@@ -1,18 +1,20 @@
 /* ============================================================================
- *  R318 — the Atlas control kernel: registry, executor, results, state, planner, audit
+ *  R318 — the Atlas control kernel: registry, executor, results, state, audit
  * ----------------------------------------------------------------------------
  *  The round's claim is that Atlas now decides "done" by WATCHING THE APP rather than by believing
  *  a function that returned. These are the checks that make that claim falsifiable:
  *
  *    ① the registry is the one list, and it covers the dispatch exactly
- *    ② the twenty audit checks can each be made to go RED (a gate never seen red proves nothing)
+ *    ② the twenty-two audit checks can each be made to go RED (a gate never seen red proves nothing)
  *    ③ `ok` cannot be written — it is derived from `status`
  *    ④ the executor awaits, observes, verifies, refuses to invent a target, cancels and supersedes
- *    ⑤ the plan is a structure: unknown capabilities, bad refs and broken dependencies are REJECTED
- *    ⑥ the goal is a gate, not a note
  *    ⑦ the nine languages reach the same capability, and the model is told the right one
  *    ⑧ one user turn costs one use — in the client, the proxy and the database
- *    ⑨ the catalogue moved without losing a byte, and the kernel shrank by moving
+ *    ⑨ the catalogue is still whole and still reachable, and the kernel shrank by moving
+ *
+ *  ⚠ ⑤ (the plan structure) and ⑥ (the goal gate) are gone: #R406 deleted js/atlas-planner.js —
+ *  the regular expressions that decided what a sentence MEANT, and a dependency-graph executor
+ *  production never called. The turn is a tool-calling loop now (tests/r406-agent.test.mjs).
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,12 +33,18 @@ const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');
 const { makeAtlasResults } = await import('../js/atlas-results.js');
 const { makeAtlasState } = await import('../js/atlas-state.js');
 const { installAtlasKernel } = await import('../js/atlas-executor.js');
-const { makeAtlasPlanner } = await import('../js/atlas-planner.js');
 const { auditWith, dispatchGroups } = await import('../scripts/atlas-capability-audit.mjs');
 
 const CAPS = makeAtlasCapabilities({});
 const DOCS = makeAtlasCatalogText({}, {});
 const RESULTS = makeAtlasResults({});
+/* (#R406) the argument schemas, loaded EXACTLY the way scripts/atlas-capability-audit.mjs loads
+   them: a missing module yields `null`, which is what makes its `argument-schemas` check red
+   rather than making the whole audit unrunnable. Loading it differently here would mean the test
+   and the gate audit different inputs. */
+const SCHEMAS = await (async () => {
+  try { return (await import('../js/atlas-schemas.js')).makeAtlasSchemas(); } catch (_) { return null; }
+})();
 
 /* a kernel wired for tests: real modules, stub capabilities */
 function kernel() {
@@ -112,15 +120,16 @@ function auditOn(over) {
     capSrc: read('js/atlas-capabilities.js'),
     execSrc: read('js/atlas-executor.js'),
     stateSrc: read('js/atlas-state.js'),
-    plannerSrc: read('js/atlas-planner.js'),
     resultsSrc: read('js/atlas-results.js'),
+    toolsSrc: read('js/atlas-toolsurface.js'),
+    schemas: SCHEMAS,
   }, over));
 }
 const failing = (checks, id) => (checks.find((c) => c.id === id) || { failures: [] }).failures;
 
 test('R318 ②a: the audit is green on the tree as it stands, except where it is honestly red', () => {
   const checks = auditOn({});
-  assert.equal(checks.length, 20, 'the audit must keep asking twenty questions');
+  assert.equal(checks.length, 22, 'the audit must keep asking twenty-two questions');
   const red = checks.filter((c) => c.failures.length).map((c) => c.id);
   assert.deepEqual(red, [], 'these capability checks are failing:\n' + JSON.stringify(checks.filter((c) => c.failures.length), null, 1));
 });
@@ -134,12 +143,15 @@ test('R318 ②b: it goes red on an unreachable dispatch label', () => {
     'a second case for a spelling an earlier case already claims is dead code and must be reported');
 });
 
-test('R318 ②c: it goes red on a capability the planner is never told about', () => {
+test('R318 ②c: it goes red on a capability Atlas is never told about', () => {
   const caps = makeAtlasCapabilities({});
   caps.define({ id: 'test.invisible', legacy: 'flyTo', aliases: ['flyTo'], execute: () => ({ ok: true }),
     produces: [], effects: { reads: [], writes: [], conflictKeys: [] } });
-  assert.ok(failing(auditOn({ caps }), 'planner-discoverable').length,
-    'a capability with no catalogue block is invisible to the planner — the #R278 defect');
+  /* (#R406) the check was `planner-discoverable`; the planner is gone and the three ways to reach a
+     capability are a catalogue block find_capability can return, a seat in the core tool surface,
+     or the always-sent rules. This one has none of them. */
+  assert.ok(failing(auditOn({ caps }), 'atlas-discoverable').length,
+    'a capability nothing documents and no tool carries is unreachable — the #R278 defect');
 });
 
 test('R318 ②d: it goes red when a promise can be reported before it settles', () => {
@@ -297,122 +309,7 @@ test('R318 ④g: unknown capabilities and bad arguments are refused, not shrugge
   assert.equal((await exec.execute('test.typed', { n: 7 })).status, 'completed');
 });
 
-/* ══ ⑤ THE PLAN IS A STRUCTURE ═══════════════════════════════════════════════════════════════ */
-
-function planner() {
-  const k = kernel();
-  return { k, P: makeAtlasPlanner({}, { WORLD_RE: /^world$/i, wctx: {}, capabilities: k.caps, results: k.results, executor: k.exec, state: k.state }) };
-}
-
-test('R318 ⑤a: the old plan shapes all still parse', () => {
-  const { P } = planner();
-  assert.equal(P.normalize([{ type: 'flyTo', place: 'Tokyo' }]).steps.length, 1, 'a bare array');
-  assert.equal(P.normalize({ type: 'flyTo', place: 'Tokyo' }).steps.length, 1, 'a single action object');
-  assert.equal(P.normalize({ actions: [{ type: 'flyTo' }, { type: 'layer' }] }).steps.length, 2, 'the actions array');
-  assert.equal(P.normalize({ steps: [{ id: 's1', capabilityId: 'view.flyTo' }] }).steps.length, 1, 'and the new form');
-  const n = P.normalize({ actions: [{ type: 'flyTo', place: 'Tokyo' }] });
-  assert.equal(n.steps[0].capabilityId, 'view.flyTo', 'a legacy type is resolved to its canonical id');
-  assert.deepEqual(n.steps[0].args, { place: 'Tokyo' }, 'and `type` does not leak into the arguments');
-});
-
-test('R318 ⑤b: unknown capabilities, dangling deps and bad $refs are REJECTED with a reason', () => {
-  const { P } = planner();
-  const v = P.validate({ steps: [
-    { id: 'a', capabilityId: 'view.flyTo', args: { place: 'Tokyo' }, expectedOutputs: ['camera'] },
-    { id: 'b', capabilityId: 'no.such.capability' },
-    { id: 'c', capabilityId: 'view.zoom', dependsOn: ['zzz'] },
-    { id: 'd', capabilityId: 'view.zoom', args: { to: { $ref: 'a.nonexistentOutput' } } },
-    { id: 'a', capabilityId: 'view.zoom' },
-    { id: 'e', capabilityId: 'system.monitor' },
-  ] });
-  const why = Object.fromEntries(v.rejected.map((r) => [r.id, r.reason]));
-  assert.equal(why.b, 'unknown_capability');
-  assert.equal(why.c, 'unknown_dependency');
-  assert.equal(why.d, 'unresolvable_ref');
-  assert.equal(why.a, 'duplicate_step_id');
-  assert.equal(why.e, 'withdrawn_capability');
-  assert.equal(v.steps.length, 1, 'only the good step survives, and nothing was silently dropped');
-});
-
-test('R318 ⑤c: a step reads its predecessor\'s output instead of re-deriving it', async () => {
-  const { k, P } = planner();
-  let geocodes = 0;
-  k.caps.define({ id: 'test.geo', execute: () => { geocodes++; return { ok: true }; }, produces: ['location'],
-    effects: { reads: [], writes: [], conflictKeys: [] },
-    observe: () => null, verify: () => ({ status: 'completed', observed: { location: { lng: 1, lat: 2 } } }) });
-  let saw = null;
-  k.caps.define({ id: 'test.use', execute: (c, a) => { saw = a.from; return { ok: true }; }, produces: [],
-    effects: { reads: [], writes: [], conflictKeys: [] },
-    observe: () => null, verify: () => ({ status: 'completed' }) });
-  await P.runPlan([
-    { id: 's1', capabilityId: 'test.geo', args: {}, dependsOn: [], expectedOutputs: ['location'], onFailure: 'stop_dependents' },
-    { id: 's2', capabilityId: 'test.use', args: { from: { $ref: 's1.location' } }, dependsOn: ['s1'], expectedOutputs: [], onFailure: 'stop_dependents' },
-  ], {});
-  assert.equal(geocodes, 1, 'the place was resolved once');
-  assert.deepEqual(saw, { lng: 1, lat: 2 }, 'and the second step read the answer instead of asking again');
-});
-
-test('R318 ⑤d: independent steps run together; a dependent one does not run after its prerequisite fails', async () => {
-  const { k, P } = planner();
-  let live = 0, maxLive = 0, ranAfterFailure = false;
-  k.caps.define({ id: 'test.readA', execute: async () => { live++; maxLive = Math.max(maxLive, live); await new Promise((r) => setTimeout(r, 20)); live--; return { ok: true }; },
-    produces: [], effects: { reads: [], writes: [], conflictKeys: [] }, observe: () => null, verify: () => ({ status: 'completed' }) });
-  const four = ['s1', 's2', 's3', 's4'].map((id) => ({ id, capabilityId: 'test.readA', args: {}, dependsOn: [], expectedOutputs: [], onFailure: 'continue' }));
-  await P.runPlan(four, {});
-  assert.ok(maxLive >= 2, `independent read-only steps must overlap (max concurrent was ${maxLive})`);
-
-  k.caps.define({ id: 'test.fails', execute: () => ({ ok: false }), produces: [],
-    effects: { reads: [], writes: [], conflictKeys: [] }, observe: () => null, verify: () => ({ status: 'failed', code: 'no_route' }) });
-  k.caps.define({ id: 'test.after', execute: () => { ranAfterFailure = true; return { ok: true }; }, produces: [],
-    effects: { reads: [], writes: [], conflictKeys: [] }, observe: () => null, verify: () => ({ status: 'completed' }) });
-  const out = await P.runPlan([
-    { id: 'p', capabilityId: 'test.fails', args: {}, dependsOn: [], expectedOutputs: [], onFailure: 'stop_dependents' },
-    { id: 'q', capabilityId: 'test.after', args: {}, dependsOn: ['p'], expectedOutputs: [], onFailure: 'stop_dependents' },
-  ], {});
-  assert.equal(ranAfterFailure, false, 'a step whose prerequisite failed must not run');
-  assert.equal(out.skipped.q, 'prerequisite_failed', 'and the skip must say why');
-});
-
-/* ══ ⑥ THE GOAL IS A GATE ════════════════════════════════════════════════════════════════════ */
-
-test('R318 ⑥a: a map that was asked for and not produced leaves the goal unmet', () => {
-  const { P } = planner();
-  const goal = P.goalSpec({ outputs: { map: true, explanation: true }, temporalMode: 'current' }, {}, 'show me X');
-  const only = (produced) => P.evaluateGoal(goal, [RESULTS.completed({ capabilityId: 'research.analyze', produced })]);
-  assert.deepEqual(only(['explanation']).unmet.map((u) => u.kind), ['map-visible'],
-    'an explanation is not a map — 「map要求は実際のmap出力なしに完了しない」');
-  assert.deepEqual(only(['map']).unmet.map((u) => u.kind), ['explanation-produced'],
-    'and operating the map is not an explanation');
-  assert.equal(only(['map', 'explanation']).satisfied, true);
-});
-
-test('R318 ⑥b: a request to DO something is not satisfied by writing about it', () => {
-  const { P } = planner();
-  const goal = P.goalSpec({ outputs: {} }, { actions: [{ type: 'layer', name: 'Wind' }] }, 'turn on the wind layer');
-  assert.ok(goal.completionRules.some((r) => r.kind === 'action-performed'), 'a plan that writes declares an action goal');
-  const wroteOnly = P.evaluateGoal(goal, [RESULTS.completed({ capabilityId: 'dialog.answer', produced: ['explanation'] })]);
-  assert.deepEqual(wroteOnly.unmet.map((u) => u.kind), ['action-performed']);
-  const didIt = P.evaluateGoal(goal, [RESULTS.completed({ capabilityId: 'layers.toggle', produced: ['map'] })]);
-  assert.equal(didIt.satisfied, true);
-});
-
-test('R318 ⑥c: a turn with an operation still waiting is not finished', () => {
-  const { P } = planner();
-  const goal = P.goalSpec({ outputs: {} }, {}, 'x');
-  const waiting = P.evaluateGoal(goal, [RESULTS.needsInput({ capabilityId: 'routing.isochrone', inputRequest: { kind: 'point' } })]);
-  assert.equal(waiting.open, true);
-  assert.equal(waiting.satisfied, false, 'needs_input is not a completed turn');
-  const running = P.evaluateGoal(goal, [RESULTS.running({ capabilityId: 'sim.earthquake' })]);
-  assert.equal(running.satisfied, false);
-});
-
-test('R318 ⑥d: repair aims at the unmet GOAL, not at the call that failed', () => {
-  const { P } = planner();
-  const goal = P.goalSpec({ outputs: { map: true } }, {}, 'x');
-  const e = P.evaluateGoal(goal, [RESULTS.failed({ capabilityId: 'map.poi', code: 'no_route' })]);
-  assert.deepEqual(e.repairTargets, ['map-visible'],
-    'the repair target is "the map is still not there", not "map.poi returned no_route"');
-});
+/* R318 ⑤a-⑤d (plan normalize / $ref / runPlan) and ⑥a-⑥d (goalSpec / evaluateGoal / repairTargets) removed in #R406: js/atlas-planner.js is deleted — the dependency-graph executor had no production caller and the goal spec was derived from a regular-expression reading of the sentence. The turn loop is covered by tests/r406-agent.test.mjs. */
 
 /* ══ ⑦ NINE LANGUAGES ════════════════════════════════════════════════════════════════════════ */
 
@@ -471,10 +368,13 @@ test('R318 ⑧a: the client stamps a turn key, and it travels in a header', () =
   assert.match(core, /headers\['x-intmap-turn'\]/, 'the turn key is not sent');
   assert.doesNotMatch(core, /body\.turnId/, 'it must NOT be in the body — the quota is consumed before the body is read');
   const atlas = codeOnly(read('js/atlas-console.js'));
-  const planCalls = atlas.match(/task:'atlas_plan'/g) || [];
-  assert.ok(planCalls.length >= 2, 'the planner and its repair pass are the two calls this is about');
-  assert.equal((atlas.match(/turnId:_turnKey/g) || []).length, planCalls.length,
-    'every atlas_plan call must carry the SAME turn key, or the repair pass bills the user again');
+  /* (#R406) the two calls used to be the plan and its repair pass. The agent loop asks the model
+     once per tool round instead — an unbounded number of calls through ONE call site — so the claim
+     is unchanged and harder: every one of them carries the same key. */
+  const turnCalls = atlas.match(/task:'atlas_turn'/g) || [];
+  assert.ok(turnCalls.length >= 1, 'the turn call is gone — this check would pass on nothing');
+  assert.equal((atlas.match(/turnId:_turnKey/g) || []).length, turnCalls.length,
+    'every atlas_turn call must carry the SAME turn key, or a multi-step turn bills the user once per step');
 });
 
 test('R318 ⑧b: the server does not trust the key it is given', () => {
@@ -524,9 +424,15 @@ test('R318 ⑨a: the 58 kB catalogue moved byte-for-byte and is still whole', ()
   const routing = DOCS.text(['routing.route', 'routing.isochrone']);
   assert.ok(routing.length > 1000 && all.includes(routing.split('\\n')[0].slice(0, 200)));
   assert.ok(routing.length < all.length / 2, 'selecting two capabilities must actually send less');
-  /* and SYS() composes from it rather than carrying it */
-  const sys = read('js/atlas-console.js');
-  assert.match(sys, /\+_DOCS\.text\(\(sel&&sel\.ids\)\|\|null\)/, 'SYS() no longer composes from the registry');
+  /* …and it is still REACHED, now by being pulled rather than pushed. (#R406) SYS() carries the
+     tools; the blocks are handed to the registry at bindRuntime, and `find_capability` reads them
+     from there. The catalogue moved out of the prompt, not out of the product. */
+  const sys = codeOnly(read('js/atlas-console.js'));
+  assert.match(sys, /bindRuntime\(\{[^}]*docs:_DOCS/,
+    'the registry is no longer given the catalogue, so find_capability has nothing to read');
+  assert.match(codeOnly(read('js/atlas-toolsurface.js')), /CAPS\.catalogText\(\[cap\.id\]\)/,
+    'find_capability no longer returns the catalogue prose for what it found');
+  assert.doesNotMatch(sys, /_DOCS\.text\(/, 'the catalogue is pasted into every prompt again');
   assert.doesNotMatch(sys, /\+'NAVIGATION\/VIEW: \{"type":"flyTo"/, 'the catalogue is inline again');
 });
 
@@ -535,28 +441,14 @@ test('R318 ⑨b: the kernel shrank by moving, and the ceiling came down with it'
   const atlas = n('js/atlas-console.js');
   /* #R199's rule: a ceiling raised once and never lowered stops asserting anything, so it follows
      the floor DOWN. #R311 shipped 5,299 lines against a ceiling of 5,300. */
-  assert.ok(atlas < 5_270, `js/atlas-console.js is ${atlas} lines; #R318 moved the planner, the catalogue and the state out and must stay below 5,270`);
+  assert.ok(atlas < 4_910, `js/atlas-console.js is ${atlas} lines; #R406 removed the request profile, the intent gates and localPlan, and it must stay below 4,900`);
   assert.ok(n('js/app-body.js') < 4_400, 'js/app-body.js keeps #R200\'s ceiling');
-  const moved = ['js/atlas-capabilities.js', 'js/atlas-catalog-text.js', 'js/atlas-executor.js',
-    'js/atlas-planner.js', 'js/atlas-results.js', 'js/atlas-state.js'].reduce((a, p) => a + n(p), 0);
-  assert.ok(moved > 1_200, `the six new modules hold ${moved} lines — the kernel shrank by moving, not by losing`);
+  const moved = ['js/atlas-agent.js', 'js/atlas-capabilities.js', 'js/atlas-catalog-text.js',
+    'js/atlas-executor.js', 'js/atlas-results.js', 'js/atlas-state.js', 'js/atlas-toolsurface.js'].reduce((a, p) => a + n(p), 0);
+  assert.ok(moved > 1_200, `the seven modules hold ${moved} lines — the kernel shrank by moving, not by losing`);
 });
 
-test('R318 ⑨c: the #R135 block moved whole, and its four tuned rows are unchanged', () => {
-  const pl = read('js/atlas-planner.js');
-  ['_requestProfile', '_profileBlock', '_validatePlan', '_goalValidation', '_actionFamily',
-    '_semanticRetryKey', '_isWorldExpansion', '_repairGuidance', '_rpExtractYear', '_rpGeoKind'].forEach((n) =>
-    assert.ok(pl.includes('function ' + n), `${n} did not arrive in js/atlas-planner.js`));
-  assert.doesNotMatch(codeOnly(read('js/atlas-console.js')), /function _requestProfile\(/, 'it is still in the kernel too — two copies');
-  /* the four rows #R135 tuned by hand must be byte-identical, or _validatePlan decides differently */
-  assert.match(pl, /mapReport:\s+\{ temporalModes:\['current','mixed','unspecified'\], evidenceModes:\['live'\], outputs:\['explanation','map'\], geoKinds:\['point','city','country','region','water'\] \}/);
-  assert.match(pl, /historicalMap:\{ temporalModes:\['historical'\], evidenceModes:\['historical'\], outputs:\['thematic-map'\], topics:\['alliance','faction','war','political-bloc'\] \}/);
-  /* …and the table is no longer four entries for a hundred and fifteen capabilities */
-  const { P } = planner();
-  const n = Object.keys(P.ATLAS_ACTION_CAPABILITIES).length;
-  assert.ok(n > 200, `ATLAS_ACTION_CAPABILITIES has ${n} entries — it is meant to be generated from the registry now`);
-  assert.deepEqual(P.ATLAS_ACTION_CAPABILITIES.mapReport.evidenceModes, ['live'], 'and the tuned row survived generation');
-});
+/* R318 ⑨c (the #R135 request-profile block and ATLAS_ACTION_CAPABILITIES) removed in #R406: the file it checked had arrived in, js/atlas-planner.js, is deleted along with every function it named. */
 
 test('R318 ⑨d: the state is data, and the paragraph is derived from it', () => {
   const st = read('js/atlas-state.js');

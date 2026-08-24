@@ -1,8 +1,10 @@
 // R159 source-level regression checks (deterministic, no browser).
 // Batch: (1) Atlas replies no bold + no divider lines, (2) remove the redundant "その他の収集記事" source pile,
 // (3) right-sidebar smaller default width, (4) smooth sidebar open/close that never pans the map (left anchored),
-// (6) news-pin band hides when its hover popup opens, (7) composite-answer integration (repair REPLACES, one
-// goal-validated answer, no internal names/codes leaked). Literal-substring assertions guard the load-bearing lines.
+// (6) news-pin band hides when its hover popup opens, (7) composite-answer integration (one answer per goal — a
+// retry REPLACES the failure it repeats — no internal names/codes leaked; #R406 deleted the repair PASS the goal
+// keying was built for, so (7) asserts the keying and the one-bubble rule against the turn loop that runs now).
+// Literal-substring assertions guard the load-bearing lines.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -78,8 +80,15 @@ test('R159 #7 composite answer — repair REPLACES, one goal-validated answer, n
   ok('function _atlGoalScore(res){', 'goal-satisfaction score picks the best result');
   ok('function _atlCompose(ai){', 'the bubble is composed from recorded results, not blind concatenation');
   ok('ai.__atlResults=(ai.__atlResults||[]).concat(results);', 'each pass records its results on the bubble');
-  ok('const rf=await runActions(ai, rplan.say||\'\', fresh, gen);', 'the repair pass runs into the SAME bubble (no new divider div)');
-  ok('if(_pk) fresh.forEach(a2=>{ if(_ATL_ANSWER_TYPES[a2&&a2.type]&&!a2.__goalKey) a2.__goalKey=_pk; });', 'a repair answer inherits the failed goal key so it REPLACES the failure');
+  /* ⚠ (#R406) THE TWO LINES THAT USED TO STAND HERE WERE REPLACED BY ONE MECHANISM THAT DOES THE
+     SAME THING FOR EVERY STEP, not only for a repair. #R159's repair pass called
+     `runActions(ai, rplan.say||'', fresh, gen)` into the bubble the first pass had already used, and
+     stamped the failed action's goal key onto the repair's answer so _atlCompose would keep exactly
+     one of the two. #R406 deleted the repair pass along with the planner that needed it: what runs
+     now is a loop in which EVERY tool Atlas calls executes into that same bubble, and a retry lands
+     in the same goal slot on its own, because the key IS the topic the answer is about. */
+  ok("await runActions(ai,'',[action],gen);", 'every step of the turn runs into the SAME bubble (js/atlas-console.js _runOne) — no second answer, no divider');
+  ok("return 'answer:'+topic; }", 'and an answer’s goal key is its topic, so a retry REPLACES the failure it repeats instead of piling on');
   gone("const div=document.createElement('div'); div.style.cssText='margin-top:7px;padding-top:7px;border-top:1px dashed", 'the appended divider div is gone');
   // the fail summary no longer leaks internal action names / arg values (e.g. mapReport "Taiwan")
   gone("'実行できなかった操作が '+fails.length+' 件あります',fails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+fails.length,fails.length+' paso(s) sin completar')+(fl?(' — '+esc(fl)):'')", 'the action-label leak in the fail summary is removed');

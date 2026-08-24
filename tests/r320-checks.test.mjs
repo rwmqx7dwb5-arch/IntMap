@@ -27,6 +27,8 @@ const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\
 if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
 const { auditWith } = await import('../scripts/atlas-capability-audit.mjs');
 const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+/* (#R406) the audit reads the real argument schemas the same way scripts/atlas-capability-audit.mjs does */
+const SCHEMAS = (await import('../js/atlas-schemas.js')).makeAtlasSchemas();
 const { makeAtlasCatalogText } = await import('../js/atlas-catalog-text.js');
 
 const CONTROLS = read('js/atlas-controls.js');
@@ -59,7 +61,7 @@ test('R320 ①c: the audit can go red on a silent cap', () => {
     caps: makeAtlasCapabilities({}), docs: makeAtlasCatalogText({}, {}),
     atlas: read('js/atlas-console.js').split(/\r?\n/), controls: damaged,
     capSrc: read('js/atlas-capabilities.js'), execSrc: read('js/atlas-executor.js'),
-    stateSrc: read('js/atlas-state.js'), plannerSrc: read('js/atlas-planner.js'),
+    stateSrc: read('js/atlas-state.js'),
     resultsSrc: read('js/atlas-results.js'),
   });
   const f = (checks.find((c) => c.id === 'no-silent-cap') || { failures: [] }).failures;
@@ -115,14 +117,16 @@ test('R320 ③c: every lazy module the loader publishes is a name the catalogue 
 
 /* ── ④ nothing regressed in the kernel this builds on ───────────────────────────────────────── */
 
-test('R320 ④: the capability audit is still green, and still asks twenty questions', () => {
+test('R320 ④: the capability audit is still green, and still asks twenty-two questions', () => {
   const checks = auditWith({
     caps: makeAtlasCapabilities({}), docs: makeAtlasCatalogText({}, {}),
     atlas: read('js/atlas-console.js').split(/\r?\n/), controls: CONTROLS,
     capSrc: read('js/atlas-capabilities.js'), execSrc: read('js/atlas-executor.js'),
-    stateSrc: read('js/atlas-state.js'), plannerSrc: read('js/atlas-planner.js'),
+    stateSrc: read('js/atlas-state.js'),
     resultsSrc: read('js/atlas-results.js'),
+    toolsSrc: read('js/atlas-toolsurface.js'),
+    schemas: SCHEMAS,
   });
-  assert.equal(checks.length, 20);
+  assert.equal(checks.length, 22, 'a capability check was added or lost — #R406 added argument-schemas and required-arguments');
   assert.deepEqual(checks.filter((c) => c.failures.length).map((c) => c.id), []);
 });

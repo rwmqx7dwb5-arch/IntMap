@@ -253,7 +253,14 @@ atlas-geo-object.js               **地点の1つの形**（#R397）— GeoObjec
                                   event_location / geocoded_point / resolved_place_centroid / model_named）。
                                   `mergeKnown()` がコードの座標を回答の地点名へ戻すので、再ジオコードしない。
                                   ⚠ 代表点は `pointLike` ではない＝「その地点」として扱わない
-atlas-policy.js                   **依拠と操作の方針**（#R397）— planner プロンプトの3節（情報源の優先順位＝
+atlas-agent.js                    **ターンの進行**（#R406）— Atlas が1手ごとに「最終回答」か「tool 呼び出し」を
+                                  選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・
+                                  回数の上限だけを見て、意味は一切決めない。DOM も network も触らない
+atlas-toolsurface.js              **道具の面**（#R406）— 中核7ツール＋`find_capability`（全126を検索）／
+                                  `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
+atlas-schemas.js                  **引数の schema**（#R406）— 126能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+                                  綴りは dispatch が実際に読む名前から取る（発明しない）
+atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
                                   目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
@@ -261,7 +268,6 @@ atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない
 atlas-state.js                    アプリの状態をデータとして持つ（#R318）。各サブシステムが provider を登録し、
                                   モデル向けの文章はそこから派生する。ターン台帳（目標・計画・結果・objectId）
-atlas-planner.js                  計画の schema・検証・GoalSpec・依存グラフ実行（#R318。#R135 の時間軸ブロックを内包）
 atlas-evidence.js                 Atlas — 証拠レジストリ（#R350）。ソースが入ってよい唯一の入口。URL の正規化と
                                   拒否理由、追跡パラメータの無視、重複の統合、捏造ホスト名の検出。1 回の呼び出しに
                                   束縛されるので、同時に走る 2 つの回答が引用を取り違えられない

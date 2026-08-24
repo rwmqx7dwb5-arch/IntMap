@@ -37,6 +37,11 @@ import * as catalogModule from '../js/atlas-catalog-text.js';
    property on a function and throw, and if it ever stopped throwing it would silently measure a
    prompt with the clauses MISSING. The real module is what keeps this a real measurement. */
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
+/* (#R406) the tool surface is what SYS() carries now, so the measurement needs the real one */
+if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+const { makeAtlasToolSurface } = await import('../js/atlas-toolsurface.js');
+const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+const { makeAtlasSchemas } = await import('../js/atlas-schemas.js');
 const ATLAS_PERSONA = personaPrompt.spec;   /* the specification hangs off the single export (#R175) */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -268,7 +273,7 @@ function plannerPromptSize() {
   const lines = read('js/atlas-console.js').split(/\r?\n/);
   /* (#R318) SYS takes the capability selection now — `SYS(sel)`, where a null selection means the
      WHOLE catalogue, i.e. the prompt this check has always measured. */
-  const s = lines.findIndex((l) => /^\s*function SYS\((sel)?\)\s*\{/.test(l));
+  const s = lines.findIndex((l) => /^\s*function SYS\(\w*\)\s*\{/.test(l));
   const e = lines.findIndex((l, i) => i > s && /^    \}$/.test(l));
   assert.ok(s >= 0 && e > s, 'function SYS() was not found — the planner prompt moved');
   /* ⚠ (#R318) THE CATALOGUE HAS TO COME BACK IN, OR THIS CHECK STOPS MEASURING THE THING IT NAMES.
@@ -279,10 +284,19 @@ function plannerPromptSize() {
      falls back to exactly that. */
   const { makeAtlasCatalogText } = catalogModule;
   const DOCS = makeAtlasCatalogText({}, {});
+  /* ⚠ (#R406) AND SO DOES THE TOOL BLOCK, FOR THE SAME REASON THE CATALOGUE DID. SYS() no longer
+     pastes the 64,250-character catalogue; it carries the tool surface, and `_toolBlock` is defined
+     BELOW SYS() so the slice above does not include it. Letting the Proxy answer it with '' would
+     measure a prompt with the tools missing — the #R318 mistake, one subject later. This is the real
+     surface over the real registry, which is what the browser sends. */
+  const TOOLS = makeAtlasToolSurface({ capabilities: makeAtlasCapabilities({}), schemas: makeAtlasSchemas(), runAction: () => {} });
+  const toolJson = (() => { const t = TOOLS.baseTools();
+    return Object.keys(t).map((k) => JSON.stringify({ name: t[k].name, description: t[k].description, parameters: t[k].parameters })).join('\n'); })();
   const env = {
     personaPrompt,
     POLICY: makeAtlasPolicy(),
     _DOCS: DOCS,
+    _toolBlock: () => toolJson,
     _langLine: () => 'English (write EVERYTHING in English, every sentence — a place, person or organization name in the request, even one written in Han/Chinese or Korean characters, NEVER changes the reply language)',
     controlCatalog: () => 'x'.repeat(3727),
     layerCatalogText: () => 'x'.repeat(3750),
@@ -305,9 +319,17 @@ test('R285 (8) ai-proxy admits the whole planner prompt, with room to grow', () 
   assert.match(code, /payload\.prompt[^\n]*MAX_PROMPT/, '`prompt` must keep its own, tighter cap: it is the half that carries user text');
 
   const size = plannerPromptSize();
-  assert.ok(size > promptCap, `the planner prompt (${size}) no longer exceeds MAX_PROMPT (${promptCap}) — if that is real, this check has stopped meaning anything`);
-  assert.ok(size < sysCap, `the planner prompt is ${size} chars but MAX_SYSTEM is ${sysCap}: ${size - sysCap} chars would be cut off, mid-word, and the model would never know`);
-  assert.ok(sysCap >= size * 1.5, `MAX_SYSTEM (${sysCap}) leaves less than 50% headroom over the current planner prompt (${size}) — a normal round's additions would start truncating again silently`);
+  /* ⚠⚠ (#R406) THE SIZE ARGUMENT FOR TWO CAPS IS GONE. THE TWO CAPS STAY.
+     #R285 split MAX_SYSTEM off from MAX_PROMPT because the system half carried a 60 kB action
+     catalogue and a shared cap would have cut it off mid-word with nothing said. #R406 removed that
+     catalogue — the system prompt is 5.9 k — so `size > MAX_PROMPT` is no longer true, and this
+     check's own message anticipated it: «if that is real, this check has stopped meaning anything».
+     It is real. What the split is FOR has not changed and is what is asserted instead: `prompt` is
+     the half that carries the reader's own text and keeps the tighter cap of the two, and the
+     system half must still fit with room for a normal round's additions. */
+  assert.ok(promptCap < sysCap, `MAX_PROMPT (${promptCap}) is no longer the tighter cap — the half carrying user text must keep its own, smaller limit`);
+  assert.ok(size < sysCap, `the system prompt is ${size} chars but MAX_SYSTEM is ${sysCap}: ${size - sysCap} chars would be cut off, mid-word, and the model would never know`);
+  assert.ok(sysCap >= size * 1.5, `MAX_SYSTEM (${sysCap}) leaves less than 50% headroom over the current system prompt (${size}) — a normal round's additions would start truncating again silently`);
   assert.ok(LIVE_CATALOGUES > 0);
 });
 

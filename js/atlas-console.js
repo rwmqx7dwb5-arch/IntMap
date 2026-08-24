@@ -30,7 +30,9 @@ import { makeAtlasSims } from './atlas-sims.js';
 import { makeAtlasVerify } from './atlas-verify.js';
 import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) normally js/app-body.js has already built the registry at boot; this is the fallback for a boot that did not get that far, so Atlas is never the thing that has no capabilities */
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
-import { makeAtlasPlanner } from './atlas-planner.js';   /* (#R318) the plan — schema, validation, GoalSpec, dependency execution (holds #R135's block) */
+import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
+import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
+import { makeAtlasSchemas } from './atlas-schemas.js';   /* (#R406) the per-capability argument schemas the registry never had */
 import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the 58 kB action catalogue that used to be inline in SYS() */
 import { makeAtlasAnswerPipeline } from './atlas-answer-pipeline.js';   /* (#R350) the analysis answer as a contract: evidence registry -> one call -> audit -> at most one repair -> degrade */
 import { makeAtlasAnswerRender } from './atlas-answer-render.js';   /* (#R350) every link on screen is built from the registry, never from the model's prose */
@@ -180,7 +182,6 @@ window.IntMapModules.atlasConsole=function(HOST){
        absolute position means nothing, and an edited message must rewind history as far as it rewinds the chat. */
     let _hist=[]; let _lastPlace=null; let _lastMissileCtx=null; let _lastRadCtx=null; let _lastRouteCtx=null;   /* (#R85) last missile / radiation / route → in-message controls re-run it */
     let _curPlanCites=[];   /* (#R350) the citations of THIS turn's planner call. The `answer` action used to read window._aiLastCitations at render time — a second Atlas turn finishing in between handed it the other turn's sources. */
-    let _curProfile=null;   /* (#R350) the request profile of the turn in flight — read by runActions to stamp each action's goal impact */
     let _turnSeq=0, _curTurn=0, _curTurnKey='';   /* (#R350) _curTurnKey is module-scoped because the analysis lives in dispatch(), not in run(): without it the structured answer and its one repair would each buy a daily use, undoing #R318 for exactly the path this round adds a repair to. (#R298) the monotone turn id: run() stamps it on the user bubble and recordTurn files the exchange under it. ⚠ its own line — tests/r199 pins `let _hist=[]; let _lastPlace=null;` verbatim to prove the kernel still owns _lastPlace, so nothing may be spliced between them */
     /* (#R86c) multi-stop route optimisation (TSP): order N points shortest-first via nearest-neighbour + 2-opt on
        great-circle distance (keyless, instant), keeping the first point as the fixed start; the ordered tour is then
@@ -205,6 +206,14 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R120) non-dispatch creators (e.g. a GeoJSON file upload) report their new object ids here, so
        "さっき読み込んだやつ" resolves via _wctx.lastObjects just like dispatch-created objects. */
     window._imNoteObjects=ids=>{ try{ if(Array.isArray(ids)&&ids.length) _wctx.lastObjects=ids.map(String).concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} };
+    /* (#R406) The last plausible past year written in an era string — «World War I 1916», «1750».
+       ⚠ THIS IS SYNTAX, NOT MEANING, and that is why it survived the round that deleted the request
+       profile it used to live in: it reads a four-digit number out of a value ATLAS ALREADY CHOSE as
+       the era of a historical map, so that a follow-up question inherits the year. It never looks at
+       the reader's sentence and it decides nothing about what was asked. */
+    function _eraYear(s){ s=String(s||''); let best=null; const yNow=(new Date()).getFullYear();
+      const re=/(?:^|[^0-9.,])((?:1[0-9]|20)[0-9]{2})\s*(?:年|CE|AD|BCE?)?/g; let m;
+      while((m=re.exec(s))){ const y=+m[1]; if(y>=1000&&y<=yNow) best=y; } return best; }
     function updateWctx(acts,fails){ try{ (acts||[]).forEach(a=>{ if(!a||(fails||[]).indexOf(a)>=0) return;
       if((a.type==='compareStats'||a.type==='compareCountries'||a.type==='statsCompare')&&a.countries) _wctx.countries=[].concat(a.countries).map(String).slice(0,10);
       if((a.type==='analyze'||a.type==='research')&&(a.question||a.query)) _wctx.topic=String(a.question||a.query).slice(0,140);
@@ -216,7 +225,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       if(a.type==='timeTravel'||a.type==='setTime'||a.type==='timeSet'){ _wctx.period=(a.reset||a.now||a.live)?'now':String(a.year||a.date||((a.daysAgo!=null)?(a.daysAgo+' days ago'):'')).slice(0,40);
         if(a.reset||a.now||a.live) _wctx.year=null; else if(a.year!=null&&isFinite(+a.year)) _wctx.year=Math.round(+a.year); else if(a.date){ try{ const y=+String(a.date).slice(0,4); if(y>=1000) _wctx.year=y; }catch(_){} } }   /* (#R135) year for the next turn's REQUEST PROFILE (conversation fallback) */
       if((a.type==='researchMap'||a.type==='research_map'||a.type==='situationMap')&&a.year!=null&&isFinite(+a.year)) _wctx.year=Math.round(+a.year);   /* (#R135) */
-      if((a.type==='historicalMap'||a.type==='allianceMap'||a.type==='powerMap')&&(a.era||a.date)){ try{ const y=_rpExtractYear(String(a.era||a.date)); if(y!=null) _wctx.year=y; }catch(_){} }   /* (#R135) */
+      if((a.type==='historicalMap'||a.type==='allianceMap'||a.type==='powerMap')&&(a.era||a.date)){ try{ const y=_eraYear(String(a.era||a.date)); if(y!=null) _wctx.year=y; }catch(_){} }   /* (#R135) */
     }); }catch(_){} }
     /* (#R80) vision §3 — REMEMBER exclusion conditions ("除外条件…を保持"). These are stated in natural language
        ("except Europe", "◯◯を除いて", "not counting China", "アメリカ以外"), not encoded in an action, so parse the
@@ -1058,7 +1067,9 @@ window.IntMapModules.atlasConsole=function(HOST){
     const { normalizeAnswer } = makeAtlasAnswerContract();
     const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
     const ANOM = makeAtlasAnomalyScore();   /* (#R397) cross-domain hazard ranking with an explainable score */
-    const POLICY = makeAtlasPolicy();     /* (#R397) the three prompt clauses that stop IntMap's own data being a ceiling */
+    const POLICY = makeAtlasPolicy();     /* (#R406) the core instruction \u2014 one paragraph, not nine */
+    const AGENT = makeAtlasAgent();       /* (#R406) the turn loop */
+    const SCHEMAS = makeAtlasSchemas();   /* (#R406) 126 argument schemas */
     const { auditAnswer } = makeAtlasAnswerAudit();
     /* ---- (#R43) PRECISE layer resolution. The user reported "レイヤーによっては混同している" — the old matcher
        fuzzy-matched loosely AND the model never saw the real layer names, so it guessed a name and the matcher
@@ -1171,20 +1182,13 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
     const { clickId, controlCatalog, doControl, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
-    /* ⚠ (#R318) THIS SITS HERE, NOT WHERE THE BLOCK IT REPLACED SAT, AND THE REASON IS A REAL
-       FAILURE. `_requestProfile` and its neighbours used to be hoisted `function` declarations, so
-       window.IntMapAtlasQA — an object literal built five hundred lines ABOVE them — could name
-       them. As destructured `const`s they are in their temporal dead zone up to this line, and the
-       built app answered «Cannot access 'Jt' before initialization», thrown out of the Atlas
-       factory, which then never mounted at all. It needs WORLD_RE (the line above) and nothing
-       later, so it goes as early as it can. */
-    /* (#R318) ↳ js/atlas-planner.js — the plan: its schema, its validation, its goal, its execution.
-       The #R135 time-axis block moved WHOLE (request profile → plan validation → goal validation); the
-       13 names below are what the rest of this file still calls, unchanged. ⚠ ATLAS_ACTION_CAPABILITIES
-       is the SAME four tuned rows it always had PLUS one derived row per registry capability — four
-       descriptors for a dispatch of 115 was the #R278 hole wearing another hat. */
-    const _PLANNER=makeAtlasPlanner(HOST,{ WORLD_RE, wctx:_wctx, personaPrompt, capabilities:CAPS, results:RESULTS, executor:EXEC, state:ASTATE });
-    const { ATLAS_ACTION_CAPABILITIES, PLAN_SCHEMA, _actionFamily, _goalValidation, _isWorldExpansion, _profileBlock, _repairGuidance, _requestProfile, _researchFamKey, _rpExtractYear, _rpGeoKind, _semanticRetryKey, _validatePlan } = _PLANNER;
+    const { TURN_SCHEMA } = AGENT;   /* (#R406) the reply shape of one step — js/atlas-agent.js */
+    /* (#R406) ONE tool surface for the module, not one per turn. What IS per-turn is where a call
+       lands: `_turnRunAction` is the running turn's executor, so the surface can be built (and
+       inspected) the moment Atlas loads rather than only once a question is in flight. */
+    let _turnRunAction=null;
+    const TOOLS=makeAtlasToolSurface({ capabilities:CAPS, schemas:SCHEMAS,
+      runAction:(action)=>(_turnRunAction?_turnRunAction(action):Promise.resolve({ ok:false, error:'no_turn', message:'no turn is running' })) });
     /* ---- (#R43) CHOROPLETH — genuine "data + map" combined output ("データやレイヤー、地図を組み合わせた複合的な
        処理＆出力"): shade EVERY country by a metric on a YlGnBu ramp (log-scaled for skewed metrics) with a legend,
        reusing the same nlq-src feature-state source the highlights use. ---- */
@@ -1350,15 +1354,24 @@ window.IntMapModules.atlasConsole=function(HOST){
     function stateContext(){ try{ return ASTATE.renderPrompt(ASTATE.snapshot()); }catch(_){ return ''; } }
     /* (#R44) build the USER message = current state + recent conversation + the new request, so the model has
        the CONTEXT it was completely missing before. */
-    function buildPrompt(q, profile){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
-      try{ const pr=profile||_requestProfile(q); const pb=_profileBlock(pr); if(pb) p+=pb+'\n'; }catch(_){}   /* (#R135) machine-parsed temporal/geo/evidence hints + enforced action-choice rules */
-      if(_herePoint&&isFinite(_herePoint.lng)) p+='[PINNED POINT] The user clicked an EXACT spot on the map: latitude '+(+_herePoint.lat).toFixed(4)+', longitude '+(+_herePoint.lng).toFixed(4)+(_herePoint.name?(' (near '+_herePoint.name+')'):'')+'. Words like "here / this spot / this place / この地点 / ここ / hier / здесь / aquí" refer to THIS coordinate. First work out what is at or near it (country, region, city, terrain, sea) and answer about it specifically; if it is ocean or uninhabited say so. You may also pass place:"there" to actions and it resolves to this point.\n\n';
-      const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about — resolve "the same/them/それ/同じ条件" against this)\n'+wc+'\n\n';
-      if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest; resolve pronouns/follow-ups against this)\n'+_hist.slice(-8).map(x=>x.s).join('\n')+'\n\n';   /* (#R298) an entry is {t,s} — the model reads `s`, `t` exists so an edited message can rewind the history */
-      p+='[NEW REQUEST]\n'+q+'\n\nInterpret the request IN CONTEXT of the state and conversation above. Resolve references like "it / that / there / here / this country / the same / again / now / turn it off / make it bigger / the Nth one / zoom in more" using them. If the request is a tweak of the previous one, keep the parts that still apply.'
-        /* (#R118) clarification-loop killer (the "ワルシャワ条約機構→何年?" death-spiral): resolve deictic references
-           from context, one clarifying question MAX, and on pushback COMMIT to the best-faith reading. */
-        +'\nDeixis & clarification rules: (1) それ/さっきの/今表示した/what you showed ALWAYS refers to the most recent Atlas output in the conversation/state above — resolve it yourself, do not ask which. (2) Ask at most ONE clarifying question about a topic, and only when truly必要; NEVER re-ask or offer another menu of interpretations after the user objects — commit to the most reasonable reading and answer. (3) The time-travel/display date is never "the year of the data"; a highlight\'s membership year comes from its stated BASIS. (4) Never claim a fact is unknowable when the state above contains it.';
+    /* (#R406) The user-side message for ONE step of the turn loop: what IntMap looks like now, what
+       this conversation is about, what was asked \u2014 and, from the second step on, IntMap's mechanical
+       record of what the previous calls actually did. ⚠ NO RULES AND NO CATALOGUE LIVE HERE. The
+       [REQUEST PROFILE] block that stood in the middle of it announced a temporal mode, a geographic
+       kind and a set of "requested outputs" derived from regular expressions, under the heading
+       «the capability rules below are ENFORCED after you plan» \u2014 a machine's guess about the
+       sentence, presented to the model as a constraint on it. State is context; it is not an order. */
+    function _agentPrompt(req, q){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
+      if(_herePoint&&isFinite(_herePoint.lng)) p+='[PINNED POINT] The user clicked an EXACT spot: latitude '+(+_herePoint.lat).toFixed(4)+', longitude '+(+_herePoint.lng).toFixed(4)+(_herePoint.name?(' (near '+_herePoint.name+')'):'')+'. "here / this spot / ここ / hier / здесь / aqu\u00ed" refer to THIS coordinate, and actions accept place:"there" for it.\n\n';
+      const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about)\n'+wc+'\n\n';
+      if(_hist.length) p+='[RECENT CONVERSATION] (oldest\u2192newest)\n'+_hist.slice(-8).map(x=>x.s).join('\n')+'\n\n';   /* (#R298) an entry is {t,s} \u2014 the model reads `s` */
+      p+='[REQUEST]\n'+q+'\n\n';
+      try{ const steps=[]; ((req&&req.messages)||[]).forEach(m=>{
+          if(m&&m.role==='assistant'&&m.toolCalls&&m.toolCalls.length) steps.push('you called: '+JSON.stringify(m.toolCalls).slice(0,1200));
+          else if(m&&m.role==='tool') steps.push('IntMap observed: '+JSON.stringify(m.content).slice(0,3000)); });
+        if(steps.length) p+='[THIS TURN SO FAR \u2014 IntMap\'s mechanical record. It did not correct, substitute or reinterpret anything; those decisions are yours.]\n'+steps.join('\n')+'\n\n';
+      }catch(_){}
+      if(req&&req.final) p+='[Answer the reader now. Do not call any more tools.]\n';
       return p; }
     /* ---- (#R61) INTEGRATED ANALYSIS ("レイヤーの数値や最新ニュース、その他様々なIntMapの機能を統合して分析…
        横断的で統合的な出力"): Atlas gathers REAL data from the sources IntMap already uses — the loaded news
@@ -1511,7 +1524,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       registry:makeEvidenceRegistry, normalize:normalizeAnswer, audit:auditAnswer };
     window.IntMapAtlasQA={
       freshness:_analyzeFreshness, nowContext:_nowContext, evidence:_analyzeEvidence, evidenceBlock:_evidenceBlock, headerBlock:_analyzeHeaderBlock, systemPrompt:_analysisSystemPrompt,
-      requestProfile:_requestProfile, validatePlan:_validatePlan, actionFamily:_actionFamily, researchFamKey:_researchFamKey, semanticRetryKey:_semanticRetryKey, get capabilities(){ return ATLAS_ACTION_CAPABILITIES; }, profileBlock:_profileBlock, isWorldExpansion:_isWorldExpansion, goalValidation:_goalValidation,   /* (#R135) getter avoids the const TDZ at load */
+      get capabilities(){ return CAPS; },
       centralAsiaFixture:function(){
         const nowMs=Date.UTC(2026,6,17,20,0,0);   /* report's reference "now" = 2026-07-18 05:00 JST; window = 72 h → 07-15 05:00 through 07-18 05:00 */
         const q='中央アジアを担当する分析官として、現在から72時間、この地域の監視レベルを引き上げるべきか判断する。ニュースの深刻そうな表現ではなく、位置・時系列・通常状態・データ欠落を含めて判断する。判断を支える直接的証拠と、重要だが未確認の兆候を区別する。確信度0〜100。';
@@ -1551,42 +1564,9 @@ window.IntMapModules.atlasConsole=function(HOST){
         add('9·prompt: user format before brevity', /FOLLOW THE OUTPUT STRUCTURE THE USER ASKED FOR/i.test(P)&&/their requested structure wins/i.test(P), '');
         add('9·prompt: no false "newest-first is chronological" claim', !/sorted newest-first/i.test(P), '');
         add('14·single analysis AI call', true, 'by construction — analyze issues exactly one askAI({task:analysis})');
-        /* ===== (#R135) Request Profile + capability validation + semantic retry (the Sea-of-Okhotsk failure class) ===== */
-        const P1=_requestProfile('当時のオホーツク海はどんな状況だった？地図上で教えて。',{live:false,dispYear:1900,convYear:null});
-        add('R135·「当時」+1900 map-state → historical', P1.temporalMode==='historical'&&P1.targetYear===1900&&P1.temporalSource==='map-state', P1.temporalMode+'/'+P1.targetYear+'/'+P1.temporalSource);
-        add('R135·water kind detected', P1.geoKind==='water', P1.geoKind);
-        add('R135·evidence=historical, wants map+explanation', P1.evidenceMode==='historical'&&P1.outputs.map&&P1.outputs.explanation, P1.evidenceMode+' map='+P1.outputs.map+' expl='+P1.outputs.explanation);
-        const P2=_requestProfile('今のオホーツク海のニュースは？',{live:false,dispYear:1900,convYear:null});
-        add('R135·「今」+ニュース overrides map-state → current/live', P2.temporalMode==='current'&&P2.evidenceMode==='live', P2.temporalMode+'/'+P2.evidenceMode);
-        const P3=_requestProfile('1900年と現在のオホーツク海を比較して',{live:true,convYear:null});
-        add('R135·比較+現在 → mixed (keeps 1900)', P3.temporalMode==='mixed'&&P3.outputs.comparison&&P3.targetYear===1900, P3.temporalMode+'/'+P3.targetYear);
-        const P4=_requestProfile('1750年のサヘル交易圏を表示して',{live:true,convYear:null});
-        add('R135·explicit 1750 → historical/explicit', P4.temporalMode==='historical'&&P4.targetYear===1750&&P4.temporalSource==='explicit', P4.targetYear+'/'+P4.temporalSource);
-        add('R135·conversation-year fallback', _requestProfile('その交易圏はどこまで広がっていた？',{live:true,convYear:1750}).targetYear===1750, '');
-        const V1=_validatePlan([{type:'mapReport',topic:'オホーツク海',place:'オホーツク海'}],P1,'当時のオホーツク海');
-        add('R135·mapReport(historical) → researchMap(year kept)', V1.plan.length===1&&V1.plan[0].type==='researchMap'&&V1.plan[0].temporalMode==='historical'&&V1.plan[0].year===1900, V1.plan[0]&&V1.plan[0].type+'/'+V1.plan[0].year);
-        add('R135·rejection recorded', (V1.rejected||[]).some(r=>/live_mapReport/.test(r.reason)), JSON.stringify((V1.rejected||[]).map(r=>r.reason)));
-        const V2=_validatePlan([{type:'historicalMap',era:'1900'}],P1,'x');
-        add('R135·historicalMap on a sea → researchMap', V2.plan[0]&&V2.plan[0].type==='researchMap', V2.plan[0]&&V2.plan[0].type);
-        const Pw=_requestProfile('第一次世界大戦1916年の勢力図を表示して',{live:true,convYear:null});
-        const V3=_validatePlan([{type:'historicalMap',era:'World War I 1916'}],Pw,'x');
-        add('R135·WWI ALLIANCE map preserved', V3.plan[0]&&V3.plan[0].type==='historicalMap', V3.plan[0]&&V3.plan[0].type);
-        const Pc=_requestProfile('今のオホーツク海で何が起きている？地図で教えて',{live:true,convYear:null});
-        const V4=_validatePlan([{type:'mapReport',topic:'Sea of Okhotsk'}],Pc,'x');
-        add('R135·mapReport(current) preserved', V4.plan[0]&&V4.plan[0].type==='mapReport', V4.plan[0]&&V4.plan[0].type);
-        const V5=_validatePlan([{type:'flyTo',place:'オホーツク海'}],P1,'当時のオホーツク海はどんな状況だった？地図上で教えて');
-        add('R135·nav-only historical+map → researchMap appended', V5.plan.some(a=>a.type==='researchMap'), V5.plan.map(a=>a.type).join(','));
-        const k1=_researchFamKey({type:'mapReport',topic:'オホーツク海'}), k2=_researchFamKey({type:'mapReport',topic:'Sea of Okhotsk'}), k3=_researchFamKey({type:'mapReport',topic:'Okhotsk Sea'});
-        add('R135·translations share ONE retry key', !!k1&&k1===k2&&k2===k3, k1);
-        add('R135·researchMap≠mapReport retry key', _researchFamKey({type:'researchMap',temporalMode:'historical'})!==k1, _researchFamKey({type:'researchMap',temporalMode:'historical'}));
-        add('R135·world flyTo blocked when target is specific', _isWorldExpansion({type:'flyTo',place:'world'},P1)===true&&_isWorldExpansion({type:'flyTo',place:'オホーツク海'},P1)===false, '');
-        add('R135·registry: mapReport ∌ historical', ATLAS_ACTION_CAPABILITIES.mapReport.temporalModes.indexOf('historical')<0, '');
-        add('R135·registry: researchMap ∋ historical', ATLAS_ACTION_CAPABILITIES.researchMap.temporalModes.indexOf('historical')>=0, '');
-        add('R135·profile block names researchMap + year', /researchMap/.test(_profileBlock(P1))&&/1900/.test(_profileBlock(P1)), '');
-        const GVok=_goalValidation(P1,[{type:'researchMap',ok:true,produced:['explanation','map'],temporalMode:'historical',semanticTarget:'オホーツク海',userGoalSatisfied:true}]);
-        add('R135·goalValidation: researchMap satisfies', GVok.userGoalSatisfied===true&&GVok.explanationProduced===true&&GVok.mapRendered===true, JSON.stringify(GVok));
-        const GVbad=_goalValidation(P1,[{type:'historicalMap',ok:true,produced:[],temporalMode:'historical'}]);
-        add('R135·goalValidation: world map alone ≠ satisfied', GVbad.userGoalSatisfied===false, JSON.stringify(GVbad));
+        /* (#R406) The #R135 self-checks that stood here exercised the request profile, the plan
+           rewriter and the goal gate. All three are removed; the turn loop is checked by
+           tests/r406-agent.test.mjs and tests/r406-turn.test.mjs, which run the real modules. */
         const passed=R.filter(x=>x.ok).length;
         try{ if(typeof console!=='undefined'){ console.log('%c[IntMapAtlasQA] '+passed+'/'+R.length+(passed===R.length?' PASS':' FAIL'),'font-weight:bold'); R.forEach(x=>console.log((x.ok?'✓ ':'✗ ')+x.id+(x.detail?('  — '+x.detail):''))); } }catch(_){}
         return { pass:passed===R.length, passed, total:R.length, results:R, evBlock, header, webMode }; }
@@ -1594,7 +1574,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R135 §17) Developer diagnostics for the LAST Atlas turn — request profile, the model's original plan, the
        validated plan, rejected/rewritten actions, per-action structured outcomes, semantic-retry blocks, scope
        changes and the final goal validation. Not shown to normal users. window.IntMapAtlasDebug.lastPlan(). */
-    try{ window.IntMapAtlasDebug={ lastPlan:function(){ return _atlasDbg; }, requestProfile:function(q){ try{ return _requestProfile(q); }catch(_){ return null; } }, validatePlan:function(acts,q){ try{ return _validatePlan(acts,_requestProfile(q||''),q||''); }catch(_){ return null; } }, get capabilities(){ return ATLAS_ACTION_CAPABILITIES; },
+    try{ window.IntMapAtlasDebug={ lastPlan:function(){ return _atlasDbg; },   /* (#R406) this turn's steps, tool calls and rejections — js/atlas-agent.js */
       /* (#R136) resolution-only probe for the highlight ladder — returns what resolveHlTarget produces WITHOUT painting
          (so headless tests, where the map never renders, can measure resolution quality without the paint-retry loop). */
       resolveHl:async function(nm){ try{ const t=await resolveHlTarget(String(nm==null?'':nm)); if(!t) return {kind:'miss'};
@@ -3463,12 +3443,14 @@ window.IntMapModules.atlasConsole=function(HOST){
              The orchestration is js/atlas-answer-pipeline.js, the rules are js/atlas-answer-audit.js,
              the drawing is js/atlas-answer-render.js. This is the CALL SITE and nothing more — the
              kernel is under a shrink-only ceiling (tests/r199 ⑤) and new logic goes to a module. */
-          const _prof=(()=>{ try{ return _requestProfile(q); }catch(_){ return null; } })();
           let RES=null;
           try{ RES=await runStructuredAnswer({
               question:q, dataBlock:block, systemPrompt:sys2, language:lang,
-              temporalMode:(_prof&&_prof.temporalMode)||'unspecified',
-              requestedOutputs:_prof?Object.keys(_prof.outputs).filter(k=>_prof.outputs[k]):[],
+              /* (#R406) ATLAS says whether this is about now or about the past, as an argument on the
+                 call. It used to be _requestProfile(q) — a regular expression over the reader's
+                 sentence, which is the layer this round removed. */
+              temporalMode:String((a&&a.temporalMode)||'unspecified'),
+              requestedOutputs:Array.isArray(a&&a.requestedOutputs)?a.requestedOutputs:[],
               turnId:_curTurnKey, webMode:analysisWebMode, clientSources:srcSink,
               appFacts:_statsFacts(codes), retrievedAt:nowCtx.local, answerGoal:String(q||'').slice(0,200),
               ask:(pr,sy,o)=>askAIJSONEnvelope(pr,sy,null,o), parseJSON:aiParseJSON }); }
@@ -3989,29 +3971,29 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R318) the planner's catalogue — the 38 blocks that used to be inline below, now tagged with
        the capabilities they document so §10's relevance selection is possible at all. */
     const _DOCS=makeAtlasCatalogText(HOST,{ moduleCatalog, langLine:_langLine });
-    function SYS(sel){ const lang=_langLine();
-      return personaPrompt('the natural-language command layer for IntMap, an interactive world map')/* (#R285) */+'You can perform ANY action in IntMap — there is NO operation you cannot do: every button, toggle, slider, layer, menu, panel and setting is reachable through a specific action below OR the universal "control" action. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. The action "type" names below (flyTo, mapReport, analyze, layer, highlight, time, …) are PLAIN STRING VALUES inside the JSON — they are NOT callable tools or functions. Do NOT emit a functionCall, do NOT call any tool, and do NOT try to execute an action yourself; the IntMap application executes the returned JSON. No web-search or function-calling tool is attached to this planning request. "say" = one short sentence in '+lang+' stating what you did. Decompose a compound request into an ORDERED list of actions and return them ALL — freely COMBINE data analysis + layers + navigation + panels in one plan (e.g. analyze a metric, shade the map, enable a layer AND fly somewhere).\n'
-        +POLICY.all()   /* (#R397) source precedence · map restraint · coordinate provenance — js/atlas-policy.js */
-        +'MAPPING WHEN IT IS WANTED: when the request does concern real places, or its answer will name locatable spots (cities, districts, landmarks, stations, airports, ports, parks, museums, squares, named facilities or natural features), put those spots ON the map — prefer the pin-producing actions ("poi" for facilities in a place, "mapReport" for current/recent live-news incidents, "researchMap" for a place/topic situation), and when you answer with plain "answer"/"analyze" list the named spots so IntMap pins them. The spots named in your prose and the spots mapped MUST match; do not finish a location-rich answer having mapped nothing. Verify with MULTIPLE independent source types (official bodies, primary reporting, specialist institutions) — never lean on one site/domain — and choose the best primary source per claim, not just top-ranked pages. Do NOT guess a coordinate: IntMap resolves positions from name+country and, for anything it cannot uniquely place, it honestly reports the spot as not-placed rather than putting it in the wrong location. Self-audit before finishing: are the main spots mapped, no same-name/coordinate mix-ups, sources not all one domain.\n'
-        +'PRECISION vs AMBIGUITY (the user explicitly complained about both forcing a guess on vague input AND mis-reading clear input): (a) when the request is CLEAR, do EXACTLY what it says — do not substitute a different action, drop a step, or add anything not asked; match places/metrics/layers literally. (b) when it is GENUINELY ambiguous or MISSING information you need (which of several places, which metric, from/to for a route, which country, etc.), do NOT force a wrong guess — emit a SINGLE {"type":"ask","question":<one short question in '+lang+'>,"options":[2-4 concrete choices],"allowText":true}. This renders the question with clickable option chips AND a free-text box, and the user\'s pick comes back to you as the next message — ALWAYS prefer this selection form over a plain guess when key info is missing. Only fall back to {"type":"answer"} for a purely conversational clarification with no sensible options. Otherwise never refuse. Never claim success for something you did not emit an action for.\n'
-        +'HONESTY: NEVER use "answer" (or the "say" text) to claim you did something you did not emit a real action for — that is a lie the user explicitly complained about. To DO anything you MUST emit its action. "say" must describe ONLY what the actions in this plan actually do. If a request is impossible or unclear, emit a single honest {"type":"answer"} explaining it, and emit NO action you cannot fulfil. Decompose multi-part requests fully (5+ actions is fine) and keep them in the order the user implied.\n'
-        +'SCOPE & SAFETY (do NOT over-refuse — the user complained that a request was blocked wholesale just because it contained a sensitive-sounding word): NEVER judge by keyword. Assess every request on FOUR axes — (1) PURPOSE: analysis / defense / preparedness / education / journalism vs genuine operational harm; (2) TARGET: a broad area or public installation vs a precise strike point or a named private individual; (3) PRECISION: approximate / public-information / illustrative vs real-time or targeting-grade; (4) OUTPUT: an explanation or a map visualization vs step-by-step instructions to cause harm. DEFAULT TO DOING A SAFE VERSION; full refusal is the LAST resort. When a request is sensitive but has a legitimate reading, TRANSFORM it and EXECUTE: turn a precise point into a BROAD public zone, keep only PUBLIC already-reported information, recast "how to attack / optimize a strike" as threat-assessment / reach / defense / preparedness, ALWAYS state the uncertainty and that it uses public information, and actually RUN the safe map actions (drawPolygon for a broad zone, radius for reach/range rings, missile for a representative arc, radiation or impact for an affected area, highlight, flyTo). Apply this SAME purpose/target/precision/output test generally across sensitive domains — military and weapons, disasters, disease and epidemics, hazardous chemicals / CBRN, crime and policing statistics, cyber, and critical infrastructure — never a keyword blocklist. REFUSE only the specific harmful slice (real-time targeting for an actual attack, a precise strike or kill plan against a specific person or an undefended civilian site, or genuinely operational instructions for building a weapon or synthesising a dangerous agent) and even then do NOT dead-end: in "say"/"answer" name the safe public-information analysis you CAN give and still emit the safe actions. Example — "using public information, show the approximate area a missile could be launched from country A toward country B": DO IT — emit a broad drawPolygon launch-region zone plus radius reach rings (optionally a representative missile arc), and in "say" note it is an approximate estimate from public information for situational / defensive analysis, not targeting data. Do NOT reply with a bare refusal.\n'
-        +'COMMON SENSE — do NOT take a generic word as a literal place name (these were real failures): "the whole world / entire world / earth / globe / 世界 / 地球" means ZOOM OUT to the planet → emit {"type":"flyTo","place":"world"} (NEVER geocode "world"/"earth" — they wrongly matched "World Bank building" / "Earth, Texas"). To show a COUNTRY or CITY, pass its plain name as flyTo place (e.g. {"type":"flyTo","place":"China"} / {"type":"flyTo","place":"Osaka"}) — the engine frames the whole country / city area itself; do NOT append "city hall" or pick a tiny sub-place, and do NOT over-zoom. The Köppen climate layer (and other color rasters) cannot isolate a SINGLE class: for "highlight the Cfa climate", enable the Köppen layer with {"type":"layer","name":"Köppen climate"} and, in "say", tell the user the Cfa zones are identified by the legend (do not claim you isolated Cfa).\n'
-        +'CONTEXT IS CRITICAL: the user message contains a [CURRENT MAP STATE] block (center, zoom, base, view, active layers, highlighted/shaded data, open country, language/theme/units) and a [RECENT CONVERSATION] block. You MUST read them and interpret the [NEW REQUEST] relative to them. Resolve every reference — "it / that / this / there / here / this country / the same / again / now / also / instead / turn it off / make it bigger / zoom in more / the other one / the Nth" — using that state and history. A short follow-up is usually a TWEAK of the previous turn: keep what still applies and change only what was asked (e.g. after "top 10 by GDP", "now per capita" → rank gdppc; after "fly to Tokyo", "weather there" → weather Tokyo; after enabling a layer, "turn it off" → same layer on:false). For "here/there/this place" you may pass place:"there" and it resolves to the last place or the map center. Action types:\n'
-        /* (#R318) THE ACTION CATALOGUE, FROM THE CAPABILITY REGISTRY — js/atlas-catalog-text.js holds
-           the 38 blocks that stood here, byte for byte, each tagged with the capabilities it documents;
-           js/atlas-capabilities.js is the registry they are tagged against. `sel` is what §10 buys: a
-           request about routes gets the routing blocks, not all 57 kB. No selection ⇒ every block, in
-           source order ⇒ the prompt #R311 sent. ⚠ THE WITHDRAWN `monitor` ACTION IS STILL ABSENT and
-           still for #R231's reason — it is now recorded as WITHDRAWN in the registry, with the proof
-           the audit checks, instead of as a comment nothing could read. */
-        +_DOCS.text((sel&&sel.ids)||null)
-        +'INTMAP HELP / HOW-TO: you are ALSO IntMap\'s built-in help. When the user asks how to DO something in IntMap, what a feature does, or what the app / you can do ("how do I compare countries?", "Chronosの使い方", "how do I turn on a layer?", "what can you do?"), ANSWER it with {"type":"answer"} using the feature knowledge in THIS prompt (the action list above IS the feature set). Be concrete and concise: name the panel/control (Layers panel, the Countries tab, the Chronos button bottom-right, workspace mode) AND give the exact plain-language phrase they can type to me to do it (e.g. \'just say "compare Japan and Germany"\'). You MAY also emit the action itself alongside the answer to demonstrate it. Do not route how-to questions through analyze/brief.\n'
-        +'CURRENT-FACT GROUNDING (hallucination ban — the user was given a WRONG current prime minister once; that must never happen again): your parametric memory of "who currently holds office / what is the current government, war status, price, record" is stale by definition. For ANY question whose answer can change over time — current leaders (首相/大統領/首脳), cabinets, election results, ongoing conflicts, prices, "latest/current/now/最近/現在" anything — NEVER answer from memory with {"type":"answer"}. Emit {"type":"analyze","question":...} (it runs a live web search and answers from evidence) or {"type":"mapReport"} when mappable. If you are not fully certain a fact is timeless, treat it as current and route it through analyze.\n'
-        +'Examples (note scale + full decomposition): "fly to Africa" → [{flyTo,place:"Africa",scale:"continent"}]; "zoom into Shibuya, Tokyo" → [{flyTo,place:"Shibuya, Tokyo",scale:"city"}]; "dark mode, fly to Taiwan, show military spending layer and the weather" → [theme, {flyTo,place:"Taiwan",scale:"country"}, layer, weather]; "shade the world by GDP per capita, list the top 10, and turn on the globe tilted" → [mapMetric, rank, {projection,mode:"globe"}, {pitch,deg:55}]; "go to the Strait of Hormuz, satellite, draw a 50km circle and show the wind" → [{flyTo,place:"Strait of Hormuz",scale:"region"}, {base,mode:"satellite"}, {radius,place:"Strait of Hormuz",km:50}, {layer,name:"Wind (animated)"}].\n'
-        +'AVAILABLE LAYERS — use these EXACT names for "layer"/"opacity": '+layerCatalogText()+'\n'
-        +'Other controls for "control" (name [#id]): '+controlCatalog(sel&&sel.q);   /* (#R320) RANKED against this request, not the first 140 in DOM order — and whatever it leaves out, it says so */
+    /* ══ (#R406) THE WHOLE SYSTEM PROMPT ═══════════════════════════════════════════════════════
+       It used to be the persona, three policy clauses, six fixed paragraphs of accumulated rules,
+       _DOCS.text() at 64,250 characters, 170 layer names and a ranked control list. Measured, the
+       catalogue alone sent 41,178 characters for 「ありがとう」. What is left is who Atlas is, what
+       it decides (js/atlas-policy.js), how to end a turn, and the tools — with their real schemas,
+       which is the only part a model needs in order to call one correctly. */
+    function SYS(tools){
+      return personaPrompt('the general intelligence and operating layer of IntMap, an interactive world map')
+        +POLICY.all()
+        +'REPLY FORMAT: one strict JSON object and nothing else \u2014 {"final_text":string,"tool_calls":[{"name":string,"arguments":object}]}. '
+        +'An empty tool_calls (or none at all) ENDS the turn, and final_text is what the reader sees. To operate IntMap, '
+        +'to look something up, or to search the web, put one or more calls in tool_calls: IntMap runs them and returns what '
+        +'it OBSERVED, and you then decide whether to call more tools or to answer. Arguments are checked against each '
+        +'tool\'s schema before anything runs; a rejected call comes back to you to fix and is never shown to the reader. '
+        +'Write final_text in '+_langLine()+'.\n'
+        +'[TOOLS]\n'+_toolBlock(tools)+'\n';
     }
+    /* The tools as compact JSON \u2014 name, one line of purpose, and the schema its arguments must match.
+       js/atlas-toolsurface.js builds them; `find_capability` reaches the other hundred-odd. */
+    function _toolBlock(tools){ try{
+      return Object.keys(tools||{}).map(function(k){ var t=tools[k];
+        return JSON.stringify({ name:t.name, description:t.description, parameters:t.parameters }); }).join('\n');
+    }catch(_){ return ''; } }
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     let _atlImgs=[];   /* (#R149) pending pasted/attached image data-URLs to send with the next message (vision) */
@@ -4512,28 +4494,19 @@ window.IntMapModules.atlasConsole=function(HOST){
       keep.forEach(res=>{ const h=(res&&res.html)||''; if(!h||seen[h]) return; seen[h]=1; body+=h; });
       try{ const ks=ai.__atlMappedKinds?Object.keys(ai.__atlMappedKinds):[]; if(ks.length) body+=mapToggleChip(ks); }catch(_){}   /* single deduped map-toggle chip */
       /* 4) head — the pre-written `say` (suppressed on all-failed / contradicted visual) + an honest, NAME-FREE summary */
-      let head=(say&&!_allFailed&&!_visFailed)?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):'';   /* (#R147) render via mdMini so line breaks / headings show */
-      /* ══ ⚠ (#R350) A COURTESY THAT DID NOT LAND IS NOT A FAILED TURN ═══════════════════════════
-         Reported: an informational question was answered correctly and the reply OPENED with 「⚠ 実行
-         できなかった操作が 1 件あります」 — because a flyTo that ATLAS ITSELF had added to the plan did
-         not land. The count was of failed actions; nothing asked whose goal each action served.
-         PRIMARY failures still lead, because the reader is owed those. SECONDARY ones are a quiet
-         line AFTER the answer — visible, never alarming, and never at the top. ⚠ NOT HIDDEN: 「エラー
-         表示をすべて隠す」 and 「map失敗を常に無視する」 are both forbidden, so the note is always printed. */
-      const primaryFails=fails.filter(a=>a&&a.__impact!=='secondary'&&a.__impact!=='none');
-      const secondaryFails=fails.filter(a=>a&&a.__impact==='secondary');
-      if(primaryFails.length){ head+='<div style="font-size:11.5px;color:#ff9f0a;font-weight:600;margin:1px 0 6px;">⚠ '+L(primaryFails.length+' step(s) could not be completed','実行できなかった操作が '+primaryFails.length+' 件あります',primaryFails.length+' Schritt(e) nicht ausgeführt','Не выполнено шагов: '+primaryFails.length,primaryFails.length+' paso(s) sin completar')+'</div>'; }   /* (#R159) no action-name/code leak — the per-action honest body already says what could not be found */
-      /* the quiet half of the same rule: what did NOT happen is still said, after the answer. */
-      if(secondaryFails.length) body+='<div class="atl-aux">'+esc(L('The map view did not change.','地図の表示は変わりませんでした。','Die Kartenansicht hat sich nicht geändert.','Вид карты не изменился.','La vista del mapa no cambió.'))+'</div>';
+      /* 4) head — ATLAS'S ANSWER, written after the results (js/atlas-agent.js) and therefore
+         never a claim about something that did not happen. It is no longer suppressed on failure:
+         the old `say` was written BEFORE execution, so a failed turn had to hide it; this text was
+         composed knowing what failed and is the honest account of it. ⚠ AND THE COUNTED-FAILURE
+         BANNERS ARE GONE WITH IT — 「実行できなかった操作が N 件あります」 counted actions, never
+         asking whose goal each served, and #R406 gives that judgement back to the one thing that
+         knows the reader's goal. What could not be done is said in the answer, in words.
+         ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
+      let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):'';
       if(ai.__atlCancelled) head=_cancelledNote()+head;
       ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
       try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} } }
-    /* (#R350) one door for every planner call, so the citations of THIS turn are captured beside the
-       plan rather than fished out of a global at render time. */
-    async function _planCall(prompt, sys, imgs, opts){ const e=await askAIJSONEnvelope(prompt, sys, imgs, opts);
-      try{ _curPlanCites=(Array.isArray(e&&e.citations)?e.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
-      return e?e.data:null; }
     async function runActions(ai, say, acts, gen){
       const results=[]; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
@@ -4560,8 +4533,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(_ar&&(_ar.status==='needs_input'||_ar.status==='running')){ r.html=(r.html||'')+RESULTS.render(_ar,{L,esc,note,warn}); }
         if(_ar&&_ar.status==='needs_input'&&_ar.inputRequest){ _pendingInput={ result:_ar, bubble:ai, at:Date.now() }; }
         if(r.ok===false&&!(_ar&&(_ar.status==='needs_input'||_ar.status==='running'))) fails.push(a);
-        try{ a.__impact=_PLANNER.goalImpact(_curProfile,a); }catch(_){ a.__impact='primary'; }   /* (#R350) primary = an output the user asked for; secondary = a courtesy Atlas added */
-        results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null, impact:a.__impact});   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
+        results.push({act:a, ok:r.ok!==false, html:r.html||'', meta:(r&&r.meta)||null});   /* (#R159) per-action result → _atlCompose de-dupes by goal so repair REPLACES a failure instead of appending */
         try{ if(r&&r.meta) a.__meta=r.meta; if(r&&r.exec) a.__exec=r.exec;   /* (#R158) mechanical execution result → fed back to Terra by the repair loop */
           if(_atlasOutcomes) _atlasOutcomes.push({type:a&&a.type,label:actLabel(a),ok:r.ok!==false,code:(r&&r.meta&&r.meta.code)||'',semanticTarget:(r&&r.meta&&r.meta.semanticTarget)||'',temporalMode:(r&&r.meta&&r.meta.temporalMode)||'',produced:(r&&r.meta&&r.meta.produced)||[],userGoalSatisfied:(r&&r.meta&&r.meta.userGoalSatisfied)}); }catch(_){}   /* (#R135) structured per-action outcome → repair + goal validation + debug */
         if(r.objectIds&&r.objectIds.length){ try{ _wctx.lastObjects=r.objectIds.concat(_wctx.lastObjects||[]).slice(0,6); }catch(_){} } }   /* (#R119) "さっき作ったやつ" resolves to these */
@@ -4587,13 +4559,6 @@ window.IntMapModules.atlasConsole=function(HOST){
       _atlCompose(ai);
       return fails;
     }
-    /* (#R52) DETERMINISTIC interpreter. The user re-reported operations Atlas "said" it did but didn't. A clear,
-       single-intent command should NEVER depend on (or spend) an AI round-trip, and when the AI fails to return a
-       usable plan we should still try to do the obvious thing rather than say "couldn't interpret". localPlan(q)
-       maps such commands to the SAME action objects dispatch already runs, in all 5 UI languages. It returns
-       {actions, confident}: `confident` (a fully-anchored single intent) runs immediately and skips the AI;
-       non-confident matches (navigation / layer toggle) are used only to RESCUE a failed AI plan, so the AI still
-       owns every compound / contextual / ambiguous request. */
     /* (#R115) Compare-indicator resolver — "Compare the USA, China and India — GDP, defense and population"
        opened the panel but IGNORED the named indicators (localPlan dropped the "— metrics" tail on purpose, and
        the AI was never told a "metrics" parameter exists). Map free-text indicator names (5 languages + common
@@ -4638,257 +4603,6 @@ window.IntMapModules.atlasConsole=function(HOST){
       String(str||'').split(/,|、|・|;|\/|\s+and\s+|\s+und\s+|\s+y\s+|\s+и\s+|と/i).map(x=>x.trim()).filter(Boolean).forEach(mm=>{
         const k=_cmpMetricKey(mm); if(k){ if(out.indexOf(k)<0) out.push(k); } else miss.push(mm.slice(0,30)); });
       return {keys:out,miss}; }
-    function localPlan(q){ const s=String(q||'').trim(); if(!s) return null; const low=s.toLowerCase();
-      const A=a=>({actions:[a],confident:true});
-      /* (#R141) AREA MONITORS — deterministic (no-AI) shortcuts. Anchored so they never shadow a compound request. */
-      if(/^(monitor|watch)( this| the)?( area| region| radius| circle| selection| here)?$|^(この(範囲|地域|エリア|円)を?|ここを?)(監視|ウォッチ)(して|する)?$|^(diese[nrs]? (bereich|region|gebiet)|hier) (überwachen|beobachten)$|^(следить за|мониторить)( этой)?( областью| зоной)?$|^(monitorear|vigilar)( esta)?( área| zona| región)?$/i.test(low)) return A({type:'monitor',op:'create'});
-      /* (#R231) the local "open my monitors" shortcut is withdrawn with the tab — see js/session-tabs.js */
-      if(/^(switch to |go |set |enable |turn on )?(dark( ?mode| ?theme)?|ダーク(モード|テーマ)?|暗い(テーマ|モード)|dunkel(modus|es design)?|тёмн(ая|ый)( тема| режим)?|modo oscuro|tema oscuro)$/i.test(low)) return A({type:'theme',mode:'dark'});
-      if(/^(switch to |go |set |enable |turn on )?(light( ?mode| ?theme)?|ライト(モード|テーマ)?|明るい(テーマ|モード)|hell(es design|modus)?|светл(ая|ый)( тема| режим)?|modo claro|tema claro)$/i.test(low)) return A({type:'theme',mode:'light'});
-      if(/^(auto|system)( ?theme| ?mode| default)?$|^(自動|システム)(テーマ|デフォルト)?$/i.test(low)) return A({type:'theme',mode:'auto'});
-      if(/^(globe|地球儀|globus|глобус|globo)( view| projection|表示)?$/i.test(low)) return A({type:'projection',mode:'globe'});
-      if(/^(flat|2d|平面(地図)?|flach(e karte)?|плоск(ая|ий)( карта)?|plano|mapa plano)( map| view|表示)?$/i.test(low)) return A({type:'projection',mode:'flat'});
-      if(/^(3d|3-?d terrain|3d地形|地形(表示)?|relieve 3d|3d-?gelände|3d рельеф)( view| mode| map)?$/i.test(low)) return A({type:'terrain3d',on:true});
-      if(/^(satellite|sat|衛星(写真|表示)?|satellit(enansicht)?|спутник|satélite)( view| imagery|表示)?$/i.test(low)) return A({type:'base',mode:'satellite'});
-      if(/^(map view|map base|地図(表示|に戻す)?|karten(ansicht)?|карт(а|ы)|mapa)( base| view)?$/i.test(low)) return A({type:'base',mode:'map'});
-      /* WORLD_RE after the projection toggles so bare "globe" means the globe PROJECTION, while "world / earth / the whole globe / 地球" still zoom out to the planet. */
-      if(WORLD_RE.test(s)) return A({type:'flyTo',place:'world'});
-      if(/^(zoom ?in|拡大|ズームイン|näher( heran)?|приблизить|acercar(se)?)$/i.test(low)) return A({type:'zoom',dir:'in'});
-      if(/^(zoom ?out|縮小|ズームアウト|heraus ?zoomen|отдалить|alejar(se)?)$/i.test(low)) return A({type:'zoom',dir:'out'});
-      if(/^(reset north|north up|face north|北を上に?|北向き|norden ausrichten|на север|al norte|orientar al norte)$/i.test(low)) return A({type:'resetNorth'});
-      if(/^(clear( the)?( map| all| everything)?|reset (the )?map|全(部)?(消去|クリア)|地図(を)?(クリア|消去)|очисти(ть)?( карту| всё)?|limpiar( el)?( mapa| todo)?|borrar todo)$/i.test(low)) return A({type:'clearAll'});
-      if(/^(compass|reset view|コンパス)$/i.test(low)) return A({type:'resetNorth'});
-      /* (#R60) FINE-GRAINED deterministic commands ("細かい指示や操作") — exact numbers, small nudges, selective
-         clears, stat questions. Each is fully anchored so it can NEVER shadow a compound/ambiguous request. */
-      let fm=low.match(/^(?:set )?zoom(?: to)?(?: level)?\s*(\d+(?:\.\d+)?)$/)||s.match(/^ズーム(?:レベル)?\s*(\d+(?:\.\d+)?)\s*(?:に(?:して)?)?$/);
-      if(fm) return A({type:'zoom',to:+fm[1]});
-      fm=low.match(/^(?:tilt|pitch)(?: to| by)?\s*(\d+)\s*(?:°|deg(?:rees)?)?$/)||s.match(/^(\d+)\s*度(?:に)?傾け(?:て|る)?$/);
-      if(fm) return A({type:'pitch',deg:+fm[1]});
-      if(/^(tilt( the map)?|傾けて|斜めに(して)?|neigen|наклонить|inclinar)$/i.test(low)) return A({type:'pitch',deg:60});
-      if(/^(un-?tilt|top ?down|flat view|真上から|傾き(を)?(解除|リセット|ゼロに)|水平に(して)?)$/i.test(low)) return A({type:'pitch',deg:0});
-      fm=low.match(/^rotate(?: by| to)?\s*(-?\d+)\s*(?:°|deg(?:rees)?)?$/)||s.match(/^(-?\d+)\s*度回転(?:して)?$/);
-      if(fm) return A({type:'bearing',delta:+fm[1]});
-      fm=low.match(/^(?:face|point|rotate to(?:ward)?)\s+(north|northeast|east|southeast|south|southwest|west|northwest)$/)||s.match(/^(北東|北西|南東|南西|北|南|東|西)(?:向き|を上)(?:に)?(?:して)?$/);
-      if(fm) return A({type:'bearing',dir:fm[1]});
-      if(/^(少し|ちょっと)(拡大|ズームイン)(して)?$|^zoom in a (little|bit)$/i.test(low)) return A({type:'zoom',delta:0.7});
-      if(/^(少し|ちょっと)(縮小|ズームアウト)(して)?$|^zoom out a (little|bit)$/i.test(low)) return A({type:'zoom',delta:-0.7});
-      if(/^(もっと|さらに)(拡大|ズームイン)(して)?$|^zoom in more$/i.test(low)) return A({type:'zoom',delta:1.5});
-      if(/^(もっと|さらに)(縮小|ズームアウト)(して)?$|^zoom out more$/i.test(low)) return A({type:'zoom',delta:-1.5});
-      fm=low.match(/^(?:pan|move|scroll|shift)\s+(a (?:little|bit)\s+)?(?:to (?:the )?)?(north|south|east|west|northeast|northwest|southeast|southwest|up|down|left|right)$/);
-      if(fm) return A({type:'pan',dir:fm[2],fraction:fm[1]?0.18:0.45});
-      fm=s.match(/^(少し|ちょっと)?(北東|北西|南東|南西|北|南|東|西|上|下|左|右)(?:へ|に)?(?:移動|ずらして|動かして|パン)(?:して)?$/);
-      if(fm){ const JD={'上':'north','下':'south','左':'west','右':'east','北':'north','南':'south','東':'east','西':'west','北東':'northeast','北西':'northwest','南東':'southeast','南西':'southwest'}; return A({type:'pan',dir:JD[fm[2]],fraction:fm[1]?0.18:0.45}); }
-      if(/^((turn|switch) off (all|every) (data )?layers?|(hide|remove|clear) (all|every) (data )?layers?|(all|every) layers? off|layers? (all )?off|(全|すべての|全ての)レイヤー(を)?(オフ|非表示|解除|消して)(に)?(して)?|レイヤー(を)?(全部|すべて)(オフ|消して|非表示)(に)?(して)?|alle ebenen aus(schalten)?|выключи(ть)? все слои|apagar todas las capas)$/i.test(low)) return A({type:'layersOff'});
-      if(/^(fullscreen|full screen|go fullscreen|全画面(表示)?(に)?(して)?|フルスクリーン(に)?(して)?|vollbild|полный экран|pantalla completa)$/i.test(low)) return A({type:'fullscreen',on:true});
-      if(/^(exit|leave) full ?screen$|^(全画面|フルスクリーン)(を)?(解除|終了|やめて)(して)?$/i.test(low)) return A({type:'fullscreen',on:false});
-      if(/^(where am i\??|my location|current location|locate me|go to my location|現在地(へ|に)?(移動|飛んで)?(して)?|ここはどこ？?|mein standort|wo bin ich\??|где я\??|моё местоположение|mi ubicación|¿?dónde estoy\??)$/i.test(low)) return A({type:'locate'});
-      if(/^(clear|remove|delete) (all )?(the )?pins?$|^ピン(を)?(全部|すべて)?(消して|削除|クリア)(して)?$/i.test(low)) return A({type:'clear',what:'pins'});
-      if(/^(clear|remove|delete) (all )?(the )?(radius(es)?|circles?)$|^(半径|サークル|円)(を)?(全部|すべて)?(消して|削除|クリア)(して)?$/i.test(low)) return A({type:'clear',what:'radius'});
-      if(/^(clear|remove) (the )?(highlights?|shading)$|^(ハイライト|色分け|濃淡)(を)?(消して|解除|クリア)(して)?$/i.test(low)) return A({type:'clear',what:'highlights'});
-      if(/^(screenshot|take a screenshot|capture the map|スクショ((を)?(撮って|とって))?|スクリーンショット((を)?(撮って|とって))?)$/i.test(low)) return A({type:'screenshot'});
-      /* (#R80) vision §17 — self-diagnosis on demand */
-      if(/^(diagnose|self-?check|health ?check|system ?status|status|are you (ok|working)|診断(して)?|自己診断|システム(の)?(状態|状況|チェック)|ヘルスチェック|データは最新[?？]?|正常[?？]?)$/i.test(low)) return A({type:'diagnose'});
-      if(/^(何か|なにか|なんか)?(問題|不具合|異常|エラー)(は|が)?(ある|あります)[?？]?$/.test(s)||/^(any )?(issues?|problems?|errors?)\??$/i.test(low)) return A({type:'diagnose'});
-      /* (#R62) POI mapping — 「東京にある石油施設を表示して」/ "map the oil facilities in Texas". */
-      if(/^(clear|remove) (the )?(facilit(y|ies)|pois?|markers?)$|^(施設|マーカー)(を)?(全部|すべて)?(消して|削除|クリア)(して)?$/i.test(low)) return A({type:'clear',what:'poi'});
-      fm=s.match(/^(.+?)にある\s*(.+?)\s*(?:関連)?(?:施設)?を(?:地図に)?(?:表示|マッピング|マップ|出して|プロット)(?:して)?$/);
-      if(fm&&fm[1].trim()&&fm[2].trim()) return A({type:'poi',place:fm[1].trim(),kind:fm[2].trim()});
-      fm=low.match(/^(?:show|map|display|plot)\s+(?:the\s+)?(.+?)\s+(facilities|plants|sites|stations|bases|installations)\s+in\s+(.+)$/);
-      if(fm) return A({type:'poi',kind:(fm[1]+' '+fm[2]).trim(),place:fm[3].trim()});
-      /* (#R63) bottom ticker on/off */
-      if(/^(show |turn on |enable )?(the )?(bottom )?ticker$|^ティッカー(を)?(表示|オン)?(に)?(して)?$/i.test(low)&&!/off|オフ|消/.test(low)) return A({type:'ticker',on:true});
-      if(/^(hide |turn off |disable )(the )?(bottom )?ticker$|^ティッカー(を)?(オフ|非表示|消して)(に)?(して)?$/i.test(low)) return A({type:'ticker',on:false});
-      /* (#R83) ballistic-missile simulation — deterministic for the clear "A → B (弾道)ミサイル/ICBM" phrasings */
-      fm=low.match(/^(?:simulate |launch |fire |run )?(?:an? |the )?(?:lofted |depressed |minimum[-\s]?energy |min[-\s]?energy |marv )*(?:icbm|ballistic missile|ballistic|missile)\s+(?:strike |launch |flight )?from\s+(.+?)\s+to\s+(.+?)$/i)
-        ||s.match(/^(?:ロフテッド軌道で|ディプレスト軌道で|低伸軌道で|機動再突入体で)?(.+?)(?:から|より)\s*(.+?)(?:へ|に|まで|への)\s*(?:の)?(?:弾道)?(?:ミサイル|ICBM|icbm)(?:攻撃|発射|の(?:飛翔|軌道))?(?:を)?(?:シミュ(?:レート|レーション)?|発射|撃(?:って|込|つ)|飛ば(?:して)?|表示)?(?:して)?$/i);
-      if(fm&&(fm[1]||'').trim()&&(fm[2]||'').trim()){
-        /* (#R85) also read the trajectory profile / MaRV off the phrasing */
-        const _lo=/ロフテッド|lofted|高高度軌道|高い軌道/i.test(s)?'lofted':(/ディプレスト|depressed|低伸|低い軌道|フラット軌道/i.test(s)?'depressed':undefined);
-        const _mv=(/marv|機動再突入|機動弾頭|maneuv/i.test(s))||undefined;
-        const _from=fm[1].trim().replace(/^(?:lofted|depressed|min(?:imum)?[-\s]?energy|marv)\s+/i,'').trim();
-        return A(Object.assign({type:'missile',from:_from,to:fm[2].trim()}, _lo?{loft:_lo}:{}, _mv?{marv:true}:{})); }
-      /* (#R83) elevation / below-sea-level highlight (real DEM) — "カスピ海周辺の海抜0m以下地点をハイライト" */
-      fm=s.match(/^(.+?)(?:周辺|付近)?の?(?:海抜|標高)\s*(-?\d+)\s*m?\s*(以下|未満|以上|超え?)?(?:の?(?:地点|エリア|地域|場所|ところ))?\s*を?\s*(?:ハイライト|強調表示|強調|表示|マッピング|マップ)(?:して)?[。]?$/i);
-      if(fm) return A({type:'elevationBelow',place:(fm[1]||'').trim(),threshold:+fm[2],above:/以上|超/.test(fm[3]||'')});
-      fm=low.match(/^highlight\s+(?:the\s+)?(?:land|areas?|points?|terrain|places?|regions?)?\s*(?:that (?:is|are)\s+)?(below|under|above|over)\s+(sea ?level|-?\d+\s*m(?:eters?)?)(?:\s+(?:in|around|near)\s+(.+?))?\.?$/i);
-      if(fm) return A({type:'elevationBelow',place:(fm[3]||'').trim(),threshold:/sea/.test(fm[2])?0:(parseInt(fm[2],10)||0),above:/above|over/.test(fm[1])});
-      /* (#R83) historical power/alliance map — curated eras (WWI 1916) run deterministically */
-      fm=s.match(/^(.+?(?:世界大戦|大戦|冷戦)[^。]*?)の?(?:勢力図|勢力|同盟|陣営|地図|マップ)を?(?:マッピング|マップ|表示|作成|描(?:いて|画)|作って)(?:して)?[。]?$/i)
-        ||low.match(/^(?:map|show|draw|display)\s+(?:the\s+)?(.+?(?:world war|wwi|wwii|first world war|cold war)[^.]*?)(?:\s+(?:power|alliance|faction)s?\s*map)?\.?$/i);
-      if(fm&&(fm[1]||'').trim()&&histMatch(fm[1])) return A({type:'historicalMap',era:(fm[1]||'').trim()});
-      /* (#R85) workspace (floating-window) mode toggle via Atlas ("ワークスペースモードの切り替えがAtlasでできない").
-         Check OFF before ON so "ワークスペースをオフ" isn't swallowed by the ON pattern. */
-      if(/(?:ワークスペース|ウィンドウ)(?:モード)?(?:を|から)?(?:オフ|終了|解除|抜け(?:て|る)?|やめ(?:て|る)?|閉じ(?:て|る)?)|(?:通常|標準|ノーマル)(?:モード|表示|レイアウト)?に?(?:戻して|戻る|切り替え)/i.test(s)||/^(?:exit|leave|turn off|disable|close)\s+(?:the\s+)?(?:window\s+)?workspace(?:\s+mode)?$|^(?:back to |return to )?normal (?:mode|layout|view)$/i.test(low)) return A({type:'workspace',on:false});
-      if(/^(?:ワークスペース|ウィンドウ(?:ワークスペース)?)(?:モード)?(?:に|を|へ)?(?:切り替え(?:て)?|きりかえ(?:て)?|移行(?:して)?|オン(?:に)?|有効(?:に)?|入(?:って|る)|開始|して|する)?(?:して)?[。]?$/i.test(s)||/^(?:enter|switch to|turn on|enable|open|go to)\s+(?:the\s+)?(?:window\s+)?workspace(?:\s+mode)?$|^workspace(?:\s+mode)?$/i.test(low)) return A({type:'workspace',on:true});
-      /* (#R84) open the empty directions panel — bare "経路案内" / "directions" / "route planner" */
-      if(/^(?:経路(?:案内|検索)?|ルート(?:案内|検索)?|道案内|ナビ)(?:を)?(?:開いて|表示|出して|開く|して)?[。]?$/i.test(s)||/^(?:directions|route planner|open directions|routing)$/i.test(low)) return A({type:'directions'});
-      /* (#R83) road directions (Google-Maps-like) — "東京から大阪への経路", "directions from A to B" */
-      { const _MMAP={'車':'driving','自動車':'driving','ドライブ':'driving','徒歩':'walking','歩き':'walking','自転車':'cycling','チャリ':'cycling','電車':'transit','列車':'transit','鉄道':'transit','地下鉄':'transit','バス':'transit','公共交通機関':'transit','公共交通':'transit'};
-        /* the transport mode may come BEFORE the origin in Japanese ("電車で新宿から横浜へ") — detect it anywhere and strip a leading mode phrase */
-        let _dm=null; const _mm=s.match(/(?:^|[\s、])(電車|列車|鉄道|地下鉄|バス|公共交通機関|公共交通|車|自動車|徒歩|歩き|自転車|チャリ|ドライブ)(?:で|を使って|を利用して)/); if(_mm) _dm=_MMAP[_mm[1]];
-        const sd=s.replace(/^(?:電車|列車|鉄道|地下鉄|バス|公共交通機関|公共交通|車|自動車|徒歩|歩き|自転車|チャリ|ドライブ)(?:で|を使って|を利用して)\s*/,'');
-        fm=sd.match(/^(.+?)(?:から|より)\s*(.+?)(?:へ|に|まで|への)\s*(?:の)?(?:(車|徒歩|自転車|歩き|ドライブ|チャリ|電車|列車|鉄道|地下鉄|バス|公共交通機関|公共交通)(?:で|を使って|を利用して)(?:の)?)?\s*(?:経路|ルート|道順|行き方|道のり|道案内|ナビ|乗換|乗り換え|行き方)(?:を)?(?:教えて|表示|案内|出して|見せて|検索|調べて)?(?:して)?[。？?]?$/i);
-        if(fm&&(fm[1]||'').trim()&&(fm[2]||'').trim()){ const mm=_MMAP[fm[3]||'']||_dm||'driving'; return A({type:'directions',from:fm[1].trim(),to:fm[2].trim(),mode:mm}); } }
-      fm=low.match(/^(?:get |give me |show me )?(?:the )?(driving|walking|cycling|car|foot|bike|drive|walk|cycle|transit|train|rail|public ?transport|public ?transit|bus|subway|metro|tram)?\s*(?:road |transit )?(?:directions?|route)\s+from\s+(.+?)\s+to\s+(.+?)\.?$/i);
-      if(fm&&(fm[2]||'').trim()&&(fm[3]||'').trim()){ const mm={drive:'driving',driving:'driving',car:'driving',walk:'walking',walking:'walking',foot:'walking',cycle:'cycling',cycling:'cycling',bike:'cycling',transit:'transit',train:'transit',rail:'transit','public transport':'transit','public transit':'transit',publictransport:'transit',publictransit:'transit',bus:'transit',subway:'transit',metro:'transit',tram:'transit'}[(fm[1]||'').toLowerCase()]||'driving'; return A({type:'directions',from:fm[2].trim(),to:fm[3].trim(),mode:mm}); }
-      fm=low.match(/^how (?:do i|to|can i)\s+(drive|walk|cycle|get|take (?:the )?train|take transit)\s+from\s+(.+?)\s+to\s+(.+?)\??$/i);
-      if(fm&&(fm[2]||'').trim()&&(fm[3]||'').trim()){ const mm={drive:'driving',walk:'walking',cycle:'cycling',get:'transit','take the train':'transit','take train':'transit','take transit':'transit'}[(fm[1]||'').toLowerCase()]||'transit'; return A({type:'directions',from:fm[2].trim(),to:fm[3].trim(),mode:mm}); }
-      /* (#R84) street-view COVERAGE mode (blue clickable roads) — bare "street view" / "ストリートビュー(モード)" */
-      if(/^(?:ストリートビュー(?:モード)?|ストビュー)(?:を)?(?:表示|オン|開始|有効に?|使いたい|使う|見せて|にして)?(?:して)?[。]?$/i.test(s)&&!/[のを](.+)(ストリートビュー|ストビュー)/.test('X'+s)) return A({type:'streetview',mode:'coverage'});
-      if(/^(?:show |open |enable |turn on )?(?:the )?street ?view(?: mode| layer| coverage)?$/i.test(low)) return A({type:'streetview',mode:'coverage'});
-      if(/^(?:ストリートビュー|ストビュー)(?:を)?(?:オフ|非表示|終了|やめて|閉じて)(?:に)?(?:して)?[。]?$/i.test(s)||/^(?:turn off |disable |exit |close )street ?view(?: mode)?$/i.test(low)) return A({type:'streetview',on:false});
-      /* (#R83) street view — "渋谷のストリートビュー", "street view of the Eiffel Tower" */
-      fm=s.match(/^(.+?)(?:の|周辺の)(?:ストリートビュー|ストビュー)(?:を)?(?:見(?:せて|る)|表示|開いて|出して|で見)?(?:して)?[。]?$/i)
-        ||low.match(/^(?:show |open )?(?:the )?street ?view\s+(?:of|for|at|near|around)\s+(.+?)\.?$/i);
-      if(fm&&(fm[1]||'').trim()) return A({type:'streetview',place:(fm[1]||'').trim()});
-      /* (#R83) radiation dispersion — "福島第一原発からの放射性物質の拡散をシミュレートして" */
-      fm=s.match(/^(.+?)(?:からの|から|周辺の|付近の|の)?(?:放射(?:性物質|能|線)|フォールアウト|死の灰)(?:の)?(?:拡散|飛散|降下|プルーム)(?:を)?(?:シミュ(?:レート|レーション)?|表示|マッピング|マップ|予測|見せて)?(?:して)?[。]?$/i);
-      if(fm&&(fm[1]||'').trim()) return A({type:'radiation',place:(fm[1]||'').trim()});
-      fm=low.match(/^(?:simulate |show |model |run )?(?:a |the )?(?:radiation|radioactive|fallout|nuclear)\s+(?:material\s+)?(?:dispersion|plume|dispersal|fallout|release|spread|cloud)\s+(?:from|at|near|around|over)\s+(.+?)\.?$/i);
-      if(fm&&(fm[1]||'').trim()) return A({type:'radiation',place:(fm[1]||'').trim()});
-      /* (#R86) isochrone / 到達圏 — "○○から車で30分の範囲", "30 minute walk from X", "reachable area from X" */ /* ⚠⚠ (#R278) 「現在地から徒歩一時間で行ける範囲を表示して」 matched NONE of these, for two independent reasons, and because localPlan runs BEFORE the AI (a confident local plan needs neither an account nor a credit) that silence was the difference between an answer and a login wall: (1) 一 is a KANJI numeral and the digit class was \d+; (2) the sentence says 「で行ける範囲」 while the tail only accepted 以内 / 圏内 / 圏 / の範囲 — the verb form was not in it at all. Both are fixed below, along with the reversed word order (「1時間で歩いて行ける範囲」); the mode may now sit on either side of the duration but is still REQUIRED (one of fm[2]/fm[5]), so a bare 「30分の範囲」 keeps falling through to the planner instead of being guessed at here. The 8 lines this note would have cost live on 2 because js/atlas-console.js is at its #R199 ceiling. */
-      { const _IM={'車':'auto','自動車':'auto','ドライブ':'auto','徒歩':'pedestrian','歩き':'pedestrian','歩いて':'pedestrian','自転車':'bicycle','チャリ':'bicycle','電車':'transit','鉄道':'transit','地下鉄':'transit','列車':'transit','メトロ':'transit'}; const _N=x=>{ x=String(x||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248)); if(/^\d+$/.test(x)) return +x; const K='〇一二三四五六七八九'; let m=x.match(/^([一二三四五六七八九]?)十([一二三四五六七八九]?)$/); if(m) return (m[1]?K.indexOf(m[1]):1)*10+(m[2]?K.indexOf(m[2]):0); m=x.match(/^([一二三四五六七八九]?)百([一二三四五六七八九]?)$/); if(m) return (m[1]?K.indexOf(m[1]):1)*100+(m[2]?K.indexOf(m[2]):0); return /^[一二三四五六七八九]$/.test(x)?K.indexOf(x):NaN; };
-        fm=s.match(/^(.+?)(?:から|より|の)?\s*(?:(車|自動車|ドライブ|徒歩|歩き|歩いて|自転車|チャリ|電車|鉄道|地下鉄|列車|メトロ)(?:で|なら|だと)?)?\s*([0-9０-９]+|[一二三四五六七八九十百]+)\s*(分|時間)\s*(?:以内|圏内|圏)?\s*(?:で|に)?\s*(?:(車|自動車|ドライブ|徒歩|歩き|歩いて|自転車|チャリ|電車|鉄道|地下鉄|列車|メトロ)(?:で|に)?)?\s*(?:(?:行ける|いける|到達(?:できる|可能)|移動できる|歩ける|走れる)?(?:の)?(?:範囲|到達圏|エリア|届く範囲|ゾーン)|以内|圏内|圏)(?:を)?(?:表示|見せて|出して|マップ|マッピング|教えて|描いて|描画)?(?:して)?[。？?！!]?$/i);
-        if(fm&&(fm[1]||'').trim()&&(fm[2]||fm[5])){ let mnt=_N(fm[3]); if(fm[4]==='時間') mnt*=60; if(isFinite(mnt)&&mnt>0&&mnt<=120) return A({type:'isochrone',place:fm[1].trim(),mode:_IM[fm[2]||fm[5]]||'auto',minutes:mnt}); }
-        fm=s.match(/^(.+?)(?:の|から|周辺の)(?:到達圏|到達範囲|アイソクロン|届く範囲)(?:を)?(?:表示|見せて|出して|教えて)?(?:して)?[。？?]?$/i);
-        if(fm&&(fm[1]||'').trim()) return A({type:'isochrone',place:fm[1].trim()});
-        fm=low.match(/^(?:show |map |draw )?(?:the |a )?(\d+)\s*[-\s]?(min|minute|minutes|hour|hours|hr|h)\s+(drive|driving|car|walk|walking|foot|bike|bicycle|cycle|cycling|train|rail|transit|subway|metro|tram)\s+(?:radius |isochrone |area |zone |catchment )?(?:from|of|around|at)\s+(.+?)\.?$/i);
-        if(fm){ const mm={drive:'auto',driving:'auto',car:'auto',walk:'pedestrian',walking:'pedestrian',foot:'pedestrian',bike:'bicycle',bicycle:'bicycle',cycle:'bicycle',cycling:'bicycle',train:'transit',rail:'transit',transit:'transit',subway:'transit',metro:'transit',tram:'transit'}[fm[3]]||'auto'; let mnt=+fm[1]; if(/^h/.test(fm[2])) mnt*=60; return A({type:'isochrone',place:fm[4].trim(),mode:mm,minutes:mnt}); }
-        fm=low.match(/^(?:the )?(?:isochrone|reachable area|reachability|catchment(?: area)?)\s+(?:for|from|of|around|at)\s+(.+?)\.?$/i);
-        if(fm&&(fm[1]||'').trim()) return A({type:'isochrone',place:fm[1].trim()}); }
-      /* (#R88) universal object list — "オブジェクト一覧", "manage objects", "show all my objects/pins/drawings" */
-      if(/^(?:(?:汎用)?オブジェクト(?:の)?(?:一覧|リスト|管理|マネージャ)|オブジェクトを(?:管理|一覧|表示)|ピンや?(?:図形|描画)?(?:の)?(?:一覧|管理)|地図上の(?:オブジェクト|もの)を(?:管理|一覧)|(?:manage|list|show|open)\s+(?:all\s+)?(?:my\s+)?(?:map\s+)?objects?|object\s+(?:list|manager|panel)|manage\s+(?:pins|drawings|shapes|everything on the map))[。.!?！？]?$/i.test(s)) return A({type:'objects'});
-      /* ⚠ (#R296) the local Earth Replay matcher stood here — 「世界を巻き戻して」 falls through to `timeTravel`. */
-      /* (#R86c) multi-stop route optimisation (TSP) — "A・B・Cを最短で回る", "optimize route through A, B, C" */
-      { fm=low.match(/^(?:optimi[sz]e|plan|find|best|shortest)\s+(?:the\s+)?(?:route|order|tour|trip|itinerary|path)\s+(?:to\s+)?(?:visit(?:ing)?|through|for|of|via|around|between)\s+(.+?)\.?$/i)
-          ||low.match(/^(?:best|shortest|optimal|most efficient)\s+(?:order|way|route)\s+to\s+visit\s+(.+?)\.?$/i);
-        if(fm&&(fm[1]||'').trim()){ const parts=fm[1].split(/\s*,\s*|\s+and\s+|\s*&\s*/).map(x=>x.trim()).filter(Boolean); if(parts.length>=2) return A({type:'optimizeRoute',places:parts}); }
-        fm=s.match(/^(.+?)(?:を)?(?:最短(?:で|順|経路で)?|効率(?:よく|的に)|一番(?:早く|短く))(?:回る|巡る|訪(?:れる|問)|周る)(?:順(?:番|路)?|ルート|経路)?(?:を)?(?:教えて|出して|表示|計算|並べ替え|して)?[。？?]?$/i);
-        if(fm&&(fm[1]||'').trim()){ const parts=fm[1].split(/\s*[,、，･・]\s*|\s+と\s+/).map(x=>x.trim()).filter(Boolean); if(parts.length>=2) return A({type:'optimizeRoute',places:parts}); } }
-      /* (#R83) flight simulator */
-      if(/^(?:(?:フライト|飛行)シミュ(?:レータ[ー]?|レーション)?|フライトシム)(?:を)?(?:起動|開始|始めて|開いて|やって|使いたい|プレイ|して)?[。]?$/i.test(s)) return A({type:'flightSim'});
-      fm=s.match(/^(.+?)(?:の上空|上空|周辺)(?:を)?(?:飛行機で)?(?:飛(?:びたい|んで|ぶ)|操縦(?:したい|して))(?:みたい)?[。]?$/);
-      if(fm&&(fm[1]||'').trim()) return A({type:'flightSim',place:(fm[1]||'').trim()});
-      if(/^(?:start (?:the |a )?)?flight ?sim(?:ulator)?$/i.test(low)) return A({type:'flightSim'});
-      fm=low.match(/^(?:let me |i want to |i'?d like to )fly(?: a plane| a jet| an aircraft)?(?:\s+over\s+(.+?))?\.?$/i)||low.match(/^fly (?:a |an )?(?:plane|jet|aircraft)(?:\s+over\s+(.+?))?\.?$/i);
-      if(fm) return A(Object.assign({type:'flightSim'},(fm[1]&&fm[1].trim())?{place:fm[1].trim()}:{}));
-      /* (#R62) country comparison — "compare Japan and Korea" / 「日本と韓国を比較して」 */
-      fm=low.match(/^compare\s+(.+)$/)||s.match(/^(.+?)を比較(?:して)?$/);
-      if(fm){ const parts=(fm[1]||'').split(/,|、| and | und | y | и |と| vs\.? |対/i).map(x=>x.trim()).filter(Boolean);
-        if(parts.length>=2&&parts.every(p=>resolveCountrySync(p))) return A({type:'compareStats',countries:parts}); }
-      fm=low.match(/^(?:set |make )?(.+?)(?: layer)?(?: opacity)?(?: to)?\s+(\d{1,3})\s*%$/)||s.match(/^(.+?)(?:レイヤー)?(?:の(?:透明度|不透明度))?\s*を?\s*(\d{1,3})\s*(?:%|％|パーセント)\s*に(?:して)?$/);
-      if(fm&&resolveLayer((fm[1]||'').trim())) return A({type:'opacity',name:fm[1].trim(),value:+fm[2]});
-      fm=low.match(/^(?:make |set )?(.+?)(?: layer)? (?:more transparent|fainter|lighter)$/)||s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:もっと|少し)?(?:薄く|透明に)(?:して)?$/);
-      if(fm&&resolveLayer((fm[1]||'').trim())) return A({type:'opacity',name:fm[1].trim(),delta:-0.2});
-      fm=low.match(/^(?:make |set )?(.+?)(?: layer)? (?:more opaque|stronger|darker|less transparent)$/)||s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:もっと|少し)?(?:濃く|不透明に|はっきり)(?:して)?$/);
-      if(fm&&resolveLayer((fm[1]||'').trim())) return A({type:'opacity',name:fm[1].trim(),delta:0.2});
-      /* single-country stat question → the REAL number from countryStats (no AI needed).
-         (#R75) VMET moved to module scope — shared with _metSpec (explore/scoreMap). */
-      fm=low.match(/^(?:what(?:'s| is)(?: the)? )?([a-z0-9 ]+?)\s+of\s+(.+?)\s*\??$/);
-      if(fm&&VMET[fm[1].trim()]&&resolveCountrySync(fm[2].trim())) return A({type:'value',metric:VMET[fm[1].trim()],country:fm[2].trim()});
-      fm=s.match(/^(.+?)の(人口密度|人口|面積|一人当たりGDP|1人当たりGDP|GDP|HDI|出生率|合計特殊出生率|民主主義指数|国防費|軍事費|首都|通貨|言語|公用語|国旗)(?:は|を教えて)?[?？]?$/i);
-      if(fm&&resolveCountrySync(fm[1].trim())){ const vk=VMET[fm[2]]||VMET[fm[2].toLowerCase()]; if(vk) return A({type:'value',metric:vk,country:fm[1].trim()}); }
-      /* (#R73) current-officeholder questions are NEVER answered from model memory ("まだ現在の首相名等を
-         間違えている") — anchored straight to analyze, whose prompt forces a live web search. */
-      fm=s.match(/^(.{1,40}?)の(?:現在の|今の|現)?(首相|大統領|総理大臣|総理|内閣総理大臣|国家元首|指導者|政権|内閣|首脳)(?:は誰(?:ですか)?|は|って誰|を教えて)?[?？。]?$/)
-        ||low.match(/^(?:who(?: is|'s)? )?(?:the )?(?:current |present )?(?:prime minister|president|chancellor|premier|leader|head of state|head of government)(?: of | in )(.{1,40}?)\??$/)
-        ||low.match(/^(.{1,40}?)(?:'s| s)? (?:current )?(?:prime minister|president|chancellor|premier|leader)\??$/);
-      if(fm){ const cn=(fm[1]||'').trim(); return A({type:'analyze',question:s,use:['web'],countries:cn?[cn]:undefined}); }
-      /* (#R74) looser net for the same class of question ("日本の首相って今誰だっけ？" etc. escaped the anchored
-         forms above and reached the AI, which sometimes answered from stale memory anyway): ANY short message
-         combining an office word with a who-word routes deterministically to analyze + live web. */
-      if(s.length<=80&&/(首相|大統領|総理|国家元首|首脳|党首|総裁|大臣|知事|prime minister|president|chancellor|premier|head of state|head of government|kanzler|президент|премьер|primer ministro|presidente)/i.test(s)
-        &&/(誰|だれ|who|wer|кто|quién|quien|現在|今|current|名前|なまえ|name)/i.test(s)) return A({type:'analyze',question:s,use:['web']});
-      /* (#R78) workspace mode — deterministic on/off. */
-      fm=s.match(/^(?:ウィンドウ)?(?:・)?ワークスペース(?:モード)?を?(オン|有効|開始)(?:に)?(?:して)?$/)||low.match(/^(?:turn on |enable |start )?(?:window )?workspace(?: mode)?(?: on)?$/);
-      if(fm) return A({type:'module',name:'IntMapWorkspace',method:'open'});
-      fm=s.match(/^(?:ウィンドウ)?(?:・)?ワークスペース(?:モード)?を?(オフ|無効|終了|解除)(?:に)?(?:して)?$/)||low.match(/^(?:turn off |disable |exit |stop )(?:window )?workspace(?: mode)?$/);
-      if(fm) return A({type:'module',name:'IntMapWorkspace',method:'close'});
-      /* (#R76) vision §6 anchors — event-grouped news, deterministic. */
-      fm=s.match(/^(?:最近|直近|今日|世界)の?(?:出来事|イベント)を?(?:まとめて|整理して|一覧にして|教えて|表示して)[。]?$/)
-        ||low.match(/^(?:summarize|group|cluster|show) (?:the )?(?:recent |latest |today'?s )?(?:news )?events?$/)
-        ||low.match(/^what events are happening\??$/);
-      if(fm) return A({type:'events'});
-      fm=s.match(/^(.{1,30}?)(?:周辺|付近)?の(?:出来事|イベント)を?(?:まとめて|整理して|教えて|表示して)[。]?$/)
-        ||low.match(/^(?:summarize|group|show) (?:the )?events? (?:in|around|near) (.{1,40}?)$/);
-      if(fm&&(fm[1]||'').trim()) return A({type:'events',place:(fm[1]||'').trim()});
-      /* (#R75) vision §10/§11 anchors — single-intent phrasings run deterministically, no AI round-trip. */
-      fm=s.match(/^(.{1,25}?)(?:と|に)(?:相関|関連)する指標を?(?:探して|調べて|教えて)?[。？?]?$/)
-        ||low.match(/^(?:what |which )?(?:indicators?|metrics?) correlate[sd]? with (.{1,30}?)\??$/)
-        ||low.match(/^explore (?:correlations? (?:of|with) )?(.{1,30}?)\??$/);
-      if(fm&&_metSpec((fm[1]||'').trim())) return A({type:'explore',metric:(fm[1]||'').trim()});
-      fm=s.match(/^(?:この|直近の|最近の)?地震の(?:影響|周辺)(?:範囲)?を?(?:分析|調査|調べて|表示|見せて)(?:して)?[。]?$/)
-        ||low.match(/^impact (?:analysis )?(?:of |around )?(?:the )?(?:latest |recent )?(?:earthquake|quake)$/);
-      if(fm) return A({type:'impact',event:'quake'});
-      fm=s.match(/^(.{1,30}?)の?周辺影響(?:分析)?を?(?:して|調べて|表示して|分析して)$/)
-        ||low.match(/^impact analysis (?:around|of|near) (.{1,40}?)$/);
-      if(fm&&(fm[1]||'').trim()) return A({type:'impact',place:(fm[1]||'').trim()});
-      /* (#R157) HIGHLIGHT TARGETS ARE NO LONGER PARSED HERE. A highlight target is a MEANING — a country set
-         ("ゲルマン諸国"/"英語圏"/"主要産油国"), an admin/natural region, a river or a basin — and the reported root
-         cause was localPlan deciding that meaning (via regionGroup / resolveHlTarget) BEFORE the model ever saw it,
-         so "ゲルマン諸国" failed as one unfound place. Every "…をハイライト" now goes to the planner, which interprets the
-         concept and returns explicit ISO3 targets (or a concrete place "query") for the code to validate & draw.
-         Only the two NON-semantic shortcuts stay — recolouring the CURRENT highlights, and clearing them — because
-         neither carries a target whose meaning must be interpreted. */
-      fm=low.match(/^highlight\s+in\s+([a-z]+(?: blue)?|#[0-9a-f]{3}|#[0-9a-f]{6})$/)||s.match(/^(.{1,9}?)で(?:ハイライト|強調表示|強調)(?:して)?$/)||low.match(/^(?:make|change|turn) (?:the )?highlights? (?:to )?([a-z]+)$/);
-      if(fm&&parseColor((fm[1]||'').trim())) return A({type:'highlight',color:(fm[1]||'').trim()});
-      if(/^highlight\s+(?:off|clear|none)$|^(?:ハイライト|強調表示|色分け|濃淡)(?:を)?(?:オフ|消して|解除|クリア|非表示)(?:に)?(?:して)?$|^hervorhebung(?:en)?\s+(?:aus|entfernen|löschen)$|^(?:убрать|снять|очистить)\s+выделени\w*$|^(?:quitar|borrar)\s+(?:el\s+)?resaltado$/i.test(low)) return A({type:'highlight',on:false});
-      /* (#R104) DIRECTIONS / route — a VERY common command that had NO deterministic plan, so it fell to the AI and
-         did NOTHING when the user wasn't logged in ("東京から横浜まで鉄道で経路を出しても地図に出ない"). Parse from/to +
-         travel mode locally so routing ALWAYS works, account or not. Placed before navigation so "AからBまで…経路"
-         can't be mis-caught as a flyTo. */
-      let rm=s.match(/^(.{1,40}?)から(.{1,40}?)(?:まで|への?|に)(?:の)?[^。]{0,16}?(?:経路|ルート|行き方|道順|乗り?換え?|ナビ)/)
-        ||s.match(/^(?:電車|鉄道|列車|地下鉄|新幹線|バス|車|自動車|徒歩|自転車|公共交通(?:機関)?)で\s*(.{1,40}?)から(.{1,40}?)(?:まで|へ|に)?[。！？!?]*$/)
-        ||low.match(/^(?:directions?|routes?|navigate|how (?:do i|to) (?:get|travel))\s+from\s+(.{1,40}?)\s+to\s+(.{1,40}?)(?:\s+by\s+[\w ]+)?[.?!]*$/);
-      if(rm&&(rm[1]||'').trim()&&(rm[2]||'').trim()){
-        const _tr=/鉄道|電車|列車|地下鉄|新幹線|メトロ|トラム|路面電車|バス|公共交通|フェリー|船|train|rail|subway|metro|tram|light[- ]?rail|bus|transit|public transport|ferry/i.test(s);
-        const _wk=/徒歩|歩いて|歩き|on foot|walk/i.test(s);
-        const _cy=/自転車|チャリ|サイクリング|cycl|bike|bicycle/i.test(s);
-        const _mode=_tr?'transit':_wk?'walking':_cy?'cycling':'driving';
-        return A({type:'directions',from:(rm[1]||'').trim(),to:(rm[2]||'').trim(),mode:_mode});
-      }
-      /* (#R105/#R115) COMPARE COUNTRIES — deterministic so "Compare the USA, China and India — GDP, defense and
-         population" (and "日本とドイツを比較して") open the comparison with NO AI round-trip. The "— metrics" tail is
-         now PARSED and honoured ("don't choose the specified indicators" bug): names resolve via _cmpMetricKeys
-         onto the panel's real indicator keys and are passed as metrics. An unresolvable tail keeps the defaults. */
-      let cm=low.match(/^compare\s+(.+?)(?:\s*[—–:]\s*(.+)|\s+-\s+(.+)|\s+by\s+(.+))?$/)||s.match(/^(.+?)を\s*(?:比較|くらべて|比べて)(?:して)?[。！？!?]*\s*(?:[—–:：]\s*(.+))?$/);
-      if(cm){ const parts=(cm[1]||'').replace(/^the\s+/i,'').split(/\s*,\s*|、|;|\s+and\s+|\s+und\s+|\s+y\s+|\s+и\s+|と|\s+vs\.?\s+|\s*対\s*/i).map(x=>x.replace(/^the\s+/i,'').trim()).filter(Boolean);
-        if(parts.length>=2&&parts.length<=10){ const act={type:'compareStats',countries:parts};
-          const tail=cm[2]||cm[3]||cm[4]||''; if(tail){ const mr=_cmpMetricKeys(tail); if(mr.keys.length) act.metrics=mr.keys; }
-          return A(act); } }
-      /* (#R105) RANKING QUESTIONS — "Which countries have the highest life expectancy?" / "…spend the most on defense
-         relative to GDP?" → the real ranked list, deterministically (no AI needed). */
-      let qm=low.match(/^which countr(?:y|ies)\s+(?:have|has)\s+the\s+(highest|greatest|largest|biggest|most|lowest|smallest|least)\s+(.+?)\s*\??$/)
-        ||low.match(/^which countr(?:y|ies)\s+spends?\s+the\s+(most|least)\s+on\s+(.+?)\s*\??$/);
-      if(qm){ const dir=/lowest|smallest|least/i.test(qm[1])?'bottom':'top'; let mtxt=(qm[2]||'').trim().replace(/\?+$/,''); let mk=null;
-        if(/defen[cs]e|military|軍事|国防/i.test(mtxt)&&/relative to gdp|% ?gdp|share of gdp|per gdp|to gdp/i.test(mtxt)) mk='milSpendGDP';
-        else { const t2=mtxt.replace(/\s+relative to gdp$/i,'').replace(/^spending on\s+/i,'').replace(/defen[cs]e(?:\s+spending)?/i,'military spending'); const sp=_metSpec(t2); mk=sp?sp.key:null; }
-        if(mk) return A({type:'rank',metric:mk,order:dir,n:10}); }
-      /* (#R105) IntMap HELP — Atlas doubles as the built-in guide. A general "how do I use this / what can you do /
-         使い方" gets a concise overview with NO AI round-trip; SPECIFIC how-to questions fall through to the AI, which
-         is told (in SYS) to answer them as IntMap's help. */
-      if(/^\s*(help|ヘルプ|使い方|つかいかた|使いかた|hilfe|ayuda|помощь|man)\s*[?？。]?\s*$/i.test(s)
-        ||/^(what can (you|atlas|intmap|this app) do|how (do i|to) use (this|intmap|atlas)|できること|何ができ|なにができ|どうやって使)/i.test(s.trim())
-        ||/(intmap|atlas|アトラス)\s*(の|は|って)?\s*(使い方|使いかた|できること|機能|ヘルプ)/i.test(s)){
-        return A({type:'answer',text:L(
-          'IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use CHRONOS (bottom-right, formerly the time machine) to travel 1850→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: "fly to Kenya", "show the population layer", "compare Japan and Germany", "highlight the top 10 by GDP per capita", "directions from Tokyo to Osaka by train", "which countries have the highest life expectancy?", or "brief me on the South China Sea". Ask "how do I …" for any specific feature.',
-          'IntMapはインタラクティブな世界地図で、私（Atlas）が自然言語ですべてを操作できます。できること: レイヤーパネルから100以上のデータレイヤー（気候・人口・経済・ライブ気象）を表示／ニュースを発生地にピン表示／右下のChronos（旧タイムマシン）で1850年〜現在を移動／Countriesで国データを並べ替え・比較／ワークスペースモードで可動ウィンドウ化。私にこう頼めます:「ケニアに飛んで」「人口レイヤーを表示」「日本とドイツを比較して」「一人当たりGDP上位10ヵ国をハイライト」「東京から大阪まで電車で経路」「平均寿命が高い国は？」「南シナ海のブリーフ」。個別の機能は「〜の使い方」と聞いてください。',
-          'IntMap ist ein interaktiver Weltatlas — und ich (Atlas) bediene alles per Sprache. Über 100 Datenebenen, Live-News, Chronos (1850→heute), Länder-Vergleich, Workspace-Modus. Frag z. B.: „flieg nach Kenia", „vergleiche Japan und Deutschland", „Route Tokio→Osaka mit dem Zug". Frag „wie benutze ich …" für Details.',
-          'IntMap — интерактивный атлас мира, и я (Atlas) управляю всем на обычном языке. 100+ слоёв данных, живые новости, Chronos (1850→сейчас), сравнение стран, режим рабочих окон. Спросите: «лети в Кению», «сравни Японию и Германию», «маршрут Токио→Осака на поезде». Спросите «как использовать …» для деталей.',
-          'IntMap es un atlas mundial interactivo — y yo (Atlas) lo manejo en lenguaje natural. Más de 100 capas de datos, noticias en vivo, Chronos (1850→ahora), comparación de países, modo espacio de ventanas. Pídeme: "vuela a Kenia", "compara Japón y Alemania", "ruta Tokio→Osaka en tren". Pregunta "cómo uso …" para más.')});
-      }
-      /* navigation (explicit motion verb + place) — rescue-grade. */
-      let mm=s.match(/^(?:fly|go|navigate|take me|jump|pan|move|center|centre)\s+(?:to|me to|over to|on)\s+(.+)$/i);
-      if(!mm) mm=s.match(/^(.+?)\s*(?:へ|に)\s*(?:移動|飛(?:んで|ぶ)|行って|ジャンプ|ズーム)(?:して)?$/);
-      if(mm){ const place=(mm[1]||'').trim().replace(/[。.!?]+$/,''); if(place&&place.length<=64) return {actions:[{type:'flyTo',place}],confident:false}; }
-      /* layer toggle (explicit on/off verb + a layer that actually RESOLVES) — rescue-grade. Only fires for a real
-         layer; non-layer "show me X" / compound text falls through to the AI rather than guessing. */
-      let on=true, lm=low.match(/^(?:show|display|turn on|enable|add|activate|put on)\s+(?:the\s+)?(.+?)(?:\s+layer)?$/i);
-      if(!lm){ const off=low.match(/^(?:hide|turn off|disable|remove|take off)\s+(?:the\s+)?(.+?)(?:\s+layer)?$/i); if(off){ lm=off; on=false; } }
-      if(lm){ const nm=(lm[1]||'').trim(); if(nm&&resolveLayer(nm)) return {actions:[{type:'layer',name:nm,on}],confident:false}; }
-      let jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:表示|オン|つけて|有効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:true}],confident:false};
-      jm=s.match(/^(.+?)(?:レイヤー)?\s*を?\s*(?:非表示|オフ|消して|無効)(?:に)?(?:して)?$/); if(jm&&resolveLayer((jm[1]||'').trim())) return {actions:[{type:'layer',name:(jm[1]||'').trim(),on:false}],confident:false};
-      return null; }
     /* (#R156) ================= DEDICATED VISION PIPELINE =================
        The work order: "通常のAtlasプランナーに、画像読解・計算・JSON計画・地名抽出を一度に処理させる現在の構造を改めてください".
        An attached image no longer goes through the giant map-oriented planner (whose MAPPING MANDATE pushed every image
@@ -4979,142 +4693,64 @@ window.IntMapModules.atlasConsole=function(HOST){
       try{ _abortCtl=(typeof AbortController!=='undefined')?new AbortController():null; }catch(_){ _abortCtl=null; }
       _setGoBusy(true);
       try{
-      let lp=null; try{ lp=localPlan(q); }catch(_){}
-      /* (#R135) build the REQUEST PROFILE up-front (temporal axis + required evidence + outputs) and open a fresh
-         diagnostics record; both feed the planner prompt, the pre-execution plan validation, the semantic repair
-         control and window.IntMapAtlasDebug.lastPlan(). */
-      let _profile=null; try{ _profile=_requestProfile(q); }catch(_){}
-      _curProfile=_profile;   /* (#R350) goalImpact() needs the REQUEST to tell a map move the user asked for from one Atlas added itself */
-      _atlasDbg={ requestProfile:_profile, originalPlan:null, validatedPlan:null, rejectedActions:[], actionOutcomes:[], semanticRetries:[], scopeChanges:[], finalGoalValidation:null };
+      /* ══ (#R406) ATLAS DRIVES THE TURN ═══════════════════════════════════════════════════════
+         What stood here: a regex REQUEST PROFILE that decided whether the message was a question,
+         a slice of a 64,250-character catalogue, ONE model call forced into {"say":…,"actions":[…]}
+         — a shape with no way to say «just answer» — a validator that rewrote the actions it
+         disagreed with, and up to two repair calls. Atlas committed before it had seen a single
+         result, and `say` was required to state what had been done before anything was done.
+         Now it chooses, watches what actually happened, and chooses again (js/atlas-agent.js).
+         The sentence the reader gets is written last, by something that has read the results. */
+      _atlasDbg={ toolCalls:[], rejected:0, actionOutcomes:[], steps:[] };
       _atlasOutcomes=_atlasDbg.actionOutcomes;
-      try{ if(_profile&&_profile.targetYear!=null&&_profile.temporalMode!=='current') _wctx.year=_profile.targetYear; }catch(_){}   /* carry the year into the conversation for the next turn's profile */
-      /* (#R52) a clear single-intent command runs deterministically with NO AI round-trip — it neither needs an
-         account nor spends a daily AI credit, so the most common operations ALWAYS work (the core of the user's
-         "claims it did X but didn't" report). The AI path below is still gated as before. */
-      if(lp&&lp.confident&&lp.actions&&lp.actions.length&&!imgs.length&&!files.length){ const ai=bubble('a',stageDots('think')); try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai,q); return; }   /* (#R149/#R158) an attached image OR file always goes to the AI (skip the no-AI local shortcut) */
-      /* (#R106) AI FALLBACK & AVAILABILITY — "LocalPlanで無理ならAIにフォールバック / できる限りAIを使用 / エラーが多い".
-         Prefer AI for anything localPlan can't confidently handle. But when AI is unavailable (logged out or the daily
-         quota is spent) we must NOT dead-end into a silent return + login modal (the frequent "何もせずエラー" case):
-         run the best-effort local plan so Atlas still ACTS without an account, and only surface the login/limit gate
-         when there is genuinely nothing to run. `_aiReady` mirrors aiGate WITHOUT its side effect (opening the modal),
-         so the local fallback doesn't pop a needless login prompt. */
       let _aiReady=false; try{ _aiReady = !!(typeof HOST.user!=='undefined'&&HOST.user) && !(typeof aiUsage!=='undefined'&&aiUsage&&aiUsage.date===aiToday()&&typeof aiUsesLeft==='function'&&aiUsesLeft()<=0); }catch(_){ _aiReady=false; }
       if(!_aiReady){
-        if(lp&&lp.actions&&lp.actions.length){ const ai2=bubble('a',stageDots('think')); try{ const fails=await runActions(ai2,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); }catch(e){ if(gen===_runGen) ai2.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } msgTools(ai2,q); return; }
         try{ if(typeof aiGate==='function') aiGate(); }catch(_){}   /* opens the login modal / shows the daily-limit toast */
         const ai3=bubble('a',''); try{ ai3.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc((typeof HOST.user!=='undefined'&&HOST.user)?aiLimitMsg():aiLoginMsg())+'</div>'; }catch(_){} msgTools(ai3,q); return;
       }
-      /* (#R156) IMAGE → DEDICATED VISION PIPELINE (classify → transcribe → solve → verify → render → map-only-if-geo),
-         NOT the map-oriented generic planner. AI availability is already gated above. */
-      if(imgs.length){ const aiv=bubble('a',stageDots('read')); try{ await _atlVisionTurn(aiv,q+_fileBlock,imgs,gen); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen) msgTools(aiv,q); return; }   /* (#R158) any text files ride along with the vision prompt */
-      const ai=bubble('a',stageDots('think'));   /* (#R130) stage-aware placeholder — updates to Searching/Analyzing/Mapping as runActions executes */
-      /* (#R117) COMPLEXITY-ADAPTIVE reasoning: long / multi-clause / conditional requests get the planner's
-         "high" effort (server-gated to atlas_plan+analysis) — the main lever for あいまい・複雑な要望. */
-      const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));
-      /* (#R318 §10) WHICH CAPABILITIES THIS REQUEST NEEDS — deterministic, scored over the WHOLE
-         registry, never a slice of the first N. A confident match ships the relevant blocks; low
-         confidence widens; no signal at all ships everything, which is exactly the prompt #R311
-         sent. The one thing it will not do is drop a capability for being 141st in the DOM. */
-      let _capSel=null; try{ _capSel=_PLANNER.selectCapabilities(q,{ recent:(ASTATE.lastTurn()&&ASTATE.lastTurn().operations||[]).map(o=>o.capabilityId), requiredOutputs:Object.keys((_profile&&_profile.outputs)||{}).filter(k=>_profile.outputs[k]) }); }catch(_){ _capSel=null; }
-      try{ if(_atlasDbg){ _atlasDbg.retrievedCapabilityIds=(_capSel&&_capSel.ids)||null; _atlasDbg.capabilitySelectionMode=(_capSel&&_capSel.mode)||'all'; _atlasDbg.plannerCatalogBytes=CAPS.catalogBytes((_capSel&&_capSel.ids)||null); } }catch(_){}
-      try{ let plan=await _planCall(buildPrompt(q,_profile)+_fileBlock+(imgs.length?'\n\n[NOTE: '+imgs.length+' image'+(imgs.length>1?'s are':' is')+' attached to this message — analyze '+(imgs.length>1?'them':'it')+' and answer about '+(imgs.length>1?'them':'it')+' in your "answer" text; if '+(imgs.length>1?'they show':'it shows')+' or imply real places, include them in the answer\'s "places" so IntMap maps them.]':''),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:_cplx?'high':undefined,schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* (#R113) planner → server JSON mode; (#R135) profile block attached; (#R142) Stop-button abort signal; (#R149) attached images (vision); (#R158) attached file text */
-        /* (#R73) a newer message arrived while the model was thinking → drop this turn's plan entirely */
+      /* (#R156) IMAGE → the dedicated vision pipeline, which is its own reader and not this loop. */
+      if(imgs.length){ const aiv=bubble('a',stageDots('read')); try{ await _atlVisionTurn(aiv,q+_fileBlock,imgs,gen); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen) msgTools(aiv,q); return; }
+      const ai=bubble('a',stageDots('think'));
+      const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));   /* (#R117) reasoning budget, not meaning: it picks an effort tier and decides nothing about the request */
+      /* ⚠ ONE TOOL CALL BECOMES THE SAME ACTION OBJECT THE DISPATCH HAS ALWAYS RUN, so every pin,
+         overlay, panel and rendering behaviour is the one that shipped — and its MECHANICAL result
+         is what goes back to Atlas. */
+      const _ranActions=[];
+      const _runOne=async(action)=>{ const before=((ai.__atlResults||[]).length);
+        _ranActions.push(action);
+        await runActions(ai,'',[action],gen);
+        const list=ai.__atlResults||[]; if(list.length<=before) return {ok:false,error:'not_run',message:'the turn was superseded'};
+        const rec=list[list.length-1];
+        return { ok:rec.ok!==false, html:rec.html||'', meta:rec.meta||null, exec:(rec.act&&rec.act.__exec)||null }; };
+      _turnRunAction=_runOne;
+      const _tools=TOOLS.baseTools();   /* rebuilt per turn: the layer enum below is live app state */
+      /* the real layer names, as an enum on the tool rather than 170 names of prose in the prompt */
+      try{ const ln=layerCatalogText().split(';').map(s2=>s2.trim()).filter(Boolean);
+        if(ln.length&&_tools.set_layer&&_tools.set_layer.parameters.properties.name) _tools.set_layer.parameters.properties.name.enum=ln; }catch(_){}
+      const _sys=SYS(_tools);
+      /* ⚠ THE TRANSPORT IS THE ENVELOPE, NOT NATIVE TOOL CALLING. supabase/functions/ai-proxy sends
+         `tools` only for the providers' own hosted web search and parses no function_call item on any
+         of its three branches, so a native call would be returned as empty text and become a 502.
+         The envelope rides the JSON-schema path that already works, and `webMode:'auto'` means the
+         model — not a regular expression here — decides whether this turn needs the live web. */
+      const _model=async(req)=>{
+        const env=await askAIJSONEnvelope(_agentPrompt(req,q)+_fileBlock,_sys,null,{task:'atlas_turn',schema:TURN_SCHEMA,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});
+        try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
+        return AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON); };
+      try{
+        const out=await AGENT.runTurn({ model:_model, tools:_tools, execute:TOOLS.makeExecute(_tools,AGENT),
+          system:_sys, messages:[{role:'user',content:q}], signal:(_abortCtl?_abortCtl.signal:undefined),
+          onStep:(s)=>{ try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });
         if(gen!==_runGen){ ai.innerHTML=_cancelledNote(); return; }
-        /* (#R43) tolerate a bare array / single action object from a weaker model; plan===null = unparseable. */
-        if(Array.isArray(plan)) plan={actions:plan}; else if(plan&&plan.type&&!plan.actions) plan={actions:[plan],say:plan.say};
-        const acts0=(plan&&Array.isArray(plan.actions))?plan.actions:[];
-        /* (#R135 §7) PRE-EXECUTION VALIDATION — rewrite/append incompatible actions against the capability registry
-           (a historical question routed to live-only mapReport → researchMap; a water/region "situation" wrongly sent
-           to a world alliance map → researchMap; explanation requested but plan only navigates → add researchMap)
-           BEFORE anything runs, so the wrong action never executes and the repair storm never starts. */
-        try{ if(_atlasDbg) _atlasDbg.originalPlan=JSON.parse(JSON.stringify(acts0)); }catch(_){}
-        let _vp=null; try{ _vp=_validatePlan(acts0,_profile,q); }catch(_){ _vp={plan:acts0,rejected:[]}; }
-        const acts=(_vp&&Array.isArray(_vp.plan))?_vp.plan:acts0;
-        try{ if(_atlasDbg){ _atlasDbg.validatedPlan=acts; _atlasDbg.rejectedActions=(_vp&&_vp.rejected)||[]; } }catch(_){}
-        if(!acts.length){
-          /* (#R52) No executable action came back. Priority: (1) if we have a DETERMINISTIC plan for this request,
-             DO it — this overrides a model that "said" it acted without emitting an action (the exact bug reported:
-             実行したと言っている操作が実行されていない). (2) else show the model's say (a real clarification / answer).
-             (3) else admit we could not interpret it. */
-          if(lp&&lp.actions&&lp.actions.length){ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); msgTools(ai,q); return; }
-          const say=plan&&plan.say; if(say){ ai.innerHTML='<div style="line-height:1.6;">'+mdMini(say)+'</div>'; recordTurn(q, say, [], []); msgTools(ai,q); return; }   /* (#R147) mdMini + inherit bubble size (drop inline 12px) */
-          ai.innerHTML=esc(L('Sorry, I could not interpret that.','うまく解釈できませんでした。','Konnte das nicht interpretieren.','Не удалось понять запрос.','No pude interpretarlo.')); msgTools(ai,q); return;
-        }
-        /* (#R53) ANTI-FABRICATION: if the model only "answered" (no real action) yet we have a deterministic plan
-           for this request, DO the real thing instead of printing words that claim an action that never ran — the
-           user explicitly reported "実行していない動作を実行したという虚偽の報告". */
-        if(acts.every(a=>a&&a.type==='answer') && lp && lp.actions && lp.actions.length){ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); msgTools(ai,q); return; }
-        /* (#R74/#R158) LIVE-SOURCE OVERRIDE. Two problems share one root: (1) "ありえないハルシネーション" — a memory-only
-           answer to a current-fact question is where hallucination lives; (2) "Atlasに出典が一つもないのはくそ" — the bare
-           answer path attaches NO source cards. Fix both: when the model answered an informational / current-fact question
-           with no live-data action, re-run it through analyze (live web + Wikidata), which grounds the reply AND renders real
-           source cards (use:['web'] forces the search → citations are never empty). Guarded so greetings / social / trivial
-           one-liners are NOT sent to a web search. */
-        try{ const TIMEVAR=/(最近|現在|今の|今は|きょう|今日|latest|current(ly)?|right now|this (week|month|year)|今年|首相|大統領|総理|president|prime minister|news|ニュース|情勢|状況|どうなって)/i;
-          const INFO=/[?？]\s*$|(なぜ|どうして|どの|どんな|どこ|いつ|誰|だれ|教え|説明|とは|について|違い|比較|理由|原因|方法|どうやって|what|who|where|when|why|how\b|which|explain|describe|compare|difference|tell me|overview|summar)/i;
-          const SOCIAL=/^\s*(hi|hello|hey|yo|ok|okay|thanks|thank you|thx|ありがとう|どうも|こんにちは|こんばんは|おはよう|やあ|hola|gracias|danke|привет|спасибо)\b/i;
-          const informational=q.length>=8 && !SOCIAL.test(q) && (TIMEVAR.test(q)||INFO.test(q));
-          if(acts.length&&acts.every(a=>a&&a.type==='answer')&&informational){
-            const fails=await runActions(ai,'',[{type:'analyze',question:q,use:['web']}],gen);
-            if(gen===_runGen) recordTurn(q,'(routed to live analysis for sources)',[{type:'analyze',question:q}],fails); msgTools(ai,q); return; } }catch(_){}
-        const fails=await runActions(ai, plan.say||'', acts, gen);
-        if(gen===_runGen) recordTurn(q, plan.say||'', acts, fails);   /* (#R44) remember this exchange so the NEXT request has context */
-        /* (#R117/#R135) REPAIR PASS — when planned actions FAILED, give the model a DIFFERENT approach. Now bounded
-           to TWO rounds and controlled by SEMANTIC key (§10): repair actions run through the SAME capability
-           validation (so a historical question is never re-routed to live news, a local place never to a world map),
-           translation-only retries of the same research family+mode are dropped, and world/continental scope-blowups
-           are refused. A map-draw failure is NOT treated as an answer failure. */
-        /* ⚠⚠⚠ (#R397) THE GOAL GATE WAS A NOTE AFTER ALL. js/atlas-planner.js:28-31 says «THE GOAL IS A
-           GATE, NOT A NOTE … nothing read it» — and #R318 filed it in the debug record again, AFTER the
-           repair loop. 「操作は通ったが目的は果たされていない」 was computed every turn, read on none. */
-        let _goalUnmet=POLICY.unmetGoalText(_goalValidation,_profile,_atlasOutcomes);
-        try{ let pending=(fails||[]).filter(a=>a&&a.type&&a.type!=='answer'); const _tried=[]; const _triedFam=new Set();
-          /* (#R158) a PARTIAL execution (some targets resolved, some not) also needs Terra's decision — seed it into the
-             repair loop even though it reported ok:true. IntMap does not adopt a partial result on its own. */
-          try{ acts.forEach(a=>{ if(a&&a.__exec&&a.__exec.status==='partial_or_failed'&&pending.indexOf(a)<0) pending.push(a); }); }catch(_){}
-          /* (#R158) format the mechanical execution results as a structured block Terra reads to generate a corrected action */
-          const _execFbOf=list=>{ const seen=[],out=[]; (list||[]).forEach(a=>{ const e=a&&a.__exec; if(e&&e.status==='partial_or_failed'&&seen.indexOf(e)<0){ seen.push(e); out.push(e); } });
-            return out.length?('\n\n[EXECUTION RESULT — IntMap executed your action and OBSERVED the following. IntMap did NOT auto-correct, substitute, drop or reinterpret anything. YOU (the model) decide how to proceed: re-issue the action with corrected identifiers, re-search, ask the user, or accept the partial. "availableIdentifiers" are deterministic candidates IntMap found but did NOT apply — use them only if you judge them correct.]\n'+out.slice(0,4).map(e=>{ try{ return JSON.stringify(e).slice(0,1500); }catch(_){ return ''; } }).filter(Boolean).join('\n')):''; };
-          acts.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
-          for(let _rp=0; _rp<2 && gen===_runGen && (pending.length||_goalUnmet) && acts.length<=12; _rp++){
-            const _execFb=_execFbOf(pending);
-            pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
-            const fdesc=_tried.slice(-14).map(s2=>s2.slice(0,220)).join('\n');
-            /* (#R397) A failed CALL wants a different call; an unmet GOAL wants the missing product.
-               Consumed once, so an unmet goal is reported honestly rather than retried forever. */
-            const _goalFb=_goalUnmet?('\n\n[GOAL NOT MET — every call you issued returned, but the request is still not satisfied: '+_goalUnmet+'. Do NOT re-issue an action that already completed. Emit the action that produces the MISSING part.]'):'';
-            const _fdescLine=pending.length?('These calls could not be completed:\n'+fdesc):'Your calls completed.';
-            _goalUnmet='';
-            const rp=await _planCall(buildPrompt(q,_profile)+_fileBlock+'\n\n[REPAIR '+(_rp+1)+'/2] '+_fdescLine+_execFb+_goalFb+'\n'+_repairGuidance(),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:'high',schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});
-            let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
-            let racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
-            /* sanitize the repair plan through the SAME capability validation as the first plan */
-            try{ const rvp=_validatePlan(racts,_profile,q); racts=rvp.plan; if(_atlasDbg&&rvp.rejected&&rvp.rejected.length) _atlasDbg.rejectedActions=_atlasDbg.rejectedActions.concat(rvp.rejected); }catch(_){}
-            const isTried=a2=>{ try{ return _tried.indexOf(JSON.stringify(a2))>=0; }catch(_){ return false; } };
-            const fresh=racts.filter(a2=>{
-              if(isTried(a2)) return false;
-              const rf=_researchFamKey(a2); if(rf&&_triedFam.has(rf)){ try{ if(_atlasDbg) _atlasDbg.semanticRetries.push({blocked:a2.type,key:rf,reason:'same_research_family_and_mode_already_tried'}); }catch(_){} return false; }
-              if(_isWorldExpansion(a2,_profile)){ try{ if(_atlasDbg) _atlasDbg.scopeChanges.push({blocked:a2.type,place:String(a2.place||a2.era||''),reason:'excessive_scope_expansion_to_world'}); }catch(_){} return false; }
-              return true; }).slice(0,6);
-            if(gen!==_runGen||!fresh.length) break;
-            fresh.forEach(a2=>{ const f=_researchFamKey(a2); if(f) _triedFam.add(f); });
-            /* (#R159) the repair FIXES the failed answer — its result must REPLACE the failure, not be appended below a
-               divider (the "最初の分析と修復後の分析が同時表示され矛盾する" bug). Tag each repair answer-producer with the goal
-               key of the pending answer it is fixing so _atlCompose keeps only the best of the two, then re-run into the
-               SAME bubble (no new divider div). */
-            try{ const _pk=(pending.map(_atlGoalKey).filter(k=>k&&k.indexOf('answer:')===0))[0]||'';
-              if(_pk) fresh.forEach(a2=>{ if(_ATL_ANSWER_TYPES[a2&&a2.type]&&!a2.__goalKey) a2.__goalKey=_pk; }); }catch(_){}
-            const rf=await runActions(ai, rplan.say||'', fresh, gen);
-            if(gen===_runGen) recordTurn(q+' (repair '+(_rp+1)+')', rplan.say||'', fresh, rf);
-            pending=(rf||[]).filter(a2=>a2&&a2.type&&a2.type!=='answer');
-            try{ fresh.forEach(a2=>{ if(a2&&a2.__exec&&a2.__exec.status==='partial_or_failed'&&pending.indexOf(a2)<0) pending.push(a2); }); }catch(_){}   /* (#R158) a still-partial repair keeps the loop going for Terra's next decision */
-            if(fresh.every(a2=>a2.type==='answer')) break;   /* the model declared it impossible — don't loop on that */
-          } }catch(_){}
-        try{ if(_atlasDbg) _atlasDbg.finalGoalValidation=_goalValidation(_profile,_atlasDbg.actionOutcomes); }catch(_){}
+        try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; } }catch(_){}
+        /* ⚠ ASSIGNED, NOT DEFAULTED. runActions seeds `__atlSay` with '' on its first pass so the
+           bubble can render while tools are still running; THIS is the answer, and it arrives after. */
+        ai.__atlSay=out.text||'';
+        _atlCompose(ai);
+        recordTurn(q,out.text||'',_ranActions,[]);
         msgTools(ai,q);
-      }catch(e){ /* (#R52) network/parse failure → still try the deterministic plan before surfacing the error. */
+      }catch(e){
         if(gen!==_runGen){ try{ ai.innerHTML=_cancelledNote(); }catch(_){} return; }
-        if(lp&&lp.actions&&lp.actions.length){ try{ const fails=await runActions(ai,'',lp.actions,gen); if(gen===_runGen) recordTurn(q,'',lp.actions,fails); msgTools(ai,q); return; }catch(_){} }
         ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); }
       }finally{ try{ if(gen===_runGen){ _setGoBusy(false); _abortCtl=null; } }catch(_){} }   /* (#R142) only the LATEST turn clears the busy button — a superseding turn keeps its own Stop shown */
     }
@@ -5242,7 +4878,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          'atlas-kernel-not-loaded' — a true statement, which is the point: a capability is never
          silently absent. `docs` is the 58 kB catalogue the planner reads (js/atlas-catalog-text.js);
          it lives in THIS chunk because only the planner needs it. */
-      try{ CAPS.bindRuntime({ dispatch:a=>dispatch(a), docs:_DOCS }); }catch(_){}
+      try{ CAPS.bindRuntime({ dispatch:a=>dispatch(a), docs:_DOCS, schemas:SCHEMAS }); }catch(_){}
       /* the state this file OWNS — everything else publishes its own (js/atlas-state.js §8) */
       try{ ASTATE.registerStateProvider('selection', _selectionState);
            ASTATE.registerStateProvider('atlas', _atlasOverlayState);

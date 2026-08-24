@@ -14,7 +14,7 @@
  *
  *  ⚠ ASSERTIONS ARE ABOUT PROPERTIES, NOT LITERALS (fourteen rounds of a pinned number turning a
  *  correct change into a false regression). The catalogue is checked as «the planner can emit it»,
- *  not as a sentence; the parser as «this Japanese sentence produces this action», not as a regex.
+ *  not as a sentence. (§④/④b asked the same of localPlan's own parser; #R406 deleted localPlan.)
  *  ⚠ COMMENTS ARE STRIPPED BEFORE ANY SEARCH — 「自分の検査が自分のコメントに当たる」, thirteen times.
  * ==========================================================================*/
 import { test } from 'node:test';
@@ -115,52 +115,7 @@ test('R278 ③ the radius entry forbids standing in for a travel-time answer', (
   assert.match(iso.slice(0, 2000), /pedestrian/, 'including the walking profile the user asked for');
 });
 
-/* ── ④ THE REPORTED SENTENCE, THROUGH THE REAL PARSER ──────────────────────────────────────────
-   localPlan runs BEFORE the AI: a confident local plan costs no account and no credit, which is why
-   the sentence not matching was the difference between a map and a login wall. The three source
-   lines that decide it are lifted VERBATIM out of js/atlas-console.js and run here — the regex and
-   the numeral reader under test are the shipped ones, not a copy. */
-function localIsochrone(s) {
-  const lines = ATLAS().split(/\r?\n/);
-  const i0 = lines.findIndex((l) => /^ {6}\{ const _IM=\{/.test(l));
-  assert.ok(i0 > 0, 'the isochrone branch of localPlan was not found — it moved');
-  const block = lines.slice(i0, i0 + 3).join('\n');
-  assert.match(block, /type:'isochrone'/, 'the three lines lifted must be the isochrone branch');
-  // eslint-disable-next-line no-new-func
-  const fn = new Function('s', 'A', `let fm=null;\n${block}\n } return null;`);
-  return fn(s, (a) => a);
-}
-
-test('R278 ④ 「現在地から徒歩一時間で行ける範囲を表示して」 plans a walking isochrone with no AI', () => {
-  const r = localIsochrone('現在地から徒歩一時間で行ける範囲を表示して');
-  assert.ok(r, 'the sentence the user actually sent must be understood');
-  assert.equal(r.type, 'isochrone');
-  assert.equal(r.mode, 'pedestrian');
-  assert.equal(r.minutes, 60, '一時間 is sixty minutes — a kanji numeral, which \\d+ could never read');
-  assert.equal(r.place, '現在地', 'and the origin is the device location, resolved by geocode()');
-});
-
-test('R278 ④b the same branch still reads what it always read, and the reversed order too', () => {
-  const cases = [
-    ['東京から車で30分の範囲を表示して', 'auto', 30],
-    ['名古屋駅から徒歩15分圏内', 'pedestrian', 15],
-    ['渋谷から自転車で45分以内', 'bicycle', 45],
-    ['現在地から1時間で歩いて行ける範囲', 'pedestrian', 60],
-    ['大阪から徒歩三十分で行けるエリアを見せて', 'pedestrian', 30],
-    ['京都から車で２時間で行ける範囲', 'auto', 120],
-  ];
-  for (const [q, mode, minutes] of cases) {
-    const r = localIsochrone(q);
-    assert.ok(r, `「${q}」 must be understood`);
-    assert.equal(r.mode, mode, `「${q}」 mode`);
-    assert.equal(r.minutes, minutes, `「${q}」 minutes`);
-  }
-  /* a duration with no mode is NOT guessed at here — it goes to the planner, which now knows the
-     action exists. And a duration the router cannot serve is not quietly turned into something else. */
-  assert.equal(localIsochrone('東京から30分の範囲'), null, 'no travel mode → the planner decides, not this regex');
-  assert.equal(localIsochrone('東京から車で3時間の範囲'), null, '180 min is outside the 1-120 the router serves');
-  assert.equal(localIsochrone('1900年から100年の歴史を教えて'), null, 'and it does not eat unrelated sentences');
-});
+/* ── ④/④b (localPlan's isochrone branch, and its kanji numerals) removed in #R406: localPlan is deleted — the reader's words are read by Atlas now, and the turn that reads them is covered by tests/r406-agent.test.mjs and tests/r406-turn.test.mjs. §② above still requires the isochrone to be described somewhere Atlas can reach it, which is the half of this round that was actually missing. */
 
 /* ── ⑤ THE COORDINATES ARE NOT DROPPED ─────────────────────────────────────────────────────────
    MEASURED before the fix, in the running app: dispatch({type:'isochrone',lng:136.934,lat:35.133,

@@ -61,7 +61,7 @@ export function readAtlas() {
    of prompt text full of `{"type":…}` braces inside string literals), so the end is the first line
    that is exactly the function's closing brace at its own indentation. */
 export function catalogueText(lines) {
-  const start = lines.findIndex((l) => /^\s*function SYS\((sel)?\)\s*\{/.test(l));
+  const start = lines.findIndex((l) => /^\s*function SYS\(\w*\)\s*\{/.test(l));
   if (start < 0) throw new Error(`${FILE}: function SYS() not found — the catalogue moved; update scripts/atlas-catalog.mjs`);
   const end = lines.findIndex((l, i) => i > start && /^    \}$/.test(l));
   if (end < 0) throw new Error(`${FILE}: the end of function SYS() was not found`);
@@ -75,11 +75,22 @@ export function catalogueText(lines) {
      `_DOCS.text(` call gets nothing appended and behaves exactly as it did before.
      ⚠ The richer question — is it EXECUTABLE, OBSERVED and VERIFIED — is
      scripts/atlas-capability-audit.mjs. This one is deliberately still the narrow one. */
-  if (!/_DOCS\.text\(/.test(body)) return body;
+  /* ⚠ (#R406) THE CATALOGUE IS NO LONGER PUSHED — IT IS SERVED, AND THIS GATE FOLLOWED IT AGAIN.
+     SYS() used to paste all 64,250 characters into every turn. It now carries the tool surface, and
+     js/atlas-toolsurface.js reaches any capability's block through CAPS.catalogText() when Atlas
+     calls find_capability. The question this file asks is UNCHANGED — is every dispatch case
+     described somewhere Atlas can reach it — so the corpus is SYS() plus the tool surface plus the
+     blocks that surface serves. ⚠ Both additions are conditional on the real markers being present,
+     so tests/r278 ① keeps feeding it a synthetic file and keeps getting the old behaviour. */
+  let corpus = body;
+  if (/_toolBlock\(/.test(body)) {
+    try { corpus += '\n' + fs.readFileSync(path.join(ROOT, 'js/atlas-toolsurface.js'), 'utf8'); } catch { /* absent in a fixture */ }
+  }
+  if (!/_DOCS\.text\(/.test(body) && !/_toolBlock\(/.test(body)) return corpus;
   let blocks = '';
   try { blocks = fs.readFileSync(path.join(ROOT, 'js/atlas-catalog-text.js'), 'utf8'); }
   catch { throw new Error('js/atlas-catalog-text.js is missing — SYS() composes its catalogue from it'); }
-  return body + '\n' + blocks;
+  return corpus + '\n' + blocks;
 }
 
 /* Every capability the dispatch can execute: one entry per `case` line inside switch(a.type). */

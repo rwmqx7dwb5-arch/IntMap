@@ -1,6 +1,6 @@
 // R157 source-level regression checks (deterministic, no browser).
 // Guards the "Atlas NL redesign — the model interprets MEANING, the code validates & executes":
-//   #1 localPlan no longer resolves a highlight TARGET before the model (the "ゲルマン諸国" root cause)
+//   #1 REMOVED in #R406 — its subject (localPlan) is deleted; see the note where the test stood
 //   #2 dispatch highlight: a GPT-decided-targets path validates ISO3 → real borders (no regionGroup on this path)
 //   #3 SYS: highlight schema is targets:[{name,iso3}] / groups / query, and the model must expand concepts itself
 //   #4 image-only: run() fabricates NO user text; the default instruction moves to the API boundary (_visionPrompt)
@@ -13,22 +13,7 @@ import { appSource } from './app-source.mjs';
 const root = new URL('../', import.meta.url);
 const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
 
-test('R157 #1 localPlan no longer decides a highlight TARGET before the model', () => {
-  // the confident concept-bypass ("…をハイライト" → {highlight,countries:<raw concept>}) is GONE
-  assert.ok(!/return \{actions:\[\{type:'highlight',countries:hn\}\],confident:true\}/.test(html),
-    'the generic "highlight X" confident shortcut is removed');
-  assert.ok(!/return \{actions:\[\{type:'highlight',countries:\(fm\[1\]\|\|''\)\.trim\(\)\}\],confident:true\}/.test(html),
-    'the basin "Xの流域" confident highlight shortcut is removed');
-  assert.ok(!/return A\(\{type:'highlight',countries:hn,color:cn\}\)/.test(html),
-    'the "highlight X in <colour>" (target+colour) shortcut is removed');
-  // the two NON-semantic shortcuts remain: recolour the CURRENT highlights + clear
-  assert.match(html, /if\(fm&&parseColor\(\(fm\[1\]\|\|''\)\.trim\(\)\)\) return A\(\{type:'highlight',color:\(fm\[1\]\|\|''\)\.trim\(\)\}\);/,
-    'bare-colour recolour of current highlights is kept (parseColor-gated, no target)');
-  assert.match(html, /highlight\\s\+\(\?:off\|clear\|none\)\$[\s\S]*?return A\(\{type:'highlight',on:false\}\)/,
-    'a dedicated "highlight off / clear" shortcut is kept');
-  // the rationale comment is present
-  assert.match(html, /HIGHLIGHT TARGETS ARE NO LONGER PARSED HERE/, 'documented: targets are the model\'s to interpret');
-});
+/* R157 #1 (localPlan's highlight shortcuts, kept and removed) deleted in #R406: localPlan is gone, so no regular expression decides a highlight target — or anything else — before the model; the turn loop that decides instead is covered by tests/r406-agent.test.mjs and tests/r406-turn.test.mjs. */
 
 test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders (no regionGroup)', () => {
   assert.match(html, /function _hlValidCodeSet\(\)\{/, 'ISO3 validity set built from window.countryGeo');
