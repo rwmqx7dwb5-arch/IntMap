@@ -90,6 +90,7 @@ export function makeTimeCountries(HOST, CTX) {
     function restore(){ try{ if(window.IntMapHistId) window.IntMapHistId.clear(); }catch(_){}   /* restore modern names/flags */
       try{ if(window.IntMapHistStates) window.IntMapHistStates.clear(); }catch(_){}   /* remove former-state entries */
       window._imHdiYear=null;
+      curWhen=null;   /* (#R425) …and the instant, or the next same-year move compares against a stale one */
       if(!base) return; try{ for(const iso in base){ const s=countryStats[iso]; if(!s) continue; const o=base[iso]; for(const k in o) s[k]=o[k]; } }catch(_){} curYear=null; window._imTimeYear=null; window._imTimeReal=false; }
     /* Fetch the year's figures from the World Bank. SEQUENTIALLY, not in parallel: the WB throttles a single
        IP on request bursts, so 7 concurrent calls get dropped — one-at-a-time (≈100 ms each) is reliable.
@@ -128,11 +129,23 @@ export function makeTimeCountries(HOST, CTX) {
       /* which year the HDI on screen actually IS — the legend prints this rather than 「2022」 */
       if(hdiSeries){ const hi=hdiIndex(year); window._imHdiYear=(hi>=0)?hdiSeries.years[hi]:null; }
       curYear=year; window._imTimeYear=year; window._imTimeReal=useM;
-      /* former states: replace successors with the historical state for its real lifespan (uses the year values just overlaid) */
-      try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(window.IntMapTime.when()); }catch(_){}
-      /* then rename/re-flag the remaining single countries to their era identity (Qing/ROC, German Empire, …) */
-      try{ if(window.IntMapHistId) window.IntMapHistId.apply(window.IntMapTime.when()); }catch(_){}
+      applyHist();   /* (#R425) former states + era identities — the half that is keyed on the DAY, not the year */
     }
+    /* ⚠⚠⚠ (#R425) THE DAY-DEPENDENT HALF OF THE OVERLAY, ON ITS OWN, BECAUSE THE YEAR NO LONGER ANSWERS FOR IT.
+       Former states replace their successors for the state's real lifespan (using the year values just overlaid),
+       then the remaining single countries are renamed to their era identity (Qing/ROC, German Empire, …).
+       ⚠ BOTH REGISTRIES ARE KEYED ON THE INSTANT, NOT THE YEAR. Every lifespan in js/history.js is a real date
+       (Austria-Hungary ends 1918-11-11, the USSR 1991-12-26), and #R425 added successor windows that open in the
+       MIDDLE of a year — the Baltic states become Soviet on 1940-06-02. #R421 gave the clock day precision and the
+       borders under it followed; this overlay did not, because the listener below returned early on `y===curYear`.
+       MEASURED on the built bundle: 1940-03-01 → 1940-08-01 left Latvia, Estonia and Lithuania in the list, while
+       reaching THE SAME 1940-08-01 from 1937 removed them — the answer depended on which year the reader had come
+       from rather than on the date they asked for, which is the shape #R410 spent a round on. So the day-dependent
+       half is factored out here, called from both places, and `curWhen` is what the second caller compares against. */
+    let curWhen=null;
+    function applyHist(){ const w=window.IntMapTime.when(); curWhen=+new Date(w);
+      try{ if(window.IntMapHistStates) window.IntMapHistStates.apply(w); }catch(_){}
+      try{ if(window.IntMapHistId) window.IntMapHistId.apply(w); }catch(_){} }
     function repaint(){
       try{ if(window._countriesActive&&window._countriesActive()&&typeof renderStats==='function') renderStats((typeof searchVal==='function')?searchVal():''); }catch(_){}
       try{ if(typeof window._imReapplyChoros==='function') window._imReapplyChoros(); }catch(_){}
@@ -155,7 +168,10 @@ export function makeTimeCountries(HOST, CTX) {
         if(y<MFLOOR){ /* before the Maddison historical series → keep present figures, flag the floor */
           if(curYear!=null){ restore(); } window._imTimePreWB=y; window._imTimeYear=null; repaint(); return; }
         window._imTimePreWB=null;
-        if(y===curYear) return;   /* same year → country annual data unchanged, nothing to repaint */
+        if(y===curYear){   /* same year → the country annual data really is unchanged, so none of the work below runs… */
+          const w=+new Date(window.IntMapTime.when());
+          if(w!==curWhen){ applyHist(); repaint(); }   /* …but the DAY moved, and both registries are keyed on the day (#R425) */
+          return; }
         try{ if(!HOST.countryDataLoaded) await loadCountryData(); }catch(_){}
         try{ await window.IntMapMaddison.load(); }catch(_){}
         try{ await loadHDI(); }catch(_){}      /* (#R270) local, ~38 kB, cached after the first travel */

@@ -112,6 +112,35 @@ window.IntMapModules.histStates=function(countryStats){
       { code:'SUN', from:'1922-12-30', to:'1991-12-26', flag:F_SUN, region:'Eurasia', wiki:'Soviet Union',
         name:LA('Soviet Union','ソビエト連邦','Sowjetunion','СССР','Unión Soviética'),
         succ:['RUS','UKR','BLR','UZB','KAZ','GEO','AZE','LTU','MDA','LVA','KGZ','TJK','ARM','TKM','EST'],
+        /* ⚠⚠⚠ (#R425) THE BALTIC STATES WERE THEIR OWN COUNTRIES FOR THE FIRST SEVENTEEN YEARS OF THIS ROW.
+           `succ` names the modern territories a former state aggregates, and `apply()` hid EVERY one of them
+           for the state's WHOLE lifespan — so Latvia, Estonia and Lithuania were struck off the Countries list
+           from 1922-12-30, seventeen years before the USSR annexed them. #R380 stated the rule one level up
+           («each era bound is the polity's OWN start date, not the window's») and it was never carried down:
+           a SUCCESSOR's bound is its own too.
+           MEASURED on production at 1938-06 and 1939-09 (builds R415/R416): the era layer draws «Latvia»,
+           «Estonia» and «Lithuania» with `_same=1` and `_modName` set — the LABEL path judged all three to be
+           present-day countries under their own names — while the Countries list had no row for any of them.
+           At 1940-08 and 1941-06 they are absent from the map too, absorbed into the Soviet Union, which is
+           right; the disagreement was confined to the years they existed and the list would not list them.
+           ⚠ THE SAME TABLE ALREADY GETS FINLAND AND POLAND RIGHT, AND ONLY BY ACCIDENT. They left the Russian
+           Empire in the same years the Baltics did, and they appear at 1938 purely because `RUE` expires in
+           1917 and `SUN` never named them. Nothing in the registry was deciding this either way.
+           ⚠ THE DATES ARE CSHAPES', NOT A HAND-PICKED PAIR. data/cshapes.js is the app's own border source
+           above 1886 and what the era layer draws in these years; it ends all three polities on 1940-06-01
+           and restarts all three on 1991-09-06 (the day the USSR State Council recognised them), and its end
+           dates are INCLUSIVE (#R421) — so the window below is the COMPLEMENT of those spans: held from
+           1940-06-02, the day the Soviet polygon itself changes shape, through 1991-09-05, the day before the
+           three are drawn again. One day either way is a day the map draws a country the list will not list.
+           Taking the
+           bound off the file the MAP reads is what stops the list and the map switching on different days —
+           the failure #R410 spent a round on. tests/r425-checks ② re-derives both dates from that file, so
+           an invented date cannot pass.
+           ⚠ NOT EVERY SUCCESSOR WANTS ONE, AND MOLDOVA IS THE REASON. CShapes has no Moldova before
+           1991-08-25: Bessarabia was ROMANIAN until 1940, so Moldova was not a sovereign state in 1938
+           either, and a window there would put a country in the list that did not exist. A window says
+           «this successor was its OWN state then», NOT «this state did not hold that ground». */
+        held:{ LTU:['1940-06-02','1991-09-05'], LVA:['1940-06-02','1991-09-05'], EST:['1940-06-02','1991-09-05'] },
         /* World Bank nominal-USD GDP for the Soviet command economy is a known official-exchange-rate artifact
            (successor sum ≈ $0.69T in 1990, mostly Russia), which buries a genuine #2–3 world economy. Use the
            real-output estimate (CIA World Factbook 1990 ≈ $2.66T GNP; consistent with the Maddison Project) for
@@ -250,11 +279,23 @@ window.IntMapModules.histStates=function(countryStats){
     const CODES=STATES.map(S=>S.code);
     function activeAt(date){ const t=+new Date(date); if(!isFinite(t)) return [];
       return STATES.filter(S=>{ const a=+new Date(S.from+'T00:00:00Z'), b=+new Date(S.to+'T23:59:59Z'); return t>=a&&t<=b; }); }
+    /* ⚠ (#R425) THE SUCCESSORS THIS STATE ACTUALLY HELD ON `date`. The default is `succ` entire — most states
+       neither gained nor lost one mid-life — and `held` narrows a single successor to its own window (see the
+       SUN row). `apply()` hides exactly this set, `agg()` aggregates exactly this set, and js/time-borders.js
+       asks it for the era labels' coverage set: the same fact read in three places under three rules is how
+       #R410's one-year-late labels happened, so it is ONE function and there is no second rule. */
+    function succAt(S,date){ if(!S||!S.succ) return [];
+      const H=S.held; if(!H) return S.succ;
+      const t=+new Date(date); if(!isFinite(t)) return S.succ;
+      return S.succ.filter(c=>{ const w=H[c]; if(!w) return true;
+        const a=+new Date((w[0]||S.from)+'T00:00:00Z'), b=+new Date((w[1]||S.to)+'T23:59:59Z');
+        return t>=a&&t<=b; }); }
     /* aggregate successors' (already year-overlaid) countryStats into one synthetic stat object */
-    function agg(S,year){
+    function agg(S,year,succ){
       const M=window.IntMapMaddison;
+      const SU=succ||S.succ;   /* (#R425) the successors held on the date being drawn — see succAt. Omitted = the whole list, which is what every state without a `held` window means. */
       let pop=0,mil=0,area=0, lN=0,lD=0, tN=0,tD=0, nN=0,nD=0, have=0;
-      S.succ.forEach(c=>{ const s=countryStats[c]; if(!s) return;
+      SU.forEach(c=>{ const s=countryStats[c]; if(!s) return;
         if(s.pop){ pop+=s.pop; if(s.lifeExp){ lN+=s.lifeExp*s.pop; lD+=s.pop; } if(s.tfr){ tN+=s.tfr*s.pop; tD+=s.pop; } if(s.internet!=null){ nN+=s.internet*s.pop; nD+=s.pop; } }
         if(s.milSpend) mil+=s.milSpend; if(s.area) area+=s.area;
         if(s.pop||s.gdp){ have++; }
@@ -265,7 +306,7 @@ window.IntMapModules.histStates=function(countryStats){
       const _mc=S.madCode||S.code;   /* (#R129) Maddison series id — lets the interwar Kingdom of Yugoslavia (code YGK) reuse the continuous "YUG" series */
       if(M&&M.ready()&&year){
         if(M.has(_mc,year)){ gdp=M.gdpBil(_mc,year); mpop=M.popN(_mc,year); real=true; }
-        else { let g=0,p=0,gh=false,ph=false; S.succ.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null){g+=cg;gh=true;} if(cp!=null){p+=cp;ph=true;} }); if(gh){gdp=g;real=true;} if(ph) mpop=p; }
+        else { let g=0,p=0,gh=false,ph=false; SU.forEach(c=>{ const cg=M.gdpBil(c,year), cp=M.popN(c,year); if(cg!=null){g+=cg;gh=true;} if(cp!=null){p+=cp;ph=true;} }); if(gh){gdp=g;real=true;} if(ph) mpop=p; }
       }
       if(mpop!=null&&mpop>0) pop=mpop;
       /* (#R109) EMPIRE ESTIMATE OVERRIDE: when Maddison has no single entity for this state, its successor-sum is
@@ -276,7 +317,7 @@ window.IntMapModules.histStates=function(countryStats){
       if(S.gdpEst && !_hasMad && (gdp==null || gdp < S.gdpEst*0.6)){ gdp=S.gdpEst; real=true; }
       const nm=S.name;
       return { code:S.code, ccn3:'', nameEn:_nmEn(nm), nameJp:_nmJp(nm), name:nm, flag:S.flag, region:S.region, wiki:S.wiki,
-        sov:true, _hist:true, _histSucc:S.succ, _histHave:((real||S.popEst)?S.succ.length:have), _histN:S.succ.length, _from:S.from, _to:S.to, _real:real,
+        sov:true, _hist:true, _histSucc:SU, _histHave:((real||S.popEst)?SU.length:have), _histN:SU.length, _from:S.from, _to:S.to, _real:real,
         capital:S.capital||'', currency:S.currency||'', languages:S.languages||'',   /* (#R130) real era capital / currency / languages on the historical card (were always blank) */
         pop:pop||null, gdp:gdp||null, area:area||null, milSpend:mil||null,
         gdppc:(gdp&&pop)?(gdp*1e9/pop):null, density:(pop&&area)?pop/area:null,
@@ -291,9 +332,9 @@ window.IntMapModules.histStates=function(countryStats){
       const act=activeAt(date); if(!act.length) return;
       const year=new Date(date).getFullYear();
       const codes=[], hidden=new Set();
-      act.forEach(S=>{ const a=agg(S,year); if(a._histHave<=0) return;   /* no successor data at all → skip (honest) */
+      act.forEach(S=>{ const su=succAt(S,date); const a=agg(S,year,su); if(a._histHave<=0) return;   /* no successor data at all → skip (honest) */
         countryStats[S.code]=a; codes.push(S.code);
-        S.succ.forEach(c=>{ if(countryStats[c]){ countryStats[c]._histHidden=true; hidden.add(c); } });
+        su.forEach(c=>{ if(countryStats[c]){ countryStats[c]._histHidden=true; hidden.add(c); } });   /* (#R425) …and ONLY the successors it held on this date: being alive in 1938 does not make a state the owner of a country that was independent in 1938 */
       });
       if(codes.length) _applied={codes,hidden};
     }
@@ -308,7 +349,7 @@ window.IntMapModules.histStates=function(countryStats){
        state was the Austrian Empire, and «Korea» for every year of both Korean states. The lifespans are
        disjoint, and `resolveHist` takes the first match that is ACTIVE, so exactly one of each pair can
        ever bind — the pattern names the polygon, the lifespan names the year. */
-    return { STATES, CODES, activeAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
+    return { STATES, CODES, activeAt, succAt, apply, clear, agg, _applied:()=>_applied, hbRe:(code)=>HB_MATCH[code]||null };
 };
 
 window.IntMapModules.histId=function(countryStats){
