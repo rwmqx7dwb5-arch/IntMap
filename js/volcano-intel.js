@@ -237,6 +237,10 @@ window.IntMapModules.volcanoIntel=function(HOST){
     },
     epoch:{
       'Holocene':LA('Holocene','完新世','Holozän','Голоцен','Holoceno'),
+      /* (#R432) the catalog is no longer Holocene-only: it also carries the volcanoes an
+         observatory publishes a current level for, and four of those are filed by GVP under the
+         Pleistocene — Yellowstone among them. */
+      'Pleistocene':LA('Pleistocene','更新世','Pleistozän','Плейстоцен','Pleistoceno'),
     },
     evidenceCat:{
       'Eruption Dated':LA('Eruption Dated','噴火年代を測定','Eruption datiert','Извержение датировано','Erupción datada'),
@@ -604,18 +608,51 @@ window.IntMapModules.volcanoIntel=function(HOST){
      strict superset rather than a second opinion. GREEN/NORMAL from USGS is a STATEMENT — the map
      already draws rank 0 in its own colour precisely so that «an agency looked and says normal»
      cannot be confused with «nobody publishes anything» (js/beta-overlays.js volcColor, #R353). */
+  /* ⚠⚠⚠ (#R432) ONE MONITORED NUMBER IS NOT A GVP NUMBER, AND TWO MONITORED ROWS ARE NOT VOLCANOES.
+     Measured 2026-08-25 against all 70 rows of `getMonitoredVolcanoes`:
+
+       · «Korovin» answers VNUM #311161. The Global Volcanism Program has no 311161 — not in the
+         Holocene catalog and not in the Pleistocene one. Korovin is the active northern cone of GVP
+         311160 «Atka Volcanic Complex», which GVP's own geological summary for 311160 names, and
+         which AVO ALSO monitors separately as ak17. AVO's notice puts Korovin at 52°22′54″N
+         174°09′55″W — 5.9 km from GVP's point for 311160. It is the same join problem JMA_TO_GVP
+         solves above, in the same shape: an agency's own numbering against the Smithsonian's.
+       · «Alaskan Volcanoes» (AVO) and «Cascade Range» (CVO) answer `vnum: null`. They are the
+         observatory-wide bulletins, carried in the same array. `+null` is 0, so before this the
+         status index grew A VOLCANO NUMBERED 0 — a key no catalog can ever hold. A row that names
+         no volcano is not a volcano.
+
+     ⚠ scripts/build-volcanoes.mjs READS USGS_TO_GVP OUT OF THIS FILE rather than keeping a second
+     copy, because the build has to know which monitored numbers are already covered. */
+  const USGS_TO_GVP={ 311161:311160 };
+  function usgsVnum(r){
+    const n=(r&&r.vnum!=null&&r.vnum!=='')?Number(r.vnum):NaN;
+    if(!Number.isFinite(n)||n<=0) return null;
+    return USGS_TO_GVP[n]||n;
+  }
+  /* ⚠ WHEN SEVERAL USGS ROWS RESOLVE TO ONE GVP NUMBER, THE MOST SEVERE ONE IS THE ANSWER. Atka is
+     watched as two units (the complex, ak17, and Korovin, ak171) and the map has one dot for both;
+     returning whichever came first in the array would let an ORANGE cone hide behind a GREEN
+     complex. Ties go to the more recent notice. */
+  const usgsRank=(r)=>Math.max(RANK[r&&r.color_code]||0,RANK[r&&r.alert_level]||0);
+  function usgsPick(rows,vn){
+    let best=null;
+    for(const r of (rows||[])){
+      if(usgsVnum(r)!==vn) continue;
+      if(!best) { best=r; continue; }
+      const d=usgsRank(r)-usgsRank(best);
+      if(d>0||(d===0&&(+r.sent_unixtime||0)>(+best.sent_unixtime||0))) best=r;
+    }
+    return best;
+  }
   function usgsFor(vn){
-    const el=FEEDS.usgs.rows;
-    if(el){ for(const r of el){ if(+r.vnum===vn) return r; } }
-    const mon=FEEDS.usgsMon.rows;
-    if(mon){ for(const r of mon){ if(+r.vnum===vn) return r; } }
-    return null;
+    return usgsPick(FEEDS.usgs.rows,vn)||usgsPick(FEEDS.usgsMon.rows,vn)||null;
   }
   /* whether USGS carries this volcano in its monitored set at all — the difference between «USGS
      says normal» and «USGS does not speak about this volcano», which the panel prints in words */
   function usgsMonitors(vn){
     const mon=FEEDS.usgsMon.rows; if(!mon) return false;
-    for(const r of mon){ if(+r.vnum===vn) return true; } return false;
+    for(const r of mon){ if(usgsVnum(r)===vn) return true; } return false;
   }
   function vonaFor(vn){
     const rows=FEEDS.vona.rows; if(!rows) return [];
@@ -687,8 +724,11 @@ window.IntMapModules.volcanoIntel=function(HOST){
   function statusIndex(){
     const m=new Map();
     const add=(vn,st)=>{ const p=m.get(vn); if(!p||(st.tier<p.tier)) m.set(vn,st); };
-    for(const r of (FEEDS.usgs.rows||[])) add(+r.vnum,status(+r.vnum));
-    for(const r of (FEEDS.usgsMon.rows||[])) add(+r.vnum,status(+r.vnum));
+    /* ⚠ (#R432) `usgsVnum` and not `+r.vnum` — see USGS_TO_GVP above. Two of the 70 monitored rows
+       are observatory-wide bulletins with no volcano number, and one carries AVO's number rather
+       than the Smithsonian's. */
+    for(const r of (FEEDS.usgs.rows||[])){ const vn=usgsVnum(r); if(vn) add(vn,status(vn)); }
+    for(const r of (FEEDS.usgsMon.rows||[])){ const vn=usgsVnum(r); if(vn) add(vn,status(vn)); }
     for(const e of (FEEDS.jma.rows||[])){
       for(const it of (((e.volcanoInfos||[])[0]||{}).items||[])){
         for(const a of (it.areas||[])){ const vn=JMA_TO_GVP[jmaKey(a.name)]; if(vn) add(vn,status(vn)); }
@@ -946,6 +986,19 @@ window.IntMapModules.volcanoIntel=function(HOST){
       ?L('The bundled eruption record could not be loaded.','同梱の噴火記録を読み込めませんでした。','Der mitgelieferte Ausbruchsdatensatz konnte nicht geladen werden.','Не удалось загрузить встроенную запись извержений.','No se pudo cargar el registro de erupciones incluido.')
       :L('Reading the eruption record…','噴火記録を読み込み中…','Ausbruchsdatensatz wird gelesen…','Чтение записи извержений…','Leyendo el registro de erupciones…'));
     const ch=character(d.er);
+    /* ⚠ (#R432) THE SENTENCE BELOW NAMES THE HOLOCENE CATALOG, AND FOR FOUR VOLCANOES THAT IS NOT
+       WHERE THEY COME FROM. Yellowstone, Long Valley, Coso Volcanic Field and Isanotski Peaks are
+       in this map because an observatory publishes a current level for them; GVP files them under
+       the Pleistocene, so «it is in the Holocene catalog on other evidence» would be false about
+       the one field the reader is looking at. The epoch is in the record — ask it. */
+    const voc0=(detailDoc&&detailDoc.vocab)||{};
+    const epochName=(d.ep!=null&&voc0.epoch)?voc0.epoch[d.ep]:null;
+    if(!ch&&epochName&&epochName!=='Holocene') return hint(L(
+      'The Global Volcanism Program records no eruption of this volcano within the Holocene. GVP holds it in the Pleistocene catalog; it is on this map because a volcano observatory publishes a current alert level for it.',
+      'GVP はこの火山について、完新世に入ってからの噴火を1件も記録していません。GVP は更新世カタログに収録しており、この地図に載っているのは、火山観測機関が現在の警戒レベルを公表しているからです。',
+      'Das Global Volcanism Program verzeichnet für diesen Vulkan keinen Ausbruch im Holozän. Das GVP führt ihn im Pleistozän-Katalog; er ist hier, weil ein Vulkanobservatorium eine aktuelle Warnstufe für ihn veröffentlicht.',
+      'В базе GVP нет ни одного извержения этого вулкана в голоцене. GVP относит его к плейстоценовому каталогу; на этой карте он потому, что вулканологическая обсерватория публикует для него текущий уровень тревоги.',
+      'El Global Volcanism Program no registra ninguna erupción de este volcán dentro del Holoceno. El GVP lo incluye en el catálogo del Pleistoceno; está en este mapa porque un observatorio vulcanológico publica un nivel de alerta actual para él.'));
     if(!ch) return hint(L('The Global Volcanism Program holds no dated eruption for this volcano. It is in the Holocene catalog on other evidence — see “The volcano”.',
       'この火山について、GVP は日付のある噴火を1件も記録していません。完新世カタログには別の証拠にもとづいて収録されています（「火山の姿」を参照）。',
       'Das Global Volcanism Program führt keinen datierten Ausbruch. Die Aufnahme in den Holozän-Katalog beruht auf anderen Belegen — siehe „Der Vulkan“.',

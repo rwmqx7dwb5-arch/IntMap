@@ -172,8 +172,27 @@ test('R353 ② four colour modes, and "nothing published" is its own colour', as
   expect(legend.text).toMatch(/VEI 7/);
   const shown = /([\d,]{3,})\s*(Holocene volcanoes|座|holozäne|вулканов|volcanes|volcans|화산|全新世)/.exec(legend.text);
   expect(shown).toBeTruthy();
-  const real = await page.evaluate(() => window.__imVolcLayer.count());
-  expect(Number(shown[1].replace(/[,.]/g, ''))).toBe(real);
+  /* ⚠ (#R432) THE FOOTER STATES A COMPOSITION NOW, AND BOTH HALVES COME OUT OF THE FILE. The
+     catalog stopped being Holocene-only: it also carries the volcanoes an observatory publishes a
+     current level for, and four of those (Yellowstone among them) are older than the Holocene, so
+     "N Holocene volcanoes" over the whole count would be false about four of them. The word is
+     still attached to the HOLOCENE number — and the numbers printed are exactly the file's two,
+     nothing rounded, nothing left out. */
+  const real = await page.evaluate(() => {
+    const fc = window.__imVolcLayer.data();
+    return { n: window.__imVolcLayer.count(), hol: fc && fc.holocene };
+  });
+  expect(Number.isInteger(real.hol), 'the layer file does not carry its Holocene count').toBe(true);
+  expect(real.hol).toBeGreaterThan(0);
+  expect(real.hol).toBeLessThanOrEqual(real.n);
+  expect(Number(shown[1].replace(/[,.]/g, ''))).toBe(real.hol);
+  const src = await page.evaluate(() => {
+    const el = document.querySelector('.volc-key-src');
+    return el ? el.textContent : '';
+  });
+  const nums = (src.match(/\d[\d.,\u00a0\u202f ']*/g) || []).map((s) => Number(s.replace(/\D/g, '')));
+  const extra = real.n - real.hol;
+  expect(nums, 'the footer prints numbers the file did not give it').toEqual(extra ? [real.hol, extra] : [real.hol]);
 
   /* the three overlay rows exist in the Layers panel — a feature reachable only from a popup is a
      feature most readers never learn exists */

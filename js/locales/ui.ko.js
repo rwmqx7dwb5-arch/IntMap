@@ -4090,7 +4090,7 @@ window.IntMapLang.define('ko', { ui: {
   "Ukraine frontline (DeepState)": "우크라이나 전선 (DeepState)",
   "Ukraine frontline (live)": "우크라이나 전선 (실시간)",
   "3D buildings (cities)": "3D 건물 (도시)",
-  "Volcanoes (GVP Holocene)": "화산 (GVP 홀로세)",
+  "Volcanoes (Smithsonian GVP)": "화산 (스미소니언 GVP)",   /* (#R432) */
   "Volcanoes (GVP Holocene, all 1,215)": "화산 (GVP 홀로세, 전체 1,215곳)",
   "Unchanged / not confirmed": "변화 없음·미확인",
   "Data gaps": "취득하지 못한 데이터",
@@ -5451,7 +5451,8 @@ window.IntMapLang.define('ko', { ui: {
   "What is in force now": "지금 발표 중인 경보",
   " ash area(s) in force": "건의 화산재 구역이 유효",
   " eruptions": "회 분화",
-  " Holocene volcanoes": "개 홀로세 화산",
+  "{h} Holocene volcanoes": "홀로세 화산 {h}곳",   /* (#R432) */
+  "{h} Holocene volcanoes + {m} older ones an observatory watches": "홀로세 화산 {h}곳 + 관측 기관이 감시하는 더 오래된 화산 {m}곳",   /* (#R432) */
   " international SIGMETs": "건의 국제 SIGMET",
   " years": "년",
   "1 million or more within 30 km": "30 km 이내 100만 명 이상",
@@ -5543,6 +5544,7 @@ window.IntMapLang.define('ko', { ui: {
   "The bundled eruption record could not be loaded.": "동봉된 분화 기록을 불러오지 못했습니다.",
   "The Global Volcanism Program holds no dated eruption for this volcano. It is in the Holocene catalog on other evidence — see “The volcano”.": "GVP는 이 화산에 대해 날짜가 있는 분화를 하나도 기록하고 있지 않습니다. 홀로세 카탈로그에는 다른 증거를 근거로 수록되어 있습니다(「화산의 모습」 참조).",
   "The Global Volcanism Program publishes no population figures for this volcano.": "GVP는 이 화산에 대한 인구 수치를 공표하고 있지 않습니다.",
+  "The Global Volcanism Program records no eruption of this volcano within the Holocene. GVP holds it in the Pleistocene catalog; it is on this map because a volcano observatory publishes a current alert level for it.": "GVP는 이 화산에 대해 홀로세에 들어선 뒤의 분화를 하나도 기록하고 있지 않습니다. GVP는 이 화산을 플라이스토세 카탈로그에 수록하고 있으며, 이 지도에 실려 있는 것은 화산 관측 기관이 현재의 경계 수준을 공표하고 있기 때문입니다.",   /* (#R432) */
   "The largest VEI this volcano has actually produced, from its own eruption record.": "이 화산 자신의 분화 기록에 있는 최대 VEI.",
   "The record": "기록 전체",
   "The SIGMET feed did not answer.": "SIGMET 피드가 응답하지 않았습니다.",
@@ -5563,7 +5565,7 @@ window.IntMapLang.define('ko', { ui: {
   "Volcanic ash areas in force (SIGMET)": "유효한 화산재 구역 (SIGMET)",
   "Volcano alert level": "화산 경계 수준",
   "Volcano hazard zones (USGS)": "화산 재해 구역 (USGS)",
-  "Volcanoes — full Holocene catalog": "화산 — 홀로세 카탈로그 전체",
+  "Volcanoes — the Smithsonian GVP catalog": "화산 — 스미소니언 GVP 카탈로그",   /* (#R432) */
   "VONA — Volcano Observatory Notice for Aviation": "VONA — 항공용 화산 정보",
   "Warning / RED": "경보 / RED",
   "Warning unit": "발표 단위 화산",
@@ -5967,6 +5969,7 @@ window.IntMapLang.define('ko', { ui: {
   "Phono-tephrite /  Tephri-phonolite": "포노테프라이트 / 테프리포놀라이트",
   "Phonolite": "포놀라이트",
   "Pitcairn Hotspot Volcano Group": "핏케언 열점 화산군",
+  "Pleistocene": "플라이스토세",   /* (#R432) */
   "Pyroclastic cone": "화산쇄설구",
   "Pyroclastic cone(s)": "화산쇄설구군",
   "Queen Charlotte Volcano Group": "퀸샬럿 화산군",
@@ -6067,7 +6070,7 @@ window.IntMapLang.define('ko', { ui: {
   "Last eruption: {y}": "최종 분화: {y}",
   "Name a volcano.": "화산 이름을 지정하세요.",
   "No observatory publishes a current level for it.": "현재 경계 수준을 공표하는 관측 기관이 없습니다.",
-  "No volcano called “{q}” is in the Holocene catalog.": "홀로세 카탈로그에 「{q}」에 해당하는 화산은 없습니다.",
+  "No volcano called “{q}” is in the Smithsonian GVP catalog this map carries.": "이 지도가 수록하고 있는 스미소니언 GVP 카탈로그에 「{q}」라는 화산은 없습니다.",   /* (#R432) */
   "Published in English by the source and shown exactly as written. Descriptions written by an observatory are not machine-translated here; the classifications above are translated because they come from a fixed vocabulary.": "출처가 영어로 공표한 문장을 그대로 표시합니다. 관측 기관이 작성한 서술은 여기서 기계 번역하지 않습니다. 위의 분류어는 정해진 어휘에서 오는 것이므로 번역합니다.",
   "Published in Japanese by the agency and shown exactly as issued — this map does not reword a warning.": "기상청이 일본어로 발표한 문장을 그대로 표시합니다 — 이 지도는 경보의 문구를 바꿔 쓰지 않습니다.",
   "Say which volcano view: a colour mode, a filter, or the map’s year.": "어떤 화산 표시를 바꿀지 지정하세요: 색상 모드, 필터, 또는 지도의 연도.",

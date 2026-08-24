@@ -207,7 +207,10 @@ export function makeAtlasControls(HOST, CTX) {
       const okm=await window.IntMapLazy.need('volcanoIntel'), V=window.IntMapVolcano;
       if(!okm||!V) return R(false, warn('⚠'));
       const hit=V.byName(q)[0];
-      if(!hit) return R(false, warn('⚠ '+esc(L('No volcano called “{q}” is in the Holocene catalog.','完新世カタログに「{q}」という火山はありません。','Kein Vulkan namens „{q}“ ist im Holozän-Katalog.','В голоценовом каталоге нет вулкана «{q}».','No hay ningún volcán llamado «{q}» en el catálogo del Holoceno.').split('{q}').join(q))));
+      /* ⚠ (#R432) NOT «the Holocene catalog» ANY MORE — the bundled set is the GVP Holocene list
+         plus the volcanoes an observatory publishes a current level for (Yellowstone among them),
+         so naming the epoch here would tell the reader the wrong reason for the miss. */
+      if(!hit) return R(false, warn('⚠ '+esc(L('No volcano called “{q}” is in the Smithsonian GVP catalog this map carries.','この地図が収録しているスミソニアンGVPカタログに「{q}」という火山はありません。','Kein Vulkan namens „{q}“ ist im Smithsonian-GVP-Katalog dieser Karte.','В каталоге Смитсоновского GVP, который содержит эта карта, нет вулкана «{q}».','No hay ningún volcán llamado «{q}» en el catálogo del Smithsonian GVP que incluye este mapa.').split('{q}').join(q))));
       try{ if(OSk&&OSk.has('volcano.open')) await OSk.exec('volcano.open',{source:'atlas',params:{v:hit.v}}); }catch(_){}
       const rec=await V.record(hit.v); if(!rec) return R(false, warn('⚠'));
       const st=rec.status||{}, ln=[];

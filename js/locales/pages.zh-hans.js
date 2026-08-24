@@ -566,7 +566,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "Inter / Pretendard (bundled, SIL OFL 1.1)": "拉丁／斯拉夫字母与韩文字体，随网站一并提供——包含「地图」自身标签所用的 SDF 字形图集，由 scripts/build-glyphs.mjs 自 Inter 产生（没有公开字形服务器提供 Inter）。授权与出处标示请见 fonts/README.md。",
     "ESA WorldCover": "10 米分辨率的全球土地覆盖分类",
     "RESOLVE / WWF Ecoregions 2017": "陆域生态区",
-    "Smithsonian GVP": "随应用程序一并附上（data/volcanoes_gvp.json 与 data/volcano-detail.json.gz，由 scripts/build-volcanoes.mjs 从 GVP 的 WFS 产生）：完整的全新世目录并带有链接键，其后还有 GVP 为该目录中的火山所记录的每一次喷发及其 VEI 与日期、火山类型、地形分类、构造环境与主要岩石、地质概要、照片，以及半径 5、10、30、100 公里内的人口。火山信息卡关于过去的一切，都是离线从这个文件读取的。",
+"Smithsonian GVP": "随应用程序一并附上（data/volcanoes_gvp.json 与 data/volcano-detail.json.gz，由 scripts/build-volcanoes.mjs 从 GVP 的 WFS 产生）：完整的全新世目录并带有链接键，其后还有 GVP 为该目录中的火山所记录的每一次喷发及其 VEI 与日期、火山类型、地形分类、构造环境与主要岩石、地质概要、照片，以及半径 5、10、30、100 公里内的人口。火山信息卡关于过去的一切，都是离线从这个文件读取的。目录除了全新世名单之外，还包含观测机构正在公布现行警戒等级的火山：黄石、长谷、科索火山区与伊萨诺茨基峰比全新世更古老，取自 GVP 的更新世目录，好让 USGS 每天都在发布等级的火山也能画在地图上。",
     "DeepStateMap": "乌克兰前线（测试版图层）",
     "historical-basemaps (aourednik)": "历史国界——测试版叠图图层，也是地图本身历史年份国界的自动备援（取最接近的快照），而在 CShapes 的下限 1886 年之前更是唯一的国界来源。上游只有 1815 与 1880 两张 1900 年以前的快照，因此 1850–1885 年全部以 1880 年的国界绘制",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "供时光机使用的 1886–2019 年逐年国际疆界（每次疆界变动皆标注年份；自行代管的简化副本）。1945–2019 年东德、西德与统一后德国的疆界，已依权威的现代邦界数据（deutschlandGeoJSON, © GeoBasis-DE / BKG）重建，使两德边界符合实情。 两次世界大战图层沿战线切割的国家轮廓，用的也是这份数据。",

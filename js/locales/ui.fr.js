@@ -4100,7 +4100,7 @@ window.IntMapLang.define('fr', { ui: {
   "Ukraine frontline (DeepState)": "Ligne de front en Ukraine (DeepState)",
   "Ukraine frontline (live)": "Ligne de front en Ukraine (en direct)",
   "3D buildings (cities)": "Bâtiments 3D (villes)",
-  "Volcanoes (GVP Holocene)": "Volcans (GVP, Holocène)",
+  "Volcanoes (Smithsonian GVP)": "Volcans (Smithsonian GVP)",   /* (#R432) */
   "Volcanoes (GVP Holocene, all 1,215)": "Volcans (GVP, Holocène, les 1 215)",
   "Unchanged / not confirmed": "Inchangé / non confirmé",
   "Data gaps": "Données manquantes",
@@ -5461,7 +5461,8 @@ window.IntMapLang.define('fr', { ui: {
   "What is in force now": "En vigueur actuellement",
   " ash area(s) in force": " zone(s) de cendres en vigueur",
   " eruptions": " éruptions",
-  " Holocene volcanoes": " volcans de l’Holocène",
+  "{h} Holocene volcanoes": "{h} volcans de l’Holocène",   /* (#R432) */
+  "{h} Holocene volcanoes + {m} older ones an observatory watches": "{h} volcans de l’Holocène + {m} plus anciens surveillés par un observatoire",   /* (#R432) */
   " international SIGMETs": " SIGMET internationaux",
   " years": " ans",
   "1 million or more within 30 km": "1 million ou plus dans un rayon de 30 km",
@@ -5553,6 +5554,7 @@ window.IntMapLang.define('fr', { ui: {
   "The bundled eruption record could not be loaded.": "Le registre des éruptions embarqué n’a pas pu être chargé.",
   "The Global Volcanism Program holds no dated eruption for this volcano. It is in the Holocene catalog on other evidence — see “The volcano”.": "Le Global Volcanism Program ne recense aucune éruption datée pour ce volcan. Son inscription au catalogue de l’Holocène repose sur d’autres indices — voir « Le volcan ».",
   "The Global Volcanism Program publishes no population figures for this volcano.": "Le GVP ne publie pas de chiffres de population pour ce volcan.",
+  "The Global Volcanism Program records no eruption of this volcano within the Holocene. GVP holds it in the Pleistocene catalog; it is on this map because a volcano observatory publishes a current alert level for it.": "Le Global Volcanism Program ne recense aucune éruption de ce volcan au cours de l’Holocène. Le GVP le classe dans le catalogue du Pléistocène ; il figure sur cette carte parce qu’un observatoire volcanologique publie un niveau d’alerte actuel pour lui.",   /* (#R432) */
   "The largest VEI this volcano has actually produced, from its own eruption record.": "Le plus grand VEI que ce volcan a réellement produit, d’après son propre registre.",
   "The record": "Le registre",
   "The SIGMET feed did not answer.": "Le flux SIGMET n’a pas répondu.",
@@ -5573,7 +5575,7 @@ window.IntMapLang.define('fr', { ui: {
   "Volcanic ash areas in force (SIGMET)": "Zones de cendres volcaniques en vigueur (SIGMET)",
   "Volcano alert level": "Niveau d’alerte volcanique",
   "Volcano hazard zones (USGS)": "Zones de danger volcanique (USGS)",
-  "Volcanoes — full Holocene catalog": "Volcans — catalogue complet de l’Holocène",
+  "Volcanoes — the Smithsonian GVP catalog": "Volcans — le catalogue du Smithsonian GVP",   /* (#R432) */
   "VONA — Volcano Observatory Notice for Aviation": "VONA — avis volcanique pour l’aviation",
   "Warning / RED": "Alerte / RED",
   "Warning unit": "Unité d’avertissement",
@@ -5977,6 +5979,7 @@ window.IntMapLang.define('fr', { ui: {
   "Phono-tephrite /  Tephri-phonolite": "Phonotéphrite / Téphriphonolite",
   "Phonolite": "Phonolite",
   "Pitcairn Hotspot Volcano Group": "Groupe volcanique du point chaud Pitcairn",
+  "Pleistocene": "Pléistocène",   /* (#R432) */
   "Pyroclastic cone": "Cône pyroclastique",
   "Pyroclastic cone(s)": "Cônes pyroclastiques",
   "Queen Charlotte Volcano Group": "Groupe volcanique de la Reine-Charlotte",
@@ -6077,7 +6080,7 @@ window.IntMapLang.define('fr', { ui: {
   "Last eruption: {y}": "Dernière éruption : {y}",
   "Name a volcano.": "Indiquez un volcan.",
   "No observatory publishes a current level for it.": "Aucun observatoire ne publie de niveau actuel pour ce volcan.",
-  "No volcano called “{q}” is in the Holocene catalog.": "Aucun volcan nommé « {q} » ne figure au catalogue de l’Holocène.",
+  "No volcano called “{q}” is in the Smithsonian GVP catalog this map carries.": "Aucun volcan nommé « {q} » ne figure dans le catalogue du Smithsonian GVP que contient cette carte.",   /* (#R432) */
   "Published in English by the source and shown exactly as written. Descriptions written by an observatory are not machine-translated here; the classifications above are translated because they come from a fixed vocabulary.": "Publié en anglais par la source et affiché tel quel. Les descriptions rédigées par un observatoire ne sont pas traduites automatiquement ici ; les classifications ci-dessus le sont, car elles proviennent d’un vocabulaire fermé.",
   "Published in Japanese by the agency and shown exactly as issued — this map does not reword a warning.": "Publié en japonais par l’agence et affiché tel qu’émis — cette carte ne reformule pas un avertissement.",
   "Say which volcano view: a colour mode, a filter, or the map’s year.": "Indiquez quelle vue des volcans : un mode de couleur, un filtre ou l’année de la carte.",

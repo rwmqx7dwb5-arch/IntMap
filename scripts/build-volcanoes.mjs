@@ -67,11 +67,26 @@ const OUT_DETAIL = path.join(ROOT, 'data', 'volcano-detail.json.gz');
 
 const WFS = 'https://webservices.volcano.si.edu/geoserver/GVP-VOTW/ows';
 const TYPES = {
-  volcanoes: 'GVP-VOTW:Smithsonian_VOTW_Holocene_Volcanoes',
-  eruptions: 'GVP-VOTW:Smithsonian_VOTW_Holocene_Eruptions',
-  e3:        'GVP-VOTW:E3WebApp_HoloceneVolcanoes',
+  volcanoes:   'GVP-VOTW:Smithsonian_VOTW_Holocene_Volcanoes',
+  eruptions:   'GVP-VOTW:Smithsonian_VOTW_Holocene_Eruptions',
+  e3:          'GVP-VOTW:E3WebApp_HoloceneVolcanoes',
+  pleistocene: 'GVP-VOTW:Smithsonian_VOTW_Pleistocene_Volcanoes',
 };
 const ATTRIBUTION = 'Smithsonian Institution, Global Volcanism Program — Volcanoes of the World';
+
+/* ⚠⚠⚠ (#R432) THE CATALOG IS NOT «THE HOLOCENE LIST» ANY MORE, AND THE REASON IS A JOIN THAT FAILED.
+   js/volcano-intel.js reads `volcano/getMonitoredVolcanoes` (#R395) so the map can say «an
+   observatory looked and calls this normal» instead of «nobody publishes anything». Measured
+   2026-08-25: 70 monitored rows, and FIVE of them name a volcano this catalog could not draw —
+   Yellowstone, Long Valley, Coso Volcanic Field, Isanotski Peaks and Korovin. The first four are
+   real GVP volcanoes filed under the PLEISTOCENE catalog (their youngest known eruption predates
+   the Holocene), so the Holocene layer alone can never hold them; the status was fetched every
+   session and then thrown away, because `volcApplyStatus` writes onto features and there was no
+   feature. A volcano the United States Geological Survey publishes a current alert level for
+   belongs on a volcano map — so the bundled catalog is Holocene PLUS whatever an observatory is
+   speaking about, and that second set is DERIVED from the live feed here rather than listed by
+   hand. (Korovin is the fifth and is not a GVP number at all — see USGS_TO_GVP below.) */
+const HANS_MONITORED = 'https://volcanoes.usgs.gov/hans-public/api/volcano/getMonitoredVolcanoes';
 
 /* ── fetch ────────────────────────────────────────────────────────────────────────────────── */
 async function wfs(typeName, key) {
@@ -104,6 +119,39 @@ async function wfs(typeName, key) {
   return doc;
 }
 
+/* the USGS feed is plain JSON, not WFS, and it caches under the same --cache/--offline rules */
+async function hans(url, key) {
+  const cached = CACHE ? path.join(CACHE, key + '.json') : '';
+  if (cached && fs.existsSync(cached)) {
+    const doc = JSON.parse(fs.readFileSync(cached, 'utf8'));
+    console.log(`  ${key}: ${doc.length.toLocaleString()} rows (cache)`);
+    return doc;
+  }
+  if (OFFLINE) throw new Error(`--offline but ${key} is not in --cache`);
+  const r = await fetch(url, { headers: { accept: 'application/json' } });
+  if (!r.ok) throw new Error(`${key}: HTTP ${r.status}`);
+  const text = await r.text();
+  const doc = JSON.parse(text);
+  if (!Array.isArray(doc)) throw new Error(`${key}: not an array`);
+  console.log(`  ${key}: ${doc.length.toLocaleString()} rows (fetched)`);
+  if (cached) { fs.mkdirSync(CACHE, { recursive: true }); fs.writeFileSync(cached, text); }
+  return doc;
+}
+
+/* ⚠ THE CORRESPONDENCE IS NOT WRITTEN TWICE. js/volcano-intel.js holds USGS_TO_GVP because the
+   RUNNING map needs it — a status has to land on the right dot — and this build needs the same
+   answer to know which monitored numbers are already covered. It is read out of that file rather
+   than copied, so the two can never drift apart (CLAUDE.md §9). */
+function usgsToGvp() {
+  const src = fs.readFileSync(path.join(ROOT, 'js', 'volcano-intel.js'), 'utf8');
+  const m = /const\s+USGS_TO_GVP\s*=\s*\{([\s\S]*?)\}/.exec(src);
+  if (!m) throw new Error('js/volcano-intel.js: USGS_TO_GVP not found — the correspondence moved or was renamed');
+  const map = new Map();
+  for (const pair of m[1].matchAll(/(\d+)\s*:\s*(\d+)/g)) map.set(+pair[1], +pair[2]);
+  if (!map.size) throw new Error('js/volcano-intel.js: USGS_TO_GVP parsed empty');
+  return map;
+}
+
 /* ── a stable index into a vocabulary, so the files carry small integers and one word list ──── */
 function vocabulary() {
   const list = [], index = new Map();
@@ -132,10 +180,12 @@ const num = (x) => (x == null || x === '' ? null : (Number.isFinite(+x) ? +x : n
 
 async function main() {
   console.log('GVP Volcanoes of the World → data/');
-  const [V, E, P] = [
+  const [V, E, P, PL, MON] = [
     await wfs(TYPES.volcanoes, 'volcanoes'),
     await wfs(TYPES.eruptions, 'eruptions'),
     await wfs(TYPES.e3, 'population'),
+    await wfs(TYPES.pleistocene, 'pleistocene'),
+    await hans(HANS_MONITORED, 'usgs-monitored'),
   ];
 
   /* population by volcano number */
@@ -223,6 +273,57 @@ async function main() {
       er: rows,
     };
   }
+  /* ── the volcanoes an observatory is speaking about that the Holocene list cannot hold ─────── */
+  const holocene = new Set(V.features.map((f) => +f.properties.Volcano_Number));
+  const reconcile = usgsToGvp();
+  const pleistocene = new Map(PL.features.map((f) => [+f.properties.Volcano_Number, f]));
+  const monitored = new Set();
+  let bulletins = 0;
+  for (const r of MON) {
+    /* ⚠ A ROW THAT NAMES NO VOLCANO IS NOT A VOLCANO. The feed carries the observatory-wide
+       bulletins in the same array — «Alaskan Volcanoes» (AVO) and «Cascade Range» (CVO) — and both
+       answer vnum: null. Same guard as js/volcano-intel.js. */
+    const raw = num(r.vnum);
+    if (raw == null) { bulletins++; continue; }
+    const vn = reconcile.get(raw) ?? raw;
+    if (!holocene.has(vn)) monitored.add(vn);
+  }
+  const added = [];
+  for (const vn of [...monitored].sort((a, b) => a - b)) {
+    const f = pleistocene.get(vn);
+    /* ⚠ LOUD, NOT SILENT. Dropping it here would put the map back where #R432 found it: a status
+       fetched every session and thrown away because there is no dot to write it onto. If GVP has
+       the number under neither catalog it is not a GVP number — add it to USGS_TO_GVP in
+       js/volcano-intel.js with the measurement that justifies the pairing. */
+    if (!f) throw new Error(`USGS monitors ${vn} and GVP holds it in neither catalog — `
+                          + `reconcile it in js/volcano-intel.js USGS_TO_GVP`);
+    const p = f.properties;
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [round(p.Longitude, 4), round(p.Latitude, 4)] },
+      properties: {
+        n: p.Volcano_Name, c: p.Country, t: p.Primary_Volcano_Type, e: num(p.Elevation),
+        /* ⚠ the Pleistocene feature type publishes NINE of the Holocene one's nineteen fields: no
+           last-eruption year, no rock type, no tectonic setting, no evidence category, no photo —
+           and the eruption list and the population layer are both Holocene-only. Every one of those
+           is null rather than guessed, and the card already renders each of them as absent. */
+        y: null, r: p.Region, v: vn, k: null, s: null, x: null, q: 0, p: null,
+      },
+    });
+    types.id(p.Primary_Volcano_Type);
+    detail[vn] = {
+      sub: p.Subregion || null,
+      lf: landforms.id(p.Volcanic_Landform),
+      ep: epochs.id(p.Geologic_Epoch),
+      ev: null,
+      g: p.Geological_Summary || null,
+      p: [null, null, null, null],
+      ph: null,
+      er: [],
+    };
+    added.push(`${vn} ${p.Volcano_Name}`);
+  }
+
   features.sort((a, b) => a.properties.v - b.properties.v);
 
   const layer = {
@@ -230,6 +331,11 @@ async function main() {
     v: 2,
     built: new Date().toISOString().slice(0, 10),
     attribution: ATTRIBUTION,
+    /* ⚠ (#R432) THE COMPOSITION IS IN THE FILE, NOT IN A LABEL. #R353 took the count out of the row
+       label because 「全1,215座」 was still there after the catalog became 1,214; the same lesson
+       applies to the word «Holocene», which is now true of all but `features.length - holocene` of
+       them. The legend reads both numbers from here. */
+    holocene: V.features.length,
     rocks: rocks.list,
     settings: settings.list,
     features,
@@ -273,6 +379,10 @@ async function main() {
   console.log(`  of the ${E.features.length.toLocaleString()} rows GVP published `
             + `(${veiKnown.toLocaleString()} with VEI); ${orphanRows.toLocaleString()} were dropped, `
             + `belonging to ${orphanVolcanoes.toLocaleString()} volcano numbers the Holocene catalog does not list`);
+  console.log(`  ${V.features.length.toLocaleString()} from the Holocene catalog`);
+  console.log(`  ${added.length} monitored by an observatory and held by GVP under the Pleistocene`
+            + (added.length ? `: ${added.join(", ")}` : ""));
+  console.log(`  ${MON.length} monitored rows read, ${bulletins} of them observatory-wide bulletins with no volcano number`);
   console.log(`  ${withHistory.toLocaleString()} volcanoes have a dated eruption record`);
   console.log(`  ${withPop.toLocaleString()} volcanoes have population figures`);
   console.log(`  rock types ${rocks.list.length} · tectonic settings ${settings.list.length} · `

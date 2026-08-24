@@ -169,13 +169,20 @@ test('④ every GVP number in the JMA join table is a Japanese volcano in the ca
 /* ── ⑤ …and the same for the USGS hazard zones ── */
 test('⑤ every GVP number in the USGS hazard-zone table is a US volcano in the catalog', () => {
   const src = LAYERS.slice(LAYERS.indexOf('const HAZ_TO_GVP={'), LAYERS.indexOf('};', LAYERS.indexOf('const HAZ_TO_GVP={')));
-  const pairs = [...src.matchAll(/'([^']+)':(\d+)/g)];
+  /* ⚠ (#R432) A ZONE MAY NAME MORE THAN ONE VOLCANO NOW. «Long Valley Volcanic Region» covers the
+     caldera (GVP 323822, which this map carries since #R432) and the Mono-Inyo chain (323120)
+     alike; the entry is an array, and every number in it still has to be a US volcano here. */
+  const pairs = [...src.matchAll(/'([^']+)':(\[[^\]]*\]|\d+)/g)]
+    .map(([, name, nums]) => [name, [...nums.matchAll(/\d+/g)].map((m) => +m[0])]);
   assert.equal(pairs.length, 7, 'the USGS service publishes seven volcanic centres');
   const byNum = new Map(LAYER.features.map((f) => [f.properties.v, f.properties]));
-  for (const [, name, num] of pairs) {
-    const p = byNum.get(+num);
-    assert.ok(p, 'hazard zone ' + name + ' points at GVP ' + num + ', which is not in the catalog');
-    assert.equal(p.c, 'United States', 'hazard zone ' + name + ' points at ' + p.n + ' in ' + p.c);
+  for (const [name, nums] of pairs) {
+    assert.ok(nums.length > 0, 'hazard zone ' + name + ' points at no volcano at all');
+    for (const num of nums) {
+      const p = byNum.get(num);
+      assert.ok(p, 'hazard zone ' + name + ' points at GVP ' + num + ', which is not in the catalog');
+      assert.equal(p.c, 'United States', 'hazard zone ' + name + ' points at ' + p.n + ' in ' + p.c);
+    }
   }
 });
 
@@ -232,14 +239,23 @@ test('⑦ parseAsh keeps only hazard VA, preserves the flight-level band, and re
 /* ── ⑧ the catalog count is READ, never written into prose ──
    It said «1,215» in the layer row in five languages while the catalog held 1,214. A number written
    down in six places is a number that will disagree with itself. */
+/* ⚠⚠⚠ (#R432) THE GATE WAS NARROWER THAN THE RULE IT ENFORCES. It scanned three files, and the
+   count was written down in a fourth: js/atlas-catalog-text.js said «the Smithsonian GVP Holocene
+   catalog, 1,214 of them» in the SYS text sent to Atlas on every turn — a shipped string, outside
+   the scan, stale the moment the catalog grew. A gate that watches three of the four places a fact
+   lives reports green about the one it cannot see ([[intmap-recurring-lessons]]). */
 test('⑧ no file writes the volcano count as a literal', () => {
-  const files = { 'js/beta-overlays.js': BETA, 'js/volcano-intel.js': INTEL, 'js/volcano-layers.js': LAYERS };
+  const files = { 'js/beta-overlays.js': BETA, 'js/volcano-intel.js': INTEL, 'js/volcano-layers.js': LAYERS,
+    'js/atlas-catalog-text.js': readLF(join(ROOT, 'js', 'atlas-catalog-text.js')),
+    'js/atlas-capabilities.js': readLF(join(ROOT, 'js', 'atlas-capabilities.js')),
+    'js/atlas-controls.js': readLF(join(ROOT, 'js', 'atlas-controls.js')) };
   for (const [name, src] of Object.entries(files)) {
     /* the header comments describe the round and may cite the measurement; the check is on CODE, so
        strip block comments first and then look for a count literal next to a volcano word. */
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '');
     assert.equal(/1[,.]?215/.test(code), false, name + ' still writes 1,215 as a count');
-    assert.equal(/1[,.]?214/.test(code), false, name + ' hardcodes the current count — read it from the file');
+    assert.equal(/1[,.]?214/.test(code), false, name + ' hardcodes the Holocene count — read it from the file');
+    assert.equal(/1[,.]?218/.test(code), false, name + ' hardcodes the current total — read it from the file');
   }
   /* …and the legend really does read it */
   assert.ok(/volcFC\s*\?\s*volcFC\.features\.length/.test(BETA), 'the legend no longer reads the count from the file');
