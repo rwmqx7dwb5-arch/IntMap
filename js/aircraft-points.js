@@ -44,10 +44,11 @@
  *
  *  ⚠ (#R411) …AND TILT IS NOT PART OF IT. 「いや実際の飛行機の向きのままにしろってこと。」 #R401
  *  answered the whole of that table by projecting the aircraft AND a point one step along its track
- *  and taking the difference — the direction a DECAL LYING ON THE GROUND would run. That is the
- *  honest answer for a decal, and this mark is not one: gl.POINTS gives an axis-aligned square, so
- *  the SHAPE never foreshortens. Squashing only the ANGLE is half a transform, and the half it
- *  keeps is the half that carries the information. Measured over Japan, 400 aircraft, z6.2:
+ *  and taking the difference — the direction a DECAL LYING ON THE GROUND would run, applied to a
+ *  silhouette that #R401 left the size and shape it had at pitch 0. Squashing only the ANGLE is half
+ *  a transform, and the half it keeps is the half that carries the information: a reader given a
+ *  full-size aeroplane pointing along the horizon has been told it is flying along the horizon.
+ *  Measured over Japan, 400 aircraft, z6.2:
  *
  *      pitch        0°     30°     60°     75°     78°
  *      within 20° of horizontal   121     128     181     287     315   of 400
@@ -61,15 +62,27 @@
  *
  *  At the tilt the report was made at, FOUR IN FIVE aircraft pointed the same way — not because
  *  they were flying the same way (the reported tracks are near-uniform, 0.214) but because a ground
- *  plane seen edge-on maps every bearing onto the horizon. So the sprite is turned by the map's own
- *  ROTATION and by nothing else: three projections — the aircraft, one step EAST, one step NORTH —
- *  give the local ground→screen Jacobian, and `atan(dE.y - dN.x, dE.x + dN.y)` is the rotation of
- *  its polar factor, i.e. that matrix with the tilt's anisotropic squash divided out. On a flat
- *  north-up map it is 0 and the mark shows the reported track; rotate the map and it is the bearing;
- *  tilt it and it does not move. Nothing about the projection is re-derived here — bearing, the
- *  perspective divide and the globe are all still read out of `projectTileFor3D`, which is the only
- *  reason this can be right for a projection this file does not own.
- *  js/cesium-engine.js `_airHeading` answers the same question from the camera's own vectors.
+ *  plane seen edge-on maps every bearing onto the horizon. So #R411 turned the sprite by the map's
+ *  own ROTATION and by nothing else — the rotation of the polar factor of that Jacobian, i.e. the
+ *  matrix with the tilt's anisotropic squash divided out.
+ *
+ *  ⚠ (#R434) …WHICH MADE TILT DO NOTHING AT ALL, AND THAT IS WHAT CAME BACK. 「傾けてるのに上から
+ *  見たときとおなじとかあほかボケ。」 Pure pitch is not a rotation, so the quantity #R411 kept does
+ *  not move under it: the mark drawn at pitch 78 was, pixel for pixel, the mark drawn at pitch 0.
+ *  Both previous answers used HALF of the same 2×2 and threw the other half away — #R401 kept the
+ *  angle and dropped the squash, #R411 kept neither. What is drawn now is the whole of it: the
+ *  plan-form lying in the aircraft's own horizontal plane, seen by this camera, so its nose is
+ *  along its true track IN THE WORLD and the picture foreshortens exactly as the ground under it
+ *  does. Nothing about the projection is re-derived here — bearing, the perspective divide and the
+ *  globe are all still read out of `projectTileFor3D`, which is the only reason this can be right
+ *  for a projection this file does not own. Where the projection has no answer (a point at or
+ *  behind the eye) the reported track on a north-up screen is the fallback, and where the squash
+ *  would take the mark below the width at which this shader stops drawing an aeroplane at all, the
+ *  transform is mixed back towards #R411's rotation — at that limit it IS #R411's mark.
+ *  ⚠ js/cesium-engine.js `_airHeading` still answers the ROTATION alone, and cannot answer more: a
+ *  BillboardCollection sprite is (rotation × axis-aligned size), the image of a ground plane is
+ *  (squash × rotation), and those two families of matrices meet only at the cardinal angles — the
+ *  shear this shader carries is not expressible by that primitive. See there for the measurement.
  *
  *  ⚠ (#R379) THE FIELD IS THE APP'S OWN AIRLINER PLAN-FORM, NOT A DART. 「航空機レイヤーの飛行機
  *  アイコンのデザインをもとに戻して。」 #R341 wrote a notched triangle here because an SDF is
@@ -118,24 +131,40 @@ window.IntMapModules.aircraftPoints = function () {
   /* MapLibre's mercator: one mercator unit is 512·2^zoom CSS pixels. */
   const TILE_PX = 512;
 
+  /* ── (#R434) THE SIZE AT WHICH THIS LAYER STOPS DRAWING AN AEROPLANE ─────────────────────────
+     Below this many DEVICE pixels the fragment shader draws a dot instead of the silhouette, and
+     that is also the floor the foreshortening is held to: a mark squashed thinner than the width
+     at which its shape stops being readable has nothing left to say about its own heading. ONE
+     declaration, injected into both shaders, because the two used to carry the same 5.0 in two
+     places and only the fragment one was ever a stated rule. */
+  const LOD_DOT_PX = 5;
+
   /* ⚠ EVERY BYTE INSIDE THESE BACKTICKS IS SHIPPED. The minifier strips JS comments; a GLSL comment
      is a string literal to it, so it travels to every browser that opens the layer. The reasoning
      lives out here — the shader keeps one line pointing at it. (#R311's budget caught the first
      draft of #R401 growing this chunk by 2.4 kB of prose.)
 
-     ── (#R401, #R411) THE MAP'S ROTATION, AND NOT ITS TILT ─────────────────────────────────────
+     ── (#R401, #R411, #R434) THE WHOLE TRANSFORM, NOT HALF OF IT ───────────────────────────────
      A gl.POINTS sprite is axis-aligned to the VIEWPORT, so the track cannot be handed to the
-     fragment shader as a compass bearing: the map turns under it and the sprite does not. But the
-     sprite does not foreshorten either, so the answer is not the ground direction — see the header
-     for the 400-aircraft measurement that settled it. Three projections (here, one step EAST, one
-     step NORTH) give the local ground→screen Jacobian M = [dE dN]; the rotation of its polar factor
-     is atan(M10 − M01, M00 + M11), and subtracting it from the track leaves the mark showing the
-     track itself on a north-up map, turned with the map, and unmoved by tilt.
+     fragment shader as a compass bearing: the map turns under it and the sprite does not. Three
+     projections (here, one step EAST, one step NORTH) give the local ground→screen Jacobian
+     J = [dE dN], and what is built from it here is the 2×2 that maps the MARK'S OWN AXES —
+     starboard and nose — onto the screen: A = [J·(cos t, −sin t)  J·(sin t, cos t)] / σ₁, i.e. the
+     aircraft's plan-form lying in its own horizontal plane, seen by this camera. Dividing by the
+     largest singular value is what keeps `u_sizePx` meaning the same longest extent it always did.
+     The fragment shader is handed A's INVERSE and samples the field through it.
+     ⚠ AND THE FLOOR IS A BLEND BACK TO #R411'S ANSWER, NOT A CLAMP ON A NUMBER. A itself is
+     R·S (polar), so mixing A towards its own rotation R by t lifts BOTH singular values to
+     (1−t)σ + t — at t = 1 this is exactly the unforeshortened mark #R411 shipped, and t is chosen
+     as the smallest value that keeps the short axis at LOD_DOT_PX device pixels. Without it an
+     aircraft near the horizon of a steep view keeps its full 11-px width and is squashed to a
+     fraction of a pixel across: the sprite's SIZE does not fall off with distance, so its
+     foreshortening must not be allowed to run away either.
      ⚠ mercator y grows SOUTHWARD, which is why the NORTH step is −y (the same sign the packer uses
      for a_vel in src/aviation-worker.js).
      ⚠ w ≤ 0 means a point is at or behind the eye. The perspective divide is meaningless there and
-     the sprite is being clipped anyway, so the reported track is left as the fallback rather than
-     turned into a NaN that would take the whole glyph with it.
+     the sprite is being clipped anyway, so the reported track on a north-up screen is left as the
+     fallback rather than turned into a NaN that would take the whole glyph with it.
      ⚠ u_viewport turns the projection's NDC differences into pixels, so the Jacobian this decomposes
      is the one the screen actually has; without it a 16:9 canvas leans every glyph. */
   const VERT = `
@@ -154,7 +183,7 @@ uniform float u_opacity;
 uniform float u_probe;      /* (#R401) mercator units to look ahead along the track */
 uniform vec2 u_viewport;    /* (#R401) drawing-buffer size, so NDC becomes an on-screen shape */
 out vec4 v_col;
-out float v_rot;
+out vec4 v_minv;
 out float v_px;
 void main(){
   v_col = vec4(a_col.rgb, a_col.a * u_opacity);
@@ -164,35 +193,59 @@ void main(){
   vec4 here = projectTileFor3D(p, e);
   gl_Position = here;
 
-  /* (#R411) the map's rotation, without its tilt — see the note above this string */
-  float trk = a_form.y;
+  float px = a_form.x * u_sizePx * u_pxRatio;
+  v_px = px;
+  gl_PointSize = px;
+
+  /* (#R434) the mark's own axes, projected — see the note above this string */
+  float trk = a_form.y, st = sin(trk), ct = cos(trk);
+  vec2 fw = vec2(st, ct), rw = vec2(ct, -st);
   vec4 pe = projectTileFor3D(p + vec2(u_probe, 0.0), e);
   vec4 pn = projectTileFor3D(p + vec2(0.0, -u_probe), e);
-  v_rot = trk;
   if (here.w > 0.0 && pe.w > 0.0 && pn.w > 0.0) {
     vec2 o = here.xy / here.w;
     vec2 dE = (pe.xy / pe.w - o) * u_viewport;
     vec2 dN = (pn.xy / pn.w - o) * u_viewport;
-    vec2 r = vec2(dE.x + dN.y, dE.y - dN.x);
-    if (dot(r, r) > 1e-14) v_rot = trk - atan(r.y, r.x);
+    vec2 F = st * dE + ct * dN;
+    vec2 R = ct * dE - st * dN;
+    vec2 pr = vec2(dE.x + dN.y, dE.y - dN.x);
+    float tr = dot(F, F) + dot(R, R);
+    float dt = R.x * F.y - R.y * F.x;
+    float s1 = sqrt(max(0.0, 0.5 * (tr + sqrt(max(0.0, tr * tr - 4.0 * dt * dt)))));
+    if (s1 > 1e-9 && dot(pr, pr) > 1e-14) {
+      float th = atan(pr.y, pr.x), cj = cos(th), sj = sin(th);
+      mat2 Rot = mat2(cj, sj, -sj, cj);
+      float k = abs(dt) / (s1 * s1);
+      float kmin = min(1.0, ${LOD_DOT_PX.toFixed(1)} / max(px, 1.0));
+      float t = clamp((kmin - k) / max(1.0 - k, 1e-6), 0.0, 1.0);
+      fw = mix(F / s1, Rot * fw, t);
+      rw = mix(R / s1, Rot * rw, t);
+    }
   }
-
-  float px = a_form.x * u_sizePx * u_pxRatio;
-  v_px = px;
-  gl_PointSize = px;
+  float det = rw.x * fw.y - rw.y * fw.x;
+  if (abs(det) < 1e-6) det = (det < 0.0) ? -1e-6 : 1e-6;
+  v_minv = vec4(fw.y, -rw.y, -fw.x, rw.x) / det;
 }`;
 
   /* (#R379) the one declaration of the mark — see the header */
   const GLYPH = window.IntMapPlaneGlyph;
 
-  /* ⚠ (#R401) CLOCKWISE, AND IT WAS NOT — the note for the `mat2` in FRAG below, kept out here
-     because a GLSL comment ships (see the note above VERT). `v_rot` is measured clockwise from
-     screen-up, the convention the reported track itself uses, so the SAMPLING point has to turn the
-     other way for the MARK to turn clockwise — and `mat2` takes its arguments by COLUMN. #R341
-     wrote `mat2(c,-s,s,c)`, which is the transpose of the right one, i.e. the mark reflected about
-     the vertical axis: measured with a probe aircraft tracking 090°, the nose was drawn pointing
-     085° WEST. Nothing caught it because the only test of the mark drew it tracking due north,
-     where the matrix is the identity either way. */
+  /* ⚠ (#R401, #R434) THE SAMPLING GOES THE OTHER WAY — the note for the `mat2` in FRAG below, kept
+     out here because a GLSL comment ships (see the note above VERT). The vertex shader builds the
+     matrix that carries the MARK onto the SCREEN; the fragment shader has a screen offset and wants
+     the point of the mark under it, so what it is handed is that matrix INVERTED. #R341 handed over
+     a rotation and applied `mat2(c,-s,s,c)`, the transpose of the right one, i.e. the mark reflected
+     about the vertical axis: measured with a probe aircraft tracking 090°, the nose was drawn
+     pointing 085° WEST. Nothing caught it because the only test of the mark drew it tracking due
+     north, where the matrix is the identity either way. Inverting in the vertex shader — once per
+     aircraft rather than once per pixel — is what leaves no second convention here to get wrong.
+
+     ⚠ (#R434) …AND THE EDGE IS STILL MEASURED ON THE SCREEN. `planeSD` returns a distance in the
+     MARK's units, and under foreshortening those are no longer screen units: one of them is worth
+     as little as LOD_DOT_PX/v_px of a pixel. So the ramp is divided by how fast the field runs
+     across the screen at this pixel — the field's own unit gradient carried through the same
+     inverse matrix — which is exactly 1 where there is no tilt, so #R411's one-pixel edge is
+     unchanged on a flat map and stays one pixel on a steep one. */
 
   /* ⚠ (#R411) THE EDGE IS ONE PIXEL, AND IT USED TO BE THREE — 「不透明度100%が全然100%じゃない
      のを辞めろ。」 The soft edge was `max(0.06, 3.0/v_px)` half-widths, i.e. a SIX-pixel ramp across
@@ -220,7 +273,7 @@ void main(){
   const FRAG = `
 precision highp float;
 in vec4 v_col;
-in float v_rot;
+in vec4 v_minv;
 in float v_px;
 out vec4 fragColor;
 
@@ -237,19 +290,24 @@ const float HALF_STROKE = ${GLYPH.SDF_HALF_STROKE.toFixed(7)};
    the part a convex shape does not need. This outline is concave in four places (either side of
    the fuselage, and the steps between wing root and tailplane), and a max-of-half-planes reads
    every one of them as outside. */
-float planeSD(vec2 p){
-  float d = dot(p - PLANE[0], p - PLANE[0]);
+float planeSD(vec2 p, out vec2 grad){
+  vec2 nb = p - PLANE[0];
+  float d = dot(nb, nb);
   float s = 1.0;
   int j = PLANE_N - 1;
   for (int i = 0; i < PLANE_N; i++) {
     vec2 e = PLANE[j] - PLANE[i];
     vec2 w = p - PLANE[i];
     vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
-    d = min(d, dot(b, b));
+    float dd = dot(b, b);
+    if (dd < d) { d = dd; nb = b; }
     bvec3 c = bvec3(p.y >= PLANE[i].y, p.y < PLANE[j].y, e.x * w.y > e.y * w.x);
     if (all(c) || all(not(c))) s = -s;
     j = i;
   }
+  /* the field's own direction of steepest ascent — a unit vector, and the one the screen-space
+     ramp below has to be measured along */
+  grad = nb * inversesqrt(max(d, 1e-12));
   return s * sqrt(d);
 }
 
@@ -262,16 +320,17 @@ void main(){
 
   vec3 pre;      /* colour, already multiplied by its own coverage — the blend is premultiplied */
   float cov;
-  if (v_px < 5.0) {
+  if (v_px < ${LOD_DOT_PX.toFixed(1)}) {
     /* LOD: below five device pixels an aeroplane and a dot are the same picture, and the dot stays
        legible where the silhouette would alias into noise. The aircraft is still drawn. */
     float r = length(q);
     cov = smoothstep(1.0, 1.0 - aa * 2.0, r);
     pre = v_col.rgb * cov;
   } else {
-    float s = sin(v_rot), c = cos(v_rot);
-    vec2 p = mat2(c, s, -s, c) * q;              /* (#R401) clockwise — see CLOCKWISE above */
-    float d = planeSD(p);
+    mat2 minv = mat2(v_minv.xy, v_minv.zw);      /* (#R434) screen → the mark — see the note above */
+    vec2 g;
+    float d = planeSD(minv * q, g);
+    aa *= length(vec2(dot(minv[0], g), dot(minv[1], g)));
     /* \`ctx.fill()\` and then \`ctx.stroke()\`, which is how this mark has always been drawn: the
        fill is everything inside the outline and the white band is painted OVER it. Composited as
        source-over rather than as two disjoint regions, because the band's inner half is white over

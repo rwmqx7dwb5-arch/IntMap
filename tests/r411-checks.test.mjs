@@ -136,7 +136,7 @@ test('R411 ① c the Edge Function asks the model, once, and no longer compares 
    the SHAPE of the derivation, i.e. the three things a later round would have to keep for that test
    to be measuring the same claim: three projections, a step east and a step north (not a step along
    the track), and the polar rotation subtracted from the track rather than replacing it. */
-test('R411 ② the vertex shader takes a step EAST and a step NORTH, and subtracts their rotation', () => {
+test('R411 ② the vertex shader takes a step EAST and a step NORTH, and still knows their rotation', () => {
   const src = code('js/aircraft-points.js');
   const vert = /const VERT = `([\s\S]*?)`;/.exec(src);
   assert.ok(vert, 'the vertex shader source is still a template literal named VERT');
@@ -147,12 +147,21 @@ test('R411 ② the vertex shader takes a step EAST and a step NORTH, and subtrac
   assert.match(v, /projectTileFor3D\(p \+ vec2\(u_probe, 0\.0\), e\)/, 'the east step');
   assert.match(v, /projectTileFor3D\(p \+ vec2\(0\.0, -u_probe\), e\)/,
     'the north step — mercator y grows SOUTHWARD, so north is minus');
-  /* ⚠ THE DECAL ANSWER, NAMED SO IT CANNOT COME BACK BY ACCIDENT. #R401's step was along the
-     track; that is the one thing this round is not. */
-  assert.doesNotMatch(v, /sin\(trk\)/, 'no step is taken along the track itself');
+  /* ⚠ THE STEPS ARE EAST AND NORTH, NOT ALONG THE TRACK. #R401 projected a step ahead and used its
+     angle alone; the two steps here span the whole ground→screen Jacobian, which is what lets
+     (#R434) the mark carry the tilt's squash as well as its rotation. The track enters as the two
+     numbers that turn that basis into the MARK's own axes, not as a third projection. */
+  const projTrack = /projectTileFor3D\([^)]*sin\(trk\)/.test(v);
+  assert.ok(!projTrack, 'no step is PROJECTED along the track itself');
   assert.match(v, /vec2\(dE\.x \+ dN\.y, dE\.y - dN\.x\)/,
-    'the rotation of the polar factor of [dE dN]');
-  assert.match(v, /v_rot = trk - atan\(/, 'and it is SUBTRACTED from the track, not put in its place');
+    'the rotation of the polar factor of [dE dN] is still computed');
+  /* ⚠ …AND IT IS STILL WHAT THE MARK FALLS BACK TO. #R411 made that rotation the answer outright;
+     #R434 makes it the LIMIT the answer is mixed towards when the squash would take the mark below
+     the size at which this shader stops drawing an aeroplane. The mix is the thing to pin, because
+     dropping it is how a steep view loses aircraft into sub-pixel slivers. */
+  assert.match(v, /float t = clamp\(\(kmin - k\)/, 'the blend back to that rotation is computed');
+  assert.match(v, /mix\(F \/ s1, Rot \* fw, t\)/, 'and the mark IS that mix, nose …');
+  assert.match(v, /mix\(R \/ s1, Rot \* rw, t\)/, '… and starboard');
   /* all three projections are guarded, because a point at or behind the eye has no divide */
   assert.match(v, /here\.w > 0\.0 && pe\.w > 0\.0 && pn\.w > 0\.0/, 'all three are guarded on w');
 });
