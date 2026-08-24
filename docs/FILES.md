@@ -238,10 +238,24 @@ atlas-msg-tools.js                Atlas — メッセージごとの操作バー
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  115 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  124 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
-atlas-catalog-text.js             Atlas — planner に渡す能力の説明文 38 ブロック（旧 SYS() の本文を逐語で移設）。
+atlas-catalog-text.js             Atlas — planner に渡す能力の説明文 40 ブロック（旧 SYS() の本文を逐語で移設）。
                                   各ブロックが「どの能力を説明しているか」を持つので関連分だけ送れる
+atlas-anomaly-score.js            **分野横断の異常度**（#R397）— 地震・台風・洪水・火山・警報・紛争などを
+                                  1つの尺度に載せる。深刻度は**種別ごとの固有スケール**（Mw／カテゴリ／VAL／
+                                  CAP の4段）、他に影響人口・地理的範囲・平常時からの乖離・新しさ・確度・
+                                  国際的重要性の7成分。`why` に成分の内訳を残すので順位を説明できる。
+                                  ⚠ **偏りは標本の偏り**だった——USGS は数百行、他は数行。各種別の上位
+                                  だけを競わせる（出力の割当ではない：真に地震の日は地震が1位になる）
+atlas-geo-object.js               **地点の1つの形**（#R397）— GeoObject＝ID・名前・緯度経度・種別・日時・出典・
+                                  確度と **provenance**（user_specified / map_click / feed_coordinate /
+                                  event_location / geocoded_point / resolved_place_centroid / model_named）。
+                                  `mergeKnown()` がコードの座標を回答の地点名へ戻すので、再ジオコードしない。
+                                  ⚠ 代表点は `pointLike` ではない＝「その地点」として扱わない
+atlas-policy.js                   **依拠と操作の方針**（#R397）— planner プロンプトの3節（情報源の優先順位＝
+                                  IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
+                                  目的未達の判定文。⚠ 人格ではない（人格の正本は atlas-persona.js のみ）
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない

@@ -77,7 +77,10 @@ test('R150 #10 orchestrator: MERGES with existing pins (no skip-on-pins) and NEV
      reconciliation now reads the ANSWER STRUCTURE's text and the evidence registry of THIS call, so
      the audit still sees the finished answer and its real sources; it just cannot be handed another
      turn's. Asserting the old two variable names would pin the defect, not the requirement. */
-  assert.match(html, /_pinReplyPlaces\(\(_env\.places\|\|\[\]\)\.map\([\s\S]{0,120}?\{text:answerPlainText\(_env\),citations:_reg\.all\(\)/, 'analyze passes the answer text + its own citations');
+  /* ⚠ (#R397) The `.map(...)` in the middle is gone — it was re-flattening the places and discarding
+     the coordinates merged in by the contract. The property this check is about (the finished text and
+     THIS call's registry, never another turn's) is unchanged, so only the middle is relaxed. */
+  assert.match(html, /_pinReplyPlaces\(_env\.places\|\|\[\][\s\S]{0,60}?\{text:answerPlainText\(_env\),citations:_reg\.all\(\)/, 'analyze passes the answer text + its own citations');
   // no empty catch — it logs the cause and returns an honest note
   assert.match(html, /console\.warn\('reply-mapping audit failed',e\)/, 'orchestrator records the failure cause');
   assert.match(html, /Could not run the map self-check for this answer\./, 'honest fallback note (not silent)');

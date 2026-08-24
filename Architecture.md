@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（940行・84 KB）＋ `css/`（3本）＋ `js/`（231本・11.3 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（940行・84 KB）＋ `css/`（3本）＋ `js/`（234本・11.3 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -222,8 +222,23 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | 能力の説明文 | `js/atlas-catalog-text.js` | planner に渡す 41 ブロック。**各ブロックがどの能力を説明しているか**を持つ |
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
-| 状態 | `js/atlas-state.js` | 15 セクションの合成スナップショットと**ターン台帳** |
-| 計画 | `js/atlas-planner.js` | Plan schema・検証・GoalSpec・依存グラフ実行 |
+| 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳** |
+| 計画 | `js/atlas-planner.js` | Plan schema・検証・GoalSpec・依存グラフ実行・**意図の門**（明示要求の無い `brief` は `analyze` へ／地図意図の無い視点・選択操作は落とす） |
+| 依拠と操作の方針 | `js/atlas-policy.js` | planner プロンプトの 3 節（**情報源の優先順位**・**地図を触ってよい条件**・**座標の provenance**）と、目的未達の判定文 |
+| 地点の 1 つの形 | `js/atlas-geo-object.js` | `GeoObject`＝ID・名前・緯度経度・種別・日時・出典・確度と **provenance**。`placed` / `pointLike` / `describesUserPoint` / `mergeKnown` |
+| 分野横断の異常度 | `js/atlas-anomaly-score.js` | 種別ごとの固有スケール（Mw／カテゴリ／VAL／CAP 4段）＋ 影響人口・範囲・平常からの乖離・新しさ・確度・国際的重要性の**7成分**。順位の根拠を `why` に残す。**各種別の上位だけを競わせる**（偏りは標本の偏りであって選好ではない） |
+
+**⚠ 観測器はファサードの実名だけを呼ぶ。** `visibleLayerIds()` は `GE().scene.getStyle()` の
+レイヤー配列を読み、`cameraNow()` は `getCenter()` が返す `{lng,lat}` を**オブジェクトとして**読み、
+不定なら `null` を返す（NaN を返すと `JSON.stringify` が `null` に潰し、**動いたカメラが動いていない
+ことになる**）。`paintNow()` が数える source id は `user-pins` と `nlq-poi-src`——**アプリが実際に
+`addSource` する名前**。`tests/r397-checks.test.mjs` が、この 3 つを**ファサードと生成側のソースから
+導出して**照合する（ここに名前を書き写すと、同じ誤りが 2 か所になる）。
+
+**⚠ 目的は門である。** `_goalValidation` は毎ターン計算され、**読まれていなかった**。いまは
+`js/atlas-policy.js` の `unmetGoalText()` が判定文を返し、**呼びが全部成功していても目的が未達なら**、
+失敗した呼びと同じ修復ループ（最大 2 回）に入る。修復プロンプトは 2 種を区別する——失敗した呼びは
+別の呼びを、未達の目的は**欠けている生成物**を求める。
 
 **実行の 11 段**（`IntMapOS.execute(capabilityId, args, {source, turnId, signal})`）:
 能力の解決 → 可用性 → 引数 schema → **必要な入力の解決** → 競合キーの取得 → 前の観測 →
@@ -272,6 +287,18 @@ getter なので、観測していない成功を呼び出し側が書き込む�
 
 **⚠ モデルは URL を書かない。** schema に URL を置く場所が無く、証拠は ID でしか参照できない。
 画面のリンクは描画側がレジストリから組み立てる。本文に URL やホスト名が現れた回答は監査で落ちる。
+
+**⚠ モデルは座標も書かない。しかしコードが持っている座標は捨てない。** `places[]` に緯度経度の欄は
+無く、代わりに **`geoId`** がある——コードが解決した地点を ID 付きでモデルに見せ、モデルはそれを
+**参照する**。`normalizeAnswer` が `mergeKnown()` でその座標を回答へ戻し、`provenance` ごと
+`_pinReplyPlaces`（`js/atlas-verify.js`）へ渡る。**照合は 3 通り**——`geoId`／正規化した名前／
+**片方が他方を含む**（「14 km SSW of X」と「X」）。`pointLike` な座標は**再解決しない**（2 度目の照会は
+一致するか*外す*かで、外れたとき正しい位置が負ける）。⚠ **代表点は `pointLike` ではない**ので、国の
+重心はいまも「地点」としては扱われない。
+
+**⚠ 「元の質問に答えたか」は記録されるが、ターンを止めない。** `answer.question_not_addressed` /
+`answer.question_only_peripheral` はどちらも `warning`。理由は `DECISIONS.md`——語の重なりでは、
+質問の名詞を 1 つも再利用しない**正しい**回答を通せない。
 
 **⚠ 「支えている」は 1 つの意味ではない。** claim は必ず `dimension` を持つ——
 `level`（現在の規模）／`share`（構成比）／`growth_contribution`（成長への寄与ポイント）／
@@ -579,14 +606,26 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 - **責任分離** — クライアントは**タスク種別**と `webMode`（`off|auto|required`）を送り、
   `ai-proxy` がタスクごとに**出力トークン上限**・**構造化出力**・**Web 方針**を選ぶ。
   タスクは allowlist で、それ以外は 400 になる：
-  `atlas_plan` / `map_report` / `analysis` / `free_text` / `json_extract` / `brief` /
-  `geo_verify` / `geo_resolve` / `research_map` / `vision_read`。
-  出力上限は 500〜3,200 トークン（絶対上限 5,000）。OpenAI 経路の `reasoning.effort` は
-  `atlas_plan` / `analysis` / `geo_resolve` / `research_map` が medium、他は low。
+  `atlas_plan` / `map_report` / `analysis` / `analysis_structured` / `free_text` / `json_extract` /
+  `brief` / `geo_verify` / `geo_resolve` / `research_map` / `vision_read`（11 種）。
+  出力上限は 500〜3,400 トークン（絶対上限 5,000）。OpenAI 経路の `reasoning.effort` は
+  `atlas_plan` / `analysis` / `analysis_structured` / `geo_resolve` / `research_map` / `vision_read`
+  が medium、他は low。
+- **構造化出力は provider にも届く。** JSON タスクの `responseSchema`（サーバ所有の
+  `MAP_REPORT_SCHEMA` / `ANSWER_SCHEMA`、およびクライアントが送る `PLAN_SCHEMA` /
+  `RESEARCH_MAP_SCHEMA` / `GEO_RESOLVE_SCHEMA`）は Gemini 方言（`type:'OBJECT'`）で書かれており、
+  `strictJsonSchema()` が OpenAI の `json_schema` へ変換する——型名を小文字化し、**任意フィールドは
+  `["string","null"]` に広げ**（`strict` は全キーを `required` に要求するので、無い欄を強制する
+  代わりに「該当なし」と言える形にする）、**列挙も同時に `null` へ広げる**（型で許して列挙で禁じると、
+  どのインスタンスも通らない schema になる）。応答の `meta.schemaAttached` が、その呼びで実際に
+  schema が効いたかを言う。
+  ⚠ **表現できない schema は変換せず、既存の梯子が `json_object` へ落とす**ので、方言を嫌うモデルでも
+  失う応答は無い。⚠ **クライアント側の決定論的検証は残る**——梯子が schema を落とした回があるので。
 - **プロバイダは `AI_PROVIDER`**（`anthropic` | `openai` | `gemini`。既定 anthropic）。
   OpenAI 経路のモデルは `AI_MODEL` シークレット（現行 `gpt-5.6-terra`）で、到達できない場合だけ
   既知の `gpt-5.6-luna` に**1回だけ**フォールバックする。
-- **障害耐性** — 400 は**フォールバック階段**（tool_choice 解除 → JSON モード解除 → ツール解除）で降格する。
+- **障害耐性** — 400 は**フォールバック階段**（tool_choice 解除 → **schema → json_object** →
+  JSON モード解除 → ツール解除）で降格する。
   Web 付き呼び出しは長めの期限を持ち、空応答（推論が予算を食い切った場合）は予算を増やして1回再試行する。
 - **プロバイダの失敗は分類して 502/503 で返す**
   （`provider_rate_limit` / `provider_quota` / `provider_malformed` / `provider_empty` /

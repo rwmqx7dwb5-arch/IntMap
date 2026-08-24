@@ -121,6 +121,59 @@ export function makeAtlasPlanner(HOST, CTX) {
       const world=WORLD_RE.test(pl)||((a&&(a.type==='historicalMap'||a.type==='allianceMap'||a.type==='powerMap'))&&!pl);
       if(!world) return false; const gk=(profile&&profile.geoKind)||''; return gk!==''&&gk!=='unknown'; }catch(_){ return false; } }
     /* (#R135 §7) PRE-EXECUTION plan validation: fix incompatible actions BEFORE running them (not repair AFTER). */
+    /* ══ (#R397) INTENT OUTRANKS THE CATALOGUE ══════════════════════════════════════════════════════
+       「質問意図をCapability制約より優先すること。」 Two rules, and both are here rather than in the
+       prompt because 「プロンプト上の注意ではなくvalidator/executorレベルで拒否すること」 — a sentence
+       in a 60 kB system prompt is a request, and this is a decision.
+
+       ⚠ NEITHER RULE DELETES AN ANSWER. CONSTITUTION.md §0.3 forbids shrinking a feature, and a reader
+       who asked a question wants an answer, not a refusal — so a mis-selected `brief` becomes
+       `analyze` and a forced `researchMap` becomes `analyze`. What is dropped is only screen movement
+       nobody asked for. */
+    const _BRIEF_ASKED=/\bbrief(?:ing|ed)?\b|\breport\b|\bdossier\b|\brundown\b|\bwrite[- ]?up\b|\bbriefe?\b|\bsitrep\b|\bsituation report\b|ブリーフ|ブリーフィング|レポート|報告書?|調査報告|概況|情勢報告|\bBericht\b|\bLagebericht\b|\bLage\b|сводк|доклад|обзор|\binforme\b|\breporte\b|\bresumen ejecutivo\b|簡報|简报|报告|報告|摘要|通報|\brapport\b|\bsynthèse\b|\bnote de synthèse\b|보고서|브리핑|정세 ?보고/i;
+    /* An explicit instruction to operate the map. ⚠ Anchored on VERBS and on the question 「どこ」/
+       「where」, not on the presence of a place name: 「フランス革命はなぜ起きたのか」 names a place and
+       asks for prose. */
+    const _MAP_ASKED=/地図|マップ|表示し|見せ|映し|飛[んびば]|移動|ズーム|拡大|縮小|ハイライト|強調|塗|色分け|比較|くらべ|比べ|並べ|レイヤー|経路|ルート|行き方|道順|等時圏|範囲|周辺|近く|どこ|何処|どのあたり|位置|座標|\bmap\b|\bshow\b|\bdisplay\b|\bdraw\b|\bplot\b|\bfly\b|\bgo to\b|\btake me\b|\bnavigate\b|\bzoom\b|\bpan\b|\bcenter\b|\bcentre\b|\bhighlight\b|\bshade\b|\bcolou?r\b|\bcompare\b|\bversus\b|\bvs\.?\b|\blayer\b|\broute\b|\bdirections?\b|\bisochrone\b|\bwhere\b|\bnearby\b|\bnear me\b|\baround\b|\blocate\b|\bkarte\b|\bzeig|\bvergleich|карт|покаж|сравн|\bмапа\b|\bmapa\b|\bmuestra\b|\bcompara\b|地圖|顯示|显示|比較|比较|圖層|图层|路線|路线|\bcarte\b|\baffiche|\bmontre|\bcompare[rz]\b|지도|보여|표시|비교|경로/i;
+    /* ⚠ TRAVEL IS MAP INTENT EVEN WITHOUT A MAP VERB. 「台湾へ旅行したい」 contains no 表示/地図/どこ, so
+       the verb list above refused it and the gate dropped the move — and 「台湾へ旅行したい」で台湾への
+       移動が失敗しない is one of this round's stated requirements. Planning a trip to a named place is the
+       「地図化による明確な追加価値」 case: the reader is asking about somewhere they intend to BE. Kept as
+       its own expression rather than merged into _MAP_ASKED, because it is a different reason. */
+    const _TRAVEL_ASKED=/旅行|旅程|行きたい|訪れ|訪問|観光|周遊|滞在|出張|\btravel\b|\btrip\b|\bvisit(?:ing)?\b|\bitinerary\b|\btour\b|\bholiday\b|\bvacation\b|\bsightseeing\b|\bgetaway\b|\bReise\b|\bbesuchen\b|\bUrlaub\b|путешеств|поездк|посетить|\bviaje\b|\bvisitar\b|\bturismo\b|\bitinerario\b|旅遊|旅游|參觀|参观|行程|觀光|观光|\bvoyage\b|\bvisiter\b|\bitinéraire\b|\bséjour\b|여행|방문|관광|일정/i;
+    /* Pure screen movement: it changes what is on screen and contributes nothing to a prose answer. */
+    const _VIEW_ONLY=['flyTo','fly','zoom','pan','bearing','pitch','projection','base','terrain3d','resetNorth','locate','selectCountry','country','countryInfo','isolate','fullscreen','grid'];
+    function _applyIntentGates(list, profile, q, rejected){
+      const text=String(q||'');
+      const briefAsked=_BRIEF_ASKED.test(text);
+      /* ⚠ AN EXPLICITLY REQUESTED BRIEFING IS MAP INTENT. 「南シナ海についてブリーフして」 asks for the
+         whole picture of a place — news, geography, the states around it, the layers that bear on it —
+         and framing that place is part of the picture, not decoration. Only an EXPLICIT request counts:
+         a `brief` the planner chose by itself was already downgraded above, so this cannot become a
+         back door for the behaviour rule (B) exists to stop. */
+      const mapAsked=_MAP_ASKED.test(text)||_TRAVEL_ASKED.test(text)||briefAsked||!!(profile&&profile.outputs&&profile.outputs.map);
+      const out=[];
+      for(const a of list){
+        if(!a||!a.type){ out.push(a); continue; }
+        /* (A) `research.brief` is a REPORT. The planner reached for it on plain questions because the
+           catalogue offers it, which is the catalogue deciding what the reader wanted. */
+        if(a.type==='brief'&&!briefAsked){
+          rejected.push({from:'brief',to:'analyze',reason:'brief_not_explicitly_requested'});
+          out.push({type:'analyze',question:String(a.topic||a.question||a.place||text).slice(0,300),place:String(a.place||'').trim()});
+          continue; }
+        if(!mapAsked){
+          /* (B) 「IntMapは地図製品だから」 is not a reason to move the reader's view. */
+          if(_VIEW_ONLY.indexOf(a.type)>=0){ rejected.push({from:a.type,to:'',reason:'no_map_intent_in_request'}); continue; }
+          /* researchMap both explains AND pins; with no map intent, keep the explanation, drop the pinning. */
+          if(_actionFamily(a)==='research-map'){
+            rejected.push({from:a.type,to:'analyze',reason:'no_map_intent_in_request'});
+            out.push({type:'analyze',question:String(a.topic||a.question||text).slice(0,300),place:String(a.place||'').trim()});
+            continue; } }
+        out.push(a); }
+      /* ⚠ NEVER RETURN AN EMPTY PLAN. Stripping every action would turn a question into silence, which
+         is a worse failure than an unwanted camera move. If nothing survived, answer it. */
+      if(list.length&&!out.length) out.push({type:'analyze',question:String(q||'').slice(0,300)});
+      return out; }
     function _validatePlan(acts, profile, q){ const rejected=[]; if(!Array.isArray(acts)) return {plan:acts,rejected};
       const mode=(profile&&profile.temporalMode)||'unspecified';
       const year=(profile&&profile.targetYear!=null)?profile.targetYear:null;
@@ -148,8 +201,12 @@ export function makeAtlasPlanner(HOST, CTX) {
           const keep=out.filter(a=>a&&a.type!=='answer'); const nav=keep.find(a=>a&&a.place);
           const na={type:'researchMap',topic:(answerOnly&&out[0]&&out[0].text)?String(out[0].text).slice(0,120):String(q||'').slice(0,140),place:nav?String(nav.place).trim():'',temporalMode:mode,evidenceMode:(profile.evidenceMode||'historical')}; if(year!=null) na.year=year;
           rejected.push({from:(navOnly?'(nav-only)':'(answer-only)'),to:'researchMap',reason:'explanation_and_map_need_a_research_producer'});
-          return {plan:keep.concat([na]),rejected}; } }
-      return {plan:out, rejected}; }
+          /* ⚠ (#R397) THE INTENT GATES RUN AFTER R3, NOT BEFORE IT. R3's job is to guarantee that SOME
+             action produces the explanation the request needs; running the gates first could leave it
+             nothing to inspect, and running them after lets R3 keep its guarantee while the gates
+             decide whether the producer has to be the map-drawing one. */
+          return {plan:_applyIntentGates(keep.concat([na]),profile,q,rejected),rejected}; } }
+      return {plan:_applyIntentGates(out,profile,q,rejected), rejected}; }
     /* Repair instruction (§10) — the loose "nearby well-known place / coarser target" advice is REMOVED. */
     function _repairGuidance(){ return 'Do NOT give up, but stay faithful to the request. Propose a GENUINELY different, documented action for the UNMET part only. HARD limits: never re-issue the same call with only a renamed / re-spelt / translated target; never switch a historical question to live news (mapReport) or vice-versa; never change the required evidence mode; never replace a specific place with a whole-world or continental thematic map. If you must widen the target, widen it by ONE step to its immediate surrounding region only (e.g. a sea → its coastline / bordering lands), keeping the original subject. A failure to DRAW on the map is NOT a failure to ANSWER: if the explanation is already given, do not retry the map. Only if it is genuinely impossible with the documented actions, reply with a single "answer" explaining specifically what is impossible. '
       + 'When an [EXECUTION RESULT] block is present it is IntMap\'s honest, mechanical observation — IntMap did NOT correct, substitute, drop or reinterpret any identifier; that decision is YOURS. Read "unresolved" and each item\'s "availableIdentifiers": if a candidate is correct, re-issue the SAME action type with the corrected identifier(s) — that is an intended fix, NOT a forbidden rename retry. If no candidate is right, re-search, ask the user a specific question, or explicitly accept the partial result. Never report a target as done unless it appears in "resolved" and the render was verified.'; }

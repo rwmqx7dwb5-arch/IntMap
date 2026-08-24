@@ -30,9 +30,15 @@
  *  unspecified when it is the answer's lead.
  * ==========================================================================*/
 
+/* (#R397) A LEAF IMPORT, DELIBERATELY. js/atlas-geo-object.js imports nothing, so there is no cycle
+   for Rollup to resolve by putting one `const` in a TDZ — the failure #R318 hit when
+   atlas-executor.js and atlas-capabilities.js imported each other in opposite directions. */
+import { makeAtlasGeoObject } from './atlas-geo-object.js';
+
 export function makeAtlasAnswerContract() {
   return (function () {
 
+  const GEO = makeAtlasGeoObject();
   const CONTRACT_VERSION = 1;
 
   const CLAIM_TYPES = ['fact', 'calculation', 'inference', 'judgment'];
@@ -178,12 +184,24 @@ export function makeAtlasAnswerContract() {
           required: ['id', 'text', 'claimType', 'importance', 'dimension', 'evidenceIds', 'confidence'],
         },
       },
+      /* ⚠ (#R397) `geoId` IS HOW A COORDINATE SURVIVES WITHOUT THE MODEL INVENTING ONE.
+         There are still no lat/lng fields here, and there must not be: a language model's latitude
+         is a plausible number, and a plausible number is the one kind a map may not draw
+         (DECISIONS.md: 座標・URL・出典をモデルに生成させない). But the answer used to carry a place
+         as a BARE NAME, so a coordinate IntMap had already fetched — from a USGS record, an event,
+         a feed, a gazetteer hit — had no field to travel in and was thrown away, and
+         `_pinReplyPlaces` re-resolved the name from scratch and reported 「未配置」 when the second
+         lookup was stricter than the first.
+         `geoId` is the same device the evidence registry uses for sources: code puts the resolved
+         objects in front of the model with ids, and the model REFERENCES one. An id that is not in
+         the KNOWN PLACES block is ignored exactly as a fabricated evidence id is. */
       places: {
         type: 'ARRAY',
         items: {
           type: 'OBJECT',
           properties: {
             name: { type: 'STRING' }, country: { type: 'STRING' }, kind: { type: 'STRING' },
+            geoId: { type: 'STRING' },
             claimIds: { type: 'ARRAY', items: { type: 'STRING' } },
           },
           required: ['name', 'country'],
@@ -253,10 +271,17 @@ export function makeAtlasAnswerContract() {
         confidence: inSet(c && c.confidence, CONFIDENCE, 'low'),
         qualifier: str(c && c.qualifier, 200),
       })),
-      places: arr(src.places).map((p) => ({
-        name: str(p && p.name, 120), country: str(p && p.country, 90),
-        kind: str(p && p.kind, 60), claimIds: arr(p && p.claimIds).map((x) => str(x, 40)),
-      })).filter((p) => p.name),
+      /* (#R397) The model's named places, with every coordinate CODE already had merged back in by
+         `mergeKnown` — matched on geoId, then on normalised name, then on containment, so
+         «Kahramanmaraş» meets «14 km SSW of Kahramanmaraş». Each entry keeps `provenance`, so a
+         representative centroid can never be presented downstream as a point the reader chose. */
+      places: GEO.mergeKnown(
+        arr(src.places).map((p) => ({
+          id: str(p && p.geoId, 80), name: str(p && p.name, 120), country: str(p && p.country, 90),
+          kind: str(p && p.kind, 60), claimIds: arr(p && p.claimIds).map((x) => str(x, 40)),
+        })).filter((p) => p.name),
+        arr(opts.knownPlaces)
+      ),
       operations: [],
       audit: { status: 'pending', errors: [], warnings: [] },
     };

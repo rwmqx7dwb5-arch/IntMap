@@ -158,9 +158,12 @@ const TASKS = new Set([
   "atlas_plan", "map_report", "analysis", "analysis_structured", "free_text", "json_extract",
   "brief", "geo_verify", "geo_resolve", "research_map", "vision_read",
 ]);
-/* A caller-supplied responseSchema is forwarded to the provider verbatim, so it is an input too.
-   Nothing in js/ passes one today (only task === "map_report" gets a schema, and that one is this
-   file's own constant) — these are the bounds on a field that exists for future callers. */
+/* A caller-supplied responseSchema is forwarded to the provider, so it is an input too.
+   ⚠ (#R397) THE OLD NOTE HERE SAID «Nothing in js/ passes one today». It does, and it did when that
+   was written: js/atlas-console.js sends PLAN_SCHEMA and RESEARCH_MAP_SCHEMA and js/atlas-geo-resolve.js
+   sends GEO_RESOLVE_SCHEMA, all through `body.schema` in js/ai-core.js. The sentence was true of the
+   Gemini era and stopped being true without being re-read — which is also why nobody noticed that the
+   OpenAI path never had a schema parameter at all. These are the bounds on a live field. */
 const MAX_SCHEMA_BYTES = 16 * 1024;
 const MAX_SCHEMA_DEPTH = 12;
 const MAX_SCHEMA_KEYS = 512;
@@ -182,6 +185,87 @@ function schemaOk(v) {
     return true;
   };
   return walk(v, 0);
+}
+
+/* ══ (#R397) THE SCHEMA REACHED GEMINI AND NEVER REACHED OPENAI ═══════════════════════════════════
+   `responseSchema` is resolved above for every JSON task — MAP_REPORT_SCHEMA, ANSWER_SCHEMA, and
+   whatever js/ passes (PLAN_SCHEMA, RESEARCH_MAP_SCHEMA, GEO_RESOLVE_SCHEMA) — and then handed to
+   `callGemini` at four call sites. `callOpenAI` never had the parameter. On the provider this app
+   actually runs (AI_PROVIDER=openai) the model was therefore asked for `{type:"json_object"}` and
+   nothing else: a bare "must be JSON", with the field names, the enumerations and the required set
+   living only in the prose of the task rules and in the client's post-hoc normaliser.
+
+   That is the shape behind a whole family of reported Atlas failures — a plan that names a field
+   the executor does not read, an answer whose `claims[].dimension` is absent so the audit cannot
+   compare, a `places` array of bare strings. None of them are model stubbornness; the schema was
+   never in the request.
+
+   ⚠ IT IS A LADDER RUNG, NOT A SWITCH. OpenAI's `json_schema` format is stricter than the Gemini
+   dialect these schemas are written in, so a rejection must degrade to exactly today's behaviour
+   rather than fail the call — see the 400 ladder in callOpenAI(). `strictJsonSchema` is what makes
+   the two dialects meet:
+     · type names are upper-case in the Gemini REST dialect (`"OBJECT"`) and lower-case in JSON
+       Schema (`"object"`);
+     · `strict:true` requires EVERY property in `required` and `additionalProperties:false`. Forcing
+       a field the schema left optional would change the contract, so an optional field is widened
+       to `["string","null"]` instead — the documented way to say "required key, may be absent in
+       meaning". Every consumer already coerces: normalizeAnswer() runs `String(v == null ? '' : v)`
+       and `Array.isArray(v) ? v : []` over the whole object, so a null lands as '' or [] exactly as
+       an omitted key does today.
+     · Gemini-only keywords (`nullable`, `propertyOrdering`) and `format` are dropped: they are the
+       dialect, not the contract. */
+const OPENAI_TYPE_BY_NAME: Record<string, string> = {
+  OBJECT: "object", STRING: "string", NUMBER: "number", INTEGER: "integer",
+  BOOLEAN: "boolean", ARRAY: "array", NULL: "null",
+};
+function strictJsonSchema(node: unknown, depth = 0): unknown {
+  if (depth > MAX_SCHEMA_DEPTH || !node || typeof node !== "object" || Array.isArray(node)) return null;
+  const src = node as Record<string, unknown>;
+  const rawType = typeof src.type === "string" ? src.type : "";
+  const type = OPENAI_TYPE_BY_NAME[rawType.toUpperCase()] || (rawType ? rawType.toLowerCase() : "");
+  if (!type) return null;
+  const out: Record<string, unknown> = { type };
+  if (typeof src.description === "string" && src.description) out.description = src.description;
+  if (Array.isArray(src.enum) && src.enum.length) out.enum = src.enum.slice();
+
+  if (type === "array") {
+    const items = strictJsonSchema(src.items, depth + 1);
+    if (!items) return null;
+    out.items = items;
+    return out;
+  }
+  if (type !== "object") return out;
+
+  const props = (src.properties && typeof src.properties === "object") ? src.properties as Record<string, unknown> : null;
+  if (!props) return null;
+  const required = new Set((Array.isArray(src.required) ? src.required : []).map((k) => String(k)));
+  const converted: Record<string, unknown> = {};
+  const keys = Object.keys(props);
+  if (!keys.length) return null;
+  for (const k of keys) {
+    const child = strictJsonSchema(props[k], depth + 1) as Record<string, unknown> | null;
+    if (!child) return null;
+    /* An optional key stays in `required` (strict mode demands it) and gains "null" so the model
+       has a way to say "not applicable" — which is what leaving it out meant.
+       ⚠ AN ENUM HAS TO BE WIDENED WITH IT. `{type:["string","null"], enum:["a","b"]}` admits null by
+       type and forbids it by enum, and a validator that reads both rejects every instance — the
+       "impossible schema" that would send this straight down the 400 ladder for no reason. */
+    if (!required.has(k) && typeof child.type === "string") {
+      child.type = [child.type, "null"];
+      if (Array.isArray(child.enum) && child.enum.indexOf(null) < 0) child.enum = child.enum.concat([null]);
+    }
+    converted[k] = child;
+  }
+  out.properties = converted;
+  out.required = keys;
+  out.additionalProperties = false;
+  return out;
+}
+/** The `text.format` value for a caller schema, or null when this schema cannot be expressed strictly. */
+function openAiSchemaFormat(schema: unknown, task: string): Record<string, unknown> | null {
+  const converted = strictJsonSchema(schema);
+  if (!converted) return null;
+  return { type: "json_schema", name: (String(task || "result").replace(/[^A-Za-z0-9_-]/g, "_") || "result"), strict: true, schema: converted };
 }
 
 // (#R113) Per-TASK output budgets (replaces the single MAX_TOKENS = 1600). A 20-item
@@ -266,6 +350,10 @@ const MAP_REPORT_SCHEMA = {
    ⚠ THERE IS NO url FIELD ANYWHERE IN IT. That is not an omission: the model has nowhere to put a
    URL, so it cannot supply one, and every link the reader sees is built by the client from the
    evidence registry (js/atlas-evidence.js). */
+// (#R397) `places[].geoId` is how a coordinate CODE already resolved survives into the answer without
+// the model inventing one. There are still no lat/lng fields and there must not be. The mirror of this
+// literal is ANSWER_SCHEMA in js/atlas-answer-contract.js, and tests/r350 ①a JSON.parses THIS ONE to
+// compare them — so nothing inside the braces below may carry a comment, however useful. Notes go here.
 const ANSWER_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -330,6 +418,7 @@ const ANSWER_SCHEMA = {
         type: "OBJECT",
         properties: {
           name: { type: "STRING" }, country: { type: "STRING" }, kind: { type: "STRING" },
+          geoId: { type: "STRING" },
           claimIds: { type: "ARRAY", items: { type: "STRING" } },
         },
         required: ["name", "country"],
@@ -495,7 +584,7 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", _isFallback = false): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[] }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", _isFallback = false, schemaFormat: Record<string, unknown> | null = null): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -505,7 +594,9 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   const _detail = (imageDetail === "high" || imageDetail === "low") ? imageDetail : "auto";
   for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}`, detail: _detail });
 
-  const build = (choice: string | null, json: boolean, tools: boolean): Record<string, unknown> => {
+  /* jsonMode: "schema" = the caller's shape, enforced; "object" = bare must-be-JSON (what every
+     call did before #R397); "off" = prose, the client parser strips fences. */
+  const build = (choice: string | null, jsonMode: "schema" | "object" | "off", tools: boolean): Record<string, unknown> => {
     const b: Record<string, unknown> = {
       model,
       input: [{ role: "user", content }],
@@ -516,7 +607,8 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (system) b.instructions = system;
     // JSON mode. NOTE: OpenAI's json_object validator wants the word "JSON" in the request; the
     // task prompts carry it, but a rejection is survivable via the 400 ladder below anyway.
-    if (json) b.text = { format: { type: "json_object" } };
+    if (jsonMode === "schema" && schemaFormat) b.text = { format: schemaFormat };
+    else if (jsonMode !== "off") b.text = { format: { type: "json_object" } };
     // Search is paid per tool call, so attach it only when the client explicitly
     // asks for auto/required web mode. Ordinary Atlas work stays tool-free.
     if (tools) { b.tools = [{ type: "web_search" }]; if (choice) b.tool_choice = choice; }
@@ -537,15 +629,19 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   // strips fences) → drop tools.
   // 90s + 40s fallback = 130s worst case — safely inside even a 150s wall-clock limit.
   const WEB_TIMEOUT = 90_000;
-  let usedTools = web, usedJson = wantJson;
+  let usedTools = web;
+  /* (#R397) THE RUNG ABOVE json_object. A caller schema is tried first and a 400 walks down to the
+     bare json_object every call used before, so a dialect this model will not accept costs one
+     extra request and never an answer. */
+  let usedJson: "schema" | "object" | "off" = wantJson ? (schemaFormat ? "schema" : "object") : "off";
   let r: Response;
   try {
-    r = await post(build(web && forceWeb ? "required" : null, wantJson, web), web ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+    r = await post(build(web && forceWeb ? "required" : null, usedJson, web), web ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
   } catch (e) {
     const timedOut = e instanceof ProviderError && e.meta && (e.meta as Record<string, unknown>).timeout === true;
     if (web && timedOut) {
       usedTools = false;
-      r = await post(build(null, wantJson, false), 40_000);
+      r = await post(build(null, usedJson, false), 40_000);
     } else {
       throw e;
     }
@@ -553,9 +649,13 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   if (!r.ok && r.status === 400 && usedTools && forceWeb) {
     r = await post(build(null, usedJson, true), WEB_TIMEOUT);
   }
-  if (!r.ok && r.status === 400 && usedJson) {
-    usedJson = false;
-    r = await post(build(null, false, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+  if (!r.ok && r.status === 400 && usedJson === "schema") {
+    usedJson = "object";
+    r = await post(build(null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
+  }
+  if (!r.ok && r.status === 400 && usedJson === "object") {
+    usedJson = "off";
+    r = await post(build(null, usedJson, usedTools), usedTools ? WEB_TIMEOUT : PROVIDER_TIMEOUT_MS);
   }
   if (!r.ok && r.status === 400 && usedTools) {
     usedTools = false;
@@ -571,7 +671,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (!_isFallback && (r.status === 403 || r.status === 404) && model !== FALLBACK_MODEL &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: FALLBACK_MODEL, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, true);
+      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, true, schemaFormat);
     }
     const pe = classifyGemini(r.status, t, "", "");
     /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written
@@ -629,7 +729,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
     throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
   }
-  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations };
+  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations, schemaAttached: usedJson === "schema" };
 }
 
 interface GeminiOpts {
@@ -881,21 +981,24 @@ Deno.serve(async (req) => {
     (provider === "openai" ? OPENAI_DEFAULT_MODEL : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R151) OpenAI default = GPT-5.6 Terra (AI_MODEL secret = gpt-5.6-terra; re-verified reachable R150/R151). Luna stays the FALLBACK_MODEL only on 403/404 model_not_found so a model outage can never blanket-kill Atlas. */
 
   try {
-    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[] };
+    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
       let effort = TASK_REASONING[task] || "low";   // (#R116) planner/analysis think at "medium"
       if (effortHint === "high" && (task === "atlas_plan" || task === "analysis" || task === "analysis_structured" || task === "vision_read")) effort = "high";   // (#R117/#R156/#R350) complexity hint (vision reading small text + maths earns "high")
+      /* (#R397) The same `responseSchema` callGemini has had since #R113, in OpenAI's dialect.
+         null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
+      const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail);
+        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail);
+          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
         } else {
           throw e;
         }
@@ -941,7 +1044,11 @@ Deno.serve(async (req) => {
       charged,
       // (#R114) webUsed = the search tool ACTUALLY ran this turn (not just attached); the client uses
       // it to keep "latest" features honest (never present a search-less answer as fresh intelligence).
-      meta: { provider, model, task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, finishReason: out.finishReason },
+      /* (#R397) `schemaAttached` is the same kind of fact as `webUsed`: whether the provider was
+         actually held to the caller's shape on THIS call, or answered under the bare json_object
+         because the strict dialect was rejected. The client reads it to decide whether a missing
+         field is the model's doing or the ladder's. */
+      meta: { provider, model, task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason },
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows
       // these as the primary, web-verified sources — separate from the client-gathered headlines.
       citations: Array.isArray(out.citations) ? out.citations : [],

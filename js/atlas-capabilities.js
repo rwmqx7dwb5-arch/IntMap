@@ -307,11 +307,45 @@ export function makeAtlasCapabilities(HOST) {
        ⚠ EVERY ONE OF THESE READS THE APP, NOT THE CALL. That is the whole point of the file. */
     function GE() { try { return window.IntMapGeoEngine; } catch (_) { return null; } }
     function hasRenderer() { try { return !!(GE() && GE().hasRenderer()); } catch (_) { return false; } }
+    /* ⚠⚠⚠ (#R397) THE THREE OBSERVERS BELOW NAMED THINGS THAT DO NOT EXIST, AND `try{}catch(_){}`
+       ATE THE PROOF. This is the #R388 shape — a façade method spelled from memory, a TypeError
+       swallowed, and a feature that never worked while every gate stayed green — except here it was
+       the VERIFIER itself, so the damage was that Atlas could not see what it had just done:
+
+         · `GE().layers.list()` DOES NOT EXIST. The layers façade (js/geo-engine.js:1813+) has
+           has/add/remove/setVisible/isVisible/getLayout/sourceData and no enumerator at all, so the
+           `?` guard took the null branch on every call and `visibleLayerIds()` returned `[]` FOREVER.
+           The `layer` observer's `observed.layers` (13 capabilities) was always empty and
+           `paintNow().visible` was always 0.
+         · `getCenter()` RETURNS `{lng,lat}`, NOT AN ARRAY — in both adapters (js/geo-engine.js:1141
+           and js/cesium-engine.js:639-640). Reading `c[0]`/`c[1]` gave `undefined` → `+undefined` →
+           NaN, and `JSON.stringify(NaN)` is `null`, so `changed(before, after)` compared
+           `{"lng":null,"lat":null,…}` against itself. THE CAMERA OBSERVER COULD ONLY SEE ZOOM,
+           BEARING AND PITCH. A `view.flyTo` that crossed the planet at an unchanged zoom — flying
+           to Kenya from another country-level view is exactly that — was reported
+           `partial / no_change`, which then fed the repair loop a failure that had not happened.
+         · `'nlq-pin-src'` and `'atl-poi-src'` ARE NOT SOURCE IDS ANYWHERE IN THIS REPOSITORY. They
+           occurred on one line, this file's, and nowhere else. The real ids are `'user-pins'`
+           (js/app-body.js:2953) and `'nlq-poi-src'` (js/atlas-console.js:1638), so
+           `sourceFeatureCount` took its `catch` and `paintNow().pins`/`.poi` were always `-1`: the
+           `paint` observer (23 capabilities) could not see a pin or a POI appear.
+
+       ⚠ THE LESSON IS THE GUARD, NOT THE SPELLING. `GE().layers.list ? … : null` and
+       `catch (_) { return -1 }` are both written as caution and both convert "this name is wrong"
+       into a plausible reading. Every façade name below is now checked by
+       tests/r397-checks.test.mjs against the façade's own source, so a rename breaks a test instead
+       of blinding the verifier. */
     function visibleLayerIds() {
       var out = [];
       try {
-        var st = GE().layers.list ? GE().layers.list() : null;
-        (st || []).forEach(function (id) { try { if (GE().layers.getLayout(id, 'visibility') !== 'none') out.push(id); } catch (_) { } });
+        /* The style is the only enumerator either adapter offers (`scene.getStyle()`), and its
+           layer objects already carry `layout.visibility` — so this is ONE call, not one per layer. */
+        var st = GE().scene.getStyle();
+        var ls = (st && Array.isArray(st.layers)) ? st.layers : [];
+        for (var i = 0; i < ls.length; i++) {
+          var l = ls[i]; if (!l || !l.id) continue;
+          if (!(l.layout && l.layout.visibility === 'none')) out.push(String(l.id));
+        }
       } catch (_) { }
       return out;
     }
@@ -321,7 +355,15 @@ export function makeAtlasCapabilities(HOST) {
     function cameraNow() {
       try {
         var c = GE().camera.getCenter();
-        return { lng: +(+c[0]).toFixed(5), lat: +(+c[1]).toFixed(5), zoom: +(+GE().camera.getZoom()).toFixed(3),
+        /* Accept the object both adapters return AND an array, so the next adapter cannot reproduce
+           the silent-NaN failure by returning the other shape. */
+        var lng = (c && c.lng != null) ? +c.lng : (Array.isArray(c) ? +c[0] : NaN);
+        var lat = (c && c.lat != null) ? +c.lat : (Array.isArray(c) ? +c[1] : NaN);
+        /* An unreadable centre is NOT a centre of NaN. Returning null makes the verifier say
+           `no_change` because it could not observe, which is the honest answer; a NaN that
+           stringifies to null claims the camera was observed and found identical. */
+        if (!isFinite(lng) || !isFinite(lat)) return null;
+        return { lng: +lng.toFixed(5), lat: +lat.toFixed(5), zoom: +(+GE().camera.getZoom()).toFixed(3),
           bearing: +(+GE().camera.getBearing()).toFixed(2), pitch: +(+GE().camera.getPitch()).toFixed(2) };
       } catch (_) { return null; }
     }
@@ -371,10 +413,13 @@ export function makeAtlasCapabilities(HOST) {
     function timeNow() {
       try { var T = window.IntMapTime; return T && T.get ? T.get() : null; } catch (_) { return null; }
     }
-    /* the Atlas-drawn canvases: how many features each holds right now */
+    /* the Atlas-drawn canvases: how many features each holds right now.
+       ⚠ THE IDS ARE THE ONES THE APP ACTUALLY CREATES — `user-pins` is added in js/app-body.js and
+       `nlq-poi-src` in js/atlas-console.js. tests/r397-checks.test.mjs re-derives both from those
+       files, because the pair that stood here was invented and cost the paint observer its eyes. */
     function paintNow() {
       return { poly: sourceFeatureCount('nlq-poly-src'), line: sourceFeatureCount('nlq-line-src'),
-        pins: sourceFeatureCount('nlq-pin-src'), poi: sourceFeatureCount('atl-poi-src'),
+        pins: sourceFeatureCount('user-pins'), poi: sourceFeatureCount('nlq-poi-src'),
         visible: visibleLayerIds().length, objects: objectIds().length };
     }
 

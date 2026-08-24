@@ -32,6 +32,11 @@ import { fileURLToPath } from 'node:url';
 import { personaPrompt } from '../js/atlas-persona.js';
 /* (#R318) the action catalogue lives in its own module now — see plannerPromptSize() below */
 import * as catalogModule from '../js/atlas-catalog-text.js';
+/* (#R397) SYS() now reads three clauses out of js/atlas-policy.js. The stub Proxy answers an unknown
+   name with `() => ''`, so leaving POLICY out would not fail — it would make `POLICY.all` a missing
+   property on a function and throw, and if it ever stopped throwing it would silently measure a
+   prompt with the clauses MISSING. The real module is what keeps this a real measurement. */
+import { makeAtlasPolicy } from '../js/atlas-policy.js';
 const ATLAS_PERSONA = personaPrompt.spec;   /* the specification hangs off the single export (#R175) */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -56,6 +61,14 @@ const EXPECTED_CALLS = {
   'js/news-ui.js': 3,                /* publisher HQ, headline subject, article translation */
   'supabase/functions/monitor-run/index.ts': 1,
   'supabase/functions/refresh-news/index.ts': 1,
+  /* ⚠ (#R397) THIS ROW WAS MISSING FOR FORTY-ONE ROUNDS. #R351 added a `personaPrompt("translating
+     world-news headlines…", {mode:"internal"})` to supabase/functions/news-ingest/index.ts and did
+     not add it here — and because every check below iterates PROMPT_FILES, which is
+     Object.keys(EXPECTED_CALLS), THE TABLE WAS THE POPULATION. A prompt in a file the table does not
+     name could drift, restate the register clause, or introduce itself in its own words, and nothing
+     would go red. Architecture.md carried the same «20» and the same omission.
+     The row is the smaller half of the fix; test (2b) below is the other half. */
+  'supabase/functions/news-ingest/index.ts': 1,   /* headline translation (internal mode) */
 };
 const PROMPT_FILES = Object.keys(EXPECTED_CALLS);
 
@@ -90,6 +103,32 @@ test('R285 (2) every Atlas system prompt is built from js/atlas-persona.js', () 
     );
     assert.match(code, /atlas-persona\.js/, `${f}: does not import the persona`);
   }
+});
+
+/* ── ②b THE TABLE IS NOT THE POPULATION ───────────────────────────────────────────────────────
+   (#R397) Every check in this file iterates PROMPT_FILES. That makes EXPECTED_CALLS a declaration of
+   what exists, and a declaration is exactly what #R351's addition slipped past. So ask the repository
+   instead: which files import the persona? Any file that does and is not in the table is a prompt
+   nothing here has ever inspected.
+   ⚠ MUTATION THAT MUST GO RED: delete the news-ingest row above. */
+test('R285 (2b) no file imports the persona without appearing in the table', () => {
+  const roots = ['js', 'supabase/functions'];
+  const found = [];
+  const walk = (dir) => {
+    for (const e of readdirSync(resolve(ROOT, dir), { withFileTypes: true })) {
+      const rel = dir + '/' + e.name;
+      if (e.isDirectory()) { walk(rel); continue; }
+      if (!/\.(js|ts|mjs)$/.test(e.name)) continue;
+      if (rel.endsWith('atlas-persona.js')) continue;   /* the source of truth and its generated mirror */
+      const src = readFileSync(resolve(ROOT, rel), 'utf8');
+      if (/from\s+['"][^'"]*atlas-persona\.js['"]/.test(src)) found.push(rel);
+    }
+  };
+  roots.forEach(walk);
+  assert.ok(found.length > 0, 'nothing imports the persona — this check has lost its subject');
+  const missing = found.filter((f) => !(f in EXPECTED_CALLS));
+  assert.deepEqual(missing, [],
+    `these files build a system prompt from the persona and are absent from EXPECTED_CALLS, so no check in this file has ever read them: ${missing.join(', ')}`);
 });
 
 /* ── ③ …AND NONE OF THEM STILL INTRODUCES ITSELF IN ITS OWN WORDS ──────────────────────────── */
@@ -237,6 +276,7 @@ function plannerPromptSize() {
   const DOCS = makeAtlasCatalogText({}, {});
   const env = {
     personaPrompt,
+    POLICY: makeAtlasPolicy(),
     _DOCS: DOCS,
     _langLine: () => 'English (write EVERYTHING in English, every sentence — a place, person or organization name in the request, even one written in Han/Chinese or Korean characters, NEVER changes the reply language)',
     controlCatalog: () => 'x'.repeat(3727),
