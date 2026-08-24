@@ -1177,6 +1177,35 @@ window.IntMapModules.weatherEC=function(HOST){
        before this was written: nothing outside this module names `ec-cape` as a style layer. */
     const slotIds=(cfg,s)=>[cfg.id+'-'+s, cfg.id+'-'+s+'-lbl'];
     const curIds=(cfg)=>slotIds(cfg,cfg._s|0);
+    /* ══ ⚠⚠⚠ (#R398) THE ISOBAR TILE WAS NEVER ASKED FOR ISOBARS ═══════════════════════════════
+       The SDK's vector protocol draws what the URL asks it to: `arrows=true` lays out wind arrows,
+       `contours=true` traces the contours, and a url with NEITHER produces a tile that contains
+       only the SDK's `grid` message. `ec-isobars` has always sent the bare url, so its two style
+       layers — the line and its label — have been reading a `contours` source-layer that was never
+       written. MEASURED on one file, one view, two sources side by side:
+
+           …?variable=pressure_msl                     0 features
+           …?variable=pressure_msl&contours=true      900 features, value "100500"
+
+       i.e. 「等圧線」 has drawn NOTHING since the row existed, for a reason that has nothing to do
+       with this round's unit defect — the layer was visible, its source loaded, its tiles fetched,
+       and every one of them was empty. Both halves had to be true for a line to appear: the tile
+       must be asked for contours, and the levels it is contoured at (the breakpoints of the ramp
+       the renderer is given) must be in the field's own unit. The second is FIELD_UNITS.
+       ⚠ `stateKey` keeps only the SDK's DATA_RELEVANT_PARAMS (`variable`), so this changes what is
+       DRAWN and nothing about what is read or cached — the same note `omRasterUrl` carries. */
+    const _tileExtra=(cfg)=>cfg.type==='arrows'?'&arrows=true':cfg.type==='isobars'?'&contours=true':'';
+    /* ⚠⚠ (#R398) THE ISOBAR LABEL IS THE CONTOUR LEVEL, AND THE LEVEL IS IN THE FILE'S UNIT.
+       The SDK writes `properties.value` as the value it contoured at, and it contours at the
+       breakpoints of the ramp it was given — which is the ramp in FIELD units (js/wx-ecmwf.js
+       `FIELD_UNITS`). So a `pressure_msl` label would read 「101000」 unless it is divided by the
+       same `per` the readout and the key are divided by. Asked for rather than written down: a
+       literal 100 here would be a fourth copy of 「気圧は hPa」 and the first one to go stale.
+       ⚠ A VARIABLE WITH NO ENTRY KEEPS THE EXPRESSION IT HAD — `['get','value']`, unchanged. */
+    const _contourLabel=(cfg)=>{
+      let fu=null; try{ fu=EC(cfg).fieldUnit&&EC(cfg).fieldUnit(cfg.variable); }catch(_){}
+      return fu ? ['to-string',['round',['/',['to-number',['get','value'],0],fu.per]]] : ['get','value'];
+    };
     function addSlot(cfg,s){
       const sid=cfg.id+'-'+s+'-src', lid=cfg.id+'-'+s, lbl=lid+'-lbl';
       const before=EC(cfg).before();
@@ -1186,13 +1215,24 @@ window.IntMapModules.weatherEC=function(HOST){
          scheme with no handler. It then fetches it natively, which is a CSP violation and never a
          tile. The retry ladders already re-call this, so refusing is the whole fix. */
       if(!EC(cfg).registerProtocol()) return false;
-      const url=omUrl(cfg,cfg.type==='arrows'?'&arrows=true':'');
+      const url=omUrl(cfg,_tileExtra(cfg));
       if(!url) return false;
       try{
         if(cfg.type==='isobars'){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:url});
           if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'line',source:sid,'source-layer':'contours',layout:{visibility:'none','line-cap':'round','line-join':'round'},paint:{'line-color':'rgba(255,255,255,0.9)','line-width':1.1,'line-opacity':cfg.op}},before);
-          if(!GE().layers.has(lbl)) GE().layers.add({id:lbl,type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'line','text-field':['get','value'],'text-size':window.IntMapLabelScale.sub(0.82)},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
+          /* ⚠⚠ (#R398) `point`, NOT `line`. 「等圧線…数値は hPa」 promises a labelled contour, and
+             with `symbol-placement:'line'` MapLibre places NONE on these tiles — MEASURED on the
+             live contour source, one view, four probes on the same features:
+                 placement 'line'         0 labels        placement 'line-center'  0 labels
+                 …with text-allow-overlap 0 labels        placement 'point'       25 labels
+             and unchanged at tile_size 512 / 1024 / 2048, so it is not the MVT extent. The SDK
+             emits each contour as many short parts (median 16 screen px at z3.4), and a part that
+             short can never host text laid along it. `point` anchors one label per part and lets
+             the collision grid thin them, which is how a printed isobar chart labels its lines
+             anyway — upright, not bent along the curve. The 'line' variant was never observable
+             before this round because the source carried no contours at all. */
+          if(!GE().layers.has(lbl)) GE().layers.add({id:lbl,type:'symbol',source:sid,'source-layer':'contours',layout:{visibility:'none','symbol-placement':'point','text-field':_contourLabel(cfg),'text-font':['literal',['Noto Sans Regular']],'text-size':window.IntMapLabelScale.sub(0.82)},paint:{'text-color':'#fff','text-halo-color':'rgba(0,0,0,0.7)','text-halo-width':1.2}},before);
         } else if(cfg.type==='arrows'){
           if(!GE().layers.hasSource(sid)) GE().layers.addSource(sid,{type:'vector',url:url});
           if(!GE().layers.has(lid)) GE().layers.add({id:lid,type:'line',source:sid,'source-layer':'wind-arrows',layout:{visibility:'none','line-cap':'round'},paint:{'line-width':1.8,'line-opacity':cfg.op,'line-color':['interpolate',['linear'],['to-number',['get','value'],0],0,'#5b8ff9',6,'#36cfc9',12,'#73d13d',18,'#ffd666',26,'#ff7a45',36,'#cf1322']}},before);

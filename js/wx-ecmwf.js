@@ -78,6 +78,9 @@ import './wx-models.js';
   var sdk = null, sdkP = null, protoReg = false;
   var readers = [];              /* most-recent-first: [{url, rd}] — one open .om file each */
   var settings = null;
+  /* (#R398) the same ramps as `settings.colorScales`, in the READER's units — see FIELD_UNITS.
+     Shared for the same reason `settings` is: a ramp describes a variable, not a model. */
+  var displayScales = null;
   var _lys = null, _ids = null, _idsHooked = false;
   var _dtf = Object.create(null);
   /* the registry that says which models exist and where their files are (js/wx-models.js). Reached
@@ -225,6 +228,71 @@ import './wx-models.js';
      steps; at 0.05 it is eight, each below 24/255 — and the ramp is 2,341 buckets, which costs
      nothing on the map (`legend()` thins the stops it DRAWS, see below). */
   var WINDY_TEMP = rampFrom(TEMP_ANCHORS, 0.05);
+
+  /* ══ ⚠⚠⚠ (#R398) THE FIELD'S NUMBERS AND THE RAMP'S NUMBERS WERE NEVER IN THE SAME UNIT ═══════
+     「海面気圧レイヤーのカーソル読み出しが、自分の凡例と100倍食い違っている。」
+
+     MEASURED on the built page, one point, three instruments that are all supposed to describe the
+     same picture:
+
+         IntMapECMWF.valueNow('pressure_msl', 35, -80)   101,458.75      ← the .om field, in PASCALS
+         legend('pressure_msl').unit / ticks             hPa · 940…1060  ← the SDK's own ramp
+         the corner readout                              「101237 hPa」   ← the first, wearing the second's unit
+
+     The readout was the only VISIBLE half of it, and it was the least of the three. `getColor` is
+     the function the SDK's tile worker paints every pixel with, and asked for the field's real
+     numbers it answers the same thing everywhere on Earth:
+
+         getColor(pressure ramp, 100000 Pa) = getColor(…, 101458.75) = getColor(…, 102500)
+                                            = [255,68,68] = the LAST colour of the ramp
+
+     — i.e. the sea-level-pressure raster was a UNIFORM RED SHEET, at every zoom, in every view,
+     for as long as the layer has existed. And the isobars are contoured at the same ramp's
+     breakpoints (the SDK uses them as the levels when no `intervals` are given), so lines were
+     being sought at 940…1060 in a field that runs 87,000…108,000: not one level is ever crossed,
+     so 「等圧線」 drew NOTHING AT ALL. One unit mismatch, three broken pictures, no error anywhere.
+
+     ⚠ THE OTHER SEVEN SHIPPED VARIABLES WERE MEASURED THE SAME WAY AND ARE FINE — temperature_2m
+     21.95 °C, dew_point_2m 17.33 °C, wind_gusts_10m 4.69 m/s, wind_u_component_10m 2.23 m/s,
+     cloud_cover 5.53 %, precipitation 0.86 mm, cape 11.25 J/kg — each against its own ramp's unit.
+     `pressure_msl` is the only variable Open-Meteo publishes in a unit its own colour scale is not
+     written in, which is exactly why nothing caught it: there was no second case to disagree with.
+
+     So the relation is DECLARED, once, here — how many of the FIELD's units make one of the
+     READER's — and everything else is derived from it rather than written down again:
+
+         · the renderer is handed the ramp expressed in the FIELD's numbers (`inFieldUnits`), so the
+           raster is painted and the isobars are contoured on the values the file actually holds;
+         · `scale()` / `legend()` keep the READER's ramp, untouched, so the key still says hPa;
+         · `sampler()` — and therefore `valueNow` / `valueAt` — divides by the same factor, so the
+           number under the cursor is in the unit the key beside it names;
+         · js/weather.js builds the isobar LABEL by dividing by this same `per`.
+
+     ⚠ A VARIABLE BELONGS HERE ONLY WHEN ITS FILE AND ITS RAMP DISAGREE. An empty entry is not a
+     harmless one: it would silently rescale a field that was already right. */
+  var FIELD_UNITS = {
+    pressure_msl: { field: 'Pa', display: 'hPa', per: 100 }
+  };
+  function fieldUnit(variable) { return FIELD_UNITS[String(variable)] || null; }
+  function fieldPer(variable) { var u = FIELD_UNITS[String(variable)]; return u ? u.per : 1; }
+  /* The SAME ramp, written in the numbers the field actually holds — same colours, same relative
+     positions, breakpoints multiplied by `per`.
+     ⚠ IT ASKS FOR BOTH THEMES AND PUTS THE PAIR BACK TOGETHER. `getColorScale` has already chosen
+     between `colors.light` and `colors.dark` by the time we see a table, so rescaling one of them
+     and storing it would hand every dark reader the light colours (or the other way round). */
+  function inFieldUnits(variable, scales) {
+    var u = FIELD_UNITS[variable]; if (!u || !sdk || !sdk.getColorScale) return null;
+    var lt, dk;
+    try { lt = sdk.getColorScale(variable, false, scales); dk = sdk.getColorScale(variable, true, scales); }
+    catch (_) { return null; }
+    if (!lt) return null;
+    var same = false;
+    try { same = JSON.stringify(lt.colors) === JSON.stringify(dk && dk.colors); } catch (_) { same = true; }
+    var out = { type: lt.type, unit: u.field, colors: same ? lt.colors : { light: lt.colors, dark: dk.colors } };
+    if (lt.type === 'breakpoint') out.breakpoints = lt.breakpoints.map(function (b) { return b * u.per; });
+    else { out.min = lt.min * u.per; out.max = lt.max * u.per; }
+    return out;
+  }
 
   /* ══ ONE MODEL ════════════════════════════════════════════════════════════════
      `cfg` is one row of js/wx-models.js. Everything that was 「the model」 — the axis, the frames,
@@ -816,9 +884,21 @@ import './wx-models.js';
     var base = sdk.defaultOmProtocolSettings;
     var scales = Object.assign({}, sdk.COLOR_SCALES_WITH_ALIASES || base.colorScales,
       { wind: WINDY_WIND, temperature: WINDY_TEMP });
+    /* ══ (#R398) TWO VIEWS OF ONE RAMP, AND ONLY ONE OF THEM IS WRITTEN DOWN ═══════════════════
+       `displayScales` is the ramp AS THE READER SEES IT — it is what `scale()` and therefore
+       `legend()` answer from, and it is untouched. `colorScales` below is the renderer's copy of
+       the very same ramp, expressed in the numbers the .om file holds, because the SDK looks a
+       pixel's value up in it directly and contours the isobars at its breakpoints. Everything that
+       differs between the two comes from FIELD_UNITS and nothing else; a variable with no entry
+       there is literally the same object in both.
+       ⚠ `mQ` (the SDK's alias resolver) checks the FULL variable name before the family, so the
+       override is keyed by the variable — `pressure_msl` alone, never every `pressure_*`. */
+    displayScales = scales;
+    var painted = Object.assign({}, scales);
+    Object.keys(FIELD_UNITS).forEach(function (v) { var s = inFieldUnits(v, scales); if (s) painted[v] = s; });
     /* ⚠ THE FIRST CALLER WINS — `getProtocolInstance` says so itself, and every call in this app
        passes this one memoised object, so the reader is built with this cache and no other. */
-    settings = Object.assign({}, base, { colorScales: scales,
+    settings = Object.assign({}, base, { colorScales: painted,
       fileReaderConfig: Object.assign({}, base.fileReaderConfig, { cache: blockCache(BLOCK_BYTES, BLOCK_MAX) }) });
     return settings;
   }
@@ -1480,16 +1560,23 @@ import './wx-models.js';
     var fr = key ? frameFor(key) : null;
     if (!fr) return null;
     var g = fr.grid, d = fr.data;
+    /* ⚠⚠⚠ (#R398) THE ONE PLACE A FIELD VALUE BECOMES A NUMBER ANYBODY READS. `valueNow` and
+       `valueAt` are this function, so converting here is what makes 「the number under the cursor
+       is in the unit the key beside it names」 true by construction rather than by two files
+       agreeing. `per` is 1 for every variable whose file and ramp are already in one unit, which
+       is all of them but `pressure_msl` — see FIELD_UNITS. */
+    var per = fieldPer(variable);
     return {
       variable: variable,
       file: fr.file,
       hasDirection: !!d.directions,
-      value: function (lat, lon) { return _lin(g, d.values, lat, lon); },
+      value: function (lat, lon) { var v = _lin(g, d.values, lat, lon); return per === 1 ? v : v / per; },
       /* speed is interpolated, bearing is nearest — a bearing is an angle and linear interpolation
          across the 0/360 seam produces a wind that briefly blows backwards. Half a cell of the O1280
          grid is 4.5 km, which is below one screen pixel at every zoom the particles are visible at. */
       uv: function (lat, lon, out) {
         var sp = _lin(g, d.values, lat, lon);
+        if (per !== 1) sp /= per;        /* (#R398) the same quantity as `value`, so the same unit */
         if (!(sp === sp)) { out[0] = out[1] = NaN; return out; }
         if (!d.directions) { out[0] = sp; out[1] = 0; return out; }
         var dir = _near(g, d.directions, lat, lon) * Math.PI / 180;
@@ -1766,11 +1853,14 @@ import './wx-models.js';
   var OWN = { temperature_2m: WINDY_TEMP, temperature_2m_max: WINDY_TEMP, temperature_2m_min: WINDY_TEMP,
     surface_temperature: WINDY_TEMP,
     wind_u_component_10m: WINDY_WIND, wind_v_component_10m: WINDY_WIND, wind_gusts_10m: WINDY_WIND };
+  /* ⚠ (#R398) `displayScales`, NOT `settings.colorScales` — this is the ramp the KEY draws and the
+     one every reading in the app is expressed against, so it stays in the reader's unit. The
+     renderer's copy of it (in the field's unit) is `omSettings().colorScales`; see FIELD_UNITS. */
   function scale(variable, dark) {
     if (!sdk || !sdk.getColorScale) return OWN[variable] || null;
     try {
-      var st = omSettings();
-      return sdk.getColorScale(variable, !!dark, st && st.colorScales);
+      omSettings();                       /* builds both views on first use */
+      return sdk.getColorScale(variable, !!dark, displayScales);
     } catch (_) { return OWN[variable] || null; }
   }
   function rgbaCss(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
@@ -2027,6 +2117,10 @@ import './wx-models.js';
     foregroundBusy: foregroundBusy,
     scale: scale,
     legend: legend,
+    /* (#R398) {field, display, per} when the .om's unit is not the ramp's, else null. The ONE
+       declaration behind the raster, the isobar levels, the key and the point value — a caller
+       that needs the factor (js/weather.js's isobar label) asks for it rather than writing 100. */
+    fieldUnit: fieldUnit,
     WINDY_TEMP: WINDY_TEMP,
     TEMP_ANCHORS: TEMP_ANCHORS,
     before: before,
