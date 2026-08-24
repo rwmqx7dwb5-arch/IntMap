@@ -745,6 +745,28 @@ window.IntMapModules.layerSidebar=function(HOST){
        desktop the way a copied panel would. */
     const _hosts=[];
     const _liveHosts=()=>_hosts.filter(h=>h&&h.isConnected);
+    /* ══ ⚠⚠⚠ (#R408 追記) THE QUESTION IS «IS THE SHEET SHOWN», NOT «IS THIS BOX IN THE VIEWPORT» ══
+       Two wrong answers were tried before this one, and the second was MEASURED to break the feature:
+         · `display`-style tests (`offsetParent`, `getClientRects().length`, `checkVisibility()`) all
+           say VISIBLE for a shut sheet, because the phone's sheet is not hidden when it is shut — it
+           is parked below the fold (MEASURED on production: top 879 px of an 812 px viewport).
+         · intersecting the VIEWPORT says NO for a sheet the reader has just opened: the tile grid is
+           a long list inside a scrollable sheet, and at the `peek`/`half` detent its top sits below
+           the fold (MEASURED here: sheet `m-sheet show`, host top 1026 px of 812). That answer would
+           have shut the gate for good and left a phone with no thumbnails at all — the exact
+           regression #R72→#R73 produced, and the one js/layer-previews.js's note is about.
+       What actually separates the two `mountInto` callers is whether the SHEET carrying the grid is
+       shown. js/mobile-ui.js `openSheet()` adds `.show` before it mounts; `applyLayout()` at boot
+       mounts with no sheet shown at all. A host that is not inside a sheet (the desktop sidebar) is
+       not this question's business and answers TRUE.
+       ⚠ AND IT FAILS OPEN, on every path it cannot read: a preview that never appears is a worse
+       defect than one that appears early. */
+    function _hostShown(el){ try{
+      if(!el||!el.isConnected) return false;
+      const sheet=el.closest&&el.closest('.m-sheet');
+      if(!sheet) return true;                       /* desktop sidebar / anything not in a sheet */
+      return sheet.classList.contains('show');
+    }catch(_){ return true; } }
     function buildTiles(host){ host=host||sb; if(!host) return; const bodyEl=host.querySelector('.lsr-body'); if(!bodyEl) return;
       const rows=rowsFromDropdown(); if(!rows.length) return;
       const root=document.createElement('div'); root.className='lst-root';
@@ -1269,7 +1291,30 @@ window.IntMapModules.layerSidebar=function(HOST){
         if(!have){ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} buildTiles(host); }
         else { const want=rowsFromDropdown().length; if(want&&want!==have) buildTiles(host); else syncTiles(); }
       }catch(_){ try{ buildTiles(host); }catch(__){} }
-      setTimeout(()=>{ try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(host); }catch(_){} },300);
+      /* ══ ⚠⚠⚠ (#R408 追記) `kick()` MEANS «THE PANEL IS ON SCREEN», AND THIS CALLER WAS NOT CHECKING ══
+         #R408 shut the boot path in js/layer-previews.js so a phone does not buy 28 pictures
+         (4,051,978 B) and 33 canvas painters for a sheet nobody has pulled up. PRODUCTION VERIFICATION
+         FOUND THEM STILL ARRIVING: 27–35 `preview_*.png` from 2.1 s, with the sheet measurably shut
+         (`class="m-sheet"`, top 879 px of an 812 px viewport). The gate was never reached, because
+         mountInto is called TWICE and only one of the two means what kick() says:
+           · js/mobile-ui.js openSheet() — the reader pulled the sheet up. `.show` is added BEFORE this
+             call, so the host is on screen and the pictures are exactly what was asked for.
+           · js/mobile-ui.js applyLayout() — at BOOT, from syncResponsive(), to have the grid ready.
+             Nothing is on screen. This is the one that was buying them.
+         So the caller checks the claim it is making. ⚠ NOT an IntersectionObserver: #R72→#R73 replaced
+         this gate with one and rows built off-screen were never revisited, so the note in
+         js/layer-previews.js states the rule as «the gate must always open». It still always opens —
+         openSheet() calls mountInto() every time, so the first pull-up kicks. The bounded retries are
+         only for the sheet's transition still being in flight when the first attempt lands.
+         ⚠ AND IT FAILS OPEN: if the geometry cannot be read, kick as before. A preview that never
+         appears is a worse defect than one that appears early. */
+      (function(){ const at=[300,700,1500];
+        const go=(i)=>setTimeout(()=>{ try{
+          if(!host.isConnected) return;
+          if(!_hostShown(host)){ if(i+1<at.length) go(i+1); return; }
+          window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(host);
+        }catch(_){} },at[i]);
+        go(0); })();
       setTimeout(()=>{ try{ if(host.isConnected&&host.querySelectorAll('.lst-tile').length<rowsFromDropdown().length) buildTiles(host); }catch(_){} },1200);
       return host;
     }
