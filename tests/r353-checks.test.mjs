@@ -429,7 +429,15 @@ test('⑮ check:docs goes red when a document misstates the size of the bundled 
     { file: 'docs/VOLCANO-INTELLIGENCE.md', from: fmt + ' 件の噴火履歴', to: '噴火履歴' },
   ];
 
-  assert.equal(docFacts().code, 0, 'volcano-eruptions is already red on the committed tree');
+  /* ⚠ A READER THAT REQUIRES A PRISTINE TREE IS ALSO A PARTY TO THE LOCK — the header of
+     tests/helpers/gate-lock.mjs says so, and this test learned it the same way #R280 did: the
+     baseline below first ran OUTSIDE the lock, and under `npm test` another file's mutation was
+     live while it read the tree, so it went red («volcano-eruptions is already red on the
+     committed tree») for a reason that had nothing to do with this round. Both bare reads take
+     the lock now, and both are one hold each rather than one hold around the whole test. */
+  await withTreeLock(() => {
+    assert.equal(docFacts().code, 0, 'volcano-eruptions is already red on the committed tree');
+  });
   for (const c of CASES) {
     await withTreeLock(() => {
       /* ⚠ #R286/#R317: match on LF text, restore the ORIGINAL BYTES, so a CRLF checkout is
@@ -449,8 +457,11 @@ test('⑮ check:docs goes red when a document misstates the size of the bundled 
       }
     });
   }
-  assert.equal(docFacts().code, 0, 'the restore left check:docs failing');
+  await withTreeLock(() => {
+    assert.equal(docFacts().code, 0, 'the restore left check:docs failing');
+  });
 });
+
 /* ── ⑫ the status ladder never merges two agencies into one number on screen ──
    ①②③ are different instruments of different agencies. `rank` exists only so the MAP can sort
    colours; the panel must print the agency's own words with the agency's name against them. */

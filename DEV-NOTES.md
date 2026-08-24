@@ -561,6 +561,28 @@ wrote data/volcano-detail.json.gz — 11,043 eruptions (8,402 with VEI), 538 kB 
 
 **コメント4か所** — 数を消して、何が在るかを言うようにした。
 
+⚠ **その `⑮` 自身が、最初は並行実行で偽の赤を出した。** 3つの変異は `withTreeLock` の中に入れて
+いたが、**その前後の「素の木で緑であること」を読む2行がロックの外に居た**——`npm test` 中は
+他のファイルの変異が生きている瞬間があるので、「volcano-eruptions is already red on the
+committed tree」で落ちる。`tests/helpers/gate-lock.mjs` の見出しが **#R280 の実測としてこれを
+名指ししている**（「A READER THAT REQUIRES A PRISTINE TREE IS ALSO A PARTY TO THE LOCK」）。
+**素の木を読むだけの行も、ロックを取る側である。** 2行それぞれを独立の hold に入れて解決
+（ホールドはテスト全体ではなく変異ごとに取る——#R403 が同じ理由で 264 s を測っている）。
+
+⚠ **ラウンド番号は R436 → R440 に取り直した**（rebase 中に origin/main が 3 コミット進み、
+R438 / R439 が別の open PR に取られていた）。R440 が **DEV-NOTES の最新**になるので、
+`index.html` のビルドスタンプ **2箇所**（`__imBuild` と `INTMAP_BUILD`）も上げる
+（`tests/r264 ⑧` と `tests/r301 ⑦` が CI で赤くして教えてくれた——隙間番号なら触らない側）。
+
+⚠ **9言語の査読で、de の1本だけ意味がずれていた**——`die Vulkankarte` は en の「volcano **card**」
+ではなく「火山**地図**」と読める複合語で、地図アプリの出典ページでは実在するレイヤーを指してしまう。
+`pages.de.js` の `-karte` 複合語は `Basiskarte`／`Warnkarte`／`Regionskarte`… と**全部「地図」**で、
+カードの意味で使われている語は `Infokarten`（Wikipedia の行）だけだった ⇒ `die Vulkan-Infokarte`。
+**新規に訳を入れた3言語のうち、es は既存の作法にそのまま乗っていて修正ゼロ**——
+英語原文が同一の兄弟3行（`CRUST1.0` / `USGS Slab2` / `Bird (2003) PB2002`）と突き合わせると、
+その言語がその文をどう書くかは**測れる**（de は `Mit der App ausgeliefert`、ru は
+`Поставляется с приложением` が兄弟3行の書き方だった）。ru はもう1つ、受動形動詞 `собираемые` の
+行為者に**造格**が要るのにラテン文字のファイル名は格を担えない ⇒ `собираемые скриптом scripts/…`。
 ### 5. 変異で実測した（緑の検査は、発火した検査ではない）
 
 | 変異 | 結果 |
