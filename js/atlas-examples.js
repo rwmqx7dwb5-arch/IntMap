@@ -72,9 +72,20 @@
  *  Lifted out of js/atlas-console.js in #R309 because that file is at #R199's 5,300-line ceiling and
  *  the ceiling is never raised — a subject moves out instead.
  * ==========================================================================*/
+import { makeAtlasViewSubject } from './atlas-view-subject.js';   /* (#R392) what the reader is looking at */
+
 export function makeAtlasExamples(HOST, CTX) {
   const L=CTX.L, GE=CTX.GE, codeAtPoint=CTX.codeAtPoint, countryStats=CTX.countryStats,
         cName=CTX.cName, loadCountryData=CTX.loadCountryData, panelEl=CTX.panelEl, pick=CTX.pick;
+
+  /* ⚠ (#R392) THE FOURTH ROUND OF THE SAME REPORT, AND THE FIRST ONE TO CHANGE THE SUBJECT. Rounds
+     one to three varied the PREDICATE over 「the country the centre pixel falls in」; this one asks
+     what is actually in the view. The measurement lives in its own module because it is a different
+     question from 「which of these sentences is eligible」, and because this file is already 690
+     lines of pool. `geo` is the country polygons Atlas already holds — passed in rather than
+     re-fetched, so this costs no network and no startup bytes. */
+  const VIEW = makeAtlasViewSubject({ GE:GE, geo:CTX.geo, countryStats:countryStats, cName:cName,
+                                      lang:()=>HOST.lang });
 
     /* ══ the measured extremes ════════════════════════════════════════════════════════════════
        A rank inside `countryStats` rather than a number in this file. 「among the densest countries
@@ -191,10 +202,237 @@ export function makeAtlasExamples(HOST, CTX) {
         const m=/(\d+)\s*official/i.exec(s2); if(m) return +m[1];
         return s2.split(',').filter(x=>x.trim()).length; })();
       const cur=String((st&&st.currency)||'').toUpperCase();
+      /* ══ ⚠⚠⚠ (#R392) …AND WHAT IS ACTUALLY IN THE VIEW ════════════════════════════════════════
+         Everything above this line describes ONE COUNTRY, chosen by which country the centre pixel
+         lands in. That is the whole of what #R309, #R313 and #R337 had to work with, and it is why
+         the reader has now sent the same sentence four times: Shibuya at z=14 and the whole of Japan
+         at z=5 are the same country, so they were handed the same four questions.
+         `vw` is measured from the view itself — which countries are inside it, how much of it is
+         land, which named water it is about, what is named on the ground, and how many kilometres
+         across it is. A question gated on any of those is a question about THIS view and not about
+         the next one, which is the property the previous three rounds could not reach. */
+      let vw=null; try{ vw=VIEW.subject(); }catch(_){}
+      /* the countries the VIEW holds, named — `{a}` and `{b}` below. Falls back to the centre
+         country's name so a one-country view still reads naturally. */
+      const vn=(vw&&vw.countryNames&&vw.countryNames.length)?vw.countryNames:(nm?[nm]:[]);
       return { code:(st&&nm)?near:'', name:nm||'', st:st||null,
                layers:ly, has:(id)=>ids.has(id), year:year, live:live, zoom:z,
-               geo:geo, langN:langN, cur:cur };
+               geo:geo, langN:langN, cur:cur,
+               vw:vw, vnames:vn,
+               /* the scale the reader is at, in kilometres rather than zoom levels — see
+                  js/atlas-view-subject.js `scaleOf` for why a zoom number cannot answer this */
+               scale:(vw&&vw.scale)||'world' };
     }catch(_){ return null; } }
+
+    /* ══ ⚠⚠⚠ (#R392) THE POOL THAT IS ABOUT THE VIEW, NOT ABOUT THE COUNTRY ═══════════════════
+       Every candidate below is gated on something MEASURED FROM THE VIEW ITSELF — how many
+       countries are inside it, how much of it is land, which named water it is about, what the
+       tiles name on the ground, and how many kilometres across it is. None of these facts exists in
+       `countryStats`, and none of them can be answered by 「which country is the centre pixel in」,
+       which is the entire reason the same report has arrived four times.
+
+       ⚠ THEY OUTRANK THE COUNTRY POOL ON PURPOSE (12–17 against its ceiling of 10). At street zoom
+       over Shibuya, 「Japan is one of the most crowded countries on Earth」 is a true sentence about
+       the wrong object; the question about what is on screen has to win. The country pool is NOT
+       removed and NOT weakened — it still fills the row whenever the view has nothing distinctive
+       to say, which is exactly the job #R337 gave the tail one level down.
+
+       ⚠ AND EVERY ONE OF THEM REFUSES WHEN THE MEASUREMENT IS MISSING. The vector tiles arrive
+       late, so 「no settlement in this view」 is gated on `groundKnown` — otherwise it would fire on
+       every slow network and tell a reader looking at the Ruhr that nobody lives there. */
+    const V=[
+      /* ── the view holds more than one country: a border, which no country-level fact can be ── */
+      { k:'vborder', w:14, on:(f)=>f.vw&&f.vw.nCountries===2&&f.vw.landFrac>=0.35&&/^(country|region|city|street)$/.test(f.scale),
+        t:()=>L('You are looking at the border between {a} and {b} — how was that line drawn, and what crosses it?',
+                'いま見えているのは{a}と{b}の国境。この線はどう引かれ、何が行き来している？',
+                '{a} und {b}: Sie sehen gerade die Grenze zwischen beiden — wie wurde sie gezogen, und was überquert sie?',
+                'Перед вами граница между {a} и {b} — как её провели и что через неё идёт?',
+                'Está viendo la frontera entre {a} y {b}: ¿cómo se trazó y qué la cruza?') },
+      { k:'vtri', w:14, on:(f)=>f.vw&&f.vw.nCountries>=3&&f.vw.landFrac>=0.35&&/^(country|region|city|street)$/.test(f.scale),
+        t:()=>L('{nc} countries meet inside this view — what decides where the lines fall?',
+                'この視界の中で{nc}か国が接している。境界線の位置は何で決まった？',
+                'In diesem Ausschnitt treffen {nc} Länder aufeinander — was entscheidet über den Verlauf der Grenzen?',
+                'В этом виде сходятся {nc} страны — чем определено, где проходят линии?',
+                'En esta vista se encuentran {nc} países: ¿qué decide por dónde van las líneas?') },
+      /* ⚠ THIS IS HOW THE CHOKEPOINTS ARE REACHED, AND IT IS WHY NO STRAIT IS RECOGNISED BY NAME.
+         The curated gazetteer has a row for Bass Strait and Davis Strait and NOT for Gibraltar,
+         Hormuz, Malacca, Dover or the Bosphorus — so a chip that matched on 「Strait」 would fire for
+         two obscure passages and stay silent over every famous one. What those views actually have
+         in common is measurable: two countries in the frame with the frame mostly water. */
+      { k:'vmaritime', w:14, on:(f)=>f.vw&&f.vw.nCountries===2&&f.vw.landFrac<0.35&&f.vw.landFrac>0.02&&/^(country|region|city)$/.test(f.scale),
+        t:()=>L('Two countries face each other across this water — where does the boundary run, and who polices it?',
+                'この水域を挟んで2か国が向き合っている。境界はどこを走り、誰が取り締まっている？',
+                'Zwei Länder liegen sich über diesem Wasser gegenüber — wo verläuft die Grenze, und wer überwacht sie?',
+                'Через эту воду друг напротив друга лежат две страны — где проходит граница и кто её контролирует?',
+                'Dos países se miran a través de estas aguas: ¿por dónde va el límite y quién lo vigila?') },
+      /* ── ⚠⚠⚠ THE 143 PLACES THIS APP ALREADY CALLS STRATEGIC (js/reference-data.js, eager). These
+         are the highest-weighted candidates in the file because they are the most specific facts it
+         can hold: 「one of the world's maritime chokepoints」 is true of SIXTEEN points on the planet.
+         ⚠ NOT ONE OF THEM SUBSTITUTES THE CARD'S NAME. The cards carry `title:{en,jp}` — two
+         languages of nine — and #R313 追記 already removed a chip's proper noun for exactly that
+         reason. Gating on the card's TYPE keeps the question just as specific and leaves every
+         sentence a literal `L()` with nothing interpolated, so all nine languages are real. ── */
+      { k:'vchoke', w:17, on:(f)=>f.vw&&f.vw.hasSite&&f.vw.hasSite('choke'),
+        t:()=>L('This is one of the world’s maritime chokepoints — what passes through it, and what happens if it closes?',
+                'ここは世界の海上交通の要衝のひとつ。何が通り、閉じたら何が起きる？',
+                'Dies ist einer der maritimen Nadelöhre der Welt — was fährt hindurch, und was passiert, wenn es dicht ist?',
+                'Это одно из морских «горлышек» мира — что через него идёт и что будет, если его закроют?',
+                'Este es uno de los cuellos de botella marítimos del mundo: ¿qué pasa por él y qué ocurre si se cierra?') },
+      { k:'vspace', w:16, on:(f)=>f.vw&&f.vw.hasSite&&f.vw.hasSite('space'),
+        t:()=>L('There is a spaceport or tracking station in this view — what launches or listens from here?',
+                'この視界には宇宙基地か追跡局がある。ここから何が打ち上がり、何を聴いている？',
+                'In diesem Ausschnitt liegt ein Raumfahrtbahnhof oder eine Bodenstation — was startet oder horcht von hier?',
+                'В этом виде есть космодром или станция слежения — что отсюда стартует и что слушает?',
+                'En esta vista hay un puerto espacial o una estación de seguimiento: ¿qué se lanza o se escucha desde aquí?') },
+      { k:'venergy', w:16, on:(f)=>f.vw&&f.vw.hasSite&&f.vw.hasSite('energy'),
+        t:()=>L('Major energy infrastructure runs through this view — what does it move, and who depends on it?',
+                'この視界を大きなエネルギー施設が通っている。何を運び、誰がそれに依存している？',
+                'Durch diesen Ausschnitt läuft große Energieinfrastruktur — was bewegt sie, und wer hängt davon ab?',
+                'Через этот вид проходит крупная энергетическая инфраструктура — что она перекачивает и кто от неё зависит?',
+                'Por esta vista pasa infraestructura energética importante: ¿qué mueve y quién depende de ella?') },
+      { k:'vtech', w:15, on:(f)=>f.vw&&f.vw.hasSite&&f.vw.hasSite('tech'),
+        t:()=>L('This is one of the world’s technology clusters — what is actually made here, and why here?',
+                'ここは世界有数の技術集積地。実際に何が作られていて、なぜここなのか？',
+                'Dies ist einer der Technologie-Cluster der Welt — was wird hier tatsächlich gebaut, und warum hier?',
+                'Это один из технологических кластеров мира — что здесь на самом деле делают и почему именно здесь?',
+                'Este es uno de los clústeres tecnológicos del mundo: ¿qué se fabrica aquí realmente y por qué aquí?') },
+      { k:'vport', w:15, on:(f)=>f.vw&&f.vw.hasSite&&f.vw.hasSite('maritime'),
+        t:()=>L('There is a major port or naval facility in this view — what moves through it, and who runs it?',
+                'この視界には主要な港湾か海軍施設がある。何が通り、誰が運営している？',
+                'In diesem Ausschnitt liegt ein großer Hafen oder Marinestützpunkt — was läuft dort durch, und wer betreibt ihn?',
+                'В этом виде есть крупный порт или военно-морская база — что через неё идёт и кто ею управляет?',
+                'En esta vista hay un puerto importante o una base naval: ¿qué pasa por allí y quién la gestiona?') },
+      { k:'vmil', w:15, on:(f)=>f.vw&&f.vw.hasSite&&f.vw.hasSite('mil'),
+        t:()=>L('There is a major military installation in this view — whose is it, and what does it cover?',
+                'この視界には大きな軍事施設がある。どこの国のもので、何を守備範囲にしている？',
+                'In diesem Ausschnitt liegt eine große Militäranlage — wem gehört sie, und was deckt sie ab?',
+                'В этом виде есть крупный военный объект — чей он и что он прикрывает?',
+                'En esta vista hay una instalación militar importante: ¿de quién es y qué cubre?') },
+      /* ── the named water this view is about. FOUR DIFFERENT QUESTIONS, because an ocean, a sea, a
+         gulf and a lake are not the same object — 33 of the gazetteer's 120 rows are fresh water,
+         and asking Lake Bled who patrols it is the defect this round exists to remove. ── */
+      { k:'vocean', w:13, on:(f)=>f.vw&&f.vw.water&&f.vw.water.kind==='ocean'&&f.vw.landFrac<0.10,
+        t:()=>L('{water}: what crosses it here, and how deep does it get?',
+                '{water}の上にいる。この辺りを何が横切り、どれくらい深い？',
+                '{water}: Was kreuzt hier, und wie tief wird es?',
+                '{water}: что пересекает эту акваторию здесь и какая тут глубина?',
+                '{water}: ¿qué lo cruza por aquí y qué profundidad alcanza?') },
+      { k:'vsea', w:13, on:(f)=>f.vw&&f.vw.water&&f.vw.water.kind==='sea'&&f.vw.landFrac<0.30,
+        t:()=>L('{water}: who has a coast on it, and what is contested there?',
+                '{water}に面しているのはどの国？ そこで争われているものは？',
+                '{water}: Wer hat dort Küste, und was ist dort umstritten?',
+                '{water}: у кого там побережье и что там оспаривается?',
+                '{water}: ¿quién tiene costa allí y qué se disputa?') },
+      { k:'vgulf', w:12, on:(f)=>f.vw&&f.vw.water&&f.vw.water.kind==='gulf'&&f.vw.landFrac<0.45,
+        t:()=>L('{water}: who fishes it, who ships through it, and who drills in it?',
+                '{water}を使っているのは誰？ 漁・海運・資源、それぞれ誰が？',
+                '{water}: Wer fischt dort, wer verschifft, wer bohrt?',
+                '{water}: кто там ловит рыбу, кто возит грузы, кто бурит?',
+                '{water}: ¿quién pesca, quién transporta y quién perfora allí?') },
+      { k:'vnarrows', w:14, on:(f)=>f.vw&&f.vw.water&&f.vw.water.kind==='narrows',
+        t:()=>L('{water} is a narrow passage — who controls both sides, and what moves through it?',
+                '{water}は狭い水路。両岸を押さえているのは誰で、何が通っている？',
+                '{water}: eine enge Passage — wer kontrolliert beide Seiten, und was fährt hindurch?',
+                '{water} — узкий проход: кто контролирует оба берега и что идёт через него?',
+                '{water} es un paso estrecho: ¿quién controla ambas orillas y qué pasa por él?') },
+      { k:'vlake', w:13, on:(f)=>f.vw&&f.vw.water&&f.vw.water.kind==='lake',
+        t:()=>L('{water}: what lives in it, who draws water from it, and is it shrinking?',
+                '{water}には何が棲み、誰が水を引き、水位は減っている？',
+                '{water}: Was lebt darin, wer entnimmt Wasser, und schrumpft es?',
+                '{water}: что в нём живёт, кто берёт из него воду и мелеет ли оно?',
+                '{water}: ¿qué vive en él, quién toma su agua y se está reduciendo?') },
+      /* a view that is half land and half named water is a COAST, which is a fact about the frame */
+      { k:'vcoast', w:12, on:(f)=>f.st&&f.vw&&f.vw.water&&f.vw.water.kind!=='lake'&&f.vw.landFrac>=0.20&&f.vw.landFrac<=0.80,
+        t:()=>L('This is where {place} meets {water} — what does that coast carry?',
+                'ここは{place}が{water}に接するところ。この海岸線は何を担っている？',
+                '{place} trifft hier auf {water} — was trägt diese Küste?',
+                '{place} выходит здесь к акватории {water} — что несёт этот берег?',
+                'Aquí {place} se asoma a {water}: ¿qué sostiene esa costa?') },
+      /* ── what the tiles name on the ground, at the scale the reader is actually at ── */
+      { k:'vstreet', w:16, on:(f)=>f.vw&&f.vw.city&&f.scale==='street',
+        t:()=>L('{city}: what is this part of it used for, and what stood here before?',
+                '{city}のこの一角は何に使われている？ 以前は何があった？',
+                '{city}: Wofür wird dieser Teil genutzt, und was stand hier vorher?',
+                '{city}: для чего служит этот участок и что стояло здесь раньше?',
+                '{city}: ¿para qué sirve esta parte y qué había aquí antes?') },
+      { k:'vcity', w:15, on:(f)=>f.vw&&f.vw.city&&/^(city|region)$/.test(f.scale),
+        t:()=>L('{city}: what is it built on, and what does it do that its neighbours do not?',
+                '{city}は何の上に築かれ、近隣の街には無い何をしている？',
+                '{city}: Worauf ist der Ort gebaut, und was kann er, was die Nachbarn nicht können?',
+                '{city}: на чём он стоит и что он делает такого, чего не делают соседи?',
+                '{city}: ¿sobre qué está construida y qué hace que no hagan sus vecinas?') },
+      /* ⚠ THREE MEASUREMENTS OF HOW FULL THE VIEW IS, and they separate the Ruhr from Kansas from
+         the Gobi — which no country-level rank can, because all three sit inside one country. */
+      /* ⚠ 「almost continuous built-up area」 IS A CLAIM ABOUT DENSITY, SO IT NEEDS THE SCALE TOO.
+         Gated on the count alone it fired over the Strait of Gibraltar and over Khasab at z=9 —
+         180 km views where a dozen named settlements is ordinary countryside, not a conurbation.
+         At `city` scale (15–80 km across) twelve named places really is continuous urban fabric. */
+      { k:'vconurb', w:13, on:(f)=>f.vw&&f.vw.groundKnown&&f.vw.nPlaces>=12&&f.vw.city&&f.scale==='city',
+        t:()=>L('This view is almost continuous built-up area — where does {city} actually end?',
+                'この視界はほぼ切れ目のない市街地。{city}はどこで終わっている？',
+                'Dieser Ausschnitt ist fast durchgehend bebaut — wo hört {city} eigentlich auf?',
+                'Этот вид — почти сплошная застройка: где на самом деле кончается {city}?',
+                'Esta vista es casi todo suelo urbanizado: ¿dónde acaba realmente {city}?') },
+      { k:'vlonely', w:13, on:(f)=>f.vw&&f.vw.groundKnown&&f.vw.nPlaces===1&&f.vw.city&&f.vw.landFrac>=0.6&&/^(country|region)$/.test(f.scale),
+        t:()=>L('{city} is the only named place in this whole view — what keeps it supplied?',
+                'この視界で名前がついている場所は{city}だけ。何がここを支えている？',
+                '{city} ist der einzige benannte Ort in diesem Ausschnitt — was versorgt ihn?',
+                '{city} — единственное названное место во всём этом виде: чем оно снабжается?',
+                '{city} es el único lugar con nombre en toda esta vista: ¿cómo se abastece?') },
+      { k:'vempty', w:13, on:(f)=>f.vw&&f.vw.groundKnown&&f.vw.nPlaces===0&&f.vw.landFrac>=0.85&&/^(country|region)$/.test(f.scale),
+        t:()=>L('There is not one named settlement in this view — what is this land used for?',
+                'この視界には名前のついた集落が1つも無い。この土地は何に使われている？',
+                'In diesem Ausschnitt liegt keine einzige benannte Siedlung — wofür wird dieses Land genutzt?',
+                'В этом виде нет ни одного названного поселения — как используется эта земля?',
+                'En esta vista no hay ni un asentamiento con nombre: ¿para qué se usa esta tierra?') },
+      /* ── ⚠ MEASURED ON THE FIRST RUN OF THIS ROUND'S OWN CHECK: a view of open water fired exactly
+         ONE view candidate and the other three slots went to 「Compare the USA, China and India」 and
+         its two neighbours. One specific question in a row of four generic ones is the report, not
+         the fix. What a water view actually has to say is measurable — whether there is any land in
+         it at all, and whether the land it does have is islands. ── */
+      { k:'vnoland', w:13, on:(f)=>f.vw&&f.vw.water&&f.vw.landFrac===0&&f.vw.water.kind!=='lake',
+        t:()=>L('There is no land anywhere in this view — what lies on the seabed under it, and who claims it?',
+                'この視界には陸地が一片も無い。この下の海底には何があり、誰が権利を主張している？',
+                'In diesem Ausschnitt liegt überhaupt kein Land — was liegt auf dem Meeresboden darunter, und wer beansprucht ihn?',
+                'В этом виде нет ни клочка суши — что лежит на дне под ним и кто на него претендует?',
+                'En esta vista no hay nada de tierra: ¿qué hay en el fondo marino y quién lo reclama?') },
+      /* ⚠ THE WORDING SAYS WHAT WAS MEASURED, WHICH IS NOT 「islands」. This chip first read 「The only
+         land in this view is islands in {water}」 and fired over Wakkanai, on the northern tip of
+         Hokkaidō — a coastal view of a large island, where the measurement 「mostly water, a little
+         land」 is true and the claim 「those are islands」 is false. What the grid actually knows is
+         the ratio, so that is what the question is about. */
+      { k:'vislands', w:14, on:(f)=>f.vw&&f.vw.water&&f.vw.water.kind!=='lake'&&f.vw.landFrac>0&&f.vw.landFrac<=0.20&&f.vw.nCountries>=1,
+        t:()=>L('This view is nearly all {water} with a little land in it — whose land is that, and what does it control?',
+                'この視界はほとんど{water}で、陸はわずか。その陸は誰のもので、何を押さえている？',
+                '{water}: Dieser Ausschnitt ist fast nur Wasser mit wenig Land darin — wessen Land ist das, und was kontrolliert es?',
+                '{water}: этот вид — почти сплошная вода с небольшим клочком суши. Чья это суша и что она контролирует?',
+                '{water}: esta vista es casi todo agua con poca tierra. ¿De quién es esa tierra y qué controla?') },
+      /* ── where the VIEW is, measured from the frame itself. ⚠ THIS IS NOT #R337'S `equator`
+         CANDIDATE ONE LEVEL DOWN. That one asked whether a COUNTRY'S EXTENT spanned the equator and
+         told Norway the equator ran through it, because Bouvet Island is Norwegian (#R337 追記). A
+         frame has no dependencies and no outlying rocks: if the equator is inside this box then it
+         is on this screen, and there is nothing for a stray island to stretch. ── */
+      { k:'vequator', w:12, on:(f)=>f.vw&&f.vw.box&&f.vw.box.s<-0.15&&f.vw.box.n>0.15&&/^(continent|country|region|city)$/.test(f.scale),
+        t:()=>L('The equator crosses this view — where exactly, and what changes from one side to the other?',
+                'この視界を赤道が横切っている。どこを通り、南北で何が変わる？',
+                'Der Äquator kreuzt diesen Ausschnitt — wo genau, und was ändert sich von einer Seite zur anderen?',
+                'Через этот вид проходит экватор — где именно и что меняется по разные стороны от него?',
+                'El ecuador cruza esta vista: ¿por dónde exactamente y qué cambia de un lado al otro?') },
+      { k:'vpolar', w:12, on:(f)=>f.vw&&f.vw.box&&(f.vw.box.s>=60||f.vw.box.n<=-55)&&/^(continent|country|region|city)$/.test(f.scale),
+        t:()=>L('Everything in this view sits in the high latitudes — what does the ice do to it through the year?',
+                'この視界は全体が高緯度にある。1年を通して氷は何をしている？',
+                'Dieser ganze Ausschnitt liegt in hohen Breiten — was macht das Eis im Jahreslauf mit ihm?',
+                'Весь этот вид лежит в высоких широтах — что делает с ним лёд в течение года?',
+                'Toda esta vista está en latitudes altas: ¿qué le hace el hielo a lo largo del año?') },
+      /* ⚠ THE HEIGHT IS A NUMBER, so it reads the same in all nine languages (#R337's rule for
+         `{n}`), and the chip refuses entirely for a peak whose row states no elevation. */
+      { k:'vpeak', w:14, on:(f)=>f.vw&&f.vw.peak&&f.vw.peak.ele>=1500&&/^(region|city|street)$/.test(f.scale),
+        t:()=>L('{peak} rises {ele} m here — what does it do to the weather and the routes around it?',
+                'ここには標高{ele} mの{peak}がある。周りの天気と道筋をどう変えている？',
+                '{peak} ragt hier {ele} m auf — was macht das mit dem Wetter und den Wegen ringsum?',
+                '{peak} поднимается здесь на {ele} м — как это влияет на погоду и пути вокруг?',
+                '{peak} se alza aquí {ele} m: ¿qué hace con el clima y las rutas de alrededor?') }
+    ];
 
     /* ══ the pool ═════════════════════════════════════════════════════════════════════════════
        `w` is how DISTINCTIVE the fact is, not how interesting the question sounds: a measured
@@ -625,28 +863,116 @@ export function makeAtlasExamples(HOST, CTX) {
       return s; }
     function fill(txt,f){
       const st=f&&f.st;
+      const vw=f&&f.vw, vn=(f&&f.vnames)||[];
       return String(txt)
         .replace(/\{place\}/g,(f&&f.name)||'')
         .replace(/\{sub\}/g,subName(st))
         /* (#R337) how many languages the country runs in — a NUMBER, so it reads the same in all
            nine languages and cannot become #R313 追記's untranslated value in a translated sentence */
         .replace(/\{n\}/g,String((f&&f.langN)||''))
-        .replace(/\{year\}/g,String((f&&f.year)||''));
+        .replace(/\{year\}/g,String((f&&f.year)||''))
+        /* ── (#R392) the view's own nouns. ⚠ `{a}`/`{b}` ARE ORDERED BY HOW MUCH OF THE FRAME EACH
+           COUNTRY HOLDS (js/atlas-view-subject.js), not by the polygon list's order, so 「the border
+           between A and B」 names the two that are actually on screen. The water name arrives
+           already resolved into the reader's language by the gazetteer's own five columns, and the
+           two numbers are numbers for the same reason `{n}` is. */
+        .replace(/\{a\}/g,vn[0]||'')
+        .replace(/\{b\}/g,vn[1]||'')
+        .replace(/\{nc\}/g,String((vw&&vw.nCountries)||''))
+        .replace(/\{water\}/g,(vw&&vw.water&&vw.water.name)||'')
+        .replace(/\{city\}/g,(vw&&vw.city&&vw.city.name)||'')
+        .replace(/\{peak\}/g,(vw&&vw.peak&&vw.peak.name)||'')
+        .replace(/\{ele\}/g,String((vw&&vw.peak&&vw.peak.ele)||''));
     }
-    function examples(){
-      const f=exFacts();
+    /* ⚠ (#R392) THE FACTS ARE PASSED IN WHEN THE CALLER ALREADY HAS THEM. `renderExamples` computes
+       them for the redraw guard and then called this, which computed them again — two full sweeps of
+       36 point-in-polygon samples plus two tile scans for every camera settle, and this round also
+       put a redraw on `idle`, which fires far more often than `moveend`. The argument is optional so
+       the published contract (#R337's `examples()`) is unchanged for the checks that drive it. */
+    function examples(pre){
+      const f=(pre!==undefined)?pre:exFacts();
       const usePlace=!!(f&&f.st&&f.name);
-      const picked=choose(usePlace?P:W,f||{ st:null, has:()=>false, live:true, year:null });
+      /* ⚠ (#R392) THE VIEW POOL IS OFFERED IN BOTH CASES, and that is half of what this round fixes.
+         `W` was reached whenever `codeAtPoint` came back empty — which is EVERY view of open water —
+         so the Pacific, the Atlantic and the Sea of Japan were all handed the same four generic
+         world sentences. The view candidates are gated on view facts alone, so they are eligible
+         whether or not a country was resolved, and an ocean view now gets a question about that
+         ocean. Merging rather than replacing also means `P`'s layer chips and `W`'s world chips are
+         untouched: they still win the slots the view has nothing to say about. */
+      const picked=choose(V.concat(usePlace?P:W),f||{ st:null, has:()=>false, live:true, year:null, scale:'world' });
       const out=picked.map(x=>fill(x.t(),f));
       /* a pool that somehow answered nothing still has to put four chips on the row */
       if(out.length<4){ W.filter(x=>x.w<=4).forEach(x=>{ if(out.length<4) out.push(fill(x.t(),f)); }); }
       return out.slice(0,4);
     }
+    /* ══ ⚠⚠⚠ (#R392) THE OTHER SET OF PRESET SENTENCES ════════════════════════════════════════
+       Clicking anywhere on the map opens Atlas with three offered questions (js/atlas-console.js
+       `askHere`). Those three were FIXED — 「なぜこの辺りはこうなっているの？」「この場所の何が重要？」
+       「ここで最近何が起きている？」 — with no knowledge of where the click landed, which makes them
+       the purest form of 「まだほぼ定型文みたいなものしかない」 in the app, fired by the single most
+       location-specific gesture it has. They are not deleted: they are real questions whose nine
+       translations are live, and they are exactly what a click on an unremarkable patch should
+       still offer. They become the TAIL, in #R337's sense — they can no longer take all three slots
+       from a spot the app knows something about.
+       ⚠ THE POINT, NOT THE CAMERA. `askHere` flies to the click over 900 ms, so the chips are built
+       from a box around the CLICKED coordinate (`boxAt`) rather than from wherever the reader was
+       looking when they clicked. */
+    /* ⚠ `on:()=>true` IS WRITTEN OUT even though these three are appended rather than filtered.
+       #R313's gate requires every candidate in this file to DECLARE its predicate — what it forbids
+       is unconditional-by-omission, because a candidate with no `on` is indistinguishable from one
+       whose predicate was forgotten. These really are unconditional: they are the floor a click on
+       an unremarkable patch still gets. */
+    const HERE=[
+      { k:'h-why', w:3, on:()=>true, tail:1,
+        t:()=>L('Why is this area the way it is?','なぜこの辺りはこうなっているの？','Warum ist dieses Gebiet so?','Почему здесь так?','¿Por qué es así esta zona?') },
+      { k:'h-imp', w:2, on:()=>true, tail:1,
+        t:()=>L('What is important about this place?','この場所の何が重要？','Was ist an diesem Ort wichtig?','Чем важно это место?','¿Qué es importante de este lugar?') },
+      { k:'h-now', w:1, on:()=>true, tail:1,
+        t:()=>L('What is happening here recently?','ここで最近何が起きている？','Was passiert hier zuletzt?','Что здесь происходит в последнее время?','¿Qué ocurre aquí últimamente?') }
+    ];
+    /* `n` chips about an explicit coordinate, from the same pools the starter chips use — so a click
+       on the Strait of Hormuz and a click on the Gobi cannot come back with the same three
+       sentences, which is the whole report. */
+    function pointExamples(lng,lat,z,n){
+      const want=Math.max(1,n||3);
+      let f=null;
+      try{
+        const base=exFacts()||{};
+        const box=VIEW.boxAt(lng,lat,z);
+        const vw=box?VIEW.subject(box):null;
+        const code=(typeof codeAtPoint==='function')?codeAtPoint(lng,lat):null;
+        const st=(code&&countryStats)?countryStats[code]:null;
+        const vn=(vw&&vw.countryNames&&vw.countryNames.length)?vw.countryNames:(st?[cName(st)]:[]);
+        f=Object.assign({},base,{ code:st?code:'', name:st?cName(st):'', st:st||null,
+                                  vw:vw, vnames:vn, scale:(vw&&vw.scale)||'region' });
+      }catch(_){ f=null; }
+      /* ⚠ ONE SLOT IS ALWAYS #R309's. MEASURED on this round's own check: without the reservation,
+         a click in the middle of a country came back 「Alfa is one of the most crowded countries on
+         Earth」 / 「…spends an unusually large share on defense」 / 「…one of the largest economies」 —
+         three true sentences about a country, offered by a gesture that means 「tell me about THIS
+         SPOT」. That is the wrong-subject defect one row down, and it is what this round exists to
+         remove. So the specific pool fills all but the last slot and 「Why is this area the way it
+         is?」 — the question that actually uses the coordinates the click carries — always survives. */
+      const specific=choose(V.concat(f&&f.st?P:W),f||{ st:null, has:()=>false, live:true, year:null, scale:'region' });
+      const out=[]; const seen=Object.create(null);
+      const take=(x)=>{ const s=fill(x.t(),f); if(!s||seen[s]) return; seen[s]=1; out.push(s); };
+      for(const x of specific){ if(out.length>=Math.max(1,want-1)) break; take(x); }
+      for(const x of HERE){ if(out.length>=want) break; take(x); }
+      return out.slice(0,want);
+    }
+
     /* the signature the redraw guard compares. It has to name every fact the pool can read, or a
        reader who switches a layer on keeps yesterday's chips (#R309's guard only knew the country). */
     function exKey(f){
       if(!f) return 'x|'+HOST.lang;
-      return (f.code||'')+'|'+HOST.lang+'|'+(f.live?'live':('y'+f.year))+'|'+f.layers.map(x=>x.id).sort().join(',');
+      /* ⚠⚠⚠ (#R392) THE GUARD IS WHERE THE DEFECT WAS ENFORCED. #R309 wrote, as if it were a
+         feature, 「a pan that stays inside one country costs one `codeAtPoint` and redraws nothing」
+         — so a reader who flew from Tokyo to Wakkanai kept Tokyo's chips, and a reader who zoomed
+         from the whole of Japan down to one city block kept the country's. The key now names the
+         VIEW as well, quantised to a fraction of the view's own span (js/atlas-view-subject.js
+         `viewKey`) so that moving somewhere else redraws and nudging the map does not. */
+      let vk=''; try{ vk=VIEW.viewKey(f.vw); }catch(_){}
+      return (f.code||'')+'|'+HOST.lang+'|'+(f.live?'live':('y'+f.year))+'|'+f.layers.map(x=>x.id).sort().join(',')+'|'+vk;
     }
 
     /* (#R309) draw the chips. `force` ignores the "did the subject change" guard (a language change
@@ -656,10 +982,11 @@ export function makeAtlasExamples(HOST, CTX) {
     function renderExamples(force){ try{
       const panel=panelEl(); if(!panel) return; const ew=panel.querySelector('.atl-ex'); if(!ew) return;
       if(ew.style.display==='none') return;
-      const key=exKey(exFacts());
+      const f=exFacts();
+      const key=exKey(f);
       if(!force&&key===_exKey) return; _exKey=key;
       ew.innerHTML='';
-      examples().forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ pick(ex); }; ew.appendChild(b); });
+      examples(f).forEach(ex=>{ const b=document.createElement('button'); b.className='atl-chip'; b.textContent=ex; b.onclick=()=>{ pick(ex); }; ew.appendChild(b); });
     }catch(_){} }
     /* ⚠ (#R309) DEBOUNCED, and on the camera's own settle — not on every frame. 600 ms is the same
        quiet the widget scheduler waits for after a pan (js/widget-scheduler.js), so the two agree on
@@ -679,6 +1006,15 @@ export function makeAtlasExamples(HOST, CTX) {
       try{ document.addEventListener('change',(e)=>{ const t=e&&e.target;
         if(t&&t.type==='checkbox'&&t.id&&/^(dl-|wp-dl-|beta-dl-|bx-|eco-dl-|l9-dl-)/.test(t.id)) bump(); },true); }catch(_){}
       try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>bump()); }catch(_){}
+      /* ⚠⚠⚠ (#R392) …AND WHEN THE TILES FINALLY ARRIVE. The view pool reads what the vector tiles
+         name on the ground, and the tiles land AFTER the 600 ms camera debounce has already fired.
+         MEASURED in a real browser on this round's own verification pass: at Kansas z=10 and at
+         Everest z=11 the ground was still unknown when the chips drew, so the city question and the
+         mountain question — the two most specific things those views had — never appeared, and
+         nothing ever asked again. `idle` is MapLibre's own 「everything requested has been drawn」,
+         which is exactly the moment the answer changes; the `exKey` guard means the common case
+         (tiles that add nothing new) still repaints nothing. */
+      try{ GE().events.on('idle',bump); }catch(_){}
     }
   /* ⚠ (#R337) `examples` and `facts` are PUBLISHED so this round's check can run the SHIPPED chooser
      over a synthetic world rather than grepping this file for wording. That is #R313 追記2's lesson
@@ -686,5 +1022,7 @@ export function makeAtlasExamples(HOST, CTX) {
      the SET of four that a given set of facts produces — 「two different countries share no chip」 is
      not a property any regular expression over this file can see. Both are read-only: neither
      touches the DOM nor this module's state. */
-  return { renderExamples, wireExamples: _wireExampleCamera, examples, facts: exFacts };
+  return { renderExamples, wireExamples: _wireExampleCamera, examples, facts: exFacts,
+           /* (#R392) the click-a-point chips are chosen by the same pools — see `pointExamples` */
+           pointExamples };
 }
