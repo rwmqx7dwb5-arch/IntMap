@@ -132,7 +132,38 @@ export function makeAtlasAnswerPipeline() {
     return { env, registry, audit, trace, webUsed: ctx.webUsed };
   }
 
-    const API = { MAX_MODEL_CALLS, runStructuredAnswer };
+  /**
+   * degradeMeta(env) -> meta | null   — what the CALLER has to be told when step 5 fired.
+   *
+   * ══ ⚠⚠⚠ (#R419) A DEGRADED ANSWER WAS REPORTED TO ATLAS AS AN UNQUALIFIED SUCCESS ═════════════
+   * The reported case is 「1940年のリトアニアでは何が起きていた？」. The evidence registry for that
+   * turn is 2026 news wire — nothing in it can corroborate 1940 — so the audit raised
+   * `evidence.primary_unsupported` on every primary claim, the repair could not fix what it did not
+   * have, and step 5 removed them all. The reader saw the honest banner this pipeline draws:
+   * 「裏付けを確認できなかった記述は、この回答から取り除きました」 over a page with the substance
+   * gone. And Atlas — the ONE reader of this result that could have done something about it — was
+   * handed {ok:true, status:'completed', rendered:true} by js/atlas-console.js's `return R(true,
+   * html)`, so its closing sentence announced 「1939年の前史からソ連軍の進駐、傀儡政権、選挙、8月の
+   * 併合…を日付順に整理した解説を表示しました」 — describing a document that was not on the screen.
+   *
+   * ⚠ THIS ADDS NO RULE AND REMOVES NO AUTHORITY (CONSTITUTION.md §5). The tool still runs, still
+   * renders, still returns true. What changes is that the result now SAYS what happened, so Atlas
+   * can decide — answer from its own knowledge, say the sourced analysis could not support the
+   * question, or try something else. It could not decide before because it was not told.
+   */
+  function degradeMeta(env) {
+    const a = env && env.audit;
+    if (!a || a.status !== 'degraded') return null;
+    const n = +(a.removedClaims || 0) || 0;
+    return { degraded: true, removedClaims: n,
+      unverified: 'DEGRADED: the answer audit removed ' + n + ' claim(s) that no evidence record in '
+        + 'this turn could support, and what is rendered is only what survived. The evidence was the '
+        + 'live sources IntMap gathered for this question; if the question is not one those sources '
+        + 'can corroborate, this tool cannot answer it. Do not describe the rendered block as the '
+        + 'account you intended — say what it does and does not contain, or answer the reader yourself.' };
+  }
+
+    const API = { MAX_MODEL_CALLS, runStructuredAnswer, degradeMeta };
     try { window.IntMapAnswerPipeline = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
