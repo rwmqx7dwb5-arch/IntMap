@@ -4052,7 +4052,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        ranking, a transit-isochrone and a cross-data brief — instead of trivial one-tap actions (dark mode / fly to X
        / satellite) that the normal UI already does ("わざわざAtlasでやる必要のない無駄な動作"). */
     /* (#R309) the starter chips are their own subject now — js/atlas-examples.js. Accessors, because `panel` and `inEl` are assigned by ensure() after this line runs. */
-    const { renderExamples, wireExamples } = makeAtlasExamples(HOST, { L, GE, codeAtPoint, countryStats, cName, loadCountryData, panelEl:()=>panel, pick:(t)=>{ if(inEl){ inEl.value=t; fire(); } } });
+    const { renderExamples, wireExamples, pointExamples } = makeAtlasExamples(HOST, { L, GE, codeAtPoint, countryStats, cName, loadCountryData, geo, panelEl:()=>panel, pick:(t)=>{ if(inEl){ inEl.value=t; fire(); } } });
     function ensure(){ if(panel) return panel; ensureStyle(); panel=document.createElement('div'); panel.id='atlas-panel'; panel.dataset.nodock='1';   /* ⚠⚠⚠ (#R242) ATLAS IS NEVER DOCKED, and the flag is written HERE, where the panel is born: #R238 wrote it in window-manager's applyDockMode(), which runs at boot while this lazy panel does not exist — so a reader whose SAVED setting is 「まとめる」 had #atlas-panel re-parented into #docked-feed with .im-docked (measured; the class survived mountTab and collapsed .atl-chat to nothing). 「元に戻せ」 */
       panel.innerHTML='<div class="atl-head"><span class="atl-title">Atlas <span class="atl-beta">beta</span></span><span class="atl-btns"><button class="atl-min-btn" title="'+L('Minimize','最小化','Minimieren','Свернуть','Minimizar')+'">–</button><button class="atl-x" title="'+t('close')+'">×</button></span></div>'
         +'<div class="atl-sub">'+L('Ask in plain language — Atlas drives the map for you. Try:','自然言語で指示すると、Atlasが地図を操作します。例:','Stell deine Anfrage in normaler Sprache — Atlas steuert die Karte. Beispiele:','Спросите обычными словами — Atlas управляет картой. Примеры:','Pide en lenguaje natural — Atlas controla el mapa. Ejemplos:')+'</div>'
@@ -5203,11 +5203,11 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(cd&&typeof countryStats!=='undefined'&&countryStats[cd]){ const s=countryStats[cd]; nm=(HOST.lang==='jp'?(s.nameJp||s.nameEn):s.nameEn)||''; }
           if(nm&&_herePoint){ _herePoint.name=String(nm).slice(0,80); if(_lastPlace) _lastPlace.name=_herePoint.name; const hd=p.querySelector('.atl-here-hd'); if(hd) hd.textContent='📍 '+String(nm).slice(0,80)+' · '+lat.toFixed(3)+', '+lng.toFixed(3); } }catch(_){} })();
       const coordStr=lat.toFixed(3)+', '+lng.toFixed(3);
-      const ex=[
-        L('Why is this area the way it is?','なぜこの辺りはこうなっているの？','Warum ist dieses Gebiet so?','Почему здесь так?','¿Por qué es así esta zona?'),
-        L('What is important about this place?','この場所の何が重要？','Was ist an diesem Ort wichtig?','Чем важно это место?','¿Qué es importante de este lugar?'),
-        L('What is happening here recently?','ここで最近何が起きている？','Was passiert hier zuletzt?','Что здесь происходит в последнее время?','¿Qué ocurre aquí últimamente?')
-      ];
+      /* ⚠⚠⚠ (#R392) THESE THREE USED TO BE FIXED SENTENCES — Hormuz, Lake Baikal and empty Gobi all opened
+         with 「なぜこの辺りはこうなっているの？」, from the most location-specific gesture there is. They come
+         from the starter chips' own pools now, measured around THE CLICKED POINT (the flyTo above takes
+         900 ms, so the camera still shows the old view); #R309's three are the guaranteed tail in `HERE`. */
+      let ex=[]; try{ ex=pointExamples(lng,lat,Math.max(GE().camera.getZoom(),5),3)||[]; }catch(_){}
       const chips=ex.map(e=>'<button class="atl-here-q" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">'+esc(e)+'</button>').join('');
       const b=bubble('a','<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">📍 '+coordStr+'</div>'
         +'<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.5;">'+L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.')+'</div>'+chips);

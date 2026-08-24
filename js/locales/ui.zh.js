@@ -5110,6 +5110,31 @@ window.IntMapLang.define('zh', {
   "Where are the tectonic plates moving fastest, and what is that building?": "板塊移動最快的地方在哪裡？那裡正在形成什麼？",   /* atlas-examples.js (#R337) */
   "How crowded is low Earth orbit now, and who owns what up there?": "現在的低地球軌道有多擁擠？上面的東西又分別屬於誰？",   /* atlas-examples.js (#R337) */
   "Which countries host the most data centres, and what draws them there?": "哪些國家的資料中心最多？是什麼把它們吸引過去？",   /* atlas-examples.js (#R337) */
+  "You are looking at the border between {a} and {b} — how was that line drawn, and what crosses it?": "現在看到的是{a}與{b}之間的國界。這條線是怎麼畫出來的？又有什麼跨越它？",   /* atlas-examples.js (#R392) */
+  "{nc} countries meet inside this view — what decides where the lines fall?": "這個視野裡有 {nc} 個國家相接。界線落在哪裡，是由什麼決定的？",   /* atlas-examples.js (#R392) */
+  "Two countries face each other across this water — where does the boundary run, and who polices it?": "兩個國家隔著這片水域相望。界線走在哪裡？由誰巡邏執法？",   /* atlas-examples.js (#R392) */
+  "This is one of the world’s maritime chokepoints — what passes through it, and what happens if it closes?": "這裡是全球海運的咽喉要道之一。有什麼從這裡通過？一旦封閉會怎麼樣？",   /* atlas-examples.js (#R392) */
+  "There is a spaceport or tracking station in this view — what launches or listens from here?": "這個視野裡有太空發射場或衛星追蹤站。從這裡發射什麼？又在聽什麼？",   /* atlas-examples.js (#R392) */
+  "Major energy infrastructure runs through this view — what does it move, and who depends on it?": "有大型能源設施穿過這個視野。它輸送什麼？誰依賴它？",   /* atlas-examples.js (#R392) */
+  "This is one of the world’s technology clusters — what is actually made here, and why here?": "這裡是全球主要的科技重鎮之一。這裡實際生產什麼？又為什麼是這裡？",   /* atlas-examples.js (#R392) */
+  "There is a major port or naval facility in this view — what moves through it, and who runs it?": "這個視野裡有主要港口或海軍設施。有什麼從這裡進出？又是誰在管理？",   /* atlas-examples.js (#R392) */
+  "There is a major military installation in this view — whose is it, and what does it cover?": "這個視野裡有大型軍事設施。它屬於哪一國？涵蓋的範圍到哪裡？",   /* atlas-examples.js (#R392) */
+  "{water}: what crosses it here, and how deep does it get?": "{water}：有什麼從這一帶經過？水有多深？",   /* atlas-examples.js (#R392) */
+  "{water}: who has a coast on it, and what is contested there?": "{water}：哪些國家在這片海域有海岸？那裡有什麼爭議？",   /* atlas-examples.js (#R392) */
+  "{water}: who fishes it, who ships through it, and who drills in it?": "{water}：在這裡捕魚的、行船的、鑽探的，分別是誰？",   /* atlas-examples.js (#R392) */
+  "{water} is a narrow passage — who controls both sides, and what moves through it?": "{water}：一條狹窄的水道。兩側各由誰控制？有什麼從中通過？",   /* atlas-examples.js (#R392) */
+  "{water}: what lives in it, who draws water from it, and is it shrinking?": "{water}：裡面住著什麼？誰在取水？水面是不是正在縮小？",   /* atlas-examples.js (#R392) */
+  "This is where {place} meets {water} — what does that coast carry?": "這裡是{place}與{water}相接之處。這條海岸線承擔著什麼？",   /* atlas-examples.js (#R392) */
+  "{city}: what is this part of it used for, and what stood here before?": "{city}：這一帶是做什麼用的？以前這裡有什麼？",   /* atlas-examples.js (#R392) */
+  "{city}: what is it built on, and what does it do that its neighbours do not?": "{city}：這座城市建立在什麼之上？它做了哪些鄰近城市做不到的事？",   /* atlas-examples.js (#R392) */
+  "This view is almost continuous built-up area — where does {city} actually end?": "這個視野幾乎是連成一片的建成區。{city}到底在哪裡結束？",   /* atlas-examples.js (#R392) */
+  "{city} is the only named place in this whole view — what keeps it supplied?": "整個視野裡有名字的地方只有{city}。是什麼在供養它？",   /* atlas-examples.js (#R392) */
+  "There is not one named settlement in this view — what is this land used for?": "這個視野裡沒有一個有名字的聚落。這片土地用來做什麼？",   /* atlas-examples.js (#R392) */
+  "There is no land anywhere in this view — what lies on the seabed under it, and who claims it?": "這個視野裡沒有半點陸地。下方的海底有什麼？又是誰在主張權利？",   /* atlas-examples.js (#R392) */
+  "This view is nearly all {water} with a little land in it — whose land is that, and what does it control?": "{water}：這個視野幾乎全是水，只有一小塊陸地。那塊陸地屬於誰？又控制著什麼？",   /* atlas-examples.js (#R392) */
+  "The equator crosses this view — where exactly, and what changes from one side to the other?": "赤道橫穿這個視野。它究竟從哪裡通過？兩側又有什麼不同？",   /* atlas-examples.js (#R392) */
+  "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "這個視野整個位於高緯度。一年之中，冰對這裡做了什麼？",   /* atlas-examples.js (#R392) */
+  "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak}：海拔 {ele} 公尺，聳立在此。它如何改變周圍的天氣與路線？",   /* atlas-examples.js (#R392) */
   "Wind particles over the temperature layer": "氣溫圖層上的風場粒子",   /* atlas-console.js (#R337) */
   "This panel could not be loaded — check your connection and try again.": "無法載入此面板 — 請檢查網路連線後再試一次。",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "哥倫布抵達美洲",   /* analysis-world-events.js (#R322) */

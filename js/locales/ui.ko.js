@@ -5008,6 +5008,31 @@ window.IntMapLang.define('ko', { ui: {
   "Where are the tectonic plates moving fastest, and what is that building?": "판이 가장 빠르게 움직이는 곳은 어디이고, 그곳에서 무엇이 만들어지고 있나요?",   /* atlas-examples.js (#R337) */
   "How crowded is low Earth orbit now, and who owns what up there?": "지금 지구 저궤도는 얼마나 붐비고, 그곳의 무엇이 누구의 것인가요?",   /* atlas-examples.js (#R337) */
   "Which countries host the most data centres, and what draws them there?": "데이터센터가 가장 많은 나라는 어디이고, 무엇이 그들을 그곳으로 끌어들이나요?",   /* atlas-examples.js (#R337) */
+  "You are looking at the border between {a} and {b} — how was that line drawn, and what crosses it?": "지금 보고 있는 것은 {a}, {b} 두 나라의 국경입니다. 이 선은 어떻게 그어졌고, 무엇이 이 선을 넘나드나요?",   /* atlas-examples.js (#R392) */
+  "{nc} countries meet inside this view — what decides where the lines fall?": "이 화면 안에서 {nc}개국이 맞닿아 있습니다. 경계선의 위치는 무엇이 정하나요?",   /* atlas-examples.js (#R392) */
+  "Two countries face each other across this water — where does the boundary run, and who polices it?": "이 수역을 사이에 두고 두 나라가 마주 보고 있습니다. 경계는 어디를 지나고, 누가 단속하나요?",   /* atlas-examples.js (#R392) */
+  "This is one of the world’s maritime chokepoints — what passes through it, and what happens if it closes?": "이곳은 세계 해상 교통의 요충지 가운데 하나입니다. 무엇이 지나가고, 막히면 어떤 일이 벌어지나요?",   /* atlas-examples.js (#R392) */
+  "There is a spaceport or tracking station in this view — what launches or listens from here?": "이 화면 안에 우주 기지나 위성 추적소가 있습니다. 여기서 무엇을 쏘아 올리고, 무엇을 듣고 있나요?",   /* atlas-examples.js (#R392) */
+  "Major energy infrastructure runs through this view — what does it move, and who depends on it?": "이 화면을 대형 에너지 시설이 가로지릅니다. 무엇을 실어 나르고, 누가 거기에 의존하나요?",   /* atlas-examples.js (#R392) */
+  "This is one of the world’s technology clusters — what is actually made here, and why here?": "이곳은 세계적인 기술 집적지 가운데 하나입니다. 실제로 여기서 무엇을 만들고, 왜 하필 여기인가요?",   /* atlas-examples.js (#R392) */
+  "There is a major port or naval facility in this view — what moves through it, and who runs it?": "이 화면 안에 주요 항만이나 해군 시설이 있습니다. 무엇이 그곳을 거쳐 가고, 누가 운영하나요?",   /* atlas-examples.js (#R392) */
+  "There is a major military installation in this view — whose is it, and what does it cover?": "이 화면 안에 대규모 군사 시설이 있습니다. 어느 나라 것이고, 담당 범위는 어디까지인가요?",   /* atlas-examples.js (#R392) */
+  "{water}: what crosses it here, and how deep does it get?": "{water}: 이 부근을 무엇이 가로지르고, 수심은 얼마나 되나요?",   /* atlas-examples.js (#R392) */
+  "{water}: who has a coast on it, and what is contested there?": "{water}: 여기에 해안을 두고 있는 나라는 어디이고, 무엇이 다투어지고 있나요?",   /* atlas-examples.js (#R392) */
+  "{water}: who fishes it, who ships through it, and who drills in it?": "{water}: 여기서 고기를 잡는 쪽, 배를 띄우는 쪽, 시추하는 쪽은 각각 누구인가요?",   /* atlas-examples.js (#R392) */
+  "{water} is a narrow passage — who controls both sides, and what moves through it?": "{water}: 좁은 수로입니다. 양쪽 기슭은 누가 쥐고 있고, 무엇이 지나가나요?",   /* atlas-examples.js (#R392) */
+  "{water}: what lives in it, who draws water from it, and is it shrinking?": "{water}: 여기에는 무엇이 살고, 누가 물을 끌어 쓰며, 수위는 줄고 있나요?",   /* atlas-examples.js (#R392) */
+  "This is where {place} meets {water} — what does that coast carry?": "{place}: 이 나라가 {water}에 닿는 지점입니다. 이 해안선은 무엇을 떠맡고 있나요?",   /* atlas-examples.js (#R392) */
+  "{city}: what is this part of it used for, and what stood here before?": "{city}: 이 구역은 무엇에 쓰이고, 예전에는 여기에 무엇이 있었나요?",   /* atlas-examples.js (#R392) */
+  "{city}: what is it built on, and what does it do that its neighbours do not?": "{city}: 이 도시는 무엇 위에 세워졌고, 이웃 도시에는 없는 무엇을 하고 있나요?",   /* atlas-examples.js (#R392) */
+  "This view is almost continuous built-up area — where does {city} actually end?": "이 화면은 거의 끊김 없는 시가지입니다. {city}의 경계는 실제로 어디인가요?",   /* atlas-examples.js (#R392) */
+  "{city} is the only named place in this whole view — what keeps it supplied?": "이 화면 전체에서 이름이 붙은 곳은 {city} 하나뿐입니다. 이곳을 지탱하는 것은 무엇인가요?",   /* atlas-examples.js (#R392) */
+  "There is not one named settlement in this view — what is this land used for?": "이 화면 안에는 이름이 붙은 마을이 하나도 없습니다. 이 땅은 무엇에 쓰이나요?",   /* atlas-examples.js (#R392) */
+  "There is no land anywhere in this view — what lies on the seabed under it, and who claims it?": "이 화면에는 육지가 한 조각도 없습니다. 이 아래 해저에는 무엇이 있고, 누가 권리를 주장하나요?",   /* atlas-examples.js (#R392) */
+  "This view is nearly all {water} with a little land in it — whose land is that, and what does it control?": "{water}: 이 화면은 거의 물이고 육지는 조금뿐입니다. 그 땅은 누구의 것이고, 무엇을 통제하나요?",   /* atlas-examples.js (#R392) */
+  "The equator crosses this view — where exactly, and what changes from one side to the other?": "적도가 이 화면을 가로지릅니다. 정확히 어디를 지나고, 남북으로 무엇이 달라지나요?",   /* atlas-examples.js (#R392) */
+  "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "이 화면은 전체가 고위도에 있습니다. 얼음은 한 해 동안 이곳을 어떻게 바꾸나요?",   /* atlas-examples.js (#R392) */
+  "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak}: 여기서 해발 {ele} m까지 솟아 있습니다. 주변의 날씨와 길에 어떤 영향을 주나요?",   /* atlas-examples.js (#R392) */
   "Wind particles over the temperature layer": "기온 레이어 위의 바람 입자",   /* atlas-console.js (#R337) */
   "This panel could not be loaded — check your connection and try again.": "이 패널을 불러오지 못했습니다 — 연결 상태를 확인한 뒤 다시 시도해 주세요.",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "콜럼버스의 아메리카 도달",   /* analysis-world-events.js (#R322) */
