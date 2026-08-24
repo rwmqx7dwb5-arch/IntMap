@@ -133,7 +133,7 @@ supabase functions deploy <name> --project-ref vpekfwdpurzejrrmacac
 ```bash
 node scripts/master-sync.mjs --sync     # 原本 (OneDrive) を origin/main へ早送り
 node scripts/master-sync.mjs --check    # 原本が merge 後の状態か（exit 0 を確認）
-pwsh -File scripts/backup-usb.ps1       # USB へ完全ミラー（作業のたびに毎回）
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1   # USB へ完全ミラー（毎回）
 node scripts/worktree.mjs done          # 自分の worktree と branch を片付ける
 ```
 
