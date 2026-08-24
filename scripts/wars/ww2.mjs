@@ -57,7 +57,11 @@ export const WW2 = {
     260: [['1945-05-08', 'ALLIED']], 265: [['1945-05-08', 'ALLIED']],
 
     /* ── the Allies ───────────────────────────────────────────────────────────────────────── */
-    200: [['1939-09-01', 'ALLIED']], 220: [['1939-09-01', 'ALLIED']],
+    200: [['1939-09-01', 'ALLIED']],
+    /* ⚠ (#R409) France needs the OCCUPATION dated, not just the surrender. From 25 Jun 1940 the Vichy
+       line splits the country and the cut tells the truth; from 11 Nov 1942 (Case Anton) there is no
+       line at all, so `control` alone decides — and it said ALLIED for twenty months. */
+    220: [['1939-09-01', 'ALLIED'], ['1942-11-11', 'AXIS'], ['1945-02-09', 'ALLIED']],
     20: [['1939-09-10', 'ALLIED']], 900: [['1939-09-03', 'ALLIED']], 920: [['1939-09-03', 'ALLIED']],
     560: [['1939-09-06', 'ALLIED']], 750: [['1939-09-03', 'ALLIED']], 710: [['1939-09-01', 'ALLIED']],
     2: [['1941-12-08', 'ALLIED']], 140: [['1942-08-22', 'ALLIED']], 70: [['1942-05-22', 'ALLIED']],

@@ -261,4 +261,38 @@ export const PLACES = {
   'Buna': [148.390, -8.650, 'PG'], 'Kokoda': [147.733, -8.883, 'PG'], 'Tulagi': [160.150, -9.100, 'SB'],
   'Balikpapan': [116.828, -1.268, 'ID'], 'Surabaya': [112.752, -7.258, 'ID'],
   'Kota Bharu': [102.243, 6.133, 'MY'], 'Ambon': [128.190, -3.695, 'ID'], 'Dili': [125.578, -8.556, 'TL'],
+
+  /* ══ #R409 — WW1: the operations, the theatres and the dated positions the record reaches now ══
+     Every name below is quoted by an operation, a dated front position or a control check in
+     scripts/wars/ww1.mjs — check ⑦ in scripts/build-wars.mjs will not let an unused one stand. */
+  /* ── WW1 · the Western Front's operations ────────────────────────────────────────────────── */
+  'Mulhouse': [7.339, 47.750, 'FR'], 'Virton': [5.533, 49.567, 'BE'], 'Le Cateau': [3.545, 50.103, 'FR'],
+  'Vimy': [2.808, 50.373, 'FR'], 'Fromelles': [2.856, 50.605, 'FR'], 'Doullens': [2.341, 50.158, 'FR'],
+  'Chantilly': [2.470, 49.194, 'FR'], 'Versailles': [2.130, 48.804, 'FR'], 'Leuven': [4.700, 50.879, 'BE'],
+  /* ── WW1 · the Eastern Front's operations ────────────────────────────────────────────────── */
+  'Gizycko': [21.760, 54.038, 'PL'], 'Augustow': [22.980, 53.844, 'PL'], 'Modlin': [20.717, 52.437, 'PL'],
+  'Naroch': [26.833, 54.867, 'BY'], 'Saaremaa': [22.700, 58.400, 'EE'],
+  /* ── WW1 · the Italian Front ─────────────────────────────────────────────────────────────── */
+  'Vittorio Veneto': [12.302, 45.977, 'IT'],
+  /* ── WW1 · the Caucasus, Mesopotamia, Palestine and the death marches ────────────────────── */
+  'Manzikert': [42.544, 39.148, 'TR'], 'Koprukoy': [41.850, 39.967, 'TR'],
+  'Sardarabad': [43.946, 40.093, 'AM'], 'Karakilisa': [44.489, 40.812, 'AM'],
+  'Ctesiphon': [44.581, 33.095, 'IQ'], 'Jericho': [35.462, 31.870, 'PS'], 'Nablus': [35.262, 32.221, 'PS'],
+  'Deir ez-Zor': [40.150, 35.333, 'SY'],
+  /* ── WW1 · Africa, where four German colonies were taken one at a time ───────────────────── */
+  'Lome': [1.222, 6.131, 'TG'], 'Douala': [9.708, 4.051, 'CM'], 'Windhoek': [17.084, -22.560, 'NA'],
+  'Sandfontein': [18.517, -28.685, 'NA'], 'Pretoria': [28.188, -25.746, 'ZA'],
+  'Dar es Salaam': [39.283, -6.822, 'TZ'], 'Tanga': [39.100, -5.067, 'TZ'],
+  'Kilimanjaro': [37.353, -3.076, 'TZ'], 'Taveta': [37.679, -3.400, 'KE'], 'Kigoma': [29.632, -4.877, 'TZ'],
+  'Mahiwa': [39.267, -10.339, 'TZ'], 'Ngomano': [38.494, -11.428, 'MZ'],
+  /* ── WW1 · East Asia and the Pacific ─────────────────────────────────────────────────────── */
+  'Qingdao': [120.383, 36.067, 'CN'], 'Apia': [-171.760, -13.833, 'WS'],
+  /* ── WW1 · the war at sea. Four of these are open water rather than a town, and the coordinate
+     is the named sea area the record gives — the same licence «Jutland» above already takes. ── */
+  'Heligoland': [7.885, 54.183, 'DE'], 'Dogger Bank': [3.000, 54.750, 'GB'], 'Scarborough': [-0.404, 54.283, 'GB'],
+  'Kinsale': [-8.522, 51.706, 'IE'], 'Coronel': [-73.130, -37.017, 'CL'], 'Stanley': [-57.851, -51.694, 'FK'],
+  'Penang': [100.329, 5.417, 'MY'], 'Cocos Islands': [96.834, -12.167, 'CC'], 'Otranto': [18.490, 40.145, 'IT'],
+  'Imbros': [25.900, 40.170, 'TR'],
+  /* ── WW1 · the risings and the revolutions ───────────────────────────────────────────────── */
+  'Dublin': [-6.260, 53.350, 'IE'], 'Tashkent': [69.240, 41.311, 'UZ'], 'Kiel': [10.135, 54.323, 'DE'],
 };
