@@ -39,6 +39,9 @@ import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
 import { makeAtlasAnswerAudit } from './atlas-answer-audit.js';
 import { makeAtlasExamples } from './atlas-examples.js';   /* (#R309) the starter chips — see the ceiling note there */
 import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.events — the ONE deterministic article→event grouper, with the measurements behind every constant */
+import { makeAtlasGeoObject } from './atlas-geo-object.js';   /* (#R397) one shape for a place, and WHERE its coordinate came from — so a coordinate IntMap already fetched stops being thrown away and re-geocoded */
+import { makeAtlasPolicy } from './atlas-policy.js';
+import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/r199 ⑤) */
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.atlasConsole=function(HOST){
@@ -1052,6 +1055,9 @@ window.IntMapModules.atlasConsole=function(HOST){
     const { renderAnswer, answerPlainText, answerCSS } = makeAtlasAnswerRender();
     const { makeEvidenceRegistry } = makeAtlasEvidence();
     const { normalizeAnswer } = makeAtlasAnswerContract();
+    const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
+    const ANOM = makeAtlasAnomalyScore();   /* (#R397) cross-domain hazard ranking with an explainable score */
+    const POLICY = makeAtlasPolicy();     /* (#R397) the three prompt clauses that stop IntMap's own data being a ceiling */
     const { auditAnswer } = makeAtlasAnswerAudit();
     /* ---- (#R43) PRECISE layer resolution. The user reported "レイヤーによっては混同している" — the old matcher
        fuzzy-matched loosely AND the model never saw the real layer names, so it guessed a name and the matcher
@@ -1377,8 +1383,9 @@ window.IntMapModules.atlasConsole=function(HOST){
          do NOT depend on the model echoing a SOURCES line (the loaded feed's links were being discarded). */
       try{ if(sink) top.forEach(it=>{ const a2=it.analysis||{}; if(it.link) sink.push({url:it.link,title:it.title,src:(it.publisher||a2.name||''),date:(function(){try{return it.pubDate?new Date(it.pubDate).toISOString().slice(0,10):'';}catch(_){return '';}})(),loc:(a2.loc&&isFinite(a2.loc[0])?a2.loc:null),place:(a2.name||''),dateType:'publication_date',origin:'loaded'}); }); }catch(_){}   /* (#R113) date + known location → evidence record; (#R131) pubDate is the article date, not the event date */
       return top.map(it=>{ const a2=it.analysis||{}; const h=_agoH(it.pubDate); return '- '+String(it.title||'').slice(0,140)+' ['+(it.publisher||'?')+(a2.name?(' @ '+a2.name):'')+(h!=null?(' · '+h+'h ago'):'')+']'; }).join('\n')||null; }catch(_){ return null; } }
+    let _lastQuakeFeatures=null;   /* (#R397) the RAW USGS rows, kept because _quakeData returns prose and the cross-domain ranking needs magnitudes, times and positions */
     async function _quakeData(ctx){ const j=await _fetchJSON('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'); if(!j||!Array.isArray(j.features)||!j.features.length) return null;
-      let fs=j.features;
+      let fs=j.features; _lastQuakeFeatures=j.features;
       if(ctx&&ctx.box){ const w=ctx.box[0][0],s2=ctx.box[0][1],e=ctx.box[1][0],n=ctx.box[1][1]; fs=fs.filter(f=>{ const c=f.geometry&&f.geometry.coordinates; return c&&c[0]>=w&&c[0]<=e&&c[1]>=s2&&c[1]<=n; }); }
       else if(ctx&&ctx.lng!=null&&isFinite(ctx.lng)){ fs=fs.filter(f=>{ const c=f.geometry&&f.geometry.coordinates; if(!c) return false; return Math.hypot((c[0]-ctx.lng)*Math.cos(((ctx.lat||0))*Math.PI/180), c[1]-ctx.lat)<=15; }); }
       if(!fs.length) return '(no M2.5+ earthquakes in this area in the last 24 h)';
@@ -1474,7 +1481,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       /* ---- multi-country coverage ---- */
       if(multi) s+='This is a MULTI-COUNTRY request. A [REQUESTED COVERAGE] block lists the countries the user asked about. For EACH requested country for which the evidence has nothing usable and in-window, SAY SO explicitly — an unmentioned country reads as "nothing to report" when the truth may be "no data gathered". Do not generalise a finding about one country to the whole set. ';
       /* ---- preserved grounding + officeholder rules ---- */
-      s+='Work primarily from the DATA blocks below (loaded news, the live GDELT + Google News evidence IntMap gathered, live Wikidata leaders, Wikipedia background, weather/quakes/stats where relevant). If a web-search tool is attached this turn, USE it to verify and fill gaps and cite the source URLs; if none is attached, do not claim to have searched the web. When the evidence has no fresh, dated, question-relevant items, do NOT assert "nothing is happening" — say honestly, in the answer language, that the available evidence has nothing recent on this and name what it covered. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader): your parametric memory is presumed STALE. If a CURRENT NATIONAL LEADERS block is present it was queried LIVE from Wikidata — use it as the primary answer (cite "Wikidata live query") and let it override your memory; otherwise name an officeholder ONLY if the evidence names them with a date. GROUNDING RULE (the user reported Atlas inventing events that never happened): EVERY event, figure, name and date must be traceable to the DATA blocks (or to attached web-search results this turn) — never from parametric memory, never embellished, never invented; an honest "could not verify from the available evidence" is REQUIRED and always better than a plausible but unverified claim. Do NOT recite weather, "no earthquakes" or statistics unless they answer the question. ';
+      s+='Work primarily from the DATA blocks below (loaded news, the live GDELT + Google News evidence IntMap gathered, live Wikidata leaders, Wikipedia background, weather/quakes/stats where relevant). If a web-search tool is attached this turn, USE it to verify and fill gaps and cite the source URLs; if none is attached, do not claim to have searched the web. When the evidence has no fresh, dated, question-relevant items, do NOT assert "nothing is happening" — say honestly, in the answer language, that the available evidence has nothing recent on this and name what it covered. CURRENT OFFICEHOLDERS (prime minister / president / cabinet / party leader): your parametric memory is presumed STALE. If a CURRENT NATIONAL LEADERS block is present it was queried LIVE from Wikidata — use it as the primary answer (cite "Wikidata live query") and let it override your memory; otherwise name an officeholder ONLY if the evidence names them with a date. GROUNDING RULE (the user reported Atlas inventing events that never happened): EVERY event, figure, name and date must be traceable to the DATA blocks (or to attached web-search results this turn) — never from parametric memory, never embellished, never invented; an honest "could not verify from the available evidence" is REQUIRED and always better than a plausible but unverified claim. Do NOT recite weather, "no earthquakes" or statistics unless they answer the question. GROUNDING IS NOT A CEILING (#R397): the rule above says every claim must be TRACEABLE, not that IntMap\'s blocks are all you may use. A DATA block that is thin, stale, one-sided or simply not about what was asked should be LEFT OUT rather than padded into the answer, and the live search attached to this call is a first-class source, not a supplement to it. Where a DATA block and a searched source CONFLICT, do not prefer the block because it is IntMap\'s: compare their dates and their reliability, follow the more defensible one, and say in the answer that the two disagree and which you took. What stays forbidden is unverified material presented as verified. ';
       /* ---- (#R147) scope: analyse sensitive-but-legitimate questions instead of over-refusing ---- */
       s+='SCOPE: analyze sensitive but legitimate questions (defense, disasters, disease, hazards, crime statistics, cyber, critical infrastructure) from PUBLIC information at an appropriate level of generality — judge by purpose, target, precision and output, never by a sensitive-sounding word. State the uncertainty and cite public sources; decline ONLY genuinely operational harm (real-time targeting, a precise strike or kill plan, or weapon/agent synthesis instructions) and, even then, still give the safe public-information analysis you can. ';
       /* ---- length + sources ---- */
@@ -1767,44 +1774,12 @@ window.IntMapModules.atlasConsole=function(HOST){
 
     /* (#R199) ↳ js/atlas-verify.js — code-side verification of an answer — content class, arithmetic, sources, mapping verdict.
        Moved whole; the 13 names below are what the rest of this file still calls. */
-    const { _atlAuditSources, _atlChecksNoteHtml, _atlContentClass, _atlExtractPlaces, _atlGeocodeStrict, _atlMappingNoteHtml, _atlMappingVerdict, _atlNameOk, _atlNorm, _atlParseRat, _atlRegDomain, _atlShouldMap, _atlVerifyChecks } = makeAtlasVerify(HOST, { L, esc });
-    /* Orchestrator: resolve the answer's places (structured list + text safety-net), MERGE with any existing plan
-       pins (never wipes them), pin only confident/unique hits, and return an honest self-audit note. */
-    async function _pinReplyPlaces(places, ctx){ ctx=ctx||{}; const text=String(ctx.text||'');
-      /* (#R156) CODE-SIDE GEO GATE — the work order's "地図化の有無をモデルのプロンプト遵守だけに依存させず、コード側で
-         検証する / 数学・コード・文書モードでは地点抽出処理自体を呼ばない". A non-geographic content class (math/code/
-         document/photo/language/conceptual) returns immediately: NO place extraction, NO geocoding, NO pins, and NO
-         "0 places / unplaced / ambiguous" note. So a math answer that happens to contain capitalised words like
-         "Problem", "Thus" or "Let U and V" can never be turned into map candidates. */
-      if(ctx.contentClass && !_atlShouldMap(ctx.contentClass)) return '';
-      try{
-        const struct=(Array.isArray(places)?places:[]).slice(0,16).map(p=>({
-          name:String((p&&(p.n||p.name||p.locationName))||'').slice(0,90), country:String((p&&(p.c||p.country))||'').slice(0,60),
-          kind:String((p&&(p.k||p.kind))||'').slice(0,40), summary:String((p&&(p.s||p.summary))||'').slice(0,240), src:'structured' })).filter(it=>it.name&&it.name.length>1);
-        const structKeys=new Set(struct.map(it=>_atlNorm(it.name)));
-        const textBudget=struct.length?4:8;   /* text extraction is the SAFETY NET — used hard only when the model under-supplied the list */
-        const textCands=_atlExtractPlaces(text).filter(s=>!structKeys.has(_atlNorm(s))).slice(0,textBudget).map(s=>({name:s,country:'',kind:'',summary:'',src:'text'}));
-        if(!struct.length && textCands.length<2 && !(Array.isArray(_pois)&&_pois.length)) return '';   /* not a place-rich answer — don't geocode incidental capitalized words */
-        const pre=(Array.isArray(_pois)?_pois:[]).map(p=>({lng:+p.lng,lat:+p.lat,name:String(p.name||''),kind:String(p.kind||''),sum:String(p.sum||''),url:String(p.url||''),src:String(p.src||'')})).filter(p=>isFinite(p.lng));
-        const preKeys=new Set(pre.map(p=>_atlNorm(p.name)).filter(Boolean));
-        const seenCell=new Set(pre.map(p=>Math.round(p.lng*20)+','+Math.round(p.lat*20)));
-        const spots=[]; const newPins=[]; let infraFail=0;
-        for(const it of struct.concat(textCands)){ const key=_atlNorm(it.name);
-          if(preKeys.has(key)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; }   /* already on the map from the plan — counts as mapped, not re-pinned */
-          if(newPins.length>=14){ spots.push({name:it.name,verdict:'unplaced',src:it.src}); continue; }
-          let g=null;
-          if(it.src==='structured'){ try{ const r=await geocode([it.name,it.country].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; }
-            if(!g){ const s=await _atlGeocodeStrict(it.name,it.country); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; } }
-          else { const s=await _atlGeocodeStrict(it.name,''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; }
-          if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; } seenCell.add(cell);
-            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); spots.push({name:it.name,verdict:'mapped',src:it.src}); }
-          else spots.push({name:it.name,verdict:'unplaced',src:it.src}); }
-        if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
-          try{ _pois=merged; let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } }catch(_){}
-          if(pre.length===0){ try{ let a=180,b=90,c=-180,d=-90; newPins.forEach(p=>{a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat);}); if(isFinite(a)&&(c-a)<340){ if((c-a)<0.05&&(d-b)<0.05) GE().camera.flyTo({center:[a,b],zoom:ctx.zoom||6,duration:1000}); else GE().camera.fitBounds([[a,b],[c,d]],{padding:80,maxZoom:9,duration:1000}); } }catch(_){} } }
-        return _atlMappingNoteHtml(_atlMappingVerdict(spots), _atlAuditSources(ctx.citations||[]), {infraFail, hadNew:newPins.length>0});
-      }catch(e){ try{ console.warn('reply-mapping audit failed',e); }catch(_){}   /* (#R150) NEVER an empty catch — record the cause + surface an honest note */
-        return '<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;opacity:.85;">'+L('Could not run the map self-check for this answer.','この回答の地図セルフチェックを実行できませんでした。','Karten-Selbstprüfung nicht möglich.','Не удалось выполнить самопроверку карты.','No se pudo verificar el mapa.')+'</div>'; } }
+    const { _atlAuditSources, _atlChecksNoteHtml, _atlContentClass, _atlExtractPlaces, _atlGeocodeStrict, _atlMappingNoteHtml, _atlMappingVerdict, _atlNameOk, _atlNorm, _atlParseRat, _atlRegDomain, _atlShouldMap, _atlVerifyChecks, makePinReplyPlaces } = makeAtlasVerify(HOST, { L, esc });
+    /* (#R397) `_pinReplyPlaces` moved into js/atlas-verify.js — eight of its dependencies already lived
+       there and this file has a shrink-only ceiling. `_pois` is passed as a getter/setter pair, never as
+       a captured value: this closure REPLACES the array, so a copy would go stale. */
+    const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois,
+      getPois: () => _pois, setPois: (v) => { _pois = v; } });
 
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,'');
@@ -3453,6 +3428,14 @@ window.IntMapModules.atlasConsole=function(HOST){
           push2('LAYER VALUES @ the drawn-area center',L('area layer values','範囲のレイヤー実値','Gebiets-Layerwerte','значения слоёв области','valores de capas del área'),got.layersArea);
           push2('POPULATION INSIDE THE DRAWN AREA',L('area population','範囲内人口','Gebietsbevölkerung','население области','población del área'),got.areaPop);
           push2('EARTHQUAKES (USGS, last 24 h'+(ctx?', in the area':'')+')',L('earthquakes','地震','Erdbeben','землетрясения','sismos'),got.quakes);
+          /* (#R397) …AND THE SAME EVENTS ON ONE SCALE WITH EVERYTHING ELSE. The block above is a sorted
+             list of magnitudes; every other hazard arrives as prose, which is why 「世界の異常TOP3」 came
+             back as three earthquakes — they were the only rows that could be ORDERED. This adds the
+             cross-domain ranking, with each score's components, so the comparison is IntMap's and not
+             an artefact of which feed happens to publish numbers. */
+          try{ const _cands=ANOM.fromUsgs(_lastQuakeFeatures||[],Date.now())
+                 .concat(ANOM.fromAlerts((window.__wpAlerts&&typeof window.__wpAlerts.at==='function'&&pt)?window.__wpAlerts.at(pt.lng,pt.lat):[],Date.now()));
+               const _rk=ANOM.rank(_cands,{nowMs:Date.now(),n:5}); if(_rk.length) block+=ANOM.promptBlock(_rk); }catch(_){}
           push2('COUNTRY STATISTICS',L('country stats','国別統計','Länderstatistik','статистика','estadísticas'),got.stats);
           const st=stateContext(); if(st) block+='[CURRENT MAP STATE]\n'+st+'\n\n';
           /* (#R113) IntMap already ran the live web-news search (GDELT + Google News) into the DATA blocks above;
@@ -3496,7 +3479,11 @@ window.IntMapModules.atlasConsole=function(HOST){
           let html='<div style="font-size:14px;line-height:1.68;">'+renderAnswer(_env,_reg,{L,esc,mdMini,linkCards})+'</div>';
           /* (#R150) prose↔map reconciliation is unchanged in intent — it now reads the STRUCTURE's
              places instead of a JSON line scraped off the end of the prose. */
-          try{ html+=await _pinReplyPlaces((_env.places||[]).map(p2=>({n:p2.name,c:p2.country,k:p2.kind})),{text:answerPlainText(_env),citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
+          /* ⚠ (#R397) PASS THE PLACE, NOT THREE OF ITS FIELDS. This re-flattened every place to
+             {n,c,k} — so the coordinate and provenance `normalizeAnswer` had just merged in were
+             discarded ONE LINE before the pinning step that needed them, and the name was resolved
+             again from scratch. `_env.places` are already GeoObjects; hand them over whole. */
+          try{ html+=await _pinReplyPlaces(_env.places||[],{text:answerPlainText(_env),citations:_reg.all().filter(r=>r.finalUrl).map(r=>({url:r.finalUrl,title:r.title}))}); }catch(e){ try{ console.warn('analyze map audit',e); }catch(_){} }
           /* (#R131) Freshness-critical question but live web verification did NOT run: label the answer a PROVISIONAL
              assessment built mainly on already-gathered headlines, so headline-only leads are never presented as
              confirmed direct evidence (the Central-Asia failure). Applies equally when the web search timed out into
@@ -4001,7 +3988,8 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _DOCS=makeAtlasCatalogText(HOST,{ moduleCatalog, langLine:_langLine });
     function SYS(sel){ const lang=_langLine();
       return personaPrompt('the natural-language command layer for IntMap, an interactive world map')/* (#R285) */+'You can perform ANY action in IntMap — there is NO operation you cannot do: every button, toggle, slider, layer, menu, panel and setting is reachable through a specific action below OR the universal "control" action. Turn the user request into ONE strict JSON object and OUTPUT JSON ONLY (no prose, no markdown, no code fence). Schema: {"say":string,"actions":Action[]}. The action "type" names below (flyTo, mapReport, analyze, layer, highlight, time, …) are PLAIN STRING VALUES inside the JSON — they are NOT callable tools or functions. Do NOT emit a functionCall, do NOT call any tool, and do NOT try to execute an action yourself; the IntMap application executes the returned JSON. No web-search or function-calling tool is attached to this planning request. "say" = one short sentence in '+lang+' stating what you did. Decompose a compound request into an ORDERED list of actions and return them ALL — freely COMBINE data analysis + layers + navigation + panels in one plan (e.g. analyze a metric, shade the map, enable a layer AND fly somewhere).\n'
-        +'MAPPING MANDATE (IntMap is a MAP product — a research answer must produce map value only IntMap can give, not a generic chatbot reply): whenever the request concerns real places or its answer will name locatable spots (cities, districts, landmarks, stations, airports, ports, parks, museums, squares, named facilities or natural features), you MUST put those spots ON the map — prefer the pin-producing actions ("poi" for facilities in a place, "mapReport" for current/recent live-news incidents, "researchMap" for a place/topic situation), and when you answer with plain "answer"/"analyze" list the named spots so IntMap pins them. The spots named in your prose and the spots mapped MUST match; NEVER finish a location-rich answer having mapped nothing. Verify with MULTIPLE independent source types (official bodies, primary reporting, specialist institutions) — never lean on one site/domain — and choose the best primary source per claim, not just top-ranked pages. Do NOT guess a coordinate: IntMap resolves positions from name+country and, for anything it cannot uniquely place, it honestly reports the spot as not-placed rather than putting it in the wrong location. Self-audit before finishing: are the main spots mapped, no same-name/coordinate mix-ups, sources not all one domain.\n'
+        +POLICY.all()   /* (#R397) source precedence · map restraint · coordinate provenance — js/atlas-policy.js */
+        +'MAPPING WHEN IT IS WANTED: when the request does concern real places, or its answer will name locatable spots (cities, districts, landmarks, stations, airports, ports, parks, museums, squares, named facilities or natural features), put those spots ON the map — prefer the pin-producing actions ("poi" for facilities in a place, "mapReport" for current/recent live-news incidents, "researchMap" for a place/topic situation), and when you answer with plain "answer"/"analyze" list the named spots so IntMap pins them. The spots named in your prose and the spots mapped MUST match; do not finish a location-rich answer having mapped nothing. Verify with MULTIPLE independent source types (official bodies, primary reporting, specialist institutions) — never lean on one site/domain — and choose the best primary source per claim, not just top-ranked pages. Do NOT guess a coordinate: IntMap resolves positions from name+country and, for anything it cannot uniquely place, it honestly reports the spot as not-placed rather than putting it in the wrong location. Self-audit before finishing: are the main spots mapped, no same-name/coordinate mix-ups, sources not all one domain.\n'
         +'PRECISION vs AMBIGUITY (the user explicitly complained about both forcing a guess on vague input AND mis-reading clear input): (a) when the request is CLEAR, do EXACTLY what it says — do not substitute a different action, drop a step, or add anything not asked; match places/metrics/layers literally. (b) when it is GENUINELY ambiguous or MISSING information you need (which of several places, which metric, from/to for a route, which country, etc.), do NOT force a wrong guess — emit a SINGLE {"type":"ask","question":<one short question in '+lang+'>,"options":[2-4 concrete choices],"allowText":true}. This renders the question with clickable option chips AND a free-text box, and the user\'s pick comes back to you as the next message — ALWAYS prefer this selection form over a plain guess when key info is missing. Only fall back to {"type":"answer"} for a purely conversational clarification with no sensible options. Otherwise never refuse. Never claim success for something you did not emit an action for.\n'
         +'HONESTY: NEVER use "answer" (or the "say" text) to claim you did something you did not emit a real action for — that is a lie the user explicitly complained about. To DO anything you MUST emit its action. "say" must describe ONLY what the actions in this plan actually do. If a request is impossible or unclear, emit a single honest {"type":"answer"} explaining it, and emit NO action you cannot fulfil. Decompose multi-part requests fully (5+ actions is fine) and keep them in the order the user implied.\n'
         +'SCOPE & SAFETY (do NOT over-refuse — the user complained that a request was blocked wholesale just because it contained a sensitive-sounding word): NEVER judge by keyword. Assess every request on FOUR axes — (1) PURPOSE: analysis / defense / preparedness / education / journalism vs genuine operational harm; (2) TARGET: a broad area or public installation vs a precise strike point or a named private individual; (3) PRECISION: approximate / public-information / illustrative vs real-time or targeting-grade; (4) OUTPUT: an explanation or a map visualization vs step-by-step instructions to cause harm. DEFAULT TO DOING A SAFE VERSION; full refusal is the LAST resort. When a request is sensitive but has a legitimate reading, TRANSFORM it and EXECUTE: turn a precise point into a BROAD public zone, keep only PUBLIC already-reported information, recast "how to attack / optimize a strike" as threat-assessment / reach / defense / preparedness, ALWAYS state the uncertainty and that it uses public information, and actually RUN the safe map actions (drawPolygon for a broad zone, radius for reach/range rings, missile for a representative arc, radiation or impact for an affected area, highlight, flyTo). Apply this SAME purpose/target/precision/output test generally across sensitive domains — military and weapons, disasters, disease and epidemics, hazardous chemicals / CBRN, crime and policing statistics, cyber, and critical infrastructure — never a keyword blocklist. REFUSE only the specific harmful slice (real-time targeting for an actual attack, a precise strike or kill plan against a specific person or an undefended civilian site, or genuinely operational instructions for building a weapon or synthesising a dangerous agent) and even then do NOT dead-end: in "say"/"answer" name the safe public-information analysis you CAN give and still emit the safe actions. Example — "using public information, show the approximate area a missile could be launched from country A toward country B": DO IT — emit a broad drawPolygon launch-region zone plus radius reach rings (optionally a representative missile arc), and in "say" note it is an approximate estimate from public information for situational / defensive analysis, not targeting data. Do NOT reply with a bare refusal.\n'
@@ -5073,6 +5061,10 @@ window.IntMapModules.atlasConsole=function(HOST){
            validation (so a historical question is never re-routed to live news, a local place never to a world map),
            translation-only retries of the same research family+mode are dropped, and world/continental scope-blowups
            are refused. A map-draw failure is NOT treated as an answer failure. */
+        /* ⚠⚠⚠ (#R397) THE GOAL GATE WAS A NOTE AFTER ALL. js/atlas-planner.js:28-31 says «THE GOAL IS A
+           GATE, NOT A NOTE … nothing read it» — and #R318 filed it in the debug record again, AFTER the
+           repair loop. 「操作は通ったが目的は果たされていない」 was computed every turn, read on none. */
+        let _goalUnmet=POLICY.unmetGoalText(_goalValidation,_profile,_atlasOutcomes);
         try{ let pending=(fails||[]).filter(a=>a&&a.type&&a.type!=='answer'); const _tried=[]; const _triedFam=new Set();
           /* (#R158) a PARTIAL execution (some targets resolved, some not) also needs Terra's decision — seed it into the
              repair loop even though it reported ok:true. IntMap does not adopt a partial result on its own. */
@@ -5081,11 +5073,16 @@ window.IntMapModules.atlasConsole=function(HOST){
           const _execFbOf=list=>{ const seen=[],out=[]; (list||[]).forEach(a=>{ const e=a&&a.__exec; if(e&&e.status==='partial_or_failed'&&seen.indexOf(e)<0){ seen.push(e); out.push(e); } });
             return out.length?('\n\n[EXECUTION RESULT — IntMap executed your action and OBSERVED the following. IntMap did NOT auto-correct, substitute, drop or reinterpret anything. YOU (the model) decide how to proceed: re-issue the action with corrected identifiers, re-search, ask the user, or accept the partial. "availableIdentifiers" are deterministic candidates IntMap found but did NOT apply — use them only if you judge them correct.]\n'+out.slice(0,4).map(e=>{ try{ return JSON.stringify(e).slice(0,1500); }catch(_){ return ''; } }).filter(Boolean).join('\n')):''; };
           acts.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
-          for(let _rp=0; _rp<2 && gen===_runGen && pending.length && acts.length<=12; _rp++){
+          for(let _rp=0; _rp<2 && gen===_runGen && (pending.length||_goalUnmet) && acts.length<=12; _rp++){
             const _execFb=_execFbOf(pending);
             pending.forEach(a=>{ try{ _tried.push(JSON.stringify(a)); const f=_researchFamKey(a); if(f) _triedFam.add(f); }catch(_){} });
             const fdesc=_tried.slice(-14).map(s2=>s2.slice(0,220)).join('\n');
-            const rp=await _planCall(buildPrompt(q,_profile)+_fileBlock+'\n\n[REPAIR '+(_rp+1)+'/2] These calls could not be completed:\n'+fdesc+_execFb+'\n'+_repairGuidance(),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:'high',schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});
+            /* (#R397) A failed CALL wants a different call; an unmet GOAL wants the missing product.
+               Consumed once, so an unmet goal is reported honestly rather than retried forever. */
+            const _goalFb=_goalUnmet?('\n\n[GOAL NOT MET — every call you issued returned, but the request is still not satisfied: '+_goalUnmet+'. Do NOT re-issue an action that already completed. Emit the action that produces the MISSING part.]'):'';
+            const _fdescLine=pending.length?('These calls could not be completed:\n'+fdesc):'Your calls completed.';
+            _goalUnmet='';
+            const rp=await _planCall(buildPrompt(q,_profile)+_fileBlock+'\n\n[REPAIR '+(_rp+1)+'/2] '+_fdescLine+_execFb+_goalFb+'\n'+_repairGuidance(),SYS(_capSel),imgs,{task:'atlas_plan',effortHint:'high',schema:PLAN_SCHEMA,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});
             let rplan=rp; if(Array.isArray(rplan)) rplan={actions:rplan}; else if(rplan&&rplan.type&&!rplan.actions) rplan={actions:[rplan],say:rplan.say};
             let racts=(rplan&&Array.isArray(rplan.actions))?rplan.actions.filter(a2=>a2&&a2.type):[];
             /* sanitize the repair plan through the SAME capability validation as the first plan */

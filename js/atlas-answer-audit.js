@@ -40,6 +40,24 @@ export function makeAtlasAnswerAudit() {
     /* structure */
     'schema.empty_direct_answer': 'error',
     'schema.no_primary_claim': 'error',
+    /* ══ (#R397) 「元の質問へ直接答えたか」 ═══════════════════════════════════════════════════════
+       The lead and its primary claims are checked against the question's own terms. Distinct from
+       `lead.not_primary` (does the lead CITE a primary claim) and `schema.no_primary_claim` (does one
+       EXIST): this asks whether what the lead says is about what was asked.
+
+       ⚠⚠⚠ BOTH ARE WARNINGS, AND THAT IS A MEASURED DECISION, NOT TIMIDITY. The request was that a
+       peripheral answer 「失敗として再計画」. Written as an `error` it fired on tests/r350's own curated
+       CORRECT answer: the question is 「中華人民共和国は世界有数の経済規模。実際に支えているのは何？」 and
+       the answer is 「需要面では最終消費が最大で、規模そのものを可能にしているのは製造能力・供給網…」 —
+       a good answer that reuses NONE of the question's nouns, because the question's nouns are a
+       country's formal name and 「経済規模」 while the answer's are 「最終消費」 and 「製造能力」.
+       No lexical-overlap rule can pass that case, so lexical overlap cannot be an error: a false
+       error spends a second model call from the reader's daily quota and can replace a correct answer
+       with a worse one, which is the failure 「一般質問でも正常回答する」 forbids.
+       The finding is recorded, it reaches the developer trace, and it is available to the repair
+       prompt. Promoting it needs a real subject/focus parser — not a longer stopword list. */
+    'answer.question_not_addressed': 'warning',
+    'answer.question_only_peripheral': 'warning',
     'schema.duplicate_id': 'error',
     'schema.unknown_claim_ref': 'error',
     'schema.unknown_evidence_ref': 'error',
@@ -116,6 +134,149 @@ export function makeAtlasAnswerAudit() {
   }
 
   function anyFacts(records) { return records.some((r) => (r.supportFacts || []).length > 0); }
+
+  /* ══ (#R397) DID IT ANSWER THE QUESTION THAT WAS ASKED? ═════════════════════════════════════════
+     「answerGoal を単に保存するだけでなく、directAnswerとprimary claimsが質問の中心命題を実際に解決して
+       いるか検証し、周辺情報だけで回答が成立している場合は失敗として再計画すること。」
+
+     `request.answerGoal` and `request.text` were stored on the envelope and never read by anything.
+     So an answer could satisfy every check in this file — properly cited, correctly dimensioned,
+     honestly limited — while being about the neighbourhood of the question rather than the question.
+
+     ⚠ IT LOOKS ONLY AT THE LEAD AND THE PRIMARY CLAIMS, ON PURPOSE. If the subject appears three
+     sections down under `supporting`, the reader still did not get an answer; that is precisely the
+     「周辺情報だけで回答が成立している」 shape. Sections and supporting claims are deliberately not
+     consulted.
+
+     ⚠ AND IT DECLINES TO JUDGE MORE OFTEN THAN IT JUDGES. A gate on natural language that guesses is
+     worse than no gate: a false error sends a correct answer back through a repair pass and can only
+     make it worse. So it fires ONLY when a head term is confidently extractable and covered NOWHERE
+     in the lead or its primary claims. Pronoun-only follow-ups («now per capita», 「じゃあ人口は？」),
+     questions with no content noun, and honest refusals all return no finding. */
+  const _STOPWORDS = new RegExp('^(?:the|a|an|and|or|of|in|on|at|to|for|from|by|with|about|as|is|are|was|were|be|been|being|do|does|did|can|could|would|should|will|shall|may|might|must|have|has|had|what|which|who|whom|whose|where|when|why|how|whether|tell|me|show|give|explain|describe|compare|please|it|its|this|that|these|those|there|here|then|than|not|no|yes|any|some|all|more|most|less|very|much|many|also|only|just|but|if|so|too|now|new|old|good|best|between|into|over|under|per|vs|versus'
+    + '|der|die|das|und|oder|von|im|in|auf|zu|für|mit|über|ist|sind|war|waren|wie|was|wer|wo|warum|welche|welcher|bitte|zeig|erklär|vergleich'
+    + '|и|в|на|с|по|для|из|о|как|что|кто|где|почему|какой|покажи|сравни'
+    + '|el|la|los|las|un|una|de|del|y|o|en|con|por|para|sobre|es|son|era|cómo|qué|quién|dónde|por qué|cuál|muestra|compara|explica'
+    + '|le|les|des|du|et|ou|dans|sur|avec|pour|par|comment|quoi|qui|où|pourquoi|quel|montre|compare|explique'
+    + ')$', 'i');
+  /* ══ (#R397) PARTICLE STRIPPING, WITHOUT A QUANTIFIER OVER AN ALTERNATION ══════════════════════
+     ⚠ THE FIRST VERSION OF THIS WAS A HIGH-SEVERITY ReDoS (CodeQL js/redos), and CodeQL caught it on
+     the pull request. It was written as `(?:の|は|…|と|…|とは|…)+$` — and because BOTH `と` and `は`
+     are alternatives alongside `とは`, the string 「とはとはとは…」 can be decomposed two ways at every
+     step. With `+` and an anchored `$`, a tail that does not match makes the engine try all of them:
+     exponential backtracking on an input the reader controls (the question text). 「かな」 vs
+     「か」+「な」 was a second instance of the same ambiguity.
+
+     So the quantifier is gone. Each pattern matches ONE token, anchored, and `stripEnd`/`stripStart`
+     apply it in a loop bounded at TOKEN_PASSES. Linear by construction, and the ambiguity is
+     harmless because a single pass has nothing to backtrack over — 「とは」 is tried before 「は」
+     because it comes first in the alternation, which is also the reading we want. */
+  const TOKEN_PASSES = 12;
+  const _JA_LEAD_ONE = /^(?:の|は|が|を|に|へ|と|で|も|や|から|まで|より|ね|よ|か|な)/;
+  const _JA_TAIL_ONE = /(?:について|における|に関して|でしょうか|ですか|とは|って|ください|下さい|教えて|おしえて|説明して|比較して|いくつ|いくら|どんな|どの|どう|なぜ|どこ|いつ|だれ|なに|から|まで|より|かな|かい|誰|何|の|は|が|を|に|へ|と|で|も|や)$/;
+  const _KO_LEAD_ONE = /^(?:의|은|는|이|가|을|를|에서|에|와|과|도|만|부터|까지)/;
+  const _KO_TAIL_ONE = /(?:입니까|인가요|알려줘|설명해|비교해|어디|언제|누가|무엇|어떻게|왜|의|은|는|이|가|을|를|에서|에|와|과|도|만|부터|까지)$/;
+  /* Chinese has no particles to strip, but the interrogative tail sits in the same run of Han. */
+  const _ZH_TAIL_ONE = /(?:是多少|有多少|多少|是什麼|是什么|為什麼|为什么|怎麼樣|怎么样|什麼|什么|如何|哪裡|哪里|哪個|哪个|的情況|的情况|嗎|吗|呢)$/;
+
+  function stripRepeat(t, re) {
+    for (let i = 0; i < TOKEN_PASSES; i++) {
+      const n = t.replace(re, '');
+      if (n === t) return t;
+      t = n;
+    }
+    return t;
+  }
+  /** trimCjkAffixes(run) — the term inside a run of Han/Kana/Hangul, with its grammar peeled off. */
+  function trimCjkAffixes(run) {
+    let t = String(run == null ? '' : run);
+    t = stripRepeat(t, _JA_LEAD_ONE);
+    t = stripRepeat(t, _KO_LEAD_ONE);
+    t = stripRepeat(t, _JA_TAIL_ONE);
+    t = stripRepeat(t, _KO_TAIL_ONE);
+    t = stripRepeat(t, _ZH_TAIL_ONE);
+    return t;
+  }
+  const _DECLINED = /cannot|could not|couldn't|unable|not available|no data|insufficient|not verifiable|nicht möglich|keine daten|нет данных|невозможно|no hay datos|no se puede|impossible|pas de données|不明|確認でき|判断でき|データがな|情報がな|無法|沒有資料|无法|没有数据|할 수 없|자료가 없/i;
+
+  const _norm = (s) => String(s == null ? '' : s).toLowerCase()
+    .normalize('NFKC').replace(/[\s　]+/g, ' ').replace(/[.,;:!?'"“”‘’()\[\]{}·、。「」『』]/g, '').trim();
+
+  /**
+   * headTerms(text) — the content words a question is ABOUT, longest first. Empty when the question
+   * has no extractable subject, which is the signal to make no finding at all.
+   */
+  function headTerms(text) {
+    const raw = String(text == null ? '' : text);
+    const terms = [];
+    /* CJK has no spaces: take each run of Han/Kana/Hangul, strip the particles that bracket it, and
+       keep the run itself. A 2-4 char n-gram sweep would produce fragments that match by accident. */
+    const cjk = raw.match(/[぀-ヿ㐀-䶿一-鿿豈-﫿가-힯]+/g) || [];
+    for (const run of cjk) {
+      const t = trimCjkAffixes(run);
+      if (t.length < 2) continue;
+      terms.push(t);
+      /* ⚠ AND ITS PARTS, OR THE TWO VERDICTS DISAGREE BY LANGUAGE. A CJK run is one term where the
+         same question in English yields three, so 「日本の平均寿命は？」 answered peripherally produced
+         `question_not_addressed` (an ERROR, because nothing at all matched the single term) while
+         «What is the life expectancy in Japan?» answered the same way produced only the WARNING — the
+         Japanese reader was judged harder for the identical defect. Splitting on the attributive
+         particles gives 「日本」 and 「平均寿命」 the way the English tokeniser gives `japan` and
+         `expectancy`, so `partial` means the same thing in both. */
+      for (const part of t.split(/[の的之]/)) if (part.length >= 2) terms.push(part);
+    }
+    /* Latin/Cyrillic: whole words, stopwords removed. */
+    for (const w of (raw.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu) || [])) {
+      if (/^[぀-ヿ一-鿿가-힯]/.test(w)) continue;
+      if (w.length < 3 || _STOPWORDS.test(w)) continue;
+      terms.push(w);
+    }
+    /* Longest first: the most specific term is the one worth requiring. */
+    return terms.map(_norm).filter((t) => t.length >= 2)
+      .sort((a, b) => b.length - a.length).slice(0, 6);
+  }
+
+  /**
+   * questionAddressed(env) -> {skipped, covered, term} — whether the lead plus its primary claims
+   * mention what the question was about.
+   */
+  function questionAddressed(env) {
+    const req = (env && env.request) || {};
+    const lead = (env && env.answer && env.answer.directAnswer) || {};
+    const terms = headTerms(String(req.text || '') + ' ' + String(req.answerGoal || ''));
+    if (!terms.length) return { skipped: 'no_head_term' };
+    const leadText = String(lead.text || '');
+    /* An honest refusal is a legitimate answer to the question and is judged by the evidence codes. */
+    if ((env.answer.limitations || []).length && _DECLINED.test(leadText)) return { skipped: 'declined' };
+    const primaries = (env.claims || []).filter((c) => c.importance === 'primary');
+    const hay = _norm(leadText + ' ' + primaries.map((c) => c.text || '').join(' '));
+    if (!hay) return { skipped: 'nothing_to_read' };
+    /* A prefix is accepted so an inflected or compounded form still counts (「平均寿命」 vs
+       「平均寿命は」, "Германии" vs "Германия", "expectancy" vs "expectancies"). */
+    const hit = (t) => {
+      const probe = t.length > 6 ? t.slice(0, Math.max(4, Math.ceil(t.length * 0.7))) : t;
+      return hay.indexOf(t) >= 0 || hay.indexOf(probe) >= 0;
+    };
+    const top = terms[0];
+    if (hit(top)) return { covered: true, term: top };
+    /* ⚠⚠⚠ TWO VERDICTS, BECAUSE ONLY ONE OF THEM IS DECIDABLE HERE. Measured on real pairs, these two
+       are indistinguishable by any surface rule:
+         · «What is the life expectancy in Japan?» → «Japan has an ageing population and low fertility»
+           — genuinely peripheral: it answers about a DIFFERENT metric of the same place.
+         · «Explain how RSA encryption works» → «RSA relies on the difficulty of factoring integers»
+           — a correct answer that happens to use the acronym rather than the longest word.
+       In both, the top term is absent and a lesser term is present. Telling them apart needs to know
+       that «japan» is a PLACE and «rsa» is the SUBJECT — semantics this pure module has no gazetteer
+       for. Raising an `error` on both would send correct answers to ordinary non-geographic questions
+       into a repair pass, which is the failure mode 「IntMapに情報がない一般質問でも正常回答する」
+       forbids. So:
+         · nothing covered at all → `error`. An answer that touches none of the question's terms is
+           off-topic on any reading, and this is the one that can be decided.
+         · top term missing but something covered → `warning`. Recorded in the trace, blocks nothing.
+       ⚠ DO NOT PROMOTE THE WARNING TO AN ERROR WITHOUT GIVING IT A PLACE-NAME TEST FIRST. */
+    const anyCovered = terms.some(hit);
+    return { covered: false, term: top, partial: anyCovered };
+  }
 
   /**
    * auditAnswer(env, registry, ctx) -> {status, errors, warnings}
@@ -269,6 +430,15 @@ export function makeAtlasAnswerAudit() {
     const leadClaims = (lead.claimIds || []).map((id) => byId.get(id)).filter(Boolean);
     if (String(lead.text || '').trim()) {
       if (!leadClaims.some((c) => c.importance === 'primary')) push('lead.not_primary', 'directAnswer cites no primary claim');
+      /* (#R397) …and the lead has to be about what was asked. */
+      /* (#R397) ⚠ TWO LITERAL push() CALLS, NOT A TERNARY ARGUMENT. tests/r350 ④b enumerates the
+         raisable codes by matching `push('<code>'` in this file's source, so a computed code is
+         declared-but-unraisable as far as that gate can see — and it said so. */
+      const qa = questionAddressed(env);
+      if (qa.covered === false && qa.partial) push('answer.question_only_peripheral',
+        'the request is about "' + qa.term + '" and only a lesser term of it appears in the lead or its primary claims');
+      if (qa.covered === false && !qa.partial) push('answer.question_not_addressed',
+        'the request is about "' + qa.term + '" and neither directAnswer nor any primary claim mentions any term of it');
       if (!leadClaims.some((c) => c.dimension)) push('lead.dimension_unstated', 'the opening sentence names no dimension');
       if (EXCLUSIVE_RE.test(lead.text)) {
         /* an exclusive verdict needs BOTH sides measured, in the SAME dimension */
@@ -365,7 +535,11 @@ export function makeAtlasAnswerAudit() {
     });
   }
 
-    const API = { AUDIT_CODES, auditAnswer, degrade, repairBrief };
+    /* `headTerms` and `questionAddressed` are exported so a test can hand them a question and an
+       answer directly — the check they drive is a judgement about natural language, and the only way
+       to know it does not fire falsely is to run it over cases (#R392: 検査は変異させて赤を見るまで完成
+       していない). */
+    const API = { AUDIT_CODES, auditAnswer, degrade, headTerms, questionAddressed, repairBrief };
     try { window.IntMapAnswerAudit = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
