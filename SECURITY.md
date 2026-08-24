@@ -6,7 +6,7 @@
 
 IntMap is a static, client-side world-map web app — since #R175 a **Vite build** (`npm run
 build` → `dist/`, which is what GitHub Pages publishes), not the repo tree — backed by
-Supabase (Auth, Postgres + RLS, **eight** Edge Functions) and many public read-only data APIs.
+Supabase (Auth, Postgres + RLS, **twelve** Edge Functions) and many public read-only data APIs.
 This document is the entry point for **reporting a vulnerability** and for the two facts
 people most often get wrong about this project.
 
