@@ -781,7 +781,7 @@ window.IntMapModules.timeBorders=function(HOST){
       /* successors a former state covers this year: their own era identity must NOT be applied on top of it —
          the Countries list hides those rows for the same reason (js/history.js `histStates.apply`). */
       const _cov=new Set();
-      try{ if(_d&&HS&&HS.activeAt) HS.activeAt(_d).forEach(S=>(S.succ||[]).forEach(c=>_cov.add(c))); }catch(_){}
+      try{ if(_d&&HS&&HS.activeAt) HS.activeAt(_d).forEach(S=>((HS.succAt&&HS.succAt(S,_d))||S.succ||[]).forEach(c=>_cov.add(c))); }catch(_){}   /* (#R425) the successors it HELD on _d, not every one it ever aggregates — the same expression js/history.js hides by, so the labels and the list cannot part company over a country that was independent that year */
       /* (#R109) HistId single-country renamings (Germany→Weimar/Nazi/Empire, China→Qing/ROC, Italy, Persia, Siam, Dutch
          East Indies): the aourednik polygon keeps the MODERN name ("Germany") — map that name to the era display name
          (#R410) FOR THE YEAR BEING DRAWN, rather than to whatever rename happens to be standing in countryStats. */
@@ -1055,7 +1055,8 @@ window.IntMapModules.timeBorders=function(HOST){
              1914 → British Raj, Korea 1914 → Empire of Japan). Resolve to THAT state — its aggregate series is the
              comparable data for this territory — instead of returning nothing. */
           else if(bestHid){ try{ const HS=window.IntMapHistStates, when2=(window.IntMapTime&&window.IntMapTime.when)?window.IntMapTime.when():null;
-            if(HS&&HS.STATES){ for(const S of HS.STATES){ if(!S.succ||S.succ.indexOf(bestHid)<0) continue;
+            if(HS&&HS.STATES){ for(const S of HS.STATES){ const su=(when2&&HS.succAt)?HS.succAt(S,when2):(S.succ||[]);   /* (#R425) …and it must have held it THEN */
+              if(!su.length||su.indexOf(bestHid)<0) continue;
               let act=true; try{ if(when2){ const t=+when2,a2=+new Date(S.from+'T00:00:00Z'),b2=+new Date(S.to+'T23:59:59Z'); if(isFinite(t)) act=(t>=a2&&t<=b2); } }catch(_){}
               if(!act||!countryStats[S.code]||countryStats[S.code]._histHidden) continue;
               code=S.code; break; } } }catch(_){} } } }catch(_){} }
