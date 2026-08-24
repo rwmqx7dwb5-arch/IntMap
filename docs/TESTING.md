@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **201 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **202 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -583,8 +583,14 @@ error from IntMap's **own** code fails the build. This is what lets CI stay gree
 upstream data API is rate-limited or down.
 
 The only test that talks to the real internet is the **production smoke** (`prod-smoke`),
-which runs against the deployed URL after a deploy and on the uptime schedule. It tolerates
-transient upstream failures via retries and the same benign-error classification.
+which runs against the deployed URL from `deploy.yml` (after every deploy) and from
+`rollback.yml` (after a rollback). It tolerates transient upstream failures via retries and the
+same benign-error classification.
+
+> ⚠ (#R382) It does **not** run on the uptime schedule, which this paragraph used to claim.
+> `uptime.yml` is a single HTTP probe for the app shell; it has never invoked playwright. So the
+> deployed site is checked by this suite **on a deploy and at no other time** — a red post-deploy
+> smoke therefore blocks the next round rather than being noticed by a monitor first.
 
 ### What only production can answer (#R333)
 
