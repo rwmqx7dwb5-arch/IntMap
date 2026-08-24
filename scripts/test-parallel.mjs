@@ -79,6 +79,12 @@ const HALVES = [
          in the gazetteer against something that quotes it. That last one is what #R349 needed: it had
          178 anchors nothing reached, one per theatre it never wrote. */
       ['node', ['scripts/build-wars.mjs', '--check']],
+      /* (#R427) the THIRD gate here that reads shipped bytes: data/hist-cities.json is re-derived
+         from scripts/histcities/ and compared byte for byte, and on the way every tile key in the
+         record is resolved against the bundled gazetteer — a spelling that also names a populated
+         place somewhere else fails the build, because the label is rewritten by matching that
+         spelling and the other city would be renamed too. */
+      ['node', ['scripts/build-hist-cities.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

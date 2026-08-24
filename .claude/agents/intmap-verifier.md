@@ -25,6 +25,7 @@ tools: Bash, Read, Grep, Glob
 | `npm run check:docs` | 文書間の事実の突き合わせ |
 | `npm run check:archfiles` | `Architecture.md` とファイル台帳の一致 |
 | `npm run check:wars` | 紛争データの生成物と定義の一致 |
+| `npm run check:histcities` | 歴史都市名の生成物と記録の一致・綴りが2都市を指さないこと |
 | `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |
 | `npm run check:perf` | 起動費用の天井（**build が要る**） |
 | `npm run check:assets` | 配られる全ファイルに読み手がいる（**build が要る**） |

@@ -89,7 +89,7 @@ import '../js/lang-switch.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
 import '../js/layer-previews.js';
-import '../js/history.js';
+import '../js/history.js'; import '../js/hist-cities.js';   /* (#R427) the country's era name, then the CITY's — see js/hist-cities.js. ⚠ ONE LINE: the shell is under tests/r168 #8's ceiling with nothing to spare (#R408 landed at 8,019/8,020), and the rule is that a feature moves out rather than the ceiling moving up. Eager and tiny — only the clock subscriber and the expression builder; the 608-city record is fetched the first time the reader leaves «now». */
 import '../js/monitors.js';
 import '../js/companies.js';
 /* (#R311) js/stats-compare.js is on-demand now (js/lazy-modules.js); js/compare.js below is the MAP-compare window, a different feature, and stays. */

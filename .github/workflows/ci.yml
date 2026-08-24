@@ -74,6 +74,8 @@ jobs:
         run: npm run check:companies
       - name: Conflict data (the generated set matches its definitions)
         run: npm run check:wars
+      - name: Historical city names (the record matches, and no key names two cities)
+        run: npm run check:histcities
       # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
       # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
       # Every previous round fixed test time for that round and the suite grew back, because the

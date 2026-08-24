@@ -1236,6 +1236,27 @@ if (RULE && RULE !== 'i18n-open-gap') {
   } else ok('ci-gates', `all ${wanted.length} source-side gates npm test runs are also ci.yml steps`);
 }
 
+/* ═══ 29. how many cities carry a historical name ═════════════════════════════════════════
+ *  (#R427) The size of data/hist-cities.json is stated in four documents — Architecture.md,
+ *  PRODUCT.md, docs/FILES.md and the DEV-NOTES round — because it is the answer to 「数百以上に」
+ *  and a reader deserves the number rather than an adjective. That is exactly the shape this file
+ *  exists for: the round that adds twenty cities will not remember all four, and a count nobody
+ *  re-derives becomes a claim about a file that has moved on. Both halves are checked, because a
+ *  document that quietly stopped stating it has stopped being wrong only by saying nothing. */
+{
+  if (!has('data/hist-cities.json')) fail('hist-cities', 'data/hist-cities.json is gone — the record the settlement labels travel on');
+  else {
+    const j = JSON.parse(rd('data/hist-cities.json'));
+    const cities = j.cities.length, names = j.cities.reduce((n, c) => n + c.e.length, 0);
+    eachDoc((f, s) => {
+      for (const m of s.matchAll(/(\d{3,4})\s*都市/g)) if (Number(m[1]) !== cities) fail('hist-cities', `${f} says ${m[1]} 都市; data/hist-cities.json holds ${cities}`);
+      for (const m of s.matchAll(/(\d{3,4})\s*の歴史名/g)) if (Number(m[1]) !== names) fail('hist-cities', `${f} says ${m[1]} の歴史名; data/hist-cities.json holds ${names}`);
+    });
+    if (!/都市/.test(BODY.get('Architecture.md') || '')) fail('hist-cities', 'Architecture.md no longer states how large the historical-city record is');
+    if (!problems.some((x) => x.startsWith('hist-cities'))) ok('hist-cities', `${cities} cities / ${names} historical names, stated correctly`);
+  }
+}
+
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
 /* (#R407) `--rule=` narrows what is REPORTED as well as what is run. ⚠ A name that matched no rule
    at all must be an error: a typo would otherwise exit 0 and let a mutation test prove nothing. */
