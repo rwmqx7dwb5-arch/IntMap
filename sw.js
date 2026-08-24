@@ -318,7 +318,7 @@ self.addEventListener('fetch', (event) => {
      · every URL goes through isTileRequest() — the same list the fetch path uses;
      · length and count are bounded before anything is queued (a URL is a z/x/y, not a document);
      · `credentials: 'omit'`, so a prefetch can never carry the reader's cookies to a tile host.
-   MEASURED against the prefetcher (js/sat-prefetch.js) this changes nothing: every URL it sends is
+   MEASURED against the prefetcher (js/tile-warm.js) this changes nothing: every URL it sends is
    an https tile on a listed host, and its batches are ≤ 96. */
 const PREFETCH_LANES = 4;                 /* concurrent prefetch fetches, across every batch */
 const PREFETCH_MAX = 96;                  /* per batch, unchanged — the ceiling that was already here */
@@ -337,7 +337,8 @@ function pfSettle() {
 }
 async function pfLane(cache) {
   while (_pfQueue.length) {
-    const u = _pfQueue.shift();
+    /* (#R408) an entry is { u, c }: the URL, and the client whose batch put it here — see the handler */
+    const u = _pfQueue.shift().u;
     try {
       if (await cache.match(u)) continue;
       /* SEC: never the reader's cookies, and never a redirect to somewhere that is not a tile. */
@@ -372,7 +373,12 @@ async function senderIsOurWindow(event) {
 }
 self.addEventListener('message', (event) => {
   const d = event.data;
-  if (!d || d.type !== 'prefetch' || !Array.isArray(d.urls)) return;
+  /* (#R408) two spellings, one path: `prefetch` says the view moved and this batch REPLACES whatever of
+     the sender's is still queued here; `prefetch-more` says it is the rest of the ring already running
+     (js/tile-warm.js caps a batch at 60/110, so the next call from the same tile rectangle is the
+     remainder). Everything below — the sender check, the allow-list, the caps, the lanes — is the same
+     for both; only the queue in front of the new URLs is treated differently. */
+  if (!d || (d.type !== 'prefetch' && d.type !== 'prefetch-more') || !Array.isArray(d.urls)) return;
   event.waitUntil((async () => {
     if (!(await senderIsOurWindow(event))) return;
     const wanted = [];
@@ -397,8 +403,32 @@ self.addEventListener('message', (event) => {
     }
     if (!wanted.length) return;
     const cache = await caches.open(CACHE);
-    for (const u of wanted) _pfQueue.push(u);
+    /* ══ (#R408) A BATCH FOR SOMEWHERE ELSE SUPERSEDES THE SAME SENDER'S LEFTOVERS ══════════════════
+       The lanes are shared across batches (above), which is what bounds how many fetches are in the
+       air — and it is also why a batch keeps its place in the queue long after the reader has moved
+       on: 260 ms after a `moveend` the page posts the ring it wants NOW, and what is queued in front
+       of it is the ring it wanted then, four lanes' worth at a time, competing with the tiles the map
+       is drawing at the new place. Everything of THIS sender's that is still queued predates the
+       message being handled (nothing else adds to the queue), so on a `prefetch` it all goes.
+       ⚠ PER SENDER, so a second tab's prefetch is not cancelled by this one's, and ⚠ ONLY ON A
+       `prefetch`: a `prefetch-more` is the same view continued and drops nothing.
+       ⚠ NOTHING ELSE IS REDUCED. The lanes, the batch cap, the backlog and the cache check are
+       unchanged, and a fetch already in flight is never abandoned — a reader who stops moving posts
+       nothing at all, so nothing supersedes the last batch and it drains in full.
+       ⚠ AND THE PAGE IS TOLD WHAT WAS DROPPED. js/tile-warm.js remembers every URL it has asked for
+       and never asks twice (#R196), so a URL dropped here in silence would be a tile its prefetch can
+       never warm again: the cancellation would be punching holes in the coverage it exists to protect.
+       It forgets the ones named here, and offers them again if the camera still wants them. */
+    const cid = (event.source && event.source.id) || '';
+    const stale = [];
+    if (d.type === 'prefetch') {
+      _pfQueue = _pfQueue.filter((e) => { if (e.c !== cid) return true; stale.push(e.u); return false; });
+    }
+    for (const u of wanted) _pfQueue.push({ u, c: cid });
     if (_pfQueue.length > PREFETCH_BACKLOG) _pfQueue = _pfQueue.slice(-PREFETCH_BACKLOG);
+    if (stale.length) {
+      try { if (event.source && event.source.postMessage) event.source.postMessage({ type: 'prefetch-dropped', urls: stale }); } catch (_) {}
+    }
     const done = pfDrain();
     pfPump(cache);
     await done;

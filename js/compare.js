@@ -15,6 +15,7 @@
  * 
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.compare=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -200,10 +201,10 @@ window.IntMapModules.compare=function(HOST){
     function setBase(kind){ baseKind=kind; const go=()=>{ try{ applyBase(); if(xrayOn()){ layoutXrayLens(); try{ cmap.render.resize(); }catch(_){} } }catch(_){} }; go(); setTimeout(go,180); setTimeout(go,600);   /* (#R32/#R32b) re-assert + re-fit the x-ray lens so Map/Sat always switches, incl. inside x-ray */
       /* (#R34) POLL until the wanted base actually shows — a click landing during the cmap style-load
          otherwise no-ops with nothing retrying ("Compare viewで…切り替えができないバグが発生する"). */
-      try{ clearInterval(_basePoll); let n=0; _basePoll=setInterval(()=>{ n++;
-        try{ if(!cmap||baseKind!==kind){ clearInterval(_basePoll); return; }
-          if(cmap.layers.has('cmp-base-sat')){ const wantSat=(kind==='sat'), isSat=(cmap.layers.getLayout('cmp-base-sat','visibility')==='visible'); if(wantSat!==isSat) go(); else clearInterval(_basePoll); } }catch(_){}
-        if(n>30) clearInterval(_basePoll); },150); }catch(_){}
+      try{ stopTick(_basePoll); let n=0; _basePoll=everyTick('compare:base-poll',150,()=>{ n++;
+        try{ if(!cmap||baseKind!==kind){ stopTick(_basePoll); return; }
+          if(cmap.layers.has('cmp-base-sat')){ const wantSat=(kind==='sat'), isSat=(cmap.layers.getLayout('cmp-base-sat','visibility')==='visible'); if(wantSat!==isSat) go(); else stopTick(_basePoll); } }catch(_){}
+        if(n>30) stopTick(_basePoll); }); }catch(_){}
     }
     /* (#R20) projection ALWAYS follows the main map (selector removed) — mercator-referenced overlays
        (Köppen/land cover/eco) only register when both maps share the projection. */

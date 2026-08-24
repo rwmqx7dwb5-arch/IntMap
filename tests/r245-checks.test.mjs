@@ -157,7 +157,7 @@ test('r245 ⑧ nine more files hold their translation tuples as calls, and the c
   let total = 0;
   for (const f of CLOSED) {
     const src = read(f);
-    const ast = parse(src, { ecmaVersion: 2022, sourceType: 'script' });
+    const ast = parse(src, { ecmaVersion: 2022, sourceType: 'module' });
     let n = 0;
     walk.simple(ast, { ObjectExpression(o) {
       const vals = []; let langs = 0;

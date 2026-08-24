@@ -326,3 +326,34 @@ export function fnBody(src, name) {
   }
   throw new Error('unbalanced braces in ' + name);
 }
+
+/* ══ ⚠ (#R408) js/ FILES CAN IMPORT NOW, AND FOUR SANDBOXES EVALUATE THEM AS CLASSIC SCRIPTS ═══
+   tests/r186 and tests/r187 hand js/space-sky.js to `vm.runInContext`, and tests/r208 and tests/r214
+   hand js/night-sky.js to `new Function`, so the astronomy in them can be exercised in about a
+   millisecond with no browser at all. That worked because every js/ module had ZERO top-level
+   declarations and zero imports — the #R175 property — and it stopped working the moment those two
+   files joined js/runtime.js's one timer wheel, with `SyntaxError: Cannot use import statement
+   outside a module` before a single assertion ran.
+   Dropping the import lines and declaring the names they bound is the same substitution those
+   sandboxes ALREADY make for `document`, `requestAnimationFrame` and `setInterval` — none of which
+   the astronomy calls either. The alternative was to keep two files on raw `setInterval` so a test
+   harness could go on parsing them, which is the tail wagging the dog.
+   ⚠ TOP-LEVEL `import` ONLY. A dynamic `import(...)` inside a function body is left exactly where it
+   is, because that is a call and the sandbox can stub it like any other. */
+export function asClassicScript(src) {
+  const names = [];
+  const body = src
+    .replace(/^[ \t]*import\s+([^;]*?)\s*from\s*['"][^'"]+['"];?[ \t]*$/gm, (_line, clause) => {
+      const braces = /\{([^}]*)\}/.exec(clause);
+      if (braces) for (const n of braces[1].split(',')) {
+        const nm = n.trim().split(/\s+as\s+/).pop().trim();
+        if (nm) names.push(nm);
+      }
+      const bare = /^\s*([A-Za-z_$][\w$]*)\s*(?:,|$)/.exec(clause.replace(/\{[^}]*\}/, ''));
+      if (bare && bare[1]) names.push(bare[1]);
+      return '';
+    })
+    .replace(/^[ \t]*import\s+['"][^'"]+['"];?[ \t]*$/gm, '');
+  const shim = names.length ? 'var ' + names.map((n) => n + ' = function () { }').join(', ') + ';\n' : '';
+  return shim + body;
+}

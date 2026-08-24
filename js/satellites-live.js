@@ -73,6 +73,8 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satellitesLive=function(HOST){
   /* ── (#R184) SGP4 ARRIVES WHEN THE LAYER DOES, NOT WHEN THE PAGE DOES ────────────────────────
@@ -907,8 +909,8 @@ window.IntMapModules.satellitesLive=function(HOST){
        two or three seconds while getting the frame budget back. */
     const period=()=>(sats.length>6000?3000:sats.length>2000?2000:1000);
     const go=()=>{ paint(); try{ ALL_LAYERS.forEach(id=>{ if(GE().layers.has(id)) GE().layers.setVisible(id,true); }); }catch(_){}
-      if(timer) clearInterval(timer);
-      timer=setInterval(tick,period()); };
+      if(timer) stopTick(timer);
+      timer=everyTick('satellites-live:tick',period(),tick); };
     /* go as soon as ANY source has answered — see _onPrimed */
     _onPrimed=()=>{ if(on) go(); };
     if(!sats.length) load(group).then(ok=>{ if(ok) go(); else { try{ HOST.imToast(L('Could not load the satellite catalog.','衛星カタログを取得できませんでした。','Satellitenkatalog nicht abrufbar.','Не удалось загрузить каталог спутников.','No se pudo cargar el catálogo de satélites.')); }catch(_){} } });
@@ -917,7 +919,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   }
   function stop(){
     on=false; _onPrimed=null;
-    if(timer){ clearInterval(timer); timer=null; }
+    if(timer){ stopTick(timer); timer=null; }
     unwire();
     const E=GE(); if(!E) return true;
     try{ ALL_LAYERS.forEach(id=>{ if(E.layers.has(id)) E.layers.setVisible(id,false); }); }catch(_){}

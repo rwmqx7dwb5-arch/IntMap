@@ -61,6 +61,8 @@
  *  DATA: NASA EOSDIS GIBS, VIIRS_Black_Marble (2016-01-01 composite). Already declared in the app's
  *  sources/privacy pages for the manual layer; this is the same service and the same product.
  * ==========================================================================*/
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapNightSide=(function(){
   'use strict';
   const GE=()=>window.IntMapGeoEngine;
@@ -479,7 +481,9 @@ window.IntMapNightSide=(function(){
     try{ GE().events.on('styledata',()=>{ try{ consider(); }catch(_){} }); }catch(_){}
     try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ refresh(true); }); }catch(_){}
     /* the sub-solar point moves 15° an hour — the same cadence app-body re-aims the light on */
-    setInterval(()=>{ try{ if(!document.hidden) refresh(false); }catch(_){} },60000);
+    /* (#R408) …and the hidden tab is the WHEEL's answer now, not a second copy of it here:
+       js/runtime.js skips a task whose document is hidden and runs it ONCE on the way back. */
+    everyTick('night-side:sun',60000,()=>{ try{ refresh(false); }catch(_){} });
   }
 
   function apply(){ wire(); consider(); return built; }

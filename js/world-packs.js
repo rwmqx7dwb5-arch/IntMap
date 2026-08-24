@@ -27,6 +27,7 @@
  *  about the satellite catalogue ("a group with no list is omitted, not empty"), applied to alerts,
  *  where the difference is a safety claim.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.worldPacks=function(HOST){
   const GE=()=>window.IntMapGeoEngine;
@@ -4507,10 +4508,24 @@ window.IntMapModules.worldPacks=function(HOST){
         for(let i=0;i<geo.length;i++){ const c=String(geo[i].id||''); if(!c||!geo[i].geometry) continue;
           if(washTier(c)===0) zero.push(c); }
         /* ⚠ (#R308 追記) 視野が鍵の一部である——切る集合が視野で決まるようになったので、
-           パンしただけで作り直されなければ、前の視野の答えがそのまま残る。 */
-        let vk=''; try{ const b=GE().camera.getBounds();
-          vk=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(v=>Math.round(v*4)/4).join(','); }catch(_){}
-        const key=sig+'|'+vk+'|'+zero.join(',');
+           パンしただけで作り直されなければ、前の視野の答えがそのまま残る。
+           ══ ⚠⚠⚠ (#R408) 視野は鍵ではない。<b>視野に入っている国の集合</b>が鍵である ═══════════
+           鍵は視野の矩形を 0.25 度に丸めて持っていた。0.25 度は指が動かすどんなパンよりも細かいので、
+           **警報を出したままパンすると毎回この鍵を外す**。外したあとに走るのは、`shown`（数千地物）
+           からの「答えている地面」の一覧・そこから作る 10 度の格子・視野の旗・頂点数での整列であり、
+           肝心の引き算だけが `cutMemo` で無料——そして #R344 の出力署名が「変わっていない」と言って
+           結果を捨てる。つまり**毎パン、同じ絵を作り直して捨てていた**。#R387 の実測では、警報を
+           載せたパンは 7,074 ms（載せないと 345 ms）で、その 74 % がレンダラの外にある。
+           切った結果は `sig` と tier 0 の集合と「**どの tier 0 の国が視野にいるか**」の関数であって、
+           同じ国の集合の中で動くかぎり出力は 1 地物も変わりえない。だから鍵は、矩形ではなくその集合を
+           名指す。⚠ そのために必要な視野の旗を、100 行下ではなく**早期 return の前で**数える——
+           上げたこと自体が早期 return を可能にしている。費用は `bboxOf` が覚えている 250 個の箱の
+           比較で、下で作っていたものより桁が小さい。 */
+        const inv=Object.create(null);
+        for(let i=0;i<geo.length;i++){ const c=String(geo[i].id||''); if(!c) continue;
+          try{ inv[c]=!!inView(geo[i]); }catch(_){ inv[c]=false; } }
+        const zeroSeen=[]; for(let i=0;i<zero.length;i++){ if(inv[zero[i]]) zeroSeen.push(zero[i]); }
+        const key=sig+'|'+zeroSeen.join(',')+'|'+zero.join(',');
         if(key===hatchCutKey) return false;
         /* この層が答えを描いている地面 */
         const ans=[];
@@ -4544,9 +4559,8 @@ window.IntMapModules.worldPacks=function(HOST){
            `countries` 側の斜線が戻る＝**画面の外で何かが消えることはない**。
            ⚠ 「画面の中か」は<b>ループの外で</b>1回だけ数える。`inViewISO` は国の一覧を毎回線形に探すので、
            比較関数の中で呼ぶと 250 か国の整列だけで 50 万回の文字列比較になる。 */
-        const inv=Object.create(null);
-        for(let i=0;i<geo.length;i++){ const c=String(geo[i].id||''); if(!c) continue;
-          try{ inv[c]=!!inView(geo[i]); }catch(_){ inv[c]=false; } }
+        /* ⚠ (#R408) `inv` は上——早期 return の前——で数えてある。鍵がその集合そのものになったので、
+           ここで数え直すと「鍵が指しているもの」と「実際に回すもの」が 2 か所で決まることになる。 */
         /* ⚠⚠ …AND WITHIN THE VIEW, THE CHEAPEST FIRST. MEASURED on the built page at z8 over Cyprus:
            five countries are in view and the budget was gone before the third — one of them cost
            171 ms on its own, because Turkey's and Syria's outlines are thousands of vertices while
@@ -5643,10 +5657,14 @@ window.IntMapModules.worldPacks=function(HOST){
          chose. `idle` catches it in a moving map; this catches it in a still one. */
       function tick(){ if(on) applyAlertVis(); if(on&&!document.hidden) refresh(); }
       function toggle(v){ on=v;
-        if(!on){ if(timer){ clearInterval(timer); timer=null; } panel.hide(); closePointCard();
+        if(!on){ if(timer){ stopTick(timer); timer=null; } panel.hide(); closePointCard();
           applyAlertVis(); return; }
         whenDrawable(()=>ensureLayers()); overview(); refresh(); hiResCountries(()=>{ if(on) paintCountries(true); });
-        if(!timer) timer=setInterval(tick,TICK_MS); }
+        /* (#R408) on the one timer wheel: it does not tick at all while the document is hidden, and
+           runs ONCE on return rather than catching up. `tick`'s own `!document.hidden` is left where
+           it is — it guards `refresh()` for the wheel's fallback path (js/runtime.js) and costs a
+           boolean; the visibilitychange listener below is what makes the return immediate. */
+        if(!timer) timer=everyTick('world-packs:alerts-tick',TICK_MS,tick); }
       document.addEventListener('visibilitychange',()=>{ if(on&&!document.hidden) refresh(); });
 
       /* ⚠⚠⚠ (#R297) THE RECOVERY ONLY RECOVERS. See the note on the dispatcher: this used to run on
@@ -6195,12 +6213,16 @@ window.IntMapModules.worldPacks=function(HOST){
           +'<button class="wp-t-live" style="'+TB+(live?'background:var(--primary-color);color:#fff;border-color:var(--primary-color);':'')+'">● '+L('Live','ライブ','Live','Сейчас','En vivo')+'</button>'
           +'</div>'; }
       function setWhen(ms){ try{ window.IntMapTime.set(new Date(snapHour(ms)),{allowFuture:true,source:'tides'}); }catch(_){} }
-      function stopPlay(){ if(playTmr){ clearInterval(playTmr); playTmr=0; } }
+      function stopPlay(){ if(playTmr){ stopTick(playTmr); playTmr=0; } }
       function togglePlay(){
         if(playTmr){ stopPlay(); }
         /* (#R297) playback steps over the model's own hours too — 20 minutes was three frames per
            published sample, i.e. two of every three frames were the same picture */
-        else playTmr=setInterval(()=>{ if(!on){ stopPlay(); return; } setWhen(when()+playStep); },420);
+        /* (#R408) …and on the wheel, so a hidden tab does not keep advancing the shared clock. That
+           matters more here than for a redraw: `setWhen` writes window.IntMapTime, so ticking away
+           unwatched would move every time-driven layer and hand the reader back a different hour
+           than the one they left. Paused, the playhead is where they left it. */
+        else playTmr=everyTick('world-packs:tide-play',420,()=>{ if(!on){ stopPlay(); return; } setWhen(when()+playStep); });
         const b=panel.body(), pb=b&&b.querySelector('.wp-t-play'); if(pb) pb.textContent=playTmr?'⏸':'▶'; }
       function wireTime(b){
         if(!b) return;

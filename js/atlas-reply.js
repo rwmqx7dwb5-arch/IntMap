@@ -15,6 +15,7 @@
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 export function makeAtlasReply(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc, fitTo=CTX.fitTo, fmtVal=CTX.fmtVal, highlight=CTX.highlight, note=CTX.note, warn=CTX.warn;
     /* (#R62) minimal safe markdown for AI text rendered in the chat (briefs / analyses). */
@@ -210,7 +211,10 @@ export function makeAtlasReply(HOST, CTX) {
          src/vendor.js). The retry loop below is unchanged and still covers a slow arrival. */
       try{ if(!(window.katex&&window.katex.renderToString)&&window.IntMapVendor
             &&document.querySelector('.atl-math-raw[data-tex]')) window.IntMapVendor.katex().catch(()=>{}); }catch(_){}
-      try{ if(window.katex&&window.katex.renderToString){ _atlTypesetMath(document); } else { let _k=0; const _t=setInterval(()=>{ if((window.katex&&window.katex.renderToString)){ clearInterval(_t); _atlTypesetMath(document); } else if(++_k>20){ clearInterval(_t); } },500); } }catch(_){}
+      /* ⚠ (#R408) ONE key for every reply that is waiting: the wait is for a GLOBAL (window.katex) and the action is
+         document-wide and idempotent, so a second answer's wait SUPERSEDING the first is exactly right — per-reply keys
+         would leave N timers polling one global and typesetting the same document N times. */
+      try{ if(window.katex&&window.katex.renderToString){ _atlTypesetMath(document); } else { let _k=0; const _t=everyTick('atlas-reply:katex-wait',500,()=>{ if((window.katex&&window.katex.renderToString)){ stopTick(_t); _atlTypesetMath(document); } else if(++_k>20){ stopTick(_t); } }); } }catch(_){}
     } }catch(_){}
     /* (#R74) ChatGPT-style SOURCE LINK CARDS ("Atlasの返答に、必要であれば記事のリンク等をChatGPT風UIで表示"):
        compact rounded cards with the site's favicon, the article title and its domain — used by analyze,
