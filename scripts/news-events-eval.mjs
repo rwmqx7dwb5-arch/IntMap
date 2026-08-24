@@ -16,6 +16,7 @@
  *      node scripts/news-events-eval.mjs --cache <p> --json <p2>  # 全結果を JSON で
  *      node scripts/news-events-eval.mjs --from-db --dump 3       # **本番が実際に作った Event** を読む
  *      node scripts/news-events-eval.mjs --from-db --link          # `link` 段が**何を結ぶか**を、結ぶ前に読む
+ *      node scripts/news-events-eval.mjs --from-db --diffs         # 媒体間で食い違っている数量を全部出す
  *
  *  ⚠ `--from-db` は「もう一度計算し直した結果」ではなく **本番の表そのもの**を測る。
  *    パイプラインの検算（同じ入力で同じ答えが出るか）は上の経路、**出荷されている物の
@@ -35,6 +36,10 @@ import {
   placeArticle, summariseEvent, clusterConfidence, eventPairCandidates, eventsAgree, INDEX,
 } from '../supabase/functions/_shared/news-ingest.js';
 import { buildIdf, tokenise, DEFAULTS } from '../supabase/functions/_shared/news-cluster.js';
+/* (#R394) 「媒体間で食い違っている数量」の規則。⚠ **UI が使うのと同じ 1 本**——
+   #R386 はこれを js/news-events.js の factory の奥に書いたので、ブラウザの外から
+   誰も呼べず、歩留まりも精度も測れなかった。 */
+import { makeNewsClaims } from '../js/news-claims.js';
 
 const SUPA = 'https://vpekfwdpurzejrrmacac.supabase.co';
 const ANON = 'sb_publishable_yI9Rf2s4nzrIuqFyUq4OOA_h83PrRd0';
@@ -110,7 +115,7 @@ if (flag('--from-db')) {
   const [sources, events, articles] = await Promise.all([
     rest('news_sources?select=id,source_family'),
     restPaged('news_events?select=id,public_id,representative_title,primary_category,category_confidence,category_evidence,rep_lng,rep_lat,rep_place_name_en,location_confidence,location_evidence,first_published_at,last_article_at,article_count,independent_source_count,cluster_confidence,status&status=eq.active&order=id'),
-    restPaged('news_articles?select=id,source_id,title,published_at,provider_category,subject_lng,subject_lat,subject_type,subject_name_en,subject_confidence,subject_reasons,canonical_url,news_event_articles(event_id,relation,assignment_score)&status=eq.active&order=id'),
+    restPaged('news_articles?select=id,source_id,title,description,embedding_model,published_at,provider_category,subject_lng,subject_lat,subject_type,subject_name_en,subject_confidence,subject_reasons,canonical_url,news_event_articles(event_id,relation,assignment_score,assigned_by)&status=eq.active&order=id'),
   ]);
   const fam = new Map(sources.map((s) => [s.id, s.source_family]));
   const byEvent = new Map(events.map((e) => [e.id, { ...e, _members: [] }]));
@@ -142,6 +147,31 @@ if (flag('--from-db')) {
   for (const e of list) { const w = (e.category_evidence && e.category_evidence.by) || 'none'; byWho[w] = (byWho[w] || 0) + 1; }
   line2('              分類を決めた段: ' + Object.entries(byWho).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + v).join(' · '));
   line2('');
+
+  /* ══ (#R394) 監査の整合性 — 走っていない機構の名前が入っていないか ═══════════════
+     ⚠⚠⚠ **実測 (2026-08-24): 埋め込みを持つ記事は 0 行なのに、`assigned_by='embedding'`
+       の辺が 23 本あった。** `news_event_merge_into` が機械の merge に無条件でその名前を
+       書いていたためで、#R386 が入れた 1 行である。#R334 がこの列に 4 値を置いたのは
+       「どの段が何件を運んだか」を数えられるようにするためだから、走っていない機構の
+       名前が入っていると、その列は情報ではなく**嘘**を持つ。
+     ⇒ 数える側をここに置く。**この行が 0 でなくなった日が、また同じことが起きた日である。** */
+  {
+    const byWho = {};
+    let liar = 0;
+    for (const a of articles) {
+      for (const l of (a.news_event_articles || [])) {
+        if (l.relation !== 'same_event' && l.relation !== 'update') continue;
+        const w = l.assigned_by || 'null';
+        byWho[w] = (byWho[w] || 0) + 1;
+        if (w === 'embedding' && !a.embedding_model) liar++;
+      }
+    }
+    const embedded = articles.filter((a) => a.embedding_model).length;
+    line2('  何が結んだか: ' + Object.entries(byWho).sort((x, y) => y[1] - x[1]).map(([k, v]) => k + ' ' + v).join(' · '));
+    line2('  埋め込みを持つ記事: ' + embedded + ' / ' + articles.length);
+    line2('  ⚠ 走っていない機構を名乗る辺: ' + liar + (liar ? '   ← 0 でなければならない' : ''));
+    line2('');
+  }
   if (DUMP) {
     line2('── n>=' + DUMP + ' の塊（目視で「1 つの出来事か」を判定する）──');
     for (const e of list.filter((x) => x.article_count >= DUMP)) {
@@ -160,6 +190,47 @@ if (flag('--from-db')) {
        baseline を測り、実装後も同じ corpus で比較する」と決めているのはこのためである。
      ⚠ ここが呼ぶのは Edge Function が呼ぶのと**同じ 2 つの関数**
        （`eventPairCandidates` / `eventsAgree`）。測るものと動くものを別にしない。 */
+  /* ── 媒体間で食い違っている数量（#R394）────────────────────────────────
+     ⚠⚠⚠ **これが無かったので、#R386 は歩留まりを 0 件だと思い込んでいた。** 実際には
+       ブラウザに載る直近 200 件の外に 2 件あり、しかも**そのうち 1 件は誤り**だった
+       （香港の上場: Shein の IPO と Alibaba の売出が同じ Event に入っており、別々の
+       数字が「媒体の食い違い」として並んでいた）。規則をモジュールへ出したので、
+       ここが同じ 1 本を本番のデータで測る。 */
+  if (flag('--diffs')) {
+    const CLAIMS = makeNewsClaims();
+    const famOf = new Map(sources.map((x) => [x.id, x.source_family || x.id]));
+    let withQty = 0, qty = 0, hits = 0;
+    const lines = [];
+    for (const e of list) {
+      const ms = e._members.map((m) => ({
+        title: m.title, description: m.description || '',
+        source: m.source_id, family: famOf.get(m.source_id) || m.source_id,
+      }));
+      const q = ms.reduce((n, m) => n + CLAIMS.quantities(m.title + ' — ' + m.description).length, 0);
+      qty += q;
+      if (q) withQty++;
+      const d = CLAIMS.differences(ms);
+      if (!d.length) continue;
+      hits++;
+      lines.push('#' + e.id + '  ' + String(e.representative_title).slice(0, 66)
+        + '   [' + ms.length + ' articles / ' + e.independent_source_count + ' outlets]');
+      for (const x of d) {
+        const vals = x.claims.map((c) => c.value);
+        const ratio = Math.min(...vals) / Math.max(...vals);
+        lines.push('   ' + x.kind + '  (min/max ' + ratio.toFixed(3) + ')');
+        for (const c of x.claims) lines.push('     [' + c.source + '] "' + c.text + '"   …' + c.context + '…');
+      }
+      lines.push('');
+    }
+    line2('── 媒体間で食い違っている数量 ──');
+    line2('  events                    ' + list.length);
+    line2('  carrying any quantity     ' + withQty + ' (' + qty + ' quantities)');
+    line2('  WITH A DISAGREEMENT       ' + hits);
+    line2('  same-quantity ratio       ' + CLAIMS.DEFAULTS.sameQuantityRatio + '  (2 つの値が同じ量の別々の説明でありうる下限)');
+    line2('');
+    for (const l of lines) line2(l);
+  }
+
   if (flag('--link')) {
     const membersOf = new Map();
     for (const e of list) if (e._members.length) membersOf.set(e.id, e._members);

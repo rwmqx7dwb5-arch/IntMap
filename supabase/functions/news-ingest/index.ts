@@ -767,10 +767,22 @@ async function stageLink(db, budget) {
       const tb = Math.min(...mb.map((x) => Date.parse(x.published_at) || Infinity));
       if (tb < ta) { target = b; source = a; }
     }
+    /* ⚠⚠⚠ **走っていない機構の名前を書かない。** #R386 はここで無条件に
+       `assigned_by='embedding'` を書かせていた。実測 (2026-08-24): 埋め込みを持つ記事は
+       本番に 0 行なのに、そう名乗る辺が 23 本あった。この鍵では候補は**語からしか出ない**。
+       ⇒ 決め手は verdict が言う（`code==='embedding'` なら意味の近さ、それ以外は語）。
+       ⚠ note も同じ。`Number(null).toFixed(3)` は "0.000" になるので、cos が無いときに
+         「cos 0.000」と書いていた——**無かったものを 0 と書くのは、無かったと書くことでは
+         ない**。在るときだけ印字する。 */
+    const decidedBy = (verdict.top && verdict.top.code === "embedding") ? "embedding" : "deterministic";
+    const cos = Number.isFinite(p2.similarity) ? p2.similarity : null;
     const { error } = await db.rpc("news_event_merge_into", {
       p_source: source, p_target: target, p_actor: null,
-      p_note: "link stage: cos " + Number(p2.similarity).toFixed(3) +
-              " · agree " + verdict.matched + "/" + verdict.pairs + " (" + verdict.share + ")",
+      p_decided_by: decidedBy,
+      p_note: "link stage: agree " + verdict.matched + "/" + verdict.pairs + " (" + verdict.share + ")"
+              + " via " + ((verdict.top && verdict.top.code) || "?")
+              + (cos == null ? " · no embedding (candidate came from shared rare words)"
+                             : " · cos " + cos.toFixed(3)),
     });
     if (error) { details.push({ source, target, error: error.message }); continue; }
     redirect.set(source, target);
@@ -779,7 +791,7 @@ async function stageLink(db, budget) {
     membersOf.delete(source);
     merged++;
     if (details.length < 20) {
-      details.push({ source, target, cos: Number(p2.similarity), share: verdict.share,
+      details.push({ source, target, cos, decided_by: decidedBy, share: verdict.share,
                      matched: verdict.matched, pairs: verdict.pairs, top: verdict.top });
     }
   }

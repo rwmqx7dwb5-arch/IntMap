@@ -83,6 +83,52 @@ for (const f of textFiles) {
   }
 }
 
+// ── 1b. 正規表現の中の制御文字  (#R394) ──────────────────────────
+//  ⚠⚠⚠ **#R351 が書いた索引記事の門は、一度も発火していなかった。** 実測 (2026-08-24):
+//
+//      /^(?:.{0,80}?--\\s*)?the following (is|are)<0x08>/i
+//
+//  末尾は `\\b`（語境界）のつもりで、実体は **バックスペース文字 1 個**だった。書いた道具が
+//  バックスラッシュを 1 段落として潰した結果で、**JavaScript としては完全に妥当**なので
+//  `node --check` も lint も何も言わない。ただ「見出しの直後にバックスペース」という、
+//  どの記事にも起こらない条件を要求するだけになる。⇒ 門は緑のまま、Yonhap の索引記事は
+//  1 本も落ちていなかった。#R394 は同じ罠を同じファイルで踏み、そこで気づいた。
+//
+//  ⚠ 「制御文字を禁止する」ではない。`js/world-packs.js` や `scripts/rail/build.mjs` は
+//    U+0001 を**区切り文字として意図的に**使っており、それは正しい。危ないのは
+//    **正規表現の中**だけである——そこに制御文字が要る理由はまず無く、あるとすれば
+//    それは潰れたエスケープである。実測: ソース 858 本のうち制御文字を含む 12 行のうち、
+//    10 行は意図的な区切りで、壊れていたのはこの規則が見る 2 行だけだった。
+{
+  /* ⚠ 正規表現リテラルで書かない——**この規則自身が禁じているもの**を自分の中に持たない
+     ように、制御文字は文字コードで判定する。 */
+  const isCtrl = (c) => (c < 32 && c !== 9) || c === 127;
+  for (const f of textFiles) {
+    if (!(f.rel.endsWith('.js') || f.rel.endsWith('.mjs') || f.rel.endsWith('.ts'))) continue;
+    if (f.rel === 'scripts/static-checks.mjs') continue;
+    const t = read(f);
+    let any = false;
+    for (let k = 0; k < t.length; k++) if (isCtrl(t.charCodeAt(k))) { any = true; break; }
+    if (!any) continue;
+    t.split('\n').forEach((line, i) => {
+      for (let k = 0; k < line.length; k++) {
+        if (!isCtrl(line.charCodeAt(k))) continue;
+        /* 前後に `/` があれば、その制御文字は正規表現リテラルの中にいる。
+           区切り文字として意図的に使っている行（world-packs / rail / zh-hans）は
+           文字列リテラルの中なので、この条件に当たらない。 */
+        const before = line.lastIndexOf('/', k);
+        const after = line.indexOf('/', k + 1);
+        if (before < 0 || after < 0) continue;
+        const code = '0x' + line.charCodeAt(k).toString(16).padStart(2, '0');
+        err('regex-control-char',
+          `${f.rel}:${i + 1}: a regular expression contains a raw control character (${code}) — `
+          + 'almost certainly a backslash escape a tool flattened. It is valid JavaScript and can never match.');
+        break;
+      }
+    });
+  }
+}
+
 // ── 2. Committed secrets ─────────────────────────────────────────────────────
 const SECRET_PATTERNS = [
   { name: 'private key block', re: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/ },
