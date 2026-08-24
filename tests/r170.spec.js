@@ -222,10 +222,24 @@ test('every Companies figure is printed with the date it is from', async ({ app 
     expect(r.title, 'the stamp must explain itself on hover').toBeTruthy();
   }
 
-  // The detail overlay dates every numeric row too. It opens on a DOUBLE click (a single click
-  // toggles compare) and the row handler distinguishes them with a 250 ms timer, so this has to be
-  // a real dblclick — two dispatched clicks 400 ms apart read as two singles.
+  /* The detail overlay dates every numeric row too. It opens on a DOUBLE click (a single click
+     toggles compare) and the row handler distinguishes them with a 250 ms timer, so this has to be
+     a real dblclick — two dispatched clicks 400 ms apart read as two singles.
+
+     ⚠ (#R400) THE CARD MOVED ONE DOOR FURTHER OUT, AND THIS TEST WAS STILL KNOCKING ON THE OLD ONE.
+     #R354 repointed the double-click at the company ATLAS (js/company-panel.js) and wrote down that
+     the market card is MOVED, NOT REMOVED (CONSTITUTION §0.3) — the atlas carries a «Market data»
+     button (`button.cop-mkt`) that opens exactly the same overlay. So `.co-detail-rows` stopped
+     appearing on dblclick alone and this test has been red every night since that merge. What it
+     asserts is unchanged and still true; only the route to the card is one click longer.
+     ⚠ Both routes are accepted because the APP accepts both: `openCompanyAtlas()` needs three lazy
+     modules, and when that download fails it falls back to opening the card directly. A test that
+     demanded the panel would go red on a slow network for a reason that is not a defect. */
   await page.locator('.co-row').first().dblclick();
+  await page.waitForSelector('.cop-mkt, .co-detail-rows', { timeout: 30000 });
+  if (!(await page.locator('.co-detail-rows').count())) {
+    await page.locator('.cop-mkt').first().click();
+  }
   await page.waitForSelector('.co-detail-rows', { timeout: 15000 });
   const detail = await page.evaluate(() => [...document.querySelectorAll('.co-drow')].map(d => ({
     label: d.querySelector('span')?.textContent.trim(),
