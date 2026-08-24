@@ -22,6 +22,14 @@
  *  ⚠ 起動時に一覧の元データ（Natural Earth の属性）が遅れて届く側の半分は
  *  `tests/r410-late.spec.js`（deep tier）にある。あちらは自分の page を起動して
  *  route で遅らせるので、この門の半分は共有 page のまま数秒で済む。
+ *
+ *  ⚠ (#R423) THE COUNTRIES LIST IS ALSO SWEPT WHOLE HERE, at the end of ①, once the clock is back
+ *  at Now: every code `countryGeo` holds that Natural Earth itself types as a country must have a
+ *  rendered row. 「Norway has no row in the Countries list, at ANY year including the present.」
+ *  It rides on this file because the stage — a booted app with the Countries tab open — is already
+ *  paid for; measured, it costs 0.6 s (9.05 s against 9.65 s for ① alone), and the suite ceiling has
+ *  no headroom left. The hermetic and exhaustive half of that claim, including WHY the Natural Earth
+ *  record was wrong, is tests/r423-checks.test.mjs.
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
@@ -149,6 +157,49 @@ test('R410 ① 1939 へ進んでから 1916 へ戻すと、描かれた国名も
   expect(seen, 'the 1939 name must not survive the move back to 1916').not.toContain('Nazi Germany');
   expect(seen, 'the Spanish Republic did not exist in 1916').not.toContain('Spanish Republic');
 
+
   await page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
   await page.waitForTimeout(400);
+
+  await test.step('R423 現在時刻: countryGeo が国として持つコードは、すべて一覧に行がある', async () => {
+    /* the clock is back at Now (the two lines above), which is where the report says the hole also
+       was — «Checked at the PRESENT time as well: all 240 rows were rendered in the DOM, and of the
+       14 rows starting with "N" none is Norway». This is that count, made an invariant and swept
+       over the WHOLE collection rather than over one letter. */
+    await page.waitForFunction(() => {
+      try {
+        if (!(window._countriesActive && window._countriesActive())) return false;
+        const g = window.countryGeo;
+        if (!g || !Array.isArray(g.features) || g.features.length < 200) return false;   /* the 10 m upgrade landed */
+        return document.querySelectorAll('.stat-row').length > 200;                      /* and the list drew from it */
+      } catch (_) { return false; }
+    }, null, { timeout: 60000, polling: 250 });
+
+    const n = await page.evaluate(() => {
+      /* what the MAP holds. `f.id` is the ISO code js/countries-ui.js promoted — the id every
+         geometry-keyed reader answers with, i.e. the set #R375 made sure has rows AT ALL. This round
+         is the other half: having a row is not the same as being listed. */
+      const drawn = new Map();
+      for (const f of (window.countryGeo.features || [])) {
+        if (!f.id) continue;
+        const p = f.properties || {};
+        drawn.set(String(f.id), { type: String(p.TYPE || ''), name: String(p.NAME_EN || p.ADMIN || p.NAME || f.id) });
+      }
+      const rows = new Set();
+      document.querySelectorAll('.stat-row').forEach((el) => rows.add(el.getAttribute('data-ccn')));
+      const missing = [];
+      for (const [code, v] of drawn) {
+        if (!/^(sovereign country|country)$/i.test(v.type)) continue;   /* NE does not call it a country — #R23 governs */
+        if (!rows.has(code)) missing.push(code + ' ' + v.name + ' (TYPE=' + v.type + ')');
+      }
+      return { missing, drawnTotal: drawn.size, rows: rows.size };
+    });
+
+    expect(n.drawnTotal, 'the map is holding a real country collection').toBeGreaterThan(200);
+    expect(n.rows, 'and the Countries list really drew rows').toBeGreaterThan(200);
+    /* ⚠ THE ASSERTION. On the build before this round it is exactly
+       ['NOR Norway (TYPE=Sovereign country)'] — measured by reverting js/countries-ui.js and re-running. */
+    expect(n.missing, 'the map draws these as countries and the Countries list has no row for them').toEqual([]);
+  });
+
 });
