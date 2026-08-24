@@ -79,7 +79,33 @@ const FILES = BODY.get('docs/FILES.md') || '';
   }
 }
 
-/* ═══ 2. the Edge Functions: directory ⇄ config.toml ⇄ CLAUDE.md ⇄ Architecture.md ════════ */
+/* ═══ 2. the Edge Functions: directory ⇄ config.toml ⇄ EVERY current-state document ═══════
+ *  ⚠ (#R399) THIS RULE READ TWO DOCUMENTS AND ONE SENTENCE EACH, AND SIX DOCUMENTS DRIFTED
+ *    UNDER IT. Three holes, every one of them silent — the report stayed green and said so:
+ *
+ *      · THE DOCUMENT LIST WAS HAND-MAINTAINED. It named `CLAUDE.md` and `Architecture.md`.
+ *        `docs/FILES.md` was never added, so its ledger sat at "全11本" and "9本" while the
+ *        tree held twelve, and `SECURITY.md` ("eight") and `docs/SECURITY-ARCHITECTURE.md`
+ *        ("ELEVEN") were never looked at at all.
+ *      · THE NEEDLE REQUIRED A LITERAL ASTERISK (`\*\*?` = one `*`, then an optional second).
+ *        `CLAUDE.md` writes `**Edge Functions は 12 本**` — the asterisks are BEFORE the noun —
+ *        so the count matched nothing and `claimed` came back null on every run. CLAUDE.md was
+ *        right for four rounds by luck: the per-name roster check below is what held it, and a
+ *        count check that never fires is indistinguishable from one that passes.
+ *      · IT USED `.match()`, WHICH RETURNS THE FIRST HIT ONLY. `Architecture.md`'s §6.2 heading
+ *        answered for the whole file, so its SECOND claim — "Edge Functions を10本デプロイする"
+ *        in §10.1 — was invisible, with a deploy list directly beneath it that already ran twelve.
+ *
+ *    So: sweep EVERY current-state document, EVERY occurrence, digits AND number-words. The
+ *    only hand-written name left is the 正本 (`Architecture.md`), and it is named to demand MORE,
+ *    not less — it must state the number, so rewording it into a shape the needle cannot read
+ *    fails instead of going quiet. Everywhere else the contract is "if you state it, it must be
+ *    right", which is what lets a document link to §6.2 instead of counting.
+ * ------------------------------------------------------------------------------------------
+ *  ⚠ AND IT MUST NOT CATCH ITSELF — the header's warning applies here. The needles are built
+ *    from parts and the examples above are quoted with their WRONG numbers, so this comment is
+ *    not a copy of the claim it checks. `docs/TESTING.md` describes the rule in prose for the
+ *    same reason. tests/r399-checks ① proves each half goes red. */
 {
   const dir = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name !== '_shared').map((d) => d.name).sort();
@@ -92,16 +118,97 @@ const FILES = BODY.get('docs/FILES.md') || '';
   }
   if (declared.includes('_shared')) fail('edge-functions', 'config.toml declares [functions._shared] — that directory is a library, not a function');
 
+  /* the two documents that promise the complete roster must name every function */
   for (const f of ['CLAUDE.md', 'Architecture.md']) {
     const body = BODY.get(f) || '';
     const missing = dir.filter((n) => !body.includes('`' + n + '`'));
     if (missing.length) fail('edge-functions', `${f} does not name ${missing.join(', ')}`);
-    const claimed = body.match(/Edge Functions?\s*(?:は|—|-)?\s*\*\*?(\d+)\s*(?:本|函数)/);
-    if (claimed && Number(claimed[1]) !== dir.length) {
-      fail('edge-functions', `${f} says there are ${claimed[1]} Edge Functions; there are ${dir.length}`);
-    }
   }
   if (same(dir, declared)) ok('edge-functions', `${dir.length} functions, declared and documented: ${dir.join(', ')}`);
+
+  /* ── 2a. every STATED size of the inventory, in every document, is the real one ─────────── */
+  const WORD = {
+    one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+    eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17,
+    eighteen: 18, nineteen: 19, twenty: 20,
+  };
+  /* An inventory claim BINDS the number to the noun with a particle or punctuation:
+       「… は 12 本」  「— **12本**」  「を10本デプロイする」  「（9本。§6.2）」  "eight Edge Functions"
+     ⚠ BARE JUXTAPOSITION IS NOT ONE, and the difference is the whole reason this is not a
+       looser pattern: `docs/NEWS-EVENTS.md` §12.1 opens "**Edge Function 1 本**（…）", which
+       says ONE FUNCTION DOES THIS, not that one exists. A needle that read that as an
+       inventory claim would report the roster as wrong on a sentence that is correct.
+     ⚠ `の` and `が` are deliberately NOT separators — 「Edge Function の 1 本」 is partitive
+       ("one OF the functions"), the same trap in the other direction. A future document that
+       phrases the count that way goes unchecked here; the roster check above still holds the
+       names, and that residual is written down in `docs/TESTING.md` rather than papered over. */
+  const SEP = '(?:は|を|—|–|-|:|：|（|\\()';
+  const JA = new RegExp('Edge Functions?[ \\t]*\\**[ \\t]*' + SEP + '[ \\t]*\\**[ \\t]*(?:全|約)?[ \\t]*(\\d+)[ \\t]*(?:本|函数)', 'g');
+  /* ⚠ the lookbehind is load-bearing: without it the §6.2 HEADING —「### 6.2 Edge Functions …」—
+     reads as a claim that there are two, and the 正本 reports itself as wrong. A section number,
+     a `§` and a `#R` round number are addresses, not counts. (Measured: this fired before the
+     documents below were touched at all.) */
+  const EN = /(?<![\d.§#])\**\b([A-Za-z]+|\d+)\b\**[ \t]+Edge Functions?\b/g;
+
+  const stated = (body) => {
+    const out = [];
+    for (const m of body.matchAll(JA)) out.push({ text: m[0].trim(), n: Number(m[1]) });
+    for (const m of body.matchAll(EN)) {
+      const raw = m[1].toLowerCase();
+      const n = /^\d+$/.test(raw) ? Number(raw) : WORD[raw];
+      if (n != null) out.push({ text: m[0].trim(), n });
+    }
+    return out;
+  };
+
+  let checked = 0, wrong = 0;
+  eachDoc((f, body) => {
+    for (const c of stated(body)) {
+      checked++;
+      if (c.n !== dir.length) {
+        wrong++;
+        fail('edge-count', `${f} says «${c.text}» — there are ${dir.length} Edge Functions`);
+      }
+    }
+  });
+
+  /* the 正本 must actually carry the number: a heading reworded out of the shape above would
+     otherwise take the fact with it and nothing would notice (§6.2, per docs/README.md) */
+  if (!stated(ARCH).length) {
+    fail('edge-count', 'Architecture.md no longer states how many Edge Functions there are — §6.2 is the 正本 for that number');
+  } else if (!wrong) {
+    ok('edge-count', `${checked} stated counts across the documents, all ${dir.length}`);
+  }
+
+  /* ── 2b. a document that ENUMERATES `_shared/` names all of it ──────────────────────────── */
+  /* ⚠ `_shared/` is a library, not a function, so it is not in `dir` and rule 2a never sees it.
+     Three documents listed it by hand and three had gone stale in different places:
+     `docs/FILES.md` was missing aviation-codec/aviation-model/volcano-parse, `CLAUDE.md` was
+     missing atlas-persona, `docs/SECURITY-ARCHITECTURE.md` was missing volcano-parse.
+     Only a list that PRESENTS ITSELF AS COMPLETE is held to it: a parenthesised run of three or
+     more `.js` names next to the directory. A list that hedges (`など` / `ほか` / `その他` /
+     `etc.`) is honestly partial and is left alone — `Architecture.md` §6.2's prose names three
+     of them followed by `など`, and that sentence is not wrong. */
+  {
+    const shared = readdirSync(join(ROOT, 'supabase/functions/_shared'))
+      .filter((f) => f.endsWith('.js')).sort();
+    const HEDGE = /など|ほか|その他|etc\.|e\.g\./;
+    eachDoc((f, body) => {
+      for (const at of body.matchAll(/_shared\//g)) {
+        const win = body.slice(at.index, at.index + 260);
+        const group = win.match(/（([^）]*)）/) || win.match(/\(([^)]*)\)/);
+        if (!group) continue;
+        const names = [...new Set([...group[1].matchAll(/([a-z0-9-]+\.js)/g)].map((m) => m[1]))].sort();
+        if (names.length < 3) continue;                 /* a passing mention, not an inventory */
+        if (HEDGE.test(group[0])) continue;             /* says so itself that it is partial */
+        const missing = shared.filter((n) => !names.includes(n));
+        const extra = names.filter((n) => !shared.includes(n));
+        if (missing.length) fail('edge-shared', `${f} lists the contents of _shared/ but omits ${missing.join(', ')}`);
+        if (extra.length) fail('edge-shared', `${f} lists ${extra.join(', ')} in _shared/, which is not there`);
+      }
+    });
+    ok('edge-shared', `_shared/ holds ${shared.length}: ${shared.join(', ')}`);
+  }
 }
 
 /* ═══ 3. migrations ═══════════════════════════════════════════════════════════════════════ */

@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **204 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **205 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -517,6 +517,38 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   — which only ever protected the rounds whose author was already thinking about the hazard.
 
 It deliberately does **not** reformat or style-lint existing code.
+
+## The Edge Function inventory, across every document (`scripts/doc-facts.mjs`)
+
+Three rules hold the same fact from different sides. `edge-functions` compares
+`supabase/functions/` with the `[functions.*]` declarations in `supabase/config.toml`, and requires
+`CLAUDE.md` and `Architecture.md` to name every one of them in backticks. `edge-count` checks every
+**stated size** of that inventory. `edge-shared` checks every **enumeration of `_shared/`**, which is
+a library directory rather than a function and so is invisible to the other two.
+
+⚠ Until #R399 the count half read **two hand-written filenames and one sentence each**, and six
+documents drifted underneath it without a single red run. Worth keeping in mind when writing any
+rule of this shape:
+
+- **A hand-written list of documents to scan is the defect.** `docs/FILES.md` was never added to it,
+  so the ledger's numbers were free to rot; `SECURITY.md` and `SECURITY-ARCHITECTURE.md` were never
+  looked at at all. The sweep now visits every current-state document and the only filename left in
+  the source is `Architecture.md`, named to demand **more**: §6.2 is the 正本 for this number, so if
+  it stops stating one, that is a failure rather than a quiet skip.
+- **A needle that never fires looks exactly like a passing check.** The old pattern required a
+  literal asterisk between the noun and the digits. The standing instructions bold the whole phrase
+  — asterisks *before* the noun — so their number was never once compared with the tree. It stayed
+  right for another reason entirely: the per-name roster check.
+- **`.match()` answers for a whole file with its first hit.** A document whose first mention is
+  correct can carry a second, stale one forever. That is exactly what happened in the deploy runbook,
+  directly above a command list that already ran the right number.
+
+What it deliberately does not read: a bare noun-then-number with no particle between them. In
+Japanese that construction means *one of them does this*, not *there is one*, and `の` / `が` are
+excluded for the mirror-image reason — they read as partitive. A future document that phrases the
+total that way goes unchecked here; the per-name roster is what still holds it. `tests/r399-checks`
+proves each half goes red, including that the `6.2` in a section heading is read as an address and
+not as a quantity.
 
 ## The Atlas capability audit (`scripts/atlas-capability-audit.mjs`)
 

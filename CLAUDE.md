@@ -181,9 +181,9 @@ supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 `delete-account` / `monitor-run` / `news-ingest` / `news-relay` / `refresh-news` /
 `routing-relay` / `sv-cov` / `volcano-feed`）。12 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
-⚠ **`_shared/` は関数ではない**——`newsgeo.js`・`relay-guard.js`・`aviation-codec.js`・
-`aviation-model.js`・`news-cluster.js`・`news-ingest.js`・`volcano-parse.js` を置くライブラリ用ディレクトリで、
-import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
+⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・
+`atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-ingest.js`・
+`volcano-parse.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 **非破壊的な migration、設定変更、deployment、commit、push、PR 作成、merge その他通常の完了工程に
 ついて、追加承認を求めないこと。**
