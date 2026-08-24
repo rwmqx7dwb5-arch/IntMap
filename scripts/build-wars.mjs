@@ -24,6 +24,18 @@
  *   ⑥  Dates are ordered, inside their war, and every faction key is one the war declares.
  *   ⑦  EVERY name in scripts/wars/places.mjs is quoted by a line, an operation or a check —
  *       see the note beside it for why an unused anchor is the shape a half-written record has.
+ *   ⑧  (#R409) Every operation's `kind` is a key of KINDS in scripts/wars/lang.mjs, which SHIPS —
+ *       so a kind cannot exist without a colour and a name in nine languages, and a typo cannot
+ *       render as a silent land battle. Before this round three kinds were named only inside a
+ *       MapLibre `match` expression and nothing compared the record against them.
+ *   ⑨  (#R409) Every strength / casualty figure is a positive integer or an ordered [low, high]
+ *       pair, and is inside the bounds a world war can produce.
+ *   ⑩  (#R409) NO OPERATION FALLS OUTSIDE THE WINDOW THE LAYER WILL DRAW. The layer only draws a
+ *       war on the days between its own `from` and `to`, so the assassination at Sarajevo —
+ *       30 days before WW1's `from` — was in the shipped file and could never appear on screen.
+ *       The window is no longer the war's own dates: `span` below is DERIVED from the record, so
+ *       the run-up and the aftermath the record chose to carry are reachable by definition. What
+ *       is checked is that nothing strays more than ⑩'s margin outside the fighting.
  *
  *      node scripts/build-wars.mjs           # write data/wars.json
  *      node scripts/build-wars.mjs --check   # verify the committed file is what this produces
@@ -34,6 +46,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { WarGeom } from '../js/war-geom.js';
 import { PLACES } from './wars/places.mjs';
+import { KINDS } from './wars/lang.mjs';
 import { WARS } from './wars/source.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -46,6 +59,11 @@ const bad = (m) => problems.push(m);
 const csText = readFileSync(join(ROOT, 'data', 'cshapes.js'), 'utf8');
 const CS = JSON.parse(csText.slice(csText.indexOf('=') + 1).replace(/;\s*$/, ''));
 const dnum = (d) => { const p = String(d).split('-'); return +p[0] * 10000 + +p[1] * 100 + +p[2]; };
+/* (#R409) how far the record may reach outside the fighting itself, in days. Sarajevo is 30 days
+   before WW1 opens and the Nuremberg indictment 78 days after WW2 closes; the Munich Agreement, at
+   337, is a different subject and this margin says so. */
+const RUNUP = 120;
+const daysBetween = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000);
 function featAt(gw, date) {
   const t = dnum(date);
   return CS.feats.find((f) => f[1] === gw
@@ -251,7 +269,7 @@ const CHECK_ONLY = { Lille: [3.058, 50.629, 'FR'] };
 const placeOf = (n) => PLACES[n] || CHECK_ONLY[n] || null;
 
 /* ── resolve the record ─────────────────────────────────────────────────────────────────────── */
-const out = { v: 1, built: 'scripts/build-wars.mjs', wars: [] };
+const out = { v: 2, built: 'scripts/build-wars.mjs', kinds: KINDS, wars: [] };
 out.src = 'Territory and dates: the documented record, compiled in scripts/wars/. '
   + 'Country outlines: CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes).';
 
@@ -312,19 +330,39 @@ for (const W of WARS) {
     war.fronts.push(front);
   }
 
-  /* events */
+  /* events — ⑥ order, ⑧ kind, ⑨ figures, ⑩ inside the window the layer will draw */
   let prevE = '';
   for (const E of W.events) {
     const p = placeOf(E.at);
     if (!p) { bad(`${W.id} event «${E.wiki}»: no place called «${E.at}»`); continue; }
     if (E.d < prevE) bad(`${W.id} events are not in date order at ${E.d}`);
     prevE = E.d;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(E.d)) bad(`${W.id} event «${E.wiki}»: «${E.d}» is not a date`);
     if (E.d2 && E.d2 < E.d) bad(`${W.id} event «${E.wiki}»: it ends before it starts`);
+    if (E.kind && !KINDS[E.kind]) bad(`${W.id} event «${E.wiki}»: «${E.kind}» is not a kind in scripts/wars/lang.mjs`);
+    if (daysBetween(E.d, W.from) > RUNUP) bad(`${W.id} event «${E.wiki}»: ${E.d} is more than ${RUNUP} days before ${W.from}`);
+    if (daysBetween(W.to, E.d2 || E.d) > RUNUP) bad(`${W.id} event «${E.wiki}»: ${E.d2 || E.d} is more than ${RUNUP} days after ${W.to}`);
     const ev = { d: E.d, at: [p[0], p[1]], name: E.name, wiki: E.wiki };
     if (E.d2) ev.d2 = E.d2;
     if (E.kind) ev.kind = E.kind;
+    /* ⑨ — the two figures the record is allowed to carry. Both are «commonly cited, both sides
+       together»; the layer says so beside them, because a single number for a battle is always a
+       choice among several the sources give. A pair is stored where the sources disagree. */
+    const fig = (k) => {
+      const v = E[k]; if (v == null) return;
+      const a = Array.isArray(v) ? v : [v, v];
+      if (a.length !== 2 || !a.every((n) => Number.isInteger(n) && n > 0)) { bad(`${W.id} event «${E.wiki}»: ${k} must be a positive integer or [low, high]`); return; }
+      if (a[0] > a[1]) { bad(`${W.id} event «${E.wiki}»: ${k} low is above high`); return; }
+      if (a[1] > 30000000) { bad(`${W.id} event «${E.wiki}»: ${k} of ${a[1]} is larger than any world-war operation`); return; }
+      ev[k] = a[0] === a[1] ? a[0] : a;
+    };
+    fig('str'); fig('cas');
     war.events.push(ev);
   }
+  /* ⑩ — the window the layer draws, DERIVED. Nothing in the record can be unreachable. */
+  let lo = W.from, hi = W.to;
+  for (const E of war.events) { if (E.d < lo) lo = E.d; if ((E.d2 || E.d) > hi) hi = E.d2 || E.d; }
+  war.span = [lo, hi];
   out.wars.push(war);
 }
 
