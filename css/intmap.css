@@ -1300,9 +1300,13 @@
 
     /* ── 出来事の詳細（`.news-reader-pane` の中） ── */
     .ev-detail{ padding-bottom:24px; }
-    .ev-detail .reader-bar{ position:sticky; top:0; z-index:5; display:flex; align-items:center; padding:6px 2px 12px; background:linear-gradient(var(--sidebar-bg) 75%, transparent); backdrop-filter:blur(8px); }
-    .ev-detail .btn-back{ display:inline-flex; align-items:center; gap:6px; background:var(--input-bg); border:none; color:var(--text-main); font-size:13px; font-weight:600; padding:9px 14px; border-radius:999px; cursor:pointer; transition:0.2s; }
-    .ev-detail .btn-back:hover{ background:var(--primary-color); color:#fff; }
+    /* ⚠⚠⚠ (#R435) THE DETAIL'S BACK BAR IS `.nrp-bar` / `.nrp-back` — the reading surface's OWN bar,
+       declared once above with the article reader. Three rules used to live here, `.ev-detail .reader-bar`
+       and `.ev-detail .btn-back`(:hover), and they were a byte-for-byte copy of those two that NEVER
+       MATCHED ANYTHING: js/news-events.js emits the bar as a SIBLING of `.ev-detail`, not a child, so
+       from #R386 to #R435 the button was drawn as a bare UA <button> (measured: #f0f0f0, radius 0,
+       padding 0, 2px outset, 44×20) and the bar was `position:static` instead of sticky. Copying a
+       look instead of pointing at it is what let the copy be wrong and stay wrong for 49 rounds. */
     .ev-d-head{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
     .ev-d-title{ font-size:22px; font-weight:700; line-height:1.28; letter-spacing:-0.35px; margin:0 0 8px; color:var(--text-main); }
     .ev-d-meta{ display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--text-muted); padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid rgba(128,128,128,0.15); }

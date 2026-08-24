@@ -488,6 +488,21 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 一致と相違／どの媒体がいつ何と書いたか／同一系列の印／この塊の組み立て方）。カテゴリ chips は
 `#news-cat-chips`。
 
+⚠⚠ **`#news-reader-pane` は 1 つの「読む面」であり、入口と出口は 1 本ずつである。**
+記事 reader と出来事の詳細は同じ面を使うので、面へ入る手順も出る手順も共有する——
+`enterReaderPane()`（`js/article-reader.js`）がサイドバーを開き、電話ならシートを full にし、
+**一覧の外皮（タブ列・`#sidebar-search-bar`・`#news-filter-toggle`・`#ai-geocode-row`・各 feed）を
+伏せて**面を出す。`closeReaderPane()`（`js/app-body.js`）が面を捨てて外皮を戻す。
+⚠ **`renderUI()` は「1 面だけ」を守る**——News 以外へ移れば読む面を閉じ、News に居るなら
+読む面を残して一覧をその下で更新する（背景の再描画で一覧が読む面の横に並ぶと、サイドバーの
+flex 列が高さを折半する）。**`setMode()` はタブ／scope の操作なので、必ず読む面を離れる。**
+⚠ 「いま開いている出来事」（Atlas の `selectedEventId`）は**面を観測して**答える。閉じる経路は
+戻るボタンだけではない。
+⚠ **workspace mode も同じ規則に従う。** `js/workspace.js` は News ウィンドウの一覧を
+`display:flex !important` で出す（サイドバーのタブ状態がそこへ届かないようにするため）ので、
+inline の `display:none` では伏せられない。入口が `body.im-reading` を立て、出口が下ろし、
+workspace の規則は**その 1 つのクラスを読む**——決定の写しを 2 つ持たない。
+
 ⚠ **「何が起きたか」を組み立てる規則は `js/news-brief.js` の 1 本だけ**で、UI と
 `scripts/news-events-eval.mjs --brief` が同じものを呼ぶ（表示の層に置くと、ブラウザの外から
 歩留まりを測れない）。決定論の抽出は**構成記事の `description` が既にブラウザに届いている**

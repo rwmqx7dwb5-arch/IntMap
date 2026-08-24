@@ -95,8 +95,17 @@ test('r430 ① the bridge carries what the prompt promises, and is cleared on th
   const ev = code('js/news-events.js');
   assert.ok(/open:\s*true/.test(ev), 'openDetail marks the bridge open');
   assert.ok(/body:\s*lines\.join/.test(ev), '…and carries body text');
-  assert.ok(/window\._imReader\s*=\s*null/.test(ev),
-    'going Back clears it — the pane is closed, so Atlas must stop claiming the user is reading it');
+  /* ⚠ (#R435) THE CLEAR MOVED, AND THE INVARIANT GOT WIDER RATHER THAN NARROWER. This asked
+     js/news-events.js for the spelling `window._imReader = null`, which was only ever right while the
+     Back button was the ONLY way the detail could close. It was not: a tab change, a background
+     re-render and the article reader all close the pane too, and none of them ran that line — so
+     Atlas went on claiming the reader was reading something that had left the screen. The clear now
+     lives in the ONE exit, `closeReaderPane()` (js/app-body.js). Ask for the property, not the
+     spelling: the detail leaves through that exit, and that exit clears the bridge. */
+  assert.ok(/HOST\.closeReaderPane\(/.test(ev),
+    'the Event detail no longer leaves through the one exit');
+  assert.ok(/window\._imReader\s*=\s*null/.test(code('js/app-body.js')),
+    'the one exit no longer clears the bridge — Atlas would go on claiming the user is reading it');
   const ui = code('js/news-ui.js');
   assert.ok(/btn-read[\s\S]{0,600}window\._imReader\s*=\s*\{/.test(ui),
     'the article-mode bridge hangs off the Read click, not off mere rendering');

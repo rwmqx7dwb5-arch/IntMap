@@ -96,5 +96,6 @@
   "tests/r410.spec.js": 12,
   "tests/r410-late.spec.js": 55,
   "tests/r416.spec.js": 5,
-  "tests/r424.spec.js": 10
+  "tests/r424.spec.js": 10,
+  "tests/r435.spec.js": 5
 }
