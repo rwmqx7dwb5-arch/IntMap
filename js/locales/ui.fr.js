@@ -276,6 +276,10 @@ window.IntMapLang.define('fr', { ui: {
       wsOff:"Désactivé (par défaut)",
       wsOn:"Activé — fenêtres flottantes et redimensionnables",
     }, inline: {
+    /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    'A new version of IntMap is available. Reload to continue.': "Une nouvelle version d'IntMap est disponible. Rechargez la page pour continuer.",
+    'An old cached version of IntMap loaded.': "Une ancienne version d'IntMap en cache a été chargée.",
+    'Reload': 'Recharger',
     'Name a category': 'Indiquez une catégorie',
     'No such event category': 'Cette catégorie d’événements n’existe pas',
     'reported by 2+ independent outlets': 'rapportés par 2 médias indépendants ou plus',

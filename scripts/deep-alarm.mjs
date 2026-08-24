@@ -36,6 +36,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { tierSpecs } from './tiers.mjs';   /* (#R372) the deep count is derived, never restated */
 
 export const TITLE = 'deep tier (nightly) is red';
 
@@ -61,10 +62,31 @@ export function junitFiles(dir) {
   return out.sort();
 }
 
+/* Attribute values arrive XML-escaped — the reporter replaces `& " ' < >` — and this project's test
+ * titles are full of apostrophes, so an id printed raw reads 「the shards&apos; junit.xml」: the name
+ * of the failing test, misspelt, in the one sentence the issue exists to say. */
+const unxml = (s) => String(s).replace(/&(amp|quot|apos|lt|gt|#39);/g,
+  (_, e) => ({ amp: '&', quot: '"', apos: "'", lt: '<', gt: '>', '#39': "'" }[e]));
+
 /* The same <testcase> shape scripts/baseline.mjs reads — one per test, a <failure>/<error> child
- * when it failed. A test that failed and then PASSED on the retry is not reported here: CI retries
- * once precisely so a transient blip clears itself (#R207), and calling that red would train the
- * reader to ignore this issue, which is the disease rather than the cure. */
+ * when it failed.
+ *
+ * ⚠ (#R372) THE KEY IS `classname › name`, AND IT USED TO BE `classname` ALONE. Playwright's JUnit
+ * reporter writes the FILE in `classname` and the TEST TITLE in `name` (its `_addTestCase` says so
+ * in as many words: 「// filename」). So a key of classname alone collapsed every test in a spec file
+ * into ONE entry, and the fold below — which is an AND — then reported that file only when ALL of
+ * its tests were red. MEASURED on a real nightly junit.xml: 96 <testcase>, 16 distinct classnames,
+ * 96 distinct classname+name. Injecting one genuine <failure> into r167.spec.js's eight cases and
+ * running the old key over it returned []. That is why issue #275 said 「No individual test is red …
+ * the job failed around the suite rather than inside it」 on a night when three tests were red, and
+ * sent whoever read it to the infrastructure instead of to the tests.
+ *
+ * ⚠ AND THE FOLD STAYS. A test that failed and then PASSED on the retry is not reported here: CI
+ * retries once precisely so a transient blip clears itself (#R207), and calling that red would train
+ * the reader to ignore this issue, which is the disease rather than the cure. Playwright already
+ * pays most of that — it writes ONE <testcase> per test whatever the retry count, so the real report
+ * has no duplicate id at all — which leaves the fold as insurance for the case the format does not
+ * rule out: the same spec turning up in two shards' reports. */
 export function failuresFrom(paths) {
   const seen = new Map();
   for (const p of paths) {
@@ -76,8 +98,14 @@ export function failuresFrom(paths) {
     for (const m of xml.matchAll(/<testcase\b([^>]*?)\/>|<testcase\b([^>]*)>([\s\S]*?)<\/testcase>/g)) {
       const attrs = m[1] || m[2] || '', body = m[3] || '';
       const cls = /classname="([^"]*)"/.exec(attrs);
-      if (!cls) continue;
-      const id = cls[1].trim();
+      /* ⚠ `\b` IS LOAD-BEARING: a bare /name="/ matches INSIDE `classname="`, which would name every
+         test after its own file all over again. And either half may be missing — a report that
+         carries only one of the two is still usable, the id is then the half that is there — so only
+         a <testcase> with neither is skipped. */
+      const nm = /\bname="([^"]*)"/.exec(attrs);
+      const parts = [cls, nm].filter(Boolean).map((x) => unxml(x[1]).trim()).filter(Boolean);
+      if (!parts.length) continue;
+      const id = parts.join(' › ');
       const failed = /<failure|<error/.test(body);
       seen.set(id, seen.has(id) ? (seen.get(id) && failed) : failed);
     }
@@ -85,9 +113,24 @@ export function failuresFrom(paths) {
   return [...seen.entries()].filter(([, f]) => f).map(([id]) => id).sort();
 }
 
+/* ⚠⚠ (#R372) A COUNT IS A COPY, AND THIS ONE ROTTED THREE TIMES. #R203 wrote 27, #R304 wrote 59,
+   docs/TESTING.md said 64, and the true figure moved from 81 to 82 DURING the round that measured
+   it — the split is a PRICE, not a list (#R204), so every spec anyone adds changes it. This issue
+   body is published to a human, so it derives the number instead of restating one.
+   ⚠ body() STAYS SYNCHRONOUS. tiers.mjs declares functions and touches nothing at import time, so a
+   static import costs nothing and keeps this a pure string builder — making it async to reach the
+   number would have made every caller await a sentence.
+   ⚠ AND A THROW MUST NOT SILENCE THE ALARM: tierSpecs() reads the disk when CALLED, so the call is
+   guarded and the sentence drops the count rather than the report. */
+function deepCount() {
+  try { return tierSpecs('deep').length; } catch { return null; }
+}
+
 export function body({ failures, runUrl, day, sawReports }) {
   const L = [];
-  L.push('`npm run test:deep` — the 27 spec files that left the gate in #R203 — went red on the nightly run.');
+  const n = deepCount();
+  L.push('`npm run test:deep` — ' + (n ? `the ${n} spec files that do not stand` : 'the spec files that do not stand')
+    + ' in front of a push — went red on the nightly run.');
   L.push('');
   L.push(`* run: ${runUrl || '(unknown)'}`);
   L.push(`* when: ${day}`);

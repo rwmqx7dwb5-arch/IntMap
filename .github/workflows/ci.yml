@@ -17,8 +17,22 @@ permissions:
   contents: read
 
 # A newer commit on the same branch/PR cancels the older in-flight run.
+# ⚠ (#R372) …AND THE NIGHTLY IS NOT ON ANYBODY'S BRANCH. A scheduled run's `github.ref` is the
+# default branch, so the nightly sat in the SAME group as every push to main — `ci-CI-refs/heads/main`
+# — and `cancel-in-progress` let a late merge kill it. MEASURED over 2026-08-08…08-23: three of the
+# sixteen scheduled runs died that way, each seconds after a main push run started (08-18 23:58:25
+# after 36 s, 08-20 18:26:24 after 51 s, 08-22 18:13:06 after 31 s). A cancelled deep tier proves
+# nothing — `browser-gate` below says exactly that — and it is worse than nothing here: the shards
+# upload their report only `if: !cancelled()`, while `deep-alarm` runs on `always()`, so the alarm
+# wakes up with no report to read and opens #275 saying it has nothing to list.
+# So a `schedule` goes to a group of its own and can only be superseded by the next schedule. Every
+# other event falls through to `github.ref`, so the group string a push or a PR gets is byte-for-byte
+# what it was before this line changed.
+# ⚠ `workflow_dispatch` DELIBERATELY STAYS ON `github.ref`. It is the button a round presses on its
+#   own branch before opening a PR (#R205/#R207), and it has to go on cancelling that branch's own
+#   earlier run — a constant group would instead make two branches' dispatches cancel each other.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'schedule' && 'nightly' || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -151,10 +165,14 @@ jobs:
         with: { tier: core, suite: "${{ matrix.suite }}", shard: "${{ matrix.shard }}", of: "${{ matrix.of }}" }
 
   # ══ (#R203) THE OTHER 78 MINUTES — NIGHTLY AND ON DEMAND ══════════════════════════════════════
-  # ⚠ (#R304) 「27 spec files」 was true when this was written and is not now: #R204/#R207 turned the
-  # split into a PRICE rather than a list (scripts/tiers.mjs, CORE_MAX_S = 1 s), so the core gate is
-  # SIX files and this tier is FIFTY-NINE. The families are unchanged — the Cesium camera comparisons,
-  # the terrain reads,
+  # ⚠ (#R304, RE-MEASURED #R372) 「27 spec files」 was true when this was written and is not now:
+  # #R204/#R207 turned the split into a PRICE rather than a list (scripts/tiers.mjs, CORE_MAX_S = 1 s),
+  # so the core gate is the four always-on suites plus what costs under a second plus this round's own
+  # spec — SIX files as this is written — and this tier is EIGHTY-ONE of the 87 specs on disk, 4,487 s
+  # of measured serial time. ⚠ #R304 wrote FIFTY-NINE here and that rotted too, because a count of a
+  # derived list is a copy of it: `npm run test:deep` prints the true figure on its first line
+  # (「run-tests: deep tier — N spec file(s)」), so re-measure there rather than trusting this one.
+  # The families are unchanged — the Cesium camera comparisons, the terrain reads,
   # the flight simulator, the drone planner, the satellite catalogue, the seismic and tsunami fields.
   # Each of those is a handful of tests that take MINUTES apiece by nature, and none of them is a
   # thing an ordinary edit breaks — which is exactly why they are the wrong thing to make somebody

@@ -277,6 +277,10 @@ window.IntMapLang.define('zh', {
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
+    /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    'A new version of IntMap is available. Reload to continue.': 'IntMap 有新版本可用。請重新載入以繼續。',
+    'An old cached version of IntMap loaded.': '載入的是快取中的舊版 IntMap。',
+    'Reload': '重新載入',
     'Name a category': '請指定分類',
     'No such event category': '沒有這個事件分類',
     'reported by 2+ independent outlets': '由 2 家以上獨立媒體報導',

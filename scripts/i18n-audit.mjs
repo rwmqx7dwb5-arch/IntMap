@@ -41,6 +41,11 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+/* ⚠ (#R372) THE PARSE IS NOT THIS FILE'S. #R239's rule — pinned by tests/r241 ① — is that the one
+   gate holds no parser of its own; scripts/i18n-helpers.mjs already parses every file in js/ ONCE
+   for this whole family of instruments, and `deadDash` below reads that syntax tree rather than
+   growing a second reader of JavaScript here. */
+import { parseAll } from './i18n-helpers.mjs';
 
 
 
@@ -149,6 +154,56 @@ const docs = run('i18n-doc-audit.mjs');
    «erase» for a clear sky in four languages. See scripts/i18n-key-collision-audit.mjs. */
 const collide = run('i18n-key-collision-audit.mjs');
 const orphanKeys = keyed.undeclared;
+
+/* ══ ⚠⚠⚠ (#R372) THE OPEN GAP IS EXEMPT FOR ONE REASON, AND THIS MEASURES THAT REASON ═══════════
+   Every one of the adjacent-data tuples counted by `pairs` is in js/reference-data.js, and what
+   reads that file is the Information dashboard's card list — which was RETIRED (#R139). The tab
+   became Companies, and `renderDashboard()` in js/companies-ui.js now begins by returning
+   `renderCompanies()`; the sidebar cards and the `HOST.dashFeatures` assignment that puts their
+   pins on the map both sit AFTER that return, so they run only if renderCompanies() itself throws.
+   So these rows are not «English in eight languages» — they are on screen in NONE of the nine, and
+   that is the whole of why the gate below tolerates them.
+   ⚠ AN EXEMPTION WHOSE JUSTIFICATION NOTHING MEASURES OUTLIVES ITS JUSTIFICATION. The day the
+   delegation goes, every tuple in that file is on screen again in nine languages and the only thing
+   that would notice is a reader — which is the failure this whole file exists to stop. So the
+   justification is MEASURED, on the AST rather than on the text of one line: re-indenting, moving
+   the comment or wrapping the file changes nothing here, while deleting the delegation — or making
+   it conditional, which reaches the same body — turns the gate red with the sentence that says what
+   has to be written before the dashboard can come back.
+   ⚠ …AND THE JUSTIFICATION COVERS ONE FILE. A tuple in any OTHER file is a live English fallback,
+   and the ratchet on the TOTAL cannot see tuples move house, so the file list is held too. */
+const DEAD_DASHBOARD = 'js/companies-ui.js';
+const DEAD_DASHBOARD_DATA = 'js/reference-data.js';
+const deadDash = (() => {
+  const entry = parseAll().get(DEAD_DASHBOARD.replace(/^js\//, ''));
+  if (!entry) return { ok: false, why: `${DEAD_DASHBOARD} is gone, or no longer parses — the OPEN GAP below rested on what it does` };
+  /* every `function renderDashboard(){…}` however deeply it is nested — the file wraps its module in
+     a factory, and a check that only looked at the top level would find nothing and say so */
+  const found = [];
+  (function visit(n) {
+    if (!n || typeof n !== 'object') return;
+    if (Array.isArray(n)) { for (const c of n) visit(c); return; }
+    if (typeof n.type !== 'string') return;
+    if (n.type === 'FunctionDeclaration' && n.id && n.id.name === 'renderDashboard') found.push(n);
+    for (const k of Object.keys(n)) { if (k !== 'loc' && k !== 'type') visit(n[k]); }
+  })(entry.ast);
+  if (found.length !== 1) return { ok: false, why: `${DEAD_DASHBOARD} declares renderDashboard() ${found.length} time(s), not once — this check needs rewriting` };
+  /* the delegation may be bare or wrapped in the try/catch it has carried since #R139. What it may
+     NOT be is conditional, or preceded by anything, or absent: each of those reaches the body. */
+  const delegates = (st) => !!st && st.type === 'ReturnStatement' && !!st.argument
+    && st.argument.type === 'CallExpression' && st.argument.callee.type === 'Identifier'
+    && st.argument.callee.name === 'renderCompanies';
+  const first = found[0].body.body[0];
+  if (delegates(first)) return { ok: true, where: `${DEAD_DASHBOARD}:${first.loc.start.line}` };
+  if (first && first.type === 'TryStatement' && delegates(first.block.body[0])) {
+    return { ok: true, where: `${DEAD_DASHBOARD}:${first.block.body[0].loc.start.line}` };
+  }
+  return { ok: false, why: `renderDashboard() in ${DEAD_DASHBOARD} no longer begins by returning renderCompanies()`
+    + (first ? ` — its first statement is of type ${first.type}, at line ${first.loc.start.line}` : ' — its body is empty')
+    + `. The card list below that return draws every tuple in ${DEAD_DASHBOARD_DATA}, so those rows are`
+    + ' on screen again: write them with pickArgs() in all nine languages, or, if the dashboard is gone'
+    + ' for good rather than back, delete this check together with it' };
+})();
 
 const keyedBy = new Map(keyed.rows.map((r) => [r.code, r]));
 const pageBy = new Map(pages.rows.map((r) => [r.code, r]));
@@ -287,8 +342,22 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
     ? '\n    ' + pairs.files.slice(0, 12).map((f) => String(f.n).padStart(4) + '  ' + f.file).join('\n    ')
       + (pairs.files.length > 12 ? `\n    …and ${pairs.files.length - 12} more file(s)` : '')
       + '\n    (node scripts/i18n-pair-audit.mjs --list lists every one, with its line)'
-      + '\n    These are NOT counted in any percentage above. Nothing indexes them by language, so no'
-      + '\n    instrument here sees them and every language the row does not list reads English.'
+      + '\n    These are NOT counted in any percentage above: nothing indexes them by language, so no'
+      + '\n    instrument here can see them.'
+      /* ⚠ (#R372) WHAT THIS PARAGRAPH USED TO SAY WAS NOT TRUE — see the note by `deadDash` above.
+         「every language the row does not list reads English」 described a live defect; no language
+         reads these rows at all, because the screen that drew them was retired. The sentence is
+         DERIVED from the measurement now rather than written down, so it cannot outlive it. */
+      + (deadDash.ok
+        ? '\n    ⚠ AND THEY ARE NOT ON SCREEN IN ANY LANGUAGE — NOT EVEN ENGLISH. The Information'
+          + `\n    dashboard that drew them was retired (#R139): ${deadDash.where} returns`
+          + '\n    renderCompanies() before the card list and before the HOST.dashFeatures assignment that'
+          + '\n    places their pins, so that body now runs only if renderCompanies() itself throws.'
+          + '\n    That — and nothing else — is why this is an OPEN GAP rather than a live English'
+          + '\n    fallback, so the gate MEASURES the delegation: the day it goes, these rows are back on'
+          + '\n    screen and need real text in nine languages before the dashboard can return.'
+        : `\n    ⚠ THE PATH THAT DRAWS THEM IS REACHABLE AGAIN — ${deadDash.why}`
+          + '\n    Until that is undone, every language the row does not list reads English, on screen.')
       + '\n    Convert with pickArgs(), the same answer the seventh and eleventh shapes got.'
     : ''));
 
@@ -341,10 +410,31 @@ if (process.argv.includes('--gate')) {
   const PAIR_CEILING = 143;
   if (pairs.total > PAIR_CEILING) problems.push(`${pairs.total - PAIR_CEILING} NEW translation tuple(s) held as adjacent data (${pairs.total} > ${PAIR_CEILING}) — every one is a fresh English fallback in fr/ko/zh-Hant/zh-Hans that no percentage above can see. Convert with pickArgs(); run scripts/i18n-pair-audit.mjs --list`);
   else if (pairs.total < PAIR_CEILING) problems.push(`the adjacent-data tuples are down to ${pairs.total} but PAIR_CEILING in scripts/i18n-audit.mjs still says ${PAIR_CEILING} — lower it, or the ratchet stops asserting anything`);
+  /* ══ ⚠⚠⚠ (#R372) …AND THE RATCHET IS ONLY HONEST WHILE THE EXEMPTION'S REASON HOLDS ═════════════
+     The ceiling says «no NEW English fallback». It says nothing about the 143 that are already
+     there, and what earns them that silence is that no reader can see them (see `deadDash` above).
+     A reason nobody measures is a reason that quietly stops being true, so BOTH halves of it are
+     asserted: the delegation that makes the card list unreachable, and the fact that every tuple is
+     in the one file that delegation covers — tuples moving house would leave the total, and
+     therefore the ratchet, completely unmoved. */
+  if (pairs.total > 0 && !deadDash.ok) problems.push(`the ${pairs.total} adjacent-data tuple(s) are tolerated ONLY because nothing draws them, and that has stopped being true: ${deadDash.why}`);
+  const strayGap = (pairs.files || []).filter((f) => f.file !== DEAD_DASHBOARD_DATA);
+  if (strayGap.length) problems.push(`${strayGap.reduce((n, f) => n + f.n, 0)} adjacent-data tuple(s) live outside ${DEAD_DASHBOARD_DATA} (${strayGap.map((f) => `${f.file} ${f.n}`).join(', ')}) — the OPEN GAP is exempt only where the retired dashboard makes it unreachable, so these ARE on screen and every language the row does not list reads English. Convert with pickArgs(); run scripts/i18n-pair-audit.mjs --list`);
   if (problems.length) {
     console.error('\n✖ i18n gate: ' + problems.join('; '));
     console.error('  `node scripts/i18n-audit.mjs --todo <code>` prints the commands that close each gap.');
     process.exit(1);
   }
-  console.log('\n✓ i18n gate: every language is complete on every measured surface.');
+  /* ⚠⚠⚠ (#R372) A PASS LINE MAY NOT BE WIDER THAN WHAT WAS MEASURED. This said «every language is
+     complete on every measured surface.» three lines under an OPEN GAP of 143 — true word for word,
+     and read by every round as «the translation is finished». The count that is OUTSIDE the
+     measurement now travels in the same sentence as the count that is inside it, so the reader
+     cannot take one without the other. The exit code does not move: this is a report of what was
+     measured, not a new gate (#R242's rule still stands). */
+  console.log('\n✓ i18n gate: every language is complete on every MEASURED surface'
+    + (pairs.total
+      ? ` — and ${pairs.total} translation tuple(s) in ${pairs.files.length} file(s) are OUTSIDE that`
+        + ` measurement (the OPEN GAP above; no percentage counts them, and nothing draws them:`
+        + ` ${deadDash.where}).`
+      : ', and no surface is left outside the measurement.'));
 }

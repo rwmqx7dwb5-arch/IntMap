@@ -155,13 +155,16 @@ window.__imBuild='R400';/* (#R121) build marker — bump when verifying that a r
       sessionStorage.removeItem('intmap_stale_bust');
     }
   }catch(e){} })();
-  window.addEventListener('DOMContentLoaded',function(){ if(!window.__INTMAP_STALE) return;
-    try{ var b=document.createElement('div'); b.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:99999;background:#b00020;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:10px 14px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.4);max-width:92vw;text-align:center;';
-      b.innerHTML='⚠️ 古いバージョンが表示されています (an old cached version loaded). <button style="margin-left:8px;background:#fff;color:#b00020;border:none;border-radius:6px;padding:5px 9px;font-weight:700;cursor:pointer;">再読み込み / Reload</button>';
-      b.querySelector('button').onclick=function(){ try{ if('caches' in window) caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}); }catch(e){} location.reload(true); };
-      document.body.appendChild(b);
-    }catch(e){}
-  });
+  /* (#R372) ONE PRESSABLE reload prompt for `vite:preloadError` and for a stale build. Why not a
+     .sat-toast, why no preventDefault(), why once, why not offline: Architecture.md §1.1. */
+  window.__imReloadPrompt=function(stale){ try{ if(document.getElementById('im-reload')) return; var lg='en';
+    try{ var s=JSON.parse(localStorage.getItem('intmap_settings')||'{}'); if(s&&s.lang) lg=s.lang; }catch(e){}   /* the same seed the launch screen and js/app-body.js use */
+    var T=function(){ try{ return window.IntMapLang.t.apply(null,[lg].concat([].slice.call(arguments))); }catch(e){ return arguments[0]; } };   /* fr/ko/zh/zh-Hans resolve from the inline table by the English string; English if the registry never arrived */
+    var d=document.createElement('div'); d.id='im-reload'; d.className='im-reload'+(stale?' im-reload-stale':''); d.setAttribute('role','alert'); d.innerHTML='<span></span><button type="button"></button>';
+    d.firstChild.textContent=stale?T('An old cached version of IntMap loaded.','古いバージョンの IntMap が表示されています。','Eine alte, zwischengespeicherte Version von IntMap wurde geladen.','Загружена старая версия IntMap из кэша.','Se ha cargado una versión antigua de IntMap desde la caché.'):T('A new version of IntMap is available. Reload to continue.','IntMap の新しいバージョンが配信されています。再読み込みしてください。','Eine neue Version von IntMap ist verfügbar. Zum Fortfahren neu laden.','Доступна новая версия IntMap. Перезагрузите страницу, чтобы продолжить.','Hay una nueva versión de IntMap. Recarga la página para continuar.');
+    d.lastChild.textContent=T('Reload','再読み込み','Neu laden','Обновить','Recargar'); d.lastChild.onclick=function(){ try{ if('caches' in window) caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}); }catch(e){} location.reload(true); }; (document.body||document.documentElement).appendChild(d); }catch(e){} };
+  window.addEventListener('vite:preloadError',function(){ if(navigator.onLine===false) return; if(document.body) window.__imReloadPrompt(false); else window.addEventListener('DOMContentLoaded',function(){ window.__imReloadPrompt(false); },{once:true}); });
+  window.addEventListener('DOMContentLoaded',function(){ if(window.__INTMAP_STALE) window.__imReloadPrompt(true); });
   </script>
 
   <!-- (#R192) The four hosts every cold start needs before it can draw anything (base-map tiles,
