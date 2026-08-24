@@ -2,7 +2,7 @@
   "solo": [
     "-cesium.*.spec.js$"
   ],
-  "tests/internal-qa.spec.js": 5,
+  "tests/internal-qa.spec.js": 2,
   "tests/monitors.spec.js": 10,
   "tests/r142.spec.js": 13,
   "tests/r143.spec.js": 9,
@@ -89,7 +89,9 @@
   "tests/r388.spec.js": 7,
   "tests/r395.spec.js": 3,
   "tests/r402.spec.js": 5,
-  "tests/security.spec.js": 9,
+  "tests/security.spec.js": 4,
   "tests/smoke.spec.js": 8,
-  "tests/r405.spec.js": 7
+  "tests/r405.spec.js": 7,
+  "tests/r410.spec.js": 12,
+  "tests/r410-late.spec.js": 55
 }

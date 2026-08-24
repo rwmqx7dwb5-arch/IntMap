@@ -138,6 +138,14 @@ export function makeTimeCountries(HOST, CTX) {
       try{ if(typeof window._imReapplyChoros==='function') window._imReapplyChoros(); }catch(_){}
       try{ if(typeof window._imCountryCardRefresh==='function') window._imCountryCardRefresh(); }catch(_){}
       try{ if(typeof window._imTimeSyncedRefresh==='function') window._imTimeSyncedRefresh(); }catch(_){}
+      /* ⚠ (#R410) THE MAP'S COUNTRY LABELS READ THIS TABLE TOO, AND THEY READ IT EARLIER THAN THIS RUNS.
+         js/time-borders.js `tagSame` resolves «Germany» → «German Empire» out of the same identities, but its
+         own clock listener fires at 45 ms and this one at 340 ms plus three awaits — so the labels were
+         written from the PREVIOUS year's table and never written again (measured: «Nazi Germany» at 1916, and
+         «Germany» beside a list already saying «German Empire» when the country file was late). This says the
+         moment the identities in the table changed — which includes `restore()`, i.e. the return to Now and
+         the years below the Maddison floor, where the modern names come back. */
+      try{ window.dispatchEvent(new CustomEvent('intmap-hist-identity',{detail:{year:curYear}})); }catch(_){}
     }
     window.IntMapTime.on(e=>{ clearTimeout(deb); const my=++seq;
       deb=setTimeout(async()=>{
