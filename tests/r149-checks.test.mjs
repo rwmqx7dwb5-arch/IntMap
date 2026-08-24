@@ -97,7 +97,13 @@ test('R149 #10 mapping-quality commission: reply places get pinned + honest self
      #R350 replaced the whole answer with a structure, so the places are a FIELD of it — still one
      call, now without a trailer to scrape. Asserting the old regex would pin the mechanism instead
      of the property, and would go red for the round that improved it. */
-  assert.match(html, /_env\.places\|\|\[\]\)\.map\(p2=>\(\{n:p2\.name,c:p2\.country,k:p2\.kind\}\)\)/, 'analyze no longer maps the places the structured answer names');
+  /* ⚠ (#R397) AND THE SENTENCE ABOVE CAME TRUE. This asserted the exact flattening
+     `.map(p2=>({n:p2.name,c:p2.country,k:p2.kind}))` — which was the DEFECT: it dropped the
+     coordinate and the provenance that `normalizeAnswer` had just merged in, one line before the
+     pinning step that needed them, so every place was re-geocoded from its name. The requirement is
+     that analyze hands its structured places to the pinning step; the shape it hands them in is the
+     mechanism. Asserted as the property now. */
+  assert.match(html, /_pinReplyPlaces\(_env\.places\|\|\[\]/, 'analyze no longer maps the places the structured answer names');
   assert.ok(!/replace\(\/\\n\?\\s\*PLACES/.test(html), 'the PLACES: trailer regex is back');
   assert.match(html, /"type":"answer","text":str,"contentClass"\?:str,"checks"\?:object\[\],"places"\?:\[\{"n":str,"c":str,"k":str\}\]/, 'answer action schema has places (R156 added contentClass + checks)');
   assert.match(html, /MAPPING MANDATE/, 'planner carries the mapping mandate');

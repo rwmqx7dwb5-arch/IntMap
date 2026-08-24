@@ -74,6 +74,16 @@ jobs:
       # same list `npm test` uses, so the two can no longer drift. ~2 s for 200+ tests.
       - name: Source-level regression checks (Edge Function invariants, area-monitor engine, R1xx suites)
         run: npm run test:checks
+      # ══ (#R397) THE GATE DECISIONS.md ALREADY NAMED ══════════════════════════════════════════════
+      # DECISIONS.md says of the one-list rule: 「『何ができるか』の一覧は1つだけ持つ（js/atlas-capabilities.js。
+      # ゲート＝npm run check:capabilities）」. That audit — twenty items, including «a capability that
+      # writes cannot be registered without observe() and verify()» and «the registry may not truncate
+      # its own population» — ran in scripts/test-parallel.mjs (so, in a local `npm test`) and in NO CI
+      # step. A push could therefore break the registry that every Atlas action resolves through and
+      # never run the check the decision record calls its gate. #R397 rewrote three of that registry's
+      # observers, which is precisely when the difference stops being theoretical.
+      - name: Atlas capability registry audit (the one-list rule)
+        run: npm run check:capabilities
       # ══ (#R311) THE STARTUP BUDGET ═══════════════════════════════════════════════════════════════
       # 「現在のCIでは、3,000KB超chunkを検出しても成功扱いになる構成があります。」 — measured, and it was
       # exactly true: until this step the only thing CI weighed was TEST TIME. `vite build` printed
