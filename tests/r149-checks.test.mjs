@@ -75,11 +75,9 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
   assert.match(html, /inEl\.addEventListener\('paste'/, 'paste handler on the input');
   assert.match(html, /async function _atlAddFiles\(files\)/, 'add-files helper');
   assert.match(html, /compressImage\(f,2000,0\.9\)/, 'reuses compressImage → JPEG data URL (R156 hi-fi 2000/0.9 for OCR/maths, was 1100/0.72)');
-  // run() threads images to the planner call (was hardcoded null)
+  // run() takes the images the paste/attach handlers collected
   assert.match(html, /async function run\(q,imgs,files\)\{/, 'run accepts images (and R158 file attachments)');
-  /* (#R318) SYS() takes the capability selection now — `SYS(_capSel)`, where a null selection is
-     the whole catalogue. What this line asks is unchanged: the planner call carries `imgs`. */
-  assert.match(html, /buildPrompt\(q,_profile\)\+_fileBlock\+\(imgs\.length\?[\s\S]*?\),SYS\(_capSel\),imgs,\{task:'atlas_plan'/, 'planner call gets imgs (not null) + R158 file text');
+  /* «the planner call gets imgs» removed in #R406: the planner is deleted, and that assertion had been guarding a path that could never run — `if(imgs.length){ … _atlVisionTurn … return; }` returns BEFORE the model call, so an image has never reached the planner; the pipeline the images do reach is the one asserted above. */
   assert.match(html, /class="atl-attach"/, 'attach button present');
   // server already supports vision
   assert.match(aiproxy, /const MAX_IMAGES = 4/, 'proxy caps images');
@@ -106,8 +104,20 @@ test('R149 #10 mapping-quality commission: reply places get pinned + honest self
   assert.match(html, /_pinReplyPlaces\(_env\.places\|\|\[\]/, 'analyze no longer maps the places the structured answer names');
   assert.ok(!/replace\(\/\\n\?\\s\*PLACES/.test(html), 'the PLACES: trailer regex is back');
   assert.match(html, /"type":"answer","text":str,"contentClass"\?:str,"checks"\?:object\[\],"places"\?:\[\{"n":str,"c":str,"k":str\}\]/, 'answer action schema has places (R156 added contentClass + checks)');
-  assert.match(html, /MAPPING MANDATE/, 'planner carries the mapping mandate');
-  assert.match(html, /Self-audit before finishing/, 'self-audit instruction');
+  /* ⚠ (#R406) THE PROMPT HALF OF THIS COMMISSION IS NOW ONE CLAUSE, AND ONE OF ITS TWO HALVES IS
+     GONE ON PURPOSE. #R149 wired a MAPPING MANDATE paragraph into planner/answer/analyze, and it
+     said two things: (a) the places in the prose and the places on the map must agree, never invent
+     a coordinate, say what could not be placed; (b) do not finish a location-rich answer having
+     mapped nothing. #R406 removed (b) by name — 「回答内に地点名が出るだけでピン配置を要求する規則」 —
+     because it turned 「フランス革命はなぜ起きたのか」, which names Paris and wants prose, into an
+     unrequested camera move; whether to map at all is Atlas's decision now. So the «MAPPING MANDATE»
+     assertion is deleted rather than re-aimed — and note HOW it was found: with the mandate gone it
+     went on passing, because js/atlas-console.js has a comment that merely NAMES it. (a) — which is
+     what the self-audit instruction served — is asserted against the surviving text in
+     js/atlas-policy.js instead, and that assertion was mutation-tested until it went red.
+     ⚠ `includes`, not `assert.match`: a failing match prints all 14 MB of appSource (#R390). */
+  assert.ok(html.includes('and say which of them could not be placed'),
+    'the model is still told to report the places it could NOT put on the map (js/atlas-policy.js mapWhatYouName)');
 });
 
 test('R149 #2 ticker gets an on/off toggle', () => {

@@ -193,6 +193,64 @@ test('R350 ③: a fabricated host cannot enter the registry in the browser eithe
 });
 
 
+/* ══ (#R406) THE TURN SURFACE, IN THE BUILT APP ═══════════════════════════════════════════════
+   tests/r406-*.test.mjs run these modules under node. What only the browser can answer is whether
+   the BUILT bundle still joins them up: that the registry really got the argument schemas through
+   bindRuntime (and not the permissive fallback), and that discovery reaches a capability that is
+   not one of the core tools. Both were `{type:'object'}` and a 64 kB paste before this round. */
+test('R406 ①: the built app binds the real argument schemas, not the permissive fallback', async () => {
+  const r = await page.evaluate(() => {
+    const C = window.IntMapCapabilities;
+    const fly = C.resolve('view.flyTo').inputSchema;
+    const empty = C.all().filter((c) => !c.inputSchema || !Object.keys(c.inputSchema.properties || {}).length).map((c) => c.id);
+    return { caps: C.all().length, flyProps: Object.keys(fly.properties || {}), lat: fly.properties && fly.properties.lat, empty };
+  });
+  expect(r.caps).toBe(126);
+  expect(r.flyProps, 'view.flyTo still has the empty schema in the built app').toContain('place');
+  expect(r.lat, 'the coordinate bounds did not survive the build').toMatchObject({ minimum: -90, maximum: 90 });
+  expect(r.empty, 'capabilities still carrying a schema that accepts any object').toEqual([]);
+});
+
+test('R406 ②: the tool surface is small, and discovery reaches what is not a core tool', async () => {
+  const r = await page.evaluate(() => {
+    const T = window.IntMapAtlasTools;
+    const tools = T.baseTools();
+    const block = Object.keys(tools).map((k) => JSON.stringify(tools[k])).join('\n');
+    const hit = T.find('isochrone reachable area');
+    return {
+      names: Object.keys(tools).sort(), chars: block.length,
+      all: window.IntMapCapabilities.catalogBytes(null),
+      matches: hit.matches.length, ids: hit.matches.map((m) => m.id),
+      schemas: hit.matches.every((m) => m.schema && m.schema.type === 'object'),
+      documented: hit.matches.filter((m) => m.documentation).length,
+    };
+  });
+  expect(r.names, 'the core tools did not survive the build').toContain('find_capability');
+  expect(r.all, 'the catalogue is gone — find_capability would have nothing to serve').toBeGreaterThan(50_000);
+  expect(r.chars, `the tool block is ${r.chars} chars against a ${r.all}-char catalogue`).toBeLessThan(12_000);
+  expect(r.matches).toBeGreaterThan(0);
+  expect(r.matches, 'discovery returned a crowd instead of a few').toBeLessThanOrEqual(8);
+  expect(r.schemas, 'a discovered capability came back without its schema').toBe(true);
+  expect(r.documented, 'no discovered capability carried its catalogue block').toBeGreaterThan(0);
+});
+
+test('R406 ③: an argument-less call is refused in the built app, before anything runs', async () => {
+  const r = await page.evaluate(async () => {
+    const A = window.IntMapAtlasAgent, T = window.IntMapAtlasTools;
+    const tools = T.baseTools();
+    const exec = T.makeExecute(tools, A);
+    /* the surface's own second check: run_capability's schema can only say `args` is an object */
+    const viaGeneric = await exec({ name: 'run_capability', arguments: { id: 'research.analyze', args: {} } });
+    /* and the loop's check, on a core tool */
+    const viaCore = A.reject({ name: 'research', arguments: {} }, tools);
+    const ok = A.reject({ name: 'map_view', arguments: { place: 'Rome' } }, tools);
+    return { generic: viaGeneric.error, core: viaCore && viaCore.code, good: ok };
+  });
+  expect(r.generic, 'run_capability let an argument-less analyze through').toBe('invalid_arguments');
+  expect(r.core, 'a core tool let an argument-less analyze through').toBe('invalid_arguments');
+  expect(r.good, 'a well-formed call was rejected').toBeNull();
+});
+
 test('R318-atlas ④: Atlas loaded without console errors', async () => {
   const errors = (diag.consoleErrors || []).concat(diag.pageErrors || []);
   expect(errors, 'loading the kernel produced console errors:\n' + errors.join('\n')).toEqual([]);

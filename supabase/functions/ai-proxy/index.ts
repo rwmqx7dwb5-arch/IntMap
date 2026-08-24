@@ -155,7 +155,10 @@ const IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"
    `"constructor"` read an inherited value instead of a missing one. The set below is exactly the ten
    tasks TASK_MAX_OUTPUT defines and the eight js/ actually sends; anything else is a 400. */
 const TASKS = new Set([
-  "atlas_plan", "map_report", "analysis", "analysis_structured", "free_text", "json_extract",
+  /* (#R406) `atlas_turn` is the turn loop (js/atlas-agent.js). `atlas_plan` STAYS in this set even
+     though nothing sends it any more: GitHub Pages serves a cached bundle for a while after a
+     deploy, and a reader still holding the previous one would get a 400 on every Atlas message. */
+  "atlas_turn", "atlas_plan", "map_report", "analysis", "analysis_structured", "free_text", "json_extract",
   "brief", "geo_verify", "geo_resolve", "research_map", "vision_read",
 ]);
 /* A caller-supplied responseSchema is forwarded to the provider, so it is an input too.
@@ -272,6 +275,7 @@ function openAiSchemaFormat(schema: unknown, task: string): Record<string, unkno
 // map_report can't fit in 1600 tokens; a quick json_extract shouldn't be allowed 3000.
 // Kept modest for cost; map_report additionally scales with the requested item count.
 const TASK_MAX_OUTPUT: Record<string, number> = {
+  atlas_turn: 2600,   // (#R406) one step: the answer, or the calls. Prose answers arrive HERE now rather than only through a separate analysis call, so it needs more room than atlas_plan's action list did.
   atlas_plan: 2200,   // (#R115) 1800→2200: multi-action plans + "say" were clipping on complex requests
   map_report: 3200,
   analysis: 2400,
@@ -292,6 +296,7 @@ const HARD_MAX_OUTPUT = 5000;   // absolute ceiling (cost guard)
 // Planning + analysis get "medium" (the quality bottleneck); the mechanical/extraction tasks stay
 // "low" for cost & latency. The brief's freshness comes from the forced web search, not reasoning.
 const TASK_REASONING: Record<string, string> = {
+  atlas_turn: "medium",
   atlas_plan: "medium",
   analysis: "medium",
   analysis_structured: "medium",   // (#R350) same bottleneck as `analysis`; the schema does not make the thinking easier
@@ -309,7 +314,7 @@ const TASK_REASONING: Record<string, string> = {
 // (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
 // latency (feeding the 45s timeouts) and the planner worked fine before with prompt-only JSON (aiParseJSON on the
 // client strips any fence). map_report / json_extract keep structured output where it matters most.
-const JSON_TASKS = new Set(["map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) · (#R350) analysis_structured returns the AnswerEnvelope */
+const JSON_TASKS = new Set(["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) · (#R350) analysis_structured returns the AnswerEnvelope */
 
 // (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
 // name/locationName/country/summary/date/evidenceIds — the client fills url, source,
@@ -971,7 +976,7 @@ Deno.serve(async (req) => {
   // workaround (forced responseMimeType slowed the big planner prompt into 45s timeouts). OpenAI's
   // json_object format has no such issue and guarantees parseable plans — a large share of the
   // "Sorry, I could not interpret that" failures were the planner's JSON arriving malformed.
-  const wantJson = JSON_TASKS.has(task) || (provider === "openai" && task === "atlas_plan");
+  const wantJson = JSON_TASKS.has(task) || (provider === "openai" && task === "atlas_plan");   /* (#R406) atlas_turn is in JSON_TASKS, so its envelope is enforced on EVERY provider — the atlas_plan clause above it was openai-only, which left Gemini and Anthropic parsing the plan out of prose */
   // Server owns the map_report schema; other JSON tasks may pass their own (validated shallowly).
   const responseSchema = task === "map_report" ? MAP_REPORT_SCHEMA
     : task === "analysis_structured" ? ANSWER_SCHEMA   // (#R350) server-owned, mirrored by js/atlas-answer-contract.js
@@ -987,7 +992,7 @@ Deno.serve(async (req) => {
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
       // (#R114) webMode:"required" → force the hosted web search so a latest-info task really runs it.
       let effort = TASK_REASONING[task] || "low";   // (#R116) planner/analysis think at "medium"
-      if (effortHint === "high" && (task === "atlas_plan" || task === "analysis" || task === "analysis_structured" || task === "vision_read")) effort = "high";   // (#R117/#R156/#R350) complexity hint (vision reading small text + maths earns "high")
+      if (effortHint === "high" && (task === "atlas_turn" || task === "atlas_plan" || task === "analysis" || task === "analysis_structured" || task === "vision_read")) effort = "high";   // (#R117/#R156/#R350) complexity hint (vision reading small text + maths earns "high")
       /* (#R397) The same `responseSchema` callGemini has had since #R113, in OpenAI's dialect.
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;

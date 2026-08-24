@@ -25,8 +25,11 @@
  *    ⑤ the China fixture: the meanings stay apart and the two series do not join
  *    ⑥ the pipeline spends ONE call on the valid path, at most one repair, then degrades
  *    ⑦ a URL the model wrote is not a link, and 「Web検証済み」 is a fact rather than a heading
- *    ⑧ goalImpact: whose goal an action served, so a courtesy that failed is not a failed turn
  *    ⑨ the mechanisms this round removes are GONE from the source — not merely unused
+ *
+ *  ⚠ ⑧ (goalImpact: whose goal an action served) is gone: #R406 deleted js/atlas-planner.js, and
+ *  with it the request profile every impact verdict was read from. An action Atlas adds itself is
+ *  now a tool call it chose, and the turn's account of it is the tool result.
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -48,10 +51,6 @@ const CT = (await import('../js/atlas-answer-contract.js')).makeAtlasAnswerContr
 const AU = (await import('../js/atlas-answer-audit.js')).makeAtlasAnswerAudit();
 const RN = (await import('../js/atlas-answer-render.js')).makeAtlasAnswerRender();
 const PL = (await import('../js/atlas-answer-pipeline.js')).makeAtlasAnswerPipeline();
-const { makeAtlasPlanner } = await import('../js/atlas-planner.js');
-const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
-const { makeAtlasResults } = await import('../js/atlas-results.js');
-const { installAtlasKernel } = await import('../js/atlas-executor.js');
 
 /* ══ THE FIXTURE ═════════════════════════════════════════════════════════════════════════════════
    ⚠ FROZEN NUMBERS, NOT A CLAIM ABOUT THE WORLD. These figures exist to test whether the code can
@@ -494,48 +493,7 @@ test('R350 ⑦d: a degraded answer says so, above the prose', () => {
   assert.ok(html.indexOf('Unverified statements were removed') < html.indexOf('atl-lead'), 'the notice is below the answer it is about');
 });
 
-/* ══ ⑧ WHOSE GOAL DID THE ACTION SERVE ═══════════════════════════════════════════════════════ */
-
-function planner() {
-  const caps = makeAtlasCapabilities({});
-  const k = installAtlasKernel({}, {}, { capabilities: makeAtlasCapabilities({}) });
-  return makeAtlasPlanner({}, { WORLD_RE: /^world$/i, wctx: {}, capabilities: caps, results: makeAtlasResults({}), executor: k.executor || k.exec, state: k.state });
-}
-
-test('R350 ⑧a: a map move Atlas added itself is secondary; one the user asked for is primary', () => {
-  const P = planner();
-  const informational = P._requestProfile('中華人民共和国は世界有数の経済規模。実際に支えているのは何？');
-  assert.equal(P.goalImpact(informational, { type: 'flyTo', place: 'China' }), 'secondary',
-    'an unasked-for map move still counts against the turn');
-  assert.equal(P.goalImpact(informational, { type: 'analyze', question: 'x' }), 'primary');
-
-  const navigational = P._requestProfile('中国へ移動して');
-  assert.equal(navigational.outputs.navigation, true, 'a navigation verb is not recognised as one');
-  assert.equal(P.goalImpact(navigational, { type: 'flyTo', place: 'China' }), 'primary');
-
-  const both = P._requestProfile('中国経済を説明し、地図も表示して');
-  assert.equal(both.outputs.explanation && both.outputs.map, true);
-  assert.equal(P.goalImpact(both, { type: 'flyTo', place: 'China' }), 'primary');
-  assert.equal(P.goalImpact(both, { type: 'analyze', question: 'x' }), 'primary');
-});
-
-test('R350 ⑧b: the turn summary counts PRIMARY failures, and says the rest quietly', () => {
-  const src = read('js/atlas-console.js');
-  assert.match(src, /const primaryFails=fails\.filter\(/, 'the fail summary is still a plain count of failed actions');
-  assert.match(src, /const secondaryFails=fails\.filter\(a=>a&&a\.__impact==='secondary'\)/, 'secondary failures are not separated');
-  /* the leading warning is built from primaryFails, and the quiet note from secondaryFails */
-  const head = src.match(/if\(primaryFails\.length\)\{[^\n]*\}/);
-  assert.ok(head && /step\(s\) could not be completed/.test(head[0]), 'the leading warning no longer reads from primaryFails');
-  assert.match(src, /if\(secondaryFails\.length\) body\+=/, 'a secondary failure is silent — 「map失敗を常に無視する」 is forbidden');
-  /* and it is a NOTE appended to the body, never prepended to the head */
-  assert.ok(src.indexOf("if(secondaryFails.length) body+=") > src.indexOf('if(primaryFails.length)'),
-    'the quiet note is assembled before the answer it follows');
-});
-
-test('R350 ⑧c: every action is stamped with its goal impact as it runs', () => {
-  const src = codeOnly(read('js/atlas-console.js'));
-  assert.match(src, /a\.__impact=_PLANNER\.goalImpact\(_curProfile,a\)/, 'nothing records whose goal an action served');
-});
+/* R350 ⑧a-⑧c (goalImpact / primaryFails / __impact) removed in #R406: js/atlas-planner.js is deleted, so the request profile the impact verdict was derived from no longer exists and js/atlas-console.js no longer splits its failures by it. */
 
 /* ══ ⑨ THE OLD MECHANISMS ARE GONE ═══════════════════════════════════════════════════════════ */
 

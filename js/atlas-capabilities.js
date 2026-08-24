@@ -626,6 +626,7 @@ export function makeAtlasCapabilities(HOST) {
        Nothing here calls into Atlas before that; a capability executed earlier answers `unavailable`
        with a reason, which is a true statement, not a silent failure. */
     API.bindRuntime = function (o) {
+      if (o && o.schemas) runtime.schemas = o.schemas;   /* (#R406) js/atlas-schemas.js */
       if (!o) return;
       if (typeof o.dispatch === 'function') runtime.dispatch = o.dispatch;
       if (o.docs) runtime.docs = o.docs;
@@ -699,8 +700,6 @@ export function makeAtlasCapabilities(HOST) {
         aliases: [legacy].concat(aliases).filter(Boolean),
         category: row[3], observerKind: obsKind,
         titleKey: 'atlas.capability.' + id,
-        inputSchema: { type: 'object' },   /* the dispatch accepts a wide argument set; the audit
-                                              checks that every documented argument is reachable */
         targetPolicy: target,
         lazyModules: lazy,
         effects: { reads: [], writes: writes, conflictKeys: writes.slice() },
@@ -728,6 +727,25 @@ export function makeAtlasCapabilities(HOST) {
         examples: [], negativeExamples: [], limitations: []
       };
       cap.execute = legacyExecute(cap);
+      /* ⚠ (#R406) THE ARGUMENT SCHEMA, AND IT IS THE TYPES ONLY. All 126 capabilities used to share
+         one literal here — `{type:'object'}` — which validates ANY object, so an `analyze` with no
+         question and a `highlight` with no target both passed and failed only after execution.
+         js/atlas-schemas.js now declares, per capability, what each argument must BE and which ones
+         a call must CARRY. Only the first half is handed to the kernel: js/atlas-executor.js
+         validates arguments at step ③ and resolves a missing target at step ④, so a BUTTON that
+         presses view.flyTo with nothing and lets resolveInputs() ask the reader is behaving
+         correctly — enforcing `required` here would turn that into bad_args and break the resume
+         path. The demands are enforced by js/atlas-toolsurface.js on what ATLAS sends, which is
+         where an argument-less action actually came from.
+         ⚠ AND IT IS BOUND, NOT IMPORTED. This file is EAGER (js/app-body.js builds the registry at
+         boot); a static import would put the table in the boot chunk for a reader who never opens
+         Atlas. Before Atlas loads the fallback is the old permissive shape, which is exactly what
+         a pre-Atlas button had before. */
+      Object.defineProperty(cap, 'inputSchema', { enumerable: true, get: function () {
+        try { var sc = runtime.schemas ? runtime.schemas.schemaFor(id) : null;
+          return { type: 'object', properties: (sc && sc.properties) || {} }; }
+        catch (_) { return { type: 'object', properties: {} }; }
+      } });
       /* the doc block that documents it, resolved lazily from js/atlas-catalog-text.js */
       Object.defineProperty(cap, 'description', { enumerable: true, get: function () {
         try { return runtime.docs ? runtime.docs.summaryFor(id) : ''; } catch (_) { return ''; }
