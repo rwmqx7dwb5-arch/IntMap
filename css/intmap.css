@@ -1031,6 +1031,19 @@
       outline:none; color-scheme:inherit; cursor:pointer; }
     [data-theme="dark"] .ntl-jump{ color-scheme:dark; }
     .ntl-jump:focus{ border-color:var(--primary-color); }
+    /* ══ (#R421) STEP ONTO THE DAYS THE BORDERS ACTUALLY MOVED ═════════════════════════════════
+       「歴史国境の更新ペースをさらに細かくして。理想は月日単位。特に20s前半が荒い。」 The year slider
+       spans 176 years in ~300 px, so no drag precision can land on 1920-10-28 — and 1920 alone has
+       fourteen border-change dates. These two arrows walk CShapes' own validity dates; the label
+       between them prints the day the world currently on screen came into being. */
+    .ntl-bstep{ display:flex; align-items:center; gap:6px; margin-top:7px; }
+    .ntl-bstep-b{ flex:0 0 auto; width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+      border-radius:8px; border:1px solid rgba(128,128,128,0.25); background:var(--input-bg); color:var(--text-main);
+      font-size:15px; line-height:1; cursor:pointer; padding:0; transition:background 0.15s, border-color 0.15s; }
+    .ntl-bstep-b:hover:not(:disabled){ border-color:var(--primary-color); color:var(--primary-color); }
+    .ntl-bstep-b:disabled{ opacity:0.35; cursor:default; }
+    .ntl-bstep-l{ flex:1; min-width:0; text-align:center; font-size:10.5px; color:var(--text-muted);
+      font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .ntl-badge{ display:none; font-size:11px; font-weight:600; color:#bcd6ff; background:rgba(10,132,255,0.2); border:1px solid rgba(10,132,255,0.4); border-radius:999px; padding:2px 10px; letter-spacing:0.01em; white-space:nowrap; }
     [data-theme="light"] .ntl-badge{ color:var(--primary-color); }
     .news-timeline.active .ntl-badge{ display:inline-block; }

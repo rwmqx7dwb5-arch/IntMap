@@ -363,12 +363,14 @@ window.IntMapLang.define('ko', { ui: {
     "Lines of equal sea-level pressure, labelled in hPa.": "해면기압이 같은 선. 숫자는 hPa.",
     "Loading the wind model…": "바람 모델을 불러오는 중…",
     "NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.": "NASA GIBS 적외 (10분 간격). GOES-East · GOES-West · 히마와리 — Meteosat은 포함되지 않아 서경 20°〜동경 75°(유럽·아프리카)는 범위 밖.",
+    "Next border change": "다음 국경 변경",   /* (#R421) news-timeline.js */
     "Next frame": "다음 프레임",
     "Next hour": "다음 시각",
     "no frames": "프레임 없음",
     "Oldest frame": "가장 오래된 프레임",
     "Particles": "입자",   /* weather.js (#R313) */
     "Pressure (MSL)": "해면기압",
+    "Previous border change": "이전 국경 변경",   /* (#R421) news-timeline.js */
     "Previous frame": "이전 프레임",
     "Previous hour": "이전 시각",
     "RainViewer radar — the last two hours, 10 min apart": "RainViewer 레이더 — 최근 2시간, 10분 간격",
