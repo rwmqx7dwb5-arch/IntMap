@@ -89,6 +89,7 @@
   "tests/r388.spec.js": 7,
   "tests/r395.spec.js": 3,
   "tests/r402.spec.js": 5,
+  "tests/r439.spec.js": 3,
   "tests/security.spec.js": 4,
   "tests/smoke.spec.js": 8,
   "tests/r405.spec.js": 7,

@@ -244,6 +244,8 @@ export function makeAtlasSchemas() {
       'settings.tiltLimit': { type: 'object', properties: { on: bool(), mode: str() } },
       'settings.eyeAltitude': { type: 'object', properties: { on: bool(), mode: str() } },
       'layers.windParticles': { type: 'object', properties: { on: bool(), mode: str(), over: str(), layer: str(), on_layer: str() } },
+      /* (#R439) 等圧線 — the contours over the sea-level-pressure field */
+      'layers.isobars': { type: 'object', properties: { on: bool(), mode: str() } },
       'layers.nightSide': { type: 'object', properties: { on: bool(), mode: str() } },
       'layers.planeAltitude': { type: 'object', properties: { on: bool(), mode: str() } },
       'layers.aircraftTrack': { type: 'object', properties: { aircraft: str(), callsign: str(), flight: str(), reg: str(), icao24: str(), on: bool(), mode: str() } },   /* no aircraft = the one already selected */
