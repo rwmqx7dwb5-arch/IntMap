@@ -150,20 +150,24 @@ begin
     return;
   end if;
 
-  for j in select jobid, jobname, command from cron.job
-            where jobname in ('news-ingest-translate', 'news-ingest-summarise') loop
+  for j in select jobid, jobname, command from cron.job where jobname = 'news-ingest-translate' loop
     newcmd := replace(j.command, '"stages":["translate"]', '"stages":["summarise"]');
-    if newcmd <> j.command then
-      perform cron.alter_job(j.jobid, command := newcmd);
-      touched := touched + 1;
+    if newcmd = j.command then
+      raise notice 'news-ingest-translate does not carry a ["translate"] stage list — leaving it alone';
+      continue;
     end if;
-    if j.jobname = 'news-ingest-translate' then
-      perform cron.alter_job(j.jobid, schedule := '13 * * * *');
-      update cron.job set jobname = 'news-ingest-summarise' where jobid = j.jobid;
-    end if;
+    /* ⚠⚠⚠ **`update cron.job` ではなく `cron.schedule`。** 実測 (2026-08-24): Management API の
+       login role は `cron.job` に直接 UPDATE できず、`permission denied for table job` で
+       **migration ごとロールバックする**（適用は 1 トランザクションなので、部分適用はしない）。
+       `cron.schedule` は同名の job を置き換えるので、名前を変える操作もこれで書ける。
+       ⚠ **command は値として渡すだけ**——秘密 (`x-news-ingest-secret`) は DB の外へ出ないし、
+         この migration が書き直すのは**段の一覧の文字列だけ**である。 */
+    perform cron.schedule('news-ingest-summarise', '13 * * * *', newcmd);
+    perform cron.unschedule(j.jobid);
+    touched := touched + 1;
   end loop;
 
   if touched = 0 then
-    raise notice 'no news-ingest-translate job carried a ["translate"] stage list — nothing to repoint';
+    raise notice 'no news-ingest-translate job to repoint — already done, or pg_cron holds no such job';
   end if;
 end $$;
