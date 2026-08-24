@@ -242,6 +242,14 @@ window.IntMapModules.countriesUi=function(HOST){
                 s.area=Math.round(v.area); s._area=v.area;
                 s.density=(s.pop&&v.area)?s.pop/v.area:null;
                 s.bbox=_bboxOf(v.f)||s.bbox; });
+              /* ⚠⚠⚠ (#R393) A ROW CREATED HERE IS A PRESENT-DAY ROW, AND THIS PASS LANDS AFTER THE CLOCK
+                 MAY ALREADY HAVE TRAVELLED. `_mkStat` reads the file: 2024's population and GDP. Below
+                 the World Bank's 1960 floor js/time-countries.js overlays ONCE, so nothing would ever
+                 come back to correct it — MEASURED on production at 1860, Singapore ($501B) and Hong
+                 Kong ($382B) ranked first and third above the Russian Empire. The time engine is asked
+                 to bring the new rows into the year on screen; it answers false when the clock is live,
+                 so this costs a function call on a normal session. */
+              if(added){ try{ const TC=window.IntMapTimeCountries; if(TC&&TC.reapply) TC.reapply(); }catch(_){} }
               HOST.countryGeo=hi; window.countryGeo=hi;
               /* ⚠ (#R195) DO NOT PUSH IT AT THE RENDERER UNLESS SOMETHING WILL DRAW IT. The 10 m
                  collection is 258 features and ~548,000 vertices; handing that to the engine rebuilds
