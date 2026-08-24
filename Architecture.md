@@ -1956,6 +1956,26 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
   「1 シンガポール $501B・3 香港 $382B」で始まっていた）。⇒ 行を作ったアップグレードが
   `IntMapTimeCountries.reapply()` を呼び、画面の年へ引き込む。**現在のスナップショットは追加式**で、
   行が現れた時点で取られる（一度きりだと「現在へ戻す」でその行だけ空になる）。
+- **「行がある」と「一覧に出る」は別の主張で、あいだに主権フラグが1枚ある。** `countryGeo` の全 id が
+  `countryStats` に行を持つこと（上）は、その国が **Countries 一覧に出ること**を意味しない——
+  `renderStats` は `sov!==false` で絞るからである。このフラグは `_mkStat()` が **1 か所で**書き、
+  **5 ファイル 6 か所**が読む（`js/countries-ui.js` の一覧・`js/stats-compare.js` の比較ピッカー・
+  `js/atlas-console.js` の国名解決と順位付け・`js/atlas-examples.js` の起点チップ・
+  `js/time-borders.js` の `tagSame`）。**1 枚のフラグが 6 か所を同時に消す。**
+  ⚠ **Natural Earth の `TYPE` が、視点ごとの `FCLASS_*` より上位である。** 同じ行が矛盾することが
+  あり、実際に矛盾している——ノルウェーは `TYPE:"Sovereign country"` と `FCLASS_TLC:"Unrecognized"`
+  を同時に持つ。`FCLASS_*` は**その多角形をある視点がどう分類するか**であって国家の存否ではなく、
+  ノルウェー自身の `WOE_NOTE`（「Svalbard・Jan Mayen・Bouvet を含まない」）がその視点差の理由を
+  書いている（`ISO_A3`/`ISO_A2`/`ISO_N3` が `-99` なのも同じ理由）。**この family が主権の欄で
+  ないことはファイル自身が示している**——ソマリランドと北キプロスは `FCLASS_ISO:"Unrecognized"` かつ
+  `FCLASS_TLC:"Admin-0 country"` という逆の並びを持ち、一覧に出ている。
+  実測: FCLASS 分岐が立つのは 110 m で 4 件・10 m で 13 件、**ノルウェー以外はすべて既に**
+  `TYPE:"Indeterminate"`（Scarborough Shoal・Serranilla・Bajo Nuevo・Bir Tawil・Wake・Siachen・
+  南パタゴニア氷原・キプロス緩衝地帯）なので、TYPE を上位に置いても**各縮尺で判定が動くのは 1 件だけ**。
+  ⚠ **不変条件: 地図が「国」として描くものは、Countries 一覧に行がある。** 「国」は名前の一覧では
+  なく **Natural Earth 自身の `TYPE`**（`Sovereign country` / `Country`）から導く。
+  `tests/r423-checks.test.mjs` が TYPE × FCLASS の全組合せを出荷ローダに食わせてこれを検査し、
+  `tests/r410.spec.js` の Countries 一覧ステップが**実際の DOM の行**と `countryGeo` を突き合わせる。
 - **失敗したフィードと、止まったフィードは違う。** 止まったフィードは全部の計器が「成功」を報告する。
   年齢を必ず測って印字する（§7.1）。
 
