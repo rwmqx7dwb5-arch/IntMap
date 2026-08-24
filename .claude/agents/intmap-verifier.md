@@ -19,15 +19,29 @@ tools: Bash, Read, Grep, Glob
 | コマンド | 何を主張するか |
 |---|---|
 | `npm run check:static` | 構文・JSON/YAML・merge marker・秘密・資産 |
-| `npm run check:i18n` | 9 言語 × 全 surface |
-| `npm run check:docs` | 文書間の事実の突き合わせ |
-| `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |
 | `npm run check:engine` | レンダラ脱依存 |
+| `npm run check:i18n` | 9 言語 × 全 surface |
+| `npm run check:companies` | 企業アトラス（拠点・座標・出典） |
+| `npm run check:docs` | 文書間の事実の突き合わせ |
+| `npm run check:archfiles` | `Architecture.md` とファイル台帳の一致 |
+| `npm run check:wars` | 紛争データの生成物と定義の一致 |
+| `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |
+| `npm run check:perf` | 起動費用の天井（**build が要る**） |
+| `npm run check:assets` | 配られる全ファイルに読み手がいる（**build が要る**） |
+| `npm run check:capabilities` | Atlas の能力表と実装の一致 |
 | `npm run check:testbudget` | 試験時間の天井（下がるだけの数） |
-| `npm test` | CI と同じ門（source 半分と browser 半分が並列に走る） |
+| `npm test` | source 半分と browser 半分が並列に走る |
+
+⚠ **この表は `check:*` の全部である**（`package.json` が正本。`npm run check:docs` の
+`gate-lists` 規則が両者を突き合わせるので、本数をここに書き写す必要はない）。かつてここには
+6 件しか無く、載っていない 5 件の赤は**名前が付かないまま**呼び出し元へ返っていた
+——**一覧に無いものは、その一覧では落ちようがない**。
 
 - 途中経過をポーリングしない。1 回走らせて、終わったログを読む。
-- 読みにくい失敗は `npm run test:seq`（同じ内容を直列で）に落として切り分けてよい。
+- 読みにくい失敗は `npm run test:seq` に落として切り分けてよい。⚠ **`npm test` と同じ内容ではない**
+  ——`test:seq` は直列に走らせるための別の並びで、含まれる手が違う。切り分けで緑になったとき、
+  それは「直したから」ではなく「その門が `test:seq` に無いから」かもしれない。
+  どちらが何を含むかは `package.json` と `scripts/test-parallel.mjs` を見る。
 
 ## 失敗を切り分ける——本物の退行か、環境要因か
 

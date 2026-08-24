@@ -52,6 +52,28 @@ jobs:
       # comment that says "the map. When…" never trips it, and a local `map` variable is not coupling.
       - name: Renderer-decoupling gate (only js/geo-engine.js may name MapLibre)
         run: npm run check:engine
+      # ══ (#R403) THE FIVE GATES `npm test` RAN AND CI DID NOT ════════════════════════════════════
+      # `scripts/test-parallel.mjs` runs eleven source-side gates; this job ran six of them. The five
+      # below were never a CI step, so 「push の直前に `npm test`」 was the ONLY thing standing in front
+      # of them — a human habit, on one machine, with CRLF line endings. `check:docs` in particular is
+      # the gate that compares every document against the tree, and #R399 rebuilt it after six
+      # documents drifted; this round found the round procedure itself stale for three more rounds.
+      # It was not literally unenforced — tests/r399-checks and tests/r403-checks run doc-facts as a
+      # subprocess and assert exit 0, so `test:checks` above already turned red on drift — but it
+      # surfaced as an unrelated-looking test failure rather than as "a document is wrong".
+      # MEASURED before adding: all five are green on a clean origin/main under LF, contact no
+      # network, need no `dist/` and no credentials, and cost ~6 s in total. They are placed BEFORE
+      # `npm run build` (~35 s) so a documentation failure does not wait for a bundle.
+      - name: Cross-document facts (the documents still agree with the repository)
+        run: npm run check:docs
+      - name: Architecture ⇄ file-ledger agreement
+        run: npm run check:archfiles
+      - name: Atlas catalogue (nothing clickable is unreachable to the planner)
+        run: npm run check:catalog
+      - name: Company atlas (sites, coordinates, attribution)
+        run: npm run check:companies
+      - name: Conflict data (the generated set matches its definitions)
+        run: npm run check:wars
       # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
       # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
       # Every previous round fixed test time for that round and the suite grew back, because the

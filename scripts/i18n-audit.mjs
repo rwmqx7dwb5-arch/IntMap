@@ -33,9 +33,12 @@
  *  ⚠ AND ADDING A LANGUAGE IS ONE COMMAND: `node scripts/i18n-new-language.mjs <code>` writes every
  *  file this gate will ask for, so the answer to «what is left» is this gate rather than memory.
  *
- *      node scripts/i18n-audit.mjs             # the matrix
- *      node scripts/i18n-audit.mjs --gate      # …and exit 1 if anything is short (CI runs this)
- *      node scripts/i18n-audit.mjs --todo fr   # every command that would close fr's gaps
+ *      node scripts/i18n-audit.mjs                    # the matrix
+ *      node scripts/i18n-audit.mjs --gate             # …and exit 1 if anything is short (CI runs this)
+ *      node scripts/i18n-audit.mjs --todo fr          # every command that would close fr's gaps — a
+ *                                                     #   list for a reader, exit 0 whatever it says
+ *      node scripts/i18n-audit.mjs --gate --todo fr   # …the same list, and then the gate above, with
+ *                                                     #   its exit code (#R403 — it used to exit 0)
  * ==========================================================================*/
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -244,9 +247,19 @@ const pct = (p) => (p ? `${String(p[0]).padStart(5)}/${String(p[1]).padEnd(5)} $
    column. The threshold is HALF the table rather than zero, because a handful of rows legitimately
    equal their key in any language (units, product names, cognates) and the four shipping languages
    sit at 11–213 of 3,576. A skeleton sits at 3,576. */
-const shortOf = (r) => (r.keyed[0] < r.keyed[1]) || (r.inline && r.inline[0] < r.inline[1])
-  || (r.positional && r.positional[0] < r.positional[1]) || (r.pages[0] < r.pages[1])
-  || (r.inline && r.identical > r.inline[1] / 2);
+/* ⚠ (#R403) ONE LIST, TWO READERS. `--todo` has to be able to NAME the short cell — it prints a
+   command per surface, and a surface with no command to print (a language the pages audit does not
+   list at all) used to leave it saying nothing while the gate called the language short. A second
+   copy of these clauses down there would be a second definition of «short» that drifts from this
+   one (the header's rule G), so the names come off the same list the gate filters on. */
+const shortCells = (r) => [
+  (r.keyed[0] < r.keyed[1]) && 'the keyed ui table',
+  (r.inline && r.inline[0] < r.inline[1]) && 'the inline L(…) table',
+  (r.positional && r.positional[0] < r.positional[1]) && 'the positional L(…) arguments',
+  (r.pages[0] < r.pages[1]) && 'the reading pages',
+  (r.inline && r.identical > r.inline[1] / 2) && 'more than half the inline table still being the English string',
+].filter(Boolean);
+const shortOf = (r) => shortCells(r).length > 0;
 
 if (process.argv.includes('--json')) {
   console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total, pairs: pairs.total, unlocalisedDocs: docs.bad }));
@@ -260,15 +273,49 @@ if (wantTodo >= 0) {
   const r = rows.find((x) => x.code === code);
   if (!r) { console.error(`unknown language: ${code}`); process.exit(1); }
   const pg = pageBy.get(code);
+  /* ⚠⚠⚠ (#R403) «NOTHING» IS A CLAIM ABOUT THIS LIST, AND IT WAS ASKING THE GATE'S QUESTION.
+     The closing line was `if (!shortOf(r))`, so every run for fr printed
+     `… --identical fr   # 269 inline rows are still the English string` and, two lines later,
+     `# nothing — this language is complete on every surface`. Both, on every run, for all four
+     inline languages (fr 269, ko / zh / zh-hans 13). They cannot both be true.
+     Neither number is wrong: the =EN line fires on `r.identical` (any row that still equals its
+     English key) while `shortOf` only counts =EN past HALF the table, on purpose — #R251 wrote that
+     threshold down because certifying which of those rows are legitimately identical is a claim no
+     instrument here has earned. What was wrong is the SENTENCE: the list had just named something
+     that is left, so «nothing» was false whatever the gate thought. The lines are collected rather
+     than printed as they are decided, and the closing line below states BOTH facts separately: what
+     this list found, and what --gate makes of it. */
+  const todo = [];
+  if (r.keyed[0] < r.keyed[1]) todo.push(`node scripts/i18n-keyed-audit.mjs --missing ${code}   # ${r.keyed[1] - r.keyed[0]} keyed strings`);
+  if (r.inline && r.inline[0] < r.inline[1]) todo.push(`node scripts/i18n-report.mjs --missing ${code}   # ${r.inline[1] - r.inline[0]} inline strings`);
+  if (r.identical) todo.push(`node scripts/i18n-report.mjs --identical ${code}   # ${r.identical} inline rows are still the English string`);
+  if (pg && !pg.file) todo.push(`node scripts/i18n-pages-audit.mjs --template ${pg.html}   # the reading pages do not exist`);
+  else if (pg && pg.have < pg.want) todo.push(`node scripts/i18n-pages-audit.mjs --missing ${pg.html}   # ${pg.want - pg.have} reading-page strings`);
+  if (r.positional && r.positional[0] < r.positional[1]) todo.push(`node scripts/i18n-positional-audit.mjs --all   # ${r.positional[1] - r.positional[0]} call-site arguments still English`);
   console.log(`# what is left for «${code}»`);
-  if (r.keyed[0] < r.keyed[1]) console.log(`node scripts/i18n-keyed-audit.mjs --missing ${code}   # ${r.keyed[1] - r.keyed[0]} keyed strings`);
-  if (r.inline && r.inline[0] < r.inline[1]) console.log(`node scripts/i18n-report.mjs --missing ${code}   # ${r.inline[1] - r.inline[0]} inline strings`);
-  if (r.identical) console.log(`node scripts/i18n-report.mjs --identical ${code}   # ${r.identical} inline rows are still the English string`);
-  if (pg && !pg.file) console.log(`node scripts/i18n-pages-audit.mjs --template ${pg.html}   # the reading pages do not exist`);
-  else if (pg && pg.have < pg.want) console.log(`node scripts/i18n-pages-audit.mjs --missing ${pg.html}   # ${pg.want - pg.have} reading-page strings`);
-  if (r.positional && r.positional[0] < r.positional[1]) console.log(`node scripts/i18n-positional-audit.mjs --all   # ${r.positional[1] - r.positional[0]} call-site arguments still English`);
-  if (!shortOf(r)) console.log('# nothing — this language is complete on every surface');
-  process.exit(0);
+  for (const line of todo) console.log(line);
+  /* ⚠ AND THE VERDICT IS NAMED WHENEVER THERE IS ONE, not only when the list came out empty. A cell
+     can be short with no command to print — a language the pages audit does not list AT ALL falls
+     back to 0/want in `rows` above, and both page branches need `pg` — so a rule that spoke only for
+     an empty list would stay silent about that surface the moment any other line existed. `--gate`'s
+     own predicate names it, in `--gate`'s own words. */
+  const short = shortCells(r);
+  if (short.length) console.log(`# and --gate fails on «${code}»: ${short.join(', ')}`);
+  else if (todo.length) console.log(`# …and none of the above fails --gate — «${code}» is complete on every surface the gate measures.`
+    + ' The =EN count is printed rather than gated (#R251): a row that equals its key is often right, and nothing here has read them.');
+  else console.log('# nothing — this language is complete on every surface');
+  /* ⚠⚠⚠ (#R403) AND `--gate --todo <code>` USED TO EXIT 0 WHATEVER THE TREE LOOKED LIKE.
+     This block ended in `process.exit(0)`, so the second of the two commands that
+     .claude/agents/intmap-i18n.md prints under the heading 「唯一のゲート」 —
+     `node scripts/i18n-audit.mjs --gate --todo <code>` — never reached the gate below and asserted
+     nothing at all. A green that is read as a gate's green while no gate ran is
+     [[intmap-r399-lessons]]: a check that cannot fire is indistinguishable from a check that passed.
+     `--todo` ALONE stays exit 0 — it is a list for a reader, not a gate. With `--gate` the run falls
+     through to the ONE gate below, unchanged: the same predicate, the same output, the same exit
+     code as `--gate` on its own, with this language's commands printed first. It is deliberately not
+     a gate on `<code>` alone — a second, narrower definition of «the gate» is the one thing the
+     header of this file forbids. */
+  if (!process.argv.includes('--gate')) process.exit(0);
 }
 
 console.log('IntMap · translation coverage — every surface, every language  (#R239)\n');

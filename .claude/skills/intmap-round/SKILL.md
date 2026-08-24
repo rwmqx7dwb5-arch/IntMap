@@ -45,7 +45,9 @@ node scripts/worktree.mjs new <slug>
 - branch `feat/r<N>-<slug>` を `origin/main` から切る
 - **OneDrive の外**に worktree を作る（原本は `main` の置き場であって作業場ではない）
 - `node_modules` を原本から junction で貼る
-- `.claude/launch.json` に `intmap-preview-r<N>` / ポート `42<N>` を足す
+- `.claude/launch.json` に `intmap-preview-r<N>` / ポート **`4000 + N`** を足す
+  （R403 なら 4403。⚠ 以前ここは `42<N>` と書いてあり、それが合うのは N が 200 番台のときだけ
+  だった——例に使われていた R257 → 4257 は `4000+257` の別の読み方でしかない）
   （⚠ #R338 以降このファイルは**追跡対象外**。commit にも PR にも出てこない）
 - 作業ディレクトリの絶対パスを印字する
 
@@ -78,6 +80,12 @@ node scripts/worktree.mjs new <slug>
 | 試験を足した・組み替えた | `docs/TESTING.md` |
 | **文書を 1 本足した** | **`docs/README.md` に 1 行**（無いと `check:docs` が落ちる） |
 | 常に | `DEV-NOTES.md` の**先頭**に `R<N>` エントリ（索引行と本文の両方） |
+| **上に無い主題**（ニュース・企業・航空・火山・DB・警報・運用…） | **[`docs/README.md`](../../../docs/README.md) の表で引く** |
+
+⚠ **最後の行は「その他」ではなく、この表の残り全部である。** ここに並んでいるのは
+`docs/` にある文書の一部にすぎず、以前は最後の行が無かった——**ニュース・企業・航空・火山・DB を
+触ったラウンドは、この手順書からは文書更新の義務が一切出てこなかった。**
+どれが何の正本かを 1 枚で持っている唯一の表は `docs/README.md` なので、**書き写さずに引く。**
 
 同じ事実を 2 か所に書かない。**正本を 1 つ決めて、他はそこへリンクする。**
 
@@ -106,7 +114,9 @@ gh pr merge --squash --delete-branch
 ```
 
 - **push の直前にラウンド番号を取り直す**（`node scripts/worktree.mjs status`）。
-  過去に 3 回、別セッションと衝突して 30 か所以上の改番をやり直している。
+  ⚠ **これは稀な事故ではない。** `DEV-NOTES.md` を「改番」「番号を取り直」で引けば実例が並ぶ
+  （ここは長く「過去に 3 回」と書いてあったが、そう書いた時点で既に下限だった）。1 回の改番が
+  30 か所を超えることがあるので、**取り直しは push の直前に、毎回**。
 - CI の deploy ログは `mode:'serial'` だと**最初の 1 件しか見せない**。「赤が 1 件」は
   「壊れているのが 1 件」ではない。
 - **非破壊的な migration・設定変更・deployment・commit・push・PR・merge に承認を求めない**
@@ -116,12 +126,27 @@ gh pr merge --squash --delete-branch
 
 ## 6. deployment と本番検証
 
-Edge Function を変えたなら本番へ出す（9 本: ai-proxy / alerts-relay / cable-geo /
-delete-account / monitor-run / news-ingest / news-relay / refresh-news / sv-cov）:
+Edge Function を変えたなら本番へ出す:
 
 ```bash
-supabase functions deploy <name> --project-ref vpekfwdpurzejrrmacac
+supabase functions deploy <name> --project-ref vpekfwdpurzejrrmacac --use-api
 ```
+
+⚠ **`--use-api` を省くと無言でハングする**（既定は Docker を使うが、このマシンではデーモンが
+動いていない。理由と実測は `CLAUDE.md` §5.1）。進んでいるかは経過時間ではなく
+`supabase functions list` の `version` で見る。
+
+⚠ **本数と名前をここに書き写さない。** 正本は [`CLAUDE.md`](../../../CLAUDE.md) §5.1、
+機械が持っている実体は `supabase/config.toml` の `[functions.*]` 宣言そのもの
+（`_shared/` は関数ではなくライブラリ）。手元で数えるならこれ:
+
+```bash
+grep -o '^\[functions\.[a-z0-9-]*\]' supabase/config.toml
+```
+
+この節はかつて本数と名前を写しており、実体が増えたあとも**3ラウンド気づかれなかった**——
+文書どうしの食い違いを見る `npm run check:docs` が、当時この階層を読んでいなかったから。
+今は読む（`scripts/doc-facts.mjs` の `edge-roster` / `edge-count`）。
 
 サイトの本番検証は `intmap-prod-verifier` に渡す。**ローカルで測った数字を本番の数字として
 報告しない。**
@@ -138,6 +163,9 @@ node scripts/worktree.mjs done          # 自分の worktree と branch を片�
 ```
 
 - `--sync` は**冪等**でロックが要らない。他セッションと同時に走ってよい。
+- ⚠ **`pwsh` ではない**（PowerShell 7 はこのマシンに無い。実測は `CLAUDE.md` §11.2）。
+  かつてここは `pwsh -File …` と書いてあり、**書いてあるとおりにやると終了処理の最後の 1 歩が
+  必ず `CommandNotFoundException` で落ちた**。
 - `backup-usb.ps1` の最後の 1 行は `RESULT ok|skipped|failed`。`skipped` はエラーではない
   （USB 未接続、または候補が一意に決まらない）。
 - `worktree.mjs done` は**自分が作った worktree と branch だけ**を消す。他セッションのものには
