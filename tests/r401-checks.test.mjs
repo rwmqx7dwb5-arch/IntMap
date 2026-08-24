@@ -142,20 +142,23 @@ test('R401 ④ pollView asks about the viewport at every zoom', () => {
 
 /* ── ⑤ THE SPRITE'S ANGLE IS DERIVED, NOT COPIED ──────────────────────────────────────────────
    Two claims, both of which the #R341 shader fails:
-     · the vertex shader PROJECTS TWICE — once for the aircraft and once for a point ahead of it —
-       because a screen angle cannot be got from one projected point;
+     · the vertex shader PROJECTS MORE THAN ONCE, because no angle at all can be had from a single
+       projected point. ⚠ (#R411) the COUNT moved from two to three when the answer stopped being
+       the projected track and became the map's rotation without its tilt — a step EAST and a step
+       NORTH in place of a step ahead. What survived the round is "derived from the projection", so
+       that is what this asserts; tests/r411-checks.test.mjs ② owns WHICH three they are;
      · the fragment shader's rotation is the CLOCKWISE one. mat2 takes its columns, so the mirrored
        version differs from the correct one only in where two minus signs sit, and the one test that
-       drew the mark before this round drew it tracking due north, where the matrix is the identity
+       drew the mark before #R401 drew it tracking due north, where the matrix is the identity
        either way. */
-test('R401 ⑤ the mark is turned by a screen angle, clockwise', () => {
+test('R401 ⑤ the mark is turned by an angle read out of the projection, clockwise', () => {
   const src = code('js/aircraft-points.js');
   const vert = /const VERT = `([\s\S]*?)`;/.exec(src);
   assert.ok(vert, 'the vertex shader source is still a template literal named VERT');
   const projections = (vert[1].match(/projectTileFor3D\s*\(/g) || []).length;
-  assert.equal(projections, 2,
-    'the vertex shader projects the aircraft AND a point along its track (found ' + projections + ')');
-  assert.match(vert[1], /v_rot\s*=\s*atan\(/, 'and v_rot is an angle it computed');
+  assert.ok(projections >= 2,
+    'the vertex shader projects the aircraft AND at least one neighbour (found ' + projections + ')');
+  assert.match(vert[1], /v_rot\s*=\s*trk\s*-\s*atan\(/, 'and v_rot is the track, less an angle it computed');
   assert.doesNotMatch(vert[1], /v_rot\s*=\s*a_form\.y\s*;/,
     'v_rot is no longer the reported bearing handed straight to a screen-aligned sprite');
 

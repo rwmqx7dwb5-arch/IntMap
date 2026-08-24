@@ -40,12 +40,30 @@
  *
  *  Three faults in one number, and the middle column moves by two degrees across the whole table:
  *  the mark ignored PITCH, it ignored BEARING, and it was MIRRORED (the mat2 in FRAG, see there).
- *  The vertex shader now projects the aircraft AND a point one step along its track, and the
- *  difference of those two projections is the angle. Bearing, pitch, the perspective divide and
- *  the globe projection are all already inside `projectTileFor3D`, so none of them is re-derived
- *  here — which is the only reason this can be right for a projection this file does not own.
- *  js/cesium-engine.js `_airHeading` has computed the same screen angle from the camera's own
- *  vectors since #R379; this is the MapLibre adapter finally answering the same question.
+ *  Two of those three are still fixed here. The third was over-corrected — see below.
+ *
+ *  ⚠ (#R411) …AND TILT IS NOT PART OF IT. 「いや実際の飛行機の向きのままにしろってこと。」 #R401
+ *  answered the whole of that table by projecting the aircraft AND a point one step along its track
+ *  and taking the difference — the direction a DECAL LYING ON THE GROUND would run. That is the
+ *  honest answer for a decal, and this mark is not one: gl.POINTS gives an axis-aligned square, so
+ *  the SHAPE never foreshortens. Squashing only the ANGLE is half a transform, and the half it
+ *  keeps is the half that carries the information. Measured over Japan, 400 aircraft, z6.2:
+ *
+ *      pitch        0°     30°     60°     75°     85°
+ *      within 20° of horizontal   121     128     181     287     315   of 400
+ *      axial concentration      0.238   0.291   0.485   0.711   0.768
+ *
+ *  At the tilt the report was made at, FOUR IN FIVE aircraft pointed the same way — not because
+ *  they were flying the same way (the reported tracks are near-uniform, 0.214) but because a ground
+ *  plane seen edge-on maps every bearing onto the horizon. So the sprite is turned by the map's own
+ *  ROTATION and by nothing else: three projections — the aircraft, one step EAST, one step NORTH —
+ *  give the local ground→screen Jacobian, and `atan(dE.y - dN.x, dE.x + dN.y)` is the rotation of
+ *  its polar factor, i.e. that matrix with the tilt's anisotropic squash divided out. On a flat
+ *  north-up map it is 0 and the mark shows the reported track; rotate the map and it is the bearing;
+ *  tilt it and it does not move. Nothing about the projection is re-derived here — bearing, the
+ *  perspective divide and the globe are all still read out of `projectTileFor3D`, which is the only
+ *  reason this can be right for a projection this file does not own.
+ *  js/cesium-engine.js `_airHeading` answers the same question from the camera's own vectors.
  *
  *  ⚠ (#R379) THE FIELD IS THE APP'S OWN AIRLINER PLAN-FORM, NOT A DART. 「航空機レイヤーの飛行機
  *  アイコンのデザインをもとに戻して。」 #R341 wrote a notched triangle here because an SDF is
@@ -99,20 +117,21 @@ window.IntMapModules.aircraftPoints = function () {
      lives out here — the shader keeps one line pointing at it. (#R311's budget caught the first
      draft of #R401 growing this chunk by 2.4 kB of prose.)
 
-     ── (#R401) THE ANGLE IS A SCREEN ANGLE ─────────────────────────────────────────────────────
+     ── (#R401, #R411) THE MAP'S ROTATION, AND NOT ITS TILT ─────────────────────────────────────
      A gl.POINTS sprite is axis-aligned to the VIEWPORT, so the track cannot be handed to the
-     fragment shader as a compass bearing: the map turns and tilts under it and the sprite does not.
-     The direction the aircraft is going ON SCREEN is what the mark has to point along, and that is
-     the difference of two projections — the aircraft, and a point one step ahead along its track at
-     the SAME altitude. Bearing falls out of it, tilt falls out of it, and so does the globe
-     projection, none of which this file has to know anything about.
-     ⚠ mercator y grows SOUTHWARD, which is why north is −y in the step (the same sign the packer
-     uses for a_vel in src/aviation-worker.js).
-     ⚠ w ≤ 0 means the point is at or behind the eye. The perspective divide is meaningless there
-     and the sprite is being clipped anyway, so the reported bearing is left as the fallback rather
-     than turned into a NaN that would take the whole glyph with it.
-     ⚠ u_viewport turns the projection's NDC difference into a shape with the screen's aspect ratio;
-     without it a 16:9 canvas leans every glyph. */
+     fragment shader as a compass bearing: the map turns under it and the sprite does not. But the
+     sprite does not foreshorten either, so the answer is not the ground direction — see the header
+     for the 400-aircraft measurement that settled it. Three projections (here, one step EAST, one
+     step NORTH) give the local ground→screen Jacobian M = [dE dN]; the rotation of its polar factor
+     is atan(M10 − M01, M00 + M11), and subtracting it from the track leaves the mark showing the
+     track itself on a north-up map, turned with the map, and unmoved by tilt.
+     ⚠ mercator y grows SOUTHWARD, which is why the NORTH step is −y (the same sign the packer uses
+     for a_vel in src/aviation-worker.js).
+     ⚠ w ≤ 0 means a point is at or behind the eye. The perspective divide is meaningless there and
+     the sprite is being clipped anyway, so the reported track is left as the fallback rather than
+     turned into a NaN that would take the whole glyph with it.
+     ⚠ u_viewport turns the projection's NDC differences into pixels, so the Jacobian this decomposes
+     is the one the screen actually has; without it a 16:9 canvas leans every glyph. */
   const VERT = `
 in vec2 a_pos;        /* mercator [0..1] at the observation */
 in vec2 a_vel;        /* d(mercator)/dt, per second */
@@ -139,13 +158,17 @@ void main(){
   vec4 here = projectTileFor3D(p, e);
   gl_Position = here;
 
-  /* (#R401) the SCREEN angle of the track — see the note above this string */
+  /* (#R411) the map's rotation, without its tilt — see the note above this string */
   float trk = a_form.y;
-  vec4 ahead = projectTileFor3D(p + vec2(sin(trk), -cos(trk)) * u_probe, e);
+  vec4 pe = projectTileFor3D(p + vec2(u_probe, 0.0), e);
+  vec4 pn = projectTileFor3D(p + vec2(0.0, -u_probe), e);
   v_rot = trk;
-  if (here.w > 0.0 && ahead.w > 0.0) {
-    vec2 d = (ahead.xy / ahead.w - here.xy / here.w) * u_viewport;
-    if (dot(d, d) > 1e-14) v_rot = atan(d.x, d.y);
+  if (here.w > 0.0 && pe.w > 0.0 && pn.w > 0.0) {
+    vec2 o = here.xy / here.w;
+    vec2 dE = (pe.xy / pe.w - o) * u_viewport;
+    vec2 dN = (pn.xy / pn.w - o) * u_viewport;
+    vec2 r = vec2(dE.x + dN.y, dE.y - dN.x);
+    if (dot(r, r) > 1e-14) v_rot = trk - atan(r.y, r.x);
   }
 
   float px = a_form.x * u_sizePx * u_pxRatio;
@@ -165,6 +188,29 @@ void main(){
      085° WEST. Nothing caught it because the only test of the mark drew it tracking due north,
      where the matrix is the identity either way. */
 
+  /* ⚠ (#R411) THE EDGE IS ONE PIXEL, AND IT USED TO BE THREE — 「不透明度100%が全然100%じゃない
+     のを辞めろ。」 The soft edge was `max(0.06, 3.0/v_px)` half-widths, i.e. a SIX-pixel ramp across
+     an outline whose fuselage is 4.4/44 of the sprite and whose white band is 2.6/44. Both are
+     narrower than the ramp, so the smoothsteps never bottomed out and the mark could not be opaque
+     anywhere: computed over the real outline at v_col.a = 1 and u_opacity = 1,
+
+         v_px                              5      8     11     14     22     40     64
+         peak coverage, 3-px edge      0.819  0.889  0.954  0.995  1.000  1.000  1.000
+         share of the mark at ≥0.99     0.0%   0.0%   0.0%   0.0%   3.0%  18.3%  25.0%
+         mean coverage over the mark   0.512  0.508  0.513  0.525  0.586  0.697  0.739
+         ── with one pixel ───────────────────────────────────────────────────────────
+         peak coverage                 1.000  1.000  1.000  1.000  1.000  1.000  1.000
+         share of the mark at ≥0.99     0.1%   4.3%  12.6%  19.8%  35.1%  48.8%  53.3%
+         mean coverage over the mark   0.531  0.601  0.660  0.707  0.786  0.863  0.904
+
+     At the default 11 px the reader asking for 100 % was being shown 95.4 % at the very best pixel
+     and 51 % across the mark. ⚠ The floor mattered as much as the slope: `max(0.06, …)` held a
+     ramp of 0.06 sprite units — 1.9 px at v_px 64 — no matter how large the mark grew, which is why
+     zooming in never made it solid either. What is LEFT below 1.0 after this is the mark's own
+     declaration, not the renderer's: STROKE_ALPHA is 0.95 because `ctx.stroke()` painted it at 0.95
+     when js/plane-glyph.js was the symbol layer's artwork, and js/cesium-engine.js still fills that
+     same path on a canvas — where the interior always has been opaque. Two engines, one mark; this
+     is the one that was not matching it. */
   const FRAG = `
 precision highp float;
 in vec4 v_col;
@@ -205,8 +251,8 @@ void main(){
   vec2 q = (gl_PointCoord - vec2(0.5)) * 2.0;   /* [-1,1], +y DOWN in point-coord space */
   q.y = -q.y;                                    /* make +y up, so 0 rad points north */
 
-  /* Anti-aliasing width in the same units as q: two pixels of the sprite. */
-  float aa = max(0.06, 3.0 / max(v_px, 1.0));
+  /* (#R411) ONE pixel of edge. q spans [-1,1] over v_px, so 1/v_px is half a pixel either side. */
+  float aa = 1.0 / max(v_px, 1.0);
 
   vec3 pre;      /* colour, already multiplied by its own coverage — the blend is premultiplied */
   float cov;

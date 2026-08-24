@@ -750,15 +750,23 @@ Deno.serve(async (req) => {
          shared snapshot, so even a cold isolate has real aircraft for this box; waiting for
          VIEW_MAX_TILES serial reads before replying is what made every response 5-6 seconds
          (measured). The tiles land in the snapshot and the next poll — 12 s later — carries them. */
-      const inBox = [];
-      for (const rec of STATE.world.values()) {
-        if (rec.lat == null || rec.lon == null) continue;
-        if (rec.lat < s || rec.lat > n) continue;
-        let lo = rec.lon;
-        if (e < w) { if (!(lo >= w || lo <= e)) continue; }      /* the box crosses the antimeridian */
-        else if (lo < w || lo > e) continue;
-        inBox.push(rec);
-      }
+      /* ⚠ (#R411) ONE DECLARATION, BECAUSE THERE WERE TWO AND THE FIRST FIX ONLY REACHED ONE. The
+         box is collected here and AGAIN after a stale box has waited for its tiles, and both copies
+         carried the same ordered comparison on longitude — the second being the path that runs when
+         the read actually happened, i.e. the one a wide view depends on most. The report named one
+         place and the check found the other. See MODEL.lonInSpan for the bounds the running
+         application reports below z4 and what those comparisons did to them. */
+      const collectBox = () => {
+        const out = [];
+        for (const rec of STATE.world.values()) {
+          if (rec.lat == null || rec.lon == null) continue;
+          if (rec.lat < s || rec.lat > n) continue;
+          if (!MODEL.lonInSpan(rec.lon, w, e)) continue;
+          out.push(rec);
+        }
+        return out;
+      };
+      let inBox = collectBox();
       /* Is what we already know about this box good enough to answer with? "Good enough" is a
          measurement, not a timer: the freshest aircraft IN THE BOX. An empty box, or one whose best
          observation is older than VIEW_STALE_S, is worth the serial tile reads — and because the
@@ -792,15 +800,7 @@ Deno.serve(async (req) => {
       if (boxStale) {
         await work;
         /* re-collect: the read just added aircraft to this box */
-        inBox.length = 0;
-        for (const rec of STATE.world.values()) {
-          if (rec.lat == null || rec.lon == null) continue;
-          if (rec.lat < s || rec.lat > n) continue;
-          const lo = rec.lon;
-          if (e < w) { if (!(lo >= w || lo <= e)) continue; }
-          else if (lo < w || lo > e) continue;
-          inBox.push(rec);
-        }
+        inBox = collectBox();
       } else {
         after(work);
       }
