@@ -26,6 +26,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
@@ -660,6 +661,73 @@ const FILES = BODY.get('docs/FILES.md') || '';
     const missing = DOCS.filter((f) => f !== 'docs/README.md' && !idx.includes(f.replace(/^docs\//, '')));
     if (missing.length) fail('doc-index', 'docs/README.md does not list ' + missing.join(', '));
     else ok('doc-index', 'all ' + (DOCS.length - 1) + ' current-state documents are listed in docs/README.md');
+  }
+}
+
+/* ═══ 21. the i18n OPEN GAP: Architecture.md §10.1 ⇄ what the pair audit measures ══════════
+   §10.1 states the size of the one named hole outside the translation gate's field of view — the
+   count, and which files hold it. Nothing ever checked those numbers, so the section went on saying
+   275 (js/reference-data.js 143 · js/analysis-panels.js 132) after the second file had been emptied
+   and the count had halved: the document overstated the debt by 132 and named a file that carries
+   none of it. A reader who opened §10.1 to find out what was left was told to convert tuples in a
+   file where there are none.
+   ⚠ THE NUMBER IS NOT COPIED INTO THIS FILE. It is read from the instrument that owns it, on every
+   run — two copies of one quantity means one of them is stale, and this rule exists because that
+   already happened to this exact quantity.
+   ⚠ COST: the child parses every file in js/ and takes about ten seconds, which is most of this
+   gate's running time. That is the price of measuring rather than restating; check:docs is a lane
+   of its own in scripts/test-parallel.mjs and is not the longest one. */
+{
+  const sec = (ARCH.match(/### 10\.1[\s\S]*?(?=\n### )/) || [''])[0];
+  let pairs = null;
+  if (!sec) {
+    fail('i18n-open-gap', 'Architecture.md no longer has a §10.1 — this rule needs rewriting');
+  } else {
+    try {
+      pairs = JSON.parse(execFileSync(process.execPath, [join(ROOT, 'scripts/i18n-pair-audit.mjs'), '--json'],
+        { cwd: ROOT, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, stdio: ['ignore', 'pipe', 'inherit'] }));
+    } catch (e) {
+      fail('i18n-open-gap', 'scripts/i18n-pair-audit.mjs --json could not be read ('
+        + (e.status != null ? 'exit ' + e.status : e.message) + ') — §10.1 cannot be checked');
+    }
+  }
+  if (pairs) {
+    const measured = new Map((pairs.files || []).map((f) => [f.file, f.n]));
+    /* Every sentence in the section that states a total AND breaks it down by file — the section
+       says it twice, in prose and in the OPEN GAP list, and one of the two rotting alone is exactly
+       the failure this file is for. Matched on the shape (a count, then a parenthesis naming .js
+       files with their counts) rather than on either wording, so re-phrasing the sentence does not
+       silently stop it being checked. */
+    const claims = [...sec.matchAll(/(\d[\d,]*)\s*件[^（(\n]{0,12}[（(]([^）)]{0,300})[）)]/g)]
+      .map((m) => ({
+        total: Number(m[1].replace(/,/g, '')),
+        files: [...m[2].matchAll(/`([\w./-]+\.js)`\s*(\d[\d,]*)/g)].map((x) => [x[1], Number(x[2].replace(/,/g, ''))]),
+        text: m[0].replace(/\s+/g, ' ').slice(0, 46),
+      }))
+      .filter((c) => c.files.length);
+    if (!claims.length) {
+      fail('i18n-open-gap', 'Architecture.md §10.1 no longer states the OPEN GAP as «N件（`file` N …）» — the rule that checks that number can no longer find it');
+    }
+    for (const c of claims) {
+      if (c.total !== pairs.total) fail('i18n-open-gap', `Architecture.md §10.1 says the OPEN GAP is ${c.total}; scripts/i18n-pair-audit.mjs measures ${pairs.total} («${c.text}…»)`);
+      for (const [f, n] of c.files) {
+        if (!measured.has(f)) fail('i18n-open-gap', `Architecture.md §10.1 says ${f} holds ${n} adjacent-data tuple(s); the audit finds none there («${c.text}…»)`);
+        else if (measured.get(f) !== n) fail('i18n-open-gap', `Architecture.md §10.1 says ${f} holds ${n}; the audit measures ${measured.get(f)} («${c.text}…»)`);
+      }
+      /* …and the other direction: a file the gap is in and the section does not name */
+      for (const [f, n] of measured) {
+        if (!c.files.some(([g]) => g === f)) fail('i18n-open-gap', `${f} holds ${n} adjacent-data tuple(s) and Architecture.md §10.1 does not name it («${c.text}…»)`);
+      }
+    }
+    /* the exemption is stated in the same section, measured by the same instrument, and had drifted
+       with it — an exemption whose size nobody checks is the one place this family of instruments
+       can be defeated quietly */
+    const ex = sec.match(/\*\*免除\*\*[^\n]{0,160}?(\d[\d,]*)\s*件/);
+    if (!ex) fail('i18n-open-gap', 'Architecture.md §10.1 no longer states how many containers are exempt');
+    else if (Number(ex[1].replace(/,/g, '')) !== pairs.exempt) fail('i18n-open-gap', `Architecture.md §10.1 says ${ex[1]} exempt container(s); the audit measures ${pairs.exempt}`);
+    if (!problems.some((p) => p.startsWith('i18n-open-gap'))) {
+      ok('i18n-open-gap', `${pairs.total} adjacent-data tuple(s) in ${measured.size} file(s) + ${pairs.exempt} exempt, stated correctly in Architecture.md §10.1`);
+    }
   }
 }
 

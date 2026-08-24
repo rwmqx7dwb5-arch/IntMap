@@ -1297,7 +1297,14 @@ window.IntMapModules.ticker=function(HOST){
     let cfg=loadCfg();
     function saveCfg(){ try{ localStorage.setItem(CFG_KEY,JSON.stringify({syms:[...cfg.syms],news:cfg.news})); }catch(_){} }
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-    async function fjson(url){ for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
+    /* ⚠ THE PROXY LADDER IS FOR "CORS WILL NOT LET ME REACH IT", NOT FOR "IT ANSWERED 429".
+       Rung 0 is the host itself; rungs 1 and 2 are relays. A CORS refusal never produces a status
+       at all — fetch rejects — so a status on rung 0 means the HOST really answered, and re-asking
+       the same host through two relays is three requests against one keyless allowance from three
+       different addresses. That is how the FX endpoint's 61 calls a day disappeared. A relay's own
+       status stays ambiguous (it may be the relay that is busy), so only rung 0 stops the descent. */
+    const PEER_REFUSED=new Set([400,401,403,404,410,429,451]);
+    async function fjson(url){ for(let i=0;i<PROX.length;i++){ try{ const r=await fetch(PROX[i](url)); if(r&&r.ok) return await r.json(); if(i===0&&r&&PEER_REFUSED.has(r.status)) return null; }catch(_){} } return null; }
     async function ftext(url){ for(const p of PROX){ try{ const r=await fetch(p(url)); if(r&&r.ok) return await r.text(); }catch(_){} } return null; }
     function css(){ const st=document.createElement('style');
       /* (#R65) DETERMINISTIC column layout — no height calc at all: body becomes a flex column, the app shell
@@ -1323,8 +1330,12 @@ window.IntMapModules.ticker=function(HOST){
         +'@media(max-width:768px){ #ticker-bar{display:none !important;} body.ticker-on{display:block;} body.ticker-on .operation-room{height:100vh !important;height:100dvh !important;} }';
       document.head.appendChild(st); }
     async function loadMarkets(){ const out=[];
-      let rt=null; try{ const j=await fjson('https://api.fxratesapi.com/latest?base=USD&currencies=JPY,EUR,GBP,CNY'); rt=j&&j.rates; }catch(_){}
-      if(!rt){ try{ const j2=await fjson('https://open.er-api.com/v6/latest/USD'); rt=j2&&j2.rates; }catch(_){} }
+      /* ⚠ ER-API FIRST. Measured in production: api.fxratesapi.com answers 429 with
+         `x-ratelimit-remaining: 0` on a plain load while open.er-api.com answers 200 — the keyless
+         fxratesapi allowance is 61 calls a day and the app was spending it on itself. fxratesapi is
+         kept as the second choice because an API key restores it. */
+      let rt=null; try{ const j=await fjson('https://open.er-api.com/v6/latest/USD'); rt=j&&j.rates; }catch(_){}
+      if(!rt){ try{ const j2=await fjson('https://api.fxratesapi.com/latest?base=USD&currencies=JPY,EUR,GBP,CNY'); rt=j2&&j2.rates; }catch(_){} }
       if(rt){ if(rt.JPY!=null) out.push({l:'USD/JPY',v:(+rt.JPY).toFixed(2),k:'usdjpy'}); if(rt.EUR!=null&&+rt.EUR>0) out.push({l:'EUR/USD',v:(1/+rt.EUR).toFixed(4),k:'eurusd'}); if(rt.GBP!=null&&+rt.GBP>0) out.push({l:'GBP/USD',v:(1/+rt.GBP).toFixed(4),k:'gbpusd'}); if(rt.CNY!=null) out.push({l:'USD/CNY',v:(+rt.CNY).toFixed(3),k:'usdcny'}); }
       /* stock indices — Yahoo Finance chart endpoint (real price + true day change vs previous close);
          Stooq rejected datacenter/proxy requests, Yahoo verified working through the proxy ladder. */

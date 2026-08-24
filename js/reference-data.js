@@ -199,7 +199,11 @@ window.IntMapRefData=(function(){
        that is in no NUTS, in no national file and in nothing the WMO register happens to hold today. */
     {n:'geoBoundaries',u:'https://www.geoboundaries.org/'},
     {n:'GDELT Project',u:'https://www.gdeltproject.org/'},
-    {n:'Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)',u:'https://fxratesapi.com/'},
+    /* ⚠ THE LINK IS THE HOST THAT ACTUALLY ANSWERS. It used to point at fxratesapi.com, which on a
+       plain load refuses with 429 (`x-ratelimit-remaining: 0`) because the keyless allowance is 61
+       calls a day; open.er-api.com — ExchangeRate-API's keyless endpoint — is the first choice for
+       both the FX widget and the bottom ticker, and fxratesapi is the fallback an API key restores. */
+    {n:'Market data (ER-API / fxratesapi · gold-api · CoinGecko · alternative.me)',u:'https://www.exchangerate-api.com/'},
     {n:'Yahoo Finance',u:'https://finance.yahoo.com/'},
     /* (#R354) the company atlas — docs/COMPANIES.md §10. All four are read at BUILD time and
        shipped as data/companies/; the browser calls none of them. OSM's ODbL makes the second

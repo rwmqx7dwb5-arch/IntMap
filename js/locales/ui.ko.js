@@ -268,6 +268,10 @@ window.IntMapLang.define('ko', { ui: {
       wsOff:"끔 (기본값)",
       wsOn:"켬 — 자유롭게 움직이는 크기 조절 가능한 창",
     }, inline: {
+    /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    'A new version of IntMap is available. Reload to continue.': 'IntMap의 새 버전이 배포되었습니다. 계속하려면 새로 고치세요.',
+    'An old cached version of IntMap loaded.': '캐시에 저장된 이전 버전의 IntMap이 로드되었습니다.',
+    'Reload': '새로 고침',
     'Name a category': '분류를 지정하세요',
     'No such event category': '그런 사건 분류는 없습니다',
     'reported by 2+ independent outlets': '독립 매체 2곳 이상이 보도',

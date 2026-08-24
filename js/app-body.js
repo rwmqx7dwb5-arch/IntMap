@@ -1791,7 +1791,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.IntMapModules.layerSidebar(IM_HOST);
   /* ===== (#R63) BOTTOM TICKER ("設定から選択すれば、画面下部に最新ニュースや為替、株価やその他指標が取引所の
      ように流れる画面") — a thin exchange-style strip BELOW the map area (the app shell shrinks by 30px; nothing
-     overlays the map), scrolling right→left: loaded news headlines (clickable), FX (fxratesapi → er-api fallback),
+     overlays the map), scrolling right→left: loaded news headlines (clickable), FX (er-api → fxratesapi fallback — #R372 swapped them; the keyless fxratesapi quota is 61/h and the app was spending it),
      stock indices (Stooq via the CORS-proxy ladder), gold/silver (gold-api) and BTC/ETH (CoinGecko). Default OFF
      (Settings → Bottom ticker). Desktop only (mobile uses the bottom sheet). ===== */
   /* ================= (#R78) WORKSPACE MODE ("動画編集ソフトのように、ユーザー自身が自由にIntMapのウィンドウを
@@ -4291,7 +4291,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Settings repopulates the list). Desktop keeps the synchronous boot. */
   (function(){ const heavy=()=>{ try{ rebuildGeoIndex(); }catch(_){} try{ populateTimezones(); }catch(_){} };
     if(typeof isMobile==='function'&&isMobile()&&window.requestIdleCallback) requestIdleCallback(heavy,{timeout:3500}); else heavy(); })();
-  updateI18n(); fetchData(); setInterval(fetchData,180000); bootSupabase();
+  updateI18n(); fetchData({background:true}); setInterval(()=>fetchData({background:true}),180000); bootSupabase();   /* (#R372) background: no upstream, no chunk, until a reader asks — js/news-feed.js */
   /* (#R17) Warm the country gazetteer shortly AFTER first paint (idle, non-blocking) so place search has
      strong LOCAL matches (countries/capitals/major places) even if the online geocoders are slow/blocked —
      the search then practically never comes back empty, without delaying initial load. */

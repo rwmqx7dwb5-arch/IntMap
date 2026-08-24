@@ -18,11 +18,14 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 ## What runs
 
-**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
-gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
-**68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **206 Node test files** with no browser at all (counted from
-`package.json`, which since #R385 may not name the same file twice — see below). `npm test` runs the source half and the browser
+**The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-24): the **core** tier that
+gates a push is **6 spec files / 0.7 min** against a ceiling of 0.7 min; the **whole** suite is
+**87 measured spec files / 75.5 min** of serial browser time against a ceiling of 75.5 min; and
+`npm run test:checks` runs **207 Node test files** with no browser at all (counted from
+`package.json`, which since #R385 may not name the same file twice — see below). The nightly
+**deep** tier is the whole suite minus core — **81 spec files**
+(`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
+`npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
 ⚠ **A NETWORK-DEPENDENT ASSERTION DOES NOT BELONG IN THE GATE.** #R341 split its browser coverage in
@@ -37,12 +40,15 @@ measured waiting 66 s and 95 s for a feed and then skipping — passing in CI, p
 thing a spec is about has two implementations, the spec must NAME the one it means (`?aviation=v1`)
 rather than depend on which is currently the default.
 
-> ⚠ **The whole-suite ceiling has zero headroom** (86.3 min measured against 86.3 min). A new
+> ⚠ **The whole-suite ceiling has zero headroom** (75.5 min measured against 75.5 min). A new
 > `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
 > ceiling only moves down. Node checks (`*.test.mjs`) are **not** governed by this budget, so
 > logic that can be checked without a browser belongs there. ⚠ Only `**N Node test files**` is
-> compared against the repository by `scripts/doc-facts.mjs`; the three numbers in the paragraph
-> above are not, and they were stale by 3 spec files when #R334 re-measured them.
+> compared against the repository by `scripts/doc-facts.mjs`; the other numbers in the paragraph
+> above are not, and every re-measurement has found them stale — by 3 spec files when #R334
+> looked, and by **19 spec files and 10.8 minutes** the next time. A number nothing compares is
+> a number that is wrong between the rounds that happen to look at it; these four want a rule in
+> `scripts/doc-facts.mjs` the way `N Node test files` already has one.
 
 | Layer | Command | Needs a browser? | External network? |
 |-------|---------|------------------|-------------------|
@@ -422,7 +428,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **64 spec files** against core's 6, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **81 spec files** against core's 6, because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.

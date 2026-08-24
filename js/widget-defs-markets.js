@@ -65,12 +65,20 @@ window.IntMapWidgetDefsMarkets = (function () {
     refreshPolicy: { kind: 'interval', minIntervalMs: 60000, staleAfterMs: 10 * 60000, cacheTtlMs: 30 * 60000 },
     title: function (cfg) { return L('FX', '為替', 'Devisen', 'Валюта', 'Divisas') + ' ' + cfg.base + '/' + cfg.quote; },
     requestKey: function (ctx, cfg) { return 'fx:' + cfg.base; },
+    /* ⚠ ER-API IS THE FIRST CHOICE, AND THE CITATION IS THE HOST THAT ANSWERED.
+       MEASURED in production on a plain load: `api.fxratesapi.com/latest?base=USD` answered
+       429 with `x-ratelimit-limit: 61 · x-ratelimit-remaining: 0` while
+       `open.er-api.com/v6/latest/USD` answered 200. The keyless fxratesapi allowance is 61 calls,
+       and this card — refreshing every 60 s and silently falling through — was spending all of
+       them itself. fxratesapi is KEPT as the second choice because an API key restores it.
+       The `source` used to be the fixed string 'fxratesapi / er-api', so the card named a host
+       that had refused it and a host that had answered it, whichever had happened (#R352). */
     loader: function (ctx, cfg, signal) {
       return firstOf([
-        'https://api.fxratesapi.com/latest?base=' + cfg.base,
         'https://open.er-api.com/v6/latest/' + cfg.base,
+        'https://api.fxratesapi.com/latest?base=' + cfg.base,
       ], signal, function (j) { return (j && j.rates) ? { rates: j.rates, at: j.timestamp ? j.timestamp * 1000 : (j.time_last_update_unix ? j.time_last_update_unix * 1000 : Date.now()) } : null; })
-        .then(function (v) { return { data: v, source: 'fxratesapi / er-api' }; });
+        .then(function (r) { return { data: r.value, source: fxProvider(r.url) }; });
     },
     renderers: {
       s: function (ctx, cfg, st) {
@@ -106,6 +114,12 @@ window.IntMapWidgetDefsMarkets = (function () {
   function fmtRate(x) {
     if (x == null || !isFinite(x)) return '—';
     return WC.num(x, { maximumFractionDigits: x < 0.01 ? 6 : x < 10 ? 4 : 2 });
+  }
+  /* ⚠ DERIVED FROM THE URL THAT ANSWERED, NOT FROM A TABLE. A hostname is a proper noun — it is
+     the same in nine languages, and it cannot drift out of step with the list above. */
+  function fxProvider(url) {
+    try { return new URL(url).hostname.replace(/^api\./, ''); } catch (e) {}
+    return 'FX';
   }
 
   WC.define({

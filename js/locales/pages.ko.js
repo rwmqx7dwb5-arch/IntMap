@@ -487,7 +487,7 @@ window.IntMapPageI18N.define('ko', {
     "GeoNames": "함께 배포하는 세계 지명 사전 data/gazetteer-world.json.gz — 242개국 147,924개 거주지(좌표·인구·국가는 cities1000 내보내기에서, 18개 언어의 이름은 alternateNamesV2에서 가져왔습니다. 인라인 열과 달리 이름마다 ISO 언어 코드가 붙어 있습니다). 3.9 MB로 gzip 압축해 브라우저에서 풉니다. scripts/build-gazetteer.mjs로 만듭니다. 덕분에 AI를 쓰지 않는 뉴스 위치 판정과 검색창이 선별 표만 쓸 때보다 열 배 더 긴 꼬리까지 지명을 해석합니다. CC BY 4.0.",
     "geoBoundaries": "행정구역 경계(ADM1/ADM2) — 아틀라스의 지역 구성과, 다른 경계 자료에 없는 특보 구역을 그리기 위한 기상특보 레이어의 최종 대체 출처(CC BY 4.0)",
     "GDELT Project": "아틀라스의 브리핑과 통합 분석을 구동하는 전 세계 실시간 뉴스 검색(최근 72시간)",
-    "Market data (fxratesapi / ER-API · gold-api · CoinGecko · alternative.me)": "환율, 금·은 시세, 암호화폐 가격과 심리 지표 — 위젯과 하단 티커",
+    "Market data (ER-API / fxratesapi · gold-api · CoinGecko · alternative.me)": "환율, 금·은 시세, 암호화폐 가격과 심리 지표 — 위젯과 하단 티커",
         "Company atlas — Wikidata (identity, headquarters, officers, subsidiaries, facilities)": "기업 아틀라스(Companies 탭): 수록된 모든 기업의 식별 정보와 본사·업종·설립·현직 임원·상장 시장·ISIN/LEI·모회사와 자회사·주요 제품, 그리고 Wikidata가 소유 또는 운영 관계를 기록한 모든 시설. 빌드 시점에 읽어 data/companies/로 배포한다. CC0.",
     "Company atlas — OpenStreetMap (operator / owner / brand :wikidata, Overpass API)": "기업 아틀라스: Wikidata에는 없고 OpenStreetMap에는 있는 시설(공장, 연구개발 거점, 데이터센터, 물류센터, 사업장)을 해당 기업의 operator:wikidata 또는 owner:wikidata를 가진 OSM 객체에 한해서만 연결한다. brand:wikidata는 \"그 기업이 소유한다\"가 아니라 \"그 브랜드를 판매한다\"는 뜻이므로 소매 진출로 따로 다룬다. ODbL; © OpenStreetMap 기여자.",
     "SEC EDGAR — XBRL company facts": "아틀라스에 수록된 미국 보고 기업의 매출·영업이익·순이익·총자산. 제출 서류(10-K)가 스스로 밝힌 회계연도와 통화 그대로의 연간 수치를 사용한다. 퍼블릭 도메인.",

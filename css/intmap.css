@@ -102,6 +102,18 @@
     body.booting{ overflow:hidden; }
     @media (prefers-reduced-motion:reduce){ .boot-inner{ animation:none; } .boot-splash,.boot-bar > i{ transition:none; } }
 
+    /* ══ (#R372) THE RELOAD PROMPT — RAISED BY index.html, NOT BY A MODULE ═══════════════════════
+       One card for both facts that end in a reload: this document is an older build than one the device
+       already ran, or it names a chunk the server no longer has (a redeploy, seen from a tab that was
+       already open). ⚠ Deliberately NOT a .sat-toast: that class is pointer-events:none so a toast never
+       eats a map drag, which also means no button inside one can be pressed. ⚠ It sits ABOVE the launch
+       screen (z-index 200000) because a chunk that 404s during boot leaves the splash up. */
+    .im-reload{ position:fixed; left:50%; top:calc(12px + env(safe-area-inset-top)); transform:translateX(-50%); z-index:200001; display:flex; align-items:center; gap:12px; max-width:min(520px,92vw); padding:10px 12px 10px 16px; border-radius:14px; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); box-shadow:var(--shadow); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); color:var(--text-main); font-size:13px; font-weight:500; line-height:1.45; }
+    .im-reload > button{ flex:0 0 auto; border:none; border-radius:999px; padding:7px 14px; background:var(--primary-color); color:#fff; font-size:13px; font-weight:600; white-space:nowrap; }
+    .im-reload > button:hover{ filter:brightness(1.06); }
+    /* the stale-build case is a fault the app already tried and failed to heal (it purged the caches and reloaded once), so it keeps the red of the banner it replaces */
+    .im-reload-stale{ border-color:rgba(176,0,32,0.45); } .im-reload-stale > button{ background:#b00020; }
+
     /* (#R242) the ONE font declaration for prose in this app — css/fonts.css owns `--im-font` and
        sets it per language. 「すべての文字をこうしろ」: nothing else here may name a face for text. */
     body,input,select,textarea,button{ font-family:var(--im-font); }

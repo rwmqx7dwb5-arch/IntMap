@@ -90,11 +90,19 @@ const nextRound = (master) => {
 };
 
 /* ══ (#R304) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
-   The deep tier (27 spec files, 78 minutes) has run every night since #R203 and has been RED every
-   night from 2026-08-08 to 2026-08-21 — fourteen consecutive runs, all five `Deep rest` shards, and
-   the aggregate job reported it honestly each time. Nobody looked. Two of the failures were a spec
-   that counted to eight while the loader had grown to ten, and a list of globals naming three
-   features #R296 was told to delete; both had been true since the round that caused them.
+   The deep tier (81 spec files, 75 minutes — measured #R372; it was 27 files when this was written,
+   and the number here went stale twice before anybody re-measured it) has run every night since
+   #R203 and has been RED every night from 2026-08-08 to 2026-08-23 — sixteen consecutive scheduled
+   runs, all five `Deep rest` shards, and the aggregate job reported it honestly each time. Nobody
+   looked. Two of the failures were a spec that counted to eight while the loader had grown to ten,
+   and a list of globals naming three features #R296 was told to delete; both had been true since
+   the round that caused them.
+
+   ⚠ (#R372) AND THREE OF THE SIXTEEN NEVER RAN AT ALL. They were CANCELLED, not red: `ci.yml` put
+   the schedule and pushes to main in one concurrency group, so a merge landing inside the nightly
+   window killed it — measured 36 s, 51 s and 31 s after the merge that did it. A cancelled run
+   uploads no report, so `deep-alarm.mjs` opened its issue with nothing in it. Both are fixed;
+   the reason they are recorded here is that «red» and «never ran» look identical in `gh run list`.
 
    `gh run list` sorted by time is the reason: a nightly is one run among the dozens a working day
    produces, so «is the deep tier green» is a question nobody thought to ask rather than one anybody
