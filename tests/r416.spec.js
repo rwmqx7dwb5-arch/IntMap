@@ -124,19 +124,65 @@ test('R416 the band carries the headline, and a pin opens the event it stands fo
     () => window.IntMapGeoEngine.coords.queryRenderedFeatures(null, { layers: ['news-labels'] }).length >= 2,
     null, { timeout: 20000 },
   );
+  /* ⚠⚠ (#R428) AIM ONE PIN AT THE CHROME, OR THIS ASSERTION CANNOT FAIL. Measured: with the
+     camera above, no band happens to land under the map's controls, so the buried-band check below
+     passed with the fix REMOVED — a check that cannot go red is indistinguishable from one that
+     passed (#R399). So the camera is panned until a real event pin sits under whatever is covering
+     the map. ⚠ The covering element is FOUND, not named: a scan asks `elementFromPoint` where the
+     canvas is not on top, so this keeps working when the chrome is rearranged (#R399's other half).
+     ⚠ Panning is linear in screen pixels at a fixed zoom, so the new centre is the old centre
+     displaced by the same delta, unprojected. */
+  const aimed = await page.evaluate(() => {
+    const GE = window.IntMapGeoEngine;
+    const cv = GE.render.canvas(), r = cv.getBoundingClientRect();
+    let target = null;
+    for (let y = 8; y < r.height - 8 && !target; y += 16) {
+      for (let x = 8; x < r.width - 8; x += 16) {
+        const el = document.elementFromPoint(Math.round(x + r.left), Math.round(y + r.top));
+        if (el && el !== cv) { target = { x, y, tag: el.tagName }; break; }
+      }
+    }
+    if (!target) return { ok: false, why: 'nothing covers the map in this build' };
+    const f = GE.coords.queryRenderedFeatures(null, { layers: ['news-dots'] })[0];
+    if (!f) return { ok: false, why: 'no pin to aim' };
+    const p0 = GE.coords.project(f.geometry.coordinates);
+    /* the band sits to the RIGHT of its dot, so aim the dot a little left of the covered pixel */
+    const cx = r.width / 2, cy = r.height / 2;
+    const c = GE.coords.unproject([cx - (target.x - 24 - p0.x), cy - (target.y - p0.y)]);
+    GE.camera.jumpTo({ center: c, zoom: GE.camera.get().zoom, pitch: 0, bearing: 0 });
+    return { ok: true, target, fid: f.properties.fid };
+  });
+  expect(aimed.ok, 'the buried-band check needs something covering the map: ' + (aimed.why || '')).toBe(true);
+  await page.waitForTimeout(1200);
+
   const bands = await page.evaluate(() => {
     const GE = window.IntMapGeoEngine;
     const q = GE.coords.queryRenderedFeatures(null, { layers: ['news-labels'] });
+    /* ⚠ (#R428) 本番実測 (2026-08-24): 帯が右上の Map/Satellite ＋ Flat/Globe/3D の卓の下に入り、
+       角丸の箱の切れ端だけが出ていた。**しかも場所は確保していた**ので、読める帯がそれに負けていた。
+       訊くのは「その画素でいちばん上に居るのは canvas か」——被せものの一覧は持たない（#R399）。
+       ⚠ 同じ 1 回の evaluate で測る。試験時間は秒単位でしか余っていない。 */
+    const cv = GE.render.canvas(), r = cv.getBoundingClientRect();
+    const shown = q.filter((f) => { try { return GE.layers.getFeatureState({ source: 'news-points', id: f.id }).bnd === true; } catch (_) { return false; } });
+    const buried = [];
+    for (const f of shown) {
+      const pt = GE.coords.project(f.geometry.coordinates);
+      const el = document.elementFromPoint(Math.round(pt.x + 24 + r.left), Math.round(pt.y + r.top));
+      if (el && el !== cv) buried.push(String(f.properties.short || '').slice(0, 24) + ' <- ' + el.tagName);
+    }
     return {
       n: q.length,
       empty: q.filter((f) => !String(f.properties.short || '').trim()).length,
       withId: q.filter((f) => f.properties.ev === '1' && f.properties.evId).length,
+      shown: shown.length, buried,
     };
   });
   expect(bands.n).toBeGreaterThanOrEqual(2);
   /* ⚠ 「1 本でも空」で赤。件数ではなく**中身**が主張である。 */
   expect(bands.empty).toBe(0);
   expect(bands.withId).toBe(bands.n);
+  expect(bands.shown, 'at least one band must actually be showing').toBeGreaterThan(0);
+  expect(bands.buried, 'a band that is shown must not be buried under the map chrome').toEqual([]);
 
   /* ── ③ ピンを押すと、そのピンの出来事が開く ──────────────────────────────
      ⚠ `project()` は**地図コンテナ基準**、`page.mouse` は**ページ基準**である。canvas の

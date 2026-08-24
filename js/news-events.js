@@ -48,6 +48,10 @@ window.IntMapModules.newsEvents = function (HOST) {
     ['society', LA('Society', '社会', 'Gesellschaft', 'Общество', 'Sociedad')],
   ];
   const catLabel = (k) => { const r = CATS.find((c) => c[0] === k); return r ? L.arr(r[1]) : k; };
+  /* ⚠ (#R428) one spelling, two readers — `renderChips()` draws it and `relabelChips()` puts it
+     back on a language change. NOT 「すべて」: the scope pair to its left already uses that word.
+     (see docs/NEWS-EVENTS.md §9) */
+  const ALL_TOPICS = () => L('All topics', '全カテゴリ', 'Alle Themen', 'Все темы', 'Todos los temas');
 
   /* ── 供給元 ─────────────────────────────────────────────────────────────
      ⚠ Supabase の client は `HOST.DB`。**未ログインでも読める**（RLS は select を
@@ -375,7 +379,7 @@ window.IntMapModules.newsEvents = function (HOST) {
     /* ⚠ (#R416) NOT 「すべて」. The scope chips immediately to the left of this strip are
        「すべて / ★ 保存済み」, and this one used to say the same word about a different axis — two
        controls, one row, one word, two meanings. This one is about TOPICS. */
-    let html = mk('all', L('All topics', '全カテゴリ', 'Alle Themen', 'Все темы', 'Todos los temas'),
+    let html = mk('all', ALL_TOPICS(),
       (HOST.globalData || []).filter((x) => x._event).length);
     for (const [key, label] of CATS) {
       const n = counts.get(key) || 0;
@@ -712,6 +716,32 @@ window.IntMapModules.newsEvents = function (HOST) {
     openDetail(it);
     return true;
   }
+
+  /* ══ (#R428) THE ONE CONTROL ON THE ROW THAT DID NOT RELABEL ════════════════════════════════
+     `js/app-body.js` `setLang()` dispatches `intmap-lang` for「modules that relabel on language
+     change」and this module was not listening. The chips' words come from `L(...)` evaluated AT
+     RENDER TIME, and the next render waits for the language switch's refetch of `news_events` to
+     land — measured on production (2026-08-24): the scope pair flipped to Japanese at once while
+     the chips beside them stayed English for **5.9 / 6.3 / 6.7 s** (three runs; the REQ/RESP pair
+     is 3.2 s → 4.6 s and `renderChips()` runs after it).
+     ⚠ **RELABEL, DO NOT RE-RENDER.** `renderChips()` reads its counts from `HOST.globalData`, which
+     the language switch has just emptied — a re-render here would draw 「全カテゴリ 0」 and drop every
+     category chip (0 件のカテゴリは出さない), i.e. it would blank the row for those six seconds
+     instead of translating it. So the words are replaced in place and the count nodes are kept.
+     ⚠ The labels come from `catLabel()` — the same `CATS` table `renderChips()` reads, so the two
+     cannot disagree about what a category is called. */
+  function relabelChips() {
+    const row = document.getElementById('news-cat-chips');
+    if (!row || row.style.display === 'none') return;
+    for (const b of row.querySelectorAll('.news-cat-chip')) {
+      const key = b.dataset.cat || '';
+      if (!key) continue;
+      const n = b.querySelector('.news-cat-n');
+      b.textContent = (key === 'all') ? ALL_TOPICS() : catLabel(key);
+      if (n) b.appendChild(n);
+    }
+  }
+  try { window.addEventListener('intmap-lang', relabelChips); } catch (_) { }
 
   const API = {
     load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail, openByPublicId,

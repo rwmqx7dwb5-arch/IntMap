@@ -416,6 +416,9 @@ action であって、その action が誰の目的に仕えていたかは誰�
   `evArticles` / `evCat` を持ち、押すと**サイドバーの出来事詳細**が開く（外部記事ではない）。
   地物を組むのは `newsFeatureOf()`（`js/news-feed.js`）**1 か所だけ**である。
 - **帯（`news-labels`）の文字**は `IntMapMapTypography.bandText()`（`js/map-typography.js`）が決める。
+  **地図の被せもの（操作卓・凡例・浮いたカード）の下に入る帯は、出さないし場所も取らない**
+  ——`declutterNewsBands()` が `elementFromPoint` で「その画素の最上位は canvas か」を訊く。
+  ⚠ 被せものの一覧は持たない。⚠ 読めない帯に場所を取らせると、読めたはずの帯がそれに負ける。
   ⚠ 帯の幅を測る `bandBox()` と同じファイルにあるのは偶然ではない——**同じ 1 つの帯について
   「何を書くか」と「どれだけ場所を取るか」を別々のファイルが答えると食い違う**。
 

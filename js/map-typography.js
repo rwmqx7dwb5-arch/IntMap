@@ -262,11 +262,37 @@ window.IntMapMapTypography = (function () {
       }
       const vis = items.filter((i) => !i.off).sort((a, b) => a.pr - b.pr || a.y - b.y || a.x - b.x);
       const claimed = [], win = new Set();
+      /* ⚠ (#R428) THE MAP'S OWN CHROME IS NOT PART OF THE MAP, AND THIS DECLUTTER COULD NOT SEE IT.
+         Measured on production (2026-08-24): the Reykjavik band won its slot and then rendered UNDER
+         the white Map/Satellite + Flat/Globe/3D cluster in the top-right, so what reached the reader
+         was a rounded box with a sliver of text — the same thing the reporter photographed, arriving
+         by a different route than the empty `text-field` #R416 fixed.
+         **It is worse than invisible: the band still CLAIMED the space**, so a band that could have
+         been read lost the collision to one that could not be.
+         ⚠ The occluders are not a list. A hand-kept list of panel ids is the defect #R399 named — it
+         goes stale the first time somebody adds a floating card. We ask the browser instead: at three
+         points along the band, whatever is topmost must be the canvas.
+         ⚠ Only the WINNERS are tested (inside the loop, after the collision check), so this costs
+         about fifteen hit-tests per settle rather than one per pin.
+         ⚠ It answers「is something hit-testable on top」, not「is something painted on top」: an
+         overlay with `pointer-events:none` is invisible to it. Every panel that covers the map today
+         takes the pointer, which is why this is the right question — but it is not the same question. */
+      const _cv = (() => { try { return GE.render.canvas(); } catch (_) { return null; } })();
+      const _cr = _cv ? _cv.getBoundingClientRect() : null;
+      const covered = (r) => {
+        if (!_cv || !_cr) return false;
+        const y = Math.round(r.y + r.h / 2 + _cr.top);
+        for (const dx of [2, r.w / 2, r.w - 2]) {
+          const el = document.elementFromPoint(Math.round(r.x + dx + _cr.left), y);
+          if (el && el !== _cv) return true;
+        }
+        return false;
+      };
       /* ⚠ (#R242) the pills are kept APART, not merely non-overlapping: a 2 px kiss reads as a
          collision at a glance, and the reported defect is 「重なりすぎ」. */
       const GAP = 5;
       const hit = (r) => { for (const c of claimed) { if (r.x < c.x + c.w + GAP && r.x + r.w + GAP > c.x && r.y < c.y + c.h + GAP && r.y + r.h + GAP > c.y) return true; } return false; };
-      for (const it of vis) { const r = { x: it.x + 9, y: it.y - it.h / 2, w: it.w, h: it.h }; if (!hit(r)) { claimed.push(r); win.add(it.fid); } }
+      for (const it of vis) { const r = { x: it.x + 9, y: it.y - it.h / 2, w: it.w, h: it.h }; if (!hit(r) && !covered(r)) { claimed.push(r); win.add(it.fid); } }
       for (const it of items) { try { GE.layers.setFeatureState({source:'news-points',id:it.fid}, { bnd: win.has(it.fid) }); } catch (_) { } }
     } catch (_) { }
   }
