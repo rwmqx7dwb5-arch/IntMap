@@ -100,6 +100,19 @@ jobs:
               echo "behind main — updating the branch"; gh pr update-branch "$PR" || true; sleep 20
             fi
             SHA="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
+            echo "head $SHA"
+
+            # ⚠⚠ WAIT FOR THE RUNS BEFORE JUDGING THEM. GitHub creates the parked runs a few seconds
+            # AFTER the push that caused them, and the first version of this step read `gh pr checks`
+            # in that window: it printed «no checks reported», exited non-zero, and the step called a
+            # catalogue red whose checks had not been created yet, let alone run. Measured on the
+            # dispatch that was meant to prove this step works — the PR was opened at 07:13:22, the
+            # runs appeared at 07:13:25, and the step had already given up at 07:13:26.
+            for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+              SEEN="$(gh run list --branch "$BRANCH" --limit 20 --json headSha --jq "[.[]|select(.headSha==\"$SHA\")]|length")"
+              [ "${SEEN:-0}" -gt 0 ] && break
+              echo "no run on $SHA yet ($i)"; sleep 10
+            done
 
             # Approve every run GitHub parked on THIS head. Without this they stay at 0 s forever
             # and the required checks below can never report.
@@ -110,12 +123,20 @@ jobs:
                 || { echo "::error::GITHUB_TOKEN could not approve run ${RUN}. The catalogue cannot land unattended; see the #R372 note at the top of this file."; exit 1; }
             done
 
-            if gh pr checks "$PR" --watch --interval 20; then
+            # ⚠ `gh pr checks` says «no checks reported» — and exits NON-ZERO — both when the checks
+            # have not been created yet and when there are none at all. That sentence is "not yet",
+            # never "red", so it is caught here rather than falling through to the failure branch.
+            OUT="$(gh pr checks "$PR" --watch --interval 20 2>&1)" && RC=0 || RC=$?
+            echo "$OUT" | tail -20
+            if [ "$RC" = "0" ]; then
               if gh pr merge "$PR" --squash --delete-branch=false; then
                 echo "catalogue landed on main"; exit 0
               fi
               echo "checks passed but the merge was refused — re-syncing and trying again"
               continue
+            fi
+            if echo "$OUT" | grep -qi 'no checks reported'; then
+              echo "the checks have not reported yet — waiting and looking again"; sleep 30; continue
             fi
 
             # ⚠ A CANCELLED RUN IS NOT A RED ONE, and `gh pr checks` cannot tell them apart:
