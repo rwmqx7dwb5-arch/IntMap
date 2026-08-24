@@ -112,8 +112,19 @@ const TILE_GAP_MS = 1200;                      // serial spacing between tile re
 const AC_MAX = 200000;                         // hard ceiling on what this function will ever hold
 const STALE_DROP_S = 900;                      // an aircraft unseen for 15 min leaves the world set
 const VIEW_CACHE_MAX = 256;
-const VIEW_STALE_S = 45;                       // a box whose best observation is older is re-read
+const VIEW_STALE_S = 45;                       // sky asked about longer ago than this is worth a read
 const RATE_BACKOFF_MS = 60000;                 // how long the whole function stays quiet after a 429
+// (#R434) how many candidate tiles the viewport ranks before spending its VIEW_MAX_TILES on the
+// stalest of them. Six deep is a 24-tile fan around the view centre — enough that a wide view has
+// somewhere to walk to, small enough that ranking them is arithmetic on two dozen numbers.
+const VIEW_FAN = 6;
+// …and the grain of the ledger that remembers when a patch of sky was last asked about. A tile is
+// RADIUS_NM = 250 nm ≈ 4.2° of latitude across, so 2° cells are about half a tile: fine enough that
+// two tile centres one cell apart really are different sky, coarse enough that the view-anchored
+// lattice (tilesForBbox centres its rows on the CAMERA, so panning shifts every centre) still lands
+// on the same cell twice. 90 × 180 cells is the whole planet; the cap is a backstop, not a budget.
+const ASK_CELL_DEG = 2;
+const ASK_MAX = 32768;
 
 const RADIUS_NM = 250;                         // the DOCUMENTED maximum for adsb.lol point queries.
                                                // Larger radii do answer, and using them would be
@@ -171,6 +182,10 @@ const STATE = {
   worldOldestAt: 0,
   worldBuilt: null,        // encoded Uint8Array
   views: new Map(),        // bboxKey → { at, bytes, count, seq }
+  /* (#R434) cell → epoch ms of the last COMPLETED tile read there, whatever it returned. The
+     viewport picks the stalest cells it can see; see the note in the view channel. */
+  asked: new Map(),
+  viewReadAt: 0,           // (#R434) when the viewport channel last spent the shared burst budget
   inflight: new Map(),     // key → Promise, so N concurrent callers make ONE upstream read
   identitySent: new Set(), // hexes whose identity line has already gone out from this isolate
   backoffUntil: 0,         // set on a 429; nothing asks upstream again until this passes
@@ -504,6 +519,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  *  blocked, and the aircraft we already have are worth more than the ones we would not be given.
  *  `backoffUntil` then keeps the whole function quiet for a while — it is isolate state, so the
  *  worst case is one slice per isolate before everyone backs off. */
+/* (#R434) THE LEDGER OF WHEN EACH PATCH OF SKY WAS LAST ASKED ABOUT. It records the ASK and not
+   the catch, which is the whole point: two thirds of the planet is ocean with no receiver
+   coverage, and a tile that answered "nothing here" thirty seconds ago is not the same as one
+   nobody has ever looked at. Every completed read stamps it — the viewport channel's and the
+   lattice sweep's alike — so the two channels stop buying the same sky twice. */
+const askCell = (lat, lon) =>
+  Math.round(lat / ASK_CELL_DEG) * 1000 + Math.round((((lon + 540) % 360) - 180) / ASK_CELL_DEG);
+function askedAt(lat, lon) {
+  return STATE.asked.get(askCell(lat, lon)) || 0;
+}
+function markAsked(lat, lon, at) {
+  // A Map that only grows is a leak; the planet needs 16,200 cells at this grain, so anything past
+  // the cap is an isolate that has outlived its usefulness as a memory of where we have looked.
+  if (STATE.asked.size >= ASK_MAX) STATE.asked.clear();
+  STATE.asked.set(askCell(lat, lon), at);
+}
+
 async function readSerial(provider, tiles) {
   const out = [];
   for (let i = 0; i < tiles.length; i++) {
@@ -514,6 +546,9 @@ async function readSerial(provider, tiles) {
       STATE.stats.rateLimited++;
       break;
     }
+    /* ⚠ STAMPED HERE, WHERE THE READ ACTUALLY HAPPENED, AND NOT AT THE CALL SITES — there are two
+       of them and a ledger only one of them writes is a ledger that lies about half the sky. */
+    markAsked(tiles[i].lat, tiles[i].lon, Date.now());
     out.push({ tile: tiles[i], recs: got });
     if (i < tiles.length - 1) await sleep(TILE_GAP_MS);
   }
@@ -724,6 +759,12 @@ Deno.serve(async (req) => {
           viewTtlMs: VIEW_TTL_MS, worldTtlMs: WORLD_TTL_MS,
           viewMaxTiles: VIEW_MAX_TILES, worldSliceTiles: WORLD_SLICE_TILES,
           radiusNm: RADIUS_NM, staleDropS: STALE_DROP_S, latLimit: LAT_LIMIT,
+          /* (#R434) the viewport's tile CHOICE, so a reader can see the sweep happening rather than
+             infer it: how deep the candidate fan is, how many cells of sky this isolate has asked
+             about, and how long ago it last spent the shared burst budget. */
+          viewFan: VIEW_FAN, askCellDeg: ASK_CELL_DEG,
+          askedCells: STATE.asked.size,
+          viewReadAgeMs: STATE.viewReadAt ? now - STATE.viewReadAt : null,
         },
       }), { headers: { ...CORS, "content-type": "application/json", "cache-control": "no-store" } });
     }
@@ -767,42 +808,81 @@ Deno.serve(async (req) => {
         return out;
       };
       let inBox = collectBox();
-      /* Is what we already know about this box good enough to answer with? "Good enough" is a
-         measurement, not a timer: the freshest aircraft IN THE BOX. An empty box, or one whose best
-         observation is older than VIEW_STALE_S, is worth the serial tile reads — and because the
-         result goes into the shared snapshot, the next viewer of the same sky pays nothing. */
-      let freshest = 0;
-      for (const rec of inBox) if (rec.seenAt > freshest) freshest = rec.seenAt;
-      const boxStale = !inBox.length || (Date.now() - freshest) / 1000 > VIEW_STALE_S;
-      const work = once(key, async () => {
-        const tiles = MODEL.tilesForBbox(w, s, e, n, RADIUS_NM, VIEW_MAX_TILES, LAT_LIMIT);
-        const results = await readSerial(provider, tiles);
-        const seen = new Map();
-        for (const got of results) {
-          for (const r of got.recs) {
-            const prev = seen.get(r.hex);
-            if (!prev || prev.seenAt < r.seenAt) seen.set(r.hex, r);
+      /* ── (#R434) WHICH FOUR TILES, AND WHETHER TO SPEND THEM AT ALL ─────────────────────────
+         「より低ズームでもより多くの航空機が表示されるように。」 The budget below is unchanged —
+         VIEW_MAX_TILES tiles, no oftener than VIEW_STALE_S — because the provider's is (see the
+         bounds block). What changes is that both halves of the decision used to be made by the
+         wrong quantity, and a wide view lost both ways:
+
+           · WHETHER. #R341 asked "is the freshest aircraft ANYWHERE IN THE BOX older than 45 s?".
+             A view wide enough to contain Europe always has a fresh aircraft in one corner, so it
+             never read at all; a view over empty ocean has none, so `!inBox.length` made it read on
+             every miss of the 15 s cache. Measured against production, world set 1,683 aircraft:
+             Japan at z6 returned 89 aircraft and Japan at z3 — a hundred and fifty times the area —
+             returned 97. Eight more aircraft for half the planet.
+           · WHICH. `tilesForBbox` returns the tiles NEAREST THE CENTRE, so a read always bought the
+             same four. Repeating it is how a wide view stays exactly as covered as it was.
+
+         Both are now the same question asked once: WHEN WAS THIS PATCH OF SKY LAST ASKED ABOUT.
+         `askedAt` is stamped by every completed tile read anywhere in the function — viewport and
+         lattice sweep alike — so the choice is the four stalest candidates out of a wider fan, ties
+         keeping tilesForBbox's centre-out order, and successive polls walk outward across the view
+         instead of re-reading its middle.
+         ⚠ THE SPACING IS GLOBAL, NOT PER VIEW, and that is a REDUCTION. The burst budget belongs to
+         this function's address, not to a bbox: two viewers of different continents used to spend it
+         twice over and collect a 429 that silenced everything for RATE_BACKOFF_MS — which is how
+         asking for more sky ends up drawing less of it. One read per VIEW_STALE_S for the whole
+         function is what the measurement in the bounds block actually licenses.
+         ⚠ AN EMPTY ANSWER IS AN ANSWER. The ledger records the ASK, not the catch; without that,
+         ocean tiles stay maximally stale for ever and a wide view spends its whole budget on them.
+         ⚠ AND IT IS ISOLATE STATE, WHICH BOUNDS WHAT IT CAN CLAIM. Supabase hands out cold isolates
+         often (see the snapshot note above), and a cold one starts its walk at the view centre
+         again. What survives an isolate is the AIRCRAFT — every read merges into the shared
+         snapshot and stays for STALE_DROP_S — so a restarted walk re-covers sky that is still
+         answered from stock; what it costs is the ordering, not the coverage. Persisting the
+         ledger would mean changing the snapshot's format, and it is not worth that. */
+      const cands = MODEL.tilesForBbox(w, s, e, n, RADIUS_NM, VIEW_MAX_TILES * VIEW_FAN, LAT_LIMIT);
+      const ranked = cands
+        .map((t, i) => ({ t, i, at: askedAt(t.lat, t.lon) }))
+        .sort((a, b) => (a.at - b.at) || (a.i - b.i))
+        .slice(0, VIEW_MAX_TILES);
+      const stalest = ranked.length ? ranked[0].at : 0;
+      const spaced = now - STATE.viewReadAt >= VIEW_STALE_S * 1000;
+      const worthIt = ranked.length > 0 && (now - stalest) / 1000 > VIEW_STALE_S;
+      /* ⚠ THE READ IS NOT BUILT UNLESS IT IS WANTED, AND THAT IS A BUG FIX ON ITS OWN. `once()`
+         STARTS what it is handed — it hands back a running promise, not a thunk — so the previous
+         `const work = once(key, …)` above the branch spent four upstream reads on EVERY request that
+         missed the 15 s cache, and `boxStale` only chose whether the caller waited for them. Four
+         tiles per fifteen seconds per bbox is three times the whole measured burst budget, which is
+         a 429 and RATE_BACKOFF_MS of silence for every channel at once. */
+      if (spaced && worthIt) {
+        /* stamped BEFORE the await, so two callers arriving in the same tick cannot both decide the
+           budget is free — an isolate runs one of them to its first await before the other starts */
+        STATE.viewReadAt = now;
+        await once(key, async () => {
+          const results = await readSerial(provider, ranked.map((r) => r.t));
+          const seen = new Map();
+          for (const got of results) {
+            for (const r of got.recs) {
+              const prev = seen.get(r.hex);
+              if (!prev || prev.seenAt < r.seenAt) seen.set(r.hex, r);
+            }
           }
-        }
-        const at = Date.now();
-        // A viewport read is also world knowledge — every user looking anywhere improves the world
-        // set for every other user. This is the compounding the old per-browser design threw away.
-        const list = Array.from(seen.values());
-        mergeIntoWorld(list, at);
-        const seq = ++STATE.worldSeq;
-        const entry = { at, bytes: encodeSet(list, seq, at), count: list.length, seq };
-        STATE.views.set(key, entry);
-        if (STATE.views.size > VIEW_CACHE_MAX) STATE.views.delete(STATE.views.keys().next().value);
-        /* the tiles this viewport paid for belong in the shared snapshot too */
-        await saveSnapshot(encodeSet(Array.from(STATE.world.values()), ++STATE.worldSeq, Date.now(), true));
-        return entry;
-      });
-      if (boxStale) {
-        await work;
+          const at = Date.now();
+          // A viewport read is also world knowledge — every user looking anywhere improves the world
+          // set for every other user. This is the compounding the old per-browser design threw away.
+          const list = Array.from(seen.values());
+          mergeIntoWorld(list, at);
+          const seq = ++STATE.worldSeq;
+          const entry = { at, bytes: encodeSet(list, seq, at), count: list.length, seq };
+          STATE.views.set(key, entry);
+          if (STATE.views.size > VIEW_CACHE_MAX) STATE.views.delete(STATE.views.keys().next().value);
+          /* the tiles this viewport paid for belong in the shared snapshot too */
+          await saveSnapshot(encodeSet(Array.from(STATE.world.values()), ++STATE.worldSeq, Date.now(), true));
+          return entry;
+        });
         /* re-collect: the read just added aircraft to this box */
         inBox = collectBox();
-      } else {
-        after(work);
       }
       STATE.stats.served++;
       const at = Date.now();

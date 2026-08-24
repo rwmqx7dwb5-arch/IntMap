@@ -51,7 +51,11 @@ function arrayFrom(rel, name) {
    facts about the shape, so their absence is the honest way to say the shape is gone. */
 test('R379 ① the fragment shader tests the plan-form, and the dart is gone from it', () => {
   const src = code('js/aircraft-points.js');
-  assert.match(src, /float planeSD\(vec2 p\)/, 'the field is the plan-form\'s');
+  /* ⚠ (#R434) the signature grew an `out vec2 grad` — the field now reports the direction of its
+     own nearest edge, so the anti-aliasing ramp can be measured on the SCREEN through the same
+     transform that foreshortens the mark. What this line is for is unchanged: the field is the
+     plan-form's, not a dart's. */
+  assert.match(src, /float planeSD\(vec2 p(, out vec2 grad)?\)/, 'the field is the plan-form\'s');
   assert.match(src, /\$\{GLYPH\.glsl\('PLANE'\)\}/, 'whose vertices are GENERATED from the one declaration');
   assert.match(src, /\$\{GLYPH\.SDF_HALF_STROKE/, 'and so is the width of its white band');
   assert.doesNotMatch(src, /triSD/, 'the triangle field is gone');
@@ -59,8 +63,13 @@ test('R379 ① the fragment shader tests the plan-form, and the dart is gone fro
     assert.ok(!src.includes('vec2(0.0, ' + n) && !src.includes('vec2(-' + n),
       `the dart's ${n} is gone from the shader`);
   /* …and the LOD is still a LOD: below five device pixels the shape stops mattering, it does not
-     stop being drawn (§11, and the rule #R341 stated in as many words) */
-  assert.match(src, /if \(v_px < 5\.0\)/, 'the dot below five device pixels survives');
+     stop being drawn (§11, and the rule #R341 stated in as many words).
+     ⚠ (#R434) the five is now a JS constant interpolated into the shader, because the vertex
+     shader needs the same number — it is where the foreshortening stops. Both halves of that are
+     asserted: the threshold is still five, and the fragment shader still reads it from there. */
+  assert.match(src, /const LOD_DOT_PX = 5;/, 'five device pixels, declared once');
+  assert.match(src, /if \(v_px < \$\{LOD_DOT_PX\.toFixed\(1\)\}\)/,
+    'the dot below five device pixels survives');
 });
 
 /* ── ② ONE DECLARATION, AND THE FROZEN PATH STILL AGREES WITH IT ──────────────────────────────

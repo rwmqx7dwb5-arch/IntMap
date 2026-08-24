@@ -147,24 +147,30 @@ test('R401 ④ pollView asks about the viewport at every zoom', () => {
        the projected track and became the map's rotation without its tilt — a step EAST and a step
        NORTH in place of a step ahead. What survived the round is "derived from the projection", so
        that is what this asserts; tests/r411-checks.test.mjs ② owns WHICH three they are;
-     · the fragment shader's rotation is the CLOCKWISE one. mat2 takes its columns, so the mirrored
-       version differs from the correct one only in where two minus signs sit, and the one test that
-       drew the mark before #R401 drew it tracking due north, where the matrix is the identity
-       either way. */
-test('R401 ⑤ the mark is turned by an angle read out of the projection, clockwise', () => {
+     · the fragment shader does not sample the field through the RAW point-coordinate. Whatever
+       carries the mark onto the screen, `q` has to go through its inverse first; #R341 applied a
+       rotation the wrong way round (mat2 takes its COLUMNS, so the mirror is two minus signs) and
+       the one test that drew the mark before #R401 drew it tracking due north, where the matrix is
+       the identity either way. ⚠ (#R434) that rotation is now a full 2×2 built in the vertex
+       shader and inverted there, so what survives here is the SHAPE of the claim — the fragment
+       shader transforms q by something it was handed — and tests/r434-checks.test.mjs owns which
+       2×2 it is. */
+test('R401 ⑤ the mark is turned by a transform read out of the projection', () => {
   const src = code('js/aircraft-points.js');
   const vert = /const VERT = `([\s\S]*?)`;/.exec(src);
   assert.ok(vert, 'the vertex shader source is still a template literal named VERT');
   const projections = (vert[1].match(/projectTileFor3D\s*\(/g) || []).length;
   assert.ok(projections >= 2,
     'the vertex shader projects the aircraft AND at least one neighbour (found ' + projections + ')');
-  assert.match(vert[1], /v_rot\s*=\s*trk\s*-\s*atan\(/, 'and v_rot is the track, less an angle it computed');
+  assert.match(vert[1], /atan\(/, 'and it reads an angle out of what it projected');
   assert.doesNotMatch(vert[1], /v_rot\s*=\s*a_form\.y\s*;/,
-    'v_rot is no longer the reported bearing handed straight to a screen-aligned sprite');
+    'the reported bearing is no longer handed straight to a screen-aligned sprite');
 
   const frag = /const FRAG = `([\s\S]*?)`;/.exec(src);
   assert.ok(frag, 'the fragment shader source is still a template literal named FRAG');
-  assert.match(frag[1], /mat2\(c,\s*s,\s*-s,\s*c\)/, 'the sprite is turned clockwise');
+  assert.match(frag[1], /planeSD\(minv \* q/, 'the field is sampled through the inverse transform');
+  assert.doesNotMatch(frag[1], /planeSD\(q\b/,
+    'and never through the raw point-coordinate, which is a compass that is not on screen');
   assert.doesNotMatch(frag[1], /mat2\(c,\s*-s,\s*s,\s*c\)/,
     'the mirrored matrix — #R341\'s — reflects the mark about the vertical axis');
 });

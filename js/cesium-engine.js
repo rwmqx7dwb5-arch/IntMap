@@ -2103,10 +2103,30 @@ window.IntMapCesiumEngine=(function(){
 
        ⚠ (#R411) THAT DIRECTION IS NOT THE TRACK'S PROJECTED ONE — 「いや実際の飛行機の向きのまま
        にしろってこと。」 Projecting the track is the direction a decal lying on the ground would
-       run, and a BillboardCollection sprite (like the gl.POINTS sprite the other engine draws) never
-       foreshortens its shape, so squashing only the angle throws the reading away: js/aircraft-
-       points.js carries the 400-aircraft measurement, where four aircraft in five ended up pointing
-       within 20° of the horizon at the tilt the report was made at.
+       run, and a BillboardCollection sprite never foreshortens its shape, so squashing only the
+       angle throws the reading away: js/aircraft-points.js carries the 400-aircraft measurement,
+       where four aircraft in five ended up pointing within 20° of the horizon at the tilt the
+       report was made at.
+
+       ⚠ (#R434) …AND THIS ENGINE STOPS HERE WHILE THE OTHER ONE GOES FURTHER, WHICH IS A PROPERTY
+       OF THE PRIMITIVE. 「傾けてるのに上から見たときとおなじとかあほかボケ。」 The MapLibre layer
+       now draws the whole 2×2 — the plan-form lying in the aircraft's horizontal plane, angle AND
+       foreshortening — because it samples a distance field through an inverse matrix and a matrix
+       can shear. A billboard cannot: BillboardCollectionVS sizes an axis-aligned quad and THEN
+       rotates it, so every image it can draw is (rotation × diagonal), while the image of a ground
+       plane is (diagonal × rotation). Those two families meet only where the rotation is a multiple
+       of a right angle. Measured on the drawn mark's own axes — the wingspan against the fuselage,
+       which are square in the artwork:
+
+           pitch                 0°      30°      60°      78°
+           out of square       0.0°     8.2°    36.9°    66.5°     (track 045°)
+           worst over track    0.0°     8.2°    35.2°    59.7°
+
+       At 78° that is not a rounding error, it is most of the shape. Drawing (rotation × diagonal)
+       anyway would put a full-size aeroplane along the horizon, which is exactly what #R401 was
+       rejected for, so this engine keeps the honest half it CAN express and js/aircraft-points.js
+       says the same thing in its header. Making Cesium agree needs a different primitive, not a
+       different angle.
 
        So what is taken from the camera is its ROTATION and not its tilt. The screen derivative of a
        world direction d is exact for a pinhole camera: with the eye-space coordinates a = v·right,
@@ -2119,7 +2139,9 @@ window.IntMapCesiumEngine=(function(){
        M = [E N]; atan2(E.y − N.x, E.x + N.y) is the rotation of its polar factor, i.e. M with the
        tilt's anisotropic squash divided out, and the mark then runs along (sin(track − θ),
        cos(track − θ)) — the reported track on a north-up view, turned with the view, unmoved by
-       tilt, and identical to what the MapLibre shader computes from three projections.
+       tilt. It is the same rotation the MapLibre shader computes from three projections, and
+       (#R434) that shader now multiplies the squash back in; see the note below for why this one
+       cannot.
 
        In SCENE3D east and north come from the aircraft's own local horizontal frame
        (up = p̂, east = ẑ×p̂, north = up×east). In Columbus View the scene is a conformal Mercator
