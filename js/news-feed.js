@@ -14,9 +14,26 @@ window.IntMapModules.newsFeed=function(HOST){
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
+  /* (#R372) «has anybody asked for news yet» — declared HERE, above both readers, because a `let`
+     below a function that reads it is a TDZ waiting for the first caller that runs early. */
+  let _asked=false;
   function startNews(){
     const feed=document.getElementById('live-news-feed'); HOST.clearMarkers(); feed.innerHTML=''; HOST.renderedCount=0;
-    if(HOST.globalData.length===0){ feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`; return; }
+    /* ⚠⚠ (#R372 追記) OPENING THE NEWS SURFACE *IS* THE GESTURE, AND NOTHING ELSE WAS ASKING.
+       #R372 stopped the boot from fetching news for a reader who never opened the tab. But
+       setMode() only calls renderUI() — it has never called fetchData() — so the tab worked purely
+       because the boot pass had already filled globalData. With that gone, opening News painted
+       「Loading articles...」 and stayed there for ever: measured in production, 0 requests to
+       news_events / news_sources / the relay after the click, and IntMapNewsEvents undefined.
+       ⚠ `_asked` makes this ONE shot and keeps it out of a loop — fetchData() sets it before it
+       does anything, and it calls startNews() back on success, so a fetch that finds nothing
+       leaves the message rather than asking again. The 3-minute timer resumes behind it either
+       way, because the latch is now lifted. */
+    if(HOST.globalData.length===0){
+      feed.innerHTML=`<div class="empty-msg">${HOST.t('loading')}</div>`;
+      if(!_asked) { try{ fetchData(); }catch(_){} }
+      return;
+    }
     HOST.newsFiltered=HOST.computeFilteredNews();
     if(HOST.newsFiltered.length===0){ feed.innerHTML=`<div class="empty-msg">${HOST.t('noMatch')}</div>`; return; }
     /* Pin every filtered news item on the map IMMEDIATELY, even items not yet rendered in sidebar.
@@ -211,8 +228,8 @@ window.IntMapModules.newsFeed=function(HOST){
      — calls this with no argument and is therefore a gesture; the first one lifts the latch and the
      timer resumes refreshing behind it. A reader whose saved mode IS the News surface has already
      asked, so the surface check below covers a cold start straight into news.
-     ⚠ The cache is still restored, so the gesture that does come has something to paint at once. */
-  let _asked=false;
+     ⚠ The cache is still restored, so the gesture that does come has something to paint at once.
+     ⚠ `_asked` is declared at the top of this factory, not here — startNews() reads it too. */
   async function fetchData(opts){
     const feed=document.getElementById('live-news-feed');
     if(opts&&opts.background&&!_asked&&HOST.mode!=='news'&&HOST.mode!=='saved'){
