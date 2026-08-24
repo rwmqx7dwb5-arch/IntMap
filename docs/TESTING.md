@@ -19,7 +19,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 ## What runs
 
 
-`npm run test:checks` runs **234 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **235 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **88 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).

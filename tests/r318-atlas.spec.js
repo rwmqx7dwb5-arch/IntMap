@@ -296,6 +296,48 @@ test('R406 ③: an argument-less call is refused in the built app, before anythi
   expect(r.good, 'a well-formed call was rejected').toBeNull();
 });
 
+/* ⚠ (#R441) THE ONE THING THE NODE CHECKS CANNOT SEE: what the reader ends up looking at.
+   tests/r441-checks.test.mjs drives js/atlas-turn-results.js directly and proves the decision; this
+   proves the decision is WIRED — the built bundle, the real dispatch case, the real route cards, and
+   the reply the console actually composes. The reported turn ran the same journey twice and the
+   reply carried the five itineraries twice, because the only guard was a comparison of rendered HTML
+   and js/routing.js gives every computed set a fresh `data-rset`. The two actions here are spelled
+   differently on purpose: that is what a turn does after `my_location` hands it coordinates. */
+test('R441 ①: one journey run twice leaves one card list in the reply — the live one', async () => {
+  const r = await page.evaluate(async () => {
+    const RT = window.IntMapRouting, keep = { stationLL: RT.stationLL, route: RT.route };
+    let calls = 0;
+    const at = (m) => new Date(Date.UTC(2026, 7, 25, 20, 56 + m)).toISOString();
+    const itin = (i) => ({ duration: 5520, transfers: 2, startTime: at(0), endTime: at(92),
+      legs: [{ mode: 'WALK', walk: true, duration: 180, to: '瑞穂区役所' },
+        { mode: 'SUBWAY', route: '桜通線', duration: 1080 },
+        { mode: 'HIGHSPEED', route: 'のぞみ' + (101 + i * 2), duration: 2940 }] });
+    RT.stationLL = (q) => (/大阪/.test(String(q))
+      ? { lng: 135.4959, lat: 34.7332, name: '大阪' } : { lng: 136.9340, lat: 35.1330, name: '瑞穂' });
+    RT.route = async () => {
+      calls++;
+      const alts = [0, 1, 2, 3, 4].map(itin);
+      return Object.assign({ ok: true, status: 'success', transit: true, mode: 'transit', sel: 0,
+        routeSetId: 'rsR441x' + calls, alternatives: alts }, alts[0]);
+    };
+    try {
+      await window.IntMapLazy.need('atlasConsole');
+      await window.IntMapConsole.runDirect('経路', [
+        { type: 'directions', from: 'ここから', to: '大阪駅', mode: 'transit' },
+        { type: 'directions', from: '35.1330,136.9340', to: '大阪駅', mode: 'transit' },
+      ]);
+    } finally { RT.stationLL = keep.stationLL; RT.route = keep.route; }
+    const bs = document.querySelectorAll('.atl-b.a');
+    const last = bs[bs.length - 1];
+    const sets = Array.from(last ? last.querySelectorAll('.rt-alts[data-rset]') : [])
+      .map((el) => el.getAttribute('data-rset'));
+    return { calls, sets, cards: last ? last.querySelectorAll('.rt-alt').length : -1 };
+  });
+  expect(r.calls, 'the stub was not the router the dispatch called — this test measured nothing').toBe(2);
+  expect(r.sets, 'the reply lists the same journey twice').toEqual(['rsR441x2']);
+  expect(r.cards, 'the surviving block is not the five itineraries').toBe(5);
+});
+
 test('R318-atlas ④: Atlas loaded without console errors', async () => {
   const errors = (diag.consoleErrors || []).concat(diag.pageErrors || []);
   expect(errors, 'loading the kernel produced console errors:\n' + errors.join('\n')).toEqual([]);
