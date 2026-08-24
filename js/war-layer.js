@@ -311,15 +311,32 @@ window.IntMapModules.warLayer = function (HOST) {
     }
 
     /* ── the layers ───────────────────────────────────────────────────────────────────────────── */
+    /* ⚠⚠⚠ (#R409) A `match` WITH NO CASES IS INVALID, AND THAT IS HOW THE DOTS DISAPPEARED FOR A
+       WHOLE SESSION. Built from an empty table this returned `['match', ['get','kind'], '#ffffff']`
+       — input and fallback, zero label/output pairs — which MapLibre rejects. The engine facade
+       swallows a bad `add`, so FOUR of the five layers went in and the circle layer silently did
+       not; and because `ensure()` returns early once the SOURCE exists, no later call ever tried
+       again. Measured: sources present, fill / outline / front / labels all drawing, operation
+       names on the map with no dot under them, `layers.has('ww1-evt') === false`.
+       The table is guaranteed non-empty by the build (check ⑧ refuses a record whose kinds are not
+       in it), so an empty one here means it is being read too early — see `ensure()`. */
     function kindColourExpr() {
-      const k = (data && data.kinds) || {};
+      const k = (data && data.kinds) || null;
+      if (!k || !Object.keys(k).length) return '#ffffff';
       const out = ['match', ['get', 'kind']];
       for (const [key, v] of Object.entries(k)) { if (key !== 'battle') out.push(key, v.col); }
+      if (out.length === 2) return (k.battle && k.battle.col) || '#ffffff';   /* one kind, no cases to match on */
       out.push((k.battle && k.battle.col) || '#ffffff');
       return out;
     }
     function ensure() {
       if (GE().layers.hasSource(SRC)) return true;
+      /* ⚠ …AND THE OTHER HALF OF THE SAME BUG: DO NOT BUILD BEFORE THE RECORD ARRIVES. `ensure()` is
+         reached from three places — `toggle()`, the `whenDrawable` retry and the `styledata` handler
+         — and only the first of them waits for `load()`. A basemap swap while the fetch is in flight
+         built the whole layer stack out of a record that was still null. Refusing here is free: the
+         caller either retries or is `toggle()`, which has already awaited the file. */
+      if (!data) return false;
       if (!canDraw()) return false;
       try {
         const empty = { type: 'FeatureCollection', features: [] };
@@ -389,16 +406,20 @@ window.IntMapModules.warLayer = function (HOST) {
        ⚠ AND THE RETRY IS A POLL, NOT AN `idle` LISTENER. `once('idle', …)` was written first and is
        the wrong instrument for exactly this case: a map that is ALREADY idle never fires it again, so
        the one situation where the retry is cheapest to satisfy is the one where it would never come. */
+    /* ⚠ (#R409) «CAN BUILD» IS «the style is ready» AND «the record has arrived». The retry used to
+       ask only the first, so a caller that arrived early — the `styledata` handler is the one that
+       does — gave up the moment `ensure()` refused for the other reason. */
+    const canBuild = () => !!data && canDraw();
     let _pending = null, _timer = null, _tries = 0;
     function whenDrawable(fn) {
-      if (canDraw()) { fn(); return true; }
+      if (canBuild()) { fn(); return true; }
       _pending = fn; _tries = 0;
       if (_timer) return false;
       const tick = () => {
         _timer = null;
         const f = _pending;
         if (!f) return;
-        if (canDraw()) { _pending = null; f(); return; }
+        if (canBuild()) { _pending = null; f(); return; }
         if (++_tries > 40) { _pending = null; return; }   /* ~12 s; a map that never draws is not our fault to log */
         _timer = setTimeout(tick, 300);
       };
@@ -721,8 +742,15 @@ window.IntMapModules.warLayer = function (HOST) {
         setDate(d);
       });
     } catch (_) { }
-    /* self-heal across basemap swaps, exactly like the other vector overlays */
-    try { GE().events.on('styledata', () => { if (on) setTimeout(() => { if (ensure()) { setVis(true); shownKey = null; paint(curDate || spanOf(war() || {})[0]); } }, 80); }); } catch (_) { }
+    /* self-heal across basemap swaps, exactly like the other vector overlays — and through the same
+       retry, so a swap that lands while data/wars.json is still in flight is rebuilt rather than
+       dropped (#R409) */
+    try {
+      GE().events.on('styledata', () => {
+        if (!on) return;
+        setTimeout(() => { if (!on) return; whenDrawable(() => { if (!on || !ensure()) return; setVis(true); shownKey = null; paint(curDate || spanOf(war() || {})[0]); }); }, 80);
+      });
+    } catch (_) { }
 
     return {
       id: warId, toggle, isOn: () => on, date: () => curDate,

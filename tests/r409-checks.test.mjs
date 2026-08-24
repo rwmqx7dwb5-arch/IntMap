@@ -328,3 +328,30 @@ test('R409 ⑯: build-wars still gates the spans where only `control` describes 
   assert.ok(/\['ww2', '\d{4}-\d{2}-\d{2}', 'Paris', 'AXIS'\]/.test(code),
     'nothing asserts that occupied Paris is Axis on a date no front line crosses France');
 });
+
+/* ── ⑰ the layer refuses to build before the record arrives, and never emits a case-less match ── */
+/* ⚠ MEASURED, NOT REASONED. `ensure()` is reached from three places and only `toggle()` awaits the
+   fetch; a basemap swap during that fetch built the whole stack from `data === null`. The colour
+   expression then came out as `['match', ['get','kind'], '#ffffff']` — input and fallback with no
+   label/output pair, which MapLibre rejects — the engine facade swallowed the bad `addLayer`, and
+   because `ensure()` returns early once the SOURCE exists nothing ever tried again. Four of five
+   layers drew; the operation dots were gone for the session with their labels still on the map. */
+test('R409 ⑰: ensure() waits for the record, and the kind colour is never a match with no cases', () => {
+  const src = codeOnly(R('js/war-layer.js'));
+  const i = src.indexOf('function ensure()');
+  assert.ok(i > 0, 'ensure() is gone');
+  const head = src.slice(i, i + 320);
+  assert.ok(/if \(!data\) return false;/.test(head), 'ensure() no longer refuses to build before data/wars.json has arrived');
+  /* …and the retry has to wait for the same two things, or the caller that arrived early gives up */
+  assert.ok(/const canBuild = \(\) => !!data && canDraw\(\);/.test(src), 'the retry predicate no longer covers both «style ready» and «record arrived»');
+  const wd = src.slice(src.indexOf('function whenDrawable('), src.indexOf('function whenDrawable(') + 620);
+  assert.ok(!/\bcanDraw\(\)/.test(wd), 'whenDrawable still asks only whether the style is ready');
+  assert.equal((wd.match(/canBuild\(\)/g) || []).length, 2, 'whenDrawable must test canBuild() on entry and on each tick');
+  /* the style handler goes through the retry rather than giving up on one refusal */
+  const sd = src.slice(src.indexOf("events.on('styledata'"), src.indexOf("events.on('styledata'") + 300);
+  assert.ok(/whenDrawable\(/.test(sd), 'a basemap swap during the fetch is dropped again instead of retried');
+  /* and the expression itself cannot degenerate */
+  const kc = src.slice(src.indexOf('function kindColourExpr()'), src.indexOf('function ensure()'));
+  assert.ok(/if \(!k \|\| !Object\.keys\(k\)\.length\) return '#ffffff';/.test(kc), 'an empty kind table produces a match expression again');
+  assert.ok(/if \(out\.length === 2\)/.test(kc), 'a single-kind table produces a match with no cases again');
+});

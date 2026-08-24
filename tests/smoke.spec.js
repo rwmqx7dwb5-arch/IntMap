@@ -1763,6 +1763,12 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
     };
     const c = GE.render.canvas();
     const drawnFronts = () => GE.coords.queryRenderedFeatures([[0, 0], [c.clientWidth, c.clientHeight]], { layers: ['ww2-front'] }).length;
+    /* ⚠ (#R409) THE OPERATION DOTS ARE ASKED FOR SEPARATELY, because they are the one part of this
+       layer that went missing without anything saying so. The engine facade swallows a rejected
+       `addLayer`, so a circle layer built from a record that had not arrived yet simply was not
+       there — four of five layers drawing, operation names on the map with no dot under them, and
+       every later `ensure()` returning early because the SOURCE existed. */
+    const drawnEvents = () => GE.coords.queryRenderedFeatures([[0, 0], [c.clientWidth, c.clientHeight]], { layers: ['ww2-evt'] }).length;
     /* ⚠ WAIT FOR THE RENDERER, NOT FOR THE DATA, AND FOR EVERY THING THIS TEST ASKS ABOUT.
        `setSourceData` returns long before MapLibre has drawn a tile, and `queryRenderedFeatures`
        answers about what is DRAWN. A fixed sleep passed on a quiet page and failed on a busy one —
@@ -1770,12 +1776,12 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
     const t0 = Date.now();
     while (Date.now() - t0 < 25000) {
       await new Promise((res) => setTimeout(res, 250));
-      if (window.IntMapWarFronts.date('ww2') === '1941-12-05' && at([13.405, 52.520]) && drawnFronts()) break;
+      if (window.IntMapWarFronts.date('ww2') === '1941-12-05' && at([13.405, 52.520]) && drawnFronts() && drawnEvents()) break;
     }
     return {
       date: window.IntMapWarFronts.date('ww2'),
       ww1Src: GE.layers.hasSource('ww1-src'),
-      fronts: drawnFronts(),
+      fronts: drawnFronts(), events: drawnEvents(), evtLayer: GE.layers.has('ww2-evt'),
       frontsBuilt: window.IntMapWarFronts._build('ww2', '1941-12-05').lines.features.length,
       minsk: at([27.567, 53.902]), moscow: at([37.618, 55.756]), berlin: at([13.405, 52.520]),
     };
@@ -1793,6 +1799,8 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
   expect(r.berlin && r.berlin.fac).toBe('AXIS');
   expect(r.frontsBuilt).toBeGreaterThan(0);
   expect(r.fronts, 'front lines built=' + r.frontsBuilt).toBeGreaterThan(0);
+  expect(r.evtLayer, 'the operation-dot layer exists at all').toBe(true);
+  expect(r.events, 'operation dots are drawn, not just their labels').toBeGreaterThan(0);
 
   /* ⚠ (#R409) 「Chronosは動かすな。」 — the legend's own range moves the layer and NOTHING else. */
   const slid = await page.evaluate(async () => {
