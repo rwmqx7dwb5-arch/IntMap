@@ -264,6 +264,13 @@ const CHECKS = [
   ['ww2', '1945-07-05', 'Guangzhou', 'AXIS'],
   ['ww2', '1945-08-20', 'Beijing', 'ALLIED'],
 ];
+/* ⚠ (#R409) …AND EACH WAR MAY CARRY ITS OWN, BESIDE THE RECORD IT CHECKS. `W.checks` is
+   [[date, place, faction], …] on the war object; the war id is filled in here. The list above is the
+   one #R349 and #R381 wrote and it stays where it is — what this adds is a place to put a check that
+   belongs to a campaign rather than to the build, so a round that extends one war's record does not
+   have to edit the same array as a round extending the other's. */
+for (const W of WARS) for (const row of (W.checks || [])) CHECKS.push([W.id, row[0], row[1], row[2]]);
+
 /* Two of the check cities are not front anchors, so they live here rather than in places.mjs. */
 const CHECK_ONLY = { Lille: [3.058, 50.629, 'FR'] };
 const placeOf = (n) => PLACES[n] || CHECK_ONLY[n] || null;
