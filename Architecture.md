@@ -218,14 +218,14 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
-| Capability Registry | `js/atlas-capabilities.js` | **126 能力**。ID・別名（302 綴り）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
+| Capability Registry | `js/atlas-capabilities.js` | **126 能力**。ID・別名（302 綴り。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
 | 能力の説明文 | `js/atlas-catalog-text.js` | 41 ブロック。**各ブロックがどの能力を説明しているか**を持つ。`find_capability` が要求されたときだけ返す |
 | 引数の schema | `js/atlas-schemas.js` | **126 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
 | 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳** |
 | ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る |
-| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 7 ツール**＋`find_capability`（全 126 を検索）／`run_capability`（ID 指定で起動）|
+| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 6 ツール**（`my_location` を含む）＋`find_capability`（全 126 を検索・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 8 本 |
 | 中核指示 | `js/atlas-policy.js` | **1 段落の中核指示**（何を Atlas が決めるか）＋ 座標ラベルの意味 ＋ ターンの終わり方 |
 | 地点の 1 つの形 | `js/atlas-geo-object.js` | `GeoObject`＝ID・名前・緯度経度・種別・日時・出典・確度と **provenance**。`placed` / `pointLike` / `describesUserPoint` / `mergeKnown` |
 | 分野横断の異常度 | `js/atlas-anomaly-score.js` | 種別ごとの固有スケール（Mw／カテゴリ／VAL／CAP 4段）＋ 影響人口・範囲・平常からの乖離・新しさ・確度・国際的重要性の**7成分**。順位の根拠を `why` に残す。**各種別の上位だけを競わせる**（偏りは標本の偏りであって選好ではない） |
@@ -261,7 +261,7 @@ getter なので、観測していない成功を呼び出し側が書き込む�
 
 **⚠ カタログは押し付けず、訊かれたときに返す。**
 そのターンに渡すのは**中核 7 ツールとその schema だけ**（約 5.9 千文字）。それ以外の能力は
-`find_capability(query)` が**全 126 を検索**して上位 8 件を schema 付きで返し、`run_capability(id, args)`
+`find_capability(query)` が**全 126 を検索**し、**得点したものを全部** schema 付きで返し（**打ち切り無し**——説明文は 41 ブロック共有なので、能力ごとに引くと同じブロックが繰り返される。**まとめて 1 回引いて重複を落とす**：実測 67,600 → 24,519 B・1 文字も切らずに）、`run_capability(id, args)`
 が起動する——**到達できる範囲は全部のままで、送る量だけが減る**。
 ⚠ **以前は全能力の説明文（64,250 文字）を毎回入れていた。**「関連する能力だけ」に絞る仕組みは
 あったが、選別を決めていたのは `produces:'explanation'` に付く加点で、実測では
