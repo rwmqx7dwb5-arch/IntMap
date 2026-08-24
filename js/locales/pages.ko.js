@@ -562,7 +562,7 @@ window.IntMapPageI18N.define('ko', {
     "Inter / Pretendard (bundled, SIL OFL 1.1)": "라틴·키릴 서체와 한국어 서체로, 사이트와 함께 배포합니다. 지도 자체의 라벨을 그리는 SDF 글리프 아틀라스도 포함하며, 이는 scripts/build-glyphs.mjs가 Inter에서 생성합니다(Inter를 제공하는 공개 글리프 서버는 없습니다). 라이선스와 출처 표기는 fonts/README.md를 참조하십시오.",
     "ESA WorldCover": "10 m 해상도 전 지구 토지 피복 분류",
     "RESOLVE / WWF Ecoregions 2017": "육상 생태 지역",
-    "Smithsonian GVP": "앱에 동봉(data/volcanoes_gvp.json 및 data/volcano-detail.json.gz — scripts/build-volcanoes.mjs가 GVP의 WFS에서 생성). 홀로세 카탈로그 전체를 결합 키와 함께 담고, 그 뒤에 11,089건의 분화(VEI와 날짜), 화산 유형·지형 구분·구조 환경·주요 암석, 지질 개요, 사진, 반경 5·10·30·100 km 인구를 가집니다. 화산 카드가 과거에 대해 말하는 것은 모두 이 파일에서 오프라인으로 읽습니다.",
+    "Smithsonian GVP": "앱에 동봉(data/volcanoes_gvp.json 및 data/volcano-detail.json.gz — scripts/build-volcanoes.mjs가 GVP의 WFS에서 생성). 홀로세 카탈로그 전체를 결합 키와 함께 담고, 그 뒤에 그 카탈로그에 실린 화산에 대해 GVP가 기록한 모든 분화를 VEI와 날짜와 함께, 화산 유형·지형 구분·구조 환경·주요 암석, 지질 개요, 사진, 반경 5·10·30·100 km 인구를 가집니다. 화산 카드가 과거에 대해 말하는 것은 모두 이 파일에서 오프라인으로 읽습니다.",
     "DeepStateMap": "우크라이나 전선(베타 레이어)",
     "historical-basemaps (aourednik)": "역사적 국경 — 베타 오버레이 레이어이자, 지도 자체의 과거 연도 국경에 대한 자동 대체 출처(가장 가까운 스냅숏)이며, CShapes의 하한인 1886년보다 이전에는 유일한 국경 출처입니다. 원본 저장소에는 1900년 이전 스냅숏이 1815년과 1880년 두 장뿐이라 1850~1885년은 모두 1880년 국경으로 그려집니다",
     "CShapes 2.0 (Schvitz et al., ETH Zürich)": "타임머신에 쓰는 1886–2019년 연도별 국제 국경(모든 국경 변화가 연 단위로 기록되어 있으며, 단순화한 사본을 자체 호스팅합니다). 1945–2019년 동·서독 및 통일 독일의 국경은 권위 있는 현대 연방주 자료(deutschlandGeoJSON, © GeoBasis-DE / BKG)로 다시 만들어, 내독 국경이 실제와 일치하도록 했습니다. 양차 세계 대전 레이어가 전선을 따라 잘라 내는 국가 윤곽도 이 데이터입니다.",

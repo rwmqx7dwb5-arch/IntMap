@@ -24,6 +24,7 @@
  *      node scripts/doc-facts.mjs --check   # exit 1 if a fact has drifted (CI)
  * ==========================================================================*/
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -1254,6 +1255,74 @@ if (RULE && RULE !== 'i18n-open-gap') {
     });
     if (!/都市/.test(BODY.get('Architecture.md') || '')) fail('hist-cities', 'Architecture.md no longer states how large the historical-city record is');
     if (!problems.some((x) => x.startsWith('hist-cities'))) ok('hist-cities', `${cities} cities / ${names} historical names, stated correctly`);
+  }
+}
+
+/* ═══ 30. how many eruptions the BUNDLED volcano record holds ═════════════════════════════
+ *  (#R440) There are two eruption counts in this project and they are not the same number. The GVP
+ *  WFS answers `Smithsonian_VOTW_Holocene_Eruptions` with every eruption it has; the build writes
+ *  the rows of the volcanoes that are in the Holocene VOLCANO catalog, and a volcano number can
+ *  have eruptions without having a catalog entry. The build's completion line printed the first
+ *  and called it «wrote data/volcano-detail.json.gz — N eruptions», and four documents and six
+ *  shipped languages copied it, so every one of them claimed 46 rows the file does not contain.
+ *
+ *  #R353 declared «件数はどこにもハードコードしない——凡例も文書検査もテストもファイルから読む» and
+ *  built the legend, the doc check and the test for the VOLCANO count. The eruption count was
+ *  written down fourteen times in the same round. This is the missing half.
+ *
+ *  ⚠ A LINE ABOUT THE UPSTREAM IS LEFT ALONE. docs/VOLCANO-INTELLIGENCE.md §2 tabulates what each
+ *  feature type answers with, and 11,089 is the right number there; a line that names the feature
+ *  type or the WFS is talking about GVP, not about the file. The discriminator is the noun on the
+ *  line, not a list of exempt line numbers.
+ *  ⚠ AND IT MUST NOT CATCH ITSELF: no count is written next to an eruption word in this comment. */
+{
+  if (!has('data/volcano-detail.json.gz')) {
+    fail('volcano-eruptions', 'data/volcano-detail.json.gz is gone — the record every volcano card reads');
+  } else {
+    const D = JSON.parse(gunzipSync(readFileSync(join(ROOT, 'data', 'volcano-detail.json.gz'))).toString('utf8'));
+    let held = 0;
+    for (const k of Object.keys(D.volcanoes)) held += D.volcanoes[k].er.length;
+    if (D.eruptions !== held) {
+      fail('volcano-eruptions', `data/volcano-detail.json.gz records ${D.eruptions} eruptions and holds ${held}`);
+    }
+    /* ⚠ MATCH THE PHRASE, NOT A NUMBER NEAR A WORD. The first draft of this rule took any grouped
+       number within 24 characters of an eruption word, and it flagged four sentences that were all
+       correct: the §2 row for the 1960-onward subset, a heading that counts VOLCANOES next to the
+       word 噴火, and the two sentences below §3 that exist precisely to contrast the two numbers.
+       Proximity is not the claim. The claim is a COUNTING PHRASE — «N 件の噴火履歴» / «噴火履歴N件» /
+       «N eruptions» — which is how every document that states this states it, and which a sentence
+       about a different number cannot accidentally be. A rewording escapes the pattern, so the
+       three documents are ALSO required by name to still contain one: going silent fails too. */
+    const SEP = '[,.\\u00a0\\u202f ]';
+    const N = '(\\d{1,3})' + SEP + '(\\d{3})(?![\\d])';
+    const JA = '噴火|噴發|喷发|분화';
+    const COUNT = new RegExp(
+      '(?:' + JA + ')(?:履歴|記録|の記録)?\\s*' + N                       /* 噴火履歴11,043件 */
+      + '|' + N + '\\s*(?:件|筆|笔|건)\\s*(?:の)?\\s*(?:' + JA + ')'      /* 11,043 件の噴火履歴 */
+      + '|' + N + '\\s+(?:eruptions?|éruptions?|Ausbrüche|erupciones)', 'gi');
+    let stated = 0;
+    eachDoc((f, s) => {
+      for (const m of s.matchAll(COUNT)) {
+        /* whichever of the three alternatives matched, its two digit groups are the only captures */
+        const g = m.slice(1).filter((x) => x != null);
+        stated++;
+        if (Number(g[0] + g[1]) !== held) {
+          fail('volcano-eruptions', `${f} writes «${m[0].replace(/\\s+/g, ' ').trim()}»`
+            + ` — data/volcano-detail.json.gz holds ${held}`);
+        }
+      }
+    });
+    /* …and a document that quietly stopped stating it has stopped being wrong only by saying
+       nothing. These three are where a reader is told how large the bundled record is. */
+    for (const f of ['PRODUCT.md', 'docs/FILES.md', 'docs/VOLCANO-INTELLIGENCE.md']) {
+      COUNT.lastIndex = 0;
+      if (!COUNT.test(BODY.get(f) || '')) {
+        fail('volcano-eruptions', `${f} no longer states how many eruptions the bundled record holds`);
+      }
+    }
+    if (!problems.some((x) => x.startsWith('volcano-eruptions'))) {
+      ok('volcano-eruptions', `${held} eruptions in the bundled record, stated correctly in ${stated} place(s)`);
+    }
   }
 }
 

@@ -10,9 +10,15 @@
  *    · ⑥/⑦ a feed parser that stops reading its upstream = the live rungs of the status ladder go
  *      quiet while the UI keeps saying "reading…" — the shape #R209 exists to prevent
  *    · ①–③ the bundled record losing its join key or its ordering = every card is wrong at once
- *    · ⑧ the count written into prose again = a label that disagrees with the file it describes
+ *    · ⑧/⑭ the count written into prose again = a label that disagrees with the file it describes
  *    · ⑨ the modules falling back into the eager bundle = every session pays for a card most
  *      readers never open
+ *
+ *  ⚠ (#R440) ⑧ AND ⑭ GUARD TWO DIFFERENT NUMBERS AND SWEEP DIFFERENTLY. ⑧ is the VOLCANO count and
+ *  reads CODE — it strips block comments, because a header may cite the measurement. ⑭ is the
+ *  ERUPTION count and does not strip anything, because all four places that number was written
+ *  down were block comments, and the six languages that stated it on sources.html are locale files
+ *  ⑧ never opened. ⑮ then proves the document half of the same guard actually goes red.
  *
  *  ⚠ ⑥ and ⑦ run against supabase/functions/_shared/volcano-parse.js — the code the EDGE FUNCTION
  *  runs — over answers captured from both upstreams (tests/fixtures/). A regex scraper of somebody
@@ -20,15 +26,17 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* ⚠ #R317: read source text through readLF so a CRLF working copy cannot make a source check
    permanently red on Windows and permanently green on CI. */
 const { readLF } = await import('../scripts/eol.mjs');
+const { withTreeLock } = await import('./helpers/gate-lock.mjs');
 const { lazyModules } = await import('./app-source.mjs');
 const { parseWeekly, parseAsh } = await import('../supabase/functions/_shared/volcano-parse.js');
 
@@ -70,7 +78,7 @@ test('② the detail record covers every volcano and its eruption rows are the d
   assert.equal(keys.length, LAYER.features.length, 'the two files describe different catalogs');
   assert.ok(Array.isArray(DETAIL.vocab.evidence) && DETAIL.vocab.evidence.length > 10, 'no evidence vocabulary');
 
-  let eruptions = 0, withVei = 0;
+  let eruptions = 0, withVei = 0, confirmed = 0;
   for (const f of LAYER.features) {
     const d = DETAIL.volcanoes[String(f.properties.v)];
     assert.ok(d, f.properties.n + ' (' + f.properties.v + ') has no detail record');
@@ -79,13 +87,40 @@ test('② the detail record covers every volcano and its eruption rows are the d
     for (const r of d.er) {
       assert.equal(r.length, 12, 'an eruption row of ' + f.properties.n + ' is not 12 fields');
       assert.ok(r[9] === 0 || r[9] === 1, 'confirmed flag is not 0/1');
+      if (r[9] === 1) confirmed++;
       if (r[7] != null) { assert.ok(r[7] >= 0 && r[7] <= 8, 'VEI ' + r[7]); withVei++; }
       if (r[10] != null) assert.ok(DETAIL.vocab.evidence[r[10]] != null, 'evidence index ' + r[10] + ' is out of range');
       eruptions++;
     }
   }
-  assert.ok(eruptions > 10000, 'only ' + eruptions + ' eruptions — the history did not come through');
-  assert.ok(withVei > 7000, 'only ' + withVei + ' eruptions carry a VEI');
+  /* ⚠ #R440: THIS USED TO BE `eruptions > 10000` AND `withVei > 7000`, AND THAT IS WHY THE FILE
+     COULD SIT 46 ROWS UNDER WHAT SIX SHIPPED LANGUAGES AND FOUR DOCUMENTS SAID IT HELD. A floor
+     passes for 11,043 and for 11,089 alike, so it could not see the gap it was the only check
+     positioned to see. Every assertion below is an EQUALITY against something measured elsewhere. */
+
+  /* ① the file states its own size, and the walk agrees with it (scripts/build-volcanoes.mjs
+     counts these in the loop that writes the records, not over the upstream response) */
+  assert.equal(typeof DETAIL.eruptions, 'number', 'the detail file does not state how many eruptions it holds');
+  assert.equal(typeof DETAIL.eruptionsWithVei, 'number', 'the detail file does not state how many carry a VEI');
+  assert.equal(eruptions, DETAIL.eruptions,
+    'the file says it holds ' + DETAIL.eruptions + ' eruptions and holds ' + eruptions);
+  assert.equal(withVei, DETAIL.eruptionsWithVei,
+    'the file says ' + DETAIL.eruptionsWithVei + ' eruptions carry a VEI and ' + withVei + ' do');
+
+  /* ② the two bundled files agree on the size of the record. `q` is written from the layer side,
+     the rows from the detail side; a build that dropped rows from one would part them. */
+  const q = LAYER.features.reduce((s, f) => s + f.properties.q, 0);
+  assert.equal(confirmed, q, 'the layer counts ' + q + ' confirmed eruptions, the detail record holds ' + confirmed);
+
+  /* ③ …and the history really came through. The three equalities above are all self-consistent at
+     zero, so this one asks an INDEPENDENT upstream field: `y` is Last_Eruption_Year from the
+     VOLCANO feature type, and a volcano that GVP dates a last eruption for must have a row for it.
+     If the eruption feature type ever answers with nothing, 848 volcanoes go red here at once. */
+  const dated = LAYER.features.filter((f) => f.properties.y != null);
+  const silent = dated.filter((f) => DETAIL.volcanoes[String(f.properties.v)].er.length === 0);
+  assert.equal(silent.length, 0, silent.length + ' volcanoes have a last-eruption year and no eruption row'
+    + (silent.length ? ' — e.g. ' + silent[0].properties.n : ''));
+  assert.ok(dated.length > 0, 'no volcano in the layer carries a last-eruption year');
 });
 
 /* ── ③ the history is newest-first, and the layer's summary numbers agree with it ──
@@ -310,6 +345,112 @@ test('⑬ no volcano paint value wraps a zoom expression inside another expressi
     'a circle-radius multiplies a ramp instead of being one');
 });
 
+/* ── ⑭ the ERUPTION count is read too, and the sweep does not stop at code (#R440) ──
+   ⑧ was written for the volcano count and it works: it strips block comments and looks for a
+   literal in CODE. That shape could not see this one. All four places the eruption count was
+   written into a shipped module were BLOCK COMMENTS, and the six languages that stated it on
+   sources.html are locale files ⑧ never opened. The count itself came from the build's own
+   completion line, which printed the upstream response's length and called it «wrote … eruptions»,
+   so every copy of it was 46 rows too large from the day it was written.
+
+   So this one reads the number FROM the file, sweeps the shipped modules WITHOUT stripping
+   comments, and reads the sources-page row in every language the directory holds. */
+test('⑭ the eruption count is never written down — not in a comment, not in a shipped string', () => {
+  const n = DETAIL.eruptions;
+  assert.equal(Number.isInteger(n) && n > 0, true, 'the detail file states no eruption total');
+  /* «11,043» / «11.043» / «11 043» / «11043» — built from the measurement, never typed here */
+  const groups = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ').split(' ');
+  const SEP = '[,.\\u00a0\\u202f ]?';
+  const CURRENT = new RegExp('(?<![\\d])' + groups.join(SEP) + '(?![\\d])');
+  /* …and the exact number this round found in fourteen places, which is the UPSTREAM total and was
+     never the file's. It is a historical constant, so it is safe to name: it can only come back by
+     somebody copying it back out of the WFS row again. */
+  const UPSTREAM = new RegExp('(?<![\\d])11' + SEP + '089(?![\\d])');
+
+  const MODULES = {
+    'js/beta-overlays.js': BETA, 'js/volcano-intel.js': INTEL,
+    'js/volcano-layers.js': LAYERS, 'js/lazy-modules.js': readLF(join(ROOT, 'js', 'lazy-modules.js')),
+  };
+  for (const [name, src] of Object.entries(MODULES)) {
+    assert.equal(UPSTREAM.test(src), false, name + ' writes 11,089 — that is what the GVP WFS answers'
+      + ' with, not what data/volcano-detail.json.gz holds');
+    assert.equal(CURRENT.test(src), false, name + ' hardcodes the eruption count (' + n + ')'
+      + ' — read it from the file, or say what is there instead of how much');
+  }
+
+  /* the sources page, in every language there is a file for */
+  const locales = readdirSync(join(ROOT, 'js', 'locales')).filter((f) => /^pages\..+\.js$/.test(f)).sort();
+  assert.ok(locales.length >= 9, 'only ' + locales.length + ' page locales — the sweep lost languages');
+  for (const file of locales) {
+    const src = readLF(join(ROOT, 'js', 'locales', file));
+    const m = /(['"])Smithsonian GVP\1:\s*(['"])([\s\S]*?)\2,$/m.exec(src);
+    assert.ok(m, file + ' has no Smithsonian GVP row on the sources page');
+    const text = m[3];
+    /* the row legitimately names the four population radii (5 / 10 / 30 / 100 km), so what is
+       banned is a number of FOUR OR MORE digits — grouped or not. No count of anything in this
+       record is smaller than that, and no radius is that large. */
+    const big = new RegExp('(?<![\\d])\\d{1,3}[,.\\u00a0\\u202f ]\\d{3}(?![\\d])'
+      + '|(?<![\\d])\\d{4,}(?![\\d])').exec(text);
+    assert.equal(big, null, file + ' states «' + (big && big[0]) + '» in the Smithsonian GVP row'
+      + ' — the sources page cannot count the bundled file, so it must not say how big it is');
+  }
+});
+
+/* ── ⑮ the document rule added with this one really goes red (#R440) ──
+   `npm run check:docs` grew a `volcano-eruptions` rule that re-derives the size of the bundled
+   record from the file and demands the three documents that state it agree. A rule nobody has
+   watched fail is indistinguishable from a rule that never runs — #R428 shipped one of those and
+   found out in production — so each half is made wrong on disk once and the gate must name it.
+   ⚠ THE TREE IS SHARED: `node --test` runs these files in parallel and four of them mutate
+   tracked files, so every mutation goes through tests/helpers/gate-lock.mjs, one at a time.
+   ⚠ `--rule=` keeps this to the one rule (and skips the rules that shell out), which is what
+   makes three mutations cost about three seconds instead of thirty. */
+test('⑮ check:docs goes red when a document misstates the size of the bundled record', async () => {
+  const held = DETAIL.eruptions;
+  const fmt = held.toLocaleString('en-US');
+  const WRONG = '11,089';                      /* the upstream total — what all four documents said */
+  assert.notEqual(fmt, WRONG, 'the bundled record now holds exactly the upstream total; pick another mutation');
+
+  const docFacts = () => {
+    try {
+      execFileSync(process.execPath, [join(ROOT, 'scripts/doc-facts.mjs'), '--check', '--rule=volcano-eruptions'],
+        { cwd: ROOT, encoding: 'utf8' });
+      return { code: 0, out: '' };
+    } catch (e) {
+      return { code: e.status == null ? -1 : e.status, out: String(e.stdout || '') + String(e.stderr || '') };
+    }
+  };
+
+  const CASES = [
+    /* the number, written the two ways these documents write it */
+    { file: 'PRODUCT.md', from: fmt + ' 件の噴火履歴', to: WRONG + ' 件の噴火履歴' },
+    { file: 'docs/FILES.md', from: '噴火履歴' + fmt + '件', to: '噴火履歴' + WRONG + '件' },
+    /* …and the other half: a document that stops stating it at all */
+    { file: 'docs/VOLCANO-INTELLIGENCE.md', from: fmt + ' 件の噴火履歴', to: '噴火履歴' },
+  ];
+
+  assert.equal(docFacts().code, 0, 'volcano-eruptions is already red on the committed tree');
+  for (const c of CASES) {
+    await withTreeLock(() => {
+      /* ⚠ #R286/#R317: match on LF text, restore the ORIGINAL BYTES, so a CRLF checkout is
+         neither a false red here nor a phantom diff afterwards. */
+      const abs = join(ROOT, c.file);
+      const originalBytes = readFileSync(abs);
+      const original = readLF(abs);
+      assert.ok(original.includes(c.from), c.file + ' no longer contains «' + c.from + '»');
+      try {
+        writeFileSync(abs, original.replace(c.from, () => c.to));
+        const r = docFacts();
+        assert.equal(r.code, 1, 'check:docs stayed green with ' + c.file + ' saying «' + c.to + '»');
+        assert.ok(r.out.includes('volcano-eruptions'),
+          'check:docs failed but never named volcano-eruptions:\n' + r.out);
+      } finally {
+        writeFileSync(abs, originalBytes);
+      }
+    });
+  }
+  assert.equal(docFacts().code, 0, 'the restore left check:docs failing');
+});
 /* ── ⑫ the status ladder never merges two agencies into one number on screen ──
    ①②③ are different instruments of different agencies. `rank` exists only so the MAP can sort
    colours; the panel must print the agency's own words with the agency's name against them. */

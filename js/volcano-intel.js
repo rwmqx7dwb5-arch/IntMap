@@ -9,8 +9,8 @@
  *  properties per volcano — name, country, type, elevation, last eruption year, region — and no GVP
  *  volcano number, so there was no join key: the eruption history, the VEI, the magma, the people
  *  living around it and every live feed on Earth were unreachable from the bundled file no matter
- *  what UI stood on top of it. scripts/build-volcanoes.mjs put the number in (and 11,089 eruptions
- *  beside it); this file is what the number is FOR.
+ *  what UI stood on top of it. scripts/build-volcanoes.mjs put the number in (and the whole eruption
+ *  record beside it); this file is what the number is FOR.
  *
  *  ── THE STATUS LADDER, AND WHY IT IS A LADDER ──────────────────────────────────────────────
  *  There is no single feed that states a current alert level for every volcano on Earth. Pretending
@@ -699,8 +699,8 @@ window.IntMapModules.volcanoIntel=function(HOST){
   }
 
   /* ══ 5. WHAT THE ERUPTION RECORD ITSELF SAYS ═══════════════════════════════════════════════
-     Everything below is computed from that volcano's own 11,089-row-wide slice of the GVP eruption
-     list. Nothing is a lookup of "volcanoes like this usually…", and the panel labels each figure
+     Everything below is computed from that volcano's own slice of the bundled GVP eruption record
+     (d.er). Nothing is a lookup of "volcanoes like this usually…", and the panel labels each figure
      with how many eruptions it rests on, because a "typical VEI" from three eruptions and one from
      forty-eight are not the same claim. */
   function character(rows){

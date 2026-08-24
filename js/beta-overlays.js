@@ -436,8 +436,8 @@ window.IntMapModules.betaOverlays=function(HOST){
     }
 
     /* ══ (#R395) THE ERUPTION RECORD ON THE MASTER CLOCK ══════════════════════════════════════════
-       11,089 dated eruptions were readable only one volcano at a time, in a card. On the clock they
-       answer a different question: «which volcanoes were erupting when the map is set to 1883?»
+       The bundled dated eruptions were readable only one volcano at a time, in a card. On the clock
+       they answer a different question: «which volcanoes were erupting when the map is set to 1883?»
        ⚠ THE DATES COME FROM THE BUNDLED HISTORY, so this costs one fetch of the file the card
        already uses (data/volcano-detail.json.gz) and nothing per year afterwards.
        ⚠ AN ERUPTION WITH NO END YEAR IS NOT AN ERUPTION THAT NEVER ENDED. GVP leaves the end blank

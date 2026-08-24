@@ -119,9 +119,15 @@ function vocabulary() {
 }
 
 /* ── GVP date parts → one comparable number, keeping the parts the record actually has ───────
-   A GVP eruption may be dated to the year, the month or the day, and 2,671 of the 11,089 carry no
-   VEI at all. Nothing here invents a missing part: month and day stay 0 when GVP wrote 0, and the
-   UI says 「年のみ」 rather than pretending to 1 January. */
+   A GVP eruption may be dated to the year, the month or the day, and about a quarter of the rows
+   carry no VEI at all. Nothing here invents a missing part: month and day stay 0 when GVP wrote 0,
+   and the UI says 「年のみ」 rather than pretending to 1 January.
+
+   ⚠ THE COUNTERS IN THIS LOOP COUNT THE UPSTREAM, NOT THE FILE. Every eruption row GVP publishes
+   lands in `hist`, but only the volcanoes in the Holocene volcano catalog get a `detail[vn]`, so
+   the rows of a volcano number that has eruptions and no catalog entry are never written. The two
+   numbers differ, they always have, and #R440 found the difference stated as if it were the file:
+   what the file holds is counted below, in the loop that writes it. */
 const num = (x) => (x == null || x === '' ? null : (Number.isFinite(+x) ? +x : null));
 
 async function main() {
@@ -169,6 +175,8 @@ async function main() {
   const landforms = vocabulary(), epochs = vocabulary(), evidenceCat = vocabulary();
   const features = [], detail = {};
   let withHistory = 0, withPop = 0;
+  /* what is actually WRITTEN, accumulated by the loop that writes it (#R440) */
+  let wroteEruptions = 0, wroteVei = 0;
 
   for (const f of V.features) {
     const p = f.properties;
@@ -177,6 +185,8 @@ async function main() {
     if (rows.length) withHistory++;
     const confirmed = rows.filter((r) => r[9] === 1);
     const veis = rows.map((r) => r[7]).filter((v) => v != null);
+    wroteEruptions += rows.length;
+    wroteVei += veis.length;
     const maxVei = veis.length ? Math.max(...veis) : null;
     const pp = pop.get(vn) || [null, null, null, null];
     if (pp[2] != null) withPop++;
@@ -230,6 +240,11 @@ async function main() {
     v: 2,
     built: layer.built,
     attribution: ATTRIBUTION,
+    /* (#R440) the file states its own size, so nothing downstream has to count it — or, worse,
+       quote a number measured somewhere else. tests/r353-checks ② walks every row and demands
+       these two agree with the walk. */
+    eruptions: wroteEruptions,
+    eruptionsWithVei: wroteVei,
     vocab: {
       evidence: evidence.list, landform: landforms.list,
       epoch: epochs.list, evidenceCat: evidenceCat.list,
@@ -240,11 +255,24 @@ async function main() {
   const gz = zlib.gzipSync(Buffer.from(JSON.stringify(detailDoc)), { level: 9 });
   fs.writeFileSync(OUT_DETAIL, gz);
 
+  /* ── what did NOT get written, and why (#R440) ────────────────────────────────────────────
+     A volcano number can have eruption rows and no entry in the Holocene volcano catalog, and the
+     loop above only writes the catalog. Those rows are dropped — correctly, since there is nothing
+     to hang them off — but for eight rounds the completion line below printed `E.features.length`
+     and called it «wrote … eruptions», and six shipped languages and four documents copied that
+     number as the size of the file. Print the two separately, and name the gap. */
+  const catalogued = new Set(features.map((f) => f.properties.v));
+  let orphanVolcanoes = 0, orphanRows = 0;
+  for (const [vn, rows] of hist) if (!catalogued.has(vn)) { orphanVolcanoes++; orphanRows += rows.length; }
+
   const layerBytes = fs.statSync(OUT_LAYER).size;
   console.log(`\nwrote data/volcanoes_gvp.json  — ${features.length.toLocaleString()} volcanoes, `
             + `${(layerBytes / 1024).toFixed(0)} kB`);
-  console.log(`wrote data/volcano-detail.json.gz — ${E.features.length.toLocaleString()} eruptions `
-            + `(${veiKnown.toLocaleString()} with VEI), ${(gz.length / 1024).toFixed(0)} kB gzipped`);
+  console.log(`wrote data/volcano-detail.json.gz — ${wroteEruptions.toLocaleString()} eruptions `
+            + `(${wroteVei.toLocaleString()} with VEI), ${(gz.length / 1024).toFixed(0)} kB gzipped`);
+  console.log(`  of the ${E.features.length.toLocaleString()} rows GVP published `
+            + `(${veiKnown.toLocaleString()} with VEI); ${orphanRows.toLocaleString()} were dropped, `
+            + `belonging to ${orphanVolcanoes.toLocaleString()} volcano numbers the Holocene catalog does not list`);
   console.log(`  ${withHistory.toLocaleString()} volcanoes have a dated eruption record`);
   console.log(`  ${withPop.toLocaleString()} volcanoes have population figures`);
   console.log(`  rock types ${rocks.list.length} · tectonic settings ${settings.list.length} · `
