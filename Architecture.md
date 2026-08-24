@@ -765,15 +765,17 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   `?feed=ash` は国際 SIGMET（`aviationweather.gov`）のうち**火山灰（`hazard:"VA"`）だけ**。
   ⚠ **上流の解析はサーバー側で行う**——ブラウザが受け取るのは **GVP 火山番号で引ける行**であって
   XML ではない（RSS の `<guid>` が `#vn_282110` の形で番号を持つ。名前で突き合わせない）。
-  解析の正本は `_shared/volcano-parse.js` で、`tests/r346-checks.test.mjs` が**捕獲した実応答**で検査する。
+  解析の正本は `_shared/volcano-parse.js` で、`tests/r353-checks.test.mjs` が**捕獲した実応答**で検査する。
   ⚠ **火山灰が0件は正常な答えであって失敗ではない**——応答の `read`（読んだ SIGMET の総数）が
   「何も出ていない」と「読めなかった」を分ける。キャッシュは灰 15 秒・週報 1 時間。
   ⚠ **残り4本の火山データ源（USGS HANS・気象庁・USGS ハザード域 ArcGIS・USGS 地震）は
   ACAO を返すので中継しない**（要らない relay は落ちうるものを1つ増やすだけ）。
   詳細は [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md)。
 
-⚠ **5本の無認証中継（`alerts-relay` / `cable-geo` / `news-relay` / `sv-cov` / `volcano-feed`）は
-`_shared/relay-guard.js` を共有する。** URL allowlist、**GET 限定**、**期限**（`AbortSignal.timeout`）、
+⚠ **`_shared/relay-guard.js` を共有するのは8本**（`alerts-relay` / `aviation-feed` / `cable-geo` /
+`news-ingest` / `news-relay` / `routing-relay` / `sv-cov` / `volcano-feed`）**。** そのうち
+`news-ingest` だけが `x-news-ingest-secret` で fail-closed に守られており、**残り7本は無認証**。
+共有しているのは、URL allowlist、**GET 限定**、**期限**（`AbortSignal.timeout`）、
 **バイト上限**（`content-length` とストリーム読み出しの両方——上流は length を返さないことがある）、
 **Content-Type** 判定、そして**外向きエラーはコード1語**（上流の例外文言・スタックは返さない）。
 ⚠ **公開レイヤーなのでログイン必須にはしない**（署名前の読者に地図を出せなくなる）。
@@ -2087,7 +2089,7 @@ supabase db diff --schema public             # driftゼロ確認
 - **monitor-run** ＝ 同型の fail-closed（`x-monitor-secret`）。ユーザーの「今すぐ実行」は JWT ＋ 所有権照合。
 - **delete-account** ＝ `verify_jwt` ＋ 関数内検証 ＋ `confirm:"DELETE"`。**1トランザクション**で
   所有行を削除し、**削除後に数え直して**残っていれば raise（fail-closed）。Auth ユーザーの削除はその後だけ。
-- **4本の無認証中継**は `_shared/relay-guard.js` を共有する（§6.2）。
+- **無認証中継**は `_shared/relay-guard.js` を共有する（本数と一覧は §6.2。ここには書き写さない）。
 
 ### 17.3 ブラウザ側の設定
 

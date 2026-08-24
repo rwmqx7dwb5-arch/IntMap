@@ -48,10 +48,42 @@ const fail = (rule, detail) => problems.push(rule + ' — ' + detail);
 const ok = (rule, detail) => notes.push(rule + ': ' + detail);
 
 /* ── the current-state documents (NOT the history files) ─────────────────────────────────── */
-const DOCS = [
+/* (#R403) …AND THE INSTRUCTION DOCUMENTS ARE CURRENT-STATE DOCUMENTS TOO.
+   every `.md` under `.claude/` — the standing rules, the round procedure, the subagent
+   definitions — says
+   the same measurable things the prose documents say, and they had been outside every sweep in
+   this file. Measured: `.claude/skills/intmap-round/SKILL.md` §6 told the reader to deploy
+   「9 本」 and named nine of them, three rounds after #R399 audited that exact number across
+   the documents and rebuilt the rule below for it. The audit could not have caught it: the
+   file was not in the set being read.
+   ⚠ These are not a lesser class of document. They are the ones a session reads BEFORE it does
+     anything, so a stale fact here is acted on rather than merely misread — the nine-name list
+     is a deploy instruction, and following it silently skips three functions.
+   ⚠ ANOTHER CHECKOUT IS NOT THIS CHECKOUT'S DOCUMENTS. The harness puts its worktrees under
+     `.claude/worktrees/`, each a complete copy of the repository (measured #R282: 2 of them,
+     11,615 files). Walking into those would scan every document twice over at whatever commit
+     that worktree sits on. The walk therefore stops at any directory holding a `.git` entry,
+     which is what makes a checkout a checkout — not at a hand-written folder name. */
+const walkMd = (rel, out = []) => {
+  const abs = join(ROOT, rel);
+  if (!existsSync(abs)) return out;
+  const ents = readdirSync(abs, { withFileTypes: true });
+  if (ents.some((e) => e.name === '.git')) return out;          /* a nested checkout — not ours */
+  for (const e of ents) {
+    if (e.isDirectory()) walkMd(rel + '/' + e.name, out);
+    else if (e.name.endsWith('.md')) out.push(rel + '/' + e.name);
+  }
+  return out;
+};
+
+/* the prose documents: the ones docs/README.md indexes (rule 20 below is about exactly these) */
+const PROSE_DOCS = [
   ...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f)),
   ...(has('docs') ? readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f) : []),
 ].filter((f) => f !== 'CLAUDE.local.md');
+/* the instruction documents: read by the session, not by a person browsing docs/ */
+const AGENT_DOCS = walkMd('.claude').sort();
+const DOCS = [...PROSE_DOCS, ...AGENT_DOCS];
 const BODY = new Map(DOCS.map((f) => [f, rd(f)]));
 const eachDoc = (fn) => { for (const [f, s] of BODY) fn(f, s); };
 
@@ -60,6 +92,13 @@ if (DOCS.length < 10) fail('scan', `only ${DOCS.length} documents were read — 
 for (const must of ['Architecture.md', 'README.md', 'CLAUDE.md', 'CONSTITUTION.md', 'SECURITY.md']) {
   if (!BODY.has(must)) fail('scan', `${must} was not scanned`);
 }
+/* …and it has to reach the instruction documents, which is the half that was missing. Named
+   individually, because `AGENT_DOCS.length > 0` would still be satisfied by a walk that found
+   the agents and stopped short of the skill — the file that actually drifted. */
+for (const must of ['.claude/skills/intmap-round/SKILL.md', '.claude/rules/execution-strategy.md']) {
+  if (!BODY.has(must)) fail('scan', `${must} was not scanned — the instruction documents are inside the sweep now`);
+}
+if (AGENT_DOCS.length < 3) fail('scan', `only ${AGENT_DOCS.length} instruction document(s) under .claude/ were read`);
 
 const ARCH = BODY.get('Architecture.md') || '';
 /* (#R280) §3 (the file ledger) and most of §7 (the layer implementation) moved to documents of
@@ -135,6 +174,76 @@ const FILES = BODY.get('docs/FILES.md') || '';
     if (missing.length) fail('edge-functions', `${f} does not name ${missing.join(', ')}`);
   }
   if (same(dir, declared)) ok('edge-functions', `${dir.length} functions, declared and documented: ${dir.join(', ')}`);
+
+  /* ── 2c. ANY document that spells the roster out is held to it ────────────────────────────
+   *  (#R403) #R399 widened the COUNT check to every document and every occurrence, and the
+   *  count in `.claude/skills/intmap-round/SKILL.md` §6 still went unread for three rounds —
+   *  「Edge Function を変えたなら本番へ出す（9 本: …）」 puts the number at the end of the
+   *  clause, and 2a below only reads a number bound directly to the noun. Widening the sweep
+   *  to that file (above) did not catch it either: measured, the report stayed green with the
+   *  wrong nine-name list sitting in it. Two silent misses of one fact, in a row.
+   *
+   *  So this reads the LIST rather than the number. A roster is not a matter of phrasing: it
+   *  is a run of real function names, and a document that writes one is claiming those are the
+   *  functions. What it must not do is read a legitimately PARTIAL list as a roster — and the
+   *  corpus has three of those, which is why the discriminator is not "three or more names":
+   *
+   *    · Architecture.md   「⚠ **5本の無認証中継**（`alerts-relay` / `cable-geo` / …）」
+   *                         — complete, about the unauthenticated relays, not about the roster
+   *    · Architecture.md   `for f in refresh-news monitor-run sv-cov …` — the deploy loop, split
+   *                         in two, so neither half is the whole set
+   *    · docs/SECURITY-ARCHITECTURE.md  "All twelve are declared there now (`aviation-feed` #R341,
+   *                         `routing-relay` #R347, …)" — names the four that were added, not all
+   *
+   *  What the two real claims have and those three do not is the NOUN: the words «Edge Function»
+   *  introduce the list. Measured over the whole corpus at a 40 / 60 / 90 character lead window,
+   *  that separates 2 from 3 identically at all three — a discriminator, not a tuned threshold.
+   *  A list that says of itself that it is partial (`など` / `ほか` / `その他` / `etc.`) is left
+   *  alone, the same escape rule 2b gives the `_shared` inventories.
+   *
+   *  ⚠ AND IT MUST NOT CATCH ITSELF — no run of three function names appears in this comment,
+   *    and docs/TESTING.md describes the rule without spelling the roster out. tests/r403-checks
+   *    ①② mutate a roster in both directions and prove each half goes red. */
+  {
+    const NAME = new RegExp('(?<![A-Za-z0-9-])(' + dir.join('|') + ')(?![A-Za-z0-9-])', 'g');
+    const HEDGE = /など|ほか|その他|etc\.|e\.g\./;
+    const LEAD = 90;          /* characters before the run in which the noun must appear */
+    const GAP = 24;           /* names further apart than this are separate lists */
+    let rosters = 0;
+    eachDoc((f, body) => {
+      const hits = [...body.matchAll(NAME)];
+      for (let i = 0; i < hits.length;) {
+        let j = i;
+        while (j + 1 < hits.length && hits[j + 1].index - (hits[j].index + hits[j][0].length) <= GAP) j++;
+        const names = [...new Set(hits.slice(i, j + 1).map((h) => h[1]))];
+        const start = hits[i].index, end = hits[j].index + hits[j][0].length;
+        i = j + 1;
+        if (names.length < 3) continue;                                   /* a mention, not a list */
+        const lead = body.slice(Math.max(0, start - LEAD), start);
+        if (!/Edge Functions?/.test(lead)) continue;                      /* not introduced as THE roster */
+        if (HEDGE.test(lead + body.slice(end, end + 40))) continue;       /* says itself it is partial */
+        rosters++;
+        const missing = dir.filter((n) => !names.includes(n));
+        if (missing.length) {
+          fail('edge-roster', `${f} writes out the Edge Functions but omits ${missing.join(', ')}`
+            + ` — «${body.slice(Math.max(0, start - 40), start).replace(/\s+/g, ' ').trim()}…»`);
+        }
+        /* …and if that same introduction states how many, the number is checked here too: 2a
+           cannot see it, because it is not bound to the noun. Take the count NEAREST the list —
+           the lead can also hold a heading number, which is an address and not a count. */
+        const nums = [...lead.matchAll(/(?<![\d.§#])(\d+)[ \t]*(?:本|函数)/g)];
+        if (nums.length) {
+          const n = Number(nums[nums.length - 1][1]);
+          if (n !== dir.length) {
+            fail('edge-roster', `${f} introduces the list with «${nums[nums.length - 1][0].trim()}»`
+              + ` — there are ${dir.length} Edge Functions`);
+          }
+        }
+      }
+    });
+    if (!rosters) fail('edge-roster', 'no document writes the Edge Function roster out any more — CLAUDE.md §5.1 is where a session reads which functions exist');
+    else if (!problems.some((p) => p.startsWith('edge-roster'))) ok('edge-roster', `${rosters} document(s) write the roster out, each naming all ${dir.length}`);
+  }
 
   /* ── 2a. every STATED size of the inventory, in every document, is the real one ─────────── */
   const WORD = {
@@ -705,9 +814,15 @@ const FILES = BODY.get('docs/FILES.md') || '';
   const idx = BODY.get('docs/README.md');
   if (!idx) fail('doc-index', 'docs/README.md is gone — there is no index of the documents');
   else {
-    const missing = DOCS.filter((f) => f !== 'docs/README.md' && !idx.includes(f.replace(/^docs\//, '')));
+    /* ⚠ PROSE_DOCS, not DOCS. The index is a reader's table of "which document owns which fact",
+       and it already covers `.claude/` the way that table is written — one row for the rules,
+       one for the round procedure, one glob row for `../.claude/agents/*.md`. Holding every
+       instruction document to a row of its own here would be a different rule about a different
+       contract; what #R403 widened is the FACT SWEEP, not the index. That residual is written
+       down in docs/TESTING.md rather than left implicit. */
+    const missing = PROSE_DOCS.filter((f) => f !== 'docs/README.md' && !idx.includes(f.replace(/^docs\//, '')));
     if (missing.length) fail('doc-index', 'docs/README.md does not list ' + missing.join(', '));
-    else ok('doc-index', 'all ' + (DOCS.length - 1) + ' current-state documents are listed in docs/README.md');
+    else ok('doc-index', 'all ' + (PROSE_DOCS.length - 1) + ' prose documents are listed in docs/README.md');
   }
 }
 
@@ -929,6 +1044,198 @@ if (RULE && RULE !== 'i18n-open-gap') {
   }
 }
 
+/* ═══ 23. a document that names a FILE tells the reader to open one that exists ═══════════
+ *  (#R403) The i18n subagent's standing instructions said to edit `js/locales/ui.zh-hant.js`.
+ *  There is no such file — the traditional-Chinese UI table is `ui.zh.js`, and the only
+ *  `-hant` name in the tree belongs to a DIFFERENT surface (the reading pages). Following that
+ *  instruction either creates a file nothing loads or edits the wrong surface. Two more of the
+ *  same shape were sitting in the prose: a worker named under `js/` that lives under `src/`,
+ *  and — worse — `Architecture.md` citing a regression test, by filename, that does not exist,
+ *  which reads as "this is verified" when nothing is.
+ *  ⚠ NAMING A FILE AS GONE IS NOT A STALE REFERENCE. `docs/MAP-LAYERS.md` says of the removed
+ *    reanalysis source that its module 「一緒に消えている」 — that sentence is CORRECT precisely
+ *    because the file is absent, and a rule without this escape would report the one document
+ *    that got it right. Same shape as the `_shared` hedge in rule 2b.
+ *  ⚠ Globs are skipped: `js/cesium-*.js` is a set, not a path. */
+{
+  const GONE = /消え|削除|撤去|外した|もう無い|もう無く|廃止|removed|deleted|no longer|is gone|was gone/;
+  let checked = 0;
+  const missing = [];
+  eachDoc((f, body) => {
+    for (const m of body.matchAll(/`((?:js|src|css|scripts|tests|supabase)\/[A-Za-z0-9_./-]+\.(?:js|mjs|ts|css|sql|ps1))`/g)) {
+      const p = m[1];
+      if (p.includes('*')) continue;                       /* a set of files, not a path */
+      checked++;
+      if (has(p)) continue;
+      /* the sentence around it may be SAYING that it is gone, which is a true sentence */
+      /* ⚠ THE ESCAPE IS THE SENTENCE, NOT A NEIGHBOURHOOD. A ±200-character window also silences a
+         genuinely stale path that merely sits near an unrelated sentence about something being
+         removed — and this document family talks about removals constantly. The one true case in
+         the tree says it on the same line as the path, which is what a sentence saying «this file
+         is gone» looks like; a wider window buys nothing and costs the rule its teeth. */
+      const line = body.slice(body.lastIndexOf('\n', m.index) + 1, (body.indexOf('\n', m.index) + 1 || body.length));
+      if (GONE.test(line)) continue;
+      missing.push(`${f} names ${p}, which is not in the tree — «${line.trim().slice(0, 80)}»`);
+    }
+  });
+  for (const d of missing) fail('named-path', d);
+  if (checked < 100) fail('named-path', `only ${checked} file paths were read across the documents — the sweep is not reaching them`);
+  else if (!missing.length) ok('named-path', `${checked} file paths named in the documents, all present`);
+}
+
+/* ═══ 24. the lists of GATES in the instruction documents are the whole list ═══════════════
+ *  (#R403) Two documents enumerate the `check:*` gates for a session to choose from, and both
+ *  had fallen behind `package.json` — one named six of eleven, the other five. The five that
+ *  were missing are not a smaller kind of failure: a gate nobody is told to run comes back red
+ *  with no name attached to it, and #R280 already wrote down that a list cannot fail on what it
+ *  does not contain. Worse, one of the two DECLARED the other to be the sole 正本 and forbade
+ *  copying it — so the incomplete list was the one every session was sent to. */
+{
+  const scripts = JSON.parse(rd('package.json')).scripts || {};
+  const gates = Object.keys(scripts).filter((k) => k.startsWith('check:')).sort();
+  const LISTS = ['.claude/agents/intmap-verifier.md', '.claude/rules/execution-strategy.md'];
+  if (gates.length < 5) fail('gate-lists', `package.json declares only ${gates.length} check:* scripts — this rule needs rewriting`);
+  for (const f of LISTS) {
+    const body = BODY.get(f);
+    if (body == null) { fail('gate-lists', `${f} was not scanned — it is one of the two documents that enumerate the gates`); continue; }
+    const absent = gates.filter((g) => !body.includes(g));
+    if (absent.length) fail('gate-lists', `${f} enumerates the gates but never names ${absent.join(', ')}`);
+  }
+  if (!problems.some((p) => p.startsWith('gate-lists'))) ok('gate-lists', `${gates.length} check:* gates, all named in both instruction documents`);
+}
+
+/* ═══ 25. the preview port, as scripts/worktree.mjs computes it ═══════════════════════════
+ *  (#R403) Two documents stated the convention as `42<N>`, which is only the right answer while
+ *  the round number has three digits starting with 2 — the example they both carried (R257 →
+ *  4257) is `4000 + 257` read a second way, so the wording and the tool agreed for exactly one
+ *  hundred rounds and then quietly stopped. */
+{
+  const m = rd('scripts/worktree.mjs').match(/const\s+port\s*=\s*(\d+)\s*\+\s*n\b/);
+  if (!m) fail('preview-port', 'scripts/worktree.mjs no longer computes the port as a base plus the round number — this rule needs rewriting');
+  else {
+    const base = Number(m[1]);
+    eachDoc((f, body) => {
+      if (!body.includes('intmap-preview-r')) return;
+      const stated = [...body.matchAll(/(\d{3,4})\s*\+\s*N\b/g)].map((x) => Number(x[1]));
+      if (!stated.length) {
+        fail('preview-port', `${f} states the preview-port convention but not as «${base} + N» — a shape nothing can check is a shape that rots`);
+      }
+      for (const s of stated) if (s !== base) fail('preview-port', `${f} says the port is ${s} + N; scripts/worktree.mjs uses ${base} + N`);
+      /* …and any worked example is arithmetic, so check it */
+      for (const ex of body.matchAll(/R(\d{2,4})\s*なら[^\n]{0,40}?(\d{4})/g)) {
+        const want = base + Number(ex[1]);
+        if (Number(ex[2]) !== want) fail('preview-port', `${f} says R${ex[1]} is port ${ex[2]}; ${base} + ${ex[1]} is ${want}`);
+      }
+    });
+    if (!problems.some((p) => p.startsWith('preview-port'))) ok('preview-port', `the preview port is ${base} + N everywhere it is stated`);
+  }
+}
+
+/* ═══ 26. the USB backup is launched with a shell this machine HAS ════════════════════════
+ *  (#R403) #R372 measured that PowerShell 7 is not installed here and corrected CLAUDE.md §11.2
+ *  — and the round procedure, the document a session actually follows, kept `pwsh -File …` for
+ *  three more rounds. Following it, the last step of every round dies with CommandNotFound.
+ *  ⚠ The needle is the LAUNCHER, taken from the owner of the fact rather than written down
+ *    twice: whatever CLAUDE.md §11.2 invokes the script with is what every other document must. */
+{
+  const owner = BODY.get('CLAUDE.md') || '';
+  const SCRIPT = 'scripts/backup-usb.ps1';
+  const shellOf = (line) => (line.match(/(^|[\s`])((?:pwsh|powershell)(?:\.exe)?)\b/i) || [])[2];
+  const ownerLine = owner.split('\n').find((l) => l.includes(SCRIPT) && shellOf(l));
+  if (!ownerLine) fail('backup-shell', 'CLAUDE.md no longer shows which shell runs the USB backup — §11.2 is the 正本 for that');
+  else {
+    const want = shellOf(ownerLine).toLowerCase();
+    /* ⚠ NOT ONLY THE DOCUMENTS. #R396 landed while this rule was being written and found the same
+       stale launcher in three more places, TWO OF THEM IN CODE — the USAGE block of the script
+       itself, and the hint `scripts/worktree.mjs` prints at the end of every round. Those are read
+       by exactly the person about to type the command, and a rule that swept only `.md` would have
+       reported the round procedure fixed while the two loudest copies stayed wrong. So the sweep
+       covers anything that can print the command. */
+    const CODE = ['scripts/backup-usb.ps1', 'scripts/worktree.mjs', 'scripts/master-sync.mjs']
+      .filter((p) => has(p)).map((p) => [p, rd(p)]);
+    let seen = 0;
+    for (const [f, body] of [...BODY, ...CODE]) {
+      for (const line of body.split('\n')) {
+        if (!line.includes(SCRIPT)) continue;
+        const got = shellOf(line);
+        if (!got) continue;                                   /* naming the script is not invoking it */
+        seen++;
+        if (got.toLowerCase() !== want && !/ではない|not `?pwsh|NOT `?pwsh/i.test(line)) {
+          fail('backup-shell', `${f} launches the USB backup with ${got}; CLAUDE.md §11.2 uses ${want}: ${line.trim().slice(0, 90)}`);
+        }
+      }
+    }
+    if (seen < 2) fail('backup-shell', `only ${seen} invocation(s) of ${SCRIPT} were read — the sweep is not reaching them`);
+    if (!problems.some((p) => p.startsWith('backup-shell'))) ok('backup-shell', `${seen} invocations of the USB backup, all with ${want}`);
+  }
+}
+
+/* ═══ 27. how many functions share the relay guard ════════════════════════════════════════
+ *  (#R403) Architecture.md said 「5本」 in §6.2 and 「4本」 in §17.2 — two sentences in one
+ *  document disagreeing about one number, while eight functions actually import it. The second
+ *  was a copy of the first with a link back to it, which is the arrangement §9 of CLAUDE.md
+ *  exists to prevent: it now states the fact once and points. */
+{
+  const dirs = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name !== '_shared').map((d) => d.name);
+  const users = dirs.filter((n) => {
+    const p = ['index.ts', 'index.js'].map((x) => 'supabase/functions/' + n + '/' + x).find((x) => has(x));
+    return p ? rd(p).includes('relay-guard') : false;
+  }).sort();
+  if (!users.length) fail('relay-guard', 'nothing imports _shared/relay-guard.js any more — this rule needs rewriting');
+  else {
+    eachDoc((f, body) => {
+      for (const line of body.split('\n')) {
+        if (!line.includes('relay-guard')) continue;
+        const m = line.match(/(?<![\d.§#])(\d+)\s*本/);
+        if (m && Number(m[1]) !== users.length) {
+          fail('relay-guard', `${f} says ${m[1]} functions share _shared/relay-guard.js; ${users.length} import it (${users.join(', ')})`);
+        }
+      }
+    });
+    if (!problems.some((p) => p.startsWith('relay-guard'))) ok('relay-guard', `${users.length} functions share _shared/relay-guard.js`);
+  }
+}
+
+/* ═══ 28. CI runs every source-side gate that `npm test` runs ═════════════════════════════
+ *  (#R403) `scripts/test-parallel.mjs` ran eleven gates on the source side; `ci.yml` ran six.
+ *  Five — the document sweep among them — existed only as a habit: type `npm test` before
+ *  pushing, on one machine. #R400 wrote down the same shape from the other end (a check that
+ *  only runs at night does not reach the person who wrote the thing it checks); this is the
+ *  version where it runs nowhere automatic at all.
+ *  ⚠ THE COMPARISON IS BY SCRIPT FILE, NOT BY npm ALIAS. `ci.yml` says `npm run check:docs`
+ *    and test-parallel says `node scripts/doc-facts.mjs --check`; matching on the alias would
+ *    call them different, and matching on nothing would call everything fine.
+ *  ⚠ `check:perf` / `check:assets` go the other way — CI runs them and `npm test` does not,
+ *    deliberately, because they need the build. That direction is not checked here; what must
+ *    not happen is a gate the developer's own command runs and CI never sees. */
+{
+  const par = rd('scripts/test-parallel.mjs');
+  const ci = rd('.github/workflows/ci.yml');
+  const pkg = JSON.parse(rd('package.json')).scripts || {};
+  /* every scripts/*.mjs the source half invokes */
+  /* ⚠ ONE name is excluded, and only because it is the OTHER HALF: `run-tests` is the browser
+     suite, which CI runs as a job of its own rather than as a step here. Anything else that turns
+     up gets demanded of ci.yml — a false positive there is loud and gets fixed, whereas a longer
+     hand-written exclusion list is the shape this whole round is about. */
+  const wanted = [...new Set([...par.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)].map((m) => m[1]))]
+    .filter((n) => n !== 'run-tests');
+  /* every scripts/*.mjs ci.yml reaches, directly or through an npm alias it names */
+  const reached = new Set([...ci.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)].map((m) => m[1]));
+  for (const m of ci.matchAll(/npm run ([a-z0-9:-]+)/g)) {
+    const body = pkg[m[1]];
+    if (body) for (const s of body.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)) reached.add(s[1]);
+  }
+  /* `npm run test:checks` reaches its own file list, which is how the node tier gets in */
+  if (/npm run test:checks/.test(ci)) reached.add('test:checks');
+  if (wanted.length < 5) fail('ci-gates', `only ${wanted.length} gate scripts were read out of scripts/test-parallel.mjs — this rule needs rewriting`);
+  const unseen = wanted.filter((n) => !reached.has(n));
+  if (unseen.length) {
+    fail('ci-gates', `npm test runs ${unseen.map((n) => 'scripts/' + n + '.mjs').join(', ')}, and no ci.yml step reaches ${unseen.length > 1 ? 'them' : 'it'}`
+      + ' — a gate that only runs when someone remembers to type npm test is not a gate');
+  } else ok('ci-gates', `all ${wanted.length} source-side gates npm test runs are also ci.yml steps`);
+}
+
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
 /* (#R407) `--rule=` narrows what is REPORTED as well as what is run. ⚠ A name that matched no rule
    at all must be an error: a typo would otherwise exit 0 and let a mutation test prove nothing. */
@@ -940,12 +1247,14 @@ if (RULE && !problems.some(mine) && !notes.some(mine)) {
 }
 const shownP = RULE ? problems.filter(mine) : problems;
 const shownN = RULE ? notes.filter(mine) : notes;
-console.log('IntMap · cross-document facts — ' + DOCS.length + ' current-state documents scanned'
+console.log('IntMap · cross-document facts — ' + DOCS.length + ' current-state documents scanned ('
+  + PROSE_DOCS.length + ' prose + ' + AGENT_DOCS.length + ' instruction)'
   + (RULE ? `  (--rule=${RULE})` : '') + '\n');
 for (const n of shownN) console.log('  ✓ ' + n);
 if (shownP.length) {
   console.log('\n' + shownP.length + ' fact(s) have drifted:\n');
   for (const p of shownP) console.log('  ✖ ' + p);
+
   console.log('\nFix the document (or the code) so they agree. Do not relax the rule to make it pass.');
 } else {
   console.log('\n✓ every checked fact agrees with the repository, and the documents agree with each other');

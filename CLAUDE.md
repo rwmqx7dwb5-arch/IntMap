@@ -77,7 +77,7 @@ node scripts/worktree.mjs status
 ### ローカルプレビュー
 
 `.claude/launch.json` にラウンド別のプレビュー設定がある。慣例は
-**`intmap-preview-r<N>` / ポート `42<N>`**（例: `intmap-preview-r257` → `http://127.0.0.1:4257`）。
+**`intmap-preview-r<N>` / ポート `4000 + N`**（R403 なら `http://127.0.0.1:4403`）。
 `node scripts/worktree.mjs new` が 1 件足すので、手で書く必要はない。dev サーバは
 **必ず preview ツール経由**で起動し、Bash から直接起動しない。
 
@@ -174,8 +174,15 @@ node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなけ�
 **変更した Edge Function は本番環境へデプロイする。** 例:
 
 ```bash
-supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
+supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac --use-api
 ```
+
+⚠ **`--use-api` を省くと無言でハングする。** 既定のバンドルは Docker を使うが、このマシンでは
+**デーモンが動いていない**（実測 2026-08-24: `docker --version` は **29.6.1** を返す＝CLI は入って
+いる。止まっているのはデーモンで、`docker info` は `failed to connect to the docker API at
+npipe:…` を返す）。旗が無いと**標準出力が 1 バイトも出ないまま 600 秒経っても終わらない**ので、
+「まだ実行中」と区別がつかない。⚠ **進んでいるかどうかは経過時間ではなく
+`supabase functions list` の `version` / `updated_at` で判定する。**
 
 **Edge Functions は 12 本**（`ai-proxy` / `alerts-relay` / `aviation-feed` / `cable-geo` /
 `delete-account` / `monitor-run` / `news-ingest` / `news-relay` / `refresh-news` /

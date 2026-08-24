@@ -40,10 +40,19 @@ function runGate(args = []) {
 }
 
 /* ── ① the gate passes, and it reports EVERY rule ────────────────────────────────────────── */
-const RULES = ['app-size', 'edge-functions', 'migrations', 'serving', 'deploy', 'build-info',
-  'usb', 'languages', 'alerts', 'app-shape', 'anon-key', 'arch-rounds'];
+/* ⚠ (#R403) THIS LIST USED TO BE TWELVE NAMES TYPED OUT HERE, AND THE GATE HAD TWENTY-NINE.
+   Seventeen rules were outside the one test whose whole point is «a rule that does not run cannot
+   fail» — including every rule added after this file was written. It is now derived from the gate's
+   own source: a rule reports `✓ name:` on a green run exactly when it calls `ok('name')`, so that
+   is what is read. #R403's subject was a hand-written list of documents; this is the same shape one
+   level up, in the test that was supposed to be watching. */
+const RULES = [...new Set([...readFileSync(join(ROOT, 'scripts/doc-facts.mjs'), 'utf8')
+  .matchAll(/\bok\('([a-z-]+)'/g)].map((m) => m[1]))].sort();
 
 test('① the cross-document gate passes, and every rule actually ran', () => {
+  /* an empty derivation would pass the loop below without asserting anything — the exact failure
+     this file's header is about */
+  assert.ok(RULES.length >= 12, `only ${RULES.length} rules were read out of scripts/doc-facts.mjs — the derivation is not reaching it`);
   const { code, out } = runGate(['--check']);
   assert.equal(code, 0, 'scripts/doc-facts.mjs --check failed:\n' + out);
   for (const r of RULES) {
@@ -53,11 +62,38 @@ test('① the cross-document gate passes, and every rule actually ran', () => {
 
 test('② the sweep reaches the whole tree of current-state documents', () => {
   const { out } = runGate();
-  const n = Number((out.match(/(\d+) current-state documents scanned/) || [])[1]);
-  const expected = readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md').length
+  /* (#R403) the sweep has two halves now — the prose documents and the instruction documents
+     under `.claude/` — and it prints them separately, so both can be checked rather than a total
+     that two errors could cancel out of */
+  const m = out.match(/(\d+) current-state documents scanned \((\d+) prose \+ (\d+) instruction\)/);
+  assert.ok(m, 'the gate no longer reports how many documents it scanned, split by kind:\n' + out);
+  const [total, prose, instruction] = m.slice(1).map(Number);
+
+  const expectedProse = readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md').length
     + readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).length;
-  assert.equal(n, expected, 'the gate did not read every markdown document it should');
-  assert.ok(n >= 15, `only ${n} documents scanned — the sweep is not reaching the tree`);
+  assert.equal(prose, expectedProse, 'the gate did not read every prose document it should');
+
+  /* ⚠ COUNTED WITH THE SAME RULE THE GATE USES — stop at any directory holding a `.git` entry.
+     A naive walk of `.claude/` is machine-dependent, not merely imprecise: the master working copy
+     carries the harness's worktrees, each a complete second checkout. MEASURED there, a naive
+     enumeration finds 1,029 markdown files against the gate's 8, so a test that counted that way
+     would pass in a temp worktree and fail in the one place the documents actually live. */
+  const walkMd = (rel, acc = []) => {
+    const abs = join(ROOT, rel);
+    if (!existsSync(abs)) return acc;
+    const ents = readdirSync(abs, { withFileTypes: true });
+    if (ents.some((e) => e.name === '.git')) return acc;
+    for (const e of ents) {
+      if (e.isDirectory()) walkMd(rel + '/' + e.name, acc);
+      else if (e.name.endsWith('.md')) acc.push(rel + '/' + e.name);
+    }
+    return acc;
+  };
+  const expectedInstruction = walkMd('.claude').length;
+  assert.equal(instruction, expectedInstruction, 'the gate did not read every instruction document under .claude/');
+  assert.equal(total, prose + instruction, 'the two halves do not add up to the total the gate printed');
+  assert.ok(instruction >= 3, `only ${instruction} instruction document(s) scanned — the .claude/ half is not reaching the tree`);
+  assert.ok(total >= 15, `only ${total} documents scanned — the sweep is not reaching the tree`);
 });
 
 /* ── ③ …and it is NOT blind: a real violation fails it ───────────────────────────────────── */

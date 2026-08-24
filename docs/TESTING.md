@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-24): the **core** tier that
 gates a push is **6 spec files / 0.6 min** against a ceiling of 0.7 min; the **whole** suite is
 **88 measured spec files / 75.5 min** of serial browser time against a ceiling of 75.5 min; and
-`npm run test:checks` runs **216 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **217 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **82 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -327,7 +327,7 @@ What is **Chromium-only**, and printed as `—` rather than 0: heap / nodes / li
 the sampling profiler. **GC time is unavailable to page script in both engines**, so it is not in any
 bucket and is not folded into `other`. **Worker-side work is also outside every bucket** —
 `addInitScript` does not reach a dedicated worker's global scope, so the decode that
-`js/sat-worker.js` does, and everything MapLibre's own workers do, is invisible; what is measured is the main thread's
+`src/sat-worker.js` does, and everything MapLibre's own workers do, is invisible; what is measured is the main thread's
 half of the exchange (`workerPost` is the structured clone, paid synchronously by the caller).
 
 ⚠⚠ **THE WEBKIT ARM IS NOT YET USABLE, AND THE REASON IS NOT KNOWN.** MEASURED, same page, same
@@ -535,13 +535,62 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
 
 It deliberately does **not** reformat or style-lint existing code.
 
+## 文書の検査 — `npm run check:docs` の規則一覧 (`scripts/doc-facts.mjs`)
+
+Every rule this gate applies, by the name it reports itself under. `Architecture.md` §15.5 sends the
+reader here for this list; adding a rule means adding a row.
+
+| rule | it fails when |
+|---|---|
+| `scan` | the sweep did not reach the tree, or missed a document it is required to read |
+| `app-size` | `Architecture.md` §1's file counts disagree with `index.html` / `js/` / `src/` / `css/` |
+| `edge-functions` | `supabase/functions/` and `supabase/config.toml` disagree, or a roster document drops a name |
+| `edge-count` | any document states an inventory size that is not the real one |
+| `edge-roster` | a document writes the roster out and omits a function, or introduces it with a wrong count |
+| `edge-shared` | a document enumerates `_shared/` and the list is not what is in the directory |
+| `migrations` | a stated migration count is wrong, or a named `.sql` file does not exist (`sql-path`) |
+| `serving` | a document still says the site is served from the repository tree or from OneDrive |
+| `deploy` | a document still describes the gated Pages deploy as switched off, or `docs/RELEASE.md` stops saying it is on |
+| `build-info` | the published build stamp is spelled with a leading hyphen |
+| `usb` | a document other than `CLAUDE.md` states the backup frequency |
+| `languages` | `js/locales/`, `_langs.js`, `Architecture.md` and the README disagree about the languages |
+| `alerts` | the warning-feed counts in `docs/MAP-LAYERS.md` / README disagree with `js/world-packs.js` |
+| `app-shape` | a document still describes the app as one hand-written file with no build step |
+| `anon-key` | a document puts the browser-side Supabase key in the entry page instead of `src/vendor.js` |
+| `arch-rounds` | `Architecture.md` carries a round reference — the history belongs in `DEV-NOTES.md` |
+| `cesium` | a document describes the second engine as withdrawn while it ships |
+| `monitors` | a document presents the withdrawn Area Monitors entry point as still clickable |
+| `news-path` | the privacy policy describes a news path the switches in `js/app-body.js` do not take |
+| `csp` | the CSP as `index.html` writes it is not the CSP the documents describe |
+| `db-tables` | the migrations, the pgTAP structure test and the documents disagree about the tables |
+| `node-tests` | a stated size of the node tier is not what `test:checks` runs |
+| `legal` | the policy text has more than one copy, or a page stops loading it |
+| `doc-index` | a prose document is missing from `docs/README.md` |
+| `i18n-open-gap` | `Architecture.md` §10.1's open-gap numbers disagree with `scripts/i18n-pair-audit.mjs` |
+| `named-path` | a document tells the reader to open a file that is not in the tree |
+| `gate-lists` | an instruction document enumerating the gates does not name every `check:*` |
+| `preview-port` | a document's preview-port convention disagrees with `scripts/worktree.mjs` |
+| `backup-shell` | a document launches the USB backup with a shell other than the one `CLAUDE.md` §11.2 uses |
+| `relay-guard` | a stated count of the functions sharing `_shared/relay-guard.js` is not the real one |
+| `ci-gates` | `npm test` runs a source-side gate that no `ci.yml` step reaches |
+
+The last six arrived in #R403 and are described below, after the Edge Function rules they grew out of.
+
+⚠ **The right-hand column paraphrases on purpose — do not quote a needle into it.** Several of these
+rules are of the form *no document says X*, and this table is in a document they sweep. Writing the
+row as the sentence it forbids makes the gate report this file. Measured while adding the table: two
+rows did exactly that on the first attempt, and two more escaped only on a technicality (one needle
+is case-sensitive, another wanted a shorter phrase). This has now happened thirteen times in this
+repository; `scripts/doc-facts.mjs`'s own header assembles its needles from parts for the same reason.
+
 ## The Edge Function inventory, across every document (`scripts/doc-facts.mjs`)
 
-Three rules hold the same fact from different sides. `edge-functions` compares
+Four rules hold the same fact from different sides. `edge-functions` compares
 `supabase/functions/` with the `[functions.*]` declarations in `supabase/config.toml`, and requires
 `CLAUDE.md` and `Architecture.md` to name every one of them in backticks. `edge-count` checks every
-**stated size** of that inventory. `edge-shared` checks every **enumeration of `_shared/`**, which is
-a library directory rather than a function and so is invisible to the other two.
+**stated size** of that inventory. `edge-roster` checks every document that **writes the list out**.
+`edge-shared` checks every **enumeration of `_shared/`**, which is a library directory rather than a
+function and so is invisible to the other three.
 
 ⚠ Until #R399 the count half read **two hand-written filenames and one sentence each**, and six
 documents drifted underneath it without a single red run. Worth keeping in mind when writing any
@@ -613,6 +662,65 @@ costs ~1.3 s and the whole file is ~18 s.
 ⚠ A `--rule` name that matches nothing **exits 2**, because a typo would otherwise exit 0 and let
 every mutation above prove nothing. `tests/r407-checks` ⑥ asserts that, for the same reason the
 rest of the file exists.
+
+### Tests that break the tree on purpose, and the lock they share (`tests/helpers/gate-lock.mjs`)
+
+Four files prove a gate really fails by making a fact wrong on disk, running the gate, and putting
+it back: `tests/r274`, `tests/r280`, `tests/r399`, `tests/r403`. `node --test` runs files in
+parallel, so they share one lock — a directory, because `mkdir` is atomic. Two rules about using it,
+both of which #R403 got wrong first and measured:
+
+- **Take it per mutation, not per test.** Holds are serialised across every file in the suite, so a
+  hold spanning a whole test blocks three other files for its whole length — measured at 82 s for
+  one test and 264 s for one file.
+- **The deadline is a backstop against a wedged suite, not a performance budget.** It decides only
+  how long a waiter tries before declaring the suite broken, so it has to exceed everything every
+  other holder can legitimately want: under `npm test` — 200-odd files competing for CPU, each gate
+  run costing multiples of its ~6 s solo time — that is minutes, not the 180 s it used to be.
+
+⚠⚠ **The lock is named after the checkout, and must stay that way.** It used to live at
+`<checkout>/node_modules/.intmap-tree-lock`, on the reasonable-sounding grounds that `node_modules`
+is gitignored — but `scripts/worktree.mjs` gives every worktree its `node_modules` as a **junction
+to the master copy's**, so that path resolved to *one directory shared by every checkout on the
+machine*, and this repository runs many sessions at once by design (`CLAUDE.md` §6). The damage is
+not queueing: a waiter in another worktree runs whatever version of the helper *its branch* has, and
+an older one decides a lock held past its staleness timeout is dead and **deletes it — while a live
+process in a different checkout is holding it**. The holder never learns, the next acquirer in the
+holder's own worktree walks in, and two processes mutate that tree at once. Measured during #R403,
+with three other worktrees running suites concurrently: `Architecture.md` carried another test's
+probe while this file's tests held the lock, and results on one unchanged tree moved 12 → 8 → 4 →
+**0** → 8 → 10 across runs. ⚠ A single green run is not evidence against an intermittent red.
+
+⚠ **A local full-suite run is not a trustworthy instrument while other sessions are working.** Under
+that contention it measures the machine, not the change — `tests/r274 ③` was measured anywhere from
+21 s to 380 s on one tree. Run the affected files together for a decisive local answer, and let CI,
+which is isolated, measure the whole gate.
+
+Two further defects in the lock surfaced when #R403 made acquisitions many and short. Both had been
+there all along; neither was reachable while holds were few and long:
+
+- **Liveness has to be the pid, not the clock.** The helper used to reclaim any lock whose mtime was
+  older than a timeout. Under load a legitimate holder exceeds any such timeout — measured,
+  `tests/r399 ①` held it for 208 s — and the waiter then deletes a *live* holder's lock and starts
+  writing the same files. That is exactly the two-writers-at-once the lock exists to prevent, and it
+  surfaces as "the restore left the tree failing" in whichever file is unlucky, which reads exactly
+  like a real regression. A heartbeat would not fix it: the callbacks run gates through
+  `execFileSync`, so the event loop is blocked for the whole hold and no timer would fire. Asking
+  the OS whether the holder still exists has neither problem, and never reclaims a live lock.
+- **On Windows the acquire race returns `EPERM`, not `EEXIST`.** A `mkdir` issued while another
+  process is removing that same directory hits it in a pending-delete state. The helper rethrew
+  anything that was not `EEXIST`, so an ordinary race killed the test outright — measured as seven
+  tests dying in milliseconds with `EPERM … mkdir`. A failure to take the lock is a failure to take
+  the lock, whatever errno the platform picks for it.
+
+⚠ **Check a restore by comparing bytes, not by running the gate again.** The byte comparison says
+what "restored" means — this file, these bytes — while a green gate only says no rule noticed, and
+it costs another gate run inside the lock. Cheaper and stricter at once.
+
+⚠ **Do not kill a suite mid-mutation.** The restore lives in a `finally`; killing the process skips
+it and leaves the tree broken. Measured: an interrupted run left `tests/r280`'s CSP probe in
+`Architecture.md`, and the next `check:docs` failed on `csp` for a reason that had nothing to do
+with the change being made.
 
 ## The Atlas capability audit (`scripts/atlas-capability-audit.mjs`)
 

@@ -43,17 +43,37 @@
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`CLAUDE.md` §6）。
 - ラウンド番号は `node scripts/worktree.mjs status` が示す**空き番号**を使い、**push の直前に取り直す**
-  （過去に 3 回、別セッションと衝突している）。
+  （⚠ 稀ではない。`DEV-NOTES.md` を「改番」で引けば実例が並ぶ）。
 
 ## 4. 検証は段で上げる——作業中は対象だけ、広い網は 1 回だけ
 
 | 段 | いつ | コマンド |
 |---|---|---|
 | 0 | 編集の直後 | 触った検査だけ `node --test tests/r<N>-checks.test.mjs` |
-| 1 | 主題のゲート | `npm run check:static` / `check:i18n` / `check:docs` / `check:catalog` / `check:engine` |
+| 1 | 主題のゲート | 下の表から**触った主題のものだけ** |
 | 2 | 該当 spec だけ | `npx playwright test tests/r<N>.spec.js` |
-| 3 | **push の直前に 1 回** | `npm test`（CI と同じ門） |
+| 3 | **push の直前に 1 回** | `npm test` |
 | 4 | 3-D・Cesium・物理・シミュレータを触ったとき | `npm run test:deep` |
+
+⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、`npm run check:docs` の
+`gate-lists` 規則が両者を突き合わせる）。かつてここには 5 件しか無く、しかも
+`.claude/agents/intmap-verifier.md` が「この表が**唯一の正本**・ここには書き写さない」と
+宣言していた——**書き写しを禁じた分だけ、正本の穴がそのまま固定されていた。**
+
+| 触った主題 | ゲート |
+|---|---|
+| 何であれ（構文・JSON/YAML・merge marker・秘密） | `npm run check:static` |
+| レンダラに触れるコード | `npm run check:engine` |
+| 利用者に見える文字列 | `npm run check:i18n` |
+| 企業アトラス | `npm run check:companies` |
+| 文書 | `npm run check:docs` |
+| `js/` のファイルを足した・消した | `npm run check:archfiles` |
+| 紛争データ | `npm run check:wars` |
+| Atlas の dispatch / catalogue | `npm run check:catalog` |
+| Atlas の能力表 | `npm run check:capabilities` |
+| 起動費用（**build が要る**） | `npm run check:perf` |
+| 配られる資産（**build が要る**） | `npm run check:assets` |
+| spec を足した・組み替えた | `npm run check:testbudget` |
 
 ⚠ 段 3 を作業の途中で何度も回さない（`CLAUDE.md` §4）。⚠ 段を飛ばして push しない。
 ⚠ **速度のために品質を落とさない。** 段を省くのではなく、**段の中を並列にする**。
