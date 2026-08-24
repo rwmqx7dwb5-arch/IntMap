@@ -30,6 +30,15 @@ import { execFileSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
+/* (#R407) `--rule=<name>` narrows the report to ONE rule and skips any rule that has to shell out
+   for its facts. It exists for the mutation tests: tests/r399-checks and tests/r407-checks run this
+   script once per mutation WHILE HOLDING THE TREE LOCK, and at eleven seconds a run a dozen
+   mutations hold it for two minutes and starve the other files that need it. MEASURED #R407: the
+   full run is 11.0 s, of which `i18n-pair-audit` as a subprocess is 10.0 s and every other rule
+   together is under one second — so `--rule` turns an 11 s mutation into a 1 s one. It is a test
+   affordance, never a way to run a narrower gate: `npm run check:docs` passes no `--rule`.
+   ⚠ A NAME THAT MATCHES NOTHING MUST NOT REPORT GREEN — a typo would silently prove nothing. */
+const RULE = (process.argv.find((a) => a.startsWith('--rule=')) || '').slice('--rule='.length);
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const has = (p) => existsSync(join(ROOT, p));
 
@@ -714,8 +723,12 @@ const FILES = BODY.get('docs/FILES.md') || '';
    already happened to this exact quantity.
    ⚠ COST: the child parses every file in js/ and takes about ten seconds, which is most of this
    gate's running time. That is the price of measuring rather than restating; check:docs is a lane
-   of its own in scripts/test-parallel.mjs and is not the longest one. */
-{
+   of its own in scripts/test-parallel.mjs and is not the longest one.
+   ⚠ …AND IT IS WHY `--rule=` EXISTS (see the top of this file). A mutation test that runs this
+   script once per mutation pays the ten seconds every time, while holding the tree lock. */
+if (RULE && RULE !== 'i18n-open-gap') {
+  /* skipped: this rule shells out for its facts and the caller asked for a different one */
+} else {
   const sec = (ARCH.match(/### 10\.1[\s\S]*?(?=\n### )/) || [''])[0];
   let pairs = null;
   if (!sec) {
@@ -769,14 +782,172 @@ const FILES = BODY.get('docs/FILES.md') || '';
   }
 }
 
+/* ═══ 22. WHEN THE DEEP TIER RUNS — derived from ci.yml's own gate ═════════════════════════
+   (#R407) MEASURED: scripts/tiers.mjs, scripts/run-tests.mjs, scripts/test-budget.mjs, ci.yml
+   itself, .github/actions/browser-tier/action.yml and FIVE files under tests/ — thirteen claims
+   across ten files — all said the deep tier runs after each merge. #R207 took it off `push` TWO
+   HUNDRED ROUNDS EARLIER; the post-merge CI run for 7d2e21e (2026-08-24, run 32708285103) skipped
+   both deep jobs. The two places that were right — package.json's `//test:deep` and
+   docs/TESTING.md — were right for no enforced reason.
+
+   ⚠ AND THE GATE ITSELF WAS GUARDED THE WHOLE TIME. tests/r207-checks ⑫ has asserted that `if:`
+   since the round that wrote it: schedule and dispatch present, `push` absent. It passed on every
+   one of those 200 rounds. What nobody held to it was the PROSE — so the half a machine reads was
+   correct and the half a person reads was not, and only the person acts on it.
+
+   It is not a cosmetic rot. A round that believes the merge will catch a deep regression does not
+   run `npm run test:deep` before opening its PR and does not treat a deep red as its own problem;
+   that belief is what #R400 measured as six consecutive red nights and what let #R372 追記's
+   regression be found by production first.
+
+   So the trigger set is READ OUT OF THE WORKFLOW, and the prose is measured against it in both
+   directions:
+     · ARM A (negative, swept over the tree). No file may name the nightly and, joined straight to
+       it, a trigger the job does not have. The file list is DERIVED — `git grep` for the nightly
+       across tracked files — because a hand-kept list of documents to scan is itself the defect
+       (#R399). Only the two history files are dropped, for the reason at the top of this file.
+     · ARM B (positive, the 正本 only). docs/TESTING.md must state, for EVERY event the workflow
+       triggers on, whether this tier runs on it. It is named here so that a document which stops
+       stating the fact FAILS instead of quietly falling out of the scan — hand-write the 正本, and
+       put it on the side that goes red when the sentence is absent (#R399).
+
+   ⚠ THE NEEDLES ARE ASSEMBLED FROM PARTS so this file is not a copy of the sentence it forbids —
+   the precaution the header of this file describes, and the reason arm A does not catch itself.
+   ⚠ ARM A IS A NEEDLE AND NEEDLES ARE INCOMPLETE. Prose that puts a whole clause between the
+   nightly and the claim slips past it; arm B is the half that cannot be phrased around, because it
+   reads the gate and demands an answer. tests/r407-checks proves both halves go red.
+
+   Cost, measured: 48 candidate files / 747 kB, of which the scan is 38 ms — the ~1.2 s this rule
+   adds is almost entirely the `git grep` process spawn on Windows. */
+{
+  const CI = '.github/workflows/ci.yml';
+  const JOB = 'browser-deep';
+  const ci = has(CI) ? rd(CI) : '';
+  if (!ci) fail('deep-tier-when', `${CI} is not there — this rule needs rewriting`);
+  else {
+    /* (1) what the workflow triggers on at all */
+    const onM = ci.match(/^on:\r?\n([\s\S]*?)^(?=\S)/m);
+    const wfEvents = onM ? [...onM[1].matchAll(/^ {2}([a-z_]+):/gm)].map((m) => m[1]) : [];
+
+    /* (2) …and which of those reach the deep job, read off its own `if:` */
+    const jobM = ci.match(new RegExp('^ {2}' + JOB + ':\\r?\\n([\\s\\S]*?)^ {2}[A-Za-z]', 'm'));
+    const body = jobM ? jobM[1].split('\n').filter((l) => !/^\s*#/.test(l)).join('\n') : '';
+    const ifM = body.match(/^ {4}if:\s*(.+)$/m);
+    const cond = ifM ? ifM[1] : '';
+    const eq = [...cond.matchAll(/github\.event_name\s*==\s*'([a-z_]+)'/g)].map((m) => m[1]);
+
+    let deepOn = null;
+    if (!wfEvents.length) fail('deep-tier-when', `${CI} no longer states its triggers as an \`on:\` block — this rule needs rewriting`);
+    else if (!jobM) fail('deep-tier-when', `${CI} no longer has a \`${JOB}\` job — this rule needs rewriting`);
+    else if (!ifM) deepOn = wfEvents.slice();                       /* no gate ⇒ every workflow event */
+    else if (eq.length && !/!=|&&/.test(cond)) deepOn = wfEvents.filter((e) => eq.includes(e));
+    else fail('deep-tier-when', `the \`if:\` on \`${JOB}\` is no longer a plain list of \`github.event_name ==\` tests («${cond.trim().slice(0, 80)}») — this rule needs rewriting`);
+
+    if (deepOn) {
+      const runsOnPush = deepOn.includes('push');
+
+      /* ── ARM A ─────────────────────────────────────────────────────────────────────────── */
+      /* the nightly, immediately joined to a merge/push claim. Both halves are built from parts. */
+      const NIGHT = '(?:nightly|every night)';
+      const JOIN = '[\\s.,;:+/&()\\u2014-]{0,6}(?:(?:it\\s+)?(?:also|and|plus|then)[\\s]*){0,2}(?:runs?\\s+)?[\\s.,;:+/&()\\u2014-]{0,6}';
+      const PUSHY = '(?:on|after|behind|follows)\\s+(?:every\\s+|each\\s+|the\\s+)?(?:push|' + 'merge' + ')'
+        + '|post-?' + 'merge';
+      const PAIR = new RegExp(NIGHT + '(' + JOIN + ')(' + PUSHY + ')', 'gi');
+
+      let files = [];
+      try {
+        /* ⚠ POSIX ERE, not JS: `git grep -E` rejects `(?:…)` with exit 128, and a rule that dies
+           on its own needle reads exactly like a rule with nothing to say. Same alternation, plain. */
+        files = execFileSync('git', ['grep', '-lIiE', '-e', 'nightly|every night', '--', '.'],
+          { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).split('\n').filter(Boolean);
+      } catch (e) {
+        if (e.status !== 1) fail('deep-tier-when', 'the tree could not be swept for the claim (' + (e.status != null ? 'git grep exit ' + e.status : e.message) + ')');
+      }
+      files = files.filter((f) => !/^DEV-NOTES/.test(f));
+      /* an empty sweep passes everything — the same guard the document scan at the top carries */
+      if (files.length < 5) fail('deep-tier-when', `only ${files.length} tracked file(s) mention the nightly — the sweep is not reaching the tree`);
+
+      let hits = 0;
+      if (!runsOnPush) {
+        for (const f of files) {
+          /* ⚠ NOT LINE BY LINE. Prose wraps, and a claim that wraps mid-sentence is invisible to a
+             line-based needle — so each file is stripped of its comment furniture and collapsed to
+             one line first. MEASURED #R407: the hand-grep that opened the round found nine of the
+             ten files and missed `tests/r337.spec.js`, whose claim breaks after «and after». */
+          const flat = rd(f).split(/\r?\n/)
+            .map((l) => l.replace(/^[\s>|]*(?:\/\*+|\*+\/|\*+|#+|\/\/)\s?/, ' '))
+            .join(' ').replace(/\s+/g, ' ');
+          for (const m of flat.matchAll(PAIR)) {
+            hits++;
+            fail('deep-tier-when', `${f} says the deep tier runs «…${m[0].trim().slice(0, 60)}…» — `
+              + `${CI}'s \`${JOB}\` gate names only [${deepOn.join(', ')}], so no push and no merge runs it`);
+          }
+        }
+      }
+
+      /* ── ARM B ─────────────────────────────────────────────────────────────────────────── */
+      const TDOC = 'docs/TESTING.md';
+      const T = BODY.get(TDOC) || '';
+      const MARK = '**Where it runs.**';
+      /* ⚠ THE ANCHOR MUST BE UNIQUE, AND THIS IS NOT PEDANTRY — the first version of this rule took
+         `indexOf`, and when tests/r407-checks blanked the real paragraph the rule quietly latched
+         onto a SECOND copy further down the file and reported something else entirely. A 正本 with
+         two copies is not a 正本 (CLAUDE.md §9), and `.indexOf` on a duplicated anchor is the same
+         defect #R399 found in `.match()`: it answers for the file with its first hit. */
+      const copies = T.split(MARK).length - 1;
+      const anchor = copies === 1 ? T.indexOf(MARK) : -1;
+      if (copies === 0) {
+        fail('deep-tier-when', `${TDOC} no longer carries a «${MARK}» statement for the deep tier — it is the 正本 for which events run it, so its absence is a failure and not a skip`);
+      } else if (copies > 1) {
+        fail('deep-tier-when', `${TDOC} carries ${copies} «${MARK}» paragraphs — the 正本 for the deep tier's triggers has to be one paragraph, or this rule reads whichever comes first`);
+      } else {
+        const win = T.slice(anchor, anchor + 480);
+        for (const e of wfEvents) {
+          const at = win.indexOf('`' + e + '`');
+          const runs = deepOn.includes(e);
+          if (at < 0) {
+            fail('deep-tier-when', `${TDOC}'s «Where it runs.» does not say whether the deep tier runs on \`${e}\`, which ${CI} triggers on`);
+            continue;
+          }
+          const negated = /\b(?:not|never|no longer)\b/i.test(win.slice(Math.max(0, at - 40), at));
+          if (runs && negated) fail('deep-tier-when', `${TDOC} says the deep tier does NOT run on \`${e}\`; \`${JOB}\`'s \`if:\` says it does`);
+          if (!runs && !negated) fail('deep-tier-when', `${TDOC} names \`${e}\` without saying the deep tier does NOT run on it; \`${JOB}\`'s \`if:\` excludes it`);
+        }
+      }
+
+      if (!problems.some((p) => p.startsWith('deep-tier-when'))) {
+        /* ⚠ say WHICH arms actually ran. If the gate ever regains `push`, arm A has nothing to
+           forbid — and «0 contradictions» would then be a sentence about a sweep that never
+           looked, which is the exact confusion this whole rule exists to prevent. */
+        ok('deep-tier-when', `the deep tier runs on [${deepOn.join(', ')}] and on nothing else `
+          + `(${wfEvents.filter((e) => !deepOn.includes(e)).join(', ') || 'no other trigger'} excluded); `
+          + (runsOnPush
+            ? `arm A is inert because the gate now includes push; ${files.length} file(s) mention the nightly`
+            : `${files.length} file(s) mentioning the nightly agree, ${hits} contradiction(s)`));
+      }
+    }
+  }
+}
+
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
-console.log('IntMap · cross-document facts — ' + DOCS.length + ' current-state documents scanned\n');
-for (const n of notes) console.log('  ✓ ' + n);
-if (problems.length) {
-  console.log('\n' + problems.length + ' fact(s) have drifted:\n');
-  for (const p of problems) console.log('  ✖ ' + p);
+/* (#R407) `--rule=` narrows what is REPORTED as well as what is run. ⚠ A name that matched no rule
+   at all must be an error: a typo would otherwise exit 0 and let a mutation test prove nothing. */
+const mine = (s) => s.split(' —')[0].split(':')[0].trim() === RULE;
+if (RULE && !problems.some(mine) && !notes.some(mine)) {
+  console.log(`IntMap · cross-document facts — --rule=${RULE} matched no rule in this file\n`);
+  console.log('  ✖ --rule named a rule that neither passed nor failed; check the spelling');
+  process.exit(2);
+}
+const shownP = RULE ? problems.filter(mine) : problems;
+const shownN = RULE ? notes.filter(mine) : notes;
+console.log('IntMap · cross-document facts — ' + DOCS.length + ' current-state documents scanned'
+  + (RULE ? `  (--rule=${RULE})` : '') + '\n');
+for (const n of shownN) console.log('  ✓ ' + n);
+if (shownP.length) {
+  console.log('\n' + shownP.length + ' fact(s) have drifted:\n');
+  for (const p of shownP) console.log('  ✖ ' + p);
   console.log('\nFix the document (or the code) so they agree. Do not relax the rule to make it pass.');
 } else {
   console.log('\n✓ every checked fact agrees with the repository, and the documents agree with each other');
 }
-if (CHECK && problems.length) process.exit(1);
+if (CHECK && shownP.length) process.exit(1);

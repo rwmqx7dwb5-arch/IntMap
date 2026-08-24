@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-24): the **core** tier that
 gates a push is **6 spec files / 0.6 min** against a ceiling of 0.7 min; the **whole** suite is
 **88 measured spec files / 75.5 min** of serial browser time against a ceiling of 75.5 min; and
-`npm run test:checks` runs **214 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **215 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **82 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -435,8 +435,18 @@ front of a push only if it costs at most one second, so nearly every per-round r
 deep. Nothing is deleted by being deep — every assertion still runs.
 
 **Where it runs.** `.github/workflows/ci.yml` runs it on the `schedule` (`0 18 * * *` = 03:00 JST)
-and on `workflow_dispatch`, and deliberately **not** on `push` — #R207 measured that attaching it to
-every merge cost ten minutes a merge. Locally, `npm run test:deep`.
+and on `workflow_dispatch`, deliberately **not** on `push`, and **not** on `pull_request` — #R207
+measured that attaching it to a merge cost ten minutes a merge. Locally, `npm run test:deep`.
+
+> ⚠ **So the merge does not catch a deep regression, and this paragraph is the 正本 that says so.**
+> Since #R407 `scripts/doc-facts.mjs` (`deep-tier-when`) reads the trigger set off the `if:` on
+> ci.yml's `browser-deep` job and requires this sentence to answer for **every** event the workflow
+> fires on. Change the gate and this goes red until the sentence is rewritten. It also sweeps the
+> tree for prose that says otherwise: at #R407 **ten files carried thirteen such claims**, including
+> the line `scripts/run-tests.mjs` prints on every `npm test`, and the post-merge run for `7d2e21e`
+> (2026-08-24) skipped both deep jobs while they said it did not. Run `npm run test:deep` yourself
+> before a PR that touches 3-D, Cesium, the simulators or the physics — nothing between your push
+> and tomorrow morning will.
 
 > ⚠ **A tier that nobody watches drifts red and stays red.** MEASURED in #R304: the nightly was red
 > on **all fourteen runs from 2026-08-08 to 08-21** — every one of the five `Deep rest` shards — and
@@ -556,6 +566,53 @@ excluded for the mirror-image reason — they read as partitive. A future docume
 total that way goes unchecked here; the per-name roster is what still holds it. `tests/r399-checks`
 proves each half goes red, including that the `6.2` in a section heading is read as an address and
 not as a quantity.
+
+## When the deep tier runs, against the gate that decides it (`scripts/doc-facts.mjs`)
+
+`deep-tier-when` reads the trigger set off the `if:` on ci.yml's `browser-deep` job — no copy of it
+lives anywhere else — and holds the prose to it from two sides.
+
+| arm | what it does | why that side |
+|---|---|---|
+| **A** (negative) | sweeps every tracked file that mentions the nightly and fails on any that joins it straight to a push/merge trigger the gate does not have | the file list comes from `git grep`, because a hand-kept list of documents to scan is the defect itself (#R399) |
+| **B** (positive) | requires the «Where it runs» paragraph above to answer for **every** event the workflow fires on — naming one it runs on, or negating one it does not | hand-name only the 正本, and put it on the side that goes **red when the sentence is absent** (#R399) |
+
+Arm A is a needle and needles are incomplete: prose that puts a whole clause between the nightly and
+the claim slips past it. Arm B is the half that cannot be phrased around, because it reads the gate
+and demands an answer — that is why both exist. **Arm A is not line-based**: it strips comment
+furniture and collapses each file to a single line before matching, because wrapped prose puts the
+claim across two lines. That is not hypothetical — the hand-grep that opened #R407 missed
+`tests/r337.spec.js` outright (`…run nightly and after` / `every merge…`), and the rule's very first
+run found it.
+
+`tests/r407-checks` proves each half goes red, by mutation: four prose sites reverted to the stale
+wording (one of them wrapped), the gate itself gaining `push` and losing `schedule`, the 正本 going
+silent **three** ways, and a sweep whose needle matches nothing — which must **fail**, because an
+empty sweep otherwise passes everything.
+
+⚠ The third silence is the one that caught a real bug in the rule while it was being written. The
+first version took `.indexOf` of the anchor; when the test blanked the real paragraph, the rule
+quietly latched onto a **second copy** further down this file and reported something else. A 正本
+with two copies is not a 正本, so a duplicated anchor is now a failure of its own — the same
+«answers for the file with its first hit» defect #R399 found in `.match()`.
+
+### `--rule=<name>`, and why it exists
+
+`node scripts/doc-facts.mjs --rule=deep-tier-when` narrows the report to one rule and skips any rule
+that shells out for its facts. It is a **test affordance, never a narrower gate** — `npm run
+check:docs` passes no `--rule`.
+
+Mutation tests run this script once per mutation *while holding the tree lock*
+(`tests/helpers/gate-lock.mjs`). MEASURED #R407: a full run is **11.0 s**, of which
+`scripts/i18n-pair-audit.mjs` as a subprocess is **10.0 s** and every other rule together is under
+one second. The first draft of `tests/r407-checks` did fifteen full runs, held the lock for over two
+minutes, and **timed out `tests/r399-checks` and `tests/r274-checks` at their 180 s limit** — a new
+round's test file made two older ones fail without touching them. With `--rule` the same mutation
+costs ~1.3 s and the whole file is ~18 s.
+
+⚠ A `--rule` name that matches nothing **exits 2**, because a typo would otherwise exit 0 and let
+every mutation above prove nothing. `tests/r407-checks` ⑥ asserts that, for the same reason the
+rest of the file exists.
 
 ## The Atlas capability audit (`scripts/atlas-capability-audit.mjs`)
 

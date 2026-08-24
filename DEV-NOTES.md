@@ -44,6 +44,7 @@
 
 - **#R408** — **起動を重くしていたのは大きさではなく、誰も頼んでいない仕事だった**〈外部監査が「スマホで遅い」の原因を6つ挙げてきた。**着手前に全部測った**——起動 JS 1,503,401 B gzip は本番実測で監査どおり、しかし**未使用でも機能全体を先行ロードしている**という主因は #R311 以降22ラウンドで **eager raw +1.11% / gzip +0.81%** の頭打ちで、伸びているのは async(+11.5%) と `dist/`(+25.8%)。監査が「直すべき1位」に挙げた10m国境は**3件中いちばん手当済み**（15秒は携帯／Data Saver 専用の緩和策・16 feature ごとに yield・パネルが可視になるまでレンダラーへ渡さない）、「操作可能の条件」という**前提は誤り**（`.boot-splash` は `pointer-events:none`＝地図はスプラッシュの下で操作できる）〉／⚠⚠⚠ **`js/runtime.js` の `every()`（hidden なタブでは動かない1本のタイマーホイール）は #R234 から在って、呼び出し元が0件だった**——ファイル冒頭は「39本の `setInterval` を1本にする」と宣言し、実体は js/ に生の `setInterval` が **43か所**。174ラウンド、宣言と実体が食い違ったまま（#R394 の「走っていない機構を名乗る列」と同じ形）⇒ **30ファイル43本を移した**／⚠⚠⚠ **綴りを消しても機構は走らないことがある**〈`js/theme-sky.js` の時計は `js/app-body.js:500`＝`makeRuntime`(:756) より**250行前**に鳴くので `everyTick` はフォールバックの生 interval を張る。ソースに `setInterval` は残らないので門は緑、しかし hidden なタブで回り続ける——**その次のラウンドで #R394 を自分で作るところだった**〉⇒ `makeRuntime` が**早く鳴いた時計を引き取る**（止めて同じ鍵・周期・関数で載せ直す）／⚠⚠⚠ **監査が引用した「950 KB」はコメントの孫引きで、実体は4倍**〈`js/layer-previews.js:709` は #R193 当時の6枚ぶんのまま。#R268/#R309 が22枚足して**28枚 / 4,051,978 B**。canvas ペインタも 19 でなく **33**〉——**古いコメントは古い測定を配る**／⚠⚠ **プレビューのキューは deadline で区切られていなかった**（`_openQueue` が全件を1回の同期 forEach で drain・入力中断もモバイル抑止も無し）⇒ 6ms スライス＋4種の入力で中断＋携帯は起動経路で門を開かない（`kick()` は無傷＝**開けば全部出る**）。⚠ **1スライスで必ず1件は走る**——予算を毎回見ると 85 ms のペインタで永久に再予約する／⚠⚠⚠ **警報の斜線カットは、パンのたびに必ずキャッシュを外していた**〈鍵に視野の矩形（0.25度丸め）が入っていた。0.25度は指が動かすどのパンより細かい。外したあとに走るのは数千地物の一覧・10度の格子・整列で、引き算だけが `cutMemo` で無料——そして #R344 の出力署名が「変わっていない」と結果を捨てる＝**毎パン、同じ絵を作り直して捨てていた**〉⇒ 鍵を**視野に入っている tier 0 の国の集合**に（同じ集合の中で動くかぎり出力は1地物も変わりえない）／⚠⚠ **先読みは発火後に止まる手段が無かった**（AbortController も世代カウンタも0件）⇒ 世代カウンタ。⚠ **世代の鍵は呼び出しではなくタイル矩形**——リングは60で切られるので同じ視野からの次の呼び出しは**残り**であり、追い越しとして捨てると今見ている視野の56件を自分で捨てる（実測して設計を1回変えた）。⚠ **落とした URL を `_pfSeen` に残さない**——残すと中止機構が先読みの被覆に静かな穴を空ける／⚠⚠ **`src/main.js` の「全ファクトリの一覧」から5件落ちていた**（`worldPacks`/`facilities`/`insolation`/`space` ＋ 種類の違う `aircraftPoints`）⇒ 一覧を導出で照合する門に（手書きの完全性を信じない）／⚠⚠ **殻の天井は残り1行だった**（8,019/8,020）——散文を DEV-NOTES へ移して `src/main.js` を0行増に畳んだ／⚠⚠ **統合で既存の門が5系統赤くなった**（`vm.runInContext`/`new Function` で js/ を classic script として評価する4本・`setInterval` の綴りを固定していた4本・`sourceType:'script'` の1本）——**主張は変えず綴りだけ更新**し、classic script 評価は共有ヘルパ `asClassicScript` に畳んだ／⚠ **CRLF が35ファイルに混入していた**（`git diff` が `src/main.js` を385行全書き換えと表示）⇒ HEAD の blob の行末に合わせ直してから commit
 
+- **#R407** — **「deep tier はマージのあとに走る」が、10ファイル13か所で嘘のまま 200 ラウンド残っていた**〈報告は `scripts/tiers.mjs` の1か所。実測は10ファイル——うち**いちばん読まれるのは `scripts/run-tests.mjs` が `npm test` のたびに端末へ印字する行**だった。#R207 が `browser-deep` を `push` から外したのは 200 ラウンド前で、実測 `7d2e21e` の post-merge run (32708285103) は deep シャードも `deep-alarm` も `skipped`〉／⚠⚠⚠ **門そのものは 200 ラウンドずっと守られていた**——`tests/r207-checks` ⑫ が `if:` に `push` が無いことを #R207 以来主張し、ずっと緑だった。**機械が読む半分は正しく、人が読む半分は間違っていて、行動するのは人のほうだけ**／⚠⚠⚠ **報告が「唯一の食い違い」と名指したファイルは、10 のうちの 1 つだった**（`package.json` と `docs/TESTING.md` は正しかったが、**正しさを強制するものは何も無かった**＝#R385 の「もう直っている ≠ もう起こらない」と同型）／⚠⚠⚠ **手作業の行単位 grep が 10 番目を取り逃がし、書いた規則の初回実行が見つけた**〈`tests/r337.spec.js` の主張は「so they run nightly and after／(改行) every merge」と**主張の途中で折り返していた**。⇒ 走査はコメント記号を剥がして1行に畳んでから当てる〉／⚠⚠⚠ **門は導出であって写しではない**——`ci.yml` の `browser-deep` の `if:` からトリガ集合を読み、両向きに縛る〈**腕A（否定・木を走査）**: 追跡下の全ファイルを `git grep` で選び（手書きの走査一覧は #R399 の欠陥そのもの）、nightly の直後に push/merge の主張が続く形を落とす。**腕B（肯定・正本1件）**: `docs/TESTING.md` の「Where it runs.」が、workflow が発火する**すべての**イベントについて走る／走らないを答えていなければ落ちる——手書きで残すのは正本だけ、しかも「**書いていなければ落ちる**」側〉／⚠⚠ **needle は不完全なので、それを書いておく**（nightly と主張の間に節が1つ入ると腕A は素通りする。腕B は言い換えでは逃げられない）／⚠⚠⚠ **9通りに変異させて赤を実測した**（散文4か所を昔の文面へ戻す・`if:` に `push` を足す・`if:` から `schedule` を抜く・正本を2通りに黙らせる・needle を実在しない語にする）／⚠ **`git grep -E` は POSIX ERE**（`(?:…)` を渡すと exit 128 で死に、**自分の needle で死んだ規則は何も言うことが無い規則と見分けがつかない**）／⚠ `ci.yml` の #R203 段落は「⚠ NOT ONLY NIGHTLY」で始まっていた——**真下の #R207 段落がそれを取り消しているのに、第1段落で読むのをやめた読者は逆の答えを持って帰る**⇒ 生き残った半分（dispatch はブランチで押す）だけ残して刈った
 - **#R406** — **`セーヌ川の長さは・` は質問ではなかった——1文字の句読点が意味を決めていた**〈`_requestProfile` の `wantExpl` が `[?？]` を見ており、`・`(U+30FB) は入っていない。実測: `・` 版は `outputs.explanation:false`、`？` 版は `true`。だが直すべきは文字クラスではなく、**正規表現が文の意味を決めていること**そのものだった〉／⚠⚠⚠ **意味を決める正規表現は 68 か所あり、うち 23 か所が利用者の生文を読んでいた**（「質問か」を訊く検出器が2つあり、**両方が同じ字面の弱点を共有**していた）／⚠⚠⚠ **最上位 Planner には web 検索も function calling も接続されていないのに、Policy は「外部情報源を選べ」と書いていた**（SYS に «No web-search or function-calling tool is attached» と明記されていた＝宣言と権限の不一致）／⚠⚠⚠ **`{"say":string,"actions":[]}` には「ただ答える」という形が無く**、`say` は**実行前に**「何をしたか」を書けと要求されていた／⚠⚠⚠ **126 能力すべてが `inputSchema:{type:'object'}` を共有**（`build()` にハードコード）＝引数ゼロの `analyze`/`highlight` が検証を通り、実行後に「何を分析しますか？」／⚠⚠⚠ **カタログ選別は文を読んでいなかった**（`produces:'explanation'` の +10 で、「ありがとう」も「東京の天気は？」も**同一の26件・41,178文字**。`comparison`/`navigation` は0能力に一致＝死んでいた）／⚠⚠⚠ **`runPlan`/`validate`/`goalSpec`/`normalize` は本番から一度も呼ばれていなかった**（#R318 の依存グラフ実行はテスト専用の第二アーキテクチャ）⇒ **`js/atlas-planner.js` を削除**／⚠⚠ **プロンプトは 77,277 → 7,483 文字（-90.3%）**／⚠⚠ **`type` を引数に混ぜると別 case へ流れる**（`Object.assign({type},args)` の順）⇒ `type` は最後に代入／⚠⚠⚠ **自分の `npx deno check` が共有 node_modules を Deno 配下で作り直し**、全セッションの `.cmd` shim を壊し cesium を 1.143→1.144 に上げて `check:perf` を落とした（`npm ci` で復旧）
 
 - **#R404** — **地点解析の AI は「止められていた」のではなく、書かれた日から一度も動いていなかった**〈依頼＝「ニュースの地点解析システムはAIを使うようにしろ。復活です」。#R29 が AI 第一手段を作り、#R40 が**読み出し**を止めた。5 か月後に測ると、止まっていたのは読み出しだけではない: `current_news` **1,548 行のうち `analyzed_by='ai'` は 0 件**（`AI_MODEL` の 403。`refresh-news` には `ai-proxy` の 403 リトライが無く、`catch(_){}` が理由ごと捨てていた）。そして **UI が実際に読むのは `news_events`（`news-ingest`）で、そちらは AI を 1 度も呼んでいなかった**〉⇒ **死んでいる経路を生き返らせるのではなく、生きている経路に AI を戻す**／⚠⚠⚠ **一番危ない罠は「入れる」側ではなく「消される」側だった**〈記事は保持期間の 72 時間ずっとフィードに居るので、`fetch` の upsert が決定論エンジンの結果を送り続ける＝**AI の座標を 20 分ごとに踏み潰す**。すぐ隣の `first_seen_at` が「列を送らない」ことで避けているのと同じ罠のもう 1 つの口。⚠ PostgREST は**鍵の揃わないオブジェクトを 1 回の upsert に混ぜられない**（欠けた鍵は既定値/NULL で埋まり、踏み潰しが名前を変えて戻る）ので**2 本に分けて送る**〉／⚠⚠⚠ **記事の行を直すだけでは地図に出ない**——代表地点を選び直すのは `summariseEvent` を呼ぶ `assign` の 1 か所だけで、そこは**所属が動いた Event しか数え直さない**。地点が変わった記事の Event を `finalOf`（**実 ID に解決済み**。仮の負 ID では何も更新されない）から `dirty` に足す／⚠⚠⚠ **「AI が見た」と「AI が置いた」は別の列**〈`subject_located_by` は座標を置いたもの、`subject_ai_at` は AI がこの記事を見た時刻。前者だけで候補を引くと、AI が「場所の無い記事」と判断したものを毎 run 送り直し、**上限を同じ記事で使い切って新しい記事に一生届かない**。#R394 の「`assigned_by='embedding'` が 23 本あって埋め込みは 0 行」と同じ形を作らない〉／⚠⚠⚠ **確度は自己申告させず、決定論エンジンとの一致を測る**（50 km 以内 0.95 / 相手が答えを持たない 0.8 / 食い違い 0.7）——較正されていない数字が `location_confidence` として画面に出るし、**食い違った行はそのまま運用者の待ち行列**になる／⚠⚠ **種別の語彙が `js/newsgeo.js` の `KIND_LOCAL` とずれると、AI が置いた都市が辞書の置いた国に代表を譲る**（`summariseEvent` は具体性で選ぶので、知らない語は 0 点）⇒ 検査は語彙を**あちらのソースから導出**して照合する／⚠⚠ **`Number(null)` は 0**（#R394・#R397 に続き 3 度目）——地点の無い記事をそれで読むとギニア湾に置いた記事になり、AI の答えが「大きく食い違った」と誤って記録される。**自分の検査が書いた直後に捕まえた**／⚠⚠ **呼ばれない段は存在しない段**——cron の body は段を名指しするので、migration が `news-ingest-tick` の command の**段の一覧だけを置換**する（command には秘密が入っているので書き直さない）／⚠ プライバシーポリシーは「この経路の地点は非AI」と**明文で**書いていた＝嘘になるので同じ変更で直し、`doc-facts` §15 に `locate` 段⇔ポリシーの門を足した（**3 通りに退行させて赤を実測**）／⚠ **検査を 1 本足したら `node-tests` が即座に落とした**（`docs/TESTING.md` の 208→209）——これは正しい動作で、#R399 が同じところで捕まっている／検査 18 本（`tests/r404-checks.test.mjs`）を**9 通りに変異させて赤を実測**
@@ -515,6 +516,167 @@ blob が元から CRLF** なので、そちらは CRLF のまま揃えた（LF �
   海底ケーブルは起動時 2,517,898 B / 61,055 座標）・**警報の国／視野単位の差分 source と Worker 化**・
   **起動バンドルの分割**——は手を付けていない。3 つとも 1 ラウンドでは収まらない。
 
+## R407 — **「マージのあとに走る」と書いてあった tier は、200 ラウンド前からマージで走っていなかった**
+
+依頼は 1 ファイルの 1 か所だった——`scripts/tiers.mjs:23` の
+「DEEP … Runs NIGHTLY, on every push to main, and on demand」。
+`.github/workflows/ci.yml` の `browser-deep` は
+`if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'` で門番されており、
+同じファイルの `══ (#R207) …AND NOT ON EVERY PUSH ══` 段落が
+"So it runs on the schedule and on demand, and no longer on push" と書いている。
+
+**実測（2026-08-24）**: `main` の post-merge CI run（`7d2e21e` / run `32708285103`）は
+`Deep …` シャードも `Nightly deep tier — raise or clear the alarm` も **`skipped`**。
+
+### ⓪ 依頼の前提は正しかった。ただし「1 か所」ではなかった
+
+木を全数で当たると、**10 ファイル・13 か所**が同じ嘘を持っていた。
+
+| ファイル | どこ | 何と言っていたか |
+|---|---|---|
+| `scripts/tiers.mjs` | 3 か所 | 「NIGHTLY, on every push to main」「every night and after every merge」「~15 分後」 |
+| **`scripts/run-tests.mjs`** | 1 か所 | **`npm test` のたびに端末へ印字される行** |
+| `scripts/test-budget.mjs` | 1 か所 | 「the 27 that run nightly and after every merge」 |
+| `.github/workflows/ci.yml` | 2 か所 | 「The job below: nightly, after every merge, and on demand」／「⚠ NOT ONLY NIGHTLY.」 |
+| `.github/actions/browser-tier/action.yml` | 1 か所 | 「the DEEP tier (nightly + after every merge)」 |
+| `tests/r337.spec.js` · `r337-atlas.spec.js` · `r341-live.spec.js` · `r353-live.spec.js` | 各 1 | 「nightly and after every merge」 |
+| `tests/r195-checks.test.mjs` | 1 か所 | 「the nightly/post-merge job」 |
+
+正しかったのは `package.json` の `//test:deep` と `docs/TESTING.md` の 2 か所だけで、
+**その正しさを強制するものは何も無かった**。`scripts/doc-facts.mjs` にはこの事実についての
+規則が 1 つも無く、`ci.yml` / `nightly` / `deep` / `schedule` のどれにも一致しなかった。
+
+⚠⚠⚠ **門そのものは 200 ラウンドずっと守られていた。** `tests/r207-checks.test.mjs` ⑫
+「the deep tier no longer stands between a merge and the next one」は、`if:` に `schedule` と
+`workflow_dispatch` が在り `push` が**無い**ことを #R207 以来ずっと主張しており、
+**200 ラウンド緑だった**。誰も突き合わせていなかったのは**散文のほう**である。
+⇒ **機械が読む半分は正しく、人が読む半分は間違っていた。そして行動するのは人のほうだけ。**
+
+⚠⚠⚠ **いちばん読まれる写しが `run-tests.mjs` だった。** ラウンドは `npm test` を走らせるたびに
+「the deep tier runs nightly and after every merge」を読む。字面の問題ではない——
+**マージが 15 分後に捕まえてくれると信じたラウンドは、PR を開く前に `npm run test:deep` を
+走らせないし、deep の赤を自分の問題として扱わない**。その信念の値段は記録に 2 回出ている:
+**#R400**（deep tier が 6 夜連続で赤）と **#R372 追記**（本番が最初の検出器だった）。
+
+### ① 手作業の行単位 grep が 10 番目を取り逃がした——規則の初回実行が見つけた
+
+`tests/r337.spec.js` の主張は**主張の途中で折り返していた**:
+
+```
+ *       standing in front of a push (…) — so they run nightly and after
+ *       every merge, which is where this project puts the expensive half…
+```
+
+`grep -i "after every merge"` はここに当たらない。⇒ **走査はコメント記号を剥がし、
+空白を畳んで 1 行にしてから当てる。** これは #R372 の「数字が 3 か所で別々に腐っていた」に
+付いていた**残件**——「この 4 つを照合する検査は無い」——の一部でもある。
+
+### ② 門は写しではなく導出。しかも両向き
+
+`deep-tier-when`（`scripts/doc-facts.mjs` 規則 22）は、`ci.yml` の `browser-deep` の `if:` から
+トリガ集合を読む。散文側に数字も一覧も置かない。
+
+- **腕A（否定・木を走査）** — 追跡下のファイルを `git grep` で選び（**手書きの走査一覧が
+  #R399 の欠陥そのもの**なので、一覧は導出する）、nightly の直後に push/merge の主張が
+  続く形を落とす。⚠ **needle は不完全**で、nightly と主張の間に節が 1 つ入ると素通りする。
+  **それを規則のコメントに書いた**——読めない検査を「効いている」と思わせないため。
+- **腕B（肯定・正本 1 件）** — `docs/TESTING.md` の「**Where it runs.**」が、workflow が発火する
+  **すべての**イベントについて「走る／走らない」を答えていなければ落ちる。名前を手書きするのは
+  正本だけ、しかも「**書いていなければ落ちる**」側（#R399）。言い換えでは逃げられない側がこれ。
+
+⚠ `pull_request` について何も言っていなかったので、正本にその 1 句を足した。
+
+### ③ 9 通りに変異させて赤を実測した（`tests/r407-checks.test.mjs`）
+
+| 変異 | 結果 |
+|---|---|
+| 散文 4 か所を昔の文面へ戻す（`tiers.mjs` / `run-tests.mjs` / `ci.yml` / **折り返した** `r337.spec.js`） | 4/4 RED |
+| `if:` に `github.event_name == 'push'` を足す | RED（正本が「push では走らない」と言っている） |
+| `if:` から `schedule` を抜く | RED（正本が「schedule で走る」と言っている） |
+| 「Where it runs.」を消す／`pull_request` の 1 句を消す | 2/2 RED |
+| needle を実在しない語にする（走査が 0 件になる） | RED（**空の走査は全部を通す**） |
+
+⚠ **`git grep -E` は POSIX ERE。** 最初の版は JS の `(?:…)` をそのまま渡して **exit 128** で
+死んでいた。`try` の中なので報告は出るが、**自分の needle で死んだ規則は、何も言うことが無い
+規則と見分けがつかない**。緑を見て終わりにしていたら、これに気付かない。
+
+### ④ `ci.yml` の第 1 段落を刈った
+
+`browser-deep` の上には「⚠ NOT ONLY NIGHTLY. It also runs on every push to main…」という
+#R203 の段落があり、**その真下の #R207 段落がそれを取り消している**。取り消しが下にあっても、
+第 1 段落で読むのをやめた読者は逆の答えを持って帰る。⇒ 生き残った半分
+（`workflow_dispatch` は**押したブランチで**走る＝PR の前にやるべきこと）だけを残した。
+
+### ⑤ 検査を書いたら、**他のラウンドの検査が2本落ちた**
+
+最初の版は変異ごとに素の `doc-facts` を回した——**15 回**。1 回 11 秒で、そのあいだ
+`tests/helpers/gate-lock.mjs` の**木のロックを握りっぱなし**になる。結果、`npm test` で
+`tests/r399-checks ①` と `tests/r274-checks ③` が **180 秒のタイムアウトで落ちた**。
+**私のファイルは、1バイトも触っていない2本の検査を落とした。**
+
+実測すると、11 秒のうち **10 秒は `scripts/i18n-pair-audit.mjs` の子プロセス**で、
+残り 21 規則ぜんぶで 1 秒未満だった。⇒ `doc-facts.mjs` に **`--rule=<name>`** を足した
+（1 つの規則だけ報告し、事実を取りに**外へ出る**規則は飛ばす。**門を狭める道具ではない**——
+`npm run check:docs` は `--rule` を渡さない）。変異 1 回が **1.3 秒**、ファイル全体が **10 秒**に。
+
+⚠⚠⚠ **そして次の版は、今度は「待つ側」で落ちた。** 握る時間を削ったのに ⓪——**読むだけの
+主張**——が木のロックを取っており、`tests/r399-checks ①` が **182 秒**握っている間に
+**180 秒で諦めた**。⇒ **ロックを取るのは書く側だけ**。取る側の待ちは `LOCK_MS = 600 秒`
+（錠は 40 worktree 共有なので、既定の 180 秒は他人の1ファイルより短い）。
+**握る時間を短く、待つ時間を長く。逆にすると、自分の検査が他人の検査を落とす。**
+
+⚠⚠⚠ **その近道自身が黙らないことを検査する**（⑥）。`--rule` の綴りが 1 文字ずれて
+「何も検査せず exit 0」になったら、①〜④ の証明はまとめて無意味になる——
+**存在しない規則名は exit 2**。#R399 の「発火しない検査は通った検査と見分けがつかない」を、
+この回が自分で入れた近道に当てたもの。
+
+⚠⚠⚠ **そしてその変異が、規則の実バグを 1 件見つけた。** 腕Bの錨は最初 `.indexOf` で取って
+いたが、`docs/TESTING.md` には**同じ文字列が 2 か所**あった（本文と、規則を説明する新しい節）。
+本物の段落を潰すと、規則は**下の写しを黙って読み、別のことを報告した**。⇒ **写しが 2 つある
+こと自体を落とす**（正本は 1 つ。#R399 の `.match()` と同じ「最初の1件で答える」欠陥）。
+
+### ⑥ ⚠ 残件2件（このラウンドでは直していない・実測だけ残す）
+
+- ⚠⚠⚠ **木のロックは「生きている持ち主」を殺す。** `tests/helpers/gate-lock.mjs` の
+  `STALE_MS = 120_000` は「殺されたプロセスの錠を壊す」ためのものだが、**待ち手は持ち主が
+  生きているかを見ない**——`mtime` は `mkdir` の時刻のまま更新されないので、
+  **120 秒より長く握っている正当な持ち主の錠が壊される**。実測: `tests/r399-checks ①` の
+  所要は 93〜205 秒で、`npm test` 全体を回すと **`R399 ①` / `R280 ②` / `r274 ③` が
+  「check:docs must be green before any of this means anything」で落ちる**——タイムアウトでは
+  なく、**別のテストに木を書き換えられた**という意味である。4 ファイルだけで回すと 3 件とも
+  通る。#R280 がこの錠を作った理由（テスト同士が木を壊し合う）が、**錠が在るのに再現している**。
+  ⇒ 直し方は `STALE_MS` を伸ばすことではなく、**持ち主の PID を錠に書いて生存を見る**こと
+  （同期の callback を握る持ち主が居るので、heartbeat では駄目——イベントループが回らない）。
+- **しかも錠は 40 個の worktree で共有されている。** 錠は `node_modules/.intmap-tree-lock` で、
+  `scripts/worktree.mjs` が **`node_modules` を原本から junction する**ので、
+  **別セッションの `npm test` と同じ錠を奪い合う**。実測: 1.3 秒の仕事に **52 秒・129 秒**の
+  取得待ち。＝ #R329「`/tmp` を使うな——全セッションで共有されている」と同じ形。
+  ⇒ このラウンドは**自分の footprint だけ**を最小化した（取得 **4 回 → 1 回**・握る合計
+  **8 秒**・待ちは `LOCK_MS = 600 秒`）。錠そのものは 40 セッションが使用中なので触っていない。
+- ⚠⚠⚠ **共有された `node_modules` は、テストが走っている最中に別セッションが差し替える。**
+  このラウンドの途中、`node_modules/.bin/playwright.cmd` の中身が
+  **`@deno run -A npm:@playwright/test@1.62.1/playwright %*`** だった——**Deno 製の shim**で、
+  Deno はこのマシンに入っていない（実体は **1.61.1**）。`npx playwright --version` は
+  この worktree でも**原本でも**「'deno' は…認識されていません」で落ち、`npm test` の
+  ブラウザ半分は **2 秒で死んだ**。⇒ 迂回して `node node_modules/@playwright/test/cli.js test`
+  で core tier を回した（**79 passed / 12.9 分**——落ちていたのは shim だけだと確かめた）。
+  **その数十分後、shim は普通の npm 製に戻っていて `npx` は動いた**（同じ木で `npm test` の
+  ブラウザ半分が **79 passed / 4.5 分**）。このラウンドは shim を1バイトも書いていないので、
+  **別セッションの `npm ci` が下から直した**ということになる。
+  `scripts/worktree.mjs` は `node_modules` を原本から **junction** するので、
+  **40 個の worktree はツールチェーン1つを共有していて、それは走行中に変わりうる**。
+  ⇒ 壊れているときの迂回路は上のコマンド。貼り替えは**しない**（他セッションの最中に触らない）。
+
+### 触ったもの
+
+`scripts/tiers.mjs`（3）・`scripts/run-tests.mjs`・`scripts/test-budget.mjs`・
+`.github/workflows/ci.yml`（2）・`.github/actions/browser-tier/action.yml`・
+`tests/r337.spec.js`・`tests/r337-atlas.spec.js`・`tests/r341-live.spec.js`・
+`tests/r353-live.spec.js`・`tests/r195-checks.test.mjs`／
+門 `scripts/doc-facts.mjs` 規則 22・回帰 `tests/r407-checks.test.mjs`（`test:checks` へ同じ
+コミットで登録）・正本 `docs/TESTING.md`（「Where it runs.」＋規則の節）。
+
+---
 ## R406 — **`セーヌ川の長さは・` は質問ではなかった。1文字の句読点が、意味を決めていた**
 
 > 依頼: 「これは『セーヌ川の長さは・』だけを直す不具合修正ではない。……今回の目的は、Atlas の判断を

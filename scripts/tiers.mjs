@@ -20,12 +20,23 @@
  *  rule like this is written as a regex in two configs, the two disagree.
  *
  *    · CORE — the gate. Runs on `npm test`, on every PR and on every push.
- *    · DEEP — everything else. Runs NIGHTLY, on every push to main, and on demand
- *      (`npm run test:deep`, or the workflow's dispatch button).
+ *    · DEEP — everything else. Runs on the nightly `schedule`, on `workflow_dispatch` (the button,
+ *      pressed on a branch), and locally on `npm run test:deep`. ⚠ AND ON NOTHING ELSE — see below.
  *
- *  ⚠ AND NOTHING IS DELETED BY BEING DEEP. Every assertion still runs, every night and after every
- *  merge; what changes is that it no longer stands between an edit and a push. A regression in a
- *  deep spec is caught by the run that follows the merge, ~15 minutes later, not the next morning.
+ *  ⚠ NOTHING IS DELETED BY BEING DEEP, BUT THE MERGE DOES NOT CATCH IT. Every assertion still runs;
+ *  what changed at #R207 is WHO FINDS OUT AND WHEN. #R203 attached this tier to `push` as well and
+ *  wrote here that a deep regression surfaces "~15 minutes after the merge"; #R207 measured that
+ *  this cost every merge ten of its fourteen minutes and removed it, and `browser-deep` in
+ *  .github/workflows/ci.yml has carried
+ *      if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+ *  ever since. MEASURED 2026-08-24 on the post-merge run for 7d2e21e (run 32708285103): the deep
+ *  shards and `deep-alarm` were BOTH `skipped`. So a deep regression is found by tonight's run, by
+ *  the dispatch button, or by `npm run test:deep` before the PR — and by nothing else. That is the
+ *  belief this header used to hand a round, and its price is on the record twice: #R400 (the tier
+ *  sat red for six consecutive nights) and #R372 追記 (production was the first detector).
+ *  ⚠ THIS SENTENCE IS A GATE, NOT A NOTE. `scripts/doc-facts.mjs` (`deep-tier-when`) derives the
+ *  trigger set from that `if:` and sweeps the tree for prose that contradicts it, so this cannot
+ *  drift away from the workflow again the way it did for the 200 rounds between #R207 and #R407.
  *
  *  ══ (#R204) WHICH FILES ARE CORE IS NOW A PRICE, NOT A LIST ═══════════════════════════════════
  *  「毎回毎回、テストに時間がかかりすぎ。いい加減にしろ。すべてが長すぎる。明らかにテストが過剰。
@@ -99,8 +110,10 @@ export function allSpecs() {
    come in under six seconds (this round's is 14.1 s locally ≈ 21 s of CI time, of which the boot is
    most), so pricing it would mean NO round ever verifies itself before its own push.
 
-   Nothing is deleted: everything that leaves the gate runs nightly and after every merge, ~15
-   minutes behind the push rather than in front of it (#R203).
+   Nothing is deleted: everything that leaves the gate runs on the nightly schedule, on the dispatch
+   button and under `npm run test:deep`. ⚠ It does NOT run behind the push it stepped out of the way
+   of — #R203 wrote that it did, and #R207 took the tier off `push` in the very block below without
+   coming back here. So the author is the only person who can find it before tonight.
 
    ⚠ AND THAT IS A BILL, NOT A SAVING — #R205 PAID IT IN ITS OWN ROUND. The PR gate was green first
    time and the post-merge deep run went red on two specs, both of them previous rounds' browser

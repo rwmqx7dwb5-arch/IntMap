@@ -8,8 +8,9 @@
  *
  *    ② (the starter chips) and ③ (NATO moving the camera) are in tests/r337-atlas.spec.js. They
  *       cost an Atlas chunk and a country table between them, which is more than the price of
- *       standing in front of a push (scripts/tiers.mjs, CORE_MAX_S) — so they run nightly and after
- *       every merge, which is where this project puts the expensive half of a round's evidence.
+ *       standing in front of a push (scripts/tiers.mjs, CORE_MAX_S) — so they run on the nightly
+ *       schedule and on the dispatch button (never on the merge, #R207), which is where this
+ *       project puts the expensive half of a round's evidence.
  *
  *  ⚠ #R318 IS WHY THIS FILE EXISTS AT ALL. A cross-chunk TDZ made Atlas fail to mount in the
  *  production build while `node --check`, 1,900 node assertions and a twenty-item audit all passed;

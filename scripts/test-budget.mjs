@@ -50,7 +50,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /* ⚠ (#R203) THE CEILING NOW GOVERNS THE TIER THAT RUNS EVERY TIME, WHICH IS THE ONE THE
    INSTRUCTION IS ABOUT. 「今の時間の1/10以下の時間で全テスト工程を終わらせろ」— the measured whole
    was 5,123 s; a tenth is 512 s. scripts/tiers.mjs splits the suite into the 29 files that gate a
-   push (424 s measured) and the 27 that run nightly and after every merge (4,699 s). Both have a
+   push (424 s measured) and the 27 that run on the nightly schedule and on demand (4,699 s;
+   #R207 took that tier off `push`, so no merge pays for it). Both have a
    ceiling here and both may only go down; a round that wants to add gate time still has to take it
    out somewhere, and a round that "fixes" the gate by pushing a file into `deep` still pays for it
    against DEEP_BUDGET_S. Moving everything to nightly is therefore not a way to pass this gate. */

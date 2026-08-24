@@ -150,7 +150,7 @@ test('R195 ⑦: the measured shard plan runs every spec exactly once, and is bal
   /* the group counts CI actually asks for — read them rather than assuming, so this test tracks
      the workflow instead of a copy of it */
   /* ⚠ (#R203) TWO TIERS NOW, AND THE PROPERTY IS ABOUT BOTH OF THEM TOGETHER. The gate runs the core
-     tier and the nightly/post-merge job runs the deep one, so neither plan covers the suite on its
+     tier and the nightly/on-demand job runs the deep one, so neither plan covers the suite on its
      own — but their UNION still must, exactly once, or a spec has quietly stopped running anywhere.
      The tiers and their group counts are read out of the workflow, so this tracks it rather than
      copying it: each `browser*` job states its tier once, in the `with:` line of the composite action. */

@@ -10,8 +10,10 @@
  *  `rNNN.spec.js` in the push gate whatever it costs, and these two claims need the 719 kB Atlas
  *  chunk and the whole country table between them — measured at 22 s and 42 s. A gate that a round
  *  can grow by a minute at a time is the accumulation #R197 exists to stop, so the cheap half keeps
- *  the gate's name and this half runs nightly and after every merge (#R203), which is where it will
- *  catch a regression ~15 minutes after the merge rather than never. Same shape as r318-atlas.
+ *  the gate's name and this half runs on the nightly schedule and on the dispatch button (#R203,
+ *  and #R207 which took the tier off `push`), which is where it will catch a regression the next
+ *  morning rather than never — so run `npm run test:deep` before the PR, because the merge will
+ *  not. Same shape as r318-atlas.
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
