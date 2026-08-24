@@ -455,7 +455,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "International SIGMET (volcanic ash) — NOAA Aviation Weather Center": "实际生效中的火山灰区域：飞航情报区依 VAAC 咨询电文发布的 SIGMET，连同其发布时的多边形与高度带（飞航空层）。由 supabase/functions/volcano-feed 中继，只保留火山灰类别。",
     "NASA GIBS — OMPS SO₂, upper troposphere & stratosphere": "卫星观测的二氧化硫总量，取的是喷烟出现的高度带，而非工业霾所在的边界层。GVP 自身的 SO₂ 排放量数据表虽在 WFS 中宣告，但上游已损坏，因此实际存在的观测是这一项。",
     "CRUST1.0 — global crustal model": "随应用程序一并提供（data/crust1.bin.gz）：1° 网格的全球地壳模型——沉积层、结晶质地壳与最上部地函，各层皆有自己的剪力波速度、密度与层界深度。地震模拟器据此建立各地点 30 米以下的速度剖面，这正是盆地能放大长周期的原因。",
-    "USGS Slab2 — subduction zone geometry": "随应用程序一并提供（data/slab2.bin.gz）：全部 27 个活跃隐没带的板块上表面深度、走向与倾角。地震模拟器以此区分板块界面地震与隐没板块内部地震——在地球上任何地方都用同一套判准。",
+    "USGS Slab2 — subduction zone geometry": "随应用程序一并提供（data/slab2.bin.gz）：全部 27 个活跃俯冲带的板块上表面深度、走向与倾角。地震模拟器以此区分板块界面地震与俯冲板块内部地震——在地球上任何地方都用同一套判准。",
     "Bird (2003) PB2002 plate boundaries": "随应用程序一并提供（data/tectonics.bin.gz）：到最近板块边界的距离、该边界的类型，以及广义变形带（orogen）多边形。用于判定地震的大地构造分区，并据此选用已发表的地动参数。",
     "USGS ShakeMap station lists": "真实观测站记录到的最大加速度与最大速度，用于将地震模型与观测对照评分（scripts/seismic-validate.mjs）。仅在离线执行该验证时取得，浏览器中的应用程序从不取得。",
     "CARTO basemaps": "浅色／深色向量底图瓦片",
