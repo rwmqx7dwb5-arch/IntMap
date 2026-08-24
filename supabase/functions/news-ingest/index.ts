@@ -203,15 +203,17 @@ async function stageFetch(db, budget, runStartedAt) {
      あちらは「送らない」ことで避けている。ここも同じ手で避ける。
      ⚠ 2 本に分けて送るのは、PostgREST の一括 insert が**鍵の揃わないオブジェクトを
        混ぜられない**からである（欠けた鍵は既定値や NULL で埋められる＝踏み潰しが
-       名前を変えて戻ってくる）。配列ごとに列が揃っていれば、その事故は起きない。 */
-  const aiFps = new Set();
-  for (let i = 0; i < rows.length; i += PAGE) {
-    const fps = rows.slice(i, i + PAGE).map((r) => r.url_fingerprint);
-    const { data, error } = await db.from("news_articles")
-      .select("url_fingerprint").eq("subject_located_by", "ai").in("url_fingerprint", fps);
-    if (error) throw new Error("news_articles(ai fingerprints): " + error.message);
-    for (const r of data || []) aiFps.add(r.url_fingerprint);
-  }
+       名前を変えて戻ってくる）。配列ごとに列が揃っていれば、その事故は起きない。
+     ⚠⚠ **指紋を `.in(…)` で問い合わせてはならない。** 実測 (2026-08-24・本番): 1 ページぶん
+       1,000 件を渡すと PostgREST への URL が **約 65,000 文字**（指紋は 64 桁）になり、
+       上流が `400 Bad Request` を返す——`fetch` 段が丸ごと落ちて **1 行も取り込めない**。
+       ⇒ 逆から訊く。**AI が置いた記事の指紋を全部**もらう（保持期間が 72 時間なので、
+       この集合は表そのものと同じ大きさ＝数千で頭打ち）。URL は常に短い。 */
+  const aiFps = new Set(
+    (await selectAll(() => db.from("news_articles"),
+      (q) => q.select("url_fingerprint").eq("subject_located_by", "ai")))
+      .map((r) => r.url_fingerprint),
+  );
   const SUBJECT_COLS = ["subject_lng", "subject_lat", "subject_name_en", "subject_type",
                         "subject_confidence", "subject_reasons", "subject_located_by"];
   const plain = [], keepAi = [];

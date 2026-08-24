@@ -203,6 +203,15 @@ test('⑥ the fetch upsert must NOT rewrite the subject of an article the AI alr
       'deterministic result would overwrite what the AI placed');
   }
 
+  /* ⚠⚠ (#R404 本番で実測) **指紋を `.in(…)` に詰めない。** 1 ページぶん 1,000 件を渡すと
+     PostgREST への URL が約 65,000 文字（指紋は 64 桁）になり、上流が 400 を返して
+     **`fetch` 段が丸ごと落ちる＝1 行も取り込めない**。逆から訊く（AI 済みの指紋を全部もらう）。
+     ⚠ 数の少ない bigint の `.in(…)` は問題ないので、禁じるのは**この列だけ**。 */
+  assert.ok(!/\.in\(\s*["']url_fingerprint["']/.test(fn),
+    'the AI-fingerprint lookup packs 64-char fingerprints into a URL — it 400s in production');
+  assert.match(fn, /selectAll\([\s\S]{0,200}subject_located_by["']\s*,\s*["']ai["']/,
+    'the AI-fingerprint set must be read with the paged reader, not one filtered request');
+
   /* 鍵の揃わないオブジェクトを 1 回の upsert に混ぜない（欠けた鍵は既定値/NULL で埋まる）。 */
   assert.match(fn, /insertChunked\(db,\s*"news_articles",\s*plain,[\s\S]{0,120}insertChunked\(db,\s*"news_articles",\s*keepAi,/,
     'the two shapes must be sent as two homogeneous upserts');
