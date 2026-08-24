@@ -170,6 +170,23 @@ export const WORDS = [
   ['加拉巴哥', '加拉帕戈斯'], ['克馬得', '克馬德克'], ['民答那峨', '棉蘭老'],
   ['皮特康', '皮特凱恩'], ['加里波底', '加里波第'], ['安地列斯', '安的列斯'],
   ['東加—', '湯加—'],     ['矽', '硅'],
+  /* ══ (#R395 追記) …AND TWO THAT PRODUCTION FOUND, BECAUSE NEITHER INSTRUMENT COULD ════════════
+     Read off the SHIPPED Simplified chunk after the round deployed: 「隐没带 / 大陆地壳」 and
+     「放射成因：分裂径迹」. Both are the #R319/#R335 shape one more time — the characters are already
+     shared, so the orthography layer converts them to themselves — and both slipped past the twp→cn
+     inventory as well, because OpenCC's vocabulary profile does not carry these two geology terms.
+     A mainland reader writes 俯衝帶 for a subduction zone and 裂變徑跡 for a fission track; 隱沒帶 and
+     分裂徑跡 are the Taiwanese terms. ⚠ WHAT THIS SAYS ABOUT THE METHOD: the inventory is a FLOOR,
+     not a ceiling — a batch of technical vocabulary has to be read term by term as well, and the
+     place to read it is the generated Simplified text, not the Traditional source.
+     ⚠ Every left-hand side was checked against its own sites: 隱沒帶 is the tectonic setting in four
+     rows of ui.zh.js plus one sentence of pages.zh-hant.js («27 個活躍隱沒帶»); 隱沒板塊 is the slab in
+     the sentence beside it; 分裂徑跡 occurs once, as the dating method. All one sense each.
+     ⚠ AND THE ROWS STAY NARROW RATHER THAN BECOMING 隱沒→俯衝. All six occurrences of 隱沒 in the
+     corpus are geological today, but the bare word ALSO means «to fade from view» in ordinary
+     Chinese — so a blanket row would mistranslate the first non-geological sentence somebody writes.
+     That is the 複製羊 rule (#R322): narrow the left-hand side, do not widen it. */
+  ['隱沒帶', '俯衝帶'],   ['隱沒板塊', '俯衝板塊'],   ['分裂徑跡', '裂變徑跡'],
   /* the aspect marker — everything not pinned above */
   ['著', '着'],
 ];

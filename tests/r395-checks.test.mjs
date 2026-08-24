@@ -213,16 +213,24 @@ test('⑨ Atlas can reach the volcano subsystem, and every list that must agree 
 
 /* ── ⑩ the Simplified file carries mainland vocabulary, not converted Taiwanese vocabulary ── */
 test('⑩ the Simplified locale does not ship Taiwan-only wording for the new geography', () => {
-  const hans = readLF(join(ROOT, 'js', 'locales', 'ui.zh-hans.js'));
+  /* ⚠ BOTH generated Simplified files, because scripts/zh-hans.mjs derives both and a word can live
+     in either — 俯冲板块 is in the reading pages' Slab2 sentence and nowhere in the UI table. Reading
+     only one of them is how a term ships wrong in the file nobody checked. */
+  const hans = readLF(join(ROOT, 'js', 'locales', 'ui.zh-hans.js'))
+    + '\n' + readLF(join(ROOT, 'js', 'locales', 'pages.zh-hans.js'));
   /* left column: what character conversion alone would have produced. #R319/#R335's shape — the
      characters are already shared, so no orthography check can see the difference. */
+  /* ⚠ (#R395 追記) THE LAST TWO CAME FROM PRODUCTION, not from the inventory: OpenCC's vocabulary
+     profile does not carry these geology terms, so the twp→cn sweep passed them and the shipped
+     Simplified chunk said 隐没带 / 分裂径迹 to a mainland reader. The inventory is a floor. */
   const PAIRS = [['索马利亚', '索马里'], ['维德角', '佛得角'], ['肯亚', '肯尼亚'], ['葛摩', '科摩罗'],
     ['万那杜', '瓦努阿图'], ['安地斯', '安第斯'], ['加拉巴哥', '加拉帕戈斯'], ['克马得', '克马德克'],
     ['民答那峨', '棉兰老'], ['皮特康', '皮特凯恩'], ['加里波底', '加里波第'], ['安地列斯', '安的列斯'],
-    ['二氧化矽', '二氧化硅']];
+    ['二氧化矽', '二氧化硅'], ['隐没带', '俯冲带'], ['隐没板块', '俯冲板块'],
+    ['分裂径迹', '裂变径迹']];
   for (const [taiwan, mainland] of PAIRS) {
-    assert.ok(hans.includes(mainland), `js/locales/ui.zh-hans.js has lost «${mainland}» — scripts/zh-hans.mjs WORDS row missing?`);
-    assert.ok(!hans.includes(taiwan), `js/locales/ui.zh-hans.js still ships the Taiwan wording «${taiwan}»; the mainland word is «${mainland}»`);
+    assert.ok(hans.includes(mainland), `the generated Simplified files have lost «${mainland}» — scripts/zh-hans.mjs WORDS row missing?`);
+    assert.ok(!hans.includes(taiwan), `a generated Simplified file still ships the Taiwan wording «${taiwan}»; the mainland word is «${mainland}»`);
   }
 });
 
