@@ -68,6 +68,35 @@ window.IntMapModules.countriesUi=function(HOST){
         'South America':A('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
         'Oceania':A('Oceania','オセアニア','Ozeanien','Океания','Oceanía'),
         'Antarctica':A('Antarctica','南極','Antarktika','Антарктида','Antártida'),
+        /* ══ ⚠⚠⚠ (#R424) …AND THE SEVEN CONTINENTS WERE NOT THE VOCABULARY ═══════════════════════
+           「歴史上の国の行だけ、国名の下のサブ行が英語のまま」——1916 の日本語で
+           「大日本帝国 / East Asia / Tokyo」、同じ一覧の現代の行は「北アメリカ」。
+
+           #R251 built this table from ONE producer — Natural Earth's CONTINENT — and `s.region`
+           has more than one. A value outside the table falls to `return r` below and is printed
+           RAW in all nine languages, and NO instrument can see it: tests/r251-langs.spec.js fires
+           only when IntMap already HOLDS a different string for that text, and for these it held
+           none. A closed set that is a guess about its inputs fails silently, by construction.
+
+           ① js/history.js's STATES carry their own SUB-CONTINENTAL vocabulary — five values, not
+              one of them a continent. That is the reported defect.
+           ② AND NATURAL EARTH HAS AN EIGHTH CONTINENT VALUE, so the defect was never only
+              historical. MEASURED over the three scales loadCountryData() fetches: ne_110m (the
+              file every default boot reads) puts «Seven seas (open ocean)» on ATF — French
+              Southern and Antarctic Lands, a row that IS in the list because sov:true — and
+              ne_50m / ne_10m put Maldives, Mauritius, Seychelles, Saint Helena, BIOT, South
+              Georgia, Heard & McDonald and Clipperton there as well.
+
+           ⚠ AND THE TABLE IS NO LONGER THE ONLY THING HOLDING THIS. tests/r424-checks ① reads
+           js/history.js's own `region:` literals and fails if one is not a key here, so a state
+           added later cannot introduce an untranslated region quietly; ② holds Natural Earth's
+           eight. The way this defect was born is the way it is now caught. */
+        'Seven seas (open ocean)':A('Seven seas (open ocean)','七つの海（外洋）','Sieben Meere (offener Ozean)','Семь морей (открытый океан)','Siete mares (océano abierto)'),
+        'Eurasia':A('Eurasia','ユーラシア','Eurasien','Евразия','Eurasia'),
+        'Middle East':A('Middle East','中東','Naher Osten','Ближний Восток','Oriente Medio'),
+        'South Asia':A('South Asia','南アジア','Südasien','Южная Азия','Asia del Sur'),
+        'Southeast Asia':A('Southeast Asia','東南アジア','Südostasien','Юго-Восточная Азия','Sudeste Asiático'),
+        'East Asia':A('East Asia','東アジア','Ostasien','Восточная Азия','Asia Oriental'),
       };
     }
     const t=_REGIONS[r]; return t?_LR.arr(t):r;
@@ -470,7 +499,13 @@ window.IntMapModules.countriesUi=function(HOST){
     const yn=v=>v?TR('Yes','はい','Ja','Да','Sí'):TR('No','いいえ','Nein','Нет','No');
     const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('')+`</div>`; };
     const geo=sec('🌍 '+TR('Geography','地理','Geografie','География','Geografía'),[
-      [HOST.t('statRegion'),(s.region||'—')+(s.subregion?' / '+s.subregion:'')],
+      /* ⚠ (#R424) THE SAME FIELD, THE OTHER SURFACE. The list sub-line was routed through
+         `_regionName` by #R251; this row — the Region line of the country card a double-click
+         opens — was left printing `s.region` raw, so every reader of every language read
+         «Europe / Western Europe» here while the row they clicked said 「ヨーロッパ」. Same table,
+         same call. (`subregion` is Natural Earth's ~24-value SUBREGION and stays English for now,
+         as the capital does — it has no entry in any table to be shown instead.) */
+      [HOST.t('statRegion'),(s.region?_regionName(s.region):'—')+(s.subregion?' / '+s.subregion:'')],
       [HOST.t('statCapital'),s.capital||'—'],
       [HOST.t('statArea'),fmtArea(s.area)],
       [HOST.t('statDensity'),s.density?fmtNum(Math.round(s.density))+' /km²':'—'],

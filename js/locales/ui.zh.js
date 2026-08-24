@@ -6179,5 +6179,11 @@ window.IntMapLang.define('zh', {
      One row, two controls, one word would read as one control. */
   "All topics": "所有分類",
   "Open event": "開啟事件",
+  "Seven seas (open ocean)": "七海（外海）",
+  "Eurasia": "歐亞大陸",
+  "Middle East": "中東",
+  "South Asia": "南亞",
+  "Southeast Asia": "東南亞",
+  "East Asia": "東亞",
   }
 });
