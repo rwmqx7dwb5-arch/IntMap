@@ -68,7 +68,12 @@ const EXPECTED_CALLS = {
      name could drift, restate the register clause, or introduce itself in its own words, and nothing
      would go red. Architecture.md carried the same «20» and the same omission.
      The row is the smaller half of the fix; test (2b) below is the other half. */
-  'supabase/functions/news-ingest/index.ts': 1,   /* headline translation (internal mode) */
+  /* (#R404) TWO now. The second is the `locate` stage's geolocation prompt. ⚠ Two call sites is not
+     two personas — it is the sanctioned shape: each prompt declares its OWN task to the one shared
+     persona (`translating world-news headlines…` / `locating world news on the map…`), which is
+     exactly what CONSTITUTION.md §5 allows the caller to add. Collapsing them into one call would
+     make one of the two lie about what it is doing. */
+  'supabase/functions/news-ingest/index.ts': 2,   /* headline translation, subject geolocation (both internal mode) */
 };
 const PROMPT_FILES = Object.keys(EXPECTED_CALLS);
 
