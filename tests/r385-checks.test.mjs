@@ -33,6 +33,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const pkg = () => JSON.parse(read('package.json'));
 const entries = (script) => String(script || '').split(/\s+/).filter((x) => /^tests\//.test(x));
+/* (#R390) checkTestList's third argument reads a file's source, because whether a `.mjs` under
+   tests/ is a test is now decided by whether it imports node:test and not by its name. Nothing
+   invented in this file is meant to be a test file it has to discover, so it declares none. */
+const noTests = () => '/* invented for this test. it declares no tests. */';
 
 /* ── ① the live list does not name anything twice ─────────────────────────────────────────────── */
 test('#R385 ① no path appears more than once in `test:checks` — the thing that was false for 22 rounds', () => {
@@ -48,7 +52,7 @@ test('#R385 ① no path appears more than once in `test:checks` — the thing th
 /* ── ② the guard catches it — exercised on a list that is wrong on purpose ────────────────────── */
 test('#R385 ② the guard reports a repeated entry, which before this round it could not see', () => {
   const script = 'node --test tests/a.test.mjs tests/b.test.mjs tests/a.test.mjs';
-  const out = checkTestList(script, ['tests/a.test.mjs', 'tests/b.test.mjs']);
+  const out = checkTestList(script, ['tests/a.test.mjs', 'tests/b.test.mjs'], noTests);
   assert.equal(out.length, 1, `exactly one problem, got ${JSON.stringify(out)}`);
   assert.equal(out[0].kind, 'duplicate');
   assert.equal(out[0].file, 'tests/a.test.mjs');
@@ -61,13 +65,13 @@ test('#R385 ② the guard reports a repeated entry, which before this round it c
 /* ── ③ once per repeated path, not once per extra copy ────────────────────────────────────────── */
 test('#R385 ③ three copies is one finding that says 「3」, not two findings', () => {
   const script = 'node --test tests/a.test.mjs tests/a.test.mjs tests/a.test.mjs';
-  const out = checkTestList(script, ['tests/a.test.mjs']);
+  const out = checkTestList(script, ['tests/a.test.mjs'], noTests);
   assert.equal(out.length, 1, `one finding per repeated path, got ${out.length}`);
   assert.match(out[0].msg, /\b3\b/, `and it says three: ${out[0].msg}`);
   /* ⚠ AND IT COUNTS PATHS THAT ARE NOT `*.test.mjs` TOO. `tests/security-logic.mjs` is in the real
      list and is not a node test file by IS_NODE_TEST — but naming it twice still runs it twice. */
   const helper = checkTestList('node --test tests/security-logic.mjs tests/security-logic.mjs',
-    ['tests/security-logic.mjs']);
+    ['tests/security-logic.mjs'], noTests);
   assert.equal(helper.length, 1, 'a repeated helper is a repeat as well');
   assert.equal(helper[0].kind, 'duplicate');
 });
@@ -76,12 +80,12 @@ test('#R385 ③ three copies is one finding that says 「3」, not two findings'
 test('#R385 ④ a clean list reports nothing, and a list wrong in all three ways reports all three', () => {
   /* the negative: distinct entries, everything on disk — silence */
   assert.deepEqual(
-    checkTestList('node --test tests/a.test.mjs tests/b.test.mjs', ['tests/a.test.mjs', 'tests/b.test.mjs']),
+    checkTestList('node --test tests/a.test.mjs tests/b.test.mjs', ['tests/a.test.mjs', 'tests/b.test.mjs'], noTests),
     [], 'no problem where there is none');
   /* all three at once: `a` twice (duplicate), `gone` listed but absent (missing), `c` on disk but
      never named (unlisted) — the new direction must not swallow or shadow the old two */
   const out = checkTestList('node --test tests/a.test.mjs tests/a.test.mjs tests/gone.test.mjs',
-    ['tests/a.test.mjs', 'tests/c.test.mjs']);
+    ['tests/a.test.mjs', 'tests/c.test.mjs'], noTests);
   assert.deepEqual(out.map((p) => `${p.kind} ${p.file}`).sort(),
     ['duplicate tests/a.test.mjs', 'missing tests/gone.test.mjs', 'unlisted tests/c.test.mjs']);
 });

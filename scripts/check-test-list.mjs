@@ -25,6 +25,19 @@
 // high the whole time. Two documents agreeing is not corroboration when one is derived from the
 // other. Regression: tests/r385-checks.test.mjs.
 //
+// ⚠⚠⚠ (#R390) AND WHAT COUNTS AS A TEST WAS READ OFF THE FILE'S NAME. The rule was the regex
+// below and nothing else, so the one file of tests here that predates the convention was outside
+// anything this guard could demand: `tests/security-logic.mjs` — #R138, 31 tests over the
+// constant-time secret comparison, the admin console's data-literal parser, the fail-closed
+// refresh-news guard and the SHA-pinned GitHub Actions. Measured: `ed058ca` (#R377) dropped it
+// from `test:checks` as collateral in that one long line, it was still absent through #R379, and
+// `82b7a0e` (#R380) put it back while doing something else entirely. For those rounds the 31 tests
+// did not run, and every gate in the repository was green — including this one, which exists for
+// exactly that. It now asks the file what it CONTAINS: a `.mjs` under tests/ that imports
+// `node:test` declares tests, whatever it is called, and must be listed. The name rule is kept
+// alongside, so a `*.test.mjs` that has not written its first `test(…)` yet is still demanded.
+// Regression: tests/r390-checks.test.mjs.
+//
 // Pure over its inputs, so tests/r301-checks.test.mjs can hand it a repository that is wrong on
 // purpose and see it say so — rather than grepping static-checks.mjs for the call and calling that
 // proof (#R298: 「検査が緑だったのは『呼び出しが書かれているか』を訊いていたから」).
@@ -32,25 +45,50 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/* A file matching this must be in the list. Anything else in tests/ (fixtures, corpora, the shared
-   helpers, the two hand-named `*-logic.mjs` files that predate the convention) may be listed or
-   not — but if it IS listed it still has to exist. */
+/* A file whose NAME matches this must be in the list, whatever it contains. */
 export const IS_NODE_TEST = /\.test\.mjs$/;
+
+/* …and so must a file whose SOURCE matches this, whatever it is called (#R390). All four spellings
+   of the import are accepted, because the rule has to hold for a file nobody has written yet.
+   Anything else in tests/ — fixtures, corpora, the shared helpers — may be listed or not, but if it
+   IS listed it still has to exist. */
+export const DECLARES_NODE_TESTS =
+  /(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*|^\s*import\s+)['"]node:test['"]/m;
+
+/**
+ * Is this `.mjs` under tests/ a node test file?
+ * @param {string} file    repo-relative POSIX path
+ * @param {string} source  its contents (only consulted when the name does not settle it)
+ */
+export function isNodeTest(file, source) {
+  if (IS_NODE_TEST.test(file)) return true;
+  return DECLARES_NODE_TESTS.test(String(source == null ? '' : source));
+}
 
 /**
  * @param {string} script    the value of package.json scripts["test:checks"]
  * @param {string[]} onDisk  every .mjs under tests/, as repo-relative POSIX paths
+ * @param {(file:string)=>string} readSource  the contents of one of those paths
  * @returns {{kind:'unlisted'|'missing'|'duplicate', file:string, msg:string}[]}
  */
-export function checkTestList(script, onDisk) {
+export function checkTestList(script, onDisk, readSource) {
+  /* ⚠ (#R390) REQUIRED, AND IT THROWS RATHER THAN DEFAULTING. An optional reader would mean that a
+     caller who forgets it gets the pre-#R390 behaviour back — silently, and green. That is the
+     hole this argument exists to close, not a convenience. */
+  if (typeof readSource !== 'function') {
+    throw new TypeError('checkTestList(script, onDisk, readSource): readSource is required — '
+      + 'without it a file of tests that is not named `*.test.mjs` (tests/security-logic.mjs) is invisible');
+  }
   const listed = String(script || '').split(/\s+/).filter((x) => /^tests\//.test(x));
   const listedSet = new Set(listed);
   const diskSet = new Set(onDisk);
   const out = [];
   /* (#R385) the list against itself, BEFORE it is compared with the disk — `listedSet` is where the
-     evidence stops existing. Counted over every `tests/` token, not only the `*.test.mjs` ones: a
-     repeated helper such as tests/security-logic.mjs is executed twice just the same. One finding
-     per repeated path, carrying the count, rather than one per extra copy. */
+     evidence stops existing. Counted over every `tests/` token, not only the `*.test.mjs` ones:
+     whatever a repeated path turns out to be, `node --test` runs it twice just the same. One
+     finding per repeated path, carrying the count, rather than one per extra copy.
+     (#R385 wrote this as 「a repeated helper such as tests/security-logic.mjs」; #R390 then made that
+     file a node test file by its source, so the example is stated without the classification.) */
   const times = new Map();
   for (const f of listed) times.set(f, (times.get(f) || 0) + 1);
   for (const [f, n] of times) {
@@ -60,10 +98,11 @@ export function checkTestList(script, onDisk) {
     }
   }
   for (const f of onDisk) {
-    if (IS_NODE_TEST.test(f) && !listedSet.has(f)) {
-      out.push({ kind: 'unlisted', file: f,
-        msg: `${f} is not in package.json "test:checks" — it never runs, so it can be red for ever and nobody sees it` });
-    }
+    if (listedSet.has(f)) continue;
+    /* (#R390) the name settles most of them without a read; the rest are asked what they contain */
+    if (!isNodeTest(f, IS_NODE_TEST.test(f) ? '' : readSource(f))) continue;
+    out.push({ kind: 'unlisted', file: f,
+      msg: `${f} is not in package.json "test:checks" — it never runs, so it can be red for ever and nobody sees it` });
   }
   for (const f of listedSet) {
     if (!diskSet.has(f)) {
@@ -88,5 +127,6 @@ export function listMjs(root, dir = join(root, 'tests'), out = []) {
 export function checkTestListHere(root) {
   const ROOT = root || resolve(join(dirname(fileURLToPath(import.meta.url)), '..'));
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-  return checkTestList(pkg.scripts && pkg.scripts['test:checks'], listMjs(ROOT));
+  return checkTestList(pkg.scripts && pkg.scripts['test:checks'], listMjs(ROOT),
+    (f) => readFileSync(join(ROOT, f), 'utf8'));
 }
