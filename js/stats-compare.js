@@ -218,7 +218,17 @@ window.IntMapModules.statsCompare=function(HOST){
     const _HSUM={gdp:1,pop:1};   /* WB-path totals to SUM; every other WB indicator = population-weighted mean */
     function _histEntry(cd){ try{ const H=window.IntMapHistStates; if(!H) return null; return (H.STATES||[]).find(S=>S.code===cd)||null; }catch(_){ return null; } }
     function _histCodes(){ try{ return codes.filter(cd=>!!_histEntry(cd)); }catch(_){ return []; } }
-    function _histMini(cd){ const S=_histEntry(cd); return S?{code:cd,nameEn:S.name.en,nameJp:S.name.jp,flag:S.flag,_hist:true}:null; }
+    /* (#R429) THE ROW'S `name` IS A TUPLE (IntMapLang.pickArgs), NOT AN {en,jp} OBJECT, so `S.name.en` and
+       `S.name.jp` were undefined on all nineteen states and cName() rendered the literal 「—」 — for the chip,
+       the bars, both table headers and the cross-table legend — the moment countryStats stopped carrying the
+       entry (returning to Now, standing at a year the state does not span, a restored session). This is the
+       defect #R380 found in js/history.js, in the one reader it did not reach; the cure is the same and it is
+       the SHARED one, window.IntMapHistName. The tuple itself still travels on `name`, exactly as histStates.agg
+       hands it out, so a per-language resolver downstream reads it rather than the English slot.
+       MEASURED before the fix (local build, Countries → Soviet Union + United States at 1960 → back to Now):
+       chip 「—×」, bar 「— —」, table header 「—」. */
+    function _histMini(cd){ const S=_histEntry(cd); if(!S) return null; const nm=S.name;
+      return {code:cd,nameEn:window.IntMapHistName(nm,0),nameJp:window.IntMapHistName(nm,1),name:nm,flag:S.flag,_hist:true}; }
     const _cs=(cd)=>countryStats[cd]||_histMini(cd)||{};   /* resolve name/flag even when a former state isn't currently applied */
     /* (#R110) ONE Maddison-path value for a former state in a given year — used by the bar/table (_histAddLatest) AND
        the time-series (_histAddSeries), so they can never diverge again. Mirrors IntMapHistStates.agg's EMPIRE-ESTIMATE
