@@ -135,8 +135,20 @@ test('R276 ④ the weather sits above the day/night shading, and one slider is t
    40 m/s beside a ramp that runs to 60. A legend that is DERIVED cannot disagree. */
 test('R276 ⑤ every ECMWF legend reads the colour scale the tiles were drawn with', () => {
   const s = EC();
-  assert.match(s, /sdk\.getColorScale\(variable, !!dark, st && st\.colorScales\)/,
+  /* ⚠⚠ (#R398) THE SPELLING MOVED AND THE REQUIREMENT DID NOT — the same shape ⑥ below records for
+     the model name. `scale()` used to resolve against `settings.colorScales`, which was at once the
+     reader's ramp and the renderer's. There are two views of one ramp now, because `pressure_msl`
+     arrives in PASCALS while its ramp is written in hPa (js/wx-ecmwf.js `FIELD_UNITS`): the
+     renderer is handed the ramp in the FIELD's numbers — that is what makes the raster a pressure
+     field instead of a flat sheet, and what puts the isobar levels where the isobars are — and the
+     key keeps the reader's. So this asks for the reader's view BY NAME, and then asks the thing
+     that keeps the bar where ⑤ put it: the two views are THE SAME OBJECT everywhere the
+     declaration does not name a variable. A legend can still not disagree with its own picture;
+     what it may now do is say the same thing in the unit the reader was promised. */
+  assert.match(s, /sdk\.getColorScale\(variable, !!dark, displayScales\)/,
     'the scale comes from the SDK, through the settings the protocol was registered with');
+  assert.match(s, /displayScales = scales;\s*var painted = Object\.assign\(\{\}, scales\);\s*Object\.keys\(FIELD_UNITS\)\.forEach\(function \(v\) \{ var s = inFieldUnits\(v, scales\); if \(s\) painted\[v\] = s; \}\);/,
+    '…and the renderer\'s copy of it diverges ONLY for the variables the declaration names');
   assert.match(s, /function legend\(variable, dark\) \{[\s\S]{0,900}?stops\.push\(\{ v: bp\[i\]/,
     'the legend is the scale, turned into stops');
   const w = WX();
@@ -370,7 +382,16 @@ test('R276 ⑭ the wind palette feeds the tiles and the legend from the same dec
   assert.match(s, /Object\.assign\(\{\}, sdk\.COLOR_SCALES_WITH_ALIASES \|\| base\.colorScales,\s*\{ wind: WINDY_WIND, temperature: WINDY_TEMP \}\)/,
     'and replaces the SDK\'s wind family in the protocol settings');
   assert.match(s, /sdk\.omProtocol\(params, ctl, st\)/, 'the tiles are rendered with those settings…');
-  assert.match(s, /sdk\.getColorScale\(variable, !!dark, st && st\.colorScales\)/, '…and the legend reads them');
+  assert.match(s, /sdk\.getColorScale\(variable, !!dark, displayScales\)/, '…and the legend reads them');
+  /* ⚠⚠ (#R398) …AND FOR THESE TWO FAMILIES THE TWO VIEWS ARE LITERALLY ONE OBJECT. The renderer's
+     copy replaces only the keys `FIELD_UNITS` names (see ⑤), so 「one declaration feeds the tiles
+     and the legend」 is unconditional here — provided neither family is ever declared as needing a
+     conversion. That is the whole content of the guarantee, so it is what is asked. */
+  const decl = s.slice(s.indexOf('var FIELD_UNITS = {'), s.indexOf('function fieldUnit('));
+  assert.ok(decl.length > 0, 'the field-unit declaration is readable');
+  for (const fam of ['wind', 'temperature', 'wind_u_component_10m', 'wind_gusts_10m', 'temperature_2m'])
+    assert.ok(!new RegExp('(^|[^_a-zA-Z])' + fam + '\\s*:').test(decl),
+      `${fam} is not declared as arriving in a unit other than its ramp's, so its two views cannot diverge`);
   /* opaque: the reader's reference picture has no holes where the air is still */
   const raw = read('js/wx-ecmwf.js');
   const block = /breakpoints: \[([^\]]*)\][\s\S]*?colors: \[([\s\S]*?)\n    \]/.exec(raw.slice(raw.indexOf('var WIND_ANCHORS')));

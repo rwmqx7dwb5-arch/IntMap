@@ -960,6 +960,167 @@ test('(#R276) prod offers the whole forecast, and stepping it changes the file A
   expect(typeof r.b.v).toBe('number');
 });
 
+/* ══ ⚠⚠⚠ (#R398) THE NUMBER THE READER IS GIVEN MUST LIE ON THE RAMP THE READER IS SHOWN ═════════
+   「海面気圧レイヤーのカーソル読み出しが、自分の凡例と100倍食い違っている。」
+
+   `pressure_msl` arrives in PASCALS and the SDK's ramp for it is written in hPa, so the corner
+   printed 「101237 hPa」, the raster was painted the ramp's last colour EVERYWHERE (getColor gives
+   one answer for every value on Earth once they are all past the top breakpoint), and the isobars
+   — contoured at that same ramp's breakpoints — found no level to cross and drew nothing at all.
+   Nothing in the app was in a position to notice: one variable in a unit its own key is not
+   written in has no second case to disagree with.
+
+   So this asks the relation of EVERY ECMWF raster the build ships, from the layer table itself,
+   and it asks it of the LIVE field rather than of the source:
+
+     ① the value the module reports lands on the key beside it — with a whole ramp-width of
+        headroom either side, so a genuinely extreme hour cannot trip it and a factor of 100 cannot
+        survive it;
+     ② the renderer's ramp and the reader's ramp are one declared factor apart — not two tables;
+     ③ where the field's own values vary at all, the colours they resolve to must vary too. That is
+        the flat-sheet symptom stated without naming a colour: a field that spans a range and paints
+        one colour is a ramp being read in the wrong unit. (A field that does NOT vary — a dry hour
+        of precipitation — asserts nothing, which is why this cannot be flaky.) */
+test('(#R398) every ECMWF raster reports its value in the unit its own key names', async () => {
+  const r = await page.evaluate(async () => {
+    const EC0 = window.IntMapECMWF, W = window.IntMapWeatherEC;
+    const sdk = await EC0.loadSDK();
+    await EC0.ready();
+    const layers = (W && W._layers) ? W._layers.filter((l) => l.type === 'raster') : [];
+    if (!layers.length) return { err: 'no raster weather layers on the deployed build' };
+    /* one narrow band, read once per variable — the same request the readout itself makes */
+    const band = EC0.bandNear(20, 50);
+    const PTS = [[35, -80], [35, 139], [45, 10], [30, 75], [48, -3], [25, 120], [40, -100], [33, 35]];
+    const out = [];
+    for (const l of layers) {
+      const EC = (W.engineFor && W.engineFor(l.id)) || EC0;
+      await EC.load(l.variable, null, band);
+      const lg = EC.legend(l.variable, true);
+      const paint = sdk.getColorScale(l.variable, true, EC._settings().colorScales);
+      /* ⚠ GUARDED ON PURPOSE. Read as `EC.fieldUnit(…)` this whole test dies with a TypeError on a
+         build that has no such export — which is RED, but red for the absence of the fix rather
+         than for the defect, and it would have told nobody whether the three assertions below can
+         see anything. Degraded to the identity, the assertions are what fires: verified by
+         running this against the pre-fix build, where ① and ③ both fail on `pressure_msl`. */
+      const fu = EC.fieldUnit ? EC.fieldUnit(l.variable) : null;
+      const per = fu ? fu.per : 1;
+      const vals = PTS.map((p) => EC.valueNow(l.variable, p[0], p[1])).filter((v) => v != null && isFinite(v));
+      const cols = vals.map((v) => JSON.stringify(sdk.getColor(paint, v * per)));
+      out.push({
+        id: l.id, variable: l.variable, per,
+        unit: lg ? lg.unit : null, min: lg ? lg.min : null, max: lg ? lg.max : null,
+        paintUnit: paint ? paint.unit : null,
+        rampEnds: (lg && paint) ? (paint.type === 'breakpoint'
+          ? [paint.breakpoints[0] / per, paint.breakpoints[paint.breakpoints.length - 1] / per]
+          : [paint.min / per, paint.max / per]) : null,
+        legendEnds: (lg && paint) ? (paint.type === 'breakpoint'
+          ? [lg.stops[0].v, lg.stops[lg.stops.length - 1].v] : [lg.min, lg.max]) : null,
+        n: vals.length, lo: Math.min.apply(null, vals), hi: Math.max.apply(null, vals),
+        distinctColours: new Set(cols).size,
+      });
+    }
+    return { out };
+  });
+  test.skip(!!r.err, r.err || '');
+
+  for (const v of r.out) {
+    const span = (v.max - v.min) || 1;
+    expect(v.n, `${v.id}: the live field answers for points`).toBeGreaterThan(0);
+    expect(v.unit, `${v.id}: its key names a unit`).toBeTruthy();
+    /* ① the reading is on the key */
+    expect(v.lo, `${v.id}: the lowest live value (${v.lo} ${v.unit}) is on its own key `
+      + `(${v.min}…${v.max} ${v.unit})`).toBeGreaterThan(v.min - span);
+    expect(v.hi, `${v.id}: the highest live value (${v.hi} ${v.unit}) is on its own key `
+      + `(${v.min}…${v.max} ${v.unit})`).toBeLessThan(v.max + span);
+    /* ② the two ramps are one declared factor apart — compared where they overlap, i.e. the ends
+       of the ramp the renderer paints from, divided back, must be the ends the key draws */
+    expect(v.rampEnds[0], `${v.id}: the renderer's ramp starts where the key does, ÷${v.per}`)
+      .toBeCloseTo(v.legendEnds[0], 6);
+    if (!/^wind_/.test(v.variable)) {   /* the wind key is deliberately capped at 30 m/s (#R297) */
+      expect(v.rampEnds[1], `${v.id}: …and ends where it does`).toBeCloseTo(v.legendEnds[1], 6);
+    }
+    /* ③ a field that varies ACROSS THE RAMP must not paint one flat colour. The threshold is a
+       fiftieth of the ramp's own width rather than 「> 0」, because two dry points a hundredth of a
+       millimetre apart legitimately share a bucket; a hundredfold unit error does not — before the
+       fix the sampled pressures spanned hundreds of the units they were reported in against a ramp
+       120 wide, i.e. far past this threshold, and still resolved to one colour. */
+    if (v.hi - v.lo > span / 50) {
+      expect(v.distinctColours,
+        `${v.id}: the field spans ${v.lo}…${v.hi} ${v.unit} — a fiftieth of its own ramp or more — `
+        + 'yet every sample resolves to ONE colour, so the ramp is being read in the wrong unit')
+        .toBeGreaterThan(1);
+    }
+  }
+});
+
+/* ══ ⚠⚠⚠ (#R398) AN ISOBAR LAYER THAT DRAWS NO ISOBARS ══════════════════════════════════════════
+   Found while measuring the unit defect above, and independent of it: `ec-isobars` sent the SDK a
+   vector url with neither `arrows=true` nor `contours=true`, and such a tile carries no `contours`
+   layer at all. MEASURED on one file, one view, two sources side by side — plain url 0 features,
+   `&contours=true` 900. The layer was visible, its source loaded, its tiles fetched, and every one
+   of them empty, for as long as the row has existed.
+   Three things have to hold for a labelled isobar to reach the reader, so all three are asked
+   here — of the live tiles, not of the source: the contours exist, they are contoured at levels
+   in the FIELD's unit (which is what the ramp handed to the renderer supplies), and the label the
+   reader sees is that level divided back into the unit the key names. */
+test('(#R398) the isobars draw, at levels in the field unit, labelled in the key unit', async () => {
+  const r = await page.evaluate(async () => {
+    const map = window.IntMapGeoEngine.raw(), EC = window.IntMapECMWF;
+    const cb = document.getElementById('dl-ec-isobars');
+    if (!cb) return { skip: 'no isobar row on the deployed build' };
+    document.getElementById('btn-view-flat')?.click();
+    map.jumpTo({ center: [-30, 45], zoom: 3.4 });
+    if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    const t0 = Date.now();
+    while (Date.now() - t0 < 45_000) {   /* inside the file's 90 s test timeout, so a source that
+                                            never yields contours reaches the assertions below */
+      const ids = map.getStyle().layers.map((l) => l.id).filter((i) => /^ec-isobars-\d+$/.test(i));
+      if (ids.length) {
+        const src = map.getStyle().layers.find((l) => l.id === ids[0]).source;
+        const f = map.querySourceFeatures(src, { sourceLayer: 'contours' });
+        if (f.length) {
+          await new Promise((res) => setTimeout(res, 4000));
+          const lblId = ids[0] + '-lbl';
+          const placed = map.queryRenderedFeatures({ layers: [lblId] });
+          const fu = EC.fieldUnit ? EC.fieldUnit('pressure_msl') : null;
+          const per = fu ? fu.per : 1;
+          const lg = EC.legend('pressure_msl', true);
+          return {
+            url: map.getSource(src).url, features: f.length,
+            levels: [...new Set(f.map((x) => Number(x.properties.value)))].sort((a, b) => a - b),
+            placedLabels: placed.length,
+            labelExpr: JSON.stringify(map.getLayoutProperty(lblId, 'text-field')),
+            per, keyMin: lg && lg.min, keyMax: lg && lg.max, keyUnit: lg && lg.unit,
+          };
+        }
+      }
+      await new Promise((res) => setTimeout(res, 2000));
+    }
+    /* ⚠ NOT A SKIP. The row exists and was switched on; contours that never arrive IS the defect
+       this test is about, so it falls through to the assertions with what it measured. A skip here
+       would have been green for the whole life of the bug. */
+    const ids = map.getStyle().layers.map((l) => l.id).filter((i) => /^ec-isobars-\d+$/.test(i));
+    const src = ids.length && map.getStyle().layers.find((l) => l.id === ids[0]).source;
+    return { url: (src && map.getSource(src) || {}).url || '', features: 0, levels: [],
+      placedLabels: 0, labelExpr: '', per: 1, keyMin: 0, keyMax: 0, keyUnit: '' };
+  });
+  test.skip(!!r.skip, r.skip || '');
+
+  expect(r.url, 'the isobar source asks the SDK for contours').toContain('contours=true');
+  expect(r.features, 'and the tiles carry them — an isobar layer with no isobars in it is the '
+    + 'defect this test exists for, so this is a failure and never a skip').toBeGreaterThan(0);
+  /* the levels are the renderer's ramp — i.e. the key's numbers × per. Divided back they must land
+     inside the key, which is the same relation the readout obeys. */
+  const back = r.levels.map((v) => v / r.per);
+  expect(Math.min(...back), `the lowest contour level (${back[0]} ${r.keyUnit}) is on the key`)
+    .toBeGreaterThanOrEqual(r.keyMin);
+  expect(Math.max(...back), 'and so is the highest').toBeLessThanOrEqual(r.keyMax);
+  /* and the label the reader actually reads is that same division */
+  expect(r.labelExpr, 'the label divides by the declared factor').toContain(String(r.per));
+  expect(r.placedLabels, 'and labels are actually placed — `line` placement puts none on these '
+    + 'geometries, which is why the layer uses `point`').toBeGreaterThan(0);
+});
+
 
 /* (#R333) THE TWO HALVES OF ONE COMMIT, DEPLOYED BY DIFFERENT MEANS.
    js/ reaches production by pushing to main (deploy.yml → Pages). An Edge Function reaches it only
