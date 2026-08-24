@@ -372,12 +372,14 @@ window.IntMapLang.define('zh-hans', {
     'Lines of equal sea-level pressure, labelled in hPa.': "海平面气压相等的等值线，标示单位为 hPa。",
     'Loading the wind model…': "正在加载风场模式…",
     'NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.': "NASA GIBS 红外线，每 10 分钟。GOES-East · GOES-West · 向日葵——不含 Meteosat，因此约西经 20 度至东经 75 度（欧洲、非洲）没有涵盖。",
+    'Next border change': "下一次国界变更",   /* (#R421) news-timeline.js */
     'Next frame': "下一影格",
     'Next hour': "下一个时刻",
     'no frames': "没有影格",
     'Oldest frame': "最旧的影格",
     'Particles': "粒子",   /* weather.js (#R313) */
     'Pressure (MSL)': "海平面气压",
+    'Previous border change': "上一次国界变更",   /* (#R421) news-timeline.js */
     'Previous frame': "上一影格",
     'Previous hour': "上一个时刻",
     'RainViewer radar — the last two hours, 10 min apart': "RainViewer 雷达——最近两小时，每 10 分钟一张",

@@ -369,12 +369,14 @@ window.IntMapLang.define('fr', { ui: {
     "Lines of equal sea-level pressure, labelled in hPa.": "Lignes d'égale pression au niveau de la mer, étiquetées en hPa.",
     "Loading the wind model…": "Chargement du modèle de vent…",
     "NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.": "NASA GIBS infrarouge, 10 min. GOES-East · GOES-West · Himawari — sans Meteosat, donc ~20°O–75°E (Europe, Afrique) n'est pas couvert.",
+    "Next border change": "Changement de frontière suivant",   /* (#R421) news-timeline.js */
     "Next frame": "Image suivante",
     "Next hour": "Heure suivante",
     "no frames": "aucune image",
     "Oldest frame": "Image la plus ancienne",
     "Particles": "Particules",   /* weather.js (#R313) */
     "Pressure (MSL)": "Pression (niveau de la mer)",
+    "Previous border change": "Changement de frontière précédent",   /* (#R421) news-timeline.js */
     "Previous frame": "Image précédente",
     "Previous hour": "Heure précédente",
     "RainViewer radar — the last two hours, 10 min apart": "Radar RainViewer — les deux dernières heures, toutes les 10 min",

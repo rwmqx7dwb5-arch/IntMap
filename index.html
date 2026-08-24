@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R419';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R421';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R419';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-25-R419';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-25-R421';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -541,7 +541,7 @@ window.__imBuild='R419';/* (#R121) build marker — bump when verifying that a r
         <input type="range" id="ntl-slider" class="ntl-slider" min="1850" max="2026" value="2026" step="1">
         <!-- (#R337) 「ChronosのTimeのタイムスライダーは、目盛りを付けるように。」 The Time tab's ruler, and it sits HERE — directly under the slider — because .ntl-scale below is on the far side of the forecast player and a graduation detached from its axis is not a graduation. Built by js/news-timeline.js `buildTicks`; empty and hidden in the Year and Date tabs, which keep the label row they have always had. -->
         <div class="ntl-ticks" id="ntl-ticks" aria-hidden="true" style="display:none;"></div>
-        <div class="ntl-player" id="ntl-player" style="display:none;"></div><div class="ntl-scale" id="ntl-scale"></div><!-- (#R288) the player is built from window.IntMapWxPlayer, so the two views of the clock cannot disagree about which button is play -->
+        <div class="ntl-player" id="ntl-player" style="display:none;"></div><div class="ntl-scale" id="ntl-scale"></div><div class="ntl-bstep" id="ntl-bstep" style="display:none;"><button class="ntl-bstep-b" id="ntl-bstep-prev" type="button">‹</button><span class="ntl-bstep-l" id="ntl-bstep-lbl"></span><button class="ntl-bstep-b" id="ntl-bstep-next" type="button">›</button></div><!-- (#R288) the player is built from window.IntMapWxPlayer, so the two views of the clock cannot disagree about which button is play --><!-- (#R421) 「歴史国境の更新ペースをさらに細かくして。理想は月日単位。」 — the border-change stepper: the year axis above is the COARSE control, and this row steps the clock onto the days the borders actually changed (CShapes' own validity dates, 369 of them 1886-2019), hidden unless the chosen instant is inside that range. Wired in js/news-timeline.js. ⚠ IT SHARES THIS SOURCE LINE for the same reason the zone and jump rows share theirs: the shell is at the line budget tests/r168 #8 sets, and origin/main reached this round with ONE line of headroom. -->
         <!-- (#R290) 「反映内容を表示する箇所はいらない」 — the 「Applied」 chips stood here; see js/news-timeline.js -->
       </div>
     </div>

@@ -30,6 +30,29 @@ window.IntMapModules.timeBorders=function(HOST){
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
+  /* ══ ⚠⚠⚠ (#R421) THIS FUNCTION WAS CALLED FOUR TIMES AND DEFINED NOWHERE ═══════════════════════
+     `whenStyleReady()` is #R140's fix for 「歴史的国境が表示されない・再読み込みで治る」: when the style is
+     mid-load, `apply()` and `go()` are supposed to DEFER and repaint once it is ready, instead of
+     giving up and leaving the era borders absent until a reload. It lives in js/data-layers.js as a
+     MODULE-LOCAL function, and #R163 moved this file out of the index.html closure where the name
+     used to resolve — so from that round on all four call sites threw `ReferenceError: whenStyleReady
+     is not defined`. MEASURED on this build before the fix: 6 uncaught rejections per boot, and the
+     retry has therefore never once run. Three of the four sites are inside `try{}catch(_){}`, which is
+     exactly why it stayed silent: the catch swallowed the ReferenceError and looked like "no retry
+     needed". ⚠ A mechanism that throws on its first line is not a weaker safety net — it is none.
+     Same shape as the canonical one (listen + poll + hard-resolve after ~6 s, because addSource works
+     as soon as the style object exists and a slightly-early add beats a layer that never appears),
+     built on THIS file's own `_imCanDraw()` so there is no second notion of "can I draw yet". */
+  function whenStyleReady(){
+    return new Promise(res=>{
+      let done=false;
+      const fin=()=>{ if(done) return; done=true; try{ GE().events.off('idle',ck); GE().events.off('styledata',ck); GE().events.off('load',ck); }catch(_){} res(); };
+      const ck=()=>{ if(_imCanDraw()) fin(); };
+      if(_imCanDraw()){ res(); return; }
+      try{ GE().events.on('idle',ck); GE().events.on('styledata',ck); GE().events.on('load',ck); }catch(_){}
+      let n=0; (function poll(){ if(done) return; if(_imCanDraw()||n++>40) fin(); else setTimeout(poll,150); })();
+    });
+  }
   const applyTheme=HOST.applyTheme, countryStats=HOST.countryStats, showCountryDetail=HOST.showCountryDetail;
   return (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()||!window.IntMapTime) return {};
@@ -63,12 +86,44 @@ window.IntMapModules.timeBorders=function(HOST){
          Congress-of-Vienna map — sixty years stale — for no gain. The 1815/1880 gap is 65 years
          wide, which is exactly what would have tripped the guard. */
       return (y<CS_MIN || (next-prev)<=MAXGAP) ? next : prev; };
-    /* ===== (#R117) YEARLY borders 1886–2019 from CShapes 2.0 (Schvitz et al. 2022, ETH Zürich — international
-       borders with per-feature validity DATES, so the map changes in the exact year a border changed: no more
-       "nearest of 10 snapshots"). Self-hosted simplified copy (data/cshapes.js, ring-pooled). aourednik snapshots
-       remain the automatic FALLBACK (and nothing else about that path was removed). The displayed state of a year
-       is its JULY 1 state (mid-year convention: 1991 still shows the USSR, 1990 shows two Germanys). */
+    /* ===== (#R117) DAY-EXACT borders 1886–2019 from CShapes 2.0 (Schvitz et al. 2022, ETH Zürich — international
+       borders with per-feature validity DATES). Self-hosted simplified copy (data/cshapes.js, ring-pooled).
+       aourednik snapshots remain the automatic FALLBACK (and nothing else about that path was removed).
+       ══ (#R421) …AND UNTIL NOW THE DATES WERE THROWN AWAY AT THE LAST STEP ═══════════════════════
+       「歴史国境の更新ペースをさらに細かくして。理想は月日単位。特に20s前半が荒い。」 The selector below
+       asked "was this feature alive on JULY 1 of `year`?" — one sample per calendar year — even though
+       every record carries `sy,sm,sd → ey,em,ed`. Measured on the shipped bundle: 710 records span
+       365 DISTINCT transition dates but only 104 distinct years, so the July-1 convention discarded
+       ~72% of the border changes IntMap already had on disk. 1920 is the worst year in the file —
+       13 transition dates (Tartu 1/12, Sèvres 7/23, Bessarabia 10/28, …) collapsing to 5 genuinely
+       different worlds, of which July 1 showed exactly ONE.
+       ⚠ THE CLOCK AND THE MAP DISAGREED, TOO. `IntMapTime.setYear(y)` sets JUNE 15 (chronos.js), and
+       for 1920 the June-15 world has 166 entities while the July-1 world has 167 — so the year slider
+       drew a world sixteen days ahead of the instant it claimed to be showing. Reading the clock's own
+       Y-M-D removes the second convention instead of reconciling it.
+       ⚠ LOCAL getters, not `e.iso`. `ymdISO` is `toISOString()` = UTC, so a date picked as 1920-10-28
+       east of Greenwich would arrive here as 10-27 — the user would name a date and get the day before.
+       `e.year` is already `getFullYear()` (local); the month and day now come from the same place. */
     const CS_MIN=1886, CS_MAX=2019;
+    /* (#R421) every instant on which the world changes, as sortable YYYYMMDD ints. Both edges: a record's
+       START, and the day AFTER its END (a state that vanishes with no successor record still ends an epoch).
+       Built once, lazily, off the same bundle the polygons come from — no second source to drift. */
+    let _csBnd=null;
+    const _ymd=(y,m,d)=>y*10000+m*100+d;
+    function _dayAfter(y,m,d){ const t=new Date(Date.UTC(y,m-1,d)); t.setUTCDate(t.getUTCDate()+1);
+      return [t.getUTCFullYear(),t.getUTCMonth()+1,t.getUTCDate()]; }
+    function csBounds(d){ if(_csBnd) return _csBnd;
+      const set=new Set();
+      for(const f of d.feats){ set.add(_ymd(f[2],f[3],f[4]));
+        const a=_dayAfter(f[5],f[6],f[7]); set.add(_ymd(a[0],a[1],a[2])); }
+      _csBnd=[...set].filter(k=>k>=_ymd(CS_MIN,1,1)&&k<=_ymd(CS_MAX,12,31)).sort((a,b)=>a-b);
+      return _csBnd; }
+    /* the epoch a date falls in = the last boundary at or before it. Two dates inside one epoch share a
+       cache key, so scrubbing a quiet decade re-renders NOTHING while 1920 now steps thirteen times. */
+    function csEpoch(d,y,m,dd){ const t=_ymd(y,m,dd), b=csBounds(d);
+      let lo=0,hi=b.length-1,ans=b.length?b[0]:t;
+      while(lo<=hi){ const mid=(lo+hi)>>1; if(b[mid]<=t){ ans=b[mid]; lo=mid+1; } else hi=mid-1; }
+      return ans; }
     let _csD=null,_csP=null; const _csGeom=new Map();
     function csLoad(){ if(_csD) return Promise.resolve(_csD); if(_csP) return _csP;
       _csP=new Promise(res=>{ if(window.__CSHAPES){ _csD=window.__CSHAPES; res(_csD); return; }
@@ -158,13 +213,13 @@ window.IntMapModules.timeBorders=function(HOST){
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
       _csGeom.set(idx,g); return g; }
-    function csFC(d,year){ const feats=[];
+    function csFC(d,year,mon,day){ const feats=[];
+      /* (#R421) `mon`/`day` absent = the old July-1 sample, kept so the aourednik-fallback and any
+         year-only caller still get a defined instant rather than January 1. */
+      const M=(mon>=1&&mon<=12)?mon:7, D=(day>=1&&day<=31)?day:1, t=_ymd(year,M,D);
       for(let i=0;i<d.feats.length;i++){ const f=d.feats[i];
-        const sy=f[2],sm=f[3],sd=f[4],ey=f[5],em=f[6],ed=f[7];
-        /* active on July 1 of `year` */
-        const started=(sy<year)||(sy===year&&(sm<7||(sm===7&&sd<=1)));
-        const ends=(ey>year)||(ey===year&&(em>7||(em===7&&ed>=1)));
-        if(!started||!ends) continue;
+        /* active ON that date: started at or before it, and not yet ended (CShapes end dates are inclusive) */
+        if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<t) continue;
         const NAME=_csName(f[0],f[1],year);
         feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:{NAME:NAME,name:NAME,_gw:f[1]}}); }
       return {type:'FeatureCollection',features:feats}; }
@@ -787,14 +842,19 @@ window.IntMapModules.timeBorders=function(HOST){
       try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
-    async function go(year){ active=true; const my=++seq; shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years */
-      /* (#R117) 1886–2019 → YEARLY CShapes borders (the year's July-1 state). Falls back to the aourednik
-         snapshot path below if the CShapes bundle can't be loaded. */
+    /* (#R421) `go` takes the INSTANT now, not the year. Callers that still hand it a number keep the old
+       meaning (that year's July 1) so nothing that predates this round has to change. */
+    async function go(when){ active=true; const my=++seq;
+      const isD=(when instanceof Date)&&!isNaN(when.getTime());
+      const year=isD?when.getFullYear():Math.round(+when), mon=isD?(when.getMonth()+1):7, day=isD?when.getDate():1;
+      shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years. ⚠ (#R421) it is derived from the INSTANT now, so it still answers "which year is on screen" while the borders under it moved to day precision. */
+      /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the aourednik snapshot path
+         below if the CShapes bundle can't be loaded. */
       if(year>=CS_MIN&&year<=CS_MAX){ const d=await csLoad();
         if(my!==seq||!active) return;
-        if(d){ const key='cs'+year;
+        if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing */
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) don't silently give up when the style is mid-load — retry once ready */
-          let fc=cache.get(key); if(!fc){ try{ fc=csFC(d,year); cache.set(key,fc); }catch(_){ fc=null; } }
+          let fc=cache.get(key); if(!fc){ try{ fc=csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc){ shownY=key; shownCorr=false; apply(fc); return; } } }
       const ny=nearest(year);
       /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
@@ -804,12 +864,13 @@ window.IntMapModules.timeBorders=function(HOST){
       if(fc){ shownY=ny; shownCorr=corr; apply(_eraCorrect(fc,year)); }
       /* (#R126) fetch failed (network hiccup on the first, uncached travel) → the map stayed border-less with no
          retry until the user moved the year again. Retry this same request once conditions allow. */
-      else setTimeout(()=>{ try{ if(active&&my===seq) go(year); }catch(_){} },4000); }
+      else setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); }
     window.IntMapTime.on(e=>{ clearTimeout(go._t);   /* cancel any pending apply first, so Now after a fast travel really clears */
       /* (#R94i) recent years (after the last aourednik snapshot, 2010) → keep the MODERN borders: they are the
          accurate present-day borders (incl. South Sudan 2011, etc.), which the stale 2010 snapshot lacks. */
       if(e.isLive || e.year>=new Date().getFullYear() || e.year>CS_MAX){ clear(); return; }   /* (#R117) CShapes carries accurate borders through 2019 (incl. South Sudan 2011) — only 2020+ keeps the modern base */
-      go._t=setTimeout(()=>{ try{ go(e.year); }catch(_){} },45); });   /* (#R122) 120→45ms: a single year change applies almost immediately, while a fast slider drag still coalesces */
+      const w=e.when;   /* (#R421) the whole instant — `e.year` alone was the July-1 rounding */
+      go._t=setTimeout(()=>{ try{ go(w); }catch(_){} },45); });   /* (#R122) 120→45ms: a single year change applies almost immediately, while a fast slider drag still coalesces */
     /* (#R107) re-localize the era LABELS (renamed states via _locName, unchanged countries via _modName) when the
        language changes WHILE travelling — tagSame bakes those at the current language, so re-apply the shown snapshot
        (no re-fetch; _eraCorrect reuses the already-computed merge state via shownCorr). */
@@ -1217,6 +1278,25 @@ window.IntMapModules.timeBorders=function(HOST){
       for(const pt of samples){ let best=null,bestA=Infinity; for(const e of idx){ const bb=e.bb; if(!bb||pt[0]<bb[0]||pt[0]>bb[2]||pt[1]<bb[1]||pt[1]>bb[3]) continue; if(e.area<bestA&&_contains(e.ff.geometry,pt[0],pt[1])){ bestA=e.area; best=e.ff; } } if(best) tally.set(best,(tally.get(best)||0)+1); }
       let win=null,wc=0; tally.forEach((c,ff)=>{ if(c>wc){ wc=c; win=ff; } });
       return win?win.geometry:null; }catch(_){ return null; } }
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest };
+    /* ===== (#R421) WALK THE REAL TRANSITION DATES ==============================================
+       「実際の国境変更日にスナップ」. The year slider stays the coarse control; these let the reader
+       step onto the exact days the world changed, which is the only way the dense stretches are
+       reachable at all — no amount of drag precision lands on 1920-10-28 in a 176-year slider.
+       Async because the answer lives in the 5.5 MB bundle, which is warmed at idle and may not be
+       parsed yet; every one of these resolves to `null` rather than throwing if it never loads. */
+    const _kToDate=k=>{ const y=Math.floor(k/10000), m=Math.floor(k/100)%100, d=k%100; return new Date(y,m-1,d,12,0,0); };
+    const _kOf=w=>{ const d=(w instanceof Date&&!isNaN(w.getTime()))?w:new Date(); return _ymd(d.getFullYear(),d.getMonth()+1,d.getDate()); };
+    async function changeAfter(when){ try{ const d=await csLoad(); if(!d) return null;
+      const t=_kOf(when), b=csBounds(d); for(const k of b) if(k>t) return _kToDate(k); return null; }catch(_){ return null; } }
+    async function changeBefore(when){ try{ const d=await csLoad(); if(!d) return null;
+      const t=_kOf(when), b=csBounds(d); for(let i=b.length-1;i>=0;i--) if(b[i]<t) return _kToDate(b[i]); return null; }catch(_){ return null; } }
+    /* the day the CURRENTLY DRAWN world came into being — what the panel prints under the stepper */
+    async function changeAt(when){ try{ const d=await csLoad(); if(!d) return null;
+      const w=(when instanceof Date&&!isNaN(when.getTime()))?when:null; if(!w) return null;
+      const y=w.getFullYear(); if(y<CS_MIN||y>CS_MAX) return null;
+      return _kToDate(csEpoch(d,y,w.getMonth()+1,w.getDate())); }catch(_){ return null; } }
+    async function changeDates(){ try{ const d=await csLoad(); if(!d) return []; return csBounds(d).map(_kToDate); }catch(_){ return []; } }
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest,
+             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:CS_MIN,max:CS_MAX}) };
   })();
 };
