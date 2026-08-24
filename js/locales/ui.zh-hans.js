@@ -5161,6 +5161,9 @@ window.IntMapLang.define('zh-hans', {
   "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "这个视野整个位于高纬度。一年之中，冰对这里做了什么？",   /* atlas-examples.js (#R392) */
   "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak}：海拔 {ele} 米，耸立在此。它如何改变周围的天气与路线？",   /* atlas-examples.js (#R392) */
   "Wind particles over the temperature layer": "气温图层上的风场粒子",   /* atlas-console.js (#R337) */
+  "Wind particles over the gust layer": "阵风图层上的风场粒子",   /* atlas-console.js (#R438) */
+  "Wind particles over the pressure layer": "气压图层上的风场粒子",   /* atlas-console.js (#R438) */
+  "sea-level pressure switched on": "已开启海平面气压",   /* atlas-console.js (#R438) */
   "This panel could not be loaded — check your connection and try again.": "无法加载此面板 — 请检查网络连接后再试一次。",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "哥伦布抵达美洲",   /* analysis-world-events.js (#R322) */
   "First Atlantic crossing opens the Columbian exchange.": "首次横渡大西洋，开启新旧大陆之间的哥伦布大交换。",   /* analysis-world-events.js (#R322) */

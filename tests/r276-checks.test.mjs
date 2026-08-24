@@ -122,7 +122,11 @@ test('R276 ④ the weather sits above the day/night shading, and one slider is t
     'the wind field re-asserts its place every idle');
   /* (#R284) the ids are a layer's CURRENT slot now (two slots per layer, so a forecast step never
      shows an empty map) — `curIds(cfg)` is the same set of layers, named through the swap. */
-  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>curIds\(cfg\)\.forEach\(l=>\{ try\{ EC\(cfg\)\.lift\(l\)/,
+  /* ⚠ (#R438) the return value is READ now — a `lift` that actually moved something is the only
+     thing that may trigger the sub-layer re-stack, because moving a layer makes the map draw and a
+     draw ends in another `idle`. The claim here is unchanged: every ECMWF layer re-asserts its
+     place above the shading on every idle. */
+  assert.match(w, /activeLayers\(\)\.forEach\(cfg=>curIds\(cfg\)\.forEach\(l=>\{ try\{ if\(EC\(cfg\)\.lift\(l\)\)/,
     '…and so does every ECMWF raster');
   /* the slider is applied ONCE, and its default is 1 */
   assert.match(DL(), /else if\(id==='wind'\)\{ try\{ window\.Wind&&window\.Wind\.setOpacity&&window\.Wind\.setOpacity\(v\); \}catch\(_\)\{\} \}/,
@@ -256,7 +260,11 @@ test('R276 ⑧ the two forecast players are two views of one state, with differe
   assert.match(w, /min="0" max="'\+Math\.max\(0,n-1\)\+'"/, '…over exactly the published steps');
   assert.ok(!/function buildPanel\(\)|panel\.className='tool-panel'/.test(w),
     'the second ECMWF panel — the one that duplicated them — is gone');
-  assert.match(w, /return \{ open\(\)\{ if\(!anyOn\(\)\) return; activeLayers\(\)\.forEach\(l=>\{ boxFor\(l\)\.style\.display='block'; \}\); renderLegend\(\); \}/,
+  /* ⚠ (#R438) `legendLayers()`, NOT `activeLayers()`. 「等圧線レイヤーを取り込み」 made the isobars a
+     SUB-LAYER: still in `activeLayers` — the two-slot swap, applyTime and commit all still run on
+     it — but with no legend box of its own, because its switch lives inside the pressure legend.
+     What this line is about is unchanged: open() SHOWS the one legend rather than building a rival. */
+  assert.match(w, /return \{ open\(\)\{ if\(!anyOn\(\)\) return; legendLayers\(\)\.forEach\(l=>\{ boxFor\(l\)\.style\.display='block'; \}\); renderLegend\(\); \}/,
     'open() shows the one legend instead of building a rival');
   /* both players drive the SAME module */
   assert.match(w, /if\(sel\) sel\.onchange=\(\)=>\{ E\.pause\(\); E\.setIndex\(\+sel\.value,\{now:true\}\);/,
@@ -379,7 +387,10 @@ test('R276 ⑭ the wind palette feeds the tiles and the legend from the same dec
   assert.match(s, /var WINDY_WIND = rampFrom\(WIND_ANCHORS, [0-9.]+\);/, '…and the table is built from it');
   /* ⚠ (#R288) …beside the temperature family, which got the same treatment. ONE object, so the
      tiles and every legend still read one declaration. */
-  assert.match(s, /Object\.assign\(\{\}, sdk\.COLOR_SCALES_WITH_ALIASES \|\| base\.colorScales,\s*\{ wind: WINDY_WIND, temperature: WINDY_TEMP \}\)/,
+  /* ⚠ (#R438) FIVE FAMILIES NOW — pressure, precipitation and dew point were fitted to windy.com's
+     own paint function too. What is asserted is unchanged: the wind family is replaced IN THE ONE
+     object the protocol is built with, so the tiles and every legend still read one declaration. */
+  assert.match(s, /Object\.assign\(\{\}, sdk\.COLOR_SCALES_WITH_ALIASES \|\| base\.colorScales,\s*\{ wind: WINDY_WIND, temperature: WINDY_TEMP[,}]/,
     'and replaces the SDK\'s wind family in the protocol settings');
   assert.match(s, /sdk\.omProtocol\(params, ctl, st\)/, 'the tiles are rendered with those settings…');
   assert.match(s, /sdk\.getColorScale\(variable, !!dark, displayScales\)/, '…and the legend reads them');

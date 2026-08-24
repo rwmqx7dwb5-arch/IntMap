@@ -266,7 +266,14 @@ test('R261 ⑩: Others is emptied into named families and the demoted rows stay 
      (「気温（2m・再解析）レイヤーも統合し、一つのレイヤー…ソースだけ切り替えられる仕様に」), so the
      merged row is where the row it absorbed was. The other two demotions are unchanged, and the
      merged row must be on the Climate shelf rather than nowhere. */
-  for (const id of ['ec-precip','ec-wind'])
+  /* ⚠ (#R438) `ec-precip` LEFT THIS LIST, and — like `ec-temp` above — not because #R40's decision
+     was overturned by us. It was promoted BY INSTRUCTION, and the instruction made the promotion
+     conditional on the work: 「あ、降水量、露点もWindyとグラフィックをRGBレベルで対応させる作業
+     やってから、気候・気象レイヤーに。」 The same message promoted 気圧 and 最大瞬間風速, and #R438
+     did the colour work for all three before moving any of them. `ec-wind` (the 10 m arrows) was NOT
+     named and is the demotion this line still guards; #R438 ⑨ asserts the four promotions and that
+     `ec-cape`, also unnamed, stayed where it was — between them nothing about #R40 goes unchecked. */
+  for (const id of ['ec-wind'])
     assert.ok(!groups.includes("'" + id + "'"), id + ' stays in Beta — it was demoted per request');
   assert.ok(groups.includes("'ec-temp'"), 'the merged air-temperature row is where the row it absorbed was');
   assert.ok(!s.includes("['temp','lyrTemp']"), '…and the row it absorbed is not declared twice');

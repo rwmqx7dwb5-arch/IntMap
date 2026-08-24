@@ -226,6 +226,9 @@ export function makeAtlasCapabilities(HOST) {
       /* (#R313) the animated streaks inside the Wind layer, on their own switch — the colour
          raster and the particles come from one forecast field and are toggled separately. */
       ['layers.windParticles',       'windParticles',  'windAnimation',                                               'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+      /* (#R438) the 4 hPa contours over the sea-level-pressure field — a switch inside that layer's
+         legend, so it is its own verb rather than a layer name (js/weather.js `sub`). */
+      ['layers.isobars',             'isobars',        'pressureContours,isolines',                                   'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
       ['layers.nightSide',           'nightSide',      '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
       ['layers.planeAltitude',       'planeAltitude',  'aircraftAltitude',                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
       ['layers.aircraftTrack',       'aircraftTrack',  'planeTrack',                                                  'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],

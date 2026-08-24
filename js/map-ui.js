@@ -2135,6 +2135,16 @@ window.IntMapModules.viewHash=function(HOST){
         if(wantSet.has('dl-wars')){ wantSet.delete('dl-wars');
           for(const k of ['dl-ww1','dl-ww2']){ if(!wantSet.has(k)){ wantSet.add(k); want.push(k); } }
           const i=want.indexOf('dl-wars'); if(i>=0) want.splice(i,1); }
+        /* ⚠ (#R438) …AND THE SAME FOR THE ISOBARS, WHICH ARE NOT A ROW ANY MORE. 「等圧線レイヤーを
+           取り込み」 moved that switch into the sea-level-pressure legend, so a link that names
+           `dl-ec-isobars` resolves to nothing. It means 「pressure, with contours」 and it is opened
+           as exactly that: the raster's row plus the switch, through the one door the legend box
+           and Atlas also use. ⚠ The switch is set LATE, with `apply`, because the module that owns
+           it is only wired once the layer has been turned on. */
+        if(wantSet.has('dl-ec-isobars')){ wantSet.delete('dl-ec-isobars');
+          if(!wantSet.has('dl-ec-slp')){ wantSet.add('dl-ec-slp'); want.push('dl-ec-slp'); }
+          const i=want.indexOf('dl-ec-isobars'); if(i>=0) want.splice(i,1);
+          [900,2000,3400].forEach(ms=>setTimeout(()=>{ try{ window._imWxIsobars&&window._imWxIsobars(true); }catch(_){} },ms)); }
         const DATASEL='input[id^="dl-"]:checked, input[id^="gx-"]:checked, input[id^="eco-dl-"]:checked, input[id^="l9-dl-"]:checked, input[id^="beta-dl-"]:checked, input[id^="wp-dl-"]:checked, #r7-dl-disputes:checked, #r7-dl-airdef:checked, #r7-dl-langs:checked';
         const apply=()=>{
           /* ⚠ (#R225) A RETIRED KEY MUST STOP BEING READ, NOT MERELY STOP BEING WRITTEN. `activeLayers()` no

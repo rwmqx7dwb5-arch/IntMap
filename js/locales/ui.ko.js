@@ -5055,6 +5055,9 @@ window.IntMapLang.define('ko', { ui: {
   "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "이 화면은 전체가 고위도에 있습니다. 얼음은 한 해 동안 이곳을 어떻게 바꾸나요?",   /* atlas-examples.js (#R392) */
   "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak}: 여기서 해발 {ele} m까지 솟아 있습니다. 주변의 날씨와 길에 어떤 영향을 주나요?",   /* atlas-examples.js (#R392) */
   "Wind particles over the temperature layer": "기온 레이어 위의 바람 입자",   /* atlas-console.js (#R337) */
+  "Wind particles over the gust layer": "최대순간풍속 레이어 위의 바람 입자",   /* atlas-console.js (#R438) */
+  "Wind particles over the pressure layer": "기압 레이어 위의 바람 입자",   /* atlas-console.js (#R438) */
+  "sea-level pressure switched on": "해면기압을 켰습니다",   /* atlas-console.js (#R438) */
   "This panel could not be loaded — check your connection and try again.": "이 패널을 불러오지 못했습니다 — 연결 상태를 확인한 뒤 다시 시도해 주세요.",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "콜럼버스의 아메리카 도달",   /* analysis-world-events.js (#R322) */
   "First Atlantic crossing opens the Columbian exchange.": "대서양 횡단으로 신구 대륙 사이의 콜럼버스 교환이 시작된다.",   /* analysis-world-events.js (#R322) */

@@ -86,11 +86,17 @@ test('R398 ① the field↔reader unit relation is declared exactly once', () =>
   const decl = declarationBlock();
   /* every unit STRING in this file belongs to that block — a second `'hPa'` anywhere else would be
      a second answer to 「what unit is this?」, which is how the four copies #R270 warns about start */
-  const units = [...ECC.matchAll(/'(hPa|Pa|mbar|millibar)'/g)].map((m) => m.index);
+  const units = [...ECC.matchAll(/'(hPa|Pa|mbar|millibar)'/g)];
   assert.ok(units.length > 0, 'the block names the two units');
   const from = ECC.indexOf(decl), to = from + decl.length;
-  for (const i of units) assert.ok(i >= from && i < to,
-    'no unit literal for this quantity lives outside the declaration');
+  /* ⚠ (#R438) ONE EXEMPTION, AND IT IS NOT A CONVERSION. A colour ramp declares the unit its own
+     breakpoints are stated in (`WIND_ANCHORS.unit` is 'm/s', `TEMP_ANCHORS.unit` is '°C'), and that
+     string is what `legend().unit` prints — it is the READER's ramp saying what it is, not a second
+     answer to 「how many of the file's units make one of the reader's」. #R438 added a pressure ramp,
+     so `unit: 'hPa'` now appears outside this block for the first time. What this test is about is
+     unchanged and is still asserted below: no consumer spells a conversion of its own. */
+  for (const m of units) assert.ok((m.index >= from && m.index < to) || /unit: $/.test(ECC.slice(m.index - 6, m.index)),
+    'no unit literal for this quantity lives outside the declaration, except a ramp naming its own');
   /* …and no consumer carries the number. js/weather.js reaches for `.per`; js/map-readout.js takes
      the unit off the legend. Neither may spell a conversion of its own. */
   assert.ok(!/pressure[^\n]{0,60}\/\s*100\b/.test(WX), 'js/weather.js writes no Pa→hPa division');
@@ -226,7 +232,13 @@ test('R398 ⑦ the isobar label is built from the declaration, not from a litera
 test('R398 ⑦b the isobar tile is asked for contours, and its label can be placed', () => {
   /* ① the SDK draws what the url asks for — a url with neither `arrows` nor `contours` produces a
      tile with no `contours` layer in it at all. MEASURED: 0 features plain, 900 with the flag. */
-  assert.match(WX, /const _tileExtra=\(cfg\)=>cfg\.type==='arrows'\?'&arrows=true':cfg\.type==='isobars'\?'&contours=true':'';/,
+  /* ⚠ (#R438) THE CLAIM IS UNCHANGED, THE SHAPE IS NOT. `_tileExtra` now appends the contour LEVELS
+     as well (`&intervals=…`), because that round replaced the pressure ramp with a 1,801-breakpoint
+     gradient and the SDK contours at the ramp's breakpoints when it is given none. What this test
+     is about — 「a vector row asks the SDK for the thing it draws」 — is asserted the same way; the
+     literal is matched loosely enough that adding a parameter is not a failure, and the two
+     following assertions still pin the bare url out of existence. */
+  assert.match(WX, /const _tileExtra=\(cfg\)=>cfg\.type==='arrows'\?'&arrows=true'\s*[\r\n]*\s*:cfg\.type==='isobars'\?\('&contours=true[^']*'/,
     'each vector row asks the SDK for the thing it draws');
   assert.match(WX, /const url=omUrl\(cfg,_tileExtra\(cfg\)\);/, 'and the source is built from that');
   assert.ok(!/omUrl\(cfg,cfg\.type==='arrows'\?'&arrows=true':''\)/.test(WX),

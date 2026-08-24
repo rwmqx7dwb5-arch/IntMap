@@ -68,26 +68,47 @@ test('R337 ① the preference lives in the temperature legend, has one door, and
   const wx = code('js/weather.js');
 
   /* the temperature legend owns the PREFERENCE and pushes an effective value — one writer */
-  assert.match(wx, /TPARTS_KEY\s*=\s*'intmap_wx_temp_parts'/, 'the preference has its own key');
-  assert.match(wx, /let tempParts=false/, '…and is OFF by default (the streaks cost a forecast read)');
-  assert.match(wx, /W\.setSolo\(!!\(tempParts&&state\['ec-temp'\]&&state\['ec-temp'\]\.on\)\)/,
+  /* ⚠⚠ (#R438) THREE LAYERS ASK NOW, so the single boolean became a table keyed by layer id
+     (「最大瞬間風速レイヤーにもパーティクルをつけて」「気圧レイヤーもパーティクルつけて」). Every claim
+     #R337 made is asserted here still, on the shape that replaced it: the temperature layer keeps
+     ITS OWN KEY — renaming it would silently untick the box for every reader who had ticked it —
+     the default is still off, and what crosses to the wind module is still ONE effective boolean
+     resolved from 「the box is ticked AND that layer is on」, now OR-ed over the layers that ask. */
+  assert.match(wx, /'ec-temp':'intmap_wx_temp_parts'/, 'the preference has its own key');
+  assert.match(wx, /PARTS_IDS\.forEach\(id=>\{ let v=false;/, '…and is OFF by default (the streaks cost a forecast read)');
+  assert.match(wx, /W\.setSolo\(PARTS_IDS\.some\(id=>parts\[id\]&&state\[id\]&&state\[id\]\.on\)\)/,
     'what crosses between the two modules is the box AND the layer, resolved once');
   assert.match(wx, /function syncLegend\(\)\{[\s\S]{0,200}?pushWindSolo\(\)/,
     'and it is pushed from the one place every on/off path already goes through');
 
   /* the row is in the LEGEND (#R16 / docs/MAP-LAYERS.md §7.10), on the layer that was asked about */
-  assert.match(wx, /function windPartsRow\(cfg\)\{\s*if\(cfg\.id!=='ec-temp'\) return ''/,
-    'the row belongs to the temperature legend and to no other');
-  assert.match(wx, /\+opRow\(cfg\)\+windPartsRow\(cfg\)\+/, '…and is rendered inside that legend body');
+  /* ⚠ (#R438) …to the legends of the layers that declare the preference, and to no others. The
+     temperature layer is one of them; a layer with no key still gets nothing. */
+  assert.match(wx, /function windPartsRow\(cfg\)\{\s*if\(!\(cfg\.id in PARTS_KEYS\)\) return ''/,
+    'the row belongs to the legends that declare the preference and to no other');
+  assert.match(wx, /PARTS_KEYS=\{'ec-temp':/, '…and the temperature layer is one of them');
+  assert.match(wx, /\+opRow\(cfg\)\+isobarRow\(cfg\)\+windPartsRow\(cfg\)\+/, '…and is rendered inside that legend body');
 
   /* ⚠ ONE STATE, ONE DOOR: the legend box, Atlas's dispatch and Atlas's inline toggle must all
      reach the same function, or two of them can hold different ideas of the answer (#R313 ①) */
   assert.match(wx, /window\._imWxTempParts=\(v\)=>/, 'the preference has exactly one published door');
   const ac = code('js/atlas-console.js');
-  assert.match(ac, /window\._imWxTempParts\(want\)/, 'Atlas dispatch goes through it');
+  /* ⚠ (#R438) THE DISPATCH RESOLVES `over` TO A LAYER FIRST, so it writes through the general door
+     `_imWxParts(layerId, v)`. That is the SAME state — `_imWxTempParts` is the temperature layer's
+     own name for it and both call `setParts('ec-temp', …)`. What #R337 pinned is that Atlas does not
+     keep a second copy of the answer, and that is asserted here on the door it now uses. */
+  assert.match(ac, /window\._imWxParts\(hit\[0\],want\)/, 'Atlas dispatch goes through the one door');
+  assert.match(ac, /\['ec-temp',\/temp\|気温/, '…having resolved 「気温の上に」 to the temperature layer');
   assert.match(ac, /tempWindParticles:\{[\s\S]{0,500}?window\._imWxTempParts/,
     'and so does the inline toggle a reply carries');
-  assert.match(ac, /_featTogHtml\('tempWindParticles'\)/, '…which the dispatch actually emits');
+  /* (#R438) the dispatch emits the toggle NAMED BY THE ROW IT RESOLVED — one row per layer, so the
+     reply carries the switch for the layer the reader asked about and not for a different one. */
+  assert.match(ac, /_featTogHtml\(hit\[2\]\)/, '…which the dispatch actually emits');
+  /* ⚠ (#R438) and the LABEL is read back out of the same entry (`_FEAT_TOG[hit[2]].lbl()`) rather
+     than written a second time in the dispatch — one declaration per layer, which is the rule the
+     legend follows and, measured, 1.6 kB of the Atlas chunk. */
+  assert.match(ac, /,'tempWindParticles'\]/, 'and the temperature row names that toggle');
+  assert.match(ac, /_FEAT_TOG\[hit\[2\]\]\.lbl\(\)/, '…and the reply reads its label from that one entry');
   assert.match(read('js/atlas-catalog-text.js'), /"over":"temperature"/,
     'the SYS catalogue documents the argument, or the planner can never emit it');
 

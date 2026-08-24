@@ -229,6 +229,129 @@ import './wx-models.js';
      nothing on the map (`legend()` thins the stops it DRAWS, see below). */
   var WINDY_TEMP = rampFrom(TEMP_ANCHORS, 0.05);
 
+  /* ══ ⚠⚠⚠ (#R438) THREE MORE FIELDS MEASURED OFF WINDY'S OWN PAINT FUNCTION ═══════════════════
+     「気圧レイヤーのグラフィックの色は、Windyの実際のサイトを見てRGB単位でおなじ気圧と色の対応に。」
+     「降水量、露点もWindyとグラフィックをRGBレベルで対応させる」
+
+     WHAT WAS ON THE MAP BEFORE, read out of the shipped bundle:
+         pressure       the SDK's own scale — 17 breakpoints, 940…1060 hPa, a blue→white→RED
+                        staircase whose top colour is [255,68,68]. Nothing to do with Windy.
+         precipitation  the SDK's own — 15 breakpoints, 0.01…30 mm, with an ALPHA ramp.
+         dew_point_2m   NO SCALE AT ALL. `mQ` resolves `dew_point_2m` → `dew_point` → `dew`, the
+                        SDK declares none of the three, and `_Q` then falls through to
+                        `Q.temperature` — i.e. the dew-point layer has been painted with the
+                        TEMPERATURE ramp, which is a different quantity's colours on a legend that
+                        says 「露点」. (MEASURED against the SDK's own key list: 24 scales, no `dew`.)
+
+     ⚠ THE GROUND TRUTH IS THE FUNCTION THE MAP IS PAINTED THROUGH, NOT THE DECLARED TABLE — #R288
+     found it for temperature and #R293 for wind, and it repeats here in BOTH directions. Windy's
+     declared `initialColorGradient` linearly interpolated against its own `RGBA(v)`, worst channel:
+         pressure   2.4/255      ← near-linear, so the declared table would have passed
+         rain      10  /255
+         dewpoint  25  /255      ← the declared table is NOT what that overlay paints
+     So each ramp was sampled from `W.colors.<ident>.RGBA(v)` at ONE POINT PER PRECOMPUTED BUCKET
+     (`steps`: 4000 / 1024 / 2048 — sampling finer than that reads the quantisation staircase back
+     and the fit chases it: the same table came out 81 stops that way and 17 this way), and the
+     smallest set of stops whose LINEAR interpolation reproduces that sampling was fitted, and
+     then every interior breakpoint was SNAPPED ONTO ITS OWN RESAMPLING GRID:
+         pressure   16 stops, worst 1.82/255   (grid 0.1 hPa)
+         precip     17 stops, worst 1.97/255   (grid 0.02 mm)
+         dew point  24 stops, worst 2.64/255   (grid 0.05 °C)
+     — inside the 3/255 standard #R288 and #R293 both held, i.e. below the threshold at which a
+     difference can be seen at all.
+     ⚠ THE SNAP IS #R284 S REQUIREMENT, NOT TIDINESS. rampFrom resamples onto a fixed step, so a
+     breakpoint that does not land on a sample point is a colour the map never paints, and 「色はその
+     まま」 would be approximate rather than literal. MEASURED both ways: snapping costs at most
+     0.8/255 and buys every anchor landing on its own colour exactly.
+
+     ⚠ EACH TABLE IS IN THE READER'S UNIT, because that is what `scale()`/`legend()` answer from;
+     `inFieldUnits` converts the renderer's copy (pressure alone needs it — see FIELD_UNITS).
+     ⚠ ALPHA 255 THROUGHOUT, in all three — MEASURED on Windy's own tables, which carry `opaque:true`
+     and hand back 255 at every value including zero. The precipitation ramp therefore paints a flat
+     grey where nothing is falling instead of fading to the basemap, which is what Windy's own rain
+     overlay does and is the whole of 「RGBレベルで対応」. The layer's opacity slider is unchanged. */
+  var PRESSURE_ANCHORS = {
+    unit: 'hPa',
+    breakpoints: [900, 950, 976, 984.8, 995.1, 1001.9, 1007.4, 1011.3, 1013.2,
+      1015.2, 1018.9, 1024, 1030.1, 1037.6, 1046, 1080],
+    colors: [
+      [8, 16, 48, 1], [0, 32, 96, 1], [0, 52, 147, 1], [0, 86, 149, 1],
+      [0, 118, 147, 1], [26, 140, 148, 1], [108, 165, 157, 1], [156, 184, 173, 1],
+      [183, 183, 183, 1], [177, 175, 153, 1], [168, 148, 108, 1], [164, 116, 67, 1],
+      [160, 81, 44, 1], [144, 49, 56, 1], [112, 24, 64, 1], [48, 8, 24, 1]
+    ]
+  };
+  /* 1013.2 hPa is the standard atmosphere and it is the ramp's grey pivot — highs go brown/red,
+     lows go blue, exactly as on the reference. 0.1 hPa resampling: the steepest segment is
+     1001.9 → 1007.4, where red travels 82 units in 5.5 hPa = 1.5 units per step. */
+  var PRECIP_ANCHORS = {
+    unit: 'mm',
+    breakpoints: [0, 0.62, 1.3, 6.04, 6.92, 7.6, 8.02, 9.16, 10.02, 14.98, 16.58, 18.44, 20,
+      23.46, 27.18, 30.84, 50],
+    colors: [
+      [111, 111, 111, 1], [61, 116, 160, 1], [59, 122, 161, 1], [59, 162, 161, 1],
+      [50, 166, 116, 1], [54, 165, 79, 1], [60, 162, 61, 1], [97, 164, 55, 1],
+      [131, 162, 59, 1], [161, 162, 59, 1], [166, 129, 49, 1], [169, 89, 52, 1],
+      [162, 59, 59, 1], [170, 55, 91, 1], [170, 55, 130, 1], [162, 59, 161, 1],
+      [169, 169, 169, 1]
+    ]
+  };
+  /* ⚠ THE UNIT IS mm AND NOTHING IS RESCALED. Windy's rain scale runs 0…50 mm and Open-Meteo's
+     `precipitation` is mm, so the SAME NUMBER OF MILLIMETRES GETS THE SAME COLOUR, which is what
+     was asked for. The two overlays accumulate over different windows (Windy's default step is
+     usually 3 h; this layer is the hour ending at the valid time, as its own description says), and
+     that is a statement about the DATA, not about the palette — inventing a factor to make the
+     pictures look alike would break the correspondence the instruction names. 0.02 mm resampling:
+     the steepest segment is 0 → 0.62, 49 units of blue in 0.62 mm = 1.6 per step. */
+  var DEW_ANCHORS = {
+    unit: '°C',
+    breakpoints: [-70.15, -55.15, -40.15, -25.2, -22.4, -20.35, -18.65, -17.05, -15.15, -8.15,
+      -3.5, 0, 0.25, 0.6, 0.85, 2.6, 4.5, 6.5, 10.35, 16.75, 20.95, 25.4, 29.85, 46.85],
+    colors: [
+      [115, 70, 105, 1], [203, 173, 196, 1], [163, 70, 146, 1], [144, 89, 170, 1],
+      [151, 120, 200, 1], [147, 149, 217, 1], [142, 176, 219, 1], [145, 198, 216, 1],
+      [157, 220, 218, 1], [106, 192, 182, 1], [99, 162, 192, 1], [93, 134, 199, 1],
+      [82, 132, 173, 1], [69, 130, 130, 1], [68, 126, 101, 1], [71, 136, 77, 1],
+      [86, 141, 54, 1], [103, 143, 39, 1], [134, 149, 22, 1], [202, 171, 9, 1],
+      [244, 183, 4, 1], [242, 132, 9, 1], [233, 83, 25, 1], [71, 14, 0, 1]
+    ]
+  };
+  /* Windy states this one in KELVIN (203…320); it is written here in °C because that is the unit
+     Open-Meteo publishes `dew_point_2m` in. The four stops crowded between 0 and 0.85 °C are the
+     same freezing-point emphasis TEMP_ANCHORS carries, and 0.05 °C resampling is the same step for
+     the same reason. It is NOT the temperature ramp: measured against it, the two differ by up to
+     73/255 (at −20 °C Windy paints dew point [147,149,217] and temperature [148,141,214] — close —
+     but at −25 °C dew point is still violet where temperature has moved on). */
+  /* ⚠ BUILT ON FIRST USE, NOT AT PARSE TIME. `WINDY_WIND` and `WINDY_TEMP` are 1,041 and 2,341
+     entries built when this file is evaluated, which is boot; these three are another 6,600 and
+     NOTHING needs them until a weather legend is drawn or the tile SDK is configured. Memoised, so
+     they are still built exactly once per page — see the note on the shared prelude for why a ramp
+     is per PAGE and never per model. */
+  var _windyRamps = Object.create(null);
+  var _WINDY_SRC = { pressure: [PRESSURE_ANCHORS, 0.1], precipitation: [PRECIP_ANCHORS, 0.02],
+    dew_point: [DEW_ANCHORS, 0.05] };
+  function windyRamp(family) {
+    if (_windyRamps[family]) return _windyRamps[family];
+    var s = _WINDY_SRC[family]; if (!s) return null;
+    return (_windyRamps[family] = rampFrom(s[0], s[1]));
+  }
+
+  /* ══ ⚠⚠ (#R438) THE ISOBAR INTERVAL, DECLARED ONCE ═══════════════════════════════════════════
+     Until this round the isobars were contoured at the BREAKPOINTS of whatever ramp `pressure_msl`
+     resolved to — the SDK's 17, which are 10 hPa apart at the ends and 5 in the middle, i.e. not an
+     isobar chart's spacing at all. And with the Windy ramp above resampled to 0.1 hPa those
+     breakpoints become 1,801 levels, so the ramp change ALONE would have asked the contourer for
+     eighteen hundred lines: the two halves are one decision and this is the other half.
+     → the level list is given explicitly. READ OUT OF THE SHIPPED BUNDLE, the SDK treats a
+     single-element `intervals` as a STEP («h.length===1 → contour at every multiple of h[0]»), so
+     one number is the whole declaration. 4 hPa is the standard interval on a printed surface chart
+     and the one Windy draws.
+     ⚠ IT IS IN THE FIELD'S UNIT, so it is derived from FIELD_UNITS rather than written as 400 —
+     the same rule the isobar LABEL follows (js/weather.js `_contourLabel`).
+     ⚠ `intervals` IS NOT IN THE SDK'S `DATA_RELEVANT_PARAMS`, so this changes what is DRAWN and
+     nothing about what is read or cached — the same note `omRasterUrl` and `_tileExtra` carry. */
+  var ISOBAR_STEP_HPA = 4;
+
   /* ══ ⚠⚠⚠ (#R398) THE FIELD'S NUMBERS AND THE RAMP'S NUMBERS WERE NEVER IN THE SAME UNIT ═══════
      「海面気圧レイヤーのカーソル読み出しが、自分の凡例と100倍食い違っている。」
 
@@ -882,8 +1005,14 @@ import './wx-models.js';
   function omSettings() {
     if (settings || !sdk) return settings;
     var base = sdk.defaultOmProtocolSettings;
+    /* ⚠ (#R438) FIVE FAMILIES NOW, AND THE KEYS ARE THE ONES `mQ` ACTUALLY LOOKS UP. Read out of
+       the bundle: `mQ(D,A)` tries `A[D]` first, then `A[I[0]+'_'+I[1]] ?? A[I[0]]` — so
+       `pressure_msl` finds `pressure`, `dew_point_2m` finds `dew_point`, and `precipitation` is an
+       exact key. `dew_point` is a family the SDK does not declare at all, which is why that layer
+       was drawing the temperature ramp; adding the key is what stops the fall-through. */
     var scales = Object.assign({}, sdk.COLOR_SCALES_WITH_ALIASES || base.colorScales,
-      { wind: WINDY_WIND, temperature: WINDY_TEMP });
+      { wind: WINDY_WIND, temperature: WINDY_TEMP, pressure: windyRamp('pressure'),
+        precipitation: windyRamp('precipitation'), dew_point: windyRamp('dew_point') });
     /* ══ (#R398) TWO VIEWS OF ONE RAMP, AND ONLY ONE OF THEM IS WRITTEN DOWN ═══════════════════
        `displayScales` is the ramp AS THE READER SEES IT — it is what `scale()` and therefore
        `legend()` answer from, and it is untouched. `colorScales` below is the renderer's copy of
@@ -1853,15 +1982,22 @@ import './wx-models.js';
   var OWN = { temperature_2m: WINDY_TEMP, temperature_2m_max: WINDY_TEMP, temperature_2m_min: WINDY_TEMP,
     surface_temperature: WINDY_TEMP,
     wind_u_component_10m: WINDY_WIND, wind_v_component_10m: WINDY_WIND, wind_gusts_10m: WINDY_WIND };
+  /* (#R438) …and the three fitted this round, built on the first ask rather than at parse time */
+  var OWN_LAZY = { pressure_msl: 'pressure', precipitation: 'precipitation', dew_point_2m: 'dew_point' };
+  function own(variable) {
+    if (OWN[variable]) return OWN[variable];
+    var f = OWN_LAZY[variable];
+    return f ? windyRamp(f) : null;
+  }
   /* ⚠ (#R398) `displayScales`, NOT `settings.colorScales` — this is the ramp the KEY draws and the
      one every reading in the app is expressed against, so it stays in the reader's unit. The
      renderer's copy of it (in the field's unit) is `omSettings().colorScales`; see FIELD_UNITS. */
   function scale(variable, dark) {
-    if (!sdk || !sdk.getColorScale) return OWN[variable] || null;
+    if (!sdk || !sdk.getColorScale) return own(variable);
     try {
       omSettings();                       /* builds both views on first use */
       return sdk.getColorScale(variable, !!dark, displayScales);
-    } catch (_) { return OWN[variable] || null; }
+    } catch (_) { return own(variable); }
   }
   function rgbaCss(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
   /* ══ ⚠⚠ (#R297) 「風レイヤーのカラー凡例は、30m/sまでにして。」 ═══════════════════════════════
@@ -2005,6 +2141,25 @@ import './wx-models.js';
       try { return before(); } finally { _beforeRe = false; } }
     return firstSymbolId();
   }
+  /* ══ ⚠⚠⚠ (#R438) `lift` CANNOT ORDER TWO OF OUR OWN LAYERS AGAINST EACH OTHER ════════════════
+     `lift` exists to rescue a layer that ended up UNDER the night shading (#R299), so it returns
+     early — 「already above the shading」 — for every layer that is already where it belongs. That is
+     right for what it is for and useless for 「the contours go on top of the raster they are contours
+     of」: both are above the shading, so neither call moves anything and the order is whichever of
+     them was added last. MEASURED on the built page: with both on, the style came out
+     `ec-isobars-0, ec-isobars-0-lbl, ec-slp-0` — 3,299 contour features fetched, drawn, and painted
+     over by the opaque raster. Every source-shape check in that round was green.
+     → this moves UNCONDITIONALLY to the same anchor `lift` uses, so the caller decides the order by
+     the order it calls in: last one raised is on top. ⚠ It drops the id cache, because it has just
+     invalidated it. */
+  function toTop(layerId) {
+    try {
+      if (!_hasLayer(layerId)) return false;
+      window.IntMapGeoEngine.layers.move(layerId, before());
+      _idsDrop();
+      return true;
+    } catch (_) { return false; }
+  }
   function lift(layerId) {
     try {
       var ids = _layerIds();
@@ -2121,10 +2276,23 @@ import './wx-models.js';
        declaration behind the raster, the isobar levels, the key and the point value — a caller
        that needs the factor (js/weather.js's isobar label) asks for it rather than writing 100. */
     fieldUnit: fieldUnit,
+    /* ⚠ (#R438) THE ISOBAR LEVELS, IN THE FIELD'S OWN NUMBERS. One call, so the caller never has to
+       know either half — neither that the interval is 4 hPa nor that the file holds pascals. The
+       SDK reads a single-element `intervals` as a step; see the note on ISOBAR_STEP_HPA. */
+    isobarIntervals: function () { return String(ISOBAR_STEP_HPA * fieldPer('pressure_msl')); },
+    ISOBAR_STEP_HPA: ISOBAR_STEP_HPA,
     WINDY_TEMP: WINDY_TEMP,
     TEMP_ANCHORS: TEMP_ANCHORS,
+    /* (#R438) the three fitted this round — the anchors are the declaration, the ramp is the
+       resampled gradient the map and the key are both drawn from */
+    PRESSURE_ANCHORS: PRESSURE_ANCHORS,
+    PRECIP_ANCHORS: PRECIP_ANCHORS,
+    DEW_ANCHORS: DEW_ANCHORS,
+    windyRamp: windyRamp,
     before: before,
     lift: lift,
+    /* (#R438) …and the unconditional version, for ordering a sub-layer above its parent */
+    toTop: toTop,
     colorScales: function () { var st = omSettings(); return st && st.colorScales; },
     WINDY_WIND: WINDY_WIND,
     LEGEND_MAX: LEGEND_MAX,

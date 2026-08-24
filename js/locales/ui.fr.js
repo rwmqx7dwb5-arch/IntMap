@@ -5065,6 +5065,9 @@ window.IntMapLang.define('fr', { ui: {
   "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "Toute cette vue se situe dans les hautes latitudes — que lui fait la glace au fil de l’année ?",   /* atlas-examples.js (#R392) */
   "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak} : le sommet culmine ici à {ele} m — quel effet cela a-t-il sur la météo et sur les routes alentour ?",   /* atlas-examples.js (#R392) */
   "Wind particles over the temperature layer": "Particules de vent sur la couche de température",   /* atlas-console.js (#R337) */
+  "Wind particles over the gust layer": "Particules de vent sur la couche de rafales",   /* atlas-console.js (#R438) */
+  "Wind particles over the pressure layer": "Particules de vent sur la couche de pression",   /* atlas-console.js (#R438) */
+  "sea-level pressure switched on": "pression au niveau de la mer activée",   /* atlas-console.js (#R438) */
   "This panel could not be loaded — check your connection and try again.": "Ce panneau n'a pas pu être chargé — vérifiez votre connexion et réessayez.",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "Colomb atteint l'Amérique",   /* analysis-world-events.js (#R322) */
   "First Atlantic crossing opens the Columbian exchange.": "La première traversée de l'Atlantique ouvre l'échange colombien.",   /* analysis-world-events.js (#R322) */

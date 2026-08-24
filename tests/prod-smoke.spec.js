@@ -1066,11 +1066,18 @@ test('(#R398) every ECMWF raster reports its value in the unit its own key names
 test('(#R398) the isobars draw, at levels in the field unit, labelled in the key unit', async () => {
   const r = await page.evaluate(async () => {
     const map = window.IntMapGeoEngine.raw(), EC = window.IntMapECMWF;
-    const cb = document.getElementById('dl-ec-isobars');
-    if (!cb) return { skip: 'no isobar row on the deployed build' };
+    /* ⚠ (#R438) THE ISOBARS ARE NO LONGER A ROW — they are a switch inside the sea-level-pressure
+       legend (「等圧線レイヤーを取り込み」). This used to look up `dl-ec-isobars` and SKIP when it was
+       absent, which after that change would have been a permanent green on the deployed build: the
+       exact 「a skip here would have been green for the whole life of the bug」 failure the note at
+       the bottom of this test is about. So it asks for the pair the switch now means — the pressure
+       row, plus the published door — and skips only when neither exists. */
+    const cb = document.getElementById('dl-ec-slp');
+    if (!cb || !window._imWxIsobars) return { skip: 'no sea-level-pressure row on the deployed build' };
     document.getElementById('btn-view-flat')?.click();
     map.jumpTo({ center: [-30, 45], zoom: 3.4 });
     if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    window._imWxIsobars(true);
     const t0 = Date.now();
     while (Date.now() - t0 < 45_000) {   /* inside the file's 90 s test timeout, so a source that
                                             never yields contours reaches the assertions below */
@@ -1085,12 +1092,21 @@ test('(#R398) the isobars draw, at levels in the field unit, labelled in the key
           const fu = EC.fieldUnit ? EC.fieldUnit('pressure_msl') : null;
           const per = fu ? fu.per : 1;
           const lg = EC.legend('pressure_msl', true);
+          /* ⚠ (#R438) …AND WHERE THEY ARE IN THE STACK. The contours are drawn over the OPAQUE
+             sea-level-pressure raster now (they are a switch on that layer), and every ECMWF layer
+             is placed at the same anchor — so 「who is on top」 is 「who was added last」. MEASURED
+             before the fix: `ec-isobars-0, ec-isobars-0-lbl, ec-slp-0`, i.e. every line fetched,
+             parsed, drawn and then painted over. The tiles, the levels and the labels were all
+             correct, so this is the one thing about them that the assertions above cannot see. */
+          const order = map.getStyle().layers.map((l) => l.id);
           return {
             url: map.getSource(src).url, features: f.length,
             levels: [...new Set(f.map((x) => Number(x.properties.value)))].sort((a, b) => a - b),
             placedLabels: placed.length,
             labelExpr: JSON.stringify(map.getLayoutProperty(lblId, 'text-field')),
             per, keyMin: lg && lg.min, keyMax: lg && lg.max, keyUnit: lg && lg.unit,
+            rasterAt: order.findIndex((i) => /^ec-slp-\d+$/.test(i)),
+            lineAt: order.indexOf(ids[0]), labelAt: order.indexOf(lblId),
           };
         }
       }
@@ -1102,7 +1118,8 @@ test('(#R398) the isobars draw, at levels in the field unit, labelled in the key
     const ids = map.getStyle().layers.map((l) => l.id).filter((i) => /^ec-isobars-\d+$/.test(i));
     const src = ids.length && map.getStyle().layers.find((l) => l.id === ids[0]).source;
     return { url: (src && map.getSource(src) || {}).url || '', features: 0, levels: [],
-      placedLabels: 0, labelExpr: '', per: 1, keyMin: 0, keyMax: 0, keyUnit: '' };
+      placedLabels: 0, labelExpr: '', per: 1, keyMin: 0, keyMax: 0, keyUnit: '',
+      rasterAt: -1, lineAt: -1, labelAt: -1 };
   });
   test.skip(!!r.skip, r.skip || '');
 
@@ -1115,6 +1132,12 @@ test('(#R398) the isobars draw, at levels in the field unit, labelled in the key
   expect(Math.min(...back), `the lowest contour level (${back[0]} ${r.keyUnit}) is on the key`)
     .toBeGreaterThanOrEqual(r.keyMin);
   expect(Math.max(...back), 'and so is the highest').toBeLessThanOrEqual(r.keyMax);
+  /* (#R438) and they are ON TOP of the field they are contours of — see the note in the probe */
+  expect(r.rasterAt, 'the sea-level-pressure raster is on the map (the contours ride on it)')
+    .toBeGreaterThanOrEqual(0);
+  expect(r.lineAt, 'the contour lines are drawn ABOVE the opaque raster, not under it')
+    .toBeGreaterThan(r.rasterAt);
+  expect(r.labelAt, 'and their labels above the lines').toBeGreaterThan(r.lineAt);
   /* and the label the reader actually reads is that same division */
   expect(r.labelExpr, 'the label divides by the declared factor').toContain(String(r.per));
   expect(r.placedLabels, 'and labels are actually placed — `line` placement puts none on these '
