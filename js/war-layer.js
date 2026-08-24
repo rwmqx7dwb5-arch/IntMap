@@ -58,6 +58,7 @@
  *  because a line that moves on a day no source describes is a claim nobody made.
  * ==========================================================================*/
 import { WarGeom } from './war-geom.js';
+import { everyTick, stopTick } from './runtime.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.warLayer = function (HOST) {
@@ -489,20 +490,25 @@ window.IntMapModules.warLayer = function (HOST) {
       if (next === curDate && shownKey === next) { if (opts && opts.force) renderPanel(); return; }
       paint(next);
     }
-    function stopPlay() { if (playT) { clearInterval(playT); playT = null; } }
+    function stopPlay() { if (playT) { stopTick(playT); playT = null; } }
+    /* ⚠ (#R409) THE PLAYBACK TIMER IS ON THE WHEEL, NOT A RAW `setInterval`. #R408 moved «does a
+       hidden tab tick?» inside js/runtime.js precisely so that no caller carries its own copy of
+       the predicate — the first draft here had `if (document.hidden) return;` in the callback,
+       which is that copy, and `tests/r408-checks ②a` names the file and the line.
+       ⚠ THE KEY CARRIES THE WAR ID. Keys are global to the wheel and a second `everyTick` under the
+       same key REPLACES the first — with both rows playing, one key would leave WW1 and WW2 fighting
+       over one timer. */
     function togglePlay() {
       const W = war(); if (!W) return;
       if (playT) { stopPlay(); renderPanel(); return; }
       const sp = spanOf(W);
       if (curDate >= sp[1]) setDate(sp[0]);
-      playT = setInterval(() => {
-        /* ⚠ a hidden document does not animate — the frames nobody sees still cut the Soviet Union */
-        if (document.hidden) return;
+      playT = everyTick('war-layer:play:' + warId, 110, () => {
         const s = spanOf(war() || W);
         const next = addDays(curDate || s[0], stepDays);
         if (next >= s[1]) { setDate(s[1]); stopPlay(); renderPanel(); return; }
         setDate(next);
-      }, 110);
+      });
       renderPanel();
     }
 
