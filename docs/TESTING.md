@@ -21,8 +21,8 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **196 Node test files** with no browser at all (counted from
-`package.json`). `npm test` runs the source half and the browser
+`npm run test:checks` runs **197 Node test files** with no browser at all (counted from
+`package.json`, which since #R385 may not name the same file twice — see below). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
 ⚠ **A NETWORK-DEPENDENT ASSERTION DOES NOT BELONG IN THE GATE.** #R341 split its browser coverage in
@@ -497,6 +497,12 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   file → fail; listed path that is not on disk → fail, because `node --test` takes the whole
   tier down for that). Fixtures, corpora and the shared helpers are `.mjs` but not `*.test.mjs`,
   and are not demanded.
+  Since #R385 it also compares the list **against itself**: a path named **more than once** fails.
+  Both of the original directions are satisfied by a list that says the same true thing twice, and
+  the guard could not see it by construction — its first act was `new Set(listed)`. Measured: from
+  #R356 to #R379 the literal named `tests/r356-checks.test.mjs` twice and the gate stayed green for
+  twenty-two rounds, running that file twice on every CI run and inflating by one the entry count
+  the paragraph at the top of this file is checked against by `scripts/doc-facts.mjs`.
   ⚠ It lives **here** rather than in `test:checks` on purpose: a guard for a list cannot be an
   entry in the list it guards. `tests/r260-checks.test.mjs` ⑥ asks the same question about itself
   — which only ever protected the rounds whose author was already thinking about the hazard.
