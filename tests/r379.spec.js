@@ -173,13 +173,18 @@ test('R379 ① the aircraft mark is the airliner plan-form again, and its shader
 });
 
 /* ============================================================================
- *  (#R401) …AND ITS ANGLE IS A SCREEN ANGLE
+ *  (#R401, #R411) …AND ITS ANGLE IS THE TRACK, TURNED WITH THE MAP
  * ----------------------------------------------------------------------------
  *  「地図を傾けても、航空レイヤーの飛行機アイコンが同じ向きなのを修正して。」
+ *  「いや実際の飛行機の向きのままにしろってこと。」
  *
  *  The mark's ANGLE lives in this file because the mark's PIXELS are what this file measures, and
  *  the angle is the same kind of claim as the silhouette: a gl.POINTS sprite is axis-aligned to the
  *  viewport, so nothing outside a rendered frame can say which way the nose ended up pointing.
+ *  ⚠ #R401 read the first of those two sentences as "the mark must follow the projection" and drew
+ *  the direction a decal lying on the ground would run; the second sentence is the answer to that,
+ *  and js/aircraft-points.js carries the 400-aircraft measurement behind it. What this file asserts
+ *  is therefore the OPPOSITE of what it asserted last round for tilt, and the SAME for bearing.
  *
  *  ── HOW THE ANGLE IS TAKEN, AND WHY IT IS TAKEN THIS WAY ────────────────────────────────────
  *  Each of these is a defect that was measured on the way here, not a precaution.
@@ -215,10 +220,14 @@ test('R379 ① the aircraft mark is the airliner plan-form again, and its shader
  *  that, not about the heading. That is what turns a spoiled run into a failure with a reason
  *  instead of a wrong angle.
  *
- *  The ground truth is the map's OWN projection — a rhumb step along the track put through
- *  `map.project`. A second derivation of the perspective divide would only be a second thing to be
- *  wrong. (Measured: the projected direction of a mercator step is the same to twelve decimal places
- *  for any step from half a pixel to 128, at every pitch, because a homography maps lines to lines.)
+ *  ⚠ 5. (#R411) THE GROUND TRUTH IS `track − bearing`, AND DELIBERATELY NOT A SECOND COPY OF THE
+ *  SHADER. #R401's truth was a rhumb step put through `map.project`, which was right for the answer
+ *  it was checking and is the wrong question now. The probe sits at the CANVAS CENTRE, where a
+ *  perspective frame has no shear and a globe no meridian convergence, so the mark's angle there IS
+ *  the track turned by the map's bearing — one subtraction, owing nothing to the implementation it
+ *  is judging. (Away from the centre the two part company by up to 16.7° at pitch 85, measured over
+ *  250 live aircraft; that residue is the local rotation a perspective genuinely has, which is why
+ *  the probe is measured where it is zero rather than tolerated where it is not.)
  * ==========================================================================*/
 /* the sprite this test measures: 64 (the layer's own ceiling) × 2 = 128 device pixels. At the 60 px
    the test above uses, the coloured part of the fuselage is 2.4 px wide and the tailplane's is
@@ -229,11 +238,12 @@ const R401_SIZE = 64, R401_BIG = 2;
 const R401_ALT_M = 12000;
 
 const ANGLES = [
-  /* track, pitch, bearing — the four rows of #R401's measurement table */
+  /* track, pitch, bearing */
   { trk: 90, pitch: 0, bearing: 0 },
   { trk: 45, pitch: 0, bearing: 0 },
-  { trk: 45, pitch: 60, bearing: 0 },   /* the report: tilting must move the mark */
-  { trk: 45, pitch: 0, bearing: 45 },   /* …and so must turning */
+  { trk: 45, pitch: 60, bearing: 0 },   /* (#R411) tilting must NOT move the mark … */
+  { trk: 45, pitch: 85, bearing: 0 },   /* … not even at the tilt the report was made at */
+  { trk: 45, pitch: 0, bearing: 45 },   /* …but turning the map must */
 ];
 
 async function headingTable(page, rows, size, big, altM) {
@@ -314,6 +324,9 @@ async function headingTable(page, rows, size, big, altM) {
 
     (async () => {
       const out = [];
+      /* (#R411) hoisted so the catch below can put the map back even when a row throws — this page
+         is shared with every other test in the worker (tests/helpers/app.js). */
+      const hidden = [];
       try {
         /* ⚠ WAIT FOR THE LIVE LAYER TO BE RUNNING BEFORE STOPPING IT. loadAviation() switches the
            row on and returns as soon as the CLOUD exists, which is earlier than the controller
@@ -327,6 +340,29 @@ async function headingTable(page, rows, size, big, altM) {
         const wasOn = !!(AV && AV.isOn && AV.isOn());
         if (wasOn) AV.stop();
         E.layers.setAircraftCloud(LIVE, { visible: false });
+        /* ⚠ (#R411) THE BASEMAP IS SWITCHED OFF FOR THE MEASUREMENT, AND THAT IS NOT TIDINESS.
+           The mark is recovered by subtracting two frames, which cancels the background EXACTLY —
+           but only while the background is the SAME in both. #R401 met the other case (a tile
+           landing between the pair erodes one mask and not the other) and answered it with three
+           retries, which is enough while the view is a few hundred kilometres wide. At pitch 85 the
+           view reaches the horizon, so it is loading an order of magnitude more tiles and the pair
+           straddles a landing far more often than three retries can absorb: measured, the steep row
+           failed its own consistency check (masks 8.6 % apart, long axes 56.5 % of a right angle
+           apart) in four runs out of four when this file was run on its own, and passed only when an
+           earlier test in the same worker had already warmed the tiles. A test that needs a
+           different test to have run first is not measuring what it says it measures.
+           Hiding the style layers removes the whole class: nothing outside the probe can change
+           between two frames, so the subtraction is exact by construction rather than by luck. It
+           also settles ⚠ 2 above — with no basemap there is no depth written in front of the
+           sprite, so no half of the silhouette can be cut away at any tilt. */
+        try {
+          for (const L of m.getStyle().layers) {
+            if (L.id === PROBE || L.id === LIVE || L.type === 'background') continue;
+            if (m.getLayoutProperty(L.id, 'visibility') === 'none') continue;
+            m.setLayoutProperty(L.id, 'visibility', 'none');
+            hidden.push(L.id);
+          }
+        } catch (_) { /* a style still settling simply leaves the retries to do the work */ }
         for (const r of rows) {
           m.jumpTo({ pitch: r.pitch, bearing: r.bearing });
           /* the aircraft goes where the CANVAS CENTRE is (#R203's trap: camera padding) */
@@ -335,13 +371,16 @@ async function headingTable(page, rows, size, big, altM) {
           const pl = Math.max(-89.9999, Math.min(89.9999, ll.lat)) * D2R;
           const my = (180 - (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + pl / 2))) / 360;
           const ms = 1 / Math.max(1, MERC_CIRC * Math.cos(ll.lat * D2R));
-          const inv = (y) => (Math.atan(Math.exp((0.5 - y) * 2 * Math.PI)) * 2 - Math.PI / 2) / D2R;
 
-          /* ground truth: one rhumb step along the track, through the map's own projection */
-          const trk = r.trk * D2R, step = 2e-4;
-          const a = m.project({ lng: mx * 360 - 180, lat: inv(my) });
-          const b = m.project({ lng: (mx + Math.sin(trk) * step) * 360 - 180, lat: inv(my - Math.cos(trk) * step) });
-          const truth = Math.atan2(b.x - a.x, -(b.y - a.y)) / D2R;
+          /* ⚠ (#R411) GROUND TRUTH IS THE TRACK, TURNED BY THE MAP AND BY NOTHING ELSE — and it is
+             written as `trk − bearing` on purpose, NOT as a second copy of the shader's polar
+             decomposition, which would only be a second thing to be wrong the same way. The probe
+             sits at the CANVAS CENTRE, where a perspective frame has no shear and a globe has no
+             meridian convergence, so the two agree exactly there and this side of the comparison
+             owes nothing to the implementation. (#R401 put the projected track here instead; that
+             is the decal answer this round replaced — see js/aircraft-points.js.) */
+          const trk = r.trk * D2R;
+          const truth = r.trk - m.getBearing();
 
           /* ⚠ TAKEN AGAIN WHEN THE TWO HALVES DISAGREE. On a machine still fetching tiles the two
              frames of a pair can straddle one landing, and those pixels are thrown out as
@@ -372,12 +411,17 @@ async function headingTable(page, rows, size, big, altM) {
           });
         }
         E.layers.setAircraftCloud(LIVE, { visible: true });
+        /* (#R411) …and the map the next test sees is the map this one was handed */
+        for (const id of hidden) { try { m.setLayoutProperty(id, 'visibility', 'visible'); } catch (_) { } }
         /* put the camera back HERE rather than through another page.evaluate: an in-page jumpTo is
            a tenth of a second, and MEASURED, the round trip that wrapped one cost three (#R401). */
         m.jumpTo({ pitch: 0, bearing: 0 });
         if (wasOn) await AV.start({});
         res({ rows: out, dpr, side });
-      } catch (e) { res({ err: String((e && e.message) || e) }); }
+      } catch (e) {
+        for (const id of hidden) { try { m.setLayoutProperty(id, 'visibility', 'visible'); } catch (_) { } }
+        res({ err: String((e && e.message) || e) });
+      }
     })();
   }), { PROBE, LIVE, rows, size, big, altM });
 }
@@ -385,7 +429,7 @@ async function headingTable(page, rows, size, big, altM) {
 /** the smaller of the two ways round, in degrees */
 const angleGap = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
 
-test('R401 the mark points along the aircraft\'s SCREEN track — tilt, bearing and all', async ({ app }) => {
+test('R411 the mark points along the aircraft\'s OWN track, turned with the map and not with the tilt', async ({ app }) => {
   const page = app.page;
   await loadAviation(page);
   /* ⚠ NO CAMERA MOVE OF ITS OWN. app.reset() has already put the named view up, and MEASURED, a
@@ -405,12 +449,13 @@ test('R401 the mark points along the aircraft\'s SCREEN track — tilt, bearing 
     /* ⚠ FIFTEEN DEGREES, AND THE NUMBER IS THE MEASUREMENT'S, NOT THE RENDERER'S. The mark's two
        opposite renders are not pixel-identical — anti-aliasing puts a limb of the silhouette either
        side of the coverage floor differently at different angles — so the difference of their
-       centroids carries a bias, measured at up to 9.3° across these four rows. That is far inside
-       what this test is for: a mark that ignores pitch is 18.4° out on the third row, one that
-       ignores bearing is 45° out on the fourth, and a mirrored one is 90° or 180° out on every row.
-       The two SIGNS below are exact, and they are what pins the mirror. */
+       centroids carries a bias, measured at up to 9.3° across these rows. That is far inside what
+       this test is for: a mark that ignores bearing is 45° out on the last row, a mirrored one is
+       90° or 180° out on every row, and (#R411) one that projects the track onto the ground is
+       18.4° out at pitch 60 and 31° at pitch 85. The two SIGNS below are exact, and they are what
+       pins the mirror. */
     expect(angleGap(r.measured, r.truth),
-      `${at}: drawn at ${r.measured.toFixed(1)}°, the projection says ${r.truth.toFixed(1)}° (${how})`).toBeLessThan(15);
+      `${at}: drawn at ${r.measured.toFixed(1)}°, the track turned with the map is ${r.truth.toFixed(1)}° (${how})`).toBeLessThan(15);
     /* ⚠ THE MASK HAS TO BE THE MARK. The plan-form fills 16.5 % of its box (319.8 artwork units² of
        44²) and the white stroke covers the outer part of that, so the coloured region is about a
        tenth of the box. A mask far outside that band is measuring something else, and an angle taken
@@ -437,17 +482,24 @@ test('R401 the mark points along the aircraft\'s SCREEN track — tilt, bearing 
   const up45 = t.rows.find((r) => r.trk === 45 && r.bearing === 45);
   expect(up45.north, 'and with the map turned 45°, a 045° track is drawn pointing up the screen').toBe(true);
 
-  /* ⚠ THE REPORT ITSELF, AS ITS OWN ASSERTION. Every row above could pass on a tolerance while the
-     mark sat frozen, if the truth happened not to move — so this says the thing that was wrong: a
-     45° track at pitch 60 is not drawn at the same angle as at pitch 0 (the projection puts them
-     18° apart), and turning the map moves it too (45° apart). Measured before the fix, all three
-     rows came out at the same 31.3°. */
+  /* ⚠ (#R411) THE REPORT ITSELF, AS ITS OWN ASSERTION, AND IT IS THE OPPOSITE OF #R401'S. Every row
+     above could pass on a tolerance while the mark sat frozen, so these say the two things that
+     have to be true at once: TURNING the map moves the mark, and TILTING it does not.
+     「いや実際の飛行機の向きのままにしろってこと。」 #R401 asserted the other half of that pair —
+     `tilting the map moves the mark`, because it drew the direction a decal on the ground would
+     run — and the measurement that replaced it is in js/aircraft-points.js: at the tilt the report
+     was made at, four aircraft in five were pointing within 20° of the horizon.
+     ⚠ FIFTEEN, and it is the MEASUREMENT'S bias again, not slack for the renderer: the centroid
+     difference of a silhouette against itself turned round carries up to 9.3° here. The behaviour
+     this separates it from is not subtle — projecting the track puts pitch 60 18.4° away and
+     pitch 85 31° away from pitch 0, both outside this. */
   const flat = t.rows.find((r) => r.trk === 45 && r.pitch === 0 && r.bearing === 0);
   const tilted = t.rows.find((r) => r.trk === 45 && r.pitch === 60);
+  const steep = t.rows.find((r) => r.trk === 45 && r.pitch === 85);
   const turned = t.rows.find((r) => r.trk === 45 && r.bearing === 45);
-  /* ⚠ SIX DEGREES, NOT EIGHTEEN. The projection puts these two 18.4° apart; the measurement's own
-     bias (see above) compresses that to about 9.7 on this machine. What the assertion has to
-     separate is MOVED from FROZEN, and frozen is zero. */
-  expect(angleGap(flat.measured, tilted.measured), 'tilting the map moves the mark').toBeGreaterThan(6);
+  expect(angleGap(flat.measured, tilted.measured),
+    `tilting the map to 60° leaves the mark alone (${flat.measured.toFixed(1)}° → ${tilted.measured.toFixed(1)}°)`).toBeLessThan(15);
+  expect(angleGap(flat.measured, steep.measured),
+    `and tilting it to 85° leaves the mark alone (${flat.measured.toFixed(1)}° → ${steep.measured.toFixed(1)}°)`).toBeLessThan(15);
   expect(angleGap(flat.measured, turned.measured), 'turning the map moves the mark').toBeGreaterThan(25);
 });

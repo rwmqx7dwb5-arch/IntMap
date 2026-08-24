@@ -2097,40 +2097,64 @@ window.IntMapCesiumEngine=(function(){
       return Cesium.Cartesian3.fromDegrees(A.lng[i]+A.dlng[i]*dt, A.lat[i]+A.dlat[i]*dt, alt,
                                            this._globe.ellipsoid, _airP);
     }
-    /* ── the screen angle of a track, in radians, the way Cesium's own rotation means it ───────
-       The sprite's top is drawn at (−sin angle, cos angle) in eye space, so `angle` is atan2 of the
-       track's SCREEN direction. That direction is exact for a pinhole camera: with the eye-space
-       coordinates a = v·right, b = v·up, f = v·direction of the aircraft, and da/db/df the same
-       dots for the track direction, the screen derivative is (da·f − a·df, db·f − b·df) — the
-       quotient rule on (a/f, b/f). Dropping the second term is the orthographic shortcut, and it
-       is wrong by up to eighteen degrees for a track that points along the view at the edge of a
-       tilted frame, which is precisely the flight-simulator view.
-       In SCENE3D the track direction is built from the aircraft's own local horizontal frame
+    /* ── the mark's angle for a track, in radians, the way Cesium's own rotation means it ──────
+       The sprite's top is drawn at (−sin angle, cos angle) in eye space, so `angle` is minus the
+       atan2 of the direction the mark must run along.
+
+       ⚠ (#R411) THAT DIRECTION IS NOT THE TRACK'S PROJECTED ONE — 「いや実際の飛行機の向きのまま
+       にしろってこと。」 Projecting the track is the direction a decal lying on the ground would
+       run, and a BillboardCollection sprite (like the gl.POINTS sprite the other engine draws) never
+       foreshortens its shape, so squashing only the angle throws the reading away: js/aircraft-
+       points.js carries the 400-aircraft measurement, where four aircraft in five ended up pointing
+       within 20° of the horizon at the tilt the report was made at.
+
+       So what is taken from the camera is its ROTATION and not its tilt. The screen derivative of a
+       world direction d is exact for a pinhole camera: with the eye-space coordinates a = v·right,
+       b = v·up, f = v·direction of the aircraft, and da/db/df the same dots for d, it is
+       (da·f − a·df, db·f − b·df) — the quotient rule on (a/f, b/f), whose 1/f² is a positive
+       common factor and so cannot move an angle. Dropping the second term is the orthographic
+       shortcut, and it is wrong by up to eighteen degrees for a direction that points along the
+       view at the edge of a tilted frame, which is precisely the flight-simulator view. Feeding
+       that derivative the aircraft's own EAST and NORTH gives the local ground→screen Jacobian
+       M = [E N]; atan2(E.y − N.x, E.x + N.y) is the rotation of its polar factor, i.e. M with the
+       tilt's anisotropic squash divided out, and the mark then runs along (sin(track − θ),
+       cos(track − θ)) — the reported track on a north-up view, turned with the view, unmoved by
+       tilt, and identical to what the MapLibre shader computes from three projections.
+
+       In SCENE3D east and north come from the aircraft's own local horizontal frame
        (up = p̂, east = ẑ×p̂, north = up×east). In Columbus View the scene is a conformal Mercator
-       plane whose axes are (height, easting, northing), and conformality is what makes the answer
-       there simply (0, sin track, cos track) with no latitude term; the aircraft's position in THAT
+       plane whose axes are (height, easting, northing), and conformality is what makes east and
+       north there simply (0,1,0) and (0,0,1) with no latitude term; the aircraft's position in THAT
        space is Cesium's to compute, not ours, so that branch uses the orthographic form. */
     _airHeading(p,track){
       const cam=this._camera, R=cam.rightWC, U=cam.upWC, F=cam.directionWC, E=cam.positionWC;
-      const s=Math.sin(track), c=Math.cos(track);
       const mode=this._scene.mode;
-      let dx,dy,dz,persp=true;
+      let ex,ey,ez,nx,ny,nz,persp=true;
       if(mode===Cesium.SceneMode.SCENE2D||mode===Cesium.SceneMode.COLUMBUS_VIEW){
-        dx=0; dy=s; dz=c; persp=false;
+        ex=0; ey=1; ez=0; nx=0; ny=0; nz=1; persp=false;
       }else{
         const m=Math.sqrt(p.x*p.x+p.y*p.y+p.z*p.z)||1;
         const ux=p.x/m, uy=p.y/m, uz=p.z/m;
-        let ex=-uy, ey=ux; const eh=Math.sqrt(ex*ex+ey*ey);
+        ex=-uy; ey=ux; ez=0; const eh=Math.sqrt(ex*ex+ey*ey);
         if(eh<1e-9){ ex=1; ey=0; }else{ ex/=eh; ey/=eh; }
-        const nx=-uz*ey, ny=uz*ex, nz=ux*ey-uy*ex;
-        dx=ex*s+nx*c; dy=ey*s+ny*c; dz=nz*c;
+        nx=-uz*ey; ny=uz*ex; nz=ux*ey-uy*ex;
       }
-      const da=dx*R.x+dy*R.y+dz*R.z, db=dx*U.x+dy*U.y+dz*U.z;
-      if(!persp) return Math.atan2(-da,db);
-      const vx=p.x-E.x, vy=p.y-E.y, vz=p.z-E.z;
-      const a=vx*R.x+vy*R.y+vz*R.z, b=vx*U.x+vy*U.y+vz*U.z, f=vx*F.x+vy*F.y+vz*F.z;
-      const df=dx*F.x+dy*F.y+dz*F.z;
-      return Math.atan2(-(da*f-a*df), db*f-b*df);
+      let a=0,b=0,f=0;
+      if(persp){
+        const vx=p.x-E.x, vy=p.y-E.y, vz=p.z-E.z;
+        a=vx*R.x+vy*R.y+vz*R.z; b=vx*U.x+vy*U.y+vz*U.z; f=vx*F.x+vy*F.y+vz*F.z;
+      }
+      /* the screen delta of one world direction — orthographic when there is no perspective term */
+      const sx=(dx,dy,dz)=>{ const da=dx*R.x+dy*R.y+dz*R.z; if(!persp) return da;
+        return da*f-a*(dx*F.x+dy*F.y+dz*F.z); };
+      const sy=(dx,dy,dz)=>{ const db=dx*U.x+dy*U.y+dz*U.z; if(!persp) return db;
+        return db*f-b*(dx*F.x+dy*F.y+dz*F.z); };
+      const Ex=sx(ex,ey,ez), Ey=sy(ex,ey,ez), Nx=sx(nx,ny,nz), Ny=sy(nx,ny,nz);
+      const rx=Ex+Ny, ry=Ey-Nx;
+      /* A degenerate frame (the aircraft exactly at the eye) leaves the mark on the reported track
+         rather than on a NaN, which would take the whole billboard with it. */
+      const th=(rx*rx+ry*ry>1e-24)?Math.atan2(ry,rx):0;
+      return th-track;
     }
     /* Cesium scales pixelSize and billboard size by czm_pixelRatio, exactly as the MapLibre layer
        multiplies by u_pxRatio — so the SAME sizePx means the same device pixels on both engines,
