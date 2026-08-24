@@ -602,15 +602,43 @@ test('R208 ⑩: scripts/serve.mjs answers Accept-Encoding the way Pages does', a
      the download term — a boot measured at 7.4 s on fast-4G is 3.9 s once the bytes are the ones
      the user actually receives. This test starts the real server and asks it. */
   const { spawn } = await import('node:child_process');
-  const PORT = 4188;
-  const srv = spawn(process.execPath, [join(ROOT, 'scripts', 'serve.mjs'), '--port', String(PORT)],
-    { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
-  try {
-    await new Promise((ok, no) => {
-      const t = setTimeout(() => no(new Error('serve.mjs did not come up')), 15000);
-      srv.stdout.on('data', (d) => { if (/static server on/.test(String(d))) { clearTimeout(t); ok(); } });
-      srv.on('error', no);
+  /* ⚠⚠ THE PORT IS THE OPERATING SYSTEM'S TO CHOOSE, NOT THIS TEST'S (#R415). It used to be `4188`
+     here and `4189` for the traversal half below — two numbers picked on the day this was written.
+     Every checkout on the machine then runs the same two literals, and CLAUDE.md §6 asks every
+     parallel session for its OWN worktree: MEASURED 2026-08-24, forty-two of them. So the second
+     session to reach this test found 4188 already LISTENING, held by a process belonging to a round
+     it has nothing to do with; the spawn died of EADDRINUSE, «static server on» never arrived, and
+     fifteen seconds later the test failed with «serve.mjs did not come up» — in a tree whose own
+     code is fine, and green again the moment it was run alone. That is the worst shape a test can
+     fail in: it accuses the change in front of it.
+     ⚠ tests/helpers/session-seed.js already derives a PRIVATE port per checkout for exactly this
+     reason (#R282 追記), but one derived number cannot serve here — `npm test` runs the source half
+     and the browser half AT THE SAME TIME (scripts/test-parallel.mjs), so a port derived from this
+     checkout is the port this run's own Playwright dev server is holding. Port 0 has no such
+     question to get wrong: the kernel hands out a port that is free at the instant of the bind, and
+     serve.mjs's ready line names the port it actually bound (never the one it was asked for), so
+     the number comes back off stdout instead of being invented. */
+  const serve = (extra, whenLate) => {
+    const proc = spawn(process.execPath,
+      [join(ROOT, 'scripts', 'serve.mjs'), '--port', '0', ...extra],
+      { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+    /* the ready line can arrive split across chunks, so match against everything seen so far */
+    const port = new Promise((ok, no) => {
+      const t = setTimeout(() => no(new Error(whenLate)), 15000);
+      let out = '';
+      proc.stdout.on('data', (d) => {
+        out += String(d);
+        const m = /static server on http:\/\/[^\s:/]+:(\d+)\//.exec(out);
+        if (m) { clearTimeout(t); ok(Number(m[1])); }
+      });
+      proc.on('error', no);
     });
+    return { proc, port };
+  };
+
+  const srv = serve([], 'serve.mjs did not come up');
+  try {
+    const PORT = await srv.port;
     const get = async (p, accept) => {
       const r = await fetch(`http://127.0.0.1:${PORT}${p}`, {
         headers: accept ? { 'accept-encoding': accept } : {},
@@ -656,15 +684,9 @@ test('R208 ⑩: scripts/serve.mjs answers Accept-Encoding the way Pages does', a
        repo root a `..` that survives resolves back onto a file that is legitimately inside it — 200
        either way, proving nothing. Rooted at tests/, package.json is genuinely outside, and the
        escape attempt has to be percent-encoded to survive the client. */
-    const SUB = 4189;
-    const sub = spawn(process.execPath, [join(ROOT, 'scripts', 'serve.mjs'), '--port', String(SUB), '--root', join(ROOT, 'tests')],
-      { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'] });
+    const sub = serve(['--root', join(ROOT, 'tests')], 'the subdirectory server did not come up');
     try {
-      await new Promise((ok, no) => {
-        const t = setTimeout(() => no(new Error('the subdirectory server did not come up')), 15000);
-        sub.stdout.on('data', (d) => { if (/static server on/.test(String(d))) { clearTimeout(t); ok(); } });
-        sub.on('error', no);
-      });
+      const SUB = await sub.port;
       const inside = await fetch(`http://127.0.0.1:${SUB}/r208-checks.test.mjs`);
       assert.equal(inside.status, 200, 'a file inside the served root is still served');
       for (const evil of ['/%2e%2e/package.json', '/%2e%2e%2f%2e%2e%2fpackage.json',
@@ -674,8 +696,8 @@ test('R208 ⑩: scripts/serve.mjs answers Accept-Encoding the way Pages does', a
         assert.ok(!/"name":\s*"intmap-ops"/.test(body),
           `${evil} returned ${r.status} and the repo's package.json — nothing may escape the served root`);
       }
-    } finally { sub.kill(); }
+    } finally { sub.proc.kill(); }
   } finally {
-    srv.kill();
+    srv.proc.kill();
   }
 });

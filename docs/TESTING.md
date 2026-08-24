@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-24): the **core** tier that
 gates a push is **6 spec files / 0.6 min** against a ceiling of 0.7 min; the **whole** suite is
 **88 measured spec files / 75.5 min** of serial browser time against a ceiling of 75.5 min; and
-`npm run test:checks` runs **219 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **220 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **82 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -113,6 +113,23 @@ not run**, on a tree whose own tests all pass — the same suite went **52 passe
 port). `tests/helpers/session-seed.js` now derives it: a linked worktree's `.git` is a FILE, the
 main worktree's is a DIRECTORY, so **the main worktree and CI keep 4173** and each worktree gets its
 own stable port in 4174–4373. `PORT` in the environment still wins when you want to pin it.
+
+**(#R415) …and a test that starts its own server asks the operating system, not the calendar.** The
+rule above covers the ONE dev server Playwright runs; a Node check that spawns `scripts/serve.mjs`
+for itself is a second question, and `tests/r208-checks.test.mjs` ⑩ answered it with `4188` (and
+`4189` for its path-traversal half) — numbers picked when it was written, and therefore the same
+numbers in every checkout on the machine. Measured 2026-08-24 with forty-two worktrees live: the
+second session to reach it found 4188 already LISTENING, the spawn died of `EADDRINUSE`, and fifteen
+seconds later the test failed with «serve.mjs did not come up» in a tree whose own code was fine.
+Deriving one more port per checkout does not fix it either — `npm test` runs the source half and
+the browser half at the same time, so that number is the one this run's own dev server is holding.
+
+So a test spawns with **`--port 0`** and reads the port back:
+`serve.mjs`'s ready line names the port it actually **bound**, never the one it was asked for, so
+`[serve] IntMap static server on http://127.0.0.1:<port>/` is the answer. **`tests/r415-checks.test.mjs`
+① is the gate**: it walks every file under `tests/` and fails on a port a test picked for itself —
+`--port <n>`, `PORT=<n>` in a spawned server's environment, `.listen(<n>)`, or a loopback URL with a
+literal port. There is no exemption list.
 
 Run a single test by title:
 
