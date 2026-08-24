@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-23): the **core** tier that
 gates a push is **6 spec files / 1.0 min** against a ceiling of 1.1 min; the **whole** suite is
 **68 measured spec files / 86.3 min** of serial browser time against a ceiling of 86.3 min; and
-`npm run test:checks` runs **199 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **200 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
 
@@ -495,8 +495,17 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   them broken by #R212, ninety rounds before anybody saw it. The check compares the list against
   `tests/` **in both directions** (unlisted test
   file → fail; listed path that is not on disk → fail, because `node --test` takes the whole
-  tier down for that). Fixtures, corpora and the shared helpers are `.mjs` but not `*.test.mjs`,
-  and are not demanded.
+  tier down for that).
+  ⚠ **Since #R390 what counts as a test file is read from the SOURCE, not from the name.** The rule
+  was `/\.test\.mjs$/` and nothing else, so the one file of tests here that predates the convention
+  — `tests/security-logic.mjs`, 31 tests hand-named in #R138 — was outside anything the guard could
+  demand. Measured: `ed058ca` (#R377) dropped it from the literal as collateral, it was still absent
+  through #R379, and `82b7a0e` (#R380) put it back while doing something else. For those rounds the
+  31 tests did not run and **every gate in the repository was green**, this one included. A `.mjs`
+  under `tests/` that imports **`node:test`** declares tests whatever it is called and must be
+  listed; the name rule is kept alongside it, so a `*.test.mjs` that has not written its first
+  `test(…)` yet is still demanded. Fixtures, corpora and the shared helpers import nothing of the
+  kind and are still not demanded.
   Since #R385 it also compares the list **against itself**: a path named **more than once** fails.
   Both of the original directions are satisfied by a list that says the same true thing twice, and
   the guard could not see it by construction — its first act was `new Set(listed)`. Measured: from
