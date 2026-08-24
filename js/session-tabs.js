@@ -109,10 +109,18 @@ export function makeSessionTabs(HOST, CTX) {
          side: 「1人当たりCO₂排出レイヤーとCO₂排出量（百万t）レイヤーは一つに統合」 and the same for
          国防費. A session that had the row that went wants the row that stayed — it is the same
          quantity, and the mode switch in the legend is where the other view now lives. */
+      /* ⚠ (#R409) …and the FIRST retirement that is a SPLIT rather than a rename. 「WW1とWW2で
+         レイヤーを分けろ。」 turned `dl-wars` into `dl-ww1` and `dl-ww2`, so the value may now be a
+         LIST. A session that had the world wars on wants both wars on — translating it to one of
+         them would be choosing for the reader, and translating it to neither is the feature
+         disappearing in a round that was about splitting, not removing. The string form is
+         untouched: every entry above still means exactly what it meant. */
       const RETIRED={ 'dl-oceancur':'wp-dl-currents', 'dl-night':'dl-nightside', 'dl-temp':'dl-ec-temp',
-                      'bx-wbco2t':'bx-wbco2', 'dl-milSpendGDP':'dl-milSpend' };
+                      'bx-wbco2t':'bx-wbco2', 'dl-milSpendGDP':'dl-milSpend',
+                      'dl-wars':['dl-ww1','dl-ww2'] };
       for(let i=want.length-1;i>=0;i--){ const to=RETIRED[want[i]];
         if(!to) continue;
+        if(Array.isArray(to)){ want.splice(i,1); for(const id of to) if(want.indexOf(id)<0) want.push(id); continue; }
         if(want.indexOf(to)<0) want[i]=to; else want.splice(i,1); }
       /* (#R189) ONE-TIME MIGRATION of poisoned sessions. Every session written before #R188 shipped
          (no `defv` stamp) was written by a snapshot that could not tell "the user switched it off"

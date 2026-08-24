@@ -607,7 +607,13 @@ window.IntMapModules.warLayer = function (HOST) {
         const KI = (data && data.kinds) || {};
         const rank = evs.slice().sort((a, b) => (magOf(b.cas) - magOf(a.cas)) || (a.d < b.d ? -1 : 1));
         const showN = Math.min(10, rank.length);
-        h += '<h5>' + esc(L('On this day', 'この日の出来事', 'An diesem Tag', 'В этот день', 'Ese día')) + '</h5>';
+        /* ⚠ (#R409) THE KEY IS «On this day of the war», AND THE SHORT ONE WAS WRONG HERE. Bare
+           «On this day» is already an inline key — js/widget-defs-data.js's 「今日は何の日」 widget,
+           i.e. THIS DATE IN HISTORY — and fr / ko / zh resolve an inline string by its English text,
+           so this heading was reading 「歴史上の今日」 in Korean and Chinese above a list of
+           operations running on the day the slider is standing on. It was wrong before the split
+           too; the split is when it was measured. One row, one meaning. */
+        h += '<h5>' + esc(L('On this day of the war', 'この日の出来事', 'An diesem Kriegstag', 'В этот день войны', 'Ese día de la guerra')) + '</h5>';
         h += rank.slice(0, showN).map((v) => {
           const K = KI[v.kind || 'battle'];
           const span = v.d2 && v.d2 !== v.d ? (v.d + ' – ' + v.d2) : v.d;

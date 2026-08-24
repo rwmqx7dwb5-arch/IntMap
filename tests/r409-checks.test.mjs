@@ -286,3 +286,25 @@ test('R409 ⑭: the clock handler only follows an instant that lands inside this
   const stop = h.indexOf('stopPlay()');
   assert.ok(bail > 0 && stop > bail, 'the handler stops playback before deciding whether the instant even belongs to this war');
 });
+
+/* ── ⑮ a SAVED SESSION that had the world wars on comes back with both wars on ───────────────── */
+/* ⚠ THIS IS THE THIRD DOOR THE OLD ID COMES THROUGH, and each one closes separately: the Layers
+   panel (①), a share link (②) and the session snapshot restored on the next visit. js/session-tabs.js
+   keeps a RETIRED table precisely so a retirement is recorded in ONE place — but every entry it had
+   was a RENAME, one id to one id, and this round is the first SPLIT. Translating dl-wars to one of
+   the two would be choosing for the reader; translating it to neither is the feature quietly
+   disappearing in a round that was about splitting, not removing. */
+test('R409 ⑮: the retired dl-wars session id restores both war rows, and the rename entries still work', () => {
+  const src = codeOnly(R('js/session-tabs.js'));
+  const m = /const RETIRED=\{([\s\S]*?)\};/.exec(src);
+  assert.ok(m, 'js/session-tabs.js no longer keeps the retirement table as a literal');
+  assert.ok(/'dl-wars':\s*\[\s*'dl-ww1'\s*,\s*'dl-ww2'\s*\]/.test(m[1]), 'the retirement table does not turn dl-wars into both war rows');
+  for (const keep of ['dl-oceancur', 'dl-night', 'dl-temp', 'bx-wbco2t', 'dl-milSpendGDP']) {
+    assert.ok(m[1].includes("'" + keep + "'"), 'the rename entry for ' + keep + ' was dropped when the table learned to hold a list');
+  }
+  /* the loop must handle BOTH shapes — and de-duplicate, which is what the old entries relied on */
+  const loop = src.slice(src.indexOf('const RETIRED='), src.indexOf('const RETIRED=') + 900);
+  assert.ok(/Array\.isArray\(to\)/.test(loop), 'the loop still assumes every value is a single id, so the list form would be spliced in as an array');
+  assert.ok(/want\.indexOf\(id\)\s*<\s*0/.test(loop), 'the list form does not de-duplicate — a session holding dl-wars AND dl-ww1 would tick one row twice');
+  assert.ok(/if\(want\.indexOf\(to\)<0\)\s*want\[i\]=to;\s*else\s*want\.splice\(i,1\);/.test(loop), 'the single-id path changed shape — the five rename entries above rely on it exactly as it was');
+});
