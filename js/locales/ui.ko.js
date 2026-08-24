@@ -5432,6 +5432,7 @@ window.IntMapLang.define('ko', { ui: {
   'Front lines': '전선',   /* war-fronts.js / history.js (#R349) */
   'line of': '전선 날짜',   /* war-fronts.js / history.js (#R349) */
   'Match the time machine': '타임머신에 맞추기',   /* war-layer.js (#R409) */
+  'On this day of the war': '이 날의 전황',   /* war-layer.js (#R409) */
   'One day back': '하루 이전으로',   /* war-layer.js (#R409) */
   'One day forward': '하루 이후로',   /* war-layer.js (#R409) */
   'Second French Empire': '프랑스 제2제국',   /* war-fronts.js / history.js (#R349) */

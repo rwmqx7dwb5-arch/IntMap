@@ -5442,6 +5442,7 @@ window.IntMapLang.define('fr', { ui: {
   'Front lines': 'Lignes de front',   /* war-fronts.js / history.js (#R349) */
   'line of': 'ligne du',   /* war-fronts.js / history.js (#R349) */
   'Match the time machine': 'Aligner sur la machine à remonter le temps',   /* war-layer.js (#R409) */
+  'On this day of the war': 'Ce jour de la guerre',   /* war-layer.js (#R409) */
   'One day back': 'Un jour en arrière',   /* war-layer.js (#R409) */
   'One day forward': 'Un jour en avant',   /* war-layer.js (#R409) */
   'Second French Empire': 'Second Empire français',   /* war-fronts.js / history.js (#R349) */

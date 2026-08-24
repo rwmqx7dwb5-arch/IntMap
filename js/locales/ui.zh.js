@@ -5534,6 +5534,7 @@ window.IntMapLang.define('zh', {
   'Front lines': '戰線',   /* war-fronts.js / history.js (#R349) */
   'line of': '戰線日期',   /* war-fronts.js / history.js (#R349) */
   'Match the time machine': '對齊時光機',   /* war-layer.js (#R409) */
+  'On this day of the war': '這一天的戰況',   /* war-layer.js (#R409) */
   'One day back': '後退一天',   /* war-layer.js (#R409) */
   'One day forward': '前進一天',   /* war-layer.js (#R409) */
   'Second French Empire': '法蘭西第二帝國',   /* war-fronts.js / history.js (#R349) */

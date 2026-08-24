@@ -264,6 +264,32 @@ const CHECKS = [
   ['ww2', '1945-07-05', 'Guangzhou', 'AXIS'],
   ['ww2', '1945-08-20', 'Beijing', 'ALLIED'],
 ];
+/* ══ (#R409) THE SIXTEEN THE NEW CHECK ⑪ ASKED FOR ═══════════════════════════════════════════════
+   Every row below stands inside a span where NO front line crosses the country, so `control` alone
+   decides its colour and nothing else in the build looks at it. ⑪ found sixteen such spans of more
+   than a year; six were already covered by the rows above and these are the rest. One of them —
+   France between Case Anton and D-Day — was WRONG, drawn Allied blue for twenty months in the
+   middle of occupied Europe, which is the whole reason the check exists. */
+const CHECKS_UNCUT = [
+  /* WW1 — Italy is a belligerent for two and a half years before a line is quoted through it, and
+     Egypt is a British protectorate throughout (the Sinai–Palestine front runs east of it) */
+  ['ww1', '1916-06-01', 'Rome', 'ALLIED'],
+  ['ww1', '1915-06-01', 'Cairo', 'ALLIED'], ['ww1', '1918-01-01', 'Cairo', 'ALLIED'],
+  /* WW2 — the occupations that no front crosses once the campaign that made them is over */
+  ['ww2', '1943-01-01', 'Krakow', 'AXIS'],          /* the General Government */
+  ['ww2', '1943-06-01', 'Paris', 'AXIS'],           /* ⚠ Case Anton: the free zone is gone from 11 Nov 1942 */
+  ['ww2', '1942-01-01', 'Berlin', 'AXIS'],
+  ['ww2', '1942-01-01', 'Rome', 'AXIS'],            /* …and Italy is Axis until the armistice */
+  ['ww2', '1942-01-01', 'Rotterdam', 'AXIS'],
+  ['ww2', '1943-01-01', 'Tirana', 'AXIS'],
+  ['ww2', '1940-01-01', 'Cairo', 'ALLIED'], ['ww2', '1944-01-01', 'Cairo', 'ALLIED'],
+  ['ww2', '1944-01-01', 'Benghazi', 'ALLIED'],      /* Libya, after the Axis are out of Africa */
+  ['ww2', '1944-01-01', 'Sfax', 'ALLIED'],          /* …and Tunisia */
+  ['ww2', '1941-01-01', 'Rangoon', 'ALLIED'],       /* British Burma, before the Japanese arrive */
+  ['ww2', '1942-01-01', 'Dimapur', 'ALLIED'], ['ww2', '1945-01-01', 'Dimapur', 'ALLIED'],
+];
+for (const row of CHECKS_UNCUT) CHECKS.push(row);
+
 /* ⚠ (#R409) …AND EACH WAR MAY CARRY ITS OWN, BESIDE THE RECORD IT CHECKS. `W.checks` is
    [[date, place, faction], …] on the war object; the war id is filled in here. The list above is the
    one #R349 and #R381 wrote and it stays where it is — what this adds is a place to put a check that
@@ -377,14 +403,17 @@ for (const W of WARS) {
 /* This is a small copy of what js/war-fronts.js does per frame, and it is deliberately written here
    from the SHIPPED file's data rather than from the source objects: it answers «what will a reader
    see», not «what did the author mean». */
+function entityAtPoint(dateStr, pt) {
+  const t = dnum(dateStr);
+  for (const f of CS.feats) {
+    if (f[2] * 10000 + f[3] * 100 + f[4] > t || f[5] * 10000 + f[6] * 100 + f[7] < t) continue;
+    if (WarGeom.pointInPolys(pt, polysOf(f))) return f;
+  }
+  return null;
+}
 function factionAtPoint(war, dateStr, pt) {
   /* which entity is this point in, on this date? */
-  let hit = null;
-  for (const f of CS.feats) {
-    const t = dnum(dateStr);
-    if (f[2] * 10000 + f[3] * 100 + f[4] > t || f[5] * 10000 + f[6] * 100 + f[7] < t) continue;
-    if (WarGeom.pointInPolys(pt, polysOf(f))) { hit = f; break; }
-  }
+  const hit = entityAtPoint(dateStr, pt);
   if (!hit) return null;
   const tl = war.control[hit[1]];
   let base = 'NEUTRAL';
@@ -412,6 +441,71 @@ for (const [warId, date, place, want] of CHECKS) {
   const got = factionAtPoint(war, date, [p[0], p[1]]);
   if (got !== want) bad(`check FAILED — on ${date} the map puts ${place} under ${got}, the record says ${want}`);
   else checked++;
+}
+
+/* ── ⑪ #R409 — WHERE THE CUT GOES AWAY, SOMETHING HAS TO SAY WHAT IS LEFT ───────────────────── */
+/* ⚠ THIS IS THE CHECK THAT WOULD HAVE CAUGHT WHAT #R349 SHIPPED AND #R381 DID NOT LOOK FOR.
+   A country a front divides is described by the CUT, and `control` only says what the country is
+   when no line is crossing it. So when the last line leaves — a campaign ends, a front is quoted
+   with an empty `pts` to mean «stop drawing me» — the whole country falls back to `control`, and
+   nothing in the record has to notice that the fallback is now wrong.
+   MEASURED: `control[220]` was one row, `['1939-09-01','ALLIED']`. From 1940 to 1942 the Vichy line
+   split France correctly; `west40`'s 1942-11-11 entry has `pts: []` (Case Anton — Germany takes the
+   free zone, so there is no line any more); and from that day until D-Day, TWENTY MONTHS, France
+   was painted Allied blue in the middle of occupied Europe. Every gate was green: the gwcode exists,
+   the dates are ordered, every line cuts what it claims to cut, every named city is on the right
+   side of a line — and this country had no line.
+   THE RULE: a country that fronts otherwise describe, left for more than a year with only `control`
+   to describe it, must be asserted by at least one control check INSIDE that span. It is the
+   cheapest possible statement of «somebody looked», and it is exactly what was missing. */
+{
+  const DAYSPAN = 365;
+  const addD = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+  const spanDays = (a, b) => (Date.parse(b) - Date.parse(a)) / 86400000;
+  /* every control check, resolved to the entity it actually lands in on its own date */
+  const asserted = new Set();
+  for (const [warId, date, place, ] of CHECKS) {
+    const p = placeOf(place); if (!p) continue;
+    const f = entityAtPoint(date, [p[0], p[1]]);
+    if (f) asserted.add(warId + '|' + f[1] + '|' + date);
+  }
+  const gaps = [];
+  for (const war of out.wars) {
+    const cutGw = new Set();
+    for (const F of war.fronts) for (const D of F.dates) for (const g of (D.cuts || [])) cutGw.add(g);
+    for (const gw of cutGw) {
+      const tl = war.control[gw] || [];
+      const isCut = (ds) => {
+        for (const F of war.fronts) {
+          if (F.until && ds >= F.until) continue;
+          let cur = null; for (const D of F.dates) { if (D.d <= ds) cur = D; }
+          if (cur && cur.pts.length && (cur.cuts || []).indexOf(gw) >= 0) return true;
+        }
+        return false;
+      };
+      const baseAt = (ds) => { let f = 'NEUTRAL'; for (const [d, k] of tl) { if (d <= ds) f = k; } return f; };
+      /* walk the war in five-day steps and collect the spans no line touches */
+      const runs = []; let s = null, bf = null;
+      for (let d = war.span[0]; d <= war.span[1]; d = addD(d, 5)) {
+        const c = isCut(d), b = baseAt(d);
+        if (!c) { if (s === null) { s = d; bf = b; } else if (b !== bf) { runs.push([s, addD(d, -5), bf]); s = d; bf = b; } }
+        else if (s !== null) { runs.push([s, addD(d, -5), bf]); s = null; }
+      }
+      if (s !== null) runs.push([s, war.span[1], bf]);
+      for (const [a, b, f] of runs) {
+        if (f === 'NEUTRAL' || spanDays(a, b) < DAYSPAN) continue;
+        let ok = false;
+        for (const k of asserted) {
+          const i = k.lastIndexOf('|'), j = k.indexOf('|');
+          if (k.slice(0, j) !== war.id || +k.slice(j + 1, i) !== gw) continue;
+          const d = k.slice(i + 1);
+          if (d >= a && d <= b) { ok = true; break; }
+        }
+        if (!ok) gaps.push(`${war.id} gw${gw} is drawn ${f} from ${a} to ${b} (${Math.round(spanDays(a, b))} days) with no front crossing it and no control check inside that span`);
+      }
+    }
+  }
+  if (gaps.length) bad(`${gaps.length} span(s) where only \`control\` describes a country a front otherwise divides, and nothing checks it:\n    ` + gaps.join('\n    '));
 }
 
 /* ── ⑦ #R381 — EVERY ANCHOR IS QUOTED BY SOMETHING ──────────────────────────────────────────── */

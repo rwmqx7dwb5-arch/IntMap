@@ -186,9 +186,22 @@ window.IntMapModules.warLayer = function (HOST) {
          and not the slider. Desktop has no height cap on .data-legend at all (mobile has had one
          since #R215), so the bound belongs to the part that varies: the text. */
       '.war-info{max-height:min(42vh,380px);overflow-y:auto;overscroll-behavior:contain;}',
-      /* …except on the narrow layout, where the whole box already scrolls — two nested scroll
-         areas on a phone is a trap, not a feature */
+      /* …except on the narrow layout, where the box itself is already capped at 30dvh and scrolls —
+         two nested scroll areas on a phone is a trap, not a feature */
       '@media (max-width:768px){.war-info{max-height:none;overflow:visible;}}',
+      /* ⚠⚠⚠ (#R409) A BODY THAT ARRIVES AFTER THE MINIMIZE PASS NEVER GETS MINIMIZED — and this one
+         cause produced BOTH of the phone's symptoms. On a narrow screen js/data-layers.js starts
+         every floating legend collapsed, and it does that by walking the box's children ONCE and
+         setting an inline display:none on each. This body is appended later (the first paint
+         happens after `_registerLayerOpacity` returns), so it was never in that walk. The box
+         therefore carried `legend-collapsed` — whose shared rules are `max-height:none !important;
+         overflow:visible !important` and `display:none` for `.ecl-player` — while showing every
+         word of the legend underneath it. Measured on a 390×844 phone: 1,095 px tall over an 844 px
+         screen with the map gone (CONSTITUTION §4), and THE WHOLE TRANSPORT INVISIBLE.
+         ⚠ The framework's own cap is not broken — measured 253.2 px (30dvh) the moment the class is
+         off. It was `legend-collapsed`'s `!important` override all along.
+         One rule, in the same shape the framework already writes for the bodies it knew about. */
+      '.legend-collapsed .war-leg{display:none !important;}',
       '.war-pop{font-size:12px;} .war-pop-h{display:block;font-size:13px;margin-bottom:2px;}',
       '.war-pop-y{color:var(--text-muted);font-size:11px;font-variant-numeric:tabular-nums;}',
       '.war-pop-f{display:flex;align-items:center;gap:6px;margin-top:5px;}',

@@ -308,3 +308,23 @@ test('R409 ⑮: the retired dl-wars session id restores both war rows, and the r
   assert.ok(/want\.indexOf\(id\)\s*<\s*0/.test(loop), 'the list form does not de-duplicate — a session holding dl-wars AND dl-ww1 would tick one row twice');
   assert.ok(/if\(want\.indexOf\(to\)<0\)\s*want\[i\]=to;\s*else\s*want\.splice\(i,1\);/.test(loop), 'the single-id path changed shape — the five rename entries above rely on it exactly as it was');
 });
+
+/* ── ⑯ the build still refuses a country described only by `control` and checked by nothing ───── */
+/* ⚠ A GATE OUTLIVES THE REASON IT WAS WRITTEN, so the reason is written down beside it and this
+   check keeps the gate. #R349 shipped France painted Allied for the twenty months between Case
+   Anton and D-Day: the Vichy line stopped being quoted, no other front crossed the country, and
+   `control` — one row, from 1939 — decided the whole map. Every other gate was green. */
+test('R409 ⑯: build-wars still gates the spans where only `control` describes a divided country', () => {
+  const src = R('scripts/build-wars.mjs');
+  assert.ok(/⑪ #R409/.test(src), 'the uncut-span gate is gone from scripts/build-wars.mjs');
+  const code = codeOnly(src);
+  assert.ok(/const DAYSPAN = 365;/.test(code), 'the gate no longer states the span it bounds');
+  assert.ok(/cur\.pts\.length && \(cur\.cuts \|\| \[\]\)\.indexOf\(gw\) >= 0/.test(code),
+    'the gate no longer treats an empty `pts` as «no line here» — that spelling IS how a front says it has stopped, and it is what made France Allied');
+  assert.ok(/const CHECKS_UNCUT = \[/.test(code), 'the assertions the gate asked for are gone');
+  const rows = [...code.matchAll(/\['ww[12]', '[\d-]+', '[^']+', '[A-Z]+'\]/g)];
+  assert.ok(rows.length >= 200, 'the control-check table shrank to ' + rows.length + ' rows');
+  /* the one that was actually wrong */
+  assert.ok(/\['ww2', '\d{4}-\d{2}-\d{2}', 'Paris', 'AXIS'\]/.test(code),
+    'nothing asserts that occupied Paris is Axis on a date no front line crosses France');
+});
