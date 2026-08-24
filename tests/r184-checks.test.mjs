@@ -70,7 +70,13 @@ test('R184 #2: satellite.js is a declared dependency and the WASM alias that mak
   const sat = rd('js/satellites-live.js');
   assert.match(sat, /import\('satellite\.js'\)/,
     'the propagator is imported, not hand-rolled — see the file header for why');
-  assert.ok(!/^import\s/m.test(sat),
+  /* ⚠ (#R408) THE NEEDLE NAMES THE PACKAGE NOW, BECAUSE IT USED TO NAME THE SYNTAX. «no static
+     import at all» was a proxy for «no static import OF SGP4», and the two parted company the moment
+     this file joined js/runtime.js's timer wheel: `import { everyTick } from './runtime.js'` pulls in
+     a module js/app-body.js already has eagerly, so it adds nothing to any bundle, and the 27 kB gz
+     the rule exists to keep out is still behind `import('satellite.js')`. A proxy that fails on a
+     change it was never about teaches people to weaken the assertion; naming the package keeps it. */
+  assert.ok(!/^import\s[^\n]*satellite\.js/m.test(sat),
     'and imported DYNAMICALLY, so a session that never opens the layer never downloads it');
   assert.ok(sat.indexOf('let SAT=null') > sat.indexOf('IntMapModules.satellitesLive=function'),
     'the lazy-loader state lives inside the factory, not at file scope (#R175 top-level rule)');

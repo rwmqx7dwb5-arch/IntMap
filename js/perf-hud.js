@@ -40,6 +40,8 @@
 /* ⚠ NOT A FACTORY. It takes nothing from the shell and it must not cost a line of js/app-body.js's
    budget (#R200 ⑤) to exist, so it starts itself at import — behind the flag, which is one regexp
    test on every load that does not ask for it. */
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapPerfHud = (function () {
   'use strict';
   if (!/[?&]perf=1\b/.test(location.search)) return null;
@@ -211,7 +213,13 @@ window.IntMapPerfHud = (function () {
   requestAnimationFrame(tick);
 
   let tiles = 0, srcs = 0, vis = 0, ratio = null;
-  setInterval(() => {
+  /* (#R408) the one timer wheel (js/runtime.js) — with the caveat its header names, and this is one
+     of the two sites it names: the IIFE above runs at IMPORT, and js/app-body.js does not build
+     window.IntMapRuntime until it boots, so `everyTick` arms a real interval here rather than
+     quietly not starting (#R170). ⚠ It does not STAY a real interval: makeRuntime adopts whatever
+     armed itself early, so this readout joins the wheel the moment the register exists. None of it
+     exists at all unless the URL asked for `?perf=1`. */
+  everyTick('perf-hud:readout', 1000, () => {
     wrapRender();
     try {
       const st = GE().render.sceneStats();
@@ -233,7 +241,7 @@ window.IntMapPerfHud = (function () {
       + 'device mem ' + (navigator.deviceMemory || '?') + 'GB  cores ' + (navigator.hardwareConcurrency || '?') + '\n'
       + 'A/B medians ' + JSON.stringify(runs);
     syncs.forEach((f) => f());
-  }, 1000);
+  });
 
   return { state: () => ({ render: med(rend), frames: med(frames), census, runs, sw }) };
 })();

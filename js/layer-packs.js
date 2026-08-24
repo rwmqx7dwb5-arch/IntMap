@@ -28,6 +28,8 @@
    shell's line budget is a real check (tests/r168 #8) and an import belongs beside a consumer
    rather than in src/main.js. This file is where the extra layer rows those four sit beside live. */
 import './osm-facilities.js';
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.earthSky=function(HOST){
@@ -133,7 +135,7 @@ window.IntMapModules.earthSky=function(HOST){
     let auroraTimer=null;
     function toggle(which,on){ state[which]=on;
       const apply=()=>{ if(!ensureLayers()){ GE().events.once('idle',apply); return; } setVis(SETS[which],on);
-        if(which==='aurora'){ if(on){ loadAurora(); if(!auroraTimer) auroraTimer=setInterval(loadAurora,300000); } else if(auroraTimer){ clearInterval(auroraTimer); auroraTimer=null; } } };
+        if(which==='aurora'){ if(on){ loadAurora(); if(!auroraTimer) auroraTimer=everyTick('layer-packs:aurora',300000,loadAurora); } else if(auroraTimer){ stopTick(auroraTimer); auroraTimer=null; } } };
       apply(); }
     GE().events.on('styledata',()=>{ if(state.dams||state.volcanoes||state.adiz||state.aurora){ setTimeout(()=>{ if(ensureLayers()){ Object.keys(SETS).forEach(k=>setVis(SETS[k],state[k])); if(state.aurora) loadAurora(); } },60); } });
     /* (#R38) [JP, EN, DE, RU]; l9Lbl() picks the active language. */
@@ -1245,12 +1247,12 @@ window.IntMapModules.timeZones=function(HOST){
       if(v){
         const go=()=>{ let tries=0; const apply=()=>{ if(!_imCanDraw()){ if(tries++<60) setTimeout(apply,150); else GE().events.once('idle',apply); return; } addLayers(); setVis(true);
           try{ window._registerLayerOpacity&&window._registerLayerOpacity('tz',[lbl(),lbl(),lbl(),lbl()],['tzl-fill'],'dl-tz'); }catch(_){}
-          try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} if(!timer) timer=setInterval(refreshTimes,60000); refreshTimes(); }; apply(); [400,1500].forEach(ms=>setTimeout(apply,ms)); };
+          try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} if(!timer) timer=everyTick('layer-packs:tz-times',60000,refreshTimes); refreshTimes(); }; apply(); [400,1500].forEach(ms=>setTimeout(apply,ms)); };
         if(geo) go();
         else if(!loading){ loading=true; try{ satToast(T('Loading time-zone boundaries…','タイムゾーン境界を読み込み中…','Zeitzonengrenzen werden geladen…','Загрузка часовых поясов…','Cargando husos horarios…')); }catch(_){}
           fetch(TZURL).then(r=>r.json()).then(j=>{ geo=j; loading=false; if(on) go(); }).catch(()=>{ loading=false; try{ satToast(T('Time-zone data unavailable','タイムゾーンデータを取得できません','Zeitzonendaten nicht verfügbar','Данные часовых поясов недоступны','Datos de husos no disponibles')); }catch(_){} const cb=document.getElementById('dl-tz'); if(cb){ cb.checked=false; const r=cb.closest('.lyr-row'); if(r) r.classList.remove('on'); } }); }
         else go();
-      } else { setVis(false); if(timer){ clearInterval(timer); timer=null; } try{ window._hideGenericLegend&&window._hideGenericLegend('tz'); }catch(_){} } }
+      } else { setVis(false); if(timer){ stopTick(timer); timer=null; } try{ window._hideGenericLegend&&window._hideGenericLegend('tz'); }catch(_){} } }
     /* ══ (#R289) THE SAME BOUNDARIES, ASKED A DIFFERENT QUESTION — window.IntMapTimeZones ═════════
        Chronos's clock selector offers 「the standard time where the map is centred」, and the answer
        to that is already downloaded here whenever this layer has been on. Publishing an accessor

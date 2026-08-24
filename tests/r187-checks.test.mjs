@@ -5,6 +5,7 @@
  *  and would otherwise only be caught by looking at the screen.
  * ==========================================================================*/
 import test from 'node:test';
+import { asClassicScript } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -309,7 +310,7 @@ test('R187 sky: the fast star path is the same rotation as the contract', () => 
                 performance: { now: () => 0 } };
   ctx.window.window = ctx.window;
   vm.createContext(ctx);
-  vm.runInContext(read('js/space-sky.js'), ctx);
+  vm.runInContext(asClassicScript(read('js/space-sky.js')), ctx);
   const S = ctx.window.IntMapSky;
   const D2R = Math.PI / 180;
   let worst = 0;

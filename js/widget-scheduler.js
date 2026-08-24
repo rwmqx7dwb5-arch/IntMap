@@ -31,6 +31,8 @@
  *  page of a stack, and the whole board while a tab is open all cost nothing. `backgroundAllowed`
  *  is the deliberate exception (nothing sets it today) rather than the default.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+
 window.IntMapWidgetScheduler = (function () {
   'use strict';
 
@@ -221,10 +223,10 @@ window.IntMapWidgetScheduler = (function () {
   }
   function ensureTimer() {
     if (timer) return;
-    timer = setInterval(sweep, 15000);
+    timer = everyTick('widget-scheduler:sweep', 15000, sweep);
   }
   function maybeStopTimer() {
-    if (timer && !Object.keys(subs).length) { clearInterval(timer); timer = null; }
+    if (timer && !Object.keys(subs).length) { stopTick(timer); timer = null; }
   }
 
   /* ══ THE VISIBILITY OBSERVER ══════════════════════════════════════════════════════════════════ */

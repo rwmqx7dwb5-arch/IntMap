@@ -42,6 +42,7 @@ import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.event
 import { makeAtlasGeoObject } from './atlas-geo-object.js';   /* (#R397) one shape for a place, and WHERE its coordinate came from — so a coordinate IntMap already fetched stops being thrown away and re-geocoded */
 import { makeAtlasPolicy } from './atlas-policy.js';
 import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/r199 ⑤) */
+import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.atlasConsole=function(HOST){
@@ -1327,9 +1328,11 @@ window.IntMapModules.atlasConsole=function(HOST){
       return parts.length?('SELF-DIAGNOSIS ALERT (IntMap health) — '+parts.join('; ')+'. If the question depends on this data, tell the user honestly and, where possible, use an alternative; suggest they say "diagnose" for a full check.'):''; }catch(_){ return ''; } }
     try{ window.IntMapDataHealth={ check:o=>healthCheck(o), news:_newsHealth, layers:_layerHealth, probe:f=>probeEndpoints(f), flag:_healthFlag, last:()=>_HEALTH.endpoints }; }catch(_){}
     /* light "常時監視": one probe ~25 s after load, then every 10 min — but ONLY while the tab is visible, so a
-       backgrounded tab never spams the network (also keeps the headless preview quiet). */
+       backgrounded tab never spams the network (also keeps the headless preview quiet). ⚠ (#R408) `whenHidden` because _tick
+       ITSELF owns that test for all three of its callers — this timer, the 25 s setTimeout and the visibilitychange below — and
+       letting the wheel skip as well would put one policy in two places, where neither owns it. */
     try{ const _tick=()=>{ try{ if(document.visibilityState==='visible') probeEndpoints(false).catch(()=>{}); }catch(_){} };
-      setTimeout(_tick,25000); setInterval(_tick,600000);
+      setTimeout(_tick,25000); everyTick('atlas-console:health-probe',600000,_tick,{whenHidden:true});
       document.addEventListener('visibilitychange',()=>{ try{ if(document.visibilityState==='visible'&&(!_HEALTH.probedAt||(Date.now()-_HEALTH.probedAt)>600000)) _tick(); }catch(_){} }); }catch(_){}
     /* (#R44) a compact snapshot of what is CURRENTLY on screen, fed to the model so it can ground references
        ("there", "this country", "turn that layer off", "zoom in more", "the same") in the real map state. */

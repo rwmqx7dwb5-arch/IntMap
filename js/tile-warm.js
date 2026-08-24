@@ -42,9 +42,19 @@ window.IntMapModules.tileWarm=function(HOST){
          template the reader types in, so its host is never on that list — and the batch below is
          posted to the worker and then RETURNS, so without this the custom provider would lose its
          prefetch entirely. The worker names what it declined and this warms it the ordinary way. */
+      /* ⚠ (#R408) …AND THE WORKER ALSO NAMES WHAT IT DROPPED, WHICH THE MEMO HAS TO HEAR ABOUT.
+         `_pfSeen` below means «asked for once, never again», so a URL that was posted to the worker
+         and then dropped there — an overtaken batch, see the generation note beside it — would be
+         remembered as asked-for and never warmed again: the cancellation would be punching holes in
+         the coverage it exists to protect. The worker names them, the memo forgets them, and the next
+         ring offers them again if the camera still wants them. */
       navigator.serviceWorker.addEventListener('message',(ev)=>{
-        try{ const d=ev&&ev.data; if(!d||d.type!=='prefetch-declined'||!Array.isArray(d.urls)) return;
-          _warmQueued.push(...d.urls.filter(u=>typeof u==='string')); _warmPump(); }catch(_){}
+        try{ const d=ev&&ev.data; if(!d||!Array.isArray(d.urls)) return;
+          if(d.type==='prefetch-dropped'){ d.urls.forEach(u=>{ if(typeof u==='string'&&_pfSeen.delete(u)) _pfDropped.worker++; }); return; }
+          if(d.type!=='prefetch-declined') return;
+          /* (#R408) a REFUSAL is not an overtake. The worker cannot date these in the page's terms, so
+             they carry the CURRENT generation: the pump never drops what it cannot age. */
+          d.urls.forEach(u=>{ if(typeof u==='string') _warmQueued.push({u,g:_pfGen}); }); _warmPump(); }catch(_){}
       });
     }catch(_){}
   }
@@ -56,6 +66,15 @@ window.IntMapModules.tileWarm=function(HOST){
      below the function that reads it is a temporal dead zone waiting for the one call that arrives
      early, and every call site here is inside a `try`/`catch` that would swallow it silently. */
   const _pfSeen=new Set();   /* every tile URL this prefetch has already asked for */
+  /* ⚠ (#R408) …AND WHICH BATCH IS THE LIVE ONE, declared here for the reason above: every reader of
+     it sits inside a `try`/`catch`, so a dead zone would stop the warming without a word.
+     ONE counter for the whole module. `predictivePrefetch` takes a number off it for each batch it
+     issues, and the three places that hand out a URL — that function, `_warmPump` below, and the
+     worker's own queue (sw.js) — refuse to issue one from a batch the counter has moved past.
+     `_pfView` is what the number is keyed to — the tile rectangle the ring was built from — and
+     `_pfDropped` is observation only: how many URLs each of the two page-side paths let go. */
+  let _pfGen=0, _pfView='';
+  const _pfDropped={queue:0,worker:0};
   /* ⚠ (#R230) …AND SO IS THE PREFETCH QUEUE, FOR THE SAME REASON THE COMMENT ABOVE GIVES. These three
      are read by predictivePrefetch, which every call site reaches from inside a `try`/`catch`, so a
      TDZ here would not throw — it would silently stop warming tiles, which is the shape of defect
@@ -65,7 +84,15 @@ window.IntMapModules.tileWarm=function(HOST){
   const WARM_LANES=4; let _warmQueued=[], _warmLanes=0;
   function _warmPump(){
     while(_warmLanes<WARM_LANES && _warmQueued.length){
-      const u=_warmQueued.shift(); _warmLanes++;
+      const e=_warmQueued.shift();
+      /* ⚠ (#R408) AN ENTRY FROM AN OVERTAKEN BATCH IS DROPPED HERE, AND UN-REMEMBERED. The lanes are
+         shared across batches (see above), so a queue filled while the reader was panning outlives the
+         viewport it was filled for; this is the last moment before a fetch, which is why the generation
+         is read here rather than at push time. `_pfSeen.delete` is the other half of it: the memo may
+         only hold URLs that were really asked for, or a cancelled batch would cost those tiles their
+         prefetch for the rest of the session. */
+      if(e.g<_pfGen){ _pfSeen.delete(e.u); _pfDropped.queue++; continue; }
+      const u=e.u; _warmLanes++;
       let p=null; try{ p=fetch(u,{mode:'cors',cache:'force-cache'}); }catch(_){}
       Promise.resolve(p).catch(()=>{}).then(()=>{ _warmLanes--; _warmPump(); });
     }
@@ -104,6 +131,7 @@ window.IntMapModules.tileWarm=function(HOST){
     const c=GE().camera.getCenter(), b=GE().camera.getBounds(), clamp=v=>Math.max(0,Math.min(n-1,v));
     let x0=clamp(_lng2x(b.getWest(),z)), x1=clamp(_lng2x(b.getEast(),z)), y0=clamp(_lat2y(b.getNorth(),z)), y1=clamp(_lat2y(b.getSouth(),z));
     if(x1<x0){[x0,x1]=[x1,x0];} if(y1<y0){[y0,y1]=[y1,y0];}
+    const _view=z+':'+x0+','+y0+','+x1+','+y1;   /* (#R408) which tiles this ring is FOR — see the generation note below */
     let dx=0,dy=0; if(_prevCenter){ dx=Math.sign(c.lng-_prevCenter.lng); dy=Math.sign(_prevCenter.lat-c.lat); } /* moving north → smaller tile y */
     _prevCenter={lng:c.lng,lat:c.lat};
     /* (#R151) FLIGHT LEAD: in the sim the camera moves continuously and fast, so a 3-tile lead can't keep the imagery
@@ -151,21 +179,67 @@ window.IntMapModules.tileWarm=function(HOST){
        invalidated by time: a tile's imagery does not change while a session is open, and the whole
        point is that the second visit is free. Changing PROVIDER changes the URL, so that needs no
        reset either. */
-    const uniq=[...new Set(urls)].filter(u=>!_pfSeen.has(u)).slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
+    const ring=[...new Set(urls)].filter(u=>!_pfSeen.has(u)).slice(0, aggressive?(_mob?110:280):(_mob?60:150));   /* (#R21/#R151) flight spends more of the idle bandwidth to stay ahead */
+    if(!ring.length) return;
+    /* ══ (#R408) A BATCH THAT HAS BEEN OVERTAKEN IS WORK NOBODY IS WAITING FOR ═══════════════════════
+       Up to the moment it fires, a pending batch can be called off: the `moveend` registration below
+       clears its own timer, so a wheel sweep or a run of pans collapses to one ring. AFTER it fires
+       there was nothing at all — no signal, no counter, in this file or in sw.js. So the sixty URLs a
+       phone builds on `moveend` (a hundred and ten while tilted or flying, and the tilted path throttles
+       to one batch every 320 ms WITHOUT calling off the last one) went on being fetched, four lanes at a
+       time, for a viewport the reader had already left — and the tiles of the place they had just moved
+       to queued behind them in the same connection pool.
+       So a batch carries a GENERATION. A newer batch takes the next number, and every place that is
+       about to hand out a URL of an older one stops instead: this loop, `_warmPump` above, and the
+       worker's queue (sw.js, which is told by the arrival of the newer batch itself). Nothing else
+       moves the counter, which is the whole guarantee for the other direction — a reader who STOPS
+       MOVING starts no batch, takes no number, and the last one runs to the end.
+       ⚠ THE NUMBER IS KEYED TO THE VIEW, NOT TO THE CALL, and it is taken here rather than at the top
+       of the function. Two kinds of call are not new demands. One finds nothing to warm at all
+       (`ring` empty — what #R196's memo produces once a viewport has been covered, and what every
+       320 ms of a barely-moving tilted view produces): it returns above and never reaches the counter.
+       The other finds something new FROM THE SAME TILE RECTANGLE, and that is the REST of the demand
+       already running rather than a replacement for it — the ring is cut to 60 URLs on a phone (110
+       in flight), so a second `moveend` inside one tile, or a rotate in place while tilted, is exactly
+       the remainder the cap left behind. MEASURED against this file with a fake camera: bumping per
+       CALL threw away 56 of the 60 still queued FOR THE VIEWPORT THE READER WAS LOOKING AT, and if
+       they stopped there nothing offered them again. So the same rectangle keeps the same generation
+       and only a different one takes the next.
+       ⚠ AND THE MEMO IS WRITTEN AS EACH URL IS ISSUED, NOT WHEN THE RING IS BUILT. `_pfSeen` means
+       «asked for once, never again», so remembering a URL that the cancellation then drops would cost
+       that tile its prefetch for the rest of the session — the stop mechanism would be quietly punching
+       holes in the coverage it exists to protect. Whatever is dropped is un-remembered where it is
+       dropped: `_warmPump` deletes it, and the worker names it back through `prefetch-dropped`.
+       The break below is that rule stated at the point of no return; this loop runs in one turn of the
+       event loop, so the two paths a newer batch really crosses are the other two. */
+    const cont=(_view===_pfView); _pfView=_view;
+    const gen=cont?_pfGen:++_pfGen;
+    const _pfMax=_mob?1500:6000, uniq=[];
+    for(const u of ring){ if(_pfGen!==gen) break;   /* overtaken → issue nothing further, remember nothing further */
+      _pfSeen.add(u); uniq.push(u); }
     if(!uniq.length) return;
-    const _pfMax=_mob?1500:6000;
-    uniq.forEach(u=>{ _pfSeen.add(u); });
     while(_pfSeen.size>_pfMax){ const f=_pfSeen.values().next().value; _pfSeen.delete(f); }
-    try{ predictivePrefetch.lastIssued={ n:uniq.length, seen:_pfSeen.size }; }catch(_){}
-    if(_tileSW){ try{ _tileSW.postMessage({type:'prefetch',urls:uniq}); return; }catch(_){} }
+    try{ predictivePrefetch.lastIssued={ n:uniq.length, seen:_pfSeen.size, gen }; }catch(_){}
+    /* (#R408) …and the worker is told WHICH of the two this is, because it cannot see the camera:
+       `prefetch` REPLACES whatever of this page's is still queued there, `prefetch-more` appends. Both
+       carry the same URLs in the same order and are queued the same way — the only difference is
+       whether the batch in front of it was for somewhere else. */
+    if(_tileSW){ try{
+        if(cont) _tileSW.postMessage({type:'prefetch-more',urls:uniq});
+        else _tileSW.postMessage({type:'prefetch',urls:uniq});
+        return; }catch(_){} }
     /* ⚠ (#R230) …AND THE NO-SERVICE-WORKER PATH GETS THE SAME LANES. sw.js's batch was changed from
        `Promise.all` to a four-lane queue this round («衛星先読みの一斉実行を小さなキューに変更»); this
        branch is what runs when there is no controller yet — the FIRST load, which is exactly the load
        the reader is complaining about — and it was firing all sixty (110 in flight) at once into the
        same connection pool as the tiles being drawn. Same URLs, same order, same count: only the
        number in the air at one time changes, so no tile is dropped and no pixel differs. */
-    _warmQueued.push(...uniq); _warmPump();
+    /* (#R408) …stamped with the batch's generation, so the pump can tell an overtaken entry from a live one */
+    for(const u of uniq) _warmQueued.push({u,g:gen});
+    _warmPump();
   }
+  /* (#R408) how many URLs each page-side path let go rather than fetch — the counterpart of lastIssued */
+  try{ predictivePrefetch.dropped=_pfDropped; }catch(_){}
   registerTileSW();
   /* ⚠ (#R206) …AND NOT WHILE THE ZOOM IS STILL MOVING. A wheel sweep is a run of moveend events a few
      tens of milliseconds apart, so a 90 ms debounce fired a whole ring PER NOTCH — at every level the

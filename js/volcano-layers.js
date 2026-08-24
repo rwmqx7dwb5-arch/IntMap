@@ -40,6 +40,8 @@
  *  · Five languages inline; the rest in js/locales/ui.*.js.
  *  · Load-on-demand (js/lazy-modules.js → `volcanoLayers`).
  * ==========================================================================*/
+/* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
+import { everyTick, stopTick } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.volcanoLayers=function(HOST){
   const L=window.IntMapLang.pick(()=>HOST.lang);
@@ -169,8 +171,8 @@ window.IntMapModules.volcanoLayers=function(HOST){
     state.ash=!!on;
     const go=()=>{ if(!ashEnsure()){ try{ GE().events.once('idle',go); }catch(_){} return; }
       setVis(ASH_IDS,state.ash);
-      if(state.ash){ ashLoad(); if(!ashTimer) ashTimer=setInterval(()=>{ if(state.ash) ashLoad(); },60000); }
-      else if(ashTimer){ clearInterval(ashTimer); ashTimer=null; } };
+      if(state.ash){ ashLoad(); if(!ashTimer) ashTimer=everyTick('volcano-layers:ash',60000,()=>{ if(state.ash) ashLoad(); }); }
+      else if(ashTimer){ stopTick(ashTimer); ashTimer=null; } };
     go(); legend(); notify();
   }
 

@@ -11,6 +11,7 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.cameras=function(HOST){
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
@@ -46,7 +47,7 @@ window.IntMapModules.cameras=function(HOST){
          cleanly. HTTPS-only so we never add a dead mixed-content pin (an http cam can't load on an https page). */
       if(/^https:/i.test(u)&&/getoneshot|snapshotjpeg|oneshotimage|wvhttp|nph-(?:jpeg|update)|[?&]action=snapshot|\/cgi-bin\/[^?]*(?:jpe?g|image|snapshot)/i.test(u)) return 'img';
       return ''; }
-    function _stopRefresh(){ if(refreshTimer){ clearInterval(refreshTimer); refreshTimer=null; } }
+    function _stopRefresh(){ if(refreshTimer){ stopTick(refreshTimer); refreshTimer=null; } }
     function contains(a,c){ return a&&c&&a[0]<=c[0]&&a[1]<=c[1]&&a[2]>=c[2]&&a[3]>=c[3]; }
     function tryEP(q,i){ i=i||0; if(i>=EP.length) return Promise.reject(new Error('overpass')); return fetch(EP[i],{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>{ if(!r.ok) throw new Error('status '+r.status); return r.json(); }).catch(()=>tryEP(q,i+1)); }
     function ensure(){ try{ if(!_imCanDraw()) return false;
@@ -85,7 +86,10 @@ window.IntMapModules.cameras=function(HOST){
       /* (#R87) thumbnail → swap the main live image to that view */
       try{ const root=popup.getElement&&popup.getElement(); if(root){ root.addEventListener('click',ev=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('.wc-thumb'); if(!b) return; const u=b.getAttribute('data-u'); const main=root.querySelector('img.wc-live'); if(main&&u){ main.setAttribute('data-base',u); main.style.display='block'; const off=main.parentNode&&main.parentNode.querySelector('.wc-off'); if(off) off.style.display='none'; main.src=u+(u.indexOf('?')>=0?'&':'?')+'_t='+Date.now(); } }); } }catch(_){}
       /* (#R86) genuinely LIVE: re-fetch the still image every 4 s while the popup is open (cache-busted) */
-      if(kind==='img'||kind==='tfl'){ refreshTimer=setInterval(()=>{ try{ const root=popup&&popup.getElement&&popup.getElement(); const el=root&&root.querySelector('img.wc-live'); if(!el){ _stopRefresh(); return; } const b=el.getAttribute('data-base')|| (kind==='tfl'?String(p.img||''):url); if(!b){ _stopRefresh(); return; } el.style.display='block'; const off=el.parentNode&&el.parentNode.querySelector('.wc-off'); if(off) off.style.display='none'; el.src=b+(b.indexOf('?')>=0?'&':'?')+'_t='+Date.now(); }catch(_){ _stopRefresh(); } },4000); }
+      /* ⚠ (#R408) ONE key, not one per camera: this module holds ONE `popup` and ONE `refreshTimer`, and openCam opens by
+         calling _stopRefresh() and popup.remove() first — two popups cannot exist, so two of these cannot either. A key
+         carrying the camera id would be a key that is never reused, i.e. a missed stop could never be replaced. */
+      if(kind==='img'||kind==='tfl'){ refreshTimer=everyTick('cameras:popup-refresh',4000,()=>{ try{ const root=popup&&popup.getElement&&popup.getElement(); const el=root&&root.querySelector('img.wc-live'); if(!el){ _stopRefresh(); return; } const b=el.getAttribute('data-base')|| (kind==='tfl'?String(p.img||''):url); if(!b){ _stopRefresh(); return; } el.style.display='block'; const off=el.parentNode&&el.parentNode.querySelector('.wc-off'); if(off) off.style.display='none'; el.src=b+(b.indexOf('?')>=0?'&':'?')+'_t='+Date.now(); }catch(_){ _stopRefresh(); } }); }
     }
     function updateLegend(){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('webcams',[lbl(),lbl(),lbl(),lbl()],['webcams-pt','webcams-ico'],'dl-webcams'); if(el){ let h=el.querySelector('.wc-note'); if(!h){ h=document.createElement('div'); h.className='wc-note'; h.style.cssText='font-size:10px;color:var(--text-muted);margin-top:5px;line-height:1.4;'; el.appendChild(h);} const n=Object.keys(camById).length;
       h.textContent=LLw(n+' live cameras loaded · every pin plays real imagery · pan/zoom for more · OpenStreetMap 🟢 · TfL London 🟠 · Caltrans 🔵 · Fintraffic Finland 🟡 · US DOTs CO/IN/AK/AZ 🩷 · US/Canada 511 DOTs 🟩', 'ライブカメラ '+n+' 台読込 · 各ピンが実映像を再生 · 移動/拡大で追加 · OpenStreetMap🟢 · ロンドンTfL🟠 · Caltrans🔵 · フィンランドFintraffic🟡 · 米州DOT（CO/IN/AK/AZ）🩷 · 米国/カナダ 511 各州DOT🟩', n+' Live-Kameras · jeder Pin zeigt echtes Bild · OpenStreetMap 🟢 · TfL 🟠 · Caltrans 🔵 · Fintraffic 🟡 · US-DOTs 🩷 · US/Kanada 511 🟩', n+' камер · живое изображение · OpenStreetMap 🟢 · TfL 🟠 · Caltrans 🔵 · Fintraffic 🟡 · US-DOT 🩷 · США/Канада 511 🟩', n+' cámaras en vivo · imagen real · OpenStreetMap 🟢 · TfL 🟠 · Caltrans 🔵 · Fintraffic 🟡 · US DOT 🩷 · EE.UU./Canadá 511 🟩'); } }catch(_){} }

@@ -11,6 +11,7 @@
  *
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.betaOverlays=function(HOST){
   /* (#R251) the language helper and its ARRAY form — see `pickArgs` in js/lang-registry.js. The tuples below were bare array literals, which no instrument can see, so every language past the two they listed read English. */
@@ -124,8 +125,8 @@ window.IntMapModules.betaOverlays=function(HOST){
          a session restore did not». The toast is gone because the map now answers instead.
          ⚠ The frame is the frontline collection's OWN extent when it has landed — see there. */
       if(on){ try{ window.IntMapLayerHome&&window.IntMapLayerHome.arrive('beta-dl-ukrfront'); }catch(_){} }
-      if(on){ if(!ukrTimer) ukrTimer=setInterval(()=>{ if(state.ukr) ukrLoad(true); },10*60*1000); }   /* refresh every 10 min while on */
-      else if(ukrTimer){ clearInterval(ukrTimer); ukrTimer=null; }
+      if(on){ if(!ukrTimer) ukrTimer=everyTick('beta-overlays:ukr-frontline',10*60*1000,()=>{ if(state.ukr) ukrLoad(true); }); }   /* refresh every 10 min while on */
+      else if(ukrTimer){ stopTick(ukrTimer); ukrTimer=null; }
       try{ if(on&&window._registerLayerOpacity){
             const el=window._registerLayerOpacity('ukrfront',LA('Ukraine frontline (DeepState)','ウクライナ前線（DeepState）','Ukraine-Frontlinie (DeepState)','Линия фронта в Украине (DeepState)','Frente de Ucrania (DeepState)'),UKR_IDS,'beta-dl-ukrfront');
             /* (#R20) proper LEGEND ("Ukraine frontlineは、凡例を作って") — color key for the DeepState classes */
