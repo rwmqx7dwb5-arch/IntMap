@@ -39,16 +39,7 @@ window.IntMapModules.newsFeed=function(HOST){
     /* Pin every filtered news item on the map IMMEDIATELY, even items not yet rendered in sidebar.
        This fixes "few pins on map despite many in sidebar". */
     HOST.newsFeatures=[];
-    HOST.newsFiltered.forEach(item=>{
-      if(item.analysis && item.analysis.loc){
-        const fid='n_'+Math.random().toString(36).slice(2,10);
-        const mappedStr = item.analysis.mapped===true?'true':(item.analysis.mapped==='publisher'?'publisher':'none');
-        HOST.newsFeatures.push({type:'Feature',id:fid,geometry:{type:'Point',coordinates:item.analysis.loc},properties:{
-          fid, mapped:mappedStr, ptype:item.analysis.ptype||'', title:item.title, name:item.analysis.name||'',
-          short:item.analysis.short||'', publisher:item.publisher, link:item.link, pubDate:item.pubDate
-        }});
-      }
-    });
+    HOST.newsFiltered.forEach(item=>{ const f=newsFeatureOf(item); if(f) HOST.newsFeatures.push(f); });
     HOST._spreadDupNewsPins(HOST.newsFeatures);   /* (#R122) fan out pins sharing an anchor so each is individually clickable */
     if(_imCanDraw()) HOST.setupIntelLayers();
     /* (#R79b) don't paint pins for a hidden News window (they'd appear with no window controlling them) */
@@ -56,6 +47,33 @@ window.IntMapModules.newsFeed=function(HOST){
     try{ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')){ E.layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST._wsNewsHidden()?[]:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){} } }catch(_){}
     HOST.appendNewsBatch(); HOST.updateOcclusion();
     maybeAutoEnrich();
+  }
+  /* ══ (#R416) ONE PIN BUILDER, AND A PIN THAT KNOWS WHAT IT STANDS FOR ═══════════════════════
+     There were TWO copies of this loop — this one and `aiRefreshNewsPins()` in js/news-ui.js —
+     byte-for-byte the same nine properties. That is how the event identity came to be missing from
+     BOTH: 1 Event = 1 feature has been true since #R386 (the event path replaces `globalData`, so
+     the loop below already walks events), but the feature never SAID so. It carried the
+     representative article's title and link and nothing that could name the出来事, so the only
+     thing a click could do was open one article's URL — measured: the map never once opened an
+     Event. `ev*` below is that missing name.
+     ⚠ `ev` is a STRING flag, not a boolean: MapLibre feature properties come back through the
+     style expression layer, and `['get','ev']` on a boolean false is indistinguishable from a
+     missing property in a `match`. #R409 measured the same shape breaking a `match` with no case.
+     ⚠ The band's text is NOT `analysis.short` any more. That field is written by
+     `analyzeContext()`, which the event path never calls, so events had `short:''` and the band —
+     an `icon-text-fit:'both'` pill with nothing to fit — drew as an empty white box (measured: 46
+     of 46 on screen). The rule now lives in js/map-typography.js beside `bandBox()`, and BOTH
+     modes read it from there. */
+  function newsFeatureOf(item){
+    const a=item&&item.analysis; if(!(a&&a.loc)) return null;
+    const ev=item._event||null;
+    const fid='n_'+Math.random().toString(36).slice(2,10);
+    return {type:'Feature',id:fid,geometry:{type:'Point',coordinates:a.loc},properties:{
+      fid, mapped:(a.mapped===true?'true':'none'), ptype:a.ptype||'', title:item.title, name:a.name||'',
+      short:window.IntMapMapTypography.bandText(item.title), publisher:item.publisher, link:item.link, pubDate:item.pubDate,
+      ev:ev?'1':'', evId:(ev&&ev.publicId)||'', evSources:(ev&&ev.sourceCount)||0,
+      evArticles:(ev&&ev.articleCount)||0, evCat:(ev&&ev.category)||''
+    }};
   }
   function maybeAutoEnrich(){
     /* (#R29) News location analysis now runs ENTIRELY server-side (refresh-news pre-AI-locates every
@@ -294,5 +312,5 @@ window.IntMapModules.newsFeed=function(HOST){
       if(any) saveNewsCache();
     }catch(e){ if(HOST.globalData.length===0&&feed&&(HOST.mode==='news'||HOST.mode==='saved')) feed.innerHTML=`<div class="empty-msg" style="color:var(--threat-unmapped);">${HOST.t('networkError')}</div>`; console.warn('fetchData failed:',e); }
   }
-  return { aiTranslateTitles, fetchData, loadNewsFromSupabase, startNews };
+  return { aiTranslateTitles, fetchData, loadNewsFromSupabase, startNews, newsFeatureOf };
 };

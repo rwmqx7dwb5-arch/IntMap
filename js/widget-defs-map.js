@@ -407,15 +407,10 @@ window.IntMapWidgetDefsMap = (function () {
     desc: function () { return L('Headlines placed near where the map is looking', '地図の中心付近に置かれた見出し', 'Schlagzeilen nahe dem Kartenausschnitt', 'Заголовки рядом с центром карты', 'Titulares cerca de donde mira el mapa'); },
     keywords: function () { return [L('news', 'ニュース', 'Nachrichten', 'новости', 'noticias'), L('headlines', '見出し', 'Schlagzeilen', 'заголовки', 'titulares'), L('nearby', '近く', 'in der Nähe', 'рядом', 'cerca')]; },
     supportedSizes: ['s', 'm', 'l'], defaultSize: 'm',
-    configSchema: {
-      by: { type: 'enum', values: ['subject', 'publisher'], default: 'subject',
-        label: function () { return L('Placed by', '配置基準', 'Verortet nach', 'Размещение по', 'Ubicadas por'); },
-        options: function () { return [
-          { value: 'subject', label: L('What the story is about', '記事の主題', 'Thema der Meldung', 'по теме', 'el tema de la noticia') },
-          { value: 'publisher', label: L('Who published it', '発行者', 'Herausgeber', 'по издателю', 'quién la publica') },
-        ]; } },
-    },
-    defaultConfig: function () { return { by: 'subject' }; },
+    /* (#R416) the `by: subject|publisher` setting is gone with the pin toggle it mirrored — a news
+       pin is placed where the story happened, and there is no second answer to choose between. */
+    configSchema: {},
+    defaultConfig: function () { return {}; },
     refreshPolicy: { kind: 'realtime-local', tick: function () { return 'minute'; }, relevantEvents: ['map', 'news'] },
     renderers: {
       s: function (ctx, cfg, st, api) {
@@ -439,7 +434,6 @@ window.IntMapWidgetDefsMap = (function () {
             return { icon: 'news', title: a.title, sub: [a.publisher, a.km != null ? distText(a.km) : null, a.at ? WC.ago(a.at) : null].filter(Boolean).join(' · '),
               href: a.link, trailing: '' };
           })),
-          R.actions([{ label: L('Placed by subject or publisher', '主題／発行者で切替', 'Nach Thema oder Herausgeber', 'По теме или издателю', 'Por tema o editor'), icon: 'gear', run: function () { api.openConfig(); } }]),
         ]);
       },
     },
@@ -455,10 +449,6 @@ window.IntMapWidgetDefsMap = (function () {
     return feats.map(function (f) {
       var p = f.properties || {}, g = f.geometry && f.geometry.coordinates;
       if (!g || !isFinite(g[0])) return null;
-      /* ⚠ THE PIN'S OWN PLACEMENT KIND IS RECORDED BY THE GEOCODER (`ptype`), so "by subject" and
-         "by publisher" are a FILTER on its answer rather than a second placement rule of ours. */
-      if (cfg.by === 'publisher' && p.ptype && p.ptype !== 'publisher') return null;
-      if (cfg.by === 'subject' && p.ptype === 'publisher') return null;
       return { title: String(p.title || ''), publisher: String(p.publisher || ''), link: p.link || null,
         at: p.pubDate ? +new Date(p.pubDate) : null, lng: g[0], lat: g[1], km: haversineKm(c, g) };
     }).filter(function (x) { return x && x.title; })

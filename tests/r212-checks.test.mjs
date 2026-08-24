@@ -212,12 +212,23 @@ test('R212 ⑪: a solid’s outline is densified and its caps are subdivided wit
 });
 
 /* ── 12. the news says where a story came FROM, or says it does not know ───────────────────────── */
-test('R212 ⑫: publisher mode never borrows the subject’s location', () => {
+/* ⚠⚠ (#R416) THIS TEST'S FIRST HALF GUARDED A MECHANISM THAT NO LONGER EXISTS — the same shape
+   #R276 found in ⑬ below. #R212 answered 「ニュースの発信地が全然発信地の場所になっていない」 by
+   forbidding the publisher branch from borrowing the subject's coordinates. #R416 removed that
+   branch, and the toggle above it, because in the surface that is now the DEFAULT it did something
+   worse than borrowing: an 出来事 has no publisher location at all, so pressing it scattered 200 of
+   200 events to invented coordinates (measured — DEV-NOTES #R416).
+   ⚠ THE INVARIANT IS KEPT, FROM THE OTHER SIDE. What #R212 protected is that a pin never claims an
+   origin it does not have; with only one placement left, the way to break that promise again is to
+   bring the branch back — so this asserts it is ABSENT. The rest of the test, which is about
+   resolving an outlet from its URL, is untouched and still runs.
+   ⚠ The needle is code-shaped for the same reason tests/r416-checks ⑤ is: this comment names the
+   removed mechanism, and a test that banned the WORD would fail on its own prose. */
+test('R212 ⑫: a news pin never claims an origin it does not have', () => {
   const app = read('js/app-body.js');
-  const block = /if\(newsPinMode==='publisher'\)\{([\s\S]*?)\n    \} else \{/.exec(app);
-  assert.ok(block, 'applyPinMode still has a publisher branch');
-  assert.ok(!/a\.loc=a\.subjectLoc/.test(block[1]),
-    'the publisher branch must not fall back to the subject location');
+  assert.ok(!/if\(newsPinMode==='publisher'\)\{/.test(app),
+    'the publisher pin branch must stay removed — it placed events at invented coordinates (#R416)');
+  assert.match(app, /function applyPinMode\(a\)\{/, 'the one placement rule is still here');
   const ctx = read('js/news-context.js');
   assert.match(ctx, /function matchPublisher\(publisher,link\)/, 'the outlet can be resolved from its URL too');
   assert.match(ctx, /_hostKey\(publisher\), _hostKey\(link\)/, 'both the publisher string and the link are tried');

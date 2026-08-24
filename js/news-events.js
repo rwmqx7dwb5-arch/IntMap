@@ -261,7 +261,12 @@ window.IntMapModules.newsEvents = function (HOST) {
     const analysis = {
       subjectLoc, subjectName: row.rep_place_name_en || '',
       subjectType: (rep && rep.subject_type) || '',
-      pubLoc: null, pubName: null, short: '',
+      /* ⚠ (#R416) `short` (the map band's text) is NOT set here any more. It used to be `''`, and
+         because the band layer reads exactly that field, every event pin drew an empty white pill
+         (measured: 46 of 46 on screen). The rule now lives in js/map-typography.js `bandText()` and
+         the pin builder applies it to the representative headline — one rule for both news modes.
+         ⚠ `pubLoc` stayed `null` for the same reason nothing else filled it: an出来事 has no
+         publisher location. #R416 removed the Subject/Publisher pin toggle it fed. */
       _title: title, _pub: outlets[0] || '',
     };
     try { HOST.applyPinMode(analysis); } catch (_) { analysis.loc = subjectLoc; analysis.name = row.rep_place_name_en || ''; analysis.mapped = subjectLoc ? true : false; }
@@ -353,7 +358,7 @@ window.IntMapModules.newsEvents = function (HOST) {
   }
 
   /* ── カテゴリの chips ───────────────────────────────────────────────────
-     docs/NEWS-EVENTS.md §9: `All/Saved | Subject/Publisher` の**下に横スクロールの 1 行**。
+     docs/NEWS-EVENTS.md §9: 検索欄の下、`すべて / ★ 保存済み` と**同じ 1 行**に横スクロールで並ぶ。
      ⚠ 一覧と地図へ**同時に**適用する。地図だけ・一覧だけに効くフィルタは、利用者が
        「どちらが本当か」を判断できない状態を作る。 */
   function renderChips() {
@@ -367,7 +372,10 @@ window.IntMapModules.newsEvents = function (HOST) {
     const mk = (key, label, n) =>
       '<button class="news-cat-chip' + (category === key ? ' active' : '') + '" data-cat="' + S(key) + '">' +
       S(label) + (n == null ? '' : '<span class="news-cat-n">' + n + '</span>') + '</button>';
-    let html = mk('all', L('All', 'すべて', 'Alle', 'Все', 'Todas'),
+    /* ⚠ (#R416) NOT 「すべて」. The scope chips immediately to the left of this strip are
+       「すべて / ★ 保存済み」, and this one used to say the same word about a different axis — two
+       controls, one row, one word, two meanings. This one is about TOPICS. */
+    let html = mk('all', L('All topics', '全カテゴリ', 'Alle Themen', 'Все темы', 'Todos los temas'),
       (HOST.globalData || []).filter((x) => x._event).length);
     for (const [key, label] of CATS) {
       const n = counts.get(key) || 0;
@@ -692,8 +700,21 @@ window.IntMapModules.newsEvents = function (HOST) {
   /* 直近の load() が作った項目。⚠ これを HOST.globalData に入れるのは js/news-feed.js である。 */
   function loaded() { return items.slice(); }
 
+  /* ══ (#R416) THE MAP'S WAY BACK TO THE 出来事 ═══════════════════════════════════════════════
+     A pin carries `evId` (the event's `public_id`); the detail pane wants the ITEM. Resolving that
+     here — rather than handing js/news-ui.js the item list — keeps `items` private and means the
+     map never has to know how an event is shaped. Returns false when the id is not in the loaded
+     window, so the caller can fall back instead of doing nothing. */
+  function openByPublicId(pid) {
+    if (!pid) return false;
+    const it = items.find((x) => x && x._event && x._event.publicId === pid);
+    if (!it) return false;
+    openDetail(it);
+    return true;
+  }
+
   const API = {
-    load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail,
+    load, loaded, state, events, passes, renderChips, hideChips, decorate, openDetail, openByPublicId,
     toggleStar, isSaved, differences, quantities,
     categories: () => CATS.map(([k, v]) => ({ key: k, label: L.arr(v) })),
     category: () => category,

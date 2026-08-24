@@ -222,6 +222,20 @@ window.IntMapModules.newsUi=function(HOST){
     if(window._intelHandlersBound) return;
     window._intelHandlersBound=true;
     /* News hover/click — (#R161 Phase 3) bound through IntMapGeoEngine.events.onLayer */
+    /* (#R416) 「N 媒体」— how many INDEPENDENT outlets stand behind this pin. On an出来事 that is the
+       single most useful thing the map can say and the card already says it; the tooltip repeated the
+       article's byline instead. Written once: the dot and the band had byte-identical tooltip strings,
+       which is the same duplication that let the pin builder drift (see js/news-feed.js). */
+    function _srcCountLabel(n){
+      return String(n===1
+        ? window.IntMapLang.t(HOST.lang,'1 source','1媒体','1 Quelle','1 источник','1 fuente')
+        : window.IntMapLang.t(HOST.lang,'{n} sources','{n}媒体','{n} Quellen','{n} источников','{n} fuentes')).replace('{n}',n);
+    }
+    function _newsTipHTML(p){
+      const isEv=p.ev==='1', n=+p.evSources||0;
+      const foot=isEv&&n>0 ? (IntMapSafe.html(p.publisher||'')+' · '+IntMapSafe.html(_srcCountLabel(n))) : IntMapSafe.html(p.publisher||'');
+      return `<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(p.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(p.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(p.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${foot}</div>`;   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
+    }
     GE.events.onLayer('mousemove','news-dots',e=>{
       if(!e.features.length) return;
       GE.render.setCursor('pointer');
@@ -232,7 +246,7 @@ window.IntMapModules.newsUi=function(HOST){
         try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=HOST.ensureMapTooltip(); el.style.display='block';
-      window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`);   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
+      window.setMapTooltipHTML(el,_newsTipHTML(f.properties));   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       HOST.positionTooltip(GE.coords.project(f.geometry.coordinates));
     });
     GE.events.onLayer('mouseleave','news-dots',()=>{
@@ -243,16 +257,46 @@ window.IntMapModules.newsUi=function(HOST){
     /* (#R38) MOBILE: tapping a news pin/band shows a POPUP with a "Read" button rather than jumping straight
        to the article (the explicit request "直接ニュース記事に行くのではなく、ポップアップが出て、そこに読むボタン").
        Desktop keeps the direct open (its hover tooltip already previews the item). */
+    /* ══ (#R416) WHERE A NEWS PIN LEADS ═════════════════════════════════════════════════════════
+       Until #R416 the answer was always "the representative article's URL, in another tab" — the
+       only thing the pin knew. The map therefore never once opened an出来事, even though every pin
+       had BEEN one event since #R386. A pin that stands for an event now opens that event's detail
+       in the News surface the sidebar already has (docs/NEWS-EVENTS.md §9.2: 「1 つの Event は
+       IntMap の中だけで理解できなければならない」— sending the reader out to one outlet is the
+       opposite of that). The external article is still one click away, per outlet, inside it.
+       ⚠ The tab is only switched when we are NOT already on it: `setMode` is a TOGGLE, so calling
+       it while News is open closes the panel the detail is about to render into (#R402 measured
+       exactly that shape). ⚠ Falls through to the article whenever the event cannot be resolved —
+       an id outside the loaded window, or the events module not loaded — so the pin never becomes
+       a dead click. */
+    function _openNewsFeature(p){
+      if(!p) return;
+      if(p.ev==='1'&&p.evId){
+        try{ const NE=window.IntMapNewsEvents;
+          if(NE&&NE.openByPublicId){
+            if(HOST.mode!=='news'&&HOST.mode!=='saved') HOST.setMode('news','btn-news');
+            if(NE.openByPublicId(p.evId)) return;
+          } }catch(_){}
+      }
+      if(p.link){ const _u=IntMapSafe.url(p.link); if(_u) window.open(_u,'_blank','noopener'); }   /* (#R138 SEC) http(s)-only */
+    }
     function _showMobileNewsPopup(pr){
       if(!pr) return;
       let back=document.getElementById('m-news-pop-back');
       if(!back){ back=document.createElement('div'); back.id='m-news-pop-back'; back.className='m-news-pop-back'; back.innerHTML='<div class="m-news-pop"></div>'; document.body.appendChild(back);
         back.addEventListener('click',(ev)=>{ if(ev.target===back) back.classList.remove('show'); }); }
       const pop=back.querySelector('.m-news-pop'), link=pr.link||'';
-      const readLbl=window.IntMapLang.t(HOST.lang,'Read article','記事を読む','Artikel lesen','Читать статью','Leer el artículo');
+      /* (#R416) on an出来事 the sheet offers the EVENT, not one outlet's article: the detail is what
+         answers 「何が起きたか」 without leaving IntMap (docs/NEWS-EVENTS.md §9.2), and it carries a
+         per-outlet link list of its own. An article pin is unchanged. */
+      const isEv=pr.ev==='1'&&!!pr.evId, nSrc=+pr.evSources||0;
+      const readLbl=isEv
+        ? window.IntMapLang.t(HOST.lang,'Open event','出来事を開く','Ereignis öffnen','Открыть событие','Abrir suceso')
+        : window.IntMapLang.t(HOST.lang,'Read article','記事を読む','Artikel lesen','Читать статью','Leer el artículo');
       const closeLbl=window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar');
-      pop.innerHTML=`<div class="mnp-head"><span class="mnp-loc">${pr.name?('['+IntMapSafe.html(pr.name)+']'):''}</span><span class="mnp-date">${formatCustomDate(pr.pubDate)}</span></div><div class="mnp-title">${IntMapSafe.html(pr.title||'')}</div><div class="mnp-pub">${IntMapSafe.html(pr.publisher||'')}</div><div class="mnp-actions">${link?`<button class="mnp-read" type="button">${readLbl}</button>`:''}<button class="mnp-close" type="button">${closeLbl}</button></div>`;   /* (#R138 SEC) escape external news fields */
-      const rb=pop.querySelector('.mnp-read'); if(rb) rb.onclick=()=>{ try{ const _u=IntMapSafe.url(link); if(_u) window.open(_u,'_blank','noopener'); }catch(_){} back.classList.remove('show'); };   /* (#R138 SEC) http(s) only — never open a javascript: link */
+      const foot=isEv&&nSrc>0 ? (IntMapSafe.html(pr.publisher||'')+' · '+IntMapSafe.html(_srcCountLabel(nSrc))) : IntMapSafe.html(pr.publisher||'');
+      pop.innerHTML=`<div class="mnp-head"><span class="mnp-loc">${pr.name?('['+IntMapSafe.html(pr.name)+']'):''}</span><span class="mnp-date">${formatCustomDate(pr.pubDate)}</span></div><div class="mnp-title">${IntMapSafe.html(pr.title||'')}</div><div class="mnp-pub">${foot}</div><div class="mnp-actions">${(isEv||link)?`<button class="mnp-read" type="button">${readLbl}</button>`:''}<button class="mnp-close" type="button">${closeLbl}</button></div>`;   /* (#R138 SEC) escape external news fields */
+      const rb=pop.querySelector('.mnp-read'); if(rb) rb.onclick=()=>{ back.classList.remove('show'); _openNewsFeature(pr); };   /* (#R138 SEC) http(s) only — never open a javascript: link (inside _openNewsFeature) */
       const cb=pop.querySelector('.mnp-close'); if(cb) cb.onclick=()=>back.classList.remove('show');
       back.classList.add('show');
     }
@@ -261,12 +305,11 @@ window.IntMapModules.newsUi=function(HOST){
       if(!e.features.length) return;
       const p=e.features[0].properties;
       if(HOST.isMobile()){ _showMobileNewsPopup(p); return; }
-      /* Desktop: open the article straight in the device's browser (the in-app mini-browser was removed) */
-      if(p.link){ const _u=IntMapSafe.url(p.link); if(_u) window.open(_u,'_blank','noopener'); }   /* (#R138 SEC) http(s)-only */
+      _openNewsFeature(p);   /* (#R416) event → its detail in the News surface; article → its URL */
     });
     /* (#R37) The BAND (news-labels = the place-name pill) is the big, natural tap target — make it clickable
        too, not just the tiny dot ("地名ラベルを押しても反応しない"). */
-    GE.events.onLayer('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(HOST.isMobile()){ _showMobileNewsPopup(p); return; } if(p.link){ const _u=IntMapSafe.url(p.link); if(_u) window.open(_u,'_blank','noopener'); }   /* (#R138 SEC) http(s)-only */ });
+    GE.events.onLayer('click','news-labels',e=>{ if(!e.features.length) return; const p=e.features[0].properties; if(HOST.isMobile()){ _showMobileNewsPopup(p); return; } _openNewsFeature(p); });
     GE.events.onLayer('mousemove','news-labels',e=>{ if(!e.features.length) return; GE.render.setCursor('pointer'); const f=e.features[0];
       /* (#R159) hovering the BAND itself must hide the band while the popup shows — the band's icon/text-opacity
          collapses to 0 when this feature's `hover` state is set (same rule the dot uses). The band sits offset to the
@@ -278,7 +321,7 @@ window.IntMapModules.newsUi=function(HOST){
         try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
       const el=HOST.ensureMapTooltip(); el.style.display='block';
-      window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${IntMapSafe.html(f.properties.name)}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(f.properties.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${IntMapSafe.html(f.properties.title)}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${IntMapSafe.html(f.properties.publisher)}</div>`);   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
+      window.setMapTooltipHTML(el,_newsTipHTML(f.properties));   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       HOST.positionTooltip(GE.coords.project(f.geometry.coordinates)); });
     GE.events.onLayer('mouseleave','news-labels',()=>{ GE.render.setCursor(''); if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
       if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
@@ -524,14 +567,15 @@ window.IntMapModules.newsUi=function(HOST){
       /* (#R30) Translate titles only when the news set actually carries a non-UI language. */
       { const gr=document.getElementById('ai-geocode-row'); if(gr) gr.style.display=HOST._newsHasForeignLang()?'block':'none'; }
       try{ HOST.aiSyncFeatureButtons(); }catch(_){}
-      /* sync the All / ★ Saved sub-filter (Saved now lives inside the News tab) */
+      /* sync the All / ★ Saved scope chips (Saved lives inside the News tab).
+         (#R416) the saved count rides on the chip: a scope you can switch to should say how much is
+         there, the way every category chip beside it does. ⚠ no count when it is zero — a chip that
+         reads 「★ 保存 0」 invites a click that shows an empty list. */
+      const _sv=(function(){ try{ const st=window.IntMapNewsEvents&&window.IntMapNewsEvents.state(); return (st&&+st.savedCount)||0; }catch(_){ return 0; } })();
       document.getElementById('newsfilter-all').textContent = window.IntMapLang.t(HOST.lang,'All','すべて','Alle','Все','Todo');
-      document.getElementById('newsfilter-saved').textContent = window.IntMapLang.t(HOST.lang,'★ Saved','★ 保存済み','★ Gespeichert','★ Сохранённые','★ Guardado');
+      document.getElementById('newsfilter-saved').innerHTML = IntMapSafe.html(window.IntMapLang.t(HOST.lang,'★ Saved','★ 保存済み','★ Gespeichert','★ Сохранённые','★ Guardado'))+(_sv?('<span class="news-cat-n">'+_sv+'</span>'):'');
       document.getElementById('newsfilter-all').classList.toggle('active', HOST.mode==='news');
       document.getElementById('newsfilter-saved').classList.toggle('active', HOST.mode==='saved');
-      /* sync the segmented control with current mode */
-      document.getElementById('pinmode-loc').classList.toggle('active', HOST.newsPinMode==='location');
-      document.getElementById('pinmode-pub').classList.toggle('active', HOST.newsPinMode==='publisher');
       HOST.startNews(); return;
     }
     feed.style.display='flex'; sb.style.display='none'; feed.innerHTML=`<div class="empty-msg">${HOST.t('emptyHint')}</div>`;
@@ -542,12 +586,9 @@ window.IntMapModules.newsUi=function(HOST){
   function aiRefreshNewsPins(){
     if(!(GE().layers.hasSource('news-points'))) return;
     HOST.newsFeatures=[];
-    HOST.computeFilteredNews().forEach(item=>{ const a=item.analysis; if(a&&a.loc){
-      const fid='n_'+Math.random().toString(36).slice(2,10);
-      const mappedStr=a.mapped===true?'true':(a.mapped==='publisher'?'publisher':'none');
-      HOST.newsFeatures.push({type:'Feature',id:fid,geometry:{type:'Point',coordinates:a.loc},properties:{
-        fid, mapped:mappedStr, ptype:a.ptype||'', title:item.title, name:a.name||'', short:a.short||'', publisher:item.publisher, link:item.link, pubDate:item.pubDate }});
-    }});
+    /* (#R416) the SECOND copy of the pin builder lived here and drifted from the first; both are
+       now HOST.newsFeatureOf (js/news-feed.js). */
+    HOST.computeFilteredNews().forEach(item=>{ const f=HOST.newsFeatureOf(item); if(f) HOST.newsFeatures.push(f); });
     _spreadDupNewsPins(HOST.newsFeatures);   /* (#R122) fan out pins sharing an anchor */
     GE().layers.setSourceData('news-points',{type:'FeatureCollection',features:HOST.newsFeatures}); try{HOST.scheduleNewsDeclutter();}catch(_){}
   }
@@ -556,36 +597,33 @@ window.IntMapModules.newsUi=function(HOST){
 
   async function aiGeocodeNews(force){
     if(!HOST.aiGate()) return;
-    const mode=HOST.newsPinMode, pub=(mode==='publisher'), cacheKey=pub?'_aiPub':'_aiGeo';
+    /* (#R416) there is one thing to locate: where the story happened. The publisher-HQ half went
+       with the Subject/Publisher toggle. */
+    const cacheKey='_aiGeo';
     const need=it=>{ const a=it.analysis; if(!a) return false;
       if(force) return true;
-      return pub ? (!a.pubLoc && !a[cacheKey]) : (!a.subjectLoc && !a[cacheKey]); };
+      return !a.subjectLoc && !a[cacheKey]; };
     const todo=HOST.computeFilteredNews().filter(need).slice(0,AI_GEO_CAP);
     const btn=document.getElementById('ai-geocode-btn');
     if(!todo.length){ HOST.aiToast(HOST.t('aiGeoNone')); return; }
     HOST.aiSetBtnBusy(btn,true,HOST.t('aiGeoBusy'));
-    const sys=pub
-      ? personaPrompt("locating news publishers on the map for IntMap",{mode:"internal"})+"Each numbered line is the NAME of a news outlet / publisher. Return the city where that outlet is headquartered. Reply with ONLY a JSON array, one object per identifiable outlet: {\"i\":<index>,\"name\":\"<City, Country>\",\"lat\":<number>,\"lng\":<number>}. Omit outlets you cannot place. No commentary, no code fences."
-      : personaPrompt("locating world news on the map for IntMap",{mode:"internal"})+"For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event/incident actually happens. RULES: (1) NOT the news outlet's HQ or dateline (e.g. ignore 'Reuters, London'). (2) NOT a place where someone merely SPOKE about the event — if an official at the White House in Washington comments on the Middle East, return the specific Middle-East country/city the event concerns, NOT Washington. (3) Be as SPECIFIC as possible — prefer city/landmark over country (e.g. 'Mariupol' over 'Ukraine', 'Rafah' over 'Gaza' when identifiable). Reply with ONLY a JSON array; one object per locatable item: {\"i\":<index number>,\"name\":\"<short English place name, most specific>\",\"lat\":<number>,\"lng\":<number>}. Omit any item with no clear subject location. No commentary, no code fences.";
+    const sys=personaPrompt("locating world news on the map for IntMap",{mode:"internal"})+"For EACH numbered headline, return the SUBJECT LOCATION: the single specific real-world place where the main event/incident actually happens. RULES: (1) NOT the news outlet's HQ or dateline (e.g. ignore 'Reuters, London'). (2) NOT a place where someone merely SPOKE about the event — if an official at the White House in Washington comments on the Middle East, return the specific Middle-East country/city the event concerns, NOT Washington. (3) Be as SPECIFIC as possible — prefer city/landmark over country (e.g. 'Mariupol' over 'Ukraine', 'Rafah' over 'Gaza' when identifiable). Reply with ONLY a JSON array; one object per locatable item: {\"i\":<index number>,\"name\":\"<short English place name, most specific>\",\"lat\":<number>,\"lng\":<number>}. Omit any item with no clear subject location. No commentary, no code fences.";
     const BATCH=12; let done=0, hit=0, failed=false;
     try{
       for(let i=0;i<todo.length;i+=BATCH){
         const chunk=todo.slice(i,i+BATCH);
-        const list=pub
-          ? chunk.map((it,k)=>`${k}. ${it.publisher||'?'}`).join('\n')
-          : chunk.map((it,k)=>`${k}. ${it.title}${it.desc?' — '+String(it.desc).slice(0,160):''}`).join('\n');
+        const list=chunk.map((it,k)=>`${k}. ${it.title}${it.desc?' — '+String(it.desc).slice(0,160):''}`).join('\n');
         let arr=null;
-        try{ arr=await HOST.askAIJSON((pub?'Outlets:\n':'Headlines:\n')+list, sys); }
+        try{ arr=await HOST.askAIJSON('Headlines:\n'+list, sys); }
         catch(e){ HOST.aiToast((e&&e.message)||HOST.t('aiGeoErr')); failed=true; break; }
         if(Array.isArray(arr)) arr.forEach(o=>{
           if(!o||typeof o.lat!=='number'||typeof o.lng!=='number') return;
           if(o.lat<-90||o.lat>90||o.lng<-180||o.lng>180) return;
           const it=chunk[o.i]; if(!it||!it.analysis) return;
-          if(pub){ it.analysis.pubLoc=[o.lng,o.lat]; it.analysis.pubName=(window.IntMapLang.t(HOST.lang,'Source: ','発信: ','Quelle: ','Источник: ','Fuente: '))+(o.name||it.publisher||''); }
-          else { it.analysis.subjectLoc=[o.lng,o.lat]; it.analysis.subjectName=o.name||it.analysis.subjectName||''; }
+          it.analysis.subjectLoc=[o.lng,o.lat]; it.analysis.subjectName=o.name||it.analysis.subjectName||'';
           HOST.applyPinMode(it.analysis); hit++;
         });
-        /* mark the whole chunk attempted so auto-mode won't re-ask outlets the AI couldn't place */
+        /* mark the whole chunk attempted so auto-mode won't re-ask stories the AI couldn't place */
         chunk.forEach(it=>{ if(it.analysis) it.analysis[cacheKey]=true; });
         done+=chunk.length;
         HOST.aiSetBtnBusy(btn,true,HOST.t('aiGeoBusy')+' '+done+'/'+todo.length);
@@ -609,13 +647,12 @@ window.IntMapModules.newsUi=function(HOST){
          whole batch. The object is normalised in place so everything below (and the pin builder) sees
          the shape it expects. */
       if(!item.analysis||typeof item.analysis!=='object') item.analysis={ loc:null, name:'', short:'', mapped:false };
-      let chipCls='loc-chip';
-      if(item.analysis.mapped===true) chipCls='loc-chip';
-      else if(item.analysis.mapped==='publisher') chipCls='loc-chip publisher';
-      else chipCls='loc-chip unmapped';
+      /* (#R416) `mapped==='publisher'` cannot occur any more — the publisher pin mode is gone — but
+         the class stays reachable for the saved snapshots #R30 restores, which still carry it. */
+      const chipCls=(item.analysis.mapped===true)?'loc-chip':((item.analysis.mapped==='publisher')?'loc-chip publisher':'loc-chip unmapped');
       const readLabel = window.IntMapLang.t(HOST.lang,'Read ↗','記事を読む ↗','Lesen ↗','Читать ↗','Leer ↗');
       card.innerHTML=`<button class="btn-bookmark ${bm?'active':''}">★</button>
-        <div class="news-head"><span class="${chipCls}">${IntMapSafe.html(item.analysis.name)||(window.IntMapLang.t(HOST.lang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida'))}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
+        <div class="news-head"><span class="${chipCls}" title="${IntMapSafe.html(item.analysis.name||'')}">${IntMapSafe.html(item.analysis.name)||(window.IntMapLang.t(HOST.lang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida'))}</span><small class="news-date">${formatCustomDate(item.pubDate)}</small></div>
         <div class="news-title">${HOST.newsTitleHTML(item)}</div>
         <div class="news-foot"><small class="news-pub"${item.publisher?' role="link" tabindex="0" title="'+IntMapSafe.html(item.publisher+' — Wikipedia ↗')+'"':''}>${IntMapSafe.html(item.publisher)}</small><button class="btn-read">${readLabel}</button></div>`;   /* (#R138 SEC) name/publisher from external RSS → escape (newsTitleHTML self-escapes) */
       /* (#R386) 出来事のカードは `.news-item` を**発展させたもの**で、別のカードではない

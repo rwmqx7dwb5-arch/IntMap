@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R415';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R416';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R415';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-24-R415';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-24-R416';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -346,20 +346,20 @@ window.__imBuild='R415';/* (#R121) build marker — bump when verifying that a r
       <button class="search-btn" id="btn-search" data-i18n="searchLoadBtn" title="Search if the box has text, otherwise reload with the current news settings" data-i18n-title="ttlSearchNews">Search / Load</button>
       <button class="csearch-pickbtn" id="csearch-pick" type="button" data-i18n-title="pickCountryMap" title="Pick a country on the map" aria-label="Pick a country on the map" data-i18n-aria="pickCountryMap"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><line x1="12" y1="1.5" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="22.5" y2="12"/></svg></button>
     </div>
-    <!-- (#R30) All/Saved AND Subject/Publisher share ONE row ("Newsのall/saved, subject/publisher locationは
-         一列に"). News location is pre-analysed server-side (refresh-news → current_news); no client AI-locate. -->
+    <!-- (#R416) ONE row above the feed, in ONE visual language. It used to be two: a pill segment
+         carrying All/Saved AND Subject/Publisher (both labels clipped to "Subject l…"/"Publisher…"
+         at 400 px), then a chip strip underneath whose first chip ALSO said "All" — two controls,
+         two shapes, two different meanings of the same word, stacked. Scope (all / ★ saved) is
+         pinned left as chips; the categories scroll beside it. The pin-position toggle is gone:
+         docs/NEWS-EVENTS.md §9 decision 9. -->
     <div class="news-filter-toggle" id="news-filter-toggle" style="display:none; margin:0 0 10px 0;">
       <div class="news-seg-row">
-        <div class="ios-segment" role="tablist">
-          <button class="ios-segment-btn active" id="newsfilter-all">All</button>
-          <button class="ios-segment-btn" id="newsfilter-saved">★ Saved</button>
+        <div class="news-scope" id="news-scope" role="tablist">
+          <button class="news-cat-chip news-scope-chip active" id="newsfilter-all">All</button>
+          <button class="news-cat-chip news-scope-chip" id="newsfilter-saved">★ Saved</button>
         </div>
-        <div class="ios-segment" id="news-pinmode-seg" role="tablist" title="Map pin position" data-i18n-title="ttlPinPos">
-          <button class="ios-segment-btn active" id="pinmode-loc" data-i18n="pinModeLoc">Subject</button>
-          <button class="ios-segment-btn" id="pinmode-pub" data-i18n="pinModePub">Publisher</button>
-        </div>
+        <div class="news-cat-chips" id="news-cat-chips" style="display:none;" role="tablist" aria-label="Event categories" data-i18n-aria="evCatsAria"></div><!-- (#R386) 出来事のカテゴリ。中身は js/news-events.js が実データから作る（docs/NEWS-EVENTS.md §9） -->
       </div>
-      <div class="news-cat-chips" id="news-cat-chips" style="display:none;" role="tablist" aria-label="Event categories" data-i18n-aria="evCatsAria"></div><!-- (#R386) 出来事のカテゴリ。中身は js/news-events.js が実データから作る（docs/NEWS-EVENTS.md §9） -->
     </div>
     <!-- (#R30) Translate titles only appears when the news set actually contains a language other than the
          UI language ("設定言語のみなら表示しない"); it translates only those non-UI-language headlines. -->

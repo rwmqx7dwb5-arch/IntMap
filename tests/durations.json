@@ -93,5 +93,6 @@
   "tests/smoke.spec.js": 8,
   "tests/r405.spec.js": 7,
   "tests/r410.spec.js": 12,
-  "tests/r410-late.spec.js": 55
+  "tests/r410-late.spec.js": 55,
+  "tests/r416.spec.js": 3
 }

@@ -109,7 +109,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   let radiusItems=[]; /* multiple radius circles */
   let radiusKm=1000, radiusColor='#007aff', radiusOpacity=0.18;
   let unitMode='both', panelDrag=null, searchMarker=null, liveCursor=null;
-  let newsPinMode='location'; /* 'location' or 'publisher' */
   let aiLocateMode=localStorage.getItem('intmap_ai_locate')||'manual'; /* 'manual' | 'auto' */
   let newsLangMode=localStorage.getItem('intmap_news_lang')||'ui';     /* 'ui' | 'multi' */
   /* Individually-selectable news languages (multi mode). ⚠ (#R246) THE NAMES ARE NOT A TABLE: eleven
@@ -232,7 +231,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get _imTouchPrimary(){ return _imTouchPrimary; }, get fetchData(){ return fetchData; },
     get loadCommunity(){ return loadCommunity; },   get registerWindow(){ return registerWindow; },
     get renderCompanies(){ return renderCompanies; }, get renderDashboard(){ return renderDashboard; },
-    get setMode(){ return setMode; },               get startNews(){ return startNews; },
+    get setMode(){ return setMode; },               get startNews(){ return startNews; },      get newsFeatureOf(){ return newsFeatureOf; },
     get computeFilteredNews(){ return computeFilteredNews; },
     /* ── (#R165) members added for the Atlas-kernel split (js/atlas-console.js). ── */
     /* READ-WRITE — the console's Atlas actions assign these five (theme/units/radius/measure state).
@@ -332,7 +331,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get commCaps(){ return commCaps; }, get communityPosts(){ return communityPosts; },
     get liveCursor(){ return liveCursor; }, get measureSnapClose(){ return measureSnapClose; },
     get newsFiltered(){ return newsFiltered; }, get newsLangMode(){ return newsLangMode; },
-    get newsPinMode(){ return newsPinMode; }, get statsFilterOpen(){ return statsFilterOpen; },
+    get statsFilterOpen(){ return statsFilterOpen; },
     get statsFilters(){ return statsFilters; }, get statsSort(){ return statsSort; },
     get statsSortDir(){ return statsSortDir; },
     /* stable helpers and tables (never rebound — getters anyway, see LAZY above) */
@@ -1036,6 +1035,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function fetchData(){ return IM_NEWSFEED.fetchData.apply(this,arguments); }
   function loadNewsFromSupabase(){ return IM_NEWSFEED.loadNewsFromSupabase.apply(this,arguments); }
   function startNews(){ return IM_NEWSFEED.startNews.apply(this,arguments); }
+  function newsFeatureOf(){ return IM_NEWSFEED.newsFeatureOf.apply(this,arguments); }   /* (#R416) the ONE news-pin builder */
   const IM_READER=window.IntMapModules.articleReader(IM_HOST);
   function openArticleInSidebar(){ return IM_READER.openArticleInSidebar.apply(this,arguments); }
   const IM_COMMBOARD=window.IntMapModules.communityBoard(IM_HOST);
@@ -2037,16 +2037,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   try{ window._respreadNews=_respreadNews; }catch(_){}
 
   /* ===== News location analysis =====
-   * Now ALWAYS computes BOTH subject location AND publisher location, plus a fallback
-   * if neither match. Result fields:
+   * Result fields:
    *   subjectLoc / subjectName  — best subject match from title (highest precision)
-   *   pubLoc / pubName          — publisher HQ
-   *   loc / name / mapped       — current "active" location based on newsPinMode
-   *
-   * EVERY news item now gets a pin (no more dropouts):
-   *   - subject match → mapped=true, blue dot
-   *   - publisher only → mapped=publisher, purple dot
-   *   - neither → fallback to title-hash on the equator strip (light purple, dim)
+   *   loc / name / mapped       — the pin's place (see applyPinMode below)
+   * An article the gazetteer cannot place falls to a title-hash point, dim and mapped=false.
+   * (#R416) the publisher-HQ pin mode is gone; `pubLoc` is still resolved by js/news-context.js
+   * but nothing places a pin with it.
    */
   function hashLocFromString(s){
     let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h)+s.charCodeAt(i)|0;
@@ -2059,30 +2055,21 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      end-to-end from outside, so expose the real function (same pattern as _declutterNewsBands /
      _atlExtractPlaces). Tests call it with a headline and assert the pin it produces. */
   window._imAnalyzeContext=analyzeContext;
-  /* Single source of truth for the active pin location under the current newsPinMode.
-     Subject mode shows ONLY the subject location; Publisher mode shows ONLY the publisher
-     location — they never borrow from each other, so flipping the toggle always moves the pin.
-     Unknown locations fall to a deterministic, MODE-SEEDED scatter point (mapped=false → dim
-     pin) so even fully-unplaced stories still shift when the toggle flips. */
+  /* ══ (#R416) THE PIN IS THE SUBJECT'S PLACE. THERE IS NO SECOND ANSWER ══════════════════════
+     This used to switch on `newsPinMode`, and the publisher branch is gone with the toggle that
+     drove it. What it did in the surface that is now the DEFAULT was not a feature: an出来事 has no
+     publisher location (`pubLoc` is null for every event by construction), so flipping to Publisher
+     sent all of them to `hashLocFromString()` — measured 200 of 200 events scattered to invented
+     coordinates in the Pacific (NPR at 144.9E/2.0S, AP News at 163.8E/23.4N). A control whose only
+     effect is to replace real places with fabricated ones is not a mode.
+     ⚠ The unresolved-subject scatter BELOW stays: it is what the article path has always done for a
+     story it cannot place, and it is marked `mapped=false` so the dot is dim and the chip says
+     「場所不明」. The event path does not use it — js/news-events.js drops `loc` entirely rather
+     than invent one (docs/NEWS-EVENTS.md §9). */
   function applyPinMode(a){
     if(!a) return;
-    const title=a._title||'', pub=a._pub||'';
-    if(newsPinMode==='publisher'){
-      if(a.pubLoc){ a.loc=a.pubLoc; a.name=a.pubName; a.mapped='publisher'; a.ptype='city'; }   /* (#R123) publisher HQ is a city-scale point */
-      /* ⚠⚠ (#R212) THE SUBJECT IS NOT THE ORIGIN, AND THIS BRANCH SAID IT WAS.
-         「ニュースの発信地が全然発信地の場所になっていない。ふざけるな。」 — this is that, exactly. #R35
-         answered 「位置不明のピンが多い」 by falling back to the SUBJECT location when the outlet's
-         headquarters could not be resolved, and still reported `mapped='publisher'`: a wildfire story
-         from CBS News was pinned in CANADA and labelled as its origin. It also contradicts the block
-         comment three lines above, which promises the two modes never borrow from each other.
-         An unresolved origin is now shown as unresolved. The reason it was rare enough to be worth
-         faking is fixed where it belongs — js/news-context.js now resolves the outlet by its DOMAIN
-         as well as its display name, which is the form Google News gives for a large part of the feed. */
-      else { a.loc=hashLocFromString('pub:'+pub+'|'+title); a.name=pub||(window.IntMapLang.t(currentLang,'Publisher unknown','発信元不明','Herausgeber unbekannt','Издатель неизвестен','Editor desconocido')); a.mapped=false; a.ptype=''; }
-    } else {
-      if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; a.ptype=a.subjectType||''; }
-      else { a.loc=hashLocFromString('sub:'+title); a.name=(window.IntMapLang.t(currentLang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida')); a.mapped=false; a.ptype=''; }
-    }
+    if(a.subjectLoc){ a.loc=a.subjectLoc; a.name=a.subjectName; a.mapped=true; a.ptype=a.subjectType||''; }
+    else { a.loc=hashLocFromString('sub:'+(a._title||'')); a.name=(window.IntMapLang.t(currentLang,'Location unknown','場所不明','Ort unbekannt','Место неизвестно','Ubicación desconocida')); a.mapped=false; a.ptype=''; }
   }
   function clearMarkers(){ markersArray.forEach(m=>m.remove()); markersArray=[]; clearIntelSources(); }
   window.flyToLoc=function(lng,lat){ if(GE().hasRenderer())GE().camera.flyTo({center:[lng,lat],zoom:4,speed:1.2}); };
@@ -2109,28 +2096,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){ return false; }
   }
   window._newsHasForeignLang=_newsHasForeignLang;
-  /* Wire up the in-tab Subject/Publisher segment buttons */
-  function setNewsPinMode(mode){
-    if(newsPinMode===mode) return;
-    newsPinMode=mode;
-    document.getElementById('pinmode-loc').classList.toggle('active', mode==='location');
-    document.getElementById('pinmode-pub').classList.toggle('active', mode==='publisher');
-    /* re-compute the active loc for every cached item under the new mode (no cross-fallback) */
-    globalData.forEach(it=>applyPinMode(it.analysis));
-    try{ aiSyncFeatureButtons(); }catch(_){}      /* button label reflects Subject/Publisher */
-    if(currentMode==='news'||currentMode==='saved') startNews();
-  }
-  document.getElementById('pinmode-loc').onclick=()=>setNewsPinMode('location');
-  document.getElementById('pinmode-pub').onclick=()=>setNewsPinMode('publisher');
-  /* Pin-mode dropdown (#28): the ▾ caret on the AI-locate button opens the Subject/Publisher menu;
-     picking one closes it. The main button's label already reflects the mode (see aiButtonSyncers). */
   (function(){
-    const caret=document.getElementById('ai-locate-caret'), menu=document.getElementById('ai-locate-menu');
-    if(caret&&menu){
-      caret.onclick=(e)=>{ e.stopPropagation(); menu.classList.toggle('show'); };
-      menu.querySelectorAll('.ios-segment-btn').forEach(b=>b.addEventListener('click',()=>menu.classList.remove('show')));
-      document.addEventListener('click',(e)=>{ if(menu.classList.contains('show') && !menu.contains(e.target) && e.target!==caret) menu.classList.remove('show'); });
-    }
     /* Manual "Translate titles" button (#28) — translates the visible headlines into the UI language. */
     const tb=document.getElementById('ai-translate-btn');
     if(tb) tb.onclick=()=>{ try{ if(!aiGate()) return; aiTranslateTitles(); }catch(_){} };
@@ -2142,13 +2108,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      Items the local gazetteer couldn't place sit at fake hash coords (analysis.mapped===false).
      Ask the LLM for the real {name,lat,lng}, then promote them to mapped subject pins. */
   function aiReaffirmLoc(a){ applyPinMode(a); }
-  /* Mode-aware AI locator. In Subject mode it geocodes the event location; in Publisher mode
-     it geocodes the outlet's HQ. `force` (the button) re-analyses EVERY filtered story incl.
-     already-pinned ones; auto mode passes force=false and only fills the gaps. */
+  /* AI locator. `force` (the button) re-analyses EVERY filtered story incl. already-pinned ones;
+     auto mode passes force=false and only fills the gaps. (#R416) there is no publisher mode. */
   { const gb=document.getElementById('ai-geocode-btn'); if(gb) gb.onclick=()=>aiGeocodeNews(true); }
   aiButtonSyncers.push(function(){ const b=document.getElementById('ai-geocode-btn'); if(!b) return;
     b.classList.toggle('ai-needs-key',!aiReady()); b.title=aiReady()?'':t('aiNoKey');
-    b.textContent = newsPinMode==='publisher' ? t('aiGeoBtnPub') : t('aiGeoBtnSub'); });
+    b.textContent = t('aiGeoBtnSub'); });
 
   /* (#R29) Hide anything older than 72h from the live feed — the server also deletes >72h rows, this is
      the matching client guard (covers the live-RSS fallback + any stale cache). Saved/bookmarked items
@@ -3338,7 +3303,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     window.imAccent=(typeof s.accent==='string'&&s.accent)?s.accent:'default'; try{ applyAccent(); }catch(_){}   /* (#R114) restore accent */
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
     if(window.IntMapLang.codes().includes(s.lang)){ currentLang=s.lang; window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
-    if(s.newsPinMode) newsPinMode=s.newsPinMode;
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
     if(s.labelLang) window.imLabelLang=s.labelLang;
     if(s.mapColor) window.imMapColor=s.mapColor;   if(s.dockPanels==='on'||s.dockPanels==='off') window.imDockPanels=s.dockPanels;   /* (#R238) */
@@ -3359,7 +3323,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   }
   function saveSettings(){
     try{ localStorage.setItem('intmap_settings',JSON.stringify({
-      theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, newsPinMode, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
+      theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
       sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
       navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)

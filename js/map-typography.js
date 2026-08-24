@@ -218,6 +218,26 @@ window.IntMapMapTypography = (function () {
     } catch (_) { return fallback; }
   }
 
+  /* ══ (#R416) WHAT THE BAND SAYS ══════════════════════════════════════════════════════════════
+     One rule, one place. The pill beside a news pin is a HEADLINE PREVIEW, and until #R416 the
+     rule that shortens it lived inside `analyzeContext` (js/news-context.js) — a function the
+     EVENT path never calls. So the event path filled the field the layer reads with `''`
+     (js/news-events.js) and the layer, whose `icon-text-fit:'both'` has nothing to fit when the
+     text is empty, drew the pill sprite at its natural size: measured 46 of 46 bands on screen
+     were empty white boxes. ⚠ The fix is not "give events their own shortener" — that is how the
+     two answers disagreed in the first place. `bandBox()` two hundred lines above already owns how
+     wide this string comes out; owning what the string IS belongs beside it, and both news paths
+     now call this one function.
+     ⚠ The `…` is appended only when something was actually cut. The old rule appended it to every
+     Latin headline, so a five-word headline claimed to be truncated when it was complete. */
+  function bandText(title) {
+    const t = String(title == null ? '' : title).trim();
+    if (!t) return '';
+    if (_lang() === 'jp') return t.length > 20 ? t.slice(0, 20) + '…' : t;
+    const w = t.split(/\s+/);
+    return w.length > 5 ? w.slice(0, 5).join(' ') + '…' : t;
+  }
+
   /* ══ (#R242) …AND WHICH BANDS GET THE ROOM ════════════════════════════════════════════════════
      Moved here from js/app-body.js with `bandBox`, because it is the same subject and because that
      file is under a shrink-only ceiling. `feats` is the caller's list — this module holds no app
@@ -293,5 +313,5 @@ window.IntMapMapTypography = (function () {
   }
   installFlagFont();
 
-  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, placeFont, readerFont, syncCjkFamily, glyphRewrite, bandBox, declutterNewsBands, installFlagFont };
+  return { GLYPH_RANGES, GLYPH_STACK, cjkFamily, placeFont, readerFont, syncCjkFamily, glyphRewrite, bandBox, bandText, declutterNewsBands, installFlagFont };
 })();
