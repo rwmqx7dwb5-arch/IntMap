@@ -340,6 +340,16 @@ function hydrate(msg) {
       registration: id.registration || "", operator: id.operator || "",
       seenAt, source: "snapshot",
     });
+    /* ⚠ (#R434 addendum) AND THE LEDGER IS SEEDED FROM WHAT THE SNAPSHOT ALREADY KNOWS. An
+       aircraft observed in this cell at time T is proof that SOMEBODY asked about this cell at
+       least at T — the observation could not exist otherwise. Without this a cold isolate starts
+       its walk with an empty ledger, decides the view centre is the stalest sky on the planet, and
+       spends its one read there whatever the snapshot already holds; measured in production
+       immediately after this round deployed, three consecutive polls of the same wide view were
+       answered by three isolates reporting askedCells 3, 0 and 0. The ledger cannot learn about
+       EMPTY sky this way — nothing observed leaves no trace — and treating that as "never asked"
+       is the safe direction: at worst one read is spent re-confirming an empty ocean. */
+    markAsked(msg.lat[i], msg.lon[i], seenAt);
     n++;
   }
   STATE.worldSeq = Math.max(STATE.worldSeq, msg.seq || 0);
@@ -530,10 +540,17 @@ function askedAt(lat, lon) {
   return STATE.asked.get(askCell(lat, lon)) || 0;
 }
 function markAsked(lat, lon, at) {
+  if (!(at > 0) || lat == null || lon == null) return;
   // A Map that only grows is a leak; the planet needs 16,200 cells at this grain, so anything past
   // the cap is an isolate that has outlived its usefulness as a memory of where we have looked.
   if (STATE.asked.size >= ASK_MAX) STATE.asked.clear();
-  STATE.asked.set(askCell(lat, lon), at);
+  /* ⚠ (#R434 addendum) THE LATEST WINS, because two writers reach this now: a completed tile read
+     (always the newest thing there is) and the hydrated snapshot, which arrives out of order —
+     fifty aircraft in one cell carry fifty different observation times and only the newest of them
+     says how recently that sky was looked at. */
+  const key = askCell(lat, lon);
+  const prev = STATE.asked.get(key) || 0;
+  if (at > prev) STATE.asked.set(key, at);
 }
 
 async function readSerial(provider, tiles) {
