@@ -23,8 +23,10 @@
  *  `world` is every aircraft the feed knows about, refreshed slowly. `view` is the current
  *  viewport, refreshed quickly. They write into the SAME store, so an aircraft the viewport poll
  *  has just refreshed is simply fresher than its world copy — there is no seam between them and
- *  nothing to reconcile. Which of the two is worth asking for depends on zoom, and that is the
- *  only thing zoom decides.
+ *  nothing to reconcile. BOTH are asked at every zoom (#R401): the floor that used to keep the
+ *  viewport channel above z3.5 is gone, because the measurement it rested on — 「the world channel
+ *  already answers down there」 — was false outside Europe. See VIEW_POLL_MS below for the numbers.
+ *  Zoom now decides only how big the mark is (sizeForZoom), never what is asked or what is drawn.
  * ==========================================================================*/
 /* The MapLibre GPU primitive travels in THIS chunk, not in the entry. js/orbit-points.js is
    imported eagerly by src/main.js because the satellite layer's contract is reachable from boot;
@@ -59,10 +61,28 @@ window.IntMapModules.aviationLive = function (HOST) {
      the sky the user is actually looking at. */
   const WORLD_POLL_MS = 20000;
   const VIEW_POLL_MS = 12000;
-  /* Above this zoom the viewport is a small enough patch of sky that asking about it specifically
-     is worth a request; below it the viewport IS most of the world and the world channel already
-     answers. Not a gate on drawing — a choice of which question to ask. */
-  const VIEW_ZOOM_MIN = 3.5;
+  /* ── (#R401) THE VIEWPORT CHANNEL IS ASKED AT EVERY ZOOM ─────────────────────────────────────
+     「より低ズームでもより多くの航空機が表示されるように。」
+     #R341 put a floor of z3.5 here with the reason 「below it the viewport IS most of the world and
+     the world channel already answers」. MEASURED against production, parked over North America
+     for 45 seconds with the layer on:
+
+         z3.2   requests issued: ?ch=world ×3          aircraft on screen:   4 →   4
+         z4.2   requests issued: ?ch=view ×4, world ×3 aircraft on screen:   0 → 177
+
+     The world channel does NOT answer for most of the world: its set is the union of the lattice
+     slices the sweeper has paid for and the viewports other people have looked at, and outside
+     Europe that is nearly nothing (measured: 4 aircraft across the whole of North America). So the
+     floor was not choosing between two answers — below it there was no second answer, and crossing
+     z3.5 was the whole difference between an empty continent and a busy one.
+     ⚠ ASKING COSTS NO MORE AT LOW ZOOM THAN AT HIGH. The server bounds a viewport read at
+     VIEW_MAX_TILES tiles whatever the box, rounds the cache key to half a degree so nearby views
+     share one upstream read, and only goes upstream when the box's own sky is stale — none of
+     which this change touches. What it does change is that a low-zoom session now contributes to
+     the shared world set instead of only consuming it.
+     ⚠ THERE IS NO REPLACEMENT CONSTANT. A floor of zero is a gate that can never fire, and this
+     project has met that shape often enough to know it reads as a live rule for the next reader
+     (#R317: 「常に赤い検査は走っていない検査」). pollView() below simply asks. */
 
   const PICK_PX = 16;
 
@@ -185,8 +205,6 @@ window.IntMapModules.aviationLive = function (HOST) {
 
   async function pollView() {
     if (!ST.on) return;
-    let z = 0; try { z = GE().camera.getZoom(); } catch (_) { }
-    if (z < VIEW_ZOOM_MIN) return;
     const q = bboxQuery();
     if (!q) return;
     ST.status.lastPollAt = Date.now();
