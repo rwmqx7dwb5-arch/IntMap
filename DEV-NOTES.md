@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R429** — **比較パネルは、旧国家の名前を書くべき場所に「—」を書いていた——#R380 が直した欠陥の、3人目の読み手**〈`js/stats-compare.js` の `_histMini` は `IntMapHistStates.STATES` の行から `{code,nameEn,nameJp,flag}` を組むのに `S.name.en` / `S.name.jp` を読んでいた。`name` は `IntMapLang.pickArgs()` が返す**タプル（配列）**なので両方 `undefined` で、`cName()` は `undefined || undefined || '—'` を返す。実測 **19/19 の旧国家が全滅**〉／⚠⚠⚠ **#R380 はこの欠陥を `js/history.js` で見つけて共有の読み手 `IntMapHistName` を作ったのに、3人目には届かなかった**——そして**そのラウンドが書いた検査は `codeOnly(R('js/history.js'))` しか走査していなかった**（`tests/r380-checks` ⑨）。**1ファイルに向けた走査は、そのファイルだけを守る**＝この読み手は 49 ラウンド緑のまま壊れていた／⚠⚠⚠ **落ちる条件は「まれ」ではなく「毎回」だった**——`_cs()` は `countryStats[cd] || _histMini(cd)` なので、`countryStats` が旧国家を持たない瞬間に必ずこの記録が使われる。**現在へ戻った直後**（`js/time-countries.js` の `restore()` が 項目を消し、`js/stats-compare.js` の時計購読は 380 ms 後に描き直す）・**その国家が存在しない年**・**セッション復元**の3通り／⚠⚠ **ブラウザで再現してから直した**（ローカルビルド・Countries を 1960 年へ→ソ連と米国をチェック→Show comparison→年スライダーを現在へ）: チップ **「—×」**・棒グラフ **「— —」**・表の見出し **「—」**。**旗は生きていた**（`_histMini` は `flag` だけ正しく写していた）＝「名前だけが死ぬ」という見分けにくい形／⚠⚠ **直し方は #R380 と同じ 1 本の共有読み手**（`window.IntMapHistName(nm,0)` / `(nm,1)`）で、**タプル自身は `name` に載せたまま**運ぶ——`histStates.agg` が配る記録と同じ形なので、下流の言語別解決が英語の欄に落ちない／⚠⚠ **`tests/r380-checks` ⑨ を「1ファイル」から「STATES 行に届く全ファイル」へ広げた**（実測5本: `js/app-body.js`・`js/history.js`・`js/stats-compare.js`・`js/time-borders.js`・`js/time-countries.js`）。タプルをオブジェクトとして読む綴りを全部で禁じ、`{nameEn,nameJp}` を組むファイルには共有読み手を要求する／⚠ **検査は変異させて赤を実測**——`_histMini` を欠陥版へ戻すと `tests/r429-checks` ①②と `tests/r380-checks` ⑨が3本とも赤（「SUN lost its English name」「SUN still renders as 「—」 in en」「js/stats-compare.js reads a former state's name tuple as an object again」）
 - **#R427** — **都市名ラベルが年に従うようになった——608都市・685の歴史名・9言語**〈依頼＝「国名ラベルはChronosに対応しているが、都市名ラベルも同じ要領で。ヴォルゴグラードなど。地名の変わった経験のある都市にできる限り多く。江戸なんかも。数百以上に。」〉／⚠⚠⚠ **層を1本も足していない**——`ofm-city` の `text-field` を `match` で包み、**既定を従来の言語式そのもの**にした。曲がった選択肢（自前の点を上に描いて元を隠す）は**位置がタイルの選んだ位置から動き**、しかも**隠すにも名前照合が要る**＝難所を1つも回避しない。包む案は**タイル自身の位置・衝突処理・ズーム段をそのまま使い**、記録に無い地名は1バイトも変わらない（実測: 1942年で `text-field` は 103 B → 27,832 B・**420分岐**、記録外の地名は同一）／⚠⚠⚠ **綴りは1つの都市しか指してはならない**——書き換えはタイル自身の名前との一致で起きるので、同じ綴りを持つ別の都市も改名されてしまう。`scripts/build-hist-cities.mjs` が全キーを `data/gazetteer-world.json.gz` と照合し、**実測でこれが4行を落とした**（アルメニアのアルマヴィル＝クラスノダール地方の同名市199,548人／アゼルバイジャンのシルヴァン＝イラン北ホラーサーンの同名市82,790人／ジンバブエのカドマ＝大阪府門真市と同綴り131,727人／テリヨキ＝クラスノヤルスク地方ゼレノゴルスクと**両方の綴りが**同じ71,354人）。例外は `!` を付けて**理由を書いた6件だけ**（район／okres／distrito＝行政区画で `place` 層に無い、あるいは GeoNames の**旧称**の alt にしか無い）／⚠⚠⚠ **門は「2都市が同じ綴り」しか見ておらず、「1行の中で同じ綴りが2回」を素通りさせていた**——`['Jakarta','Jakarta']` が3行。MapLibre では**間違った答えではなく拒否される style**（«Branch labels must be unique»・addLayer が throw し**ラベル層が丸ごと消える**。#R211 の実測）。⚠ **見つけたのは、書いた検査の初回実行**——`@maplibre/maplibre-gl-style-spec` の `createExpression` に**実際の出力を通した** `tests/r427-checks ⑦`。ソースを読む検査は6本とも緑だった／⚠⚠ **判定はクロックであって国境層ではない**——`IntMapTimeBorders.active()` は CShapes が2019年で終わるため**2020年以降 false** で、2022年のヌルスルタン→アスタナが永久に出なくなる。検査⑧が2020年で `Nur-Sultan` を要求する／⚠⚠ **記録に無い言語は「英語へのフォールバック」ではなくラテン文字の名前で、それは現行の地図が既にやっていること**（`name:zh-Hant`→`name:zh`→`name:en`→`name:latin`）。9言語すべてを JSON に書き出し、実行時に fallback 規則を持たない（en/jp/ru は 685/685・zh/zh-hans/ko は 199・de 131・fr 101・es 64——**測って印字する**）／⚠ **本番形の検証はブラウザで実測**したが、**恒久 spec は足していない**——`scripts/test-budget.mjs` の天井は 75.6/75.6 で余白ゼロ。⚠ **preview ツールは他セッションが5枠を占めていて起動できなかった**ので Playwright（自分でサーバを立てて畳む）で測った
 
 - **#R421** — **日付はデータの中に最初からあった——捨てていたのは最後の1行だった**〈「歴史国境の更新ペースをさらに細かくして。理想は月日単位。特に20s前半が荒い。」CShapes の全レコードは `開始年月日 → 終了年月日` を持っているのに、`csFC(d,year)` は**暦年に1回**「7月1日に生きていたか」と訊いていた。実測: 710 レコードは **365 の異なる変化日**を持ち、暦年は 104。**変化の約72%を捨てていた**〉／⚠⚠⚠ **時計と地図が別の日を指していた**——`IntMapTime.setYear(y)` は**6月15日**を置き、`csFC` は**7月1日**を読む。1920 年で 6/15 は 166 主体・7/1 は 167 主体＝**年スライダーは、自分が名乗る瞬間より16日先の世界**を描いていた。片方に合わせるのではなく、**2つ目の慣習ごと消した**（時計の年月日をそのまま読む）／⚠⚠⚠ **報告された「20s前半」は file 中で最も密な年だった**——1920 だけで**変化日14・異なる世界5つ**、7月1日サンプルはそのうち**1つ**しか見せていなかった（Tartu 1/12・Sèvres 7/23・ベッサラビア 10/28 …）。到達できる世界は全体で **68 → 132**／⚠⚠ **「増やした」ではなく「捨てるのをやめた」ことの証明を検査にした**——新しい選択子は**134年すべての7月1日で旧選択子と完全一致**（#4）。一致しないなら粒度以外の何かが動いている／⚠⚠ **キャッシュの鍵は日付ではなくエポック**（`csEpoch`＝その日以前で最も新しい変化日）——鍵を日付にすると、静かな年代をスクラブするたびに FeatureCollection を作り直して短絡が死ぬ。1920-11-05 は 1920-10-28 のエポックを共有＝**再描画ゼロ**（実測）／⚠⚠ **変化日の一覧を UI に書き写さない**——多角形と同じレコードから導出し（`csBounds`：開始日と**終了日の翌日**の両端）、`IntMapTimeBorders` が公開、Chronos の**国境ステッパー**はそれだけを尋ねる。**176年を300pxに載せたスライダーでは 1920-10-28 に指で止められない**ので、これが唯一その日に届く操作／⚠⚠ **ステッパーはマスタークロックに書く**——国境レンダラを直接叩けば、ニュース・統計・気候区と国境がずれる／⚠⚠ **ローカルの getter であって `iso` ではない**（`iso` は `toISOString()`＝UTC。`#ntl-date` はローカル午前0時を書くので、UTC で読み直すと**東半球では利用者が選んだ日の前日**が出る）／⚠⚠⚠ **`whenStyleReady()` は4か所から呼ばれ、どこにも定義が無かった**——`js/data-layers.js` の**モジュール内部**にしか無く、#R163 がこのファイルを index.html のクロージャから出した時からスコープ外。実測 **起動毎に6件の uncaught rejection**。これは #R140 が「歴史的国境が表示されない・再読み込みで治る」を直すために入れた**再試行機構そのもの**で、**一度も動いていなかった**。⚠ **4か所のうち3か所が `try{}catch(_){}` の中**＝catch が ReferenceError を飲み、「再試行は要らなかった」ように見えていた。**最初の行で throw する機構は、弱い安全網ではなく安全網が無い**／⚠ Atlas は既に任意の日付を置けるので日単位を**自動的に継承**した——ただしカタログが「歴史は年で」と教えていたので、そこだけ実体に合わせた（#R115 の規則：カタログが書いていない能力は planner に存在しない）
@@ -357,6 +358,111 @@
 
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
+
+## R429 — **#R380 が直した欠陥は、3人目の読み手にだけ 49 ラウンド残っていた**
+
+報告は 1 行の指摘だった。「`js/stats-compare.js:221` に、#R380 が `js/history.js` で直したのと同じ欠陥が
+そのまま残っている。」
+
+```js
+function _histMini(cd){ const S=_histEntry(cd); return S?{code:cd,nameEn:S.name.en,nameJp:S.name.jp,flag:S.flag,_hist:true}:null; }
+```
+
+### 何が壊れていたか
+
+`S` は `IntMapHistStates.STATES` の生の行で、その `name` は `IntMapLang.pickArgs()`
+（`js/lang-registry.js`・`Array.prototype.slice.call(arguments)`）が返す**タプル＝配列**である。
+配列に `.en` も `.jp` も無いので、`nameEn` と `nameJp` は**両方 `undefined`** になる。
+その記録を `cName()`（`js/app-body.js`）に渡すと `return (s&&s.nameEn)||f||'—';` が最後まで落ちて、
+画面に出るのは文字どおりの **`—`** になる。実測: `STATES.every(x=>Array.isArray(x.name)) === true`、
+**19 行すべて**が該当した。
+
+この記録が使われるのは `_cs()` である。
+
+```js
+const _cs=(cd)=>countryStats[cd]||_histMini(cd)||{};
+```
+
+`countryStats` がその旧国家を持っている間は誰も `_histMini` を通らない。持っていない瞬間に、
+**必ず**通る。そしてその瞬間は例外的ではない——
+
+1. **現在へ戻った直後。** `js/time-countries.js` の `restore()` が `IntMapHistStates.clear()` を呼んで
+   `countryStats` から旧国家の項目を消す。一方 `js/stats-compare.js` の時計購読は同じ移動を受けて
+   **380 ms 後に開いているパネルを描き直す**。順序は毎回この向きになる。
+2. **その国家が存在しない年に立っているとき**（`histStates.apply` はその年に存在する行しか入れない）。
+3. **セッション復元**（`codes` は保存されているが `countryStats` はまだ現代の姿）。
+
+到達先は 5 か所——チップ列（`chipRow`）・棒グラフのラベル（`barsHtml`）・指標ごとの表の見出し（`blockHtml`）・
+年マトリクスの見出し・クロス表の凡例（`cLbl`）。**旗は正しかった**（`_histMini` は `flag` だけ写せていた）ので、
+画面には「旗はあるのに名前が `—` の行」が出る。
+
+### ブラウザで再現した
+
+ローカルビルド（`http://127.0.0.1:4429/`）で、実際の操作をそのまま踏んだ。
+Countries タブ → 年スライダーを **1960** → 一覧の **Soviet Union** と **United States** をクリックで選択 →
+`Show comparison` → 年スライダーを現在へ戻す。
+
+| 場所 | 1960 年（`countryStats` にある） | 現在へ戻したあと |
+|---|---|---|
+| チップ | `Soviet Union ×` | **`— ×`** |
+| 棒グラフ | `Soviet Union $1.34T (1960)` | **`— —`** |
+| 表の見出し | `Soviet Union` | **`—`** |
+
+`state().codes` は前後とも `["SUN","USA"]` のまま——**パネルは何を比べているか分かっていて、
+それを何と呼ぶかだけを失っていた。**
+
+### 直し
+
+#R380 が `js/history.js` に置いた**共有の読み手**をそのまま使う。
+
+```js
+function _histMini(cd){ const S=_histEntry(cd); if(!S) return null; const nm=S.name;
+  return {code:cd,nameEn:window.IntMapHistName(nm,0),nameJp:window.IntMapHistName(nm,1),name:nm,flag:S.flag,_hist:true}; }
+```
+
+⚠ **タプル自身は `name` に載せたまま運ぶ。** `histStates.agg` が配る記録（`js/history.js`）と同じ形になるので、
+言語別に解決する下流（`js/time-borders.js` の `_LTB.arr`）が英語の欄へ落ちない。
+`_histEntry` が非 null を返した時点で `js/history.js` は読み込まれている（同じファイルが両方を定義する）ため、
+`window.IntMapHistName` の存在確認は要らない——**確認を足すと、それは 2 本目の読み手を書く誘惑になる。**
+
+### なぜ 49 ラウンド見つからなかったか — 検査を広げた
+
+#R380 は同じ欠陥を見つけ、共有の読み手を作り、それを守る検査（`tests/r380-checks` ⑨）まで書いた。
+その検査はこう走査していた。
+
+```js
+const src = codeOnly(R('js/history.js'));
+assert.deepEqual(src.match(/\bname\.(?:en|jp)\b/g) || [], [], 'something reads a tuple as an object again');
+```
+
+**1 ファイルに向けた走査は、そのファイルだけを守る。** 同じ記録を組む 3 人目は最初から視野の外にいた。
+だから ⑨ を「STATES 行に届く**全ファイル**」へ広げた——対象はディスクを歩いて求める（一覧を書かない・#R399/#R415 と同じ規律）。
+実測 5 本: `js/app-body.js`・`js/history.js`・`js/stats-compare.js`・`js/time-borders.js`・`js/time-countries.js`。
+そのすべてでタプルをオブジェクトとして読む綴りを禁じ、`{nameEn,nameJp}` を**組む**ファイルには共有読み手を要求する。
+
+振る舞いのほうは `tests/r429-checks.test.mjs` が持つ。**出荷されたコードを走らせる**——
+`_histEntry` / `_histMini` / `_cs` を `js/stats-compare.js` から、`cName` を `js/app-body.js` から
+`codeOnly` 経由で切り出して評価するので、この記録ファイル自身の説明文（欠陥の綴りを必ず含む）を
+検査が拾うことはない（#R345）。
+
+- **①** 19 行すべてについて `_histMini` が `IntMapHistName` と同じ答えを返し、`name` にタプルを残し、旗を保つ。
+- **②** `countryStats` を**空**にした状態で `_cs()` → `cName()` を通し、en / jp / de の 3 言語で `—` にならないことを見る
+  （＝`restore()` が置いていく状態そのもの）。de が英語に落ちるのは現役の国と同じ規則なので、そこも明示的に主張する。
+
+変異させて赤を実測した。`_histMini` を欠陥版へ戻すと 3 本が同時に落ちる——
+`SUN lost its English name`（①）／`SUN still renders as 「—」 in en`（②）／
+`js/stats-compare.js reads a former state's name tuple as an object again`（`tests/r380-checks` ⑨）。
+
+### 触った範囲
+
+| ファイル | 何を |
+|---|---|
+| `js/stats-compare.js` | `_histMini` が共有読み手を通る（＋タプルを `name` に残す） |
+| `tests/r380-checks.test.mjs` | ⑨ の走査を 1 ファイルから「STATES 行に届く全ファイル」へ |
+| `tests/r429-checks.test.mjs` | 新規・出荷コードを走らせる振る舞いの検査 2 本 |
+| `Architecture.md` | 「旧国家の名前はタプル、読み手は 1 本」を現状仕様として明記 |
+| `package.json` / `docs/TESTING.md` | node 検査の一覧と本数（224 → 225） |
+| `index.html` | ビルド刻印 2 か所 |
 
 ## R427 — **都市名ラベルが年に従う——608都市・685の歴史名・9言語、層は1本も足さずに**
 
