@@ -62,7 +62,19 @@ test('R184 Cesium FS ①: every camera capability the simulator drives is implem
 
 /* ── ② A REAL FLIGHT MOVES THE REAL CAMERA ────────────────────────────────────────────────── */
 test('R184 Cesium FS ②: the aircraft flies and the camera is at the aircraft', async ({ page }) => {
-  test.setTimeout(180_000);
+  /* ⚠ (#R400) 180 s → 300 s, AND THE NUMBERS ARE HERE BECAUSE RAISING A TIMEOUT TO MAKE A TEST PASS
+     is the move this repository distrusts. Measured, not guessed. Locally the three tests in this
+     file cost 9 s / 87 s / 38 s = 134 s; tests/durations.json records 234 s for the same file in
+     CI, so a CI runner is ~1.75× slower than this machine and ② lands at roughly 152 s there. The
+     cap was 180 s — an 18 % margin on the heaviest Cesium test in the suite, which starts a
+     renderer with software WebGL and flies an aircraft for twenty simulated seconds. It held on
+     2026-08-19 and 2026-08-21 and went over on 2026-08-23; nothing else in that nightly's failure
+     was this test's doing.
+     ⚠ THIS IS A CLOCK, NOT AN ASSERTION. Every expectation below is unchanged: what the test proves
+     about the camera is exactly what it proved before. What changed is that a slow runner no longer
+     turns a green fact into a red night — which matters because an alarm that cries wolf is an alarm
+     that gets ignored, and #R304 measured what that costs (fourteen unread red nights). */
+  test.setTimeout(300_000);
   await asCesium(page);
   await loadLazyModules(page);   // (#R209) ask for the on-demand modules the way the app asks
   const r = await page.evaluate(async () => {
