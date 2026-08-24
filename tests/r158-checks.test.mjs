@@ -112,8 +112,18 @@ test('R158 #1 → R159 Atlas typography — no bold, no ## divider; body 14px + 
 
 test('R158 #2 Atlas sources — informational answers gather sources (use:[web] forces the search)', () => {
   ok("const analysisWebMode=(freshness.critical||(use&&use.indexOf('web')>=0))?'required':'auto';", 'an explicit use:[web] forces a live search → citations');
-  ok('const informational=q.length>=8 && !SOCIAL.test(q) && (TIMEVAR.test(q)||INFO.test(q));', 'informational answers route to analyze for sources');
-  ok('(routed to live analysis for sources)', 'the re-route is recorded honestly');
+  /* ⚠ (#R406) THE PROPERTY IS THE SAME AND THE THING THAT DECIDES IT IS NOT A REGEX ANY MORE.
+     #R158's mechanism was `const informational=q.length>=8 && !SOCIAL.test(q) && (TIMEVAR.test(q)||
+     INFO.test(q));` — an answer-only plan on a sentence matching those patterns was re-run as
+     analyze, and «(routed to live analysis for sources)» recorded the substitution. #R406 deleted
+     the override and the regexes with it (they were the same `[?？]` character class that decided
+     「セーヌ川の長さは・」 was not a question). What gathers the sources now is Atlas choosing the
+     research tool, which is offered on EVERY turn with the description that says when to reach for
+     it — so the question 'can an informational answer get sources' is answered by that tool being
+     present, not by a pattern having matched. The «recorded honestly» assertion is deleted with the
+     re-route it described: there is no substitution left to record. */
+  ok("{ name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations.",
+    'the sourced-analysis tool is offered every turn (js/atlas-toolsurface.js CORE), so Atlas can reach for it');
 });
 
 test('R158 #5 Terra is the decision-maker, IntMap the faithful executor', () => {
@@ -125,9 +135,16 @@ test('R158 #5 Terra is the decision-maker, IntMap the faithful executor', () => 
   ok("status:(gUnresolved.length?'partial_or_failed':'ok')", 'structured status');
   ok('renderState:{painted:!!painted, features:(features!=null?features:0), verified:!!verified}', 'observed render state');
   ok("capabilities:{ identifierScheme:'ISO 3166-1 alpha-3', validIdentifierCount:_hlValidCodeSet().size }", 'observed capabilities');
-  // fed back to Terra via the repair loop; Terra decides
+  // fed back to Terra; Terra decides
   ok('if(r&&r.exec) a.__exec=r.exec;', 'runActions captures the execution result');
-  ok("a.__exec.status==='partial_or_failed'&&pending.indexOf(a)<0) pending.push(a)", 'a partial execution seeds the repair loop');
-  ok('EXECUTION RESULT — IntMap executed your action and OBSERVED', 'the structured result is fed back to the model');
-  ok('re-issue the SAME action type with the corrected identifier(s)', 'the model is told it may correct identifiers itself');
+  /* ⚠ (#R406) THE PROPERTY THIS TEST NAMES IS STRONGER NOW, SO THE THREE LINES BELOW MOVED RATHER
+     THAN LEFT. #R158 fed the structured result back by appending a prose block («EXECUTION RESULT —
+     IntMap executed your action and OBSERVED …», «re-issue the SAME action type with the corrected
+     identifier(s)») to a SECOND planner call, and only when a partial failure had seeded a repair
+     list. In #R406 every tool result goes back to Atlas as the tool's own mechanical record, on
+     every step, whether it succeeded or not — and the candidates IntMap merely OBSERVED travel with
+     it untouched. IntMap still corrects nothing: the correction is a call Atlas re-issues. */
+  ok('exec:(rec.act&&rec.act.__exec)||null', 'the turn hands the dispatch’s structured execution result back (js/atlas-console.js _runOne)');
+  ok('out.observed = JSON.parse(JSON.stringify(res.exec));', 'and what IntMap observed reaches Atlas verbatim, not summarised (js/atlas-toolsurface.js mechanical)');
+  ok('Re-issue the SAME call with the arguments corrected.', 'a rejected call is handed to the model to correct — IntMap never substitutes for it');
 });

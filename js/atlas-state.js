@@ -614,7 +614,7 @@ export function makeAtlasState(HOST) {
     API.beginTurn = function (turnId, question) {
       var rec = {
         turnId: turnId, question: String(question || ''), at: (function () { try { return Date.now(); } catch (_) { return 0; } })(),
-        goalSpec: null, plan: null, operations: [], objectIds: [], unresolved: [],
+        plan: null, operations: [], objectIds: [], unresolved: [],   /* (#R406) `goalSpec` left with the planner */
         resumeToken: null, reply: '', status: 'running', repairs: 0, aiCalls: 0
       };
       turns.push(rec);

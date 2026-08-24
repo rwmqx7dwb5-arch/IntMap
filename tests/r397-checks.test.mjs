@@ -23,6 +23,11 @@
  *  赤を見るまで書けていない」 — cost that round two green tests that proved nothing. The mutation for
  *  each block is named in its comment, and §7 re-runs three of the pure predicates against
  *  deliberately wrong inputs so the file demonstrates its own sensitivity rather than asserting it.
+ *
+ *  ⚠ §5 (the intent gates) and §6 (the goal gate) are gone: #R406 deleted js/atlas-planner.js, so
+ *  no regular expression reads the request and there is no plan for a gate to sit in front of. §7's
+ *  two surviving claims — IntMap's data is not a ceiling, and a centroid is not a place — are
+ *  asserted against the rewritten core paragraph in js/atlas-policy.js.
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -32,7 +37,6 @@ import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { makeAtlasGeoObject } from '../js/atlas-geo-object.js';
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
-import { makeAtlasPlanner } from '../js/atlas-planner.js';
 import { makeAtlasAnswerAudit } from '../js/atlas-answer-audit.js';
 import { makeAtlasAnomalyScore } from '../js/atlas-anomaly-score.js';
 
@@ -194,100 +198,24 @@ test('R397 ④b: the answer schema can carry a reference to a resolved place, an
     'normalizeAnswer does not call mergeKnown — knownPlaces is accepted and ignored');
 });
 
-/* ══ §5 INTENT OUTRANKS THE CATALOGUE ══════════════════════════════════════════════════════════
-   Run the SHIPPED validator. MUTATION THAT MUST GO RED: delete either gate from _applyIntentGates. */
-
-const PLAN = makeAtlasPlanner({}, {
-  WORLD_RE: /world|globe/i, capabilities: null, results: null, executor: null, state: null,
-  personaPrompt: () => '', wctx: {},
-});
-const validate = (q, acts) => {
-  const r = PLAN._validatePlan(JSON.parse(JSON.stringify(acts)), PLAN._requestProfile(q), q);
-  return { types: (r.plan || []).map((a) => a && a.type), rejected: r.rejected || [] };
-};
-
-test('R397 ⑤a: research.brief runs only when a report was actually asked for', () => {
-  assert.deepEqual(validate('南シナ海についてブリーフして', [{ type: 'brief' }]).types, ['brief'],
-    'an explicitly requested briefing was refused');
-  const auto = validate('日本の人口を教えて', [{ type: 'brief', place: 'Japan' }]);
-  assert.deepEqual(auto.types, ['analyze'], 'a brief the planner chose for a plain question was allowed to run');
-  assert.ok(auto.rejected.some((r) => r.reason === 'brief_not_explicitly_requested'),
-    'the downgrade happened without being recorded — a silent rewrite is not a decision');
-  /* Every one of the nine languages must be able to ask for one. */
-  for (const q of ['give me a brief on Taiwan', 'Bericht über Taiwan', 'сводка по Тайваню',
-    'informe sobre Taiwán', '台灣的簡報', '台湾的报告', 'rapport sur Taïwan', '대만 보고서', '台湾のレポート']) {
-    assert.deepEqual(validate(q, [{ type: 'brief' }]).types, ['brief'], `an explicit request in "${q}" was not recognised`);
-  }
-});
-
-test('R397 ⑤b: a plain knowledge question gets no unrequested screen movement', () => {
-  const r = validate('フランス革命はなぜ起きたのか', [{ type: 'answer', text: '…' }, { type: 'flyTo', place: 'France' }]);
-  assert.deepEqual(r.types, ['answer'], 'a camera move was added to a question whose answer is prose');
-  assert.ok(r.rejected.some((x) => x.reason === 'no_map_intent_in_request'), 'the drop was not recorded');
-  assert.deepEqual(validate('Explain how RSA encryption works', [{ type: 'answer' }, { type: 'flyTo', place: 'world' }]).types,
-    ['answer'], 'a non-geographic question still moved the map');
-  /* ⚠ AND IT NEVER ANSWERS NOTHING. Stripping every action would be a worse failure. */
-  const bare = validate('Explain how RSA encryption works', [{ type: 'flyTo', place: 'world' }]);
-  assert.ok(bare.types.length >= 1, 'the gate emptied the plan — a question became silence');
-});
-
-test('R397 ⑤c: the requests that DO want the map still get it', () => {
-  /* These are this round's stated regression cases; a gate that breaks one of them is worse than no gate. */
-  assert.deepEqual(validate('ケニアに飛んで', [{ type: 'flyTo', place: 'Kenya' }]).types, ['flyTo']);
-  assert.deepEqual(validate('人口レイヤーを表示', [{ type: 'layer', name: 'Population' }]).types, ['layer']);
-  assert.deepEqual(validate('日本とドイツを比較', [{ type: 'compareStats' }]).types, ['compareStats']);
-  assert.deepEqual(validate('GDP per capita上位10カ国をハイライト', [{ type: 'rank' }, { type: 'highlight' }]).types, ['rank', 'highlight']);
-  assert.deepEqual(validate('東京から大阪まで電車で経路', [{ type: 'directions' }]).types, ['directions']);
-  /* 「台湾へ旅行したい」 carries no map VERB, and the move must survive anyway. */
-  assert.deepEqual(validate('台湾へ旅行したい', [{ type: 'flyTo', place: 'Taiwan' }]).types, ['flyTo'],
-    'a travel request lost its move — 「台湾へ旅行したい」で台湾への移動が失敗しない is a stated requirement');
-  assert.ok(validate('台湾一週間の旅程', [{ type: 'answer' }, { type: 'flyTo', place: 'Taiwan' }]).types.indexOf('flyTo') >= 0,
-    'an itinerary request lost its map connection');
-  for (const q of ['I want to travel to Taiwan', 'Reise nach Taiwan', 'поездка на Тайвань', 'viaje a Taiwán',
-    '台灣旅遊', '台湾旅游', 'voyage à Taïwan', '대만 여행']) {
-    assert.deepEqual(validate(q, [{ type: 'flyTo', place: 'Taiwan' }]).types, ['flyTo'], `travel intent missed in "${q}"`);
-  }
-});
-
-/* ══ §6 THE GOAL IS A GATE ══════════════════════════════════════════════════════════════════════ */
-
-const POL = makeAtlasPolicy();
-
-test('R397 ⑥a: an unmet goal is reported, and a met one is silent', () => {
-  const gv = PLAN._goalValidation;
-  const wantExpl = { temporalMode: 'current', outputs: { explanation: true } };
-  /* Nothing ran → not this function's business (the caller handles a turn with no actions). */
-  assert.equal(POL.unmetGoalText(gv, wantExpl, []), '');
-  /* Calls returned, explanation wanted, none produced → the turn may NOT end. */
-  const unmet = POL.unmetGoalText(gv, wantExpl, [{ type: 'flyTo', ok: true, produced: ['map'] }]);
-  assert.ok(unmet.length > 0, 'a turn that moved the map but never answered the question was allowed to end');
-  assert.match(unmet, /explanation/);
-  /* An explanation WAS produced → silent. */
-  assert.equal(POL.unmetGoalText(gv, wantExpl, [{ type: 'analyze', ok: true, produced: ['explanation'] }]), '',
-    'a satisfied goal still triggered a repair — this would fire on ordinary turns');
-});
-
-test('R397 ⑥b: the run loop actually consumes the goal verdict', () => {
-  /* #R135 computed it and filed it; #R318 filed it again. The point of this check is that something
-     READS it. MUTATION THAT MUST GO RED: drop `||_goalUnmet` from the repair-loop condition. */
-  const c = codeOnly(read('js/atlas-console.js'));
-  assert.ok(/unmetGoalText\(/.test(c), 'js/atlas-console.js never asks whether the goal was met');
-  const loop = c.slice(c.indexOf('for(let _rp=0;'), c.indexOf('for(let _rp=0;') + 200);
-  assert.ok(loop.length > 20, 'the bounded repair loop is gone');
-  assert.ok(/_goalUnmet/.test(loop),
-    'the repair loop enters only on a FAILED CALL — an unmet goal with no failed call still ends the turn silently');
-});
+/* R397 ⑤a-⑤c (the intent gates) and ⑥a-⑥b (the goal gate) removed in #R406: _validatePlan, _requestProfile, _applyIntentGates and POLICY.unmetGoalText are deleted with js/atlas-planner.js — a regular expression no longer decides what the sentence meant, and there is no plan to gate. What the turn does is decided by the model choosing tools (tests/r406-agent.test.mjs). */
 
 /* ══ §7 THE PROMPT NO LONGER MAKES INTMAP'S OWN DATA A CEILING ══════════════════════════════════ */
+
+const POL = makeAtlasPolicy();
 
 test('R397 ⑦a: the policy clauses exist, are reachable, and say what they must', () => {
   const all = POL.all();
   assert.ok(all.length > 800, 'the policy clauses collapsed to almost nothing');
-  /* Precedence: IntMap's own data is explicitly LAST. */
-  assert.ok(/user's purpose/.test(all) && /NOT an\s+obligation and NOT a ceiling|NOT a ceiling/.test(all),
-    'the source-precedence clause no longer says IntMap\'s data is not a ceiling');
-  assert.ok(/GENERAL ASSISTANT/.test(all),
-    'nothing tells Atlas it may answer an ordinary question as a general assistant');
+  /* ⚠ (#R406) THE CLAUSE WAS REWRITTEN, NOT WITHDRAWN. POLICY.sourcePrecedence and its «NOT an
+     obligation and NOT a ceiling» / «GENERAL ASSISTANT» headings are gone; both sentences are now
+     inside the single core paragraph, which is what these two read. What #R397 established — that
+     IntMap's own data is not a ceiling, and that an ordinary question may simply be answered — is
+     asserted against the shipped wording, so a round that drops the meaning still goes red. */
+  assert.ok(/not your knowledge ceiling/.test(all),
+    'the core instruction no longer says IntMap\'s data is not a ceiling');
+  assert.ok(/Answer directly when tools are unnecessary/.test(all),
+    'nothing tells Atlas it may answer an ordinary question without reaching for a tool');
   assert.ok(/resolved_place_centroid/.test(all),
     'the model is never told what a representative centroid means, so it can read one as an exact spot');
   /* And SYS() must actually include them. */

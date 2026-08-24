@@ -112,7 +112,7 @@ test('R156 #7 ai-proxy: vision_read task + input_image detail:high', () => {
   assert.match(aiproxy, /vision_read: 3000,/, 'vision_read output budget');
   assert.match(aiproxy, /vision_read: "medium",/, 'vision_read reasoning (effortHint:"high" bumps it)');
   /* (#R350) analysis_structured joined the set — the AnswerEnvelope is a strict JSON task too. */
-  assert.match(aiproxy, /new Set\(\["map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"\]\)/, 'vision_read returns strict JSON');
+  assert.match(aiproxy, /new Set\(\["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"\]\)/, 'vision_read returns strict JSON (#R406 put atlas_turn at the head of the same set)');
   assert.match(aiproxy, /imageDetail = "auto", _isFallback = false/, 'callOpenAI takes an imageDetail param');
   assert.match(aiproxy, /content\.push\(\{ type: "input_image", image_url: `data:\$\{ip\.mime\};base64,\$\{ip\.b64\}`, detail: _detail \}\);/, 'input_image carries the detail flag');
   assert.match(aiproxy, /const imageDetail = \(payload\.imageDetail === "high" \|\| payload\.imageDetail === "low"\) \? payload\.imageDetail : "auto";/, 'server clamps imageDetail to a safe set');

@@ -48,6 +48,13 @@ async function loadRegistry() {
   return { caps, docs, results };
 }
 
+/* (#R406) The argument schemas, loaded the same way — checks ㉑ and ㉒ read the real table rather
+   than a list written down twice. */
+async function loadSchemas() {
+  if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+  try { return (await import('../js/atlas-schemas.js')).makeAtlasSchemas(); } catch { return null; }
+}
+
 /* Every `case 'x': case 'y':` inside the dispatch switch — one group is one capability, whatever
    number of spellings it answers to. Shared with scripts/atlas-catalog.mjs, which reads it here. */
 export function dispatchGroups(src) {
@@ -61,7 +68,7 @@ export function dispatchGroups(src) {
 }
 
 /* ── the twenty checks. Each takes DATA and returns {id, title, failures[], note} ───────────── */
-export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateSrc, plannerSrc, resultsSrc }) {
+export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateSrc, resultsSrc, toolsSrc, schemas }) {
   const J = caps.toJSON();
   const byId = Object.create(null);
   J.capabilities.forEach((c) => { byId[c.id] = c; });
@@ -107,14 +114,21 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
     add('target-policy', 'the target policy is answerable, and never the map centre', bad);
   }
 
-  /* ⑤ every capability is discoverable by the planner: a catalogue block, the always-sent rules, or
-        an explicit withdrawal */
+  /* ⑤ every capability is REACHABLE BY ATLAS: a catalogue block that find_capability can return, a
+        seat in the core tool surface, the always-sent rules, or an explicit withdrawal.
+        ⚠ (#R406) THE CORE SURFACE IS A THIRD SOURCE, AND IT HAD TO BECOME ONE. `dialog.ask` has no
+        catalogue block; it was "documented" by the literal '{"type":"ask"' appearing in SYS()'s
+        prose, and when that prose went, a capability that is now a FIRST-CLASS TOOL read as
+        undiscoverable. The list is parsed out of js/atlas-toolsurface.js rather than copied here —
+        a second copy of a list is how the three disagreeing capability tables of #R323 started. */
   {
     const covered = new Set(docs.idsCovered());
     const ruleDoc = caps.ruleDocumented();
+    const coreTools = new Set([...String(toolsSrc || '').matchAll(/cap:\s*'([a-zA-Z.]+)'/g)].map((m) => m[1]));
     const bad = [];
     J.capabilities.forEach((c) => {
       if (covered.has(c.id)) return;
+      if (coreTools.has(c.id)) return;
       if (c.withdrawn) return;
       const lit = ruleDoc[c.id];
       if (lit) {
@@ -124,8 +138,8 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
       }
       bad.push(`${c.id}: no catalogue block documents it`);
     });
-    add('planner-discoverable', 'the planner is told about every capability', bad,
-      `${covered.size} of ${J.count} in ${docs.count()} blocks`);
+    add('atlas-discoverable', 'Atlas can reach every capability', bad,
+      `${covered.size} of ${J.count} in ${docs.count()} blocks, ${coreTools.size} as core tools`);
   }
 
   /* ⑥ a lazy capability is in the catalogue BEFORE its module loads */
@@ -374,6 +388,52 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
       `${declared.size + consoleDeclared.size} sections have an owner`);
   }
 
+  /* ㉑ (#R406) EVERY CAPABILITY DECLARES ITS ARGUMENTS. All 126 shared one literal — the
+        `inputSchema: {type:'object'}` hard-coded in build() — which validates any object at all, so
+        an `analyze` with no question and a `highlight` with no target both passed validation and
+        failed only after execution («何を分析しますか？»). A schema with no `properties` is the
+        shape that let that through, and it is what this check refuses. */
+  {
+    const bad = [];
+    const S = (schemas && schemas.ALL) || null;
+    if (!S) {
+      bad.push('js/atlas-schemas.js supplied no table');
+    } else {
+      const known = new Set(J.capabilities.map((c) => c.id));
+      Object.keys(S).forEach((id) => { if (!known.has(id)) bad.push(`${id}: a schema for a capability that does not exist`); });
+      J.capabilities.forEach((c) => {
+        const sc = S[c.id];
+        if (!sc) { bad.push(`${c.id}: no argument schema`); return; }
+        if (sc.type !== 'object') { bad.push(`${c.id}: schema is not an object schema`); return; }
+        const props = sc.properties && typeof sc.properties === 'object' ? Object.keys(sc.properties) : [];
+        if (!props.length) bad.push(`${c.id}: an empty object schema accepts anything`);
+      });
+    }
+    add('argument-schemas', 'every capability declares the arguments it takes',
+      bad, S ? `${Object.keys(S).length} schemas` : 'none');
+  }
+
+  /* ㉒ (#R406) …AND A CAPABILITY THAT CANNOT ACT WITHOUT A TARGET SAYS SO MECHANICALLY.
+        targetPolicy.required has meant «resolveInputs will ask for it» since #R318; it never meant
+        «the model must supply it», which is why an argument-less call reached execution. A schema
+        that names the requirement is what makes it checkable BEFORE anything runs. */
+  {
+    const bad = [];
+    const S = (schemas && schemas.ALL) || {};
+    let n = 0;
+    J.capabilities.forEach((c) => {
+      if (!c.targetPolicy || !c.targetPolicy.required) return;
+      n++;
+      const sc = S[c.id];
+      if (!sc) return;   /* ㉑ already said so */
+      const hasReq = Array.isArray(sc.required) && sc.required.length;
+      const hasAny = Array.isArray(sc.anyOf) && sc.anyOf.length;
+      if (!hasReq && !hasAny) bad.push(`${c.id}: needs a ${c.targetPolicy.kind} and its schema demands nothing`);
+    });
+    add('required-arguments', 'a capability that needs a target demands it in its schema', bad,
+      `${n} capabilities require a target`);
+  }
+
   return checks;
 }
 
@@ -390,8 +450,9 @@ export async function audit() {
       capSrc: read('js/atlas-capabilities.js'),
       execSrc: read('js/atlas-executor.js'),
       stateSrc: read('js/atlas-state.js'),
-      plannerSrc: read('js/atlas-planner.js'),
       resultsSrc: read('js/atlas-results.js'),
+      toolsSrc: read('js/atlas-toolsurface.js'),
+      schemas: await loadSchemas(),
     }),
   };
 }
