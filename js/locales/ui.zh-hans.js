@@ -45,7 +45,6 @@ window.IntMapLang.define('zh-hans', {
       "ttlGridLabels":"格线与标注",
       "ttlMapLayers":"地图与图层",
       "ttlMapOptions":"地图选项",
-      "ttlPinPos":"地图图钉位置",
       "ttlMapTools":"地图工具",
       "ttlMeasureDA":"测量距离／面积",
       "ttlMeasureTools":"测量工具",
@@ -258,7 +257,6 @@ window.IntMapLang.define('zh-hans', {
       spRunway:"跑道", spGarrison:"驻军", spOperator:"营运者", spEstd:"设立", spAircraft:"机种", spType:"类型", spCapacity:"容量", spDepth:"深度", spOutput:"产量", spReserves:"蕴藏量",
       flat:"平面", globe:"地球仪", threeD:"⛰️ 3D", gridBtn:"🌐 经纬格线", gridLayer:"🌐 格线与标注", widgetsBtn:"小工具", lblTempUnit:"温度", tempBoth:"°C＋°F", tempC:"仅 °C", tempF:"仅 °F", measureBtn:"📏 测量", measureMenuBtn:"测量", measureDistBtn:"📏 距离／面积", areaBtn:"📐 面积", drawBtn:"✏️ 绘制", vol3dBtn:"🧊 立体体积", droneBtn:"🛸 无人机", radiusBtn:"⭕ 半径", objectsBtn:"🗂 对象", mScreenshot:"地图屏幕撷取", shareMenuBtn:"分享", shareLinkBtn:"分享／复制链接", layersBtn:"图层 ▾",
       ctxDropPin:"放置图钉", ctxMeasureFrom:"从此开始测量", ctxPostHere:"发布到社区", ctxDistFrom:"与前一个图钉的距离", ctxCopy:"复制坐标", ctxClearPins:"移除所有图钉", ctxThisPoint:"此地点", coords:"坐标", depth:"深度", climate:"气候", tlToday:"今天", tlTitle:"Chronos", tlMachine:"Chronos", tl10y:"−10年", tl5y:"−5年", tlNow:"现在",
-      lblPinMode:"新闻图钉位置", pinModeLoc:"事件发生地", pinModePub:"媒体所在地",
       lyrEEZ:"专属经济海域／12海里", lyrShips:"实时船舶动态", lyrPlanes:"实时航班动态", lyrSats:"实时卫星", lyrThermal:"热异常（火点）", planesZoomHint:"放大以加载实时航班", planesAreaHint:"请放大 — 实时航班只涵盖画面中央区域", poiLabels:"地点、商家与设施", shipsZoomHint:"放大以加载实时船舶", aisNoKey:"实时船舶需要免费的 AISstream.io API 密钥 — 请在设置中新增。", aisKeyLabel:"实时船舶动态（AISstream 密钥）", aisKeyHint:"在 aisstream.io 申请免费密钥并贴在此处即可看到实时船舶。密钥仅保存在这个浏览器中。",
       filtCiv:"民用", filtMil:"军用", filtAll:"全部", trafficFilter:"筛选", lyrTime:"图层日期", thermWin24:"过去 24 小时", thermWin48:"过去 48 小时", thermWin72:"过去 72 小时",
       tabCommunity:"社区", commAdd:"＋ 新贴文", commAddArmed:"点击地图放置图钉", commTitle:"标题", commBody:"分享你的观察、问题或推论…", commPost:"发布", commCancel:"取消", commEmpty:"目前还没有贴文。点「＋ 新贴文」开始讨论。", commComment:"留言", commLocate:"在地图上显示", commDelete:"删除", commReply:"回复", commWrite:"写下留言…", commPostNew:"新贴文", commPlacedAt:"放置于", commSortHot:"热门", commSortNew:"最新", commSortTop:"最高分", commSearchPh:"搜索贴文…", commInView:"画面范围内", commCat:"分类", commCatAll:"全部", commEdit:"编辑", commEdited:"已编辑", commEditPost:"编辑贴文", commSaveEdit:"保存变更", commNoMatch:"没有符合筛选条件的贴文。", borders:"国界", coastline:"海岸线与湖岸线", compare:"比较", compareEmpty:"点击国家列以选取并比较。", coCompareEmpty:"点击企业列以选取并比较。", compareView:"显示比较", compareClear:"清除", back:"返回", deletePin:"删除",
@@ -269,7 +267,7 @@ window.IntMapLang.define('zh-hans', {
       aiNoKey:"请先在「设置 → AI 功能」中新增 AI API 密钥。", aiNoVision:"这个模型无法读取影像。请改用 GPT-4o、Claude 3.5 Sonnet 或 Gemini 1.5 Pro。",
       aiChromeUnavail:"此处无法使用 Chrome 内置 AI。请使用 Chrome 127 以上并启用本机 AI，或改选其他提供者。",
       aiThinking:"AI 分析中…", aiError:"AI 请求失败", aiCopy:"复制", aiCopied:"已复制 ✓", aiClose:"关闭", aiRetry:"重试",
-      aiGeoBtn:"✨ 以 AI 定位所有新闻", aiGeoBtnSub:"✨ 以 AI 定位事件地", aiGeoBtnPub:"✨ 以 AI 定位媒体", aiTranslateTitles:"翻译标题", aiGeoBusy:"定位中…", aiGeoNone:"没有可定位的项目。", aiGeoDone:"已定位 {n} 则报道", aiGeoErr:"地理编码失败", aiTransBusy:"翻译中…", aiTransDone:"已翻译 {n} 则标题", aiTransNone:"标题已是你的语言。",
+      aiGeoBtn:"✨ 以 AI 定位所有新闻", aiGeoBtnSub:"✨ 以 AI 定位事件地", aiTranslateTitles:"翻译标题", aiGeoBusy:"定位中…", aiGeoNone:"没有可定位的项目。", aiGeoDone:"已定位 {n} 则报道", aiGeoErr:"地理编码失败", aiTransBusy:"翻译中…", aiTransDone:"已翻译 {n} 则标题", aiTransNone:"标题已是你的语言。",
       lblNewsLang:"新闻语言", newsLangUi:"仅目前语言", newsLangMulti:"所有语言（自动翻译标题）", lblAiLocate:"AI 位置分析", aiLocManual:"手动（按钮）", aiLocAuto:"所有新闻自动执行",
       aiTranslate:"翻译", aiShowOriginal:"原文", aiTransNoText:"没有可翻译的内文 — 请改用网页检视。",
       aiSumBtn:"以 AI 摘要这个区域", popInArea:"此区域人口", popCalcing:"正在计算人口…", popFail:"人口查询失败 — 请再试一次。", newsInArea:"此区域的新闻", elevProfile:"高程剖面", finalizeMeas:"保留在地图上", aiSumTitle:"区域简报", aiSumSub:"所选区域内有 {n} 个新闻图钉", aiSumNoArea:"请先画出范围或放置圆形。", aiSumNoNews:"此区域内没有新闻图钉。",
@@ -6180,5 +6178,11 @@ window.IntMapLang.define('zh-hans', {
   "This is a published statement, not silence: USGS monitors this volcano and its current level is the one above. The date is when that level was last issued — it stands until USGS changes it.": "这是已公布的声明，而不是沉默：USGS 监测此火山，其现行等级即为上方所示。日期是该等级最后一次发布的时间 —— 在 USGS 变更之前一直有效。",
   "map year": "地图年份",
   "{n} volcanoes shown": "显示 {n} 座",
+  /* (#R416) News UI — js/news-ui.js (the mobile pin sheet) and js/news-events.js
+     (the category chips). ⚠ "All topics" is the CATEGORY axis: the scope chip sitting
+     beside it on the same row is "All" = 「全部」, so this one must NOT be that word.
+     One row, two controls, one word would read as one control. */
+  "All topics": "所有分类",
+  "Open event": "开启事件",
   }
 });

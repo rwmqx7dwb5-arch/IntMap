@@ -2647,9 +2647,9 @@ window.IntMapModules.atlasConsole=function(HOST){
             else { await window.IntMapLazy.need('playground'); if(window._openPlayground){ window._openPlayground(); ok=true; } } }catch(_){}
           return R(ok, ok?note('🎮 '+esc(lbl)):warn('⚠ '+L('Playground unavailable','プレイグラウンドを開けません','Playground nicht verfügbar','Playground недоступен','Playground no disponible'))); }
         case 'news': { const m=String(a.mode||a.name||'').toLowerCase(); let id=null,lbl='';
-          if(/pub|source|outlet|媒体|発信|発信元|издат|fuente/.test(m)){ id='pinmode-pub'; lbl=L('Publisher pins','発信元ピン','Quelle','Издатель','Editor'); }
-          else if(/subj|event|loc|主題|出来事|событ|suceso/.test(m)){ id='pinmode-loc'; lbl=L('Subject pins','主題ピン','Ereignisort','Событие','Suceso'); }
-          else if(/saved|favorit|bookmark|保存|ブックマーク|сохран|guardad/.test(m)){ id='newsfilter-saved'; lbl=L('Saved','保存','Gespeichert','Сохранённые','Guardados'); }
+          /* (#R416) `pinmode-pub` / `pinmode-loc` are gone — the pin is where the story happened. */
+          if(/saved|favorit|bookmark|保存|ブックマーク|сохран|guardad/.test(m)){ id='newsfilter-saved'; lbl=L('Saved','保存','Gespeichert','Сохранённые','Guardados'); }
+          else if(/all|unsaved|すべて|全部|все|todo/.test(m)){ id='newsfilter-all'; lbl=L('All','すべて','Alle','Все','Todo'); }
           else if(/translat|翻訳|перевод|traduc/.test(m)){ id='ai-translate-btn'; lbl=L('Translate','翻訳','Übersetzen','Перевод','Traducir'); }
           if(id){ const ok=clickId(id); return R(ok, ok?note('📰 '+esc(lbl)):warn('⚠')); }
           const ok=clickId('btn-news'); return R(ok, ok?note('📰 '+L('News','ニュース','Nachrichten','Новости','Noticias')):warn('⚠')); }

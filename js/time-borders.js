@@ -65,6 +65,9 @@ window.IntMapModules.timeBorders=function(HOST){
     const YEARS=[1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the Tibet display-year merge state (see _eraCorrect) */
+    /* (#R410) the YEAR the reader is on (shownY is the SNAPSHOT key, and one aourednik snapshot answers many
+       years), and the collection currently on the source — the two things a re-tag of the labels needs. */
+    let shownYear=null, shownFC=null;
     /* (#R94o) CLOSEST snapshot, not just the closest ≤ year — so a mid-gap year like 1910 shows the 1914 borders
        (Japan's southern Sakhalin/Karafuto, held since 1905) instead of the staler 1900, i.e. borders change at the
        gap midpoint, roughly halving how long a year is shown with the "wrong" borders. A FORWARD jump is only
@@ -735,33 +738,88 @@ window.IntMapModules.timeBorders=function(HOST){
       const m=/^(.+?)\s*\(([^)]+)\)\s*$/.exec(low0);
       if(m){ const col=_COLONIZER[_normNm(m[2])]; if(col){ const lb=_loc1(m[1].trim())||m[1].trim(); const lc=_LTB.arr(col)||m[2]; return lb+(lg==='jp'?'（'+lc+'）':' ('+lc+')'); } }
       return null; }catch(_){ return null; } }
-    function tagSame(fc){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
+    /* ══ (#R410) THE ERA NAME IS A PROPERTY OF THE YEAR, NOT OF WHATEVER `countryStats` HAPPENS TO HOLD ══
+       「地図の国名ラベルが、同じ画面の Countries 一覧と食い違う。」 TWO listeners answer the same clock and they
+       do not run in step. This file draws the borders 45 ms after the event; js/time-countries.js waits
+       340 ms and then AWAITS the country table, Maddison and the HDI series before it renames `countryStats`
+       to the year's identities. `tagSame` read that rename (`s._histId`) — so the labels were always one
+       travel behind, and NOTHING ever re-tagged them.
+       MEASURED on the built site (tests/r410.spec.js), Europe at z4, English:
+         · fresh page → 1916 with the Natural Earth attributes 8 s late — map «Germany / France / Italy /
+           Spain / United Kingdom» beside a list saying «German Empire / French Third Republic / Kingdom of
+           Italy / Spain / United Kingdom of Great Britain and Ireland». Still wrong 16 s later: the tag is
+           written once, and the year never asks again.
+         · 1939 → 1916 — «Nazi Germany» at 1916 (the year before's name), «Spanish Republic» (a state that
+           began in 1931), «United Kingdom» (in 1916 it was the UK of Great Britain and Ireland).
+       So the year is asked of the TABLES, which are pure functions of it — `IntMapHistId.at(code, year)` and
+       `IntMapHistStates.activeAt(year)` — and `countryStats` supplies only the present-day names, read
+       through `IntMapHistId._applied()` when an era rename is standing over them. The one thing that stays
+       ordering-dependent (the table has not arrived AT ALL yet) is repaired by the `intmap-hist-identity`
+       listener below rather than left on the screen.
+       ⚠ THE FLOOR IS THE LIST'S FLOOR. js/time-countries.js overlays a year only from the Maddison floor
+       upward and RESTORES the modern identities below it, so an era name applied at 1750 would be a NEW
+       disagreement pointing the other way. Same expression, so the two cannot part company. */
+    function tagSame(fc,year){ try{ if(!fc||!Array.isArray(fc.features)) return fc;
       const lg=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
+      const HID=window.IntMapHistId, HS=window.IntMapHistStates;
+      const _disp=(o)=>((o.name&&_LTB.arr(o.name))||((lg==='jp'&&o.nameJp)?o.nameJp:o.nameEn)||o.nameEn||'');
       /* normalized present-day name -> the country's CURRENT localized display name (so an unchanged country shows its
          EXISTING label, e.g. "フランス" for a JP user — "国名が変わってない国は既存の国名ラベルのまま"). */
       const cur=new Map();
       try{ if(typeof countryStats!=='undefined'&&countryStats){ Object.values(countryStats).forEach(s=>{ if(s&&s.sov!==false){
-        const disp=(s.name&&_LTB.arr(s.name))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn)||s.nameEn||'';
+        const disp=_disp(s);
         if(s.nameEn) cur.set(_normNm(s.nameEn),disp); if(s.nameJp) cur.set(_normNm(s.nameJp),disp); } }); } }catch(_){}
+      /* (#R410) …and the PRESENT-DAY name of every country an era rename is currently standing over, so the
+         polygon called "Germany" still resolves in a year Germany has no era entry of its own (1946–1948)
+         while `countryStats.DEU` is still called something else. */
+      try{ const sav=(HID&&HID._applied&&HID._applied())||null;
+        if(sav) for(const code in sav){ const o=sav[code]||{}; const disp=_disp(o);
+          if(o.nameEn) cur.set(_normNm(o.nameEn),disp); if(o.nameJp) cur.set(_normNm(o.nameJp),disp); } }catch(_){}
+      const _y=(year!=null&&isFinite(year))?+year:null;
+      const _mfloor=(window.IntMapMaddison&&window.IntMapMaddison.minYear)||1900;   /* js/time-countries.js's own floor, verbatim */
+      const _d=(_y!=null&&_y>=_mfloor)?(_y+'-07-01T00:00:00Z'):null;
+      /* successors a former state covers this year: their own era identity must NOT be applied on top of it —
+         the Countries list hides those rows for the same reason (js/history.js `histStates.apply`). */
+      const _cov=new Set();
+      try{ if(_d&&HS&&HS.activeAt) HS.activeAt(_d).forEach(S=>(S.succ||[]).forEach(c=>_cov.add(c))); }catch(_){}
       /* (#R109) HistId single-country renamings (Germany→Weimar/Nazi/Empire, China→Qing/ROC, Italy, Persia, Siam, Dutch
-         East Indies): the aourednik polygon keeps the MODERN name ("Germany") but countryStats is renamed to the era
-         name — map the modern polygon name → the current era display name so the LABEL shows the era name too, not the
-         modern one. Only when HistId actually renamed the entry this era (s._histId). */
-      try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies'],JPN:['Japan'],RUS:['Russia'],GBR:['United Kingdom'],ESP:['Spain'],PRT:['Portugal'],BRA:['Brazil'],EGY:['Egypt'],FRA:['France'],HUN:['Hungary']};   /* (#R117/#R118) expanded identities */
-        for(const code in MODNM){ const s=(typeof countryStats!=='undefined')&&countryStats[code]; if(!s||s._histHidden||!s._histId) continue;
-          const disp=(s.name&&_LTB.arr(s.name))||s.nameEn; if(!disp) continue; MODNM[code].forEach(mn=>cur.set(_normNm(mn),disp)); } }catch(_){}
-      if(!cur.size) return fc;
+         East Indies): the aourednik polygon keeps the MODERN name ("Germany") — map that name to the era display name
+         (#R410) FOR THE YEAR BEING DRAWN, rather than to whatever rename happens to be standing in countryStats. */
+      /* ⚠ (#R410) EVERY CODE `IntMapHistId` CAN RENAME MUST BE IN HERE, or the map keeps the modern name for a
+         country the Countries list has already renamed. KOR and ETH were missing — measured at 1939, «Ethiopia»
+         on the map against «Ethiopian Empire» in the list. tests/r410-checks ② compares the two tables, so the
+         next identity added to js/history.js cannot silently miss the labels. (KOR is covered by the Korean
+         former states for every year it has an entry, so it changes nothing today; it is here because a table
+         that is right only by coincidence is the thing that check exists to stop.) */
+      try{ const MODNM={CHN:['China'],DEU:['Germany'],ITA:['Italy'],IRN:['Iran','Persia'],THA:['Thailand','Siam'],IDN:['Indonesia','Dutch East Indies'],JPN:['Japan'],RUS:['Russia'],GBR:['United Kingdom'],ESP:['Spain'],PRT:['Portugal'],BRA:['Brazil'],EGY:['Egypt'],FRA:['France'],HUN:['Hungary'],KOR:['Korea','South Korea'],ETH:['Ethiopia','Abyssinia']};   /* (#R117/#R118) expanded identities */
+        if(_d&&HID&&HID.at) for(const code in MODNM){ if(_cov.has(code)) continue;
+          const e=HID.at(code,_y); if(!e||!e.name) continue; const disp=_LTB.arr(e.name); if(!disp) continue;
+          MODNM[code].forEach(mn=>cur.set(_normNm(mn),disp)); } }catch(_){}
+      /* ⚠ (#R410) …AND THE FORMER STATES, WHOSE POLYGON USUALLY CARRIES A SUCCESSOR'S MODERN NAME. At 1916 the
+         CShapes polygons are «Russia» and «Japan» while the Countries rows are «Russian Empire» and «Empire of
+         Japan» — the same disagreement, one table over. `hbRe` is the polygon-name pattern js/history.js has
+         always kept for exactly this correspondence; the click path (`resolveHist`) used it and the LABEL never
+         did. Only a state whose row is REALLY in countryStats counts, so the map can never name a polity the
+         list is not listing (`histStates.apply` skips a state with no successor data at all). */
+      const _former=[];
+      try{ if(_d&&HS&&HS.activeAt&&HS.hbRe&&typeof countryStats!=='undefined'&&countryStats)
+        HS.activeAt(_d).forEach(S=>{ const s=countryStats[S.code], re=HS.hbRe(S.code);
+          if(s&&s._hist&&re) _former.push([re,_disp(s)]); }); }catch(_){}
+      if(!cur.size&&!_former.length) return fc;
       fc.features.forEach(f=>{ try{ f.properties=f.properties||{};
         if(f.properties._corrected){ return; }   /* (#R105) _correctEra already set _same/_modName (Tibet→China, label suppressed) — don't re-tag */
         const nm=(f.properties.NAME||f.properties.name)||'';
-        const hit=cur.get(_normNm(nm));
+        /* the former state is asked FIRST: at 1916 `countryStats.RUS` is still in `cur` (hidden, not removed),
+           so a name lookup would answer «Russia» for the polygon the list is calling the Russian Empire. */
+        let hit=null; for(const p of _former){ if(p[0].test(nm)){ hit=p[1]; break; } }
+        if(!hit) hit=cur.get(_normNm(nm));
         if(hit){ f.properties._same=1; f.properties._modName=hit; }   /* unchanged → its present-day localized name */
         else { f.properties._same=0; f.properties._modName=null;      /* renamed / vanished → era name (imtb-lbl) */
           const loc=_eraLocName(nm); if(loc) f.properties._locName=loc; else if('_locName' in f.properties) delete f.properties._locName; }   /* (#R107) localized era label when known */
       }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
-    function apply(fc){ const mySeq=seq; try{ fc=tagSame(fc); }catch(_){}
+    function apply(fc){ const mySeq=seq; shownFC=fc; try{ fc=tagSame(fc,shownYear); }catch(_){}
       /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
          SECOND year change didn't update: ensure() could transiently return false and block setData, so the
          borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker.
@@ -777,7 +835,7 @@ window.IntMapModules.timeBorders=function(HOST){
          ~6s — the exact fix R41 made for this class of hang), and guard on the travel seq so a stale deferred apply
          from an earlier year can't clobber a newer one ("タイムマシンで変更しても国境線が変化しない"). */
       else whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); }); }
-    function clear(){ const was=active; active=false; shownY=null; shownCorr=false;
+    function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null;
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
@@ -789,6 +847,7 @@ window.IntMapModules.timeBorders=function(HOST){
     async function go(when){ active=true; const my=++seq;
       const isD=(when instanceof Date)&&!isNaN(when.getTime());
       const year=isD?when.getFullYear():Math.round(+when), mon=isD?(when.getMonth()+1):7, day=isD?when.getDate():1;
+      shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years. ⚠ (#R421) it is derived from the INSTANT now, so it still answers "which year is on screen" while the borders under it moved to day precision. */
       /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the aourednik snapshot path
          below if the CShapes bundle can't be loaded. */
       if(year>=CS_MIN&&year<=CS_MAX){ const d=await csLoad();
@@ -816,6 +875,21 @@ window.IntMapModules.timeBorders=function(HOST){
        language changes WHILE travelling — tagSame bakes those at the current language, so re-apply the shown snapshot
        (no re-fetch; _eraCorrect reuses the already-computed merge state via shownCorr). */
     window.addEventListener('intmap-lang',()=>{ try{ if(!active||shownY==null) return; const fc=cache.get(shownY); if(fc) apply(_eraCorrect(fc, shownCorr?1951:1900)); }catch(_){} });
+    /* ⚠ (#R410) …AND THE SAME RE-READ WHEN THE IDENTITIES THEMSELVES ARRIVE. The present-day names live in
+       `countryStats`, which comes off the network (Natural Earth attributes) long after the first era snapshot
+       is drawn: measured at 1916 with that file 8 s late, `tagSame` found an EMPTY table, returned untagged,
+       and the map still read «Germany / France / Italy» sixteen seconds later beside a list reading «German
+       Empire / French Third Republic / Kingdom of Italy». js/time-countries.js `repaint()` announces every
+       moment the year's identities in that table may have changed — including the return to Now and the years
+       below the Maddison floor, where they are RESTORED to the modern ones.
+       ⚠ It re-pushes the collection ONLY when a label actually moved. `repaint()` fires twice per travel (the
+       local overlay, then the World Bank series), and the second one must not cost a `setSourceData` of a few
+       hundred kilobytes to write back what is already there. */
+    window.addEventListener('intmap-hist-identity',()=>{ try{ if(!active||!shownFC||!Array.isArray(shownFC.features)) return;
+      const sig=()=>JSON.stringify(shownFC.features.map(f=>{ const p=f.properties||{}; return [p._same||0,p._modName||'',p._locName||'']; }));
+      const before=sig(); tagSame(shownFC,shownYear); if(sig()===before) return;
+      if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')) GE().layers.setSourceData('imtb-src',shownFC);
+    }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
     (function warm(){ const pf=()=>{ csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */

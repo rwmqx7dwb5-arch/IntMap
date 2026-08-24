@@ -388,7 +388,10 @@ window.IntMapModules.newsContext=function(HOST){
   const _NG_KIND={ country:'country', admin1:'region', feature:'region', flashpoint:'flashpoint', city:'city', seat:'city', org:'city' };
   function analyzeContext(title,publisher,seed,desc){
     desc=desc||'';
-    const short=HOST.lang==='jp'?(title.length>20?title.slice(0,20)+'…':title):(title.split(' ').slice(0,5).join(' ')+'…');
+    /* (#R416) the map band's text rule moved to js/map-typography.js, beside the code that already
+       decides how wide that band comes out — the EVENT path could not reach it here, and filled the
+       layer's field with '' instead (empty white pills). One rule, two callers. */
+    const short=window.IntMapMapTypography.bandText(title);
     let subjectLoc=null, subjectName=null, subjectType=null, subjectConf=0;
     /* ---- (#R161) PRIMARY: the deterministic NewsGeo engine (js/newsgeo.js).
        It does what a plain gazetteer scan cannot — resolves same-name places from

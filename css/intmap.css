@@ -230,7 +230,10 @@
     /* iOS-style location pill (replaces old loc-chip) */
     /* (#R137) the geolocated location pill = the ACCENT colour ("ニュースカードの地点ピルはアクセントカラーに"). Was a
        hardcoded blue gradient that ignored the user's chosen accent; the unmapped/publisher states stay distinct below. */
-    .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:var(--primary-color); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); }
+    /* (#R416) one line, always. A long place name ("Brooklyn-Queens Expressway") wrapped the chip to
+       two lines and pushed the card's whole head row out of shape; the full name stays in the title
+       attribute and in the event detail. */
+    .loc-chip{ display:inline-flex; align-items:center; gap:5px; font-size:11px; padding:3px 9px 3px 7px; font-weight:600; color:#fff; background:var(--primary-color); border-radius:999px; letter-spacing:-0.1px; box-shadow:0 1px 2px rgba(0,0,0,0.06); max-width:52%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     /* (#R33) No 📍/📡 emoji on news-card location chips per request. */
     .loc-chip.unmapped{ background:linear-gradient(135deg, rgba(155,89,182,0.85), rgba(122,75,150,0.85)); }
     .loc-chip.publisher{ background:linear-gradient(135deg, rgba(94,92,230,0.92), rgba(88,86,214,0.88)); }
@@ -1621,9 +1624,20 @@
     .news-ai-actions > #news-pinmode-seg .ios-segment-btn{ flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; }
     .news-ai-actions > #ai-translate-btn{ width:100%; margin-top:0 !important; }
     /* (#R30) All/Saved + Subject/Publisher segments side-by-side in one row. */
-    .news-seg-row{ display:flex; gap:8px; align-items:stretch; }
-    .news-seg-row > .ios-segment{ display:flex; flex:1 1 0; min-width:0; box-sizing:border-box; }
-    .news-seg-row .ios-segment-btn{ flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* (#R416) ONE row: the scope pair stays put on the left, the categories scroll beside it.
+       The old rules here shared the row between TWO `.ios-segment`s at `flex:1 1 0` each, which is
+       why both sets of labels were clipped at a 400 px sidebar ("Subject l…" / "Publisher…"). */
+    .news-seg-row{ display:flex; gap:8px; align-items:center; min-width:0; }
+    /* ⚠ (#R416) SCOPE AND TOPIC ARE TWO AXES AND MUST NOT LOOK LIKE ONE. Sharing the row is what
+       makes the panel calm; sharing the ACTIVE state's appearance is what would make it lie —
+       「All」 filled blue next to 「All topics」 filled blue reads as one control with two things
+       selected. The scope pair keeps the app's segmented-control skin (a tray with the chosen half
+       raised, same as .lang-btn), the categories stay flat pills. */
+    .news-scope{ display:flex; gap:2px; flex:0 0 auto; align-items:center; background:var(--input-bg); border-radius:999px; padding:2px; }
+    .news-scope-chip{ background:transparent; padding:4px 10px; color:var(--text-muted); }
+    .news-scope-chip:hover{ color:var(--text-main); }
+    .news-scope-chip.active{ background:var(--card-bg); color:var(--text-main); box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+    .news-seg-row > .news-cat-chips{ margin-top:0; flex:1 1 auto; min-width:0; }
     #ai-translate-btn{ flex:1 1 50%; min-width:0; margin-top:0 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
     /* === Stats compare bar (pinned to top of Stats list) === */
