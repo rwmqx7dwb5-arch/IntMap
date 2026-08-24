@@ -260,6 +260,10 @@ async function stageFetch(db, budget, runStartedAt) {
  * ────────────────────────────────────────────────────────────────────── */
 const LOCATE_CAP = 240;      /* 1 run で AI に送る上限（費用の天井。docs/NEWS-EVENTS.md §14） */
 const LOCATE_BATCH = 20;
+/* ⚠ この段は `assign` より**前**に走るので、予算を使い切ると後ろの段が飢える。
+   翻訳（最後から 2 番目）の 30 s より厚く取り置く——1 batch 減るだけで、代わりに
+   割り当て・link・保持が必ず自分のぶんを持てる。残りは次の run に回る。 */
+const LOCATE_RESERVE_MS = 45000;
 /* 採否と確度の判定は `_shared/news-ingest.js` の `parseAiPlaces()`——Node のテストから
    直接呼べるので、返答の壊れ方を実データで試験できる。一致とみなす距離も
    あちらの `GEO_AGREE_KM` が正本で、ここは値を持たない。 */
@@ -308,7 +312,7 @@ async function stageLocate(db, budget, relocated) {
   const updates = [];
 
   for (let i = 0; i < todo.length; i += LOCATE_BATCH) {
-    if (budget.left() < 30000) break;
+    if (budget.left() < LOCATE_RESERVE_MS) break;
     const chunk = todo.slice(i, i + LOCATE_BATCH);
     batches++;
     const user = "Headlines:\n" + chunk.map((a) =>

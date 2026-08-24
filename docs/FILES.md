@@ -485,8 +485,7 @@ supabase/
   functions/<name>/index.ts       Edge Functions（12本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（newsgeo.js / relay-guard.js /
                                   atlas-persona.js / aviation-codec.js / aviation-model.js /
-                                  news-cluster.js / news-geo-prompt.js / news-ingest.js /
-                                  volcano-parse.js）
+                                  news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）
                                   ⚠ news-cluster.js は**サーバー専用**——クライアントの
                                   バンドルに入れない（docs/NEWS-EVENTS.md §5）
 docs/
