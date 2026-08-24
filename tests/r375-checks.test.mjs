@@ -158,6 +158,12 @@ async function runLoader({ coarse, fine }) {
   )(win, env.document, env.turf, env.fetch, env.navigator, env.requestIdleCallback, env.console, env.localStorage);
 
   run(read('js/tables.js'));
+  /* ⚠ (#R426) js/countries-ui.js now DEPENDS on this: `_mkStat` derives `bbox` (the frame)
+     and `bboxAll` (the union) from window.IntMapCountryExtent. src/main.js imports it before
+     js/countries-ui.js for exactly this reason, and this harness runs the real loader, so it
+     loads it in the same order. Without it every row is built with a null footprint — which
+     is what ③ and ⑤ below catch. */
+  run(read('js/country-extent.js'));
   run(read('js/countries-ui.js'));
   const mod = win.IntMapModules.countriesUi(HOST);
   await mod.loadCountryData();

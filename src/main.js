@@ -48,6 +48,12 @@ import '../js/wx-source.js';
    contain only declarations (tests/r169-checks #4) and because being map-free is what lets the
    whole table be tested without a browser. */
 import '../js/place-framing.js';
+/* (#R426) …and the other half of that decision, which had been folded into js/countries-ui.js as a
+   min/max over the whole Natural Earth feature: WHICH PARTS OF A COUNTRY ARE THE COUNTRY. Norway's
+   union is 135.2° of latitude because Bouvet Island is Norwegian, and framing that is not framing
+   Norway. Pure like the module above, and for the same reason — it is verified in Node against the
+   real geometry. It must precede js/countries-ui.js, which builds every country row from it. */
+import '../js/country-extent.js';
 /* (#R198) …and the same shape for the other "how big should this be" decision: js/label-scale.js is the
    ONE ladder every text size on the map comes from, and the only thing that can hold "a non-place label
    is smaller than a place label" as a property rather than a coincidence. Pure arithmetic — no DOM, no

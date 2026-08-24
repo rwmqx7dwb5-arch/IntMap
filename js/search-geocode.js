@@ -114,7 +114,11 @@ window.IntMapModules.searchGeocode=function(HOST){
     /* (#R185) …and the extent rides along as the shape js/place-framing.js already reads — a
        Nominatim-style [S, N, W, E] box plus the point — so one ladder frames local and remote
        results alike rather than there being a second copy of the decision here. */
-    const _localRaw=(l)=>(l&&l.bbox)?{ boundingbox:[l.bbox[1],l.bbox[3],l.bbox[0],l.bbox[2]], lat:l.lat, lon:l.lng }:null;
+    /* (#R426) `homeExtent` marks WHERE this box came from, and js/place-framing.js reads it to skip
+       the OUTLIER test — a guess about a provider box of unknown provenance, and the wrong question
+       to ask of one js/country-extent.js has already trimmed. Without it twenty countries held their
+       own measured footprint and were still flown to the flat `country` zoom of 4.4. */
+    const _localRaw=(l)=>(l&&l.bbox)?{ boundingbox:[l.bbox[1],l.bbox[3],l.bbox[0],l.bbox[2]], lat:l.lat, lon:l.lng, homeExtent:true }:null;
     local.filter(l=>l.score>=72).forEach(l=>addItem(l.name,l.lng,l.lat,_localRaw(l),l.kind));
     if(!res.children.length) res.innerHTML=`<div class="ms-loading">${HOST.t('loading')}</div>`;
     /* (#R16) The mobile "no results" bug: under file:// / on mobile networks Nominatim is often rate-limited,
