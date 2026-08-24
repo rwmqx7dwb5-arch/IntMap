@@ -61,8 +61,14 @@ test('R416 ① the news pin is built in exactly one place', () => {
   assert.deepEqual(hits, ['news-feed.js'],
     `the news-pin feature literal must exist only in js/news-feed.js (newsFeatureOf); found in ${hits.join(', ')}`);
   assert.match(feed, /function newsFeatureOf\(/, 'newsFeatureOf must be the builder');
-  assert.match(ui, /HOST\.newsFeatureOf\(item\)/,
-    'aiRefreshNewsPins must call the shared builder rather than keep its own copy');
+  /* (#R430) this clause used to read `assert.match(ui, /HOST\.newsFeatureOf\(item\)/)` — i.e. it
+     named aiRefreshNewsPins() in js/news-ui.js as a caller of the shared builder. That function
+     existed only to repaint pins WHILE the client-side AI locator ran, and both went out with it
+     (CONSTITUTION §5: the browser never calls the AI to place a headline). js/news-ui.js now
+     builds no pins at all, which satisfies #R416's "exactly one place" contract more strictly
+     than calling the shared builder did — so the clause is re-aimed rather than dropped. */
+  assert.ok(!/newsFeatures\.push\(/.test(ui),
+    'js/news-ui.js must not build news pins — the one builder is newsFeatureOf() in js/news-feed.js');
 });
 
 /* ── ② 帯の文字の規則は 1 本で、両方の経路が同じものを呼ぶ ───────────────── */

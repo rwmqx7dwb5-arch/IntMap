@@ -379,9 +379,15 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
 5. **AI content-sharing**: when the active provider is OpenAI, submitted text/outputs may be
    used by OpenAI to improve its models (disclosed in-app); users are told not to submit
    sensitive data.
-6. **The unwired in-app article reader** (`openArticleInSidebar`, no caller) uses a
-   `sandbox="allow-scripts allow-same-origin"` iframe; `escForReader` now quote-escapes so its
-   attribute sinks are safe, but if it is ever re-wired, drop `allow-same-origin`.
+6. **The unwired in-app article reader** (`openArticleInSidebar`, still no caller — re-measured
+   #R430) builds its web mode with `sandbox="allow-same-origin allow-scripts allow-popups
+   allow-forms"` (`js/news-ui.js`) — **four tokens, not the two this entry claimed until #R430**.
+   `escForReader` quote-escapes, so its attribute sinks are safe; if it is ever re-wired, drop
+   `allow-same-origin` (and reconsider `allow-popups` / `allow-forms`, which were never reviewed
+   here because nobody could reach the code that sets them).
+   ⚠ #R430 fed Atlas's open-article bridge (`window._imReader`) from the Event detail and the
+   article card's Read click instead of re-wiring this reader, so **this iframe is still
+   unreachable** and the paragraph above is still a statement about dormant code.
 
 ---
 

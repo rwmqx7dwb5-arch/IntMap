@@ -85,7 +85,11 @@ const RW = {
   /* Same exception as `mode`: globalData and newsFeatures were already live getters up with the
      other mutable state before #R167 gave them setters. */
   globalData:         { v: 'globalData',         owners: ['news-timeline.js'], oneLinePair: false },
-  newsFeatures:       { v: 'newsFeatures',       owners: ['news-timeline.js', 'news-ui.js'], oneLinePair: false },
+  /* (#R430) news-ui.js dropped off this list: its only write to newsFeatures was inside
+     aiRefreshNewsPins(), which existed solely to repaint pins while aiGeocodeNews() ran. Both went
+     with the client-side AI locator. The member is still RW — news-feed.js and news-timeline.js
+     write it — so this is the declaration catching up with the code, not the contract relaxing. */
+  newsFeatures:       { v: 'newsFeatures',       owners: ['news-timeline.js'], oneLinePair: false },
   extendedDashDB:     { v: 'extendedDashDB',     owners: ['dash-extended.js'] },
   /* ── (#R168) the seventh split. countryGeo / toolMode / user already had live getters up with the
      rest of the mutable state, so those three are pairs across the object rather than on one line. ── */
