@@ -152,8 +152,10 @@ jobs:
   #
   # So the suite is now two tiers (scripts/tiers.mjs, listed as data in tests/durations.json):
   #   · CORE — 29 files, 424 s measured. THIS job. The gate on every PR and every push.
-  #   · DEEP — 27 files, 4,699 s. The job below: nightly, after every merge, and on demand. Every
-  #     assertion still runs; it just no longer stands between an edit and a push.
+  #   · DEEP — 27 files, 4,699 s. The job below: the nightly schedule and the dispatch button only
+  #     — #R203 also put it on `push` and #R207 took it back off (its block sits above the job).
+  #     Every assertion still runs; it just no longer stands between an edit and a push, and it no
+  #     longer stands behind the merge either.
   # Two machines cover the core tier at ~4 minutes of wall clock including npm ci and the browser
   # download, against the twelve machines and ~12 minutes this job used to take.
   browser:
@@ -188,11 +190,13 @@ jobs:
   # thing an ordinary edit breaks — which is exactly why they are the wrong thing to make somebody
   # wait for before a push, and the right thing to run while nobody is waiting.
   #
-  # ⚠ NOT ONLY NIGHTLY. It also runs on every push to main, so a regression in this half surfaces
-  # ~15 minutes after the merge that caused it rather than the next morning; the branch that caused
-  # it is still the top of the history when it does. `workflow_dispatch` runs it on a branch on
-  # demand — which is what a round that touches 3-D, Cesium or the simulators should do BEFORE it
-  # opens the PR, and what `npm run test:deep` does locally.
+  # ⚠ ON DEMAND MEANS ON A BRANCH. `workflow_dispatch` runs this tier on the branch the button is
+  # pressed from — which is what a round that touches 3-D, Cesium or the simulators should do
+  # BEFORE it opens the PR, and what `npm run test:deep` does locally. (#R203 ALSO attached the
+  # tier to every push to main and this paragraph used to lead with that; the #R207 block below
+  # removed it, and the `if:` on the job is the current answer. Trimmed in #R407 because a reader
+  # who stopped at the first paragraph came away believing the merge would catch a deep
+  # regression.)
   #
   # Eight machines: the same measured packing as before, over a pool that is now the heavy half. The
   # `cesium` pool still gets one worker per machine — #R186 measured that contention is what those

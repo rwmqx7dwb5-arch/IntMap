@@ -4,7 +4,8 @@
  *  The half of the round that cannot stand in the gate, and the reason is written at the top of
  *  tests/r353.spec.js: these claims need USGS, JMA, the Smithsonian relay and an ArcGIS service to
  *  answer this minute, and a gate that goes red because volcano.si.edu had a bad afternoon is a
- *  gate people learn to ignore. Deep tier: nightly, and after every merge.
+ *  gate people learn to ignore. Deep tier: the nightly schedule and the dispatch button — not the
+ *  merge (#R207).
  *
  *  ⚠ WHAT IS ASSERTED IS THE SHAPE OF THE ANSWER, NEVER ITS CONTENT. Most hours there is no
  *  volcanic-ash SIGMET anywhere on Earth and no US volcano above GREEN; a test that required either

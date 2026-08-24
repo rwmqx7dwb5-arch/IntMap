@@ -68,8 +68,13 @@ function run(files, workers, label) {
   return r.status == null ? 1 : r.status;   /* (#R191) a null status is a FAILURE, not a clean exit */
 }
 
+/* ⚠ (#R407) THE SECOND HALF OF THIS LINE IS THE MOST-READ SENTENCE ABOUT THE DEEP TIER — it is
+   printed to the terminal on every `npm test`. Until #R407 it said the deep tier runs "after every
+   merge", which stopped being true at #R207; a round that read it here had no reason to run
+   `test:deep` before its PR. Keep it agreeing with ci.yml's `browser-deep` gate — scripts/tiers.mjs
+   has the measurement and scripts/doc-facts.mjs (`deep-tier-when`) enforces it. */
 console.log(`run-tests: ${TIER} tier — ${allSpecs().length} spec file(s)`
-  + (TIER === 'core' ? ' (the deep tier runs nightly and after every merge; `npm run test:deep` runs it here)' : ''));
+  + (TIER === 'core' ? ' (the deep tier is NOT in this run, and the merge will NOT run it either — it runs on the nightly schedule, on the CI dispatch button, or here via `npm run test:deep`)' : ''));
 const rest = poolFiles('rest');
 const solo = poolFiles('cesium');
 
