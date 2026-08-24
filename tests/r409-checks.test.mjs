@@ -269,3 +269,20 @@ test('R409 ⑬: each war row carries a label span that the favourites bar can re
   const favs = codeOnly(R('js/layer-favs.js'));
   assert.ok(/querySelector\('span\.ec-lbl'\)/.test(favs), 'js/layer-favs.js no longer reads span.ec-lbl — the class above now means nothing');
 });
+
+/* ── ⑭ a layer whose era the clock has left holds its own day ────────────────────────────────── */
+/* ⚠ THE SPLIT CREATED A CASE THAT DID NOT EXIST BEFORE. With one layer, «follow Chronos» had no
+   wrong answer. With two, a clock at 1916 is inside WW1 and outside WW2 — and `setDate` clamps, so
+   an unguarded follow would drag the WW2 layer to 1 September 1939 and stop its playback for a date
+   that says nothing about it. */
+test('R409 ⑭: the clock handler only follows an instant that lands inside this war', () => {
+  const src = codeOnly(R('js/war-layer.js'));
+  const i = src.indexOf('window.IntMapTime.on(');
+  assert.ok(i > 0, 'the layer no longer subscribes to the master clock at all');
+  const h = src.slice(i, i + 520);
+  assert.ok(/if \(d < sp\[0\] \|\| d > sp\[1\]\) return;/.test(h), 'the clock handler no longer refuses an instant outside this war');
+  /* and it refuses BEFORE it stops playback or repaints */
+  const bail = h.indexOf('sp[1]) return;');
+  const stop = h.indexOf('stopPlay()');
+  assert.ok(bail > 0 && stop > bail, 'the handler stops playback before deciding whether the instant even belongs to this war');
+});

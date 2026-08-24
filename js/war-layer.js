@@ -25,7 +25,9 @@
  *      map is a layer that looks broken (the reader chose this over a legend that only offers a
  *      button);
  *    · moving Chronos afterwards re-seeds the layer and PAUSES playback — an explicit move of the
- *      master clock wins over an animation;
+ *      master clock wins over an animation — but ONLY when the instant lands inside this war. A
+ *      clock at 1916 says nothing about WW2, so the WW2 layer holds the day it was showing rather
+ *      than clamping itself to 1 September 1939;
  *    · moving the slider, or playing, changes nothing but this layer.
  *  ⚠ Chronos has no ticker (js/chronos.js broadcasts only when something sets it), so «follow
  *  Chronos» cannot fight the slider on its own.
@@ -683,12 +685,21 @@ window.IntMapModules.warLayer = function (HOST) {
        IS OFF. Subscribing on toggle-on and unsubscribing on toggle-off was measured first and is a
        leak waiting to happen: js/chronos.js's unsubscribe is a closure the caller has to keep, and a
        style reload or a second toggle while the first is still awaiting `load()` leaves two.
-       ⚠ (#R409) AN EXPLICIT MOVE OF THE MASTER CLOCK WINS OVER AN ANIMATION. */
+       ⚠ (#R409) AN EXPLICIT MOVE OF THE MASTER CLOCK WINS OVER AN ANIMATION — but only when the
+       clock actually lands in THIS war. Before the split there was one layer and «follow Chronos»
+       had no other case; now there are two, and a reader who moves the time machine to 1916 with
+       both rows on would otherwise see the WW2 layer clamp itself to 1 September 1939 and stop
+       playing, for a date that says nothing about it. A layer whose era the clock has left simply
+       holds what it was showing, and its legend goes on naming its own day. */
     try {
       window.IntMapTime.on((e) => {
         if (!on) return;
+        const W = war(); if (!W) return;
+        const sp = spanOf(W);
+        const d = e.isLive ? iso(new Date()) : e.iso;
+        if (d < sp[0] || d > sp[1]) return;
         stopPlay();
-        setDate(e.isLive ? iso(new Date()) : e.iso);
+        setDate(d);
       });
     } catch (_) { }
     /* self-heal across basemap swaps, exactly like the other vector overlays */
