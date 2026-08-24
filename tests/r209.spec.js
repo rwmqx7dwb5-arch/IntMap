@@ -200,6 +200,29 @@ const MEMBER = {
      calls on the first route request. */
   navigation: ['IntMapNavigation', 'start'],
   routingTraffic: ['IntMapRouteTraffic', 'route'],
+  /* ⚠⚠ (#R400) EIGHT MORE, FROM FIVE DIFFERENT ROUNDS, AND THAT IS THE THIRD TIME.
+     Read the #R341 note above: #R322 added five keys to the loader and not to this table, so the
+     deep tier went red at that merge and stayed red. It happened again — R349 (`warLayer`),
+     R353 (`volcanoIntel`, `volcanoLayers`), R354 (the three `company*`), R386 (`newsEvents`) and
+     R388 (`railways`) each added a lazy module and none of them added its line here. The nightly
+     has been red on this test since R349.
+     ⚠ THE REASON IT KEEPS HAPPENING IS NOT CARELESSNESS — IT IS THE TIER. The assertion below is
+     the only thing comparing these two lists, and it lives in a spec that runs at NIGHT. A round
+     that forgets a line is told six days later, by a job nobody is watching. So the parity half of
+     that assertion — the half that needs no browser — now also runs on every push, in
+     tests/r400-checks.test.mjs. This table is still the place the member is NAMED; what changed is
+     when you find out you left one out.
+     Each names the member its OWN doors call: the layer rows call toggle()/show(), the panels
+     open(), js/company-panel.js asks js/company-data.js for index(), js/news-ui.js calls
+     load() on the events module, and the war layer's door is toggle(). */
+  railways: ['IntMapRailways', 'toggle'],
+  volcanoIntel: ['IntMapVolcano', 'open'],
+  volcanoLayers: ['IntMapVolcanoLayers', 'state'],
+  companyData: ['IntMapCompanyData', 'index'],
+  companyPanel: ['IntMapCompanyPanel', 'open'],
+  companyFacilities: ['IntMapCompanyFacilities', 'show'],
+  warLayer: ['__imWarFronts', 'toggle'],
+  newsEvents: ['IntMapNewsEvents', 'load'],
 };
 
 test('R209 ③: every deferred module actually arrives, registers and publishes', async ({ app }) => {
