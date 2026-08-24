@@ -349,3 +349,71 @@ test('R408 ⑤: 斜線カットの鍵が視野の矩形でなく、視野に入�
   assert.equal((body.match(/inv\[c\]=!!inView\(geo\[i\]\)/g) || []).length, 1,
     '視野の旗を2か所で数えると、鍵が指すものと実際に回すものが別々に決まる');
 });
+
+/* ── ⑥ (#R408 追記) THE BOOT GATE IS ONLY SHUT IF EVERY WAY IN RESPECTS IT ────────────────────
+   #R408 shut the boot path inside js/layer-previews.js and PRODUCTION STILL DOWNLOADED THE PICTURES:
+   27–35 `preview_*.png` from 2.1 s on a 375×812 load, with the sheet measurably shut. The gate was
+   never reached — `js/mobile-ui.js` mounts the tile grid at boot, and `mountInto` kicked the queue
+   unconditionally. ⚠ THE SHAPE TO REMEMBER: a gate is only as shut as its least careful caller, and
+   the caller that walked past it was in a DIFFERENT FILE from the one the round was about. */
+test('R408 追記 ⑥a: パネルを組み立てる経路は、画面に出ているときだけプレビューの門を開く', () => {
+  const s = rd('js/map-ui.js');
+  const i = s.indexOf('function mountInto(');
+  assert.ok(i > 0, 'mountInto が居る');
+  /* ⚠ 6000: 理由を書いたコメントが長いので、3000 では guard の手前（3,064 バイト目）で切れる。
+     切れた検査は「その主張が無い」と言うので、最初に書いたときは実装が正しいのに赤くなった。 */
+  const body = s.slice(i, i + 6000);
+  assert.match(body, /if\(!_hostShown\(host\)\)\{ if\(i\+1<at\.length\) go\(i\+1\); return; \}/,
+    'mountInto の kick は、格子を載せているシートが表示されていることを確かめる');
+  assert.match(body, /window\.IntMapLayerPreviews\.kick\(host\)/, '確かめたうえで、今までどおり kick する');
+
+  /* ⚠⚠⚠ 問いは「このシートは表示されているか」であって「この箱は視界にあるか」ではない。
+     間違った答えを2つ試し、**2つ目は実測で機能を壊した**:
+       · `display` 系（offsetParent / getClientRects().length / checkVisibility）は、閉じたシートにも
+         「見えている」と答える——閉じたシートは非表示ではなく**折り返しの下に駐車**しているだけ
+         （本番実測: 812px の視界に top 879px）。
+       · **視界との交差**は、読者がいま開いたシートに「いいえ」と答える——タイル格子はスクロールする
+         シートの中の長い一覧で、peek/half では上端が折り返しの下にある（実測: `m-sheet show` で
+         host top 1026px / 視界 812px）。この判定だと**門が二度と開かず、携帯にサムネイルが1枚も
+         出ない**——#R72→#R73 が作った当の退行である。 */
+  const os = s.slice(s.indexOf('function _hostShown('), s.indexOf('function _hostShown(') + 700);
+  assert.match(os, /closest\('\.m-sheet'\)/, '格子を載せているシートを見る');
+  assert.match(os, /return sheet\.classList\.contains\('show'\)/, '表示されているかで判定する');
+  assert.match(os, /if\(!sheet\) return true;/, 'シートの中に無いもの（デスクトップの側柱）は対象外');
+  assert.ok(!/offsetParent|checkVisibility|getClientRects|getBoundingClientRect/.test(os),
+    '閉じたシートを「見えている」と答える判定も、開いたシートを「見えていない」と答える判定も使わない');
+  /* ⚠ 読めなければ true。プレビューが二度と出ないほうが、早く出るより重い欠陥である。 */
+  assert.match(os, /\}catch\(_\)\{ return true; \}/, '判定できないときは今までどおり門を開く');
+});
+
+test('R408 追記 ⑥b: 門は必ず開く——シートを開く経路が .show を付けてから組み立てを呼ぶ', () => {
+  /* ⚠⚠⚠ これが逆順だと、⑥a のせいで**携帯でプレビューが二度と出ない**。#R72→#R73 が
+     IntersectionObserver で同じ門を置き換えて、画面外で組まれた行が二度と見直されなかったのと
+     同じ壊れ方で、`js/layer-previews.js` はその教訓を「門は必ず開く」と書いている。 */
+  const m = rd('js/mobile-ui.js');
+  const i = m.indexOf('function openSheet(');
+  assert.ok(i > 0, 'openSheet が居る');
+  const body = m.slice(i, m.indexOf('function closeSheet('));
+  const show = body.indexOf("el.classList.add('show')");
+  const mount = body.indexOf('mountInto(moMountLayers)');
+  assert.ok(show > 0, 'openSheet はシートを表示する');
+  assert.ok(mount > 0, 'openSheet はタイル格子を組み直す');
+  assert.ok(show < mount,
+    '.show を付ける前に mountInto を呼ぶと、⑥a の判定が偽になり携帯でプレビューが出なくなる');
+
+  /* そして起動時の経路（applyLayout）は、シートを表示しないまま mountInto を呼ぶ——それでよい。
+     グリッドは用意され、絵だけが読者の操作を待つ。 */
+  const apply = m.slice(m.indexOf('function applyLayout('), m.indexOf('function applyLayout(') + 4000);
+  assert.match(apply, /mountInto\(moMountLayers\)/, '起動時も格子は組む（行は用意されている）');
+  assert.ok(!/classList\.add\('show'\)/.test(apply), '起動時にシートを表示していない');
+});
+
+test('R408 追記 ⑥c: デスクトップの入口は今までどおり無条件に開く', () => {
+  const s = rd('js/map-ui.js');
+  const i = s.indexOf('function open(');
+  assert.ok(i > 0, 'open() が居る');
+  const body = s.slice(i, i + 2500);
+  assert.match(body, /IntMapLayerPreviews\.kick\(sb\)/, 'サイドバーを開いたら kick する');
+  assert.ok(!/_onScreen\(sb\)/.test(body),
+    'デスクトップの入口に判定を足さない — 開いた直後は遷移中で矩形が定まらないことがあり、そこで拒むと絵が出なくなる');
+});
