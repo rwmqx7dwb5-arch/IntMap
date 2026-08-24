@@ -350,3 +350,56 @@ test('R413 ⑪: re-introducing each defect makes the matching check fail', async
   assert.ok(!ranked.slice(0, 8).some((r) => r.id === 'routing.route'),
     '…and routing.route is not among them: the cut is what dropped it, not the score');
 });
+
+/* ══ ⑫ AND NO TEST MAY GO ON ASSERTING THE LIMIT EITHER (#R433) ═══════════════════════════════
+   ⑨ scans js/ for `MAX_FIND`, and ⑦ proves by running the real surface that nothing caps the
+   result. Both were green for the twelve days that tests/r318-atlas.spec.js asserted
+   `hit.matches.length <= 8` — this round's own number, kept alive in the one place neither check
+   looks. ⚠ A RETIRED LIMIT SURVIVES IN WHATEVER STILL CHECKS FOR IT, and this one survived at the
+   worst address available: that spec is deep tier (scripts/tiers.mjs), which runs on schedule and
+   on dispatch only, so it failed every night and no pull request ever saw it. R413 did update
+   tests/r406-turn.test.mjs — the comment at its line 166 says so — and simply never opened the
+   other one. That is what this check is for: the sweep across the whole test tree that neither the
+   source scan nor the behavioural test can perform.
+
+   ⚠ THE BOUND THAT IS ALLOWED IS THE ONE WITH NO NUMBER IN IT. `expect(r.matches).toBeLessThan(
+   r.registry)` says «this is a search and not the registry», which is the claim tests/r318-atlas
+   .spec.js ② now makes. A LITERAL says «Atlas may know eight things», which is the defect. So the
+   needle is the digit, not the comparison.
+
+   ⚠ AND THE NEEDLE IS ASSEMBLED FROM PIECES ON PURPOSE. Written out whole it would stand in this
+   file as code and match itself — the self-hit the header above counts thirteen of. `code()` blanks
+   string literals, so these fragments disappear when this file is the one being scanned, while a
+   real assertion written here would still be caught. */
+test('R413 ⑫: no test asserts an upper bound on what find_capability returns', () => {
+  const LT = 'toBeLess' + 'Than';
+  const EXPECT = new RegExp('matches(?:[.]length)?[^;]{0,200}[.]' + LT + '(?:OrEqual)?[(][ ]*[0-9]');
+  const COMPARE = new RegExp('matches[.]length[ ]*<=?[ ]*[0-9]');
+
+  /* ⚠ the needle bites before it is trusted: the exact line this round removed, and the assert form */
+  assert.ok(EXPECT.test('expect(hit.' + 'matches.length).' + LT + 'OrEqual(8);'),
+    'the pattern no longer matches the assertion that caused this check to exist');
+  assert.ok(EXPECT.test('expect(r.' + 'matches, `returned ${r.matches}`).' + LT + '(9);'),
+    'the pattern misses the form that carries a message');
+  assert.ok(COMPARE.test('assert.ok(hit.' + 'matches.length <= 8);'), 'the comparison form is not caught');
+  /* …and does not bite the bound that is a fact about the registry rather than a ceiling */
+  assert.ok(!EXPECT.test('expect(r.' + 'matches).' + LT + '(r.registry);'),
+    'bounding the result by the size of the registry is the correct claim and must stay legal');
+
+  const DIR = join(ROOT, 'tests');
+  const walk = (d) => readdirSync(d, { withFileTypes: true })
+    .flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)]));
+  const files = walk(DIR).filter((f) => /\.spec\.js$|\.test\.mjs$/.test(f));
+  assert.ok(files.length > 250, `the walk found only ${files.length} test files — it is not reaching them`);
+
+  const guilty = [];
+  for (const f of files) {
+    const src = code(readFileSync(f, 'utf8'));
+    for (const re of [EXPECT, COMPARE]) {
+      const m = re.exec(src);
+      if (m) guilty.push(`${f.slice(ROOT.length + 1)}:${src.slice(0, m.index).split(String.fromCharCode(10)).length}`);
+    }
+  }
+  assert.deepEqual(guilty, [],
+    'a test caps find_capability at a literal — CONSTITUTION.md §5: the answer to a defect is not a bigger number');
+});

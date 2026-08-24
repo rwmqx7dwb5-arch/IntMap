@@ -211,27 +211,72 @@ test('R406 ①: the built app binds the real argument schemas, not the permissiv
   expect(r.empty, 'capabilities still carrying a schema that accepts any object').toEqual([]);
 });
 
-test('R406 ②: the tool surface is small, and discovery reaches what is not a core tool', async () => {
+/* ⚠⚠⚠ (#R433) THIS TEST ASSERTED THE LIMIT THAT #R413 DELETED, AND SO IT FAILED ON THE FIX.
+   The line here read `expect(hit.matches.length).toBeLessThanOrEqual(8)` — the `MAX_FIND = 8` whose
+   removal is the whole of fa924f6. It returned the first eight matches sorted by score and then by
+   id, so on 「現在地から大阪駅までの経路」, where ten capabilities tie at score 16, the ALPHABET
+   dropped `routing.route` at ninth — the one capability that answers the request — and the five
+   `navigation.*` that arrived in its place all reply «plan a route first». R413 updated
+   tests/r318-checks.test.mjs and never opened this file. Because this spec is deep tier
+   (scripts/tiers.mjs), it went red every night for twelve days without failing a single PR.
+
+   ⚠ THE ANSWER IS NOT A BIGGER NUMBER. CONSTITUTION.md §5: a reported defect is not closed by
+   raising a truncation count. So the count assertion is GONE rather than widened, and the two
+   claims it was conflating are separated and each asserted where it is true:
+
+     · «small» is a fact about what is SENT every turn — the core tool block, measured against the
+       catalogue it stands in for. That claim never depended on find_capability and still holds.
+     · what discovery owes is RELEVANCE, not a page size. The count has no upper bound and must not
+       acquire one: it tracks the request. Measured here — 「isochrone reachable area」 returns ten
+       of a hundred and twenty-five with `routing.isochrone` first at score 161 against nine ties
+       at 16, while 「ありがとう」 returns NONE. A fixed page could not produce both numbers. */
+test('R406 ②: what is sent is small, and discovery returns what matched — not a page of it', async () => {
   const r = await page.evaluate(() => {
-    const T = window.IntMapAtlasTools;
+    const T = window.IntMapAtlasTools, C = window.IntMapCapabilities;
     const tools = T.baseTools();
     const block = Object.keys(tools).map((k) => JSON.stringify(tools[k])).join('\n');
     const hit = T.find('isochrone reachable area');
+    /* the request that the alphabet used to answer with five «plan a route first» (#R413) */
+    const jp = T.find('現在地から大阪駅までの経路');
+    /* a sentence that asks for nothing IntMap does — the other end of the same measurement */
+    const none = T.find('ありがとう');
     return {
       names: Object.keys(tools).sort(), chars: block.length,
-      all: window.IntMapCapabilities.catalogBytes(null),
+      all: C.catalogBytes(null),
+      registry: C.all().filter((c) => !c.withdrawn).length,
+      coreCaps: Object.keys(tools).map((k) => tools[k].capabilityId).filter(Boolean),
       matches: hit.matches.length, ids: hit.matches.map((m) => m.id),
       schemas: hit.matches.every((m) => m.schema && m.schema.type === 'object'),
-      documented: hit.matches.filter((m) => m.documentation).length,
+      /* (#R413) the catalogue text is ONE de-duplicated block for all the ids, at the top level of
+         the result. It used to be a copy of the shared block hung off every match and clipped at
+         1,400 characters each; asking per-capability returned 60,935 bytes of which 19,865 were
+         distinct. The old `documented` count — matches carrying their own — is now always 0. */
+      doc: (hit.documentation || '').length,
+      perMatchDoc: hit.matches.filter((m) => m.documentation).length,
+      jpIds: jp.matches.map((m) => m.id),
+      noneMatches: none.matches.length,
     };
   });
   expect(r.names, 'the core tools did not survive the build').toContain('find_capability');
   expect(r.all, 'the catalogue is gone — find_capability would have nothing to serve').toBeGreaterThan(50_000);
+  /* ── «small» — and it is about the block that crosses the wire, not about the search ── */
   expect(r.chars, `the tool block is ${r.chars} chars against a ${r.all}-char catalogue`).toBeLessThan(12_000);
+
+  /* ── relevance: what MATCHED, sized by the request rather than by a constant ── */
   expect(r.matches).toBeGreaterThan(0);
-  expect(r.matches, 'discovery returned a crowd instead of a few').toBeLessThanOrEqual(8);
+  expect(r.matches, `discovery returned ${r.matches} of ${r.registry} — that is the registry, not a search`).toBeLessThan(r.registry);
+  expect(r.noneMatches, `「ありがとう」 matched ${r.noneMatches} capabilities — discovery is handing back a page, not a result`).toBe(0);
+  /* and the capability that answers the request is there, first — the rank the cut used to decide */
+  expect(r.ids[0], `discovery ranked ${r.ids.join(', ')}`).toBe('routing.isochrone');
+  expect(r.coreCaps, 'routing.isochrone became a core tool — this no longer proves discovery reaches past them').not.toContain('routing.isochrone');
   expect(r.schemas, 'a discovered capability came back without its schema').toBe(true);
-  expect(r.documented, 'no discovered capability carried its catalogue block').toBeGreaterThan(0);
+
+  /* ── the catalogue block reaches Atlas, once, for all the ids ── */
+  expect(r.doc, 'discovery carried no catalogue text at all — Atlas got ids and schemas with nothing explaining them').toBeGreaterThan(0);
+  expect(r.perMatchDoc, 'the shared catalogue block is hung off every match again — that is the duplication #R413 removed').toBe(0);
+
+  /* ── the defect itself, in the built app: ten tie at 16 and routing.route sorts ninth by id ── */
+  expect(r.jpIds, `the alphabet dropped routing.route again: ${r.jpIds.join(', ')}`).toContain('routing.route');
 });
 
 test('R406 ③: an argument-less call is refused in the built app, before anything runs', async () => {
