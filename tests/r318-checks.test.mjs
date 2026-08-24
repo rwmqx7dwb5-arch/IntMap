@@ -430,7 +430,12 @@ test('R318 ⑨a: the 58 kB catalogue moved byte-for-byte and is still whole', ()
   const sys = codeOnly(read('js/atlas-console.js'));
   assert.match(sys, /bindRuntime\(\{[^}]*docs:_DOCS/,
     'the registry is no longer given the catalogue, so find_capability has nothing to read');
-  assert.match(codeOnly(read('js/atlas-toolsurface.js')), /CAPS\.catalogText\(\[cap\.id\]\)/,
+  /* ⚠ (#R413) THE CLAIM IS UNCHANGED AND THE SPELLING IS NOT. It used to be `catalogText([cap.id])`
+     — once per match — and that repeated the same shared block for every capability it documents:
+     ten matches on 「現在地から大阪駅までの経路」 came back as 60,935 bytes of which 19,865 were
+     distinct, and the 1,400-character clip on each copy was how that was paid for. `catalogText(ids)`
+     asks once for all of them and de-duplicates. The prose still reaches Atlas — whole, now. */
+  assert.match(codeOnly(read('js/atlas-toolsurface.js')), /CAPS\.catalogText\(ids\)/,
     'find_capability no longer returns the catalogue prose for what it found');
   assert.doesNotMatch(sys, /_DOCS\.text\(/, 'the catalogue is pasted into every prompt again');
   assert.doesNotMatch(sys, /\+'NAVIGATION\/VIEW: \{"type":"flyTo"/, 'the catalogue is inline again');

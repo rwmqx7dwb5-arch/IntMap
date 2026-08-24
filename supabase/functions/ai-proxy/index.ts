@@ -98,7 +98,13 @@ const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unli
      · TURN_MAX_CALLS  — how many calls one key may carry. Above it: 429 {error:"turn_calls"}.
      · TURN_TTL_S      — how long a key stays alive. A replayed old key opens a new, charged turn.
    Both are constants in this file precisely so a caller cannot raise them. */
-const TURN_MAX_CALLS = 6;
+/* (#R413) 6 → 12. One REQUEST still costs the reader one unit of their daily quota — that is what
+   this block is for and it is unchanged. What 6 was additionally doing was capping how many steps
+   Atlas could take inside that one paid turn, and js/atlas-agent.js had shrunk its own ceiling to 4
+   to stay clear of it, so a turn that had to look something up, act on it and then speak had no room
+   left to fix a mistake. Twelve is the same protection against a runaway loop without deciding for
+   Atlas how much thinking one answer is allowed. */
+const TURN_MAX_CALLS = 12;
 const TURN_TTL_S = 900;
 const MAX_TURN_KEY = 120;   /* (#R101) free 10→30/day; (#R147) 30→10/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;

@@ -32,8 +32,20 @@ export function makeAtlasToolSurface(deps) {
     var SCHEMAS = deps.schemas;            /* js/atlas-schemas.js */
     var runAction = deps.runAction;        /* (action) -> {ok, html, meta, …}  — the existing dispatch */
 
-    var MAX_FIND = 8;                      /* capabilities returned by one search */
-    var MAX_DOC = 1400;                    /* characters of catalogue prose per returned capability */
+    /* ⚠⚠⚠ (#R413) THERE WAS A LIMIT HERE AND IT IS GONE. `MAX_FIND = 8` returned the first eight
+       matches; `search()` breaks equal scores with `a.id.localeCompare(b.id)`, so the ALPHABET decided
+       which capabilities Atlas was allowed to know about. Measured on 「現在地から大阪駅までの経路」:
+       ten capabilities score 16 — identically, because the only signal a Japanese request produces is
+       the per-CATEGORY hint row, which awards the same points to every member of the category. Sorted
+       by id the first eight are navigation.camera, navigation.start, navigation.status,
+       navigation.stop, navigation.voice, routing.drone, routing.isochrone, routing.optimizeStops —
+       and `routing.route`, the one capability that answers the request, is NINTH. It was dropped, and
+       all five navigation.* that arrived instead reply «plan a route first». Atlas asked the reader to
+       type their own address because IntMap had just handed it a toolkit that could not draw a route.
+       The fix is not a bigger number. `search()` already scores the whole registry and already returns
+       only what MATCHED — Atlas gets that, and decides for itself. */
+    /* (#R413) …and the per-capability prose is no longer clipped either. A capability whose
+       documentation stops mid-sentence at 1,400 characters is a capability Atlas half-knows. */
 
     /* ── The fast path: the capabilities most turns need, as first-class typed tools. ──────────
        ⚠ THIS LIST IS A CONVENIENCE, NOT A PERMISSION BOUNDARY. Everything absent from it is one
@@ -44,7 +56,14 @@ export function makeAtlasToolSurface(deps) {
       { name: 'highlight', cap: 'map.highlight', desc: 'Colour named countries or regions on the map.' },
       { name: 'set_layer', cap: 'layers.toggle', desc: 'Turn a named map layer on or off.' },
       { name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations. Use for anything current, contested or beyond your own knowledge. This renders its own sourced answer to the reader.' },
-      { name: 'ask_user', cap: 'dialog.ask', desc: 'Ask the reader one question with 2-4 concrete options, when missing information would materially change the result.' },
+      /* ⚠ (#R413) THE EXISTING CAPABILITY, PROMOTED — NOT A NEW ONE. `view.locate` has read the
+         device's real position since #R155. What was missing is that Atlas could not FIND it:
+         measured, `find_capability('my location')` matched NOTHING and answered «IntMap may not have
+         this», in every language, because `norm()` did not split `myLocation` into words. That is
+         fixed in js/atlas-capabilities.js; this line is the rest of it, because the reader's own
+         position is not a feature to go hunting for — it is a fact about the person asking. */
+      { name: 'my_location', cap: 'view.locate', desc: 'Get the reader\'s real position from their device. The result carries their coordinates. Call it yourself whenever the request depends on where the reader is — never ask them to type their own location, and never use the map centre in its place. Afterwards "my location" / "現在地" resolves to it in any place argument.' },
+      { name: 'ask_user', cap: 'dialog.ask', desc: 'Ask the reader one question with 2-4 concrete options. Only for what ONLY they can supply — a preference, or a choice between real alternatives you have already found. Never for something you could obtain with another tool.' },
     ];
 
     function schemaOf(capId) {
@@ -57,12 +76,14 @@ export function makeAtlasToolSurface(deps) {
       try { return CAPS.resolve(idOrAlias); } catch (_) { return null; }
     }
 
-    /* Short one-line summary for a capability, from the catalogue it already has. */
+    /* Short one-line summary for a capability, from the catalogue it already has.
+       (#R413) the 160-character cut is gone with the others: a capability's own one-line summary is
+       written to be one line, so the cut only ever fired on the few that are not — and those are
+       precisely the ones that needed the words. */
     function summaryOf(cap) {
       var d = '';
       try { d = String(cap.description || ''); } catch (_) { d = ''; }
-      d = d.replace(/\s+/g, ' ').trim();
-      return d.slice(0, 160);
+      return d.replace(/\s+/g, ' ').trim();
     }
 
     /* ── The tools that are always present ────────────────────────────────────────────────── */
@@ -114,22 +135,29 @@ export function makeAtlasToolSurface(deps) {
         return { ok: true, query: query, matches: [],
           note: 'Nothing matched. IntMap may not have this; answer the reader directly, or search the web.' };
       }
-      var out = [];
-      for (var i = 0; i < ranked.length && out.length < MAX_FIND; i++) {
+      var out = [], ids = [];
+      for (var i = 0; i < ranked.length; i++) {
         var cap = null;
         try { cap = CAPS.resolve(ranked[i].id); } catch (_) { cap = null; }
         if (!cap || cap.withdrawn) continue;
-        var doc = '';
-        try { doc = String(CAPS.catalogText([cap.id]) || ''); } catch (_) { doc = ''; }
+        ids.push(cap.id);
         out.push({
           id: cap.id,
           summary: summaryOf(cap) || undefined,
           schema: schemaOf(cap.id),
-          documentation: doc ? doc.replace(/\s+/g, ' ').trim().slice(0, MAX_DOC) : undefined,
           needsConfirmation: cap.confirmation && cap.confirmation !== 'none' ? cap.confirmation : undefined,
         });
       }
-      return { ok: true, query: query, matches: out,
+      /* ⚠ ONE call for ALL the ids, and that is why the cap could go. js/atlas-catalog-text.js
+         documents capabilities in 41 shared BLOCKS, so asking per-capability returned the same block
+         once per match: the ten matches on 「現在地から大阪駅までの経路」 came to 60,935 bytes of
+         which 19,865 were distinct — and clipping each copy at 1,400 characters was the old way of
+         paying for that, at the price of every description ending mid-sentence. `catalogText(ids)`
+         already de-duplicates. Measured: 67,600 → 20,200 bytes for the same ten capabilities, with
+         nothing truncated. The saving is the repetition, not the content. */
+      var doc = '';
+      try { doc = String(CAPS.catalogText(ids) || '').trim(); } catch (_) { doc = ''; }
+      return { ok: true, query: query, matches: out, documentation: doc || undefined,
         note: out.length ? 'Call run_capability with one of these ids and arguments matching its schema.' : undefined };
     }
 
@@ -218,7 +246,10 @@ export function makeAtlasToolSurface(deps) {
       };
       if (!ok) {
         out.error = meta.code || 'failed';
-        out.message = String((res && res.error) || meta.message || '').slice(0, 400) || undefined;
+        /* (#R413) …and not clipped at 400 either. This is the reason a call FAILED, read by the
+           thing that has to decide what to do next; half a reason is how a turn picks the wrong
+           recovery. CONSTITUTION.md §5. */
+        out.message = String((res && res.error) || meta.message || '') || undefined;
       }
       if (res && res.exec) {
         /* the deterministic candidates IntMap found but did NOT apply — Atlas decides */
@@ -227,7 +258,7 @@ export function makeAtlasToolSurface(deps) {
       return out;
     }
 
-    var API = { CORE, baseTools, find, actionFor, makeExecute, schemaOf, MAX_FIND };
+    var API = { CORE, baseTools, find, actionFor, makeExecute, schemaOf };
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

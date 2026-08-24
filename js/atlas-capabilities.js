@@ -803,7 +803,26 @@ export function makeAtlasCapabilities(HOST) {
        Retrieval is DETERMINISTIC and scores every capability — it never truncates the population.
        What it returns is a RANKING; the caller decides how deep to go, and the honest fallback of
        "send everything" is still there and is still exercised (see catalogText(null)). */
-    function norm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[\s·・･_\-]+/g, ' ').trim(); }
+    /* ⚠⚠⚠ (#R413) `norm` DID NOT SPLIT camelCase, AND THAT CLOSED HALF THE DOOR ══════════════════
+       Every alias in the table above is written the way a planner EMITS it — `myLocation`,
+       `streetView`, `lineOfSight`, `askHere`, `timeSeries`, `countryInfo`. `norm` lower-cased and
+       collapsed whitespace, so those became `mylocation`, `streetview`, … — strings no human
+       phrasing contains. `score()` then compared them against a request that says «my location» and
+       found nothing: `'my location'.indexOf('mylocation')` is −1.
+       MEASURED ON THE TABLE AS IT STANDS: **143 camelCase ALIASES, of which 60 scored 0** when written
+       as the ordinary words they are made of (186 and 93 counting the `legacy` spellings too). Since
+       #R406 made `find_capability` the ONLY
+       door to 121 of the 126 capabilities, a spelling that scores 0 is a capability that does not
+       exist — and the door does not merely stay shut, it ANSWERS: «Nothing matched. IntMap may not
+       have this; answer the reader directly, or search the web.» So Atlas was being told, in so many
+       words, that IntMap cannot show a street view or find the reader's own position.
+       Splitting the boundary costs ONE replace and cannot lose a match — an identifier a planner emits
+       verbatim normalises to the same words the alias does, so `myLocation` and «my location» both hit. */
+    function norm(s) {
+      return String(s == null ? '' : s)
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .toLowerCase().replace(/[\s·・･_\-]+/g, ' ').trim();
+    }
     /* ══ SEARCH HINTS ═══════════════════════════════════════════════════════
        MATCH TERMS, not text the app writes. These are the words a REQUEST may
        use, all nine languages at once, one packed row per category. Nothing here is ever shown to

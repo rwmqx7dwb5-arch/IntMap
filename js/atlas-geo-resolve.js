@@ -23,19 +23,67 @@ export function makeAtlasGeoResolve(HOST, CTX) {
        "現在地の天気 / 現在地のストリートビュー / 現在地から東京への経路" all resolved to wherever Atlas last touched (or the
        map centre) — "Atlasが現在地というワードをユーザーの現在地だと認識できない". Now these phrases actually read the
        browser geolocation (cached 5 min), and only fall back to deixis/centre if permission is denied/unavailable. */
-    const SELFLOC_RE=/^\s*(現在地|現在の位置|今(いる|の)(場所|位置)|自分の(位置|居場所|現在地)|マイ ?ロケーション|my (current )?(location|position)|current (location|position)|where i ?am|где я|моё ?местоположение|mi ubicación|mein standort)\s*$/i;
+    /* ══ (#R413) 「現在地」 IN ALL NINE LANGUAGES INTMAP SHIPS, NOT FIVE OF THEM ══════════════════
+       The regular expression this replaces carried ja / en / ru / es / de. A French, Korean or
+       Chinese reader had NO WAY TO SAY IT: 「ma position」「내 위치」「我的位置」 fell through to the
+       deixis branch below and came back as the map centre, silently. CLAUDE.md §3.5 has required nine
+       languages for every reader-facing string for dozens of rounds; a phrase the reader TYPES is one.
+       ⚠ IT IS A TABLE, NOT A PATTERN, so the coverage can be MEASURED, and it is KEYED BY INTMAP'S
+       OWN LANGUAGE CODES — the ones js/locales/ui.<code>.js is named for — so tests/r413-checks
+       reads the shipped set off the directory and requires a key for each. A hand-written list of
+       "the languages we support" is the exact shape #R399 found lying. Every spelling the old
+       expression accepted is still here. */
+    const SELFLOC_WORDS=Object.freeze({
+      en:['my location','my current location','my position','my current position','current location','current position','where am i','where i am','where iam'],
+      jp:['現在地','現在の位置','今いる場所','今いる位置','今の場所','今の位置','自分の位置','自分の居場所','自分の現在地','マイロケーション','マイ ロケーション'],
+      de:['mein standort','mein aktueller standort','aktueller standort','meine position','wo bin ich'],
+      ru:['где я','где я нахожусь','моё местоположение','моёместоположение','мое местоположение','текущее местоположение','моя позиция'],
+      es:['mi ubicación','mi ubicacion','ubicación actual','ubicacion actual','mi posición','mi posicion','dónde estoy','donde estoy'],
+      fr:['ma position','ma position actuelle','position actuelle','ma localisation','où je suis','ou je suis','où suis-je','ou suis-je'],
+      ko:['내 위치','내위치','현재 위치','현재위치','지금 위치','지금위치','내 현재 위치'],
+      zh:['我的位置','目前位置','現在位置','目前所在位置','我在哪','我在哪裡'],
+      'zh-hans':['我的位置','当前位置','现在位置','当前所在位置','我在哪','我在哪里'] });
+    const SELFLOC_RE=new RegExp('^\\s*(?:'+Object.keys(SELFLOC_WORDS)
+      .reduce((a,k)=>a.concat(SELFLOC_WORDS[k]),[])
+      .map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))
+      .sort((a,b)=>b.length-a.length).join('|')+')\\s*$','i');
     let _selfLocCache=null,_selfLocT=0;
     function _selfLoc(){ return new Promise(res=>{ try{
         if(_selfLocCache && Date.now()-_selfLocT<300000) return res(_selfLocCache);
         if(!navigator.geolocation) return res(null);
         navigator.geolocation.getCurrentPosition(
-          p=>{ _selfLocCache={lng:+p.coords.longitude,lat:+p.coords.latitude,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; _selfLocT=Date.now(); res(_selfLocCache); },
+          p=>{ res(_selfLocSeed({lng:+p.coords.longitude,lat:+p.coords.latitude,acc:+p.coords.accuracy||0})); },
           ()=>res(null), {enableHighAccuracy:true,timeout:20000,maximumAge:0});   /* (#R170) GPS-grade fix, never a cached one — the 5-min _selfLocCache above still avoids re-prompting */
       }catch(_){ res(null); } }); }
+    /* (#R413) a fix obtained ELSEWHERE (the my_location capability) becomes this cache, so the very
+       next 「現在地から…」 resolves from memory instead of putting a second permission prompt in front
+       of the reader for a position IntMap already has. */
+    function _selfLocSeed(f){ try{ const lng=+f.lng, lat=+f.lat; if(!isFinite(lng)||!isFinite(lat)) return null;
+      _selfLocCache={lng,lat,acc:+f.acc||0,name:L('my location','現在地','mein Standort','моё местоположение','mi ubicación')}; _selfLocT=Date.now();
+      return _selfLocCache; }catch(_){ return null; } }
     window._imSelfLoc=_selfLoc;
+    /* (#R413) an explicit coordinate, written the way every map app writes one ("34.7016, 135.4959").
+       Atlas obtains the reader's position as two numbers and must be able to HAND THEM BACK to any
+       capability that takes a place — otherwise the fact it just obtained is only usable through a
+       magic word, and every origin-taking case would need its own lng/lat pair bolted on. Latitude
+       first, because that is the order the whole world writes and the order IntMap's own readouts
+       print. Two bare numbers are never a place name, so nothing that used to resolve stops. */
+    const COORD_RE=/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/;
+    function _coordPlace(place){ const m=COORD_RE.exec(place); if(!m) return null;
+      const lat=+m[1], lng=+m[2]; if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
+      return {lng,lat,name:lat.toFixed(4)+', '+lng.toFixed(4)}; }
     async function geocode(place){ place=String(place||'').trim();
-      if(SELFLOC_RE.test(place)){ const sl=await _selfLoc(); if(sl) return _setLast({lng:sl.lng,lat:sl.lat,name:sl.name}); /* denied → fall through to deixis/centre */ }
-      if(!place||DEIXIS_RE.test(place)||SELFLOC_RE.test(place)){
+      /* ⚠ (#R413) A REFUSED GPS USED TO BECOME THE MAP CENTRE, AND THE CALLER WAS NEVER TOLD.
+         「現在地から大阪駅まで」 with location blocked fell through the two branches below and
+         returned `GE().camera.getCenter()` — so IntMap drew a route from wherever the map happened to
+         be pointing and reported it as a SUCCESS. That is the failure PRODUCT.md §3.4 names by name
+         (「必要な地点を勝手に決めない… 地図の中心で代用せず」) and it is worse than the refusal that
+         started this round, because nothing on screen says the origin is wrong. A self-location
+         phrase now resolves to the device or to NOTHING — including past `_lastPlace`, which is the
+         place ATLAS last touched and is no more the reader than the map centre is. */
+      if(SELFLOC_RE.test(place)){ const sl=await _selfLoc(); return sl?_setLast({lng:sl.lng,lat:sl.lat,name:sl.name}):null; }
+      { const c=_coordPlace(place); if(c) return _setLast(c); }
+      if(!place||DEIXIS_RE.test(place)){
         const _lastPlace=CTX.lastPlace(); if(_lastPlace) return {lng:_lastPlace.lng,lat:_lastPlace.lat,name:_lastPlace.name}; const c=GE().camera.getCenter(); return {lng:c.lng,lat:c.lat,name:''}; }
       /* (#R93d) A 'capital' fuzzy match carries the COUNTRY's centroid, NOT the city — up to ~80 km off (searching
          "Riga" gave Latvia's centroid 83 km from the city, "Paris" gives France's centroid, …), which put the point
@@ -469,5 +517,9 @@ export function makeAtlasGeoResolve(HOST, CTX) {
     function flyToBox(box){ try{ const el=GE().render.container&&GE().render.container(); const W=(el&&el.clientWidth)||1000, H=(el&&el.clientHeight)||700; const pad=Math.max(38, Math.round(Math.min(W,H)*0.09));
       const cam=GE().camera.forBounds(box,{padding:pad,maxZoom:16.5}); if(cam&&cam.center&&isFinite(cam.zoom)){ const z=Math.max(0.6,Math.min(16.5,cam.zoom)); GE().camera.flyTo({center:[cam.center.lng,cam.center.lat], zoom:z, duration:1100}); return true; } }catch(_){}
       try{ GE().camera.fitBounds(box,{padding:46,duration:1100,maxZoom:16}); return true; }catch(_){} return false; }
-  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, flyToBox, geoVerify, geocode, parseDirectional, placeExtent, regionBox, sliceBox };
+  /* ⚠ (#R413) THIS SET IS NOT A CONVENIENCE — tests/r199-checks ② requires it to be EXACTLY what
+     js/atlas-console.js destructures, because a name in one and not the other is a silent
+     `undefined`. So `SELFLOC_WORDS`, `SELFLOC_RE` and `_coordPlace` are NOT exported for the test's
+     benefit: tests/r413-checks reaches them the way the app does, through `geocode()`. */
+  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geocode, parseDirectional, placeExtent, regionBox, sliceBox };
 }
