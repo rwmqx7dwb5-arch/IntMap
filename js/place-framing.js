@@ -44,6 +44,12 @@
          as a box spanning nearly the whole globe, and framing it zooms to the entire world. Any box
          wider than 180° of longitude — or taller than 170° — is therefore rejected and the class
          table answers instead. js/widgets.js has guarded its country flight the same way since #R34.
+         ⚠ (#R426) That is a rule about a box a PROVIDER built with min/max, which genuinely cannot
+         tell «spans the date line» from «spans the planet». A box that CAN say so does not trip it:
+         js/country-extent.js writes a wrapping extent as an interval whose east edge runs past 180
+         (Russia is 26.9 → 191.0, i.e. 164.1° wide), so `e - w` is the true span here and Russia is
+         framed rather than refused. Only Antarctica, which really does encircle the pole, still
+         arrives 360° wide and still takes the widened fallback below.
        · A bounding box is not always the useful frame. Nominatim gives a river or a motorway a box
          hundreds of km across whose centre is nowhere near the point that was clicked, so a LINEAR
          feature is framed by its class, not its extent. */
@@ -289,8 +295,21 @@
        larger than any place that could be framed by its own box at street scale and far smaller than
        every outlier measured. Tokyo (6.3°) and France (20°) are still rejected; Monaco and Vatican
        City keep their footprints. */
+    /* ⚠⚠⚠ (#R426) …AND A BOX THAT HAS NO OUTLIERS MUST NOT BE JUDGED BY THIS TEST. The rule
+       above is a GUESS about a box whose provenance is unknown — it infers «this extent is
+       being driven by outlying territory» from the label sitting off-centre, because a
+       geocoder hands over one number and no way to ask what is in it. Our own country rows
+       are not that: js/country-extent.js decides which parts of the feature ARE the country
+       and publishes only those, so `raw.homeExtent` says the trimming already happened and
+       an off-centre label is now just where the label goes.
+       MEASURED, with the box fixed at the source and this test still applied to it: Norway
+       (26.4° × 13.2°, mainland), Denmark (7.1° × 3.2°, all fifteen parts including Bornholm),
+       Russia, Kiribati, Croatia, Vietnam, Indonesia, the Bahamas and eleven more were STILL
+       refused and STILL fell to the flat `country` zoom of 4.4 — twenty rows framed by a
+       guess while holding their own measured footprint. Denmark is the clearest of them: the
+       whole country is in the box, and the label is 13 % across it because Jutland is. */
     const plng=+(raw.lon!=null?raw.lon:raw.lng), plat=+raw.lat;
-    if(isFinite(plng)&&isFinite(plat)){
+    if(!raw.homeExtent&&isFinite(plng)&&isFinite(plat)){
       const cx=(w+e)/2, cy=(s+n)/2;
       const fx=(plng-w)/(e-w), fy=(plat-s)/(n-s);
       const offX=Math.abs(plng-cx), offY=Math.abs(plat-cy);

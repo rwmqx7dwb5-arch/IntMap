@@ -122,17 +122,19 @@ window.IntMapModules.countriesUi=function(HOST){
         if(!(gj&&gj.features)){ gj=await grab('ne_10m_admin_0_countries.geojson'); coarse=false; }
         if(gj&&gj.features){
           HOST.countryGeo=gj; window.countryGeo=HOST.countryGeo;   /* reused by the projection viewer (#16,#17) */
-          /* [w,s,e,n] of a feature's rings — no turf, because this is arithmetic over coordinates and
-             runs once per country. Returns null when the geometry is unusable. */
-          const _bboxOf=(feat)=>{
-            let w=Infinity,s2=Infinity,e=-Infinity,n=-Infinity,seen=0;
-            const walk=(c)=>{ if(!Array.isArray(c)) return;
-              if(typeof c[0]==='number'){ const x=+c[0],y=+c[1];
-                if(isFinite(x)&&isFinite(y)){ seen++; if(x<w)w=x; if(x>e)e=x; if(y<s2)s2=y; if(y>n)n=y; } return; }
-              for(const k of c) walk(k); };
-            try{ walk(feat&&feat.geometry&&feat.geometry.coordinates); }catch(_){ return null; }
-            return seen?[w,s2,e,n]:null;
-          };
+          /* ══ ⚠⚠⚠ (#R426) TWO BOXES, BECAUSE THEY ANSWER TWO DIFFERENT QUESTIONS ═════════════
+             This was one function returning min/max over the whole feature, and both callers were
+             handed it. They do not want the same thing. Framing asks WHERE IS THE COUNTRY; the
+             hit-test's cheap refusal asks WHERE COULD THIS POINT POSSIBLY BE. For a country with
+             remote territory those differ by more than a hundred degrees — Norway's union is
+             135.2° of latitude because Bouvet Island is Norwegian — and the union answered the
+             framing question with the hit-test's answer. See js/country-extent.js for what that
+             cost and how the frame is derived; the decision lives there because it is pure and so
+             can be measured in Node against the real Natural Earth geometry. */
+          const CE=()=>window.IntMapCountryExtent;
+          const _labelOf=(p)=>(p&&p.LABEL_X!=null&&p.LABEL_Y!=null)?[+p.LABEL_X,+p.LABEL_Y]:null;
+          const _homeOf=(feat)=>{ try{ const M=CE(); return M?M.homeExtent(feat&&feat.geometry,_labelOf(feat&&feat.properties)):null; }catch(_){ return null; } };
+          const _fullOf=(feat)=>{ try{ const M=CE(); return M?M.fullExtent(feat&&feat.geometry):null; }catch(_){ return null; } };
           /* ══ ⚠⚠⚠ (#R375) ONE CONSTRUCTOR, BECAUSE TWO LOOPS BUILD THIS RECORD ════════════════════
              #R195 split this load in two — the 110 m file for the ATTRIBUTES at boot, the 10 m file for
              the GEOMETRY once the browser is idle — on the premise that «the attributes are identical at
@@ -173,8 +175,17 @@ window.IntMapModules.countriesUi=function(HOST){
                  offer, so every country from Russia to Vatican City was framed at the one `country`
                  zoom of 4.4. Measured: Monaco, Singapore, Vatican City and Japan all landed on 4.4.
                  The geometry that answers this is already in hand here — one pass over the winning
-                 feature's rings, done once per country at load. */
-              bbox:_bboxOf(f),
+                 feature's rings, done once per country at load.
+                 (#R426) …and it is the country's HOME extent, not the union of everything it owns.
+                 The union put Norway back on 4.4 and flew New Zealand to zoom 3.2; see the ⚠ block
+                 above `_homeOf` and js/country-extent.js. */
+              bbox:_homeOf(f),
+              /* (#R426) the union is still published, under a name that says what it is, for the one
+                 reader that needs a SUPERSET rather than a frame: js/atlas-view-subject.js refuses a
+                 country outright when the sampled point is outside this box before paying for a
+                 ray-cast, and a refusal computed from the home extent would deny that Bouvet Island
+                 is in Norway. */
+              bboxAll:_fullOf(f),
               /* (#R240) the ISO 3166-1 alpha-2 is KEPT, not just used for the flag: it is the key
                  Intl.DisplayNames needs to name this country in the reader's own language — see
                  `cName` in js/app-body.js. Without it every language but Japanese read English. */
@@ -241,7 +252,7 @@ window.IntMapModules.countriesUi=function(HOST){
                 /* an EXISTING row is enriched IN PLACE, never replaced — see the ⚠ above `upgrade` */
                 s.area=Math.round(v.area); s._area=v.area;
                 s.density=(s.pop&&v.area)?s.pop/v.area:null;
-                s.bbox=_bboxOf(v.f)||s.bbox; });
+                s.bbox=_homeOf(v.f)||s.bbox; s.bboxAll=_fullOf(v.f)||s.bboxAll; });
               /* ⚠⚠⚠ (#R393) A ROW CREATED HERE IS A PRESENT-DAY ROW, AND THIS PASS LANDS AFTER THE CLOCK
                  MAY ALREADY HAVE TRAVELLED. `_mkStat` reads the file: 2024's population and GDP. Below
                  the World Bank's 1960 floor js/time-countries.js overlays ONCE, so nothing would ever

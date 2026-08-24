@@ -242,7 +242,11 @@ export function makeAtlasViewSubject(CTX) {
         let code = null;
         for (const f of feats) {
           const st = countryStats ? countryStats[String(f.id)] : null;
-          const bb = (st && st.bbox && st.bbox.length === 4) ? st.bbox : null;
+          /* ⚠ (#R426) THE SUPERSET, NOT THE FRAME. `bbox` is the country's HOME extent now — the
+             parts that read as the country — and a refusal built from it would answer «that point
+             cannot be in Norway» over Bouvet Island, which is Norwegian. `bboxAll` is the union
+             this line has always used, under the name that says so. */
+          const bb = (st && st.bboxAll && st.bboxAll.length === 4) ? st.bboxAll : null;
           /* the cheap refusal first; a wrapped ring's bbox is useless so it goes to the ray-cast */
           if (bb && (bb[2] - bb[0]) < 180 &&
               (lng < bb[0] || lng > bb[2] || lat < bb[1] || lat > bb[3])) continue;

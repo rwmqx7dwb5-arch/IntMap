@@ -138,10 +138,19 @@ const at = (p) => FILLER(p);
 
 function world() {
   const S = {};
-  const put = (c, o) => { S[c] = Object.assign({
+  /* ⚠ (#R426) THE FOUR GEO CLAIMS BELOW READ `bboxAll`, NOT `bbox`. A country row now
+     publishes two boxes (js/country-extent.js): `bbox` is the FRAME — where the country is,
+     with remote territory trimmed off — and `bboxAll` is the union of everything it owns.
+     Every claim this file pins is about the WHOLE TERRITORY (`spread` IS the measurement of
+     outlying territory; `arctic` is answered for the United States by Alaska), so they read
+     the union. The fixture mirrors what `_mkStat` writes, so a case that names one box gets
+     both — which is what a real row looks like. */
+  const put = (c, o) => { const r = Object.assign({
     code: c, nameEn: c, sov: true, subregion: 'Western Europe', capital: 'Cap',
     currency: 'XXX', languages: 'One', bbox: [10, 30, 11, 31], latlng: [30.5, 10.5]
-  }, FILLER(0.5), { milSpend: FILLER(0.5).gdp * 0.05 }, o); };
+  }, FILLER(0.5), { milSpend: FILLER(0.5).gdp * 0.05 }, o);
+    if (r.bboxAll === undefined) r.bboxAll = r.bbox;
+    S[c] = r; };
   const N = 240;
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1), v = FILLER(t);
