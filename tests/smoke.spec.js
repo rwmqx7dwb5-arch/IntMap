@@ -1802,22 +1802,59 @@ test('#R349 the war layer draws nothing until it is asked, then paints the day i
   expect(r.evtLayer, 'the operation-dot layer exists at all').toBe(true);
   expect(r.events, 'operation dots are drawn, not just their labels').toBeGreaterThan(0);
 
+  /* ⚠ (#R409 追記) CLICKING AN OPERATION OVER LAND MUST OPEN THE OPERATION, NOT THE COUNTRY UNDER IT.
+     Found on production: onLayer is a plain per-layer listener and NOT «topmost wins», so one click
+     ran both handlers and whichever popup was shown second removed the other — every operation that
+     is not at sea was unreachable, and Kursk opened the card for the Soviet Union underneath it.
+     The fix is #R210's claimClick / clickClaimed; this is the assertion that keeps it. */
+  const pop = await page.evaluate(async () => {
+    const GE = window.IntMapGeoEngine;
+    window.IntMapWarFronts.setDate('ww2', '1943-07-05');
+    GE.camera.jumpTo({ center: [36.187, 51.731], zoom: 6, pitch: 0, bearing: 0 });
+    const t0 = Date.now();
+    while (Date.now() - t0 < 20000) {
+      await new Promise((res) => setTimeout(res, 250));
+      const q = GE.coords.project([36.187, 51.731]);
+      if (GE.coords.queryRenderedFeatures([q.x, q.y], { layers: ['ww2-evt'] }).length) break;
+    }
+    const c = GE.render.canvas(), b = c.getBoundingClientRect(), q = GE.coords.project([36.187, 51.731]);
+    const at = { bubbles: true, clientX: q.x + b.left, clientY: q.y + b.top };
+    for (const type of ['mousedown', 'mouseup', 'click']) c.dispatchEvent(new MouseEvent(type, at));
+    await new Promise((res) => setTimeout(res, 900));
+    const el = document.querySelector('.plc-popup');
+    return { onDot: GE.coords.queryRenderedFeatures([q.x, q.y], { layers: ['ww2-evt'] }).length,
+      kind: !!(el && el.querySelector('.war-pop-k')), wiki: !!(el && el.querySelector('a')),
+      text: (el ? el.textContent : '').replace(/\s+/g, ' ').slice(0, 80) };
+  });
+  expect(pop.onDot, 'the click landed on an operation dot').toBeGreaterThan(0);
+  expect(pop.kind, 'the operation card opened, not the country under it: ' + pop.text).toBe(true);
+  expect(pop.wiki, 'the operation card carries its Wikipedia link').toBe(true);
+
   /* ⚠ (#R409) 「Chronosは動かすな。」 — the legend's own range moves the layer and NOTHING else. */
+  /* ⚠ the expectation is RELATIVE to wherever the slider was standing, not a date written here.
+     The first spelling pinned '1942-02-03', which was only true while this block happened to run
+     first; adding the click check above it moved the starting day and the assertion failed for a
+     reason that had nothing to do with what it measures. A test that depends on the order of the
+     blocks around it measures the order. */
   const slid = await page.evaluate(async () => {
     const clockBefore = window.IntMapTime.iso();
     const rng = document.querySelector('#data-legend-ww2 .war-range');
     if (!rng) return { missing: true };
-    rng.value = String(Math.min(+rng.max, +rng.value + 60));
+    const from = window.IntMapWarFronts.date('ww2');
+    const step = Math.min(+rng.max - +rng.value, 60);
+    rng.value = String(+rng.value + step);
     rng.dispatchEvent(new Event('input', { bubbles: true }));
     const t0 = Date.now();
     while (Date.now() - t0 < 8000) {
       await new Promise((res) => setTimeout(res, 150));
-      if (window.IntMapWarFronts.date('ww2') !== '1941-12-05') break;
+      if (window.IntMapWarFronts.date('ww2') !== from) break;
     }
-    return { missing: false, clockBefore, clockAfter: window.IntMapTime.iso(), layerDate: window.IntMapWarFronts.date('ww2') };
+    const want = new Date(Date.parse(from + 'T00:00:00Z') + step * 86400000).toISOString().slice(0, 10);
+    return { missing: false, clockBefore, clockAfter: window.IntMapTime.iso(), from, step, want, layerDate: window.IntMapWarFronts.date('ww2') };
   });
   expect(slid.missing, 'the legend has a day slider').toBe(false);
-  expect(slid.layerDate).toBe('1942-02-03');
+  expect(slid.step, 'the slider had room to move').toBeGreaterThan(0);
+  expect(slid.layerDate, 'the slider moved the layer by exactly the days it was dragged, from ' + slid.from).toBe(slid.want);
   expect(slid.clockAfter, 'the slider must not move the master clock').toBe(slid.clockBefore);
 
   const after = await page.evaluate(async () => {

@@ -360,3 +360,28 @@ test('R409 ⑰: ensure() waits for the record, and the kind colour is never a ma
   assert.ok(/if \(!k \|\| !Object\.keys\(k\)\.length\) return '#ffffff';/.test(kc), 'an empty kind table produces a match expression again');
   assert.ok(/if \(out\.length === 2\)/.test(kc), 'a single-kind table produces a match with no cases again');
 });
+
+/* ── ⑱ the operation card wins the click, and the legend is capped against its neighbours ─────── */
+/* ⚠ BOTH OF THESE WERE FOUND ON PRODUCTION, after every local gate was green.
+   · `onLayer` is a plain per-layer listener, not «topmost wins», so one click ran the operation
+     handler AND the country handler and whichever popup was shown second removed the other. Every
+     operation over land was unreachable; only the ones at sea, with no fill under them, opened.
+   · The legend was 579 px. That fits a window on its own — and the live site opens the submarine
+     cables legend (193 px) BY DEFAULT, and legends stack upward from a bottom anchor, so the box
+     started at y = −22 on a 900 px window and at −98 on a 768 px one, inside a container that is
+     `overflow-y:hidden`. The title, the close button and the opacity row could not be reached. */
+test('R409 ⑱: the operation claims its click, and the legend cap allows for another legend', () => {
+  const src = codeOnly(R('js/war-layer.js'));
+  const ev = src.slice(src.indexOf('function onEvent('), src.indexOf('function onEvent(') + 420);
+  assert.ok(/claimClick\(ev\)/.test(ev), 'the operation handler no longer claims the click, so the country underneath takes it');
+  const ar = src.slice(src.indexOf('function onArea('), src.indexOf('function onArea(') + 320);
+  assert.ok(/clickClaimed\(ev\)\)\s*return;/.test(ar), 'the country handler no longer stands down for a claimed click');
+  /* the claim must be the FIRST thing the country handler does — after `show()` it would be too late */
+  assert.ok(ar.indexOf('clickClaimed') < ar.indexOf('show('), 'the country handler shows its popup before asking whether the click was claimed');
+  /* and the height cap has to be viewport-relative, not a bare pixel number */
+  const cssBlock = R('js/war-layer.js');
+  const m = /'\.war-info\{max-height:([^;]+);/.exec(cssBlock);
+  assert.ok(m, 'the legend prose no longer carries a height cap');
+  assert.ok(/dvh|vh/.test(m[1]), 'the cap is a fixed pixel number again — it cannot know there is another legend on the map: ' + m[1]);
+  assert.ok(/calc\(/.test(m[1]), 'the cap no longer subtracts room for the box’s own controls and a neighbouring legend: ' + m[1]);
+});
