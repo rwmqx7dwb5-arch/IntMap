@@ -567,6 +567,18 @@ Flat/Globe/3D の卓の下に帯が潜り、角丸の箱の切れ端だけが読
 `N sources`。カード全体は代表地点へ fly（現行どおり）。`N sources` が
 **同じ News surface 内で**（既存の `#news-reader-pane`）Event detail を開く。
 
+⚠⚠⚠ **「同じ面に描く」だけでは同じ面にならない。** #R386 は面を共有すると決めたが、
+**面へ入る手順**は共有していなかった——記事 reader の入口 9 行に対して、詳細が持っていたのは
+`pane.style.display=''` と `feed.style.display='none'` の 2 行だけだった。そこから
+3 つの症状が同時に出ている: 帯のクラスを独自に綴ったので CSS が当たらず戻るボタンが素の
+`<button>` になり（`.ev-detail .reader-bar` は `.ev-detail` の**兄弟**を指せない）、一覧の外皮を
+伏せないので詳細が「一覧の残した帯」に描かれ、電話ではシートを full にしないので詳細ごと
+画面の下へ落ちた（実測 390×780・peek: 戻るボタンが y=866）。
+⇒ **入口は `enterReaderPane()`、出口は `closeReaderPane()` の 1 本ずつ**（Architecture.md の
+News 節）。帯は記事 reader と同じ `.nrp-bar` / `.nrp-back` で、規則の写しを持たない。
+⚠ **`renderUI()` は 1 面しか出さない。** 背景の再描画（auth の realtime 購読・言語切替・設定の
+適用）が一覧を読む面の横に並べると、サイドバーの flex 列が高さを折半する。
+
 **カテゴリ chips** は `すべて / ★ 保存済み` と**同じ行**に、その右へ横スクロールで並ぶ
 （`#news-cat-chips`）。⚠ **0 件のカテゴリは出さない**——押せない chip は嘘である。
 ⚠⚠ **軸が 2 つあることを、見た目で分かるようにする。** scope（すべて／★保存済み）は
