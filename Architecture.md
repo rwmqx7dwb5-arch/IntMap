@@ -498,6 +498,15 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 flex 列が高さを折半する）。**`setMode()` はタブ／scope の操作なので、必ず読む面を離れる。**
 ⚠ 「いま開いている出来事」（Atlas の `selectedEventId`）は**面を観測して**答える。閉じる経路は
 戻るボタンだけではない。
+⚠⚠ **読む面は Atlas への道を自分で持つ。** 入口は `.control-panel`（タブ列）ごと伏せるので、
+読んでいる間は Atlas タブが 0×0 になる。帯（`.nrp-bar`）は `js/article-reader.js` の
+`readerBar()` が**1 か所で**組み、戻ると **`.nrp-atlas`（「Ask Atlas」）** を必ず載せる——
+記事 reader も出来事の詳細もそれを呼ぶ。
+⚠⚠ **面を離れることと、Atlas の主題を捨てることは別である。** `closeReaderPane(quiet, carryArticle)`
+は既定で `window._imReader` を捨てるが、`setMode()` が **Atlas へ入る**ときだけ主題を運び、
+`onScreen:false` を立てる（次のタブ操作＝Atlas の解除を含む、が捨てる）。Atlas の文は
+運ばれた記事を「いま読んでいる」とは言わない（`js/atlas-state.js`）。詳細は
+[`docs/NEWS-EVENTS.md` §10.1](docs/NEWS-EVENTS.md)。
 
 ⚠⚠ **記事本文の取得（`fetchReadable()`・`js/article-reader.js`）は 2 段で、全体に 1 つの上限がある。**
 第 1 段は `r.jina.ai` の Markdown、第 2 段は **CORS プロキシ経由の記事 HTML** を `DOMParser` で

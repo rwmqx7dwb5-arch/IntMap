@@ -663,10 +663,15 @@ window.IntMapModules.newsUi=function(HOST){
     HOST.updateOcclusion();
   }
 
+  /* ⚠ (#R451) the bar itself is js/article-reader.js `readerBar()` — the ONE place the reading
+     surface's chrome is decided (#R435's rule, now enforced by construction rather than by spelling).
+     Reader⇄Web and ✨translate are this surface's own buttons and ride in as `extra`; ‹ back and the
+     route to Atlas belong to every reading surface and come from the builder. */
   function readerBar(item,mode){
     const back=window.IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
     const other=mode==='reader'?(window.IntMapLang.t(HOST.lang,'🌐 Web','🌐 ページ表示','🌐 Web','🌐 Веб','🌐 Web')):(window.IntMapLang.t(HOST.lang,'📖 Reader','📖 リーダー','📖 Leseansicht','📖 Читалка','📖 Lector'));
-    return `<div class="nrp-bar"><button class="nrp-back" id="nrp-back-btn">‹ ${back}</button><button class="nrp-mode" id="nrp-mode-btn">${other}</button>${mode==='reader'?`<button class="nrp-mode" id="nrp-translate-btn">✨ ${HOST.t('aiTranslate')}</button>`:''}<span class="nrp-src">${HOST.escForReader(item.publisher)}</span></div>`;
+    const extra=`<button class="nrp-mode" id="nrp-mode-btn">${other}</button>${mode==='reader'?`<button class="nrp-mode" id="nrp-translate-btn">✨ ${HOST.t('aiTranslate')}</button>`:''}`;
+    return HOST.readerBar({back,extra,publisher:item.publisher});
   }
 
   function renderReaderMode(item,res,mode){

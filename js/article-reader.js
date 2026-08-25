@@ -131,6 +131,41 @@ window.IntMapModules.articleReader=function(HOST){
        exactly the reported 「デザインが浮いている」: a reader wedged into the strip left over by a list
        that is no longer on screen (measured: 42 + 44 + 27 px of list chrome still standing). It is not
        invented behaviour any more; it is what the one reading surface has to do to be one. */
+  /* ══ ⚠⚠⚠ (#R451) THE READING SURFACE'S BAR IS BUILT HERE, ONCE ════════════════════════════
+     #R435 established that `#news-reader-pane` is ONE surface with one way in and one way out, and
+     it moved the Event detail onto the same `.nrp-bar`/`.nrp-back` SPELLING. The MARKUP was still
+     written out three times (here, js/news-ui.js `readerBar()`, js/news-events.js `openDetail()`),
+     so an exit added to one of them was missing from the other two — which is exactly how #R430's
+     Atlas bridge shipped with no route across it. The bar is a function now; the three surfaces
+     call it and can no longer disagree about what a reading surface offers.
+     ⚠ `extra` is for buttons that belong to ONE surface (Reader⇄Web, ✨translate). `back` and the
+       Atlas route belong to the surface itself and are not optional. */
+  function readerBar(o){
+    o=o||{};
+    const back=o.back||window.IntMapLang.t(HOST.lang,'Back','戻る','Zurück','Назад','Atrás');
+    /* the same English key js/tool-panel.js's map「Ask Atlas」uses — its nine translations already exist */
+    const atlas=window.IntMapLang.t(HOST.lang,'Ask Atlas','Atlasに聞く','Atlas fragen','Спросить Atlas','Preguntar a Atlas');
+    return '<div class="nrp-bar"><button class="nrp-back" id="'+(o.backId||'nrp-back-btn')+'">‹ '+HOST.escForReader(back)+'</button>'
+      +(o.extra||'')
+      +(o.publisher?('<span class="nrp-src">'+HOST.escForReader(o.publisher)+'</span>'):'')
+      +'<button class="nrp-atlas" type="button" title="'+HOST.escForReader(atlas)+'">'+HOST.escForReader(atlas)+'</button></div>';
+  }
+  /* ⚠⚠⚠ (#R451) THE ROUTE FROM THE READING SURFACE TO ATLAS — the one thing the surface could not do.
+     `enterReaderPane()` hides `.control-panel`, so while something is being read the tab row (News /
+     Companies / Countries / **Atlas**) is 0×0 and the only way out is ‹ back. MEASURED on production
+     (build R441, 800×450 / 1280×720 / 1920×1080 and 375×812): every mode button had height 0 while an
+     Event detail was open, so in the normal sidebar there was NO gesture that reached Atlas from a
+     reading surface — and #R430's `window._imReader` bridge therefore only ever crossed in workspace
+     mode, where Atlas is a separate window. CONSTITUTION §5: Atlas is not taken away from a surface.
+     ⚠ `IntMapAtlas` FIRST, not `IntMapConsole`. The kernel is lazy (js/atlas-loader.js) — measured on
+       a 375×812 reload, `window.IntMapConsole` was undefined while `window.IntMapAtlas` was already
+       there, so reaching for the console directly is a route that works on a desktop and throws on a
+       phone. */
+  function askAtlasAboutReading(){
+    try{ if(window.IntMapAtlas&&window.IntMapAtlas.call){ window.IntMapAtlas.call('open'); return; } }catch(_){}
+    try{ if(window.IntMapConsole&&window.IntMapConsole.open){ window.IntMapConsole.open(); return; } }catch(_){}
+    try{ const b=document.getElementById('btn-community'); if(b) b.click(); }catch(_){}
+  }
   function enterReaderPane(){
     /* (#R160) reveal the sidebar to show the reader. The sidebar overlays a fixed full-width map, so this
        can't move the map — just drop `collapsed` and let the search-pill layout recompute; no anchor, no resize. */
@@ -141,6 +176,11 @@ window.IntMapModules.articleReader=function(HOST){
     ['sidebar-search-bar','news-filter-toggle','ai-geocode-row',
      'live-news-feed','info-dashboard','community-feed'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display='none'; });
     const pane=document.getElementById('news-reader-pane'); if(pane) pane.style.display='flex';
+    /* ⚠ (#R451) the Atlas route is wired ON THE PANE, not on the button: every surface replaces the
+       pane's innerHTML after entering, so a listener bound to the element would be thrown away by the
+       very next render. The pane itself outlives them all, so one delegated listener serves all three. */
+    try{ if(pane && !pane.dataset.atlasRoute){ pane.dataset.atlasRoute='1';
+      pane.addEventListener('click',(e)=>{ try{ const b=e.target&&e.target.closest&&e.target.closest('.nrp-atlas'); if(!b) return; e.preventDefault(); askAtlasAboutReading(); }catch(_){} }); } }catch(_){}
     /* ⚠ (#R435) the ONE switch that says «something is being read». Workspace mode's own layout CSS
        (js/workspace.js) forces the News window's list visible with `!important`, so an inline
        display:none cannot reach it — it reads this class instead of keeping a second copy of the rule. */
@@ -155,7 +195,7 @@ window.IntMapModules.articleReader=function(HOST){
     try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
     const pane=enterReaderPane(); if(!pane) return;
     const back=window.IntMapLang.t(HOST.lang,'Back to news','ニュースへ戻る','Zurück zu den News','Назад к новостям','Volver a noticias');
-    pane.innerHTML=`<div class="nrp-bar"><button class="nrp-back" id="nrp-back-btn">‹ ${back}</button><span class="nrp-src">${HOST.escForReader(item.publisher)}</span></div>
+    pane.innerHTML=`${readerBar({back,publisher:item.publisher})}
       <div class="nrp-loading"><div class="nrp-spinner"></div>${window.IntMapLang.t(HOST.lang,'Loading article…','記事を読み込み中…','Artikel lädt…','Загрузка статьи…','Cargando artículo…')}</div>`;
     pane.querySelector('#nrp-back-btn').onclick=HOST.closeReaderPane;
     pane.scrollTop=0;
@@ -172,5 +212,5 @@ window.IntMapModules.articleReader=function(HOST){
     const hasText=res.blocks&&res.blocks.length>=2;
     HOST.renderReaderMode(item,res, hasText?'reader':'web');
   }
-  return { enterReaderPane, openArticleInSidebar };
+  return { enterReaderPane, openArticleInSidebar, readerBar };
 };
