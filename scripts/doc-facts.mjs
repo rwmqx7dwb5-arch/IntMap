@@ -1326,6 +1326,49 @@ if (RULE && RULE !== 'i18n-open-gap') {
   }
 }
 
+/* ═══ 31. 既存機能を削る方針は、3つの正本すべてで同じ形をしている ══════════════════════════
+ *  (#R473) The user changed the policy: removing or shrinking an existing feature is allowed —
+ *  proposed, confirmed, then done — and doing it unilaterally stays forbidden. That one policy is
+ *  written in three documents, in three voices: CONSTITUTION.md (何を守るか), CLAUDE.md (どう働くか)
+ *  and PRODUCT.md (§2.1 守ること).
+ *  ⚠ The failure this repository actually keeps having is «one was updated, two were not» —
+ *    #R403's gate-lists, #R399's counts, `backup-shell`'s launcher. Here BOTH stale halves are
+ *    dangerous: a session reading the old wording refuses to propose a removal that is now wanted,
+ *    and a session reading a permission with the asking-step dropped removes things unasked.
+ *  ⚠ What is checked is the SHAPE, not the wording. Inside the window each document opens when it
+ *    talks about 既存機能 there must be (a) the removal words, (b) the condition that makes it
+ *    legal — asking — and (c) the prohibition on doing it alone.
+ *  ⚠ The Atlas carve-out (implementation may go; the reachable capabilities and the answer quality
+ *    may not) has ONE owner: CONSTITUTION.md §5. The other two must NAME that file rather than
+ *    carry a second copy of the sentence — a copy is what goes stale.
+ *  ⚠ AND A DOCUMENT THAT SIMPLY STOPPED SAYING IT IS NOT GREEN (#R385's shape): no anchor at all
+ *    is a failure, not a pass. */
+{
+  const OWNERS = ['CONSTITUTION.md', 'CLAUDE.md', 'PRODUCT.md'];
+  const CANON = 'CONSTITUTION.md';
+  const WIN = 700;                                   /* 錨から先の「その方針を述べている範囲」 */
+  for (const f of OWNERS) {
+    const body = BODY.get(f);
+    if (body == null) { fail('shrink-policy', `${f} was not scanned — it is one of the three documents that carry the removal policy`); continue; }
+    const wins = [...body.matchAll(/既存機能/g)].map((m) => body.slice(m.index, m.index + WIN));
+    if (!wins.length) { fail('shrink-policy', `${f} no longer states the policy about 既存機能 at all — a rule that stopped being written down is not a rule`); continue; }
+    const any = (re) => wins.some((w) => re.test(w));
+    if (!any(/削除|縮小/)) fail('shrink-policy', `${f} names 既存機能 but never says what may happen to it`);
+    if (!any(/確認|承認/)) fail('shrink-policy', `${f} states the removal policy without the step that makes it legal — asking first`);
+    if (!any(/勝手|承認の無い|承認されるまで/)) fail('shrink-policy', `${f} permits removal without forbidding it unilaterally — permission with no brake is a licence`);
+    if (f === CANON) {
+      const whole = /Atlas[\s\S]{0,200}?一体/.test(body);
+      const kept = /到達[^。]{0,20}能力[^。]{0,40}(削ら|減ら)/.test(body);
+      if (!whole || !kept) fail('shrink-policy', `${CANON} owns the Atlas carve-out and no longer carries it (treat Atlas as one system${whole ? '' : ' — missing'}; its reachable capabilities are not cut${kept ? '' : ' — missing'})`);
+    } else if (!wins.some((w) => w.includes(CANON))) {
+      fail('shrink-policy', `${f} states the removal policy without sending the reader to ${CANON} — the Atlas carve-out is written there and nowhere else`);
+    }
+  }
+  if (!problems.some((p) => p.startsWith('shrink-policy'))) {
+    ok('shrink-policy', `removal is proposed-then-confirmed in all ${OWNERS.length} standing documents, and the Atlas carve-out has one owner`);
+  }
+}
+
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
 /* (#R407) `--rule=` narrows what is REPORTED as well as what is run. ⚠ A name that matched no rule
    at all must be an error: a typo would otherwise exit 0 and let a mutation test prove nothing. */
