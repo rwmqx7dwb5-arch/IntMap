@@ -262,7 +262,10 @@ test('R439 ⑥ the retired isobar id still resolves — share link, alias and a 
    draws one set of streaks. ⚠ And ec-temp keeps its ORIGINAL key or every reader who ticked that
    box before this round is silently unticked. */
 test('R439 ⑦ the particle preference is per layer, and ec-temp keeps its old key', () => {
-  assert.match(WX, /const PARTS_KEYS=\{'ec-temp':'intmap_wx_temp_parts','ec-gust':'intmap_wx_gust_parts','ec-slp':'intmap_wx_slp_parts'\};/);
+  /* ⚠ (#R455) A FOURTH LAYER ASKS (`ec-precip`), and three of the four now DEFAULT ON. This
+     assertion is still an exact match on the table, because that table is the one place that can
+     be wrong about which layers can ask — what changed is its contents, not its job. */
+  assert.match(WX, /const PARTS_KEYS=\{'ec-temp':'intmap_wx_temp_parts','ec-gust':'intmap_wx_gust_parts','ec-slp':'intmap_wx_slp_parts','ec-precip':'intmap_wx_precip_parts'\};/);
   assert.match(WX, /W\.setSolo\(PARTS_IDS\.some\(id=>parts\[id\]&&state\[id\]&&state\[id\]\.on\)\)/,
     'the effective answer is the OR over every asking layer');
   assert.match(WX, /function windPartsRow\(cfg\)\{\s*if\(!\(cfg\.id in PARTS_KEYS\)\) return '';/,
@@ -275,7 +278,7 @@ test('R439 ⑦ the particle preference is per layer, and ec-temp keeps its old k
   assert.match(AC, /\['ec-gust',\/gust\|突風/, 'Atlas understands 「突風の上に」');
   assert.match(AC, /\['ec-slp',\/press\|気圧/, 'and 「気圧の上に」');
   assert.match(AC, /window\._imWxParts\(hit\[0\],want\)/, '…and writes through the one door');
-  for (const k of ['gustWindParticles:', 'slpWindParticles:']) {
+  for (const k of ['gustWindParticles:', 'slpWindParticles:', 'precipWindParticles:']) {
     assert.ok(AC.includes(k), 'a reply can carry ' + k + ' inline');
   }
   /* the two switches that are no longer checkboxes travel in the share link, or a shared picture

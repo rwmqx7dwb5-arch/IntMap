@@ -70,7 +70,8 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'beta-dl-ukrfront':'preview_ukraine.png',       /* (#R79g) real basemap + live DeepState frontline (green = UA gains, red = occupied) */
       'cb-rail2':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',   /* German rail web */
       'ox-oxrail':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',
-      'beta-dl-rail':'https://a.tiles.openrailwaymap.org/standard/'+4+'/'+_t45.x+'/'+_t45.y+'.png',
+      /* ⚠ (#R455) `beta-dl-rail` USED TO SIT ON THIS SAME UPSTREAM TILE and now has its own capture
+         at the bottom of this table — one key, one value, no duplicate row. */
       'ox-oxsea':'https://tiles.openseamap.org/seamark/7/63/42.png',   /* Dover Strait — dense real seamarks */
       /* (#R79i) actual IntMap contour-line render captured over the Alps (Zermatt/Matterhorn) */
       'dl-contours':'preview_contours.png',
@@ -103,7 +104,29 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
       'dl-sealevel':'preview_sealevel.png',
       'dl-subcables':'preview_subcables.png',
       'dl-uselect':'preview_uselect.png',
-      'beta-dl-volc2':'preview_volcanoes.png'
+      'beta-dl-volc2':'preview_volcanoes.png',
+      /* == (#R455) SEVEN MORE CAPTURES, SAME FOLDER, SAME RULE =================================
+         「レイヤーサムネイルフォルダに７つ追加したから、それも反映させといて。」 Same provenance as
+         #R309: real screenshots of THIS app with THAT layer on, named by the layer's own English
+         label, centre-cropped to the tile's 240:121 and saved at 480×242 so `cover` crops nothing.
+         ⚠ FIVE OF THESE ROWS OUTRANK SOMETHING THAT WAS ALREADY DRAWING, because `into()` tests
+         IMG first — and that is the point, not an accident:
+           · dl-planes / dl-sats had REAL canvas painters (a sketch of routes, a sketch of a shell).
+             Those stay as code, but a photograph of the real thing is what the tile is for.
+           · dl-radar had the `radarURL()` special case one line below — a single RainViewer tile
+             over Germany, which is whatever weather Germany happens to have.
+           · dl-ec-precip and dl-ec-slp had PAINT/REAL entries painted from the Open-Meteo field.
+           · beta-dl-rail pointed at an upstream OpenRailwayMap tile — a picture of OSM's rendering,
+             not of this app's gauge colours. ⚠ `cb-rail2` (basemap reference line) and `ox-oxrail`
+             (the OpenRailwayMap raster overlay) are DIFFERENT layers and keep their upstream tile.
+         dl-ec-gust had no entry in any table at all — its tile was the labelled gradient. */
+      'dl-planes':'preview_planes.png',
+      'dl-sats':'preview_satellites.png',
+      'dl-radar':'preview_radar.png',
+      'dl-ec-precip':'preview_precipfc.png',
+      'dl-ec-slp':'preview_slp.png',
+      'dl-ec-gust':'preview_gusts.png',
+      'beta-dl-rail':'preview_railways.png'
     };
     let _radar=null;
     function radarURL(){ if(_radar!==null) return Promise.resolve(_radar); return fetch('https://api.rainviewer.com/public/weather-maps.json').then(r=>r.json()).then(j=>{ const p=j&&j.radar&&j.radar.past&&j.radar.past.length?j.radar.past[j.radar.past.length-1].path:null; const t4=tXY(4,8,50); _radar=p?((j.host||'https://tilecache.rainviewer.com')+p+'/256/4/'+t4.x+'/'+t4.y+'/2/1_1.png'):''; return _radar; }).catch(()=>{ _radar=''; return ''; }); }
@@ -705,14 +728,26 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        fourfold. Re-counted this round from the IMG table above and the bytes on disk — these are the
        three numbers that say what「a panel nobody opened」actually costs, and they are what the gate
        below (and, since this round, the SLICING of its drain) exists to keep off the boot path:
-         · self-hosted pictures — 28 distinct preview_*.png are named by IMG, 4,051,978 B of PNG in
+         · self-hosted pictures — 35 distinct preview_*.png are named by IMG, 4,572,977 B of PNG in
            total. That is the on-the-wire size of exactly the files IMG points at (PNG, already
            compressed; not gzip, not the whole repository), i.e. what _imgPump downloads.
-         · upstream tiles — the other 16 IMG rows are live GIBS / Carto / OpenRailwayMap / OpenSeaMap
+           (⚠ #R408 measured 28 / 4,051,978 B; #R455 added seven captures and re-weighed it. The
+            gate below is what forces that — a note that quotes its own subject has to be re-read
+            every time the subject changes, which is the whole reason the gate exists.)
+         · upstream tiles — the other 15 IMG rows are live GIBS / Carto / OpenRailwayMap / OpenSeaMap
            / Esri URLs, one request each, counted as URLs because their size is not ours to know.
+           (⚠ 16 until #R455: `beta-dl-rail` moved from an upstream OpenRailwayMap tile to its own
+            capture. `cb-rail2` and `ox-oxrail` are different layers and still point upstream.)
          · canvas painters — 33 jobs are released the instant this gate opens (the STAT / MEMBERS /
            non-lazy REAL / PAINT routes in into()), and a further 38 stay behind the
            IntersectionObserver (the World-Bank choropleths and REAL_LAZY) and are not boot cost.
+           ⚠ (#R455) THESE TWO ARE #R408'S OWN COUNTS AND ARE NOT RE-DERIVED HERE, because the way
+           #R408 counted them is not recoverable from the file and a number this round cannot
+           reproduce is a number it must not overwrite. What IS known exactly: `dl-planes` and
+           `dl-sats` left the eager set this round (IMG now answers them before REAL is reached),
+           so the eager figure is two lower than whatever #R408 meant by 33. The gate below does
+           not read these two, which is precisely why they were free to drift — see the note on
+           `tests/r408 ①d`.
 
        ⚠ The fix is NOT an IntersectionObserver. #R72 tried that and #R73 had to undo it: tiles
        registered while the panel was off-screen never got a second look and sat on their gradient

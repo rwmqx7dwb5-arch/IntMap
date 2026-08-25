@@ -1303,15 +1303,19 @@ window.IntMapModules.weatherEC=function(HOST){
        between them is one effective boolean — 「this box is ticked AND the layer it belongs to is
        on」 — pushed through `Wind.setSolo`. Neither module reads the other's state, so there is no
        second copy of either answer to drift.
-       ⚠ DEFAULT OFF. The streaks are drawn from the wind field, which is two more variables (u AND
-       v) that a reader with only a temperature raster up has never downloaded. Nothing about this
-       layer changes for a reader who does not touch the box; an absent key reads as off.
+       ⚠ DEFAULT OFF — ⚠ FOR THIS LAYER, AND SINCE #R455 FOR THIS LAYER ONLY (see PARTS_DEFAULT
+       below). The streaks are drawn from the wind field, which is two more variables (u AND v)
+       that a reader with only a temperature raster up has never downloaded. Nothing about the
+       temperature layer changes for a reader who does not touch the box; an absent key reads as
+       off there.
        ⚠ PUSHED FROM `syncLegend`, NOT FROM THE CHECKBOX HANDLER ALONE. The temperature layer can go
        off without anyone touching this box — the reader unchecks the row, a session restore turns
        it off, or `toggle`'s own catch turns it off because ECMWF could not be reached — and every
        one of those paths already goes through `syncLegend`. */
-    /* ⚠⚠ (#R439) THREE LAYERS ASK FOR THE STREAKS NOW, AND EACH REMEMBERS ITS OWN ANSWER ════════
+    /* ⚠⚠ (#R439) MORE THAN ONE LAYER ASKS FOR THE STREAKS, AND EACH REMEMBERS ITS OWN ANSWER ════
        「最大瞬間風速レイヤーにもパーティクルをつけて」「気圧レイヤーもパーティクルつけて」
+       (⚠ #R439 wrote 「THREE LAYERS」 here and #R455 added a fourth — the count lives in
+        PARTS_KEYS below, which is the one place that can be wrong about it.)
        #R337 wrote this as one boolean because there was one layer that could ask. A single flag
        cannot answer three: a reader who wants streaks over the pressure field and not over the
        temperature field has to be able to say so, and 「the box is ticked」 has to survive switching
@@ -1320,12 +1324,32 @@ window.IntMapModules.weatherEC=function(HOST){
        only draws one set of streaks.
        ⚠ `ec-temp` KEEPS ITS ORIGINAL KEY. A reader who ticked that box before this round has it
        stored under `intmap_wx_temp_parts`; renaming it would silently untick it for everybody.
-       ⚠ DEFAULT OFF for all three, for #R337's reason: the streaks are two more variables (u AND v)
-       that a reader with only a raster up has never downloaded. */
-    const PARTS_KEYS={'ec-temp':'intmap_wx_temp_parts','ec-gust':'intmap_wx_gust_parts','ec-slp':'intmap_wx_slp_parts'};
+       ⚠ (#R455) THE DEFAULT IS PER LAYER NOW, AND THREE OF THE FOUR START ON.
+       「海面気圧と最大瞬間風速レイヤーはデフォルトでパーティクルをオンに。降水量（予報）レイヤーも
+         パーティクルをオンできるように。(これもデフォルトでオン)。」
+       #R337's reason for OFF was the download — two more variables (u AND v) a reader with only a
+       raster up has never fetched. That reason does not weigh the same on every field: pressure,
+       gusts and forecast precipitation are all fields a reader is reading FOR the weather system
+       in them, and the streaks are what make the system legible (a low is a spiral, a front is a
+       shear line). Temperature is not — it is read as a value at a place — so `ec-temp` KEEPS
+       DEFAULT OFF, which is also what tests/r337 fixed and what a reader who never ticked it has
+       been getting since #R337.
+       ⚠ THE STORED VALUE STILL WINS BOTH WAYS. The default only decides what happens when the key
+       is ABSENT, so a reader who ticked a box (or unticked one) keeps their answer: `'1'` is on,
+       `'0'` is off, missing is `PARTS_DEFAULT`. Writing this as `!== '0'` for the on-by-default
+       rows is exactly what the Wind layer's own `partsOn` does (see PARTS_KEY above), so the two
+       preferences behave the same way rather than one of them treating 「never asked」 as 「no」.
+       ⚠ `ec-precip` IS NEW HERE, AND IT NEEDS NO NEW DATA SOURCE. The streaks always read the WIND
+       field (`VAR` at the top of this file — the SDK derives speed and direction from u+v); what
+       raster sits under them is irrelevant, which is why a scalar field like precipitation can
+       carry them at all. */
+    const PARTS_KEYS={'ec-temp':'intmap_wx_temp_parts','ec-gust':'intmap_wx_gust_parts','ec-slp':'intmap_wx_slp_parts','ec-precip':'intmap_wx_precip_parts'};
+    const PARTS_DEFAULT={'ec-temp':false,'ec-gust':true,'ec-slp':true,'ec-precip':true};
     const PARTS_IDS=Object.keys(PARTS_KEYS);
     const parts=Object.create(null);
-    PARTS_IDS.forEach(id=>{ let v=false; try{ v=(localStorage.getItem(PARTS_KEYS[id])==='1'); }catch(_){} parts[id]=v; });
+    PARTS_IDS.forEach(id=>{ let v=!!PARTS_DEFAULT[id];
+      try{ const s=localStorage.getItem(PARTS_KEYS[id]); if(s!=null) v=(s==='1'); }catch(_){}
+      parts[id]=v; });
     const partsOn=(id)=>!!parts[id];
     /* ⚠ THE OR OVER EVERY ASKING LAYER. `Wind.setSolo` is 「something other than the Wind layer wants
        the streaks」 and is idempotent, so the effective answer is 「any layer whose box is ticked is

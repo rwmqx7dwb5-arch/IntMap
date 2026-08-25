@@ -423,10 +423,19 @@ window.IntMapModules.newsEvents = function (HOST) {
     if (head) head.insertAdjacentHTML('beforeend',
       '<span class="ev-cat" title="' + S(L('Event category', '出来事のカテゴリ', 'Ereigniskategorie', 'Категория события', 'Categoría del suceso')) + '">' + S(catLabel(ev.category)) + '</span>');
 
+    /* ⚠⚠ (#R455) ボタンは**押すと何が起きるか**を名乗る。「3 sources」ではない。
+       「ニュースの詳細開くのに、○sourcesの部分をクリックするのはUIとして不自然。ボタンの名前
+         を変えて。」 — そのとおりで、これは数の**表示**であって動作の名前ではなかった。押すと
+       開くのは出来事の詳細シート（`openDetail`）なので、先頭は「詳細」になる。
+       ⚠ 媒体数は捨てない。**括弧の中に残す** — 「何媒体が報じた出来事か」は一覧を眺めている
+       段階でいちばん効く情報で、消すのは名前を直すこととは別の変更になる（CLAUDE.md §3.1）。
+       ⚠ `js/news-ui.js` の `_srcCountLabel()` は**この行ではない**。あちらは地図のツールチップと
+       携帯のポップアップに出る**説明文**で、押せない — だから「3 sources」のままが正しく、この
+       ラウンドで2つの文字列は意図的に分かれる。 */
     const nSrc = ev.sourceCount || 1;
     const label = nSrc === 1
-      ? L('1 source', '1媒体', '1 Quelle', '1 источник', '1 fuente')
-      : L('{n} sources', '{n}媒体', '{n} Quellen', '{n} источников', '{n} fuentes');
+      ? L('Details (1 source)', '詳細（1媒体）', 'Details (1 Quelle)', 'Подробнее (1 источник)', 'Detalles (1 fuente)')
+      : L('Details ({n} sources)', '詳細（{n}媒体）', 'Details ({n} Quellen)', 'Подробнее ({n} источников)', 'Detalles ({n} fuentes)');
     const btn = document.createElement('button');
     btn.className = 'ev-sources';
     btn.textContent = String(label).replace('{n}', nSrc);
