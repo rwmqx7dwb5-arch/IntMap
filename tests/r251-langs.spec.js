@@ -101,6 +101,50 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
   await page.waitForFunction(() => window.IntMapLang && window.IntMapLang.list && document.readyState === 'complete',
     null, { timeout: 60_000 });
 
+  /* ══ ③ (#R473) THE FAVOURITES HEADING DRAWS EXACTLY ONE STAR, IN EVERY LANGUAGE ═════════════════
+     Measured on production (build R466/R467): `#layer-fav-section > .layer-fav-title` read
+     「⭐ ★ Favoriten」 in de, and the same twice-starred heading in es and ru. index.html owns the
+     decoration — `<div class="layer-fav-title">⭐ <span data-i18n="favLayers">…</span></div>` — and
+     `favLayers` in those three locale files carried a star of its own.
+
+     ⚠⚠⚠ NOTHING HERE COULD SEE IT, AND ① IS THE REASON: 「★ Избранное」 IS A CORRECT RUSSIAN
+     TRANSLATION. ① asks «is this English while a translation exists?»; every instrument in
+     scripts/i18n-*.mjs asks a version of the same question. The words were never the defect — the
+     TRANSLATION CARRIED DECORATION, and the decoration was the markup's.
+     ⚠ Nor would comparing the characters have helped: the markup's star is ⭐ U+2B50 and the
+     locales' was ★ U+2605, so «does the translation repeat the markup's character?» is GREEN on the
+     bytes that shipped. tests/r473-checks.test.mjs gates the TABLES on that reasoning (a ceiling of
+     zero: a key the markup decorates carries no decoration in any language) and runs on every push.
+
+     ⚠ THIS RIDES ①'s WALK RATHER THAN BOOTING AGAIN. Written as its own spec it measured 10.9 s —
+     nine language switches at ~1.1 s each, and the switching IS the cost — against a core ceiling
+     with about five seconds in it (scripts/test-budget.mjs). This file already switches every
+     language on a booted app, which is the whole of what the claim needs, so it goes here: «it
+     forces consolidation instead of accumulation», taken at its word, exactly as #R451 did.
+     ⚠ ① skips English (it would have nothing to report), so English is read HERE, before the loop.
+     ⚠ And the section is `display:none` until a layer is starred (css/intmap.css), so star one. */
+  const FAV_STARS = '★☆⭐🌟✦✧⭑⭒✩✪✫✬✭✮✯✰';
+  const favStar = await page.evaluate(async () => {
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    let st = null;
+    for (let i = 0; i < 100 && !st; i++) { st = document.querySelector('#layer-dropdown .lyr-star'); if (!st) await sleep(50); }
+    if (!st) return { ok: false, why: 'no #layer-dropdown .lyr-star after 5 s' };
+    if (!st.classList.contains('on')) st.click();
+    for (let i = 0; i < 100; i++) {
+      const s = document.getElementById('layer-fav-section');
+      if (s && s.classList.contains('has-favs') && getComputedStyle(s).display === 'block') return { ok: true, why: '' };
+      await sleep(50);
+    }
+    return { ok: false, why: '#layer-fav-section never took .has-favs' };
+  });
+  expect(favStar.ok, `#R473 ③ starring a layer: ${favStar.why}`).toBe(true);
+
+  const favSeen = [await page.evaluate(() => ({
+    lang: 'en',
+    text: document.querySelector('#layer-fav-section > .layer-fav-title').textContent.replace(/\s+/g, ' ').trim(),
+    own: (window.IntMapLang._ui.en || {}).favLayers,
+  }))];
+
   const findings = [];
   for (const lang of langs) {
     const res = await page.evaluate(async ({ screens, lang, exclude }) => {
@@ -201,11 +245,16 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
           }
         }
       }
-      return { switched: true, why: '', found };
+      /* (#R473) ③ — 同じ切り替えの上で、お気に入りの見出しを1行読む。判定はループの外 */
+      const favEl = document.querySelector('#layer-fav-section > .layer-fav-title');
+      const fav = { text: favEl ? favEl.textContent.replace(/\s+/g, ' ').trim() : null,
+        own: ((window.IntMapLang._ui && window.IntMapLang._ui[lang]) || {}).favLayers };
+      return { switched: true, why: '', found, fav };
     }, { screens: SCREENS, lang, exclude: EXCLUDE_SELECTOR });
 
     expect(res.switched, `${lang} actually switched (${res.why})`).toBe(true);
     findings.push(...res.found);
+    favSeen.push(Object.assign({ lang }, res.fav));
   }
 
   /* one row per (language, string) — one screen reporting it is enough to fix it */
@@ -220,6 +269,22 @@ test('#R251 (deep) every language: nothing on screen is English while IntMap hol
     .map((f) => `  ${f.lang.padEnd(8)} ${JSON.stringify(f.text).slice(0, 60).padEnd(62)} → ${JSON.stringify(f.expected).slice(0, 34)}   (${f.screen}, ${f.where}, ${f.via})`)
     .join('\n');
 
+
+  /* ══ ③ (#R473) — 数える。①の掃引が言語を切り替えたその状態で読んだ見出しを、ここで判定する ══ */
+  const favStarsIn = (s) => Array.from(s).filter((ch) => FAV_STARS.indexOf(ch) >= 0);
+  const favStrip = (s) => Array.from(s).filter((ch) => FAV_STARS.indexOf(ch) < 0).join('').replace(/\s+/g, ' ').trim();
+  const favReport = favSeen.map((f) => `  ${String(f.lang).padEnd(8)} ${JSON.stringify(f.text)} → ${favStarsIn(f.text || '').join('') || '(no star)'}`).join('\n');
+
+  expect(favSeen.length, `#R473 ③ every language was read (${favReport})`).toBe(langs.length + 1);
+  expect(favSeen.filter((f) => favStarsIn(f.text || '').length !== 1).map((f) => f.lang),
+    `#R473 ③ the favourites heading draws exactly ONE star in every language:\n${favReport}\n`).toEqual([]);
+  for (const f of favSeen) {
+    expect(favStarsIn(f.text)[0], `#R473 ③ ${f.lang}: the star is the markup's ⭐, not a ★ the translation brought`).toBe('⭐');
+    /* what is left once the star is taken away is that language's OWN row — `keyed()` inherits from
+       English (js/lang-registry.js), so comparing against it would let a missing row pass as English */
+    expect(favStrip(f.text), `#R473 ③ ${f.lang}: the heading is that language's own translation`).toBe(f.own);
+    expect(String(f.own || '').length, `#R473 ③ ${f.lang} has a favLayers row of its own`).toBeGreaterThan(0);
+  }
 
   /* ══ ② …AND AN OPEN PANEL FOLLOWS THE LANGUAGE ══════════════════════════════════════════════════
      Found by the sweep before it was split: switching language left ALREADY-OPEN panels in the old

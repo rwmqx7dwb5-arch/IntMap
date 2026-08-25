@@ -174,7 +174,23 @@ const BUDGET_S = 30;                    /* core: 0.5 min — measured 30 s over 
    not exist before — 4.1 / 3.8 / 2.8 s over three runs, entered at the upper bound. Nothing left
    the suite, so the total carries the whole of it; tests/r455.spec.js merely moves from the gate to
    the nightly tier (`currentRoundSpec()` demotes it), which relieves BUDGET_S and not this. */
-const TOTAL_BUDGET_S = 4629;            /* 77.2 min — 4,624 (#R455) + 5 (#R466: one new core spec, measured three times) */
+/* ⚠⚠ (#R473) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,629 -> 4,630 (+1 s). Saying
+   so plainly because this file's message is «never raise it»; #R388 / #R405 / #R410 / #R424 /
+   #R428 / #R435 / #R451 / #R455 / #R466 are the precedents.
+   ⚠ AND NO NEW SPEC FILE WAS ADDED, for the reason #R451 gives: the round's browser-only claim —
+   that the favourites heading draws exactly ONE star in every one of the nine languages — needs a
+   booted app and a switch through every language, and tests/r251-langs.spec.js ALREADY DOES BOTH.
+   Written as its own file it measured 10.9 s (nine switches at ~1.1 s each; the switching IS the
+   cost) against a core tier with about five seconds in it — so a separate spec would have paid for
+   a second boot and eight more switches to read one heading the existing walk already renders.
+     · MEASURED, serial, one worker, server already up, the test passing, on this machine:
+       33.98 s before the addition, 30.04 / 34.75 s after — the marginal is INSIDE the run-to-run
+       spread, so it is not claimed from that pair. The added work was timed directly instead
+       (starring one layer 0.38 s + nine textContent reads) at ≈ 0.5 s.
+     · CALIBRATED the way #R451 did: the committed entry for this file is 66 against 33.98 s local,
+       so a local second is ≈ 1.94 table-seconds here; 0.5 s is ≈ 1. ENTERED AS 1, and the entry
+       below goes 66 -> 67 so the sum and the ceiling still meet exactly. */
+const TOTAL_BUDGET_S = 4630;            /* 77.2 min — 4,629 (#R466) + 1 (#R473: ③ rides #R251's walk; no new spec) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

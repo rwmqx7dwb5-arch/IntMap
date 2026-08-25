@@ -64,7 +64,7 @@
   "tests/r210.spec.js": 10,
   "tests/r211.spec.js": 10,
   "tests/r226-seismic.spec.js": 29,
-  "tests/r251-langs.spec.js": 66,
+  "tests/r251-langs.spec.js": 67,
   "tests/r318-atlas.spec.js": 4,
   "tests/r318.spec.js": 4,
   "tests/r322.spec.js": 4,
