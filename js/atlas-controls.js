@@ -120,30 +120,45 @@ export function makeAtlasControls(HOST, CTX) {
     function _rowLbl(el){ try{ const row=el.closest&&(el.closest('.lyr-row')||el.closest('label')); if(!row) return '';
       const sp=row.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label')||row.querySelector('span');
       return String((sp?sp.textContent:row.textContent)||'').replace(/\s+/g,' ').trim().slice(0,40); }catch(_){ return ''; } }
+    /* (#R466) every name the sweep writes is STAMPED as its own, so a language change can take back
+       exactly what this function wrote and nothing that any other file authored deliberately. */
+    function _name(el,txt){ try{ el.setAttribute('aria-label',txt); el.setAttribute('data-imname','1'); }catch(_){} }
     function _uiNameSweep(){ try{ const jp=HOST.lang==='jp';
-      document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'favorite: ','お気に入り: ','Favorit: ','избранное: ','favorito: '))+l2); });
-      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'opacity: ','不透明度: ','Deckkraft: ','непрозрачность: ','opacidad: '))+l2); });
+      document.querySelectorAll('button.lyr-star:not([aria-label])').forEach(b=>{ const l2=_rowLbl(b); if(l2) _name(b,(window.IntMapLang.t(HOST.lang,'favorite: ','お気に入り: ','Favorit: ','избранное: ','favorito: '))+l2); });
+      document.querySelectorAll('input.lyr-op:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) _name(i2,(window.IntMapLang.t(HOST.lang,'opacity: ','不透明度: ','Deckkraft: ','непрозрачность: ','opacidad: '))+l2); });
       document.querySelectorAll('input.dl-date:not([aria-label])').forEach(i2=>{ let l2=_rowLbl(i2);
         if(!l2){ const lg=i2.closest('[id^="data-legend-"]'); if(lg) l2=lg.id.replace(/^data-legend-/,''); }   /* date inputs live in the layer's LEGEND, not its row */
-        if(l2) i2.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'date: ','日付: ','Datum: ','дата: ','fecha: '))+l2); });
-      document.querySelectorAll('#layer-dropdown input[type=checkbox]:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',l2); });
+        if(l2) _name(i2,(window.IntMapLang.t(HOST.lang,'date: ','日付: ','Datum: ','дата: ','fecha: '))+l2); });
+      document.querySelectorAll('#layer-dropdown input[type=checkbox]:not([aria-label])').forEach(i2=>{ const l2=_rowLbl(i2); if(l2) _name(i2,l2); });
       document.querySelectorAll('button.layer-popup-x:not([aria-label])').forEach(b=>{ let nm2='';
         const box=b.closest('[id^="data-legend-"]')||b.closest('[id$="-legend"]')||b.closest('[id^="legend"]')||b.closest('.layer-popup')||b.closest('.data-legend');
         if(box){ /* first heading candidate that contains REAL text (skip the ⋮⋮ drag handle) */
           let t3=''; try{ [].slice.call(box.querySelectorAll('b, strong, .lgd-t, span')).some(h=>{ const x2=String(h.textContent||'').replace(/\s+/g,' ').trim(); if(/\p{L}/u.test(x2)&&x2.length>=2){ t3=x2; return true; } return false; }); }catch(_){}
           nm2=(t3||String(box.id||'').replace(/^data-legend-/,'')).slice(0,32); }
-        b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'close legend: ','凡例を閉じる: ','Legende schließen: ','закрыть легенду: ','cerrar leyenda: '))+(nm2||'legend')); });
-      document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label',window.IntMapLang.t(HOST.lang,'sea level rise (m)','海面上昇 (m)','Meeresspiegelanstieg (m)','подъём уровня моря (м)','subida del nivel del mar (m)')); });
+        _name(b,(window.IntMapLang.t(HOST.lang,'close legend: ','凡例を閉じる: ','Legende schließen: ','закрыть легенду: ','cerrar leyenda: '))+(nm2||'legend')); });
+      document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ _name(i2,window.IntMapLang.t(HOST.lang,'sea level rise (m)','海面上昇 (m)','Meeresspiegelanstieg (m)','подъём уровня моря (м)','subida del nivel del mar (m)')); });
       /* generic: an unnamed ×/× button is a CLOSE button for its nearest identified container */
       document.querySelectorAll('button:not([aria-label]), [role="button"]:not([aria-label])').forEach(b=>{ try{
         const t2=(b.textContent||'').replace(/\s+/g,''); if(t2&&!/^[××✖xX]$/.test(t2)) return; if(b.id&&b.id.length>3) return;
         const host=b.closest&&b.closest('[id]'); if(!host||!host.id) return;
-        b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
-      document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label',window.IntMapLang.t(HOST.lang,'file: ','ファイル: ','Datei: ','файл: ','archivo: ')+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
+        _name(b,(window.IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
+      document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ _name(i2,window.IntMapLang.t(HOST.lang,'file: ','ファイル: ','Datei: ','файл: ','archivo: ')+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
       /* unnamed generic checkboxes/radios outside the layer panel: take the row text they sit in */
       document.querySelectorAll('input[type=checkbox]:not([aria-label]), input[type=radio]:not([aria-label])').forEach(i2=>{ try{
-        if(i2.closest('#layer-dropdown')||i2.closest('#atlas-panel')) return; const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',l2); }catch(_){} });
+        if(i2.closest('#layer-dropdown')||i2.closest('#atlas-panel')) return; const l2=_rowLbl(i2); if(l2) _name(i2,l2); }catch(_){} });
     }catch(_){} }
+    /* ⚠ (#R466) THE SWEEP NAMES ONLY WHAT HAS NO NAME (`:not([aria-label])`), so the first language an
+       element ever appeared in is the language its accessible name — and therefore the handle Atlas
+       finds it by — keeps for the rest of the session. MEASURED: after switching to French with
+       Settings open, the news-language checkboxes still announced "English"/"Japanese" and every
+       ×-button still announced "close: …". It now takes back its OWN labels (`data-imname`, written
+       by _name above) and runs again. Deferred a tick because updateI18n() dispatches `intmap-lang`
+       BEFORE it repaints the rows these names are derived from — the same reason a dozen other
+       listeners in this repository wait 20–30 ms. */
+    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ try{
+      document.querySelectorAll('[data-imname]').forEach(el=>{ try{ el.removeAttribute('aria-label'); el.removeAttribute('data-imname'); }catch(_){} });
+      _uiNameSweep();
+    }catch(_){} },40));
     /* permanent §17 diagnostic: how much of the UI can Atlas actually address? Names elements first, then counts. */
     window.IntMapUIAudit={ sweep:_uiNameSweep,
       run(){ _uiNameSweep(); const seen=new Set(); let total=0,named=0; const un=[];
