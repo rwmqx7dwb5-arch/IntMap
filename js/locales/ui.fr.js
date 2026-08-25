@@ -4764,6 +4764,10 @@ window.IntMapLang.define('fr', { ui: {
   "{water}: what lives in it, who draws water from it, and is it shrinking?": "{water} : qu’est-ce qui y vit, qui y puise de l’eau, et le niveau baisse-t-il ?",   /* atlas-examples.js (#R392) */
   "This is where {place} meets {water} — what does that coast carry?": "{place} : c’est ici que le pays rencontre {water} — que porte cette côte ?",   /* atlas-examples.js (#R392) */
   "{city}: what is this part of it used for, and what stood here before?": "{city} : à quoi sert ce quartier, et qu’y avait-il avant ?",   /* atlas-examples.js (#R392) */
+  /* (#R455) 「{city}は何の上に築かれ…」を、街の性格で3つに割ったうちの2つ — js/atlas-examples.js。
+     ⚠ {city} / {water} は描画時に地名へ置換されるトークン。綴りを変えると一致しない。 */
+  "{city} sits within sight of a border — what crosses there, and how has that shaped the place?": "{city} est à portée de vue d’une frontière — qu’est-ce qui la franchit, et comment cela a-t-il façonné la ville ?",   /* atlas-examples.js (#R455) */
+  "{city} lives off {water} — what comes and goes through here, and who depends on it?": "{city} vit de {water} — qu’est-ce qui entre et sort par ici, et qui en dépend ?",   /* atlas-examples.js (#R455) */
   "{city}: what is it built on, and what does it do that its neighbours do not?": "{city} : sur quoi cette ville est-elle bâtie, et que fait-elle que ses voisines ne font pas ?",   /* atlas-examples.js (#R392) */
   "This view is almost continuous built-up area — where does {city} actually end?": "Cette vue est presque entièrement bâtie — où s’arrête vraiment {city} ?",   /* atlas-examples.js (#R392) */
   "{city} is the only named place in this whole view — what keeps it supplied?": "{city} : c’est le seul lieu nommé de toute cette vue — qu’est-ce qui l’approvisionne ?",   /* atlas-examples.js (#R392) */
@@ -4773,9 +4777,23 @@ window.IntMapLang.define('fr', { ui: {
   "The equator crosses this view — where exactly, and what changes from one side to the other?": "L’équateur traverse cette vue — où exactement, et qu’est-ce qui change d’un côté à l’autre ?",   /* atlas-examples.js (#R392) */
   "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "Toute cette vue se situe dans les hautes latitudes — que lui fait la glace au fil de l’année ?",   /* atlas-examples.js (#R392) */
   "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak} : le sommet culmine ici à {ele} m — quel effet cela a-t-il sur la météo et sur les routes alentour ?",   /* atlas-examples.js (#R392) */
+  /* (#R455) 「いま画面の中に実際に何件あるか」を数えたうえで出すプリセット — js/atlas-examples.js。
+     ⚠ {ncab} / {nvolc} / {nquake} は描画時に数字へ置換されるトークン。綴りを変えると一致しない。 */
+  "{ncab} submarine cable landings sit inside this view — where do those cables run, and what happens if one is cut?": "{ncab} points d’atterrissement de câbles sous-marins se trouvent dans cette vue — où vont ces câbles, et que se passe-t-il si l’un est coupé ?",   /* atlas-examples.js (#R455) */
+  "One submarine cable lands inside this view — where does it go, and what happens if it is cut?": "Un câble sous-marin atterrit dans cette vue — où va-t-il, et que se passe-t-il s’il est coupé ?",   /* atlas-examples.js (#R455) */
+  "{nvolc} volcanoes stand inside this view — which of them is restless, and what would an eruption reach?": "{nvolc} volcans se dressent dans cette vue — lequel d’entre eux montre des signes d’activité, et jusqu’où irait une éruption ?",   /* atlas-examples.js (#R455) */
+  "{nquake} earthquakes have been recorded inside this view — which fault or plate boundary is behind them?": "{nquake} séismes ont été enregistrés dans cette vue — quelle faille ou limite de plaques est en cause ?",   /* atlas-examples.js (#R455) */
+  "There is news pinned inside this view right now — what is happening here, and who is reporting it?": "Des actualités sont localisées dans cette vue en ce moment — que se passe-t-il ici, et qui le rapporte ?",   /* atlas-examples.js (#R455) */
+  "Aircraft are crossing this view right now — where are they coming from, and what routes are these?": "Des avions traversent cette vue en ce moment — d’où viennent-ils, et de quelles routes s’agit-il ?",   /* atlas-examples.js (#R455) */
+  "Ships are moving through this view right now — what are they carrying, and where are they bound?": "Des navires traversent cette vue en ce moment — que transportent-ils, et vers où se dirigent-ils ?",   /* atlas-examples.js (#R455) */
+  "Satellites are passing over this view right now — what are they for, and who operates them?": "Des satellites passent au-dessus de cette vue en ce moment — à quoi servent-ils, et qui les exploite ?",   /* atlas-examples.js (#R455) */
+  "There is a volcano inside this view — is it restless, and what would an eruption reach?": "Il y a un volcan dans cette vue — montre-t-il des signes d’activité, et jusqu’où irait une éruption ?",   /* atlas-examples.js (#R455) */
+  "One earthquake has been recorded inside this view — which fault or plate boundary is behind it?": "Un séisme a été enregistré dans cette vue — quelle faille ou limite de plaques est en cause ?",   /* atlas-examples.js (#R455) */
+  "There is data-centre capacity inside this view — what does it serve, and what does it draw in power and water?": "Il y a de la capacité de centres de données dans cette vue — à quoi sert-elle, et que consomme-t-elle en électricité et en eau ?",   /* atlas-examples.js (#R455) */
   "Wind particles over the temperature layer": "Particules de vent sur la couche de température",   /* atlas-console.js (#R337) */
   "Wind particles over the gust layer": "Particules de vent sur la couche de rafales",   /* atlas-console.js (#R439) */
   "Wind particles over the pressure layer": "Particules de vent sur la couche de pression",   /* atlas-console.js (#R439) */
+  "Wind particles over the precipitation layer": "Particules de vent sur la couche de précipitations",   /* atlas-console.js (#R455) */
   "sea-level pressure switched on": "pression au niveau de la mer activée",   /* atlas-console.js (#R439) */
   "This panel could not be loaded — check your connection and try again.": "Ce panneau n'a pas pu être chargé — vérifiez votre connexion et réessayez.",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "Colomb atteint l'Amérique",   /* analysis-world-events.js (#R322) */
@@ -5800,6 +5818,10 @@ window.IntMapLang.define('fr', { ui: {
      One row, two controls, one word would read as one control. */
   "All topics": "Toutes les catégories",
   "Open event": "Ouvrir l’événement",
+  /* (#R455) ニュースカードのボタン（押すと出来事の詳細が同じ面に開く）— js/news-events.js。
+     「1 source」「{n} sources」はこの表の上のほうに既にあり、ここはそれを括弧に入れたボタン文言。 */
+  "Details (1 source)": "Détails (1 source)",   /* news-events.js (#R455) */
+  "Details ({n} sources)": "Détails ({n} sources)",   /* news-events.js (#R455) */
   "Seven seas (open ocean)": "Sept mers (océan ouvert)",
   "Eurasia": "Eurasie",
   "Middle East": "Moyen-Orient",

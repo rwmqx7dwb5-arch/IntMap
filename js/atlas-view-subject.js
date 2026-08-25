@@ -488,6 +488,66 @@ export function makeAtlasViewSubject(CTX) {
     return hit;
   }
 
+  /* ══ ⚠⚠⚠ (#R455) A LAYER BEING SWITCHED ON IS NOT EVIDENCE THAT ANYTHING IS THERE ═══════════
+     「まだほぼ定型文みたいなものしかない。もっとその場所にあったものに。」 — a fifth time, and this
+     is the measurement that finally names it. The chips in js/atlas-examples.js that read as a mail
+     merge are the ones gated on `f.has('<checkbox id>')`, which asks the LAYERS PANEL a question,
+     not the map. Two of those layers are on by DEFAULT (`window.IntMapDefaultLayers` =
+     `dl-climate`, `dl-subcables`), so their chips fired on every view on Earth.
+     MEASURED, on this build, over fifteen genuinely different views: 60 chips shown, and
+     「Which submarine cables land in {place}, and what happens if one is cut?」 took TEN of them —
+     one chip in six — including 「…land in Switzerland」, which is landlocked, and 「…land in
+     Algeria」 while the reader was over the middle of the Sahara. The sentence varies (53 distinct
+     of 60) because the NAME varies. The question does not.
+     ⇒ this counts what the app is ALREADY HOLDING inside the box, so a chip can be gated on
+     「there are cables here」 instead of 「the cable box is ticked」, and can say HOW MANY.
+     ⚠ ZERO FETCH, exactly like the rest of this module. `IntMapLayers.featuresIn` (js/map-ui.js)
+     filters the geojson the renderer is already drawing; nothing is requested and nothing is
+     parsed twice. A layer that is off has no source, `featuresIn` returns null, and **null is a
+     real answer** — 「the app cannot count this」 is not 「there is none」, and the pool is written
+     to tell those two apart.
+     ⚠ THE CABLE LANDING POINTS HAVE NO REGISTRY ROW, because `js/map-ui.js` registers the layers a
+     reader samples and the landings are not one of them. They are a plain point source
+     (`src-subcables-lp`, js/data-layers.js) and are counted here the same way — a LANDING is the
+     thing the question is about, and the cable LINES cross oceans nobody lands on. */
+  const COUNTABLE = ['news', 'volcanoes', 'aircraft', 'ships', 'satellites', 'earthquakes',
+                     'webcams', 'datacenters', 'pharma'];
+  function pointsInBox(srcId, box) {
+    try {
+      const d = GE().layers.sourceData(srcId);
+      if (!d || !Array.isArray(d.features)) return null;
+      return d.features.filter((f) => {
+        try {
+          const g = f.geometry;
+          const c = g && g.type === 'Point' && g.coordinates;
+          return c && c[0] >= box.w && c[0] <= box.e && c[1] >= box.s && c[1] <= box.n;
+        } catch (_) { return false; }
+      });
+    } catch (_) { return null; }
+  }
+  /* ⚠ (#R455) NO NAME IS LIFTED OUT OF A FEATURE HERE, AND `tests/r392 ③` IS RIGHT TO FORBID IT.
+     The first draft of this round pulled `properties.name || properties.title` off the first
+     volcano and the first news point, so a chip could say WHICH volcano — and that is #R313 追記's
+     defect exactly: an upstream English (or English+Japanese) noun dropped into a sentence the
+     other eight languages had translated. The counts below are NUMBERS, which read the same in all
+     nine. The place names this module does offer (`city`, `peak`) come from the vector tiles'
+     localised name keys, which is a different source with a different guarantee. */
+  function contentInView(box) {
+    const out = Object.create(null);
+    if (!box) return out;
+    const b = [[box.w, box.s], [box.e, box.n]];
+    let REG = null;
+    try { REG = window.IntMapLayers; } catch (_) {}
+    for (const id of COUNTABLE) {
+      let f = null;
+      try { f = (REG && REG.featuresIn) ? REG.featuresIn(id, b) : null; } catch (_) { f = null; }
+      out[id] = f ? f.length : null;
+    }
+    const cab = pointsInBox('src-subcables-lp', box);
+    out.cables = cab ? cab.length : null;
+    return out;
+  }
+
   /* ── the whole answer ─────────────────────────────────────────────────────────────────────
      One sweep per redraw. Everything downstream reads this object and nothing re-measures. */
   function subject(explicitBox) {
@@ -497,6 +557,7 @@ export function makeAtlasViewSubject(CTX) {
     const water = waterInView(box);
     const ground = groundInView(box);
     const sites = sitesInView(box);
+    const content = contentInView(box);
     const names = land.codes.map((c) => {
       const st = countryStats ? countryStats[c] : null;
       return st ? cName(st) : '';
@@ -511,7 +572,11 @@ export function makeAtlasViewSubject(CTX) {
       peak: ground.peaks.length ? ground.peaks[0] : null,
       nPlaces: ground.places.length,
       sites: sites, siteType: sites.length ? sites[0].type : null,
-      hasSite: (t) => sites.some((s) => s.type === t)
+      hasSite: (t) => sites.some((s) => s.type === t),
+      /* (#R455) what the app already holds INSIDE this box — see contentInView above.
+         `nIn(id)` is a number when the app can count, and null when it cannot. */
+      content: content,
+      nIn: (id) => { const v = content[id]; return (typeof v === 'number') ? v : null; }
     };
   }
 
@@ -523,15 +588,26 @@ export function makeAtlasViewSubject(CTX) {
     if (!sub) return 'x';
     const q = Math.max(0.02, sub.spanKm / 4000);
     const r = (v) => Math.round(v / q) * q;
+    /* ⚠ (#R455) THE CONTENT ENTERS THE KEY AS PRESENCE, NOT AS A COUNT — for the live feeds. An
+       aircraft count changes every few seconds and the whole chip row would rebuild under a
+       motionless camera; what a chip is gated on is 「is there any」, so that is what the guard
+       compares. The two STATIC catalogues (cable landings, volcanoes) contribute their real count,
+       because those only change when the reader moves and their number is printed in the chip. */
+    const c = sub.content || {};
+    const bit = (v) => (v == null ? '?' : (v > 0 ? '1' : '0'));
+    const cont = bit(c.news) + bit(c.aircraft) + bit(c.ships) + bit(c.satellites) +
+                 bit(c.earthquakes) + bit(c.webcams) + bit(c.datacenters) + bit(c.pharma) +
+                 ':' + (c.cables == null ? '?' : c.cables) + ':' + (c.volcanoes == null ? '?' : c.volcanoes);
     return sub.scale + '|' + r(sub.box.lng).toFixed(3) + ',' + r(sub.box.lat).toFixed(3) +
            '|' + sub.codes.join('+') + '|' + Math.round(sub.landFrac * 4) +
            '|' + ((sub.water && sub.water.name) || '') +
            '|' + ((sub.city && sub.city.name) || '') + '|' + ((sub.peak && sub.peak.name) || '') +
-           '|' + (sub.siteType || '');
+           '|' + (sub.siteType || '') + '|' + cont;
   }
 
   return { subject: subject, viewBox: viewBox, boxAt: boxAt, viewKey: viewKey,
            landInView: landInView, waterInView: waterInView, groundInView: groundInView,
+           contentInView: contentInView,
            /* the pure ones, for the round's checks — see the note above */
            waterKind: waterKind, waterReachKm: waterReachKm, pickWater: pickWater,
            haversineKm: haversineKm, scaleOf: scaleOf };
