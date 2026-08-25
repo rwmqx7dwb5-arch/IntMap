@@ -156,6 +156,20 @@ const docs = run('i18n-doc-audit.mjs');
    MEASURED: `'Clear'` was one row over five meanings and ten sites, so the weather widget said
    «erase» for a clear sky in four languages. See scripts/i18n-key-collision-audit.mjs. */
 const collide = run('i18n-key-collision-audit.mjs');
+/* ══ ⚠⚠⚠ (#R450) THE EIGHTEENTH SURFACE — «CAN ANYTHING ASK FOR THIS ROW?» ═══════════════════════
+   Every surface above counts `want ∩ have`, so a row in `have` that is in NO `want` falls out of
+   both the numerator and the denominator and is invisible to all seventeen — not short, not
+   missing, not identical to its key, simply never looked at. `orphanKeys` below is the nearest
+   thing and it asks the opposite question (markup wanting a key nobody declares); the keyed audit
+   computes a `stale` set and this gate never read it, and NOTHING at all watched the inline table.
+   MEASURED: 413 keys, 1,959 rows — unrenderable, unfailable, unseeable. TWO of them are the same
+   legend, orphaned twice: «Volcanoes (GVP Holocene, all 1,215)» → «Volcanoes (GVP Holocene)»
+   (#R353) → «Volcanoes (Smithsonian GVP)» (#R432), each rename leaving the previous spelling in
+   fr / ko / zh-Hant / zh-Hans. The second one landed on main while this gate was being written,
+   which is the argument for a gate rather than one deletion: the shape recurs on its own.
+   ⚠ It deliberately does NOT reuse this family's `want` set: see the header of the audit for why
+   inheriting shapeOf()'s blind spots would turn each of them into a deletion. */
+const dead = run('i18n-dead-key-audit.mjs');
 const orphanKeys = keyed.undeclared;
 
 /* ══ ⚠⚠⚠ (#R372) THE OPEN GAP IS EXEMPT FOR ONE REASON, AND THIS MEASURES THAT REASON ═══════════
@@ -262,7 +276,7 @@ const shortCells = (r) => [
 const shortOf = (r) => shortCells(r).length > 0;
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total, pairs: pairs.total, unlocalisedDocs: docs.bad }));
+  console.log(JSON.stringify({ rows, orphanKeys, twoBranch: two.total, shortSites: pos.short, unkeyedAttrs: attrs.total, positionalArrays: arrays.hits.length, langMaps: langmap.total, pairs: pairs.total, unlocalisedDocs: docs.bad, deadKeys: dead.keys.length, deadRows: dead.rows.length, deadStaging: dead.staging.length, deadHeld: dead.heldKeys.length }));
   process.exit(0);
 }
 
@@ -372,6 +386,17 @@ console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.tot
     + ` unlisted, ${collide.listed} judged benign, of ${collide.keys} keys`
   + (collide.unlisted.length ? '\n    ' + collide.unlisted.map((u) => JSON.stringify(u.en) + ' — ' + u.meanings.join(' / ')).join('\n    ')
       + '\n    (node scripts/i18n-key-collision-audit.mjs --list)' : '')
+  /* (#R450) the eighteenth surface — see the note by `dead` above. The held-back count travels
+     beside it because it is the part this instrument declines to judge: a key an assembled
+     argument could reach is left alone, and saying so is what stops the zero reading wider than
+     what was measured (#R372's rule for the pass line, applied to a report line). */
+  + `\nrows in a locale table that NOTHING can ask for: ${dead.keys.length}`
+    + ` (${dead.rows.length} row(s); ${dead.heldKeys.length} more held back for an assembled key)`
+  + (dead.keys.length ? '\n    ' + dead.keys.slice(0, 20).map((k) => JSON.stringify(k)).join('\n    ')
+      + (dead.keys.length > 20 ? `\n    …and ${dead.keys.length - 20} more` : '')
+      + '\n    (node scripts/i18n-dead-key-audit.mjs --list lists every one)' : '')
+  + (dead.staging.length ? `\n    ⚠ ${dead.staging.length} of them are still in the staging files that would put them back`
+      + '\n    ' + [...new Set(dead.staging.map((s) => s.file))].join('\n    ') : '')
   /* (#R246) the twelfth shape — see the note by `pairs` above. OPEN GAP: printed, not counted. */
   /* ⚠⚠⚠ (#R249) THE EXEMPTION IS PRINTED ON EVERY RUN. 「固有名詞は構造的に除外し、UI文だけ全言語化」
      — and an exemption nobody can see is an exemption nobody re-examines. #R248's matcher rule
@@ -436,6 +461,18 @@ if (process.argv.includes('--gate')) {
      no longer collides has stopped asserting anything (see the header of the audit). */
   if (collide.unlisted.length) problems.push(`${collide.unlisted.length} English key(s) carrying more than one meaning — one inline row cannot serve both, so fr/ko/zh-Hant/zh-Hans are wrong at one of the sites. Run scripts/i18n-key-collision-audit.mjs --list`);
   if (collide.stale.length) problems.push(`${collide.stale.length} stale BENIGN entr(ies) in scripts/i18n-key-collision-audit.mjs — delete them, or the allowlist becomes a place a real collision can hide`);
+  /* ══ ⚠⚠⚠ (#R450) THE EIGHTEENTH SURFACE — A GATE AT ZERO FROM THE DAY IT IS ADDED ══════════════
+     Not a ratchet. #R242's rule («a gate nobody can reach in one round gets deleted by the next»)
+     is what makes the adjacent-data tuples a ceiling instead of a zero, and it does not apply here:
+     closing those means WRITING four languages of prose, while closing this means DELETING rows
+     nothing reads. The round that measured 413 of them removed all 413, so zero is reachable by
+     definition — and a ceiling of 413 would have been a number with no argument behind it.
+     ⚠ AND THE STAGING FILES ARE PART OF THE SAME ZERO. Deleting the row is not enough while
+     scripts/i18n-apply-inline.mjs can put it straight back (see the note in the audit): the row and
+     its resurrection have to go in the same commit, or the next person to top up a translation
+     turns this red for a reason their diff does not contain. */
+  if (dead.keys.length) problems.push(`${dead.keys.length} key(s) — ${dead.rows.length} row(s) — that nothing can ask for: no shipped file names them, so no language can ever render them and no surface above can see them. Run scripts/i18n-dead-key-audit.mjs --list, then scripts/i18n-dead-key-codemod.mjs --write`);
+  if (dead.staging.length) problems.push(`${dead.staging.length} unreachable row(s) still in scripts/i18n/*.json, which scripts/i18n-apply-inline.mjs would insert back into the locale tables — scripts/i18n-dead-key-codemod.mjs --write takes both sides`);
 
   /* ══ ⚠ (#R311) …AND THE OPEN GAP IS A RATCHET NOW, WHICH IS NOT THE SAME AS A GATE ═════════════
      「性能改善でUI生成方法やdescriptor構造を変える前に、この領域も品質gateへ含めてください…
