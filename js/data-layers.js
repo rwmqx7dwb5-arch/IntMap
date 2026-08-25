@@ -41,7 +41,7 @@ window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admi
 /* ══ ⚠⚠⚠ (#R309) WHAT "Base map & labels" CONTAINS, AS ONE LIST ═══════════════════════════════════
    「Base map & labelsのオン数をレイヤーのオン数にみなすな。」 The reason it was counted is that the
    membership of that section existed in FOUR hand-written copies and they disagreed. Measured against
-   the section the panel actually draws (13 rows):
+   the section the panel actually drew (13 rows at the time; nine cb-* + two, since #R469):
        js/data-layers.js `skip` (the "Active layers (N)" counter)  11 ids — missing dl-tz, beta-dl-bldg3d
        js/data-layers.js reorganizeLayerPanel's ordering           10 ids + three appended rows
        js/data-layers.js the unplaced-rows sweep                   10 ids
@@ -50,16 +50,91 @@ window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admi
                                                                    so it counted the other three
    #R235 already fixed this once for `dl-nightside` by adding an eleventh literal to one of the copies —
    #R271 and #R273 then moved `dl-tz` and `beta-dl-bldg3d` into the section and neither copy learned.
-   `IntMapBasicLayerRows` is the ten checkbox rows in the order the panel shows them;
-   `IntMapBasicLayers` is the whole section, and it is what any counter must subtract.
+   `IntMapBasicLayerRows` is the checkbox rows in the order the panel shows them (ten then, NINE
+   now — `cb-countries` went to `IntMapHiddenLayerRows` in #R469);
+   `IntMapBasicLayers` is the whole section, and it is what any counter must subtract (thirteen then,
+   ELEVEN now — `dl-tz` became an ordinary layer in the same round).
    ⚠ NOT the re-assert exclusion further down: that list answers a different question («which toggles
    have stateful handlers that a re-dispatched change would flip back on», #R38) and the three rows
    added here are ordinary async layers that DO want the re-assert. Same ids, different rule.
    ⚠ BOTH halves are on `window`, not module-level `const`s. This file is a module (#R175), so a
    top-level binding would be private to it and invisible to js/widget-core.js — and
    tests/r175-checks.test.mjs fails the whole shape on sight, which is how that was caught here. */
-window.IntMapBasicLayerRows=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2','cb-grid','cb-countries'];
-window.IntMapBasicLayers=window.IntMapBasicLayerRows.concat(['dl-nightside','dl-tz','beta-dl-bldg3d']);
+/* ⚠⚠ (#R469) TWO ROWS LEFT THIS LIST, IN OPPOSITE DIRECTIONS — see `IntMapHiddenLayerRows` below.
+     · `cb-countries` 国境・国情報 — 「レイヤー行だけ隠す」. It is no longer a row anywhere, so it is no
+       longer a member of the always-on block; and it is NOT subtracted from the counters either,
+       because the 「表示中のレイヤー」 chip is now the only handle a reader has for switching it off
+       when Atlas or the Countries window raised it. A layer with no row and no chip is a layer that
+       cannot be turned off.
+     · `dl-tz` 🕒 タイムゾーン — 「基本表示ではなく普通のレイヤーにして」. It is a row of `lyrGrpPolitics`
+       now and is counted like any other layer. */
+window.IntMapBasicLayerRows=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2','cb-grid'];
+window.IntMapBasicLayers=window.IntMapBasicLayerRows.concat(['dl-nightside','beta-dl-bldg3d']);
+/* ══ ⚠⚠⚠ (#R469) ROWS THAT KEEP THEIR CHECKBOX AND LOSE THEIR ROW ═════════════════════════════════
+   A layer the panel never draws is not a layer that was deleted: the checkbox stays in the
+   permanently-hidden `#layer-dropdown` registry, so its change handler, its legend, its opacity, its
+   entry in the session snapshot and every door Atlas has to it keep working exactly as before. What
+   goes is one thing — the row in the layer browser.
+     · `cb-countries` 国境・国情報 — the reader asked for the row to go; Atlas's `countryInfo` action and
+       `window._wsCountryInfo` (the Countries window's own toggle) still raise the overlay.
+     · `dl-contours` 等高線 — 「等高線レイヤーは廃止し、…の凡例内でトグルでオンオフできるように統合」.
+       This checkbox is where the state lives; the three elevation legends press it (`_contourSwitch`).
+   ⚠ EVERY SWEEP THAT FILES ROWS MUST BE TOLD. `reorganizeLayerPanel`'s `order.push` MOVES an element,
+   so a row nobody claims lands in Beta — measured in #R271, when 🕒 タイムゾーン came out there.
+   `rowsFromDropdown` (js/map-ui.js) and `renderLayerFavs` (js/layer-favs.js) read this list too: a
+   hidden row must not come back as a favourite star or a tile. */
+window.IntMapHiddenLayerRows=['cb-countries','dl-contours'];
+/* ══ ⚠⚠⚠ (#R469) 基本表示 IS THREE EXCLUSIVE CHOICES NOW, NOT A LIST OF ELEVEN SWITCHES ═════════════
+   「もとは基本表示があった場所をデフォルト/クリーン/カスタムとして、カスタムを選択すれば今の基本表示の
+     一覧が出てくるように。デフォルトは今の基本表示のデフォルトオンをそのままやればいい。クリーンは全基本
+     表示をオフってこと。…複数選択ではないです。どれか一つ。」
+   The eleven switches did not go anywhere — they are the 「カスタム」 list. What is new is that the
+   section's own answer is one of three, and the first two SET the eleven rather than describing them.
+   ⚠ THE MODE IS A CLAIM ABOUT THE STATE, so it cannot outlive it. Anything at all may flip a base
+   toggle — Atlas, the wind layer's one-shot coastline offer (#R289), a restored session — and the
+   moment one of them disagrees with the mode, the mode says 「カスタム」. That is `_reconcile` below,
+   and it is why the reader can never be shown a section headed 「デフォルト」 over a map that is not.
+   ⚠ THE DEFAULT SET IS DERIVED, NOT COPIED. #R309 spent a round undoing four hand-written copies of
+   the membership of this section; a hand-written copy of its DEFAULTS would be the same defect one
+   field over. `window.IntMapDefaultOn` is the list for the nine `cb-*`; the two rows that are not
+   `cb-*` are stated here because they are not in it and never were (#R233 / #R273).
+   ⚠ NOT A `const` — this file is a module (#R175), so a top-level binding would be invisible to
+   js/map-ui.js, which is where the three rows are drawn. */
+window.IntMapBaseDisplay=(function(){
+  const KEY='intmap_base_mode';
+  const MODES=['default','clean','custom'];
+  let applying=false;
+  const rows=()=>(window.IntMapBasicLayers||[]);
+  const defOn=(id)=> (id==='dl-nightside') ? true
+                   : (id==='beta-dl-bldg3d') ? false
+                   : (window.IntMapDefaultOn||[]).indexOf(id)>=0;
+  const get=()=>{ try{ const v=localStorage.getItem(KEY); return MODES.indexOf(v)>=0?v:'default'; }catch(_){ return 'default'; } };
+  const put=(m)=>{ try{ localStorage.setItem(KEY,m); }catch(_){} };
+  const announce=()=>{ try{ window.dispatchEvent(new CustomEvent('intmap-basemode',{detail:{mode:get()}})); }catch(_){} };
+  /* Does the live state still support the stored claim? 'custom' claims nothing, so it always does. */
+  function matches(m){ if(m==='custom') return true;
+    return rows().every(id=>{ const cb=document.getElementById(id); if(!cb) return true;
+      return !!cb.checked === (m==='clean'?false:defOn(id)); }); }
+  function apply(m){ applying=true;
+    try{ rows().forEach(id=>{ const cb=document.getElementById(id); if(!cb) return;
+      const want=(m==='clean')?false:defOn(id);
+      if(!!cb.checked!==want){ cb.checked=want; cb.dispatchEvent(new Event('change',{bubbles:true})); } }); }
+    finally{ applying=false; } }
+  function set(m){ if(MODES.indexOf(m)<0) return; put(m);
+    /* 「カスタム」 changes nothing — it only opens the list. The other two ARE the state. */
+    if(m!=='custom') apply(m);
+    announce(); }
+  function reconcile(){ if(applying) return; const m=get(); if(m==='custom'||matches(m)) return; put('custom'); announce(); }
+  /* ⚠ DEBOUNCED, because a restore is a SEQUENCE of change events and the states in between it are
+     not states the reader ever chose. Boot dispatches one `change` per default-on row (js/app-body.js)
+     and js/session-tabs.js another per saved row; judging the claim on the first of them would read a
+     half-applied session as 「カスタム」 every single load. The settled state is the one that counts. */
+  let rcT=0;
+  const reconcileSoon=()=>{ try{ clearTimeout(rcT); }catch(_){} rcT=setTimeout(reconcile,400); };
+  try{ document.addEventListener('change',(e)=>{ try{ const t=e.target; if(!t||t.type!=='checkbox'||!t.id) return;
+    if(rows().indexOf(t.id)<0) return; reconcileSoon(); }catch(_){} },true); }catch(_){}
+  return { get, set, rows, defOn, matches, reconcile, MODES };
+})();
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.dataLayers=function(HOST){
   const LDL=window.IntMapLang.pick(()=>HOST.lang);
@@ -1593,11 +1668,14 @@ window.IntMapModules.dataLayers=function(HOST){
              ours — 「beta」 is a judgement about quality. This is not ours: it is four rows named by
              name, with the reason the reader gave for each. `ec-wind` (the 10 m arrows) and
              `ec-cape` were NOT named and stay where they are.
+             ⚠⚠ (#R469) …AND THEN CAPE WAS NAMED: 「ベータからはCAPE不安定度レイヤーを気象に昇格。」 The
+             rule above is untouched — what changed is its premise, for that one row. `ec-wind` still
+             has not been named and is still in the beta list.
              ⚠ `ec-isobars` IS NOT IN ANY LIST ANY MORE — it is not a row. See js/weather.js `sub`. */
-          ['lyrGrpClimate',['climate','ec-temp','annprecip','wind','radar','ec-cloud','ec-precip','ec-slp','ec-gust','ec-dew','snow','aod','wbpm25','wbco2']],   /* (#R289) the two CO₂ rows (#R261) are ONE row with a total/per-capita switch in its own legend; 紫外線エアロゾル指数・一酸化炭素・雲・赤外 are deleted */
+          ['lyrGrpClimate',['climate','wind','annprecip','ec-temp','ec-precip','radar','ec-slp','ec-gust','snow','ec-cloud','ec-dew','aod','ec-cape','wbpm25','wbco2'],9],   /* (#R289) the two CO₂ rows (#R261) are ONE row with a total/per-capita switch in its own legend; 紫外線エアロゾル指数・一酸化炭素・雲・赤外 are deleted */
           /* (#R202) `sats` moved OUT of Maritime and into its own group, second from the top — see the
              lyrGrpOrbit note above. Nothing else moved: live aircraft stay where they were. */
-          ['lyrGrpOrbit',['sats','osmspace','aurora']],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
+          ['lyrGrpOrbit',['sats','aurora','osmspace'],2],   /* (#R261) +spaceports and satellite ground stations — a one-row shelf is not a category */
           /* ⚠ (#R255) `subcables` LEFT THIS GROUP for Technology & infrastructure. A submarine cable
              is under the sea the way a railway is under a hill — the sea is where it runs, not what
              it is — and a reader looking for the internet's physical plant looks under technology,
@@ -1606,13 +1684,21 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R261) `planes` LEFT for Transport & mobility (it is aircraft, not ocean); tides and
              ocean currents ARRIVED from the beta sweep — both are finished world-packs layers with
              their own panel, legend and sources, and neither was ever demoted by an instruction. */
-          ['lyrGrpMaritime',['sst','tides','currents','gxseaice','gxsstanom']],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
-          /* (#R273) +slope / aspect (← Beta, where it had no shelf): it is computed FROM the
-             elevation model and belongs beside the hillshade and the contours. */
-          ['lyrGrpTerrain',['plates','relief','hillshade','contours','slope','sealevel','gxrelief']],
+          ['lyrGrpMaritime',['sst','currents','gxsstanom','tides','gxseaice'],3],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          /* ⚠ (#R469) TWO ROWS LEFT THIS SHELF AND NEITHER WENT TO ANOTHER ONE.
+             · 等高線 `contours` — 「等高線レイヤーは廃止し、標高（カラー段彩）、陰影起伏（標高）、
+               カラー段彩・陰影（ASTER）の凡例内でトグルでオンオフできるように統合。」 It is a switch
+               inside those three legends now (`ensureContourSwitch`); the checkbox survives in
+               `window.IntMapHiddenLayerRows`, which is why nothing about the layer was rewritten.
+             · 傾斜・斜面方向 `slope` — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 #R273 had promoted it
+               here out of Beta; the module, its Atlas action and its catalogue entry are gone. */
+          ['lyrGrpTerrain',['plates','relief','sealevel','hillshade','gxrelief'],3],
           /* (#R271) the new shelf: what is ON the ground, as against the shape of it */
-          ['lyrGrpNature',['worldcover','ecoregions','gxndvi','wbforest']],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
-          /* ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
+          ['lyrGrpNature',['worldcover','ecoregions','gxndvi','wbforest'],3],   /* (#R261) +3-D city buildings — built ground is still ground */   /* (#R40) Blue Marble removed (deleted); +agricultural-land (World Bank) promoted. (#R42) +soil moisture (AMSR2, objective + exact legend) */
+          /* ⚠⚠ (#R469) 「人口密度（国別）を昇格。」 — `pop`, one of the rows #R233 demoted, is back on
+             this shelf by name, in the folded half. Everything the note below says still holds; one
+             row of it was reversed by the reader, the way `energy` was in #R254.
+             ⚠ (#R233) SEVEN, NAMED BY THE INSTRUCTION — everything else in this group was DEMOTED.
              「人口・経済レイヤーは 人口密度（1kmグリッド）／1人当たりGDP／合計特殊出生率／HDI (2022)／
              民主主義指数 (2023)／汚職・腐敗指標／平均寿命 以外のものはbetaに降格。」
              #R39/#R40 had promoted eighteen more World-Bank choropleths here on the argument that they
@@ -1643,12 +1729,12 @@ window.IntMapModules.dataLayers=function(HOST){
              human-development composite of health, schooling and income), +adolescent fertility
              (← Health: it is a fertility rate, and the other four already live here). The heading
              is 「人口・人口動態」 now, because with GDP gone there is no economy left on the shelf. */
-          ['lyrGrpDemo',['popgrid','tfr','nightsat','wbpopgrow','wbaging','wbfert','wbadofert','wburb','wbrural','wbdensity','wbref']],
+          ['lyrGrpDemo',['popgrid','nightsat','tfr','pop','wbpopgrow','wbaging','wbfert','wbadofert','wburb','wbrural','wbdensity','wbref'],3],
           /* (#R233) 'nightside' LEFT this group — 「昼夜の表示はレイヤー選択欄の基本表示カテゴリです。」
              It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
-          ['lyrGrpHazard',['thermal','volc2','eq','alerts','osmemg']],   /* (#R270) +emergency response bases — see the note below */   /* (#R273) +live weather & disaster warnings — one national agency per country, GDACS removed */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
+          ['lyrGrpHazard',['alerts','eq','volc2','thermal','osmemg'],3],   /* (#R270) +emergency response bases — see the note below */   /* (#R273) +live weather & disaster warnings — one national agency per country, GDACS removed */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
              「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
                それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
@@ -1683,7 +1769,7 @@ window.IntMapModules.dataLayers=function(HOST){
              (#R409) 「WW1とWW2でレイヤーを分けろ。」 — one row became two, side by side and in the
              order the wars happened. The old single id `wars` is gone from the panel; a share link
              that still names it opens both (js/map-ui.js). */
-          ['lyrGrpPolitics',['uselect','ww1','ww2','eu','dem','cpi','eez','wbwomparl','osmdiplo']],
+          ['lyrGrpPolitics',['dem','cpi','eez','uselect','eu','ww2','ww1','tz','wbwomparl','osmdiplo'],6],
           /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
              「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
 
@@ -1708,18 +1794,18 @@ window.IntMapModules.dataLayers=function(HOST){
              「任せる」 for the obviously-wrong rows is not a licence to re-sort a list somebody chose.
              オーロラ予測 and 夜間光 stay in 「災害・夜空 / Hazards & night sky」 — that heading names
              them; the shelf is not only about disasters. */
-          ['lyrGrpSecurity',['milSpend','nato','ukrfront','wbmilgdp','wbmilppl','osmmil']],   /* (#R289) 国防費 is one row with a $B / %GDP switch */
+          ['lyrGrpSecurity',['milSpend','nato','ukrfront','wbmilgdp','wbmilppl','osmmil'],3],   /* (#R289) 国防費 is one row with a $B / %GDP switch */
           /* (#R273) −clean cooking fuel access (→ Energy: it is an energy-access rate and sits
              beside electricity access), −undernourishment (→ Agriculture & food: it measures food),
              −adolescent fertility (→ Population), −pharma hubs (→ Economy: they are factories).
              What is left is care, disease, sanitation and the things a body does. */
-          ['lyrGrpHealth',['wbhealth','wbphys','wbbeds','wbinfmort','wbu5mort','lifeexp','wblife','wbwater','wbsan','wbsmoke','wbalcohol','wbsuicide','wboverwt','osmhealth','osmwater']],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
+          ['lyrGrpHealth',['lifeexp','wbinfmort','wbsuicide','wbsmoke','wbalcohol','wbwater','wbhealth','wbphys','wbbeds','wbu5mort','wblife','wbsan','wboverwt','osmhealth','osmwater'],6],   /* (#R261) +water & wastewater plant, +pharma hubs. (#R270) −emergency services (→ hazards), −fertility (→ society) */
           /* (#R261) `rail` LEFT for Transport & mobility — a railway network is transport, and the
              category it was in is the one about computing and communications. */
           /* (#R273) −high-tech exports (→ Economy: it is a share of EXPORTS, i.e. a trade
              statistic), − 3-D city buildings (→ the always-on view switches at the top: it is a way
              of DRAWING the map, like Roads and Place names, not a statistic about technology). */
-          ['lyrGrpTech',['dc','subcables','wbnet','wbmobile','wbbbnd','wbrnd','wbresearch','wbpatent','osmtelecom']],
+          ['lyrGrpTech',['subcables','dc','wbnet','wbmobile','wbbbnd','wbrnd','wbresearch','wbpatent','osmtelecom'],1],
           /* ══ ⚠⚠ (#R261) FOUR NEW SHELVES, AND «OTHERS» AND «BETA» EMPTIED INTO THEM ═══════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの
                再編のほか、新レイヤー…全部任せる。結局何もしませんはやめろ。」
@@ -1750,16 +1836,16 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R273) +GDP per capita (← Population), +extreme poverty, +income inequality (Gini) and
              +female labour participation (← Society: all three measure income and the labour market),
              +high-tech exports (← Technology), +pharma manufacturing hubs (← Health). */
-          ['lyrGrpEconomy',['trade','industry','gdppc','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbhitech','wbfdi','wbunemp','wbgni','wbpov','wbgini','wbflfp','wbremit','wbtour','pharma']],
+          ['lyrGrpEconomy',['gdppc','trade','wbgini','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbhitech','wbfdi','wbunemp','wbgni','wbpov','wbflfp','wbremit','wbtour','pharma'],3],
           /* (#R273) +HDI (← Population: it is the human-development composite), and −poverty,
              −Gini, −female labour participation (→ Economy). */
-          ['lyrGrpSociety',['hdi','wblit','wbschool','wbtert','wbedu','osmedu','wbhomicide','cat-religion','cat-language']],   /* (#R270) +homicide rate, +fertility rate — see the note above */
+          ['lyrGrpSociety',['hdi','wbhomicide','cat-language','wblit','wbschool','wbtert','wbedu','osmedu','cat-religion'],3],   /* (#R270) +homicide rate, +fertility rate — see the note above */
           /* (#R273) +live cameras (← Beta, where it had no shelf rather than a demotion): the feeds
              are road and traffic cameras — TfL JamCams, Caltrans, the DOT 「511」 networks. */
-          ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport','webcams']],
+          ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport','webcams'],2],
           /* (#R273) +undernourishment (← Health): it is the food-security measure, and it belongs
              with the land that grows the food. */
-          ['lyrGrpAgri',['crops','wbagri','wbagremp','gxsoil','wbunder']],
+          ['lyrGrpAgri',['crops','wbagremp','wbunder','wbagri','gxsoil'],3],
           /* ══ (#R258) A FIFTH NEW CATEGORY — WHERE THE ENERGY AND THE MATERIAL COME FROM ═════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り…新レイヤー（国単位で塗るだけの
                やつじゃなくて、モノホンのやつ。）」 The map had no shelf for energy at all: the country
@@ -1772,10 +1858,10 @@ window.IntMapModules.dataLayers=function(HOST){
              overturn a list somebody wrote out by hand (the same reasoning as the ⚠⚠ note above). */
           /* (#R273) +clean cooking fuel access (← Health), directly beside electricity access:
              both are 「does this household have energy」 rates. */
-          ['lyrGrpEnergy',['osmpower','osmextract','dams','energy','wbelec','wbcook','wbrenew','wbelecuse','wbrenelec','wbenergy']],
+          ['lyrGrpEnergy',['energy','wbrenew','wbelec','osmpower','osmextract','dams','wbcook','wbelecuse','wbrenelec','wbenergy'],3],
           /* (#R271) EMPTY, AND KEPT — `tz` joined the always-on switches at the top of the panel;
              the KEY stays for the same reason `lyrGrpGeoPol` and `lyrGrpOthers` keep theirs. */
-          ['lyrGrpIndic',[]],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
+          ['lyrGrpIndic',[],0],   /* (#R41) Indicators & overlays — Time-zone layer promoted out of beta (objective Natural Earth data, has a legend + live clock) */
           /* ══ ⚠ (#R254) "OTHERS" IS A REAL CATEGORY NOW, AND "BETA" MEANS BETA ═══════════════════════
              「以下のレイヤーは、Others(beta) layersから移動し、新たなカテゴリであるOthersにおくこと。
                Others(beta)は単にベータとすること。」 The sixty-one rows named in that instruction are
@@ -1793,14 +1879,14 @@ window.IntMapModules.dataLayers=function(HOST){
              #R255 kept `lyrGrpGeoPol`: an old saved session or a share link can still name it, and a
              group with no rows is simply not rendered. Nothing is deleted; the shelf is empty
              because the things on it found their families. */
-          ['lyrGrpOthersReal',[]]
+          ['lyrGrpOthersReal',[],0]
         ];
         /* Explicit order for the Others/beta group; a safety sweep below also catches anything missed. */
         /* (#R439) −ec-precip −ec-dew −ec-slp (promoted to 気候・気象, see the GROUPS note) and
            −ec-isobars (no longer a row at all — it is a switch inside the pressure legend).
            `ec-gust` was never in this list; it reached Beta through the safety sweep below, and it
            now reaches 気候・気象 through the group. */
-        const OTHERS_IDS=['precip','ec-wind','ec-cape','ec-sst'];   /* (#R261) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
+        const OTHERS_IDS=['precip','ec-wind','ec-sst'];   /* (#R261) `ships` → Transport, `dams` → Energy & resources */   /* (#R225) the nine geopolitics keys left this list with the layers themselves */
         const rowFor=(id)=>{ let el=document.getElementById('lyrrow-'+id); if(el) return el;
           /* (#R20) beta-dl- so promoted ex-beta layers (histb, ukrfront) can be filed into a real group.
              (#R254) …and wp-dl- for the same reason, so a world-packs row (energy mix) can be too. */
@@ -1828,9 +1914,12 @@ window.IntMapModules.dataLayers=function(HOST){
            .lyr-row rather than a bare label, so it is fetched through rowFor() and marked `placed` — the
            safety sweep below would otherwise find it unplaced and file it under Others (beta). */
         const nsRow=rowFor('nightside'); if(nsRow){ try{ nsRow.style.display=''; }catch(_){} order.push(nsRow); }
-        /* (#R271) …and the time zones, for the same reason: a live-clock overlay of the whole planet
-           is a view switch, not an indicator, and 「指標・オーバーレイ」 held nothing else. */
-        const tzRow=rowFor('tz'); if(tzRow){ try{ tzRow.style.display=''; }catch(_){} order.push(tzRow); }
+        /* ⚠ (#R469) THE TIME-ZONE ROW LEFT THIS BLOCK — 「基本表示の『タイムゾーン（現在時刻）』レイヤーは、
+           基本表示ではなく普通のレイヤーにして。」 #R271 filed it here on the argument that a live-clock
+           overlay of the whole planet is a view switch; the reader has now said it is a layer. It is a
+           row of `lyrGrpPolitics` (time zones are a thing governments legislate), so it is placed by the
+           GROUPS loop below like every other layer, and `window.IntMapBasicLayers` no longer subtracts
+           it from the counters — 「表示中のレイヤー」 counts it now, which is what being a layer means. */
         /* (#R273) …and the 3-D city buildings, for the same reason again: 「how the map is drawn」
            rather than 「a statistic about a subject」. It was filed under IT & infrastructure, beside
            broadband subscriptions and patent counts. ⚠ `placed.add` below is half of this move. */
@@ -1866,15 +1955,37 @@ window.IntMapModules.dataLayers=function(HOST){
         order.push(mkHr());
         const placed=new Set();
         if(nsRow) placed.add(nsRow);   /* (#R233) already in the basic-display block above */
-        /* ⚠ (#R271) …AND SO IS THE TIME-ZONE OVERLAY, FOR THE SAME REASON. Pushing a row into the
-           always-on block without marking it here does nothing at all: the safety sweep below finds
-           it unplaced, and `order.push` MOVES the element, so it lands in Beta. MEASURED on the
-           built page before this line existed — 「Beta」 is exactly where 🕒 タイムゾーン came out. */
-        if(tzRow) placed.add(tzRow);
         if(b3Row) placed.add(b3Row);
-        GROUPS.forEach(([key,ids])=>{ const rows=ids.map(rowFor).filter(Boolean); if(!rows.length) return;
+        /* ⚠⚠⚠ (#R469) A ROW THE PANEL NEVER DRAWS IS STILL A ROW HERE ═══════════════════════════════
+           `window.IntMapHiddenLayerRows` is the ids that keep their checkbox in this registry — so the
+           layer, its handler, its legend, its opacity, Atlas and the session snapshot all go on working
+           — and are never shown as a row of the layer browser. Two of them today:
+             · `cb-countries` 国境・国情報 — 「国境・国情報レイヤーは完全削除して」, narrowed by the reader
+               to 「レイヤー行だけ隠す」: Atlas's `countryInfo` action and the Countries window's own
+               toggle still raise the overlay, so nothing it can do became unreachable.
+             · `dl-contours` 等高線 — 「等高線レイヤーは廃止し、標高（カラー段彩）、陰影起伏（標高）、
+               カラー段彩・陰影（ASTER）の凡例内でトグルでオンオフできるように統合。」 The checkbox is
+               where the state lives; the three legends press it (see `_contourSwitch`).
+           ⚠ THEY MUST BE `placed`. `order.push` MOVES an element, so a row nobody claims is swept into
+           Beta — which is exactly where 🕒 タイムゾーン came out when #R271 forgot this (see the note
+           two lines up in that round). Marking them placed and never pushing them leaves them where
+           they already are: inside the permanently-hidden `#layer-dropdown`. */
+        window.IntMapHiddenLayerRows.forEach(id=>{ const el=document.getElementById(id); const r=el&&(el.closest('.lyr-row')||el.closest('label')); if(r) placed.add(r); });
+        /* ══ ⚠⚠ (#R469) 「以下に指定されたレイヤー以外は、『その他N件』と、各カテゴリの中で畳むように」 ══
+           The third element of a GROUPS entry is how many of its ids the reader named. Those come first
+           (the array is in the order they named them); everything after it is marked here and folds
+           behind one 「その他N件」 line inside its own category. The mark travels on the ROW, because the
+           tile browser (js/map-ui.js) builds from the rows and never sees this array.
+           ⚠ The count is not a style — it is data, and it lives beside the order it belongs to. Writing
+           it in js/map-ui.js instead would put the reader's list in two places, which is the defect
+           #R309 spent a round undoing for the basics list. */
+        const _markRest=(r,rest)=>{ try{ if(rest) r.setAttribute('data-lyr-rest','1'); else r.removeAttribute('data-lyr-rest'); }catch(_){} };
+        GROUPS.forEach(([key,ids,primary])=>{
+          const rows=[]; ids.forEach((id,i)=>{ const r=rowFor(id); if(!r) return; rows.push([r,i]); });
+          if(!rows.length) return;
+          const nPrim=(primary==null)?ids.length:primary;
           const h=document.createElement('div'); h.className='lyr-head'; h.setAttribute('data-i18n',key); h.textContent=T(key); order.push(h);
-          rows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); placed.add(r); }); });
+          rows.forEach(([r,i])=>{ try{ r.style.display=''; }catch(_){} _markRest(r,i>=nPrim); order.push(r); placed.add(r); }); });
         /* (#R15 / #26) "Others (beta)" — every remaining thematic layer row. Start with the explicit list,
            then a safety sweep adds any layer row not already placed (so new layers never strand at the top). */
         const otherRows=[];
@@ -1892,7 +2003,11 @@ window.IntMapModules.dataLayers=function(HOST){
         if(otherRows.length){
           const oh=document.createElement('div'); oh.className='lyr-head'; oh.setAttribute('data-i18n','lyrGrpOthers'); oh.textContent=T('lyrGrpOthers'); order.push(oh);
           const note=document.createElement('div'); note.className='lyr-others-note'; note.textContent=(window.IntMapLang.t(lang,'May be incomplete or not fully working.','動作しない場合や不完全な場合があります。','Kann unvollständig sein oder nicht voll funktionieren.','Может быть неполным или работать не полностью.','Puede estar incompleto o no funcionar del todo.')); order.push(note);
-          otherRows.forEach(r=>{ try{ r.style.display=''; }catch(_){} order.push(r); });
+          /* ⚠ (#R469) Beta is NOT folded — the reader's category list does not name it, and every row
+             here would be behind the one 「その他N件」 line if the rule were applied to it. The mark is
+             CLEARED rather than merely not set: this function is idempotent and a row that moved out
+             of a group would otherwise carry a stale attribute into Beta. */
+          otherRows.forEach(r=>{ try{ r.style.display=''; }catch(_){} _markRest(r,false); order.push(r); });
         }
         /* ══ ⚠ (#R242) THE SEISMIC SIMULATOR IS REACHABLE FROM THE LAYERS PANEL ═════════════════════
            「地震シミュレータはレイヤー欄からも開けるようにしろ。」 It could be opened from Atlas, from
@@ -3324,20 +3439,77 @@ window.IntMapModules.dataLayers=function(HOST){
       r.addEventListener('input',()=>{ const v=parseFloat(r.value); setLayerOpacity(id,v); if(val) val.textContent=Math.round(v*100)+'%'; });
     }
     window._ensureLegendOpacity=ensureLegendOpacity;
-    /* (#R152) contour DENSITY slider — added to the contour legend right under its opacity row (layer controls live
-       in the legend, R16 rule). Dragging rebuilds contour-src with a finer/coarser interval table (on release). */
+    /* ══ ⚠⚠⚠ (#R469) 等高線 IS A SWITCH INSIDE THREE LEGENDS, NOT A ROW OF ITS OWN ═══════════════════
+       「等高線レイヤーは廃止し、標高（カラー段彩）、陰影起伏（標高）、カラー段彩・陰影（ASTER）の凡例内で
+         トグルでオンオフできるように統合。」
+       The three elevation layers named there are the three legends that carry the switch. The STATE is
+       still the `dl-contours` checkbox in the hidden registry (`window.IntMapHiddenLayerRows`), so the
+       toggle path, the opacity, the self-repair audit, the session snapshot and Atlas's own door to it
+       are the ones that already existed — nothing about contours was re-implemented, only re-reached.
+       ⚠ ONE BUILDER, THREE CALL SITES. Writing the markup into each legend would be the 「同じ規則を持つ
+       関数が2つ」 defect [[intmap-r463-lessons]]: a fix applied to one legend would leave the other two.
+       ⚠ AND THE SWITCHES FOLLOW THE CHECKBOX, whoever pressed it — a legend, another legend, or Atlas.
+       ⚠ 等高線 IS NOT VISIBLE WITHOUT ONE OF ITS THREE HOSTS. `_contourHostOn()` is what closes the trap
+       the integration would otherwise open: a reader who leaves contours on and switches the last
+       elevation layer off would have lines on the map and no legend anywhere to reach the switch in. */
+    const CONTOUR_HOSTS=['relief','hillshade','gxrelief'];
+    function _contourHostOn(){ try{ return CONTOUR_HOSTS.some(id=>{ const cb=document.getElementById('dl-'+id)||document.getElementById('gx-'+id); return !!(cb&&cb.checked); }); }catch(_){ return false; } }
+    window._imContourHostOn=_contourHostOn;
+    function _syncContourSwitches(){ try{ const cb=document.getElementById('dl-contours'); const on=!!(cb&&cb.checked);
+      document.querySelectorAll('.dl-ct-sw').forEach(sw=>{ sw.classList.toggle('on',on); sw.setAttribute('aria-checked',on?'true':'false'); });
+      document.querySelectorAll('.dl-cd-row').forEach(r=>{ r.style.display=on?'':'none'; }); }catch(_){} }
+    window._imSyncContourSwitches=_syncContourSwitches;
+    function ensureContourSwitch(el){ try{
+      if(!el || CONTOUR_HOSTS.indexOf(legendIdOf(el))<0) return;
+      if(el.querySelector('.dl-ct-row')) return;
+      const cb=document.getElementById('dl-contours'); if(!cb) return;
+      const row=document.createElement('div'); row.className='dl-op-row dl-ct-row';
+      const lb=document.createElement('span'); lb.textContent=(i18n[HOST.lang]&&i18n[HOST.lang].lyrContours)||(i18n.en&&i18n.en.lyrContours)||'Contour lines';
+      const sw=document.createElement('button'); sw.type='button'; sw.className='dl-sw dl-ct-sw'+(cb.checked?' on':'');
+      sw.setAttribute('role','switch'); sw.setAttribute('aria-checked',cb.checked?'true':'false');
+      sw.setAttribute('aria-label',lb.textContent);
+      sw.innerHTML='<i class="dl-sw-k"></i>';
+      sw.addEventListener('click',(e)=>{ e.preventDefault(); e.stopPropagation();
+        const c=document.getElementById('dl-contours'); if(!c) return;
+        c.checked=!c.checked; c.dispatchEvent(new Event('change',{bubbles:true})); _syncContourSwitches(); });
+      row.appendChild(lb); row.appendChild(sw);
+      const op=el.querySelector('.dl-op-row:not(.dl-ct-row):not(.dl-cd-row)');
+      if(op && op.parentNode===el) el.insertBefore(row, op.nextSibling);
+      else { const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row); }
+    }catch(_){} }
+    window._ensureContourSwitch=ensureContourSwitch;
+    /* ⚠ (#R469) ONE listener for both halves: the switches follow the checkbox whoever pressed it
+       (a second legend, Atlas, a restored session), and 等高線 goes off with the LAST of its three
+       hosts. `gxrelief` lives in js/layer-packs.js and its box is `gx-gxrelief`, so this is keyed on
+       the checkbox rather than on any one module's toggle path. */
+    document.addEventListener('change',(e)=>{ try{ const t2=e.target; if(!t2||t2.type!=='checkbox') return;
+      const cid=t2.id||'';
+      if(cid==='dl-contours'){ _syncContourSwitches(); return; }
+      if(cid!=='dl-relief'&&cid!=='dl-hillshade'&&cid!=='gx-gxrelief') return;
+      if(_contourHostOn()) return;
+      const c=document.getElementById('dl-contours');
+      if(c&&c.checked){ c.checked=false; c.dispatchEvent(new Event('change',{bubbles:true})); }
+    }catch(_){} },true);
+    /* (#R152) contour DENSITY slider — the layer's own control, in the legend (R16 rule). Dragging rebuilds
+       contour-src with a finer/coarser interval table (on release).
+       ⚠ (#R469) It follows the switch into the three host legends, and is hidden while contours are off —
+       a 「細かさ」 slider for lines nobody is drawing is a control with nothing on the other end of it. */
     function ensureContourDensity(el){ try{
-      if(!el || legendIdOf(el)!=='contours') return;
+      if(!el || CONTOUR_HOSTS.indexOf(legendIdOf(el))<0) return;
       if(el.querySelector('.dl-cd-row')) return;
       const d=Math.max(0.25,Math.min(4,+window._contourDensity||1));
       const row=document.createElement('div'); row.className='dl-op-row dl-cd-row';
       row.innerHTML=`${window.IntMapLang.t(HOST.lang,'Detail','細かさ','Dichte','Детализация','Detalle')}<input type="range" min="0.5" max="3" step="0.25" value="${d}"><span class="dl-op-val">${d}×</span>`;
-      const op=el.querySelector('.dl-op-row:not(.dl-cd-row)');
-      if(op && op.parentNode===el) el.insertBefore(row, op.nextSibling);
-      else { const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row); }
+      /* (#R469) directly under the contour switch it belongs to — not under the HOST layer's opacity row */
+      const ct=el.querySelector('.dl-ct-row');
+      if(ct && ct.parentNode===el) el.insertBefore(row, ct.nextSibling);
+      else { const op=el.querySelector('.dl-op-row:not(.dl-cd-row)');
+        if(op && op.parentNode===el) el.insertBefore(row, op.nextSibling);
+        else { const hint=el.querySelector('.dl-hint, .kl-hint'); if(hint && hint.parentNode===el) el.insertBefore(row,hint); else el.appendChild(row); } }
       const r=row.querySelector('input'), val=row.querySelector('.dl-op-val');
       r.addEventListener('input',()=>{ if(val) val.textContent=parseFloat(r.value)+'×'; });
       r.addEventListener('change',()=>{ if(window._setContourDensity) window._setContourDensity(parseFloat(r.value)); });
+      try{ const c=document.getElementById('dl-contours'); row.style.display=(c&&c.checked)?'':'none'; }catch(_){}
     }catch(_){} }
     window._ensureContourDensity=ensureContourDensity;
     /* (#R15c) Generic legend for layers that previously had ONLY an inline opacity slider in the Layers
@@ -3501,7 +3673,7 @@ window.IntMapModules.dataLayers=function(HOST){
          a hand-maintained name would have gone stale on the next layer. */
       const all=[document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat,document.getElementById('data-legend-wind')].concat([...document.querySelectorAll('[id^="data-legend-ec-"]')]).concat([...document.querySelectorAll('.data-legend.generic-legend')]);
       const visible=all.filter(el=>el&&el.style.display==='block' && !el.dataset.dragged);
-      all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
+      all.forEach(el=>{ if(el&&(el.style.display==='block'||el.style.display==='flex')) try{ ensureLegendOpacity(el); ensureContourSwitch(el); ensureContourDensity(el); ensureLegendMinimize(el); }catch(_){} });
       /* (#R13c) Desktop legends live on the LEFT of the map. In frosted-overlay mode the sidebar floats
          over the map, so offset past it (unless collapsed); mobile keeps its own right-dock CSS. */
       const ws=document.body.classList.contains('ws-mode');
@@ -5757,7 +5929,9 @@ window.IntMapModules.dataLayers=function(HOST){
         /* (#R232) the day/night SHADING — one call to its owner, and the Settings picker follows. */
         else if(id==='nightside'){ _setNightSide(true); }
         /* (#R15c) layers without a dedicated legend get a generic one (so opacity moves out of the panel) */
-        { try{ const gl=ensureGenericLegend(id); if(gl){ gl.style.display='block'; tileLegends(); } }catch(_){} }
+        /* ⚠ (#R469) …EXCEPT 等高線, which is no longer a layer with a row: it is a switch inside the
+           three elevation legends, and a floating legend of its own would be a fourth place saying so. */
+        if(id!=='contours'){ try{ const gl=ensureGenericLegend(id); if(gl){ gl.style.display='block'; tileLegends(); } }catch(_){} }
         /* (#R30) ASYNC-RACE ORPHAN GUARD — root cause of "オンになっているのにactive layersに表示されず、消せない" /
            "勝手にレイヤーがオンになる". Most layers add+show inside whenStyleReady()/poll callbacks that resolve
            LATER. If the user UNCHECKED before that resolved, the deferred setVis(true) re-showed a layer whose
@@ -6032,7 +6206,7 @@ window.IntMapModules.dataLayers=function(HOST){
       /* (#R74) feed the layer-state audit: remember which REAL style layers belong to this checkbox */
       try{ if(cbId&&layerIds&&layerIds.length){ (window._imAuditReg=window._imAuditReg||{})[cbId]=layerIds.slice(); } }catch(_){}
       const el=ensureGenericLegend(id,namesEnJp,cbId);
-      if(el){ el.style.display='block'; try{ ensureLegendOpacity(el); }catch(_){} try{ ensureContourDensity(el); }catch(_){} try{ ensureLegendMinimize(el); }catch(_){} try{ tileLegends(); }catch(_){} }
+      if(el){ el.style.display='block'; try{ ensureLegendOpacity(el); }catch(_){} try{ ensureContourSwitch(el); }catch(_){} try{ ensureContourDensity(el); }catch(_){} try{ ensureLegendMinimize(el); }catch(_){} try{ tileLegends(); }catch(_){} }
       /* apply the registered default immediately so the layer paints at it (was: slider showed the
          default but the layer kept its hard-coded paint until first slider move) */
       try{ setTimeout(()=>{ try{ setLayerOpacity(id,opacities[id]); }catch(_){} },120); }catch(_){}

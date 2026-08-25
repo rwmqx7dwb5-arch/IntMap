@@ -461,6 +461,11 @@
        sheet bottom ("モバイル版でもActive layersは下部にstick"). Full width (the scroller has no side padding). */
     /* (#R64) mobile: same TOP placement — sticky first child of the sheet scroller, fixed height. */
     .m-sheet #layer-active-section{ position:sticky; top:0; z-index:5; margin:0; padding:8px 16px 7px; border-radius:0; background:var(--card-bg); backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur)); border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.25)); box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+    /* ⚠ (#R469) …and on the phone the same strip has the same defect for the same reason: `.m-sheet`
+       is painted with --glass-fill in the two frosted appearances (the #R33 list further down), while
+       this bar stayed on the opaque --card-bg. It takes the sheet's own material, and keeps the
+       backdrop-filter it already had — that is what stops the rows reading through a sticky bar. */
+    body.sidebar-translucent .m-sheet #layer-active-section, body.sidebar-glass2 .m-sheet #layer-active-section{ background:var(--glass-fill); }
     /* (#R34) Kill the gap under the sticky bar (the scroller's bottom padding pushed it up). */
     #mo-sheet .m-sheet-scroll{ padding-bottom:0; }
     /* (#R33) Remove the colored square before EVERY layer name ("色付きの四角をやめて"). */
@@ -2764,6 +2769,20 @@
     .dl-op-row{ display:flex; align-items:center; gap:8px; margin:5px 0 2px; font-size:10px; color:var(--text-muted); }
     .dl-op-row input[type=range]{ flex:1; min-width:0; accent-color:var(--primary-color); height:4px; }
     .dl-op-row .dl-op-val{ min-width:28px; text-align:right; font-variant-numeric:tabular-nums; }
+    /* ══ (#R469) THE SWITCH INSIDE A LEGEND — 「…の凡例内でトグルでオンオフできるように統合」 ═══════════
+       Same iOS object the rest of the app draws (`.wgt-sw` in the widget deck, `.lst-sw` in the layer
+       browser): 42×26 track, 20 px knob, 16 px throw. Only the ON colour differs, and it is the
+       panel's own --primary-color, exactly as `.lst-sw` already resolved that question. */
+    .dl-op-row .dl-sw{ position:relative; flex:0 0 auto; width:42px; height:26px; border:none; border-radius:13px; padding:0; cursor:pointer;
+      background:rgba(128,128,128,0.32); transition:background .16s; -webkit-tap-highlight-color:transparent; }
+    .dl-op-row .dl-sw.on{ background:var(--primary-color); }
+    .dl-op-row .dl-sw .dl-sw-k{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:10px; background:#fff;
+      box-shadow:0 1px 3px rgba(0,0,0,0.28); transition:transform .16s cubic-bezier(0.2,0.7,0.2,1); }
+    .dl-op-row .dl-sw.on .dl-sw-k{ transform:translateX(16px); }
+    .dl-op-row .dl-sw:focus-visible{ outline:2px solid var(--primary-color); outline-offset:2px; }
+    .dl-ct-row{ margin-top:7px; }
+    .dl-ct-row > span:first-child{ flex:1; min-width:0; }
+    @media (prefers-reduced-motion: reduce){ .dl-op-row .dl-sw, .dl-op-row .dl-sw .dl-sw-k{ transition:none; } }
     /* ══ (#R215) THE WORLD-DATA FAMILIES RENDER INTO THIS SAME BOX ═══════════════════════════════
        「いや汎用の凡例の方に統合させろ。余計な例外作んなぼけ」 — trade / energy / warnings / tides /
        crops / the industry web used to open a second floating window of their own beside the

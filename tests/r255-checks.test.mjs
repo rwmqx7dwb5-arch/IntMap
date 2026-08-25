@@ -7,6 +7,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8');
 /* comments carry the reasoning and quote the very strings under test — strip them first */
@@ -191,9 +192,10 @@ test('#R255 ⑧ four new categories exist, are filled, and are named in all nine
   const KEYS = ['lyrGrpPolitics', 'lyrGrpSecurity', 'lyrGrpHealth', 'lyrGrpTech'];
   const seen = new Map();
   for (const k of KEYS) {
-    const m = new RegExp(String.raw`\['` + k + String.raw`',\[([^\]]*)\]\]`).exec(dl);
-    assert.ok(m, `${k} is not built from a list`);
-    const ids = m[1].split(',').map((s) => s.trim().replace(/'/g, '')).filter(Boolean);
+    /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+       matched nothing once each shelf grew a count of the rows the reader named. */
+    assert.ok(byKey[k], `${k} is not built from a list`);
+    const ids = byKey[k];
     assert.ok(ids.length >= 4, `${k} holds only ${ids.length} rows`);
     ids.forEach((i) => { assert.ok(!seen.has(i), `${i} is in ${seen.get(i)} AND ${k} — order.push MOVES the element, so it renders only in the last group`); seen.set(i, k); });
   }
