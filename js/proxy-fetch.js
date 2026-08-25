@@ -81,11 +81,21 @@ export const fetchViaProxy = (() => {
   const PROXY_TIMEOUT_MS = 8000;      /* one attempt's deadline */
   const PROXY_FALLBACK_MS = 6000;     /* …and the second, bounded pass */
   const BUDGET_MS = 20000;            /* (#R446) …and what the WHOLE ladder may cost, end to end */
+  const DIRECT_TIMEOUT_MS = 6000;     /* (#R452) the host itself, for the callers that may read it */
 
+  /* ⚠⚠⚠ (#R452) THE CLOCK HAS TO COVER THE BODY, AND IT DID NOT. `clearTimeout` ran in a `.finally`
+     on the `fetch` promise — i.e. THE MOMENT THE HEADERS ARRIVED — so a relay that answered 200 and
+     then stalled halfway through the body had nothing left to abort it. Measured on the live site:
+     api.allorigins.win returns its headers for a Google News feed in ~8.7 s (the deadline is 8 s)
+     and its body some time after that; every millisecond of the read was outside the deadline that
+     was supposed to bound this call. The read is now INSIDE the clock, which is why this helper
+     hands back the TEXT rather than a Response nobody is holding a timer for. */
   const fetchDeadline = (u, ms, ctl) => {
     const c = ctl || new AbortController();
     const t = setTimeout(() => { try { c.abort(); } catch (_) { /* already done */ } }, ms);
-    return fetch(u, { signal: c.signal }).finally(() => clearTimeout(t));
+    return fetch(u, { signal: c.signal })
+      .then((r) => { if (!r.ok) throw new Error('bad status ' + r.status); return r.text(); })
+      .finally(() => clearTimeout(t));
   };
   const isFeed = (txt) => !!txt && (txt.includes('<rss') || txt.includes('<feed'));
 
@@ -135,12 +145,27 @@ export const fetchViaProxy = (() => {
     if (!/<!doctype\s+html|<html[\s>]/i.test(txt)) return false;
     return /<p[\s>]/i.test(txt) || /<meta[^>]+(?:og:description|name=["']description)/i.test(txt);
   };
-  const ACCEPT = { feed: isFeed, html: isHTML };
+  /* (#R452) …and the same question once more for the callers that want DATA rather than a document:
+     a relay's error envelope is JSON-shaped prose or HTML, and must not be handed back as the JSON
+     the caller asked for. Parsing is the only honest test of «is this JSON», and these bodies are
+     kilobytes. */
+  const isJSON = (txt) => { try { const v = JSON.parse(txt); return !!v && typeof v === 'object'; } catch (_) { return false; } };
+  const ACCEPT = { feed: isFeed, html: isHTML, json: isJSON };
 
   /* fetchViaProxy(url, opts) -> the document as TEXT, or null
    *
-   *   opts.as        'feed' (default) | 'html'  — what counts as an answer rather than an error page
+   *   opts.as        'feed' (default) | 'html' | 'json'  — what counts as an answer rather than an
+   *                  error page
    *   opts.budgetMs  what the whole ladder may cost, end to end (default 20 s)
+   *   opts.direct    try the host ITSELF first, before the relays (#R452) — for hosts a browser may
+   *                  read. A CORS refusal costs nothing: it rejects before a byte moves.
+   *   opts.signal    the caller's AbortSignal — Stop, or a superseding turn (#R452)
+   *
+   * ⚠⚠ (#R452) `opts.signal` IS NOT DECORATION. Atlas builds an AbortController for every turn and
+   * hands it to the model call and to the executor, but the EVIDENCE fetches never saw it — so
+   * asking a second question did not REPLACE the first attempt, it ADDED to it: measured on the
+   * live site, a superseded call ran 12.6 s more and returned 200, and requests were still going
+   * out 280 s after the reader's last message.
    *
    * ⚠⚠ (#R446) THE BUDGET IS WHY THE READER PANE CAN STOP SAYING 「読み込み中」. Before it, this
    * function's floor was 「one 8 s race, then up to four 6 s retries」 — a measured 20.3 s to answer
@@ -151,18 +176,41 @@ export const fetchViaProxy = (() => {
     const okDoc = ACCEPT[o.as] || isFeed;
     const budget = (o.budgetMs > 0) ? o.budgetMs : BUDGET_MS;
     const t0 = Date.now();
-    const left = () => budget - (Date.now() - t0);
+    const outer = o.signal || null;
+    const left = () => ((outer && outer.aborted) ? 0 : budget - (Date.now() - t0));
 
-    if (left() <= 0) return null;
-    const PROXIES = proxiesFor(url);
-    const ctls = PROXIES.map(() => new AbortController());
+    if (outer && outer.aborted) return null;
+    /* ⚠ (#R452) EVERY attempt this call makes is registered here — the direct one, the racers and
+       the fallback pass alike — so the caller's Stop reaches whichever of them is in flight. A
+       signal that only cancels the attempt someone remembered to wire it to is not a Stop. */
+    const ctlsAll = [];
+    const relayAbort = () => { ctlsAll.forEach((c) => { try { c.abort(); } catch (_) { /* already done */ } }); };
+    if (outer) { try { outer.addEventListener('abort', relayAbort); } catch (_) { /* no listener support */ } }
+    const mk = () => { const c = new AbortController(); ctlsAll.push(c); return c; };
+
+    try {
+      /* (#R452) the host itself, when the caller says a browser is allowed to read it */
+      if (o.direct) {
+        try {
+          const txt = await fetchDeadline(url, Math.min(DIRECT_TIMEOUT_MS, left()), mk());
+          if (okDoc(txt)) return txt;
+        } catch (_) { /* CORS, a status, or the clock — the relays are next either way */ }
+      }
+      if (left() <= 0) return null;
+      return await race(proxiesFor(url), url, okDoc, left, mk);
+    } finally {
+      if (outer) { try { outer.removeEventListener('abort', relayAbort); } catch (_) { /* nothing to remove */ } }
+    }
+  };
+
+  /* the race, and the one bounded pass behind it */
+  async function race(PROXIES, url, okDoc, left, mk) {
+    const ctls = PROXIES.map(() => mk());
     const attempts = PROXIES.map((make, i) => (async () => {
       /* ⚠ each racer still has its own clock, which is what #R212 put here; what is new is that the
          clock cannot outlast the budget the CALLER named, or a 3 s budget would still sit through an
          8 s attempt. */
-      const r = await fetchDeadline(make(url), Math.min(PROXY_TIMEOUT_MS, left()), ctls[i]);
-      if (!r.ok) throw new Error('bad status ' + r.status);
-      const txt = await r.text();
+      const txt = await fetchDeadline(make(url), Math.min(PROXY_TIMEOUT_MS, left()), ctls[i]);
       if (!okDoc(txt)) throw new Error('not the document that was asked for');
       return txt;
     })());
@@ -176,13 +224,11 @@ export const fetchViaProxy = (() => {
       for (const make of PROXIES) {
         if (left() <= 0) break;
         try {
-          const r = await fetchDeadline(make(url), Math.min(PROXY_FALLBACK_MS, left()));
-          if (!r.ok) continue;
-          const txt = await r.text();
+          const txt = await fetchDeadline(make(url), Math.min(PROXY_FALLBACK_MS, left()), mk());
           if (okDoc(txt)) return txt;
         } catch (__) { /* try the next one */ }
       }
       return null;
     }
-  };
+  }
 })();
