@@ -486,6 +486,13 @@ subcable-overrides.json           生成の**訂正をデータとして持つ**
                                   CLDR と綴りが違う国名の ISO コード）。コードに緯度経度を書かない
 precip-mm.png / .json             年降水量の値格納ラスタ（8bit の log(mm)）と、その格子・帯・色
 precip-year.png / .json           年別の年降水量（1枚に縦積み）
+country-facts.json                国詳細カードの6欄——首都・通貨・言語・隣接（陸の国境）・時間帯・
+                                  国連加盟（＋ demonym / independent）。**restcountries.com が撤去された
+                                  ので同梱に切り替えた**（#R453）。上流は mledoze/countries（ODbL・
+                                  restcountries 自身の上流）と IANA time-zone database。鍵は
+                                  `js/countries-ui.js` が導くコード。生成は
+                                  `scripts/build-country-facts.mjs`（`npm run build:countryfacts`・
+                                  `--check` で上流と byte 比較）。カードを開いたときだけ取りに行く
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境
