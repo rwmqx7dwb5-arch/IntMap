@@ -15,6 +15,7 @@ window.IntMapPageI18N=window.IntMapPageI18N||{_d:{},define:function(c,d){this._d
 window.IntMapPageI18N.define('en', {
 
   common: {
+    language: 'Language',
     backToMap: 'Back to the map',
     contents: 'Contents',
     toScience: 'Science & logic',

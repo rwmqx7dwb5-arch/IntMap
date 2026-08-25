@@ -10,6 +10,7 @@ window.IntMapPageI18N=window.IntMapPageI18N||{_d:{},define:function(c,d){this._d
 window.IntMapPageI18N.define('zh-hant', {
 
   common: {
+    language: "語言",
     backToMap: "回到地圖",
     contents: "目錄",
     toScience: "科學與運算邏輯",

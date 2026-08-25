@@ -213,4 +213,7 @@ window.IntMapLang.define('es', { ui: {
       sortDir:"Cambiar orden",
       lblWsMode:'Espacio de ventanas (escritorio)',
       wsHint:'Noticias, países, el mapa, las capas y Atlas se convierten en ventanas propias que puedes mover, redimensionar, plegar y apilar libremente. Tu diseño se guarda.',
+    
+      ttlLayersPanel:"Capas",
+      ttlFavorite:"Favorito",
     } });

@@ -10,6 +10,7 @@ window.IntMapPageI18N=window.IntMapPageI18N||{_d:{},define:function(c,d){this._d
 window.IntMapPageI18N.define('ko', {
 
   common: {
+    language: "언어",
     backToMap: "지도로 돌아가기",
     contents: "목차",
     toScience: "과학과 계산 논리",

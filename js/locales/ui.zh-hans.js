@@ -240,6 +240,9 @@ window.IntMapLang.define('zh-hans', {
       aiVisHead:"AI 变化侦测", aiVisBtn:"侦测变化", aiVisTitle:"卫星影像变化报告", aiVisSub:"比较 {a} → {b}", aiVisBefore:"之前", aiVisAfter:"之后", aiVisCapturing:"正在撷取影像…", aiVisPickDates:"请选择两个日期进行比较。", aiVisNeedsDated:"请在卫星模式中改用可选日期的提供者（MODIS／VIIRS／Sentinel-2）。", aiVisCapFail:"无法撷取地图影像。" 
 ,
       tabMonitors:"监控",
+    
+      ttlLayersPanel:"图层",
+      ttlFavorite:"收藏",
     },
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
@@ -6042,5 +6045,11 @@ window.IntMapLang.define('zh-hans', {
   "South Asia": "南亚",
   "Southeast Asia": "东南亚",
   "East Asia": "东亚",
+  "API key": "API 密钥",
+  "Base map and projection": "底图与投影",
+  "Close popup": "关闭弹出窗口",
+  "email": "电子邮件",
+  "file: ": "文件: ",
+  "remove": "移除",
   }
 });

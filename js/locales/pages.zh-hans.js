@@ -15,6 +15,7 @@
 window.IntMapPageI18N.define('zh-hans', {
 
   common: {
+    language: "语言",
     backToMap: "回到地图",
     contents: "目录",
     toScience: "科学与运算逻辑",

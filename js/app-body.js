@@ -453,7 +453,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     try{ window.IntMapLang.syncDocument(currentLang); }catch(_){}
     document.getElementById('text-settings').innerText=d.settings; document.getElementById('modal-title').innerText=d.modalTitle;
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
-    { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch||'Search timezone…'; }
+    { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch;   /* (#R459) no English fallback: keyed() puts en under every language */ }
     document.getElementById('btn-close-settings').innerText=d.btnApply; document.getElementById('opt-theme-auto').innerText=d.optAuto;
     const a=document.getElementById('opt-tz-auto'); if(a) a.innerText=d.optLocal;
     if(toolMode) updateToolPanel();
@@ -3950,8 +3950,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       card.innerHTML='<div id="acled-head" style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text-main);">⚔ '+(window.IntMapLang.t(currentLang,"Conflict events (ACLED)","紛争イベント（ACLED）","Konfliktereignisse (ACLED)","События конфликтов (ACLED)","Eventos de conflicto (ACLED)"))+'<span style="margin-left:auto;font-size:10px;color:var(--text-muted);">beta</span><span style="opacity:0.6;font-size:10px;">'+(open?'▾':'▸')+'</span></div>'+
         (open?('<div style="margin-top:8px;">'+
           '<div style="display:flex;gap:6px;margin-bottom:6px;">'+
-          '<input id="acled-email" type="email" placeholder="email" value="'+esc(cred.email)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;">'+
-          '<input id="acled-key" type="password" placeholder="API key" value="'+esc(cred.key)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;"></div>'+
+          '<input id="acled-email" type="email" placeholder="'+window.IntMapLang.t(currentLang,"email","メール","E-Mail","эл. почта","correo")+'" value="'+esc(cred.email)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;">'+
+          '<input id="acled-key" type="password" placeholder="'+window.IntMapLang.t(currentLang,"API key","APIキー","API-Schlüssel","API-ключ","clave de API")+'" value="'+esc(cred.key)+'" style="flex:1;min-width:0;padding:6px 8px;border-radius:8px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);font-size:11.5px;"></div>'+
           '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">'+
           '<button id="acled-load" class="ai-test-btn" style="flex:1;">'+(window.IntMapLang.t(currentLang,"Load last 14 days","直近14日間を取得","Letzte 14 Tage laden","Загрузить за последние 14 дней","Cargar los últimos 14 días"))+'</button>'+
           '<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);cursor:pointer;"><input id="acled-pins" type="checkbox" '+(pinsOn?'checked':'')+'>'+(window.IntMapLang.t(currentLang,"Pins","ピン","Pins","Метки","Marcadores"))+'</label></div>'+
