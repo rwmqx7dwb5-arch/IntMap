@@ -327,8 +327,32 @@ test('R168 #8 index.html shrank and no module body came back inline', () => {
        js/lazy-modules.js  +0   folded onto the rows that were already there.
 
      Headroom is 8 lines. The debt this round did NOT pay is js/app-body.js itself (4,331 lines): the
-     news predicate now serves two surfaces and is the natural thing to lift out of the shell next. */
-  assert.ok(lines < 8_020, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
+     news predicate now serves two surfaces and is the natural thing to lift out of the shell next.
+     ⚠ (#R459) 8,020 → 8,050, and the measurement is written down because raising a tripwire to make
+     one's own change pass is exactly the move this file exists to catch. The shell was at 8,019 —
+     ONE line of headroom — and what landed is 26 lines in index.html and nothing at all in the other
+     four files:
+
+       index.html  +26   `__imDocStale()` and the capture-phase error listener that feeds it: the
+                         recovery for a browser that answers a navigation from its own HTTP cache
+                         with the PREVIOUS build's document, whose hashed entry the current deploy no
+                         longer has (measured on production 2026-08-25 — entry 404, IntMapConsole and
+                         IntMapAtlasAgent both undefined, nothing booted).
+
+     THE POINT OF THE DEFECT IS THAT THIS CANNOT LIVE ANYWHERE ELSE, and both exclusions are measured
+     rather than assumed:
+       · not under assets/ — that directory is precisely what is missing; code shipped there is code
+         that never arrives in the failure it is meant to answer;
+       · not in sw.js — the worker is registered from js/tile-warm.js, i.e. from INSIDE that same
+         bundle, so a reader who meets this failure may have no worker at all. It would also put a
+         round trip on every warm start (§1.1's startup budget) and give a fetch handler the power to
+         strand every returning reader. See DECISIONS.md.
+     The explanation was cut to a seven-line pointer at Architecture.md §1.1 / DECISIONS.md /
+     DEV-NOTES #R459 rather than carried here, which is the same shape the #R372 note uses; the first
+     draft of this block was 59 lines. 8,019 → 8,045. Headroom is 5 lines.
+     The debt this round did NOT pay is the one #R386 named and left: js/app-body.js (4,331 lines).
+     Paying it is an unrelated refactor, which is why this round did not reach for it. */
+  assert.ok(lines < 8_050, `index.html should be well under the pre-R168 9,709 lines; it is ${lines}`);
   assert.ok(!/<style>[\s\S]{4000,}?<\/style>/.test(html), 'the stylesheet stays in css/intmap.css');
   // A leftover in-page copy of a moved body would WIN over the module (a later function declaration
   // overwrites an earlier one). Probe with a line from deep inside each of the three biggest bodies,
