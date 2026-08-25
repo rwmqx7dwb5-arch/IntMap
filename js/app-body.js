@@ -249,7 +249,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get _aiLangName(){ return _aiLangName; },       get addEdgeResize(){ return addEdgeResize; },
     get addPin(){ return addPin; },                 get aiGate(){ return aiGate; },
     get aiLimitMsg(){ return aiLimitMsg; },         get aiLoginMsg(){ return aiLoginMsg; },
-    get aiParseJSON(){ return aiParseJSON; },       get aiToday(){ return aiToday; },
+    get aiParseJSON(){ return aiParseJSON; },       get aiQuotaBlocked(){ return aiQuotaBlocked; },
+    get aiToday(){ return aiToday; },
     get aiUsage(){ return aiUsage; },               get aiUsesLeft(){ return aiUsesLeft; },
     get applyAccent(){ return applyAccent; },       get askAI(){ return askAI; },
     get askAIJSON(){ return askAIJSON; },           get askAIJSONEnvelope(){ return askAIJSONEnvelope; },
@@ -1005,6 +1006,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function aiLimitMsg(){ return IM_AI.aiLimitMsg.apply(this,arguments); }
   function aiLoginMsg(){ return IM_AI.aiLoginMsg.apply(this,arguments); }
   function aiParseJSON(){ return IM_AI.aiParseJSON.apply(this,arguments); }
+  function aiQuotaBlocked(){ return IM_AI.aiQuotaBlocked.apply(this,arguments); }
   function aiReady(){ return IM_AI.aiReady.apply(this,arguments); }
   function aiRenderSettings(){ return IM_AI.aiRenderSettings.apply(this,arguments); }
   function aiReport(){ return IM_AI.aiReport.apply(this,arguments); }
