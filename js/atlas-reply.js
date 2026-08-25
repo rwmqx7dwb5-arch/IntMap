@@ -18,6 +18,44 @@
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 export function makeAtlasReply(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc, fitTo=CTX.fitTo, fmtVal=CTX.fmtVal, highlight=CTX.highlight, note=CTX.note, warn=CTX.warn;
+    /* ══ (#R463) ATOMS — the two sentence tokenizers below must never cut inside a URL or a number ═══
+       Reported: an Atlas answer rendered "地図中心付近の49." and "10°N・19.54°E" as two paragraphs, and its
+       source link came out as a dead anchor reading "https://liptovska-mara.". Neither is a model defect
+       nor a markdown defect. BOTH tokenizers in this file treat every '.' as a possible sentence end:
+         _atlStanza  → SENT       cuts a >230-char run-on into ~2-sentence stanzas rejoined with '\n\n'
+         _dedupText  → dedupLine  cuts a line into sentences to drop verbatim repeats (#R137)
+       A dotted host (liptovska-mara.slovakian-mountains.eu) reads as three sentences and a decimal
+       (21.6 / 49.10 / 19.54) as two, so a stanza boundary lands INSIDE them — and the markdown-link and
+       bare-URL rules further down allow no whitespace in a URL, which is why only the fragment up to the
+       first dot became a link. Measured on this branch BEFORE the fix, one 306-char paragraph produced
+       "21.\n\n6平方キロメートル", "49. 10°N・19.\n\n54°E" and href="https://liptovska-mara.".
+       ⚠ The dedup side was worse than a broken link. Its tokens are rejoined with '' so nothing shifts —
+       it DELETES a repeated middle token instead. The same URL twice in one reply therefore rendered the
+       second one as href="https://liptovska-mara.html": a different, live, wrong destination that looks
+       perfectly ordinary. A visibly broken link is reported; that one would not be.
+       ⚠ THE FIX IS NOT A SMARTER FULL-STOP TEST. Deciding "is this dot a sentence end" from the characters
+       around it is guesswork that gets abbreviations and hosts wrong forever, one special case at a time.
+       Instead the spans that are NEVER prose — a markdown link, a URL, an e-mail address, a decimal or
+       thousands-separated number — are lifted OUT of the string into placeholders BEFORE either tokenizer
+       sees it and put back immediately after, so the tokenizer cannot cut where a cut is meaningless.
+       Nothing else moves: the >230 length gate still measures the REAL paragraph and every dedup key is
+       computed on the RESTORED token, so text carrying no atom tokenizes byte-for-byte as it did before.
+       Placeholders are PUA U+E010/U+E011, deliberately distinct from mdMini's own U+E000/U+E001 code /
+       math / table tokens — those are already in the string by the time _atlStanza runs. */
+    /* ⚠ FOUR spans, in this order, and the order is load-bearing. (1) a whole markdown link, label included.
+       (2) a scheme-ful or www url — its character class is the LINKIFIER's own (/(https?:\/\/[^\s<)"']+)/,
+       further down): the span held out here and the span that becomes the href must be the SAME span, or a
+       cut could still land inside an anchor. (3) an e-mail address. (4) a bare host or filename — reuters.com,
+       index.html — which is not a decoration: js/atlas-answer-render.js runs stripModelUrls() over structured
+       answers and hands mdMini exactly that, so without this branch the commonest source citation in the app
+       still rendered as "reuters." / "com" on two paragraphs. Its TLD must be LOWERCASE so that an English
+       run-on typed without a space ("the end.Next one") is still read as two sentences, and its lookbehind
+       stops it matching the tail of a token an earlier branch already declined. (5) a decimal or
+       thousands-separated number. ⚠ An ABBREVIATION is deliberately NOT here: "U.S." and "e.g." are prose,
+       the guesswork about them is exactly what this design refuses, and they split today as they always did. */
+    const _ATL_ATOM=/!?\[[^\]\n]{0,200}\]\([^)\s]{1,400}\)|(?:https?:\/\/|www\.)[^\s<)"']+|[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+|(?<![A-Za-z0-9@.-])[A-Za-z0-9][A-Za-z0-9-]*(?:\.[A-Za-z0-9][A-Za-z0-9-]*)*\.[a-z]{2,24}(?![A-Za-z0-9])|\d+(?:[.,]\d+)+/g;
+    function _atlHold(s){ const A=[]; const t=String(s==null?'':s).replace(_ATL_ATOM,m=>{ A.push(m); return '\uE010'+(A.length-1)+'\uE011'; }); return { t, A }; }
+    function _atlFree(s,A){ return A.length?String(s).replace(/\uE010(\d+)\uE011/g,(m,i)=>A[+i]!==undefined?A[+i]:m):String(s); }
     /* (#R62) minimal safe markdown for AI text rendered in the chat (briefs / analyses). */
     /* (#R137) Atlas occasionally emits the SAME sentence/paragraph twice verbatim in one reply ("たまに二度同じことを
        …同じ文章をそのまま繰り返す"). Strip verbatim-duplicate paragraphs and sentences (normalized, length-gated so short
@@ -27,8 +65,10 @@ export function makeAtlasReply(HOST, CTX) {
       try{
         const MIN=15; const norm=x=>String(x).trim().replace(/\s+/g,' ').toLowerCase();
         const seenSent=new Set();
-        const dedupLine=(line)=>{ const toks=line.match(/[^.!?。！？]*[.!?。！？]+\s*|[^.!?。！？]+$/g); if(!toks) return line;
-          const out=[]; for(const tk of toks){ const k=norm(tk); if(k.length>=MIN){ if(seenSent.has(k)) continue; seenSent.add(k); } out.push(tk); }
+        const dedupLine=(line)=>{ const H=_atlHold(line);                                    /* (#R463) a dotted host / a decimal is not a sentence end */
+          const toks=H.t.match(/[^.!?。！？]*[.!?。！？]+\s*|[^.!?。！？]+$/g); if(!toks) return line;
+          const out=[]; for(const tk0 of toks){ const tk=_atlFree(tk0,H.A); const k=norm(tk);   /* the KEY is the restored token → atom-free text dedups exactly as before */
+            if(k.length>=MIN){ if(seenSent.has(k)) continue; seenSent.add(k); } out.push(tk); }
           return out.join(''); };
         const seenPara=new Set(); const outP=[];
         for(const p of s.split(/\n{2,}/)){
@@ -85,7 +125,8 @@ export function makeAtlasReply(HOST, CTX) {
       for(const p of paras){
         if(isList(p)){ out.push(p.replace(/^\s*(?:\d+[.)、]|[①-⑳])[ \t　]+/,'- ').replace(/^\s*[•・*][ \t　]+/,'- ')); continue; }
         const pc=(p.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;
-        if((p.length+pc)>230){ const sents=p.match(SENT)||[p];                /* long run-on → ~2-sentence stanzas (spacing only, no enlargement) */
+        if((p.length+pc)>230){ const H=_atlHold(p);                            /* (#R463) the gate still measures the REAL paragraph; only the SPLIT sees placeholders */
+          const sents=(H.t.match(SENT)||[H.t]).map(x=>_atlFree(x,H.A));        /* long run-on → ~2-sentence stanzas (spacing only, no enlargement) */
           if(sents.length>=3){ for(let i=0;i<sents.length;i+=2) out.push(sents.slice(i,i+2).join(' ').trim()); continue; } }
         out.push(p);
       }
