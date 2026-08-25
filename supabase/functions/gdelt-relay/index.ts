@@ -71,7 +71,27 @@
 
 import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../_shared/relay-guard.js";
 
-const CORS = corsFor();
+/* ⚠⚠⚠ (#R468) THE DIAGNOSTIC HEADERS HAVE TO BE EXPOSED, OR THEY DO NOT EXIST WHERE THEY ARE READ.
+   #R464 added `x-intmap-gdelt-cache` / `-age-ms` / `-store` for one stated reason: a cache that
+   silently fails to persist looks EXACTLY like a cache that is working — every request becomes a
+   "miss" that returns real data, so the reader sees answers and only the upstream notices. It paid
+   for itself within the hour, reporting `http400:AccessDenied` the first time the write path ran.
+
+   And then production verification could not read a single one of them. Measured from the live
+   origin, four fetches of this endpoint: 200 each time, 14 articles each time, and of the response
+   headers JavaScript could see only the three CORS-safelisted ones (cache-control, content-length,
+   content-type). The values were there — the same requests made with curl showed
+   `x-intmap-gdelt-cache: stale, age-ms: 5,941,649` — but a browser is not allowed to read a header
+   the server does not name in `Access-Control-Expose-Headers`, and this function named none.
+
+   ⚠ So the diagnostic existed everywhere EXCEPT the surface where the app runs and where production
+   verification happens. aviation-feed has listed its `x-intmap-*` headers since #R341 for exactly
+   this reason; this is the same list, for the same purpose. */
+const CORS = {
+  ...corsFor(),
+  "Access-Control-Expose-Headers":
+    "x-intmap-gdelt-cache, x-intmap-gdelt-age-ms, x-intmap-gdelt-store",
+};
 
 /* GDELT's artlist replies measured 4.1-4.8 kB; 2 MB is three orders of magnitude of headroom. */
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -311,9 +331,21 @@ Deno.serve(async (req) => {
     const fresh = await refresh(canonUrl, key);
     if (fresh) return answer(fresh, 0, "miss");
 
-    /* 4) cold AND refused. The pipeline's honest "unavailable", reached in ~12 s rather than ~45. */
-    return new Response(JSON.stringify({ error: "upstream_unavailable" }),
-      { status: 502, headers: { ...CORS, "content-type": "application/json" } });
+    /* 4) cold AND refused. The pipeline's honest "unavailable", reached in ~12 s rather than ~45.
+       ⚠ (#R468) THIS ANSWER CARRIES THE SAME DIAGNOSTIC AS THE OTHERS. It used to carry none, which
+       made the one outcome a reader actually complains about the one outcome nobody could explain:
+       measured from production, an uncached query spent 12.7-14.8 s and returned this 502 with no
+       `x-intmap-*` header of any kind, so 「the cache had nothing」 and 「GDELT refused a refresh of
+       something we had」 were indistinguishable from outside. `cold` says which. */
+    return new Response(JSON.stringify({ error: "upstream_unavailable" }), {
+      status: 502,
+      headers: {
+        ...CORS,
+        "content-type": "application/json",
+        "x-intmap-gdelt-cache": "cold",
+        "x-intmap-gdelt-store": STORE_NOTE || "-",
+      },
+    });
   } catch (e) {
     /* A CODE, NOT THE EXCEPTION — this endpoint is world-readable (CodeQL js/stack-trace-exposure). */
     return relayFail(e, CORS);
