@@ -40,12 +40,12 @@ export const SESSION_KEY = 'intmap_session2';
 /* The base half of window.IntMapDefaultOn (js/data-layers.js) — the toggles index.html ships CHECKED.
  * A spec that writes its OWN session and is not about the base map must include these, or (#R225) it
  * is saying «the reader switched the whole base map off» and will spend the restore doing that. */
-export const BASE_LAYERS = ['cb-names', 'cb-geolabels', 'cb-poi', 'cb-borders', 'cb-admin1', 'cb-roads', 'cb-rail2'];
+export const BASE_LAYERS = ['cb-names', 'cb-geolabels', 'cb-poi', 'cb-borders', 'cb-coast', 'cb-admin1', 'cb-roads', 'cb-rail2'];
 /** A session snapshot that keeps the base map and adds whatever thematic layers a spec wants on. */
 export function sessionWith(layers, extra) {
   return JSON.stringify(Object.assign({ v: 2, defv: 190, layers: BASE_LAYERS.concat(layers || []), lsrOpen: false }, extra || {}));
 }
-export const SESSION_VALUE = '{"v":2,"defv":190,"layers":["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"],"lsrOpen":false}';
+export const SESSION_VALUE = '{"v":2,"defv":190,"layers":["cb-names","cb-geolabels","cb-poi","cb-borders","cb-coast","cb-admin1","cb-roads","cb-rail2"],"lsrOpen":false}';
 /* ── THE PORT IS PER-CHECKOUT, BECAUSE SESSIONS RUN IN PARALLEL  (#R282 追記) ───────────────────
    This was `process.env.PORT || 4173` for every checkout on the machine, and playwright.config.js
    sets `reuseExistingServer: !isCI`. Together that means two Claude Code sessions testing at the

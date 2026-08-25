@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R475';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R476';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R475';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-25-R475';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-26-R476';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -500,8 +500,11 @@ window.__imBuild='R475';/* (#R121) build marker — bump when verifying that a r
                   and only appears from z14, so it starts OFF like Grid and Countries do. -->
              <label class="layer-option"><input type="checkbox" id="cb-poi" checked> <span data-i18n="poiLabels">Places, businesses &amp; facilities</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-borders" checked> <span data-i18n="borders">Country borders</span></label>
-             <!-- (#R289) 「海岸線も国境線が全く同じ手法で」 — js/coast-line.js. Ships OFF; the Wind layer switches it on once. -->
-             <label class="layer-option"><input type="checkbox" id="cb-coast"> <span data-i18n="coastline">Coastlines &amp; shores</span></label>
+             <!-- (#R289) 「海岸線も国境線が全く同じ手法で」 — js/coast-line.js.
+                  (#R476) 「Coastlines & shoresはデフォルトでオンにして」 — ships CHECKED. ⚠ The tick here and the id in
+                  window.IntMapDefaultOn (js/data-layers.js) are ONE edit: a tick without the id makes 基本表示 fall to
+                  「カスタム」 400 ms after boot, and an id without the tick paints nothing (#R34). -->
+             <label class="layer-option"><input type="checkbox" id="cb-coast" checked> <span data-i18n="coastline">Coastlines &amp; shores</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-grid"> <span data-i18n="gridLayer">🌐 Grid &amp; labels</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-countries"> <span data-i18n="countries">Countries (info)</span></label>
              <label class="layer-option"><input type="checkbox" id="cb-admin1" checked> <span data-i18n="adminBounds">State / province borders</span></label>

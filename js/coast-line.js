@@ -72,7 +72,11 @@ export function makeCoastLine(CTX) {
   /* ⚠ (#R289) THE WIND LAYER TURNS THIS ON ONCE, AND «ONCE» IS THE WHOLE DESIGN. 「風レイヤーオン時
      はデフォルトでオン」 is a DEFAULT, not a coupling: re-asserting it every time the wind is
      switched on would overrule a reader who deliberately switched the coast off while the wind was
-     up — 「オフにしてるレイヤーが勝手につく」, the defect #R85 recorded. The latch makes it a default. */
+     up — 「オフにしてるレイヤーが勝手につく」, the defect #R85 recorded. The latch makes it a default.
+     ⚠ (#R476) THE ROW NOW SHIPS ON, so on a first load this spends the latch and returns false at the
+     `c.checked` line without touching anything. It is kept, unchanged, because it is still the only
+     thing that offers the coastline to a reader who is running a SAVED session written before #R476 —
+     there the restore's off-sweep switches the row off, and the wind is the one path back. */
   window._imCoastAuto = function () {
     try {
       const c = document.getElementById('cb-coast');
