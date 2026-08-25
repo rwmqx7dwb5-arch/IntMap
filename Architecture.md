@@ -498,6 +498,25 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 flex 列が高さを折半する）。**`setMode()` はタブ／scope の操作なので、必ず読む面を離れる。**
 ⚠ 「いま開いている出来事」（Atlas の `selectedEventId`）は**面を観測して**答える。閉じる経路は
 戻るボタンだけではない。
+
+⚠⚠ **記事本文の取得（`fetchReadable()`・`js/article-reader.js`）は 2 段で、全体に 1 つの上限がある。**
+第 1 段は `r.jina.ai` の Markdown、第 2 段は **CORS プロキシ経由の記事 HTML** を `DOMParser` で
+読む（`<article>`／`<p>`／`og:description`）。第 2 段は `fetchViaProxy(link, {as:'html', budgetMs})`
+を呼ぶ——**`as` を省くと `js/proxy-fetch.js` は RSS/Atom しか「答え」と認めない**ので、記事 HTML は
+捨てられる。`budgetMs` には `READER_BUDGET_MS` の**残り**を渡し、残りが無ければ第 2 段を行わない。
+⚠ **上流のエラーページを本文にしない**のが両段の共通規律である。第 1 段は抽出テキストが
+`MIN_ARTICLE_CHARS` 未満なら受理しない（相手サイトの「Something went wrong.」は 2 ブロックある）。
+第 2 段の受理条件は §「`fetchViaProxy(url, opts)`」（下）。
+
+**`fetchViaProxy(url, opts)`（`js/proxy-fetch.js`）** は、自前リレー（`news-relay`・Google News の
+RSS だけ）＋公開プロキシ 4 本を**競争させ**、勝者以外を abort し、全滅時に 1 周だけ再試行する。
+
+- `opts.as` … `'feed'`（既定・`<rss`／`<feed` を含むこと）または `'html'`。
+  `'html'` の受理条件は「**HTML 文書を名乗り**（`<!doctype html`／`<html`）・**`HTML_MIN_BYTES` 以上**・
+  **`<p>` か description の meta を持つ**」の 3 つ。リレーの JSON エラー封筒・ボット遮断の
+  interstitial・空の殻はここで落ちる（`news-relay` が interstitial を feed として返さないのと同じ規律）。
+  ⚠ 「本文が読み取れるか」は**呼び手の問い**であり、呼び手が別に判定する。
+- `opts.budgetMs` … **ladder 全体**の上限（既定 `BUDGET_MS`）。各試行の締切はこの残り時間を超えない。
 ⚠ **workspace mode も同じ規則に従う。** `js/workspace.js` は News ウィンドウの一覧を
 `display:flex !important` で出す（サイドバーのタブ状態がそこへ届かないようにするため）ので、
 inline の `display:none` では伏せられない。入口が `body.im-reading` を立て、出口が下ろし、
