@@ -178,7 +178,16 @@ window.IntMapRefData=(function(){
     {n:'NASA/JPL Horizons — interplanetary spacecraft trajectories',u:'https://ssd.jpl.nasa.gov/horizons/'},
     {n:'NASA/JPL Small-Body Database (SBDB)',u:'https://ssd.jpl.nasa.gov/tools/sbdb_query.html'},
     {n:'SIMBAD — CDS, Strasbourg (deep-sky objects and their published distances)',u:'https://simbad.u-strasbg.fr/simbad/'},
-    {n:'REST Countries',u:'https://restcountries.com/'},
+    /* ⚠ (#R452) REST COUNTRIES IS GONE, AND WITH IT THE ONLY RUN-TIME SOURCE FOR THE COUNTRY CARD'S
+       capital / currency / languages / neighbours / timezones / UN-membership rows. Measured on
+       production 2026-08-25: every /v3.1 AND /v5 path 301s to a 261-byte deprecation notice, and
+       the 301 carries no ACAO, so the browser reported CORS. Those facts are now BUILT IN, by
+       scripts/build-country-facts.mjs into data/country-facts.json — so the credit moves to what
+       is actually read, and both entries are build time only. mledoze/countries is REST Countries'
+       own upstream, which is why the values did not change when the server did; ODbL 1.0 makes
+       the first line a licence obligation rather than a courtesy, as it is for OpenStreetMap. */
+    {n:"Country facts — mledoze/countries (capital, currency, languages, land borders, UN membership, demonym; ODbL 1.0, build time only)",u:'https://github.com/mledoze/countries'},
+    {n:"Country facts — IANA Time Zone Database (standard-time offsets, build time only)",u:'https://www.iana.org/time-zones'},
     {n:'NASA FIRMS',u:'https://firms.modaps.eosdis.nasa.gov/'},
     {n:'RainViewer',u:'https://www.rainviewer.com/'},
     {n:'Open-Meteo',u:'https://open-meteo.com/'},
