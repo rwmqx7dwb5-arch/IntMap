@@ -533,8 +533,10 @@ test('R350 ⑨c: the exported envelope carries the identity of the call it came 
     .map((f) => read(f)).join('\n').split('\n').length;
   /* ⚠ (#R386) the number lives in tests/r168 #8, where the reason for each rise is written down.
      This copy exists so a round that grows the shell HERE cannot pass by only looking at its own
-     file — so it has to move with it. 8,000 → 8,020: see the measurement in tests/r168 #8. */
-  assert.ok(shell < 8020, 'this round grew the app shell to ' + shell + ' lines — tests/r168 #8 budgets it');
+     file — so it has to move with it. 8,000 → 8,020 → 8,050: see the measurement in tests/r168 #8.
+     ⚠ (#R462) and it worked exactly as intended: that round raised the ceiling in r168 #8, ran the
+     whole suite, and THIS copy is what stayed red — 2,842 passed, this one failed. */
+  assert.ok(shell < 8050, 'this round grew the app shell to ' + shell + ' lines — tests/r168 #8 budgets it');
 });
 
 test('R350 ⑨d: the proxy knows the task, budgets it, and refuses a shape the client cannot audit', () => {

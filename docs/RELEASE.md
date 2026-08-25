@@ -111,6 +111,31 @@ HTTP 200, app shell present, no uncaught exceptions, layer UI built, `INTMAP_BUI
 reported. It retries to absorb GitHub Pages propagation lag. A transient upstream API
 failure does not fail it (only IntMap’s own breakage does).
 
+## The ten minutes after a deploy
+
+GitHub Pages serves **`Cache-Control: max-age=600` on every response** — `index.html`, `sw.js`
+and the content-hashed, immutable assets alike. Measured 2026-08-25; the header does not vary by
+file type, which is how we know it is GitHub’s policy and not something this repo sets. Pages has
+no per-file header control (no `_headers`, no `.htaccess`), so **you cannot ask for `no-cache` on
+the document.**
+
+The consequence is structural, not a bug in the deploy: for up to ten minutes after a release, a
+returning reader’s browser may answer the navigation from its own HTTP cache with the **previous**
+`index.html`. That document names `assets/main-<previous hash>.js`, which the new deploy no longer
+has — so the entry 404s and **nothing boots**. Observed in production on 2026-08-25:
+`window.__imBuild === 'R451'` with `IntMapConsole` and `IntMapAtlasAgent` both `undefined`.
+
+`index.html` recovers from this itself (`__imDocStale()` — see `Architecture.md` §1.1): it catches
+the entry’s load failure, re-fetches the document past the cache, and reloads **once** if the
+server’s copy names a different entry. So:
+
+- **A blank page reported in the ten minutes after a release is expected to self-heal on the
+  reader’s next load.** Ask whether it persists; if it does, it is not this.
+- **The post-deploy smoke cannot see this failure.** Playwright starts from a cold profile with an
+  empty HTTP cache, so it always gets the fresh document. A green post-deploy run says nothing
+  about readers holding a warm cache — the regression tests for that are `tests/r462-checks.test.mjs`.
+- **When verifying a deploy by hand, a hard reload hides it.** Load the site normally first if what
+  you want to know is what a returning reader gets.
 ## Which build is live?
 
 - `window.INTMAP_BUILD` — the human-readable build stamp (e.g. `2026-07-18-R133`), visible
