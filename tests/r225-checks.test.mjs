@@ -116,11 +116,16 @@ test('R225 ④ the geopolitics layer family is deleted in every file that held a
    so every reload put them back at their HTML default. */
 test('R225 ⑤ every default-ON id is in ONE list, and the restore turns all of them off', () => {
   const dl = read('js/data-layers.js');
-  assert.match(dl, /window\.IntMapDefaultOn=\['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2'\]\s*\n\s*\.concat\(window\.IntMapDefaultLayers\);/,
+  assert.match(dl, /window\.IntMapDefaultOn=\[(?:'cb-[a-z0-9]+',)*'cb-[a-z0-9]+'\]\s*\n\s*\.concat\(window\.IntMapDefaultLayers\);/,
     'the union is declared once, beside the thematic list it extends');
-  /* every id in it is genuinely shipped checked (or is a thematic default) */
+  /* every id in it is genuinely shipped checked (or is a thematic default)
+     ⚠ (#R476) DERIVED, NOT COPIED. This loop used to carry its own hand-written copy of the seven ids,
+     so the eighth (cb-coast) could be added to the list above and be checked by nobody — the shape
+     #R309 spent a round removing from the product is not one to keep in the gate. */
   const html = read('index.html');
-  for (const id of ['cb-names', 'cb-geolabels', 'cb-poi', 'cb-borders', 'cb-admin1', 'cb-roads', 'cb-rail2']) {
+  const declared = /window\.IntMapDefaultOn=\[([^\]]*)\]/.exec(dl)[1].split(',').map((x) => x.trim().replace(/'/g, ''));
+  assert.ok(declared.length >= 8, 'the base half is parsed, not assumed');
+  for (const id of declared) {
     const m = new RegExp('id="' + id + '"[^>]*checked|checked[^>]*id="' + id + '"');
     assert.ok(m.test(html), `${id} must actually be shipped checked, or it does not belong in the list`);
   }
@@ -154,7 +159,7 @@ test('R225 ⑥ no shipped source still resolves a deleted geopolitics key', () =
    value drifts (#R220): they import it. */
 test('R225 ⑦ the seeded session lives in exactly one place, and it states the base toggles', () => {
   const seed = read('tests/helpers/session-seed.js');
-  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":190,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
+  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":190,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-coast","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
   const files = readdirSync(new URL('tests/', root)).filter((f) => f.endsWith('.spec.js'));
   for (const f of files) {
     const src = read('tests/' + f);
