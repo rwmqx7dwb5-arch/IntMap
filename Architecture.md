@@ -1997,6 +1997,16 @@ UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押�
 実例: `js/map-readout.js` は `const L=(...a)=>{ if(!_L) _L=window.IntMapLang.pick(…); return _L(...a); }`
 という遅延ラッパを書いており、`i18n-helpers.mjs` はこれをヘルパと認識しないので**その10サイトは
 全計器から見えない**。`have − want` で実装すると «Tropic of Cancer» が「死んだ鍵」になる。
+
+⚠⚠⚠ **そして遅延ラッパは、被覆の側でも同じだけ危ない。** 呼び先が証明できない＝その英語原文は
+`want` 集合に**入らない**＝ fr / ko / zh は inline 表を引けず**引数0の英語に落ちる**。
+`pick()` は最初の5言語だけを位置引数で解決するので、**5言語は正しく、4言語は英語**という状態が
+**どの百分率も下がらないまま**成立する。実例は `js/auth-ui.js` の `_authL`
+（`function _authL(){ if(!_authL._p) _authL._p=window.IntMapLang.pick(…); … }`）で、
+本番のフランス語・韓国語で `placeholder="Display name"` / `"Password"` がそのまま出ていた。
+⇒ **読み手に見える文字列は、計器が証明できる綴り**（`window.IntMapLang.t(HOST.lang, …)` など）
+**で書く。** 遅延ラッパそのものは factory の規則（factory の本体で `const x=f()` は「宣言」では
+ない・`tests/r168-checks ④`）から来ているので消せない——だから**綴りのほうを選ぶ**。
 だから問いを**弱くして健全にする**——「その鍵は出荷される木のどこかに書かれているか」。
 `js/lang-registry.js` は `pick()` の第0引数と `t()` の第1引数を**無加工で**添字にする
 （trim も正規化も接頭辞も単複変化も無い。`fn.arr(tuple)` は `pick()` の適用）ので、
