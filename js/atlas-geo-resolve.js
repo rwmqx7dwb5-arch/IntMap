@@ -1,4 +1,5 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
+import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a clock — see the file header there */
 /* ============================================================================
  *  IntMap · Atlas — place / region resolution and camera framing  (#R199)
  * ----------------------------------------------------------------------------
@@ -17,6 +18,12 @@ import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is �
  * ==========================================================================*/
 export function makeAtlasGeoResolve(HOST, CTX) {
   const GE=CTX.GE, L=CTX.L, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, codeAtPoint=CTX.codeAtPoint, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup, resolveCountrySync=CTX.resolveCountrySync;
+    /* (#R452) `geocode()` and `_nomExtent()` both went to Nominatim with no signal and no deadline,
+       and `placeExtent()` calls the second up to THREE times in a file — so a host that had stopped
+       answering stopped the turn. 8 s is well above Nominatim's own answer time for every query this
+       file builds; past it, the caller's existing 「no extent / no coordinate」 branch is the truth.
+       ⚠ It sits BELOW the CTX rebinds because tests/r199 ② requires those to be the first statement. */
+    const NOMINATIM_TIMEOUT_MS = 8000;
     /* (#R44) deictic references → the place Atlas last touched, else the current map centre. */
     const DEIXIS_RE=/^(here|there|current|this( ?place| ?location)?|that( ?place| ?spot)?|the same( ?place| ?spot)?|same|そこ|ここ|そこの|この場所|同じ場所)$/i;
     /* (#R85) "現在地" means the DEVICE'S real GPS location, NOT deixis. The old code lumped 現在地 into DEIXIS_RE, so
@@ -93,7 +100,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length){ _fz={lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}; if(_fz.kind!=='capital') return _setLast(_fz); } } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
          real extent so a continent zooms out and a city zooms in (was: everything pinned at country-zoom ~6). */
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(j&&j[0]){ const b=j[0].boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0],bbox,kind:(j[0].addresstype||j[0].type||j[0].class||'')}); } }catch(_){}
+      try{ const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(j&&j[0]){ const b=j[0].boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0],bbox,kind:(j[0].addresstype||j[0].type||j[0].class||'')}); } }catch(_){}
       if(_fz) return _setLast(_fz);   /* capital match + Nominatim unreachable → fall back to the coarse centroid */
       return null; }
     function _bboxOK(b){ try{ const w=b[0][0],s=b[0][1],e=b[1][0],n=b[1][1]; if(![w,s,e,n].every(v=>typeof v==='number'&&isFinite(v))) return false; if(e<=w||n<=s) return false; if((e-w)>355||(n-s)>175) return false; return true; }catch(_){ return false; } }
@@ -237,7 +244,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
               ("トスカーナ州" / "Toscana"), so the exact-name bonus below fired for an obscure English HOMONYM instead
               (Tuscany the Calgary suburb) — a reported "見当違いの場所" wrong-place highlight. */
         const _lang=(typeof HOST.lang!=='undefined'&&HOST.lang)?String(HOST.lang):'en';
-        const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language='+encodeURIComponent(_lang+',en')+'&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),{headers:{Accept:'application/json'}}); const j=await r.json(); if(!Array.isArray(j)||!j.length) return null;
+        const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language='+encodeURIComponent(_lang+',en')+'&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(!Array.isArray(j)||!j.length) return null;
         const _q=String(place).trim().toLowerCase();
         const _imp=x=>(+x.importance||0); const _maxImp=Math.max.apply(null,j.map(_imp).concat([0]));
         /* (#R116/#R136) EXACT-NAME bonus: a result whose own name equals the query beats a FUZZY near-miss of slightly

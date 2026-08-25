@@ -324,7 +324,10 @@ test('R276 ⑩ RainViewer animates its past frames, and its retired satellite pr
 test('R276 ⑪ every Open-Meteo request goes through IntMapWx', () => {
   const files = ['js/weather.js', 'js/wx-ecmwf.js', 'js/wx-wind.js', 'js/map-ui.js', 'js/map-readout.js',
     'js/app-body.js', 'js/widgets.js', 'js/layer-previews.js', 'js/sims.js', 'js/flight-sim.js',
-    'js/world-packs.js', 'js/search-geocode.js', 'js/drone-ops.js', 'js/atlas-console.js'];
+    'js/world-packs.js', 'js/search-geocode.js', 'js/drone-ops.js', 'js/atlas-console.js',
+    /* (#R452) Atlas's shared loader moved out of the console (that file is under a shrink-only line
+       ceiling), so the file this rule has to read moved with it. */
+    'js/atlas-deadlines.js'];
   const bad = [];
   for (const f of files) {
     const s = codeOnly(read(f));
@@ -336,8 +339,12 @@ test('R276 ⑪ every Open-Meteo request goes through IntMapWx', () => {
   assert.deepEqual(bad, [], 'these files still fetch Open-Meteo directly');
   assert.match(codeOnly(read('js/wx-source.js')), /isOpenMeteo: isOpenMeteo,/,
     'the guard publishes the host test so callers can route by it');
-  for (const f of ['js/sims.js', 'js/atlas-console.js'])
-    assert.match(codeOnly(read(f)), /window\.IntMapWx\.isOpenMeteo\(url\)\) return await window\.IntMapWx\.guardedJSON\(url,\d+\)/,
+  /* ⚠ (#R452) THE PROPERTY IS 「ATLAS'S SHARED LOADER ROUTES OPEN-METEO THROUGH THE GUARD」, and the
+     file that holds that loader is not the property. `_fetchJSON` moved to js/atlas-deadlines.js
+     this round; pinning js/atlas-console.js would have gone red on a move that changed nothing
+     about what the rule protects — the #R429 shape, one round later. */
+  for (const f of ['js/sims.js', 'js/atlas-deadlines.js'])
+    assert.match(codeOnly(read(f)), /window\.IntMapWx\.isOpenMeteo\(url\)\) return await window\.IntMapWx\.guardedJSON\(url,\s*\d+\)/,
       f + ' routes its shared loader through the guard');
 });
 

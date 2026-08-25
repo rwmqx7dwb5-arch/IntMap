@@ -26,6 +26,7 @@ import { atlasPanelCSS } from './atlas-styles.js';   /* (#R313) the panel's styl
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
 import { makeAtlasControls } from './atlas-controls.js';
 import { makeAtlasSources } from './atlas-sources.js';
+import { ATLAS_BUDGETS, settleWithin, lateNote, makeFetchJSON, newTurnController } from './atlas-deadlines.js';   /* (#R452) the turn's clocks — Atlas had two private, unbounded copies of the relay ladder */
 import { makeAtlasSims } from './atlas-sims.js';
 import { makeAtlasVerify } from './atlas-verify.js';
 import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) normally js/app-body.js has already built the registry at boot; this is the fallback for a boot that did not get that far, so Atlas is never the thing that has no capabilities */
@@ -1383,12 +1384,8 @@ window.IntMapModules.atlasConsole=function(HOST){
        elevation (Open-Meteo — already a listed provider), recent earthquakes (USGS — already the map layer's
        source) and countryStats — then ONE text-AI call synthesizes the answer FROM THAT DATA ONLY. Datasets
        that returned nothing are listed honestly in the footer (never silently pretended). ---- */
-    async function _fetchJSON(url){ /* direct → the app's usual CORS proxies (GDELT/IMF don't send ACAO) */
-      try{ if(window.IntMapWx&&window.IntMapWx.isOpenMeteo(url)) return await window.IntMapWx.guardedJSON(url,300000); }catch(_){}   /* (#R276) …except Open-Meteo: CORS-open and rate-limited, so it goes through the app's ONE guarded client (js/wx-source.js) */
-      const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-      for(const p of PROX){ try{ const c=('AbortController' in window)?new AbortController():null; const t2=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },9000):null;
-        const r=await fetch(p(url),c?{signal:c.signal}:undefined); if(t2) clearTimeout(t2); if(r&&r.ok) return await r.json(); }catch(_){} }
-      return null; }
+    const { EVIDENCE_BUDGET_MS, GATHER_BUDGET_MS, WEB_BUDGET_MS } = ATLAS_BUDGETS;   /* (#R452) the clocks, the bounded gather and the evidence fetcher live in js/atlas-deadlines.js — this file has a SHRINK-ONLY ceiling, so the subject moved OUT rather than the ceiling moving up */
+    const turnSignal = () => { try{ return _abortCtl?_abortCtl.signal:undefined; }catch(_){ return undefined; } }, _fetchJSON = makeFetchJSON(turnSignal);   /* ⚠ read at CALL time — `run()` installs the controller when a turn starts, so one captured here would belong to no turn */
     function _agoH(d){ try{ const t2=(typeof parseDate==='function')?parseDate(d).getTime():Date.parse(d); if(!t2) return null; return Math.max(0,Math.round((Date.now()-t2)/3600000)); }catch(_){ return null; } }
     function _newsData(ctx,q,sink){ try{ if(typeof HOST.globalData==='undefined'||!HOST.globalData||!HOST.globalData.length) return null;
       let items=HOST.globalData.slice();
@@ -1626,7 +1623,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       visionSys:function(){ try{ return _visionSYS(); }catch(_){ return ''; } } }; }catch(_){}
     /* (#R199) ↳ js/atlas-sources.js — external evidence sources — leaders, live news, POI catalogues.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { _OP_EPS, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm });
+    const { _OP_EPS, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, turnSignal });
     let _pois=[], _poiColor=null;
     function ensurePoiLayer(){ try{ if(!GE().layers.hasSource('nlq-poi-src')) GE().layers.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(GE().layers.has('nlq-poi-c')) return true;
@@ -1722,7 +1719,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       if(evid==='historical'||evid==='mixed'){ const wt=place||topic; if(wt) jobs.push(_wikiSummary(wt).then(v=>{ if(v) wiki=v; }).catch(()=>{})); }
       if(evid==='live'||evid==='mixed'){ const t2=topic||place; if(t2){ jobs.push(_gdeltNews(t2,evSink).catch(()=>{})); jobs.push(_gnewsNews(t2,evSink).catch(()=>{})); }
         try{ let cx=null; if(place){ try{ cx=await placeExtent(place); }catch(_){} } _newsData(cx,topic||place,evSink); }catch(_){} }
-      await Promise.all(jobs);
+      await settleWithin(jobs,GATHER_BUDGET_MS);   /* (#R452) bounded — a source that has not answered by now is one this brief goes without, not one it waits behind */
       const evRecs=[]; for(const r of evSink){ if(!r||!r.title) continue; evRecs.push({id:'e'+(evRecs.length+1),title:String(r.title).slice(0,180),src:String(r.src||''),date:String(r.date||''),place:String(r.place||'')}); if(evRecs.length>=30) break; }
       let block=''; if(wiki) block+='[BACKGROUND (Wikipedia — stable reference, not news)]\n'+wiki+'\n\n';
       if(evRecs.length) block+='[LIVE NEWS EVIDENCE (CURRENT — use ONLY for the present-day part; each is a dated LEAD, the article date is NOT the event date)]\n'+evRecs.map(e=>'['+e.id+'] '+e.title+(e.src?(' — '+e.src):'')+(e.date?(' ('+e.date+')'):'')+(e.place?(' — '+e.place):'')).join('\n')+'\n\n';
@@ -3353,13 +3350,15 @@ window.IntMapModules.atlasConsole=function(HOST){
             if(!regionQ&&!multi){ try{ regionQ=q.split(/[^\p{L}\p{N}]+/u).filter(w=>w.length>3).slice(0,4).join(' '); }catch(_){ regionQ=q.slice(0,60); } }
             const orQ=multi?('('+cnEn.map(n=>'"'+n.replace(/"/g,'')+'"').join(' OR ')+')'):'';
             jobs.push((async()=>{ let any=false;
-              /* 1) region-wide GDELT (the whole area) — runs sequentially with (2) to stay gentle on GDELT's per-IP limit */
-              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink); if(!v&&regionQ.indexOf('"')>=0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink); if(v){ got.web=v; any=true; } }
-              /* 2) a search that INCLUDES the explicit countries (OR of the requested set), so no country is dropped */
-              if(orQ){ let v3=await _gdeltNews(orQ,srcSink); if(v3){ got.web3=v3; any=true; } }
-              /* 3) user-language Google News (region topic, else the requested country set) */
+              /* ⚠⚠ (#R452) GOOGLE NEWS IS A DIFFERENT HOST, SO IT STARTS NOW AND IS AWAITED LAST — all three were in one file, so own-language news waited out every GDELT attempt first, and the file exists for GDELT's per-IP limit, which says nothing about news.google.com */
               const gnQ=topic||cnEn.join(' OR ')||q.slice(0,60);
-              let v2=null; try{ v2=await _gnewsNews(gnQ,srcSink); }catch(_){}
+              const gn=_gnewsNews(gnQ,srcSink).catch(()=>null);   /* 3) user-language Google News — started first, awaited last */
+              const w0=Date.now(); const wLeft=()=>WEB_BUDGET_MS-(Date.now()-w0);
+              /* 1) region-wide GDELT (the whole area) — runs sequentially with (2) to stay gentle on GDELT's per-IP limit */
+              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink); if(!v&&regionQ.indexOf('"')>=0&&wLeft()>0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink); if(v){ got.web=v; any=true; } }
+              /* 2) a search that INCLUDES the explicit countries (OR of the requested set), so no country is dropped */
+              if(orQ&&wLeft()>0){ let v3=await _gdeltNews(orQ,srcSink); if(v3){ got.web3=v3; any=true; } }
+              const v2=await gn;
               if(v2){ got.web2=v2; any=true; }
               if(!any) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')); })());
             if(topic) jobs.push(_wikiSummary(topic).then(v=>{ if(v) got.wiki=v; })); }
@@ -3385,7 +3384,7 @@ window.IntMapModules.atlasConsole=function(HOST){
                 try{ if(window.IntMapPopArea&&typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length>=3){ jobs.push(window.IntMapPopArea.estimate({type:'Polygon',coordinates:[[...HOST.measurePoints,HOST.measurePoints[0]]]}).then(v=>{ if(v) got.areaPop=v.pop.toLocaleString()+' (WorldPop 2020, 100m grid)'; }).catch(()=>{})); } }catch(_){}
               } } }catch(_){}
           if(wantD('stats')!==false){ got.stats=_statsData(codes); if(!got.stats&&(wantD('stats')===true||codes.length)) missing.push(L('country stats','国別統計','Länderstatistik','статистика стран','estadísticas')); }
-          await Promise.all(jobs);
+          { const late=await settleWithin(jobs,GATHER_BUDGET_MS); if(late) missing.push(lateNote(late,GATHER_BUDGET_MS)); }
           /* build the DATA block + synthesize with ONE text-AI call (answers ONLY from this data). */
           /* (#R131) Give the model a REAL clock + requested time window (the old prompt passed only a UTC date, so
              it had no way to reject out-of-window items) and, for a multi-country request, the explicit country set
@@ -4692,7 +4691,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       if(q||files.length) bubble('u',(files.length?'<div style="display:flex;flex-wrap:wrap;gap:5px;'+(q?'margin-bottom:6px;':'')+'">'+files.map(f=>'<span class="atl-fchip atl-fchip-msg"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="atl-fchip-n">'+esc(f.name)+'</span></span>').join('')+'</div>':'')+esc(q),{turn:turn,q:q,imgs:imgs,files:files,edit:true});   /* (#R158) file chips are named, not shown, so they stay in the bubble with the text; (#R298) this bubble carries the whole request, so this is the one Edit re-runs */
       /* (#R142) generating state → the send button becomes a Stop button; a fresh AbortController lets Stop kill the
          in-flight request. The whole turn is wrapped so EVERY exit path (return / throw / early-out) restores the button. */
-      try{ _abortCtl=(typeof AbortController!=='undefined')?new AbortController():null; }catch(_){ _abortCtl=null; }
+      _abortCtl=newTurnController(_abortCtl);   /* ⚠⚠⚠ (#R452) a second question REPLACES the first — it used to be overwritten WITHOUT being aborted, so a turn nobody would see kept running. js/atlas-deadlines.js has the measurement */
       _setGoBusy(true);
       try{
       /* ══ (#R406) ATLAS DRIVES THE TURN ═══════════════════════════════════════════════════════
