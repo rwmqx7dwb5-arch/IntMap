@@ -102,5 +102,11 @@ export function makeI18nLate(HOST, CTX) {
       const news=!!host.querySelector('input[data-tknews]:checked'); try{ TK.setConfig({syms,news}); }catch(_){} };
     host.querySelectorAll('input[data-tks],input[data-tknews]').forEach(c=>c.addEventListener('change',commit));
   }catch(_){} };
+  /* ⚠ (#R464) …and it is only ever called when Settings OPENS, while the language <select> that
+     changes these labels is inside Settings — so the group headings, «Shown items» and «News
+     headlines» kept the language the dialog was opened in. Rebuilding is safe HERE because every
+     tick commits immediately (`TK.setConfig` above): the boxes are read back out of the config,
+     not out of a pending edit. */
+  try{ window.addEventListener('intmap-lang',()=>{ try{ window._populateTickerSyms(); }catch(_){} }); }catch(_){}
 
 }

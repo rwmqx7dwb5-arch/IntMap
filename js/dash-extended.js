@@ -225,7 +225,13 @@ window.IntMapModules.dashExtended=function(HOST){
     /* keep the advanced labels localized on language switch */
     const _origUpdateI18n=window.updateI18n;
     function _r7Relabel(){ const h=document.querySelector('[data-r7head]'); if(h) h.textContent=window.IntMapLang.t(HOST.lang,"Intelligence (advanced)","インテリジェンス（高度）","Aufklärung (erweitert)","Разведка (расширенно)","Inteligencia (avanzado)"); const d=document.getElementById('r7-dl-disputes-lbl'), a=document.getElementById('r7-dl-airdef-lbl'), l=document.getElementById('r7-dl-langs-lbl'); if(d) d.textContent=window.IntMapLang.t(HOST.lang,"Disputed boundaries","係争境界線","Umstrittene Grenzen","Спорные границы","Fronteras en disputa"); if(a) a.textContent=window.IntMapLang.t(HOST.lang,"Air-defense coverage","防空カバレッジ（射程ドーム）","Luftverteidigungsabdeckung","Зоны ПВО","Cobertura de defensa aérea"); if(l) l.textContent=window.IntMapLang.t(HOST.lang,"World languages","世界の言語分布","Sprachen der Welt","Языки мира","Idiomas del mundo"); refreshDisputeLabels(); }
-    ['lang-jp','lang-en','lang-de','lang-ru','lang-es'].forEach(id=>{ const b=document.getElementById(id); if(b) b.addEventListener('click',()=>setTimeout(_r7Relabel,20)); });
+    /* ⚠ (#R464) THIS USED TO LISTEN TO THE HEADER LANGUAGE PILLS, and #R11 hid those permanently
+       (`css/intmap.css` `.lang-toggle{display:none!important}` — «language is changed from Settings
+       only»), so the relabel had no reachable trigger left: the five buttons it wired are still in
+       the markup and can never be clicked. It listens to the event the switch actually dispatches
+       now, which also reaches the map itself — `refreshDisputeLabels()` re-pushes the dispute
+       geometry, whose labels are language-dependent. */
+    window.addEventListener('intmap-lang',()=>setTimeout(_r7Relabel,20));
     window.IntMapOverlays={ toggle, _ensure:ensureOverlays };
   })();
 };

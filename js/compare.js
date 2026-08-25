@@ -635,12 +635,17 @@ window.IntMapModules.compare=function(HOST){
     /* (#R17) Dedupe by the BUTTON, not the #cmp-mount wrapper — reorganizeLayerPanel MOVES the button into
        #layer-tools and removes the wrapper, so the old wrapper-guard let a later call create a SECOND button
        ("Tools二重" on mobile). Re-file into Tools right after mounting so the section never goes missing. */
+    const cmpBtnLabel=()=>window.IntMapLang.t(HOST.lang,"Open compare view","比較ビューを開く","Vergleichsansicht öffnen","Открыть режим сравнения","Abrir la vista de comparación");
     function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-compare')) return;
       const wrap=document.createElement('div'); wrap.id='cmp-mount'; wrap.style.marginTop='4px';
-      wrap.innerHTML='<button id="btn-compare" class="ai-test-btn" style="width:100%;">🪟 <span>'+(window.IntMapLang.t(HOST.lang,"Open compare view","比較ビューを開く","Vergleichsansicht öffnen","Открыть режим сравнения","Abrir la vista de comparación"))+'</span></button>';
+      wrap.innerHTML='<button id="btn-compare" class="ai-test-btn" style="width:100%;">🪟 <span>'+cmpBtnLabel()+'</span></button>';
       dd.appendChild(wrap); wrap.querySelector('#btn-compare').onclick=open;
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1600);
+    /* ⚠ (#R464) …and those two calls are the ONLY ones: the dedupe guard above makes mountButton a
+       no-op once the button exists, so the label was frozen in whatever language the session booted
+       in. It lives in the Layers panel, which stays open across a language change. */
+    try{ window.addEventListener('intmap-lang',()=>{ try{ const b=document.getElementById('btn-compare'); const sp=b&&b.querySelector('span'); if(sp) sp.textContent=cmpBtnLabel(); }catch(_){} }); }catch(_){}
     /* (#R27) Re-clamp the compare window off the sidebar whenever the sidebar slides open/closed or is
        resized (covers "サイドバーを広げるとcompare viewがサイドバーの上に載る"). The 450ms re-run waits out the
        0.4s sidebar slide so the final geometry is clamped, not the mid-transition one. */

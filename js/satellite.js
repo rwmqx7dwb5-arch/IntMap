@@ -160,6 +160,10 @@ window.IntMapModules.satellite=function(HOST){
   /* Settings-modal API-key management (Pro / BYOK providers). */
   function satRenderKeyInputs(){
     const wrap=document.getElementById('sat-keys-list'); if(!wrap) return;
+    /* ⚠ (#R464) wired HERE, not at factory level: this file's factory only ever DECLARES
+       (tests/r169 #4 — that is what makes calling it early safe), and the first paint is also the
+       first moment there is anything for a relabel to rewrite. */
+    if(!satRenderKeyInputs._lang){ satRenderKeyInputs._lang=1; try{ window.addEventListener('intmap-lang',satRelabelKeyInputs); }catch(_){} }
     /* Only Pro users may register their own (paid) satellite imagery providers. */
     if(!HOST.imIsPro()){
       wrap.innerHTML=`<div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;padding:4px 0;">${window.IntMapLang.t(HOST.lang,'🔒 Only <b>Pro</b> users can add their own satellite imagery services (API integrations).','🔒 独自の衛星画像サービス（API連携）を追加できるのは <b>Pro</b> ユーザーのみです。','🔒 Nur <b>Pro</b>-Nutzer können eigene Satellitenbild-Dienste (API-Integrationen) hinzufügen.','🔒 Только пользователи <b>Pro</b> могут добавлять собственные сервисы спутниковых снимков (API).','🔒 Solo los usuarios <b>Pro</b> pueden añadir sus propios servicios de imágenes satelitales (API).')}<br><button type="button" id="sat-keys-upgrade" style="margin-top:8px;background:linear-gradient(135deg,#ffe08a,#e9b949);color:#7a5a00;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">${window.IntMapLang.t(HOST.lang,'See IntMap Pro','IntMap Pro を見る','IntMap Pro ansehen','Смотреть IntMap Pro','Ver IntMap Pro')}</button></div>`;
@@ -173,6 +177,23 @@ window.IntMapModules.satellite=function(HOST){
         `<span class="sat-key-status ${on?'on':''}">${on?'● '+HOST.t('satKeyConnected'):'○ '+HOST.t('satKeyNone')}</span></div>`+
         `<input type="text" class="sat-key-input" data-keyname="${p.keyName}" value="${String(v).replace(/"/g,'&quot;')}" placeholder="${String(p.keyPh||'').replace(/"/g,'&quot;')}" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`;
     }).join('');
+  }
+  /* ══ (#R464) THE LANGUAGE CAN CHANGE WHILE THIS LIST IS ON SCREEN ═════════════════════════════
+     satRenderKeyInputs() runs when Settings opens, and the language <select> is in that same dialog,
+     so the provider names and the ●/○ status words kept the language the dialog was opened in.
+     ⚠ RELABEL, DO NOT RE-RENDER, on the Pro path: the rebuild writes `value=` from the SAVED keys
+     (satSaveKeyInputs is the Apply step), so re-running it would wipe a key that had been typed and
+     not yet applied. The locked (non-Pro) panel has no input in it, so it is simply rebuilt. */
+  function satRelabelKeyInputs(){
+    const wrap=document.getElementById('sat-keys-list'); if(!wrap) return;
+    if(!HOST.imIsPro()){ satRenderKeyInputs(); return; }
+    wrap.querySelectorAll('.sat-key-row').forEach(row=>{
+      const inp=row.querySelector('.sat-key-input'); if(!inp) return;
+      const p=HOST.SAT_PROVIDERS.find(x=>x.keyName===inp.getAttribute('data-keyname')); if(!p) return;
+      const nm=row.querySelector('.sat-key-name'); if(nm) nm.textContent=(p.keyLabel&&LS().arr(p.keyLabel))||LS().arr(p.name);
+      const st=row.querySelector('.sat-key-status');
+      if(st){ const on=st.classList.contains('on'); st.textContent=on?('● '+HOST.t('satKeyConnected')):('○ '+HOST.t('satKeyNone')); }
+    });
   }
   function satSaveKeyInputs(){
     const wrap=document.getElementById('sat-keys-list'); if(!wrap) return;

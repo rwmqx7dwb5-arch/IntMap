@@ -455,7 +455,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     document.getElementById('lbl-theme').innerText=d.lblTheme; document.getElementById('lbl-tz').innerText=d.lblTz;
     { const tzs=document.getElementById('setting-tz-search'); if(tzs) tzs.placeholder=d.tzSearch;   /* (#R459) no English fallback: keyed() puts en under every language */ }
     document.getElementById('btn-close-settings').innerText=d.btnApply; document.getElementById('opt-theme-auto').innerText=d.optAuto;
-    const a=document.getElementById('opt-tz-auto'); if(a) a.innerText=d.optLocal;
+    /* ⚠ (#R464) a relabel of `#opt-tz-auto` stood here — an id index.html lost in #R18, so it found nothing and 「Local (System Default)」 stayed English all session. The combo is rebuilt from `intmap-lang` now (wireTzSearch). */
     if(toolMode) updateToolPanel();
     try{ if(currentMapType==='sat'){ satRenderController(); satRefreshReadout(); } }catch(_){}
     try{ if(window._imSyncMobile) window._imSyncMobile(); }catch(_){}   /* (#R8) mobile proxy buttons follow every language change */
@@ -2778,6 +2778,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     inp.addEventListener('keydown',(e)=>{ if(e.key!=='Enter') return; e.preventDefault(); const first=res.querySelector('.tz-row:not(.tz-empty)'); if(first){ first.click(); inp.blur(); } });
     /* tapping outside the combo closes the list */
     document.addEventListener('click',(e)=>{ const combo=document.getElementById('tz-combo'); if(combo && !combo.contains(e.target)) res.classList.remove('show'); });
+    window.addEventListener('intmap-lang',()=>{ try{ populateTimezones(res.classList.contains('show')?inp.value:''); }catch(_){} });   /* ⚠ (#R464) the language can change while this list is up — the <select> is in the same dialog, so nothing ever re-ran populateTimezones(). Rebuilding is safe: the value (`prev`) AND the filter are carried across, so a half-typed search survives. */
   })();
   const modal=document.getElementById('settings-modal');
   /* Discard-changes guard: any edit inside Settings marks it dirty; closing without Apply asks. */
@@ -2806,6 +2807,13 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       try{ window._imDemoStop&&window._imDemoStop(); }catch(_){}
       setTimeout(()=>{ try{ window._imStartDemo&&window._imStartDemo(true); }catch(_){} },150); };
   })();
+  /* (#R180) the ENGINE line — see the note at its call site below. ⚠ (#R464) it has a NAME now because opening Settings was the only moment it could be right, and the language changes under it. */
+  function syncEngineStatus(){ try{ const es=document.getElementById('setting-engine'), st=document.getElementById('engine-status'), ES=window.IntMapEngineSelect;
+    if(!es||!ES) return; es.value=ES.choice(); if(!st) return; const live=ES.active(), fail=ES.failure();
+    if(fail&&ES.choice()==='cesium'){ st.textContent=t('engineFellBack')+' ('+fail+')'; st.style.display=''; st.style.color='var(--danger-color,#ff3b30)'; }
+    else if(live!==ES.choice()){ st.textContent=t('engineActive')+ES.label(live,currentLang); st.style.display=''; st.style.color=''; }
+    else st.style.display='none'; }catch(_){} }
+  window.addEventListener('intmap-lang',syncEngineStatus);
   document.getElementById('btn-open-settings').onclick=()=>{ const sl=document.getElementById('setting-lang'); if(sl) sl.value=currentLang; document.getElementById('setting-theme').value=userTheme;
     /* (#R18) Reflect the SAVED timezone in the combo input and rebuild the (closed) list on every open. */
     try{ const tzs=document.getElementById('setting-tz-search'); const tzr=document.getElementById('tz-results');
@@ -2830,15 +2838,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        fail to load (no WebGL2, a blocked chunk, an offline first visit) and the session then
        runs on MapLibre while the stored choice still says otherwise. The select shows the
        CHOICE; the line under it shows what is really drawing, and only when they differ. */
-    try{ const es=document.getElementById('setting-engine'), st=document.getElementById('engine-status');
-      const ES=window.IntMapEngineSelect;
-      if(es&&ES){ es.value=ES.choice();
-        const live=ES.active(), fail=ES.failure();
-        if(st){
-          if(fail&&ES.choice()==='cesium'){ st.textContent=t('engineFellBack')+' ('+fail+')'; st.style.display=''; st.style.color='var(--danger-color,#ff3b30)'; }
-          else if(live!==ES.choice()){ st.textContent=t('engineActive')+ES.label(live,currentLang); st.style.display=''; st.style.color=''; }
-          else st.style.display='none';
-        } } }catch(_){}
+    syncEngineStatus();
     settingsDirty=false; modal.style.display='flex';
     /* (#R9) Always open scrolled to the TOP. Previously the Apply button kept focus, so reopening
        scrolled it into view at the very bottom. Reset both the content and the modal scroll positions. */

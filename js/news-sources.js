@@ -56,6 +56,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
     }
 
     const allLabel=()=>L('All outlets','すべての提供元','Alle Quellen','Все источники','Todas las fuentes');
+    const emptyLabel=()=>L('No headlines have loaded yet.','まだ見出しが読み込まれていません。','Noch keine Schlagzeilen geladen.','Заголовки ещё не загружены.','Aún no se han cargado titulares.');
     function label(){ const sel=window.imNewsSources||[]; return sel.length?sel.join(', '):allLabel(); }
     function syncLabel(){ const el=document.getElementById('newssource-dd-label'); if(el) el.textContent=label(); }
 
@@ -67,7 +68,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
       (window.imNewsSources||[]).forEach(s=>{ if(!seen.has(s)) rows.push([s,0]); });
       wrap.innerHTML=rows.length
         ? rows.map(([name,n])=>'<label><input type="checkbox" value="'+esc(name)+'"> <span>'+esc(name)+(n?(' <span style="opacity:.55;">('+n+')</span>'):'')+'</span></label>').join('')
-        : '<div style="padding:8px 10px;font-size:12px;color:var(--text-muted);">'+esc(L('No headlines have loaded yet.','まだ見出しが読み込まれていません。','Noch keine Schlagzeilen geladen.','Заголовки ещё не загружены.','Aún no se han cargado titulares.'))+'</div>';
+        : '<div class="ns-empty" style="padding:8px 10px;font-size:12px;color:var(--text-muted);">'+esc(emptyLabel())+'</div>';
       wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=(window.imNewsSources||[]).includes(cb.value); });
       if(!wrap.dataset.built){ wrap.dataset.built='1';
         wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value);
@@ -112,11 +113,16 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
        right. They are gone; all three pickers are now the one CSS rule.
        ⚠ The mode is DERIVED from the selection rather than stored separately — one fewer thing that
        can disagree with the list it describes. */
-    function countryLabel(){
-      const sel=(window.imNewsCountries||[]);
-      if(!sel.length) return L('None (default feeds only)','未選択（標準のニュースのみ）','Keine (nur Standard-Feeds)','Не выбрано (только стандартные ленты)','Ninguno (solo fuentes predeterminadas)');
+    const noneLabel=()=>L('None (default feeds only)','未選択（標準のニュースのみ）','Keine (nur Standard-Feeds)','Не выбрано (только стандартные ленты)','Ninguno (solo fuentes predeterminadas)');
+    /* (#R464) ONE place that turns a set of country codes into the button's summary. It was written
+       twice — once for the committed set and once for the ticked set — and `relabel()` below needs a
+       third reading of the same sentence, which is exactly when a copy stops being free. */
+    function countryLabelOf(codes){
+      const sel=codes||[];
+      if(!sel.length) return noneLabel();
       return sel.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+LNS.arr(f.name)):c; }).join(', ');
     }
+    function countryLabel(){ return countryLabelOf(window.imNewsCountries||[]); }
     function syncCountryLabel(){ const el=document.getElementById('newscountry-dd-label'); if(el) el.textContent=countryLabel(); }
     function renderCountries(){
       const wrap=document.getElementById('newscountry-multi'); if(!wrap) return false;
@@ -124,10 +130,8 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
         wrap.innerHTML=Object.keys(NEWS_COUNTRY_FEEDS).map(code=>'<label><input type="checkbox" value="'+esc(code)+'"> <span>'+NEWS_COUNTRY_FEEDS[code].flag+' <span class="ncx" data-code="'+esc(code)+'"></span></span></label>').join('');
         wrap.dataset.built='1';
         /* the button summary follows the ticks live; the selection itself commits on Apply */
-        wrap.addEventListener('change',()=>{ const tmp=Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value);
-          const el=document.getElementById('newscountry-dd-label');
-          if(el) el.textContent=tmp.length?tmp.map(c=>{ const f=NEWS_COUNTRY_FEEDS[c]; return f?(f.flag+' '+LNS.arr(f.name)):c; }).join(', ')
-            :L('None (default feeds only)','未選択（標準のニュースのみ）','Keine (nur Standard-Feeds)','Не выбрано (только стандартные ленты)','Ninguno (solo fuentes predeterminadas)'); });
+        wrap.addEventListener('change',()=>{ const el=document.getElementById('newscountry-dd-label');
+          if(el) el.textContent=countryLabelOf(Array.from(wrap.querySelectorAll('input:checked')).map(c=>c.value)); });
       }
       wrap.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked=(window.imNewsCountries||[]).includes(cb.value); });
       wrap.querySelectorAll('.ncx').forEach(s=>{ const c=s.getAttribute('data-code'); const f=NEWS_COUNTRY_FEEDS[c]; if(f) s.textContent=LNS.arr(f.name); });
@@ -153,6 +157,37 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
       return before!==(window.imNewsCountries||[]).slice().sort().join(',');
     }
 
+    /* ══ (#R464) THE LANGUAGE CHANGES WHILE THIS DIALOG IS OPEN ═══════════════════════════════════
+       Both pickers are painted by `render()`/`renderCountries()`, and the only thing that calls those
+       is Settings being OPENED (js/app-body.js `btn-open-settings`). The language `<select>` is INSIDE
+       Settings, so between choosing a language and reading these rows the dialog is never re-opened —
+       MEASURED on production R450 and again here: all sixteen country names stayed English after an
+       in-session switch to fr/ko/zh, while a reload in the same language showed them translated. The
+       translations were never missing; nothing re-asked for them.
+       ⚠ RELABEL, DO NOT RE-RENDER. `renderCountries()` sets every checkbox from `imNewsCountries` —
+       the COMMITTED selection — so re-running it here would silently throw away ticks the user has
+       made but not yet applied. Same for `render()`. This writes text and nothing else. */
+    function relabel(){
+      const cw=document.getElementById('newscountry-multi');
+      if(cw){
+        cw.querySelectorAll('.ncx').forEach(s=>{ const c=s.getAttribute('data-code'); const f=NEWS_COUNTRY_FEEDS[c]; if(f) s.textContent=LNS.arr(f.name); });
+        const el=document.getElementById('newscountry-dd-label');
+        if(el) el.textContent=cw.dataset.built
+          ? countryLabelOf(Array.from(cw.querySelectorAll('input:checked')).map(c=>c.value))
+          : countryLabel();
+      }
+      const sw=document.getElementById('newssource-multi');
+      if(sw){
+        /* outlet names are publisher strings out of the feed and are not translated; the two strings
+           here that ARE ours are the empty-state line and the "All outlets" summary. */
+        const em=sw.querySelector('.ns-empty'); if(em) em.textContent=emptyLabel();
+        const el=document.getElementById('newssource-dd-label');
+        if(el){ const ticked=sw.dataset.built?Array.from(sw.querySelectorAll('input:checked')).map(c=>c.value):(window.imNewsSources||[]);
+          el.textContent=ticked.length?ticked.join(', '):allLabel(); }
+      }
+    }
+    try{ window.addEventListener('intmap-lang',relabel); }catch(_){}
+
     /* one wiring pass for both dropdown buttons — identical behaviour, so identical code */
     ['newssource','newscountry'].forEach(k=>{
       const dd=document.getElementById(k+'-dd'), btn=document.getElementById(k+'-dd-btn'); if(!dd||!btn) return;
@@ -160,7 +195,7 @@ window.IntMapModules.newsSources=function(HOST,DEPS){
       document.addEventListener('click',(e)=>{ if(dd.classList.contains('open') && !dd.contains(e.target)) dd.classList.remove('open'); });
     });
 
-    return { counts, allows, label, render, commit, syncLabel,
-      renderCountries, commitCountries, countryLabel, syncCountryLabel };
+    return { counts, allows, label, render, commit, syncLabel, relabel,
+      renderCountries, commitCountries, countryLabel, countryLabelOf, syncCountryLabel };
   })();
 };

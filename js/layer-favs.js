@@ -81,5 +81,12 @@ export function makeLayerFavs(HOST, CTX) {
   injectLayerStars(); setTimeout(injectLayerStars,1200); setTimeout(injectLayerStars,2800);   /* (#R17) extra pass so late-mounted modules (eco/l9/ECMWF, ~1.5–1.6 s) all get fav stars */
   /* (#R17) also (re)inject stars whenever the Layers panel is opened — covers any module that mounted late */
   try{ const _bl=document.getElementById('btn-layers'); if(_bl) _bl.addEventListener('click',()=>setTimeout(injectLayerStars,40)); }catch(_){}
+  /* ⚠ (#R464) the chips are TEXT, and they are only ever written when a star is clicked, a layer is
+     toggled or the panel is opened. The Layers panel is a permanent surface — it can be open while
+     the language changes in Settings — and half of these labels come from `t()` rather than from a
+     `data-i18n` span, so updateI18n()'s sweep cannot reach them. Rebuilding is safe: a chip carries
+     no state of its own (it is derived from imLayerFavs and the checkbox it stands for). Deferred so
+     the `data-i18n` spans it reads the other labels from have already been repainted. */
+  try{ window.addEventListener('intmap-lang',()=>setTimeout(renderLayerFavs,30)); }catch(_){}
   return { layerCbInfo, renderLayerFavs };
 }
