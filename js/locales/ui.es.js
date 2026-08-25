@@ -177,11 +177,11 @@ window.IntMapLang.define('es', { ui: {
       lyrGrpSociety:"Sociedad y educación",   /* (#R261) */
       lyrGrpTransport:"Transporte y movilidad",   /* (#R261) */
       lyrGrpAgri:"Agricultura y alimentación",   /* (#R261) */
-      lyrGrpMaritime:"Océanos y marítimo",
+      lyrGrpMaritime:"Océanos",
       lyrGrpTerrain:"Terreno y altitud",
       lyrGrpNature:"Naturaleza y cobertura del suelo",
       lyrGrpIndic:"Indicadores y capas",
-      lyrGrpOrbit:"Espacio y órbita",
+      lyrGrpOrbit:"Espacio",
       lblAccent:"Color de acento",
       accentDefault:"Predeterminado",
       accentCustom:"Color personalizado",

@@ -24,6 +24,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -321,7 +322,9 @@ test('R273 ⑪ the panel has one control height and one gap', () => {
 /* ── ⑫ the shelves say what is on them ─────────────────────────────────────────────────────── */
 test('R273 ⑫ the population shelf is renamed in every language, because the economy left it', () => {
   const s = read('js/data-layers.js');
-  const m = /\['lyrGrpDemo',\[([^\]]*)\]\]/.exec(s);
+  /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  const m = [null, byKey.lyrGrpDemo.map((x) => "'" + x + "'").join(',')];
   assert.ok(m, 'the shelf must exist');
   assert.ok(!/'gdppc'/.test(m[1]), 'GDP per capita left for Economy');
   assert.ok(!/'hdi'/.test(m[1]), 'HDI left for Society');

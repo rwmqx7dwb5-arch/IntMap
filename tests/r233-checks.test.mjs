@@ -12,6 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = new URL('../', import.meta.url);
 const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
@@ -100,9 +101,10 @@ test('R233 the screenshot feature names the MAP in every language', () => {
 /* ── ⑤ Population & economy is the seven that were named ─────────────────────────────────────── */
 test('R233 layers: Population & economy is the seven named layers, the rest fell to beta', () => {
   const dl = read('js/data-layers.js');
-  const m = /\['lyrGrpDemo',\[([^\]]*)\]\]/.exec(dl);
-  assert.ok(m, 'the group is still built from a list');
-  const ids = m[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
+  /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  assert.ok(byKey.lyrGrpDemo, 'the group is still built from a list');
+  const ids = byKey.lyrGrpDemo;
   /* ⚠ (#R254) 'energy' JOINED THE SEVEN, BY INSTRUCTION — 「エネルギー構成レイヤーは昇格」, and the
      reader chose this group when asked which one. So the assertion is «the seven #R233 named, plus
      whatever a later instruction promoted», not a frozen set: freezing it would make the next
@@ -117,10 +119,9 @@ test('R233 layers: Population & economy is the seven named layers, the rest fell
      reorganise. Pinning the shelf here would have made that instruction look like a regression, so
      what is asserted is the property #R233 was actually about: each of them is on a CURATED shelf,
      exactly one, and none of them fell back into Beta / Others. */
-  const shelves = {};
-  for (const e of dl.matchAll(/\['(lyrGrp[A-Za-z]+)',\[([^\]]*)\]\]/g)) {
-    shelves[e[1]] = e[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
-  }
+  /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  const shelves = byKey;
   const shelfOf = (id) => Object.keys(shelves).filter((g) => shelves[g].includes(id));
   const SEVEN = ['cpi', 'dem', 'gdppc', 'hdi', 'lifeexp', 'popgrid', 'tfr'];
   SEVEN.concat(['energy']).forEach((id) => {
@@ -148,8 +149,9 @@ test('R233 the day/night shading sits in the basic-display block, exactly once',
   assert.match(dl, /const nsRow=rowFor\('nightside'\);/, 'it is placed with the always-there view switches');
   assert.match(dl, /if\(nsRow\) placed\.add\(nsRow\);/,
     'and marked placed, or the safety sweep would file it under Others (beta) as well');
-  const hz = /\['lyrGrpHazard',\[([^\]]*)\]\]/.exec(dl);
-  assert.ok(hz && !/nightside/.test(hz[1]), 'it is no longer a hazard overlay — one row, one owner');
+  /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  assert.ok(!byKey.lyrGrpHazard.includes('nightside'), 'it is no longer a hazard overlay — one row, one owner');
 });
 
 /* ── ⑧ the Atlas picture viewer ──────────────────────────────────────────────────────────────── */

@@ -72,7 +72,9 @@ const MOVED = {
      見通し線解析を統合」, 「4つのうち…全削除」, 「存在意義が不明だから全削除」. What this list is FOR is
      that every factory a file DECLARES is instantiated — shortening it is the honest edit; the check
      is unchanged and still fails if a declared factory goes uninstantiated. */
-  'js/sims.js': ['radiation', 'popArea', 'slope', 'sun', 'transitReach'],
+  /* ⚠ (#R469) …and 'slope' with them — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 The factory is gone
+     from js/sims.js, so listing it here would fail this check for a module that no longer exists. */
+  'js/sims.js': ['radiation', 'popArea', 'sun', 'transitReach'],
 };
 const ALL_FACS = Object.values(MOVED).flat();
 /* (#R209) …of which these are fetched on demand: the factories whose file the loader import()s. */
@@ -89,7 +91,7 @@ const ORDER = [
   'layerPresets', 'aiResearch', 'correlate', 'worldEvents', 'edu',
   'labelPopup', 'geojsonUpload', 'weatherPanel', 'viewHash', 'share',
   'outline', 'moveShape', 'isochrone', 'radiation', 'arc3d',
-  'objectList', 'popArea', 'slope', 'sun', 'transitReach',
+  'objectList', 'popArea', 'sun', 'transitReach',   /* (#R469) −slope, deleted */
   'timeZones', 'gibsScience',
 ];
 

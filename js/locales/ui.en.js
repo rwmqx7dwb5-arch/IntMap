@@ -138,8 +138,8 @@ window.IntMapLang.define('en', { ui: {
       lyrGrpAgri:"Agriculture & food",   /* (#R261) */
       lyrGrpOthers:"Beta",
       lyrGrpOthersReal:"Others",
-      lyrGrpOrbit:"Space & orbit",
-      lyrGrpMaritime:"Oceans & maritime",
+      lyrGrpOrbit:"Space",
+      lyrGrpMaritime:"Oceans",
       lyrGrpIndic:"Indicators & overlays",
       lyrGrpTerrain:"Terrain & elevation",
       lyrGrpNature:"Nature & land cover",

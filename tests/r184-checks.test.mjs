@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import * as acorn from 'acorn';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const root = new URL('../', import.meta.url);
 
@@ -165,7 +166,9 @@ test('R184 #7: the satellite layer is registered, grouped, legended and toggled'
      two were built and not somewhere anyone looks for satellites — 「いや今衛星レイヤーなんてないわ」.
      What #7 is actually about is that the row reaches a REAL group rather than falling through to
      Others(beta), so it asks that, and the group it names is the one it is in now. */
-  assert.match(dl, /lyrGrpOrbit',\[[^\]]*'sats'/, 'it is filed into a real group of its own');
+  /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  assert.ok(byKey.lyrGrpOrbit.includes('sats'), 'it is filed into a real group of its own');
   /* (#R241) the legend TITLE table is written as calls now — `LA('Live satellites', …)` — because a
      bare array is invisible to every translation instrument and has no inline-table fallback, so
      fr/ko/zh read element 0 (English) for ever. Same table, same key, same assertion. */
