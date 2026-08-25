@@ -6047,5 +6047,9 @@ window.IntMapLang.define('zh', {
   "email": "電子郵件",
   "file: ": "檔案: ",
   "remove": "移除",
+  "Password": "密碼",
+  "Create account": "建立帳號",
+  "Log In": "登入",
+  "Password (min. 8 chars, incl. a number)": "密碼（至少 8 個字元，須含數字）",
   }
 });

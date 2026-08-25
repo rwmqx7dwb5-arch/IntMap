@@ -5827,4 +5827,9 @@ window.IntMapLang.define('ko', { ui: {
   "email": "이메일",
   "file: ": "파일: ",
   "remove": "제거",
+  "Display name": "표시 이름",
+  "Password": "비밀번호",
+  "Create account": "계정 만들기",
+  "Log In": "로그인",
+  "Password (min. 8 chars, incl. a number)": "비밀번호 (8자 이상, 숫자 포함)",
 } });

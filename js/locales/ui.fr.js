@@ -5837,4 +5837,9 @@ window.IntMapLang.define('fr', { ui: {
   "email": "e-mail",
   "file: ": "fichier : ",
   "remove": "retirer",
+  "Display name": "Nom affiché",
+  "Password": "Mot de passe",
+  "Create account": "Créer un compte",
+  "Log In": "Se connecter",
+  "Password (min. 8 chars, incl. a number)": "Mot de passe (min. 8 caractères, dont un chiffre)",
 } });
