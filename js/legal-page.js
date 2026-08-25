@@ -30,23 +30,23 @@ window.IntMapLegalPage = (function () {
      (`lnkTerms` / `lnkPrivacy`) and js/locales/pages.*.js (`common.backToMap`) so the four
      reading pages and the app footer name these documents identically. */
   var S = {
-    en: { terms: 'Terms of Service', privacy: 'Privacy Policy', back: 'Back to the map',
+    en: { language: 'Language', terms: 'Terms of Service', privacy: 'Privacy Policy', back: 'Back to the map',
           note: 'These documents are published in Japanese and English only. A machine translation of a legal text is not the same document, so only a version we have checked is shown.' },
-    ja: { terms: '利用規約', privacy: 'プライバシーポリシー', back: '地図に戻る',
+    ja: { language: '言語', terms: '利用規約', privacy: 'プライバシーポリシー', back: '地図に戻る',
           note: '本文書は日本語と英語でのみ公開しています。法務文書の機械翻訳は同じ文書ではないため、当方が内容を確認した版だけを表示します。' },
-    de: { terms: 'Nutzungsbedingungen', privacy: 'Datenschutzerklärung', back: 'Zurück zur Karte',
+    de: { language: 'Sprache', terms: 'Nutzungsbedingungen', privacy: 'Datenschutzerklärung', back: 'Zurück zur Karte',
           note: 'Diese Dokumente werden nur auf Japanisch und Englisch veröffentlicht. Die maschinelle Übersetzung eines Rechtstextes ist nicht dasselbe Dokument, daher wird nur eine von uns geprüfte Fassung angezeigt.' },
-    ru: { terms: 'Условия использования', privacy: 'Политика конфиденциальности', back: 'Назад к карте',
+    ru: { language: 'Язык', terms: 'Условия использования', privacy: 'Политика конфиденциальности', back: 'Назад к карте',
           note: 'Эти документы публикуются только на японском и английском языках. Машинный перевод юридического текста — не тот же документ, поэтому показывается только проверенная нами версия.' },
-    es: { terms: 'Términos del servicio', privacy: 'Política de privacidad', back: 'Volver al mapa',
+    es: { language: 'Idioma', terms: 'Términos del servicio', privacy: 'Política de privacidad', back: 'Volver al mapa',
           note: 'Estos documentos se publican únicamente en japonés e inglés. La traducción automática de un texto legal no es el mismo documento, por lo que solo se muestra una versión que hemos revisado.' },
-    fr: { terms: 'Conditions d’utilisation', privacy: 'Politique de confidentialité', back: 'Retour à la carte',
+    fr: { language: 'Langue', terms: 'Conditions d’utilisation', privacy: 'Politique de confidentialité', back: 'Retour à la carte',
           note: 'Ces documents ne sont publiés qu’en japonais et en anglais. La traduction automatique d’un texte juridique n’est pas le même document ; seule une version que nous avons vérifiée est affichée.' },
-    ko: { terms: '이용약관', privacy: '개인정보 처리방침', back: '지도로 돌아가기',
+    ko: { language: '언어', terms: '이용약관', privacy: '개인정보 처리방침', back: '지도로 돌아가기',
           note: '이 문서는 일본어와 영어로만 제공됩니다. 법률 문서의 기계 번역은 같은 문서가 아니므로, 저희가 확인한 판본만 표시합니다.' },
-    'zh-hant': { terms: '服務條款', privacy: '隱私權政策', back: '回到地圖',
+    'zh-hant': { language: '語言', terms: '服務條款', privacy: '隱私權政策', back: '回到地圖',
           note: '本文件僅以日文與英文發布。法律文件的機器翻譯並非同一份文件，因此只顯示我們確認過的版本。' },
-    'zh-hans': { terms: '服务条款', privacy: '隐私权政策', back: '回到地图',
+    'zh-hans': { language: '语言', terms: '服务条款', privacy: '隐私权政策', back: '回到地图',
           note: '本文件仅以日文与英文发布。法律文件的机器翻译并非同一份文件，因此只显示我们确认过的版本。' }
   };
   var FALLBACK = 'en';
@@ -121,7 +121,6 @@ window.IntMapLegalPage = (function () {
     host.appendChild(el('span', 'pg-lang-globe', '\u{1F310}'));
     var sel = document.createElement('select');
     sel.id = 'pg-lang-select';
-    sel.setAttribute('aria-label', 'Language');
     rows.forEach(function (l) {
       var tag = normalise(l.code);
       if (!S[tag]) return;                       /* only languages this page has chrome for */
@@ -141,6 +140,13 @@ window.IntMapLegalPage = (function () {
     var T = window.IntMapLegalText;
 
     document.documentElement.setAttribute('lang', uiLang);
+    var picker = document.getElementById('pg-lang-select');   /* (#R456) named in the reader's language */
+    /* ⚠ (#R456) FROM `S` ABOVE, NOT FROM `IntMapLang.t(…)`. MEASURED in the browser: this page
+       loads the registry and its own tables and NOTHING else, so `t()` here resolves the five
+       POSITIONAL languages and falls back to English for fr / ko / zh — the inline table those
+       four need lives in js/locales/ui.*.js, which no reading page loads. Russian came out
+       「Язык」 and French stayed 「Language」. `S` is the nine-language table this page has. */
+    if (picker) picker.setAttribute('aria-label', c.language);
     document.title = 'IntMap — ' + title;
     var m = document.querySelector('meta[name="description"]');
     if (m) m.setAttribute('content', title + ' — IntMap.');

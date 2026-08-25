@@ -435,7 +435,7 @@ window.IntMapModules.companiesUi=function(HOST){
       [HOST._coL('Sector','セクター','Sektor','Сектор','Sector'), _coSec(c.sec)],
       [HOST._coL('Headquarters','本社','Hauptsitz','Штаб-квартира','Sede'), (_coFlag(c.cc)?_coFlag(c.cc)+' ':'')+_coCountry(c.cc)] ];
     const site='https://'+c.dom;
-    ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="Close">×</button>`+
+    ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}">×</button>`+
       `<div class="co-detail-head"><span class="co-logo-box co-logo-lg">${_coLogoInner(c.dom,nm,hue)}</span>`+
       `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
       `<div class="co-detail-btns"><button class="co-detail-btn${HOST.coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${HOST.coCompareSet.has(c.tk)?HOST._coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):HOST._coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${HOST.coCompareSet.size?` (${HOST.coCompareSet.size}/8)`:''}</button>`+

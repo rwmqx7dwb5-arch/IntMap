@@ -139,7 +139,7 @@ export function makeAtlasControls(HOST, CTX) {
         const t2=(b.textContent||'').replace(/\s+/g,''); if(t2&&!/^[××✖xX]$/.test(t2)) return; if(b.id&&b.id.length>3) return;
         const host=b.closest&&b.closest('[id]'); if(!host||!host.id) return;
         b.setAttribute('aria-label',(window.IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
-      document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label','file: '+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
+      document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ i2.setAttribute('aria-label',window.IntMapLang.t(HOST.lang,'file: ','ファイル: ','Datei: ','файл: ','archivo: ')+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });
       /* unnamed generic checkboxes/radios outside the layer panel: take the row text they sit in */
       document.querySelectorAll('input[type=checkbox]:not([aria-label]), input[type=radio]:not([aria-label])').forEach(i2=>{ try{
         if(i2.closest('#layer-dropdown')||i2.closest('#atlas-panel')) return; const l2=_rowLbl(i2); if(l2) i2.setAttribute('aria-label',l2); }catch(_){} });

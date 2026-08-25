@@ -420,6 +420,11 @@ window.IntMapModules.layerSidebar=function(HOST){
       document.addEventListener('keydown',(e)=>{ try{ act(e.target,false); }catch(_){} },true);   /* (#R258) typing is an operation */
     }
     const T=window.IntMapLang.pick(()=>HOST.lang);
+    /* ⚠ (#R456) AN ATTRIBUTE THAT OUTLIVES A LANGUAGE CHANGE NEEDS BOTH HALVES. The text is right the
+       moment the element is built; the KEY is what js/app-body.js's updateI18n() re-applies on every
+       switch. `tg.title='Layers'` and `st.title='Favorite'` had neither and shipped English in all nine
+       languages — invisibly, because scripts/i18n-attr-audit.mjs read only index.html until #R456. */
+    const titleKey=(el,k)=>{ try{ el.title=window.IntMapLang.keyed(HOST.lang)[k]||el.title; }catch(_){} el.setAttribute('data-i18n-title',k); return el; };
     /* (#R70) REBUILT FROM SCRATCH ("単にデフォルトの Layers選択欄を移植するな。一から同じ機能かつ洗練された
        UIで作り直せ。タイル形式にして"): the sidebar no longer adopts/reparents #layer-dropdown. It is its own
        TILE GRID — every layer row of the classic panel becomes a visual tile (preview image via
@@ -671,7 +676,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         const sel='.lst-tile[data-lid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]';
         _liveHosts().forEach(h=>{ const tile=h.querySelector(sel); if(tile) tile.classList.toggle('on',t2.checked); }); }catch(_){} });   /* (#R232) every mounted grid, not only the sidebar */
       /* (#R63) left-style edge toggle button (open AND close, like the left sidebar's chevron) */
-      const tg=document.createElement('button'); tg.id='lsr-toggle'; tg.title='Layers'; tg.innerHTML='<span class="chev"></span>';
+      const tg=document.createElement('button'); tg.id='lsr-toggle'; titleKey(tg,'ttlLayersPanel'); tg.innerHTML='<span class="chev"></span>';
       tg.addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
       document.body.appendChild(tg); }
     _wireFrontMost();
@@ -703,7 +708,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       }
       /* ★ favorite — the SAME store as the classic panel (imLayerFavs), mirrored both ways */
       try{ if(typeof layerCbInfo==='function'&&Array.isArray(window.imLayerFavs)){ const info=layerCbInfo(r.cb);
-        if(info){ const st=document.createElement('button'); st.className='lst-star'+(window.imLayerFavs.includes(info.key)?' on':''); st.type='button'; st.textContent='★'; st.title='Favorite';
+        if(info){ const st=document.createElement('button'); st.className='lst-star'+(window.imLayerFavs.includes(info.key)?' on':''); st.type='button'; st.textContent='★'; titleKey(st,'ttlFavorite');
           st.onclick=(e)=>{ e.preventDefault(); e.stopPropagation();
             const i=window.imLayerFavs.indexOf(info.key); if(i>=0) window.imLayerFavs.splice(i,1); else window.imLayerFavs.push(info.key);
             st.classList.toggle('on');

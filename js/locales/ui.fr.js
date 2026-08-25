@@ -239,6 +239,9 @@ window.IntMapLang.define('fr', { ui: {
       viewScience:"Comment fonctionne chaque simulation ↗",
       viewSourcesPage:"Ouvrir la page des sources ↗",
       wsHint:"Actualités, Pays, la carte, les calques et Atlas deviennent chacun une fenêtre que vous pouvez déplacer, redimensionner, réduire et empiler librement. Votre disposition est enregistrée.",
+    
+      ttlLayersPanel:"Calques",
+      ttlFavorite:"Favori",
     }, inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     'A new version of IntMap is available. Reload to continue.': "Une nouvelle version d'IntMap est disponible. Rechargez la page pour continuer.",
@@ -5828,4 +5831,10 @@ window.IntMapLang.define('fr', { ui: {
   "South Asia": "Asie du Sud",
   "Southeast Asia": "Asie du Sud-Est",
   "East Asia": "Asie de l'Est",
+  "API key": "Clé API",
+  "Base map and projection": "Fond de carte et projection",
+  "Close popup": "Fermer la fenêtre",
+  "email": "e-mail",
+  "file: ": "fichier : ",
+  "remove": "retirer",
 } });

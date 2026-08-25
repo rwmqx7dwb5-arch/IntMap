@@ -454,7 +454,18 @@ window.IntMapPageI18N = (function () {
     var md = document.querySelector('meta[name="description"]');
     if (md && pick(page, 'meta')) md.setAttribute('content', pick(page, 'meta'));
     var sel = document.getElementById('pg-lang-select');
-    if (sel) sel.value = current;
+    if (sel) {
+      sel.value = current;
+      /* (#R456) …and its accessible name, which buildPicker() could only have written in English:
+         it runs once, before the first setLang, so the language was not known there yet. */
+      /* ⚠ (#R456) FROM `common` IN pages.*.js, NOT FROM `IntMapLang.t(…)`. MEASURED in the
+         browser: sources.html loads pages.*.js and js/lang-registry.js and nothing else, so `t()`
+         here resolves only the five POSITIONAL languages — the inline table fr / ko / zh need is
+         in js/locales/ui.*.js, which no reading page loads. Russian came out 「Язык」 and French
+         stayed 「Language」. `common` is the nine-language table these pages DO carry. */
+      var name = pick('common', 'language');
+      if (name) sel.setAttribute('aria-label', name);
+    }
   }
 
   /* ── the public entry point ───────────────────────────────────────────────────────────────
@@ -478,7 +489,6 @@ window.IntMapPageI18N = (function () {
     var globe = el('span', 'pg-lang-globe', '\u{1F310}');
     var sel = document.createElement('select');
     sel.id = 'pg-lang-select';
-    sel.setAttribute('aria-label', 'Language');
     LANGS.forEach(function (l) {
       var o = document.createElement('option');
       o.value = l.code; o.textContent = l.label;

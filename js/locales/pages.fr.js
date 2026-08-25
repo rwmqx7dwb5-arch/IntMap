@@ -10,6 +10,7 @@ window.IntMapPageI18N=window.IntMapPageI18N||{_d:{},define:function(c,d){this._d
 window.IntMapPageI18N.define('fr', {
 
   common: {
+    language: "Langue",
     backToMap: "Retour à la carte",
     contents: "Sommaire",
     toScience: "Science et logique",

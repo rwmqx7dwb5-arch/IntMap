@@ -10,6 +10,7 @@ window.IntMapPageI18N=window.IntMapPageI18N||{_d:{},define:function(c,d){this._d
 window.IntMapPageI18N.define('ru', {
 
   common: {
+    language: 'Язык',
     backToMap: 'Назад к карте',
     contents: 'Содержание',
     toScience: 'Наука и логика',

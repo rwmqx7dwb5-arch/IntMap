@@ -133,7 +133,7 @@ export function attachLightbox(chatEl, closeLabel) {
 
     const x = document.createElement('button');
     x.className = 'atl-lb-x'; x.type = 'button';
-    x.setAttribute('aria-label', closeLabel || 'Close'); x.textContent = '×';
+    x.setAttribute('aria-label', closeLabel || window.IntMapLang.t(document.documentElement.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); x.textContent = '×';
     el.appendChild(img); el.appendChild(x);
     x.addEventListener('click', (e) => { e.stopPropagation(); close(); });
     el.addEventListener('click', () => { if (moved) { moved = false; return; } close(); });
