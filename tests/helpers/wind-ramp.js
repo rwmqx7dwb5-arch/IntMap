@@ -124,3 +124,66 @@ export function explain(px, v) {
     + ' m/s, which the table paints between ' + JSON.stringify(b.min) + ' and ' + JSON.stringify(b.max)
     + ' (' + b.entries + ' entries)';
 }
+
+/* ══ ⚠⚠⚠ (#R458) …AND WHETHER THE PAIR OF POINTS CAN CARRY THE CROSS-COMPARISON AT ALL ═════════
+   The two verdicts above are each about ONE pixel and its own footprint, and they are always
+   well-posed. The cyclone smoke then makes a THIRD claim, across the pair — 「the eyewall pixel
+   reads as faster than anything the model has under the eye, and the eye's as calmer than anything
+   under the eyewall」 — and that one is not always a claim about the picture.
+
+   The footprints are intervals of speed. `speedInFootprint` says each pixel's colour stands for
+   SOME speed inside its own interval, and the renderer is free to choose which: a perfectly correct
+   render may paint the eye at the TOP of its footprint. So when the two intervals OVERLAP —
+   eye.foot[1] >= ring.foot[0] — a correct picture can fail the cross-claim, and no threshold can
+   repair that, because the two halves of the claim then contradict each other by construction:
+       ring pixel > eye.foot[1]  AND  eye pixel < ring.foot[0]  with  ring.foot[0] <= eye.foot[1]
+   MEASURED, the post-deploy smoke of run 32818517323 (#R455's deploy), four attempts running:
+       eye pixel reads 15.5 m/s   ring.foot = [15.045, 36.9]   eye.foot[1] >= 15.5
+   — the eye's own footprint reached ABOVE the bottom of the eyewall's, because the global maximum
+   sits on the inner EDGE of the eyewall where ±1.5 px spans the whole wall. The map was right.
+
+   So the pair is CHOSEN rather than assumed: the finder's two points are kept whenever they
+   separate, and when they do not, the calmest and the strongest point the same screen offers are
+   taken instead — the one whose footprint TOPS OUT lowest, and the one whose footprint BOTTOMS OUT
+   highest. Nothing here is tuned: the ranking key is the footprint bound the claim itself names,
+   and 「calm」/「strong」 is the finder's own 0.6 × peak line. If even that pair overlaps, the hour
+   cannot carry the claim and says so — see `why`. */
+export function separablePair(calm, strong) {
+  const nCalm = Array.isArray(calm) ? calm.length : 0;
+  const nStrong = Array.isArray(strong) ? strong.length : 0;
+  const considered = { calm: nCalm, strong: nStrong };
+  if (!nCalm || !nStrong) {
+    return { eye: null, ring: null, gap: null, origGap: null, separated: false, repicked: false,
+      considered,
+      why: 'the screen offered ' + nCalm + ' calm and ' + nStrong + ' strong candidate point(s), so '
+        + 'there is no pair to compare — the storm the finder measured is not on this screen' };
+  }
+  const gapOf = (e, r) => r.foot[0] - e.foot[1];
+  const origGap = gapOf(calm[0], strong[0]);
+  if (origGap > 0) {
+    return { eye: calm[0], ring: strong[0], gap: origGap, origGap, separated: true, repicked: false,
+      considered, why: '' };
+  }
+  /* deterministic argmin / argmax — ties broken by position, so two runs of the same hour agree */
+  const pick = (list, key) => list.reduce((best, c) => {
+    const a = key(c), b = key(best);
+    if (a < b) return c;
+    if (a > b) return best;
+    return (c.la < best.la || (c.la === best.la && c.lo < best.lo)) ? c : best;
+  });
+  const eye = pick(calm, (c) => c.foot[1]);
+  const ring = pick(strong, (c) => -c.foot[0]);
+  const gap = gapOf(eye, ring);
+  return {
+    eye, ring, gap, origGap, separated: gap > 0, repicked: true, considered,
+    why: gap > 0 ? ''
+      : 'the calmest pixel this screen offers has the model reaching ' + eye.foot[1].toFixed(2)
+        + ' m/s under it, and the strongest has it dropping to ' + ring.foot[0].toFixed(2)
+        + ' m/s under that one, so the two footprints overlap by ' + (-gap).toFixed(2) + ' m/s. '
+        + 'A correct render may paint either pixel anywhere inside its own footprint, so at this '
+        + 'hour NO pair of points on this screen can show one to be calmer than everything under '
+        + 'the other. This is a fact about the geometry of the storm, not about the picture: the two '
+        + 'single-pixel verdicts above still stand, and only the comparison ACROSS the pair is '
+        + 'withheld. ' + nCalm + ' calm and ' + nStrong + ' strong candidates were ranked.',
+  };
+}

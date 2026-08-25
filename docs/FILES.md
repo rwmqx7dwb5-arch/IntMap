@@ -626,8 +626,8 @@ tests/
   helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
                                   prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
                                   コードだけ——コメントの中の `corsFor()` は契約ではない
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（227本）
-  *.spec.js                       ブラウザ回帰（92本）
+  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（241本）
+  *.spec.js                       ブラウザ回帰（99本）
 .github/workflows/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
   deploy.yml                      本番公開（**有効**。§15.4）

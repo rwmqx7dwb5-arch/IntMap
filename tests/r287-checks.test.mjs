@@ -262,8 +262,14 @@ test('#R287 ⑦ tests/prod-smoke.spec.js asserts both claims and drops the point
      ramp — 195 of its 1,041 entries invert it; see tests/r382-checks.test.mjs).
      A gate outlives its reason unless somebody moves it. So what is pinned here is what the sibling
      asserts NOW: the same verdict this file is about, taken over each pixel's own footprint. */
-  assert.match(src, /readPixel\(pic\.ramp, eyePx, pic\.eyeFoot\[0\]/, 'the eye pixel takes this verdict');
-  assert.match(src, /readPixel\(pic\.ramp, ringPx, pic\.ringFoot\[0\]/, 'and so does the eyewall');
+  /* ⚠ (#R458) …and the footprints it takes that verdict over are now the CHOSEN pair's rather
+     than blindly the finder's two points: at the hours where those two overlap in speed, the
+     comparison BETWEEN them is not a question about the picture at all. The spelling pinned here
+     moved with the thing it pins, and the choice itself is pinned as well. */
+  assert.match(src, /readPixel\(pic\.ramp, eyePx, eyeFoot\[0\]/, 'the eye pixel takes this verdict');
+  assert.match(src, /readPixel\(pic\.ramp, ringPx, ringFoot\[0\]/, 'and so does the eyewall');
+  assert.match(src, /separablePair\(pic\.eyeCands, pic\.ringCands\)/,
+    'over a pair chosen to be one the cross-claim can be made about (#R458)');
   assert.ok(!/the eye is painted nearer the entry for its own speed/.test(src),
     'and the point-value distance comparison it used to make is gone');
   assert.equal((src.match(/gl\.readPixels\(/g) || []).length, 2,
@@ -271,10 +277,14 @@ test('#R287 ⑦ tests/prod-smoke.spec.js asserts both claims and drops the point
 });
 
 /* ── ⑧ settling the time axis must not cancel the load of the hour it is announcing ──────────
-   ⚠⚠⚠ THE SECOND FAILURE, WHICH THE FIRST ONE HAD BEEN HIDING. tests/prod-smoke.spec.js runs
-   `test.describe.configure({ mode: 'serial' })`, so when the wind-pixel test above failed the two
-   after it were never RUN — they reported as skipped, and the deploy log showed one red test where
-   there were two. Fixing the first unmasked this.
+   ⚠⚠⚠ THE SECOND FAILURE, WHICH THE FIRST ONE HAD BEEN HIDING. tests/prod-smoke.spec.js ran
+   `test.describe.configure({ mode: 'serial' })` at the time, so when the wind-pixel test above
+   failed the two after it were never RUN — they reported as skipped, and the deploy log showed one
+   red test where there were two. Fixing the first unmasked this.
+   ⚠ (#R458) THAT CONFIGURE LINE IS GONE. The same cascade blanked four checks again on the deploy
+   of run 32818517323, and measuring showed serial was never what kept a dead site from reporting
+   twenty confusing failures — `beforeAll` is, because it throws. The note stays, because the
+   DEFECT ⑧ pins is unchanged; only the thing that kept it hidden for a round has been removed.
 
    `fireTime()` — the coalesced 「the axis has settled」 event #R284 introduced — dropped the stale
    frame with an unqualified `release()`, and `release()` clears `loadingKey` as well as `held`. In

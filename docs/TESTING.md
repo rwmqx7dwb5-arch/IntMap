@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **96 measured spec files / 77.0 min** of serial browser time against a ceiling of 77.0 min; and
-`npm run test:checks` runs **245 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **246 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **90 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -812,6 +812,37 @@ same benign-error classification.
 > `uptime.yml` is a single HTTP probe for the app shell; it has never invoked playwright. So the
 > deployed site is checked by this suite **on a deploy and at no other time** — a red post-deploy
 > smoke therefore blocks the next round rather than being noticed by a monitor first.
+
+### `prod-smoke` does not cascade its skips (#R458)
+
+`tests/prod-smoke.spec.js` is **not** `mode: 'serial'`, and that is deliberate. Serial mode does not
+protect this file from a dead production site — `beforeAll` does, because it performs the navigation
+and the boot wait and **throws**, which fails every test in the file with the real reason. What
+serial mode did do was discard every verdict below the first red one: on run 32818517323 a single
+assertion failed and the forecast axis, both #R398 checks and #R333's CORS contract reported
+「did not run」, so that deploy shipped with four of its checks unasked.
+
+Measured with a four-test probe under this config's `retries: 3` — `mode: 'serial'` re-ran the
+tests *before* the failing one on all four attempts and never reached the ones after it; the default
+runs only the failing test again and then continues. Tests in a file still run **in order, in one
+worker** (`fullyParallel` is not set in `playwright.prod.config.js`), so the shared page and the
+written order are unchanged.
+
+### A claim the model hour cannot always carry (#R458)
+
+The cyclone test asks three things of the two pixels it reads. Two are about one pixel each and are
+always answerable. The third compares them — 「the eyewall pixel reads as faster than anything under
+the eye, and the eye's as calmer than anything under the eyewall」 — and that one depends on the
+**geometry of the storm at that hour**: each pixel legitimately stands for any speed inside the
+±1.5 px patch under it (#R287), so when the two patches overlap as speed intervals, one colour is a
+legal reading of both points and the comparison stops being a statement about the map.
+
+So the pair of points is **chosen**: the storm finder's own two points whenever they separate,
+otherwise the calmest and the strongest point on the same screen, ranked by the footprint bound the
+claim itself names. If no pair separates, the test **prints why in m/s and withholds only that
+third claim** — it is not a `test.skip`, and the two per-pixel verdicts still run. The decision is
+`separablePair()` in `tests/helpers/wind-ramp.js`, and `tests/r458-checks.test.mjs` puts it through
+the overlap the deployed page cannot be made to reproduce on demand.
 
 ### What only production can answer (#R333)
 
