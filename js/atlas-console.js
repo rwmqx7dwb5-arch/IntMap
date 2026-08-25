@@ -1623,7 +1623,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       visionSys:function(){ try{ return _visionSYS(); }catch(_){ return ''; } } }; }catch(_){}
     /* (#R199) ↳ js/atlas-sources.js — external evidence sources — leaders, live news, POI catalogues.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { _OP_EPS, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, turnSignal });
+    const { _OP_EPS, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, WEB_BUDGET_MS, turnSignal });
     let _pois=[], _poiColor=null;
     function ensurePoiLayer(){ try{ if(!GE().layers.hasSource('nlq-poi-src')) GE().layers.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(GE().layers.has('nlq-poi-c')) return true;
@@ -1828,7 +1828,8 @@ window.IntMapModules.atlasConsole=function(HOST){
              (no fabrication) — but the quoted-only, 3-day, no-fallback version was returning nothing for topics like
              "South China Sea", which is why the section came back empty. */
           try{ const [gd,gn]=await Promise.all([
-              (async()=>{ let v=await _gdeltNews('"'+nm3+'"',srcSink,'7d'); if(!v) v=await _gdeltNews(nm3,srcSink,'7d'); return v; })().catch(()=>null),
+              /* ⚠ (#R464) SEQUENTIAL, so the pair shares ONE budget — otherwise it costs two (js/atlas-deadlines.js) */
+              (async()=>{ const b0=Date.now(); const bLeft=()=>WEB_BUDGET_MS-(Date.now()-b0); let v=await _gdeltNews('"'+nm3+'"',srcSink,'7d',bLeft()); if(!v&&bLeft()>0) v=await _gdeltNews(nm3,srcSink,'7d',bLeft()); return v; })().catch(()=>null),
               _gnewsNews(nm3,srcSink).catch(()=>null)
             ]);
             if(gd) hl2+='\n\nLive web news search results (GDELT, last 7 days) — use for "Recent developments":\n'+gd;
@@ -3354,10 +3355,11 @@ window.IntMapModules.atlasConsole=function(HOST){
               const gnQ=topic||cnEn.join(' OR ')||q.slice(0,60);
               const gn=_gnewsNews(gnQ,srcSink).catch(()=>null);   /* 3) user-language Google News — started first, awaited last */
               const w0=Date.now(); const wLeft=()=>WEB_BUDGET_MS-(Date.now()-w0);
-              /* 1) region-wide GDELT (the whole area) — runs sequentially with (2) to stay gentle on GDELT's per-IP limit */
-              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink); if(!v&&regionQ.indexOf('"')>=0&&wLeft()>0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink); if(v){ got.web=v; any=true; } }
+              /* ⚠⚠ (#R464) wLeft() is HANDED to each call, not just consulted before it — consulting alone gated only whether to START one, so 3×14 s ran inside a 「20 s」 budget (js/atlas-deadlines.js)
+                 1) region-wide GDELT (the whole area) — runs sequentially with (2) to stay gentle on GDELT's rate limit */
+              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink,null,wLeft()); if(!v&&regionQ.indexOf('"')>=0&&wLeft()>0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink,null,wLeft()); if(v){ got.web=v; any=true; } }
               /* 2) a search that INCLUDES the explicit countries (OR of the requested set), so no country is dropped */
-              if(orQ&&wLeft()>0){ let v3=await _gdeltNews(orQ,srcSink); if(v3){ got.web3=v3; any=true; } }
+              if(orQ&&wLeft()>0){ let v3=await _gdeltNews(orQ,srcSink,null,wLeft()); if(v3){ got.web3=v3; any=true; } }
               const v2=await gn;
               if(v2){ got.web2=v2; any=true; }
               if(!any) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')); })());

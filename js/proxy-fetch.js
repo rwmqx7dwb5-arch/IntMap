@@ -71,17 +71,46 @@ export const fetchViaProxy = (() => {
   /* the relay only forwards news.google.com/rss/… (it is an allow-list, not an open proxy), so it
      is offered only for the URLs it will actually answer */
   const relayable = (u) => /^https:\/\/news\.google\.com\/rss\//.test(String(u || ''));
+  const supaBase = () => { try { return String(window.SUPABASE_URL || '').replace(/\/$/, ''); } catch (_) { return ''; } };
   const proxiesFor = (u) => {
-    let base = '';
-    try { base = String(window.SUPABASE_URL || '').replace(/\/$/, ''); } catch (_) { base = ''; }
+    const base = supaBase();
     return (base && relayable(u))
       ? [(x) => `${base}/functions/v1/news-relay?u=${encodeURIComponent(x)}`, ...PUBLIC_PROXIES]
       : PUBLIC_PROXIES;
+  };
+  /* ══ ⚠⚠⚠ (#R464) GDELT HAS ITS OWN RELAY, AND IT IS NOT IN THE RACE ABOVE ═══════════════════════
+     news-relay can ride inside `race()` because Google News answers in ~700 ms, comfortably inside
+     one racer's 8 s. gdelt-relay cannot: on a cache MISS it is waiting on api.gdeltproject.org,
+     whose fastest measured response of any kind is 10.7 s. Raced at 8 s it would be aborted every
+     time the cache was cold — i.e. exactly when the upstream read that FILLS the cache is in
+     flight — and the cache would never warm. So it is tried first, alone, with a clock sized to the
+     thing it is actually waiting for.
+
+     ⚠ AND IT IS TRIED BEFORE `direct`, WHICH IS THE OPPOSITE OF THE OTHER HOSTS. Measured from the
+     live site, 18 direct attempts at GDELT: 4 succeeded (22.2%), median success 17,454 ms. Trying
+     that first would spend the budget on a coin-flip before asking the cache that answers in
+     ~0.6 s. Direct stays BEHIND it, unchanged in spirit from DECISIONS.md's point that a reader's
+     own IP is a real second chance when our own relay is down. */
+  const gdeltRelayable = (u) => /^https:\/\/api\.gdeltproject\.org\/api\/v2\/doc\/doc(\?|$)/.test(String(u || ''));
+  const ownRelay = (u) => {
+    const base = supaBase();
+    return (base && gdeltRelayable(u)) ? `${base}/functions/v1/gdelt-relay?u=${encodeURIComponent(u)}` : '';
   };
   const PROXY_TIMEOUT_MS = 8000;      /* one attempt's deadline */
   const PROXY_FALLBACK_MS = 6000;     /* …and the second, bounded pass */
   const BUDGET_MS = 20000;            /* (#R446) …and what the WHOLE ladder may cost, end to end */
   const DIRECT_TIMEOUT_MS = 6000;     /* (#R452) the host itself, for the callers that may read it */
+  /* (#R464) our own relay's, which has to cover ITS upstream deadline (25 s) plus the round trip —
+     a shorter clock here would abort precisely the cold-miss reads that make the cache worth having */
+  const OWN_RELAY_TIMEOUT_MS = 28000;
+  /* ⚠ (#R464) …AND THE DIRECT DEADLINE IS PER HOST, BECAUSE 6 s IS A DEADLINE FOR HOSTS THAT ANSWER
+     QUICKLY. Measured from the live site, 18 direct attempts at GDELT: median SUCCESS 17,454 ms,
+     fastest response of any kind 10.7 s. Six seconds could not reach it even once — the direct
+     attempt was structurally guaranteed to fail, and the 6.1 / 7.0 / 6.7 s in the production report
+     are this deadline firing rather than anything about GDELT. The knowledge lives here, in the one
+     module that already knows which hosts have their own relay, so no caller has to carry it. */
+  const GDELT_DIRECT_MS = 18000;
+  const directMsFor = (u) => (gdeltRelayable(u) ? GDELT_DIRECT_MS : DIRECT_TIMEOUT_MS);
 
   /* ⚠⚠⚠ (#R452) THE CLOCK HAS TO COVER THE BODY, AND IT DID NOT. `clearTimeout` ran in a `.finally`
      on the `fetch` promise — i.e. THE MOMENT THE HEADERS ARRIVED — so a relay that answered 200 and
@@ -157,8 +186,15 @@ export const fetchViaProxy = (() => {
    *   opts.as        'feed' (default) | 'html' | 'json'  — what counts as an answer rather than an
    *                  error page
    *   opts.budgetMs  what the whole ladder may cost, end to end (default 20 s)
-   *   opts.direct    try the host ITSELF first, before the relays (#R452) — for hosts a browser may
-   *                  read. A CORS refusal costs nothing: it rejects before a byte moves.
+   *   opts.direct    try the host ITSELF, before the public relays (#R452) — for hosts a browser
+   *                  may read.
+   *                  ⚠ (#R464) THE NOTE THAT USED TO BE HERE — 「A CORS refusal costs nothing: it
+   *                  rejects before a byte moves」 — IS TRUE OF A REJECTED PRE-FLIGHT AND FALSE OF
+   *                  GDELT. Its 429 is a real response that takes 10.7-15.8 s to arrive and merely
+   *                  carries no ACAO, so the browser waits out the entire round trip before
+   *                  refusing to show it. A refusal that costs twelve seconds is not free, and
+   *                  sizing a deadline as though it were is what made this path unusable.
+   *                  The direct deadline is therefore per-HOST (see directMsFor), not one number.
    *   opts.signal    the caller's AbortSignal — Stop, or a superseding turn (#R452)
    *
    * ⚠⚠ (#R452) `opts.signal` IS NOT DECORATION. Atlas builds an AbortController for every turn and
@@ -189,10 +225,18 @@ export const fetchViaProxy = (() => {
     const mk = () => { const c = new AbortController(); ctlsAll.push(c); return c; };
 
     try {
-      /* (#R452) the host itself, when the caller says a browser is allowed to read it */
-      if (o.direct) {
+      /* (#R464) our own relay, for the hosts that have one that cannot be raced */
+      const own = ownRelay(url);
+      if (own) {
         try {
-          const txt = await fetchDeadline(url, Math.min(DIRECT_TIMEOUT_MS, left()), mk());
+          const txt = await fetchDeadline(own, Math.min(OWN_RELAY_TIMEOUT_MS, left()), mk());
+          if (okDoc(txt)) return txt;
+        } catch (_) { /* ours is cold, refused or down — the reader's own IP is the next chance */ }
+      }
+      /* (#R452) the host itself, when the caller says a browser is allowed to read it */
+      if (o.direct && left() > 0) {
+        try {
+          const txt = await fetchDeadline(url, Math.min(directMsFor(url), left()), mk());
           if (okDoc(txt)) return txt;
         } catch (_) { /* CORS, a status, or the clock — the relays are next either way */ }
       }

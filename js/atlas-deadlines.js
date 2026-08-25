@@ -39,7 +39,14 @@ import { fetchViaProxy } from './proxy-fetch.js';   /* the app's ONE relay ladde
 export const ATLAS_BUDGETS = {
   EVIDENCE_BUDGET_MS: 14000,   /* ONE external evidence fetch, relay ladder included */
   GATHER_BUDGET_MS: 32000,     /* the whole `jobs` gather for one analyze call */
-  WEB_BUDGET_MS: 20000,        /* the GDELT ladder inside that gather (Google News runs beside it) */
+  /* ⚠⚠ (#R464) 20 s → 30 s, AND THIS RAISES NOTHING — IT LOWERS THE REAL COST FROM 42 s. The old
+     number bounded only the DECISION to start another GDELT attempt, never an attempt itself, so
+     three sequential attempts at EVIDENCE_BUDGET_MS each spent 42 s inside a 「20 s」 budget and
+     returned nothing (measured in production: 8.0 s x3 of relay racing plus 6.1 / 7.0 / 6.7 s of
+     direct attempts). js/atlas-console.js now HANDS this budget to each call, so it is the ceiling
+     for the whole sequence; 30 s is what one cold read through supabase/functions/gdelt-relay
+     costs, and a warm one costs ~0.6 s, so the common case is a couple of seconds. */
+  WEB_BUDGET_MS: 30000,        /* the GDELT ladder inside that gather (Google News runs beside it) */
 };
 
 /* newTurnController(prev) -> the AbortController for the turn that is starting
@@ -98,7 +105,19 @@ export function lateNote(n, ms) {
  *
  * ⚠ `direct: true` because these hosts (GDELT, USGS, IMF, Wikipedia REST) DO send ACAO when they
  * answer at all. The browser-visible 「CORS 拒否」 on api.gdeltproject.org is its 429, which carries
- * no ACAO header — and that refusal costs nothing, because it rejects before a byte moves.
+ * no ACAO header.
+ *
+ * ⚠⚠⚠ (#R464) THE SENTENCE THAT USED TO END THAT PARAGRAPH WAS WRONG, AND IT IS WHY THIS PATH
+ * NEVER WORKED: 「…and that refusal costs nothing, because it rejects before a byte moves」. That
+ * is true of a rejected PRE-FLIGHT. GDELT's 429 is a real HTTP response that the browser waits for
+ * in full and only then refuses to expose. Measured — 18 direct attempts from the live site: the
+ * refusals took a median of 12,297 ms and the four successes a median of 17,454 ms, so the fastest
+ * thing GDELT did at all was 10.7 s. A 6 s direct deadline could not reach it once. Believing the
+ * refusal was free is what made 6 s look like a safe number, and the production report's
+ * 6.1 / 7.0 / 6.7 s are that deadline firing rather than anything GDELT did.
+ * ⚠ GDELT is now reached through supabase/functions/gdelt-relay (js/proxy-fetch.js tries it first),
+ * which caches for the fifteen minutes GDELT's own `cache-control` names — so the common case is a
+ * ~0.6 s cache hit and nobody waits on the upstream at all.
  *
  * ⚠⚠ THE TURN'S OWN Stop REACHES THE NETWORK THROUGH `turnSignal`. Atlas builds an AbortController
  * for every turn and hands it to the model call and to the executor; the evidence fetches — the

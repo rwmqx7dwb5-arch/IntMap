@@ -147,6 +147,9 @@ verify_jwt = false
 
 # news-relay (#R216) relays Google News RSS (news.google.com sends no ACAO). Keyless,
 # no user data — deployed --no-verify-jwt.
+[functions.gdelt-relay]
+verify_jwt = false
+
 [functions.news-relay]
 verify_jwt = false
 

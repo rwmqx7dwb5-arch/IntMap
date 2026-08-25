@@ -157,7 +157,7 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
     });
 
     /* 数だけを間違える（名前は12本のまま） */
-    const num = anchorRe('**Edge Functions は 12 本**');
+    const num = anchorRe('**Edge Functions は 13 本**');
     assert.ok(num.test(readLF(join(ROOT, 'CLAUDE.md'))), 'CLAUDE.md §5.1 no longer states the count next to the roster');
     await breaking('CLAUDE.md', (s) => s.replace(num, () => '**Edge Functions は 9 本**'), (r) => {
       assert.equal(r.code, 1, 'check:docs stayed green with the count wrong beside a correct roster');
@@ -179,11 +179,11 @@ test('R403 ④ a legitimately PARTIAL list of functions is not read as the roste
        ⚠ `assert.match` を巨大ファイルに使わない——落ちるとファイル全体が印字される
        （Architecture.md は 96 KB。#R390 で実測した形）。真偽と短い message で言う。 */
     const arch = rd('Architecture.md');
-    assert.ok(/を共有するのは8本\*\*（`alerts-relay`/.test(arch),
+    assert.ok(/を共有するのは9本\*\*（`alerts-relay`/.test(arch),
       'the relay-guard list is gone from Architecture.md — case ④ is no longer proven by the tree');
     assert.ok(/for f in refresh-news monitor-run/.test(arch),
       'the split deploy loop is gone from Architecture.md — case ④ is no longer proven by the tree');
-    assert.ok(/All twelve are declared there now/.test(rd('docs/SECURITY-ARCHITECTURE.md')),
+    assert.ok(/All thirteen are declared there now/.test(rd('docs/SECURITY-ARCHITECTURE.md')),
       'the "four most recently added" sentence is gone from docs/SECURITY-ARCHITECTURE.md — case ④ is no longer proven by the tree');
 
     /* そのうえで木が緑であること。上の3文はいずれも3本以上の実名を並べている。 */
@@ -236,7 +236,7 @@ const NEW_RULES = [
 
   /* relay-guard — 1つの文書の中で2つの文が違う数を言う */
   { rule: 'relay-guard', file: 'Architecture.md', why: 'a shared-module count that no longer matches the imports',
-    from: '`_shared/relay-guard.js` を共有するのは8本', to: '`_shared/relay-guard.js` を共有するのは5本' },
+    from: '`_shared/relay-guard.js` を共有するのは9本', to: '`_shared/relay-guard.js` を共有するのは5本' },
 
   /* backup-shell — ⚠ **文書ではなくコードの側**。#R396 がこのラウンドと並行して着地し、同じ
      古い launcher を3か所で見つけた——うち2か所は `.md` ではない（スクリプト自身の USAGE と、
