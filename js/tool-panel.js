@@ -183,7 +183,7 @@ window.IntMapModules.toolPanel=function(HOST){
     p.querySelector('.tp-close').onclick=HOST.exitTool; HOST.makeDraggable(p,p.querySelector('.tp-header'));
     /* (#R34) Minimize button ("Enable − in Radius") — collapses the panel to just its header so the tool no
        longer covers the centre crosshair on mobile ("Radius widget is too big so it hides the cross pointer"). */
-    { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.title=(HOST.lang==='jp'?(on?'展開':'最小化'):HOST.lang==='de'?(on?'Ausklappen':'Minimieren'):HOST.lang==='ru'?(on?'Развернуть':'Свернуть'):HOST.lang==='es'?(on?'Expandir':'Minimizar'):(on?'Expand':'Minimize')); }; }   /* (#R35) icon (line↔box) is drawn by CSS off .tp-collapsed — no text –/+ */
+    { const mb=p.querySelector('.tp-min-btn'); if(mb) mb.onclick=(e)=>{ e.stopPropagation(); const on=p.classList.toggle('tp-collapsed'); p.dataset.collapsed=on?'1':'0'; mb.title=(on?window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir'):window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')); }; }   /* (#R35) icon (line↔box) is drawn by CSS off .tp-collapsed — no text –/+ */
     { const sb=p.querySelector('#ai-summarize-btn'); if(sb){ sb.classList.toggle('ai-needs-key',!HOST.aiReady()); sb.title=HOST.aiReady()?'':HOST.t('aiNoKey');
       /* (#R119) the area summary now runs INSIDE the Atlas thread (analyze scope:"drawn-area" = news in the area +
          displayed-layer values + WorldPop population, one conversation surface). The legacy popup stays as fallback. */

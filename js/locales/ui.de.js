@@ -214,4 +214,7 @@ window.IntMapLang.define('de', { ui: {
       sortDir:"Auf-/absteigend umschalten",
       lblWsMode:'Fenster-Workspace (Desktop)',
       wsHint:'News, Länder, Karte, Ebenen und Atlas werden zu eigenen Fenstern, die Sie frei verschieben, skalieren, einklappen und stapeln können. Das Layout wird gespeichert.',
+    
+      ttlLayersPanel:"Ebenen",
+      ttlFavorite:"Favorit",
     } });

@@ -65,7 +65,7 @@ export function makeLayerFavs(HOST, CTX) {
       const opt=cb.closest('.layer-option')||cb.closest('.lyr-row'); if(!opt||opt.querySelector('.lyr-star')) return;
       const info=layerCbInfo(cb); if(!info) return;
       const star=document.createElement('button'); star.className='lyr-star'+(window.imLayerFavs.includes(info.key)?' on':'');
-      star.type='button'; star.title='Favorite'; star.dataset.key=info.key; star.textContent='★';
+      star.type='button'; star.title=t('ttlFavorite'); star.setAttribute('data-i18n-title','ttlFavorite'); star.dataset.key=info.key; star.textContent='★';
       star.onclick=(e)=>{ e.preventDefault(); e.stopPropagation();
         const i=window.imLayerFavs.indexOf(info.key);
         if(i>=0) window.imLayerFavs.splice(i,1); else window.imLayerFavs.push(info.key);

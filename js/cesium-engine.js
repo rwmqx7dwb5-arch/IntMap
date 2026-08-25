@@ -2933,7 +2933,7 @@ window.IntMapCesiumEngine=(function(){
       if(o.closeButton!==false){
         closer=document.createElement('button');
         closer.className='maplibregl-popup-close-button'; closer.type='button';
-        closer.setAttribute('aria-label','Close popup'); closer.textContent='×';
+        closer.setAttribute('aria-label',window.IntMapLang.t(document.documentElement.lang,'Close popup','ポップアップを閉じる','Pop-up schließen','Закрыть всплывающее окно','Cerrar la ventana emergente')); closer.textContent='×';
         content.appendChild(closer);
       }
     } else if(o.element){ el.appendChild(o.element); }
