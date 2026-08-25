@@ -35,7 +35,7 @@ import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u
 import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
 import { makeAtlasSchemas } from './atlas-schemas.js';   /* (#R406) the per-capability argument schemas the registry never had */
 import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the 58 kB action catalogue that used to be inline in SYS() */
-import { makeAtlasAnswerPipeline } from './atlas-answer-pipeline.js';   /* (#R350) the analysis answer as a contract: evidence registry -> one call -> audit -> at most one repair -> degrade */
+import { makeAtlasAnswerPipeline } from './atlas-answer-pipeline.js';   /* (#R350/#R472) the analysis answer as a contract: evidence registry -> ONE call -> audit -> report. The audit no longer re-asks or rewrites the answer. */
 import { makeAtlasAnswerRender } from './atlas-answer-render.js';   /* (#R350) every link on screen is built from the registry, never from the model's prose */
 import { makeAtlasEvidence } from './atlas-evidence.js';
 import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
@@ -1064,7 +1064,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R350) the answer contract, in the shape tests/r175 ③ requires of every js/ module: ONE
        exported factory per file, nothing private at a module's top level, and the API attached to
        window so the browser spec can drive the REAL renderer rather than a Node copy of it. */
-    const { runStructuredAnswer, degradeMeta } = makeAtlasAnswerPipeline();
+    const { runStructuredAnswer, auditMeta } = makeAtlasAnswerPipeline();
     const { renderAnswer, answerPlainText, answerCSS } = makeAtlasAnswerRender();
     const { makeEvidenceRegistry } = makeAtlasEvidence();
     const { normalizeAnswer } = makeAtlasAnswerContract();
@@ -3489,7 +3489,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const usedAll=usedNames.slice();   /* (#R113) IntMap's own gathered sources (GDELT, Google News, Wikidata, Wikipedia…) are already in usedNames. */
           if(RES.webUsed) usedAll.push(L('live web verification','ライブWeb検証','Live-Web-Verifizierung','проверка в интернете','verificación web en vivo'));
           if(usedAll.length) html+='<div style="font-size:10.5px;color:var(--text-muted);margin-top:6px;">'+L('Data used','使用データ','Verwendete Daten','Данные','Datos usados')+': '+usedAll.join(', ')+'</div>';   /* (#R118) no data → NO empty "Data used:" line */
-          const _dm=degradeMeta(_env); return _dm?R(true,html,{meta:_dm}):R(true,html); }   /* ⚠ (#R419) AN ANSWER THE AUDIT GUTTED IS NOT `completed` TO THE ONE WRITING THE SENTENCE ABOUT IT — the 1940 Lithuania report. Why, and what the meta says: degradeMeta() in js/atlas-answer-pipeline.js. */
+          const _am=auditMeta(_env); return _am?R(true,html,{meta:_am}):R(true,html); }   /* ⚠ (#R419/#R472) THE ANSWER IS RENDERED IN FULL AND ATLAS IS TOLD WHAT THE AUDIT NOTICED — codes, not a verdict, and never a claim that something was removed (nothing is). auditMeta() in js/atlas-answer-pipeline.js. */
         /* (#R180) THE RENDERING ENGINE — Atlas is the control plane (STANDING RULE since #R82),
            so the second engine is selectable from here too. It cannot take effect on the live
            scene for the same reason the Settings panel reloads: a renderer swap is a rebuild.

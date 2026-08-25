@@ -15,8 +15,12 @@
  *  ran for THIS call and the annotation is stamped with this call's id. Everything IntMap fetched
  *  itself is filed under the ordinary 「Sources」 heading, because that is what it is.
  *
- *  It renders; it does not judge. The audit has already run and its verdict arrives as
- *  `env.audit.status` — a degraded answer says so, above the prose, in the reader's language.
+ *  It renders; it does not judge — and as of #R472 nothing else does either. The banner
+ *  「裏付けを確認できなかった記述は、この回答から取り除きました」 used to stand here because code had
+ *  just deleted those statements; it is gone with the deleting (js/atlas-answer-pipeline.js). The
+ *  audit's findings go to Atlas instead. What still protects the reader from an invented URL is
+ *  right here and unchanged: `stripModelUrls()` on every rendered field, and citation pills built
+ *  ONLY from records the registry holds.
  * ==========================================================================*/
 
 import { makeAtlasAnswerContract } from './atlas-answer-contract.js';
@@ -82,16 +86,6 @@ export function makeAtlasAnswerRender() {
 
     let html = '';
 
-    /* the honest banner a degraded answer carries — above the prose, never hidden */
-    if (env.audit && env.audit.status === 'degraded') {
-      html += '<div class="atl-degraded">⚠ ' + esc(L(
-        'Unverified statements were removed from this answer.',
-        '裏付けを確認できなかった記述は、この回答から取り除きました。',
-        'Nicht belegte Aussagen wurden aus dieser Antwort entfernt.',
-        'Неподтверждённые утверждения удалены из этого ответа.',
-        'Se eliminaron de esta respuesta las afirmaciones no verificadas.')) + '</div>';
-    }
-
     const da = env.answer.directAnswer || { text: '', claimIds: [] };
     if (String(da.text || '').trim()) {
       html += '<div class="atl-lead">' + mdMini(stripModelUrls(da.text)) + cite(da.claimIds) + '</div>';
@@ -146,8 +140,6 @@ export function makeAtlasAnswerRender() {
   .atl-cite-data:hover{background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);}
   .atl-lim{margin-top:.9em;padding:.55em .75em;border-radius:10px;background:var(--input-bg,rgba(128,128,128,.09));}
   .atl-lim-h{font-size:.82em;font-weight:600;color:var(--text-muted);margin-bottom:.15em;letter-spacing:.02em;}
-  .atl-degraded{margin:0 0 .6em;padding:.5em .7em;border-radius:10px;border:1px solid var(--warn-color,#c98a00);
-    background:rgba(201,138,0,.09);font-size:.86em;line-height:1.5;color:var(--text-main);}
   .atl-aux{margin-top:.7em;font-size:.82em;line-height:1.5;color:var(--text-muted);}
   `;
 

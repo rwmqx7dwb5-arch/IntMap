@@ -290,9 +290,10 @@ atlas-evidence.js                 Atlas — 証拠レジストリ（#R350）。�
                                   束縛されるので、同時に走る 2 つの回答が引用を取り違えられない
 atlas-answer-contract.js          Atlas — 回答の契約（#R350）。AnswerEnvelope の schema（ai-proxy と同一）・
                                   主張の意味区分（構成比／成長寄与／供給能力…）・単位クラス・文中の数値の読み取り
-atlas-answer-audit.js             Atlas — 回答の監査（#R350）。冒頭結論と本文の矛盾、統計系列の混同、%とポイント、
-                                  裏付けのない数値、本文中の URL など 30 超のコードを構造から判定する（自己点検ではない）
-atlas-answer-pipeline.js          Atlas — 1 回の呼び出し → 監査 → 最大 1 回の修復 → 劣化（#R350）。正常経路は 1 回のまま
+atlas-answer-audit.js             Atlas — 回答の監査（#R350／#R472）。冒頭結論と本文の矛盾、統計系列の混同、%とポイント、
+                                  裏付けのない数値、本文中の URL など 39 のコードを構造から出す。所見であって判決ではない
+atlas-answer-pipeline.js          Atlas — 台帳 → 1 回の呼び出し → 監査 → Atlas へ報告（#R350／#R472）。
+                                  監査は回答を書き換えず・削らず・問い直さない。所見は Atlas が読んで判断する
 atlas-answer-render.js            Atlas — 構造化回答の描画（#R350）。引用記号と出典カードはレジストリからのみ生成し、
                                   モデルが書いた URL はリンクにしない
 ```
