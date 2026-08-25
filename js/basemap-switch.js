@@ -197,7 +197,7 @@ window.IntMapBasemapSwitch = (function () {
 
   function buildPop() {
     var d = document.createElement('div');
-    d.className = 'bm-pop'; d.id = 'bm-pop'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Base map');
+    d.className = 'bm-pop'; d.id = 'bm-pop'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', L('Base map', 'ベースマップ', 'Basiskarte', 'Базовая карта', 'Mapa base'));
     /* the SAME data-proxy ids the retired .m-seg-block carried — see the header */
     /* ⚠ The two headings go through L(…) rather than `data-i18n`, and the five buttons carry NO words
        at all — js/mobile-ui.js's syncControls() copies each one's label off the real control it
@@ -222,7 +222,7 @@ window.IntMapBasemapSwitch = (function () {
     if (host) return;
     host = document.createElement('button');
     host.type = 'button'; host.className = 'bm-square'; host.id = 'bm-square';
-    host.setAttribute('aria-label', 'Base map and projection');
+    host.setAttribute('aria-label', L('Base map and projection', 'ベースマップと投影法', 'Basiskarte und Projektion', 'Базовая карта и проекция', 'Mapa base y proyección'));
     cv = document.createElement('canvas'); cv.width = cv.height = SIZE;
     cap = document.createElement('span'); cap.className = 'bm-cap';
     host.appendChild(cv); host.appendChild(cap);

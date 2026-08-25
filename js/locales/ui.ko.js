@@ -231,6 +231,9 @@ window.IntMapLang.define('ko', { ui: {
       viewScience:"각 시뮬레이션의 계산 방법 보기 ↗",
       viewSourcesPage:"데이터 출처 페이지 열기 ↗",
       wsHint:"뉴스·국가·지도·레이어·Atlas가 각각 독립된 창이 되어 자유롭게 옮기고 크기를 바꾸고 접고 겹칠 수 있습니다. 배치는 저장됩니다.",
+    
+      ttlLayersPanel:"레이어",
+      ttlFavorite:"즐겨찾기",
     }, inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     'A new version of IntMap is available. Reload to continue.': 'IntMap의 새 버전이 배포되었습니다. 계속하려면 새로 고치세요.',
@@ -5818,4 +5821,10 @@ window.IntMapLang.define('ko', { ui: {
   "South Asia": "남아시아",
   "Southeast Asia": "동남아시아",
   "East Asia": "동아시아",
+  "API key": "API 키",
+  "Base map and projection": "배경지도 및 투영법",
+  "Close popup": "팝업 닫기",
+  "email": "이메일",
+  "file: ": "파일: ",
+  "remove": "제거",
 } });

@@ -247,4 +247,7 @@ window.IntMapLang.define('en', { ui: {
       lblNavInertia:'Inertia',
       lblWsMode:'Window workspace (desktop)',
       wsHint:'News, Countries, the map, layers and Atlas each become their own window you can move, resize, collapse and stack freely. Your layout is saved.',
+    
+      ttlLayersPanel:"Layers",
+      ttlFavorite:"Favorite",
     } });

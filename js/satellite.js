@@ -9,7 +9,7 @@
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.satellite=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
+ const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
      A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
      isStyleLoaded() test only if the host is somehow absent. */
@@ -142,7 +142,7 @@ window.IntMapModules.satellite=function(HOST){
     } else {
       dateCtrl=`<div class="satc-row"><label>${HOST.t('satDate')}</label><span class="satc-latest">${HOST.t('satLatest')}</span></div>`;
     }
-    panel.innerHTML=`<div class="satc-head">📡 <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="Close" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
+    panel.innerHTML=`<div class="satc-head">📡 <span>${HOST.t('satCtrlTitle')}</span><button id="satc-close" title="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" aria-label="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}" style="margin-left:auto;background:transparent;border:none;color:var(--text-muted);width:26px;height:26px;font-size:22px;font-weight:300;line-height:1;cursor:pointer;">×</button></div>`+
       `<div class="satc-row"><label>${HOST.t('satProvider')}</label><select id="satc-provider">${opts}</select></div>`+
       dateCtrl+
       `<div class="satc-row"><label>${HOST.t('opacity')}</label><input type="range" id="satc-op" min="0.2" max="1" step="0.05" value="${HOST.satState.opacity}"></div>`+

@@ -247,4 +247,7 @@ window.IntMapLang.define('jp', { ui: {
       lblNavInertia:'慣性（0で無効）',
       lblWsMode:'ウィンドウ・ワークスペース（デスクトップ）',
       wsHint:'ニュース・国・地図・レイヤー・Atlasがそれぞれ独立したウィンドウになり、自由に移動・リサイズ・折りたたみ・重ね替えできます。レイアウトは保存されます。',
+    
+      ttlLayersPanel:"レイヤー",
+      ttlFavorite:"お気に入り",
     } });

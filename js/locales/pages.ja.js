@@ -11,6 +11,7 @@ window.IntMapPageI18N=window.IntMapPageI18N||{_d:{},define:function(c,d){this._d
 window.IntMapPageI18N.define('ja', {
 
   common: {
+    language: '言語',
     backToMap: '地図に戻る',
     contents: '目次',
     toScience: '科学的根拠とロジック',

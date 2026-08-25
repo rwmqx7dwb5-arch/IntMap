@@ -236,6 +236,9 @@ window.IntMapLang.define('zh', {
       aiVisHead:"AI 變化偵測", aiVisBtn:"偵測變化", aiVisTitle:"衛星影像變化報告", aiVisSub:"比較 {a} → {b}", aiVisBefore:"之前", aiVisAfter:"之後", aiVisCapturing:"正在擷取影像…", aiVisPickDates:"請選擇兩個日期進行比較。", aiVisNeedsDated:"請在衛星模式中改用可選日期的提供者（MODIS／VIIRS／Sentinel-2）。", aiVisCapFail:"無法擷取地圖影像。" 
 ,
       tabMonitors:"監控",
+    
+      ttlLayersPanel:"圖層",
+      ttlFavorite:"收藏",
     },
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
@@ -6038,5 +6041,11 @@ window.IntMapLang.define('zh', {
   "South Asia": "南亞",
   "Southeast Asia": "東南亞",
   "East Asia": "東亞",
+  "API key": "API 金鑰",
+  "Base map and projection": "底圖與投影",
+  "Close popup": "關閉彈出視窗",
+  "email": "電子郵件",
+  "file: ": "檔案: ",
+  "remove": "移除",
   }
 });
