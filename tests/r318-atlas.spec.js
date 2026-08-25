@@ -13,6 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { installHermeticRouting, collectPageDiagnostics } from './helpers/network.js';
 import { seededStorageState } from './helpers/session-seed.js';
+import { declaredCapabilityIds } from './helpers/atlas-registry.mjs';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -205,9 +206,16 @@ test('R406 ①: the built app binds the real argument schemas, not the permissiv
     const C = window.IntMapCapabilities;
     const fly = C.resolve('view.flyTo').inputSchema;
     const empty = C.all().filter((c) => !c.inputSchema || !Object.keys(c.inputSchema.properties || {}).length).map((c) => c.id);
-    return { caps: C.all().length, flyProps: Object.keys(fly.properties || {}), lat: fly.properties && fly.properties.lat, empty };
+    return { ids: C.all().map((c) => c.id).sort(), flyProps: Object.keys(fly.properties || {}), lat: fly.properties && fly.properties.lat, empty };
   });
-  expect(r.caps).toBe(126);
+  /* ⚠⚠⚠ (#R475) THIS ASSERTION WAS A TYPED INTEGER, AND IT WAS NEVER MEASURING THE BUILD.
+     #R439 added `layers.isobars` (→127) and it went red every night; #R469 removed `sim.slopeAspect`
+     (→126) and it went green again — on two rounds that never opened this file. What the assertion
+     MEANS is «the registry crossed the build whole», so it is asked that way: the ids the source
+     declares against the ids the built app answers with. Stronger than a size — a swapped id has
+     the same length — and it moves with the registry instead of against it. (#R433: the answer is
+     never a bigger number.) */
+  expect(r.ids, 'the built bundle carries a different registry than js/atlas-capabilities.js declares').toEqual(declaredCapabilityIds());
   expect(r.flyProps, 'view.flyTo still has the empty schema in the built app').toContain('place');
   expect(r.lat, 'the coordinate bounds did not survive the build').toMatchObject({ minimum: -90, maximum: 90 });
   expect(r.empty, 'capabilities still carrying a schema that accepts any object').toEqual([]);
