@@ -79,11 +79,48 @@ window.IntMapModules.aiCore=function(HOST){
       aiSetUsage(data && typeof data.count==='number' ? data.count : 0, aiDailyLimit());
     }catch(_){}
   }
+  /* ══ (#R447) THE COUNTER IS A MIRROR OF THE SERVER'S ROW — NEVER A GUESS ═══════════════════
+     Observed in production 2026-08-25: Atlas answered «本日の無料AI使用回数に達しました。» with NOT ONE
+     network request made, while public.ai_usage for that account read count = 0. The number came
+     from here. A 429 that ai-proxy did not write used to be believed anyway — the handler in
+     aiCallServerFull wrote `used = the limit` into this mirror — and neither of ai-proxy's own
+     429s can even happen at count 0 (`limit` needs a row already AT the limit; `turn_calls` needs
+     a turn whose first call charged, so ≥ 1), which is what proves the number was invented rather
+     than received. Both of ai-proxy's 429s carry `used`; anything else is a 429 from IN FRONT of
+     the function and says nothing about the reader's day.
+
+     So: ① only a number the server sent may be written to the mirror (aiSetUsage), and ② when the
+     mirror says «no uses left», the row is RE-READ before anybody is turned away — public.ai_usage
+     is readable by its owner under RLS, so the authority is one small SELECT away. Reloading the
+     page used to be the only way back: nothing re-synced except a login or opening Settings. */
+  let _aiUsageSyncAt=0, _aiUsageSyncing=null;
+  const _aiNow=()=>{ try{ return Date.now(); }catch(_){ return 0; } };
+  /* the ONE spelling of the client-side quota rule — three hand-written copies of it is how a stale
+     mirror got to refuse a whole turn inside a file that never asks the server (js/atlas-console.js). */
+  function aiOverQuota(){ try{ return HOST.aiUsage.date===aiToday() && aiUsesLeft()<=0; }catch(_){ return false; } }
+  /* Re-read today's row. Throttled, coalesced, and it never rejects — a gate must not depend on it. */
+  function aiResyncUsage(){
+    if(_aiUsageSyncing) return _aiUsageSyncing;
+    const now=_aiNow();
+    if(now && (now-_aiUsageSyncAt)<10000) return Promise.resolve();
+    _aiUsageSyncAt=now;
+    _aiUsageSyncing=Promise.resolve().then(()=>aiFetchUsage()).catch(()=>{}).then(()=>{ _aiUsageSyncing=null; });
+    return _aiUsageSyncing;
+  }
+  /* «Is this reader out of uses?» — asked of the SERVER whenever the mirror says yes. Every
+     asynchronous gate uses this one; aiGate() stays synchronous (it is called from click handlers)
+     and re-syncs in the background so the next click is answered from the server's number. */
+  async function aiQuotaBlocked(){
+    if(!aiOverQuota()) return false;
+    try{ await aiResyncUsage(); }catch(_){}
+    return aiOverQuota();
+  }
   /* The single click-time gate every AI feature runs FIRST. Extensible: future paid plans only need to
      raise the limit the server returns (aiUsage.limit) — no per-feature change. */
   function aiGate(){
     if(typeof HOST.user==='undefined' || !HOST.user){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){ try{ aiToast(aiLoginMsg()); }catch(__){} } return false; }
-    if(HOST.aiUsage.date===aiToday() && aiUsesLeft()<=0){ try{ aiToast(aiLimitMsg()); }catch(_){} return false; }
+    if(aiOverQuota()){ try{ aiResyncUsage(); }catch(_){}   /* (#R447) ask the row, so a stale mirror costs one click and not a reload */
+      try{ aiToast(aiLimitMsg()); }catch(_){} return false; }
     return true;
   }
   /* (#R113) Map a typed PROVIDER error (ai-proxy 502/503) to a clear, localized message. These are DISTINCT from
@@ -148,11 +185,26 @@ window.IntMapModules.aiCore=function(HOST){
     if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
     const r=await fetch(cfg.url,fetchOpts);
     if(r.status===401){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
-    if(r.status===429){ let j=null; try{ j=await r.json(); }catch(_){} if(j&&typeof j.used==='number') aiSetUsage(j.used, j.limit); else { HOST.aiUsage.date=aiToday(); HOST.aiUsage.used=aiDailyLimit(); }
+    if(r.status===429){
+      /* ⚠ (#R447) READ THE BODY ONCE AND KEEP IT. This used to consume the response with r.json()
+         and drop everything when that threw — so the one 429 nobody could account for left nothing
+         to account for it BY. window._aiLast429 is what the next occurrence gets diagnosed from. */
+      let raw=''; try{ raw=await r.text(); }catch(_){ raw=''; }
+      let j=null; try{ j=JSON.parse(raw); }catch(_){ j=null; }
+      /* ⚠ (#R447) ONLY IntMap'S OWN QUOTA MAY WRITE THE QUOTA MIRROR. ai-proxy answers 429 in exactly
+         two places and both name themselves; a 429 from in front of the function (a platform / edge
+         rate limit) knows nothing about the reader's day, and reading it as "your free uses are gone"
+         is what pinned a page whose server-side count was 0. */
+      const mine=!!(j&&(j.error==='limit'||j.error==='turn_calls'));
+      try{ window._aiLast429={ at:_aiNow(), attributed:mine, error:(j&&j.error)||null,
+        used:(j&&typeof j.used==='number')?j.used:null, body:String(raw||'').slice(0,300) }; }catch(_){}
+      if(!mine){ try{ aiResyncUsage(); }catch(_){}   /* the row, not a guess */
+        throw new Error(aiProviderErrMsg('provider_rate_limit')); }
+      if(typeof j.used==='number') aiSetUsage(j.used, j.limit); else { try{ aiResyncUsage(); }catch(_){} }
       /* (#R318) two different 429s. "limit" = the day's free uses are gone. "turn_calls" = THIS one
          request has already asked the model as many times as a request may — a bug in the repair
          loop, not a bill the reader owes, so it must not read as "you are out of uses". */
-      if(j&&j.error==='turn_calls') throw new Error(aiTurnCallsMsg());
+      if(j.error==='turn_calls') throw new Error(aiTurnCallsMsg());
       throw new Error(aiLimitMsg()); }
     if(!r.ok){
       /* (#R113) a typed PROVIDER error (502/503) is NOT the IntMap daily limit — surface a clear, distinct message
@@ -184,7 +236,7 @@ window.IntMapModules.aiCore=function(HOST){
     /* Account-based path (always on). Gate first so we never spend a network round-trip when the user
        is logged out / over quota, and so the auth modal opens immediately. */
     if(!HOST.user){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
-    if(HOST.aiUsage.date===aiToday() && aiUsesLeft()<=0){ throw new Error(aiLimitMsg()); }
+    if(await aiQuotaBlocked()){ throw new Error(aiLimitMsg()); }   /* (#R447) the SERVER's number, re-read when the mirror says no */
     if(aiProxyOn()) return aiCallServer(prompt, systemPrompt, imgs, opts);
     throw new Error(aiLimitMsg());
   }
@@ -196,7 +248,7 @@ window.IntMapModules.aiCore=function(HOST){
   async function askAIEnvelope(prompt, systemPrompt, imageDatas, opts){
     const imgs=(imageDatas||[]).filter(Boolean);
     if(!HOST.user){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
-    if(HOST.aiUsage.date===aiToday() && aiUsesLeft()<=0){ throw new Error(aiLimitMsg()); }
+    if(await aiQuotaBlocked()){ throw new Error(aiLimitMsg()); }   /* (#R447) the same one answer */
     if(aiProxyOn()) return aiCallServerFull(prompt, systemPrompt, imgs, opts);
     throw new Error(aiLimitMsg()); }
   async function askAIJSONEnvelope(prompt, systemPrompt, imageDatas, opts){ opts=opts||{}; if(!opts.task) opts.task='json_extract';
@@ -304,5 +356,5 @@ window.IntMapModules.aiCore=function(HOST){
   function aiWaitMapIdle(timeout){ return new Promise(res=>{ const E=window.IntMapGeoEngine; if(!E){ res(); return; } let done=false;
     const fin=()=>{ if(done)return; done=true; try{ E.events.off('idle',fin); }catch(_){} res(); };
     try{ E.events.on('idle',fin); }catch(_){ } setTimeout(fin,timeout||4500); }); }
-  return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIJSON, askAIJSONEnvelope };
+  return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiQuotaBlocked, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIJSON, askAIJSONEnvelope };
 };
