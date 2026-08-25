@@ -132,7 +132,7 @@ test('R406 ③b: the persistent instruction is a paragraph, not a rulebook', asy
 });
 
 /* ── ④ every capability declares its arguments ────────────────────────────────────────────── */
-test('R406 ④: all 126 capabilities have an action-specific schema, and a required target is demanded', async () => {
+test('R406 ④: every capability has an action-specific schema, and a required target is demanded', async () => {
   if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
   const CAPS = (await import('../js/atlas-capabilities.js')).makeAtlasCapabilities({});
   const S = (await import('../js/atlas-schemas.js')).makeAtlasSchemas();
@@ -149,6 +149,10 @@ test('R406 ④: all 126 capabilities have an action-specific schema, and a requi
   assert.deepEqual(missing, [], 'capabilities with no argument schema');
   assert.deepEqual(empty, [], 'capabilities whose schema accepts any object at all');
   assert.deepEqual(undemanded, [], 'capabilities that need a target but demand nothing');
+  /* ⚠ A FLOOR, DELIBERATELY — NOT A PIN (#R474). Adding a capability cannot break it; only
+     withdrawing one below the historic low can, and that is the alarm it exists to raise. The
+     EQUALITY spelling of this claim is what went red every night in tests/r318-atlas.spec.js,
+     and tests/r474-checks ② sweeps for it — floors are exempted there for this reason. */
   assert.ok(all.length >= 126, `the registry shrank to ${all.length}`);
   /* the schema table must not name capabilities that do not exist */
   const known = new Set(all.map((c) => c.id));
@@ -158,7 +162,7 @@ test('R406 ④: all 126 capabilities have an action-specific schema, and a requi
 test('R406 ④b: the registry no longer hands every capability the same schema literal', () => {
   const caps = codeOnly(read('js/atlas-capabilities.js'));
   assert.doesNotMatch(caps, /inputSchema:\s*\{\s*type:\s*'object'\s*\}/,
-    'build() is hard-coding one empty schema for all 126 again');
+    'build() is hard-coding one empty schema for all of them again');
 });
 
 /* ── ⑤ the loop's ceilings are technical, and inside the server's ─────────────────────────── */
