@@ -72,6 +72,5 @@
  " last eruption": [" letzter Ausbruch", " последнее извержение", " última erupción", " dernière éruption", "년 마지막 분화", " 年最後噴發"],
  "Could not load volcano data": ["Vulkandaten konnten nicht geladen werden", "Не удалось загрузить данные о вулканах", "No se pudieron cargar los datos de volcanes", "Impossible de charger les données volcaniques", "화산 데이터를 불러오지 못했습니다", "無法載入火山資料"],
  "Erupted since 1950": ["Ausbruch seit 1950", "Извергался с 1950 года", "Con erupción desde 1950", "Éruption depuis 1950", "1950년 이후 분화", "1950 年以後噴發"],
- "Erupted since 1500": ["Ausbruch seit 1500", "Извергался с 1500 года", "Con erupción desde 1500", "Éruption depuis 1500", "1500년 이후 분화", "1500 年以後噴發"],
- "Older / undated": ["Älter / undatiert", "Раньше / без даты", "Anterior / sin fecha", "Antérieur / non daté", "그 이전 · 기록 없음", "更早／無紀錄"]
+ "Erupted since 1500": ["Ausbruch seit 1500", "Извергался с 1500 года", "Con erupción desde 1500", "Éruption depuis 1500", "1500년 이후 분화", "1500 年以後噴發"]
 }

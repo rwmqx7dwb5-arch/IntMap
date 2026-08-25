@@ -65,7 +65,7 @@ window.IntMapLang.define('fr', { ui: {
       ttlTools:"Outils",
       phAisKey:"Clé d’API aisstream.io",
       lnkTerms:"Conditions d'utilisation", lnkPrivacy:"Politique de confidentialité", legalTabTerms:"Conditions", legalTabPrivacy:"Confidentialité", commAddImage:"Ajouter une image",
-      tabNews:"Actualités", tabSaved:"★ Enregistrés", tabInfo:"Informations", tabCompanies:"Entreprises", tabStats:"Pays", tabCommunity:"Communauté",
+      tabNews:"Actualités", tabCompanies:"Entreprises", tabStats:"Pays", 
       searchPh:"Rechercher actualités / lieux...", filterCountriesPh:"Filtrer les pays...", filterCompaniesPh:"Filtrer les entreprises...", evCatsAria:"Catégories d’événements", pickCountryMap:"Choisir un pays sur la carte", searchBtn:"Rechercher", searchLoadBtn:"Rechercher / Charger", loading:"Chargement des articles...",
       noMatch:"Aucun résultat.", networkError:"Impossible de charger les actualités. Nouvelle tentative…",
       emptyHint:"Aucun onglet sélectionné — la carte est dégagée.<br>Choisissez un onglet ci-dessus pour afficher du contenu.",
@@ -75,38 +75,34 @@ window.IntMapLang.define('fr', { ui: {
       lblTheme:"Thème", lblTz:"Fuseau horaire", tzSearch:"Rechercher un fuseau…", btnApply:"Appliquer", optAuto:"Réglage du système", optLocal:"Local (réglage du système)",
       dashCatMil:"Bases militaires", dashCatTech:"Tech / Cyber", dashCatMar:"Maritime / Détroits", dashCatGeo:"Géo / Climat",
       readWiki:"Lire sur Wikipédia ↗", measure:"Mesurer", areaTool:"Surface", radius:"Rayon", vol3dTool:"Volume 3D", points:"Points", total:"Total", perimeter:"Périmètre", area:"Surface", clear:"Effacer", undoPt:"Annuler le point",
-      measureHint:"Cliquez pour ajouter des points · double-cliquez pour terminer", areaHint:"Ajoutez au moins 3 points pour fermer · double-cliquez pour terminer", radiusHint:"Cliquez sur la carte pour placer un cercle. Plusieurs cercles possibles.",
-      placeNames:"Noms de lieux", geoLabels:"Hydrographie et relief", adminBounds:"Limites régionales", roadsLayer:"Routes", railLayer:"Voies ferrées", countries:"Pays (infos)", addCircle:"Placer un cercle", removeAll:"Tout effacer", color:"Couleur",
-      statPop:"Population", statGdp:"PIB (nominal)", statGdpPc:"PIB par habitant", statGdpPPP:"PIB (PPA)", statGdpPcPPP:"PIB par habitant (PPA)", statArea:"Superficie", statDensity:"Densité de population", statRegion:"Région", statSub:"Sous-région", statCapital:"Capitale", statCurrency:"Monnaie", statLang:"Langues", statHDI:"IDH", statDem:"Indice de démocratie", statMil:"Dépenses militaires", statLife:"Espérance de vie", statInet:"Internautes",
+      radiusHint:"Cliquez sur la carte pour placer un cercle. Plusieurs cercles possibles.",
+      placeNames:"Noms de lieux", geoLabels:"Hydrographie et relief", adminBounds:"Limites régionales", roadsLayer:"Routes", railLayer:"Voies ferrées", countries:"Pays (infos)", removeAll:"Tout effacer", color:"Couleur",
+      statPop:"Population", statGdp:"PIB (nominal)", statGdpPc:"PIB par habitant", statGdpPPP:"PIB (PPA)", statGdpPcPPP:"PIB par habitant (PPA)", statArea:"Superficie", statDensity:"Densité de population", statRegion:"Région", statCapital:"Capitale", statCurrency:"Monnaie", statLang:"Langues", statHDI:"IDH", statDem:"Indice de démocratie", statMil:"Dépenses militaires", statLife:"Espérance de vie", statInet:"Internautes",
       details:"Détails ↗", loadingData:"Chargement des données du pays...", dataNA:"N/D", noData:"Données du pays indisponibles.", sortGdp:"PIB", sortPop:"Pop.", sortArea:"Surf.", sortName:"A–Z", sortHDI:"IDH", sortMil:"Mil.$", elev:"Alt.", bearing:"Azimut", presetNone:"— choisir —", presetLbl:"Plages prédéfinies", opacity:"Opacité", circumference:"Circonférence", lblUnits:"Unités de mesure", unitBoth:"Métrique + impérial", unitMetric:"Métrique seulement", unitImperial:"Impérial seulement", msPh:"Rechercher n'importe quel lieu sur Terre...",
-      spRunway:"Piste", spGarrison:"Garnison", spOperator:"Exploitant", spEstd:"Créé en", spAircraft:"Aéronefs", spType:"Type", spCapacity:"Capacité", spDepth:"Profondeur", spOutput:"Production", spReserves:"Réserves",
-      flat:"Plat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grille", gridLayer:"🌐 Grille et repères", widgetsBtn:"Widgets", lblTempUnit:"Température", tempBoth:"°C + °F", tempC:"°C seulement", tempF:"°F seulement", measureBtn:"📏 Mesurer", measureMenuBtn:"Mesurer", measureDistBtn:"📏 Distance / surface", areaBtn:"📐 Surface", drawBtn:"✏️ Dessiner", vol3dBtn:"🧊 Volume 3D", droneBtn:"🛸 Drone", radiusBtn:"⭕ Rayon", objectsBtn:"🗂 Objets", mScreenshot:"Capture de la carte", shareMenuBtn:"Partager", shareLinkBtn:"Partager / copier le lien", layersBtn:"Calques ▾",
-      ctxDropPin:"Poser un repère", ctxMeasureFrom:"Commencer à mesurer", ctxPostHere:"Publier dans la communauté", ctxDistFrom:"Distance depuis le repère précédent", ctxCopy:"Copier les coordonnées", ctxClearPins:"Supprimer tous les repères", ctxThisPoint:"Ce point", coords:"Coordonnées", depth:"Profondeur", climate:"Climat", tlToday:"Aujourd'hui", tlTitle:"Chronos", tlMachine:"Chronos", tl10y:"−10 ans", tl5y:"−5 ans", tlNow:"Maintenant",
+      spType:"Type", 
+      flat:"Plat", globe:"Globe", threeD:"⛰️ 3D", gridBtn:"🌐 Grille", gridLayer:"🌐 Grille et repères", lblTempUnit:"Température", tempBoth:"°C + °F", tempC:"°C seulement", tempF:"°F seulement", measureMenuBtn:"Mesurer", measureDistBtn:"📏 Distance / surface", drawBtn:"✏️ Dessiner", vol3dBtn:"🧊 Volume 3D", radiusBtn:"⭕ Rayon", objectsBtn:"🗂 Objets", mScreenshot:"Capture de la carte", shareMenuBtn:"Partager", shareLinkBtn:"Partager / copier le lien", layersBtn:"Calques ▾",
+      ctxDropPin:"Poser un repère", ctxMeasureFrom:"Commencer à mesurer", ctxPostHere:"Publier dans la communauté", ctxDistFrom:"Distance depuis le repère précédent", ctxCopy:"Copier les coordonnées", ctxClearPins:"Supprimer tous les repères", ctxThisPoint:"Ce point", coords:"Coordonnées", depth:"Profondeur", climate:"Climat", tlMachine:"Chronos", 
       lyrEEZ:"ZEE / 12 milles marins", lyrShips:"Trafic maritime en direct", lyrPlanes:"Trafic aérien en direct", lyrSats:"Satellites en direct", lyrThermal:"Anomalies thermiques (incendies)", planesZoomHint:"Zoomez pour charger les aéronefs en direct", planesAreaHint:"Zoomez — les aéronefs en direct couvrent la zone centrale de cette vue", poiLabels:"Lieux, commerces et équipements", shipsZoomHint:"Zoomez pour charger les navires en direct", aisNoKey:"Le trafic maritime en direct nécessite une clé API AISstream.io gratuite — ajoutez-la dans les Paramètres.", aisKeyLabel:"Trafic maritime en direct (clé AISstream)", aisKeyHint:"Obtenez une clé gratuite sur aisstream.io et collez-la ici pour voir le trafic maritime en direct. Stockée uniquement dans ce navigateur.",
       filtCiv:"Civil", filtMil:"Militaire", filtAll:"Tous", trafficFilter:"Filtre", lyrTime:"Date du calque", thermWin24:"24 dernières h", thermWin48:"48 dernières h", thermWin72:"72 dernières h",
-      commAdd:"+ Nouveau message", commAddArmed:"Cliquez sur la carte pour placer le repère", commTitle:"Titre", commBody:"Partagez une observation, une question ou une hypothèse...", commPost:"Publier", commCancel:"Annuler", commEmpty:"Aucun message. Cliquez sur « + Nouveau message » pour lancer la discussion.", commComment:"Commenter", commLocate:"Voir sur la carte", commDelete:"Supprimer", commReply:"Répondre", commWrite:"Écrire un commentaire...", commPostNew:"Nouveau message", commPlacedAt:"Placé à", commSortHot:"Populaires", commSortNew:"Récents", commSortTop:"Meilleurs", commSearchPh:"Rechercher des messages…", commInView:"Dans la vue", commCat:"Catégorie", commCatAll:"Toutes", commEdit:"Modifier", commEdited:"modifié", commEditPost:"Modifier le message", commSaveEdit:"Enregistrer", commNoMatch:"Aucun message ne correspond à vos filtres.", borders:"Frontières", coastline:"Littoraux et rives", compare:"Comparer", compareEmpty:"Touchez des lignes de pays pour les sélectionner et les comparer.", coCompareEmpty:"Touchez des lignes d'entreprises pour les sélectionner et les comparer.", compareView:"Afficher la comparaison", compareClear:"Effacer", back:"Retour", deletePin:"Supprimer",
+      commAdd:"+ Nouveau message", commTitle:"Titre", commBody:"Partagez une observation, une question ou une hypothèse...", commPost:"Publier", commCancel:"Annuler", commEmpty:"Aucun message. Cliquez sur « + Nouveau message » pour lancer la discussion.", commLocate:"Voir sur la carte", commDelete:"Supprimer", commReply:"Répondre", commWrite:"Écrire un commentaire...", commPostNew:"Nouveau message", commPlacedAt:"Placé à", commSortHot:"Populaires", commSortNew:"Récents", commSortTop:"Meilleurs", commSearchPh:"Rechercher des messages…", commInView:"Dans la vue", commCat:"Catégorie", commCatAll:"Toutes", commEdit:"Modifier", commEdited:"modifié", commEditPost:"Modifier le message", commSaveEdit:"Enregistrer", commNoMatch:"Aucun message ne correspond à vos filtres.", borders:"Frontières", coastline:"Littoraux et rives", compare:"Comparer", compareEmpty:"Touchez des lignes de pays pour les sélectionner et les comparer.", coCompareEmpty:"Touchez des lignes d'entreprises pour les sélectionner et les comparer.", compareView:"Afficher la comparaison", compareClear:"Effacer", back:"Retour", deletePin:"Supprimer",
       satCtrlTitle:"Imagerie satellite", satProvider:"Fournisseur", satDate:"Date de prise de vue", satLatest:"La plus récente", satMosaicSuffix:"mosaïque sans nuages", satLocked:"clé API requise", satPrevDay:"Jour précédent", satNextDay:"Jour suivant", satKeysTitle:"Imagerie satellite (clé personnelle)", satKeyHint:"Saisissez une clé API pour débloquer ces fournisseurs dans le panneau Satellite. Les clés sont stockées uniquement dans ce navigateur.", satKeyConnected:"Connecté", satKeyNone:"Aucune clé", satErrAuth:"{provider} : échec de l'authentification — vérifiez la clé API", satErrTiles:"{provider} : imagerie indisponible — basculement sur la source de secours",
       aiSecTitle:"Fonctions IA", aiSecHint:"IA intégrée — gratuite pour les utilisateurs connectés (jusqu'à 10 usages par jour). Aucune clé API nécessaire.",
-      aiProvider:"Fournisseur d'IA", aiModel:"Modèle", aiApiKey:"Clé API", aiKeyConnected:"Connecté", aiKeyNone:"Aucune clé", aiGetKey:"Obtenir une clé ↗", aiOnDevice:"Fonctionne sur l'appareil dans Chrome — aucune clé API nécessaire.",
-      aiTest:"Tester la connexion", aiTesting:"Test en cours…", aiTestOk:"Connexion OK ✓",
+      aiProvider:"Fournisseur d'IA", 
       aiNoKey:"Ajoutez d'abord une clé API dans Paramètres → Fonctions IA.", aiNoVision:"Ce modèle ne peut pas lire les images. Choisissez GPT-4o, Claude 3.5 Sonnet ou Gemini 1.5 Pro.",
-      aiChromeUnavail:"L'IA intégrée de Chrome n'est pas disponible ici. Utilisez Chrome 127+ avec l'IA sur l'appareil activée, ou choisissez un autre fournisseur.",
       aiThinking:"L'IA analyse…", aiError:"Échec de la requête IA", aiCopy:"Copier", aiCopied:"Copié ✓", aiClose:"Fermer", aiRetry:"Réessayer",
-      aiGeoBtn:"✨ Localiser toutes les actualités par IA", aiTranslateTitles:"Traduire les titres", aiTransBusy:"Traduction…", aiTransDone:"{n} titres traduits", aiTransNone:"Les titres sont déjà dans votre langue.",
-      lblNewsLang:"Langues des actualités", newsLangUi:"Langue actuelle uniquement", newsLangMulti:"Toutes les langues (traduction automatique des titres)", lblAiLocate:"Analyse de localisation par IA", aiLocManual:"Manuelle (bouton)", aiLocAuto:"Automatique pour toutes les actualités",
+      aiTranslateTitles:"Traduire les titres", aiTransBusy:"Traduction…", aiTransDone:"{n} titres traduits", aiTransNone:"Les titres sont déjà dans votre langue.",
+      lblNewsLang:"Langues des actualités", newsLangUi:"Langue actuelle uniquement", newsLangMulti:"Toutes les langues (traduction automatique des titres)", 
       aiTranslate:"Traduire", aiShowOriginal:"Original", aiTransNoText:"Aucun texte d'article à traduire — essayez la vue Web.",
       aiSumBtn:"Résumer cette zone avec l'IA", popInArea:"Population dans cette zone", popCalcing:"Calcul de la population…", popFail:"Échec du calcul de population — réessayez.", newsInArea:"Actualités dans cette zone", elevProfile:"Profil altimétrique", finalizeMeas:"Conserver sur la carte", aiSumTitle:"Synthèse de zone", aiSumSub:"{n} repères d'actualité dans la zone sélectionnée", aiSumNoArea:"Dessinez d'abord une zone ou placez un cercle.", aiSumNoNews:"Aucun repère d'actualité dans cette zone.",
       aiVisHead:"Détection de changements par IA", aiVisBtn:"Détecter les changements", aiVisTitle:"Rapport de changement satellite", aiVisSub:"Comparaison {a} → {b}", aiVisBefore:"Avant", aiVisAfter:"Après", aiVisCapturing:"Capture de l'imagerie…", aiVisPickDates:"Choisissez deux dates à comparer.", aiVisNeedsDated:"Passez à un fournisseur avec dates (MODIS / VIIRS / Sentinel-2) en mode Satellite.", aiVisCapFail:"Impossible de capturer l'imagerie de la carte."
 ,
       accentCustom:"Couleur personnalisée",
       accentDefault:"Par défaut",
-      atlasBtn:"Atlas — demandez en langage courant (bêta) · Ctrl/⌘+K",
       blueberryBody:"Mon objectif est de bâtir une carte où la géographie, le climat, l'histoire, l'écologie, la démographie et l'actualité mondiale s'explorent au même endroit.\nIntMap est développé de façon indépendante et s'enrichit continuellement de nouveaux calques, jeux de données et fonctions.\nSi vous appréciez IntMap et souhaitez soutenir son développement, vous pouvez contribuer ci-dessous.",
       blueberryBtn:"Soutenir",
       blueberryGo:"Choisir un montant ↗",
       blueberryNote:"Ouvre une page externe (Stripe).",
       blueberryTitle:"Soutenir IntMap",
-      climAt:"Climat",
       engineActive:"Moteur actif : ",
       engineCesium:"Cesium — véritable globe 3D avec relief réel",
       engineFellBack:"Cesium n'a pas pu démarrer ; cette session fonctionne donc avec MapLibre.",
@@ -119,8 +115,6 @@ window.IntMapLang.define('fr', { ui: {
       labelLangEn:"Toujours en anglais",
       labelLangLocal:"Langue locale (écriture d'origine)",
       labelLangUi:"Suivre la langue de l'application",
-      layerPanelClassic:"Menu déroulant classique",
-      layerPanelRight:"Barre latérale droite (visuelle, avec aperçus)",
       lblAccent:"Couleur d'accentuation",
       lblDataSources:"Sources des données",
       lblEngine:"Moteur de carte",
@@ -129,7 +123,6 @@ window.IntMapLang.define('fr', { ui: {
       lblKbd:"Raccourcis clavier",
       lblLabelLang:"Étiquettes de noms de lieux",
       lblLang:"Langue",
-      lblLayerPanel:"Panneau des calques",
       lblMapColor:"Couleur de la carte",
       lblNavInertia:"Inertie",
       lblNavPan:"Déplacement",
@@ -138,22 +131,15 @@ window.IntMapLang.define('fr', { ui: {
       lblNewsCountries:"Actualités par média national",
       lblNewsSources:"Médias d'actualité",
       lblNightSide:"Ombrage jour / nuit",
-      lblPlayground:"Terrain de jeu (bêta)",
       lblScience:"Science et logique",
       lblShowRank:"Numéros de rang (Pays)",
       lblSidebarStyle:"Apparence de la barre latérale",
-      lblSourcesPage:"Sources des données",
       lblTicker:"Bandeau inférieur (actualités et marchés)",
       lblTiltLimit:"Limite d'inclinaison de la carte",
       lblWsMode:"Espace de travail en fenêtres (ordinateur)",
       lgdRadarTitle:"Intensité des précipitations",
-      lgdReliefTitle:"Altitude",
       lgdSSTTitle:"Temp. de surface de la mer",
-      lgdSeaLevelTitle:"Variation du niveau de la mer",
-      lgdSubcablesTitle:"Câbles sous-marins",
-      lgdTempTitle:"Temp. de l'air (2 m)",
       lgdTitle:"Köppen–Geiger",
-      lgdWindTitle:"Vitesse du vent",
       lyrAOD:"Aérosols / brume",
       lyrClimate:"Climats de Köppen",
      lyrContours:"Courbes de niveau",
@@ -180,7 +166,6 @@ window.IntMapLang.define('fr', { ui: {
       lyrGrpOthersReal:"Autres",
       lyrGrpTerrain:"Relief et altitude",
       lyrGrpNature:"Nature et couverture du sol",
-      lyrGrpWeather:"Météo et environnement",
       lyrHDI:"IDH (2022)",
       lyrHillshade:"Relief ombré",
       lyrMilSpend:"Dépenses militaires",
@@ -198,8 +183,6 @@ window.IntMapLang.define('fr', { ui: {
       lyrSnow:"Couverture de neige et de glace",
       lyrSubcables:"Câbles sous-marins",
       lyrTFR:"Indice synthétique de fécondité",
-      lyrTemp:"Température de l'air (2 m)",
-      lyrTimeMonth:"Mois",
       lyrWind:"Vent",
       mDone:"Terminé",
       mTitleMap:"Carte",
@@ -218,24 +201,12 @@ window.IntMapLang.define('fr', { ui: {
       newsSourcesHint:"Seuls les titres des médias cochés sont affichés. La liste est construite à partir des médias que votre flux actuel contient réellement.",
       nightSideOff:"Désactivé — un globe uniformément éclairé",
       nightSideOn:"Activé (par défaut) — assombrir la face nuit et afficher les lumières urbaines",
-      optBaroque:"Baroque (européen)",
-      optClassic:"Grandes découvertes",
-      optCyber:"Terminal cyber",
       optDark:"Sombre",
       optLight:"Clair",
-      optMedical:"Médical",
-      optMilitary:"Militaire",
-      optPsychedelic:"Psychédélique",
-      optTaisho:"Japon de l'ère Taishō",
-      playgroundBtn:"🎮 Ouvrir le terrain de jeu",
       proArchive:"🔒 Archives temporelles sur 10 ans",
       proIntel:"🔒 Sources primaires locales RU · CN",
-      proModalSub:"Allez au-delà de la carte en direct — archives historiques approfondies et renseignement de source primaire.",
-      proModalTitle:"Débloquer IntMap Pro",
-      proSection:"Fonctions premium",
       reportBugBtn:"🐞 Signaler un bogue",
       screenshotBtn:"Capture de la carte (masque les commandes, garde les légendes)",
-      screenshotBusy:"Capture en cours…",
       screenshotSaved:"Capture enregistrée ✓",
       sendFeedbackBtn:"⭐ Envoyer un avis",
       shareView:"Partager cette vue (copier le lien)",
@@ -264,14 +235,10 @@ window.IntMapLang.define('fr', { ui: {
       tkgFx:"Devises",
       tkgIdx:"Indices",
       uploadGeoJSON:"Importer un GeoJSON",
-      viewDataSources:"Liste rapide dans l'application",
       viewKbd:"⌨ Voir les raccourcis clavier (ou appuyez sur ?)",
       viewScience:"Comment fonctionne chaque simulation ↗",
       viewSourcesPage:"Ouvrir la page des sources ↗",
-      worldExplorerBtn:"🌍 Largage satellite",
       wsHint:"Actualités, Pays, la carte, les calques et Atlas deviennent chacun une fenêtre que vous pouvez déplacer, redimensionner, réduire et empiler librement. Votre disposition est enregistrée.",
-      wsOff:"Désactivé (par défaut)",
-      wsOn:"Activé — fenêtres flottantes et redimensionnables",
     }, inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     'A new version of IntMap is available. Reload to continue.': "Une nouvelle version d'IntMap est disponible. Rechargez la page pour continuer.",
@@ -288,7 +255,6 @@ window.IntMapLang.define('fr', { ui: {
     'Follow-up': 'Suivi',
     'matching events': 'événements correspondants',
     /* (#R386) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
-    '(translated from English)': '(traduit de l’anglais)',
     '1 source': '1 source',
     'Category decided by: {by}.': 'Catégorie décidée par : {by}.',
     'Climate & Weather': 'Climat et météo',
@@ -334,7 +300,7 @@ window.IntMapLang.define('fr', { ui: {
     'What the latest report added': 'Ce qu’a ajouté le dernier article',
     'Where outlets agree': 'Ce sur quoi les médias s’accordent',
     'Which outlet said what, in the order they published it.': 'Quel média a dit quoi, dans l’ordre de publication.',
-    'The map view did not change.': "La vue de la carte n’a pas changé.",   /* atlas-console.js */
+    /* atlas-console.js */
     'Unverified statements were removed from this answer.': "Les affirmations non vérifiées ont été retirées de cette réponse.",   /* atlas-answer-render.js */
     "% of GDP": "% du PIB",
     "By accession year": "Par année d'adhésion",
@@ -358,7 +324,6 @@ window.IntMapLang.define('fr', { ui: {
     "Air pressure reduced to sea level — highs, lows and the storm centre.": "Pression atmosphérique ramenée au niveau de la mer — anticyclones, dépressions et centre de la tempête.",
     "Air temperature 2 m above the ground.": "Température de l'air à 2 m du sol.",
     "Animate": "Animer",
-    "Clouds · infrared (GOES + Himawari)": "Nuages · infrarouge (GOES + Himawari)",
     "Convective available potential energy: how much lift a thunderstorm could draw on.": "Énergie potentielle convective disponible : la portance sur laquelle un orage peut compter.",
     "drag to move": "glissez pour déplacer",
     "First step": "Premier pas de temps",
@@ -367,17 +332,14 @@ window.IntMapLang.define('fr', { ui: {
     "Latest frame": "Image la plus récente",
     "Lines of equal sea-level pressure, labelled in hPa.": "Lignes d'égale pression au niveau de la mer, étiquetées en hPa.",
     "Loading the wind model…": "Chargement du modèle de vent…",
-    "NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.": "NASA GIBS infrarouge, 10 min. GOES-East · GOES-West · Himawari — sans Meteosat, donc ~20°O–75°E (Europe, Afrique) n'est pas couvert.",
     "Next border change": "Changement de frontière suivant",   /* (#R421) news-timeline.js */
     "Next frame": "Image suivante",
-    "Next hour": "Heure suivante",
     "no frames": "aucune image",
     "Oldest frame": "Image la plus ancienne",
     "Particles": "Particules",   /* weather.js (#R313) */
     "Pressure (MSL)": "Pression (niveau de la mer)",
     "Previous border change": "Changement de frontière précédent",   /* (#R421) news-timeline.js */
     "Previous frame": "Image précédente",
-    "Previous hour": "Heure précédente",
     "RainViewer radar — the last two hours, 10 min apart": "Radar RainViewer — les deux dernières heures, toutes les 10 min",
     "run": "sortie",
     "Strongest gust expected in the hour ending at the valid time.": "Rafale la plus forte attendue dans l'heure se terminant à l'heure de validité.",
@@ -392,19 +354,16 @@ window.IntMapLang.define('fr', { ui: {
        English, per string. */
     /* (#R234) the seismic panel's new instruction banners, its 詳細設定 disclosure and the
        two-state run button. Item ③ 「フランス語、韓国語の整備を継続」. */
-    "Advanced — model assumptions":"Avancé — hypothèses du modèle",
   "All areas in force in this country": "Toutes les zones en vigueur dans ce pays",   /* (#R275) */
     "Choose an earthquake…":"Choisissez un séisme…",
     "Click the map to add an observation point.":"Cliquez sur la carte pour ajouter un point d’observation.",
     "Click to start, click each corner, and click the first point again to finish.":"Cliquez pour commencer, cliquez chaque sommet, puis cliquez à nouveau sur le premier point pour terminer.",
     "Draw the rupture area on the map.":"Tracez la zone de rupture sur la carte.",
-    "Each point is added to the table below. Press the button again to turn this off.":"Chaque point s’ajoute au tableau ci-dessous. Appuyez de nouveau sur le bouton pour désactiver.",
   "Educational — follow the official authorities.": "Informatif — suivez les autorités officielles.",   /* world-packs.js (#R293) */
   "IntMap read": "Lu par IntMap",   /* world-packs.js (#R293) */
   "issued": "émis",   /* world-packs.js (#R293) */
   "Not covered, or not read yet (diagonal hatching)": "Non couvert ou pas encore lu (hachures)",   /* world-packs.js (#R293) */
   "Educational display — follow the official authorities.": "Affichage éducatif — suivez les autorités officielles.",   /* (#R275) */
-    "If one is already placed, tapping moves it. Press the button again to turn this off.":"Si un épicentre existe déjà, le toucher le déplace. Appuyez de nouveau sur le bouton pour désactiver.",
   "IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.": "IntMap n’est pas connecté au service d’alerte de ce pays : la carte n’affirme rien sur ce point — cela ne veut pas dire qu’aucune alerte n’est en vigueur.",   /* (#R275) */
   "National services via the WMO register": "Services nationaux via le registre de l’OMM",   /* (#R275) */
   "No country here.": "Aucun pays ici.",   /* (#R275) */
@@ -415,7 +374,7 @@ window.IntMapLang.define('fr', { ui: {
     "Apply":"Appliquer", "Reset":"Réinitialiser", "Search":"Rechercher", "Loading…":"Chargement…",
     "Layers":"Calques", "Settings":"Paramètres", "Map":"Carte", "Satellite":"Satellite", "Globe":"Globe",
     "Flat":"Plat", "Minimize":"Réduire", "Send":"Envoyer", "Copy":"Copier", "Copy name":"Copier le nom", "Open":"Ouvrir", "Back":"Retour",
-    "Sources":"Sources", "Related articles":"Articles liés", "Cited sources":"Sources citées",
+    "Sources":"Sources", 
   "The water has come to rest — press ↺ to run it again, or place more": "L’eau s’est immobilisée — appuyez sur ↺ pour rejouer, ou ajoutez de l’eau",   /* (#R275) */
   "This country’s service is in the update cycle and has not been read yet.": "Le service de ce pays est dans le cycle de mise à jour et n’a pas encore été lu.",   /* (#R275) */
   "Warnings at this point": "Alertes à cet endroit",   /* (#R275) */
@@ -430,12 +389,12 @@ window.IntMapLang.define('fr', { ui: {
     "Seismic waves":"Ondes sismiques", "P wave":"Onde P", "S wave":"Onde S",
     "Rayleigh wave":"Onde de Rayleigh (de surface)", "Love wave":"Onde de Love (de surface)",
     "Method & sources":"Méthode et sources", "Observed at the time":"Valeurs observées à l'époque",
-    "Load a past earthquake…":"Charger un séisme passé…", "Peak intensity":"Intensité maximale",
+    "Peak intensity":"Intensité maximale",
     "Slip":"Glissement", "Tsunami":"Tsunami", "Casualties":"Victimes", "strike/dip/rake":"azimut/pendage/glissement",
     "Educational model — in a real emergency follow the official authorities.":"Modèle éducatif — en cas d'urgence réelle, suivez les autorités officielles.",
     "depth":"profondeur", "Place":"Lieu", "shaking":"durée", "Shindo":"Shindo", "Minimize":"Réduire",
-    "Day & night shading":"Ombrage jour/nuit", "Night side of the Earth":"Face nocturne de la Terre",
-    "Ocean currents":"Courants marins", "Disaster simulator":"Simulateur de catastrophes",
+    "Night side of the Earth":"Face nocturne de la Terre",
+    "Ocean currents":"Courants marins", 
     "My location":"Ma position", "Reset bearing":"Réinitialiser l'orientation", "Map tools":"Outils cartographiques",
     "Search layers…":"Rechercher des calques…", "Base map & labels":"Fond de carte et libellés",
     "Climate & weather":"Climat et météo", "Terrain & elevation":"Relief et altitude",
@@ -490,7 +449,6 @@ window.IntMapLang.define('fr', { ui: {
   "level": "en palier",
   "Load an earthquake": "Charger un séisme",
   "Log in to post, comment and vote.": "Connectez-vous pour publier, commenter et voter.",
-  "Month: ": "Mois : ",
   "Move pin on map": "Déplacer le repère sur la carte",
   "No boundary available for this place": "Aucun contour disponible pour ce lieu",
   "on ground": "au sol",
@@ -592,7 +550,6 @@ window.IntMapLang.define('fr', { ui: {
   "Pitch": "Inclinaison",
   "Zoom": "Zoom",
   "North": "Nord",
-  "Publisher unknown": "Éditeur inconnu",
   "Location unknown": "Lieu inconnu",
   "Click on a country (land)": "Cliquez sur un pays (terre)",
   "Click a country on the map to add it": "Cliquez un pays sur la carte pour l'ajouter",
@@ -791,9 +748,6 @@ window.IntMapLang.define('fr', { ui: {
   "Where? Give an epicenter (place, or lng/lat).": "Où ? Indiquez un épicentre (lieu, ou long/lat).",
   "Tsunami propagation": "Propagation d'un tsunami",
   "flood inundation": "inondation",
-  "ashfall plume": "panache de cendres",
-  "smoke plume": "panache de fumée",
-  "radioactive fallout": "retombées radioactives",
   "Earth Replay": "Relecture de la Terre",
   "Data & connection status": "État des données et de la connexion",
   "News feed": "Fil d'actualités",
@@ -816,8 +770,6 @@ window.IntMapLang.define('fr', { ui: {
   "Outlined": "Détouré",
   "No precise boundary for": "Aucune limite précise pour",
   "Playground unavailable": "Bac à sable indisponible",
-  "Publisher pins": "Épingles des éditeurs",
-  "Subject pins": "Épingles des sujets",
   "Saved": "Enregistré",
   "Translate": "Traduire",
   "News": "Actualités",
@@ -870,14 +822,14 @@ window.IntMapLang.define('fr', { ui: {
   "Coal / oil / gas": "Charbon / pétrole / gaz",   /* (#R258) */
   "Crest above ground": "Hauteur de crête (au-dessus du sol)",   /* (#R258) */
   "Depth per stroke": "Profondeur par trait",   /* (#R258) */
-  "Discharge": "Débit",   /* (#R258) */
+  /* (#R258) */
   "Disperse a release on the live wind field": "Disperser un rejet dans le champ de vent réel",   /* (#R258) */
   "Elapsed": "Écoulé",   /* (#R258) */
   "Flow arrows": "Flèches de flux",   /* (#R258) */
   "Fuel / source": "Combustible / source",   /* (#R258) */
   "Height per stroke": "Hauteur par trait",   /* (#R258) */
   "How far you get in a given time": "Jusqu'où l'on va en un temps donné",   /* (#R258) */
-  "Inflow": "Apport",   /* (#R258) */
+  /* (#R258) */
   "Method": "Méthode",   /* (#R258) */
   "Mine / shaft": "Mine / puits",   /* (#R258) */
   "Mines, quarries & wells": "Mines, carrières et puits",   /* (#R258) */
@@ -900,36 +852,36 @@ window.IntMapLang.define('fr', { ui: {
   "Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.": "Effacé. Relancez l’analyse ici, ou utilisez « Déplacer le point… ».",   /* (#R261) */
   "College": "Établissement supérieur",   /* (#R261) */
   "continuous": "continu",   /* (#R261) */
-  "continuous (▶ pours these)": "continu (▶ verse ceux-ci)",   /* (#R261) */
+  /* (#R261) */
   "Control tower": "Tour de contrôle",   /* (#R261) */
-  "Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.": "Les comptes et la capacité portent sur ce qui est à l’écran. Une capacité n’est affichée que si l’exploitant ou OpenStreetMap la publie — rien n’est estimé. Touchez une classe pour la retirer de la carte.",   /* (#R261) */
+  /* (#R261) */
   "Crane": "Grue",   /* (#R261) */
   "curated": "répertoriés",   /* (#R261) */
   "Data centers & AI infrastructure": "Centres de données et infrastructure IA",   /* (#R261) */
   "Dish diameter": "Diamètre d’antenne",   /* (#R261) */
   "Drone flight planner": "Planificateur de vol de drone",   /* (#R261) */
-  "Earth replay (sun over time)": "Rejeu de la Terre (course du Soleil)",   /* (#R261) */
+  /* (#R261) */
   "Emergency services": "Services de secours",   /* (#R261) */
   "Ferry terminal": "Terminal de ferry",   /* (#R261) */
   "Fire station": "Caserne de pompiers",   /* (#R261) */
   "Fire stations, police stations, ambulance stations and mountain-rescue posts mapped in OpenStreetMap for the current view — how far help has to come from, which no national statistic answers.": "Casernes de pompiers, commissariats, bases d’ambulances et postes de secours en montagne cartographiés dans OpenStreetMap pour la vue actuelle — d’où l’aide doit venir, ce qu’aucune statistique nationale ne dit.",   /* (#R261) */
-  "Flood & tsunami hazard": "Risque d’inondation et de tsunami",   /* (#R261) */
+  /* (#R261) */
   "Harbour type": "Type de port",   /* (#R261) */
-  "How far the timetable takes you, not the road": "Jusqu’où l’horaire vous emmène, pas la route",   /* (#R261) */
+  /* (#R261) */
   "IATA code": "Code IATA",   /* (#R261) */
   "ICAO code": "Code OACI",   /* (#R261) */
   "International airport": "Aéroport international",   /* (#R261) */
-  "Largest published capacity in view": "Plus grandes capacités publiées à l’écran",   /* (#R261) */
+  /* (#R261) */
   "Launch pad": "Pas de tir",   /* (#R261) */
   "Launch pads, spaceports, satellite ground stations and radio telescopes mapped in OpenStreetMap for the current view — the ground half of everything the orbit layers show overhead.": "Pas de tir, ports spatiaux, stations terriennes et radiotélescopes cartographiés dans OpenStreetMap pour la vue actuelle — la moitié au sol de tout ce que les couches orbitales montrent au-dessus.",   /* (#R261) */
   "Move the site…": "Déplacer le point…",   /* (#R261) */
   "Next source": "Prochaine source",   /* (#R261) */
-  "No site in view publishes a capacity figure.": "Aucun site à l’écran ne publie de capacité.",   /* (#R261) */
+  /* (#R261) */
   "Observatory": "Observatoire",   /* (#R261) */
   "of": "sur",   /* (#R261) */
   "On the map": "Sur la carte",   /* (#R261) */
   "one shot": "unique",   /* (#R261) */
-  "Only one-shot volumes are placed — add a continuous source to pour": "Seuls des volumes uniques sont posés — ajoutez une source continue pour verser",   /* (#R261) */
+  /* (#R261) */
   "Police station": "Commissariat",   /* (#R261) */
   "Port / harbour": "Port",   /* (#R261) */
   "Ports, harbours & terminals": "Ports et terminaux",   /* (#R261) */
@@ -939,16 +891,16 @@ window.IntMapLang.define('fr', { ui: {
   "Radio telescope": "Radiotélescope",   /* (#R261) */
   "Rescue post": "Poste de secours",   /* (#R261) */
   "Research institute": "Institut de recherche",   /* (#R261) */
-  "Run the day and night round the planet": "Faites tourner le jour et la nuit autour de la planète",   /* (#R261) */
+  /* (#R261) */
   "Runway length": "Longueur de piste",   /* (#R261) */
   "Satellite ground station": "Station terrienne",   /* (#R261) */
-  "Signal strength from a transmitter placed here": "Niveau de signal d’un émetteur placé ici",   /* (#R261) */
-  "sites in view": "sites à l’écran",   /* (#R261) */
+  /* (#R261) */
+  /* (#R261) */
   "Spaceports & ground stations": "Ports spatiaux et stations terriennes",   /* (#R261) */
   "Students": "Étudiants",   /* (#R261) */
   "Substance": "Fluide traité",   /* (#R261) */
   "Terminal": "Terminal passagers",   /* (#R261) */
-  "Transit reachability": "Accessibilité en transport en commun",   /* (#R261) */
+  /* (#R261) */
   "Universities & research institutes": "Universités et instituts de recherche",   /* (#R261) */
   "Universities, colleges, research institutes, observatories and libraries mapped in OpenStreetMap for the current view — where teaching and research actually happen, beside the enrolment percentages.": "Universités, écoles supérieures, instituts de recherche, observatoires et bibliothèques cartographiés dans OpenStreetMap pour la vue actuelle — là où l’enseignement et la recherche ont lieu, à côté des taux de scolarisation.",   /* (#R261) */
   "University": "Université",   /* (#R261) */
@@ -957,23 +909,23 @@ window.IntMapLang.define('fr', { ui: {
   "Water tower / reservoir": "Château d’eau / réservoir",   /* (#R261) */
   "Water works": "Usine d’eau potable",   /* (#R261) */
   "Water works, wastewater treatment plants, pumping stations, water towers and reservoirs mapped in OpenStreetMap for the current view — the plant that makes safe water and sanitation real in a place, rather than the national percentage.": "Usines d’eau potable, stations d’épuration, stations de pompage, châteaux d’eau et réservoirs cartographiés dans OpenStreetMap pour la vue actuelle — les installations qui rendent l’eau potable et l’assainissement réels sur place, plutôt que le pourcentage national.",   /* (#R261) */
-  "What a given water level reaches from here": "Jusqu’où monte un niveau d’eau donné depuis ici",   /* (#R261) */
+  /* (#R261) */
   "Power plants & grid": "Centrales électriques et réseau",   /* (#R258) */
   "Quarry": "Carrière",   /* (#R258) */
   "Radioactive plume simulator": "Simulateur de panache radioactif",   /* (#R258) */
   "Rainfall": "Précipitations",   /* (#R258) */
   "Resource": "Ressource",   /* (#R258) */
   "Sculpt the ground, pour water, build a levee": "Modeler le terrain, verser de l'eau, bâtir une digue",   /* (#R258) */
-  "Solve the wave from a sea-floor rupture": "Calculer la vague d'une rupture sous-marine",   /* (#R258) */
+  /* (#R258) */
   "Source & notes": "Source et notes",   /* (#R258) */
   "Substation": "Poste électrique",   /* (#R258) */
   "Terrain & water simulator": "Simulateur de terrain et d'eau",   /* (#R258) */
   "The sky a person standing here has": "Le ciel vu par une personne debout ici",   /* (#R258) */
   "Tool": "Outil",   /* (#R258) */
-  "Tsunami simulator": "Simulateur de tsunami",   /* (#R258) */
+  /* (#R258) */
   "Voltage": "Tension",   /* (#R258) */
-  "Volume per click": "Volume par clic",   /* (#R258) */
-  "What the terrain hides from a point": "Ce que le relief masque depuis un point",   /* (#R258) */
+  /* (#R258) */
+  /* (#R258) */
   "Where the sun reaches, hour by hour": "Où le soleil arrive, heure par heure",   /* (#R258) */
   "Width": "Largeur",   /* (#R258) */
   "Mines, quarries, mine shafts and oil or gas wells mapped in OpenStreetMap for the current view — the places raw material physically leaves the ground. Click any point for the resource and operator as tagged.": "Mines, carrières, puits de mine et puits de pétrole ou de gaz cartographiés dans OpenStreetMap pour la vue actuelle — les lieux où la matière première sort physiquement du sol. Cliquez sur un point pour la ressource et l'exploitant tels qu'ils sont étiquetés.",   /* (#R258) */
@@ -1055,7 +1007,6 @@ window.IntMapLang.define('fr', { ui: {
   "(none found in OSM within the radius)": "(aucun trouvé dans OSM dans ce rayon)",
   "(unverified — data missing)": "(non vérifié — données manquantes)",
   "(up to 10)": "(jusqu'à 10)",
-  "(working back from the arrival deadline)": "(calculé à rebours depuis l'heure d'arrivée)",
   ")": ")",
   "← Exit workspace": "← Quitter l'espace de travail",
   "↻ Fly again": "↻ Revoler",
@@ -1114,7 +1065,6 @@ window.IntMapLang.define('fr', { ui: {
   "Add countries above to compare them.": "Ajoutez des pays ci-dessus pour les comparer.",
   "Add observation points": "Ajouter des points d'observation",
   "Add on map": "Ajouter sur la carte",
-  "Advanced — fault geometry": "Avancé — géométrie de la faille",
   "Advisory": "Avis",
   "Aerosol / haze": "Aérosols / brume",
   "Age of the elements": "Âge des éléments orbitaux",
@@ -1134,7 +1084,6 @@ window.IntMapLang.define('fr', { ui: {
   "Airport": "Aéroport",
   "AIRSPEED": "VITESSE AIR",
   "AIS connect failed: ": "Échec de la connexion AIS : ",
-  "alert areas": "zones d'alerte",
   "All": "Tous",
   "All active satellites": "Tous les satellites actifs",
   "All indicators": "Tous les indicateurs",
@@ -1208,14 +1157,12 @@ window.IntMapLang.define('fr', { ui: {
   "Aug": "août",
   "auto": "auto",
   "Average slip": "Glissement moyen",
-  "Avoid routing via Valhalla (OSM).": "Itinéraire évitant certaines voies, via Valhalla (OSM).",
   "Avoid:": "Éviter :",
   "avoids ": "évite ",
   "AWS Terrain (terrarium DEM)": "AWS Terrain (MNT terrarium)",
   "Axial tilt": "Inclinaison de l'axe",
   "az.": "az.",
   "Azimuth": "Azimut",
-  "back a quarter cycle (6h12m)": "un quart de cycle en arrière (6 h 12 min)",
   "back about a quarter cycle (6 h)": "environ un quart de cycle en arrière (6 h)",
   "Back to automatic": "Retour à l'automatique",
   "back to now": "retour à maintenant",
@@ -1228,7 +1175,6 @@ window.IntMapLang.define('fr', { ui: {
   "Battery": "Batterie",
   "Bear slightly left": "Serrez légèrement à gauche",
   "Bear slightly right": "Serrez légèrement à droite",
-  "below DEM resolution": "sous la résolution du MNT",
   "Below the horizon": "Sous l'horizon",
   "below the horizon here": "sous l'horizon ici",
   "Below the horizon here": "Sous l'horizon ici",
@@ -1266,11 +1212,8 @@ window.IntMapLang.define('fr', { ui: {
   "Cesium could not start": "Cesium n'a pas pu démarrer",
   "Change (partial)": "Changement (partiel)",
   "Change reported": "Changement signalé",
-  "Change the values and press Analyze to re-run at this site; right-click the map to move it.": "Modifiez les valeurs et appuyez sur Analyser pour relancer sur ce site ; clic droit sur la carte pour le déplacer.",
   "Channel": "Chenal",
   "Check other routes": "Voir d'autres itinéraires",
-  "Choose destination": "Choisir la destination",
-  "Choose start (or click the map)": "Choisir le départ (ou cliquez la carte)",
   "Circle": "Cercle",
   "city": "ville",
   "city lights loaded": "lumières urbaines chargées",
@@ -1284,7 +1227,6 @@ window.IntMapLang.define('fr', { ui: {
   "Clear sort": "Annuler le tri",
   "clear-sky beam": "faisceau par ciel clair",
   "Clear.": "Dégagé.",
-  "Cleared. Press Analyze to re-run here, or right-click the map to move the site.": "Effacé. Appuyez sur Analyser pour relancer ici, ou faites un clic droit sur la carte pour déplacer le site.",
   "clears by": "dégagé de",
   "Click 3 or more points on the map to trace the footprint.": "Cliquez au moins 3 points sur la carte pour tracer l'emprise.",
   "click a pin for details · say \"clear facilities\" to remove": "cliquez un repère pour le détail · dites « effacer les installations » pour tout retirer",
@@ -1299,7 +1241,6 @@ window.IntMapLang.define('fr', { ui: {
   "Click to highlight • right-click for criteria": "Clic : mettre en évidence • clic droit : critères",
   "Click to show": "Cliquer pour afficher",
   "Click two corners": "Cliquez deux coins opposés",
-  "closed basin below sea level": "bassin endoréique sous le niveau de la mer",
   "Closest approach": "Approche au plus près",
   "coasts in view · level now, and the next turn": "côtes en vue · niveau actuel et prochaine marée",
   "COCKPIT": "COCKPIT",
@@ -1384,7 +1325,6 @@ window.IntMapLang.define('fr', { ui: {
   "covered": "couvert",
   "CRASHED": "ÉCRASÉ",
   "Create monitor": "Créer une surveillance",
-  "Crest above ground (m)": "Crête au-dessus du sol (m)",
   "Critical": "Critique",
   "Crop": "Culture",
   "Crop cultivation": "Cultures",
@@ -1422,7 +1362,6 @@ window.IntMapLang.define('fr', { ui: {
   "Deposition stays below mapped thresholds in this run (winds carried most activity out of the modeled area).": "Les dépôts restent sous les seuils cartographiés pour cette simulation (les vents ont emporté l'essentiel de l'activité hors de la zone modélisée).",
   "depth ": "profondeur ",
   "Depth (km)": "Profondeur (km)",
-  "Depth per stroke (m)": "Profondeur par passage (m)",
   "Detail": "Détail",
   "Details": "Détails",
   "Detected active fire / heat source": "Feu actif / source de chaleur détecté",
@@ -1432,10 +1371,8 @@ window.IntMapLang.define('fr', { ui: {
   "dip": "pendage",
   "Dip": "Pendage",
   "Directions": "Itinéraire",
-  "Discharge (m³/s)": "Débit (m³/s)",
   "displayed-layer values": "valeurs des calques affichés",
   "DISTANCE": "DISTANCE",
-  "distance only beyond": "distance seule au-delà de",
   "Domain": "Domaine",
   "Done — use Redraw to start over": "Terminé — utilisez Redessiner pour recommencer",
   "Done.": "Terminé.",
@@ -1443,7 +1380,6 @@ window.IntMapLang.define('fr', { ui: {
   "DOWN": "BAS",
   "downrange": "distance au sol",
   "Downstream": "Aval",
-  "downwind": "sous le vent",
   "Drag ": "Faites glisser ",
   "Drag from one corner to the opposite one.": "Faites glisser d'un coin au coin opposé.",
   "Drag from the center outwards to size the circle.": "Faites glisser du centre vers l'extérieur pour dimensionner le cercle.",
@@ -1479,13 +1415,11 @@ window.IntMapLang.define('fr', { ui: {
   "Earthquakes (7 days, in radius)": "Séismes (7 jours, dans le rayon)",
   "Earthquakes near the route (last 24 h)": "Séismes près de l'itinéraire (dernières 24 h)",
   "Eccentricity": "Excentricité",
-  "ECMWF forecast time": "Heure de prévision ECMWF",
   "ECMWF weather": "Météo ECMWF",
   "One step back": "Un pas en arrière",
   "One step forward": "Un pas en avant",
   "Economy": "Économie",
   "Edit comment": "Modifier le commentaire",
-  "Educational approximation only — in a real emergency follow official authorities. Flood = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model. Tsunamis are modeled separately, by the propagation simulator.": "Approximation pédagogique uniquement — en cas d'urgence réelle, suivez les autorités officielles. Inondation = submersion connectée calculée sur le modèle d'élévation réel ; cendres/fumée = panache advecté par le vent en direct ; radioactif = modèle lagrangien de retombées. Les tsunamis sont modélisés à part, par le simulateur de propagation.",
   "EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.": "ZEE = zone économique exclusive (jusqu'à 200 milles marins). La couleur de la ligne indique le type de limite (couleurs vives pour la lisibilité) ; les chevauchements signalent des revendications contestées.",
   "elapsed": "écoulé",
   "Electricity": "Électricité",
@@ -1505,7 +1439,6 @@ window.IntMapLang.define('fr', { ui: {
   "Energy mix": "Mix énergétique",
   "English": "Anglais",
   "Enter a number between -11000 and 9000": "Saisissez un nombre entre -11000 et 9000",
-  "Enter a start and destination.": "Saisissez un départ et une destination.",
   "Entering workspace…": "Ouverture de l'espace de travail…",
   "Epoch": "Époque",
   "equinox": "équinoxe",
@@ -1534,7 +1467,6 @@ window.IntMapLang.define('fr', { ui: {
   "exit ": "sortie ",
   "Exit workspace": "Quitter l'espace de travail",
   "Expand": "Développer",
-  "Export:": "Exporter :",
   "exports": "exportations",
   "Exports": "Exportations",
   "extreme": "extrême",
@@ -1581,9 +1513,7 @@ window.IntMapLang.define('fr', { ui: {
   "Flight simulator — pick your aircraft & runway, then START": "Simulateur de vol — choisissez votre appareil et votre piste, puis DÉMARRER",
   "Flood": "Inondation",
   "Flooded (≤ today ": "Submergé (≤ aujourd'hui ",
-  "flooded cells": "mailles submergées",
   "Flow stops here": "L'écoulement s'arrête ici",
-  "Flow stops here (flat)": "L'écoulement s'arrête ici (terrain plat)",
   "Fly to": "Voler vers",
   "Focus place search": "Activer la recherche de lieu",
   "FOLLOW": "SUIVI",
@@ -1606,7 +1536,6 @@ window.IntMapLang.define('fr', { ui: {
   "FUEL": "CARBURANT",
   "FUEL OUT": "PANNE SÈCHE",
   "Full moon": "Pleine lune",
-  "future — terminator only": "futur — terminateur seulement",
   "G-LIMIT": "LIMITE G",
   "Galaxies & nebulae": "Galaxies et nébuleuses",
   "Galaxies, clusters and nebulae at their measured distances (SIMBAD)": "Galaxies, amas et nébuleuses à leurs distances mesurées (SIMBAD)",
@@ -1626,7 +1555,6 @@ window.IntMapLang.define('fr', { ui: {
   "GHRSST MUR L4 (oceans only)": "GHRSST MUR L4 (océans uniquement)",
   "Give me at least 2 places to visit (comma-separated), or drop pins first.": "Indiquez au moins 2 lieux à visiter (séparés par des virgules), ou posez d'abord des repères.",
   "global": "mondial",
-  "Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires.": "Flux mondial : GDACS (Global Disaster Alert and Coordination System, ONU/CE) — séismes, cyclones tropicaux, inondations, volcans, sécheresses et feux de forêt.",
   "Globe / flat / 3D terrain": "Globe / plan / relief 3D",
   "Gold": "Or",
   "Good": "Bon",
@@ -1634,14 +1562,12 @@ window.IntMapLang.define('fr', { ui: {
   "Grass": "Herbe",
   "Gray = terrain (curvature applied) · dashed = 60% Fresnel zone.": "Gris = relief (courbure appliquée) · pointillés = 60 % de la zone de Fresnel.",
   "green = terrain shadow": "vert = ombre du relief",
-  "Green alert": "Alerte verte",
   "Grid + labels": "Grille et repères",
   "Ground (no-DEM fallback)": "Sol (valeur de repli, sans MNT)",
   "Ground at the site": "Sol au niveau du site",
   "Ground below": "Sol en dessous",
   "Ground distance": "Distance au sol",
   "Ground station height": "Hauteur de la station au sol",
-  "Grouping is mechanical (place ≤150 km × time ≤48 h × headline similarity) on the loaded IntMap feed — one group = reports that likely cover the same occurrence; \"first report → latest\" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. \"analyze event 2\".": "Le regroupement est mécanique (lieu ≤150 km × temps ≤48 h × similarité des titres) sur le flux IntMap chargé — un groupe = des articles qui portent probablement sur le même événement ; « premier article → dernier » montre l'évolution de la couverture. Pour les divergences entre sources ou une analyse plus poussée, demandez par exemple « analyse l'événement 2 ».",
   "h": "h",
   "h ago": "h",
   "Hard — ": "Dur — ",
@@ -1649,7 +1575,6 @@ window.IntMapLang.define('fr', { ui: {
   "Hazardous": "Dangereux",
   "Hazy": "Brumeux",
   "Heavy": "Épais",
-  "Height per stroke (m)": "Hauteur par passage (m)",
   "Heliport": "Héliport",
   "Hide (reopen from the dock)": "Masquer (rouvrir depuis la barre)",
   "Hide ticker": "Masquer le bandeau",
@@ -1658,12 +1583,10 @@ window.IntMapLang.define('fr', { ui: {
   "High tide": "Marée haute",
   "highest": "le plus élevé",
   "Highest": "Le plus élevé",
-  "Highest point": "Point culminant",
   "highest ridge": "crête la plus haute",
   "Highly elliptical (HEO)": "Fortement elliptique (HEO)",
   "highways": "autoroutes",
   "Highways": "Autoroutes",
-  "Historical network:": "Réseau historique :",
   "Historical overview from established sources — borders and figures are approximate.": "Aperçu historique d'après des sources établies — frontières et chiffres approximatifs.",
   "horizon": "horizon",
   "horizon scanned to": "horizon balayé jusqu'à",
@@ -1690,23 +1613,14 @@ window.IntMapLang.define('fr', { ui: {
   "Indicators": "Indicateurs",
   "Industry": "Industrie",
   "Industry web": "Réseau industriel",
-  "Inflow (m³/s)": "Débit entrant (m³/s)",
-  "Integrated analysis": "Analyse intégrée",
-  "Intensity field: bundled 0.25° Vs30 where the DEM could not reach — the ground still varies": "Champ d'intensité : Vs30 embarqué à 0,25° là où le MNT n'a pas pu être atteint — le sol reste variable",
-  "Intensity field: slope-based Vs30 (Wald & Allen 2007) on real DEM": "Champ d'intensité : Vs30 déduit de la pente (Wald & Allen 2007) sur MNT réel",
   "Intensity fill opacity": "Opacité du remplissage d'intensité",
   "Intensity scale": "Échelle d'intensité",
   "Intercity Japan rail: real Shinkansen lines and stations, with times estimated from the operators’ published timetables (express pattern + service frequency) — not live times. Local segments use open GTFS (Transitous) where available; where none exists (e.g. Nagoya) they are distance-based estimates, marked as such. The line between stations is schematic.": "Trains interurbains au Japon : lignes et gares Shinkansen réelles, avec des temps estimés d'après les horaires publiés par les opérateurs (schéma des express + fréquence) — ce ne sont pas des horaires en temps réel. Les tronçons locaux utilisent les GTFS ouverts (Transitous) lorsqu'ils existent ; à défaut (par ex. Nagoya) ce sont des estimations fondées sur la distance, signalées comme telles. Le tracé entre les gares est schématique.",
   "International designator": "Désignation internationale",
   "Interplanetary spacecraft, from JPL Horizons trajectories": "Sondes interplanétaires, d'après les trajectoires JPL Horizons",
-  "IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use CHRONOS (bottom-right, formerly the time machine) to travel 1850→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: \"fly to Kenya\", \"show the population layer\", \"compare Japan and Germany\", \"highlight the top 10 by GDP per capita\", \"directions from Tokyo to Osaka by train\", \"which countries have the highest life expectancy?\", or \"brief me on the South China Sea\". Ask \"how do I …\" for any specific feature.": "IntMap est un atlas mondial interactif — et moi (Atlas) je peux tout piloter en langage courant. Vous pouvez : activer plus de 100 CALQUES DE DONNÉES (climat, population, économie, météo en direct) depuis le panneau Calques ; lire les ACTUALITÉS EN DIRECT épinglées là où les événements se produisent ; utiliser CHRONOS (en bas à droite, l'ancienne machine à remonter le temps) pour voyager de 1850 à aujourd'hui ; ouvrir PAYS pour trier et comparer des données nationales ; et passer en mode ESPACE DE TRAVAIL pour des fenêtres déplaçables. Demandez-moi par exemple : « vole jusqu'au Kenya », « affiche le calque de population », « compare le Japon et l'Allemagne », « mets en évidence le top 10 du PIB par habitant », « itinéraire de Tokyo à Osaka en train », « quels pays ont l'espérance de vie la plus élevée ? » ou « fais-moi un point sur la mer de Chine méridionale ». Demandez « comment faire … » pour n'importe quelle fonction.",
-  "Inundated area": "Zone submergée",
   "Invalid area": "Zone non valide",
   "items": "éléments",
   "Jan": "janv.",
-  "Japan — JMA, by issuing unit": "Japon — JMA, par unité d'émission",
-  "Japan and the United States are drawn at the unit their agency issues at. Everywhere else is GDACS, which is an event feed, not a national warning service — a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon et les États-Unis sont représentés à l'échelle à laquelle leur agence émet ses avis. Partout ailleurs, la source est GDACS, qui est un flux d'événements et non un service national d'alerte — un pays sans événement GDACS n'est pas un pays sans alertes. Affichage pédagogique : suivez les autorités officielles.",
-  "Japan Meteorological Agency, at the unit the warning is issued for.": "Agence météorologique japonaise, à l'échelle pour laquelle l'alerte est émise.",
   "JMA (shindo)": "JMA (shindo)",
   "Joined EU": "Entrée dans l'UE",
   "Joined NATO": "Entrée dans l'OTAN",
@@ -1751,16 +1665,12 @@ window.IntMapLang.define('fr', { ui: {
   "limited to this aircraft’s service ceiling": "limité au plafond pratique de cet appareil",
   "Line drawn": "Ligne tracée",
   "Line of sight (radar shadow)": "Ligne de visée (ombre radar)",
-  "Line width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length). Hover any arc for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ": "L'épaisseur du trait est proportionnelle à la RACINE CARRÉE de la valeur (convention des cartes de flux — l'œil compare des surfaces, et la surface d'un trait vaut largeur × longueur). Survolez un arc pour le chiffre exact ; rien ici ne rééchelonne les montants. Source : BACI (CEPII) via OEC, SH à 6 chiffres, année ",
-  "Line-of-sight service area over real terrain (4/3-earth horizon + free-space path loss). A first approximation — no diffraction/clutter.": "Zone de service en visibilité directe sur relief réel (horizon 4/3 de la Terre + affaiblissement en espace libre). Première approximation — sans diffraction ni obstacles.",
   "line-of-sight service area over real terrain. Set antenna height / power / frequency in the panel; click to move the mast.": "zone de service en visibilité directe sur relief réel. Réglez la hauteur d'antenne, la puissance et la fréquence dans le panneau ; cliquez pour déplacer le pylône.",
   "Link margin": "Marge de liaison",
   "Link to a point…": "Lier à un point…",
   "List": "Liste",
   "live": "en direct",
   "Live": "En direct",
-  "live · drag to move": "en direct · faites glisser pour déplacer",
-  "Live (present)": "En direct (présent)",
   "Live cameras": "Caméras en direct",
   "Live info": "Infos en direct",
   "Live satellites off": "Satellites en direct désactivés",
@@ -1823,8 +1733,6 @@ window.IntMapLang.define('fr', { ui: {
   "max ": "max ",
   "MAX ALT": "ALT MAX",
   "max depth": "profondeur max",
-  "Max range": "Portée maximale",
-  "Max walk": "Marche maximale",
   "Maximize / restore": "Agrandir / restaurer",
   "Maximum 10 countries": "10 pays au maximum",
   "Maximum wave height instead": "Hauteur de vague maximale à la place",
@@ -1844,7 +1752,6 @@ window.IntMapLang.define('fr', { ui: {
   "Medium Earth orbit (MEO)": "Orbite terrestre moyenne (MEO)",
   "Member": "Membre",
   "Merge": "Fusionner",
-  "MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.": "Réanalyse MERRA-2, mensuelle — sans lacune à l'échelle mondiale. Utilisez le curseur pour choisir un mois.",
   "met — the satellite is up and in sunlight (needs a dark sky here)": "réunies — le satellite est levé et éclairé par le Soleil (le ciel doit être sombre ici)",
   "Midnight sun": "Soleil de minuit",
   "Mil. spending (% GDP)": "Dépenses militaires (% du PIB)",
@@ -1868,7 +1775,6 @@ window.IntMapLang.define('fr', { ui: {
   "move here<br>= map syncs": "déplacez ici<br>= la carte suit",
   "Move the cursor to trace → click to finish": "Déplacez le curseur pour tracer → cliquez pour terminer",
   "Moving the working area here…": "Déplacement de la zone de travail ici…",
-  "N pole in polar night": "Pôle Nord en nuit polaire",
   "Naked-eye conditions": "Conditions à l'œil nu",
   "Name": "Nom",
   "named currents · ": "courants nommés · ",
@@ -1893,7 +1799,6 @@ window.IntMapLang.define('fr', { ui: {
   "New name": "Nouveau nom",
   "New route": "Nouvel itinéraire",
   "news": "actualités",
-  "news · imagery · quakes time-traveled to this date": "actualités · imagerie · séismes ramenés à cette date",
   "News / Info / Countries / Community tab": "Onglet Actualités / Informations / Pays / Communauté",
   "News along the route": "Actualités le long de l'itinéraire",
   "Next": "Suivant",
@@ -1911,13 +1816,10 @@ window.IntMapLang.define('fr', { ui: {
   "No coast in this view — pan to a coastline, or tap one for its tide times.": "Aucune côte dans cette vue — déplacez la carte vers un littoral, ou touchez-en un pour ses horaires de marée.",
   "No conflict with any other saved route.": "Aucun conflit avec un autre itinéraire enregistré.",
   "no cultivation recorded in this cell": "aucune culture enregistrée dans cette maille",
-  "No current GDACS event for this country. GDACS only carries disasters above its own severity thresholds, and no national warning service is wired here yet — so this is not the same as \"no warnings in force\".": "Aucun événement GDACS en cours pour ce pays. GDACS ne recense que les catastrophes au-dessus de ses propres seuils de gravité, et aucun service national d'alerte n'est encore raccordé ici — cela ne signifie donc pas « aucune alerte en vigueur ».",
   "no data": "pas de données",
   "No data for this country and year.": "Aucune donnée pour ce pays et cette année.",
   "No data for this country.": "Aucune donnée pour ce pays.",
   "no DEM": "pas de MNT",
-  "No earthquakes or geolocated news near this route.": "Aucun séisme ni actualité géolocalisée près de cet itinéraire.",
-  "No elevation data beyond here": "Aucune donnée d'altitude au-delà d'ici",
   "No elevation data for this route yet.": "Pas encore de données d'altitude pour cet itinéraire.",
   "No evidence stored.": "Aucun élément enregistré.",
   "No geolocated articles in the loaded news for this window/area": "Aucun article géolocalisé dans les actualités chargées pour cette période ou cette zone",
@@ -1933,18 +1835,14 @@ window.IntMapLang.define('fr', { ui: {
   "No other saved route to check against — save a second route first.": "Aucun autre itinéraire enregistré pour la comparaison — enregistrez d'abord un second itinéraire.",
   "No overlapping data to correlate": "Aucune donnée commune à corréler",
   "No populated cities/towns within the radius (per OSM population tags)": "Aucune ville habitée dans ce rayon (d'après les populations renseignées dans OSM)",
-  "No public-transit route found here": "Aucun itinéraire en transports en commun trouvé ici",
   "No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.": "Aucun itinéraire en transports en commun ici — la zone n'a peut-être pas encore de données ouvertes. Essayez 🚗 ou 🚶 ci-dessus.",
   "no published revenue": "aucun chiffre d'affaires publié",
   "No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.": "Aucun train accessible ici dans ce temps (ou le service de données ferroviaires est saturé). Essayez un point plus proche d'une gare, ou 🚗/🚶.",
   "No readable data on the active layers here. Turn a data layer on first.": "Aucune donnée lisible sur les calques actifs ici. Activez d'abord un calque de données.",
-  "No route found (maybe no connection).": "Aucun itinéraire trouvé (peut-être aucune connexion).",
   "No route found (no road connection between these points).": "Aucun itinéraire trouvé (aucune liaison routière entre ces points).",
   "No runs yet.": "Aucune exécution pour l'instant.",
   "No satellite matching": "Aucun satellite correspondant",
   "No Street View coverage here": "Aucune couverture Street View ici",
-  "No terrain data here.": "Aucune donnée de relief ici.",
-  "No terrain/wind data here.": "Aucune donnée de relief ou de vent ici.",
   "No tide model at this point (inland or outside the model domain).": "Aucun modèle de marée en ce point (à l'intérieur des terres ou hors du domaine du modèle).",
   "No time-series available": "Aucune série temporelle disponible",
   "no wave in this run": "aucune vague dans cette simulation",
@@ -1964,21 +1862,19 @@ window.IntMapLang.define('fr', { ui: {
   "not shared": "non partagé",
   "Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)": "Remarque : une petite part des plus petits cours d'eau a été omise à la limite d'affichage (tous les affluents principaux sont tracés)",
   "Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of": "Rien trouvé — ni OpenStreetMap ni Wikidata ne recensent de telles installations ici, et l'IA n'en connaît aucune avec certitude",
-  "Nothing in force right now.": "Rien en vigueur pour l'instant.",
-  "Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China, Australia and the Philippines are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis, le Canada, le Brésil, l’Allemagne, la Norvège et chaque région européenne nommée par MeteoAlarm sont dessinés à l’unité pour laquelle leur service émet, et ne sont jamais colorés en entier — la forme de la zone est la réponse. La Chine, l’Australie et les Philippines sont dessinées par province ou par État, les divisions dans lesquelles leur service publie ses avertissements ; les avertissements de Hong Kong couvrent tout le territoire, donc le territoire EST l’unité. Un aplat GDACS est une autre échelle, dans d’autres couleurs : il indique qu’un événement de ce niveau touche le pays, pas qu’un avertissement est en vigueur à un endroit donné. La Russie, l’Inde, la Nouvelle-Zélande, la Malaisie, l’Indonésie, l’Afrique du Sud et le Mexique ont été testés et aucun n’a de flux public lisible par un navigateur ; ils n’ont que GDACS — un flux d’événements, pas un service national d’alerte, et un pays sans événement GDACS n’est pas un pays sans avertissements. Affichage à titre indicatif : suivez les autorités officielles.",   /* world-packs.js (#R271) */
-  "PAGASA (Philippines), flood advisories with their published province outlines.": "PAGASA (Philippines) — bulletins d’inondation avec les contours provinciaux publiés.",   /* world-packs.js (#R271) */
-  "Philippines — PAGASA, by province": "Philippines — PAGASA, par province",   /* world-packs.js (#R271) */
-  "issuing regions": "régions d’émission",   /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
   "Areas the agency published but this map could not place: ": "Zones publiées par le service mais que cette carte n’a pas pu localiser : ",   /* world-packs.js (#R271) */
-  "Deutscher Wetterdienst, warnings with their own district polygons.": "Deutscher Wetterdienst — avertissements avec leurs propres polygones d’arrondissement, groupés par Land.",   /* world-packs.js (#R271) */
-  "Europe — MeteoAlarm (35 services)": "Europe — MeteoAlarm (35 services)",   /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
   "Extending the model to here…": "Extension du modèle jusqu’ici…",   /* world-packs.js (#R271) */
-  "Germany — DWD, by district": "Allemagne — DWD, par arrondissement",   /* world-packs.js (#R271) */
-  "Japan Meteorological Agency, at the region the warning is issued for.": "Agence météorologique du Japon, à la région pour laquelle l’alerte est émise.",   /* world-packs.js (#R271) */
-  "Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis, le Canada, le Brésil, l’Allemagne, la Norvège et chaque région européenne nommée par MeteoAlarm sont dessinés à l’unité pour laquelle leur service émet, et ne sont jamais colorés en entier — la forme de la zone est la réponse. La Chine est dessinée par province et l’Australie par État, les divisions dans lesquelles leur service publie ses avertissements ; les avertissements de Hong Kong couvrent tout le territoire, donc le territoire EST l’unité. Un aplat GDACS est une autre échelle, dans d’autres couleurs : il indique qu’un événement de ce niveau touche le pays, pas qu’un avertissement est en vigueur à un endroit donné. La Russie, l’Inde, la Nouvelle-Zélande, la Malaisie, l’Indonésie, l’Afrique du Sud et le Mexique ont été testés et aucun n’a de flux public lisible par un navigateur ; ils n’ont que GDACS — un flux d’événements, pas un service national d’alerte, et un pays sans événement GDACS n’est pas un pays sans avertissements. Affichage à titre indicatif : suivez les autorités officielles.",   /* world-packs.js (#R271) */
-  "MET Norway, alerts with their own polygons.": "MET Norway — alertes avec leurs propres polygones.",   /* world-packs.js (#R271) */
-  "Norway — MET Norway": "Norvège — MET Norway",   /* world-packs.js (#R271) */
-  "Nothing is drawn — this is a failed query, not an industry with no companies.": "Rien n'est dessiné — il s'agit d'une requête ayant échoué, pas d'un secteur sans entreprises.",
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
   "Nothing is highlighted yet — name the countries or regions": "Rien n'est encore mis en évidence — nommez les pays ou les régions",
   "Nov": "nov.",
   "now": "maintenant",
@@ -1992,28 +1888,22 @@ window.IntMapLang.define('fr', { ui: {
   "of the disk": "du disque",
   "of the view": "de la vue",
   "off-field": "hors terrain",
-  "on a quarter cycle (6h12m)": "un quart de cycle en avant (6 h 12 min)",
   "on about a quarter cycle (6 h)": "environ un quart de cycle en avant (6 h)",
   "Worldwide": "Dans le monde entier",
   "on the ground — released just above the field, flying": "au sol — lâché juste au-dessus du terrain, en vol",
   "On the runway": "Sur la piste",
   "on your left": "sur votre gauche",
   "on your right": "sur votre droite",
-  "one clock for the whole globe: pick a date/time and the day/night terminator is drawn for it; within ~10 years the news, satellite imagery and quakes time-travel to that date, and dated weather/air layers reload. ▶ plays time forward.": "une seule horloge pour tout le globe : choisissez une date et une heure, et le terminateur jour/nuit est tracé pour ce moment ; dans une fenêtre d'environ 10 ans, les actualités, l'imagerie satellite et les séismes voyagent jusqu'à cette date, et les calques météo/air datés se rechargent. ▶ fait défiler le temps.",
-  "One clock for the whole globe: the day/night terminator is computed for any date; within ~10 years the news, satellite imagery and earthquakes time-travel to the date, and any dated weather/air layers reload for it. Turn on the layers you want to replay.": "Une seule horloge pour tout le globe : le terminateur jour/nuit est calculé pour n'importe quelle date ; dans une fenêtre d'environ 10 ans, les actualités, l'imagerie satellite et les séismes voyagent jusqu'à cette date, et les calques météo/air datés se rechargent pour elle. Activez les calques que vous voulez rejouer.",
   "One shot": "Une seule fois",
   "Only images and text-based files can be attached": "Seuls des images et des fichiers texte peuvent être joints",
   "Only one route was returned — there is nothing to compare.": "Un seul itinéraire a été renvoyé — il n'y a rien à comparer.",
   "Only the first 10 countries are compared": "Seuls les 10 premiers pays sont comparés",
-  "Only visible from here": "Visible uniquement depuis ici",
   "opacity": "opacité",
   "open horizon would give": "un horizon dégagé donnerait",
   "Open in Google Maps": "Ouvrir dans Google Maps",
   "Open in new tab": "Ouvrir dans un nouvel onglet",
   "Open original": "Ouvrir l'original",
   "Open the tsunami simulator": "Ouvrir le simulateur de tsunami",
-  "Opened the radioactive-fallout model.": "Modèle de retombées radioactives ouvert.",
-  "Opens the full radioactive-fallout model (source term, isotope, wind).": "Ouvre le modèle complet de retombées radioactives (terme source, isotope, vent).",
   "OpenStreetMap could not be reached.": "Impossible de joindre OpenStreetMap.",
   "Operations": "Opérations",
   "Operator": "Exploitant",
@@ -2021,13 +1911,11 @@ window.IntMapLang.define('fr', { ui: {
   "option not found": "option introuvable",
   "or": "ou",
   "or type your own answer…": "ou saisissez votre propre réponse…",
-  "Orange alert": "Alerte orange",
   "Orbit class": "Classe d'orbite",
   "Orbital period": "Période orbitale",
   "Orbits": "Orbites",
   "Ordered shortest-first (nearest-neighbor + 2-opt), then driven on the OSM road network (OSRM). The first stop is fixed as the start.": "Ordonné au plus court (plus proche voisin + 2-opt), puis calculé sur le réseau routier OSM (OSRM). Le premier arrêt est fixé comme point de départ.",
   "Ordered shortest-first (nearest-neighbor + 2-opt). Road routing is busy — the optimized ORDER is shown; try again for the drawn route.": "Ordonné au plus court (plus proche voisin + 2-opt). Le service d'itinéraires routiers est saturé — seul l'ORDRE optimisé est affiché ; réessayez pour obtenir le tracé.",
-  "Out of the news range (about the last 10 years)": "Hors de la portée des actualités (environ les 10 dernières années)",
   "out to": "jusqu'à",
   "outlets": "médias",
   "OVERSPEED": "SURVITESSE",
@@ -2042,7 +1930,6 @@ window.IntMapLang.define('fr', { ui: {
   "partial": "partielle",
   "Partial": "Partielle",
   "partners": "partenaires",
-  "Direction arrows": "Flèches de direction",
   "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "Une région de nuage ou un campus publié. Le point est le lieu publié par l’exploitant (une ville ou un comté), pas un bâtiment relevé ; les champs que l’exploitant ne publie pas sont omis plutôt qu’estimés.",
   "AI compute": "Calcul IA",
   "AI compute campus": "Campus de calcul IA",
@@ -2073,9 +1960,7 @@ window.IntMapLang.define('fr', { ui: {
   "paused": "en pause",
   "Paused": "En pause",
   "PAUSED": "EN PAUSE",
-  "peak ahead ": "sommet devant ",
   "Peak coastal height (Green’s law)": "Hauteur maximale à la côte (loi de Green)",
-  "Peak water rise (m)": "Élévation maximale de l'eau (m)",
   "Peaks": "Sommets",
   "Pen width": "Épaisseur du trait",
   "penumbral": "par la pénombre",
@@ -2086,23 +1971,17 @@ window.IntMapLang.define('fr', { ui: {
   "Pick a country on the map": "Choisissez un pays sur la carte",
   "pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.": "choisissez une date et une heure ; les bâtiments visibles (zoomez) projettent de vraies ombres et la scène 3D est éclairée par le Soleil. Appuyez sur ▶ pour parcourir la journée.",
   "Pick a point further away.": "Choisissez un point plus éloigné.",
-  "Pick on map": "Choisir sur la carte",
-  "Pick the hazard & source in the panel; the time slider steps the impact area. Educational approximation — follow official authorities in a real emergency.": "Choisissez l'aléa et la source dans le panneau ; le curseur de temps fait progresser la zone touchée. Approximation pédagogique — en cas d'urgence réelle, suivez les autorités officielles.",
   "Pins": "Repères",
   "Place an epicenter to begin.": "Placez un épicentre pour commencer.",
-  "Place antenna on map": "Placer l'antenne sur la carte",
   "Place labels": "Étiquettes de lieux",
   "Place names": "Noms de lieux",
   "Place names are drawn on a body — open one from the list": "Les noms de lieux se dessinent sur un corps céleste — ouvrez-en un dans la liste",
-  "Place source on map": "Placer la source sur la carte",
   "Place water to see where it goes.": "Versez de l'eau pour voir où elle va.",
   "places": "lieux",
   "Plate code": "Code de plaque",
   "playable now": "jouable maintenant",
   "Please set an area to monitor first (radius, drawn area, region, or the current map view).": "Définissez d'abord une zone à surveiller (rayon, zone dessinée, région ou vue actuelle de la carte).",
   "Please wait a moment before running again.": "Patientez un instant avant de relancer.",
-  "Plume follows the live wind at the source; the time slider extends it downwind.": "Le panache suit le vent en direct à la source ; le curseur de temps l'étire sous le vent.",
-  "Plume reach": "Portée du panache",
   "Pluto is drawn in its measured color: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labeled fictional by their author. Its position and its IAU names are real.": "Pluton est dessinée dans sa couleur mesurée : aucune carte de surface globale n'est fournie pour elle, et celles proposées ailleurs pour les planètes naines sont qualifiées de fictives par leur auteur. Sa position et ses noms UAI, eux, sont réels.",
   "points mapped — click a pin (or an item below) for the summary & article": "points cartographiés — cliquez un repère (ou un élément ci-dessous) pour le résumé et l'article",
   "Polar low Earth orbit": "Orbite basse polaire",
@@ -2112,7 +1991,6 @@ window.IntMapLang.define('fr', { ui: {
   "Polygon drawn": "Polygone tracé",
   "Polygons": "Polygones",
   "Ponded": "Retenu",
-  "Ponds crossed": "Retenues traversées",
   "pop ": "pop. ",
   "Pop. density": "Densité de population",
   "Pop. density (grid)": "Densité de population (grille)",
@@ -2121,8 +1999,6 @@ window.IntMapLang.define('fr', { ui: {
   "Population nearby": "Population à proximité",
   "Positions: JPL approximate elements (3000 BC – 3000 AD); the Moon: truncated ELP-2000/82. Surfaces: Solar System Scope textures (CC BY 4.0) from NASA/JPL/USGS imagery — except the Earth, which is the app’s own whole-Earth basemap (NASA Blue Marble via GIBS), the same picture the map draws under its satellite tiles. Names: USGS Gazetteer of Planetary Nomenclature (IAU). Stars: Hipparcos. Satellites other than the Moon are not modeled — their phase cannot be computed faithfully from published elements alone.": "Positions : éléments approchés du JPL (3000 av. J.-C. – 3000 apr. J.-C.) ; la Lune : ELP-2000/82 tronquée. Surfaces : textures Solar System Scope (CC BY 4.0) d'après des images NASA/JPL/USGS — sauf la Terre, qui utilise le fond de carte mondial propre à l'application (NASA Blue Marble via GIBS), la même image que la carte dessine sous ses tuiles satellite. Noms : USGS Gazetteer of Planetary Nomenclature (UAI). Étoiles : Hipparcos. Les satellites autres que la Lune ne sont pas modélisés — leur phase ne peut pas être calculée fidèlement à partir des seuls éléments publiés.",
   "Pour": "Verser",
-  "Pouring": "Versement",
-  "pre-archive date — day/night terminator + any historical layers": "date antérieure aux archives — terminateur jour/nuit et calques historiques uniquement",
   "Precip.": "Précip.",
   "Precision": "Précision",
   "prefectures": "préfectures",
@@ -2149,8 +2025,6 @@ window.IntMapLang.define('fr', { ui: {
   "Radius circles": "Cercles de rayon",
   "Rail": "Train",
   "Railways": "Voies ferrées",
-  "Rainfall (mm)": "Précipitations (mm)",
-  "RainViewer live radar (latest frame)": "Radar en direct RainViewer (dernière image)",
   "Raise": "Relever",
   "Ran: ": "Exécuté : ",
   "Range (km)": "Portée (km)",
@@ -2174,12 +2048,10 @@ window.IntMapLang.define('fr', { ui: {
   "real 2011 int$": "$ int. 2011 constants",
   "real DEM": "MNT réel",
   "real GDP (2011 int$)": "PIB réel ($ int. 2011)",
-  "Real terrarium elevation, sculpted by you. Water is routed by priority-flood depression filling and downslope volume accounting — it answers where the water stands and which way it leaves, not how fast the front travels.": "Altitude terrarium réelle, sculptée par vous. L'eau est acheminée par remplissage des dépressions (priority-flood) et bilan volumique vers l'aval — cela répond à la question de savoir où l'eau stagne et par où elle repart, pas à quelle vitesse le front avance.",
   "Receiver sensitivity": "Sensibilité du récepteur",
   "Recompute": "Recalculer",
   "Rectangle": "Rectangle",
   "Red = reachable": "Rouge = accessible",
-  "Red alert": "Alerte rouge",
   "Redraw": "Redessiner",
   "Refraction": "Réfraction",
   "Refresh": "Actualiser",
@@ -2197,7 +2069,6 @@ window.IntMapLang.define('fr', { ui: {
   "RESET": "RÉINIT.",
   "Reset layout": "Réinitialiser la disposition",
   "Reset terrain": "Réinitialiser le relief",
-  "Rest of the world — GDACS": "Reste du monde — GDACS",
   "Restore": "Restaurer",
   "Restricted areas": "Zones réglementées",
   "Restricted-area data could not be fetched — this route has NOT been checked against airports, military areas or reserves.": "Impossible de récupérer les données de zones réglementées — cet itinéraire N'A PAS été vérifié au regard des aéroports, zones militaires ou réserves.",
@@ -2211,8 +2082,6 @@ window.IntMapLang.define('fr', { ui: {
   "reverses with the season": "s'inverse avec la saison",
   "Revolution at epoch": "Numéro de révolution à l'époque",
   "Rises": "Lever",
-  "Road routing via OSRM (OpenStreetMap) — up to 3 alternatives with lane guidance. Times are typical (no live traffic). Clear it with \"clear the route\".": "Itinéraire routier via OSRM (OpenStreetMap) — jusqu'à 3 variantes avec indications de voies. Les temps sont typiques (pas de trafic en direct). Effacez-le avec « efface l'itinéraire ».",
-  "Road routing with your avoid options via Valhalla (OpenStreetMap). Times are typical (no live traffic). Clear it with \"clear the route\".": "Itinéraire routier avec vos options d'évitement via Valhalla (OpenStreetMap). Les temps sont typiques (pas de trafic en direct). Effacez-le avec « efface l'itinéraire ».",
   "Roads": "Routes",
   "rock (Vs30 760)": "rocher (Vs30 760)",
   "Roll left": "Incliner à gauche",
@@ -2223,20 +2092,17 @@ window.IntMapLang.define('fr', { ui: {
   "Route on it": "Calculer un itinéraire dessus",
   "Route saved": "Itinéraire enregistré",
   "Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.": "Calculé le long du réseau ferré RÉEL (OpenStreetMap), en nommant les lignes et gares réellement empruntées (marche jusqu'à la gare la plus proche). JR et Shinkansen ne publient pas d'horaires ouverts (GTFS) : le temps est donc estimé à partir des vitesses typiques par classe de ligne (grande vitesse / classique) — ce n'est pas un horaire en direct.",
-  "Routing…": "Calcul de l'itinéraire…",
   "RUD": "DIR",
   "Run history": "Historique des exécutions",
   "Run now": "Exécuter maintenant",
   "Run this request again": "Relancer cette demande",
   "Running…": "Exécution…",
-  "runs below sea level on land": "passe sous le niveau de la mer à terre",
   "rupture": "rupture",
   "Rupture": "Rupture",
   "Rupture area": "Zone de rupture",
   "Rupture area drawn": "Zone de rupture dessinée",
   "rupture radius": "rayon de rupture",
   "s": "s",
-  "S pole in polar night": "Pôle Sud en nuit polaire",
   "Safest": "Le plus sûr",
   "samples": "échantillons",
   "Sampling": "Échantillonnage",
@@ -2258,7 +2124,6 @@ window.IntMapLang.define('fr', { ui: {
   "Searching": "Recherche",
   "Searching the next 24 hours…": "Recherche dans les 24 prochaines heures…",
   "See IntMap Pro": "Découvrir IntMap Pro",
-  "See the past world": "Voir le monde d'autrefois",
   "Earthquake simulator (set as epicentre)": "Simulateur de séismes (définir comme épicentre)",
   "Select at least one indicator.": "Sélectionnez au moins un indicateur.",
   "Selected": "Sélectionné",
@@ -2292,7 +2157,6 @@ window.IntMapLang.define('fr', { ui: {
   "shown on the map. I could not compile a written summary this time — try rephrasing the question.": "affiché sur la carte. Je n'ai pas pu rédiger de synthèse cette fois — essayez de reformuler la question.",
   "Silver": "Argent",
   "Simulate": "Simuler",
-  "Simulation failed — try again.": "Échec de la simulation — réessayez.",
   "Sky from here": "Le ciel vu d'ici",
   "Slant range": "Distance oblique",
   "Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve \"bathtub\" fill from the AWS Terrain DEM — ignores tides & defenses.": "Curseur ou valeur numérique (−11000 à 9000 m ; négatif = baisse du niveau de la mer). Remplissage naïf « en baignoire » à partir du MNT AWS Terrain — ne tient compte ni des marées ni des ouvrages de protection.",
@@ -2300,7 +2164,6 @@ window.IntMapLang.define('fr', { ui: {
   "slope direction (hue = compass bearing it faces)": "direction de la pente (la teinte donne l'azimut vers lequel elle regarde)",
   "slope over": "pente sur",
   "Slower": "Plus lent",
-  "Smoke": "Fumée",
   "Smooth — ": "Doux — ",
   "Snow & ice": "Neige et glace",
   "Society": "Société",
@@ -2312,7 +2175,6 @@ window.IntMapLang.define('fr', { ui: {
   "Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).": "Certains tracés de tronçons n'ont pas pu être récupérés — ces segments figurent ci-dessus mais ne sont pas dessinés sur la carte (aucun trait droit de substitution).",
   "Some targets could not be matched to border data — checking with the model": "Certaines cibles n'ont pas pu être rattachées à des données de frontières — vérification auprès du modèle",
   "soon": "bientôt",
-  "Sorry, I could not interpret that.": "Désolé, je n'ai pas pu interpréter cela.",
   "SOUND": "SON",
   "Source unavailable": "Source indisponible",
   "Source: ": "Source : ",
@@ -2328,7 +2190,6 @@ window.IntMapLang.define('fr', { ui: {
   "SPD": "VIT",
   "Speed": "Vitesse",
   "Sports pitch": "Terrain de sport",
-  "Spreads into standing water": "S'étale en eau stagnante",
   "STALL": "DÉCROCHAGE",
   "Stand and look up": "Se placer ici et lever les yeux",
   "standard": "standard",
@@ -2351,7 +2212,6 @@ window.IntMapLang.define('fr', { ui: {
   "Stepping through the solstice day…": "Parcours du jour du solstice…",
   "steps": "pas",
   "stiff soil (Vs30 360)": "sol ferme (Vs30 360)",
-  "still flowing at the 600 km limit": "s'écoule encore à la limite des 600 km",
   "Stop": "Arrêter",
   "Stop answering": "Arrêter la réponse",
   "straight": "tout droit",
@@ -2363,7 +2223,6 @@ window.IntMapLang.define('fr', { ui: {
   "strike": "azimut",
   "Style &amp; presets": "Style et préréglages",
   "Sub-satellite point": "Point sub-satellite",
-  "sub-solar lat": "lat. du point subsolaire",
   "Submarine cable data unavailable": "Données de câbles sous-marins indisponibles",
   "Subway": "Métro",
   "Summarize and analyze the situation inside the drawn area": "Résumer et analyser la situation dans la zone dessinée",
@@ -2393,17 +2252,13 @@ window.IntMapLang.define('fr', { ui: {
   "Tap a country for its mix.": "Touchez un pays pour voir son mix.",
   "Tap a country on the map.": "Touchez un pays sur la carte.",
   "Tap a country to see who it trades with.": "Touchez un pays pour voir avec qui il commerce.",
-  "Tap any country for the legend its own agency uses.": "Touchez n'importe quel pays pour voir la légende qu'utilise sa propre agence.",
   "Tap each corner on the map, then press Done.": "Touchez chaque coin sur la carte, puis appuyez sur Terminé.",
   "tap for details": "touchez pour le détail",
   "Tap inside the rupture area — this is where the rupture starts.": "Touchez à l'intérieur de la zone de rupture — c'est là que la rupture commence.",
   "Tap the map to place it.": "Touchez la carte pour le placer.",
-  "Tap the map to place the antenna.": "Touchez la carte pour placer l'antenne.",
   "Tap the map to place the epicenter.": "Touchez la carte pour placer l'épicentre.",
-  "Tap the map to place the source.": "Touchez la carte pour placer la source.",
   "Tap the map. Tapping again moves it.": "Touchez la carte. Un nouveau toucher le déplace.",
   "Tap the point to analyze.": "Touchez le point à analyser.",
-  "tap to clear": "touchez pour effacer",
   "Tap to highlight • long-press for criteria": "Touchez pour mettre en évidence • appui long pour les critères",
   "Target height (m)": "Hauteur de la cible (m)",
   "Tell me a start and destination — e.g. \"directions from Tokyo to Osaka\" or \"電車で新宿から横浜\".": "Indiquez-moi un départ et une destination — par exemple « itinéraire de Tokyo à Osaka » ou « 電車で新宿から横浜 ».",
@@ -2452,7 +2307,6 @@ window.IntMapLang.define('fr', { ui: {
   "The route already ends at the launch point.": "L'itinéraire se termine déjà au point de départ.",
   "The route ends where it started, so no separate return leg is needed.": "L'itinéraire se termine là où il a commencé : aucun trajet de retour distinct n'est nécessaire.",
   "The routing service is unreachable right now (outage or network) — the route was NOT computed. Try again shortly.": "Le service d'itinéraires est injoignable pour le moment (panne ou réseau) — l'itinéraire N'A PAS été calculé. Réessayez sous peu.",
-  "The routing service is unreachable right now (outage or network) — try again shortly.": "Le service d'itinéraires est injoignable pour le moment (panne ou réseau) — réessayez sous peu.",
   "The satellite layer is unavailable": "Le calque satellite est indisponible",
   "The satellites of the selected planet, propagated from JPL mean elements": "Les satellites de la planète sélectionnée, propagés à partir des éléments moyens du JPL",
   "The shape resolved for that region was invalid (degenerate/self-intersecting) and was not drawn": "La forme obtenue pour cette région était non valide (dégénérée ou auto-intersectante) et n'a pas été dessinée",
@@ -2463,7 +2317,6 @@ window.IntMapLang.define('fr', { ui: {
   "the sun does not rise today": "le soleil ne se lève pas aujourd'hui",
   "the sun does not set today": "le soleil ne se couche pas aujourd'hui",
   "The tide model could not be fetched.": "Impossible de récupérer le modèle de marée.",
-  "The trace failed here": "Le tracé a échoué ici",
   "The tsunami propagation simulator is not available in this build.": "Le simulateur de propagation de tsunami n'est pas disponible dans cette version.",
   "the whole map (news, countries, borders, climate era) moves with it": "toute la carte suit (actualités, pays, frontières, époque climatique)",
   "the wind forecast is unavailable": "la prévision de vent est indisponible",
@@ -2495,8 +2348,6 @@ window.IntMapLang.define('fr', { ui: {
   "TIME": "TEMPS",
   "Time — tap to add/remove (max 3)": "Durée — touchez pour ajouter/retirer (3 max)",
   "Time machine": "Machine à remonter le temps",
-  "time option applies to transit (road times are typical, not traffic-aware)": "l'option horaire s'applique aux transports en commun (les temps routiers sont typiques et ne tiennent pas compte du trafic)",
-  "Time speed": "Vitesse du temps",
   "Time-zone data unavailable": "Données de fuseaux horaires indisponibles",
   "Timed out": "Délai dépassé",
   "Timezones": "Fuseaux horaires",
@@ -2519,10 +2370,6 @@ window.IntMapLang.define('fr', { ui: {
   "Total climb": "Dénivelé positif total",
   "Total fertility rate": "Indice synthétique de fécondité",
   "toward ": "vers ",
-  "traced as far as the elevation budget allows": "tracé aussi loin que le budget d'altimétrie le permet",
-  "traced as far as the window budget allows": "tracé aussi loin que le budget de la fenêtre le permet",
-  "Tracing downstream": "Suivi vers l'aval",
-  "tracing…": "tracé…",
   "Track of": "Trace de",
   "Trade data could not be fetched.": "Impossible de récupérer les données commerciales.",
   "Trade flows": "Flux commerciaux",
@@ -2530,7 +2377,6 @@ window.IntMapLang.define('fr', { ui: {
   "Tram": "Tramway",
   "Trans-Neptunian object": "Objet transneptunien",
   "Transit": "Transports en commun",
-  "Transit data (GTFS) may not cover this area yet. Try 🚗 driving or 🚶 walking, or a route within a covered city/country.": "Les données de transport (GTFS) ne couvrent peut-être pas encore cette zone. Essayez 🚗 en voiture ou 🚶 à pied, ou un trajet dans une ville ou un pays couvert.",
   "Transmit power": "Puissance d'émission",
   "Transpose": "Transposer",
   "Travel-time contours (hours)": "Isochrones de temps de trajet (heures)",
@@ -2547,7 +2393,6 @@ window.IntMapLang.define('fr', { ui: {
   "Turn your phone sideways": "Tournez votre téléphone à l'horizontale",
   "TX power (dBm)": "Puissance d'émission (dBm)",
   "Type": "Type",
-  "Ukraine frontline on — pan to Ukraine to see it": "Ligne de front ukrainienne activée — déplacez la carte vers l'Ukraine pour la voir",
   "UN member": "Membre de l'ONU",
   "unavailable": "indisponible",
   "Unavailable components skipped": "Composantes indisponibles ignorées",
@@ -2555,14 +2400,11 @@ window.IntMapLang.define('fr', { ui: {
   "Uncertain in the image": "Incertain sur l'image",
   "Undo": "Annuler",
   "Unhealthy": "Mauvais",
-  "Unhealthy (sensitive)": "Mauvais (personnes sensibles)",
-  "United States — NWS": "États-Unis — NWS",
   "Units": "Unités",
   "Unknown action": "Action inconnue",
   "Unknown module": "Module inconnu",
   "unlimited": "illimité",
   "Unlimited tilt": "Inclinaison illimitée",
-  "unresolved slope": "pente non résolue",
   "Unsupported method": "Méthode non prise en charge",
   "UP": "HAUT",
   "up to": "jusqu'à",
@@ -2570,18 +2412,15 @@ window.IntMapLang.define('fr', { ui: {
   "Up to 4 images per message": "4 images au maximum par message",
   "Updated": "Mis à jour",
   "Uploaded data": "Données importées",
-  "US National Weather Service, active alerts.": "National Weather Service des États-Unis, alertes en vigueur.",
   "Usable for PV": "Exploitable en photovoltaïque",
   "USD, nominal": "USD, nominal",
   "Use": "Utiliser",
   "Use current map view": "Utiliser la vue actuelle de la carte",
-  "Use:": "Utiliser :",
   "Using the current map view — pan/zoom before creating, or close and set a radius, draw an area or resolve a region for a tighter watch.": "Utilisation de la vue actuelle — déplacez ou zoomez avant de créer, ou fermez puis définissez un rayon, dessinez une zone ou choisissez une région pour une surveillance plus précise.",
   "using the map’s center as the observer": "en prenant le centre de la carte comme observateur",
   "UTC": "UTC",
   "V/SPEED": "VIT. VERT.",
   "valid": "valide",
-  "Valid time (hourly)": "Heure de validité (horaire)",
   "value rejected (out of range?)": "valeur refusée (hors plage ?)",
   "Verifying": "Vérification",
   "vertically": "verticalement",
@@ -2592,12 +2431,10 @@ window.IntMapLang.define('fr', { ui: {
   "View report": "Voir le rapport",
   "Viewing the future": "Vue sur le futur",
   "Viewing the past": "Vue sur le passé",
-  "Viewing the past · tap": "Vue sur le passé · touchez",
   "Viewpoint altitude": "Altitude du point de vue",
   "Viewpoint altitude in the readout": "Altitude du point de vue dans l'affichage",
   "violent": "violent",
   "Volume": "Volume",
-  "Volume per click (m³)": "Volume par clic (m³)",
   "warm": "chaud",
   "Warm current — measurably warmer than the sea at the same latitude": "Courant chaud — mesurablement plus chaud que la mer à la même latitude",
   "Warning": "Avertissement",
@@ -2605,7 +2442,6 @@ window.IntMapLang.define('fr', { ui: {
   "Watch for": "Surveiller",
   "Watching": "Surveillance",
   "water": "eau",
-  "Water here": "Eau ici",
   "Water source": "Source d’eau",
   "Water supply": "Alimentation en eau",
   "Wave scale": "Échelle des vagues",
@@ -2617,8 +2453,6 @@ window.IntMapLang.define('fr', { ui: {
   "weather (no place given)": "météo (aucun lieu indiqué)",
   "Weather along the way": "Météo en chemin",
   "Weather satellites": "Satellites météorologiques",
-  "Weather service daily limit reached — retrying after 00:00 UTC": "Limite quotidienne du service météo atteinte — nouvel essai après 00:00 UTC",
-  "Weather services unreachable": "Services météo injoignables",
   "Weather temporarily unavailable (both weather services could not be reached — possibly rate-limited). Try again in a few minutes.": "Météo temporairement indisponible (les deux services météo sont injoignables — peut-être en raison d'une limitation de débit). Réessayez dans quelques minutes.",
   "web news search": "recherche d'actualités sur le web",
   "What is happening here recently?": "Que se passe-t-il ici ces derniers temps ?",
@@ -2632,10 +2466,7 @@ window.IntMapLang.define('fr', { ui: {
   "Which one?": "Lequel ?",
   "Whole planet · 28 km": "Planète entière · 28 km",
   "Why is this area the way it is?": "Pourquoi cette région est-elle ainsi ?",
-  "wide look-aheads": "visées larges vers l'avant",
-  "wider than the transect": "plus large que le transect",
   "width": "largeur",
-  "Width (m)": "Largeur (m)",
   "Wikidata could not be reached: ": "Impossible de joindre Wikidata : ",
   "Wikidata states no ownership link between this company and another one in this industry.": "Wikidata n'indique aucun lien de participation entre cette entreprise et une autre de ce secteur.",
   "Wikidata’s public endpoint is rate-limiting this browser — wait a moment and switch the layer on again": "Le point d'accès public de Wikidata limite le débit pour ce navigateur — patientez un instant puis réactivez le calque",
@@ -2668,28 +2499,19 @@ window.IntMapLang.define('fr', { ui: {
   "Intensity": "Intensité",
   "Tap the map to place the hypocenter. Drawing a rupture area first is optional.": "Touchez la carte pour placer l’hypocentre. Dessiner d’abord une zone de rupture est facultatif.",
   "Press to solve the intensity field for this source.": "Appuyez pour calculer le champ d’intensité de cette source.",
-  "Done — press ▶ above to watch the waves, or change anything and recompute.": "Terminé — appuyez sur ▶ ci-dessus pour voir les ondes, ou modifiez un réglage et recalculez.",
   "Active volcanoes": "Volcans actifs",
   "Air-defense zones (ADIZ ≈)": "Zones d’identification aérienne (ADIZ ≈)",
   "Annual precipitation": "Précipitations annuelles",
-  "Anomaly vs climatology (ENSO signal)": "Anomalie par rapport à la climatologie (signal ENSO)",
   "Assassination": "Assassinat",
   "ASTER global DEM color + shaded relief (static)": "MNT mondial ASTER : couleur + ombrage (statique)",
   "Aurora forecast (NOAA)": "Prévision d’aurores (NOAA)",
-  "Brightness temp (thermal IR)": "Température de brillance (IR thermique)",
-  "Carbon monoxide (CO)": "Monoxyde de carbone (CO)",
-  "Chlorophyll-a (ocean color)": "Chlorophylle-a (couleur de l’océan)",
   "Clear sky": "Ciel dégagé",
-  "Cloud fraction (day)": "Fraction nuageuse (jour)",
-  "Cloud-top temperature": "Température du sommet des nuages",
-  "Clouds (infrared)": "Nuages (infrarouge)",
   "CO₂ per capita": "CO₂ par habitant",
   "CO₂ per capita (t)": "CO₂ par habitant (t)",
   "Color relief (ASTER GDEM)": "Relief en couleur (ASTER GDEM)",
   "Contour lines": "Courbes de niveau",
   "Corruption indicator": "Indicateur de corruption",
   "Current account (% GDP)": "Balance courante (% du PIB)",
-  "Daily satellite (true color)": "Satellite quotidien (couleurs naturelles)",
   "Data centers & AI infra": "Centres de données et infrastructures d’IA",
   "Day / night": "Jour / nuit",
   "dense": "dense",
@@ -2730,8 +2552,6 @@ window.IntMapLang.define('fr', { ui: {
   "Internet users": "Internautes",
   "Internet users %": "Internautes %",
   "Land cover (ESA 2021)": "Occupation du sol (ESA 2021)",
-  "Land surface temp (day)": "Température de surface (jour)",
-  "Land surface temp (night)": "Température de surface (nuit)",
   "Life expectancy": "Espérance de vie",
   "Light drizzle": "Bruine faible",
   "Light rain": "Pluie faible",
@@ -2744,22 +2564,11 @@ window.IntMapLang.define('fr', { ui: {
   "Mainly clear": "Plutôt dégagé",
   "Major dams": "Grands barrages",
   "Mandatory evacuation": "Évacuation obligatoire",
-  "Mid-tropospheric CO — wildfire smoke, combustion & air pollution (AIRS)": "CO en moyenne troposphère — fumées d’incendies, combustion et pollution de l’air (AIRS)",
   "Military (% GDP)": "Dépenses militaires (% du PIB)",
   "Military spending": "Dépenses militaires",
   "Military spending ($)": "Dépenses militaires ($)",
-  "MODIS atmospheric water vapor": "Vapeur d’eau atmosphérique MODIS",
-  "MODIS band-31 thermal-IR brightness temperature": "Température de brillance IR thermique (bande 31) MODIS",
-  "MODIS cloud fraction, daytime": "Fraction nuageuse MODIS, de jour",
-  "MODIS cloud-top temperature; colder = taller storm clouds": "Température du sommet des nuages MODIS ; plus froid = nuages d’orage plus hauts",
-  "MODIS land-surface temperature, daytime": "Température de surface MODIS, de jour",
-  "MODIS land-surface temperature, nighttime": "Température de surface MODIS, de nuit",
-  "MODIS Terra daily true-color mosaic": "Mosaïque quotidienne en couleurs naturelles MODIS Terra",
   "MODIS vegetation index (8-day)": "Indice de végétation MODIS (8 jours)",
   "NATO members": "Membres de l’OTAN",
-  "Ocean temperature (ECMWF)": "Température de l’océan (ECMWF)",
-  "Ocean-surface chlorophyll-a — phytoplankton / marine productivity (VIIRS)": "Chlorophylle-a de surface — phytoplancton / productivité marine (VIIRS)",
-  "OMPS UV-absorbing aerosols — smoke, dust, volcanic ash": "Aérosols absorbant l’UV (OMPS) — fumée, poussière, cendres volcaniques",
   "Overcast": "Couvert",
   "Partly cloudy": "Partiellement nuageux",
   "Pharma manufacturing hubs": "Pôles de production pharmaceutique",
@@ -2791,10 +2600,8 @@ window.IntMapLang.define('fr', { ui: {
   "Unemployment": "Chômage",
   "Unemployment rate": "Taux de chômage",
   "Urban population": "Population urbaine",
-  "UV Aerosol Index": "Indice d’aérosols UV",
   "Vegetation index (NDVI)": "Indice de végétation (NDVI)",
   "War": "Guerre",
-  "Water vapor": "Vapeur d’eau",
   "wet": "mouillé",
   "All goods": "Tous les biens",
   "Animal products": "Produits animaux",
@@ -2928,7 +2735,6 @@ window.IntMapLang.define('fr', { ui: {
   "Could not load volcano data": "Impossible de charger les données volcaniques",
   "Erupted since 1950": "Éruption depuis 1950",
   "Erupted since 1500": "Éruption depuis 1500",
-  "Older / undated": "Antérieur / non daté",
   "Köppen climate": "Climat de Köppen",
   "Ecoregions": "Écorégions",
   "Hillshade": "Ombrage du relief",
@@ -3001,7 +2807,6 @@ window.IntMapLang.define('fr', { ui: {
   "Could not load ecoregions": "Impossible de charger les écorégions",
   "Biome: ": "Biome : ",
   "Could not load railway data": "Impossible de charger les données ferroviaires",
-  "AI superclusters": "Superclusters d’IA",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "Sièges et pôles de production des grands laboratoires pharmaceutiques (sites représentatifs). À combiner avec la couche Espérance de vie.",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "Indicateur WGI de la Banque mondiale « Contrôle de la corruption » (0–100, plus haut = plus intègre) — l’équivalent en API ouverte de l’IPC de TI.",
   "Life expectancy at birth (World Bank, 2022).": "Espérance de vie à la naissance (Banque mondiale, 2022).",
@@ -3119,115 +2924,54 @@ window.IntMapLang.define('fr', { ui: {
   "1yr M6+": "1 an M6+",
   "Could not load earthquake data": "Impossible de charger les données sismiques",
   "Could not load ECMWF weather": "Impossible de charger les données météo ECMWF",
-  "ECMWF valid: ": "ECMWF valide : ",
   "latest": "le plus récent",
-  "Open-Meteo ECMWF IFS (hourly)": "Open-Meteo ECMWF IFS (horaire)",
-  "Time & date": "Heure et date",
   "Analog clock": "Horloge analogique",
-  "An analog clock face": "Un cadran analogique",
-  "Weather at your location (asks for location permission when added)": "La météo à votre position (demande l’autorisation de localisation à l’ajout)",
   "FX rate": "Taux de change",
-  "Pick any currency pair": "Choisissez n’importe quelle paire de devises",
-  "Crypto (BTC·ETH)": "Crypto (BTC·ETH)",
-  "Price & 24h change": "Cours et variation sur 24 h",
   "Crypto market cap": "Capitalisation du marché crypto",
-  "Total cap & BTC dominance": "Capitalisation totale et dominance du BTC",
   "Fear & Greed": "Fear & Greed",
-  "Crypto market sentiment index": "Indice de sentiment du marché crypto",
-  "Gold spot (USD/oz)": "Cours au comptant de l’or (USD/oz)",
-  "Silver spot (USD/oz)": "Cours au comptant de l’argent (USD/oz)",
-  "Top-3 magnitude, last 24 h (USGS)": "Les trois plus fortes magnitudes sur 24 h (USGS)",
   "On this day": "Ce jour-là",
-  "A historical event from this date": "Un événement historique de cette date",
   "Featured layer": "Couche à la une",
-  "Random pick — tap to show it": "Sélection aléatoire — touchez pour l’afficher",
   "Random country": "Pays aléatoire",
-  "Flag & key facts": "Drapeau et chiffres clés",
   "Countdown": "Compte à rebours",
-  "Set a date & title": "Définissez une date et un titre",
   "Sunrise & sunset": "Lever et coucher du soleil",
-  "At your location (if allowed) or map center": "À votre position (si autorisée) ou au centre de la carte",
   "Moon phase": "Phase de la Lune",
-  "Tonight’s phase & illumination": "Phase et illumination de ce soir",
   "Air quality (AQI)": "Qualité de l’air (AQI)",
-  "US AQI & PM2.5": "AQI américain et PM2,5",
   "ISS tracker": "Suivi de l’ISS",
-  "Live ISS position — tap to fly there": "Position en direct de l’ISS — touchez pour y voler",
   "World clock": "Horloge mondiale",
-  "Pick a city / timezone": "Choisissez une ville / un fuseau horaire",
   "Year progress": "Progression de l’année",
   "How far through the year we are": "Où en est l’année",
   "Featured article": "Article à la une",
   "Wikipedia’s article of the day": "L’article du jour de Wikipédia",
   "World population": "Population mondiale",
-  "Live estimate (UN-based)": "Estimation en direct (basée sur l’ONU)",
   "UV index": "Indice UV",
-  "UV index at your location": "Indice UV à votre position",
-  "Aurora (Kp)": "Aurores (Kp)",
-  "Geomagnetic activity (NOAA SWPC)": "Activité géomagnétique (NOAA SWPC)",
-  "Top technology story": "L’actu tech du moment",
   "Next holiday": "Prochain jour férié",
-  "Next public holiday (pick a country)": "Prochain jour férié officiel (choisissez un pays)",
   "Next rocket launch": "Prochain lancement de fusée",
-  "The next spaceflight launch": "Le prochain lancement spatial mondial",
   "Bitcoin network": "Réseau Bitcoin",
-  "Block height & fees": "Hauteur de bloc et frais",
   "Day progress": "Progression de la journée",
   "How far through today we are": "Où en est la journée",
   "Season": "Saison",
-  "Current season (hemisphere-aware)": "Saison actuelle (selon l’hémisphère)",
-  "Week number": "Numéro de semaine",
-  "ISO week, day-of-year & days left": "Semaine ISO, jour de l’année et jours restants",
   "Unix time": "Temps Unix",
-  "Live Unix timestamp": "Horodatage Unix en direct",
   "Map center": "Centre de la carte",
-  "Center coordinates & zoom": "Coordonnées du centre et zoom",
   "Next full moon": "Prochaine pleine lune",
-  "Days until the next full moon": "Jours avant la prochaine pleine lune",
-  "Configure": "Configurer",
   "Edit": "Modifier",
-  "Add widget": "Ajouter un widget",
-  "Add a widget…": "Ajouter un widget…",
-  "Available widgets": "Widgets disponibles",
   "as of ": "au ",
-  "Title (e.g. Olympics opening)": "Titre (ex. ouverture des Jeux olympiques)",
-  "World clock ": "Horloge mondiale ",
   "live estimate, UN-based": "estimation en direct basée sur l’ONU",
   "Southern Hemisphere": "Hémisphère sud",
   "Northern Hemisphere": "Hémisphère nord",
   "seconds since 1970-01-01 UTC": "secondes depuis le 1970-01-01 UTC",
   "zoom ": "zoom ",
-  "Tonight!": "Ce soir !",
-  "until the next full moon": "avant la prochaine pleine lune",
-  "until the next new moon": "avant la prochaine nouvelle lune",
   "lat ": "lat ",
   "daylight": "durée du jour",
-  "100-px bar ≈ ": "barre de 100 px ≈ ",
-  "Location needed": "Localisation nécessaire",
   "Allow location": "Autoriser la localisation",
-  "Locating…": "Localisation…",
   "FX ": "Change ",
   "daylight ": "durée du jour ",
   "age ": "âge lunaire ",
   "lit": "éclairée",
-  "Fly there →": "S’y rendre →",
   "dominance": "dominance",
-  "None ≥ M2.5 (24 h)": "Aucun ≥ M2,5 (24 h)",
-  "Tap for another": "Touchez pour en voir un autre",
-  "Tap to show on the map →": "Touchez pour l’afficher sur la carte →",
-  "Layer on: ": "Couche activée : ",
-  "loading country data": "chargement des données pays",
-  "Fly to this country": "Aller vers ce pays",
   "Pop ": "Pop. ",
-  "Another ↻": "Un autre ↻",
-  "Set date & title via ⚙": "Définissez la date et le titre via ⚙",
-  "<span style=\"font-size:20px;\">Today! 🎉</span>": "<span style=\"font-size:20px;\">Aujourd’hui ! 🎉</span>",
-  "Storm — aurora likely": "Orage — aurore probable",
   "Active": "Actif",
   "Quiet": "Calme",
-  "Next holiday ": "Prochain jour férié ",
   "today": "aujourd’hui",
-  "fee ": "frais ",
   "block height": "hauteur de bloc",
   "Nine-dash line (S. China Sea)": "Ligne en neuf traits (mer de Chine méridionale)",
   "Ukraine front line (approx.)": "Ligne de front en Ukraine (approx.)",
@@ -3258,23 +3002,15 @@ window.IntMapLang.define('fr', { ui: {
   "Colour = who received the state’s electoral votes.": "La couleur indique qui a obtenu les grands électeurs de l’État.",
   "Source: National Archives · American Presidency Project": "Source : National Archives · American Presidency Project",
   "Could not load the election data": "Impossible de charger les données électorales",
-  "Map weather": "Météo de la carte",
-  "Live weather at the map center (no location permission)": "Météo actuelle au centre de la carte (sans autorisation de localisation)",
   "Day length": "Durée du jour",
-  "Daylight hours at the map-center latitude": "Heures de clarté à la latitude du centre de la carte",
   "Map scale": "Échelle de la carte",
-  "Scale at the current zoom": "Échelle au niveau de zoom actuel",
   "Calendar": "Calendrier",
-  "This month, today highlighted": "Le mois en cours, aujourd’hui mis en évidence",
   "Next new moon": "Prochaine nouvelle lune",
-  "Days until the next new moon": "Jours avant la prochaine nouvelle lune",
   "Time zones (live clock)": "Fuseaux horaires (horloge en direct)",
-  "Educational model — in a real emergency follow the official authorities. These simulations do not predict whether damage will or will not occur; either way, keep the preparations you would need ready as a matter of routine.": "Modèle pédagogique — en cas d’urgence réelle, suivez les autorités officielles. Ces simulations ne prédisent pas s’il y aura ou non des dégâts ; dans tous les cas, tenez toujours prêt le nécessaire.",
   "⚠ Weather & disaster warnings": "⚠ Alertes météo et catastrophes",
   "⚡ Energy mix": "⚡ Mix énergétique",
   "🌊 Ocean currents": "🌊 Courants marins",
   "🌊 Tides": "🌊 Marées",
-  "🌾 Crop cultivation": "🌾 Cultures agricoles",
   "🕸 Industry web": "🕸 Réseau industriel",
   "🚢 Trade flows": "🚢 Flux commerciaux",
   "3C 273 — the first quasar ever identified": "3C 273 — le premier quasar identifié",
@@ -3502,7 +3238,6 @@ window.IntMapLang.define('fr', { ui: {
   "Federation of Rhodesia and Nyasaland": "Fédération de Rhodésie et du Nyassaland",
   "Federation of South Arabia": "Fédération d'Arabie du Sud",
   "Female labor participation %": "Taux d'activité des femmes %",
-  "Fertility rate (births/woman)": "Indice de fécondité (enfants/femme)",
   "Fezzan": "Fezzan",
   "Fixed broadband /100": "Haut débit fixe /100",
   "Food industry": "Agroalimentaire",
@@ -3831,7 +3566,6 @@ window.IntMapLang.define('fr', { ui: {
   "Battery reserve": "Réserve de batterie",
   "Boundaries of Earth’s tectonic plates — where most earthquakes and volcanoes occur.": "Limites des plaques tectoniques — là où se produisent la plupart des séismes et des volcans.",
   "Buddhism": "Bouddhisme",
-  "Carbon-dioxide emissions per person per year (tonnes) — a country’s per-capita climate footprint.": "Émissions de dioxyde de carbone par personne et par an (tonnes) — l’empreinte climatique par habitant.",
   "Caribbean": "Caraïbes",
   "Christianity": "Christianisme",
   "Climb rate": "Vitesse ascensionnelle",
@@ -4015,7 +3749,6 @@ window.IntMapLang.define('fr', { ui: {
   "Snow accretion": "Accumulation de neige",
   "Snowmelt": "Fonte des neiges",
   "Earthquake": "Séisme",
-  "Tropical cyclone": "Cyclone tropical",
   "Volcano": "Volcan",
   "Drought": "Sécheresse",
   "Wildfire": "Feu de forêt",
@@ -4044,7 +3777,6 @@ window.IntMapLang.define('fr', { ui: {
   "Mangroves": "Mangroves",
   "Moss and lichen": "Mousses et lichens",
   "Standard 1435 mm": "Écartement standard 1435 mm",
-  "Russian 1520/1524 mm": "Écartement russe 1520/1524 mm",
   "Iberian 1668 mm": "Écartement ibérique 1668 mm",
   "Irish 1600 mm": "Écartement irlandais 1600 mm",
   "Religion distribution": "Répartition des religions",
@@ -4101,7 +3833,6 @@ window.IntMapLang.define('fr', { ui: {
   "Ukraine frontline (live)": "Ligne de front en Ukraine (en direct)",
   "3D buildings (cities)": "Bâtiments 3D (villes)",
   "Volcanoes (Smithsonian GVP)": "Volcans (Smithsonian GVP)",   /* (#R432) */
-  "Volcanoes (GVP Holocene, all 1,215)": "Volcans (GVP, Holocène, les 1 215)",
   "Unchanged / not confirmed": "Inchangé / non confirmé",
   "Data gaps": "Données manquantes",
   "Limitations": "Limites",
@@ -4162,23 +3893,23 @@ window.IntMapLang.define('fr', { ui: {
   " countries reporting": " pays ayant déclaré",   /* (#R266) */
   " · ": " · ",   /* (#R266) */
   "An anomaly is a DIFFERENCE, not a temperature. Each pixel is today’s sea-surface temperature minus the 1985–2014 average for that same spot on that same day of the year, so red means warmer than usual there and blue means cooler than usual there — a +2 °C patch in the Arctic and a +2 °C patch in the tropics are the same departure from normal, not the same water. Grey is normal. The scale is clamped at ±3 °C. This is the map El Niño and La Niña are read off: a warm tongue along the equatorial Pacific is El Niño, a cool one is La Niña.": "Une anomalie est un ÉCART, pas une température : chaque pixel est la température de surface de la mer du jour moins la moyenne 1985–2014 au même endroit et au même jour de l’année. Rouge = plus chaud que d’habitude à cet endroit, bleu = plus froid, gris = normal ; l’échelle est bornée à ±3 °C. C’est sur cette carte que se lisent El Niño et La Niña : une langue chaude le long du Pacifique équatorial est El Niño, une langue froide La Niña.",   /* (#R266) */
-  "Canada — ECCC": "Canada — ECCC",   /* (#R266) */
+  /* (#R266) */
   "Catholic": "Catholicisme",   /* (#R266) */
-  "China Meteorological Administration — the public warning list, grouped by province.": "Administration météorologique de Chine — la liste publique des alertes, groupée par province.",   /* (#R266) */
-  "China — CMA": "Chine — CMA",   /* (#R266) */
+  /* (#R266) */
+  /* (#R266) */
   "Christian (not separated)": "Christianisme (sans détail)",   /* (#R266) */
-  "Each area": "Chaque zone",   /* (#R266) */
+  /* (#R266) */
   "Each country is coloured by the group with the largest share; tap a country for the full composition. Source: CIA World Factbook (public domain).": "Chaque pays est coloré selon le groupe majoritaire ; touchez un pays pour la composition complète. Source : CIA World Factbook (domaine public).",   /* (#R266) */
-  "Environment and Climate Change Canada, active alerts by province.": "Environnement et Changement climatique Canada — alertes en vigueur, par province.",   /* (#R266) */
-  "Europe — MeteoAlarm (37 services)": "Europe — MeteoAlarm (37 services)",   /* (#R266) */
+  /* (#R266) */
+  /* (#R266) */
   "Finnish 1524 mm": "Écartement finlandais 1524 mm",   /* (#R266) */
   "Folk & traditional": "Religions populaires et traditionnelles",   /* (#R266) */
-  "Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires of the last four days.": "Flux mondial : GDACS (système mondial d’alerte aux catastrophes, ONU/CE) — séismes, cyclones tropicaux, inondations, volcans, sécheresses et feux de forêt des quatre derniers jours.",   /* (#R266) */
+  /* (#R266) */
   "How far today’s sea-surface temperature is from normal for this place and this time of year": "De combien la température de surface de la mer d’aujourd’hui s’écarte de la normale pour ce lieu et cette saison",   /* (#R266) */
-  "Japan, the United States and Canada are drawn at the unit their agency issues at. Europe and China publish a list rather than a shape, so their countries are washed and the tap holds the regions. Russia has no machine-readable public warning feed, so it is on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis et le Canada sont dessinés à l’unité d’émission de leur agence. L’Europe et la Chine publient une liste et non des formes : leur pays est coloré et les régions apparaissent au toucher. La Russie ne publie aucun flux d’alerte lisible par machine — elle n’apparaît que via GDACS, un flux d’événements et non un service national d’alerte ; un pays sans événement GDACS n’est pas un pays sans alerte. Affichage à titre indicatif : suivez les autorités officielles.",   /* (#R266) */
+  /* (#R266) */
   "Latest per country": "Le plus récent par pays",   /* (#R266) */
-  "Live from OpenStreetMap for this view": "En direct d’OpenStreetMap pour cette vue",   /* (#R266) */
-  "MeteoAlarm (EUMETNET) — the national weather service’s own warnings, grouped by region.": "MeteoAlarm (EUMETNET) — les avertissements du service météorologique national, groupés par région.",   /* (#R266) */
+  /* (#R266) */
+  /* (#R266) */
   "Normal 1981–2010 (1 km)": "Normale 1981–2010 (1 km)",   /* (#R266) */
   "Normal: CHELSA V2.1 bio12, mean annual precipitation 1981–2010, 30 arc-seconds (~1 km), reprojected to Web Mercator and masked to land. Its 16-bit storage saturates at 6,553 mm, so the very wettest places (parts of Meghalaya, the Chilean fjords) are shown at that ceiling. Years: GPCC Full Data Monthly V2022 (Deutscher Wetterdienst), a rain-gauge analysis at 0.5° over land, with the twelve monthly totals of each year summed. A gauge analysis has nothing to say over the ocean, which is why the sea is empty in both.": "Normale : CHELSA V2.1 bio12, précipitations annuelles moyennes 1981–2010, 30 secondes d’arc (~1 km), reprojetées en Web Mercator et limitées aux terres. Son stockage 16 bits sature à 6 553 mm : les endroits les plus arrosés (parties du Meghalaya, fjords chiliens) sont affichés à ce plafond. Années : GPCC Full Data Monthly V2022 (Deutscher Wetterdienst), analyse pluviométrique à 0,5° sur les terres, les douze totaux mensuels de chaque année étant additionnés. Une analyse pluviométrique n’a rien à dire sur l’océan : c’est pourquoi la mer est vide dans les deux cas.",   /* (#R266) */
   "Orthodox": "Orthodoxie",   /* (#R266) */
@@ -4197,9 +3928,6 @@ window.IntMapLang.define('fr', { ui: {
   "warnings": "avertissements",   /* (#R266) */
   "warnings in": "avertissements dans",   /* (#R266) */
   "zoom in for the live record": "zoomez pour le relevé en direct",   /* (#R266) */
-  "Run to steady state": "Jusqu’au régime permanent",
-  "Steady state (t → ∞)": "Régime permanent (t → ∞)",
-  "The water has come to rest — add a continuous source or place more": "L’eau s’est immobilisée — ajoutez une source continue ou davantage d’eau",
   "front": "front",
   "Flow": "Écoulement",
   "left the area": "sorti de la zone",
@@ -4211,14 +3939,11 @@ window.IntMapLang.define('fr', { ui: {
   "as set": "tel que défini",
   "from the sources": "d’après les sources",
   "from the placed volume": "d’après le volume placé",
-  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. ⏭ jumps to the steady state, which is solved by priority-flood depression filling and downslope volume routing.": "Altitudes réelles, sculptées par vous. L’eau est intégrée dans le temps par les équations de Saint-Venant bidimensionnelles sous forme inertielle locale (Bates 2010, schéma centré sur q d’après de Almeida 2012) avec frottement de Manning n = 0,035 : une onde de crue met le temps qu’elle met. ⏭ saute au régime permanent, résolu par remplissage des dépressions priority-flood et routage volumique vers l’aval.",
-  "Longest straight run": "Plus long segment rectiligne",
   "fall": "dénivelé",
   "relief": "relief",
-  "— flat water: the shortest way across is the way the water goes": "— eau calme : le chemin le plus court est celui que l’eau emprunte",
   "Annual precipitation (by country)": "Précipitations annuelles (par pays)",   /* (#R266) */
-  "Also in GDACS for this country — an event feed, not this agency’s warnings": "Également dans GDACS pour ce pays — un flux d’événements, et non les avertissements de cette agence",   /* (#R266) */
-  "— every point on it is a DEM reading": "— chaque point en est une lecture du MNT",   /* (#R255) */
+  /* (#R266) */
+  /* (#R255) */
   "At rest": "Au repos",   /* (#R267) */
   "integrated": "intégré",   /* (#R267) */
   "flowing": "s’écoule",   /* (#R267) */
@@ -4233,19 +3958,12 @@ window.IntMapLang.define('fr', { ui: {
   "— when the water reached the front, on the run that drew it": "— instant où l’eau a atteint le front, dans le calcul même qui l’a dessinée",   /* (#R267) */
   "Run on until the water stops moving": "Poursuivre jusqu’à l’arrêt de l’eau",   /* (#R267) */
   "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "Altitudes réelles, sculptées par vous. L’eau est intégrée dans le temps par les équations de Saint-Venant sous leur forme inertielle locale (Bates 2010, schéma centré sur q de de Almeida 2012) avec un frottement de Manning n = 0,035 : une onde de crue met le temps qu’elle met. Le même modèle couvre tout le parcours : la grille s’étend dans la direction que prend l’eau, à la même taille de maille, donc il n’y a en aval ni second calcul ni second tracé. ⏭ poursuit l’intégration jusqu’à l’arrêt de l’eau.",
-  "Australia — BoM": "Australie — BoM",
-  "Brazil — INMET": "Brésil — INMET",
-  "Bureau of Meteorology — warnings in force, grouped by state or territory.": "Bureau of Meteorology — avertissements en vigueur, regroupés par État ou territoire.",
   "By area": "Par zone",
   "cells have no elevation data and the water cannot enter them": "cellules sans données d’altitude : l’eau ne peut pas y entrer",
   "Creoles & pidgins": "Créoles et pidgins",
   "Data year": "Année des données",
   "Each municipality": "Chaque commune",
   "every 60 s": "toutes les 60 s",
-  "Hong Kong — HKO": "Hong Kong — Observatoire (HKO)",
-  "Hong Kong Observatory — the warning signals in force.": "Observatoire de Hong Kong — les signaux d’alerte en vigueur.",
-  "INMET (Brazil), active warnings with their published areas, grouped by state.": "INMET (Brésil) — avertissements actifs avec leurs zones publiées, regroupés par État.",
-  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed and the tap holds the units. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis, le Canada et le Brésil sont dessinés à l’échelle où leur agence émet. L’Europe, la Chine, l’Australie et Hong Kong publient une liste plutôt qu’une forme : leur pays est coloré et le tap montre les unités. La Russie, l’Inde, la Nouvelle-Zélande, la Malaisie, l’Indonésie, l’Afrique du Sud et le Mexique ont été testés ce tour-ci et aucun n’expose de flux public lisible par un navigateur ; ils ne relèvent que de GDACS — un flux d’événements, pas un service d’alerte national, et un pays sans événement GDACS n’est pas un pays sans alerte. Affichage à titre indicatif : suivez les autorités officielles.",
   "Land cover (ESA)": "Couverture du sol (ESA)",
   "Live OpenStreetMap for this view, merged with the shipped snapshot": "OpenStreetMap en direct pour cette vue, fusionné avec l’instantané fourni",
   "Montenegrin": "Monténégrin",
@@ -4268,7 +3986,6 @@ window.IntMapLang.define('fr', { ui: {
   "Tok Pisin": "Tok pisin",
   "Greenlandic": "Groenlandais",
   "Dzongkha": "Dzongkha",
-  "Emergency / danger warning": "Alerte d’urgence / de danger",
   "Gale": "Tempête",
   "Strong wind": "Vent fort",
   "Snow and wind": "Neige et vent",
@@ -4276,10 +3993,7 @@ window.IntMapLang.define('fr', { ui: {
   "Ice accretion": "Givrage",
   "Fertility rate (World Bank)": "Taux de fécondité (Banque mondiale)",
   "Life expectancy (World Bank)": "Espérance de vie (Banque mondiale)",
-  "GDACS event level, over the whole country": "Niveau d’événement GDACS, sur tout le pays",
-  "Warning rank, at the unit the agency issues for": "Rang de l’alerte, à l’échelle où l’agence la publie",
   "UNDP publishes no HDI for this year": "Le PNUD ne publie pas d’IDH pour cette année",
-  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "Le Japon, les États-Unis, le Canada et le Brésil sont dessinés à l’échelle où leur agence publie ses alertes, et ne sont jamais teintés en entier — ce sont les formes qui répondent. L’Europe, la Chine, l’Australie et Hong Kong publient une liste plutôt qu’une géométrie : leur pays est teinté selon le rang de l’agence et le détail apparaît au toucher. Une teinte GDACS est une autre échelle, dans d’autres couleurs : elle indique qu’un événement de ce niveau touche le pays, pas qu’une alerte est en vigueur à un endroit précis. La Russie, l’Inde, la Nouvelle-Zélande, la Malaisie, l’Indonésie, l’Afrique du Sud et le Mexique n’ont aucun flux public lisible par un navigateur ; ils ne figurent que dans GDACS — un flux d’événements, pas un service national d’alerte, et un pays sans événement GDACS n’est pas un pays sans alertes. Affichage à titre indicatif : suivez les autorités officielles.",
   "areas": "zones",
   "Areas published but not locatable on this map: ": "Zones publiées mais non localisables sur cette carte : ",
   "Read from this service but not in force now: ": "Lus depuis ce service mais non en vigueur actuellement : ",   /* world-packs.js (#R383) */
@@ -4304,7 +4018,6 @@ window.IntMapLang.define('fr', { ui: {
   "Europe — MeteoAlarm": "Europe — MeteoAlarm",
   "every 30 s": "toutes les 30 s",
   "Every area every connected service published could be located.": "Toutes les zones publiées ont pu être localisées.",
-  "Fill opacity": "Opacité du remplissage",
   "Fresh": "Récent",
   "higher rank": "niveau supérieur",
   "IntMap has no connection to this country’s warning service, so it is saying nothing about it — not that nothing is in force. Follow the national authority.": "IntMap n’est pas relié au service d’alerte de ce pays : la carte n’affirme rien ici — cela ne veut pas dire qu’aucune alerte n’est en vigueur. Suivez l’autorité nationale.",
@@ -4359,10 +4072,10 @@ window.IntMapLang.define('fr', { ui: {
   "Temperature": "Température",   /* (#R288) */
   "Month": "Mois",   /* (#R288) */
   "Forecast": "Prévision",   /* (#R288) */
-  "ECMWF IFS forecast": "Prévision ECMWF IFS",   /* (#R288) */
-  "MERRA-2 reanalysis": "Réanalyse MERRA-2",   /* (#R288) */
+  /* (#R288) */
+  /* (#R288) */
   "monthly mean": "moyenne mensuelle",   /* (#R288) */
-  "Open the time machine": "Ouvrir la machine à remonter le temps",   /* (#R288) */
+  /* (#R288) */
   "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "L’absence d’alerte est dessinée par unité administrative dans {u} pays ({n} unités) et à l’échelle du pays dans {c}.",   /* (#R288) */
   ' km from the nearest routable road.': ' km de la route carrossable la plus proche.',   /* (#R291) */
   ' of the points returned no forecast (the shared weather client is rate-limited); the others are real.': ' des points n’ont renvoyé aucune prévision (le client météo partagé est limité en débit) ; les autres sont réels.',   /* (#R291) */
@@ -4384,7 +4097,7 @@ window.IntMapLang.define('fr', { ui: {
   'Click the map to set this point. Esc cancels.': 'Cliquez sur la carte pour définir ce point. Échap annule.',   /* (#R291) */
   'Click two corners… (Esc cancels)': 'Cliquez deux coins… (Échap annule)',   /* (#R291) */
   'Click two opposite corners on the map to draw a box the route may not enter.': 'Cliquez deux coins opposés sur la carte pour tracer une zone que l’itinéraire ne peut pas traverser.',   /* (#R291) */
-  'Close the directions panel (the route stays on the map)': 'Fermer le panneau d’itinéraire (la route reste sur la carte)',   /* (#R291) */
+  /* (#R291) */
   'Compute a route first — these describe a route that exists.': 'Calculez d’abord un itinéraire — ces analyses portent sur un itinéraire existant.',   /* (#R291) */
   'Date and time': 'Date et heure',   /* (#R291) */
   'Departure or arrival': 'Départ ou arrivée',   /* (#R291) */
@@ -4730,8 +4443,6 @@ window.IntMapLang.define('fr', { ui: {
   "Pin this page to the front": "Épingler cette page en avant",
   "Place saved": "Lieu enregistré",
   "Placed": "Placé",
-  "Placed by": "Placé selon",
-  "Placed by subject or publisher": "Placé par sujet ou par éditeur",
   "Planetary K index, recent readings": "Indice K planétaire, mesures récentes",
   "pollution": "pollution",
   "present": "présent",
@@ -4893,14 +4604,12 @@ window.IntMapLang.define('fr', { ui: {
   "West–East": "Ouest–Est",
   "What happened on today’s date": "Ce qui s’est passé à cette date",
   "What is drawn on the map, and switches for each": "Ce qui est dessiné sur la carte, avec un interrupteur par couche",
-  "What the story is about": "Le sujet de l’article",
   "Whatever is selected on the map": "Ce qui est sélectionné sur la carte",
   "Where the map is looking": "Ce que regarde la carte",
   "Where the station is right now": "Où se trouve la station en ce moment",
   "Where these earthquakes were": "Où ces séismes ont eu lieu",
   "Where these stories are placed": "Où ces articles sont situés",
   "Which country": "Quel pays",
-  "Who published it": "Qui l’a publié",
   "Why is this showing?": "Pourquoi ceci s’affiche-t-il ?",
   "Widget board": "Tableau de widgets",
   "Widget options": "Options du widget",
@@ -5455,10 +5164,6 @@ window.IntMapLang.define('fr', { ui: {
   'World War I (day by day)': 'Première Guerre mondiale (jour par jour)',   /* war-fronts.js war-layer.js (#R409) */
   'World War II (day by day)': 'Seconde Guerre mondiale (jour par jour)',   /* war-fronts.js war-layer.js (#R409) */
   '{n} more running today': '{n} autres ce jour-là',   /* war-layer.js (#R409) */
-  "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "Les couleurs sont celles du service émetteur : au Japon le jaune / rouge / magenta / noir de la JMA, en Chine les quatre couleurs de signal du CMA, ailleurs l’échelle CAP. Touchez un pays pour son échelle exacte.",
-  "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "Conversion propre à IntMap : un même niveau ne signifie PAS un même danger — les systèmes d’alerte diffèrent. Touchez un pays pour l’échelle de son service.",
-  "Nothing in force in any connected service right now.": "Aucune alerte en vigueur dans les services raccordés.",
-  "What is in force now": "En vigueur actuellement",
   " ash area(s) in force": " zone(s) de cendres en vigueur",
   " eruptions": " éruptions",
   "{h} Holocene volcanoes": "{h} volcans de l’Holocène",   /* (#R432) */

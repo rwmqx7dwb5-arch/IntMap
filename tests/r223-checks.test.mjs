@@ -220,7 +220,22 @@ test('R223 ⑩ Traditional Chinese is registered, complete, and appended at the 
     if (k === 'ui' && n.value.type === 'ObjectExpression') ui = n.value.properties.length;
     if (k === 'inline' && n.value.type === 'ObjectExpression') inl = n.value.properties.length;
   } });
-  assert.ok(ui >= 450, 'the keyed table carries the late-registered keys too (got ' + ui + ')');
+  /* ⚠ (#R450) DERIVED, NOT 450. The floor was written when this table held 493 rows, 73 of which
+     were keys no shipped file could ask for (#R450 removed them and this assertion is what caught
+     it) — so the number was measuring dead weight, and any replacement constant would start
+     rotting the same day. The property is what it always said: zh carries the late-registered keys
+     too, i.e. AT LEAST what English declares. That cannot go stale, and it still fails the moment
+     a language stops keeping up. */
+  const enUi = (() => {
+    let n = 0;
+    walk.simple(parse(read('js/locales/ui.en.js'), { ecmaVersion: 2022 }), { Property(p) {
+      const k = p.key && (p.key.name || p.key.value);
+      if (k === 'ui' && p.value.type === 'ObjectExpression') n = p.value.properties.length;
+    } });
+    return n;
+  })();
+  assert.ok(enUi > 300, 'the English keyed table was read (got ' + enUi + ')');
+  assert.ok(ui >= enUi, 'the keyed table carries the late-registered keys too (got ' + ui + ' vs en ' + enUi + ')');
   assert.ok(inl >= 1800, 'every inline L(…) string has an entry (got ' + inl + ')');
   /* …and it is really Chinese, not a copy of the template */
   const cjk = (zh.match(/[一-鿿]/g) || []).length;

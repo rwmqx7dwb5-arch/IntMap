@@ -64,14 +64,6 @@
     "현재 경계 수준을 공표하는 관측 기관이 없습니다.",
     "沒有任何觀測機構公布此火山的現行等級。"
   ],
-  "No volcano called “{q}” is in the Holocene catalog.": [
-    "Kein Vulkan namens „{q}“ ist im Holozän-Katalog.",
-    "В голоценовом каталоге нет вулкана «{q}».",
-    "No hay ningún volcán llamado «{q}» en el catálogo del Holoceno.",
-    "Aucun volcan nommé « {q} » ne figure au catalogue de l’Holocène.",
-    "홀로세 카탈로그에 「{q}」에 해당하는 화산은 없습니다.",
-    "全新世目錄中沒有名為「{q}」的火山。"
-  ],
   "Published in English by the source and shown exactly as written. Descriptions written by an observatory are not machine-translated here; the classifications above are translated because they come from a fixed vocabulary.": [
     "Von der Quelle auf Englisch veröffentlicht und unverändert wiedergegeben. Von einem Observatorium verfasste Beschreibungen werden hier nicht maschinell übersetzt; die Klassifikationen oben schon, weil sie aus einem festen Vokabular stammen.",
     "Опубликовано источником по-английски и приведено дословно. Описания, написанные обсерваторией, здесь не переводятся машинно; классификации выше переведены, потому что взяты из фиксированного словаря.",

@@ -205,7 +205,17 @@ test('the new UI strings exist in every registered language', () => {
      assertions were about coverage, never about the count. `LANGS` is the one list (js/lang-registry.js). */
   const NL = (R('js/locales/_langs.js').split('IntMapLangBeta')[0].match(/"[a-z-]+"/g) || []).length;   /* (#R232) the GENERATED language list — the registry's rows stopped being the list when a language became one file */
   const i18n = R('js/i18n.js'), d = R('js/drone-nav.js'), tp = R('js/tool-panel.js');
-  assert.equal((i18n.match(/droneBtn:/g) || []).length, NL, 'the launcher label is in every language');
+  /* ⚠ (#R450) THE `droneBtn:` SAMPLE IS GONE, AND ITS SUBJECT WENT FIRST. #R176 removed the
+     launcher button — this file says so ten lines up, «with no button left to click» — and the key
+     it labelled has been unreachable ever since: nine rows of translation for a string no shipped
+     file names. #R450 deleted them and this line, which counted them, is what noticed.
+     ⚠ The CLAIM it sampled is not dropped, it moved and got wider: «every registered language
+     declares every keyed string» is measured repo-wide by scripts/i18n-keyed-audit.mjs against
+     EVERY declaration site (the locale files plus the six `Object.assign(i18n.<code>,…)` modules),
+     and scripts/i18n-audit.mjs --gate fails on it — which one hand-picked key never could. What is
+     left here is this feature's own strings, in the shape it actually uses now: five positional
+     arguments at each L(…) below. Do not re-add a single-key count; that is the shape that rotted. */
+  assert.ok(NL >= 9, 'the generated language list is still being read (got ' + NL + ')');
   /* L(en, jp, de, ru, es) — walk to the matching close paren, because the English text contains brackets */
   const callAt = (src, needle) => {
     const i = src.indexOf(needle); assert.ok(i > 0, `${needle} is missing`);

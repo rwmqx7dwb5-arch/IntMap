@@ -57,7 +57,7 @@ window.IntMapLang.define('ko', { ui: {
       ttlTools:"도구",
       phAisKey:"aisstream.io API 키",
       lnkTerms:"이용약관", lnkPrivacy:"개인정보 처리방침", legalTabTerms:"약관", legalTabPrivacy:"개인정보", commAddImage:"이미지 추가",
-      tabNews:"뉴스", tabSaved:"★ 저장됨", tabInfo:"정보", tabCompanies:"기업", tabStats:"국가", tabCommunity:"커뮤니티",
+      tabNews:"뉴스", tabCompanies:"기업", tabStats:"국가", 
       searchPh:"뉴스 / 장소 검색...", filterCountriesPh:"국가 필터...", filterCompaniesPh:"기업 필터...", evCatsAria:"사건 분류", pickCountryMap:"지도에서 국가 선택", searchBtn:"검색", searchLoadBtn:"검색 / 불러오기", loading:"기사를 불러오는 중...",
       noMatch:"결과가 없습니다.", networkError:"뉴스를 불러오지 못했습니다. 다시 시도 중…",
       emptyHint:"선택된 탭이 없습니다 — 지도가 비어 있습니다.<br>위에서 탭을 선택하면 내용이 표시됩니다.",
@@ -67,38 +67,34 @@ window.IntMapLang.define('ko', { ui: {
       lblTheme:"테마", lblTz:"시간대 설정", tzSearch:"시간대 검색…", btnApply:"적용", optAuto:"시스템 기본값", optLocal:"현지 (시스템 기본값)",
       dashCatMil:"군사 기지", dashCatTech:"기술 / 사이버", dashCatMar:"해양 / 요충지", dashCatGeo:"지리 / 기후",
       readWiki:"위키백과에서 보기 ↗", measure:"측정", areaTool:"면적", radius:"반경", vol3dTool:"3D 부피", points:"지점", total:"합계", perimeter:"둘레", area:"면적", clear:"지우기", undoPt:"지점 취소",
-      measureHint:"클릭하여 지점 추가 · 더블클릭하여 완료", areaHint:"3개 이상의 지점으로 둘러싸기 · 더블클릭하여 완료", radiusHint:"지도를 클릭해 원을 놓습니다. 여러 개 가능합니다.",
-      placeNames:"지명", geoLabels:"수계 및 지형 이름", adminBounds:"주 / 도 경계", roadsLayer:"도로", railLayer:"철도", countries:"국가 (정보)", addCircle:"원 놓기", removeAll:"모두 지우기", color:"색상",
-      statPop:"인구", statGdp:"GDP (명목)", statGdpPc:"1인당 GDP", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"1인당 GDP (PPP)", statArea:"면적", statDensity:"인구 밀도", statRegion:"지역", statSub:"소지역", statCapital:"수도", statCurrency:"통화", statLang:"언어", statHDI:"HDI", statDem:"민주주의 지수", statMil:"국방비", statLife:"기대 수명", statInet:"인터넷 이용자",
+      radiusHint:"지도를 클릭해 원을 놓습니다. 여러 개 가능합니다.",
+      placeNames:"지명", geoLabels:"수계 및 지형 이름", adminBounds:"주 / 도 경계", roadsLayer:"도로", railLayer:"철도", countries:"국가 (정보)", removeAll:"모두 지우기", color:"색상",
+      statPop:"인구", statGdp:"GDP (명목)", statGdpPc:"1인당 GDP", statGdpPPP:"GDP (PPP)", statGdpPcPPP:"1인당 GDP (PPP)", statArea:"면적", statDensity:"인구 밀도", statRegion:"지역", statCapital:"수도", statCurrency:"통화", statLang:"언어", statHDI:"HDI", statDem:"민주주의 지수", statMil:"국방비", statLife:"기대 수명", statInet:"인터넷 이용자",
       details:"자세히 ↗", loadingData:"국가 데이터를 불러오는 중...", dataNA:"해당 없음", noData:"국가 데이터를 사용할 수 없습니다.", sortGdp:"GDP", sortPop:"인구", sortArea:"면적", sortName:"가나다", sortHDI:"HDI", sortMil:"국방비", elev:"고도", bearing:"방위", presetNone:"— 선택 —", presetLbl:"범위 프리셋", opacity:"불투명도", circumference:"둘레", lblUnits:"측정 단위", unitBoth:"미터법 + 야드파운드법", unitMetric:"미터법만", unitImperial:"야드파운드법만", msPh:"지구상의 어떤 장소든 검색...",
-      spRunway:"활주로", spGarrison:"주둔 부대", spOperator:"운영자", spEstd:"설립", spAircraft:"항공기", spType:"종류", spCapacity:"수용력", spDepth:"수심", spOutput:"생산량", spReserves:"매장량",
-      flat:"평면", globe:"지구본", threeD:"⛰️ 3D", gridBtn:"🌐 격자", gridLayer:"🌐 격자 및 좌표", widgetsBtn:"위젯", lblTempUnit:"온도", tempBoth:"°C + °F", tempC:"°C만", tempF:"°F만", measureBtn:"📏 측정", measureMenuBtn:"측정", measureDistBtn:"📏 거리 / 면적", areaBtn:"📐 면적", drawBtn:"✏️ 그리기", vol3dBtn:"🧊 3D 부피", droneBtn:"🛸 드론", radiusBtn:"⭕ 반경", objectsBtn:"🗂 객체", mScreenshot:"지도 스크린샷", shareMenuBtn:"공유", shareLinkBtn:"공유 / 링크 복사", layersBtn:"레이어 ▾",
-      ctxDropPin:"핀 놓기", ctxMeasureFrom:"측정 시작", ctxPostHere:"커뮤니티에 게시", ctxDistFrom:"이전 핀으로부터의 거리", ctxCopy:"좌표 복사", ctxClearPins:"모든 핀 삭제", ctxThisPoint:"이 지점", coords:"좌표", depth:"수심", climate:"기후", tlToday:"오늘", tlTitle:"Chronos", tlMachine:"Chronos", tl10y:"−10년", tl5y:"−5년", tlNow:"현재",
+      spType:"종류", 
+      flat:"평면", globe:"지구본", threeD:"⛰️ 3D", gridBtn:"🌐 격자", gridLayer:"🌐 격자 및 좌표", lblTempUnit:"온도", tempBoth:"°C + °F", tempC:"°C만", tempF:"°F만", measureMenuBtn:"측정", measureDistBtn:"📏 거리 / 면적", drawBtn:"✏️ 그리기", vol3dBtn:"🧊 3D 부피", radiusBtn:"⭕ 반경", objectsBtn:"🗂 객체", mScreenshot:"지도 스크린샷", shareMenuBtn:"공유", shareLinkBtn:"공유 / 링크 복사", layersBtn:"레이어 ▾",
+      ctxDropPin:"핀 놓기", ctxMeasureFrom:"측정 시작", ctxPostHere:"커뮤니티에 게시", ctxDistFrom:"이전 핀으로부터의 거리", ctxCopy:"좌표 복사", ctxClearPins:"모든 핀 삭제", ctxThisPoint:"이 지점", coords:"좌표", depth:"수심", climate:"기후", tlMachine:"Chronos", 
       lyrEEZ:"배타적 경제수역 / 12해리", lyrShips:"실시간 선박", lyrPlanes:"실시간 항공기", lyrSats:"실시간 위성", lyrThermal:"열 이상 (산불)", planesZoomHint:"확대하면 실시간 항공기를 불러옵니다", planesAreaHint:"확대하세요 — 실시간 항공기는 화면 중앙 영역만 표시됩니다", poiLabels:"장소, 상점 및 시설", shipsZoomHint:"확대하면 실시간 선박을 불러옵니다", aisNoKey:"실시간 선박에는 무료 AISstream.io API 키가 필요합니다 — 설정에서 추가하세요.", aisKeyLabel:"실시간 선박 (AISstream 키)", aisKeyHint:"aisstream.io에서 무료 키를 받아 여기에 붙여넣으면 실시간 선박이 표시됩니다. 이 브라우저에만 저장됩니다.",
       filtCiv:"민간", filtMil:"군용", filtAll:"전체", trafficFilter:"필터", lyrTime:"레이어 날짜", thermWin24:"최근 24시간", thermWin48:"최근 48시간", thermWin72:"최근 72시간",
-      commAdd:"+ 새 글", commAddArmed:"지도를 클릭해 핀을 놓으세요", commTitle:"제목", commBody:"관찰, 질문 또는 견해를 공유하세요...", commPost:"게시", commCancel:"취소", commEmpty:"아직 글이 없습니다. 「+ 새 글」을 눌러 대화를 시작하세요.", commComment:"댓글", commLocate:"지도에서 보기", commDelete:"삭제", commReply:"답글", commWrite:"댓글 작성...", commPostNew:"새 글", commPlacedAt:"위치", commSortHot:"인기", commSortNew:"최신", commSortTop:"베스트", commSearchPh:"글 검색…", commInView:"화면 내", commCat:"분류", commCatAll:"전체", commEdit:"수정", commEdited:"수정됨", commEditPost:"글 수정", commSaveEdit:"변경 사항 저장", commNoMatch:"필터와 일치하는 글이 없습니다.", borders:"국경", coastline:"해안선·호안선", compare:"비교", compareEmpty:"국가 행을 탭해 선택하고 비교하세요.", coCompareEmpty:"기업 행을 탭해 선택하고 비교하세요.", compareView:"비교 보기", compareClear:"지우기", back:"뒤로", deletePin:"삭제",
+      commAdd:"+ 새 글", commTitle:"제목", commBody:"관찰, 질문 또는 견해를 공유하세요...", commPost:"게시", commCancel:"취소", commEmpty:"아직 글이 없습니다. 「+ 새 글」을 눌러 대화를 시작하세요.", commLocate:"지도에서 보기", commDelete:"삭제", commReply:"답글", commWrite:"댓글 작성...", commPostNew:"새 글", commPlacedAt:"위치", commSortHot:"인기", commSortNew:"최신", commSortTop:"베스트", commSearchPh:"글 검색…", commInView:"화면 내", commCat:"분류", commCatAll:"전체", commEdit:"수정", commEdited:"수정됨", commEditPost:"글 수정", commSaveEdit:"변경 사항 저장", commNoMatch:"필터와 일치하는 글이 없습니다.", borders:"국경", coastline:"해안선·호안선", compare:"비교", compareEmpty:"국가 행을 탭해 선택하고 비교하세요.", coCompareEmpty:"기업 행을 탭해 선택하고 비교하세요.", compareView:"비교 보기", compareClear:"지우기", back:"뒤로", deletePin:"삭제",
       satCtrlTitle:"위성 영상", satProvider:"제공처", satDate:"촬영일", satLatest:"최신", satMosaicSuffix:"무운량 모자이크", satLocked:"API 키 필요", satPrevDay:"이전 날", satNextDay:"다음 날", satKeysTitle:"위성 영상 (본인 키)", satKeyHint:"API 키를 입력하면 위성 패널에서 해당 제공처를 사용할 수 있습니다. 키는 이 브라우저에만 저장됩니다.", satKeyConnected:"연결됨", satKeyNone:"키 없음", satErrAuth:"{provider}: 인증 실패 — API 키를 확인하세요", satErrTiles:"{provider}: 영상을 사용할 수 없어 대체 소스로 전환했습니다",
       aiSecTitle:"AI 기능", aiSecHint:"내장 AI — 로그인한 사용자는 무료 (하루 최대 10회). API 키가 필요 없습니다.",
-      aiProvider:"AI 제공처", aiModel:"모델", aiApiKey:"API 키", aiKeyConnected:"연결됨", aiKeyNone:"키 없음", aiGetKey:"키 받기 ↗", aiOnDevice:"Chrome에서 기기 내에서 실행됩니다 — API 키가 필요 없습니다.",
-      aiTest:"연결 테스트", aiTesting:"테스트 중…", aiTestOk:"연결 정상 ✓",
+      aiProvider:"AI 제공처", 
       aiNoKey:"먼저 설정 → AI 기능에서 API 키를 추가하세요.", aiNoVision:"이 모델은 이미지를 읽을 수 없습니다. GPT-4o, Claude 3.5 Sonnet 또는 Gemini 1.5 Pro를 선택하세요.",
-      aiChromeUnavail:"여기서는 Chrome 내장 AI를 사용할 수 없습니다. 기기 내 AI가 활성화된 Chrome 127 이상을 쓰거나 다른 제공처를 선택하세요.",
       aiThinking:"AI가 분석 중…", aiError:"AI 요청 실패", aiCopy:"복사", aiCopied:"복사됨 ✓", aiClose:"닫기", aiRetry:"다시 시도",
-      aiGeoBtn:"✨ 모든 뉴스를 AI로 위치 지정", aiTranslateTitles:"제목 번역", aiTransBusy:"번역 중…", aiTransDone:"{n}개의 제목을 번역했습니다", aiTransNone:"제목이 이미 사용 언어입니다.",
-      lblNewsLang:"뉴스 언어", newsLangUi:"현재 언어만", newsLangMulti:"모든 언어 (제목 자동 번역)", lblAiLocate:"AI 위치 분석", aiLocManual:"수동 (버튼)", aiLocAuto:"모든 뉴스에 자동 적용",
+      aiTranslateTitles:"제목 번역", aiTransBusy:"번역 중…", aiTransDone:"{n}개의 제목을 번역했습니다", aiTransNone:"제목이 이미 사용 언어입니다.",
+      lblNewsLang:"뉴스 언어", newsLangUi:"현재 언어만", newsLangMulti:"모든 언어 (제목 자동 번역)", 
       aiTranslate:"번역", aiShowOriginal:"원문", aiTransNoText:"번역할 본문이 없습니다 — 웹 보기를 사용해 보세요.",
       aiSumBtn:"이 지역을 AI로 요약", popInArea:"이 지역의 인구", popCalcing:"인구 계산 중…", popFail:"인구 조회 실패 — 다시 시도하세요.", newsInArea:"이 지역의 뉴스", elevProfile:"고도 단면", finalizeMeas:"지도에 남기기", aiSumTitle:"지역 브리핑", aiSumSub:"선택 지역 내 뉴스 핀 {n}개", aiSumNoArea:"먼저 영역을 그리거나 원을 놓으세요.", aiSumNoNews:"이 지역에는 뉴스 핀이 없습니다.",
       aiVisHead:"AI 변화 탐지", aiVisBtn:"변화 탐지", aiVisTitle:"위성 변화 보고서", aiVisSub:"{a} → {b} 비교", aiVisBefore:"이전", aiVisAfter:"이후", aiVisCapturing:"영상 캡처 중…", aiVisPickDates:"비교할 두 날짜를 선택하세요.", aiVisNeedsDated:"위성 모드에서 날짜 선택이 가능한 제공처(MODIS / VIIRS / Sentinel-2)로 전환하세요.", aiVisCapFail:"지도 영상을 캡처하지 못했습니다."
 ,
       accentCustom:"사용자 지정 색",
       accentDefault:"기본값",
-      atlasBtn:"Atlas — 평소 말로 물어보세요 (베타) · Ctrl/⌘+K",
       blueberryBody:"지리·기후·역사·생태·인구·세계의 사건을 한 화면에서 살펴볼 수 있는 지도를 만드는 것이 목표입니다.\nIntMap은 개인이 개발하고 있으며, 새로운 레이어와 데이터셋, 기능을 꾸준히 더해 가고 있습니다.\nIntMap이 마음에 드시고 앞으로의 개발을 응원하고 싶으시다면 아래에서 후원하실 수 있습니다.",
       blueberryBtn:"후원",
       blueberryGo:"금액 선택 ↗",
       blueberryNote:"외부 페이지(Stripe)로 이동합니다.",
       blueberryTitle:"IntMap 후원하기",
-      climAt:"기후",
       engineActive:"현재 엔진: ",
       engineCesium:"Cesium — 실제 지형을 갖춘 진짜 3D 지구본",
       engineFellBack:"Cesium을 시작하지 못해 이번 세션은 MapLibre로 동작합니다.",
@@ -111,8 +107,6 @@ window.IntMapLang.define('ko', { ui: {
       labelLangEn:"항상 영어",
       labelLangLocal:"현지어 (현지 문자)",
       labelLangUi:"앱 언어에 맞춤",
-      layerPanelClassic:"기존 드롭다운",
-      layerPanelRight:"오른쪽 사이드바 (미리보기 포함)",
       lblAccent:"강조 색상",
       lblDataSources:"데이터 출처",
       lblEngine:"지도 엔진",
@@ -121,7 +115,6 @@ window.IntMapLang.define('ko', { ui: {
       lblKbd:"키보드 단축키",
       lblLabelLang:"지명 표기",
       lblLang:"언어",
-      lblLayerPanel:"레이어 패널",
       lblMapColor:"지도 색상",
       lblNavInertia:"관성",
       lblNavPan:"이동",
@@ -130,22 +123,15 @@ window.IntMapLang.define('ko', { ui: {
       lblNewsCountries:"국가별 매체 뉴스",
       lblNewsSources:"뉴스 매체",
       lblNightSide:"낮·밤 음영",
-      lblPlayground:"플레이그라운드 (베타)",
       lblScience:"과학과 계산 논리",
       lblShowRank:"순위 숫자 (국가)",
       lblSidebarStyle:"사이드바 외관",
-      lblSourcesPage:"데이터 출처",
       lblTicker:"하단 티커 (뉴스·시장)",
       lblTiltLimit:"지도 기울기 제한",
       lblWsMode:"창 작업 공간 (데스크톱)",
       lgdRadarTitle:"강수 강도",
-      lgdReliefTitle:"표고",
       lgdSSTTitle:"해수면 온도",
-      lgdSeaLevelTitle:"해수면 변화",
-      lgdSubcablesTitle:"해저 케이블",
-      lgdTempTitle:"기온 (2 m)",
       lgdTitle:"쾨펜–가이거",
-      lgdWindTitle:"풍속",
       lyrAOD:"에어로졸 / 연무",
       lyrClimate:"쾨펜 기후",
      lyrContours:"등고선",
@@ -172,7 +158,6 @@ window.IntMapLang.define('ko', { ui: {
       lyrGrpOthersReal:"기타",
       lyrGrpTerrain:"지형·표고",
       lyrGrpNature:"자연·토지피복",
-      lyrGrpWeather:"기상·환경",
       lyrHDI:"인간개발지수 (2022)",
       lyrHillshade:"음영 기복",
       lyrMilSpend:"국방비",
@@ -190,8 +175,6 @@ window.IntMapLang.define('ko', { ui: {
       lyrSnow:"적설·해빙 분포",
       lyrSubcables:"해저 케이블",
       lyrTFR:"합계출산율",
-      lyrTemp:"기온 (2 m)",
-      lyrTimeMonth:"월",
       lyrWind:"바람",
       mDone:"완료",
       mTitleMap:"지도",
@@ -210,24 +193,12 @@ window.IntMapLang.define('ko', { ui: {
       newsSourcesHint:"선택한 매체의 헤드라인만 표시합니다. 목록은 현재 피드에 실제로 들어 있는 매체로 만듭니다.",
       nightSideOff:"끔 — 지구 전체를 고르게 밝게",
       nightSideOn:"켬 (기본값) — 밤 쪽을 어둡게 하고 도시 조명 표시",
-      optBaroque:"바로크 (유럽)",
-      optClassic:"대항해시대",
-      optCyber:"사이버 터미널",
       optDark:"어둡게",
       optLight:"밝게",
-      optMedical:"의료",
-      optMilitary:"군용",
-      optPsychedelic:"사이키델릭",
-      optTaisho:"다이쇼 시대 일본",
-      playgroundBtn:"🎮 플레이그라운드 열기",
       proArchive:"🔒 10년 타임머신 아카이브",
       proIntel:"🔒 러시아·중국 현지 1차 자료",
-      proModalSub:"실시간 지도를 넘어 — 깊이 있는 역사 아카이브와 1차 자료 기반 정보.",
-      proModalTitle:"IntMap Pro 잠금 해제",
-      proSection:"프리미엄 기능",
       reportBugBtn:"🐞 버그 신고",
       screenshotBtn:"지도 스크린샷 (조작 버튼은 숨기고 범례는 유지)",
-      screenshotBusy:"촬영 중…",
       screenshotSaved:"스크린샷을 저장했습니다 ✓",
       sendFeedbackBtn:"⭐ 의견 보내기",
       shareView:"이 화면 공유 (링크 복사)",
@@ -256,14 +227,10 @@ window.IntMapLang.define('ko', { ui: {
       tkgFx:"환율",
       tkgIdx:"주가지수",
       uploadGeoJSON:"GeoJSON 불러오기",
-      viewDataSources:"앱 안에서 간단히 보기",
       viewKbd:"⌨ 단축키 목록 보기 (? 키로도 열립니다)",
       viewScience:"각 시뮬레이션의 계산 방법 보기 ↗",
       viewSourcesPage:"데이터 출처 페이지 열기 ↗",
-      worldExplorerBtn:"🌍 위성 낙하 게임",
       wsHint:"뉴스·국가·지도·레이어·Atlas가 각각 독립된 창이 되어 자유롭게 옮기고 크기를 바꾸고 접고 겹칠 수 있습니다. 배치는 저장됩니다.",
-      wsOff:"끔 (기본값)",
-      wsOn:"켬 — 자유롭게 움직이는 크기 조절 가능한 창",
     }, inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     'A new version of IntMap is available. Reload to continue.': 'IntMap의 새 버전이 배포되었습니다. 계속하려면 새로 고치세요.',
@@ -280,7 +247,6 @@ window.IntMapLang.define('ko', { ui: {
     'Follow-up': '후속 보도',
     'matching events': '건의 해당 사건',
     /* (#R386) 出来事単位の News — js/news-events.js。この4言語は位置引数の5つ目より後なので、英語の原文を鍵にここで引く。 */
-    '(translated from English)': '(영어에서 번역)',
     '1 source': '1개 매체',
     'Category decided by: {by}.': '분류를 정한 근거: {by}.',
     'Climate & Weather': '기후·날씨',
@@ -326,7 +292,7 @@ window.IntMapLang.define('ko', { ui: {
     'What the latest report added': '최신 기사가 추가한 내용',
     'Where outlets agree': '매체 간에 일치하는 점',
     'Which outlet said what, in the order they published it.': '어느 매체가 무엇을 썼는지, 공개된 순서대로 나열했습니다.',
-    'The map view did not change.': "지도 화면은 바뀌지 않았습니다.",   /* atlas-console.js */
+    /* atlas-console.js */
     'Unverified statements were removed from this answer.': "검증되지 않은 내용은 이 답변에서 제외했습니다.",   /* atlas-answer-render.js */
     "% of GDP": "GDP 대비 %",
     "By accession year": "가입 연도별",
@@ -350,7 +316,6 @@ window.IntMapLang.define('ko', { ui: {
     "Air pressure reduced to sea level — highs, lows and the storm centre.": "해면으로 환산한 기압 — 고기압·저기압과 폭풍의 중심.",
     "Air temperature 2 m above the ground.": "지상 2 m 기온.",
     "Animate": "애니메이션",
-    "Clouds · infrared (GOES + Himawari)": "구름 · 적외 (GOES + 히마와리)",
     "Convective available potential energy: how much lift a thunderstorm could draw on.": "대류 가용 잠재 에너지 — 뇌우가 쓸 수 있는 상승 에너지의 양.",
     "drag to move": "끌어서 이동",
     "First step": "첫 시각",
@@ -359,17 +324,14 @@ window.IntMapLang.define('ko', { ui: {
     "Latest frame": "최신 프레임",
     "Lines of equal sea-level pressure, labelled in hPa.": "해면기압이 같은 선. 숫자는 hPa.",
     "Loading the wind model…": "바람 모델을 불러오는 중…",
-    "NASA GIBS clean-IR, 10 min. GOES-East · GOES-West · Himawari — no Meteosat, so ~20°W–75°E (Europe, Africa) is not covered.": "NASA GIBS 적외 (10분 간격). GOES-East · GOES-West · 히마와리 — Meteosat은 포함되지 않아 서경 20°〜동경 75°(유럽·아프리카)는 범위 밖.",
     "Next border change": "다음 국경 변경",   /* (#R421) news-timeline.js */
     "Next frame": "다음 프레임",
-    "Next hour": "다음 시각",
     "no frames": "프레임 없음",
     "Oldest frame": "가장 오래된 프레임",
     "Particles": "입자",   /* weather.js (#R313) */
     "Pressure (MSL)": "해면기압",
     "Previous border change": "이전 국경 변경",   /* (#R421) news-timeline.js */
     "Previous frame": "이전 프레임",
-    "Previous hour": "이전 시각",
     "RainViewer radar — the last two hours, 10 min apart": "RainViewer 레이더 — 최근 2시간, 10분 간격",
     "run": "초기시각",
     "Strongest gust expected in the hour ending at the valid time.": "유효 시각까지의 1시간 동안 예상되는 최대 순간풍속.",
@@ -382,19 +344,16 @@ window.IntMapLang.define('ko', { ui: {
        regenerates the full skeleton; anything absent renders in English, per string. */
     /* (#R234) the seismic panel's new instruction banners, its 詳細設定 disclosure and the
        two-state run button. Item ③ 「フランス語、韓国語の整備を継続」. */
-    "Advanced — model assumptions":"고급 설정 — 모델 가정",
   "All areas in force in this country": "이 나라에서 발효 중인 모든 구역",   /* (#R275) */
     "Choose an earthquake…":"지진을 선택하세요…",
     "Click the map to add an observation point.":"지도를 클릭해 관측 지점을 추가하세요.",
     "Click to start, click each corner, and click the first point again to finish.":"클릭해서 시작하고 모서리를 차례로 클릭한 뒤, 첫 점을 다시 클릭하면 끝납니다.",
     "Draw the rupture area on the map.":"지도 위에 진원역을 그려 주세요.",
-    "Each point is added to the table below. Press the button again to turn this off.":"추가한 지점은 아래 표에 나타납니다. 버튼을 다시 누르면 해제됩니다.",
   "Educational — follow the official authorities.": "참고용입니다 — 공식 기관의 발표를 따르세요.",   /* world-packs.js (#R293) */
   "IntMap read": "IntMap 수신",   /* world-packs.js (#R293) */
   "issued": "발표",   /* world-packs.js (#R293) */
   "Not covered, or not read yet (diagonal hatching)": "미지원 또는 미수신 (빗금)",   /* world-packs.js (#R293) */
   "Educational display — follow the official authorities.": "참고용 표시입니다. 공식 기관의 발표를 따르세요.",   /* (#R275) */
-    "If one is already placed, tapping moves it. Press the button again to turn this off.":"이미 설정되어 있으면 탭한 위치로 이동합니다. 버튼을 다시 누르면 해제됩니다.",
   "IntMap is not connected to this country’s warning service, so it is saying nothing about this point — not that nothing is in force.": "IntMap은 이 나라의 경보 기관에 연결되어 있지 않으므로, 이 지점에 대해 아무것도 말하지 않습니다 — 발표가 없다는 뜻이 아닙니다.",   /* (#R275) */
   "National services via the WMO register": "각국 기상기관(WMO 등록 경유)",   /* (#R275) */
   "No country here.": "여기에는 국가가 없습니다.",   /* (#R275) */
@@ -405,7 +364,7 @@ window.IntMapLang.define('ko', { ui: {
     "Apply":"적용", "Reset":"초기화", "Search":"검색", "Loading…":"불러오는 중…",
     "Layers":"레이어", "Settings":"설정", "Map":"지도", "Satellite":"위성", "Globe":"지구본",
     "Flat":"평면", "Minimize":"최소화", "Send":"보내기", "Copy":"복사", "Copy name":"지명 복사", "Open":"열기", "Back":"뒤로",
-    "Sources":"출처", "Related articles":"관련 기사", "Cited sources":"인용 출처",
+    "Sources":"출처", 
   "The water has come to rest — press ↺ to run it again, or place more": "물이 멈췄습니다 — ↺ 로 다시 재생하거나 물을 더 배치하세요",   /* (#R275) */
   "This country’s service is in the update cycle and has not been read yet.": "이 나라의 기관은 갱신 순서를 기다리는 중이며 아직 수신되지 않았습니다.",   /* (#R275) */
   "Warnings at this point": "이 지점의 경보",   /* (#R275) */
@@ -420,12 +379,12 @@ window.IntMapLang.define('ko', { ui: {
     "Seismic waves":"지진파", "P wave":"P파", "S wave":"S파",
     "Rayleigh wave":"레일리파 (표면파)", "Love wave":"러브파 (표면파)",
     "Method & sources":"계산 방법과 출처", "Observed at the time":"당시 실측값",
-    "Load a past earthquake…":"과거 지진 불러오기…", "Peak intensity":"최대 진도",
+    "Peak intensity":"최대 진도",
     "Slip":"미끄러짐량", "Tsunami":"쓰나미", "Casualties":"인명 피해", "strike/dip/rake":"주향/경사/미끄러짐각",
     "Educational model — in a real emergency follow the official authorities.":"교육용 모델입니다 — 실제 재난 시에는 공식 기관의 지시를 따르세요.",
     "depth":"깊이", "Place":"지점", "shaking":"지속", "Shindo":"진도", "Minimize":"최소화",
-    "Day & night shading":"주야 음영", "Night side of the Earth":"지구의 밤쪽",
-    "Ocean currents":"해류", "Disaster simulator":"재난 시뮬레이터",
+    "Night side of the Earth":"지구의 밤쪽",
+    "Ocean currents":"해류", 
     "My location":"내 위치", "Reset bearing":"방위 초기화", "Map tools":"지도 도구",
     "Search layers…":"레이어 검색…", "Base map & labels":"기본 지도와 라벨",
     "Climate & weather":"기후와 날씨", "Terrain & elevation":"지형과 고도",
@@ -480,7 +439,6 @@ window.IntMapLang.define('ko', { ui: {
   "level": "수평비행",
   "Load an earthquake": "지진 불러오기",
   "Log in to post, comment and vote.": "게시·댓글·투표하려면 로그인하세요.",
-  "Month: ": "대상 월: ",
   "Move pin on map": "지도에서 핀 옮기기",
   "No boundary available for this place": "이 장소의 경계를 찾을 수 없습니다",
   "on ground": "지상",
@@ -582,7 +540,6 @@ window.IntMapLang.define('ko', { ui: {
   "Pitch": "기울기",
   "Zoom": "확대",
   "North": "북",
-  "Publisher unknown": "발행처 불명",
   "Location unknown": "위치 불명",
   "Click on a country (land)": "국가(육지)를 클릭하세요",
   "Click a country on the map to add it": "지도에서 국가를 클릭하면 추가됩니다",
@@ -781,9 +738,6 @@ window.IntMapLang.define('ko', { ui: {
   "Where? Give an epicenter (place, or lng/lat).": "어디인가요? 진앙을 지정하세요 (장소 또는 경도/위도).",
   "Tsunami propagation": "쓰나미 전파",
   "flood inundation": "침수",
-  "ashfall plume": "화산재 기둥",
-  "smoke plume": "연기 기둥",
-  "radioactive fallout": "방사성 낙진",
   "Earth Replay": "지구 다시 보기",
   "Data & connection status": "데이터 및 연결 상태",
   "News feed": "뉴스 피드",
@@ -806,8 +760,6 @@ window.IntMapLang.define('ko', { ui: {
   "Outlined": "윤곽 표시함",
   "No precise boundary for": "정확한 경계가 없습니다:",
   "Playground unavailable": "플레이그라운드를 사용할 수 없습니다",
-  "Publisher pins": "발행처 핀",
-  "Subject pins": "주제 핀",
   "Saved": "저장됨",
   "Translate": "번역",
   "News": "뉴스",
@@ -860,14 +812,14 @@ window.IntMapLang.define('ko', { ui: {
   "Coal / oil / gas": "석탄·석유·가스",   /* (#R258) */
   "Crest above ground": "제방 마루 높이(지상)",   /* (#R258) */
   "Depth per stroke": "1획당 깊이",   /* (#R258) */
-  "Discharge": "유량",   /* (#R258) */
+  /* (#R258) */
   "Disperse a release on the live wind field": "실제 바람장에서 방출을 확산시킵니다",   /* (#R258) */
   "Elapsed": "경과 시간",   /* (#R258) */
   "Flow arrows": "흐름 화살표",   /* (#R258) */
   "Fuel / source": "연료·에너지원",   /* (#R258) */
   "Height per stroke": "1획당 높이",   /* (#R258) */
   "How far you get in a given time": "정해진 시간에 어디까지 갈 수 있는가",   /* (#R258) */
-  "Inflow": "유입량",   /* (#R258) */
+  /* (#R258) */
   "Method": "방식",   /* (#R258) */
   "Mine / shaft": "광산·수직갱",   /* (#R258) */
   "Mines, quarries & wells": "광산·채석장·유정",   /* (#R258) */
@@ -890,36 +842,36 @@ window.IntMapLang.define('ko', { ui: {
   "Cleared. Press Analyze to re-run here, or “Move the site…” to place it somewhere else.": "지웠습니다. 「분석」으로 다시 계산하거나 「지점 변경…」으로 다른 곳에 놓으세요.",   /* (#R261) */
   "College": "전문대·단과대",   /* (#R261) */
   "continuous": "연속",   /* (#R261) */
-  "continuous (▶ pours these)": "연속（▶ 로 주수되는 쪽）",   /* (#R261) */
+  /* (#R261) */
   "Control tower": "관제탑",   /* (#R261) */
-  "Counts and capacity are for what is on screen. A capacity is shown only where the operator or OpenStreetMap publishes one — nothing here is estimated. Tap a class to take it off the map.": "건수·용량은 화면에 보이는 범위의 집계입니다. 용량은 운영자 또는 OpenStreetMap이 공표한 경우에만 표시하며 추정값은 쓰지 않습니다. 분류를 누르면 지도에서 뺄 수 있습니다.",   /* (#R261) */
+  /* (#R261) */
   "Crane": "하역 크레인",   /* (#R261) */
   "curated": "수록",   /* (#R261) */
   "Data centers & AI infrastructure": "데이터센터·AI 인프라",   /* (#R261) */
   "Dish diameter": "안테나 직경",   /* (#R261) */
   "Drone flight planner": "드론 비행 계획",   /* (#R261) */
-  "Earth replay (sun over time)": "지구 리플레이（태양의 움직임）",   /* (#R261) */
+  /* (#R261) */
   "Emergency services": "긴급 대응 거점（소방·경찰·구급）",   /* (#R261) */
   "Ferry terminal": "페리 터미널",   /* (#R261) */
   "Fire station": "소방서",   /* (#R261) */
   "Fire stations, police stations, ambulance stations and mountain-rescue posts mapped in OpenStreetMap for the current view — how far help has to come from, which no national statistic answers.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 소방서·경찰서·구급 스테이션·산악 구조 거점입니다. 「도움이 어디서 오는가」는 국가 통계로는 알 수 없습니다.",   /* (#R261) */
-  "Flood & tsunami hazard": "침수·쓰나미 위험",   /* (#R261) */
+  /* (#R261) */
   "Harbour type": "항만 종별",   /* (#R261) */
-  "How far the timetable takes you, not the road": "도로가 아니라 시간표로 갈 수 있는 범위",   /* (#R261) */
+  /* (#R261) */
   "IATA code": "IATA 코드",   /* (#R261) */
   "ICAO code": "ICAO 코드",   /* (#R261) */
   "International airport": "국제공항",   /* (#R261) */
-  "Largest published capacity in view": "표시 범위에서 공표 용량이 큰 순",   /* (#R261) */
+  /* (#R261) */
   "Launch pad": "발사대",   /* (#R261) */
   "Launch pads, spaceports, satellite ground stations and radio telescopes mapped in OpenStreetMap for the current view — the ground half of everything the orbit layers show overhead.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 발사대·우주기지·위성 지상국·전파망원경입니다. 궤도 레이어가 머리 위에 그리는 것의 지상 쪽 절반입니다.",   /* (#R261) */
   "Move the site…": "지점 변경…",   /* (#R261) */
   "Next source": "다음에 놓을 수원",   /* (#R261) */
-  "No site in view publishes a capacity figure.": "표시 범위 안에 용량을 공표한 시설이 없습니다.",   /* (#R261) */
+  /* (#R261) */
   "Observatory": "천문대·관측소",   /* (#R261) */
   "of": "／전",   /* (#R261) */
   "On the map": "배치됨",   /* (#R261) */
   "one shot": "1회",   /* (#R261) */
-  "Only one-shot volumes are placed — add a continuous source to pour": "놓여 있는 것은 1회분 수량뿐입니다. 연속 수원을 추가하면 주수할 수 있습니다",   /* (#R261) */
+  /* (#R261) */
   "Police station": "경찰서",   /* (#R261) */
   "Port / harbour": "항만",   /* (#R261) */
   "Ports, harbours & terminals": "항만·터미널",   /* (#R261) */
@@ -929,16 +881,16 @@ window.IntMapLang.define('ko', { ui: {
   "Radio telescope": "전파망원경",   /* (#R261) */
   "Rescue post": "구조 거점",   /* (#R261) */
   "Research institute": "연구기관",   /* (#R261) */
-  "Run the day and night round the planet": "밤과 낮을 지구 위에서 돌려 봅니다",   /* (#R261) */
+  /* (#R261) */
   "Runway length": "활주로 길이",   /* (#R261) */
   "Satellite ground station": "위성 지상국",   /* (#R261) */
-  "Signal strength from a transmitter placed here": "여기에 놓은 송신기의 수신 강도",   /* (#R261) */
-  "sites in view": "건（표시 범위 내）",   /* (#R261) */
+  /* (#R261) */
+  /* (#R261) */
   "Spaceports & ground stations": "우주기지·지상국",   /* (#R261) */
   "Students": "학생 수",   /* (#R261) */
   "Substance": "대상",   /* (#R261) */
   "Terminal": "터미널",   /* (#R261) */
-  "Transit reachability": "대중교통 도달권",   /* (#R261) */
+  /* (#R261) */
   "Universities & research institutes": "대학·연구기관",   /* (#R261) */
   "Universities, colleges, research institutes, observatories and libraries mapped in OpenStreetMap for the current view — where teaching and research actually happen, beside the enrolment percentages.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 대학·단과대·연구기관·천문대·도서관입니다. 취학률 숫자 옆에, 교육과 연구가 실제로 이루어지는 장소 자체를 둡니다.",   /* (#R261) */
   "University": "대학",   /* (#R261) */
@@ -947,23 +899,23 @@ window.IntMapLang.define('ko', { ui: {
   "Water tower / reservoir": "급수탑·배수지",   /* (#R261) */
   "Water works": "정수장",   /* (#R261) */
   "Water works, wastewater treatment plants, pumping stations, water towers and reservoirs mapped in OpenStreetMap for the current view — the plant that makes safe water and sanitation real in a place, rather than the national percentage.": "현재 표시 범위에 대해 OpenStreetMap에 등록된 정수장·하수처리장·펌프장·급수탑·배수지입니다. 국가별 보급률이 아니라, 그 장소에서 실제로 상하수도를 성립시키는 설비 그 자체입니다.",   /* (#R261) */
-  "What a given water level reaches from here": "어떤 수위가 여기서 어디까지 닿는가",   /* (#R261) */
+  /* (#R261) */
   "Power plants & grid": "발전소·송변전 설비",   /* (#R258) */
   "Quarry": "채석장",   /* (#R258) */
   "Radioactive plume simulator": "방사성 플룸 확산 시뮬레이터",   /* (#R258) */
   "Rainfall": "강수량",   /* (#R258) */
   "Resource": "자원",   /* (#R258) */
   "Sculpt the ground, pour water, build a levee": "지형을 깎고 쌓고, 물을 붓고, 제방을 세웁니다",   /* (#R258) */
-  "Solve the wave from a sea-floor rupture": "해저 단층에서 파를 계산합니다",   /* (#R258) */
+  /* (#R258) */
   "Source & notes": "출처·주석",   /* (#R258) */
   "Substation": "변전소",   /* (#R258) */
   "Terrain & water simulator": "지형·수류 시뮬레이터",   /* (#R258) */
   "The sky a person standing here has": "이곳에 선 사람이 보는 하늘",   /* (#R258) */
   "Tool": "도구",   /* (#R258) */
-  "Tsunami simulator": "쓰나미 시뮬레이터",   /* (#R258) */
+  /* (#R258) */
   "Voltage": "전압",   /* (#R258) */
-  "Volume per click": "클릭당 수량",   /* (#R258) */
-  "What the terrain hides from a point": "한 지점에서 지형이 가리는 범위",   /* (#R258) */
+  /* (#R258) */
+  /* (#R258) */
   "Where the sun reaches, hour by hour": "시간대별로 해가 드는 곳",   /* (#R258) */
   "Width": "폭",   /* (#R258) */
   "Mines, quarries, mine shafts and oil or gas wells mapped in OpenStreetMap for the current view — the places raw material physically leaves the ground. Click any point for the resource and operator as tagged.": "현재 표시 범위에서 OpenStreetMap에 등록된 광산·채석장·수직갱·유정/가스정입니다. 원자재가 실제로 땅에서 나오는 장소 그 자체입니다. 점을 클릭하면 태그에 기록된 자원과 운영자가 표시됩니다.",   /* (#R258) */
@@ -1045,7 +997,6 @@ window.IntMapLang.define('ko', { ui: {
   "(none found in OSM within the radius)": "(해당 반경 내 OSM에서 찾지 못했습니다)",
   "(unverified — data missing)": "(미확인 — 데이터 없음)",
   "(up to 10)": "(최대 10개)",
-  "(working back from the arrival deadline)": "(도착 시각에서 역산)",
   ")": ")",
   "← Exit workspace": "← 작업 공간 나가기",
   "↻ Fly again": "↻ 다시 비행",
@@ -1104,7 +1055,6 @@ window.IntMapLang.define('ko', { ui: {
   "Add countries above to compare them.": "위에서 국가를 추가하면 비교할 수 있습니다.",
   "Add observation points": "관측 지점 추가",
   "Add on map": "지도에 추가",
-  "Advanced — fault geometry": "고급 — 단층 형상",
   "Advisory": "주의보",
   "Aerosol / haze": "에어로졸 / 연무",
   "Age of the elements": "궤도 요소의 경과 시간",
@@ -1124,7 +1074,6 @@ window.IntMapLang.define('ko', { ui: {
   "Airport": "공항",
   "AIRSPEED": "대기속도",
   "AIS connect failed: ": "AIS 연결 실패: ",
-  "alert areas": "경보 구역",
   "All": "전체",
   "All active satellites": "운용 중인 모든 위성",
   "All indicators": "모든 지표",
@@ -1198,14 +1147,12 @@ window.IntMapLang.define('ko', { ui: {
   "Aug": "8월",
   "auto": "자동",
   "Average slip": "평균 변위",
-  "Avoid routing via Valhalla (OSM).": "Valhalla(OSM)를 통한 회피 경로 탐색입니다.",
   "Avoid:": "회피:",
   "avoids ": "회피: ",
   "AWS Terrain (terrarium DEM)": "AWS Terrain (terrarium DEM)",
   "Axial tilt": "자전축 기울기",
   "az.": "방위",
   "Azimuth": "방위각",
-  "back a quarter cycle (6h12m)": "4분의 1 주기 전 (6시간 12분)",
   "back about a quarter cycle (6 h)": "약 4분의 1 주기 전 (6시간)",
   "Back to automatic": "자동으로 되돌리기",
   "back to now": "현재로 되돌리기",
@@ -1218,7 +1165,6 @@ window.IntMapLang.define('ko', { ui: {
   "Battery": "배터리",
   "Bear slightly left": "왼쪽으로 살짝 붙으세요",
   "Bear slightly right": "오른쪽으로 살짝 붙으세요",
-  "below DEM resolution": "DEM 해상도 미만",
   "Below the horizon": "지평선 아래",
   "below the horizon here": "이 지점의 지평선 아래",
   "Below the horizon here": "이 지점의 지평선 아래",
@@ -1256,11 +1202,8 @@ window.IntMapLang.define('ko', { ui: {
   "Cesium could not start": "Cesium을 시작할 수 없습니다",
   "Change (partial)": "변화 (일부)",
   "Change reported": "변화 보고됨",
-  "Change the values and press Analyze to re-run at this site; right-click the map to move it.": "값을 바꾸고 「분석」을 누르면 이 지점에서 다시 계산합니다. 지도를 오른쪽 클릭하면 지점을 옮길 수 있습니다.",
   "Channel": "수로",
   "Check other routes": "다른 경로 보기",
-  "Choose destination": "목적지 선택",
-  "Choose start (or click the map)": "출발지 선택 (또는 지도를 클릭)",
   "Circle": "원",
   "city": "도시",
   "city lights loaded": "야간 조명을 불러왔습니다",
@@ -1274,7 +1217,6 @@ window.IntMapLang.define('ko', { ui: {
   "Clear sort": "정렬 해제",
   "clear-sky beam": "맑은 하늘 직달 일사",
   "Clear.": "가림 없음.",
-  "Cleared. Press Analyze to re-run here, or right-click the map to move the site.": "지웠습니다. 「분석」을 누르면 여기서 다시 계산하고, 지도를 오른쪽 클릭하면 지점을 옮깁니다.",
   "clears by": "여유",
   "Click 3 or more points on the map to trace the footprint.": "지도에서 3점 이상을 클릭해 범위를 그리세요.",
   "click a pin for details · say \"clear facilities\" to remove": "핀을 클릭하면 상세 정보 · 「시설 지우기」라고 말하면 제거",
@@ -1289,7 +1231,6 @@ window.IntMapLang.define('ko', { ui: {
   "Click to highlight • right-click for criteria": "클릭: 강조 • 오른쪽 클릭: 기준 보기",
   "Click to show": "클릭하면 표시",
   "Click two corners": "두 모서리를 클릭하세요",
-  "closed basin below sea level": "해수면보다 낮은 내륙 분지",
   "Closest approach": "최근접",
   "coasts in view · level now, and the next turn": "화면 안의 해안 · 현재 조위와 다음 만조·간조",
   "COCKPIT": "조종석",
@@ -1374,7 +1315,6 @@ window.IntMapLang.define('ko', { ui: {
   "covered": "포함",
   "CRASHED": "추락",
   "Create monitor": "감시 만들기",
-  "Crest above ground (m)": "지면 위 마루 높이 (m)",
   "Critical": "심각",
   "Crop": "작물",
   "Crop cultivation": "작물 재배",
@@ -1412,7 +1352,6 @@ window.IntMapLang.define('ko', { ui: {
   "Deposition stays below mapped thresholds in this run (winds carried most activity out of the modeled area).": "이번 계산에서는 침착량이 표시 기준 아래에 머물렀습니다 (바람이 대부분의 방사능을 모델 영역 밖으로 실어 냈습니다).",
   "depth ": "깊이 ",
   "Depth (km)": "깊이 (km)",
-  "Depth per stroke (m)": "한 번에 파는 깊이 (m)",
   "Detail": "상세",
   "Details": "상세 정보",
   "Detected active fire / heat source": "감지된 활성 화재 / 열원",
@@ -1422,10 +1361,8 @@ window.IntMapLang.define('ko', { ui: {
   "dip": "경사각",
   "Dip": "경사각",
   "Directions": "길찾기",
-  "Discharge (m³/s)": "유량 (m³/s)",
   "displayed-layer values": "표시 중인 레이어 값",
   "DISTANCE": "거리",
-  "distance only beyond": "이 거리 이상에서는 거리만 반영",
   "Domain": "영역",
   "Done — use Redraw to start over": "완료 — 다시 그리려면 「다시 그리기」를 누르세요",
   "Done.": "완료했습니다.",
@@ -1433,7 +1370,6 @@ window.IntMapLang.define('ko', { ui: {
   "DOWN": "하강",
   "downrange": "수평 거리",
   "Downstream": "하류",
-  "downwind": "바람 아래쪽",
   "Drag ": "드래그: ",
   "Drag from one corner to the opposite one.": "한쪽 모서리에서 반대쪽 모서리까지 드래그하세요.",
   "Drag from the center outwards to size the circle.": "중심에서 바깥쪽으로 드래그해 원 크기를 정하세요.",
@@ -1469,13 +1405,11 @@ window.IntMapLang.define('ko', { ui: {
   "Earthquakes (7 days, in radius)": "지진 (7일, 반경 내)",
   "Earthquakes near the route (last 24 h)": "경로 주변의 지진 (최근 24시간)",
   "Eccentricity": "이심률",
-  "ECMWF forecast time": "ECMWF 예보 시각",
   "ECMWF weather": "ECMWF 기상",
   "One step back": "한 단계 뒤로",
   "One step forward": "한 단계 앞으로",
   "Economy": "경제",
   "Edit comment": "댓글 수정",
-  "Educational approximation only — in a real emergency follow official authorities. Flood = connected inundation from the real elevation model; ash/smoke = wind-advected plume on live wind; radioactive = the Lagrangian fallout model. Tsunamis are modeled separately, by the propagation simulator.": "교육용 근사 계산입니다. 실제 재난 시에는 공식 기관의 발표를 따르세요. 침수는 실제 표고 모델에서 연결된 범위, 화산재·연기는 실시간 바람을 따라 이동하는 연기 기둥, 방사성 물질은 라그랑주 낙진 모델입니다. 쓰나미는 전파 시뮬레이터에서 따로 계산합니다.",
   "EEZ = Exclusive Economic Zone (to 200 nm). Line color = boundary type (bright colors for visibility); overlaps flag disputed claims.": "EEZ = 배타적 경제수역(200해리까지). 선 색은 경계 종류를 뜻하며(가독성을 위해 밝은 색을 씁니다), 겹치는 부분은 분쟁 중인 주장을 나타냅니다.",
   "elapsed": "경과",
   "Electricity": "전력",
@@ -1495,7 +1429,6 @@ window.IntMapLang.define('ko', { ui: {
   "Energy mix": "에너지 구성",
   "English": "영어",
   "Enter a number between -11000 and 9000": "-11000에서 9000 사이의 숫자를 입력하세요",
-  "Enter a start and destination.": "출발지와 목적지를 입력하세요.",
   "Entering workspace…": "작업 공간으로 전환 중…",
   "Epoch": "기준 시각(Epoch)",
   "equinox": "분점",
@@ -1524,7 +1457,6 @@ window.IntMapLang.define('ko', { ui: {
   "exit ": "출구 ",
   "Exit workspace": "작업 공간 나가기",
   "Expand": "펼치기",
-  "Export:": "내보내기:",
   "exports": "수출",
   "Exports": "수출",
   "extreme": "극심",
@@ -1571,9 +1503,7 @@ window.IntMapLang.define('ko', { ui: {
   "Flight simulator — pick your aircraft & runway, then START": "비행 시뮬레이터 — 기체와 활주로를 고른 뒤 시작하세요",
   "Flood": "홍수",
   "Flooded (≤ today ": "침수 (≤ 오늘 ",
-  "flooded cells": "침수 격자",
   "Flow stops here": "여기서 흐름이 멈춥니다",
-  "Flow stops here (flat)": "여기서 흐름이 멈춥니다 (평지)",
   "Fly to": "이동",
   "Focus place search": "장소 검색창으로 이동",
   "FOLLOW": "추적",
@@ -1596,7 +1526,6 @@ window.IntMapLang.define('ko', { ui: {
   "FUEL": "연료",
   "FUEL OUT": "연료 소진",
   "Full moon": "보름달",
-  "future — terminator only": "미래 — 명암 경계선만 표시",
   "G-LIMIT": "G 한계",
   "Galaxies & nebulae": "은하와 성운",
   "Galaxies, clusters and nebulae at their measured distances (SIMBAD)": "은하·성단·성운을 실측 거리에 배치 (SIMBAD)",
@@ -1616,7 +1545,6 @@ window.IntMapLang.define('ko', { ui: {
   "GHRSST MUR L4 (oceans only)": "GHRSST MUR L4 (해양만)",
   "Give me at least 2 places to visit (comma-separated), or drop pins first.": "방문할 장소를 두 곳 이상 쉼표로 구분해 알려 주시거나, 먼저 핀을 놓으세요.",
   "global": "전 세계",
-  "Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires.": "전 세계 피드: GDACS (Global Disaster Alert and Coordination System, UN/EC) — 지진·열대저기압·홍수·화산·가뭄·산불.",
   "Globe / flat / 3D terrain": "지구본 / 평면 / 3D 지형",
   "Gold": "금",
   "Good": "좋음",
@@ -1624,14 +1552,12 @@ window.IntMapLang.define('ko', { ui: {
   "Grass": "초지",
   "Gray = terrain (curvature applied) · dashed = 60% Fresnel zone.": "회색 = 지형(지구 곡률 반영) · 점선 = 프레넬 영역의 60 %.",
   "green = terrain shadow": "초록 = 지형 그림자",
-  "Green alert": "녹색 경보",
   "Grid + labels": "격자 및 좌표",
   "Ground (no-DEM fallback)": "지반 (DEM 없음, 대체값)",
   "Ground at the site": "지점의 지면 고도",
   "Ground below": "아래 지면",
   "Ground distance": "지상 거리",
   "Ground station height": "지상국 높이",
-  "Grouping is mechanical (place ≤150 km × time ≤48 h × headline similarity) on the loaded IntMap feed — one group = reports that likely cover the same occurrence; \"first report → latest\" shows how coverage moved. For source disagreements or deeper analysis, ask e.g. \"analyze event 2\".": "묶기는 불러온 IntMap 피드에 대해 기계적으로 수행합니다 (거리 150 km 이내 × 시간 48시간 이내 × 제목 유사도). 한 묶음은 같은 사건을 다뤘을 가능성이 높은 기사들이며, 「최초 보도 → 최신」은 보도가 어떻게 이어졌는지를 보여 줍니다. 출처 간 불일치나 심층 분석이 필요하면 「사건 2 분석」처럼 물어보세요.",
   "h": "시간",
   "h ago": "시간 전",
   "Hard — ": "거친 착륙 — ",
@@ -1639,7 +1565,6 @@ window.IntMapLang.define('ko', { ui: {
   "Hazardous": "매우 나쁨",
   "Hazy": "실안개",
   "Heavy": "굵게",
-  "Height per stroke (m)": "한 번에 높이는 높이 (m)",
   "Heliport": "헬기장",
   "Hide (reopen from the dock)": "숨기기 (독에서 다시 열기)",
   "Hide ticker": "티커 숨기기",
@@ -1648,12 +1573,10 @@ window.IntMapLang.define('ko', { ui: {
   "High tide": "만조",
   "highest": "최고",
   "Highest": "최고",
-  "Highest point": "최고 지점",
   "highest ridge": "가장 높은 능선",
   "Highly elliptical (HEO)": "고타원궤도 (HEO)",
   "highways": "고속도로",
   "Highways": "고속도로",
-  "Historical network:": "당시 노선망:",
   "Historical overview from established sources — borders and figures are approximate.": "정평 있는 자료를 바탕으로 한 역사 개요입니다 — 국경과 수치는 근사값입니다.",
   "horizon": "지평선",
   "horizon scanned to": "지평선 탐색 범위",
@@ -1680,23 +1603,14 @@ window.IntMapLang.define('ko', { ui: {
   "Indicators": "지표",
   "Industry": "산업",
   "Industry web": "산업 관계망",
-  "Inflow (m³/s)": "유입량 (m³/s)",
-  "Integrated analysis": "종합 분석",
-  "Intensity field: bundled 0.25° Vs30 where the DEM could not reach — the ground still varies": "진도 분포: DEM이 닿지 않는 곳은 내장된 0.25° Vs30을 사용했습니다 — 지반 조건은 여전히 반영됩니다",
-  "Intensity field: slope-based Vs30 (Wald & Allen 2007) on real DEM": "진도 분포: 실제 DEM에서 경사로 구한 Vs30 (Wald & Allen 2007)",
   "Intensity fill opacity": "진도 채색 불투명도",
   "Intensity scale": "진도 계급",
   "Intercity Japan rail: real Shinkansen lines and stations, with times estimated from the operators’ published timetables (express pattern + service frequency) — not live times. Local segments use open GTFS (Transitous) where available; where none exists (e.g. Nagoya) they are distance-based estimates, marked as such. The line between stations is schematic.": "일본 도시 간 철도: 실제 신칸센 노선과 역을 사용하며, 소요 시간은 운영사가 공개한 시각표(급행 패턴 + 운행 빈도)로 추정한 값입니다. 실시간 시각이 아닙니다. 도시 내 구간은 공개 GTFS(Transitous)가 있으면 그것을 쓰고, 없는 곳(예: 나고야)은 거리 기반 추정값이며 그렇게 표시됩니다. 역과 역 사이의 선은 개략적인 표현입니다.",
   "International designator": "국제 designator",
   "Interplanetary spacecraft, from JPL Horizons trajectories": "행성 간 탐사선 (JPL Horizons 궤적 기반)",
-  "IntMap is an interactive world atlas — and I (Atlas) can operate all of it in plain language. You can: turn on 100+ DATA LAYERS (climate, population, economy, live weather) from the Layers panel; read LIVE NEWS pinned where events happen; use CHRONOS (bottom-right, formerly the time machine) to travel 1850→now; open COUNTRIES to sort & compare country data; and switch to WORKSPACE mode for movable windows. Just ask me things like: \"fly to Kenya\", \"show the population layer\", \"compare Japan and Germany\", \"highlight the top 10 by GDP per capita\", \"directions from Tokyo to Osaka by train\", \"which countries have the highest life expectancy?\", or \"brief me on the South China Sea\". Ask \"how do I …\" for any specific feature.": "IntMap은 대화형 세계 지도책이며, 저(Atlas)는 그 모든 기능을 평소 말로 조작할 수 있습니다. 「레이어」 패널에서 100가지가 넘는 데이터 레이어(기후·인구·경제·실시간 기상)를 켜고, 사건이 일어난 자리에 꽂힌 실시간 뉴스를 읽고, 오른쪽 아래의 CHRONOS(옛 이름 타임머신)로 1850년부터 현재까지 오가고, 「국가」 탭에서 국가 데이터를 정렬·비교하고, 작업 공간 모드로 바꿔 창을 자유롭게 배치할 수 있습니다. 예를 들어 이렇게 물어보세요. 「케냐로 이동」, 「인구 레이어 보여 줘」, 「일본과 독일 비교」, 「1인당 GDP 상위 10개국 강조」, 「도쿄에서 오사카까지 기차 경로」, 「기대 수명이 가장 높은 나라는?」, 「남중국해 상황 브리핑」. 특정 기능은 「…하려면 어떻게 해?」라고 물어보시면 됩니다.",
-  "Inundated area": "침수 범위",
   "Invalid area": "올바르지 않은 영역",
   "items": "개 항목",
   "Jan": "1월",
-  "Japan — JMA, by issuing unit": "일본 — 기상청, 발표 단위별",
-  "Japan and the United States are drawn at the unit their agency issues at. Everywhere else is GDACS, which is an event feed, not a national warning service — a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본과 미국은 각 기관이 발표하는 단위로 표시합니다. 그 밖의 지역은 GDACS를 사용하는데, 이는 사건 피드일 뿐 각국의 경보 서비스가 아닙니다. GDACS 사건이 없다고 해서 그 나라에 경보가 없다는 뜻이 아닙니다. 교육용 표시이므로 공식 기관의 발표를 따르세요.",
-  "Japan Meteorological Agency, at the unit the warning is issued for.": "일본 기상청, 경보가 발표되는 단위 기준.",
   "JMA (shindo)": "기상청 진도 (shindo)",
   "Joined EU": "EU 가입",
   "Joined NATO": "NATO 가입",
@@ -1741,16 +1655,12 @@ window.IntMapLang.define('ko', { ui: {
   "limited to this aircraft’s service ceiling": "이 기체의 실용 상승 한도로 제한됨",
   "Line drawn": "선을 그렸습니다",
   "Line of sight (radar shadow)": "가시선 (레이더 음영)",
-  "Line width is proportional to the SQUARE ROOT of the value (a flow-map convention — the eye compares area, and a stroke’s area is width × length). Hover any arc for the exact figure; nothing here rescales the amounts. Source: BACI (CEPII) via OEC, HS 6-digit, year ": "선 굵기는 값의 제곱근에 비례합니다 (흐름 지도의 관례입니다. 눈은 면적으로 비교하고, 선의 면적은 굵기 × 길이이기 때문입니다). 정확한 수치는 곡선 위에 마우스를 올리면 나옵니다. 여기서 금액을 다시 조정하지는 않습니다. 출처: BACI (CEPII), OEC 경유, HS 6자리, ",
-  "Line-of-sight service area over real terrain (4/3-earth horizon + free-space path loss). A first approximation — no diffraction/clutter.": "실제 지형 위의 가시선 서비스 범위입니다 (4/3 지구 반경 지평선 + 자유공간 전파 손실). 1차 근사이며 회절과 지물 반사는 고려하지 않습니다.",
   "line-of-sight service area over real terrain. Set antenna height / power / frequency in the panel; click to move the mast.": "실제 지형 위의 가시선 서비스 범위입니다. 패널에서 안테나 높이·출력·주파수를 설정하고, 지도를 클릭하면 안테나를 옮깁니다.",
   "Link margin": "링크 마진",
   "Link to a point…": "지점에 연결…",
   "List": "목록",
   "live": "실시간",
   "Live": "실시간",
-  "live · drag to move": "실시간 · 드래그해서 이동",
-  "Live (present)": "실시간 (현재)",
   "Live cameras": "실시간 카메라",
   "Live info": "실시간 정보",
   "Live satellites off": "실시간 위성 끔",
@@ -1813,8 +1723,6 @@ window.IntMapLang.define('ko', { ui: {
   "max ": "최대 ",
   "MAX ALT": "최대 고도",
   "max depth": "최대 수심",
-  "Max range": "최대 도달 거리",
-  "Max walk": "최대 도보 거리",
   "Maximize / restore": "최대화 / 되돌리기",
   "Maximum 10 countries": "최대 10개국",
   "Maximum wave height instead": "대신 최대 파고 표시",
@@ -1834,7 +1742,6 @@ window.IntMapLang.define('ko', { ui: {
   "Medium Earth orbit (MEO)": "중궤도 (MEO)",
   "Member": "회원국",
   "Merge": "합치기",
-  "MERRA-2 reanalysis, monthly — gap-free worldwide. Use the slider to pick a month.": "MERRA-2 재분석 자료, 월별 — 전 세계에 결측이 없습니다. 슬라이더로 달을 고르세요.",
   "met — the satellite is up and in sunlight (needs a dark sky here)": "충족 — 위성이 떠 있고 햇빛을 받고 있습니다 (이 지점의 하늘이 어두워야 합니다)",
   "Midnight sun": "백야",
   "Mil. spending (% GDP)": "국방비 (GDP 대비 %)",
@@ -1858,7 +1765,6 @@ window.IntMapLang.define('ko', { ui: {
   "move here<br>= map syncs": "여기로 옮기면<br>지도가 따라옵니다",
   "Move the cursor to trace → click to finish": "커서를 움직여 따라 그리고 → 클릭하면 끝납니다",
   "Moving the working area here…": "작업 영역을 이곳으로 옮기는 중…",
-  "N pole in polar night": "북극이 극야 상태",
   "Naked-eye conditions": "맨눈 관측 조건",
   "Name": "이름",
   "named currents · ": "개 해류 · ",
@@ -1883,7 +1789,6 @@ window.IntMapLang.define('ko', { ui: {
   "New name": "새 이름",
   "New route": "새 경로",
   "news": "뉴스",
-  "news · imagery · quakes time-traveled to this date": "뉴스 · 위성 영상 · 지진을 이 날짜로 되돌렸습니다",
   "News / Info / Countries / Community tab": "뉴스 / 정보 / 국가 / 커뮤니티 탭",
   "News along the route": "경로 주변의 뉴스",
   "Next": "다음",
@@ -1901,13 +1806,10 @@ window.IntMapLang.define('ko', { ui: {
   "No coast in this view — pan to a coastline, or tap one for its tide times.": "이 화면에는 해안이 없습니다 — 해안선으로 이동하거나, 해안을 탭하면 조석 시각을 볼 수 있습니다.",
   "No conflict with any other saved route.": "저장된 다른 경로와 충돌하지 않습니다.",
   "no cultivation recorded in this cell": "이 격자에는 재배 기록이 없습니다",
-  "No current GDACS event for this country. GDACS only carries disasters above its own severity thresholds, and no national warning service is wired here yet — so this is not the same as \"no warnings in force\".": "이 나라에 현재 GDACS 사건이 없습니다. GDACS는 자체 심각도 기준을 넘는 재해만 다루며, 이곳에는 아직 각국 경보 서비스가 연결되어 있지 않습니다. 따라서 「발효 중인 경보가 없다」는 뜻은 아닙니다.",
   "no data": "데이터 없음",
   "No data for this country and year.": "이 나라와 연도의 데이터가 없습니다.",
   "No data for this country.": "이 나라의 데이터가 없습니다.",
   "no DEM": "DEM 없음",
-  "No earthquakes or geolocated news near this route.": "이 경로 주변에 지진이나 위치가 확인된 뉴스가 없습니다.",
-  "No elevation data beyond here": "이 지점 너머의 표고 데이터가 없습니다",
   "No elevation data for this route yet.": "이 경로의 표고 데이터가 아직 없습니다.",
   "No evidence stored.": "저장된 근거가 없습니다.",
   "No geolocated articles in the loaded news for this window/area": "불러온 뉴스 중 이 기간·영역에 위치가 확인된 기사가 없습니다",
@@ -1923,18 +1825,14 @@ window.IntMapLang.define('ko', { ui: {
   "No other saved route to check against — save a second route first.": "비교할 다른 저장 경로가 없습니다 — 먼저 두 번째 경로를 저장하세요.",
   "No overlapping data to correlate": "상관을 볼 만한 공통 데이터가 없습니다",
   "No populated cities/towns within the radius (per OSM population tags)": "이 반경 안에 인구가 기록된 도시·마을이 없습니다 (OSM 인구 태그 기준)",
-  "No public-transit route found here": "이곳에서는 대중교통 경로를 찾지 못했습니다",
   "No public-transit route here — the area may have no open transit data yet. Try 🚗 or 🚶 above.": "이곳에는 대중교통 경로가 없습니다 — 아직 공개 교통 데이터가 없는 지역일 수 있습니다. 위의 🚗 또는 🚶를 이용해 보세요.",
   "no published revenue": "공개된 매출 없음",
   "No rail reachable here in that time (or the rail-data service is busy). Try a point nearer a station, or 🚗/🚶.": "그 시간 안에 닿는 철도가 없습니다 (또는 철도 데이터 서비스가 혼잡합니다). 역에 더 가까운 지점을 고르거나 🚗/🚶를 이용해 보세요.",
   "No readable data on the active layers here. Turn a data layer on first.": "여기서는 켜져 있는 레이어에서 읽을 값이 없습니다. 먼저 데이터 레이어를 켜세요.",
-  "No route found (maybe no connection).": "경로를 찾지 못했습니다 (연결이 없을 수 있습니다).",
   "No route found (no road connection between these points).": "경로를 찾지 못했습니다 (두 지점 사이에 도로 연결이 없습니다).",
   "No runs yet.": "아직 실행 기록이 없습니다.",
   "No satellite matching": "일치하는 위성이 없습니다",
   "No Street View coverage here": "이곳에는 스트리트 뷰가 없습니다",
-  "No terrain data here.": "이곳의 지형 데이터가 없습니다.",
-  "No terrain/wind data here.": "이곳의 지형·바람 데이터가 없습니다.",
   "No tide model at this point (inland or outside the model domain).": "이 지점에는 조석 모델이 없습니다 (내륙이거나 모델 범위 밖입니다).",
   "No time-series available": "시계열 자료가 없습니다",
   "no wave in this run": "이번 계산에서는 파고가 나타나지 않았습니다",
@@ -1954,21 +1852,19 @@ window.IntMapLang.define('ko', { ui: {
   "not shared": "공유되지 않음",
   "Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)": "참고: 표시 한도 때문에 아주 작은 물줄기 일부를 생략했습니다 (주요 지류는 모두 그렸습니다)",
   "Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of": "찾지 못했습니다 — OpenStreetMap과 Wikidata 모두 이곳에 그런 시설을 기록해 두지 않았고, AI도 확신할 수 있는 것을 알지 못합니다",
-  "Nothing in force right now.": "현재 발효 중인 것이 없습니다.",
-  "Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China, Australia and the Philippines are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다·브라질·독일·노르웨이, 그리고 MeteoAlarm이 이름을 밝히는 유럽의 각 지역은 해당 기관이 발표하는 단위로 그리며, 국가 전체를 칠하지 않습니다 — 그곳에서는 발표 구역의 형태 자체가 답이기 때문입니다. 중국은 성, 오스트레일리아는 주, 필리핀은 주라는, 그 기관이 경보를 발표하는 구분으로 칠합니다. 홍콩의 경보는 전역을 대상으로 하므로 홍콩 자체가 발표 단위입니다. GDACS의 옅은 칠은 다른 척도, 다른 색입니다 — 그 수준의 사건이 그 나라에 영향을 준다는 뜻이지, 나라 안 특정 지점에 경보가 발효 중이라는 뜻이 아닙니다. 러시아·인도·뉴질랜드·말레이시아·인도네시아·남아프리카공화국·멕시코는 이번에 실제로 접속을 시도했으나 브라우저가 읽을 수 있는 공개 피드를 찾지 못해 GDACS만 표시됩니다 — GDACS는 사건 배포이지 각국의 경보 자체가 아니며, 사건이 없는 나라가 경보가 없는 나라는 아닙니다. 참고용 표시입니다. 실제로는 공식 기관의 발표를 따르십시오.",   /* world-packs.js (#R271) */
-  "PAGASA (Philippines), flood advisories with their published province outlines.": "PAGASA(필리핀) — 공표된 주별 범위를 그린 홍수 정보.",   /* world-packs.js (#R271) */
-  "Philippines — PAGASA, by province": "필리핀 — PAGASA (주 단위)",   /* world-packs.js (#R271) */
-  "issuing regions": "발표 구역",   /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
   "Areas the agency published but this map could not place: ": "기관이 발표했으나 이 지도가 위치를 특정하지 못한 구역: ",   /* world-packs.js (#R271) */
-  "Deutscher Wetterdienst, warnings with their own district polygons.": "독일 기상청(DWD) — 군(Landkreis) 단위 구역을 그리며, 주별로 묶습니다.",   /* world-packs.js (#R271) */
-  "Europe — MeteoAlarm (35 services)": "유럽 — MeteoAlarm (35개 기관)",   /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
   "Extending the model to here…": "여기까지 모델을 확장하는 중…",   /* world-packs.js (#R271) */
-  "Germany — DWD, by district": "독일 — DWD (군 단위)",   /* world-packs.js (#R271) */
-  "Japan Meteorological Agency, at the region the warning is issued for.": "일본 기상청, 특보가 발표되는 지역 단위.",   /* world-packs.js (#R271) */
-  "Japan, the United States, Canada, Brazil, Germany, Norway and every European region MeteoAlarm names are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. China and Australia are drawn at the province and the state their agency files warnings by; Hong Kong’s warnings are territory-wide, so the territory IS the unit. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다·브라질·독일·노르웨이, 그리고 MeteoAlarm이 이름을 밝히는 유럽의 각 지역은 해당 기관이 발표하는 단위로 그리며, 국가 전체를 칠하지 않습니다 — 그곳에서는 발표 구역의 형태 자체가 답이기 때문입니다. 중국은 성, 오스트레일리아는 주라는, 그 기관이 경보를 발표하는 구분으로 칠합니다. 홍콩의 경보는 전역을 대상으로 하므로 홍콩 자체가 발표 단위입니다. GDACS의 옅은 칠은 다른 척도, 다른 색입니다 — 그 수준의 사건이 그 나라에 영향을 준다는 뜻이지, 나라 안 특정 지점에 경보가 발효 중이라는 뜻이 아닙니다. 러시아·인도·뉴질랜드·말레이시아·인도네시아·남아프리카공화국·멕시코는 이번에 실제로 접속을 시도했으나 브라우저가 읽을 수 있는 공개 피드를 찾지 못해 GDACS만 표시됩니다 — GDACS는 사건 배포이지 각국의 경보 자체가 아니며, 사건이 없는 나라가 경보가 없는 나라는 아닙니다. 참고용 표시입니다. 실제로는 공식 기관의 발표를 따르십시오.",   /* world-packs.js (#R271) */
-  "MET Norway, alerts with their own polygons.": "MET Norway — 경보별 대상 구역을 그립니다.",   /* world-packs.js (#R271) */
-  "Norway — MET Norway": "노르웨이 — MET Norway",   /* world-packs.js (#R271) */
-  "Nothing is drawn — this is a failed query, not an industry with no companies.": "아무것도 그리지 않았습니다 — 조회에 실패한 것이며, 기업이 없는 업종이라는 뜻이 아닙니다.",
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
+  /* world-packs.js (#R271) */
   "Nothing is highlighted yet — name the countries or regions": "아직 강조된 것이 없습니다 — 국가나 지역을 지정해 주세요",
   "Nov": "11월",
   "now": "현재",
@@ -1982,28 +1878,22 @@ window.IntMapLang.define('ko', { ui: {
   "of the disk": "· 원반 대비",
   "of the view": "· 화면 대비",
   "off-field": "활주로 밖",
-  "on a quarter cycle (6h12m)": "4분의 1 주기 후 (6시간 12분)",
   "on about a quarter cycle (6 h)": "약 4분의 1 주기 후 (6시간)",
   "Worldwide": "전 세계",
   "on the ground — released just above the field, flying": "지상 — 활주로 바로 위에서 놓아 비행 중",
   "On the runway": "활주로 위",
   "on your left": "왼쪽에",
   "on your right": "오른쪽에",
-  "one clock for the whole globe: pick a date/time and the day/night terminator is drawn for it; within ~10 years the news, satellite imagery and quakes time-travel to that date, and dated weather/air layers reload. ▶ plays time forward.": "지구 전체가 하나의 시계를 씁니다. 날짜와 시각을 고르면 그 시점의 낮·밤 경계선이 그려지고, 약 10년 이내라면 뉴스·위성 영상·지진이 그 날짜로 이동하며 날짜가 있는 기상·대기 레이어도 다시 불러옵니다. ▶를 누르면 시간이 흘러갑니다.",
-  "One clock for the whole globe: the day/night terminator is computed for any date; within ~10 years the news, satellite imagery and earthquakes time-travel to the date, and any dated weather/air layers reload for it. Turn on the layers you want to replay.": "지구 전체가 하나의 시계를 씁니다. 어떤 날짜든 낮·밤 경계선을 계산하고, 약 10년 이내라면 뉴스·위성 영상·지진이 그 날짜로 이동하며 날짜가 있는 기상·대기 레이어도 그에 맞춰 다시 불러옵니다. 되돌려 보고 싶은 레이어를 켜 두세요.",
   "One shot": "한 번만",
   "Only images and text-based files can be attached": "이미지와 텍스트 기반 파일만 첨부할 수 있습니다",
   "Only one route was returned — there is nothing to compare.": "경로가 하나만 나와 비교할 대상이 없습니다.",
   "Only the first 10 countries are compared": "앞의 10개국만 비교합니다",
-  "Only visible from here": "여기서만 보임",
   "opacity": "불투명도",
   "open horizon would give": "지평선이 트여 있다면",
   "Open in Google Maps": "Google 지도에서 열기",
   "Open in new tab": "새 탭에서 열기",
   "Open original": "원문 열기",
   "Open the tsunami simulator": "쓰나미 시뮬레이터 열기",
-  "Opened the radioactive-fallout model.": "방사성 낙진 모델을 열었습니다.",
-  "Opens the full radioactive-fallout model (source term, isotope, wind).": "방사성 낙진 모델 전체를 엽니다 (방출량·핵종·바람).",
   "OpenStreetMap could not be reached.": "OpenStreetMap에 연결할 수 없습니다.",
   "Operations": "운용",
   "Operator": "운영 주체",
@@ -2011,13 +1901,11 @@ window.IntMapLang.define('ko', { ui: {
   "option not found": "해당 옵션을 찾을 수 없습니다",
   "or": "또는",
   "or type your own answer…": "또는 직접 입력하세요…",
-  "Orange alert": "주황 경보",
   "Orbit class": "궤도 분류",
   "Orbital period": "공전 주기",
   "Orbits": "궤도",
   "Ordered shortest-first (nearest-neighbor + 2-opt), then driven on the OSM road network (OSRM). The first stop is fixed as the start.": "최단 경로 순으로 정렬한 뒤(최근접 이웃 + 2-opt) OSM 도로망(OSRM)으로 주행 경로를 냈습니다. 첫 지점은 출발지로 고정됩니다.",
   "Ordered shortest-first (nearest-neighbor + 2-opt). Road routing is busy — the optimized ORDER is shown; try again for the drawn route.": "최단 경로 순으로 정렬했습니다(최근접 이웃 + 2-opt). 도로 경로 서비스가 혼잡하여 최적화된 순서만 표시합니다. 실제 경로를 그리려면 다시 시도하세요.",
-  "Out of the news range (about the last 10 years)": "뉴스 범위를 벗어났습니다 (대략 최근 10년)",
   "out to": "· 범위",
   "outlets": "개 매체",
   "OVERSPEED": "과속",
@@ -2032,7 +1920,6 @@ window.IntMapLang.define('ko', { ui: {
   "partial": "부분",
   "Partial": "부분식",
   "partners": "개 상대국",
-  "Direction arrows": "방향 화살표",
   "A published cloud region or campus. The point is the location the operator publishes (a city or county), not a surveyed building; fields the operator does not publish are left out rather than estimated.": "사업자가 공개한 클라우드 리전 또는 캠퍼스입니다. 지점은 사업자가 공개한 위치(도시·군)이며 실측된 건물이 아닙니다. 공개되지 않은 항목은 추정하지 않고 생략합니다.",
   "AI compute": "AI 연산",
   "AI compute campus": "AI 연산 캠퍼스",
@@ -2063,9 +1950,7 @@ window.IntMapLang.define('ko', { ui: {
   "paused": "일시정지됨",
   "Paused": "일시정지",
   "PAUSED": "일시정지",
-  "peak ahead ": "앞쪽 봉우리 ",
   "Peak coastal height (Green’s law)": "연안 최대 파고 (그린의 법칙)",
-  "Peak water rise (m)": "최대 수위 상승 (m)",
   "Peaks": "봉우리",
   "Pen width": "선 굵기",
   "penumbral": "반영식",
@@ -2076,23 +1961,17 @@ window.IntMapLang.define('ko', { ui: {
   "Pick a country on the map": "지도에서 나라를 고르세요",
   "pick a date & time; buildings in view (zoom in) cast real shadows and the 3D scene is lit from the sun. Press ▶ to sweep the day.": "날짜와 시각을 고르세요. 화면 안의 건물(확대하면 보입니다)이 실제 그림자를 드리우고 3D 장면이 태양빛으로 조명됩니다. ▶를 누르면 하루를 훑어봅니다.",
   "Pick a point further away.": "더 멀리 있는 지점을 고르세요.",
-  "Pick on map": "지도에서 선택",
-  "Pick the hazard & source in the panel; the time slider steps the impact area. Educational approximation — follow official authorities in a real emergency.": "패널에서 재해 종류와 발생원을 고르세요. 시간 슬라이더로 영향 범위가 진행됩니다. 교육용 근사이므로 실제 재난 시에는 공식 기관의 발표를 따르세요.",
   "Pins": "핀",
   "Place an epicenter to begin.": "먼저 진앙을 놓으세요.",
-  "Place antenna on map": "지도에 안테나 놓기",
   "Place labels": "지명 표시",
   "Place names": "지명",
   "Place names are drawn on a body — open one from the list": "지명은 천체 위에 표시됩니다 — 목록에서 천체를 하나 여세요",
-  "Place source on map": "지도에 발생원 놓기",
   "Place water to see where it goes.": "물을 부어 어디로 흐르는지 보세요.",
   "places": "개 지점",
   "Plate code": "판 코드",
   "playable now": "지금 재생 가능",
   "Please set an area to monitor first (radius, drawn area, region, or the current map view).": "먼저 감시할 영역을 정하세요 (반경, 그린 영역, 지역, 또는 현재 지도 화면).",
   "Please wait a moment before running again.": "잠시 후에 다시 실행해 주세요.",
-  "Plume follows the live wind at the source; the time slider extends it downwind.": "연기 기둥은 발생원의 실시간 바람을 따릅니다. 시간 슬라이더를 움직이면 바람 아래쪽으로 뻗어 나갑니다.",
-  "Plume reach": "연기 도달 범위",
   "Pluto is drawn in its measured color: no global surface map is bundled for it, and the ones offered for the dwarf planets elsewhere are labeled fictional by their author. Its position and its IAU names are real.": "명왕성은 실측한 색으로만 그립니다. 전면 표면 지도가 함께 제공되지 않으며, 다른 곳에서 왜소행성용으로 배포되는 지도는 제작자 스스로 가상이라고 밝히고 있습니다. 위치와 IAU 지명은 실제 자료입니다.",
   "points mapped — click a pin (or an item below) for the summary & article": "개 지점을 표시했습니다 — 핀이나 아래 항목을 클릭하면 요약과 기사를 볼 수 있습니다",
   "Polar low Earth orbit": "극궤도 저궤도",
@@ -2102,7 +1981,6 @@ window.IntMapLang.define('ko', { ui: {
   "Polygon drawn": "다각형을 그렸습니다",
   "Polygons": "다각형",
   "Ponded": "고임",
-  "Ponds crossed": "지나온 고임",
   "pop ": "인구 ",
   "Pop. density": "인구 밀도",
   "Pop. density (grid)": "인구 밀도 (격자)",
@@ -2111,8 +1989,6 @@ window.IntMapLang.define('ko', { ui: {
   "Population nearby": "주변 인구",
   "Positions: JPL approximate elements (3000 BC – 3000 AD); the Moon: truncated ELP-2000/82. Surfaces: Solar System Scope textures (CC BY 4.0) from NASA/JPL/USGS imagery — except the Earth, which is the app’s own whole-Earth basemap (NASA Blue Marble via GIBS), the same picture the map draws under its satellite tiles. Names: USGS Gazetteer of Planetary Nomenclature (IAU). Stars: Hipparcos. Satellites other than the Moon are not modeled — their phase cannot be computed faithfully from published elements alone.": "위치: JPL 근사 궤도 요소(기원전 3000년 ~ 서기 3000년), 달은 ELP-2000/82를 절단한 값. 표면: NASA/JPL/USGS 영상을 바탕으로 한 Solar System Scope 텍스처(CC BY 4.0). 다만 지구는 이 앱 자체의 전 지구 기본 지도(GIBS 경유 NASA Blue Marble)로, 지도가 위성 타일 아래에 그리는 것과 같은 그림입니다. 지명: USGS 행성 지명 사전(IAU). 항성: 히파르코스. 달 이외의 위성은 모형화하지 않았습니다. 공개된 궤도 요소만으로는 위상을 충실히 계산할 수 없기 때문입니다.",
   "Pour": "붓기",
-  "Pouring": "붓는 중",
-  "pre-archive date — day/night terminator + any historical layers": "기록 보관 이전 날짜 — 낮·밤 경계선과 역사 레이어만 표시됩니다",
   "Precip.": "강수",
   "Precision": "정밀도",
   "prefectures": "개 도도부현",
@@ -2139,8 +2015,6 @@ window.IntMapLang.define('ko', { ui: {
   "Radius circles": "반경 원",
   "Rail": "철도",
   "Railways": "철도",
-  "Rainfall (mm)": "강수량 (mm)",
-  "RainViewer live radar (latest frame)": "RainViewer 실시간 레이더 (최신 프레임)",
   "Raise": "높이기",
   "Ran: ": "실행: ",
   "Range (km)": "사거리 (km)",
@@ -2164,12 +2038,10 @@ window.IntMapLang.define('ko', { ui: {
   "real 2011 int$": "2011년 불변 국제달러",
   "real DEM": "실측 DEM",
   "real GDP (2011 int$)": "실질 GDP (2011년 국제달러)",
-  "Real terrarium elevation, sculpted by you. Water is routed by priority-flood depression filling and downslope volume accounting — it answers where the water stands and which way it leaves, not how fast the front travels.": "실제 terrarium 표고를 직접 깎고 쌓습니다. 물은 우선순위 홍수 알고리즘으로 웅덩이를 채우고 하류로 부피를 배분해 흐릅니다. 물이 어디에 고이고 어느 쪽으로 빠지는지는 답하지만, 물마루가 얼마나 빨리 이동하는지는 다루지 않습니다.",
   "Receiver sensitivity": "수신기 감도",
   "Recompute": "다시 계산",
   "Rectangle": "직사각형",
   "Red = reachable": "빨강 = 도달 가능",
-  "Red alert": "적색 경보",
   "Redraw": "다시 그리기",
   "Refraction": "굴절",
   "Refresh": "새로 고침",
@@ -2187,7 +2059,6 @@ window.IntMapLang.define('ko', { ui: {
   "RESET": "초기화",
   "Reset layout": "배치 초기화",
   "Reset terrain": "지형 초기화",
-  "Rest of the world — GDACS": "그 밖의 지역 — GDACS",
   "Restore": "되돌리기",
   "Restricted areas": "제한 구역",
   "Restricted-area data could not be fetched — this route has NOT been checked against airports, military areas or reserves.": "제한 구역 데이터를 가져오지 못했습니다 — 이 경로는 공항·군사 구역·보호구역과 대조하지 않았습니다.",
@@ -2201,8 +2072,6 @@ window.IntMapLang.define('ko', { ui: {
   "reverses with the season": "계절에 따라 방향이 바뀝니다",
   "Revolution at epoch": "기준 시각의 주회 수",
   "Rises": "뜨는 시각",
-  "Road routing via OSRM (OpenStreetMap) — up to 3 alternatives with lane guidance. Times are typical (no live traffic). Clear it with \"clear the route\".": "OSRM(OpenStreetMap) 기반 도로 경로입니다 — 차로 안내를 포함해 최대 3개의 대안을 보여 줍니다. 소요 시간은 일반적인 값이며 실시간 교통 정보는 반영하지 않습니다. 「경로 지우기」라고 말하면 지웁니다.",
-  "Road routing with your avoid options via Valhalla (OpenStreetMap). Times are typical (no live traffic). Clear it with \"clear the route\".": "Valhalla(OpenStreetMap)로 회피 조건을 적용한 도로 경로입니다. 소요 시간은 일반적인 값이며 실시간 교통 정보는 반영하지 않습니다. 「경로 지우기」라고 말하면 지웁니다.",
   "Roads": "도로",
   "rock (Vs30 760)": "암반 (Vs30 760)",
   "Roll left": "왼쪽으로 롤",
@@ -2213,20 +2082,17 @@ window.IntMapLang.define('ko', { ui: {
   "Route on it": "이 경로로 길찾기",
   "Route saved": "경로를 저장했습니다",
   "Routed along the REAL rail network (OpenStreetMap), naming the actual lines and stations it rides (walk to the nearest station). JR/Shinkansen publish no open timetable (GTFS), so the time is estimated from typical speeds per line class (high-speed / conventional) — not a live schedule.": "실제 철도망(OpenStreetMap)을 따라 경로를 냈으며, 실제로 이용하는 노선과 역 이름을 표시합니다(가까운 역까지는 도보). JR과 신칸센은 공개 시각표(GTFS)를 제공하지 않으므로, 소요 시간은 노선 등급별(고속·재래선) 평균 속도로 추정한 값이며 실시간 시각표가 아닙니다.",
-  "Routing…": "경로 계산 중…",
   "RUD": "방향타",
   "Run history": "실행 기록",
   "Run now": "지금 실행",
   "Run this request again": "이 요청을 다시 실행",
   "Running…": "실행 중…",
-  "runs below sea level on land": "육상에서 해수면보다 낮게 지납니다",
   "rupture": "파괴",
   "Rupture": "파괴면",
   "Rupture area": "진원역",
   "Rupture area drawn": "진원역을 그렸습니다",
   "rupture radius": "파괴 반경",
   "s": "초",
-  "S pole in polar night": "남극이 극야 상태",
   "Safest": "가장 안전",
   "samples": "개 표본",
   "Sampling": "표본 추출",
@@ -2248,7 +2114,6 @@ window.IntMapLang.define('ko', { ui: {
   "Searching": "검색 중",
   "Searching the next 24 hours…": "앞으로 24시간을 탐색하는 중…",
   "See IntMap Pro": "IntMap Pro 보기",
-  "See the past world": "과거의 세계 보기",
   "Earthquake simulator (set as epicentre)": "지진 시뮬레이터 (이 지점을 진앙으로)",
   "Select at least one indicator.": "지표를 하나 이상 선택하세요.",
   "Selected": "선택됨",
@@ -2282,7 +2147,6 @@ window.IntMapLang.define('ko', { ui: {
   "shown on the map. I could not compile a written summary this time — try rephrasing the question.": "을(를) 지도에 표시했습니다. 이번에는 글로 된 요약을 만들지 못했습니다 — 질문을 바꿔서 다시 물어봐 주세요.",
   "Silver": "은",
   "Simulate": "시뮬레이션",
-  "Simulation failed — try again.": "시뮬레이션에 실패했습니다 — 다시 시도하세요.",
   "Sky from here": "이곳에서 본 하늘",
   "Slant range": "경사 거리",
   "Slider or a number (-11000–9000 m; negative = sea-level fall). Naïve \"bathtub\" fill from the AWS Terrain DEM — ignores tides & defenses.": "슬라이더나 숫자로 지정하세요 (−11000~9000 m, 음수는 해수면 하강). AWS Terrain DEM을 이용한 단순 「욕조」 방식 침수이며, 조석과 방재 시설은 고려하지 않습니다.",
@@ -2290,7 +2154,6 @@ window.IntMapLang.define('ko', { ui: {
   "slope direction (hue = compass bearing it faces)": "사면이 향한 방향 (색조가 방위각을 나타냅니다)",
   "slope over": "경사 계산 폭",
   "Slower": "더 느리게",
-  "Smoke": "연기",
   "Smooth — ": "매끄러운 착륙 — ",
   "Snow & ice": "눈과 얼음",
   "Society": "사회",
@@ -2302,7 +2165,6 @@ window.IntMapLang.define('ko', { ui: {
   "Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).": "일부 탑승 구간의 선형을 가져오지 못했습니다. 해당 구간은 위 목록에는 있지만 지도에는 그리지 않았습니다 (직선으로 대신 그리지 않습니다).",
   "Some targets could not be matched to border data — checking with the model": "일부 대상을 경계 데이터와 대조하지 못했습니다 — 모델에 확인하는 중",
   "soon": "곧",
-  "Sorry, I could not interpret that.": "죄송합니다. 그 요청을 이해하지 못했습니다.",
   "SOUND": "소리",
   "Source unavailable": "출처를 사용할 수 없습니다",
   "Source: ": "출처: ",
@@ -2318,7 +2180,6 @@ window.IntMapLang.define('ko', { ui: {
   "SPD": "속도",
   "Speed": "속도",
   "Sports pitch": "운동장",
-  "Spreads into standing water": "고인 물로 퍼집니다",
   "STALL": "실속",
   "Stand and look up": "이곳에 서서 올려다보기",
   "standard": "표준",
@@ -2341,7 +2202,6 @@ window.IntMapLang.define('ko', { ui: {
   "Stepping through the solstice day…": "지점(至點) 하루를 훑는 중…",
   "steps": "단계",
   "stiff soil (Vs30 360)": "단단한 지반 (Vs30 360)",
-  "still flowing at the 600 km limit": "600 km 한계에서도 아직 흐르고 있습니다",
   "Stop": "정지",
   "Stop answering": "응답 중지",
   "straight": "직진",
@@ -2353,7 +2213,6 @@ window.IntMapLang.define('ko', { ui: {
   "strike": "주향",
   "Style &amp; presets": "스타일 및 프리셋",
   "Sub-satellite point": "위성 직하점",
-  "sub-solar lat": "태양 직하점 위도",
   "Submarine cable data unavailable": "해저 케이블 데이터를 사용할 수 없습니다",
   "Subway": "지하철",
   "Summarize and analyze the situation inside the drawn area": "그린 영역 안의 상황을 요약·분석",
@@ -2383,17 +2242,13 @@ window.IntMapLang.define('ko', { ui: {
   "Tap a country for its mix.": "나라를 탭하면 에너지 구성을 볼 수 있습니다.",
   "Tap a country on the map.": "지도에서 나라를 탭하세요.",
   "Tap a country to see who it trades with.": "나라를 탭하면 교역 상대를 볼 수 있습니다.",
-  "Tap any country for the legend its own agency uses.": "아무 나라나 탭하면 그 나라 기관이 쓰는 범례를 볼 수 있습니다.",
   "Tap each corner on the map, then press Done.": "지도에서 각 꼭짓점을 탭한 뒤 「완료」를 누르세요.",
   "tap for details": "탭하면 상세 정보",
   "Tap inside the rupture area — this is where the rupture starts.": "진원역 안쪽을 탭하세요 — 여기가 파괴의 시작점이 됩니다.",
   "Tap the map to place it.": "지도를 탭해 놓으세요.",
-  "Tap the map to place the antenna.": "지도를 탭해 안테나를 놓으세요.",
   "Tap the map to place the epicenter.": "지도를 탭해 진앙을 놓으세요.",
-  "Tap the map to place the source.": "지도를 탭해 발생원을 놓으세요.",
   "Tap the map. Tapping again moves it.": "지도를 탭하세요. 다시 탭하면 옮겨집니다.",
   "Tap the point to analyze.": "분석할 지점을 탭하세요.",
-  "tap to clear": "탭하면 해제",
   "Tap to highlight • long-press for criteria": "탭: 강조 • 길게 누르기: 기준 보기",
   "Target height (m)": "대상 높이 (m)",
   "Tell me a start and destination — e.g. \"directions from Tokyo to Osaka\" or \"電車で新宿から横浜\".": "출발지와 목적지를 알려 주세요 — 예: 「도쿄에서 오사카까지 길찾기」, 「電車で新宿から横浜」.",
@@ -2442,7 +2297,6 @@ window.IntMapLang.define('ko', { ui: {
   "The route already ends at the launch point.": "경로가 이미 출발 지점에서 끝납니다.",
   "The route ends where it started, so no separate return leg is needed.": "경로가 출발한 자리에서 끝나므로 따로 복귀 구간이 필요하지 않습니다.",
   "The routing service is unreachable right now (outage or network) — the route was NOT computed. Try again shortly.": "지금 경로 서비스에 연결할 수 없습니다 (장애 또는 네트워크 문제). 경로를 계산하지 않았습니다. 잠시 후 다시 시도하세요.",
-  "The routing service is unreachable right now (outage or network) — try again shortly.": "지금 경로 서비스에 연결할 수 없습니다 (장애 또는 네트워크 문제) — 잠시 후 다시 시도하세요.",
   "The satellite layer is unavailable": "위성 레이어를 사용할 수 없습니다",
   "The satellites of the selected planet, propagated from JPL mean elements": "선택한 행성의 위성들을 JPL 평균 궤도 요소로 계산했습니다",
   "The shape resolved for that region was invalid (degenerate/self-intersecting) and was not drawn": "그 지역으로 얻은 도형이 올바르지 않아(퇴화 또는 자기교차) 그리지 않았습니다",
@@ -2453,7 +2307,6 @@ window.IntMapLang.define('ko', { ui: {
   "the sun does not rise today": "오늘은 해가 뜨지 않습니다",
   "the sun does not set today": "오늘은 해가 지지 않습니다",
   "The tide model could not be fetched.": "조석 모델을 가져올 수 없습니다.",
-  "The trace failed here": "이 지점에서 추적에 실패했습니다",
   "The tsunami propagation simulator is not available in this build.": "이 빌드에서는 쓰나미 전파 시뮬레이터를 사용할 수 없습니다.",
   "the whole map (news, countries, borders, climate era) moves with it": "지도 전체가 함께 움직입니다 (뉴스·국가·국경·기후 시대)",
   "the wind forecast is unavailable": "바람 예보를 사용할 수 없습니다",
@@ -2485,8 +2338,6 @@ window.IntMapLang.define('ko', { ui: {
   "TIME": "시간",
   "Time — tap to add/remove (max 3)": "시간 — 탭해서 추가·제거 (최대 3개)",
   "Time machine": "타임머신",
-  "time option applies to transit (road times are typical, not traffic-aware)": "시간 옵션은 대중교통에만 적용됩니다 (도로 소요 시간은 일반적인 값이며 교통 상황을 반영하지 않습니다)",
-  "Time speed": "시간 배속",
   "Time-zone data unavailable": "시간대 데이터를 사용할 수 없습니다",
   "Timed out": "시간이 초과되었습니다",
   "Timezones": "시간대",
@@ -2509,10 +2360,6 @@ window.IntMapLang.define('ko', { ui: {
   "Total climb": "총 상승 고도",
   "Total fertility rate": "합계출산율",
   "toward ": "방향: ",
-  "traced as far as the elevation budget allows": "표고 조회 한도가 허용하는 데까지 추적했습니다",
-  "traced as far as the window budget allows": "화면 처리 한도가 허용하는 데까지 추적했습니다",
-  "Tracing downstream": "하류로 추적 중",
-  "tracing…": "추적 중…",
   "Track of": "궤적:",
   "Trade data could not be fetched.": "무역 데이터를 가져올 수 없습니다.",
   "Trade flows": "무역 흐름",
@@ -2520,7 +2367,6 @@ window.IntMapLang.define('ko', { ui: {
   "Tram": "노면전차",
   "Trans-Neptunian object": "해왕성 바깥 천체",
   "Transit": "대중교통",
-  "Transit data (GTFS) may not cover this area yet. Try 🚗 driving or 🚶 walking, or a route within a covered city/country.": "이 지역은 아직 대중교통 데이터(GTFS)가 없을 수 있습니다. 🚗 자동차나 🚶 도보를 쓰시거나, 데이터가 있는 도시·국가 안의 경로로 시도해 보세요.",
   "Transmit power": "송신 출력",
   "Transpose": "행렬 바꾸기",
   "Travel-time contours (hours)": "소요 시간 등치선 (시간)",
@@ -2537,7 +2383,6 @@ window.IntMapLang.define('ko', { ui: {
   "Turn your phone sideways": "휴대전화를 가로로 돌리세요",
   "TX power (dBm)": "송신 출력 (dBm)",
   "Type": "종류",
-  "Ukraine frontline on — pan to Ukraine to see it": "우크라이나 전선을 켰습니다 — 우크라이나로 이동하면 보입니다",
   "UN member": "UN 회원국",
   "unavailable": "사용할 수 없음",
   "Unavailable components skipped": "사용할 수 없는 구성 요소는 건너뛰었습니다",
@@ -2545,14 +2390,11 @@ window.IntMapLang.define('ko', { ui: {
   "Uncertain in the image": "이미지에서 판단이 불확실함",
   "Undo": "실행 취소",
   "Unhealthy": "나쁨",
-  "Unhealthy (sensitive)": "나쁨 (민감군)",
-  "United States — NWS": "미국 — NWS",
   "Units": "단위",
   "Unknown action": "알 수 없는 동작",
   "Unknown module": "알 수 없는 모듈",
   "unlimited": "무제한",
   "Unlimited tilt": "기울기 무제한",
-  "unresolved slope": "판정하지 못한 경사",
   "Unsupported method": "지원하지 않는 방식",
   "UP": "상승",
   "up to": "최대",
@@ -2560,18 +2402,15 @@ window.IntMapLang.define('ko', { ui: {
   "Up to 4 images per message": "메시지당 이미지 4장까지",
   "Updated": "갱신",
   "Uploaded data": "업로드한 데이터",
-  "US National Weather Service, active alerts.": "미국 국립기상청(NWS)의 발효 중인 경보입니다.",
   "Usable for PV": "태양광 발전에 적합",
   "USD, nominal": "USD, 명목",
   "Use": "사용",
   "Use current map view": "현재 지도 화면 사용",
-  "Use:": "사용:",
   "Using the current map view — pan/zoom before creating, or close and set a radius, draw an area or resolve a region for a tighter watch.": "현재 지도 화면을 사용합니다. 만들기 전에 화면을 옮기거나 확대하시고, 더 좁게 감시하려면 창을 닫고 반경을 정하거나 영역을 그리거나 지역을 지정하세요.",
   "using the map’s center as the observer": "지도 중심을 관측 지점으로 사용",
   "UTC": "UTC",
   "V/SPEED": "수직 속도",
   "valid": "유효",
-  "Valid time (hourly)": "유효 시각 (1시간 단위)",
   "value rejected (out of range?)": "값이 거부되었습니다 (범위를 벗어났을 수 있습니다)",
   "Verifying": "확인 중",
   "vertically": "수직으로",
@@ -2582,12 +2421,10 @@ window.IntMapLang.define('ko', { ui: {
   "View report": "보고서 보기",
   "Viewing the future": "미래를 보는 중",
   "Viewing the past": "과거를 보는 중",
-  "Viewing the past · tap": "과거를 보는 중 · 탭",
   "Viewpoint altitude": "시점 고도",
   "Viewpoint altitude in the readout": "상시 표시란에 시점 고도 표시",
   "violent": "격렬",
   "Volume": "부피",
-  "Volume per click (m³)": "클릭당 부피 (m³)",
   "warm": "난류",
   "Warm current — measurably warmer than the sea at the same latitude": "난류 — 같은 위도의 바다보다 뚜렷하게 따뜻함",
   "Warning": "주의",
@@ -2595,7 +2432,6 @@ window.IntMapLang.define('ko', { ui: {
   "Watch for": "감시 대상",
   "Watching": "감시 중",
   "water": "물",
-  "Water here": "이곳의 물",
   "Water source": "물 공급원",
   "Water supply": "용수 공급",
   "Wave scale": "파고 눈금",
@@ -2607,8 +2443,6 @@ window.IntMapLang.define('ko', { ui: {
   "weather (no place given)": "날씨 (장소가 지정되지 않음)",
   "Weather along the way": "경로상의 날씨",
   "Weather satellites": "기상위성",
-  "Weather service daily limit reached — retrying after 00:00 UTC": "기상 서비스의 일일 한도에 도달했습니다 — 00:00 UTC 이후 다시 시도합니다",
-  "Weather services unreachable": "기상 서비스에 연결할 수 없습니다",
   "Weather temporarily unavailable (both weather services could not be reached — possibly rate-limited). Try again in a few minutes.": "날씨 정보를 일시적으로 사용할 수 없습니다 (두 기상 서비스 모두 연결되지 않았습니다. 호출 제한일 수 있습니다). 몇 분 뒤 다시 시도하세요.",
   "web news search": "웹 뉴스 검색",
   "What is happening here recently?": "요즘 이곳에서는 무슨 일이 있나요?",
@@ -2622,10 +2456,7 @@ window.IntMapLang.define('ko', { ui: {
   "Which one?": "어느 쪽인가요?",
   "Whole planet · 28 km": "전 지구 · 28 km",
   "Why is this area the way it is?": "이 지역은 왜 이런 모습인가요?",
-  "wide look-aheads": "개 광역 전방 탐색",
-  "wider than the transect": "단면보다 넓음",
   "width": "폭",
-  "Width (m)": "폭 (m)",
   "Wikidata could not be reached: ": "Wikidata에 연결할 수 없습니다: ",
   "Wikidata states no ownership link between this company and another one in this industry.": "Wikidata에는 이 기업과 같은 업종의 다른 기업 사이의 지분 관계가 기록되어 있지 않습니다.",
   "Wikidata’s public endpoint is rate-limiting this browser — wait a moment and switch the layer on again": "Wikidata 공개 엔드포인트가 이 브라우저의 호출을 제한하고 있습니다 — 잠시 후 레이어를 다시 켜 보세요",
@@ -2658,28 +2489,19 @@ window.IntMapLang.define('ko', { ui: {
   "Intensity": "진도 분포",
   "Tap the map to place the hypocenter. Drawing a rupture area first is optional.": "지도를 탭해 진원을 놓으세요. 먼저 진원역을 그리는 것은 선택 사항입니다.",
   "Press to solve the intensity field for this source.": "이 진원에 대한 진도 분포를 계산합니다.",
-  "Done — press ▶ above to watch the waves, or change anything and recompute.": "완료되었습니다 — 위의 ▶ 로 파동을 재생하거나, 조건을 바꿔 다시 계산하세요.",
   "Active volcanoes": "활화산",
   "Air-defense zones (ADIZ ≈)": "방공식별구역 (ADIZ ≈)",
   "Annual precipitation": "연간 강수량",
-  "Anomaly vs climatology (ENSO signal)": "평년 대비 편차 (ENSO 신호)",
   "Assassination": "암살",
   "ASTER global DEM color + shaded relief (static)": "ASTER 전 지구 수치표고모델 색채 + 음영기복 (정지 영상)",
   "Aurora forecast (NOAA)": "오로라 예보 (NOAA)",
-  "Brightness temp (thermal IR)": "휘도온도 (열적외)",
-  "Carbon monoxide (CO)": "일산화탄소 (CO)",
-  "Chlorophyll-a (ocean color)": "클로로필-a (해색)",
   "Clear sky": "맑음",
-  "Cloud fraction (day)": "운량 비율 (주간)",
-  "Cloud-top temperature": "운정 온도",
-  "Clouds (infrared)": "구름 (적외)",
   "CO₂ per capita": "1인당 CO₂",
   "CO₂ per capita (t)": "1인당 CO₂ (t)",
   "Color relief (ASTER GDEM)": "색채 기복도 (ASTER GDEM)",
   "Contour lines": "등고선",
   "Corruption indicator": "부패 지수",
   "Current account (% GDP)": "경상수지 (GDP 대비)",
-  "Daily satellite (true color)": "일별 위성영상 (자연색)",
   "Data centers & AI infra": "데이터센터·AI 인프라",
   "Day / night": "낮 / 밤",
   "dense": "밀집",
@@ -2720,8 +2542,6 @@ window.IntMapLang.define('ko', { ui: {
   "Internet users": "인터넷 이용자",
   "Internet users %": "인터넷 이용률 %",
   "Land cover (ESA 2021)": "토지피복 (ESA 2021)",
-  "Land surface temp (day)": "지표면 온도 (주간)",
-  "Land surface temp (night)": "지표면 온도 (야간)",
   "Life expectancy": "기대수명",
   "Light drizzle": "약한 이슬비",
   "Light rain": "약한 비",
@@ -2734,22 +2554,11 @@ window.IntMapLang.define('ko', { ui: {
   "Mainly clear": "대체로 맑음",
   "Major dams": "주요 댐",
   "Mandatory evacuation": "의무 대피",
-  "Mid-tropospheric CO — wildfire smoke, combustion & air pollution (AIRS)": "대류권 중층 일산화탄소 — 산불 연기·연소·대기오염 (AIRS)",
   "Military (% GDP)": "국방비 (GDP 대비)",
   "Military spending": "국방비",
   "Military spending ($)": "국방비 ($)",
-  "MODIS atmospheric water vapor": "MODIS 대기 수증기량",
-  "MODIS band-31 thermal-IR brightness temperature": "MODIS 31밴드 열적외 휘도온도",
-  "MODIS cloud fraction, daytime": "MODIS 운량 비율 (주간)",
-  "MODIS cloud-top temperature; colder = taller storm clouds": "MODIS 운정 온도 — 낮을수록 높이 발달한 뇌운",
-  "MODIS land-surface temperature, daytime": "MODIS 지표면 온도 (주간)",
-  "MODIS land-surface temperature, nighttime": "MODIS 지표면 온도 (야간)",
-  "MODIS Terra daily true-color mosaic": "MODIS Terra 일별 자연색 합성",
   "MODIS vegetation index (8-day)": "MODIS 식생지수 (8일 합성)",
   "NATO members": "NATO 회원국",
-  "Ocean temperature (ECMWF)": "해수온 (ECMWF)",
-  "Ocean-surface chlorophyll-a — phytoplankton / marine productivity (VIIRS)": "해양 표층 클로로필-a — 식물플랑크톤·해양 생산성 (VIIRS)",
-  "OMPS UV-absorbing aerosols — smoke, dust, volcanic ash": "OMPS 자외선 흡수 에어로졸 — 연기·먼지·화산재",
   "Overcast": "흐림",
   "Partly cloudy": "구름 조금",
   "Pharma manufacturing hubs": "제약 생산 거점",
@@ -2781,10 +2590,8 @@ window.IntMapLang.define('ko', { ui: {
   "Unemployment": "실업",
   "Unemployment rate": "실업률",
   "Urban population": "도시 인구 비율",
-  "UV Aerosol Index": "자외선 에어로졸 지수",
   "Vegetation index (NDVI)": "식생지수 (NDVI)",
   "War": "전쟁",
-  "Water vapor": "수증기",
   "wet": "습윤",
   "All goods": "모든 품목",
   "Animal products": "동물성 생산품",
@@ -2918,7 +2725,6 @@ window.IntMapLang.define('ko', { ui: {
   "Could not load volcano data": "화산 데이터를 불러오지 못했습니다",
   "Erupted since 1950": "1950년 이후 분화",
   "Erupted since 1500": "1500년 이후 분화",
-  "Older / undated": "그 이전 · 기록 없음",
   "Köppen climate": "쾨펜 기후 구분",
   "Ecoregions": "생태 지역",
   "Hillshade": "음영 기복",
@@ -2991,7 +2797,6 @@ window.IntMapLang.define('ko', { ui: {
   "Could not load ecoregions": "생태 지역 데이터를 불러오지 못했습니다",
   "Biome: ": "생물군계: ",
   "Could not load railway data": "철도 데이터를 불러오지 못했습니다",
-  "AI superclusters": "AI 슈퍼클러스터",
   "Major pharma HQ / manufacturing clusters (representative sites). Pairs with the Life-expectancy layer.": "주요 제약사 본사·생산 클러스터(대표 지점). 기대수명 레이어와 함께 보세요.",
   "World Bank WGI “Control of Corruption” score (0–100, higher = cleaner) — the open-API counterpart of TI’s CPI.": "세계은행 WGI「부패 통제」 점수(0–100, 높을수록 청렴) — TI의 CPI에 해당하는 공개 API 지표.",
   "Life expectancy at birth (World Bank, 2022).": "출생 시 기대수명 (세계은행, 2022).",
@@ -3109,115 +2914,54 @@ window.IntMapLang.define('ko', { ui: {
   "1yr M6+": "1년 M6+",
   "Could not load earthquake data": "지진 데이터를 가져오지 못했습니다",
   "Could not load ECMWF weather": "ECMWF 데이터를 불러오지 못했습니다",
-  "ECMWF valid: ": "ECMWF 유효 시각: ",
   "latest": "최신",
-  "Open-Meteo ECMWF IFS (hourly)": "Open-Meteo ECMWF IFS (1시간 간격)",
-  "Time & date": "현재 시각과 날짜",
   "Analog clock": "아날로그 시계",
-  "An analog clock face": "아날로그 문자판",
-  "Weather at your location (asks for location permission when added)": "현재 위치의 날씨 (추가 시 위치 권한을 요청합니다)",
   "FX rate": "환율",
-  "Pick any currency pair": "원하는 통화쌍 선택",
-  "Crypto (BTC·ETH)": "암호자산 (BTC·ETH)",
-  "Price & 24h change": "가격과 24시간 변동",
   "Crypto market cap": "암호자산 시가총액",
-  "Total cap & BTC dominance": "총 시가총액과 BTC 점유율",
   "Fear & Greed": "공포·탐욕 지수",
-  "Crypto market sentiment index": "암호자산 시장 심리 지수",
-  "Gold spot (USD/oz)": "금 현물 가격 (USD/oz)",
-  "Silver spot (USD/oz)": "은 현물 가격 (USD/oz)",
-  "Top-3 magnitude, last 24 h (USGS)": "최근 24시간 규모 상위 3 (USGS)",
   "On this day": "오늘의 역사",
-  "A historical event from this date": "이 날짜의 역사적 사건",
   "Featured layer": "추천 레이어",
-  "Random pick — tap to show it": "무작위 추천. 누르면 표시됩니다",
   "Random country": "무작위 국가",
-  "Flag & key facts": "국기와 기본 정보",
   "Countdown": "카운트다운",
-  "Set a date & title": "날짜와 제목을 설정",
   "Sunrise & sunset": "일출·일몰",
-  "At your location (if allowed) or map center": "현재 위치(허용 시) 또는 지도 중심",
   "Moon phase": "달의 위상",
-  "Tonight’s phase & illumination": "오늘 밤의 위상과 조도",
   "Air quality (AQI)": "대기질 (AQI)",
-  "US AQI & PM2.5": "US AQI와 PM2.5",
   "ISS tracker": "국제우주정거장 추적",
-  "Live ISS position — tap to fly there": "ISS의 현재 위치. 탭하면 지도로 이동",
   "World clock": "세계 시계",
-  "Pick a city / timezone": "도시·표준시 선택",
   "Year progress": "올해의 진행률",
   "How far through the year we are": "올해가 몇 % 지났는지",
   "Featured article": "오늘의 주목 기사",
   "Wikipedia’s article of the day": "위키백과의 오늘의 글",
   "World population": "세계 인구 시계",
-  "Live estimate (UN-based)": "유엔 추계 기반 실시간 추정",
   "UV index": "자외선 지수",
-  "UV index at your location": "현재 위치의 자외선 지수",
-  "Aurora (Kp)": "지자기·오로라 (Kp)",
-  "Geomagnetic activity (NOAA SWPC)": "지자기 활동 (NOAA SWPC)",
-  "Top technology story": "기술 분야 인기 기사",
   "Next holiday": "다음 공휴일",
-  "Next public holiday (pick a country)": "지정한 나라의 다음 공휴일",
   "Next rocket launch": "다음 로켓 발사",
-  "The next spaceflight launch": "전 세계의 다음 발사 예정",
   "Bitcoin network": "비트코인 네트워크",
-  "Block height & fees": "블록 높이와 수수료",
   "Day progress": "오늘의 진행률",
   "How far through today we are": "오늘이 몇 % 지났는지",
   "Season": "계절",
-  "Current season (hemisphere-aware)": "현재 계절 (반구 반영)",
-  "Week number": "주차 번호",
-  "ISO week, day-of-year & days left": "ISO 주차·연중 일수·남은 날짜",
   "Unix time": "Unix 시각",
-  "Live Unix timestamp": "현재 Unix 타임스탬프",
   "Map center": "지도 중심",
-  "Center coordinates & zoom": "표시 중심의 좌표와 줌",
   "Next full moon": "다음 보름달",
-  "Days until the next full moon": "다음 보름달까지 남은 날짜",
-  "Configure": "설정",
   "Edit": "편집",
-  "Add widget": "위젯 추가",
-  "Add a widget…": "추가할 위젯…",
-  "Available widgets": "추가할 수 있는 위젯",
   "as of ": "기준 ",
-  "Title (e.g. Olympics opening)": "제목 (예: 올림픽 개막)",
-  "World clock ": "세계 시계 ",
   "live estimate, UN-based": "유엔 추계 기반 실시간 추정",
   "Southern Hemisphere": "남반구",
   "Northern Hemisphere": "북반구",
   "seconds since 1970-01-01 UTC": "1970-01-01 UTC부터의 초",
   "zoom ": "줌 ",
-  "Tonight!": "오늘 밤!",
-  "until the next full moon": "다음 보름달까지",
-  "until the next new moon": "다음 초승달까지",
   "lat ": "위도 ",
   "daylight": "일조",
-  "100-px bar ≈ ": "100px 막대 ≈ ",
-  "Location needed": "위치 정보가 필요합니다",
   "Allow location": "위치 정보 허용",
-  "Locating…": "위치 확인 중…",
   "FX ": "환율 ",
   "daylight ": "낮의 길이 ",
   "age ": "월령 ",
   "lit": "조도",
-  "Fly there →": "지도에서 보기 →",
   "dominance": "도미넌스",
-  "None ≥ M2.5 (24 h)": "M2.5 이상 없음 (24시간)",
-  "Tap for another": "탭하면 다른 사건",
-  "Tap to show on the map →": "탭하면 지도에 표시 →",
-  "Layer on: ": "레이어 표시: ",
-  "loading country data": "국가 데이터 로딩 중",
-  "Fly to this country": "이 나라로 이동",
   "Pop ": "인구 ",
-  "Another ↻": "다른 나라 ↻",
-  "Set date & title via ⚙": "⚙ 에서 날짜와 제목 설정",
-  "<span style=\"font-size:20px;\">Today! 🎉</span>": "<span style=\"font-size:20px;\">오늘! 🎉</span>",
-  "Storm — aurora likely": "지자기 폭풍 (오로라 가능성)",
   "Active": "활발",
   "Quiet": "정온",
-  "Next holiday ": "다음 공휴일 ",
   "today": "오늘",
-  "fee ": "수수료 ",
   "block height": "블록 높이",
   "Nine-dash line (S. China Sea)": "구단선 (남중국해)",
   "Ukraine front line (approx.)": "우크라이나 전선 (개략)",
@@ -3248,23 +2992,15 @@ window.IntMapLang.define('ko', { ui: {
   "Colour = who received the state’s electoral votes.": "색은 그 주의 선거인단 표를 얻은 후보를 나타냅니다.",
   "Source: National Archives · American Presidency Project": "출처: 미국 국립문서기록관리청 · American Presidency Project",
   "Could not load the election data": "선거 데이터를 불러오지 못했습니다",
-  "Map weather": "지도 중심 날씨",
-  "Live weather at the map center (no location permission)": "지도 중심의 현재 날씨 (위치 권한 불필요)",
   "Day length": "낮의 길이",
-  "Daylight hours at the map-center latitude": "지도 중심 위도의 일조 시간",
   "Map scale": "지도 축척",
-  "Scale at the current zoom": "현재 확대 수준의 축척",
   "Calendar": "달력",
-  "This month, today highlighted": "이번 달, 오늘 표시",
   "Next new moon": "다음 삭(신월)",
-  "Days until the next new moon": "다음 신월까지 남은 일수",
   "Time zones (live clock)": "시간대 (실시간 시계)",
-  "Educational model — in a real emergency follow the official authorities. These simulations do not predict whether damage will or will not occur; either way, keep the preparations you would need ready as a matter of routine.": "교육용 모델입니다 — 실제 재난 시에는 공식 기관의 지시를 따르세요. 이 시뮬레이션은 피해가 발생할지 여부를 예측하지 않습니다. 어느 쪽이든 평소에 필요한 대비를 갖춰 두세요.",
   "⚠ Weather & disaster warnings": "⚠ 기상·재해 경보",
   "⚡ Energy mix": "⚡ 에너지 구성",
   "🌊 Ocean currents": "🌊 해류",
   "🌊 Tides": "🌊 조석",
-  "🌾 Crop cultivation": "🌾 작물 재배",
   "🕸 Industry web": "🕸 산업 연결망",
   "🚢 Trade flows": "🚢 무역 흐름",
   "3C 273 — the first quasar ever identified": "3C 273 — 최초로 확인된 퀘이사",
@@ -3492,7 +3228,6 @@ window.IntMapLang.define('ko', { ui: {
   "Federation of Rhodesia and Nyasaland": "로디지아 니아살랜드 연방",
   "Federation of South Arabia": "남아라비아 연방",
   "Female labor participation %": "여성 경제활동 참가율 %",
-  "Fertility rate (births/woman)": "합계출산율(명/여성)",
   "Fezzan": "페잔",
   "Fixed broadband /100": "고정 광대역 /100명",
   "Food industry": "식품",
@@ -3821,7 +3556,6 @@ window.IntMapLang.define('ko', { ui: {
   "Battery reserve": "배터리 예비량",
   "Boundaries of Earth’s tectonic plates — where most earthquakes and volcanoes occur.": "지구 판 경계 — 대부분의 지진과 화산이 일어나는 곳.",
   "Buddhism": "불교",
-  "Carbon-dioxide emissions per person per year (tonnes) — a country’s per-capita climate footprint.": "1인당 연간 이산화탄소 배출량(톤) — 국민 1인의 기후 부담.",
   "Caribbean": "카리브",
   "Christianity": "기독교",
   "Climb rate": "상승률",
@@ -4005,7 +3739,6 @@ window.IntMapLang.define('ko', { ui: {
   "Snow accretion": "착설",
   "Snowmelt": "융설",
   "Earthquake": "지진",
-  "Tropical cyclone": "열대저기압",
   "Volcano": "화산",
   "Drought": "가뭄",
   "Wildfire": "산불",
@@ -4034,7 +3767,6 @@ window.IntMapLang.define('ko', { ui: {
   "Mangroves": "맹그로브",
   "Moss and lichen": "이끼·지의류",
   "Standard 1435 mm": "표준궤 1435 mm",
-  "Russian 1520/1524 mm": "러시아 광궤 1520/1524 mm",
   "Iberian 1668 mm": "이베리아 궤간 1668 mm",
   "Irish 1600 mm": "아일랜드 궤간 1600 mm",
   "Religion distribution": "종교 분포",
@@ -4091,7 +3823,6 @@ window.IntMapLang.define('ko', { ui: {
   "Ukraine frontline (live)": "우크라이나 전선 (실시간)",
   "3D buildings (cities)": "3D 건물 (도시)",
   "Volcanoes (Smithsonian GVP)": "화산 (스미소니언 GVP)",   /* (#R432) */
-  "Volcanoes (GVP Holocene, all 1,215)": "화산 (GVP 홀로세, 전체 1,215곳)",
   "Unchanged / not confirmed": "변화 없음·미확인",
   "Data gaps": "취득하지 못한 데이터",
   "Limitations": "제약·불확실성",
@@ -4152,23 +3883,23 @@ window.IntMapLang.define('ko', { ui: {
   " countries reporting": "개국 보고",   /* (#R266) */
   " · ": " · ",   /* (#R266) */
   "An anomaly is a DIFFERENCE, not a temperature. Each pixel is today’s sea-surface temperature minus the 1985–2014 average for that same spot on that same day of the year, so red means warmer than usual there and blue means cooler than usual there — a +2 °C patch in the Arctic and a +2 °C patch in the tropics are the same departure from normal, not the same water. Grey is normal. The scale is clamped at ±3 °C. This is the map El Niño and La Niña are read off: a warm tongue along the equatorial Pacific is El Niño, a cool one is La Niña.": "편차(아노말리)는 “수온” 자체가 아니라 “차이”입니다. 각 화소는 그날 그 지점의 해수면 수온에서 같은 지점·같은 날짜의 1985–2014년 평균을 뺀 값입니다. 빨강은 그곳 평년보다 따뜻함, 파랑은 평년보다 차가움, 회색은 평년 수준을 뜻합니다. 눈금은 ±3 °C에서 잘립니다. 엘니뇨와 라니냐는 이 지도에서 읽습니다 — 적도 태평양을 따라 붉은 혀가 뻗으면 엘니뇨, 푸르면 라니냐입니다.",   /* (#R266) */
-  "Canada — ECCC": "캐나다 — ECCC",   /* (#R266) */
+  /* (#R266) */
   "Catholic": "가톨릭",   /* (#R266) */
-  "China Meteorological Administration — the public warning list, grouped by province.": "중국기상국의 공개 경보 목록입니다. 성(省) 단위로 묶어 표시합니다.",   /* (#R266) */
-  "China — CMA": "중국 — CMA",   /* (#R266) */
+  /* (#R266) */
+  /* (#R266) */
   "Christian (not separated)": "기독교(교파 구분 없음)",   /* (#R266) */
-  "Each area": "지역별",   /* (#R266) */
+  /* (#R266) */
   "Each country is coloured by the group with the largest share; tap a country for the full composition. Source: CIA World Factbook (public domain).": "각 나라는 가장 큰 집단의 색으로 칠합니다. 나라를 누르면 전체 구성이 나옵니다. 출처: CIA World Factbook(퍼블릭 도메인).",   /* (#R266) */
-  "Environment and Climate Change Canada, active alerts by province.": "캐나다 환경·기후변화부의 발효 중 경보를 주(州)별로 표시합니다.",   /* (#R266) */
-  "Europe — MeteoAlarm (37 services)": "유럽 — MeteoAlarm(37개 기관)",   /* (#R266) */
+  /* (#R266) */
+  /* (#R266) */
   "Finnish 1524 mm": "핀란드 궤간 1524 mm",   /* (#R266) */
   "Folk & traditional": "민족·전통 종교",   /* (#R266) */
-  "Global feed: GDACS (Global Disaster Alert and Coordination System, UN/EC) — earthquakes, tropical cyclones, floods, volcanoes, droughts and wildfires of the last four days.": "전 지구 피드: GDACS(유엔/EU 전 지구 재난경보 시스템) — 최근 4일간의 지진·열대저기압·홍수·화산·가뭄·산불.",   /* (#R266) */
+  /* (#R266) */
   "How far today’s sea-surface temperature is from normal for this place and this time of year": "오늘의 해수면 수온이 이 장소·이 시기의 평년값에서 얼마나 벗어나 있는지",   /* (#R266) */
-  "Japan, the United States and Canada are drawn at the unit their agency issues at. Europe and China publish a list rather than a shape, so their countries are washed and the tap holds the regions. Russia has no machine-readable public warning feed, so it is on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다는 각 기관의 발표 단위로 그립니다. 유럽과 중국은 도형이 아니라 목록으로 공개하므로 국가를 색으로 칠하고, 누르면 지역별 내역이 나옵니다. 러시아는 기계가 읽을 수 있는 공개 경보 피드를 찾지 못해 GDACS만 사용합니다 — GDACS는 사건 피드이지 각국의 경보가 아니며, 사건이 없는 나라가 경보가 없는 나라는 아닙니다. 참고용 표시입니다. 실제로는 공식 기관의 발표를 따르십시오.",   /* (#R266) */
+  /* (#R266) */
   "Latest per country": "국가별 최신",   /* (#R266) */
-  "Live from OpenStreetMap for this view": "이 화면 범위의 최신 OpenStreetMap",   /* (#R266) */
-  "MeteoAlarm (EUMETNET) — the national weather service’s own warnings, grouped by region.": "MeteoAlarm(EUMETNET) — 각국 기상기관이 발표한 경보를 지역별로 묶어 표시합니다.",   /* (#R266) */
+  /* (#R266) */
+  /* (#R266) */
   "Normal 1981–2010 (1 km)": "평년값 1981–2010 (1 km)",   /* (#R266) */
   "Normal: CHELSA V2.1 bio12, mean annual precipitation 1981–2010, 30 arc-seconds (~1 km), reprojected to Web Mercator and masked to land. Its 16-bit storage saturates at 6,553 mm, so the very wettest places (parts of Meghalaya, the Chilean fjords) are shown at that ceiling. Years: GPCC Full Data Monthly V2022 (Deutscher Wetterdienst), a rain-gauge analysis at 0.5° over land, with the twelve monthly totals of each year summed. A gauge analysis has nothing to say over the ocean, which is why the sea is empty in both.": "평년값: CHELSA V2.1 bio12(1981–2010년 연강수량 평균, 30초각 ≈ 1 km)를 웹 메르카토르로 재투영하고 육지만 표시했습니다. 16비트 저장 한계로 6,553 mm에서 포화되므로 가장 비가 많은 지역(메갈라야 일부, 칠레 피오르 등)은 그 상한값으로 표시됩니다. 연도별: GPCC Full Data Monthly V2022(독일 기상청)의 육상 0.5° 우량계 분석으로, 각 연도의 12개월 합계를 더했습니다. 우량계 분석은 해상에 대해 말할 수 없으므로 두 경우 모두 바다는 비어 있습니다.",   /* (#R266) */
   "Orthodox": "정교회",   /* (#R266) */
@@ -4187,9 +3918,6 @@ window.IntMapLang.define('ko', { ui: {
   "warnings": "건",   /* (#R266) */
   "warnings in": "건 /",   /* (#R266) */
   "zoom in for the live record": "확대하면 최신 기록을 가져옵니다",   /* (#R266) */
-  "Run to steady state": "정상 상태까지 진행",
-  "Steady state (t → ∞)": "정상 상태 (t → ∞)",
-  "The water has come to rest — add a continuous source or place more": "물이 멈췄습니다 — 연속 수원을 추가하거나 물을 더 배치하세요",
   "front": "선단",
   "Flow": "흐름",
   "left the area": "영역 밖으로",
@@ -4201,14 +3929,11 @@ window.IntMapLang.define('ko', { ui: {
   "as set": "설정값",
   "from the sources": "수원의 유량에서",
   "from the placed volume": "배치한 수량에서",
-  "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. ⏭ jumps to the steady state, which is solved by priority-flood depression filling and downslope volume routing.": "실제 표고 데이터를 직접 편집합니다. 물은 2차원 천수방정식의 국소 관성 형식(Bates 2010, de Almeida 2012의 q 중심화)과 매닝 조도 n = 0.035로 시간 적분되므로, 홍수파는 실제로 걸리는 시간만큼 진행합니다. ⏭ 를 누르면 정상 상태(우선순위 침수 기반 요지 충전과 사면 하향 체적 라우팅)로 넘어갑니다.",
-  "Longest straight run": "가장 긴 직선 구간",
   "fall": "낙차",
   "relief": "기복",
-  "— flat water: the shortest way across is the way the water goes": "— 잔잔한 수면: 최단 경로가 곧 물의 경로입니다",
   "Annual precipitation (by country)": "연강수량 (국가별)",   /* (#R266) */
-  "Also in GDACS for this country — an event feed, not this agency’s warnings": "이 나라에 대해 GDACS에 있는 사건 — 사건 피드이지 이 기관의 경보가 아닙니다",   /* (#R266) */
-  "— every point on it is a DEM reading": "— 모든 지점이 실측 DEM 값입니다",   /* (#R255) */
+  /* (#R266) */
+  /* (#R255) */
   "At rest": "정지",   /* (#R267) */
   "integrated": "적분",   /* (#R267) */
   "flowing": "흘러가는 중",   /* (#R267) */
@@ -4223,19 +3948,12 @@ window.IntMapLang.define('ko', { ui: {
   "— when the water reached the front, on the run that drew it": "— 그림을 만든 것과 같은 적분에서 선단에 물이 도달한 시각",   /* (#R267) */
   "Run on until the water stops moving": "물이 멈출 때까지 계속 진행",   /* (#R267) */
   "Real terrarium elevation, sculpted by you. The water is integrated in time by the 2-D shallow-water equations in their local inertial form (Bates 2010, q-centred after de Almeida 2012) with Manning friction at n = 0.035, so a flood wave takes the time a flood wave takes. The same model runs the whole course: the lattice is extended in whichever direction the water goes, at the same cell size, so there is no second calculation and no second drawing downstream. ⏭ runs this model on until the water stops moving.": "실제 고도 데이터를 편집하고 있습니다. 물은 2차원 천수 방정식의 국소 관성 형식(Bates 2010, de Almeida 2012의 q 중심화)으로 시간 적분되며, 마닝 조도 n = 0.035를 씁니다. 따라서 홍수파는 실제로 걸리는 시간만큼 진행합니다. 상류에서 하류까지 같은 모델입니다. 물이 향하는 방향으로 같은 셀 크기의 격자를 이어 붙이므로 하류에 별도의 계산도 별도의 그림도 없습니다. ⏭ 는 같은 모델을 물이 멈출 때까지 계속 진행시킵니다.",
-  "Australia — BoM": "오스트레일리아 — 기상청(BoM)",
-  "Brazil — INMET": "브라질 — INMET",
-  "Bureau of Meteorology — warnings in force, grouped by state or territory.": "오스트레일리아 기상청(BoM) — 발효 중인 경보를 주·준주별로 묶었습니다.",
   "By area": "지역별",
   "cells have no elevation data and the water cannot enter them": "개 셀에 표고 데이터가 없어 물이 들어갈 수 없습니다",
   "Creoles & pidgins": "크리올어·피진어",
   "Data year": "데이터 연도",
   "Each municipality": "시·군·구별",
   "every 60 s": "60초마다",
-  "Hong Kong — HKO": "홍콩 — 천문대(HKO)",
-  "Hong Kong Observatory — the warning signals in force.": "홍콩 천문대 — 발효 중인 경보 신호.",
-  "INMET (Brazil), active warnings with their published areas, grouped by state.": "INMET(브라질) — 공표된 대상 구역과 함께 표시한 발효 중 경보, 주별로 묶었습니다.",
-  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed and the tap holds the units. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다·브라질은 각 기관이 발표하는 단위로 그립니다. 유럽·중국·오스트레일리아·홍콩은 도형이 아니라 목록으로 공개하므로 국가를 색으로 칠하고, 탭하면 단위별 내역을 보여 줍니다. 러시아·인도·뉴질랜드·말레이시아·인도네시아·남아프리카공화국·멕시코는 이번에 실제로 접속해 확인했지만 브라우저에서 읽을 수 있는 공개 피드를 찾지 못해 GDACS만 사용합니다 — GDACS는 사건 배포이지 각국의 경보 자체가 아니며, 사건이 없는 나라가 경보가 없는 나라라는 뜻은 아닙니다. 표시는 참고용입니다. 실제로는 공식 기관의 발표를 따르십시오.",
   "Land cover (ESA)": "토지 피복 (ESA)",
   "Live OpenStreetMap for this view, merged with the shipped snapshot": "이 화면의 실시간 OpenStreetMap과 동봉 스냅샷을 합친 결과",
   "Montenegrin": "몬테네그로어",
@@ -4258,7 +3976,6 @@ window.IntMapLang.define('ko', { ui: {
   "Tok Pisin": "톡 피신",
   "Greenlandic": "그린란드어",
   "Dzongkha": "종카어",
-  "Emergency / danger warning": "특별경보·위험경보",
   "Gale": "폭풍",
   "Strong wind": "강풍",
   "Snow and wind": "눈과 바람",
@@ -4266,10 +3983,7 @@ window.IntMapLang.define('ko', { ui: {
   "Ice accretion": "착빙",
   "Fertility rate (World Bank)": "합계출산율(세계은행)",
   "Life expectancy (World Bank)": "기대수명(세계은행)",
-  "GDACS event level, over the whole country": "GDACS 사건 등급 — 국가 전체를 엷게 칠함",
-  "Warning rank, at the unit the agency issues for": "각 기관의 발령 등급(발령 단위로 표시)",
   "UNDP publishes no HDI for this year": "이 연도의 HDI는 UNDP가 발표하지 않았습니다",
-  "Japan, the United States, Canada and Brazil are drawn at the unit their agency issues at, and are never washed as a whole country — the shapes are the answer there. Europe, China, Australia and Hong Kong publish a list rather than a shape, so their countries are washed in the agency’s own rank and the tap holds the units. A GDACS wash is a different scale in different colours: it says an event of that level affects the country, not that a warning is in force at any given place in it. Russia, India, New Zealand, Malaysia, Indonesia, South Africa and Mexico were probed this round and none of them has a public feed a browser can read; they are on GDACS only — an event feed, not a national warning service, and a country with no GDACS event is not a country with no warnings. Educational display: follow the official authorities.": "일본·미국·캐나다·브라질은 각 기관의 발령 단위로 그리며, 국가 전체를 칠하지 않습니다 — 그 나라에서는 발령 구역의 형태 자체가 답입니다. 유럽·중국·호주·홍콩은 도형이 아닌 목록으로 공개하므로 해당 기관의 등급 색으로 국가를 엷게 칠하고, 탭하면 단위별 내역이 나옵니다. GDACS 색칠은 다른 척도·다른 색입니다 — 그 등급의 사건이 해당 국가에 영향을 준다는 뜻이지, 국가 내 어느 지점에 경보가 발령됐다는 뜻이 아닙니다. 러시아·인도·뉴질랜드·말레이시아·인도네시아·남아프리카·멕시코는 브라우저에서 읽을 수 있는 공개 피드가 없어 GDACS만 표시됩니다 — GDACS는 사건 배포이지 각국의 경보 그 자체가 아니며, 사건이 없는 나라가 경보가 없는 나라는 아닙니다. 참고용 표시입니다. 실제로는 공식 기관의 발표를 따르십시오.",
   "areas": "구역",
   "Areas published but not locatable on this map: ": "발표되었으나 이 지도에서 위치를 특정할 수 없는 구역: ",
   "Read from this service but not in force now: ": "이 기관에서 읽었으나 현재 발효 중이 아닌 것: ",   /* world-packs.js (#R383) */
@@ -4294,7 +4008,6 @@ window.IntMapLang.define('ko', { ui: {
   "Europe — MeteoAlarm": "유럽 — MeteoAlarm",
   "every 30 s": "30초마다",
   "Every area every connected service published could be located.": "접속 중인 각 기관이 발표한 모든 구역의 위치를 특정했습니다.",
-  "Fill opacity": "채우기 투명도",
   "Fresh": "최신",
   "higher rank": "상위 등급",
   "IntMap has no connection to this country’s warning service, so it is saying nothing about it — not that nothing is in force. Follow the national authority.": "IntMap는 이 나라의 경보 기관에 연결되어 있지 않으므로 이 나라에 대해 아무것도 말하지 않습니다 — 「발표된 것이 없다」는 뜻이 아닙니다. 해당 국가 기관의 발표를 따르십시오.",
@@ -4349,10 +4062,10 @@ window.IntMapLang.define('ko', { ui: {
   "Temperature": "기온",   /* (#R288) */
   "Month": "대상 월",   /* (#R288) */
   "Forecast": "예보",   /* (#R288) */
-  "ECMWF IFS forecast": "ECMWF IFS 예보",   /* (#R288) */
-  "MERRA-2 reanalysis": "MERRA-2 재분석",   /* (#R288) */
+  /* (#R288) */
+  /* (#R288) */
   "monthly mean": "월평균",   /* (#R288) */
-  "Open the time machine": "타임머신 열기",   /* (#R288) */
+  /* (#R288) */
   "Nothing in force is drawn per administrative unit in {u} countries ({n} units), and country-wide in {c}.": "「발표 없음」은 {u}개국에서 행정구역 단위로({n}개 구역), {c}개국에서는 국가 전체로 표시합니다.",   /* (#R288) */
   ' km from the nearest routable road.': ' km 떨어져 있습니다(가장 가까운 통행 가능 도로에서).',   /* (#R291) */
   ' of the points returned no forecast (the shared weather client is rate-limited); the others are real.': '개 지점에서 예보를 받지 못했습니다(공용 날씨 클라이언트가 요청 제한 중). 나머지는 실제 데이터입니다.',   /* (#R291) */
@@ -4374,7 +4087,7 @@ window.IntMapLang.define('ko', { ui: {
   'Click the map to set this point. Esc cancels.': '지도를 클릭해 이 지점을 지정합니다. Esc로 취소.',   /* (#R291) */
   'Click two corners… (Esc cancels)': '대각선 두 점을 클릭…(Esc로 취소)',   /* (#R291) */
   'Click two opposite corners on the map to draw a box the route may not enter.': '지도에서 대각선 두 점을 클릭하면 경로가 지날 수 없는 사각형을 만듭니다.',   /* (#R291) */
-  'Close the directions panel (the route stays on the map)': '경로 패널 닫기(경로는 지도에 남습니다)',   /* (#R291) */
+  /* (#R291) */
   'Compute a route first — these describe a route that exists.': '먼저 경로를 계산하세요 — 이 분석은 이미 있는 경로에 대한 것입니다.',   /* (#R291) */
   'Date and time': '날짜와 시각',   /* (#R291) */
   'Departure or arrival': '출발 또는 도착',   /* (#R291) */
@@ -4720,8 +4433,6 @@ window.IntMapLang.define('ko', { ui: {
   "Pin this page to the front": "이 페이지를 앞에 고정",
   "Place saved": "지점을 저장했습니다",
   "Placed": "배치했습니다",
-  "Placed by": "배치 기준",
-  "Placed by subject or publisher": "주제/발행자로 전환",
   "Planetary K index, recent readings": "최근의 행성 K 지수",
   "pollution": "오염",
   "present": "현재",
@@ -4883,14 +4594,12 @@ window.IntMapLang.define('ko', { ui: {
   "West–East": "서–동",
   "What happened on today’s date": "오늘 날짜에 일어난 일",
   "What is drawn on the map, and switches for each": "지도에 그려진 것과 각각의 전환",
-  "What the story is about": "기사의 주제",
   "Whatever is selected on the map": "지도에서 선택 중인 국가",
   "Where the map is looking": "지도가 보고 있는 위치",
   "Where the station is right now": "지금 정거장의 위치",
   "Where these earthquakes were": "이 지진들의 위치",
   "Where these stories are placed": "이 기사들의 위치",
   "Which country": "어느 국가",
-  "Who published it": "발행자",
   "Why is this showing?": "왜 이것이 표시되는가",
   "Widget board": "위젯 보드",
   "Widget options": "위젯 조작",
@@ -5445,10 +5154,6 @@ window.IntMapLang.define('ko', { ui: {
   'World War I (day by day)': '제1차 세계 대전(일별)',   /* war-fronts.js war-layer.js (#R409) */
   'World War II (day by day)': '제2차 세계 대전(일별)',   /* war-fronts.js war-layer.js (#R409) */
   '{n} more running today': '이 밖에 {n}건이 진행 중',   /* war-layer.js (#R409) */
-  "Colours are the issuing agency’s own — Japan’s are the JMA’s yellow / red / magenta / black, China’s the CMA’s four signal colours, and the rest the CAP awareness ladder. Tap a country for that agency’s exact scale.": "색상은 발표 기관 자체의 배색입니다 — 일본은 기상청의 노랑/빨강/자홍/검정, 중국은 기상국의 4색 예경보 신호, 그 밖은 CAP 등급입니다. 국가를 누르면 해당 기관의 정확한 등급이 나옵니다.",
-  "Each agency’s ranks are mapped onto these four by IntMap. Two countries at the same step do NOT necessarily face the same danger — the warning systems themselves differ. Tap a country for its own agency’s scale.": "각 기관의 등급을 IntMap이 독자적으로 이 4단계로 환산한 것입니다. 같은 단계라도 두 나라의 위험도가 같다는 뜻이 아닙니다 — 경보 제도 자체가 다릅니다. 국가를 누르면 해당 기관의 등급이 나옵니다.",
-  "Nothing in force in any connected service right now.": "접속 중인 어느 기관에도 현재 발표 중인 것이 없습니다.",
-  "What is in force now": "지금 발표 중인 경보",
   " ash area(s) in force": "건의 화산재 구역이 유효",
   " eruptions": "회 분화",
   "{h} Holocene volcanoes": "홀로세 화산 {h}곳",   /* (#R432) */

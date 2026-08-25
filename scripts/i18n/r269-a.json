@@ -1,13 +1,5 @@
 {
  "_": "IntMap #R269 — the JMA's own hazard words, which its table distinguishes by level (強風 vs 暴風, 風雪 vs 暴風雪). de / ru / es are the call-site arguments; fr / ko / zh-Hant are looked up by the English source string.",
- "Emergency / danger warning": [
-  "Notfall-/Gefahrenwarnung",
-  "Экстренное / опасное предупреждение",
-  "Aviso de emergencia / peligro",
-  "Alerte d’urgence / de danger",
-  "특별경보·위험경보",
-  "特別警報・危險警報"
- ],
  "Gale": [
   "Sturm",
   "Шторм",
