@@ -77,11 +77,19 @@ test('R335 ① no word the vocabulary table names reaches the Simplified reader'
    round "fixes" it by rewriting ui.zh.js and takes the Traditional reader's word away. */
 test('R335 ② 社群 stays in Traditional and becomes 社区 in Simplified', () => {
   const trad = TRAD.map(read).join('\n');
-  assert.ok(trad.split('社群').length - 1 >= 6, 'the Traditional sources still say 社群');
+  /* ⚠ (#R450) FIVE, NOT SIX — and the missing one was never on screen. `tabCommunity` labelled the
+     Information/Community tab retired in #R139; no shipped file has named it since, so its nine rows
+     were unreachable and #R450 deleted them (scripts/i18n-dead-key-audit.mjs). A bare count is what
+     let a dead row prop this up, so the LIVE witness is named beside it: if the word is ever taken
+     away from the Traditional reader, that line fails with the row it is about rather than with an
+     arithmetic that could be satisfied by anything. */
+  assert.ok(trad.includes('ctxPostHere:"發佈到社群"'), 'the Traditional reader keeps 社群 where it is on screen');
+  assert.ok(trad.split('社群').length - 1 >= 5, 'the Traditional sources still say 社群');
   assert.ok(!trad.includes('社區 ADS-B'), 'the Traditional page was not rewritten');
   const ui = read('js/locales/ui.zh-hans.js'), pages = read('js/locales/pages.zh-hans.js');
   assert.ok(!ui.includes('社群') && !pages.includes('社群'), '社群 must not survive into Simplified');
-  assert.ok(ui.includes('tabCommunity:"社区"'), 'the Community tab');
+  /* (#R450) the same derivation, asserted on a row that is actually drawn — see the note above */
+  assert.ok(ui.includes('ctxPostHere:"发布到社区"'), 'the derivation still reaches the Simplified reader');
   assert.ok(pages.includes('社区 ADS-B'), 'the source description this was found in');
   assert.ok(pages.includes('OpenStreetMap 社区'), 'and the sources page prose');
   /* the pre-existing 社區 («about a neighbourhood») is untouched — it was already the right word */

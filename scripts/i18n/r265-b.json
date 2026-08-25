@@ -1,9 +1,6 @@
 {
   "_": "(#R265) The panel now names the thing that has been reported five times — the longest straight run of the traced course, with the fall and the relief along it, so a reader can tell a lake crossing from a defect. Columns: de, ru, es, fr, ko, zh-Hant.",
 
-  "Longest straight run": ["Längste Gerade", "Самый длинный прямой участок", "Tramo recto más largo", "Plus long segment rectiligne", "가장 긴 직선 구간", "最長的直線區段"],
   "fall": ["Gefälle", "падение", "desnivel", "dénivelé", "낙차", "落差"],
-  "relief": ["Relief", "перепад", "relieve", "relief", "기복", "起伏"],
-  "— flat water: the shortest way across is the way the water goes": ["— stilles Wasser: der kürzeste Weg ist der Weg des Wassers", "— стоячая вода: кратчайший путь и есть путь воды", "— agua en calma: el camino más corto es el del agua", "— eau calme : le chemin le plus court est celui que l’eau emprunte", "— 잔잔한 수면: 최단 경로가 곧 물의 경로입니다", "——平靜水面：最短路徑就是水的路徑"],
-  "— every point on it is a DEM reading": ["— jeder Punkt darauf ist ein DEM-Wert", "— каждая точка на нём — отсчёт DEM", "— cada punto de él es una lectura del DEM", "— chaque point en est une lecture du MNT", "— 모든 지점이 실측 DEM 값입니다", "——其上每一點都是實測 DEM 值"]
+  "relief": ["Relief", "перепад", "relieve", "relief", "기복", "起伏"]
 }
