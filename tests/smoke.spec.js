@@ -615,9 +615,10 @@ test('R289 ㉑ the coastline is the border line drawn round the water, and the w
     const E = window.IntMapGeoEngine;
     const cb = document.getElementById('cb-coast');
     /* ⚠ THIS FILE IS SERIAL AND THE WIND HAS ALREADY BEEN SWITCHED ON ABOVE (#R276 ⑰–⑲), so the
-       latch may already have fired. «Ships off» is a fact about the markup and the default list,
-       and it is asserted where it can be — tests/r289-checks ③. What only a browser can answer is
-       the two things below: the wind LEAVES it on, and switching it off STAYS off. */
+       latch may already have fired. What the row ships as is a fact about the markup and the default
+       list, and it is asserted where it can be — tests/r289-checks ③ and tests/r476-checks ①
+       (#R476: it now ships ON). What only a browser can answer is the two things below: the wind
+       LEAVES it on, and switching it off STAYS off. */
     const out = { row: !!cb, latched: !!(cb && cb.__windAuto) };
     /* switching the WIND on is what is supposed to offer the coastline — 「風レイヤーオン時は既定でオン」 */
     const w = document.getElementById('dl-wind');

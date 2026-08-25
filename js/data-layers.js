@@ -35,8 +35,18 @@ window.IntMapDefaultLayers=['dl-climate','dl-subcables'];
    hold for every DEFAULT-ON id, not for the two that happened to be thematic. `IntMapDefaultLayers`
    keeps its old meaning (the thematic layers the app switches on for a first-time reader, and the ones
    `imAutoOff` protects); `IntMapDefaultOn` is that set PLUS the base toggles the HTML ticks, and it is
-   what the restore's off-sweep reads. Adding a default-on row means adding it here, once. */
-window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2']
+   what the restore's off-sweep reads. Adding a default-on row means adding it here, once.
+   ⚠⚠ (#R476) «HERE» IS TWO PLACES AND THEY ARE ONE EDIT. index.html has to ship the box `checked` as well,
+   because this list is not what ticks it — js/app-body.js only dispatches `change` for boxes that are
+   ALREADY ticked (#R34), and js/data-layers.js's IntMapBaseDisplay.matches() compares the live ticks
+   against defOn(). Half the edit is silent both ways: the tick alone drops 基本表示 to 「カスタム」 400 ms
+   after every boot, the id alone paints nothing. tests/r476-checks ① holds the two sides equal, in BOTH
+   directions — the html→list direction had no gate at all until this round.
+   ⚠ It reaches FIRST-TIME readers only. A saved session that predates the change has the id absent, and
+   the restore's off-sweep below reads absence as «the reader switched it off» (#R186/#R225) and switches
+   it back off. Healing those would be a `defv` generation bump (#R189/#R190); not done — the round was
+   asked for the default, not for a migration. */
+window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2']
   .concat(window.IntMapDefaultLayers);
 /* ══ ⚠⚠⚠ (#R309) WHAT "Base map & labels" CONTAINS, AS ONE LIST ═══════════════════════════════════
    「Base map & labelsのオン数をレイヤーのオン数にみなすな。」 The reason it was counted is that the
