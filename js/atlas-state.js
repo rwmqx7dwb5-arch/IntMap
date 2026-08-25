@@ -520,7 +520,14 @@ export function makeAtlasState(HOST) {
 
       var ar = sel.article;
       if (ar && ar.title) {
-        lines.push('OPEN NEWS ARTICLE (the user is reading this right now): "' + str(ar.title).slice(0, lim.maxTitle) + '"' +
+        /* ⚠ (#R451) TWO FACTS, TWO SENTENCES. In workspace mode the reader and Atlas are separate
+           windows, so the article really is on screen while the question is typed. In the normal
+           sidebar Atlas REPLACES the reading surface, so by the time the turn runs the reader has
+           left the article behind on purpose — saying "is reading this right now" there would be the
+           model asserting something nobody observed. Both sentences bind the same pronouns. */
+        lines.push((ar.onScreen === false
+            ? 'THE NEWS ARTICLE THE READER BROUGHT TO ATLAS (they had it open, then came here to ask about it — it is no longer on screen): "'
+            : 'OPEN NEWS ARTICLE (the user is reading this right now): "') + str(ar.title).slice(0, lim.maxTitle) + '"' +
           (ar.publisher ? (' — ' + ar.publisher) : '') + (ar.pubDate ? (', ' + str(ar.pubDate).slice(0, 16)) : '') +
           (ar.place ? (', about ' + ar.place) : '') +
           '. "This article / this event / この記事 / この出来事 / それ / a bare 詳しく・背景・なぜ・translate this" refer to THIS article' +

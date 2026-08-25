@@ -348,6 +348,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get bearingDeg(){ return bearingDeg; }, get clearMarkers(){ return clearMarkers; },
     /* (#R435) one reading surface — one way in, one way out */
     get closeReaderPane(){ return closeReaderPane; }, get enterReaderPane(){ return enterReaderPane; },
+    /* (#R451) …and one bar, so an exit cannot exist on one surface and be missing from another */
+    get readerBar(){ return readerBar; },
     get coCompareSet(){ return coCompareSet; },
     get commCatLabel(){ return commCatLabel; }, get commCollapsed(){ return commCollapsed; },
     get compareSet(){ return compareSet; }, get compassDir(){ return compassDir; },
@@ -1040,6 +1042,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const IM_READER=window.IntMapModules.articleReader(IM_HOST);
   function openArticleInSidebar(){ return IM_READER.openArticleInSidebar.apply(this,arguments); }
   function enterReaderPane(){ return IM_READER.enterReaderPane.apply(this,arguments); }   /* (#R435) the Event detail enters the same surface */
+  function readerBar(){ return IM_READER.readerBar.apply(this,arguments); }   /* (#R451) …and wears the same bar */
   const IM_COMMBOARD=window.IntMapModules.communityBoard(IM_HOST);
   function cmAddPost(){ return IM_COMMBOARD.cmAddPost.apply(this,arguments); }
   function cmEditPost(){ return IM_COMMBOARD.cmEditPost.apply(this,arguments); }
@@ -2172,9 +2175,25 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      is NOT one of those, so it is restored here.
      `quiet` is for callers that are already re-rendering — renderUI() and setMode() — so a single
      gesture does not render the tab twice. */
-  function closeReaderPane(quiet){
+  function closeReaderPane(quiet,carryArticle){
     readerOpen=false; readerCurrent=null;
-    try{ window._imReader=null; }catch(_){ }   /* (#R80) clear the open-article bridge (vision §2) */
+    /* ⚠⚠⚠ (#R451) LEAVING THE SURFACE AND DROPPING ATLAS'S SUBJECT ARE TWO THINGS, AND ONE GESTURE
+       NEEDED THEM SEPARATED. Every route to Atlas in the normal sidebar goes through setMode(), which
+       leaves the reading surface first — so the ONE gesture that means «ask Atlas about what I am
+       reading» was also the one that erased what was being read. MEASURED before this change
+       (1280×800 and 375×812, local build of R441): open an Event detail → `window._imReader` carries
+       title+body; open Atlas → `_imReader` is null and `IntMapConsole.state()` has no OPEN NEWS
+       ARTICLE line at all. #R430's bridge only ever crossed in workspace mode, where Atlas is a
+       separate window and setMode() is never called.
+       ⚠ `carryArticle` is NOT «keep it around a while». It is set by exactly one caller — setMode()
+         ENTERING Atlas — and the very next tab gesture (including deselecting Atlas) clears it, so the
+         subject lives precisely as long as the conversation the reader opened it for.
+       ⚠ AND IT IS MARKED, NOT SILENTLY PRESERVED: `onScreen:false` is how js/atlas-state.js knows to
+         say "the reader brought this here" instead of "the user is reading this right now". #R340's
+         produces-observed — a carried article is a real fact, but it is a different fact. */
+    try{ const _rd=window._imReader;
+         if(carryArticle===true && _rd && _rd.open) _rd.onScreen=false;
+         else window._imReader=null; }catch(_){ }   /* (#R80) clear the open-article bridge (vision §2) */
     const pane=document.getElementById('news-reader-pane'); if(pane){ pane.style.display='none'; pane.innerHTML=''; }
     const cp=document.querySelector('.control-panel'); if(cp) cp.style.display='';
     try{ document.body.classList.remove('im-reading'); }catch(_){}   /* (#R435) the pair of enterReaderPane()'s switch — workspace mode reads it */
@@ -2621,7 +2640,10 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        `flex:1 1 auto` children — split its height between the two. MEASURED (390×780): #live-news-feed
        85 px at y=339 and #news-reader-pane 356 px at y=424, i.e. the reported 「半分だけになる謎の状態」.
        `renderUI()` guards the OTHER half (a background re-render, which is what makes it happen 勝手に). */
-    try{ closeReaderPane(true); }catch(_){}
+    /* ⚠ (#R451) …and ENTERING ATLAS carries the article it was reading (closeReaderPane's note).
+       `currentMode!==mode` is what makes this «entering»: tapping the Atlas tab while already on it
+       DESELECTS it (the branch below), which is the reader leaving Atlas — and that clears the subject. */
+    try{ closeReaderPane(true, mode==='atlas' && currentMode!==mode); }catch(_){}
     if(currentMode===mode){ currentMode=null; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); renderUI(); return; }
     currentMode=mode; document.querySelectorAll('.control-panel .mode-btn').forEach(b=>b.classList.remove('active')); document.getElementById(btnId).classList.add('active');
     if(mode==='stats'){ if(!countryDataLoaded)loadCountryData(); }

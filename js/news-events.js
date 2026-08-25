@@ -492,7 +492,11 @@ window.IntMapModules.newsEvents = function (HOST) {
        ブラウザ既定の <button>（実測: 背景 #f0f0f0・角丸 0・padding 0・border 2px outset・44×20 px）
        として描かれ、帯の `position:sticky` も効かず（実測 `static`）**スクロールで流れて二度と
        戻らなかった**。⇒ 読む面の外皮は 1 か所（`.nrp-bar`/`.nrp-back`）だけが持つ。 */
-    let html = '<div class="nrp-bar"><button class="nrp-back" id="ev-back">‹ ' + S(back) + '</button></div>';
+    /* ⚠⚠⚠ (#R451) …AND IT IS NOW THE SAME BAR, NOT THE SAME SPELLING. #R435 pointed this markup at
+       the article reader's class names; the markup itself stayed a second copy, so the route to Atlas
+       that a reading surface needs would have had to be typed twice to exist once. It is built by
+       js/article-reader.js `readerBar()` now (HOST.readerBar), which both surfaces call. */
+    let html = HOST.readerBar({ back, backId: 'ev-back' });
     html += '<div class="ev-detail">';
     html += '<div class="ev-d-head">';
     if (ev.place) html += '<span class="loc-chip">' + S(ev.place) + '</span>';

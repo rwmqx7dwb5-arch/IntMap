@@ -1265,7 +1265,17 @@
     .nrp-bar{ position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:10px; padding:6px 2px 12px; background:linear-gradient(var(--sidebar-bg) 75%, transparent); backdrop-filter:blur(8px); }
     .nrp-back{ display:inline-flex; align-items:center; gap:6px; background:var(--input-bg); border:none; color:var(--text-main); font-size:13px; font-weight:600; padding:9px 14px; border-radius:999px; cursor:pointer; transition:0.2s; }
     .nrp-back:hover{ background:var(--primary-color); color:#fff; }
-    .nrp-src{ font-size:12px; color:var(--text-muted); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .nrp-src{ font-size:12px; color:var(--text-muted); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:0 1 auto; }
+    /* ⚠ (#R451) THE READING SURFACE'S ROUTE TO ATLAS. `enterReaderPane()` hides `.control-panel`, so
+       while something is being read the Atlas tab is 0×0 — this pill is the tab row's stand-in for the
+       one surface that has none, and it sits at the far end of the bar (`margin-left:auto`) opposite
+       ‹ back, the way a pushed detail view carries its action on the trailing edge.
+       Same visual language as `.mode-btn.mode-atlas:not(.active)`: the accent letterform on the panel
+       fill with a gradient hairline, NOT a filled gradient — a filled one would outrank ‹ back. */
+    .nrp-atlas{ position:relative; flex:0 0 auto; margin-left:auto; display:inline-flex; align-items:center; background:var(--input-bg); border:none; color:#5e5ce6; font-size:13px; font-weight:600; padding:9px 14px; border-radius:999px; cursor:pointer; transition:0.2s; white-space:nowrap; }
+    .nrp-atlas::before{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px; background:var(--atlas-grad); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+    .nrp-atlas:hover{ background:var(--atlas-grad); color:#fff; }
+    [data-theme="dark"] .nrp-atlas{ color:#a5a3ff; }
     .nrp-hero{ width:100%; max-height:220px; object-fit:cover; border-radius:16px; margin-bottom:16px; box-shadow:var(--shadow); }
     .nrp-loc{ display:inline-flex; align-items:center; gap:5px; align-self:flex-start; font-size:11px; padding:4px 11px 4px 9px; font-weight:600; color:#fff; background:linear-gradient(135deg, rgba(0,122,255,0.92), rgba(0,113,227,0.88)); border-radius:999px; margin-bottom:12px; cursor:pointer; }
     .nrp-title{ font-size:24px; font-weight:700; line-height:1.25; letter-spacing:-0.4px; margin:0 0 10px; color:var(--text-main); }

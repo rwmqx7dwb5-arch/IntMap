@@ -739,6 +739,39 @@ NPR 79 字 / France 24 133 字 = 0.59）。⚠ 母数は薄い（**526 組中 1 
   `news.category` は絞った結果の件数とピンの本数を state provider から読み、
   0 件なら `NO_RESULTS`、ピンが 0 なら `partial` を立てる。
 
+### 10.1 「いま読んでいる出来事」を Atlas へ渡す橋（と、その橋を渡る道）
+
+出来事の詳細を開くと `js/news-events.js` が **`window._imReader`** を書く（見出し・媒体・
+リンク・時刻・座標・場所、そして本文には **`synthesis` と `gist` だけ**——どちらも媒体の原文と
+出典付きで、根拠のない要約は載せない。§15）。読み手は `js/atlas-console.js` の
+`_selectionState()`、文にするのは `js/atlas-state.js` で、「この記事 / この出来事 / それ /
+詳しく・背景・なぜ」がその 1 件へ解決する。
+
+⚠⚠⚠ **橋が在ることと、渡れることは別である。** 通常のサイドバーでは、読む面へ入ると
+`enterReaderPane()` が `.control-panel` を伏せる＝**Atlas タブも 0×0 になる**。唯一の到達手段
+（`IntMapConsole.open()`）は `#btn-community` を押す＝`setMode()` を通り、`setMode()` は読む面を
+離れ、`closeReaderPane()` が `window._imReader` を捨てていた。⇒ **Atlas へ行こうとすると必ず
+文脈が消えるので、この橋は workspace mode でしか渡っていなかった**（Atlas が別ウィンドウなので
+`open()` が早期 return する）。実測: 本番 build R441・800×450 / 1280×720 / 1920×1080 / 375×812 の
+すべてで `btn-community` の height=0。
+
+いまは 2 つに分かれている。
+
+- **道**: 読む面の帯（`.nrp-bar`）が **`.nrp-atlas`（「Ask Atlas」）** を持つ。帯は
+  `js/article-reader.js` の `readerBar()` が**1 か所で**組み、記事 reader も出来事の詳細も
+  それを呼ぶ——面ごとに書き写すと、片方にしか無い出口ができる。押した先は
+  `window.IntMapAtlas`（遅延カーネル）が先で、`IntMapConsole` は後
+  ——電話の初回は `IntMapConsole` がまだ undefined。
+- **文脈**: `closeReaderPane(quiet, carryArticle)` が「**面を離れること**」と「**Atlas の主題を
+  捨てること**」を分ける。運ぶのは **`setMode()` が Atlas へ入るときだけ**で、次のタブ操作
+  （Atlas の解除を含む）が捨てる。運ばれた記事は `onScreen:false` を持ち、Atlas の文は
+  「いま読んでいる」ではなく **「読み手が持ち込んだ」**と名乗る——workspace mode では
+  本当に画面に在るので、そちらは今までどおり「いま読んでいる」。
+
+検査: `tests/r451-checks.test.mjs`（道が 1 か所から出ること・寿命の規則を**実際に走らせる**）と
+`tests/r435.spec.js` ④（タブ列が 0×0 であること・道が視野に在って押せること・押すと Atlas が
+その記事を読めること）。
+
 ---
 
 ## 11. 運用者の修正

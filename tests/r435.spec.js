@@ -23,6 +23,14 @@
  *    完全に健在である。①②③ はどれも**計算済みスタイルと配置**にしか現れない。
  *  ⚠ **1 テスト・1 起動・電話の視野。** 報告は電話のものなので視野は 390×780 で測り、
  *    worker 共有の page を汚さないよう最後に既定（1280×720）へ戻す。
+ *
+ *  ══ (#R451) 同じ面の、同じ起動で測れるもう 1 つの主張 ═════════════════════════════════
+ *  #R435 が伏せた外皮には **タブ列そのもの**（`.control-panel`）が入っている。だから読んでいる
+ *  間は News / Companies / Countries / **Atlas** が 0×0 で、通常のサイドバーには
+ *  「読んでいるものについて Atlas に訊く」操作が 1 つも無かった——#R430 が架けた
+ *  `window._imReader` の橋は、workspace mode でしか渡っていなかった（実測 本番 build R441）。
+ *  ⚠ **新しい spec ファイルは作らない。** これは同じ面・同じ起動・同じ試料についての主張で、
+ *    scripts/test-budget.mjs の言う「積み増しではなく統合」がそのまま当てはまる。④ を見よ。
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
@@ -68,6 +76,11 @@ const probe = (page, chrome) => page.evaluate((sels) => {
     feed: one('#live-news-feed'), pane: one('#news-reader-pane'), countries: one('#countries-feed'),
     chromeShown: sels.filter((s) => { const el = one(s); return el && el.disp !== 'none'; }),
     barPos: bar ? getComputedStyle(bar).position : null,
+    /* (#R451) タブ列は伏せられている＝Atlas へ行く既定の操作が無い。読む面が自分で道を持つ。 */
+    tabsH: [...document.querySelectorAll('.control-panel .mode-btn')].map((b) => Math.round(b.getBoundingClientRect().height)),
+    atlasBtn: (() => { const a = document.querySelector('#news-reader-pane .nrp-atlas'); if (!a) return null;
+      const s = getComputedStyle(a); return { radius: parseFloat(s.borderTopLeftRadius), padTop: parseFloat(s.paddingTop), ...box(a) }; })(),
+    reader: (() => { const r = window._imReader; return r ? { title: r.title, onScreen: r.onScreen } : null; })(),
     back: cs ? { radius: parseFloat(cs.borderTopLeftRadius), padTop: parseFloat(cs.paddingTop), ...box(btn) } : null,
     vh: window.innerHeight,
     atlasSelected: (() => { try { const s = window.IntMapNewsEvents.state(); return s ? s.selectedEventId : null; } catch (_) { return 'ERR'; } })(),
@@ -150,6 +163,54 @@ test('R435 the event detail opens as the reading surface, and nothing renders be
   expect(back.pane.disp).toBe('none');
   expect(back.feed.disp).not.toBe('none');
   expect(back.chromeShown.sort()).toEqual(CHROME.slice().sort());
+
+  /* ══ ④ (#R451) 読む面から Atlas へ行く道が在り、行っても主題が消えない ═══════════════
+     ⚠⚠⚠ **ソースの検査（tests/r451-checks.test.mjs）はここを言えない。** 「タブ列が伏せられて
+       いる」は計算済みの高さにしか無く、「その代わりの道が押せる位置に在る」は配置にしか無い。
+       そして #R430 の橋が 15 ラウンド渡らなかったのは、読み手と書き手を別々に確かめる検査が
+       **その 2 つを繋ぐ利用者の操作**を一度も走らせなかったからである。ここは走らせる。 */
+  await page.evaluate(() => document.querySelector('.news-item.news-event .ev-sources').click());
+  await page.waitForFunction(() => !!document.querySelector('#news-reader-pane .nrp-atlas'), null, { timeout: 15000 });
+  const reading = await probe(page, CHROME);
+
+  /* 道が要る理由: タブ列は 1 つ残らず 0×0。Atlas も含まれる。 */
+  expect(reading.tabsH.length, 'the tab row is gone from the markup — this claim can no longer be read').toBeGreaterThan(3);
+  expect(reading.tabsH.filter((h) => h > 0), 'the reading surface is no longer the only surface — recheck why the route exists').toEqual([]);
+  /* その代わりの道は、画面の中に在り、素の <button> ではない（当たらない CSS は綴りとしては健在・#R435 ①）。 */
+  expect(reading.atlasBtn, 'the reading surface has no route to Atlas').not.toBeNull();
+  expect(reading.atlasBtn.top).toBeGreaterThanOrEqual(0);
+  expect(reading.atlasBtn.bottom).toBeLessThanOrEqual(reading.vh);
+  expect(reading.atlasBtn.radius, 'a UA-default button means no rule matched it').toBeGreaterThan(8);
+  expect(reading.atlasBtn.padTop).toBeGreaterThan(0);
+  /* 戻ると重ならず、帯の反対端に立つ。 */
+  expect(reading.atlasBtn.left).toBeGreaterThan(reading.back.left + 20);
+  expect(reading.reader, 'the Event detail no longer hands its subject to the bridge').not.toBeNull();
+
+  /* 押す → Atlas タブに着き、読んでいた記事は「画面には無いが主題である」として残る。 */
+  await page.evaluate(() => document.querySelector('#news-reader-pane .nrp-atlas').click());
+  await page.waitForFunction(() => document.getElementById('btn-community').classList.contains('active'), null, { timeout: 20000 });
+  const asked = await page.evaluate(() => ({
+    reader: (() => { const r = window._imReader; return r ? { title: r.title, onScreen: r.onScreen } : null; })(),
+    paneDisp: getComputedStyle(document.getElementById('news-reader-pane')).display,
+  }));
+  expect(asked.reader, 'going to Atlas still erases the article the reader was on').not.toBeNull();
+  expect(asked.reader.title).toBe(reading.reader.title);
+  expect(asked.reader.onScreen, 'a carried article must say it is no longer on screen').toBe(false);
+  expect(asked.paneDisp, 'Atlas replaces the reading surface in the normal sidebar').toBe('none');
+
+  /* そして Atlas 自身がそれを読める——橋の向こう側まで、1 回の操作で。 */
+  await page.waitForFunction(() => !!(window.IntMapConsole && window.IntMapConsole.state), null, { timeout: 30000 });
+  const line = await page.evaluate(async () => {
+    const s = String(await window.IntMapConsole.state());
+    return (s.match(/^.*NEWS ARTICLE.*$/m) || [null])[0];
+  });
+  expect(line, 'Atlas cannot see the article the reader brought it').toBeTruthy();
+  expect(line).toContain('BROUGHT TO ATLAS');
+  expect(line).toContain(reading.reader.title);
+
+  /* 会話を離れれば主題も終わる。 */
+  await page.evaluate(() => document.getElementById('btn-stats').click());
+  await page.waitForFunction(() => window._imReader == null, null, { timeout: 15000 });
 
   await page.setViewportSize({ width: 1280, height: 720 });   /* worker 共有の page を既定へ戻す */
 });

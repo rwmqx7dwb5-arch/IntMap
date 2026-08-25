@@ -94,9 +94,17 @@ test('R435 ② the reading surface has ONE back bar, and both readers spell it t
     const scoped = rules.filter((l) => /\.(ev-detail|news-item|content-area)\s+\.nrp-/.test(l));
     assert.deepEqual(scoped, [], `.${cls} has been copied under another surface's scope again`);
   }
-  assert.ok(events.includes('class="nrp-bar"'), 'the Event detail no longer draws the reading surface bar');
-  assert.ok(events.includes('class="nrp-back"'), 'the Event detail no longer draws the reading surface back button');
-  assert.ok(reader.includes('class="nrp-bar"') && ui.includes('class="nrp-bar"'), 'the article reader stopped using its own bar');
+  /* ⚠⚠⚠ (#R451) ONE BAR, NOT THREE COPIES OF ONE SPELLING. This round asserted the SPELLING — that
+     all three surfaces wrote `class="nrp-bar"` — and that is exactly as far as a spelling check can
+     see: the markup was still typed out three times, so the route to Atlas a reading surface needs
+     (#R430's bridge had no caller in the normal sidebar) would have had to be typed three times to
+     exist once. js/article-reader.js `readerBar()` builds it now; the other two ask for it. */
+  const emitters = [reader, ui, events].filter((c) => /class="nrp-bar"/.test(c));
+  assert.equal(emitters.length, 1, 'the reading surface bar is written out in more than one place again');
+  assert.ok(reader.includes('class="nrp-bar"') && reader.includes('class="nrp-back"'),
+    'js/article-reader.js is no longer the one that builds the reading surface bar');
+  assert.ok(/HOST\.readerBar\(/.test(events), 'the Event detail no longer draws the reading surface bar');
+  assert.ok(/HOST\.readerBar\(/.test(ui), 'the article reader stopped using the shared bar');
   /* 旧綴りは、CSS からもコードからも消えている。 */
   for (const [where, code] of [['js/news-events.js', events], ['css/intmap.css', css]]) {
     assert.ok(!/\breader-bar\b/.test(code), `the dead \`reader-bar\` spelling is back in ${where}`);
@@ -129,7 +137,7 @@ test('R435 ④ everything enterReaderPane() hides is put back by closeReaderPane
   const hidden = [...arr[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
   assert.ok(hidden.length >= 6, `enterReaderPane() now hides only ${hidden.length} ids — the scan lost the list`);
 
-  const close = lift(CODE('js/app-body.js'), 'function closeReaderPane(quiet)', 'js/app-body.js');
+  const close = lift(CODE('js/app-body.js'), 'function closeReaderPane(quiet,carryArticle)', 'js/app-body.js');   /* (#R451) the exit also decides whether Atlas keeps the subject */
   const render = lift(CODE('js/news-ui.js'), 'function renderUI()', 'js/news-ui.js');
   const orphans = hidden.filter((id) => !close.includes(id) && !render.includes(id));
   assert.deepEqual(orphans, [], 'these rows are hidden on the way in and nobody puts them back');
@@ -148,7 +156,7 @@ test('R435 ④ everything enterReaderPane() hides is put back by closeReaderPane
      サイドバーと同じ「半分だけ」）。⇒ 決定を 2 か所に写さず、**1 つのクラス**を読む。 */
 test('R435 ④b the "something is being read" switch is one class, set and cleared as a pair', () => {
   const enter = lift(CODE('js/article-reader.js'), 'function enterReaderPane()', 'js/article-reader.js');
-  const close = lift(CODE('js/app-body.js'), 'function closeReaderPane(quiet)', 'js/app-body.js');
+  const close = lift(CODE('js/app-body.js'), 'function closeReaderPane(quiet,carryArticle)', 'js/app-body.js');   /* (#R451) */
   assert.ok(/classList\.add\('im-reading'\)/.test(enter), 'entering the reading surface no longer raises the flag');
   assert.ok(/classList\.remove\('im-reading'\)/.test(close), 'leaving it no longer lowers the flag');
   /* workspace mode reads the flag rather than keeping its own copy of the decision. */
@@ -182,7 +190,10 @@ test('R435 ⑤ renderUI() shows one surface: the reader, or the list — never b
    さっきの詳細が出たまま」になる。 */
 test('R435 ⑥ a tab or scope gesture leaves the reading surface', () => {
   const setMode = lift(CODE('js/app-body.js'), 'function setMode(mode,btnId)', 'js/app-body.js');
-  assert.ok(setMode.includes('closeReaderPane(true)'), 'setMode() no longer leaves the reading surface');
+  /* ⚠ (#R451) `closeReaderPane(true, …)` — the second argument decides whether Atlas keeps the
+     article the reader was on (tests/r451-checks ③ owns that rule). What ⑥ guards is unchanged: a
+     tab or scope gesture LEAVES the surface, and does it quietly. */
+  assert.ok(/closeReaderPane\(true[,)]/.test(setMode), 'setMode() no longer leaves the reading surface');
   /* ⚠ 静かに閉じる。ここで renderUI() を走らせると 1 回の操作でタブを 2 度描く。 */
   assert.ok(!/closeReaderPane\(\s*\)/.test(setMode), 'setMode() is closing loudly — the tab would render twice per click');
 });
