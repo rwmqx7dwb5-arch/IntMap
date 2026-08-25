@@ -1271,7 +1271,26 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   「Natural Earth の8種」の両方が鍵になっていることを検査し、④ が `js/lang-registry.js` と
   4本の inline 表を**実行して** 9言語ぶんの解決結果を確かめる。
   ⚠ **首都は地名なので訳さない**——現代の行は `CAPITAL[code]`（«Washington, D.C.»）、歴史の行は
-  `_STINFO`（«Tokyo»）で、どちらも英語のまま出る。サブ行で訳されるのは region だけ。
+  `_STINFO`（«Tokyo»）で、どちらも英語のまま出る。一覧のサブ行で訳されるのは region だけ。
+- ⚠ **国詳細カードの Region 行は `region / subregion` の2欄で、subregion にも表がある。**
+  `js/countries-ui.js` の top-level が公開する **`window._imSubregionName(sub, lang)`**（`pickArgs()` の
+  5引数＋4言語の inline 表・`IntMapLang.t(lang, …)` で解決）が、**Natural Earth の SUBREGION ＝
+  24種**を持つ。`ne_110m` は22種、`ne_50m` / `ne_10m` が `Micronesia` と `Polynesia` を足す。
+  どの縮尺にも**空の SUBREGION は1件も無い**ので、`enrichCountry()` の restcountries フォールバックは
+  この欄では実際には通らない（CONTINENT と同じ）。
+  ⚠ **表は1本で、読み手が2つある。** `js/atlas-examples.js` の starter chip の `{sub}` は
+  `window._imSubregionName(…)` で**同じ表**を読む。同じ語彙の写しを面ごとに持つと、直るのは
+  片方だけになる。`tests/r424-checks.test.mjs` ⑩ が `js/*.js` を数えて、この24語を宣言する
+  ファイルが**ちょうど1本**であることを検査する。
+  ⚠ **`export` ではなく `window` で渡す。** `js/countries-ui.js` は複数の検査ハーネスが
+  `new Function(src)` で**素のスクリプトとして実行**して、本物の `_mkStat` と 10 m 昇格パスを
+  合成 feature に対して走らせる（`tests/r375` ①〜⑦・`tests/r423` ①〜③ など）。`export` を1語
+  足すとそれらが全部 SyntaxError になる。同じファイルの `window._imCldrRegion` が同じ理由で
+  window に載っている。⑩ がこの性質（script として parse できること）を直接検査する。
+  ⚠ **2欄が同じ語になったら1つに畳む**。`North America`/`Northern America`・`South America`/
+  `South America`・`Antarctica`・`Seven seas (open ocean)` の4組は同じ場所を指し、英語以外の
+  8言語では訳が**完全に一致する**（英語だけ `North America` と `Northern America` が別語）。
+  比べるのは**解決後の文字列**で、英語の鍵ではない。
 - **両大戦の日ごとの勢力**（`js/war-fronts.js`・レイヤー行は **`dl-ww1` と `dl-ww2` の2本**・
   どちらも既定 OFF）。その日の**支配（面）・戦線（線）・進行中の作戦（点と名前）**を描く。
   面は保存していない——**戦線の線で国の輪郭を切って導く**（`js/war-geom.js`）ので、線と面が

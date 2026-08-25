@@ -843,35 +843,23 @@ export function makeAtlasExamples(HOST, CTX) {
        from the one that ships. 追記1 caught a gate that measured templates instead of values; this one
        caught a gate that measured Node instead of the browser.
        ⇒ the names are SHIPPED STRINGS now. No runtime lookup, nothing to be present in one engine and
-       absent in another, and `scripts/i18n-report.mjs` can see all 22 because each is a literal `L()`.
-       ⚠ 22 のうち上流が実際に使うのは 20 種（177 features 中 175）。`Antarctica` と
-       `Seven seas (open ocean)` は地域名ではないので表に無く、上流の英語に落ちる。 */
-    const SUB={
-      'Eastern Asia':()=>L('Eastern Asia','東アジア','Ostasien','Восточная Азия','Asia oriental'),
-      'South-Eastern Asia':()=>L('South-Eastern Asia','東南アジア','Südostasien','Юго-Восточная Азия','Sudeste Asiático'),
-      'Southern Asia':()=>L('Southern Asia','南アジア','Südasien','Южная Азия','Asia meridional'),
-      'Central Asia':()=>L('Central Asia','中央アジア','Zentralasien','Центральная Азия','Asia central'),
-      'Western Asia':()=>L('Western Asia','西アジア','Westasien','Западная Азия','Asia occidental'),
-      'Northern Europe':()=>L('Northern Europe','北ヨーロッパ','Nordeuropa','Северная Европа','Europa septentrional'),
-      'Western Europe':()=>L('Western Europe','西ヨーロッパ','Westeuropa','Западная Европа','Europa occidental'),
-      'Southern Europe':()=>L('Southern Europe','南ヨーロッパ','Südeuropa','Южная Европа','Europa meridional'),
-      'Eastern Europe':()=>L('Eastern Europe','東ヨーロッパ','Osteuropa','Восточная Европа','Europa oriental'),
-      'Northern Africa':()=>L('Northern Africa','北アフリカ','Nordafrika','Северная Африка','África septentrional'),
-      'Western Africa':()=>L('Western Africa','西アフリカ','Westafrika','Западная Африка','África occidental'),
-      'Middle Africa':()=>L('Middle Africa','中部アフリカ','Zentralafrika','Центральная Африка','África central'),
-      'Eastern Africa':()=>L('Eastern Africa','東アフリカ','Ostafrika','Восточная Африка','África oriental'),
-      'Southern Africa':()=>L('Southern Africa','南部アフリカ','Südliches Afrika','Южная Африка','África meridional'),
-      'Northern America':()=>L('Northern America','北アメリカ','Nordamerika','Северная Америка','América del Norte'),
-      'Central America':()=>L('Central America','中央アメリカ','Mittelamerika','Центральная Америка','América Central'),
-      'Caribbean':()=>L('Caribbean','カリブ海地域','Karibik','Карибский бассейн','Caribe'),
-      'South America':()=>L('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
-      'Australia and New Zealand':()=>L('Australia and New Zealand','オーストラリア・ニュージーランド','Australien und Neuseeland','Австралия и Новая Зеландия','Australia y Nueva Zelanda'),
-      'Melanesia':()=>L('Melanesia','メラネシア','Melanesien','Меланезия','Melanesia'),
-      'Micronesia':()=>L('Micronesia','ミクロネシア','Mikronesien','Микронезия','Micronesia'),
-      'Polynesia':()=>L('Polynesia','ポリネシア','Polynesien','Полинезия','Polinesia'),
-    };
+       absent in another, and `scripts/i18n-report.mjs` can see them because each is a literal `L()`.
+       ══ ⚠⚠⚠ (#R443) …AND THE 22 STRINGS THEMSELVES MOVED, BECAUSE A SECOND READER APPEARED ══════
+       The table this box created lived HERE, and the country card printed the very same field raw
+       (「北アメリカ / Northern America」) for nineteen rounds because nothing connected the two. The
+       answer to «one field, two surfaces» is not a second copy of 22×5 strings — it is one table
+       with two readers, so a corrected spelling reaches both. It is `window._imSubregionName` in
+       js/countries-ui.js now, which is where the sibling vocabulary (`_REGIONS`, Natural Earth's
+       CONTINENT) already lives and where the two values this box deliberately omitted as non-places
+       — «Antarctica» and «Seven seas (open ocean)» — were already spelled. Nothing a reader sees in
+       an Atlas chip changed: the same five arguments, resolved by the same registry, keyed by the
+       same English string.
+       ⚠ THROUGH `window`, NOT THROUGH `import` — several harnesses run js/countries-ui.js as a
+       CLASSIC SCRIPT via `new Function(src)` to exercise the real `_mkStat`, so one `export` keyword
+       there is a SyntaxError to every one of them (measured: 16 red). The reason, and the check that
+       holds it, are written where the table is. */
     function subName(st){ const s=(st&&st.subregion)||''; if(!s) return '';
-      try{ const f=SUB[s]; if(f) return f()||s; }catch(_){}
+      try{ return window._imSubregionName(s,HOST.lang)||s; }catch(_){}
       return s; }
     function fill(txt,f){
       const st=f&&f.st;
