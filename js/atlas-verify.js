@@ -14,8 +14,18 @@
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
+import { jsonWithin } from './fetch-deadline.js';   /* (#R448) Nominatim, with a clock — see the file header there */
+
 export function makeAtlasVerify(HOST, CTX) {
-  const L=CTX.L, esc=CTX.esc;
+  const L=CTX.L, esc=CTX.esc;   /* ⚠ tests/r199 ② requires the CTX rebinds to be the factory's FIRST statement */
+  /* (#R448) ONE geocode, and the whole pinning pass that awaits up to 24 of them in a file. Nominatim
+     answers a client it has had enough of by not answering; without these two numbers the mapping
+     self-check — which runs immediately before the answer is drawn — was the last unbounded await in
+     the turn. ⚠ A place that could not be resolved in time is reported as `unplaced`, which is the
+     verdict this audit already has for 「we could not put this on the map」; nothing is invented and
+     nothing is hidden. */
+  const GEOCODE_TIMEOUT_MS = 8000;
+  const PINPASS_BUDGET_MS = 20000;
     /* ═══════════ (#R150 · Atlas research-mapping commission) CODE-SIDE VERIFICATION ═══════════
        A location-rich answer must deliver MAP value AND honestly reconcile its prose with the map — NOT rely on
        the model to emit a perfect structured list. The prior design (R149) pinned only the model's inline `places`
@@ -157,8 +167,8 @@ export function makeAtlasVerify(HOST, CTX) {
        Only place-type, name-matching results count; ≥2 distinct locations with no country hint = ambiguous (not placed). */
     async function _atlGeocodeStrict(name, country){ name=String(name||'').trim(); if(name.length<2) return {ok:false,reason:'empty'};
       const q=[name,String(country||'').trim()].filter(Boolean).join(', '); let arr=null;
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}}); arr=await r.json(); }
-      catch(e){ return {ok:false,reason:'network'}; }
+      try{ arr=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q),GEOCODE_TIMEOUT_MS,{headers:{Accept:'application/json'}}); }
+      catch(e){ return {ok:false,reason:'network'}; }   /* (#R448) …and the deadline lands here too: in both cases nothing arrived */
       if(!Array.isArray(arr)||!arr.length) return {ok:false,reason:'not_found'};
       const matches=arr.filter(j=>{ const okType=/^(place|boundary|natural|waterway|landuse|tourism|historic|leisure|amenity)$/.test(String(j.class||''))||!!j.addresstype; return okType && _atlNameOk(name,(j.display_name||'').split(',')[0]); });
       if(!matches.length) return {ok:false,reason:'no_name_match'};
@@ -221,9 +231,17 @@ export function makeAtlasVerify(HOST, CTX) {
           if(n.length>=3){ for(const p of pre){ const pn=GEOBJ.normName(p.name); if(pn.length>=3&&(pn.indexOf(n)>=0||n.indexOf(pn)>=0)) return true; } }
           return false; };
         const spots=[]; const newPins=[]; let infraFail=0;
+        /* ⚠⚠⚠ (#R448) THIS LOOP AWAITS UP TO 24 NOMINATIM LOOKUPS ONE AFTER ANOTHER, and it runs
+           immediately before the answer is drawn — so for as long as it took, the reader saw
+           「Searching」 with a finished answer already in hand. The lookups are in a file on purpose
+           (one host, and its usage policy asks for exactly that), which makes a budget for the PASS
+           the right shape rather than a shorter clock on each one: whatever is still unresolved when
+           it runs out keeps the verdict this audit already has for it. */
+        const pin0=Date.now();
         for(const it of struct.concat(textCands)){
           if(alreadyMapped(it)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; }   /* already on the map from the plan — counts as mapped, not re-pinned */
           if(newPins.length>=14){ spots.push({name:it.name,verdict:'unplaced',src:it.src}); continue; }
+          if((Date.now()-pin0)>=PINPASS_BUDGET_MS){ spots.push({name:it.name,verdict:'unplaced',src:it.src}); continue; }
           let g=null;
           /* ⚠⚠⚠ (#R397) A COORDINATE THAT ARRIVED IS NOT RE-RESOLVED: a second lookup can only agree
              (wasted) or DISAGREE, and when it disagreed the correct position lost. ⚠ A centroid does

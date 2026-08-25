@@ -142,7 +142,11 @@ test('R446 ③: opts.budgetMs bounds the whole ladder, race and fallback togethe
   /* the constants that make that true, and the default for callers that name no budget */
   const pf = R('js/proxy-fetch.js');
   assert.match(pf, /const BUDGET_MS = \d+/, 'there must be a default end-to-end budget');
-  assert.match(pf, /const left = \(\) => budget - \(Date\.now\(\) - t0\)/, 'the budget is a clock, not a flag');
+  /* ⚠ (#R448) THE PROPERTY IS 「THE BUDGET IS A CLOCK, NOT A FLAG」, and the exact expression was one
+     way of holding it. `left()` now also reads zero the moment the CALLER's signal aborts, which is
+     strictly more clock-like, not less — pinning the old spelling would have gone red on a change
+     that only made the guarantee stronger. */
+  assert.match(pf, /const left = \(\) => [^;]*budget - \(Date\.now\(\) - t0\)/, 'the budget is a clock, not a flag');
   assert.match(pf, /Math\.min\(PROXY_FALLBACK_MS, left\(\)\)/, 'the bounded pass is bounded by it too');
   assert.match(pf, /if \(left\(\) <= 0\) break;/, '…and stops entirely when the budget is gone');
 });
@@ -172,7 +176,10 @@ test('R446 ⑤: an extract too short to be prose is not accepted as the body', (
   /* the two floors are one rule, so the same reasoning is spelled out where the fetch happens */
   const pf = R('js/proxy-fetch.js');
   assert.match(pf, /const HTML_MIN_BYTES = \d+/, 'the HTML side needs its own floor');
-  assert.match(pf, /const ACCEPT = \{ feed: isFeed, html: isHTML \}/, 'and the two predicates are one table');
+  /* ⚠ (#R448) …and the table gained a third row (`json: isJSON`, for Atlas's evidence fetches).
+     The claim is that every acceptor lives in ONE table rather than being scattered per call site;
+     a new row satisfies that claim, so the check reads the table rather than counting it. */
+  assert.match(pf, /const ACCEPT = \{[^}]*feed: isFeed[^}]*html: isHTML[^}]*\}/, 'and the predicates are one table');
 });
 
 /* ── ⑥ the note that said the caller discards article HTML is no longer true ──────────────────── */

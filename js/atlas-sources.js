@@ -13,6 +13,8 @@
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
+import { fetchViaProxy } from './proxy-fetch.js';   /* (#R448) the app's ONE relay ladder — see _fetchText below */
+
 export function makeAtlasSources(HOST, CTX) {
   const _fetchJSON=CTX._fetchJSON, askAIJSON=CTX.askAIJSON, countryStats=CTX.countryStats, nm=CTX.nm;
     /* ══ (#R318) THE WIKIPEDIA LANGUAGE EDITION, DERIVED — NOT A FIVE-ROW TABLE ══════════════════
@@ -56,10 +58,18 @@ export function makeAtlasSources(HOST, CTX) {
     /* (#R64) second live-news engine: Google News RSS search (multi-language, topic-aware). GDELT alone failed
        for non-English topics ("取得不可: ライブWebニュース" in the Greece report) — the ladder is now
        GDELT (EN topic) → Google News RSS (user language + English). Fetched via the CORS-proxy ladder. */
-    async function _fetchText(url){ const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-      for(const p of PROX){ try{ const c=('AbortController' in window)?new AbortController():null; const t2=c?setTimeout(()=>{ try{ c.abort(); }catch(_){} },9000):null;
-        const r=await fetch(p(url),c?{signal:c.signal}:undefined); if(t2) clearTimeout(t2); if(r&&r.ok){ const tx=await r.text(); if(tx&&tx.length>40) return tx; } }catch(_){} }
-      return null; }
+    /* ⚠⚠⚠ (#R448) THIS WAS A THIRD COPY OF THE RELAY LADDER, AND IT WAS THE PRE-#R212 ONE.
+       It walked three proxies SEQUENTIALLY at 9 s each, cleared its own deadline the moment the
+       headers arrived (so the body read was bounded by nothing), and — because #R216's Edge Function
+       lives in js/proxy-fetch.js and this copy had never heard of it — sent every Google-News request
+       Atlas ever made to a stranger's uptime, direct-first, from an origin news.google.com refuses.
+       Measured on the live site: the direct attempt is a CORS refusal, corsproxy.io answers 403/503,
+       api.allorigins.win takes ~8.7 s. Two locales × three proxies = ~55 s for ONE evidence fetch,
+       and `analyze` makes several. The app has ONE answer to 「this host sends no ACAO header」 and
+       it is js/proxy-fetch.js: our own relay first, the four public ones raced behind it, a clock on
+       the body, and a budget for the whole ladder. Google News RSS is a feed, which is exactly what
+       that module already verifies before declaring a winner. */
+    async function _fetchText(url){ return fetchViaProxy(url,{budgetMs:CTX.EVIDENCE_BUDGET_MS,signal:(CTX.turnSignal?CTX.turnSignal():undefined)}); }
     async function _gnewsNews(q2,sink){ const query=String(q2||'').trim(); if(!query) return null;
       /* (#R318) NINE EDITIONS, NOT FOUR — a reader of zh / zh-Hans / fr / ko was searching the US
          English edition of Google News for a query in their own language.

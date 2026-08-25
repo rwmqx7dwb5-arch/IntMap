@@ -57,11 +57,36 @@ export function makeAtlasAgent() {
        supabase/functions/ai-proxy, which this round raises to 12 in the same commit. Atlas gets the
        room; the ceiling stays only as the runaway-loop backstop it was meant to be.
        「制限を増やす方向、例外を増やす方向に持っていくな」 — CONSTITUTION.md §5. */
+    /* ══ ⚠⚠⚠ (#R448) …AND THE ONE CEILING THAT WAS MISSING WAS THE CLOCK ══════════════════════════
+       Every ceiling above counts something. None of them measured TIME, and `out = await execute(call)`
+       below had no deadline of any kind — so a turn's length was the sum of whatever the network felt
+       like doing, with no upper bound at all. Measured on the live site: an evidence fetch walked
+       three CORS relays at 9 s each with the clock cleared at the headers, `analyze` made half a
+       dozen of those, the calls in one step are awaited one after another, and a step may carry
+       eight of them. 8 × 8 × (a relay having a bad afternoon) is not a number — it is 「ずっと
+       Searching」, which is what was reported.
+       ⚠ THIS TAKES NOTHING FROM ATLAS (CONSTITUTION.md §5), and it is deliberately NOT a smaller
+       world: no source is dropped, no tool is withheld, no count is lowered. They exist so that the
+       ONE thing the reader is owed — an answer, even if the answer is 「これは取れなかった」 —
+       always arrives. A turn that never ends tells them nothing at all.
+
+       ⚠⚠⚠ AND THE NUMBERS ARE MEASURED, NOT PICKED. The first draft of this round wrote 45 s and
+       180 s, on the assumption that a healthy turn takes about ten seconds. Then the live site was
+       measured: ONE ordinary turn about an open news article took **191 s**, spending FOUR ai-proxy
+       calls of 8.1 / 51.2 / 48.9 / 17.2 s — and the slowest single call seen was **73.2 s**. A tool
+       call is worse still, because `analyze` may spend up to MAX_MODEL_CALLS (2, in
+       js/atlas-answer-pipeline.js) of those plus its 32 s evidence gather plus a 20 s pinning pass:
+       roughly 200 s for ONE tool call that is working perfectly. Both first drafts would therefore
+       have fired on turns that were about to succeed, replacing a good answer with a degraded one —
+       which is precisely the 「制限を増やす方向」 this round was told not to take. The values below
+       clear the measured worst case with room, and nothing else decides them. */
     const LIMITS = {
       maxSteps: 8,          /* model calls in one turn, the final answer included */
       maxToolCalls: 32,     /* (#R413) 16 → 32: the step count doubled above, so the same headroom per step */
       maxPerStep: 8,        /* tool calls accepted from a single model reply */
       maxMalformed: 3,      /* consecutive steps that produced nothing but rejected calls */
+      toolTimeoutMs: 240000,  /* (#R448) ONE tool call — above the ~200 s a working `analyze` can cost. Past it Atlas is TOLD it did not finish, and chooses again */
+      turnBudgetMs: 600000,   /* (#R448) …and the whole turn — three times the longest turn ever measured, so it only ever fires on one that was not going to end */
     };
 
     /* ── THE WIRE SHAPE OF ONE STEP ────────────────────────────────────────────────────────────
@@ -227,8 +252,28 @@ export function makeAtlasAgent() {
       let malformedRun = 0;
       let stopped = '';
 
+      /* (#R448) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
+      const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
+      const startedAt = now();
+      const outOfTime = () => (lim.turnBudgetMs > 0) && ((now() - startedAt) >= lim.turnBudgetMs);
+      /* ⚠ THE RESULT IS A TYPED NOTE TO ATLAS, NOT AN ABORT. A tool that overran its deadline is
+         abandoned — the turn stops WAITING for it — and what goes into the transcript is the same
+         mechanical record every other outcome gets, so the next step is chosen by Atlas knowing what
+         happened rather than by this loop deciding on its behalf. */
+      const runTool = (call) => {
+        const p = Promise.resolve().then(() => execute(call));
+        if (!(lim.toolTimeoutMs > 0)) return p;
+        let tm = null;
+        const clock = new Promise((res) => { tm = setTimeout(() => res({ ok: false, error: 'tool_timeout',
+          message: '"' + String((call && call.name) || '') + '" did not finish within '
+            + Math.round(lim.toolTimeoutMs / 1000) + ' s and was left running; nothing it was fetching '
+            + 'arrived in time. Answer with what you have, or try a different approach.' }), lim.toolTimeoutMs); });
+        return Promise.race([p, clock]).finally(() => { try { clearTimeout(tm); } catch (_) { /* already fired */ } });
+      };
+
       for (let step = 0; step < lim.maxSteps; step++) {
         if (opts.signal && opts.signal.aborted) { stopped = 'aborted'; break; }
+        if (outOfTime()) { stopped = 'time_budget'; break; }
 
         let reply = null;
         try {
@@ -304,6 +349,14 @@ export function makeAtlasAgent() {
               message: 'This turn has already run ' + lim.maxToolCalls + ' tools. Answer with what you have.' });
             continue;
           }
+          /* (#R448) …and the same note when it is the clock rather than the count that ran out. */
+          if (outOfTime()) {
+            stepResults.push({ id: call && call.id, name: call && call.name, ok: false,
+              error: 'time_budget_exhausted',
+              message: 'This turn has been running for ' + Math.round(lim.turnBudgetMs / 1000)
+                + ' s. Answer the reader now with what you have.' });
+            continue;
+          }
           trace.calls++;
           const bad = reject(call, tools);
           if (bad) {
@@ -315,7 +368,7 @@ export function makeAtlasAgent() {
           }
           let out = null;
           try {
-            out = await execute(call);
+            out = await runTool(call);   /* (#R448) …with a deadline. See `runTool` above. */
           } catch (e) {
             out = { ok: false, error: 'execution_failed', message: (e && e.message) || 'the tool threw' };
           }
