@@ -9,6 +9,7 @@ import { test, expect } from '@playwright/test';
 import { collectPageDiagnostics, ensureAtlasOnDemand } from './helpers/network.js';
 import { loadLazyModules } from './helpers/app.js';
 import { readPixel, explain, colourFor, separablePair } from './helpers/wind-ramp.js';
+import { findEye, describeEye } from './helpers/cyclone-eye.js';
 import { fileURLToPath } from 'node:url';
 import { repoCorsContract, parseAllowHeaders } from './helpers/fn-cors.js';
 
@@ -719,9 +720,8 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
     const f = await EC.load('wind_u_component_10m');
     if (!f) return { err: 'field did not load' };
     const s = EC.sampler('wind_u_component_10m');
-    /* Sweep the tropics on a half-degree lattice for the strongest wind, then look for an eye:
-       a point within 1.5° whose speed is at most 60 % of the peak. That IS the structure — a warm
-       core with a light-wind centre inside its eyewall — and it needs no storm list to find. */
+    /* Sweep the tropics on a half-degree lattice for the strongest wind. That IS the structure —
+       a warm core with a light-wind centre inside its eyewall — and it needs no storm list to find. */
     let peak = { sp: -1 };
     for (let la = -40; la <= 40; la += 0.5) {
       for (let lo = -180; lo < 180; lo += 0.5) {
@@ -729,23 +729,44 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
         if (v > peak.sp) peak = { sp: v, la, lo };
       }
     }
-    let eye = null;
+    /* ══ ⚠⚠⚠ (#R460) THIS PAGE READS THE BOX; tests/helpers/cyclone-eye.js SAYS WHICH POINT ══════
+       What stood here walked the ±1.5° box from its south-west corner and STOPPED at the first
+       point at or below 0.6 × peak, calling that the eye. A median 48 % of the box is below that
+       line — up to 93 % of it — so the first hit is the corner the walk starts at: MEASURED over
+       the 145 forecast hours production was serving on 2026-08-25, it returned exactly
+       `peak.la - 1.5, peak.lo - 1.5` in 94 of the 101 hours that had an eye, a median 222 km from
+       the storm, at a median 15.45 m/s of ordinary trade wind. The test's name, the camera below
+       and every failure message it has ever printed were about a point outside the cyclone.
+       ⚠ AND IT IS ONE SIDE OF THE OVERLAP #R458 HAD TO WORK AROUND: 「eyeFoot[1] >= 15.5」 is the
+       footprint of that trade wind, not of an eye, and the eye this now names runs a median
+       5.24 m/s. The pair-picking below still earns its keep — the EYEWALL's footprint straddles
+       the wall whatever point is chosen — but the finder now hands it a real storm centre.
+       ⚠ SO THE BOX IS GATHERED HERE AND THE CHOICE IS MADE IN NODE, the same split #R287 made for
+       the colour verdict: tests/r460-checks.test.mjs can then put the identical decision through
+       the fields this page cannot be made to show — a storm over land with calmer air inland, an
+       eyewall whose ring has a gap, a box with no ring in it at all. */
+    let box = null;
     if (peak.sp >= 25) {
-      for (let dla = -1.5; dla <= 1.5 && !eye; dla += 0.1) {
-        for (let dlo = -1.5; dlo <= 1.5; dlo += 0.1) {
-          const v = s.value(peak.la + dla, peak.lo + dlo);
-          if (v <= peak.sp * 0.6) { eye = { sp: v, la: +(peak.la + dla).toFixed(2), lo: +(peak.lo + dlo).toFixed(2) }; break; }
-        }
+      const n = 31, step = 0.1;
+      const la0 = +(peak.la - 1.5).toFixed(2), lo0 = +(peak.lo - 1.5).toFixed(2);
+      const v = [];
+      for (let i = 0; i < n; i++) {
+        v.push([]);
+        for (let j = 0; j < n; j++) v[i].push(s.value(+(la0 + i * step).toFixed(2), +(lo0 + j * step).toFixed(2)));
       }
+      box = { la0, lo0, step, n, v };
     }
-    return { peak, eye, validTime: EC.validTime() };
+    return { peak, box, validTime: EC.validTime() };
   });
   expect(found.err, 'the ECMWF wind field loaded on the deployed site').toBeUndefined();
   /* the strong-wind area always exists somewhere; the eye only when a cyclone does */
   expect(found.peak.sp, 'there is a strong-wind area somewhere on the planet').toBeGreaterThan(15);
-  test.skip(!found.eye,
-    'no cyclone eye in this model hour — strongest wind measured ' + found.peak.sp.toFixed(1) + ' m/s at '
-    + found.peak.la + ', ' + found.peak.lo + ' (valid ' + found.validTime + ')');
+  const storm = found.box ? findEye(found.peak, found.box)
+    : { eye: null, why: 'the strongest wind anywhere in the tropics is ' + found.peak.sp.toFixed(1)
+        + ' m/s, below the 25 m/s this looks for a cyclone at' };
+  test.skip(!storm.eye,
+    'no cyclone eye in this model hour — ' + storm.why + ' (valid ' + found.validTime + ')');
+  console.log('[R460] eye ' + describeEye(found.peak, storm));
 
   /* Now the VISUAL half: fly to the eye and read the two pixels. The eye must be painted with a
      calmer colour than its eyewall, which is what "you can see the eye" means on a colour field. */
@@ -890,7 +911,7 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
       });
       map.triggerRepaint();
     });
-  }, found);
+  }, { peak: found.peak, eye: storm.eye });
 
   expect(pic.eyePx, 'the eye is on screen').not.toBeNull();
   expect(pic.ringPx, 'and so is the eyewall').not.toBeNull();
