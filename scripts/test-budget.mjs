@@ -113,7 +113,23 @@ const BUDGET_S = 28;                    /* core: 0.5 min — measured 28 s over 
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
    two browser checks for the era-label defect and pays 8 s of it; the entry below records the eight
    files measured looking for the rest and why none of them could be claimed. */
-const TOTAL_BUDGET_S = 4618;            /* 77.0 min — 4,613 (#R439) + 5 (#R435: one new nightly spec, measured four times) */
+/* ⚠⚠ (#R451) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 4,618 -> 4,620 (+2 s). Saying it
+   here as well as in the ledger because this file's own message is «never raise it»; #R410 (total,
+   +59) and #R405 (total, +7) are the precedents for saying so plainly.
+   ⚠ AND NO NEW SPEC FILE WAS ADDED. The round's browser-only claim — that the tab row is 0×0 while
+   something is being read, that the reading surface's own route to Atlas is on screen and hittable
+   in its place, and that pressing it lands on Atlas with the article still the subject — is about
+   the SAME surface, the SAME fixture and the SAME boot as tests/r435.spec.js, so it went in there.
+   That is this file's stated purpose («it forces consolidation instead of accumulation») taken at
+   its word: a separate tests/r451.spec.js would have paid for a second app boot to assert the next
+   thing about the state the first one had already reached.
+     · MEASURED, serial, one worker, server already up, the test passing, on this machine:
+       4.259 s before the additions and 5.534 s after — a marginal 1.275 s.
+     · CALIBRATED the way #R402 did rather than copied: the committed entry for this file is 5
+       against that same 4.259 s local, so a local second is ≈ 1.17 table-seconds here; 1.275 s
+       is ≈ 1.5. ENTERED AS 2, the conservative end, and the entry below goes 5 -> 7 so the sum
+       and the ceiling still meet exactly. */
+const TOTAL_BUDGET_S = 4620;            /* 77.0 min — 4,618 (#R435) + 2 (#R451: measured marginal cost of the Atlas-route assertions in tests/r435.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

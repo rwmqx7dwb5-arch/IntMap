@@ -3952,7 +3952,11 @@ window.IntMapModules.atlasConsole=function(HOST){
     function _selectionState(){ const o={lastPlace:null,countryCard:null,article:null,searchBox:''};
       try{ if(_lastPlace&&_lastPlace.name) o.lastPlace={name:_lastPlace.name}; }catch(_){}
       try{ if(window._cpCurrent&&window._cpCurrent.name) o.countryCard={name:window._cpCurrent.name}; }catch(_){}
-      try{ const rd=window._imReader; if(rd&&rd.open&&rd.title) o.article={ title:String(rd.title).slice(0,140), publisher:rd.publisher||'', pubDate:rd.pubDate?String(rd.pubDate).slice(0,16):'', place:rd.place||'', loc:(rd.loc&&isFinite(rd.loc[0]))?[+rd.loc[0],+rd.loc[1]]:null, body:rd.body?String(rd.body).slice(0,2600):'' }; }catch(_){}
+      /* ⚠ (#R451) `onScreen` — the reading surface can HAND its article to Atlas and be replaced by
+         it (the normal sidebar has one surface, so opening Atlas closes the reader). The subject is
+         still the subject; it is no longer on screen, and js/atlas-state.js says so in those words
+         rather than claiming the reader is reading it right now. */
+      try{ const rd=window._imReader; if(rd&&rd.open&&rd.title) o.article={ title:String(rd.title).slice(0,140), publisher:rd.publisher||'', pubDate:rd.pubDate?String(rd.pubDate).slice(0,16):'', place:rd.place||'', loc:(rd.loc&&isFinite(rd.loc[0]))?[+rd.loc[0],+rd.loc[1]]:null, body:rd.body?String(rd.body).slice(0,2600):'', onScreen:rd.onScreen!==false }; }catch(_){}
       try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) o.searchBox=String(si.value).trim().slice(0,60); }catch(_){}
       return o; }
     function _atlasOverlayState(){ const o={highlightCountries:0,highlight:null,choropleth:null,customScore:null,pins:null,polygons:null,lines:null,measure:null,radius:null,userPins:null,tool:''};
