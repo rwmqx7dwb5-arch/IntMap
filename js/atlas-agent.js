@@ -44,8 +44,8 @@ export function makeAtlasAgent() {
     /* ── The technical ceilings. They bound the LOOP; they never decide what it should do. ──────
        ⚠ `maxSteps` COUNTS AGAINST A SERVER BUDGET IT DOES NOT OWN. supabase/functions/ai-proxy
        charges every call carrying one `x-intmap-turn` key against TURN_MAX_CALLS = 6, and a tool
-       Atlas runs may itself ask the model (analyze → js/atlas-answer-pipeline.js spends one, and
-       two if its audit repairs). Four leaves that room. Going to six here would mean the reader's
+       Atlas runs may itself ask the model (analyze → js/atlas-answer-pipeline.js spends ONE; the
+       repair that used to make it two is gone with the audit's power, #R472). Four leaves that room. Going to six here would mean the reader's
        LAST step — the sentence — is the one that 429s, which is the worst possible place to run
        out. `stopped:'transport'` below is the belt to this braces. */
     /* ⚠ (#R413) `maxSteps` WAS 4, AND IT WAS THE CLIENT BEING STRICTER THAN THE SERVER. The comment
@@ -74,9 +74,9 @@ export function makeAtlasAgent() {
        180 s, on the assumption that a healthy turn takes about ten seconds. Then the live site was
        measured: ONE ordinary turn about an open news article took **191 s**, spending FOUR ai-proxy
        calls of 8.1 / 51.2 / 48.9 / 17.2 s — and the slowest single call seen was **73.2 s**. A tool
-       call is worse still, because `analyze` may spend up to MAX_MODEL_CALLS (2, in
-       js/atlas-answer-pipeline.js) of those plus its 32 s evidence gather plus a 20 s pinning pass:
-       roughly 200 s for ONE tool call that is working perfectly. Both first drafts would therefore
+       call is worse still, because `analyze` spends one of those (two, before #R472 removed the
+       repair) plus its 32 s evidence gather plus a 20 s pinning pass: roughly 200 s for ONE tool
+       call that is working perfectly. Both first drafts would therefore
        have fired on turns that were about to succeed, replacing a good answer with a degraded one —
        which is precisely the 「制限を増やす方向」 this round was told not to take. The values below
        clear the measured worst case with room, and nothing else decides them. */

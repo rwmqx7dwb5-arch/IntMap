@@ -307,26 +307,34 @@ test('R419 ⑨d: the kernel did not grow to hold any of this', () => {
   assert.ok(rd('js/atlas-turn-continuity.js').length > 2_000, 'the module that was supposed to hold it is empty');
 });
 
-/* ── ⑩ a gutted answer is not reported as a finished one ─────────────────────────────────────── */
+/* ── ⑩ what the analysis tells Atlas about itself ────────────────────────────────────────────
+   ⚠ (#R472) THE SUBJECT OF THIS PAIR CHANGED, AND THE FINDING DID NOT. #R419's report was Atlas
+   announcing 「日付順に整理した解説を表示しました」 over a document its own audit had emptied — because
+   the tool handed it {ok:true, status:'completed'} and said nothing else. The answer to that was:
+   the result must SAY what happened. It still must. What is gone is the gutting: nothing removes a
+   claim any more (js/atlas-answer-pipeline.js), so there is no 'degraded' status and no
+   `removedClaims` to carry. The channel carries `auditFindings` — the codes the audit raised about
+   an answer that IS on the screen, in full — and Atlas judges them. */
 
-test('R419 ⑩: a DEGRADED analysis reaches Atlas as degraded, with what was removed', async () => {
+test('R419 ⑩: what the answer audit noticed reaches Atlas, on an answer that is rendered whole', async () => {
   const surface = makeAtlasToolSurface({
     capabilities: CAPS, schemas: SCHEMAS,
-    /* what js/atlas-console.js's analyze case now returns when its audit removed every claim it
-       could not tie to an evidence record — the 1940 Lithuania answer. */
-    runAction: async () => ({ ok: true, html: '<div class="atl-degraded">…</div>',
-      meta: { status: 'completed', produced: ['explanation'], degraded: true, removedClaims: 7,
-        unverified: 'DEGRADED: the answer audit removed 7 claim(s) …' } }),
+    /* what js/atlas-console.js's analyze case returns when the audit raised something */
+    runAction: async () => ({ ok: true, html: '<div class="atl-lead">…</div>',
+      meta: { status: 'completed', produced: ['explanation'],
+        auditFindings: ['evidence.primary_unsupported', 'contradiction.superlative_beaten'],
+        unverified: 'The answer is rendered in full, as written. the answer audit noticed these things …' } }),
   });
   const tools = surface.baseTools();
   const out = await surface.makeExecute(tools, AGENT)({ name: 'research', arguments: { question: '1940年のリトアニアでは何が起きていた？' } });
   assert.equal(out.ok, true, 'the tool did run and did render — that part was never in doubt');
-  assert.equal(out.status, 'degraded', 'Atlas is still told the gutted answer "completed"');
-  assert.equal(out.removedClaims, 7, 'Atlas is not told how much was removed');
-  assert.match(String(out.unverified), /DEGRADED/, 'the reason did not survive to the one deciding what to say');
+  assert.equal(out.status, 'completed', 'the answer was not cut down, so it is not reported as anything else');
+  assert.deepEqual(out.auditFindings, ['evidence.primary_unsupported', 'contradiction.superlative_beaten'],
+    'the codes did not survive to the one deciding what to say');
+  assert.match(String(out.unverified), /rendered in full/, 'the reason did not survive to the one deciding what to say');
 });
 
-test('R419 ⑩b: an ordinary analysis is untouched — no new hedge on an answer that passed', async () => {
+test('R419 ⑩b: an analysis the audit had nothing to say about carries no hedge at all', async () => {
   const surface = makeAtlasToolSurface({
     capabilities: CAPS, schemas: SCHEMAS,
     runAction: async () => ({ ok: true, html: '<div>answer</div>', meta: { status: 'completed', produced: ['explanation'] } }),
@@ -334,7 +342,7 @@ test('R419 ⑩b: an ordinary analysis is untouched — no new hedge on an answer
   const tools = surface.baseTools();
   const out = await surface.makeExecute(tools, AGENT)({ name: 'research', arguments: { question: 'x' } });
   assert.equal(out.status, 'completed');
-  assert.equal(out.removedClaims, undefined);
+  assert.equal(out.auditFindings, undefined);
   assert.equal(out.unverified, undefined);
 });
 

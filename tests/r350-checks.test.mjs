@@ -23,7 +23,7 @@
  *    ④ every audit code can be made to go RED from a correct answer (a gate never seen red
  *      proves nothing — #R318 ②)
  *    ⑤ the China fixture: the meanings stay apart and the two series do not join
- *    ⑥ the pipeline spends ONE call on the valid path, at most one repair, then degrades
+ *    ⑥ the pipeline spends ONE call (#R472 removed the repair and the degrade — tests/r472-checks)
  *    ⑦ a URL the model wrote is not a link, and 「Web検証済み」 is a fact rather than a heading
  *    ⑨ the mechanisms this round removes are GONE from the source — not merely unused
  *
@@ -386,36 +386,14 @@ test('R350 ⑥a: a valid answer costs exactly one model call', async () => {
   assert.equal(s.calls[0].task, 'analysis_structured');
 });
 
-test('R350 ⑥b: a failed audit buys exactly ONE repair, on the same turn key', async () => {
-  const bad = RAW_GOOD(); bad.claims[0].evidenceIds = [];
-  const s = scriptedAsk([bad, RAW_GOOD()]);
-  const out = await PL.runStructuredAnswer(withFixtureFacts(pipelineOpts(s.ask)));
-  assert.equal(s.calls.length, 2, 'expected one repair, got ' + (s.calls.length - 1));
-  assert.equal(s.calls[1].repair, true, 'the second call was not aimed at the findings');
-  assert.equal(s.calls[1].turnId, 't1', 'the repair opened a new turn — it would cost a second daily use');
-  assert.notEqual(s.calls[1].callId, s.calls[0].callId, 'the repair reused the first call\'s id');
-  assert.equal(out.env.audit.status, 'passed');
-});
-
-test('R350 ⑥c: two failures degrade in code rather than showing unverified prose', async () => {
-  const bad = RAW_GOOD(); bad.claims[0].evidenceIds = [];
-  const s = scriptedAsk([bad, bad]);
-  const out = await PL.runStructuredAnswer(withFixtureFacts(pipelineOpts(s.ask)));
-  assert.equal(s.calls.length, PL.MAX_MODEL_CALLS, 'the repair loop is not bounded at ' + PL.MAX_MODEL_CALLS);
-  assert.equal(out.env.audit.status, 'degraded');
-  assert.ok(!out.env.claims.some((c) => c.id === 'c1'), 'the claim the audit rejected is still in the answer');
-  assert.ok(String(out.env.answer.directAnswer.text || '').trim(), 'degrading emptied the answer instead of shortening it');
-});
-
-test('R350 ⑥d: a repair that is WORSE than the original is refused', async () => {
-  const bad = RAW_GOOD(); bad.claims[0].evidenceIds = [];
-  const worse = RAW_GOOD();
-  worse.claims.forEach((c) => { c.evidenceIds = []; c.dimension = ''; });
-  const s = scriptedAsk([bad, worse]);
-  const out = await PL.runStructuredAnswer(withFixtureFacts(pipelineOpts(s.ask)));
-  assert.equal(out.audit.errors.length <= AU.auditAnswer(CT.normalizeAnswer(worse, {}), fixtureRegistry(), CTX).errors.length, true,
-    'the newer, worse answer replaced the better one');
-});
+/* R350 ⑥b / ⑥c / ⑥d (the repair call, the degrade, and refusing a repair that is worse) removed in
+   #R472: js/atlas-answer-pipeline.js no longer asks a second time and no longer rebuilds the answer
+   from the claims that passed. Measured on the live site, the thing `degrade` was deleting was a
+   CORRECT answer, condemned by `evidence.primary_unsupported` for lacking an id that IntMap's own
+   ANSWER CONTRACT makes impossible to obtain (with the contract the provider returns 0 citation
+   annotations; the same call without it returns 2). The audit still runs and every code still fires
+   — ④ above — but its findings are reported to Atlas rather than executed on the reader's answer.
+   tests/r472-checks.test.mjs holds what replaced these. */
 
 test('R350 ⑥e: two answers in flight keep their own citations', async () => {
   /* ⚠ THIS IS THE TEST THE OLD SHAPE COULD NOT PASS. The analyse path read window._aiLastCitations
@@ -485,13 +463,8 @@ test('R350 ⑦c: a figure from IntMap\'s own data still shows a citation', () =>
   assert.ok(!/href/.test(html.split('atl-cite-data')[0].split('atl-lead')[1] || ''), 'a record with no page was given a link anyway');
 });
 
-test('R350 ⑦d: a degraded answer says so, above the prose', () => {
-  const e = goodAnswer();
-  e.audit = { status: 'degraded', errors: [], warnings: [] };
-  const html = RN.renderAnswer(e, fixtureRegistry(), UI);
-  assert.ok(html.indexOf('Unverified statements were removed') >= 0, 'the reader is not told the answer was cut');
-  assert.ok(html.indexOf('Unverified statements were removed') < html.indexOf('atl-lead'), 'the notice is below the answer it is about');
-});
+/* R350 ⑦d (the degraded banner, above the prose) removed in #R472 with the degrading it announced.
+   Nothing cuts an answer down any more, so there is no banner to draw — see tests/r472-checks. */
 
 /* R350 ⑧a-⑧c (goalImpact / primaryFails / __impact) removed in #R406: js/atlas-planner.js is deleted, so the request profile the impact verdict was derived from no longer exists and js/atlas-console.js no longer splits its failures by it. */
 
