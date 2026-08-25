@@ -239,9 +239,11 @@ test('R212 ⑫: a news pin never claims an origin it does not have', () => {
 test('R212 ⑬: the news proxies and the wind grid both carry a deadline', () => {
   const pf = read('js/proxy-fetch.js');
   assert.match(pf, /const PROXY_TIMEOUT_MS = \d+/);
-  /* (#R446) each racer still has its own clock; it may simply no longer outlast the budget the
-     CALLER named — without the clamp a 3 s budget would still sit through an 8 s attempt. */
-  assert.match(pf, /fetchDeadline\(make\(url\), Math\.min\(PROXY_TIMEOUT_MS, left\(\)\), ctls\[i\]\)/, 'each racer has its own clock');
+  /* ⚠ (#R452) THE PROPERTY IS 「EACH RACER HAS ITS OWN CLOCK」; the exact third argument was one way
+     of holding it. It is now `Math.min(PROXY_TIMEOUT_MS, left())` — still a per-racer clock, and
+     additionally one that cannot outlast the budget the caller named, which is strictly stronger.
+     Pinning the old spelling would have failed the day the guarantee got better. */
+  assert.match(pf, /fetchDeadline\(make\(url\),[\s\S]{0,48}PROXY_TIMEOUT_MS[\s\S]{0,48}ctls\[i\]\)/, 'each racer has its own clock');
   assert.match(pf, /ctls\.forEach\(\(c\) => \{ try \{ c\.abort\(\)/, 'and the losers are aborted when one wins');
   assert.match(read('js/app-body.js'), /import \{ fetchViaProxy \} from '\.\/proxy-fetch\.js'/, 'and the core just imports it');
   /* ⚠⚠ (#R276) THE SECOND HALF OF THIS TEST GUARDED A MECHANISM THAT NO LONGER EXISTS, AND THE

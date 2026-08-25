@@ -1677,6 +1677,7 @@ window.IntMapLang.define('fr', { ui: {
   "Live satellites on": "Satellites en direct activés",
   "Live weather data unavailable": "Données météo en direct indisponibles",
   "live web news": "actualités du web en direct",
+  "{n} source(s) did not answer within {s}s": "{n} source(s) n’ont pas répondu en {s}s",
   "live web verification": "vérification web en direct",
   "Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.": "La vérification web en direct n'a pas abouti pour cette question sensible au temps ; il s'agit donc d'une évaluation PROVISOIRE fondée surtout sur des titres déjà collectés — considérez ces éléments comme des pistes, pas comme des preuves directes confirmées.",
   "LOAD": "CHARGE",

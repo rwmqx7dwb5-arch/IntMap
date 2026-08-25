@@ -1174,6 +1174,7 @@ window.IntMapLang.define('zh', {
     'Live satellites off': "已關閉即時衛星",   /* atlas-console.js */
     'Live satellites on': "已開啟即時衛星",   /* atlas-console.js */
     'live web news': "即時網路新聞",   /* atlas-console.js */
+    '{n} source(s) did not answer within {s}s': "{n} 個來源未在 {s} 秒內回應",   /* atlas-console.js */
     'live web search': "即時網路搜尋",   /* atlas-console.js */
     'live web verification': "即時網路查證",   /* atlas-console.js */
     'Live web verification did not complete for this time-sensitive question, so this is a PROVISIONAL assessment based mainly on already-gathered headlines — treat items as leads, not confirmed direct evidence.': "這個具時效性的問題未能完成即時網路查證，因此以下是主要依據既有標題的暫定判斷 — 請視為線索，而非已確認的直接證據。",   /* atlas-console.js */

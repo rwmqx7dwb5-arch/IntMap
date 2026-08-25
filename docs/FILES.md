@@ -437,7 +437,10 @@ wx-wind.js                        風の粒子レンダラ window.IntMapWindGL�
 place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
 country-extent.js                 その国が「在る場所」の枠 window.IntMapCountryExtent——遠い海外領土を外し、±180 をまたぐ範囲を区間として書き下す
 proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）。
-                                  `opts.as` が受理する文書の形（feed／html）、`opts.budgetMs` が ladder 全体の上限
+                                  `opts.as` が受理する文書の形（feed／html／json）、`opts.budgetMs` が ladder 全体の上限、
+                                  `opts.direct` が相手先を先に試すか、`opts.signal` が停止。⚠ 締切は**本文の読み終わりまで**掛かる
+fetch-deadline.js                 締切つきの JSON 取得 `jsonWithin()`——相手が答えるのをやめても必ず終わる 1 回の取得
+atlas-deadlines.js                Atlas の証拠集めが使ってよい時間——予算3つ・締切つきの gather・停止の届く JSON 取得器
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
 ```
