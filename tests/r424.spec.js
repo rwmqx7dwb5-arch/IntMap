@@ -93,6 +93,28 @@ const READ_CARD = (lang) => {
   return { label, n: rows.length, value: row ? ((row.querySelector('b') || {}).textContent || '').trim() : null };
 };
 
+/** ⚠ (#R451) カードは**二度**描かれる——同期の一枚目と、enrich が解決したあとの二枚目。
+    `openCard` が待つ `.cm-row` は一枚目で満たされるので、そこで読むと同梱データが届く前の
+    HTML を読むことがある。待つのは**機構が止まったこと**であって主張そのものではない
+    （#R399/#R435 の規則: 「Neighbours が出るまで」を待つと、壊れたビルドは 30 秒黙ってから
+    述語の名前だけを残す）。`state` が idle でも loading でもなくなるのは、取得が成功しても
+    失敗しても真になる。そのあと 2 フレーム待って再描画の microtask を流す。 */
+const factsSettled = async (page) => {
+  await page.waitForFunction(() => {
+    const F = window.IntMapCountryFacts;
+    return !!F && F.state !== 'idle' && F.state !== 'loading';
+  }, null, { timeout: 30000, polling: 100 });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+};
+
+/** カードの行を丸ごと読む——#R451 は行の**有無**を見るので、見出しを鍵にした表を返す。 */
+const READ_ROWS = () => {
+  const out = {}; const rows = [...document.querySelectorAll('#country-popup .cm-row')];
+  for (const r of rows) { const k = ((r.querySelector('span') || {}).textContent || '').trim();
+    out[k] = ((r.querySelector('b') || {}).textContent || '').trim(); }
+  return { n: rows.length, rows: out };
+};
+
 async function openCard(page, lang, code = HIST) {
   await page.evaluate(() => { const b = document.getElementById('cp-close'), p = document.getElementById('country-popup'); if (b && p && p.style.display === 'block') b.click(); });
   await page.dblclick(`.stat-row[data-ccn="${code}"]`);
@@ -171,6 +193,44 @@ test('R424 1916年の一覧で、歴史の行のサブ行が現代の行と同�
   const enDeu = await openCard(page, 'en', 'DEU');
   expect(enUsa.value, '英語では大陸と小地域が別の語なので、畳まない').toBe('North America / Northern America');
   expect(enDeu.value, '英語の対照——ここは九言語すべてで二語').toBe('Europe / Western Europe');
+
+  /* ══ (#R451) 同じカードの、衛星から届かなくなっていた行 ══════════════════════
+     本番実測 2026-08-25（R443）: `enrichCountry()` が投げる restcountries.com への要求が
+     **5か国 5件とも**失敗し、`catch(e){}` がそれを飲んでいた——USA のカードは **16行**で、
+     Neighbours 行も Timezones 行も**無いまま完全に見えていた**。API は廃止されており
+     （/v3.1 も /v5 も 261 バイトの廃止通知へ 301）、中継すべき上流が存在しないので、
+     6つの事実は data/country-facts.json として**同梱**されるようになった。
+
+     ⚠ tests/r451-checks.test.mjs は出荷される module を Node で実行して同じ 3 行を見ているが、
+     **ブラウザがそのファイルを実際に取れるか**はここでしか言えない（同一 origin の fetch は
+     ビルドと配備の問題であって、ソースの問題ではない）。すでに開いているカードを読むだけなので、
+     gate の天井（scripts/test-budget.mjs）に足すのは assert 分だけである——新しい spec ファイルを
+     1 本立てると、同じカードをもう一度開くためだけに分単位の時間を買うことになる。 */
+  await factsSettled(page);
+  const deuRows = await page.evaluate(READ_ROWS);   /* 直前の openCard で DEU が開いている */
+  expect(deuRows.rows['Neighbours'], 'DEU のカードに Neighbours 行が無い——同梱データが届いていない').toBeTruthy();
+  expect(deuRows.rows['Neighbours']).toContain('POL');
+  expect(deuRows.rows['Timezones'], 'DEU のカードに Timezones 行が無い').toMatch(/^UTC[+-]\d\d:\d\d/);
+  expect(deuRows.rows['UN member'], 'UN member 行').toBe('Yes');
+
+  /* 同じことを USA でも——報告に名指されたカードであり、隣国が 2 か国しか無いので
+     「行が出ている」と「値が正しい」を一つの assert で分けられる。 */
+  await openCard(page, 'en', 'USA');
+  await factsSettled(page);
+  const usa2 = await page.evaluate(READ_ROWS);
+  expect(usa2.rows['Neighbours'], 'USA の隣国').toBe('CAN, MEX');
+  expect(usa2.rows['Timezones'], 'USA の時間帯').toMatch(/^UTC[+-]\d\d:\d\d/);
+  expect(usa2.rows['UN member']).toBe('Yes');
+
+  /* ⚠ 同梱にした理由そのもの——取得の**結果が値として残っている**ことを画面側でも見る。
+     'failed' なら 3 行は出ていないはずで、上の assert が先に落ちる。 */
+  const facts = await page.evaluate(() => {
+    const F = window.IntMapCountryFacts;
+    return F ? { state: F.state, codes: F.codes, url: F.url, error: F.error } : null;
+  });
+  expect(facts, 'window.IntMapCountryFacts が無い').toBeTruthy();
+  expect(facts.state, '国データの取得が ready でない: ' + facts.error).toBe('ready');
+  expect(facts.codes, '同梱されたコード数').toBeGreaterThan(200);
 
   expect(errors, '言語と年を動かす間、page error は出ない: ' + errors.join(' | ')).toEqual([]);
 

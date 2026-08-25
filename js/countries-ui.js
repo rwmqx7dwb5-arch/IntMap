@@ -58,8 +58,10 @@ window._imCldrRegion=function(a2,lang){
    ⚠ MEASURED FIRST, over the three scales loadCountryData() actually fetches (2026-08-25):
    Natural Earth's SUBREGION is EXACTLY 24 values — ne_110m (177 features) carries 22 of them and
    ne_50m / ne_10m (242 / 258) add «Micronesia» and «Polynesia». NOT ONE feature at any scale has
-   an empty SUBREGION, which is also why the restcountries fallback in enrichCountry() is
+   an empty SUBREGION, which is also why the enrichCountry() fallback for this field is
    unreachable in practice — the same thing #R424 measured about CONTINENT, one field over.
+   (#R451 acted on that measurement: the `subregion` and `region` fallback lines are gone, along
+   with the dead restcountries request all fourteen of them lived in. See enrichCountry().)
 
    ⚠⚠⚠ AND ALL 24 WERE ALREADY TRANSLATED, TWICE OVER, WHILE THE CARD READ NEITHER.
    js/atlas-examples.js held 22 of them as shipped `L(…)` calls — #R313 追記2 put them there after
@@ -132,6 +134,65 @@ window._imSubregionName=function(sub,lang){
   if(!a) return sub;
   try{ return window.IntMapLang.t.apply(null,[lang].concat(a))||sub; }catch(_){ return sub; }
 };
+
+/* ══ ⚠⚠⚠ (#R451) THE CARD WAS ASKING A SERVER THAT NO LONGER EXISTS ═══════════════════
+   `enrichCountry()` below fetched restcountries.com for every country card. MEASURED ON PRODUCTION
+   2026-08-25 (build R443), USA / DEU / ARG / JPN / IDN — five of five:
+
+       Access to fetch at 'https://restcountries.com/v3.1/alpha/USA?fields=…' … has been
+       blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present…
+
+   …and the CORS message is the symptom, not the illness. The API is WITHDRAWN: every path —
+   /v3.1/alpha/USA, /v3.1/all AND /v5/alpha/USA — 301s to one 261-byte file that reads «This API
+   version has been deprecated … migrate to our new version (v5)», and it is the 301 that carries
+   no ACAO. v5 wants an account and a bearer key, so there was no URL to edit and no relay worth
+   writing: a Supabase relay would have relayed the deprecation notice.
+
+   ⚠⚠⚠ AND `catch(e){}` MADE THAT INDISTINGUISHABLE FROM A COUNTRY WITH NO NEIGHBOURS.
+   `sec()` drops a row whose value is null, so the USA card shipped SIXTEEN rows with no
+   Neighbours row and no Timezones row and looked complete. #R262’s rule: «an empty answer» and
+   «no answer» must not be the same value. So the outcome is a VALUE now — `state` is
+   'idle' | 'loading' | 'ready' | 'failed' — a failure is logged rather than swallowed, a failed
+   load is NOT recorded as «tried» so the next card retries it, and the checks look at the ROWS
+   ON THE SCREEN rather than at whether the code compiles: tests/r451-checks.test.mjs runs this
+   very file and reads the card's HTML, and the tail of tests/r424.spec.js reads it in a browser.
+
+   ⚠ THE FACTS ARE SHIPPED, NOT FETCHED. A land border, a capital and a standard-time offset move
+   on the order of once a decade; a run-time request to a third party bought nothing but a way to
+   fail. data/country-facts.json is built by scripts/build-country-facts.mjs from mledoze/countries
+   (restcountries' OWN upstream, ODbL 1.0) and the IANA time-zone database, keyed by the code THIS
+   file derives — same origin, no key, no CORS. It is fetched once, and only when a card is
+   actually opened, so boot pays nothing for it.
+   ⚠ `window.` RATHER THAN `export`, for the reason one helper up: four harnesses run this file as
+   a classic script through `new Function(src)`, and one `export` keyword is a SyntaxError to all of
+   them (#R443 measured 16 red tests on a file whose behaviour had not changed). */
+window.IntMapCountryFacts=(function(){
+  const FACTS_URL='data/country-facts.json';
+  const S={ url:FACTS_URL, state:'idle', error:null, codes:0, built:'' };
+  let P=null, TABLE=null;
+  S.load=function(){
+    if(P) return P;
+    S.state='loading';
+    P=fetch(FACTS_URL).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(j){
+        const c=j&&j.countries;
+        if(!c||typeof c!=='object'||!Object.keys(c).length) throw new Error('no countries in '+FACTS_URL);
+        TABLE=c; S.codes=Object.keys(c).length; S.built=(j.built||''); S.state='ready'; S.error=null;
+        return c;
+      })
+      .catch(function(e){
+        /* ⚠ THE FAILURE IS RECORDED, NOT DISCARDED — and the promise is released so the next card
+           retries. A permanent failure is then visible three ways: `state`, the console, and the
+           rows tests/r451-checks.test.mjs ⑥⑧ look for. */
+        S.state='failed'; S.error=String((e&&e.message)||e); TABLE=null; P=null;
+        try{ console.error('[IntMap] country facts unavailable ('+FACTS_URL+'): '+S.error); }catch(_){}
+        return null;
+      });
+    return P;
+  };
+  S.get=function(code){ return (TABLE&&code&&TABLE[code])||null; };
+  return S;
+})();
 
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
@@ -549,32 +610,40 @@ window.IntMapModules.countriesUi=function(HOST){
     p.style.display='block';
   }
 
+  /* ⚠ (#R451) SAME NINE FIELDS, SAME PRECEDENCE, A SUPPLIER THAT ANSWERS — see the ⚠⚠⚠ box at
+     `window.IntMapCountryFacts` above for why the network call is gone.
+     Three of these stand in for a hand-written table in js/tables.js that does not cover the code
+     set, and they have been printing «—» ever since the API died: measured against ne_10m
+     (252 codes), 60 codes have no CAPITAL, 100 no CURRENCY and 115 no LANGS.
+     ⚠ FIVE OF THE OLD FOURTEEN LINES ARE GONE BECAUSE THEY CANNOT FIRE, not because the data is
+     missing: `region` / `subregion` are never empty at any Natural Earth scale (#R424, #R443),
+     LABEL_X/Y are on every feature so `latlng` is always set, and the only codes with an empty
+     ISO_A2 (fallback `flag`) or POP_EST 0 (fallback `population`) are Natural Earth’s own
+     disputed-ground codes, which have no ISO row to fall back TO. */
   async function enrichCountry(id){
     if(!id) return null;
     const s=HOST.countryStats[id];
     if(!s) return null;
-    if(s._enrichedTried) return s;
-    s._enrichedTried=true;
-    try{
-      const r=await fetch(`https://restcountries.com/v3.1/alpha/${encodeURIComponent(id)}?fields=name,capital,languages,currencies,population,area,region,subregion,flag,latlng,timezones,car,callingCodes,demonyms,borders,independent,unMember`);
-      if(!r.ok) return s;
-      const j=await r.json(); const c=Array.isArray(j)?j[0]:j; if(!c) return s;
-      if(!s.capital && c.capital && c.capital.length) s.capital=c.capital[0];
-      if(!s.languages && c.languages) s.languages=Object.values(c.languages).join(', ');
-      if(!s.currency && c.currencies){ const cur=Object.entries(c.currencies)[0]; if(cur) s.currency=`${cur[0]}${cur[1]&&cur[1].name?' ('+cur[1].name+')':''}`; }
-      if(!s.pop && c.population) s.pop=c.population;
-      if((!s.area||s.area<1) && c.area) s.area=c.area;
-      if(!s.density && s.pop && s.area) s.density=s.pop/s.area;
-      if(!s.region && c.region) s.region=c.region;
-      if(!s.subregion && c.subregion) s.subregion=c.subregion;
-      if((!s.flag||s.flag==='🏳️') && c.flag) s.flag=c.flag;
-      if(!s.latlng && c.latlng && c.latlng.length===2) s.latlng=c.latlng;
-      if(c.timezones) s.timezones=c.timezones;
-      if(c.borders) s.borders=c.borders;
-      if(c.independent!=null) s.independent=c.independent;
-      if(c.unMember!=null) s.unMember=c.unMember;
-      if(c.demonyms){ const eng=c.demonyms.eng; if(eng){ s.demonym=(eng.m||eng.f||''); } }
-    }catch(e){}
+    if(s._enriched) return s;
+    const F=window.IntMapCountryFacts;
+    await F.load();
+    /* ⚠⚠ A FAILED LOAD IS NOT RECORDED AS «TRIED». The old code set that flag BEFORE the request
+       and then swallowed the outcome, so one blocked fetch retired the country for the whole
+       session and left nothing behind to say so. */
+    if(F.state!=='ready') return s;
+    const c=F.get(id);
+    s._enriched=c?'facts':'no-row';
+    if(!c) return s;
+    if(!s.capital && c.capital) s.capital=c.capital;
+    if(!s.languages && c.languages) s.languages=c.languages;
+    if(!s.currency && c.currency) s.currency=c.currency;
+    if((!s.area||s.area<1) && c.area) s.area=c.area;
+    if(!s.density && s.pop && s.area) s.density=s.pop/s.area;
+    if(c.tz) s.timezones=c.tz;
+    if(c.borders) s.borders=c.borders;
+    if(c.ind!=null) s.independent=c.ind;
+    if(c.un!=null) s.unMember=c.un;
+    if(c.dem) s.demonym=c.dem;
     return s;
   }
 

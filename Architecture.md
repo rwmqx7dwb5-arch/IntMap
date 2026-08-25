@@ -1275,6 +1275,34 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ⚠ **窓を持たない後継国もある**——モルドバは 1940 年までルーマニア領であって独立国では無かったので、
   窓を与えれば存在しない国が一覧に出る。窓は「この後継国はそのとき**自分の国**だった」の意であって、
   「この国家がその土地を持っていなかった」の意ではない。
+- ⚠ **国詳細カードの6欄は「取りに行く」ものではなく、同梱している**（`data/country-facts.json`）。
+  首都・通貨・言語・**隣接（陸の国境）**・**時間帯**・**国連加盟**の6つは、以前は
+  `enrichCountry()` が **restcountries.com** へ毎カード投げていた。その API は撤去されている——
+  `/v3.1/alpha/<ISO3>` も `/v3.1/all` も `/v5/alpha/<ISO3>` も、261 バイトの廃止通知1枚へ 301 され、
+  **その 301 に `Access-Control-Allow-Origin` が無い**（ブラウザは CORS として報告する）。v5 は
+  アカウントと bearer key を要求するので、**URL を書き換える先も、中継する先も存在しない**。
+  ⇒ 6欄は `scripts/build-country-facts.mjs` が**ビルド時に**作り、ブラウザは同一 origin の
+  `data/country-facts.json` を**カードを開いたときに1度だけ**読む（起動費用は 0）。
+  上流は **mledoze/countries（ODbL 1.0・restcountries 自身の上流）** と
+  **IANA time-zone database（public domain）**、鍵は `js/countries-ui.js` 自身が導く
+  `ISO_A3_EH || ISO_A3 || ADM0_A3`（ISO 3166-1 ではない——app が計算しない鍵は読めない鍵）。
+  ⚠ **失われていたのは Neighbours と Timezones の2行では済まない。** 3欄は `js/tables.js` の
+  手書き表の**穴埋め**で、ne_10m の 252 コードに対し **CAPITAL が 60・CURRENCY が 100・
+  LANGS が 115** 欠けている。それらのカードは API が死んで以来ずっと「—」を出していた。
+  ⚠ **「答えが無い」を「空の答え」と同じ値にしない。** `catch(e){}` が失敗を
+  飲んでいたので、`sec()` が null の行を落としたカードは「隣国が無い国」と見分けがつかなかった。
+  いまは `window.IntMapCountryFacts.state`（`idle` / `loading` / `ready` / `failed`）と
+  `.error` が値として残り、**失敗は「試した」として記録されない**ので次のカードで retry する。
+  ファイル自身も `withoutTimezone` で「行は在るが tz が無いコード」を名指す（IANA が区域を
+  割り当てていないコソボと、無人の Heard & McDonald の2件）。
+  ⚠ **上流の誤りは訂正としてデータに書く**（`data/subcable-overrides.json` と同じ規則）。
+  バチカンは常任オブザーバーであって国連加盟国ではない（加盟国は 193）。スリランカとインドの
+  間にあるのはポーク海峡であって陸の国境ではない——生成器の対称性検査が見つけた唯一の非対称。
+  ⚠ **生成器は、2つのコード体系が食い違い始めたら止まる。** Natural Earth の 252 と mledoze の
+  250 の差（NE 側 13・ISO 側 11・コソボは別名で解決）は**宣言**されていて、実測と一致しなければ
+  ビルドが失敗する——黙って何か国か足りないファイルを書くのが、このラウンドが消した欠陥の形。
+  検査は `tests/r451-checks.test.mjs`（出荷される module を Node で実行してカードの HTML を読む）と
+  `tests/r424.spec.js` の末尾（ブラウザで同じ3行）。
 - ⚠ **国名の下のサブ行（`.stat-sub` ＝ `region / capital`）の region は、産地が2つある。**
   一覧の行と、行をダブルクリックして開く国詳細カードの Region 行は、どちらも
   `js/countries-ui.js` の `_regionName()`（`pickArgs()` の5引数＋4言語の inline 表）を通る。
@@ -1295,8 +1323,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   `js/countries-ui.js` の top-level が公開する **`window._imSubregionName(sub, lang)`**（`pickArgs()` の
   5引数＋4言語の inline 表・`IntMapLang.t(lang, …)` で解決）が、**Natural Earth の SUBREGION ＝
   24種**を持つ。`ne_110m` は22種、`ne_50m` / `ne_10m` が `Micronesia` と `Polynesia` を足す。
-  どの縮尺にも**空の SUBREGION は1件も無い**ので、`enrichCountry()` の restcountries フォールバックは
-  この欄では実際には通らない（CONTINENT と同じ）。
+  どの縮尺にも**空の SUBREGION は1件も無い**ので、`enrichCountry()` のこの欄のフォールバックは
+  実際には通らない（CONTINENT と同じ）。**その測定に従って、`region` / `subregion` の
+  フォールバック行そのものが消えている**——上の同梱データの項を見ること。
   ⚠ **表は1本で、読み手が2つある。** `js/atlas-examples.js` の starter chip の `{sub}` は
   `window._imSubregionName(…)` で**同じ表**を読む。同じ語彙の写しを面ごとに持つと、直るのは
   片方だけになる。`tests/r424-checks.test.mjs` ⑩ が `js/*.js` を数えて、この24語を宣言する

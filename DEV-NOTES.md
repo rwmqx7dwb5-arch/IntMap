@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R451** — **国別カードが 16 行で「完全」に見えていたのは、`catch(e){}` が「取れなかった」を「無い」と同じ値にしていたから**〈本番実測 2026-08-25 (build R443): `enrichCountry()` の `https://restcountries.com/v3.1/alpha/<ISO3>` が USA / DEU / ARG / JPN / IDN の **5 か国 5 件とも** CORS で失敗〉／⚠⚠⚠ **CORS は症状で、病名ではない——API は撤去されている**〈`/v3.1/alpha/USA` も `/v3.1/all` も **`/v5/alpha/USA`** も、261 バイトの「This API version has been deprecated … migrate to our new version (v5)」1 枚へ **301**。**ACAO が無いのは 301 のほう**で、リダイレクト先の静的ファイルには `access-control-allow-origin: *` が付いている＝「設定漏れ」に見えた理由。v5 はアカウントと `Authorization: Bearer` を要求する⇒ **URL を書き換える先も、中継する先も存在しない**——Edge Function の relay を書いても relay されるのは廃止通知である〉／⚠⚠⚠ **失われていたのは報告された 2 行では済まない**〈`enrichCountry()` は **9 欄**を供給し、うち 3 欄は `js/tables.js` の手書き表の**穴埋め**。ne_10m の 252 コードに対し **CAPITAL が 60・CURRENCY が 100・LANGS が 115** 欠けている（モナコ・アンドラ・バチカン・バーレーン・ウルグアイ・エストニア・ラトビア・ホンジュラス…）＝**それらのカードは API が死んで以来ずっと「—」を出していた**。同じ 1 つの原因で、誰も報告していない⇒ 直したのは「消えた 2 行」ではなく**供給者**で、代入の優先順位は 1 バイトも変えていない〉／⚠⚠ **取りに行くのをやめて同梱した**〈`scripts/build-country-facts.mjs` → `data/country-facts.json`（239 コード・63.7 KB）。上流は **mledoze/countries（ODbL 1.0）＝restcountries 自身の上流**なので**カードに出る値はサーバが死ぬ前と同じ値**であり、乗り換えではない。timezone 欄は mledoze に**無い**（250 行中 0）ので **IANA `zone.tab`** から標準時に解く——夏時間は基準に**足す**ほうにしか動かないので `min(1月,7月)`（実測 Sydney +11/+10→+10・Santiago -3/-4→-4・Lord_Howe +11/+10:30→+10:30）。鍵は ISO 3166-1 ではなく `js/countries-ui.js` 自身が導く `ISO_A3_EH || ISO_A3 || ADM0_A3`＝**app が計算しない鍵は app が読めない鍵**。取りに行くのはカードを開いたとき 1 度だけ（起動費用 0）〉／⚠⚠⚠ **「答えが無い」を「空の答え」と同じ値にしない**〈`window.IntMapCountryFacts.state` は idle/loading/ready/failed の**値**で `.error` に理由が残る。**失敗は「試した」として記録されない**——旧コードは `s._enrichedTried=true` を**要求の前に**置いて結果を飲んだので、1 回の失敗がその国をセッション中引退させ、しかも何も残さなかった。ファイル自身も `withoutTimezone` で「行は在るが tz が無いコード」を名指す（IANA が区域を割り当てない **KOS** と無人の **HMD**）〉／⚠⚠ **生成器は 2 つのコード体系が食い違い始めたら止まる**〈NE 252 と mledoze 250 は**同じ 250 ではない**。差は宣言（`NE_ONLY` 13＝係争地・未定義地／`ISO_ONLY` 11＝親ポリゴンに畳まれる仏海外県等／`ALIAS` は UNK→KOS の 1 本＝**コソボは NE が KOS・mledoze が UNK・IntMap の CAPITAL 表が XKX の 3 通り**）で、実測と食い違えば**差分を印字して止まる**（初回実行で実際に止まった）。黙って何か国か足りないファイルを書かない〉／⚠⚠ **上流の誤りは緩めず訂正として書く**（`subcable-overrides` と同じ規則）〈バチカンは mledoze が `unMember:true`＝194 だが加盟国は **193**（教皇庁は常任オブザーバー・UN GA res. 58/314）。スリランカ→インドは **250 行で唯一の非対称**で、間にあるのはポーク海峡＝陸の国境ではない——**見つけたのは対称性検査**なので緩めずに訂正した〉／⚠⚠ **検査は「行が HTML に出るか」を見る**〈`tests/r451-checks` ⑥⑦⑧ は出荷される module を `new Function` で実行して `showCountryDetail()` を呼び `#cp-body` を読む。⑥ が見るのは行数ではなく**供給者が居ないときとの差**で、それが Neighbours / Timezones / UN member の 3 行と一致すること。① は**注釈を剥がしてから** restcountries を探す（剥がさないと自分の説明文を読んで緑になる＝#R345 の形）〉／⚠ **新しい spec ファイルは立てず `tests/r424.spec.js` に相乗り**〈`test-budget` は「77.0 min / ceiling 77.0 min」＝**天井ちょうど**で、規則は「足すなら同じだけ削れ」。すでに USA と DEU のカードを開いている段があるので assert 分だけ。待つのは**機構が止まったこと**（state が idle でも loading でもない）で、カードは 2 度描かれるから `.cm-row` が生えた時点で読むと enrich 前を読む〉／⚠ **発火しない 5 行は消した**（region / subregion / latlng / flag / population——#R424・#R443 の実測どおり NE の CONTINENT / SUBREGION はどの縮尺でも空にならず、LABEL_X/Y は全 feature にあり、ISO_A2 が空か POP_EST が 0 なのは NE 独自の係争地コードだけで落ちる先の ISO 行が無い）
 - **#R450** — **17の面が全部「want ∩ have」を数えていたので、`want` に無い `have` の行はどの分数にも入っていなかった**〈報告は4言語1件——`"Volcanoes (GVP Holocene, all 1,215)"` の訳が `ui.{fr,ko,zh,zh-hans}.js` に在り、その英語を出す場所が js/ のどこにも無い。実測すると **413 鍵・1,959 行**（inline 表 340・keyed `ui` 表 73）が同じ形で、9ファイル全部に散っていた〉／⚠⚠⚠ **「足りない」でも「英語のまま」でもなく、誰も見ていない行だった**——`scripts/i18n-report.mjs` の被覆は `[...want].filter(s=>have.has(s))` ＝**積集合**なので、余った行は**分子からも分母からも**落ちる。17面のどれもこの向きを持たず、`i18n-keyed-audit.mjs` が計算している `stale` は**ゲートが一度も読んでいなかった**／⚠⚠⚠ **`have − want` で実装してはならない。** `want` は解決できた call site の集合で、穴がある——`js/map-readout.js` は `const L=(...a)=>{ if(!_L) _L=window.IntMapLang.pick(…); return _L(...a); }` という**遅延ラッパ**を書いており、`bindsHelper()` はこれをヘルパと認めず `strictNames()` が `L` を shadowed 扱いにするので、**そのファイルの10サイトは全計器から見えない**。他の16面にとって穴は「翻訳を頼まれない文字列」＝過小計上だが、**この面では生きた行を消すことになる**（«Tropic of Cancer»・«Wind from the {d} …»）。だから問いを**弱くして健全に**した——「その鍵は出荷される木のどこかに書かれているか」。`js/lang-registry.js` は `pick()` の第0引数と `t()` の第1引数を**無加工で**添字にする（`fn.arr(tuple)` は `pick()` の適用）ので、どこにも書かれていない文字列は添字になりようがない／⚠⚠ **生テキスト検索だけでは 23 行を誤って殺した**——鍵は literal が**表す**文字列、ファイルが持つのは**綴られ方**。エスケープを含む呼び出しは両者が食い違う。コーパスは**生テキスト ∪ 出荷ファイルの全 string literal の値**（52,593 語）にした／⚠⚠ **書かれずに到達しうる唯一の経路は「組み立て」**——定数と変数を連結して鍵を作る call site が **107**。各サイトを生成しうる文字列の**パターン**（定数部を順に、間は任意一致）に変え、当たる鍵は**消さずに保留**として報告する。定数部が無い連結は**パターンにしない**（全鍵に当たって表ごと保留＝何も主張しない緑になる）。実測: 413 鍵のうち保留 **0**／⚠⚠ **ratchet ではなく 0 で締めた**——「1ラウンドで届かないゲートは次のラウンドに消される」（#R242）は**訳を書く**仕事についての規則で、ここは**誰も読まない行を消す**だけなので、測った 413 をその場で 0 にできた。413 という天井は根拠の無い数になっていた／⚠⚠ **消した行が戻れないことまで同じゲートの仕事**——`scripts/i18n-apply-inline.mjs` は `scripts/i18n/r*.json` を合流させ、`scripts/i18n-append-inline.mjs` が**locale に無い鍵を全部**挿入する（設計どおり）。staging 側にも同じ問いを掛け、**17ファイル 100 行**を落とした。掛けないと「次に翻訳を足した人が、自分の diff に無い理由で赤くなる」／⚠⚠⚠ **同じ欠陥がこのラウンドの最中に main へ入ってきた**——凡例は「…, all 1,215」→「Volcanoes (GVP Holocene)」(#R353) →「Volcanoes (Smithsonian GVP)」(#R432) と**2度改名され、そのたびに前の綴りが4言語ぶん残っていた**。2件目は rebase で取り込んだ側にあり、書いている最中のゲートが捕まえた＝**一度消すだけでは足りないことの実測**／⚠ 配信も減った: `ui.fr.js` 476→432 kB・`ui.ko.js` 356→325 kB・`ui.zh.js` / `ui.zh-hans.js` 各 383→353 kB（読者は自分の言語1本だけ取る）／⚠ 検査は node 6本。④が要——**遅延ラッパ越しにしか生きていない文字列**を名指しし、`want` に無いことと、それでも `live` と判定されることを両方主張する（`have − want` に「簡略化」されたら訳が壊れる前に赤くなる）。⑤は 40 パターンから実際に候補文字列を作って保留を確認、⑥はゲートブロックだけを見て `>` 比較が無いこと＝ratchet 化の禁止／⚠⚠⚠ **staging は1つではなく2つあり、最初の版は片方しか知らなかった**——`scripts/zh/*.json` は `build-ui-zh.mjs` が `ui.zh.js` を組み直す元で、keyed 側を `"ui:<name>"` と綴る。接頭辞を外さない走査には**構造的に見えない**。足したら **11ファイル 246 行**が出た＝「戻る経路を塞いだ」は**半分しか塞いでいなかった**／⚠⚠⚠ **既存の検査3本が、死んだ行が在ることを主張していた**（`r174`＝#R176 で撤去済みボタンの `droneBtn:` を9言語ぶん数える／`r223 ⑩`＝`ui >= 450` の床が 73 の死行を数えていた／`r335 ②`＝`社群 >= 6` と `tabCommunity:"社区"` が #R139 で撤去済みタブの行に乗っていた）。**同じ欠陥が1つ上の層に居た**——⇒ 定数を下げるのではなく、`r223` は **English の keyed 数から導出**、`r335` は**画面に出ている `ctxPostHere` を名指し**、`r174` は主張を**リポジトリ全体を測る門へ移した**（1鍵の標本には戻さない）
 - **#R446** — **記事リーダーの第2手段は「遅い」のではなく、構造上ぜったいに成功しない経路だった**〈`js/article-reader.js` の Strategy 2 は記事ページの HTML を `HOST.fetchViaProxy(item.link)` で取るが、`js/proxy-fetch.js` の唯一の受理条件は `isFeed(txt)` ＝ `<rss` か `<feed` を含むこと。記事 HTML は満たさない〉／⚠⚠⚠ **本番で実測（2026-08-25）——記事は届いていた。2回届いて、2回捨てられていた**: `corsproxy.io` が **200 · `text/html` · 217,509 B**（dw.com）を 3,362 ms で、**198,238 B**（aljazeera）を 1,087 ms で返し、どちらも「not feed」で破棄。corsfix 403・allorigins と codetabs は 8 s の締切で abort。race 全滅のあと bounded fallback が**同じページをキャッシュから取り直して**（8 ms / 21 ms）**もう一度捨てた**。**合計 20,313 ms / 20,355 ms で `null`**／⚠⚠⚠ **なぜ誰も気づかなかったか——第1段が「上流のエラーページ」で成功していた**。`openArticleInSidebar()` を本番のページ上で実際に走らせると、`r.jina.ai` は **200 · 572 B** を 5,826 ms で返し、その「Markdown Content:」は **DW 自身のエラー境界**（「Something went wrong.」／「We have been notified and are looking into it.」、jina の警告「This page maybe requiring CAPTCHA」付き）。**572 > 200 も 2 ブロックも通る**ので `ok:true` ＝ **他人のエラーメッセージを記事本文として描く**状態で出荷されていた。第1段が「成功」する限り第2段は走らないので、**第2段が構造上成功できないことは一度も画面に出なかった**／⚠⚠ **`opts.as:'html'` は「何でも通す」ではない**（#R216 が `news-relay` で「interstitial は feed ではない」を 502 にしたのと同じ規律）——**HTML 文書を名乗る**（中継の JSON エラー封筒 314 B をこれで落とす）・**`HTML_MIN_BYTES` 以上**（実測、中継と遮断ページは 314 B / **2,041 B**（#R216 の Google「Sorry…」）/ 7,594 B、実在記事は 198,238 B と 217,509 B）・**`<p>` か description の meta を持つ**。⚠ 「この中に記事があるか」は**呼び手の問い**で、呼び手は既にその判定を持っている／⚠⚠ **`opts.budgetMs` で ladder 全体に上限**（各試行の締切は呼び手の残り時間を超えない）。リーダーは `READER_BUDGET_MS` を両段で分け合い、**最悪 12 s + 20.3 s = 32 s の spinner が 20 s で必ず終わる**。既定 20 s なのでニュース取得側の呼び出しは 1 バイトも変わらない／⚠⚠ **第1段に `MIN_ARTICLE_CHARS` の床**（あのエラー境界は markdown で **79 文字**、同じ秒の aljazeera の抽出は 10,678 B）。第2段の「40字超の段落が2つ」は**わざと触っていない**——同じ問いの呼び手側の半分で、そちらは元から正しい／⚠ **直していないこと**: サイドバー内リーダーは今も UI から到達できない（`.btn-read` は #R11 以来 `window.open`。#R169・#R430 が製品の判断として据え置いた）。直したのは「呼ばれたときに壊れている」であって「呼ばれるようになった」ではない／⚠ 検査 6 本は **grep ではなく出荷モジュールを動かす**（`fetch` を差し替え、4 中継に実測した形の本文を答えさせる）。配線の 2 本は `codeOnly()` 越しで、**この検査自身の散文が針に当たらない**（#R345）
 - **#R443** — **国別カードの Region 行は `region / subregion` の2欄で、訳していたのは左半分だけだった**〈本番（R430・日本語）で USA が「北アメリカ / Northern America」、ドイツが「ヨーロッパ / Western Europe」。de / ru / es / fr / ko / zh-Hant / zh-Hans も同じ〉／⚠⚠⚠ **24語の訳はリポジトリに既に在って、カードがそのどちらも読んでいなかった**〈`js/atlas-examples.js` の `SUB` が22値（#R313 追記2 が「ブラウザの `Intl.DisplayNames` は M49 を22中0しか解決しない」を実測して出荷文字列にしたもの）、残る `Antarctica` と `Seven seas (open ocean)` は `_REGIONS` の鍵。`js/locales/ui.{fr,ko,zh,zh-hans}.js` は24値すべて inline 済み＝**欠け0**。⇒ **このラウンドは訳語を1語も書いていない**。2つ在った表を1本にして、カードに読み手を与えただけ〉／⚠⚠⚠ **語彙は書く前に実測した**〈`loadCountryData()` が取りに行く3縮尺で SUBREGION は**ちょうど24値**（ne_110m 177 features で22値・ne_50m 242 と ne_10m 258 が `Micronesia` と `Polynesia` を足す）。**空の SUBREGION は3縮尺とも0件**⇒ `enrichCountry()` の restcountries フォールバックはこの欄では実際には通らない——#R424 が CONTINENT について測ったのと同じ結論〉／⚠⚠ **写しを2本にせず1本にした**〈`window._imSubregionName(sub,lang)` を `js/countries-ui.js` の top-level に置き、`js/atlas-examples.js` はそこを読む。`tests/r424-checks ⑩` が `js/*.js` を数えて、この24語を宣言するファイルが**ちょうど1本**であることを検査する——面ごとの写しは「直るのが片方だけ」という、この欠陥そのものの形〉／⚠⚠⚠ **`export` にしたら、挙動を1バイトも変えていないのに16件が赤になった**〈`js/countries-ui.js` は複数の検査ハーネスが `new Function(src)` で**素のスクリプトとして実行**して本物の `_mkStat` と 10 m 昇格パスを走らせている（`tests/r375` ①〜⑦・`tests/r423` ①〜③・`tests/r392`・`tests/r337`）。`export` は全部に対して SyntaxError。同じファイルの `window._imCldrRegion` が同じ理由で window に載っていた⇒**前例のほうが正しかった**。⑩ が「script として parse できること」を直接検査する〉／⚠⚠ **訳すと大陸名と小地域名が同語になる組が4つある**〈`North America`/`Northern America`（13行）・`South America`/`South America`（41行）・`Antarctica`（3行）・`Seven seas (open ocean)`（12行）。**英語以外の8言語では完全一致**で、英語だけ左右が別語。⇒ 比べるのは**解決後の文字列**で英語の鍵ではない。英語で今も出ていた「South America / South America」も同時に直る〉／⚠⚠ **移した表を綴りで探していた門も、消さずに向け直した**〈`tests/r313b ②` は `const SUB=` と `SUB[s]` を needle にしていたので表が動いた瞬間に赤（[[intmap-r433-lessons]]＝退役した綴りは製品ではなく「それをまだ検査しているもの」に生き残る）。`Intl.DisplayNames` を使っていないことの検査は**ファイル全体ではなく解決器の本体**に限定した——移転先には `window._imCldrRegion` が居るので、全体に掛ければ必ず誤検出する〉／⚠ **画面の証拠は2か国で取る**〈`tests/r424.spec.js` の末尾に現代の行を足した。ja: USA「北アメリカ」(畳む)／DEU「ヨーロッパ / 西ヨーロッパ」(畳まない)、en: USA「North America / Northern America」／DEU「Europe / Western Europe」。**USA だけでは「訳した」と「畳んだ」が区別できない**〉
@@ -259,6 +260,146 @@
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
 
+## R451 — **カードが 16 行で「完全」に見えていたのは、`catch(e){}` が「取れなかった」を「無い」と同じ値にしていたから**
+
+**報告（本番 https://rwmqx7dwb5-arch.github.io/IntMap/ · build R443 · 2026-08-25 実測）**——
+`js/countries-ui.js` の `enrichCountry()` が国別カードのたびに投げる
+`https://restcountries.com/v3.1/alpha/<ISO3>?fields=…` が、**USA / DEU / ARG / JPN / IDN の 5 か国 5 件とも**
+
+```
+Access to fetch at 'https://restcountries.com/v3.1/alpha/USA?fields=…' from origin
+'https://rwmqx7dwb5-arch.github.io' has been blocked by CORS policy: No
+'Access-Control-Allow-Origin' header is present on the requested resource.
+```
+
+で失敗する。`catch(e){}` がそれを飲むので、**画面には何も出ない**。
+
+### ⚠⚠⚠ CORS は症状で、病名ではない——API は撤去されている
+
+着手して最初に測ったのは「本当に ACAO が無いのか」ではなく「**そもそも何が返るのか**」だった。
+
+| 叩いた先 | 返り |
+|---|---|
+| `/v3.1/alpha/USA?fields=…` | **301** → `https://files-03.restcountries.com/countries.00/legacy.json?fields=…` |
+| `/v3.1/all?fields=…` | **301** → 同じ 1 枚 |
+| **`/v5/alpha/USA`** | **301** → 同じ 1 枚 |
+| その 1 枚（261 バイト） | `{"success":false,"errors":[{"message":"This API version has been deprecated. Please … migrate to our new version (v5)."}]}` |
+
+**ACAO が無いのは 301 のほうである**（リダイレクト先の静的ファイルには `access-control-allow-origin: *` が
+付いている——だから「CORS の設定漏れ」に見えた）。そして **`/v5` も同じ廃止通知へ 301 される**：
+公式の移行手順は「URL の版を `/v5` に書き換え、`Authorization: Bearer <key>` を送れ」であり、
+**アカウント登録と API キーが要る**。
+
+⇒ **依頼が挙げた 3 択のうち 1 つは、着手前に消えた。**
+「`_shared/relay-guard.js` が守る Edge Function で中継する」は、**中継される中身が廃止通知**である。
+キーを取れば別だが、それは (a) 本 repo が public であること (b) アカウント作成そのものが Claude の
+禁止事項であること、そして何より (c) **1 日に一度も変わらない 6 つの事実のために鍵付きの実行時依存を
+増やすこと**を意味する。
+
+### ⚠⚠⚠ そして失われていたのは、報告された 2 行では済まなかった
+
+`enrichCountry()` は **9 つの欄**を供給していた。`sec()` は値が null の行を落とすので、
+USA のカードは **16 行**で、Neighbours 行も Timezones 行も**無いまま完全に見えていた**——
+これが報告の中身である。だが `capital` / `currency` / `languages` の 3 つは
+**`js/tables.js` の手書き表の穴埋め**で、その表はコード集合を覆っていない。
+`ne_10m_admin_0_countries.geojson`（252 コード）に対して実測：
+
+| 欄 | 手書き表に無いコード数 | 例 |
+|---|---|---|
+| `CAPITAL` | **60** | PSE, KOS, DOM, TGO, GRL, NCL, PRI, BHR, MAC, ジャージー, フェロー … |
+| `CURRENCY` | **100** | モナコ, アンドラ, サンマリノ, バチカン, バーレーン, エスワティニ, リベリア, アンゴラ … |
+| `LANGS` | **115** | ウルグアイ, エストニア, ラトビア, 北マケドニア, モンテネグロ, ホンジュラス, ベリーズ, ブータン … |
+
+**それらのカードは API が死んで以来ずっと Capital / Currency / Languages に「—」を出していた。**
+同じ 1 つの原因で、誰も報告していない。⇒ このラウンドは「消えた 2 行を戻す」ではなく
+**「供給者を戻す」**をやった。行を足していない——`enrichCountry()` の代入は同じ優先順位のままである。
+
+### 直し方——**取りに行くのをやめて、同梱する**
+
+陸の国境も、首都も、標準時のオフセットも、国連加盟も、**10 年に一度動くかどうか**の事実である。
+実行時に第三者へ要求を出して得ていたものは、**失敗する方法**だけだった。
+
+- **`scripts/build-country-facts.mjs`**（新規）がビルド時に `data/country-facts.json`（239 コード・63.7 KB）を作る。
+  - **mledoze/countries（ODbL 1.0）** — `borders` / `unMember` / `independent` / `demonyms.eng` /
+    `capital` / `currencies` / `languages` / `area`。
+    ⚠ **これは restcountries 自身の上流である**（restcountries はこのファイルの前に立つサーバだった）
+    ⇒ **カードに出る値はサーバが死ぬ前と同じ値**であって、別のデータに乗り換えたのではない。
+  - **IANA time-zone database（public domain）** — `tz`。mledoze に timezone 欄は**無い**（実測 250 行中 0）ので、
+    `zone.tab` の各区域を**標準時**のオフセットに解いて集合にする。夏時間は基準に**足す**ほうにしか
+    動かないので `min(1月, 7月)` が標準時——実測 `Australia/Sydney` +11/+10 → +10、
+    `America/Santiago` -3/-4 → -4、`Australia/Lord_Howe` +11/+10:30 → +10:30。
+  - **Natural Earth admin-0（public domain）** — **鍵**。ISO 3166-1 ではなく
+    `js/countries-ui.js` 自身が導く `ISO_A3_EH || ISO_A3 || ADM0_A3` で引く。
+    **app が計算しない鍵は、app が読めない鍵**である。
+- ブラウザは同一 origin の `data/country-facts.json` を、**カードを開いたときに 1 度だけ**取る（起動費用は 0）。
+- 出典は `js/reference-data.js` で付け替えた（`REST Countries` を落とし、上の 2 本を「build time only」で掲げる。
+  ODbL は義務であって礼儀ではない——OpenStreetMap の行と同じ扱い）。
+
+### ⚠⚠⚠ 「答えが無い」を「空の答え」と同じ値にしない（依頼 §3）
+
+- `window.IntMapCountryFacts.state` は `idle` / `loading` / `ready` / `failed` の**値**で、
+  `.error` に理由が残り、失敗は `console.error` に出る。
+- **失敗は「試した」として記録されない。** 旧コードは `s._enrichedTried=true` を**要求の前に**置いて
+  結果を飲んでいたので、1 回の失敗がその国をセッション中ずっと引退させ、しかも**何も残さなかった**。
+  いまは `state!=='ready'` なら印を付けずに返る＝次のカードで retry する。
+- **ファイル自身が「無い」を宣言する。** `withoutTimezone` が「行は在るが `tz` が無いコード」を名指す
+  （IANA が区域を割り当てていない **KOS** と、無人の **HMD** の 2 件）。黙って欠けるのを禁じる側の検査が ④。
+
+### ⚠⚠ 生成器は、2 つのコード体系が食い違い始めたら**止まる**
+
+Natural Earth は 252 コード、mledoze は 250 で、**同じ 250 ではない**。差は宣言されている：
+
+- `NE_ONLY`（13）— Natural Earth 独自の係争地・未定義地のコード（Bir Tawil, Spratly, Siachen, Scarborough …）
+- `ISO_ONLY`（11）— Natural Earth が親のポリゴンに畳み込む ISO コード（フランス海外県 5, Svalbard, Tokelau …）
+- `ALIAS = { UNK: 'KOS' }` — **コソボは実在の国**で、NE は `KOS`・mledoze と ISO ユーザー割当は `UNK`・
+  IntMap 自身の `CAPITAL` 表は `XKX`（**1 つの場所に 3 通りの綴り**）。この 1 行が無いとコソボのカードだけが
+  黙って 4 欄とも失う——**このラウンドが消した欠陥そのものの形**。
+
+実測と宣言が食い違えばビルドが**差分を印字して止まる**（初回実行で実際に止まった：`ALIAS` を足したので
+`KOS` はもう NE 側の余りではなかった）。**黙って何か国か足りないファイルを書かない**ことが要点である。
+
+### ⚠⚠ 上流の誤りは、緩めるのではなく**訂正として書く**（`data/subcable-overrides.json` と同じ規則）
+
+- **バチカン** — mledoze は `unMember:true` を **194 行**に付ける。国連加盟国は **193**。教皇庁は
+  常任オブザーバー国であって加盟国ではない（UN GA res. 58/314）。世界地図が「国連加盟: はい」と
+  出すのは見える事実誤りなので、理由付きで訂正した（`UN_FIX`）。生成器は加盟数が 193 でなければ止まる。
+- **スリランカ** — `LKA.borders` が `IND` を持ち、`IND.borders` は `LKA` を持たない。**250 行で唯一の非対称**。
+  スリランカは島であり、間にあるのは**ポーク海峡**（最狭部 ～30 km）で陸の国境ではない＝インド側が正しい。
+  ⚠ **見つけたのは対称性検査**であって、データを読んだからではない。だから検査を緩めずに訂正した。
+
+### 検査
+
+- **`tests/r451-checks.test.mjs`（9 本・`test:checks` に登録＝push の前に走る）**
+  ① 撤去された `restcountries` を**実行コード**（`js/` `src/` `supabase/functions/` `index.html`）が
+  1 か所も名指さない。⚠ 注釈を剥がしてから探す——このファイルにも `js/countries-ui.js` にも
+  経緯として綴りが書いてあるので、剥がさなければ**自分の説明文を読んで緑になる**（#R345 の形）。
+  ② 出典の付け替え。③ 同梱ファイルの中身（`tz` は `UTC±HH:MM`・隣国は必ずこのファイルの鍵・
+  **対称**・国連 193・USA は `CAN, MEX`・ウルグアイの言語とモナコの通貨とバーレーンの首都が埋まる）。
+  ④ `withoutTimezone` と実体が**両方向**で一致。⑤ classic script として parse できる（#R443 が 16 件で払った代金）。
+  ⑥⑦⑧ **出荷される module を実行して、カードの HTML を読む**——`js/tables.js` → `js/country-extent.js`
+  → `js/countries-ui.js` を `new Function` で走らせ、`showCountryDetail()` を呼び、`#cp-body` を読む。
+  ⚠ ⑥ が見るのは**行数**ではなく「**供給者が居ないときと比べて増えた行**」で、それが
+  `['Neighbours','Timezones','UN member']` と一致すること——報告はまさにその差だった。
+  ⑧ は取得を失敗させて `state==='failed'` / `error` が残る / **`_enriched` が付かない** / 次のカードで
+  もう一度 fetch が飛ぶ、の 4 つを実行して確かめる。⑨ 綴り・場所・作り直す手順の一致。
+- **`tests/r424.spec.js` の末尾（ブラウザ）** — すでに USA と DEU のカードを開いている段に相乗り。
+  DEU と USA の 3 行と `IntMapCountryFacts.state === 'ready'` を読む。
+  ⚠ **新しい spec ファイルは立てなかった**——`scripts/test-budget.mjs` は
+  「whole suite 77.0 min / ceiling 77.0 min」で**天井ちょうど**であり、規則は「足すなら同じだけ削れ」。
+  同じカードをもう一度開くためだけに分単位を買うより、開いている所で読むほうが正しい。
+  ⚠ **待つのは「機構が止まったこと」**（`state` が `idle` でも `loading` でもなくなる）であって
+  「Neighbours が出ること」ではない。カードは 2 度描かれるので、`.cm-row` が生えた時点で読むと
+  enrich 前の HTML を読む（#R399/#R435 の規則）。
+- 生成器の `--check` は上流と byte 比較するが、**ネットワークが要るので `npm test` には入れない**
+  （`npm run build:countryfacts` の旗。同梱ファイルの検証は上の ①〜⑨ が**オフラインで**行う）。
+
+### 残していない疑問
+
+`region` / `subregion` / `latlng` / `flag` / `population` の 5 つのフォールバック行は**消した**——
+データが無いからではなく、**発火しないから**である。#R424 と #R443 が測ったとおり Natural Earth の
+`CONTINENT` / `SUBREGION` はどの縮尺でも空にならず、`LABEL_X` / `LABEL_Y` は全 feature にあり、
+`ISO_A2` が空（＝旗のフォールバック）か `POP_EST` が 0（＝人口のフォールバック）なのは
+**Natural Earth 独自の係争地コードだけ**で、それらには落ちる先の ISO 行が無い。mledoze に population 欄は無い。
 ## R450 — **17の面が全部「want ∩ have」を数えていたので、`want` に無い行はどの分数にも入っていなかった**
 
 **報告（#R432 の調査中に見つかった別件）**: `js/locales/ui.{fr,ko,zh,zh-hans}.js` の4本に
