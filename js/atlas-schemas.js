@@ -183,7 +183,6 @@ export function makeAtlasSchemas() {
       'panel.workspace': { type: 'object', properties: { on: bool(), mode: str(), action: str(), state: str() } },
       'panel.shortcuts': noArgs('shortcuts'),
       'map.objectList': noArgs('objects'),
-      'sim.slopeAspect': { type: 'object', properties: { mode: str(), what: str() } },   /* `slope`; `mode`/`what` choose slope vs aspect */
       'sim.rfCoverage': { type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), height: num(0), antennaHeight: num(0), frequency: num(0), freq: num(0) }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] },
       'sim.sunPosition': { type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), date: str(), datetime: str(), time: str() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] },   /* `sun` */
       'sim.terrainWater': { type: 'object', properties: { place: str(), at: str(), location: str(), lng: lng(), lat: lat(), rainMm: num(0), waterM3: num(0), flowM3s: num(0), raiseM: num(), lowerM: num(), radiusM: num(0), mode: str(), pour: one('once', 'cont', 'continuous', 'stop'), pourRateM3s: num(0), timeSpeed: num(0), resetTerrain: bool() }, anyOf: [{ required: ['place'] }, { required: ['at'] }, { required: ['location'] }, { required: ['lat', 'lng'] }] },

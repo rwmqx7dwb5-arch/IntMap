@@ -4223,11 +4223,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R167) moved to js/map-extras.js — see Architecture.md §3.1. */
   window.IntMapModules.terrain(IM_HOST);
 
-  /* ===== (#R89) SLOPE / ASPECT ANALYSIS ("傾斜・方角解析") — colour-codes terrain steepness (slope angle) or the
-     direction each slope faces (aspect), computed from the real DEM over the current view. Disaster / hiking /
-     construction / military use. Keyless (terrarium DEM). Recomputes on pan/zoom. ===== */
-  /* (#R166) moved to js/sims.js — see Architecture.md §3.1. */
-  window.IntMapModules.slope(IM_HOST);
+  /* ⚠ (#R469) `slope` is gone — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」. The layer row, its
+     legend, the Atlas capability and its dispatch case went with it; see the note in js/sims.js. */
 
   /* ⚠ (#R296) `rf` is gone — 「電波・通信圏と見通し線解析を統合して」. Its physics was a strict
      subset of js/viewshed.js, which is the merged tool; the TX power and link budget moved there. */

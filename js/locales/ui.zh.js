@@ -125,8 +125,8 @@ window.IntMapLang.define('zh', {
     "lyrGrpAgri":"農業與糧食",   /* (#R261) */
     "lyrGrpHazard":"災害與緊急",
     "lyrGrpIndic":"指標與疊圖",
-    "lyrGrpMaritime":"海洋與海事",
-    "lyrGrpOrbit":"太空與軌道",
+    "lyrGrpMaritime":"海洋",
+    "lyrGrpOrbit":"太空",
     "lyrGrpOthers":"Beta",
     "lyrGrpOthersReal":"其他",
     "lyrGrpTerrain":"地形與高程",
@@ -377,8 +377,6 @@ window.IntMapLang.define('zh', {
     '<1h ago': "1 小時內",   /* atlas-console.js */
     '−10y': "−10年",   /* news-timeline.js */
     '−5y': "−5年",   /* news-timeline.js */
-    '▸ Show aspect (direction)': "▸ 顯示坡向",   /* sims.js */
-    '▸ Show slope (steepness)': "▸ 顯示坡度",   /* sims.js */
     /* seismic.js */
     '⚠ Capped at 600 results — zoom into a sub-region for the rest': "⚠ 已限制為 600 筆結果 — 請放大到較小區域查看其餘",   /* atlas-console.js */
     '⚠ Wikidata is community-maintained, so coverage is uneven: a company nobody has entered is simply absent, and «the largest» means «the largest Wikidata has a revenue for». An ownership graph is not a market-share or influence graph.': "⚠ Wikidata 由社群維護，因此涵蓋程度並不平均：沒有人建檔的公司就是不存在於此，而「最大」的意思是「Wikidata 有營收資料者之中最大」。持股關係圖不等於市佔率或影響力圖。",   /* industry-web.js */
@@ -686,7 +684,6 @@ window.IntMapLang.define('zh', {
     'Compute propagation': "計算傳播",   /* tsunami.js */
     'Compute the intensity map': "計算震度分布",   /* seismic.js */
     'Compute the next pass from here': "計算下一次由此經過的時刻",   /* satellite-detail.js */
-    'computed from the real elevation model for the current view; pan/zoom to update.': "依目前畫面由實測高程模型計算；平移或縮放可更新。",   /* atlas-console.js */
     'Computed from this app’s own ephemeris. Solar-eclipse local circumstances (where on Earth it is total) are not computed.': "由本應用自有的星曆計算。日食的地面觀測條件（地球上何處為全食）不在計算範圍內。",   /* space.js */
     'Computing': "計算中",   /* tsunami.js */
     'Computing sightlines…': "正在計算視線…",   /* viewshed.js */
@@ -954,7 +951,6 @@ window.IntMapLang.define('zh', {
     'fixes': "次修正",   /* atlas-console.js */
     'FLAPS': "襟翼",   /* flight-sim.js */
     'Flat': "平面",   /* workspace.js */
-    'flat → steep: green · yellow · orange · red (° gradient)': "平緩→陡峭：綠・黃・橙・紅（角度梯度）",   /* sims.js */
     'Flat map': "平面地圖",   /* atlas-console.js */
     'Flight': "飛行",   /* aircraft-detail.js */
     'Flight could not start': "無法開始飛行",   /* atlas-console.js */
@@ -1968,11 +1964,7 @@ window.IntMapLang.define('zh', {
     'Sky from': "天空來自",   /* atlas-console.js */
     'Sky from here': "從此處看到的天空",   /* night-sky.js */
     'Slant range': "斜距",   /* satellite-detail.js */
-    'Slope / aspect': "坡度／坡向",   /* sims.js */
-    'Slope aspect (direction each slope faces)': "坡向（每個坡面朝向的方位）",   /* atlas-console.js */
-    'slope direction (hue = compass bearing it faces)': "坡向（色相＝其朝向的方位）",   /* sims.js */
     'slope over': "坡度量測距離",   /* seismic.js */
-    'Slope steepness (angle)': "坡度（角度）",   /* atlas-console.js */
     'Slower': "較慢",   /* space.js */
     /* sims.js */
     /* atlas-console.js */
@@ -6051,5 +6043,9 @@ window.IntMapLang.define('zh', {
   "Create account": "建立帳號",
   "Log In": "登入",
   "Password (min. 8 chars, incl. a number)": "密碼（至少 8 個字元，須含數字）",
+  " Holocene volcanoes": " 座全新世火山",
+  "Default": "預設",
+  "Clean": "清爽",
+  "{n} more": "其他 {n} 項",
   }
 });

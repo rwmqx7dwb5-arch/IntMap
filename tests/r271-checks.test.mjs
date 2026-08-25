@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GROUPS, byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -236,15 +237,13 @@ test('R271 ⑥ placing a source extends the basin instead of rebuilding the grid
 /* ── ⑦ the taxonomy ─────────────────────────────────────────────────────────────────────────── */
 test('R271 ⑦ every layer id is in exactly one group, and the moved rows are where they were sent', () => {
   const s = read('js/data-layers.js');
-  const m = /const GROUPS=\[([\s\S]*?)\n        \];/.exec(s);
-  assert.ok(m, 'GROUPS must be a literal');
-  const body = m[1].replace(/\/\*[\s\S]*?\*\//g, ' ');
-  const groups = {};
-  const re = /\['(lyrGrp\w+)',\[([^\]]*)\]\]/g;
-  let g;
-  while ((g = re.exec(body))) {
-    groups[g[1]] = g[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
-  }
+  /* ⚠ (#R469) THE OLD PARSE WAS A REGEX AND IT DIED THE DAY THE TUPLE GREW A THIRD ELEMENT.
+     `/\['(lyrGrp\w+)',\[([^\]]*)\]\]/` needs the id list to be followed immediately by `]]`;
+     #R469 gave every shelf a count of the rows the reader named, and the pattern matched NOTHING —
+     so this check reported 「the panel has more than a handful of shelves」 about a panel with
+     eighteen of them. A regex over a literal asks about spelling. The shared reader evaluates the
+     literal and answers about the value, which is the question every assertion below is asking. */
+  const groups = byKey;
   assert.ok(Object.keys(groups).length >= 15, 'the panel has more than a handful of shelves');
   /* ⚠ an id in two groups renders only in the last one — `order.push` MOVES the element (#R255) */
   const seen = new Map();
@@ -274,7 +273,11 @@ test('R271 ⑦ every layer id is in exactly one group, and the moved rows are wh
     assert.equal(where(id), 'lyrGrpEconomy', id + ' measures income, labour or trade');
   }
   assert.equal(where('eez'), 'lyrGrpPolitics', 'an EEZ is a jurisdiction drawn on water');
-  assert.equal(where('slope'), 'lyrGrpTerrain', 'slope is computed from the elevation model');
+  /* ⚠ (#R469) THE SLOPE ROW IS NOT ON A SHELF BECAUSE THERE IS NO SLOPE ROW. #R273 promoted it
+     here out of Beta on the argument that it is computed from the elevation model; 「⛰ 傾斜・斜面方向
+     レイヤーは完全削除。」 removed the layer itself. Asserting a shelf for it would be asserting that a
+     deleted feature is correctly filed. */
+  assert.equal(where('slope'), undefined, 'the slope/aspect layer is deleted, not re-shelved');
   assert.equal(where('webcams'), 'lyrGrpTransport', 'the camera feeds are road and traffic cameras');
   /* ⚠ (#R273) 3-D buildings LEFT the shelves entirely: it is a way of DRAWING the map, like Roads
      and Place names, and it now sits with the always-on view switches at the top — the same move
@@ -290,20 +293,25 @@ test('R271 ⑦ every layer id is in exactly one group, and the moved rows are wh
   }
   assert.ok(!(groups.lyrGrpIndic || []).length, 'the one-row shelf is empty; its key is kept');
   const code = codeOnly(s);
-  assert.match(code, /rowFor\('tz'\)/, 'the time-zone overlay joins the always-on switches');
-  /* ⚠ …AND IT HAS TO BE MARKED PLACED, or the safety sweep files it under Beta and `order.push`
-     MOVES it there. MEASURED on the built page before this line existed: 🕒 タイムゾーン came out in
-     Beta, i.e. pushing it into the always-on block had done nothing at all. Same shape as #R233's
-     note about the day/night row, one row later. */
-  assert.match(code, /if\(tzRow\) placed\.add\(tzRow\)/,
-    'a row pushed into the always-on block must be marked placed, or the sweep re-files it');
+  /* ══ ⚠⚠ (#R469) THIS ROW WENT BACK, BY INSTRUCTION — 「基本表示の『タイムゾーン（現在時刻）』
+     レイヤーは、基本表示ではなく普通のレイヤーにして。」 #R271 filed it with the always-on switches on
+     the argument that a live-clock overlay of the whole planet is a view of the map rather than data
+     about a subject; the reader has now said it is a layer. It is a row of 政治・統治 — time zones are
+     a thing governments legislate — and `window.IntMapBasicLayers` no longer subtracts it, so
+     「表示中のレイヤー」 counts it, which is what being a layer means.
+     ⚠ THE PROPERTY #R271 WAS DEFENDING SURVIVES, POINTING THE OTHER WAY. Its point was that a row is
+     claimed EXACTLY ONCE: pushed into the always-on block without `placed.add`, the safety sweep
+     re-filed it and `order.push` MOVED it — MEASURED then, 🕒 タイムゾーン came out in Beta. So the
+     assertion is now that the block does NOT claim it while a group does; one claim too many and one
+     claim too few fail the same way. */
+  assert.equal(where('tz'), 'lyrGrpPolitics', 'the time-zone overlay is a row of a category now');
+  assert.ok(!/rowFor\('tz'\)/.test(code), '…and the always-on block does not also claim it');
+  assert.ok(!/tzRow/.test(code), '…so there is no tz row left for the block to mark placed');
   assert.match(code, /if\(nsRow\) placed\.add\(nsRow\)/, '…the same way the day/night row is');
 });
 
 test('R271 ⑦ every group key the panel uses has a heading in all nine languages', () => {
-  const s = read('js/data-layers.js');
-  const m = /const GROUPS=\[([\s\S]*?)\n        \];/.exec(s);
-  const keys = [...m[1].replace(/\/\*[\s\S]*?\*\//g, ' ').matchAll(/\['(lyrGrp\w+)'/g)].map((x) => x[1]);
+  const keys = GROUPS.map(([k]) => k);   /* (#R469) the value, not the spelling — see ⑦ above */
   const files = ['en', 'jp', 'de', 'ru', 'es', 'fr', 'ko', 'zh', 'zh-hans'];
   for (const f of files) {
     const src = read('js/locales/ui.' + f + '.js');

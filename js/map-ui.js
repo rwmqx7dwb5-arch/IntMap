@@ -581,8 +581,28 @@ window.IntMapModules.layerSidebar=function(HOST){
            «selected» reads identically whichever kind of card it is. The section heading keeps its
            16 px of air above and gives up its own bottom margin to the flex gap, so the first card
            does not sit 16 px further down than the tiles' first row. */
-        +'#layer-sidebar-r .lst-tools,.lsr-mount .lst-tools{margin-top:18px;display:flex;flex-direction:column;gap:8px;}'
-        +'#layer-sidebar-r .lst-tools>.lst-sech,.lsr-mount .lst-tools>.lst-sech{margin-bottom:0;}'
+        /* (#R469) the gap moved onto the collapsible body so the section can be closed without the
+           wrapper still reserving a row of empty space where the tools were. */
+        +'#layer-sidebar-r .lst-tools,.lsr-mount .lst-tools{margin-top:18px;display:block;}'
+        +'#layer-sidebar-r .lst-toolbody,.lsr-mount .lst-toolbody{display:flex;flex-direction:column;gap:8px;}'
+        +'#layer-sidebar-r .lst-toolbody.closed,.lsr-mount .lst-toolbody.closed{display:none;}'
+        +'#layer-sidebar-r .lst-tools>.lst-sech,.lsr-mount .lst-tools>.lst-sech{margin-bottom:8px;}'
+        /* ══ (#R469) 「その他N件」 — the fold inside a category ═══════════════════════════════════════
+           Full-width in a 3-column grid, and quiet: it is a way IN to rows the reader did not name,
+           not a control competing with the layers themselves. The chevron is the same glyph the
+           section headers use, so «this opens» reads the same in both places. */
+        +'#layer-sidebar-r .lst-more,.lsr-mount .lst-more{grid-column:1/-1;width:100%;box-sizing:border-box;display:flex;align-items:center;gap:7px;'
+          +'min-height:34px;padding:6px 10px;margin-top:2px;border:1px dashed rgba(128,128,128,0.28);border-radius:10px;'
+          +'background:transparent;color:var(--text-muted);font-size:11.5px;font-weight:500;cursor:pointer;text-align:left;'
+          +'transition:background .13s ease,border-color .13s ease,color .13s ease;-webkit-tap-highlight-color:transparent;}'
+        +'#layer-sidebar-r .lst-more:hover,.lsr-mount .lst-more:hover{border-color:rgba(128,128,128,0.45);color:var(--text-main);background:var(--input-bg);}'
+        /* ⚠ the section headers' chevron rule is scoped to `.lst-sech`, so this one needs the geometry
+           of its own — a `.lst-chev` inside `.lst-more` would otherwise be an unstyled empty span. */
+        +'#layer-sidebar-r .lst-more .lst-chev,.lsr-mount .lst-more .lst-chev{flex:0 0 auto;width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .18s ease;position:relative;top:0;}'
+        +'#layer-sidebar-r .lst-more.open .lst-chev,.lsr-mount .lst-more.open .lst-chev{transform:rotate(-135deg);top:2px;}'
+        /* (#R469) the three exclusive 基本表示 choices. `role=radio` + the switch the rows already use;
+           only one carries `.on`, because `IntMapBaseDisplay` only ever names one. */
+        +'#layer-sidebar-r .lst-tile.lst-mode .lst-nm,.lsr-mount .lst-tile.lst-mode .lst-nm{font-weight:600;}'
         +'#layer-sidebar-r .lst-toolrow,.lsr-mount .lst-toolrow{width:100%;box-sizing:border-box;display:flex;align-items:center;gap:10px;'
           +'min-height:46px;padding:9px 12px;border-radius:12px;border:1px solid rgba(128,128,128,0.18);'
           +'background:var(--card-bg);color:var(--text-main);font-size:12.5px;font-weight:500;cursor:pointer;text-align:left;'
@@ -614,6 +634,19 @@ window.IntMapModules.layerSidebar=function(HOST){
            undefined and the fallback keeps #R115's rule («Active layers is OPAQUE — never transparent»)
            byte-for-byte. */
         +'#layer-sidebar-r #layer-active-section{position:sticky;top:0;bottom:auto;background:var(--panel-bg,var(--card-bg));z-index:6;margin:0 -8px 1px;padding:5px 7px 3px;border-radius:0;}'   /* (#R115) opaque — never transparent */
+        /* ══ ⚠⚠⚠ (#R469) 「フロストガラス時に、『表示中のレイヤー』の背景の色が濃すぎ。」 ═══════════════
+           MEASURED, frosted + dark, same moment: this bar computed to `rgb(28,28,30)` — FULLY OPAQUE —
+           sitting on a panel computed at `rgba(28,28,30,0.85)` with a 25 px blur. The rule above is why:
+           `--panel-bg` is declared only under `body:not(.sidebar-translucent):not(.sidebar-glass2)`
+           (css/intmap.css), so in the two frosted appearances the fallback fires and paints the one
+           strip of this panel that never lets the map through.
+           ⚠ THE ANSWER IS THE PANEL'S OWN MATERIAL, NOT «MORE TRANSPARENT». `--sidebar-bg` is exactly
+           what `#layer-sidebar-r` itself is painted with two rules above, so the bar stops being a
+           darker slab and becomes the same surface — and it keeps its OWN backdrop-filter, which is what
+           preserves #R115's actual requirement: the rows scrolling underneath a sticky bar must not
+           read through it. A blur over a translucent fill hides them; dropping the fill would not.
+           ⚠ Solid mode is untouched — `--panel-bg` is declared there and the rule above still wins. */
+        +'body.sidebar-translucent #layer-sidebar-r #layer-active-section,body.sidebar-glass2 #layer-sidebar-r #layer-active-section{background:var(--sidebar-bg);backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));-webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));}'
         +'#layer-sidebar-r #layer-active-section .active-lyr-chips{display:none;}'
         +'#layer-sidebar-r .lsr-body{padding-top:0;}'   /* (#R106) flush the Search box to the Active-layers bar (was a 2px see-through seam) */
         /* (#R63) left-style edge toggle — mirrors .btn-toggle-sidebar */
@@ -690,7 +723,16 @@ window.IntMapModules.layerSidebar=function(HOST){
           if(cb){ const sp=ch.querySelector('span:not(.lyr-sw):not(.lfc-sw):not(.lsr-thumb)');
             const name=((sp?sp.textContent:ch.textContent)||'').replace(/★/g,'').replace(/\s+/g,' ').trim();
             const id=cb.id||cb.getAttribute('data-layer')||'';
-            if(name&&id) out.push({cb,id,name,sec,secBeta,gk:cb.getAttribute('data-layer')||''}); }
+            /* ⚠ (#R469) a row whose checkbox is in `IntMapHiddenLayerRows` is NOT a row of this browser.
+               The box stays in the registry so the layer, its legend, the session snapshot and Atlas's
+               door to it all keep working — it simply has no tile. 国境・国情報 (the reader asked for the
+               row) and 等高線 (now a switch inside three legends) are the two. */
+            const hidden=(window.IntMapHiddenLayerRows||[]).indexOf(id)>=0;
+            /* (#R469) 「以下に指定されたレイヤー以外は、『その他N件』と、各カテゴリの中で畳む」 — the mark is
+               written onto the ROW by reorganizeLayerPanel, which is where the reader's order lives. */
+            const rowEl=(ch.closest&&ch.closest('.lyr-row'))||ch;
+            const rest=!!(rowEl.getAttribute&&rowEl.getAttribute('data-lyr-rest')==='1');
+            if(name&&id&&!hidden) out.push({cb,id,name,sec,secBeta,rest,gk:cb.getAttribute('data-layer')||''}); }
           continue; }
         if(ch.children&&ch.children.length) walk(ch); } };
       walk(dd); return out; }
@@ -772,6 +814,41 @@ window.IntMapModules.layerSidebar=function(HOST){
       if(!sheet) return true;                       /* desktop sidebar / anything not in a sheet */
       return sheet.classList.contains('show');
     }catch(_){ return true; } }
+    /* ══ ⚠⚠⚠ (#R469) 基本表示 = デフォルト / クリーン / カスタム ═════════════════════════════════════
+       「もとは基本表示があった場所をデフォルト/クリーン/カスタムとして、カスタムを選択すれば今の基本表示の
+         一覧が出てくるように。…複数選択ではないです。どれか一つ。どれかをオンにしたら、それまでのやつが
+         勝手にトグルがオフになる形式に。」
+       ⚠ THE STATE IS NOT HERE. `window.IntMapBaseDisplay` (js/data-layers.js) owns the mode, applies it
+       to the eleven checkboxes and demotes itself to 「カスタム」 the moment anything at all disagrees.
+       These rows are a VIEW of it — the same relationship #R232 gave the day/night row to
+       `IntMapNightSide`, and for the same reason: one quantity, one owner. `syncModes` re-reads that
+       owner, so a mode changed from anywhere lands here without this file keeping a second copy. */
+    const BD=()=>window.IntMapBaseDisplay;
+    const MODE_LBL={
+      'default':()=>T('Default','デフォルト','Standard','По умолчанию','Predeterminado'),
+      'clean'  :()=>T('Clean','クリーン','Klar','Чисто','Limpio'),
+      'custom' :()=>T('Custom','カスタム','Benutzerdefiniert','Свой','Personalizado') };
+    /* (#R469) 「その他N件」 — the count is part of the sentence, so it is substituted, not appended. */
+    const LA_MORE=(n)=>String(T('{n} more','その他{n}件','{n} weitere','ещё {n}','{n} más')).replace('{n}',n);
+    function modeRows(grid){ ['default','clean','custom'].forEach(m=>{
+      const d=document.createElement('div'); d.className='lst-tile lst-row lst-mode'; d.dataset.mode=m;
+      d.setAttribute('role','radio'); d.setAttribute('aria-checked','false');
+      const nm=document.createElement('div'); nm.className='lst-nm'; nm.textContent=MODE_LBL[m]();
+      d.dataset.nm=(MODE_LBL[m]()+' '+m).toLowerCase();
+      const sw=document.createElement('span'); sw.className='lst-sw'; sw.appendChild(document.createElement('i'));
+      d.appendChild(nm); d.appendChild(sw);
+      d.addEventListener('click',()=>{ try{ const B=BD(); if(B) B.set(m); }catch(_){} });
+      grid.appendChild(d); }); }
+    /* ⚠ The eleven rows are shown or hidden by `filterTiles`, not by a CSS rule: that function writes an
+       inline `display` on every tile, and an inline value beats a stylesheet — two mechanisms deciding
+       one property is how a search that force-opens a section would have fought the mode. */
+    function syncModes(){ try{ const m=(BD()&&BD().get())||'default';
+      _liveHosts().forEach(h=>{
+        h.querySelectorAll('.lst-tile.lst-mode').forEach(d=>{ const on=d.dataset.mode===m;
+          d.classList.toggle('on',on); d.setAttribute('aria-checked',on?'true':'false'); });
+        h.querySelectorAll('.lst-grid.lst-rows').forEach(g=>g.classList.toggle('custom-open',m==='custom'));
+        try{ filterTiles(h); }catch(_){} }); }catch(_){} }
+    try{ window.addEventListener('intmap-basemode',()=>{ try{ syncModes(); }catch(_){} }); }catch(_){}
     function buildTiles(host){ host=host||sb; if(!host) return; const bodyEl=host.querySelector('.lsr-body'); if(!bodyEl) return;
       const rows=rowsFromDropdown(); if(!rows.length) return;
       const root=document.createElement('div'); root.className='lst-root';
@@ -798,15 +875,49 @@ window.IntMapModules.layerSidebar=function(HOST){
           h.addEventListener('click',()=>{ const now=!h.classList.contains('closed');
             h.classList.toggle('closed',now); h.setAttribute('aria-expanded',now?'false':'true');
             const g2=h.nextElementSibling; if(g2&&g2.classList.contains('lst-grid')) g2.classList.toggle('closed',now);
-            _secClosed[secName]=now; }); }
-        curGrid.appendChild(tileFor(r,curRow)); });
-      root.querySelectorAll('.lst-grid').forEach(g=>{ const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')){ const c=document.createElement('span'); c.className='lst-cnt'; c.textContent=g.children.length; h.appendChild(c); } });
+            _secClosed[secName]=now; });
+          /* (#R469) the three exclusive choices stand where the eleven switches used to — see `modeRows` */
+          if(curRow) modeRows(curGrid); }
+        const t=tileFor(r,curRow);
+        /* (#R469) 「カスタム」 is the only mode that shows the eleven, and `filterTiles` is what shows
+           them — this marks them, it does not hide them.
+           ⚠ THEY ARE BUILT IN EVERY MODE. `open()`'s cheap path compares the drawn tile count against
+           `rowsFromDropdown().length`, so a section that rendered a different NUMBER of tiles per mode
+           would rebuild the whole grid on every open — the #R72 slowness this browser was written to
+           end, and it would look like nothing at all was wrong. */
+        if(curRow) t.classList.add('lst-basic');
+        if(r.rest) t.dataset.rest='1';
+        curGrid.appendChild(t); });
+      /* ══ ⚠⚠ (#R469) 「その他N件」 — ONE DISCLOSURE PER CATEGORY, AFTER ITS NAMED ROWS ═══════════════
+         The rows the reader named are `data-rest`-less and stand open; the rest of the category folds
+         behind one line. ⚠ The button is a CHILD OF THE GRID (so it flows with the tiles and is found
+         by `filterTiles` on the same element), and it is excluded from the header's count badge — that
+         badge answers 「how many layers are in this category」, not 「how many boxes did we draw」. */
+      root.querySelectorAll('.lst-grid').forEach(g=>{
+        const restT=Array.from(g.querySelectorAll('.lst-tile[data-rest="1"]'));
+        if(restT.length){
+          const b=document.createElement('button'); b.type='button'; b.className='lst-more';
+          b.setAttribute('aria-expanded','false');
+          const cv=document.createElement('span'); cv.className='lst-chev'; b.appendChild(cv);
+          const tx=document.createElement('span'); tx.textContent=LA_MORE(restT.length); b.appendChild(tx);
+          restT.forEach(t2=>{ t2.style.display='none'; });
+          b.addEventListener('click',()=>{ const open=!g.classList.contains('rest-open');
+            g.classList.toggle('rest-open',open); b.classList.toggle('open',open);
+            b.setAttribute('aria-expanded',open?'true':'false');
+            restT.forEach(t2=>{ t2.style.display=open?'':'none'; }); });
+          g.appendChild(b);
+        }
+        /* ⚠ (#R469) the basics section carries no count: its answer is one of three choices, and a
+           number beside it would be counting the switches those choices SET, not options to pick from. */
+        if(g.querySelector('.lst-mode')) return;
+        const h=g.previousElementSibling; if(h&&h.classList.contains('lst-sech')){ const c=document.createElement('span'); c.className='lst-cnt'; c.textContent=g.querySelectorAll('.lst-tile').length; h.appendChild(c); } });
       root.appendChild(toolsBlock());   /* (#R243) 「地震シミュレータはレイヤー欄からも」 — see the CSS note */
       /* ⚠ (#R232) `#lst-root` was an ID and there can now be two of them on the page at once, so the
          root is found by CLASS within its own host. The id is kept on the sidebar's copy because
          tests and older selectors name it. */
       const old=host.querySelector('.lst-root'); if(old) old.replaceWith(root); else bodyEl.appendChild(root);
       if(host===sb) root.id='lst-root';
+      syncModes();   /* (#R469) marks the live mode and runs filterTiles, which is what shows/hides the eleven */
       filterTiles(host); }
     /* ══ (#R243) THE TOOLS BLOCK AT THE FOOT OF THE TILE BROWSER ═════════════════════════════════
        One entry today — the seismic-wave simulator — declared as data so a second one is a row in
@@ -1038,8 +1149,10 @@ window.IntMapModules.layerSidebar=function(HOST){
          entry, not even a right-click. A terrain-aware drone flight planner (#R174/#R184) and a
          radio-coverage model have been in this program for seventy rounds behind a door nobody can
          see. They are rows here now, exactly like the other eight.
-         ⚠ NOT ADDED, ON PURPOSE: 「⛰ Slope / aspect」 (`IntMapSlope`) is a LAYER — it has its own row
-         in the layer list — and the instruction is about the things that are not. */
+         ⚠ (#R296) #R261's note here said 「⛰ Slope / aspect」 (`IntMapSlope`) was NOT added on purpose,
+         because it was a LAYER with a row of its own and this instruction is about the things that are
+         not. #R469 deleted that layer outright — 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 — so there is
+         no longer anything to exclude, and nothing here was ever a door to it. */
       { id:'sim.drone', mod:'IntMapDrone', ic:SVG_DRONE, en:'Drone flight planner',
         run:()=>{ try{ return !!(window.IntMapDrone&&window.IntMapDrone.open()); }catch(_){ return false; } },
         label:()=>T('Drone flight planner','ドローン飛行計画','Drohnen-Flugplanung','Планировщик полёта дрона','Planificador de vuelo de dron'),
@@ -1089,11 +1202,27 @@ window.IntMapModules.layerSidebar=function(HOST){
       SIM_TOOLS.forEach(t=>{ if(!t.run) return; try{ if(OS.has&&OS.has(t.id)) return;
         OS.register(t.id,()=>Promise.resolve(t.run()),{label:t.en,group:t.group||'sim'}); }catch(_){} }); }catch(_){} }
     const TOOLS=SIM_TOOLS;
+    /* ⚠ (#R469) the tools section's collapse state shares `_secClosed` with the layer categories, under
+       a key no translated section name can collide with. It is remembered for the session exactly as a
+       category is, and it starts OPEN — 「ツールも、レイヤーカテゴリと同様に畳めるように」 asks for the
+       ability, and #R210 settled that a section defaults to open unless it is Beta. */
+    const TOOLS_SEC='__tools__';
     function toolsBlock(){ registerSimTools();
       const wrap=document.createElement('div'); wrap.className='lst-tools';
-      const h=document.createElement('div'); h.className='lst-sech';
+      if(!(TOOLS_SEC in _secClosed)) _secClosed[TOOLS_SEC]=false;
+      const closed=!!_secClosed[TOOLS_SEC];
+      const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':'');
+      h.setAttribute('role','button'); h.setAttribute('aria-expanded',closed?'false':'true');
+      /* ⚠ THE CHEVRON IS WHY THE OLD HEADER LIED. It was a bare `.lst-sech` with a `:hover` rule and no
+         chevron, no listener and no count — it looked exactly like a category header and did nothing. */
+      const cv=document.createElement('span'); cv.className='lst-chev'; h.appendChild(cv);
       const tt=document.createElement('span'); tt.textContent=T('Tools','ツール','Werkzeuge','Инструменты','Herramientas'); h.appendChild(tt);
-      wrap.appendChild(h);
+      const cnt=document.createElement('span'); cnt.className='lst-cnt'; cnt.textContent=TOOLS.length; h.appendChild(cnt);
+      const body=document.createElement('div'); body.className='lst-toolbody'+(closed?' closed':'');
+      h.addEventListener('click',()=>{ const now=!h.classList.contains('closed');
+        h.classList.toggle('closed',now); h.setAttribute('aria-expanded',now?'false':'true');
+        body.classList.toggle('closed',now); _secClosed[TOOLS_SEC]=now; });
+      wrap.appendChild(h); wrap.appendChild(body);
       TOOLS.forEach(t=>{
         const b=document.createElement('button'); b.type='button'; b.className='lst-toolrow'+(_toolOn(t)?' on':''); b.dataset.act=t.id;
         const ic=document.createElement('span'); ic.className='lst-toolic'; ic.innerHTML=t.ic;
@@ -1130,7 +1259,7 @@ window.IntMapModules.layerSidebar=function(HOST){
           syncTools(); setTimeout(syncTools,340);
           try{ if(p&&typeof p.then==='function') p.then(syncTools,syncTools); }catch(_){}
           try{ if(isMob()) close(); }catch(_){} });   /* on a phone the panel covers the map the tool needs */
-        wrap.appendChild(b);
+        body.appendChild(b);   /* (#R469) into the collapsible body, not the wrapper */
       });
       return wrap;
     }
@@ -1174,7 +1303,19 @@ window.IntMapModules.layerSidebar=function(HOST){
       const q=((qi&&qi.value)||'').toLowerCase().trim();
       const root=host.querySelector('.lst-root'); if(!root) return;
       root.querySelectorAll('.lst-grid').forEach(g=>{ let vis=0;
-        g.querySelectorAll('.lst-tile').forEach(t2=>{ const show=!q||t2.dataset.nm.indexOf(q)>=0; t2.style.display=show?'':'none'; if(show) vis++; });
+        /* ══ ⚠⚠ (#R469) THREE THINGS DECIDE ONE `display`, AND THEY DECIDE IT HERE ═══════════════════
+           ① does the row match the query, ② is it one of the eleven 基本表示 rows (shown only in
+           「カスタム」), ③ is it past its category's named rows (folded behind 「その他N件」).
+           ⚠ A SEARCH OVERRIDES ② AND ③, exactly as it already force-opens a collapsed section: a reader
+           who types 「道路」 is looking for that row, and answering 「no such layer」 because the section
+           happens to be folded is the instrument lying about the app. */
+        const restOpen=g.classList.contains('rest-open'), customOpen=g.classList.contains('custom-open');
+        g.querySelectorAll('.lst-tile').forEach(t2=>{
+          const match=!q||t2.dataset.nm.indexOf(q)>=0;
+          const folded=!q&&((t2.dataset.rest==='1'&&!restOpen)||(t2.classList.contains('lst-basic')&&!customOpen));
+          const show=match&&!folded; t2.style.display=show?'':'none'; if(show) vis++; });
+        /* the disclosure itself is meaningless while a query is narrowing the list */
+        const more=g.querySelector('.lst-more'); if(more) more.style.display=q?'none':'';
         /* while searching, a collapsed section with matches is forced open (inline display beats .closed) */
         /* (#R309) …and a section drawn as rows is `flex`, not `grid` — this inline value is what forces a
            collapsed section open while a search is running, so it has to name that section's own display. */
@@ -1182,14 +1323,20 @@ window.IntMapModules.layerSidebar=function(HOST){
       /* (#R291) 「Layersの検索で route / directions / 経路 / ルート / 道順 等から発見できるように」 — the
          tool rows were outside this filter entirely, so a search narrowed the layers and left the
          tools alone. They match on their own name, their hint, their English id and a keyword list. */
+      /* ⚠⚠ (#R469) …AND A SEARCH FORCES THE TOOLS SECTION OPEN, now that it can be closed.
+         「レイヤー検索欄が、ツールにも効くように」 came in the same breath as 「ツールも…畳めるように」, and a
+         collapsible section is exactly what turns a working filter into a dead one: the rows would be
+         narrowed correctly inside a body the reader cannot see, which reads as 「検索が効かない」. The
+         inline `display` beats `.closed`'s, and clearing it on an empty query hands the class back. */
       try{ const tw=root.querySelector('.lst-tools'); if(tw){ let tv=0;
         tw.querySelectorAll('.lst-toolrow').forEach(b=>{ const show=!q||String(b.dataset.nm||'').indexOf(q)>=0; b.style.display=show?'':'none'; if(show) tv++; });
+        const tb=tw.querySelector('.lst-toolbody'); if(tb) tb.style.display=q?'flex':'';
         tw.style.display=tv?'':'none'; } }catch(_){} }
     function open(){ build();   /* (#R107) mobile allowed — the right-sidebar layer panel now works on phones too (overlay, no map push) */
       /* (#R72) SPEED ("layersをクリックしたときの反応が非常に遅い"): the full reorganize+rebuild ran on EVERY
          open. Now the grid is rebuilt only when the row set actually changed; an unchanged grid just re-syncs
          its ✓ states (milliseconds). */
-      try{ const have=sb.querySelectorAll('.lst-tile').length;
+      try{ const have=sb.querySelectorAll('.lst-tile[data-lid]').length;   /* (#R469) the layer tiles, not the three mode rows */
         if(!have){ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} buildTiles(); }
         else{ const want=rowsFromDropdown().length; if(want&&want!==have) buildTiles(); else syncTiles(); } }catch(_){ try{ buildTiles(); }catch(__){} }
       /* (#R66) dynamic width: the map ALWAYS keeps ≥320px when geometrically possible — on a narrow window or
@@ -1214,7 +1361,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       /* the Active-layers bar re-homes to the top of the tile browser (returns to the dropdown on close) */
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       /* rows built by late modules (eco/l9/beta, ~1.5 s) — one deferred rebuild picks them up */
-      setTimeout(()=>{ try{ if(sb.classList.contains('open')&&sb.querySelectorAll('.lst-tile').length<rowsFromDropdown().length) buildTiles(); }catch(_){} },900);
+      setTimeout(()=>{ try{ if(sb.classList.contains('open')&&sb.querySelectorAll('.lst-tile[data-lid]').length<rowsFromDropdown().length) buildTiles(); }catch(_){} },900);
       /* (#R72) clicking the MAP closes the sidebar, same as the classic dropdown ("地図上のどこかをクリックしたら
          閉まるように") */
       if(!open._mapCloser){ open._mapCloser=()=>{ try{ if(sb&&sb.classList.contains('open')) close(); }catch(_){} }; }
@@ -1292,7 +1439,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         _hosts.push(host);
       }
       try{
-        const have=host.querySelectorAll('.lst-tile').length;
+        const have=host.querySelectorAll('.lst-tile[data-lid]').length;   /* (#R469) as above */
         if(!have){ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} buildTiles(host); }
         else { const want=rowsFromDropdown().length; if(want&&want!==have) buildTiles(host); else syncTiles(); }
       }catch(_){ try{ buildTiles(host); }catch(__){} }
@@ -1320,7 +1467,7 @@ window.IntMapModules.layerSidebar=function(HOST){
           window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(host);
         }catch(_){} },at[i]);
         go(0); })();
-      setTimeout(()=>{ try{ if(host.isConnected&&host.querySelectorAll('.lst-tile').length<rowsFromDropdown().length) buildTiles(host); }catch(_){} },1200);
+      setTimeout(()=>{ try{ if(host.isConnected&&host.querySelectorAll('.lst-tile[data-lid]').length<rowsFromDropdown().length) buildTiles(host); }catch(_){} },1200);
       return host;
     }
     function unmountFrom(container){ try{ const host=container&&container.querySelector('.lsr-mount');
@@ -1456,7 +1603,15 @@ window.IntMapModules.layerPresets=function(HOST){
     function cbKey(cb){ if(cb.id) return 'id:'+cb.id; const dl=cb.getAttribute&&cb.getAttribute('data-layer'); return dl?('dl:'+dl):null; }
     function findCb(key){ if(!key) return null; if(key.startsWith('id:')) return document.getElementById(key.slice(3));
       if(key.startsWith('dl:')){ const dd=document.getElementById('layer-dropdown'); return dd&&dd.querySelector('input[data-layer="'+key.slice(3)+'"]'); } return null; }
-    const SKIP=new Set(['cb-names','cb-geolabels','cb-borders','cb-coast','cb-grid','cb-countries','cb-admin1','cb-roads','cb-rail2']);
+    /* ⚠⚠ (#R469) DERIVED, because a hand-written copy of this membership had already drifted. #R309
+       reduced the panel's three copies of 「what is in 基本表示」 to one list and this fourth one, which
+       answers a different question (which toggles are base chrome a preset must neither capture nor
+       clear), was not part of that pass: it was missing `cb-poi` — added to the section by #R186 —
+       so 「施設・店舗・企業名」 was captured into every preset and switched off by 「全解除」, while its
+       eight neighbours were left alone. Reading `IntMapBasicLayerRows` makes the two questions share
+       one answer about membership, and this round's departure (`cb-countries`, no longer base chrome)
+       lands here without a second edit. */
+    const SKIP=new Set(window.IntMapBasicLayerRows||[]);
     function capture(){ const dd=document.getElementById('layer-dropdown'); if(!dd) return null;
       const ids=[]; dd.querySelectorAll('input[type=checkbox]').forEach(cb=>{ if(!cb.checked||SKIP.has(cb.id)) return; const k=cbKey(cb); if(k&&!ids.includes(k)) ids.push(k); });
       let ops={}; try{ ops=JSON.parse(JSON.stringify(opacities)); }catch(_){}

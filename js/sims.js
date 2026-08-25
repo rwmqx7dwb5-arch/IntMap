@@ -1,9 +1,9 @@
 /* ============================================================================
- *  IntMap · Physical simulations & solar geometry — IntMapModules.{radiation,popArea,slope,sun,transitReach}  (#R166 / #R296)
+ *  IntMap · Physical simulations & solar geometry — IntMapModules.{radiation,popArea,sun,transitReach}  (#R166 / #R296 / #R469)
  * ----------------------------------------------------------------------------
- *  Simulations computed from real data on the client: population inside a drawn area, DEM
- *  slope/aspect, the solar terminator, transit reachability and the radioactive-plume model.
- *  ⚠ (#R296) three of the eight left this file with their features — see the notes where each stood.
+ *  Simulations computed from real data on the client: population inside a drawn area, the solar
+ *  terminator, transit reachability and the radioactive-plume model.
+ *  ⚠ (#R296/#R469) four of the eight left this file with their features — see the notes where each stood.
  *
  *  Moved verbatim out of index.html's DOMContentLoaded closure (#R166): each body below is
  *  byte-identical to the block that used to live there, except that closure values which are
@@ -448,65 +448,13 @@ window.IntMapModules.popArea=function(HOST){
   })();
 };
 
-window.IntMapModules.slope=function(HOST){
- const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
-  /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
-     A function DECLARATION so nested closures above this line can call it (no TDZ). Falls back to the old
-     isStyleLoaded() test only if the host is somehow absent. */
-  function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
-  window.IntMapSlope=(function(){
-    if(!GE().hasRenderer()||!GE().hasRenderer()) return { toggle(){}, run(){}, clear(){}, setMode(){} };
-    const SRC='imslope-src'; let on=false, mode='slope', busy=false, moveT=null, lastKey='';
-    const SL=window.IntMapLang.pick(()=>HOST.lang);
-    function slopeColor(d){ return d<2?'#1a9850':d<5?'#66bd63':d<10?'#a6d96a':d<15?'#fee08b':d<20?'#fdae61':d<30?'#f46d43':d<40?'#d73027':'#a50026'; }
-    function aspectColor(a){ return 'hsl('+Math.round(a)+',72%,55%)'; }
-    function ensure(){ try{ if(GE().layers.hasSource(SRC)) return true; if(!_imCanDraw()) return false;
-      GE().layers.addSource(SRC,{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-      GE().layers.add({id:'imslope-fill',type:'fill',source:SRC,paint:{'fill-color':['coalesce',['get','col'],'#888'],'fill-opacity':0.55,'fill-antialias':false}});
-      return true; }catch(_){ return false; } }
-    async function run(){ if(busy||!on||!GE().hasRenderer()) return; let b; try{ b=GE().camera.getBounds(); }catch(_){ return; }
-      const w=b.getWest(),s=b.getSouth(),e=b.getEast(),n=b.getNorth(); const z=Math.max(3,Math.min(13,Math.round(GE().camera.getZoom())));
-      const key=[mode,z,w.toFixed(3),s.toFixed(3),e.toFixed(3),n.toFixed(3)].join(','); if(key===lastKey) return; lastKey=key; busy=true;
-      try{ const samp=await window.IntMapTerrain.sampler([w,s,e,n],z); if(!samp||!on){ busy=false; return; }
-        const COLS=48, dLng=(e-w)/COLS, dLat=(n-s)/COLS, midLat=(s+n)/2;
-        const mLat=110540, mLng=111320*Math.cos(midLat*Math.PI/180); const feats=[];
-        for(let i=0;i<COLS;i++)for(let j=0;j<COLS;j++){ const lng=w+(i+0.5)*dLng, lat=s+(j+0.5)*dLat;
-          const zE=samp.elevAt(lng+dLng,lat), zW=samp.elevAt(lng-dLng,lat), zN=samp.elevAt(lng,lat+dLat), zS=samp.elevAt(lng,lat-dLat);
-          if(zE==null||zW==null||zN==null||zS==null) continue;
-          const dzdx=(zE-zW)/(2*dLng*mLng), dzdy=(zN-zS)/(2*dLat*mLat);
-          const slope=Math.atan(Math.hypot(dzdx,dzdy))*180/Math.PI; let col;
-          if(mode==='aspect'){ let asp=(Math.atan2(-dzdx,-dzdy)*180/Math.PI+360)%360; col=slope<1.5?'#b8b8b8':aspectColor(asp); } else col=slopeColor(slope);   /* downslope azimuth (the direction the slope faces), clockwise from north */
-          feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[w+i*dLng,s+j*dLat],[w+(i+1)*dLng,s+j*dLat],[w+(i+1)*dLng,s+(j+1)*dLat],[w+i*dLng,s+(j+1)*dLat],[w+i*dLng,s+j*dLat]]]},properties:{col:col}});
-        }
-        if(on){ try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:feats}); }catch(_){} updateLegend(feats.length); }
-      }catch(_){}
-      busy=false; }
-    function updateLegend(nc){ try{ const el=window._registerLayerOpacity&&window._registerLayerOpacity('slope',[lbl(),lbl(),lbl(),lbl()],['imslope-fill'],'dl-slope'); if(!el) return; let h=el.querySelector('.sl-note'); if(!h){ h=document.createElement('div'); h.className='sl-note'; h.style.cssText='font-size:10.5px;color:var(--text-muted);margin-top:6px;line-height:1.5;'; el.appendChild(h);}
-      const modeBtn='<button id="sl-mode" style="margin-top:5px;padding:3px 9px;border-radius:7px;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);font-size:11px;cursor:pointer;">'+(mode==='slope'?SL('▸ Show aspect (direction)','▸ 斜面方向を表示','▸ Exposition','▸ Экспозиция','▸ Orientación'):SL('▸ Show slope (steepness)','▸ 傾斜角を表示','▸ Neigung','▸ Крутизна','▸ Pendiente'))+'</button>';
-      const ramp=mode==='slope'?SL('flat → steep: green · yellow · orange · red (° gradient)','平坦→急: 緑・黄・橙・赤（傾斜角）','flach→steil','пологий→крутой','llano→empinado'):SL('slope direction (hue = compass bearing it faces)','斜面の向き（色相＝方位）','Hangrichtung','направление склона','orientación');
-      h.innerHTML=ramp+'<br>'+modeBtn; const mb=h.querySelector('#sl-mode'); if(mb) mb.onclick=()=>setMode(mode==='slope'?'aspect':'slope'); }catch(_){} }
-    const lbl=()=>SL('Slope / aspect','傾斜・斜面方向','Neigung / Exposition','Уклон / экспозиция','Pendiente / orientación');
-    function setMode(m){ mode=(m==='aspect')?'aspect':'slope'; lastKey=''; run(); }
-    function toggle(v){ on=v; const apply=()=>{ if(!ensure()){ GE().events.once('idle',apply); return; }
-      try{ GE().layers.setLayout('imslope-fill','visibility',on?'visible':'none'); }catch(_){}
-      if(on){ lastKey=''; run(); try{ window._raiseLabelLayers&&window._raiseLabelLayers(); }catch(_){} } else { try{ window._hideGenericLegend&&window._hideGenericLegend('slope'); }catch(_){} try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} } };
-      apply(); if(on)[400,1500].forEach(ms=>setTimeout(apply,ms)); }
-    GE().events.on('moveend',()=>{ if(!on) return; clearTimeout(moveT); moveT=setTimeout(run,500); });
-    GE().events.on('styledata',()=>{ if(on) setTimeout(()=>{ if(ensure()){ try{ GE().layers.setLayout('imslope-fill','visibility','visible'); }catch(_){} } },80); });
-    function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('dl-slope')) return;
-      const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-slope';
-      const lab=document.createElement('label'); lab.className='layer-option';
-      const cb=document.createElement('input'); cb.type='checkbox'; cb.id='dl-slope';
-      const sw=document.createElement('span'); sw.className='lyr-sw'; sw.style.background='#f46d43';
-      const sp=document.createElement('span'); sp.id='dl-slope-lbl'; sp.textContent='⛰ '+lbl();
-      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sw); lab.appendChild(document.createTextNode(' ')); lab.appendChild(sp);
-      w.appendChild(lab); dd.appendChild(w);
-      cb.addEventListener('change',ev=>{ w.classList.toggle('on',ev.target.checked); toggle(ev.target.checked); });
-      try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
-    window.addEventListener('intmap-lang',()=>{ const s=document.getElementById('dl-slope-lbl'); if(s) s.textContent='⛰ '+lbl(); });
-    if(document.readyState!=='loading') setTimeout(buildUI,950); else document.addEventListener('DOMContentLoaded',()=>setTimeout(buildUI,950));
-    return { toggle, run, clear:()=>toggle(false), setMode }; })();
-};
+/* ══ ⚠⚠ (#R469) 「⛰ 傾斜・斜面方向レイヤーは完全削除。」 ═══════════════════════════════
+   `IntMapModules.slope` / `window.IntMapSlope` stood here: the `dl-slope` row, the `imslope-fill`
+   fill of 48×48 DEM cells recomputed on every move, and its legend. It is gone WHOLE — factory,
+   boot call, layer row, legend, the `sim.slopeAspect` capability, its schema, its catalogue entry
+   and its dispatch case — so nothing is left that could switch it back on. The shared DEM sampler
+   it read (js/map-extras.js) stays: the viewshed, the drone planner and the seismic site term
+   are its other readers. */
 
 /* ══ ⚠⚠ (#R296) 「電波・通信圏と見通し線解析を統合して」 ═══════════════════════════════
    `IntMapModules.rf` / `window.IntMapRF` stood here. Its physics is a strict subset of js/viewshed.js

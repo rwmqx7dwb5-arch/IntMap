@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -249,9 +250,10 @@ test('R258 ⑩: Energy & resources is a category with two surveyed layers in it'
      shelf, which is what the shelf is for. What #R258 was actually asserting is that the category
      exists and that its two SURVEYED layers are on it — a list literal also asserts «and nothing
      else will ever be», which is not something this round knew. (#R244's lesson, third time.) */
-  const eg = /\['lyrGrpEnergy',\[([^\]]*)\]\]/.exec(dl);
-  assert.ok(eg, 'the Energy & resources group is there');
-  ['osmpower', 'osmextract'].forEach(k => assert.ok(eg[1].includes("'" + k + "'"),
+  /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  assert.ok(byKey.lyrGrpEnergy, 'the Energy & resources group is there');
+  ['osmpower', 'osmextract'].forEach(k => assert.ok(byKey.lyrGrpEnergy.includes(k),
     k + ' is on the Energy & resources shelf'));
   const fac = read('js/osm-facilities.js');
   assert.match(fac, /id:'osmpower', row:'fac-dl-osmpower'/, 'the power layer exists');

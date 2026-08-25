@@ -20,6 +20,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -37,7 +38,9 @@ test('R409 ①: the Layers panel offers ww1 and ww2, and the retired single row 
     assert.ok(shell.includes("'dl-' + R.id"), 'the checkbox id is no longer derived from the row id');
   }
   const cat = codeOnly(R('js/data-layers.js'));
-  const row = /\['lyrGrpPolitics',\s*\[([^\]]*)\]\]/.exec(cat);
+  /* (#R469) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  const row = [null, byKey.lyrGrpPolitics.map((x) => "'" + x + "'").join(',')];
   assert.ok(row, 'the politics group is no longer a literal list — this check reads the list itself');
   const ids = row[1].split(',').map((s) => s.trim().replace(/^'|'$/g, ''));
   assert.ok(ids.includes('ww1') && ids.includes('ww2'), 'the two war rows are not both in the politics group: ' + ids.join(' '));
