@@ -43,7 +43,7 @@ const sw = read('sw.js');
 const adminHtml = read('admin.html');
 const indexHtml = read('index.html');
 const RELAYS = ['alerts-relay', 'cable-geo', 'news-relay', 'sv-cov'];
-const FUNCTIONS = ['ai-proxy', 'alerts-relay', 'aviation-feed', 'cable-geo', 'delete-account', 'monitor-run', 'news-ingest', 'news-relay', 'refresh-news', 'routing-relay', 'sv-cov', 'volcano-feed'];
+const FUNCTIONS = ['ai-proxy', 'alerts-relay', 'aviation-feed', 'cable-geo', 'delete-account', 'gdelt-relay', 'monitor-run', 'news-ingest', 'news-relay', 'refresh-news', 'routing-relay', 'sv-cov', 'volcano-feed'];
 
 // ---- Mirror of refresh-news timingSafeEqual (kept in lock-step; unit-tested here) ----
 function timingSafeEqual(a, b) {

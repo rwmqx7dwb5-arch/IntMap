@@ -785,9 +785,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **12本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **13本**（`_shared/` は関数ではない）
 
-> ⚠ **12本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **13本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
@@ -839,6 +839,16 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   （取得順は [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) §7.7）。
 - **`news-relay`** … Google News RSS の ACAO 付与中継。`news.google.com` の `/rss/search` と
   `/rss/headlines/section/topic/<TOPIC>` の**2エンドポイントだけ**。
+- **`gdelt-relay`** … GDELT DOC 2.0 の ACAO 付与中継＋**共有キャッシュ**（`--no-verify-jwt`）。
+  中継するのは `api.gdeltproject.org/api/v2/doc/doc` の1エンドポイントだけで、パラメータも
+  `js/atlas-sources.js` が組み立てる6個の allowlist。⚠ **CORS を通すためだけの関数ではない**——
+  実測（2026-08-25・15標本）で GDELT は**約8割を 429 で拒み、成功・拒否のどちらも 10.7–26.0 秒**
+  かかる。答えは Supabase Storage の `gdelt` バケットに**クエリ単位で 15 分**（GDELT 自身の
+  `cache-control: public, max-age=900`）保持し、期限切れでも6時間までは**古い答えを返しながら
+  裏で更新する**（`EdgeRuntime.waitUntil`）。⚠ **上流への要求は読者数ではなく時間に比例する**
+  ので、直に叩いていた頃より要求は**減る**。キャッシュがある場合の実測は **0.6 秒**。
+  ⚠ 秘密は `GDELT_STORAGE_KEY`（Storage 書き込み用。platform 注入の
+  `SUPABASE_SERVICE_ROLE_KEY` は本プロジェクトでは Storage に AccessDenied になる）。
 - **`aviation-feed`** … ライブ航空機の**唯一の上流読み取り役**（`--no-verify-jwt`・秘密なし）。
   provider（既定 adsb.lol・ODbL 1.0。`AVIATION_PROVIDER` で切替。OpenSky は事前の書面合意が要るので
   `OPENSKY_AGREEMENT=1` のときだけ）を**サーバー側で TTL ごとに1回だけ**読み、全利用者へ同じ
@@ -861,9 +871,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ACAO を返すので中継しない**（要らない relay は落ちうるものを1つ増やすだけ）。
   詳細は [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md)。
 
-⚠ **`_shared/relay-guard.js` を共有するのは8本**（`alerts-relay` / `aviation-feed` / `cable-geo` /
-`news-ingest` / `news-relay` / `routing-relay` / `sv-cov` / `volcano-feed`）**。** そのうち
-`news-ingest` だけが `x-news-ingest-secret` で fail-closed に守られており、**残り7本は無認証**。
+⚠ **`_shared/relay-guard.js` を共有するのは9本**（`alerts-relay` / `aviation-feed` / `cable-geo` /
+`gdelt-relay` / `news-ingest` / `news-relay` / `routing-relay` / `sv-cov` / `volcano-feed`）**。** そのうち
+`news-ingest` だけが `x-news-ingest-secret` で fail-closed に守られており、**残り8本は無認証**。
 共有しているのは、URL allowlist、**GET 限定**、**期限**（`AbortSignal.timeout`）、
 **バイト上限**（`content-length` とストリーム読み出しの両方——上流は length を返さないことがある）、
 **Content-Type** 判定、そして**外向きエラーはコード1語**（上流の例外文言・スタックは返さない）。
@@ -2243,10 +2253,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を12本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を13本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed news-ingest routing-relay volcano-feed; do
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed news-ingest routing-relay volcano-feed gdelt-relay; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```
@@ -2359,7 +2369,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（16本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（17本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。

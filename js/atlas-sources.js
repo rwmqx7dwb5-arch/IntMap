@@ -46,8 +46,19 @@ export function makeAtlasSources(HOST, CTX) {
        news search across ~all outlets, last 72 h, CORS-open) + Wikipedia REST summaries. This is what fixes the
        "provided data is insufficient to describe current events around Taiwan" class of reply: the loaded RSS
        feed is no longer the only news source. ---- */
-    async function _gdeltNews(q2,sink,timespan){ const query=String(q2||'').trim(); if(!query) return null;   /* (#R113d) optional timespan (default 3d) so a brief can widen the window */
-      const j=await _fetchJSON('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(query)+'&mode=artlist&maxrecords=14&format=json&timespan='+encodeURIComponent(timespan||'3d')+'&sort=hybridrel');
+    /* ⚠⚠ (#R464) `budgetMs` IS NOT OPTIONAL DECORATION — IT WAS BEING COMPUTED AND THROWN AWAY.
+       js/atlas-console.js works out `wLeft()` before every one of these calls, but had no way to
+       HAND it over, so each call silently took the full EVIDENCE_BUDGET_MS: the 20 s WEB_BUDGET_MS
+       decided only whether to START another attempt, never how long one could run, and three
+       sequential attempts cost 42 s inside a 20 s budget. Production measured 8.0 s x3 of relay
+       racing plus 6.1 / 7.0 / 6.7 s of direct attempts — about 45 s — for zero bytes. */
+    /* ⚠⚠ (#R464) AND THE DEFAULT IS GDELT'S OWN NUMBER, NOT THE ONE EVERY OTHER HOST USES. Falling
+       through to EVIDENCE_BUDGET_MS (14 s) is shorter than the deadline supabase/functions/gdelt-relay
+       gives its own upstream read (25 s), so a COLD call would be aborted at 14 s — and a cold call
+       is precisely the one that fills the shared cache. Every site would keep paying full price
+       forever while looking like it was merely unlucky. */
+    async function _gdeltNews(q2,sink,timespan,budgetMs){ const query=String(q2||'').trim(); if(!query) return null;   /* (#R113d) optional timespan (default 3d) so a brief can widen the window */
+      const j=await _fetchJSON('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(query)+'&mode=artlist&maxrecords=14&format=json&timespan='+encodeURIComponent(timespan||'3d')+'&sort=hybridrel',(budgetMs>0?budgetMs:CTX.WEB_BUDGET_MS));
       const arts=j&&j.articles; if(!Array.isArray(arts)||!arts.length) return null;
       const seen=new Set(); const rows2=[];
       for(const a2 of arts){ const t2=String(a2.title||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
