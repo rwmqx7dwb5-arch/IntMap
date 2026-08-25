@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -289,12 +290,9 @@ test('R268 ⑨ the tap folds three levels deep and never opens on a list of town
 /* ── ⑩ the layer taxonomy ──────────────────────────────────────────────────────────────────── */
 test('R268 ⑩ the four moved rows are on their new shelf, and no id is on two', () => {
   const s = read('js/data-layers.js');
-  const i = s.indexOf('const GROUPS=[');
-  const block = s.slice(i, s.indexOf('/* Explicit order for the Others', i));
-  const groups = {};
-  for (const m of block.matchAll(/\['(lyrGrp[A-Za-z]+)',\[([^\]]*)\]\]/g)) {
-    groups[m[1]] = m[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
-  }
+  /* (#R468) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  const groups = byKey;
   assert.ok(Object.keys(groups).length > 10, 'the taxonomy must parse');
   assert.ok(groups.lyrGrpAgri.includes('wbagri'), '農地率 belongs with agriculture');
   assert.ok(groups.lyrGrpAgri.includes('gxsoil'), '土壌水分 belongs with agriculture');

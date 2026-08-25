@@ -31,6 +31,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -158,9 +159,10 @@ test('#R254 ⑥ a move during a crop fetch is not lost, the encode is a blob, an
 /* ── ⑦ THE TAXONOMY ──────────────────────────────────────────────────────────────────────────── */
 test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is promoted', () => {
   const dl = code(read('js/data-layers.js'));
-  const g = /\['lyrGrpOthersReal',\[([^\]]*)\]\]/.exec(dl);
-  assert.ok(g, 'the Others group is gone');
-  const ids = g[1].split(',').map(s => s.trim().replace(/'/g, '')).filter(Boolean);
+  /* (#R468) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  assert.ok(byKey.lyrGrpOthersReal, 'the Others group is gone');
+  const ids = byKey.lyrGrpOthersReal;
   /* ⚠ (#R255) THIS WAS `assert.equal(ids.length, 61)`, AND THAT MADE THE NEXT INSTRUCTION LOOK LIKE
      A REGRESSION — the same trap #R254 itself removed from tests/r233 ⑤. 「政治、軍事、医療・衛生、
      IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように」 moved twenty-eight of the
@@ -226,10 +228,9 @@ test('#R254 ⑦ Others is a real category, Beta means beta, and energy mix is pr
      asserts. The shelf it landed on was this file's choice at the time (there was no energy shelf
      until #R258 built one); #R271's reorganisation moved it there, so the assertion is «promoted,
      onto a curated shelf», not «on the shelf #R254 happened to pick». */
-  const grp = {};
-  for (const e of dl.matchAll(/\['(lyrGrp[A-Za-z]+)',\[([^\]]*)\]\]/g)) {
-    grp[e[1]] = e[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
-  }
+  /* (#R468) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  const grp = byKey;
   const energyShelf = Object.keys(grp).filter((g) => grp[g].includes('energy'));
   assert.equal(energyShelf.length, 1, 'the energy-mix row must be on exactly one shelf');
   assert.ok(!/Others|Beta/i.test(energyShelf[0]),

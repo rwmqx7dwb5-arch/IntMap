@@ -1,0 +1,27 @@
+{
+  "_": "(#R468) The layer panel's Base-display section became a three-way choice (Default / Clean / Custom) and each category learned to fold its unrequested rows behind a «{n} more» toggle — js/map-ui.js. de/ru/es are the arguments already written at the T(…) call sites and are copied here verbatim; fr, ko and zh-Hant are the new work. «Clean» is NOT the hygienic sense the file already carries for «Clean air»/«Clean cooking fuel» (propre / 청정 / 潔淨) — it names a map with nothing drawn on it, so each language takes the word that file itself uses when it says the map is kept uncluttered. ⚠ «{n}» is substituted at run time (LA_MORE replaces it), so every cell keeps the placeholder. Columns: de, ru, es, fr, ko, zh-Hant.",
+  "Default": [
+    "Standard",
+    "По умолчанию",
+    "Predeterminado",
+    "Par défaut",
+    "기본값",
+    "預設"
+  ],
+  "Clean": [
+    "Klar",
+    "Чисто",
+    "Limpio",
+    "Épuré",
+    "깨끗하게",
+    "清爽"
+  ],
+  "{n} more": [
+    "{n} weitere",
+    "ещё {n}",
+    "{n} más",
+    "{n} autres",
+    "{n}개 더",
+    "其他 {n} 項"
+  ]
+}

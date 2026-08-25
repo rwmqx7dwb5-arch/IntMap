@@ -352,7 +352,7 @@ const MODULE_FACTORIES = [
   'arc3d', 'objectList', 'wind', 'weatherEC', 'weatherPanel', 'earthSky',
   'landCover', 'betaPack2', 'religionLang', 'timeZones', 'gibsScience', 'timeSeries',
   'aiResearch', 'correlate', 'worldEvents', 'edu', 'radiation', 'popArea',
-  'slope', 'sun', 'transitReach',
+  'sun', 'transitReach',
   'legal', 'feedback', 'onboarding', 'progressCtl', 'mobileUI', 'layoutReflow',
   'newsTimeline', 'dashExtended', 'locate', 'annotations', 'layerHoverPopup',
   'runwaySearch', 'terrain', 'railSeaOverlays', 'countriesUi', 'newsUi', 'companiesUi',

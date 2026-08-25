@@ -117,11 +117,16 @@ test('R264 ③: the data-centre layer floats exactly one thing — the card abou
 test('R264 ④: the tool rows are spaced and highlighted like the tiles', () => {
   const s = read('js/map-ui.js');
   const gridGap = s.match(/\.lst-grid\{display:grid;[^}]*gap:(\d+)px;/);
-  const toolGap = s.match(/\.lst-tools,\.lsr-mount \.lst-tools\{[^}]*gap:(\d+)px;/);
+  /* ⚠ (#R468) THE FLEX COLUMN MOVED ONE ELEMENT IN, and the question did not change. 「ツールも、
+     レイヤーカテゴリと同様に畳めるように」 put the rows inside a `.lst-toolbody` the header can hide, so
+     the column and its gap live there — left on the wrapper, a closed section would still reserve a
+     row of empty space where the tools were. What #R264 measured — the tool cards are spaced like
+     the tile cards — is measured on whichever element declares the column. */
+  const toolGap = s.match(/\.lst-toolbody,\.lsr-mount \.lst-toolbody\{[^}]*gap:(\d+)px;/);
   assert.ok(gridGap && toolGap, 'both blocks declare a gap');
   assert.equal(toolGap[1], gridGap[1], 'the tool cards use the same gap the tile cards do');
-  assert.match(s, /\.lst-tools,\.lsr-mount \.lst-tools\{[^}]*display:flex;flex-direction:column;/,
-    '…which needs the wrapper to be a flex column, not a block');
+  assert.match(s, /\.lst-toolbody,\.lsr-mount \.lst-toolbody\{[^}]*display:flex;flex-direction:column;/,
+    '…which needs the collapsible body to be a flex column, not a block');
   const onRule = s.indexOf('.lst-toolrow.on,.lsr-mount .lst-toolrow.on{');
   const hoverRule = s.indexOf('.lst-toolrow:hover,.lsr-mount .lst-toolrow:hover{');
   assert.ok(onRule > 0 && hoverRule > 0, 'both rules exist');

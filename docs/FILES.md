@@ -344,7 +344,7 @@ widget-smart.js                   Smart Stack IntMapWidgetSmart —— 文脈に
                                   「なぜ表示されたか」の説明、切替のちらつき防止
 tool-panel.js                     計測／半径ツールのパネルと地図のコンテキストメニュー
 elevation-profile.js              標高断面のパネル
-sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散・範囲人口・傾斜・
+sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散・範囲人口・
                                   日照・鉄道の到達圏）
 seismic.js                        地震波シミュレータ（477 KB）
 seismic-events.js                 過去の地震——公表された震源パラメータ

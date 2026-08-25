@@ -83,11 +83,18 @@ test('R278 ② no capability is implemented and invisible', () => {
      together, so it is neither implemented nor described. #R278's rule is about the GAP between the
      two, and a capability that exists in neither place opens no gap; scripts/atlas-catalog.mjs
      (which runs in `npm test`) is what keeps the general form of that rule. The named five stay named. */
-  for (const t of ['isochrone', 'optimizeRoute', 'objects', 'slope', 'rfCoverage']) {
+  /* ⚠ (#R468) FOUR NOW. `slope` went the way `earthReplay` went — 「⛰ 傾斜・斜面方向レイヤーは
+     完全削除。」 — dispatch case, module, capability row, schema and catalogue entry together. #R278's
+     rule is about the GAP between what the dispatch can run and what the planner is told about, and
+     a capability that exists in NEITHER place opens no gap. It gets the same pair of negative
+     assertions earthReplay has, so «deleted» stays measured rather than merely unlisted. */
+  for (const t of ['isochrone', 'optimizeRoute', 'objects', 'rfCoverage']) {
     assert.ok(sys.includes(`{"type":"${t}"`), `${t} must be catalogued as an emittable action`);
   }
   assert.ok(!sys.includes('{"type":"earthReplay"'), 'and earthReplay is described nowhere, having been removed');
   assert.ok(!ATLAS().includes("case 'earthReplay':"), '…including in the dispatch');
+  assert.ok(!sys.includes('{"type":"slope"'), 'and neither is slope, deleted in #R468');
+  assert.ok(!ATLAS().includes("case 'slope':"), '…including in the dispatch');
   /* The mirror question — «does the catalogue offer anything the dispatch cannot run?» — is NOT
      asserted here, and the reason is worth writing down rather than leaving as an omission: the
      catalogue uses {"type":…} for NESTED schemas too, not only for actions. Running it once found

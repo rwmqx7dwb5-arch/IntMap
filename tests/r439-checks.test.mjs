@@ -324,8 +324,13 @@ test('R439 ⑨ the promoted rows are in 気候・気象 and in no other list', (
     assert.ok(!others.includes("'" + id + "'"), id + ' is not also in the beta list');
   }
   /* the two rows the instruction did NOT name stay where they were — 再編 is not a licence (#R273) */
-  assert.ok(others.includes("'ec-wind'") && others.includes("'ec-cape'"),
-    'the rows nobody asked to promote are untouched');
+  /* ⚠⚠ (#R468) 「ベータからはCAPE不安定度レイヤーを気象に昇格。」 #R439 asserted that `ec-wind` and
+     `ec-cape` stay in Beta because the reader had not NAMED them — the #R273 rule that a
+     reorganisation is not a licence to overturn a beta judgement of the reader's. That rule is
+     untouched; its PREMISE changed, because `ec-cape` has now been named. `ec-wind` still has not,
+     and is still asserted to be where it was. */
+  assert.ok(others.includes("'ec-wind'"),
+    'the row nobody asked to promote is untouched — ec-wind was not named, then or now');
   /* and no group anywhere still names the retired id */
   assert.ok(!/'ec-isobars'/.test(DLC), 'the Layers panel knows nothing about the retired row');
 });

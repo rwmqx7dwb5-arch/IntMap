@@ -124,7 +124,7 @@ window.IntMapLang.define('de', { ui: {
          screenshot messages and most of Settings, in English, in four languages.
          [[intmap-recurring-lessons]] G — one quantity, one place. 109 keys arrived here from that
          move; `node scripts/i18n-keyed-audit.mjs` fails if a seventh home is ever opened. */
-      lyrGrpOrbit:"Weltraum & Orbit",
+      lyrGrpOrbit:"Weltraum",
       lyrEU:"EU-Mitglieder",
       lyrClimate:"Köppen-Klima",
       lyrPrecip:"Niederschlag (IMERG)",
@@ -159,7 +159,7 @@ window.IntMapLang.define('de', { ui: {
       lyrGrpSociety:"Gesellschaft & Bildung",   /* (#R261) */
       lyrGrpTransport:"Verkehr & Mobilität",   /* (#R261) */
       lyrGrpAgri:"Landwirtschaft & Ernährung",   /* (#R261) */
-      lyrGrpMaritime:"Ozeane & Seefahrt",
+      lyrGrpMaritime:"Ozeane",
       lyrGrpIndic:"Indikatoren & Overlays",
       lyrGrpTerrain:"Gelände & Höhe",
       lyrGrpNature:"Natur & Bodenbedeckung",

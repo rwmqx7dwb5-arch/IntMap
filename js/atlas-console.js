@@ -2463,10 +2463,6 @@ window.IntMapModules.atlasConsole=function(HOST){
         /* (#R88) universal object list — see & manage every pin/drawing/radius/route/upload/isochrone in one panel */
         case 'objects': case 'objectList': case 'manageObjects': case 'listObjects': case 'myObjects': { let n=0; try{ if(window.IntMapObjects){ n=window.IntMapObjects.count(); window.IntMapObjects.open(); } }catch(_){}
           return R(true, note('🗂 '+L('Objects','オブジェクト一覧','Objekte','Объекты','Objetos')+' · '+n+' '+L('on the map','件','Objekte','объектов','objetos'))+note(L('Manage every pin, drawing, radius, route, uploaded layer and reachable-area here — rename, recolor, hide or delete.','ピン・図形・半径・経路・アップロード・到達圏をここで一括管理（名称変更・色変更・非表示・削除）。','Alle Objekte hier verwalten.','Управляйте всеми объектами здесь.','Gestiona todos los objetos aquí.'))); }
-        /* (#R89) slope / aspect terrain analysis */
-        case 'slope': case 'aspect': case 'terrainAnalysis': case 'steepness': case 'gradient': { const m=(a.type==='aspect'||/aspect|direction|方向|向き/i.test(String(a.mode||a.what||'')))?'aspect':'slope';
-          try{ const cb=document.getElementById('dl-slope'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); } if(window.IntMapSlope){ window.IntMapSlope.setMode(m); } }catch(_){}
-          return R(true, note('⛰ '+(m==='aspect'?L('Slope aspect (direction each slope faces)','斜面の向き（方位）','Hangexposition','Экспозиция склона','Orientación'):L('Slope steepness (angle)','傾斜の急さ（角度）','Hangneigung','Крутизна склона','Pendiente'))+' — '+L('computed from the real elevation model for the current view; pan/zoom to update.','現在の表示範囲の標高データから算出。移動・拡大で更新。','aus dem echten Höhenmodell.','по реальной модели высот.','del modelo de elevación real.'))); }
         /* (#R89) RF / radio coverage from an antenna */
         /* (#R318) `lineOfSight` WAS ALSO LISTED HERE, AND WAS UNREACHABLE. A switch enters the FIRST
            matching case and `case 'los': case 'lineOfSight':` above already claims that spelling, so

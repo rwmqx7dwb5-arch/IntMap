@@ -31,6 +31,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { corridorAxes, axisFit, splitAntimeridian, unwrap, lineLength, haversine } from '../scripts/subcables/geo.mjs';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readLF(path.join(ROOT, p));
@@ -84,7 +85,9 @@ test('① default opacity, default-ON state and the opacity control are unchange
     'the per-layer opacity control for the cables changed');
   assert.match(DL, /'dl-subcables':\['lyr-subcables','lyr-subcables-glow','lyr-subcables-pts'\]/,
     'the layer audit no longer knows all three cable sublayers');
-  assert.match(DL, /\['lyrGrpTech',\['dc','subcables'/, 'the cable row moved out of Technology & infrastructure in the layer panel');
+  /* (#R468) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  assert.ok(byKey.lyrGrpTech.includes('subcables'), 'the cable row moved out of Technology & infrastructure in the layer panel');
 });
 
 /* ══ ② THE POPUP MODULE TOUCHES NO PAINT ═══════════════════════════════════ */

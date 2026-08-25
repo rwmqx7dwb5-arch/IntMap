@@ -170,7 +170,18 @@ test('r309 ⑥ the base-map section is ONE published list, and it covers every r
   const cb = /window\.IntMapBasicLayerRows\s*=\s*\[([^\]]*)\]/.exec(DL);
   assert.ok(cb, 'js/data-layers.js publishes IntMapBasicLayerRows');
   const cbIds = cb[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);
-  assert.ok(cbIds.length >= 10, 'the checkbox half of the section is there (' + cbIds.length + ')');
+  /* ⚠⚠ (#R468) THE FLOOR IS 9, AND WHAT IT PROTECTS IS UNCHANGED. This number is not a count of
+     the section — it is a guard against the list being quietly emptied, which is the shape #R309
+     found (four hand-written copies of this membership, disagreeing). `cb-countries` left it by
+     instruction (「国境・国情報レイヤーは完全削除して」, narrowed by the reader to 「レイヤー行だけ隠す」),
+     so it is now in `window.IntMapHiddenLayerRows` instead: the checkbox is still in the registry
+     and the layer still works, it simply has no row.
+     ⚠ AND ONE INVARIANT WAS DELIBERATELY GIVEN UP, so it is written down rather than left to be
+     inferred from a smaller number: `cb-countries` is no longer SUBTRACTED from the layer counters
+     either. #R309's rule was 「Base map & labels のオン数をレイヤーのオン数にみなすな」, and that still
+     holds for the nine rows this section draws — but a layer with no row and no chip cannot be
+     switched off at all, so the 「表示中のレイヤー」 chip is now its only handle and it has to count. */
+  assert.ok(cbIds.length >= 9, 'the checkbox half of the section is there (' + cbIds.length + ')');
   const pub = /IntMapBasicLayers\s*=\s*window\.IntMapBasicLayerRows\.concat\(\[([^\]]*)\]\)/.exec(DL);
   assert.ok(pub, 'window.IntMapBasicLayers is those rows plus the ones that were moved in');
   const extra = pub[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean);

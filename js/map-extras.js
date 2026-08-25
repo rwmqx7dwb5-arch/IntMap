@@ -366,8 +366,11 @@ window.IntMapModules.runwaySearch=function(HOST){
 };
 
 window.IntMapModules.terrain=function(HOST){
-  /* ===== (#R89) TERRAIN ELEVATION SAMPLER — shared keyless DEM access for slope/aspect, viewshed (RF) and
-     terrain shadows. Decodes Mapzen/AWS "terrarium" terrain-RGB tiles (public S3, CORS-OK for canvas readback,
+  /* ===== (#R89) TERRAIN ELEVATION SAMPLER — shared keyless DEM access for the viewshed (RF), drone
+     flight planning, the seismic site term and terrain shadows.
+     ⚠ (#R468) The slope/aspect layer this was written for is deleted; the sampler is not — the four
+     readers above are the reason it exists now.
+     Decodes Mapzen/AWS "terrarium" terrain-RGB tiles (public S3, CORS-OK for canvas readback,
      elevation = R*256 + G + B/256 − 32768 metres) into an elevAt(lng,lat) sampler for a given bounds+zoom. ===== */
   window.IntMapTerrain=(function(){
     const cache={};

@@ -178,11 +178,11 @@ window.IntMapLang.define('ru', { ui: {
       lyrGrpSociety:"Общество и образование",   /* (#R261) */
       lyrGrpTransport:"Транспорт и мобильность",   /* (#R261) */
       lyrGrpAgri:"Сельское хозяйство и продовольствие",   /* (#R261) */
-      lyrGrpMaritime:"Океаны и море",
+      lyrGrpMaritime:"Океаны",
       lyrGrpTerrain:"Рельеф и высота",
       lyrGrpNature:"Природа и растительный покров",
       lyrGrpIndic:"Индикаторы и слои",
-      lyrGrpOrbit:"Космос и орбита",
+      lyrGrpOrbit:"Космос",
       lblAccent:"Акцентный цвет",
       accentDefault:"По умолчанию",
       accentCustom:"Свой цвет",

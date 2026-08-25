@@ -18,6 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -150,9 +151,10 @@ test('R202 ③c the satellite layer is in a group somebody would open', () => {
      ground stations) to this shelf — 「1行だけのグループはカテゴリではない」 — and a list literal
      asserts «and nothing else, ever», which is not what #R202 was claiming. The claim is that `sats`
      has a group of its own and is not filed under the ocean. */
-  const og = /\['lyrGrpOrbit',\[([^\]]*)\]\]/.exec(dl);
-  assert.ok(og && og[1].includes("'sats'"), 'sats is in its own group');
-  assert.doesNotMatch(dl, /lyrGrpMaritime',\[[^\]]*'sats'/, 'and no longer under Oceans & maritime');
+  /* (#R468) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  assert.ok(byKey.lyrGrpOrbit.includes('sats'), 'sats is in its own group');
+  assert.ok(!byKey.lyrGrpMaritime.includes('sats'), 'and no longer under Oceans & maritime');
   /* ⚠ (#R239) SAME CLAIM, NEW HOME — every keyed string moved into js/locales/ui.<code>.js.
      The `Object.assign(i18n.en…es,{…})` shape this test read was five languages by
      construction, and fr/ko/zh fell back to English for ~170 keys declared that way

@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { byKey } from './helpers/layer-groups.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -212,10 +213,9 @@ test('R270 ⑤ each South-Slavic standard has its own colour, so the key can nam
 /* ── ⑥ the shelves ──────────────────────────────────────────────────────────────────────────── */
 test('R270 ⑥ the three moved rows are on exactly one shelf each, and it is the right one', () => {
   const s = codeOnly(read('js/data-layers.js'));
-  const groups = {};
-  for (const e of s.matchAll(/\['(lyrGrp[A-Za-z]+)',\[([^\]]*)\]\]/g)) {
-    groups[e[1]] = e[2].split(',').map((x) => x.trim().replace(/^'|'$/g, '')).filter(Boolean);
-  }
+  /* (#R468) the shared reader — the regex this replaced needed `]]` after the id list, and
+     matched nothing once each shelf grew a count of the rows the reader named. */
+  const groups = byKey;
   const where = (id) => Object.keys(groups).filter((g) => groups[g].includes(id));
   assert.deepEqual(where('wbhomicide'), ['lyrGrpSociety'], 'a homicide rate is not a defence layer');
   assert.deepEqual(where('osmemg'), ['lyrGrpHazard'], 'fire and police stations are not health');
