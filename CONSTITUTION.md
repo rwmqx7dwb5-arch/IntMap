@@ -19,9 +19,17 @@
    **すべての指摘は実際の現象であり、すべて実装側（あなた）の責任である。**
    Every report describes a real phenomenon and is your responsibility. Find the real root cause.
 
-3. **既存機能は、明確な指示がない限り、削除・縮小を絶対に行わない。**
-   Never delete or shrink an existing feature without an explicit instruction to do so.
-   迷ったら「移動」「追加」「無効化」で対応し、消さない。When in doubt, move/add/disable — do not remove.
+3. **既存機能の削除・縮小は「提案 → 確認 → 実行」。勝手には行わない。**
+   Removing or shrinking an existing feature is allowed — **but only after asking and getting a yes.**
+   必要と判断したら**遠慮せず提案する**（何を・なぜ・代わりに何が残るか・失うもの）。
+   ⚠ **承認の無い削除・縮小・無効化・簡略化は、今までどおり禁止。** 迷っている間は消さない。
+   ⚠ **確認の時期**——今回の依頼と**不可分**なとき（削らなければ依頼が正しく直らないとき）だけ
+   その場で訊く。それ以外（ついでに見つけた重複・死んだ機構・二重の正本）は**依頼を完遂してから**
+   最終報告の中で提案する。**1つの依頼を、提案のために止めない。**
+   ⚠ **名指しで「消さない」と書いてある個別項目も、この手続きの対象である**——Cesium・ニュースの
+   決定論フォールバック・停止中の記事経路・撤去済み Area Monitors の基盤・`DEV-NOTES` の不削除など。
+   そこに書かれた理由は**提案のときに検討する材料**であって、提案そのものを禁じるものではない。
+   ⚠ **Atlas だけは別**（§5）——実装は削ってよいが、**到達可能な能力と回答品質は削らない。**
 
 4. **過去に行ったからという理由で、現在の指示を確認せず無視しない。**
    Do not skip a current instruction just because a previous round "already did it." Re-read and re-verify
@@ -31,7 +39,13 @@
 
 ## 1. 変更の作法 (How to change the code)
 
-- **変更は加算的・その場で。** Keep changes additive and in-place. Don't rewrite working subsystems wholesale.
+- **変更は加算的・その場で——ただし加算は既定であって、義務ではない。**
+  Keep changes additive and in-place; don't rewrite working subsystems wholesale. **But additive is the
+  default, not a duty.** 同じ判定を持つ2本目の関数・使われていない分岐・二重のカタログ・役目を終えた
+  機構は、**足して回避せず、確認のうえ削る**（§0 の 3）。
+  ⚠ **「足して塞ぐ」が常に安全なわけではない。** 重複した機構は「**片方だけが直る**」という形で
+  実際に何度も壊れてきた——同じ規則を持つ文分割器が2本あり報告された側だけ直した回、同じ拒否の
+  綴りが3本あり3本目だけ残った回、同じ語彙表が2枚あり片方だけ訳された回。
 - **作業は branch → PR → CI → squash merge。** `main` へ直接 push しない。
   本番は `main` への merge ごとに **GitHub Actions がビルドして GitHub Pages へ配信**する
   （公開されるのは `dist/`。リポジトリのソースツリーではない）。手順は `docs/RELEASE.md`。
@@ -86,6 +100,14 @@
 - ⚠⚠⚠ **Atlas には全権が委任されている。Atlas を触るとき、制限を増やす方向・例外を増やす方向へ
   持っていってはならない。**
   Atlas holds full authority. **Never** move Atlas in the direction of more limits or more exceptions.
+  - ⚠⚠⚠ **Atlas に触るときは、常に Atlas を一体として扱う。**
+    Treat Atlas as ONE system every time you touch it. 症状1つに機構を1つ足す積み重ねは、Atlas では
+    そのまま**回答品質の劣化**になる（互いに矛盾する門が増え、どれが効いたのか誰にも言えなくなる）。
+    ⇒ **実装は削ってよい**——重複した機構・二重の正本・到達しない分岐は、統合し、確認のうえ撤去する。
+    ⇒ ⚠ **削ってはならないのは、Atlas が到達できる能力と、回答の品質である。**
+    能力の集合を数えるのは `npm run check:capabilities` と `npm run check:catalog`。
+    **統合は、能力を1本も減らさずに行う**——減るならそれは統合ではなく機能削減であり、
+    §0 の 3 の確認が要る。
   - **自力で取れるものを利用者に投げ返さない。** Atlas が道具で取得できるものは Atlas が取得する。
     利用者に訊いてよいのは**利用者にしか出せないもの**だけ（好み、実在する選択肢からの選択、
     ブラウザが本人にしか出さない許可）。**地図の中心で代用しない。**
@@ -160,4 +182,5 @@
 ---
 
 ### 違反したら (If a change would violate any of the above)
-立ち止まり、原因を特定し、加算的に直す。ユーザーの報告を疑わない。完了後は必ず commit & sync。
+立ち止まり、原因を特定し、加算的に直す（削るほうが正しいなら、**確認を取ってから**削る）。
+ユーザーの報告を疑わない。完了後は必ず commit & sync。

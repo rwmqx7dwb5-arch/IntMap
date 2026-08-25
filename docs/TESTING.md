@@ -23,7 +23,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **96 measured spec files / 77.0 min** of serial browser time against a ceiling of 77.0 min; and
 **98 measured spec files / 77.2 min** of serial browser time against a ceiling of 77.2 min; and
-`npm run test:checks` runs **255 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **256 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **92 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -591,6 +591,7 @@ reader here for this list; adding a rule means adding a row.
 | `backup-shell` | a document launches the USB backup with a shell other than the one `CLAUDE.md` §11.2 uses |
 | `relay-guard` | a stated count of the functions sharing `_shared/relay-guard.js` is not the real one |
 | `ci-gates` | `npm test` runs a source-side gate that no `ci.yml` step reaches |
+| `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
 
 The last six arrived in #R403 and are described below, after the Edge Function rules they grew out of.
 
