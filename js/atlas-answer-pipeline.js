@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · ATLAS — ONE ANSWER, ONE CALL, ONE AUDIT, AT MOST ONE REPAIR  (#R350)
+ *  IntMap · ATLAS — ONE ANSWER, ONE CALL, ONE AUDIT — AND THE AUDIT ONLY REPORTS  (#R472)
  * ----------------------------------------------------------------------------
  *  The order matters and it is fixed here so no call site can reorder it:
  *
@@ -7,19 +7,48 @@
  *       figures it holds — and mint the callId BEFORE the call, so the registry is bound to the
  *       call that is about to happen rather than to whichever call answers last;
  *    2. ask ONCE, with the schema, showing the model evidence IDS and no URLs;
- *    3. AUDIT the structure against the registry (js/atlas-answer-audit.js);
- *    4. if it failed, ask ONCE more — with the finding CODES, not the previous prose — under the
- *       same turnId, so the repair does not cost the reader a second daily use (#R318);
- *    5. if it failed again, DEGRADE in code: keep what passed, drop what did not, and say so.
+ *    3. AUDIT the structure against the registry (js/atlas-answer-audit.js) and HAND THE FINDINGS
+ *       TO ATLAS. Nothing here edits, deletes or re-asks the answer.
  *
- *  ⚠ THE VALID PATH IS STILL ONE MODEL CALL. #R318 made one question cost one use; this round does
- *  not spend a second one to buy its own correctness. The repair happens only when the audit has
- *  something concrete to point at, and it is capped at one — a loop that keeps asking until the
- *  model agrees with itself is the self-check this file exists to replace.
+ *  ══ ⚠⚠⚠ (#R472) WHAT THIS FILE STOPPED DOING, AND WHY THAT IS THE FIX ═══════════════════════════
+ *  Reported: 「岐阜県で藤の名所は」 came back as Atlas answering from its own knowledge above the
+ *  banner 「裏付けを確認できなかった記述は、この回答から取り除きました」 — over an empty document.
+ *
+ *  #R350 gave this file two powers over the model's answer: ask AGAIN when the audit found
+ *  something (step 4), and, if that also failed, REBUILD the answer in code — keep the claims that
+ *  passed, delete the rest (step 5, `degrade`). Both are gone.
+ *
+ *  ⚠ THEY WERE MEASURED ON THE LIVE SITE BEFORE THEY WERE REMOVED. For `analysis_structured`, the
+ *  hosted web search runs (`webUsed:true`, 2 searches) and the provider returns **ZERO** citation
+ *  annotations — because IntMap's own ANSWER CONTRACT tells the model never to write a URL, and the
+ *  annotation is attached where the model writes one. Same question, same schema, same web mode,
+ *  the only difference being the contract: **with it, 0 citations; without it, 2.** So a
+ *  `hosted_web` record could never enter the registry on this path, every primary claim was
+ *  `evidence.primary_unsupported`, the repair (shown the same evidence list) wrote
+ *  「无法核实」, and `degrade` removed every claim — leaving `directAnswer.text` empty, which the
+ *  call site then reported as 「分析没有回传结果」. **The tool returned nothing at all.**
+ *
+ *  ⚠ THE ANSWER WAS NOT WRONG. It named 赤坂スポーツ公園, its address and its bloom season, off two
+ *  real searches. What it lacked was an ID LINKING A SENTENCE TO A PAGE — and IntMap is the reason
+ *  that ID cannot exist. Deleting the sentence for it punished the model for IntMap's own rule.
+ *
+ *  ⚠ AND THE SECOND «ANSWER» IN THE REPORT WAS THE CORRECT CONSEQUENCE OF THE FIRST. Atlas is told
+ *  when an answer came back gutted (#R419) and it did the right thing: it answered the reader
+ *  itself. Two answers stacked in one reply is what «code deleted the tool's answer» looks like
+ *  from the outside. One cause, not two.
+ *
+ *  WHAT REPLACES THEM: nothing. The audit still runs, every rule intact, and its findings go to the
+ *  developer trace and to Atlas — which is an AI, reads them, and decides what to say. That is the
+ *  same authority #R413 restored everywhere else in Atlas, arriving here.
+ *
+ *  ⚠ THE READER IS NOT LESS PROTECTED. The guarantee that named #R350 — «a URL the model invented
+ *  never reaches the reader as a link» — lives in the RENDERER and the REGISTRY, not here: source
+ *  cards are built only from records IntMap put in, and js/atlas-answer-render.js never linkifies
+ *  prose. `degrade` was not enforcing that. It was only deleting text.
  *
  *  ⚠ NOTHING HERE TOUCHES THE DOM AND NOTHING HERE CALLS THE NETWORK DIRECTLY. `ask` is injected,
- *  so tests/r334-checks.test.mjs runs the whole pipeline — including the repair and the degrade —
- *  against a scripted model with no browser and no key.
+ *  so tests/r472-checks.test.mjs runs the whole pipeline against a scripted model with no browser
+ *  and no key.
  * ==========================================================================*/
 
 import { makeAtlasEvidence } from './atlas-evidence.js';
@@ -30,9 +59,7 @@ export function makeAtlasAnswerPipeline() {
   return (function () {
   const { makeEvidenceRegistry } = makeAtlasEvidence();
   const { normalizeAnswer, answerContractRules } = makeAtlasAnswerContract();
-  const { auditAnswer, repairBrief, degrade } = makeAtlasAnswerAudit();
-
-  const MAX_MODEL_CALLS = 2;   /* the answer, and at most one repair. Not a setting. */
+  const { auditAnswer } = makeAtlasAnswerAudit();
 
   let _seq = 0;
   function newCallId(prefix) {
@@ -51,7 +78,7 @@ export function makeAtlasAnswerPipeline() {
    *   language          the answer language, as a name ("Japanese")
    *   temporalMode      'current' | 'historical' | 'mixed' | 'unspecified'
    *   requestedOutputs  from the request profile
-   *   turnId            the #R318 turn key — the repair rides on the SAME one
+   *   turnId            the #R318 turn key
    *   webMode           'off' | 'auto' | 'required'
    *   clientSources     the srcSink IntMap gathered  [{url,title,src,date,dateType,origin}]
    *   appFacts          measured values IntMap holds [{title,publisher,validTime,supportFacts:[…]}]
@@ -68,12 +95,31 @@ export function makeAtlasAnswerPipeline() {
 
     const contract = answerContractRules({ language: opts.language || 'the user\'s language' });
     const system = String(opts.systemPrompt || '') + '\n\n[ANSWER CONTRACT]\n' + contract;
-    const evBlock = registry.promptBlock();
-    const prompt = '[QUESTION]\n' + String(opts.question || '') + '\n\n'
-      + String(opts.dataBlock || '')
-      + (evBlock ? ('[EVIDENCE RECORDS — cite these ids in evidenceIds. Use ONLY these ids. They are the only sources that exist for this answer, and there are no URLs for you to write.]\n' + evBlock + '\n\n') : '');
 
-    const trace = { callId, calls: [], evidence: registry.size() };
+    /* ⚠ (#R472) AND THE PROMPT STOPPED SAYING SOMETHING THAT WAS NOT TRUE. It used to declare the
+       list below «the only sources that exist for this answer» — to a call that was about to run a
+       web search, and, for any question IntMap holds no article about, of an EMPTY list. That was a
+       lie the model obeyed. It is not replaced by a longer instruction: the false clause is kept
+       only where it is true (no search running), and where a search IS about to run the model is
+       told plainly that a page it opens has no id here and that the sentence is still worth
+       writing. */
+    const evBlock = registry.promptBlock();
+    const searching = (opts.webMode || 'auto') !== 'off';
+    const evidenceSection = evBlock
+      ? ('[EVIDENCE RECORDS — cite these ids in evidenceIds. There are no URLs for you to write, and an id that is '
+        + 'not listed here is a fabrication.'
+        + (searching
+          ? ' A page your web search opens during this call has no id here yet; cite what you can and write the rest plainly.'
+          : ' They are the only sources that exist for this answer.')
+        + ']\n' + evBlock + '\n\n')
+      : (searching
+        ? '[EVIDENCE RECORDS — none. IntMap holds no source of its own for this question. Answer from your web search '
+          + 'and your own knowledge; never write a URL and never invent an id.]\n\n'
+        : '');
+    const prompt = '[QUESTION]\n' + String(opts.question || '') + '\n\n'
+      + String(opts.dataBlock || '') + evidenceSection;
+
+    const trace = { callId, calls: [] };
     const ctx = { webUsed: false, temporalMode: opts.temporalMode || 'unspecified' };
 
     /* ── 2) the one call ─────────────────────────────────────────────────────────────────────── */
@@ -87,83 +133,50 @@ export function makeAtlasAnswerPipeline() {
     /* ⚠ `data` FIRST. The transport is askAIJSONEnvelope, which has already parsed this call's
        JSON; parsing `text` a second time would be a second chance to disagree with it. */
     const body = (o) => (o && o.data != null) ? o.data : parseJSON((o && o.text) || '');
-    let env = normalizeAnswer(body(first), {
+    const env = normalizeAnswer(body(first), {
       turnId: opts.turnId || '', callId, text: opts.question || '', language: opts.language || '',
       temporalMode: ctx.temporalMode, requestedOutputs: opts.requestedOutputs || [],
       answerGoal: opts.answerGoal || '',
     });
-    let audit = auditAnswer(env, registry, ctx);
+
+    /* ── 3) audit, and REPORT ────────────────────────────────────────────────────────────────── */
+    const audit = auditAnswer(env, registry, ctx);
     trace.calls.push({ callId, task: 'analysis_structured', errors: audit.errors.length, warnings: audit.warnings.length });
-
-    /* ── 4) at most one repair, aimed at the CODES ───────────────────────────────────────────── */
-    if (audit.errors.length) {
-      const repairId = newCallId('rep');
-      registry.allowCall(repairId);
-      let second = null;
-      try {
-        second = await ask(prompt + '\n\n' + repairBrief(audit), system, {
-          task: 'analysis_structured', webMode: 'off',
-          callId: repairId, turnId: opts.turnId || '',
-        });
-      } catch (_) { second = null; }
-      if (second && second.text) {
-        registry.addProviderCitations(second.citations || [], { callId: second.callId || repairId, webUsed: !!(second.meta && second.meta.webUsed) });
-        const env2 = normalizeAnswer(body(second), {
-          turnId: opts.turnId || '', callId: repairId, text: opts.question || '', language: opts.language || '',
-          temporalMode: ctx.temporalMode, requestedOutputs: opts.requestedOutputs || [],
-          answerGoal: opts.answerGoal || '',
-        });
-        const audit2 = auditAnswer(env2, registry, ctx);
-        trace.calls.push({ callId: repairId, task: 'analysis_structured', repair: true, errors: audit2.errors.length, warnings: audit2.warnings.length });
-        /* ⚠ THE REPAIR IS ACCEPTED ONLY IF IT IS BETTER. A second answer with MORE findings than the
-           first is not a repair; keeping it because it is newer is how a fix becomes a regression. */
-        if (audit2.errors.length <= audit.errors.length) { env = env2; audit = audit2; }
-      }
-    }
-
-    /* ── 5) degrade rather than show prose the audit rejected ────────────────────────────────── */
-    if (audit.errors.length) {
-      env = degrade(env, audit);
-      trace.degraded = true;
-    } else {
-      env.audit = { status: 'passed', errors: [], warnings: audit.warnings };
-    }
+    env.audit = { status: audit.errors.length ? 'findings' : 'passed', errors: audit.errors, warnings: audit.warnings };
     trace.status = env.audit.status;
+    trace.evidence = registry.size();
     return { env, registry, audit, trace, webUsed: ctx.webUsed };
   }
 
   /**
-   * degradeMeta(env) -> meta | null   — what the CALLER has to be told when step 5 fired.
+   * auditMeta(env) -> meta | null   — what the CALLER passes to Atlas when the audit found something.
    *
-   * ══ ⚠⚠⚠ (#R419) A DEGRADED ANSWER WAS REPORTED TO ATLAS AS AN UNQUALIFIED SUCCESS ═════════════
-   * The reported case is 「1940年のリトアニアでは何が起きていた？」. The evidence registry for that
-   * turn is 2026 news wire — nothing in it can corroborate 1940 — so the audit raised
-   * `evidence.primary_unsupported` on every primary claim, the repair could not fix what it did not
-   * have, and step 5 removed them all. The reader saw the honest banner this pipeline draws:
-   * 「裏付けを確認できなかった記述は、この回答から取り除きました」 over a page with the substance
-   * gone. And Atlas — the ONE reader of this result that could have done something about it — was
-   * handed {ok:true, status:'completed', rendered:true} by js/atlas-console.js's `return R(true,
-   * html)`, so its closing sentence announced 「1939年の前史からソ連軍の進駐、傀儡政権、選挙、8月の
-   * 併合…を日付順に整理した解説を表示しました」 — describing a document that was not on the screen.
+   * ══ ⚠ (#R419, KEPT; #R472, NARROWED) ═══════════════════════════════════════════════════════════
+   * #R419's finding stands and is the reason this function exists: a tool result that hides what
+   * happened leaves Atlas describing a document that is not on the screen. What changed is the fact
+   * being reported. It used to be 「this answer was GUTTED — n claims removed」, because code had
+   * just removed them. Nothing is removed now, so what Atlas is told is what the audit NOTICED
+   * about an answer that is on the screen in full.
    *
-   * ⚠ THIS ADDS NO RULE AND REMOVES NO AUTHORITY (CONSTITUTION.md §5). The tool still runs, still
-   * renders, still returns true. What changes is that the result now SAYS what happened, so Atlas
-   * can decide — answer from its own knowledge, say the sourced analysis could not support the
-   * question, or try something else. It could not decide before because it was not told.
+   * ⚠ IT CARRIES CODES, NOT A VERDICT. Atlas is the reader of this, and Atlas is an AI: it can tell
+   * `contradiction.superlative_beaten` (the answer argues with itself — say so) from
+   * `evidence.primary_unsupported` (IntMap had no record to link — often nothing to say at all)
+   * better than a severity column in this repository can.
    */
-  function degradeMeta(env) {
+  function auditMeta(env) {
     const a = env && env.audit;
-    if (!a || a.status !== 'degraded') return null;
-    const n = +(a.removedClaims || 0) || 0;
-    return { degraded: true, removedClaims: n,
-      unverified: 'DEGRADED: the answer audit removed ' + n + ' claim(s) that no evidence record in '
-        + 'this turn could support, and what is rendered is only what survived. The evidence was the '
-        + 'live sources IntMap gathered for this question; if the question is not one those sources '
-        + 'can corroborate, this tool cannot answer it. Do not describe the rendered block as the '
-        + 'account you intended — say what it does and does not contain, or answer the reader yourself.' };
+    if (!a || !a.errors || !a.errors.length) return null;
+    const codes = [];
+    a.errors.forEach((e) => { if (e && e.code && codes.indexOf(e.code) < 0) codes.push(e.code); });
+    return { auditFindings: codes,
+      unverified: 'The answer is rendered in full, as written. IntMap\'s answer audit noticed these things '
+        + 'about it: ' + codes.join(', ') + '. Judge them yourself — `evidence.*` usually means IntMap held no '
+        + 'record to link a sentence to, which is not a claim that the sentence is wrong; `contradiction.*`, '
+        + '`series.*` and `metric.*` mean the answer disagrees with itself or with a figure IntMap holds, which '
+        + 'is worth telling the reader. Do not rewrite the rendered answer; frame it.' };
   }
 
-    const API = { MAX_MODEL_CALLS, runStructuredAnswer, degradeMeta };
+    const API = { runStructuredAnswer, auditMeta };
     try { window.IntMapAnswerPipeline = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

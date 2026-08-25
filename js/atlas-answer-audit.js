@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  ⚠ THIS IS NOT A SELF-CHECK PROMPT. Every rule below is decided by this code over the envelope
  *  and the evidence registry — a model's own opinion of its answer is exactly the thing that was
- *  already wrong. The model may be asked ONCE to repair what this found; it is never the judge.
+ *  already wrong. What this file produces is a REPORT — it is never the judge of what the reader sees.
  *
  *  The reported failure is six defects in one reply, and each one is a rule here:
  *
@@ -20,10 +20,11 @@
  *    ⑥ 「Web検証済み」 was a heading rather than a fact
  *         → web.unverified_label · citation.call_mismatch
  *
- *  ⚠ SEVERITY IS THE CONTRACT WITH THE UI. An `error` that survives means the turn may not be
- *  rendered as a finished answer — js/atlas-console.js repairs once, then DEGRADES (drops what
- *  could not be verified and says so). A `warning` is recorded and shown to nobody but the
- *  developer trace; it never blocks.
+ *  ⚠⚠⚠ (#R472) SEVERITY NO LONGER DECIDES ANYTHING. It used to be «the contract with the UI»: an
+ *  `error` meant the turn could not be rendered as a finished answer, so the caller asked again and
+ *  then REBUILT the answer without the flagged claims. Both of those are gone — see the box above
+ *  `verdict()`. A finding is a finding: it reaches the developer trace and it reaches Atlas, and
+ *  Atlas decides. Nothing in this file edits, deletes or re-asks an answer.
  *
  *  Pure over (envelope, registry, ctx). tests/r334-checks.test.mjs mutates a correct answer one
  *  field at a time and asserts each mutation lands on its own code — a gate never seen red proves
@@ -482,64 +483,38 @@ export function makeAtlasAnswerAudit() {
     return verdict(out);
   }
 
+  /* ⚠ (#R472) `status` IS INFORMATION NOW, NOT A GATE. It used to read 'repairable', and the caller
+     acted on it: ask again, then rebuild the answer in code from the claims that passed. Both are
+     gone (js/atlas-answer-pipeline.js). The split into errors / warnings is kept because it is the
+     most useful thing this file knows about its own findings — but nothing here decides what happens
+     to the answer any more. Atlas is told the codes and judges them. */
   function verdict(list) {
     const errors = list.filter((e) => e.severity === 'error');
     const warnings = list.filter((e) => e.severity !== 'error');
-    return { status: errors.length ? 'repairable' : 'passed', errors, warnings };
+    return { status: errors.length ? 'findings' : 'passed', errors, warnings };
   }
 
-  /** What the ONE repair call is told. Codes and ids — never the whole previous answer. */
-  function repairBrief(audit) {
-    const rows = (audit && audit.errors ? audit.errors : []).slice(0, 20)
-      .map((e) => '- ' + e.code + (e.claimId ? (' [' + e.claimId + ']') : '') + ': ' + e.detail);
-    return 'Your previous structured answer failed IntMap\'s answer audit. Fix EXACTLY these findings and return the whole object again in the same schema. '
-      + 'Do not argue with a finding — either correct the claim, split it, add the missing metric field, cite a different evidence id, or DELETE the statement and record the gap in limitations. '
-      + 'Remember: no URLs, evidence only by id, one series per claim, dimension always stated, and the opening sentence may not outrun the body.\n\n[AUDIT FINDINGS]\n' + rows.join('\n');
-  }
+  /* ══ ⚠⚠⚠ (#R472) `repairBrief` AND `degrade` USED TO BE HERE, AND THEY ARE NOT COMING BACK ═══════
+     `degrade` rebuilt the answer: claims the audit had flagged were deleted, blocks that lost all of
+     their claims were deleted, and the opening sentence was replaced by whatever survived. Measured
+     on the live site, the answer it was deleting was RIGHT — 「岐阜県で藤の名所は」 named 赤坂スポーツ
+     公園 with its address and bloom season off two real web searches — and the finding that condemned
+     it was `evidence.primary_unsupported`: no evidence id linked the sentence to a page. No id COULD:
+     the hosted search's citation annotations are attached where the model writes a URL, and the
+     ANSWER CONTRACT in js/atlas-answer-contract.js forbids it (with the contract, 0 citations; the
+     same call without it, 2). So the answer was deleted for obeying IntMap's own rule.
 
-  /* ══ DEGRADE ═════════════════════════════════════════════════════════════════════════════════════
-     ⚠ WHEN THE SECOND ATTEMPT ALSO FAILS, THE UNVERIFIED PROSE IS NOT SHOWN. The answer is rebuilt by
-     CODE from the parts that passed: claims with no error survive, a block survives if at least one of
-     its claims survives, and the opening sentence is replaced by a surviving primary claim when the
-     original one is among the casualties. What was removed is stated, not hidden — 「エラー表示をすべて
-     隠す」 is the failure mode this is the opposite of. */
-  function degrade(env, audit) {
-    const bad = new Set((audit && audit.errors ? audit.errors : []).map((e) => e.claimId).filter(Boolean));
-    const leadFailed = (audit && audit.errors ? audit.errors : []).some((e) => /^(lead\.|schema\.empty_direct_answer|url\.)/.test(e.code));
-    const kept = (env.claims || []).filter((c) => !bad.has(c.id));
-    const keptIds = new Set(kept.map((c) => c.id));
-    const sections = (env.answer.sections || []).map((s) => ({
-      id: s.id,
-      heading: s.heading,
-      blocks: (s.blocks || []).filter((b) => (b.claimIds || []).some((id) => keptIds.has(id)))
-        .map((b) => ({ type: b.type, text: b.text, claimIds: (b.claimIds || []).filter((id) => keptIds.has(id)) })),
-    })).filter((s) => s.blocks.length);
-
-    let leadText = env.answer.directAnswer.text;
-    let leadIds = (env.answer.directAnswer.claimIds || []).filter((id) => keptIds.has(id));
-    if (leadFailed || !leadIds.length) {
-      const best = kept.find((c) => c.importance === 'primary') || kept.find((c) => c.importance === 'major') || kept[0];
-      leadText = best ? best.text : '';
-      leadIds = best ? [best.id] : [];
-    }
-    const removed = (env.claims || []).length - kept.length;
-    return Object.assign({}, env, {
-      answer: {
-        directAnswer: { text: leadText, claimIds: leadIds },
-        sections,
-        limitations: (env.answer.limitations || []).slice(),
-      },
-      claims: kept,
-      places: (env.places || []).filter((p) => !(p.claimIds || []).length || (p.claimIds || []).some((id) => keptIds.has(id))),
-      audit: { status: 'degraded', errors: (audit && audit.errors) || [], warnings: (audit && audit.warnings) || [], removedClaims: removed },
-    });
-  }
+     ⚠ A RULE THAT DELETES A CORRECT ANSWER IS NOT A STRICTER RULE, IT IS A WRONG ONE. What protects
+     the reader from an invented URL is the REGISTRY (a source card can only be built from a record
+     IntMap put in) and the RENDERER (prose is never linkified) — neither of which `degrade` was
+     doing. The audit below is unchanged, every code still fires, and what it finds is now REPORTED:
+     to the developer trace, and to Atlas, which is an AI and decides what to say about it. */
 
     /* `headTerms` and `questionAddressed` are exported so a test can hand them a question and an
        answer directly — the check they drive is a judgement about natural language, and the only way
        to know it does not fire falsely is to run it over cases (#R392: 検査は変異させて赤を見るまで完成
        していない). */
-    const API = { AUDIT_CODES, auditAnswer, degrade, headTerms, questionAddressed, repairBrief };
+    const API = { AUDIT_CODES, auditAnswer, headTerms, questionAddressed };
     try { window.IntMapAnswerAudit = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

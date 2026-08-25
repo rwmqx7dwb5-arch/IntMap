@@ -262,11 +262,13 @@ export function makeAtlasToolSurface(deps) {
       var out = {
         ok: ok,
         capability: built.cap ? built.cap.id : undefined,
-        /* (#R419) a tool that ran to completion but whose OUTPUT was cut down by its own audit is
-           not 「completed」 to the one deciding what to say about it. The flag comes from the case
-           itself (js/atlas-console.js's analyze), through the executor, which no longer drops it. */
-        status: (ok && meta.degraded) ? 'degraded' : (meta.status || (ok ? 'completed' : 'failed')),
-        removedClaims: (ok && meta.degraded && meta.removedClaims != null) ? meta.removedClaims : undefined,
+        /* (#R419) a tool result that hides what happened leaves Atlas describing a document that is
+           not on the screen. ⚠ (#R472) THE FACT REPORTED CHANGED WITH THE THING IT REPORTED: nothing
+           cuts an answer down any more, so there is no 'degraded' status and no `removedClaims`.
+           `auditFindings` is what IntMap's answer audit NOTICED about an answer that is rendered in
+           full — codes, not a verdict. Atlas reads them and decides. */
+        status: meta.status || (ok ? 'completed' : 'failed'),
+        auditFindings: (ok && meta.auditFindings && meta.auditFindings.length) ? meta.auditFindings : undefined,
         produced: meta.produced && meta.produced.length ? meta.produced : undefined,
         rendered: !!(res && res.html),
         unverified: meta.unverified || undefined,

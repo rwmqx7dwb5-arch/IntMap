@@ -176,7 +176,9 @@ test('R350 ②: the answer stylesheet is on the page, not merely in the module',
   const css = await page.evaluate(() => Array.from(document.querySelectorAll('style'))
     .map((s) => s.textContent || '').join('\n'));
   expect(css.includes('.atl-cite'), 'answerCSS never reached the document — the citation pills have no styling').toBe(true);
-  expect(css.includes('.atl-degraded'), 'the degraded banner has no styling').toBe(true);
+  /* (#R472) the '.atl-degraded' banner is gone with the degrading it announced — nothing rebuilds
+     an answer from the claims that passed any more, so there is nothing to announce. */
+  expect(css.includes('.atl-lead'), 'the opening sentence has no styling').toBe(true);
 });
 
 test('R350 ③: a fabricated host cannot enter the registry in the browser either', async () => {
