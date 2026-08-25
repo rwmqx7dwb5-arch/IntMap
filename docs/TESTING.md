@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **96 measured spec files / 77.0 min** of serial browser time against a ceiling of 77.0 min; and
-`npm run test:checks` runs **247 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **248 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **90 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -843,6 +843,40 @@ claim itself names. If no pair separates, the test **prints why in m/s and withh
 third claim** — it is not a `test.skip`, and the two per-pixel verdicts still run. The decision is
 `separablePair()` in `tests/helpers/wind-ramp.js`, and `tests/r458-checks.test.mjs` puts it through
 the overlap the deployed page cannot be made to reproduce on demand.
+
+### The point the cyclone test calls "the eye" (#R460)
+
+`prod-smoke` proves the weather raster is real by finding a storm in the live field and reading two
+pixels: the eye and its wall. Since #R276 it swept the tropics for the strongest wind and then took
+**the first point** of a ±1.5° box around it that was at or below 0.6 × peak, walking from the
+south-west corner. A median 48 % of that box is below that line — up to 93 % — so the first hit is
+the corner the walk starts at: MEASURED over the 145 forecast hours production was serving on
+2026-08-25, that is exactly what came back in **94 of the 101 hours** that had an eye, a median
+**222 km** from the storm, in a median **15.45 m/s** of ordinary trade wind.
+
+The choice now lives in `tests/helpers/cyclone-eye.js`, which the page feeds a 31 × 31 lattice of
+speeds and which answers with the calm point the strong wind encloses most deeply:
+
+```
+wall(p)       = the lowest, over all walks from p out of the box, of the highest speed on the walk
+prominence(p) = wall(p) - speed(p)          — the eye is the calm point that maximises it
+```
+
+That is topographic prominence upside down. It adds **no constant**: "calm" is still #R276's
+0.6 × peak, and `prominence > 0` is not a threshold but the difference between being inside a ring
+and not — a point on the edge of the box can be left without the wind rising at all, which is
+what the old answer always was. MEASURED with the same 145 hours, it lands a median **45 km** from
+the peak at a median **5.24 m/s**, and #R276's gate answers identically in every one of them.
+
+⚠ **Neither obvious repair works, and only measuring says so.** The minimum of the box agrees in 70
+of 101 hours and is a whole storm wrong in the rest — after landfall the calmest air in the box is
+inland behind the terrain, 223 km away at 2026-08-27T23:00Z. "The nearest calm point to the peak"
+sits 30 km away but at a median 16.52 m/s, which is the inner edge of the eyewall.
+
+`tests/r460-checks.test.mjs` runs that decision over two recorded production lattices
+(`tests/fixtures/r460-cyclone-boxes.json`) plus the fields the live page cannot be made to show —
+a ring with a gap, a band with no ring at all, a hole in the field. Replacing the rule with the box
+minimum turns 6 of its 9 checks red.
 
 ### What only production can answer (#R333)
 
