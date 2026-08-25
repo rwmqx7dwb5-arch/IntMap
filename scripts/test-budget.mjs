@@ -124,7 +124,23 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ran three times for one render — and its first viewport measurement is taken at whatever width the
    page already has instead of re-asserting the default one. 3,800 / 2,524 / 2,983 ms over three runs,
    upper bound entered as 4. No fixed sleeps: every wait is on the condition it stands for (#R399). */
-const BUDGET_S = 29;                    /* core: 0.5 min — measured 29 s over 6 files (#R455) */
+/* ⚠⚠ (#R466) THE CORE CEILING MOVED, BY THE MEASURED AMOUNT — 29 -> 30. Saying it here as well as
+   in the ledger because this file's own message is «never raise it»; #R388 (36 -> 40), #R424
+   (30 -> 35), #R428 (28 -> 30) and #R455 (28 -> 29) are the precedents for saying so plainly. The
+   five always-on suites did not move (monitors 10, smoke 8, security 4, internal-qa 2, r157 1 = 25);
+   the sixth is `currentRoundSpec()`, and this round's is one second dearer than #R455's was.
+   ⚠ AND IT WAS PAID OUT OF THE SPEC FIRST. The first draft compared the dialog against a SECOND
+   BOOT in the new language — which is what «reload and it is translated» literally means — and cost
+   a whole extra start-up. It asks the cheaper question instead, and the cheaper question is also the
+   truer one: **re-opening Settings must not change a single character.** That is the defect's own
+   definition (everything here is painted on open, and only on open), it needs one boot, and it
+   catches a control added this way in a future round without naming it. Three language switches
+   became two by hanging the «half-finished edits survive» claim on the switch back to English that
+   the shared page needs anyway: 7.1 s -> 4.1 / 3.8 / 2.8 s over three runs, entered at the upper
+   bound, 5. A saving elsewhere was not looked for — #R455 measured this table under-charging by
+   69 s on tests/smoke.spec.js alone, and a table that under-charges is not one to take a saving
+   from. */
+const BUDGET_S = 30;                    /* core: 0.5 min — measured 30 s over 6 files (#R466) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
@@ -152,7 +168,13 @@ const BUDGET_S = 29;                    /* core: 0.5 min — measured 29 s over 
    whatever is there when it lands — not on the 4,618 it was measured against. Saying so plainly
    because this file's message is «never raise it»; #R388 / #R405 / #R410 / #R424 / #R428 / #R435 /
    #R451 are the precedents. The +4 is tests/r455.spec.js, a spec that did not exist before. */
-const TOTAL_BUDGET_S = 4624;            /* 77.0 min — 4,620 (#R451) + 4 (#R455: one new core spec, measured three times) */
+/* ⚠⚠ (#R466) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,624 -> 4,629 (+5 s). Saying
+   so plainly because this file's message is «never raise it»; #R388 / #R405 / #R410 / #R424 /
+   #R428 / #R435 / #R451 / #R455 are the precedents. The +5 is tests/r466.spec.js, a spec that did
+   not exist before — 4.1 / 3.8 / 2.8 s over three runs, entered at the upper bound. Nothing left
+   the suite, so the total carries the whole of it; tests/r455.spec.js merely moves from the gate to
+   the nightly tier (`currentRoundSpec()` demotes it), which relieves BUDGET_S and not this. */
+const TOTAL_BUDGET_S = 4629;            /* 77.2 min — 4,624 (#R455) + 5 (#R466: one new core spec, measured three times) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum
