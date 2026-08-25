@@ -1,0 +1,3954 @@
+{
+ "//": "BUILT FILE — do not edit by hand. Regenerate with `npm run build:countryfacts`. See scripts/build-country-facts.mjs for why these facts are shipped rather than fetched.",
+ "built": "2026-08-25",
+ "sources": [
+  {
+   "n": "mledoze/countries",
+   "u": "https://github.com/mledoze/countries",
+   "licence": "ODbL 1.0",
+   "fields": "capital, currency, languages, area, borders, un, ind, dem"
+  },
+  {
+   "n": "IANA Time Zone Database",
+   "u": "https://www.iana.org/time-zones",
+   "licence": "public domain",
+   "fields": "tz"
+  },
+  {
+   "n": "Natural Earth admin-0",
+   "u": "https://www.naturalearthdata.com/",
+   "licence": "public domain",
+   "fields": "the code set"
+  }
+ ],
+ "corrections": [
+  {
+   "code": "VAT",
+   "un": false,
+   "why": "Holy See is a UN Permanent Observer State, not a member (UN GA res. 58/314)"
+  },
+  {
+   "code": "LKA",
+   "dropBorders": [
+    "IND"
+   ],
+   "why": "Sri Lanka is an island — the Palk Strait, not a land border, separates it from India"
+  }
+ ],
+ "neOnlyCodes": [
+  "BJN",
+  "BRT",
+  "CNM",
+  "CYN",
+  "ESB",
+  "KAS",
+  "PGA",
+  "SCR",
+  "SER",
+  "SOL",
+  "SPI",
+  "USG",
+  "WSB"
+ ],
+ "isoOnlyCodes": [
+  "BES",
+  "BVT",
+  "CCK",
+  "CXR",
+  "GLP",
+  "GUF",
+  "MTQ",
+  "MYT",
+  "REU",
+  "SJM",
+  "TKL"
+ ],
+ "withoutTimezone": [
+  "HMD",
+  "KOS"
+ ],
+ "countries": {
+  "ABW": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Aruban",
+   "capital": "Oranjestad",
+   "currency": "AWG (Aruban florin)",
+   "languages": "Dutch, Papiamento",
+   "area": 180
+  },
+  "AFG": {
+   "tz": [
+    "UTC+04:30"
+   ],
+   "borders": [
+    "CHN",
+    "IRN",
+    "PAK",
+    "TJK",
+    "TKM",
+    "UZB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Afghan",
+   "capital": "Kabul",
+   "currency": "AFN (Afghan afghani)",
+   "languages": "Dari, Pashto, Turkmen",
+   "area": 652230
+  },
+  "AGO": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "COD",
+    "COG",
+    "NAM",
+    "ZMB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Angolan",
+   "capital": "Luanda",
+   "currency": "AOA (Angolan kwanza)",
+   "languages": "Portuguese",
+   "area": 1246700
+  },
+  "AIA": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Anguillian",
+   "capital": "The Valley",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 91
+  },
+  "ALA": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Ålandish",
+   "capital": "Mariehamn",
+   "currency": "EUR (Euro)",
+   "languages": "Swedish",
+   "area": 1580
+  },
+  "ALB": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "GRC",
+    "KOS",
+    "MKD",
+    "MNE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Albanian",
+   "capital": "Tirana",
+   "currency": "ALL (Albanian lek)",
+   "languages": "Albanian",
+   "area": 28748
+  },
+  "AND": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "ESP",
+    "FRA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Andorran",
+   "capital": "Andorra la Vella",
+   "currency": "EUR (Euro)",
+   "languages": "Catalan",
+   "area": 468
+  },
+  "ARE": {
+   "tz": [
+    "UTC+04:00"
+   ],
+   "borders": [
+    "OMN",
+    "SAU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Emirati",
+   "capital": "Abu Dhabi",
+   "currency": "AED (United Arab Emirates dirham)",
+   "languages": "Arabic",
+   "area": 83600
+  },
+  "ARG": {
+   "tz": [
+    "UTC-03:00"
+   ],
+   "borders": [
+    "BOL",
+    "BRA",
+    "CHL",
+    "PRY",
+    "URY"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Argentine",
+   "capital": "Buenos Aires",
+   "currency": "ARS (Argentine peso)",
+   "languages": "Guaraní, Spanish",
+   "area": 2780400
+  },
+  "ARM": {
+   "tz": [
+    "UTC+04:00"
+   ],
+   "borders": [
+    "AZE",
+    "GEO",
+    "IRN",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Armenian",
+   "capital": "Yerevan",
+   "currency": "AMD (Armenian dram)",
+   "languages": "Armenian",
+   "area": 29743
+  },
+  "ASM": {
+   "tz": [
+    "UTC-11:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "American Samoan",
+   "capital": "Pago Pago",
+   "currency": "USD (United States dollar)",
+   "languages": "English, Samoan",
+   "area": 199
+  },
+  "ATA": {
+   "tz": [
+    "UTC-03:00",
+    "UTC+00:00",
+    "UTC+03:00",
+    "UTC+05:00",
+    "UTC+07:00",
+    "UTC+08:00",
+    "UTC+10:00",
+    "UTC+12:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Antarctican",
+   "area": 14000000
+  },
+  "ATF": {
+   "tz": [
+    "UTC+05:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "French",
+   "capital": "Port-aux-Français",
+   "currency": "EUR (Euro)",
+   "languages": "French",
+   "area": 7747
+  },
+  "ATG": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Antiguan, Barbudan",
+   "capital": "Saint John's",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 442
+  },
+  "AUS": {
+   "tz": [
+    "UTC+08:00",
+    "UTC+08:45",
+    "UTC+09:30",
+    "UTC+10:00",
+    "UTC+10:30"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Australian",
+   "capital": "Canberra",
+   "currency": "AUD (Australian dollar)",
+   "languages": "English",
+   "area": 7692024
+  },
+  "AUT": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "CHE",
+    "CZE",
+    "DEU",
+    "HUN",
+    "ITA",
+    "LIE",
+    "SVK",
+    "SVN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Austrian",
+   "capital": "Vienna",
+   "currency": "EUR (Euro)",
+   "languages": "Austro-Bavarian German",
+   "area": 83871
+  },
+  "AZE": {
+   "tz": [
+    "UTC+04:00"
+   ],
+   "borders": [
+    "ARM",
+    "GEO",
+    "IRN",
+    "RUS",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Azerbaijani",
+   "capital": "Baku",
+   "currency": "AZN (Azerbaijani manat)",
+   "languages": "Azerbaijani, Russian",
+   "area": 86600
+  },
+  "BDI": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "COD",
+    "RWA",
+    "TZA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Burundian",
+   "capital": "Gitega",
+   "currency": "BIF (Burundian franc)",
+   "languages": "French, Kirundi",
+   "area": 27834
+  },
+  "BEL": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "DEU",
+    "FRA",
+    "LUX",
+    "NLD"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Belgian",
+   "capital": "Brussels",
+   "currency": "EUR (Euro)",
+   "languages": "German, French, Dutch",
+   "area": 30528
+  },
+  "BEN": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BFA",
+    "NER",
+    "NGA",
+    "TGO"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Beninese",
+   "capital": "Porto-Novo",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "French",
+   "area": 112622
+  },
+  "BFA": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "BEN",
+    "CIV",
+    "GHA",
+    "MLI",
+    "NER",
+    "TGO"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Burkinabe",
+   "capital": "Ouagadougou",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "French",
+   "area": 272967
+  },
+  "BGD": {
+   "tz": [
+    "UTC+06:00"
+   ],
+   "borders": [
+    "IND",
+    "MMR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bangladeshi",
+   "capital": "Dhaka",
+   "currency": "BDT (Bangladeshi taka)",
+   "languages": "Bengali",
+   "area": 147570
+  },
+  "BGR": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "GRC",
+    "MKD",
+    "ROU",
+    "SRB",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bulgarian",
+   "capital": "Sofia",
+   "currency": "EUR (Euro)",
+   "languages": "Bulgarian",
+   "area": 110879
+  },
+  "BHR": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bahraini",
+   "capital": "Manama",
+   "currency": "BHD (Bahraini dinar)",
+   "languages": "Arabic",
+   "area": 765
+  },
+  "BHS": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bahamian",
+   "capital": "Nassau",
+   "currency": "BSD (Bahamian dollar)",
+   "languages": "English",
+   "area": 13943
+  },
+  "BIH": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "HRV",
+    "MNE",
+    "SRB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bosnian, Herzegovinian",
+   "capital": "Sarajevo",
+   "currency": "BAM (Bosnia and Herzegovina convertible mark)",
+   "languages": "Bosnian, Croatian, Serbian",
+   "area": 51209
+  },
+  "BLM": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Saint Barthélemy Islander",
+   "capital": "Gustavia",
+   "currency": "EUR (Euro)",
+   "languages": "French",
+   "area": 21
+  },
+  "BLR": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "LTU",
+    "LVA",
+    "POL",
+    "RUS",
+    "UKR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Belarusian",
+   "capital": "Minsk",
+   "currency": "BYN (Belarusian ruble)",
+   "languages": "Belarusian, Russian",
+   "area": 207600
+  },
+  "BLZ": {
+   "tz": [
+    "UTC-06:00"
+   ],
+   "borders": [
+    "GTM",
+    "MEX"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Belizean",
+   "capital": "Belmopan",
+   "currency": "BZD (Belize dollar)",
+   "languages": "Belizean Creole, English, Spanish",
+   "area": 22966
+  },
+  "BMU": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Bermudian",
+   "capital": "Hamilton",
+   "currency": "BMD (Bermudian dollar)",
+   "languages": "English",
+   "area": 54
+  },
+  "BOL": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "borders": [
+    "ARG",
+    "BRA",
+    "CHL",
+    "PER",
+    "PRY"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bolivian",
+   "capital": "Sucre",
+   "currency": "BOB (Bolivian boliviano)",
+   "languages": "Aymara, Guaraní, Quechua, Spanish",
+   "area": 1098581
+  },
+  "BRA": {
+   "tz": [
+    "UTC-05:00",
+    "UTC-04:00",
+    "UTC-03:00",
+    "UTC-02:00"
+   ],
+   "borders": [
+    "ARG",
+    "BOL",
+    "COL",
+    "GUY",
+    "PER",
+    "PRY",
+    "SUR",
+    "URY",
+    "VEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Brazilian",
+   "capital": "Brasília",
+   "currency": "BRL (Brazilian real)",
+   "languages": "Portuguese",
+   "area": 8515767
+  },
+  "BRB": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Barbadian",
+   "capital": "Bridgetown",
+   "currency": "BBD (Barbadian dollar)",
+   "languages": "English",
+   "area": 430
+  },
+  "BRN": {
+   "tz": [
+    "UTC+08:00"
+   ],
+   "borders": [
+    "MYS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bruneian",
+   "capital": "Bandar Seri Begawan",
+   "currency": "BND (Brunei dollar)",
+   "languages": "Malay",
+   "area": 5765
+  },
+  "BTN": {
+   "tz": [
+    "UTC+06:00"
+   ],
+   "borders": [
+    "CHN",
+    "IND"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Bhutanese",
+   "capital": "Thimphu",
+   "currency": "BTN (Bhutanese ngultrum)",
+   "languages": "Dzongkha",
+   "area": 38394
+  },
+  "BWA": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "NAM",
+    "ZAF",
+    "ZMB",
+    "ZWE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Motswana",
+   "capital": "Gaborone",
+   "currency": "BWP (Botswana pula)",
+   "languages": "English, Tswana",
+   "area": 582000
+  },
+  "CAF": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "CMR",
+    "COD",
+    "COG",
+    "SDN",
+    "SSD",
+    "TCD"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Central African",
+   "capital": "Bangui",
+   "currency": "XAF (Central African CFA franc)",
+   "languages": "French, Sango",
+   "area": 622984
+  },
+  "CAN": {
+   "tz": [
+    "UTC-08:00",
+    "UTC-07:00",
+    "UTC-06:00",
+    "UTC-05:00",
+    "UTC-04:00",
+    "UTC-03:30"
+   ],
+   "borders": [
+    "USA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Canadian",
+   "capital": "Ottawa",
+   "currency": "CAD (Canadian dollar)",
+   "languages": "English, French",
+   "area": 9984670
+  },
+  "CHE": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "DEU",
+    "FRA",
+    "ITA",
+    "LIE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Swiss",
+   "capital": "Bern",
+   "currency": "CHF (Swiss franc)",
+   "languages": "French, Swiss German, Italian, Romansh",
+   "area": 41284
+  },
+  "CHL": {
+   "tz": [
+    "UTC-06:00",
+    "UTC-04:00",
+    "UTC-03:00"
+   ],
+   "borders": [
+    "ARG",
+    "BOL",
+    "PER"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Chilean",
+   "capital": "Santiago",
+   "currency": "CLP (Chilean peso)",
+   "languages": "Spanish",
+   "area": 756102
+  },
+  "CHN": {
+   "tz": [
+    "UTC+06:00",
+    "UTC+08:00"
+   ],
+   "borders": [
+    "AFG",
+    "BTN",
+    "HKG",
+    "IND",
+    "KAZ",
+    "KGZ",
+    "LAO",
+    "MAC",
+    "MMR",
+    "MNG",
+    "NPL",
+    "PAK",
+    "PRK",
+    "RUS",
+    "TJK",
+    "VNM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Chinese",
+   "capital": "Beijing",
+   "currency": "CNY (Chinese yuan)",
+   "languages": "Chinese",
+   "area": 9706961
+  },
+  "CIV": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "BFA",
+    "GHA",
+    "GIN",
+    "LBR",
+    "MLI"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Ivorian",
+   "capital": "Yamoussoukro",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "French",
+   "area": 322463
+  },
+  "CMR": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "CAF",
+    "COG",
+    "GAB",
+    "GNQ",
+    "NGA",
+    "TCD"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Cameroonian",
+   "capital": "Yaoundé",
+   "currency": "XAF (Central African CFA franc)",
+   "languages": "English, French",
+   "area": 475442
+  },
+  "COD": {
+   "tz": [
+    "UTC+01:00",
+    "UTC+02:00"
+   ],
+   "borders": [
+    "AGO",
+    "BDI",
+    "CAF",
+    "COG",
+    "RWA",
+    "SSD",
+    "TZA",
+    "UGA",
+    "ZMB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Congolese",
+   "capital": "Kinshasa",
+   "currency": "CDF (Congolese franc)",
+   "languages": "French, Kikongo, Lingala, Tshiluba, Swahili",
+   "area": 2344858
+  },
+  "COG": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AGO",
+    "CAF",
+    "CMR",
+    "COD",
+    "GAB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Congolese",
+   "capital": "Brazzaville",
+   "currency": "XAF (Central African CFA franc)",
+   "languages": "French, Kikongo, Lingala",
+   "area": 342000
+  },
+  "COK": {
+   "tz": [
+    "UTC-10:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Cook Islander",
+   "capital": "Avarua",
+   "currency": "CKD (Cook Islands dollar)",
+   "languages": "English, Cook Islands Māori",
+   "area": 236
+  },
+  "COL": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "borders": [
+    "BRA",
+    "ECU",
+    "PAN",
+    "PER",
+    "VEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Colombian",
+   "capital": "Bogotá",
+   "currency": "COP (Colombian peso)",
+   "languages": "Spanish",
+   "area": 1141748
+  },
+  "COM": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Comoran",
+   "capital": "Moroni",
+   "currency": "KMF (Comorian franc)",
+   "languages": "Arabic, French, Comorian",
+   "area": 1862
+  },
+  "CPV": {
+   "tz": [
+    "UTC-01:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Cape Verdian",
+   "capital": "Praia",
+   "currency": "CVE (Cape Verdean escudo)",
+   "languages": "Portuguese",
+   "area": 4033
+  },
+  "CRI": {
+   "tz": [
+    "UTC-06:00"
+   ],
+   "borders": [
+    "NIC",
+    "PAN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Costa Rican",
+   "capital": "San José",
+   "currency": "CRC (Costa Rican colón)",
+   "languages": "Spanish",
+   "area": 51100
+  },
+  "CUB": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Cuban",
+   "capital": "Havana",
+   "currency": "CUC (Cuban convertible peso)",
+   "languages": "Spanish",
+   "area": 109884
+  },
+  "CUW": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Curaçaoan",
+   "capital": "Willemstad",
+   "currency": "ANG (Netherlands Antillean guilder)",
+   "languages": "English, Dutch, Papiamento",
+   "area": 444
+  },
+  "CYM": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Caymanian",
+   "capital": "George Town",
+   "currency": "KYD (Cayman Islands dollar)",
+   "languages": "English",
+   "area": 264
+  },
+  "CYP": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Cypriot",
+   "capital": "Nicosia",
+   "currency": "EUR (Euro)",
+   "languages": "Greek, Turkish",
+   "area": 9251
+  },
+  "CZE": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "DEU",
+    "POL",
+    "SVK"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Czech",
+   "capital": "Prague",
+   "currency": "CZK (Czech koruna)",
+   "languages": "Czech, Slovak",
+   "area": 78865
+  },
+  "DEU": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "BEL",
+    "CHE",
+    "CZE",
+    "DNK",
+    "FRA",
+    "LUX",
+    "NLD",
+    "POL"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "German",
+   "capital": "Berlin",
+   "currency": "EUR (Euro)",
+   "languages": "German",
+   "area": 357114
+  },
+  "DJI": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "ERI",
+    "ETH",
+    "SOM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Djibouti",
+   "capital": "Djibouti",
+   "currency": "DJF (Djiboutian franc)",
+   "languages": "Arabic, French",
+   "area": 23200
+  },
+  "DMA": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Dominican",
+   "capital": "Roseau",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 751
+  },
+  "DNK": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "DEU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Danish",
+   "capital": "Copenhagen",
+   "currency": "DKK (Danish krone)",
+   "languages": "Danish",
+   "area": 43094
+  },
+  "DOM": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "borders": [
+    "HTI"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Dominican",
+   "capital": "Santo Domingo",
+   "currency": "DOP (Dominican peso)",
+   "languages": "Spanish",
+   "area": 48671
+  },
+  "DZA": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "ESH",
+    "LBY",
+    "MAR",
+    "MLI",
+    "MRT",
+    "NER",
+    "TUN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Algerian",
+   "capital": "Algiers",
+   "currency": "DZD (Algerian dinar)",
+   "languages": "Arabic",
+   "area": 2381741
+  },
+  "ECU": {
+   "tz": [
+    "UTC-06:00",
+    "UTC-05:00"
+   ],
+   "borders": [
+    "COL",
+    "PER"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Ecuadorean",
+   "capital": "Quito",
+   "currency": "USD (United States dollar)",
+   "languages": "Spanish",
+   "area": 276841
+  },
+  "EGY": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "ISR",
+    "LBY",
+    "PSE",
+    "SDN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Egyptian",
+   "capital": "Cairo",
+   "currency": "EGP (Egyptian pound)",
+   "languages": "Arabic",
+   "area": 1002450
+  },
+  "ERI": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "DJI",
+    "ETH",
+    "SDN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Eritrean",
+   "capital": "Asmara",
+   "currency": "ERN (Eritrean nakfa)",
+   "languages": "Arabic, English, Tigrinya",
+   "area": 117600
+  },
+  "ESH": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "DZA",
+    "MAR",
+    "MRT"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Sahrawi",
+   "capital": "El Aaiún",
+   "currency": "DZD (Algerian dinar)",
+   "languages": "Berber, Hassaniya, Spanish",
+   "area": 266000
+  },
+  "ESP": {
+   "tz": [
+    "UTC+00:00",
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AND",
+    "FRA",
+    "GIB",
+    "MAR",
+    "PRT"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Spanish",
+   "capital": "Madrid",
+   "currency": "EUR (Euro)",
+   "languages": "Spanish",
+   "area": 505992
+  },
+  "EST": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "LVA",
+    "RUS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Estonian",
+   "capital": "Tallinn",
+   "currency": "EUR (Euro)",
+   "languages": "Estonian",
+   "area": 45227
+  },
+  "ETH": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "DJI",
+    "ERI",
+    "KEN",
+    "SDN",
+    "SOM",
+    "SSD"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Ethiopian",
+   "capital": "Addis Ababa",
+   "currency": "ETB (Ethiopian birr)",
+   "languages": "Amharic",
+   "area": 1104300
+  },
+  "FIN": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "NOR",
+    "RUS",
+    "SWE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Finnish",
+   "capital": "Helsinki",
+   "currency": "EUR (Euro)",
+   "languages": "Finnish, Swedish",
+   "area": 338424
+  },
+  "FJI": {
+   "tz": [
+    "UTC+12:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Fijian",
+   "capital": "Suva",
+   "currency": "FJD (Fijian dollar)",
+   "languages": "English, Fijian, Fiji Hindi",
+   "area": 18272
+  },
+  "FLK": {
+   "tz": [
+    "UTC-03:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Falkland Islander",
+   "capital": "Stanley",
+   "currency": "FKP (Falkland Islands pound)",
+   "languages": "English",
+   "area": 12173
+  },
+  "FRA": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AND",
+    "BEL",
+    "CHE",
+    "DEU",
+    "ESP",
+    "ITA",
+    "LUX",
+    "MCO"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "French",
+   "capital": "Paris",
+   "currency": "EUR (Euro)",
+   "languages": "French",
+   "area": 551695
+  },
+  "FRO": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Faroese",
+   "capital": "Tórshavn",
+   "currency": "DKK (Danish krone)",
+   "languages": "Danish, Faroese",
+   "area": 1393
+  },
+  "FSM": {
+   "tz": [
+    "UTC+10:00",
+    "UTC+11:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Micronesian",
+   "capital": "Palikir",
+   "languages": "English",
+   "area": 702
+  },
+  "GAB": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "CMR",
+    "COG",
+    "GNQ"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Gabonese",
+   "capital": "Libreville",
+   "currency": "XAF (Central African CFA franc)",
+   "languages": "French",
+   "area": 267668
+  },
+  "GBR": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "IRL"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "British",
+   "capital": "London",
+   "currency": "GBP (British pound)",
+   "languages": "English",
+   "area": 242900
+  },
+  "GEO": {
+   "tz": [
+    "UTC+04:00"
+   ],
+   "borders": [
+    "ARM",
+    "AZE",
+    "RUS",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Georgian",
+   "capital": "Tbilisi",
+   "currency": "GEL (lari)",
+   "languages": "Georgian",
+   "area": 69700
+  },
+  "GGY": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Channel Islander",
+   "capital": "St. Peter Port",
+   "currency": "GBP (British pound)",
+   "languages": "English, French, Guernésiais",
+   "area": 78
+  },
+  "GHA": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "BFA",
+    "CIV",
+    "TGO"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Ghanaian",
+   "capital": "Accra",
+   "currency": "GHS (Ghanaian cedi)",
+   "languages": "English",
+   "area": 238533
+  },
+  "GIB": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "ESP"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Gibraltar",
+   "capital": "Gibraltar",
+   "currency": "GIP (Gibraltar pound)",
+   "languages": "English",
+   "area": 6
+  },
+  "GIN": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "CIV",
+    "GNB",
+    "LBR",
+    "MLI",
+    "SEN",
+    "SLE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Guinean",
+   "capital": "Conakry",
+   "currency": "GNF (Guinean franc)",
+   "languages": "French",
+   "area": 245857
+  },
+  "GMB": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "SEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Gambian",
+   "capital": "Banjul",
+   "currency": "GMD (dalasi)",
+   "languages": "English",
+   "area": 10689
+  },
+  "GNB": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "GIN",
+    "SEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Guinea-Bissauan",
+   "capital": "Bissau",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "Portuguese, Upper Guinea Creole",
+   "area": 36125
+  },
+  "GNQ": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "CMR",
+    "GAB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Equatorial Guinean",
+   "capital": "Malabo",
+   "currency": "XAF (Central African CFA franc)",
+   "languages": "French, Portuguese, Spanish",
+   "area": 28051
+  },
+  "GRC": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "ALB",
+    "BGR",
+    "MKD",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Greek",
+   "capital": "Athens",
+   "currency": "EUR (Euro)",
+   "languages": "Greek",
+   "area": 131990
+  },
+  "GRD": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Grenadian",
+   "capital": "St. George's",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 344
+  },
+  "GRL": {
+   "tz": [
+    "UTC-04:00",
+    "UTC-02:00",
+    "UTC+00:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Greenlandic",
+   "capital": "Nuuk",
+   "currency": "DKK (krone)",
+   "languages": "Greenlandic",
+   "area": 2166086
+  },
+  "GTM": {
+   "tz": [
+    "UTC-06:00"
+   ],
+   "borders": [
+    "BLZ",
+    "HND",
+    "MEX",
+    "SLV"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Guatemalan",
+   "capital": "Guatemala City",
+   "currency": "GTQ (Guatemalan quetzal)",
+   "languages": "Spanish",
+   "area": 108889
+  },
+  "GUM": {
+   "tz": [
+    "UTC+10:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Guamanian",
+   "capital": "Hagåtña",
+   "currency": "USD (United States dollar)",
+   "languages": "Chamorro, English, Spanish",
+   "area": 549
+  },
+  "GUY": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "borders": [
+    "BRA",
+    "SUR",
+    "VEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Guyanese",
+   "capital": "Georgetown",
+   "currency": "GYD (Guyanese dollar)",
+   "languages": "English",
+   "area": 214969
+  },
+  "HKG": {
+   "tz": [
+    "UTC+08:00"
+   ],
+   "borders": [
+    "CHN"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Hong Konger",
+   "capital": "City of Victoria",
+   "currency": "HKD (Hong Kong dollar)",
+   "languages": "English, Chinese",
+   "area": 1104
+  },
+  "HMD": {
+   "un": false,
+   "ind": false,
+   "dem": "Heard and McDonald Islander",
+   "languages": "English",
+   "area": 412
+  },
+  "HND": {
+   "tz": [
+    "UTC-06:00"
+   ],
+   "borders": [
+    "GTM",
+    "NIC",
+    "SLV"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Honduran",
+   "capital": "Tegucigalpa",
+   "currency": "HNL (Honduran lempira)",
+   "languages": "Spanish",
+   "area": 112492
+  },
+  "HRV": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BIH",
+    "HUN",
+    "MNE",
+    "SRB",
+    "SVN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Croatian",
+   "capital": "Zagreb",
+   "currency": "EUR (Euro)",
+   "languages": "Croatian",
+   "area": 56594
+  },
+  "HTI": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "borders": [
+    "DOM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Haitian",
+   "capital": "Port-au-Prince",
+   "currency": "HTG (Haitian gourde)",
+   "languages": "French, Haitian Creole",
+   "area": 27750
+  },
+  "HUN": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "HRV",
+    "ROU",
+    "SRB",
+    "SVK",
+    "SVN",
+    "UKR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Hungarian",
+   "capital": "Budapest",
+   "currency": "HUF (Hungarian forint)",
+   "languages": "Hungarian",
+   "area": 93028
+  },
+  "IDN": {
+   "tz": [
+    "UTC+07:00",
+    "UTC+08:00",
+    "UTC+09:00"
+   ],
+   "borders": [
+    "MYS",
+    "PNG",
+    "TLS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Indonesian",
+   "capital": "Jakarta",
+   "currency": "IDR (Indonesian rupiah)",
+   "languages": "Indonesian",
+   "area": 1904569
+  },
+  "IMN": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Manx",
+   "capital": "Douglas",
+   "currency": "GBP (British pound)",
+   "languages": "English, Manx",
+   "area": 572
+  },
+  "IND": {
+   "tz": [
+    "UTC+05:30"
+   ],
+   "borders": [
+    "BGD",
+    "BTN",
+    "CHN",
+    "MMR",
+    "NPL",
+    "PAK"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Indian",
+   "capital": "New Delhi",
+   "currency": "INR (Indian rupee)",
+   "languages": "English, Hindi, Tamil",
+   "area": 3287590
+  },
+  "IOT": {
+   "tz": [
+    "UTC+06:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Indian",
+   "capital": "Diego Garcia",
+   "currency": "USD (United States dollar)",
+   "languages": "English",
+   "area": 60
+  },
+  "IRL": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "GBR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Irish",
+   "capital": "Dublin",
+   "currency": "EUR (Euro)",
+   "languages": "English, Irish",
+   "area": 70273
+  },
+  "IRN": {
+   "tz": [
+    "UTC+03:30"
+   ],
+   "borders": [
+    "AFG",
+    "ARM",
+    "AZE",
+    "IRQ",
+    "PAK",
+    "TKM",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Iranian",
+   "capital": "Tehran",
+   "currency": "IRR (Iranian rial)",
+   "languages": "Persian (Farsi)",
+   "area": 1648195
+  },
+  "IRQ": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "IRN",
+    "JOR",
+    "KWT",
+    "SAU",
+    "SYR",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Iraqi",
+   "capital": "Baghdad",
+   "currency": "IQD (Iraqi dinar)",
+   "languages": "Arabic, Aramaic, Sorani",
+   "area": 438317
+  },
+  "ISL": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Icelander",
+   "capital": "Reykjavik",
+   "currency": "ISK (Icelandic króna)",
+   "languages": "Icelandic",
+   "area": 103000
+  },
+  "ISR": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "EGY",
+    "JOR",
+    "LBN",
+    "PSE",
+    "SYR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Israeli",
+   "capital": "Jerusalem",
+   "currency": "ILS (Israeli new shekel)",
+   "languages": "Arabic, Hebrew",
+   "area": 20770
+  },
+  "ITA": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "CHE",
+    "FRA",
+    "SMR",
+    "SVN",
+    "VAT"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Italian",
+   "capital": "Rome",
+   "currency": "EUR (Euro)",
+   "languages": "Italian",
+   "area": 301336
+  },
+  "JAM": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Jamaican",
+   "capital": "Kingston",
+   "currency": "JMD (Jamaican dollar)",
+   "languages": "English, Jamaican Patois",
+   "area": 10991
+  },
+  "JEY": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Channel Islander",
+   "capital": "Saint Helier",
+   "currency": "GBP (British pound)",
+   "languages": "English, French, Jèrriais",
+   "area": 116
+  },
+  "JOR": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "IRQ",
+    "ISR",
+    "PSE",
+    "SAU",
+    "SYR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Jordanian",
+   "capital": "Amman",
+   "currency": "JOD (Jordanian dinar)",
+   "languages": "Arabic",
+   "area": 89342
+  },
+  "JPN": {
+   "tz": [
+    "UTC+09:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Japanese",
+   "capital": "Tokyo",
+   "currency": "JPY (Japanese yen)",
+   "languages": "Japanese",
+   "area": 377930
+  },
+  "KAZ": {
+   "tz": [
+    "UTC+05:00"
+   ],
+   "borders": [
+    "CHN",
+    "KGZ",
+    "RUS",
+    "TKM",
+    "UZB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Kazakhstani",
+   "capital": "Astana",
+   "currency": "KZT (Kazakhstani tenge)",
+   "languages": "Kazakh, Russian",
+   "area": 2724900
+  },
+  "KEN": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "ETH",
+    "SOM",
+    "SSD",
+    "TZA",
+    "UGA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Kenyan",
+   "capital": "Nairobi",
+   "currency": "KES (Kenyan shilling)",
+   "languages": "English, Swahili",
+   "area": 580367
+  },
+  "KGZ": {
+   "tz": [
+    "UTC+06:00"
+   ],
+   "borders": [
+    "CHN",
+    "KAZ",
+    "TJK",
+    "UZB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Kirghiz",
+   "capital": "Bishkek",
+   "currency": "KGS (Kyrgyzstani som)",
+   "languages": "Kyrgyz, Russian",
+   "area": 199951
+  },
+  "KHM": {
+   "tz": [
+    "UTC+07:00"
+   ],
+   "borders": [
+    "LAO",
+    "THA",
+    "VNM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Cambodian",
+   "capital": "Phnom Penh",
+   "currency": "KHR (Cambodian riel)",
+   "languages": "Khmer",
+   "area": 181035
+  },
+  "KIR": {
+   "tz": [
+    "UTC+12:00",
+    "UTC+13:00",
+    "UTC+14:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "I-Kiribati",
+   "capital": "South Tarawa",
+   "currency": "AUD (Australian dollar)",
+   "languages": "English, Gilbertese",
+   "area": 811
+  },
+  "KNA": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Kittitian or Nevisian",
+   "capital": "Basseterre",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 261
+  },
+  "KOR": {
+   "tz": [
+    "UTC+09:00"
+   ],
+   "borders": [
+    "PRK"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "South Korean",
+   "capital": "Seoul",
+   "currency": "KRW (South Korean won)",
+   "languages": "Korean",
+   "area": 100210
+  },
+  "KOS": {
+   "borders": [
+    "ALB",
+    "MKD",
+    "MNE",
+    "SRB"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Kosovar",
+   "capital": "Pristina",
+   "currency": "EUR (Euro)",
+   "languages": "Albanian, Serbian",
+   "area": 10908
+  },
+  "KWT": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "IRQ",
+    "SAU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Kuwaiti",
+   "capital": "Kuwait City",
+   "currency": "KWD (Kuwaiti dinar)",
+   "languages": "Arabic",
+   "area": 17818
+  },
+  "LAO": {
+   "tz": [
+    "UTC+07:00"
+   ],
+   "borders": [
+    "CHN",
+    "KHM",
+    "MMR",
+    "THA",
+    "VNM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Laotian",
+   "capital": "Vientiane",
+   "currency": "LAK (Lao kip)",
+   "languages": "Lao",
+   "area": 236800
+  },
+  "LBN": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "ISR",
+    "SYR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Lebanese",
+   "capital": "Beirut",
+   "currency": "LBP (Lebanese pound)",
+   "languages": "Arabic, French",
+   "area": 10452
+  },
+  "LBR": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "CIV",
+    "GIN",
+    "SLE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Liberian",
+   "capital": "Monrovia",
+   "currency": "LRD (Liberian dollar)",
+   "languages": "English",
+   "area": 111369
+  },
+  "LBY": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "DZA",
+    "EGY",
+    "NER",
+    "SDN",
+    "TCD",
+    "TUN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Libyan",
+   "capital": "Tripoli",
+   "currency": "LYD (Libyan dinar)",
+   "languages": "Arabic",
+   "area": 1759540
+  },
+  "LCA": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Saint Lucian",
+   "capital": "Castries",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 616
+  },
+  "LIE": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "CHE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Liechtensteiner",
+   "capital": "Vaduz",
+   "currency": "CHF (Swiss franc)",
+   "languages": "German",
+   "area": 160
+  },
+  "LKA": {
+   "tz": [
+    "UTC+05:30"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Sri Lankan",
+   "capital": "Colombo",
+   "currency": "LKR (Sri Lankan rupee)",
+   "languages": "Sinhala, Tamil",
+   "area": 65610
+  },
+  "LSO": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "ZAF"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Mosotho",
+   "capital": "Maseru",
+   "currency": "LSL (Lesotho loti)",
+   "languages": "English, Sotho",
+   "area": 30355
+  },
+  "LTU": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "BLR",
+    "LVA",
+    "POL",
+    "RUS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Lithuanian",
+   "capital": "Vilnius",
+   "currency": "EUR (Euro)",
+   "languages": "Lithuanian",
+   "area": 65300
+  },
+  "LUX": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BEL",
+    "DEU",
+    "FRA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Luxembourger",
+   "capital": "Luxembourg",
+   "currency": "EUR (Euro)",
+   "languages": "German, French, Luxembourgish",
+   "area": 2586
+  },
+  "LVA": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "BLR",
+    "EST",
+    "LTU",
+    "RUS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Latvian",
+   "capital": "Riga",
+   "currency": "EUR (Euro)",
+   "languages": "Latvian",
+   "area": 64559
+  },
+  "MAC": {
+   "tz": [
+    "UTC+08:00"
+   ],
+   "borders": [
+    "CHN"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Macanese",
+   "currency": "MOP (Macanese pataca)",
+   "languages": "Portuguese, Chinese",
+   "area": 30
+  },
+  "MAF": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "borders": [
+    "SXM"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Saint Martin Islander",
+   "capital": "Marigot",
+   "currency": "EUR (Euro)",
+   "languages": "French",
+   "area": 53
+  },
+  "MAR": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "DZA",
+    "ESH",
+    "ESP"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Moroccan",
+   "capital": "Rabat",
+   "currency": "MAD (Moroccan dirham)",
+   "languages": "Arabic, Berber",
+   "area": 446550
+  },
+  "MCO": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "FRA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Monegasque",
+   "capital": "Monaco",
+   "currency": "EUR (Euro)",
+   "languages": "French",
+   "area": 2.02
+  },
+  "MDA": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "ROU",
+    "UKR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Moldovan",
+   "capital": "Chișinău",
+   "currency": "MDL (Moldovan leu)",
+   "languages": "Moldavian",
+   "area": 33846
+  },
+  "MDG": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Malagasy",
+   "capital": "Antananarivo",
+   "currency": "MGA (Malagasy ariary)",
+   "languages": "French, Malagasy",
+   "area": 587041
+  },
+  "MDV": {
+   "tz": [
+    "UTC+05:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Maldivan",
+   "capital": "Malé",
+   "currency": "MVR (Maldivian rufiyaa)",
+   "languages": "Maldivian",
+   "area": 300
+  },
+  "MEX": {
+   "tz": [
+    "UTC-08:00",
+    "UTC-07:00",
+    "UTC-06:00",
+    "UTC-05:00"
+   ],
+   "borders": [
+    "BLZ",
+    "GTM",
+    "USA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Mexican",
+   "capital": "Mexico City",
+   "currency": "MXN (Mexican peso)",
+   "languages": "Spanish",
+   "area": 1964375
+  },
+  "MHL": {
+   "tz": [
+    "UTC+12:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Marshallese",
+   "capital": "Majuro",
+   "currency": "USD (United States dollar)",
+   "languages": "English, Marshallese",
+   "area": 181
+  },
+  "MKD": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "ALB",
+    "BGR",
+    "GRC",
+    "KOS",
+    "SRB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Macedonian",
+   "capital": "Skopje",
+   "currency": "MKD (denar)",
+   "languages": "Macedonian",
+   "area": 25713
+  },
+  "MLI": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "BFA",
+    "CIV",
+    "DZA",
+    "GIN",
+    "MRT",
+    "NER",
+    "SEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Malian",
+   "capital": "Bamako",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "French",
+   "area": 1240192
+  },
+  "MLT": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Maltese",
+   "capital": "Valletta",
+   "currency": "EUR (Euro)",
+   "languages": "English, Maltese",
+   "area": 316
+  },
+  "MMR": {
+   "tz": [
+    "UTC+06:30"
+   ],
+   "borders": [
+    "BGD",
+    "CHN",
+    "IND",
+    "LAO",
+    "THA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Burmese",
+   "capital": "Naypyidaw",
+   "currency": "MMK (Burmese kyat)",
+   "languages": "Burmese",
+   "area": 676578
+  },
+  "MNE": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "ALB",
+    "BIH",
+    "HRV",
+    "KOS",
+    "SRB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Montenegrin",
+   "capital": "Podgorica",
+   "currency": "EUR (Euro)",
+   "languages": "Montenegrin",
+   "area": 13812
+  },
+  "MNG": {
+   "tz": [
+    "UTC+07:00",
+    "UTC+08:00"
+   ],
+   "borders": [
+    "CHN",
+    "RUS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Mongolian",
+   "capital": "Ulan Bator",
+   "currency": "MNT (Mongolian tögrög)",
+   "languages": "Mongolian",
+   "area": 1564110
+  },
+  "MNP": {
+   "tz": [
+    "UTC+10:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "American",
+   "capital": "Saipan",
+   "currency": "USD (United States dollar)",
+   "languages": "Carolinian, Chamorro, English",
+   "area": 464
+  },
+  "MOZ": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "MWI",
+    "SWZ",
+    "TZA",
+    "ZAF",
+    "ZMB",
+    "ZWE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Mozambican",
+   "capital": "Maputo",
+   "currency": "MZN (Mozambican metical)",
+   "languages": "Portuguese",
+   "area": 801590
+  },
+  "MRT": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "DZA",
+    "ESH",
+    "MLI",
+    "SEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Mauritanian",
+   "capital": "Nouakchott",
+   "currency": "MRU (Mauritanian ouguiya)",
+   "languages": "Arabic",
+   "area": 1030700
+  },
+  "MSR": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Montserratian",
+   "capital": "Plymouth",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 102
+  },
+  "MUS": {
+   "tz": [
+    "UTC+04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Mauritian",
+   "capital": "Port Louis",
+   "currency": "MUR (Mauritian rupee)",
+   "languages": "English, French, Mauritian Creole",
+   "area": 2040
+  },
+  "MWI": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "MOZ",
+    "TZA",
+    "ZMB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Malawian",
+   "capital": "Lilongwe",
+   "currency": "MWK (Malawian kwacha)",
+   "languages": "English, Chewa",
+   "area": 118484
+  },
+  "MYS": {
+   "tz": [
+    "UTC+08:00"
+   ],
+   "borders": [
+    "BRN",
+    "IDN",
+    "THA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Malaysian",
+   "capital": "Kuala Lumpur",
+   "currency": "MYR (Malaysian ringgit)",
+   "languages": "English, Malay",
+   "area": 330803
+  },
+  "NAM": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "AGO",
+    "BWA",
+    "ZAF",
+    "ZMB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Namibian",
+   "capital": "Windhoek",
+   "currency": "NAD (Namibian dollar)",
+   "languages": "Afrikaans, German, English, Herero, Khoekhoe, Kwangali, Lozi, Ndonga, Tswana",
+   "area": 825615
+  },
+  "NCL": {
+   "tz": [
+    "UTC+11:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "New Caledonian",
+   "capital": "Nouméa",
+   "currency": "XPF (CFP franc)",
+   "languages": "French",
+   "area": 18575
+  },
+  "NER": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BEN",
+    "BFA",
+    "DZA",
+    "LBY",
+    "MLI",
+    "NGA",
+    "TCD"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Nigerien",
+   "capital": "Niamey",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "French",
+   "area": 1267000
+  },
+  "NFK": {
+   "tz": [
+    "UTC+11:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Norfolk Islander",
+   "capital": "Kingston",
+   "currency": "AUD (Australian dollar)",
+   "languages": "English, Norfuk",
+   "area": 36
+  },
+  "NGA": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BEN",
+    "CMR",
+    "NER",
+    "TCD"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Nigerian",
+   "capital": "Abuja",
+   "currency": "NGN (Nigerian naira)",
+   "languages": "English",
+   "area": 923768
+  },
+  "NIC": {
+   "tz": [
+    "UTC-06:00"
+   ],
+   "borders": [
+    "CRI",
+    "HND"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Nicaraguan",
+   "capital": "Managua",
+   "currency": "NIO (Nicaraguan córdoba)",
+   "languages": "Spanish",
+   "area": 130373
+  },
+  "NIU": {
+   "tz": [
+    "UTC-11:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Niuean",
+   "capital": "Alofi",
+   "currency": "NZD (New Zealand dollar)",
+   "languages": "English, Niuean",
+   "area": 260
+  },
+  "NLD": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BEL",
+    "DEU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Dutch",
+   "capital": "Amsterdam",
+   "currency": "EUR (Euro)",
+   "languages": "Dutch",
+   "area": 41850
+  },
+  "NOR": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "FIN",
+    "RUS",
+    "SWE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Norwegian",
+   "capital": "Oslo",
+   "currency": "NOK (Norwegian krone)",
+   "languages": "Norwegian Nynorsk, Norwegian Bokmål, Sami",
+   "area": 323802
+  },
+  "NPL": {
+   "tz": [
+    "UTC+05:45"
+   ],
+   "borders": [
+    "CHN",
+    "IND"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Nepalese",
+   "capital": "Kathmandu",
+   "currency": "NPR (Nepalese rupee)",
+   "languages": "Nepali",
+   "area": 147181
+  },
+  "NRU": {
+   "tz": [
+    "UTC+12:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Nauruan",
+   "capital": "Yaren",
+   "currency": "AUD (Australian dollar)",
+   "languages": "English, Nauru",
+   "area": 21
+  },
+  "NZL": {
+   "tz": [
+    "UTC+12:00",
+    "UTC+12:45"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "New Zealander",
+   "capital": "Wellington",
+   "currency": "NZD (New Zealand dollar)",
+   "languages": "English, Māori, New Zealand Sign Language",
+   "area": 270467
+  },
+  "OMN": {
+   "tz": [
+    "UTC+04:00"
+   ],
+   "borders": [
+    "ARE",
+    "SAU",
+    "YEM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Omani",
+   "capital": "Muscat",
+   "currency": "OMR (Omani rial)",
+   "languages": "Arabic",
+   "area": 309500
+  },
+  "PAK": {
+   "tz": [
+    "UTC+05:00"
+   ],
+   "borders": [
+    "AFG",
+    "CHN",
+    "IND",
+    "IRN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Pakistani",
+   "capital": "Islamabad",
+   "currency": "PKR (Pakistani rupee)",
+   "languages": "English, Urdu",
+   "area": 881912
+  },
+  "PAN": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "borders": [
+    "COL",
+    "CRI"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Panamanian",
+   "capital": "Panama City",
+   "currency": "PAB (Panamanian balboa)",
+   "languages": "Spanish",
+   "area": 75417
+  },
+  "PCN": {
+   "tz": [
+    "UTC-08:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Pitcairn Islander",
+   "capital": "Adamstown",
+   "currency": "NZD (New Zealand dollar)",
+   "languages": "English",
+   "area": 47
+  },
+  "PER": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "borders": [
+    "BOL",
+    "BRA",
+    "CHL",
+    "COL",
+    "ECU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Peruvian",
+   "capital": "Lima",
+   "currency": "PEN (Peruvian sol)",
+   "languages": "Aymara, Quechua, Spanish",
+   "area": 1285216
+  },
+  "PHL": {
+   "tz": [
+    "UTC+08:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Filipino",
+   "capital": "Manila",
+   "currency": "PHP (Philippine peso)",
+   "languages": "English, Filipino",
+   "area": 342353
+  },
+  "PLW": {
+   "tz": [
+    "UTC+09:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Palauan",
+   "capital": "Ngerulmud",
+   "currency": "USD (United States dollar)",
+   "languages": "English, Palauan",
+   "area": 459
+  },
+  "PNG": {
+   "tz": [
+    "UTC+10:00",
+    "UTC+11:00"
+   ],
+   "borders": [
+    "IDN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Papua New Guinean",
+   "capital": "Port Moresby",
+   "currency": "PGK (Papua New Guinean kina)",
+   "languages": "English, Hiri Motu, Tok Pisin",
+   "area": 462840
+  },
+  "POL": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BLR",
+    "CZE",
+    "DEU",
+    "LTU",
+    "RUS",
+    "SVK",
+    "UKR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Polish",
+   "capital": "Warsaw",
+   "currency": "PLN (Polish złoty)",
+   "languages": "Polish",
+   "area": 312679
+  },
+  "PRI": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Puerto Rican",
+   "capital": "San Juan",
+   "currency": "USD (United States dollar)",
+   "languages": "English, Spanish",
+   "area": 8870
+  },
+  "PRK": {
+   "tz": [
+    "UTC+09:00"
+   ],
+   "borders": [
+    "CHN",
+    "KOR",
+    "RUS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "North Korean",
+   "capital": "Pyongyang",
+   "currency": "KPW (North Korean won)",
+   "languages": "Korean",
+   "area": 120538
+  },
+  "PRT": {
+   "tz": [
+    "UTC-01:00",
+    "UTC+00:00"
+   ],
+   "borders": [
+    "ESP"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Portuguese",
+   "capital": "Lisbon",
+   "currency": "EUR (Euro)",
+   "languages": "Portuguese",
+   "area": 92090
+  },
+  "PRY": {
+   "tz": [
+    "UTC-03:00"
+   ],
+   "borders": [
+    "ARG",
+    "BOL",
+    "BRA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Paraguayan",
+   "capital": "Asunción",
+   "currency": "PYG (Paraguayan guaraní)",
+   "languages": "Guaraní, Spanish",
+   "area": 406752
+  },
+  "PSE": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "EGY",
+    "ISR",
+    "JOR"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Palestinian",
+   "capital": "Ramallah",
+   "currency": "EGP (Egyptian pound)",
+   "languages": "Arabic",
+   "area": 6220
+  },
+  "PYF": {
+   "tz": [
+    "UTC-10:00",
+    "UTC-09:30",
+    "UTC-09:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "French Polynesian",
+   "capital": "Papeetē",
+   "currency": "XPF (CFP franc)",
+   "languages": "French",
+   "area": 4167
+  },
+  "QAT": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "SAU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Qatari",
+   "capital": "Doha",
+   "currency": "QAR (Qatari riyal)",
+   "languages": "Arabic",
+   "area": 11586
+  },
+  "ROU": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "BGR",
+    "HUN",
+    "MDA",
+    "SRB",
+    "UKR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Romanian",
+   "capital": "Bucharest",
+   "currency": "RON (Romanian leu)",
+   "languages": "Romanian",
+   "area": 238391
+  },
+  "RUS": {
+   "tz": [
+    "UTC+02:00",
+    "UTC+03:00",
+    "UTC+04:00",
+    "UTC+05:00",
+    "UTC+06:00",
+    "UTC+07:00",
+    "UTC+08:00",
+    "UTC+09:00",
+    "UTC+10:00",
+    "UTC+11:00",
+    "UTC+12:00"
+   ],
+   "borders": [
+    "AZE",
+    "BLR",
+    "CHN",
+    "EST",
+    "FIN",
+    "GEO",
+    "KAZ",
+    "LTU",
+    "LVA",
+    "MNG",
+    "NOR",
+    "POL",
+    "PRK",
+    "UKR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Russian",
+   "capital": "Moscow",
+   "currency": "RUB (Russian ruble)",
+   "languages": "Russian",
+   "area": 17098242
+  },
+  "RWA": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "BDI",
+    "COD",
+    "TZA",
+    "UGA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Rwandan",
+   "capital": "Kigali",
+   "currency": "RWF (Rwandan franc)",
+   "languages": "English, French, Kinyarwanda",
+   "area": 26338
+  },
+  "SAU": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "ARE",
+    "IRQ",
+    "JOR",
+    "KWT",
+    "OMN",
+    "QAT",
+    "YEM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Saudi Arabian",
+   "capital": "Riyadh",
+   "currency": "SAR (Saudi riyal)",
+   "languages": "Arabic",
+   "area": 2149690
+  },
+  "SDN": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "CAF",
+    "EGY",
+    "ERI",
+    "ETH",
+    "LBY",
+    "SSD",
+    "TCD"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Sudanese",
+   "capital": "Khartoum",
+   "currency": "SDG (Sudanese pound)",
+   "languages": "Arabic, English",
+   "area": 1886068
+  },
+  "SEN": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "GIN",
+    "GMB",
+    "GNB",
+    "MLI",
+    "MRT"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Senegalese",
+   "capital": "Dakar",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "French",
+   "area": 196722
+  },
+  "SGP": {
+   "tz": [
+    "UTC+08:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Singaporean",
+   "capital": "Singapore",
+   "currency": "SGD (Singapore dollar)",
+   "languages": "English, Malay, Tamil, Chinese",
+   "area": 710
+  },
+  "SGS": {
+   "tz": [
+    "UTC-02:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "South Georgian South Sandwich Islander",
+   "capital": "King Edward Point",
+   "currency": "SHP (Saint Helena pound)",
+   "languages": "English",
+   "area": 3903
+  },
+  "SHN": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Saint Helenian",
+   "capital": "Jamestown",
+   "currency": "GBP (Pound sterling)",
+   "languages": "English",
+   "area": 394
+  },
+  "SLB": {
+   "tz": [
+    "UTC+11:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Solomon Islander",
+   "capital": "Honiara",
+   "currency": "SBD (Solomon Islands dollar)",
+   "languages": "English",
+   "area": 28896
+  },
+  "SLE": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "GIN",
+    "LBR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Sierra Leonean",
+   "capital": "Freetown",
+   "currency": "SLE (Sierra Leonean leone)",
+   "languages": "English",
+   "area": 71740
+  },
+  "SLV": {
+   "tz": [
+    "UTC-06:00"
+   ],
+   "borders": [
+    "GTM",
+    "HND"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Salvadoran",
+   "capital": "San Salvador",
+   "currency": "USD (United States dollar)",
+   "languages": "Spanish",
+   "area": 21041
+  },
+  "SMR": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "ITA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Sammarinese",
+   "capital": "City of San Marino",
+   "currency": "EUR (Euro)",
+   "languages": "Italian",
+   "area": 61
+  },
+  "SOM": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "DJI",
+    "ETH",
+    "KEN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Somali",
+   "capital": "Mogadishu",
+   "currency": "SOS (Somali shilling)",
+   "languages": "Arabic, Somali",
+   "area": 637657
+  },
+  "SPM": {
+   "tz": [
+    "UTC-03:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Saint-Pierrais, Miquelonnais",
+   "capital": "Saint-Pierre",
+   "currency": "EUR (Euro)",
+   "languages": "French",
+   "area": 242
+  },
+  "SRB": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "BGR",
+    "BIH",
+    "HRV",
+    "HUN",
+    "KOS",
+    "MKD",
+    "MNE",
+    "ROU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Serbian",
+   "capital": "Belgrade",
+   "currency": "RSD (Serbian dinar)",
+   "languages": "Serbian",
+   "area": 88361
+  },
+  "SSD": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "CAF",
+    "COD",
+    "ETH",
+    "KEN",
+    "SDN",
+    "UGA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "South Sudanese",
+   "capital": "Juba",
+   "currency": "SSP (South Sudanese pound)",
+   "languages": "English",
+   "area": 619745
+  },
+  "STP": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Sao Tomean",
+   "capital": "São Tomé",
+   "currency": "STN (São Tomé and Príncipe dobra)",
+   "languages": "Portuguese",
+   "area": 964
+  },
+  "SUR": {
+   "tz": [
+    "UTC-03:00"
+   ],
+   "borders": [
+    "BRA",
+    "GUY"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Surinamer",
+   "capital": "Paramaribo",
+   "currency": "SRD (Surinamese dollar)",
+   "languages": "Dutch",
+   "area": 163820
+  },
+  "SVK": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "CZE",
+    "HUN",
+    "POL",
+    "UKR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Slovak",
+   "capital": "Bratislava",
+   "currency": "EUR (Euro)",
+   "languages": "Slovak",
+   "area": 49037
+  },
+  "SVN": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "AUT",
+    "HRV",
+    "HUN",
+    "ITA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Slovene",
+   "capital": "Ljubljana",
+   "currency": "EUR (Euro)",
+   "languages": "Slovene",
+   "area": 20273
+  },
+  "SWE": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "FIN",
+    "NOR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Swedish",
+   "capital": "Stockholm",
+   "currency": "SEK (Swedish krona)",
+   "languages": "Swedish",
+   "area": 450295
+  },
+  "SWZ": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "MOZ",
+    "ZAF"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Swazi",
+   "capital": "Lobamba",
+   "currency": "SZL (Swazi lilangeni)",
+   "languages": "English, Swazi",
+   "area": 17364
+  },
+  "SXM": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "borders": [
+    "MAF"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "St. Maartener",
+   "capital": "Philipsburg",
+   "currency": "ANG (Netherlands Antillean guilder)",
+   "languages": "English, French, Dutch",
+   "area": 34
+  },
+  "SYC": {
+   "tz": [
+    "UTC+04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Seychellois",
+   "capital": "Victoria",
+   "currency": "SCR (Seychellois rupee)",
+   "languages": "Seychellois Creole, English, French",
+   "area": 452
+  },
+  "SYR": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "IRQ",
+    "ISR",
+    "JOR",
+    "LBN",
+    "TUR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Syrian",
+   "capital": "Damascus",
+   "currency": "SYP (Syrian pound)",
+   "languages": "Arabic",
+   "area": 185180
+  },
+  "TCA": {
+   "tz": [
+    "UTC-05:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Turks and Caicos Islander",
+   "capital": "Cockburn Town",
+   "currency": "USD (United States dollar)",
+   "languages": "English",
+   "area": 948
+  },
+  "TCD": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "CAF",
+    "CMR",
+    "LBY",
+    "NER",
+    "NGA",
+    "SDN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Chadian",
+   "capital": "N'Djamena",
+   "currency": "XAF (Central African CFA franc)",
+   "languages": "Arabic, French",
+   "area": 1284000
+  },
+  "TGO": {
+   "tz": [
+    "UTC+00:00"
+   ],
+   "borders": [
+    "BEN",
+    "BFA",
+    "GHA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Togolese",
+   "capital": "Lomé",
+   "currency": "XOF (West African CFA franc)",
+   "languages": "French",
+   "area": 56785
+  },
+  "THA": {
+   "tz": [
+    "UTC+07:00"
+   ],
+   "borders": [
+    "KHM",
+    "LAO",
+    "MMR",
+    "MYS"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Thai",
+   "capital": "Bangkok",
+   "currency": "THB (Thai baht)",
+   "languages": "Thai",
+   "area": 513120
+  },
+  "TJK": {
+   "tz": [
+    "UTC+05:00"
+   ],
+   "borders": [
+    "AFG",
+    "CHN",
+    "KGZ",
+    "UZB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Tadzhik",
+   "capital": "Dushanbe",
+   "currency": "TJS (Tajikistani somoni)",
+   "languages": "Russian, Tajik",
+   "area": 143100
+  },
+  "TKM": {
+   "tz": [
+    "UTC+05:00"
+   ],
+   "borders": [
+    "AFG",
+    "IRN",
+    "KAZ",
+    "UZB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Turkmen",
+   "capital": "Ashgabat",
+   "currency": "TMT (Turkmenistan manat)",
+   "languages": "Russian, Turkmen",
+   "area": 488100
+  },
+  "TLS": {
+   "tz": [
+    "UTC+09:00"
+   ],
+   "borders": [
+    "IDN"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "East Timorese",
+   "capital": "Dili",
+   "currency": "USD (United States dollar)",
+   "languages": "Portuguese, Tetum",
+   "area": 14874
+  },
+  "TON": {
+   "tz": [
+    "UTC+13:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Tongan",
+   "capital": "Nuku'alofa",
+   "currency": "TOP (Tongan paʻanga)",
+   "languages": "English, Tongan",
+   "area": 747
+  },
+  "TTO": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Trinidadian",
+   "capital": "Port of Spain",
+   "currency": "TTD (Trinidad and Tobago dollar)",
+   "languages": "English",
+   "area": 5130
+  },
+  "TUN": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "DZA",
+    "LBY"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Tunisian",
+   "capital": "Tunis",
+   "currency": "TND (Tunisian dinar)",
+   "languages": "Arabic",
+   "area": 163610
+  },
+  "TUR": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "ARM",
+    "AZE",
+    "BGR",
+    "GEO",
+    "GRC",
+    "IRN",
+    "IRQ",
+    "SYR"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Turkish",
+   "capital": "Ankara",
+   "currency": "TRY (Turkish lira)",
+   "languages": "Turkish",
+   "area": 783562
+  },
+  "TUV": {
+   "tz": [
+    "UTC+12:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Tuvaluan",
+   "capital": "Funafuti",
+   "currency": "AUD (Australian dollar)",
+   "languages": "English, Tuvaluan",
+   "area": 26
+  },
+  "TWN": {
+   "tz": [
+    "UTC+08:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Taiwanese",
+   "capital": "Taipei",
+   "currency": "TWD (New Taiwan dollar)",
+   "languages": "Chinese",
+   "area": 36193
+  },
+  "TZA": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "BDI",
+    "COD",
+    "KEN",
+    "MOZ",
+    "MWI",
+    "RWA",
+    "UGA",
+    "ZMB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Tanzanian",
+   "capital": "Dodoma",
+   "currency": "TZS (Tanzanian shilling)",
+   "languages": "English, Swahili",
+   "area": 945087
+  },
+  "UGA": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "COD",
+    "KEN",
+    "RWA",
+    "SSD",
+    "TZA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Ugandan",
+   "capital": "Kampala",
+   "currency": "UGX (Ugandan shilling)",
+   "languages": "English, Swahili",
+   "area": 241550
+  },
+  "UKR": {
+   "tz": [
+    "UTC+02:00",
+    "UTC+03:00"
+   ],
+   "borders": [
+    "BLR",
+    "HUN",
+    "MDA",
+    "POL",
+    "ROU",
+    "RUS",
+    "SVK"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Ukrainian",
+   "capital": "Kyiv",
+   "currency": "UAH (Ukrainian hryvnia)",
+   "languages": "Ukrainian",
+   "area": 603500
+  },
+  "UMI": {
+   "tz": [
+    "UTC-11:00",
+    "UTC+12:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "American Islander",
+   "currency": "USD (United States dollar)",
+   "languages": "English",
+   "area": 34.2
+  },
+  "URY": {
+   "tz": [
+    "UTC-03:00"
+   ],
+   "borders": [
+    "ARG",
+    "BRA"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Uruguayan",
+   "capital": "Montevideo",
+   "currency": "UYU (Uruguayan peso)",
+   "languages": "Spanish",
+   "area": 181034
+  },
+  "USA": {
+   "tz": [
+    "UTC-10:00",
+    "UTC-09:00",
+    "UTC-08:00",
+    "UTC-07:00",
+    "UTC-06:00",
+    "UTC-05:00"
+   ],
+   "borders": [
+    "CAN",
+    "MEX"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "American",
+   "capital": "Washington D.C.",
+   "currency": "USD (United States dollar)",
+   "languages": "English",
+   "area": 9372610
+  },
+  "UZB": {
+   "tz": [
+    "UTC+05:00"
+   ],
+   "borders": [
+    "AFG",
+    "KAZ",
+    "KGZ",
+    "TJK",
+    "TKM"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Uzbekistani",
+   "capital": "Tashkent",
+   "currency": "UZS (Uzbekistani soʻm)",
+   "languages": "Russian, Uzbek",
+   "area": 447400
+  },
+  "VAT": {
+   "tz": [
+    "UTC+01:00"
+   ],
+   "borders": [
+    "ITA"
+   ],
+   "un": false,
+   "ind": true,
+   "dem": "Vatican",
+   "capital": "Vatican City",
+   "currency": "EUR (Euro)",
+   "languages": "Italian, Latin",
+   "area": 0.44
+  },
+  "VCT": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Saint Vincentian",
+   "capital": "Kingstown",
+   "currency": "XCD (Eastern Caribbean dollar)",
+   "languages": "English",
+   "area": 389
+  },
+  "VEN": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "borders": [
+    "BRA",
+    "COL",
+    "GUY"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Venezuelan",
+   "capital": "Caracas",
+   "currency": "VES (Venezuelan bolívar soberano)",
+   "languages": "Spanish",
+   "area": 916445
+  },
+  "VGB": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Virgin Islander",
+   "capital": "Road Town",
+   "currency": "USD (United States dollar)",
+   "languages": "English",
+   "area": 151
+  },
+  "VIR": {
+   "tz": [
+    "UTC-04:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Virgin Islander",
+   "capital": "Charlotte Amalie",
+   "currency": "USD (United States dollar)",
+   "languages": "English",
+   "area": 347
+  },
+  "VNM": {
+   "tz": [
+    "UTC+07:00"
+   ],
+   "borders": [
+    "CHN",
+    "KHM",
+    "LAO"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Vietnamese",
+   "capital": "Hanoi",
+   "currency": "VND (Vietnamese đồng)",
+   "languages": "Vietnamese",
+   "area": 331212
+  },
+  "VUT": {
+   "tz": [
+    "UTC+11:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Ni-Vanuatu",
+   "capital": "Port Vila",
+   "currency": "VUV (Vanuatu vatu)",
+   "languages": "Bislama, English, French",
+   "area": 12189
+  },
+  "WLF": {
+   "tz": [
+    "UTC+12:00"
+   ],
+   "un": false,
+   "ind": false,
+   "dem": "Wallis and Futuna Islander",
+   "capital": "Mata-Utu",
+   "currency": "XPF (CFP franc)",
+   "languages": "French",
+   "area": 142
+  },
+  "WSM": {
+   "tz": [
+    "UTC+13:00"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Samoan",
+   "capital": "Apia",
+   "currency": "WST (Samoan tālā)",
+   "languages": "English, Samoan",
+   "area": 2842
+  },
+  "YEM": {
+   "tz": [
+    "UTC+03:00"
+   ],
+   "borders": [
+    "OMN",
+    "SAU"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Yemeni",
+   "capital": "Sana'a",
+   "currency": "YER (Yemeni rial)",
+   "languages": "Arabic",
+   "area": 527968
+  },
+  "ZAF": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "BWA",
+    "LSO",
+    "MOZ",
+    "NAM",
+    "SWZ",
+    "ZWE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "South African",
+   "capital": "Pretoria",
+   "currency": "ZAR (South African rand)",
+   "languages": "Afrikaans, English, Southern Ndebele, Northern Sotho, Southern Sotho, Swazi, Tswana, Tsonga, Venda, Xhosa, Zulu",
+   "area": 1221037
+  },
+  "ZMB": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "AGO",
+    "BWA",
+    "COD",
+    "MOZ",
+    "MWI",
+    "NAM",
+    "TZA",
+    "ZWE"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Zambian",
+   "capital": "Lusaka",
+   "currency": "ZMW (Zambian kwacha)",
+   "languages": "English",
+   "area": 752612
+  },
+  "ZWE": {
+   "tz": [
+    "UTC+02:00"
+   ],
+   "borders": [
+    "BWA",
+    "MOZ",
+    "ZAF",
+    "ZMB"
+   ],
+   "un": true,
+   "ind": true,
+   "dem": "Zimbabwean",
+   "capital": "Harare",
+   "currency": "BWP (Botswana pula)",
+   "languages": "Chibarwe, English, Kalanga, Khoisan, Ndau, Northern Ndebele, Chewa, Shona, Sotho, Tonga, Tswana, Tsonga, Venda, Xhosa, Zimbabwean Sign Language",
+   "area": 390757
+  }
+ }
+}
