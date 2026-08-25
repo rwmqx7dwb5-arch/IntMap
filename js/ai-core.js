@@ -309,6 +309,9 @@ window.IntMapModules.aiCore=function(HOST){
      Built-in AI: nothing to configure. We only show login state + today's free-use counter. */
   function aiRenderSettings(){
     const wrap=document.getElementById('ai-settings-body'); if(!wrap) return;
+    /* ⚠ (#R465) wired HERE, not at factory level: this file's factory only ever DECLARES
+       (tests/r169 #4). The first paint is also the first moment there is anything to repaint. */
+    if(!aiRenderSettings._lang){ aiRenderSettings._lang=1; try{ window.addEventListener('intmap-lang',()=>{ try{ aiRenderSettings(); }catch(_){} }); }catch(_){} }
     const jp=aiJP();
     /* (#R34) DEV = UNLIMITED — check this FIRST. It used to sit BELOW the "not logged in" early-return, so a
        developer (intmap_dev flag, or logged in but currentUser not yet populated) saw the login prompt instead
@@ -344,6 +347,10 @@ window.IntMapModules.aiCore=function(HOST){
         (left<=0?`<div style="font-size:11.5px;color:#ff453a;margin-top:7px;font-weight:500;">`+aiEsc(aiLimitMsg())+`</div>`:'')+
       `</div>`;
   }
+  /* ⚠ (#R465) this block is painted when Settings OPENS, and the language <select> that decides which
+     of these sentences is right sits three groups above it in the same dialog — so «Developer account
+     — unlimited AI usage.» / the login line / the counter stayed in the language the dialog was opened
+     in. Nothing here is user-editable, so a full repaint is the whole fix. */
   function aiSaveSettings(){ saveAIConfig(); try{ aiSyncFeatureButtons(); }catch(_){} }
   function aiSyncFeatureButtons(){ HOST.aiButtonSyncers.forEach(fn=>{ try{ fn(); }catch(_){} }); }
   /* Toggle a busy spinner + disabled state on an .ai-action-btn (shared by all features). */
