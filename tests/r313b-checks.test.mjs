@@ -63,8 +63,12 @@ test('R313 追記 ① every token the chips use is resolved by fill(), and every
   assert.match(fill, /\{sub\\\}\/g,subName\(st\)/, '{sub} goes through a resolver, not through the raw field');
   const sub = ex.slice(ex.indexOf('function subName('), ex.indexOf('function fill('));
   /* ⚠ (#R313 追記2) this used to require a CLDR call. The browser has no M49 names, so that call was
-     doing nothing where it mattered — the resolver reads a table this repository ships. See ②. */
-  assert.match(sub, /SUB\[s\]/, 'and that resolver reads the names this repository ships');
+     doing nothing where it mattered — the resolver reads a table this repository ships. See ②.
+     ⚠ (#R443) …and the table itself moved to js/countries-ui.js, because the country card prints the
+     SAME field and had no reader for it. The property here is unchanged — «this resolver reads names
+     the repository ships, in the reader's language» — so the needle follows the table rather than
+     being deleted with it. [[intmap-r433-lessons]]: a retired spelling survives in what still checks it. */
+  assert.match(sub, /window\._imSubregionName\(s,HOST\.lang\)/, 'and that resolver reads the names this repository ships');
   assert.match(sub, /return s;/, '…falling back to the upstream string for anything not in it');
 });
 
@@ -83,10 +87,15 @@ test('R313 追記2 ② every subregion is a literal L() in the source, and nothi
      M49 macro-regions. Every reader kept seeing 「モンゴル国はEastern Asiaの…」 while THIS FILE'S OWN
      CHECK stayed green, because it measured the runtime the test runs in rather than the one that
      ships. ⚠ So the property is no longer «the platform can name it» but «the name is in our source»,
-     which is the same in every engine. */
-  const table = /const SUB=\{[\s\S]*?\r?\n {4}\};/.exec(src);
-  assert.ok(table, 'the subregion names are a table in this file');
-  const entries = [...table[0].matchAll(/'([^']+)':\(\)=>L\('([^']*)','([^']*)','([^']*)','([^']*)','([^']*)'\)/g)];
+     which is the same in every engine.
+     ⚠⚠ (#R443) AND THE TABLE MOVED — to `window._imSubregionName` in js/countries-ui.js — because the
+     country card printed the same field raw («北アメリカ / Northern America») for nineteen rounds while
+     this copy sat here fully translated. One table, two readers. This test follows it: the assertions
+     below are the same ones, made about the file the strings actually live in now. */
+  const cu = read('js/countries-ui.js');
+  const table = /_imSubregionName\._t=\{[\s\S]*?\r?\n {4}\};/.exec(cu);
+  assert.ok(table, 'the subregion names are a table in js/countries-ui.js');
+  const entries = [...table[0].matchAll(/'([^']+)':A\('([^']*)','([^']*)','([^']*)','([^']*)','([^']*)'\)/g)];
   assert.ok(entries.length >= 20, 'it names the subregions the country table ships (' + entries.length + ')');
 
   for (const [, key, en, ja, de, ru, es] of entries) {
@@ -115,8 +124,18 @@ test('R313 追記2 ② every subregion is a literal L() in the source, and nothi
   assert.ok(!/Intl\.DisplayNames/.test(ex), 'the chips do not ask Intl for a region name');
   assert.ok(!/_imCldrRegion/.test(ex), 'nor the CLDR helper, which cannot answer for a macro-region');
   const sub = ex.slice(ex.indexOf('function subName('), ex.indexOf('function fill('));
-  assert.match(sub, /SUB\[s\]/, 'subName reads the shipped table');
+  assert.match(sub, /window\._imSubregionName\(s,HOST\.lang\)/, 'subName reads the shipped table');
   assert.match(sub, /return s;/, '…and falls back to the upstream string for anything not in it');
+  /* ⚠ (#R443) …AND THE SAME IS ASKED OF THE TABLE'S NEW HOME. js/countries-ui.js does contain an
+     `Intl.DisplayNames` — `window._imCldrRegion`, for two-letter COUNTRY codes, which is the one
+     thing the browser can answer — so the absence is asserted over the resolver's own body, not
+     over the file. A whole-file check here would be either vacuous or wrong. */
+  const cuFn = code('js/countries-ui.js');
+  const body = cuFn.slice(cuFn.indexOf('window._imSubregionName=function('),
+                          cuFn.indexOf('window.IntMapModules=window.IntMapModules||{}'));
+  assert.ok(body.length > 500, 'the window._imSubregionName resolver was found in js/countries-ui.js');
+  assert.ok(!/Intl\.DisplayNames/.test(body), 'the subregion resolver asks nothing of the platform');
+  assert.ok(!/_imCldrRegion/.test(body), 'nor of the CLDR helper, which has no macro-regions in any browser');
 
   /* the helper it used to lean on is back to the codes it can actually answer for */
   assert.match(code('js/countries-ui.js'), /a2\.length!==2/,
