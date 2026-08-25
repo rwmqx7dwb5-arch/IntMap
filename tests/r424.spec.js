@@ -13,6 +13,11 @@
  *  ⚠ **国名（`.stat-name`）はここの主題ではない**——#R410 が直して、いま正しい。
  *  読むのは `.stat-sub`（サブ行）と、その行をダブルクリックして開くカードの Region 行だけ。
  *
+ *  ⚠ **#R443 追記——その Region 行には二つの欄があった。** #R424 は `s.region` だけを解決し、
+ *  隣の `s.subregion` を生のまま出し続けた（本番・日本語で「北アメリカ / Northern America」）。
+ *  最後の段はそれを**現代の行**で読む。`tests/r424-checks ⑥〜⑩` は表と解決器までしか言えず、
+ *  **カードがその解決器を通したか**は、ここでしか言えない。
+ *
  *  ⚠ **首都は英語のままが正しい。** 現代の行は `CAPITAL[code]`（«Washington, D.C.»）、
  *  歴史の行は `_STINFO`（«Tokyo»）——どちらも地名で、#R251 がそう決めている。だから
  *  この spec は「region が変わり、**capital は 1 バイトも変わらない**」を言う。
@@ -88,9 +93,9 @@ const READ_CARD = (lang) => {
   return { label, n: rows.length, value: row ? ((row.querySelector('b') || {}).textContent || '').trim() : null };
 };
 
-async function openCard(page, lang) {
+async function openCard(page, lang, code = HIST) {
   await page.evaluate(() => { const b = document.getElementById('cp-close'), p = document.getElementById('country-popup'); if (b && p && p.style.display === 'block') b.click(); });
-  await page.dblclick(`.stat-row[data-ccn="${HIST}"]`);
+  await page.dblclick(`.stat-row[data-ccn="${code}"]`);
   await page.waitForFunction(() => {
     const p = document.getElementById('country-popup');
     return !!(p && p.style.display === 'block' && p.querySelectorAll('.cm-row').length);
@@ -141,6 +146,31 @@ test('R424 1916年の一覧で、歴史の行のサブ行が現代の行と同�
   expect(jpCard.label, 'カードの見出し自体は #R240 から訳されている').not.toBe(enCard.label);
   expect(jpCard.value, `カードの Region 行が英語のまま: 「${jpCard.value}」`).not.toBe(enCard.value);
   expect(jpCard.value, 'カードは一覧の行と同じ語を言う').toBe(jp.hist.region);
+
+  /* ══ (#R443) 同じカードの、同じ行の、残り半分 ═════════════════════════════════════════════
+     報告は**現代の行**についてのものだった——本番・日本語で USA のカードが
+     「北アメリカ / Northern America」、ドイツが「ヨーロッパ / Western Europe」。
+     時計を現在へ戻し、同じ入口（行をダブルクリック）で同じ行を読む。
+
+     ⚠ **USA と DEU で、二つの経路が両方言える。** USA は CONTINENT が «North America»・
+     SUBREGION が «Northern America» ——英語では**別の語**、他の八言語では**同じ語**なので、
+     英語は 2 つ出し（畳まない）、日本語は 1 つに畳む。DEU は九言語すべてで別の語なので
+     どちらの言語でも 2 つ出る。⇒「畳んだ」と「訳した」を取り違えられない。 */
+  await page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
+  await page.waitForFunction(() => !!document.querySelector('.stat-row[data-ccn="DEU"] .stat-sub')
+    && !!document.querySelector('.stat-row[data-ccn="USA"] .stat-sub'),
+  null, { timeout: 40000, polling: 200 });
+
+  const jpUsa = await openCard(page, 'jp', 'USA');
+  const jpDeu = await openCard(page, 'jp', 'DEU');
+  expect(jpUsa.value, `カードの subregion が英語のまま: 「${jpUsa.value}」`).toBe('北アメリカ');
+  expect(jpDeu.value, `カードの subregion が英語のまま: 「${jpDeu.value}」`).toBe('ヨーロッパ / 西ヨーロッパ');
+
+  await switchTo(page, 'en');
+  const enUsa = await openCard(page, 'en', 'USA');
+  const enDeu = await openCard(page, 'en', 'DEU');
+  expect(enUsa.value, '英語では大陸と小地域が別の語なので、畳まない').toBe('North America / Northern America');
+  expect(enDeu.value, '英語の対照——ここは九言語すべてで二語').toBe('Europe / Western Europe');
 
   expect(errors, '言語と年を動かす間、page error は出ない: ' + errors.join(' | ')).toEqual([]);
 

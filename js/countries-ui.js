@@ -47,6 +47,92 @@ window._imCldrRegion=function(a2,lang){
     return (dn&&dn.of(a2.toUpperCase()))||'';
   }catch(_){ return ''; }
 };
+
+/* ══ ⚠⚠⚠ (#R443) THE OTHER HALF OF THE SAME ROW — AND ITS VOCABULARY ALREADY EXISTED ═══════════
+   #R424 routed `s.region` through `_regionName()` on both surfaces and left `s.subregion` beside
+   it printing RAW, so the card read 「北アメリカ / Northern America」 in Japanese — and the same
+   way in de / ru / es / fr / ko / zh-Hant / zh-Hans, because the string never met a table at all.
+   #R424 deferred it in one sentence («it has no entry in any table to be shown instead»), and
+   that sentence was wrong about this repository.
+
+   ⚠ MEASURED FIRST, over the three scales loadCountryData() actually fetches (2026-08-25):
+   Natural Earth's SUBREGION is EXACTLY 24 values — ne_110m (177 features) carries 22 of them and
+   ne_50m / ne_10m (242 / 258) add «Micronesia» and «Polynesia». NOT ONE feature at any scale has
+   an empty SUBREGION, which is also why the restcountries fallback in enrichCountry() is
+   unreachable in practice — the same thing #R424 measured about CONTINENT, one field over.
+
+   ⚠⚠⚠ AND ALL 24 WERE ALREADY TRANSLATED, TWICE OVER, WHILE THE CARD READ NEITHER.
+   js/atlas-examples.js held 22 of them as shipped `L(…)` calls — #R313 追記2 put them there after
+   measuring that Chromium's `Intl.DisplayNames` resolves 0 of 22 M49 macro-region codes while
+   Node's ICU resolves all 22, so the gate that asked Node stayed green while every reader saw
+   English — and the remaining two, «Antarctica» and «Seven seas (open ocean)», are already keys of
+   `_REGIONS` in the factory below. js/locales/ui.{fr,ko,zh,zh-hans}.js carry all 24 with no gaps.
+   So this round wrote NO new translation. It made ONE table out of the two that existed and gave
+   the card the reader it never had.
+
+   ⚠ THE TABLE LIVES HERE AND ATLAS READS IT THROUGH `window`. A copy in each file is the same 22
+   strings twice, and the half that gets corrected later is the half whoever is reading happens to
+   open. It is TOP-LEVEL rather than a member of the factory below because the factory's
+   `_regionName` closes over `HOST.lang` while Atlas has a language of its own — hence `lang` as an
+   argument, exactly like `window._imCldrRegion` above.
+   ⚠⚠ AND IT IS A `window.` PUBLICATION RATHER THAN A NAMED `export`, WHICH WAS MEASURED, NOT
+   ASSUMED. tests/r175 ③ allows either («wrapped, exported, or attached to window»), and the export
+   is the more checkable of the two — but FOUR harnesses run THIS FILE as a classic script through
+   `new Function(src)` to exercise the real `_mkStat` and the real upgrade pass (tests/r375 ①–⑦,
+   tests/r392, tests/r423 ①–③, tests/r337). One `export` keyword is a SyntaxError to all of them:
+   16 tests went red on a file whose behaviour had not changed. `window.` is what this file already
+   does for the same reason, one helper up.
+   ⚠ `IntMapLang.t(lang, …)` IS `pick()` with the language as argument one (js/lang-registry.js §t)
+   — the positional slots for en/jp/de/ru/es, then the inline table keyed by the English string — so
+   fr / ko / zh / zh-hans resolve here exactly as they do at every other call site, with no second
+   fallback rule to keep in step. */
+window._imSubregionName=function(sub,lang){
+  if(!sub) return '';
+  let T=window._imSubregionName._t;
+  if(!T){
+    /* ⚠ `pickArgs()`, NOT a bare array literal. An array is not a CallExpression, so
+       scripts/i18n-report.mjs and scripts/i18n-positional-audit.mjs count zero of it and print
+       100 % — the seventh SHAPE #R241 removed. The cache hangs off the function itself, as
+       `window._imCldrRegion._c` above does, so there is no unexported top-level declaration. */
+    const A=window.IntMapLang.pickArgs();
+    T=window._imSubregionName._t={
+      'Eastern Asia':A('Eastern Asia','東アジア','Ostasien','Восточная Азия','Asia oriental'),
+      'South-Eastern Asia':A('South-Eastern Asia','東南アジア','Südostasien','Юго-Восточная Азия','Sudeste Asiático'),
+      'Southern Asia':A('Southern Asia','南アジア','Südasien','Южная Азия','Asia meridional'),
+      'Central Asia':A('Central Asia','中央アジア','Zentralasien','Центральная Азия','Asia central'),
+      'Western Asia':A('Western Asia','西アジア','Westasien','Западная Азия','Asia occidental'),
+      'Northern Europe':A('Northern Europe','北ヨーロッパ','Nordeuropa','Северная Европа','Europa septentrional'),
+      'Western Europe':A('Western Europe','西ヨーロッパ','Westeuropa','Западная Европа','Europa occidental'),
+      'Southern Europe':A('Southern Europe','南ヨーロッパ','Südeuropa','Южная Европа','Europa meridional'),
+      'Eastern Europe':A('Eastern Europe','東ヨーロッパ','Osteuropa','Восточная Европа','Europa oriental'),
+      'Northern Africa':A('Northern Africa','北アフリカ','Nordafrika','Северная Африка','África septentrional'),
+      'Western Africa':A('Western Africa','西アフリカ','Westafrika','Западная Африка','África occidental'),
+      'Middle Africa':A('Middle Africa','中部アフリカ','Zentralafrika','Центральная Африка','África central'),
+      'Eastern Africa':A('Eastern Africa','東アフリカ','Ostafrika','Восточная Африка','África oriental'),
+      'Southern Africa':A('Southern Africa','南部アフリカ','Südliches Afrika','Южная Африка','África meridional'),
+      'Northern America':A('Northern America','北アメリカ','Nordamerika','Северная Америка','América del Norte'),
+      'Central America':A('Central America','中央アメリカ','Mittelamerika','Центральная Америка','América Central'),
+      'Caribbean':A('Caribbean','カリブ海地域','Karibik','Карибский бассейн','Caribe'),
+      'South America':A('South America','南アメリカ','Südamerika','Южная Америка','América del Sur'),
+      'Australia and New Zealand':A('Australia and New Zealand','オーストラリア・ニュージーランド','Australien und Neuseeland','Австралия и Новая Зеландия','Australia y Nueva Zelanda'),
+      'Melanesia':A('Melanesia','メラネシア','Melanesien','Меланезия','Melanesia'),
+      'Micronesia':A('Micronesia','ミクロネシア','Mikronesien','Микронезия','Micronesia'),
+      'Polynesia':A('Polynesia','ポリネシア','Polynesien','Полинезия','Polinesia'),
+      /* ⚠ THE LAST TWO ARE NOT REGION NAMES, AND THAT IS EXACTLY WHY THEY BELONG HERE. #R313 追記2
+         left them out of the Atlas table on the grounds that they are not places one compares
+         countries within — true of a sentence, false of THIS row, which simply names the field
+         Natural Earth put on the record. Both are already `_REGIONS` keys (#R424 measured that
+         «Seven seas (open ocean)» is a real CONTINENT value on rows the list shows), so the two
+         spellings must not drift; they are the same five arguments in both tables. */
+      'Antarctica':A('Antarctica','南極','Antarktika','Антарктида','Antártida'),
+      'Seven seas (open ocean)':A('Seven seas (open ocean)','七つの海（外洋）','Sieben Meere (offener Ozean)','Семь морей (открытый океан)','Siete mares (océano abierto)'),
+    };
+  }
+  const a=T[sub];
+  if(!a) return sub;
+  try{ return window.IntMapLang.t.apply(null,[lang].concat(a))||sub; }catch(_){ return sub; }
+};
+
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.countriesUi=function(HOST){
   /* (#R251) the seven continent names the country table carries in `region`, as calls.
@@ -498,14 +584,26 @@ window.IntMapModules.countriesUi=function(HOST){
     const TR=window.IntMapLang.pick(()=>HOST.lang);
     const yn=v=>v?TR('Yes','はい','Ja','Да','Sí'):TR('No','いいえ','Nein','Нет','No');
     const sec=(title,rows)=>{ const r=rows.filter(Boolean); if(!r.length) return ''; return `<div class="cp-sec"><div class="cp-sec-h">${title}</div>`+r.map(([k,v])=>`<div class="cm-row"><span>${k}</span><b>${v}</b></div>`).join('')+`</div>`; };
+    /* ⚠ (#R443) THE COLLAPSE IS COMPARED AFTER RESOLUTION, NOT BEFORE. Natural Earth's CONTINENT
+       and SUBREGION are different English strings for the same place on four groups of rows —
+       «North America»/«Northern America» (13), «South America»/«South America» (41), «Antarctica»
+       (3) and «Seven seas (open ocean)» (12) — and translation makes three of those four IDENTICAL
+       in every language: 「北アメリカ / 北アメリカ」, «Nordamerika / Nordamerika», «Северная Америка /
+       Северная Америка». Comparing the English keys would collapse none of them and comparing a
+       hand-written list of pairs would go stale the next time a translation is edited, so what is
+       compared is what the reader is about to see. English gains from the same rule: the card said
+       «South America / South America» for all 41 South American rows before this round. */
+    const _regRow=(a,b)=>(a||'—')+((b&&b!==a)?' / '+b:'');
     const geo=sec('🌍 '+TR('Geography','地理','Geografie','География','Geografía'),[
       /* ⚠ (#R424) THE SAME FIELD, THE OTHER SURFACE. The list sub-line was routed through
          `_regionName` by #R251; this row — the Region line of the country card a double-click
          opens — was left printing `s.region` raw, so every reader of every language read
          «Europe / Western Europe» here while the row they clicked said 「ヨーロッパ」. Same table,
-         same call. (`subregion` is Natural Earth's ~24-value SUBREGION and stays English for now,
-         as the capital does — it has no entry in any table to be shown instead.) */
-      [HOST.t('statRegion'),(s.region?_regionName(s.region):'—')+(s.subregion?' / '+s.subregion:'')],
+         same call.
+         ⚠ (#R443) …and `subregion`, the other half of the very same line, went on printing raw
+         for one more round on the grounds that it «has no entry in any table to be shown instead».
+         It had two: see `window._imSubregionName` at the top of this file. */
+      [HOST.t('statRegion'),_regRow(s.region?_regionName(s.region):'',s.subregion?window._imSubregionName(s.subregion,HOST.lang):'')],
       [HOST.t('statCapital'),s.capital||'—'],
       [HOST.t('statArea'),fmtArea(s.area)],
       [HOST.t('statDensity'),s.density?fmtNum(Math.round(s.density))+' /km²':'—'],
