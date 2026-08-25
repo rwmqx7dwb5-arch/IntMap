@@ -4979,6 +4979,10 @@ window.IntMapLang.define('zh-hans', {
   "{water}: what lives in it, who draws water from it, and is it shrinking?": "{water}：里面住着什么？谁在取水？水面是不是正在缩小？",   /* atlas-examples.js (#R392) */
   "This is where {place} meets {water} — what does that coast carry?": "这里是{place}与{water}相接之处。这条海岸线承担着什么？",   /* atlas-examples.js (#R392) */
   "{city}: what is this part of it used for, and what stood here before?": "{city}：这一带是做什么用的？以前这里有什么？",   /* atlas-examples.js (#R392) */
+  /* (#R455) 「{city}は何の上に筑かれ…」を、街の性格で3つに割ったうちの2つ — js/atlas-examples.js。
+     ⚠ {city} / {water} は描画时に地名へ置换されるトークン。缀りを変えると一致しない。 */
+  "{city} sits within sight of a border — what crosses there, and how has that shaped the place?": "{city}：从这座城市一眼就能望见国界。有什么跨越那条线？这又如何塑造了这座城市？",   /* atlas-examples.js (#R455) */
+  "{city} lives off {water} — what comes and goes through here, and who depends on it?": "{city}：这座城市以{water}为生。有什么从这里进出？又有谁依赖它？",   /* atlas-examples.js (#R455) */
   "{city}: what is it built on, and what does it do that its neighbours do not?": "{city}：这座城市建立在什么之上？它做了哪些邻近城市做不到的事？",   /* atlas-examples.js (#R392) */
   "This view is almost continuous built-up area — where does {city} actually end?": "这个视野几乎是连成一片的建成区。{city}到底在哪里结束？",   /* atlas-examples.js (#R392) */
   "{city} is the only named place in this whole view — what keeps it supplied?": "整个视野里有名字的地方只有{city}。是什么在供养它？",   /* atlas-examples.js (#R392) */
@@ -4988,9 +4992,23 @@ window.IntMapLang.define('zh-hans', {
   "The equator crosses this view — where exactly, and what changes from one side to the other?": "赤道横穿这个视野。它究竟从哪里通过？两侧又有什么不同？",   /* atlas-examples.js (#R392) */
   "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "这个视野整个位于高纬度。一年之中，冰对这里做了什么？",   /* atlas-examples.js (#R392) */
   "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak}：海拔 {ele} 米，耸立在此。它如何改变周围的天气与路线？",   /* atlas-examples.js (#R392) */
+  /* (#R455) 「いま画面の中に実际に何件あるか」を数えたうえで出すプリセット — js/atlas-examples.js。
+     ⚠ {ncab} / {nvolc} / {nquake} は描画时に数字へ置换されるトークン。缀りを変えると一致しない。 */
+  "{ncab} submarine cable landings sit inside this view — where do those cables run, and what happens if one is cut?": "这个视野里有 {ncab} 处海底电缆登陆点。这些电缆通往哪里？其中一条被切断会怎么样？",   /* atlas-examples.js (#R455) */
+  "One submarine cable lands inside this view — where does it go, and what happens if it is cut?": "这个视野里有一处海底电缆登陆点。这条电缆通往哪里？被切断会怎么样？",   /* atlas-examples.js (#R455) */
+  "{nvolc} volcanoes stand inside this view — which of them is restless, and what would an eruption reach?": "这个视野里有 {nvolc} 座火山。哪一座正在活动？一旦喷发会波及到哪里？",   /* atlas-examples.js (#R455) */
+  "{nquake} earthquakes have been recorded inside this view — which fault or plate boundary is behind them?": "这个视野里记录到 {nquake} 次地震。背后是哪条断层或板块边界？",   /* atlas-examples.js (#R455) */
+  "There is news pinned inside this view right now — what is happening here, and who is reporting it?": "此刻这个视野里标着新闻地点。这里发生了什么事？又是谁在报道？",   /* atlas-examples.js (#R455) */
+  "Aircraft are crossing this view right now — where are they coming from, and what routes are these?": "此刻有飞机正横越这个视野。它们从哪里起飞？这些是什么航线？",   /* atlas-examples.js (#R455) */
+  "Ships are moving through this view right now — what are they carrying, and where are they bound?": "此刻有船只正通过这个视野。载运的是什么？要开往哪里？",   /* atlas-examples.js (#R455) */
+  "Satellites are passing over this view right now — what are they for, and who operates them?": "此刻有卫星正飞越这个视野上空。它们是做什么用的？又是谁在营运？",   /* atlas-examples.js (#R455) */
+  "There is a volcano inside this view — is it restless, and what would an eruption reach?": "这个视野里有一座火山。它正在活动吗？一旦喷发会波及到哪里？",   /* atlas-examples.js (#R455) */
+  "One earthquake has been recorded inside this view — which fault or plate boundary is behind it?": "这个视野里记录到一次地震。背后是哪条断层或板块边界？",   /* atlas-examples.js (#R455) */
+  "There is data-centre capacity inside this view — what does it serve, and what does it draw in power and water?": "这个视野里有数据中心。它服务的是什么？又要用掉多少电和水？",   /* atlas-examples.js (#R455) */
   "Wind particles over the temperature layer": "气温图层上的风场粒子",   /* atlas-console.js (#R337) */
   "Wind particles over the gust layer": "阵风图层上的风场粒子",   /* atlas-console.js (#R439) */
   "Wind particles over the pressure layer": "气压图层上的风场粒子",   /* atlas-console.js (#R439) */
+  "Wind particles over the precipitation layer": "降水量图层上的风场粒子",   /* atlas-console.js (#R455) */
   "sea-level pressure switched on": "已开启海平面气压",   /* atlas-console.js (#R439) */
   "This panel could not be loaded — check your connection and try again.": "无法加载此面板 — 请检查网络连接后再试一次。",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "哥伦布抵达美洲",   /* analysis-world-events.js (#R322) */
@@ -6014,6 +6032,10 @@ window.IntMapLang.define('zh-hans', {
      One row, two controls, one word would read as one control. */
   "All topics": "所有分类",
   "Open event": "开启事件",
+  /* (#R455) ニュースカードのボタン（押すと出来事の详细が同じ面に开く）— js/news-events.js。
+     「1 source」「{n} sources」はこの表の上のほうに既にあり、ここはそれを括弧に入れたボタン文言。 */
+  "Details (1 source)": "详情（1 家媒体）",   /* news-events.js (#R455) */
+  "Details ({n} sources)": "详情（{n} 家媒体）",   /* news-events.js (#R455) */
   "Seven seas (open ocean)": "七海（外海）",
   "Eurasia": "欧亚大陆",
   "Middle East": "中东",

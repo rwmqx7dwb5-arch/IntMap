@@ -196,11 +196,11 @@ test('R408 ①d: 自分の見積りを書き直した — コメントの数が�
      古いコメントは古い測定を配る。だから**コメントの数をディスクと突き合わせる**——「950 が
      書かれていないこと」ではない（旧値を「これは古い」と断って引用するのは正しい書き方で、
      それを禁じると次の書き手は経緯を消す）。効くのは下の2本の等式のほうである。 */
-  assert.match(s, /4,051,978|4051978/, '自ホスト画像の実バイトが書かれている');
+  assert.match(s, /4,572,977|4572977/, '自ホスト画像の実バイトが書かれている');
   const imgs = readdirSync(ROOT).filter((f) => /^preview_.*\.png$/.test(f));
-  assert.equal(imgs.length, 28, `preview_*.png は ${imgs.length} 枚 — コメントの28枚と食い違う`);
+  assert.equal(imgs.length, 35, `preview_*.png は ${imgs.length} 枚 — コメントの35枚と食い違う`);
   const bytes = imgs.reduce((n, f) => n + statSync(join(ROOT, f)).size, 0);
-  assert.equal(bytes, 4051978, `実測 ${bytes} B — コメントの数と食い違う`);
+  assert.equal(bytes, 4572977, `実測 ${bytes} B — コメントの数と食い違う`);
 });
 
 /* ── ③ THE PREFETCH STOPS WHEN IT IS OVERTAKEN, AND FORGETS WHAT IT DID NOT ASK FOR ───────────*/

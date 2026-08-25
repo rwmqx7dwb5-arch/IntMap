@@ -75,7 +75,13 @@ test('R337 ① the preference lives in the temperature legend, has one door, and
      the default is still off, and what crosses to the wind module is still ONE effective boolean
      resolved from 「the box is ticked AND that layer is on」, now OR-ed over the layers that ask. */
   assert.match(wx, /'ec-temp':'intmap_wx_temp_parts'/, 'the preference has its own key');
-  assert.match(wx, /PARTS_IDS\.forEach\(id=>\{ let v=false;/, '…and is OFF by default (the streaks cost a forecast read)');
+  /* ⚠ (#R455) THE DEFAULT IS PER LAYER NOW — gusts, sea-level pressure and forecast
+     precipitation start ON; the TEMPERATURE layer, which is the one #R337 was about, still
+     starts OFF for #R337's reason. So this checks the same claim about the same layer,
+     against the table that decides it rather than against a single `false` literal. */
+  assert.match(wx, /const PARTS_DEFAULT=\{'ec-temp':false,/, '…and the temperature layer is OFF by default (the streaks cost a forecast read)');
+  assert.match(wx, /let v=!!PARTS_DEFAULT\[id\];[\s\S]{0,120}?if\(s!=null\) v=\(s==='1'\);/,
+    'a stored answer still wins both ways — the default only decides an ABSENT key');
   assert.match(wx, /W\.setSolo\(PARTS_IDS\.some\(id=>parts\[id\]&&state\[id\]&&state\[id\]\.on\)\)/,
     'what crosses between the two modules is the box AND the layer, resolved once');
   assert.match(wx, /function syncLegend\(\)\{[\s\S]{0,200}?pushWindSolo\(\)/,

@@ -4754,6 +4754,10 @@ window.IntMapLang.define('ko', { ui: {
   "{water}: what lives in it, who draws water from it, and is it shrinking?": "{water}: 여기에는 무엇이 살고, 누가 물을 끌어 쓰며, 수위는 줄고 있나요?",   /* atlas-examples.js (#R392) */
   "This is where {place} meets {water} — what does that coast carry?": "{place}: 이 나라가 {water}에 닿는 지점입니다. 이 해안선은 무엇을 떠맡고 있나요?",   /* atlas-examples.js (#R392) */
   "{city}: what is this part of it used for, and what stood here before?": "{city}: 이 구역은 무엇에 쓰이고, 예전에는 여기에 무엇이 있었나요?",   /* atlas-examples.js (#R392) */
+  /* (#R455) 「{city}は何の上に築かれ…」を、街の性格で3つに割ったうちの2つ — js/atlas-examples.js。
+     ⚠ {city} / {water} は描画時に地名へ置換されるトークン。綴りを変えると一致しない。 */
+  "{city} sits within sight of a border — what crosses there, and how has that shaped the place?": "{city}: 국경이 바로 눈앞에 보이는 도시입니다. 무엇이 그 선을 넘나들고, 국경은 이 도시를 어떤 곳으로 만들어 왔나요?",   /* atlas-examples.js (#R455) */
+  "{city} lives off {water} — what comes and goes through here, and who depends on it?": "{city}: {water}에 기대어 살아가는 도시입니다. 무엇이 이곳을 드나들고, 누가 거기에 의존하나요?",   /* atlas-examples.js (#R455) */
   "{city}: what is it built on, and what does it do that its neighbours do not?": "{city}: 이 도시는 무엇 위에 세워졌고, 이웃 도시에는 없는 무엇을 하고 있나요?",   /* atlas-examples.js (#R392) */
   "This view is almost continuous built-up area — where does {city} actually end?": "이 화면은 거의 끊김 없는 시가지입니다. {city}의 경계는 실제로 어디인가요?",   /* atlas-examples.js (#R392) */
   "{city} is the only named place in this whole view — what keeps it supplied?": "이 화면 전체에서 이름이 붙은 곳은 {city} 하나뿐입니다. 이곳을 지탱하는 것은 무엇인가요?",   /* atlas-examples.js (#R392) */
@@ -4763,9 +4767,23 @@ window.IntMapLang.define('ko', { ui: {
   "The equator crosses this view — where exactly, and what changes from one side to the other?": "적도가 이 화면을 가로지릅니다. 정확히 어디를 지나고, 남북으로 무엇이 달라지나요?",   /* atlas-examples.js (#R392) */
   "Everything in this view sits in the high latitudes — what does the ice do to it through the year?": "이 화면은 전체가 고위도에 있습니다. 얼음은 한 해 동안 이곳을 어떻게 바꾸나요?",   /* atlas-examples.js (#R392) */
   "{peak} rises {ele} m here — what does it do to the weather and the routes around it?": "{peak}: 여기서 해발 {ele} m까지 솟아 있습니다. 주변의 날씨와 길에 어떤 영향을 주나요?",   /* atlas-examples.js (#R392) */
+  /* (#R455) 「いま画面の中に実際に何件あるか」を数えたうえで出すプリセット — js/atlas-examples.js。
+     ⚠ {ncab} / {nvolc} / {nquake} は描画時に数字へ置換されるトークン。綴りを変えると一致しない。 */
+  "{ncab} submarine cable landings sit inside this view — where do those cables run, and what happens if one is cut?": "이 화면 안에 해저 케이블이 상륙하는 지점이 {ncab}곳 있습니다. 이 케이블들은 어디로 이어지고, 한 가닥이 끊기면 어떻게 되나요?",   /* atlas-examples.js (#R455) */
+  "One submarine cable lands inside this view — where does it go, and what happens if it is cut?": "이 화면 안에 해저 케이블이 상륙하는 지점이 한 곳 있습니다. 이 케이블은 어디로 이어지고, 끊기면 어떻게 되나요?",   /* atlas-examples.js (#R455) */
+  "{nvolc} volcanoes stand inside this view — which of them is restless, and what would an eruption reach?": "이 화면 안에 화산이 {nvolc}개 있습니다. 그중 활동이 활발한 것은 어느 화산이고, 분화하면 어디까지 영향이 미치나요?",   /* atlas-examples.js (#R455) */
+  "{nquake} earthquakes have been recorded inside this view — which fault or plate boundary is behind them?": "이 화면 안에서 지진이 {nquake}번 기록되었습니다. 어느 단층이나 판 경계 때문인가요?",   /* atlas-examples.js (#R455) */
+  "There is news pinned inside this view right now — what is happening here, and who is reporting it?": "지금 이 화면 안에 뉴스가 표시된 지점이 있습니다. 여기서 무슨 일이 일어나고 있고, 누가 보도하고 있나요?",   /* atlas-examples.js (#R455) */
+  "Aircraft are crossing this view right now — where are they coming from, and what routes are these?": "지금 이 화면을 항공기가 가로지르고 있습니다. 어디에서 왔고, 무슨 항로인가요?",   /* atlas-examples.js (#R455) */
+  "Ships are moving through this view right now — what are they carrying, and where are they bound?": "지금 이 화면을 선박이 지나고 있습니다. 무엇을 싣고 있고, 어디로 향하나요?",   /* atlas-examples.js (#R455) */
+  "Satellites are passing over this view right now — what are they for, and who operates them?": "지금 이 화면 위를 인공위성이 지나고 있습니다. 무엇을 위한 위성이고, 누가 운용하나요?",   /* atlas-examples.js (#R455) */
+  "There is a volcano inside this view — is it restless, and what would an eruption reach?": "이 화면 안에 화산이 하나 있습니다. 지금 활동이 활발한가요? 분화하면 어디까지 영향이 미치나요?",   /* atlas-examples.js (#R455) */
+  "One earthquake has been recorded inside this view — which fault or plate boundary is behind it?": "이 화면 안에서 지진이 한 번 기록되었습니다. 어느 단층이나 판 경계 때문인가요?",   /* atlas-examples.js (#R455) */
+  "There is data-centre capacity inside this view — what does it serve, and what does it draw in power and water?": "이 화면 안에 데이터센터가 있습니다. 무엇을 떠받치고 있고, 전력과 물을 얼마나 쓰나요?",   /* atlas-examples.js (#R455) */
   "Wind particles over the temperature layer": "기온 레이어 위의 바람 입자",   /* atlas-console.js (#R337) */
   "Wind particles over the gust layer": "최대순간풍속 레이어 위의 바람 입자",   /* atlas-console.js (#R439) */
   "Wind particles over the pressure layer": "기압 레이어 위의 바람 입자",   /* atlas-console.js (#R439) */
+  "Wind particles over the precipitation layer": "강수량 레이어 위의 바람 입자",   /* atlas-console.js (#R455) */
   "sea-level pressure switched on": "해면기압을 켰습니다",   /* atlas-console.js (#R439) */
   "This panel could not be loaded — check your connection and try again.": "이 패널을 불러오지 못했습니다 — 연결 상태를 확인한 뒤 다시 시도해 주세요.",   /* analysis-panels.js (#R322) */
   "Columbus reaches the Americas": "콜럼버스의 아메리카 도달",   /* analysis-world-events.js (#R322) */
@@ -5790,6 +5808,10 @@ window.IntMapLang.define('ko', { ui: {
      One row, two controls, one word would read as one control. */
   "All topics": "모든 분류",
   "Open event": "사건 열기",
+  /* (#R455) ニュースカードのボタン（押すと出来事の詳細が同じ面に開く）— js/news-events.js。
+     「1 source」「{n} sources」はこの表の上のほうに既にあり、ここはそれを括弧に入れたボタン文言。 */
+  "Details (1 source)": "상세 정보 (1개 매체)",   /* news-events.js (#R455) */
+  "Details ({n} sources)": "상세 정보 ({n}개 매체)",   /* news-events.js (#R455) */
   "Seven seas (open ocean)": "일곱 바다(외해)",
   "Eurasia": "유라시아",
   "Middle East": "중동",

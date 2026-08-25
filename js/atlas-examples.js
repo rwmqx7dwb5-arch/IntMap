@@ -231,6 +231,18 @@ export function makeAtlasExamples(HOST, CTX) {
                layers:ly, has:(id)=>ids.has(id), year:year, live:live, zoom:z,
                geo:geo, langN:langN, cur:cur,
                vw:vw, vnames:vn,
+               /* ⚠ (#R455) HOW MANY OF THAT THING ARE ACTUALLY INSIDE THIS VIEW — a number when the
+                  app can count, and **null when it cannot**, which is a different answer from 0.
+                  `has()` above asks the layers PANEL; this asks the MAP. See the ⚠⚠⚠ box in
+                  js/atlas-view-subject.js for the ten-chips-in-sixty measurement that made the
+                  difference matter. */
+               inView:(id)=>{ try{ return vw&&vw.nIn?vw.nIn(id):null; }catch(_){ return null; } },
+               /* the reader's own latitude band, MEASURED FROM THE VIEW. ⚠ Not from the country's
+                  extent — 「Part of United States of America lies inside the Arctic Circle」 was
+                  measured on this build while the reader was looking at Manhattan, because Alaska
+                  is in the same country. An extent is not a location (#R337 追記) and it is not a
+                  VIEW either. */
+               viewN:(vw&&vw.box&&isFinite(vw.box.n))?vw.box.n:null,
                /* the scale the reader is at, in kilometres rather than zoom levels — see
                   js/atlas-view-subject.js `scaleOf` for why a zoom number cannot answer this */
                scale:(vw&&vw.scale)||'world' };
@@ -367,7 +379,32 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{city}: Wofür wird dieser Teil genutzt, und was stand hier vorher?',
                 '{city}: для чего служит этот участок и что стояло здесь раньше?',
                 '{city}: ¿para qué sirve esta parte y qué había aquí antes?') },
-      { k:'vcity', w:15, on:(f)=>f.vw&&f.vw.city&&/^(city|region)$/.test(f.scale),
+      /* ══ ⚠⚠ (#R455) ONE CITY QUESTION IS STILL A TEMPLATE, EVEN WITH THE RIGHT NAME IN IT ═══════
+         MEASURED after the layer chips were fixed: 「{city}: what is it built on…」 was handed to
+         EIGHT of fifteen views — Tokyo, Bandar Abbas, Tangier, Donetsk, Akureyri, Aosta, Seoul,
+         Singapore. The set of DISTINCT SENTENCES looks healthy (55 of 60) only because the name
+         differs; the QUESTION is the same one every time, which is 「まだほぼ定型文」 in the form
+         that survives a distinct-string count.
+         ⇒ the same subject, split on facts the module already measured, so which question a city
+         gets depends on what kind of place it is. Same weight for all three: they cannot both be
+         true, so ordering between them never arises.
+         ⚠ NO NEW MEASUREMENT. `nCountries`, `landFrac` and `water` are already on the subject —
+         this is a partition of an existing candidate, not another sweep of the map. */
+      { k:'vcityborder', w:15, on:(f)=>f.vw&&f.vw.city&&f.vw.nCountries>=2&&f.vw.landFrac>=0.35&&/^(city|region)$/.test(f.scale),
+        t:()=>L('{city} sits within sight of a border — what crosses there, and how has that shaped the place?',
+                '{city}は国境のすぐそばにある。そこを何が行き来し、この街をどう形づくってきた？',
+                '{city} liegt in Sichtweite einer Grenze — was quert sie dort, und wie hat das den Ort geprägt?',
+                '{city} стоит у самой границы — что через неё идёт и как это сформировало город?',
+                '{city} está a la vista de una frontera: ¿qué la cruza y cómo ha marcado a la ciudad?') },
+      { k:'vcityport', w:15, on:(f)=>f.vw&&f.vw.city&&f.vw.nCountries<2&&f.vw.landFrac<0.75&&f.vw.water&&/^(city|region)$/.test(f.scale),
+        t:()=>L('{city} lives off {water} — what comes and goes through here, and who depends on it?',
+                '{city}は{water}に面して暮らしている。ここを何が出入りし、誰がそれに頼っている？',
+                '{city} lebt von {water} — was geht hier ein und aus, und wer hängt davon ab?',
+                '{city} живёт за счёт акватории {water} — что здесь проходит и кто от этого зависит?',
+                '{city} vive de {water}: ¿qué entra y sale por aquí y quién depende de ello?') },
+      { k:'vcity', w:15, on:(f)=>f.vw&&f.vw.city&&/^(city|region)$/.test(f.scale)
+                                 &&!(f.vw.nCountries>=2&&f.vw.landFrac>=0.35)
+                                 &&!(f.vw.nCountries<2&&f.vw.landFrac<0.75&&f.vw.water),
         t:()=>L('{city}: what is it built on, and what does it do that its neighbours do not?',
                 '{city}は何の上に築かれ、近隣の街には無い何をしている？',
                 '{city}: Worauf ist der Ort gebaut, und was kann er, was die Nachbarn nicht können?',
@@ -443,7 +480,101 @@ export function makeAtlasExamples(HOST, CTX) {
                 'ここには標高{ele} mの{peak}がある。周りの天気と道筋をどう変えている？',
                 '{peak} ragt hier {ele} m auf — was macht das mit dem Wetter und den Wegen ringsum?',
                 '{peak} поднимается здесь на {ele} м — как это влияет на погоду и пути вокруг?',
-                '{peak} se alza aquí {ele} m: ¿qué hace con el clima y las rutas de alrededor?') }
+                '{peak} se alza aquí {ele} m: ¿qué hace con el clima y las rutas de alrededor?') },
+      /* ══ ⚠⚠⚠ (#R455) WHAT IS ACTUALLY INSIDE THIS VIEW, COUNTED ══════════════════════════════
+         「まだほぼ定型文みたいなものしかない。もっとその場所にあったものに。」 (fifth time)
+         Every candidate below is gated on `f.inView(id)` — the number of that thing the app is
+         holding INSIDE the box right now — and not on `f.has('<checkbox>')`, which only says the
+         box is ticked. That distinction is the whole of this round's answer: the single most
+         repeated chip in the app fired ten times in sixty because ONE default-on layer had its
+         checkbox ticked, and one of those ten told a reader over the Alps about the submarine
+         cables landing in Switzerland.
+         ⚠ THE NUMBER IS PRINTED ONLY FOR THE STATIC CATALOGUES. Cable landings and volcanoes do
+         not move, so `{ncab}` / `{nvolc}` are still true a minute later and the redraw guard keeps
+         their exact count. Aircraft, ships, satellites and news points change under a motionless
+         camera, so those chips are gated on PRESENCE and print no figure — a chip that said 「214
+         aircraft」 would be wrong before the reader finished reading it.
+         ⚠ AND EVERY ONE OF THEM IS IN THE VIEW POOL, not the country pool, so they are offered over
+         open water too — which is where the cable question is most worth asking and where #R392
+         measured the app falling back to four generic world sentences. */
+      /* ⚠ A COUNT NEEDS A SINGULAR. There is no plural machinery in `L()` — nine languages, nine
+         rules — so the pool does what the rest of this app does with counted nouns and carries TWO
+         candidates whose predicates cannot both be true. 「1 submarine cable landings」 shipped for
+         exactly one measurement pass of this round; it does not ship.
+         ⚠ AND IT REFUSES AT WORLD SCALE. Measured before this gate: 「501 submarine cable landings
+         sit inside this view」 over the whole planet — which is a fact about the CABLE NETWORK, not
+         about a place, and is the same 「true sentence about the wrong object」 #R392 removed.
+         ⚠ w=13, NOT 16. The first version outranked the chokepoint and the border and took the
+         first slot in seven of fifteen views — trading one chip that fired everywhere for another.
+         A cable landing is a real fact about this view; it is not more distinctive than 「this is
+         one of sixteen chokepoints on Earth」. */
+      { k:'vcable', w:13, on:(f)=>f.inView('cables')>=2&&/^(continent|country|region|city|street)$/.test(f.scale),
+        t:()=>L('{ncab} submarine cable landings sit inside this view — where do those cables run, and what happens if one is cut?',
+                'この視界の中に海底ケーブルの陸揚げ地点が{ncab}か所ある。ケーブルはどこへ伸び、1本切れたら何が起きる？',
+                'In diesem Ausschnitt liegen {ncab} Seekabel-Anlandungen — wohin laufen diese Kabel, und was passiert, wenn eines reißt?',
+                'В этом виде находятся {ncab} точек выхода подводных кабелей на берег — куда идут эти кабели и что будет, если один перережут?',
+                'En esta vista hay {ncab} puntos de amarre de cables submarinos: ¿hacia dónde van y qué pasa si se corta uno?') },
+      { k:'vcable1', w:13, on:(f)=>f.inView('cables')===1&&/^(continent|country|region|city|street)$/.test(f.scale),
+        t:()=>L('One submarine cable lands inside this view — where does it go, and what happens if it is cut?',
+                'この視界の中に海底ケーブルの陸揚げ地点が1か所ある。そのケーブルはどこへ伸び、切れたら何が起きる？',
+                'In diesem Ausschnitt landet ein Seekabel an — wohin führt es, und was passiert, wenn es reißt?',
+                'В этом виде на берег выходит один подводный кабель — куда он идёт и что будет, если его перережут?',
+                'En esta vista amarra un cable submarino: ¿adónde va y qué pasa si se corta?') },
+      { k:'vvolc', w:17, on:(f)=>f.inView('volcanoes')>=2,
+        t:()=>L('{nvolc} volcanoes stand inside this view — which of them is restless, and what would an eruption reach?',
+                'この視界の中に火山が{nvolc}座ある。いま活動しているのはどれで、噴火したらどこまで届く？',
+                'In diesem Ausschnitt stehen {nvolc} Vulkane — welcher davon ist unruhig, und wie weit reichte ein Ausbruch?',
+                'В этом виде находятся {nvolc} вулканов — какой из них беспокоен и куда дотянется извержение?',
+                'En esta vista hay {nvolc} volcanes: ¿cuál está inquieto y hasta dónde llegaría una erupción?') },
+      { k:'vquake', w:17, on:(f)=>f.inView('earthquakes')>=2,
+        t:()=>L('{nquake} earthquakes have been recorded inside this view — which fault or plate boundary is behind them?',
+                'この視界の中で{nquake}回の地震が記録されている。どの断層・プレート境界のせい？',
+                'In diesem Ausschnitt sind {nquake} Erdbeben verzeichnet — welche Störung oder Plattengrenze steckt dahinter?',
+                'В этом виде зафиксировано {nquake} землетрясений — какой разлом или граница плит за ними стоит?',
+                'Dentro de esta vista hay {nquake} terremotos registrados: ¿qué falla o límite de placas los explica?') },
+      { k:'vnews', w:16, on:(f)=>f.inView('news')>0,
+        t:()=>L('There is news pinned inside this view right now — what is happening here, and who is reporting it?',
+                'いまこの視界の中にニュースの地点がある。ここで何が起きていて、誰が報じている？',
+                'In diesem Ausschnitt sind gerade Nachrichten verortet — was passiert hier, und wer berichtet darüber?',
+                'Прямо сейчас в этом виде есть новостные точки — что здесь происходит и кто об этом пишет?',
+                'Ahora mismo hay noticias localizadas en esta vista: ¿qué está pasando aquí y quién lo cuenta?') },
+      { k:'vplanes', w:15, on:(f)=>f.inView('aircraft')>0,
+        t:()=>L('Aircraft are crossing this view right now — where are they coming from, and what routes are these?',
+                'いまこの視界を航空機が横切っている。どこから来て、これは何という航路？',
+                'Gerade queren Flugzeuge diesen Ausschnitt — woher kommen sie, und welche Routen sind das?',
+                'Прямо сейчас этот вид пересекают самолёты — откуда они летят и что это за маршруты?',
+                'Ahora mismo hay aviones cruzando esta vista: ¿de dónde vienen y qué rutas son estas?') },
+      { k:'vships', w:15, on:(f)=>f.inView('ships')>0,
+        t:()=>L('Ships are moving through this view right now — what are they carrying, and where are they bound?',
+                'いまこの視界を船が通っている。何を積んで、どこへ向かっている？',
+                'Gerade fahren Schiffe durch diesen Ausschnitt — was haben sie geladen, und wohin?',
+                'Прямо сейчас через этот вид идут суда — что они везут и куда направляются?',
+                'Ahora mismo pasan barcos por esta vista: ¿qué transportan y hacia dónde van?') },
+      { k:'vsats', w:15, on:(f)=>f.inView('satellites')>0,
+        t:()=>L('Satellites are passing over this view right now — what are they for, and who operates them?',
+                'いまこの視界の上を人工衛星が通過している。何のための衛星で、誰が運用している？',
+                'Gerade ziehen Satelliten über diesen Ausschnitt — wofür sind sie da, und wer betreibt sie?',
+                'Прямо сейчас над этим видом проходят спутники — для чего они и кто ими управляет?',
+                'Ahora mismo pasan satélites sobre esta vista: ¿para qué sirven y quién los opera?') },
+      /* the singular halves of the two counted catalogues above — see the ⚠ on `vcable1` */
+      { k:'vvolc1', w:17, on:(f)=>f.inView('volcanoes')===1,
+        t:()=>L('There is a volcano inside this view — is it restless, and what would an eruption reach?',
+                'この視界の中に火山が1座ある。いま活動している？ 噴火したらどこまで届く？',
+                'In diesem Ausschnitt steht ein Vulkan — ist er unruhig, und wie weit reichte ein Ausbruch?',
+                'В этом виде есть вулкан — беспокоен ли он и куда дотянется извержение?',
+                'En esta vista hay un volcán: ¿está inquieto y hasta dónde llegaría una erupción?') },
+      { k:'vquake1', w:17, on:(f)=>f.inView('earthquakes')===1,
+        t:()=>L('One earthquake has been recorded inside this view — which fault or plate boundary is behind it?',
+                'この視界の中で地震が1回記録されている。どの断層・プレート境界のせい？',
+                'In diesem Ausschnitt ist ein Erdbeben verzeichnet — welche Störung oder Plattengrenze steckt dahinter?',
+                'В этом виде зафиксировано одно землетрясение — какой разлом или граница плит за ним стоит?',
+                'Dentro de esta vista hay un terremoto registrado: ¿qué falla o límite de placas lo explica?') },
+      { k:'vdc', w:15, on:(f)=>f.inView('datacenters')>0,
+        t:()=>L('There is data-centre capacity inside this view — what does it serve, and what does it draw in power and water?',
+                'この視界の中にデータセンターがある。何を支えていて、電力と水をどれだけ使う？',
+                'In diesem Ausschnitt steht Rechenzentrums-Kapazität — was bedient sie, und was zieht sie an Strom und Wasser?',
+                'В этом виде есть мощности дата-центров — что они обслуживают и сколько потребляют энергии и воды?',
+                'En esta vista hay capacidad de centros de datos: ¿a qué da servicio y cuánta energía y agua consume?') }
     ];
 
     /* ══ the pool ═════════════════════════════════════════════════════════════════════════════
@@ -454,19 +585,34 @@ export function makeAtlasExamples(HOST, CTX) {
        out a question about the thing that makes this place different, which was the complaint. */
     const P=[
       /* ── what the reader is looking at right now ─────────────────────────────────────────── */
+      /* ══ ⚠⚠⚠ (#R455) `has()` ASKS THE PANEL. IT IS NOT EVIDENCE THAT ANYTHING IS THERE. ══════
+         Five of the rows below used to fire on 「the checkbox is ticked」 alone, and two of the
+         layers in this app are ticked BY DEFAULT (`window.IntMapDefaultLayers`), so those chips
+         went out on every view on Earth with the country's name pasted in. MEASURED on this build
+         across fifteen views: 「Which submarine cables land in {place}…」 took 10 of 60 chips,
+         among them 「…land in Switzerland」.
+         ⇒ each of the five now ALSO requires that the app cannot count that thing in the box
+         (`inView(id)===null` — the layer is on but its source has not been built yet). The moment
+         it CAN count, the counted view-scoped chip in `V` above owns the subject: it fires when
+         there is something here and stays silent when there is not. So the question survives in
+         both worlds and no row can claim content it has not seen.
+         ⚠ THE OTHER LAYER ROWS ARE LEFT EXACTLY AS THEY WERE. A raster field — warnings, wind,
+         radar, climate, sea level — has no features to count, so 「is the layer on」 is the best
+         evidence there is for it and refusing on an uncountable layer would delete a working chip
+         to satisfy a rule it cannot be judged by. */
       { k:'alerts', w:10, on:(f)=>f.st&&f.has('wp-dl-alerts'),
         t:()=>L('Which weather warnings are in force over {place} right now, and who issued them?',
                 '{place}でいま発表中の気象警報は？ 発表元はどこ？',
                 '{place}: Welche Wetterwarnungen gelten dort gerade, und von wem stammen sie?',
                 '{place}: какие метеопредупреждения действуют прямо сейчас и кто их выпустил?',
                 '{place}: ¿qué avisos meteorológicos están vigentes ahora y quién los emitió?') },
-      { k:'quake', w:10, on:(f)=>f.st&&f.has('bx-eq'),
+      { k:'quake', w:10, on:(f)=>f.st&&f.has('bx-eq')&&f.inView('earthquakes')===null,
         t:()=>L('What has been shaking near {place}, and which fault or plate boundary is behind it?',
                 '{place}の近くで最近起きた地震は？ どの断層・プレート境界のせい？',
                 '{place}: Wo hat es dort zuletzt gebebt, und welche Störung oder Plattengrenze steckt dahinter?',
                 '{place}: где рядом недавно трясло и какой разлом или граница плит за это отвечает?',
                 '{place}: ¿dónde ha temblado cerca y qué falla o límite de placas lo explica?') },
-      { k:'volc', w:10, on:(f)=>f.st&&f.has('beta-dl-volc2'),
+      { k:'volc', w:10, on:(f)=>f.st&&f.has('beta-dl-volc2')&&f.inView('volcanoes')===null,
         t:()=>L('Which volcanoes near {place} are restless, and what would an eruption reach?',
                 '{place}周辺で活動中の火山は？ 噴火したらどこまで影響する？',
                 '{place}: Welche Vulkane in der Nähe sind unruhig, und wie weit reichte ein Ausbruch?',
@@ -478,19 +624,19 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: Was treibt das Windmuster über dem Land heute an?',
                 '{place}: чем определяется сегодняшний рисунок ветра над страной?',
                 '{place}: ¿qué está impulsando el patrón de viento de hoy?') },
-      { k:'cables', w:9, on:(f)=>f.st&&f.has('dl-subcables'),
+      { k:'cables', w:9, on:(f)=>f.st&&f.has('dl-subcables')&&f.inView('cables')===null,
         t:()=>L('Which submarine cables land in {place}, and what happens if one is cut?',
                 '{place}に陸揚げされている海底ケーブルは？ 1本切れたら何が起きる？',
                 '{place}: Welche Seekabel landen dort an, und was passiert, wenn eines reißt?',
                 '{place}: какие подводные кабели туда заходят и что будет, если один перережут?',
                 '{place}: ¿qué cables submarinos llegan allí y qué pasa si se corta uno?') },
-      { k:'planes', w:8, on:(f)=>f.st&&f.has('dl-planes'),
+      { k:'planes', w:8, on:(f)=>f.st&&f.has('dl-planes')&&f.inView('aircraft')===null,
         t:()=>L('What is flying over {place} right now, and where are those aircraft going?',
                 'いま{place}の上空を飛んでいるのは？ どこへ向かっている？',
                 '{place}: Was fliegt gerade darüber, und wohin?',
                 '{place}: что сейчас летит над страной и куда?',
                 '{place}: ¿qué está sobrevolando ahora y hacia dónde va?') },
-      { k:'ships', w:8, on:(f)=>f.st&&f.has('dl-ships'),
+      { k:'ships', w:8, on:(f)=>f.st&&f.has('dl-ships')&&f.inView('ships')===null,
         t:()=>L('What is moving through {place}’s waters right now, and what is it carrying?',
                 'いま{place}の海域を通っている船は？ 何を運んでいる？',
                 '{place}: Was fährt gerade durch die Gewässer, und was hat es geladen?',
@@ -517,7 +663,14 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: Welche Erdplatten treffen in der Nähe aufeinander, und wie schnell bewegen sie sich?',
                 '{place}: какие тектонические плиты сходятся рядом и с какой скоростью движутся?',
                 '{place}: ¿qué placas tectónicas se encuentran cerca y a qué velocidad se mueven?') },
-      { k:'climate', w:8, on:(f)=>f.st&&f.has('dl-climate'),
+      /* ⚠ (#R455) THE OTHER LAYER THAT IS ON BY DEFAULT. Köppen is a raster, so there is nothing
+         to count and `has()` really is the best evidence for it — but 「which climate zones does
+         {place} span」 is a claim about a WHOLE COUNTRY, and it was measured firing over one Alpine
+         valley at z=9 and over Manhattan at z=13, which is the 「true sentence about the wrong
+         object」 shape again. It is not weakened and not removed: it is asked at the register it is
+         about. `scaleOf`'s own note in js/atlas-view-subject.js already promised that 「a view at
+         `street` is never handed a question about the country」 — nothing enforced it. */
+      { k:'climate', w:8, on:(f)=>f.st&&f.has('dl-climate')&&/^(world|continent|country)$/.test(f.scale),
         t:()=>L('Which climate zones does {place} span, and which of them are shifting?',
                 '{place}はどの気候帯にまたがっている？ そのうち動いているのは？',
                 '{place}: Welche Klimazonen umfasst das Land, und welche davon verschieben sich?',
@@ -640,7 +793,7 @@ export function makeAtlasExamples(HOST, CTX) {
                 '{place}: Der Äquator verläuft mitten hindurch — was macht das mit Jahreszeiten und Regen?',
                 '{place}: через страну проходит экватор. Что это делает с её сезонами и дождями?',
                 '{place}: el ecuador la atraviesa. ¿Qué hace eso con sus estaciones y sus lluvias?') },
-      { k:'arctic', w:9, on:(f)=>f.st&&f.geo&&f.geo.arctic,
+      { k:'arctic', w:9, on:(f)=>f.st&&f.geo&&f.geo.arctic&&f.viewN!=null&&f.viewN>=60,
         t:()=>L('Part of {place} lies inside the Arctic Circle — who lives up there, and on what?',
                 '{place}の一部は北極圏の中にある。そこには誰が、何で暮らしている？',
                 '{place}: Ein Teil liegt im Polarkreis — wer lebt dort oben, und wovon?',
@@ -882,7 +1035,15 @@ export function makeAtlasExamples(HOST, CTX) {
         .replace(/\{water\}/g,(vw&&vw.water&&vw.water.name)||'')
         .replace(/\{city\}/g,(vw&&vw.city&&vw.city.name)||'')
         .replace(/\{peak\}/g,(vw&&vw.peak&&vw.peak.name)||'')
-        .replace(/\{ele\}/g,String((vw&&vw.peak&&vw.peak.ele)||''));
+        .replace(/\{ele\}/g,String((vw&&vw.peak&&vw.peak.ele)||''))
+        /* ── (#R455) HOW MANY OF THAT THING ARE IN THIS BOX. Numbers, for the same reason `{n}` and
+           `{ele}` are numbers: a figure reads identically in all nine languages and can never
+           become #R313 追記's untranslated value inside a translated sentence.
+           ⚠ ONLY THE STATIC CATALOGUES GET A FIGURE. The live feeds move under a motionless
+           camera, so their chips are gated on presence and carry no token to go stale. */
+        .replace(/\{ncab\}/g,String((vw&&vw.content&&vw.content.cables)||''))
+        .replace(/\{nvolc\}/g,String((vw&&vw.content&&vw.content.volcanoes)||''))
+        .replace(/\{nquake\}/g,String((vw&&vw.content&&vw.content.earthquakes)||''));
     }
     /* ⚠ (#R392) THE FACTS ARE PASSED IN WHEN THE CALLER ALREADY HAS THEM. `renderExamples` computes
        them for the redraw guard and then called this, which computed them again — two full sweeps of
