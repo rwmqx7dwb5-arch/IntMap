@@ -59,11 +59,16 @@ const CACHE = "public, max-age=300, s-maxage=300, stale-while-revalidate=1800";
    different host past a `startsWith`.
    ⚠ AND THE PATH IS NOW THE SHAPE, NOT THE PREFIX. `startsWith("/rss/")` accepted every URL under
    that directory — including `/rss/articles/CBMi…`, the aggregator REDIRECT that every Google News
-   item's `link` is. Nothing in the app can use one (js/proxy-fetch.js returns only documents that
-   contain `<rss`/`<feed`, so an article's HTML is discarded by the caller either way), but the relay
-   would still have FETCHED it: an arbitrary Google-News-hosted redirect target, followed server-side,
-   at this project's expense. Two endpoints are what the app builds, so two endpoints are what this
-   forwards, and the query is an allow-list rather than whatever was attached. */
+   item's `link` is. That would have had the relay FETCH one: an arbitrary Google-News-hosted
+   redirect target, followed server-side, at this project's expense. Two endpoints are what the app
+   builds, so two endpoints are what this forwards, and the query is an allow-list rather than
+   whatever was attached.
+   ⚠ (#R446) THE SHAPE CHECK BELOW IS NOW THE WHOLE GUARANTEE, AND IT WAS ALREADY WRITTEN AS IF IT
+   WERE. This note used to add 「nothing in the app can use one anyway — js/proxy-fetch.js returns
+   only documents containing `<rss`/`<feed`, so an article's HTML is discarded by the caller either
+   way」. js/article-reader.js now asks that function for `as:'html'` and reads exactly such a page,
+   so the caller-side half of that sentence has expired. Nothing changes here: the two endpoints
+   above are what this relay forwards, and an article redirect was never one of them. */
 const TOPIC_RE = /^\/rss\/headlines\/section\/topic\/[A-Z][A-Z_]{1,31}$/;
 const EDITION_PARAMS = new Set(["hl", "gl", "ceid"]);
 const MAX_Q = 512;
