@@ -6051,5 +6051,9 @@ window.IntMapLang.define('zh-hans', {
   "email": "电子邮件",
   "file: ": "文件: ",
   "remove": "移除",
+  "Password": "密码",
+  "Create account": "建立账号",
+  "Log In": "登录",
+  "Password (min. 8 chars, incl. a number)": "密码（至少 8 个字元，须含数字）",
   }
 });
