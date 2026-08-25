@@ -45,10 +45,40 @@ window.IntMapModules.articleReader=function(HOST){
     flush();
     return {hero:firstImg, blocks};
   }
+  /* ══ ⚠⚠⚠ (#R446) HOW LONG THE PANE MAY SAY 「読み込み中」, AND WHAT COUNTS AS AN ARTICLE ═══════
+     MEASURED end to end on the live site (2026-08-25), dw.com's story off the front page, this
+     module's own fetchReadable() driven with the shipped ladder:
+
+       Strategy 1  r.jina.ai  200 · text/plain · 572 B in 5,826 ms
+                   …whose 「Markdown Content:」 is DW's own error boundary —
+                   「## Something went wrong.」 /「We have been notified and are looking into it.」,
+                   under jina's own warning 「This page maybe requiring CAPTCHA」.
+                   572 > 200 and the extract is 2 blocks, so BOTH old gates passed and this function
+                   returned ok:true. The reader would have drawn that as the article.
+       Strategy 2  never ran — and when it does run it took 20,313 ms to return null (see
+                   js/proxy-fetch.js, where the reason is measured).
+
+     So the two defects hid each other: Strategy 1 «succeeded» with a two-line error page, which is
+     why Strategy 2 being structurally unable to succeed was never visible. Two floors, one rule —
+     an upstream's apology is not an article:
+       · MIN_ARTICLE_CHARS — the extract has to contain some prose. Measured, that error boundary is
+         79 characters of markdown; a real article's lede alone is several hundred (aljazeera.com's
+         extract that same second came back 10,678 B).
+       · READER_BUDGET_MS  — the whole of fetchReadable, both strategies, has ONE ceiling. Before it
+         the worst case was 12 s of Strategy 1 plus a measured 20.3 s of Strategy 2 = 32 s of
+         spinner. Strategy 2 is now given what is LEFT of the budget, and is skipped when there is
+         none left.
+     ⚠ Strategy 2's own 「two paragraphs of >40 chars」 rule is deliberately untouched: it is the
+       caller-side half of the same question and it already worked. */
+  const READER_BUDGET_MS=20000;   /* what fetchReadable may spend, end to end */
+  const JINA_TIMEOUT_MS=12000;    /* …of which Strategy 1 keeps the clock it has had since #R169 */
+  const MIN_ARTICLE_CHARS=200;    /* an extract shorter than this is an error page, not an article */
+  const blockChars=(bs)=>(bs||[]).reduce((n,b)=>n+String((b&&b.v)||'').length,0);
   async function fetchReadable(item){
+    const t0=Date.now();
     /* Strategy 1: r.jina.ai reader — clean article text, CORS-friendly (works from file://). */
     try{
-      const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),12000);
+      const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),JINA_TIMEOUT_MS);
       const r=await fetch('https://r.jina.ai/'+item.link,{signal:ctrl.signal});
       clearTimeout(to);
       if(r.ok){
@@ -57,13 +87,16 @@ window.IntMapModules.articleReader=function(HOST){
           const mc=txt.indexOf('Markdown Content:');
           if(mc>=0) txt=txt.slice(mc+'Markdown Content:'.length);
           const parsed=cleanReaderMarkdown(txt);
-          if(parsed.blocks.length>=2) return {blocks:parsed.blocks, hero:parsed.hero, ok:true};
+          if(parsed.blocks.length>=2&&blockChars(parsed.blocks)>=MIN_ARTICLE_CHARS) return {blocks:parsed.blocks, hero:parsed.hero, ok:true};
         }
       }
     }catch(_){}
-    /* Strategy 2: proxy raw HTML -> extract <article>/<p> text or og:description. */
+    /* Strategy 2: proxy raw HTML -> extract <article>/<p> text or og:description.
+       ⚠ `as:'html'` is not optional decoration — without it js/proxy-fetch.js answers only feeds and
+       this branch is unreachable by construction (measured; the note above this function). */
     try{
-      const html=await HOST.fetchViaProxy(item.link);
+      const left=READER_BUDGET_MS-(Date.now()-t0);
+      const html=(left>0)?await HOST.fetchViaProxy(item.link,{as:'html',budgetMs:left}):null;
       if(html){
         const doc=new DOMParser().parseFromString(html,'text/html');
         let hero=''; const ogi=doc.querySelector('meta[property="og:image"]'); if(ogi) hero=ogi.getAttribute('content')||'';

@@ -218,7 +218,8 @@ news-cluster.js                   Atlas `research.events` の**ブラウザ側�
 news-sources.js                   どの媒体からニュースを取るか window.IntMapNewsSources
 news-timeline.js                  ニュースのタイムマシン用タイムライン帯
 newsgeo.js                        NewsGeo — 決定論的（非AI）のニュース地点解析
-article-reader.js                 サイドバー内の記事リーダー
+article-reader.js                 サイドバー内の記事リーダー。本文取得は 2 段（r.jina.ai → プロキシ経由の
+                                  記事 HTML）で、両段あわせて 1 つの上限。上流のエラーページは本文にしない
 ```
 
 ### 3.7 `js/` — Atlas と AI
@@ -435,7 +436,8 @@ wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF�
 wx-wind.js                        風の粒子レンダラ window.IntMapWindGL——WebGL 1描画呼び出し／実経過時間基準
 place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
 country-extent.js                 その国が「在る場所」の枠 window.IntMapCountryExtent——遠い海外領土を外し、±180 をまたぐ範囲を区間として書き下す
-proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）
+proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）。
+                                  `opts.as` が受理する文書の形（feed／html）、`opts.budgetMs` が ladder 全体の上限
 perf-hud.js                       実機の計器 `?perf=1`
 admin-literal.js                  admin.html の初期データ読み取り——**評価器ではなくパーサ**
 ```

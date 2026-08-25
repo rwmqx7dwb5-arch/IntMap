@@ -1,4 +1,4 @@
-/*  IntMap · Fetching a feed through a CORS proxy  (#R212)
+/*  IntMap · Fetching a document through a CORS proxy  (#R212)
  *
  *  Lifted out of js/app-body.js, which is at its #R200 line ceiling and whose subject is not
  *  «how to get an RSS document from a host that sends no ACAO header».
@@ -80,6 +80,7 @@ export const fetchViaProxy = (() => {
   };
   const PROXY_TIMEOUT_MS = 8000;      /* one attempt's deadline */
   const PROXY_FALLBACK_MS = 6000;     /* …and the second, bounded pass */
+  const BUDGET_MS = 20000;            /* (#R446) …and what the WHOLE ladder may cost, end to end */
 
   const fetchDeadline = (u, ms, ctl) => {
     const c = ctl || new AbortController();
@@ -88,14 +89,81 @@ export const fetchViaProxy = (() => {
   };
   const isFeed = (txt) => !!txt && (txt.includes('<rss') || txt.includes('<feed'));
 
-  return async function fetchViaProxy(url) {
+  /* ══ ⚠⚠⚠ (#R446) THE ONLY ANSWER THIS FILE ACCEPTED WAS A FEED, AND ONE CALLER ASKS FOR A PAGE ══
+     js/article-reader.js's second strategy hands `item.link` — a news ARTICLE's URL — to this
+     function and parses the result as HTML. An article page contains neither `<rss` nor `<feed`, so
+     `isFeed` refused it; Strategy 2 could not succeed, it could only take twenty seconds to fail.
+
+     MEASURED from the live site (https://rwmqx7dwb5-arch.github.io, 2026-08-25), the two article
+     URLs on the front page that day, through this exact ladder:
+
+        corsfix       403                                                    986 ms / 320 ms
+        corsproxy.io  200 · text/html · 217,509 B (dw.com)   → «not feed»   3,362 ms
+        corsproxy.io  200 · text/html · 198,238 B (aljazeera) → «not feed»  1,087 ms
+        allorigins    aborted at its 8 s deadline
+        codetabs      aborted at its 8 s deadline
+        …then the bounded pass fetched the SAME page again (8 ms / 21 ms, from the HTTP cache) and
+        rejected it a second time.
+        TOTAL 20,313 ms and 20,355 ms — and `null` both times.
+
+     The article arrived, twice, and was thrown away, twice.
+
+     ⚠⚠ AND THE FIX IS NOT «ACCEPT WHATEVER CAME BACK». #R216 made news-relay answer 502 for
+     Google's HTML interstitial on the grounds that 「an interstitial is not a feed」; the same rule
+     holds one layer out. A relay's own error page IS HTML, and a reader that draws somebody else's
+     error message as the article body is worse than a reader that says it could not fetch one —
+     #R446 measured that exact failure happening already, in the reader's FIRST strategy.
+     So `as:'html'` accepts an HTML DOCUMENT THAT IS NOT A STUB, and nothing else:
+
+       · it declares itself HTML (`<!doctype html` / `<html`) — which is also what rules out the
+         relays' JSON error envelopes, measured at 314 B of `{"corsfix_error":…}`;
+       · it is at least HTML_MIN_BYTES long — measured, the relay and interstitial bodies are
+         314 B, 2,041 B (#R216's Google 「Sorry…」 page) and 7,594 B, and the two real articles were
+         198,238 B and 217,509 B;
+       · it carries the markup the caller actually reads — a `<p>` or a description meta. A document
+         with neither cannot yield a single block, so accepting it would hand back an "answer" that
+         is empty by construction.
+
+     ⚠ WHAT THIS DOES NOT CLAIM. «Is there an ARTICLE in this page» is the caller's question, and
+     the caller already asks it: js/article-reader.js requires two paragraphs of >40 characters
+     before it calls the extract a body, and falls back to the page-embed mode when it cannot. This
+     predicate answers only 「is this a page, or is it the relay apologising」. The non-2xx shapes
+     never reach it at all — measured, every relay failure above came with 403 / 404 / 530. */
+  const HTML_MIN_BYTES = 4096;
+  const isHTML = (txt) => {
+    if (!txt || txt.length < HTML_MIN_BYTES) return false;
+    if (!/<!doctype\s+html|<html[\s>]/i.test(txt)) return false;
+    return /<p[\s>]/i.test(txt) || /<meta[^>]+(?:og:description|name=["']description)/i.test(txt);
+  };
+  const ACCEPT = { feed: isFeed, html: isHTML };
+
+  /* fetchViaProxy(url, opts) -> the document as TEXT, or null
+   *
+   *   opts.as        'feed' (default) | 'html'  — what counts as an answer rather than an error page
+   *   opts.budgetMs  what the whole ladder may cost, end to end (default 20 s)
+   *
+   * ⚠⚠ (#R446) THE BUDGET IS WHY THE READER PANE CAN STOP SAYING 「読み込み中」. Before it, this
+   * function's floor was 「one 8 s race, then up to four 6 s retries」 — a measured 20.3 s to answer
+   * `null`, on top of the 12 s Strategy 1 had already spent. A caller that names a budget now finds
+   * out, inside it, whether it got a document. */
+  return async function fetchViaProxy(url, opts) {
+    const o = opts || {};
+    const okDoc = ACCEPT[o.as] || isFeed;
+    const budget = (o.budgetMs > 0) ? o.budgetMs : BUDGET_MS;
+    const t0 = Date.now();
+    const left = () => budget - (Date.now() - t0);
+
+    if (left() <= 0) return null;
     const PROXIES = proxiesFor(url);
     const ctls = PROXIES.map(() => new AbortController());
     const attempts = PROXIES.map((make, i) => (async () => {
-      const r = await fetchDeadline(make(url), PROXY_TIMEOUT_MS, ctls[i]);
+      /* ⚠ each racer still has its own clock, which is what #R212 put here; what is new is that the
+         clock cannot outlast the budget the CALLER named, or a 3 s budget would still sit through an
+         8 s attempt. */
+      const r = await fetchDeadline(make(url), Math.min(PROXY_TIMEOUT_MS, left()), ctls[i]);
       if (!r.ok) throw new Error('bad status ' + r.status);
       const txt = await r.text();
-      if (!isFeed(txt)) throw new Error('not feed');
+      if (!okDoc(txt)) throw new Error('not the document that was asked for');
       return txt;
     })());
     try {
@@ -103,13 +171,15 @@ export const fetchViaProxy = (() => {
       ctls.forEach((c) => { try { c.abort(); } catch (_) { /* the losers are of no further use */ } });
       return won;
     } catch (_) {
-      /* one bounded pass, for the case where all three rejected quickly (a transient blip) */
+      /* one bounded pass, for the case where all three rejected quickly (a transient blip) —
+         and only for as long as the budget this call was given still has room in it */
       for (const make of PROXIES) {
+        if (left() <= 0) break;
         try {
-          const r = await fetchDeadline(make(url), PROXY_FALLBACK_MS);
+          const r = await fetchDeadline(make(url), Math.min(PROXY_FALLBACK_MS, left()));
           if (!r.ok) continue;
           const txt = await r.text();
-          if (isFeed(txt)) return txt;
+          if (okDoc(txt)) return txt;
         } catch (__) { /* try the next one */ }
       }
       return null;
