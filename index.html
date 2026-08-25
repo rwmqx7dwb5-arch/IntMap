@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R464';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R465';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R464';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-25-R464';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-25-R465';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -165,6 +165,32 @@ window.__imBuild='R464';/* (#R121) build marker — bump when verifying that a r
     d.lastChild.textContent=T('Reload','再読み込み','Neu laden','Обновить','Recargar'); d.lastChild.onclick=function(){ try{ if('caches' in window) caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}); }catch(e){} location.reload(true); }; (document.body||document.documentElement).appendChild(d); }catch(e){} };
   window.addEventListener('vite:preloadError',function(){ if(navigator.onLine===false) return; if(document.body) window.__imReloadPrompt(false); else window.addEventListener('DOMContentLoaded',function(){ window.__imReloadPrompt(false); },{once:true}); });
   window.addEventListener('DOMContentLoaded',function(){ if(window.__INTMAP_STALE) window.__imReloadPrompt(true); });
+  /* ⚠⚠ (#R465) …AND THE OTHER HALF: THE ENTRY ITSELF 404s, and then the code that would raise the
+     prompt above is the code that never arrived — `vite:preloadError` ships INSIDE assets/main-<hash>.js.
+     GitHub Pages serves `max-age=600` on EVERY response (the content-hashed assets included, which is
+     how we know it is theirs to set and not ours), so for ten minutes after a deploy a returning reader
+     can be handed a cached document naming assets that are gone, and NOTHING boots. Why this is inline
+     rather than in sw.js, why only the entry module tag, why it verifies before reloading, and why the
+     mark is never cleared: Architecture.md §1.1 and DECISIONS.md. Measured: DEV-NOTES #R465. */
+  window.__imDocStale=function(failed){ try{
+    if(navigator.onLine===false) return;                                  /* not a redeploy — the panel's own «check your connection» is the right words */
+    var prompt=function(){ try{ if(document.body) window.__imReloadPrompt(true); else window.addEventListener('DOMContentLoaded',function(){ window.__imReloadPrompt(true); },{once:true}); }catch(e){} };
+    var tried; try{ tried=sessionStorage.getItem('intmap_doc_bust'); }catch(e){ tried='1'; }   /* no storage → no AUTOMATIC reload: the mark is what stops the loop */
+    if(tried) return prompt();
+    var want=String(failed||'').split('/').pop().split('?')[0]; if(!want) return prompt();
+    fetch(location.href,{cache:'reload'}).then(function(r){ return r.ok?r.text():Promise.reject(0); }).then(function(html){
+      if(html.indexOf(want)>=0) return prompt();                          /* the server really has lost it — a reload cannot mend that */
+      try{ sessionStorage.setItem('intmap_doc_bust','1'); }catch(e){ return prompt(); }
+      location.reload();                                                  /* the fetch above re-seeded the HTTP cache, so this reads the CURRENT document */
+    },prompt);
+  }catch(e){} };
+  (function(){ var fired=false;   /* one verification however many of the six assets 404 */
+    window.addEventListener('error',function(ev){ try{ var el=ev&&ev.target; if(!el||fired) return;
+      if(el.tagName!=='SCRIPT'||el.type!=='module'||!el.src) return;      /* the entry, and nothing else — a lazy chunk means the app is ALIVE and #R372 owns it */
+      var u=new URL(el.src,location.href); if(u.origin!==location.origin||u.pathname.indexOf('/assets/')<0) return;
+      fired=true; window.__imDocStale(u.pathname);
+    }catch(e){} },true);                                                  /* capture — resource errors do not bubble */
+  })();
   </script>
 
   <!-- (#R192) The four hosts every cold start needs before it can draw anything (base-map tiles,
