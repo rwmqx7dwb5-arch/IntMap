@@ -48,6 +48,19 @@ export const GROUPS = (0, eval)('(' + literal(SRC, 'const GROUPS=', '[', ']') + 
 /** the ids explicitly routed to Beta before the safety sweep runs */
 export const OTHERS_IDS = (0, eval)('(' + literal(SRC, 'const OTHERS_IDS=', '[', ']') + ')');
 
+/* ⚠ (#R478) THE HEADING AN UNLISTED ROW LANDS UNDER — and it is NOT one of the shelves above.
+   「その他 (beta)」 is not in `GROUPS`; `reorganizeLayerPanel`'s safety sweep builds it for every
+   row no shelf claimed (#R271 is 🕒 タイムゾーン actually landing there). A check that wants to say
+   「this row is where the declaration files it」 needs both halves, so both come from the same file:
+   asking for the spelling instead is how tests/r439.spec.js kept a copy that went stale in #R469
+   and stayed stale until the next nightly. */
+export const BETA_KEY = (() => {
+  const sweep = SRC.slice(SRC.indexOf('if(otherRows.length){'));
+  const m = /setAttribute\('data-i18n','([^']+)'\)/.exec(sweep);
+  if (!m) throw new Error('js/data-layers.js no longer builds the beta heading in the safety sweep');
+  return m[1];
+})();
+
 /** `{ lyrGrpClimate: ['climate', …], … }` — the shape the older checks expected */
 export const byKey = Object.fromEntries(GROUPS.map(([k, ids]) => [k, ids]));
 

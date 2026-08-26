@@ -10,8 +10,9 @@
  *      「どこからも点けられない」という壊れ方が新しく可能になった。**押して**確かめる。
  *    ③ 気圧の帯は `legend('pressure_msl')` が**実際に返すもの**——Windy の 900…1080 hPa と
  *      標準大気の灰。表そのものは checks 側が持つので、ここは**生きた経路**だけを見る。
- *    ④ パーティクルの箱が**レイヤーごとに独立**であること、昇格した4行が「気候・気象」の下に
- *      あること。どちらも DOM の位置の話である。
+ *    ④ パーティクルの箱が**レイヤーごとに独立**であること、そして**描かれたパネルが
+ *      `js/data-layers.js` の宣言どおりに行を並べている**こと。どちらも DOM の位置の話である。
+ *      ⚠ (#R478) どの棚に載るかは**宣言から読む**——ここに綴らない。理由は ④ の中の注記。
  *
  *  ⚠ **1 テスト・1 ブート・固定 sleep なし。** これは #R405 / #R416 が同じ理由で取った形で、
  *    `scripts/test-budget.mjs` の core 天井（このラウンドの spec は `currentRoundSpec()` で
@@ -22,6 +23,9 @@
  *    #R439 で入口を付け替え、スタック順の表明を足してある）。
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
+/* ⚠ (#R478) the layer taxonomy as a VALUE — see the note at ④. `js/data-layers.js` declares it;
+   nothing here spells a shelf key a second time. */
+import { where, BETA_KEY } from './helpers/layer-groups.mjs';
 
 test('R439 the pressure legend: a picker that fits, an isobar switch that works, Windy’s key, and the promoted rows', async ({ app }) => {
   const page = app.page;
@@ -141,10 +145,32 @@ test('R439 the pressure legend: a picker that fits, an isobar switch that works,
     }
     return out;
   });
-  for (const id of ['dl-ec-slp', 'dl-ec-gust', 'dl-ec-precip', 'dl-ec-dew']) {
-    expect(under[id], id + ' is on the 気候・気象 shelf').toBe('lyrGrpClimate');
+  /* ⚠⚠ (#R478) どの棚に載るかは宣言から読む——ここに二度目の写しを綴らない。
+     この4行と `ec-cape` の棚は、かつてここに棚のキーを**直接書いて**あった。#R469 が
+     「ベータからはCAPE不安定度レイヤーを気象に昇格。」で `ec-cape` を気候・気象へ移したとき、
+     同じ事実を述べる node 検査2本（`tests/r439-checks` ⑨・`tests/r469-checks` ⑥）は一緒に直った
+     ——**毎 push 走るから**である。ここは nightly の deep tier で、写しだけが古い世界を主張した
+     まま残り、次に deep が回るまで誰も気づかなかった（#R475 と同じ形：開いていないラウンドで
+     動く判定は、そのラウンドでは測られていない）。
+     ⚠ **この spec が主張すべきは「どの棚か」ではない。** 棚を決めるのは分類（`GROUPS`）で、
+     それを動かせるのは読者の指示だけ（#R273）。ここが主張すべきなのは、**描かれたパネルが
+     その宣言どおりに行を並べているか**である。`order.push` は要素を**移動**させるので、2つの
+     リストに載った id は最後の1つでしか描かれず、どのリストにも載らない行は「その他 (beta)」へ
+     掃き出される（#R271 の 🕒 タイムゾーンが実際にそこへ落ちた経路）。
+     宣言を読む口は `tests/helpers/layer-groups.mjs` ——リテラルを**値として**評価するので、
+     タプルの形が変わっても綴りを追いかけずに済む（#R469 が正規表現12本を一度に落としたのが
+     その理由）。⚠ `BETA_KEY` は分類の写しではない——どの棚にも無い行がベータへ掃き
+     出されるという `reorganizeLayerPanel` の1つの事実である。 */
+  for (const id of ['ec-slp', 'ec-gust', 'ec-precip', 'ec-dew', 'ec-cape', 'ec-wind']) {
+    expect(under['dl-' + id], id + ' renders under the head js/data-layers.js files it on')
+      .toBe(where(id) || BETA_KEY);
+  }
+  /* ⚠ そして #R439 自身の主張——名指しされた4行が**ベータを出た**こと。どの棚へ行ったかは分類が
+     決めるが、「昇格した」は棚の名前を綴らなくても言える。宣言の側は `tests/r439-checks` ⑨ が
+     毎 push、id を名指しで見ている。 */
+  for (const id of ['ec-slp', 'ec-gust', 'ec-precip', 'ec-dew']) {
+    expect(under['dl-' + id], id + ' left 「その他 (beta)」 — that is what this round did')
+      .not.toBe(BETA_KEY);
   }
   expect(under['dl-ec-isobars'], 'and the retired row is nowhere at all').toBeUndefined();
-  /* the rows the instruction did NOT name stayed where they were — 再編 is not a licence (#R273) */
-  expect(under['dl-ec-cape'], 'ec-cape was not promoted by anybody').toBe('lyrGrpOthers');
 });
