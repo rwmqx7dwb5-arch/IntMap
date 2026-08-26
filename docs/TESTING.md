@@ -41,7 +41,7 @@ measured waiting 66 s and 95 s for a feed and then skipping — passing in CI, p
 thing a spec is about has two implementations, the spec must NAME the one it means (`?aviation=v1`)
 rather than depend on which is currently the default.
 
-> ⚠ **The whole-suite ceiling has zero headroom** (75.5 min measured against 75.5 min). A new
+> ⚠ **The whole-suite ceiling has zero headroom** (77.2 min measured against 77.2 min). A new
 > `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
 > ceiling only moves down. Node checks (`*.test.mjs`) are **not** governed by this budget, so
 > logic that can be checked without a browser belongs there. ⚠ Only `**N Node test files**` is
