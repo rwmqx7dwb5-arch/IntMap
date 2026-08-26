@@ -21,9 +21,8 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
-**96 measured spec files / 77.0 min** of serial browser time against a ceiling of 77.0 min; and
 **98 measured spec files / 77.2 min** of serial browser time against a ceiling of 77.2 min; and
-`npm run test:checks` runs **261 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **262 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **92 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -42,7 +41,7 @@ measured waiting 66 s and 95 s for a feed and then skipping — passing in CI, p
 thing a spec is about has two implementations, the spec must NAME the one it means (`?aviation=v1`)
 rather than depend on which is currently the default.
 
-> ⚠ **The whole-suite ceiling has zero headroom** (75.5 min measured against 75.5 min). A new
+> ⚠ **The whole-suite ceiling has zero headroom** (77.2 min measured against 77.2 min). A new
 > `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
 > ceiling only moves down. Node checks (`*.test.mjs`) are **not** governed by this budget, so
 > logic that can be checked without a browser belongs there. ⚠ Only `**N Node test files**` is
