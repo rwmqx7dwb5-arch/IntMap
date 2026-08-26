@@ -38,7 +38,29 @@ export function makeLabelOcclusion(HOST, CTX) {
        rule stated just above means a city name wins the collision against the region containing it. It sits
        above the peaks for the same reason in the other direction. This list is what decides that — the order
        these layers are ADDED in is transient, because raise() re-asserts this one on idle and styledata. */
-    const STACK=['layer-sat-labels','borders-only-line','ofm-river','ofm-water','ofm-water2','ofm-peak','ofm-admin1','ofm-city','ofm-other','geo-sea','imtb-line','ofm-country','imtb-lbl2','imtb-lbl'];
+    /* ══ ⚠⚠⚠ (#R477) THE COASTLINE WAS NEVER IN THIS LIST, AND THIS LIST IS THE WHOLE RULE ═══════
+       「Wind gustsでCoastlines & shoresが見えない。」 MEASURED on the built app, base display only,
+       with `dl-ec-gust` switched on — the style came out
+
+           21:borders-only-casing  22:coast-only-casing  23:coast-only-line  …
+           30:im-night-lights-lyr  31:im-night-shade  32:ec-gust-0  33:layer-sat-labels
+           34:borders-only-line
+
+       — i.e. the national border was ABOVE the opaque gust raster (`raster-opacity` 1) and the
+       coastline was NINE layers UNDER it. Nothing about the coast layer is wrong: js/coast-line.js
+       adds it at the same anchor js/app-body.js's `borders-only-line` uses, in the same colour, on
+       the same ladder (#R289 「全く同じ手法で」). What puts the border on top is not that anchor —
+       an anchor is transient, as the note above says — it is THIS list, re-asserted on every idle.
+       #R289 wrote the layer and did not add it here, so the two lines were identical in every
+       respect a check looked at and opposite in the only one a reader can see.
+
+       ⚠ AND THE TWO CASINGS COME WITH THEM. Each casing is added with its line as the beforeId
+       (js/app-body.js, js/coast-line.js) precisely so it sits DIRECTLY under it — that is what
+       makes the pale line read over a pale basemap (#R210). raise() moves what is in this list and
+       leaves behind what is not, so `borders-only-casing` was being separated from its own line by
+       everything that happened to be added in between (measured above: thirteen layers, the gust
+       raster among them). Listing a line without its casing does not raise a line — it splits one. */
+    const STACK=['layer-sat-labels','coast-only-casing','coast-only-line','borders-only-casing','borders-only-line','ofm-river','ofm-water','ofm-water2','ofm-peak','ofm-admin1','ofm-city','ofm-other','geo-sea','imtb-line','ofm-country','imtb-lbl2','imtb-lbl'];
     /* (#R25) "own" overlays — the user's active drawings / measurements / analysis + the isolation mask +
        the place highlight — legitimately sit ABOVE the labels. Everything else is a DATA layer that the
        user wants BENEATH the place-name/border labels ("地名や国境はどのレイヤーよりも最前部に"). */
