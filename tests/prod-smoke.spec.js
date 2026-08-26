@@ -1190,6 +1190,12 @@ test('(#R398) the isobars draw, at levels in the field unit, labelled in the key
     document.getElementById('btn-view-flat')?.click();
     map.jumpTo({ center: [-30, 45], zoom: 3.4 });
     if (!cb.checked) { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); }
+    /* (#R477) the coastline rides along on the one test that has a REAL opaque ECMWF raster on a
+       REAL deployed build — 「Wind gustsでCoastlines & shoresが見えない」 was measured as an order,
+       and an order is the one thing about these layers that only the live style can answer. It
+       ships ON (#R476); this states it rather than assuming the deployed default. */
+    const cc = document.getElementById('cb-coast');
+    if (cc && !cc.checked) { cc.checked = true; cc.dispatchEvent(new Event('change', { bubbles: true })); }
     window._imWxIsobars(true);
     const t0 = Date.now();
     while (Date.now() - t0 < 45_000) {   /* inside the file's 90 s test timeout, so a source that
@@ -1220,6 +1226,9 @@ test('(#R398) the isobars draw, at levels in the field unit, labelled in the key
             per, keyMin: lg && lg.min, keyMax: lg && lg.max, keyUnit: lg && lg.unit,
             rasterAt: order.findIndex((i) => /^ec-slp-\d+$/.test(i)),
             lineAt: order.indexOf(ids[0]), labelAt: order.indexOf(lblId),
+            /* (#R477) the same question about the base map's own two boundary lines */
+            coastAt: order.indexOf('coast-only-line'), coastCasingAt: order.indexOf('coast-only-casing'),
+            borderAt: order.indexOf('borders-only-line'), coastOn: !!(cc && cc.checked),
           };
         }
       }
@@ -1230,9 +1239,12 @@ test('(#R398) the isobars draw, at levels in the field unit, labelled in the key
        would have been green for the whole life of the bug. */
     const ids = map.getStyle().layers.map((l) => l.id).filter((i) => /^ec-isobars-\d+$/.test(i));
     const src = ids.length && map.getStyle().layers.find((l) => l.id === ids[0]).source;
+    const ord = map.getStyle().layers.map((l) => l.id);
     return { url: (src && map.getSource(src) || {}).url || '', features: 0, levels: [],
       placedLabels: 0, labelExpr: '', per: 1, keyMin: 0, keyMax: 0, keyUnit: '',
-      rasterAt: -1, lineAt: -1, labelAt: -1 };
+      rasterAt: ord.findIndex((i) => /^ec-slp-\d+$/.test(i)), lineAt: -1, labelAt: -1,
+      coastAt: ord.indexOf('coast-only-line'), coastCasingAt: ord.indexOf('coast-only-casing'),
+      borderAt: ord.indexOf('borders-only-line'), coastOn: !!(cc && cc.checked) };
   });
   test.skip(!!r.skip, r.skip || '');
 
@@ -1255,6 +1267,19 @@ test('(#R398) the isobars draw, at levels in the field unit, labelled in the key
   expect(r.labelExpr, 'the label divides by the declared factor').toContain(String(r.per));
   expect(r.placedLabels, 'and labels are actually placed — `line` placement puts none on these '
     + 'geometries, which is why the layer uses `point`').toBeGreaterThan(0);
+
+  /* ══ ⚠⚠⚠ (#R477) THE BASE MAP'S OWN LINES ARE ABOVE THAT SAME OPAQUE RASTER ══════════════════
+     「Wind gustsでCoastlines & shoresが見えない。」 Every ECMWF raster is opaque and lands at one
+     anchor, so this is one question asked of whichever of them is up. It is asked HERE because the
+     hermetic suite can only prove the MECHANISM (tests/smoke ㉑ raises a probe layer); this is the
+     deployed build, with a real forecast raster painted over a real coastline. */
+  expect(r.coastOn, 'the coastline row is on (it ships on since #R476)').toBe(true);
+  expect(r.coastAt, 'the coastline is on the deployed map').toBeGreaterThanOrEqual(0);
+  expect(r.coastAt, `the coastline (${r.coastAt}) is drawn ABOVE the opaque weather raster `
+    + `(${r.rasterAt}) — under it, the shore is not faint, it is gone`).toBeGreaterThan(r.rasterAt);
+  expect(r.borderAt, 'so is the national border it is a copy of').toBeGreaterThan(r.rasterAt);
+  expect(r.coastCasingAt, 'and the casing stayed directly under its own line (#R210)')
+    .toBe(r.coastAt - 1);
 });
 
 
