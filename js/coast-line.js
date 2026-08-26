@@ -13,6 +13,13 @@
  *  ring round an ocean polygon IS the coast; the ring round a lake IS its shore. One layer
  *  answers both halves of the request because they are one geometry.
  *
+ *  ⚠ (#R477) …AND «THE SAME ANCHOR» IS NOT WHAT KEEPS EITHER LINE ON TOP. The anchor decides where
+ *  the layer is BORN; what decides where it lives is js/label-occlusion.js's STACK, re-asserted on
+ *  every idle. This file shipped without an entry there for four rounds, so the coastline sat under
+ *  every opaque data raster while the border it is a copy of sat above them. Adding a line here now
+ *  means adding it there too — tests/r477-checks ① derives that from js/data-layers.js's own map and
+ *  fails if the two files ever disagree again.
+ *
  *  ⚠ THE TILE SEAMS DO NOT SHOW, AND THAT WAS MEASURED RATHER THAN HOPED. Stroking a polygon
  *  layer normally paints the tile's own clip edges as a grid of straight lines across the sea.
  *  Decoding real OpenFreeMap tiles (z4 Atlantic, z5 and z8 Tokyo, z8 Lake Biwa) says the clip

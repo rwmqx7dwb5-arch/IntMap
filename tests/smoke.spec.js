@@ -635,6 +635,33 @@ test('R289 ㉑ the coastline is the border line drawn round the water, and the w
     out.borderWidth = JSON.stringify(get('borders-only-line', 'line-width'));
     out.coastCasingWidth = JSON.stringify(get('coast-only-casing', 'line-width'));
     out.borderCasingWidth = JSON.stringify(get('borders-only-casing', 'line-width'));
+    /* ══ ⚠⚠⚠ (#R477) …AND WHERE IT IS IN THE STACK, WHICH IS THE HALF THAT WAS WRONG ═══════════
+       Everything above compares the coastline against the border's OWN paint and every one of them
+       was green while 「Wind gustsでCoastlines & shoresが見えない」 was true: the gust field is a
+       raster at `raster-opacity` 1 and the coastline was NINE layers under it while the border was
+       above it (measured order in tests/r477-checks). Colour, width and casing ladder cannot see
+       that. Only the order can.
+
+       ⚠ IT IS ASKED WITHOUT THE WEATHER, ON PURPOSE. What made the gust raster able to bury the
+       coastline is not the gust raster — it is that ANY layer added with no `beforeId` lands on top
+       (#R26 wrote that sentence) and js/label-occlusion.js's `raise()` only pulls back what is in
+       its STACK. So the probe below IS that condition, with no network and no forecast in it. */
+    try { E.raw().addLayer({ id: 'r477-probe-top', type: 'background',
+      paint: { 'background-color': '#000000', 'background-opacity': 0 } }); } catch (_) {}
+    /* the re-assert is debounced 140 ms behind `styledata`/`idle` — wait for the CONDITION, and let
+       it fail on its own timeout rather than on a sleep that guessed short */
+    const pos = () => E.scene.getStyle().layers.map((l) => l.id);
+    const t0 = Date.now();
+    while (Date.now() - t0 < 6000) {
+      const ids = pos();
+      if (ids.indexOf('coast-only-line') > ids.indexOf('r477-probe-top')) break;
+      await new Promise((s) => setTimeout(s, 120));
+    }
+    const ord = pos(); const at = (id) => ord.indexOf(id);
+    out.stack = { probe: at('r477-probe-top'), coastLine: at('coast-only-line'),
+      coastCasing: at('coast-only-casing'), borderLine: at('borders-only-line'),
+      borderCasing: at('borders-only-casing') };
+    try { E.layers.remove('r477-probe-top'); } catch (_) {}
     /* ⚠ AND SWITCHING IT OFF MUST STICK — the latch is what makes 「既定でオン」 a default */
     cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true }));
     if (w) { w.checked = false; w.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -654,6 +681,20 @@ test('R289 ㉑ the coastline is the border line drawn round the water, and the w
   expect(r.coastColor, 'the coastline is the border colour').toBe(r.borderColor);
   expect(r.coastWidth, 'and the border width ladder').toBe(r.borderWidth);
   expect(r.coastCasingWidth, 'and the border casing ladder').toBe(r.borderCasingWidth);
+  /* (#R477) …and the border's own PLACE. A layer that lands on top is pulled back under the label
+     stack; the coastline has to be in that stack, whole, or an opaque data layer erases it. */
+  expect(r.stack.probe, 'the probe layer was added').toBeGreaterThanOrEqual(0);
+  expect(r.stack.coastLine, `the coastline (${r.stack.coastLine}) is re-asserted above a layer `
+    + `added on top of everything (${r.stack.probe}) — this is what an opaque raster is`)
+    .toBeGreaterThan(r.stack.probe);
+  expect(r.stack.borderLine, 'as the border it is a copy of always was').toBeGreaterThan(r.stack.probe);
+  /* a casing is not a layer of its own — it is the underside of one stroke (#R210), so it travels */
+  expect(r.stack.coastCasing, 'the coast casing is directly under the coast line')
+    .toBe(r.stack.coastLine - 1);
+  expect(r.stack.borderCasing, 'and the border casing directly under the border line')
+    .toBe(r.stack.borderLine - 1);
+  expect(r.stack.coastLine, 'where a border runs along a shore the border is drawn last')
+    .toBeLessThan(r.stack.borderLine);
   expect(r.stayedOff, 'a reader who switches it off is not overruled the next time the wind goes on').toBe(true);
   expect(r.visAfterOff).toBe('none');
 });
