@@ -425,7 +425,25 @@ window.IntMapModules.layoutReflow=function(HOST){
         let leftRight=mapL;
         try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')) leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
         try{ const tg=document.querySelector('.btn-toggle-sidebar'); if(tg){ const r=tg.getBoundingClientRect(); if(r.width>0) leftRight=Math.max(leftRight,r.right); } }catch(_){}
-        const half=110, margin=14;   /* half = half of a comfortable ~220px centered pill */
+        /* ⚠⚠⚠ (#R484) THIS PREDICTED A PILL THAT IS NOT THE ONE ON SCREEN. `half=110` said "a comfortable
+           ~220px centered pill"; the element is `width:min(380px,55vw)` plus 16px padding and 2px border
+           = 398px, so its real half is 199. The test therefore cleared a collision the pill was already in,
+           and the gap only stayed hidden because the widest row of the right-hand stack used to be the
+           TOOLS row at y=50 — which barely shares a y-band with the pill at y=10.
+           #R480 put a 317px row at y=10 and the 89px of under-estimate became visible: MEASURED at 1310x900,
+           pill 656–1054 against the row's left edge at 982.56 = 71.44px of overlap, and
+           `elementFromPoint` at the centre of #ms-btn returned `btn-view-map` — the search button could
+           not be clicked at all. The unprotected band was ~1303–1453px, which contains 1366 and 1440.
+           ⚠⚠ MEASURING IT AT RUNTIME IS WORSE, WHICH THIS ROUND FOUND BY DOING IT FIRST. Under `ms-narrow`
+           the width IS the watcher's own output, so it can only be read while the watcher is off — and the
+           moment it latches a wrong early reading (before the stylesheet's max-width applies, the pill is
+           its container's full width) nothing ever re-measures, because the watcher is now on. MEASURED:
+           1500x900 stayed anchored with both collision tests false, since the stale half was ~455 not 199.
+           A stuck layout at a width that was never in trouble is a worse failure than the one being fixed.
+           So the number is written here, and `tests/r484-checks` ② DERIVES it from the `.map-search` rule
+           in css/intmap.css (380 content + 16 padding + 2 border) and fails if the two ever disagree —
+           which is the thing #R25 had no way to notice. */
+        const half=199, margin=14;
         const collide = ((mapCX + half + margin) > rightLeft) || ((mapCX - half - margin) < leftRight);
         const bs=document.body.style;
         if(collide){
