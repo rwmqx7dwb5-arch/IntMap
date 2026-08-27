@@ -16,8 +16,12 @@
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
+import { makeAtlasAnnotate } from './atlas-annotate.js';   /* (#R492) the in-reply unit / clock / abbreviation notes — js/atlas-annotate.js */
 export function makeAtlasReply(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc, fitTo=CTX.fitTo, fmtVal=CTX.fmtVal, highlight=CTX.highlight, note=CTX.note, warn=CTX.warn;
+  /* (#R492) the in-reply notes. ⚠ MADE HERE, not at module scope: a js/ module may hold no unexported
+     top-level declaration (tests/r175 ③), so the lexicon and the compiled regexes live inside the factory. */
+  const { annotateAtlasHTML, annotateAtlasText, annotateOptions, wireAtlasAnnotations } = makeAtlasAnnotate();
     /* ══ (#R463) ATOMS — the two sentence tokenizers below must never cut inside a URL or a number ═══
        Reported: an Atlas answer rendered "地図中心付近の49." and "10°N・19.54°E" as two paragraphs, and its
        source link came out as a dead anchor reading "https://liptovska-mara.". Neither is a model defect
@@ -166,16 +170,23 @@ export function makeAtlasReply(HOST, CTX) {
       return '<div class="atl-codewrap"><div class="atl-codebar"><span class="atl-codelang">'+(lbl||'code')+'</span>'
         +'<button class="atl-codecopy" type="button" data-cid="'+id+'">'+esc(L('Copy','コピー','Kopieren','Копировать','Copiar'))+'</button></div>'
         +'<pre class="atl-codeblock"><code id="'+id+'">'+esc(code)+'</code></pre></div>'; }
-    function _atlCellFmt(s){ return esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'$1'); }   /* (#R159) table cells: strip **bold** markers to plain — Atlas replies carry no bold (inline code/math placeholders survive esc + restore globally) */
-    function _atlBuildTable(header, sep, body){
+    /* ⚠ (#R492) ONE options object per reply. `seen` inside it is what makes an abbreviation carry its
+       note on FIRST USE only; sharing it across replies would annotate a term once and never again, and
+       making a new one per paragraph would underline the same word five times in one answer. */
+    function _atlAnnOpts(){ try{ return annotateOptions({ lang:(HOST&&HOST.lang)||'en', tz:(HOST&&HOST.userTZ)||null }); }catch(_){ try{ return annotateOptions({}); }catch(__){ return null; } } }
+    /* (#R159) table cells: strip **bold** markers to plain — Atlas replies carry no bold (inline code/math placeholders survive esc + restore globally).
+       (#R492) …and a cell is prose too: it is annotated here rather than by the pass at the end of mdMini, because by then
+       the whole table is a single placeholder token and its cells are out of that walk's reach. */
+    function _atlCellFmt(s,AN){ const t=esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'$1'); if(!AN) return t; try{ return annotateAtlasText(t,AN); }catch(_){ return t; } }
+    function _atlBuildTable(header, sep, body, AN){
       const cut=r=>String(r).trim().replace(/^\|/,'').replace(/\|$/,'').split(/\|/).map(x=>x.trim());
       const aligns=cut(sep).map(s=>{ const l=/^:/.test(s), r=/:$/.test(s); return (r&&l)?'center':r?'right':l?'left':''; });
       const th=cut(header); const rows=body.map(cut); const al=i=>aligns[i]?(' style="text-align:'+aligns[i]+'"'):'';
       let h='<div class="atl-tablewrap"><table class="atl-md-table"><thead><tr>';
-      th.forEach((c,i)=>{ h+='<th'+al(i)+'>'+_atlCellFmt(c)+'</th>'; }); h+='</tr></thead><tbody>';
-      rows.forEach(r=>{ h+='<tr>'; for(let i=0;i<th.length;i++){ h+='<td'+al(i)+'>'+_atlCellFmt(r[i])+'</td>'; } h+='</tr>'; });
+      th.forEach((c,i)=>{ h+='<th'+al(i)+'>'+_atlCellFmt(c,AN)+'</th>'; }); h+='</tr></thead><tbody>';
+      rows.forEach(r=>{ h+='<tr>'; for(let i=0;i<th.length;i++){ h+='<td'+al(i)+'>'+_atlCellFmt(r[i],AN)+'</td>'; } h+='</tr>'; });
       return h+'</tbody></table></div>'; }
-    function mdMini(s){ s=String(s||''); const B=[], I=[];
+    function mdMini(s){ s=String(s||''); const B=[], I=[]; const AN=_atlAnnOpts();
       const pB=h=>{ B.push(h); return 'B'+(B.length-1)+''; };
       const pI=h=>{ I.push(h); return 'I'+(I.length-1)+''; };
       /* 1) protect fenced code, then display + inline math, then inline code (block-level first; guarded $…$ last) */
@@ -188,7 +199,7 @@ export function makeAtlasReply(HOST, CTX) {
       /* 2) GFM pipe tables → protected block */
       s=(function(src){ const ls=src.split('\n'), out=[]; let i=0;
         const isRow=l=>/^\s*\|.*\|\s*$/.test(l), isSep=l=>/\|/.test(l)&&/-/.test(l)&&/^\s*\|?[\s:|-]*-[-\s:|]*\|?\s*$/.test(l);
-        while(i<ls.length){ if(isRow(ls[i])&&i+1<ls.length&&isSep(ls[i+1])){ const hdr=ls[i], sp=ls[i+1], bd=[]; let j=i+2; while(j<ls.length&&isRow(ls[j])){ bd.push(ls[j]); j++; } out.push(pB(_atlBuildTable(hdr,sp,bd))); i=j; } else { out.push(ls[i]); i++; } }
+        while(i<ls.length){ if(isRow(ls[i])&&i+1<ls.length&&isSep(ls[i+1])){ const hdr=ls[i], sp=ls[i+1], bd=[]; let j=i+2; while(j<ls.length&&isRow(ls[j])){ bd.push(ls[j]); j++; } out.push(pB(_atlBuildTable(hdr,sp,bd,AN))); i=j; } else { out.push(ls[i]); i++; } }
         return out.join('\n'); })(s);
       /* 3) the EXISTING R154/R155 typography pipeline — the text is now placeholder-protected (code/math/tables intact).
          (#R154) HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR ("目次を色分けするのはやめる"). (#R155) a "## "
@@ -233,6 +244,14 @@ export function makeAtlasReply(HOST, CTX) {
       html=html
         .replace(/<div class="atl-gap"[^>]*><\/div>(?=<div class="atl-h")/g,'')
         .replace(/(<div class="atl-h"[^>]*>(?:(?!<\/div>)[\s\S])*<\/div>)(?:<div class="atl-gap"[^>]*><\/div>|<br>)/g,'$1');
+      /* ⚠ (#R492) THE ANNOTATION PASS STANDS HERE, AND NOWHERE ELSE. Above it the reply is finished HTML;
+         below it the code/math/table placeholders come back. Running here means the walk never sees the inside
+         of a code block, a formula or an inline `code` span — those are still single PUA tokens — and it never
+         sees an attribute, because annotateAtlasHTML splits tags from text. Running it in js/atlas-console.js
+         AFTER the bubble is painted would have been wrong for a different reason: _atlCompose rebuilds that
+         bubble's innerHTML from the stored HTML strings once per tool call, so DOM-side decoration is erased
+         by the next action. Table cells are annotated by _atlCellFmt with the SAME options object. */
+      if(AN){ try{ html=annotateAtlasHTML(html,AN); }catch(_){} }
       /* 4) restore protected blocks (may hold inline placeholders) THEN inlines */
       return html.replace(/B(\d+)/g,(m,i)=>B[+i]||'').replace(/I(\d+)/g,(m,i)=>I[+i]||''); }
     /* (#R156) ONE-TIME wiring for the renderer's interactive bits, at document level so it works in EVERY Atlas
@@ -241,6 +260,7 @@ export function makeAtlasReply(HOST, CTX) {
        since it is a defer script that runs before DOMContentLoaded), upgrade the escaped-raw fallbacks in place. */
     function _atlFallbackCopy(txt){ try{ const ta=document.createElement('textarea'); ta.value=String(txt||''); ta.style.cssText='position:fixed;left:-9999px;top:0;'; document.body.appendChild(ta); ta.focus(); ta.select(); try{ document.execCommand('copy'); }catch(_){} ta.remove(); }catch(_){} }
     try{ if(!window.__atlRenderWired){ window.__atlRenderWired=true;
+      try{ wireAtlasAnnotations(); }catch(_){}   /* (#R492) hover / tap on an annotation — document-level, so all three Atlas surfaces get it */
       document.addEventListener('click',e=>{ try{ const b=e.target.closest&&e.target.closest('.atl-codecopy'); if(!b) return;
         const code=document.getElementById(b.getAttribute('data-cid')); const txt=code?(code.textContent||''):'';
         const done=()=>{ const old=b.textContent; b.textContent=L('Copied','コピー済み','Kopiert','Скопировано','Copiado'); b.classList.add('ok'); setTimeout(()=>{ try{ b.textContent=old; b.classList.remove('ok'); }catch(_){} },1400); };

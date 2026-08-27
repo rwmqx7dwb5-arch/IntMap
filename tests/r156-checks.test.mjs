@@ -52,7 +52,7 @@ test('R156 #2 unified renderer: code blocks, math, tables, inline code — place
   assert.match(html, /function _atlCodeBlock\(code, lang\)\{/, 'code-block builder');
   assert.match(html, /class="atl-codecopy" type="button" data-cid="'\+id\+'">'\+esc\(L\('Copy'/, 'code block has a localized Copy button');
   assert.match(html, /<code id="'\+id\+'">'\+esc\(code\)\+'<\/code>/, 'code is HTML-escaped (never executed)');
-  assert.match(html, /function _atlBuildTable\(header, sep, body\)\{/, 'GFM table builder');
+  assert.match(html, /function _atlBuildTable\(header, sep, body, AN\)\{/, 'GFM table builder (#R492 hands it the annotation options for its cells)');
   assert.match(html, /class="atl-tablewrap"><table class="atl-md-table">/, 'tables render into a scrollable wrapper');
   assert.match(html, /'`\(\[\^`\\n\]\+\)`'|`\(\[\^`\\n\]\+\)`/, 'sanity: inline-code source present');
   // the EXISTING R154/R155 heading/bullet/paragraph HTML is preserved verbatim
