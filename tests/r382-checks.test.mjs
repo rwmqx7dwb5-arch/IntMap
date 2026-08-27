@@ -42,6 +42,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { colourFor, nearestEntry, readPixel, explain } from './helpers/wind-ramp.js';
+import { deltaE00, VISIBLE_AT_A_GLANCE } from './helpers/colour-difference.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -181,7 +182,13 @@ test('#R382 ⑤ the two pixels sit on opposite sides of the gap between the two 
     'the eyewall pixel (' + ring + ') is above everything under the eye (' + EYE_FOOT[1] + ')');
   assert.ok(eye < RING_FOOT[0],
     'and the eye pixel (' + eye + ') below everything under the eyewall (' + RING_FOOT[0] + ')');
-  assert.ok(d2(SETTLED, EYE_PX) > 900, 'and they are visibly different colours');
+  /* (#R487) …and the reader's half in the reader's unit. This line was the same squared RGB
+     distance the deployed test carried, and the same objection applies to it: sRGB distance does
+     not order how different two colours look. MEASURED here — [232,216,213] against [169,78,139]
+     is ΔE00 39.1, which is not a marginal call in either unit; what changed is that it is now
+     asked in the one that means something. See tests/helpers/colour-difference.js. */
+  assert.ok(deltaE00(SETTLED, EYE_PX) > VISIBLE_AT_A_GLANCE,
+    'and they are visibly different colours — ΔE00 ' + deltaE00(SETTLED, EYE_PX).toFixed(1));
 });
 
 /* ── ⑥ the verdict still refuses what it exists to refuse ────────────────────────────────────

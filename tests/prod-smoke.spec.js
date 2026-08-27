@@ -9,6 +9,7 @@ import { test, expect } from '@playwright/test';
 import { collectPageDiagnostics, ensureAtlasOnDemand } from './helpers/network.js';
 import { loadLazyModules } from './helpers/app.js';
 import { readPixel, explain, colourFor, separablePair } from './helpers/wind-ramp.js';
+import { deltaE00, VISIBLE_AT_A_GLANCE } from './helpers/colour-difference.js';
 import { findEye, describeEye } from './helpers/cyclone-eye.js';
 import { fileURLToPath } from 'node:url';
 import { repoCorsContract, parseAllowHeaders } from './helpers/fn-cors.js';
@@ -972,7 +973,6 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
      the field. Nothing here is chosen.
      ⚠ (#R458) Nothing in the VERDICT is chosen — that is still true. WHICH TWO POINTS the verdict
      is taken at now is, because at some hours no two points can carry it. See below. */
-  const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
   /* ══ ⚠⚠⚠ (#R458) …AND THE PAIR ITSELF HAS TO BE ONE THE CLAIM CAN BE MADE ABOUT ═════════════
      Claim ③ below compares one pixel against the OTHER point's footprint. That is a question
      about the picture only while the two footprints are disjoint in speed. When they overlap —
@@ -1020,9 +1020,37 @@ test('(#R276) prod shows a real cyclone: a calm eye inside a ring of strong wind
     expect(eyeRead.nearest.v, 'and the eye pixel as calmer than anything under the eyewall ('
       + eyeRead.nearest.v + ' m/s vs ' + ringFoot[0].toFixed(1) + '…'
       + ringFoot[1].toFixed(1) + ')').toBeLessThan(ringFoot[0]);
-    /* …and the two are far apart, which is the difference a reader actually sees */
-    expect(d2(eyePx, ringPx), 'the eye and its wall are visibly different colours: '
-      + JSON.stringify(eyePx) + ' vs ' + JSON.stringify(ringPx)).toBeGreaterThan(900);
+    /* ══ ⚠⚠⚠ (#R487) …AND THE READER'S HALF IS ASKED IN THE READER'S UNIT ══════════════════
+       「the two are far apart, which is the difference a reader actually sees」 — a claim about a
+       PERSON, and it was put to the squared Euclidean distance between two sRGB triples, with the
+       bound at 30 units. sRGB is a storage encoding; that distance does not order 「how different
+       these look」. MEASURED on the shipped table, two pairs it ranks the opposite way round from
+       the eye, by a factor of six and a half:
+           4.7 m/s [77,143,131] vs 27.6 m/s [76,117,145]   RGB 29.5 → 「the same colour」, ΔE00 20.56
+           9.0 m/s [53,160,53]  vs  9.6 m/s [83,162,54]    RGB 30.1 → 「far apart」,        ΔE00  3.17
+       That is #R276 追記's own lesson (「red − blue is not monotone along this ramp」) and #R382's
+       (「distance-to-an-entry does not order speeds」) for the THIRD time: a quantity written beside
+       the colours instead of read out of the observer.
+       ⚠ WHAT IT COST. Run 33096001326, both attempts: eye [75,145,155] over 2.15…7.20 m/s and
+       eyewall [76,117,145] over 26.20…27.86 — 19.00 m/s apart, every other assertion here green,
+       and this one red at 885 of the 900 it wanted. In ΔE00 that pair is **14.22**, seven times the
+       bound below. The map was right; the ruler was not.
+       ⚠ AND THE BOUND IS NOT READ OFF THE RAMP, deliberately. 「further apart than the table's own
+       finest step」 writes no constant down and is worthless: flatten the ramp towards grey and the
+       step goes to zero with it, so an unreadable map would clear its own bound. The threshold
+       belongs to the eye — ΔE00 is scaled so 1.0 is one just-noticeable difference, and above 2 is
+       the band that is visible AT A GLANCE, which is how a map is read. See
+       tests/helpers/colour-difference.js; tests/r487-checks.test.mjs pins the formula against the
+       reference pairs CIE 142 / Sharma et al. publish for exactly this reason. */
+    const dE = deltaE00(eyePx, ringPx);
+    const rgbDist = Math.sqrt((eyePx[0] - ringPx[0]) ** 2 + (eyePx[1] - ringPx[1]) ** 2
+      + (eyePx[2] - ringPx[2]) ** 2);
+    console.log('[R487] eye ' + JSON.stringify(eyePx) + ' vs eyewall ' + JSON.stringify(ringPx)
+      + ' — ΔE00 ' + dE.toFixed(2) + ' (RGB distance ' + rgbDist.toFixed(1) + ')');
+    expect(dE, 'the eye and its wall are visibly different colours: ' + JSON.stringify(eyePx)
+      + ' vs ' + JSON.stringify(ringPx) + ' differ by ΔE00 ' + dE.toFixed(2) + ', at or below the '
+      + VISIBLE_AT_A_GLANCE + ' at which a difference becomes visible at a glance')
+      .toBeGreaterThan(VISIBLE_AT_A_GLANCE);
   } else {
     /* ⚠ NOT `test.skip`. Skipping would take the two single-pixel verdicts above down with it and
        report the hour as untested; this states exactly which claim could not be asked and why, in

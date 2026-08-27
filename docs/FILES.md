@@ -625,11 +625,16 @@ tests/
   tests/prod-smoke.spec.js              実 URL に対するスモーク（PROD_URL）
   tests/security.spec.js                実ブラウザでの無害化確認
   helpers/network.js              hermetic なルーティングと console の分類
+  helpers/colour-difference.js    **2色がどれくらい違って見えるか**（sRGB→CIELAB＋CIEDE2000）。
+                                  #R487 まで prod-smoke は「見分けられるか」を **sRGB のユークリッド距離**で
+                                  訊いていたが、その距離は見え方を順序づけない（出荷中の風の表で実測、
+                                  順序が逆になる対がある）。閾値は表からではなく**観測者から**採る
+                                  ——ΔE00 は 1.0 が JND、2 以上が一目で分かる帯
   helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
                                   prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
                                   コードだけ——コメントの中の `corsFor()` は契約ではない
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（241本）
-  *.spec.js                       ブラウザ回帰（99本）
+  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（262本）
+  *.spec.js                       ブラウザ回帰（100本）
 .github/workflows/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
   deploy.yml                      本番公開（**有効**。§15.4）
