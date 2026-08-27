@@ -4,7 +4,7 @@
     "gzip": 1510632,
     "brotli": 1151347,
     "requests": 6,
-    "modules": 281,
+    "modules": 282,
     "cssRaw": 326601,
     "cssGzip": 55017
   },

@@ -39,7 +39,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
     /* (#R78e) REAL cartography for the vector-overlay layers ("まだクソみたいな手抜きレイヤー例画像が多すぎる"):
        borders / place names / admin lines / country outlines are basemap features — show an actual CARTO tile of
        a recognisable region instead of a hand-drawn sketch. @2x for crispness; distinct regions so no two look alike. */
-    const CT=(style,z,lon,lat)=>{ const t=tXY(z,lon,lat); return 'https://a.basemaps.cartocdn.com/'+style+'/'+z+'/'+t.x+'/'+t.y+'@2x.png'; };
+    const CT=(style,z,lon,lat)=>{ const t=tXY(z,lon,lat); return window.cartoTileURL(style,z+'/'+t.x+'/'+t.y,{hiDPI:true}); };
     const IMG={
       'dl-climate':'preview_koppen_eu.png',   /* (#R79f) Europe crop of the Köppen map (per request — "ヨーロッパを写したスクショに") */
       /* (#R268) 「年降水量レイヤーは…サムネイル画像（実スクリーンショット）をつけるように。」 — this layer
@@ -602,7 +602,7 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        (2 web-mercator tiles = a true 2:1 slice) with the real layer drawn on top via setView, exactly like a
        screenshot of the live map. Falls back to the PAINT sketch if the tiles fail (CORS/offline). ==== */
     function _bmShot(z,lon,lat,dark,drawOverlay){ const t=tXY(z,lon,lat), n=Math.pow(2,z), style=dark?'dark_all':'rastertiles/voyager';
-      const u=(sub,x)=>'https://'+sub+'.basemaps.cartocdn.com/'+style+'/'+z+'/'+(((x%n)+n)%n)+'/'+t.y+'@2x.png';
+      const u=(sub,x)=>window.cartoTileURL(style,z+'/'+(((x%n)+n)%n)+'/'+t.y,{host:sub,hiDPI:true});
       return Promise.all([imgLoad(u('a',t.x)),imgLoad(u('b',t.x+1))]).then(ims=>{ if(!ims[0]&&!ims[1]) return null;
         const lon0=t.x/n*360-180, lon1=(t.x+2)/n*360-180;
         const latT=Math.atan(Math.sinh(Math.PI*(1-2*t.y/n)))*180/Math.PI, latB=Math.atan(Math.sinh(Math.PI*(1-2*(t.y+1)/n)))*180/Math.PI;

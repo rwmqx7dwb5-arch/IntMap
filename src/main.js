@@ -36,6 +36,10 @@ import '../js/geo-engine.js';
 import '../js/engine-select.js';
 
 import '../js/newsgeo.js';
+/* (#R479) CARTO's key, the two tile-URL builders and the basemap credit. Anywhere before
+   js/app-body.js works (it builds tile URLs at map setup); the first three slots and the last one
+   are pinned by tests/r175-checks, so it sits here among the feature modules. */
+import '../js/carto-basemap.js';
 /* (#R183) The one guarded weather/UV client, imported before anything that could ask it for a
    number. js/wx-source.js publishes window.IntMapWx synchronously (no factory), so it costs nothing
    here and guarantees the widget board, the point-weather popup and every other reader share one

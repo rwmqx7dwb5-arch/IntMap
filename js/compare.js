@@ -165,14 +165,14 @@ window.IntMapModules.compare=function(HOST){
       document.head.appendChild(st); }
     function compareStyle(){ const dark=document.documentElement.getAttribute('data-theme')==='dark';
       return { version:8, glyphs:'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', sources:{
-        'cmp-carto':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OpenStreetMap'},
-        'cmp-dark':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OpenStreetMap'},
+        'cmp-carto':{type:'raster',tiles:window.cartoTiles('rastertiles/voyager',{hosts:['a','b','c']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION},
+        'cmp-dark':{type:'raster',tiles:window.cartoTiles('dark_all',{hosts:['a','b','c']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION},
         /* (#R34) Same two-host Esri imagery as the MAIN map so compare satellite is byte-identical quality
            ("Compare viewでも同一品質のレイヤーを") and not throttled to one host. */
         'cmp-sat':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:(typeof isMobile==='function'&&isMobile())?18:19,attribution:'© Esri'},
         'cmp-koppen':{type:'image',url:koppenUrl(),coordinates:KC},
         'cmp-worldcover':{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'},
-        'cmp-relief':{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256}
+        'cmp-relief':{type:'raster',tiles:window.cartoTiles('rastertiles/voyager',{hosts:['a']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION}
       }, layers:[
         {id:'cmp-base-carto',type:'raster',source:'cmp-carto',layout:{visibility:dark?'none':'visible'}},
         {id:'cmp-base-dark',type:'raster',source:'cmp-dark',layout:{visibility:dark?'visible':'none'}},

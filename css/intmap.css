@@ -723,6 +723,14 @@
     .ci-details{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--primary-color); color:#fff; font-weight:600; cursor:pointer; }
     /* (#R103) the coordinate/elevation always-on readout tucked closer to the bottom-left corner (kept non-flush). */
     .coord-readout{ display:none; position:absolute; bottom:9px; left:9px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
+
+    /* (#R479) BASEMAP CREDIT — the price of CARTO's free tier is that the credit stays visible.
+       Bottom-RIGHT because it is the one free corner: the coord readout owns bottom-left at 9/9 and
+       tests/r252 pins it there, and Chronos sits above this at bottom:54px. Same glass material as
+       the rest of the map furniture so it reads as part of the app rather than a renderer artefact. */
+    .map-credit{ position:absolute; bottom:9px; right:14px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:3px 9px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:11px; line-height:1.6; color:var(--text-muted); white-space:nowrap; }
+    .map-credit a{ color:var(--text-muted); text-decoration:none; }
+    .map-credit a:hover{ color:var(--text-main); text-decoration:underline; }
     .coord-readout .cr-elev{ color:var(--text-muted); }
     .coord-readout .cr-sat{ color:var(--primary-color); font-weight:600; }
     .coord-readout .cr-wind{ color:#5ec8ff; font-weight:600; display:inline-flex; align-items:center; gap:5px; }
