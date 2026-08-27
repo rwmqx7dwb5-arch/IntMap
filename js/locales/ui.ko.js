@@ -236,14 +236,29 @@ window.IntMapLang.define('ko', { ui: {
       ttlFavorite:"즐겨찾기",
     }, inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    "{n} lookups left today": "오늘 남은 해설 {n}회",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap의 새 버전이 배포되었습니다. 계속하려면 새로 고치세요.',
+    "AI-generated — verify anything important.": "AI가 생성한 내용입니다. 중요한 정보는 확인하세요.",   /* #R491 */
     'An old cached version of IntMap loaded.': '캐시에 저장된 이전 버전의 IntMap이 로드되었습니다.',
+    "Ask Atlas for more": "Atlas에서 자세히",   /* #R491 */
+    "Background": "배경",   /* #R491 */
+    "Explain": "해설",   /* #R491 */
+    "Explain \"{term}\" in more depth.": "「{term}」에 대해 더 자세히 설명해 줘.",   /* #R491 */
+    "In this passage": "이 문장에서의 의미",   /* #R491 */
+    "Looking it up…": "찾아보는 중…",   /* #R491 */
+    "Meaning": "뜻",   /* #R491 */
+    "Name the phrase to explain.": "해설할 단어나 표현을 지정하세요.",   /* #R491 */
+    "opened the term card": "용어 카드를 열었습니다",   /* #R491 */
+    "Related": "관련어",   /* #R491 */
     'Reload': '새로 고침',
     'Name a category': '분류를 지정하세요',
     'No such event category': '그런 사건 분류는 없습니다',
     'reported by 2+ independent outlets': '독립 매체 2곳 이상이 보도',
     'server-side clustering over the full 72-hour window': '서버 측에서 72시간 창 전체를 보고 수행한 군집화',
+    "That is a passage, not a term — select a word or a phrase.": "너무 깁니다. 단어나 표현을 선택하세요.",   /* #R491 */
     'The events surface is not available': '사건 목록을 사용할 수 없습니다',
+    "The glossary card could not open.": "해설 카드를 열지 못했습니다.",   /* #R491 */
+    "The lookup came back empty.": "해설을 가져오지 못했습니다.",   /* #R491 */
     'with no location': '지점 불명',
     'Business & Economy': '경제',
     'Latest article': '최신 기사',
@@ -313,6 +328,7 @@ window.IntMapLang.define('ko', { ui: {
     "Total votes cast": "총 투표수",
     "Where the map is centred (standard time)": "지도 중심의 표준시",
     "Wind from the {d} — the arrow points the way it is blowing": "{d}풍 — 화살표는 바람이 불어 가는 방향입니다",
+    "You have used today’s free term lookups. Your Atlas questions are unaffected.": "오늘의 무료 용어 해설 횟수를 모두 사용했습니다. Atlas 질문 횟수에는 영향이 없습니다.",   /* #R491 */
     "Your device": "기기 시각",
     "Your setting": "설정한 시간대",
     "Air pressure reduced to sea level — highs, lows and the storm centre.": "해면으로 환산한 기압 — 고기압·저기압과 폭풍의 중심.",

@@ -22,6 +22,7 @@
  * ==========================================================================*/
 import { LIGHTBOX_CSS } from './atlas-attach.js';
 import { MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE } from './atlas-msg-tools.js';
+import { GLOSS_CSS, GLOSS_CSS_MOBILE } from './atlas-gloss.js';   /* (#R491) the term-gloss card + its touch pill */
 
 export function atlasPanelCSS() {
     /* (#R62) refined AI-app look ("ChatGPTのような洗練された生成AI App風のUI") + the DEFAULT desktop layout is a
@@ -179,6 +180,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'#atlas-panel .atl-go.busy{background:var(--primary-color);box-shadow:0 2px 8px rgba(0,0,0,0.2);color:#fff;border-color:transparent;}'   /* (#R156) Stop-answering button = accent fill + white square icon */
       +'#atlas-panel .atl-go.busy:hover{filter:brightness(1.07);}'
       +MSG_TOOLS_CSS
+      +GLOSS_CSS   /* (#R491) ⚠ NOT scoped to #atlas-panel: the card is appended to <body> so the panel's overflow cannot clip it */
       /* (#R72) scroll-to-bottom jump button */
       +'#atlas-panel .atl-jump{position:absolute;left:50%;transform:translateX(-50%);bottom:72px;z-index:5;width:32px;height:32px;border-radius:50%;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--popup-bg);color:var(--text-main);cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,0.22);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:0;}'
       +'#atlas-panel .atl-jump.show{display:flex;}'
@@ -245,5 +247,6 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ctl-lbl{font-size:13px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-msgt button{font-size:11.5px;padding:4px 8px;}'
       +MSG_TOOLS_CSS_MOBILE
+      +GLOSS_CSS_MOBILE   /* (#R491) on a phone the card stops chasing the selection and becomes a sheet */
       +'}';
 }

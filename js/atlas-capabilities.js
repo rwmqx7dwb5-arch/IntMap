@@ -114,6 +114,9 @@ export function makeAtlasCapabilities(HOST) {
       ['view.flyTo',                 'flyTo',          '',                                                            'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   'place',    ''],
       ['data.weather',               'weather',        '',                                                            'data',    'panel',   'panel.weather',          'panel,explanation',   'read',    'none',   'place',    ''],
       ['research.brief',             'brief',          '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'place?',   ''],
+      /* (#R491) the term gloss. It writes nothing and paints nothing — it opens a card beside the
+         text and produces an explanation, which is why its observer is 'none' and its risk 'read'. */
+      ['reader.gloss',               'gloss',          'explainTerm,defineTerm',                                      'research','none',    '',                       'explanation',         'read',    'none',   'text',     ''],
       ['research.askHere',           'askHere',        '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
       ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
       ['data.ratio',                 'ratio',          '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
@@ -683,7 +686,7 @@ export function makeAtlasCapabilities(HOST) {
         case 'country': return any(['country', 'countries', 'place', 'name', 'target']);
         case 'layer': return any(['name', 'layer', 'layers', 'all']);
         case 'metric': return any(['metric', 'metricA', 'metricY', 'components', 'key']);
-        case 'text': return any(['query', 'text', 'question', 'value', 'place']);
+        case 'text': return any(['query', 'text', 'question', 'value', 'place', 'term']);   /* (#R491) a phrase to explain is a text target like any other */
         default: return true;
       }
     }

@@ -71,7 +71,7 @@ const MODULES = {
   /* (#R318) +2: `_aiLangName` / `_aiLangLine` came over from js/app-body.js — the instruction
      that tells the model which language to answer in belongs with the transport that carries it,
      and the app shell had no line to spare (tests/r168 #8). */
-  aiCore:           { file: 'js/ai-core.js', k: 'IM_AI', exports: ['_aiLangLine', '_aiLangName', 'aiDev', 'aiEsc', 'aiFetchUsage', 'aiGate', 'aiLimitMsg', 'aiLoginMsg', 'aiParseJSON', 'aiQuotaBlocked', 'aiReady', 'aiRenderSettings', 'aiReport', 'aiSaveSettings', 'aiSetBtnBusy', 'aiSyncFeatureButtons', 'aiToast', 'aiToday', 'aiUsesLeft', 'aiVisionReady', 'aiWaitMapIdle', 'askAI', 'askAIJSON', 'askAIJSONEnvelope'] },
+  aiCore:           { file: 'js/ai-core.js', k: 'IM_AI', exports: ['_aiLangLine', '_aiLangName', 'aiDev', 'aiEsc', 'aiFetchUsage', 'aiGate', 'aiLimitMsg', 'aiLoginMsg', 'aiParseJSON', 'aiQuotaBlocked', 'aiReady', 'aiRenderSettings', 'aiReport', 'aiSaveSettings', 'aiSetBtnBusy', 'aiSyncFeatureButtons', 'aiToast', 'aiToday', 'aiUsesLeft', 'aiVisionReady', 'aiWaitMapIdle', 'askAI', 'askAIGloss', 'askAIJSON', 'askAIJSONEnvelope'] },
   placeLabels:      { file: 'js/place-labels.js', k: 'IM_LABELS', exports: ['applyLabelLang', 'ensurePlaceLabels'] },
   /* (#R238) +5: the dock (setDocked/isDocked/dockedCount/dockRefresh) and its app-side glue
      (wireDock). ⚠ Only `registerWindow` and the three above it are SHIMMED into index.html —

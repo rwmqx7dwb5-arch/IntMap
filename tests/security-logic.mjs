@@ -107,7 +107,11 @@ test('ai-proxy enforces the per-user daily quota via the SECURITY DEFINER RPC', 
 test('ai-proxy caps prompt and image input (no unbounded request)', () => {
   assert.match(aiProxy, /MAX_PROMPT = \d/);
   assert.match(aiProxy, /MAX_IMAGES = \d/);
-  assert.match(aiProxy, /\.slice\(0, MAX_PROMPT\)/);
+  /* (#R491) THE PROPERTY IS «THE PROMPT IS BOUNDED», not «the bound is spelled MAX_PROMPT». The
+     term-gloss lane has a SMALLER ceiling of its own, so the one slice now chooses between two
+     constants — and this still fails the moment the slice, or either constant, goes away. */
+  assert.match(aiProxy, /MAX_GLOSS_PROMPT = \d/);
+  assert.match(aiProxy, /\.slice\(0, isGloss \? MAX_GLOSS_PROMPT : MAX_PROMPT\)/);
   /* ⚠ «THE IMAGE LIST IS BOUNDED» IS THE PROPERTY. `.slice(0, MAX_IMAGES)` was one way to hold it, and
      it was the WEAK way: four images each just under the per-image limit is four times the per-image
      limit, and slicing a list says nothing about how big its members are. The loop that replaced it

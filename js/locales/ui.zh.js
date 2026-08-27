@@ -244,14 +244,29 @@ window.IntMapLang.define('zh', {
      1882 of them. A key left untranslated renders in English. */
   inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    "{n} lookups left today": "今日剩餘解說 {n} 次",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap 有新版本可用。請重新載入以繼續。',
+    "AI-generated — verify anything important.": "由 AI 生成，重要資訊請自行查證。",   /* #R491 */
     'An old cached version of IntMap loaded.': '載入的是快取中的舊版 IntMap。',
+    "Ask Atlas for more": "讓 Atlas 詳述",   /* #R491 */
+    "Background": "背景",   /* #R491 */
+    "Explain": "解說",   /* #R491 */
+    "Explain \"{term}\" in more depth.": "請更詳細地說明「{term}」。",   /* #R491 */
+    "In this passage": "在此段落中的意思",   /* #R491 */
+    "Looking it up…": "查詢中…",   /* #R491 */
+    "Meaning": "意思",   /* #R491 */
+    "Name the phrase to explain.": "請指定要解說的字詞。",   /* #R491 */
+    "opened the term card": "已開啟術語卡片",   /* #R491 */
+    "Related": "相關詞",   /* #R491 */
     'Reload': '重新載入',
     'Name a category': '請指定分類',
     'No such event category': '沒有這個事件分類',
     'reported by 2+ independent outlets': '由 2 家以上獨立媒體報導',
     'server-side clustering over the full 72-hour window': '在伺服器端針對完整 72 小時視窗做的分群',
+    "That is a passage, not a term — select a word or a phrase.": "這是一整段，不是詞彙——請選取一個字詞或片語。",   /* #R491 */
     'The events surface is not available': '目前無法使用事件清單',
+    "The glossary card could not open.": "無法開啟解說卡片。",   /* #R491 */
+    "The lookup came back empty.": "未取得解說內容。",   /* #R491 */
     'with no location': '地點不明',
     'Business & Economy': '財經',
     'Latest article': '最新報導',
@@ -320,6 +335,7 @@ window.IntMapLang.define('zh', {
     "Total votes cast": "總投票數",
     "Where the map is centred (standard time)": "地圖中心所在地的標準時間",
     "Wind from the {d} — the arrow points the way it is blowing": "{d}風 — 箭頭指向風吹去的方向",
+    "You have used today’s free term lookups. Your Atlas questions are unaffected.": "今日的免費術語解說次數已用完。這不影響您向 Atlas 提問的次數。",   /* #R491 */
     "Your device": "裝置時間",
     "Your setting": "你設定的時區",
     'Air pressure reduced to sea level — highs, lows and the storm centre.': "換算至海平面的氣壓——高壓、低壓與風暴中心。",

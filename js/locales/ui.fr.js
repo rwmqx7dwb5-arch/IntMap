@@ -244,14 +244,29 @@ window.IntMapLang.define('fr', { ui: {
       ttlFavorite:"Favori",
     }, inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    "{n} lookups left today": "{n} explications restantes aujourd’hui",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': "Une nouvelle version d'IntMap est disponible. Rechargez la page pour continuer.",
+    "AI-generated — verify anything important.": "Généré par IA — vérifiez ce qui est important.",   /* #R491 */
     'An old cached version of IntMap loaded.': "Une ancienne version d'IntMap en cache a été chargée.",
+    "Ask Atlas for more": "Approfondir avec Atlas",   /* #R491 */
+    "Background": "Contexte",   /* #R491 */
+    "Explain": "Expliquer",   /* #R491 */
+    "Explain \"{term}\" in more depth.": "Explique « {term} » plus en détail.",   /* #R491 */
+    "In this passage": "Dans ce passage",   /* #R491 */
+    "Looking it up…": "Recherche en cours…",   /* #R491 */
+    "Meaning": "Sens",   /* #R491 */
+    "Name the phrase to explain.": "Indiquez l’expression à expliquer.",   /* #R491 */
+    "opened the term card": "carte du terme ouverte",   /* #R491 */
+    "Related": "Termes liés",   /* #R491 */
     'Reload': 'Recharger',
     'Name a category': 'Indiquez une catégorie',
     'No such event category': 'Cette catégorie d’événements n’existe pas',
     'reported by 2+ independent outlets': 'rapportés par 2 médias indépendants ou plus',
     'server-side clustering over the full 72-hour window': 'regroupement côté serveur sur la totalité de la fenêtre de 72 heures',
+    "That is a passage, not a term — select a word or a phrase.": "C’est un passage, pas un terme — sélectionnez un mot ou une expression.",   /* #R491 */
     'The events surface is not available': 'La vue des événements n’est pas disponible',
+    "The glossary card could not open.": "La carte d’explication n’a pas pu s’ouvrir.",   /* #R491 */
+    "The lookup came back empty.": "La recherche n’a rien renvoyé.",   /* #R491 */
     'with no location': 'sans localisation',
     'Business & Economy': 'Économie',
     'Latest article': 'Dernier article',
@@ -321,6 +336,7 @@ window.IntMapLang.define('fr', { ui: {
     "Total votes cast": "Total des suffrages exprimés",
     "Where the map is centred (standard time)": "Là où la carte est centrée (heure normale)",
     "Wind from the {d} — the arrow points the way it is blowing": "Vent de {d} — la flèche indique le sens dans lequel il souffle",
+    "You have used today’s free term lookups. Your Atlas questions are unaffected.": "Vous avez épuisé les explications gratuites du jour. Vos questions à Atlas ne sont pas affectées.",   /* #R491 */
     "Your device": "Votre appareil",
     "Your setting": "Votre réglage",
     "Air pressure reduced to sea level — highs, lows and the storm centre.": "Pression atmosphérique ramenée au niveau de la mer — anticyclones, dépressions et centre de la tempête.",

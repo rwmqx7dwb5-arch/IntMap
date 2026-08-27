@@ -96,6 +96,7 @@ export function makeAtlasSchemas() {
       'data.weather': { type: 'object', properties: { place: str() }, required: ['place'] },
       'research.brief': { type: 'object', properties: { place: str(), lng: lng(), lat: lat() } },
       'research.askHere': { type: 'object', properties: { place: str(), lng: lng(), lat: lat(), question: str(), query: str() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] },
+      'reader.gloss': { type: 'object', properties: { term: str(), text: str(), query: str() }, anyOf: [{ required: ['term'] }, { required: ['text'] }, { required: ['query'] }] },   /* (#R491) a gloss with no phrase is not a question */
       'data.rank': { type: 'object', properties: { metric: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metric'] },
       'data.ratio': { type: 'object', properties: { metricA: str(), metricB: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metricA', 'metricB'] },
       'data.relate': { type: 'object', properties: { metricY: str(), metricX: str(), find: one('low', 'high'), n: int(1, 40) }, required: ['metricY', 'metricX'] },
