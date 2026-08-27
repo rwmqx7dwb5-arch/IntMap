@@ -160,9 +160,11 @@ test('R479 ⑤ the basemap credit element ships, is styled, and survives capture
     'the credit lives in the map container next to the other HUD furniture');
 
   const css = codeOnly(read('css/intmap.css'));
-  assert.match(css, /\.map-credit\{[^}]*position:absolute[^}]*\}/, 'the credit is positioned on the map');
-  assert.match(css, /\.map-credit\{[^}]*bottom:9px; right:14px/,
-    'bottom-RIGHT — the coord readout owns bottom-left at 9/9 (tests/r252 pins it) and Chronos sits at bottom:54px');
+  /* ⚠ WHERE it sits is #R485's question now, not this one. #R479 put it bottom-right and MEASURED
+     WRONG — the layer panel covered it on every desktop width and the toolbar covered it on a phone.
+     The placement invariants live in tests/r485-checks.test.mjs; what stays here is the part this
+     round is actually about: the element ships, it is styled, and it is not hidden. */
+  assert.match(css, /\.map-credit\{[^}]*\}/, 'the credit has a rule of its own');
   assert.ok(!/\.map-credit\{[^}]*display:none/.test(css), 'and it is not shipped hidden');
 
   /* ⚠ a screenshot of the map is exactly the artefact the attribution has to travel with */

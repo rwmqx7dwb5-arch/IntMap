@@ -5,8 +5,8 @@
     "brotli": 1151347,
     "requests": 6,
     "modules": 282,
-    "cssRaw": 328887,
-    "cssGzip": 55017
+    "cssRaw": 329103,
+    "cssGzip": 55401
   },
   "async": {
     "raw": 9665999,
