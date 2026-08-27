@@ -43,7 +43,12 @@ test('R234 runtime: the eight private per-camera rAFs are gone from the follower
   /* Each of these files coalesced its own camera work with its own requestAnimationFrame. The
      claim is not "they got faster" — it is that they now share ONE frame. */
   const wired = {
-    'js/app-body.js': /RT\(\)\.onCamera\('shell\.crosshair'/,
+    /* (#R496) the crosshair left js/app-body.js for js/mobile-map-input.js — the shell budget
+       (tests/r168 #8, tests/r479 ⑧) had one line of headroom and this round needed 124. The CLAIM
+       is unchanged and is what is checked: this follower shares the one frame. ⚠ And it is now
+       SPLIT across the runtime's two phases, which is #R496's own fix — the write half used to
+       measure the DOM after writing to it. */
+    'js/mobile-map-input.js': /RT\(\)\.onCamera\('shell\.crosshair'/,
     'js/view-controls.js': /R\.onCamera\('viewctl\.altitude'/,
     'js/tool-panel.js': /R\.onCamera\('toolpanel\.ctxmenu'/,
     'js/map-tools.js': /R\.onCamera\('arc3d\.draw'/,
@@ -60,8 +65,15 @@ test('R234 runtime: the eight private per-camera rAFs are gone from the follower
   /* the runtime is built before anything can register with it */
   const ab = read('js/app-body.js');
   assert.ok(ab.indexOf('makeRuntime(IM_HOST);') > 0, 'the runtime is instantiated in the shell');
-  assert.ok(ab.indexOf('makeRuntime(IM_HOST);') < ab.indexOf("RT().onCamera('shell.crosshair'"),
+  /* (#R496) the first registration the shell reaches is the crosshair's, and it now happens inside
+     js/mobile-map-input.js — so what the shell has to get right is that the runtime exists before it
+     MOUNTS that surface. Same ordering claim, at the seam it moved to. */
+  assert.ok(ab.indexOf('makeRuntime(IM_HOST);') < ab.indexOf('IM_MOBIN.crosshair();'),
     '…and it is built before the first registration');
+  assert.ok(ab.indexOf('makeRuntime(IM_HOST);') < ab.indexOf('window.IntMapModules.mobileMapInput(IM_HOST)'),
+    '…and before the factory that will register it is even built');
+  assert.match(read('js/mobile-map-input.js'), /RT\(\)\.onCamera\('shell\.crosshair\.read',[\s\S]{0,200}\{phase:'read'\}\)/,
+    'the crosshair samples the camera in the READ phase — a WRITE-phase read is a forced layout (#R496)');
 });
 
 /* ── 2 · ⚠⚠ the directivity term no longer creates energy ───────────────────────────────────── */
@@ -317,5 +329,5 @@ test('R234 hillshade: one rule for DEM depth, raised only where something capped
   assert.match(read('js/cesium-engine.js'), /maxzoom:Math\.min\(15,this\._dem\.maxzoom\(\)\)/,
     'the Cesium hillshade is no longer clamped a level below the DEM it is given');
   /* ⚠ the phone is UNCHANGED — this round's first instruction is that it must get faster */
-  assert.ok(!/_imPhoneGPU\(\)\?1[45]:/.test(ab), 'no phone-side DEM depth was raised');
+  assert.ok(!/_imPhoneClass\(\)\?1[45]:/.test(ab), 'no phone-side DEM depth was raised');   /* (#R496) _imPhoneGPU → _imPhoneClass */
 });

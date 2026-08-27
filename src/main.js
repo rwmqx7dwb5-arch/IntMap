@@ -289,6 +289,10 @@ import '../js/community-board.js';
 /* (#R311) the map hover tooltip — one surface used by every hover handler in the app, moved out of
    js/app-body.js so the shell budget (tests/r168 #8) is paid rather than raised. See that file. */
 import '../js/map-tooltip.js';
+/* (#R496) the mobile touch-input surface — the long-press, the crosshair, the centre readout and the
+   "Add point" pill. Registers a factory only; js/app-body.js mounts its two halves at the two
+   positions their blocks occupied. Out of the shell for the reason js/map-tooltip.js is. */
+import '../js/mobile-map-input.js';
 import '../js/map-readout.js';
 import '../js/elevation-profile.js';
 /* (#R186) the real night sky behind the globe (stars from the bundled Bright Star Catalogue, the Sun
@@ -357,7 +361,7 @@ const MODULE_FACTORIES = [
   'landCover', 'betaPack2', 'religionLang', 'timeZones', 'gibsScience', 'timeSeries',
   'aiResearch', 'correlate', 'worldEvents', 'edu', 'radiation', 'popArea',
   'sun', 'transitReach',
-  'legal', 'feedback', 'onboarding', 'progressCtl', 'mobileUI', 'layoutReflow',
+  'legal', 'feedback', 'onboarding', 'progressCtl', 'mobileUI', 'mobileMapInput', 'layoutReflow',
   'newsTimeline', 'dashExtended', 'locate', 'annotations', 'layerHoverPopup',
   'runwaySearch', 'terrain', 'railSeaOverlays', 'countriesUi', 'newsUi', 'companiesUi',
   'toolPanel', 'authUi', 'community', 'satellite', 'aiCore', 'placeLabels',

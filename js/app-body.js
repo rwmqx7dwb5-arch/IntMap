@@ -130,7 +130,27 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   const MOBILE_MQ=window.matchMedia('(max-width:768px)');
   const isMobile=()=>MOBILE_MQ.matches;
   /* ⚠⚠ (#R232) 「携帯か」IS A GPU QUESTION AND WIDTH ANSWERS IT WRONG IN LANDSCAPE: an iPhone turned sideways is 844 px, so isMobile() flips false and the renderer gets the DESKTOP settings (MSAA, DPR 3) on the same phone GPU. 「横向きを縦向きと同じ品質設定に揃えてよい」 — asked first. QUALITY asks the device; LAYOUT still asks isMobile(). See DEV-NOTES #R232. */
-  const _imPhoneGPU=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
+  /* ══ ⚠⚠⚠ (#R496) …AND #R232 ONLY MOVED THREE OF THEM ═══════════════════════════════════════════
+     #R232 established the rule — 「携帯か」 is a question about the DEVICE, and a 768 px media query
+     answers it wrong the moment the phone is turned sideways — and then applied it to `antialias`,
+     `pixelRatio` and `maxTileCacheSize`. Everything else that is also a device question kept asking
+     the WIDTH, so an iPhone in landscape (844 px) still took, all at once:
+       · `_hiDPITiles` true → @2x CARTO tiles and the @2x Esri stitch: 512² per tile, FOUR times the
+         pixels to decode and upload per tile, on the phone GPU #R232 had just protected;
+       · `maxCanvasSize` raised to the GPU's own limit (up to 8192²) instead of the 4096² RAM guard;
+       · the per-frame marker-occlusion recompute that #R33 measured as the heaviest per-move work
+         and switched off on phones — back on, on every frame of every drag;
+       · `_DEM_CACHE_MAX` 560 instead of 140, and the settle-time DEM viewport prefetch.
+     They are one question, so they ask one predicate now, and it has the name of the question.
+     ⚠ WHAT IS **NOT** MOVED, deliberately. `maxZoom` (18 on phones, 19 elsewhere) is a CAPABILITY,
+     not a cost — asked, and the answer was to leave landscape at 19. Every LAYOUT test stays a width
+     question because that is what it is about: `isMobile()` drives the sheet, the crosshair and the
+     mobile readout, and moving those would leave a landscape phone with NO readout at all (the
+     desktop one early-returns when the crosshair owns it, and the crosshair early-returns when it
+     does not). `_imTouchPrimary` keeps its own name for the same reason — it answers "click or
+     tap", which is a question about the POINTER, not about the GPU. */
+  const _imPhoneClass=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
+  try{ window._imPhoneClass=_imPhoneClass; }catch(_){}   /* js/ modules that hold no HOST ask through this */
   /* (#R234) the elevation source — hosts, encoding and DEPTH — in one place three files can ask. */
   const _IM_DEM=makeDemSource();
   /* (#R25) Touch-vs-mouse for WORDING (e.g. Köppen "tap/long-press" vs "click/right-click"). isMobile()
@@ -228,6 +248,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get addCountryLayers(){ return addCountryLayers; }, get ensureMapTooltip(){ return ensureMapTooltip; },
     get ensureTerrainSource(){ return ensureTerrainSource; }, get positionTooltip(){ return positionTooltip; },
     get renderCoordReadout(){ return renderCoordReadout; }, get _collapseGroup(){ return _collapseGroup; },
+    /* (#R496) js/mobile-map-input.js reaches these three through the host rather than inheriting them */
+    get updateLayerReadout(){ return updateLayerReadout; }, get handleMapClick(){ return handleMapClick; }, get showContextMenu(){ return showContextMenu; },
     get _imTouchPrimary(){ return _imTouchPrimary; }, get fetchData(){ return fetchData; },
     get loadCommunity(){ return loadCommunity; },   get registerWindow(){ return registerWindow; },
     get renderCompanies(){ return renderCompanies; }, get renderDashboard(){ return renderDashboard; },
@@ -695,7 +717,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      value has two owners one of them silently wins. */
   const _hiDPITiles=(function(){
     try{
-      if(isMobile()) return false;                       /* RAM + radio: #R20's tab-kills */
+      if(_imPhoneClass()) return false;                  /* RAM + radio: #R20's tab-kills. (#R496) the DEVICE — a phone held sideways is the same phone */
       if(!((window.devicePixelRatio||1)>=1.5)) return false;   /* nothing to gain on a 1× screen */
       const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
       if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return false;
@@ -758,6 +780,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      lazy loader for the same reason: a caller that registers before it exists is #R205's no-op. */
   makeRuntime(IM_HOST);
   const RT=()=>window.IntMapRuntime;
+  /* (#R496) the mobile touch-input surface — long-press, crosshair, centre readout, "Add point". */
+  const IM_MOBIN=window.IntMapModules.mobileMapInput(IM_HOST);
   /* (#R203) …and the centre is COMPUTED ONCE AND PUBLISHED. A test cannot re-derive it — it moves
      0.25° a minute, so "boot, then compute what the centre should be" is off by however long the
      boot took — and tests/r180-cesium pinned the literal 10 and went red the moment this stopped
@@ -775,7 +799,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          jump WITHOUT dropping tile resolution (so quality up, nothing sacrificed — the user: "表示速度、
          画質を高めて。どちらか一方犠牲はNG"). It's left OFF on phones, where the extra sample buffers are a
          real GPU/VRAM cost that risks the tab ("ブラウザが落ちることがないように"). */
-      antialias:!_imPhoneGPU(),   /* (#R232) the DEVICE, not the viewport width — see _imPhoneGPU */
+      antialias:!_imPhoneClass(),   /* (#R232) the DEVICE, not the viewport width — see _imPhoneClass */
       /* preserveDrawingBuffer is intentionally OFF (it can cause a visible flash/flicker on resize
          and costs perf). The Screenshot feature reads the canvas inside a render tick instead, which
          works without it. fadeDuration:0 makes raster tiles appear instantly; a large in-memory tile
@@ -790,11 +814,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          「ブラウザが落ちることがないように」. 2048 double-density tiles hold the same bytes 8192 single-
          density ones did, which is the cap #R21 actually decided on. Phones do not take @2x at all
          (see _hiDPITiles), so their numbers are untouched. */
-      fadeDuration:0, maxTileCacheSize:(_imPhoneGPU()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):(_hiDPITiles?2048:8192)), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
+      fadeDuration:0, maxTileCacheSize:(_imPhoneClass()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):(_hiDPITiles?2048:8192)), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
-      pixelRatio:(_imPhoneGPU()?Math.min(2,window.devicePixelRatio||1):(window.devicePixelRatio||1)),   /* (#R232) …and landscape is the same phone */
+      pixelRatio:(_imPhoneClass()?Math.min(2,window.devicePixelRatio||1):(window.devicePixelRatio||1)),   /* (#R232) …and landscape is the same phone */
       /* ══ (#R180) TWO CEILINGS INSIDE THE RENDERER THAT WERE THROWING PIXELS AWAY ═══════════
          #R178 and #R179 found the satellite layer and then the base map running at half the
          resolution the display can show. Both were OUR arithmetic. These two are MapLibre's
@@ -822,7 +846,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
             outranked sharpness on mobile since #R20. */
       anisotropicFilterPitch:0,
       maxCanvasSize:(function(){
-        if(isMobile()) return [4096,4096];
+        if(_imPhoneClass()) return [4096,4096];   /* (#R496) …in landscape too: this cap is a RAM guard, not a layout */
         let lim=4096;
         try{ const c=document.createElement('canvas'), gl=c.getContext('webgl2')||c.getContext('webgl');
           if(gl){ const t=gl.getParameter(gl.MAX_TEXTURE_SIZE)||0, r=gl.getParameter(gl.MAX_RENDERBUFFER_SIZE)||0;
@@ -844,6 +868,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          product at full alpha. js/opening-view.js keeps this centre whenever the Sun is at least 12°
          above it and rotates to the sub-solar longitude when it is not. Same latitude, same zoom, and
          a hash, a search or one drag overrides it immediately. */
+      /* ⚠ (#R496) THIS ONE STAYS A WIDTH TEST ON PURPOSE. Everything else #R496 moved onto
+         `_imPhoneClass()` is a COST; this is a CAPABILITY, and how far a landscape phone can zoom
+         in is not something to take away for speed without being asked. It was asked. Left at 19. */
       center:_openingCentre, zoom:1.7, minZoom:0, maxZoom:(isMobile()?18:19),
       style:{ version:8, glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
         sources:{ 'bl':{type:'raster',tiles:carto('light_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bln':{type:'raster',tiles:carto('light_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bd':{type:'raster',tiles:carto('dark_all'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'bdn':{type:'raster',tiles:carto('dark_nolabels'),tileSize:256,attribution:window.CARTO_ATTRIBUTION},'sat-labels':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256},'satellite':{type:'raster',tiles:(window.__imSatProto?['imapsat://{z}/{y}/{x}']:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']),tileSize:256,maxzoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},'tool-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}},'grid-source':{type:'geojson',data:{type:'FeatureCollection',features:[]}} },
@@ -1449,7 +1476,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      tiles; each cached 256² canvas+pixels is ~½ MB, and they previously accumulated FOREVER — a real
      mobile OOM vector ("重い動作をすると頻繁にブラウザが落ちます"). Map preserves insertion order, so
      evicting the first non-loading entries is a cheap LRU. */
-  const _DEM_CACHE_MAX=(typeof isMobile==='function'&&isMobile())?140:560;   /* (#R21) follows the raised desktop LOS tile budget */
+  const _DEM_CACHE_MAX=_imPhoneClass()?140:560;   /* (#R21) follows the raised desktop LOS tile budget; (#R496) the DEVICE, not the width */
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
   /* (#R169) moved verbatim to js/elevation-profile.js — see Architecture.md §3.1. */
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
@@ -1459,7 +1486,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* Warm the DEM tile cache across the visible area once the camera settles, so the
      elevation/depth readout is instant on hover (kills the first-hover network wait). */
   function prefetchDEMViewport(){
-    if(!GE().hasRenderer()||isMobile()) return;
+    if(!GE().hasRenderer()||_imPhoneClass()) return;   /* (#R496) 49 DEM reads on every settle is a phone cost in either orientation */
     try{ const z=demZoomForMap(); const b=GE().camera.getBounds(), w=b.getWest(),e=b.getEast(),s=b.getSouth(),n=b.getNorth(), STEP=6;
       for(let i=0;i<=STEP;i++) for(let j=0;j<=STEP;j++) demElevAt(w+(e-w)*i/STEP, s+(n-s)*j/STEP, null, z);
     }catch(_){}
@@ -1521,7 +1548,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
        phones (it's the heaviest per-move work) and just settle it on moveend. Desktop keeps per-move.
        ⚠ (#R234) THE GATE IS UNCHANGED — only WHERE the frame comes from (js/runtime.js's one rAF). */
     GE().events.on('move',()=>{ if(window.__fsCamActive) return;
-      try{ if(isMobile()) return; }catch(_){ } RT().frame('shell.occlusion',updateOcclusion); });
+      try{ if(_imPhoneClass()) return; }catch(_){ } RT().frame('shell.occlusion',updateOcclusion); });   /* (#R496) …and the same phone held sideways */
     GE().events.on('moveend',()=>{ if(window.__fsCamActive) return; updateOcclusion(); });   /* (#R95) skip per-frame label declutter while the flight sim drives the camera */
     GE().events.on('rotate',updateCompass); GE().events.on('pitch',updateCompass);
     GE().events.on('moveend',refreshGrid); GE().events.on('zoomend',refreshGrid);
@@ -1645,33 +1672,11 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          finger, often off the edge / behind the sheet ("画面からはみ出して何も見えない"). */
       try{ if(window._mCenterLL && window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const c=window._mCenterLL(); pt={x:c.px.x,y:c.px.y}; ll={lng:c.lng,lat:c.lat}; } }catch(_){}
       showContextMenu(pt, ll); });
-    /* Long-press → context menu on touch devices */
-    (function(){
-      const canvas=GE().render.canvas(); let pressTimer=null, startPt=null, fired=false;
-      canvas.addEventListener('touchstart',(e)=>{
-        if(e.touches.length!==1) return;
-        const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
-        const rect=canvas.getBoundingClientRect();
-        startPt={x:tx-rect.left,y:ty-rect.top}; fired=false;
-        /* (#R13) Long-press → context menu re-enabled. The center "Add point" button now only appears
-           while a measurement tool is active (per the user), so long-press is again the way to reach the
-           right-click menu on touch when idle. Suppressed while a tool is active (the button handles that). */
-        if(typeof toolMode!=='undefined' && toolMode) return;
-        pressTimer=setTimeout(()=>{ fired=true; try{ const ll=GE().coords.unproject([startPt.x,startPt.y]); showContextMenu({x:startPt.x,y:startPt.y}, ll); }catch(_){} }, 550);
-      },{passive:true});
-      const cancel=(e)=>{
-        if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
-        if(fired && e.cancelable){ e.preventDefault(); }
-      };
-      canvas.addEventListener('touchmove',(e)=>{
-        if(!startPt||!e.touches.length){cancel(e); return;}
-        const rect=canvas.getBoundingClientRect();
-        const dx=e.touches[0].clientX-rect.left-startPt.x, dy=e.touches[0].clientY-rect.top-startPt.y;
-        if(Math.hypot(dx,dy)>12) cancel(e);
-      },{passive:true});
-      canvas.addEventListener('touchend',cancel,{passive:false});
-      canvas.addEventListener('touchcancel',cancel,{passive:true});
-    })();
+    /* (#R496) the long-press, the crosshair, the centre readout and the "Add point" pill left for
+       js/mobile-map-input.js — one surface, and the shell budget (tests/r168 #8, tests/r479 ⑧) had
+       one line of headroom. Mounted from the two positions the blocks occupied, because both
+       register listeners whose order relative to their neighbours is observable. */
+    IM_MOBIN.longPress();
     /* Reposition pin popup on every render — keeps it pinned to lng/lat with no drift */
     GE().events.on('render',()=>{ if(activePinId!=null) positionPinPopup(); });
   }
@@ -3984,75 +3989,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R166) moved to js/analysis-panels.js — see Architecture.md §3.1. */
   window.IntMapModules.edu(IM_HOST);
 
-  /* ===== (#R11) Mobile measuring is CENTER-FIXED: a subtle crosshair marks the map center, a bottom-
-     center "Add point" button adds the center coordinate (for measure / area / radius), and a small
-     bottom-left readout shows the center's coords + active-layer value. The button also replaces the
-     (now-disabled) long-press context menu when no tool is active. On desktop it shows only while a
-     measurement tool is active (so right-click still drives the menu). ===== */
-  (function(){
-    if(!GE().hasRenderer()) return;
-    const mob=()=>{ try{ return isMobile(); }catch(_){ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); } };
-    const mc=document.getElementById('map-container')||document.body;
-    const st=document.createElement('style'); st.textContent=`
-      #m-crosshair{ display:none; position:absolute; top:50%; left:50%; width:28px; height:28px; margin:-14px 0 0 -14px; pointer-events:none; z-index:600; }
-      #m-crosshair::before,#m-crosshair::after{ content:''; position:absolute; background:rgba(255,255,255,0.6); box-shadow:0 0 1.5px rgba(0,0,0,0.7); }
-      #m-crosshair::before{ left:50%; top:0; width:1.4px; height:100%; margin-left:-0.7px; }
-      #m-crosshair::after{ top:50%; left:0; height:1.4px; width:100%; margin-top:-0.7px; }
-      #m-addpoint{ display:none; position:absolute; left:50%; bottom:calc(var(--sheet-cover, 80px) + 14px); transform:translateX(-50%); z-index:1200; background:var(--primary-color); color:#fff; border:none; border-radius:999px; padding:11px 22px; font-size:14px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,0.32); cursor:pointer; }
-      #m-addpoint:active{ transform:translateX(-50%) scale(0.96); }
-      /* (#R15c) Mobile readout: ALWAYS one line (was wrapping to two when the layer value was long),
-         smaller, and tucked into the very corner. nowrap + ellipsis keeps it compact. */
-      /* (#R18) The always-on readout hugs the sheet — only a sliver of a gap ("ボトムシートとの間にわずかに隙間がある程度まで下げて"). */
-      @media(max-width:768px){ .coord-readout{ left:6px !important; right:auto !important; bottom:calc(var(--sheet-cover, 80px) + 4px) !important; top:auto !important; font-size:9.5px !important; padding:3px 7px !important; gap:7px !important; max-width:calc(100vw - 12px); flex-wrap:nowrap !important; white-space:nowrap !important; overflow:hidden; text-overflow:ellipsis; border-radius:8px !important; }
-        .coord-readout span{ white-space:nowrap; flex-shrink:0; }
-        /* (#R16) The crosshair must mark the center of the VISIBLE map space — the area NOT covered by the
-           bottom sheet — not the center of the phone screen. Sit it halfway down the uncovered area. */
-        #m-crosshair{ top:calc((100% - var(--sheet-cover, var(--peek-h, 196px))) / 2) !important; } }`;
-    document.head.appendChild(st);
-    const cross=document.createElement('div'); cross.id='m-crosshair'; cross.innerHTML=''; mc.appendChild(cross);
-    const btn=document.createElement('button'); btn.id='m-addpoint'; btn.type='button'; mc.appendChild(btn);
-    function setLabel(){ btn.textContent=(window.IntMapLang.t(currentLang,'＋ Add point','＋ 地点を追加','＋ Punkt hinzufügen','＋ Добавить точку','＋ Añadir punto')); }
-    setLabel(); window.addEventListener('intmap-lang',setLabel);
-    /* (#R12) The crosshair sits at the GEOMETRIC center of the map (50%/50%). map.getCenter() returns the
-       PADDED center (the bottom-sheet/sidebar shift the map padding), so it was offset from the crosshair
-       — adding measure points in the wrong place. Unproject the visual center pixel instead so the
-       crosshair's center IS the exact point. */
-    function centerLL(){ const r=mc.getBoundingClientRect();
-      /* (#R16) Match the crosshair: on mobile the target point is the center of the UNCOVERED map area
-         (above the sheet), so unproject that exact pixel — keeps Add-point and long-press accurate. */
-      let cy=r.height/2;
-      if(mob()){ const cs=getComputedStyle(mc); const cover=parseFloat(cs.getPropertyValue('--sheet-cover'))||parseFloat(cs.getPropertyValue('--peek-h'))||0; cy=(r.height-cover)/2; }
-      const px=[r.width/2, cy]; const ll=GE().coords.unproject(px); return {lng:ll.lng, lat:ll.lat, px:{x:px[0],y:px[1]}}; }
-    window._mCenterLL=centerLL;
-    /* (#R13) The +Add point button (and the center crosshair) now appear ONLY while a measurement tool
-       is active — the user didn't want a permanent button cluttering the mobile map. When idle, long-press
-       drives the context menu instead. */
-    /* (#R15 / #1) The crosshair is now ALWAYS visible on mobile (the user wants the center point's
-       coords/elevation/layer value shown at all times), while the +Add-point button stays tool-only. */
-    /* (#R33) "Add point" pill is MOBILE-ONLY now — on desktop you add points by clicking the map, so the
-       pill is redundant ("Don't show 'Add point' pill in desktop mode"). */
-    function update(){ const m=mob(); const tool=!!(typeof toolMode!=='undefined' && toolMode); cross.style.display=m?'block':'none'; btn.style.display=(tool&&m)?'block':'none'; }
-    /* (#R12) Mobile bottom-left readout = coords + elevation + active-layer value at the crosshair
-       center, mirroring desktop. updateCoord() early-returns on mobile, so compute them here directly. */
-    function readout(){ if(!mob()) return; try{ const c=centerLL();
-      const dem=demElevAt(c.lng,c.lat,()=>{ const d2=demElevAt(c.lng,c.lat); if(d2!=null){ lastElev=elevText(d2); renderCoordReadout(c.lng,c.lat); } });
-      if(dem!=null) lastElev=elevText(dem);
-      try{ updateLayerReadout(c.lng,c.lat); }catch(_){}
-      renderCoordReadout(c.lng,c.lat); }catch(_){} }
-    let _roT=0;
-    GE().events.on('moveend',()=>{ readout(); update(); });
-    /* (#R25/#R37) Smoother pan/zoom ("動きがカクツク" / "抜本的に滑らかに"): during motion render only the
-       cheap coordinate text. The heavy crosshair readout — DEM lookup + queryRenderedFeatures for the
-       active-layer value — settles once on moveend above instead of spiking the main thread mid-gesture.
-       ⚠ (#R234) the private rAF is gone, not the work: same frames, same inputs, now through
-       js/runtime.js's single WRITE phase so this cannot invalidate another follower's read. */
-    RT().onCamera('shell.crosshair',()=>{ update();
-      if(mob()){ try{ const c=centerLL(); renderCoordReadout(c.lng,c.lat); }catch(_){} } });
-    window.addEventListener('resize',update);
-    btn.onclick=()=>{ try{ const c=centerLL(); if(typeof toolMode!=='undefined' && toolMode){ handleMapClick(c.lng,c.lat,c.px,true); } else { showContextMenu({x:c.px.x,y:c.px.y},{lng:c.lng,lat:c.lat}); } }catch(_){} };
-    setTimeout(()=>{ update(); readout(); },400);
-    window._mAddPoint=btn; window._mAddPointUpdate=update;
-  })();
+    /* (#R496) …and the crosshair half, at the position its block occupied — see js/mobile-map-input.js */
+  IM_MOBIN.crosshair();
 
   /* ===== (#R8c) Click a place LABEL → paint that place's area red + a popup with a copy button.
      Country labels fill the real country polygon (point-in-polygon over countryGeo); city/other labels

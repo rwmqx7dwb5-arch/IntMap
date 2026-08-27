@@ -825,9 +825,9 @@ window.IntMapModules.worldPacks=function(HOST){
           GE().events.onLayer('mousemove',id,e=>{ if(!on||!e.features.length) return;
             const p=e.features[0].properties; if(!p||!p.vShort) return;
             const el=HOST.ensureMapTooltip(); el.style.display='block';
-            el.innerHTML='<div style="font-weight:600;font-size:13px;">'+esc(p.name)+'</div>'
+            window.setMapTooltipHTML(el,'<div style="font-weight:600;font-size:13px;">'+esc(p.name)+'</div>'
               +'<div style="margin-top:4px;font-size:15px;font-weight:700;color:var(--text-main);">'+esc(p.vShort)+'</div>'
-              +'<div style="font-size:11px;color:var(--text-muted);">'+esc(p.vExact)+'</div>';
+              +'<div style="font-size:11px;color:var(--text-muted);">'+esc(p.vExact)+'</div>');
             HOST.positionTooltip(e.point); });
           GE().events.onLayer('mouseleave',id,()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }); }); }
 

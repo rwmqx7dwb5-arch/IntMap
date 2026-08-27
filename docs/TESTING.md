@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **98 measured spec files / 77.2 min** of serial browser time against a ceiling of 77.2 min; and
-`npm run test:checks` runs **274 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **275 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **92 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -301,7 +301,8 @@ node scripts/mobile-trace.mjs --verify             # + the CDP sampler cross-che
 ```
 
 One continuous trace per rep — **boot → settle → pan-first → zoom-first → warm-up → pan-warm →
-zoom-warm → zoom-back → weather-on → pan-weather → alerts-on → pan-alerts** — with main-thread SELF
+zoom-warm → zoom-back → pan-touch → pinch-touch → weather-on → pan-weather → alerts-on → pan-alerts
+→ zoom-alerts-city → pan-alerts-city** — with main-thread SELF
 time in eight buckets: `placement` (`Style._updatePlacement`), `render` (`Painter.render`),
 `mapRender` (`Map._render`), `texUpload`, `bufUpload`, `decode`, `workerPost`, `workerRecv`.
 
@@ -309,6 +310,26 @@ time in eight buckets: `placement` (`Style._updatePlacement`), `render` (`Painte
 not exist in WebKit; throttling one arm and not the other would compare two different machines. The
 historical ×4 Chromium numbers stay where they were measured. **A number from this script is an
 engine comparison on desktop silicon, not a phone number.**
+
+⚠ **`pan-touch` / `pinch-touch` / `pan-alerts-city` are driven by a REAL FINGER, and the rest are
+not.** Every other phase moves the camera through `IntMapGeoEngine.camera` — the right answer for a
+synthesised MOUSE, whose events never reach MapLibre's handlers — and a camera command produces no
+`touchstart`, no `touchmove` and no pinch recognition. So until these phases existed, the app's own
+touch handlers had never once been invoked by any instrument in this repository, and neither had
+MapLibre's; two hot paths on the input route contributed exactly zero to every mobile number here.
+These three send `Input.dispatchTouchEvent` (trusted touch, viewport coordinates taken from the
+canvas's own box) and report two numbers the other phases cannot produce:
+
+| column | what it is |
+|---|---|
+| `rect/move`, `style/move` | `getBoundingClientRect` / `getComputedStyle` calls **per touchmove**. `fps` cannot tell a forced synchronous layout from any other millisecond; this can. The budget is "≈ 0 on the input path" |
+| `lat p50 / p95 / max` | touchmove → the frame that answers it, in ms. 「指に付いてこない」 stated as a measurement |
+
+⚠ **CHROMIUM ONLY.** CDP does not exist in Playwright's WebKit, so those phases are ABSENT from the
+WebKit arm and reported as absent — never as a cost of zero. `pan-alerts-city` falls back to a
+camera-driven pan there and says so in its `note`.
+⚠ **`zoom-alerts-city` + `pan-alerts-city` exist because a whole-world pan is not the reported
+gesture.** The wide `pan-alerts` is kept unchanged beside them so the two are comparable.
 
 Four things it does that no earlier instrument here did:
 
