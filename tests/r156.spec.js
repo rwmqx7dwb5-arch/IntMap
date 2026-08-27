@@ -74,12 +74,17 @@ test('#2 unified renderer: matrix→KaTeX, code block, table', async () => {
       hasFracLine: host.querySelectorAll('.katex .frac-line').length > 0,
       mathScroll: (() => { const m = host.querySelector('.atl-math-b'); return m ? getComputedStyle(m).overflowX : null; })(),
       codeCopy: !!host.querySelector('.atl-codecopy'),
-      codeEscaped: /1&lt;2|1 &lt; 2/.test(host.querySelector('.atl-codeblock code')?.innerHTML || ''),
+      /* (#R494) the code is token-coloured now, so `1 < 2` is no longer one contiguous run of text.
+         The claim is unchanged and stated exactly: the ONLY markup inside <code> is our own spans. */
+      codeEscaped: (() => { const h = host.querySelector('.atl-codeblock code')?.innerHTML || '';
+        return h.includes('&lt;') && !/<(?!\/?span[ >])/.test(h); })(),
       codeNotExecuted: !host.querySelector('.atl-codeblock code b, .atl-codeblock code i'),
       inlineCode: !!host.querySelector('.atl-code-i'),
       table: !!host.querySelector('.atl-md-table th'),
       tableScroll: (() => { const t = host.querySelector('.atl-tablewrap'); return t ? getComputedStyle(t).overflowX : null; })(),
-      heading: /font-size:1\.56em/.test(host.innerHTML),   // R158 "## " heading (stronger size contrast)
+      /* (#R494) the heading is a real <h2> styled by CSS, not a <div> carrying an inline font-size */
+      heading: (() => { const h = host.querySelector('h2.atl-h2'); if (!h) return false;
+        return parseFloat(getComputedStyle(h).fontSize) > parseFloat(getComputedStyle(host).fontSize) * 1.4; })(),
     };
   });
   expect(r.katexEls).toBeGreaterThan(0);

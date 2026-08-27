@@ -65,8 +65,13 @@ test('R151 #4 toolbar: Radius under Measure menu, Screenshot + link under one Sh
 });
 
 test('R151 #5 Atlas typography: a standalone bold line becomes a real sub-heading', () => {
-  assert.match(html, /\.replace\(\/\^\\\*\\\*\(\[\^\*\\n\]\{2,90\}\)\\\*\\\*\[ \\t\]\*:\?\[ \\t\]\*\$\/gm/, 'standalone **bold line** → heading rule');
-  assert.match(html, /<div (?:class="atl-gap" )?style="height:1\.5em"><\/div>/, 'generous explicit-paragraph gap (R158 1.5em)');
+  /* (#R494) the rule moved into the block parser as RE_LEAD and now produces a real <h4 class="atl-hb">
+     rather than a styled <div>; the shape it recognises — a whole line that is nothing but a bold run,
+     with an optional trailing colon — is unchanged. */
+  assert.match(html, /const RE_LEAD\s+= \/\^\\\*\\\*\(\[\^\*\\n\]\{2,90\}\)\\\*\\\*\[ \\t\]\*\[:：\]\?\[ \\t\]\*\$\//, 'standalone **bold line** → heading rule');
+  assert.match(html, /\.atl-hb\{font-size:1\.28em;/, '…and it renders one step below a "## " section, as it always did');
+  /* (#R494) the same 1.5em rhythm, declared once on the paragraph instead of emitted as an empty div */
+  assert.match(html, /\.atl-p\{margin:0 0 1\.5em;/, 'generous explicit-paragraph gap (R158 1.5em)');
 });
 
 test('R151 #6 monitor highlight is cleared when the monitor is deleted', () => {

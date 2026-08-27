@@ -51,15 +51,22 @@ test('R156 #2 unified renderer: code blocks, math, tables, inline code — place
   assert.match(html, /s=s\.replace\(\/\\\\\\\(\(\[\\s\\S\]\+\?\)\\\\\\\)\/g,\(m,t\)=>pI\(_atlKatex\(t,false\)\)\);/, 'inline math \\(…\\) protected');
   assert.match(html, /function _atlCodeBlock\(code, lang\)\{/, 'code-block builder');
   assert.match(html, /class="atl-codecopy" type="button" data-cid="'\+id\+'">'\+esc\(L\('Copy'/, 'code block has a localized Copy button');
-  assert.match(html, /<code id="'\+id\+'">'\+esc\(code\)\+'<\/code>/, 'code is HTML-escaped (never executed)');
+  /* (#R494) `esc(code)` became `highlightCode(code,lang)`, which inherits the whole of that call's
+     responsibility. The claim worth keeping is not the spelling but the property: code never becomes
+     markup. tests/r494-checks.test.mjs proves it by RENDERING a block that contains a <script> tag. */
+  assert.match(html, /<code id="'\+id\+'">'\+highlightCode\(code,lang\)\+'<\/code>/, 'code goes through the escaping highlighter, never raw');
   assert.match(html, /function _atlBuildTable\(header, sep, body, AN\)\{/, 'GFM table builder (#R492 hands it the annotation options for its cells)');
   assert.match(html, /class="atl-tablewrap"><table class="atl-md-table">/, 'tables render into a scrollable wrapper');
   assert.match(html, /'`\(\[\^`\\n\]\+\)`'|`\(\[\^`\\n\]\+\)`/, 'sanity: inline-code source present');
   // the EXISTING R154/R155 heading/bullet/paragraph HTML is preserved verbatim
   /* (#R232) the MARGIN is not the property — it came down because the paragraph spacer beside a
      heading was being counted twice. Weight, colour and size are what this line protects. */
-  assert.match(html, /\.replace\(\/\^##\\s\*\(\.\+\)\$\/gm,'<div class="atl-h" style="font-weight:600;color:var\(--text-main\);margin:[\d.]+em 0 \.?\d+em;font-size:1\.56em/, 'R159 "## " heading style (semibold, no divider, still --text-main)');
-  assert.match(html, /\.replace\(\/\\\*\\\*\(\[\^\*\]\+\)\\\*\\\*\/g,'\$1'\)/, 'R159 inline **bold** stripped to plain (no bold in Atlas replies)');
+  /* (#R494) the heading style is a CSS rule on a real <h2> now, not an inline style on a <div>; the
+     three properties this line exists to protect — weight, colour, size — are all still stated. */
+  assert.match(html, /\.atl-h\{font-weight:600;color:var\(--text-main\);/, 'R159 heading weight + R154 monochrome');
+  assert.match(html, /\.atl-h2\{font-size:1\.56em;/, 'R159 "## " heading size');
+  assert.ok(!/border-top:[^;]*;?\s*\}?\s*'?\s*\/\*\s*\(#R155\)/.test(html), 'R159 no "## " divider rule');
+  assert.match(html, /\.replace\(\/\\\*\\\*\(\[\^\*\\n\]\+\?\)\\\*\\\*\/g, '\$1'\)/, 'R159 inline **bold** stripped to plain (no bold in Atlas replies)');
   // interactive wiring at document level (works in panel + sidebar tab + workspace)
   assert.match(html, /if\(!window\.__atlRenderWired\)\{ window\.__atlRenderWired=true;/, 'one-time document-level wiring for the Copy button');
   assert.match(html, /\.atl-codeblock\{margin:0;padding:10px 12px;overflow-x:auto;/, 'code block scrolls horizontally (mobile)');
