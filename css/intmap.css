@@ -394,6 +394,19 @@
        while workspace mode uses 4px (see the body.ws-mode override). Match it so the bar spacing is identical. */
     .map-controls-top{ position:absolute; top:10px; right:10px; z-index:1000; display:flex; flex-direction:column; gap:4px; align-items:flex-end; pointer-events:none; }
     .map-controls-top > *, .map-controls-top .layer-dropdown{ pointer-events:auto; }
+    /* (#R480) 「Map/SatelliteとFlat/Globe/3Dを同じ行にまとめて。」 — .map-controls-top is a COLUMN, so two
+       pills can only share a line by sharing a parent. This wrapper is that parent and nothing else: no
+       surface of its own (the pills carry the glass), no padding, and it shrinks to its content because the
+       column sets `align-items:flex-end` — so it adds no invisible click target over the map even though
+       `.map-controls-top > *` hands it `pointer-events:auto`. It wraps at narrow widths for the same reason
+       .map-view-group does: the stack must never push a pill off the right edge. */
+    /* ⚠ align-items:STRETCH, not center. MEASURED once the two pills shared a line: the projection pill
+       is 35.33px and the base-map pill 33.33px, because `⛰️ 3D` renders a 30px line box where the plain-text
+       buttons render 28px. Stacked, that difference was two rows apart and invisible; side by side it is two
+       neighbours with mismatched tops and bottoms. Stretching binds them to the row instead of to their own
+       content, so they stay level whatever the emoji font on the machine decides a line box is — the pills
+       already centre their own buttons, so nothing inside moves. */
+    .map-view-row{ display:flex; align-items:stretch; justify-content:flex-end; gap:4px; flex-wrap:wrap; max-width:100%; }
     .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:12px; padding:2px 4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
     .view-btn{ background:transparent; border:none; padding:7px 12px; font-size:12px; font-weight:500; color:var(--text-main); border-radius:8px; cursor:pointer; transition:0.2s; white-space:nowrap; }
     /* (#R62/#R63) Atlas launch button — prominent gradient pill; label NOT bold, NO symbol before "Atlas". */
@@ -408,9 +421,23 @@
     #btn-measure-menu.tool-on, #btn-tool-measure.tool-on, #btn-tool-radius.tool-on{ background:#fff; color:#111; box-shadow:0 2px 8px rgba(0,0,0,0.18); }
     /* (#R122) dark mode: the SELECTED view button reads as a solid white pill with black text (high-contrast, matches the request) */
     :root[data-theme="dark"] .view-btn.active{ background:#fff; color:#111; box-shadow:0 2px 8px rgba(0,0,0,0.35); }
-    /* (#R24) zero vertical padding + capped height so the (deliberately large) compass icon doesn't
-       inflate the Flat/Globe/3D row — that extra height read as "無駄に上下に余白" around the text buttons. */
-    .compass-btn{ width:40px; padding:0 6px !important; height:33px; display:flex; align-items:center; justify-content:center; overflow:visible; } .compass-svg{ transition:transform 0.2s; display:block; }
+    /* ⚠ (#R24) is RETIRED here, not lost: it capped this button's height so the (deliberately large) compass
+       icon could not inflate the Flat/Globe/3D row it shared — "無駄に上下に余白" around the text buttons.
+       (#R480) 「方位磁針ボタンは分離し、三行目の右側に丸く配置。」 — it no longer shares a row with anything,
+       so there is no neighbour left to inflate and the cap has nothing to protect. What replaces it is a
+       real FAB: a 42px circle carrying its own glass, border and shadow, because it is now a direct child of
+       .map-controls-top and no pill is drawing a surface underneath it. Sized between the desktop pills
+       (35px) and the phone's .m-fab (46px), which is the control this is the desktop twin of.
+       ⚠ overflow:visible stays — the 34px glyph is deliberately larger than a 24px icon box and must not be
+       clipped by the round border. */
+    /* ⚠ this rule does NOT declare background / backdrop-filter / border. It is named in the two glass
+       lists below (the light/dark top-bar rule and the shared --glass-fill list, which sets all three with
+       !important), so declaring them here would be four dead declarations charged to the startup CSS budget.
+       box-shadow is NOT in those lists, so it stays. */
+    .compass-btn{ width:42px; height:42px; padding:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      box-shadow:var(--shadow); cursor:pointer; overflow:visible; transition:transform 0.14s; }
+    .compass-btn:active{ transform:scale(0.94); }
+    .compass-svg{ transition:transform 0.2s; display:block; }
     /* (#R152) desktop right-click-the-compass numeric view entry (bearing / pitch / zoom) — opaque, like Measure/Share */
     .compass-num-pop{ position:fixed; z-index:4000; background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); width:194px; font-size:12px; display:flex; flex-direction:column; gap:8px; }
     .compass-num-pop .cnp-t{ font-weight:700; font-size:12.5px; color:var(--text-main); margin-bottom:2px; }
@@ -1532,8 +1559,10 @@
     .liquid-glass{ background:rgba(255,255,255,0.55); backdrop-filter:saturate(180%) blur(28px); -webkit-backdrop-filter:saturate(180%) blur(28px); border:1px solid rgba(255,255,255,0.4); box-shadow:0 8px 32px rgba(0,0,0,0.08); }
     [data-theme="dark"] .liquid-glass{ background:rgba(28,28,30,0.55); border:1px solid rgba(255,255,255,0.08); box-shadow:0 8px 32px rgba(0,0,0,0.5); }
     /* Apply glass touch to top control bars */
-    .map-view-group{ background:rgba(255,255,255,0.62); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(255,255,255,0.35); }
-    [data-theme="dark"] .map-view-group{ background:rgba(28,28,30,0.62); border:1px solid rgba(255,255,255,0.06); }
+    /* (#R480) the compass is named beside .map-view-group everywhere the pills are, because it stopped being
+       one of their children and would otherwise be the only surface in this bar wearing a different glass. */
+    .map-view-group, .compass-btn{ background:rgba(255,255,255,0.62); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(255,255,255,0.35); }
+    [data-theme="dark"] .map-view-group, [data-theme="dark"] .compass-btn{ background:rgba(28,28,30,0.62); border:1px solid rgba(255,255,255,0.06); }
     .map-search{ background:rgba(255,255,255,0.62); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); }
     [data-theme="dark"] .map-search{ background:rgba(28,28,30,0.62); }
     /* (#R20) Keep the search pill clear of BOTH side control zones at every width. 55vw is viewport-
@@ -2506,7 +2535,7 @@
     /* Every floating glass surface reads the one shared material. */
     .layer-dropdown,.tool-panel,.hover-tooltip,.country-info,.coord-readout,.sat-controller,
     .ctx-menu,.news-timeline,.country-popup,.pin-popup,.map-tooltip,.search-result-card,
-    .map-search-results,.layer-ctrl,.koppen-legend,.data-legend,.map-view-group,.map-search,
+    .map-search-results,.layer-ctrl,.koppen-legend,.data-legend,.map-view-group,.compass-btn,.map-search,
     /* ⚠ (#R244) …AND THAT INCLUDES THE RIGHT SIDEBAR'S HANDLE. 「左右のサイドバーの開閉持ち手部分の
        色味が統一されていないのが気になる。」 MEASURED, same theme, same moment: the left handle
        computed to `rgb(28,28,30)` with `saturate(1.5) blur(16px)`, the right one to

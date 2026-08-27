@@ -29,7 +29,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R479';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R480';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +44,7 @@ window.__imBuild='R479';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-27-R479';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-28-R480';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -432,23 +432,20 @@ window.__imBuild='R479';/* (#R121) build marker — bump when verifying that a r
       <div class="map-search-results" id="ms-results"></div>
     </div>
     <div class="map-controls-top">
-      <div class="map-view-group">
-        <!-- (#R207) Satellite is the default basemap now (js/app-body.js `currentMapType`), so the
-             pressed state starts here — otherwise the segmented control reads "Map" over a satellite
-             picture for as long as the style takes to load. -->
-        <button class="view-btn" id="btn-view-map" data-i18n="viewMap">Map</button>
-        <button class="view-btn active" id="btn-view-sat" data-i18n="viewSat">Satellite</button>
-      </div>
-      <div class="map-view-group">
-        <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
-        <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
-        <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain" data-i18n-title="ttl3dTerrain">⛰️ 3D</button>
-        <button class="view-btn compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth">
-          <svg class="compass-svg" width="34" height="34" viewBox="0 0 24 24">
-            <polygon points="12,2 9,12 12,9.5 15,12" fill="#ff3b30"/>
-            <polygon points="12,22 9,12 12,14.5 15,12" fill="#9aa0a6"/>
-          </svg>
-        </button>
+      <!-- (#R480) 基図と投影法は同じ行。⚠ ピルは2つのまま（1つにすると選択チップが2つ並ぶ）— 理由は css `.map-view-row` と DEV-NOTES #R480 -->
+      <div class="map-view-row">
+        <div class="map-view-group">
+          <!-- (#R207) Satellite is the default basemap now (js/app-body.js `currentMapType`), so the
+               pressed state starts here — otherwise the segmented control reads "Map" over a satellite
+               picture for as long as the style takes to load. -->
+          <button class="view-btn" id="btn-view-map" data-i18n="viewMap">Map</button>
+          <button class="view-btn active" id="btn-view-sat" data-i18n="viewSat">Satellite</button>
+        </div>
+        <div class="map-view-group">
+          <button class="view-btn" id="btn-view-flat" data-i18n="flat">Flat</button>
+          <button class="view-btn active" id="btn-view-globe" data-i18n="globe">Globe</button>
+          <button class="view-btn" id="btn-view-3d" data-i18n="threeD" title="3D terrain" data-i18n-title="ttl3dTerrain">⛰️ 3D</button>
+        </div>
       </div>
       <div class="map-view-group" id="map-tools-group">
         <button class="view-btn" id="btn-tool-grid" data-i18n="gridBtn" title="Grid + Labels" data-i18n-title="ttlGridLabels" style="display:none;">🌐 Grid</button>
@@ -523,6 +520,8 @@ window.__imBuild='R479';/* (#R121) build marker — bump when verifying that a r
           </div>
         </div>
       </div>
+      <!-- (#R480) 方位磁針は直下の子＝3行目に単独。id/class/title は不変（7つの呼び出し元は行を知らない）— 丸型と glass は css `.compass-btn` -->
+      <button class="compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth"><svg class="compass-svg" width="34" height="34" viewBox="0 0 24 24"><polygon points="12,2 9,12 12,9.5 15,12" fill="#ff3b30"/><polygon points="12,22 9,12 12,14.5 15,12" fill="#9aa0a6"/></svg></button>
     </div>
     <div id="map"></div>
     <canvas id="wind-canvas"></canvas>

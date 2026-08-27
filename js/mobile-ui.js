@@ -413,7 +413,15 @@ window.IntMapModules.layoutReflow=function(HOST){
         /* (#R66) use the map rect even when it is squeezed to ~0 — discarding it re-enabled the overlap */
         try{ const mc=document.querySelector('.map-container'); if(mc){ const r=mc.getBoundingClientRect(); if(r.right>0){ mapL=r.left; mapR=r.right; mapCX=r.left+r.width/2; } } }catch(_){}
         let rightLeft=mapR, stackBottom=66;
-        document.querySelectorAll('.map-controls-top .map-view-group, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
+        /* ⚠ (#R480) THE ROWS OF THE STACK, NOT THE PILLS SOMEONE REMEMBERED. `stackBottom` is where the
+           search pill is dropped to when it cannot fit beside the controls, so it has to be the bottom of
+           the WHOLE right-hand stack. Naming `.map-view-group` made that true only while every row happened
+           to be one of those pills — and #R480 moved the compass OUT of a pill into a row of its own, which
+           under the old selector would have left a 42px circle sitting on top of the search field with the
+           geometry reporting no collision. Every ROW is a direct child of .map-controls-top by construction,
+           so measuring the children measures the stack, including rows added after this line was written.
+           (#btn-layers stays named: it is measured for its dropdown's left edge, not for a row.) */
+        document.querySelectorAll('.map-controls-top > *, #btn-layers').forEach(el=>{ const r=el.getBoundingClientRect(); if(r.width>0){ rightLeft=Math.min(rightLeft,r.left); stackBottom=Math.max(stackBottom,r.bottom); } });
         let leftRight=mapL;
         try{ if(document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb&&!sb.classList.contains('collapsed')) leftRight=Math.max(leftRight, sb.getBoundingClientRect().right); } }catch(_){}
         try{ const tg=document.querySelector('.btn-toggle-sidebar'); if(tg){ const r=tg.getBoundingClientRect(); if(r.width>0) leftRight=Math.max(leftRight,r.right); } }catch(_){}
