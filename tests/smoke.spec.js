@@ -1974,3 +1974,61 @@ test('#R438 the object count stands on the label\'s baseline, not above it', asy
   expect(Math.abs(r.labelBase - r.numBase),
     'count baseline vs label baseline (button display=' + r.display + ')').toBeLessThan(0.6);
 });
+
+/* ══ (#R479) EVERY CARTO URL THE APP BUILT CARRIES THE KEY ══════════════════════════════════════
+   CARTO began requiring an API key on the raster basemaps in August 2026. An unkeyed tile does not
+   fail — it returns 200 with "API KEY REQUIRED" painted into the picture — so no error handler, no
+   status check and no console listener in this file could ever have noticed. What CAN be seen is
+   the URL the app assembled, and this suite is hermetic anyway, so the style is the honest place
+   to ask. The wire itself is checked against live CARTO in tests/r179-imagery.spec.js. */
+test('R479 ⑧ every CARTO source in the live style carries the API key', async () => {
+  const srcs = await page.evaluate(() => {
+    const out = [];
+    try {
+      const st = window.__imap.getStyle();
+      for (const [id, s] of Object.entries(st.sources || {})) {
+        for (const t of (s.tiles || [])) if (/cartocdn\.com/.test(t)) out.push({ id, t });
+      }
+    } catch (_) { /* reported as an empty list below */ }
+    return out;
+  });
+  expect(srcs.length, 'the style really does draw CARTO rasters').toBeGreaterThan(0);
+  const unkeyed = srcs.filter((s) => !/[?&]key=[^&]+/.test(s.t));
+  expect(unkeyed.map((s) => s.id + ' → ' + s.t),
+    'an unkeyed CARTO tile is served watermarked, not refused — nothing downstream can catch it').toEqual([]);
+});
+
+/* ══ (#R479) …AND THE CREDIT CARTO'S TERMS BUY IS ON THE MAP ════════════════════════════════════
+   The free tier is granted in exchange for keeping CARTO and OpenStreetMap attribution visible.
+   Before this round both engines had their credit suppressed and the only attribution was inside
+   a modal, so a reader looking at the map saw none. A fresh session opens on satellite (R207 ①),
+   so what is asserted here is that the element is real, on screen, and names the base that is
+   ACTUALLY drawn — crediting CARTO over Esri imagery would be a false credit, which is worse than
+   the omission it replaces. The CARTO wording is asserted in tests/r179-imagery.spec.js, which
+   already selects the base map. */
+test('R479 ⑨ the basemap credit is visible and names the base that is drawn', async () => {
+  const c = await page.evaluate(() => {
+    const el = document.getElementById('map-credit');
+    if (!el) return { missing: true };
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    return {
+      missing: false,
+      text: (el.textContent || "").trim(),
+      links: [...el.querySelectorAll("a")].map((a) => a.getAttribute("href")),
+      display: cs.display, visibility: cs.visibility, opacity: cs.opacity,
+      w: Math.round(r.width), h: Math.round(r.height),
+      onScreen: r.width > 0 && r.height > 0 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && r.top >= 0,
+      sat: !!document.getElementById("btn-view-sat")?.classList.contains("active"),
+    };
+  });
+  expect(c.missing, 'the credit element exists').toBe(false);
+  expect(c.display, 'it is not display:none').not.toBe('none');
+  expect(c.visibility, 'nor visibility:hidden').toBe('visible');
+  expect(Number(c.opacity), 'nor transparent').toBeGreaterThan(0.5);
+  expect(c.onScreen, 'and it is inside the viewport (w=' + c.w + ' h=' + c.h + ')').toBe(true);
+  expect(c.text.length, 'it says something').toBeGreaterThan(3);
+  /* it credits what is on screen, and links out rather than just naming */
+  const want = c.sat ? /Esri/ : /CARTO/;
+  expect(c.text, 'the credit names the base actually drawn (sat=' + c.sat + ')').toMatch(want);
+  expect(c.links.length, 'and the credit links out').toBeGreaterThan(0);
+});

@@ -816,6 +816,13 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
 
 - **初期化**：`map = new maplibregl.Map(...)`。`renderWorldCopies` は投影／自由パンに応じて切り替える。
   基盤は CARTO / Esri のラスタ ＋ OpenFreeMap のベクタ（`ofm`）。
+  ⚠ **CARTO のラスタは API キーが要る**（2026-08 から）。組み立ては `window.cartoTiles()` の1か所、
+  キーは `js/carto-basemap.js`。キー無しでも 200 で返るが、絵に「API KEY REQUIRED」が焼かれている。
+- **基図の帰属表示は地図の上に常時出す**（`#map-credit`、右下）。CARTO の Basemap Terms が
+  無料枠の対価として「読者に見える帰属表示」を求めるため。⚠ **描かれている基図を名乗る**——
+  CARTO 基図なら CARTO ＋ OpenStreetMap、衛星なら Esri。衛星の上に「© CARTO」を出すのは
+  省略より悪い偽の帰属である。⚠ capture mode でも消さない（スクリーンショットこそ帰属が
+  一緒に旅する必要のある成果物）。
 - **基盤切替**：`btn-view-map/sat` と `applyTheme()` ＋ `_reassertBase()`（スタイルロード競合に強い
   ポーリング再適用）。⚠ `applyTheme` は `styledata` を同期で発火しうるので**再入禁止フラグ**を持つ。
 - **投影**：Flat (mercator) / Globe。3D 地形は terrarium DEM（複数ホストで並列取得。携帯は maxzoom 13）。

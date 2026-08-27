@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R479** — **「API KEY REQUIRED」は障害ではなく、200 で返ってくる仕様変更だった**〈2026-08-26 頃から地図一面に透かし。IntMap 側の退行ではなく CARTO がラスタータイルに API キーを要求し始めた。⚠ **タイルは失敗していない**——実測 `dark_all/6/33/21.png` はキー無しでもキー有りでも **HTTP 200 の本物の PNG** で、違うのは絵の中身だけ（明ピクセル **946 → 0**、6スタイル全部で 7〜23% のピクセルが変わる。`@2x` も同じ）。だから状態コードもエラーハンドラもコンソールも鳴らず、**「壊れた」と言える計器がこのリポジトリに1つも無かった**〉／⚠⚠⚠ **上流の手続きが先で、コードは後だった**——CARTO の申請は**アカウント不要・審査待ち無し**のフォーム1枚（原文 "no approval queue and you do not need a CARTO account"）で、規約 §12 は「CARTO-issued API key を取得・使用する **any Customer**」に無償提供すると書いている＝**フォームの "Is this a commercial project?" は licence の条件ではなく容量計画の自己申告**。将来商用化しても再申告義務も違反も無く、効くのは 5,000,000 タイル要求/月を超えたときだけ／⚠⚠⚠ **キーは隠せないので隠さない**——静的サイトはタイル URL を読み手のブラウザへ渡す。実測で CARTO は **Referer を強制しない**（foreign referer でも透かしの無いタイルが返る）ので、Actions secret へ退避しても DevTools で読める＝守りにならない。`src/vendor.js` の `SUPABASE_ANON_KEY`（#R479 以前から在る「公開前提の鍵」の前例）と同じ扱いだが、**置き場は専用の `js/carto-basemap.js`**——app shell の行数予算（`tests/r168` #8 / `tests/r350` ⑨c）は HEAD で 8045/8050 ＝ **残り5行**で、このラウンドは 60 行要ったから。天井を上げずに済み、ベクタ移行もそこに来る（代わりに eager モジュールが 281→282 になるので、`tests/perf-baseline.json` はその1行だけを意図的に更新した——`modules` は設計上**完全一致**で、「eager グラフへのモジュール出入りこそこの予算が気づくべき事象」だと `scripts/perf-budget.mjs` 自身が書いている）／⚠⚠ **綴りは1つ**——5つの呼び出し口（app-body・compare・playground・layer-previews ×2）はどれもホスト名を綴らず `window.cartoTileURL()` / `window.cartoTiles()` を通る。`tests/r479-checks` ② は **js/ と src/ の全ファイル**を走査して `basemaps.cartocdn.com` の綴りを禁じる（#R429 の形＝門は落とした行より広く）。②b は**出荷されていた当の2行**に対して発火することを見せる／⚠⚠ **透かしは「実行時に測る」では捕まらない**——ネットワーク的には成功なので、リクエストの成否を見る検査は永久に緑。捕まるのは「キーの付いていない URL を組み立てたか」だけで、それは静的に読める／⚠⚠⚠ **無料枠の対価は帰属表示で、それを IntMap は払っていなかった**——`js/app-body.js` は `attributionControl:false`、`css/intmap.css` は `.cesium-widget-credits{display:none}`、CARTO と OpenStreetMap は Sources モーダルの中だけ＝**地図を見ている読者には何も出ていなかった**⇒`#map-credit`（右下）。⚠ **場所は測って決めた**——`.coord-readout` は `bottom:9px; left:9px` に`tests/r252-checks` が固定しており、Chronos は `bottom:54px`。空いている角は右下だけだった／⚠⚠ **名乗るのは描かれている基図**（`currentMapType`）——衛星の上に「© CARTO」を出すのは省略より悪い偽の帰属⇒`window.IntMapCartoCredit()` を `view.base.map` / `view.base.sat` の両方から呼ぶ（⑥ が両方を見る）。⚠ **引数を取らず `#btn-view-sat` の active を読む**ので、呼び手が古い答えを渡せない／⚠ **capture mode では消さない**——`tests/r232` は HUD を隠すが、スクリーンショットこそ帰属が一緒に旅すべき成果物／⚠⚠ **新しい spec は作っていない**——core tier は 6本で予算上限ちょうど（`test-budget` は core 0.5 分／上限 0.5 分）なので、毎 push を守るのは node 検査（9本）、実ブラウザは **`tests/smoke.spec.js` ⑧⑨ に相乗り**（hermetic なので**スタイルが組み立てた URL**を見る）、**実通信は `tests/r179-imagery.spec.js` に相乗り**（既に base map を選んで cartocdn の全リクエストを集めている＝追加費用ほぼ 0。実測 live CARTO に対して 1 passed）／⚠ **Cesium は無傷**——`js/cesium-layers.js` はスタイルの `cfg.tiles` を受け取り placeholder 置換しかしないので、`?key=` を付けても壊れない（`.png` の文字列手術をしていないことを確認済み）／⚠ **SW も無傷**——`sw.js` は hostname で照合しクエリを読まないので `?key=` はキャッシュに影響しない。CARTO の 7日 TTL（#R224）は規約の「端末上 30 日まで」の内側
 - **#R478** — **深夜にしか走らない検査が、写しを持っていた**〈nightly の deep tier で `tests/r439.spec.js:149` が `Expected: "lyrGrpOthers" / Received: "lyrGrpClimate"` で赤。**製品が正しい**——#R469 が読者の名指し「ベータからはCAPE不安定度レイヤーを気象に昇格。」に従って `ec-cape` を `js/data-layers.js` の `GROUPS` で気候・気象の棚へ移した（`30d1a7c`、親では `lyrGrpClimate` の並びに `ec-cape` は無い）。同じ事実を述べる node 検査2本（`tests/r439-checks` ⑨・`tests/r469-checks` ⑥）は**同じコミットで直っている**〉／⚠⚠⚠ **直らなかったのは deep tier の写しだけで、それは #R469 の push では走らない**（`scripts/tiers.mjs` の core は `internal-qa, monitors, r157, r466, security, smoke` の6本）。#R475 が記録した形——**開いていないラウンドで動く判定は、そのラウンドでは測られていない**／⚠⚠⚠ **門を「棚のキーの集合」から導出した初版は、落ちた当の行を捕まえられなかった**——`lyrGrpOthers` は `GROUPS` に**無い**（掃き出しの見出しであって棚ではない）ので集合に入らず、出荷版を走査すると **145 行目だけが挙がり、赤くなった 149 行目は素通り**した⇒禁じるのはキーではなく **`lyrGrp` という綴りそのもの**（実測: 出荷版に対して 145 と 149 の両方を挙げる）／⚠⚠ **綴らずに済む口を先に用意する**——`tests/helpers/layer-groups.mjs` に `BETA_KEY` を足した（`reorganizeLayerPanel` の safety sweep が作る見出しを**同じファイルから**読む）。`where(id) || BETA_KEY` は分類の写しではなく「どの棚にも無い行はベータへ落ちる」という掃き出しの1事実／⚠ **spec が主張すべきは「どの棚か」ではない**——棚を決めるのは分類で、動かせるのは読者の指示だけ（#R273）。spec が主張するのは**描かれたパネルが宣言どおりに行を並べているか**（`order.push` は要素を**移動**させる＝2つのリストに載った id は最後の1つでしか描かれない）。#R439 自身の主張＝名指しの4行が**ベータを出た**ことは、棚の名前を綴らずに `.not.toBe(BETA_KEY)` で残した／⚠ `docs/TESTING.md` の「whole suite」の文が **2行に重複**しており（`96 specs / 77.0 min` と `98 specs / 77.2 min`）、実測は後者だった＝#R468 の rebase の取り残し。古いほうを削った（同じ数字の3つ目の写しが 44 行目の注記にもあり、そちらも実測へ。⚠ `doc-facts.mjs` が照合しているのは Node test の本数**だけ**）
 - **#R477** — **アンカーは「どこで生まれるか」しか決めていない。「どこに居るか」を決める一覧に、海岸線は4ラウンド入っていなかった**〈「Wind gustsでCoastlines & shoresが見えない」。実測（ビルド済みアプリ・基本表示のみ・`dl-ec-gust` 点灯・平面・本州上空）: `21:borders-only-casing 22:coast-only-casing 23:coast-only-line … 30:im-night-lights-lyr 31:im-night-shade 32:ec-gust-0 33:layer-sat-labels 34:borders-only-line`＝**国境線は不透明ラスタ（`raster-opacity` 1）の上、海岸線は9層下**。`queryRenderedFeatures` はどちらの状態でも 15 本返す——幾何は常にそこにあり、上に不透明な一枚が載っていただけ〉／⚠⚠⚠ **`js/coast-line.js` には欠陥が1バイトも無い**——同じ `ofm` ソース・同じ `BORDER_COLOR`・同じ `BORDER_WIDTH`／`BORDER_CASING`・同じ retry・そして**同じ `before` アンカー**（#R289「全く同じ手法で」）。上に居続けるかを決めるのは**そのアンカーではない**: **`js/label-occlusion.js` の `STACK`**（#R19「地名や国境はどのレイヤーよりも最前部に」）が idle と styledata のたびに再表明し、**追加順を毎回上書きする**。`borders-only-line` はその一覧に在り、`coast-only-line` は #R289 以来一度も入っていなかった⇒**2本の線は、検査が見ていた全ての性質で同一で、読み手に見える唯一の性質で正反対だった**／⚠⚠⚠ **黒縁は線の一部なので一緒に上げる**——`raise()` は一覧に在るものを動かし無いものを置いていくので、**線だけを書くと線は上がらず対が割れる**。`borders-only-casing` は #R210 以来ずっと割れており（上の実測で13層離れ、間に gust ラスタが居た）、**淡い基図の上で白線を読ませるための黒縁が、報告されないまま効いていなかった**⇒`STACK` は `coast-only-casing, coast-only-line, borders-only-casing, borders-only-line` の順で、**縁は必ず線の直前**（国境と海岸線が同じ地物を走るときは国境が勝つ＝あとに描く）／⚠⚠ **門は3段で、どれも写しを持たない**: `tests/r477-checks`（①〜⑤——`STACK` と `js/data-layers.js` の `BASE`（#R79 の監査表）を**両方パースして**照合。③は一般形＝**どの base トグルも「全部一覧に在る」か「全部無い」かのどちらかで、半分だけは禁止**）／`tests/smoke.spec.js` ㉑（**最上段に層を1枚足して自己修復を実際に走らせる**＝#R26 が書いた「beforeId 無しの追加は最上段に載る」条件そのもの。**ネットワークも予報も要らない**）／`tests/prod-smoke.spec.js`（#R398 の等圧線テストに相乗り＝**本番の実ラスタの上に本当に載っているか**）。⚠ **どれも出荷版で赤を確認した**（checks 5本中4本が赤、smoke ㉑ は `coastLine 23 > probe 32` で赤）／⚠ **色・幅・縁の梯子を国境の実測値と突き合わせる `tests/smoke ㉑` の5本は、この欠陥の全期間ずっと緑だった**——同一性を測る検査は、**測っていない次元での正反対**を止められない
 - **#R476** — **「Coastlines & shoresはデフォルトでオンにして」——既定オンは2か所で1つの編集で、門は片側にしかなかった**〈`cb-coast` を既定オンにするには `index.html` の `checked` と `js/data-layers.js` の `window.IntMapDefaultOn` の**両方**が要り、どちらも他方を含意しない〉／⚠⚠⚠ **片方だけだと両方向とも無症状で壊れる**——`checked` だけなら線は出るが `IntMapBaseDisplay.matches()`（#R469）が生のチェック状態と `defOn()` の食い違いを見て**起動 400 ms 後に基本表示を毎回「カスタム」へ降格**させる（例外も警告も出ない）。id だけなら boot dispatcher は点いていない箱に `change` を投げないので**チェックも入らず線も出ず**（#R34）、さらに off-sweep が復元のたびに能動的に外す／⚠⚠⚠ **門は片方向しか無かった**——`tests/r225-checks` ⑤ は「リスト → markup」だけを歩き、**markup → リスト を歩くものは存在しなかった**ので `checked` だけの編集は検査の視野の外だった。⚠ しかも ⑤ のループは **7 個の id を手書きで持っていた**（#R309 が製品から消した写しと同じ形が門の中に残っていた）ので、8 個目を上のリストに足しても**このループは見なかった**⇒宣言をパースして導出する形に／⚠⚠ **新しい `tests/r476-checks` ① は両側とも導出**で、membership の写しを1本も持たない。② は `cb-coast` が `IntMapBasicLayerRows` に**留まっている**ことも見る——既定オンになったからといって「表示中のレイヤー」の chip やモバイル FAB に数えられ始めてはならない（#R233/#R309。海岸線は地図の**見え方**であってデータではない）／⚠⚠ **届くのは初回訪問者だけで、そう書いた**——保存済みセッションには id が無く、`js/session-tabs.js:143` の off-sweep はそれを「読み手が消した」と読む（#R186/#R225）。既存利用者へ届かせるのは `defv` の世代を上げること（#R189/#R190）で、依頼は「複雑なことはしなくていい」だったのでしていない。⚠ **代わりに off-sweep を緩めるのは誤り**（緩めれば意図した opt-out がリロードで消える＝#R186 が直した defect）⇒③ がその綴りを固定／⚠ `window._imCoastAuto` は**残した**——初回訪問では空振りするが、#R476 以前の保存を持つ読み手にとっては**唯一の戻り道**である／⚠ #R289 ③ の「ships OFF / NOT in the default-on list」は**消さずに反転した**（この検査の仕事は2つの半分が一致していることであって、どちら向きかではない）
@@ -280,6 +281,136 @@
 - **#R261** — **「矢印と線が分離している」の正体は、長さが画面の画素・角度が地理の方位という**2つの空間**だった**（#R258 は軸を投影に訊いて切ったが、頭は `bearingOf()` の地理方位を `icon-rotation-alignment:'map'` に渡していた。'map' は「地図の北から測る」＝**ビューポート全体で1つのスカラ**で、球面投影では中心経線以外で子午線が収束する。実測: globe・z2.2 中心170°E で USA の頭 **125.3° 対 軸の画面方向 99.0°＝26.3°違い**（45.5px の頭の底が 13px の軸から **20.7px** 離れる）、z1.4 中心100°E では **130.5°違い**。→ 角度も**投影された neck→tip から**読み `'viewport'` へ。実測 **誤差 ≤0.02°・隙間 ≤0.55px**）／**「たまに直線で地形を完全無視する区間」は、粗い段（最大27×）の1歩そのものだった**（#R258 は湖の横断が1点だったのを直した。今回の計器＝**脚長 ÷ その点が辿られた標本間隔**では 3,563 m でも **1.4セル**＝正常。**描かれる側の最細標本と比べると 150〜160セル**——#R250 の「見るべきは比」。→ 粗い段は**決定**であって**描画**ではない: 各脚を細かい格子上の**最小上昇経路**（Dijkstra・回廊は粗いセル1つ分）で歩き直す。実測 琵琶湖 **3,563 m → 297 m**、Death Valley 586→151・`coarseLegs` 0。⚠ 最初の版は**細かいタイルが無くて黙って諦めていた**（`nodata` 36件）ので、渡された経路そのものを warm する）／**水源を追加すると地形が消えていたのは `build()` が `sculpt` を作り直していたから**（作業矩形の外に水を置く→`rebuildAround`→`build()`→`sculpt=new Float32Array`＋`undoStack=[]`。堤防と水は生き残り、**利用者が彫った地形だけ**が消える。→ メートル単位のオフセット場なので**新しい格子へ再標本化**、undo のスナップショットも同じ関数で。実測 矩形を1/3東へずらす再構築で **436セルと undo 24段が生存**（従来 0））／**一回きりと継続の区別がデータに無かった**（`pourMode` はパネルの設定で、注水は `sources[sources.length-1]` **だけ**を太らせていた＝2つ目を置くと1つ目が黙って止まる。→ `cont`/`rate` は**水源自身の属性**、▶ は継続の水源**すべて**に注ぎ、地図は輪付き（継続・緑）と普通の点（1回・青）で描き分ける。▶ が `pourMode='cont'` を書き換えるのもやめた）／**Reachable area のパネルは `--popup-bg`（α0.74）を `backdrop-filter` なしで使う唯一の浮遊パネルだった**（→ 既定は不透明 `--card-bg`、フロスト2モードの一覧に `#iso-panel` を追加＝**設定には従う**）／**Line of sight に地点を変えるボタンが無かった**（右クリックの案内が2箇所に**文章で**書いてあるだけ。「2点間の見通し…」と同じ1クリック方式で追加。⚠ `open()` は呼ばない——パネルの位置を書き戻してドラッグを台無しにする）／**Atlas からしか開けないシミュレーションが5つあった**（`IntMapDrone`／`IntMapDisaster`／`IntMapTransitReach`／`IntMapRF`／`IntMapEarthReplay`——ボタンもメニューも右クリックも無い。#R258 は**右クリックメニューにあるもの**を集めたので、その1段外側が残っていた。ツール欄は 8→**13**）／**レイヤーの再編（Others と Beta を名指しで許可された）**——Others 33行は全部が世界銀行指標＝カテゴリではなく表の尻尾だったので、**経済・貿易／社会・教育／交通・輸送／農業・食料**の4棚を新設して家族ごとに（9言語）。Beta 40→**26**（貿易フロー・海流・潮汐・作物・産業ウェブ・気象警報は**完成した world-packs 層で、指示で降格されたことは一度も無い**）。⚠ **#R40 が「指示により降格」と記録している GIBS・ECMWF 系は1つも昇格していない**。⚠ `rowFor()` が `ox-` 接頭辞を知らず、OpenRailwayMap/OpenSeaMap は**移したのに動かなかった**（実測 5行のはずが7行）／**実測 OSM 点レイヤー6つ**（空港・航空施設／港湾・ターミナル／上下水道施設／大学・研究機関／緊急対応拠点／宇宙基地・地上局。「1行だけの棚」だった Space & orbit と Indicators、新設の交通・社会に中身が入った）／**データセンター層に「今画面に何があるか」を答えるパネル**（件数の収録/OSM 内訳・**公表容量は必ず「N件／全M件」と併記**・分類別の内訳＝そのままフィルタ・容量順の上位。実測 318件・3.20 GW は **2件のみ**の公表値）／**詳細カードの × は丸をやめて殻自身の角丸四角へ**（`.country-popup-close`＝携帯で32px・ドラッグ除外リスト入りも同時に手に入る）／**再生ボタンは 19px 半径の円→11px の角丸四角**
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
+
+## R479 — **「API KEY REQUIRED」は障害ではなく、200 で返ってくる仕様変更だった**
+
+依頼は2段階だった。**「まず IntMap のコード修正ではない。CARTO 側で必要になる作業を確認し、
+ブラウザ操作が可能であれば手続きも進めてほしい」**——そのうえで、キーが届いてからコードを直した。
+
+### 何が起きていたか
+
+2026-08-26 頃から地図の全面に「API KEY REQUIRED」の透かし。IntMap 側の退行ではない。
+
+```
+https://a.basemaps.cartocdn.com/dark_all/6/33/21.png
+  キー無し   HTTP 200  13,380 B   明ピクセル(>100 グレー) 946
+  キー有り   HTTP 200  13,452 B   明ピクセル               0
+  不正キー   HTTP 200  13,380 B   ＝キー無しと同一バイト
+```
+
+⚠⚠⚠ **タイルは一度も失敗していない。** 返ってくるのは常に 200 の本物の PNG で、違うのは
+**絵の中身だけ**である。6スタイル（`dark_all` / `dark_nolabels` / `light_all` / `light_nolabels` /
+`rastertiles/voyager` / `dark_all@2x`）すべてで 7〜23% のピクセルが変わる。だから状態コードも
+エラーハンドラもコンソールリスナーも鳴らず、**「壊れた」と言える計器がこのリポジトリに1つも無かった**。
+同じ日に home-assistant/core#180277 でも同一の報告が出ている。
+
+### 上流の手続き（コードより先）
+
+⚠⚠⚠ **確認の結果、「アカウント・ダッシュボードの確認」という工程は存在しなかった。**
+CARTO のベースマップキーはプラットフォーム契約と別系統で、申請はフォーム1枚。原文は
+"We email the key straight back — there is no approval queue and you do not need a CARTO account."
+
+規約（`carto.com/legal/basemap-terms/`）を条文で読むと:
+
+- §12 の無料枠は **5,000,000 タイル要求/月**（ラスタ＋ベクタ合算・全キー合算）。
+- その §12 は「CARTO-issued API key を取得・使用する **any Customer**」に無償提供すると書いており、
+  **`non-commercial` は licence の条件として条文中に存在しない。**
+  ⚠ つまりフォームの "Is this a commercial project?" は**容量計画の自己申告**であって門ではない。
+  商用状況が変わったときの申告義務条項も無い（通知義務は CARTO → 顧客の一方向のみ）。
+  効いてくるのは 5M/月を超えたときだけで、そのとき CARTO Platform に加入する。
+- 禁止されているのは**サーバ側プロキシ／サーバ側キャッシュ**、**端末上 30 日を超えるキャッシュ**、
+  キーの共有・無関係プロジェクトでの再利用、帰属表示の隠蔽。
+  ⚠ IntMap は `sw.js` の `REFRESHABLE` で CARTO だけ **7 日**（#R224）＝内側。プロキシもしていない。
+- ⚠ **ラスターは退役予定**で、CARTO は「データ更新の停止を検討中」と明記。**同じキーがベクタにも効く**。
+
+### キーをどこに置くか
+
+⚠⚠⚠ **隠せないので隠さない。** 静的サイトはタイル URL をそのまま読み手のブラウザへ渡す。しかも実測で
+CARTO は **Referer を強制しない**——宣言したドメイン以外から要求しても透かしの無いタイルが返る。
+GitHub Pages は `build_type: workflow` なので Actions secret へ退避する道は技術的には在ったが、
+**それは DevTools で読める値を repo からだけ隠す**ので守りにならない。
+
+この判断には**この repo 自身の前例**がある: `src/vendor.js` は既に `SUPABASE_ANON_KEY` を
+（`admin.html` はインラインで）コミットしており、`DECISIONS.md` の「公開 (anon) キーは公開前提とし、
+保護は RLS が行う」がその理由を書いている。CARTO のキーは**その行の隣**に置いた。
+守りは隠すことではなく、**綴りを1か所に閉じる**こと（回転が1行で済む）と、無料枠の中に居ること。
+
+⚠⚠ **ただし置き場は `src/vendor.js` ではなく専用の `js/carto-basemap.js` になった。** 最初は vendor.js に
+書いて全部緑にしたが、`npm run test:checks` の最後で `tests/r350` ⑨c が落ちた——**app shell の行数予算**
+（index.html＋src/main.js＋src/vendor.js＋js/app-body.js＋js/geo-engine.js＋js/lazy-modules.js が 8,050 行未満）。
+実測: **HEAD 8045 行＝残り5行**、このラウンドの追加は **60 行**。⚠ 天井を上げるのは最後の手段なので、
+CARTO 一式（キー・2つの組み立て口・credit）を shell の外の1ファイルに出した——**結果 8048 行で天井は不動**。
+その代償は eager モジュールが 281→282 になることで、`modules` は設計上**完全一致**（`scripts/perf-budget.mjs`:
+「a module entering or leaving the eager graph is precisely the event this budget exists to notice」）。
+⇒ `tests/perf-baseline.json` の**その1行だけ**を意図的に更新した（`--update` は全項目を書き戻すので使っていない
+——他ラウンドのコストまで無言で追認してしまう）。
+
+### 綴りは1つ
+
+`js/carto-basemap.js` が `window.CARTO_BASEMAP_KEY` と2つの組み立て口を持つ:
+
+- `window.cartoTileURL(style, zxy, opts)` — 1本の具体 URL（プレビューは z/x/y を自分で作る）
+- `window.cartoTiles(style, opts)` — MapLibre の `tiles` 配列（a–d のホスト round-robin は #R7、
+  `@2x` は #R179。どちらもここでは変えていない）
+
+呼び出し口は5つ（`js/app-body.js` の `carto()`、`js/compare.js` の3ソース、`js/playground.js`、
+`js/layer-previews.js` の `CT()` と `_bmShot()`）で、**どれもホスト名を綴らない**。
+
+⚠⚠ **この欠陥は「実行時に測る」では捕まらない。** 透かしはネットワーク的には成功なので、
+リクエストの成否を見る検査は永久に緑になる。捕まえられるのは「キーの付いていない CARTO の URL を
+このリポジトリが組み立てたか」だけで、**それは静的に読める**。だから `tests/r479-checks` ② は
+**js/ と src/ の全ファイル**（今回書き換えた4本ではない＝#R429 の形）を走査して
+`basemaps.cartocdn.com` という綴りそのものを禁じ、②b が**出荷されていた当の2行**に対して
+発火することを見せる（#R465: 検査は発火することを証明できる形に）。
+
+### 無料枠の対価は帰属表示で、それを IntMap は払っていなかった
+
+⚠⚠⚠ CARTO の規約は帰属表示が "prominent and conspicuous to Persons viewing each CARTO basemap"
+であることを求める。実装を読むと **IntMap はどちらのエンジンでも地図上に何も出していなかった**:
+
+- `js/app-body.js` の `createView({ … attributionControl:false })`
+- `css/intmap.css` の `.cesium-widget-credits{display:none!important}`
+  （注記いわく「the app renders attribution in its own Sources modal」）
+- 基図ソース `bl`/`bln`/`bd`/`bdn` に `attribution:` が無い
+
+つまり CARTO と OpenStreetMap は「Data sources」モーダルの中にしか無く、**地図を見ている読者には
+何も出ていなかった**。これは意図的な設計判断だったので、`DECISIONS.md` に反転として記録した。
+
+⇒ `#map-credit`（右下）。⚠ **場所は測って決めた**——`.coord-readout` は `bottom:9px; left:9px` に
+`tests/r252-checks.test.mjs:206` が固定しており（「the coord readout moved — re-derive the clearance above」）、
+Chronos は `bottom:54px`。**空いている角は右下だけだった。**
+
+⚠⚠ **名乗るのは描かれている基図**である。衛星画像の上に「© CARTO」を出すのは、省略より悪い**偽の帰属**に
+なる。`window.IntMapCartoCredit()` は `view.base.map` / `view.base.sat` の**両方**から呼ばれる
+（⑥ が両方を見る——片方だけだと、基図を切り替えた読者に古い credit が残る）。
+⚠ **引数を取らない。** `#btn-view-sat` の `active` を自分で読むので、真実の出所が1つになり、
+呼び手が古い答えを渡すことができない（クラスを立てるのは、この関数を末尾で呼ぶのと同じコマンドの先頭）。
+
+⚠ **capture mode では消さない。** `tests/r232` は `body.capture-mode` で HUD の家具を隠すが、
+**スクリーンショットこそ帰属が一緒に旅すべき成果物**なので、この要素はその規則に入れていない（⑤ が固定）。
+
+### 検査 — 新しい spec は作っていない
+
+⚠⚠ core tier は6本で**予算上限ちょうど**（`node scripts/test-budget.mjs`: core 0.5 分／上限 0.5 分）。
+`scripts/tiers.mjs` の `coreNames()` は「最も番号の大きい `rNNN.spec.js`」を自動で core に入れるので、
+`tests/r479.spec.js` を作れば**予算を押し出していた**。#R473/#R451 と同じ判断で相乗りにした:
+
+| どこ | tier | 何を主張するか |
+|---|---|---|
+| `tests/r479-checks.test.mjs`（9本） | **毎 push** | 綴りの禁止・builder の実行・要素と CSS・両コマンドからの再適用・SW・**shell の外に居ること** |
+| `tests/smoke.spec.js` ⑧⑨ | **core** | 実ブラウザで**スタイルが組み立てた**全 CARTO URL がキー付き／credit が可視で基図を名乗る |
+| `tests/r179-imagery.spec.js` | deep | **実通信**（live CARTO）の全リクエストがキー付き／credit が CARTO ＋ OpenStreetMap |
+
+⚠ smoke は hermetic routing なので**ワイヤーではなくスタイル**に訊く——それが hermetic で
+正直に測れる半分であり、静かに退行しうる半分でもある。実通信は既に base map を選んで
+`cartocdn` の全リクエストを集めている r179-imagery に足したので、追加費用はほぼ 0（実測 1 passed / 54.5s）。
+
+### 触っていないもの
+
+- **Cesium** — `js/cesium-layers.js` はスタイルの `cfg.tiles` を受け取り `urlFor()` で placeholder を
+  置換するだけで、`.png` の文字列手術をしない。`?key=` を付けても壊れない（確認済み）。
+- **`sw.js`** — hostname で照合しクエリを読まないので、`?key=` はキャッシュの当たりに影響しない。
+- **ベクタ基図** — CARTO は「キー要件はベクタにも来るが、まだ有効ではない」と明記。同じキーで covered。
 
 ## R478 — **深夜にしか走らない検査が、写しを持っていた**
 

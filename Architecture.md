@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（971行・91 KB）＋ `css/`（3本）＋ `js/`（243本・11.3 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（972行・91 KB）＋ `css/`（3本）＋ `js/`（244本・11.3 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -101,6 +101,17 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 - **Supabase の接続先は `src/vendor.js`**（`window.SUPABASE_URL` / `window.SUPABASE_ANON_KEY`）。
   `admin.html` はバンドラを通らない別ページなので、同じ2つを自分のインライン script で持つ。
   どちらも publishable(anon) キー＝**公開前提**で、保護は RLS が行う（§17）。
+- **CARTO 基図のキーは `js/carto-basemap.js`**（`window.CARTO_BASEMAP_KEY`）。2026-08 に CARTO が
+  ラスタータイルへ API キーを要求し始めた。⚠ **キー無しの応答は失敗しない**——200 のまま
+  「API KEY REQUIRED」の透かしを焼いた PNG が返るので、状態コードもエラーハンドラも鳴らない。
+  URL を組み立てる口は `window.cartoTileURL()` / `window.cartoTiles()` の2つだけで、
+  `js/app-body.js` / `js/compare.js` / `js/playground.js` / `js/layer-previews.js` は
+  ホスト名を綴らない（`tests/r479-checks.test.mjs` ② が綴りそのものを禁じる）。
+  ⚠ **`src/vendor.js` ではなく専用ファイルなのは app shell の行数予算のため**（`tests/r168` #8 と
+  `tests/r350` ⑨c。予算は index.html＋src/main.js＋src/vendor.js＋js/app-body.js＋js/geo-engine.js＋
+  js/lazy-modules.js で 8,050 行未満）。ベクタ移行もこのファイルに来る。
+  これも**公開前提**の鍵——静的サイトはタイル URL を読み手のブラウザへ渡すので、基図キーが
+  秘密である配置は存在しない。無料枠は 5,000,000 タイル要求/月（ラスタ＋ベクタ合算）。
 - **ソースマップは本番に出さない**（`vite.config.js` の `build.sourcemap` は false）。
 - **ビルドは自分を計測する。** `vite.config.js` の `buildReportPlugin()`（`scripts/build-report.mjs`）が
   Rollup の最終グラフから **eager**（`index.html` のエントリ＋その静的 import の推移閉包＝Vite が
