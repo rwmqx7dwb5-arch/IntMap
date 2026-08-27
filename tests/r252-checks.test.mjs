@@ -198,7 +198,13 @@ test('#R252 ⑧ the seismic panel’s default box clears the coord readout and t
 
   /* the obstacles, as MEASURED at 1100×800 */
   const css = code(read('css/intmap.css'));
-  assert.match(css, /\.sidebar\.collapsed ~ \.map-container \.btn-toggle-sidebar \{ left:0; \}/,
+  /* ⚠⚠ (#R488) THIS ASSERTION WAS GREEN WHILE THE RULE WAS DEAD. #R485 wrapped #map-container in
+     `.map-column`, so `.sidebar.collapsed ~ .map-container` — a SIBLING combinator — stopped matching
+     anything and the handle stayed 400 px out in the middle of the map with the sidebar shut. The
+     byte-for-byte match below went on passing the whole time, because it reads the stylesheet and not
+     the page. The NUMBER is still worth pinning here (the clearance above is derived from it); the
+     claim that the rule REACHES the handle is now measured in a browser — tests/r159.spec.js R488. */
+  assert.match(css, /:has\(> \.sidebar\.collapsed\) \.map-container \.btn-toggle-sidebar \{ left:0; \}/,
     'the collapsed sidebar handle no longer sits at x=0 — re-derive the clearance above');
   assert.match(css, /\.btn-toggle-sidebar\{[^}]*left:var\(--sidebar-w\)/,
     'the OPEN sidebar handle no longer sits at --sidebar-w — re-derive the clearance above');
