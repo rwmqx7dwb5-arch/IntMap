@@ -405,11 +405,29 @@
     .map-container.tool-active .maplibregl-canvas{ cursor:crosshair; }
     #map{ position:absolute; inset:0; width:100%; height:100%; background:var(--bg-color); }
     /* Sidebar toggle — attached flush to the sidebar edge */
+    /* ══ (#R488) THE SELECTOR NAMES THE STATE, NOT THE PATH ═══════════════════════════════════════
+       This rule and the five like it (search `:has(> .sidebar.collapsed)`) used to read
+       `.sidebar.collapsed ~ .map-container …` — a SIBLING combinator, i.e. the assertion that
+       #map-container is a direct sibling of #sidebar. #R485 stopped that being true: it wrapped the
+       map in `.map-column` so the basemap credit could have a row of its own that no overlay can
+       cover. The wrapper is right; the six selectors that spelled the old path simply stopped
+       matching anything, in silence — the handle stayed pinned at `left:var(--sidebar-w)`, i.e.
+       400 px out in the middle of the map, after the sidebar had slid away (「開閉タブが残り続ける」),
+       its chevron went on pointing 「close」, and in frosted mode the left-anchored HUD kept an indent
+       for a sidebar that was no longer there.
+       ⚠ NOTHING FAILED. tests/r252 ⑥ pinned the rule’s SPELLING, and a spelling can be byte-perfect
+       while matching zero elements — so the gate stayed green through the whole regression. It now
+       measures the handle in a real browser (tests/r159.spec.js «R488» — the same boot that already
+       toggles this sidebar), which is the one question a stylesheet cannot be read for.
+       ⚠ THE SCOPE IS UNCHANGED. In ws-mode js/workspace.js re-parents #map-container into a window on
+       <body>, where it is not inside .operation-room — just as it was not a sibling of #sidebar there
+       before — so these rules go on not applying in workspace mode, and #btn-toggle-sidebar is
+       `display:none` there anyway. ═══════════════════════════════════════════════════════════════ */
     .btn-toggle-sidebar{ position:fixed; top:50%; left:var(--sidebar-w); z-index:1500; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.18); border-left:none; color:var(--text-muted); width:22px; height:64px; padding:0; border-radius:0 10px 10px 0; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:4px 0 16px rgba(0,0,0,0.12); transition:left 0.4s cubic-bezier(0.25,1,0.5,1), background 0.2s, color 0.2s, transform 0.2s; transform:translateY(-50%); }
-    .sidebar.collapsed ~ .map-container .btn-toggle-sidebar { left:0; }
+    .operation-room:has(> .sidebar.collapsed) .map-container .btn-toggle-sidebar { left:0; }
     .btn-toggle-sidebar:hover{ background:var(--card-bg); color:var(--primary-color); transform:translateY(-50%) scale(1.08); }
     .btn-toggle-sidebar .chev{ width:7px; height:7px; border-left:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); transition:transform 0.4s cubic-bezier(0.25,1,0.5,1); }
-    .sidebar.collapsed ~ .map-container .btn-toggle-sidebar .chev{ transform:rotate(-135deg); }
+    .operation-room:has(> .sidebar.collapsed) .map-container .btn-toggle-sidebar .chev{ transform:rotate(-135deg); }
     /* (#R25) align-items:flex-end leaves a wide EMPTY left region in this flex column, but the container
        (z-index:1000, later in DOM than the centered search) still hit-tested ON TOP of the search input —
        so on a narrow desktop the search box "couldn't be typed in" even when visually clear. Make the
@@ -2664,14 +2682,15 @@
     /* (#R13c) Only the FROSTED sidebar overlays the map, so ONLY there must the left-anchored HUD (coord readout,
        data/Köppen legends, country-info) clear it; a collapsed sidebar → flush left. In SOLID mode the sidebar sits
        beside the map (map-container starts to its right), so the HUD is already correctly positioned — no shift. */
+    /* (#R488) `:has(> .sidebar.collapsed)`, not `.sidebar.collapsed ~ …` — see the box at .btn-toggle-sidebar */
     @media(min-width:769px){
       body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
-      body.sidebar-glass .sidebar.collapsed ~ .map-container .coord-readout{ left:16px; }
+      body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .coord-readout{ left:16px; }
       body.sidebar-glass .data-legend:not([data-dragged]), body.sidebar-glass .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
-      body.sidebar-glass .sidebar.collapsed ~ .map-container .data-legend:not([data-dragged]),
-      body.sidebar-glass .sidebar.collapsed ~ .map-container .koppen-legend:not([data-dragged]){ left:24px; }
+      body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .data-legend:not([data-dragged]),
+      body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .koppen-legend:not([data-dragged]){ left:24px; }
       body.sidebar-glass .country-info{ left:calc(var(--sidebar-w) + 24px); }
-      body.sidebar-glass .sidebar.collapsed ~ .map-container .country-info{ left:24px; }
+      body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .country-info{ left:24px; }
     }
 
     /* (#R160) RIGHT layer sidebar now OVERLAYS the map too (it no longer pushes the map-container's margin —

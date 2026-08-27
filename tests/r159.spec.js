@@ -100,3 +100,76 @@ test('R159 #4 → R160 LEFT sidebar toggle keeps its mechanism AND never drives 
   // no exceptions
   expect(diag.pageErrors, `pageerror(s):\n${diag.pageErrors.join('\n---\n')}`).toHaveLength(0);
 });
+/* ══ (#R488) 「左サイドバーの開閉タブが残り続けてしまっている。」 ═══════════════════════════════
+   Same boot, same viewport, same classic/solid mode as #4 above — one more assertion, not one more
+   browser (scripts/test-budget.mjs).
+   #R485 wrapped #map-container in .map-column, because the basemap credit needed a row that no
+   overlay could cover. Six rules in css/intmap.css spelled the OLD path — a SIBLING combinator that
+   read ".sidebar.collapsed ~ .map-container …" — and all six silently stopped matching: the handle
+   stayed at left:var(--sidebar-w) (measured in production, build R485: x=400 with the sidebar shut),
+   the chevron never turned round, and in frosted mode the left-anchored HUD kept an indent for a
+   sidebar that was no longer there.
+   ⚠⚠⚠ THE SUITE WAS GREEN THROUGHOUT. tests/r252 ⑥ asserts that rule's SPELLING, and a spelling can
+   be byte-perfect while matching zero elements — «the CSS is there» and «the CSS applies here» are
+   different claims. So ⓑ below does not look for a string in the stylesheet: it walks the CSSOM,
+   takes EVERY rule that speaks about a collapsed sidebar, and demands each one match at least one
+   live element. That is spelling-agnostic — it survives any correct rewrite and fails on the next
+   wrapper, which is precisely what went unseen here. */
+test('R488 the sidebar handle follows the sidebar, and no collapsed-state rule matches nothing', async () => {
+  const sw = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--sidebar-w').trim());
+  const sidebarW = parseFloat(sw);
+  expect(sidebarW, `--sidebar-w is a plain px number (${sw})`).toBeGreaterThan(100);
+
+  const setCollapsed = async (want) => {
+    await page.evaluate((w) => {
+      const sb = document.getElementById('sidebar');
+      if (sb.classList.contains('collapsed') !== w) document.getElementById('btn-toggle-sidebar').click();
+    }, want);
+    await page.waitForTimeout(700);   // the handle carries its own `transition:left .4s`
+  };
+  const probe = () => page.evaluate(() => {
+    const tg = document.getElementById('btn-toggle-sidebar');
+    const r = tg.getBoundingClientRect();
+    const m = getComputedStyle(tg.querySelector('.chev')).transform.match(/matrix\(([^,]+),/);
+    return { left: r.left, right: r.right, chevA: m ? parseFloat(m[1]) : NaN };
+  });
+
+  // ⓐ THE SYMPTOM, MEASURED. Open: the handle hugs the sidebar's edge. Shut: it hugs the window's.
+  await setCollapsed(false);
+  const open = await probe();
+  expect(Math.abs(open.left - sidebarW), `open: the handle sits at the sidebar edge (${open.left} vs ${sidebarW})`).toBeLessThan(2);
+  await setCollapsed(true);
+  const shut = await probe();
+  expect(shut.left, `shut: the handle came back to the window edge instead of staying behind at x=${shut.left}`).toBeLessThan(2);
+  expect(shut.right, 'shut: the whole 22 px handle is on screen').toBeGreaterThan(18);
+  // …and the chevron turned round with it: rotate(45deg) → rotate(-135deg) flips the matrix's first term
+  expect(open.chevA, 'open: the chevron points «close»').toBeGreaterThan(0);
+  expect(shut.chevA, 'shut: the chevron points «open»').toBeLessThan(0);
+
+  // ⓑ NO COLLAPSED-STATE RULE MAY MATCH NOTHING. The frosted body class goes on for the duration
+  //   because three of the six rules are scoped to it; nothing else about that mode is needed here.
+  const dead = await page.evaluate(() => {
+    const had = document.body.classList.contains('sidebar-glass');
+    document.body.classList.add('sidebar-glass');
+    const out = [];
+    const walk = (rules) => {
+      for (const r of rules) {
+        if (r.cssRules) { walk(r.cssRules); continue; }
+        const sel = r.selectorText;
+        if (!sel || !/\.sidebar\.collapsed/.test(sel)) continue;
+        try { if (document.querySelectorAll(sel).length === 0) out.push(sel); } catch { out.push('UNPARSEABLE: ' + sel); }
+      }
+    };
+    for (const sheet of document.styleSheets) {
+      if (!sheet.href) continue;              // the linked css/intmap.css, not the panels' runtime <style> blocks
+      let rules; try { rules = sheet.cssRules; } catch { continue; }
+      walk(rules);
+    }
+    if (!had) document.body.classList.remove('sidebar-glass');
+    return out;
+  });
+  expect(dead, 'these collapsed-sidebar rules match no element at all: ' + dead.join(' | ')).toHaveLength(0);
+
+  await setCollapsed(false);
+  expect(diag.pageErrors, 'pageerror(s): ' + diag.pageErrors.join(' --- ')).toHaveLength(0);
+});
