@@ -5713,6 +5713,24 @@ window.IntMapModules.dataLayers=function(HOST){
     let _rvFrames=[], _rvIdx=-1, _rvPlay=false, _rvPlayT=0;
     const RV_SCHEME=4;                 /* the blue->red palette the two-palette free tier gives back */
     const RV_STEP_MS=520;              /* one radar frame per ~half second, the RainViewer pace */
+    /* ══ ⚠⚠⚠ (#R482) THE FREE TILE CACHE STOPS AT z7, AND IT SAYS SO **IN THE PICTURE** ═════════
+       「降水レーダー（実時間）レイヤーはある程度以上ズームしたら zoom level not supported と
+         透かしがなります」
+       MEASURED against tilecache.rainviewer.com on 2026-08-28, four continents, both tile sizes:
+         z4-z7  real radar (neighbouring tiles differ from one another: 435 B – 19,100 B)
+         z8+    ONE byte-identical 1,370 B PNG everywhere — a grey plate reading
+                「Zoom Level Not Supported」. HTTP **200**. Same at z9…z15, over Tokyo / New York /
+                London / Miami / Sydney, at /256/ and at /512/.
+       ⚠ This is #R479's shape again: the request SUCCEEDS and the failure is painted into the
+       image, so no error path, no onerror, no tile-count instrument can ever see it. The only
+       place it is visible is the source's own zoom ceiling — which said **12**, five levels past
+       the data, so MapLibre and Cesium dutifully asked for z8…z12 and got the plate back.
+       ⚠ The fix is NOT to hide the layer above z7. Overzooming the z7 tile keeps the rain field on
+       screen at every zoom, which is what the reader asked for, and the free mosaic is ~2 km/px:
+       z7 (~1.2 km/px at the equator) is already at its native resolution, so the stretch adds
+       blur, not error. ⚠ Do not raise this number again — a taller ceiling does not buy detail the
+       free tier has, it buys the grey plate. */
+    const RV_MAX_Z=7;                  /* deepest zoom the free tile cache serves radar at (measured) */
     function rvFetch(){
       if(_rvData && Date.now()-_rvAt<5*60000) return Promise.resolve(_rvData);
       if(_rvPending) return _rvPending;
@@ -5743,7 +5761,7 @@ window.IntMapModules.dataLayers=function(HOST){
     function addRainViewer(){
       const tiles=rvTiles(); if(!tiles) return false;
       try{ if(GE().layers.has('lyr-radar')) GE().layers.remove('lyr-radar'); if(GE().layers.hasSource('src-radar')) GE().layers.removeSource('src-radar'); }catch(_){}
-      addRaster('radar',tiles,12);
+      addRaster('radar',tiles,RV_MAX_Z);
       setVis('lyr-radar',true);
       rvUpdateLegend();
       return true;
