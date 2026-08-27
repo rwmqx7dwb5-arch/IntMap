@@ -38,6 +38,21 @@
  *    node scripts/mobile-trace.mjs --cpu 4 --engine chromium # the historical throttled profile
  *    node scripts/mobile-trace.mjs --verify                  # + the CDP sampler cross-check
  *      …with  --desktop  --reps N (default 3)  --base http://127.0.0.1:4373  --json <path>
+ *
+ *  ── ⚠⚠⚠ (#R496) AND SINCE #R496, TWO PHASES DRIVEN BY A REAL FINGER ──────────────────────────
+ *  Everything above is driven through `IntMapGeoEngine.camera` — an animated easeTo/panBy — for the
+ *  reason #R352 recorded: a synthesised MouseEvent never reaches MapLibre's handlers, and page.mouse
+ *  is viewport-relative while the map is offset. That reason is about the MOUSE. It left this
+ *  instrument unable to see the whole of the reported defect, which is about a FINGER: a camera
+ *  command produces no touchstart, no touchmove, no pinch recognition, and therefore never runs the
+ *  app's own touch handlers or MapLibre's — so the two hottest paths #R496 found (a
+ *  `getBoundingClientRect()` per touchmove in the long-press handler, and a write→read→write
+ *  crosshair task on the same frames) contributed EXACTLY ZERO to every mobile number this repo owns.
+ *  `Input.dispatchTouchEvent` produces trusted touch events, so `pan-touch` and `pinch-touch` run
+ *  the real input path, and each reports what a camera command cannot: forced-layout reads per
+ *  touchmove, and the delay from the event to the frame that answers it.
+ *  ⚠ CHROMIUM ONLY, AND SAID SO RATHER THAN SKIPPED. CDP does not exist in Playwright's WebKit, so
+ *  those phases are absent from the WebKit arm — reported as absent, never as a cost of zero (#R322).
  * ==========================================================================*/
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -121,6 +136,12 @@ const WIND_CB = ['dl-wind', 'dl-ec-wind'];
 const ALERT_CB = ['wp-dl-alerts', 'dl-alerts'];
 const PAN = { dx: 170, dy: 120, ms: 900 };
 const ZOOM = { dz: 2, ms: 1100 };
+/* (#R496) a finger drag of about the same size as PAN, at about 60 Hz, and a two-finger spread */
+const TPAN = { dx: 150, dy: 110, steps: 36, ms: 16 };
+const TPINCH = { from: 60, to: 220, steps: 36, ms: 16 };
+/* (#R496) …and the gesture the alerts report is actually about: a SMALL pan, at city zoom */
+const TPAN_SMALL = { dx: 55, dy: 40, steps: 20, ms: 16 };
+const CITY_Z = 11;
 
 const BUCKETS = ['placement', 'render', 'mapRender', 'texUpload', 'bufUpload', 'decode', 'workerPost', 'workerRecv'];
 
@@ -267,6 +288,93 @@ async function zoom(page, dir) {
   await settle(page, 600);
 }
 
+/* ══ (#R496) REAL FINGER INPUT ═══════════════════════════════════════════════════════════════
+   `Input.dispatchTouchEvent` is the only way to produce a TRUSTED touch, which is what MapLibre's
+   TouchPanHandler / TouchZoomRotateHandler and the app's own long-press listener are waiting for.
+   The coordinates are viewport CSS pixels, so they are taken from the canvas's own box rather than
+   assumed — #R352's other half of the same lesson. */
+async function canvasBox(page) {
+  return page.evaluate(() => {
+    const r = window.IntMapGeoEngine.render.canvas().getBoundingClientRect();
+    return { x: r.left, y: r.top, w: r.width, h: r.height };
+  });
+}
+/* ⚠ THE TWO COUNTERS THIS PHASE EXISTS FOR. `busy` and `fps` cannot tell a forced synchronous
+   layout from any other millisecond, and a forced layout is precisely what the input path was
+   paying: the count of `getBoundingClientRect` / `getComputedStyle` calls PER TOUCHMOVE is the
+   number that goes to 0 when the defect is gone and stays whatever it is when it is not.
+   The third number is the one a camera command can never produce: touchmove → the frame that
+   answers it, which is 「指に付いてこない」 stated as a measurement. */
+async function touchMetersOn(page) {
+  await page.evaluate(() => {
+    const S = window.__imTouch = { rect: 0, style: 0, moves: 0, lat: [] };
+    if (!window.__imTouchWrapped) {
+      window.__imTouchWrapped = true;
+      const ER = Element.prototype.getBoundingClientRect;
+      Element.prototype.getBoundingClientRect = function () { if (window.__imTouch) window.__imTouch.rect++; return ER.apply(this, arguments); };
+      const GS = window.getComputedStyle;
+      window.getComputedStyle = function () { if (window.__imTouch) window.__imTouch.style++; return GS.apply(this, arguments); };
+    }
+    /* capture, so `t` is when the event ARRIVED — before the app's own handlers, not after them */
+    S.on = () => { S.moves++; const t = performance.now(); requestAnimationFrame(() => S.lat.push(performance.now() - t)); };
+    try { window.IntMapGeoEngine.render.canvas().addEventListener('touchmove', S.on, { passive: true, capture: true }); } catch (_) {}
+  });
+}
+async function touchMetersOff(page) {
+  return page.evaluate(() => {
+    const S = window.__imTouch; if (!S) return null;
+    try { window.IntMapGeoEngine.render.canvas().removeEventListener('touchmove', S.on, { capture: true }); } catch (_) {}
+    window.__imTouch = null;                                 /* the wrappers stop counting here */
+    const l = S.lat.slice().sort((a, b) => a - b);
+    const pick = (f) => (l.length ? +l[Math.min(l.length - 1, Math.floor(l.length * f))].toFixed(1) : null);
+    return {
+      moves: S.moves, rect: S.rect, style: S.style,
+      rectPerMove: S.moves ? +(S.rect / S.moves).toFixed(2) : null,
+      stylePerMove: S.moves ? +(S.style / S.moves).toFixed(2) : null,
+      latP50: pick(0.5), latP95: pick(0.95), latMax: l.length ? +l[l.length - 1].toFixed(1) : null,
+    };
+  });
+}
+async function touchPan(page, cdp, P) {
+  P = P || TPAN;
+  const b = await canvasBox(page);
+  const x0 = b.x + b.w / 2 + P.dx / 2, y0 = b.y + b.h * 0.42 + P.dy / 2;
+  const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+  await send('touchStart', [{ x: x0, y: y0, id: 0 }]);
+  for (let i = 1; i <= P.steps; i++) {
+    const k = i / P.steps;
+    await send('touchMove', [{ x: x0 - P.dx * k, y: y0 - P.dy * k, id: 0 }]);
+    await sleep(P.ms);
+  }
+  await send('touchEnd', []);
+  await settle(page, 600);
+}
+async function touchPinch(page, cdp) {
+  const b = await canvasBox(page);
+  const cx = b.x + b.w / 2, cy = b.y + b.h * 0.42;
+  const send = (type, touchPoints) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints });
+  const pts = (r) => [{ x: cx - r, y: cy, id: 0 }, { x: cx + r, y: cy, id: 1 }];
+  await send('touchStart', pts(TPINCH.from));
+  for (let i = 1; i <= TPINCH.steps; i++) {
+    await send('touchMove', pts(TPINCH.from + (TPINCH.to - TPINCH.from) * (i / TPINCH.steps)));
+    await sleep(TPINCH.ms);
+  }
+  await send('touchEnd', []);
+  await settle(page, 600);
+}
+async function zoomTo(page, z) {
+  await page.evaluate(async (zz) => {
+    const E = window.IntMapGeoEngine, m = E.raw();
+    await new Promise((res) => {
+      let done = false;
+      const fin = () => { if (done) return; done = true; try { m.off('moveend', fin); } catch (_) {} res(); };
+      m.on('moveend', fin); setTimeout(fin, 6000);
+      try { E.camera.easeTo({ center: E.camera.get().center, zoom: zz, duration: 800 }); } catch (_) { fin(); }
+    });
+  }, z);
+  await settle(page, 1500);
+}
+
 /* ── switching a layer on, without trusting a hard-coded id ────────────────
    ⚠ THE FIRST RUN OF THIS SCRIPT GOT BOTH IDS WRONG AND SAID SO, WHICH IS THE ONLY REASON THIS
    FUNCTION LOOKS LIKE THIS. `dl-ec-wind` is the id of the layer PREVIEW canvas (js/layer-previews.js),
@@ -394,6 +502,15 @@ async function traceOnce(engine, rep) {
   await step('zoom-warm', () => zoom(page, +1));
   await step('zoom-back', () => zoom(page, -1));
 
+  /* (#R496) the same warm map, driven by a finger instead of by a camera command */
+  const touched = async (name, fn) => {
+    await step(name, async () => { await touchMetersOn(page); await fn(); extra[name] = { touch: await touchMetersOff(page) }; });
+  };
+  if (cdp) {
+    await touched('pan-touch', () => touchPan(page, cdp));
+    await touched('pinch-touch', () => touchPinch(page, cdp));
+  }
+
   /* ⚠ A PHASE THAT DID NOT HAPPEN POISONS THE ONES AFTER IT, not just itself. The first run spent
      92 s inside a wait for a wind field that was never going to arrive, and the two phases that
      followed it inherited whatever the app had queued up in that time — 20 s of pan at 4.5 fps that
@@ -443,6 +560,20 @@ async function traceOnce(engine, rep) {
   if (!al.ran) taint = true;
   await step('pan-alerts', () => pan(page));
   extra['pan-alerts'] = { tainted: taint };
+
+  /* ⚠ (#R496) 12,063 ms busy / 34.2 fps FOR THE ALERTS PHASE IS A NUMBER ABOUT A WHOLE-WORLD PAN.
+     The report is about a phone in a city, so the layer is measured again where a reader meets it:
+     zoomed to z11 and moved by a short finger drag, which is a different amount of geometry and a
+     different amount of placement. The wide pan above is kept, unchanged, so the two are comparable. */
+  await step('zoom-alerts-city', () => zoomTo(page, CITY_Z));
+  extra['zoom-alerts-city'] = { tainted: taint, zoom: CITY_Z };
+  if (cdp) {
+    await touched('pan-alerts-city', () => touchPan(page, cdp, TPAN_SMALL));
+    extra['pan-alerts-city'] = Object.assign({ tainted: taint }, extra['pan-alerts-city'] || {});
+  } else {
+    await step('pan-alerts-city', () => pan(page));
+    extra['pan-alerts-city'] = { tainted: taint, note: 'camera-driven: no CDP in this engine' };
+  }
 
   /* ── the floor, and what it says about this engine's resolution ─────────── */
   const clock = await page.evaluate(() => {
@@ -536,6 +667,22 @@ function table(runs) {
   }
 }
 
+/* ⚠ (#R496) THE TWO NUMBERS A CAMERA COMMAND CANNOT PRODUCE GET THEIR OWN TABLE, because they are
+   not milliseconds of anything: `rect/move` and `style/move` are COUNTS of forced-layout questions
+   asked per finger event — the quantity that is 0 when the input path is clean and stays whatever it
+   is when it is not — and `lat` is the delay from a touchmove to the frame that answers it. */
+function touchTable(runs) {
+  const rows = [];
+  for (const r of runs) for (const [p, v] of Object.entries(r.phases)) if (v && v.touch) rows.push([r.engine, r.rep, p, v.touch]);
+  if (!rows.length) { console.log('\n  REAL TOUCH: no phase was driven by a finger (CDP is chromium-only)'); return; }
+  console.log('\n  REAL TOUCH (CDP-dispatched finger events)   phase             moves  rect/move  style/move   lat p50  lat p95  lat max');
+  for (const [e, rep_, p, t] of rows) {
+    console.log(`    ${e} rep${rep_}  ${p.padEnd(18)} ${pad(t.moves, 6)} ${pad(t.rectPerMove ?? '—', 10)} ${pad(t.stylePerMove ?? '—', 11)} ${pad(t.latP50 ?? '—', 9)} ${pad(t.latP95 ?? '—', 8)} ${pad(t.latMax ?? '—', 8)}`);
+  }
+  console.log('    ⚠ rect/move and style/move include this harness\'s own wrappers on every element in the page,');
+  console.log('      not only the map — they are a BUDGET for the input path, and the number to watch is the trend.');
+}
+
 /* (#R322's pattern) the pieces a regression check needs, so the arithmetic that decides what every
    number in the table means can be exercised without launching a browser. */
 export { phaseOf, BUCKETS, layerOn, servingOurDist };
@@ -574,7 +721,7 @@ for (const e of ENGINES) {
   }
 }
 if (!runs.length) console.log('\n  every rep was lost — nothing to tabulate');
-else table(runs);
+else { table(runs); touchTable(runs); }
 if (lost.length) {
   console.log(`\n  ⚠ ${lost.length} rep(s) lost: ` + lost.map((l) => `${l.engine} rep${l.rep} (${l.why})`).join(' · '));
 }

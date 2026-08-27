@@ -254,7 +254,7 @@ window.IntMapModules.wbLayers=function(HOST){
       const L=()=>V(wbById[L0.id]||L0);
       const fmt=(v)=>{ if(v==null) return '—'; const a=Math.abs(v); const r=(a>=100?Math.round(v):Math.round(v*10)/10); return r+(L().unit||''); };
       GE().events.onLayer('mousemove',fill,(e)=>{ if(!e.features||!e.features.length) return; GE().render.canvas().style.cursor='pointer'; const p=e.features[0].properties||{};
-        try{ const el=window.ensureMapTooltip(); el.style.display='block'; el.innerHTML='<div style="font-weight:600;">'+(p.nm||'')+'</div><div style="color:var(--text-muted);font-size:11px;margin-top:2px;">'+(bxLabel(L()))+'</div><div style="font-weight:700;margin-top:3px;">'+fmt(p.v)+'</div>'; window.positionTooltip(e.point); }catch(_){} });
+        try{ const el=window.ensureMapTooltip(); el.style.display='block'; window.setMapTooltipHTML(el,'<div style="font-weight:600;">'+(p.nm||'')+'</div><div style="color:var(--text-muted);font-size:11px;margin-top:2px;">'+(bxLabel(L()))+'</div><div style="font-weight:700;margin-top:3px;">'+fmt(p.v)+'</div>'); window.positionTooltip(e.point); }catch(_){} });
       GE().events.onLayer('mouseleave',fill,()=>{ GE().render.canvas().style.cursor=''; try{ const el=window.ensureMapTooltip(); el.style.display='none'; }catch(_){} });
     }
     const _nmOf=(p)=>{ p=p||{}; return p.NAME_EN||p.ADMIN||p.name_en||p.NAME||p.name||p.NAME_LONG||p.ADM0_A3||''; };

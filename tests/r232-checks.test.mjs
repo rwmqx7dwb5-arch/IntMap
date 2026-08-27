@@ -303,8 +303,13 @@ test('R232 Companies and Countries do not drift sideways', () => {
 
 test('R232 mobile: the renderer quality gate asks the device, not the viewport width', () => {
   const b = read('js/app-body.js');
-  assert.match(b, /const _imPhoneGPU=\(\)=>/, 'a device test exists');
-  assert.match(b, /antialias:!_imPhoneGPU\(\)/, 'MSAA follows the device');
-  assert.match(b, /pixelRatio:\(_imPhoneGPU\(\)\?Math\.min\(2,window\.devicePixelRatio\|\|1\)/, 'so does the DPR cap');
+  /* ⚠ (#R496) RENAMED, NOT WEAKENED. The predicate is `_imPhoneClass` now because #R496 found five
+     more phone COSTS still asking the 768 px width — the @2x tile decision, the canvas RAM guard,
+     the DEM cache cap, the DEM viewport prefetch and the per-frame marker occlusion — so the name
+     「this is a phone-class device」 outgrew 「this is a phone GPU」. The three properties #R232 is
+     about are asserted here unchanged; the other five are in tests/r496-checks ③. */
+  assert.match(b, /const _imPhoneClass=\(\)=>/, 'a device test exists');
+  assert.match(b, /antialias:!_imPhoneClass\(\)/, 'MSAA follows the device');
+  assert.match(b, /pixelRatio:\(_imPhoneClass\(\)\?Math\.min\(2,window\.devicePixelRatio\|\|1\)/, 'so does the DPR cap');
   assert.doesNotMatch(noJs(b), /antialias:!isMobile\(\)/, 'width no longer decides quality');
 });
