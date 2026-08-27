@@ -45,10 +45,25 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
       +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
       /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
-      +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:92%;padding:6px 12px;background:var(--atlas-grad);color:#fff;border-radius:16px 16px 5px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.14);white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble; (#R132) shared --atlas-grad so bubble+tab stay identical & accent-responsive without the flat default fill */
+      /* ══ ⚠⚠⚠ (#R483) 「Atlasのユーザー送信メッセージの吹き出しを、フロストガラスの質感に。」 ══════
+         The fill moved from --atlas-grad (opaque, and shared with the Atlas tab, which nobody asked to
+         change) to --atlas-glass (accent-tinted, translucent, this bubble only), and the text from a
+         hard #fff to --text-main.
+         ⚠ THE TEXT COLOUR IS NOT A SIDE-DETAIL, IT IS WHAT MAKES GLASS POSSIBLE — see the measured
+         contrast note beside the token in css/intmap.css. White on glass is unreadable, and glass
+         opaque enough to carry white is not glass. Reading --text-main is the same trade every other
+         frosted surface in this app already made.
+         ⚠ THE BLUR IS THE HOUSE IDIOM, AND ON THE DESKTOP IT IS NEARLY A NO-OP: this bubble sits
+         inside #atlas-panel, which composites a backdrop blur of its own, so what stands behind a
+         child of it is already a smooth wash with little left to blur. It is kept because it is NOT a
+         no-op where it matters — the mobile tab rule further down this file sets the panel blur to
+         none !important, and there the map really is behind the bubble. What a desktop reader reads as
+         frost comes from the translucent tint, the hairline edge and the inset sheen.
+         ⚠ The -webkit- twin is required: every declaration in this app that truly blurs carries one. */
+      +'#atlas-panel .atl-b.u{align-self:flex-end;max-width:92%;padding:6px 12px;background:var(--atlas-glass);color:var(--text-main);border:1px solid var(--atlas-glass-edge);border-radius:16px 16px 5px 16px;box-shadow:var(--atlas-glass-shadow),inset 0 1px 0 var(--atlas-glass-sheen);backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));-webkit-backdrop-filter:saturate(var(--glass-sat,150%)) blur(var(--glass-blur,16px));white-space:pre-wrap;}'   /* (#R122) pre-wrap keeps the user\'s own line breaks (Shift+Enter) visible in the bubble */
       +'#atlas-panel .atl-b.a{align-self:stretch;max-width:100%;background:transparent;color:var(--text-main);border:none;border-radius:0;padding:2px 1px;}'
       /* (#R231) the attached-picture row: the user's own column, without the bubble around it */
-      +'#atlas-panel .atl-b.u.atl-imgrow{background:none;box-shadow:none;padding:0;border-radius:0;max-width:92%;white-space:normal;}'
+      +'#atlas-panel .atl-b.u.atl-imgrow{background:none;box-shadow:none;padding:0;border-radius:0;max-width:92%;white-space:normal;border:none;backdrop-filter:none;-webkit-backdrop-filter:none;}'   /* (#R483) the glass is stripped here too: this row is bare pictures, and a pane of frosted glass around them is a bubble by another name */
       +'#atlas-panel .atl-imgrow-in{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}'
       +'#atlas-panel .atl-imgrow-in img{display:block;max-width:100%;max-height:230px;width:auto;height:auto;border-radius:12px;cursor:zoom-in;}'
       +'#atlas-panel .atl-imgrow-in img:only-child{max-height:280px;}'
@@ -143,7 +158,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'#atlas-panel .atl-fchip svg{flex:0 0 auto;opacity:.72;}'
       +'#atlas-panel .atl-fchip-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
       +'#atlas-panel .atl-fchip-x{position:absolute;top:50%;right:4px;transform:translateY(-50%);}'
-      +'#atlas-panel .atl-b.u .atl-fchip.atl-fchip-msg{height:26px;padding:0 9px;max-width:200px;background:rgba(255,255,255,0.16);border-color:rgba(255,255,255,0.28);color:#fff;}'   /* (#R158) file chip inside the (gradient) user bubble */
+      +'#atlas-panel .atl-b.u .atl-fchip.atl-fchip-msg{height:26px;padding:0 9px;max-width:200px;background:var(--input-bg);border-color:var(--atlas-glass-edge);color:var(--text-main);}'   /* (#R158) file chip inside the user bubble; (#R483) it was white-on-white the moment the bubble stopped being an opaque gradient — a chip whose whole job is to name a file has to be readable on whatever the bubble is */
       +'#atlas-panel .atl-thumb-x:hover{background:rgba(220,50,50,0.9);}'
       +'#atlas-panel.atl-drag .atl-chat{outline:2px dashed var(--primary-color);outline-offset:-6px;border-radius:10px;}'
       /* (#R103) ONE small AI disclaimer under the input (instead of appending it to every message) */

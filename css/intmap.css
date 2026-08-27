@@ -14,6 +14,21 @@
          flat solid fill: with the DEFAULT accent (#0a84ff≈first stop) it reproduces the rich 3-stop gradient, and with any
          custom accent it starts on that accent and sweeps through indigo/violet. Fixes "デフォルトアクセントでべた塗". */
       --atlas-grad:linear-gradient(135deg,var(--primary-color),#5e5ce6 56%,#bf5af2);
+      /* ══ ⚠⚠ (#R483) 「Atlasのユーザー送信メッセージの吹き出しを、フロストガラスの質感に。」 ═══════════
+         A SECOND token, not a redefinition of --atlas-grad: that one is shared with the Atlas tab
+         (css/intmap.css:167 says so in as many words), and frosting it would have frosted a button
+         nobody asked about. The bubble takes this one; the tab keeps the solid sweep.
+         ⚠ THE ALPHA IS SET BY THE TEXT, NOT BY TASTE. The old bubble was #fff on the opaque sweep —
+         4.0:1 in light theme. Glass cannot carry white text: the same sweep at a glass-like 0.55 alpha
+         over the panel measures 2.2:1, which is unreadable, and the alpha that would rescue white
+         (~0.9) is not glass. So the tint goes LOW and the text becomes --text-main, which is the
+         theme's own contrast guarantee and the way every other frosted surface in this app reads.
+         ⚠ It still says "this one is mine": the accent leads the same blue→indigo→violet sweep,
+         so the bubble is accent-tinted glass rather than neutral glass. */
+      --atlas-glass:linear-gradient(135deg,rgba(0,122,255,0.20),rgba(94,92,230,0.18) 56%,rgba(191,90,242,0.18));
+      --atlas-glass-edge:rgba(255,255,255,0.55);
+      --atlas-glass-sheen:rgba(255,255,255,0.34);
+      --atlas-glass-shadow:0 2px 10px rgba(0,0,0,0.10);
       /* (#R210) Progress bars are the ACCENT, full stop ("進捗系のバーの色はアクセントカラーに").
          Unlike --atlas-grad this does NOT sweep to indigo/violet: a custom accent must stay
          that accent all the way across, otherwise a green accent still reads as a blue bar.
@@ -22,7 +37,14 @@
          see the note where `.tp-prog.indet` used to be. */
       --prog-grad:var(--primary-color); }
     /* (#R101) --text-muted brightened toward white for legibility on dark ("灰色文字は見えにくい") — was #a6a6ad */
-    [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#cfcfd6; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4); }
+    [data-theme="dark"]{ --bg-color:#000000; --sidebar-bg:rgba(28,28,30,0.85); --primary-color:#0a84ff; --text-main:#f5f5f7; --text-muted:#cfcfd6; --card-bg:#1c1c1e; --input-bg:rgba(255,255,255,0.1); --popup-bg:rgba(28,28,30,0.74); --shadow:0 8px 30px rgba(0,0,0,0.4);
+      /* (#R483) the same glass, read the other way round: a dark panel needs a HEAVIER tint to be seen
+         at all, a dimmer edge (a 0.55 white hairline glows on black) and a deeper shadow. This is the
+         first `[data-theme="dark"]` rule the user bubble has ever had — #R483 note in js/atlas-styles.js. */
+      --atlas-glass:linear-gradient(135deg,rgba(10,132,255,0.34),rgba(94,92,230,0.30) 56%,rgba(191,90,242,0.28));
+      --atlas-glass-edge:rgba(255,255,255,0.14);
+      --atlas-glass-sheen:rgba(255,255,255,0.10);
+      --atlas-glass-shadow:0 2px 12px rgba(0,0,0,0.34); }
     /* (#R115) The R33-retired skin themes' CSS (cyber/classic/psychedelic/military/medical/baroque/taisho)
        was DEAD CODE: applyTheme() strips every theme-* body class and coerces a saved skin to 'auto', so none
        of those selectors could ever match. Removed per the dead-code cleanup request; the coercion in
@@ -164,7 +186,11 @@
     [data-theme="dark"] .mode-btn.mode-atlas:not(.active){ color:#a5a3ff; }
     /* (#R132) unselected ring now uses the shared accent gradient too, so BOTH tab states track the accent ("選択前のカラーも合わせて"). */
     .mode-btn.mode-atlas:not(.active)::before{ content:""; position:absolute; inset:0; border-radius:inherit; padding:1.5px; background:var(--atlas-grad); -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
-    /* (#R130/#R132) Selected Atlas tab = the shared accent gradient (same fill as the Atlas user bubble `.atl-b.u`).
+    /* (#R130/#R132) Selected Atlas tab = the accent gradient.
+       ⚠ (#R483) IT IS NO LONGER "the same fill as the Atlas user bubble" — that sentence stood here for
+       350 rounds and stopped being true when the bubble became frosted glass (--atlas-glass). The tab is
+       an opaque control that must read as pressed; the bubble is a translucent surface. They still track
+       the same accent, they are no longer the same paint. Do not re-unify them without being asked.
        (#R132) The gradient LEADS with the accent then sweeps indigo→violet, so the DEFAULT accent no longer renders as a
        flat solid fill ("デフォルトアクセントカラーでべた塗となってしまう") while any custom accent still drives it. */
     .mode-btn.mode-atlas.active{ background:var(--atlas-grad); color:#fff; box-shadow:0 2px 9px rgba(94,92,230,0.32), inset 0 1px 0 rgba(255,255,255,0.22); }
