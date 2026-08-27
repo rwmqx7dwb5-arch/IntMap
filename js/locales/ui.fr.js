@@ -243,6 +243,12 @@ window.IntMapLang.define('fr', { ui: {
       ttlLayersPanel:"Calques",
       ttlFavorite:"Favori",
     }, inline: {
+      /* (#R493) view.inspect — what the reader is told when Atlas looks at the map for them */
+      "The map was not drawing when I looked — the page is in the background, so there was no frame to capture. Ask again with IntMap in front.": "La carte ne dessinait pas au moment où j'ai regardé : la page est en arrière-plan, il n'y avait donc aucune image à capturer. Repose la question avec IntMap au premier plan.",
+      'Atlas looked at the map': 'Atlas a regardé la carte',
+      'map only': 'carte seule',
+      'The map is not running, so there is nothing to look at.': "La carte n'est pas active : il n'y a rien à regarder.",
+      'Could not read the map frame — the renderer gave nothing back.': "Impossible de lire l'image de la carte : le moteur de rendu n'a rien renvoyé.",
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     "{n} lookups left today": "{n} explications restantes aujourd’hui",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': "Une nouvelle version d'IntMap est disponible. Rechargez la page pour continuer.",

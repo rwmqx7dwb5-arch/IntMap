@@ -217,6 +217,11 @@ export function makeAtlasSchemas() {
       'map.clear': { type: 'object', properties: { what: str(), target: str() } },  /* no `what` = everything, which is the case's own default */
       'view.fullscreen': { type: 'object', properties: { on: bool(), mode: str() } },
       'view.locate': noArgs('locate'),
+      /* (#R493) `include` is a CLOSED, ASCII set the dispatch really compares against (rule 2 above),
+         and neither argument is required: an inspect with no arguments takes the whole screen, which
+         is the right default for 「今見えているもの」. `reason` is free text — what Atlas is looking
+         FOR — carried into the frame's caption so the reader can see why their view was captured. */
+      'view.inspect': { type: 'object', properties: { include: { type: 'string', enum: ['screen', 'map'] }, reason: str() } },
       /* the place is optional (no place = the current view) but the KIND is not: without it the
          case asks «what kind of facilities?» */
       'map.poi': { type: 'object', properties: { kind: str(), query: str(), what: str(), name: str(), place: str(), color: str() }, anyOf: [{ required: ['kind'] }, { required: ['query'] }, { required: ['what'] }, { required: ['name'] }] },

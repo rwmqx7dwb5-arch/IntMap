@@ -148,7 +148,12 @@ export function attachLightbox(chatEl, closeLabel) {
 
   chatEl.__lb = true;
   chatEl.addEventListener('click', (e) => {
-    const im = e.target && e.target.closest && e.target.closest('.atl-imgrow-in img');
+    /* (#R493) `.atl-viewframe img` is the frame Atlas captured with view.inspect, shown back inside
+       the answer. It is a picture in the chat like any other, so it opens in the same viewer — a
+       340-pixel thumbnail of a map is a thing you have to be able to enlarge. ⚠ THE SELECTOR IS THE
+       WHOLE BINDING: a class renamed on one side and not here fails SILENTLY (the click simply does
+       nothing), which is why tests/r493-checks.test.mjs reads both spellings out of the sources. */
+    const im = e.target && e.target.closest && e.target.closest('.atl-imgrow-in img, .atl-viewframe img');
     if (im && im.src) { e.preventDefault(); e.stopPropagation(); _open(im.src, (typeof closeLabel === 'function') ? closeLabel() : closeLabel); }
   });
 }

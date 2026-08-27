@@ -104,7 +104,13 @@ test('R193 ⑧ nothing large is fetched on the boot path that nobody is waiting 
      their first use now: html2canvas when the shutter is pressed, KaTeX when an answer carries LaTeX. */
   assert.ok(!/requestIdleCallback\(load/.test(v), 'the vendors are no longer merely delayed');
   assert.match(v, /window\.IntMapVendor = /, 'they are behind an explicit first-use gate');
-  assert.match(read('js/screenshot.js'), /IntMapVendor\.html2canvas\(\)/, 'the screenshot path fetches its own library');
+  /* ⚠ (#R493) THE FETCH MOVED WITH THE CAPTURE, AND THE CLAIM DID NOT. js/screenshot.js used to hold
+     the picture; it now holds the BUTTON and calls js/atlas-view-capture.js, which Atlas calls too
+     (view.inspect). Reading the old file would only prove that a second copy of the fetch had been
+     left behind — the duplication that round removed. The property is unchanged: whoever composes
+     the screen pulls its own 198 kB library at that moment and never at boot. */
+  assert.match(read('js/atlas-view-capture.js'), /IntMapVendor\.html2canvas\(\)/, 'the capture path fetches its own library');
+  assert.match(read('js/screenshot.js'), /await import\('\.\/atlas-view-capture\.js'\)/, '…and the shutter reaches it on demand, not at boot');
   assert.match(read('js/atlas-reply.js'), /IntMapVendor\.katex\(\)/, 'and the maths path fetches KaTeX');
   /* the country file waits for the map's own idle */
   const ab = read('js/app-body.js');

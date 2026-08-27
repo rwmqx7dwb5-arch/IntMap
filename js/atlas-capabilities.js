@@ -210,6 +210,12 @@ export function makeAtlasCapabilities(HOST) {
       ['map.clear',                  'clear',          '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'none',   '',         ''],
       ['view.fullscreen',            'fullscreen',     '',                                                            'view',    'none',    'view.fullscreen',        'view',                'session', 'none',   '',         ''],
       ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   '',         ''],
+      /* ⚠ (#R493) THE ONLY CAPABILITY WHOSE RESULT IS A PICTURE. Every other row hands Atlas facts
+         it can already read off the state ledger; this one hands it the PIXELS — the frame the
+         reader is looking at, attached to the next model call as a real image. It writes nothing
+         and moves nothing (observer `none`, empty `writes`), so it holds no conflict key and can
+         run beside anything. risk='read' for the same reason. */
+      ['view.inspect',               'inspect',        'lookAtMap,seeMap,viewInspect,readScreen',                     'view',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['map.poi',                    'poi',            'mapPois,facilities',                                          'map',     'paint',   'map.poi',                'map',                 'session', 'none',   'place?',   ''],
       ['research.mapReport',         'mapReport',      'newsMap,reportMap',                                           'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
       ['research.situationMap',      'researchMap',    'research_map,situationMap',                                   'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],

@@ -247,6 +247,12 @@ window.IntMapLang.define('zh-hans', {
   /* ② the inline strings — every L(…) call site in js/*.js, keyed by its English text.
      1882 of them. A key left untranslated renders in English. */
   inline: {
+    /* (#R493) view.inspect — what the reader is told when Atlas looks at the map for them */
+    "The map was not drawing when I looked — the page is in the background, so there was no frame to capture. Ask again with IntMap in front.": "查看时地图并未在绘制——页面在背景中，因此没有可撷取的画面。请将 IntMap 移到前景后再问一次。",
+    'Atlas looked at the map': 'Atlas 查看了地图',
+    'map only': '仅地图',
+    'The map is not running, so there is nothing to look at.': '地图未在执行，因此没有可以查看的内容。',
+    'Could not read the map frame — the renderer gave nothing back.': '无法读取地图画面——算绘引擎没有回传任何内容。',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     "{n} lookups left today": "今日剩余解说 {n} 次",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap 有新版本可用。请重新加载以继续。',

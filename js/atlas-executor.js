@@ -402,6 +402,30 @@ function makeAtlasExecutor(HOST, CTX) {
              this. What survives is the case's own account of ITSELF, which is the part no observer
              can re-derive from the outside. The verdict wins any key it also sets. */
           _base.meta = Object.assign({}, (raw && typeof raw === 'object' && raw.meta) || null, _base.meta || null);
+          /* ══ ⚠⚠⚠ (#R493) …AND THE CASE'S `exec` DIED THE SAME DEATH, ONE FIELD OVER ═══════════
+             js/atlas-results.js's `toLegacy` reads the mechanical block back out of `observed.exec`
+             — and the only function that ever put it there is `fromLegacy`, which the app never
+             calls (measured: its three call sites are all inside tests/r318-checks.test.mjs). The
+             live path is this one, and `observed` here is composed from the before/after snapshots
+             and the VERIFIER'S observation; no observer in js/atlas-capabilities.js sets `exec`. So
+             `toLegacy` never set it, `a.__exec` was null, `_runOne` handed js/atlas-toolsurface.js
+             `exec:null`, and `mechanical()` emitted no `observed` — for EVERY capability that
+             returns one.
+             ⚠ #R413 IS THE MEASUREMENT OF WHAT THAT COSTS, and it did not know. It ends «`exec` IS
+             WHY THIS WAS UNUSABLE: js/atlas-toolsurface.js forwards `res.exec` and nothing else, so
+             the note reaches the READER while the turn that located them learned only ok:true», and
+             it fixed the locate case to return {lat,lng,accuracyM,provenance}. That block has never
+             once arrived. tests/r413 asserts the SPELLING of the line in the dispatch — true, and
+             silent about whether the value survives the executor (#R488's shape exactly: a check
+             that pins a spelling cannot notice a dead rule).
+             ⚠ AFTER `Object.assign(…, verdict)` ABOVE, NOT INSIDE THE COMPOSITION IT REPLACES. A
+             verdict that carries its own `observed` overwrites the composed object wholesale, which
+             is how the `camera` observer — view.locate's — discards it. And it is skipped when
+             something upstream already claimed the key, so the observer still wins where it speaks.
+             This adds a field that was being written into a hole; it removes nothing. */
+          if (raw && typeof raw === 'object' && raw.exec && !(_base.observed && _base.observed.exec)) {
+            _base.observed = Object.assign({}, _base.observed || null, { exec: raw.exec });
+          }
           var r = Results.make(_base);
           return settle(r);
         } finally {

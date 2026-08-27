@@ -69,6 +69,13 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'#atlas-panel .atl-imgrow-in{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}'
       +'#atlas-panel .atl-imgrow-in img{display:block;max-width:100%;max-height:230px;width:auto;height:auto;border-radius:12px;cursor:zoom-in;}'
       +'#atlas-panel .atl-imgrow-in img:only-child{max-height:280px;}'
+      /* (#R493) the frame Atlas looked at, shown back to the reader inside the ANSWER — small, so it
+         reads as evidence rather than as a second map, and captioned so «Atlas looked» is a claim the
+         reader can check rather than one they have to take. js/atlas-attach.js's delegated click
+         names this class too, so a tap opens it full-screen in the same viewer as an attached image. */
+      +'.atl-viewframe{margin:6px 0 4px;max-width:340px;}'
+      +'.atl-viewframe img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--atlas-glass-edge);cursor:zoom-in;}'
+      +'.atl-viewframe-cap{font-size:10.5px;line-height:1.45;color:var(--text-muted);margin-top:4px;}'
       +LIGHTBOX_CSS
       /* (#R156) UNIFIED RENDERER — code blocks, inline code, display/inline math, tables, blockquotes. NOT scoped to
          #atlas-panel so the same classes render identically in the sidebar-tab and workspace-window Atlas surfaces.
