@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **98 measured spec files / 77.2 min** of serial browser time against a ceiling of 77.2 min; and
-`npm run test:checks` runs **268 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **269 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier is the whole suite minus core — **92 spec files**
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -878,6 +878,44 @@ sits 30 km away but at a median 16.52 m/s, which is the inner edge of the eyewal
 (`tests/fixtures/r460-cyclone-boxes.json`) plus the fields the live page cannot be made to show —
 a ring with a gap, a band with no ring at all, a hole in the field. Replacing the rule with the box
 minimum turns 6 of its 9 checks red.
+
+### 「visibly different colours」 is a claim about a reader, so it is measured in the reader's unit (#R487)
+
+The cyclone test ends with a fourth claim, after the three above: the eye and its wall must not
+only *be* different, a reader must be able to **see** that they are. Since #R276 that was asked of
+the squared Euclidean distance between two sRGB triples, bounded at 30 units.
+
+sRGB is a storage encoding, and distance in it does not order how different two colours look.
+MEASURED on the shipped wind table (`js/wx-ecmwf.js`, resampled to 1,041 entries):
+
+```
+ 4.7 m/s [77,143,131] vs 27.6 m/s [76,117,145]   RGB 29.5 → 「the same colour」   ΔE00 20.56
+ 9.0 m/s [53,160,53]  vs  9.6 m/s [83,162,54]    RGB 30.1 → 「far apart」         ΔE00  3.17
+```
+
+— the same order, backwards, by a factor of six and a half. It cost a deploy: run 33096001326
+read the eye at `[75,145,155]` over 2.15…7.20 m/s and its wall at `[76,117,145]` over
+26.20…27.86 m/s — **19.00 m/s apart**, every other assertion in the test green — and went red at
+885 of the 900 it wanted. That pair is **ΔE00 14.22**. The map was right; the ruler was not.
+
+This is the third time the same test has recorded this defect: #R276 追記 (「red − blue is not
+monotone along this ramp」), #R382 (「distance-to-an-entry does not order speeds」), and this. Each
+time the repair was to stop inventing the quantity and read it out of the thing the claim is about
+— the field, in those two, and the **observer**, here. The claim is now CIEDE2000
+(`tests/helpers/colour-difference.js`), and `tests/r382-checks.test.mjs` — which carried a second
+copy of the same line — asks it the same way.
+
+⚠ **The bound does not come from the ramp, on purpose.** 「further apart than the table's own finest
+step」 is tempting because it writes no constant down, and it is worthless: reduce the ramp's
+contrast and the step shrinks with it, so the bound follows the defect down and an unreadable map
+clears it. `tests/r487-checks.test.mjs` ⑤ builds exactly that map and watches the derived bound pass
+it. The threshold is the observer's instead — ΔE00 is scaled so **1.0 is one just-noticeable
+difference**, and above **2** is the band visible *at a glance*, which is how a map is read.
+
+⚠ **A hand-written ΔE00 would be another invented quantity**, so ① of the same file puts the
+implementation through the reference pairs CIE 142 / Sharma et al. publish — the data exists because
+the three easy mistakes (the a* rescaling, the mean hue across the 0° wrap, the sign of the rotation
+term) all yield a function that looks right on ordinary colours and is wrong on the deciding ones.
 
 ### What only production can answer (#R333)
 
