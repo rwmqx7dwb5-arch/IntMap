@@ -215,3 +215,41 @@ test.describe('the imagery-depth memo', () => {
     expect(r.tokyoDepth.have, 'and real imagery was seen at least at the tile fetched').toBeGreaterThanOrEqual(12);
   });
 });
+
+/* ══ (#R479) THE WIRE, AGAINST LIVE CARTO ══════════════════════════════════════════════════════
+   This file already boots the app, selects the base map and records every basemaps.cartocdn.com
+   request, so the keyed-URL property costs one more pass over a list it has already collected.
+   It belongs HERE rather than in a spec of its own: the core tier is at its budget ceiling, and
+   the every-push half of this round is the node gate (tests/r479-checks.test.mjs ②), which
+   refuses the spelling outright. What only a real browser can add is that the credit reads the
+   way CARTO's terms require while a CARTO basemap is the one on screen. */
+test.describe('R479 the CARTO key and the credit it buys', () => {
+  test('every CARTO request is keyed, and the map credits CARTO + OpenStreetMap', async ({ page }) => {
+    test.setTimeout(180000);
+    const carto = [];
+    page.on('request', r => { const u = r.url(); if (/basemaps\.cartocdn\.com\//.test(u)) carto.push(u); });
+    await boot(page);
+    await useBaseMap(page);
+
+    expect(carto.length, 'CARTO tiles are being requested at all').toBeGreaterThan(3);
+    const unkeyed = carto.filter((u) => !/[?&]key=[^&]+/.test(u));
+    expect(unkeyed.slice(0, 5),
+      'an unkeyed request is answered 200 with the watermark burned in, so only the URL can tell').toEqual([]);
+
+    /* the credit for the base that is now on screen */
+    const c = await page.evaluate(() => {
+      const el = document.getElementById('map-credit');
+      if (!el) return { missing: true };
+      const r = el.getBoundingClientRect();
+      return { missing: false, text: (el.textContent || "").trim(),
+        hrefs: [...el.querySelectorAll("a")].map((a) => a.getAttribute("href")),
+        onScreen: r.width > 0 && r.height > 0 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 };
+    });
+    expect(c.missing, 'the credit element exists').toBe(false);
+    expect(c.onScreen, 'and it is drawn inside the viewport').toBe(true);
+    expect(c.text, 'CARTO is credited while a CARTO basemap is drawn').toMatch(/CARTO/);
+    expect(c.text, 'and so is OpenStreetMap — the terms name both').toMatch(/OpenStreetMap/);
+    expect(c.hrefs.some((h) => /carto\.com/.test(h || '')), 'CARTO credit links to CARTO').toBe(true);
+    expect(c.hrefs.some((h) => /openstreetmap\.org/.test(h || '')), 'OSM credit links to OSM').toBe(true);
+  });
+});

@@ -130,6 +130,7 @@ compass.js                        方位の呼び名（9言語・16方位）wind
 chronos.js                        Chronos＝統一時間カーネル window.IntMapTime
 label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す
 border-style.js                   国境線を1本にまとめるスタイル層
+carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
 coast-line.js                     海岸線・湖岸線——国境線と同じ手法で makeCoastLine()
 grid-style.js                     経緯線のスタイル層
 layer-home.js                     カメラを動かしてよいレイヤーの表 window.IntMapLayerHome

@@ -187,7 +187,7 @@ window.IntMapModules.playground=function(HOST){
       const answerB=document.createElement('button'); answerB.textContent=window.IntMapLang.t(HOST.lang,"Answer","回答","Antwort","Ответ","Respuesta"); answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
       let gmap=null, guess=null, gmarker=null, answered=false;
       try{
-        gmap=GE().ui.createSubView({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© CARTO © OSM'}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
+        gmap=GE().ui.createSubView({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:window.cartoTiles('rastertiles/voyager',{hosts:['a','b']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
         /* (#R31) GLOBE projection for the guess map ("メルカトルではなくglobe地図に") — more game-y & honest about distance. */
         /* (#R179) through the scoped engine: setProjection takes a MODE, not a renderer spec */
         try{ gmap.events.on('style.load',()=>{ try{ gmap.camera.setProjection('globe'); }catch(_){} }); gmap.camera.setProjection('globe'); }catch(_){}
