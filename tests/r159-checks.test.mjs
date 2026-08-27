@@ -22,7 +22,9 @@ test('R159 #1 Atlas replies carry NO bold and NO divider lines', () => {
   // inline **bold** and table-cell **bold** are stripped to plain text (mdMini + _atlCellFmt).
   // (NB: the separate non-Atlas md() renderer at ~23453 legitimately keeps <b>; scope the check to the Atlas helpers.)
   ok(".replace(/\\*\\*([^*]+)\\*\\*/g,'$1')                                                             /* (#R159) inline **bold** → plain", 'mdMini inline **bold** → plain');
-  ok("function _atlCellFmt(s){ return esc(String(s==null?'':s)).replace(/\\*\\*([^*]+)\\*\\*/g,'$1');", 'table-cell **bold** → plain');
+  /* (#R492) the cell formatter also annotates the cell (units / clocks / abbreviations), so it takes the
+     options object as a second argument. The property THIS line protects — the bold strip — is unchanged. */
+  ok("function _atlCellFmt(s,AN){ const t=esc(String(s==null?'':s)).replace(/\\*\\*([^*]+)\\*\\*/g,'$1');", 'table-cell **bold** → plain');
   // headings differentiate by SIZE + SPACING only — semibold 600, never the heavy 750/800 bold weight
   /* (#R232) …now carrying class="atl-h", which is what lets mdMini drop the paragraph spacer that
      lands against a heading. Weight and colour — the property these three lines exist for — stand. */

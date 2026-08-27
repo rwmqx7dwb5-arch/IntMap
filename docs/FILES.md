@@ -237,6 +237,8 @@ atlas-view-subject.js             Atlas — 「いま何を見ているか」の
 atlas-styles.js                   Atlas パネルのスタイルシート 1 本（atlasPanelCSS）
 atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方
 atlas-reply.js                    Atlas — 返答の描画（安全な markdown・コード／数式・GFM 表・出典カード）
+atlas-annotate.js                 Atlas — 返答本文の小注釈（単位換算・UTC→現地時刻・略語34語の展開）と、
+                                  ホバー／タップで出る一枚。印は mdMini が返す HTML 文字列に入る
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）

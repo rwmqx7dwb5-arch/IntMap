@@ -23,6 +23,7 @@
 import { LIGHTBOX_CSS } from './atlas-attach.js';
 import { MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE } from './atlas-msg-tools.js';
 import { GLOSS_CSS, GLOSS_CSS_MOBILE } from './atlas-gloss.js';   /* (#R491) the term-gloss card + its touch pill */
+import { ATLAS_ANNOTATE_CSS } from './atlas-annotate.js';
 
 export function atlasPanelCSS() {
     /* (#R62) refined AI-app look ("ChatGPTのような洗練された生成AI App風のUI") + the DEFAULT desktop layout is a
@@ -91,6 +92,9 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'.atl-md-table th,.atl-md-table td{border:1px solid var(--glass-border,rgba(128,128,128,.18));padding:5px 10px;text-align:left;vertical-align:top;white-space:nowrap;}'
       +'.atl-md-table thead th{background:rgba(120,120,128,.14);font-weight:600;}'   /* (#R159) header row: semibold, not bold */
       +'.atl-md-table tbody tr:nth-child(2n){background:rgba(120,120,128,.06);}'
+      /* (#R492) the in-reply notes and their one floating card. Unscoped for the same reason as the block
+         above: the card is appended to document.body and the marks appear on all three Atlas surfaces. */
+      +ATLAS_ANNOTATE_CSS
       /* ══ ⚠⚠⚠ (#R313) THE PROGRESS INDICATOR IS CHATGPT'S SHIMMER, NOT THREE BOUNCING DOTS ═════
          「AtlasのThinkingとかSearchingとかのUI、ChatGPTと同じグラフィックにしてください。
            （実際にChatGPTのサイト見て、実装してください。）」
