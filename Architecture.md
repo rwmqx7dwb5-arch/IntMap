@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（970行・92 KB）＋ `css/`（3本）＋ `js/`（247本・11.3 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（970行・92 KB）＋ `css/`（3本）＋ `js/`（248本・11.3 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -315,6 +315,31 @@ getter なので、観測していない成功を呼び出し側が書き込む�
 
 検査は `node scripts/atlas-capability-audit.mjs`（20 項目・`--json` で機械可読）。
 `scripts/atlas-catalog.mjs`（「planner に説明されているか」だけを問う旧ゲート）は互換入口として残る。
+
+### 2.1b 回答の中の語句を引く (The term gloss)
+
+**Atlas の回答は「読むもの」でもあるので、読んでいる途中で止まらずに済む経路がある。**
+回答文の語句を選んで**右クリック**（タッチは長押し → 「解説」）すると、その語の小さな辞書カードが
+その場に開く——**意味**（一般的な語義）・**この文での意味**・**背景**・**関連語**。
+
+⚠ **価値があるのは 2 番目の欄だけである。** 1 番目はブラウザの辞書でも出る。「この文での意味」は
+**その段落を持っている側にしか出せない**——同じ `Georgia` が国なのか米国の州なのかは、語ではなく
+文脈が決める。だからモデルには語だけでなく、**その文・その回答の抜粋・その回答を生んだ質問**を渡す。
+
+| 部品 | ファイル | 何の正本か |
+|---|---|---|
+| カードと操作 | `js/atlas-gloss.js` | 選択の判定・文脈の切り出し・カードの描画と配置・キャッシュ |
+| カードの schema | `supabase/functions/ai-proxy/index.ts` の `GLOSS_SCHEMA` | サーバ所有（`map_report` / `analysis_structured` と同じ理由） |
+| 通信と枠 | `js/ai-core.js` の `askAIGloss` | 専用レーン（§5）。質問の枠は消費しない |
+
+- **文脈は描画済みの DOM から採る。** 吹き出しがその回答を、その直前の吹き出しがその質問を持って
+  いる。だからこの機能は turn 履歴にも envelope にも証拠レジストリにも触らず、**それらが変わっても
+  古びない**。長い回答は語句の**周りを**切り出す（先頭から切ると、終盤の語句が属する段落——
+  つまり「この文での意味」に答えられる唯一の段落——が落ちる）。
+- **同じ語×同じ回答は 1 回しか訊かない。** キャッシュ鍵は（言語・吹き出し・語句）。
+  次の回答の同じ語は**別の問い**なので訊き直す（答えが段落に依存する、というのがこの機能の趣旨）。
+- **Atlas 自身も同じカードを開ける**（`{"type":"gloss","term":str}` ＝ 能力 `reader.gloss`）。
+  選択 UI からしか届かない能力を作らない（`CONSTITUTION.md`／Atlas は操作卓）。
 
 ### 2.2 回答の契約 (The answer contract)
 
@@ -761,6 +786,21 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   1日上限の 429 `{error:"limit"}` とは**別の文言**を出す。
   プロバイダ失敗の払い戻しは `refund_ai_turn` が**charge とターンの両方**を解放する。
   ⚠ **決定論的な操作（`IntMapOS.execute()` だけで終わる依頼）は AI 枠を一切使わない。**
+- **⚠ 用語グロス（回答文の語句の解説）は「別の枠」で動く。** 回答の中の語句を選んで訊く操作は、
+  Atlas への質問とは費用の桁が違う（短い prompt・出力 700 token・ツールなし・web 検索なし）。
+  これを質問と同じ枠に載せると、free の 10 回では**1 つの回答を読む間に 3 語調べたら質問が
+  残らない**——つまり機能の目的そのものが成り立たない。よって専用のカウンタ
+  `public.ai_gloss_usage` を持ち、上限は free 60 / plus 300 / pro 1,000。
+  **両方向に独立**で、グロスを使い切っても質問はでき、質問を使い切っても語句は引ける。
+  ⚠ **どちらの枠で払うかは、本文を読む前に決まる**（消費は parse の前——上の `x-intmap-turn` と
+  同じ理由）。だからレーンも `x-intmap-lane: gloss` ヘッダで宣言し、**本文を読んだ後に
+  `task === "gloss"` と照合する**。食い違えば払い戻して 400 `{error:"bad_lane"}`——照合が無ければ
+  ヘッダは高価な task を安いカウンタで買う穴になる。安いレーンは画像も web 検索も受け付けず、
+  prompt 上限も 8,000 文字と別に持つ。429 は `{error:"gloss_limit"}` で、質問枠の `limit` とは
+  別の文言を出す（利用者の質問回数には何も起きていないため）。
+  ⚠ **応答は `used`/`limit` を返さない。** `js/ai-core.js` は受け取った `used` を無条件に
+  質問カウンタの写しへ書くので、グロスの数をその名前で送ると**質問の残数がグロスの残数に化ける**。
+  グロスは `glossUsed`/`glossLimit` を名乗り、専用の写し（`aiGlossLeft()`）だけがそれを読む。
 - **⚠ クライアントが持っているのは「サーバーの行の写し」であって、独自の数え上げではない。**
   `js/ai-core.js` が `public.ai_usage` の当日行（RLS で本人だけが読める）を写し、
   **サーバーが送った数以外を、その写しに書き込まない**。`ai-proxy` の 429 は 2 か所しか無く、
@@ -826,8 +866,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **31 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
-`user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `community_*` 5 表 / `feedback` /
+実証手順も同じファイル）。現在 **32 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
+`user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` /
+`community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
 ＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
 `news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`
@@ -2469,7 +2510,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（17本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（18本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。

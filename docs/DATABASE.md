@@ -28,6 +28,7 @@ is the human explanation.
 |---|---|---|---|
 | `profiles` | One row per user. Public columns (`display_name`, `bio`, `avatar_url`) + private (`email`, `is_admin`, `is_pro`, `plan`, `login_count`). | Owner + admin (full row). Public columns for everyone via the `profiles_public` **view**. | Owner may update only `display_name`/`bio`/`avatar_url`/`login_count` (column-level grant → **no self-escalation**). |
 | `ai_usage` | Daily AI free-use counter (`user_id`, `usage_date`, `count`). | Owner reads own rows. | **RPCs only** (`increment_ai_usage` / `refund_ai_usage`, service_role). Users cannot write it. |
+| `ai_gloss_usage` | Daily counter for the Atlas **term-gloss** lane (`user_id`, `usage_date`, `count`). Separate from `ai_usage` so looking a word up inside an answer never spends one of the reader's questions — and so spending the questions never stops the lookups. | Owner reads own rows. | **RPCs only** (`consume_ai_gloss` / `refund_ai_gloss`, service_role). |
 | `ai_turns` | One row per (account, AI **turn**) — `(user_id, turn_key)`, `calls`, `charged`, `started_at`. The first call of a turn charges `ai_usage`; the rest are free up to a server-set ceiling. | Owner reads own rows. | **RPCs only** (`consume_ai_turn` / `refund_ai_turn` / `sweep_ai_turns`, service_role). |
 | `user_prefs` | Per-user synced settings blob (`data` jsonb). | Owner. | Owner. |
 | `favorites` | Saved (★) article links. | Owner. | Owner. |
@@ -130,6 +131,8 @@ itself; `grant execute` means "may call", never "may do".
 | `public.handle_new_user()` + `on_auth_user_created` trigger on `auth.users` | SECURITY DEFINER | Creates the `profiles` row on signup (copies id/email/display_name). |
 | `public.increment_ai_usage(uuid, integer)` | SECURITY DEFINER, `search_path=''` | Atomically consumes one AI use if under the limit. Returns `(used, allowed)`. EXECUTE = service_role only. |
 | `public.refund_ai_usage(uuid)` | SECURITY DEFINER, `search_path=''` | Refunds one use after a failed provider call. EXECUTE = service_role only. |
+| `public.consume_ai_gloss(uuid, integer)` | SECURITY DEFINER, `search_path=''` | Atomically consumes one **term-gloss** lookup if under that lane's own limit. Returns `(used, allowed)`. EXECUTE = service_role only. |
+| `public.refund_ai_gloss(uuid)` | SECURITY DEFINER, `search_path=''` | Refunds one lookup after a failed provider call. EXECUTE = service_role only. |
 | `public.consume_ai_turn(uuid, integer, text, integer, integer)` | SECURITY DEFINER, `search_path=''` | The turn-aware front door to the quota. Charges once per turn key; later calls of the same key are free until `p_max_calls`, and the key expires after `p_ttl_seconds`. Returns `(used, allowed, charged, calls, reason)`. EXECUTE = service_role only. |
 | `public.refund_ai_turn(uuid, text)` | SECURITY DEFINER, `search_path=''` | Releases the charge **and** the turn together, so a retry after a provider failure is not treated as a free continuation. EXECUTE = service_role only. |
 | `public.sweep_ai_turns()` | SECURITY DEFINER, `search_path=''` | Deletes turn rows older than a day. The ledger is a scratch pad, not a history. EXECUTE = service_role only. |
@@ -145,12 +148,12 @@ so a caller cannot hijack it via their own search path.
 
 1. **PII is not world-readable.** `profiles` SELECT is owner-or-admin; the public
    `profiles_public` view exposes only `id/display_name/bio/avatar_url`. `feedback`,
-   `bug_reports`, `donations`, `community_reports`, `ai_usage`, `ai_turns` are never readable by anon or
+   `bug_reports`, `donations`, `community_reports`, `ai_usage`, `ai_turns`, `ai_gloss_usage` are never readable by anon or
    by other users.
 2. **No privilege escalation.** A user can update only the four safe profile columns (column
    grant), so they cannot set their own `is_admin`/`is_pro`/`plan`. Admin is granted only via
    SQL (below) or `service_role`.
-3. **AI quota is tamper-proof.** `ai_usage` is written only by the SECURITY DEFINER RPCs, and
+3. **AI quota is tamper-proof.** `ai_usage` — and the separate `ai_gloss_usage` lane — is written only by the SECURITY DEFINER RPCs, and
    those RPCs are executable only by `service_role`.
 4. **(#R144) Server-owned run-state.** Monitor run results (`monitor_runs`/`_evidence`/`_reports`/
    `_seen_items`) have no write policy → only `service_role` writes them, so they cannot be forged.
@@ -185,7 +188,7 @@ edit `geo_pins`/`dashboard_cards`.
 
 ## Data classification (drives backup + retention)
 
-- **A — critical, irreplaceable:** `profiles`, `ai_usage`, `user_prefs`, `favorites`,
+- **A — critical, irreplaceable:** `profiles`, `ai_usage`, `ai_gloss_usage`, `user_prefs`, `favorites`,
   `donations`, `feedback`, `bug_reports`, all `community_*`. User-generated / account data.
   ⚠ **`news_events`, `news_event_articles`, `news_cluster_decisions` and `saved_news_events`
   belong here too.** Re-fetching the feeds returns the articles; it does not return which articles
@@ -225,7 +228,7 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **31**, key
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **32**, key
   PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin`.
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't

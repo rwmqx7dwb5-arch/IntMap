@@ -100,6 +100,14 @@ flowchart LR
     that holds in prod regardless of grants. pgTAP now simulates the prod grant so tests catch this.
 - **AuthZ — AI quota:** `ai_usage` is writable **only** by the SECURITY DEFINER RPCs
   `increment_ai_usage` / `refund_ai_usage`, whose EXECUTE is granted to `service_role` only.
+  The term-gloss lane has the identical shape in its own table (`ai_gloss_usage`,
+  `consume_ai_gloss` / `refund_ai_gloss`).
+  ⚠ **Which lane pays is declared in a header (`x-intmap-lane`) and is therefore not trusted.**
+  Quota is consumed before the body is parsed, so the header is a claim about a body nobody has read;
+  `ai-proxy` verifies it against `task` once the body IS parsed and answers 400 `bad_lane` — after
+  refunding — on any mismatch in either direction. Without that check the header would be a door into
+  the expensive tasks at the cheap counter's price. The cheap lane additionally refuses images and
+  hosted web search and carries its own prompt ceiling.
   A user cannot inflate/deflate their own quota.
 - **AuthZ — admin:** `profiles.is_admin`, checked by the `is_admin()` SECURITY DEFINER
   function (with `search_path=''`) inside the admin-only RLS policies. `admin.html`'s login
