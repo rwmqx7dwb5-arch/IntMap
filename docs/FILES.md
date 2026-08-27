@@ -260,6 +260,20 @@ atlas-geo-object.js               **地点の1つの形**（#R397）— GeoObjec
                                   event_location / geocoded_point / resolved_place_centroid / model_named）。
                                   `mergeKnown()` がコードの座標を回答の地点名へ戻すので、再ジオコードしない。
                                   ⚠ 代表点は `pointLike` ではない＝「その地点」として扱わない
+atlas-geo-ledger.js               **この会話が解決した場所の台帳**（#R489）— 1度解決した地点を
+                                  種別・国コード・正規名・**stableId**・座標・**その回答の中での役割**として
+                                  ターンを越えて保持する。`resolve()` は再ジオコードの前に引かれ、
+                                  `contextLines()` が次のターンのプロンプトへ**識別子として**渡る。
+                                  時間窓（`setWindow`）も質問ごとに1度だけ固定して持つ。
+                                  ⚠ 地点の**形**は `atlas-geo-object.js` のもの（provenance ごと受け取る）。
+                                  ⚠ 従来ターンを越えたのは `actLabel` の**26文字**だけで、次のターンは
+                                  同じ地名を自分の文章から**文字列として**取り直していた
+atlas-admin1.js                   **第1レベル行政境界を、同梱ファイルから**（#R489）—
+                                  `data/admin1-world.json.gz`（4,515 ユニット／247か国・#R290 で同梱）を
+                                  **セッション1回**読み、名前・現地名・ISO 3166-2・HASC で引く。
+                                  `hlTarget()` が `resolveHlTarget` の**ネットワークより前の段**。
+                                  ⚠ 同名2ユニットの決め手は**問い合わせ側の行政区分語**（州/oblast/область…）
+                                  ——あれば面積の大きい方＝「Moscow Oblast」は市ではなく州
 atlas-agent.js                    **ターンの進行**（#R406）— Atlas が1手ごとに「最終回答」か「tool 呼び出し」を
                                   選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・
                                   回数の上限だけを見て、意味は一切決めない。DOM も network も触らない
@@ -368,6 +382,12 @@ routing.js                        車／徒歩／自転車／公共交通の経�
 routing-store.js                  経路の唯一の状態 window.IntMapRouteStore（Atlas とパネルが共有）
 routing-providers.js              各ルーターが実際にできること window.IntMapRouteProviders
 routing-geocode.js                地点の候補検索・順位付け window.IntMapRouteGeocode
+                                  （⚠ 1秒1件の床は #R489 で `nominatim-gate.js` へ移した＝共有の1つ）
+nominatim-gate.js                 **Nominatim の前に立つ唯一のキュー**（#R489）— 公開エンドポイントの
+                                  「1秒1リクエスト」を**アプリ全体で1つの counter** として守る。
+                                  `reserve({drop:true})` は打鍵経路（古い問い合わせは捨てる・#R298 のまま）、
+                                  `wait()` は一括経路（14件は**並ぶ**）。取得はしない＝枠を配るだけ
+                                  window.IntMapNominatimGate ＋ ES import の両方（同一インスタンス）
 routing-cards.js                  経路候補カード／手順／区間の共通描画 window.IntMapRouteCards
 routing-export.js                 GPX・GeoJSON・共有状態 window.IntMapRouteExport
 routing-ui.js                     経路パネル（Layers ▸ Tools ▸ Directions・遅延取得）window.IntMapRouteUI

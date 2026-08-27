@@ -1,5 +1,6 @@
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy; see js/atlas-persona.js */
 import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a clock — see the file header there */
+import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and with the app's ONE one-a-second floor in front of it. Both calls below used to go straight out, so fourteen Atlas oblast outlines left as fast as the network took them. */
 /* ============================================================================
  *  IntMap · Atlas — place / region resolution and camera framing  (#R199)
  * ----------------------------------------------------------------------------
@@ -100,7 +101,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length){ _fz={lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}; if(_fz.kind!=='capital') return _setLast(_fz); } } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
          real extent so a continent zooms out and a city zooms in (was: everything pinned at country-zoom ~6). */
-      try{ const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(j&&j[0]){ const b=j[0].boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0],bbox,kind:(j[0].addresstype||j[0].type||j[0].class||'')}); } }catch(_){}
+      try{ await NominatimGate.nominatimSlot(); const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(j&&j[0]){ const b=j[0].boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0],bbox,kind:(j[0].addresstype||j[0].type||j[0].class||'')}); } }catch(_){}
       if(_fz) return _setLast(_fz);   /* capital match + Nominatim unreachable → fall back to the coarse centroid */
       return null; }
     function _bboxOK(b){ try{ const w=b[0][0],s=b[0][1],e=b[1][0],n=b[1][1]; if(![w,s,e,n].every(v=>typeof v==='number'&&isFinite(v))) return false; if(e<=w||n<=s) return false; if((e-w)>355||(n-s)>175) return false; return true; }catch(_){ return false; } }
@@ -244,7 +245,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
               ("トスカーナ州" / "Toscana"), so the exact-name bonus below fired for an obscure English HOMONYM instead
               (Tuscany the Calgary suburb) — a reported "見当違いの場所" wrong-place highlight. */
         const _lang=(typeof HOST.lang!=='undefined'&&HOST.lang)?String(HOST.lang):'en';
-        const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language='+encodeURIComponent(_lang+',en')+'&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(!Array.isArray(j)||!j.length) return null;
+        await NominatimGate.nominatimSlot(); const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language='+encodeURIComponent(_lang+',en')+'&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(!Array.isArray(j)||!j.length) return null;
         const _q=String(place).trim().toLowerCase();
         const _imp=x=>(+x.importance||0); const _maxImp=Math.max.apply(null,j.map(_imp).concat([0]));
         /* (#R116/#R136) EXACT-NAME bonus: a result whose own name equals the query beats a FUZZY near-miss of slightly

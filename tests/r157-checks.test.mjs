@@ -34,7 +34,13 @@ test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders
   assert.match(html, /if\(!cg\.geo\|\|!cg\.hit\.length\) return;/, 'no geometry for a group → skip it');
   assert.match(html, /const vg=_validGeo\(cg\.geo,\{trusted:true,autoclose:true\}\);/, 'geometry validated before drawing');
   // (#R158) all-unresolved → honest ok:false with the STRUCTURED execution result fed back to Terra (not a silent skip)
-  assert.match(html, /return R\(false, warn\('⚠ '\+L\('None of the identifiers for that request resolved to a real border'/,
+  /* ⚠ (#R489) THE SENTENCE CHANGED AND THE PROPERTY DID NOT. This check is about the BRANCH — an
+     all-unresolved highlight must return ok:false with a structured exec, never a silent skip — and
+     that is unchanged. What the old wording claimed was that the identifiers did not resolve to a
+     REAL BORDER, which reads as 「その場所は無い」; the reported case was Belgorod Oblast, which has a
+     real administrative outline that Nominatim simply did not rank first. A message that blames the
+     world for a lookup's failure sent the next turn off to re-verify a place never in doubt. */
+  assert.match(html, /return R\(false, warn\('⚠ '\+L\('None of those identifiers could be matched to a boundary in the data IntMap holds/,
     'all-unresolved → honest ok:false + structured exec back to Terra');
   assert.match(html, /status:\(gUnresolved\.length\?'partial_or_failed':'ok'\)/, 'the mechanical execution-result status');
   // it STATES the interpretation used

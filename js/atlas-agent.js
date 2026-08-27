@@ -38,6 +38,8 @@
  *  round is not a second architecture.
  * ==========================================================================*/
 
+import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R489) `callKey` — the identity of one tool call, in the same terms #R441 already uses for one action */
+
 export function makeAtlasAgent() {
   return (function () {
 
@@ -246,7 +248,24 @@ export function makeAtlasAgent() {
       if (typeof model !== 'function') throw new Error('runTurn: opts.model is required');
 
       const transcript = (opts.messages || []).slice();
-      const trace = { steps: [], calls: 0, rejected: 0, executed: 0 };
+      const trace = { steps: [], calls: 0, rejected: 0, executed: 0, reused: 0 };
+      /* ══ ⚠⚠⚠ (#R489) THE SAME CALL, MADE TWICE IN ONE TURN, IS ANSWERED ONCE ══════════════════
+         「1回の依頼に対して少なくとも4回の独立した『調査＋地図化』を連続実行しています。」 — and the
+         evidence in the transcript is that the four DISAGREED: 「限界」「使用データ」「本文に登場したが
+         未配置」 appeared again and again with different conclusions each time, because each pass ran
+         its own web searches at its own moment over a window nobody had fixed.
+         js/atlas-turn-results.js has de-duplicated this since #R441, but it does it at RENDER time —
+         by then every pass has already been paid for, and the reader is shown the survivor of four
+         answers rather than one answer. Asking the identity BEFORE the call is the same rule applied
+         where it costs nothing.
+         ⚠ THIS TAKES NOTHING FROM ATLAS (CONSTITUTION.md §5, and the standing 「制限を増やす方向に
+         持っていくな」). There is no cap and no refusal: every call Atlas makes is still a call, the
+         budget is untouched, no plan is rewritten, and the result handed back is the REAL result of
+         the identical call — with a note saying so, so the model can see it is looking at its own
+         earlier answer rather than a new one. Only SUCCESSFUL calls are reused; a failure is exactly
+         the case where trying again is right. */
+      const TR = makeAtlasTurnResults({});
+      const doneCalls = Object.create(null);
       const results = [];
       let text = '';
       let malformedRun = 0;
@@ -366,6 +385,23 @@ export function makeAtlasAgent() {
             stepResults.push({ id: call.id, name: call.name, ok: false, error: bad.code, message: bad.message, schema: bad.schema });
             continue;
           }
+          /* (#R489) …and the identity check, after `reject` has confirmed the call is well formed
+             so a malformed repeat still gets its own schema note. See `doneCalls` above. */
+          const ckey = TR.callKey(call.name, call.arguments);
+          if (ckey && doneCalls[ckey]) {
+            trace.reused++;
+            const rec0 = Object.assign({}, doneCalls[ckey], { id: call.id, name: call.name, reusedFromEarlierCallThisTurn: true,
+              note: 'This turn has ALREADY made this exact call. Above is what it returned — the app has not '
+                + 'changed since, so a second run would search the same sources over the same window and could only '
+                + 'disagree with itself. Use this result, or ask something different.' });
+            stepResults.push(rec0);
+            /* ⚠ NOT pushed onto `results`: the original run is already there, and the reply is built
+               from `results`. Counting as executed is deliberate — the step DID produce results, and
+               `malformedRun` below is about a model emitting calls that go nowhere, which this is
+               the opposite of. */
+            executedHere++;
+            continue;
+          }
           let out = null;
           try {
             out = await runTool(call);   /* (#R452) …with a deadline. See `runTool` above. */
@@ -376,6 +412,9 @@ export function makeAtlasAgent() {
           executedHere++;
           trace.executed++;
           const rec = Object.assign({ id: call.id, name: call.name }, out);
+          /* ⚠ ONLY A SUCCESS IS REMEMBERED. Freezing a failure would turn a transient network error
+             into a permanent one for the rest of the turn, which is the opposite of the point. */
+          if (ckey && rec.ok !== false) doneCalls[ckey] = rec;
           stepResults.push(rec);
           results.push(rec);
           /* the TOOL may declare it, or the RESULT may — the second is how a generic invoker

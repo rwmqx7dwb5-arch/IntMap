@@ -18,6 +18,7 @@
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import { NominatimGate } from './nominatim-gate.js';   /* (#R489) the one Nominatim floor — js/nominatim-gate.js. The outline tool asks for `polygon_geojson` up to ten results at a time; that is exactly the shape the host's policy is about. */
 
 window.IntMapModules=window.IntMapModules||{};
 
@@ -744,6 +745,7 @@ window.IntMapModules.outline=function(HOST){
       const ids=els.slice().sort((a,b)=>(a.type==='relation'?0:1)-(b.type==='relation'?0:1))
         .slice(0,4).map(e=>(e.type==='relation'?'R':'W')+e.id).join(',');
       try{
+        await NominatimGate.nominatimSlot();
         const r=await fetch('https://nominatim.openstreetmap.org/lookup?osm_ids='+encodeURIComponent(ids)
           +'&polygon_geojson=1&polygon_threshold=0.0003&format=jsonv2',{headers:{Accept:'application/json'}});
         const j=await r.json(); if(!Array.isArray(j)) return null;
@@ -757,7 +759,7 @@ window.IntMapModules.outline=function(HOST){
     async function fetchPolygon(name, ctx){ const q=String(name||'').trim(); if(!q) return null;
       const thr=(ctx&&ctx.threshold!=null)?ctx.threshold:0.0003;   /* (#R54) high-res shape, not 9 straight points */
       const located=!!(ctx&&isFinite(ctx.lng)&&isFinite(ctx.lat));
-      const _ask=async(vb)=>{ try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); return Array.isArray(j)?j:[]; }catch(_){ return []; } };
+      const _ask=async(vb)=>{ try{ await NominatimGate.nominatimSlot(); const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q)+vb,{headers:{Accept:'application/json'}}); const j=await r.json(); return Array.isArray(j)?j:[]; }catch(_){ return []; } };
       /* pick THIS place's boundary out of an answer — identical rule for both passes */
       const _pick=(j)=>{ const polys=j.filter(o=>o.geojson&&/Polygon/.test(o.geojson.type||''));
         if(!polys.length) return null;   /* (#R59) NO rectangle fallback — if there is no real boundary, draw NOTHING */

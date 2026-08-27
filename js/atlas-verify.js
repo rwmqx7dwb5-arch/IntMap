@@ -15,6 +15,7 @@
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a clock — see the file header there */
+import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and behind the app's ONE one-a-second floor — js/nominatim-gate.js */
 
 export function makeAtlasVerify(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc;   /* ⚠ tests/r199 ② requires the CTX rebinds to be the factory's FIRST statement */
@@ -167,7 +168,7 @@ export function makeAtlasVerify(HOST, CTX) {
        Only place-type, name-matching results count; ≥2 distinct locations with no country hint = ambiguous (not placed). */
     async function _atlGeocodeStrict(name, country){ name=String(name||'').trim(); if(name.length<2) return {ok:false,reason:'empty'};
       const q=[name,String(country||'').trim()].filter(Boolean).join(', '); let arr=null;
-      try{ arr=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q),GEOCODE_TIMEOUT_MS,{headers:{Accept:'application/json'}}); }
+      try{ await NominatimGate.nominatimSlot(); arr=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q),GEOCODE_TIMEOUT_MS,{headers:{Accept:'application/json'}}); }
       catch(e){ return {ok:false,reason:'network'}; }   /* (#R452) …and the deadline lands here too: in both cases nothing arrived */
       if(!Array.isArray(arr)||!arr.length) return {ok:false,reason:'not_found'};
       const matches=arr.filter(j=>{ const okType=/^(place|boundary|natural|waterway|landuse|tourism|historic|leisure|amenity)$/.test(String(j.class||''))||!!j.addresstype; return okType && _atlNameOk(name,(j.display_name||'').split(',')[0]); });
@@ -196,6 +197,15 @@ export function makeAtlasVerify(HOST, CTX) {
        empty rule are the lines that stood in the console, character for character. */
     function makePinReplyPlaces(D) {
       const geocode = D.geocode, paintPois = D.paintPois, getPois = D.getPois, setPois = D.setPois;
+      /* ⚠ (#R489) THIS PASS IS WHERE THE CONVERSATION LEARNS ITS PLACES. It already walks every place
+         an answer named, resolves each one, and knows the country and the kind the model declared —
+         and then it threw all of that away the moment the pins were drawn, because the only thing a
+         turn left behind was js/atlas-turn-continuity.js's 26-character label. So the next turn
+         re-extracted fourteen oblast names out of its own prose and geocoded them again, one by one,
+         in the language the reader happened to have typed. Recording here closes that loop, and
+         reading here means a name resolved a moment ago is not sent to Nominatim a second time.
+         ⚠ OPTIONAL: without a ledger this file behaves exactly as it did (the node checks). */
+      const ledger = D.ledger || null;
       const GE = D.GE, GEOBJ = D.GEOBJ, L = D.L;
       return async function _pinReplyPlaces(places, ctx){ ctx=ctx||{}; const text=String(ctx.text||'');
       /* (#R156) CODE-SIDE GEO GATE — 「地図化の有無をモデルのプロンプト遵守だけに依存させず、コード側で
@@ -247,11 +257,12 @@ export function makeAtlasVerify(HOST, CTX) {
              (wasted) or DISAGREE, and when it disagreed the correct position lost. ⚠ A centroid does
              not qualify — `pointLike` excludes it, so an area is still reported as an area. */
           if(GEOBJ.pointLike(it)){ g={lng:it.lng,lat:it.lat,name:it.name}; }
+          else if(ledger){ try{ const k=ledger.resolve(it.name,{countryCode:it.countryCode}); if(k&&k.lng!=null) g={lng:k.lng,lat:k.lat,name:k.canonicalName||k.name}; }catch(_){} }   /* (#R489) a place THIS conversation already resolved is not sent to a geocoder again */
           else if(it.src==='structured'){ try{ const r=await geocode([it.name,it.country].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; }
             if(!g){ const s=await _atlGeocodeStrict(it.name,it.country); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; } }
           else { const s=await _atlGeocodeStrict(it.name,''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; }
           if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; } seenCell.add(cell);
-            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); spots.push({name:it.name,verdict:'mapped',src:it.src}); }
+            newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); if(ledger){ try{ ledger.record({kind:String(it.kind||''),name:String(it.name||''),canonicalName:g.name||String(it.name||''),countryName:String(it.country||''),lng:g.lng,lat:g.lat,summary:String(it.summary||''),source:'answer',provenance:(GEOBJ.pointLike(it)?it.provenance:'geocoded_point')}); }catch(_){} }   /* (#R489) …and what it DID resolve is filed, so the next turn is handed an identifier instead of a string */ spots.push({name:it.name,verdict:'mapped',src:it.src}); }
           else spots.push({name:it.name,verdict:'unplaced',src:it.src}); }
         if(newPins.length){ const merged=pre.concat(newPins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));
           try{ setPois(merged); let ok=paintPois(); for(let i=0;i<5&&!ok;i++){ await new Promise(r=>setTimeout(r,500)); ok=paintPois(); } }catch(_){}

@@ -178,12 +178,34 @@ test('R406-agent ⑨: repeated malformed calls stop the loop instead of burning 
 });
 
 test('R406-agent ⑩: the tool-call budget is enforced across steps', async () => {
-  const model = scripted([{ text: '', toolCalls: [{ id: 'x', name: 'map_view', arguments: { place: 'a' } }] }]);
+  /* ⚠ (#R489) THE PLACES DIFFER NOW, AND THAT IS THE POINT OF THE TEST RESTORED RATHER THAN RELAXED.
+     `scripted` repeats its last reply, so this used to ask for the SAME call — {place:'a'} — on every
+     step, and «executed 3» measured the budget only because nothing collapsed a repeat. #R489 answers
+     an identical call from the identical call it already made, so three requests for {place:'a'} are
+     one execution and two reuses. Three DIFFERENT calls put the subject back where it was: three
+     executions, stopped by the budget and not by anything else. The check below then states the half
+     that is genuinely new — a repeat is not a way around the budget. */
+  let i = 0;
+  const model = async () => ({ text: '', toolCalls: [{ id: 'x' + (++i), name: 'map_view', arguments: { place: 'p' + i } }] });
   const r = await AGENT.runTurn({
     model, tools: TOOLS, execute: okExec, messages: [{ role: 'user', content: 'x' }],
     limits: { maxSteps: 10, maxToolCalls: 3 },
   });
   assert.equal(r.trace.executed, 3, 'executed ' + r.trace.executed + ' with a budget of 3');
+  assert.equal(r.trace.calls, 3);
+});
+
+test('R406-agent ⑩b: an IDENTICAL call is answered from the first one, and still costs budget', async () => {
+  const model = scripted([{ text: '', toolCalls: [{ id: 'x', name: 'map_view', arguments: { place: 'a' } }] }]);
+  let ran = 0;
+  const r = await AGENT.runTurn({
+    model, tools: TOOLS, execute: async (c) => { ran++; return okExec(c); },
+    messages: [{ role: 'user', content: 'x' }], limits: { maxSteps: 10, maxToolCalls: 3 },
+  });
+  assert.equal(ran, 1, 'the same call, made three times in one turn, is executed once');
+  assert.equal(r.trace.reused, 2);
+  /* ⚠ AND THE BUDGET IS UNCHANGED — reuse is not a way to buy extra calls (CONSTITUTION.md §5). */
+  assert.equal(r.trace.calls, 3);
 });
 
 test('R406-agent ⑪: a turn that operated IntMap but said nothing is asked once for the sentence', async () => {

@@ -129,6 +129,31 @@ export function makeAtlasTurnResults(deps) {
       return 'op:' + String(act.type) + ':' + ks.map((k) => k + '=' + stable(act[k])).join('&');
     }
 
+    /**
+     * callKey(name, args) -> string — the identity of ONE TOOL CALL, in the same terms `opKey` uses
+     * for one action: the name plus every argument that carries meaning, sorted and normalised.
+     *
+     * ⚠ (#R489) IT EXISTS BECAUSE THE DE-DUPE ABOVE RUNS TOO LATE TO SAVE THE WORK. `keep()` decides
+     * what the reader is SHOWN; by the time it runs, four identical research passes have already
+     * been executed, each having spent its own web searches, its own model call and its own
+     * geocoding — and, in the reported transcript, each having reached a different conclusion,
+     * because they searched at different moments over a window nobody had fixed. js/atlas-agent.js
+     * asks this before it runs a call, so a call the turn has ALREADY MADE returns what it returned.
+     *
+     * ⚠ IT IS NOT A CAP, AND NOT A REFUSAL (CONSTITUTION.md §5). Atlas may call whatever it likes as
+     * often as it likes; the loop's budget is untouched, no plan is rewritten and no action is
+     * rejected. What changes is that asking the identical question twice costs one answer instead of
+     * two — and only when the first one SUCCEEDED, because a failure is exactly the case where
+     * trying again is the right thing to do.
+     */
+    function callKey(name, args) {
+      const nm = String(name == null ? '' : name).trim();
+      if (!nm) return '';
+      const a = (args && typeof args === 'object' && !Array.isArray(args)) ? args : {};
+      const ks = Object.keys(a).filter((k) => k.slice(0, 2) !== '__' && !isEmpty(a[k])).sort();
+      return 'call:' + nm + ':' + ks.map((k) => k + '=' + stable(a[k])).join('&');
+    }
+
     /** score(res) — #R159's ranking of two results for the same goal, unchanged. */
     function score(res) {
       const m = (res && res.meta) || {};
@@ -167,7 +192,7 @@ export function makeAtlasTurnResults(deps) {
       return out;
     }
 
-    const API = { ANSWER_TYPES, answerKey, opKey, score, keep };
+    const API = { ANSWER_TYPES, answerKey, opKey, callKey, score, keep };
     try { window.IntMapAtlasTurnResults = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

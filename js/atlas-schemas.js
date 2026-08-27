@@ -158,7 +158,7 @@ export function makeAtlasSchemas() {
       /* Chronos: a year, a date, a number of days — or the return to live. With none of them the
          case says «give a year or date», which is what this branch list makes it stop needing to. */
       'time.travel': { type: 'object', properties: { year: int(), date: str(), daysAgo: int(), value: num(), now: bool(), reset: bool(), live: bool() }, anyOf: [{ required: ['year'] }, { required: ['date'] }, { required: ['daysAgo'] }, { required: ['value'] }, { required: ['now'] }, { required: ['reset'] }, { required: ['live'] }] },   /* `timeTravel` */
-      'map.pin': { type: 'object', properties: { place: str() }, required: ['place'] },
+      'map.pin': { type: 'object', properties: { place: str(), country: str(), title: str(), description: str(), source: str(), url: str(), date: str(), confidence: str(), kind: str(), countryCode: str() }, required: ['place'] },   /* (#R489) a pin may carry what it IS — the marker's popup shows title/description/date/source/link. Before this the action took a bare place, so a turn that wanted described incident markers had to improvise with a second research pass (js/atlas-console.js case 'pin'). `country` is not decoration: 「オクチャブリスキー」 alone is a query that cannot succeed. */
       'map.tool': { type: 'object', properties: { name: str() }, required: ['name'] },
       'map.radius': { type: 'object', properties: { place: str(), km: num(0), color: str() }, required: ['place'] },
       /* base and top are ALTITUDES; without both the case refuses, whatever the footprint */

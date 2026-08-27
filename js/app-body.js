@@ -2967,8 +2967,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       return (typeof e==='number')?e:null;
     }catch(_){ return null; }
   }
-  function addPin(lng,lat){
-    const id='p'+(++pinSeq); const pin={id,lng,lat,elev:null};
+  function addPin(lng,lat,meta){   /* ⚠⚠ (#R489) A PIN MAY CARRY WHAT IT IS — `meta` is the OPTIONAL {title,description,when,source,url}. A pin was four fields and its popup opened with 「Pin #3」, which is the whole of why Atlas could not answer 「着弾地点を説明付きでピンして」: the `pin` action had no field for the explanation, so a turn that wanted described markers went research → bare pin → research again → pin again, four passes whose conclusions disagreed. Every existing caller (the context menu, the search card, the popup's own buttons) passes nothing and is unchanged. */
+    const id='p'+(++pinSeq); const pin={id,lng,lat,elev:null,meta:(meta&&typeof meta==='object')?meta:null};
     userPins.push(pin); refreshPins();
     fetchElevDepth(lat,lng).then(e=>{ pin.elev=e; if(activePinId===id) renderPinPopup(); });
     return id;
@@ -2992,8 +2992,9 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       const brg=bearingDeg([prev.lng,prev.lat],[pin.lng,pin.lat]);
       distHTML2=`<div class="pin-popup-row"><span>${t('ctxDistFrom')}</span><b>${distTXT(km)}</b></div><div class="pin-popup-row"><span>${t('bearing')}</span><b>${brg.toFixed(1)}° ${compassDir(brg)}</b></div>`;
     }
+    const pm=pin.meta||{}, pmT=String(pm.title||'').trim(), pmD=String(pm.description||'').trim(), pmS=[String(pm.when||'').trim(),String(pm.source||'').trim()].filter(Boolean).join(' · '), pmU=pm.url?IntMapSafe.url(String(pm.url)):'';   /* ⚠ (#R489) EVERY VALUE HERE IS AN ATLAS-SUPPLIED STRING, so every one reaches innerHTML through IntMapSafe.html and the link through IntMapSafe.url — http(s)/mailto/tel only (index.html). A pin with no meta renders byte-identically to what it always did. */ const pmH=(pmD?`<div style="font-size:11.5px;line-height:1.55;margin:-2px 0 6px;opacity:.9;">${IntMapSafe.html(pmD)}</div>`:'')+(pmS?`<div style="font-size:10.5px;color:var(--text-muted);margin:-3px 0 6px;">${IntMapSafe.html(pmS)}</div>`:'')+(pmU?`<div style="font-size:10.5px;margin:-3px 0 6px;"><a href="${IntMapSafe.html(pmU)}" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;">${window.IntMapLang.t(currentLang,'source','出典','Quelle','источник','fuente')} ↗</a></div>`:'');
     el.innerHTML=`<button class="pin-popup-close" onclick="window._closePinPopup()">×</button>
-      <div style="font-weight:600; margin-bottom:6px;">📍 ${window.IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}</div>
+      <div style="font-weight:600; margin-bottom:6px;">📍 ${pmT?IntMapSafe.html(pmT):`${window.IntMapLang.t(currentLang,'Pin','ピン','Pin','Метка','Pin')} #${idx+1}`}</div>${pmH}
       <div class="pin-popup-row"><span>${t('coords')}</span><b>${fmtLL(pin.lng,pin.lat)}</b></div>
       <div class="pin-popup-row"><span>${pin.elev!=null&&pin.elev<0?t('depth'):t('elev')}</span>${elevHTML}</div>
       ${distHTML2}

@@ -846,7 +846,8 @@ window.IntMapModules.routing=function(HOST){
       try{ const r=await fetch('https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(q)+'&count=5&language='+(window.IntMapLang.locale(HOST.lang,"en"))); const j=await r.json();
         const cs=(j&&j.results||[]).map(g=>({lng:+g.longitude,lat:+g.latitude,pop:+g.population||0,name:g.name+(g.admin1?(', '+g.admin1):'')+(g.country?(', '+g.country):'')}));
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q)); const j=await r.json();
+      try{ const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();   /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js (reached through `window`: no top-level declarations here, tests/r175-checks #4) */
+        const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&q='+encodeURIComponent(q)); const j=await r.json();
         const cs=(j||[]).map(x=>({lng:+x.lon,lat:+x.lat,pop:+x.importance*1e6||0,name:(x.display_name||q).split(',').slice(0,2).join(', ')}));
         const b=_pickNear(cs,refLL); if(b) return b; }catch(_){}
       return null; }
