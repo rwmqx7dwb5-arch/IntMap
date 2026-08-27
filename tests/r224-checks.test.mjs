@@ -247,7 +247,10 @@ test('R224 ⑦ katex and html2canvas are fetched by the features that need them'
   const v = read('src/vendor.js');
   assert.match(v, /window\.IntMapVendor = \(function \(\)/);
   assert.ok(!/requestIdleCallback\(load/.test(v), 'no longer merely delayed to idle');
-  assert.match(read('js/screenshot.js'), /IntMapVendor\.html2canvas\(\)/);
+  /* (#R493) composing the screen — and therefore the html2canvas fetch — moved to
+     js/atlas-view-capture.js, which BOTH the shutter and Atlas's view.inspect call. */
+  assert.match(read('js/atlas-view-capture.js'), /IntMapVendor\.html2canvas\(\)/);
+  assert.match(read('js/screenshot.js'), /await import\('\.\/atlas-view-capture\.js'\)/);
   assert.match(read('js/atlas-reply.js'), /IntMapVendor\.katex\(\)/);
   /* the Köppen work canvas decodes at the size it keeps, not at 4096² */
   const dl = read('js/data-layers.js');
