@@ -208,11 +208,18 @@ test('R447 ⑥: ai-proxy answers 429 in exactly two places, and both carry `used
   const proxy = read('supabase/functions/ai-proxy/index.ts');
   const src = codeOnly(proxy);
   const four29 = [...src.matchAll(/return json\(\s*(\{[^}]*\})\s*,\s*429\s*\)/g)].map((m) => m[1]);
-  assert.equal(four29.length, 2, `ai-proxy returns ${four29.length} 429s — the client tells its own quota from a platform rate limit by the body, so a third shape must be declared here`);
+  assert.equal(four29.length, 3, `ai-proxy returns ${four29.length} 429s — the client tells its own quota from a platform rate limit by the body, so a fourth shape must be declared here`);
   four29.forEach((body) => {
-    assert.match(body, /\bused\b/, `a 429 without \`used\` is unattributable to the client: ${body}`);
-    assert.match(body, /error: "(limit|turn_calls)"/, `and it must name itself: ${body}`);
+    assert.match(body, /\b(used|glossUsed)\b/, `a 429 without a count is unattributable to the client: ${body}`);
+    assert.match(body, /error: "(limit|turn_calls|gloss_limit)"/, `and it must name itself: ${body}`);
   });
+  /* (#R491) …and the third one must NOT carry the FIRST counter's name. js/ai-core.js writes any
+     `used` it receives straight into HOST.aiUsage, so a gloss 429 that carried one would tell a
+     reader with ten questions intact that their questions were gone. */
+  const glossOne = four29.find((b) => /gloss_limit/.test(b));
+  assert.ok(glossOne, 'the term-gloss lane answers its own 429');
+  assert.match(glossOne, /glossUsed, glossLimit/, 'it carries its own two numbers');
+  assert.doesNotMatch(glossOne, /\bused\b(?!Gloss)|\blimit:/, 'and never the question counter\'s');
   assert.match(src, /const TURN_MAX_CALLS = \d+;/, 'the turn ceiling is what makes the second 429 possible');
 
   /* …and neither of them can happen while the row reads 0, which is what proved the production

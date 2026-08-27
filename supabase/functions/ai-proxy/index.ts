@@ -83,7 +83,7 @@ const cors = {
   /* (#R318) x-intmap-turn — the turn key. It is a HEADER because the quota is consumed before the
      body is read (see the consumption step), and a preflight that does not name it makes the whole
      request fail in the browser rather than merely dropping the field. */
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-intmap-turn, x-intmap-lane",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) =>
@@ -91,6 +91,21 @@ const json = (body: unknown, status = 200) =>
 
 // ---- Plan → daily free-use limit. Extend here for future paid tiers. --------
 const PLAN_LIMITS: Record<string, number> = { free: 10, plus: 50, pro: 200, unlimited: 1_000_000 };
+/* == (#R491) THE TERM GLOSS IS A SEPARATE LANE, NOT A BIGGER ALLOWANCE =========================
+   Selecting a phrase inside an Atlas answer and asking what it means is a different kind of call
+   from asking Atlas a question: a short prompt, ~700 tokens out, no tools and no web search. Put
+   on PLAN_LIMITS it would have been unusable for what it is FOR - free is 10/day, so a reader who
+   looked up three terms while reading ONE answer would have no questions left.
+   Its counter is public.ai_gloss_usage and it is genuinely separate in both directions: spending
+   the gloss budget cannot stop the reader asking a question, and spending their questions cannot
+   stop them looking a word up.
+   /!\ THE LANE ARRIVES IN A HEADER FOR THE REASON THE TURN KEY DOES - quota is consumed before the
+   body is parsed. Which makes the header a claim about a body nobody has read yet, so it is
+   VERIFIED against `task` once the body IS parsed, and a mismatch refunds and 400s. Without that
+   check "x-intmap-lane: gloss" would be a cheap door into the expensive tasks. */
+const GLOSS_PLAN_LIMITS: Record<string, number> = { free: 60, plus: 300, pro: 1_000, unlimited: 1_000_000 };
+const GLOSS_LANE = "gloss";
+const MAX_GLOSS_PROMPT = 8_000;   // the selection + the sentence around it + the question that produced the answer
 /* (#R318) ONE USER TURN = ONE USE. Atlas finishes one request with up to three calls (planner +
    two bounded repairs, or a vision read + its self-check re-read), and charging three for one
    question is a bill the user never agreed to. The client stamps a turn key; the FIRST call
@@ -166,6 +181,7 @@ const TASKS = new Set([
      deploy, and a reader still holding the previous one would get a 400 on every Atlas message. */
   "atlas_turn", "atlas_plan", "map_report", "analysis", "analysis_structured", "free_text", "json_extract",
   "brief", "geo_verify", "geo_resolve", "research_map", "vision_read",
+  "gloss",   /* (#R491) the term gloss - its own lane, its own counter, its own tiny budget */
 ]);
 /* A caller-supplied responseSchema is forwarded to the provider, so it is an input too.
    ⚠ (#R397) THE OLD NOTE HERE SAID «Nothing in js/ passes one today». It does, and it did when that
@@ -173,6 +189,24 @@ const TASKS = new Set([
    sends GEO_RESOLVE_SCHEMA, all through `body.schema` in js/ai-core.js. The sentence was true of the
    Gemini era and stopped being true without being re-read — which is also why nobody noticed that the
    OpenAI path never had a schema parameter at all. These are the bounds on a live field. */
+/* == (#R491) THE GLOSS CARD'S SHAPE BELONGS TO THE SERVER =====================================
+   Same argument as MAP_REPORT_SCHEMA and ANSWER_SCHEMA: a caller-supplied schema is an input, and
+   this one is fixed by what the card renders (js/atlas-gloss.js). `background` and `also` are
+   optional - plenty of terms are ordinary words with no background worth printing, and the
+   converter above gives an optional key a way to say so. */
+const GLOSS_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    term: { type: "STRING" },        // the phrase as it should be shown (the reader's selection, tidied)
+    kind: { type: "STRING" },        // "noun phrase" / "military term" / "place name" - what KIND of thing this is, in the reader's language
+    sense: { type: "STRING" },       // the dictionary sense, independent of this answer
+    inContext: { type: "STRING" },   // what it means HERE - the half a browser dictionary cannot do
+    background: { type: "STRING" },  // 1-3 sentences, only when there is something to know
+    also: { type: "ARRAY", items: { type: "STRING" } },   // closely related terms worth looking up next
+  },
+  required: ["term", "kind", "sense", "inContext"],
+};
+
 const MAX_SCHEMA_BYTES = 16 * 1024;
 const MAX_SCHEMA_DEPTH = 12;
 const MAX_SCHEMA_KEYS = 512;
@@ -292,6 +326,7 @@ const TASK_MAX_OUTPUT: Record<string, number> = {
   geo_verify: 500,   // (#R130) web-search-grounded place verification for the Atlas highlight/outline resolver — tiny JSON
   geo_resolve: 1800, // (#R132) web-search-grounded STRUCTURED region resolution (metadata + boundary anchors, NOT a dense polygon)
   research_map: 2600, // (#R135) time-axis research/situation map: written explanation + related mappable places (historical/current/mixed)
+  gloss: 700,        // (#R491) a dictionary card: sense + this-context reading + a short background. Deliberately small - it is a gloss, not an essay.
   vision_read: 3000, // (#R156) multimodal read: classify → transcribe → solve (LaTeX/Markdown) → verify-checks → optional places. Needs room for a transcription + working + the checks matrices.
 };
 const FALLBACK_MAX_OUTPUT = 1800;
@@ -313,6 +348,7 @@ const TASK_REASONING: Record<string, string> = {
   geo_verify: "low",   // (#R130) freshness comes from the forced web search, not reasoning
   geo_resolve: "medium",   // (#R132) classifying an ambiguous / natural / historical region + picking a geometry strategy needs real reasoning
   research_map: "medium",   // (#R135) a grounded historical/situation answer + naming real related places needs real reasoning
+  gloss: "low",   // (#R491) naming what a term means in a paragraph the caller supplies is reading, not reasoning
   vision_read: "medium",   // (#R156) reading small text + transcribing + solving a maths problem needs real reasoning (effortHint:"high" bumps it further)
 };
 
@@ -320,7 +356,7 @@ const TASK_REASONING: Record<string, string> = {
 // (#R113c) atlas_plan is INTENTIONALLY excluded: forcing responseMimeType on the very large planner prompt added
 // latency (feeding the 45s timeouts) and the planner worked fine before with prompt-only JSON (aiParseJSON on the
 // client strips any fence). map_report / json_extract keep structured output where it matters most.
-const JSON_TASKS = new Set(["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) · (#R350) analysis_structured returns the AnswerEnvelope */
+const JSON_TASKS = new Set(["atlas_turn", "map_report", "analysis_structured", "json_extract", "geo_verify", "geo_resolve", "research_map", "vision_read", "gloss"]);   /* (#R156) vision_read returns a strict JSON object (contentClass/answer/checks/places) · (#R350) analysis_structured returns the AnswerEnvelope */
 
 // (#R113) Gemini Structured Output schema for map_report. The model returns ONLY
 // name/locationName/country/summary/date/evidenceIds — the client fills url, source,
@@ -881,11 +917,30 @@ Deno.serve(async (req) => {
      It is a client-supplied string and is treated as one — see the migration's header for the
      three things that make it safe to accept. */
   const turnId = String(req.headers.get("x-intmap-turn") || "").slice(0, MAX_TURN_KEY);
+  /* (#R491) ...and the LANE, read here for the same reason: the body is not available yet. */
+  const lane = String(req.headers.get("x-intmap-lane") || "").toLowerCase().slice(0, 16);
+  const isGloss = lane === GLOSS_LANE;
+  const glossLimit = GLOSS_PLAN_LIMITS[plan] ?? GLOSS_PLAN_LIMITS.free;
 
   // 3) Consume one use for TODAY, once per TURN (the developer is exempt — no consumption).
   let used = 0;
   let charged = false;
-  if (!isDev) try {
+  let glossUsed = 0;
+  if (isGloss) {
+    /* (#R491) The gloss lane has no turns: one card is one call, and it pays from its own day. */
+    if (!isDev) try {
+      const { data: dec, error } = await db.rpc("consume_ai_gloss", { p_user: user.id, p_limit: glossLimit });
+      if (error) throw error;
+      const row = Array.isArray(dec) ? dec[0] : dec;
+      glossUsed = row?.used ?? 0;
+      charged = !!row?.allowed;
+      /* /!\ ITS OWN ERROR CODE. "limit" means the reader is out of QUESTIONS, and telling someone
+         that when their questions are untouched would be false - they are out of lookups. */
+      if (!row?.allowed) return json({ error: "gloss_limit", glossUsed, glossLimit }, 429);
+    } catch (_e) {
+      return json({ error: "quota_unavailable", message: "The usage counter is unavailable - please try again." }, 500);
+    }
+  } else if (!isDev) try {
     const { data: dec, error } = await db.rpc("consume_ai_turn", {
       p_user: user.id, p_limit: limit, p_turn: turnId,
       p_max_calls: TURN_MAX_CALLS, p_ttl_seconds: TURN_TTL_S,
@@ -909,7 +964,7 @@ Deno.serve(async (req) => {
   /* ⚠ (#R318) A REFUND RELEASES THE CHARGE **AND** THE TURN. Refunding the use while leaving the
      turn row behind would make the user's retry look like a free continuation of a turn nobody
      paid for — the failure would end up costing less than nothing. */
-  const refund = async () => { if (!isDev) try { await db.rpc("refund_ai_turn", { p_user: user.id, p_turn: turnId }); charged = false; } catch (_) { /* best-effort */ } };
+  const refund = async () => { if (!isDev) try { if (isGloss) await db.rpc("refund_ai_gloss", { p_user: user.id }); else await db.rpc("refund_ai_turn", { p_user: user.id, p_turn: turnId }); charged = false; } catch (_) { /* best-effort */ } };
 
   // Parse the request body.
   // (#R113) `task` + `webMode` let the proxy configure output budget, JSON mode and
@@ -943,6 +998,14 @@ Deno.serve(async (req) => {
     await refund();
     return json({ error: "bad_task", message: "Unknown task." }, 400);
   }
+  /* == (#R491) THE LANE WAS A CLAIM ABOUT A BODY NOBODY HAD READ. HERE IS THE BODY. ============
+     Both directions are wrong and both are refused: "lane: gloss" carrying an expensive task would
+     buy `atlas_turn` out of the cheap counter, and `task: "gloss"` with no lane would charge a
+     lookup against the reader's questions - the one thing this whole lane exists to prevent. */
+  if (isGloss !== (task === "gloss")) {
+    await refund();
+    return json({ error: "bad_lane", message: "The declared lane does not match the task." }, 400);
+  }
   // (#R156) input_image detail — "high" is the small-text/maths OCR lever for vision_read; clamp to a safe set.
   const imageDetail = (payload.imageDetail === "high" || payload.imageDetail === "low") ? payload.imageDetail : "auto";
   const webMode = String(payload.webMode || (payload.web === true ? "auto" : "off")).toLowerCase();
@@ -952,7 +1015,7 @@ Deno.serve(async (req) => {
   const effortHint = String(payload.effortHint || "").toLowerCase();
   const web = webMode === "auto" || webMode === "required";
   const requestedCount = typeof payload.requestedCount === "number" ? payload.requestedCount : undefined;
-  const prompt = String(payload.prompt || "").slice(0, MAX_PROMPT);
+  const prompt = String(payload.prompt || "").slice(0, isGloss ? MAX_GLOSS_PROMPT : MAX_PROMPT);   /* (#R491) the cheap lane gets a cheap ceiling - a gloss is a phrase and the paragraph around it */
   const system = String(payload.system || "").slice(0, MAX_SYSTEM);   // (#R285) its own bound — see MAX_SYSTEM
   /* ⚠ THE PER-IMAGE CEILING IS IN parseDataUrl; THIS IS THE ONE FOR ALL OF THEM TOGETHER. Four
      images each just under the single-image limit is four times the single-image limit, and the
@@ -974,6 +1037,12 @@ Deno.serve(async (req) => {
     await refund();
     return json({ error: "empty" }, 400);
   }
+  /* (#R491) ...and what the cheap lane may NOT ask for. An image read or a hosted web search costs
+     what `vision_read` and `brief` cost, and neither is a dictionary lookup. */
+  if (isGloss && (imgs.length || web)) {
+    await refund();
+    return json({ error: "bad_lane", message: "The gloss lane takes text only." }, 400);
+  }
 
   const maxTokens = maxOutputFor(task, requestedCount);
   // 4) Provider call with the server-held key. (Provider read BEFORE wantJson — see below.)
@@ -986,6 +1055,7 @@ Deno.serve(async (req) => {
   // Server owns the map_report schema; other JSON tasks may pass their own (validated shallowly).
   const responseSchema = task === "map_report" ? MAP_REPORT_SCHEMA
     : task === "analysis_structured" ? ANSWER_SCHEMA   // (#R350) server-owned, mirrored by js/atlas-answer-contract.js
+    : task === "gloss" ? GLOSS_SCHEMA   // (#R491) server-owned, mirrored by js/atlas-gloss.js
     : (wantJson && payload.schema && typeof payload.schema === "object" && schemaOk(payload.schema) ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
   const model = Deno.env.get("AI_MODEL") ||
@@ -1049,7 +1119,14 @@ Deno.serve(async (req) => {
     }
     // 5) Success.
     return json({
-      text: out.text, used, limit, remaining: Math.max(0, limit - used),
+      text: out.text,
+      /* /!\ (#R491) A GLOSS RETURNS NO `used`/`limit`, ON PURPOSE. js/ai-core.js mirrors those two
+         into the reader's QUESTION counter the moment it sees them (aiSetUsage), so sending the
+         gloss numbers under those names would show "58 of 60 left" on a day when 10 was the real
+         answer. The gloss lane names its own numbers and its own mirror reads them. */
+      ...(isGloss
+        ? { lane: GLOSS_LANE, glossUsed, glossLimit, glossRemaining: Math.max(0, glossLimit - glossUsed) }
+        : { used, limit, remaining: Math.max(0, limit - used) }),
       /* (#R318) whether THIS call consumed a use. The UI shows the count honestly instead of
          letting the reader infer it from a number that sometimes moves and sometimes does not. */
       charged,

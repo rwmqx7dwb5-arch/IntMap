@@ -48,6 +48,41 @@ window.IntMapModules.aiCore=function(HOST){
     if(typeof limit==='number' && limit>0) HOST.aiUsage.limit=limit;
     try{ aiRenderSettings(); }catch(_){}
   }
+  /* ══ (#R491) THE TERM GLOSS COUNTS SEPARATELY, AND THE MIRROR IS SEPARATE TOO ═══════════════
+     Looking a word up inside an Atlas answer runs on its own daily counter (public.ai_gloss_usage;
+     the limits are GLOSS_PLAN_LIMITS in supabase/functions/ai-proxy/index.ts, which is authoritative
+     — the number below is what the UI assumes until the first response says otherwise, exactly the
+     relationship HOST.AI_FREE_DAILY has with PLAN_LIMITS).
+     ⚠ IT IS ITS OWN OBJECT AND NOT A FIELD OF HOST.aiUsage: every asynchronous gate in this file
+     reads that one, and a gloss that moved it would turn a reader with 58 lookups left into a
+     reader with no questions left. The two lanes must not be able to block each other — that is
+     the whole point of the lane. */
+  const AI_GLOSS_FREE_DAILY = 60;
+  let _glossUsage={ date:'', used:0, limit:AI_GLOSS_FREE_DAILY };
+  function aiGlossLimit(){ return _glossUsage.limit || AI_GLOSS_FREE_DAILY; }
+  function aiGlossLeft(){ if(aiDev()) return Infinity; if(_glossUsage.date!==aiToday()) return aiGlossLimit(); return Math.max(0, aiGlossLimit() - (_glossUsage.used||0)); }
+  function aiGlossOverQuota(){ try{ return _glossUsage.date===aiToday() && aiGlossLeft()<=0; }catch(_){ return false; } }
+  function aiSetGlossUsage(used, limit){
+    _glossUsage.date=aiToday();
+    if(typeof used==='number') _glossUsage.used=used;
+    if(typeof limit==='number' && limit>0) _glossUsage.limit=limit;
+  }
+  /* ⚠ (#R447)'s rule, applied to the second counter: only a number the server sent may be written,
+     and when the mirror says «none left» the ROW is re-read before anybody is turned away. */
+  async function aiFetchGlossUsage(){
+    try{
+      if(!HOST.user || !window.sb){ return; }
+      const { data } = await window.sb.from('ai_gloss_usage').select('count').eq('user_id',HOST.user.id).eq('usage_date',aiToday()).maybeSingle();
+      aiSetGlossUsage(data && typeof data.count==='number' ? data.count : 0, aiGlossLimit());
+    }catch(_){}
+  }
+  function aiGlossLimitMsg(){ try{ return window.IntMapLang.t(HOST.lang,
+    'You have used today’s free term lookups. Your Atlas questions are unaffected.',
+    '本日の用語解説の無料回数を使い切りました。Atlasへの質問回数には影響しません。',
+    'Die kostenlosen Begriffserklärungen für heute sind aufgebraucht. Ihre Atlas-Fragen sind davon nicht betroffen.',
+    'Бесплатные разборы терминов на сегодня исчерпаны. На ваши вопросы к Atlas это не влияет.',
+    'Has agotado las consultas de términos gratuitas de hoy. Tus preguntas a Atlas no se ven afectadas.'); }
+    catch(_){ return 'You have used today’s free term lookups. Your Atlas questions are unaffected.'; } }
   /* ══ (#R318) WHICH LANGUAGE THE MODEL MUST ANSWER IN — moved here from js/app-body.js ═══════
      It belongs with the transport: every prompt this file sends carries it, and the app shell it
      used to live in has no line to spare (tests/r168 #8). ⚠ IT USED TO TELL THREE OF THE NINE
@@ -180,6 +215,9 @@ window.IntMapModules.aiCore=function(HOST){
          the body (so an over-quota caller's body is never parsed). ⚠ AND IT IS NOT TRUSTED: the
          server binds it to the account, caps how many calls one key may carry and expires it. */
       if(opts.turnId) headers['x-intmap-turn']=String(opts.turnId).slice(0,120);
+      /* (#R491) …and the LANE, for the identical reason: which counter pays is decided before the
+         body is read. The server verifies this header against `task` once it HAS read the body. */
+      if(opts.lane) headers['x-intmap-lane']=String(opts.lane).slice(0,16);
     }
     const fetchOpts={method:'POST',headers,body:JSON.stringify(body)};
     if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
@@ -195,11 +233,15 @@ window.IntMapModules.aiCore=function(HOST){
          two places and both name themselves; a 429 from in front of the function (a platform / edge
          rate limit) knows nothing about the reader's day, and reading it as "your free uses are gone"
          is what pinned a page whose server-side count was 0. */
-      const mine=!!(j&&(j.error==='limit'||j.error==='turn_calls'));
+      const mine=!!(j&&(j.error==='limit'||j.error==='turn_calls'||j.error==='gloss_limit'));
       try{ window._aiLast429={ at:_aiNow(), attributed:mine, error:(j&&j.error)||null,
         used:(j&&typeof j.used==='number')?j.used:null, body:String(raw||'').slice(0,300) }; }catch(_){}
       if(!mine){ try{ aiResyncUsage(); }catch(_){}   /* the row, not a guess */
         throw new Error(aiProviderErrMsg('provider_rate_limit')); }
+      /* ⚠ (#R491) THE GLOSS 429 IS ANSWERED FIRST AND NEVER TOUCHES THE QUESTION MIRROR. It is
+         IntMap's own 429 (so it must not be read as a platform rate limit), it carries its own two
+         numbers, and it says nothing whatever about how many questions the reader has left. */
+      if(j.error==='gloss_limit'){ if(typeof j.glossUsed==='number') aiSetGlossUsage(j.glossUsed, j.glossLimit); throw new Error(aiGlossLimitMsg()); }
       if(typeof j.used==='number') aiSetUsage(j.used, j.limit); else { try{ aiResyncUsage(); }catch(_){} }
       /* (#R318) two different 429s. "limit" = the day's free uses are gone. "turn_calls" = THIS one
          request has already asked the model as many times as a request may — a bug in the repair
@@ -216,6 +258,7 @@ window.IntMapModules.aiCore=function(HOST){
     const j=await r.json().catch(()=>null);
     if(j==null) return {text:'',meta:null,citations:[],callId,turnId:String((opts&&opts.turnId)||''),task:String((opts&&opts.task)||'free_text')};
     if(typeof j.used==='number') aiSetUsage(j.used, j.limit);
+    if(typeof j.glossUsed==='number') aiSetGlossUsage(j.glossUsed, j.glossLimit);   /* (#R491) the gloss lane names its own numbers; the question mirror above never sees them */
     try{ window._aiLastCharged=(j&&typeof j.charged==='boolean')?j.charged:null; }catch(_){}   /* (#R318) did THIS call consume a use */
     const meta=(j&&typeof j==='object'&&j.meta&&typeof j.meta==='object')?j.meta:null;
     const citations=(j&&typeof j==='object'&&Array.isArray(j.citations))?j.citations:[];
@@ -256,6 +299,20 @@ window.IntMapModules.aiCore=function(HOST){
     /* (#R350) …and the CALL IDENTITY travels with it. Without callId the caller cannot tell its own
        provider citations from a concurrent call's, which is what window._aiLastCitations could never do. */
     return { data:aiParseJSON(env.text), text:env.text, meta:env.meta, citations:env.citations, callId:env.callId, turnId:env.turnId, task:env.task }; }
+  /* ══ (#R491) askAIGloss — THE ONE ENTRY POINT OF THE SEPARATE LANE ═════════════════════════
+     Deliberately NOT built on askAI/askAIEnvelope: those two gate on aiQuotaBlocked(), which asks
+     whether the reader has QUESTIONS left — and a lane that stopped working because the reader had
+     asked ten questions would be the exact failure this whole design exists to prevent. It gates on
+     its own counter instead, with the same «re-read the row before turning anyone away» rule.
+     Returns { data, text } — `data` is the GLOSS_SCHEMA object ai-proxy holds the model to. */
+  async function askAIGloss(prompt, systemPrompt, opts){
+    if(!HOST.user){ try{ HOST.openAuthModal(aiLoginMsg()); }catch(_){} throw new Error(aiLoginMsg()); }
+    if(!aiProxyOn()) throw new Error(aiLimitMsg());
+    if(aiGlossOverQuota()){ try{ await aiFetchGlossUsage(); }catch(_){} if(aiGlossOverQuota()) throw new Error(aiGlossLimitMsg()); }
+    const o=Object.assign({}, opts||{}, { task:'gloss', lane:'gloss', webMode:'off' });
+    const env=await aiCallServerFull(prompt, systemPrompt||'', null, o);
+    return { data:aiParseJSON(env.text), text:env.text, callId:env.callId, left:aiGlossLeft() };
+  }
   function aiParseJSON(raw){
     if(raw==null) return null;
     let s=String(raw).trim();
@@ -363,5 +420,5 @@ window.IntMapModules.aiCore=function(HOST){
   function aiWaitMapIdle(timeout){ return new Promise(res=>{ const E=window.IntMapGeoEngine; if(!E){ res(); return; } let done=false;
     const fin=()=>{ if(done)return; done=true; try{ E.events.off('idle',fin); }catch(_){} res(); };
     try{ E.events.on('idle',fin); }catch(_){ } setTimeout(fin,timeout||4500); }); }
-  return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiQuotaBlocked, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIJSON, askAIJSONEnvelope };
+  return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiQuotaBlocked, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIGloss, askAIJSON, askAIJSONEnvelope };
 };

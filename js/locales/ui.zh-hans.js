@@ -248,14 +248,29 @@ window.IntMapLang.define('zh-hans', {
      1882 of them. A key left untranslated renders in English. */
   inline: {
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    "{n} lookups left today": "今日剩余解说 {n} 次",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap 有新版本可用。请重新加载以继续。',
+    "AI-generated — verify anything important.": "由 AI 生成，重要信息请自行查证。",   /* #R491 */
     'An old cached version of IntMap loaded.': '加载的是缓存中的旧版 IntMap。',
+    "Ask Atlas for more": "让 Atlas 详述",   /* #R491 */
+    "Background": "背景",   /* #R491 */
+    "Explain": "解说",   /* #R491 */
+    "Explain \"{term}\" in more depth.": "请更详细地说明「{term}」。",   /* #R491 */
+    "In this passage": "在此段落中的意思",   /* #R491 */
+    "Looking it up…": "查询中…",   /* #R491 */
+    "Meaning": "意思",   /* #R491 */
+    "Name the phrase to explain.": "请指定要解说的字词。",   /* #R491 */
+    "opened the term card": "已开启术语卡片",   /* #R491 */
+    "Related": "相关词",   /* #R491 */
     'Reload': '重新加载',
     'Name a category': '请指定分类',
     'No such event category': '没有这个事件分类',
     'reported by 2+ independent outlets': '由 2 家以上独立媒体报道',
     'server-side clustering over the full 72-hour window': '在服务器端针对完整 72 小时窗口做的分群',
+    "That is a passage, not a term — select a word or a phrase.": "这是一整段，不是词汇——请选取一个字词或片语。",   /* #R491 */
     'The events surface is not available': '目前无法使用事件列表',
+    "The glossary card could not open.": "无法开启解说卡片。",   /* #R491 */
+    "The lookup came back empty.": "未取得解说内容。",   /* #R491 */
     'with no location': '地点不明',
     'Business & Economy': '财经',
     'Latest article': '最新报道',
@@ -324,6 +339,7 @@ window.IntMapLang.define('zh-hans', {
     "Total votes cast": "总投票数",
     "Where the map is centred (standard time)": "地图中心所在地的标准时间",
     "Wind from the {d} — the arrow points the way it is blowing": "{d}风 — 箭头指向风吹去的方向",
+    "You have used today’s free term lookups. Your Atlas questions are unaffected.": "今日的免费术语解说次数已用完。这不影响您向 Atlas 提问的次数。",   /* #R491 */
     "Your device": "设备时间",
     "Your setting": "你设置的时区",
     'Air pressure reduced to sea level — highs, lows and the storm centre.': "换算至海平面的气压——高压、低压与风暴中心。",

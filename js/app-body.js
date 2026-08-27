@@ -253,7 +253,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get aiToday(){ return aiToday; },
     get aiUsage(){ return aiUsage; },               get aiUsesLeft(){ return aiUsesLeft; },
     get applyAccent(){ return applyAccent; },       get askAI(){ return askAI; },
-    get askAIJSON(){ return askAIJSON; },           get askAIJSONEnvelope(){ return askAIJSONEnvelope; },
+    get askAIJSON(){ return askAIJSON; },           get askAIJSONEnvelope(){ return askAIJSONEnvelope; }, get askAIGloss(){ return askAIGloss; },
     get clearAllPins(){ return clearAllPins; },     get compressImage(){ return compressImage; },
     get diskFillPolys(){ return diskFillPolys; },   get exitTool(){ return exitTool; },
     get localFuzzyPlaces(){ return localFuzzyPlaces; }, get parseDate(){ return parseDate; },
@@ -1020,6 +1020,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function askAI(){ return IM_AI.askAI.apply(this,arguments); }
   function askAIJSON(){ return IM_AI.askAIJSON.apply(this,arguments); }
   function askAIJSONEnvelope(){ return IM_AI.askAIJSONEnvelope.apply(this,arguments); }
+  function askAIGloss(){ return IM_AI.askAIGloss.apply(this,arguments); }   /* (#R491) the term-gloss lane. It answers with its OWN remaining count, so the reader's question counter (HOST.aiUsage) is never read or written for a lookup */
   const IM_LABELS=window.IntMapModules.placeLabels(IM_HOST);
   function applyLabelLang(){ return IM_LABELS.applyLabelLang.apply(this,arguments); }
   function ensurePlaceLabels(){ return IM_LABELS.ensurePlaceLabels.apply(this,arguments); }

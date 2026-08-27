@@ -242,10 +242,15 @@ atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライ
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
 atlas-attach.js                   Atlas — 添付ファイルの正体判定と全画面ビューア
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
+atlas-gloss.js                    Atlas — 回答文の語句を選択→右クリック（タッチは長押し→「解説」）で開く
+                                  用語カード。意味・**この文での意味**・背景を AI が生成する。文脈は描画済みの
+                                  DOM（その吹き出しと直前の質問）から採るのでカーネルの状態に依存しない。
+                                  専用クォータ（`askAIGloss` → `x-intmap-lane: gloss`）で動き、
+                                  質問回数を消費しない。同じ語×同じ回答はキャッシュして再要求しない
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  124 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  125 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
 atlas-catalog-text.js             Atlas — planner に渡す能力の説明文 40 ブロック（旧 SYS() の本文を逐語で移設）。
                                   各ブロックが「どの能力を説明しているか」を持つので関連分だけ送れる
@@ -536,7 +541,7 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全13本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（17本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（18本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数。7本）
   functions/<name>/index.ts       Edge Functions（13本。一覧と各本の役割は Architecture.md §6.2）

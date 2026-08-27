@@ -85,9 +85,10 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
     { rule: 'db-tables', file: 'supabase/tests/00_structure_test.sql',
       /* (#R351) news_ingest_runs joined both lists and the count moved 29 → 30, so the anchor moved
          with it. (#R386) news_event_admin_actions joined them too, 30 → 31, and the anchor moved
-         again. The mutation is unchanged in kind: take a table OUT of the list the rule reads. */
-      from: "  'news_event_admin_actions'\n]) as t;                                                    -- 31 assertions\n\n-- 2)",
-      to: "]) as t;                                                    -- 31 assertions\n\n-- 2)" },
+         again. The mutation is unchanged in kind: take a table OUT of the list the rule reads.
+         (#R491) ai_gloss_usage joined them, 31 → 32, and the anchor moved once more. */
+      from: "  'news_event_admin_actions'\n]) as t;                                                    -- 32 assertions\n\n-- 2)",
+      to: "]) as t;                                                    -- 32 assertions\n\n-- 2)" },
     { rule: 'node-tests', file: 'docs/TESTING.md',
       from: 'Node test files** with no browser at all',
       to: 'Node test files** with no browser at all' },   /* rewritten below to a wrong number */

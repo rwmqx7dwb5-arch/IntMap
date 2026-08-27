@@ -21,7 +21,7 @@
 import { makeAtlasReply } from './atlas-reply.js';
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. Every system prompt below opens with personaPrompt('<its task role>') and adds ONLY its task rules. */
 import { attachLightbox, atlFileKind, atlFmtBytes, atlReadText } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer */
-import { makeMsgTools } from './atlas-msg-tools.js';   /* (#R298) the per-message tool bar + the in-place editor */
+import { makeMsgTools } from './atlas-msg-tools.js';   /* (#R298) the per-message tool bar + the in-place editor */   import { makeAtlasGloss } from './atlas-gloss.js';   /* (#R491) select a phrase in a reply → a dictionary card for it. ⚠ ON THIS LINE because the kernel has no headroom (tests/r318 ⑨b) and a feature moves out, never the ceiling up */
 import { atlasPanelCSS } from './atlas-styles.js';   /* (#R313) the panel's stylesheet — moved out so this file stays under a ceiling that is never raised */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
 import { makeAtlasControls } from './atlas-controls.js';
@@ -1767,8 +1767,8 @@ window.IntMapModules.atlasConsole=function(HOST){
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
 
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
-    async function dispatch(a){ if(!a||!a.type) return R(true,'');
-      switch(a.type){
+    async function dispatch(a){ if(!a||!a.type) return R(true,''); switch(a.type){
+        case 'gloss': return GLOSS.dispatch(a);   /* (#R491) 「この言葉の意味は」 — the same card the reader raises by right-clicking a phrase. Spends the gloss lane, not a question; paints nothing */
         case 'reset': clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); return R(true, note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.')));
         case 'layer': {
           /* (#R73) SELF-VERIFICATION ("レイヤーのオンオフが実情と対応していない" / vision §16): snapshot the
@@ -4026,7 +4026,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        built, `run` / `_stopRun` are this closure's own, and only this closure may truncate `_hist`. */
     const { copyBtn, editBtn, msgTools } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl,
       run:(q,imgs,files)=>run(q,imgs,files), stopRun:()=>{ try{ _stopRun(); }catch(_){} },
-      rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); } });
+      rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); } });   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */
     /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn`. (#R298) `ed` = what the turn was RUN
        with ({turn,q,imgs,files,edit}): the turn id is stamped on the bubble so an edit can rewind to it, and a bubble
        that carries a request (not a bare image row) gets Edit next to Copy. */
@@ -4050,7 +4050,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'<div class="atl-ainote">'+L('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.')+'</div>'
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
-      chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in');
+      chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in'); try{ GLOSS.wire(panel); }catch(_){}   /* (#R491) one delegated listener per gesture, for every message the panel will ever hold */
       try{ attachLightbox(chatEl,()=>L('Close','閉じる','Schließen','Закрыть','Cerrar')); }catch(_){}   /* (#R232) */
       /* (#R79g) auto-scroll so a reply that REPLACES the "thinking" dots stays visible ("返答が短いものであれば
          返答に合わせて自動的に最下部までスクロール"). A MutationObserver covers every reply-setting path. It only
