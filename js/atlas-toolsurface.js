@@ -63,6 +63,14 @@ export function makeAtlasToolSurface(deps) {
          fixed in js/atlas-capabilities.js; this line is the rest of it, because the reader's own
          position is not a feature to go hunting for — it is a fact about the person asking. */
       { name: 'my_location', cap: 'view.locate', desc: 'Get the reader\'s real position from their device. The result carries their coordinates. Call it yourself whenever the request depends on where the reader is — never ask them to type their own location, and never use the map centre in its place. Afterwards "my location" / "現在地" resolves to it in any place argument.' },
+      /* ══ ⚠⚠⚠ (#R493) THE EYES, IN CORE — BECAUSE A CAPABILITY YOU HAVE TO GO LOOKING FOR IS ONE
+         YOU NEVER USE ON THE TURN IT MATTERS. Every other entry here is a convenience; this one is
+         the difference between Atlas knowing the layer list and Atlas seeing the map. The state
+         block tells it precipitation is on; nothing told it the east half is solid red. It is a
+         READ (it moves nothing, writes nothing, holds no conflict key), so it composes with
+         anything and may be called more than once in a turn — including after Atlas moves the
+         camera, to see the result of its own action. */
+      { name: 'look_at_map', cap: 'view.inspect', desc: 'LOOK at the map — capture what the reader is seeing right now and read it as an image on your next step. include:"screen" (default) is map + legends, scale, markers, bands and the timebar; include:"map" is the renderer frame alone (cheaper). Use it whenever the request points at something visual ("this", "that band", 「これ」「見えてるもの」) or asks about colour, shape, density, arrangement, overlap, a label\'s text, or whether a layer actually painted — and again after you move the camera or toggle a layer, to see what you just did. Do NOT use it to read coordinates, zoom, layer names or dates: those are given to you exactly, and a picture can only approximate them.' },
       /* ⚠ (#R419) `endsTurn` IS A FACT ABOUT THE MACHINE, NOT A RULE ABOUT ATLAS. The loop stops
          when this tool succeeds (js/atlas-agent.js), because the thing it went to get is the
          reader's reply and the reader has not replied yet. Whether to ask at all, when, and what,

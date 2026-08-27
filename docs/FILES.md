@@ -286,6 +286,15 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   回数の上限だけを見て、意味は一切決めない。DOM も network も触らない
 atlas-toolsurface.js              **道具の面**（#R406）— 中核7ツール＋`find_capability`（全126を検索）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
+atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
+                                  **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
+                                  「動的 import でしか届かない export は死んだ export」と見るため）。
+                                  `captureCanvas` は screenshot.js が #R200 から撮ってきたのと**同じ**絵
+                                  （WebGL を render tick 内で読む／#R231 の1座標系／DOM オーバーレイ合成）で、
+                                  ボタンと Atlas の両方がこれを呼ぶ。`captureFrame` は撮った**画素を台帳に置き**、
+                                  transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
+                                  ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
+                                  WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
 atlas-schemas.js                  **引数の schema**（#R406）— 126能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
@@ -442,7 +451,8 @@ workspace.js                      浮遊ウィンドウのワークスペース�
 session-tabs.js                   タブバーと、その裏の OS 登録と、両方を復元するセッション
 keyboard-shortcuts.js             キーボードと、それを一覧するカード
 onboarding.js                     ウェルカムカード・案内デモ・進捗コントロール
-screenshot.js                     スクリーンショットのボタン
+screenshot.js                     スクリーンショットのボタン（busy 状態・`capture-mode`・フラッシュ・保存。
+                                  **絵そのものは atlas-view-capture.js**——Atlas と同じ1本を呼ぶ）
 sidebar-style.js                  左サイドバーの材質（不透明／フロスト2種）と、フロスト時にカメラへ渡す左 inset
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare

@@ -235,6 +235,12 @@ window.IntMapLang.define('ko', { ui: {
       ttlLayersPanel:"레이어",
       ttlFavorite:"즐겨찾기",
     }, inline: {
+      /* (#R493) view.inspect — what the reader is told when Atlas looks at the map for them */
+      "The map was not drawing when I looked — the page is in the background, so there was no frame to capture. Ask again with IntMap in front.": "확인하러 갔을 때 지도가 그려지고 있지 않았습니다 — 페이지가 백그라운드에 있어 캡처할 화면이 없었습니다. IntMap을 앞으로 놓고 다시 물어봐 주세요.",
+      'Atlas looked at the map': 'Atlas가 지도를 보았습니다',
+      'map only': '지도만',
+      'The map is not running, so there is nothing to look at.': '지도가 실행 중이 아니어서 볼 것이 없습니다.',
+      'Could not read the map frame — the renderer gave nothing back.': '지도 화면을 읽지 못했습니다 — 렌더러가 아무것도 반환하지 않았습니다.',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     "{n} lookups left today": "오늘 남은 해설 {n}회",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap의 새 버전이 배포되었습니다. 계속하려면 새로 고치세요.',

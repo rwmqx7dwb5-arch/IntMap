@@ -33,6 +33,7 @@ import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) no
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
 import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
 import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
+import { makeViewCapture } from './atlas-view-capture.js';   /* (#R493) view.inspect — the SAME picture the screenshot button takes, plus the per-turn frame ledger. The subject lives THERE because this file is shrink-only (tests/r419 ⑨d) */
 import { makeAtlasSchemas } from './atlas-schemas.js';   /* (#R406) the per-capability argument schemas the registry never had */
 import { makeAtlasCatalogText } from './atlas-catalog-text.js';   /* (#R318) the 58 kB action catalogue that used to be inline in SYS() */
 import { makeAtlasAnswerPipeline } from './atlas-answer-pipeline.js';   /* (#R350/#R472) the analysis answer as a contract: evidence registry -> ONE call -> audit -> report. The audit no longer re-asks or rewrites the answer. */
@@ -1376,7 +1377,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(m&&m.role==='assistant'&&m.toolCalls&&m.toolCalls.length) steps.push('you called: '+JSON.stringify(m.toolCalls));
           else if(m&&m.role==='tool') steps.push('IntMap observed: '+JSON.stringify(m.content)); });
         if(steps.length) p+='[THIS TURN SO FAR \u2014 IntMap\'s mechanical record. It did not correct, substitute or reinterpret anything; those decisions are yours.]\n'+steps.join('\n')+'\n\n';
-      }catch(_){}
+      }catch(_){} try{ p+=VFRAMES.promptBlock(); }catch(_){}   /* ⚠ (#R493) THE IMAGES ATTACHED TO THIS CALL, NAMED — they arrive through the vision channel carrying no labels of their own, so without these sentences a second frame is indistinguishable from the first and neither is tied to the place it shows. Written in js/atlas-view-capture.js, beside the ledger that holds them. */
       if(req&&req.final) p+='[Answer the reader now. Do not call any more tools.]\n';
       return p; }
     /* ---- (#R61) INTEGRATED ANALYSIS ("レイヤーの数値や最新ニュース、その他様々なIntMapの機能を統合して分析…
@@ -1704,7 +1705,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        by SEMANTIC key (not JSON-exact) so translation-only retries and world-substitutions can't recur. Pure helpers
        are covered by IntMapAtlasQA.run(); the researchMap dispatch case is below with the other actions. */
     let _atlasDbg=null;          /* last-turn diagnostics for window.IntMapAtlasDebug.lastPlan() */
-    let _atlasOutcomes=null;     /* current-turn per-action outcome sink (array while a run() turn executes) */
+    let _atlasOutcomes=null;     /* current-turn per-action outcome sink (array while a run() turn executes) */ const VFRAMES=makeViewCapture({ GE:GE, L:L, esc:esc, waitIdle:HOST.aiWaitMapIdle, snapshot:()=>{ try{ return ASTATE.snapshot(); }catch(_){ return null; } } });   /* (#R493) the per-turn frame ledger — the pixels Atlas captured, kept OUT of the transcript (js/atlas-view-capture.js says why that separation IS the design) */
     /* geo_resolve-style structured output for the research_map task (the model returns NO coordinates/URLs). */
     const RESEARCH_MAP_SCHEMA={ type:'OBJECT', properties:{
       title:{type:'STRING'}, explanation:{type:'STRING'}, temporalBasis:{type:'STRING'},
@@ -2974,6 +2975,7 @@ window.IntMapModules.atlasConsole=function(HOST){
               }, {enableHighAccuracy:true,timeout:25000,maximumAge:0});   /* (#R155) 9s→15s so the permission prompt has time to be answered; (#R170) high accuracy + no cached fix (a 2-min-old coarse fix could be a different city) — 25 s because a GPS cold start after the prompt genuinely takes that long */
             }catch(_){ fin(R(false, warn('⚠'))); }
             setTimeout(()=>fin(R(false, warn('⚠ '+L('Location timed out','位置情報の取得がタイムアウトしました','Standort-Timeout','Тайм-аут геолокации','Tiempo de ubicación agotado')))),28000); }); }   /* (#R170) must outlast the 25 s getCurrentPosition budget above, or this outer guard would report a timeout while the GPS was still converging */
+        case 'inspect': case 'lookAtMap': case 'seeMap': case 'viewInspect': case 'readScreen': { const _vf=await VFRAMES.captureFrame(a); return _vf.ok?R(true,_vf.html,{exec:_vf.facts}):R(false,warn('⚠ '+esc(_vf.message))); }   /* ⚠⚠⚠ (#R493) THE ONE CASE WHOSE RESULT IS A PICTURE. `facts` is the mechanical record Atlas reads — bbox, zoom, bearing, pitch, layers, all exact; the PIXELS stay in the ledger and ride the vision channel, because js/atlas-agent.js serialises every tool result into the prompt TEXT and a data URL put there is not an image, it is half a megabyte of base64. The capture itself is the screenshot button's, unchanged: js/atlas-view-capture.js. */
         case 'poi': case 'mapPois': case 'facilities': { /* (#R62) "○○にある石油施設を表示して" → REAL facilities mapped from OpenStreetMap */
           const kindStr=String(a.kind||a.query||a.what||a.name||'').trim();
           if(!kindStr) return R(false, warn('⚠ '+L('What kind of facilities?','どんな施設を表示しますか？','Welche Einrichtungen?','Какие объекты?','¿Qué instalaciones?')));
@@ -4704,8 +4706,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          result, and `say` was required to state what had been done before anything was done.
          Now it chooses, watches what actually happened, and chooses again (js/atlas-agent.js).
          The sentence the reader gets is written last, by something that has read the results. */
-      _atlasDbg={ toolCalls:[], rejected:0, actionOutcomes:[], steps:[] };
-      _atlasOutcomes=_atlasDbg.actionOutcomes;
+      _atlasDbg={ toolCalls:[], rejected:0, actionOutcomes:[], steps:[] }; _atlasOutcomes=_atlasDbg.actionOutcomes; VFRAMES.reset();   /* (#R493) a frame is a fact about a MOMENT; the previous turn's moment is gone */
       /* ⚠ (#R447) THE THIRD HAND-WRITTEN COPY OF THE QUOTA RULE STOOD HERE — a mirror of the server's counter that this page never re-read, so a wrong one ended the turn with the daily-limit message and NOT ONE request sent. aiQuotaBlocked() is the one answer, and it ASKS; missing, it fails OPEN, because ai-proxy holds the authority and refusing on a number nobody sent is the defect this replaced. */
       let _aiReady=false; try{ _aiReady = !!(typeof HOST.user!=='undefined'&&HOST.user) && !(typeof aiQuotaBlocked==='function' && await aiQuotaBlocked()); }catch(_){ _aiReady=false; }
       if(!_aiReady){
@@ -4737,8 +4738,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          of its three branches, so a native call would be returned as empty text and become a 502.
          The envelope rides the JSON-schema path that already works, and `webMode:'auto'` means the
          model — not a regular expression here — decides whether this turn needs the live web. */
-      const _model=async(req)=>{
-        const env=await askAIJSONEnvelope(_agentPrompt(req,q)+_fileBlock,_sys,null,{task:'atlas_turn',schema:TURN_SCHEMA,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});
+      const _model=async(req)=>{ const env=await askAIJSONEnvelope(_agentPrompt(req,q)+_fileBlock,_sys,VFRAMES.urls(),{task:'atlas_turn',schema:TURN_SCHEMA,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* ⚠ (#R493) THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */
         try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
         return AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON); };
       try{
