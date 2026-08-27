@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（970行・92 KB）＋ `css/`（3本）＋ `js/`（250本・11.3 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（970行・92 KB）＋ `css/`（3本）＋ `js/`（252本・11.3 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -247,10 +247,10 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
-| Capability Registry | `js/atlas-capabilities.js` | **127 能力**（現役 126・撤回 1）。ID・別名（302 綴り。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
-| 能力の説明文 | `js/atlas-catalog-text.js` | 41 ブロック。**各ブロックがどの能力を説明しているか**を持つ。`find_capability` が要求されたときだけ返す |
-| 引数の schema | `js/atlas-schemas.js` | **127 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
-| 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段。⚠ dispatch の case が返す**機械的な `exec` ブロックは `observed.exec` として結果に載る**——載せているのは 10 段目で、`verdict.observed` が `observed` を丸ごと置き換えた**あと**に足す（`camera` observer を使う `view.locate` がまさにその形）。observer 自身が `exec` を名乗ったときは observer が勝つ |
+| Capability Registry | `js/atlas-capabilities.js` | **129 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
+| 能力の説明文 | `js/atlas-catalog-text.js` | 45 ブロック。**各ブロックがどの能力を説明しているか**を持つ。`find_capability` が要求されたときだけ返す |
+| 引数の schema | `js/atlas-schemas.js` | **129 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
+| 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
 | 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳** |
 | ターンの進行 | `js/atlas-agent.js` | **Atlas が主体のループ**。1 手ごとに「最終回答」か「tool 呼び出し」を選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・回数の上限だけを見る。**読者への質問が成功した時点でターンは終わる**（`stopped:'awaiting_user'`）——同じ返信に並んだ後続の呼びは実行せず `turn_ended` で差し戻し、締めの 1 文のためのモデル呼び出しもしない。**旗は道具（と結果）に立っているので、ループは特定の道具の意味を知らない**。⚠ **同じ呼び出しを 1 ターンで 2 回したら、答えは 1 回**——`js/atlas-turn-results.js` の `callKey(name, args)` で同一性を見て、**成功した**先の結果をそのまま返し「これは今このターンで自分が出した答えである」と添える。⚠ **上限ではない**——呼び出し回数の予算も plan も 1 つも変えず、拒否もしない。失敗した呼び出しは覚えない（再試行が正しい場合だから） |
@@ -341,6 +341,45 @@ getter なので、観測していない成功を呼び出し側が書き込む�
   次の回答の同じ語は**別の問い**なので訊き直す（答えが段落に依存する、というのがこの機能の趣旨）。
 - **Atlas 自身も同じカードを開ける**（`{"type":"gloss","term":str}` ＝ 能力 `reader.gloss`）。
   選択 UI からしか届かない能力を作らない（`CONSTITUTION.md`／Atlas は操作卓）。
+### 2.1c データ横断クエリ (The cross-dataset query) — `js/atlas-query.js`
+
+**条件を複数まとめて満たす行を、データセットをまたいで求める操作。** `{"type":"query"}` ＝ 能力
+`data.query`。`FROM` 表 → `WHERE` 列条件 → `NEAR` 空間結合 → `ORDER` / `LIMIT` を、実データの上で
+実行して**行を返す**。文章を書くのではない。
+
+| 部品 | 何の正本か |
+|---|---|
+| 表 (tables) | `cities`（GeoNames cities1000・147,924 件・同梱）／`countries`（Countries タブの記録）／`earthquakes`（USGS FDSN・生）／`volcanoes`（Smithsonian GVP・同梱）／`facilities`（OpenStreetMap＋Wikidata・生。`kind` 必須） |
+| 列 (columns) | 行が持つもの（`pop`・`country`・`mag`・`depthKm`）／同梱データから測るもの（`precipMm`＝CHELSA、`coastKm`・`seaKm`＝`js/coastline.js`）／ネットワークで訊くもの（`elevM`・`tempC`・`windKmh`・`humidity`・`rainMm`＝Open-Meteo）／**国の統計**（`gdppc`・`hdi`・`dem`・`tfr`・`lifeExp`… を都市の ISO-2 から引く）／**任意の World Bank 指標**（`wb:SP.POP.GROW` のように書く） |
+| 演算子 | `>=` `>` `<=` `<` `==` `!=` `between` `in` `contains` |
+| 空間結合 | `near:[{of:表, withinKm:数, require?:bool, …その表の絞り込み}]`。結合先には**候補の外接矩形＋半径**しか要求しない |
+
+**⚠ 計画は費用の安い順である。** 列には費用（0＝行が持っている／1＝1 回の取得で以後ただ／2＝行ごとの
+ネットワーク）があり、条件はその順に評価される。「標高1500m以上・人口50万人以上・年降水量300mm未満」
+は、メモリ上の 934 件 → ラスタ参照 934 件 → **残った数十件にだけ**標高の問い合わせ、となる。
+147,924 件を Open-Meteo に送る実装は、この順序が無ければ避けられない。
+
+**⚠ この操作が守る 3 つのこと**（`js/atlas-query.js` の冒頭に同じ文がある）:
+
+1. **打ち切りを黙らない。** ネットワーク列の上限 400・結合の上限 20,000・表示行の上限・ピンの上限は
+   すべて結果に載り、表の下に印字される。
+2. **出典の無い列を出さない。** どの列も自分のデータセット名を持ち、取れなかった値は「—」と書く。
+   **評価できなかった条件は表の上に警告として出す**——下に小さく書くのでは、69 行が 3 条件すべてを
+   満たしたように読める。
+3. **数値をモデルに訊かない。** この操作の中に AI 呼び出しは 1 つも無い。
+
+**⚠ `coastKm` と `seaKm` は別の答えであり、選択は読者に見せる。** Natural Earth の海岸線には
+カスピ海が含まれる。テヘランはカスピ海から 109 km・ペルシャ湾から 611 km なので、
+「海から200km以上の都市」はこの 1 つの定義でテヘランを含みも外しもする。`data/coastline.json.gz` は
+外洋 (`coords`) と内海 (`enclosed`) を分けて持ち、2 本の列として出す（`js/coastline.js`）。
+
+**⚠ 測り方**——点から**線分**までの大円距離。頂点は単位ベクトル (Float64) で持ち、内側ループに
+三角関数は無く（`|p·n|` が横断角の sin）、`Math.acos` は 1 クエリにつき 1 回だけ呼ぶ。誤差は
+簡略化の許容値 2 km がそのまま上限で、距離が伸びても増えない。0.1° の距離ラスタなら ±6 km・
+2,600 万セルで、これより粗い。
+
+**⚠ 遅延モジュール。** `js/lazy-modules.js` の `atlasQuery`。エンジンも `js/coastline.js` も
+249 KB の海岸線も、**クエリが実際に走るまで取得しない**（Atlas 本体自体が on-demand なので二段）。
 
 ### 2.2 回答の契約 (The answer contract)
 

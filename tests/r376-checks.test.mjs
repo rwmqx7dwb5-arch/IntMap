@@ -70,7 +70,11 @@ test('R376 ① a raster-source capability is not verified by counting features',
 test('R376 ①b the new observer is declared in the audit’s own tables', () => {
   const a = AUDIT();
   assert.match(a, /wxModel: \['map', 'explanation'\]/, 'OBSERVABLE says what it can witness');
-  assert.match(a, /const MAP_OBS = \[[^\]]*'wxModel'\]/, 'and MAP_OBS counts it as a map observer');
+  /* ⚠ (#R495) MEMBERSHIP, NOT POSITION. This read `[^\]]*'wxModel'\]` — which also required
+     `wxModel` to be the LAST entry, so adding a second map observer (`queryRows`) failed a test
+     whose subject is whether `wxModel` is in the list at all. The rule is unchanged; what is gone
+     is an incidental fact about where in the array it sits. */
+  assert.match(a, /const MAP_OBS = \[[^\]]*'wxModel'[^\]]*\]/, 'and MAP_OBS counts it as a map observer');
 });
 
 /* ── ② a waiter is only woken by the commit it is waiting for ─────────────────────────────────*/

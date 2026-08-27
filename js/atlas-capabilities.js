@@ -118,6 +118,11 @@ export function makeAtlasCapabilities(HOST) {
          text and produces an explanation, which is why its observer is 'none' and its risk 'read'. */
       ['reader.gloss',               'gloss',          'explainTerm,defineTerm',                                      'research','none',    '',                       'explanation',         'read',    'none',   'text',     ''],
       ['research.askHere',           'askHere',        '',                                                            'research','none',    '',                       'explanation',         'read',    'none',   'point',    ''],
+      /* ⚠⚠ (#R495) THE JOIN. Every row above answers about ONE dataset — rank a metric, read a point,
+         sum an area, score countries — and 「人口100万人以上で、年間降水量500mm未満、海から200km以上、
+         過去30日でM5以上の地震があった都市」 is a question about four at once. `read` and `none`: it
+         measures and pins, it changes no setting the reader has to undo. */
+      ['data.query',                 'query',          'crossQuery,dataQuery',                                        'data',    'queryRows','map.object',           'map,explanation',     'session','none',   '',         'atlasQuery'],
       ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
       ['data.ratio',                 'ratio',          '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
       ['data.relate',                'relate',         '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
@@ -569,6 +574,28 @@ export function makeAtlasCapabilities(HOST) {
             return { status: 'partial', code: 'no_change', html: (raw && raw.html) || '' };
           }
           return { status: 'completed', code: 'ok', objectIds: made, observed: { objects: after }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ ⚠⚠⚠ (#R495) A QUERY THAT MATCHED NOTHING IS A COMPLETE ANSWER ═══════════════════════
+         `data.query` pins its matching rows, so it promises the map — but 「条件を全部満たす都市は
+         無い」 is a RESULT, not a failure, and it draws nothing. Under `object` or `paint` that run
+         reports `partial / no_change`, i.e. `ok:false`, for an answer that is correct and complete.
+         That is #R376's defect pointed the other way: a caller who is told a working feature failed
+         stops using it. So the observer watches what this capability ACTUALLY changes — the pins it
+         says it made — and treats «no rows, no pins» as the completed run it is. It still cannot
+         claim a map it did not draw: when the reply carries object ids, they must be on the map.
+         ⚠ NOT A WIDENING OF THE AUDIT'S ⑱. It is a NEW map observer, listed there beside `wxModel`
+         for the same stated reason, and it reads the object ledger rather than trusting `raw`. */
+      queryRows: {
+        observe: function () { return { ids: objectIds() }; },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: (raw && raw.html) || '' };
+          var made = (raw && raw.objectIds) ? raw.objectIds.slice() : [];
+          if (!made.length) return { status: 'completed', code: 'ok', html: (raw && raw.html) || '' };
+          var have = (after && after.ids) || [];
+          var landed = made.filter(function (id) { return have.indexOf(id) >= 0; });
+          if (!landed.length) return { status: 'partial', code: 'not_rendered', observed: { objects: after }, html: (raw && raw.html) || '' };
+          return { status: 'completed', code: 'ok', objectIds: landed, observed: { objects: after }, html: (raw && raw.html) || '' };
         }
       },
       setting: {
