@@ -2019,6 +2019,24 @@ test('R479 ⑨ the basemap credit is visible and names the base that is drawn', 
       w: Math.round(r.width), h: Math.round(r.height),
       onScreen: r.width > 0 && r.height > 0 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && r.top >= 0,
       sat: !!document.getElementById("btn-view-sat")?.classList.contains("active"),
+      /* (#R485) hit-test the CREDIT TEXT — left, middle and right of every link in it. The strip
+         spans the map column and the layer panel is legitimately drawn over its far end; what may
+         never be covered is the credit itself. */
+      covered: (() => {
+        const bad = [];
+        for (const a of el.querySelectorAll("a")) {
+          const q = a.getBoundingClientRect();
+          for (const [nm, x, y] of [["L", q.left + 2, q.top + q.height / 2],
+                                    ["M", q.left + q.width / 2, q.top + q.height / 2],
+                                    ["R", q.right - 2, q.top + q.height / 2]]) {
+            const t = document.elementFromPoint(x, y);
+            if (!(t && (t === el || el.contains(t)))) {
+              bad.push(a.textContent.trim() + nm + " < " + String(t ? (t.id || t.className || t.tagName) : "null").slice(0, 24));
+            }
+          }
+        }
+        return bad;
+      })(),
     };
   });
   expect(c.missing, 'the credit element exists').toBe(false);
@@ -2026,6 +2044,12 @@ test('R479 ⑨ the basemap credit is visible and names the base that is drawn', 
   expect(c.visibility, 'nor visibility:hidden').toBe('visible');
   expect(Number(c.opacity), 'nor transparent').toBeGreaterThan(0.5);
   expect(c.onScreen, 'and it is inside the viewport (w=' + c.w + ' h=' + c.h + ')').toBe(true);
+  /* ══ (#R485) …AND NOTHING IS DRAWN ON TOP OF IT ═════════════════════════════════════════════
+     Every assertion above passed on a credit that was COMPLETELY HIDDEN under the layer panel:
+     display, visibility, opacity and "inside the viewport" are all true of a thing with an opaque
+     board over it. #R477 and #R455 are the same lesson one level down. So ask the browser what is
+     actually frontmost at the credit's own text — the only question a reader cares about. */
+  expect(c.covered, 'nothing is drawn over the credit text').toEqual([]);
   expect(c.text.length, 'it says something').toBeGreaterThan(3);
   /* it credits what is on screen, and links out rather than just naming */
   const want = c.sat ? /Esri/ : /CARTO/;
