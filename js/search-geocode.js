@@ -131,8 +131,15 @@ window.IntMapModules.searchGeocode=function(HOST){
       /* (#R183) `feature_code` is carried under its own name as well as `type`: it is a GeoNames code
          (PCLI / ADM1 / PPLC …), not an OSM type, and placeClass reads the two vocabularies apart. */
       .then(r=>r.ok?r.json():null).then(j=>{ (j&&j.results||[]).forEach(p=>{ if(p.latitude==null||p.longitude==null)return; const adm=[p.admin1,p.country].filter(Boolean).join(', '); addItem(p.name+(adm?', '+adm:''),+p.longitude,+p.latitude,{display_name:p.name,type:p.feature_code,feature_code:p.feature_code,population:p.population,address:{country:p.country}}); }); }).catch(()=>{});
-    const nomP=fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${window.IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal})
-      .then(r=>r.ok?r.json():[]).then(a=>{ (a||[]).forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl)); }).catch(()=>{});
+    /* (#R489) …behind the app's ONE one-a-second Nominatim floor (js/nominatim-gate.js), reached
+       through `window` because this file may contain no top-level declarations (tests/r175 #4).
+       ⚠ IT QUEUES RATHER THAN DROPPING. #R298 measured what dropping does to a typed search — every
+       keystroke inside the window answered 「[]」 — and the two parallel geocoders beside this one
+       keep answering meanwhile, so the card is never empty while this waits. The 5 s AbortController
+       above is still the ceiling, and a search the reader has moved on from is checked for here. */
+    const nomP=(window.IntMapNominatimGate?window.IntMapNominatimGate.nominatimSlot():Promise.resolve(true))
+      .then(()=>ctrl.signal.aborted?null:fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=${window.IntMapLang.locale(HOST.lang,"en")}&q=${encodeURIComponent(pq)}`,{signal:ctrl.signal}))
+      .then(r=>(r&&r.ok)?r.json():[]).then(a=>{ (a||[]).forEach(pl=>addItem(pl.display_name,+pl.lon,+pl.lat,pl)); }).catch(()=>{});
     /* (#R19) Third parallel geocoder: Photon (komoot) — TYPO-TOLERANT like a search engine
        ("あいまいな単語を入れても検索できるように"; curl-verified CORS* and that "osakaa" → Osaka). */
     const phP=fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=${HOST.lang==='jp'?'en':'en'}`,{signal:ctrl.signal})
@@ -198,6 +205,7 @@ window.IntMapModules.searchGeocode=function(HOST){
       const u='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&polygon_geojson=1'
         +'&polygon_threshold=0.0003&bounded=1&viewbox='+(lng-d)+','+(lat+d)+','+(lng+d)+','+(lat-d)
         +'&postalcode='+encodeURIComponent(code);
+      const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();   /* (#R489) the one Nominatim floor — js/nominatim-gate.js */
       const r=await fetch(u,{headers:{Accept:'application/json'}}); if(!r.ok) return;
       const j=await r.json(); if(!Array.isArray(j)||!j.length) return;
       const polys=j.filter(o=>o&&o.geojson&&/Polygon/.test(o.geojson.type||''));

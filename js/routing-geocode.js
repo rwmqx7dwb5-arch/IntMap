@@ -120,7 +120,7 @@ window.IntMapRouteGeocode = (function () {
 
   /* ══ THE CACHE, AND THE ONE-A-SECOND FLOOR NOMINATIM ASKS FOR ═════════════════════════════════ */
   var cache = new Map(), CACHE_MS = 300000, CACHE_N = 60;
-  var lastNominatim = 0, NOMINATIM_GAP_MS = 1100;
+  var GATE = function () { return window.IntMapNominatimGate; };   /* (#R489) the app's ONE Nominatim floor — js/nominatim-gate.js */
   function cacheGet(k) { var v = cache.get(k); if (!v) return null; if (Date.now() - v.t > CACHE_MS) { cache.delete(k); return null; } return v.v; }
   function cacheSet(k, v) { cache.set(k, { t: Date.now(), v: v }); if (cache.size > CACHE_N) cache.delete(cache.keys().next().value); }
   /* ══ ⚠⚠⚠ (#R298) THE FLOOR WAS DROPPING THE SEARCH, NOT DELAYING IT ═══════════════════════════
@@ -134,13 +134,13 @@ window.IntMapRouteGeocode = (function () {
      ⚠ THE SLOT IS RESERVED SYNCHRONOUSLY, so two callers cannot both decide the window is free, and
      the queue is capped at ONE — a caller that would have to wait longer than the gap itself is
      still dropped, because by then the reader has typed something else. */
-  function nominatimSlot() {
-    var now = Date.now();
-    var at = Math.max(now, lastNominatim + NOMINATIM_GAP_MS);
-    if (at - now > NOMINATIM_GAP_MS) return -1;      /* one is already queued — this keystroke is stale */
-    lastNominatim = at;
-    return at - now;
-  }
+  /* ⚠ (#R489) THE COUNTER MOVED OUT AND THE RULE DID NOT. This function held the app's only honest
+     Nominatim floor, and it held it PRIVATELY — the six other files that call the same host each
+     went straight to `fetch`, so the "one request per second" this enforced was one per second for
+     routing plus however many everyone else wanted. The arithmetic is now js/nominatim-gate.js's,
+     shared by every caller, and `{drop:true}` keeps EXACTLY the keystroke behaviour #R298 measured:
+     a search whose window is already spoken for is stale, and is dropped rather than queued. */
+  function nominatimSlot() { var g = GATE(); return g ? g.reserve({ drop: true }) : 0; }
   function wait(ms) { return ms > 0 ? new Promise(function (r) { setTimeout(r, ms); }) : Promise.resolve(); }
   function abortError() { var e = new Error('aborted'); e.name = 'AbortError'; return e; }
 
@@ -257,9 +257,7 @@ window.IntMapRouteGeocode = (function () {
       + '&lat=' + (+lat).toFixed(6) + '&lon=' + (+lng).toFixed(6);
     /* (#R298) the same reservation the search uses, so a reverse lookup and a suggestion cannot both
        decide the second is theirs. A label is worth waiting for, so this one never gives up its turn. */
-    var hold = nominatimSlot();
-    await wait(hold < 0 ? NOMINATIM_GAP_MS : hold);
-    if (hold < 0) lastNominatim = Date.now();
+    var g = GATE(); if (g) await g.nominatimSlot();   /* (#R489) no `drop` — this one queues, which is what «never gives up its turn» always meant */
     var j = await jsonFetch(url, o.signal);
     if (!j || !j.display_name) return null;
     var a = j.address || {};

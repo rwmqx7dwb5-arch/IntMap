@@ -45,7 +45,9 @@ import { makeNewsCluster } from './news-cluster.js';   /* (#R340) research.event
 import { makeAtlasGeoObject } from './atlas-geo-object.js';   /* (#R397) one shape for a place, and WHERE its coordinate came from — so a coordinate IntMap already fetched stops being thrown away and re-geocoded */
 import { makeAtlasPolicy } from './atlas-policy.js';
 import { makeAtlasTurnContinuity } from './atlas-turn-continuity.js';   /* (#R419) what a turn leaves behind when it ends early: the question in the record, and a Stopped note that does not erase the page. ⚠ ON THIS LINE because js/atlas-console.js is AT its shrink-only ceiling (tests/r318 ⓑ) — the same reason #R278 appended inside a line. */
-import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R441) one operation, one block in the reply: the de-dupe that used to compare rendered HTML and lost to routing's per-set `data-rset` nonce */
+import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R441) one operation, one block in the reply: the de-dupe that used to compare rendered HTML and lost to routing's per-set `data-rset` nonce */ import { NominatimGate } from './nominatim-gate.js';   /* ⚠ (#R489) TWO IMPORTS ON THIS LINE because js/atlas-console.js is AT its shrink-only ceiling (tests/r318 ⓑ) — the same reason #R419 appended here. The two below need lines of their own: scripts/js-reachability.mjs anchors its import scan at the START of a line, so a module named second on a shared line reads as one nothing imports. The room came from deleting this file's own private Nominatim floor (see `_fetchUnitPoly`). */
+import { makeAtlasGeoLedger } from './atlas-geo-ledger.js';   /* (#R489) the places this conversation has resolved, kept as data instead of as 26 characters of action label */
+import { makeAtlasAdmin1 } from './atlas-admin1.js';   /* (#R489) first-level boundaries out of the file we already ship, so fourteen oblasts cost ONE request between them */
 import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/r199 ⑤) */
 import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 
@@ -383,7 +385,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _riverGeoCache={};
     async function fetchRiverLine(nm){ const key=_lnorm(nm); if(_riverGeoCache[key]!==undefined) return _riverGeoCache[key];
       let out=null;
-      try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&namedetails=1&q='+encodeURIComponent(nm),{headers:{Accept:'application/json'}});
+      try{ await NominatimGate.nominatimSlot(); const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&namedetails=1&q='+encodeURIComponent(nm),{headers:{Accept:'application/json'}});   /* (#R489) …behind the app's one floor — js/nominatim-gate.js */
         if(r.ok){ const j=await r.json();
           if(Array.isArray(j)){ const wat=j.filter(o=>{ const c=(o.class||o.category||'').toLowerCase(); const gt=(o.geojson&&o.geojson.type)||''; return (c==='waterway'||/^(river|canal|stream)$/.test(String(o.type||'').toLowerCase()))&&/LineString/.test(gt); })
             .sort((x,y)=>((+y.importance||0)-(+x.importance||0)))[0];
@@ -437,7 +439,8 @@ window.IntMapModules.atlasConsole=function(HOST){
        triangles", abnormal long edges, self-intersections, whole-world blobs and tiny slivers; (b) a real-border
        geometry builder for country-set groups; (c) a categorical palette + legend so multiple regions in one
        command are individually identifiable. ===== */
-    let _hlGen=0;   /* (#R143) generation token — a slow async resolution can't overwrite a newer highlight (古い処理の遅延上書き対策) */
+    let _hlGen=0;   /* (#R143) generation token — a slow async resolution can't overwrite a newer highlight (古い処理の遅延上書き対策) */ let _hlRun=null, _poiRun=null; const _hlAdd=(a)=>{ const g=(a&&a.__paintRun)||null; const s=(g!=null&&_hlRun===g); _hlRun=g; return s; }; const _poiAdd=(a)=>{ const g=(a&&a.__paintRun)||null; const s=(g!=null&&_poiRun===g); _poiRun=g; return s; };   /* ⚠⚠ (#R489) A SECOND HIGHLIGHT IN THE SAME TURN USED TO ERASE THE FIRST. Every painting path below opens with clearHl()/clearPolyHl(), which is right when a NEW request arrives and wrong when one request draws fourteen oblasts as fourteen actions: each ran, each reported 「地図に表示中」, and the map ended up holding the last one. #R143's generation token is about a STALE async paint overwriting a NEWER one and it stays exactly as it was; this is about two paints that BOTH belong to the turn the reader is waiting on. `_runGen` is the run token this console already bumps for every user-visible operation — a turn (three call sites), a `runDirect` from another feature, and a press of Stop — so «the same request» is a fact the console holds rather than a guess. ⚠ IT IS NOT `_curTurn`: that one only moves in `run()`, so two presses of an area-summary button (which go through `runDirect`) would have read as one request and piled up for ever. ⚠ IT ADDS NOTHING TO WHAT ATLAS MAY DO (CONSTITUTION.md §5) — no cap, no refusal; the map simply keeps what this turn drew, which is what the reply already claimed. The POI half is the same sentence about pins: mapReport, researchMap and the answer-place pinner each called clearPois() first, so a turn that researched and then mapped showed one of the two. */
+    /* ⚠⚠ (#R489) A SECOND HIGHLIGHT IN THE SAME TURN USED TO ERASE THE FIRST. Every painting path below opens with clearHl()/clearPolyHl(), which is right when a NEW request arrives and wrong when one request draws fourteen oblasts as fourteen actions: each ran, each reported 「地図に表示中」, and the map ended up holding the last one. #R143's generation token is about a STALE async paint overwriting a NEWER one and it stays exactly as it was; this is about two paints that BOTH belong to the turn the reader is waiting on. `_curTurn` is the monotone turn id #R298 already stamps on every bubble, so «same request» is a fact the console holds rather than a guess. ⚠ IT ADDS NOTHING TO WHAT ATLAS MAY DO (CONSTITUTION.md §5) — no cap, no refusal; the map simply keeps what this turn drew, which is what the reply already claimed. The POI half is the same sentence about pins: mapReport, researchMap and the answer-place pinner each called clearPois() first, so a turn that researched and then mapped showed one of the two. */
     function _ringSignedArea(r){ let a=0; for(let i=0,n=r.length-1;i<n;i++){ a+=(r[i][0]*r[i+1][1]-r[i+1][0]*r[i][1]); } return a/2; }
     function _ringBbox(r){ let a=180,b=90,c=-180,d=-90; for(const p of r){ if(p[0]<a)a=p[0]; if(p[0]>c)c=p[0]; if(p[1]<b)b=p[1]; if(p[1]>d)d=p[1]; } return [a,b,c,d]; }
     function _orient3(p,q,r){ return (q[1]-p[1])*(r[0]-q[0])-(q[0]-p[0])*(r[1]-q[1]); }
@@ -598,14 +601,11 @@ window.IntMapModules.atlasConsole=function(HOST){
        member admin units and the same real-boundary composition runs. The old 12-30-vertex traced outline survives
        only as the LAST resort, and is labelled as approximate. ==== */
     const _unitPolyCache={}, _composeCache={};
-    /* Nominatim allows ~1 request/second — a burst of 30+ member-unit fetches got rate-limited and half the
-       chernozem belt silently dropped. All unit fetches go through ONE throttled gate (1.05 s spacing), transient
-       failures are retried once and NEVER cached (only real polygons are). */
-    let _nomGate=Promise.resolve();
-    function _nomSlot(){ const p=_nomGate.then(()=>new Promise(r=>setTimeout(r,1050))); _nomGate=p.catch(()=>{}); return p; }
+    /* Nominatim allows ~1 request/second — a burst of 30+ member-unit fetches got rate-limited and half the chernozem belt silently dropped. Transient failures are retried once and NEVER cached (only real polygons are).
+       ⚠ (#R489) THIS BLOCK'S OWN 1.05 s PROMISE CHAIN IS GONE. It was the second of three private floors (js/routing-geocode.js kept a third, and the five remaining Nominatim callers kept none) — so «one request per second» was one per second EACH. js/nominatim-gate.js owns the counter now and every caller queues behind the same second. */
     async function _fetchUnitPoly(q,thr){ const key=q+'|'+thr; if(_unitPolyCache[key]!==undefined) return _unitPolyCache[key];
       for(let att=0;att<2;att++){
-        await _nomSlot();
+        await NominatimGate.nominatimSlot();
         try{ const r=await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=4&polygon_geojson=1&polygon_threshold='+thr+'&q='+encodeURIComponent(q),{headers:{Accept:'application/json'}});
           if(!r.ok){ continue; } const j=await r.json();
           if(Array.isArray(j)&&j.length){ const best=j.filter(o=>o.geojson&&/Polygon/.test((o.geojson.type||''))).sort((x,y)=>((+y.importance||0)+_classBonus(y))-((+x.importance||0)+_classBonus(x)))[0];
@@ -964,6 +964,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     async function resolveHlTarget(nm){
       const c=resolveCountrySync(nm); if(c&&c.code) return {code:c.code,name:c.name};
       const grp=regionGroup(nm); if(grp&&grp.codes.length) return {codes:grp.codes,name:grp.name,basis:grp.basis||null};   /* (#R118) carry the historical-membership basis into the reply */
+      { const _a1=await ADM1.hlTarget(nm,{ledger:GLEDGER}); if(_a1){ try{ GLEDGER.record(_a1.entity); }catch(_){} return _a1; } }   /* ⚠ (#R489) THE FIRST-LEVEL ADMIN RUNG, AND IT IS LOCAL. Everything below this line leaves the machine: `_nomExtent` asks Nominatim for `polygon_geojson` and `geoVerify` asks the web. Fourteen oblasts went down that ladder once per name, plus retries, against a host whose published policy is one request per second — and 「ベルゴロド州」 still failed, because Nominatim's top hit for it is the CITY of Belgorod and the fail-closed check correctly refused a city as an oblast outline. `data/admin1-world.json.gz` has held the real outline, and its Russian and ISO names, since #R290; only js/world-packs.js could see it. Now the ladder consults it BEFORE the network, so the fourteen cost ONE request between them — and the entity is filed in the ledger so the NEXT turn does not start from a string again (js/atlas-admin1.js explains why it declines rather than guesses). ⚠ IT SITS ABOVE regionCompose, NOT BELOW IT — measured on the running app: the curated-composition rung ANSWERS 「Belgorod Oblast」 by composing it out of Nominatim member units, one gated request per name, so four oblasts took 4,285 ms and four requests with this rung underneath it and 19 ms and ZERO with it on top. A name this index does not hold still falls through to composition exactly as before. */
       const comp=regionCompose(nm); if(comp){ const cp=await composeRegion(comp.spec,comp.key); if(cp&&cp.geo) return {poly:{name:String(nm||'').trim(),geo:cp.geo},composed:true,partial:cp.n<cp.total}; }
       /* (#R117) recognisably WATER-shaped queries (…湾/…海/灘/水道/海峡, Bay/Gulf/Strait/Sea…) get a RETRY on the
          real-polygon lookup and NEVER fall through to the AI-traced outline: a hallucinated blob over the wrong
@@ -1080,7 +1081,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        so the model targets EXACT names; (b) resolveLayer scores by exact-id / exact-text / data-layer / prefix /
        whole-word / token-coverage with a threshold; (c) toggleLayer VERIFIES the checkbox reached the wanted state
        and returns the EXACT label it toggled so the note shows precisely what happened (no more silent confusion). */
-    const _lnorm=s=>{ try{ return String(s==null?'':s).replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase().replace(/\s+/g,' ').trim(); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim(); } }; const TRES = makeAtlasTurnResults({norm:_lnorm});   /* (#R441) which of this turn's results the reply is built from — js/atlas-turn-results.js. ⚠ HERE and not beside POLICY/TCONT above: `_lnorm` is a `const` on this line, so building it earlier reads it inside its own temporal dead zone. */
+    const _lnorm=s=>{ try{ return String(s==null?'':s).replace(/^[^\p{L}\p{N}]+/u,'').toLowerCase().replace(/\s+/g,' ').trim(); }catch(_){ return String(s==null?'':s).toLowerCase().replace(/\s+/g,' ').trim(); } }; const TRES = makeAtlasTurnResults({norm:_lnorm});   /* (#R441) which of this turn's results the reply is built from — js/atlas-turn-results.js. ⚠ HERE and not beside POLICY/TCONT above: `_lnorm` is a `const` on this line, so building it earlier reads it inside its own temporal dead zone. */ const GLEDGER = makeAtlasGeoLedger({norm:_lnorm, geoObject:GEOBJ.geoObject}); const ADM1 = makeAtlasAdmin1({});   /* (#R489) the conversation's resolved places, and the shipped first-level boundary index. ⚠ `geoObject` is handed IN so the ledger stores #R397's shape and #R397's provenance classes rather than inventing a second opinion about what a place record is. */
     function layerCatalog(){ const out=[]; document.querySelectorAll('#layer-dropdown input[type=checkbox]').forEach(cb=>{ const lab=cb.closest('label')||cb.closest('.lyr-row'); let disp=''; if(lab){ const sp=lab.querySelector('span[data-i18n], span.ec-lbl, span[id$="-lbl"], .geo-label'); disp=(sp?sp.textContent:(lab.textContent||'')); } disp=disp.replace(/\s+/g,' ').trim(); const txt=_lnorm(disp); if(!txt) return; out.push({cb, label:disp, txt, id:(cb.id||'').toLowerCase(), dl:(cb.getAttribute('data-layer')||'').toLowerCase()}); }); return out; }
     function layerCatalogText(){ try{ const seen=new Set(),out=[]; layerCatalog().forEach(c=>{ const n=c.label; if(!n||n.length<2) return; const k=c.txt; if(seen.has(k)) return; seen.add(k); out.push(n); }); return out.slice(0,170).join('; '); }catch(_){ return ''; } }
     /* (#R52) The user re-reported "レイヤーによっては混同している" (layer confusion). Verified real failures with the
@@ -1368,7 +1369,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        sentence, presented to the model as a constraint on it. State is context; it is not an order. */
     function _agentPrompt(req, q){ let p=''; const ctx=stateContext(); if(ctx) p+='[CURRENT MAP STATE]\n'+ctx+'\n\n';
       if(_herePoint&&isFinite(_herePoint.lng)) p+='[PINNED POINT] The user clicked an EXACT spot: latitude '+(+_herePoint.lat).toFixed(4)+', longitude '+(+_herePoint.lng).toFixed(4)+(_herePoint.name?(' (near '+_herePoint.name+')'):'')+'. "here / this spot / ここ / hier / здесь / aqu\u00ed" refer to THIS coordinate, and actions accept place:"there" for it.\n\n';
-      const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about)\n'+wc+'\n\n';
+      const wc=wctxBlock(); if(wc) p+='[WORKING CONTEXT] (what this conversation is currently about)\n'+wc+'\n\n'; try{ const _gl=GLEDGER.contextLines(); if(_gl.length) p+=_gl.join('\n')+'\n\n'; }catch(_){}   /* ⚠ (#R489) THE PLACES THIS CONVERSATION HAS ALREADY RESOLVED, AS IDENTIFIERS. Without this block the only thing a turn inherited about the fourteen oblasts it had just named was js/atlas-turn-continuity.js's 26-character action label, so the next turn re-extracted them from its own prose as bare strings with no country and no kind — and then geocoded, translated, retried and web-verified every one of them again. js/atlas-geo-ledger.js */
       if(_hist.length) p+='[RECENT CONVERSATION] (oldest→newest)\n'+_hist.map(x=>x.s).join('\n')+'\n\n';   /* ⚠ (#R413) NEITHER `_hist` NOR THE STEP RECORD BELOW IS CLIPPED HERE ANY MORE: one place bounds the conversation (`_remember`, 48), and the 1,200/3,000-char cuts on the record of what the calls DID were the code editing the evidence it then told Atlas to trust. (#R298) an entry is {t,s} — the model reads `s` */
       p+='[REQUEST]\n'+q+'\n\n';
       try{ const steps=[]; ((req&&req.messages)||[]).forEach(m=>{
@@ -1748,7 +1749,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(seen.some(p=>Math.abs(p[0]-lng)<0.05&&Math.abs(p[1]-lat)<0.05)) continue; seen.push([lng,lat]);
         pinIdx[i]=pins.length; pins.push({lng,lat,name:String((it&&it.name)||ln).slice(0,90),kind:String((it&&it.dateOrPeriod)||(it&&it.kind)||'').slice(0,60),sum:String((it&&it.summary)||'')}); }
       let rendered=false, method='';
-      if(pins.length){ clearPois(); _pois=pins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})); let okP=paintPois(); for(let i=0;i<6&&!okP;i++){ await new Promise(r=>setTimeout(r,600)); okP=paintPois(); } rendered=okP; method='pins'; }
+      if(pins.length){ const _kpM=_poiAdd(opt.act); const _pvM=_kpM?_pois.slice():[]; clearPois(); _pois=_pvM.concat(pins.map(p=>({lng:p.lng,lat:p.lat,name:p.name,kind:p.kind,sum:p.sum,url:'',src:''})));   /* (#R489) researchMap keeps what this same turn already pinned — see the note beside `_poiAdd` */ let okP=paintPois(); for(let i=0;i<6&&!okP;i++){ await new Promise(r=>setTimeout(r,600)); okP=paintPois(); } rendered=okP; method='pins'; }
       try{ let a=180,b=90,c=-180,d=-90,has=false;
         if(box){ a=Math.min(a,box[0][0]);b=Math.min(b,box[0][1]);c=Math.max(c,box[1][0]);d=Math.max(d,box[1][1]); has=true; }
         pins.forEach(p=>{ a=Math.min(a,p.lng);b=Math.min(b,p.lat);c=Math.max(c,p.lng);d=Math.max(d,p.lat); has=true; });
@@ -1762,7 +1763,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R397) `_pinReplyPlaces` moved into js/atlas-verify.js — eight of its dependencies already lived
        there and this file has a shrink-only ceiling. `_pois` is passed as a getter/setter pair, never as
        a captured value: this closure REPLACES the array, so a copy would go stale. */
-    const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois,
+    const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
 
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
@@ -2263,9 +2264,10 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(a.value!=null){ T.setDaysAgo(3650-(+a.value),{source:'atlas'}); return R(true, note(ymdISO(T.when()))); }
           return R(false, warn('⚠ '+L('Give a year or date','年か日付を指定してください','Jahr/Datum angeben','Укажите год/дату','Indica un año o fecha')));
         }catch(_){ return R(false, warn('⚠ '+L('Time machine unavailable','タイムマシンが使えません','Zeitmaschine nicht verfügbar','Машина времени недоступна','Máquina del tiempo no disponible'))); } }
-        case 'pin': { const ll=await geocode(a.place); if(ll){ try{ addPin(ll.lng,ll.lat); }catch(_){} try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)}); }catch(_){}
+        case 'pin': { const _pm={title:String(a.title||a.name||'').trim(),description:String(a.description||a.summary||a.note||a.text||'').trim(),source:String(a.source||a.src||'').trim(),url:String(a.url||'').trim(),when:String(a.date||a.when||'').trim(),confidence:String(a.confidence||'').trim()}; const _pk=GLEDGER.resolve(a.place); const _pp=String(a.place||'').trim(), _pc=String(a.country||'').trim(); const _pq=(_pc&&_pp&&_lnorm(_pp).indexOf(_lnorm(_pc))<0)?(_pp+', '+_pc):_pp;   /* ⚠ (#R489) THE COUNTRY IS APPENDED ONLY WHEN IT IS NOT ALREADY THERE. Measured on the live endpoint: 「Kotovsk, Russia」 returns 1 result and 「Kotovsk, Russia, Russia」 returns 0 — and a model that fills both `place` and `country` writes the doubled form every time. */ const ll=(_pk&&_pk.lng!=null)?{lng:_pk.lng,lat:_pk.lat,name:_pk.canonicalName||_pk.name}:await geocode(_pq||a.place);   /* ⚠⚠ (#R489) A PIN CAN SAY WHAT IT IS, AND THAT IS THE WHOLE OF THE SECOND REPORT. `pin` accepted a place and nothing else, and `addPin(lng,lat)` made a marker whose popup reads 「Pin #3」 — so a turn asked for 「これらの着弾地点を説明付きでピンして」 had NO action that could carry the explanation, and improvised: research → bare pin → research again → pin again, four independent passes whose conclusions disagreed because each one re-searched. The description travels with the marker now. ⚠ AND THE PLACE IS ASKED FOR WITH ITS COUNTRY (js/atlas-geo-ledger.js first, so a name this conversation already resolved is not geocoded a second time) — 「オクチャブリスキー」 with no parent oblast and no country code is a query that cannot succeed, which is what the transcript shows it doing. */
+          if(ll){ try{ addPin(ll.lng,ll.lat,_pm); }catch(_){} try{ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)}); }catch(_){} try{ GLEDGER.record({kind:String(a.kind||ll.kind||'point'),name:String(a.place||''),canonicalName:ll.name||String(a.place||''),countryCode:String(a.countryCode||''),countryName:String(a.country||''),lng:ll.lng,lat:ll.lat,role:_pm.title||'pin',summary:_pm.description,source:'pin',provenance:'geocoded_point'}); }catch(_){}
           let _oid=null; try{ _oid=(HOST.userPins&&HOST.userPins.length)?String(HOST.userPins[HOST.userPins.length-1].id):null; }catch(_){}   /* (#R119) creating actions return the created object's id */
-          return R(true, note(esc(ll.name||a.place||'')), _oid?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
+          return R(true, note(esc(_pm.title||ll.name||a.place||'')+(_pm.description?('<br><span style="font-size:11px;opacity:0.85;">'+esc(_pm.description)+'</span>'):'')), _oid?{objectIds:[_oid]}:null); } return R(false, warn('⚠ '+esc(a.place||''))); }
         /* (#R172) …and "volume". The catalogue has advertised {"type":"tool","name":"volume"} since #R170, but
            there was no branch for it, so it fell through to doControl() and quietly did nothing. */
         /* (#R176) The drone planner lost its toolbar button (「どこにも置くな」), so it can no longer be
@@ -2696,13 +2698,13 @@ window.IntMapModules.atlasConsole=function(HOST){
                 renderState:{painted:!!painted, features:(features!=null?features:0), verified:!!verified},
                 capabilities:{ identifierScheme:'ISO 3166-1 alpha-3', validIdentifierCount:_hlValidCodeSet().size } });
               if(!G.length){   /* nothing valid to draw → return the STRUCTURED result (not a dead-end) so Terra corrects the identifiers */
-                return R(false, warn('⚠ '+L('None of the identifiers for that request resolved to a real border','その要求の識別子はいずれも実在の国境に解決できませんでした','Keiner der Bezeichner dieser Anfrage ließ sich einer realen Grenze zuordnen','Ни один идентификатор запроса не сопоставлен с реальной границей','Ninguno de los identificadores de esa solicitud se resolvió a una frontera real'))+(gUnresolved.length?note(esc(_unrSum(gUnresolved))):'')+cwarn, {meta:{partial:true}, exec:_mkExec(false,0,false)}); }
-              clearHl(); clearLineHl(); _hlLines=[]; clearPolyHl();
-              _hlPolys=G.map((g,i)=>{ g.color=_single||_hlPaletteColor(i); return {name:g.name,geo:g.geo,color:g.color,comp:1,op:0.42}; });
+                return R(false, warn('⚠ '+L('None of those identifiers could be matched to a boundary in the data IntMap holds — the places may well exist','いずれの識別子も、IntMapが保持する境界データに一致させられませんでした（場所自体は実在する可能性があります）','Keiner dieser Bezeichner ließ sich den vorhandenen Grenzdaten zuordnen — die Orte können durchaus existieren','Ни один идентификатор запроса не сопоставлен с реальной границей','Ninguno de los identificadores de esa solicitud se resolvió a una frontera real'))+(gUnresolved.length?note(esc(_unrSum(gUnresolved))):'')+cwarn, {meta:{partial:true}, exec:_mkExec(false,0,false)}); }
+              const _keepA=_hlAdd(a); const _prevA=_keepA?_hlPolys.slice():[]; if(!_keepA){ clearHl(); clearLineHl(); _hlLines=[]; } clearPolyHl();   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
+              _hlPolys=_prevA.concat(G.map((g,i)=>{ g.color=_single||_hlPaletteColor(_prevA.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:1,op:0.42}; }));   /* the palette continues from what is already drawn, so the second action's groups are not the first action's colours */
               let paintedP=paintPolys();
               for(let i5=0;i5<8&&!paintedP;i5++){ await new Promise(r5=>setTimeout(r5,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
               if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn, {exec:_mkExec(false,0,false)});
-              const ver=_verifyPolyPaint(G.length);
+              const ver=_verifyPolyPaint(_hlPolys.length);   /* (#R489) …which is G plus whatever this same turn already drew */
               if(!_fitGroups(_hlPolys)){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
               const totalC=G.reduce((s2,g)=>s2+g.nCountries,0);
               let hh=note('✦ '+G.map(g=>esc(g.displayName)).join(', '))+_hlLegendHtml(G);
@@ -2808,12 +2810,12 @@ window.IntMapModules.atlasConsole=function(HOST){
             if(gAmbig.length){ if(_hlMyGen!==_hlGen) return R(true,''); return R(false, _hlAmbigConfirm(gAmbig, G.map(g=>g.displayName||g.name).concat(gMiss)), {meta:{partial:true}}); }
             if(G.length>=2 && G.some(g=>g.kind==='set'||g.kind==='region')){
               if(_hlMyGen!==_hlGen) return R(true,'');   /* superseded by a newer highlight → don't overwrite it */
-              clearHl(); clearLineHl(); _hlLines=[]; clearPolyHl();
-              _hlPolys=G.map((g,i)=>{ g.color=_hlPaletteColor(i); return {name:g.name,geo:g.geo,color:g.color,comp:(g.kind!=='region'||g.composed)?1:0,op:0.42}; });
+              const _keepB=_hlAdd(a); const _prevB=_keepB?_hlPolys.slice():[]; if(!_keepB){ clearHl(); clearLineHl(); _hlLines=[]; } clearPolyHl();   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
+              _hlPolys=_prevB.concat(G.map((g,i)=>{ g.color=_hlPaletteColor(_prevB.length+i); return {name:g.name,geo:g.geo,color:g.color,comp:(g.kind!=='region'||g.composed)?1:0,op:0.42}; }));
               let paintedP=paintPolys();
               for(let i4=0;i4<8&&!paintedP;i4++){ await new Promise(r4=>setTimeout(r4,700)); if(_hlMyGen!==_hlGen) return R(true,''); paintedP=paintPolys(); }
               if(!paintedP) return R(false, warn('⚠ '+L('Could not paint the highlight (map still loading) — try again','ハイライトを描画できませんでした（地図読込中）。もう一度お試しください','Hervorhebung konnte nicht gezeichnet werden (Karte lädt) — bitte erneut','Не удалось нарисовать выделение (карта загружается) — повторите','No se pudo dibujar el resaltado (mapa cargando) — reintenta'))+cwarn);
-              const ver=_verifyPolyPaint(G.length);
+              const ver=_verifyPolyPaint(_hlPolys.length);   /* (#R489) …which is G plus whatever this same turn already drew */
               if(!_fitGroups(_hlPolys)){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} }
               let hh=note('✦ '+G.map(g=>esc(g.displayName||g.name)).join(', '))+_hlLegendHtml(G);
               if(G.some(g=>g.kind==='set'||g.kind==='country')) hh+=note(L('Country sets drawn from real national borders (UN M49 standard where applicable)','国集合は実際の国境データから描画（該当時はUN M49標準）','Ländergruppen aus realen Staatsgrenzen (ggf. UN-M49-Standard)','Наборы стран построены по реальным госграницам (при наличии — стандарт UN M49)','Conjuntos de países con fronteras reales (estándar UN M49 cuando aplica)'));
@@ -2835,7 +2837,7 @@ window.IntMapModules.atlasConsole=function(HOST){
              (#R64) + country GROUPS (旧ソ連諸国, EU…) and real-boundary COMPOSITIONS (東海地方, 肥沃な三日月帯…).
              (#R65) + RIVERS as their real course (line) and BASINS (tributaries + faint basin fill) — judged
              BEFORE any admin-unit logic. */
-          const found=[],polys=[],lines=[],lineNames=[],miss=[],ambig=[],rejected=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false,anyOsm=false,anyDerived=false;
+          const found=[],polys=[],lines=[],lineNames=[],miss=[],ambig=[],rejected=[],seen=new Set(),grpNames=[],grpBases=[]; let anyApprox=false,anyComposed=false,anyPartial=false,basinInfo=null,anyVerified=false,anyOsm=false,anyDerived=false,anyAdm1=false;
           for(const nm2 of rawX){
             const bi=basinIntent(nm2);
             if(bi){ let B=null; try{ B=await buildBasin(bi.base); }catch(_){}
@@ -2862,7 +2864,7 @@ window.IntMapModules.atlasConsole=function(HOST){
               if(!_vg.ok){ rejected.push({name:t2.poly.name||nm2,reason:_vg.reason}); }
               else { if(pc2) t2.poly.color=pc2; if(t2.composed) t2.poly.comp=true; polys.push(t2.poly); if(t2.composed) anyComposed=true; if(t2.partial) anyPartial=true;
                 /* (#R132) precise BASIS per method — real OSM boundary vs web-anchor-derived vs curated gazetteer/AI outline */
-                if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; } }
+                if(t2.rrMethod==='admin1_index') anyAdm1=true; else if(t2.rrMethod==='osm_polygon') anyOsm=true; else if(t2.rrMethod==='derived_anchors') anyDerived=true; else if(t2.soft||t2.approx) anyApprox=true; } }
             else miss.push(nm2); }
           /* (#R150) AMBIGUITY GATE (shared decision with the multi-region path via _hlAmbigConfirm): ANY ambiguous
              target STOPS the request with ONE confirmation and paints nothing — never "highlighted A" + "did you
@@ -2870,14 +2872,14 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(ambig.length){ if(_hlMyGen!==_hlGen) return R(true,''); const clear=found.filter(c=>!c._grp).map(c=>c.name).concat(grpNames).concat(polys.map(p=>p.name)).concat(lineNames).concat(miss); return R(false, _hlAmbigConfirm(ambig, clear)+cwarn, {meta:{partial:true}}); }
           if(!found.length&&!polys.length&&!lines.length){
             if(rejected.length) return R(false, warn('⚠ '+L('The shape resolved for that region was invalid (degenerate/self-intersecting) and was not drawn','その地域の形状が不正（退化・自己交差）なため描画しませんでした','Die aufgelöste Form dieser Region war ungültig (entartet/selbstschneidend)','Форма региона оказалась недействительной (вырожденная/самопересекающаяся)','La forma resuelta para esa región no era válida (degenerada/autointersecante)')+': '+esc(rejected.map(r=>r.name).join(', ')))+cwarn);
-            return R(false, warn('⚠ '+L('Nothing found for','見つかりません','Nichts gefunden für','Ничего не найдено','Nada encontrado para')+': '+esc(raw.join(', ')))+cwarn); }
+            return R(false, warn('⚠ '+L('No boundary could be resolved for','境界データを解決できませんでした','Keine Grenze auflösbar für','Не удалось разрешить границу для','No se pudo resolver la frontera de')+': '+esc(raw.join(', ')))+cwarn); }   /* ⚠ (#R489) IT SAYS WHAT FAILED. 「見つかりません」 reads as 「その場所は無い」, and the reported case was the opposite: Belgorod Oblast exists, has a real administrative outline, and the lookup returned the CITY. A message that blames the world for a lookup's failure sends the next turn off to re-verify a place that was never in doubt. */
           /* (#R61) VERIFY the paint really happened (style may still be loading) — bounded retry, then honesty. */
           if(_hlMyGen!==_hlGen) return R(true,'');   /* (#R143) superseded by a newer highlight */
-          clearPolyHl(); _hlPolys=polys; clearLineHl(); _hlLines=lines;
-          const codes2=found.map(c=>c.code);
-          let painted=(codes2.length?highlight(codes2):(clearHl(),true)); let paintedP=paintPolys(); let paintedL=paintLines();
-          for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(_hlMyGen!==_hlGen) return R(true,''); if(codes2.length&&!painted) painted=highlight(codes2); if(polys.length&&!paintedP) paintedP=paintPolys(); if(lines.length&&!paintedL) paintedL=paintLines(); }
-          const ub=unionBox(codes2,polys.concat(lines)); if(ub){ try{ GE().camera.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(codes2.length){ const fitOk=fitTo(codes2);
+          const _keepC=_hlAdd(a); const _prevP=_keepC?_hlPolys.slice():[], _prevL=_keepC?_hlLines.slice():[], _prevC=_keepC?Array.from(_hl):[]; clearPolyHl(); clearLineHl(); _hlPolys=_prevP.concat(polys); _hlLines=_prevL.concat(lines);   /* (#R489) additive within one turn — see the note beside `_hlAdd` */
+          const codes2=found.map(c=>c.code); const _allC=_prevC.concat(codes2.filter(c=>_prevC.indexOf(c)<0));   /* `highlight()` clears the feature-state set before it paints, so the countries this turn already lit have to be asked for again */
+          let painted=(_allC.length?highlight(_allC):(_keepC?true:(clearHl(),true))); let paintedP=paintPolys(); let paintedL=paintLines();
+          for(let i2=0;i2<8&&((codes2.length&&!painted)||(polys.length&&!paintedP)||(lines.length&&!paintedL));i2++){ await new Promise(r2=>setTimeout(r2,700)); if(_hlMyGen!==_hlGen) return R(true,''); if(codes2.length&&!painted) painted=highlight(_allC); if(polys.length&&!paintedP) paintedP=paintPolys(); if(lines.length&&!paintedL) paintedL=paintLines(); }
+          const ub=unionBox(_allC,_hlPolys.concat(_hlLines)); if(ub){ try{ GE().camera.fitBounds(ub,{padding:60,maxZoom:7.5,duration:900}); }catch(_){} } else if(_allC.length){ const fitOk=fitTo(_allC);   /* (#R489) frame EVERYTHING this turn drew — framing only the last action's target is how fourteen oblasts ended as a close-up of one */
             /* (#R64) antimeridian-spanning sets (旧ソ連諸国: Chukotka wraps the date line) defeat a bbox fit —
                zoom out to the planet so the highlight is actually visible instead of silently not moving. */
             if(!fitOk){ try{ if(GE().camera.getZoom()>2.6) GE().camera.flyTo({center:[GE().camera.getCenter().lng,30],zoom:1.6,duration:1000}); }catch(_){} } }
@@ -2898,13 +2900,13 @@ window.IntMapModules.atlasConsole=function(HOST){
           }
           if(anyComposed) hh+=note(L('Drawn from the real administrative boundaries of the region\'s member units','構成する行政区画の実際の境界データから描画','Aus den realen Verwaltungsgrenzen der Teilgebiete gezeichnet','Построено из реальных административных границ','Dibujado a partir de los límites administrativos reales'));
           /* (#R132) explicit BASIS lines for the general resolver */
-          if(anyOsm) hh+=note(L('Drawn from real OpenStreetMap boundary data','実際のOpenStreetMapの境界データから描画','Aus realen OpenStreetMap-Grenzdaten gezeichnet','Построено по реальным границам OpenStreetMap','Dibujado a partir de límites reales de OpenStreetMap'));
+          if(anyAdm1) hh+=note(L('Drawn from real first-level administrative boundaries (the bundled Natural Earth index)','実際の第1レベル行政境界（同梱のNatural Earth索引）から描画','Aus realen Verwaltungsgrenzen der ersten Ebene gezeichnet (mitgelieferter Natural-Earth-Index)','Построено по реальным границам регионов первого уровня (встроенный индекс Natural Earth)','Dibujado con fronteras administrativas reales de primer nivel (índice Natural Earth incluido)'));   /* (#R489) js/atlas-admin1.js */ if(anyOsm) hh+=note(L('Drawn from real OpenStreetMap boundary data','実際のOpenStreetMapの境界データから描画','Aus realen OpenStreetMap-Grenzdaten gezeichnet','Построено по реальным границам OpenStreetMap','Dibujado a partir de límites reales de OpenStreetMap'));
           if(anyDerived) hh+=note(L('⬡ = approximate extent derived from web-verified boundary anchors (no official boundary exists for this region)','⬡ = 近似範囲（公式境界が存在しない地域を、Web検索で照合した境界アンカーから構築）','⬡ = ungefähre Ausdehnung aus web-verifizierten Grenzankern (keine offizielle Grenze)','⬡ = приблизительный контур из проверенных веб-поиском опорных точек (официальной границы нет)','⬡ = extensión aproximada a partir de anclas verificadas por búsqueda web (no hay límite oficial)'));
           if(anyPartial) hh+=warn('⚠ '+L('Some member boundaries could not be fetched — the shape may be missing pieces','一部の構成区画の境界を取得できませんでした（欠けがある可能性）','Einige Teilgrenzen fehlen','Часть границ получить не удалось','Faltan algunos límites'));
           if(anyApprox) hh+=note(L('⬡ = approximate extent (no official boundary exists — AI-traced outline)','⬡ = 近似輪郭（公式境界が存在しない地域のAIトレース）','⬡ = ungefähre Ausdehnung (KI-Umriss)','⬡ = приблизительный контур (ИИ)','⬡ = contorno aproximado (IA)'));
           if(anyVerified) hh+=note('✓ '+L('location web-verified','位置をWeb検索で照合','Standort per Websuche geprüft','местоположение проверено веб-поиском','ubicación verificada con búsqueda web'));
           /* (#R150) ambig is impossible here — the ambiguity gate above stopped and asked before any painting. */
-          if(miss.length) hh+=warn('⚠ '+L('Not found','見つからず','Nicht gefunden','Не найдено','No encontrado')+': '+esc(miss.join(', ')));
+          if(miss.length) hh+=warn('⚠ '+L('No boundary resolved','境界を解決できず','Keine Grenze aufgelöst','Граница не разрешена','Sin frontera resuelta')+': '+esc(miss.join(', ')));   /* (#R489) the same correction as above — this lists what could not be DRAWN, not what does not exist */
           if(rejected.length) hh+=warn('⚠ '+L('Rejected — invalid/degenerate shape (not drawn)','不正・退化した形状のため未描画','Abgelehnt — ungültige/entartete Form','Отклонено — некорректная форма','Rechazado — forma inválida')+': '+esc(rejected.map(r=>r.name).join(', ')));   /* (#R143) */
           /* (#R142) PARTIAL result → the planner's pre-written "…をハイライトしました" over-claims the targets that were NOT
              drawn. Flag partial so runActions suppresses that say (#3) and lets this honest body — which lists exactly what
@@ -3081,8 +3083,9 @@ window.IntMapModules.atlasConsole=function(HOST){
           for(const it of raw){ const cites=it.evidenceIds.filter(id=>evById[id]).map(id=>evById[id]);
             let lng=null,lat=null; const withLoc=cites.find(e=>e.loc); if(withLoc){ lng=+withLoc.loc[0]; lat=+withLoc.loc[1]; }
             if(lng==null){ const qn=[String(it.locationName||'').trim(),String(it.country||'').trim()].filter(Boolean).join(', ');
-              let g=null; try{ g=await geocode(qn); }catch(_){} if(!g&&it.locationName){ try{ g=await geocode(String(it.locationName).trim()); }catch(_){} }
-              if(g&&isFinite(+g.lng)){ lng=+g.lng; lat=+g.lat; } }
+              let g=null; try{ const _k=GLEDGER.resolve(it.locationName,{countryName:it.country}); if(_k&&_k.lng!=null) g={lng:_k.lng,lat:_k.lat,name:_k.canonicalName||_k.name}; }catch(_){}   /* (#R489) a place this conversation already resolved is not geocoded again */
+              if(!g){ try{ g=await geocode(qn); }catch(_){} } if(!g&&it.locationName){ try{ g=await geocode(String(it.locationName).trim()); }catch(_){} }
+              if(g&&isFinite(+g.lng)){ lng=+g.lng; lat=+g.lat; try{ GLEDGER.record({kind:'city',name:String(it.locationName||''),canonicalName:g.name||String(it.locationName||''),countryName:String(it.country||''),lng,lat,role:'incident',summary:String(it.summary||''),when:{start:String(it.date||''),end:String(it.date||'')},source:'evidence',provenance:'event_location'}); }catch(_){} } }
             const mappable=(lng!=null&&isFinite(lng)&&isFinite(lat)&&Math.abs(lat)<=90&&Math.abs(lng)<=180);
             if(mappable&&_seenXY.some(p=>Math.abs(p[0]-lng)<0.02&&Math.abs(p[1]-lat)<0.02)) continue;   /* dedupe same spot */
             if(mappable) _seenXY.push([lng,lat]);
@@ -3092,9 +3095,9 @@ window.IntMapModules.atlasConsole=function(HOST){
               lng, lat, mappable, url:(first&&/^https?:\/\//i.test(first.url)?first.url.slice(0,300):''), src:(first?String(first.source||'').slice(0,40):'') }); }
           if(!items.length) return R(false, warn('⚠ '+L('The evidence did not support any concrete mappable items — nothing was invented','証拠から具体的にマッピングできる項目は得られませんでした（創作はしていません）','Die Belege ergaben keine konkreten kartierbaren Einträge — nichts erfunden','Доказательства не дали конкретных объектов для карты — ничего не выдумано','La evidencia no dio elementos mapeables concretos — nada inventado')), {meta:{code:'NO_MAPPABLE_ITEMS',category:'evidence',retryable:false,semanticTarget:_lnorm(topic),temporalMode:'current',produced:[],userGoalSatisfied:false}});
           const mappableItems=items.filter(i=>i.mappable); const unmappable=items.length-mappableItems.length;
-          clearPois();
-          _pois=mappableItems.map(it=>({lng:+it.lng,lat:+it.lat,name:String(it.name).slice(0,90),kind:[it.date,it.src].filter(Boolean).join(' · ').slice(0,60),
-            sum:String(it.summary||''),url:it.url,src:it.src}));
+          const _kpR=_poiAdd(a); const _pvR=_kpR?_pois.slice():[]; clearPois();   /* ⚠ (#R489) A SECOND mapReport IN THE SAME TURN USED TO ERASE THE FIRST'S PINS. The reported transcript ran four research-and-map passes for one request and each said 「地図に表示中」; only the last one's pins existed. Accumulating within the turn is what makes that claim true — see the note beside `_poiAdd`. */
+          _pois=_pvR.concat(mappableItems.map(it=>({lng:+it.lng,lat:+it.lat,name:String(it.name).slice(0,90),kind:[it.date,it.src].filter(Boolean).join(' · ').slice(0,60),
+            sum:String(it.summary||''),url:it.url,src:it.src})));
           let okR=paintPois(); for(let i2=0;i2<6&&!okR&&_pois.length;i2++){ await new Promise(r2=>setTimeout(r2,700)); okR=paintPois(); }
           try{ if(_pois.length){ let a2=180,b2=90,c2=-180,d2=-90; _pois.forEach(p=>{ a2=Math.min(a2,p.lng);b2=Math.min(b2,p.lat);c2=Math.max(c2,p.lng);d2=Math.max(d2,p.lat); });
             if(c2-a2<340) GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:90,maxZoom:9,duration:1100}); } }catch(_){}
@@ -3127,7 +3130,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const research=await _buildResearchAnswer({topic,place,mode,year,evid});
           /* 2) MAP (independent, non-fatal) */
           let mapRes={rendered:false,method:'',name:(place||topic),pinCount:0,hasExtent:false,pinIdx:[]};
-          try{ mapRes=await _tryMapResearch(place||topic, research.items, {mode,year}); }catch(_){}
+          try{ mapRes=await _tryMapResearch(place||topic, research.items, {mode,year,act:a}); }catch(_){}
           /* 3) compose — the explanation ALWAYS wins; the map is reported honestly (§11/§13) */
           if(!research.ok){
             if(mapRes.rendered) return R(true, note('🗺 '+esc(mapRes.name)+' — '+L('shown on the map. I could not compile a written summary this time — try rephrasing the question.','を地図に表示しました。今回は文章の要約を作成できませんでした。質問を言い換えてお試しください。','auf der Karte gezeigt. Konnte diesmal keine Textzusammenfassung erstellen.','показано на карте. На этот раз не удалось составить текстовую сводку.','mostrado en el mapa. No pude redactar un resumen esta vez.')), {meta:{code:(evid==='live'?'NO_LIVE_EVIDENCE':'NO_HISTORICAL_EVIDENCE'),category:'evidence',retryable:false,semanticTarget:semTarget,temporalMode:mode,produced:['map'],userGoalSatisfied:false}});
@@ -4509,6 +4512,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     async function runActions(ai, say, acts, gen){
       const results=[]; const fails=[]; let cancelled=false;
       for(const a of acts){ if(gen!=null&&gen!==_runGen){ cancelled=true; break; }
+        try{ a.__paintRun="run"+(gen!=null?gen:_runGen); }catch(_){}   /* ⚠ (#R489) WHICH RUN THIS ACTION BELONGS TO, stamped on the action rather than held as a flag. The painting paths accumulate within ONE run and replace between runs, and this is what tells them apart with no lifecycle to get wrong: an action reached through IntMapOS.dispatch (the diagnostics door, and the door tests/r157.spec.js uses) carries no stamp, so it REPLACES — which is right, because a bare dispatch is its own request. */
         try{ setStage(ai, _STAGE_OF(a)); }catch(_){}   /* (#R130) reflect the real current action in the indicator */
         /* ══ (#R318) THROUGH THE KERNEL, NOT STRAIGHT AT THE ENGINE ════════════════════════════
            This line used to be `r=await dispatch(a)` — call the case, believe what it says. The case
@@ -4669,7 +4673,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       _lastUserMsg=q;   /* (#R64) replies mirror the language of THIS message, not the UI setting */
       /* (#R73) a new message CANCELS any turn still thinking/executing */
       const gen=++_runGen;
-      const turn=(_curTurn=++_turnSeq);   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */
+      const turn=(_curTurn=++_turnSeq);   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */ try{ GLEDGER.beginTurn(turn); }catch(_){}   /* (#R489) …and the same id groups the places this exchange resolves. Nothing is forgotten; the counter moves. */
       /* ══ (#R318) ONE TURN = ONE UNIT OF WORK ═══════════════════════════════════════════════════
          `_turnKey` identifies this exchange to the SERVER, so the planner call, the bounded repair
          calls and the vision re-read that belong to ONE user request consume ONE use of the daily

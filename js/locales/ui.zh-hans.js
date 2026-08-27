@@ -845,6 +845,11 @@ window.IntMapLang.define('zh-hans', {
     'Drawings': "绘制图形",   /* map-tools.js */
     'drawn': "已绘制",   /* atlas-console.js */
     'Drawn area': "绘制的范围",   /* monitors.js */
+    "Drawn from real first-level administrative boundaries (the bundled Natural Earth index)": "依实际的一级行政界线绘制（内置 Natural Earth 索引）",   /* (#R489) */
+    "No boundary could be resolved for": "无法解析出界线",   /* (#R489) */
+    "No boundary resolved": "界线未解析",   /* (#R489) */
+    "None of those identifiers could be matched to a boundary in the data IntMap holds — the places may well exist": "这些识别码都无法对应到 IntMap 持有的界线数据——地点本身可能确实存在",   /* (#R489) */
+    "source": "来源",   /* (#R489) */
     'Drawn from real OpenStreetMap boundary data': "依据 OpenStreetMap 的实际界线数据绘制",   /* atlas-console.js */
     'Drawn from the real administrative boundaries of the region\'s member units': "依据该区域各成员单位的实际行政界线绘制",   /* atlas-console.js */
     'Drive': "开车",   /* map-tools.js routing.js */
@@ -1407,7 +1412,7 @@ window.IntMapLang.define('zh-hans', {
     'None (default feeds only)': "无（仅默认数据源）",   /* news-sources.js */
     'none (k=1)': "无（k=1）",   /* viewshed.js */
     'none in area': "区域内没有",   /* atlas-console.js */
-    'None of the identifiers for that request resolved to a real border': "该请求的识别码都无法对应到实际的界线",   /* atlas-console.js */
+    /* atlas-console.js */
     'NORAD catalog number': "NORAD 目录编号",   /* satellite-detail.js */
     'north': "北",   /* atlas-console.js */
     'North': "北",   /* app-body.js */
@@ -1428,7 +1433,7 @@ window.IntMapLang.define('zh-hans', {
     'Note': "备注",   /* atlas-console.js */
     'Note: a small share of the tiniest streams was omitted at the display cap (all major tributaries are drawn)': "注意：在显示上限处省略了极少数最细的水流（所有主要支流都已绘出）",   /* atlas-console.js */
     'Nothing found — neither OpenStreetMap nor Wikidata has such facilities recorded here and the AI knows none it is sure of': "查无结果 — OpenStreetMap 与 Wikidata 都没有记录此处有这类设施，AI 也没有可确定的数据",   /* atlas-console.js */
-    'Nothing found for': "查无结果：",   /* atlas-console.js */
+    /* atlas-console.js */
     /* world-packs.js */
     /* world-packs.js (#R271) */
     /* world-packs.js (#R271) */

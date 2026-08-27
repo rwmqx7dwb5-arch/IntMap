@@ -203,6 +203,10 @@ window.IntMapRiverCourse=(function(){
   }
   async function _nominatim(name,anchors){
     try{
+      /* (#R489) the app's ONE one-a-second floor — js/nominatim-gate.js. Reached through `window`
+         because this file may contain no top-level declarations (tests/r175-checks #4), and it is
+         the SAME module instance the ES-module callers import, so the counter really is shared. */
+      const _g=window.IntMapNominatimGate; if(_g) await _g.nominatimSlot();
       const r=await fetch(NOMINATIM+'?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(name),{headers:{Accept:'application/json'}});
       if(!r.ok) return null;
       const j=await r.json(); if(!Array.isArray(j)) return null;
