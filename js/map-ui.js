@@ -557,6 +557,26 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lst-tile.on .lst-sw,.lsr-mount .lst-tile.on .lst-sw{background:var(--primary-color);}'
         +'#layer-sidebar-r .lst-sw i,.lsr-mount .lst-sw i{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:10px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.28);transition:transform .16s cubic-bezier(0.2,0.7,0.2,1);}'
         +'#layer-sidebar-r .lst-tile.on .lst-sw i,.lsr-mount .lst-tile.on .lst-sw i{transform:translateX(16px);}'
+        /* ══ ⚠⚠ (#R483) 「基本表示の、カスタムにしたときに出てくる選択肢は、もっと縦方向をコンパクトに。」 ═══
+           The eleven `.lst-basic` rows are the SUB-choices of one of the three modes above them, and they
+           are the only rows a reader ever sees eleven of at once — 46 px each put the bottom of the list
+           past the fold on every phone. They compact; the three `.lst-mode` rows above them do NOT.
+           ⚠ THAT SPLIT IS THE WHOLE POINT OF SCOPING THIS TO `.lst-basic`. The note on `.lst-sw` above
+           states a standing rule — the 42×26 / 20 px knob / 16 px throw switch is ONE object shared with
+           the widget deck's `.wgt-sw`, and shrinking the base rule would have silently resized that too.
+           A sub-option's switch is a smaller instance of the same shape (34×21 / 15 px knob / 13 px throw:
+           the same 3 px inset all round, so 34−3−15−3 = 13), not a different switch.
+           ⚠ The row gap is a flex `gap` on the shared grid, which cannot differ per child — the negative
+           margin BETWEEN two basics is how 6 px becomes 4 px without touching the mode rows' spacing.
+           It is written `.lst-basic + .lst-basic` for that reason: the first basic keeps its full 6 px
+           of air under 「カスタム」, which is the boundary between the choice and what it opens. */
+        +'#layer-sidebar-r .lst-tile.lst-row.lst-basic,.lsr-mount .lst-tile.lst-row.lst-basic{min-height:34px;padding:3px 10px;gap:8px;border-radius:9px;}'
+        +'#layer-sidebar-r .lst-tile.lst-row.lst-basic .lst-nm,.lsr-mount .lst-tile.lst-row.lst-basic .lst-nm{font-size:12px;line-height:1.25;}'
+        +'#layer-sidebar-r .lst-tile.lst-row.lst-basic .lst-star,.lsr-mount .lst-tile.lst-row.lst-basic .lst-star{width:18px;height:18px;font-size:11px;}'
+        +'#layer-sidebar-r .lst-tile.lst-row.lst-basic .lst-sw,.lsr-mount .lst-tile.lst-row.lst-basic .lst-sw{width:34px;height:21px;border-radius:10.5px;}'
+        +'#layer-sidebar-r .lst-tile.lst-row.lst-basic .lst-sw i,.lsr-mount .lst-tile.lst-row.lst-basic .lst-sw i{width:15px;height:15px;border-radius:7.5px;}'
+        +'#layer-sidebar-r .lst-tile.lst-row.lst-basic.on .lst-sw i,.lsr-mount .lst-tile.lst-row.lst-basic.on .lst-sw i{transform:translateX(13px);}'
+        +'#layer-sidebar-r .lst-tile.lst-basic+.lst-tile.lst-basic,.lsr-mount .lst-tile.lst-basic+.lst-tile.lst-basic{margin-top:-2px;}'
         /* ══ ⚠⚠⚠ (#R243) THE TOOL ROW — 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 ══════
            #R242 answered this by appending a button to `#layer-tools`, which lives inside
            `#layer-dropdown` — the CLASSIC dropdown, and `imLayerPanel` has defaulted to `'right'`
@@ -707,7 +727,10 @@ window.IntMapModules.layerSidebar=function(HOST){
       document.addEventListener('change',e=>{ try{ const t2=e.target; if(!t2||t2.type!=='checkbox') return; if(!t2.closest||!t2.closest('#layer-dropdown')) return;
         const id=t2.id||t2.getAttribute('data-layer'); if(!id) return;
         const sel='.lst-tile[data-lid="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]';
-        _liveHosts().forEach(h=>{ const tile=h.querySelector(sel); if(tile) tile.classList.toggle('on',t2.checked); }); }catch(_){} });   /* (#R232) every mounted grid, not only the sidebar */
+        /* ⚠ (#R483) querySelectorAll, not querySelector: a starred layer now has TWO tiles in the same
+           host (its own category's, and its copy in 「お気に入り」), and the singular form left the copy
+           showing the previous state — a checkbox that disagrees with its own row is #R72's report. */
+        _liveHosts().forEach(h=>{ h.querySelectorAll(sel).forEach(tile=>tile.classList.toggle('on',t2.checked)); }); }catch(_){} });   /* (#R232) every mounted grid, not only the sidebar */
       /* (#R63) left-style edge toggle button (open AND close, like the left sidebar's chevron) */
       const tg=document.createElement('button'); tg.id='lsr-toggle'; titleKey(tg,'ttlLayersPanel'); tg.innerHTML='<span class="chev"></span>';
       tg.addEventListener('click',e=>{ e.stopPropagation(); toggle(); });
@@ -751,11 +774,18 @@ window.IntMapModules.layerSidebar=function(HOST){
       /* ★ favorite — the SAME store as the classic panel (imLayerFavs), mirrored both ways */
       try{ if(typeof layerCbInfo==='function'&&Array.isArray(window.imLayerFavs)){ const info=layerCbInfo(r.cb);
         if(info){ const st=document.createElement('button'); st.className='lst-star'+(window.imLayerFavs.includes(info.key)?' on':''); st.type='button'; st.textContent='★'; titleKey(st,'ttlFavorite');
+          /* (#R483) the key is written onto the button so every ★ standing for the same layer can be
+             re-synced from the store — there are two of them now (its category's tile and its copy in
+             the お気に入り category), plus one per mounted host. */
+          st.dataset.key=info.key;
           st.onclick=(e)=>{ e.preventDefault(); e.stopPropagation();
             const i=window.imLayerFavs.indexOf(info.key); if(i>=0) window.imLayerFavs.splice(i,1); else window.imLayerFavs.push(info.key);
             st.classList.toggle('on');
             try{ saveSettings(); }catch(_){} try{ renderLayerFavs(); }catch(_){}
-            try{ const cls=document.querySelector('#layer-dropdown .lyr-star[data-key="'+info.key+'"]'); if(cls) cls.classList.toggle('on',st.classList.contains('on')); }catch(_){} };
+            try{ const cls=document.querySelector('#layer-dropdown .lyr-star[data-key="'+info.key+'"]'); if(cls) cls.classList.toggle('on',st.classList.contains('on')); }catch(_){}
+            /* ⚠ (#R483) LAST — `refreshFavs` rebuilds the お気に入り grid, which can be the very grid
+               `st` lives in. Everything this handler still needs from that element is already read. */
+            try{ window.dispatchEvent(new Event('intmap-layerfavs')); }catch(_){} };
           d.appendChild(st); } } }catch(_){}
       if(asRow){ const sw=document.createElement('span'); sw.className='lst-sw'; sw.appendChild(document.createElement('i')); d.appendChild(sw); }
       /* (#R72) toggle the LIVE checkbox, not a possibly-stale captured node ("押しても反応しないレイヤーがある" /
@@ -849,6 +879,50 @@ window.IntMapModules.layerSidebar=function(HOST){
         h.querySelectorAll('.lst-grid.lst-rows').forEach(g=>g.classList.toggle('custom-open',m==='custom'));
         try{ filterTiles(h); }catch(_){} }); }catch(_){} }
     try{ window.addEventListener('intmap-basemode',()=>{ try{ syncModes(); }catch(_){} }); }catch(_){}
+    /* ══ ⚠⚠⚠ (#R483) 「お気に入りにしているレイヤーがある場合のみ、お気に入りレイヤーカテゴリを
+       ほかとおなじように作り、基本表示のあとに出すように。」 ═══════════════════════════════════════
+       ★ has worked since #R200 and the store (`window.imLayerFavs`) is shared by every surface — but the
+       one place that LISTED the starred layers (`#layer-fav-section`'s chip strip) lives inside
+       `#layer-dropdown`, which is the永久 `display:none` registry this browser reads its data from, and
+       css/intmap.css hides it outright in tile mode. So a reader could star a layer and then had nowhere
+       to see what they had starred. This is that list, built as a CATEGORY like every other one.
+       ⚠ IT IS A SECOND TILE FOR THE SAME LAYER, NOT A MOVED ONE. #R469 measured what moving costs: a row
+       nobody re-homes falls into the beta group (`order.push` MOVES the element), and a layer with no row
+       is a layer that cannot be switched off once it is on. A copy keeps the layer in its own category,
+       where the count badge and 「その他N件」 still describe the taxonomy truthfully.
+       ⚠ AND THE COPIES DO NOT COUNT. `open()` / `mountInto()` rebuild the whole grid when the drawn tile
+       count disagrees with `rowsFromDropdown().length` — the #R72 slowness guard — so a duplicate tile
+       carrying `data-lid` would make the two numbers permanently disagree and rebuild the panel on every
+       single open, invisibly. `data-fav="1"` is what the four guards subtract, exactly as #R469's
+       `[data-lid]` subtracted the three mode rows.
+       ⚠ 「ある場合のみ」 IS NOT A BRANCH HERE. The header and grid are always built; `filterTiles` already
+       hides any grid with zero visible tiles AND its header, so an empty favourites list disappears
+       through the mechanism that was going to run anyway. Two mechanisms deciding one `display` is the
+       defect #R469's note warns about, and this avoids being the second one. */
+    const FAV_SEC='__favs';   /* collapse-state key: fixed, so remembering it survives a language change */
+    const favLabel=()=>{ try{ return window.IntMapLang.keyed(HOST.lang)['favLayers']||'Favorite layers'; }catch(_){ return 'Favorite layers'; } };
+    /* the starred rows, in the reader's own star order — `imLayerFavs` is the order they starred them in */
+    function favRowsOf(rows){ try{
+      if(!Array.isArray(window.imLayerFavs)||typeof layerCbInfo!=='function') return [];
+      const byKey=new Map();
+      rows.forEach(r=>{ try{ const i=layerCbInfo(r.cb); if(i&&i.key&&!byKey.has(i.key)) byKey.set(i.key,r); }catch(_){} });
+      return window.imLayerFavs.map(k=>byKey.get(k)).filter(Boolean);
+    }catch(_){ return []; } }
+    function fillFavGrid(grid,rows){ grid.innerHTML='';
+      favRowsOf(rows).forEach(r=>{ const t2=tileFor(r,false); t2.dataset.fav='1'; grid.appendChild(t2); }); }
+    /* one ★ per layer per host was true until this round; now re-read them all from the store */
+    function syncStars(){ try{ if(!Array.isArray(window.imLayerFavs)) return;
+      _liveHosts().forEach(h=>h.querySelectorAll('.lst-star[data-key]').forEach(st=>{
+        st.classList.toggle('on',window.imLayerFavs.indexOf(st.dataset.key)>=0); })); }catch(_){} }
+    function refreshFavs(){ try{ const rows=rowsFromDropdown();
+      _liveHosts().forEach(h=>{ const g=h.querySelector('.lst-favgrid'); if(!g) return;
+        fillFavGrid(g,rows);
+        const hd=g.previousElementSibling; if(hd&&hd.classList.contains('lst-sech')){ const c=hd.querySelector('.lst-cnt'); if(c) c.textContent=g.querySelectorAll('.lst-tile').length; }
+        try{ window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(h); }catch(_){}
+        try{ filterTiles(h); }catch(_){} });
+      syncStars(); }catch(_){} }
+    /* the classic panel's ★ (js/layer-favs.js) fires this too, so starring from either surface lands here */
+    try{ window.addEventListener('intmap-layerfavs',()=>{ try{ refreshFavs(); }catch(_){} }); }catch(_){}
     function buildTiles(host){ host=host||sb; if(!host) return; const bodyEl=host.querySelector('.lsr-body'); if(!bodyEl) return;
       const rows=rowsFromDropdown(); if(!rows.length) return;
       const root=document.createElement('div'); root.className='lst-root';
@@ -888,6 +962,25 @@ window.IntMapModules.layerSidebar=function(HOST){
         if(curRow) t.classList.add('lst-basic');
         if(r.rest) t.dataset.rest='1';
         curGrid.appendChild(t); });
+      /* (#R483) 「基本表示のあと」 — the basics section is the one holding the three mode rows, so the
+         insertion point is found the same way #R469's count-badge rule identifies it, not by position.
+         Built BEFORE the badge/disclosure sweep below so this category gets its count badge from the
+         same line every other category gets one from. */
+      (function(){ try{
+        const anchor=Array.from(root.querySelectorAll('.lst-grid')).find(x=>x.querySelector('.lst-mode'))||null;
+        if(!(FAV_SEC in _secClosed)) _secClosed[FAV_SEC]=false;
+        const closed=!!_secClosed[FAV_SEC];
+        const h=document.createElement('div'); h.className='lst-sech'+(closed?' closed':''); h.setAttribute('role','button'); h.setAttribute('aria-expanded',closed?'false':'true');
+        const ch=document.createElement('span'); ch.className='lst-chev'; h.appendChild(ch);
+        const tt=document.createElement('span'); tt.textContent=favLabel(); h.appendChild(tt);
+        const g=document.createElement('div'); g.className='lst-grid lst-favgrid'+(closed?' closed':'');
+        h.addEventListener('click',()=>{ const now=!h.classList.contains('closed');
+          h.classList.toggle('closed',now); h.setAttribute('aria-expanded',now?'false':'true');
+          g.classList.toggle('closed',now); _secClosed[FAV_SEC]=now; });
+        fillFavGrid(g,rows);
+        if(anchor&&anchor.parentNode){ anchor.insertAdjacentElement('afterend',g); g.insertAdjacentElement('beforebegin',h); }
+        else { root.insertBefore(g,root.firstChild); root.insertBefore(h,g); }
+      }catch(_){} })();
       /* ══ ⚠⚠ (#R469) 「その他N件」 — ONE DISCLOSURE PER CATEGORY, AFTER ITS NAMED ROWS ═══════════════
          The rows the reader named are `data-rest`-less and stand open; the rest of the category folds
          behind one line. ⚠ The button is a CHILD OF THE GRID (so it flows with the tiles and is found
@@ -1336,7 +1429,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       /* (#R72) SPEED ("layersをクリックしたときの反応が非常に遅い"): the full reorganize+rebuild ran on EVERY
          open. Now the grid is rebuilt only when the row set actually changed; an unchanged grid just re-syncs
          its ✓ states (milliseconds). */
-      try{ const have=sb.querySelectorAll('.lst-tile[data-lid]').length;   /* (#R469) the layer tiles, not the three mode rows */
+      try{ const have=sb.querySelectorAll('.lst-tile[data-lid]:not([data-fav="1"])').length;   /* (#R469) the layer tiles, not the three mode rows */
         if(!have){ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} buildTiles(); }
         else{ const want=rowsFromDropdown().length; if(want&&want!==have) buildTiles(); else syncTiles(); } }catch(_){ try{ buildTiles(); }catch(__){} }
       /* (#R66) dynamic width: the map ALWAYS keeps ≥320px when geometrically possible — on a narrow window or
@@ -1361,7 +1454,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       /* the Active-layers bar re-homes to the top of the tile browser (returns to the dropdown on close) */
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
       /* rows built by late modules (eco/l9/beta, ~1.5 s) — one deferred rebuild picks them up */
-      setTimeout(()=>{ try{ if(sb.classList.contains('open')&&sb.querySelectorAll('.lst-tile[data-lid]').length<rowsFromDropdown().length) buildTiles(); }catch(_){} },900);
+      setTimeout(()=>{ try{ if(sb.classList.contains('open')&&sb.querySelectorAll('.lst-tile[data-lid]:not([data-fav="1"])').length<rowsFromDropdown().length) buildTiles(); }catch(_){} },900);
       /* (#R72) clicking the MAP closes the sidebar, same as the classic dropdown ("地図上のどこかをクリックしたら
          閉まるように") */
       if(!open._mapCloser){ open._mapCloser=()=>{ try{ if(sb&&sb.classList.contains('open')) close(); }catch(_){} }; }
@@ -1439,7 +1532,7 @@ window.IntMapModules.layerSidebar=function(HOST){
         _hosts.push(host);
       }
       try{
-        const have=host.querySelectorAll('.lst-tile[data-lid]').length;   /* (#R469) as above */
+        const have=host.querySelectorAll('.lst-tile[data-lid]:not([data-fav="1"])').length;   /* (#R469) as above */
         if(!have){ try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} buildTiles(host); }
         else { const want=rowsFromDropdown().length; if(want&&want!==have) buildTiles(host); else syncTiles(); }
       }catch(_){ try{ buildTiles(host); }catch(__){} }
@@ -1467,7 +1560,7 @@ window.IntMapModules.layerSidebar=function(HOST){
           window.IntMapLayerPreviews&&window.IntMapLayerPreviews.kick&&window.IntMapLayerPreviews.kick(host);
         }catch(_){} },at[i]);
         go(0); })();
-      setTimeout(()=>{ try{ if(host.isConnected&&host.querySelectorAll('.lst-tile[data-lid]').length<rowsFromDropdown().length) buildTiles(host); }catch(_){} },1200);
+      setTimeout(()=>{ try{ if(host.isConnected&&host.querySelectorAll('.lst-tile[data-lid]:not([data-fav="1"])').length<rowsFromDropdown().length) buildTiles(host); }catch(_){} },1200);
       return host;
     }
     function unmountFrom(container){ try{ const host=container&&container.querySelector('.lsr-mount');

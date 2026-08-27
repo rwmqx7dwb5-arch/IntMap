@@ -70,6 +70,10 @@ export function makeLayerFavs(HOST, CTX) {
         const i=window.imLayerFavs.indexOf(info.key);
         if(i>=0) window.imLayerFavs.splice(i,1); else window.imLayerFavs.push(info.key);
         star.classList.toggle('on'); saveSettings(); renderLayerFavs();
+        /* (#R483) …and the tile browser's 「お気に入り」 category, which is a THIRD surface reading this
+           same store. It listens rather than being called, because js/map-ui.js is not a dependency of
+           this file and must not become one — the store is the contract, the event says it moved. */
+        try{ window.dispatchEvent(new Event('intmap-layerfavs')); }catch(_){}
       };
       opt.appendChild(star);
       /* reflect on/off chip state when the underlying layer toggles */
