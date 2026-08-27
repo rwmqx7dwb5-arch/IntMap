@@ -161,6 +161,10 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
          source swap draws exactly as many features as it drew before, which is why "paint" could
          not see it and reported a working switch as not_rendered. */
       wxModel: ['map', 'explanation'],
+      /* (#R495) the "queryRows" observer reads the OBJECT LEDGER — the pins a cross-dataset query
+         says it dropped — so it observes the map and the objects on it. What it deliberately does
+         NOT do is call a query that matched nothing a `no_change`: see js/atlas-capabilities.js. */
+      queryRows: ['map', 'object', 'explanation'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
     const bad = [];
     J.capabilities.forEach((c) => {
@@ -355,8 +359,12 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
 
   /* ⑱ a map-producing capability is verified by looking at the map */
   {
-    /* (#R376) …and "wxModel", which reads the map layers' displayed model back out of the module */
-    const MAP_OBS = ['paint', 'camera', 'layer', 'sim', 'route', 'object', 'time', 'panelPaint', 'wxModel'];
+    /* (#R376) …and "wxModel", which reads the map layers' displayed model back out of the module.
+       (#R495) …and "queryRows", which checks the pins a cross-dataset query says it made against the
+       object ledger, and treats a query that matched nothing — and therefore drew nothing — as the
+       COMPLETE answer it is rather than as `no_change`. See js/atlas-capabilities.js for why the
+       generic observers report that correct run as a partial one. */
+    const MAP_OBS = ['paint', 'camera', 'layer', 'sim', 'route', 'object', 'time', 'panelPaint', 'wxModel', 'queryRows'];
     add('map-verified', 'a capability that promises the map is checked against the map',
       J.capabilities.filter((c) => c.produces.includes('map') && !MAP_OBS.includes(c.observerKind))
         .map((c) => `${c.id}: promises "map" but its observer is "${c.observerKind}"`));

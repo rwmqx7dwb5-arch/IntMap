@@ -454,7 +454,7 @@ window.IntMapGazetteer=(function(){
     const out=[], cap=_isMobile()?MOBILE_CAP:Infinity;
     for(const r of (doc&&doc.rows)||[]){
       if(out.length>=cap) break;
-      const en=r[0], ja=r[1], lng=+r[3], lat=+r[4], pop=+r[5]||0, alt=r[6]||[];
+      const en=r[0], ja=r[1], iso2=r[2]||'', lng=+r[3], lat=+r[4], pop=+r[5]||0, alt=r[6]||[];
       if(!en||!isFinite(lng)||!isFinite(lat)) continue;
       const terms=[en]; if(ja) terms.push(ja);
       for(const a of alt){ if(a&&terms.indexOf(a)<0) terms.push(a); }
@@ -463,7 +463,12 @@ window.IntMapGazetteer=(function(){
          at least 250,000 people" — and the seismic simulator's observation points needed 「周囲の主要
          都市」, which is a RANKING and not a threshold. Appending rather than inserting is deliberate:
          every existing reader destructures `[type, terms, lng, lat, en, ja]` and is unaffected. */
-      out.push([pop>=250000?'city':'town', terms, lng, lat, en, ja||en, pop]);
+      /* ⚠ (#R495) …AND THE COUNTRY IS THE EIGHTH, for the same reason and by the same rule. The
+         source row has carried `iso2` since #R198 and this conversion threw it away, so the only
+         thing a caller could ask about a place was where it is and how many people live there —
+         which is why 「GDP/人が2万ドル未満の…都市」 had no way to reach the country statistics this
+         app already holds. js/atlas-query.js joins `cities` to `countries` on this field. */
+      out.push([pop>=250000?'city':'town', terms, lng, lat, en, ja||en, pop, iso2]);
     }
     return out;
   }

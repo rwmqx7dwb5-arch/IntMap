@@ -316,6 +316,11 @@ window.IntMapRefData=(function(){
     {n:'EMODnet Human Activities — submarine cables',u:'https://emodnet.ec.europa.eu/en/human-activities'},
     {n:'ACMA / Geoscience Australia — Australian submarine cable locations',u:'https://www.arcgis.com/home/item.html?id=bc1e7fb37fca40faa5dafbc8a5a4dc3c'},
     {n:'Natural Earth 1:10m physical — lakes',u:'https://www.naturalearthdata.com/'},
+    /* (#R495) …and the same publisher's 1:10m physical COASTLINE, simplified to a 2 km tolerance at
+       build time (scripts/build-coastline.mjs) into data/coastline.json.gz. It is what makes
+       「海から200km以上の都市」 a measurement instead of a research question: js/coastline.js reads it
+       and js/atlas-query.js turns it into the `coastKm` / `seaKm` columns. Public domain. */
+    {n:'Natural Earth 1:10m physical — coastline',u:'https://www.naturalearthdata.com/'},
     {n:'NASA SEDAC GPW v4',u:'https://sedac.ciesin.columbia.edu/'},
     {n:'UNDP / EIU / SIPRI / World Bank',u:'https://hdr.undp.org/'},
     {n:'AISstream.io',u:'https://aisstream.io/'},

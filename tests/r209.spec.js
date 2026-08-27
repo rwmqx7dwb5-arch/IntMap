@@ -166,6 +166,10 @@ const MEMBER = {
   streetView: ['IntMapStreetView', 'open'],
   nightSky: ['IntMapNightSky', 'open'],
   atlasConsole: ['IntMapConsole', 'dispatch'],   /* Atlas is the control plane — it must dispatch */
+  /* (#R495) the cross-dataset query engine. Its member is `run` — the door the `query` dispatch
+     case in js/atlas-console.js reaches through answer(); a module that arrived and published a
+     bare object would still fail here, which is what this table is for. */
+  atlasQuery: ['IntMapQuery', 'run'],
   routeUi: ['IntMapRouteUI', 'open'],
   /* (#R311) the six that moved this round. Each names the member its OWN doors call, so a module
      that loaded and registered half of itself is still a failure here: the data-center row calls

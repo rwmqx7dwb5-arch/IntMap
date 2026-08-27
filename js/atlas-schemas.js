@@ -97,6 +97,11 @@ export function makeAtlasSchemas() {
       'research.brief': { type: 'object', properties: { place: str(), lng: lng(), lat: lat() } },
       'research.askHere': { type: 'object', properties: { place: str(), lng: lng(), lat: lat(), question: str(), query: str() }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] },
       'reader.gloss': { type: 'object', properties: { term: str(), text: str(), query: str() }, anyOf: [{ required: ['term'] }, { required: ['text'] }, { required: ['query'] }] },   /* (#R491) a gloss with no phrase is not a question */
+      /* (#R495) the cross-dataset query. `from` names a table, `where` a list of {col, op, value}
+         over that table's COLUMNS, `near` a spatial join with its own conditions. Deliberately not
+         an `enum`: js/atlas-query.js's registry is what decides which tables and columns exist, and
+         a closed list here would refuse a dataset the day it is registered (rule (2) of this file). */
+      'data.query': { type: 'object', properties: { from: str(), where: list(obj()), near: list(obj()), in: obj(), show: list(str()), order: obj(), limit: int(1, 200) }, required: ['from'] },
       'data.rank': { type: 'object', properties: { metric: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metric'] },
       'data.ratio': { type: 'object', properties: { metricA: str(), metricB: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metricA', 'metricB'] },
       'data.relate': { type: 'object', properties: { metricY: str(), metricX: str(), find: one('low', 'high'), n: int(1, 40) }, required: ['metricY', 'metricX'] },

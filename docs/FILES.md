@@ -132,6 +132,11 @@ label-occlusion.js                名前を最前面に、地球の裏側のマ�
 border-style.js                   国境線を1本にまとめるスタイル層
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
 coast-line.js                     海岸線・湖岸線——国境線と同じ手法で makeCoastLine()
+coastline.js                      **海までの距離**（#R495）— data/coastline.json.gz（Natural Earth 1:10m、2km 許容で
+                                  簡略化）を読み、任意の点から**線分**までの大円距離を返す makeCoastline()。
+                                  外洋のみの `coastKm` と、内海（カスピ海）を海に数える `seaKm` の 2 本立て。
+                                  頂点は単位ベクトル（Float64）、内側ループに三角関数は無く acos は 1 クエリ 1 回。
+                                  ⚠ js/coast-line.js（上）は描画用のレイヤーで、こちらは計測用。別物。
 grid-style.js                     経緯線のスタイル層
 layer-home.js                     カメラを動かしてよいレイヤーの表 window.IntMapLayerHome
 layer-dropdown.js                 レイヤーメニューとそのアコーディオン
@@ -254,6 +259,13 @@ ai-core.js                        Atlas の AI 通信・利用枠・設定
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
                                   125 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
+atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
+                                  WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
+                                  earthquakes・volcanoes・facilities）と列（pop・precipMm・coastKm・elevM・
+                                  tempC・国別統計・任意の World Bank 指標）はレジストリなので、データセットを
+                                  1 行登録すれば同じ条件・結合・出典表示がその日から効く。条件は**費用の安い順**に
+                                  評価し、ネットワーク列は生き残った行にだけ払う。打ち切りは必ず結果に印字する。
+                                  遅延モジュール（`atlasQuery`）。dispatch の入口は js/atlas-console.js の 1 行。
 atlas-catalog-text.js             Atlas — planner に渡す能力の説明文 40 ブロック（旧 SYS() の本文を逐語で移設）。
                                   各ブロックが「どの能力を説明しているか」を持つので関連分だけ送れる
 atlas-anomaly-score.js            **分野横断の異常度**（#R397）— 地震・台風・洪水・火山・警報・紛争などを

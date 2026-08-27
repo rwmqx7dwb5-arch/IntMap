@@ -87,7 +87,7 @@ export function makeLazyModules(HOST) {
          reason: Atlas is this app's control plane, so a dozen features reach for `window.IntMapConsole`.
          Every one of them now goes through `window.IntMapAtlas` (js/app-body.js), which fetches the
          kernel first — so «Atlas can drive everything» is unchanged and only the MOMENT it arrives is. */
-      atlasConsole: 'IntMapConsole',
+      atlasConsole: 'IntMapConsole', atlasQuery: 'IntMapQuery',   /* (#R495) the cross-dataset query engine and, through its static import, the coastline it measures 「海から200km」 with — behind its OWN door rather than inside the Atlas chunk, so a session that opens Atlas to ask about one place never pays for a 249 kB coastline and a 2 MB index it does not query. ⚠ ON THIS LINE because tests/r168 #8 budgets this file as part of the shell, and five separate lines put it over. */
       /* (#R291) the directions PANEL. The router (js/routing.js) is eager — Atlas must be able to
          route with no panel — and this is the ~30 kB of UI a session that never opens Layers →
          Tools → Directions never downloads (§2.3). */
@@ -150,7 +150,7 @@ export function makeLazyModules(HOST) {
         case 'los': return import('./viewshed.js');
         case 'streetView': return import('./street-view.js');
         case 'nightSky': return import('./night-sky.js');
-        case 'atlasConsole': return import('./atlas-console.js');
+        case 'atlasConsole': return import('./atlas-console.js');   case 'atlasQuery': return import('./atlas-query.js');   /* (#R495) — same reason as the PUBLISHES line above */
         case 'routeUi': return import('./routing-ui.js');
         case 'dataCenters': return import('./datacenters.js');   case 'railways': return import('./railways.js');
         case 'aircraftDetail': return import('./aircraft-detail.js');
@@ -186,7 +186,7 @@ export function makeLazyModules(HOST) {
         case 'terrainWater': window.IntMapModules.terrainWater(IM_HOST); return true;
         case 'los': window.IntMapModules.los(IM_HOST); return true;
         case 'streetView': window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); return true;
-        case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;
+        case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;   case 'atlasQuery': window.IntMapQuery=window.IntMapModules.atlasQuery(IM_HOST); return true;   /* (#R495) */
         case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;
         case 'dataCenters': window.IntMapModules.dataCenters(IM_HOST); return true;   case 'railways': window.IntMapModules.railways(IM_HOST); return true;
         case 'aircraftDetail': window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST); return true;

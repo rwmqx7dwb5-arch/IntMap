@@ -119,10 +119,21 @@ Find nuclear sites near major rivers.
 
 How far can I walk in one hour from my location?
 
+Cities over 1 million with under 500 mm of rain a year, more than 200 km from the sea,
+that had an M5+ earthquake in the last 30 days.
+
 Change the map to a globe and show country borders.
 ```
 
-The last example is a *reachable area*, not a circle: it is traced over the real road network
+The rain-and-earthquakes example is a **query**, not an essay. IntMap filters its own datasets and
+intersects them — GeoNames population, CHELSA annual precipitation, the distance from each place to
+the Natural Earth coastline, and the USGS earthquake catalogue — and answers with the matching rows,
+pinned on the map, with the source of every column printed underneath. Conditions it could not
+evaluate, and anything it had to cut short, are stated rather than left out. Any combination works:
+country statistics and World Bank indicators, elevation, current temperature, volcanoes, and
+OpenStreetMap facilities can all appear in the same question.
+
+The walking example is a *reachable area*, not a circle: it is traced over the real road network
 (Valhalla / OpenStreetMap), so rivers, motorways and dead ends shape it. Asking in terms of
 travel time — walking, cycling, driving, or the reachable stations by rail — gives that,
 never a straight-line radius standing in for it.

@@ -248,6 +248,12 @@ window.IntMapModules.precipAnnual = function (HOST) {
   window.IntMapPrecipAnnual = {
     toggle, isOn: () => on, year: () => year, setYear: (y) => { year = String(y || ''); if (on) paint(); return year; },
     years: () => (yr ? yr.years.slice() : []), valueAt, ready: () => manifests(),
+    /* ⚠ (#R495) `valueAt` READS A GRID THE LAYER LOADS WHEN IT IS SWITCHED ON, and until this round
+       `ensureVals()` was reachable only from `toggle(true)`. So a caller that wants the NUMBER and not
+       the picture — js/atlas-query.js's `precipMm` column, which must answer 「年間降水量500mm未満」 for
+       several hundred cities — got `null` for every point unless the reader happened to have the layer
+       on. This is that load, with nothing painted and nothing toggled. */
+    warmValues: () => ensureVals(),
     state: () => ({ on, year, hasClim: !!mmVals, yearsLoaded: Object.keys(yearVals), painted: lastPainted }),
   };
   return window.IntMapPrecipAnnual;
