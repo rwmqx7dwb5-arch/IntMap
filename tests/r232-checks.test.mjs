@@ -193,9 +193,12 @@ test('R232 seismic: the wavefronts are named, and the observation points are cit
   assert.match(s, /a\.km<=MMI_CALIB_KM/, 'and only where the model will answer at all');
   assert.match(s, /OBS_MIN_SEP_KM/, 'a metropolis is not ten rows of its own wards');
   assert.doesNotMatch(noJs(s), /r\[0\]==='capital'\)\s*$/m, 'capitals are no longer the source');
-  /* the population the ranking needs is kept by the gazetteer */
-  assert.match(read('js/gazetteer.js'), /out\.push\(\[pop>=250000\?'city':'town', terms, lng, lat, en, ja\|\|en, pop\]\)/,
-    'the row carries its population');
+  /* the population the ranking needs is kept by the gazetteer.
+     ⚠ (#R495) …and the ISO-2 country now rides behind it, for js/atlas-query.js's `cities`→`countries`
+     join. The field this test is about is `pop`, and it is still the SEVENTH — appending an eighth
+     cannot move it, which is the property worth asserting rather than the exact end of the line. */
+  assert.match(read('js/gazetteer.js'), /out\.push\(\[pop>=250000\?'city':'town', terms, lng, lat, en, ja\|\|en, pop(, iso2)?\]\)/,
+    'the row carries its population, in the seventh slot');
 });
 
 test('R232 seismic + tsunami: the method folds away, the warning does not', () => {
