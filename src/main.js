@@ -46,7 +46,7 @@ import '../js/carto-basemap.js';
    circuit breaker rather than each re-hammering a dead quota.
    It sits AFTER newsgeo deliberately: tests/r175-checks pins newsgeo as the first feature module,
    and nothing about this file needs to precede it — its consumers all call it lazily. */
-import '../js/wx-source.js';
+import '../js/wx-source.js'; import '../js/nominatim-gate.js';   /* (#R489) …and, for the same reason one guarded weather client exists, ONE queue in front of Nominatim. Seven files call that host; two kept private floors and five kept none, so «one request per second» was one per second EACH and fourteen Atlas oblast outlines left as fast as the network took them. EAGER and BEFORE the window-global callers (js/routing.js, js/river-course.js, js/search-geocode.js, js/routing-geocode.js): those may contain no top-level declarations (tests/r175-checks #4) and so reach it as window.IntMapNominatimGate rather than by name. */
 /* (#R183) …and the pure "how close should the camera go for THIS kind of place" decision, which
    js/search-geocode.js consults from gotoPlace. Its own file because that factory's body may
    contain only declarations (tests/r169-checks #4) and because being map-free is what lets the
