@@ -412,7 +412,19 @@ test('R408 追記 ⑥c: デスクトップの入口は今までどおり無条�
   const s = rd('js/map-ui.js');
   const i = s.indexOf('function open(');
   assert.ok(i > 0, 'open() が居る');
-  const body = s.slice(i, i + 2500);
+  /* ⚠⚠ (#R483) 窓は「先頭から固定 2,500 バイト」だった。それは open() の本体ではなく
+     **改行コードとコメント量に依存する近似**で、二重に脆い:
+       ① 作業コピーは CRLF・CI は LF（`.gitattributes` は js/*.js に eol=lf を課していない）。
+          この窓の中には改行が 21 行あるので、**同じ commit が手元で 2,512・CI で 2,491** になる。
+       ② 中身が育つと黙って端が落ちる。#R483 が open() 内の1行に 20 バイト足しただけで
+          LF の余白は 29 → 9 バイトになり、CRLF では 12 バイト**超過して赤くなった**
+          ——しかも報告は「サイドバーを開いたら kick する」＝**製品が壊れたと名乗る**。
+     ⇒ 次の関数宣言までを本体とする。改行コードに依らず、育っても切れず、
+     しかも下の否定アサーションは **open() 全体**に効くようになる（2,500 バイト目以降に
+     `_onScreen(sb)` が足されても捕まる）＝緩めたのではなく、正確にした。 */
+  const j = s.indexOf('function close(', i);
+  assert.ok(j > i, 'open() の次に close() が居る（本体の終端をそこで採る）');
+  const body = s.slice(i, j);
   assert.match(body, /IntMapLayerPreviews\.kick\(sb\)/, 'サイドバーを開いたら kick する');
   assert.ok(!/_onScreen\(sb\)/.test(body),
     'デスクトップの入口に判定を足さない — 開いた直後は遷移中で矩形が定まらないことがあり、そこで拒むと絵が出なくなる');
