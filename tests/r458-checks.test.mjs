@@ -220,7 +220,10 @@ test('#R458 ⑦ tests/prod-smoke.spec.js chooses its pair and withholds the clai
   const guarded = body.slice(guard);
   assert.match(guarded, /toBeGreaterThan\(eyeFoot\[1\]\)/, 'the eyewall half is inside the guard');
   assert.match(guarded, /toBeLessThan\(ringFoot\[0\]\)/, 'and so is the eye half');
-  assert.match(guarded, /toBeGreaterThan\(900\)/, 'and so is 「visibly different colours」');
+  /* (#R487) the bound moved out of squared RGB distance and into ΔE00; what this gate is for
+     is that the claim stays INSIDE the guard, so the spelling is followed rather than frozen. */
+  assert.match(guarded, /toBeGreaterThan\(VISIBLE_AT_A_GLANCE\)/,
+    'and so is 「visibly different colours」');
 
   /* the two per-pixel verdicts are NOT inside it — they are answerable at every hour */
   const before = body.slice(0, guard);
