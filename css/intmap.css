@@ -751,13 +751,28 @@
     /* (#R103) the coordinate/elevation always-on readout tucked closer to the bottom-left corner (kept non-flush). */
     .coord-readout{ display:none; position:absolute; bottom:9px; left:9px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
 
-    /* (#R479) BASEMAP CREDIT — the price of CARTO's free tier is that the credit stays visible.
-       Bottom-RIGHT because it is the one free corner: the coord readout owns bottom-left at 9/9 and
-       tests/r252 pins it there, and Chronos sits above this at bottom:54px. Same glass material as
-       the rest of the map furniture so it reads as part of the app rather than a renderer artefact. */
-    .map-credit{ position:absolute; bottom:9px; right:14px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:3px 9px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:11px; line-height:1.6; color:var(--text-muted); white-space:nowrap; }
+    /* ══ (#R485) BASEMAP CREDIT — A ROW OF THE LAYOUT, NOT A THING FLOATING ON THE MAP ═══════════
+       #R479 put this in the bottom-right corner as an absolutely-positioned pill and it was WRONG:
+       measured on the live site it was covered by the layer panel (#lst-root, x 993–1268) at 1280
+       AND 1920, and by the mobile toolbar on a phone — elementFromPoint returned lst-grid / btn-news
+       at all three of its own points. ⚠ "IN THE DOM AND INSIDE THE VIEWPORT" IS NOT "SEEN"; #R477 and
+       #R455 are the same lesson and #R479's tests asked only the weaker question.
+       ⚠ AND THERE WAS NO CORNER TO MOVE IT TO. Scanning the whole map column for a free 175×26 box
+       with the coord readout up (x 409–780), a country selected (#country-info, x 424–718) and
+       Chronos expanded (x 630–970) leaves NOTHING that is clear in every state — the column is that
+       crowded. A floating pill cannot be guaranteed visible here, so this stops being an overlay:
+       .map-column is a flex COLUMN, the map takes the space above, and the credit is the row below
+       it. Nothing can cover a row that no overlay's containing block reaches, and the transient HUD
+       keeps its coordinates exactly (tests/r252 pins the coord readout at 9/9 — untouched). */
+    .map-column{ --credit-h:22px; flex:1; min-width:0; display:flex; flex-direction:column; height:100%; }
+    .map-column > .map-container{ flex:1 1 auto; height:auto; min-height:0; }
+    .map-credit{ flex:0 0 auto; height:var(--credit-h); padding:0 12px; background:var(--card-bg); border-top:1px solid var(--glass-border,rgba(128,128,128,0.22)); font-size:10.5px; line-height:var(--credit-h); color:var(--text-muted); white-space:nowrap; overflow:hidden; }
     .map-credit a{ color:var(--text-muted); text-decoration:none; }
     .map-credit a:hover{ color:var(--text-main); text-decoration:underline; }
+    /* ⚠ GLASS MODE takes the map out of the flow (position:absolute; inset:0), which would put it
+       over the strip. It stays a ROW — the map just stops one strip-height short. One number, named
+       once above, so the two can never disagree. */
+    body.sidebar-glass .map-column > .map-container{ bottom:var(--credit-h); }
     .coord-readout .cr-elev{ color:var(--text-muted); }
     .coord-readout .cr-sat{ color:var(--primary-color); font-weight:600; }
     .coord-readout .cr-wind{ color:#5ec8ff; font-weight:600; display:inline-flex; align-items:center; gap:5px; }
@@ -1847,6 +1862,9 @@
       *{ -webkit-tap-highlight-color:transparent; }
       .operation-room{ display:block; position:relative; height:100dvh; }
       .map-container{ position:fixed; inset:0; width:100vw; height:100dvh; }
+      /* (#R485) …so the credit is a pill again here, at the offset MEASURED clear above the sheet
+         (the same var the coord readout uses at line ~4004 and Chronos uses for its own bottom). */
+      .map-credit{ position:fixed; left:6px; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px); z-index:900; height:auto; padding:3px 9px; border:1px solid rgba(128,128,128,0.15); border-radius:9px; background:var(--popup-bg); box-shadow:var(--shadow); font-size:10px; line-height:1.5; max-width:calc(100vw - 12px); }
 
       /* ---------- Bottom sheet (the old left sidebar) ---------- */
       .sidebar{
