@@ -467,6 +467,15 @@ aviation-model.js                 provider 正規化・出典・タイル格子�
 
 ```
 mobile-ui.js                      モバイル UI とレスポンシブのシェル
+mobile-map-input.js               **指が地図に届く経路 1 面**——長押し（コンテキストメニュー）／中央クロス
+                                  ヘア／中心の座標・標高・レイヤー値の読み出し／「地点を追加」ピル。
+                                  `js/app-body.js` から**まるごと**出したもので、幾何（#R16 の「シートに
+                                  覆われていない領域の中心」・#R12 の視覚中心の unproject・12 px / 550 ms の
+                                  閾値）は本文そのまま。⚠ 出した理由は `tests/r168 #8` / `tests/r479 ⑧` の
+                                  shell 予算——**天井は上げず、同量以上を外へ出す**（#R195/#R196 の規則）。
+                                  ⚠ **マウント点は2つ**（`longPress()` は地図イベント配線から、
+                                  `crosshair()` はブロックが在った位置から）——どちらもリスナーの登録順が
+                                  観測可能なので、1つにまとめると片方が動く。
 window-manager.js                 浮遊パネルのドラッグ／リサイズ／重なり順
 workspace.js                      浮遊ウィンドウのワークスペースモード（デスクトップ）
 session-tabs.js                   タブバーと、その裏の OS 登録と、両方を復元するセッション
@@ -649,6 +658,13 @@ scripts/
                                   ⚠ これは**エンジンの比較であって携帯の数字ではない**。
                                   サーバは自分で起動・停止し、`.frame-cache/` は
                                   `frame-profile.mjs` と**共有**する（別々に育てると腕がキャッシュの分だけ違う）。
+                                  ⚠ **3つの相 (`pan-touch` / `pinch-touch` / `pan-alerts-city`) だけは
+                                  `Input.dispatchTouchEvent` で本物の指を出す**（他は camera 命令なので
+                                  touchstart も touchmove も起きず、アプリと MapLibre の touch 経路が
+                                  一度も走らない）。この相だけが **touchmove 1回あたりの
+                                  `getBoundingClientRect` / `getComputedStyle` 回数**と
+                                  **touchmove →次フレームの遅延**を出す。CDP は Chromium だけなので
+                                  WebKit 側には**この相が無い**（0 ではなく「無い」と印字する）。
   trace-probe.js                  上の**ページ側の計器**（`addInitScript` で最初のスクリプトより前に入る）。
                                   ⚠ **アプリではない**——`js/` も `src/` も import しない
                                   （`tests/r387-checks ⑤` が出荷経路への混入を落とす）。

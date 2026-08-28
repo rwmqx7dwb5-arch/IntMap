@@ -2207,7 +2207,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!e.features.length) return;
         const s=countryStats[e.features[0].id]; if(!s) return;
         const el=ensureMapTooltip(); el.style.display='block';
-        el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${meta.label()}: <b style="color:var(--text-main);">${meta.fmt(s)}</b></div>`;
+        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${meta.label()}: <b style="color:var(--text-main);">${meta.fmt(s)}</b></div>`);
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave',id+'-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
@@ -2510,10 +2510,10 @@ window.IntMapModules.dataLayers=function(HOST){
       GE().events.onLayer('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
         const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
         const el=ensureMapTooltip(); el.style.display='block';
-        el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
+        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
           `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
           `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
-          `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`;
+          `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`);
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','nato-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
@@ -2601,8 +2601,8 @@ window.IntMapModules.dataLayers=function(HOST){
       if(_euHoverWired) return; _euHoverWired=true;
       GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
         const el=ensureMapTooltip(); el.style.display='block';
-        el.innerHTML=`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
-          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(window.IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`;
+        window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
+          `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(window.IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`);
         positionTooltip(e.point);
       });
       GE().events.onLayer('mouseleave','eu-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
@@ -3826,7 +3826,7 @@ window.IntMapModules.dataLayers=function(HOST){
           if(!d) return;
           if(openPlaneCard(d)){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
           else { const el=ensureMapTooltip(); el.style.display='block';
-            el.innerHTML=trafficTooltipHTML('planes',Object.assign({sel:1},d));
+            window.setMapTooltipHTML(el,trafficTooltipHTML('planes',Object.assign({sel:1},d)));
             positionTooltip(e.point); }
         });
         return;
@@ -3852,7 +3852,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const cached=_av2Cache.get(hex);
         const show=(rec)=>{ if(!rec||_av2HoverHex!==hex) return;
           const t=ensureMapTooltip(); t.style.display='block';
-          t.innerHTML=trafficTooltipHTML('planes',rec); positionTooltip(e.point); };
+          window.setMapTooltipHTML(t,trafficTooltipHTML('planes',rec)); positionTooltip(e.point); };
         if(cached) show(cached); else _av2Detail(hex).then(show);
       });
     }
@@ -5198,7 +5198,7 @@ window.IntMapModules.dataLayers=function(HOST){
         },paint:{'icon-opacity':opacities.ships}},beforeId);
       }
       /* Hover tooltip via shared map-tooltip — shows every available field + data freshness. */
-      GE().events.onLayer('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML(id,f.properties); positionTooltip(GE().coords.project(f.geometry.coordinates)); });
+      GE().events.onLayer('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; window.setMapTooltipHTML(el,trafficTooltipHTML(id,f.properties)); positionTooltip(GE().coords.project(f.geometry.coordinates)); });
       GE().events.onLayer('mousemove','lyr-'+id,(e)=>{ positionTooltip(e.point); });
       GE().events.onLayer('mouseleave','lyr-'+id,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
       /* (#R172) the lifted bodies answer the same hover — the aircraft is the same aircraft whichever way
@@ -5208,7 +5208,7 @@ window.IntMapModules.dataLayers=function(HOST){
       if(id==='planes'){
         [PLANE3D_LYR,PLANE3D_POST].forEach(ly=>{
           GE().events.onLayer('mouseenter',ly,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer';
-            const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; el.innerHTML=trafficTooltipHTML('planes',f.properties); positionTooltip(e.point); });
+            const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; window.setMapTooltipHTML(el,trafficTooltipHTML('planes',f.properties)); positionTooltip(e.point); });
           GE().events.onLayer('mousemove',ly,(e)=>{ positionTooltip(e.point); });
           GE().events.onLayer('mouseleave',ly,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
         });
@@ -5230,9 +5230,9 @@ window.IntMapModules.dataLayers=function(HOST){
           if(_t-_pickAt<16) return; _pickAt=_t;
           const d=pickPlane(e.point);
           if(d){ GE().render.canvas().style.cursor='pointer'; const el=ensureMapTooltip(); el.style.display='block';
-            el.innerHTML=trafficTooltipHTML('planes',{ type:d.type, sel:(d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
+            window.setMapTooltipHTML(el,trafficTooltipHTML('planes',{ type:d.type, sel:(d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
               acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel, heading:d.heading,
-              vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
+              vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) }));
             positionTooltip(e.point); _pickHover=true; }
           else if(_pickHover){ _pickHover=false; GE().render.canvas().style.cursor='';
             try{ if(GE().coords.queryRenderedFeatures(e.point,{layers:[PLANE3D_LYR,PLANE3D_POST].filter(l=>GE().layers.get(l))}).length) return; }catch(_){}
@@ -5280,9 +5280,9 @@ window.IntMapModules.dataLayers=function(HOST){
             if(selectedPlane){ window.IntMapLazy.need('aircraftDetail').then(()=>{
               if(openPlaneCard(d)){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
               else { const el=ensureMapTooltip(); el.style.display='block';
-                el.innerHTML=trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
+                window.setMapTooltipHTML(el,trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
                   reg:d.reg||'', acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel,
-                  heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) });
+                  heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) }));
                 positionTooltip(e.point); } }); }
             return; }
           if(selectedPlane&&!_planesClearT) _planesClearT=setTimeout(()=>{ _planesClearT=null; if(selectedPlane) selectPlane(null); },320);
