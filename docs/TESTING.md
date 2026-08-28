@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **100 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
-`npm run test:checks` runs **280 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **281 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier — **94 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -300,6 +300,7 @@ node scripts/mobile-trace.mjs                      # chromium + webkit, 3 reps e
 node scripts/mobile-trace.mjs --engine webkit --reps 1
 node scripts/mobile-trace.mjs --cpu 4 --engine chromium   # the historical throttled profile
 node scripts/mobile-trace.mjs --verify             # + the CDP sampler cross-check
+node scripts/mobile-trace.mjs --attribute --reps 1 # + WHO asked for each layout read
 ```
 
 One continuous trace per rep — **boot → settle → pan-first → zoom-first → warm-up → pan-warm →
@@ -326,6 +327,25 @@ canvas's own box) and report two numbers the other phases cannot produce:
 |---|---|
 | `rect/move`, `style/move` | `getBoundingClientRect` / `getComputedStyle` calls **per touchmove**. `fps` cannot tell a forced synchronous layout from any other millisecond; this can. The budget is "≈ 0 on the input path" |
 | `lat p50 / p95 / max` | touchmove → the frame that answers it, in ms. 「指に付いてこない」 stated as a measurement |
+
+⚠ **A COUNT WITHOUT A CALLER IS A NUMBER NOBODY CAN ACT ON — `--attribute`.** `rect/move` did its
+job (9.59 → 7.47 when the app stopped measuring the canvas per touchmove), but the wrapper counts
+CALLS, not CALLERS, so the remainder had to be attributed by reading somebody's source and believing
+the reading. `--attribute` captures the first three page frames of every rect/style call in a touch
+phase and prints a **WHO ASKED** table under the REAL TOUCH one:
+
+```
+WHO ASKED · chromium rep1 pan-alerts-city   (top 7 sites of 6224 calls)
+      3045  rect   /assets/main-*.js:291:106702  ← …:291:106596  ← …:291:181435
+      3045  rect   /assets/main-*.js:291:106702  ← …:291:106596  ← …:318:6500
+       108  rect   /assets/maplibre-gl-*.js:5:356609  ← …
+```
+
+Against a production build the frames are `file:line:column` of the minified bundle, so the RANKING
+is what transfers; the source is identified by slicing the bundle at that column. ⚠ **Off by default
+and it has to stay off**: `new Error().stack` per call costs far more than the call it measures, so
+an `--attribute` run's `lat` / `busy` / `fps` are the instrument's numbers. Only the counts transfer,
+and the printout says so.
 
 ⚠ **CHROMIUM ONLY.** CDP does not exist in Playwright's WebKit, so those phases are ABSENT from the
 WebKit arm and reported as absent — never as a cost of zero. `pan-alerts-city` falls back to a

@@ -486,8 +486,30 @@ window.IntMapModules.toolPanel=function(HOST){
      ⚠ the coordinate is its own row (`coord`) rather than being welded to the first heading: it is a
      FACT about the click, not a group you can open, and it has to stay visible when everything is
      collapsed. */
+  /* ══ (#R499) THE FOUR THINGS place() USED TO ASK THE DOM EVERY CAMERA FRAME ═══════════════════
+     Factory scope rather than inside showContextMenu, because the menu is a singleton and so is the
+     bottom sheet it clamps against: a per-open cache would be re-warmed on every right-click and the
+     `--sheet-cover` key would be re-read from a computed style each time. See the ⚠ box on place(). */
+  /* ⚠ built on first use, not here: tests/r168 #4 requires a factory body to DECLARE and call
+     nothing while it runs (a factory that works at construction time makes the module's cost a
+     property of being imported). One MediaQueryList for the life of the page either way. */
+  let _mq, _cover=null, _coverKey=null;
+  function _mqSmall(){ if(_mq===undefined){ try{ _mq=window.matchMedia('(max-width:768px)'); }catch(_){ _mq=null; } } return _mq; }
+  function _rt(){ try{ return window.IntMapRuntime; }catch(_){ return null; } }
+  function _boxOf(el){ const R=_rt(); if(R&&R.box) return R.box(el); return el.getBoundingClientRect(); }
+  function _sheetCover(mcEl){
+    let key=''; try{ key=(mcEl.style.getPropertyValue('--sheet-cover')||'')+'|'+(document.body.className||''); }catch(_){}
+    if(_cover!=null&&key===_coverKey) return _cover;
+    _coverKey=key;
+    try{ _cover=parseFloat(getComputedStyle(mcEl).getPropertyValue('--sheet-cover'))||0; }catch(_){ _cover=0; }
+    return _cover; }
+  /* a style write invalidates layout even when it assigns the string that is already there (#R311).
+     ⚠ the guard compares against the INLINE declaration rather than a remembered copy — reading
+     `el.style.left` is a CSSOM read and costs no layout, and a copy would go stale the moment
+     anything else wrote to the same box. */
+  function _set(el,prop,v){ try{ if(el.style[prop]===v) return; }catch(_){} el.style[prop]=v; }
   function showContextMenu(point,lngLat){
-    const m=document.getElementById('ctx-menu'); let mc=document.getElementById('map-container').getBoundingClientRect();   /* (#R210) `let`: place() re-reads it */
+    const m=document.getElementById('ctx-menu'); let mc=_boxOf(document.getElementById('map-container'));   /* (#R210) `let`: place() re-reads it */
     const L=window.IntMapLang.pick(()=>HOST.lang);
     /* ══ (#R216) THE MENU SAYS WHICH POINT ONCE, AT THE TOP ═══════════════════════════════════════
        「『この地点: 35.986°N 137.863°E / この地点』ってなんやねんネーミングセンス悪すぎ。右クリック
@@ -572,19 +594,44 @@ window.IntMapModules.toolPanel=function(HOST){
       m.querySelectorAll('.ctx-sec').forEach(o=>{ o.hidden=true; });
       if(!was){ b.setAttribute('aria-expanded','true'); if(sec) sec.hidden=false; }
       /* re-clamp: the menu just changed height and may now hang off the bottom */
+      try{ const R=_rt(); if(R&&R.remeasure) R.remeasure(m); }catch(_){}   /* (#R499) WE changed it — do not wait for the observer */
       try{ place(); }catch(_){}
     }; });
     m.style.display='block';
+    try{ const R=_rt(); if(R&&R.remeasure) R.remeasure(m); }catch(_){}     /* (#R499) a menu that was just rebuilt is a new size */
     place();
     /* (#R17) On mobile the bottom sheet covers the lower map; clamp the menu into the VISIBLE area above it
        (and cap its height so a long menu scrolls) — it was overflowing behind the sheet / off-screen.
        (#R205) …and it is a function now, because expanding a section changes the height after the fact. */
+    /* ══ ⚠⚠⚠ (#R499) THE WRITE→READ→WRITE SANDWICH, ON EVERY CAMERA FRAME ════════════════════════
+       #R210 made the menu follow the point rather than the screen — correct, and it put `place()` on
+       the camera. #R234 registered it in the WRITE phase and said why. What neither noticed is what
+       the body does in that phase, once per frame, for as long as the menu is open:
+           getBoundingClientRect(#map-container)   ← read
+           getComputedStyle(#map-container)        ← read (a style recalculation, not a cheap one)
+           m.style.maxHeight = …                   ← WRITE, unconditionally, the same string as before
+           m.getBoundingClientRect()               ← read — now FORCED, by the write above it
+           m.style.left/top = …                    ← write
+       That is the exact shape js/runtime.js's header exists to remove, hidden inside one callback
+       where the phase split could not see it — and it is the shape #R498 found in the crosshair.
+       Every input is now taken the way #R498 took the crosshair's:
+         · the container's box and the menu's own box from the observer (js/runtime.js §5), so a
+           frame in which nothing resized asks the DOM nothing at all;
+         · `--sheet-cover` from the INLINE declaration string plus `body.className` — a CSSOM read
+           that costs no recalculation — with the computed value re-taken only when that key moves
+           (js/mobile-ui.js writes the declaration, js/playground.js overrides it with !important);
+         · the media query held as ONE MediaQueryList instead of being re-created per frame;
+         · and all four writes guarded, because assigning the string that is already there still
+           invalidates layout — which is what made the read after it a forced one.
+       ⚠ THE PLACEMENT IS UNCHANGED. Same clamps, same `availBottom`, same anchor re-projection.
+       ⚠ A CHANGE THIS FUNCTION CAUSES ITSELF IS NOT OBSERVED IN TIME, so the two callers that know
+       they changed the menu — opening it, and expanding a section — say `remeasure` first. */
     function place(){
       /* (#R210) re-read: this now runs on every map move AND on window resize, so a rect captured
          at open time would clamp against a container size that no longer exists. */
-      try{ const r=document.getElementById('map-container').getBoundingClientRect(); if(r&&r.width) mc=r; }catch(_){}
-      let availBottom=mc.height; try{ const mcEl=document.getElementById('map-container'); const cover=parseFloat(getComputedStyle(mcEl).getPropertyValue('--sheet-cover'))||0; const isM=window.matchMedia&&window.matchMedia('(max-width:768px)').matches; if(isM&&cover>0){ availBottom=mc.height-cover-8; m.style.maxHeight=Math.max(160,availBottom-56)+'px'; m.style.overflowY='auto'; } else { m.style.maxHeight=''; m.style.overflowY=''; } }catch(_){}
-      const rect=m.getBoundingClientRect();
+      try{ const r=_boxOf(document.getElementById('map-container')); if(r&&r.width) mc=r; }catch(_){}
+      let availBottom=mc.height; try{ const mcEl=document.getElementById('map-container'); const cover=_sheetCover(mcEl); const _m=_mqSmall(), isM=!!(_m&&_m.matches); if(isM&&cover>0){ availBottom=mc.height-cover-8; _set(m,'maxHeight',Math.max(160,availBottom-56)+'px'); _set(m,'overflowY','auto'); } else { _set(m,'maxHeight',''); _set(m,'overflowY',''); } }catch(_){}
+      const rect=_boxOf(m);
       /* ══ (#R210) THE MENU BELONGS TO THE POINT, NOT TO THE SCREEN ═════════════════════════════
          「右クリック時のポップアップは、画面に固定ではなく地点に固定するように。」 It was placed once at
          the pixel the pointer was over and then stayed there while the map moved underneath, so
@@ -598,7 +645,7 @@ window.IntMapModules.toolPanel=function(HOST){
       let x=anchor.x, y=anchor.y;
       if(x+rect.width>mc.width) x=mc.width-rect.width-8;
       if(y+rect.height>availBottom) y=availBottom-rect.height-8;
-      m.style.left=Math.max(8,x)+'px'; m.style.top=Math.max(8,y)+'px';
+      _set(m,'left',Math.max(8,x)+'px'); _set(m,'top',Math.max(8,y)+'px');
     }
     /* (#R210) …and it keeps following. Registered ONCE on the element (the menu is a singleton and
        every closer in the app just sets display:none), so the handler is inert whenever it is

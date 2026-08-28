@@ -55,25 +55,49 @@ export function makeWheelZoom(HOST, CTX) {
        custom 2-finger pinch that scales the zoom delta by the slider. It engages ONLY when the user has
        CHANGED the setting (sens !== 1) — at the default, MapLibre's native pinch is left fully intact, so
        there is zero regression risk for everyone who never touched the slider. */
+    /* ══ ⚠⚠⚠ (#R499) …AND IT WAS THE MOST EXPENSIVE INPUT PATH IN THE APP ════════════════════════
+       Everything below is the #R27 gesture, unchanged in what it does. What changed is how often it
+       asks the DOM and the renderer, because it did BOTH once per finger event:
+         · `midLngLat` opened with `cv.getBoundingClientRect()` — a layout read on the pointer's own
+           path, to learn an offset that changes when the WINDOW changes and at no other time. It is
+           the same defect #R498 removed from the long-press handler, in the handler right beside it;
+         · and it drove `camera.easeTo({duration:0})` from the event, so a 120 Hz touch digitiser —
+           which every recent phone has — ran the renderer's whole camera update TWICE per displayed
+           frame and threw one of them away. The listener is `passive:false`, so all of that is
+           between the finger and the browser's own scroll/zoom decision.
+       ⚠ THIS RUNS ONLY WHEN THE READER HAS MOVED THE ZOOM SLIDER (`sens()!==1`) — which is exactly
+       why it survived: at the default MapLibre handles the pinch and this path is never entered, so
+       「感度を変えると特にピンチが重い」 is a report only the people who changed the setting can make.
+       ⚠ THE GESTURE IS BYTE-FOR-BYTE THE SAME GESTURE. Same `log2(d/startDist)*sens()`, same clamp,
+       same anchor pixel, same preventDefault. The zoom is applied on the frame, and the LAST pending
+       one is flushed on touchend so the gesture cannot end on a stale value. */
     (function(){
       const cv=GE().render.canvasContainer&&GE().render.canvasContainer(); if(!cv||cv.__pinchSens) return; cv.__pinchSens=true;
-      let active=false, startDist=0, startZoom=0;
+      let active=false, startDist=0, startZoom=0, pend=null;
       const sens=()=>Math.max(0.25,Math.min(3,+window.imNavZoomSens||1));
       const dist=(t)=>Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-      const midLngLat=(t)=>{ const r=cv.getBoundingClientRect(); return GE().coords.unproject([ (t[0].clientX+t[1].clientX)/2-r.left, (t[0].clientY+t[1].clientY)/2-r.top ]); };
+      /* (#R499) the observed box — js/runtime.js §5. The direct read is the pre-runtime fallback and
+         nothing else: this listener cannot be reached before the map exists. */
+      const boxOf=()=>{ try{ const R=window.IntMapRuntime; if(R&&R.box) return R.box(cv); }catch(_){} return cv.getBoundingClientRect(); };
+      const apply=()=>{ const p=pend; pend=null; if(!p) return;
+        const r=boxOf();
+        try{ GE().camera.easeTo({ zoom:Math.max(GE().camera.getMinZoom(),Math.min(GE().camera.getMaxZoom(),p.z)),
+          around:GE().coords.unproject([p.mx-r.left,p.my-r.top]), duration:0 }); }catch(_){} };
       cv.addEventListener('touchstart',(e)=>{
         if(sens()===1) return;                                 /* default feel → MapLibre handles it */
-        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=GE().camera.getZoom();
+        if(e.touches&&e.touches.length===2){ active=true; startDist=dist(e.touches); startZoom=GE().camera.getZoom(); pend=null;
           try{ GE().input.set('touchZoomRotate',false); }catch(_){} }
       },{passive:true});
       cv.addEventListener('touchmove',(e)=>{
         if(!active||!e.touches||e.touches.length!==2) return;
-        const d=dist(e.touches); if(startDist<=0) return;
-        const z=startZoom + Math.log2(d/startDist)*sens();
-        try{ GE().camera.easeTo({zoom:Math.max(GE().camera.getMinZoom(),Math.min(GE().camera.getMaxZoom(),z)), around:midLngLat(e.touches), duration:0}); }catch(_){}
+        const t=e.touches, d=dist(t); if(startDist<=0) return;
+        pend={ z:startZoom + Math.log2(d/startDist)*sens(), mx:(t[0].clientX+t[1].clientX)/2, my:(t[0].clientY+t[1].clientY)/2 };
+        let queued=false; try{ const R=window.IntMapRuntime; if(R&&R.frame){ R.frame('wheel-zoom.pinch',apply); queued=true; } }catch(_){}
+        if(!queued) apply();
         if(e.cancelable) e.preventDefault();
       },{passive:false});
-      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; try{ GE().input.set('touchZoomRotate',true); }catch(_){} } };
+      const end=(e)=>{ if(active && (!e.touches||e.touches.length<2)){ active=false; apply();   /* (#R499) never end on a frame that was never drawn */
+        try{ GE().input.set('touchZoomRotate',true); }catch(_){} } };
       cv.addEventListener('touchend',end); cv.addEventListener('touchcancel',end);
     })();
     /* (#R23) re-assert once the map first settles — some gesture handlers (e.g. the Draw tool) re-enable
