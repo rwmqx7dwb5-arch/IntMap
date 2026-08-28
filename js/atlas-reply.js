@@ -17,11 +17,15 @@
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */
 import { makeAtlasAnnotate } from './atlas-annotate.js';   /* (#R492) the in-reply unit / clock / abbreviation notes — js/atlas-annotate.js */
+import { makeAtlasMarkdown } from './atlas-markdown.js';   /* (#R494) the block parser — see the header of that file */
+import { makeAtlasHighlight } from './atlas-highlight.js';  /* (#R494) code-block token colouring */
 export function makeAtlasReply(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc, fitTo=CTX.fitTo, fmtVal=CTX.fmtVal, highlight=CTX.highlight, note=CTX.note, warn=CTX.warn;
   /* (#R492) the in-reply notes. ⚠ MADE HERE, not at module scope: a js/ module may hold no unexported
      top-level declaration (tests/r175 ③), so the lexicon and the compiled regexes live inside the factory. */
   const { annotateAtlasHTML, annotateAtlasText, annotateOptions, wireAtlasAnnotations } = makeAtlasAnnotate();
+  const _atlMd=makeAtlasMarkdown({ esc });   /* (#R494) built once per reply pipeline; it holds no state between calls */
+  const { highlightCode }=makeAtlasHighlight();   /* (#R494) …and one grammar cache with it */
     /* ══ (#R463) ATOMS — the two sentence tokenizers below must never cut inside a URL or a number ═══
        Reported: an Atlas answer rendered "地図中心付近の49." and "10°N・19.54°E" as two paragraphs, and its
        source link came out as a dead anchor reading "https://liptovska-mara.". Neither is a model defect
@@ -120,21 +124,38 @@ export function makeAtlasReply(HOST, CTX) {
       if(/^\s*#{1,6}\s/m.test(raw)) return raw;                               /* model emitted real headings already → respect verbatim */
       const plainAll=raw.replace(/\s+/g,' ').trim();
       const cjk=(plainAll.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;               /* CJK carries ~2× the text of a Latin char */
-      const paras=raw.split(/\n\s*\n|\n/).map(s=>s.trim()).filter(Boolean);
+      /* ⚠⚠ (#R494) THE LINES ARE NO LONGER TRIMMED, AND THAT IS THE WHOLE FIX FOR NESTED LISTS.
+         `.map(s=>s.trim())` removed the leading whitespace from every line before anything looked at
+         it, so a sub-item («  - …») and its parent arrived at the renderer at the same indent and
+         there was nothing left to nest. Only the NON-list paragraphs are trimmed now (their indent
+         carries no meaning); a list line keeps its column. */
+      const paras=raw.split(/\n\s*\n|\n/).filter(s=>s.trim());
       if(!paras.length) return raw;
       if((plainAll.length+cjk)<=150 && paras.length<2) return raw;            /* a one-line answer doesn't need reflow */
-      const isList=p=>/^\s*(?:[-・*•]|\d+[.)、]|[①-⑳])\s/.test(p);
+      const isList=p=>/^[ \t　]*(?:[-・*•+][ \t　]|\d{1,9}[.)、][ \t　]|[①-⑳])/.test(p);
       const SENT=/[^.!?。！？…]+(?:[.!?。！？…]+["”』）)]*|$)/g;
-      const out=[];
-      for(const p of paras){
-        if(isList(p)){ out.push(p.replace(/^\s*(?:\d+[.)、]|[①-⑳])[ \t　]+/,'- ').replace(/^\s*[•・*][ \t　]+/,'- ')); continue; }
+      const out=[];   /* {text, list} — a run of consecutive list lines is rejoined with ONE newline so it stays one list */
+      for(const p0 of paras){
+        const pl=p0.replace(/[ \t　]+$/,'');
+        /* ⚠ (#R494) A NUMBER IS NOT A BULLET. #R154 normalised «1.» and «①» to «- », which is why an
+           ordered list arrived at the reader unnumbered. The marker is CANONICALISED now, not
+           replaced: 「1、」→「1. 」 keeps the number, ①-⑳ keep their value, and only the genuinely
+           interchangeable bullet glyphs (•・*+) fold to «- ». Full-width indent becomes spaces so the
+           column arithmetic in js/atlas-markdown.js can count it. */
+        if(isList(pl)){ out.push({ text:pl
+            .replace(/^([ \t　]*)(\d{1,9})[.)、][ \t　]+/,(m,ind,n)=>ind.replace(/　/g,'  ')+n+'. ')
+            .replace(/^([ \t　]*)([①-⑳])[ \t　]*/,(m,ind,c)=>ind.replace(/　/g,'  ')+c+' ')
+            .replace(/^([ \t　]*)[•・*+][ \t　]+/,(m,ind)=>ind.replace(/　/g,'  ')+'- '), list:true }); continue; }
+        const p=pl.trim();
         const pc=(p.match(/[぀-ヿ㐀-鿿가-힯]/g)||[]).length;
         if((p.length+pc)>230){ const H=_atlHold(p);                            /* (#R463) the gate still measures the REAL paragraph; only the SPLIT sees placeholders */
           const sents=(H.t.match(SENT)||[H.t]).map(x=>_atlFree(x,H.A));        /* long run-on → ~2-sentence stanzas (spacing only, no enlargement) */
-          if(sents.length>=3){ for(let i=0;i<sents.length;i+=2) out.push(sents.slice(i,i+2).join(' ').trim()); continue; } }
-        out.push(p);
+          if(sents.length>=3){ for(let i=0;i<sents.length;i+=2) out.push({ text:sents.slice(i,i+2).join(' ').trim(), list:false }); continue; } }
+        out.push({ text:p, list:false });
       }
-      return out.join('\n\n'); }
+      let joined='';
+      for(let i=0;i<out.length;i++){ if(i) joined += (out[i].list && out[i-1].list) ? '\n' : '\n\n'; joined += out[i].text; }
+      return joined; }
     /* (#R156) ================= UNIFIED MARKDOWN + LaTeX RENDERER =================
        The long-standing "Atlas replies are a monotone wall of text" complaint AND the vision/math work order both
        demand a REAL renderer, not more regexes bolted onto esc(). mdMini is now a wrapper that ADDS, on top of the
@@ -165,11 +186,26 @@ export function makeAtlasReply(HOST, CTX) {
         if(disp){ el.classList.remove('atl-math-raw'); el.removeAttribute('data-tex'); el.innerHTML=h; }
         else { const s=document.createElement('span'); s.innerHTML=h; el.replaceWith(s.firstChild||s); } }catch(_){} }); }catch(_){} }
     try{ window._atlTypesetMath=_atlTypesetMath; }catch(_){}
-    function _atlCodeBlock(code, lang){ code=String(code).replace(/\n+$/,''); const id='atlcb'+(_atlCbSeq++);
+    /* ⚠ (#R494) `highlightCode` REPLACES the `esc(code)` that used to sit here, and inherits its whole
+       job: it escapes every character of the source itself and emits nothing but its own <span>s.
+       An unlabelled fence gets no grammar and comes back plainly escaped, exactly as before.
+       The Wrap button is the reader's override for the default `white-space:pre`; the Copy button
+       still copies `code.textContent`, which is the source text with the spans stripped by the DOM. */
+    /* (#R494) a fence written INSIDE a list item is indented to the item's content column, and the
+       protection pass captures that indent as part of the code. Strip the common prefix so the block
+       reads as the author wrote it rather than shifted right by the markup around it. */
+    function _atlDedentCode(code){ const ls=String(code).split('\n');
+      let min=Infinity; for(const l of ls){ if(!l.trim()) continue; const m=/^[ \t]*/.exec(l)[0];
+        let w=0; for(const c of m) w+=(c==='\t'?4:1); if(w<min) min=w; }
+      if(!min||min===Infinity) return code;
+      return ls.map(l=>{ let i=0,w=0; while(i<l.length&&w<min){ const c=l.charAt(i); if(c===' '){w++;i++;} else if(c==='\t'){w+=4;i++;} else break; } return l.slice(i); }).join('\n'); }
+    function _atlCodeBlock(code, lang){ code=_atlDedentCode(String(code).replace(/\n+$/,'')); const id='atlcb'+(_atlCbSeq++);
       const lbl=lang?esc(String(lang).slice(0,24)):'';
       return '<div class="atl-codewrap"><div class="atl-codebar"><span class="atl-codelang">'+(lbl||'code')+'</span>'
-        +'<button class="atl-codecopy" type="button" data-cid="'+id+'">'+esc(L('Copy','コピー','Kopieren','Копировать','Copiar'))+'</button></div>'
-        +'<pre class="atl-codeblock"><code id="'+id+'">'+esc(code)+'</code></pre></div>'; }
+        +'<span class="atl-codebtns">'
+        +'<button class="atl-codewrapbtn" type="button" data-cid="'+id+'">'+esc(L('Wrap','折り返し','Umbrechen','Перенос','Ajustar'))+'</button>'
+        +'<button class="atl-codecopy" type="button" data-cid="'+id+'">'+esc(L('Copy','コピー','Kopieren','Копировать','Copiar'))+'</button></span></div>'
+        +'<pre class="atl-codeblock"><code id="'+id+'">'+highlightCode(code,lang)+'</code></pre></div>'; }
     /* ⚠ (#R492) ONE options object per reply. `seen` inside it is what makes an abbreviation carry its
        note on FIRST USE only; sharing it across replies would annotate a term once and never again, and
        making a new one per paragraph would underline the same word five times in one answer. */
@@ -178,13 +214,33 @@ export function makeAtlasReply(HOST, CTX) {
        (#R492) …and a cell is prose too: it is annotated here rather than by the pass at the end of mdMini, because by then
        the whole table is a single placeholder token and its cells are out of that walk's reach. */
     function _atlCellFmt(s,AN){ const t=esc(String(s==null?'':s)).replace(/\*\*([^*]+)\*\*/g,'$1'); if(!AN) return t; try{ return annotateAtlasText(t,AN); }catch(_){ return t; } }
+    /* ⚠ (#R494) A CELL MAY CONTAIN A PIPE. The splitter was `split(/\|/)`, so `\|` — the escape GFM
+       defines for exactly this — cut the row at the character it was written to protect, silently
+       shifting every later cell one column left. Split on a pipe that is NOT preceded by a
+       backslash, then unescape. */
+    const _atlCutRow=r=>String(r).trim().replace(/^\|/,'').replace(/\|$/,'')
+      .split(/(?<!\\)\|/).map(x=>x.trim().replace(/\\\|/g,'|'));
+    /* ⚠ (#R494) `white-space:nowrap` ON EVERY CELL IS RIGHT FOR NUMBERS AND WRONG FOR SENTENCES.
+       It is what keeps a comparison table's figures on one line, and it is also what made a table
+       with one prose column scroll several screens sideways. The decision is now PER COLUMN and is
+       made from the content: a column stays nowrap while every one of its cells is short or looks
+       like a measurement; the moment one cell is a sentence, that column wraps and the rest of the
+       table keeps its alignment. */
+    function _atlColWrap(cells){
+      let longest=0, prose=false;
+      for(const c of cells){ const t=String(c==null?'':c).trim();
+        if(t.length>longest) longest=t.length;
+        if(!/^[\s\d.,:;%+\-–—/()°$¥€£~×xX*a-zA-Z]{0,14}$/.test(t)) prose=true; }
+      return longest>14 || (prose && longest>10); }
     function _atlBuildTable(header, sep, body, AN){
-      const cut=r=>String(r).trim().replace(/^\|/,'').replace(/\|$/,'').split(/\|/).map(x=>x.trim());
+      const cut=_atlCutRow;
       const aligns=cut(sep).map(s=>{ const l=/^:/.test(s), r=/:$/.test(s); return (r&&l)?'center':r?'right':l?'left':''; });
-      const th=cut(header); const rows=body.map(cut); const al=i=>aligns[i]?(' style="text-align:'+aligns[i]+'"'):'';
+      const th=cut(header); const rows=body.map(cut);
+      const wrap=th.map((c,i)=>_atlColWrap([c].concat(rows.map(r=>r[i]))));
+      const at=i=>(wrap[i]?' class="atl-c-wrap"':'')+(aligns[i]?(' style="text-align:'+aligns[i]+'"'):'');
       let h='<div class="atl-tablewrap"><table class="atl-md-table"><thead><tr>';
-      th.forEach((c,i)=>{ h+='<th'+al(i)+'>'+_atlCellFmt(c,AN)+'</th>'; }); h+='</tr></thead><tbody>';
-      rows.forEach(r=>{ h+='<tr>'; for(let i=0;i<th.length;i++){ h+='<td'+al(i)+'>'+_atlCellFmt(r[i],AN)+'</td>'; } h+='</tr>'; });
+      th.forEach((c,i)=>{ h+='<th'+at(i)+'>'+_atlCellFmt(c,AN)+'</th>'; }); h+='</tr></thead><tbody>';
+      rows.forEach(r=>{ h+='<tr>'; for(let i=0;i<th.length;i++){ h+='<td'+at(i)+'>'+_atlCellFmt(r[i],AN)+'</td>'; } h+='</tr>'; });
       return h+'</tbody></table></div>'; }
     function mdMini(s){ s=String(s||''); const B=[], I=[]; const AN=_atlAnnOpts();
       const pB=h=>{ B.push(h); return 'B'+(B.length-1)+''; };
@@ -201,56 +257,34 @@ export function makeAtlasReply(HOST, CTX) {
         const isRow=l=>/^\s*\|.*\|\s*$/.test(l), isSep=l=>/\|/.test(l)&&/-/.test(l)&&/^\s*\|?[\s:|-]*-[-\s:|]*\|?\s*$/.test(l);
         while(i<ls.length){ if(isRow(ls[i])&&i+1<ls.length&&isSep(ls[i+1])){ const hdr=ls[i], sp=ls[i+1], bd=[]; let j=i+2; while(j<ls.length&&isRow(ls[j])){ bd.push(ls[j]); j++; } out.push(pB(_atlBuildTable(hdr,sp,bd,AN))); i=j; } else { out.push(ls[i]); i++; } }
         return out.join('\n'); })(s);
-      /* 3) the EXISTING R154/R155 typography pipeline — the text is now placeholder-protected (code/math/tables intact).
-         (#R154) HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR ("目次を色分けするのはやめる"). (#R155) a "## "
-         section also gets a subtle neutral top hairline = pure 配置/placement. */
-      let html=esc(_dedupText(_atlStanza(s)))
-        /* (#R158) STRONGER design contrast via SIZE / WEIGHT / SPACING / neutral dividers ONLY — still no colour-coding and
-           no fabricated headings (R154 constraints kept). Bigger size jumps + heavier weight + more generous rhythm + a more
-           visible section hairline give the flat, monotone reply the structure the user asked for ("コントラストに乏しい"). */
-        /* (#R159) headings differentiate by SIZE + SPACING only — no heavy bold weight ("返答のテキストは太字にしない") and
-           no "##" top-rule divider ("区切りの横線はいらない"). Down from 750/800 to a light 600; border-top removed. */
-        /* ══ (#R232) 「各見出しと、その前後の本文に間隔があきすぎに思える」 ═══════════════════════════
-           The gap around a heading was never one number — it was TWO, added together and never counted:
-           the heading's own margin, PLUS the blank-line spacer the paragraph rule below emits for the
-           `\n\n` that always surrounds a markdown heading. A `## ` section therefore opened with
-           2.05em + 1.5em = 3.55em of nothing above it and 0.62em + 1.5em = 2.12em below.
-           ⚠ THE MARGINS ARE TIGHTENED **AND** THE DOUBLE COUNT IS REMOVED (see the post-pass at the end
-           of this function). The paragraph rhythm between ordinary paragraphs is deliberately unchanged
-           — #R158 widened it on request and this instruction is about headings, not about the body. */
-        .replace(/^#{3,6}\s*(.+)$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.05em 0 .3em;font-size:1.3em;line-height:1.3;letter-spacing:.004em;">$1</div>')
-        .replace(/^##\s*(.+)$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.3em 0 .38em;font-size:1.56em;line-height:1.25;letter-spacing:.006em;">$1</div>')
-        .replace(/^#\s*(.+)$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.1em 0 .4em;font-size:1.9em;letter-spacing:.012em;line-height:1.2;">$1</div>')
-        /* (#R151/#R154) a whole-line **bold run** is an author-written section lead → modest heading (size+spacing, no colour) */
-        .replace(/^\*\*([^*\n]{2,90})\*\*[ \t]*:?[ \t]*$/gm,'<div class="atl-h" style="font-weight:600;color:var(--text-main);margin:1.0em 0 .3em;font-size:1.28em;line-height:1.3;">$1</div>')
-        .replace(/\*\*([^*]+)\*\*/g,'$1')                                                             /* (#R159) inline **bold** → plain: Atlas reply body carries no bold */
-        .replace(/(^|[^*\w])\*(?!\s)([^*\n]+?)(?<!\s)\*(?!\w)/g,'$1<i>$2</i>')                      /* (#R156) *italic* (single asterisk; guarded so ** and "2 * 3"/bullets don't misfire) */
-        .replace(/^&gt;\s?(.+)$/gm,'<div style="border-left:3px solid rgba(128,128,128,.4);padding:3px 0 3px 13px;margin:.7em 0;color:var(--text-muted);">$1</div>')   /* (#R156) > blockquote (esc turned > into &gt;) */
-        /* (#R74) markdown links → real (safe) anchors */
-        .replace(/\[([^\]\n]{1,120})\]\((https?:[^)\s]{4,300})\)/g,(m,t,u)=>'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;">'+t+'</a>')
-        /* (#R79g) linkify BARE urls too (leading-char guard skips urls already inside an href="…") */
-        .replace(/(^|[^"'=>\/])(https?:\/\/[^\s<)"']+)/g,(m,pre,u)=>pre+'<a href="'+u+'" target="_blank" rel="noopener" style="color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;word-break:break-all;">'+u+'</a>')
-        .replace(/^[-・*]\s+(.+)$/gm,'<div style="padding-left:1.35em;text-indent:-1.1em;margin:.42em 0;line-height:1.6;">•&nbsp; $1</div>')   /* (#R158) clearer bullets + more air */
-        .replace(/\n{2,}/g,'<div class="atl-gap" style="height:1.5em"></div>')                         /* (#R158) paragraph gap (bigger rhythm) */
-        .replace(/([.!?。！？…”"』）)])\n(?=\S)/g,'$1<div style="height:.82em"></div>')                 /* (#R150-R158) sentence-end + single newline = soft gap */
-        .replace(/\n/g,'<br>');
-      /* ⚠ (#R232) THE SECOND HALF OF THE HEADING-SPACING FIX — drop the paragraph spacer that lands
-         against a heading. A markdown heading is a line surrounded by blank lines, so the rule above
-         ALWAYS emits a 1.5em spacer on each side of one; that spacer is what a paragraph gap means
-         BETWEEN TWO PARAGRAPHS, and next to a heading whose own margin already provides the air it
-         simply means twice the intended gap. The `<br>` case is the same defect with a single newline.
-         Tempered `(?:(?!</div>)[\s\S])*` stops at the heading div's own close tag — heading text at
-         this point is plain, its code/math/table content having been swapped out for placeholders. */
-      html=html
-        .replace(/<div class="atl-gap"[^>]*><\/div>(?=<div class="atl-h")/g,'')
-        .replace(/(<div class="atl-h"[^>]*>(?:(?!<\/div>)[\s\S])*<\/div>)(?:<div class="atl-gap"[^>]*><\/div>|<br>)/g,'$1');
+      /* ══ ⚠⚠⚠ (#R494) 3) THE BLOCK STRUCTURE — PARSED, NOT PATTERN-MATCHED ══════════════════════
+         What stood here from #R149 to #R232 was `esc(text)` followed by twelve `.replace()` calls
+         that rewrote line shapes into <div>s and turned newlines into SPACER ELEMENTS — an empty
+         1.5em div for a blank line, a 0.82em one for a sentence-end newline, <br> for the rest —
+         and then a POST-PASS that went back over the finished HTML to delete the spacer beside a
+         heading, because the heading rule and the paragraph rule each emitted air and 2.05em +
+         1.5em is 3.55em of nothing above a `## ` section. A renderer that has to re-read its own
+         output to correct it is telling you it never knew what it was building.
+
+         It is a parser now (js/atlas-markdown.js): lines → a block tree → semantic HTML, and the
+         spacing is CSS. The double gap is not fixed, it is ABSENT — <p>'s bottom margin and <h2>'s
+         top margin COLLAPSE, which is the browser doing for free the arithmetic #R232 did by hand.
+         ⚠ THE DECISIONS THE OLD CHAIN CARRIED ARE UNCHANGED AND ARE NOW STATED ONCE, IN CSS:
+         #R154 headings differentiate by SIZE + SPACING and carry no colour, #R159 they are weight
+         600 and the reply body has no bold, #R150 a sentence-end + single newline is a soft gap.
+         What is NEW is what the chain could not express at all: nested lists, real ordered lists,
+         a list item that contains a second paragraph or a code block, a multi-line blockquote as
+         ONE quote, a horizontal rule, and escaped markdown. */
+      let html=_atlMd.renderMarkdown(_dedupText(_atlStanza(s)));
       /* ⚠ (#R492) THE ANNOTATION PASS STANDS HERE, AND NOWHERE ELSE. Above it the reply is finished HTML;
          below it the code/math/table placeholders come back. Running here means the walk never sees the inside
          of a code block, a formula or an inline `code` span — those are still single PUA tokens — and it never
          sees an attribute, because annotateAtlasHTML splits tags from text. Running it in js/atlas-console.js
          AFTER the bubble is painted would have been wrong for a different reason: _atlCompose rebuilds that
          bubble's innerHTML from the stored HTML strings once per tool call, so DOM-side decoration is erased
-         by the next action. Table cells are annotated by _atlCellFmt with the SAME options object. */
+         by the next action. Table cells are annotated by _atlCellFmt with the SAME options object.
+         ⚠ (#R494) …and it now walks SEMANTIC elements rather than a chain of styled <div>s. Nothing about
+         where it stands changes: it still sees finished HTML with code, maths and tables held out of it. */
       if(AN){ try{ html=annotateAtlasHTML(html,AN); }catch(_){} }
       /* 4) restore protected blocks (may hold inline placeholders) THEN inlines */
       return html.replace(/B(\d+)/g,(m,i)=>B[+i]||'').replace(/I(\d+)/g,(m,i)=>I[+i]||''); }
@@ -265,6 +299,18 @@ export function makeAtlasReply(HOST, CTX) {
         const code=document.getElementById(b.getAttribute('data-cid')); const txt=code?(code.textContent||''):'';
         const done=()=>{ const old=b.textContent; b.textContent=L('Copied','コピー済み','Kopiert','Скопировано','Copiado'); b.classList.add('ok'); setTimeout(()=>{ try{ b.textContent=old; b.classList.remove('ok'); }catch(_){} },1400); };
         try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done).catch(()=>{ _atlFallbackCopy(txt); done(); }); } else { _atlFallbackCopy(txt); done(); } }catch(_){ _atlFallbackCopy(txt); done(); }
+      }catch(_){} });
+      /* (#R494) the Wrap toggle. Document-level and per-block, like Copy — a reader who turns wrapping
+         on for one JSON payload has not asked for it on the next reply's shell transcript. The state
+         lives on the <pre> element, so it survives nothing and needs to survive nothing. */
+      document.addEventListener('click',e=>{ try{ const b=e.target.closest&&e.target.closest('.atl-codewrapbtn'); if(!b) return;
+        const code=document.getElementById(b.getAttribute('data-cid')); const pre=code&&code.closest?code.closest('.atl-codeblock'):null; if(!pre) return;
+        const on=pre.classList.toggle('wrap'); b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false');
+      }catch(_){} });
+      /* (#R494) …and the source row's overflow chip: reveal the cards the six-card row could not hold */
+      document.addEventListener('click',e=>{ try{ const b=e.target.closest&&e.target.closest('.atl-lc-more'); if(!b) return;
+        const rest=b.parentNode&&b.parentNode.querySelector?b.parentNode.querySelector('.atl-lc-rest'):null;
+        if(rest) rest.hidden=false; b.remove();
       }catch(_){} });
       /* belt-and-suspenders: re-typeset any raw-LaTeX fallbacks once KaTeX is present (covers a slow-CDN edge) */
       /* (#R224) …and KaTeX is fetched HERE, the first time an answer carries maths, rather than at
@@ -396,11 +442,22 @@ export function makeAtlasReply(HOST, CTX) {
          specific claim — web-verified / model-cited — still pass neither and skip relevance entirely. */
       if(refText||topic) clean=_atlRelevantCards(clean, refText, topic);
       if(!clean.length) return '';
-      const cards=clean.slice(0,6).map(c=>{ const dom=(c.agg&&c.src)?c.src:c.host;   /* (#R154) aggregator card shows the PUBLISHER name (from src), not the ugly "news.google.com" */
+      /* ⚠ (#R494) THE SEVENTH SOURCE IS NOT A SOURCE THE READER DECIDED NOT TO SEE. `slice(0,6)` was a
+         SILENT truncation: a reply backed by nine articles showed six and said nothing, which reads on
+         the screen as "these are the sources" — a claim about provenance that the code knew was false.
+         The cap on what is VISIBLE stays (six cards is the row this layout was designed for); what
+         changes is that the rest are rendered, hidden, behind a chip that says how many there are. */
+      const card=c=>{ const dom=(c.agg&&c.src)?c.src:c.host;   /* (#R154) aggregator card shows the PUBLISHER name (from src), not the ugly "news.google.com" */
         return '<a class="atl-lc" href="'+esc(c.url)+'" target="_blank" rel="noopener">'
         +'<img class="atl-lc-ico" src="https://www.google.com/s2/favicons?domain='+esc(encodeURIComponent(c.host))+'&sz=64" alt="" loading="lazy" onerror="this.style.display=\'none\'">'
-        +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(c.title)+'</span><span class="atl-lc-d">'+esc(dom)+'</span></span></a>'; });
-      return '<div class="atl-lc-row">'+cards.join('')+'</div>'; }catch(_){ return ''; } }
+        +'<span class="atl-lc-tx"><span class="atl-lc-t">'+esc(c.title)+'</span><span class="atl-lc-d">'+esc(dom)+'</span></span></a>'; };
+      const shown=clean.slice(0,6).map(card).join('');
+      const restList=clean.slice(6);
+      if(!restList.length) return '<div class="atl-lc-row">'+shown+'</div>';
+      const more=esc(L('Show all sources','すべてのソースを表示','Alle Quellen anzeigen','Показать все источники','Mostrar todas las fuentes'));
+      return '<div class="atl-lc-row">'+shown
+        +'<span class="atl-lc-rest" hidden>'+restList.map(card).join('')+'</span>'
+        +'<button class="atl-lc-more" type="button" title="'+more+'" aria-label="'+more+'">+'+restList.length+'</button></div>'; }catch(_){ return ''; } }
     function listHtml(title,list,metric){ if(!list||!list.length) return note('⚠ '+L('No matching countries / metric unavailable.','該当国なし／指標が利用できません。','Keine passenden Länder / Kennzahl nicht verfügbar.','Нет данных по показателю.','Sin países coincidentes / métrica no disponible.'));
       const painted=highlight(list.map(r=>r.code)); fitTo(list.map(r=>r.code));
       return '<div style="font-weight:600;margin:2px 0 4px;">'+esc(title)+'</div><ol style="margin:0;padding-left:22px;line-height:1.65;font-size:12px;">'

@@ -104,10 +104,14 @@ test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', ()
 
 test('R158 #1 → R159 Atlas typography — no bold, no ## divider; body 14px + mobile lift; still monochrome', () => {
   gone('border-top:1.5px solid rgba(128,128,128,.34)', 'R159 removed the ## hairline divider ("区切りの横線はいらない")');
-  ok("font-size:14px;line-height:1.68", 'desktop reply body lifted from 12.5px to 14px');
-  ok("style*=\"font-size:14px\"]{font-size:15.5px !important;}", 'mobile still lifts the (now 14px) body');
-  // still monochrome — every mdMini heading keeps --text-main (R154 "色分け廃止" preserved) — R159 also drops the bold weight
-  ok('.replace(/^##\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', 'H2 heading is semibold (R159 no bold), still --text-main');
+  /* (#R494) the reply body is a NAMED class now. It was an inline style five call sites in
+     js/atlas-console.js had to keep re-spelling, and the mobile rule below matched it by that
+     spelling — so the lift held only while all five agreed on the characters. */
+  ok(".atl-md{font-size:14px;line-height:1.62;}", 'desktop reply body is 14px (R494 line-height 1.68 → 1.62)');
+  ok(".atl-b.a .atl-md{font-size:15.5px !important;}", 'mobile still lifts the (now 14px) body');
+  gone('<div style="font-size:14px;line-height:1.68;">', 'the inline-style wrapper it used to be sniffed by is gone');
+  // still monochrome — every heading keeps --text-main (R154 "色分け廃止" preserved) — R159 also drops the bold weight
+  ok('.atl-h{font-weight:600;color:var(--text-main);', 'headings are semibold (R159 no bold), still --text-main');
 });
 
 test('R158 #2 Atlas sources — informational answers gather sources (use:[web] forces the search)', () => {

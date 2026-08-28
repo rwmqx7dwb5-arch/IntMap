@@ -48,7 +48,8 @@ test('R153/R154 #3 Atlas typography — safe reflow only, NO fabricated headings
   assert.ok(!/out\.push\('\*\*'\+first\+'\*\*'\)/.test(html), 'R154: the opening sentence is NOT promoted to a bold lead');
   assert.match(html, /model emitted real headings already → respect verbatim/, 'model-authored ## structure is respected as-is');
   assert.match(html, /long run-on → ~2-sentence stanzas \(spacing only, no enlargement\)/, 'the only reflow is stanza-splitting (spacing, not enlargement)');
-  assert.match(html, /<div (?:class="atl-gap" )?style="height:1\.5em"><\/div>/, 'paragraph gap 1.5em (R158)');
+  /* (#R494) the same 1.5em rhythm, declared once on the paragraph instead of emitted as an empty div */
+  assert.match(html, /\.atl-p\{margin:0 0 1\.5em;/, 'paragraph gap 1.5em (R158)');
   // headings are colourless now
   assert.match(html, /HEADINGS DIFFERENTIATE BY SIZE \+ SPACING ONLY — NO COLOUR/, 'headings size/spacing only, no colour');
 });

@@ -24,6 +24,7 @@ import { LIGHTBOX_CSS } from './atlas-attach.js';
 import { MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE } from './atlas-msg-tools.js';
 import { GLOSS_CSS, GLOSS_CSS_MOBILE } from './atlas-gloss.js';   /* (#R491) the term-gloss card + its touch pill */
 import { ATLAS_ANNOTATE_CSS } from './atlas-annotate.js';
+import { HIGHLIGHT_CSS } from './atlas-highlight.js';   /* (#R494) the code-block token palette, beside the grammars that emit the classes */
 
 export function atlasPanelCSS() {
     /* (#R62) refined AI-app look ("ChatGPTのような洗練された生成AI App風のUI") + the DEFAULT desktop layout is a
@@ -44,7 +45,18 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'#atlas-panel .atl-x:hover{background:var(--input-bg);color:var(--text-main);}'
       +'#atlas-panel .atl-sub{padding:9px 8px 4px;font-size:11px;color:var(--text-muted);line-height:1.55;}'   /* (#R142/#R145) full-width in the sidebar — the feed now bleeds past #sidebar\'s 24px pad, so only a small inner gutter remains */
       +'#atlas-panel .atl-chat{flex:1;overflow-y:auto;scrollbar-gutter:stable both-edges;padding:8px 6px 6px;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;}'   /* (#R146) L/R gutters equal — the space-reserving webkit scrollbar (Win) only sat on the RIGHT, so the left looked narrower ("左だけ狭い"); reserve an equal gutter on BOTH edges */
-      +'#atlas-panel .atl-b{padding:8px 12px;font-size:12.8px;line-height:1.6;border-radius:15px;word-break:break-word;animation:atlIn .18s ease;}'
+      /* ══ (#R494) THE BUBBLE'S OWN TEXT — SIZE, AND HOW JAPANESE BREAKS ═══════════════════════════
+         12.8px was set when this bubble held a sentence of English status text; it now holds prose in
+         nine languages, and Japanese at 12.8px is small. 13.5/1.62 is the size the reply BODY already
+         renders at one wrapper down (.atl-md), so the two stop disagreeing.
+         ⚠ `word-break:break-word` IS THE WRONG PROPERTY FOR CJK. It permits a break between any two
+         characters, which in Japanese means a line can end with 「（」 or begin with 「、」「。」「）」 —
+         the kinsoku violations the language's own line-breaking rules exist to prevent. The trio that
+         replaces it says the three separate things that were being conflated: `line-break:strict`
+         asks for the strict Japanese rule set, `word-break:normal` stops breaking inside words, and
+         `overflow-wrap:anywhere` still lets a single unbreakable run (a long URL) break rather than
+         overflow the panel. This is the combination the mobile tab rule already used. */
+      +'#atlas-panel .atl-b{padding:8px 12px;font-size:13.5px;line-height:1.62;border-radius:15px;line-break:strict;word-break:normal;overflow-wrap:anywhere;animation:atlIn .18s ease;}'
       +'@keyframes atlIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}'
       /* (#R103) user message = a compact bubble (tighter top/bottom); Atlas message = NO bubble (full width for text). */
       /* ══ ⚠⚠⚠ (#R483) 「Atlasのユーザー送信メッセージの吹き出しを、フロストガラスの質感に。」 ══════
@@ -102,6 +114,71 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       /* (#R492) the in-reply notes and their one floating card. Unscoped for the same reason as the block
          above: the card is appended to document.body and the marks appear on all three Atlas surfaces. */
       +ATLAS_ANNOTATE_CSS
+      /* (#R494) a column js/atlas-reply.js measured as PROSE rather than figures wraps instead of
+         stretching the table sideways — see _atlColWrap. The min-width stops it collapsing to one
+         word per line beside a run of nowrap number columns. */
+      +'.atl-md-table .atl-c-wrap{white-space:normal;min-width:10em;line-break:strict;overflow-wrap:anywhere;}'
+      +HIGHLIGHT_CSS
+      +'.atl-codebtns{display:flex;align-items:center;gap:5px;}'
+      +'.atl-codewrapbtn{font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:7px;padding:2px 9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;}'
+      +'.atl-codewrapbtn:hover{color:var(--text-main);border-color:var(--primary-color);}'
+      +'.atl-codewrapbtn.on{color:var(--primary-color);border-color:var(--primary-color);background:rgba(120,120,128,.12);}'
+      /* ══ ⚠⚠⚠ (#R494) THE REPLY'S TYPOGRAPHY — ONE PLACE, AND IT IS THIS ONE ══════════════════════
+         js/atlas-reply.js used to carry these numbers as inline styles inside twelve `.replace()`
+         calls, which is why #R232 had to DELETE a spacer element after the fact: two rules each
+         emitted margin around a heading and nothing could see the total. Here they are declarations
+         on real elements, so the browser COLLAPSES a paragraph's bottom margin against a heading's
+         top margin and the double gap cannot be expressed.
+         ⚠ NOT scoped to #atlas-panel — the same classes render in the sidebar tab and the workspace
+         window, exactly as the #R156 code/math/table rules above are not scoped.
+         ⚠ #R154's 「見出しを色分けするのはやめる」 and #R159's 「返答のテキストは太字にしない」 live
+         here now, and this is the line the gates in tests/r153/r154-checks read:
+         HEADINGS DIFFERENTIATE BY SIZE + SPACING ONLY — NO COLOUR. Every level is weight 600 in
+         --text-main; nothing below may introduce a hue, and #R159's 600 is never raised to 750/800. */
+      +'.atl-md{font-size:14px;line-height:1.62;}'
+      +'.atl-p{margin:0 0 1.5em;text-wrap:pretty;}'                                 /* (#R158) the paragraph rhythm, unchanged in value */
+      +'.atl-ps{margin-bottom:.82em;}'                                              /* (#R150) sentence-end + single newline = a softer gap */
+      +'.atl-p:last-child{margin-bottom:0;}'
+      +'.atl-h{font-weight:600;color:var(--text-main);text-wrap:balance;}'          /* (#R494) balance: a two-line heading no longer leaves one orphan word */
+      +'.atl-h1{font-size:1.9em;letter-spacing:.012em;line-height:1.2;margin:1.1em 0 .4em;}'
+      +'.atl-h2{font-size:1.56em;line-height:1.25;letter-spacing:.006em;margin:1.3em 0 .38em;}'
+      +'.atl-h3{font-size:1.3em;line-height:1.3;letter-spacing:.004em;margin:1.05em 0 .3em;}'
+      /* (#R494) H4–H6 were all 1.3em — the same size as H3 and as each other, so a reply that nested
+         three levels deep rendered as one level three times. They are a real ladder now. */
+      +'.atl-h4{font-size:1.14em;line-height:1.35;letter-spacing:.002em;margin:1.0em 0 .28em;}'
+      +'.atl-h5{font-size:1.02em;line-height:1.4;letter-spacing:.012em;margin:.95em 0 .25em;}'
+      +'.atl-h6{font-size:.94em;line-height:1.45;letter-spacing:.04em;margin:.9em 0 .22em;}'
+      /* a whole-line **bold run** is an author-written section lead (#R151/#R154) — it is emitted as
+         an <h4> and this rule, declared AFTER .atl-h4, gives it back its own size */
+      +'.atl-hb{font-size:1.28em;line-height:1.3;letter-spacing:.004em;margin:1.0em 0 .3em;}'
+      +'.atl-h:first-child{margin-top:0;}'
+      /* (#R494) real lists: the marker is the browser's, so the hanging indent, the nesting and the
+         numbering are all free — none of which the `•&nbsp;` + text-indent div could do */
+      +'.atl-ul,.atl-ol{margin:.45em 0 .9em;padding-left:1.5em;}'
+      /* ⚠ THE MARKER FOLLOWS THE DEPTH, NOT THE PARENT'S TYPE. `.atl-ul .atl-ul` would only change a
+         bullet list nested under another BULLET list — a bullet list inside a NUMBERED one (which is
+         the commoner shape in an answer: three numbered steps, one of which has sub-points) would
+         have kept the top-level disc and read as if it were top level. Keying on `.atl-li` counts
+         list ancestors of either kind. */
+      +'.atl-ul{list-style:disc;}.atl-li .atl-ul{list-style:circle;}.atl-li .atl-li .atl-ul{list-style:square;}'
+      +'.atl-ol{list-style:decimal;}.atl-li .atl-ol{list-style:lower-alpha;}.atl-li .atl-li .atl-ol{list-style:lower-roman;}'
+      +'.atl-li{margin:.3em 0;line-height:1.6;text-wrap:pretty;}'
+      +'.atl-li::marker{color:var(--text-muted);}'
+      +'.atl-li>.atl-ul,.atl-li>.atl-ol{margin:.25em 0 .3em;}'
+      +'.atl-loose>.atl-li{margin:.55em 0;}'
+      +'.atl-li>.atl-p{margin-bottom:.5em;}.atl-li>.atl-p:last-child{margin-bottom:0;}'
+      +'.atl-ul:last-child,.atl-ol:last-child{margin-bottom:0;}'
+      /* (#R494) ONE blockquote for a multi-line quotation. Each `>` line used to become its own
+         bordered box, so a three-line quotation drew three left rules. */
+      +'.atl-bq{margin:.75em 0;padding:3px 0 3px 13px;border-left:3px solid rgba(128,128,128,.4);color:var(--text-muted);}'
+      +'.atl-bq>*:last-child{margin-bottom:0;}'
+      +'.atl-hr{margin:1.15em 0;border:0;border-top:1px solid var(--glass-border,rgba(128,128,128,.28));}'
+      +'.atl-a{color:var(--primary-color);text-decoration:none;border-bottom:1px solid currentColor;}'
+      +'.atl-a-url{word-break:break-all;}'
+      /* (#R494) the source row's overflow chip — `slice(0,6)` used to drop the rest silently */
+      +'#atlas-panel .atl-lc-rest:not([hidden]){display:contents;}'
+      +'#atlas-panel .atl-lc-more{align-self:center;font-size:11.5px;font-weight:600;color:var(--text-muted);background:var(--input-bg);border:1px solid var(--glass-border,rgba(128,128,128,.28));border-radius:11px;padding:5px 11px;cursor:pointer;transition:color .15s,border-color .15s;}'
+      +'#atlas-panel .atl-lc-more:hover{color:var(--text-main);border-color:var(--primary-color);}'
       /* ══ ⚠⚠⚠ (#R313) THE PROGRESS INDICATOR IS CHATGPT'S SHIMMER, NOT THREE BOUNCING DOTS ═════
          「AtlasのThinkingとかSearchingとかのUI、ChatGPTと同じグラフィックにしてください。
            （実際にChatGPTのサイト見て、実装してください。）」
@@ -244,7 +321,15 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12.5px"],'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:12.8px"],'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:13px"],'
-      +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:14px"]{font-size:15.5px !important;}'   /* (#R158) desktop reply body is now 14px → keep mobile a touch larger */
+      /* ⚠⚠ (#R494) THE REPLY BODY IS NAMED, NOT SNIFFED. This list matched the reply body by the
+         SPELLING of an inline style — `[style*="font-size:14px"]` — so the mobile size lift held only
+         for as long as five call sites in js/atlas-console.js kept writing that exact substring, and
+         nothing anywhere would have failed if one of them had written `font-size: 14px`. The body is
+         `.atl-md` now and the selector says so. The `[style*=…]` entries above stay: they still catch
+         the meta/footer builders that have not been converted, and those are the ones this rule was
+         always guessing at. */
+      +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a [style*="font-size:14px"],'
+      +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-b.a .atl-md{font-size:15.5px !important;}'   /* (#R158) desktop reply body is 14px → keep mobile a touch larger */
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-sub{font-size:12.5px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-ex{gap:7px;padding:6px 11px 2px;}'
       +'body:not(.ws-mode) #atlas-panel.atl-tab .atl-chip{font-size:12.5px;padding:8px 12px;}'

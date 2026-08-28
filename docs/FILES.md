@@ -244,6 +244,15 @@ atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラ
 atlas-reply.js                    Atlas — 返答の描画（安全な markdown・コード／数式・GFM 表・出典カード）
 atlas-annotate.js                 Atlas — 返答本文の小注釈（単位換算・UTC→現地時刻・略語34語の展開）と、
                                   ホバー／タップで出る一枚。印は mdMini が返す HTML 文字列に入る
+atlas-markdown.js                 Atlas — 返答の**ブロック構造の解析器**（#R494）。行 → ブロック木 →
+                                  semantic DOM（`<p>`／`<h1>`〜`<h6>`／`<ul>`／`<ol>`／`<li>`／
+                                  `<blockquote>`／`<hr>`）。入れ子リスト・番号付きリスト・項目内の
+                                  複数段落・複数行引用・エスケープされた markdown を扱う。
+                                  ⚠ 余白は**吐かない**——CSS（`js/atlas-styles.js`）が決める
+atlas-highlight.js                Atlas — コードブロックのシンタックスハイライト（#R494）。外部依存なしの
+                                  8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋
+                                  未知言語のフォールバック。出力は必ず esc 済み。配色は
+                                  `HIGHLIGHT_CSS`（light / dark の 2 組）
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）

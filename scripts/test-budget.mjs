@@ -140,7 +140,13 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    bound, 5. A saving elsewhere was not looked for — #R455 measured this table under-charging by
    69 s on tests/smoke.spec.js alone, and a table that under-charges is not one to take a saving
    from. */
-const BUDGET_S = 30;                    /* core: 0.5 min — measured 30 s over 6 files (#R466) */
+/* ⚠⚠ (#R494) THE CORE CEILING FELL — 30 -> 28 — AND THE FALL IS NOT THIS ROUND'S SAVING. It is the
+   shape #R416, #R435 and #R439 each recorded: tests/r494.spec.js is `currentRoundSpec()` now, so
+   tests/r466.spec.js loses that free pass and, at 5 s against CORE_MAX_S = 1, leaves the gate. The
+   gate is the five always-on suites plus this round's spec — smoke 8, monitors 10, security 4,
+   internal-qa 2, r157 1, r494 3 = 28 — measured, not chosen. The ceiling follows the floor down
+   whoever made it true, and this round claims none of it. */
+const BUDGET_S = 28;                    /* core: 0.5 min — measured 28 s over 6 files (#R494) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
@@ -199,10 +205,12 @@ const BUDGET_S = 30;                    /* core: 0.5 min — measured 30 s over 
    the suite reads pixels back out of a capture; the node checks drive the whole ledger against a
    fake renderer, which is exactly the thing that cannot answer this one question. Measured, in the
    junit the run wrote: testcase time 1.594 s (the 93 s wall clock is the webServer build, which
-   every spec shares). ENTERED AS 2 in tests/durations.json, and the ceiling moves by that 2.
-   ⚠ THE CORE TIER DID NOT MOVE: `currentRoundSpec()` makes this round's spec the gate's and lets
-   tests/r466.spec.js (5 s) out of it, so the gate went 30 s -> 27 s. */
-const TOTAL_BUDGET_S = 4632;            /* 77.3 min — 4,630 (#R474) + 2 (#R493: tests/r493.spec.js, the only reader of captured pixels) */
+   every spec shares). ENTERED AS 2 in tests/durations.json, and the ceiling moves by that 2. */
+/* ⚠⚠ (#R494) …AND AGAIN, BY ITS OWN MEASURED AMOUNT — 4,632 -> 4,635 (+3 s). #R405, #R410, #R416,
+   #R424, #R428, #R435, #R439, #R455 and #R493 are the precedents for saying so plainly rather than
+   quietly. ⚠ THE CORE CEILING FELL WITH IT, 30 -> 28, and that fall is not this round's saving
+   either — see the note beside BUDGET_S. */
+const TOTAL_BUDGET_S = 4635;            /* 77.3 min — 4,632 (#R493) + 3 (#R494: tests/r494.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum
@@ -271,6 +279,7 @@ const TOTAL_BUDGET_S = 4632;            /* 77.3 min — 4,630 (#R474) + 2 (#R493
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['#R494', 4635, "⚠⚠ THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT — 4,632 -> 4,635 (+3 s) — AND THE CORE CEILING FELL BY TWO (30 -> 28), WHICH IS NOT THIS ROUND'S SAVING. Saying both plainly, because this file's own message is «never raise it» and #R388 / #R405 / #R416 / #R424 / #R428 / #R435 / #R439 / #R455 are the precedents for saying so. THE CORE FALL IS THE SHAPE #R416 AND #R435 RECORDED: tests/r494.spec.js is `currentRoundSpec()`, so tests/r466.spec.js loses that free pass and, at 5 s against CORE_MAX_S = 1, leaves the gate — smoke 8, monitors 10, security 4, internal-qa 2, r157 1, r494 3 = 28, measured rather than chosen. ⚠ THE 3 s IS THE SPEC'S OWN MEASUREMENT, taken the way #R416 / #R428 / #R435 / #R439 / #R455 took theirs: warm server, one worker, worker-scoped page, the reporter's own duration for the TEST BODY, summed over the file's five tests — 1,049 / 1,173 / 1,480 / 2,192 ms over four consecutive runs, upper bound 2,192, entered at the conservative 3. The tool that writes this table (`shard-plan --update`, which rounds each testcase before summing) would have written 1 from every one of those four runs; 3 is deliberately the expensive reading. ⚠ AND A SAVING WAS LOOKED FOR, MEASURED, AND DECLINED — twice. tests/r159.spec.js, whose #1 this round could have deleted outright (it asserts on an mdMini STRING and needs no browser; tests/r494-checks ⑥ now holds the same rule in node), measures 0.031 s for that test and 6 s for the file against an entry of 5: the test is free and the FILE is stale-LOW, so deleting a test there would have bought nothing and claiming a second from the entry would have been arithmetic on a table that under-charges. That is the third measurement in this ledger agreeing with #R384, #R388, #R439 and #R455 that this corpus under-charges, and #R322's rule forbids taking a saving out of it. ⚠ AND IT WAS NOT PAID OUT OF THE SPEC EITHER — the spec is FIVE tests on ONE boot with no fixed sleeps, and the payload in #3 was already cut from 400 to 120 characters when that turned out not to be where the time was. ⚠ WHAT THE SPEC BUYS IS THE ONE CLAIM THIS ROUND MAKES THAT NO SOURCE-SHAPE GATE CAN REACH. #R232's defect was that a heading was spaced TWICE — its own margin plus the paragraph spacer the renderer emitted on each side of it, 2.05em + 1.5em — and #R232's fix was a POST-PASS that deleted the spacer element from the finished HTML. Its test asserted the TEXT OF THAT POST-PASS, which proves a regex is present and says nothing about the gap. #R494 deletes both the spacer and the post-pass: the gap is a `<p>`'s bottom margin against an `<h2>`'s top margin, and adjacent margins COLLAPSE. Only a browser can confirm that they did, and #1 does it by reading `getBoundingClientRect()` and asserting the gap is the MAX of the two margins and strictly less than their SUM — an assertion that fails if collapsing ever stops happening. The other four are the same kind: computed `list-style-type` and a measured indent for the nested list (a `<div>` with a `•` had no notion of either), the `white-space` and `scrollWidth` a Wrap toggle actually changes, and the six source cards that were being dropped silently by `slice(0,6)` now revealed by their chip."],
   ['#R493', 4632, "⚠⚠ THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT — 4,630 -> 4,632 (+2 s) — AND THE CORE "
     + "CEILING DID NOT MOVE AT ALL. Saying both plainly, because this file's own message is «never raise it»; "
     + "#R451 (+2), #R410 (+59) and #R405 (+7) are the precedents. The round gives Atlas eyes (view.inspect): it "

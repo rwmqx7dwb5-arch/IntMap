@@ -49,7 +49,8 @@ test('R152 #3 Atlas typography — size + spacing hierarchy, NO fabricated headi
   // (#R158) hierarchy strengthened (bigger jumps + stronger neutral divider) — still no colour, no fabricated headings
   assert.match(html, /font-size:1\.9em;letter-spacing:\.012em/, 'h1 (1.9em, R158)');
   assert.match(html, /font-size:1\.56em;line-height:1\.25;letter-spacing:\.006em/, 'h2 (1.56em, R158)');
-  assert.match(html, /<div (?:class="atl-gap" )?style="height:1\.5em"><\/div>/, 'generous paragraph gap (1.5em, R158)');
+  /* (#R494) the same 1.5em rhythm, declared once on the paragraph instead of emitted as an empty div */
+  assert.match(html, /\.atl-p\{margin:0 0 1\.5em;/, 'generous paragraph gap (1.5em, R158)');
 });
 
 test('R152 #4 Atlas sources — broadened blocklist (not medium/substack), relevance gate, honest relabel', () => {

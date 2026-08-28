@@ -46,7 +46,14 @@ test('R159 #1 Atlas markdown renders with no bold and no divider line', async ()
   // (2) no horizontal divider line (the old "## " top-rule is removed)
   expect(out, 'no divider hairline').not.toContain('border-top');
   // headings still exist, differentiated by SIZE (semibold, not bold)
-  expect(out).toContain('font-weight:600');
+  /* ⚠ (#R494) THE WEIGHT MOVED OUT OF THE MARKUP AND INTO CSS, so asking the HTML string for
+     `font-weight:600` would now be asking the wrong document. The heading is a real <h2>/<h3>/<h1>
+     carrying `atl-h`, and the weight is asserted where it is declared — see tests/r494-checks ⑥
+     and the computed-style read in tests/r156.spec.js #2. */
+  expect(out).toContain('<h2 class="atl-h atl-h2">');
+  expect(out).toContain('<h3 class="atl-h atl-h3">');
+  expect(out).toContain('<h1 class="atl-h atl-h1">');
+  expect(out, 'no inline font-weight is emitted at all').not.toContain('font-weight');
   expect(out).toContain('Section Heading');
 });
 
