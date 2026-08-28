@@ -2,12 +2,12 @@
  *  #R257 — the standing instructions live in the repository, and carry no secret
  * ----------------------------------------------------------------------------
  *  Until this round the operating rules were pasted into chat by hand at the top
- *  of every session ("IntMap 定例指示"). They now live in CLAUDE.md, which Claude
+ *  of every session ("IntMap 定例指示"). They now live in AGENTS.md, which Claude
  *  Code loads automatically, so the first message is the task alone.
  *
  *  Two things can silently undo that, and each has a test here:
  *
- *    · a later round trims CLAUDE.md and a load-bearing rule quietly disappears —
+ *    · a later round trims AGENTS.md and a load-bearing rule quietly disappears —
  *      nobody notices, because nothing was ever asserting it was there;
  *    · a later round copies the account credentials out of the untracked
  *      CLAUDE.local.md and into a tracked file. **This repository is PUBLIC.**
@@ -24,25 +24,25 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 const at = (p) => new URL('../' + p, import.meta.url);
 const read = (p) => readFileSync(at(p), 'utf8');
 
-/* ── ① CLAUDE.md exists and is the thing Claude Code actually auto-loads ─────────────────────── */
-test('#R257 ① CLAUDE.md exists at the repository root', () => {
-  assert.ok(existsSync(at('CLAUDE.md')),
-    'CLAUDE.md is gone — every session is back to needing the instructions pasted by hand');
-  const md = read('CLAUDE.md');
+/* ── ① AGENTS.md exists and is the thing Claude Code actually auto-loads ─────────────────────── */
+test('#R257 ① AGENTS.md exists at the repository root', () => {
+  assert.ok(existsSync(at('AGENTS.md')),
+    'AGENTS.md is gone — every session is back to needing the instructions pasted by hand');
+  const md = read('AGENTS.md');
   assert.ok(md.length > 3000,
-    `CLAUDE.md is ${md.length} bytes — it has been trimmed to a stub`);
+    `AGENTS.md is ${md.length} bytes — it has been trimmed to a stub`);
 });
 
 /* ── ② every load-bearing rule of the old 定例指示 survived the move ─────────────────────────── */
-test('#R257 ② CLAUDE.md still carries each standing rule', () => {
-  const md = read('CLAUDE.md');
+test('#R257 ② AGENTS.md still carries each standing rule', () => {
+  const md = read('AGENTS.md');
   /* Each entry is [what the rule is, a string that can only be there if the rule is].
      They are quoted from the instructions the user maintained by hand for 250+ rounds. */
   const rules = [
     ['着手前の確認',          '着手前に必ず確認するもの'],
     ['再現してから根本原因',  '根本原因'],
     /* ⚠ (#R473) この行の needle は書き換わった。利用者が方針を変え、削除・縮小は
-       「提案 → 確認 → 実行」になったので、CLAUDE.md §3 の 1 はもう「してはならない」で
+       「提案 → 確認 → 実行」になったので、AGENTS.md §3 の 1 はもう「してはならない」で
        終わっていない。**規則が消えたのではなく形が変わった**ので、needle も substance を
        追う——⑴ 無断の削除は今も禁止 ⑵ 確認を取ってから行う、の両方が在ること。
        3文書が揃っているかは check:docs の `shrink-policy` が別に見ている。 */
@@ -68,7 +68,11 @@ test('#R257 ② CLAUDE.md still carries each standing rule', () => {
     ['ユーザー依頼は最小限',  '2FA'],
     ['推測の禁止',            '推測・Guess・独自解釈'],
     ['言い訳語の禁止',        '最も自然なのは'],
-    ['質問は質問機能で',      'AskUserQuestion'],
+    /* ⚠ (#R503) この needle も書き換わった。`AskUserQuestion` は **Claude Code の道具の名前**で、
+       Codex にその道具は無い（あちらは「質問だけを本文にして turn を終える」）。恒久指示から
+       製品固有の綴りが消えたのであって、**規則が消えたのではない**——だから needle は規則の側を
+       追い、道具の名前のほうは下の ⑦ が製品固有ファイルに残っていることを確かめる。 */
+    ['質問は質問機能で',      '質問は必ず質問用の機能で行う'],
     ['ドキュメント最新化',    '古い情報を放置しない'],
     ['DEV-NOTES に R### 追加','R###'],
     ['日本語で報告',          '日本語'],
@@ -78,13 +82,13 @@ test('#R257 ② CLAUDE.md still carries each standing rule', () => {
   ];
   for (const [name, needle] of rules) {
     assert.ok(md.includes(needle),
-      `CLAUDE.md lost the rule 「${name}」 (looked for ${JSON.stringify(needle)})`);
+      `AGENTS.md lost the rule 「${name}」 (looked for ${JSON.stringify(needle)})`);
   }
 });
 
 /* ── ③ the project facts the user used to paste are all there ───────────────────────────────── */
-test('#R257 ③ CLAUDE.md carries the project information block', () => {
-  const md = read('CLAUDE.md');
+test('#R257 ③ AGENTS.md carries the project information block', () => {
+  const md = read('AGENTS.md');
   for (const needle of [
     'https://rwmqx7dwb5-arch.github.io/IntMap/',        // production
     'https://github.com/rwmqx7dwb5-arch/IntMap',        // repo
@@ -100,13 +104,13 @@ test('#R257 ③ CLAUDE.md carries the project information block', () => {
     'donate.stripe.com/8x29AM9Qa2se7JYetA5gc00',        // Stripe JA
     'CLAUDE.local.md',                                  // where the credentials went
   ]) {
-    assert.ok(md.includes(needle), `CLAUDE.md lost the project fact ${JSON.stringify(needle)}`);
+    assert.ok(md.includes(needle), `AGENTS.md lost the project fact ${JSON.stringify(needle)}`);
   }
 });
 
 /* ── ④ the /rename rule is gone and stays gone ──────────────────────────────────────────────── */
 test('#R257 ④ no session-rename instruction — the title is generated, not typed', () => {
-  const md = read('CLAUDE.md');
+  const md = read('AGENTS.md');
   /* The old rule 14 told Claude to run `/rename <name>` at session start. That command does not
      exist in the Desktop app, so it was an instruction that could only ever be failed. Claude Code
      titles an unnamed session from its first prompt instead. */
@@ -132,7 +136,7 @@ test('#R257 ⑤ CLAUDE.local.md is ignored, and no tracked doc carries a credent
     ? readdirSync(at('docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f)
     : [];
   const scanned = [...roots, ...docs].filter((f) => f !== 'CLAUDE.local.md');
-  assert.ok(scanned.includes('CLAUDE.md'), 'the scan did not reach CLAUDE.md');
+  assert.ok(scanned.includes('AGENTS.md'), 'the scan did not reach AGENTS.md');
   assert.ok(scanned.length >= 10, `only ${scanned.length} markdown files were scanned — the sweep is not reaching the tree`);
 
   for (const f of scanned) {
@@ -144,14 +148,29 @@ test('#R257 ⑤ CLAUDE.local.md is ignored, and no tracked doc carries a credent
   }
 });
 
-/* ── ⑥ the other docs point at CLAUDE.md, so it cannot be forgotten ─────────────────────────── */
-test('#R257 ⑥ CONSTITUTION.md and Architecture.md both register CLAUDE.md', () => {
+/* ── ⑥ the other docs point at AGENTS.md, so it cannot be forgotten ─────────────────────────── */
+test('#R257 ⑥ CONSTITUTION.md and Architecture.md both register AGENTS.md', () => {
   const con = read('CONSTITUTION.md');
-  assert.ok(con.includes('CLAUDE.md'),
-    'CONSTITUTION.md §6 no longer lists CLAUDE.md — the two top-level rule files have drifted apart');
+  assert.ok(con.includes('AGENTS.md'),
+    'CONSTITUTION.md §6 no longer lists AGENTS.md — the two top-level rule files have drifted apart');
   assert.ok(con.includes('CLAUDE.local.md'),
     'CONSTITUTION.md no longer records where the credentials live');
   const arch = read('Architecture.md');
-  assert.ok(arch.includes('CLAUDE.md'),
-    'Architecture.md §3 (ファイル構成) no longer lists CLAUDE.md');
+  assert.ok(arch.includes('AGENTS.md'),
+    'Architecture.md §3 (ファイル構成) no longer lists AGENTS.md');
+});
+
+/* ── ⑦ the product-specific half kept what the neutral half had to give up ────────────────────
+   (#R503) §8 of AGENTS.md used to name `AskUserQuestion` — a Claude Code tool that does not exist
+   in Codex. Making the standing instructions provider-neutral meant taking the tool name out, and
+   the failure mode of that move is silent: the RULE survives in AGENTS.md while the instruction a
+   Claude Code session can actually act on quietly disappears. So the needle did not vanish, it
+   MOVED, and this is the test that says where to. */
+test('#R257 ⑦ CLAUDE.md keeps the Claude Code spelling of the neutral rules', () => {
+  const claude = read('CLAUDE.md');
+  assert.ok(claude.includes('AskUserQuestion'),
+    'CLAUDE.md no longer names AskUserQuestion — AGENTS.md §8 stopped naming it too (it is not a Codex tool), '
+    + 'so no document tells a Claude Code session which tool to ask with');
+  assert.ok(/@AGENTS\.md/.test(claude),
+    'CLAUDE.md no longer imports AGENTS.md — a Claude Code session would start with none of the standing rules above');
 });

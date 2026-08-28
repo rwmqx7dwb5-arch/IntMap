@@ -346,7 +346,7 @@ test('R397 ⑪d: what was not measured is named, never defaulted', () => {
 });
 
 test('R397 ⑪e: the ranking is wired to the real feed, not to a fixture', () => {
-  /* ⚠ CLAUDE.md §3.3 forbids a placeholder implementation. A scorer nothing calls is one. */
+  /* ⚠ AGENTS.md §3.3 forbids a placeholder implementation. A scorer nothing calls is one. */
   const c = codeOnly(read('js/atlas-console.js'));
   assert.ok(/ANOM\.fromUsgs\(/.test(c), 'nothing converts the live USGS rows into ranking candidates');
   assert.ok(/ANOM\.rank\(/.test(c), 'the cross-domain ranking is never computed in the app');

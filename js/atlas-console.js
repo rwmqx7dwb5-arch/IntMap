@@ -3536,7 +3536,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           return R(ok, ok?note('✓ '+L('Night side of the Earth','地球の夜側','Nachtseite der Erde','Ночная сторона Земли','Lado nocturno de la Tierra')+': '+(want?'on':'off')+detail)+_featTogHtml('nightSide'):warn('⚠')); }
         /* (#R172) aircraft at their reported altitude, or flat on the map */
         /* ⚠ (#R313) the animated streaks inside the Wind layer, on their own switch — the reader put
-           a box for it in the wind legend and CLAUDE.md §3-3 says a feature reaches Atlas in the same
+           a box for it in the wind legend and AGENTS.md §3-3 says a feature reaches Atlas in the same
            change: dispatch here, the sentence in the SYS catalogue below, and the inline toggle in
            `_FEAT_TOG` so a reply can carry the switch. All three call window.Wind.setParticles — the
            legend box calls it too, so no two of them can hold different ideas of the state. */

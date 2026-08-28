@@ -54,7 +54,7 @@
   本番は `main` への merge ごとに **GitHub Actions がビルドして GitHub Pages へ配信**する
   （公開されるのは `dist/`。リポジトリのソースツリーではない）。手順は `docs/RELEASE.md`。
   ⚠ **OneDrive（`C:\Users\gyuuk\OneDrive\IntMap`）は原本の作業ディレクトリであって、
-  公開元ではない**——`CLAUDE.md` §6。merge のあとは原本も最新化する（§5 の最終工程）。
+  公開元ではない**——`AGENTS.md` §6。merge のあとは原本も最新化する（§5 の最終工程）。
 - **既定のレンダラは MapLibre GL。Cesium は設定で選べる第2エンジン**（設定 ▸ 地図の動作 ▸ 地図エンジン）。
   MapLibre is the default renderer; Cesium is a second engine the user can select. どちらも消さない。
   ⚠ レンダラの名を出してよいファイルは `js/geo-engine.js` だけ（`npm run check:engine`）。
@@ -168,12 +168,19 @@
 - `docs/FILES.md`（ファイル台帳）/ `docs/MAP-LAYERS.md`（レイヤー実装の詳細）… `Architecture.md` の
   §3・§7 の本体。節番号は Architecture 側と同じにしてあるので `§3.x` / `§7.x` の参照はそのまま通る。
 - `CONSTITUTION.md`（本ファイル）… 標準指示。変わるのはユーザーが方針を変えたときだけ。
-- `CLAUDE.md` … (#R257) **Claude Code が毎セッション自動で読む恒久指示**（作業の進め方・ワークフロー・
+- `AGENTS.md` … (#R257) **毎セッション自動で読む恒久指示**（作業の進め方・ワークフロー・
   確認要件・報告要件・プロジェクト情報）。ユーザーが毎回チャットに貼っていた「IntMap 定例指示」が
-  ここへ移り、**貼る必要が無くなった**。本ファイルと**同格**——`CLAUDE.md`＝「どう働くか」、
+  ここへ移り、**貼る必要が無くなった**。本ファイルと**同格**——`AGENTS.md`＝「どう働くか」、
   `CONSTITUTION.md`＝「何を守るか」。⚠ **秘密情報を書いてはならない**（このリポジトリは public）。
   (#R260) §11 に**作業終了処理**（commit / push → **USB への完全ミラーと検証**）を追加。
-  ⚠ **頻度・手順の正本は `CLAUDE.md` §11 だけ**。ここに書き写すと二重になり、片方だけ古くなる。
+  ⚠ **頻度・手順の正本は `AGENTS.md` §11 だけ**。ここに書き写すと二重になり、片方だけ古くなる。
+  (#R503) **名前が `CLAUDE.md` から `AGENTS.md` になったのは、読み手が 1 つではなくなったから。**
+  Codex は `AGENTS.md` を自分で読み、Claude Code は `CLAUDE.md` の `@AGENTS.md` から読む。
+  ⚠ **恒久指示の 2 つ目の写しを作らない**——製品固有の作法だけを `CLAUDE.md`（Claude Code）と
+  `.codex/config.toml`（Codex）に置き、配線図は `docs/AGENT-SETUP.md`。
+  ⚠ **`AGENTS.md` には 32,768 バイトの天井がある**（Codex は超えた分を無言で捨てる）。
+- `CLAUDE.md` … (#R503) Claude Code 固有の作法だけ。`AGENTS.md` と `.agents/rules/*.md` を
+  import する。**ここに両製品で通じる規則を書いたら、その時点で正本が 2 つになる。**
 - `CLAUDE.local.md` … (#R257) 同じ機構のローカル上書き。**追跡対象外**（`.gitignore` ＋
   `.git/info/exclude`）。資格情報など公開できない情報だけを置く。
 - 出典・プライバシーポリシー・利用規約は**常に現状に即した正確な情報**に保つ。

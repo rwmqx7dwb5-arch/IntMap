@@ -96,7 +96,7 @@ GVP の WFS（`webservices.volcano.si.edu`）は 6 つの feature type を出す
 `js/volcano-intel.js` の `USGS_TO_GVP` が 3 つ目を結ぶ。**気象庁について `JMA_TO_GVP` がやっているのと
 同じ形の結合表**で、機関自身の番号づけとスミソニアンの番号づけを突き合わせている。
 ⚠ **`scripts/build-volcanoes.mjs` はこの表を `js/volcano-intel.js` から読み出す**——
-2 つ目の写しを持たせない（`CLAUDE.md` §9）。
+2 つ目の写しを持たせない（`AGENTS.md` §9）。
 
 ⚠ **AVO は Atka を 2 単位で監視している**（複合火山 ak17 と Korovin ak171）。地図の点は 1 つなので、
 **同じ GVP 番号に落ちた行が複数あるときは、いちばん重いものを答えにする**（同着なら新しいほう）。

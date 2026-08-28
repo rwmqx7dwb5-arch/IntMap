@@ -290,7 +290,7 @@ test('R280 ⑦ the archive boundary moved without losing a round', () => {
 
 /* ── the USB procedure is implemented, not described twice ───────────────────────────────── */
 test('R280 ⑧ the backup procedure lives in one place and keeps its invariants', () => {
-  assert.ok(has('scripts/backup-usb.ps1'), 'scripts/backup-usb.ps1 is gone — CLAUDE.md §11 points at nothing');
+  assert.ok(has('scripts/backup-usb.ps1'), 'scripts/backup-usb.ps1 is gone — AGENTS.md §11 points at nothing');
   const ps = rd('scripts/backup-usb.ps1');
   /* the properties that must survive any rewrite of the script */
   assert.match(ps, /DriveType\s*=\s*2/, 'the removable-only guard is gone — a mirror could target the system disk');
@@ -301,11 +301,11 @@ test('R280 ⑧ the backup procedure lives in one place and keeps its invariants'
   assert.ok(/master-sync\.mjs[\s\S]{0,80}--check/.test(ps), 'the script no longer refuses a master that is behind origin/main');
   assert.match(ps, /AMBIGUOUS/, 'the refuse-to-guess path is gone');
   assert.match(ps, /RESULT /, 'the machine-readable result line is gone');
-  /* CLAUDE.md keeps WHEN, and stays the only place that states the frequency */
-  const cm = rd('CLAUDE.md');
-  assert.match(cm, /scripts\/backup-usb\.ps1/, 'CLAUDE.md no longer points at the implementation');
-  assert.match(cm, /作業のたびに毎回/, 'CLAUDE.md lost the frequency rule it owns');
-  assert.ok(!/robocopy/i.test(cm), 'CLAUDE.md is describing the mechanism again — that is the script’s job');
+  /* AGENTS.md keeps WHEN, and stays the only place that states the frequency */
+  const cm = rd('AGENTS.md');
+  assert.match(cm, /scripts\/backup-usb\.ps1/, 'AGENTS.md no longer points at the implementation');
+  assert.match(cm, /作業のたびに毎回/, 'AGENTS.md lost the frequency rule it owns');
+  assert.ok(!/robocopy/i.test(cm), 'AGENTS.md is describing the mechanism again — that is the script’s job');
 });
 
 /* ── the standalone pages are COPIED, so their js/ and css/ references are not bundled ───── */

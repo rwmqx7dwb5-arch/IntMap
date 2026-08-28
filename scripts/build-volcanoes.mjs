@@ -141,7 +141,7 @@ async function hans(url, key) {
 /* ⚠ THE CORRESPONDENCE IS NOT WRITTEN TWICE. js/volcano-intel.js holds USGS_TO_GVP because the
    RUNNING map needs it — a status has to land on the right dot — and this build needs the same
    answer to know which monitored numbers are already covered. It is read out of that file rather
-   than copied, so the two can never drift apart (CLAUDE.md §9). */
+   than copied, so the two can never drift apart (AGENTS.md §9). */
 function usgsToGvp() {
   const src = fs.readFileSync(path.join(ROOT, 'js', 'volcano-intel.js'), 'utf8');
   const m = /const\s+USGS_TO_GVP\s*=\s*\{([\s\S]*?)\}/.exec(src);

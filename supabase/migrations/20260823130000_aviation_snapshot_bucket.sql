@@ -2,7 +2,7 @@
 --  #R341 — WHERE THE SHARED AIRCRAFT SNAPSHOT LIVES
 -- ----------------------------------------------------------------------------
 --  The whole point of supabase/functions/aviation-feed is that ONE upstream read serves every
---  IntMap user (CLAUDE.md §5.1). The first version kept the snapshot in the Edge Function's own
+--  IntMap user (AGENTS.md §5.1). The first version kept the snapshot in the Edge Function's own
 --  isolate memory, and MEASURED AGAINST THE DEPLOYED FUNCTION that turned out not to hold:
 --
 --      three identical viewport requests, 15 s TTL, cache expected to serve two of them
