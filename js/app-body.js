@@ -149,7 +149,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      desktop one early-returns when the crosshair owns it, and the crosshair early-returns when it
      does not). `_imTouchPrimary` keeps its own name for the same reason — it answers "click or
      tap", which is a question about the POINTER, not about the GPU. */
-  const _imPhoneClass=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }catch(_){ return isMobile(); } };
+  /* ⚠⚠ (#R499) A PHONE WITH A STYLUS IS STILL A PHONE. `!(any-pointer:fine)` was meant to keep a
+     touchscreen LAPTOP out, and `(pointer:coarse)` already does that (its primary pointer is the
+     mouse) — what it actually excluded was the phone with a fine pointer AS WELL: an S Pen out, a
+     Bluetooth mouse paired. Those took the DESKTOP budget on the hardware this list protects.
+     ⚠ The third term can only move devices INTO the phone budget, never out of one, and it asks
+     the DEVICE the way #R232 chose — `screen`, not the viewport, and the SMALLER of its two
+     dimensions, so a phone held sideways answers as it does upright. See DEV-NOTES #R499 §2. */
+  const _imPhoneClass=()=>{ try{ if(!window.matchMedia('(pointer:coarse)').matches) return false; if(!window.matchMedia('(any-pointer:fine)').matches) return true; const s=window.screen||{}, m=Math.min(+s.width||0,+s.height||0); return m>0&&m<=500; }catch(_){ return isMobile(); } };
   try{ window._imPhoneClass=_imPhoneClass; }catch(_){}   /* js/ modules that hold no HOST ask through this */
   /* (#R234) the elevation source — hosts, encoding and DEPTH — in one place three files can ask. */
   const _IM_DEM=makeDemSource();

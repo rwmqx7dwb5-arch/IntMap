@@ -71,14 +71,14 @@ window.IntMapModules.communityBoard=function(HOST){
           hoverComm=f.id;
           try{_LY().setFeatureState({source:'community-points',id:hoverComm},{hover:true});}catch(_){}
         }
-        const el=HOST.ensureMapTooltip(); el.style.display='block';
+        const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
         const p=f.properties;
         window.setMapTooltipHTML(el,`<div style="color:#34c759;font-weight:600;font-size:13px;">💬 ${IntMapSafe.html(p.title)}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);font-size:11px;">${IntMapSafe.html(p.body||'')}</div>`);   /* (#R138 SEC) community post title/body are user-generated → escape (stored XSS on pin hover) */
         HOST.positionTooltip(e.point);
       });
       _EV().onLayer('mouseleave','community-dots',()=>{
         if(hoverComm!=null){ try{_LY().setFeatureState({source:'community-points',id:hoverComm},{hover:false});}catch(_){} hoverComm=null; }
-        _GE().render.setCursor(''); if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
+        _GE().render.setCursor(''); if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
       });
       _EV().onLayer('click','community-dots',e=>{
         if(!e.features.length) return;

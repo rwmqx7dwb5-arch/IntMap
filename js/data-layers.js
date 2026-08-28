@@ -2206,11 +2206,11 @@ window.IntMapModules.dataLayers=function(HOST){
       GE().events.onLayer('mousemove',id+'-fill',e=>{
         if(!e.features.length) return;
         const s=countryStats[e.features[0].id]; if(!s) return;
-        const el=ensureMapTooltip(); el.style.display='block';
+        const el=ensureMapTooltip(); window.showMapTooltip(el);
         window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${meta.label()}: <b style="color:var(--text-main);">${meta.fmt(s)}</b></div>`);
         positionTooltip(e.point);
       });
-      GE().events.onLayer('mouseleave',id+'-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+      GE().events.onLayer('mouseleave',id+'-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
     }
     function addChoro(id){
       if(GE().layers.has(id+'-fill'))return;
@@ -2509,14 +2509,14 @@ window.IntMapModules.dataLayers=function(HOST){
       if(_natoHoverWired) return; _natoHoverWired=true;
       GE().events.onLayer('mousemove','nato-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; if(!s) return;
         const yr=NATO_JOIN[s.code], pct=defensePctGDP(s);
-        const el=ensureMapTooltip(); el.style.display='block';
+        const el=ensureMapTooltip(); window.showMapTooltip(el);
         window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
           `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined NATO','NATO加盟年','NATO-Beitritt','Вступление в НАТО','Ingreso en la OTAN')}: <b style="color:var(--text-main);">${yr||'—'}</b></div>`+
           `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense spending','国防費','Verteidigungsausgaben','Расходы на оборону','Gasto en defensa')}: <b style="color:var(--text-main);">${s.milSpend!=null?'$'+s.milSpend+'B (2023)':'—'}</b></div>`+
           `<div style="color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Defense (% GDP)','国防費 (対GDP)','Verteidigung (% BIP)','Оборона (% ВВП)','Defensa (% PIB)')}: <b style="color:var(--text-main);">${pct!=null?pct.toFixed(2)+'%':'—'}</b></div>`);
         positionTooltip(e.point);
       });
-      GE().events.onLayer('mouseleave','nato-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+      GE().events.onLayer('mouseleave','nato-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
     }
 
     /* (#R26 / EU) European Union members fill + accession-year time-travel control (mirrors NATO). Real
@@ -2600,12 +2600,12 @@ window.IntMapModules.dataLayers=function(HOST){
     function wireEuHover(){
       if(_euHoverWired) return; _euHoverWired=true;
       GE().events.onLayer('mousemove','eu-fill',e=>{ if(!e.features.length) return; const s=countryStats[e.features[0].id]; const code=e.features[0].id; if(!s) return;
-        const el=ensureMapTooltip(); el.style.display='block';
+        const el=ensureMapTooltip(); window.showMapTooltip(el);
         window.setMapTooltipHTML(el,`<div style="font-weight:600;font-size:14px;">${s.flag?s.flag+' ':''}${cName(s)}</div>`+
           `<div style="margin-top:5px;color:var(--text-muted);font-size:12px;">${window.IntMapLang.t(HOST.lang,'Joined EU','EU加盟年','EU-Beitritt','Вступление в ЕС','Ingreso en la UE')}: <b style="color:var(--text-main);">${EU_JOIN[code]||'—'}${EU_LEFT[code]?(' → '+EU_LEFT[code]+(window.IntMapLang.t(HOST.lang,' left',' 離脱',' ausgetreten',' вышла',' salió'))):''}</b></div>`);
         positionTooltip(e.point);
       });
-      GE().events.onLayer('mouseleave','eu-fill',()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+      GE().events.onLayer('mouseleave','eu-fill',()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
     }
 
     /* (#R94) NATO & EU enlargement follow the master spacetime clock: travel to a year → only members that
@@ -3693,16 +3693,39 @@ window.IntMapModules.dataLayers=function(HOST){
          bottom-left in ws-mode. Only offset past the sidebar when it is genuinely visible with a real width. */
       try{ if(!ws && document.body.classList.contains('sidebar-glass')){ const sb=document.querySelector('.sidebar'); if(sb && !sb.classList.contains('collapsed') && getComputedStyle(sb).display!=='none'){ const w=sb.getBoundingClientRect().width; if(w>1) leftBase=w+24; } } }catch(_){}
       const mobile = !ws && window.matchMedia && window.matchMedia('(max-width:768px)').matches;
+      /* ══ ⚠⚠⚠ (#R499) EVERY HEIGHT IS READ BEFORE THE FIRST POSITION IS WRITTEN ══════════════════
+         All three branches below were written as ONE loop that placed a legend and then measured it:
+             el.style.top = …; el.style.bottom='auto'; el.style.left=…; el.style.right='auto';
+             top += el.getBoundingClientRect().height + 8;      ← forced, by the four writes above it
+         so a stack of N legends cost N forced synchronous layouts, and this function is called from
+         **thirty-one** sites — every legend open, every legend close, every wind-legend re-render,
+         every `panel.open` (twice: `_registerLayerOpacity` ends with it and the panel calls it
+         again). MEASURED with scripts/mobile-trace.mjs --attribute on the phone profile, with the
+         weather and warning layers on: **5,724 of the 5,852 `getBoundingClientRect` calls in one
+         eight-second finger pan came from the `mobile` branch's single line** — 98 % of the input
+         path's layout questions, from a function about where a box sits.
+         Reading every height FIRST costs one layout flush for the whole stack instead of one per
+         legend, and the writes below are guarded, so a call that changes nothing writes nothing —
+         which leaves the layout clean and the NEXT call's reads cheap too.
+         ⚠ THE ARITHMETIC IS UNTOUCHED: same 30/64/140 origins, same +10/+8/+10 gaps, same
+         `data-grow-down` rule, same `gdKey`. The heights are the same heights, taken a moment
+         earlier — and nothing between the read and the write can change them, because the only
+         writes in between are the ones this function makes. */
+      const H=visible.map(el=>{ try{ return el.getBoundingClientRect().height; }catch(_){ return 0; } });
+      /* ⚠ the guard compares against the INLINE declaration, not a remembered copy: reading
+         `el.style.top` is a CSSOM read and costs no layout, and a remembered copy would go stale the
+         moment anything else touched the box (a drag restoring `cssText`, the dock, a theme rebuild). */
+      const put=(el,prop,v)=>{ try{ if(el.style[prop]===v) return; }catch(_){} el.style[prop]=v; };
       if(ws){
         /* (#R85) workspace mode: dock legends to the BOTTOM-LEFT of the Map window ("ワークスペースモードでレイヤーを
            オンにしたら、凡例は地図の左下あたりに") — stack upward, clearing the coordinate readout in the corner. */
         let bottom=30;
-        visible.forEach(el=>{ el.style.bottom=bottom+'px'; el.style.top='auto'; el.style.left='12px'; el.style.right='auto'; bottom += el.getBoundingClientRect().height+10; });
+        visible.forEach((el,i)=>{ put(el,'bottom',bottom+'px'); put(el,'top','auto'); put(el,'left','12px'); put(el,'right','auto'); bottom += H[i]+10; });
       } else if(mobile){
         /* (#R15d) Stack legends DOWNWARD from just below the search bar (top:64), left-aligned. The CSS
            default above is for the first paint; this keeps multiple open legends from overlapping. */
         let top=64;
-        visible.forEach(el=>{ el.style.top=top+'px'; el.style.bottom='auto'; el.style.left='6px'; el.style.right='auto'; top += el.getBoundingClientRect().height+8; });
+        visible.forEach((el,i)=>{ put(el,'top',top+'px'); put(el,'bottom','auto'); put(el,'left','6px'); put(el,'right','auto'); top += H[i]+8; });
       } else {
         let bottom=140;
         /* ══ ⚠ (#R244) A LEGEND MAY ASK TO GROW DOWNWARD ═════════════════════════════════════════════
@@ -3714,9 +3737,13 @@ window.IntMapModules.dataLayers=function(HOST){
            A legend that declares `data-grow-down` is placed by its TOP instead. The stack maths is
            unchanged — the same `bottom` cursor decides where it sits — so it lands in exactly the
            same place and only its GROWTH direction differs. */
-        const mcH=(()=>{ try{ const mc=document.getElementById('map-container'); return (mc&&mc.getBoundingClientRect().height)||window.innerHeight; }catch(_){ return window.innerHeight; } })();
-        visible.forEach((el,idx)=>{ el.style.left=leftBase+'px'; el.style.right='auto';
-          const h=el.getBoundingClientRect().height;
+        /* (#R499) the container's box comes from js/runtime.js §5's observer — it changes when the
+           WINDOW changes, and this function is called thirty-one times per session for other reasons. */
+        const mcH=(()=>{ try{ const mc=document.getElementById('map-container'); if(!mc) return window.innerHeight;
+          const R=window.IntMapRuntime; const r=(R&&R.box)?R.box(mc):mc.getBoundingClientRect();
+          return r.height||window.innerHeight; }catch(_){ return window.innerHeight; } })();
+        visible.forEach((el,idx)=>{ put(el,'left',leftBase+'px'); put(el,'right','auto');
+          const h=H[idx];
           if(el.dataset.growDown==='1'){
             /* ⚠ WRITING `top` IS NOT ENOUGH — `top = mcH − bottom − h` is the bottom-anchored place
                expressed as a top, so it still moves when `h` changes. Measured on the election
@@ -3728,9 +3755,9 @@ window.IntMapModules.dataLayers=function(HOST){
             const key=visible.length+':'+idx;
             let top=+el.dataset.gdTop;
             if(el.dataset.gdKey!==key||!isFinite(top)){ top=Math.max(8,mcH-bottom-h); el.dataset.gdKey=key; el.dataset.gdTop=String(top); }
-            el.style.top=top+'px'; el.style.bottom='auto';
+            put(el,'top',top+'px'); put(el,'bottom','auto');
           }
-          else { el.style.bottom=bottom+'px'; el.style.top='auto'; }
+          else { put(el,'bottom',bottom+'px'); put(el,'top','auto'); }
           bottom += h+10; });
       }
     }
@@ -3824,8 +3851,8 @@ window.IntMapModules.dataLayers=function(HOST){
         window.IntMapLazy.need('aircraftDetail').then(async()=>{
           const d=await _av2Detail(hex);
           if(!d) return;
-          if(openPlaneCard(d)){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
-          else { const el=ensureMapTooltip(); el.style.display='block';
+          if(openPlaneCard(d)){ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); }
+          else { const el=ensureMapTooltip(); window.showMapTooltip(el);
             window.setMapTooltipHTML(el,trafficTooltipHTML('planes',Object.assign({sel:1},d)));
             positionTooltip(e.point); }
         });
@@ -3851,7 +3878,7 @@ window.IntMapModules.dataLayers=function(HOST){
         _av2HoverHex=hex;
         const cached=_av2Cache.get(hex);
         const show=(rec)=>{ if(!rec||_av2HoverHex!==hex) return;
-          const t=ensureMapTooltip(); t.style.display='block';
+          const t=ensureMapTooltip(); window.showMapTooltip(t);
           window.setMapTooltipHTML(t,trafficTooltipHTML('planes',rec)); positionTooltip(e.point); };
         if(cached) show(cached); else _av2Detail(hex).then(show);
       });
@@ -5198,9 +5225,9 @@ window.IntMapModules.dataLayers=function(HOST){
         },paint:{'icon-opacity':opacities.ships}},beforeId);
       }
       /* Hover tooltip via shared map-tooltip — shows every available field + data freshness. */
-      GE().events.onLayer('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; window.setMapTooltipHTML(el,trafficTooltipHTML(id,f.properties)); positionTooltip(GE().coords.project(f.geometry.coordinates)); });
+      GE().events.onLayer('mouseenter','lyr-'+id,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer'; const f=e.features[0]; const el=ensureMapTooltip(); window.showMapTooltip(el); window.setMapTooltipHTML(el,trafficTooltipHTML(id,f.properties)); positionTooltip(GE().coords.project(f.geometry.coordinates)); });
       GE().events.onLayer('mousemove','lyr-'+id,(e)=>{ positionTooltip(e.point); });
-      GE().events.onLayer('mouseleave','lyr-'+id,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+      GE().events.onLayer('mouseleave','lyr-'+id,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
       /* (#R172) the lifted bodies answer the same hover — the aircraft is the same aircraft whichever way
          it is drawn, so the tooltip is the identical one (it is fed from the same ADS-B properties).
          (#R173) …and the same CLICK. Both representations, and the post under a lifted aircraft, select it
@@ -5208,9 +5235,9 @@ window.IntMapModules.dataLayers=function(HOST){
       if(id==='planes'){
         [PLANE3D_LYR,PLANE3D_POST].forEach(ly=>{
           GE().events.onLayer('mouseenter',ly,(e)=>{ if(!e.features.length)return; GE().render.canvas().style.cursor='pointer';
-            const f=e.features[0]; const el=ensureMapTooltip(); el.style.display='block'; window.setMapTooltipHTML(el,trafficTooltipHTML('planes',f.properties)); positionTooltip(e.point); });
+            const f=e.features[0]; const el=ensureMapTooltip(); window.showMapTooltip(el); window.setMapTooltipHTML(el,trafficTooltipHTML('planes',f.properties)); positionTooltip(e.point); });
           GE().events.onLayer('mousemove',ly,(e)=>{ positionTooltip(e.point); });
-          GE().events.onLayer('mouseleave',ly,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; });
+          GE().events.onLayer('mouseleave',ly,()=>{ GE().render.canvas().style.cursor=''; if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); });
         });
 
         /* The pick above, wired to the pointer: hovering a lifted aircraft shows the same tooltip and
@@ -5229,14 +5256,14 @@ window.IntMapModules.dataLayers=function(HOST){
           const _t=(typeof performance!=='undefined'&&performance.now)?performance.now():Date.now();
           if(_t-_pickAt<16) return; _pickAt=_t;
           const d=pickPlane(e.point);
-          if(d){ GE().render.canvas().style.cursor='pointer'; const el=ensureMapTooltip(); el.style.display='block';
+          if(d){ GE().render.canvas().style.cursor='pointer'; const el=ensureMapTooltip(); window.showMapTooltip(el);
             window.setMapTooltipHTML(el,trafficTooltipHTML('planes',{ type:d.type, sel:(d.icao24===selectedPlane)?1:0, callsign:d.callsign||'', icao24:d.icao24||'', reg:d.reg||'',
               acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel, heading:d.heading,
               vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) }));
             positionTooltip(e.point); _pickHover=true; }
           else if(_pickHover){ _pickHover=false; GE().render.canvas().style.cursor='';
             try{ if(GE().coords.queryRenderedFeatures(e.point,{layers:[PLANE3D_LYR,PLANE3D_POST].filter(l=>GE().layers.get(l))}).length) return; }catch(_){}
-            if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
+            if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); }
         }; GE().events.on('mousemove',_planesHover); }
         /* ONE click handler, deliberately. It began as two — a layer-scoped one for the renderer's own
            footprint hit and a map-level one for the pick — and each of them TOGGLED, so a click that
@@ -5278,8 +5305,8 @@ window.IntMapModules.dataLayers=function(HOST){
                either way, so a chunk that genuinely fails to arrive still lands on the pinned
                tooltip rather than turning the click into a no-op. */
             if(selectedPlane){ window.IntMapLazy.need('aircraftDetail').then(()=>{
-              if(openPlaneCard(d)){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }
-              else { const el=ensureMapTooltip(); el.style.display='block';
+              if(openPlaneCard(d)){ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); }
+              else { const el=ensureMapTooltip(); window.showMapTooltip(el);
                 window.setMapTooltipHTML(el,trafficTooltipHTML('planes',props||{ type:d.type, sel:1, callsign:d.callsign||'', icao24:d.icao24||'',
                   reg:d.reg||'', acType:d.acType||'', desc:d.desc||'', baroAlt:d.baroAlt, geoAlt:d.geoAlt, vel:d.vel,
                   heading:d.heading, vrate:d.vrate, squawk:d.squawk||'', onGround:!!d.onGround, lastContact:(d.lastContact||0) }));

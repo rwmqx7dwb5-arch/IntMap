@@ -365,7 +365,13 @@ window.IntMapModules.drawTool=function(HOST){
       const cv=GE().render.canvas(); cv.addEventListener('touchstart',onTouchStart,{passive:false}); cv.addEventListener('touchmove',onTouchMove,{passive:false}); cv.addEventListener('touchend',onTouchEnd,{passive:false}); }
     function unwire(){ if(!wired) return; wired=false; GE().events.off('click',onClick); GE().events.off('mousemove',onMove);
       const cv=GE().render.canvas(); cv.removeEventListener('touchstart',onTouchStart); cv.removeEventListener('touchmove',onTouchMove); cv.removeEventListener('touchend',onTouchEnd); }
-    function touchLL(tch){ const r=GE().render.canvas().getBoundingClientRect(); const pt=[tch.clientX-r.left,tch.clientY-r.top]; return {point:{x:pt[0],y:pt[1]}, lngLat:GE().coords.unproject(pt)}; }
+    /* (#R499) the canvas box comes from the observer (js/runtime.js §5), not from a layout read on
+       every touchmove of a stroke — the third of the five copies of that shape #R498 found the first
+       of. The offset it subtracts changes when the window changes; a finger does not move it. */
+    function touchLL(tch){ const cv=GE().render.canvas();
+      let r=null; try{ const R=window.IntMapRuntime; if(R&&R.box) r=R.box(cv); }catch(_){}
+      if(!r) r=cv.getBoundingClientRect();
+      const pt=[tch.clientX-r.left,tch.clientY-r.top]; return {point:{x:pt[0],y:pt[1]}, lngLat:GE().coords.unproject(pt)}; }
     function onTouchStart(e){ if(state==='off'||e.touches.length!==1) return; _touchTs=Date.now(); e.preventDefault(); hadTouchMove=false; if(state==='armed') startStroke(touchLL(e.touches[0]).lngLat); }
     function onTouchMove(e){ if(state!=='drawing'||e.touches.length!==1) return; _touchTs=Date.now(); e.preventDefault(); hadTouchMove=true; const o=touchLL(e.touches[0]); sample(o.point,o.lngLat); }
     /* (#R139) press-drag-release is the mobile gesture: a real trace (finger moved) finishes on lift; a bare TAP

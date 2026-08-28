@@ -283,15 +283,40 @@ window.IntMapModules.worldPacks=function(HOST){
          `_want` is this panel's own idea of whether it should be on screen; `claim()` restores it
          after re-registering, so re-declaring the opacity targets stays what it says it is. */
       let _want=false;
+      /* ══ ⚠⚠ (#R499) THE SAME PANEL, WRITTEN AGAIN, DOES NOT MOVE THE LEGEND COLUMN ═════════════
+         `open()` is the panel's ONLY renderer, and every automatic re-render goes through it —
+         a feed landing, a feed failing, a publish, a language change. It re-registers the legend's
+         opacity targets and re-tiles EVERY legend on the map, and `_registerLayerOpacity` ends with
+         a `tileLegends()` of its own, so one call is TWO full re-layouts of the legend column.
+         MEASURED (scripts/mobile-trace.mjs --attribute, phone profile, warnings on): those two lines
+         were **6,090 of the 6,224 `getBoundingClientRect` calls** in one eight-second finger pan.
+         The loop that produced them is fixed where it lives (the ⚠ box by RETRY_MS); this is the
+         second half of the same answer — the guard #R311 put on the map tooltip's markup, here.
+         ⚠ THE KEY NAMES EVERY INPUT THOSE TWO CALLS USE: the body, the layer ids (they arrive late
+         for raster families) and the localized names (a language change must re-register).
+         ⚠⚠ AND THE BODY IS STILL REWRITTEN, WHICH IS THE HALF THAT ALMOST GOT WRITTEN WRONG.
+         Returning early from an identical open() looks strictly better and is not: `wireControls`
+         attaches its handlers with `addEventListener`, and the only reason that has never leaked is
+         that `b.innerHTML=` REPLACED the buttons on every render. Hand the same nodes back and every
+         automatic re-render stacks another click listener on them. So the skip covers exactly the
+         two calls that cost the frame — re-registering identical opacity targets, and re-placing
+         legends that have not moved — and nothing a caller can observe. */
+      let _openKey=null, _openEl=null;
       const P={
         get el(){ return legend(); },
         open(bodyHTML){
-          let el=null;
+          let el=null, same=false, key=null;
           _want=true;
-          try{ el=window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){}
+          try{
+            const cur=legend();
+            key=String(bodyHTML)+' '+layers().join(',')+' '+names().join('');
+            same=!!(cur&&cur===_openEl&&key===_openKey&&cur.style.display==='block'&&cur.querySelector('.wp-body'));
+          }catch(_){ same=false; key=null; }
+          if(!same){ try{ el=window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){} }
           if(!el) el=legend();
           if(!el) return null;
-          el.style.display='block'; el.classList.add('wp-legend');
+          if(el.style.display!=='block') el.style.display='block';
+          el.classList.add('wp-legend');
           let b=el.querySelector('.wp-body');
           if(!b){ b=document.createElement('div'); b.className='wp-body';
             const h=el.querySelector('h4');
@@ -299,13 +324,15 @@ window.IntMapModules.worldPacks=function(HOST){
           b.innerHTML=bodyHTML;
           if(el.classList.contains('legend-collapsed')) b.style.display='none';
           try{ window._ensureLegendMinimize&&window._ensureLegendMinimize(el); }catch(_){}
-          try{ window._tileLegends&&window._tileLegends(); }catch(_){}
+          if(!same){ try{ window._tileLegends&&window._tileLegends(); }catch(_){} }
+          _openKey=key; _openEl=el;   /* (#R499) the element the key belongs to — a rebuilt legend is a new box */
           return b; },
         body(){ const el=legend(); return el?el.querySelector('.wp-body'):null; },
         /* re-register the ids once the layers actually exist (raster families build theirs late).
            ⚠ never a way to re-open a box the user closed — see the note on `_want` above. */
         claim(){ try{ window._registerLayerOpacity&&window._registerLayerOpacity(LID,names(),layers(),cbId); }catch(_){}
-          if(!_want){ const el=legend(); if(el) el.style.display='none';
+          if(!_want){ _openKey=null; _openEl=null;   /* (#R499) */
+            const el=legend(); if(el) el.style.display='none';
             try{ window._tileLegends&&window._tileLegends(); }catch(_){} } },
         /* ══ (#R270) THE YEAR, ON THE LAYER ══════════════════════════════════════════════════════
            「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — the trade,
@@ -316,7 +343,7 @@ window.IntMapModules.worldPacks=function(HOST){
            re-render of the body cannot take it away. */
         clockYear(opts){ const el=legend(); if(!el) return null;
           try{ return window._legendClockYear?window._legendClockYear(el,opts||{}):null; }catch(_){ return null; } },
-        hide(){ _want=false;
+        hide(){ _want=false; _openKey=null; _openEl=null;   /* (#R499) a closed panel is not "already showing this" */
           try{ window._hideGenericLegend&&window._hideGenericLegend(LID); }catch(_){}
           const el=legend(); if(el) el.style.display='none'; },
         shown(){ const el=legend(); return !!(el&&el.style.display!=='none'&&el.style.display!==''); } };
@@ -824,12 +851,12 @@ window.IntMapModules.worldPacks=function(HOST){
         ['wp-trade-arc','wp-trade-tip'].forEach(id=>{   /* (#R254) the pin layer it also hovered is gone; the arc carries the figure */
           GE().events.onLayer('mousemove',id,e=>{ if(!on||!e.features.length) return;
             const p=e.features[0].properties; if(!p||!p.vShort) return;
-            const el=HOST.ensureMapTooltip(); el.style.display='block';
+            const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
             window.setMapTooltipHTML(el,'<div style="font-weight:600;font-size:13px;">'+esc(p.name)+'</div>'
               +'<div style="margin-top:4px;font-size:15px;font-weight:700;color:var(--text-main);">'+esc(p.vShort)+'</div>'
               +'<div style="font-size:11px;color:var(--text-muted);">'+esc(p.vExact)+'</div>');
             HOST.positionTooltip(e.point); });
-          GE().events.onLayer('mouseleave',id,()=>{ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; }); }); }
+          GE().events.onLayer('mouseleave',id,()=>{ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); }); }); }
 
       function toggle(v){ on=v;
         if(!on){ panel.hide(); draw(); setVis([CHORO],false); return; }
@@ -2142,7 +2169,8 @@ window.IntMapModules.worldPacks=function(HOST){
         cold.sort((a,b)=>(maAsked.indexOf(a)>=0?0:1)-(maAsked.indexOf(b)>=0?0:1));
         const byAge=viewFirst(fresh.sort((a,b)=>(maAt[a]||0)-(maAt[b]||0)));
         const now=Date.now();
-        const take=cold.concat(byAge).filter(k=>!maPend[k]&&(!maAt[k]||now-maAt[k]>=MIN_AGE_MS))
+        const take=cold.concat(byAge).filter(k=>!maPend[k]&&(!maAt[k]||now-maAt[k]>=MIN_AGE_MS)
+            &&dueToAsk(maTry,maFail,k,now))   /* (#R499) a country that just failed is not due again yet */
           .slice(0,Math.max(0,n||MA_PER_TICK));
         take.forEach(k=>{ if(maAsked.indexOf(k)<0) maAsked.push(k); });
         return take; }
@@ -2173,10 +2201,54 @@ window.IntMapModules.worldPacks=function(HOST){
         /* (#R288) — see the note on maNext: in view first, then oldest */
         const byAge=viewFirst(hot.filter(k=>swicData[k]).sort((a,b)=>(swicAt[a]||0)-(swicAt[b]||0)));
         const now=Date.now();
-        return cold.concat(byAge).filter(k=>!swicPend[k]&&(!swicAt[k]||now-swicAt[k]>=MIN_AGE_MS))
+        return cold.concat(byAge).filter(k=>!swicPend[k]&&(!swicAt[k]||now-swicAt[k]>=MIN_AGE_MS)
+            &&dueToAsk(swicTry,swicFail,k,now))   /* (#R499) — see the ⚠ box by RETRY_MS */
           .slice(0,Math.max(0,n||SWIC_PER_TICK)); }
       /* (#R277) how many batches of each rotation are in flight, and which countries they hold */
       const maPend=Object.create(null), swicPend=Object.create(null);
+      /* ══ ⚠⚠⚠ (#R499) A READ THAT FAILED WAS NOT A READ THAT HAPPENED ═══════════════════════════
+         「スマホでの動作が重い」, and MEASURED with scripts/mobile-trace.mjs --attribute on the phone
+         profile: **3,045 `panel.open()` calls in one eight-second finger pan** with this layer on,
+         each of them re-registering the legend and re-tiling every legend on the map. Nothing was
+         asking for that. This is where they came from.
+
+         Both rotations order by a clock that only a SUCCESSFUL read writes — deliberately, and
+         #R277 wrote down why: 「`maAt` is only written when a read COMPLETES, because it is the age
+         the panel prints and an optimistic write would hide a stall.」 That is right about `maAt`.
+         What it left is that the same clock also answers 「is it time to ask again?」, and for a
+         country that has never answered there is no clock at all: `maNext`'s filter passes on
+         `!maAt[k]`, and `cold` (`!maData[k]`) is not age-filtered at all.
+         So when a read FAILS — a relay outage, a 429, a phone in a tunnel — nothing moves, and the
+         batch's own finaliser calls `pumpMA()` again. The next call returns THE SAME countries, they
+         fail the same way, and the loop turns at microtask speed for as long as the outage lasts:
+         a hot loop of network attempts, and — because every `.catch` ends with `showPanel()` — a
+         full panel re-render and legend re-tile on each turn. On a phone that is the whole main
+         thread, and the worse the connection the harder it spins.
+
+         → the ATTEMPT is timed separately from the SUCCESS. `maAt` / `swicAt` keep their meaning
+         exactly (the age the panel prints), and a second clock — written when the batch is ISSUED —
+         answers 「ask again yet?」, with a back-off that lengthens while a country keeps failing and
+         is cleared the moment it answers. An outage now costs one attempt per country per back-off
+         step instead of as many as the event loop can fit. */
+      const RETRY_MS=[2000,6000,20000,60000];
+      const maTry=Object.create(null), maFail=Object.create(null);
+      const swicTry=Object.create(null), swicFail=Object.create(null);
+      const dueToAsk=(tries,fails,k,now)=>{ const t=tries[k];
+        if(!t) return true;
+        const n=(fails[k]||0);
+        if(n<=0) return true;                        /* it answered: the age gate above is the only one */
+        return (now-t)>=RETRY_MS[Math.min(n-1,RETRY_MS.length-1)]; };
+      const markAsked=(tries,keys,now,at)=>{ const snap=Object.create(null);
+        keys.forEach(k=>{ tries[k]=now; snap[k]=(at&&at[k])||0; }); return snap; };
+      /* a batch answers per country: the ones whose SUCCESS clock MOVED have their back-off cleared,
+         and the rest count one more failure.
+         ⚠ 「does it hold data」 is the wrong question, and it was the first thing written here. A
+         country read successfully a minute ago still holds data when today's read fails — clearing
+         its back-off on that would leave exactly the loop this exists to stop, for every WARM
+         country (the `MIN_AGE_MS` gate has already expired for them). The success clock is the only
+         thing that says whether THIS read arrived. */
+      const markDone=(fails,keys,at,snap)=>{ keys.forEach(k=>{
+        if(((at&&at[k])||0)>((snap&&snap[k])||0)) fails[k]=0; else fails[k]=(fails[k]||0)+1; }); };
       let swicMetaBusy=false;
       let bomRec=null, hkoRec=null;
       /* the loaders that are NOT awaited with the others still put shapes on the map, so the
@@ -4889,17 +4961,19 @@ window.IntMapModules.worldPacks=function(HOST){
         while(maBusy<MA_CALLS){
           const b=maNext(MA_PER_TICK); if(!b.length) break;
           maBusy++; b.forEach(k=>{ maPend[k]=1; });
+          const maSnap=markAsked(maTry,b,Date.now(),maAt);   /* (#R499) the attempt is timed here — see the ⚠ box by RETRY_MS */
           loadMA(b).then(()=>{ feedOK('meteoalarm'); if(on) publish(); })
             .catch(e=>{ FEED_STATE.meteoalarm='error'; console.warn('MeteoAlarm',e); if(on&&panel.shown()) showPanel(); })
-            .then(()=>{ maBusy--; b.forEach(k=>{ delete maPend[k]; }); pumpMA(); }); } }
+            .then(()=>{ maBusy--; b.forEach(k=>{ delete maPend[k]; }); markDone(maFail,b,maAt,maSnap); pumpMA(); }); } }
       function pumpSWIC(){ if(!on||!swicMeta.at) return;
         const SWIC_CALLS=swicCold()?COLD_CALLS:SWIC_SLOTS;
         while(swicBusy<SWIC_CALLS){
           const b=swicNext(SWIC_PER_TICK); if(!b.length) break;
           swicBusy++; b.forEach(k=>{ swicPend[k]=1; });
+          const swSnap=markAsked(swicTry,b,Date.now(),swicAt);   /* (#R499) — see the ⚠ box by RETRY_MS */
           loadSWIC(b).then(()=>{ feedOK('swic'); if(on){ publish(); paintCountries(); } })
             .catch(e=>{ FEED_STATE.swic='error'; console.warn('WMO SWIC',e); if(on&&panel.shown()) showPanel(); })
-            .then(()=>{ swicBusy--; b.forEach(k=>{ delete swicPend[k]; }); pumpSWIC(); }); } }
+            .then(()=>{ swicBusy--; b.forEach(k=>{ delete swicPend[k]; }); markDone(swicFail,b,swicAt,swSnap); pumpSWIC(); }); } }
 
       async function refresh(){ if(busy) return; busy=true;
         FEED_KEYS.forEach(k=>{ if(FEED_STATE[k]!=='ok') FEED_STATE[k]='loading'; });

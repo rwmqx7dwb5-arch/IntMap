@@ -877,7 +877,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       const el=window.ensureMapTooltip?window.ensureMapTooltip():null; if(!el) return;
       if(id==null){ if(el.dataset.owner==='sats'){ el.style.display='none'; el.dataset.owner=''; } return; }
       const f=get(id); if(!f) return;
-      el.dataset.owner='sats'; el.style.display='block'; window.setMapTooltipHTML(el,tooltipHTML(f));
+      el.dataset.owner='sats'; window.showMapTooltip(el); window.setMapTooltipHTML(el,tooltipHTML(f));
       try{ window.positionTooltip&&window.positionTooltip(e.point); }catch(_){}
     }; try{ E.events.on('mousemove',_hover); }catch(_){} }
     if(!_click){ _click=(e)=>{
@@ -924,7 +924,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     const E=GE(); if(!E) return true;
     try{ ALL_LAYERS.forEach(id=>{ if(E.layers.has(id)) E.layers.setVisible(id,false); }); }catch(_){}
     try{ if(orbOn) E.layers.setOrbit(ORB,{visible:false}); }catch(_){}
-    try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el&&el.dataset.owner==='sats'){ el.style.display='none'; el.dataset.owner=''; } }catch(_){}
+    try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el&&el.dataset.owner==='sats'){ window.hideMapTooltip(el); el.dataset.owner=''; } }catch(_){}
     try{ const P=window.IntMapSatPanel; if(P&&P.isOpen()) P.close(); }catch(_){}
     return true;
   }

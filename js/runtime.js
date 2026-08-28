@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · RUNTIME — the one frame loop, the one timer, the one lifecycle  (#R234)
+ *  IntMap · RUNTIME — the one frame loop, the one timer, the one box, the one lifecycle  (#R234)
  * ----------------------------------------------------------------------------
  *  「move、rAF、setInterval、Observer類を共通Schedulerで管理。操作中は地図描画を最優先。
  *    全機能に load / activate / suspend / dispose のライフサイクルを持たせる。
@@ -27,7 +27,7 @@
  *  ⚠ #R229 is why that paragraph is here. A scheduler is exactly the kind of file that starts
  *  "helpfully" dropping frames for people, and nobody asked for that.
  *
- *  ══ THE FOUR REGISTERS ════════════════════════════════════════════════════════════════════════
+ *  ══ THE FIVE REGISTERS ════════════════════════════════════════════════════════════════════════
  *   1. `onCamera(key, fn, {phase})` — the camera moved. ONE engine subscription drives all of them.
  *      `phase:'read'` runs before every `phase:'write'`, so geometry is sampled from one layout.
  *   2. `frame(key, fn)` — do this on the next animation frame, coalesced by key. Same driver.
@@ -35,6 +35,9 @@
  *      document is hidden (a browser already throttles hidden timers; this makes it exact and
  *      makes the wake-up ONE timer instead of thirty-nine).
  *   4. `idle(key, fn)` — after the frame, when nothing is pending.
+ *   5. `box(el)` (#R499) — where an element IS, answered from an observer instead of from the DOM.
+ *      One cache instead of the three private ResizeObservers and the five per-event
+ *      `getBoundingClientRect()` calls that turn a finger's coordinates into the map's.
  *
  *  ══ AND THE LIFECYCLE, WHICH IS THE OTHER HALF OF THE INSTRUCTION ═════════════════════════════
  *  `define(name, {load, activate, suspend, dispose})` records what a capability can do; `activate`
@@ -221,6 +224,69 @@ export function makeRuntime(HOST) {
        interval the browser had throttled it to. */
     try { document.addEventListener('visibilitychange', () => { if (!_hidden()) _arm(16); }); } catch (_) { }
 
+    /* ══ ⚠⚠⚠ (#R499) 5. THE BOX — AN ELEMENT'S GEOMETRY IS NOT A PROPERTY OF THE FINGER ═════════
+       「スマホでの動作が重い」, and #R498's answer to the same report was one instance of a shape
+       that this branch carries FIVE more of. Every place that turns a pointer's CLIENT coordinates
+       into MAP coordinates does it the same way:
+
+           const r = canvas.getBoundingClientRect();      // ← on every touchmove
+           unproject([touch.clientX - r.left, touch.clientY - r.top]);
+
+       js/wheel-zoom.js's custom pinch, js/map-tools.js's `touchLL`, js/volume3d.js's two stroke
+       handlers, js/tool-panel.js's context menu (on every camera frame) and js/map-tooltip.js's
+       placement each measured for themselves — and three of them kept a private ResizeObserver to
+       avoid it, which is three implementations of one instrument (#R311 for the tooltip, #R498 for
+       the crosshair). ⚠ THE ANSWER CANNOT BE "everyone should remember to cache", because #R498
+       measured what happens to an optimisation that is optional: `setMapTooltipHTML` existed for
+       eleven rounds and ONE of eight files used it. So the cache is HERE, beside the frame loop
+       whose whole purpose is that a layout is sampled once, and the sites ask this instead.
+
+       WHAT INVALIDATES IT — every way the answer can change, not a guess about which ones matter:
+         · a ResizeObserver on the element itself (the sidebar's 300 ms collapse, a rotation, the
+           bottom sheet resizing the map — all of them change the box and all of them fire here);
+         · window resize / orientationchange / scroll, and the visual viewport's own pair, which is
+           what moves `left`/`top` under a pinch-zoomed mobile page without any size changing;
+         · ⚠ AND EVERY `pointerdown` / `touchstart`, which is the one that makes this exact rather
+           than merely careful. A gesture cannot begin without one, so every drag starts from a
+           freshly measured box and re-uses it for the rest of the stroke — precisely the rule
+           #R498 wrote for the long-press by hand, held for every caller instead of one.
+       The measurement itself is taken LAZILY, on the next `box()` after an invalidation, so a
+       resize nobody asks about costs nothing at all. */
+    const BOXES = new WeakMap();     /* el → {r, ro} — r === null means "ask the DOM next time" */
+    let _boxWired = false;
+    function _boxAllStale() { _boxGen++; }
+    let _boxGen = 0;
+    function _wireBox() {
+      if (_boxWired) return; _boxWired = true;
+      let W = null; try { W = window; } catch (_) { W = null; }     /* ⚠ evaluating `window` is itself the throw, outside any try the callee owns */
+      if (!W || !W.addEventListener) return;
+      const on = (t, ev) => { try { t.addEventListener(ev, _boxAllStale, { passive: true, capture: true }); } catch (_) { } };
+      on(W, 'resize'); on(W, 'orientationchange'); on(W, 'scroll');
+      on(W, 'pointerdown'); on(W, 'touchstart');
+      try { if (W.visualViewport) { on(W.visualViewport, 'resize'); on(W.visualViewport, 'scroll'); } } catch (_) { }
+    }
+    function box(el) {
+      if (!el || !el.getBoundingClientRect) return { left: 0, top: 0, width: 0, height: 0 };
+      _wireBox();
+      let e = BOXES.get(el);
+      if (!e) {
+        e = { r: null, gen: -1, ro: null };
+        BOXES.set(el, e);
+        try { e.ro = new ResizeObserver(() => { e.r = null; }); e.ro.observe(el); } catch (_) { e.ro = null; }
+      }
+      if (!e.r || e.gen !== _boxGen) {
+        const r = el.getBoundingClientRect();
+        /* a plain object, not the live DOMRect: a caller that keeps it must not be handed something
+           the next layout silently rewrites. */
+        e.r = { left: r.left, top: r.top, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
+        e.gen = _boxGen;
+      }
+      return e.r;
+    }
+    /* for the caller that KNOWS it just changed the layout itself — a panel that expanded, a sheet
+       that was dragged — and cannot wait for the observer's next delivery. */
+    function remeasure(el) { if (el) { const e = BOXES.get(el); if (e) e.r = null; } else _boxAllStale(); }
+
     /* ── 4. idle ──────────────────────────────────────────────────────────────────────────────*/
     const IDLE = new Map();
     let _idleH = 0;
@@ -308,6 +374,7 @@ export function makeRuntime(HOST) {
 
     const API = {
       onCamera, offCamera, frame, every, clearEvery, idle, schedule,
+      box, remeasure,
       define, load, activate, suspend, dispose,
       gesturing: () => _gesture > 0,
       capabilities: () => Array.from(CAPS.keys()),
