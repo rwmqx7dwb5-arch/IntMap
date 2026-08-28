@@ -6170,5 +6170,6 @@ window.IntMapLang.define('zh', {
   "Wind speed": "風速",
   "rows are not single points, so a distance join cannot be measured against them": "各列不是單一地點，因此無法以距離進行結合",
   "Earthquake magnitude": "地震規模",
+  "Last known eruption": "最後一次已知噴發",
   }
 });

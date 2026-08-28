@@ -5949,4 +5949,5 @@ window.IntMapLang.define('ko', { ui: {
   "Wind speed": "풍속",
   "rows are not single points, so a distance join cannot be measured against them": "행이 단일 지점이 아니므로 거리 기반 결합을 측정할 수 없습니다",
   "Earthquake magnitude": "지진 규모",
+  "Last known eruption": "마지막 확인된 분화",
 } });

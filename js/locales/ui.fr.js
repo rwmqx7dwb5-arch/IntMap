@@ -5959,4 +5959,5 @@ window.IntMapLang.define('fr', { ui: {
   "Wind speed": "Vitesse du vent",
   "rows are not single points, so a distance join cannot be measured against them": "les lignes ne sont pas des points uniques ; une jointure par distance n'est pas mesurable",
   "Earthquake magnitude": "Magnitude du séisme",
+  "Last known eruption": "Dernière éruption connue",
 } });
