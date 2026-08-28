@@ -11,8 +11,12 @@
 
 ## 0. 最重要 (Prime directives)
 
-1. **最後まで作業を行い、Commit、Sync まで必ず行う。**
-   Finish the work completely, then commit AND sync (push to `main`). A task is not done until it is pushed.
+1. **最後まで作業を行い、Commit、merge、原本の同期まで必ず行う。**
+   Finish the work completely, then commit, push the BRANCH, merge the PR, and bring the master copy
+   up to date. ⚠ **「Sync」 is not a direct push to `main`** — §1 below forbids that in this same file
+   (branch → PR → CI → squash merge). It is `node scripts/master-sync.mjs --sync`, which fast-forwards
+   the OneDrive master copy to the merged `origin/main`. A task is not done until the change is merged
+   AND the master copy carries it.
 
 2. **ユーザーのせいにしない。バグ報告を「正常」「誤認」として切り捨てない。**
    Never blame the user. Never dismiss a bug report as "working as intended" or "your misperception."

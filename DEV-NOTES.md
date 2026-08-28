@@ -43,6 +43,8 @@
 ## 索引 — このファイルのラウンド（新しい順）
 
 - **#R502** — **動いていた計測は、9言語の第三者一覧のどこにも名前が無かった**〈公開前レビューの指摘を実コードで確かめた回〉／⚠⚠⚠ **GA (`G-57X5MX0ZPW`) と Microsoft Clarity (`x2colhytq7`) は同意も告知も無く起動していた**——`index.html` の静的な `<script async src=…googletagmanager…>` はパースされた瞬間に飛び、Clarity は #R193 の `requestIdleCallback` で少し遅れて入るだけ。**そして `js/legal-text.js` の「4. 第三者」は Supabase から Open-Meteo まで数十社を 9 言語で挙げているのに、実際に Cookie を置き DOM 再生を録っている 2 社だけが抜けていた**（§5 Cookie は「セッション維持と設定の保存に使用します」の 1 行で、分析にひとことも触れていない）。⚠ **抜けていたのは実装ではなく、実装と文書の対応**／⚠⚠ **だから直しかたは「消す」ではなく「止めて、戻すときに名指しを強制する」**——利用者の指示は「一旦停止。削除ではない」。`window.INTMAP_ANALYTICS=false` 1 つの後ろに両方のローダを移し、タグ本体・measurement id・#R155 の auth URL スクラブ・#R272 の「credential が URL に在るうちは挿入しない」は 1 行も消していない。`gtag()` / `clarity()` の queue shim は門の**外**（呼ぶ側は落ちず、黙って溜まる）。⚠ **スクラブの定義も門の外**——中に入れると GA を止めた瞬間 `window.__imScrubAuthUrl` が消える／⚠⚠⚠ **そして `tests/r502-checks.test.mjs ④` がフラグと本文を結んである**——`true` に戻した瞬間、`js/legal-text.js` が `Google Analytics` と `Clarity` を名指していなければ赤くなる。**計測を戻すことと告知することが 1 つの動作になった**（別々にできるあいだは、また離れる）／⚠⚠⚠ **別件、同じ形。`js/news-events.js` のコメントは「AI が書いたことを隠さない」と宣言していたのに、画面に出る 9 言語の文字列は 1 つも `AI` と言っていなかった**——出ていたのは `IntMap combined what these outlets published` /「IntMap がまとめたものである」で、これは `news_events.summary`（`summarise` 段が LLM に書かせ、1 文ごとに原文と照合してから保存する段落）についての表示である。**隠すつもりが無いことは、隠れていないことの証拠にならない**（[[intmap-r485-lessons]]・#R488 と同じ形——規則は在り、綴りは在り、当たっていない）。注記を 9 言語で AI / KI / ИИ / IA に書き換え、**畳まれた `<details>` の下から段落の直下へ移した**（要素は 1 つも足していない。順番だけ）／⚠ 位置引数は 5 つ（en/ja/de/ru/es）なので、残り 4 言語は inline table の**英語キーごと**差し替え——英語だけ書き換えると fr/ko/zh の 2 言語 4 ファイルが静かに英語へ落ちる（#R492）
+- **#R500** — **同じ数を2か所に書いた箇所が、比較する相手を1つも持っていなかった**〈外部監査が9件の陳腐化を報告し、確かめたら全部本物だった。共通していたのは形である——**どれも「機械が持っている数」を散文が書き写した箇所で、突き合わせる相手が他の散文しかいなかった**〉／⚠⚠⚠ **能力レジストリは 129（撤去済み 1 を除いて到達可能 128）なのに、5つの文書が 126 と言い、`Architecture.md` は同じファイルの中で 126 と 127 の両方を言っていた**／⚠⚠⚠ **system prompt は 22 本なのに 20 本**——しかも内訳の `news-ui` は 3 ではなく 1 で、`atlas-gloss` と `news-ingest` の行が無かった。⚠ **#R397 が同じ文の同じ「20」を一度直している**（そのときは r285 の表に `news-ingest` の行が無かったのが真因）。直した文が、また離れた／⚠⚠⚠ **deep tier の大きさは `scripts/tiers.mjs` が導出するのに、4か所に手で書いてあり3か所が食い違っていた**（package.json 86 / docs/TESTING.md は 92 と 94 の**両方** / scripts/worktree.mjs 82）。⚠ **#R372 が同じ4か所を一度そろえている**——そのコメント自身が「derived なので再計測せよ」と書いたうえで、次の 128 ラウンドを古い数字のまま過ごした／⚠⚠ **`ai-proxy` の冒頭コメントは free = 30/day、20行下の `PLAN_LIMITS` は 10**。#R147 が 30→10 にしたときに**コードだけが直った**／⚠ `Architecture.md` の routing 節に**13行が2度**書いてあった（各コピーは個別には正しいので、既存のどの検査にも見えない）・README は Chronos を #R289 の旧名で呼び、**撤去済み**（`docs/NEWS-EVENTS.md` 決定16）の Subject/Publisher 切替を案内していた・`CONSTITUTION.md` は §0.1 で「push to `main`」と言い §1 で「`main` へ直接 push しない」と言っていた・`docs/NEWS-EVENTS.md` は #R76 の実装が `atlas-console` に「今も生きている」と現在形で書いていた（正本は #R334/#R340 以降 `_shared/news-cluster.js` の1本）／⚠⚠⚠ **文面を直すのは半分でしかない**——9件すべてが「一度直された文が再び離れた」か「そもそも誰も比較していなかった」のどちらかなので、`scripts/doc-facts.mjs` に規則を3本足した: `capability-count`（レジストリを実際に import して数える）・`prompt-count`（`tests/r285-checks.test.mjs` の `EXPECTED_CALLS` を population にする——ここに2枚目の手書き一覧を作らない）・`deep-tier-size`（⚠ **4つのうち2つは文書ではない**ので `eachDoc` に見えない。`package.json` と `scripts/worktree.mjs` を名指しで読む）／⚠⚠ **「近いほうの語が勝つ」も「固定の優先順位」も、実際の散文の上で両方とも間違えた**——前者は「the **deep** tier is the whole suite minus core — **94 spec files**」を core の主張と読み、後者は「the **whole** suite is 100 measured spec files」を core の主張と読む。**曖昧さは文の性質**なので、直すのは文のほう（ambiguous なものは注に件数として出し、推測しない）／⚠ **規則の一覧表そのものに3行足りなかった**（`deep-tier-when`・`hist-cities`・`volcano-eruptions`）——「規則を足したら1行足す」と書いてあるのに、表と規則を比べるものが無かった／⚠ 足した `tests/r500-checks.test.mjs` は**今の文面が正しいこと**ではなく**規則が壊したときに実際に赤くなること**を見る（#R407 と同じ理由で、CI の static job は `check:docs` を走らせないので、この検査が規則を merge 前へ届ける唯一の経路）。⚠ その追加自体が `node-tests` を 277→278 で赤くした——**足した瞬間に門が働いた**
+
 - **#R498** — **指の経路が、指が動くたびに DOM を測っていた**〈「スマホで地図が重い・指に付いてこない」。原因は2本、同じ形〉／⚠⚠⚠ **長押し判定が `touchmove` ごとに `canvas.getBoundingClientRect()`**——式は `clientX − rect.left − (startClientX − rect.left)` で、**2つの `rect.left` は打ち消し合う**。自分自身を引くために、指1本の移動のたびにレイアウトを測っていた。しかも 12 px を越えて長押しを**諦めたあとも測り続ける**（`cancel()` が `startPt` を残し、早期 return がそれを見ていた）＝**1 touchstart ＋ 100 touchmove で 101 回**／⚠⚠⚠ **クロスヘアのカメラ仕事が、1つのコールバックの中で「書く→測る→書く」をしていた**——`js/runtime.js` は「READ を全部 WRITE より先に」のためだけに在るのに、このタスクは既定の WRITE 相に登録されたうえで `display` を2枚書き → `getBoundingClientRect()` → `getComputedStyle()` → `unproject` → 文字を書いていた。**強制同期レイアウトを、位相分割が見えない場所に隠していた**。READ 相と WRITE 相に割り、箱は ResizeObserver、`--sheet-cover` は `js/mobile-ui.js` が書く**インライン宣言の文字列が変わったときだけ**引き直す（実測: 60 フレームで rect 0 回・style 0 回）／⚠⚠⚠ **そしてこの2本は、どの計器からも見えていなかった**——`scripts/mobile-trace.mjs` の pan/zoom は `IntMapGeoEngine.camera` 命令（#R352 が**マウス**について正しく決めたこと）なので、**touchstart も touchmove も出ない**。この repo が持つ携帯の数字は全部、**アプリの touch ハンドラが一度も呼ばれないまま**取られていた。`Input.dispatchTouchEvent` で本物の指を出す3相を足し、**touchmove 1回あたりの rect/style 回数**と **touchmove →次フレームの遅延**を出す／⚠⚠ **#R232 は3つしか動かしていなかった**——「携帯か」は端末の問いだと決めた回で、`antialias`/`pixelRatio`/`maxTileCacheSize` だけを `(pointer:coarse)` に移した。残りは幅のままだったので、**横向きの iPhone（844 px）は @2x タイル（512²＝4倍のピクセル）・canvas 8192²・毎フレームのマーカー遮蔽・DEM 先読みを全部払っていた**。5か所を `_imPhoneClass()` へ。⚠ **`maxZoom` は幅のまま**——あれは費用ではなく**到達できる能力**で、横向きから 1 段取り上げるかは性能の話ではない（確認して据え置き）／⚠⚠ **#R311 の `setMapTooltipHTML` を使っていたのは `js/news-ui.js` だけだった**——他の14か所は `el.innerHTML=` を直に書いていたので、**同じ markup でも毎 mousemove で部分木を作り直し**、直後の `offsetWidth` が強制リフローになっていた（「書かない」最適化が、その呼び出し元にだけ効いていなかった）／⚠ **ホバーの可視レイヤー一覧もポインタの性質ではない**——#R195 が26回のヒットテストを1回にしたとき、`ids()` の走査（登録数ぶんの `getLayer`＋`getLayoutProperty`。この枝は74登録）はポインタ経路に残っていた。`styledata` と登録変更で無効化するキャッシュへ（実測: 50 移動で追加0回）／⚠ **衛星の大気は毎フレーム 256 段の積分を2本**回していた——#R220 の注は「per frame では描かない・settle ごとに4回」と書いてあり、#R234 がこの follower を毎フレーム登録した時点でそれが偽になっていた（実測 0.23 ms/本）。**#R234 が要ったのは安いほう**（`_limbOwnsRim`・`_airAtZoom`・re-aim）なので、それは先に・毎フレームのまま残し、色の2本だけ**入力3つでメモ化＋ジェスチャ中は 100 ms 間隔**にした（**止まったフレームでは必ず厳密に計算する**）
 
 - **#R497** — **行数は合っていた。名前が一つも入っていなかった**〈#R495 が `volcanoes` を交差検索の表として登録し、行を `p.name` / `p.elev` / `p.type` / `p.last` で読んでいた。`data/volcanoes_gvp.json` のキーは**一文字**——`n` `c` `t` `e` `y` `v`——なので、そのすべてが `undefined`。本番で実測: 「外洋から300km以上の火山」は **127 件**と答え、**127 件すべてが名前空・標高 null** だった〉／⚠⚠ **件数が正しいことが、これを隠した**。#R495 自身の規則②「出典の無い列を出さない」は、**出典付きで中身が空の列**によって内側から破られる——値が欠けているのは見えるが、行が数えられているのに名前が無いのは見えない／⚠ だから tests/r497-checks は**形ではなく値**を見る: 同梱ファイルを実際に変換して、名前のある行が 99%・標高のある行が 95%・国のある行が 95% を超えること、id が重複しないこと、そして **Fuji が日本にあって 3,000〜4,000 m で 138.73/35.36 にいる**ことを確かめる／⚠ 併せて、行が持っていたのに誰も訊けなかった 2 つを列にした——`country`（GVP は**国名**を持ち、コードは持たない）と `lastEruptionYear`（負値＝紀元前）。カタログにも書いた（#R115: カタログが書いていない列は planner にとって存在しない）
@@ -384,6 +386,100 @@ Open-Meteo・OSRM・Valhalla・WorldPop・CelesTrak・GDELT……と**数十社�
 | deep tier が赤 | 事実（nightly 2026-08-28） | 別ラウンド規模 |
 | 事件地点の精度表示 | 未検証 | UI の追加 |
 
+## R500 — **同じ数を2か所に書いた箇所が、比較する相手を1つも持っていなかった**
+
+依頼は外部（Codex）の監査レポートだった。9件の陳腐化が挙がっており、**確かめたら全部本物だった**。
+ただし報告された9件は互いに無関係ではない。**全部同じ形**である——機械が持っている数を散文が書き写し、
+その写しを突き合わせる相手が**他の散文しかいなかった**。
+
+だからこのラウンドの仕事は2つに割れる。**文面を直すこと**と、**次に離れたときに赤くなるようにすること**。
+前者だけをやったラウンドは既に2回ある（#R397 と #R372 が、いま直したのと**同じ文・同じ4か所**を直している）。
+
+### 1. 何がどう食い違っていたか
+
+| 事実 | 実体 | 文書が言っていたこと |
+|---|---|---|
+| Atlas 能力レジストリ | **129**（撤去済み `system.monitor` を除いて到達可能 **128**） | `Architecture.md` が **126 と 127 の両方**・`DECISIONS.md` 126・`docs/FILES.md` 126・`js/atlas-toolsurface.js` 126 |
+| system prompt | **22 本**・9 ファイル | `Architecture.md` **20 本**、内訳の `news-ui` **3**（実際は 1）、`atlas-gloss` と `news-ingest` の行が無い |
+| deep tier | **94 spec**（core 6・全体 100） | package.json **86** / docs/TESTING.md **92** と **94** / scripts/worktree.mjs **82** |
+| free の AI 枠 | `PLAN_LIMITS.free` = **10**/day | `ai-proxy` 冒頭コメント **30**/day |
+| 説明文の量 | **45 ブロック・73,563 文字** | `Architecture.md` 41 ブロック |
+
+残りの4件は数ではなく**述語**だった——README が Chronos を #R289 の旧名で呼び、**撤去済み**の
+Subject/Publisher ピン切替（`docs/NEWS-EVENTS.md` 決定16）を機能として案内していた。
+`docs/NEWS-EVENTS.md` §5.1 は #R76 のアルゴリズムが `js/atlas-console.js` に「今も生きている」と
+**現在形で**書いていた（#R334/#R340 以降、正本は `supabase/functions/_shared/news-cluster.js` の1本で、
+`atlas-console` はそれを import して呼ぶだけ）。`CONSTITUTION.md` は §0.1 で
+「commit AND sync (push to `main`)」と言い、§1 で「`main` へ直接 push しない」と言っていた。
+そして `Architecture.md` の routing 節には**13行が丸ごと2度**書いてあった——各コピーは個別には正しいので、
+既存のどの検査からも見えない。
+
+### 2. ⚠ 直したのは文面ではなく、比較する相手が無かったこと
+
+`scripts/doc-facts.mjs` に3本足した。
+
+- **`capability-count`** — `js/atlas-capabilities.js` を実際に import して `list()` を数える。
+  文書側は「数を探す」のではなく、文書が実際にこの数を名詞に結びつけている**5つの形**だけを見る
+  （`find_capability … 全 N を検索` / `**N 能力**` / `N 能力ぶん` / `N 本の schema` /
+  `到達可能 N`）。⚠ **裸の 129 は主張ではない。** 数を探す needle は、この repo で13回自分自身に
+  当たっている。
+- **`prompt-count`** — population は `tests/r285-checks.test.mjs` の `EXPECTED_CALLS`。
+  ⚠ **ここに2枚目の手書き一覧を作らない**——#R397 の教訓は「表に無いファイルは検査の視野にも入らない」で、
+  同じ表をもう1枚作ればその欠陥が2か所に増える。この規則が訊くのは
+  「散文があの表と一致しているか」だけで、表と木の一致は r285 の (2b) が持っている。
+  ⚠ Edge Function の prompt ファイルは必ず `<name>/index.ts` なので、**ファイル名の stem は3行とも
+  「index」**になる。散文はそう呼ばないので、**フォルダ名**を採る。
+- **`deep-tier-size`** — `scripts/tiers.mjs` が導出する。
+  ⚠ **4つの写しのうち2つは文書ではない**——`package.json` の script コメントと
+  `scripts/worktree.mjs` がセッション開始時に印字するバナーで、`eachDoc` はどちらも見ない。
+  そしてその2つが**いちばん古かった**。名指しで読む。
+
+### 3. ⚠ 「どの tier についての数か」は、窓の中の語順では決まらなかった
+
+`N spec files` が3つの tier のどれについての主張かを決める必要がある。2つの素朴な規則を試して、
+**どちらも実際の散文の上で間違えた**。
+
+| 規則 | 間違えた文 | どう読んだか |
+|---|---|---|
+| 固定の優先順位（deep > core > whole） | 「the **whole** suite is **100 measured spec files**」 | 直前の文に `core` があるので **core の主張**と読んだ |
+| 最も近い語が勝つ | 「the **deep** tier is the whole suite minus core — **94 spec files**」 | 数のすぐ手前が `core` なので **core の主張**と読んだ |
+
+⇒ **曖昧さは文の性質**なので、直すのは文のほうにした。窓（60文字）の中に tier 語が
+**ちょうど1種類**あるときだけ主張として扱い、2種類以上あるものは注に**件数として**出す
+（「0件だった」と仮定しない）。そのうえで、曖昧だった2文を書き直した。
+
+### 4. 足した検査は「今が正しいこと」を見ていない
+
+`tests/r500-checks.test.mjs` が見るのは、**規則が事実を壊したときに実際に赤くなること**である。
+今の文面が正しいことは `check:docs` の仕事で、いまこの瞬間は緑である——**緑を主張する検査は、
+規則が黙っていても緑になる。**
+
+⚠ #R407 と同じ理由で、これは規則が merge の前に評価される**唯一の経路**でもある
+（CI の static job は `npm run check:docs` を走らせない。走る `test:checks` にこのファイルが居る）。
+
+- ① 文書の数字を動かすと `capability-count` が落ちる
+- ②a 総数を動かすと `prompt-count` が落ちる／②b **総数が正しいまま内訳の1行だけ**を動かしても落ちる
+  （#R500 の実物がこの形だった）
+- ③ `deep-tier-size` が `package.json` でも `scripts/worktree.mjs` でも落ちる
+- ④ 正本が**黙った**ときに落ちる（#R399 の形。⚠ 正本は同じ数を4つの形で言っているので、
+  黙ったことを確かめるには4つ全部を消す必要がある——1つ消して赤くならないのは**正しい**）
+- ⑤ `ai-proxy` の散文が `PLAN_LIMITS` と一致する（`.ts` は `doc-facts` の走査に入っていないので、ここが唯一の門）
+- ⑥ README が index.html と同じ名前で面を呼ぶ
+- ⑦ `Architecture.md` に5行以上の逐語の重複が無い
+
+⚠ **この検査を `test:checks` に足した瞬間、`node-tests` が 277→278 で赤くなった。**
+門が働いたということで、直すべきは門ではなく docs/TESTING.md と package.json の数字のほう。
+
+### 5. ⚠ 規則の一覧表そのものに3行足りなかった
+
+`docs/TESTING.md` の「文書の検査」節は「ルールを足したらそこに1行足す」と書いてあるのに、
+`deep-tier-when`（#R407）・`hist-cities`・`volcano-eruptions` の3行が**無かった**。
+**表と規則を比べるものが無い**ので、「何が検査されているか」の一覧そのものが未検査だった。
+3行足した（今回の3本と合わせて6行）。
+
+⚠ 併せて `docs/TESTING.md` 冒頭の「これら4つの数は誰も比較していない」という注記を書き換えた——
+4つのうち3つ（core / deep / 全体の spec 数）は今日から比較されている。**残る「分」は意図的に
+比較しない**: 測った所要時間は機械の速さで動くので、規則にすると**古い文書ではなく遅いマシンで**赤くなる。
 
 ## R498 — **指の経路が、指が動くたびに DOM を測っていた**
 

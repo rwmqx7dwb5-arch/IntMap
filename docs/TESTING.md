@@ -21,10 +21,10 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
-**98 measured spec files / 77.2 min** of serial browser time against a ceiling of 77.2 min; and
-`npm run test:checks` runs **278 Node test files** with no browser at all (counted from
+**100 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
+`npm run test:checks` runs **279 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
-**deep** tier is the whole suite minus core — **94 spec files**
+**deep** tier — **94 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -44,12 +44,14 @@ rather than depend on which is currently the default.
 > ⚠ **The whole-suite ceiling has zero headroom** (77.2 min measured against 77.2 min). A new
 > `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
 > ceiling only moves down. Node checks (`*.test.mjs`) are **not** governed by this budget, so
-> logic that can be checked without a browser belongs there. ⚠ Only `**N Node test files**` is
-> compared against the repository by `scripts/doc-facts.mjs`; the other numbers in the paragraph
-> above are not, and every re-measurement has found them stale — by 3 spec files when #R334
-> looked, and by **19 spec files and 10.8 minutes** the next time. A number nothing compares is
-> a number that is wrong between the rounds that happen to look at it; these four want a rule in
-> `scripts/doc-facts.mjs` the way `N Node test files` already has one.
+> logic that can be checked without a browser belongs there. ⚠ Every **count** in the paragraph above
+> is now compared against the repository — `N Node test files` by `node-tests`, and the three tier
+> sizes by `deep-tier-size` (#R500), which also reads `package.json` and `scripts/worktree.mjs`
+> because those are not documents and `eachDoc` cannot see them. Before that rule existed the
+> numbers went stale every time: by 3 spec files when #R334 looked, by **19 spec files and 10.8
+> minutes** the next time, and by #R500 the four hand-kept copies of the deep-tier size held three
+> different values at once. ⚠ **The MINUTES are still uncompared** — a measured duration moves on
+> its own, so a rule for it would go red on a slow machine rather than on a stale document.
 
 | Layer | Command | Needs a browser? | External network? |
 |-------|---------|------------------|-------------------|
@@ -467,7 +469,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **92 spec files** against core's 6, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **94 spec files** against core's 6, because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.
@@ -611,9 +613,22 @@ reader here for this list; adding a rule means adding a row.
 | `backup-shell` | a document launches the USB backup with a shell other than the one `CLAUDE.md` §11.2 uses |
 | `relay-guard` | a stated count of the functions sharing `_shared/relay-guard.js` is not the real one |
 | `ci-gates` | `npm test` runs a source-side gate that no `ci.yml` step reaches |
+| `deep-tier-when` | a document describes the nightly as running on a trigger the workflow's own `if:` does not name |
+| `hist-cities` | the bundled historical-city record and the stated counts disagree |
+| `volcano-eruptions` | a stated size of the bundled eruption record is not the real one |
+| `capability-count` | a document states a size for the Atlas capability registry that is not what `js/atlas-capabilities.js` holds |
+| `prompt-count` | `Architecture.md`'s system-prompt total or per-file breakdown disagrees with `EXPECTED_CALLS` in `tests/r285-checks.test.mjs` |
+| `deep-tier-size` | a stated size of a test tier — in a document, in `package.json` or in `scripts/worktree.mjs` — is not what `scripts/tiers.mjs` derives |
 | `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
 
-The last six arrived in #R403 and are described below, after the Edge Function rules they grew out of.
+The last six of the #R403 batch are described below, after the Edge Function rules they grew out of.
+The final three arrived in #R500; `tests/r500-checks.test.mjs` is what proves they actually go red,
+and — as with `deep-tier-when` (#R407) — that test file is the only path by which they reach CI,
+because the static job does not run `check:docs`.
+
+⚠ **Three rows were missing from this table before #R500** (`deep-tier-when`, `hist-cities`,
+`volcano-eruptions`), even though the sentence above says adding a rule means adding a row. Nothing
+compares the table with the rules it describes, so the list of what is checked was itself unchecked.
 
 ⚠ **The right-hand column paraphrases on purpose — do not quote a needle into it.** Several of these
 rules are of the form *no document says X*, and this table is in a document they sweep. Writing the

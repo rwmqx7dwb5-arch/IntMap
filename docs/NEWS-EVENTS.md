@@ -307,8 +307,8 @@ Registry が持つ列は §4 の `news_sources` を見ること。**`independent
 
 ### 5.1 #R76 の実装から引き継がないもの
 
-#R76 のアルゴリズムは `js/atlas-console.js` に**今も生きており**、実データで破綻している。
-同じ入力（600件）での ablation:
+#R76 のアルゴリズムは、この節を書いた時点では `js/atlas-console.js` の中にあり、実データで
+破綻していた。同じ入力（600件）での ablation:
 
 | 設定 | events | 最大クラスタ | 判定 |
 |---|---|---|---|
@@ -320,6 +320,11 @@ Registry が持つ列は §4 の `news_sources` を見ること。**`independent
 **根本原因**: 国レベルに解決された subject は座標が**完全一致（d=0km）**するため
 `d<30km && dh≤24h` が常に真になり、**Jaccard 0.06 だけが最後の関門**になる。
 ⇒ **緩和規則は使わない。国の代表点を「近い」として扱わない。**
+
+⚠ **この表は今の実装の説明ではなく、今の定数の根拠である。** グルーピングの実装は
+`supabase/functions/_shared/news-cluster.js` の 1 本だけで、ブラウザ側は `js/news-cluster.js` が
+それを再輸出し、Atlas の `research.events` も `js/atlas-console.js` からその 1 本を import して呼ぶ
+（#R334・#R340）。`atlas-console` に #R76 の写しは残っていない。
 
 ⚠⚠⚠ **同じ穴が「国」以外にも開いていた（#R351 実測）。** `IntMapNewsGeo` が
 `kind:'org'` に解決した subject は**その組織の本部座標**なので、同じ会社の無関係な 2 件は

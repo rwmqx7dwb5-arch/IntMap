@@ -6,7 +6,10 @@
 //  here with the user's Supabase session JWT. This function:
 //
 //    1. Verifies the JWT and resolves the user  (login REQUIRED → 401 if not).
-//    2. Looks up the user's plan + daily quota   (free = 30/day; easily tiered).
+//    2. Looks up the user's plan + daily quota   (free = 10/day; easily tiered).
+//       ⚠ THE NUMBER IS PLAN_LIMITS BELOW, NOT THIS LINE. It read «30/day» for the whole of the
+//       time #R147 had already moved free to 10 — a header that restates a constant twenty lines
+//       above it is a second copy, and the copy is the one a reader meets first.
 //    3. Atomically consumes one use for today    (increment_ai_usage RPC).
 //       → over quota returns 429 {error:"limit", used, limit}.
 //    4. Calls the provider with a SERVER-HELD key (model fixed here — the user

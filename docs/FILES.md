@@ -305,7 +305,7 @@ atlas-admin1.js                   **第1レベル行政境界を、同梱ファ�
 atlas-agent.js                    **ターンの進行**（#R406）— Atlas が1手ごとに「最終回答」か「tool 呼び出し」を
                                   選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・
                                   回数の上限だけを見て、意味は一切決めない。DOM も network も触らない
-atlas-toolsurface.js              **道具の面**（#R406）— 中核7ツール＋`find_capability`（全126を検索）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核7ツール＋`find_capability`（レジストリの全129を検索・到達可能 128）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
@@ -316,7 +316,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 126能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 129能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、

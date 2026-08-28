@@ -258,7 +258,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | 外部証拠の取得 | `js/proxy-fetch.js`（唯一の梯子） | 自前の Edge Function を先頭に、公開 relay 4 本を**競争**させ、勝った時点で残りを中断する。⚠ **締切は本文を読み終わるまで掛かる**（ヘッダが着いた時点で解除すると、200 を返してから止まった相手を止めるものが無くなる）。呼び出し側は `budgetMs` で**梯子全体の上限**を、`signal` で**停止**を渡す。Atlas の 1 取得 14 秒／証拠集め全体 32 秒／GDELT の梯子 20 秒 |
 | 締切つきの単発取得 | `js/fetch-deadline.js` | `jsonWithin(url, ms, init)`。Nominatim のように relay を要さない相手のための 1 回の取得。**呼び出し側の signal は置き換えず連結する** |
 | 証拠集めの予算 | `js/atlas-deadlines.js` | Atlas の 1 取得 14 秒／gather 全体 32 秒／GDELT の梯子 20 秒。締切つきの `settleWithin(jobs, ms)` は**まだ飛んでいる件数**を返し、それが読み手に見える「取得不可」の1行になる。⚠ `js/atlas-console.js` は**縮小のみの行数上限**にあるので、この主題はここに置く（上限を上げるのではなく主題を出す） |
-| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 7 ツール**（`my_location` と、画面そのものを見る `look_at_map` を含む）＋`find_capability`（全 126 を検索・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 9 本。`ask_user` は `endsTurn`＝**ターンを終える道具**で、旗は**結果にも**載る（`run_capability` が `dialog.ask` を ID で呼ぶ経路では、呼びの名前は `run_capability` だから）。監査に削られた回答は `status:'degraded'` と削除件数で返す |
+| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 7 ツール**（`my_location` と、画面そのものを見る `look_at_map` を含む）＋`find_capability`（レジストリの全 129 を検索・返るのは撤去済み 1 を除く **128** から・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 9 本。`ask_user` は `endsTurn`＝**ターンを終える道具**で、旗は**結果にも**載る（`run_capability` が `dialog.ask` を ID で呼ぶ経路では、呼びの名前は `run_capability` だから）。監査に削られた回答は `status:'degraded'` と削除件数で返す |
 | **Atlas の目** | `js/atlas-view-capture.js` | **`view.inspect`（tool 名 `look_at_map`）が返すのは事実ではなく絵。** 読者がいま見ている画面を撮り、**次のモデル呼び出しに画像として添付**する。`include:"screen"`（既定）は地図＋凡例・スケール・マーカー・ニュース帯・時間バー（操作系は隠す）＝**凡例や帯についての問いに答えられる唯一の絵**、`include:"map"` はレンダラのフレームだけ（html2canvas を取りに行かないぶん安い）。⚠ **撮る処理は screenshot ボタンのものと同一の 1 本**——「読者が見ているもの」の答えが 2 つある状態を作らない。⚠ **画素は transcript に載せない**：`js/atlas-agent.js` は tool の結果を**プロンプト本文の JSON** として戻すので、data URL をそこに置くと画像ではなく数十万文字の base64 になる。台帳が画素を持ち、transcript には bbox・中心・zoom・bearing・pitch・base・投影・ON のレイヤー・Chronos 時刻という**その瞬間の機械値**だけが載る（＝**数値は状態から、見え方は画像から**）。1 呼び出しに載せるのは**直近 3 枚**（ai-proxy の `MAX_IMAGES`＝4）で、落とした枚数は**明示する**。撮った絵は**読者にも縮小版で見せる**（タップで拡大） |
 | 早く終わったターンが残すもの | `js/atlas-turn-continuity.js` | ①**訊いた質問を会話の記録へ 1 行として残す**（選択肢付き。`did:` の一覧＝260 字で切られる側には入れない）。②**中止の印は「考え中の点」だけを置き換える**——ターンが既に描いたものは残る。点まで届かなかった bubble だけを丸ごと置き換える |
 | 返信に載せる結果 | `js/atlas-turn-results.js` | そのターンの結果のうち**どれを返信に載せるか**。①**回答の族**は主題ごとに最良を1つ（修復が失敗を置き換える。同点なら先に書いたものが残る）。②**同じ操作の繰り返しは最後のもの**——アプリが持っているのが最後のものだから。同一性は action の型と引数、または結果が自分で名乗った `meta.resultKey`（経路は**解決済みの端点と mode** で名乗る＝「ここから」と `my_location` が返した座標は同じ出発点）。⚠ **Atlas の呼び出し回数は制限しない**（CONSTITUTION.md §5）——変わるのは読み手に何回見せるかだけ。③**同じ tool 呼び出しの同一性**（`callKey(name,args)`）——これは描画時ではなく **実行前**に `js/atlas-agent.js` が引く |
@@ -303,7 +303,7 @@ getter なので、観測していない成功を呼び出し側が書き込む�
 
 **⚠ カタログは押し付けず、訊かれたときに返す。**
 そのターンに渡すのは**中核 7 ツールとその schema だけ**（約 5.9 千文字）。それ以外の能力は
-`find_capability(query)` が**全 127 を検索**し、**得点したものを全部** schema 付きで返し（**打ち切り無し**——説明文は 41 ブロック共有なので、能力ごとに引くと同じブロックが繰り返される。**まとめて 1 回引いて重複を落とす**：実測 67,600 → 24,519 B・1 文字も切らずに）、`run_capability(id, args)`
+`find_capability(query)` が**レジストリの全 129 を検索**し（返るのは撤去済み 1 を除く **128** から）、**得点したものを全部** schema 付きで返し（**打ち切り無し**——説明文は 45 ブロック共有なので、能力ごとに引くと同じブロックが繰り返される。**まとめて 1 回引いて重複を落とす**：実測 67,600 → 24,519 B・1 文字も切らずに）、`run_capability(id, args)`
 が起動する——**到達できる範囲は全部のままで、送る量だけが減る**。
 ⚠ **以前は全能力の説明文（64,250 文字）を毎回入れていた。**「関連する能力だけ」に絞る仕組みは
 あったが、選別を決めていたのは `produces:'explanation'` に付く加点で、実測では
@@ -787,13 +787,16 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   事実優先・意見の出し方・感情表現・自己設定の扱い・内部指示の非開示——これらは
   **そのファイルの中の文章そのものが仕様**で、この文書はここに書き写さない
   （**同じ事実を2か所に書くと片方だけが古くなる**——`npm run check:docs`）。
-- **20 本すべての system prompt が `personaPrompt('<その呼び出しの役割>')` で始まり、
-  各呼び出し側はタスク規則しか足さない**（`atlas-console` 9・`news-ui` 3・`analysis-research` 2・
-  `app-body` 2・`atlas-geo-resolve` 2・`monitor-run` 1・`refresh-news` 1）。モードは 2 つ——
+- **22 本すべての system prompt が `personaPrompt('<その呼び出しの役割>')` で始まり、
+  各呼び出し側はタスク規則しか足さない**（`atlas-console` 9・`news-ingest` 3・`analysis-research` 2・
+  `app-body` 2・`atlas-geo-resolve` 2・`atlas-gloss` 1・`news-ui` 1・`monitor-run` 1・`refresh-news` 1）。
+  ⚠ **本数と内訳の正本は `tests/r285-checks.test.mjs` の `EXPECTED_CALLS`**——あの表に無いファイルは
+  検査の視野にも入らないので、prompt を足したらまずあの表に足す。モードは 2 つ——
   出力が人の読む文章になる経路は全文、出力が機械可読な JSON だけの経路（地域の輪郭・
   行政単位の解決・ニュースの地点解析・記事翻訳・地名検証）は `{mode:'internal'}` で
   身元・事実規律・非開示だけを渡す。
-  サーバー側の2本は Edge Function がリポジトリ外を import できないため
+  サーバー側の3ファイル（`monitor-run`・`refresh-news`・`news-ingest`）は Edge Function が
+  リポジトリ外を import できないため
   `supabase/functions/_shared/atlas-persona.js` の**生成された写し**を読む
   （`node scripts/sync-atlas-persona.mjs`・`npm run check:static` が差分を落とす）。
 - **プリセット送信文の主語は「視界」であって「中心画素が落ちる国」ではない**
@@ -1821,19 +1824,6 @@ Atlas の自然言語も同じ経路計算を呼ぶ補助的な入口で、**両
 | `js/routing.js` | 実際の経路計算、地図への描画、`window.IntMapRouting` の公開契約 |
 | `js/routing-ui.js` | パネル本体。**遅延取得**（`IntMapLazy.need('routeUi')`）。CSS は `css/intmap.css` の `.rtp-*` |
 | `js/routing-ops.js` | 既存の経路についての分析（標高・国境・沿道・到着時刻・経路差・過去の路線網） |
-| `js/routing-errors.js` | 失敗の分類 `window.IntMapRouteErrors`。15 コード。各コードは**文ではなく判断**を運ぶ（再試行してよいか・別 provider に投げてよいか・利用者が直せるか）。文は別に 9 言語で引く |
-| `js/routing-time.js` | **どちらの「今」か** `window.IntMapRouteClock`。`planningNow()`＝Chronos（読者が見ている時刻・depart at / arrive by / 沿道天候）、`navNow()`＝壁時計（案内中）。**時計を増やしていない。既にある2つに名前を付けただけ** |
-| `js/routing-traffic.js` | 交通情報つき provider のアダプタ `window.IntMapRouteTraffic`。`routing-relay` 経由でのみ通信し、**結果を一切保存しない**（provider の規約） |
-
-**能力レジストリ (§3)** — `js/routing-providers.js` は 40 キーの語彙を宣言し、**どの provider も
-全キーに答えなければ登録できない**（`assertComplete` が throw する）。キーが無いことは `false` と
-読まれてしまうが、意味は「誰も訊いていない」なので、その2つを区別しないための仕組み。
-UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押しても何も起きないボタン」が構造上作れない。
-⚠ 語彙に入るのは**事実**だけ（yes/no か数）。**計算するもの**（どの provider がこの要求に答えるか、
-それを選ぶと何を失うか）は関数のままで、語彙には入れない。
-⚠ 各 provider は `evidence` を持つ——`'measured'`（実サーバに訊いた）か `'documented'`（提供元の
-文書を読んだだけ）。`documented` の provider は `available()` が relay の答えを得るまで false なので、
-**文書の力だけで利用者に何かを提示することは無い**。
 | `js/routing-errors.js` | 失敗の分類 `window.IntMapRouteErrors`。15 コード。各コードは**文ではなく判断**を運ぶ（再試行してよいか・別 provider に投げてよいか・利用者が直せるか）。文は別に 9 言語で引く |
 | `js/routing-time.js` | **どちらの「今」か** `window.IntMapRouteClock`。`planningNow()`＝Chronos（読者が見ている時刻・depart at / arrive by / 沿道天候）、`navNow()`＝壁時計（案内中）。**時計を増やしていない。既にある2つに名前を付けただけ** |
 | `js/routing-traffic.js` | 交通情報つき provider のアダプタ `window.IntMapRouteTraffic`。`routing-relay` 経由でのみ通信し、**結果を一切保存しない**（provider の規約） |
