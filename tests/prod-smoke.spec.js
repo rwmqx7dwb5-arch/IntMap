@@ -592,7 +592,7 @@ test('(#R178) prod service worker caches every terrarium DEM alias', async () =>
    CDNs, on purpose, and what is being asked here is whether the ECMWF field the live site actually
    downloads produces the right PICTURE and the right NUMBER. This file already drives the deployed
    site with real network and retries, so it is where they belong — and it is also this round's
-   production verification (CLAUDE.md §5). They reuse the shared page, like every test above, so
+   production verification (AGENTS.md §5). They reuse the shared page, like every test above, so
    they cost assertions rather than boots.
 
    ⚠ EACH ONE STATES WHAT IT MEASURED WHEN IT SKIPS. A test that quietly passes because the thing it

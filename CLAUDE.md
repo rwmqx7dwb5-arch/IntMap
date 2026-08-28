@@ -1,466 +1,78 @@
-# IntMap — 恒久指示 (Standing instructions)
+# IntMap — Claude Code 固有 (provider-specific)
 
-> **このファイルは毎セッション自動で読み込まれる常設の指示書。**
-> ユーザーは各セッションの最初のメッセージに**「今回やってほしい作業」だけ**を書く。
-> 定例の前置きは貼られない——**貼られていないことは「省略された」であって「不要になった」ではない。**
-> ここに書いてあるルールは、毎回明示されなくても**常に有効**。
+<!-- ⚠ 恒久指示の正本は AGENTS.md。ここには「Claude Code でしか意味を持たない事実」だけを書く。
+     両方に書ける事実をここに書いた時点で正本が2つになる（AGENTS.md §9）。 -->
+
+@AGENTS.md
+
+@.agents/rules/execution-strategy.md
+
+@.agents/rules/gpt-handoff.md
+
+---
+
+> **上の 3 行は import であって要約ではない。** Claude Code は `@` の指すファイルを起動時に
+> 展開して読み込む（相対パスは本ファイルからの相対）。**恒久指示の正本は `AGENTS.md`** で、
+> 本ファイルはそれに Claude Code 固有の作法を足すだけのもの。
+> Codex は `AGENTS.md` を直に読む。対応表は [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md)。
 >
-> 優先順位: **`CLAUDE.md`（本ファイル） ＝ `CONSTITUTION.md` ＞ `Architecture.md` ＞ `DEV-NOTES.md`**
-> 本ファイルは「どう働くか」、`CONSTITUTION.md` は「何を守るか（製品の不文律）」。**両方を読むこと。**
+> ⚠ **もし上の import が展開されず、`AGENTS.md` の中身が見えていないなら、いますぐ読むこと。**
+> それが見えていない状態は「恒久指示が無い」状態であって、「不要になった」ではない。
 
 ---
 
-## 0. セッションの始め方
+## A-1. セッションの始め方（Claude Code）
 
-1. ユーザーの最初のメッセージ＝**そのセッション固有の作業内容**。それ以外は本ファイルが供給する。
-2. **セッション名は Claude Code が最初のプロンプトから自動生成する。**
-   `/rename` を実行しない。ユーザーにセッション名を入力させない。
-3. 作業に入る前に、§1 の事前確認を必ず済ませる。
+- **セッション名は Claude Code が最初のプロンプトから自動生成する。**
+  `/rename` を実行しない。ユーザーにセッション名を入力させない。
+- **不明点は `AskUserQuestion` で訊く**（`AGENTS.md` §8）。通常の説明文・進捗報告・
+  最終報告の文章中に質問を混ぜない。
+- 起動時に `.claude/settings.json` の `SessionStart` hook が
+  `node scripts/worktree.mjs status --brief` を走らせ、branch・未コミット変更・空きラウンド
+  番号・deep tier の夜間結果を出す。**その出力に出ている事実を、手で数え直さない。**
 
----
+## A-2. 委譲（subagent）
 
-## 1. 着手前に必ず確認するもの
+`.agents/roles/` が**役の正本**で、`.claude/agents/*.md` は
+`node scripts/agent-sync.mjs` が**そこから生成する写し**（`npm run check:agents` が照合）。
+役そのものの説明は `.agents/rules/execution-strategy.md` §2。
 
-作業を開始する前に、以下をすべて確認すること。
+Claude Code では **Agent tool** に `subagent_type` を渡して起動する:
 
-- メモリ（`~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/memory/`）
-- `DEV-NOTES.md` の**最新ラウンド**
-- `CONSTITUTION.md`（製品の不文律）
-- **[`docs/README.md`](docs/README.md) — 文書の索引。**「どれが何の正本か・いつ更新するか」がここに
-  1枚の表であるので、今回触る主題の**正本**をここで特定してから、その文書を読む
-- `Architecture.md`（現状仕様）・`PRODUCT.md`（何ができるか）・`DECISIONS.md`（なぜそうなっているか）
-- `README.md`、および今回の作業に関係するすべてのドキュメント・記録ファイル
-- **現在の Git 状態**（ブランチ、未コミット変更、他セッションの worktree）
-- **既存の PR** と **CI 状態**
-
-Git 側の確認は 1 コマンドで済む——**手で `git status` / `worktree list` / ラウンド番号を数えない**:
-
-```bash
-node scripts/worktree.mjs status
-```
-
-これが、branch・未コミット変更・全 worktree・`origin/main` との差・`DEV-NOTES.md` の最新ラウンド・
-**空いているラウンド番号**をまとめて出す。ここに出ないものだけ個別に見る。
-
-報告されたバグについては、**実際に観測される挙動として再現したうえで**、表面的な対処ではなく
-**根本原因のレベルで**修正すること。
-
----
-
-## 2. プロジェクト情報
-
-| 項目 | 値 |
+| subagent_type | 渡す仕事 |
 |---|---|
-| Production | https://rwmqx7dwb5-arch.github.io/IntMap/ |
-| GitHub | https://github.com/rwmqx7dwb5-arch/IntMap （**public**・default branch `main`） |
-| Local | `npm run serve` → http://127.0.0.1:4173/ （**`file://` は非対応**） |
-| Admin | `admin.html` |
-| Supabase project ref | `vpekfwdpurzejrrmacac` |
-| **文書の索引** | **`docs/README.md`** — どれが何の正本か・対象読者・更新条件（**まずここ**） |
-| **実行戦略** | **`.claude/rules/execution-strategy.md`** — 並列化・委譲・隔離・検証の段（§5.0） |
-| **ラウンドの手順** | **`/intmap-round`**（`.claude/skills/intmap-round/`）・作業場は `node scripts/worktree.mjs` |
-| 専用 subagent | `.claude/agents/` — scout（全数調査）／verifier（テストとログ）／i18n（9言語）／implementer（隔離実装）／prod-verifier（本番検証） |
-| 現状仕様書 | `Architecture.md`（＋ `docs/FILES.md` ファイル台帳・`docs/MAP-LAYERS.md` レイヤー実装） |
-| 製品 | `PRODUCT.md`（目的・機能一覧・Atlas の到達点） |
-| 技術判断 | `DECISIONS.md`（今も有効な判断とその理由だけ） |
-| 開発記録 | `DEV-NOTES.md`（**最新 `R###` エントリを先頭に足す**） |
-| 過去記録 | `DEV-NOTES-ARCHIVE.md`（読むだけ・追記しない） |
-| 統治原則 | `CONSTITUTION.md` |
-| 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE,AREA-MONITORS}.md` |
-| Stripe 寄付 (EN) | https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en |
-| Stripe 寄付 (JA) | https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja |
-
-**Claude 用 IntMap アカウント（Google）の資格情報は `CLAUDE.local.md` にある。**
-このリポジトリは **public** なので、パスワード等の秘密情報を `CLAUDE.md` や
-その他の追跡対象ファイルに書いてはならない（`CLAUDE.local.md` は `.gitignore` 済み）。
-
-### ローカルプレビュー
-
-`.claude/launch.json` にラウンド別のプレビュー設定がある。慣例は
-**`intmap-preview-r<N>` / ポート `4000 + N`**（R403 なら `http://127.0.0.1:4403`）。
-`node scripts/worktree.mjs new` が 1 件足すので、手で書く必要はない。dev サーバは
-**必ず preview ツール経由**で起動し、Bash から直接起動しない。
-
-⚠ **このファイルは追跡対象ではない**（#R338 で外した）。中身は
-`C:/Users/.../Temp/intmap-worktrees/…/dist` のような**このマシンだけの絶対パス**で、
-共有する意味が無い。追跡していた間は、preview ツールが**原本の**そのファイルへ書くため、
-**並行セッションが 1 つでもプレビューを持つと原本の早送りが拒否され**（§6 が他セッションの
-未コミット変更を触ることを禁じているので、その拒否は正しい）、**USB バックアップも
-`skipped master-not-synced` で止まっていた**。実測 #R334: 19 セッション同時・原本は 3 コミット
-遅れ・バックアップは skip。外したことで、書き込みも読み出しも今までどおりのまま、
-他セッションの merge を塞がなくなった。
-
----
-
-## 3. 変更の作法
-
-1. **既存機能の削除・縮小は、確認を取ってから行う。勝手にはしない。**
-   必要と判断したら**提案してよい**——何を・なぜ・代わりに何が残るか・失うものを示し、
-   **承認を得てから実行する**。⚠ **承認の無い削除・縮小・無効化・簡略化は、今までどおり禁止。**
-   ⚠ **確認の時期**は、今回の依頼と**不可分**なときだけその場で訊き、それ以外は**依頼を完遂してから**
-   最終報告の中で提案する（正本は `CONSTITUTION.md` §0 の 3）。
-   ⚠ **Atlas は別扱い**——実装は削ってよいが、**到達可能な能力と回答品質は削らない**
-   （`CONSTITUTION.md` §5）。
-   なお、要求された作業と**無関係な**リファクタリング・仕様変更・UI 変更・挙動変更を勝手に行っては
-   ならない（2 と同じ理由）。削るべきものに気づいたときも、まず今回の作業を終えてから提案する。
-
-2. **絶対に勝手な判断または解釈によって余計な変更を行ってはならない。**
-   要求された範囲を超える変更が必要または有益であると考えた場合も、**実行する前に必ず確認**すること。
-
-3. **偽物・表面的・暫定的・ハリボテ・プレースホルダーの実装は禁止。**
-   機能は**実データおよび実際の挙動**を用いて実装し、必要な **Atlas dispatch ロジック、catalog、
-   SYS 定義**その他関連する内部定義にも**同時に**組み込むこと。
-
-4. **データソースを変更する場合**は、**出典表記・利用規約・プライバシー情報・関連する説明ページ**も
-   同時に更新すること。
-
-5. **UI・文言・応答その他ユーザーに表示される内容の変更は、現在対応している全言語すべてに反映する。**
-   対応言語: **en / ja / de / ru / es / zh-Hant / zh-Hans / fr / ko（9言語）**。
-   ゲートは `npm run check:i18n`（`npm test` に内包）。
-
-6. **許可なく絵文字を追加してはならない。**
-
-7. **すべてをモダンな実装で行い、明示のない限り iOS 風の洗練されたデザインにすること。**
-
-8. **各指示について、要求された作業を可能な限り 1 回のパスで完了する。**
-   不必要に作業を分割し、同じ種類の確認・修正・テスト・deployment をユーザーに何度も要求してはならない。
-
----
-
-## 4. テストとデータベース
-
-- **変更後は必ず `npm test` を実行**し、**必要な回帰テストを追加**すること。
-- **データベース変更は必ず `supabase/migrations/` を通じて**行うこと。
-- 環境が許す場合は **`supabase db reset`** および **`supabase test db`** も実行すること。
-- 1 ターンを数時間にしない。全件テストは**完成後に 1 回**。長い待ちは並列化し、
-  push 前に CI と同じ門をローカルで通す。待っている間はポーリングせず別の独立作業を進める。
-
----
-
-## 5. ワークフロー（原則として最後まで完走する）
-
-### 5.0 実行戦略は Claude が決める（利用者に管理させない）
-
-ユーザーは「これを実装して」「これを直して」としか言わない。
-**分解・並列化・subagent への委譲・worktree による隔離・検証の段は、毎回 Claude 自身が判断する。**
-worktree・subagent・agent 設定の手動管理をユーザーに要求してはならない。
-
-- 独立した調査・分析・実装は**積極的に並列化**する（ただし**小さい仕事まで並列化しない**）
-- リポジトリ探索・大量ログ解析・独立調査は **subagent へ委譲**し、メインの context を浪費しない
-- 並列編集が有効なら **worktree で安全に分離**する（同じファイルを 2 体に書かせない）
-- 作業中は**対象テストだけ**で高速に検証し、広い網は**適切な段階で 1 回**
-- **速度のために IntMap の品質を落とさない**
-
-⚠ **正本は [`.claude/rules/execution-strategy.md`](.claude/rules/execution-strategy.md)**
-（判断基準・委譲先の agent・検証の段の表）。ラウンド 1 本を通す**具体的な手順**は
-**`/intmap-round`**（`.claude/skills/intmap-round/`）。ここに書き写して二重にしない。
-
-### 5.1 工程
-
-問題によって妨げられない限り、本規程の確認要件を遵守し、並行作業の存在を考慮したうえで、
-**以下のワークフロー全体を完了まで実行する**こと。
-
-```
-調査 → 再現 → 実装 → ドキュメント更新 → テスト → commit → push → PR
-     → CI 確認および修正 → squash merge → production deployment
-     → production verification → branch deletion → 原本 (OneDrive) の最新化
-```
-
-**最後の工程は省略できない。** 原本は `C:\Users\gyuuk\OneDrive\IntMap`（§6）。merge した内容が
-原本の作業ディレクトリに**実際に書き込まれて**初めて、その作業は手元で完了したことになる。
-**冪等なので、他セッションと同時に走らせてよい**（§6）。
-
-```bash
-node scripts/master-sync.mjs --sync    # fetch して原本を origin/main へ早送り
-node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなければ exit 1
-```
-
-原本の場所はハードコードしていない。`git rev-parse --git-common-dir` から導出するので、
-**どの worktree から実行しても原本を指す。**
-
-**変更した Edge Function は本番環境へデプロイする。** 例:
-
-```bash
-supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac --use-api
-```
-
-⚠ **`--use-api` を省くと無言でハングする。** 既定のバンドルは Docker を使うが、このマシンでは
-**デーモンが動いていない**（実測 2026-08-24: `docker --version` は **29.6.1** を返す＝CLI は入って
-いる。止まっているのはデーモンで、`docker info` は `failed to connect to the docker API at
-npipe:…` を返す）。旗が無いと**標準出力が 1 バイトも出ないまま 600 秒経っても終わらない**ので、
-「まだ実行中」と区別がつかない。⚠ **進んでいるかどうかは経過時間ではなく
-`supabase functions list` の `version` / `updated_at` で判定する。**
-
-**Edge Functions は 13 本**（`ai-proxy` / `alerts-relay` / `aviation-feed` / `cable-geo` /
-`delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `refresh-news` /
-`routing-relay` / `sv-cov` / `volcano-feed`）。13 本すべてが
-`supabase/config.toml` に `[functions.*]` として宣言されている。
-⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・
-`atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・
-`news-ingest.js`・`volcano-parse.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
-
-**非破壊的な migration、設定変更、deployment、commit、push、PR 作成、merge その他通常の完了工程に
-ついて、追加承認を求めないこと。**
-
-### ただし、必ず事前に確認を求める場合
-
-- 指示または意図された挙動の**一部でも不明確**な場合
-- **既存機能の削除・縮小・無効化**（§3 の 1。**提案は歓迎、実行は承認後**）
-- **破壊的変更・データ損失・料金発生・契約変更・外部サービス上の重大な変更**、
-  その他同様に重大な結果を伴う判断
-
----
-
-## 6. 原本と、並行セッションと Git
-
-**原本（master copy）は `C:\Users\gyuuk\OneDrive\IntMap` である。**
-これはリポジトリの main worktree であり、OneDrive が同期している唯一の作業ディレクトリ。
-GitHub は共有と CI のための remote、USB は §11 のバックアップであって、**どちらも原本ではない。**
-
-**原本は「作業場」ではなく「`main` の置き場」である。**
-原本は常に `main` にあり、`origin/main` と一致し、作業ツリーは clean。
-**原本で branch を切って作業してはならない。**
-
-- **作業は必ず、専用 branch と独立した worktree で行う。**
-  worktree は OneDrive の外（`%LOCALAPPDATA%\Temp` 以下）に置く。
-  そこで完結した作業は**原本に 1 バイトも書き込まない**——だから次の工程が要る。
-  **手で組み立てない**——`node scripts/worktree.mjs new <slug>` が、空きラウンド番号の決定・
-  branch・OneDrive 外の worktree・`node_modules` の junction・preview 設定までを 1 回で行う。
-  終わったら `node scripts/worktree.mjs done`（**自分のものだけ**片付ける）。
-
-- **§5 の最終工程で原本を merge 後の状態にする。** `node scripts/master-sync.mjs --sync`。
-  これを行わない限り、その作業は原本に存在しない。
-- **この工程はロックを必要としない。** `--sync` は `main` を `origin/main` へ早送りするだけで、
-  **branch を切り替えず、未コミットの変更を上書きしない**＝**冪等**。何セッションが同時に走っても
-  結果は同じで、**1 回の実行がその時点で merge 済みの全セッション分を運ぶ**。
-  拒否されても失うものは無い——次のセッションの実行が同じ commit を運ぶ。
-- **未コミットの変更が「邪魔かどうか」を判定するのは git であって、このツールではない。**
-  早送りが触らないファイル（**他セッションの `.claude/launch.json` など**）は素通りする。
-  実際に上書きになる場合だけ `git merge --ff-only` 自身の理由を出して止まる。
-  `--check` も「遅れている」と「汚れている」を分け、**汚れは警告として印字するが exit 0 を妨げない**
-  （USB ミラーは作業ディレクトリをそのまま写すので、汚れたまま写すのが §11.5 の要求）。
-  ⚠ 以前は「汚れていれば何であれ拒否」だった。**正しい作業がゲートを迂回した実例がある**
-  ——用心深く見える拒否は、安全を足さずに**ツールを迂回する習慣を教える**。
-
-> ⚠ **なぜ原本を作業場にしないのか（#R282 追記の実測）**
-> 原本を既定の作業場にすると、2 つのものが同時に必要になる——「空いているか」を判定する排他
-> ロックと、占有されていたときの回復手順。ロックは**失効ロック**という新しい壊れ方を作り、
-> 競合時は並行度を 1 に落とす。そして最初に書いた `--sync` は「`origin/main` に含まれる branch
-> なら `main` へ checkout する」という規則を持っていたため、**原本で `feat/session-a` を使って
-> いるセッションの作業ディレクトリを、別セッションの終了処理が黙って `main` に切り替えた**
-> （実測。成功メッセージまで出た）。
-> **原本を `main` 専用にすると、切り替える branch がそもそも存在しない。**
-> ロックも回復手順も要らず、並行度も落ちない。
-
-> ⚠ **この規則が効かない範囲がある。** Claude Code の**ハーネス**が作る worktree は
-> `<repo>\.claude\worktrees\` にでき、そこは **OneDrive の中**である。Claude 自身が
-> `git worktree add` で作るものには上の規則が効くが、ハーネスが作るものには効かない。
-> 実測（#R282 追記）: そこに 2 本・**611 MB・11,615 ファイル**があり、ファイル属性に PINNED が
-> 立っていて **OneDrive が実際にアップロードしていた**（追跡対象の本体は 113.8 MB / 693 ファイル
-> なので、**同期量の約 9 割が一時物**）。
-> 恒久的に外へ出すには、その階層に**使用中の worktree が 1 本も無いとき**に
-> `.claude\worktrees` を OneDrive 外への junction に置き換える（OneDrive は reparse point を
-> たどらない）。**使用中の worktree があるときに行ってはならない。**
-
-複数の Claude Code セッションが同時に実行されている場合:
-
-- **各セッションは必ず独立した worktree および専用 branch を使用する。**
-  セッション間で同一の working directory を共有してはならない。同一 branch も共有してはならない。
-- **テストの dev サーバもセッションごとに分かれる**（`tests/helpers/session-seed.js`）。
-  ポートはチェックアウトから導出され、**原本と CI は 4173 のまま**・各 worktree は 4174〜4373。
-  ⚠ 以前は全チェックアウトが 4173 を共有し `reuseExistingServer` が効いていたため、
-  **2 つ目のセッションは自分のビルドを作らず相手の `dist/` を試験する**か、相手がサーバを
-  落とした瞬間に `ERR_CONNECTION_REFUSED` で死んでいた（実測 **2 failed / 25 did not run**。
-  私有ポートなら同じ木で **52 passed**）。
-- **別セッションの未コミット変更・branch・worktree・stash その他の作業状態を、
-  変更・削除・reset・clean・force-push・上書きしてはならない。**
-- 編集前・push 前・merge 前には**最新の Git 状態を確認**し、必要に応じて `main` の最新更新を取り込む。
-- 変更範囲が別セッションの作業と重なる場合、**そのセッションの作業を勝手に上書きしない。**
-- 各セッションは、割り当てられたタスクについて PR 作成 → CI 確認・修正 → squash merge →
-  production deployment → production verification → branch deletion まで**完了させる**。
-- **競合その他の問題を安全かつ明確に解決できない場合は、必ず確認を求める。**
-  問題解決後はワークフローを再開し、可能な限り完了まで実行する。
-
-> 実務上の注意: 原本（`C:\Users\gyuuk\OneDrive\IntMap`）が他セッションの作業中である場合がある。
-> 着手時に `git status` と `git worktree list` を必ず見ること。
->
-> ⚠ #R282 の実測: この規程が worktree を既定にしていた間に、原本は origin/main より
-> **15 コミット・159 ファイル**遅れていた（R272〜R279 が丸ごと欠落）。OneDrive の同期エンジンは
-> 正常に動いていた——**原本に何も書き込まれていなかった**だけ。GitHub と USB は各ラウンドで
-> 更新され、原本だけが「どの工程も責任を持たない写し」になっていた。
-
----
-
-## 7. ユーザーに依頼してよいこと（ごく限定）
-
-ユーザーが行うべき作業は、**2FA の完了・CAPTCHA の解決・秘密情報の本人入力**その他、
-**Claude にとって物理的または技術的に不可能なもの**に限る。
-
-CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他利用可能な手段を通じて
-**Claude 自身が完了できる作業を、ユーザーに依頼してはならない。**
-
-一見不可能に見える場合でも、まず利用可能な代替手段を徹底的に確認し、Claude 自身で可能な手段を
-尽くすこと。それでも人間による操作が必要な場合に限り、**必要な操作を可能な限り 1 回の依頼にまとめて**
-提示する。
-
----
-
-## 8. 不明点の扱い（推測禁止）
-
-指示の一部、意図する挙動、仕様、変更範囲、優先順位その他判断に必要な事項が**少しでも不明確な場合**、
-**推測・Guess・独自解釈によって補完してはならない。必ず確認すること。**
-
-- 確認事項が複数ある場合は、**質問数を制限せず**、必要な事項を徹底的に質問する。
-- 確認を省略するために「**一般的には**」「**おそらく**」「**最も自然なのは**」等の判断を用いてはならない。
-- **質問は必ず質問用の機能（AskUserQuestion）で行う。**
-  通常の説明文・進捗報告・最終報告等の文章中に質問を混在させてはならない。
-
----
-
-## 9. ドキュメントの更新
-
-- Markdown 系の記録、メモリ／記憶用途のファイル、`Architecture.md`、`DEV-NOTES.md`、`README.md`、
-  出典ページ、ロジック解説ページその他**プロジェクトの状態を記録または説明する文書**については、
-  **実装の現状を正確に反映するよう常に更新し、古い情報を放置しない。**
-- **複数の文書に書いてある同じ事実**（配信方法・Edge Function の一覧・対応言語・
-  USB バックアップの頻度など）は **`npm run check:docs`（`npm test` に内包）が実体と照合する**。
-  事実を書き写して二重にしないこと——**正本を 1 つに決め、他はそこへリンクする**。
-  ⚠ `Architecture.md` は**現状仕様書**であって変更履歴ではない。**ラウンド番号を書かない**
-  （経緯は `DEV-NOTES.md` の仕事。同じ検査がこれを見ている）。
-- **作業完了時**には、現在の状態を反映するよう `Architecture.md` および関連ドキュメントを更新し、
-  **`DEV-NOTES.md` の先頭に新しい `R###` エントリを追加する**（索引行と本文の両方）。
-- **文書を1本足したら、同じコミットで [`docs/README.md`](docs/README.md) に1行足す**
-  （その行が無ければ `npm run check:docs` が落ちる）。役割が既存の文書と重なるなら、
-  **新しい文書を作らずそちらへ足す**——1つの事実に正本が2つある状態を作らない。
-- ファイルの分担の全体像は [`docs/README.md`](docs/README.md) と `CONSTITUTION.md` §6:
-  `PRODUCT.md`＝何のためにあり何ができるか / `DECISIONS.md`＝なぜそうなっているか /
-  `Architecture.md`＝今どうなっているか（主題順） /
-  `DEV-NOTES.md`＝直近ラウンドの記録（新しい順） /
-  `DEV-NOTES-ARCHIVE.md`＝それ以前（古い順・追記しない）。
-
----
-
-## 10. コミュニケーションと最終報告
-
-**作業中の報告・質問・完了報告その他のコミュニケーションは、原則として日本語で行う。**
-
-最終報告は日本語で記述し、少なくとも以下を簡潔に記載する。
-
-- 実施した変更
-- 実施したテストおよび結果
-- CI 状態
-- commit / PR / merge 状態
-- production deployment の状態
-- production verification の結果
-- 残っている問題
-
-**作業が正常に完了した場合は、ユーザーによる追加作業が不要であることも明示する。**
-
-**最終報告の末尾には、§11.8 のバックアップ状態を必ず記載する。**
-
----
-
-## 11. 作業終了処理（Git → USB バックアップ）
-
-ユーザーから依頼された作業が**すべて完了した後**、必ず以下の終了処理を行う。
-
-### 11.1 Git
-
-実装・修正・テスト・必要なドキュメント更新をすべて完了させ（§5 のワークフロー）、
-**今回の変更を commit し、GitHub へ push する。**
-
-- **変更が存在しない場合は、不要な commit を作成しない。**
-- **GitHub 側が今回の作業を含む最新状態になっていることを確認してから**次へ進む。
-
-### 11.2 USB バックアップ — **作業のたびに毎回**
-
-USB バックアップは、**依頼された作業が完了するたびに毎回**行う。**1 日 1 回の制限は無い。**
-同じ日に複数のセッションがあれば、**そのすべてで**同期する。
-
-**手順は実装されている。読んで真似せず、これを実行する:**
-
-```bash
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1
-```
-
-⚠ **`pwsh` ではない。** このマシンに PowerShell 7 は**入っていない**（実測: `Get-Command pwsh` は
-CommandNotFound、`C:\Program Files\PowerShell` も `WindowsApps\pwsh.exe` も存在しない。
-`$PSVersionTable.PSVersion` は **5.1.26100.9168**）。#R372 までここは `pwsh -File …` と書いてあり、
-**その通りに実行すると `CommandNotFoundException` で終わる**——つまり終了処理の最後の1歩が、
-書いてあるとおりにやると必ず失敗する状態だった。スクリプト自身は 5.1 で完動する
-（`::new()` は 5.0 以降にあり、PS7 専用の構文は使っていない。実測 `RESULT ok 2683 files`）。
-
-最後の1行が `RESULT <status> <detail>` で、`ok` / `skipped` / `failed` のいずれかを返す。
-`skipped` は**エラーではない**（USB 未接続、または候補が複数あって一意に特定できない）。
-
-### 11.3 スクリプトが守っていること（**書き換えるときも壊さないこと**）
-
-- ⚠ **ミラー元は原本（`C:\Users\gyuuk\OneDrive\IntMap`）であって、temp の worktree ではない。**
-  スクリプトは原本の場所を**ハードコードせず** `git rev-parse --git-common-dir` から導出するので、
-  どの worktree から実行しても原本を見る。§5 の最終工程で原本を最新化し、
-  `node scripts/master-sync.mjs --check` が exit 0 を返してから同期すること
-  （原本が merge 後の状態でなければ、スクリプトは同期せず `skipped` で終わる）。
-- **同期方向は `原本 → USB` の一方向のみ。** USB 上のファイルを作業元にしない。逆同期しない。
-- **USB のルートが IntMap の完全ミラー**になる。中身は **Git HEAD の追跡対象ファイル**
-  （＝サイトを再現するのに必要なものすべて。`node_modules` / `.git` / `dist` / キャッシュは入らない）。
-  新規は作成、更新は上書き、**リポジトリに無いものは USB からも削除**する。
-  例外は `.intmap-backup-id.json` ——ドライブを識別するためにスクリプト自身が置く管理情報。
-- ⚠ **マシン固有のファイルは、意図的に USB に入らない。** `.claude/launch.json` は #R338 で追跡から
-  外れたので、ミラーの対象外であり、**次回同期で USB 上の古い写しは削除される**。これは正しい——
-  中身はこのマシンの worktree への絶対パスで、復元先で意味を持たない。**USB から復元した原本には
-  preview 設定が無い状態で立ち上がるが、`node scripts/worktree.mjs new` が作り直す**ので手当は要らない。
-- ⚠ **早送りを塞いでいた当のファイルが、早送りを通す側にも要る。** 追跡から外すだけでは、
-  **それを外すコミット自身を早送りできない**（早送りは HEAD の木から目標の木への 1 回の checkout で
-  あって履歴の再生ではないから、そのコミットはここでもファイルを消す必要があり、git は
-  ローカルで変更された／追跡外のパスの削除をどちらも拒否する。#R339 で両方を実測）。
-  そこで `master-sync.mjs --sync` が、**宣言されたマシン固有のパスに限り**、中身を退避 → git に消させる
-  → 書き戻す。**commit もせず、捨てもしない**（§6）。宣言に無いパスが 1 つでも混じれば拒否のまま。
-- **ドライブは推測しない。** ボリュームラベル `INTMAP-BACKUP`（または上記の識別ファイル）で特定する。
-  ラベル付きが無く、書き込み可能なリムーバブルが**ちょうど1台**のときだけ、それを採用してラベルを刻む。
-  候補が複数あって一意に決まらない場合は**スキップして報告する**。
-  **バックアップ先としては、内蔵 SSD・システムドライブ・OneDrive・ネットワークドライブを対象外**
-  にする（DriveType で除外。⚠ OneDrive はミラーの**元**であって、**先**ではない）。
-- **コピーが成功したことを、バックアップが成功したことにしない。** 同期後に両側を再帰的に歩き直し、
-  相対パス・存在・SHA-256 が**完全に一致することを確認する**。一致した場合のみ成功とする。
-- **失敗したら原因を調べ、再同期・再検証する**（既定3回）。それでも駄目なら**無限ループにせず**失敗として終える。
-- **成功したときだけ**、台帳に日時を書く:
-  `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/usb-backup-state.json`（リポジトリの外・追跡対象外）。
-
-### 11.4 終了報告
-
-すべての終了処理後、**最終報告（§10）の末尾**にバックアップ状態を簡潔に明示する。
-
-```
-GitHub: push済み / 最新
-USB: 2026-08-19 14:20 同期済み
-USB検証: 差分ゼロ
-```
-
-USB が接続されていなければ:
-
-```
-GitHub: push済み / 最新
-USB: 未接続のためスキップ
-```
-
-**USB 同期が最終的に失敗した場合は、その事実を隠さず明示する。**
-
----
-
-## 12. 本ファイル自体の保守
-
-本規程の前提となる**プロジェクト構成・開発環境・Git 運用・CI/CD・言語構成・Supabase 構成・
-deployment 方法**その他の事項に変更が生じ、**本ファイル自体を変更すべき状態になった場合は、
-その事実を放置してはならない。**
-
-その場合は、
-
-1. **何が変更されたのか**
-2. **本ファイルのどこを変更すべきなのか**
-
-を具体的に説明したうえで、**`CLAUDE.md` 全体をそのままコピー＆ペーストで完全置換できる形の最新版**
-として提示すること。**部分的な差分のみを提示したり、「この箇所だけ置換してください」等の形式に
-してはならない。**
-
-（本ファイルはリポジトリで追跡されているため、通常は Claude 自身が編集し、通常の変更と同じ
-ワークフロー——PR → CI → merge——に載せてよい。ユーザーに手作業を求めないこと。）
+| `intmap-scout` | 全数調査・呼び出し元の特定 |
+| `intmap-verifier` | テスト／CI／ビルドの大量ログ |
+| `intmap-i18n` | 9 言語の掃引 |
+| `intmap-implementer` | 触るファイルが重ならない並列実装 |
+| `intmap-prod-verifier` | 本番サイトでの検証 |
+
+- **独立した仕事は同じメッセージの中でまとめて起動する**（1 つずつ待たない）。
+- ⚠ **Agent tool の `isolation: "worktree"` を使わない。** それが作る worktree は
+  リポジトリの中（`.claude/worktrees/`）＝ OneDrive の中になる（§A-4）。
+  隔離は `node scripts/worktree.mjs new <slug>` で行う。
+
+## A-3. プレビューと dev サーバ
+
+**dev サーバは必ず preview ツール（`mcp__Claude_Browser__preview_start`）で起動し、
+Bash から直接起動しない。** ラウンド別の設定は `.claude/launch.json`（追跡対象外）にあり、
+`node scripts/worktree.mjs new` が 1 件足す。**慣例と、追跡から外した理由は
+[`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §4。**
+
+本番検証は `intmap-prod-verifier` に渡す（`AGENTS.md` §5.1 の production verification）。
+
+## A-4. ハーネスが作る worktree
+
+⚠ **Claude Code のハーネスが作る worktree は `<repo>\.claude\worktrees\` にでき、
+そこは OneDrive の中である。** `AGENTS.md` §6 の「worktree は OneDrive の外に置く」は
+自分で `git worktree add` するものにしか効かない。**実測と恒久的な対処は
+[`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §5。**
+
+## A-5. 権限と設定
+
+- `.claude/settings.json` — 追跡対象。読み取り専用コマンドと IntMap のゲートを allow 済み。
+  `GPT-HANDOFF/HANDOFF.md` の編集は deny（`.agents/rules/gpt-handoff.md`）。
+- `.claude/settings.local.json` — このマシンだけ。追跡対象外。
+- **MCP サーバはこの製品が供給するもの**（ブラウザ・セッション管理など）で、リポジトリは
+  1 つも宣言していない（`.mcp.json` は無い）。Codex 側の対応は
+  [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §6。

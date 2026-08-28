@@ -12,13 +12,15 @@
 
 | 文書 | 対象読者 | 役割（＝ここが正本の事実） | いつ更新するか |
 |---|---|---|---|
-| [`../CLAUDE.md`](../CLAUDE.md) | 作業する人／AI | **どう働くか** — セッションの始め方、着手前の確認、変更の作法、ワークフロー、報告、**USB バックアップの頻度と手順** | 開発環境・Git 運用・CI/CD・deployment の前提が変わったとき |
+| [`../AGENTS.md`](../AGENTS.md) | 作業する人／AI | **どう働くか** — セッションの始め方、着手前の確認、変更の作法、ワークフロー、報告、**USB バックアップの頻度と手順**。⚠ **32,768 バイトの天井がある**（`npm run check:agents`） | 開発環境・Git 運用・CI/CD・deployment の前提が変わったとき |
+| [`../CLAUDE.md`](../CLAUDE.md) | Claude Code | **`AGENTS.md` を import したうえで、Claude Code でしか意味を持たない作法**（委譲の呼び方・preview ツール・ハーネスの worktree・権限） | Claude Code 側の作法が変わったとき |
+| [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定 | 対応する製品・その設定が変わったとき |
 | [`../CONSTITUTION.md`](../CONSTITUTION.md) | 同上 | **何を守るか** — 製品の不文律、壊れやすい罠、地図・モバイルの作法、鍵とニュースの方針、文書の分担 | ユーザーが方針を変えたとき |
-| [`../.claude/rules/execution-strategy.md`](../.claude/rules/execution-strategy.md) | 作業する AI | **どう速く・安全にやるか** — 依頼の分解、並列化と委譲の判断基準、並列編集の隔離、検証の段、context の節約（`CLAUDE.md` §5.0 の正本） | 並列化・委譲・検証の方針が変わったとき |
-| [`../.claude/skills/intmap-round/SKILL.md`](../.claude/skills/intmap-round/SKILL.md) | 同上 | **ラウンド 1 本を通す具体的な手順**（`/intmap-round`）— 着手前・作業場・実装・文書・検証・PR・merge・deployment・終了処理の実行順。規則ではなく**順番とコマンド** | 工程の順やコマンドが変わったとき |
-| `../.claude/agents/*.md` | 同上 | **専用 subagent の定義**（scout / verifier / i18n / implementer / prod-verifier）。本文は起動されたときだけ読まれるので、詳しい手順はここに置く | 役割を足す・変えるとき |
+| [`../.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) | 作業する AI | **どう速く・安全にやるか** — 依頼の分解、並列化と委譲の判断基準、並列編集の隔離、検証の段、context の節約（`AGENTS.md` §5.0 の正本） | 並列化・委譲・検証の方針が変わったとき |
+| [`../.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) | 同上 | **ラウンド 1 本を通す具体的な手順**（Claude `/intmap-round`／Codex `$intmap-round`）— 着手前・作業場・実装・文書・検証・PR・merge・deployment・終了処理の実行順。規則ではなく**順番とコマンド** | 工程の順やコマンドが変わったとき |
+| `../.agents/roles/*.md` | 同上 | **専用 subagent の定義**（scout / verifier / i18n / implementer / prod-verifier）。本文は起動されたときだけ読まれるので、詳しい手順はここに置く。⚠ **`.claude/agents/` と `.codex/agents/` はここからの生成物**（`npm run check:agents`） | 役割を足す・変えるとき |
 | `../CLAUDE.local.md` | このマシンだけ | 資格情報とローカル固有の情報（**追跡対象外**。リポジトリは public） | 資格情報が変わったとき |
-| [`../CHATGPT-HANDOFF.md`](../CHATGPT-HANDOFF.md) | ChatGPT 側の会話 | **GPT → Claude の受け渡し規約** — どんな発話を実装意図として拾い、どの Issue の受信箱へ積むか（実装は `scripts/handoff*.mjs`・規則は `.claude/rules/gpt-handoff.md`） | 受け渡しの手順・受信箱・判定条件が変わったとき |
+| [`../CHATGPT-HANDOFF.md`](../CHATGPT-HANDOFF.md) | ChatGPT 側の会話 | **GPT → エージェントの受け渡し規約** — どんな発話を実装意図として拾い、どの Issue の受信箱へ積むか（実装は `scripts/handoff*.mjs`・規則は `.agents/rules/gpt-handoff.md`） | 受け渡しの手順・受信箱・判定条件が変わったとき |
 
 ## 製品と判断
 

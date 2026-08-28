@@ -35,9 +35,13 @@ package.json / package-lock     npm スクリプトと依存。dependencies が�
 vite.config.js                  ビルド設定（チャンク分割・静的アセットのコピー・prebuild フック）
 playwright.config.js            hermetic なブラウザ試験（webServer=scripts/serve.mjs）
 playwright.prod.config.js       実 URL に対する本番スモーク（webServer 無し・retry 3）
-CLAUDE.md                       Claude Code が毎セッション自動で読む恒久指示（作業の進め方・ワークフロー・
-                                確認要件・報告要件・作業終了処理）。⚠ 秘密情報を書いてはならない
-                                （このリポジトリは public）
+AGENTS.md                       毎セッション自動で読む恒久指示（作業の進め方・ワークフロー・確認要件・
+                                報告要件・作業終了処理）。**Codex はそのまま読み、Claude Code は
+                                CLAUDE.md の @AGENTS.md import から読む**。⚠ 32,768 バイトの天井
+                                （Codex project_doc_max_bytes。npm run check:agents が測る）。
+                                ⚠ 秘密情報を書いてはならない（このリポジトリは public）
+CLAUDE.md                       Claude Code 固有の作法。AGENTS.md と .agents/rules/*.md を import し、
+                                委譲の呼び方・preview ツール・ハーネスの worktree・権限だけを足す
 CLAUDE.local.md                 同じ機構のローカル上書き。**追跡対象外**（.gitignore ＋ .git/info/exclude）。
                                 公開できない資格情報だけを置く
 CONSTITUTION.md                 標準指示（最優先のルール集）

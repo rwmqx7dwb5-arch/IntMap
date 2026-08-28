@@ -102,7 +102,7 @@ test('R455 出来事カードのボタンは、名前が動作で始まり、同
   expect(labels.length).toBe(2);
   /* 先頭が動作の名前であること。⚠ 「3 sources」で始まってはいけない——それがこのラウンドの報告 */
   for (const l of labels) expect(l).toMatch(/^(Details|詳細)/);
-  /* 数は消えていない（CLAUDE.md §3.1 — 名前を直すことと情報を削ることは別の変更） */
+  /* 数は消えていない（AGENTS.md §3.1 — 名前を直すことと情報を削ることは別の変更） */
   expect(labels.some((l) => /\(3 sources\)|（3媒体）/.test(l))).toBe(true);
   /* ⚠ 単数形。「1 sources」の形が出たらここで落ちる。
      ⚠⚠⚠ この `\b` は一度**生の 0x08（backspace）に潰れて出荷されかけた**——ファイルを

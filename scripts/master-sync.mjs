@@ -13,7 +13,7 @@
  *  `pull --ff-only` in the reflog. Nothing had been WRITTEN into the folder for twelve hours, so
  *  there was nothing for the sync engine to carry.
  *
- *  ⚠ THE CAUSE WAS IN THE STANDING RULES, NOT IN ONEDRIVE. CLAUDE.md §6 asks every parallel session
+ *  ⚠ THE CAUSE WAS IN THE STANDING RULES, NOT IN ONEDRIVE. AGENTS.md §6 asks every parallel session
  *  for its own worktree, and those worktrees live under %LOCALAPPDATA%\Temp — outside OneDrive.
  *  §5's workflow ended at «branch deletion», and §11's USB mirror was taken from whatever working
  *  directory the session happened to be in (the ledger for R279 says «mirrored from the session
@@ -33,7 +33,7 @@
  *  ⚠ --check IS AN END-OF-TASK GATE, NOT A CI GATE, and deliberately not in `npm test`: on a CI
  *  runner the checkout is a detached PR ref and «behind origin/main» is the normal, correct state.
  *  What CI can prove about this rule is proved in tests/r282-checks.test.mjs instead.
- *  ⚠ IT NEVER TAKES A BRANCH AWAY FROM ANOTHER SESSION (CLAUDE.md §6). The master is «main, at
+ *  ⚠ IT NEVER TAKES A BRANCH AWAY FROM ANOTHER SESSION (AGENTS.md §6). The master is «main, at
  *  origin/main», not a workspace: --sync only ever fast-forwards main, never checks out anything,
  *  and never writes over an uncommitted change. Anything else is reported and left as it was.
  *  ⚠ AND BECAUSE OF THAT IT NEEDS NO LOCK. Fast-forwarding main onto origin/main is idempotent, so
@@ -106,13 +106,13 @@ const survey = ({ fetch = true } = {}) => {
 const blocking = (s) => {
   const out = [];
   if (!s.target) out.push('origin/main is unknown to the master (no remote-tracking ref).');
-  if (s.branch !== 'main') out.push(`the master is on «${s.branch}», not main — it is not a workspace (CLAUDE.md §6).`);
+  if (s.branch !== 'main') out.push(`the master is on «${s.branch}», not main — it is not a workspace (AGENTS.md §6).`);
   if (s.behind) out.push(`the master is ${s.behind} commit(s) behind origin/main.`);
   if (s.ahead) out.push(`the master is ${s.ahead} commit(s) ahead of origin/main (not pushed).`);
   return out;
 };
 const advisory = (s) => (s.dirty.length
-  ? [`the master has ${s.dirty.length} uncommitted change(s) — a concurrent session may own them (CLAUDE.md §6); they are mirrored as they are.`]
+  ? [`the master has ${s.dirty.length} uncommitted change(s) — a concurrent session may own them (AGENTS.md §6); they are mirrored as they are.`]
   : []);
 
 /* ── MACHINE-LOCAL PATHS: THE ONE THING A FAST-FORWARD IS ALLOWED TO CARRY ACROSS ──────────────
@@ -175,7 +175,7 @@ if (want('--sync')) {
   const before = survey();
   /* ⚠ THIS NEVER CHANGES WHICH BRANCH THE MASTER IS ON, AND NEVER TOUCHES A FILE IT DID NOT PULL.
      The first version of this switched to main whenever origin/main already contained the
-     checked-out branch — which is precisely what CLAUDE.md §6 forbids. MEASURED: a session sitting
+     checked-out branch — which is precisely what AGENTS.md §6 forbids. MEASURED: a session sitting
      on «feat/session-a» in the master had its working directory moved to main by ANOTHER session's
      finish step, silently and with a success message. The master is now defined as «main, at
      origin/main» (§6) and nobody works in it, so there is never a branch to leave: anything else
@@ -187,7 +187,7 @@ if (want('--sync')) {
   if (before.branch !== 'main') {
     console.error(`master-sync: refusing — the master is on «${before.branch}», not main.`);
     console.error(`  ${MASTER}`);
-    console.error('  the master is «main at origin/main» and is not a workspace (CLAUDE.md §6).');
+    console.error('  the master is «main at origin/main» and is not a workspace (AGENTS.md §6).');
     console.error('  a session is working in the wrong place; this will NOT move it. Finish or move that work.');
     process.exit(1);
   }
@@ -272,7 +272,7 @@ if (want('--sync')) {
     console.error(`master-sync: git refused the fast-forward in ${MASTER}.`);
     for (const line of why.split('\n').slice(0, 8)) console.error(`  ${line}`);
     if (before.dirty.length) {
-      console.error(`  the master has ${before.dirty.length} uncommitted change(s); another session may own them (CLAUDE.md §6).`);
+      console.error(`  the master has ${before.dirty.length} uncommitted change(s); another session may own them (AGENTS.md §6).`);
     }
     console.error('  nothing is lost: this step is idempotent and the next run carries this commit too.');
     process.exit(1);

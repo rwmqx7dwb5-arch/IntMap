@@ -5,7 +5,7 @@
  *  carry: 8-bit RGB/RGBA, non-interlaced, which is what the AWS Terrain Tiles
  *  ("terrarium") public dataset serves. Kept here as one copy so the sea-floor
  *  grid this pipeline needs does not add a THIRD hand-written PNG reader to the
- *  repository (CLAUDE.md §9 — one canonical copy of a fact).
+ *  repository (AGENTS.md §9 — one canonical copy of a fact).
  * ==========================================================================*/
 import zlib from 'node:zlib';
 

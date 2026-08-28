@@ -1,6 +1,6 @@
 # IntMap — 実行戦略 (How the work is executed, every session)
 
-`CLAUDE.md` §5 が **何を・どの順で**やるか。このファイルは **それをどう速く・安全にやるか**。
+`AGENTS.md` §5 が **何を・どの順で**やるか。このファイルは **それをどう速く・安全にやるか**。
 利用者は「これを実装して」「これを直して」としか言わない。
 **分解・並列化・委譲・隔離・検証の段は、毎回 Claude 自身が決める。利用者に管理させない。**
 
@@ -9,7 +9,7 @@
 1. 依頼を**独立な仕事**に分ける（互いの出力を必要としないもの）。
 2. 独立な仕事が 2 つ以上あるなら、**同じメッセージの中で**まとめて起動する。1 つずつ待たない。
 3. 依存のある仕事だけを直列に残す。
-4. 待ちが出たら、その間に**別の独立作業**を進める。**ポーリングしない**（`CLAUDE.md` §4）。
+4. 待ちが出たら、その間に**別の独立作業**を進める。**ポーリングしない**（`AGENTS.md` §4）。
 
 ## 2. 自分でやるか、subagent へ渡すか
 
@@ -37,11 +37,11 @@
 - **同じファイルを 2 つの agent に書かせない。** 分解は**ファイル単位**で行い、重なるなら直列にする。
 - 並列実装のときは、`node scripts/worktree.mjs new <slug>` で**作業ごとに worktree を用意**し、
   各 implementer には**その絶対パスと、触ってよいファイルの一覧**を渡す。
-- ⚠ **Agent tool の `isolation: "worktree"` を IntMap では使わない。** それが作る worktree は
-  `<repo>/.claude/worktrees/` ＝ **OneDrive の中**になる（実測した影響は `CLAUDE.md` §6 の ⚠ 箱）。
+- ⚠ **製品のハーネスが作る worktree を隔離に使わない。** それはリポジトリの中
+  （＝ OneDrive の中）にできる（`docs/AGENT-SETUP.md` §5）。
   `scripts/worktree.mjs` は OneDrive の外に作る。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
-- 他セッションの branch・worktree・未コミット変更・stash に触れない（`CLAUDE.md` §6）。
+- 他セッションの branch・worktree・未コミット変更・stash に触れない（`AGENTS.md` §6）。
 - ラウンド番号は `node scripts/worktree.mjs status` が示す**空き番号**を使い、**push の直前に取り直す**
   （⚠ 稀ではない。`DEV-NOTES.md` を「改番」で引けば実例が並ぶ）。
 
@@ -57,7 +57,7 @@
 
 ⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、`npm run check:docs` の
 `gate-lists` 規則が両者を突き合わせる）。かつてここには 5 件しか無く、しかも
-`.claude/agents/intmap-verifier.md` が「この表が**唯一の正本**・ここには書き写さない」と
+`.agents/roles/intmap-verifier.md` が「この表が**唯一の正本**・ここには書き写さない」と
 宣言していた——**書き写しを禁じた分だけ、正本の穴がそのまま固定されていた。**
 
 | 触った主題 | ゲート |
@@ -67,6 +67,7 @@
 | 利用者に見える文字列 | `npm run check:i18n` |
 | 企業アトラス | `npm run check:companies` |
 | 文書 | `npm run check:docs` |
+| エージェントの文脈（`AGENTS.md`・`.agents/` とその生成物） | `npm run check:agents` |
 | `js/` のファイルを足した・消した | `npm run check:archfiles` |
 | 紛争データ | `npm run check:wars` |
 | 歴史都市名（`scripts/histcities/`） | `npm run check:histcities` |
@@ -76,7 +77,7 @@
 | 配られる資産（**build が要る**） | `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |
 
-⚠ 段 3 を作業の途中で何度も回さない（`CLAUDE.md` §4）。⚠ 段を飛ばして push しない。
+⚠ 段 3 を作業の途中で何度も回さない（`AGENTS.md` §4）。⚠ 段を飛ばして push しない。
 ⚠ **速度のために品質を落とさない。** 段を省くのではなく、**段の中を並列にする**。
 
 ## 5. context を太らせない
@@ -88,5 +89,6 @@
 
 ## 6. 手順の正本
 
-ラウンド 1 本を通す**具体的な手順**は `/intmap-round` にある（`.claude/skills/intmap-round/`）。
+ラウンド 1 本を通す**具体的な手順**は `.agents/skills/intmap-round/` にある
+（Claude Code `/intmap-round` ／ Codex `$intmap-round`）。
 状態の把握・worktree の用意・後片付けは `node scripts/worktree.mjs`。

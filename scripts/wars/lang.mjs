@@ -35,7 +35,7 @@
  *  gw = the CShapes gwcode. Every one is checked against data/cshapes.js for the date it is used on.
  * ==========================================================================*/
 
-/* Nine languages, the same set as the rest of the app (CLAUDE.md §3.5).
+/* Nine languages, the same set as the rest of the app (AGENTS.md §3.5).
    ⚠ THE KEYS ARE js/lang-registry.js's OWN CODES, not ISO tags — `jp`, `zh` (Traditional) and
    `zh-hans` are what that registry calls those three, and js/war-fronts.js looks a string up with
    `o[HOST.lang]`. A second spelling here would be a second list of languages, and the way it would

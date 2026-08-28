@@ -4,6 +4,7 @@ description: IntMap の 9 言語 (en/ja/de/ru/es/zh-Hant/zh-Hans/fr/ko) 翻訳�
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
+<!-- ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。 -->
 # IntMap · 9 言語の掃引 (i18n)
 
 ## 対象

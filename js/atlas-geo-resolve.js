@@ -34,7 +34,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
     /* ══ (#R413) 「現在地」 IN ALL NINE LANGUAGES INTMAP SHIPS, NOT FIVE OF THEM ══════════════════
        The regular expression this replaces carried ja / en / ru / es / de. A French, Korean or
        Chinese reader had NO WAY TO SAY IT: 「ma position」「내 위치」「我的位置」 fell through to the
-       deixis branch below and came back as the map centre, silently. CLAUDE.md §3.5 has required nine
+       deixis branch below and came back as the map centre, silently. AGENTS.md §3.5 has required nine
        languages for every reader-facing string for dozens of rounds; a phrase the reader TYPES is one.
        ⚠ IT IS A TABLE, NOT A PATTERN, so the coverage can be MEASURED, and it is KEYED BY INTMAP'S
        OWN LANGUAGE CODES — the ones js/locales/ui.<code>.js is named for — so tests/r413-checks

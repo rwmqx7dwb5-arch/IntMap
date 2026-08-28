@@ -6,7 +6,7 @@
  *  能力と回答品質は削らない。**
  *
  *  この一文は3つの文書に、3つの声で書いてある——`CONSTITUTION.md`（何を守るか）・
- *  `CLAUDE.md`（どう働くか）・`PRODUCT.md`（§2.1 守ること）。**同じ方針が3か所にある**という
+ *  `AGENTS.md`（どう働くか）・`PRODUCT.md`（§2.1 守ること）。**同じ方針が3か所にある**という
  *  形は、この repository が最もよく壊してきた形そのものである（#R403 の gate-lists、#R399 の
  *  本数、`backup-shell` の launcher——どれも「1つを直して2つを直し忘れた」）。
  *
@@ -39,7 +39,7 @@ import { readLF } from '../scripts/eol.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const CANON = 'CONSTITUTION.md';
-const OWNERS = [CANON, 'CLAUDE.md', 'PRODUCT.md'];
+const OWNERS = [CANON, 'AGENTS.md', 'PRODUCT.md'];
 const WIN = 700;                 /* scripts/doc-facts.mjs の窓と同じ幅 */
 
 /* ⚠ 規則1本だけを走らせる（#R407 の `--rule=`）。全規則を回すと 11 秒、これは 1 秒。

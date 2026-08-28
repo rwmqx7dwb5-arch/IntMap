@@ -440,7 +440,7 @@ test('R299 追記 ⑭ the normalised legend note is no longer than the agency on
 test('R299 追記3 ⑰ both legend notes fit one line in all NINE languages, not just English', () => {
   /* MEASURED on production at the panel's fixed 330 px content width: en and jp were one line while
      **de wrapped at 339 px, fr at 334 and ru at 414**. Shortening only the English is answering the
-     instruction in the language it happened to be discussed in (CLAUDE.md §3-5).
+     instruction in the language it happened to be discussed in (AGENTS.md §3-5).
      The bound is a WIDTH MODEL, not a character count: a CJK ideograph, kana or Hangul syllable takes
      about two Latin advances at this size. Production's own numbers calibrate it — the German agency
      note is 66 units and measured 304 px, i.e. ≈4.6 px/unit, so the 330 px box holds ≈71 units. */

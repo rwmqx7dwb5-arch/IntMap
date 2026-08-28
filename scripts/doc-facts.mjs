@@ -82,24 +82,28 @@ const PROSE_DOCS = [
   ...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f)),
   ...(has('docs') ? readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f) : []),
 ].filter((f) => f !== 'CLAUDE.local.md');
-/* the instruction documents: read by the session, not by a person browsing docs/ */
-const AGENT_DOCS = walkMd('.claude').sort();
+/* the instruction documents: read by the session, not by a person browsing docs/.
+   (#R503) The SOURCES live under `.agents/` — provider-neutral, so Codex reads them too. What is
+   left under `.claude/` is RENDERED from them by scripts/agent-sync.mjs, and scanning a copy as
+   well as its source would report every finding twice while proving nothing extra; `check:agents`
+   is what holds the copies to their source. */
+const AGENT_DOCS = walkMd('.agents').sort();
 const DOCS = [...PROSE_DOCS, ...AGENT_DOCS];
 const BODY = new Map(DOCS.map((f) => [f, rd(f)]));
 const eachDoc = (fn) => { for (const [f, s] of BODY) fn(f, s); };
 
 /* the sweep has to actually reach the tree — an empty scan passes everything */
 if (DOCS.length < 10) fail('scan', `only ${DOCS.length} documents were read — the sweep is not reaching the tree`);
-for (const must of ['Architecture.md', 'README.md', 'CLAUDE.md', 'CONSTITUTION.md', 'SECURITY.md']) {
+for (const must of ['Architecture.md', 'README.md', 'AGENTS.md', 'CLAUDE.md', 'CONSTITUTION.md', 'SECURITY.md']) {
   if (!BODY.has(must)) fail('scan', `${must} was not scanned`);
 }
 /* …and it has to reach the instruction documents, which is the half that was missing. Named
    individually, because `AGENT_DOCS.length > 0` would still be satisfied by a walk that found
    the agents and stopped short of the skill — the file that actually drifted. */
-for (const must of ['.claude/skills/intmap-round/SKILL.md', '.claude/rules/execution-strategy.md']) {
+for (const must of ['.agents/skills/intmap-round/SKILL.md', '.agents/rules/execution-strategy.md']) {
   if (!BODY.has(must)) fail('scan', `${must} was not scanned — the instruction documents are inside the sweep now`);
 }
-if (AGENT_DOCS.length < 3) fail('scan', `only ${AGENT_DOCS.length} instruction document(s) under .claude/ were read`);
+if (AGENT_DOCS.length < 3) fail('scan', `only ${AGENT_DOCS.length} instruction document(s) under .agents/ were read`);
 
 const ARCH = BODY.get('Architecture.md') || '';
 /* (#R280) §3 (the file ledger) and most of §7 (the layer implementation) moved to documents of
@@ -133,13 +137,13 @@ const FILES = BODY.get('docs/FILES.md') || '';
  *  ⚠ (#R399) THIS RULE READ TWO DOCUMENTS AND ONE SENTENCE EACH, AND SIX DOCUMENTS DRIFTED
  *    UNDER IT. Three holes, every one of them silent — the report stayed green and said so:
  *
- *      · THE DOCUMENT LIST WAS HAND-MAINTAINED. It named `CLAUDE.md` and `Architecture.md`.
+ *      · THE DOCUMENT LIST WAS HAND-MAINTAINED. It named `AGENTS.md` and `Architecture.md`.
  *        `docs/FILES.md` was never added, so its ledger sat at "全11本" and "9本" while the
  *        tree held twelve, and `SECURITY.md` ("eight") and `docs/SECURITY-ARCHITECTURE.md`
  *        ("ELEVEN") were never looked at at all.
  *      · THE NEEDLE REQUIRED A LITERAL ASTERISK (`\*\*?` = one `*`, then an optional second).
- *        `CLAUDE.md` writes `**Edge Functions は 12 本**` — the asterisks are BEFORE the noun —
- *        so the count matched nothing and `claimed` came back null on every run. CLAUDE.md was
+ *        `AGENTS.md` writes `**Edge Functions は 12 本**` — the asterisks are BEFORE the noun —
+ *        so the count matched nothing and `claimed` came back null on every run. AGENTS.md was
  *        right for four rounds by luck: the per-name roster check below is what held it, and a
  *        count check that never fires is indistinguishable from one that passes.
  *      · IT USED `.match()`, WHICH RETURNS THE FIRST HIT ONLY. `Architecture.md`'s §6.2 heading
@@ -169,7 +173,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
   if (declared.includes('_shared')) fail('edge-functions', 'config.toml declares [functions._shared] — that directory is a library, not a function');
 
   /* the two documents that promise the complete roster must name every function */
-  for (const f of ['CLAUDE.md', 'Architecture.md']) {
+  for (const f of ['AGENTS.md', 'Architecture.md']) {
     const body = BODY.get(f) || '';
     const missing = dir.filter((n) => !body.includes('`' + n + '`'));
     if (missing.length) fail('edge-functions', `${f} does not name ${missing.join(', ')}`);
@@ -242,7 +246,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
         }
       }
     });
-    if (!rosters) fail('edge-roster', 'no document writes the Edge Function roster out any more — CLAUDE.md §5.1 is where a session reads which functions exist');
+    if (!rosters) fail('edge-roster', 'no document writes the Edge Function roster out any more — AGENTS.md §5.1 is where a session reads which functions exist');
     else if (!problems.some((p) => p.startsWith('edge-roster'))) ok('edge-roster', `${rosters} document(s) write the roster out, each naming all ${dir.length}`);
   }
 
@@ -303,7 +307,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
   /* ── 2b. a document that ENUMERATES `_shared/` names all of it ──────────────────────────── */
   /* ⚠ `_shared/` is a library, not a function, so it is not in `dir` and rule 2a never sees it.
      Three documents listed it by hand and three had gone stale in different places:
-     `docs/FILES.md` was missing aviation-codec/aviation-model/volcano-parse, `CLAUDE.md` was
+     `docs/FILES.md` was missing aviation-codec/aviation-model/volcano-parse, `AGENTS.md` was
      missing atlas-persona, `docs/SECURITY-ARCHITECTURE.md` was missing volcano-parse.
      Only a list that PRESENTS ITSELF AS COMPLETE is held to it: a parenthesised run of three or
      more `.js` names next to the directory. A list that hedges (`など` / `ほか` / `その他` /
@@ -366,7 +370,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
   /* ⚠ A LIST OF EXACT SUBSTRINGS ONLY CATCHES THE WORDING SOMEBODY ALREADY THOUGHT OF. The two
      needles above missed the sentence that was actually sitting in CONSTITUTION.md §1 —
      「本番は OneDrive 上の …… を直接配信」 — the same false claim, spelled a way no needle matched,
-     and it survived every run of this gate. OneDrive is the MASTER WORKING DIRECTORY (CLAUDE.md
+     and it survived every run of this gate. OneDrive is the MASTER WORKING DIRECTORY (AGENTS.md
      §6); it has never served production, which is Pages publishing the dist/ build. */
   const SERVED_FROM_ONEDRIVE = /OneDrive[^\n]{0,60}?(直接配信|から配信|を配信|直配信)/;
   eachDoc((f, s) => {
@@ -417,15 +421,15 @@ const FILES = BODY.get('docs/FILES.md') || '';
 {
   const FREQ = [/1\s*日\s*1\s*回/, /1日に1回/, /一日一回/, /毎日\s*1\s*回/];
   eachDoc((f, s) => {
-    if (f === 'CLAUDE.md') return;               // the owner may say whatever it likes
+    if (f === 'AGENTS.md') return;               // the owner may say whatever it likes
     if (!/USB/.test(s)) return;
     for (const line of s.split('\n')) {
       if (!/USB/.test(line)) continue;
-      if (FREQ.some((re) => re.test(line))) fail('usb', `${f} states a backup frequency; the owner of that fact is CLAUDE.md §11`);
+      if (FREQ.some((re) => re.test(line))) fail('usb', `${f} states a backup frequency; the owner of that fact is AGENTS.md §11`);
     }
   });
-  if (!/USB/.test(BODY.get('CLAUDE.md') || '')) fail('usb', 'CLAUDE.md no longer describes the USB backup at all');
-  else ok('usb', 'the backup frequency is stated in CLAUDE.md only');
+  if (!/USB/.test(BODY.get('AGENTS.md') || '')) fail('usb', 'AGENTS.md no longer describes the USB backup at all');
+  else ok('usb', 'the backup frequency is stated in AGENTS.md only');
 }
 
 /* ═══ 8. the languages ════════════════════════════════════════════════════════════════════ */
@@ -816,8 +820,8 @@ const FILES = BODY.get('docs/FILES.md') || '';
   if (!idx) fail('doc-index', 'docs/README.md is gone — there is no index of the documents');
   else {
     /* ⚠ PROSE_DOCS, not DOCS. The index is a reader's table of "which document owns which fact",
-       and it already covers `.claude/` the way that table is written — one row for the rules,
-       one for the round procedure, one glob row for `../.claude/agents/*.md`. Holding every
+       and it already covers `.agents/` the way that table is written — one row for the rules,
+       one for the round procedure, one glob row for `../.agents/roles/*.md`. Holding every
        instruction document to a row of its own here would be a different rule about a different
        contract; what #R403 widened is the FACT SWEEP, not the index. That residual is written
        down in docs/TESTING.md rather than left implicit. */
@@ -1008,7 +1012,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
       /* ⚠ THE ANCHOR MUST BE UNIQUE, AND THIS IS NOT PEDANTRY — the first version of this rule took
          `indexOf`, and when tests/r407-checks blanked the real paragraph the rule quietly latched
          onto a SECOND copy further down the file and reported something else entirely. A 正本 with
-         two copies is not a 正本 (CLAUDE.md §9), and `.indexOf` on a duplicated anchor is the same
+         two copies is not a 正本 (AGENTS.md §9), and `.indexOf` on a duplicated anchor is the same
          defect #R399 found in `.match()`: it answers for the file with its first hit. */
       const copies = T.split(MARK).length - 1;
       const anchor = copies === 1 ? T.indexOf(MARK) : -1;
@@ -1094,7 +1098,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
 {
   const scripts = JSON.parse(rd('package.json')).scripts || {};
   const gates = Object.keys(scripts).filter((k) => k.startsWith('check:')).sort();
-  const LISTS = ['.claude/agents/intmap-verifier.md', '.claude/rules/execution-strategy.md'];
+  const LISTS = ['.agents/roles/intmap-verifier.md', '.agents/rules/execution-strategy.md'];
   if (gates.length < 5) fail('gate-lists', `package.json declares only ${gates.length} check:* scripts — this rule needs rewriting`);
   for (const f of LISTS) {
     const body = BODY.get(f);
@@ -1133,17 +1137,17 @@ if (RULE && RULE !== 'i18n-open-gap') {
 }
 
 /* ═══ 26. the USB backup is launched with a shell this machine HAS ════════════════════════
- *  (#R403) #R372 measured that PowerShell 7 is not installed here and corrected CLAUDE.md §11.2
+ *  (#R403) #R372 measured that PowerShell 7 is not installed here and corrected AGENTS.md §11.2
  *  — and the round procedure, the document a session actually follows, kept `pwsh -File …` for
  *  three more rounds. Following it, the last step of every round dies with CommandNotFound.
  *  ⚠ The needle is the LAUNCHER, taken from the owner of the fact rather than written down
- *    twice: whatever CLAUDE.md §11.2 invokes the script with is what every other document must. */
+ *    twice: whatever AGENTS.md §11.2 invokes the script with is what every other document must. */
 {
-  const owner = BODY.get('CLAUDE.md') || '';
+  const owner = BODY.get('AGENTS.md') || '';
   const SCRIPT = 'scripts/backup-usb.ps1';
   const shellOf = (line) => (line.match(/(^|[\s`])((?:pwsh|powershell)(?:\.exe)?)\b/i) || [])[2];
   const ownerLine = owner.split('\n').find((l) => l.includes(SCRIPT) && shellOf(l));
-  if (!ownerLine) fail('backup-shell', 'CLAUDE.md no longer shows which shell runs the USB backup — §11.2 is the 正本 for that');
+  if (!ownerLine) fail('backup-shell', 'AGENTS.md no longer shows which shell runs the USB backup — §11.2 is the 正本 for that');
   else {
     const want = shellOf(ownerLine).toLowerCase();
     /* ⚠ NOT ONLY THE DOCUMENTS. #R396 landed while this rule was being written and found the same
@@ -1162,7 +1166,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
         if (!got) continue;                                   /* naming the script is not invoking it */
         seen++;
         if (got.toLowerCase() !== want && !/ではない|not `?pwsh|NOT `?pwsh/i.test(line)) {
-          fail('backup-shell', `${f} launches the USB backup with ${got}; CLAUDE.md §11.2 uses ${want}: ${line.trim().slice(0, 90)}`);
+          fail('backup-shell', `${f} launches the USB backup with ${got}; AGENTS.md §11.2 uses ${want}: ${line.trim().slice(0, 90)}`);
         }
       }
     }
@@ -1174,7 +1178,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
 /* ═══ 27. how many functions share the relay guard ════════════════════════════════════════
  *  (#R403) Architecture.md said 「5本」 in §6.2 and 「4本」 in §17.2 — two sentences in one
  *  document disagreeing about one number, while eight functions actually import it. The second
- *  was a copy of the first with a link back to it, which is the arrangement §9 of CLAUDE.md
+ *  was a copy of the first with a link back to it, which is the arrangement §9 of AGENTS.md
  *  exists to prevent: it now states the fact once and points. */
 {
   const dirs = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
@@ -1329,7 +1333,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
 /* ═══ 31. 既存機能を削る方針は、3つの正本すべてで同じ形をしている ══════════════════════════
  *  (#R473) The user changed the policy: removing or shrinking an existing feature is allowed —
  *  proposed, confirmed, then done — and doing it unilaterally stays forbidden. That one policy is
- *  written in three documents, in three voices: CONSTITUTION.md (何を守るか), CLAUDE.md (どう働くか)
+ *  written in three documents, in three voices: CONSTITUTION.md (何を守るか), AGENTS.md (どう働くか)
  *  and PRODUCT.md (§2.1 守ること).
  *  ⚠ The failure this repository actually keeps having is «one was updated, two were not» —
  *    #R403's gate-lists, #R399's counts, `backup-shell`'s launcher. Here BOTH stale halves are
@@ -1344,7 +1348,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
  *  ⚠ AND A DOCUMENT THAT SIMPLY STOPPED SAYING IT IS NOT GREEN (#R385's shape): no anchor at all
  *    is a failure, not a pass. */
 {
-  const OWNERS = ['CONSTITUTION.md', 'CLAUDE.md', 'PRODUCT.md'];
+  const OWNERS = ['CONSTITUTION.md', 'AGENTS.md', 'PRODUCT.md'];
   const CANON = 'CONSTITUTION.md';
   const WIN = 700;                                   /* 錨から先の「その方針を述べている範囲」 */
   for (const f of OWNERS) {

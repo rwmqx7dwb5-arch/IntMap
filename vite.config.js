@@ -111,7 +111,7 @@ export const STATIC_EXCLUDE = [
      the site was then opened as `file:///…/index.html`, where Chrome blocks fetch() of a local file,
      so the data had to arrive through a <script> tag. That is no longer a situation this app can be
      in — since #R175 index.html loads `<script type="module" crossorigin>`, which `file://` refuses
-     outright, and CLAUDE.md §2 records `file://` as unsupported. The scenario the second copy was
+     outright, and AGENTS.md §2 records `file://` as unsupported. The scenario the second copy was
      for cannot occur, and it was costing every visitor's CDN and every deploy.
 
      ⚠ NOTHING IS DELETED. The .js stays in the repository (it is the input the .geojson-only deploy

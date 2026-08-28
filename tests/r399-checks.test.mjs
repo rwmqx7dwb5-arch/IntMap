@@ -7,8 +7,8 @@
  *
  *    · 走査する文書名が**手書きの2件**だった。`docs/FILES.md` は一度も入っていない。
  *    · 数の needle が**リテラルの `*` を必須**にしていた（`\*\*?` は「`*` 1個＋任意の2個目」）。
- *      `CLAUDE.md` は `**Edge Functions は 12 本**` と書く——アスタリスクは名詞の**前**なので
- *      一致は常に null。CLAUDE.md の数は一度も検査されていない。合っていたのは、下の
+ *      `AGENTS.md` は `**Edge Functions は 12 本**` と書く——アスタリスクは名詞の**前**なので
+ *      一致は常に null。AGENTS.md の数は一度も検査されていない。合っていたのは、下の
  *      「全部の名前が出てくるか」の検査が別の理由で効いていたからで、**発火しない検査は
  *      通った検査と見分けがつかない**。
  *    · `.match()` は**最初の1件**しか返さない。`Architecture.md` は §6.2 の見出しで正しい数を
@@ -71,8 +71,8 @@ const CASES = [
   { rule: 'edge-shared', file: 'docs/FILES.md', why: 'a name dropped from the _shared roster',
     from: 'news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）', to: 'news-cluster.js / news-ingest.js）' },
 
-  /* ② CLAUDE.md 側の同じ一覧。括弧の形に直したのは、この検査が読める形にするため。 */
-  { rule: 'edge-shared', file: 'CLAUDE.md', why: 'the same roster in the standing instructions',
+  /* ② AGENTS.md 側の同じ一覧。括弧の形に直したのは、この検査が読める形にするため。 */
+  { rule: 'edge-shared', file: 'AGENTS.md', why: 'the same roster in the standing instructions',
     from: '`atlas-persona.js`・`aviation-codec.js`', to: '`aviation-codec.js`' },
 ];
 

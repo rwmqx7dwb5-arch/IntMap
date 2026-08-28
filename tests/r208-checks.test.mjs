@@ -604,7 +604,7 @@ test('R208 ⑩: scripts/serve.mjs answers Accept-Encoding the way Pages does', a
   const { spawn } = await import('node:child_process');
   /* ⚠⚠ THE PORT IS THE OPERATING SYSTEM'S TO CHOOSE, NOT THIS TEST'S (#R415). It used to be `4188`
      here and `4189` for the traversal half below — two numbers picked on the day this was written.
-     Every checkout on the machine then runs the same two literals, and CLAUDE.md §6 asks every
+     Every checkout on the machine then runs the same two literals, and AGENTS.md §6 asks every
      parallel session for its OWN worktree: MEASURED 2026-08-24, forty-two of them. So the second
      session to reach this test found 4188 already LISTENING, held by a process belonging to a round
      it has nothing to do with; the spawn died of EADDRINUSE, «static server on» never arrived, and

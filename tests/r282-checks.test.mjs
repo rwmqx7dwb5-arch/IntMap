@@ -5,7 +5,7 @@
  *  「いやそもそもOneDriveが原本やろが。なんでOneDriveを編集しとらんねん。」
  *
  *  The master copy sat fifteen commits behind origin/main because no step in the workflow owned
- *  it. #R282 gave it an owner: scripts/master-sync.mjs plus the three places in CLAUDE.md that
+ *  it. #R282 gave it an owner: scripts/master-sync.mjs plus the three places in AGENTS.md that
  *  name it. This file is the measurement of that rule (#R278: a rule written in prose gets a check
  *  that measures it, in the same round) — and of the one property that makes the tool correct at
  *  all, namely that it FINDS the master rather than being told where it is.
@@ -126,7 +126,7 @@ test('R282 (3) --check fails on a master that is behind, and passes once it is s
   } finally { drop(s.tmp); }
 });
 
-/* ── ④ IT NEVER MOVES THE MASTER OFF THE BRANCH IT IS ON (CLAUDE.md §6) ─────────────────────────
+/* ── ④ IT NEVER MOVES THE MASTER OFF THE BRANCH IT IS ON (AGENTS.md §6) ─────────────────────────
    ⚠ THIS IS THE REGRESSION TEST FOR A DEFECT THIS ROUND SHIPPED AND THE NEXT ONE TOOK OUT. The
    first --sync checked out main whenever origin/main ALREADY CONTAINED the checked-out branch, on
    the theory that a contained branch is merged and therefore safe to leave. MEASURED: a session
@@ -225,10 +225,10 @@ test('R282 (4b) --sync is idempotent, so concurrent finishes cannot disagree', (
 });
 
 /* ── ⑤ THE STANDING RULES STILL NAME THE STEP ───────────────────────────────────────────────────
-   The defect #R282 fixed was a MISSING STEP in CLAUDE.md, so the regression to guard against is
+   The defect #R282 fixed was a MISSING STEP in AGENTS.md, so the regression to guard against is
    that step quietly falling back out of the workflow. */
-test('R282 (5) CLAUDE.md ends the workflow at the master and sources the USB mirror from it', () => {
-  const md = read('CLAUDE.md');
+test('R282 (5) AGENTS.md ends the workflow at the master and sources the USB mirror from it', () => {
+  const md = read('AGENTS.md');
 
   const fence = (md.match(/```[\s\S]*?```/g) || []).find((b) => b.includes('squash merge'));
   assert.ok(fence, '§5 still states the workflow as a fenced chain');

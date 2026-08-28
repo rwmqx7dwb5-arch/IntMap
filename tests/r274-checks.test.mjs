@@ -89,8 +89,11 @@ test('② the sweep reaches the whole tree of current-state documents', () => {
     }
     return acc;
   };
-  const expectedInstruction = walkMd('.claude').length;
-  assert.equal(instruction, expectedInstruction, 'the gate did not read every instruction document under .claude/');
+  /* (#R503) the instruction documents moved to the provider-neutral `.agents/`, so Codex reads
+     them too. What is left under `.claude/` is RENDERED from them by scripts/agent-sync.mjs, and
+     scanning a copy beside its source would report every finding twice while proving nothing. */
+  const expectedInstruction = walkMd('.agents').length;
+  assert.equal(instruction, expectedInstruction, 'the gate did not read every instruction document under .agents/');
   assert.equal(total, prose + instruction, 'the two halves do not add up to the total the gate printed');
   assert.ok(instruction >= 3, `only ${instruction} instruction document(s) scanned — the .claude/ half is not reaching the tree`);
   assert.ok(total >= 15, `only ${total} documents scanned — the sweep is not reaching the tree`);
@@ -161,13 +164,13 @@ test('⑦ Architecture.md says what the reader most needs to be told correctly',
 
 /* ── ⑧ single-owner facts stay single-owner ──────────────────────────────────────────────── */
 test('⑧ each shared fact still has exactly one owner', () => {
-  assert.match(read('CLAUDE.md'), /USB/, 'CLAUDE.md §11 is the owner of the backup procedure and no longer mentions it');
+  assert.match(read('AGENTS.md'), /USB/, 'AGENTS.md §11 is the owner of the backup procedure and no longer mentions it');
   assert.match(read('docs/RELEASE.md'), /ENABLE_PAGES_DEPLOY/, 'docs/RELEASE.md is the owner of the release procedure');
   assert.match(read('docs/SECURITY-ARCHITECTURE.md'), /## 6\. Browser security/,
     'docs/SECURITY-ARCHITECTURE.md is the owner of the browser-security posture');
   /* Architecture.md points at those owners rather than restating them */
   const md = read('Architecture.md');
-  for (const owner of ['docs/RELEASE.md', 'docs/SECURITY-ARCHITECTURE.md', 'CLAUDE.md']) {
+  for (const owner of ['docs/RELEASE.md', 'docs/SECURITY-ARCHITECTURE.md', 'AGENTS.md']) {
     assert.ok(md.includes(owner), `Architecture.md no longer points at ${owner}`);
   }
 });

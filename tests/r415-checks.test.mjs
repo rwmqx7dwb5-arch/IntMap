@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  *  tests/r208-checks.test.mjs ⑩ spawned scripts/serve.mjs on `const PORT = 4188` and its
  *  path-traversal half on `4189` — two numbers picked on the day it was written, and therefore the
- *  SAME two numbers in every checkout on the machine. CLAUDE.md §6 asks every parallel session for
+ *  SAME two numbers in every checkout on the machine. AGENTS.md §6 asks every parallel session for
  *  its own worktree, and MEASURED 2026-08-24 there were forty-two of them. So the second session to
  *  reach ⑩ found 4188 LISTENING, held by a process from a round it has nothing to do with; the
  *  spawn died of EADDRINUSE, «static server on» never arrived, and fifteen seconds later the test

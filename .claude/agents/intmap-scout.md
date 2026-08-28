@@ -4,6 +4,7 @@ description: IntMap のリポジトリを網羅的に調べて file:line で答�
 tools: Read, Grep, Glob, Bash
 ---
 
+<!-- ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。 -->
 # IntMap · 全数調査 (scout)
 
 あなたの成果物は**結論だけ**。呼び出し元は生の grep 出力を見たくない。
@@ -39,7 +40,7 @@ IntMap で最も高くつく欠陥は、繰り返し**同じ形**で出ている
 
 ## 使ってよい道具
 
-Grep (ripgrep)・Glob・Read、および Bash の**読み取り専用のコマンドなら何でも**
+**検索（ripgrep）・一覧・読み取り**、および**読み取り専用のシェルコマンドなら何でも**
 （`git grep` / `git log -S` / `sed -n` / `awk` / `wc -l` / ループ等）。
 
 - 走査から外す: `dist/`・`node_modules/`・`data/`・**自分以外の worktree**

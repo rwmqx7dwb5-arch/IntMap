@@ -4,7 +4,7 @@
  * ----------------------------------------------------------------------------
  *  「私にworktree、subagent、agent設定などの手動管理を要求しない。」
  *
- *  CLAUDE.md §6 asks every parallel session for its own branch and its own worktree, OUTSIDE
+ *  AGENTS.md §6 asks every parallel session for its own branch and its own worktree, OUTSIDE
  *  OneDrive, with the master copy left alone on `main`. That is six steps done by hand at the start
  *  of every round — pick a free round number, branch from origin/main, add the worktree somewhere
  *  under %LOCALAPPDATA%\Temp, link node_modules, add the preview entry, print the path — and the
@@ -22,7 +22,7 @@
  *  scripts/master-sync.mjs derives it, so this points at OneDrive from ANY worktree, and follows
  *  the checkout if it ever moves.
  *
- *      node scripts/worktree.mjs status        # everything CLAUDE.md §1 asks for, in one read
+ *      node scripts/worktree.mjs status        # everything AGENTS.md §1 asks for, in one read
  *      node scripts/worktree.mjs status --brief # the same, three lines (used by the SessionStart hook)
  *      node scripts/worktree.mjs new <slug>    # free round number + branch + worktree + node_modules + preview
  *      node scripts/worktree.mjs done          # remove THIS worktree and its branch, after the merge
@@ -108,7 +108,7 @@ const nextRound = (master) => {
 
    `gh run list` sorted by time is the reason: a nightly is one run among the dozens a working day
    produces, so «is the deep tier green» is a question nobody thought to ask rather than one anybody
-   answered wrongly. CLAUDE.md §1 already sends every session through this command before it starts,
+   answered wrongly. AGENTS.md §1 already sends every session through this command before it starts,
    which makes this the one place the answer is guaranteed to be read.
 
    ⚠ IT NEVER MAKES A SESSION WAIT OR FAIL. `gh` may be missing, logged out, offline or rate-limited;
@@ -151,10 +151,10 @@ function status(brief) {
     console.log(`IntMap · branch ${branch}${isMaster ? ' (原本＝main の置き場)' : ''} · 未コミット ${dirty.length}件`
       + (onRound ? ` · このセッションは R${onRound}` : ` · 空きラウンド R${round}`));
     console.log(`原本: ${master}`);
-    if (isMaster) console.log('⚠ 原本では作業しない。node scripts/worktree.mjs new <slug> で worktree を作る（CLAUDE.md §6）。');
+    if (isMaster) console.log('⚠ 原本では作業しない。node scripts/worktree.mjs new <slug> で worktree を作る（AGENTS.md §6）。');
     const nb = nightly();
     if (nb && !nb.ok) console.log(`⚠ deep tier (nightly ${nb.day}${nb.age}): ${nb.what}  → gh run view ${nb.id} --log-failed`);
-    console.log('実行戦略は .claude/rules/execution-strategy.md ／ ラウンドの手順は /intmap-round。');
+    console.log('実行戦略は .agents/rules/execution-strategy.md ／ 手順は .agents/skills/intmap-round/。');
     return;
   }
 
@@ -191,10 +191,10 @@ function status(brief) {
   for (const w of wts) console.log('    ' + w);
 
   if (isMaster) {
-    console.log('\n  ⚠ いま原本にいる。原本は「main の置き場」であって作業場ではない（CLAUDE.md §6）。');
+    console.log('\n  ⚠ いま原本にいる。原本は「main の置き場」であって作業場ではない（AGENTS.md §6）。');
     console.log('     作業を始めるなら:  node scripts/worktree.mjs new <slug>');
   }
-  console.log('\n  次にやること: .claude/rules/execution-strategy.md ／ 手順は /intmap-round');
+  console.log('\n  次にやること: .agents/rules/execution-strategy.md ／ 手順は .agents/skills/intmap-round/');
 }
 
 /* ── NEW ────────────────────────────────────────────────────────────────────────────────────── */
@@ -214,7 +214,7 @@ function makeNew(slug) {
   const port = 4000 + n;
 
   /* OUTSIDE ONEDRIVE, and said out loud: os.tmpdir() is %LOCALAPPDATA%\Temp on Windows, which is
-     what CLAUDE.md §6 names. The master must stay a clean `main`. */
+     what AGENTS.md §6 names. The master must stay a clean `main`. */
   const base = join(tmpdir(), 'intmap-worktrees');
   if (!existsSync(base)) mkdirSync(base, { recursive: true });
   const dir = join(base, `wt-r${n}-${slug}`);
@@ -261,10 +261,46 @@ function makeNew(slug) {
     }
   } catch (e) { console.log('  ⚠ launch.json を更新できなかった: ' + e.message); }
 
+  trustWithCodex(dir);
+
   console.log('\n  作業ディレクトリ（以降の編集は全部この中で）:');
   console.log('    ' + dir);
   console.log('\n  並列実装をするなら、この絶対パスと「触ってよいファイルの一覧」を');
   console.log('  intmap-implementer に渡す。同じファイルを2体に書かせない。');
+}
+
+/* ── CODEX TRUST ─────────────────────────────────────────────────────────────────────────────
+   (#R503) Codex reads a project's own `.codex/` layer — the five subagent roles, the lifecycle
+   hooks, the Codex-specific developer instructions — ONLY in a project it has been told to trust,
+   and it records that trust against the PATH. AGENTS.md §6 gives every round a brand-new path, so
+   without this step a Codex session in a fresh worktree silently loses all five roles: it still
+   reads AGENTS.md (that needs no trust), but the half of the configuration that lives in files is
+   skipped, and nothing says so.
+   ⚠ IT ONLY EVER ADDS THE DIRECTORY THIS SCRIPT JUST CREATED, and only if it is not already
+     listed. It never rewrites, reorders or removes anything else in the user's global config —
+     the file is appended to, never parsed and re-emitted, because a TOML round-trip through a
+     hand-rolled writer is how comments and formatting get destroyed.
+   ⚠ Failure here is not fatal. Codex is optional; the round is not. */
+function trustWithCodex(dir) {
+  const home = process.env.CODEX_HOME || join(process.env.USERPROFILE || process.env.HOME || '', '.codex');
+  const cfg = join(home, 'config.toml');
+  if (!existsSync(cfg)) return;                       /* Codex is not installed here — nothing to do */
+  try {
+    const body = readFileSync(cfg, 'utf8');
+    const path = resolve(dir);
+    /* both spellings a human or a previous version might have written */
+    if (body.includes(`[projects.'${path}']`) || body.includes(`[projects."${path.replace(/\\/g, '\\\\')}"]`)) {
+      console.log('  ✓ codex     この作業場は既に信頼済み');
+      return;
+    }
+    if (path.includes("'")) return;                   /* a literal TOML key cannot hold a quote */
+    const add = `${body.endsWith('\n') ? '' : '\n'}\n# (#R503) IntMap worktree — scripts/worktree.mjs new\n`
+      + `[projects.'${path}']\ntrust_level = "trusted"\n`;
+    writeFileSync(cfg, body + add);
+    console.log('  ✓ codex     ~/.codex/config.toml にこの作業場を信頼済みとして登録');
+  } catch (e) {
+    console.log('  ⚠ codex     信頼の登録に失敗（Codex を使うなら /permissions で手動）: ' + e.message);
+  }
 }
 
 /* ── DONE ───────────────────────────────────────────────────────────────────────────────────── */
@@ -311,7 +347,7 @@ function done() {
     /* -d, never -D: git refuses an unmerged branch, and that refusal is the safety rule. */
     try { git(['branch', '-d', branch], master); console.log(`  ✓ branch ${branch} を削除`); }
     catch {
-      /* ⚠ AND IT WILL ALWAYS REFUSE HERE, BECAUSE CLAUDE.md §5 MERGES BY SQUASH. A squashed
+      /* ⚠ AND IT WILL ALWAYS REFUSE HERE, BECAUSE AGENTS.md §5 MERGES BY SQUASH. A squashed
          branch's commits are not ancestors of main, so `-d` calls every finished round «unmerged»
          and the branches pile up — the rule would be technically safe and useless in practice.
          So ask the question -d is a proxy for: does this branch still carry anything main lacks?

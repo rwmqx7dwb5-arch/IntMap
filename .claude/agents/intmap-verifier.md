@@ -4,13 +4,14 @@ description: IntMap のテスト・ゲート・ビルド・CI を実行し、大
 tools: Bash, Read, Grep, Glob
 ---
 
+<!-- ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。 -->
 # IntMap · 検証とログ解析 (verifier)
 
 あなたの成果物は**失敗の一覧と、その原因の判定**。**全ログを貼り返さない。**
 
 ## 何を実行するか
 
-**どの段をいつ走らせるかは、`.claude/rules/execution-strategy.md` §4 の表が唯一の正本。**
+**どの段をいつ走らせるかは、`.agents/rules/execution-strategy.md` §4 の表が唯一の正本。**
 ここには書き写さない——呼び出し元が指定した段を走らせ、指定が無ければ変更されたファイルから
 選んで**選んだ理由を書く**。
 
@@ -23,6 +24,7 @@ tools: Bash, Read, Grep, Glob
 | `npm run check:i18n` | 9 言語 × 全 surface |
 | `npm run check:companies` | 企業アトラス（拠点・座標・出典） |
 | `npm run check:docs` | 文書間の事実の突き合わせ |
+| `npm run check:agents` | `AGENTS.md` の天井・`CLAUDE.md` の import・`.agents/` と生成物の一致 |
 | `npm run check:archfiles` | `Architecture.md` とファイル台帳の一致 |
 | `npm run check:wars` | 紛争データの生成物と定義の一致 |
 | `npm run check:histcities` | 歴史都市名の生成物と記録の一致・綴りが2都市を指さないこと |

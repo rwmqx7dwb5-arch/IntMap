@@ -1,7 +1,7 @@
 /* ============================================================================
  *  #R403 — 「Edge Function の本数」が、#R399 の監査の**次のラウンドから**また古かった回
  * ----------------------------------------------------------------------------
- *  `.claude/skills/intmap-round/SKILL.md` §6 は、毎セッションが読む deployment の手順として
+ *  `.agents/skills/intmap-round/SKILL.md` §6 は、毎セッションが読む deployment の手順として
  *  「9 本」と9つの名前を持っていた。実体は12本。#R399 はまさにこの事実を全文書で監査し
  *  `scripts/doc-facts.mjs` の規則を作り直したのに、この文書は**その走査対象に入っていなかった**。
  *
@@ -17,7 +17,7 @@
  *  よってここで検査するのは「今が12本であること」ではない（それは `check:docs` の仕事）。
  *  **塞いだ側が実際に赤くなること**、そして**塞ぎ方が正しい文を巻き込まないこと**である。
  *
- *    ① 指示文書（`.claude/` の下）が本当に走査に入っている——そこに事実の食い違いを
+ *    ① 指示文書（`.agents/` の下）が本当に走査に入っている——そこに事実の食い違いを
  *       入れると落ちる。数とは無関係の2つの規則で確かめる（1つだと、その規則が
  *       たまたま効いているだけかもしれない）。
  *    ② 報告されたその欠陥そのものを書き戻すと `edge-roster` が落ち、
@@ -38,7 +38,7 @@ import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
-const SKILL = '.claude/skills/intmap-round/SKILL.md';
+const SKILL = '.agents/skills/intmap-round/SKILL.md';
 
 /* ⚠ (#R286/#R283) 錨は LF で書いてあり、このチェックアウトはそうとは限らない。照合は改行を
    緩めた正規表現で、**復元は元のバイト列**で行う（正規化して書き戻すと、テストを走らせた
@@ -103,12 +103,12 @@ const BEFORE = 'check:docs must be green before any of this means anything';
 test('R403 ① the instruction documents are inside the sweep', async () => {
   await withTreeLock(async () => {
     await green(BEFORE);
-    /* 数とは無関係の2つの規則で確かめる。`usb` は「頻度を書いてよいのは CLAUDE.md だけ」、
+    /* 数とは無関係の2つの規則で確かめる。`usb` は「頻度を書いてよいのは AGENTS.md だけ」、
        `serving` は「本番を OneDrive から配信していると書いてはならない」。どちらも
-       `eachDoc` で全文書を見る規則なので、`.claude/` が走査に入っていれば必ず落ちる。
+       `eachDoc` で全文書を見る規則なので、`.agents/` が走査に入っていれば必ず落ちる。
        ⚠ 1規則だけだと、その規則が偶然効いているだけかもしれない。 */
     const CASES = [
-      { rule: 'usb', why: 'a backup frequency stated outside CLAUDE.md',
+      { rule: 'usb', why: 'a backup frequency stated outside AGENTS.md',
         at: 'USB へ完全ミラー（毎回）', add: 'USB へ完全ミラー（1 日 1 回）' },
       { rule: 'serving', why: 'production described as served from OneDrive',
         at: '## 6. deployment と本番検証', add: '## 6. deployment と本番検証\n\n本番は OneDrive から配信している。' },
@@ -149,8 +149,8 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
   await withTreeLock(async () => {
     /* 名前を1つ落とす */
     const drop = anchorRe('`routing-relay` / `sv-cov`');
-    assert.ok(drop.test(readLF(join(ROOT, 'CLAUDE.md'))), 'CLAUDE.md §5.1 no longer writes the roster in the shape this test edits');
-    await breaking('CLAUDE.md', (s) => s.replace(drop, () => '`sv-cov`'), (r) => {
+    assert.ok(drop.test(readLF(join(ROOT, 'AGENTS.md'))), 'AGENTS.md §5.1 no longer writes the roster in the shape this test edits');
+    await breaking('AGENTS.md', (s) => s.replace(drop, () => '`sv-cov`'), (r) => {
       assert.equal(r.code, 1, 'check:docs stayed green with a function missing from the roster');
       assert.ok(r.out.includes('edge-roster') && r.out.includes('routing-relay'),
         'the roster rule did not name the dropped function:\n' + r.out);
@@ -158,8 +158,8 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
 
     /* 数だけを間違える（名前は12本のまま） */
     const num = anchorRe('**Edge Functions は 13 本**');
-    assert.ok(num.test(readLF(join(ROOT, 'CLAUDE.md'))), 'CLAUDE.md §5.1 no longer states the count next to the roster');
-    await breaking('CLAUDE.md', (s) => s.replace(num, () => '**Edge Functions は 9 本**'), (r) => {
+    assert.ok(num.test(readLF(join(ROOT, 'AGENTS.md'))), 'AGENTS.md §5.1 no longer states the count next to the roster');
+    await breaking('AGENTS.md', (s) => s.replace(num, () => '**Edge Functions は 9 本**'), (r) => {
       assert.equal(r.code, 1, 'check:docs stayed green with the count wrong beside a correct roster');
       assert.ok(r.out.includes('edge-count') || r.out.includes('edge-roster'),
         'neither count rule fired on a wrong number:\n' + r.out);
@@ -198,12 +198,12 @@ test('R403 ⑤ the sweep does not descend into a nested checkout', async () => {
        読む——そして規則は全部「文書が実体と食い違っていないか」なので、必ず赤くなる。
        止める目印はフォルダ名ではなく `.git` の有無（＝チェックアウトをチェックアウトたらしめるもの）。 */
     await withTreeLock(() => {
-      const nest = join(ROOT, '.claude/__r403-nested-checkout');
+      const nest = join(ROOT, '.agents/__r403-nested-checkout');
       assert.ok(!existsSync(nest), 'the scratch directory this test creates already exists');
       try {
         mkdirSync(nest, { recursive: true });
         writeFileSync(join(nest, '.git'), 'gitdir: ../../.git/worktrees/whatever\n');
-        writeFileSync(join(nest, 'CLAUDE.md'), '# a second checkout\n\n**Edge Functions は 3 本**（`ai-proxy` / `sv-cov` / `news-relay`）。\n');
+        writeFileSync(join(nest, 'AGENTS.md'), '# a second checkout\n\n**Edge Functions は 3 本**（`ai-proxy` / `sv-cov` / `news-relay`）。\n');
         const r = docFacts();
         assert.equal(r.code, 0,
           'the sweep walked into a directory holding a .git entry and read another checkout\'s documents as this one\'s:\n' + r.out);
@@ -219,19 +219,19 @@ test('R403 ⑤ the sweep does not descend into a nested checkout', async () => {
    規則名まで確かめるのは、「別の理由で赤かった」を緑と同じくらい無意味にしないため。 */
 const NEW_RULES = [
   /* named-path — 開けと言われたファイルが無い */
-  { rule: 'named-path', file: '.claude/agents/intmap-i18n.md', why: 'a document naming a file that is not there',
+  { rule: 'named-path', file: '.agents/roles/intmap-i18n.md', why: 'a document naming a file that is not there',
     from: '繁体の **`js/locales/ui.zh.js`** を編集して', to: '繁体の **`js/locales/ui.zh-hant.js`** を編集して' },
 
   /* gate-lists — 一覧が package.json に追いつかなくなる */
-  { rule: 'gate-lists', file: '.claude/agents/intmap-verifier.md', why: 'a gate dropped from the list a session is sent to',
+  { rule: 'gate-lists', file: '.agents/roles/intmap-verifier.md', why: 'a gate dropped from the list a session is sent to',
     from: '| `npm run check:wars` | 紛争データの生成物と定義の一致 |\n', to: '' },
 
   /* preview-port — 式が worktree.mjs と食い違う */
-  { rule: 'preview-port', file: 'CLAUDE.md', why: 'the port convention drifting from the tool that assigns it',
+  { rule: 'preview-port', file: 'AGENTS.md', why: 'the port convention drifting from the tool that assigns it',
     from: 'ポート `4000 + N`**（R403 なら', to: 'ポート `4200 + N`**（R403 なら' },
 
   /* backup-shell — このマシンに無い shell を指示する */
-  { rule: 'backup-shell', file: '.claude/skills/intmap-round/SKILL.md', why: 'the round procedure naming a shell that is not installed',
+  { rule: 'backup-shell', file: '.agents/skills/intmap-round/SKILL.md', why: 'the round procedure naming a shell that is not installed',
     from: 'powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1', to: 'pwsh -File scripts/backup-usb.ps1' },
 
   /* relay-guard — 1つの文書の中で2つの文が違う数を言う */
@@ -281,7 +281,7 @@ test('R403 ⑦ naming a file AS GONE is not a stale reference', async () => {
 
 test('R403 ⑨ `--gate --todo <code>` actually asserts something', async () => {
   await withTreeLock(async () => {
-    /* ⚠ `.claude/agents/intmap-i18n.md` prints these two commands under the heading 「唯一のゲート」,
+    /* ⚠ `.agents/roles/intmap-i18n.md` prints these two commands under the heading 「唯一のゲート」,
        which reads as «add --gate and it will assert». It did not: the `--todo` branch ended in an
        unconditional `process.exit(0)` and the `--gate` branch below it was never reached, so the
        command returned 0 on every tree in every state. Same shape as #R399 — a check that never
@@ -329,8 +329,8 @@ test('R403 ⑨ `--gate --todo <code>` actually asserts something', async () => {
 
 test('R403 ⑧ the sweep and the roster rule keep their shape', () => {
   const src = rd('scripts/doc-facts.mjs');
-  assert.match(src, /walkMd\('\.claude'\)/, 'the sweep no longer walks the instruction documents');
-  assert.match(src, /\.claude\/skills\/intmap-round\/SKILL\.md/,
+  assert.match(src, /walkMd\('\.agents'\)/, 'the sweep no longer walks the instruction documents');
+  assert.match(src, /\.agents\/skills\/intmap-round\/SKILL\.md/,
     'the sweep no longer asserts that it reached the round procedure — an empty walk passes everything');
   const rule = src.slice(src.indexOf('2c.'), src.indexOf('2a.'));
   assert.ok(rule.length > 200, 'rule 2c is no longer where this test expects it in scripts/doc-facts.mjs');

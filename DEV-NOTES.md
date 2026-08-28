@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R503** — **同じリポジトリを Codex で開くと、規則が1行も渡っていなかった**〈「Codexにプロンプトだけ送ったら、Claude Codeと完全に同じ手法・やり方・コンテクストでやれるようにしたい」〉／⚠⚠⚠ **恒久指示・実行戦略・ラウンドの手順・5役は全部 `CLAUDE.md` と `.claude/` にあり、Codex はそのどれも読まない**——`AGENTS.md` を `CLAUDE.md` へ改名し、`CLAUDE.md` は `@AGENTS.md` の import ＋ Claude Code 固有だけにした（この形は Anthropic 自身が「AGENTS.md を既に使う repo」向けに書いている手順）。**実測**: `codex exec` で「Supabase project ref の値」を訊くと、改名前は `NONE`・改名後は `vpekfwdpurzejrrmacac`／⚠⚠⚠ **`AGENTS.md` には 32,768 バイトの天井があり、超えた分は警告なしに落ちる**——`project_doc_max_bytes` の既定値。**実測（codex-cli 0.150.0）**: 36,095 バイトの試験ファイルで**先頭の行は答えられ、末尾の行は「無い」と答えた**。最初の試作（機械的な `Claude`→`Codex` 置換で作った 33,046 バイトの写し）は**この天井を 278 バイト超えていた**ので、§12「本ファイル自体の保守」がそもそも読まれない状態だった。`npm run check:agents` が余白ごと測る（現在 590 バイト）／⚠⚠⚠ **写しを作る修理は、正本を2つ作る修理**（`AGENTS.md` §9）——最初の試作は `~/.Codex/projects/…`・`.Codex/rules/…` という**存在しないパス**を持つ第二の規則集だった。正本は provider 中立な `.agents/`（`rules/` `roles/` `skills/`）に置き、`scripts/agent-sync.mjs` が `.claude/agents/`・`.claude/skills/`・`.codex/agents/` を**生成**する。写しを直すと `npm run check:agents` が落ちる／⚠⚠ **`.codex/` は信頼されたプロジェクトでしか読まれず、信頼はパス単位**——`AGENTS.md` §6 はラウンドごとに新しい worktree を作るので、`scripts/worktree.mjs new` が `~/.codex/config.toml` に `trust_level = "trusted"` を1行足すようにした（**自分が作った作業場だけ**・追記のみ）。⚠ **`AGENTS.md` 自体は信頼も設定も要らずに読まれる**ので、恒久指示を `.codex/` へ移してはならない／⚠⚠ **TOML の table は、そのあとに書いた key を飲み込む**——`.codex/config.toml` で `developer_instructions` を `[agents]` の**後ろ**に書いたら、Codex はそれを `developer_instructions` という名前の**カスタム役**と読んで起動を拒否した（`expected struct AgentRoleToml in \`agents\``）。ここは大声で落ちたが、一般には**黙って効かない設定**になる形／⚠ **5役は Codex 側でも本当に登録された**——`codex exec` にツール定義だけを見せて訊くと `intmap-i18n / intmap-implementer / intmap-prod-verifier / intmap-scout / intmap-verifier` ＋ 組み込みの `default / explorer / worker` を返した（本文からの echo ではないことを、道具の schema だけを見る問いで分けた）／⚠ **完全互換にならなかったのは 4 つ**——hook の trust（`/hooks` の対話的承認）・原本の初回 trust・model と reasoning effort（費用の判断は利用者のもの）・Claude Code 側の `@` import の目視確認（`claude` CLI がこのマシンに無く、`/context` でしか確かめられない）。`docs/AGENT-SETUP.md` §7 がその4つを表にしている
 - **#R502** — **動いていた計測は、9言語の第三者一覧のどこにも名前が無かった**〈公開前レビューの指摘を実コードで確かめた回〉／⚠⚠⚠ **GA (`G-57X5MX0ZPW`) と Microsoft Clarity (`x2colhytq7`) は同意も告知も無く起動していた**——`index.html` の静的な `<script async src=…googletagmanager…>` はパースされた瞬間に飛び、Clarity は #R193 の `requestIdleCallback` で少し遅れて入るだけ。**そして `js/legal-text.js` の「4. 第三者」は Supabase から Open-Meteo まで数十社を 9 言語で挙げているのに、実際に Cookie を置き DOM 再生を録っている 2 社だけが抜けていた**（§5 Cookie は「セッション維持と設定の保存に使用します」の 1 行で、分析にひとことも触れていない）。⚠ **抜けていたのは実装ではなく、実装と文書の対応**／⚠⚠ **だから直しかたは「消す」ではなく「止めて、戻すときに名指しを強制する」**——利用者の指示は「一旦停止。削除ではない」。`window.INTMAP_ANALYTICS=false` 1 つの後ろに両方のローダを移し、タグ本体・measurement id・#R155 の auth URL スクラブ・#R272 の「credential が URL に在るうちは挿入しない」は 1 行も消していない。`gtag()` / `clarity()` の queue shim は門の**外**（呼ぶ側は落ちず、黙って溜まる）。⚠ **スクラブの定義も門の外**——中に入れると GA を止めた瞬間 `window.__imScrubAuthUrl` が消える／⚠⚠⚠ **そして `tests/r502-checks.test.mjs ④` がフラグと本文を結んである**——`true` に戻した瞬間、`js/legal-text.js` が `Google Analytics` と `Clarity` を名指していなければ赤くなる。**計測を戻すことと告知することが 1 つの動作になった**（別々にできるあいだは、また離れる）／⚠⚠⚠ **別件、同じ形。`js/news-events.js` のコメントは「AI が書いたことを隠さない」と宣言していたのに、画面に出る 9 言語の文字列は 1 つも `AI` と言っていなかった**——出ていたのは `IntMap combined what these outlets published` /「IntMap がまとめたものである」で、これは `news_events.summary`（`summarise` 段が LLM に書かせ、1 文ごとに原文と照合してから保存する段落）についての表示である。**隠すつもりが無いことは、隠れていないことの証拠にならない**（[[intmap-r485-lessons]]・#R488 と同じ形——規則は在り、綴りは在り、当たっていない）。注記を 9 言語で AI / KI / ИИ / IA に書き換え、**畳まれた `<details>` の下から段落の直下へ移した**（要素は 1 つも足していない。順番だけ）／⚠ 位置引数は 5 つ（en/ja/de/ru/es）なので、残り 4 言語は inline table の**英語キーごと**差し替え——英語だけ書き換えると fr/ko/zh の 2 言語 4 ファイルが静かに英語へ落ちる（#R492）
 - **#R500** — **同じ数を2か所に書いた箇所が、比較する相手を1つも持っていなかった**〈外部監査が9件の陳腐化を報告し、確かめたら全部本物だった。共通していたのは形である——**どれも「機械が持っている数」を散文が書き写した箇所で、突き合わせる相手が他の散文しかいなかった**〉／⚠⚠⚠ **能力レジストリは 129（撤去済み 1 を除いて到達可能 128）なのに、5つの文書が 126 と言い、`Architecture.md` は同じファイルの中で 126 と 127 の両方を言っていた**／⚠⚠⚠ **system prompt は 22 本なのに 20 本**——しかも内訳の `news-ui` は 3 ではなく 1 で、`atlas-gloss` と `news-ingest` の行が無かった。⚠ **#R397 が同じ文の同じ「20」を一度直している**（そのときは r285 の表に `news-ingest` の行が無かったのが真因）。直した文が、また離れた／⚠⚠⚠ **deep tier の大きさは `scripts/tiers.mjs` が導出するのに、4か所に手で書いてあり3か所が食い違っていた**（package.json 86 / docs/TESTING.md は 92 と 94 の**両方** / scripts/worktree.mjs 82）。⚠ **#R372 が同じ4か所を一度そろえている**——そのコメント自身が「derived なので再計測せよ」と書いたうえで、次の 128 ラウンドを古い数字のまま過ごした／⚠⚠ **`ai-proxy` の冒頭コメントは free = 30/day、20行下の `PLAN_LIMITS` は 10**。#R147 が 30→10 にしたときに**コードだけが直った**／⚠ `Architecture.md` の routing 節に**13行が2度**書いてあった（各コピーは個別には正しいので、既存のどの検査にも見えない）・README は Chronos を #R289 の旧名で呼び、**撤去済み**（`docs/NEWS-EVENTS.md` 決定16）の Subject/Publisher 切替を案内していた・`CONSTITUTION.md` は §0.1 で「push to `main`」と言い §1 で「`main` へ直接 push しない」と言っていた・`docs/NEWS-EVENTS.md` は #R76 の実装が `atlas-console` に「今も生きている」と現在形で書いていた（正本は #R334/#R340 以降 `_shared/news-cluster.js` の1本）／⚠⚠⚠ **文面を直すのは半分でしかない**——9件すべてが「一度直された文が再び離れた」か「そもそも誰も比較していなかった」のどちらかなので、`scripts/doc-facts.mjs` に規則を3本足した: `capability-count`（レジストリを実際に import して数える）・`prompt-count`（`tests/r285-checks.test.mjs` の `EXPECTED_CALLS` を population にする——ここに2枚目の手書き一覧を作らない）・`deep-tier-size`（⚠ **4つのうち2つは文書ではない**ので `eachDoc` に見えない。`package.json` と `scripts/worktree.mjs` を名指しで読む）／⚠⚠ **「近いほうの語が勝つ」も「固定の優先順位」も、実際の散文の上で両方とも間違えた**——前者は「the **deep** tier is the whole suite minus core — **94 spec files**」を core の主張と読み、後者は「the **whole** suite is 100 measured spec files」を core の主張と読む。**曖昧さは文の性質**なので、直すのは文のほう（ambiguous なものは注に件数として出し、推測しない）／⚠ **規則の一覧表そのものに3行足りなかった**（`deep-tier-when`・`hist-cities`・`volcano-eruptions`）——「規則を足したら1行足す」と書いてあるのに、表と規則を比べるものが無かった／⚠ 足した `tests/r500-checks.test.mjs` は**今の文面が正しいこと**ではなく**規則が壊したときに実際に赤くなること**を見る（#R407 と同じ理由で、CI の static job は `check:docs` を走らせないので、この検査が規則を merge 前へ届ける唯一の経路）。⚠ その追加自体が `node-tests` を 277→278 で赤くした——**足した瞬間に門が働いた**
 
@@ -303,6 +304,164 @@
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
 
+## R503 — **同じリポジトリを Codex で開くと、規則が1行も渡っていなかった**
+
+> 「Codexにプロンプトだけ送ったら、Claude Codeと完全に同じ手法、やり方、コンテクストでやれるように
+> したい」——先に環境を全部監査し、そのうえで共通化した。
+
+このリポジトリは「毎セッション自動で読まれる恒久指示」を前提に書かれている（#R257）。その前提は
+**製品を 1 つしか想定していなかった**。恒久指示は `CLAUDE.md`、実行戦略は `.claude/rules/`、
+ラウンドの手順は `.claude/skills/`、5 役は `.claude/agents/` にあり、**Codex はそのどれも読まない。**
+
+**実測**（`codex exec` に「あなたの恒久指示にある『Supabase project ref』の値は」と訊く。
+道具は使わせない）:
+
+| | 答え |
+|---|---|
+| 改名前（`CLAUDE.md` だけがある） | `NONE` |
+| `AGENTS.md` を置いたあと | `vpekfwdpurzejrrmacac` |
+
+つまり Codex のセッションは、**規則を持たないまま**「これを直して」を受け取っていた。
+
+---
+
+### 1. 最初の試作が、直そうとしていた病気そのものだった
+
+このラウンドを始めた時点で、原本には**追跡対象外の試作**が置かれていた——
+`AGENTS.md`（33,046 バイト）・`.codex/agents/*.toml`・`.agents/skills/`。中身は
+**`Claude` を `Codex` に機械的に置換した写し**で、
+
+- `~/.Codex/projects/C--Users-gyuuk-OneDrive-IntMap/memory/` — **存在しないパス**
+- `.Codex/rules/execution-strategy.md` — **存在しないパス**
+- 33,046 バイト — **後述の天井を 278 バイト超えている**
+
+そして何より、**同じ規則が 2 つのファイルに書かれた**。`AGENTS.md` §9 が名前を持っている状態
+（正本が2つある）で、この repo の検査群はまさにそれを見つけるために書かれている。
+
+**写しではなく生成にした。** 正本は製品中立な `.agents/` に置き、各製品が読む場所へ**描画**する:
+
+```
+.agents/roles/<name>.md      →  .claude/agents/<name>.md      (Claude Code)
+                             →  .codex/agents/<name>.toml     (Codex)
+.agents/skills/<skill>/…     →  .claude/skills/<skill>/…      (Claude Code)
+                                (Codex は .agents/skills/ を直に読む — 写しは要らない)
+.agents/rules/*.md           →  CLAUDE.md の @import          (Claude Code)
+                                AGENTS.md §1 が「自分で開け」  (Codex)
+```
+
+`scripts/agent-sync.mjs --write` が書き、`npm run check:agents` が**描き直して比較する**ので、
+写しを直した瞬間に落ちる。CI にも段を足した（`ci-gates` 規則が、足していないことを教えてくれた）。
+
+### 2. ⚠⚠⚠ `AGENTS.md` には 32,768 バイトの天井があり、超えた分は無言で落ちる
+
+Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで止まる。**実測**（codex-cli
+0.150.0-alpha.12.2）——36,095 バイトの `AGENTS.md` を置き、**先頭**に書いた行と**末尾**に書いた行を
+別々に訊いた:
+
+| 訊いたもの | 答え |
+|---|---|
+| 先頭の行の値 | `ALPHA-1111`（読めている） |
+| 末尾の行の値 | `ABSENT`（**無いと答えた**） |
+
+**警告はどこにも出ない。** ログにも、起動時にも、`/status` にも。つまり 33 KB の試作は
+「§12 本ファイル自体の保守」——**このファイルを保守せよという節そのもの**——を落としていた。
+
+`.codex/config.toml` はこれを 262,144 に上げるが、**それは信頼されたプロジェクトでしか読まれない**
+（§4）。**常に効いている数は既定値のほう**なので、`check:agents` は既定値に対して測り、
+`AGENTS.md` は 32,178 バイト（**余白 590**）に収めた。削ったのではなく**製品固有の段落を移した**——
+`.claude/launch.json` を追跡から外した #R338/#R334 の実測と、ハーネスの worktree が OneDrive に
+611 MB 載っていた #R282 の実測は、どちらも**製品の話**なので `docs/AGENT-SETUP.md` が持つ。
+
+### 3. 名前を動かした——`CLAUDE.md` → `AGENTS.md`、`CLAUDE.md` は import に
+
+Claude Code は `CLAUDE.md` しか読まず、Codex は `AGENTS.md` を読む。**どちらかが import できる側**を
+探すと、片方しかない: Claude Code の `CLAUDE.md` は `@AGENTS.md` で他ファイルを展開できる。
+（Codex 側には `project_doc_fallback_filenames = ["CLAUDE.md"]` という道もあり、**実測で動いた**が、
+それは `.codex/config.toml` か `~/.codex/config.toml` に書く**設定**であって、
+**設定が読まれない状況では規則も読まれない**。`AGENTS.md` は設定も信頼も要らずに読まれる——
+だからこちらを選んだ。）
+
+```markdown
+@AGENTS.md
+
+@.agents/rules/execution-strategy.md
+@.agents/rules/gpt-handoff.md
+```
+
+⚠ import は**バッククォートの外**でなければ効かない（Claude Code は code span と fence を飛ばす）。
+消えても何もエラーにならず、**セッションが恒久指示ごと静かに無くなる**だけなので、
+`check:agents` と `tests/r503` が「裸の `@AGENTS.md` 行」を名指しで見ている。
+
+**節番号は動かしていない。** `§6`・`§11.2` のような参照は 185 か所あり、そのすべてを
+`AGENTS.md §N` に付け替えた。⚠ **`DEV-NOTES.md` と `DEV-NOTES-ARCHIVE.md` は書き換えていない**——
+あれは「当時どうだったか」の記録で、当時それは `CLAUDE.md` だった。
+
+### 4. ⚠⚠ `.codex/` は信頼されたプロジェクトでしか読まれず、信頼はパス単位
+
+`AGENTS.md` は無条件に読まれるが、`.codex/config.toml`・`.codex/agents/*.toml`・`.codex/hooks.json`
+は**プロジェクトを信頼したときだけ**読まれ、その信頼は**パスに対して**記録される。
+`AGENTS.md` §6 は**ラウンドごとに新しい worktree**を作るので、放っておくと
+**新しい作業場では毎回 5 役が消える**（`AGENTS.md` は読めるので、欠けたことに気づきにくい）。
+
+`scripts/worktree.mjs new` が、**自分が今作った作業場だけ**を `~/.codex/config.toml` に足すようにした:
+
+```toml
+[projects.'C:\Users\…\wt-r503-agent-context-parity']
+trust_level = "trusted"
+```
+
+⚠ **追記しかしない。** 利用者の global config を解析して書き戻すと、コメントと整形が壊れる。
+既にある行は数えて素通りし、Codex が入っていなければ何もしない。
+
+### 5. ⚠⚠ TOML の table は、そのあとに書いた key を飲み込む
+
+`.codex/config.toml` に `developer_instructions`（Codex 固有の作法）を書いたとき、
+`[agents]` の**後ろ**に置いた。TOML はそれを `[agents]` の中の key と読む。Codex にとって
+`agents.<name>` は**カスタム役の宣言**なので、起動が拒否された:
+
+```
+Error loading config.toml: invalid type: string "# IntMap · Codex 固有の作法…",
+expected struct AgentRoleToml in `agents`
+```
+
+ここは大声で落ちたから見つかった。**一般には、黙って効かない設定になる形**である。
+`tests/r503` ③ が、top-level のつもりの key が最初の table より前にあることを見ている
+（⚠ 「table のあとの key は全部だめ」ではない——それは正しい TOML であり、最初に書いた検査は
+`max_concurrent_threads_per_session` を誤って落とした）。
+
+### 6. 5 役が Codex 側でも本当に登録されたことを、echo と区別して確かめた
+
+`codex exec` に「あなたが spawn できるエージェント名を」と訊くと、`.codex/config.toml` の
+`developer_instructions` に**同じ 5 つが散文で書いてある**ので、本文を読み上げただけかもしれない。
+そこで**道具の schema だけ**を見せて訊いた（「ファイルも道具も使うな。エージェント起動ツールの
+型パラメータの許容値を逐語で」）:
+
+```
+intmap-i18n / intmap-implementer / intmap-prod-verifier / intmap-scout / intmap-verifier
+default / explorer / worker
+```
+
+`.agents/roles/` の 5 つと、Codex 組み込みの 3 つ。**登録されている。**
+
+### 7. 完全互換にならなかったもの（4 つ）
+
+| 事項 | なぜ | どこに書いたか |
+|---|---|---|
+| hook の trust | Codex は hook の**ハッシュ**に対して信頼を記録し、承認は `/hooks` の対話 | `docs/AGENT-SETUP.md` §7 |
+| 原本の初回 trust | `worktree.mjs new` は自分が作った作業場しか登録しない | 同上 |
+| model / reasoning effort | 費用の判断は利用者のもの。既定は `low` のまま**変えていない** | 同上 |
+| Claude Code の `@` import の目視 | `claude` CLI がこのマシンに無く、`/context` の **Memory files** でしか確かめられない | 同上 |
+
+⚠ **MCP は移植対象が無い。** このリポジトリは MCP サーバを 1 つも宣言していない（`.mcp.json` は
+無く、`~/.claude.json` の `mcpServers` も空）。どちらの製品も、ブラウザ操作などを**製品側が供給する**
+ものに頼っている——移すべきものは「呼び方」だけで、それは `docs/AGENT-SETUP.md` §6 の表。
+
+### 検査
+
+- `npm run check:agents`（新）— `AGENTS.md` の余白 / `CLAUDE.md` の裸 import / 生成物と `.agents/` の一致 / 孤児の写し
+- `tests/r503-checks.test.mjs`（新・11 本）— 天井・import・TOML の table・5 役の三者一致・生成物の警告・資格情報が混ざっていないこと・`docs/AGENT-SETUP.md` が索引にあること
+- `scripts/doc-facts.mjs` — 走査対象を `.claude/` から `.agents/`（正本の側）へ。`ci-gates` 規則が、CI に段を足していないことを教えた
+- `tests/r338` ④ — 移した事実を、**移した先でも**主張するように
 ## R502 — **動いていた計測は、9言語の第三者一覧のどこにも名前が無かった**
 
 利用者が公開前レビューの結果を持ってきた回。**報告をそのまま前提にせず、主張ごとに実コードで

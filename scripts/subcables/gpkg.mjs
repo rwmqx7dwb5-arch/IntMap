@@ -4,7 +4,7 @@
  *  NOAA's Office for Coastal Management publishes the Marine Cadastre submarine
  *  cable layer as one 8 MB GeoPackage. Reading THAT — rather than paging 2,816
  *  features through the ArcGIS REST endpoint 2,000 at a time — makes the build
- *  reproducible from a single archived download (CLAUDE.md §20) and keeps the
+ *  reproducible from a single archived download (AGENTS.md §20) and keeps the
  *  pipeline off a service whose paging window can change under it.
  *
  *  A GeoPackage is a SQLite file (node:sqlite reads it) whose geometry column
