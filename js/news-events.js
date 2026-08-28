@@ -539,19 +539,25 @@ window.IntMapModules.newsEvents = function (HOST) {
       /* ── 複数媒体をまとめた説明（サーバーが書き、根拠を照合済み）───────────
          ⚠⚠⚠ **AI が書いたことを隠さない。** 1 文ごとに引用元の媒体を付け、
            下に**原文の断片**（各文の根拠として照合に使ったもの）をそのまま置く。
-           読者が「この文はどこから来たのか」を自分で確かめられる状態にする。 */
+           読者が「この文はどこから来たのか」を自分で確かめられる状態にする。
+         ⚠⚠⚠ (#R502) **その規則は、9 言語の文字列のどれにも届いていなかった。** 出ていたのは
+           `IntMap combined what these outlets published` /「IntMap がまとめたものである」で、
+           **`AI` という語が 1 言語にも入っていなかった**——隠すつもりが無いことと、隠れていない
+           ことは別である（[[intmap-r485-lessons]] と同じ形）。いま注記は `AI` を明示し、
+           畳まれた `<details>` の下ではなく**段落の直下**に出る。
+           tests/r502-checks.test.mjs ③④ が、9 言語すべてでその語が在ることを見ている。 */
       if (ev.synthesis) {
         html += '<div class="ev-syn">';
         for (const l of ev.synthesis.lines) {
           html += '<p class="ev-line">' + S(l.text) + '<span class="ev-src">— ' + S(l.source) + '</span></p>';
         }
+        html += '<p class="ev-d-note ev-ai">' + S(L('The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.', '上の段落は AI が書いたものである。これらの媒体が公表した内容をまとめたもので、各文は保存前にここに示した原文と機械的に照合してある。照合できなかった文は捨てられ、表示されることはない。', 'Der Absatz oben wurde von einer KI geschrieben. Er fasst zusammen, was diese Quellen veröffentlicht haben: Jeder Satz wurde vor dem Speichern maschinell gegen den hier gezeigten Wortlaut geprüft; ungeprüfte Sätze werden verworfen und nie angezeigt.', 'Абзац выше написан ИИ. Он объединяет опубликованное этими источниками: каждое предложение перед сохранением машинно сверено с приведёнными здесь формулировками, а непроверенные предложения отбрасываются и никогда не показываются.', 'El párrafo anterior lo escribió una IA. Combina lo que publicaron estos medios: cada frase se verificó automáticamente con la redacción mostrada aquí antes de guardarse, y las que no se pudieron verificar se descartan y nunca se muestran.')) + '</p>';
         html += '<details class="ev-syn-ev"><summary>' +
           S(String(L('How this was written — the exact wording each sentence came from ({n})', 'この文が何から書かれたか — 各文の根拠になった原文（{n}件）', 'Woraus dies geschrieben wurde — der genaue Wortlaut je Satz ({n})', 'Из чего это написано — точные формулировки для каждого предложения ({n})', 'De dónde salió esto — la redacción exacta de cada frase ({n})')).replace('{n}', ev.synthesis.lines.length)) + '</summary>';
         for (const l of ev.synthesis.lines) {
           if (l.span) html += '<div class="ev-diff-ctx">“' + S(l.span) + '” <span class="ev-src">— ' + S(l.source) + '</span></div>';
         }
         html += '</details>';
-        html += '<p class="ev-d-note">' + S(L('IntMap combined what these outlets published into the paragraph above. Every sentence was machine-checked against the wording shown here before it was saved; sentences that could not be checked are discarded, never shown.', '上の段落は、これらの媒体が公表した内容を IntMap がまとめたものである。各文は保存前に、ここに示した原文と機械的に照合してある。照合できなかった文は捨てられ、表示されることはない。', 'IntMap hat das Veröffentlichte zu obigem Absatz zusammengefügt. Jeder Satz wurde vor dem Speichern maschinell gegen den hier gezeigten Wortlaut geprüft; ungeprüfte Sätze werden verworfen.', 'IntMap объединил опубликованное в абзац выше. Каждое предложение перед сохранением машинно сверено с приведёнными формулировками; непроверенные отбрасываются.', 'IntMap combinó lo publicado en el párrafo anterior. Cada frase se verificó automáticamente con la redacción mostrada aquí antes de guardarse; las que no se pudieron verificar se descartan.')) + '</p>';
         html += '</div>';
       }
 

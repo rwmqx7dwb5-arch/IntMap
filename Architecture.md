@@ -36,7 +36,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（970行・92 KB）＋ `css/`（3本）＋ `js/`（255本・11.3 MB）＋ `src/`（10本）。**
+- **本体は `index.html`（988行・94 KB）＋ `css/`（3本）＋ `js/`（255本・11.3 MB）＋ `src/`（10本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -638,6 +638,13 @@ RLS・grant・運用者 RPC の一覧は [`docs/DATABASE.md`](docs/DATABASE.md)�
 `fetchData({background:true})` で、まだ誰も訊いておらず News/Saved も出ていなければ**何もせずに
 戻る**。開くと `startNews()` が掛け金付きで 1 度だけ取得を起こす。⚠ `setMode()` は `fetchData()` を
 呼ばない（`renderUI()` だけ）ので、この掛け金が無いとタブは「読み込み中」のまま止まる。
+
+⚠ **統合文は、画面上で「AI が書いた」と名乗る。** `summarise` 段が LLM に書かせた段落
+（`news_events.summary`）を出すとき、`js/news-events.js` の注記が **9 言語すべてで AI
+（KI / ИИ / IA）を明示**し、**畳まれた `<details>`（各文の根拠になった原文）の上**、段落の直下に出る。
+1 文ごとの引用元の媒体名と、照合に使った原文の断片は従来どおり同じブロックの中にあり、
+引用元の媒体がいまの構成記事に無ければ統合文そのものを出さない。
+`tests/r502-checks.test.mjs` が 9 言語すべての語と、注記が `<details>` より前に在ることを検査する。
 両方の半分——起動時は降りてこない／開けば降りてきてカードになる——を `tests/r402.spec.js` が
 本物のブラウザで測る。
 `HOST.globalData` に**記事モードと同じ形の項目**を入れ、`_event` にだけ出来事固有の事実を足す
@@ -2710,6 +2717,18 @@ supabase db diff --schema public             # driftゼロ確認
 
 - **CSP は `<meta http-equiv>`**（GitHub Pages は独自のレスポンスヘッダを設定できない）。
   `index.html` は `default-src 'self'` を持ち、**14 の directive** を明示的に書く。
+- ⚠ **アナリティクスは在るが、止まっている。** Google Analytics（`G-57X5MX0ZPW`）と
+  Microsoft Clarity（`x2colhytq7`）のタグは `index.html` に残り、CSP にもホストが載ったままだが、
+  **どちらのローダも `window.INTMAP_ANALYTICS`（`false` で宣言）の後ろに在る**ので、
+  `www.googletagmanager.com` にも `www.clarity.ms` にもリクエストは 1 本も出ず、GA の Cookie も
+  session replay も作られない。`gtag()` / `clarity()` の queue shim は定義されたままなので、
+  呼ぶ側があっても落ちない（黙って配列に溜まる）。
+  ⚠ **止まっている理由はタグの不具合ではなく、実装と文書の対応が無かったこと。** `js/legal-text.js` の
+  「4. 第三者 / Third parties」は 9 言語で数十社を挙げているのに、**実際に Cookie を置き DOM 再生を
+  録っている 2 社だけを名指していない**。だから戻しかたも 1 か所ではなく 2 つを束ねてある——
+  `tests/r502-checks.test.mjs` が**フラグと本文を結んでおり**、`js/legal-text.js` に
+  `Google Analytics` と `Clarity` を書かないまま `true` に戻すとゲートが赤くなる。
+  auth 復帰 URL に対する防御は 1 行も消していない（`docs/SECURITY-ARCHITECTURE.md` §7）。
 - ⚠ **`index.html` の `script-src` には現在 `'unsafe-eval'` と 8 つの CDN ホストが入っている**
   （`unpkg.com` / `maps.googleapis.com` / `www.googletagmanager.com` / `www.google-analytics.com` /
   `ssl.google-analytics.com` / `browser.sentry-cdn.com` / `www.clarity.ms` / `*.clarity.ms`）。

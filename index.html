@@ -7,7 +7,16 @@
        <meta> policy, so it is deliberately absent rather than written and silently inert (§6/§8). -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; manifest-src 'self'; frame-src 'self' https: blob:; child-src 'self' blob:; worker-src 'self' blob:; connect-src 'self' https: wss: data: blob:; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://unpkg.com https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://browser.sentry-cdn.com https://www.clarity.ms https://*.clarity.ms">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-57X5MX0ZPW"></script>
+  <!-- ⚠⚠⚠ (#R502) GA と Microsoft Clarity は「一旦停止」であって削除ではない ─────────────────
+       このフラグ 1 つが両方を止める。`false` の間、www.googletagmanager.com にも www.clarity.ms にも
+       リクエストは 1 本も出ず、GA の Cookie も Clarity の session replay も作られない。
+       タグ本体も、auth URL のスクラブ (#R155) も、credential が URL に在るうちは挿入しない規則
+       (#R272) も、1 行も消していない——**戻すのはここを `true` にする 1 か所だけ**。
+       ⚠ 戻すときは js/legal-text.js に Google Analytics と Microsoft Clarity を明記すること。
+         止めた理由は「動いていたのに、プライバシー本文がその 2 つをどこにも名指していなかった」
+         ことであって、タグが壊れていたからではない。tests/r502-checks.test.mjs ⑤ がフラグと本文を
+         結んであるので、名前が無いまま `true` に戻すと赤くなる。 -->
+  <script>window.INTMAP_ANALYTICS=false;</script>
 <script>
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
@@ -17,19 +26,25 @@ gtag('js', new Date());
    code / access_token / refresh_token / token_hash in the URL query or hash for a moment
    before supabase-js consumes and clears them; GA's default page_location would capture
    them. Report a SANITIZED location (and referrer) with those params stripped. */
-(function(){ try{
+(function(){
   var _scrub=function(href){ try{ var u=new URL(href);
     ['code','access_token','refresh_token','token_hash','type','provider_token','provider_refresh_token','error','error_code','error_description'].forEach(function(k){ u.searchParams.delete(k); });
     if(/(access_token|refresh_token|provider_token|token_hash)=/.test(u.hash||'')) u.hash='';
     return u.origin+u.pathname+(u.search||'')+(u.hash||''); }catch(e){ try{ return location.origin+location.pathname; }catch(_){ return href; } } };
   window.__imScrubAuthUrl=_scrub;
-  gtag('config', 'G-57X5MX0ZPW', { page_location:_scrub(location.href), page_referrer:_scrub(document.referrer||'') });
-}catch(e){ gtag('config', 'G-57X5MX0ZPW'); } })();
+  /* ⚠ (#R502) 停止中はここで終わる。ローダを挿入しないので googletagmanager へのリクエストは 1 本も出ない。
+     `gtag()` と `dataLayer` は上でそのまま定義してあるので、呼ぶ側があっても黙って配列に溜まるだけで落ちない。 */
+  if(!window.INTMAP_ANALYTICS) return;
+  var _g=document.createElement('script'); _g.async=1; _g.src='https://www.googletagmanager.com/gtag/js?id=G-57X5MX0ZPW';
+  (document.head||document.documentElement).appendChild(_g);
+  try{ gtag('config', 'G-57X5MX0ZPW', { page_location:_scrub(location.href), page_referrer:_scrub(document.referrer||'') }); }
+  catch(e){ gtag('config', 'G-57X5MX0ZPW'); }
+})();
 /* (#R73) DEV-ONLY headless-test shim: `?rafshim=1` replaces requestAnimationFrame with a timer so MapLibre
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R498';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R502';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -44,7 +59,7 @@ window.__imBuild='R498';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-28-R498';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-28-R502';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -957,6 +972,9 @@ window.__imBuild='R498';/* (#R121) build marker — bump when verifying that a r
 <script type="text/javascript">
     (function(c,l,a,r,i){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        /* ⚠ (#R502) 一旦停止。queue shim（すぐ上の 1 行）は今までどおり定義されるので、
+           `clarity(...)` を呼ぶ側があっても落ちない——溜まるだけで、送られない。 */
+        if(!c.INTMAP_ANALYTICS) return;
         var ins=function(){ var t=l.createElement(r); t.async=1; t.src="https://www.clarity.ms/tag/"+i;
             var y=l.getElementsByTagName(r)[0]; y.parentNode.insertBefore(t,y); };
         /* ⚠⚠ (#R272 SEC) NOT WHILE AN AUTH CREDENTIAL IS IN THE URL. An OAuth return / magic link lands here with `?code=…` / `#access_token=…` until supabase-js finishes detectSessionInUrl, and Clarity records the page URL and a DOM replay (GA is scrubbed — __imScrubAuthUrl above — this was not, and an idle callback made it a RACE). Skipped for this page-load if the URL never clears; a normal visit has no such parameter and is unaffected. See docs/SECURITY-ARCHITECTURE.md §7. */
