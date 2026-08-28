@@ -1369,6 +1369,169 @@ if (RULE && RULE !== 'i18n-open-gap') {
   }
 }
 
+/* ═══ 24. THE SIZE OF THE ATLAS CAPABILITY REGISTRY, WHEREVER A DOCUMENT STATES IT ═════════
+ *  (#R500) Five documents said the registry holds 126 capabilities. It holds 129, of which one
+ *  (`system.monitor`, withdrawn #R231) is unreachable — and Architecture.md said BOTH 126 and 127
+ *  in two sections of the same file. Nothing noticed for as long as the number was only ever
+ *  compared with other prose.
+ *
+ *  ⚠ THE NEEDLES ARE DELIBERATELY NARROW. A bare number in a document is not a claim about the
+ *    registry, so this does not look for numbers — it looks for the shapes in which the documents
+ *    actually bind a number to this noun, and reports how many it classified, so that a reworded
+ *    sentence shows up as a smaller count rather than as silence.
+ * ======================================================================================== */
+{
+  let caps = null;
+  try { caps = (await import('../js/atlas-capabilities.js')).makeAtlasCapabilities({}); } catch (_) { caps = null; }
+  if (!caps) {
+    fail('capability-count', 'js/atlas-capabilities.js would not load — the registry is the 正本 for this number and it could not be measured');
+  } else {
+    const total = caps.list().length;
+    const gone = (caps.withdrawn() || []).length;
+    const live = total - gone;
+
+    /* the shapes, and what each one is a claim ABOUT */
+    const CLAIMS = [
+      { src: 'find_capability[^。\\n]{0,60}?全\\s*\\**\\s*(\\d+)\\s*を検索', want: total, what: 'the registry' },
+      { src: '\\*\\*(\\d+)\\s*能力\\*\\*',                                        want: total, what: 'the registry' },
+      { src: '(\\d+)\\s*能力ぶん',                                          want: total, what: 'the registry' },
+      { src: '(\\d+)\\s*本の schema',                                        want: total, what: 'the registry' },
+      { src: '到達可能\\s*\\**\\s*(\\d+)',                                   want: live,  what: 'the reachable half' },
+      { src: '撤去済み\\s*1\\s*を除く\\s*\\**\\s*(\\d+)',                     want: live,  what: 'the reachable half' },
+    ];
+
+    let seen = 0;
+    eachDoc((file, body) => {
+      for (const c of CLAIMS) {
+        for (const m of body.matchAll(new RegExp(c.src, 'g'))) {
+          seen++;
+          if (Number(m[1]) !== c.want) {
+            fail('capability-count', `${file} says «${m[0].trim()}» — ${c.what} holds ${c.want}`
+              + ` (registry ${total}, withdrawn ${gone}, reachable ${live})`);
+          }
+        }
+      }
+    });
+
+    /* the 正本 must actually carry it: a reworded §5 would take the fact with it in silence */
+    if (!CLAIMS.some((c) => new RegExp(c.src).test(ARCH))) {
+      fail('capability-count', 'Architecture.md no longer states how large the capability registry is — §5 is the 正本 for that number');
+    } else if (!problems.some((p) => p.startsWith('capability-count'))) {
+      ok('capability-count', `${seen} stated size(s) across the documents — registry ${total}, reachable ${live} (${gone} withdrawn)`);
+    }
+  }
+}
+
+/* ═══ 25. HOW MANY ATLAS SYSTEM PROMPTS THERE ARE, AND THE PER-FILE BREAKDOWN ══════════════
+ *  (#R500) Architecture.md said 20 with `news-ui` 3 — the count and two of the rows were wrong at
+ *  once, and #R397 had already recorded that this same sentence carried the same stale count when
+ *  the r285 table was missing a row. The sentence was fixed then and drifted again.
+ *
+ *  ⚠ THE POPULATION IS `EXPECTED_CALLS` IN tests/r285-checks.test.mjs, NOT THIS FILE. That table
+ *    is what the prompt tests iterate, so a prompt it does not name is invisible to them; making a
+ *    SECOND hand-kept list here would put the same defect in a second place. This rule only asks
+ *    whether the prose agrees with that table — r285 test (2b) is what keeps the table honest
+ *    against the tree.
+ * ======================================================================================== */
+{
+  const src = rd('tests/r285-checks.test.mjs');
+  const tbl = src.match(/const EXPECTED_CALLS = \{([\s\S]*?)\n\};/);
+  if (!tbl) {
+    fail('prompt-count', 'tests/r285-checks.test.mjs no longer declares EXPECTED_CALLS in the expected shape — that table is the population for every prompt check');
+  } else {
+    /* ⚠ AN EDGE FUNCTION'S PROMPT FILE IS ALWAYS <name>/index.ts, so the file STEM is 「index」 for
+       three of the rows and the prose names none of them that way. The folder is the name a
+       document uses, and collapsing all three to 「index」 made the rule report the breakdown as
+       missing a row it in fact carried three of. */
+    const shortName = (p) => {
+      const parts = p.split('/');
+      const stem = parts[parts.length - 1].replace(/\.(js|ts)$/, '');
+      return stem === 'index' && parts.length > 1 ? parts[parts.length - 2] : stem;
+    };
+    const rows = [...tbl[1].matchAll(/'([^']+\.(?:js|ts))':\s*(\d+)/g)]
+      .map((m) => ({ base: shortName(m[1]), n: Number(m[2]) }));
+    const total = rows.reduce((s, r) => s + r.n, 0);
+
+    const stated = ARCH.match(/\*\*(\d+)\s*本すべての system prompt/);
+    if (!stated) {
+      fail('prompt-count', 'Architecture.md §7 no longer states how many system prompts there are');
+    } else if (Number(stated[1]) !== total) {
+      fail('prompt-count', `Architecture.md says «${stated[1]} 本すべての system prompt» — EXPECTED_CALLS sums to ${total}`);
+    }
+
+    /* the breakdown that follows the count: every row present, with its own number */
+    const head = ARCH.indexOf('本すべての system prompt');
+    const near = head < 0 ? '' : ARCH.slice(head, head + 700);
+    const listed = new Map([...near.matchAll(/`([a-z0-9-]+)`\s*(\d+)/g)].map((m) => [m[1], Number(m[2])]));
+    for (const r of rows) {
+      if (!listed.has(r.base)) fail('prompt-count', `Architecture.md's breakdown omits \`${r.base}\` (${r.n})`);
+      else if (listed.get(r.base) !== r.n) fail('prompt-count', `Architecture.md says \`${r.base}\` ${listed.get(r.base)}; EXPECTED_CALLS says ${r.n}`);
+    }
+    for (const [name] of listed) {
+      if (!rows.some((r) => r.base === name)) fail('prompt-count', `Architecture.md's breakdown names \`${name}\`, which EXPECTED_CALLS does not`);
+    }
+    if (!problems.some((p) => p.startsWith('prompt-count'))) {
+      ok('prompt-count', `${total} prompts across ${rows.length} files, and Architecture.md's breakdown matches EXPECTED_CALLS row for row`);
+    }
+  }
+}
+
+/* ═══ 26. THE SIZE OF THE DEEP TIER, WHICH IS DERIVED AND WAS COPIED OUT FOUR TIMES ════════
+ *  (#R500) `scripts/tiers.mjs` computes the split from a PRICE, so the size is a measurement.
+ *  It was nevertheless written out by hand in four places, and three of them disagreed:
+ *  package.json said 86, docs/TESTING.md said 92 in one section and 94 in another, and
+ *  scripts/worktree.mjs said 82. #R372 had already fixed the same four copies once.
+ *
+ *  ⚠ TWO OF THE FOUR ARE NOT DOCUMENTS, so `eachDoc` cannot see them — the package-script comments
+ *    and the worktree banner are read by a session exactly the way the prose is, and they are the
+ *    two that were furthest out of date. They are named here explicitly.
+ *  ⚠ A NUMBER OF SPEC FILES IS NOT ALWAYS A TIER SIZE. docs/TESTING.md legitimately says a
+ *    re-measurement moved things by so many spec files — a delta, not a claim. Only a window that
+ *    names the tier is classified, and the unclassified ones are counted in the note, so the
+ *    residual is visible rather than assumed to be zero.
+ * ======================================================================================== */
+{
+  let tiers = null;
+  try { tiers = await import('./tiers.mjs'); } catch (_) { tiers = null; }
+  if (!tiers) {
+    fail('deep-tier-size', 'scripts/tiers.mjs would not load — it derives the split and is the 正本 for these numbers');
+  } else {
+    const SIZE = { deep: tiers.tierSpecs('deep').length, core: tiers.tierSpecs('core').length, all: tiers.tierSpecs('all').length };
+    const SOURCES = [...DOCS.map((d) => [d, BODY.get(d)]), ['package.json', rd('package.json')], ['scripts/worktree.mjs', rd('scripts/worktree.mjs')]];
+
+    let checked = 0, skipped = 0;
+    for (const [file, body] of SOURCES) {
+      for (const m of body.matchAll(/\**(\d+)\**\s*(?:measured\s+)?spec\s+files?/g)) {
+        const win = body.slice(Math.max(0, m.index - 60), m.index);
+        /* ⚠ A NUMBER IS A CLAIM ONLY WHEN EXACTLY ONE TIER IS WITHIN REACH OF IT. Both looser
+           readings were tried and both were wrong on the real prose: a fixed precedence read
+           「the **whole** suite is 100 measured spec files」 as a claim about core, and
+           「the nearest word wins」 read 「the **deep** tier is the whole suite minus core —
+           **94 spec files**」 as a claim about core, because 「core」 is the word standing closest
+           to the number. Ambiguity here is a property of the SENTENCE, so the sentence is the
+           thing that gets fixed: an unclassifiable one is counted in the note, not guessed at. */
+        const found = [...new Set([...win.matchAll(/deep|core|whole|全体/gi)]
+          .map((h) => (/deep/i.test(h[0]) ? 'deep' : /core/i.test(h[0]) ? 'core' : 'all')))];
+        const tier = found.length === 1 ? found[0] : null;
+        if (!tier) { skipped++; continue; }
+        checked++;
+        if (Number(m[1]) !== SIZE[tier]) fail('deep-tier-size', `${file} says «${m[0].trim()}» of the ${tier} tier — it holds ${SIZE[tier]}`);
+      }
+      /* the other half of the same sentence, which the shape above steps over */
+      for (const m of body.matchAll(/against (?:the )?core(?: tier)?'s\s*\**(\d+)/g)) {
+        checked++;
+        if (Number(m[1]) !== SIZE.core) fail('deep-tier-size', `${file} says «${m[0].trim()}» — the core tier holds ${SIZE.core}`);
+      }
+    }
+    /* several sources carry it; a rewording that dropped one would otherwise pass in silence */
+    const carriers = SOURCES.filter(([, body]) => /(?:deep|core)[\s\S]{0,140}?\d+\s*(?:measured\s+)?spec\s+files?/i.test(body)).length;
+    if (carriers < 3) fail('deep-tier-size', `only ${carriers} source(s) still state a tier size — package.json, docs/TESTING.md and scripts/worktree.mjs each tell a session how big the nightly is`);
+    if (!problems.some((p) => p.startsWith('deep-tier-size'))) {
+      ok('deep-tier-size', `${checked} stated tier size(s) across ${carriers} source(s) — deep ${SIZE.deep} / core ${SIZE.core} / whole ${SIZE.all} (${skipped} spec-file mention(s) were not tier claims)`);
+    }
+  }
+}
+
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
 /* (#R407) `--rule=` narrows what is REPORTED as well as what is run. ⚠ A name that matched no rule
    at all must be an error: a typo would otherwise exit 0 and let a mutation test prove nothing. */

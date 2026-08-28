@@ -46,7 +46,7 @@ IntMap is primarily designed for people interested in geography and internationa
 * Compare any World Bank indicator in a year you choose, rather than whatever year each country last reported
 * Look up high and low water anywhere on a coast, and how far the tide reaches over real terrain
 * Explore climate, terrain, ecology, population, economics, infrastructure, and strategic geography
-* Move between historical periods using the Time Machine
+* Move the whole map through time with Chronos
 * Compare countries through rankings, charts, tables, and correlation analysis
 * View recent world news at the location where events occurred
 * Monitor aircraft, earthquakes, weather, fires, volcanoes, and other changing information
@@ -80,9 +80,10 @@ Layers can be combined rather than viewed in isolation. For example, you can pla
 
 Some live and satellite services require a separate provider key, which is stored only in the browser.
 
-## Time Machine
+## Chronos
 
-The Time Machine lets you explore changes from 1850 to the present.
+Chronos is IntMap’s master clock. It lets you explore changes from 1850 to the present, and it moves
+the whole map together rather than one layer at a time.
 
 Depending on the selected year and available data, it can update:
 
@@ -166,12 +167,10 @@ Current data is generally more complete than historical data. Availability varie
 
 ## Recent world news
 
-IntMap places recent headlines on the map according to the location of the reported event.
+IntMap places recent headlines on the map at one location only: where the reported event happened.
 
-You can switch between:
-
-* **Subject** — where the event happened
-* **Publisher** — where the news organization is based
+Which organizations are covering an event, and when, is answered by the **Coverage** list inside the
+event itself rather than by a second set of pins on the map.
 
 The News section also supports searching, saved articles, multiple news languages, and optional AI-assisted title translation.
 
