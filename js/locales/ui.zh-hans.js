@@ -316,7 +316,7 @@ window.IntMapLang.define('zh-hans', {
     'first appears in this report': '首次出现于这篇报道',
     'How this was written — the exact wording each sentence came from ({n})': '这段文字从何而来 — 每句话所依据的原文（{n} 则）',
     'In each outlet’s own words': '各家媒体的原文',
-    'IntMap combined what these outlets published into the paragraph above. Every sentence was machine-checked against the wording shown here before it was saved; sentences that could not be checked are discarded, never shown.': '上面这段是 IntMap 将这些媒体所发布的内容整合而成。每一句在保存前都已由机器与此处显示的原文比对过；无法比对的句子一律舍弃，绝不显示。',
+    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': '上面这段由 AI 撰写。它整合了这些媒体所发布的内容：每一句在保存前都已由机器与此处显示的原文比对过，无法比对的句子一律舍弃，绝不显示。',
     'Key figures': '关键数字',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '这则事件只有一家媒体提供内文，因此不离开 IntMap 就能读到的内容仅止于此。',
     'Read at {s} ↗': '在 {s} 阅读 ↗',

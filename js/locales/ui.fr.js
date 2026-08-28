@@ -312,7 +312,7 @@ window.IntMapLang.define('fr', { ui: {
     'first appears in this report': 'apparaît pour la première fois dans cet article',
     'How this was written — the exact wording each sentence came from ({n})': 'Comment ce texte a été écrit — la formulation exacte dont provient chaque phrase ({n})',
     'In each outlet’s own words': 'Dans les mots de chaque média',
-    'IntMap combined what these outlets published into the paragraph above. Every sentence was machine-checked against the wording shown here before it was saved; sentences that could not be checked are discarded, never shown.': 'IntMap a réuni dans le paragraphe ci-dessus ce que ces médias ont publié. Chaque phrase a été vérifiée automatiquement contre la formulation montrée ici avant d’être enregistrée ; les phrases qui n’ont pas pu être vérifiées sont écartées et ne sont jamais affichées.',
+    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': 'Le paragraphe ci-dessus a été rédigé par une IA. Il réunit ce que ces médias ont publié : chaque phrase a été vérifiée automatiquement contre la formulation montrée ici avant d’être enregistrée, et les phrases non vérifiables sont écartées et jamais affichées.',
     'Key figures': 'Chiffres clés',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': 'Un seul média a fourni le texte de l’article pour cet événement : c’est tout ce qu’IntMap peut montrer sans quitter l’application.',
     'Read at {s} ↗': 'Lire sur {s} ↗',

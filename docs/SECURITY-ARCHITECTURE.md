@@ -322,9 +322,19 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   and answered the same proxy with its bot-block page for `ja-JP`.
 - **No PII in URL query strings**; error monitoring (Sentry, dormant) strips PII / tokens /
   query strings and only reports IntMap's own exceptions.
-- Analytics: Google Analytics (gtag) + Microsoft Clarity load as third-party scripts
-  (allowlisted in the CSP).
-  ⚠ **Neither may see an auth return URL.** An OAuth return and a magic-link click land on the
+- Analytics: **paused.** Google Analytics (gtag) and Microsoft Clarity are still in `index.html`
+  and still allowlisted in the CSP, but both loaders sit behind one switch — `window.INTMAP_ANALYTICS`,
+  declared `false` — so no request reaches `www.googletagmanager.com` or `www.clarity.ms`, no GA
+  cookie is set, and no session replay is recorded. The queue shims (`gtag()`, `clarity()`) are
+  still defined, so any caller queues harmlessly instead of throwing.
+  ⚠ **They were stopped because the privacy text named neither of them** — not because the tags
+  were faulty. `js/legal-text.js` §4 lists dozens of third parties in nine languages and omitted
+  the only two that set a cookie and record a DOM replay; §5 says "Cookies & local storage — used
+  for your session and preferences" and nothing about measurement. `tests/r502-checks.test.mjs ④`
+  ties the switch to that text: setting it back to `true` without naming **Google Analytics** and
+  **Clarity** in `js/legal-text.js` turns the gate red. Turning measurement back on and disclosing
+  it are therefore one action, not two.
+  ⚠ **Neither may see an auth return URL** (this governs the tags whenever they are switched on). An OAuth return and a magic-link click land on the
   page with the credential *in the URL* (`?code=…`, `#access_token=…&refresh_token=…`) until
   supabase-js finishes `detectSessionInUrl`, which is a network round trip. GA has been given a
   sanitised `page_location` since #R155 (`__imScrubAuthUrl`); **Clarity had not been**, and
