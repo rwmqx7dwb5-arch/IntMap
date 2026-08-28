@@ -131,7 +131,11 @@ const RW = {
   _crLng:             { v: '_crLng',             owners: ['map-readout.js'] },
   _elevSeq:           { v: '_elevSeq',           owners: ['map-readout.js'] },
   elevTimer:          { v: 'elevTimer',          owners: ['map-readout.js'] },
-  lastElev:           { v: 'lastElev',           owners: ['map-readout.js'] },
+  /* (#R498) js/mobile-map-input.js is the crosshair's centre readout — it computes the elevation at
+     the map centre and stamps it exactly as js/map-readout.js stamps it for the pointer. Two owners,
+     one member, both declared: the RW contract's point is that a writer is NAMED, not that there is
+     only ever one of them. */
+  lastElev:           { v: 'lastElev',           owners: ['map-readout.js', 'mobile-map-input.js'] },
   lastLayerVal:       { v: 'lastLayerVal',       owners: ['map-readout.js'] },
   /* write halves only — the getter for each of these was already there for an earlier module */
   commCaps:           { v: 'commCaps',           owners: ['community-board.js'], oneLinePair: false },

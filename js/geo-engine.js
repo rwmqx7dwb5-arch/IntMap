@@ -1469,12 +1469,24 @@ function _m(){ return window.__imap||null; }
        finish in. `click` delegation is untouched, so nothing that opens a card is affected. */
     _hoverHub(){
       if(this._hvh) return this._hvh;
-      const H={ regs:[], inside:new Set(), wired:null };
-      H.ids=()=>{ const m=_m(), out=[], seen=new Set();
+      const H={ regs:[], inside:new Set(), wired:null, _ids:null, _armed:false, _pending:null };
+      /* ══ ⚠⚠ (#R498) THE LIST OF LAYERS TO ASK IS NOT A PROPERTY OF THE POINTER EITHER ═══════════
+         #R195 replaced twenty-six hit tests with one and left THIS walk on the pointer's path: for
+         every registration, on every mousemove, `getLayer(id)` and `getLayoutProperty(id,'visibility')`
+         — to rebuild a list that can only change when the STYLE changes. This branch carries 74 hover
+         registrations, so with a normal set of layers on, a pointer event paid dozens of style lookups
+         before the one query it exists to make, and `getLayoutProperty` is not free (Style.getLayoutProperty
+         goes through the layer's own property store).
+         It is cached, and invalidated by the only two things that can move it: a style mutation — MapLibre
+         emits `styledata` for addLayer / removeLayer / setLayoutProperty alike — and a change to the
+         registration list itself. ⚠ Same ids, same order, same query; only asked when it can differ. */
+      H.dirty=()=>{ H._ids=null; };
+      H.ids=()=>{ if(H._ids) return H._ids;
+        const m=_m(), out=[], seen=new Set();
         for(let i=0;i<H.regs.length;i++){ const id=H.regs[i].layer;
           if(seen.has(id)) continue; seen.add(id);
           try{ if(m.getLayer(id)&&m.getLayoutProperty(id,'visibility')!=='none') out.push(id); }catch(_){} }
-        return out; };
+        return (H._ids=out); };
       H.emit=(layer,type,ev,feats)=>{
         for(let i=0;i<H.regs.length;i++){ const r=H.regs[i];
           if(r.layer!==layer||r.type!==type) continue;
@@ -1482,9 +1494,9 @@ function _m(){ return window.__imap||null; }
           try{ r.cb.call(_m(),ev); }catch(_){}
           if(feats) delete ev.features;
           if(r.once) r.dead=true; }
-        if(H.regs.some(r=>r.dead)) H.regs=H.regs.filter(r=>!r.dead);
+        if(H.regs.some(r=>r.dead)){ H.regs=H.regs.filter(r=>!r.dead); H.dirty(); }
       };
-      H.leaveAll=(ev)=>{ if(!H.inside.size) return;
+      H.leaveAll=(ev)=>{ H._pending=null; if(!H.inside.size) return;
         const gone=[...H.inside]; H.inside.clear();
         for(const id of gone) H.emit(id,'mouseleave',ev,null); };
       H.move=(ev)=>{
@@ -1504,27 +1516,48 @@ function _m(){ return window.__imap||null; }
           } else if(H.inside.has(id)){ H.inside.delete(id); H.emit(id,'mouseleave',ev,null); }
         }
       };
+      /* ⚠ (#R498) …AND A POINTER THAT REPORTS FASTER THAN THE DISPLAY CANNOT QUEUE MORE THAN ONE OF
+         THESE PER FRAME. #R195 chose synchronous delivery deliberately and gave the reason: coalescing
+         to an animation frame "would change when a tooltip appears relative to the event that caused
+         it, and the app's own tests are written against that order (#R182)". That reason applies to
+         the FIRST move of a frame, and only to it — so the first is still delivered synchronously,
+         exactly as before, and only the EXTRA moves that arrive inside the same frame are coalesced
+         to the newest one and delivered on the next. At a 60 Hz pointer nothing changes; a 120/240 Hz
+         trackpad, pen or mouse now runs the hit test once per frame instead of two or four times. */
+      /* ⚠ AND THE DISARM CANNOT DEPEND ON rAF ALONE. A hidden document stops `requestAnimationFrame`
+         — that is the documented state of this project's headless preview — and a queue that only
+         drains on a frame would then stay armed for ever and SWALLOW every later pointer move. A
+         timer races the frame; whichever arrives first drains and re-arms, the other is a no-op. */
+      H.onMove=(ev)=>{ if(H._armed){ H._pending=ev; return; }
+        H._armed=true; H.move(ev); H.arm(); };
+      H.arm=()=>{ let done=false;
+        const go=()=>{ if(done) return; done=true; const p=H._pending; H._pending=null;
+          if(p){ H.move(p); H.arm(); } else H._armed=false; };
+        let any=false;
+        try{ requestAnimationFrame(go); any=true; }catch(_){ }
+        try{ setTimeout(go,32); any=true; }catch(_){ }
+        if(!any) H._armed=false; };
       /* ⚠ keyed on the MAP INSTANCE, not a boolean: a style reload keeps the same map and the same
          listeners, but a re-created map would keep the flag and lose the wiring — silently, which is
          the failure mode this whole file exists to make impossible (#R194) */
-      H.wire=()=>{ const m=_m(); if(!m||H.wired===m) return; H.wired=m; H.inside.clear();
-        m.on('mousemove',H.move); m.on('mouseout',H.leaveAll); };
+      H.wire=()=>{ const m=_m(); if(!m||H.wired===m) return; H.wired=m; H.inside.clear(); H.dirty();
+        m.on('mousemove',H.onMove); m.on('mouseout',H.leaveAll); m.on('styledata',H.dirty); };
       return (this._hvh=H);
     },
     onLayer(e,layer,c){ const m=_m(); if(!m) return;
       if(typeof layer==='string'&&(e==='mousemove'||e==='mouseenter'||e==='mouseleave')){
-        const H=this._hoverHub(); H.regs.push({type:e,layer,cb:c}); H.wire(); return; }
+        const H=this._hoverHub(); H.regs.push({type:e,layer,cb:c}); H.dirty(); H.wire(); return; }
       m.on(e,layer,c); },
     offLayer(e,layer,c){ const m=_m(); if(!m) return;
       if(typeof layer==='string'&&(e==='mousemove'||e==='mouseenter'||e==='mouseleave')){
         const H=this._hoverHub();
-        H.regs=H.regs.filter(r=>!(r.type===e&&r.layer===layer&&r.cb===c));
+        H.regs=H.regs.filter(r=>!(r.type===e&&r.layer===layer&&r.cb===c)); H.dirty();
         if(!H.regs.some(r=>r.layer===layer)) H.inside.delete(layer);
         return; }
       m.off(e,layer,c); },
     onceLayer(e,layer,c){ const m=_m(); if(!m) return;
       if(typeof layer==='string'&&(e==='mousemove'||e==='mouseenter'||e==='mouseleave')){
-        const H=this._hoverHub(); H.regs.push({type:e,layer,cb:c,once:true}); H.wire(); return; }
+        const H=this._hoverHub(); H.regs.push({type:e,layer,cb:c,once:true}); H.dirty(); H.wire(); return; }
       if(m.once) m.once(e,layer,c); },
     /* ══ (#R178) THE REST OF THE SURFACE ════════════════════════════════════════════════════
        「MapLibre依存脱却作業を完了させて。」 An AST sweep (scripts/engine-coupling.mjs) counted
