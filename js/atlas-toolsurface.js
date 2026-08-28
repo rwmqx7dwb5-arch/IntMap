@@ -15,7 +15,7 @@
  *  hundred-odd. Atlas asks for what it needs and gets that capability's real schema; nothing is
  *  pushed at it on the chance it might be relevant.
  *
- *  ⚠ NOTHING IS TAKEN AWAY. `find_capability` searches all 126 and `run_capability` invokes any of
+ *  ⚠ NOTHING IS TAKEN AWAY. `find_capability` searches the whole registry and `run_capability` invokes any of
  *  them, so the reachable surface is the whole registry — CONSTITUTION.md §0.3. What shrinks is
  *  what is SENT, not what can be DONE.
  *
