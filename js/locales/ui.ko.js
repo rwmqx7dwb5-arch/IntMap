@@ -389,6 +389,7 @@ window.IntMapLang.define('ko', { ui: {
     "Layers":"레이어", "Settings":"설정", "Map":"지도", "Satellite":"위성", "Globe":"지구본",
     "Flat":"평면", "Minimize":"최소화", "Send":"보내기", "Copy":"복사", "Copy name":"지명 복사", "Open":"열기", "Back":"뒤로",
     "Sources":"출처", 
+  "Wrap": "줄바꿈", "Show all sources": "모든 출처 보기",   /* atlas-reply.js (#R494) */
   "The water has come to rest — press ↺ to run it again, or place more": "물이 멈췄습니다 — ↺ 로 다시 재생하거나 물을 더 배치하세요",   /* (#R275) */
   "This country’s service is in the update cycle and has not been read yet.": "이 나라의 기관은 갱신 순서를 기다리는 중이며 아직 수신되지 않았습니다.",   /* (#R275) */
   "Warnings at this point": "이 지점의 경보",   /* (#R275) */

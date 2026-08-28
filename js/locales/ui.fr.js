@@ -399,6 +399,7 @@ window.IntMapLang.define('fr', { ui: {
     "Layers":"Calques", "Settings":"Paramètres", "Map":"Carte", "Satellite":"Satellite", "Globe":"Globe",
     "Flat":"Plat", "Minimize":"Réduire", "Send":"Envoyer", "Copy":"Copier", "Copy name":"Copier le nom", "Open":"Ouvrir", "Back":"Retour",
     "Sources":"Sources", 
+  "Wrap": "Retour à la ligne", "Show all sources": "Afficher toutes les sources",   /* atlas-reply.js (#R494) */
   "The water has come to rest — press ↺ to run it again, or place more": "L’eau s’est immobilisée — appuyez sur ↺ pour rejouer, ou ajoutez de l’eau",   /* (#R275) */
   "This country’s service is in the update cycle and has not been read yet.": "Le service de ce pays est dans le cycle de mise à jour et n’a pas encore été lu.",   /* (#R275) */
   "Warnings at this point": "Alertes à cet endroit",   /* (#R275) */

@@ -21,17 +21,20 @@ const gone = (s, msg) => assert.ok(!has(s), msg || ('should be removed: ' + s.sl
 test('R159 #1 Atlas replies carry NO bold and NO divider lines', () => {
   // inline **bold** and table-cell **bold** are stripped to plain text (mdMini + _atlCellFmt).
   // (NB: the separate non-Atlas md() renderer at ~23453 legitimately keeps <b>; scope the check to the Atlas helpers.)
-  ok(".replace(/\\*\\*([^*]+)\\*\\*/g,'$1')                                                             /* (#R159) inline **bold** → plain", 'mdMini inline **bold** → plain');
+  ok(".replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '$1');", 'inline **bold** → plain (js/atlas-markdown.js)');
   /* (#R492) the cell formatter also annotates the cell (units / clocks / abbreviations), so it takes the
      options object as a second argument. The property THIS line protects — the bold strip — is unchanged. */
   ok("function _atlCellFmt(s,AN){ const t=esc(String(s==null?'':s)).replace(/\\*\\*([^*]+)\\*\\*/g,'$1');", 'table-cell **bold** → plain');
-  // headings differentiate by SIZE + SPACING only — semibold 600, never the heavy 750/800 bold weight
-  /* (#R232) …now carrying class="atl-h", which is what lets mdMini drop the paragraph spacer that
-     lands against a heading. Weight and colour — the property these three lines exist for — stand. */
-  ok('.replace(/^#{3,6}\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', '### heading is semibold, not bold');
-  ok('.replace(/^##\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', '## heading is semibold, not bold');
-  ok('.replace(/^#\\s*(.+)$/gm,\'<div class="atl-h" style="font-weight:600;color:var(--text-main)', '# heading is semibold, not bold');
-  assert.ok(!/mdMini[\s\S]{0,4000}font-weight:(750|800)/.test(html), 'no mdMini heading keeps the heavy 750/800 bold weight');
+  /* ⚠ (#R494) THREE ASSERTIONS USED TO NAME AN IMPLEMENTATION AND NOT A RULE. Each asserted the literal
+     text of one `.replace()` call, so what they actually protected was that the renderer kept being
+     written as a regex chain — and when #R494 replaced the chain with a parser, all three would have
+     failed while the rule they exist for (weight 600, --text-main, no colour-coding) was untouched.
+     The rule is stated once in CSS now, and once here. `atl-h` is on EVERY level, so one assertion
+     covers what three could not: a level added later cannot skip it. */
+  ok('.atl-h{font-weight:600;color:var(--text-main);', 'every heading level is semibold, not bold, and monochrome');
+  for (const lv of [1, 2, 3, 4, 5, 6]) ok('.atl-h' + lv + '{font-size:', 'h' + lv + ' has its own size');
+  assert.ok(!/\.atl-h\d?\{[^}]*font-weight:(750|800)/.test(html), 'no heading keeps the heavy 750/800 bold weight');
+  assert.ok(!/\.atl-h[1-6]\{[^}]*color:var\(--primary-color\)/.test(html), 'R154: no heading is colour-coded');
   // the "## " section top-rule divider is removed ("区切りの横線はいらない")
   gone('padding-top:.78em;border-top:1.5px solid rgba(128,128,128,.34)', 'the ## hairline divider is gone');
   // and the repair-pass dashed divider between answer segments is gone (see #7)

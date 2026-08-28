@@ -62,7 +62,10 @@ test('R279 (2) the analyze reply opens with the prose, not with a label', () => 
   assert.ok(opener, 'the analyze reply still renders the model prose through mdMini');
   assert.ok(!/L\(/.test(opener), `the reply opens with a translated label again: ${opener}`);
   assert.ok(!/font-weight:600/.test(opener), `the reply opens with a heading again: ${opener}`);
-  assert.match(opener, /font-size:14px/, 'the prose div is the first thing in the reply');
+  /* (#R494) the prose div is `class="atl-md"` now. It was an inline `style="font-size:14px;…"` that
+     five call sites had to keep re-spelling identically — and the mobile size rule in
+     js/atlas-styles.js matched it by that spelling, so the styling held only by agreement. */
+  assert.match(opener, /class="atl-md"/, 'the prose div is the first thing in the reply');
 });
 
 test('R279 (3) the label itself is gone from the shipped console', () => {

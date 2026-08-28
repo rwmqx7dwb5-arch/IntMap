@@ -87,12 +87,16 @@ test('#4 typography: a flat run-on wall is grouped into stanzas; structured text
     return {
       wallParas: D.stanza(wall).split('\n\n').length,
       structuredUnchanged: D.stanza(structured) === structured,
-      mdHasGap: D.mdMini(wall).includes('height:'),
+      /* (#R494) the gap used to be an empty div with an inline `height:`; it is a paragraph's own
+         bottom margin now, so what the rendered HTML shows is SEVERAL PARAGRAPH BOXES. */
+      mdParas: (D.mdMini(wall).match(/class="atl-p/g) || []).length,
+      mdHasSpacerDiv: /style="height:[\d.]+em"/.test(D.mdMini(wall)),
     };
   });
   expect(r.wallParas).toBeGreaterThanOrEqual(2);   // the monotone wall gets breathing room
   expect(r.structuredUnchanged).toBe(true);        // never fights the model's own structure
-  expect(r.mdHasGap).toBe(true);                    // rendered HTML has paragraph gaps
+  expect(r.mdParas).toBeGreaterThanOrEqual(2);      // rendered HTML has real paragraphs to space apart
+  expect(r.mdHasSpacerDiv).toBe(false);             // …and no empty div doing the spacing
 });
 
 test('#3 Köppen legend STOPS when all classes are shown (R151: clamp to content, no empty space)', async () => {

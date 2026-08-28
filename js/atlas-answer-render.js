@@ -71,7 +71,13 @@ export function makeAtlasAnswerRender() {
         });
       });
       if (!marks.length) return '';
-      return marks.sort((a, b) => a - b).map((n) => {
+      /* ⚠ (#R494) [1][2][3] IS THREE PILLS OF NOISE FOR ONE ACT OF CITING. A sentence backed by three
+         records rendered three separate rounded chips with a gap between each, and a paragraph with
+         two such sentences read as a scatter of numbers. They are ONE pill now — one background, one
+         outline, hairlines between the numbers — which is a citation cluster in the typographic sense
+         and costs nothing: every number is still its own anchor to its own source, so nothing that was
+         reachable before became unreachable. A single mark keeps the plain pill it always had. */
+      const pills = marks.sort((a, b) => a - b).map((n) => {
         const r = order[n - 1];
         const label = esc(r.publisher || r.host || r.title);
         /* ⚠ A RECORD WITH NO URL IS STILL A CITATION. IntMap's own measured data (country statistics,
@@ -82,6 +88,7 @@ export function makeAtlasAnswerRender() {
           ? '<a class="atl-cite" href="' + esc(r.finalUrl) + '" target="_blank" rel="noopener" title="' + label + '">' + n + '</a>'
           : '<span class="atl-cite atl-cite-data" title="' + label + '">' + n + '</span>';
       }).join('');
+      return marks.length > 1 ? '<span class="atl-cites">' + pills + '</span>' : pills;
     };
 
     let html = '';
@@ -138,6 +145,12 @@ export function makeAtlasAnswerRender() {
   .atl-cite:hover{background:var(--primary-color);color:#fff;}
   .atl-cite-data{cursor:default;}
   .atl-cite-data:hover{background:var(--input-bg,rgba(128,128,128,.16));color:var(--text-muted);}
+  /* (#R494) the citation CLUSTER: several marks for one statement share one pill instead of scattering
+     several. Each number is still its own anchor — only the chrome around them is merged. */
+  .atl-cites{display:inline-flex;vertical-align:.35em;margin:0 .12em;border-radius:.6em;overflow:hidden;
+    background:var(--input-bg,rgba(128,128,128,.16));}
+  .atl-cites .atl-cite{margin:0;border-radius:0;background:none;vertical-align:baseline;}
+  .atl-cites .atl-cite+.atl-cite{border-left:1px solid rgba(128,128,128,.3);}
   .atl-lim{margin-top:.9em;padding:.55em .75em;border-radius:10px;background:var(--input-bg,rgba(128,128,128,.09));}
   .atl-lim-h{font-size:.82em;font-weight:600;color:var(--text-muted);margin-bottom:.15em;letter-spacing:.02em;}
   .atl-aux{margin-top:.7em;font-size:.82em;line-height:1.5;color:var(--text-muted);}

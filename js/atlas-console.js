@@ -1613,7 +1613,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       mappingVerdict:function(s){ try{ return _atlMappingVerdict(s); }catch(_){ return null; } },
       mappingNote:function(v,s,m){ try{ return _atlMappingNoteHtml(v,s,m); }catch(_){ return ''; } },
       stanza:function(t){ try{ return _atlStanza(t); }catch(_){ return t; } },
-      mdMini:function(t){ try{ return mdMini(t); }catch(_){ return ''; } },
+      mdMini:function(t){ try{ return mdMini(t); }catch(_){ return ''; } }, linkCards:function(l,r,tp){ try{ return linkCards(l,r,tp); }catch(_){ return ''; } },   /* (#R494) on ONE line: this file's shrink-only ceiling (tests/r318 ⑨b / r419 ⑨d) is a LINE count, and tests/r494.spec.js needs the real card row to click its overflow chip */
       /* (#R156) UNIFIED VISION/RENDER/GEO spine — exposed for the hermetic node + Playwright tests: content class,
          the map gate, exact-rational deterministic verification, the self-check note, and the vision system prompt. */
       contentClass:function(x){ try{ return _atlContentClass(x); }catch(_){ return ''; } },
@@ -1854,7 +1854,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           let asofB=''; try{ const _m=(_envB&&_envB.meta)||{};   /* (#R350) THIS call's meta, not window._aiLastMeta — a concurrent Atlas turn used to decide whether this brief said 「ライブWeb検索」 */ asofB='<div style="font-size:10.5px;color:var(--text-muted);margin-top:7px;">'+L('As of','時点','Stand','На дату','A fecha de')+' '+today+(_m.webUsed?(' · '+L('live web search','ライブWeb検索','Live-Websuche','поиск в интернете','búsqueda web en vivo')):'')+'</div>'; }catch(_){}
           /* (#R232) …and the model's own version of it — dropLeadTitle is in js/atlas-reply.js. */
           const bodyB=dropLeadTitle(txtB,nm3); try{ if(window.IntMapWidgetBriefStore) window.IntMapWidgetBriefStore.remember({place:nm3,text:bodyB,at:Date.now()}); }catch(_){}   /* (#R292) the widget board is SHOWN this brief and never asks for one — see js/widget-defs-map.js. ⚠ ON THIS LINE because #R199's ceiling is never raised (#R272): the file had one line of headroom and this addition pays for itself. */
-          return R(true,'<div style="font-size:14px;line-height:1.68;">'+mdMini(bodyB)+'</div>'+asofB+srcCardsB); }
+          return R(true,'<div class="atl-md">'+mdMini(bodyB)+'</div>'+asofB+srcCardsB); }
         case 'askHere': { /* (#R83) absorbed into Atlas — pin the point HERE so the ongoing conversation resolves
             "here/there" to it; if a concrete question came with it, answer it straight away via analyze. */
           let ll=null; if(a.lng!=null&&isFinite(+a.lng)) ll={lng:+a.lng,lat:+a.lat,name:a.place||''}; else if(a.place) ll=await geocode(a.place);
@@ -3150,7 +3150,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           } else if(research.temporalBasis){
             h='<div style="font-size:10.5px;color:var(--text-muted);margin:2px 0 4px;">'+esc(research.temporalBasis)+'</div>';
           }
-          h+='<div style="font-size:14px;line-height:1.68;margin-bottom:6px;">'+mdMini(research.explanation)+'</div>';
+          h+='<div class="atl-md" style="margin-bottom:6px;">'+mdMini(research.explanation)+'</div>';
           if(mapRes.rendered){ const ml=mapRes.pinCount?L(mapRes.pinCount+' related place(s) shown on the map',mapRes.pinCount+'件の関連地点を地図に表示しました',mapRes.pinCount+' zugehörige Orte auf der Karte',mapRes.pinCount+' связанных мест на карте',mapRes.pinCount+' lugares relacionados en el mapa'):(mapRes.method==='bbox'?L('Framed the area on the map','対象範囲を地図に表示しました','Gebiet auf der Karte eingerahmt','Область показана на карте','Área enmarcada en el mapa'):L('Centered the map on the location','地図を対象地点に移動しました','Karte auf den Ort zentriert','Карта отцентрирована','Mapa centrado en el lugar'));
             h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+esc(ml)+((!mapRes.hasExtent&&mapRes.pinCount)?(' · '+L('the region outline was not available, so related places are shown as points','海域・地域の輪郭は取得できなかったため関連地点を表示','Regionsumriss nicht verfügbar — Punkte stattdessen','контур недоступен — показаны точки','sin contorno — se muestran puntos')):'')+'</div>'; }
           else h+='<div style="font-size:10.5px;color:var(--text-muted);margin-bottom:2px;">🗺 '+L('The map view could not be updated for this, but the explanation above stands.','この件では地図表示を更新できませんでしたが、上の説明は有効です。','Kartenansicht nicht aktualisierbar — die Erklärung oben gilt.','Не удалось обновить карту — пояснение выше остаётся в силе.','No se pudo actualizar el mapa, pero la explicación anterior es válida.')+'</div>';
@@ -3473,7 +3473,7 @@ window.IntMapModules.atlasConsole=function(HOST){
              BODY — call ids, audit codes and counts only, so turning it on in production leaks
              nothing. window.IntMapAtlasDev is the same switch the rest of Atlas debugging uses. */
           try{ if(window.IntMapAtlasDev) window.IntMapAtlasTrace=Object.assign({},RES.trace,{errors:RES.audit.errors.map(x=>x.code),warnings:RES.audit.warnings.map(x=>x.code)}); }catch(_){}
-          let html='<div style="font-size:14px;line-height:1.68;">'+renderAnswer(_env,_reg,{L,esc,mdMini,linkCards})+'</div>';
+          let html='<div class="atl-md">'+renderAnswer(_env,_reg,{L,esc,mdMini,linkCards})+'</div>';
           /* (#R150) prose↔map reconciliation is unchanged in intent — it now reads the STRUCTURE's
              places instead of a JSON line scraped off the end of the prose. */
           /* ⚠ (#R397) PASS THE PLACE, NOT THREE OF ITS FIELDS. This re-flattened every place to
@@ -3895,7 +3895,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         case 'monitor':
           return R(false, warn('⚠ '+window.IntMapLang.t(HOST.lang,'Area monitors are not available right now.','エリア監視は現在ご利用いただけません。','Gebietsmonitore sind derzeit nicht verfügbar.','Мониторы районов сейчас недоступны.','Los monitores de área no están disponibles por ahora.')), {meta:{code:'FEATURE_WITHDRAWN',category:'capability',retryable:false,userGoalSatisfied:false,produced:[]}});
         case 'control': return doControl(a);
-        case 'answer': { let _ah='<div style="font-size:14px;line-height:1.68;">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
+        case 'answer': { let _ah='<div class="atl-md">'+mdMini(a.text||'')+'</div>';   /* (#R149) if the answer NAMED mappable places, pin them (unless the plan already pinned) so a location-rich reply always delivers map value */
           /* (#R156) shared spine: a text answer may also carry a content class + verifiable checks (e.g. the model solved
              an equation in prose). Verify the checks deterministically, show the honest self-check note, and let the SAME
              class gate mapping below — so a math/code/document text answer never runs place extraction either. */
@@ -4651,7 +4651,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           else if(vr2.ran && vr2.failed.length<vr.failed.length){ d=d2; vr=vr2; env=env2; } }        /* strictly fewer failures → still an improvement */
       }catch(_){} }
       if(gen!==_runGen) return;
-      let html='<div style="font-size:14px;line-height:1.68;">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
+      let html='<div class="atl-md">'+mdMini(d.answer||L('(no answer returned)','（回答が返りませんでした）','(keine Antwort)','(нет ответа)','(sin respuesta)'))+'</div>';
       if(Array.isArray(d.uncertain)&&d.uncertain.length) html+='<div style="font-size:11px;margin-top:6px;color:var(--text-muted);"><b>'+esc(L('Uncertain in the image','画像中の判読が不確実な箇所','Im Bild unsicher','Неуверенно распознано','Incierto en la imagen'))+':</b> '+esc(d.uncertain.slice(0,8).join(', '))+'</div>';
       try{ html+=_atlChecksNoteHtml(vr); }catch(_){}
       const cls=_atlContentClass(d.contentClass);

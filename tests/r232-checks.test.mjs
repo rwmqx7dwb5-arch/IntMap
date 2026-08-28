@@ -234,10 +234,18 @@ test('R232 Atlas: the place name is printed once, not twice', () => {
 
 test('R232 Atlas: a heading is not spaced twice, and a source card must be about the topic', () => {
   const rep = read('js/atlas-reply.js');
-  assert.match(rep, /<div class="atl-h"/, 'headings are marked');
-  assert.match(rep, /<div class="atl-gap"/, 'so are paragraph spacers');
-  assert.match(rep, /atl-gap"\[\^>\]\*><\\\/div>\(\?=<div class="atl-h"\)/,
-    'the spacer BEFORE a heading is dropped');
+  /* ⚠ (#R494) THE DOUBLE GAP IS NOT DELETED ANY MORE — IT CANNOT BE EXPRESSED.
+     #R232's mechanism was a POST-PASS over finished HTML that removed the `atl-gap` spacer element
+     landing beside a heading, because the heading rule and the paragraph rule each emitted air and
+     nothing could see the sum. Both the spacer and the post-pass are gone: spacing is a margin on a
+     real <p> and a real <h2>, and adjacent margins COLLAPSE, so the browser computes what the
+     post-pass computed by hand. What this test can prove offline is that the double-emitting shape
+     is gone; the resulting gap is MEASURED on screen in tests/r494.spec.js. */
+  const md = read('js/atlas-markdown.js');
+  assert.match(md, /class="atl-h atl-h/, 'headings are marked, and now they are real <h1>…<h6>');
+  assert.ok(!/class="atl-gap"/.test(rep + md), 'the paragraph SPACER ELEMENT is gone');
+  assert.ok(!/atl-gap"\[\^>\]\*><\\\/div>/.test(rep), 'and so is the post-pass that deleted it');
+  assert.match(read('js/atlas-styles.js'), /\.atl-p\{margin:0 0 1\.5em;/, 'the paragraph gap is a margin that can collapse');
   assert.match(rep, /function _atlTopicKeys\(topic\)/, 'relevance judges against the topic');
   assert.match(rep, /cross-script: TWO tokens/, 'the cross-script fallback needs two, not none');
   assert.match(read('js/atlas-console.js'), /linkCards\(srcSink,txtB,nm3\+' \/ '\+String\(a\.place\|\|''\)\)/,
