@@ -304,7 +304,7 @@ window.IntMapLang.define('ko', { ui: {
     'first appears in this report': '이 기사에서 처음 나온 수치',
     'How this was written — the exact wording each sentence came from ({n})': '이 글이 무엇에서 쓰였는지 — 각 문장의 근거가 된 원문({n}건)',
     'In each outlet’s own words': '각 매체의 원문 그대로',
-    'IntMap combined what these outlets published into the paragraph above. Every sentence was machine-checked against the wording shown here before it was saved; sentences that could not be checked are discarded, never shown.': '위 문단은 이 매체들이 공개한 내용을 IntMap이 하나로 합친 것입니다. 각 문장은 저장되기 전에 여기 표시된 원문과 기계적으로 대조했으며, 대조하지 못한 문장은 버려져 표시되지 않습니다.',
+    'The paragraph above was written by AI. It combines what these outlets published: every sentence was machine-checked against the wording shown here before it was saved, and sentences that could not be checked are discarded, never shown.': '위 문단은 AI가 작성한 것입니다. 이 매체들이 공개한 내용을 합친 것으로, 각 문장은 저장되기 전에 여기 표시된 원문과 기계적으로 대조했으며, 대조하지 못한 문장은 버려져 표시되지 않습니다.',
     'Key figures': '주요 수치',
     'Only one outlet supplied article text for this event, so this is all IntMap can show without leaving the app.': '이 사건의 본문을 제공한 매체는 한 곳뿐이라, 앱을 벗어나지 않고 IntMap이 보여 줄 수 있는 것은 여기까지입니다.',
     'Read at {s} ↗': '{s}에서 읽기 ↗',
