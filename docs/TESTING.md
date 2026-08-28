@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **100 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
-`npm run test:checks` runs **279 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **280 Node test files** with no browser at all (counted from
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier — **94 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
@@ -92,7 +92,7 @@ npm run test:qa          # IntMap's own in-page QA harnesses
 
 **WHICH of these to run WHILE working** — the staged ladder (targeted checks during the edit,
 `npm test` once before the push, `test:deep` only when 3-D/physics were touched) is stated once,
-in [`../.claude/rules/execution-strategy.md`](../.claude/rules/execution-strategy.md) §4. This
+in [`../.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) §4. This
 document owns *what each layer is*; that one owns *when a session runs it*.
 
 **(#R196) `npm test`'s browser half runs through `scripts/run-tests.mjs`, not `playwright test`
@@ -500,7 +500,7 @@ starts:
 | | |
 |---|---|
 | `scripts/deep-alarm.mjs` | the `deep-alarm` CI job runs it after the nightly. RED → open the issue if it is not open and **rewrite its body** with tonight's failing tests (named, read out of the shards' `junit.xml`); GREEN → close it. One issue edited, never a comment a night. `cancelled` is not a pass. |
-| `node scripts/worktree.mjs status` | prints last night's verdict — which CLAUDE.md §1 puts in front of every session before any work starts. The `--brief` form (the SessionStart hook) shouts only when it is not green; the full form always answers, including 「不明」 when `gh` could not be asked, so silence is never read as a pass. |
+| `node scripts/worktree.mjs status` | prints last night's verdict — which AGENTS.md §1 puts in front of every session before any work starts. The `--brief` form (the SessionStart hook) shouts only when it is not green; the full form always answers, including 「不明」 when `gh` could not be asked, so silence is never read as a pass. |
 
 Reproduce a nightly failure locally with `npm run test:deep`, or one file at a time:
 
@@ -575,6 +575,34 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
 
 It deliberately does **not** reformat or style-lint existing code.
 
+## The agent context — `npm run check:agents` (`scripts/agent-sync.mjs`, #R503)
+
+Two products read this repository, and each reads only its own location: Claude Code reads
+`CLAUDE.md` and `.claude/`, Codex reads `AGENTS.md` and `.codex/`. The instructions are written
+**once**, provider-neutral, under `.agents/` (`rules/`, `roles/`, `skills/`), and the per-product
+files are **rendered** from them by `node scripts/agent-sync.mjs --write`. This gate re-renders
+into memory and compares. It reports four things:
+
+| name | what it asserts |
+|---|---|
+| `doc-size` | `AGENTS.md` is under **32,768 bytes** and prints the margin |
+| `claude-import` | `CLAUDE.md` carries a **bare** `@AGENTS.md` line, plus one per `.agents/rules/*.md` |
+| `render` | every rendered file equals what `.agents/` renders to |
+| `stray` | no rendered file survives its source being deleted |
+
+⚠ **`doc-size` is not a style preference.** `project_doc_max_bytes` defaults to 32,768 and Codex
+**drops the overflow without a warning**. MEASURED #R503 with codex-cli 0.150.0: a 36,095-byte
+`AGENTS.md` answered a question about its first row and reported its last row absent. Nothing is
+printed to any log. `.codex/config.toml` raises the limit, but that layer loads only in a
+**trusted** project and trust is per path — so the number always in force is the default.
+
+⚠ **`claude-import` looks for a needle outside code spans**, because Claude Code skips imports
+inside backticks and fences. A backticked `` `@AGENTS.md` `` is exactly the spelling that does not
+load, and losing the import costs a session every standing rule with no error anywhere.
+
+The wiring between the two products, and the four steps that stayed manual, are in
+[`AGENT-SETUP.md`](AGENT-SETUP.md).
+
 ## 文書の検査 — `npm run check:docs` の規則一覧 (`scripts/doc-facts.mjs`)
 
 Every rule this gate applies, by the name it reports itself under. `Architecture.md` §15.5 sends the
@@ -592,7 +620,7 @@ reader here for this list; adding a rule means adding a row.
 | `serving` | a document still says the site is served from the repository tree or from OneDrive |
 | `deploy` | a document still describes the gated Pages deploy as switched off, or `docs/RELEASE.md` stops saying it is on |
 | `build-info` | the published build stamp is spelled with a leading hyphen |
-| `usb` | a document other than `CLAUDE.md` states the backup frequency |
+| `usb` | a document other than `AGENTS.md` states the backup frequency |
 | `languages` | `js/locales/`, `_langs.js`, `Architecture.md` and the README disagree about the languages |
 | `alerts` | the warning-feed counts in `docs/MAP-LAYERS.md` / README disagree with `js/world-packs.js` |
 | `app-shape` | a document still describes the app as one hand-written file with no build step |
@@ -610,7 +638,7 @@ reader here for this list; adding a rule means adding a row.
 | `named-path` | a document tells the reader to open a file that is not in the tree |
 | `gate-lists` | an instruction document enumerating the gates does not name every `check:*` |
 | `preview-port` | a document's preview-port convention disagrees with `scripts/worktree.mjs` |
-| `backup-shell` | a document launches the USB backup with a shell other than the one `CLAUDE.md` §11.2 uses |
+| `backup-shell` | a document launches the USB backup with a shell other than the one `AGENTS.md` §11.2 uses |
 | `relay-guard` | a stated count of the functions sharing `_shared/relay-guard.js` is not the real one |
 | `ci-gates` | `npm test` runs a source-side gate that no `ci.yml` step reaches |
 | `deep-tier-when` | a document describes the nightly as running on a trigger the workflow's own `if:` does not name |
@@ -641,7 +669,7 @@ repository; `scripts/doc-facts.mjs`'s own header assembles its needles from part
 
 Four rules hold the same fact from different sides. `edge-functions` compares
 `supabase/functions/` with the `[functions.*]` declarations in `supabase/config.toml`, and requires
-`CLAUDE.md` and `Architecture.md` to name every one of them in backticks. `edge-count` checks every
+`AGENTS.md` and `Architecture.md` to name every one of them in backticks. `edge-count` checks every
 **stated size** of that inventory. `edge-roster` checks every document that **writes the list out**.
 `edge-shared` checks every **enumeration of `_shared/`**, which is a library directory rather than a
 function and so is invisible to the other three.
@@ -736,7 +764,7 @@ both of which #R403 got wrong first and measured:
 `<checkout>/node_modules/.intmap-tree-lock`, on the reasonable-sounding grounds that `node_modules`
 is gitignored — but `scripts/worktree.mjs` gives every worktree its `node_modules` as a **junction
 to the master copy's**, so that path resolved to *one directory shared by every checkout on the
-machine*, and this repository runs many sessions at once by design (`CLAUDE.md` §6). The damage is
+machine*, and this repository runs many sessions at once by design (`AGENTS.md` §6). The damage is
 not queueing: a waiter in another worktree runs whatever version of the helper *its branch* has, and
 an older one decides a lock held past its staleness timeout is dead and **deletes it — while a live
 process in a different checkout is holding it**. The holder never learns, the next acquirer in the

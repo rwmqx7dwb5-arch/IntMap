@@ -2,10 +2,10 @@
 ================================================================================
   IntMap · END-OF-WORK USB MIRROR
 --------------------------------------------------------------------------------
-  The PROCEDURE for CLAUDE.md §11. That section used to carry 114 lines of steps;
+  The PROCEDURE for AGENTS.md §11. That section used to carry 114 lines of steps;
   steps written in prose are re-implemented slightly differently every time they
   are followed, and "slightly differently" is how a backup ends up verified by a
-  weaker test than the one that was written down. CLAUDE.md now owns WHEN to run
+  weaker test than the one that was written down. AGENTS.md now owns WHEN to run
   this and what to report; this file owns HOW, and it is the only implementation.
 
   WHAT IT DOES
@@ -270,7 +270,7 @@ Say ("USB: {0} ({1})" -f $drive.Root, ($(if ($drive.VolName) { $drive.VolName } 
 # a backup of work that is already superseded — and does it while reporting success.
 & node (Join-Path $Repo 'scripts/master-sync.mjs') --check | Out-Null
 if ($LASTEXITCODE -ne 0) {
-  Say 'The master copy is not the merged state. Run `npm run master:sync` first (CLAUDE.md §5).'
+  Say 'The master copy is not the merged state. Run `npm run master:sync` first (AGENTS.md §5).'
   Result 'skipped' 'master-not-synced'
   exit 0
 }

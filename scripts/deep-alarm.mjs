@@ -28,7 +28,7 @@
  *  ⚠ AND `cancelled` IS NOT `success`. A run that was cut short proved nothing; treating it as a
  *  pass is exactly the failure mode this file exists to end.
  *
- *  The other half of the answer is `node scripts/worktree.mjs status`, which CLAUDE.md §1 puts in
+ *  The other half of the answer is `node scripts/worktree.mjs status`, which AGENTS.md §1 puts in
  *  front of every session — it prints this same verdict before any work starts.
  *
  *      node scripts/deep-alarm.mjs --result <conclusion> [--reports <dir>] [--run-url <url>] [--dry-run]

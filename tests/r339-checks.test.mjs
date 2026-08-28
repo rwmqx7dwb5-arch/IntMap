@@ -109,7 +109,7 @@ test('R339 (1) --sync carries the machine-local file across the commit that untr
       'the master must actually be at origin/main afterwards');
     assert.ok(existsSync(join(s.master, LOCAL)), 'the machine-local file must still exist');
     assert.equal(sha(readFileSync(join(s.master, LOCAL))), before,
-      'the other session\'s bytes must survive byte-for-byte (CLAUDE.md §6)');
+      'the other session\'s bytes must survive byte-for-byte (AGENTS.md §6)');
     assert.match(got.stderr, /machine-local/, 'the carry must be reported out loud, not done silently');
     /* and the tree is clean, because the incoming commit also started ignoring it — which is what
        makes the NEXT round's --check pass and the USB backup actually run */

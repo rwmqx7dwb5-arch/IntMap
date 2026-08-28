@@ -22,7 +22,7 @@
 //  WHAT IT IS NOT
 //  --------------
 //  It is not a stream collector. Deno Edge Functions are request-scoped, so a persistent Firehose
-//  socket does not belong here (CLAUDE.md §5.2) — the providers wired below are REST, polled, and
+//  socket does not belong here (AGENTS.md §5.2) — the providers wired below are REST, polled, and
 //  need no persistent connection. If IntMap ever contracts a streaming provider, that collector is
 //  an always-on container and this function becomes its edge cache, not its host.
 //

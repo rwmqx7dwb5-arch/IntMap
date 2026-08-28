@@ -1,0 +1,19 @@
+{
+  "description": "IntMap — Codex lifecycle hooks. Mirrors the SessionStart hook in .claude/settings.json so a session starts knowing the same things in both products: branch, uncommitted changes, the free round number, and last night's deep-tier verdict. ⚠ Codex records hook trust against the hook's HASH — a new or edited hook is listed but SKIPPED until it is trusted once with /hooks (docs/AGENT-SETUP.md §7).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/worktree.mjs status --brief",
+            "statusMessage": "IntMap · reading the working state",
+            "timeout": 20,
+            "additionalContextLimit": 2000
+          }
+        ]
+      }
+    ]
+  }
+}

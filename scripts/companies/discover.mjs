@@ -2,7 +2,7 @@
  *  IntMap · company DISCOVERY — build data/companies/manifest.json
  * ----------------------------------------------------------------------------
  *  Which 500+ companies does a world atlas cover? Typing a list from memory is
- *  exactly the failure mode CLAUDE.md §3.3 forbids, so the list is DERIVED:
+ *  exactly the failure mode AGENTS.md §3.3 forbids, so the list is DERIVED:
  *
  *    1. Wikidata is asked which companies it reports as large — by revenue
  *       (P2139) and, for names that report no revenue, by market cap (P2226).

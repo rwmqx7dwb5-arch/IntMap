@@ -1,0 +1,67 @@
+# IntMap — Codex 固有 (provider-specific)
+#
+# ⚠ 恒久指示の正本は ../AGENTS.md。Codex はそれを自分で読むので、ここには
+#   「Codex でしか意味を持たない事実」だけを書く（AGENTS.md §9: 正本を2つ作らない）。
+#
+# ⚠ このファイルは PROJECT LAYER で、**信頼されたプロジェクトでしか読まれない**。
+#   信頼はパス単位に記録され、AGENTS.md §6 はラウンドごとに新しい worktree を作るので、
+#   `node scripts/worktree.mjs new` が新しい作業場を ~/.codex/config.toml に登録する。
+#   ⚠ ここが読まれなくても AGENTS.md は読まれる——恒久指示をここに移さないこと。
+#
+# 対応表・手動で要る設定は docs/AGENT-SETUP.md。
+
+# AGENTS.md は既定の 32,768 バイトに収まっている（npm run check:agents が測る）。
+# ここで上げるのは、収まっていることに依存しないための余裕であって、天井の撤廃ではない。
+project_doc_max_bytes = 262144
+
+developer_instructions = '''
+# IntMap · Codex 固有の作法
+
+恒久指示の正本は `AGENTS.md`（Codex が自動で読む）。ここはその Codex 版の付則。
+Claude Code 側の対応物は `CLAUDE.md`、両者の対応表は `docs/AGENT-SETUP.md`。
+
+## C-1. セッションの始め方
+
+- **セッション名は自動生成に任せる。** `/rename` を使わない。
+- `AGENTS.md` §1 の事前確認のうち、**`.agents/rules/` の 2 本は自分で開く**
+  （Claude Code は自動で読み込むが、Codex は読まない）。
+- 状態は `node scripts/worktree.mjs status` が 1 回で出す。手で数え直さない。
+
+## C-2. 不明点
+
+`AGENTS.md` §8 は「推測で埋めるな・質問は説明文に混ぜるな」と要求する。
+Codex には専用の質問 UI が無いので、**質問だけを本文にして turn を終える**。
+作業を進めながら末尾に質問を添えない——それは §8 が禁じている形。
+
+## C-3. 委譲（subagent）
+
+`.codex/agents/*.toml` の 5 役は `.agents/roles/` から生成されたもの（`npm run check:agents`）。
+`scout` / `verifier` / `i18n` / `implementer` / `prod-verifier` を、
+`.agents/rules/execution-strategy.md` §2 の表のとおりに使い分ける。
+
+- **独立した仕事は 1 回の依頼でまとめて spawn する**（1 つずつ待たない）。
+- 隔離は `node scripts/worktree.mjs new <slug>`。同じファイルを 2 体に書かせない。
+- **統合・commit・push・merge は主スレッドだけが行う。**
+
+## C-4. 資格情報
+
+`CLAUDE.local.md`（追跡対象外）にある。**Codex は自動で読まない**ので、
+本番ログインが要る検証の前に自分で開く。中身をどこにも書き写さない。
+
+## C-5. dev サーバとブラウザ
+
+シェルから直に dev サーバを起動しない。`node scripts/worktree.mjs new` が
+`intmap-preview-r<N>` / ポート `4000 + N` を用意する。本番検証は browser プラグインで行い、
+測った数字は**本番で**測る（`AGENTS.md` §5.1 の production verification）。
+
+## C-6. サンドボックスと承認
+
+`AGENTS.md` §5.1 は「非破壊的な migration・設定変更・deployment・commit・push・PR 作成・
+merge に追加承認を求めない」と要求する。それを満たすには **workspace-write + ネットワーク**が
+要る（`docs/AGENT-SETUP.md` §7）。read-only で始まった場合は、承認を求めるのではなく
+**その旨を報告してから**続けること。
+'''
+
+[agents]
+# AGENTS.md §5.0 は「独立した仕事は同じメッセージでまとめて起動する」と要求する。
+max_concurrent_threads_per_session = 8

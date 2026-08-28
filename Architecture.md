@@ -9,7 +9,8 @@
 
 - **§1–§18 は「今どうなっているか」だけ**を書く。**このファイルには変更履歴を書かない。**
   「いつ・なぜ・どう直したか」は `DEV-NOTES.md`（直近）と `DEV-NOTES-ARCHIVE.md`（それ以前）の担当。
-  標準指示（やってはいけないこと等）は `CONSTITUTION.md`、作業の進め方は `CLAUDE.md`。
+  標準指示（やってはいけないこと等）は `CONSTITUTION.md`、作業の進め方は `AGENTS.md`
+  （Claude Code 固有の作法だけが `CLAUDE.md`、2 製品の配線図が [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md)）。
 - **このファイルは構造・データフロー・公開契約・不変条件だけを持つ。** 分量が大きく、かつ
   「そこだけ読めば済む」主題は、**節番号をこのファイルと共有したまま**別の文書にしてある——
   [`docs/FILES.md`](docs/FILES.md)（§3 ファイル台帳）と
@@ -2569,7 +2570,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
 | 稼働監視・アラート | [`docs/MONITORING.md`](docs/MONITORING.md) |
 | 障害対応（サイト・DB・鍵） | [`docs/INCIDENT-RESPONSE.md`](docs/INCIDENT-RESPONSE.md) |
 | CI／検査スクリプトのファイル一覧 | [`docs/FILES.md`](docs/FILES.md) §3.12 |
-| **作業終了処理**（commit / push → 原本の最新化 → USB への完全ミラーと検証） | [`CLAUDE.md`](CLAUDE.md) §11 ＋ `scripts/master-sync.mjs` ＋ `scripts/backup-usb.ps1` |
+| **作業終了処理**（commit / push → 原本の最新化 → USB への完全ミラーと検証） | [`AGENTS.md`](AGENTS.md) §11 ＋ `scripts/master-sync.mjs` ＋ `scripts/backup-usb.ps1` |
 
 ### 15.2 実行
 

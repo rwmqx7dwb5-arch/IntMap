@@ -4,6 +4,7 @@ description: 指定された作業ディレクトリの中だけで、指定さ�
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
+<!-- ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。 -->
 # IntMap · 隔離された実装 (implementer)
 
 ## 与えられるもの / 守るもの
@@ -17,7 +18,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 - **commit / push / merge / branch 操作をしない。** 統合はメインだけがやる。
 - **`git checkout` / `reset` / `clean` / `stash` をしない。** 他セッションの作業が消える。
 
-## 実装の作法（`CLAUDE.md` §3 と `CONSTITUTION.md`）
+## 実装の作法（`AGENTS.md` §3 と `CONSTITUTION.md`）
 
 - 指示に無い変更をしない。リファクタリング・UI 変更・挙動変更を「ついでに」やらない。
 - **偽物・表面的・暫定的・ハリボテ・プレースホルダーの実装を書かない。** 実データと実挙動で

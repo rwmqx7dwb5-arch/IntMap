@@ -50,7 +50,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
    It used to, on the reasonable-sounding grounds that `node_modules` is gitignored. But
    `scripts/worktree.mjs` gives every worktree its `node_modules` as a JUNCTION to the master
    copy's — so that path resolved to ONE directory shared by every checkout on the machine, and
-   this repository runs many sessions at once by design (`CLAUDE.md` §6).
+   this repository runs many sessions at once by design (`AGENTS.md` §6).
    The consequence was not merely that unrelated suites queued behind each other. A waiter in
    another worktree, running whatever version of this file its branch has, would decide a lock held
    for longer than its own staleness timeout was dead and DELETE IT — while it was held, by a live

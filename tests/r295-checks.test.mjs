@@ -6,7 +6,7 @@
  *    進める状態にしてください。」「私にworktree、subagent、agent設定などの手動管理を要求しない。」
  *
  *  #R295 put that state into the official mechanisms: ONE always-on rule
- *  (.claude/rules/execution-strategy.md), five subagents (.claude/agents/), one skill
+ *  (.agents/rules/execution-strategy.md), five subagents (.claude/agents/), one skill
  *  (.claude/skills/intmap-round/), a SessionStart hook, and scripts/worktree.mjs.
  *
  *  This file measures the configuration, because a configuration is a set of CLAIMS ABOUT THE
@@ -38,7 +38,7 @@ const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\
 
 const AGENT_DIR = resolve(ROOT, '.claude/agents');
 const SKILL_DIR = resolve(ROOT, '.claude/skills');
-const RULE = '.claude/rules/execution-strategy.md';
+const RULE = '.agents/rules/execution-strategy.md';
 
 /** The YAML front matter of a markdown file, as a flat map. ⚠ takes TEXT, not a path. */
 function frontmatter(text) {
@@ -82,7 +82,7 @@ test('#R295 ① every .claude/agents/*.md is a well-formed, addressable subagent
 
 /* ── ② THE SKILL IS INVOCABLE ──────────────────────────────────────────────────────────────────
    The command name comes from the DIRECTORY, and the body is loaded only when it is invoked —
-   which is the whole reason the round procedure lives there instead of in CLAUDE.md. */
+   which is the whole reason the round procedure lives there instead of in AGENTS.md. */
 test('#R295 ② .claude/skills/*/SKILL.md is well-formed', () => {
   assert.ok(existsSync(SKILL_DIR), '.claude/skills/ is gone');
   const dirs = readdirSync(SKILL_DIR).filter((d) => statSync(join(SKILL_DIR, d)).isDirectory());
@@ -101,7 +101,7 @@ test('#R295 ② .claude/skills/*/SKILL.md is well-formed', () => {
    The rule, the skill and the agents are prose that tells a future session which commands to run.
    Prose does not break when the command is renamed; this does. */
 test('#R295 ③ every `node scripts/…` named in the configuration exists', () => {
-  const sources = [RULE, '.claude/skills/intmap-round/SKILL.md', 'CLAUDE.md',
+  const sources = [RULE, '.claude/skills/intmap-round/SKILL.md', 'AGENTS.md',
     ...readdirSync(AGENT_DIR).filter((f) => f.endsWith('.md')).map((f) => '.claude/agents/' + f)];
   let named = 0;
   for (const src of sources) {
@@ -148,7 +148,7 @@ test('#R295 ④ every `npm run …` named in the configuration is a real script'
 test('#R295 ⑤ .claude/settings.json keeps the pre-existing deny rule and wires the hook', () => {
   const s = JSON.parse(read('.claude/settings.json'));
   assert.ok(s.permissions?.deny?.includes('Edit(GPT-HANDOFF/HANDOFF.md)'),
-    'the GPT-handoff deny rule was dropped — .claude/rules/gpt-handoff.md depends on it');
+    'the GPT-handoff deny rule was dropped — .agents/rules/gpt-handoff.md depends on it');
 
   const entries = s.hooks?.SessionStart || [];
   const cmds = entries.flatMap((e) => (e.hooks || []).map((h) => h.command || ''));
@@ -161,18 +161,18 @@ test('#R295 ⑤ .claude/settings.json keeps the pre-existing deny rule and wires
 });
 
 /* ── ⑥ THE ALWAYS-ON RULE HAS A CEILING ────────────────────────────────────────────────────────
-   .claude/rules/*.md is loaded into EVERY session, exactly like CLAUDE.md — so moving text there
+   .agents/rules/*.md is loaded into EVERY session, exactly like AGENTS.md — so moving text there
    does not make it cheaper, it only moves it. The instruction for this round was
-   「CLAUDE.mdを巨大化させないでください」, and the honest reading of that is a budget on the
+   「AGENTS.mdを巨大化させないでください」, and the honest reading of that is a budget on the
    always-on set, not a budget on one file. Same mechanism as scripts/test-budget.mjs: a number
    that only ever goes DOWN. Lower it when a round makes the rule shorter; never raise it. */
 test('#R295 ⑥ the always-on instruction set stays under its ceiling', () => {
   const CEILING = 6144;                       // bytes, per rule file
-  const dir = resolve(ROOT, '.claude/rules');
+  const dir = resolve(ROOT, '.agents/rules');
   for (const f of readdirSync(dir).filter((f) => f.endsWith('.md'))) {
     const n = Buffer.byteLength(readLF(join(dir, f)), 'utf8');
     assert.ok(n <= CEILING,
-      `.claude/rules/${f} is ${n} bytes — every session pays for it. Move detail into an agent or a skill.`);
+      `.agents/rules/${f} is ${n} bytes — every session pays for it. Move detail into an agent or a skill.`);
   }
 });
 
@@ -211,23 +211,25 @@ test('#R295 ⑧ tests/r295-checks.test.mjs is in the test:checks list', () => {
 });
 
 /* ── ⑨ THE STANDING INSTRUCTIONS POINT AT THE CONFIGURATION ────────────────────────────────────
-   The rule, the agents and the skill are only reachable if CLAUDE.md and the document index say
-   they exist. ⚠ read as CONTENT (line endings normalised), and CLAUDE.md is prose, so no comment
+   The rule, the agents and the skill are only reachable if AGENTS.md and the document index say
+   they exist. ⚠ read as CONTENT (line endings normalised), and AGENTS.md is prose, so no comment
    stripping applies here — but the assertion is deliberately about the LINK, not about a sentence
    that could be reworded. */
-test('#R295 ⑨ CLAUDE.md and docs/README.md point at the operating configuration', () => {
-  const claude = read('CLAUDE.md');
-  assert.ok(claude.includes(RULE), `CLAUDE.md does not link ${RULE}`);
-  assert.ok(/intmap-round/.test(claude), 'CLAUDE.md does not name the /intmap-round skill');
-  assert.ok(/scripts\/worktree\.mjs/.test(claude), 'CLAUDE.md does not name scripts/worktree.mjs');
+test('#R295 ⑨ AGENTS.md and docs/README.md point at the operating configuration', () => {
+  const claude = read('AGENTS.md');
+  assert.ok(claude.includes(RULE), `AGENTS.md does not link ${RULE}`);
+  assert.ok(/intmap-round/.test(claude), 'AGENTS.md does not name the /intmap-round skill');
+  assert.ok(/scripts\/worktree\.mjs/.test(claude), 'AGENTS.md does not name scripts/worktree.mjs');
 
+  /* (#R503) the index points at the SOURCES under `.agents/`, not at the per-product copies
+     rendered from them — a reader sent to a generated file would edit the copy and lose it. */
   const idx = read('docs/README.md');
-  for (const needle of [RULE, '.claude/skills/intmap-round/SKILL.md', '.claude/agents/'])
+  for (const needle of [RULE, '.agents/skills/intmap-round/SKILL.md', '.agents/roles/'])
     assert.ok(idx.includes(needle), `docs/README.md does not list ${needle}`);
 });
 
 /* ── ⑩ THE ROUND PROCEDURE IS NOT COPIED INTO THE ALWAYS-ON SET ────────────────────────────────
-   One fact, one owner (CLAUDE.md §9). The step-by-step commands belong to the skill; the rule
+   One fact, one owner (AGENTS.md §9). The step-by-step commands belong to the skill; the rule
    points at it. If the rule ever grows its own copy of the workflow the two will drift, and the
    always-on half is the one that will be read. */
 test('#R295 ⑩ the always-on rule delegates the procedure rather than restating it', () => {
@@ -239,7 +241,7 @@ test('#R295 ⑩ the always-on rule delegates the procedure rather than restating
 });
 
 /* ── ⑪ worktree.mjs BUILDS OUTSIDE OneDrive ────────────────────────────────────────────────────
-   The whole point of the script is CLAUDE.md §6: the master is «main, at origin/main», and work
+   The whole point of the script is AGENTS.md §6: the master is «main, at origin/main», and work
    happens elsewhere. ⚠ comments stripped first — the banner above the code quotes OneDrive by
    name while explaining why the code must not. */
 test('#R295 ⑪ scripts/worktree.mjs derives the master and builds outside it', () => {
@@ -247,9 +249,9 @@ test('#R295 ⑪ scripts/worktree.mjs derives the master and builds outside it', 
   assert.match(src, /rev-parse['"\s,\]]*.*--git-common-dir/s,
     'the master must be DERIVED (git rev-parse --git-common-dir), never hard-coded (#R282)');
   assert.ok(!/OneDrive/.test(src), 'scripts/worktree.mjs hard-codes OneDrive in executable code');
-  assert.match(src, /tmpdir\(\)/, 'worktrees must be created outside OneDrive (CLAUDE.md §6)');
+  assert.match(src, /tmpdir\(\)/, 'worktrees must be created outside OneDrive (AGENTS.md §6)');
   /* ⚠ `-D` IS PERMITTED, BUT ONLY BEHIND THE TREE COMPARISON. The first draft of this check simply
-     banned `-D`, and it was right until CLAUDE.md §5's squash merge made `-d` refuse every finished
+     banned `-D`, and it was right until AGENTS.md §5's squash merge made `-d` refuse every finished
      round (see §⑭). The honest assertion is not «never force-delete» but «never force-delete
      something main does not already contain», so what is measured is the GUARD, not the verb. */
   const forced = src.indexOf("'branch', '-D'");
@@ -337,7 +339,7 @@ test('#R295 ⑬ `done` decides by re-reading the worktree list, not by the remov
 });
 
 /* ── ⑭ A SQUASH-MERGED BRANCH IS CLEANED UP; A DIVERGENT ONE IS NOT ────────────────────────────
-   CLAUDE.md §5 merges every round with `--squash`, so the branch's commits never become ancestors
+   AGENTS.md §5 merges every round with `--squash`, so the branch's commits never become ancestors
    of main and `git branch -d` calls EVERY finished round «unmerged». A cleanup step that refuses
    in the normal case is a cleanup step nobody uses, and the branches accumulate.
    The replacement asks whether the branch still carries anything main lacks, by comparing trees.
@@ -387,7 +389,7 @@ test('#R295 ⑭ done deletes a squash-merged branch but keeps one that still has
 });
 
 /* ── ⑮ ADDING A SIXTH SUBAGENT CANNOT SILENTLY STALE THE TWO ROSTERS ───────────────────────────
-   `CLAUDE.md` §2 and `docs/README.md` both spell the five roles out. `scripts/doc-facts.mjs`
+   `AGENTS.md` §2 and `docs/README.md` both spell the five roles out. `scripts/doc-facts.mjs`
    builds its DOCS list from the repository root and docs/ ONLY (see its readdirSync calls), so
    `.claude/**` is outside the sweep that enforces 「同じ事実を2か所に書くな」 — dropping a sixth
    file into .claude/agents/ would leave both rosters wrong with every gate still green. That is
@@ -397,19 +399,19 @@ test('#R295 ⑭ done deletes a squash-merged branch but keeps one that still has
 test('#R295 ⑮ every subagent on disk is named in both rosters', () => {
   const names = readdirSync(AGENT_DIR).filter((f) => f.endsWith('.md')).map((f) => basename(f, '.md'));
   assert.ok(names.length >= 5, 'the agent directory is empty — this check has no subject');
-  const claude = read('CLAUDE.md');
+  const claude = read('AGENTS.md');
   const idx = read('docs/README.md');
   for (const n of names) {
     /* The rosters use the short role name (「scout（全数調査）」), not the file name. */
     const role = n.replace(/^intmap-/, '');
-    assert.ok(claude.includes(role), `CLAUDE.md's roster does not mention "${role}" (.claude/agents/${n}.md)`);
+    assert.ok(claude.includes(role), `AGENTS.md's roster does not mention "${role}" (.claude/agents/${n}.md)`);
     assert.ok(idx.includes(role), `docs/README.md's roster does not mention "${role}" (.claude/agents/${n}.md)`);
   }
 });
 
 /* ── ⑯ THE VERIFICATION LADDER HAS EXACTLY ONE OWNER ───────────────────────────────────────────
    R295's first draft stated the stage table three times — in the rule, in intmap-verifier.md and
-   in the skill — while the rule was declared the 正本 by CLAUDE.md and docs/README.md. An audit
+   in the skill — while the rule was declared the 正本 by AGENTS.md and docs/README.md. An audit
    of the round found it; this is the gate so the next round cannot re-introduce it.
    The signature of the table is a STAGE NUMBER BOUND TO A COMMAND (「段 3」 beside `npm test`,
    「段0」 beside `node --test`). One file may carry that; the others must link. */

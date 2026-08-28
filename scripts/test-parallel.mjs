@@ -52,6 +52,13 @@ const HALVES = [
          other. It also refuses to let Architecture.md become a changelog again. */
       ['node', ['scripts/doc-facts.mjs', '--check']],
       ['node', ['scripts/arch-files-check.mjs', '--check']],
+      /* (#R503) THE AGENT CONTEXT. The standing instructions, the round procedure and the five
+         roles are now written once under `.agents/` and RENDERED into each product's own
+         location, because Claude Code reads only `.claude/` and Codex reads only `AGENTS.md`
+         plus `.codex/`. This re-renders and compares, so an edit to a copy fails here
+         instead of quietly becoming a second source — and it measures AGENTS.md against the
+         32,768-byte ceiling Codex truncates it at without a word. */
+      ['node', ['scripts/agent-sync.mjs']],
       /* ⚠ (#R278) THE ATLAS CATALOGUE GATE. 「an action the catalogue does not describe does not
          exist for the planner」 has been the rule since #R115 and nothing enforced it: six working
          capabilities — the road-network isochrone among them — had a dispatch case and no catalogue

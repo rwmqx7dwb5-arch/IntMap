@@ -85,7 +85,7 @@ test('R313 ① the particle switch is one published function, and the legend / A
     'start() does not force the canvas visible — _applyParts owns that decision');
   assert.match(start, /_applyParts\(\)/, 'start() defers to it');
 
-  /* CLAUDE.md §3-3: a feature reaches Atlas in the SAME change — catalogue, dispatch and controls */
+  /* AGENTS.md §3-3: a feature reaches Atlas in the SAME change — catalogue, dispatch and controls */
   assert.match(at, /case\s*'windParticles'/, 'Atlas can dispatch it');
   assert.match(at, /windParticles[\s\S]{0,400}?window\.Wind[\s\S]{0,40}?setParticles/,
     'and the dispatch calls the SAME published function the legend does');

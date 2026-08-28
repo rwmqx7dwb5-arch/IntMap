@@ -7,7 +7,7 @@ on:
       - 'scripts/handoff-inbox.mjs'
       - 'CHATGPT-HANDOFF.md'
       - 'HANDOFF-REVIEW.cmd'
-      - '.claude/rules/gpt-handoff.md'
+      - '.agents/rules/gpt-handoff.md'
       - '.claude/settings.json'
       - '.github/workflows/handoff-self-test.yml'
   workflow_dispatch:

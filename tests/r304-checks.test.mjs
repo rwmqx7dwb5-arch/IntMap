@@ -177,7 +177,7 @@ test('R304 ⑥ deep-alarm reads the shards\' junit.xml and reports only what rea
 });
 
 /* ── ⑦ …AND THE VERDICT IS IN FRONT OF EVERY SESSION ──────────────────────────────────────────
-   CLAUDE.md §1 sends every session through `node scripts/worktree.mjs status` before it starts, so
+   AGENTS.md §1 sends every session through `node scripts/worktree.mjs status` before it starts, so
    that is where the answer is guaranteed to be read. ⚠ It must never make a session wait or fail:
    the header of that file says `status` never exits non-zero, and gh may be missing or offline. */
 test('R304 ⑦ worktree.mjs status reports the nightly, and cannot break a session doing it', () => {

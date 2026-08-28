@@ -68,6 +68,12 @@ jobs:
         run: npm run check:docs
       - name: Architecture ⇄ file-ledger agreement
         run: npm run check:archfiles
+      # (#R503) The agent context is written once under .agents/ and RENDERED into each
+      # product's own location, because Claude Code reads only .claude/ and Codex reads only
+      # AGENTS.md plus .codex/. This re-renders and compares, and measures AGENTS.md against
+      # the 32,768-byte ceiling Codex silently truncates it at.
+      - name: Agent context (one source, both products)
+        run: npm run check:agents
       - name: Atlas catalogue (nothing clickable is unreachable to the planner)
         run: npm run check:catalog
       - name: Company atlas (sites, coordinates, attribution)

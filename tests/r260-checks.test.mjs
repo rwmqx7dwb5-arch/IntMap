@@ -1,13 +1,13 @@
 /* ============================================================================
  *  #R260 — the session has an END, and the end is written down
  * ----------------------------------------------------------------------------
- *  「定例指示に追加して。作業終了処理…」— until this round CLAUDE.md described how to
+ *  「定例指示に追加して。作業終了処理…」— until this round AGENTS.md described how to
  *  do the work and stopped at `branch deletion`. What happens AFTER the work was
  *  carried in the user's head and pasted when it mattered: commit and push, then
  *  mirror the site onto the backup USB stick, once a calendar day, and VERIFY the
  *  mirror instead of trusting that the copy returned 0.
  *
- *  This file exists for the same reason tests/r257-checks.test.mjs does: CLAUDE.md
+ *  This file exists for the same reason tests/r257-checks.test.mjs does: AGENTS.md
  *  is a document nobody executes, so a rule can vanish from it and every later
  *  round will run happily without ever noticing. Three things in particular are
  *  load-bearing and silent when broken:
@@ -29,10 +29,10 @@ const at = (p) => new URL('../' + p, import.meta.url);
 const read = (p) => readFileSync(at(p), 'utf8');
 
 /* ── ① the section exists, and the renumbering it caused did not lose the old one ────────────── */
-test('#R260 ① CLAUDE.md has §11 作業終了処理 and still has 本ファイル自体の保守', () => {
-  const md = read('CLAUDE.md');
+test('#R260 ① AGENTS.md has §11 作業終了処理 and still has 本ファイル自体の保守', () => {
+  const md = read('AGENTS.md');
   assert.match(md, /^## 11\. 作業終了処理/m,
-    'CLAUDE.md §11 (作業終了処理) is gone — the session has no defined end again');
+    'AGENTS.md §11 (作業終了処理) is gone — the session has no defined end again');
   assert.match(md, /^## 12\. 本ファイル自体の保守/m,
     '§12 本ファイル自体の保守 disappeared when §11 was inserted — the renumbering dropped a section');
   /* §10 has to hand off to it, or the backup line quietly stops appearing in reports */
@@ -41,16 +41,16 @@ test('#R260 ① CLAUDE.md has §11 作業終了処理 and still has 本ファイ
 });
 
 /* ── ② every clause of the procedure survived ───────────────────────────────────────────────── */
-test('#R260 ② CLAUDE.md still carries each clause of the finish procedure', () => {
+test('#R260 ② AGENTS.md still carries each clause of the finish procedure', () => {
   /* ⚠⚠ (#R280) THE PROCEDURE IS CODE NOW. §11 was 114 lines of prose steps; steps written in
      prose are re-implemented slightly differently every time they are followed, and «slightly
      differently» is how a backup ends up verified by a weaker test than the one written down.
-     scripts/backup-usb.ps1 is the implementation and CLAUDE.md keeps WHEN to run it and the
+     scripts/backup-usb.ps1 is the implementation and AGENTS.md keeps WHEN to run it and the
      invariants. What #R260 established — that every clause is WRITTEN DOWN — is unchanged, so
-     this reads both, and asserts that CLAUDE.md actually points at the script. */
-  const md = read('CLAUDE.md') + '\n' + read('scripts/backup-usb.ps1');
-  assert.ok(read('CLAUDE.md').includes('scripts/backup-usb.ps1'),
-    'CLAUDE.md no longer names the script — a procedure nobody is told to run is not a procedure');
+     this reads both, and asserts that AGENTS.md actually points at the script. */
+  const md = read('AGENTS.md') + '\n' + read('scripts/backup-usb.ps1');
+  assert.ok(read('AGENTS.md').includes('scripts/backup-usb.ps1'),
+    'AGENTS.md no longer names the script — a procedure nobody is told to run is not a procedure');
   const rules = [
     ['作業完了後に必ず実行',     '作業終了処理'],
     ['commit と push',           'GitHub へ push'],
@@ -89,13 +89,13 @@ test('#R260 ② CLAUDE.md still carries each clause of the finish procedure', ()
   ];
   for (const [name, needle] of rules) {
     assert.ok(md.includes(needle),
-      `CLAUDE.md lost the finish-procedure rule 「${name}」 (looked for ${JSON.stringify(needle)})`);
+      `AGENTS.md lost the finish-procedure rule 「${name}」 (looked for ${JSON.stringify(needle)})`);
   }
 });
 
 /* ── ③ the three report shapes are all spelled out ──────────────────────────────────────────── */
 test('#R260 ③ the finish report has a line for each outcome', () => {
-  const md = read('CLAUDE.md');
+  const md = read('AGENTS.md');
   for (const [what, needle] of [
     /* (#R267) the sample line carries a TIME now — «once a day» was the only reason a bare date
        was enough — and the «already done today» shape is gone with the rule that produced it. */
@@ -111,7 +111,7 @@ test('#R260 ③ the finish report has a line for each outcome', () => {
 
 /* ── ④ the direction of the sync, asserted on its own ───────────────────────────────────────── */
 test('#R260 ④ the mirror is one-way, PC → USB', () => {
-  const md = read('CLAUDE.md');
+  const md = read('AGENTS.md');
   const ps = read('scripts/backup-usb.ps1');
   /* ⚠ THE ASSERTION IS THE PROPERTY, NOT THE WORDING. This read «PC 上の IntMap → USB» literally
      until #R282, when the source had to be named more precisely: 「PC 上の IntMap」 was ambiguous
@@ -120,7 +120,7 @@ test('#R260 ④ the mirror is one-way, PC → USB', () => {
      is now stated in two places and BOTH have to keep saying it. */
   assert.match(md, /(原本|PC 上の IntMap)\s*→\s*USB/,
     'the sync direction is no longer written down — a "sync" that can run backwards is not a backup');
-  assert.ok(!/USB\s*→\s*(原本|PC)/.test(md), 'CLAUDE.md now describes a sync that runs back from the USB');
+  assert.ok(!/USB\s*→\s*(原本|PC)/.test(md), 'AGENTS.md now describes a sync that runs back from the USB');
   assert.match(ps, /ONE WAY\. .*→ USB/, 'the script no longer states the direction it enforces');
   assert.ok(md.includes('USB 上のファイルを作業元にしない'),
     'the ban on working from the USB copy is gone');

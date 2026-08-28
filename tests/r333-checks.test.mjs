@@ -93,7 +93,7 @@ test('5. _shared is a library, not a function — it is never counted as one', (
   assert.ok(!names.some((n) => n.startsWith('_')), '_shared must not appear as a function');
   assert.ok(existsSync(new URL('../supabase/functions/_shared/relay-guard.js', import.meta.url)),
     'and it does exist — the exclusion is deliberate, not a missing directory');
-  /* CLAUDE.md §5 names this trap by hand: `[functions._shared]` in config.toml is the mistake. */
+  /* AGENTS.md §5 names this trap by hand: `[functions._shared]` in config.toml is the mistake. */
   const cfg = readLF(new URL('../supabase/config.toml', import.meta.url));
   assert.ok(!/\[functions\._shared\]/.test(cfg), '_shared must not be declared in config.toml');
 });

@@ -320,7 +320,7 @@ if (wantTodo >= 0) {
   else console.log('# nothing — this language is complete on every surface');
   /* ⚠⚠⚠ (#R403) AND `--gate --todo <code>` USED TO EXIT 0 WHATEVER THE TREE LOOKED LIKE.
      This block ended in `process.exit(0)`, so the second of the two commands that
-     .claude/agents/intmap-i18n.md prints under the heading 「唯一のゲート」 —
+     .agents/roles/intmap-i18n.md prints under the heading 「唯一のゲート」 —
      `node scripts/i18n-audit.mjs --gate --todo <code>` — never reached the gate below and asserted
      nothing at all. A green that is read as a gate's green while no gate ran is
      [[intmap-r399-lessons]]: a check that cannot fire is indistinguishable from a check that passed.

@@ -74,8 +74,15 @@ test('③ the round-number finder still reads it, and the writer can create it',
 
 /* ── ④ 文書が実体と合っている ────────────────────────────────────────── */
 test('④ the documents say it is untracked', () => {
-  assert.match(rd('CLAUDE.md'), /このファイルは追跡対象ではない/,
-    'CLAUDE.md §2 must say the preview config is untracked');
+  /* (#R503) AGENTS.md now has a hard 32,768-byte ceiling — Codex truncates past it in silence —
+     so the MEASUREMENT behind this (19 concurrent sessions, the master three commits behind, the
+     USB mirror skipped) moved to docs/AGENT-SETUP.md §4. The standing instructions keep the FACT
+     and the pointer; the setup document keeps the story. Both are asserted, because a pointer at
+     a document that quietly stopped saying it is the same silence #R338 was written against. */
+  assert.match(rd('AGENTS.md'), /追跡対象ではない/,
+    'AGENTS.md §2 must say the preview config is untracked');
+  assert.match(rd('docs/AGENT-SETUP.md'), /追跡から外した理由/,
+    'docs/AGENT-SETUP.md §4 owns why the preview config is untracked, and no longer explains it');
   assert.match(rd('.claude/skills/intmap-round/SKILL.md'), /追跡対象外/,
     'the round skill must say the preview entry does not appear in the commit');
 });

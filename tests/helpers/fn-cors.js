@@ -31,7 +31,7 @@ import { codeOnly } from '../../scripts/code-only.mjs';
 export const FN_DIR = 'supabase/functions';
 
 /** Functions the repository ships. `_shared/` is a library the CLI bundles INTO its importers,
- *  not a function — declaring it as one is the mistake CLAUDE.md §5 calls out by name. */
+ *  not a function — declaring it as one is the mistake AGENTS.md §5 calls out by name. */
 export function repoFunctionNames(root) {
   const dir = join(root, FN_DIR);
   return readdirSync(dir)

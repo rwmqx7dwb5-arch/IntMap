@@ -22,7 +22,7 @@
  *  users». That seed never completed once — it threw on its second iteration (see js/widget-core.js)
  *  and the flag was never set, so no reader has been through it. Reviving the "append to everyone"
  *  reading now would push five cards onto boards people have since curated, which is a change nobody
- *  asked for (CLAUDE.md §3.2). A default board is therefore what a board with NOTHING saved gets.
+ *  asked for (AGENTS.md §3.2). A default board is therefore what a board with NOTHING saved gets.
  * ==========================================================================*/
 window.IntMapWidgetStore = (function () {
   'use strict';
