@@ -126,6 +126,16 @@ async function ensureServer(base) {
 const CPU = Number(val('--cpu', 1));
 const REPS = Number(val('--reps', 3));
 const VERIFY = has('--verify');
+/* ⚠⚠⚠ (#R499) A COUNT WITHOUT A CALLER IS A NUMBER NOBODY CAN ACT ON. #R498 added `rect/move` and it
+   did its job — it fell from 9.59 to 7.47 when the app stopped measuring the canvas per touchmove —
+   but the REMAINDER had to be identified by READING MapLibre's source, because the wrapper counts
+   calls and not callers. This branch then reported **901.63 rect/move** for `pan-alerts-city`, and
+   no amount of reading tells you whose 901 that is. `--attribute` captures the first stack frame
+   below the wrapper for every rect/style call in a touch phase and prints the busiest sites.
+   ⚠ IT IS OFF BY DEFAULT AND HAS TO STAY OFF BY DEFAULT: `new Error().stack` costs far more than the
+   call it is measuring, so `lat` / `busy` / `fps` from an --attribute run are the INSTRUMENT's
+   numbers, not the app's. The COUNTS are unaffected, and the counts are what this flag is for. */
+const ATTRIB = has('--attribute');
 const ENGINES = (() => {
   const e = val('--engine', 'both');
   return e === 'both' ? ['chromium', 'webkit'] : [e];
@@ -305,20 +315,48 @@ async function canvasBox(page) {
    number that goes to 0 when the defect is gone and stays whatever it is when it is not.
    The third number is the one a camera command can never produce: touchmove → the frame that
    answers it, which is 「指に付いてこない」 stated as a measurement. */
-async function touchMetersOn(page) {
-  await page.evaluate(() => {
-    const S = window.__imTouch = { rect: 0, style: 0, moves: 0, lat: [] };
+async function touchMetersOn(page, attrib) {
+  await page.evaluate((ATTR) => {
+    const S = window.__imTouch = { rect: 0, style: 0, moves: 0, lat: [], by: ATTR ? Object.create(null) : null };
+    /* (#R499) the first stack frame that belongs to the PAGE. Against a production build that is
+       `/assets/main-xxxx.js:1:234567`, so the ranking is what this reports — WHICH site is asking
+       most often — and the file is identified from the column with a sourcemap or a grep.
+       ⚠ THE FILTER IS "HAS A URL", NOT A LIST OF NAMES TO SKIP. The first version skipped frames
+       whose text mentioned `__imSite` / `getBoundingClientRect`, and the very first frame is the
+       arrow below — named `site`, mentioning neither — so EVERY call was attributed to the
+       instrument and the whole run said one thing 6,674 times. Every frame the wrapper contributes
+       lives in the injected `<anonymous>` script and has no URL; every frame the app contributes
+       has one. */
+    /* ⚠ THREE FRAMES, NOT ONE. One frame names the LINE that measures; it does not name the reason
+       that line ran 5,724 times, and the reason is what a round acts on. Three is where the caller
+       and its caller both fit on one printed row. */
+    const site = () => {
+      const out = [];
+      try {
+        const L = String((new Error()).stack || '').split(String.fromCharCode(10));
+        for (let i = 1; i < L.length && out.length < 3; i++) {
+          const l = L[i];
+          if (!l || l.indexOf('http') < 0) continue;
+          out.push(l.trim().replace(/^at /, '').replace(/^[^(]*\(/, '').replace(/\)$/, '').replace(/^https?:\/\/[^/]+/, ''));
+        }
+      } catch (_) { }
+      return out.length ? out.join('  ← ') : '(the instrument itself — no page frame on the stack)';
+    };
+    window.__imSite = (kind) => {
+      const T = window.__imTouch; if (!T || !T.by) return;
+      const k = kind + '  ' + site(); T.by[k] = (T.by[k] || 0) + 1;
+    };
     if (!window.__imTouchWrapped) {
       window.__imTouchWrapped = true;
       const ER = Element.prototype.getBoundingClientRect;
-      Element.prototype.getBoundingClientRect = function () { if (window.__imTouch) window.__imTouch.rect++; return ER.apply(this, arguments); };
+      Element.prototype.getBoundingClientRect = function () { if (window.__imTouch) { window.__imTouch.rect++; window.__imSite('rect '); } return ER.apply(this, arguments); };
       const GS = window.getComputedStyle;
-      window.getComputedStyle = function () { if (window.__imTouch) window.__imTouch.style++; return GS.apply(this, arguments); };
+      window.getComputedStyle = function () { if (window.__imTouch) { window.__imTouch.style++; window.__imSite('style'); } return GS.apply(this, arguments); };
     }
     /* capture, so `t` is when the event ARRIVED — before the app's own handlers, not after them */
     S.on = () => { S.moves++; const t = performance.now(); requestAnimationFrame(() => S.lat.push(performance.now() - t)); };
     try { window.IntMapGeoEngine.render.canvas().addEventListener('touchmove', S.on, { passive: true, capture: true }); } catch (_) {}
-  });
+  }, !!attrib);
 }
 async function touchMetersOff(page) {
   return page.evaluate(() => {
@@ -332,6 +370,7 @@ async function touchMetersOff(page) {
       rectPerMove: S.moves ? +(S.rect / S.moves).toFixed(2) : null,
       stylePerMove: S.moves ? +(S.style / S.moves).toFixed(2) : null,
       latP50: pick(0.5), latP95: pick(0.95), latMax: l.length ? +l[l.length - 1].toFixed(1) : null,
+      by: S.by ? Object.entries(S.by).sort((a, b) => b[1] - a[1]).slice(0, 12) : null,
     };
   });
 }
@@ -504,7 +543,7 @@ async function traceOnce(engine, rep) {
 
   /* (#R498) the same warm map, driven by a finger instead of by a camera command */
   const touched = async (name, fn) => {
-    await step(name, async () => { await touchMetersOn(page); await fn(); extra[name] = { touch: await touchMetersOff(page) }; });
+    await step(name, async () => { await touchMetersOn(page, ATTRIB); await fn(); extra[name] = { touch: await touchMetersOff(page) }; });
   };
   if (cdp) {
     await touched('pan-touch', () => touchPan(page, cdp));
@@ -681,6 +720,16 @@ function touchTable(runs) {
   }
   console.log('    ⚠ rect/move and style/move include this harness\'s own wrappers on every element in the page,');
   console.log('      not only the map — they are a BUDGET for the input path, and the number to watch is the trend.');
+  /* (#R499) …and WHO asked, when --attribute was passed. Without this the remainder of a count can
+     only be attributed by reading somebody's source and believing the reading. */
+  let any = false;
+  for (const [e, rep_, p, t] of rows) {
+    if (!t.by || !t.by.length) continue;
+    any = true;
+    console.log(`\n    WHO ASKED · ${e} rep${rep_} ${p}   (top ${t.by.length} sites of ${t.rect + t.style} calls)`);
+    for (const [k, n] of t.by) console.log(`      ${String(n).padStart(8)}  ${k}`);
+  }
+  if (any) console.log('    ⚠ an --attribute run\'s lat/busy/fps are the instrument\'s, not the app\'s — only the counts transfer.');
 }
 
 /* (#R322's pattern) the pieces a regression check needs, so the arithmetic that decides what every

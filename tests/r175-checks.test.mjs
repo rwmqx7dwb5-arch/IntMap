@@ -127,8 +127,22 @@ test('R175 ②: the click opens a detail card, and the ADS-B record carries the 
   for (const f of ['ias:', 'tas:', 'mach:', 'oat:', 'navAlt:', 'navQnh:', 'roll:', 'trueHdg:', 'magHdg:', 'windDir:', 'windSpd:', 'rssi:', 'messages:', 'src:', 'emergency:']) {
     assert.ok(dl.includes(f), `adsbToPlane must carry ${f} — the card shows it and the sim starts from it`);
   }
-  assert.match(dl, /if\(openPlaneCard\(d\)\)\{ if\(HOST\.mapTooltipEl\) HOST\.mapTooltipEl\.style\.display='none'; \}/,
-    'a click opens the card and stands the tooltip down');
+  /* ══ ⚠ (#R499) THE RELATION, NOT THE SPELLING ═══════════════════════════════════════════════
+     This asserted the exact characters of one line — `HOST.mapTooltipEl.style.display='none'` —
+     and #R499 changed them everywhere on purpose: the tooltip's `display` is written in ONE place
+     now (js/map-tooltip.js's showMapTooltip / hideMapTooltip), because thirty-seven sites across
+     eight files wrote it unguarded on every mousemove and made the `offsetWidth` read beside it a
+     forced synchronous layout. #R488 is the standing lesson about what happened here: a check that
+     pins a spelling cannot tell a rename from a regression, and it goes red on the change that
+     makes the code MORE correct. So the claim is the one this test's own name makes — the branch
+     that opens the card is the branch that stands the tooltip down — and it is asserted of BOTH
+     places that branch exists (the label click and the 3-D body click). */
+  const clicks = [...dl.matchAll(/if\(openPlaneCard\(d\)\)\{([^}]*)\}/g)];
+  assert.equal(clicks.length, 2, 'the two click paths that can open the card are still two');
+  for (const c of clicks) {
+    assert.match(c[1], /hideMapTooltip\(HOST\.mapTooltipEl\)/,
+      'a click opens the card and stands the tooltip down — through the one setter (#R499)');
+  }
   assert.ok(dl.includes('else { const el=ensureMapTooltip();'), 'and falls back to the pinned tooltip if the card module is absent');
   assert.match(dl, /P\.update\(d,\{track:_trackCard\(d\.icao24\)\}\)/, 'the open card is refreshed by the live poll');
   /* ⚠ (#R311) THE CARD IS FETCHED WHEN THE AIRCRAFT IS CLICKED, so the factory call moved out of

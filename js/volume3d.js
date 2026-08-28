@@ -419,8 +419,13 @@ window.IntMapModules.volume3d=function(HOST){
     let armed=false, drawing=false, anchor=null, trace=[], _cv=null, _lastPx=null;
     const ownsGesture=()=>armed;
     function _canvas(){ try{ return GE().render.canvas(); }catch(_){ return null; } }
+    /* (#R499) ONE observed box (js/runtime.js §5) instead of TWO layout reads per pointer event —
+       `_ll` measured the canvas and then `onMove`/`onTouchMove` measured it again on the very next
+       line, for the same element, in the same event, to subtract the same two numbers. */
+    function _box(cv){ try{ const R=window.IntMapRuntime; if(R&&R.box) return R.box(cv); }catch(_){}
+      return cv.getBoundingClientRect(); }
     function _ll(clientX,clientY){ const cv=_canvas(); if(!cv) return null;
-      const r=cv.getBoundingClientRect(); const p=GE().coords.unproject([clientX-r.left, clientY-r.top]);
+      const r=_box(cv); const p=GE().coords.unproject([clientX-r.left, clientY-r.top]);
       return p?[p.lng, Math.max(-88,Math.min(88,p.lat))]:null; }
     function _grab(on){ try{ GE().input.setDragPan(!on); }catch(_){}
       try{ GE().render.setCursor(on?'crosshair':''); }catch(_){} }
@@ -436,7 +441,7 @@ window.IntMapModules.volume3d=function(HOST){
       /* A stroke produces no map click, so nothing else would tell the panel its numbers changed. */
       try{ if(onShapeDone) onShapeDone(); }catch(_){} }
     function onDown(e){ if(!armed||e.button!==0) return; e.preventDefault(); e.stopPropagation(); _begin(_ll(e.clientX,e.clientY)); }
-    function onMove(e){ if(!drawing) return; const cv=_canvas(); if(!cv) return; const r=cv.getBoundingClientRect();
+    function onMove(e){ if(!drawing) return; const cv=_canvas(); if(!cv) return; const r=_box(cv);
       _extend(_ll(e.clientX,e.clientY),{x:e.clientX-r.left,y:e.clientY-r.top}); }
     /* A stroke that ends where no mouseup can reach us — the pointer released outside the window, the
        tab lost focus mid-drag, a touch cancelled — would otherwise leave the map's pan switched off.
@@ -445,7 +450,7 @@ window.IntMapModules.volume3d=function(HOST){
     function onLost(){ if(drawing) _end(); }
     function onTouchStart(e){ if(!armed||e.touches.length!==1) return; e.preventDefault(); _begin(_ll(e.touches[0].clientX,e.touches[0].clientY)); }
     function onTouchMove(e){ if(!drawing||e.touches.length!==1) return; e.preventDefault(); const cv=_canvas(); if(!cv) return;
-      const r=cv.getBoundingClientRect(), t=e.touches[0]; _extend(_ll(t.clientX,t.clientY),{x:t.clientX-r.left,y:t.clientY-r.top}); }
+      const r=_box(cv), t=e.touches[0]; _extend(_ll(t.clientX,t.clientY),{x:t.clientX-r.left,y:t.clientY-r.top}); }
     function onTouchEnd(e){ if(drawing) e.preventDefault(); _end(); }
     function _wire(on){
       const cv=_canvas(); if(!cv) return;

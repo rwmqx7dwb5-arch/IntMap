@@ -70,10 +70,41 @@ window.IntMapModules.mapTooltip=function(){
     }
     return {width:_mcW,height:_mcH};
   }
+  /* ══ ⚠⚠⚠ (#R499) …AND NEITHER IS THE TOOLTIP'S OWN SIZE ═══════════════════════════════════════
+     #R311 took the MAP's size off the pointer's path and left the TOOLTIP's on it: `offsetWidth` and
+     `offsetHeight`, twice per mousemove, on an element that is only ever a different size when its
+     markup changed. On its own that is a cheap read — but the callers write `display:block` on the
+     same element on the same line, and #R311's own note says why that matters: a style write
+     invalidates layout even when it assigns the string that is already there, so every one of those
+     reads was a FORCED synchronous layout, once per pointer event, for the whole of a hover.
+     So the size is cached and invalidated by the only three things that can move it: new markup
+     (setMapTooltipHTML, which already knows), the element becoming visible (showMapTooltip), and a
+     ResizeObserver as the backstop for anything else — a font arriving, a theme changing a padding.
+     ⚠ THE NUMBERS ARE THE SAME NUMBERS. Still `offsetWidth`/`offsetHeight` — not a DOMRect, whose
+     fractional width would move every clamp below by a sub-pixel — and still the same `||280`/`||80`
+     fallbacks for the frame before anything has been measured. */
+  let _tw=0,_th=0,_tDirty=true,_tRO=null;
+  function _tipSize(el){
+    if(!_tRO){ try{ _tRO=new ResizeObserver(()=>{ _tDirty=true; }); _tRO.observe(el); }catch(_){ _tRO=true; } }
+    if(_tDirty){ _tDirty=false; _tw=el.offsetWidth; _th=el.offsetHeight; }
+    return {w:_tw,h:_th};
+  }
+  /* ⚠ (#R499) ONE PLACE THAT DECIDES WHETHER THE TOOLTIP IS SHOWN, for the same reason #R311 gave
+     for the markup: thirty-seven sites across eight files wrote `el.style.display='block'` on every
+     mousemove and `'none'` on every mouseleave, unconditionally. tests/r499-checks ③ is what keeps
+     the thirty-eighth from being written, because #R498 measured what happens to an optimisation
+     that is merely available: `setMapTooltipHTML` had ONE adopter out of eight files. */
+  /* ⚠ the guard reads the INLINE declaration rather than a remembered copy: `el.style.display` is a
+     CSSOM read and costs no layout, and a copy would go stale the moment anything else wrote it. */
+  function showMapTooltip(el){ el=el||mapTooltipEl; if(!el) return el;
+    if(el.style.display!=='block'){ el.style.display='block'; _tDirty=true; } return el; }
+  function hideMapTooltip(el){ el=el||mapTooltipEl; if(!el) return el;
+    if(el.style.display!=='none'){ el.style.display='none'; } return el; }
   function positionTooltip(point){
     const el=ensureMapTooltip();
     const mc=_mcSize();
-    const w=el.offsetWidth||280, half=w/2, h=el.offsetHeight||80;
+    const _sz=_tipSize(el);
+    const w=_sz.w||280, half=w/2, h=_sz.h||80;
     const px=(+point.x||0), py=(+point.y||0);
     const x=Math.max(half+TIP_EDGE, Math.min(Math.max(half+TIP_EDGE, mc.width-half-TIP_EDGE), px));
     /* above is the long-standing look and stays the default; below only when above cannot fit and below can */
@@ -100,13 +131,14 @@ window.IntMapModules.mapTooltip=function(){
   function setMapTooltipHTML(el,html){
     if(!el) return el;
     if(el._tipHTML===html) return el;
-    el._tipHTML=html; el.innerHTML=html;
+    el._tipHTML=html; el.innerHTML=html; _tDirty=true;   /* (#R499) new markup is the one thing that changes the size */
     return el;
   }
   window.ensureMapTooltip=ensureMapTooltip; window.positionTooltip=positionTooltip;   /* (#R23) beta choropleths reuse the same hover tooltip as HDI */
   window.setMapTooltipHTML=setMapTooltipHTML;   /* (#R311) see above — used by the always-on hover handlers */
+  window.showMapTooltip=showMapTooltip; window.hideMapTooltip=hideMapTooltip;   /* (#R499) the guarded display writes — see above */
   /* the element itself, for js/app-body.js's `HOST.mapTooltipEl` getter -- a live read, never a copy. */
-  const API={ ensureMapTooltip, positionTooltip, setMapTooltipHTML, element:()=>mapTooltipEl };
+  const API={ ensureMapTooltip, positionTooltip, setMapTooltipHTML, showMapTooltip, hideMapTooltip, element:()=>mapTooltipEl };
   try{ window.IntMapMapTooltip=API; }catch(_){ }
   return API;
 };

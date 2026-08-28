@@ -1919,6 +1919,13 @@ UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押�
 | timer | `every(key, ms, fn, {whenHidden})` | **1本の timeout** が全周期を回す。`document.hidden` の間は動かさない（戻ったとき取り戻しはしない） |
 
 | idle | `idle(key, fn, {timeout})` | フレームのあと、暇なとき |
+| box | `box(el)` / `remeasure(el)` | **要素がどこにあるか**。ResizeObserver で持ち、`resize` / `orientationchange` / `scroll` / visualViewport、そして**あらゆる `pointerdown` / `touchstart`** で無効化する。測るのは無効化のあと**最初に訊かれたとき 1 回** |
+
+⚠ **`box(el)` が pointerdown / touchstart でも無効化されるのが、この登録簿の要点である。**
+ジェスチャは down 無しには始まらないので、**1 ストロークは必ず 1 回の実測から始まり、その間ずっと
+使い回される**——`js/mobile-map-input.js` の長押しが手で書いていた規則を、全員に対して機械が守る。
+`remeasure(el)` は、**自分でレイアウトを変えた**呼び出し側（開いたメニュー、広げた節）が
+observer の次の配達を待てないときに言う。
 
 **周期処理は全部この timer 登録簿を通る。** `js/` に生の `setInterval` は無く（唯一の例外は
 `js/runtime.js` 自身のフォールバック）、**30 ファイル・43 本**が `everyTick(key, ms, fn, opts)` /
@@ -1989,10 +1996,18 @@ UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押�
 - **`.m-scrim` は、閉じている間 `visibility:hidden`。**
 - ⚠ **「携帯」の問いは2種類あり、答える述語も2つある。** 幅（`isMobile()` ＝
   `matchMedia('(max-width:768px)')`）は**レイアウト**の問い——シート・クロスヘア・携帯用読み出し・
-  タップの文言。`_imPhoneClass()`（`(pointer:coarse)` かつ `(any-pointer:fine)` でない）は**端末**の
+  タップの文言。`_imPhoneClass()` は**端末**の
   問い——MSAA・DPR 上限・常駐タイル予算・@2x タイル・canvas の RAM 上限・DEM キャッシュ上限・
   DEM 先読み・毎フレームのマーカー遮蔽。**横向きの iPhone は 844 px なので、幅で端末を訊くと
   全部デスクトップの設定になる**（同じ GPU のまま）。
+  述語は3項で、**上から順に答える**:
+  1. `(pointer:coarse)` でなければ **false**（主ポインタがマウス＝タッチ対応のノート PC もここで落ちる）
+  2. `(any-pointer:fine)` が無ければ **true**（ふつうの携帯・タブレット）
+  3. どちらもある場合だけ、**端末の画面**（`Math.min(screen.width, screen.height)` ≤ 500）を見る
+  ⚠ **3 番目が無いと「細いポインタも持っている携帯」がデスクトップ扱いになる**——S Pen を抜いた
+  Galaxy、Bluetooth マウスを繋いだ端末。2 番目が守るはずだったのは 1 番目が既に落とす機械なので、
+  実際に除かれていたのはその携帯だけだった。3 項目は**追加しかしない**（既に true の端末を false に
+  することはできない）し、幅ではなく**画面の短いほう**を見るので向きで答えが変わらない。
   ⚠ **`maxZoom`（携帯 18／それ以外 19）は幅のまま**で、これは意図的な例外である。ここで区別して
   いるのは費用ではなく**到達できる能力**で、横向きの端末から 1 段取り上げるかどうかは性能の話では
   ないから。
@@ -2023,6 +2038,26 @@ UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押�
   **インライン宣言**として書くので、**その文字列（＋ `document.body.className`）が変わったときだけ**
   `getComputedStyle` を引き直す——シートが止まっていれば 1 フレームあたり 0 回。
 - `style.display` のような**値が同じ書き込みもレイアウトを無効化する**ので、変わったときだけ書く。
+
+**指のクライアント座標を地図の座標に直す場所は 5 つあり、全部 §9.1 の `box(el)` を通る。**
+どれも「`rect = canvas.getBoundingClientRect()` → `clientX − rect.left`」という同じ形で、
+それぞれが自分で測っていた:
+
+| 場所 | 何のとき | 以前 |
+|---|---|---|
+| `js/wheel-zoom.js` のピンチ | ズーム感度を既定から変えている読者の 2 本指 | touchmove ごとに矩形＋`easeTo` |
+| `js/map-tools.js` の `touchLL` | 作図ツールのストローク | touch イベントごとに矩形 |
+| `js/volume3d.js` の `_ll` / `onMove` | 3-D 体積ツールのストローク | 1 移動につき矩形 **2 回** |
+| `js/tool-panel.js` の `place()` | コンテキストメニューを開いている間 | **カメラのフレームごと**に「読む→書く→読む→書く」 |
+| `js/map-tooltip.js` の `positionTooltip` | ホバー中 | mousemove ごとに `offsetWidth/Height`（直前の `display` 書き込みで強制同期化） |
+
+- **ピンチはフレームに合流する。** `touchmove` は目標のズームと中点を控えるだけで、`easeTo` は
+  `RT.frame()` が 1 フレームに 1 回呼ぶ。**`touchend` で控えが残っていれば必ず流す**ので、
+  ジェスチャが描かれなかったフレームの値で終わることはない。
+  ⚠ この経路は**感度が 1 でないときだけ**動く（既定ではレンダラ自身のピンチが引き受ける）。
+- **地図のツールチップの表示は 1 か所が決める**（`window.showMapTooltip` / `hideMapTooltip`）。
+  8 ファイル・37 か所が `el.style.display='block'` を毎 mousemove で書いていた。
+  大きさは**markup が変わったときだけ**測り直す（`setMapTooltipHTML` が知っている）。
 
 ⚠ **この経路を測れる計器は `scripts/mobile-trace.mjs` の `pan-touch` / `pinch-touch` /
 `pan-alerts-city` だけ**（他の相は camera 命令で動かすので touch イベントが 1 つも出ない）。

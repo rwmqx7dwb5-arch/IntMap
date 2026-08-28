@@ -245,14 +245,14 @@ window.IntMapModules.newsUi=function(HOST){
         hoveredNewsId=f.id;
         try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
-      const el=HOST.ensureMapTooltip(); el.style.display='block';
+      const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
       window.setMapTooltipHTML(el,_newsTipHTML(f.properties));   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       HOST.positionTooltip(GE.coords.project(f.geometry.coordinates));
     });
     GE.events.onLayer('mouseleave','news-dots',()=>{
       if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }
       GE.render.setCursor('');
-      if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
+      if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
     });
     /* (#R38) MOBILE: tapping a news pin/band shows a POPUP with a "Read" button rather than jumping straight
        to the article (the explicit request "直接ニュース記事に行くのではなく、ポップアップが出て、そこに読むボタン").
@@ -320,10 +320,10 @@ window.IntMapModules.newsUi=function(HOST){
         hoveredNewsId=f.id;
         try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:true});}catch(err){}
       }
-      const el=HOST.ensureMapTooltip(); el.style.display='block';
+      const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
       window.setMapTooltipHTML(el,_newsTipHTML(f.properties));   /* (#R138 SEC) news name/title/publisher come from external RSS → escape */
       HOST.positionTooltip(GE.coords.project(f.geometry.coordinates)); });
-    GE.events.onLayer('mouseleave','news-labels',()=>{ GE.render.setCursor(''); if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
+    GE.events.onLayer('mouseleave','news-labels',()=>{ GE.render.setCursor(''); if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
       if(hoveredNewsId!=null){ try{GE.layers.setFeatureState({source:'news-points',id:hoveredNewsId},{hover:false});}catch(err){} hoveredNewsId=null; }   /* (#R159) restore the band when the pointer leaves it */ });
     /* (#R37) MOBILE crosshair → news popup, the same way the DESKTOP cursor reveals the pin under it
        ("モバイル版でも…十字ポインターの位置のニュースは…ポップアップが出るように"). On every settle, look for a news
@@ -333,11 +333,11 @@ window.IntMapModules.newsUi=function(HOST){
       /* (#R107) DISABLED on mobile per request ("disable hover news pin and popping news popup in mobile version"):
          no auto hover-highlight of the pin under the crosshair and no auto-popping news tooltip. Tapping a pin/label
          still opens the article (that handler is separate). Clear any lingering state and bail. */
-      if(HOST.mapTooltipEl){ HOST.mapTooltipEl.style.display='none'; HOST.mapTooltipEl.style.pointerEvents='none'; }
+      if(HOST.mapTooltipEl){ window.hideMapTooltip(HOST.mapTooltipEl); HOST.mapTooltipEl.style.pointerEvents='none'; }
       if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; _xhrLink=null; _xhrProps=null; }
       return;
       if(!HOST.isMobile()||!_imCanDraw()||!GE().layers.has('news-dots')) return;
-      if(HOST.toolMode||document.body.classList.contains('pg-we')){ if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none'; return; }
+      if(HOST.toolMode||document.body.classList.contains('pg-we')){ if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl); return; }
       const c=GE().coords.project(GE().camera.getCenter()); const R=22;
       const layers=['news-labels','news-dots'].filter(l=>GE().layers.get(l));
       let hits=[]; try{ hits=GE().coords.queryRenderedFeatures([[c.x-R,c.y-R],[c.x+R,c.y+R]],{layers}); }catch(_){}
@@ -345,10 +345,10 @@ window.IntMapModules.newsUi=function(HOST){
         if(_xhrNewsId!==f.id){ if(_xhrNewsId!=null) try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){}
           _xhrNewsId=f.id; try{GE().layers.setFeatureState({source:'news-points',id:f.id},{hover:true});}catch(_){} }
         _xhrLink=pr.link||null; _xhrProps=pr;
-        const el=HOST.ensureMapTooltip(); el.style.display='block'; el.style.pointerEvents='auto'; el.style.cursor='pointer';
+        const el=HOST.ensureMapTooltip(); window.showMapTooltip(el); el.style.pointerEvents='auto'; el.style.cursor='pointer';
         window.setMapTooltipHTML(el,`<div style="display:flex;justify-content:space-between;gap:8px;"><span style="color:var(--primary-color);font-weight:600;font-size:11px;">[${pr.name}]</span><span style="color:var(--text-muted);font-size:11px;font-weight:500;">${formatCustomDate(pr.pubDate)}</span></div><div style="line-height:1.4;font-weight:500;margin-top:4px;">${pr.title}</div><div style="color:var(--text-muted);margin-top:6px;font-size:11px;">${pr.publisher}${' · '+(window.IntMapLang.t(HOST.lang,'tap for details','タップで詳細','Für Details tippen','Нажмите для подробностей','toca para ver detalles'))}</div>`);
         try{ HOST.positionTooltip(GE().coords.project(f.geometry.coordinates)); }catch(_){}
-      } else { if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; _xhrProps=null; if(HOST.mapTooltipEl){ HOST.mapTooltipEl.style.display='none'; HOST.mapTooltipEl.style.pointerEvents='none'; } }
+      } else { if(_xhrNewsId!=null){ try{GE().layers.setFeatureState({source:'news-points',id:_xhrNewsId},{hover:false});}catch(_){} _xhrNewsId=null; } _xhrLink=null; _xhrProps=null; if(HOST.mapTooltipEl){ window.hideMapTooltip(HOST.mapTooltipEl); HOST.mapTooltipEl.style.pointerEvents='none'; } }
     }catch(_){} }
     window._crosshairNews=_crosshairNews;
     GE().events.on('moveend',_crosshairNews);
@@ -371,7 +371,7 @@ window.IntMapModules.newsUi=function(HOST){
         if(card){ card.classList.add('hovered'); }
         if(f.properties.layerRef) window.triggerLayerHover(f.properties.layerRef,true);
       }
-      const el=HOST.ensureMapTooltip(); el.style.display='block';
+      const el=HOST.ensureMapTooltip(); window.showMapTooltip(el);
       window.setMapTooltipHTML(el,`<div style="color:${f.properties.color};font-weight:600;font-size:14px;">${f.properties.title}</div><div style="line-height:1.4;margin-top:4px;color:var(--text-muted);">${f.properties.body}</div>`);
       HOST.positionTooltip(GE().coords.project(f.geometry.coordinates));
     });
@@ -383,7 +383,7 @@ window.IntMapModules.newsUi=function(HOST){
         hoveredDashId=null;
       }
       GE().render.canvas().style.cursor='';
-      if(HOST.mapTooltipEl) HOST.mapTooltipEl.style.display='none';
+      if(HOST.mapTooltipEl) window.hideMapTooltip(HOST.mapTooltipEl);
     });
     GE().events.onLayer('click','dash-dots',e=>{
       if(!e.features.length) return;
