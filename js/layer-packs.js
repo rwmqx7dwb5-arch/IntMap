@@ -748,7 +748,7 @@ window.IntMapModules.betaPack2=function(HOST){
              map tooltip (desktop pointer; mobile keeps the tap popup above). */
           GE().events.onLayer('mousemove',W.ids[0],e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
             try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(!el) return; el.style.display='block';
-              el.innerHTML='<div style="font-weight:600;font-size:14px;">'+esc(_nmOf(p))+'</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>';
+              window.setMapTooltipHTML(el,'<div style="font-weight:600;font-size:14px;">'+esc(_nmOf(p))+'</div><div style="margin-top:5px;color:var(--text-muted);font-size:12px;">'+(jp()?W.nm[1]:W.nm[0])+': <b style="color:var(--text-main);">'+_valOf(p)+'</b></div>');
               window.positionTooltip&&window.positionTooltip(e.point); GE().render.canvas().style.cursor='pointer'; }catch(_){}
           });
           GE().events.onLayer('mouseleave',W.ids[0],()=>{ try{ const el=window.ensureMapTooltip&&window.ensureMapTooltip(); if(el) el.style.display='none'; GE().render.canvas().style.cursor=''; }catch(_){} });

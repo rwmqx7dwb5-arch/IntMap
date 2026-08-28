@@ -952,12 +952,42 @@ export function makeThemeSky(HOST, CTX) {
   /* the horizon band follows the Sun, and the Sun's elevation depends on WHERE the camera is looking
      as much as on the clock — so this is re-evaluated when the camera settles too. It re-sets the sky
      only when the colour has actually moved, because setSky re-parses the block. */
+  /* ══ ⚠⚠⚠ (#R498) TWO FULL SCATTERING INTEGRALS, EVERY FRAME, FOR THE LENGTH OF EVERY GESTURE ═══
+     「スマホで地図が重い」. #R220's note on the march says 「Nothing draws per frame from here」 and
+     budgets the model at 「four times per camera settle … against a 60-second re-aim interval」. That
+     stopped being true when #R234 moved this follower onto the per-frame camera register: with the
+     satellite basemap and the day/night display on — the one combination where `_sunElevAtCentre()`
+     answers — `_horizonColour()` and `_skyColour()` each run a 256-step view march with an 8-step
+     sun sub-march, on every frame of every drag, to decide whether the block needs re-parsing.
+     MEASURED on this machine (node, js/sky-model.js directly): the multiple-scattering table costs
+     17.5 ms to build on first use and each colour costs 0.23 ms after that — so 0.47 ms of main
+     thread per frame, on a desktop CPU, for a question whose answer is usually 「no change」.
+     ⚠ WHAT #R234 ACTUALLY NEEDED PER FRAME IS THE CHEAP HALF, AND IT IS UNTOUCHED. Its report was
+     that the limb vanished mid-zoom because `_limbOwnsRim()` — booleans and one altitude — was only
+     asked on `moveend`; #R241's `_airAtZoom` and #R240's re-aim are one `setLimb` and one
+     `setLight`. All three still run on every frame, and they now run FIRST, before anything that
+     can be deferred.
+     ⚠ TWO GUARDS, AND NEITHER LOWERS THE PICTURE'S QUALITY.
+      ① The model is a pure function of (sun elevation at the centre, eye altitude, relative azimuth),
+         so the same three numbers give the same two hexes: memoised on them, a frame that repeats
+         its inputs is free and is *identical*, not approximated.
+      ② While the camera is in a gesture the pair is re-evaluated at most every `_SKY_GESTURE_MS`,
+         and ALWAYS on the frame the gesture ends — so what the reader is left looking at when the
+         map stops is computed exactly, from the exact camera, as it was before. During the drag the
+         full-screen gradient is re-derived at 10 Hz instead of 60. It is the same integral with the
+         same constants; only how often it is asked has changed, which is the distinction #R229 draws
+         between removing duplicated work and quietly lowering quality to buy frames. */
+  const _SKY_GESTURE_MS=100;
+  function _skyColoursNow(){
+    let k=null;
+    try{ k=_sunElevAtCentre()+'|'+_eyeAltM()+'|'+_relAzimuth(); }catch(_){ k=null; }
+    const c=_skyColoursNow._c;
+    if(k!==null&&c&&c.k===k) return c;
+    const out={ k, hz:_horizonColour(), sc:_skyColour() };
+    _skyColoursNow._c=out; return out;
+  }
   function _skyFollowCamera(){
     try{ if(!_applySkyAtmosphere._on||_skyIsOwnedElsewhere()) return;
-      /* (#R202) …and the far end of the gradient moves with the camera too: climbing out of the
-         atmosphere darkens the sky exactly as sunset does, so both ends are compared before the
-         block is re-parsed. */
-      const hz=_horizonColour(), sc=_skyColour();
       /* (#R216) …and so does the aerial perspective, which is a function of eye height alone — a
          camera that climbs without the Sun moving still has less air in front of it. Comparing only
          the two colours would leave the haze at the value it had on the ground. */
@@ -988,6 +1018,17 @@ export function makeThemeSky(HOST, CTX) {
           if(c&&isFinite(c.lng)&&(!p||Math.abs(c.lng-p.lng)>0.25||Math.abs(c.lat-p.lat)>0.25)){
             _aimSun._at={lng:c.lng,lat:c.lat}; _aimSun(); } }catch(_){}
       } else { _aimSun._at=null; }
+      /* (#R202) …and the far end of the gradient moves with the camera too: climbing out of the
+         atmosphere darkens the sky exactly as sunset does, so both ends are compared before the
+         block is re-parsed. ⚠ (#R498) …but only after the cheap per-frame work above, and — while
+         the camera is actually moving — at most every _SKY_GESTURE_MS. Left at the last APPLIED pair
+         in between, so the comparison below reads "no colour change" and the other three terms can
+         still trigger on their own. See the ⚠ box on this function. */
+      let hz=_applySkyAtmosphere._hz, sc=_applySkyAtmosphere._sc;
+      const _n=(function(){ try{ return performance.now(); }catch(_){ return Date.now(); } })();
+      if(!window.__imGesture || !(_n-(_skyFollowCamera._t||0)<_SKY_GESTURE_MS)){
+        _skyFollowCamera._t=_n; const q=_skyColoursNow(); hz=q.hz; sc=q.sc;
+      }
       if(hz===_applySkyAtmosphere._hz&&sc===_applySkyAtmosphere._sc
          &&fg.ground===of.ground&&fg.horizon===of.horizon&&limb===_applySkyAtmosphere._limb) return;
       _applySkyAtmosphere(HOST.mapType==='sat');

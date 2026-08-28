@@ -877,7 +877,7 @@ window.IntMapModules.satellitesLive=function(HOST){
       const el=window.ensureMapTooltip?window.ensureMapTooltip():null; if(!el) return;
       if(id==null){ if(el.dataset.owner==='sats'){ el.style.display='none'; el.dataset.owner=''; } return; }
       const f=get(id); if(!f) return;
-      el.dataset.owner='sats'; el.style.display='block'; el.innerHTML=tooltipHTML(f);
+      el.dataset.owner='sats'; el.style.display='block'; window.setMapTooltipHTML(el,tooltipHTML(f));
       try{ window.positionTooltip&&window.positionTooltip(e.point); }catch(_){}
     }; try{ E.events.on('mousemove',_hover); }catch(_){} }
     if(!_click){ _click=(e)=>{
