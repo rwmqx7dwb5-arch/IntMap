@@ -177,11 +177,19 @@ window.IntMapModules.atlasQuery = function (HOST) {
       const url = (() => { try { return new URL('data/volcanoes_gvp.json', (window.IM_HOST && window.IM_HOST.base) || document.baseURI).toString(); } catch (_) { return 'data/volcanoes_gvp.json'; } })();
       const j = await (D.fetchJSON ? D.fetchJSON(url) : fetch(url).then((r) => r.json()));
       _volc = [];
+      /* ⚠⚠ THE KEYS ARE ONE LETTER LONG, AND GUESSING THEM COST A WHOLE TABLE. data/volcanoes_gvp.json
+         is written short — `n` name, `c` country, `t` type, `e` elevation (m), `y` the year of the
+         last known eruption, `v` the GVP volcano number. This read `p.name` / `p.elev` / `p.type`,
+         which exist nowhere in the file, so every row of the `volcanoes` table came back with an
+         empty name and a null elevation while the row COUNT looked right (measured on production:
+         「coastKm >= 300」 answered 127 volcanoes, all of them nameless).
+         ⚠ A missing VALUE is visible; a missing NAME on a row that still counts is not — which is
+         why tests/r497-checks asserts the values and not the shape. */
       for (const f of ((j && j.features) || [])) {
         const c = f.geometry && f.geometry.coordinates; if (!c) continue;
         const p = f.properties || {};
-        _volc.push({ id: String(p.id || p.num || p.name), name: p.name || '', lng: +c[0], lat: +c[1],
-          elevM: num(p.elev), kind: p.type || '', lastEruption: p.last || p.lastEruption || '' });
+        _volc.push({ id: String(p.v != null ? p.v : (p.n || '')), name: p.n || '', lng: +c[0], lat: +c[1],
+          iso2: '', country: p.c || '', elevM: num(p.e), kind: p.t || '', lastEruption: p.y != null ? String(p.y) : '' });
       }
     }
     return { rows: _volc, note: null, source: 'Smithsonian Global Volcanism Program (data/volcanoes_gvp.json)' };
@@ -345,6 +353,10 @@ window.IntMapModules.atlasQuery = function (HOST) {
     col('seaKm', ['cities', 'volcanoes', 'facilities'], LA('Distance to any sea', '海（内海含む）からの距離', 'Entfernung zu einem Meer', 'Расстояние до моря', 'Distancia a cualquier mar'), 'km', 1, (rows) => ensureCoast(rows, 'seaKm'), 'Natural Earth 1:10m coastline'),
     col('elevM', ['cities', 'facilities'], LA('Elevation', '標高', 'Höhe', 'Высота', 'Altitud'), 'm', 2, (rows) => ensureElev(rows), 'Open-Meteo elevation API'),
     col('elevM', ['volcanoes'], LA('Elevation', '標高', 'Höhe', 'Высота', 'Altitud'), 'm', 0, intrinsic('elevM', (r) => r.elevM), 'Smithsonian GVP'),
+    /* (#R497) the two facts the GVP row carries that nothing could ask for: which country it is in
+       (a NAME here, not an ISO code — the file has no code) and the year of its last known eruption. */
+    col('country', ['volcanoes'], LA('Country', '国', 'Land', 'Страна', 'País'), '', 0, intrinsic('country', (r) => r.country), 'Smithsonian GVP', 'text'),
+    col('lastEruptionYear', ['volcanoes'], LA('Last known eruption', '最後の噴火', 'Letzter bekannter Ausbruch', 'Последнее известное извержение', 'Última erupción conocida'), '', 0, intrinsic('lastEruptionYear', (r) => (r.lastEruption === '' ? null : +r.lastEruption)), 'Smithsonian GVP'),
   ];
   for (const w in WX) COLUMNS.push(col(w, ['cities', 'facilities', 'volcanoes'], WX[w][1], WX[w][2], 2, (rows) => ensureWx(rows, [w]), 'Open-Meteo forecast API'));
 
