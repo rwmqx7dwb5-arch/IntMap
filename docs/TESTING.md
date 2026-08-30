@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **100 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
-`npm run test:checks` runs **284 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **285 Node test files** with no browser at all (counted from
 
 > ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
 > `tests/r505-checks.test.mjs` ① は 13 本すべての `supabase/functions/*/index.ts` を
@@ -1113,6 +1113,19 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
 - **`supabase/tests/03_security_test.sql`** (pgTAP) — the `feedback.rating` CHECK rejects the
   out-of-range DoS payload, `profiles_public` exposes no PII, public-read tables aren't
   anon-writable, `ai_usage` is RPC-only. (00/01/02 cover structure / the RLS matrix / the RPCs.)
+- **`supabase/tests/07_r507_profiles_public_test.sql`** (pgTAP, #R507) — proves the public author
+  card is a **table with RLS**, not a SECURITY DEFINER view: relkind `r`, RLS on, exactly one
+  `SELECT USING (true)` policy, no INSERT/UPDATE/DELETE/**TRUNCATE** for anon or authenticated,
+  a SECURITY DEFINER sync function with a pinned `search_path` and no client EXECUTE, and the
+  sync proven end to end (backfill, rename, a `login_count` bump that must not disturb the card,
+  a new signup, an account deletion). ⚠ **The older files could not have caught this**: they
+  assert the projection (four columns, no `email`) and both roles can read it — all true of the
+  defective view. This file asserts the mechanism.
+- **`tests/r507-checks.test.mjs`** (`node --test`, #R507) — the source-side pair: the migrations
+  end with `profiles_public` as a table, the drop of the old view is guarded on `relkind` so the
+  migration stays re-runnable, only `SELECT` is ever granted, the PostgREST schema reload sits
+  **outside** the transaction — and the class-level gate, that **any** view a migration leaves
+  behind must set `security_invoker = true`, so this defect cannot be dug a second time.
 - **`supabase/tests/05_r155_security_test.sql`** (pgTAP, #R155) — proves the profiles
   privilege-escalation is closed **grant-independently**: it RE-CREATES the production condition on
   CI (grants `authenticated` the blanket table-level `UPDATE` on `profiles`) and then asserts the

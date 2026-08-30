@@ -215,7 +215,8 @@ window.IntMapModules.communityBoard=function(HOST){
     if(uid && HOST.DB){ try{
       /* (#R134) Read the PUBLIC-safe projection (profiles_public = id/display_name/bio/avatar_url only) so a
          viewer never receives another user's email/is_admin/plan. Falls back to profiles for a database that
-         has not applied the profiles_public view yet (forward+backward compatible with the DB migration). */
+         has not applied the profiles_public migration yet (forward+backward compatible with the DB migration).
+         (#R507) profiles_public is a trigger-synced TABLE, not a view — the request below is unchanged. */
       let r=await HOST.DB.from('profiles_public').select('display_name,bio,avatar_url').eq('id',uid).maybeSingle();
       if(r.error) r=await HOST.DB.from('profiles').select('display_name,bio,avatar_url').eq('id',uid).maybeSingle();
       const data=r.data; if(data){ name=data.display_name||name; bio=data.bio||''; avatar=data.avatar_url||''; }

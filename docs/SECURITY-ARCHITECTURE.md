@@ -375,11 +375,19 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
    an explicit grant, so tightening it would not affect IntMap; it would affect anything else
    that creates tables here. Left untouched **by decision**. To close:
    `alter default privileges in schema public revoke all on tables from anon, authenticated;`
-7. **`public.profiles_public` is not `security_invoker`**, so it reads `profiles` with the
-   view owner's rights and bypasses that table's RLS. Its projection is `id, display_name, bio,
-   avatar_url` — the columns the baseline declares as public — so this is the intended
-   behaviour rather than a leak, and it is recorded here because a future column added to the
-   view would inherit the bypass.
+7. ~~**`public.profiles_public` is not `security_invoker`**~~ — **CLOSED by #R507.** It was a
+   view without `security_invoker`, so it read `profiles` with the view owner's rights and
+   bypassed that table's RLS; the projection was only `id, display_name, bio, avatar_url`, so
+   nothing leaked, and this entry recorded the risk that a future column added to it would
+   inherit the bypass. Supabase's own advisor raised it as level **ERROR** (lint
+   `0010_security_definer_view`). The advisor's remedy — `security_invoker = on` — was **not**
+   taken: `profiles` has a single owner-or-admin SELECT policy, so an invoker view would return
+   the caller's own row and `anon` would get a permission error, and making it work would mean
+   a `USING (true)` policy on `profiles` with column grants as the only barrier — the barrier
+   #R155 proved untrustworthy (item 6 above is why). Instead `profiles_public` is now a **real
+   table** holding only the four public columns, RLS on, one `SELECT USING (true)` policy, no
+   write grant, kept in step by the `profiles_public_sync` trigger. There is no bypass left for
+   a future column to inherit, because the column would not be in this table.
 8. **`supabase/config.toml` still says `db.major_version = 15`; production is Postgres 17.6.**
    The file drives only the LOCAL stack, so this affects the fidelity of `supabase db diff`, not
    production. Recorded rather than changed because raising it changes what every local reset
@@ -481,8 +489,8 @@ Prod had **drifted** from the migration files; a live audit (`supabase db query 
   policies granted to the `public` role. RLS ORs policies, so these overrode the intended
   own-or-admin policy: **any anon/authenticated caller could read every user's `email`,
   `is_admin`, `is_pro`, `plan`** via the public anon key. Fixed by dropping both permissive
-  policies and adding the `profiles_public` view (id/display_name/bio/avatar_url only) — which
-  the client already reads first (`imViewProfile`, #R134).
+  policies and adding `profiles_public` (id/display_name/bio/avatar_url only — a view then, a
+  table since #R507) — which the client already reads first (`imViewProfile`, #R134).
 - **Privilege / billing escalation (high).** Supabase's schema-wide DEFAULT PRIVILEGES grant
   every role a blanket table-level `UPDATE` on every public table, and profiles' UPDATE policy
   is row-only (no column filter). A pre-existing `guard_admin_flag` trigger froze `is_admin`
