@@ -44,7 +44,7 @@ gtag('js', new Date());
    can finish booting in a hidden/background tab (rAF is throttled to zero there, `map.on('load')` never fires
    and nothing map-side can be verified). Never active for normal visitors. */
 if(/[?&]rafshim=1/.test(location.search)){ try{ window.requestAnimationFrame=function(cb){ return setTimeout(function(){ cb(performance.now()); },33); }; window.cancelAnimationFrame=clearTimeout; }catch(_){} }
-window.__imBuild='R503';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
+window.__imBuild='R504';/* (#R121) build marker — bump when verifying that a reload really picked up the edited file (file:// reloads can serve a stale cache) */   /* (#R174) bump BOTH stamps together — tests/r169-checks.test.mjs requires them to name the same round, and both sat at R171 through #R172/#R173 */
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -59,7 +59,7 @@ window.__imBuild='R503';/* (#R121) build marker — bump when verifying that a r
      the NEWEST build ever loaded on this device. If a load ever serves an OLDER build than one already seen,
      we KNOW it's a stale copy → purge caches + hard-reload ONCE; if it's still old after that, surface a
      banner so it can never silently masquerade as the current app again. */
-  window.INTMAP_BUILD='2026-08-28-R503';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
+  window.INTMAP_BUILD='2026-08-31-R504';/* (#R174) …and it MUST be bumped every round: it was left at R171 through
      #R172 and #R173, which means that for three rounds a device serving a stale cached copy looked current to the
      guard above. Caught by the production smoke test, which prints the live build id. */
   /* (#R29.1) Maintenance/security: capture the last ~25 runtime errors into a ring buffer so the Bug Report
@@ -536,7 +536,7 @@ window.__imBuild='R503';/* (#R121) build marker — bump when verifying that a r
         </div>
       </div>
       <!-- (#R480) 方位磁針は直下の子＝3行目に単独。id/class/title は不変（7つの呼び出し元は行を知らない）— 丸型と glass は css `.compass-btn` -->
-      <button class="compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth"><svg class="compass-svg" width="34" height="34" viewBox="0 0 24 24"><polygon points="12,2 9,12 12,9.5 15,12" fill="#ff3b30"/><polygon points="12,22 9,12 12,14.5 15,12" fill="#9aa0a6"/></svg></button>
+      <button class="compass-btn" id="btn-compass" title="Reset North" data-i18n-title="ttlResetNorth"><svg class="compass-svg" width="34" height="34" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="16.8" fill="none" stroke="currentColor" stroke-opacity="0.16" stroke-width="1"/><path d="M36 20h-2.4M20 36v-2.4M4 20h2.4M20 4v2.4" stroke="currentColor" stroke-opacity="0.34" stroke-width="1.6" stroke-linecap="round"/><path d="M31.31 8.69l-1.11 1.11M31.31 31.31l-1.11-1.11M8.69 31.31l1.11-1.11M8.69 8.69l1.11 1.11" stroke="currentColor" stroke-opacity="0.2" stroke-width="1.1" stroke-linecap="round"/><polygon points="20,7.4 14.5,20 20,20" fill="#ff453a"/><polygon points="20,7.4 25.5,20 20,20" fill="#d2312a"/><polygon points="20,32.6 14.5,20 20,20" fill="currentColor" fill-opacity="0.32"/><polygon points="20,32.6 25.5,20 20,20" fill="currentColor" fill-opacity="0.6"/><circle cx="20" cy="20" r="2.5" fill="currentColor" fill-opacity="0.14"/><circle cx="20" cy="20" r="1.15" fill="currentColor" fill-opacity="0.72"/></svg></button>
     </div>
     <div id="map"></div>
     <canvas id="wind-canvas"></canvas>
@@ -555,9 +555,9 @@ window.__imBuild='R503';/* (#R121) build marker — bump when verifying that a r
          a Year/Date mode toggle, a big current-value readout + "Back to now", a year (or recent-date) slider with
          era marks, and a "What's applied" chip row. Closes when the user operates elsewhere on the map. -->
     <div id="news-timeline" class="news-timeline collapsed">
-      <!-- (#R102/#27) collapsed = the labeled entry point (per the attached mock). ⚠ (#R289) renamed it to 「Chronos / Control the map's time」: it names no year, so nothing here follows the clock's floor. -->
+      <!-- (#R102/#27) collapsed = the labeled entry point (per the attached mock). ⚠ (#R289) renamed it to 「Chronos / Control the map's time」: it names no year, so nothing here follows the clock's floor. ⚠ (#R504) the glyph is a CLOCK (face, cardinal marks, hour+minute hands, pivot), built like the compass rose — the old rotate-ccw arrow read as 「戻す」 at 23 px; DEV-NOTES #R504 §7. ⚠ no id in it: the compass roses share this document (r504 ⑧). -->
       <button class="ntl-open" id="ntl-toggle" type="button" title="Chronos" data-i18n-title="tlMachine">
-        <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l2.5 1.7"/></svg></span>
+          <span class="ntl-open-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.2"/><path d="M12 3.6v1.6M20.4 12h-1.6M12 20.4v-1.6M3.6 12h1.6" stroke-opacity="0.55"/><path d="M12 6.9V12l3.7 2.2"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>
         <span class="ntl-open-txt"><b id="ntl-open-t">Chronos</b><small id="ntl-open-s">Control the map’s time</small></span>
       </button>
       <div class="ntl-body" id="ntl-body">
@@ -892,7 +892,7 @@ window.__imBuild='R503';/* (#R121) build marker — bump when verifying that a r
     <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 3.3a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4L8.6 21 3 21l0-5.6L14.7 3.3Z"/><path d="m11.5 6.5 6 6M8 10l2 2M5.5 12.5l2 2"/></svg>
   </button>
   <button class="m-fab m-fab-compass" id="m-fab-compass" type="button" aria-label="Reset bearing" data-i18n-aria="ttlResetBearing" title="Compass" data-i18n-title="ttlCompass">
-    <svg class="m-compass-svg" viewBox="0 0 24 24" width="38" height="38"><polygon points="12,3 9.4,12 12,9.9 14.6,12" fill="#ff3b30"/><polygon points="12,21 9.4,12 12,14.1 14.6,12" fill="#9aa0a6"/></svg>
+    <svg class="m-compass-svg" width="38" height="38" viewBox="0 0 40 40" aria-hidden="true" focusable="false"><circle cx="20" cy="20" r="16.8" fill="none" stroke="currentColor" stroke-opacity="0.16" stroke-width="1"/><path d="M36 20h-2.4M20 36v-2.4M4 20h2.4M20 4v2.4" stroke="currentColor" stroke-opacity="0.34" stroke-width="1.6" stroke-linecap="round"/><path d="M31.31 8.69l-1.11 1.11M31.31 31.31l-1.11-1.11M8.69 31.31l1.11-1.11M8.69 8.69l1.11 1.11" stroke="currentColor" stroke-opacity="0.2" stroke-width="1.1" stroke-linecap="round"/><polygon points="20,7.4 14.5,20 20,20" fill="#ff453a"/><polygon points="20,7.4 25.5,20 20,20" fill="#d2312a"/><polygon points="20,32.6 14.5,20 20,20" fill="currentColor" fill-opacity="0.32"/><polygon points="20,32.6 25.5,20 20,20" fill="currentColor" fill-opacity="0.6"/><circle cx="20" cy="20" r="2.5" fill="currentColor" fill-opacity="0.14"/><circle cx="20" cy="20" r="1.15" fill="currentColor" fill-opacity="0.72"/></svg>
   </button>
   <!-- (#R137) "Go to my location" FAB — same UI as the three above; sits directly under the compass. Flies to the
        user's position and shows an accent dot + accuracy circle that follow them (see window.IntMapLocate). -->

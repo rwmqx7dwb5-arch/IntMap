@@ -452,7 +452,12 @@
        already centre their own buttons, so nothing inside moves. */
     .map-view-row{ display:flex; align-items:stretch; justify-content:flex-end; gap:4px; flex-wrap:wrap; max-width:100%; }
     .map-view-group{ display:flex; align-items:center; background:var(--sidebar-bg); backdrop-filter:blur(20px); border-radius:12px; padding:2px 4px; box-shadow:var(--shadow); border:1px solid rgba(128,128,128,0.15); gap:4px; flex-wrap:wrap; max-width:100%; }
-    .view-btn{ background:transparent; border:none; padding:7px 12px; font-size:12px; font-weight:500; color:var(--text-main); border-radius:8px; cursor:pointer; transition:0.2s; white-space:nowrap; }
+    /* ⚠ (#R504) THE PADDING IS THE HEIGHT OF THE ROW. 「…のバーの縦幅を詰めて」 — measured at
+       1440×900: .view-btn 28.0 px (12 px type + 7 px above and below), so each pill row was 35.3 px
+       and the three-row stack 120.7 px. Nothing here changes the type, the hit area's width, or the
+       glass; 5 px above and below puts the row at 24 px and the group at ~31. ⚠ 2 px looks like a
+       small number to take, and it is 15 % of a row that repeats twice. */
+    .view-btn{ background:transparent; border:none; padding:5px 12px; font-size:12px; font-weight:500; color:var(--text-main); border-radius:8px; cursor:pointer; transition:0.2s; white-space:nowrap; }
     /* (#R62/#R63) Atlas launch button — prominent gradient pill; label NOT bold, NO symbol before "Atlas". */
     .view-btn.atlas-launch{ display:inline-flex; align-items:center; padding:7px 14px; border-radius:999px; background:linear-gradient(135deg,#0a84ff,#5e5ce6 58%,#bf5af2); color:#fff; font-weight:500; letter-spacing:0.3px; box-shadow:0 2px 9px rgba(94,92,230,0.38), inset 0 1px 0 rgba(255,255,255,0.25); border:none; }
     .view-btn.atlas-launch:hover{ filter:brightness(1.09); box-shadow:0 3px 14px rgba(94,92,230,0.5), inset 0 1px 0 rgba(255,255,255,0.25); transform:translateY(-0.5px); }
@@ -479,8 +484,19 @@
        !important), so declaring them here would be four dead declarations charged to the startup CSS budget.
        box-shadow is NOT in those lists, so it stays. */
     .compass-btn{ width:42px; height:42px; padding:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
-      box-shadow:var(--shadow); cursor:pointer; overflow:visible; transition:transform 0.14s; }
+      box-shadow:var(--shadow); cursor:pointer; overflow:visible; transition:transform 0.14s, box-shadow 0.18s;
+      /* (#R504) THE ROSE INHERITS THIS. Every part of the glyph except the north needle is drawn in
+         `currentColor`, so the dial ring, the sixteen ticks, the south needle and the pivot follow the
+         theme instead of being frozen at the old #9aa0a6 — a mid grey picked for a light background,
+         which reads as mud on the dark glass this button has worn since #R480. */
+      color:var(--text-main); }
+    .compass-btn:hover{ box-shadow:0 6px 18px rgba(0,0,0,0.16); }
     .compass-btn:active{ transform:scale(0.94); }
+    /* ⚠ THE WHOLE ROSE COUNTER-ROTATES, TICKS AND ALL, because that is what a compass card does —
+       js/map-readout.js writes `rotate(-bearing)` here (#R480 lists the seven callers that know this
+       class). transform-origin stays at its default 50% 50%, which is the dial's centre only because
+       the artwork is centred in a square viewBox; moving the needle off-centre would need this to
+       say so out loud. */
     .compass-svg{ transition:transform 0.2s; display:block; }
     /* (#R152) desktop right-click-the-compass numeric view entry (bearing / pitch / zoom) — opaque, like Measure/Share */
     .compass-num-pop{ position:fixed; z-index:4000; background:var(--card-bg); border:1px solid rgba(128,128,128,0.2); border-radius:12px; padding:12px 14px; box-shadow:var(--shadow); width:194px; font-size:12px; display:flex; flex-direction:column; gap:8px; }
@@ -793,7 +809,11 @@
     .ci-name{ font-weight:700; font-size:15px; margin-bottom:8px; display:flex; align-items:center; gap:8px; } .ci-row{ display:flex; justify-content:space-between; margin:3px 0; color:var(--text-muted); } .ci-row b{ color:var(--text-main); }
     .ci-details{ margin-top:10px; width:100%; padding:8px; border:none; border-radius:9px; background:var(--primary-color); color:#fff; font-weight:600; cursor:pointer; }
     /* (#R103) the coordinate/elevation always-on readout tucked closer to the bottom-left corner (kept non-flush). */
-    .coord-readout{ display:none; position:absolute; bottom:9px; left:9px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
+    /* ⚠ (#R504) 「座標標高常時表示バーは、もっと左下に詰めて。」 9 px → 6 px, and Chronos's own
+       corner inset moves with it (see .news-timeline in the frosted block) so the two bottom
+       corners keep the SAME gap — that is the whole point of the pair. ⚠ tests/r252 ⑥ and
+       tests/r485 ⑤ pin this number on purpose: other clearances are derived from it. */
+    .coord-readout{ display:none; position:absolute; bottom:6px; left:6px; z-index:900; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.15); border-radius:10px; padding:6px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); font-size:12px; gap:12px; align-items:center; pointer-events:none; font-variant-numeric:tabular-nums; }
 
     /* ══ (#R485) BASEMAP CREDIT — A ROW OF THE LAYOUT, NOT A THING FLOATING ON THE MAP ═══════════
        #R479 put this in the bottom-right corner as an absolutely-positioned pill and it was WRONG:
@@ -1481,7 +1501,7 @@
     /* (#R104) in-map search bar unified with the Atlas input pill (rounding / hairline border / focus ring); keeps its floating frosted material so it stays legible over the map. Size & wording unchanged. */
     /* (#R170) 24px → 10px ("地名検索バーの位置をもう少し上に") — now flush with the top of .map-controls-top
        (also top:10px) on the right, so the two float on one visual row instead of the pill sitting lower. */
-    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:21px; padding:4px 4px 4px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
+    .map-search{ position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000; display:flex; align-items:center; gap:6px; background:var(--sidebar-bg); backdrop-filter:blur(20px); border:1px solid rgba(128,128,128,0.25); border-radius:18px; padding:3px 4px 3px 12px; box-shadow:var(--shadow); width:min(380px,55vw); transition:border-color .15s ease, box-shadow .15s ease; }
     .map-search:focus-within{ border-color:var(--primary-color); box-shadow:0 0 0 3px rgba(10,132,255,0.18); }
     /* Place-search pin + popup card */
     .search-pin{ width:30px; height:38px; position:relative; cursor:pointer; }
@@ -1501,11 +1521,16 @@
     .src-card .src-actions button{ flex:1; padding:7px 8px; font-size:11px; font-weight:600; border:none; border-radius:7px; background:var(--input-bg); color:var(--text-main); cursor:pointer; }
     .src-card .src-actions .primary{ background:var(--primary-color); color:#fff; }
     .src-card .src-actions button:hover{ filter:brightness(1.1); }
-    .map-search input{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text-main); font-size:14px; padding:8px 4px; }
+    /* ⚠ (#R504) …AND THE SAME FOR THE SEARCH BAR (「地名検索バーも」). Measured 42.0 px: a 14 px
+       field with 8 px above and below inside a shell with 4 px more. 5 px and 3 px put it at ~35,
+       and the radius follows the height — 21 px was exactly half of 42, and a pill whose radius
+       outgrows its half-height stops being a pill. ⚠ The phone is untouched: its own rule turns
+       this into a 46 px round FAB with padding:0, so none of these three numbers reach it. */
+    .map-search input{ flex:1; min-width:0; background:transparent; border:none; outline:none; color:var(--text-main); font-size:14px; padding:5px 4px; }
     /* (#R105) the search button now matches the pill bar + the sidebar search button: a clean primary rounded button. */
     /* (#R106) the search button is a NEUTRAL pill by default and only turns primary-blue once the input carries
        text ("入力テキストがある場合のみ青くなるように"). The .has-text class is toggled on the bar from the input. */
-    .map-search>button{ background:var(--input-bg); color:var(--text-muted); border:none; border-radius:999px; padding:8px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
+    .map-search>button{ background:var(--input-bg); color:var(--text-muted); border:none; border-radius:999px; padding:5px 15px; font-size:13px; font-weight:600; cursor:pointer; transition:background .15s ease, color .15s ease, filter .15s ease; }
     .map-search.has-text>button{ background:var(--primary-color); color:#fff; }
     .map-search>button:hover{ filter:brightness(1.08); }
     /* (#R231) the desktop pill shows the WORD; the phone shows the glyph (see the mobile block). */
@@ -2660,7 +2685,11 @@
     }
 
     /* --- Timebar (news-timeline) redesign + glass, aligned with Summarize button (#9,#22,#24) --- */
-    .news-timeline{ right:10px; bottom:10px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }   /* (#R105) tucked a little further DOWN into the corner (not flush) */
+    /* ⚠ (#R504) 「Chronosボタンも、座標標高常時表示部と同じ幅で右下にそろえて」——「UIはそのままで
+       隙間だけ同じように詰める」。The button, its type, its padding and its shape are untouched; what
+       moves is the corner inset, from 10 px to the 6 px the coord readout now uses, so the two
+       bottom corners read as one pair rather than as two independently-placed things. */
+    .news-timeline{ right:6px; bottom:6px; background:var(--sidebar-bg); backdrop-filter:saturate(180%) blur(22px); -webkit-backdrop-filter:saturate(180%) blur(22px); border:1px solid rgba(128,128,128,0.18); border-radius:999px; padding:5px 6px; }   /* (#R105) tucked a little further DOWN into the corner (not flush) */
     /* (#R105) while travelling the collapsed "See the past world" pill turns BLUE and its label shows the year/date in
        place — same size & shape, just colour + text; returns to normal on "Now". */
     .news-timeline.collapsed.active{ background:var(--primary-color) !important; border-color:var(--primary-color) !important; }
@@ -2688,8 +2717,8 @@
        beside the map (map-container starts to its right), so the HUD is already correctly positioned — no shift. */
     /* (#R488) `:has(> .sidebar.collapsed)`, not `.sidebar.collapsed ~ …` — see the box at .btn-toggle-sidebar */
     @media(min-width:769px){
-      body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }
-      body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .coord-readout{ left:16px; }
+      body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 12px); }
+      body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .coord-readout{ left:12px; }
       body.sidebar-glass .data-legend:not([data-dragged]), body.sidebar-glass .koppen-legend:not([data-dragged]){ left:calc(var(--sidebar-w) + 24px); right:auto; }
       body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .data-legend:not([data-dragged]),
       body.sidebar-glass .operation-room:has(> .sidebar.collapsed) .map-container .koppen-legend:not([data-dragged]){ left:24px; }
@@ -2705,7 +2734,7 @@
       body:not(.ws-mode) #sat-controller, body:not(.ws-mode) .news-timeline{ transition:right .38s cubic-bezier(0.25,1,0.5,1); }
       body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }
       body.lsr-open:not(.ws-mode) #tool-panel, body.lsr-open:not(.ws-mode) #sat-controller{ right:calc(var(--lsr-w) + 24px); }
-      body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 10px); }
+      body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 6px); }
     }
 
     /* ══ ⚠ (#R253) WHO IS IN FRONT — THE SIDEBAR, OR THE THING YOU JUST REACHED INTO ══════════════

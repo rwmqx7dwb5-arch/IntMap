@@ -107,7 +107,9 @@ test('R485 ④ the attribution survives capture mode', () => {
 /* ── ⑤ the transient HUD did NOT move ────────────────────────────────────────────────────────── */
 test('R485 ⑤ nothing else in the map column was moved to make room', () => {
   const css = codeOnly(read('css/intmap.css'));
-  assert.match(css, /\.coord-readout\{[^}]*bottom:9px; left:9px/,
+  /* (#R504) moved 9 → 6 on request; the POINT of the assertion is unchanged — this round's strip
+     did not move it, and tests/r252 ⑥ still pins the same pair of numbers. */
+  assert.match(css, /\.coord-readout\{[^}]*bottom:6px; left:6px/,
     'the coord readout keeps the coordinates tests/r252 pins — the strip made room by shortening the MAP');
   assert.match(css, /\.news-timeline\{[^}]*right:14px; bottom:54px/, 'and Chronos keeps its own');
   assert.match(css, /\.country-info\{[^}]*bottom:60px; left:24px/, 'and so does the country panel');

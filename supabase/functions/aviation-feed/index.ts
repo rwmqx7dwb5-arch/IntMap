@@ -108,12 +108,65 @@ const VIEW_TTL_MS = 15000;                     // viewport channel: what the use
 const WORLD_TTL_MS = 30000;                    // world channel: one small slice per refresh
 const VIEW_MAX_TILES = 4;                      // = the measured burst budget
 const WORLD_SLICE_TILES = 3;                   // lattice tiles advanced per world refresh (adsb.lol)
+/* (#R504) …and what `?refresh=1&tiles=N` may raise that to. The sweeper is the one caller that is
+   not a browser waiting for a response, so it can afford to sit through a whole bucket; the cap is
+   READ_BURST because nothing may take more tokens than the bucket can ever hold. */
+const SWEEP_TILES_MAX = READ_BURST;
 const TILE_GAP_MS = 1200;                      // serial spacing between tile reads
 const AC_MAX = 200000;                         // hard ceiling on what this function will ever hold
 const STALE_DROP_S = 900;                      // an aircraft unseen for 15 min leaves the world set
 const VIEW_CACHE_MAX = 256;
 const VIEW_STALE_S = 45;                       // sky asked about longer ago than this is worth a read
-const RATE_BACKOFF_MS = 60000;                 // how long the whole function stays quiet after a 429
+
+/* ── (#R504) HOW FAST THIS FUNCTION MAY ASK — AND WHY THAT IS NOT ONE BURST PER 45 SECONDS ─────
+   「航空トラフィックレイヤーはもっと多くの航空機が表示されるように。」 Measured against production
+   BEFORE any change here: `x-intmap-count` was 2699 and `x-intmap-coverage` was `lattice 0/980`,
+   at a minute when the provider's own network held 10,924 aircraft with a position. So four out of
+   every five aircraft that exist were missing, and the reason was not the drawing, the wire or the
+   client — it was how little sky this function is allowed to ask about.
+
+   #R434 gave the WHOLE function one burst of VIEW_MAX_TILES tiles per VIEW_STALE_S — 4 tiles per
+   45 s, or 0.089 reads a second — and it did so from #R341's reading of the provider: "a small
+   BURST BUDGET (~4 requests) that refills slowly, not a requests-per-second ceiling". Re-measured
+   2026-08-31 against api.adsb.lol from one address, with the load-bearing User-Agent below:
+
+       back to back    5 of  6 answered 200
+       1.0 s apart     8 of 12 answered 200
+       2.0 s apart    31 of 40 answered 200        ← the knee is ~0.5 req/s, not 0.089
+
+   A budget that does not move with the gap but DOES answer 78 % at 2 s spacing is a leaky bucket
+   that refills continuously, not a four-shot magazine. #R341 read four successes out of ten and
+   concluded the refill was measured in minutes; ten requests is simply too short a window to see a
+   bucket refilling at one token every two seconds. So this is a rate, and the rate this function
+   spent was a fifth of the one it is granted.
+
+   ⚠ THE CEILING IS DELIBERATELY BELOW THE KNEE. 0.34 reads a second is about two thirds of the
+   measured 0.5, which leaves the provider's own headroom intact; the alternative — asking at the
+   knee — buys 45 % more sky and spends it on 429s, and a 429 silences EVERY channel at once
+   (see the backoff below). api.adsb.lol's published terms say the API is free, that a key tied to
+   feeding is coming, and that production users should make contact; docs/AVIATION-ARCHITECTURE.md
+   records that as the next step rather than something a constant here can decide.
+   ⚠ AND IT IS A BUCKET, NOT A GAP, because the two channels are not the same shape. A viewport
+   read wants its four tiles NOW (the caller is waiting); the lattice sweep is happy to take one
+   tile whenever there is one going. A bucket serves both from one honest ceiling — burst up to
+   READ_BURST after a quiet spell, never more than READ_RATE_PER_S on average.
+   ⚠ IT IS ISOLATE STATE, AND THAT BOUNDS WHAT IT CAN CLAIM (the same caveat #R434 wrote about the
+   asked-ledger). Two warm isolates hold two buckets. What keeps that honest is that the bucket's
+   clock is SEEDED FROM THE SHARED LEDGER on hydrate: a cold isolate adopts the last read time
+   every isolate agreed on, so it starts with what has actually refilled since, not with a free
+   full burst. */
+const READ_RATE_PER_S = 0.34;
+const READ_BURST = 6;
+
+/* ⚠ (#R504) A 429 IS NO LONGER A MINUTE OF SILENCE ON THE FIRST OFFENCE. At 0.089 reads a second a
+   429 meant something had gone badly wrong, so a flat 60 s stop was proportionate. At 0.34 an
+   occasional 429 is the bucket telling us it is empty — measured, 9 of 40 at 2 s spacing — and
+   answering that by stopping every channel for a minute costs 20 tiles to save one. So the pause
+   STARTS short and doubles while the refusals keep coming, and any successful read puts it back:
+   the response to a provider that means it is still a minute, and the response to ordinary bucket
+   pressure is to wait for a token. */
+const RATE_BACKOFF_MIN_MS = 8000;
+const RATE_BACKOFF_MS = 60000;                 // the ceiling the escalation walks up to
 // (#R434) how many candidate tiles the viewport ranks before spending its VIEW_MAX_TILES on the
 // stalest of them. Six deep is a 24-tile fan around the view centre — enough that a wide view has
 // somewhere to walk to, small enough that ranking them is arithmetic on two dozen numbers.
@@ -186,6 +239,14 @@ const STATE = {
      viewport picks the stalest cells it can see; see the note in the view channel. */
   asked: new Map(),
   viewReadAt: 0,           // (#R434) when the viewport channel last spent the shared burst budget
+  /* (#R504) the leaky bucket every upstream read is drawn from, and the clock it refills against.
+     Seeded from the shared ledger on hydrate so a cold isolate does not start with a free burst. */
+  readTokens: READ_BURST,
+  readTokensAt: 0,
+  readAt: 0,               // last completed read, ANY channel — this is what the ledger carries
+  backoffStep: 0,          // (#R504) the current escalating pause; a successful read clears it
+  sweepSavedAt: 0,         // when the sweep ledger was last written
+  sweepLoaded: false,
   inflight: new Map(),     // key → Promise, so N concurrent callers make ONE upstream read
   identitySent: new Set(), // hexes whose identity line has already gone out from this isolate
   backoffUntil: 0,         // set on a 429; nothing asks upstream again until this passes
@@ -209,6 +270,36 @@ const STATE = {
 const BUCKET = "aviation";
 const WORLD_OBJECT = "world.bin";
 const SNAP_MAX_BYTES = 32 * 1024 * 1024;
+
+/* ── (#R504) …AND THE SWEEP'S OWN PROGRESS, WHICH WAS NOT IN IT ────────────────────────────────
+   The snapshot above carries AIRCRAFT. Everything that says WHERE WE HAVE ALREADY LOOKED —
+   `STATE.cursor`, each lattice tile's `last` and `miss`, and the asked-cell ledger #R434 added —
+   lived only in isolate memory, and Supabase hands out cold isolates constantly. The consequences
+   were not subtle, and all three were visible in production on 2026-08-31:
+
+     · `x-intmap-coverage: lattice 0/980` on every isolate, for as long as the header has existed.
+       Not "the sweep is behind" — the sweep has never been able to report a single probed tile,
+       because the isolate that answers is essentially never the isolate that swept.
+     · The sweeper restarted at `cursor 0` every run, so the scrambled visiting order that exists
+       precisely so a small budget samples the whole planet re-bought the SAME first tiles
+       ~6 times a day and never reached tile 7. The lattice has 980 entries and the sweep was a
+       loop over three of them.
+     · `miss` — the counter that exists so two thirds of the planet (ocean without receivers) is
+       re-probed at a reduced rate — reset to 0 with every isolate, so it never reduced anything.
+
+   ⚠ THE SWEEP LEDGER IS INDEXED BY LATTICE POSITION, WHICH IS ONLY MEANINGFUL BECAUSE THE LATTICE
+   IS DETERMINISTIC. buildLattice(RADIUS_NM, LAT_LIMIT) and the golden-ratio stride below both
+   depend on nothing but constants in this file, so tile #412 is the same patch of sky in every
+   isolate for as long as those constants hold. `n` is stored WITH the arrays and a mismatch
+   discards them rather than mapping old numbers onto new sky — which is what changing RADIUS_NM
+   would otherwise silently do.
+   ⚠ IT IS SMALL AND IT IS WRITTEN RARELY. Two arrays of 980 numbers plus the newest
+   SWEEP_ASKED_MAX cells is tens of kilobytes, and SWEEP_SAVE_MS keeps it to one PUT a minute —
+   next to a world snapshot that is already written after every viewport read, it is noise. */
+const SWEEP_OBJECT = "sweep.json";
+const SWEEP_MAX_BYTES = 4 * 1024 * 1024;
+const SWEEP_SAVE_MS = 60000;
+const SWEEP_ASKED_MAX = 3000;
 
 function svcUrl(path) {
   const base = (env("SUPABASE_URL") || "").replace(/\/$/, "");
@@ -295,6 +386,138 @@ async function saveSnapshot(bytes) {
   } catch (e) { STATE.saveNote = "throw:" + ((e && e.name) || "err"); return false; }
 }
 
+/* ── (#R504) the sweep ledger, read once per isolate and written at most once a minute ─────────
+   Seconds, not milliseconds, everywhere in the wire form: this file only ever asks "how long ago"
+   of these numbers, and a second of resolution turns each entry from 13 digits into 10. */
+async function loadSweep() {
+  const u = svcUrl("/storage/v1/object/public/" + BUCKET + "/" + SWEEP_OBJECT);
+  if (!u) return null;
+  try {
+    const r = await fetch(u + "?t=" + Date.now(), { signal: AbortSignal.timeout(6000) });
+    if (!r.ok) return null;
+    const txt = await r.text();
+    if (!txt || txt.length > SWEEP_MAX_BYTES) return null;
+    const j = JSON.parse(txt);
+    return (j && j.v === 1) ? j : null;
+  } catch (_) { return null; }
+}
+
+function applySweep(j) {
+  if (!j) return false;
+  const L = lattice();
+  /* ⚠ THE LENGTH IS THE VERSION. Tile #412 is only the same sky as long as the lattice is; a
+     different length means RADIUS_NM or LAT_LIMIT moved, and mapping the old numbers onto the new
+     tiles would claim coverage of sky nobody has looked at. Dropping them costs one rotation. */
+  /* ⚠ `| 0` IS NOT AVAILABLE FOR THE TIMES. These are epoch SECONDS, and a bitwise operator coerces
+     to int32 — which is fine today and turns every stored timestamp negative in January 2038. The
+     cell keys below are small integers by construction (askCell), so they may have it. */
+  const secs = (v) => (Number(v) || 0) * 1000;
+  if (Array.isArray(j.last) && Array.isArray(j.miss) && j.n === L.length) {
+    for (let i = 0; i < L.length; i++) {
+      const last = secs(j.last[i]);
+      if (last > 0) L[i].last = last;
+      const miss = j.miss[i] | 0;
+      if (miss > 0) L[i].miss = Math.min(8, miss);
+    }
+    STATE.cursor = Math.max(0, j.cursor | 0) % L.length;
+  }
+  if (Array.isArray(j.asked)) {
+    for (const pair of j.asked) {
+      if (!Array.isArray(pair) || pair.length !== 2) continue;
+      stampCell(pair[0] | 0, secs(pair[1]));
+    }
+  }
+  /* ⚠ AND THE BUCKET'S CLOCK, WHICH IS THE HALF OF THIS THAT BOUNDS UPSTREAM LOAD. Without it a
+     cold isolate would refill from `0`, see a gap of fifty-six years, and grant itself a full
+     burst on its first request — which is exactly the "load proportional to isolates" shape the
+     snapshot exists to remove, moved from aircraft to permission-to-ask. */
+  if (j.readAt) {
+    STATE.readAt = secs(j.readAt);
+    STATE.readTokensAt = STATE.readAt;
+    STATE.readTokens = 0;
+  }
+  STATE.sweepLoaded = true;
+  return true;
+}
+
+function sweepBody() {
+  const L = lattice();
+  const last = new Array(L.length);
+  const miss = new Array(L.length);
+  for (let i = 0; i < L.length; i++) {
+    last[i] = Math.round((L[i].last || 0) / 1000);
+    miss[i] = L[i].miss | 0;
+  }
+  /* The newest cells, because the ledger's whole job is "how long ago", and the oldest entries are
+     the ones a re-read would be spent on anyway. */
+  const asked = Array.from(STATE.asked.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, SWEEP_ASKED_MAX)
+    .map((e) => [e[0], Math.round(e[1] / 1000)]);
+  return JSON.stringify({
+    v: 1, at: Math.round(Date.now() / 1000), n: L.length,
+    cursor: STATE.cursor | 0, readAt: Math.round((STATE.readAt || 0) / 1000),
+    last, miss, asked,
+  });
+}
+
+async function saveSweep(force) {
+  const now = Date.now();
+  if (!force && now - STATE.sweepSavedAt < SWEEP_SAVE_MS) return false;
+  const key = storageKey();
+  const u = svcUrl("/storage/v1/object/" + BUCKET + "/" + SWEEP_OBJECT);
+  if (!key || !u) return false;
+  STATE.sweepSavedAt = now;
+  try {
+    const r = await fetch(u, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer " + key,
+        /* ⚠ NOT application/json, EVEN THOUGH THAT IS WHAT THIS IS. The bucket is declared with
+           `allowed_mime_types = array['application/octet-stream']` (migration 20260823130000, and
+           ensureBucket below repeats it), and Storage refuses an upload whose content-type is not
+           on that list — so an honest header here would make every write fail with 415 while
+           everything else looked fine, which is precisely the silent half of #R341. Widening the
+           bucket instead would need a migration applied with the database password
+           (docs/MIGRATIONS.md), i.e. a human step, for a label nobody reads: loadSweep() asks for
+           .text() and parses it, and the object is not served to anything else. */
+        "content-type": "application/octet-stream",
+        "cache-control": "max-age=5",
+        "x-upsert": "true",
+      },
+      body: sweepBody(),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (r.ok) { STATE.stats.sweepSaved = (STATE.stats.sweepSaved || 0) + 1; return true; }
+    if (r.status === 404) { await ensureBucket(); return false; }
+    STATE.stats.sweepSaveFail = (STATE.stats.sweepSaveFail || 0) + 1;
+    return false;
+  } catch (_) {
+    STATE.stats.sweepSaveFail = (STATE.stats.sweepSaveFail || 0) + 1;
+    return false;
+  }
+}
+
+/* ── (#R504) the read budget ───────────────────────────────────────────────────────────────────
+   Every upstream read in this file passes through takeTokens(). Nothing else may call readTile or
+   readSerial without one, which is what makes READ_RATE_PER_S a fact about the function rather
+   than about whichever channel happened to be written most carefully. */
+function refillTokens(now) {
+  const at = STATE.readTokensAt || now;
+  if (now > at) {
+    STATE.readTokens = Math.min(READ_BURST, STATE.readTokens + ((now - at) / 1000) * READ_RATE_PER_S);
+  }
+  STATE.readTokensAt = now;
+}
+
+function takeTokens(want, now) {
+  refillTokens(now);
+  if (now < STATE.backoffUntil) return 0;
+  const n = Math.min(want | 0, Math.floor(STATE.readTokens));
+  if (n > 0) STATE.readTokens -= n;
+  return n;
+}
+
 //  Turn a decoded snapshot back into the record shape the world Map holds. The wire is lossy about
 //  identity on purpose (it is sent once per aircraft, not per refresh), so an aircraft whose
 //  identity line was in an earlier message hydrates with empty strings — which is correct: empty
@@ -363,8 +586,16 @@ function hydrate(msg) {
 function ensureHydrated() {
   if (STATE.hydrated) return Promise.resolve(0);
   return once("hydrate", async () => {
-    const msg = await loadSnapshot();
+    /* (#R504) BOTH halves of what survives an isolate, in one round trip's worth of wall clock:
+       the aircraft, and the record of where we have already looked. They are independent objects
+       and either may be missing — a first deployment has neither — so neither await may fail the
+       other. */
+    const [msg, sweep] = await Promise.all([loadSnapshot(), loadSweep().catch(() => null)]);
     const n = hydrate(msg);
+    /* AFTER hydrate(), because hydrate() seeds the asked-ledger from the snapshot's observations
+       (#R434) and the stored ledger is the more precise of the two: markAsked keeps the later
+       time, and applySweep writes only where it is later still. */
+    if (applySweep(sweep)) STATE.stats.sweepLoaded = 1;
     STATE.hydrated = true;
     STATE.stats.hydrated = n;
     return n;
@@ -539,18 +770,26 @@ const askCell = (lat, lon) =>
 function askedAt(lat, lon) {
   return STATE.asked.get(askCell(lat, lon)) || 0;
 }
-function markAsked(lat, lon, at) {
-  if (!(at > 0) || lat == null || lon == null) return;
+/* ⚠ (#R504) THE ONLY PLACE THE LEDGER IS WRITTEN. There are now three writers — a completed tile
+   read, the hydrated snapshot, and the persisted ledger itself — and the cap and the latest-wins
+   rule must hold for all of them. Splitting the key arithmetic off is what lets applySweep(), which
+   already holds cell keys and never saw a latitude, come through the same door. */
+function stampCell(key, at) {
+  if (!(at > 0)) return;
   // A Map that only grows is a leak; the planet needs 16,200 cells at this grain, so anything past
   // the cap is an isolate that has outlived its usefulness as a memory of where we have looked.
   if (STATE.asked.size >= ASK_MAX) STATE.asked.clear();
-  /* ⚠ (#R434 addendum) THE LATEST WINS, because two writers reach this now: a completed tile read
-     (always the newest thing there is) and the hydrated snapshot, which arrives out of order —
-     fifty aircraft in one cell carry fifty different observation times and only the newest of them
-     says how recently that sky was looked at. */
-  const key = askCell(lat, lon);
+  /* ⚠ (#R434 addendum) THE LATEST WINS, because the writers do not arrive in order: a completed
+     tile read is always the newest thing there is, while the hydrated snapshot carries fifty
+     aircraft in one cell with fifty different observation times, and only the newest of them says
+     how recently that sky was looked at. */
   const prev = STATE.asked.get(key) || 0;
   if (at > prev) STATE.asked.set(key, at);
+}
+
+function markAsked(lat, lon, at) {
+  if (!(at > 0) || lat == null || lon == null) return;
+  stampCell(askCell(lat, lon), at);
 }
 
 async function readSerial(provider, tiles) {
@@ -559,13 +798,25 @@ async function readSerial(provider, tiles) {
     if (Date.now() < STATE.backoffUntil) break;
     const got = await readTile(provider, tiles[i].lat, tiles[i].lon);
     if (got === RATE_LIMITED) {
-      STATE.backoffUntil = Date.now() + RATE_BACKOFF_MS;
+      /* (#R504) escalating, not flat — see RATE_BACKOFF_MIN_MS. The step doubles for as long as
+         the refusals keep arriving and is cleared by the next successful read below, so the
+         provider meaning it and the bucket being momentarily empty stop costing the same minute. */
+      STATE.backoffStep = Math.min(RATE_BACKOFF_MS, Math.max(RATE_BACKOFF_MIN_MS, STATE.backoffStep * 2));
+      STATE.backoffUntil = Date.now() + STATE.backoffStep;
       STATE.stats.rateLimited++;
+      /* An empty bucket is not a reason to keep the tokens we already spent on tiles we will now
+         never read; hand them back so the next caller is not charged for this one's refusal. */
+      STATE.readTokens = Math.min(READ_BURST, STATE.readTokens + (tiles.length - i));
       break;
     }
+    STATE.backoffStep = 0;
     /* ⚠ STAMPED HERE, WHERE THE READ ACTUALLY HAPPENED, AND NOT AT THE CALL SITES — there are two
        of them and a ledger only one of them writes is a ledger that lies about half the sky. */
-    markAsked(tiles[i].lat, tiles[i].lon, Date.now());
+    const at = Date.now();
+    markAsked(tiles[i].lat, tiles[i].lon, at);
+    /* (#R504) …and the one clock the sweep ledger carries, so a cold isolate inherits how much of
+       the bucket has actually refilled rather than assuming all of it. */
+    STATE.readAt = at;
     out.push({ tile: tiles[i], recs: got });
     if (i < tiles.length - 1) await sleep(TILE_GAP_MS);
   }
@@ -593,7 +844,7 @@ function mergeIntoWorld(records, nowMs) {
   noteOldest();
 }
 
-async function refreshWorld() {
+async function refreshWorld(wantTiles) {
   const now = Date.now();
   const provider = providerName();
 
@@ -608,9 +859,14 @@ async function refreshWorld() {
     STATE.stats.sweeps++;
   } else {
     const L = lattice();
+    /* (#R504) The slice is what the SHARED BUDGET grants, not a constant. `?refresh=1&tiles=N`
+       asks for more; the bucket decides. A grant of 0 is not a failure — it means a viewport read
+       is using the budget right now, which is the better use of it. */
+    const want = Math.max(1, Math.min(SWEEP_TILES_MAX, wantTiles | 0 || WORLD_SLICE_TILES));
+    const grant = takeTokens(want, now);
     const picked = [];
     let scanned = 0;
-    while (picked.length < WORLD_SLICE_TILES && scanned < L.length) {
+    while (picked.length < grant && scanned < L.length) {
       const t = L[STATE.cursor % L.length];
       STATE.cursor++;
       scanned++;
@@ -618,6 +874,10 @@ async function refreshWorld() {
       picked.push(t);
     }
     const results = await readSerial(provider, picked);
+    /* (#R504) A slice the bucket had nothing for read nothing, so the world is exactly what it was.
+       Re-encoding 10,000 aircraft and PUTting 137 kB to say so is work nobody asked for — and
+       ?refresh=1 now arrives ten times a run, so it is work nobody asked for ten times over. */
+    if (!results.length && STATE.worldBuilt) { STATE.stats.sweeps++; return STATE.worldBuilt; }
     for (const got of results) {
       // Only a tile that actually ANSWERED is marked probed. A tile skipped by the backoff is
       // still unknown sky, and recording it as seen-and-empty would make coveragePct a lie.
@@ -634,7 +894,17 @@ async function refreshWorld() {
   /* ⚠ THE SNAPSHOT IS WRITTEN WITH EVERY IDENTITY IT HAS, not with the once-per-isolate subset the
      wire normally carries. A hydrating isolate has never sent anything, so an incremental identity
      section would leave it with 20,000 aircraft and no callsigns. */
-  if (await saveSnapshot(encodeSet(Array.from(STATE.world.values()), STATE.worldSeq, now, true))) STATE.stats.saved++;
+  /* ⚠ (#R504) AN EMPTY WORLD IS NEVER WRITTEN OVER THE SHARED ONE. Every path into here can end
+     with nothing in hand — hydration could not reach Storage, the provider refused, or the budget
+     granted no tiles — and in all three cases the snapshot on disk is the best knowledge that
+     exists. Overwriting it with 0 aircraft would take the layer down for every browser at once and
+     look exactly like an upstream outage. The grant-0 case is what made this reachable often
+     enough to matter. */
+  if (STATE.world.size &&
+      await saveSnapshot(encodeSet(Array.from(STATE.world.values()), STATE.worldSeq, now, true))) STATE.stats.saved++;
+  /* (#R504) …and the sweep's own progress, which is the half of this that used to be thrown away.
+     Throttled inside saveSweep, so a busy minute writes it once. */
+  await saveSweep(false);
   return STATE.worldBuilt;
 }
 
@@ -782,6 +1052,15 @@ Deno.serve(async (req) => {
           viewFan: VIEW_FAN, askCellDeg: ASK_CELL_DEG,
           askedCells: STATE.asked.size,
           viewReadAgeMs: STATE.viewReadAt ? now - STATE.viewReadAt : null,
+          /* (#R504) the read budget, so "why is coverage not moving" is answerable without a
+             deploy: what the ceiling is, how much of it is available right now, when this
+             function last actually asked anything, and whether the persisted ledger arrived. */
+          readRatePerS: READ_RATE_PER_S, readBurst: READ_BURST,
+          readTokens: Math.round(Math.min(READ_BURST, STATE.readTokens +
+            (STATE.readTokensAt ? ((now - STATE.readTokensAt) / 1000) * READ_RATE_PER_S : 0)) * 100) / 100,
+          readAgeMs: STATE.readAt ? now - STATE.readAt : null,
+          sweepCursor: STATE.cursor,
+          sweepLedger: STATE.sweepLoaded ? "loaded" : "absent",
         },
       }), { headers: { ...CORS, "content-type": "application/json", "cache-control": "no-store" } });
     }
@@ -864,20 +1143,33 @@ Deno.serve(async (req) => {
         .sort((a, b) => (a.at - b.at) || (a.i - b.i))
         .slice(0, VIEW_MAX_TILES);
       const stalest = ranked.length ? ranked[0].at : 0;
-      const spaced = now - STATE.viewReadAt >= VIEW_STALE_S * 1000;
       const worthIt = ranked.length > 0 && (now - stalest) / 1000 > VIEW_STALE_S;
+      /* ⚠ (#R504) THE SPACING WAS THE WHOLE CEILING, AND IT WAS A FIFTH OF THE PROVIDER'S.
+         `spaced` used to be `now - STATE.viewReadAt >= VIEW_STALE_S * 1000` — one burst of four
+         tiles per 45 seconds for the entire function, which is 0.089 reads a second against a
+         provider measured at ~0.5 (see READ_RATE_PER_S). VIEW_STALE_S was doing two unrelated
+         jobs at once: "this patch of sky is stale enough to be worth a read", which is a fact
+         about the sky and stays above in `worthIt`, and "the function may ask again now", which is
+         a fact about the PROVIDER and belongs in one bucket that every channel draws from.
+         Measured consequence of conflating them: a browser polls this channel every 12 s and got a
+         read on one poll in four, so three quarters of the polls could only re-serve what was
+         already in the world set. The grant below is what actually refilled. */
+      const grant = worthIt ? takeTokens(ranked.length, now) : 0;
+      const spent = ranked.slice(0, grant);
       /* ⚠ THE READ IS NOT BUILT UNLESS IT IS WANTED, AND THAT IS A BUG FIX ON ITS OWN. `once()`
          STARTS what it is handed — it hands back a running promise, not a thunk — so the previous
          `const work = once(key, …)` above the branch spent four upstream reads on EVERY request that
          missed the 15 s cache, and `boxStale` only chose whether the caller waited for them. Four
          tiles per fifteen seconds per bbox is three times the whole measured burst budget, which is
          a 429 and RATE_BACKOFF_MS of silence for every channel at once. */
-      if (spaced && worthIt) {
+      if (grant > 0) {
         /* stamped BEFORE the await, so two callers arriving in the same tick cannot both decide the
-           budget is free — an isolate runs one of them to its first await before the other starts */
+           budget is free — an isolate runs one of them to its first await before the other starts.
+           (#R504) takeTokens above is the part that actually enforces that now: it is synchronous
+           and it debits before anything yields, so the second caller finds an emptier bucket. */
         STATE.viewReadAt = now;
         await once(key, async () => {
-          const results = await readSerial(provider, ranked.map((r) => r.t));
+          const results = await readSerial(provider, spent.map((r) => r.t));
           const seen = new Map();
           for (const got of results) {
             for (const r of got.recs) {
@@ -894,8 +1186,15 @@ Deno.serve(async (req) => {
           const entry = { at, bytes: encodeSet(list, seq, at), count: list.length, seq };
           STATE.views.set(key, entry);
           if (STATE.views.size > VIEW_CACHE_MAX) STATE.views.delete(STATE.views.keys().next().value);
-          /* the tiles this viewport paid for belong in the shared snapshot too */
-          await saveSnapshot(encodeSet(Array.from(STATE.world.values()), ++STATE.worldSeq, Date.now(), true));
+          /* the tiles this viewport paid for belong in the shared snapshot too — but see the note
+             in refreshWorld: an empty world is never written over the shared one (#R504). */
+          if (STATE.world.size) {
+            await saveSnapshot(encodeSet(Array.from(STATE.world.values()), ++STATE.worldSeq, Date.now(), true));
+          }
+          /* (#R504) …and so does WHERE it looked. Without this the next isolate re-ranks from an
+             empty ledger, decides the view centre is the stalest sky on the planet again, and
+             spends the budget re-reading the tiles this request just paid for. */
+          await saveSweep(false);
           return entry;
         });
         /* re-collect: the read just added aircraft to this box */
@@ -919,6 +1218,9 @@ Deno.serve(async (req) => {
          answers from the snapshot immediately, however old it is, and is TOLD how old it is —
          which is the honest thing to show and the fast thing to serve. */
       const force = url.searchParams.get("refresh") === "1";
+      /* (#R504) how big a slice the sweeper is asking for. Clamped, and then clamped again by the
+         bucket inside refreshWorld — a query parameter may ask, it may not grant. */
+      const wantTiles = Math.max(1, Math.min(SWEEP_TILES_MAX, Number(url.searchParams.get("tiles")) || WORLD_SLICE_TILES));
       let bytes = STATE.worldBuilt;
       let age = STATE.worldAt ? now - STATE.worldAt : Infinity;
       if (!bytes && STATE.world.size) {
@@ -926,10 +1228,10 @@ Deno.serve(async (req) => {
         STATE.worldBuilt = bytes = encodeSet(Array.from(STATE.world.values()), STATE.worldSeq, now, true);
       }
       if (force || !bytes) {
-        bytes = await once("world", refreshWorld);
+        bytes = await once("world", () => refreshWorld(wantTiles));
         age = Date.now() - STATE.worldAt;
       } else if (age > WORLD_TTL_MS) {
-        after(once("world", refreshWorld));
+        after(once("world", () => refreshWorld(WORLD_SLICE_TILES)));
       }
       STATE.stats.served++;
       /* O(1): the oldest observation is recorded where the set is already being walked (build,
