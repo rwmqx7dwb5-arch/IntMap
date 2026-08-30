@@ -22,7 +22,14 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **100 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
-`npm run test:checks` runs **282 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **283 Node test files** with no browser at all (counted from
+
+> ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
+> `tests/r505-checks.test.mjs` ① は 13 本すべての `supabase/functions/*/index.ts` を
+> **Node 24 の素の `.ts` `import()` で実際に評価する**（関数ごとに子プロセス、`Deno` だけ stub、
+> 一覧はディレクトリから発見）。#R504 は `const` を、それが読む `const` の 45 行**上**に置いて
+> 出荷し、**本番の全リクエストが 500 `WORKER_ERROR`** になった——それでも `check:static`・
+> `npm test` 3,136 本・CI は全部緑だった。**構文を読む検査は、順序を見ない。**
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier — **94 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).

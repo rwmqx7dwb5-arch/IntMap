@@ -304,6 +304,16 @@ bucket を広げるには DB のパスワードで migration を当てる必要�
 ⇒ 1回の run が惜しいので、run の中で 10 スライス（`?refresh=1&tiles=6`）を 20 秒間隔で回す。
 **速さを決めるのは相変わらず bucket** で、この loop は「訊く」ことしかできない。
 
+#### ⚠ #R505 — この関数は、#R504 を deploy した直後に**全リクエスト 500** を返した
+
+`const SWEEP_TILES_MAX = READ_BURST;` が `READ_BURST` の **45 行上**にあった（temporal dead zone）。
+module を評価した瞬間に `Cannot access 'READ_BURST' before initialization` が投げられ、
+`Deno.serve` に一度も到達しない。**`check:static`・`npm test` 3,136 本・CI・#R504 自身の 13 本、
+どれも緑だった**——この repo の Edge Function 検査は全部**ソースを読む**検査で、
+**本体を評価する**検査がゼロだったから。
+⇒ `tests/r505-checks.test.mjs` ① が、13 本すべてを **Node 24 の素の `.ts` import で実際に評価する**
+（関数ごとに子プロセス・`Deno` だけ stub・一覧はディレクトリから発見）。
+
 #### やらなかったこと
 
 **readsb の re-api（全球を1回の box query で返す）は使わない。** `adsb.lol` の API 説明が
