@@ -3563,9 +3563,9 @@ window.IntMapModules.atlasConsole=function(HOST){
           const off=(a.on===false)||/^(off|clear|hide|none)$/i.test(String(a.mode||a.aircraft||''));
           if(off){ try{ P.select(null); }catch(_){} return R(true,note('✓ '+L('Aircraft track cleared','航空機の軌跡を消去','Flugspur entfernt','Трек убран','Traza borrada'))); }
           const q=String(a.aircraft||a.callsign||a.flight||a.reg||a.icao24||'').trim();
-          const key=q?(P.find(q)||null):(P.selected()||null);
+          const key=q?((await P.find(q))||null):(P.selected()||null);
           if(!key) return R(false,warn('⚠ '+L('No aircraft matching','該当する航空機がありません','Kein Flugzeug gefunden','Самолёт не найден','Ningún avión coincide')+(q?' “'+esc(q)+'”':'')));
-          let ok=false; try{ P.select(key); ok=true; }catch(_){}
+          let ok=false; try{ await P.select(key); ok=true; }catch(_){}   /* (#R506) awaited — find/select are worker round trips now, and trackStats below would read an empty track if it ran first */
           const s2=(()=>{ try{ const t=P.trackStats(key); return ' — '+t.fixes+' '+L('fixes','点','Punkte','точек','puntos')+' · '+t.minutes+' '+L('min','分','min','мин','min')+(t.maxAlt?(' · '+L('up to','最高','bis','до','hasta')+' '+t.maxAlt.toLocaleString()+' m'):''); }catch(_){ return ''; } })();
           return R(ok, ok?note('✓ '+L('Track of','軌跡','Spur von','Трек','Traza de')+' '+esc(q||key)+s2):warn('⚠')); }
         /* (#R184) LIVE SATELLITES — the same three verbs the aircraft layer answers, applied to orbit:

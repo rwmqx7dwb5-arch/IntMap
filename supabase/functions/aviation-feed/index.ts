@@ -78,7 +78,7 @@ const CORS = {
   "Access-Control-Expose-Headers":
     "x-intmap-provider, x-intmap-attribution, x-intmap-count, x-intmap-age-ms, " +
     "x-intmap-oldest-ms, " +
-    "x-intmap-seq, x-intmap-channel, x-intmap-coverage, x-intmap-save",
+    "x-intmap-seq, x-intmap-channel, x-intmap-coverage, x-intmap-save, x-intmap-note",
 };
 
 // ── bounds ──────────────────────────────────────────────────────────────────
@@ -995,6 +995,8 @@ function binResponse(bytes, meta) {
     "x-intmap-channel": hdr(meta.channel),
     "x-intmap-coverage": hdr(meta.coverage),
     "x-intmap-save": hdr(STATE.saveNote),
+    /* (#R506) empty on every channel that has no decision to explain */
+    "x-intmap-note": hdr(meta.note || ""),
   };
   return new Response(bytes, { headers: h });
 }
@@ -1162,12 +1164,24 @@ Deno.serve(async (req) => {
          already in the world set. The grant below is what actually refilled. */
       const grant = worthIt ? takeTokens(ranked.length, now) : 0;
       const spent = ranked.slice(0, grant);
+      /* ⚠ (#R506) THE DECISION IS NOW A FACT THE CALLER CAN READ, because guessing at it cost a
+         whole afternoon. Measured against production: the same box polled five times, 16 s apart,
+         answered `x-intmap-oldest-ms` 252,843 → 258,339 → 258,111 → 263,907 → 264,811 — the sky in
+         that box was never refreshed — while `?meta=1` reported a FULL bucket and no backoff. Three
+         different things produce that one symptom (nothing ranked, the sky judged fresh enough, or
+         the budget granting zero) and from outside they are indistinguishable. §24's rule is that a
+         layer must be able to say WHY it did what it did; this is the view channel's half of it. */
+      let viewNote = "cands=" + cands.length + ",ranked=" + ranked.length +
+        ",stalestS=" + (stalest ? Math.round((now - stalest) / 1000) : -1) +
+        ",worth=" + (worthIt ? 1 : 0) + ",grant=" + grant +
+        ",tokens=" + Math.floor(STATE.readTokens) + ",inBox=" + inBox.length;
       /* ⚠ THE READ IS NOT BUILT UNLESS IT IS WANTED, AND THAT IS A BUG FIX ON ITS OWN. `once()`
          STARTS what it is handed — it hands back a running promise, not a thunk — so the previous
          `const work = once(key, …)` above the branch spent four upstream reads on EVERY request that
          missed the 15 s cache, and `boxStale` only chose whether the caller waited for them. Four
          tiles per fifteen seconds per bbox is three times the whole measured burst budget, which is
          a 429 and RATE_BACKOFF_MS of silence for every channel at once. */
+      const merged0 = STATE.stats.merged, up0 = STATE.stats.upstream, fail0 = STATE.stats.upstreamFail;
       if (grant > 0) {
         /* stamped BEFORE the await, so two callers arriving in the same tick cannot both decide the
            budget is free — an isolate runs one of them to its first await before the other starts.
@@ -1205,6 +1219,15 @@ Deno.serve(async (req) => {
         });
         /* re-collect: the read just added aircraft to this box */
         inBox = collectBox();
+        /* ⚠ (#R506) …AND SAY WHAT THE READ ACTUALLY BOUGHT. "grant=4" only means four tokens were
+           SPENT. Measured in production: six aircraft, one of them at 465 kt, held byte-identical
+           coordinates for 6.4 minutes while this channel reported grant=4 on every other poll — so
+           the tokens were going somewhere that was not a fresh position. Tiles asked, tiles that
+           answered, records returned and records that actually replaced something are four
+           different numbers, and only the last one means the sky moved. */
+        viewNote += ",up=" + (STATE.stats.upstream - up0) +
+                    ",fail=" + (STATE.stats.upstreamFail - fail0) +
+                    ",merged=" + (STATE.stats.merged - merged0);
       }
       STATE.stats.served++;
       const at = Date.now();
@@ -1213,7 +1236,7 @@ Deno.serve(async (req) => {
       for (const rec of inBox) { const a = at - rec.seenAt; if (a > oldest) oldest = a; }
       return binResponse(encodeSet(inBox, seq, at, true), {
         provider, count: inBox.length, ageMs: Date.now() - at, oldestMs: oldest, seq,
-        channel: "view", ttlMs: VIEW_TTL_MS, coverage: coverageLine(provider),
+        channel: "view", ttlMs: VIEW_TTL_MS, coverage: coverageLine(provider), note: viewNote,
       });
     }
 
