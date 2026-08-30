@@ -134,6 +134,17 @@ window.IntMapModules.aviationLive = function (HOST) {
     ids: null,
     lastFrameAt: 0,
     worldTimer: 0, viewTimer: 0,
+    /* (#R506) the page's callback for "the selected aircraft's observed track has more fixes".
+       ⚠ THE WORKER HAS BEEN RECORDING THIS SINCE #R341 AND NOBODY EVER ASKED FOR IT. src/
+       aviation-worker.js keeps a ring buffer per aircraft (TRACK, 2,000 × 64 fixes, viewport
+       channel only) precisely so that selecting an aeroplane shows where it has already been —
+       #R341 wrote that the behaviour "is kept, it is a real feature and CONSTITUTION §0.3 forbids
+       shrinking one". What it did not keep was the OTHER end: the drawing, the card's Show/Hide
+       row and Atlas's layers.aircraftTrack all still read the OLD layer's planeTracks, which the
+       old sweep stopped filling the moment this platform replaced it. So the fixes accumulated in
+       the worker and nothing on the map or in the card could reach them (reported: 「前までトラック
+       もあったんですが、なくなってしまいました」). This is the missing wire. */
+    onTrack: null,
     status: {
       provider: '', attribution: '', coverage: '', serverAgeMs: 0, oldestObservationMs: 0, seq: 0,
       total: 0, rendered: 0, lastPollAt: 0, lastOkAt: 0,
@@ -169,6 +180,15 @@ window.IntMapModules.aviationLive = function (HOST) {
       ST.status.applyMs = m.stat.applyMs;
       ST.status.bytes = m.stat.bytes;
       ST.status.lastOkAt = Date.now();
+    }
+    /* (#R506) …and hand the page the selected aircraft's track. A frame IS the moment a new fix
+       can exist, so this is one worker round trip per publish and ONLY while something is
+       selected — not a timer of its own, and nothing at all for the 99 % of sessions that never
+       click an aeroplane. */
+    if (ST.selected && ST.onTrack) {
+      W().track(ST.selected)
+        .then((r) => { if (ST.selected && ST.onTrack) ST.onTrack(ST.selected, (r && r.track) || []); })
+        .catch(() => { });
     }
     const E = GE();
     if (!E || !ST.on) return;
@@ -315,6 +335,29 @@ window.IntMapModules.aviationLive = function (HOST) {
     } catch (_) { return null; }
   }
 
+  /* (#R506) THE OBSERVED TRACK — what this browser has actually received, never the shader's
+     extrapolation (§17.1). Fixes are recorded for the VIEWPORT channel only, which is the same
+     scope the old sweep had, so nothing that used to have a history loses one. */
+  async function track(hex) {
+    try {
+      const r = await W().track(hex || ST.selected || '');
+      return (r && r.track) || [];
+    } catch (_) { return []; }
+  }
+
+  /* …and "which aircraft does this name mean", so `layers.aircraftTrack` can be given a callsign.
+     The worker owns the identity table; asking it is what keeps Atlas and a click on the map
+     resolving to the SAME aeroplane (#R82). */
+  async function find(q) {
+    try {
+      const r = await W().search(q, 1);
+      const hit = r && r.results && r.results[0];
+      return hit ? hit.hex : null;
+    } catch (_) { return null; }
+  }
+
+  function onTrack(fn) { ST.onTrack = (typeof fn === 'function') ? fn : null; }
+
   /* ── lifecycle ────────────────────────────────────────────────────────── */
   async function start(opts) {
     if (ST.on) return true;
@@ -460,6 +503,7 @@ window.IntMapModules.aviationLive = function (HOST) {
     start, stop, destroy,
     pollWorld, pollView,
     pick, select, detail, snapshotFor,
+    track, find, onTrack,
     setOpacity, setLift, setFilter, onZoom,
     sizeForZoom,
     status, workerStats,
