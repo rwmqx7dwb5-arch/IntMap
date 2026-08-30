@@ -3838,6 +3838,45 @@ window.IntMapModules.dataLayers=function(HOST){
          . a tap on empty sky deselects, but only after MapLibre's double-click window (#R174)
        What differs is only WHERE the aircraft comes from: a GPU-side pick and one worker round
        trip, instead of a linear scan of a main-thread array. */
+    /* ══ (#R506) THE OBSERVED TRACK, RECONNECTED ═══════════════════════════════════════════
+       「前までトラックもあったんですが、なくなってしまいました。」 It had. #R341 replaced the
+       aircraft layer wholesale and carried the RECORDING across — src/aviation-worker.js has kept a
+       per-aircraft ring buffer of received fixes ever since — but not the other end. The drawing
+       (drawTrack / TRACK_LINE / TRACK_3D), the card's Show/Hide row (_trackCard) and Atlas's
+       layers.aircraftTrack all read `planeTracks`, which the OLD sweep filled and which has been
+       empty since the day the old sweep stopped running. Selecting an aeroplane therefore drew a
+       track of zero points and hid both layers — silently, because an empty track and "no track
+       yet" look identical.
+       ⚠ NOTHING IS RE-IMPLEMENTED HERE. The 2-D line, the altitude-following 3-D extrusion, the
+       per-leg ground clamp (#R174), trackStats, the card row and the Atlas verb are all still the
+       code that shipped; what was missing was four lines that put the worker's fixes into the array
+       they already read. Rebuilding the drawing beside the existing drawing is how a product ends
+       up with two of everything (§22.1).
+       ⚠ METRES, NOT FEET. planeTracks stores altitude in metres AMSL — drawTrack subtracts the
+       ground under each leg from it — and the worker's wire carries altFt. A track that skipped
+       this conversion would be drawn 3.3× too high and would look like a working feature. */
+    const FT_M=0.3048;
+    function _av2TrackApply(hex,fixes){
+      if(!hex) return;
+      const k=String(hex).toUpperCase();
+      const pts=[];
+      for(const f of (fixes||[])){
+        if(f==null||f.lon==null||f.lat==null) continue;
+        pts.push([f.lon,f.lat,(f.altFt||0)*FT_M,f.t]);
+      }
+      if(pts.length) planeTracks[k]=pts; else delete planeTracks[k];
+      if(selectedPlane===k){
+        drawTrack(k);
+        try{ const P=window.IntMapAircraftPanel;
+          if(P&&P.isOpen()&&P.current()===k) P.setTrack(_trackCard(k)); }catch(_){}
+      }
+    }
+    /* one fetch now (a click must not have to wait for the next 12 s poll to show what is already
+       recorded), and then one per published frame for as long as it stays selected */
+    async function _av2TrackSync(hex){
+      if(!_av2||!hex) return;
+      try{ _av2TrackApply(hex,await _av2.track(hex)); }catch(_){}
+    }
     function _av2Click(e){
       let hex=null;
       try{ hex=_av2&&_av2.pick(e.point); }catch(_){ hex=null; }
@@ -3845,9 +3884,14 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ if(GE().events.claimClick) GE().events.claimClick(e); }catch(_){}
         if(_planesClearT){ clearTimeout(_planesClearT); _planesClearT=null; }
         const already=(selectedPlane===hex.toUpperCase());
-        selectPlane(already?null:hex.toUpperCase());
         try{ if(_av2) _av2.select(already?'':hex); }catch(_){}
+        /* (#R506) BEFORE selectPlane, because selectPlane draws the track and reads planeTracks to
+           decide whether there is one — handing it an empty array is what "the track disappeared"
+           looked like. The fetch is a worker round trip, so selectPlane runs first with what is
+           already known and _av2TrackApply redraws when the fixes land. */
+        selectPlane(already?null:hex.toUpperCase());
         if(already) return;
+        _av2TrackSync(hex);
         window.IntMapLazy.need('aircraftDetail').then(async()=>{
           const d=await _av2Detail(hex);
           if(!d) return;
@@ -3896,6 +3940,9 @@ window.IntMapModules.dataLayers=function(HOST){
           else {
             const f=trafficFilters.planes;
             _av2.setFilter({ kind:(f==='military'?'military':(f==='civilian'?'civil':'all')) });
+            /* (#R506) every published frame is a moment a new fix can exist, so the track grows
+               while the aeroplane is watched rather than freezing at whatever the click saw */
+            try{ _av2.onTrack((hex,fixes)=>_av2TrackApply(hex,fixes)); }catch(_){}
             if(!_av2Zoom){ _av2Zoom=()=>{ try{ _av2&&_av2.onZoom(); }catch(_){} }; GE().events.on('zoom',_av2Zoom); }
           }
         }
@@ -4667,7 +4714,12 @@ window.IntMapModules.dataLayers=function(HOST){
        the properties rather than opening a half-empty card. */
     function openPlaneCard(d){
       try{ const P=window.IntMapAircraftPanel; if(!P||!d||!d.icao24) return false;
-        return P.open(d,{ track:_trackCard(d.icao24), onToggleTrack:(k)=>{ selectPlane(k===selectedPlane?null:k); } }); }catch(_){ return false; }
+        /* (#R506) the card's Show/Hide button and a click on the map must land on the SAME
+           selection, and with the v2 platform running that means telling the worker too — otherwise
+           the card can hide a track the map still highlights (#R175's rule, one platform later). */
+        return P.open(d,{ track:_trackCard(d.icao24), onToggleTrack:(k)=>{ const want=(k===selectedPlane)?null:k;
+          selectPlane(want);
+          try{ if(_av2){ _av2.select(want||''); if(want) _av2TrackSync(want); } }catch(_){} } }); }catch(_){ return false; }
     }
     /* ground metres per screen pixel at the map centre — the same figure IntMapGeoEngine derives for the
        camera, computed here from the renderer's own map scale so it is defined at any pitch. */
@@ -6119,7 +6171,20 @@ window.IntMapModules.dataLayers=function(HOST){
         status:(function(){ try{ return _av2?_av2.stats():null; }catch(_){ return null; } })() }),
       /* (#R173) the clicked aircraft's track, also reachable by callsign / registration / ICAO24 so Atlas
          and the tests drive exactly what a click drives (#R82: everything is operable from Atlas). */
-      select:selectPlane, selected:()=>selectedPlane, track:k=>((planeTracks[k||selectedPlane]||[]).slice()),
+      /* ⚠ (#R506) SELECT AND FIND HAVE TO REACH THE PLATFORM THAT IS ACTUALLY DRAWING. Both
+         answered out of `planesData` / `planeTracks`, which the v1 sweep filled and which have been
+         empty since #R341 replaced it — so Atlas's `layers.aircraftTrack` could not find an
+         aircraft by callsign (v1 has no identities) and, when handed a hex, selected it in a store
+         nothing renders. The v1 branch is kept first and unchanged: it is still the answer whenever
+         the old layer is the one running.
+         ⚠ BOTH ARE THENABLE NOW. The identity table lives in the worker, so `find` is a round trip;
+         `select` waits for the fixes so a caller that reports `trackStats` immediately afterwards
+         reports the track it just drew rather than an empty one. `await` on the v1 string is a
+         no-op, so the old path is unaffected. */
+      select:(k)=>{ const r=selectPlane(k);
+        try{ if(_av2){ _av2.select(r||''); if(r) return _av2TrackSync(r).then(()=>r); } }catch(_){}
+        return r; },
+      selected:()=>selectedPlane, track:k=>((planeTracks[k||selectedPlane]||[]).slice()),
       /* diagnostics for the pick: where an aircraft is DRAWN, and which one a screen point would select */
       screenPos:k=>{ const d=planesData.find(x=>x.icao24===k); if(!d) return null;
         const E=window.IntMapGeoEngine, pa=E&&E.coords&&E.coords.projectAltitude; if(!pa) return null;
@@ -6133,7 +6198,9 @@ window.IntMapModules.dataLayers=function(HOST){
           ||planesData.find(d=>(d.callsign||'').trim().toUpperCase()===s2)
           ||planesData.find(d=>(d.reg||'').toUpperCase()===s2)
           ||planesData.find(d=>((d.callsign||'')+' '+(d.reg||'')).toUpperCase().indexOf(s2)>=0);
-        return hit?hit.icao24:null; },
+        if(hit) return hit.icao24;
+        try{ if(_av2) return _av2.find(s2); }catch(_){}
+        return null; },
       state:()=>{ const s2=_planes3DStats;
         /* (#R183) `aircraft` and `detailed` are surfaced because `features` stopped meaning "one per
            aircraft" the moment the body became four extrusions — a reader that only sees `features`

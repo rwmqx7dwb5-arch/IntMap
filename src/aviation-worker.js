@@ -183,11 +183,32 @@ function apply(msg, nowMs, recordTracks) {
  *  ⚠ ONLY RECEIVED OBSERVATIONS GO IN HERE. The shader's extrapolated positions are a display
  *  convenience, not evidence, and §17.1 forbids storing them as history.
  */
+/* ⚠ (#R506) A FIX THIS FAR FROM THE LAST ONE IS NOT THIS AIRCRAFT MOVING. Measured against
+   production with the track finally drawn: the median leg was 267 kt — right, and matching the
+   aircraft's own reported ground speed — but 30 legs in 263 implied more than 900 kt and the worst
+   implied 25,283 kt over 1,679 km in 129 s. Those are not observations of flight; they are the
+   world set handing back a position that belongs to a different moment (a record that has not been
+   refreshed for minutes, then jumping when it finally is). Drawn, they are a straight line across
+   Europe that no aeroplane flew — which is worse than no track at all, because a track is evidence
+   (§17.1) and this one would be an invention.
+   The bound is deliberately far above any airliner (the fastest cruise ~600 kt, and a tailwind and
+   a coarse timestamp can inflate a real leg well past that) so it rejects the impossible rather
+   than the merely fast. Past it the track RESTARTS at the new fix: the earlier points are still
+   real observations, but they are not continuous with this one, and joining them is the lie. */
+const TRACK_MAX_KT = 1500;
+const KM_PER_KT_S = 1.852 / 3600;   // nautical miles per hour → km per second
 const TRACK = {
   cap: 2000, per: 64,
   slot: new Map(),            // icao → track slot
   icao: null, t: null, x: null, y: null, a: null, head: null, count: null, used: null,
   next: 0,
+  /* ⚠ (#R506) …AND `used` IS A COUNTER, NOT A CLOCK. It held the message's own timestamp, so every
+     slot written by ONE message carried the same value — and the eviction scan takes the first slot
+     strictly below its running minimum, which after a full message is slot 0 every single time. A
+     whole-world viewport poll (the app opens at z1, so the first poll IS the whole world) therefore
+     thrashed slot 0 for every aircraft past the two-thousandth instead of retiring the genuinely
+     least recently seen. A monotone counter makes "least recently updated" mean it. */
+  tick: 0,
 };
 function trackInit() {
   if (TRACK.t) return;
@@ -203,8 +224,9 @@ function trackInit() {
 }
 function trackSlot(icao, nowMs) {
   trackInit();
+  const stamp = ++TRACK.tick;
   let ts = TRACK.slot.get(icao);
-  if (ts !== undefined) { TRACK.used[ts] = nowMs; return ts; }
+  if (ts !== undefined) { TRACK.used[ts] = stamp; return ts; }
   if (TRACK.next < TRACK.cap) ts = TRACK.next++;
   else {
     /* evict the least recently updated — never the selected aircraft, whose history is the one
@@ -217,7 +239,7 @@ function trackSlot(icao, nowMs) {
     ts = oldest;
     TRACK.slot.delete(TRACK.icao[ts]);
   }
-  TRACK.icao[ts] = icao; TRACK.head[ts] = 0; TRACK.count[ts] = 0; TRACK.used[ts] = nowMs;
+  TRACK.icao[ts] = icao; TRACK.head[ts] = 0; TRACK.count[ts] = 0; TRACK.used[ts] = stamp;
   TRACK.slot.set(icao, ts);
   return ts;
 }
@@ -228,7 +250,24 @@ function trackRecord(icao, tMs, mx, my, altFt) {
     /* the same position twice is not two observations — the old path de-duplicated here too */
     const last = base + ((TRACK.head[ts] + TRACK.per - 1) % TRACK.per);
     if (TRACK.x[last] === mx && TRACK.y[last] === my) return;
+    /* (#R506) the backwards check moved ABOVE the plausibility gate below, because that gate may
+       reset the slot — and a check that then reads TRACK.t[last] out of a slot it has just cleared
+       is reading a number that no longer means anything. */
     if (tMs <= TRACK.t[last]) return;          // never record backwards in time
+    /* ⚠ (#R506) …and neither is a position this aircraft could not have reached. See TRACK_MAX_KT.
+       Great-circle distance from the previous fix against the time between the two OBSERVATIONS
+       (not between the two messages): a leg that needs more than TRACK_MAX_KT did not happen, so
+       the history before it is not continuous with this fix and the track starts again here. */
+    const dtS = (tMs - TRACK.t[last]) / 1000;
+    if (dtS > 0) {
+      const aLon = mx2lon(TRACK.x[last]), aLat = my2lat(TRACK.y[last]);
+      const bLon = mx2lon(mx), bLat = my2lat(my);
+      const rLat = aLat * D2R, rLat2 = bLat * D2R;
+      const dLat = rLat2 - rLat, dLon = (bLon - aLon) * D2R;
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(rLat) * Math.cos(rLat2) * Math.sin(dLon / 2) ** 2;
+      const km = 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+      if (km > TRACK_MAX_KT * KM_PER_KT_S * dtS) { TRACK.head[ts] = 0; TRACK.count[ts] = 0; }
+    }
   }
   const at = base + TRACK.head[ts];
   TRACK.t[at] = tMs; TRACK.x[at] = mx; TRACK.y[at] = my; TRACK.a[at] = altFt;
