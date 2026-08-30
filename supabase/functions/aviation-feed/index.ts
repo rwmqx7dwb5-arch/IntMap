@@ -108,10 +108,6 @@ const VIEW_TTL_MS = 15000;                     // viewport channel: what the use
 const WORLD_TTL_MS = 30000;                    // world channel: one small slice per refresh
 const VIEW_MAX_TILES = 4;                      // = the measured burst budget
 const WORLD_SLICE_TILES = 3;                   // lattice tiles advanced per world refresh (adsb.lol)
-/* (#R504) …and what `?refresh=1&tiles=N` may raise that to. The sweeper is the one caller that is
-   not a browser waiting for a response, so it can afford to sit through a whole bucket; the cap is
-   READ_BURST because nothing may take more tokens than the bucket can ever hold. */
-const SWEEP_TILES_MAX = READ_BURST;
 const TILE_GAP_MS = 1200;                      // serial spacing between tile reads
 const AC_MAX = 200000;                         // hard ceiling on what this function will ever hold
 const STALE_DROP_S = 900;                      // an aircraft unseen for 15 min leaves the world set
@@ -157,6 +153,16 @@ const VIEW_STALE_S = 45;                       // sky asked about longer ago tha
    full burst. */
 const READ_RATE_PER_S = 0.34;
 const READ_BURST = 6;
+/* (#R504) …and what `?refresh=1&tiles=N` may raise WORLD_SLICE_TILES to. The sweeper is the one
+   caller that is not a browser waiting for a response, so it can afford to sit through a whole
+   bucket; the cap is READ_BURST because nothing may take more tokens than the bucket can ever hold.
+   ⚠ (#R505) IT LIVES HERE, BELOW READ_BURST, AND THAT IS THE WHOLE BUG #R504 SHIPPED. It was
+   declared beside WORLD_SLICE_TILES, forty-five lines ABOVE the `const READ_BURST` it reads — a
+   temporal dead zone, so evaluating this module threw ReferenceError before Deno.serve was ever
+   reached and EVERY request answered 500 WORKER_ERROR. Nothing caught it: the file parses
+   (check:static reads syntax, not order), and #R504's own thirteen checks read the source as TEXT.
+   The gate that catches it now actually EVALUATES this constant block — tests/r505 ①. */
+const SWEEP_TILES_MAX = READ_BURST;
 
 /* ⚠ (#R504) A 429 IS NO LONGER A MINUTE OF SILENCE ON THE FIRST OFFENCE. At 0.089 reads a second a
    429 meant something had gone badly wrong, so a flat 60 s stop was proportionate. At 0.34 an
