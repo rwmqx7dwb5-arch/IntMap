@@ -209,7 +209,7 @@ test('#R252 ⑧ the seismic panel’s default box clears the coord readout and t
   assert.match(css, /\.btn-toggle-sidebar\{[^}]*left:var\(--sidebar-w\)/,
     'the OPEN sidebar handle no longer sits at --sidebar-w — re-derive the clearance above');
   assert.match(css, /\.btn-toggle-sidebar\{[^}]*width:22px/, 'the sidebar handle is no longer 22 px wide');
-  assert.match(css, /\.coord-readout\{[^}]*bottom:9px; left:9px/, 'the coord readout moved — re-derive the clearance above');
+  assert.match(css, /\.coord-readout\{[^}]*bottom:6px; left:6px/, 'the coord readout moved — re-derive the clearance above');
 });
 
 /* ── ⑦ THE MAP’S CJK FACE FOLLOWS THE LANGUAGE ─────────────────────────────────────────────── */
