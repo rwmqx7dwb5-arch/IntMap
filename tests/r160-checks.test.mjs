@@ -76,10 +76,15 @@ test('R160 (B5) the RIGHT sidebar no longer pushes the map; right HUD slides to 
   ok('if(mc&&mc.style.marginRight) mc.style.marginRight=', 'open() clears any stale inline margin instead');
   // right-anchored HUD slides left by the panel width while the panel is open
   ok('body.lsr-open:not(.ws-mode) .map-controls-top{ right:calc(var(--lsr-w) + 10px); }', 'top-right controls clear the open right panel');
-  ok('body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 10px); }', 'the news timeline clears the open right panel');
+  /* ⚠ (#R504) THE OFFSET IN EACH RULE IS THAT ELEMENT'S OWN CORNER INSET, PLUS THE PANEL. The two
+     numbers below differ because the two elements sit at different distances from the edge —
+     .map-controls-top at 10 px, Chronos at 6 px since the coord readout was tucked in to meet it —
+     and what this test is about is that each one CLEARS the panel, not that they agree. Reading the
+     inset from the element's own rule is what keeps that true when either corner moves again. */
+  ok('body.lsr-open:not(.ws-mode) .news-timeline{ right:calc(var(--lsr-w) + 6px); }', 'the news timeline clears the open right panel');
   // the LEFT sidebar is beside the map in solid mode, so its HUD shift stays FROSTED-only (reverted the generalisation)
-  ok('body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 16px); }', 'coord readout shift is frosted-only again');
-  gone('body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 16px); }', 'left HUD is NOT shifted in solid (beside) mode');
+  ok('body.sidebar-glass .coord-readout{ left:calc(var(--sidebar-w) + 12px); }', 'coord readout shift is frosted-only again');
+  gone('body:not(.ws-mode) .coord-readout{ left:calc(var(--sidebar-w) + 12px); }', 'left HUD is NOT shifted in solid (beside) mode');
 });
 
 /* ⚠ (#R296) #R160's defect was 「設定を変更すると勝手に右サイドバーが出てくる」: `apply()` re-opens the

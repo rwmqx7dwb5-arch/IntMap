@@ -207,15 +207,19 @@ test('R434 ③ b the shear a billboard cannot express is most of the shape at ti
    remembered aircraft could never tell them apart — so a wide view would spend its whole budget on
    the same empty water for ever. */
 test('R434 ④ every completed tile read stamps the sky it asked about, wherever it came from', () => {
-  assert.match(FEED, /markAsked\(tiles\[i\]\.lat, tiles\[i\]\.lon, Date\.now\(\)\);/,
+  assert.match(FEED, /markAsked\(tiles\[i\]\.lat, tiles\[i\]\.lon, at\);/,
     'readSerial stamps each tile it actually read');
-  /* ⚠ TWO WRITERS, NAMED. Upstream reads reach the ledger through readSerial — the ONE place both
-     the viewport channel and the lattice sweep go through, so a ledger only one of them wrote
-     would lie about half the sky (the #R411 ① c shape) — and (#R434 addendum) hydration seeds it
-     from the shared snapshot. Counting the calls is what stops a third writer appearing without
-     anybody deciding it should. */
-  const stamps = (FEED.match(/markAsked\(/g) || []).length;
-  assert.equal(stamps, 3, 'one declaration and exactly two writers (found ' + stamps + ')');
+  /* ⚠ THE WRITERS ARE NAMED BY COUNTING THE DOOR, NOT THE CALLERS (#R504 widened this). Upstream
+     reads reach the ledger through readSerial — the ONE place both the viewport channel and the
+     lattice sweep go through, so a ledger only one of them wrote would lie about half the sky (the
+     #R411 ① c shape); hydration seeds it from the shared snapshot (#R434 addendum); and #R504's
+     persisted ledger restores it from Storage. Three writers, and the cap and the latest-wins rule
+     have to hold for all of them — so what is counted is the single assignment they must all go
+     through. A fourth writer that does its own STATE.asked.set() is what this forbids. */
+  const doors = (FEED.match(/STATE\.asked\.set\(/g) || []).length;
+  assert.equal(doors, 1, 'the ledger has exactly one assignment, in stampCell (found ' + doors + ')');
+  assert.match(FEED, /function markAsked\(lat, lon, at\) \{[\s\S]*?stampCell\(askCell\(lat, lon\), at\);/,
+    'markAsked is the lat/lon door onto it');
   const serials = (FEED.match(/await readSerial\(/g) || []).length;
   assert.equal(serials, 2, 'and both upstream readers go through readSerial (found ' + serials + ')');
   /* the stamp is inside the loop and AFTER the rate-limit check, because a 429 taught us nothing */
@@ -252,12 +256,17 @@ test('R434 ④ b the hydrated snapshot seeds the ledger, so a cold isolate does 
   /* ⚠ THE LATEST WINS. Hydration arrives out of order — fifty aircraft in one cell carry fifty
      observation times — so an unconditional set would leave the OLDEST of them in the ledger and
      make well-covered sky look stale. */
-  const mk = /function markAsked\(lat, lon, at\) \{([\s\S]*?)\n\}/.exec(FEED);
-  assert.ok(mk, 'markAsked is still one function');
+  /* (#R504) the rule is unchanged; it moved one function inwards so all three writers obey it. */
+  const mk = /function stampCell\(key, at\) \{([\s\S]*?)\n\}/.exec(FEED);
+  assert.ok(mk, 'stampCell is the one place the ledger is written');
   assert.match(mk[1], /if \(at > prev\) STATE\.asked\.set\(key, at\);/, 'the latest stamp wins');
   assert.ok(!/^\s*STATE\.asked\.set\(askCell\(lat, lon\), at\);/m.test(mk[1]),
     'and the unconditional write is gone');
-  assert.match(mk[1], /if \(!\(at > 0\) \|\| lat == null \|\| lon == null\) return;/,
+  assert.match(mk[1], /if \(STATE\.asked\.size >= ASK_MAX\) STATE\.asked\.clear\(\);/,
+    'the cap is inside the one door, so no writer can miss it');
+  const mk2 = /function markAsked\(lat, lon, at\) \{([\s\S]*?)\n\}/.exec(FEED);
+  assert.ok(mk2, 'markAsked is still one function');
+  assert.match(mk2[1], /if \(!\(at > 0\) \|\| lat == null \|\| lon == null\) return;/,
     'a record with no position and no time stamps nothing');
 });
 
@@ -324,15 +333,24 @@ test('R434 ⑥ the viewport spends the burst budget once per VIEW_STALE_S, for t
   const view = /if \(channel === "view"\) \{([\s\S]*?)\n {4}\}\n/.exec(FEED);
   assert.ok(view, 'the viewport channel is still one block');
   const body = view[1];
-  const gate = body.indexOf('if (spaced && worthIt) {');
+  /* ⚠ (#R504) THE CONDITION KEPT ITS JOB AND CHANGED ITS NAME. `spaced` asked "has the whole
+     function waited VIEW_STALE_S?"; that was a fact about the PROVIDER wearing a constant named
+     after the sky, and it was measured at a fifth of what the provider grants. It is now a token
+     taken from the one bucket — still global, still synchronous, still decided before anything
+     awaits, and now it also says HOW MANY tiles may go. */
+  const gate = body.indexOf('if (grant > 0) {');
   assert.ok(gate > 0, 'the decision is one condition');
   assert.ok(body.indexOf('await once(key,') > gate,
     'and the read is built INSIDE it, not above it');
   assert.ok(!/const work = once\(/.test(body), 'nothing holds a started read outside the branch');
 
-  /* the spacing is the function's, not the bbox's: the burst budget belongs to one address */
-  assert.match(body, /const spaced = now - STATE\.viewReadAt >= VIEW_STALE_S \* 1000;/,
-    'the spacing is global');
+  /* the ceiling is the function's, not the bbox's: the budget belongs to one address */
+  assert.match(body, /const grant = worthIt \? takeTokens\(ranked\.length, now\) : 0;/,
+    'the ceiling is global, and it is the same bucket the lattice sweep draws from');
+  assert.ok(!/const spaced = /.test(FEED),
+    'the old per-45-s spacing is gone — see tests/r504-checks.test.mjs ④');
+  assert.match(body, /const spent = ranked\.slice\(0, grant\);/,
+    'and the read is over what was granted, not over what was ranked');
   assert.match(body, /STATE\.viewReadAt = now;\n\s*await once\(/,
     '…and is stamped BEFORE the await, so two callers in one tick cannot both pass');
   assert.match(body, /const worthIt = ranked\.length > 0 && \(now - stalest\) \/ 1000 > VIEW_STALE_S;/,
