@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R508** — **前面へ出す印が、ダイアログを九千段沈めていた**〈「Terms of Service · Privacy Policy をクリックして読もうとしても、設定に邪魔されて読めない。」〉／⚠⚠⚠ **開くところまでは正しく、スクロール1回で沈む**——本番で実測: `afterOpen legal 9999 / settings 9999` → `afterWheel legal 2650 .im-front / settings 9999`。`#legal-modal` は `position:fixed` なので #R253〜#R258 の「触ったパネルを最前面に」機構の `panelOf` が**浮遊パネルとして拾い**、`.im-front{z-index:2650 !important}` を付ける。**!important は当のクラス自身の 9999 に勝つ**ので、前へ出すための印が、触ってもいない設定ダイアログの**下**へ押し込んでいた／⚠⚠⚠ **このアプリのダイアログは全部 9999 で、全部が同じ扱いを受けていた**——読む・押す・打つのどれでも印は付く。**見えるのは2枚重なったときだけ**で、それが設定→規約という報告された唯一の経路だった／⚠⚠ **#R258 は同じ形を反対側から見て、`#compare-window` (4000) を帯の中へ降ろして解いた。** モーダルは降ろせない（帯より上にいるのが仕様）ので、今回は**不変条件のほうを書いた**——`.im-front` は**上げる**印であって下げる手段ではないから、既にその高さより上にいる層は帯の一員ではない。`_aboveBand()` が resolved z-index を見て除外する（**綴りの一覧ではなく実測**＝#R253 の作法。後から足した重ね物も自動で入る）。⚠ 比較は**厳密に上**（`> _FRONT_Z`）で、印を持つ節点は class で飛ばす——さもないと一度上がったパネルが**自分を永久に免除**して二度と降りない／⚠⚠ **`_FRONT_Z` は `css/intmap.css` の `.im-front` と同じ数**なので、`tests/r508-checks` ① が両方を読んで食い違いを拒む／⚠ **これは computed z-index の話で、どのソースにも書いていない**——だから本体の検査は `tests/r508.spec.js`（ブラウザで実際にホイールを回し、`elementFromPoint` が規約シートを返すことまで見る）。ソースを読む検査は3件のうち①②③の「二重の数」「除外は実測か」「ダイアログはまだ帯より上か」だけを守る（[[intmap-edge-function-must-be-evaluated]] と同じ線引き）
 - **#R507** — **公開列だけだったのは「射影」であって「仕組み」ではなかった**〈Supabase Security Advisor の CRITICAL: `View public.profiles_public is defined with the SECURITY DEFINER property`〉／⚠⚠⚠ **`security_invoker` の無い view は所有者 (postgres) の権限で `profiles` を読み、その RLS を丸ごと迂回する**。射影は `id / display_name / bio / avatar_url` の4列だけなので**今日は1バイトも漏れていない**——が、**迂回は relation の性質であって射影の性質ではない**。`docs/SECURITY-ARCHITECTURE.md §8` の 7 番は #R465 の本番監査でこれを見つけ、「将来この view に列を1本足したら、その列が迂回を継承する」と書いたうえで**判断により閉じなかった**。この回が閉じた／⚠⚠⚠ **既存の検査は1本も捕まえられない形だった**——`00_structure` は `has_view(...)` と「email 列が無い」、`01`/`05` は「anon も authenticated も読める」を主張していて、**そのすべてが欠陥のある形について真**である。検査は**射影**を見ていて、欠陥は**仕組み**にあった（[[intmap-r488-lessons]] と同じ形——規則は在り、綴りは在り、当たっていない）／⚠⚠⚠ **advisor 自身の推奨（`alter view … set (security_invoker = on)`）は採れない**——`profiles` の SELECT ポリシーは `auth.uid() = id OR is_admin(auth.uid())` の1本だけなので invoker view は「自分の行」しか返さず、`anon` は #R155 以降 profiles に権限を1つも持たないので permission denied ＝**コミュニティの著者カードが全員に対して消える**。動かすには `profiles` に `USING (true)` を足し、email/is_admin/is_pro/plan を**列単位の grant だけ**で隠すことになる——それは **#R155 が信用できないと実証した壁そのもの**（Supabase の既定権限が anon/authenticated にテーブルの ALL を配るので、誰も `grant` を書かないまま blanket UPDATE が生えた）。**RLS の壁を grant の壁と交換すると、全員の email が「既定権限が1回戻る」だけの距離に来る**／⇒ **壁を構造にした**: `profiles_public` は**4列しか物理的に持たない実テーブル**になり、`profiles_public_sync`（AFTER INSERT / UPDATE OF 3列 / DELETE、SECURITY DEFINER・`search_path` 固定・EXECUTE は剥がす）が同期する。**view が無いので継承する迂回が無い**——明日 `profiles` に列を足しても、その列はこの表に存在しない／⚠⚠ **トリガ関数は fire 時に EXECUTE 権限を要求しない**（`CREATE TRIGGER` の時にだけ検査される。本番で rollback 付きトランザクションに入れて実測）ので、剥がしても同期は動き、advisor の `anon/authenticated_security_definer_function_executable` に**新しい行が増えない**／⚠⚠ **`drop view if exists` は table には効かず「is not a view」で落ちる**ので、view の落とし方を `relkind = 'v'` で守って migration を再実行可能に保つ／⚠⚠ **PostgREST は schema を cache する**——`notify pgrst, 'reload schema'` を**トランザクションの外**に置かないと、API から見た形は view のまま（commit していない形を先に announce することになる）／⚠ 新しい表は Supabase の既定権限で `anon`/`authenticated` に **ALL（TRUNCATE 込み・TRUNCATE は RLS の対象外）**が付くので、`revoke all` → `grant select` を #R155 と同じ形で書く／⚠ 検査は**射影ではなく仕組み**を見る2本立て: `supabase/tests/07_r507_profiles_public_test.sql`（relkind・RLS・ポリシー1本・4種の書込権限・同期の実測5通り）と `tests/r507-checks.test.mjs`（**クラスとしての門**——migration が今後残す view は `security_invoker = true` でなければ赤。同じ穴を二度掘らせない）。**5通りに変異させて赤を実測**
 - **#R506** — **航跡は消えたのではない。記録の片側だけが残っていた**〈「航空トラフィックレイヤーは、前までトラックもあったんですが、なくなってしまいました。」〉／⚠⚠⚠ **#R341 は TRACK リングバッファを持ち越し、反対側を持ち越さなかった**——描画（`drawTrack`/`TRACK_LINE`/`TRACK_3D`）・詳細カードの Show/Hide 行・Atlas の `layers.aircraftTrack` は全部**旧レイヤーの `planeTracks`** を読んだままで、それは旧掃引が止まった日から空。機体を選ぶと**0点の軌跡**が描かれ両レイヤーが隠れた。⚠ **空の軌跡と「まだ軌跡が無い」は見分けがつかない**ので誰も気づけなかった／⚠⚠⚠ **繋いだ瞬間、描ける状態ではないことが分かった**（本番 London z7・263機）: 脚の**中央値 267kt は正しい**（機体の対地速度と一致）のに、**263本中30本が900kt超・最悪 25,283kt**（1,679km を129秒）。1,679km の直線はどの飛行機も飛んでいない——**軌跡は証拠であって（§17.1）、これは捏造**／⇒ 記録器に**物理の門**（`TRACK_MAX_KT=1500`。超えたら繋がず**そこから track を始め直す**）／⚠⚠ **追い出しが毎回スロット0を選んでいた**——`used` にメッセージの時刻を入れていたので1通で書かれた全スロットが同値になり、走査の「最小より小さい最初」は常にスロット0。アプリは z1 で開くので**最初の視野ポーリングが全球**＝2,000枠を超える。⇒ 単調カウンタ／⚠⚠ **フィートとメートル**——`planeTracks` はメートル AMSL、wire は `altFt`。換算を落とすと**3.3倍の高さに描かれ、動く機能に見える**／⚠ 視野チャンネルの判断を `x-intmap-note` に出した（`cands/ranked/stalestS/worth/grant/tokens/up/fail/merged`）——**推測で半日溶かしたから**
 - **#R505** — **出荷した Edge Function が、本番で一度も動かなかった**〈#R504 を deploy した直後、`?meta=1` が **HTTP 500 `WORKER_ERROR`**。どの channel も同じ〉／⚠⚠⚠ **`const SWEEP_TILES_MAX = READ_BURST;` が `READ_BURST` の 45 行**上**にあった**——temporal dead zone。module を評価した瞬間に `Cannot access 'READ_BURST' before initialization` が投げられ、`Deno.serve` に一度も到達しない／⚠⚠⚠ **何一つ捕まえなかった**: `check:static` は構文を読む（順序は構文的に正しい）・`npm test` の **3,136 本は全部緑**・CI も全緑（pass 7 / skip 3）・#R504 自身の 13 本は定数を**文字列として**読み「`READ_BURST` を参照しているか」は見ても「**その時点で存在するか**」は一度も訊いていない／⚠⚠⚠ **「テストが足りない」ではなく「テストの種類が1つも無い」**——この repo の Edge Function 検査は**全部ソースを読む**検査で、**本体を評価する**検査がゼロだった。穴は `aviation-feed` のものではなく **13 本すべて**にある／⚠⚠ **本物を走らせる以外では塞がらない**: 最初に書いた「import を落として `vm` に流す」版は、5 本を複数行 import で切り損ね・3 本が **TypeScript の型注釈**で構文エラー・1 本が import された名前をトップレベルで使用——**どれも検査の粗さであって関数の欠陥ではない**のに赤は同じ顔をする ⇒ **Node 24 は `.ts` を素で `import()` できる**ので、実際の module graph をそのまま評価する（`_shared/` も本物・型注釈も剥がれる）／本番は redeploy で復旧し、**`x-intmap-coverage` が 0 → 3 → 6 → 9 → 12/980 と初めて動いた**（別 isolate が `ledger loaded` / `cursor 24` を報告＝#R504 が直した当のものが効いている）
@@ -308,6 +309,79 @@
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
 
+## R508 — **前面へ出す印が、ダイアログを九千段沈めていた**
+
+> 「Terms of Service · Privacy Policyをクリックして読もうとしても、設定に邪魔されて読めない。」
+
+### 1. 開くところまでは正しかった
+
+本番 (`https://rwmqx7dwb5-arch.github.io/IntMap/`) で実測:
+
+```
+afterOpen    legal 9999            / settings 9999      ← 設定の上に正しく開く
+afterWheel   legal 2650 .im-front  / settings 9999      ← ホイール1回で沈む
+```
+
+設定フッターの `#link-terms` は `js/legal.js` が `openLegal('terms')` に差し替えており、
+`#legal-modal` は `#settings-modal` より **DOM で後ろ**・z-index はどちらも 9999 なので、
+**開いた瞬間は正しく前にいる**。壊れるのは「読もうとした」瞬間だけで、報告の文はそのとおりだった。
+
+### 2. ⚠⚠⚠ 真因——`.im-front` は上げる印なのに、下げる手段として働いていた
+
+#R253〜#R258 が積み上げた「触ったパネルを最前面へ」の機構（`js/map-ui.js` の `_wireFrontMost`）は、
+pointerdown / wheel / focusin / keydown が当たった要素から**最初の positioned 祖先**を探し、
+そこに `.im-front{ z-index:2650 !important }` を付ける。
+
+`#legal-modal` は `position:fixed` である。**だから浮遊パネルとして拾われる。**
+そして `!important` は `.modal-overlay` 自身の 9999 に勝つので、
+**前へ出すための印が、触ってもいない設定ダイアログの下へ九千段押し込んでいた。**
+
+⚠ **これは規約ダイアログ固有の欠陥ではない。** このアプリのダイアログは全部 `.modal-overlay` の
+9999 で、**全部が同じ扱いを受けている**——読んでも押しても打っても印は付く。
+**見えるのは2枚重なったときだけ**で、それが「設定 → 規約」という報告された唯一の経路だった。
+
+### 3. ⚠⚠ #R258 は同じ形を反対側から見ていた
+
+#R258 は「`#compare-window` (z-index 4000) は帯の上にいるので**サイドバーに覆われない**」という
+裏返しの症状に当たり、**そのウィンドウを帯の中 (2200) へ降ろして**解いた。
+モーダルは降ろせない——帯より上にいるのが仕様だ（`tests/r508-checks` ③ がそれを錨にしている）。
+
+そこで今回は**不変条件のほうを書いた**:
+
+> `.im-front` は**上げる**印であって、下げる手段ではない。
+> 既にその高さより上にいる層は、この帯の一員ではない。
+
+`_aboveBand(el)` が祖先の resolved z-index を見て、`> _FRONT_Z` の層に当たったら `act()` は
+何もせずに返る。**綴りの一覧ではなく実測で訊く**（#R253 の作法）ので、後から足したどんな重ね物も
+自動でこの答えを継ぐ。
+
+⚠ 比較は**厳密に上**で、`.im-front` を持つ節点は class で飛ばす——さもないと一度上がったパネルが
+computed 2650 で**自分を永久に免除**し、二度と降りなくなる。
+
+⚠ `_FRONT_Z` は `css/intmap.css` の `.im-front` と**同じ数**である。1つの事実が2ファイルにある形なので、
+`tests/r508-checks` ① が両方を読んで食い違いを拒む。
+
+### 4. 検査——これは computed z-index の話で、どのソースにも書いていない
+
+`.im-front` の 2650・`.modal-overlay` の 9999・`panelOf` の歩き方は、**どれも単体では正しい**。
+壊れているのはブラウザが解決した数のほうで、だから `.im-front` の作業は 5 ラウンド続いても
+`npm test` の全ゲートを緑のまま通り抜けた（[[intmap-edge-function-must-be-evaluated]] と同じ線引き）。
+
+- **`tests/r508.spec.js`（本体）** — 実際に設定を開き、規約を開き、**本物のホイールを回して**、
+  ① 開いたとき前にいる ② スクロールしても前にいる（かつ本文は実際にスクロールしている）
+  ③ 中をクリックしても前にいる ④ **帯の中のパネル (`#country-popup` 2200) は今も上がる**
+  ——④ が無いと「z-index を持つものは全部無視」という広すぎる直しが通ってしまう。
+  前にいることの判定には `elementFromPoint` を使う（[[intmap-visible-is-not-unoccluded]]）。
+- **`tests/r508-checks.test.mjs`（3本）** — 二重の数の一致・除外が実測で書かれていること・
+  ダイアログがまだ帯より上にいること。**挙動そのものはここでは守れない**ので守ろうとしない。
+
+⚠ **最初に書いた ② は固定 `waitForTimeout(150)` の後ろで `scrollTop > 0` を一発読みしていて、
+同一 dist・同一サーバの連続 7 回中 1 回だけ落ちた**（落ちたのは重なり順の 3 つの主張ではなく
+「実際にスクロールしたか」）。`expect.poll` に替えて 5 回連続緑。**待つべきところで眠っていた。**
+
+予算: 中央値 **0.935 s**（5回・testcase time 合計 0.66〜1.40）。`tests/r494.spec.js` は同じ2セッションで
+1.270 / 2.126 s ＝ **換算係数自体が 1.7 倍ぶれる**ので、保守的な上端で **3** を記録した
+（r494 が抜けた枠にそのまま入るので **core の天井 28 は動いていない**。総計だけ 4,635 → 4,638）。
 ## R507 — **公開列だけだったのは「射影」であって「仕組み」ではなかった**
 
 依頼＝「Supabase Security Advisor の `public.profiles_public` に関する CRITICAL 警告を確認して、

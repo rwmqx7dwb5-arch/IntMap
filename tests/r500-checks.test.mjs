@@ -111,8 +111,8 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
 
     /* ③ 文書でない2か所。⚠ ここが規則の要点である——`eachDoc` はこの2つを見ない。 */
     for (const [file, from, to, why] of [
-      ['package.json', 'the deep tier is 94 spec files', 'the deep tier is ' + String(86) + ' spec files', 'the npm script commentary'],
-      ['scripts/worktree.mjs', 'The deep tier (94 spec files', 'The deep tier (' + String(82) + ' spec files', 'the banner printed at the start of every session'],
+      ['package.json', 'the deep tier is 95 spec files', 'the deep tier is ' + String(86) + ' spec files', 'the npm script commentary'],
+      ['scripts/worktree.mjs', 'The deep tier (95 spec files', 'The deep tier (' + String(82) + ' spec files', 'the banner printed at the start of every session'],
     ]) {
       await t.test(`③ deep-tier-size catches ${file} — ${why}`, () => {
         const r = withBroken([{ file, why, from, to }], () => docFacts('deep-tier-size'));
