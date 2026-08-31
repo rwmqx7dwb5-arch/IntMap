@@ -210,7 +210,25 @@ const BUDGET_S = 28;                    /* core: 0.5 min — measured 28 s over 
    #R424, #R428, #R435, #R439, #R455 and #R493 are the precedents for saying so plainly rather than
    quietly. ⚠ THE CORE CEILING FELL WITH IT, 30 -> 28, and that fall is not this round's saving
    either — see the note beside BUDGET_S. */
-const TOTAL_BUDGET_S = 4635;            /* 77.3 min — 4,632 (#R493) + 3 (#R494: tests/r494.spec.js) */
+/* ⚠⚠ (#R508) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 4,635 -> 4,638 (+3 s). Saying it
+   here as well as in the ledger because this file's own message is «never raise it»; #R405 (+7),
+   #R410 (+59), #R451 (+2), #R455 (+4), #R466 (+5), #R493 (+2) and #R494 (+3) are the precedents
+   for saying so plainly rather than quietly.
+   ⚠ AND THE SPEC COULD NOT RIDE AN EXISTING FILE, WHICH IS THE FIRST THING THIS FILE ASKS. What it
+   asserts is the z-index two stacked DIALOGS resolve to after a wheel event — Settings open, Terms
+   opened from its footer, the reader scrolling the terms text. Nothing else in the suite opens two
+   overlays at once (that is precisely why the defect survived five rounds of `.im-front` work), and
+   the node checks cannot answer it at all: no source file holds the number that was wrong.
+     · MEASURED, five consecutive runs, server already up, all five green, testcase time summed:
+       1.193 / 0.660 / 0.706 / 0.935 / 1.397 s — median 0.935.
+     · CALIBRATED the way #R451 and #R474 did rather than copied: tests/r494.spec.js measured 1.270
+       and 2.126 s in the same two sessions against a committed entry of 3, i.e. a local second is
+       worth 1.4–2.4 table-seconds here and the coefficient itself swings by 1.7×. ENTERED AS 3 —
+       the conservative end of a spec that costs LESS THAN HALF of r494's local time.
+   ⚠ THE CORE CEILING DID NOT MOVE. The gate is the same six files: smoke 8, monitors 10, security 4,
+   internal-qa 2, r157 1, and `currentRoundSpec()` — which is tests/r508.spec.js now, at 3, exactly
+   what tests/r494.spec.js carried on its way out. 28 either way. */
+const TOTAL_BUDGET_S = 4638;            /* 77.4 min — 4,635 (#R494) + 3 (#R508: tests/r508.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

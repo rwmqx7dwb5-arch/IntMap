@@ -97,6 +97,7 @@
  "tests/r466.spec.js": 5,
  "tests/r493.spec.js": 2,
  "tests/r494.spec.js": 3,
+ "tests/r508.spec.js": 3,
  "tests/security.spec.js": 4,
  "tests/smoke.spec.js": 8,
  "solo": [
