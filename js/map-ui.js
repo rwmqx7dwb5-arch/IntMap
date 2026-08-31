@@ -394,6 +394,38 @@ window.IntMapModules.layerSidebar=function(HOST){
           ⚠ Both sidebars are `relative` + `z-index:2600`, so they are named in `_NOT_PANEL` as
           well as in `_FRONT_SIDE`: they are the shell this band is measured against, never a
           panel inside it. */
+    /* == (#R508) <FRONT-MOST> IS A RAISE. IT MUST NEVER LOWER ANYTHING ==========================
+       「Terms of Service ・ Privacy Policy をクリックして読もうとしても、設定に邪魔されて読めない。」
+       MEASURED on the shipped build: opening Terms from the Settings footer is correct (both
+       overlays are `.modal-overlay` z-index 9999 and the legal one is later in the DOM, so it
+       paints on top) — and ONE wheel notch inside the terms text sinks it behind Settings:
+
+           afterOpen   legal 9999            / settings 9999
+           afterWheel  legal 2650 .im-front  / settings 9999
+
+       `#legal-modal` is `position:fixed`, so `panelOf` accepts it as «a floating panel» and marks
+       it. `.im-front` is `z-index:2650 !important`, and !important beats the class's own 9999 —
+       the mark that exists to bring a panel FORWARD pushed this one nine thousand levels BACK,
+       under a dialog nobody had touched. EVERY dialog in this app is at 9999 and every one of them
+       is marked the moment the reader scrolls, clicks or types inside it; it only becomes VISIBLE
+       when two of them are stacked, which is exactly the Settings → Terms path the report names.
+       ⚠ #R258 met the same shape from the other side (`#compare-window` at 4000 could never be
+       COVERED by the sidebar) and answered it by moving that window down INTO the band. A modal
+       cannot be moved into the band — it is above the band on purpose — so the invariant is stated
+       here instead: a layer already above `.im-front`'s own level is not a member of this band, and
+       the machinery neither raises nor demotes on account of it. Asked of the LAYOUT (#R253) rather
+       than of a list of dialog ids, so every later overlay inherits the answer for free.
+       ⚠ `_FRONT_Z` IS THE SAME NUMBER as `.im-front` in css/intmap.css. Two files stating one fact
+       is the shape this project keeps paying for, so tests/r508-checks.test.mjs reads both and
+       refuses a build where they have drifted. */
+    const _FRONT_Z=2650;
+    /* strictly ABOVE the band: a panel that currently carries the mark computes to exactly _FRONT_Z
+       and must stay demotable, so its own mark is skipped by class as well as by number. */
+    const _aboveBand=(el)=>{ for(let n=el; n&&n!==document.body; n=n.parentElement){
+        if(n.classList&&n.classList.contains('im-front')) continue;
+        let z=''; try{ z=getComputedStyle(n).zIndex; }catch(_){}
+        if(z&&z!=='auto'&&+z>_FRONT_Z) return true; }
+      return false; };
     const _NOT_PANEL='#map,#map-container,.operation-room,.maplibregl-map,.maplibregl-canvas-container,'
       +'.maplibregl-control-container,canvas,.sidebar,#sidebar,#layer-sidebar-r';
     function _wireFrontMost(){ if(window.__imFrontMostWired) return; window.__imFrontMostWired=1;
@@ -408,6 +440,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       const raise=(el)=>{ try{ document.querySelectorAll('.im-front').forEach(n=>{ if(n!==el) n.classList.remove('im-front'); }); }catch(_){}
         if(el) el.classList.add('im-front'); };
       const act=(t,mayDemote)=>{ if(!t||!t.closest) return;
+        if(_aboveBand(t)) return;   /* (#R508) a dialog is above this band — raising it would sink it */
         if(t.closest(_FRONT_SIDE)){ document.body.classList.remove('im-float-front'); raise(null); return; }
         const p=panelOf(t);
         /* a wheel over the map must not clear a panel the reader is using — only a POINTERDOWN on the
