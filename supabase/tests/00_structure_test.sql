@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(84);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
+select plan(86);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
                    -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
                    -- list cannot fail the list (#R280) — that is why the count moves with the table.
                    -- (#R386) +6: news_event_admin_actions joins BOTH lists (+2), and the four operator
@@ -14,6 +14,9 @@ select plan(84);   -- (#R334) +16: the eight Event tables join the has_table lis
                    --   assertion は 2 つ増える（表の存在と RLS の 2 リストに入るから）。
                    -- (#R491) +2: ai_gloss_usage joins both lists — the term-gloss lane's own
                    -- daily counter, separate from ai_usage so a lookup never spends a question.
+                   -- (#R507) +2: profiles_public joins both lists. It used to be a VIEW, so it was
+                   -- in neither — and a view has no RLS to assert. Now that the public projection is
+                   -- a real table it must satisfy exactly the same two claims as every other table.
 
 -- 1) Every expected table exists in public.
 select has_table('public', t, 'table ' || t || ' exists')
@@ -42,8 +45,12 @@ from unnest(array[
   -- (#R386) the operator's audit trail (docs/NEWS-EVENTS.md §11). Admin reads it, service_role
   -- writes it, and every Merge / Split / Reassign / override writes one row with the material
   -- needed to undo it. ⚠ NO FK to auth.users on actor — see the migration's note.
-  'news_event_admin_actions'
-]) as t;                                                    -- 32 assertions
+  'news_event_admin_actions',
+  -- (#R507) the public author card. Until now this name was a SECURITY DEFINER view, which read
+  -- profiles with the owner's rights and bypassed its RLS; it is a table holding only the four
+  -- public columns, so there is no bypass left for a future column to inherit.
+  'profiles_public'
+]) as t;                                                    -- 33 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -60,8 +67,9 @@ from unnest(array[
   -- (#R351) …and the ingest telemetry beside them (docs/NEWS-EVENTS.md §13). Operational
   -- rather than public: admin reads it, service_role writes it.
   'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs',
-  'news_event_admin_actions'
-]) as t;                                                    -- 32 assertions
+  'news_event_admin_actions',
+  'profiles_public'                                         -- (#R507) see the note above
+]) as t;                                                    -- 33 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.
@@ -76,8 +84,10 @@ select col_is_pk('public', 'ai_usage', array['user_id','usage_date'], 'ai_usage 
 select fk_ok('public','community_comments','post_id','public','community_posts','id',
              'community_comments.post_id → community_posts.id');
 
--- 4) The public profile view exists and does NOT leak sensitive columns.
-select has_view('public', 'profiles_public', 'profiles_public view exists');
+-- 4) The public profile projection does NOT leak sensitive columns — and (#R507) it is no longer
+--    a VIEW. A view here had no security_invoker, so it read profiles with the owner's rights and
+--    bypassed that table's RLS; `has_view` passing was compatible with the defect.
+select hasnt_view('public', 'profiles_public', 'profiles_public is NOT a view (no RLS bypass to inherit)');
 select hasnt_column('public', 'profiles_public', 'email', 'profiles_public does NOT expose email');
 select hasnt_column('public', 'profiles_public', 'is_admin', 'profiles_public does NOT expose is_admin');
 

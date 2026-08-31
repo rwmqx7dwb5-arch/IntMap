@@ -26,7 +26,8 @@ is the human explanation.
 ### Account / identity
 | Table | Purpose | Read | Write |
 |---|---|---|---|
-| `profiles` | One row per user. Public columns (`display_name`, `bio`, `avatar_url`) + private (`email`, `is_admin`, `is_pro`, `plan`, `login_count`). | Owner + admin (full row). Public columns for everyone via the `profiles_public` **view**. | Owner may update only `display_name`/`bio`/`avatar_url`/`login_count` (column-level grant → **no self-escalation**). |
+| `profiles` | One row per user. Public columns (`display_name`, `bio`, `avatar_url`) + private (`email`, `is_admin`, `is_pro`, `plan`, `login_count`). | Owner + admin (full row). Public columns for everyone via `profiles_public` (next row). | Owner may update only `display_name`/`bio`/`avatar_url`/`login_count` (column-level grant → **no self-escalation**). |
+| `profiles_public` | The public author card: `id`, `display_name`, `bio`, `avatar_url` — and physically nothing else. Kept in step with `profiles` by the `profiles_public_sync` trigger. **A table, not a view** (#R507): as a view it had no `security_invoker`, so it read `profiles` with the owner's rights and bypassed that table's RLS, and any column added to it would have inherited that bypass. | Everyone (`SELECT USING (true)` — this data is public by declaration). | **Nobody.** No role holds a write grant; the trigger is the only writer. |
 | `ai_usage` | Daily AI free-use counter (`user_id`, `usage_date`, `count`). | Owner reads own rows. | **RPCs only** (`increment_ai_usage` / `refund_ai_usage`, service_role). Users cannot write it. |
 | `ai_gloss_usage` | Daily counter for the Atlas **term-gloss** lane (`user_id`, `usage_date`, `count`). Separate from `ai_usage` so looking a word up inside an answer never spends one of the reader's questions — and so spending the questions never stops the lookups. | Owner reads own rows. | **RPCs only** (`consume_ai_gloss` / `refund_ai_gloss`, service_role). |
 | `ai_turns` | One row per (account, AI **turn**) — `(user_id, turn_key)`, `calls`, `charged`, `started_at`. The first call of a turn charges `ai_usage`; the rest are free up to a server-set ceiling. | Owner reads own rows. | **RPCs only** (`consume_ai_turn` / `refund_ai_turn` / `sweep_ai_turns`, service_role). |
@@ -147,7 +148,8 @@ so a caller cannot hijack it via their own search path.
 ## RLS model (the three security guarantees)
 
 1. **PII is not world-readable.** `profiles` SELECT is owner-or-admin; the public
-   `profiles_public` view exposes only `id/display_name/bio/avatar_url`. `feedback`,
+   `profiles_public` table holds only `id/display_name/bio/avatar_url` and is not a view
+   over `profiles`, so there is no owner-rights read of it to inherit (#R507). `feedback`,
    `bug_reports`, `donations`, `community_reports`, `ai_usage`, `ai_turns`, `ai_gloss_usage` are never readable by anon or
    by other users.
 2. **No privilege escalation.** A user can update only the four safe profile columns (column
@@ -228,8 +230,8 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
 
 ### What is tested (files)
 
-- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **32**, key
-  PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin`.
+- **`00_structure_test.sql`** — every table exists, RLS is enabled on all **33**, key
+  PKs/FKs exist, and `profiles_public` does not leak `email`/`is_admin` (and is not a view).
 - **`01_rls_matrix_test.sql`** — the isolation matrix (§7.3): anon can't read PII tables; A
   can't read/update/delete B's rows; A can't self-escalate `is_admin`/`plan`; A can't
   write/inflate `ai_usage`; non-admins can't read feedback/reports; author-or-admin post
@@ -242,6 +244,13 @@ The synthetic users + data come from [`supabase/seed.sql`](../supabase/seed.sql)
   table; a user reaches only its own `saved_news_events`; and each constraint the migration argues
   for is attacked — the `url_fingerprint` unique, the **partial** one-primary-event index, the two
   merge CHECKs, the four enumerated columns, and the account purge reaching the saved list.
+- **`07_r507_profiles_public_test.sql`** *(#R507)* — `profiles_public` is a table (relkind `r`)
+  with RLS on and exactly one `SELECT USING (true)` policy; no role holds INSERT/UPDATE/DELETE/
+  **TRUNCATE**; the sync function is SECURITY DEFINER with a pinned `search_path` and no client
+  EXECUTE; and the sync actually syncs — backfill, rename, a `login_count` bump that must *not*
+  disturb the card, a new signup, and an account deletion that takes the card with it. ⚠ The
+  older files assert the **projection** (four columns, no `email`); every one of those assertions
+  was also true of the SECURITY DEFINER view, which is why this file asserts the **mechanism**.
 
 ### How the checks work (so a failure is readable)
 

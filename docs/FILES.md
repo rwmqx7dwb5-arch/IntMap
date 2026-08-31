@@ -587,9 +587,9 @@ tle/                              衛星の軌道要素カタログ（定期生�
 ```
 supabase/
   config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全13本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（18本）。本番変更は必ずここを通す
+  migrations/*.sql                DB の唯一の設計図（19本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
-  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数。7本）
+  tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表。8本）
   functions/<name>/index.ts       Edge Functions（13本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（newsgeo.js / relay-guard.js /
                                   atlas-persona.js / aviation-codec.js / aviation-model.js /

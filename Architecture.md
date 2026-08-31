@@ -956,7 +956,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **32 表**（`profiles` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **33 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` /
 `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
@@ -2683,15 +2683,19 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（18本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（19本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
-- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events）。
+- `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表）。
 
 ### 16.2 RLS の3大保証（テストで実証）
 
 1. **PII 非公開**: `profiles` の email / is_admin / plan は本人＋admin のみ。公開表示は `profiles_public`
-   ビュー（id / display_name / bio / avatar_url の4列）。feedback / bug_reports / donations /
+   （id / display_name / bio / avatar_url の4列）。⚠ これは **view ではなく実テーブル**で、
+   `profiles_public_sync` トリガが同期する——view は `security_invoker` を持たない限り所有者の権限で
+   `profiles` を読んで RLS を迂回し、**後から足した列がその迂回を継承する**（Supabase advisor の
+   `0010_security_definer_view`。詳細は `docs/SECURITY-ARCHITECTURE.md` §8 の 7）。
+   feedback / bug_reports / donations /
    community_reports / ai_usage は他人・anon から読めない。
 2. **昇格不可**: 本人は display_name / bio / avatar_url / login_count のみ更新可（列単位 grant）。
    ⚠ grant は本番の既定権限で無効化されうるので、**grant 非依存の BEFORE UPDATE トリガ**
