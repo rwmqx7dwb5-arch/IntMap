@@ -101,7 +101,8 @@ select ok(    has_table_privilege('authenticated','public.monitor_reports','sele
 select ok(not has_table_privilege('anon','public.profiles','select'),               'R155: anon has NO access to profiles (uses profiles_public)');
 
 -- PII-leak invariant: no world-readable profiles. A cannot read B's email/flags;
--- anon cannot read profiles at all; both CAN read the safe profiles_public view.
+-- anon cannot read profiles at all; both CAN read the safe profiles_public projection
+-- (a real table with an RLS policy since #R507 — see 07_r507_profiles_public_test.sql).
 select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}', true);
 set local role authenticated;
 select is((select count(*)::int from public.profiles where id='22222222-2222-2222-2222-222222222222'), 0,

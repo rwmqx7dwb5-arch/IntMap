@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R507** — **公開列だけだったのは「射影」であって「仕組み」ではなかった**〈Supabase Security Advisor の CRITICAL: `View public.profiles_public is defined with the SECURITY DEFINER property`〉／⚠⚠⚠ **`security_invoker` の無い view は所有者 (postgres) の権限で `profiles` を読み、その RLS を丸ごと迂回する**。射影は `id / display_name / bio / avatar_url` の4列だけなので**今日は1バイトも漏れていない**——が、**迂回は relation の性質であって射影の性質ではない**。`docs/SECURITY-ARCHITECTURE.md §8` の 7 番は #R465 の本番監査でこれを見つけ、「将来この view に列を1本足したら、その列が迂回を継承する」と書いたうえで**判断により閉じなかった**。この回が閉じた／⚠⚠⚠ **既存の検査は1本も捕まえられない形だった**——`00_structure` は `has_view(...)` と「email 列が無い」、`01`/`05` は「anon も authenticated も読める」を主張していて、**そのすべてが欠陥のある形について真**である。検査は**射影**を見ていて、欠陥は**仕組み**にあった（[[intmap-r488-lessons]] と同じ形——規則は在り、綴りは在り、当たっていない）／⚠⚠⚠ **advisor 自身の推奨（`alter view … set (security_invoker = on)`）は採れない**——`profiles` の SELECT ポリシーは `auth.uid() = id OR is_admin(auth.uid())` の1本だけなので invoker view は「自分の行」しか返さず、`anon` は #R155 以降 profiles に権限を1つも持たないので permission denied ＝**コミュニティの著者カードが全員に対して消える**。動かすには `profiles` に `USING (true)` を足し、email/is_admin/is_pro/plan を**列単位の grant だけ**で隠すことになる——それは **#R155 が信用できないと実証した壁そのもの**（Supabase の既定権限が anon/authenticated にテーブルの ALL を配るので、誰も `grant` を書かないまま blanket UPDATE が生えた）。**RLS の壁を grant の壁と交換すると、全員の email が「既定権限が1回戻る」だけの距離に来る**／⇒ **壁を構造にした**: `profiles_public` は**4列しか物理的に持たない実テーブル**になり、`profiles_public_sync`（AFTER INSERT / UPDATE OF 3列 / DELETE、SECURITY DEFINER・`search_path` 固定・EXECUTE は剥がす）が同期する。**view が無いので継承する迂回が無い**——明日 `profiles` に列を足しても、その列はこの表に存在しない／⚠⚠ **トリガ関数は fire 時に EXECUTE 権限を要求しない**（`CREATE TRIGGER` の時にだけ検査される。本番で rollback 付きトランザクションに入れて実測）ので、剥がしても同期は動き、advisor の `anon/authenticated_security_definer_function_executable` に**新しい行が増えない**／⚠⚠ **`drop view if exists` は table には効かず「is not a view」で落ちる**ので、view の落とし方を `relkind = 'v'` で守って migration を再実行可能に保つ／⚠⚠ **PostgREST は schema を cache する**——`notify pgrst, 'reload schema'` を**トランザクションの外**に置かないと、API から見た形は view のまま（commit していない形を先に announce することになる）／⚠ 新しい表は Supabase の既定権限で `anon`/`authenticated` に **ALL（TRUNCATE 込み・TRUNCATE は RLS の対象外）**が付くので、`revoke all` → `grant select` を #R155 と同じ形で書く／⚠ 検査は**射影ではなく仕組み**を見る2本立て: `supabase/tests/07_r507_profiles_public_test.sql`（relkind・RLS・ポリシー1本・4種の書込権限・同期の実測5通り）と `tests/r507-checks.test.mjs`（**クラスとしての門**——migration が今後残す view は `security_invoker = true` でなければ赤。同じ穴を二度掘らせない）。**5通りに変異させて赤を実測**
 - **#R506** — **航跡は消えたのではない。記録の片側だけが残っていた**〈「航空トラフィックレイヤーは、前までトラックもあったんですが、なくなってしまいました。」〉／⚠⚠⚠ **#R341 は TRACK リングバッファを持ち越し、反対側を持ち越さなかった**——描画（`drawTrack`/`TRACK_LINE`/`TRACK_3D`）・詳細カードの Show/Hide 行・Atlas の `layers.aircraftTrack` は全部**旧レイヤーの `planeTracks`** を読んだままで、それは旧掃引が止まった日から空。機体を選ぶと**0点の軌跡**が描かれ両レイヤーが隠れた。⚠ **空の軌跡と「まだ軌跡が無い」は見分けがつかない**ので誰も気づけなかった／⚠⚠⚠ **繋いだ瞬間、描ける状態ではないことが分かった**（本番 London z7・263機）: 脚の**中央値 267kt は正しい**（機体の対地速度と一致）のに、**263本中30本が900kt超・最悪 25,283kt**（1,679km を129秒）。1,679km の直線はどの飛行機も飛んでいない——**軌跡は証拠であって（§17.1）、これは捏造**／⇒ 記録器に**物理の門**（`TRACK_MAX_KT=1500`。超えたら繋がず**そこから track を始め直す**）／⚠⚠ **追い出しが毎回スロット0を選んでいた**——`used` にメッセージの時刻を入れていたので1通で書かれた全スロットが同値になり、走査の「最小より小さい最初」は常にスロット0。アプリは z1 で開くので**最初の視野ポーリングが全球**＝2,000枠を超える。⇒ 単調カウンタ／⚠⚠ **フィートとメートル**——`planeTracks` はメートル AMSL、wire は `altFt`。換算を落とすと**3.3倍の高さに描かれ、動く機能に見える**／⚠ 視野チャンネルの判断を `x-intmap-note` に出した（`cands/ranked/stalestS/worth/grant/tokens/up/fail/merged`）——**推測で半日溶かしたから**
 - **#R505** — **出荷した Edge Function が、本番で一度も動かなかった**〈#R504 を deploy した直後、`?meta=1` が **HTTP 500 `WORKER_ERROR`**。どの channel も同じ〉／⚠⚠⚠ **`const SWEEP_TILES_MAX = READ_BURST;` が `READ_BURST` の 45 行**上**にあった**——temporal dead zone。module を評価した瞬間に `Cannot access 'READ_BURST' before initialization` が投げられ、`Deno.serve` に一度も到達しない／⚠⚠⚠ **何一つ捕まえなかった**: `check:static` は構文を読む（順序は構文的に正しい）・`npm test` の **3,136 本は全部緑**・CI も全緑（pass 7 / skip 3）・#R504 自身の 13 本は定数を**文字列として**読み「`READ_BURST` を参照しているか」は見ても「**その時点で存在するか**」は一度も訊いていない／⚠⚠⚠ **「テストが足りない」ではなく「テストの種類が1つも無い」**——この repo の Edge Function 検査は**全部ソースを読む**検査で、**本体を評価する**検査がゼロだった。穴は `aviation-feed` のものではなく **13 本すべて**にある／⚠⚠ **本物を走らせる以外では塞がらない**: 最初に書いた「import を落として `vm` に流す」版は、5 本を複数行 import で切り損ね・3 本が **TypeScript の型注釈**で構文エラー・1 本が import された名前をトップレベルで使用——**どれも検査の粗さであって関数の欠陥ではない**のに赤は同じ顔をする ⇒ **Node 24 は `.ts` を素で `import()` できる**ので、実際の module graph をそのまま評価する（`_shared/` も本物・型注釈も剥がれる）／本番は redeploy で復旧し、**`x-intmap-coverage` が 0 → 3 → 6 → 9 → 12/980 と初めて動いた**（別 isolate が `ledger loaded` / `cursor 24` を報告＝#R504 が直した当のものが効いている）
 - **#R504** — **「もっと多くの航空機を」は描画の話ではなく、「この関数が訊いてよい空の量」の話だった**〈「航空トラフィックレイヤーはもっと多くの航空機が表示されるように。方位磁針ボタンは、デザインをもっといいものに。」〉／⚠⚠⚠ **本番の world は 2,699 機・`x-intmap-coverage` は `lattice 0/980`、同じ分に provider の網が見ていたのは 10,924 機**。原因は2つで、どちらも上流の渋さではない／⚠⚠⚠ **掃引の進捗が isolate を越えていなかった**——`STATE.cursor`・タイルごとの `last`/`miss`・#R434 の台帳は全部 isolate の記憶で、Supabase は冷えた isolate を頻繁に配る。⇒ 被覆率は**ヘッダ導入以来 0 から動けず**、掃引は**毎回 cursor 0 から同じ3枚を買い直して7枚目に到達せず**、大洋を間引く `miss` も毎回 0 に戻るので**何も間引いていなかった**。⇒ `aviation/sweep.json`（格子の長さ `n` を添え、一致しなければ捨てる）／⚠⚠⚠ **「間隔」が上流の実力の 1/5 だった**——#R434 は関数全体に 4 枚 / 45 秒 ＝ **0.089 read/s** を課していた。同じアドレス・同じ UA で測り直すと**連続 5/6・1 秒 8/12・2 秒 31/40**＝四連発の弾倉ではなく**毎秒 0.5 発ほどの leaky bucket**。⇒ 上限を1つの bucket（`READ_RATE_PER_S = 0.34`・膝の 2/3）に集め、視野も掃引もそこから引く／⚠⚠ **`cron: '*/5'` は5分ごとに走らない**——実測の直近8回は間隔 2〜5 時間＝**1日6回**。3枚×2スライスで**1日 36 枚**が掃引の全量だった／⚠⚠ **429 の休みを 8 秒から倍々（上限 60 秒・成功で 0）に**——0.089 のときの 429 は異常事態だが 0.34 では「バケツが一瞬空」でもあり、全チャンネル1分の沈黙は**1枚を惜しんで 20 枚を捨てる**取引／⚠⚠ **readsb の re-api は使わない**——全球を1回の box query で返す（実測 10,924 機・665 kB）が、**feeder 専用**で自サイト以外には HTTP 207・本文0バイト。Referer を偽ればすり抜けられるが、それは**アクセス制御の迂回**である／方位磁針は二等辺三角形2枚から**方位環**（リング・4方位＋4隅の目盛り・二面取りの針・軸受け）へ。**北の針以外は `currentColor`**＝テーマ追従で、固定灰 `#9aa0a6` は消えた。デスクトップ 34px と携帯 38px は**同じ幾何**で、検査が両者の一致と `id` の不在（gradient を足した瞬間にページ内で衝突する）を見る／同じ回の追加依頼で**余白**も詰めた——ピル行 35.3→**31.3px**・地名検索バー 42→**34px**（⚠ **字は1つも小さくしていない**・⚠ **角丸は高さの半分**なので 21→18px を一緒に動かす）、座標標高バー 左下 9→**6px**・Chronos 右下 10→**6px**（⚠ **「そろえた」は2か所に同じ数を書くことではない**ので、検査は**2つが等しいこと**を見る）、Chronos の字は rotate-ccw（23px では「戻す」と読める）から**時計**へ
@@ -307,6 +308,107 @@
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
 
+## R507 — **公開列だけだったのは「射影」であって「仕組み」ではなかった**
+
+依頼＝「Supabase Security Advisor の `public.profiles_public` に関する CRITICAL 警告を確認して、
+全部任せる」。advisor の本文はこれだけ:
+
+> View `public.profiles_public` is defined with the SECURITY DEFINER property
+
+### ① 本番で何が本当だったか（`supabase db query --linked` で実測）
+
+`supabase db advisors --linked --type security --level info` が返した**ERROR は 1 件だけ**
+（`security_definer_view` → `profiles_public`）。ほかは WARN 7 件と INFO 9 件で、INFO の 9 件は
+`docs/SECURITY-ARCHITECTURE.md §8` の 5 番が既に記録している `mgmt_*` である。
+
+```
+relname          relkind  reloptions   owner
+profiles         r        null         postgres
+profiles_public  v        null         postgres     ← reloptions が null ＝ security_invoker なし
+```
+
+`profiles` の SELECT ポリシーは **1 本だけ**: `((auth.uid() = id) OR is_admin(auth.uid()))`。
+つまり view は**所有者 `postgres` の権限で `profiles` を読み、この 1 本を丸ごと迂回していた**。
+
+⚠⚠⚠ **射影は4列だけなので、今日は 1 バイトも漏れていない。**
+それでも危ないのは、**迂回が relation の性質であって射影の性質ではない**から。
+`docs/SECURITY-ARCHITECTURE.md §8` の 7 番は #R465 の本番監査でこれを見つけ、
+「将来この view に列を1本足したら、その列が迂回を継承する」と書いたうえで、
+**判断により閉じなかった**（そのときの判断は「意図どおり」だった）。この回がそれを閉じた。
+
+### ② 既存の検査が 1 本も捕まえられなかった理由
+
+| 既にあった主張 | 欠陥のある形で真か |
+|---|---|
+| `has_view('public','profiles_public')` | **真**（まさに view だから） |
+| `profiles_public` に `email` / `is_admin` 列が無い | **真** |
+| 列はちょうど 4 つ | **真** |
+| anon も authenticated も読める | **真** |
+
+⚠⚠⚠ **全部真である。** 検査は**射影**を見ていて、欠陥は**仕組み**にあった。
+[[intmap-r488-lessons]] と同じ形——規則は在り、綴りは在り、当たっていない。
+
+### ③ advisor 自身の推奨（`security_invoker = on`）を採らなかった理由
+
+SECURITY INVOKER の view は**呼び手の権限**と**基底表の RLS** で評価される。すると:
+
+- `authenticated` は `profiles` の own+admin ポリシーしか通らない ⇒ 著者カードは**自分の分だけ**
+- `anon` は #R155 以降 `profiles` に権限を 1 つも持たない ⇒ **permission denied**
+
+⇒ **コミュニティの著者カードが全員に対して消える。**
+
+動かすには `profiles` に `USING (true)` の SELECT ポリシーを足し、
+email / is_admin / is_pro / plan を**列単位の grant だけ**で隠すことになる。
+⚠⚠⚠ **それは #R155 が「信用できない」と実証した壁そのものである**——Supabase の
+schema-wide DEFAULT PRIVILEGES は新規テーブル全部に anon/authenticated へ ALL を配っており
+（`docs/SECURITY-ARCHITECTURE.md §8` の 6 番）、**誰も `grant` を書かないまま blanket UPDATE が
+生えた**のが #R155 の権限昇格だった。**RLS の壁を grant の壁と交換すると、全員の email が
+「既定権限が 1 回戻る」だけの距離に来る。**
+
+### ④ 直しかた——壁を構造にする
+
+`profiles_public` を **4 列しか物理的に持たない実テーブル**にした。
+
+- RLS 有効・ポリシーは `for select using (true)` の **1 本だけ**
+  （このデータが公開であることを、view の中に隠した迂回ではなく**宣言**として書く）
+- `revoke all` → `grant select` のみ（⚠ TRUNCATE は RLS の対象外なので、grant 層だけが断れる）
+- `profiles_public_sync`（AFTER INSERT / **UPDATE OF display_name, bio, avatar_url** / DELETE）が同期
+- `id` は `references public.profiles(id) on delete cascade` ＝ 退会でカードも消える
+
+**view が無いので、継承する迂回が無い。** 明日 `profiles` に列を足しても、その列はこの表に無い。
+
+⚠ 関係名・4 列の名前と型は 1 つも変えていないので、`js/community-board.js` の
+`from('profiles_public').select('display_name,bio,avatar_url')` は**一字も変えていない**。
+
+### ⑤ 実測でしか分からなかったこと 3 つ
+
+⚠⚠ **トリガ関数は fire 時に EXECUTE 権限を要求しない。** `CREATE TRIGGER` の時にだけ検査される。
+本番で rollback 付きトランザクションに入れて実測した（`revoke all on function … from public, anon,
+authenticated` を効かせたうえで `authenticated` として INSERT → 同期先に 1 行、
+`has_function_privilege` は false）。⇒ 剥がしても同期は動き、advisor の
+`anon/authenticated_security_definer_function_executable` に**新しい行が増えない**。
+
+⚠⚠ **`drop view if exists` は table には効かない**——「is not a view」で落ちる。
+つまり 2 回目の実行が失敗する migration になる。`relkind = 'v'` で守った `do $$ … $$` にした。
+
+⚠⚠ **PostgREST は schema を cache する。** `notify pgrst, 'reload schema'` を
+**トランザクションの外**に置く。中に置くと、commit していない形を先に announce することになる。
+
+### ⑥ 検査は「射影」ではなく「仕組み」を見る
+
+- `supabase/tests/07_r507_profiles_public_test.sql`（pgTAP）— relkind `r` / RLS / ポリシー 1 本 /
+  4 種の書込権限が anon・authenticated のどちらにも無いこと / 同期関数の secdef・search_path・
+  EXECUTE 無し / **同期が本当に同期すること**（backfill・改名・**カードを動かしてはいけない
+  `login_count` の加算**・新規 signup・退会）。
+- `tests/r507-checks.test.mjs`（`node --test`）— migration 側の 11 本。うち ② が
+  **クラスとしての門**である: **migration が今後残す view は `security_invoker = true` でなければ赤**。
+  同じ穴を二度掘らせない。**5 通りに変異させて赤を実測**（`grant insert` を足す / 素の
+  `drop view if exists` に戻す / `notify` をトランザクションの中へ / 5 列目 `email` を足す /
+  将来の migration が素の view を作る）。
+
+⚠ `profiles_public` が表になったので `db-tables`（`scripts/doc-facts.mjs` 規則 17）の母数が
+32 → **33** になり、`00_structure_test.sql` の**2 つの一覧の両方**に名前が要る（#R280 の教訓——
+一覧に無い表は、その一覧で落ちようがない）。plan は 84 → **86**。
 ## R506 — **航跡は消えたのではない。記録の片側だけが残っていた**
 
 > 「航空トラフィックレイヤーは、前までトラックもあったんですが、なくなってしまいました。」

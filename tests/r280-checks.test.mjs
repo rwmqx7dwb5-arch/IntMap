@@ -86,9 +86,11 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
       /* (#R351) news_ingest_runs joined both lists and the count moved 29 → 30, so the anchor moved
          with it. (#R386) news_event_admin_actions joined them too, 30 → 31, and the anchor moved
          again. The mutation is unchanged in kind: take a table OUT of the list the rule reads.
-         (#R491) ai_gloss_usage joined them, 31 → 32, and the anchor moved once more. */
-      from: "  'news_event_admin_actions'\n]) as t;                                                    -- 32 assertions\n\n-- 2)",
-      to: "]) as t;                                                    -- 32 assertions\n\n-- 2)" },
+         (#R491) ai_gloss_usage joined them, 31 → 32, and the anchor moved once more.
+         (#R507) profiles_public stopped being a VIEW and became a table, so it joined both lists
+         too, 32 → 33 — and it is now the last name in list #1, so the anchor is on it. */
+      from: "  'profiles_public'\n]) as t;                                                    -- 33 assertions\n\n-- 2)",
+      to: "]) as t;                                                    -- 33 assertions\n\n-- 2)" },
     { rule: 'node-tests', file: 'docs/TESTING.md',
       from: 'Node test files** with no browser at all',
       to: 'Node test files** with no browser at all' },   /* rewritten below to a wrong number */
