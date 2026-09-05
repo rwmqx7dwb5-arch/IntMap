@@ -170,6 +170,17 @@ verify_jwt = false
 # header comment is not configuration.
 verify_jwt = false
 
+# ais-feed (#R510) is the SHIP half of the same idea, and the fourteenth function. The live-ship
+# layer used to be BYOK — every reader pasted their own aisstream.io key into Settings, and without
+# one the map said "API key required" and drew nothing. That is upstream load proportional to USERS
+# plus a feature only credential-holders could see. This function holds ONE key (AISSTREAM_API_KEY,
+# optional) and reads Digitraffic (keyless, CC BY 4.0) besides, and serves everyone from one shared
+# snapshot. Like aviation-feed it is NOT a relay: the caller may not name a URL, only a channel.
+# verify_jwt is OFF because the ship layer is offered to signed-out readers exactly as it is to
+# signed-in ones — and because a key that is absent is not false (see the note above).
+[functions.ais-feed]
+verify_jwt = false
+
 # routing-relay (#R347) holds the Mapbox Directions key so the page never sees it, and relays the
 # traffic-aware routes and their refreshes. verify_jwt is OFF because routing is offered to signed-out
 # readers exactly as it is to signed-in ones — requiring a login would break the panel for everyone
