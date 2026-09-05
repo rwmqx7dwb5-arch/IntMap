@@ -53,8 +53,22 @@
 (function () {
   'use strict';
 
-  /* The spatial archive every offered model is read from. One host, one path rule. */
-  var HOST = 'https://map-tiles.open-meteo.com/data_spatial';
+  /* The spatial archive every offered model is read from. One host, one path rule.
+     ⚠⚠⚠ (#R514) THIS IS THE PUBLIC ORIGIN, NOT OPEN-METEO'S OWN CDN — MEASURED, BECAUSE THE PREVIOUS
+     HOST STOPPED EXISTING. Until 2026-08-28 the files were read from map-tiles.open-meteo.com, a
+     Bunny CDN in front of this bucket. Open-Meteo retired it (weather-map-layer #305: 「end providers
+     should have their own CDN」); by 2026-09-05 the name returned NXDOMAIN from 8.8.8.8, 1.1.1.1 and
+     9.9.9.9 alike, so every deployed build answered 「no metadata」 while nothing in this repository had
+     changed. The successor Open-Meteo's own maps app uses, data-spatial.open-meteo.com, answers 403
+     {"error":true,"reason":"Forbidden"} unless the Referer is *.open-meteo.com or localhost
+     (measured across eleven header combinations: the Referer alone decides), so it is not a host a
+     third-party site can read from. What Open-Meteo documents for everyone else is the AWS Open Data
+     bucket the CDN was fronting — public, CORS "*", "Accept-Ranges: bytes", a preflight that allows
+     "range", CC-BY-4.0, seven days of retention — and that is what the browser now reads directly.
+     The path rule is unchanged: the SDK finds the domain by "data_spatial/<id>" in the URL, and the
+     bucket keeps that prefix. Uncached means every reader's range reads reach S3 in us-west-2; a CDN
+     of our own in front of it is a separate decision (cost, another party), not a line here. */
+  var HOST = 'https://openmeteo.s3.amazonaws.com/data_spatial';
 
   /* ── the models IntMap offers ────────────────────────────────────────────────────────
      `id`        the upstream domain name — also the directory on HOST and the key into the
