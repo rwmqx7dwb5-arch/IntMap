@@ -52,6 +52,7 @@ supabase/functions/**/.env
 # ── Vite build output (added R175) ───────────────────────────────────────────
 # `npm run build` emits the deployable tree here; GitHub Pages publishes it from CI.
 dist/
+dist-dev/
 
 # ── (#R209) the frame instrument's tile replay cache ─────────────────────────
 # scripts/frame-profile.mjs answers every external request from here so an A/B

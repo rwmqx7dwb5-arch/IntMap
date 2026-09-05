@@ -681,6 +681,28 @@ scripts/
                                   `getBoundingClientRect` / `getComputedStyle` 回数**と
                                   **touchmove →次フレームの遅延**を出す。CDP は Chromium だけなので
                                   WebKit 側には**この相が無い**（0 ではなく「無い」と印字する）。
+  layer-sweep.mjs                 **全レイヤーを 1 つずつ同じ指で測る計器**（ゲートではない）。
+                                  `#layer-dropdown` の checkbox 全部（＝レイヤーの唯一のレジストリ）を
+                                  1 行ずつ ON → 待機 → 指パン＋ピンチ → OFF → 待機と回し、基準値との
+                                  **限界費用**（busy・fps・worst・placement/render/decode）と、**地図が
+                                  止まっている間の試行回数**（fetch・`styledata`・`setData`／秒）、
+                                  **OFF にした後の残り**を 1 行に出す。待機中の試行が積み上がる行が
+                                  「失敗した取得を取得したと数えなかった」形（`DEV-NOTES.md` #R499）。
+                                  既定 ON の行は OFF にして測る（Δbusy が負＝既定の地図がそれに払って
+                                  いる分）。基準値は 3 回の中央値で、`--rebase` 行ごとに取り直す
+                                  （ブラウザは暖まるほど速くなる）。床（アプリのレイヤー全部非表示）は
+                                  **最後に**測る。指・起動・スナップショットは `mobile-trace.mjs` から
+                                  import する（写しを持たない）。
+  view-matrix.mjs                 **{ベクタ, 衛星}×{平面, globe} の 4 条件＋日付変更線セル**に同じ指を
+                                  当てる計器。切替はアプリ自身の命令（`view.base.*` / `view.proj.*`）。
+                                  5 つ目のセルは MapLibre 5.24 の既知の欠陥（globe・pitch>40°・z>5・
+                                  日付変更線越し）の再現条件で、そこだけ遅ければレンダラの費用。
+  phase-profile.mjs               **指が動いている間（または静止中）に誰が走っているか**を CDP の
+                                  サンプリングプロファイラで関数ごとに出す。mobile-trace の `other` 列
+                                  （どのバケツでもない時間）の中身を名指しする計器。`--with` でレイヤーを
+                                  ON にし、`--zoom` で読者が会う場所へ寄せ、`--rest <ms>` なら指を出さず
+                                  静止中を測る。⚠ minify 済みの束では名前が1文字なので
+                                  `npx vite build --minify false --outDir dist-dev` と `--dist dist-dev`。
   trace-probe.js                  上の**ページ側の計器**（`addInitScript` で最初のスクリプトより前に入る）。
                                   ⚠ **アプリではない**——`js/` も `src/` も import しない
                                   （`tests/r387-checks ⑤` が出荷経路への混入を落とす）。

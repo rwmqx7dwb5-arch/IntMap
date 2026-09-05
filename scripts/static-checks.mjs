@@ -21,7 +21,8 @@ const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
 // Directories never worth scanning.
 /* (#R175) `dist` is the Vite build output — generated, minified, gitignored. Linting it would flag the
    bundler's own output and time out on the source maps; the SOURCES are what these checks are about. */
-const SKIP_DIRS = new Set(['.git', 'node_modules', 'playwright-report', 'test-results', '.cache', '.playwright', 'coverage', 'dist']);
+const SKIP_DIRS = new Set(['.git', 'node_modules', 'playwright-report', 'test-results', '.cache', '.playwright', 'coverage', 'dist',
+  'dist-dev']);   /* (#R512) the unminified build scripts/phase-profile.mjs profiles against — ignored by git, and a build, not a source */
 // Binary / large-asset extensions we do not read as text.
 const BINARY_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.woff', '.woff2', '.ttf', '.pdf', '.zip', '.gz', '.tif', '.tiff', '.mp4', '.mov']);
 const TEXT_EXT = new Set(['.html', '.htm', '.js', '.mjs', '.cjs', '.ts', '.json', '.yml', '.yaml', '.md', '.css', '.py', '.txt', '.xml', '.svg', '.sql', '.toml']);
