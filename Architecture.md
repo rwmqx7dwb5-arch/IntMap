@@ -2120,6 +2120,10 @@ observer の次の配達を待てないときに言う。
 `pan-alerts-city` だけ**（他の相は camera 命令で動かすので touch イベントが 1 つも出ない）。
 その3相は **touchmove 1回あたりの `getBoundingClientRect` / `getComputedStyle` 回数**と
 **touchmove →次フレームの遅延**を出す。詳細は `docs/TESTING.md`。
+同じ指を**全レイヤーに 1 つずつ**当てて限界費用と静止中の試行回数を並べるのが
+`scripts/layer-sweep.mjs`、**{ベクタ, 衛星}×{平面, globe}＋日付変更線**に当てるのが
+`scripts/view-matrix.mjs`、その間に**どの関数が走っているか**を名指しするのが
+`scripts/phase-profile.mjs`（3 本とも mobile-trace の指・起動・スナップショットを import する）。
 
 ### 9.4 携帯が余分に持たない／待たないもの
 
