@@ -90,7 +90,7 @@ const nextRound = (master) => {
 };
 
 /* ══ (#R304) THE NIGHTLY'S ANSWER, IN FRONT OF EVERY SESSION ════════════════════════════════════
-   The deep tier (95 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
+   The deep tier (96 spec files, 77 minutes — measured #R500; it was 27 files when this was written,
    the number went stale three times before anybody re-measured it, and it moved 81 → 82 DURING that
    round. `node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`
    is the answer; scripts/deep-alarm.mjs derives it rather than restating it) has run every night since
