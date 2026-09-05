@@ -54,6 +54,16 @@ export function makeAtlasToolSurface(deps) {
     var CORE = [
       { name: 'map_view', cap: 'view.flyTo', desc: 'Move the map to a place or coordinate.' },
       { name: 'highlight', cap: 'map.highlight', desc: 'Colour named countries or regions on the map.' },
+      /* ══ ⚠⚠⚠ (#R511) THE MAP AS ONE ACT OF EXPLANATION, IN CORE. Every entry above operates ONE
+         thing — a camera, a colour, a layer. Explaining with a map is several at once: the places,
+         numbered; what each one is in the answer; the flows between them; the shaded region; one
+         frame over all of it; and the legend the words refer to. Offered as six separate calls it
+         was six decisions across six steps, and measured on 「Xを地理的に説明して」 the model made
+         none of them — it wrote the paragraph on step 0. This is that act as ONE call, so choosing
+         the map costs Atlas one decision. It resolves every place through the ledger first and the
+         geocoder second, files what it resolved back with its ROLE, and reports by name what it
+         could not place. It never takes a coordinate from the model (js/atlas-map-compose.js). */
+      { name: 'compose_map', cap: 'map.compose', desc: 'Draw a whole map explanation in ONE call: `items` are the places in the order to number them (name + country, optional kind / role — what this place IS in your answer — / color / fill:true to shade a country or region); `relations` are links between items (from/to = an item name or its number; type "flow" or "route" draws an arrow, "influence"/"border" dashes, "link" a plain line; optional label); `title` heads the legend. IntMap resolves every name itself (ledger first, then geocoder — never write coordinates), numbers the markers, draws the arcs, frames the camera over everything that landed, shows a legend with the same numbers, and links the names in your final_text to the markers. The result lists what was placed and — by name — what could NOT be; say so in your answer rather than describing an unplaced place as shown. Use it whenever the map carries part of your answer; use highlight / map_view for a single colour or a single move.' },
       { name: 'set_layer', cap: 'layers.toggle', desc: 'Turn a named map layer on or off.' },
       { name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations. Use for anything current, contested or beyond your own knowledge. This renders its own sourced answer to the reader.' },
       /* ⚠ (#R413) THE EXISTING CAPABILITY, PROMOTED — NOT A NEW ONE. `view.locate` has read the
@@ -286,6 +296,11 @@ export function makeAtlasToolSurface(deps) {
            to ask and keep going — the defect this fixes, arriving through the other door. */
         endsTurn: (ok && built.cap && ENDS_TURN(built.cap.id)) ? true : undefined,
       };
+      /* ══ (#R511) DID THIS CALL CHANGE THE MAP? A fact the loop reads the way it reads `endsTurn`:
+         a capability whose registry row PRODUCES the map, and whose run the observer marked
+         completed (a `partial` — nothing painted — is not a change). js/atlas-agent.js holds a
+         "map"/"mixed" `answer_mode` to it; nothing here decides whether the map SHOULD change. */
+      if (ok && out.status === 'completed' && Array.isArray(out.produced) && out.produced.indexOf('map') >= 0) out.changedMap = true;
       if (!ok) {
         out.error = meta.code || 'failed';
         /* (#R413) …and not clipped at 400 either. This is the reason a call FAILED, read by the
