@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R514** — **本番の気象 5 本が赤いのは、上流がホストごと消えていたからだった**〈「Post-deploy smoke ジョブが 2 回の deploy で同じ 5 本落ちている。上流の変更なのか、js 側の退行なのか、test 側の前提が古いのかを切り分けて根本原因で直すこと」〉／⚠⚠⚠ **`map-tiles.open-meteo.com` は 2026-08-28 に上流が廃止（weather-map-layer #305「end providers should have their own CDN」）し、9/5 には 8.8.8.8・1.1.1.1・9.9.9.9 のすべてで NXDOMAIN**。本番は `meta()` が null → 「no metadata」「field did not load」「browser has been closed」「Received 0」「Received ""」の 5 通りの顔で同じ不在を報告し、赤いトースト「Wind data unavailable」が出続けていた。8/31 の緑から js/ の気象系は 1 バイトも変わっていない／⚠⚠ **後継の `data-spatial.open-meteo.com` は Referer で門を閉めている**（11 通りのヘッダ組合せで実測: Referer が `*.open-meteo.com` か localhost のときだけ 200、GitHub Pages の Referer では 403）——**ローカルでは通って本番で落ちる**形／⇒ 上流が第三者に案内している **AWS Open Data の S3 バケット `openmeteo.s3.amazonaws.com/data_spatial`**（200・CORS `*`・Range 206・preflight が `range` を許す・CC-BY-4.0・保持 7 日・`latest.json` の鍵と `.om` のパス規則は同一）へ `js/wx-models.js` の HOST を切替。**プライバシー §4 は配信者が Amazon になったことを en/ja で名指し**（`LEGAL_DATE` 2026-09-06）、`index.html` の dns-prefetch も追随／⚠⚠ **上流のホストが消えると、こちらの計器は 5 通りの別名でしか言えない** ⇒ `tests/prod-smoke.spec.js` に、配信された build が名指すホストの名前解決・CORS・Range 応答を**単独で先に**訊く 1 本（#R514）を足した。`tests/r514-checks.test.mjs`: HOST が公開バケット・SDK の `data_spatial/<id>` 抽出が通る・死んだ名前が出荷物に無い・方針文が code の host を名指す・S3 は Open-Meteo の日次ブレーカの外
 - **#R512** — **速い方の腕は、空の地図だった**〈外部の分析「スマホの重さは1個の原因ではない」を受けて「出来るだけ」〉／⚠⚠⚠ **MapLibre 6.7 の A/B で 6.7 側が全相 60 fps・busy 半分と出たが、タイルを 1 枚も読んでいなかった**——6.x は worker を `import.meta.url` の隣の実 URL で読み、Vite がそれを出さず 404。`queryRenderedFeatures().length === 0` で発覚。worker を並べて測り直すと**それでも 6.7 は busy −30〜50%**（pan-alerts-city 11,055 → 5,658 ms・26.5 → 57.9 fps、satellite/globe 5,089 → 3,159、日付変更線セル 4,464/35 fps → 3,101/59 fps）／⚠⚠ **163 レイヤーを 1 つずつ同じ指で測る `scripts/layer-sweep.mjs`**（限界費用・静止中の試行回数・OFF 後の残り）——**#R499 型の輪は 163 個のどれにも無い**（後半窓で回り続けるのは警報の設計上の輪番 1.5 fetch/s だけ・render 0/s）。重いのは読み込み（鉄道 13 MB・警報の cold burst 最初の 45 s）とレンダラ／⚠⚠ **ホバーの hit-test は指の相で 0 回**（A/B 不要）／⚠⚠ **掃引の基準値は暖機で 4,570 → 1,390 と動き、OFF にしたレイヤーは style に残る（63 → 357 層）**——3 回中央値・`--rebase`・既定 ON の行と床は最後／`scripts/view-matrix.mjs`（4 条件＋日付変更線）・`scripts/phase-profile.mjs`（誰が走っているか・`--rest`）／再生キャッシュが空の worktree は遮断された地図を測る（`--record`）／`el.click()` は 163 個全部で失敗
 - **#R511** — **地図は道具ではなく、回答の形式になった**〈「Atlasは『地図を操作する能力』が不足しているのではなく、『地図を使った説明』がAtlasの第一級の回答形式になっていません。」〉／⚠⚠⚠ **#R406 が「地名が出たら地図化」を撤去したのは正しく、その跡に「地図を使うと決めた回答を地図回答として完成させる仕組み」が無かった**——`final_text` は地図について何も言えず、地図を使うと決めた回答が step 0 の文だけで正常終了していた／⚠⚠ 直し方は**言葉から推定する規則を戻すことではない**: 返答に `answer_mode`（text / map / mixed）を **Atlas が宣言**し、ループは「map / mixed と言ったのに `changedMap` を刻まれた成功結果が無い final」だけを `map_not_drawn` として差し戻す（schema 検査と同じ種類・`maxMapGate` 2 回・上限後は受け入れて `mapDrawn:false` を記録）／⚠⚠ **「地図で説明する」は 1 つの行為なのに 6 つの道具に割れていた**——`map.compose`（中核 `compose_map`）が地点・役割・大円の弧・塗り・カメラ・凡例を 1 回で描き、台帳 → ジオコーダの順に**コードが**解決し、解決できない地名は**名前で `unplaced`**（座標を発明しない）／⚠ 回答文の最初の言及に番号バッジ（`linkProse`・テキストノードだけ）→ 文と印が双方向に光る／⚠ `js/atlas-console.js` は余白 0 行——**空行 3 本を実装行に替えて**収めた（import は行頭でないと reachability に見えない）／⚠ 英語キー `On the map` は terrain-water と衝突（ja が別訳）→ `Places on the map` に改名
 - **#R510** — **「APIキーが必要です」と出るレイヤーは、機能ではなく前提条件だった**〈「船舶レイヤーは、APIキーが必要ですと出てくるので、没にしてましたが、ちゃんと実装したい。あなたの側でできることはすべてやって。」〉／⚠⚠⚠ **BYOK は #R341 が航空機で潰した構造そのもの**——利用者ひとりずつが aisstream.io の鍵を取りに行き、取るまで地図は**何も描かず**プロンプトを出す＝上流負荷が利用者数に比例し、資格情報を取った人にしか機能が存在しない ⇒ `supabase/functions/ais-feed`（**14本目**）が provider を代表して読み、全利用者へ同じスナップショットを配る。**鍵はブラウザに1バイトも渡らない**／⚠ **BYOK は取り上げていない**（`AGENTS.md` §3.1）——鍵を持つ人は今までどおり直接繋ぐ（ライブの WebSocket のほうが新しい）。変えたのは**鍵が無いとき何が起きるか**だけ／⚠⚠ **無料・鍵不要・全球の AIS は存在しない**ので provider は2本: **Digitraffic / Fintraffic**（バルト海・**鍵も登録も不要**・CC BY 4.0・実測 位置890件＋静的854件・CORS 開放）と **aisstream.io**（全球・鍵あり）。Digitraffic は「鍵が無い日でもレイヤーが空にならない」ためにある／⚠⚠⚠ **WebSocket は1回の呼び出しの中で開いて閉じる**——`EdgeRuntime.waitUntil` は応答をまたいで生きない（#R341 実測）ので「裏で開きっぱなし」は単発の試験で正しく見えて本番で1バイトも集めない／⚠⚠⚠ **鍵が違うときの見え方は、繋がらないときと同じ**（`open|sent|error|close:1006`・フレーム0）。**わざと無効な鍵で同じ形を再現して確定**させ、`x-intmap-note` に socket の顛末と**鍵の長さと形**（値ではない）を出した——保存されていた秘密は **79文字・英数字以外を含み**、aisstream が発行する形ではなかった／⚠⚠ **秘密は trim する**（末尾の改行1つで、何も言われずに拒否される）／⚠⚠ **Storage は存在しない bucket への PUT に HTTP 400 + NoSuchBucket を返す**（404 ではない）ので、404 だけ見る再試行は一度も発火しない／⚠ **リレー経路にはズーム下限もパン時の再購読も無い**——後者の `else` 枝は `shipsData` を空にするので、リレーで走ると**ドラッグのたびに世界が消える**／本番実測: **834隻・うち815隻に船名**（TRUVOR / UBEG6 / IMO 9311543 / 曳船 / dest PRIM RU / 喫水 3.9m）／⚠⚠⚠ **8/31 に書かれて 9/6 まで 1 コミットも無かった**——関数は本番に deploy 済み・ブラウザ側は worktree に未コミット＝**サーバーは出荷済み、ブラウザは出荷前**で、利用者は 9/6 もトーストを見ていた。その worktree に触らず差分を R510 へ写して改番／⚠⚠⚠ **温かい isolate は一度 build したら二度と更新しなかった**（`refresh()` の条件が「強制・空・空で古い」だけ。本番 `?meta=1`＝`refreshes:0`・5.7 日前の snapshot を hydrate して即答）⇒ TTL 超過で 1 回分待つ `refreshOnce`（同時は `INFLIGHT` で共有・aisstream は鍵 1 本に同時 3 接続）／⚠⚠ **全球の JSON を 30 秒ごとに丸ごと運ぶ設計だった**（実測 797 隻＝gzip 52 kB＝**1 隻 65 バイト**→全球なら数 MB/30 秒）⇒ `view` チャンネル `?bbox=`＋余白 35%・箱を出たときだけ再取得／⚠⚠ **`x-intmap-coverage` は設定を名乗っていた**（aisstream 0 隻でも `digitraffic+aisstream`）⇒ 答えた provider と隻数 `digitraffic:891`・snapshot に `p` 同梱／⚠ **9/6 も鍵は 79 文字・英数字以外**（Node で無効鍵を再現＝同じ形）＝直せるのは利用者だけ。直るまで鍵無しの船はバルト海だけ／検査 11 本のうち ⑨⑩⑪ は **handler を捕まえて Request を投げる**（上流だけ stub）
@@ -312,6 +313,97 @@
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
 
+## R514 — **本番の気象 5 本が赤いのは、上流がホストごと消えていたからだった**
+
+> 「IntMap の本番 deploy workflow「Deploy (production, Pages)」の Post-deploy smoke ジョブが、2026-09-05 の 2 回の
+> deploy（R510 / R511）で同じ 5 本落ちている。Build + verify と Deploy to Pages は成功で、本番は配信されている。
+> 上流（weather tile SDK / データ提供元）の変更なのか、js/ 側の退行なのか、test 側の前提が古いのかを切り分けて
+> 根本原因で直すこと。」
+
+### 1. ⚠⚠⚠ 真因——ホスト名そのものが無くなっていた
+
+落ちた 5 本（風の画素色・サイクロンの眼・予報の段送り・ラスタの単位・等圧線）は、ログではそれぞれ
+`Target page, context or browser has been closed`・`"field did not load"`・`"no metadata"`・`Received 0`・
+`Received ""` と言っていて、**5 つとも `window.IntMapECMWF.meta()` が null であること**に還元される
+（`js/wx-ecmwf.js` の `fetchMeta` は `guardedJSON(META_URL)` が null なら `metaP = null` で戻る）。
+2 run の失敗文はバイト単位で同一、4 回のリトライも同一。8/31 の緑（1d01267）以降、`js/wx-*.js`・
+`js/weather.js`・spec は無変更（`index.html` の差は build stamp だけ）。
+
+`META_URL` の元は `js/wx-models.js` の `HOST = https://map-tiles.open-meteo.com/data_spatial`。この名前を
+8.8.8.8・1.1.1.1・9.9.9.9 で引くと **3 つとも `Non-existent domain`**。同時刻に `api.open-meteo.com`・
+`open-meteo.com`・`unpkg.com` は解決するので、こちらの網ではなく**その名前だけが消えている**。本番ページの
+`performance.getEntriesByType('resource')` では `latest.json` を **39 回試行して全部 status 0**
+（`TypeError: Failed to fetch`）、`.om` の Range 読みも `om://` ソースも 0 件、画面には赤いトースト
+「Wind data unavailable」。`IntMapWx.status()` は `{down:false}`——**guard は「落ちている」と認識していない**
+（DNS 失敗は `fetch` の reject で、429 の日次ブレーカの外）。
+
+上流側の経緯（`open-meteo/weather-map-layer`）: #294（8/5）で例示ホストを Bunny CDN 直の名前へ、
+#305「Unfortunately the bunny CDN will be retired soon, **end providers should have their own CDN**」（8/27）→
+#306「fix: retire bunnycdn」（8/28）で README を **`https://openmeteo.s3.amazonaws.com/data_spatial`** へ。
+他の利用者も同日に同じ切替をしている（cmer81/maps #123, 9/4）。
+
+### 2. ⚠⚠ 後継ホストは Referer で門を閉めている——ローカルでは通り、本番で落ちる
+
+Open-Meteo 自身の maps アプリ（`maps.open-meteo.com`、bundle を読んだ）は
+`https://data-spatial.open-meteo.com/data_spatial` を読む。ここを 11 通りのヘッダ組合せで叩いた:
+
+| ヘッダ | 結果 |
+|---|---|
+| 無し／UA だけ／Origin だけ（maps・open-meteo.com・localhost・github・example） | **403** `{"error":true,"reason":"Forbidden"}` |
+| Referer `https://maps.open-meteo.com/` | 200 |
+| Referer `http://localhost:5173/` | 200 |
+| Referer `https://rwmqx7dwb5-arch.github.io/IntMap/` | **403** |
+| Referer maps ＋ Origin github | 200 |
+
+**Referer だけが決める。** README も「only accepts requests with a localhost or *.open-meteo.com referer」と
+明記している。つまりこのホストは**第三者サイトが読む面ではない**し、ブラウザは Referer を偽装できない。
+Edge Function で Referer を付けて中継するのは門を迂回する行為なので採らない。
+⚠ **落とし穴**: `npm run serve`（127.0.0.1）からは通るので、ローカルで直したつもりの切替が本番で 403 になる。
+
+### 3. 直し方——上流が第三者に案内している公開バケットへ
+
+`openmeteo.s3.amazonaws.com/data_spatial`（AWS Open Data・`s3://openmeteo`・us-west-2）を実測:
+`latest.json` 3 モデルとも 200（0.47 s）・`Access-Control-Allow-Origin: *`・`Expose-Headers: ETag, Content-Range`、
+`.om`（129 MB）の Range 読みは **206**・`Accept-Ranges: bytes`、OPTIONS preflight が `range` を許す、
+本番ページ内からの `fetch` も 200 / 206（type cors）。`latest.json` の鍵
+（`completed / crs_wkt / last_modified_time / reference_time / valid_times / variables`）も `.om` のパス規則
+（`<id>/<YYYY>/<MM>/<DD>/<HH>00Z/<valid>.om`）も旧ホストと同一で、固定中の SDK 0.0.19 の
+`RESOLVE_DOMAIN_REGEX = /data_spatial\/(?<domain>[^/]+)/` は S3 の URL から `ecmwf_ifs` を返す。
+ECMWF の `variables` は 8/23 の fixture の 35 から **43** に増えている（出荷 9 変数は全部ある）。
+
+変えたもの:
+- `js/wx-models.js` の `HOST`——なぜ CDN でなく原本なのかを、実測ごと注記。
+- `index.html` の `dns-prefetch`——**解決しない名前を毎起動で引かせない**。
+- `js/legal-text.js` Privacy §4（en/ja）——配信者が **Amazon Web Services** になった事実を名指し、
+  `LEGAL_DATE` を 2026-09-06 に。第三者の記載は「誰がバイトを配るか」であって「誰のデータか」ではない。
+- `tests/smoke.spec.js` の前提文から死んだホスト名を外した。
+- `Architecture.md` §7.3b・`docs/MAP-LAYERS.md`——現状としてホストと、公式 CDN が使えない理由。
+
+変えなかったもの（判断は利用者へ）:
+- **自前 CDN**。上流の言葉どおり「end providers should have their own CDN」で、S3 直読みは**キャッシュ無し**
+  ——全読者の Range 読みが us-west-2 に届く（実測: 1 回 0.5〜0.7 s。#R276 の冷たい点灯は 410 回の Range 読みで
+  7.5〜9.1 s だったので、ここが伸びる可能性がある）。Cloudflare 等を前に置くのは別の当事者・別の費用なので、
+  この回では足さず提案に留める。
+- **SDK 0.1.0**（8/25 公開・`feat!: atomic one-step reads, drop setToOmFile`）への更新。今回の赤と無関係で、
+  破壊的変更を含む。
+- `tests/fixtures/om-models/_index.json` の `host`——8/23 に**その名前から**取った記録なので書き換えない。
+
+### 4. ⚠⚠ 上流のホストが消えると、こちらの計器は 5 通りの別名でしか言えない
+
+5 本はどれも「その先」を測る試験で、前提（名前が引ける・CORS が通る・Range が返る）を 1 本も**単独では**
+訊いていなかった。しかも 1 本目は `waitForFunction` 150 s が file の test timeout 90 s より長く、
+`browser has been closed` という**原因を隠す文**で落ちる。そこで `tests/prod-smoke.spec.js` に (#R514) を
+5 本の**前に**足した: 配信された build が名指すホスト（`window.IntMapWxModels.metaUrl`——綴りは
+`js/wx-models.js` だけ）の `latest.json` が 200・`Access-Control-Allow-Origin: *`・軸が 40 段以上・
+最初の `.om` の `Range: bytes=0-1023` が 206。各行が URL と status を持つので、次に名前が動いたときは
+**最初の赤い行が「host」と言う**。150 s 対 90 s の関係は閾値の変更なので、この回では触らず報告に載せた。
+
+`tests/r514-checks.test.mjs`（`test:checks` に登録）: ① 3 モデルの `metaUrl / fileUrl` が公開バケット上で、
+SDK の domain 抽出が通る／② 死んだ名前が `js/wx-*.js`・`js/legal-text.js`・`sw.js` のコードと `index.html` に無く、
+prefetch が code の host と一致／③ Privacy §4 en/ja が code の host と「Amazon Web Services」を名指し、
+死んだ名前を含まない（#R502 の形: 第三者が変わったのに文が変わらない）／④ `js/wx-source.js` の
+`isOpenMeteo` が S3 を Open-Meteo API と誤認しない（日次ブレーカの外に居ることを**出荷された述語で**確認。
+以前は API の 429 で tripped したブレーカが model の metadata まで道連れにしていた）。
 ## R512 — **速い方の腕は、空の地図だった**
 
 > 外部（ChatGPT）の分析: 「2026年9月6日時点のIntMapを追った結果、スマホの重さは1個の原因ではありません。

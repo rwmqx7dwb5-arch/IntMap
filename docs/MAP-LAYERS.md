@@ -1290,6 +1290,8 @@ ec-isobars-0, ec-isobars-0-lbl, ec-slp-0     ← 等圧線 3,299 本が不透明
 
 **1 つのレイヤーの気象の数値は、すべて 1 つのモデルから来る。** `window.IntMapECMWF`（`js/wx-ecmwf.js`）が
 Open-Meteo の spatial アーカイブ（**ECMWF IFS HRES・O1280 縮約ガウス格子・約 9 km**）を持つ。
+配信元は Open-Meteo が AWS Open Data で公開している S3 バケット（綴りは `js/wx-models.js` の `HOST`
+だけ。Open-Meteo 自身の CDN は Referer を自サイトに限るので使えない——`Architecture.md` §7.3b）。
 色面（ラスタ）・粒子・カーソル下の地点値・共有リンクの4つが**同じ変数・同じ初期時刻・同じ有効時刻**を読む。
 
 - **`.om` ファイルの場所は自分で組み立てる。**

@@ -1172,7 +1172,13 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   自身の `latest.json` から**導出する**。手書きの変数表は上流が1つ足した日から間違いになり、しかも
   **黙って**間違う（レイヤーは何も描かず、凡例は変数名を表示し続ける）。
 - **`.om` のパス規則はモデル非依存**（`<host>/<id>/<ref>/<valid>.om`）。ホストの綴りは
-  `js/wx-models.js` にしかない。
+  `js/wx-models.js` にしかない。**ホストは Open-Meteo が AWS Open Data で公開している S3 バケット**
+  （`openmeteo.s3.amazonaws.com/data_spatial`——公開・CORS `*`・Range 可・CC-BY-4.0・保持 7 日）で、
+  ブラウザが直接 Range 読みする。☠ **Open-Meteo 自身の CDN（`data-spatial.open-meteo.com`）は
+  Referer が `*.open-meteo.com` か localhost のときしか答えない**（第三者サイトからは 403）。
+  以前の Bunny CDN ホストは上流が廃止し、DNS 名そのものが無い。上流のホストが消えると、こちらの計器は
+  「no metadata」「field did not load」としか言えないので、`tests/prod-smoke.spec.js` は 5 本の
+  気象試験の前に**配信元の名前解決・CORS・Range 応答を単独で**訊く。
 - **「このモデルでこれを見せてよいか」は共通部分であって宣言ではない**——`availability()` が
   「提供の可否 × ライブ metadata × カバー範囲 × 変数 × 時刻」を突き合わせ、**理由コードを返す**。
   ☠ 実測: ECMWF IFS HRES に気圧面は**0面**、GFS 0.13° に `pressure_msl` / `cape` / `dew_point_2m` は
