@@ -157,9 +157,9 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are thirteen Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are fourteen Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All thirteen are declared there now
+flag that lives in a comment is not configuration. All fourteen are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
 `relay-guard.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
@@ -178,6 +178,7 @@ flag that lives in a comment is not configuration. All thirteen are declared the
 | `routing-relay` | false | none — public, but **keyed upstream**: it is the only relay that holds a provider token | — | `MAPBOX_TOKEN`, server env only, never returned |
 | `sv-cov` | false | none — keyless public relay of Google Street-View coverage tiles | — | — |
 | `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
+| `ais-feed` | false | none — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
 
 **`aviation-feed` is keyless but is NOT a fifth relay**, and the distinction is a security
 property rather than a naming one. A relay forwards a URL **the caller named**, which is why the

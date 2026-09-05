@@ -4090,6 +4090,9 @@ window.IntMapModules.dataLayers=function(HOST){
     })();
     const AVIATION_ENDPOINT=(function(){ try{ const b=String(window.SUPABASE_URL||'').replace(/\/$/,'');
       return b?(b+'/functions/v1/aviation-feed'):''; }catch(_){ return ''; } })();
+    /* (#R510) the ship relay — same derivation, same reason: the project ref lives in one place */
+    const AIS_ENDPOINT=(function(){ try{ const b=String(window.SUPABASE_URL||'').replace(/\/$/,'');
+      return b?(b+'/functions/v1/ais-feed'):''; }catch(_){ return ''; } })();
     let _av2=null;                 /* the IntMapAviation controller, once the lazy module has landed */
     let _av2Starting=false;
     let _av2Zoom=null;
@@ -4459,10 +4462,13 @@ window.IntMapModules.dataLayers=function(HOST){
     function updateShipsZoomHint(){
       const on=GE().layers.get('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible';
       const el=zoomHintEl('ships-zoom-hint',SHIPS_MIN_ZOOM);
+      /* (#R510) …and only for the BYOK stream. The relay holds the world set, so there is no zoom
+         at which it has nothing to say — telling a reader to zoom in would be false. */
       if(on&&aisKey&&GE().camera.getZoom()<SHIPS_MIN_ZOOM){ el.textContent=t('shipsZoomHint'); el.style.display='block'; } else el.style.display='none';
     }
     function aisBBox(){ const b=GE().camera.getBounds(); return [[[b.getSouth(),b.getWest()],[b.getNorth(),b.getEast()]]]; }
     function stopAIS(){
+      stopAisPoll();
       if(aisRefreshT){ clearTimeout(aisRefreshT); aisRefreshT=null; }
       if(aisReconnectT){ clearTimeout(aisReconnectT); aisReconnectT=null; }
       if(aisWS){ try{ aisWS.onclose=null; aisWS.close(); }catch(_){} aisWS=null; }
@@ -4507,10 +4513,109 @@ window.IntMapModules.dataLayers=function(HOST){
       ws.onerror=()=>{};
       ws.onclose=()=>{ if(ws!==aisWS) return; aisReconnectT=setTimeout(()=>{ if(GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'&&aisKey&&GE().camera.getZoom()>=SHIPS_MIN_ZOOM) connectAIS(); },4000); };
     }
+    /* ══ (#R510) SHIPS WITHOUT A KEY ═══════════════════════════════════════════════════════════
+       「船舶レイヤーは、APIキーが必要ですと出てくるので、没にしてましたが、ちゃんと実装したい。」
+       It did say that, and that was the whole design: BYOK. Every reader had to go and get an
+       aisstream.io credential, and until they did the layer drew NOTHING and toasted a prompt —
+       upstream load proportional to USERS, and a feature only credential-holders could see. That is
+       the structure #R341 removed for aircraft, and supabase/functions/ais-feed is the ship half of
+       the same answer: one key held on the server, one shared snapshot, every reader served from it,
+       and Digitraffic (keyless, CC BY 4.0) underneath so the layer is never empty and never asks.
+
+       ⚠ THE BYOK PATH IS NOT REMOVED (AGENTS.md §3.1). A reader who HAS a key still streams
+       aisstream.io directly from their browser — a live WebSocket is fresher than any snapshot can
+       be, and their key is still theirs and still stored only in their browser. What changed is
+       only what happens when there is NO key: real ships instead of a prompt.
+       ⚠ …AND THE ZOOM FLOOR IS THE STREAM'S, NOT THE LAYER'S. The floor exists because the direct
+       stream subscribes to the VIEWPORT and a whole-world subscription would be a firehose into one
+       browser. The relay already holds the world, so there is nothing for a floor to protect.
+       ⚠ BUT THE WHOLE WORLD IS NOT WHAT A BROWSER LOOKING AT ONE STRAIT SHOULD DOWNLOAD. Measured
+       on the wire: ~65 gzipped bytes per vessel, so a Baltic-only set is 52 kB and a global one
+       is megabytes — every 30 s, on a phone. The relay therefore has a VIEW channel (`?bbox=`) and
+       this side asks for the viewport plus a margin, re-asking only when the view LEAVES the box
+       it last fetched (a small pan inside the margin costs nothing). Below zoom 2 the view is the
+       world and the world is what is asked for, same bytes at every zoom from there down. */
+    let aisPollT=null, aisPollBusy=false, aisPollBox=null, aisPollMoveT=null;
+    const AIS_POLL_MS=30000, AIS_VIEW_PAD=0.35, AIS_VIEW_MIN_ZOOM=2;
+    function stopAisPoll(){ if(aisPollT){ clearTimeout(aisPollT); aisPollT=null; } if(aisPollMoveT){ clearTimeout(aisPollMoveT); aisPollMoveT=null; } }
+    const _aisLonIn=(lon,w,e)=>{ let span=e-w; if(!(span>0)) span+=360; if(span>=360) return true; return ((((lon-w)%360)+360)%360)<=span; };
+    /* the padded viewport as [w,s,e,n], or null when the view already spans the world; w>e means
+       the box crosses the antimeridian (the relay reads it the same way) */
+    function aisViewBox(){
+      try{
+        if(GE().camera.getZoom()<AIS_VIEW_MIN_ZOOM) return null;
+        const b=GE().camera.getBounds(); const w=b.getWest(), e=b.getEast(), s=b.getSouth(), n=b.getNorth();
+        const dx=(e-w)*AIS_VIEW_PAD, dy=(n-s)*AIS_VIEW_PAD;
+        if((e-w)+2*dx>=360) return null;
+        const nl=x=>((((x+180)%360)+360)%360)-180;
+        return [nl(w-dx), Math.max(-90,s-dy), nl(e+dx), Math.min(90,n+dy)];
+      }catch(_){ return null; }
+    }
+    /* is the CURRENT (unpadded) view still inside the box the last poll asked for? */
+    function aisBoxCovers(box){
+      if(!box) return true;
+      try{
+        const b=GE().camera.getBounds(); const w=b.getWest(), e=b.getEast();
+        if(e-w>=360) return false;
+        if(b.getSouth()<box[1]||b.getNorth()>box[3]) return false;
+        return _aisLonIn(w,box[0],box[2])&&_aisLonIn(e,box[0],box[2])&&_aisLonIn((w+e)/2,box[0],box[2]);
+      }catch(_){ return false; }
+    }
+    function aisViewMoved(){
+      if(aisPollBox===null&&aisViewBox()===null) return;   /* world to world: the bytes would be the same */
+      if(aisBoxCovers(aisPollBox)) return;
+      clearTimeout(aisPollMoveT); aisPollMoveT=setTimeout(()=>{ aisPollMoveT=null; pollAis(); },600);
+    }
+    function shipsLayerOn(){ try{ return GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'; }catch(_){ return false; } }
+    /* the relay's compact wire → the very records shipMaterialize already produces, so the glyphs,
+       the tooltip and the card do not learn a second vocabulary (§22.1) */
+    function aisApply(j){
+      if(!j||!Array.isArray(j.a)) return 0;
+      const now=Date.now(), names=new Map();
+      for(const it of (j.id||[])) names.set(it[0],it);
+      const out=[];
+      for(const r of j.a){
+        const idr=names.get(r[0])||null;
+        const st=r[7];
+        out.push({ lng:r[1], lat:r[2], mmsi:r[0],
+          name:idr?idr[1]:'', callsign:idr?idr[2]:'',
+          speed:(r[3]!=null?r[3]:null), cog:(r[4]!=null?r[4]:null),
+          heading:(r[5]!=null?r[5]:(r[4]!=null?r[4]:0)),
+          navStatus:(r[6]!=null?r[6]:null), shipType:(st!=null?st:null),
+          dest:idr?idr[4]:'', draught:(idr&&idr[5])?idr[5]:null, imo:(idr&&idr[3])?idr[3]:null,
+          /* the wire carries AGE in seconds, because a snapshot's own clock is not the reader's
+             (§22.2) — the card says "last seen N ago" off this */
+          t:now-((r[8]||0)*1000),
+          type:(st===35?'military':'civilian') });
+      }
+      shipsData=out;
+      refreshTrafficLayer('ships');
+      return out.length;
+    }
+    async function pollAis(){
+      if(aisPollBusy||!AIS_ENDPOINT) return;
+      aisPollBusy=true; if(aisPollT){ clearTimeout(aisPollT); aisPollT=null; }
+      const box=aisViewBox();
+      try{
+        const r=await fetch(AIS_ENDPOINT+(box?('?bbox='+box.map(v=>v.toFixed(2)).join(',')):''),{cache:'no-store'});
+        if(r.ok){ aisPollBox=box; aisApply(await r.json()); }
+      }catch(_){
+        /* ⚠ A FAILED POLL CHANGES NOTHING ON SCREEN. The vessels already drawn are real and simply
+           age; emptying the layer would say "there are no ships", which is a different claim (§25.2).
+           But a reader who has NOTHING drawn is owed the reason — an empty sea and an unreachable
+           feed look identical, and only one of them is about the sea. */
+        if(!shipsData.length) imToast(t('aisNoKey'));
+      }
+      aisPollBusy=false;
+      if(shipsLayerOn()&&!aisKey) aisPollT=setTimeout(pollAis,AIS_POLL_MS);
+    }
     function startShips(){
-      if(!aisKey){ imToast(t('aisNoKey')); updateShipsZoomHint(); return; }
-      if(GE().camera.getZoom()<SHIPS_MIN_ZOOM){ updateShipsZoomHint(); return; }  /* connect once the user zooms in */
-      connectAIS();
+      if(aisKey){
+        if(GE().camera.getZoom()<SHIPS_MIN_ZOOM){ updateShipsZoomHint(); return; }  /* connect once the user zooms in */
+        connectAIS();
+        return;
+      }
+      stopAisPoll(); updateShipsZoomHint(); pollAis();
     }
     /* AIS ship-type code → label */
     function shipTypeLabel(c){ if(c==null) return ''; const jp=HOST.lang==='jp';
@@ -5176,7 +5281,7 @@ window.IntMapModules.dataLayers=function(HOST){
           row(window.IntMapLang.t(HOST.lang,'Draught','喫水','Tiefgang','Осадка','Calado'),p.draught?p.draught+' m':'')+
           row(window.IntMapLang.t(HOST.lang,'Destination','仕向地','Ziel','Пункт назначения','Destino'),escapeHtml(p.dest||''))+
           typeChip+
-          `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(Math.floor((p.t||0)/1000))}<br>aisstream.io · AIS</div>`;
+          `<div style="font-size:10px;color:var(--text-muted);margin-top:5px;border-top:1px solid rgba(128,128,128,0.18);padding-top:4px;">${(window.IntMapLang.t(HOST.lang,'Last seen','最終受信','Zuletzt empfangen','Последний приём','Última recepción'))+' '+agoStr(Math.floor((p.t||0)/1000))}<br>${aisKey?'aisstream.io · AIS':'aisstream.io + Digitraffic/Fintraffic (CC BY 4.0) · AIS'}</div>`;
       }
       /* planes — every available ADS-B field (airplanes.live) */
       const baroFt=p.baroAlt!=null?` (${Math.round(p.baroAlt*3.281)} ft)`:'';
@@ -5408,7 +5513,13 @@ window.IntMapModules.dataLayers=function(HOST){
       } else {
         startShips();
         /* viewport-follow: reconnect AIS for wherever the user pans (when zoomed in enough) */
-        if(!_aisMove){ _aisMove=()=>{ if(GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'){ updateShipsZoomHint(); if(aisKey&&GE().camera.getZoom()>=SHIPS_MIN_ZOOM){ clearTimeout(_aisMoveT); _aisMoveT=setTimeout(connectAIS,1500); } else { stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships'); } } }; GE().events.on('moveend',_aisMove); GE().events.on('zoom',updateShipsZoomHint); }
+        /* ⚠ (#R510) THE PAN HANDLER BELOW THE FIRST LINE BELONGS TO THE BYOK STREAM, which is
+           subscribed to the VIEWPORT and must re-subscribe when the viewport moves — and its `else`
+           branch EMPTIES shipsData, which on the relay path would wipe the world every time the
+           reader dragged the map. The relay path takes the first line only: re-ask the relay when
+           the view has left the box the last poll covered, and never empty anything. */
+        if(!_aisMove){ _aisMove=()=>{ if(!shipsLayerOn()) return; if(!aisKey){ aisViewMoved(); return; }
+            updateShipsZoomHint(); if(GE().camera.getZoom()>=SHIPS_MIN_ZOOM){ clearTimeout(_aisMoveT); _aisMoveT=setTimeout(connectAIS,1500); } else { stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships'); } }; GE().events.on('moveend',_aisMove); GE().events.on('zoom',updateShipsZoomHint); }
         updateShipsZoomHint();
       }
     }

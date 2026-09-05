@@ -56,16 +56,16 @@ function docFacts() {
 const CASES = [
   /* ① 手書き一覧に一度も入っていなかった文書。これがこの回の報告そのもの。 */
   { rule: 'edge-count', file: 'docs/FILES.md', why: 'the ledger that drifted was never in the list',
-    from: 'Edge Function は全13本をここに宣言する', to: 'Edge Function は全11本をここに宣言する' },
+    from: 'Edge Function は全14本をここに宣言する', to: 'Edge Function は全11本をここに宣言する' },
 
   /* ① 同じ文書の**2つ目**の出現。§6.2 の見出しは正しいまま残す——`.match()` が最初の1件で
      満足していた穴は、まさにこの形でしか再現しない。 */
   { rule: 'edge-count', file: 'Architecture.md', why: 'the second claim in a file whose first claim is right',
-    from: '**Edge Functions を13本デプロイする**', to: '**Edge Functions を10本デプロイする**' },
+    from: '**Edge Functions を14本デプロイする**', to: '**Edge Functions を10本デプロイする**' },
 
   /* ① 英単語で書かれた数。`SECURITY.md` は外部の報告者向けで、日本語の needle では読めない。 */
   { rule: 'edge-count', file: 'SECURITY.md', why: 'a count spelled as an English word',
-    from: '**thirteen** Edge Functions', to: '**eight** Edge Functions' },
+    from: '**fourteen** Edge Functions', to: '**eight** Edge Functions' },
 
   /* ② `_shared/` の一覧から1本抜く。`_shared` は関数ではないので①の分母には入らない。 */
   { rule: 'edge-shared', file: 'docs/FILES.md', why: 'a name dropped from the _shared roster',
@@ -110,8 +110,8 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
     const originalBytes = rd('Architecture.md');
     const original = readLF(join(ROOT, 'Architecture.md'));
     const silent = original
-      .replace(anchorRe('### 6.2 Edge Functions — **13本**'), () => '### 6.2 Edge Functions')
-      .replace(anchorRe('**Edge Functions を13本デプロイする**'), () => '**Edge Functions をすべてデプロイする**');
+      .replace(anchorRe('### 6.2 Edge Functions — **14本**'), () => '### 6.2 Edge Functions')
+      .replace(anchorRe('**Edge Functions を14本デプロイする**'), () => '**Edge Functions をすべてデプロイする**');
     assert.notEqual(silent, original, 'Architecture.md no longer states the count in either place');
     try {
       writeFileSync(join(ROOT, 'Architecture.md'), silent);
@@ -138,7 +138,7 @@ test('R399 ③ a bare "Edge Function 1 本" is not read as an inventory claim', 
   assert.match(news, /\*\*Edge Function 1 本\*\*/,
     'the sentence this guard is about is gone from docs/NEWS-EVENTS.md — the case is no longer proven');
   assert.doesNotMatch(news, /9 本目/,
-    'the stale ordinal came back: news-ingest is one of thirteen, not "the 9th"');
+    'the stale ordinal came back: news-ingest is one of fourteen, not "the 9th"');
 });
 
 test('R399 ④ the sweep reaches every current-state document, not a hand-written few', () => {
@@ -158,7 +158,13 @@ test('R399 ④ the sweep reaches every current-state document, not a hand-writte
     ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f),
   ];
   const holders = docs.filter((f) => /Edge Functions?[ \t]*\**[ \t]*(?:は|を|—|–|-|:|：|（|\()[ \t]*\**[ \t]*(?:全|約)?[ \t]*\d+[ \t]*(?:本|函数)/.test(rd(f))
-    || /(?<![\d.§#])\**\b(?:thirteen|13)\b\**[ \t]+Edge Functions?\b/.test(rd(f)));
+    /* ⚠ (#R510) THE ENGLISH FORM MAY NOT NAME ONE PARTICULAR NUMBER. This alternation was
+       `thirteen|13`, so the day a fourteenth function landed — and the documents were correctly
+       updated to say "fourteen" — the two English documents stopped being COUNTED as holders and
+       this test failed for having done its job. What it is really asking is "does this document
+       state the count in a shape the gate can read", which is a question about the SHAPE. Whether
+       the number is right is doc-facts' rule 2a, and it is checked there. */
+    || /(?<![\d.§#])\**\b(?:\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b\**[ \t]+Edge Functions?\b/i.test(rd(f)));
   assert.ok(holders.length >= 5,
     `only ${holders.length} documents state the Edge Function count in a shape the gate can read: ${holders.join(', ')}`);
 });

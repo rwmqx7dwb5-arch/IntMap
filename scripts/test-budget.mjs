@@ -228,7 +228,18 @@ const BUDGET_S = 28;                    /* core: 0.5 min — measured 28 s over 
    ⚠ THE CORE CEILING DID NOT MOVE. The gate is the same six files: smoke 8, monitors 10, security 4,
    internal-qa 2, r157 1, and `currentRoundSpec()` — which is tests/r508.spec.js now, at 3, exactly
    what tests/r494.spec.js carried on its way out. 28 either way. */
-const TOTAL_BUDGET_S = 4638;            /* 77.4 min — 4,635 (#R494) + 3 (#R508: tests/r508.spec.js) */
+/* ⚠ (#R510) THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT — 1 SECOND (4,638 -> 4,639) — for
+   tests/r510.spec.js, the ship layer's gate half: switch the layer on WITHOUT a key, see the relay
+   asked for the viewport box and its answer drawn, and no toast. The relay is routed (a canned wire
+   body), so a push cannot go red because a feed had a bad afternoon; the relay ITSELF is exercised by
+   tests/r510-checks.test.mjs ⑨⑩⑪ with its upstreams stubbed. Measured the way #R405/#R416 measured
+   theirs — warm server, one worker, worker-scoped page, the reporter's own test-body duration —
+   756 ms, entered as 1. The core ceiling did not move: this file replaces tests/r508.spec.js as
+   `currentRoundSpec()` (3 -> 1) and the gate is 26 s of entries against BUDGET_S = 28, so the core
+   ceiling could follow the floor down by 2 — not claimed here, because r508 leaving the gate is the
+   price rule's doing and not this round's saving (#R416's shape). Not paid out of a stale-high entry,
+   for #R405's reason: none has been measured that this round may take from. */
+const TOTAL_BUDGET_S = 4639;            /* 77.3 min — 4,638 (#R508) + 1 (#R510: tests/r510.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

@@ -243,7 +243,10 @@ window.IntMapModules.layerRegistry=function(HOST){
       summary:()=>{ const f=_srcFeatsIn('src-planes',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'airplanes.live ADS-B' });
     register('ships',{ label:()=>L5('Live ships','船舶（リアルタイム）','Live-Schiffe','Суда (онлайн)','Barcos en vivo'),
       on:()=>_lyrVis('lyr-ships'), featuresIn:b=>_srcFeatsIn('src-ships',b),
-      summary:()=>{ const f=_srcFeatsIn('src-ships',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'aisstream.io AIS' });
+      summary:()=>{ const f=_srcFeatsIn('src-ships',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; },
+      /* (#R510) with the reader's own key the browser streams aisstream.io directly; without one the
+         shared relay serves aisstream.io AND Digitraffic (CC BY 4.0 — naming it is an obligation) */
+      source:()=>{ let own=''; try{ own=localStorage.getItem('intmap_ais_key')||''; }catch(_){} return own?'aisstream.io AIS':'aisstream.io / Digitraffic (Fintraffic, CC BY 4.0) AIS'; } });
     /* (#R184) live satellites. Unlike the two above, this one does NOT read the source back out of the
        renderer: the layer's own state() is authoritative (a GeoJSON source's data is not readable in
        MapLibre 5 — #R183), and "how many are above the horizon from here" is the meaningful count. */

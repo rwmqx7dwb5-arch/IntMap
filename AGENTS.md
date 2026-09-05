@@ -187,9 +187,9 @@ npipe:…` を返す）。旗が無いと**標準出力が 1 バイトも出な�
 「まだ実行中」と区別がつかない。⚠ **進んでいるかどうかは経過時間ではなく
 `supabase functions list` の `version` / `updated_at` で判定する。**
 
-**Edge Functions は 13 本**（`ai-proxy` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+**Edge Functions は 14 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
 `delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `refresh-news` /
-`routing-relay` / `sv-cov` / `volcano-feed`）。13 本すべてが
+`routing-relay` / `sv-cov` / `volcano-feed`）。14 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 ⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・
