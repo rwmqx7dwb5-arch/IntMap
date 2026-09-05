@@ -43,6 +43,15 @@ function registry() {
 }
 
 const RETIRED = 'map-tiles.open-meteo.com';
+/* THE HOSTS A TEXT NAMES — every token that parses as a hostname, compared WHOLE. Never a substring
+   test: `text.includes(host)` also matches https://evil.example/?x=host, which is the defect CodeQL's
+   js/incomplete-url-substring-sanitization names, and the same rule this repo already keeps in
+   js/wx-source.js. The question here is membership, so it is asked of tokens. */
+const hostsNamed = (text) => new Set(text.split(/[^A-Za-z0-9.-]+/)
+  .filter((w) => /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(w)).map((w) => w.toLowerCase()));
+/* the hosts index.html asks the browser to resolve early — parsed from the hint, not searched for */
+const prefetched = (html) => new Set([...html.matchAll(/<link rel="dns-prefetch" href="([^"]+)">/g)]
+  .map((m) => new URL(m[1]).hostname));
 /* the SDK's own domain extraction — @openmeteo/weather-map-layer 0.0.19, dist/index.js:
    `xQ=/data_spatial\/(?<domain>[^/]+)/` — quoted from the pinned bundle so that ① asks the
    question the renderer asks, not one this file invents */
@@ -71,14 +80,14 @@ test('R514 ① every model URL is on the public AWS Open Data origin, with the s
 test('R514 ② the retired CDN name is in no shipped code and no boot hint', () => {
   for (const p of ['js/wx-models.js', 'js/wx-ecmwf.js', 'js/weather.js', 'js/wx-wind.js', 'js/wx-source.js',
     'js/legal-text.js', 'sw.js']) {
-    assert.ok(!codeOnly(read(p)).includes(RETIRED), p + ' ships no reference to ' + RETIRED);
+    assert.ok(!hostsNamed(codeOnly(read(p))).has(RETIRED), p + ' ships no reference to ' + RETIRED);
   }
   const html = read('index.html');
-  assert.ok(!html.includes(RETIRED), 'index.html does not prefetch a name that does not resolve');
+  assert.ok(!hostsNamed(html).has(RETIRED), 'index.html does not name a host that does not resolve');
+  assert.ok(!prefetched(html).has(RETIRED), 'and does not prefetch it');
   const R = registry();
   const host = new URL(R.HOST).hostname;
-  assert.match(html, new RegExp('<link rel="dns-prefetch" href="https://' + host.replace(/\./g, '\\.') + '">'),
-    'index.html prefetches the host the code reads from');
+  assert.ok(prefetched(html).has(host), 'index.html prefetches the host the code reads from (' + host + ')');
 });
 
 /* ── ③ the policy names the recipient the code sends the request to ───────────────────────── */
@@ -89,9 +98,10 @@ test('R514 ③ the privacy policy names the model host the code reads from, in b
   const ja = src.slice(src.indexOf('4. 第三者'), src.indexOf('5. ', src.indexOf('4. 第三者')));
   const en = src.slice(src.indexOf('4. Third parties'), src.indexOf('5. ', src.indexOf('4. Third parties')));
   assert.ok(ja.length > 500 && en.length > 500, 'both §4 sections were found');
-  assert.ok(ja.includes(host), 'Privacy §4 (ja) names ' + host);
-  assert.ok(en.includes(host), 'Privacy §4 (en) names ' + host);
-  assert.ok(!ja.includes(RETIRED) && !en.includes(RETIRED), 'and neither still names the retired host');
+  const jaHosts = hostsNamed(ja), enHosts = hostsNamed(en);
+  assert.ok(jaHosts.has(host), 'Privacy §4 (ja) names ' + host);
+  assert.ok(enHosts.has(host), 'Privacy §4 (en) names ' + host);
+  assert.ok(!jaHosts.has(RETIRED) && !enHosts.has(RETIRED), 'and neither still names the retired host');
   /* the bucket is Amazon's; the policy must say so — the recipient of the request is the fact */
   assert.ok(/Amazon Web Services/.test(en), 'Privacy §4 (en) says who serves the bytes');
   assert.ok(/Amazon Web Services/.test(ja), 'Privacy §4 (ja) says who serves the bytes');
