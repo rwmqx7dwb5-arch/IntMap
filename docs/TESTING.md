@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **102 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
-`npm run test:checks` runs **288 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **289 Node test files** with no browser at all (counted from
 
 > ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
 > `tests/r505-checks.test.mjs` ① は 13 本すべての `supabase/functions/*/index.ts` を
@@ -443,6 +443,64 @@ layer's command never settles when a request it starts cannot be answered — an
 went on is reported `ran:false`, not as a phase that cost nothing** (#R322's rule). The first run of
 this instrument drove `dl-ec-wind`, which is the id of a preview *canvas*, and `dl-alerts`, which
 does not exist; the real ids are `dl-wind` and `wp-dl-alerts`.
+
+### Every layer under the same finger: `scripts/layer-sweep.mjs` · `scripts/view-matrix.mjs` (#R512)
+
+`mobile-trace.mjs` measures the two layers a report named. These two borrow its harness — boot,
+context, replay cache, the CDP finger, the snapshot arithmetic are **imported, not copied**, so a
+busy millisecond here is the same millisecond there — and ask a wider question.
+
+```bash
+node scripts/layer-sweep.mjs --cpu 4 --record            # every box in #layer-dropdown, one at a time
+node scripts/layer-sweep.mjs --only 'alerts|planes' --idle 5000
+node scripts/layer-sweep.mjs --with wp-dl-alerts        # the marginal cost of each layer ON TOP of alerts
+node scripts/view-matrix.mjs --cpu 4 --reps 2 --record  # vector/satellite × flat/globe + the antimeridian cell
+```
+
+**`layer-sweep`** walks `#layer-dropdown input[type=checkbox]` — the one registry every reader of
+the layer list uses (Atlas, favourites, session tabs) — so a layer added next round is swept next
+run. ⚠ Not `input[id^="dl-"]`: that spelling keeps 44 of the 163. Each row is **flip → idle window →
+finger pan + pinch → flip back → post window**, and it reports three things the finger alone cannot:
+
+| column | what it is |
+|---|---|
+| `Δbusy`, `fps`, `worst`, `placemt`/`render`/`decode` | the gesture with the box flipped, against the most recent baseline. A `+` row was switched ON (Δ = what it adds); a `−` row is ON by default and was switched OFF (Δ < 0 = what the default map pays for it) |
+| `idle f/s`, `sd/s`, `setD/s` | fetch **attempts**, `styledata` events, `GeoJSONSource.setData` calls per second **while nobody touches the map**. A layer that keeps the style busy at rest is the #R499 shape — a retry loop that turns at microtask speed when a feed does not answer — and it is caught by a counter, not by a thumb |
+| `after-off` | the same counters after the box is unchecked. A layer still fetching or mutating the style after OFF is a leak |
+| `unpainted` | the box is checked but `__imLayerPainted` says nothing reached the renderer (#R353's rule: the box is the app's opinion) |
+
+⚠ **The baseline drifts, so it is a median of three and is taken again every `--rebase` rows** (12):
+on the smoke run a single baseline read 6,962 ms and the third row 2,867 ms with *less* on, because the
+default map was still decoding while the baseline was taken. Every row records `baselineAt`. The
+floor — every app layer hidden through the engine, basemap and UI only — is measured **last**, in the
+warmest browser of the run, beside one more baseline. ⚠ Boxes are driven by `checked` + `change`,
+which is exactly what `IntMapOS.exec('layer.on')` does; never `el.click()` (the dropdown cancels it in
+the capture phase) and not through the command either (measured: a 3 s poll per flip that fell through
+to the same `change` anyway).
+
+**`view-matrix`** puts the identical finger on four maps — `{vector, satellite} × {flat, globe}` —
+switched through the app's own commands, and on a fifth that is a known renderer defect:
+maplibre-gl-js#7672 (globe, pitch ≳ 40°, zoom > 5, looking across the date line collapses to
+single-digit fps in a bare map). Satellite-only fast → symbol placement; flat-only fast → the globe
+renderer; both slow → pixel fill / UI composite / the touch path; the fifth cell alone slow → the
+renderer, and the answer is a version, not an optimisation.
+
+Both are Chromium-only (the finger is CDP), both print **a ranking on desktop silicon, not a phone
+number**, and both need `--record` on a checkout whose `.frame-cache/` has not seen the layers'
+bytes yet — a blocked miss measures a layer without its data.
+
+**`scripts/phase-profile.mjs`** answers the question the buckets leave open — *which functions* make
+up `other`. Same boot, the layers named by `--with` switched on, the camera taken to `--zoom`, and the
+CDP sampling profiler run across one small finger pan (or, with `--rest <ms>`, across that many
+milliseconds of nobody touching the map). Self time by file and by function, with the bundle
+offset. ⚠ Against a minified build every name is one letter: build once with
+`npx vite build --minify false --outDir dist-dev` and pass `--dist dist-dev`.
+
+⚠ **An A/B arm has to be asked whether it is drawing the same thing before it is asked how fast.**
+The first MapLibre 6.7 arm reported 60 fps in every phase and half the busy time — and had drawn no
+tile at all: the 6.x worker is loaded as a real URL beside the bundle, Vite does not emit it, the
+request 404s, and a map without a worker is the fastest map there is. `queryRenderedFeatures().length`,
+`__imLayerPainted(id)`, the visible-symbol count and a screenshot come first; `fps` comes after.
 
 ### On-demand modules (#R209)
 
