@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R512** — **速い方の腕は、空の地図だった**〈外部の分析「スマホの重さは1個の原因ではない」を受けて「出来るだけ」〉／⚠⚠⚠ **MapLibre 6.7 の A/B で 6.7 側が全相 60 fps・busy 半分と出たが、タイルを 1 枚も読んでいなかった**——6.x は worker を `import.meta.url` の隣の実 URL で読み、Vite がそれを出さず 404。`queryRenderedFeatures().length === 0` で発覚。worker を並べて測り直すと**それでも 6.7 は busy −30〜50%**（pan-alerts-city 11,055 → 5,658 ms・26.5 → 57.9 fps、satellite/globe 5,089 → 3,159、日付変更線セル 4,464/35 fps → 3,101/59 fps）／⚠⚠ **163 レイヤーを 1 つずつ同じ指で測る `scripts/layer-sweep.mjs`**（限界費用・静止中の試行回数・OFF 後の残り）——**#R499 型の輪は 163 個のどれにも無い**（後半窓で回り続けるのは警報の設計上の輪番 1.5 fetch/s だけ・render 0/s）。重いのは読み込み（鉄道 13 MB・警報の cold burst 最初の 45 s）とレンダラ／⚠⚠ **ホバーの hit-test は指の相で 0 回**（A/B 不要）／⚠⚠ **掃引の基準値は暖機で 4,570 → 1,390 と動き、OFF にしたレイヤーは style に残る（63 → 357 層）**——3 回中央値・`--rebase`・既定 ON の行と床は最後／`scripts/view-matrix.mjs`（4 条件＋日付変更線）・`scripts/phase-profile.mjs`（誰が走っているか・`--rest`）／再生キャッシュが空の worktree は遮断された地図を測る（`--record`）／`el.click()` は 163 個全部で失敗
 - **#R511** — **地図は道具ではなく、回答の形式になった**〈「Atlasは『地図を操作する能力』が不足しているのではなく、『地図を使った説明』がAtlasの第一級の回答形式になっていません。」〉／⚠⚠⚠ **#R406 が「地名が出たら地図化」を撤去したのは正しく、その跡に「地図を使うと決めた回答を地図回答として完成させる仕組み」が無かった**——`final_text` は地図について何も言えず、地図を使うと決めた回答が step 0 の文だけで正常終了していた／⚠⚠ 直し方は**言葉から推定する規則を戻すことではない**: 返答に `answer_mode`（text / map / mixed）を **Atlas が宣言**し、ループは「map / mixed と言ったのに `changedMap` を刻まれた成功結果が無い final」だけを `map_not_drawn` として差し戻す（schema 検査と同じ種類・`maxMapGate` 2 回・上限後は受け入れて `mapDrawn:false` を記録）／⚠⚠ **「地図で説明する」は 1 つの行為なのに 6 つの道具に割れていた**——`map.compose`（中核 `compose_map`）が地点・役割・大円の弧・塗り・カメラ・凡例を 1 回で描き、台帳 → ジオコーダの順に**コードが**解決し、解決できない地名は**名前で `unplaced`**（座標を発明しない）／⚠ 回答文の最初の言及に番号バッジ（`linkProse`・テキストノードだけ）→ 文と印が双方向に光る／⚠ `js/atlas-console.js` は余白 0 行——**空行 3 本を実装行に替えて**収めた（import は行頭でないと reachability に見えない）／⚠ 英語キー `On the map` は terrain-water と衝突（ja が別訳）→ `Places on the map` に改名
 - **#R510** — **「APIキーが必要です」と出るレイヤーは、機能ではなく前提条件だった**〈「船舶レイヤーは、APIキーが必要ですと出てくるので、没にしてましたが、ちゃんと実装したい。あなたの側でできることはすべてやって。」〉／⚠⚠⚠ **BYOK は #R341 が航空機で潰した構造そのもの**——利用者ひとりずつが aisstream.io の鍵を取りに行き、取るまで地図は**何も描かず**プロンプトを出す＝上流負荷が利用者数に比例し、資格情報を取った人にしか機能が存在しない ⇒ `supabase/functions/ais-feed`（**14本目**）が provider を代表して読み、全利用者へ同じスナップショットを配る。**鍵はブラウザに1バイトも渡らない**／⚠ **BYOK は取り上げていない**（`AGENTS.md` §3.1）——鍵を持つ人は今までどおり直接繋ぐ（ライブの WebSocket のほうが新しい）。変えたのは**鍵が無いとき何が起きるか**だけ／⚠⚠ **無料・鍵不要・全球の AIS は存在しない**ので provider は2本: **Digitraffic / Fintraffic**（バルト海・**鍵も登録も不要**・CC BY 4.0・実測 位置890件＋静的854件・CORS 開放）と **aisstream.io**（全球・鍵あり）。Digitraffic は「鍵が無い日でもレイヤーが空にならない」ためにある／⚠⚠⚠ **WebSocket は1回の呼び出しの中で開いて閉じる**——`EdgeRuntime.waitUntil` は応答をまたいで生きない（#R341 実測）ので「裏で開きっぱなし」は単発の試験で正しく見えて本番で1バイトも集めない／⚠⚠⚠ **鍵が違うときの見え方は、繋がらないときと同じ**（`open|sent|error|close:1006`・フレーム0）。**わざと無効な鍵で同じ形を再現して確定**させ、`x-intmap-note` に socket の顛末と**鍵の長さと形**（値ではない）を出した——保存されていた秘密は **79文字・英数字以外を含み**、aisstream が発行する形ではなかった／⚠⚠ **秘密は trim する**（末尾の改行1つで、何も言われずに拒否される）／⚠⚠ **Storage は存在しない bucket への PUT に HTTP 400 + NoSuchBucket を返す**（404 ではない）ので、404 だけ見る再試行は一度も発火しない／⚠ **リレー経路にはズーム下限もパン時の再購読も無い**——後者の `else` 枝は `shipsData` を空にするので、リレーで走ると**ドラッグのたびに世界が消える**／本番実測: **834隻・うち815隻に船名**（TRUVOR / UBEG6 / IMO 9311543 / 曳船 / dest PRIM RU / 喫水 3.9m）／⚠⚠⚠ **8/31 に書かれて 9/6 まで 1 コミットも無かった**——関数は本番に deploy 済み・ブラウザ側は worktree に未コミット＝**サーバーは出荷済み、ブラウザは出荷前**で、利用者は 9/6 もトーストを見ていた。その worktree に触らず差分を R510 へ写して改番／⚠⚠⚠ **温かい isolate は一度 build したら二度と更新しなかった**（`refresh()` の条件が「強制・空・空で古い」だけ。本番 `?meta=1`＝`refreshes:0`・5.7 日前の snapshot を hydrate して即答）⇒ TTL 超過で 1 回分待つ `refreshOnce`（同時は `INFLIGHT` で共有・aisstream は鍵 1 本に同時 3 接続）／⚠⚠ **全球の JSON を 30 秒ごとに丸ごと運ぶ設計だった**（実測 797 隻＝gzip 52 kB＝**1 隻 65 バイト**→全球なら数 MB/30 秒）⇒ `view` チャンネル `?bbox=`＋余白 35%・箱を出たときだけ再取得／⚠⚠ **`x-intmap-coverage` は設定を名乗っていた**（aisstream 0 隻でも `digitraffic+aisstream`）⇒ 答えた provider と隻数 `digitraffic:891`・snapshot に `p` 同梱／⚠ **9/6 も鍵は 79 文字・英数字以外**（Node で無効鍵を再現＝同じ形）＝直せるのは利用者だけ。直るまで鍵無しの船はバルト海だけ／検査 11 本のうち ⑨⑩⑪ は **handler を捕まえて Request を投げる**（上流だけ stub）
 - **#R508** — **前面へ出す印が、ダイアログを九千段沈めていた**〈「Terms of Service · Privacy Policy をクリックして読もうとしても、設定に邪魔されて読めない。」〉／⚠⚠⚠ **開くところまでは正しく、スクロール1回で沈む**——本番で実測: `afterOpen legal 9999 / settings 9999` → `afterWheel legal 2650 .im-front / settings 9999`。`#legal-modal` は `position:fixed` なので #R253〜#R258 の「触ったパネルを最前面に」機構の `panelOf` が**浮遊パネルとして拾い**、`.im-front{z-index:2650 !important}` を付ける。**!important は当のクラス自身の 9999 に勝つ**ので、前へ出すための印が、触ってもいない設定ダイアログの**下**へ押し込んでいた／⚠⚠⚠ **このアプリのダイアログは全部 9999 で、全部が同じ扱いを受けていた**——読む・押す・打つのどれでも印は付く。**見えるのは2枚重なったときだけ**で、それが設定→規約という報告された唯一の経路だった／⚠⚠ **#R258 は同じ形を反対側から見て、`#compare-window` (4000) を帯の中へ降ろして解いた。** モーダルは降ろせない（帯より上にいるのが仕様）ので、今回は**不変条件のほうを書いた**——`.im-front` は**上げる**印であって下げる手段ではないから、既にその高さより上にいる層は帯の一員ではない。`_aboveBand()` が resolved z-index を見て除外する（**綴りの一覧ではなく実測**＝#R253 の作法。後から足した重ね物も自動で入る）。⚠ 比較は**厳密に上**（`> _FRONT_Z`）で、印を持つ節点は class で飛ばす——さもないと一度上がったパネルが**自分を永久に免除**して二度と降りない／⚠⚠ **`_FRONT_Z` は `css/intmap.css` の `.im-front` と同じ数**なので、`tests/r508-checks` ① が両方を読んで食い違いを拒む／⚠ **これは computed z-index の話で、どのソースにも書いていない**——だから本体の検査は `tests/r508.spec.js`（ブラウザで実際にホイールを回し、`elementFromPoint` が規約シートを返すことまで見る）。ソースを読む検査は3件のうち①②③の「二重の数」「除外は実測か」「ダイアログはまだ帯より上か」だけを守る（[[intmap-edge-function-must-be-evaluated]] と同じ線引き）
@@ -310,6 +311,170 @@
 - **#R261** — **「矢印と線が分離している」の正体は、長さが画面の画素・角度が地理の方位という**2つの空間**だった**（#R258 は軸を投影に訊いて切ったが、頭は `bearingOf()` の地理方位を `icon-rotation-alignment:'map'` に渡していた。'map' は「地図の北から測る」＝**ビューポート全体で1つのスカラ**で、球面投影では中心経線以外で子午線が収束する。実測: globe・z2.2 中心170°E で USA の頭 **125.3° 対 軸の画面方向 99.0°＝26.3°違い**（45.5px の頭の底が 13px の軸から **20.7px** 離れる）、z1.4 中心100°E では **130.5°違い**。→ 角度も**投影された neck→tip から**読み `'viewport'` へ。実測 **誤差 ≤0.02°・隙間 ≤0.55px**）／**「たまに直線で地形を完全無視する区間」は、粗い段（最大27×）の1歩そのものだった**（#R258 は湖の横断が1点だったのを直した。今回の計器＝**脚長 ÷ その点が辿られた標本間隔**では 3,563 m でも **1.4セル**＝正常。**描かれる側の最細標本と比べると 150〜160セル**——#R250 の「見るべきは比」。→ 粗い段は**決定**であって**描画**ではない: 各脚を細かい格子上の**最小上昇経路**（Dijkstra・回廊は粗いセル1つ分）で歩き直す。実測 琵琶湖 **3,563 m → 297 m**、Death Valley 586→151・`coarseLegs` 0。⚠ 最初の版は**細かいタイルが無くて黙って諦めていた**（`nodata` 36件）ので、渡された経路そのものを warm する）／**水源を追加すると地形が消えていたのは `build()` が `sculpt` を作り直していたから**（作業矩形の外に水を置く→`rebuildAround`→`build()`→`sculpt=new Float32Array`＋`undoStack=[]`。堤防と水は生き残り、**利用者が彫った地形だけ**が消える。→ メートル単位のオフセット場なので**新しい格子へ再標本化**、undo のスナップショットも同じ関数で。実測 矩形を1/3東へずらす再構築で **436セルと undo 24段が生存**（従来 0））／**一回きりと継続の区別がデータに無かった**（`pourMode` はパネルの設定で、注水は `sources[sources.length-1]` **だけ**を太らせていた＝2つ目を置くと1つ目が黙って止まる。→ `cont`/`rate` は**水源自身の属性**、▶ は継続の水源**すべて**に注ぎ、地図は輪付き（継続・緑）と普通の点（1回・青）で描き分ける。▶ が `pourMode='cont'` を書き換えるのもやめた）／**Reachable area のパネルは `--popup-bg`（α0.74）を `backdrop-filter` なしで使う唯一の浮遊パネルだった**（→ 既定は不透明 `--card-bg`、フロスト2モードの一覧に `#iso-panel` を追加＝**設定には従う**）／**Line of sight に地点を変えるボタンが無かった**（右クリックの案内が2箇所に**文章で**書いてあるだけ。「2点間の見通し…」と同じ1クリック方式で追加。⚠ `open()` は呼ばない——パネルの位置を書き戻してドラッグを台無しにする）／**Atlas からしか開けないシミュレーションが5つあった**（`IntMapDrone`／`IntMapDisaster`／`IntMapTransitReach`／`IntMapRF`／`IntMapEarthReplay`——ボタンもメニューも右クリックも無い。#R258 は**右クリックメニューにあるもの**を集めたので、その1段外側が残っていた。ツール欄は 8→**13**）／**レイヤーの再編（Others と Beta を名指しで許可された）**——Others 33行は全部が世界銀行指標＝カテゴリではなく表の尻尾だったので、**経済・貿易／社会・教育／交通・輸送／農業・食料**の4棚を新設して家族ごとに（9言語）。Beta 40→**26**（貿易フロー・海流・潮汐・作物・産業ウェブ・気象警報は**完成した world-packs 層で、指示で降格されたことは一度も無い**）。⚠ **#R40 が「指示により降格」と記録している GIBS・ECMWF 系は1つも昇格していない**。⚠ `rowFor()` が `ox-` 接頭辞を知らず、OpenRailwayMap/OpenSeaMap は**移したのに動かなかった**（実測 5行のはずが7行）／**実測 OSM 点レイヤー6つ**（空港・航空施設／港湾・ターミナル／上下水道施設／大学・研究機関／緊急対応拠点／宇宙基地・地上局。「1行だけの棚」だった Space & orbit と Indicators、新設の交通・社会に中身が入った）／**データセンター層に「今画面に何があるか」を答えるパネル**（件数の収録/OSM 内訳・**公表容量は必ず「N件／全M件」と併記**・分類別の内訳＝そのままフィルタ・容量順の上位。実測 318件・3.20 GW は **2件のみ**の公表値）／**詳細カードの × は丸をやめて殻自身の角丸四角へ**（`.country-popup-close`＝携帯で32px・ドラッグ除外リスト入りも同時に手に入る）／**再生ボタンは 19px 半径の円→11px の角丸四角**
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
+
+## R512 — **速い方の腕は、空の地図だった**
+
+> 外部（ChatGPT）の分析: 「2026年9月6日時点のIntMapを追った結果、スマホの重さは1個の原因ではありません。
+> 1. ズームの恒常的な重さ → MapLibre本体＋GPU描画 2. 異常に重くなるケース → 特定レイヤーの再描画・通信リトライ暴走
+> 3. ホバー → まだ毎フレームhit-testが残る 4. DPR 2 5. iPhone/WebKitおよびMapLibre 5.24.0側の問題 6. backdrop-filter」
+> 「今やるべき順番: 実機 `?perf=1` ／ `mobile-trace` でレイヤー二分探索 ／ hover 無効化 A/B ／ 4 条件比較 ／ 5.24 vs 6.7 A/B」
+> 指示文は無し。AskUserQuestion の答え: **「出来るだけ。」**
+
+この回は**計測の回**である。分析の主張を 1 つずつ、この機械で測れる形にして測った。製品コードは触っていない
+（触るべきものが見つかったら**提案**する——`CONSTITUTION.md` §0 の 3）。足したのは計器 3 本と、それが借りる
+`mobile-trace.mjs` の export、文書、検査 10 本。
+
+### 0. 前提と、最初の 2 つの罠
+
+すべて Chromium 390×844・DPR 3・**CPU ×4**・`--record` の再生バイト（`docs/TESTING.md` の mobile-trace の節）。
+**携帯の数字ではなく、腕どうしの比較**である。
+
+- ⚠⚠ **最初のトレースは `0 replayed / 2,250 blocked` だった。** `.frame-cache/` は checkout ごとで新しい worktree は空。
+  decode と texUpload が 0 なのは軽いのではなく**何も来ていない**。原本のキャッシュを種にして `--record` で取り直した。
+- ⚠ `mobile-trace.mjs --help` は本物のトレースを**原本で**走らせた（未知の旗は無視される）。止めて、旗はソースで読む。
+
+### 1. 基準（MapLibre 5.24.0・main そのまま）
+
+```
+phase              busy>2   fps  worst │ placemt render mapRnd │ other
+pan-warm             1092  52.8   50.0 │     141    303    347 │   312
+pan-touch            2545  57.2   49.9 │     296    575    691 │   953
+pinch-touch          2385  58.7   33.4 │     301    755    670 │   692
+alerts-on           14408  44.2  566.7 │     882   2023   2610 │ 10591   (block 11,021)
+pan-alerts           7294  51.1  166.7 │     771   2187   2299 │  2166
+pan-alerts-city     11055  26.5  283.3 │     583   2466   3471 │  4535   (block 6,115)
+```
+
+#R499 の直後（暖機後の指パン 345 ms 相当）から見て、**警報 ON の都市パンは今も暖機パンの 4 倍**。
+`scripts/phase-profile.mjs --with wp-dl-alerts --zoom 11`（minify 無しの束で CDP サンプラ）で中身を割ると:
+**maplibre 5,746 ms / native 4,078 ms（うち `postMessage` 477 = worker 往復）/ main.js 665 ms（6%）**。
+`getRenderableIds`・`getTileById`・`intersectsFrustum`・`calculatePosMatrix`——**世界規模の GeoJSON を geojson-vt が
+切ったタイルを、レンダラが毎フレーム数え直している**費用で、IntMap の JS ではない。
+
+### 2. 4 条件＋日付変更線（`scripts/view-matrix.mjs`）
+
+分析の「Satellite だけ速い→placement／Flat だけ速い→globe renderer」をそのまま表にした。同じ指（pan＋pinch）、
+切替はアプリ自身の命令（`view.base.*` / `view.proj.*`）、5 つ目は maplibre-gl-js#7672 の再現条件
+（globe・pitch 50°・z6・日付変更線越し）。2 反復の中央値:
+
+```
+cell                              5.24 busy   fps  1st fps │  6.7 busy   fps  1st fps
+vector/flat                            2702  58.4     58.0 │      2084  59.8     53.7
+vector/globe                           3886  58.2     55.8 │      2927  59.4     58.0
+satellite/flat                         2799  59.7     57.8 │      2191  60.0     58.9
+satellite/globe                        5089  25.0     39.3 │      3159  59.1     55.8   (5.24 rep1: 11,560 ms)
+vector/globe · dateline pitch 50       4464  35.2     16.4 │      3101  58.8     57.6   (5.24 rep1: 7,001 ms)
+```
+
+- **衛星だけでは遅くならない**（flat 2,799 ≈ 2,702）→ placement が主犯ではない。
+- **globe は +44%**、**globe × 衛星は +88%・25 fps**、**日付変更線セルは最初の gesture が 16.4 fps**——
+  #7672 の形そのもの。**5.24 のレンダラの費用**で、IntMap 側に打つ手は無い。
+- 6.7 では 5 セルすべてが 59〜60 fps、最初の gesture も 54〜59 fps。**日付変更線の崩壊は消えている。**
+
+### 3. ⚠⚠⚠ MapLibre 6.7.0 の A/B——「速い方の腕」は空の地図だった
+
+`feat/r513-maplibre6-ab`（別 worktree・実 `npm ci`）。6.0 の破壊的変更で IntMap に当たるのは
+`import maplibregl from`（default export 廃止 → `import * as`）と `transform.getMatrixForModel`（消えた——
+`projectAltitude` / `projectMercAlt` は feature-detect で null）。`map.transform` getter・
+`_elevateCameraIfInsideTerrain`・`transformCameraUpdate`・custom layer の `shaderData.vertexShaderPrelude` は 6.7 にも在る。
+
+**最初の 6.7 トレースは全相 60 fps・busy 半分。** そして `queryRenderedFeatures().length === 0`・tile cache `0/0`。
+6.x は worker を `new URL('./maplibre-gl-worker.mjs', import.meta.url)`＝**束の隣の実 URL**で読み、Vite はその
+ファイルを出さない → 404 → worker 無し → タイル無し → **何も描かない地図が最速**。console には 404 が 1 行。
+⇒ **A/B の腕は「同じ物を描いているか」を先に訊く**（`queryRenderedFeatures().length`・`__imLayerPainted`・
+symbol 層の可視数・screenshot）。`dist/assets/` に `maplibre-gl-worker.mjs` と `maplibre-gl-shared.mjs` を並べて
+（4,714 features・climate painted・globe に都市名、を目視）取り直した:
+
+```
+phase              5.24 busy   fps │  6.7 busy   fps
+boot                    5697   9.9 │      4112  10.6
+pan-warm                1092  52.8 │       775  60.0
+zoom-warm               1949  48.3 │      1146  55.6
+pan-touch               2545  57.2 │      2377  47.1   (6.7 rep1 に 871 ms の block)
+pinch-touch             2385  58.7 │      1179  60.0
+alerts-on              14408  44.2 │     10417  42.3
+pan-alerts              7294  51.1 │      4639  57.6
+pan-alerts-city        11055  26.5 │      5658  57.9
+```
+
+**busy −30〜50%、警報都市パンは半分、globe/衛星/日付変更線の崩壊は無い。** これがこの回で最大のレバー。
+⚠ **merge はしていない。** 上げるには別ラウンドが要る: worker の配布（`setWorkerUrl()` か Vite の asset 化）、
+`getMatrixForModel` の代替（航空機・軌道の hover pick が使う）、`5.24.0` を固定する検査 2 本と
+`maplibre-gl-dev.js` の内部文字列を読む検査 4 本（r182・r230・r241・r322）、`perf-baseline.json` の modules 数、
+deep tier の r179（prototype 鎖から `_elevateCameraIfInsideTerrain` を探す）。**A/B の worktree は残してある。**
+
+### 4. ⚠⚠ 163 レイヤーを 1 つずつ同じ指で（`scripts/layer-sweep.mjs`）
+
+分析の「二分探索」は 1 本を見つけて残りを言わない。**線形に全部**測って表にした: `#layer-dropdown` の checkbox
+163 個（＝レイヤーの唯一のレジストリ。`input[id^="dl-"]` は 44 しか拾わない）を 1 行ずつ ON → 待機 → 指パン＋ピンチ →
+OFF → 待機。1 行あたり busy・fps・worst・placement/render/decode の限界費用と、**静止中の fetch / `styledata` / `setData`
+の毎秒**、**OFF 後の残り**。2,110 s・163 行・不能 0。
+
+```
+layer                Δbusy   busy   fps  worst │ idle f/s  sd/s  setD/s │ flags
++beta-dl-rail       +36353  38971   7.6 1833.2 │     1.11     2    2.23 │ (13 MB の世界ファイルを主スレッドで decode)
++wp-dl-alerts       +12030  14050  23.6  233.3 │    16.06  1.53    0.25 │ idle-fetch (cold burst)
++beta-dl-volc2       +9291  11311  19.1  150.0 │        0  0.31    0.62 │
++dl-ww2              +6293   9488  30.5  183.3 │     2.67  3.47    4.27 │ ON でマスタークロックを 1939 へ動かす
++dl-eu               +5418   8613  34.6  116.7 │     4.24  0.65       0 │
++dl-uselect          +5075   8270  33.9  100.0 │     2.31  0.99    1.32 │
++beta-dl-ukrfront    +4698   8193  36.4   83.3 │    11.24  0.96    0.32 │
++bx-eq               +4497   6517  32.6   83.4 │        0  0.64       0 │
++dl-ww1              +4379   7574  39.5   66.7 │     1.52  0.30    0.91 │
++dl-tz               +4076   7271  39.0   66.6 │        0  0.33       0 │ after-off
+floor（アプリの層を全部非表示）: 2618 ms  ←  既定の地図の自前レイヤーは 1 gesture あたり 345 ms
+```
+
+- ⚠⚠ **#R499 型の輪（失敗が「取得した」に数えられず微小タスク速度で回る）は 163 個のどれにも無い。**
+  静止窓を前後半に割った再掃引（`--idle 30000`）で、後半も回り続けていたのは**警報だけ**で、それは #R275/#R284/#R297 が
+  「リアルタイムに」（5 回）に応えて設計した輪番（定常 1.5 fetch/s・**render 0/s・styledata 0/s**、静止中の描画費用ゼロ）。
+  掃引の `idle f16/s` は ON 直後 45 s の cold burst（`COLD_CALLS=10 × MA_PER_TICK=6`）で、`--rest 20000` のプロファイルは
+  その burst が主スレッドを 17 s/20 s 使う（maplibre 14.2 s＝shape が届くたびの再タイル化）ことを言っている——**一度きり**。
+- ⚠⚠ **重いのは「読み込み」と「レンダラ」であって、IntMap の JS の輪ではない**。鉄道は 13 MB の世界ファイルを主スレッドで
+  gunzip → decode → `stamp` → `setData`（#R344 が「11.5 s」と測ったそれ）——ON の瞬間に指が数秒止まる。WW2 は ON で
+  `IntMapTime.set(1939-09-01)` するので時刻連動レイヤーが一緒に動く。
+- ⚠⚠⚠ **基準値はブラウザが暖まるほど動く。** 煙試験で基準 6,962 ms に対し 3 行目 2,867 ms。全走行で 4,570 → 1,390（12 行目）
+  → 2,020（48）→ 3,495（72）→ 2,700 前後。前半は暖機。⇒ 基準は捨て 1 回＋3 回の中央値・`--rebase 12` 行ごと・
+  各行に `baselineAt`。**既定 ON の行（cb-names 等）と床は最後に**測る（最初に測ると全部 −3,000 ms＝ブラウザの差になる）。
+- ⚠⚠ **OFF にしたレイヤーは style から消えない**——掃引の間に style は **63 層 → 357 層・sources 22 → 86**（可視は 4 のまま）。
+  後半の基準上昇はこれだと思ったので**測った**（60 レイヤーを ON/OFF、cpu ×4、3 回の中央値）:
+  ```
+  fresh                         busy 4459 · 58.2 fps · worst 33   style 63 層 / 22 sources / 5,433 DOM nodes
+  after 60 on/off cycles        busy 4704 · 44.9 fps · worst 50   style 189 層（133 hidden）/ 86 sources / 8,395 nodes
+  …20 s later                   busy 3420 · 51.1 fps · worst 50
+  after removing 133 hidden     busy 4839 · 38.3 fps · worst 50   style 56 層 / 86 sources
+  ```
+  **非表示の層を全部下ろしても gesture は速くならない**（差はノイズの幅）。残留は事実、費用は未証明——
+  「増えた層が重い」は言わない。fps と worst の悪化（58 → 45〜51・33 → 50）は残ったが、層の数では説明できていない
+  （sources 86 と DOM 8,395 は下ろしていない）。
+- ⚠⚠ `el.click()` は 163 個全部で失敗する（`js/data-layers.js` が capture で潰し pointerup で反転）。`IntMapOS.exec('layer.on')`
+  は `checked + change` そのものだが、掃引では 3 s のポーリングを使い切って change に落ちた → 直接 `checked + change`。
+- `wp-dl-industry` / `wp-dl-crops` は箱が入っても `__imLayerPainted` が false（`unpainted`）。ズーム条件の可能性——未追跡。
+
+### 5. ホバー——A/B は要らなかった
+
+掃引の全行・トレースの全 touch 相で **`queryRenderedFeatures` の呼び出し回数は 0**。指の相では mousemove が 1 つも
+出ないので、hover hub の hit-test は携帯の指に 1 ms も課していない（分析の項目 3 と 4 の答え）。
+
+### 6. 「見る前に測る」——この回の計器
+
+| 計器 | 何を出すか |
+|---|---|
+| `scripts/layer-sweep.mjs` | 163 行の限界費用・静止中の試行（前後半）・OFF 後の残り・`unpainted`。`--only` `--with` `--idle` `--rebase` |
+| `scripts/view-matrix.mjs` | {ベクタ, 衛星}×{平面, globe}＋日付変更線セル、同じ指、2 反復の中央値 |
+| `scripts/phase-profile.mjs` | 指 1 回（または `--rest <ms>` の静止）を CDP サンプラで関数ごとに。`--dist dist-dev` |
+
+3 本とも指・起動・スナップショット・再生キャッシュを `mobile-trace.mjs` から **import** する（export を足した。写しは持たない）。
+`tests/r512-checks.test.mjs` 10 本。正本は `docs/TESTING.md`、台帳は `docs/FILES.md`。
+
+### 7. 提案（この回では 1 バイトも変えていない）
+
+1. **MapLibre 6.7.0 への更新を 1 ラウンドとして。** §3 の数字。手順は §3 の但し書き。
+2. **OFF にしたレイヤーの残留（63 → 357 層・sources 22 → 86）は衛生の問題として。** §4 の実験は「層を下ろしても
+   速くならない」と言っているので、性能を理由には勧めない。残った sources と DOM（5,433 → 8,395 nodes）の費用は未測定。
+3. **鉄道の世界ファイルを worker で decode する**（beta）。ON の瞬間の数秒停止はこれ。
+4. **移動中 DPR（#R229 で外したもの）は再導入しない方を勧める。** 6.7 で得られる −30〜50% は画質を落とさず、
+   #R202 の DPR 2→1.4（zoom 30 → 47 fps）と同じ桁。要るなら設定の opt-in にする。
 
 ## R511 — **地図は道具ではなく、回答の形式になった**
 

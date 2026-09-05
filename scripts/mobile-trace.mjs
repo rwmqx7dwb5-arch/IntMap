@@ -734,7 +734,11 @@ function touchTable(runs) {
 
 /* (#R322's pattern) the pieces a regression check needs, so the arithmetic that decides what every
    number in the table means can be exercised without launching a browser. */
-export { phaseOf, BUCKETS, layerOn, servingOurDist };
+export { phaseOf, BUCKETS, layerOn, servingOurDist,
+  /* (#R512) the sweep harness (scripts/layer-sweep.mjs) drives the SAME boot, the same finger and the same
+     snapshot arithmetic — exported rather than copied, so the two instruments cannot drift apart */
+  launch, cdpFor, newContext, settle, waitFor, pan, zoom, zoomTo, touchPan, touchPinch, touchMetersOn, touchMetersOff,
+  snap, framesBetween, deadline, ensureServer, canvasBox, PROBE, BASE, CPU, TPAN, TPINCH, TPAN_SMALL, stats, has, val };
 
 /* ── run ────────────────────────────────────────────────────────────────────
    …only when this file IS the command. Importing it must not start a server or a browser. */
