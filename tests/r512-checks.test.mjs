@@ -24,6 +24,7 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* comments off, so a sentence ABOUT el.click() is not mistaken for a call to it (#R229's rule) */
 const code = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/[^\n]*/g, '$1');
 
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const TRACE = read('scripts/mobile-trace.mjs');
 const SWEEP = read('scripts/layer-sweep.mjs');
 const MATRIX = read('scripts/view-matrix.mjs');
@@ -54,6 +55,8 @@ test('R512 ② the sweep walks #layer-dropdown — the one registry — not an i
   assert.match(c, /querySelectorAll\('#layer-dropdown input\[type="checkbox"\]\[id\]'\)/);
   assert.doesNotMatch(c, /input\[id\^="dl-"\]/, 'the 44-of-163 spelling is gone');
   assert.match(c, /IntMapBasicLayers/, 'basic rows are marked, not dropped');
+  assert.doesNotMatch(c, /new RegExp\(val\(/, '--only / --skip are id lists with *, never a regex typed on the command line');
+  assert.match(c, /const globList = /);
 });
 
 test('R512 ③ the sweep drives a box the way the app\'s own command does — never el.click(), never a 3 s detour', () => {
@@ -90,7 +93,7 @@ test('R512 ④ …and the idle window counts attempts, not successes', () => {
 
 test('R512 ⑤ view-matrix switches through the app\'s commands and carries the antimeridian cell', () => {
   const c = code(MATRIX);
-  for (const cmd of ['view.base.map', 'view.base.sat', 'view.proj.flat', 'view.proj.globe']) assert.match(c, new RegExp(`'${cmd.replace(/\./g, '\\.')}'`), cmd);
+  for (const cmd of ['view.base.map', 'view.base.sat', 'view.proj.flat', 'view.proj.globe']) assert.match(c, new RegExp(`'${escRe(cmd)}'`), cmd);
   assert.match(c, /pitch: 50/, 'pitch past 40°');
   assert.match(c, /center: \[179\.5, 25\]/, 'looking across the date line');
   assert.match(c, /zoom: 6/, 'zoom above 5');
@@ -110,7 +113,7 @@ test('R512 ⑥ the profiler samples at rest when asked, and its server serves th
 test('R512 ⑥ all three instruments are ledgered', () => {
   const files = read('docs/FILES.md'), testing = read('docs/TESTING.md');
   for (const n of ['layer-sweep.mjs', 'view-matrix.mjs', 'phase-profile.mjs']) {
-    assert.match(files, new RegExp(n.replace('.', '\\.')), `docs/FILES.md names ${n}`);
-    assert.match(testing, new RegExp(n.replace('.', '\\.')), `docs/TESTING.md names ${n}`);
+    assert.match(files, new RegExp(escRe(n)), `docs/FILES.md names ${n}`);
+    assert.match(testing, new RegExp(escRe(n)), `docs/TESTING.md names ${n}`);
   }
 });

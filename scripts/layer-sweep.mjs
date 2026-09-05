@@ -29,7 +29,7 @@
  *  IMPORTED from mobile-trace.mjs (#R387/#R498), so the two instruments cannot drift: a busy
  *  millisecond here is the same busy millisecond there. Chromium only (real touch needs CDP).
  *
- *    node scripts/layer-sweep.mjs [--cpu 4] [--only <regex>] [--skip <regex>] [--limit N]
+ *    node scripts/layer-sweep.mjs [--cpu 4] [--only id,id,beta-dl-*] [--skip id,…] [--limit N]
  *                                 [--with id,id] [--idle 3000] [--json out.json] [--record]
  *
  *  ⚠ The default is CPU ×1 (mobile-trace's default). --cpu 4 is the historical mobile figure.
@@ -41,8 +41,13 @@ import {
   snap, framesBetween, deadline, ensureServer, phaseOf, PROBE, BASE, CPU, stats, has, val,
 } from './mobile-trace.mjs';
 
-const ONLY = val('--only', null) ? new RegExp(val('--only')) : null;
-const SKIP = val('--skip', null) ? new RegExp(val('--skip')) : null;
+/* `--only` / `--skip` take a comma-separated list of ids with `*` as a wildcard — NOT a regular
+   expression: a pattern typed on the command line would be compiled as one (CodeQL js/regex-injection),
+   and every character of an id is escaped here before `*` becomes `.*` */
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const globList = (v) => v ? new RegExp('^(?:' + v.split(',').map((s) => s.trim()).filter(Boolean).map((g) => escRe(g).replace(/\\\*/g, '.*')).join('|') + ')$') : null;
+const ONLY = globList(val('--only', null));
+const SKIP = globList(val('--skip', null));
 const LIMIT = Number(val('--limit', 0)) || 0;
 const WITH = (val('--with', '') || '').split(',').map((s) => s.trim()).filter(Boolean);
 const IDLE_MS = Number(val('--idle', 3000));
