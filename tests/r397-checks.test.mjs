@@ -105,7 +105,7 @@ test('R397 ②: every source id the paint observer counts is a source some file 
   const ids = [...body.matchAll(/sourceFeatureCount\('([^']+)'\)/g)].map((m) => m[1]);
   assert.ok(ids.length >= 4, `paintNow() counts only ${ids.length} sources — it counted four (poly, line, pins, poi)`);
   /* Where a source is CREATED is the authority. Searched across the app, not guessed. */
-  const creators = ['js/app-body.js', 'js/atlas-console.js', 'js/map-tools.js', 'js/data-layers.js']
+  const creators = ['js/app-body.js', 'js/atlas-console.js', 'js/map-tools.js', 'js/data-layers.js', 'js/atlas-map-compose.js' /* (#R511) atl-compose-src */]
     .map((f) => codeOnly(read(f))).join('\n');
   for (const id of ids) {
     assert.ok(creators.indexOf("addSource('" + id + "'") >= 0 || creators.indexOf("hasSource('" + id + "'") >= 0,
