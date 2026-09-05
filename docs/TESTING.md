@@ -452,7 +452,7 @@ busy millisecond here is the same millisecond there — and ask a wider question
 
 ```bash
 node scripts/layer-sweep.mjs --cpu 4 --record            # every box in #layer-dropdown, one at a time
-node scripts/layer-sweep.mjs --only 'alerts|planes' --idle 5000
+node scripts/layer-sweep.mjs --only wp-dl-alerts,dl-planes,beta-dl-* --idle 5000
 node scripts/layer-sweep.mjs --with wp-dl-alerts        # the marginal cost of each layer ON TOP of alerts
 node scripts/view-matrix.mjs --cpu 4 --reps 2 --record  # vector/satellite × flat/globe + the antimeridian cell
 ```
