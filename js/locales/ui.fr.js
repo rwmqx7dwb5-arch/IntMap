@@ -249,6 +249,10 @@ window.IntMapLang.define('fr', { ui: {
       'map only': 'carte seule',
       'The map is not running, so there is nothing to look at.': "La carte n'est pas active : il n'y a rien à regarder.",
       'Could not read the map frame — the renderer gave nothing back.': "Impossible de lire l'image de la carte : le moteur de rendu n'a rien renvoyé.",
+      /* (#R511) map.compose — the legend of a map explanation */
+      'Places on the map': 'Lieux sur la carte',
+      'Shaded': 'En couleur',
+      'Could not be placed': 'Impossible à placer',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     "{n} lookups left today": "{n} explications restantes aujourd’hui",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': "Une nouvelle version d'IntMap est disponible. Rechargez la page pour continuer.",

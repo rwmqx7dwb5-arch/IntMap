@@ -249,6 +249,10 @@ window.IntMapLang.define('zh', {
     'map only': '僅地圖',
     'The map is not running, so there is nothing to look at.': '地圖未在執行，因此沒有可以查看的內容。',
     'Could not read the map frame — the renderer gave nothing back.': '無法讀取地圖畫面——算繪引擎沒有回傳任何內容。',
+    /* (#R511) map.compose — the legend of a map explanation */
+    'Places on the map': '地圖上的地點',
+    'Shaded': '填色',
+    'Could not be placed': '無法定位',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     "{n} lookups left today": "今日剩餘解說 {n} 次",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap 有新版本可用。請重新載入以繼續。',

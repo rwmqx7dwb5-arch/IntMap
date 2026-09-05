@@ -241,6 +241,10 @@ window.IntMapLang.define('ko', { ui: {
       'map only': '지도만',
       'The map is not running, so there is nothing to look at.': '지도가 실행 중이 아니어서 볼 것이 없습니다.',
       'Could not read the map frame — the renderer gave nothing back.': '지도 화면을 읽지 못했습니다 — 렌더러가 아무것도 반환하지 않았습니다.',
+      /* (#R511) map.compose — the legend of a map explanation */
+      'Places on the map': '지도 위의 장소',
+      'Shaded': '색 구분',
+      'Could not be placed': '위치를 찾지 못한 곳',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     "{n} lookups left today": "오늘 남은 해설 {n}회",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap의 새 버전이 배포되었습니다. 계속하려면 새로 고치세요.',

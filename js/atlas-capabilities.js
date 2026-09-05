@@ -210,6 +210,11 @@ export function makeAtlasCapabilities(HOST) {
       ['panel.feedback',             'feedback',       '',                                                            'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
       ['panel.bugReport',            'bugReport',      'bug',                                                         'panel',   'panel',   'panel.feedback',         'panel',               'session', 'none',   '',         ''],
       ['map.highlight',              'highlight',      '',                                                            'map',     'paint',   'map.highlight',          'map',                 'session', 'none',   '',         ''],
+      /* (#R511) one map explanation in one call — numbered places with roles, arcs between them,
+         shaded regions, one frame, a legend. `paint`: the observer counts its own source
+         (`atl-compose-src`, in paintNow below) to know it drew. Writes the highlight key too,
+         because a shaded item goes through the highlight path. */
+      ['map.compose',                'compose',        'mapCompose,composeMap,explainOnMap',                          'map',     'paint',   'map.compose,map.highlight', 'map,explanation',  'session', 'none',   '',         ''],
       ['data.value',                 'value',          'stat,lookup',                                                 'data',    'none',    '',                       'explanation',         'read',    'none',   'country',  ''],
       ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
       ['map.clear',                  'clear',          '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'none',   '',         ''],
@@ -436,6 +441,7 @@ export function makeAtlasCapabilities(HOST) {
     function paintNow() {
       return { poly: sourceFeatureCount('nlq-poly-src'), line: sourceFeatureCount('nlq-line-src'),
         pins: sourceFeatureCount('user-pins'), poi: sourceFeatureCount('nlq-poi-src'),
+        compose: sourceFeatureCount('atl-compose-src'),   /* (#R511) js/atlas-map-compose.js — the ONE source every compose layer reads */
         visible: visibleLayerIds().length, objects: objectIds().length };
     }
 

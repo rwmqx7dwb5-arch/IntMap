@@ -50,7 +50,7 @@ import { makeAtlasTurnResults } from './atlas-turn-results.js';   /* (#R441) one
 import { makeAtlasGeoLedger } from './atlas-geo-ledger.js';   /* (#R489) the places this conversation has resolved, kept as data instead of as 26 characters of action label */
 import { makeAtlasAdmin1 } from './atlas-admin1.js';   /* (#R489) first-level boundaries out of the file we already ship, so fourteen oblasts cost ONE request between them */
 import { makeAtlasAnomalyScore } from './atlas-anomaly-score.js';   /* (#R397) one scale for an earthquake, a typhoon and a flood — see that file for why the old bias was a SAMPLING artefact */   /* (#R397) source precedence, map restraint, coordinate provenance — prompt prose, out of the shell's line ceiling (tests/r199 ⑤) */   import { everyTick } from './runtime.js';   /* (#R408) the one timer wheel — see js/runtime.js */   /* ⚠ (#R495) ON THIS LINE because js/atlas-console.js is AT its shrink-only ceiling (tests/r318 ⓑ) and this round adds a dispatch case. js/runtime.js is imported at line-start by 31 other modules, so scripts/js-reachability.mjs still sees it — the exact test #R489 applied before sharing a line. */
-
+import { makeAtlasMapCompose } from './atlas-map-compose.js';   /* (#R511) one map explanation in ONE call — numbered places with roles, arcs, fills, a frame and a legend the prose is linked to. ⚠ ON A LINE THAT WAS BLANK: this file is AT its shrink-only ceiling (tests/r318 ⓑ), and scripts/js-reachability.mjs anchors its import scan at line start, so a new module cannot share a line. */
 window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.atlasConsole=function(HOST){
   /* (#R318) THE KERNEL, published by js/app-body.js before Atlas is ever fetched. Named here so the
@@ -1692,7 +1692,6 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* (#R199) ↳ js/atlas-sims.js — animated flight, ballistic, blast, elevation and faction overlays.
        Moved whole; the 16 names below are what the rest of this file still calls. */
     const { HIST_SCENARIOS, _ballTrack, _gcKm, ballisticProfileSVG, ballisticSolve, clearBlast, clearElev, clearFac, clearFly, drawBlastRings, elevGrid, ensureElevLayers, flyAnimate, histMatch, missileClass, paintFactions } = makeAtlasSims(HOST, { GE, L, _fetchJSON, diskFillPolys, geo });
-
     /* ============================ (#R135) TIME-AXIS RESEARCH/MAPPING ============================
        Root cause of the "Sea of Okhotsk in 1900" failure: mapReport has TWO meanings — the planner reads it as
        "map research findings", but it is IMPLEMENTED as a LIVE-NEWS incident mapper. A historical question (time
@@ -1765,11 +1764,12 @@ window.IntMapModules.atlasConsole=function(HOST){
        a captured value: this closure REPLACES the array, so a copy would go stale. */
     const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
-
+    const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } } });   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,''); switch(a.type){
         case 'gloss': return GLOSS.dispatch(a);   /* (#R491) 「この言葉の意味は」 — the same card the reader raises by right-clicking a phrase. Spends the gloss lane, not a question; paints nothing */
-        case 'reset': clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); return R(true, note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.')));
+        case 'compose': case 'mapCompose': case 'composeMap': case 'explainOnMap': return await COMPOSE.run(a);   /* (#R511) map.compose — js/atlas-map-compose.js. ⚠ THE LINE CAME FROM A BLANK ONE ABOVE THE TIME-AXIS BLOCK: this file is at its ceiling (tests/r318 ⓑ) */
+        case 'reset': clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); try{ COMPOSE.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared map highlights.','ハイライトを消去しました。','Hervorhebungen gelöscht.','Выделение очищено.','Resaltado borrado.')));
         case 'layer': {
           /* (#R73) SELF-VERIFICATION ("レイヤーのオンオフが実情と対応していない" / vision §16): snapshot the
              style's visible layers (+ overlay canvas count) BEFORE the toggle, then verify the map actually
@@ -2629,7 +2629,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           h+='</div>';
           h+=note(H.ok?('✓ '+L('All systems normal.','すべて正常です。','Alle Systeme normal.','Все системы в норме.','Todo normal.')):('⚠ '+L('Some data sources need attention (red). Atlas uses fallbacks where it can.','一部のデータ源に問題があります（赤）。可能な範囲でAtlasは代替に切り替えます。','Einige Datenquellen brauchen Aufmerksamkeit (rot). Atlas nutzt Ausweichquellen.','Некоторые источники требуют внимания (красное). Atlas использует запасные варианты.','Algunas fuentes requieren atención (rojo). Atlas usa alternativas.')));
           return R(true, h); }
-        case 'clearAll': { _herePoint=null; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ clearElev(); }catch(_){} try{ clearFac(); }catch(_){} try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); }catch(_){} try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); }catch(_){} try{ window.IntMapArc3D&&window.IntMapArc3D.hide(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
+        case 'clearAll': { _herePoint=null; try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ COMPOSE.clear(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} try{ clearPois(); }catch(_){} try{ clearFly(); }catch(_){} try{ clearBlast(); }catch(_){} try{ clearElev(); }catch(_){} try{ clearFac(); }catch(_){} try{ window.IntMapRouting&&window.IntMapRouting.clear&&window.IntMapRouting.clear(); }catch(_){} try{ window.IntMapRadiation&&window.IntMapRadiation.clear&&window.IntMapRadiation.clear(); }catch(_){} try{ window.IntMapArc3D&&window.IntMapArc3D.hide(); }catch(_){} try{ if(typeof clearAllPins==='function') clearAllPins(); }catch(_){} try{ window.clearAllRadius&&window.clearAllRadius(); }catch(_){} try{ window.IntMapIsolate&&window.IntMapIsolate.exit&&window.IntMapIsolate.exit(); }catch(_){} try{ window.IntMapOutline&&window.IntMapOutline.clear&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Cleared the map','地図をクリアしました','Karte geleert','Карта очищена','Mapa despejado'))); }
         case 'outline': case 'extent': case 'showExtent': { if(a.on===false||/^(off|clear|hide|none)$/i.test(String(a.place||a.country||''))){ try{ window.IntMapOutline&&window.IntMapOutline.clear(); }catch(_){} return R(true, note('✓ '+L('Outline cleared','範囲表示を消去','Umriss gelöscht','Контур очищен','Contorno borrado'))); }
           const place=String(a.place||a.country||a.name||'').trim(); if(!place) return R(false, warn('⚠ '+L('Which place to outline?','どの場所の範囲？','Welcher Ort?','Какое место?','¿Qué lugar?')));
           if(!window.IntMapOutline||!window.IntMapOutline.show) return R(false, warn('⚠'));
@@ -3996,8 +3996,8 @@ window.IntMapModules.atlasConsole=function(HOST){
     function SYS(tools){
       return personaPrompt('the general intelligence and operating layer of IntMap, an interactive world map')
         +POLICY.all()
-        +'REPLY FORMAT: one strict JSON object and nothing else \u2014 {"final_text":string,"tool_calls":[{"name":string,"arguments":object}]}. '
-        +'An empty tool_calls (or none at all) ENDS the turn, and final_text is what the reader sees. To operate IntMap, '
+        +'REPLY FORMAT: one strict JSON object and nothing else \u2014 {"final_text":string,"answer_mode":"text"|"map"|"mixed","tool_calls":[{"name":string,"arguments":object}]}. '
+        +'An empty tool_calls (or none at all) ENDS the turn, and final_text is what the reader sees. answer_mode says what KIND of answer this is \u2014 "text": the map is untouched; "map": the map IS the answer and final_text frames it; "mixed": the words and the map each carry part. You decide it; but a "map"/"mixed" final is accepted only after something in this turn actually drew on or moved the map (compose_map draws a whole explanation in one call) \u2014 otherwise it comes back to you like a rejected call, and you either draw or answer as "text". To operate IntMap, '
         +'to look something up, or to search the web, put one or more calls in tool_calls: IntMap runs them and returns what '
         +'it OBSERVED, and you then decide whether to call more tools or to answer. Arguments are checked against each '
         +'tool\'s schema before anything runs; a rejected call comes back to you to fix and is never shown to the reader. '
@@ -4292,14 +4292,14 @@ window.IntMapModules.atlasConsole=function(HOST){
       route:['imroute-cas','imroute-line','imroute-pt','imroute-walk','imroute-rail','imroute-transfer','imroute-wp','imroute-durlab','imroute-hit','imroute-area','imroute-area-line','imroute-diff','imroute-hist'],
       radiation:['imrad-heat','imrad-pt','imrad-srcpt','imrad-dep'], blast:['nlq-blast-fill','nlq-blast-line'], lines:['nlq-line'], outline:['pl-outline-fill','pl-outline-line'],
       /* (#R85) close the "できないものもある" gap — flight paths, line-of-sight, isolate mask, pins and street-view marker were painted but had no in-message on/off. */
-      fly:['nlq-fly-line','nlq-fly-head'], los:['los-cover','los-shadow','los-cover-line','los-site'], isolate:['iso-mask'], pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'], isochrone:['im-iso-fill','im-iso-line','im-iso-ctr'] };
+      fly:['nlq-fly-line','nlq-fly-head'], los:['los-cover','los-shadow','los-cover-line','los-site'], isolate:['iso-mask'], pin:['user-pin-dot','user-pin-shadow'], streetview:['sv-here-pt','sv-here-cone'], isochrone:['im-iso-fill','im-iso-line','im-iso-ctr'], compose:['atl-compose-line','atl-compose-dash','atl-compose-arrow','atl-compose-c','atl-compose-hl','atl-compose-n','atl-compose-t'] };   /* (#R511) every layer js/atlas-map-compose.js draws — read from the same list there (COMPOSE.LAYERS); tests/r511 holds the two equal */
     const OVL_OF={ highlight:'highlight', mapMetric:'choropleth', choropleth:'choropleth', poi:'poi', elevationBelow:'elevation', belowSeaLevel:'elevation', elevationHighlight:'elevation', elevationScan:'elevation',
       historicalMap:'historical', historical:'historical', powerMap:'historical', allianceMap:'historical', radiation:'radiation', fallout:'radiation', dispersion:'radiation', plume:'radiation', radiationSim:'radiation',
       directions:'route', roadRoute:'route', navigate:'route', drivingRoute:'route', walkingRoute:'route', missile:['arc','fly','blast'], ballistic:['arc','fly','blast'], ballisticMissile:['arc','fly','blast'], strike:['arc','fly','blast'], icbm:['arc','fly','blast'],   /* (#R142) include the blast ring so a strike's blast overlay also gets a map on/off chip (#9) */
       fly:'fly', flight:'fly', flyTo:null, flyPath:'fly', greatCircle:'fly', los:'los', lineOfSight:'los', radarShadow:'los', viewshed:'los',
       isolate:'isolate', isolateRegion:'isolate', focus:'isolate', pin:'pin', marker:'pin', locate:'pin', myLocation:'pin', whereAmI:'pin', streetview:'streetview', streetView:'streetview', pano:'streetview',
       compareStats:'compare', compareCountries:'compare', statsCompare:'compare', drawLine:'lines', line:'lines', outline:'outline', mapReport:'poi', newsMap:'poi', reportMap:'poi', researchMap:'poi', research_map:'poi', situationMap:'poi', events:'poi', impact:'poi', runway:'poi',
-      isochrone:'isochrone', reach:'isochrone', reachability:'isochrone', reachable:'isochrone', catchment:'isochrone' };
+      isochrone:'isochrone', reach:'isochrone', reachability:'isochrone', reachable:'isochrone', catchment:'isochrone', compose:'compose', mapCompose:'compose', composeMap:'compose', explainOnMap:'compose' };   /* (#R511) */
     function _ovlVisible(kind){ if(kind==='arc'){ const cv=document.getElementById('arc3d-canvas'); return !!(cv&&cv.parentNode&&cv.style.display!=='none'); } const ids=_OVL[kind]||[]; for(const id of ids){ try{ if(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')!=='none') return true; }catch(_){} } return false; }
     /* (#R122) PER-MESSAGE overlay OWNERSHIP — the shared nlq-* canvas can only paint one message's snapshot of a
        given kind at a time, so each kind has ONE current owner (the reply bubble whose snapshot is on the map). A
@@ -4471,7 +4471,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _STAGE_TXT={ think:L('Thinking','考え中','Denke nach','Думаю','Pensando'), search:L('Searching','検索中','Suche','Ищу','Buscando'), analyze:L('Analyzing','分析中','Analysiere','Анализирую','Analizando'), map:L('Mapping','地図に描画中','Zeichne Karte','Рисую карту','Dibujando mapa'), write:L('Writing','作成中','Schreibe','Пишу','Escribiendo'), read:L('Reading the image','画像を精読中','Lese das Bild','Читаю изображение','Leyendo la imagen'), verify:L('Verifying','検算中','Verifiziere','Проверяю','Verificando') };
     function stageDots(k){ return '<span class="atl-stage" role="status" aria-live="polite">'+esc(_STAGE_TXT[k]||_STAGE_TXT.think)+'</span>'; }
     function setStage(el,k){ try{ if(el&&el.querySelector&&el.querySelector('.atl-stage')) el.innerHTML=stageDots(k); }catch(_){} }
-    const _STAGE_OF=a=>{ const t=a&&a.type; if(t==='analyze'||t==='research'||t==='synthesize'||t==='brief'||t==='news'||t==='events') return 'search'; if(t==='compare'||t==='rank'||t==='stat'||t==='mapReport'||t==='researchMap'||t==='research_map'||t==='situationMap'||t==='population') return 'analyze'; if(['flyTo','fly','layer','highlight','outline','draw','missile','directions','isochrone','radiation','viewshed','zoom','pan','pitch','bearing','pin','marker'].indexOf(t)>=0) return 'map'; return 'think'; };
+    const _STAGE_OF=a=>{ const t=a&&a.type; if(t==='analyze'||t==='research'||t==='synthesize'||t==='brief'||t==='news'||t==='events') return 'search'; if(t==='compare'||t==='rank'||t==='stat'||t==='mapReport'||t==='researchMap'||t==='research_map'||t==='situationMap'||t==='population') return 'analyze'; if(['flyTo','fly','layer','highlight','outline','draw','missile','directions','isochrone','radiation','viewshed','zoom','pan','pitch','bearing','pin','marker','compose','mapCompose','composeMap','explainOnMap'].indexOf(t)>=0) return 'map'; return 'think'; };
     /* (#R159) ── COMPOSITE-ANSWER INTEGRATION ─────────────────────────────────────────────────────────────────
        One request must produce ONE final answer — not the first (failed) analysis and the repaired analysis stacked
        with a divider, contradicting each other. runActions now RECORDS each action's result on the bubble
@@ -4506,10 +4506,10 @@ window.IntMapModules.atlasConsole=function(HOST){
          asking whose goal each served, and #R406 gives that judgement back to the one thing that
          knows the reader's goal. What could not be done is said in the answer, in words.
          ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
-      let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):'';
+      let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):''; try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results */
       if(ai.__atlCancelled) head=_cancelledNote()+head;
       ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
-      try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */
+      try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} } }
     async function runActions(ai, say, acts, gen){
       const results=[]; const fails=[]; let cancelled=false;
@@ -4746,7 +4746,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           system:_sys, messages:[{role:'user',content:q}], signal:(_abortCtl?_abortCtl.signal:undefined),
           onStep:(s)=>{ try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });
         if(gen!==_runGen){ _markCancelled(ai); return; }
-        try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; } }catch(_){}
+        try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; _atlasDbg.answerMode=out.answerMode||''; _atlasDbg.mapDrawn=!!out.mapDrawn; _atlasDbg.mapGate=(out.trace&&out.trace.mapGate)||0; } }catch(_){}   /* (#R511) what Atlas declared vs what the machine drew, and how often the final was handed back */
         /* ⚠ ASSIGNED, NOT DEFAULTED. runActions seeds `__atlSay` with '' on its first pass so the
            bubble can render while tools are still running; THIS is the answer, and it arrives after. */
         ai.__atlSay=out.text||'';

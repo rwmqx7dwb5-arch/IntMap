@@ -42,6 +42,7 @@
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R511** — **地図は道具ではなく、回答の形式になった**〈「Atlasは『地図を操作する能力』が不足しているのではなく、『地図を使った説明』がAtlasの第一級の回答形式になっていません。」〉／⚠⚠⚠ **#R406 が「地名が出たら地図化」を撤去したのは正しく、その跡に「地図を使うと決めた回答を地図回答として完成させる仕組み」が無かった**——`final_text` は地図について何も言えず、地図を使うと決めた回答が step 0 の文だけで正常終了していた／⚠⚠ 直し方は**言葉から推定する規則を戻すことではない**: 返答に `answer_mode`（text / map / mixed）を **Atlas が宣言**し、ループは「map / mixed と言ったのに `changedMap` を刻まれた成功結果が無い final」だけを `map_not_drawn` として差し戻す（schema 検査と同じ種類・`maxMapGate` 2 回・上限後は受け入れて `mapDrawn:false` を記録）／⚠⚠ **「地図で説明する」は 1 つの行為なのに 6 つの道具に割れていた**——`map.compose`（中核 `compose_map`）が地点・役割・大円の弧・塗り・カメラ・凡例を 1 回で描き、台帳 → ジオコーダの順に**コードが**解決し、解決できない地名は**名前で `unplaced`**（座標を発明しない）／⚠ 回答文の最初の言及に番号バッジ（`linkProse`・テキストノードだけ）→ 文と印が双方向に光る／⚠ `js/atlas-console.js` は余白 0 行——**空行 3 本を実装行に替えて**収めた（import は行頭でないと reachability に見えない）／⚠ 英語キー `On the map` は terrain-water と衝突（ja が別訳）→ `Places on the map` に改名
 - **#R510** — **「APIキーが必要です」と出るレイヤーは、機能ではなく前提条件だった**〈「船舶レイヤーは、APIキーが必要ですと出てくるので、没にしてましたが、ちゃんと実装したい。あなたの側でできることはすべてやって。」〉／⚠⚠⚠ **BYOK は #R341 が航空機で潰した構造そのもの**——利用者ひとりずつが aisstream.io の鍵を取りに行き、取るまで地図は**何も描かず**プロンプトを出す＝上流負荷が利用者数に比例し、資格情報を取った人にしか機能が存在しない ⇒ `supabase/functions/ais-feed`（**14本目**）が provider を代表して読み、全利用者へ同じスナップショットを配る。**鍵はブラウザに1バイトも渡らない**／⚠ **BYOK は取り上げていない**（`AGENTS.md` §3.1）——鍵を持つ人は今までどおり直接繋ぐ（ライブの WebSocket のほうが新しい）。変えたのは**鍵が無いとき何が起きるか**だけ／⚠⚠ **無料・鍵不要・全球の AIS は存在しない**ので provider は2本: **Digitraffic / Fintraffic**（バルト海・**鍵も登録も不要**・CC BY 4.0・実測 位置890件＋静的854件・CORS 開放）と **aisstream.io**（全球・鍵あり）。Digitraffic は「鍵が無い日でもレイヤーが空にならない」ためにある／⚠⚠⚠ **WebSocket は1回の呼び出しの中で開いて閉じる**——`EdgeRuntime.waitUntil` は応答をまたいで生きない（#R341 実測）ので「裏で開きっぱなし」は単発の試験で正しく見えて本番で1バイトも集めない／⚠⚠⚠ **鍵が違うときの見え方は、繋がらないときと同じ**（`open|sent|error|close:1006`・フレーム0）。**わざと無効な鍵で同じ形を再現して確定**させ、`x-intmap-note` に socket の顛末と**鍵の長さと形**（値ではない）を出した——保存されていた秘密は **79文字・英数字以外を含み**、aisstream が発行する形ではなかった／⚠⚠ **秘密は trim する**（末尾の改行1つで、何も言われずに拒否される）／⚠⚠ **Storage は存在しない bucket への PUT に HTTP 400 + NoSuchBucket を返す**（404 ではない）ので、404 だけ見る再試行は一度も発火しない／⚠ **リレー経路にはズーム下限もパン時の再購読も無い**——後者の `else` 枝は `shipsData` を空にするので、リレーで走ると**ドラッグのたびに世界が消える**／本番実測: **834隻・うち815隻に船名**（TRUVOR / UBEG6 / IMO 9311543 / 曳船 / dest PRIM RU / 喫水 3.9m）／⚠⚠⚠ **8/31 に書かれて 9/6 まで 1 コミットも無かった**——関数は本番に deploy 済み・ブラウザ側は worktree に未コミット＝**サーバーは出荷済み、ブラウザは出荷前**で、利用者は 9/6 もトーストを見ていた。その worktree に触らず差分を R510 へ写して改番／⚠⚠⚠ **温かい isolate は一度 build したら二度と更新しなかった**（`refresh()` の条件が「強制・空・空で古い」だけ。本番 `?meta=1`＝`refreshes:0`・5.7 日前の snapshot を hydrate して即答）⇒ TTL 超過で 1 回分待つ `refreshOnce`（同時は `INFLIGHT` で共有・aisstream は鍵 1 本に同時 3 接続）／⚠⚠ **全球の JSON を 30 秒ごとに丸ごと運ぶ設計だった**（実測 797 隻＝gzip 52 kB＝**1 隻 65 バイト**→全球なら数 MB/30 秒）⇒ `view` チャンネル `?bbox=`＋余白 35%・箱を出たときだけ再取得／⚠⚠ **`x-intmap-coverage` は設定を名乗っていた**（aisstream 0 隻でも `digitraffic+aisstream`）⇒ 答えた provider と隻数 `digitraffic:891`・snapshot に `p` 同梱／⚠ **9/6 も鍵は 79 文字・英数字以外**（Node で無効鍵を再現＝同じ形）＝直せるのは利用者だけ。直るまで鍵無しの船はバルト海だけ／検査 11 本のうち ⑨⑩⑪ は **handler を捕まえて Request を投げる**（上流だけ stub）
 - **#R508** — **前面へ出す印が、ダイアログを九千段沈めていた**〈「Terms of Service · Privacy Policy をクリックして読もうとしても、設定に邪魔されて読めない。」〉／⚠⚠⚠ **開くところまでは正しく、スクロール1回で沈む**——本番で実測: `afterOpen legal 9999 / settings 9999` → `afterWheel legal 2650 .im-front / settings 9999`。`#legal-modal` は `position:fixed` なので #R253〜#R258 の「触ったパネルを最前面に」機構の `panelOf` が**浮遊パネルとして拾い**、`.im-front{z-index:2650 !important}` を付ける。**!important は当のクラス自身の 9999 に勝つ**ので、前へ出すための印が、触ってもいない設定ダイアログの**下**へ押し込んでいた／⚠⚠⚠ **このアプリのダイアログは全部 9999 で、全部が同じ扱いを受けていた**——読む・押す・打つのどれでも印は付く。**見えるのは2枚重なったときだけ**で、それが設定→規約という報告された唯一の経路だった／⚠⚠ **#R258 は同じ形を反対側から見て、`#compare-window` (4000) を帯の中へ降ろして解いた。** モーダルは降ろせない（帯より上にいるのが仕様）ので、今回は**不変条件のほうを書いた**——`.im-front` は**上げる**印であって下げる手段ではないから、既にその高さより上にいる層は帯の一員ではない。`_aboveBand()` が resolved z-index を見て除外する（**綴りの一覧ではなく実測**＝#R253 の作法。後から足した重ね物も自動で入る）。⚠ 比較は**厳密に上**（`> _FRONT_Z`）で、印を持つ節点は class で飛ばす——さもないと一度上がったパネルが**自分を永久に免除**して二度と降りない／⚠⚠ **`_FRONT_Z` は `css/intmap.css` の `.im-front` と同じ数**なので、`tests/r508-checks` ① が両方を読んで食い違いを拒む／⚠ **これは computed z-index の話で、どのソースにも書いていない**——だから本体の検査は `tests/r508.spec.js`（ブラウザで実際にホイールを回し、`elementFromPoint` が規約シートを返すことまで見る）。ソースを読む検査は3件のうち①②③の「二重の数」「除外は実測か」「ダイアログはまだ帯より上か」だけを守る（[[intmap-edge-function-must-be-evaluated]] と同じ線引き）
 - **#R507** — **公開列だけだったのは「射影」であって「仕組み」ではなかった**〈Supabase Security Advisor の CRITICAL: `View public.profiles_public is defined with the SECURITY DEFINER property`〉／⚠⚠⚠ **`security_invoker` の無い view は所有者 (postgres) の権限で `profiles` を読み、その RLS を丸ごと迂回する**。射影は `id / display_name / bio / avatar_url` の4列だけなので**今日は1バイトも漏れていない**——が、**迂回は relation の性質であって射影の性質ではない**。`docs/SECURITY-ARCHITECTURE.md §8` の 7 番は #R465 の本番監査でこれを見つけ、「将来この view に列を1本足したら、その列が迂回を継承する」と書いたうえで**判断により閉じなかった**。この回が閉じた／⚠⚠⚠ **既存の検査は1本も捕まえられない形だった**——`00_structure` は `has_view(...)` と「email 列が無い」、`01`/`05` は「anon も authenticated も読める」を主張していて、**そのすべてが欠陥のある形について真**である。検査は**射影**を見ていて、欠陥は**仕組み**にあった（[[intmap-r488-lessons]] と同じ形——規則は在り、綴りは在り、当たっていない）／⚠⚠⚠ **advisor 自身の推奨（`alter view … set (security_invoker = on)`）は採れない**——`profiles` の SELECT ポリシーは `auth.uid() = id OR is_admin(auth.uid())` の1本だけなので invoker view は「自分の行」しか返さず、`anon` は #R155 以降 profiles に権限を1つも持たないので permission denied ＝**コミュニティの著者カードが全員に対して消える**。動かすには `profiles` に `USING (true)` を足し、email/is_admin/is_pro/plan を**列単位の grant だけ**で隠すことになる——それは **#R155 が信用できないと実証した壁そのもの**（Supabase の既定権限が anon/authenticated にテーブルの ALL を配るので、誰も `grant` を書かないまま blanket UPDATE が生えた）。**RLS の壁を grant の壁と交換すると、全員の email が「既定権限が1回戻る」だけの距離に来る**／⇒ **壁を構造にした**: `profiles_public` は**4列しか物理的に持たない実テーブル**になり、`profiles_public_sync`（AFTER INSERT / UPDATE OF 3列 / DELETE、SECURITY DEFINER・`search_path` 固定・EXECUTE は剥がす）が同期する。**view が無いので継承する迂回が無い**——明日 `profiles` に列を足しても、その列はこの表に存在しない／⚠⚠ **トリガ関数は fire 時に EXECUTE 権限を要求しない**（`CREATE TRIGGER` の時にだけ検査される。本番で rollback 付きトランザクションに入れて実測）ので、剥がしても同期は動き、advisor の `anon/authenticated_security_definer_function_executable` に**新しい行が増えない**／⚠⚠ **`drop view if exists` は table には効かず「is not a view」で落ちる**ので、view の落とし方を `relkind = 'v'` で守って migration を再実行可能に保つ／⚠⚠ **PostgREST は schema を cache する**——`notify pgrst, 'reload schema'` を**トランザクションの外**に置かないと、API から見た形は view のまま（commit していない形を先に announce することになる）／⚠ 新しい表は Supabase の既定権限で `anon`/`authenticated` に **ALL（TRUNCATE 込み・TRUNCATE は RLS の対象外）**が付くので、`revoke all` → `grant select` を #R155 と同じ形で書く／⚠ 検査は**射影ではなく仕組み**を見る2本立て: `supabase/tests/07_r507_profiles_public_test.sql`（relkind・RLS・ポリシー1本・4種の書込権限・同期の実測5通り）と `tests/r507-checks.test.mjs`（**クラスとしての門**——migration が今後残す view は `security_invoker = true` でなければ赤。同じ穴を二度掘らせない）。**5通りに変異させて赤を実測**
@@ -310,6 +311,115 @@
 - **#R260** — **作業には終わりがあって、その終わりだけが書かれていなかった**。`CLAUDE.md` は §5 のワークフローが `branch deletion` で終わっており、その先——「GitHub が今回の作業を含む最新状態か」の確認と、**USB への物理バックアップ**——は 250 ラウンドぶん**ユーザーの頭の中**にあった。§11 として明文化し、**1 回実行した**（§11 を入れたので旧 §11「本ファイル自体の保守」は §12 へ。`CLAUDE.local.md` が参照する §6/§7 は動いていない）。⑴ **ドライブの特定は条件 1 つでは足りない**——`DriveType=Removable`（Get-Volume）と `BusType=USB`（Get-Disk）の**両方**で交わりを取る。実測: 交わりは **D: 1 台だけ**（BUFFALO USB Flash Disk・115.43 GB・NTFS・**ラベル無し**）。C: は Fixed かつ IsSystem。「候補が 1 台だけ」条項に当たったので、**恒久ラベル `INTMAP-BACKUP` を付けて**次回からは推測ではなく**名前**で当たるようにした。⑵ ⚠ **USB には既に旧形式のフルコピーがあった**（`D:\IntMap`・本日 02:43 更新・`node_modules` と `.git` 込み・**ドライブ全体で 31,816 項目**）。新しい規則は「**ルート**を IntMap バックアップに」「古い IntMap ファイルを残さない」なので、畳んでルートへ移した（**削除を伴うので実行前に確認して承認を得ている**）。**中身は追跡対象 609 ファイル・87.6 MB**——`node_modules` も `.git` も**再現には要らない**（`package-lock.json` から生成できるものを 31,000 ファイルぶん運んでいた）。基準は `git ls-files`＝**除外の定義を `.gitignore` に一本化**。⑶ **「コピーが成功した」は「同じ物がある」ではない**。robocopy の終了コードは**書いた側の主張**でしかないので、同期後に**相対パス・存在・SHA-256** の三点で再帰比較し、**差分ゼロ**を見るまでバックアップ成功と呼ばない。⑷ ⚠ **1 回目は 609 分の 1 のファイルで落ちた**——`git ls-files` は既定（`core.quotepath=true`）で非 ASCII のパスを**引用符とオクタルのエスケープで**返し、PowerShell はそれをそのままファイル名にする（`USGS.能登.pdf`）。⚠ **止まった時点で 8.2 分の剪定は終わっているので、USB は空**。`core.quotepath=false` にして `[Console]::OutputEncoding` を UTF-8 にし、引用符で始まるパスが残っていたら投げる検査を足して再同期・再検証（§11.7 の実行例）。実測: 剪定 **491 秒**（31,816 項目）→ コピー **609 ファイル・91,882,916 バイト・483.1 秒** → 検証 **22.2 秒**で MISSING 0 / EXTRA 0 / MISMATCH 0。⚠ **検証は同期の 3% の時間しかかからない**。⑸ **台帳の日付は成功したときだけ動く**（`usb-backup-state.json`・リポジトリの外）。⚠ 先に日付を書いて後から同期すると、**1 回の失敗が丸 1 日のスキップになる**。未接続はエラーではない——スキップして、**日付も更新しない**。⑹ 門は `tests/r260-checks.test.mjs`（6 本・終了処理の 29 条項を 1 つずつ名指し）。⚠ ⑥ は**この検査ファイル自身が `test:checks` の一覧に入っているか**を検査する——**入れ忘れた per-round checks ファイルは永久に緑**だからで、実際に書いた直後の実行で⑥だけが赤になった（`package.json` に足す前）。
 
 
+## R511 — **地図は道具ではなく、回答の形式になった**
+
+> 「Atlasは『地図を操作する能力』が不足しているのではなく、『地図を使った説明』がAtlasの第一級の回答形式になっていません。
+> 現在は『文章を答えるAgent』が必要に応じて地図操作ツールを呼ぶ構造です。」
+
+貼られた分析（9 主張）を実体と照合したところ、6 が真・3 が一部真・偽は無かった。ずれていたのは
+中核ツールが 6 本ではなく 7 本（`ask_user` が漏れ）、「地図化の義務」がコード側に `_pinReplyPlaces` 3 か所として
+半分残っていること、非地理クラスの遮断が agent ループではなく pin 監査の class ゲートであること。
+
+### 1. ⚠⚠⚠ 真因——撤去は正しく、跡が空だった
+
+#R406 は「location-rich な回答を何も地図化せず終了してはならない」を名指しで撤去した（`js/atlas-policy.js` ③、
+理由は 「フランス革命はなぜ起きたのか」 が Paris を名指すが散文を求めること）。**その判断は今回も維持する。**
+
+問題は撤去のあと。1 手の返答は `{"final_text","tool_calls"}` で、`final_text` は地図について何も言えない。
+「X を地理的に説明して」に対してモデルが頭の中で十分な段落を作れれば、**step 0 で `final_text` を返して正常終了**が
+最短経路であり、ループはそれを見分ける手段を持たなかった（`runTurn` の終了条件は answered / awaiting_user /
+malformed_limit / call_budget / step_budget / transport / aborted だけ。地図オブジェクトを見る分岐は無い）。
+そして「地図で説明する」は本来 1 つの行為なのに、IntMap はそれを `map_view` → `highlight` → `find_capability` →
+`line` → … の 6〜7 手に割って差し出していた。1 手ごとに選び・型を合わせ・結果を見る判断が要るので、
+ほとんどのターンでモデルは 1 つも選ばず、段落を書いて終えていた。
+
+### 2. ⚠⚠ 直し方——言葉から推定する規則を戻さない
+
+`TURN_SCHEMA` に `answer_mode: "text"|"map"|"mixed"` を足した（任意・enum）。**Atlas が宣言する**その回答の種類で、
+コードは決めず・示唆せず・言葉から推定しない。コードがするのは**宣言との整合**だけ:
+
+```
+final が来た
+  ├ answer_mode が text / 未宣言        → そのまま終了（#R406 ① のまま。ツール 0 回・model 呼び出し 1 回）
+  └ answer_mode が map / mixed
+      ├ そのターンに changedMap:true の成功結果がある → 終了
+      └ 無い → transcript に {error:'map_not_drawn'} を積んで次の step（読者には見えない）
+              上限 maxMapGate=2。上限後は受け入れて answerMode / mapDrawn:false を返す
+```
+
+`changedMap` は `js/atlas-toolsurface.js` の `mechanical()` が結果に刻む事実——**その能力の registry 行が `map` を
+生成し、観測器が completed と言ったとき**だけ（`partial`＝何も描けなかった、は数えない）。ループが読むのは
+この旗であって道具の名前ではない（tests/r511 ⑤ は `zzz` という名の道具で示す）。**引数が schema に合わない呼び出しを
+Atlas に返すのと同じ種類の検査**であり、`js/atlas-policy.js` には 1 文も足していない（⑩）。
+
+### 3. ⚠⚠ `map.compose`——「地図で説明する」を 1 回の呼び出しに
+
+`js/atlas-map-compose.js`（新設・中核ツール `compose_map`・capability `map.compose`・schema・カタログ 1 ブロック）。
+入力は**説明そのもの**——`items`（地点。番号順・`role`＝答えの中で何であるか・`fill:true` で塗り）と
+`relations`（`from`/`to` は地点名か 1 始まりの番号。flow / route は矢印つきの大円の弧、influence / border は破線）。
+出力は、番号つきの印・弧・塗り（highlight 経路へ委譲。`__paintRun` を継いで同ターン内は加算）・全体を収める
+カメラ・同じ番号の凡例。
+
+- **地名は台帳 → ジオコーダの順にコードが解決する。** 台帳（`js/atlas-geo-ledger.js`）が知る地点は再ジオコードせず、
+  未知は #R489 の規則で国名を 1 回だけ付けて訊く。解決したものは**役割ごと**台帳へ戻す（次のターンにデータとして渡る）。
+- **解決できない地名は名前で `unplaced`。** `exec.unplaced` で Atlas に、凡例の 1 行で読者に。座標は発明しない。
+  モデルが `lng`/`lat` を書いても読まない（⑦b）。ジオコーダが黙れば `timeout`（項目 8 秒・1 回 26 秒・⑦d）。
+- **観測は `paintNow()` が `atl-compose-src` を数えて行う**（`js/atlas-capabilities.js`）——描画元を 1 本にした理由。
+- `linkProse()` が回答文（`_atlCompose` の head）の**最初の言及**に番号バッジを付ける。テキストノードだけ・
+  `<a>`/`<code>` の中は触らない・ラテン文字は語境界を見る（「Tokyoite」は Tokyo ではない）。
+  一致は**元の文字列**に対して取り、あとで組み立てる——書き換えながら探すと `data-geo="city:JP:tokyo"` が
+  次の候補の検索対象になる。hover は `focus(id)` で地図の輪と文の下線が双方向に光り、印のクリックで文へスクロール。
+
+### 4. ⚠ 収め方——`js/atlas-console.js` は余白 0 行
+
+`split('\n').length` は 4,909 で天井は `< 4,910`。import（行頭でないと `scripts/js-reachability.mjs` に見えない）・
+`COMPOSE` の生成・dispatch の `case` の 3 行は、**ファイルにあった空行 3 本**を実装行に替えて置いた。
+他（REPLY FORMAT・`_STAGE_OF`・`_OVL`/`OVL_OF`・`_atlCompose`・reset/clearAll・debug）は既存行の続き。
+`_OVL.compose` の layer 一覧は `COMPOSE.LAYERS` と等しいことを ⑨ が見る。
+
+### 5. 検査
+
+`tests/r511-checks.test.mjs`（15 本・`test:checks` に登録）。①差し戻し 1 回→描画→受理、②text/未宣言は #R406 ① のまま、
+③上限で受け入れ（`mapDrawn:false`）、④`readReply`、⑤旗であって名前でない、⑥CORE と `changedMap` の刻印、
+⑦a–e 合成器（台帳優先・国名 1 回・役割の記録・unplaced・大円と日付変更線の分割・**番号は項目順**・fill の委譲・
+timeout・**国名付きで見つからなければ裸の名前で再試行**・**レイヤーはピンの直下＝最上段**）、⑧`linkProse`、⑨配線と天井、⑩policy に文を足していない。
+
+⚠⚠ ⑦f も**ブラウザ実測**: 最初の版は POI レイヤーの anchor 一覧（`nlq-poi-c`、無ければ `nlq-fill`…）を借りていて、
+プレビューでは 7 レイヤーが 72 段中の 23〜29 段——不透明な `country-fill`（30 段）の**下**——に入り、3 地点・2 本の弧が
+`ok:true` のまま **rendered 0 件**だった。合成の印は利用者のピンと同じ注釈なので、`user-pin-shadow` の直下（無ければ最上段）に置く。
+
+⚠ ⑦の「番号は項目順」と⑦e は**ブラウザ実測で見つけた**: プレビューで `Strait of Hormuz, Iran` が Nominatim に無く
+（海峡は国の中に無い——裸の名前なら即解決）、項目 1 が unplaced になった結果、`from: 2` が「配置番号 2」＝ 3 番目の項目に
+解決して `same_endpoint` を報告した。モデルは自分の `items` の並びしか知らないので、数字は**項目の位置**として読む。ブラウザ spec は足していない——`scripts/test-budget.mjs` の
+core 天井 28 に入れるには計測と較正が要る（§8 の提案）。
+
+### 6. ⚠ 起動直後は style が無い／atlas-console チャンクの天井
+
+プレビュー（Browser ペイン）で起動直後に dispatch すると `addSource` / `addLayer` が 「Style is not done loading」 で
+全部拒否され、3 地点が解決済みなのに `ok:false` だった。合成器は描く前に `getStyle()` が答えるまで**最長 6 秒**待つ
+（`awaitStyle`。scene を持たない fake engine はすぐ通る）。⚠ ペインが `document.hidden` のあいだは style 読み込み自体が
+進まないので、前面に出して測る（#R493 の記録どおり）。**最初の黒い絵はフレーム遅延**——`queryRenderedFeatures` は
+3 点・3 線を返していた。実測（本物のエンジン・Nominatim）: Strait of Hormuz / Malacca / Ningbo ＝ 3 placed・
+Nowhere Reef ＝ unplaced・弧 2 本・レイヤーは 47 段中 42〜44（ピンの影 45 の直下）・凡例 HTML あり・所要 3.2 s。
+
+`check:perf`: 非同期チャンク `atlas-console` が 927.3 → **951.6 kB**（+24 kB＝合成器 1 本と中核ツールの説明文）。
+起動バンドルは 1 バイトも動いていない。`tests/perf-baseline.json` の **その 1 項目だけ**を実測値 974,452 B に上げた
+（`--update` は全項目を書き戻すので使わない——memory `intmap-perf-budget-tolerances`）。
+
+### 7. ⚠ 能力を 1 つ足すと赤くなる検査が 2 本あった
+
+- `tests/r500-checks.test.mjs` は Architecture.md の錨を **`129` / `128` のリテラル**で持っていた——#R500 自身が
+  「機械が持つ数を写した箇所は必ず離れる」と書いた形。錨の数はレジストリから読む（`caps.list().length` と
+  `caps.withdrawn().length`＝doc-facts と同じ 2 呼び出し。⚠ `list()` は **id 文字列の配列**で、行オブジェクトではない）。
+- `tests/r397-checks.test.mjs ②` の「source を作るファイル」一覧（4 本）に `js/atlas-map-compose.js` を足し、
+  作成箇所は `addSource('atl-compose-src'` の**リテラル**で書く（grep で見つかる形が正本）。
+- 文書の数: js 255→256 本・node 検査 286→287 本・能力 129→130（DECISIONS 2 か所）・Architecture の新行から
+  ラウンド番号を外した（`arch-rounds`）・ビルド刻印 2 本を R511 に。
+
+### 8. ⚠ 英語キーの衝突
+
+凡例見出し `On the map` は `js/terrain-water.js` の水源パネルと英語キーが同じで ja が別訳（配置済み）だったので
+`check:i18n` が止めた。`Places on the map` に改名（9 言語。zh-Hans は `node scripts/zh-hans.mjs` で再生成）。
 ## R510 — **「APIキーが必要です」と出るレイヤーは、機能ではなく前提条件だった**
 
 > 「船舶レイヤーは、APIキーが必要ですと出てくるので、没にしてましたが、ちゃんと実装したい。

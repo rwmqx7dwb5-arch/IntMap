@@ -283,6 +283,26 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'#atlas-panel .atl-ctl-btn{align-self:flex-start;border:1px solid var(--glass-border,rgba(128,128,128,0.3));background:var(--input-bg);color:var(--text-main);border-radius:10px;padding:6px 12px;font-size:11.5px;font-weight:600;cursor:pointer;}'
       +'#atlas-panel .atl-ctl-btn:hover{border-color:var(--primary-color);color:var(--primary-color);}'
       /* (#R74) ChatGPT-style source link cards */
+      /* (#R511) the map explanation's legend and the numbered references in the prose — js/atlas-map-compose.js.
+         The badge is a CSS circle, not a glyph, so it is the same in every font and script; its colour is the marker's. */
+      +'#atlas-panel .atl-geo-n{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:8px;font-size:10px;font-weight:700;line-height:1;color:#fff;background:var(--accent,#0a84ff);vertical-align:0.15em;margin-left:3px;letter-spacing:0;}'
+      +'#atlas-panel .atl-geo-ref{border-bottom:1px dotted currentColor;cursor:pointer;border-radius:3px;transition:background .15s;}'
+      +'#atlas-panel .atl-geo-ref.atl-geo-on,#atlas-panel .atl-geo-ref:hover{background:rgba(10,132,255,.14);border-bottom-color:transparent;}'
+      +'#atlas-panel .atl-geo-flash{background:rgba(255,159,10,.35) !important;}'
+      +'#atlas-panel .atl-cmp{margin:8px 0 4px;padding:8px 10px;border-radius:12px;background:var(--input-bg);border:1px solid var(--glass-border,rgba(128,128,128,0.22));font-size:11.5px;line-height:1.5;}'
+      +'#atlas-panel .atl-cmp-h{font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}'
+      +'#atlas-panel .atl-cmp-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;}'
+      +'#atlas-panel .atl-cmp-l li{display:flex;align-items:baseline;gap:6px;padding:2px 4px;border-radius:7px;cursor:pointer;}'
+      +'#atlas-panel .atl-cmp-l li .atl-geo-n{margin-left:0;flex:none;}'
+      +'#atlas-panel .atl-cmp-l li.atl-geo-on,#atlas-panel .atl-cmp-l li:hover{background:rgba(10,132,255,.12);}'
+      +'#atlas-panel .atl-cmp-nm{font-weight:600;}'
+      +'#atlas-panel .atl-cmp-role{color:var(--text-muted);}'
+      +'#atlas-panel .atl-cmp-rels{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:5px;}'
+      +'#atlas-panel .atl-cmp-rel{display:inline-flex;align-items:center;gap:3px;color:var(--text-muted);}'
+      +'#atlas-panel .atl-cmp-rel .atl-geo-n{margin-left:0;}'
+      +'#atlas-panel .atl-cmp-arr{font-size:12px;}'
+      +'#atlas-panel .atl-cmp-rl{margin-left:2px;}'
+      +'#atlas-panel .atl-cmp-f,#atlas-panel .atl-cmp-un{margin-top:5px;color:var(--text-muted);font-size:11px;}'
       +'#atlas-panel .atl-src-h{font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);margin:9px 0 1px;}'   /* (#R79) ChatGPT-style Sources label above the cards */
       +'#atlas-panel .atl-lc-row{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0 3px;}'
       +'#atlas-panel .atl-lc{display:flex;align-items:center;gap:7px;max-width:100%;min-width:0;padding:5px 10px 5px 6px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));border-radius:11px;background:var(--input-bg);text-decoration:none;transition:border-color .15s ease,background .15s ease;}'

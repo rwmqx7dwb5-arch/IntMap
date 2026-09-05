@@ -47,6 +47,16 @@ const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 /* ⚠ (#R286/#R283) 錨は LF で書いてあり、このチェックアウトはそうとは限らない。照合は改行を
    緩めた正規表現で行い、復元は元のバイト列で行う。 */
 const anchorRe = (s) => new RegExp(s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\n/g, '\\r?\\n'));
+/* ⚠ (#R511) THE ANCHORS BELOW CARRY THE REGISTRY SIZE, AND THAT SIZE IS READ FROM THE REGISTRY.
+   They were written as the literal 129 / 128, so adding ONE capability (map.compose) turned this
+   file red for a reason that had nothing to do with the rule it tests — the very shape #R500 was
+   written against (a number copied where a machine holds it). The 正本 is js/atlas-capabilities.js. */
+if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
+const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
+const _CAPS = makeAtlasCapabilities({});
+const _REGISTRY = _CAPS.list();
+const REG = _REGISTRY.length;
+const REACH = REG - (_CAPS.withdrawn() || []).length;   /* the same two calls scripts/doc-facts.mjs makes */
 
 function docFacts(rule) {
   try {
@@ -84,7 +94,7 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
     await t.test('① capability-count catches a document that misstates the registry', () => {
       const STALE = String(12) + String(6);
       const r = withBroken([{ file: 'Architecture.md', why: 'the registry size in §5',
-        from: 'レジストリの全 129 を検索', to: 'レジストリの全 ' + STALE + ' を検索' }],
+        from: 'レジストリの全 ' + REG + ' を検索', to: 'レジストリの全 ' + STALE + ' を検索' }],
         () => docFacts('capability-count'));
       assert.equal(r.code, 1, 'a document may state the wrong registry size and stay green');
       assert.match(r.out, /capability-count/, 'the report does not name the rule that failed');
@@ -132,14 +142,14 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
          ——それは正しい。黙ったことを確かめるには**全部**消す必要がある。 */
       const a = withBroken([
         { file: 'Architecture.md', why: 'the registry size in the table row',
-          from: '**129 能力**', to: '**能力の一覧**' },
+          from: '**' + REG + ' 能力**', to: '**能力の一覧**' },
         { file: 'Architecture.md', why: 'the schema count',
-          from: '**129 能力ぶんの引数定義**', to: '**各能力ぶんの引数定義**' },
+          from: '**' + REG + ' 能力ぶんの引数定義**', to: '**各能力ぶんの引数定義**' },
         { file: 'Architecture.md', why: 'the size in the tool-surface row',
-          from: '（レジストリの全 129 を検索・返るのは撤去済み 1 を除く **128** から・**打ち切り無し**）',
+          from: '（レジストリの全 ' + REG + ' を検索・返るのは撤去済み 1 を除く **' + REACH + '** から・**打ち切り無し**）',
           to: '（レジストリ全体を検索・**打ち切り無し**）' },
         { file: 'Architecture.md', why: 'the size in §5',
-          from: '**レジストリの全 129 を検索**し（返るのは撤去済み 1 を除く **128** から）',
+          from: '**レジストリの全 ' + REG + ' を検索**し（返るのは撤去済み 1 を除く **' + REACH + '** から）',
           to: '**レジストリ全体を検索**し' },
       ], () => docFacts('capability-count'));
       assert.equal(a.code, 1, 'Architecture.md may drop the registry size in silence');

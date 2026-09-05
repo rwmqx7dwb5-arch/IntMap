@@ -87,6 +87,7 @@ export function makeAtlasAgent() {
       maxToolCalls: 32,     /* (#R413) 16 → 32: the step count doubled above, so the same headroom per step */
       maxPerStep: 8,        /* tool calls accepted from a single model reply */
       maxMalformed: 3,      /* consecutive steps that produced nothing but rejected calls */
+      maxMapGate: 2,        /* (#R511) how many times a "map"/"mixed" final with nothing drawn is handed back before it is accepted as it stands */
       toolTimeoutMs: 240000,  /* (#R452) ONE tool call — above the ~200 s a working `analyze` can cost. Past it Atlas is TOLD it did not finish, and chooses again */
       turnBudgetMs: 600000,   /* (#R452) …and the whole turn — three times the longest turn ever measured, so it only ever fires on one that was not going to end */
     };
@@ -102,11 +103,28 @@ export function makeAtlasAgent() {
        the arguments as JSON text keeps every other field strictly checked, and is what native
        function calling does with them anyway. The caller accepts an object too, for a model that
        sends one regardless. */
+    /* ══ ⚠⚠⚠ (#R511) `answer_mode` — THE MAP AS AN OUTPUT MODALITY, DECLARED BY ATLAS ═════════════
+       #R406 removed «do not finish a location-rich answer having mapped nothing» because a place
+       NAME is not a reason to draw (「フランス革命はなぜ起きたのか」 names Paris and wants prose), and
+       left whether to use the map to Atlas. Correct — and it left the other half empty: a turn that
+       DECIDED the map carried part of its answer could still end with the map untouched, and the
+       loop had no way to notice, because `final_text` says nothing about the map. Measured on the
+       ordinary shape 「Xを地理的に説明して」: the model writes the paragraph in its head, returns it on
+       step 0, and IntMap counts that as a complete turn. It was.
+       `answer_mode` is Atlas SAYING which kind of answer this is — "text" (the map is untouched),
+       "map" (the map IS the answer; the words frame it), or "mixed" (both carry it). The loop does
+       not decide it, suggest it, or infer it from words. What it does is hold Atlas to its OWN
+       declaration, exactly as `reject()` holds a call to its own tool's schema: a "map"/"mixed" reply
+       arriving before anything this turn changed the map is handed back as a typed note
+       (`map_not_drawn`), and Atlas chooses again — draw now, or answer as "text" and say why. That
+       is a consistency check between two things the model said, not a rule about meaning. */
+    const ANSWER_MODES = ['text', 'map', 'mixed'];
     const TURN_SCHEMA = {
       type: 'object',
       required: ['final_text'],
       properties: {
         final_text: { type: 'string' },
+        answer_mode: { type: 'string', enum: ANSWER_MODES },
         tool_calls: {
           type: 'array',
           items: {
@@ -270,6 +288,9 @@ export function makeAtlasAgent() {
       let text = '';
       let malformedRun = 0;
       let stopped = '';
+      let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
+      let mapGateBounces = 0;    /* (#R511) how many finals came back as `map_not_drawn` */
+      trace.mapGate = 0;
 
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
@@ -324,10 +345,29 @@ export function makeAtlasAgent() {
 
         const calls = (reply && Array.isArray(reply.toolCalls)) ? reply.toolCalls.slice(0, lim.maxPerStep) : [];
         if (reply && typeof reply.text === 'string' && reply.text.trim()) text = reply.text;
+        if (reply && ANSWER_MODES.indexOf(reply.answerMode) >= 0) answerMode = reply.answerMode;
 
         /* ── ZERO TOOL CALLS IS A COMPLETE TURN. This is the branch the old planner had no shape
            for: 「セーヌ川の長さは」 is answered here, on step 0, having touched nothing. ────── */
         if (!calls.length) {
+          /* ══ (#R511) …UNLESS ATLAS SAID THIS ANSWER IS A MAP AND THE MAP IS UNTOUCHED. `changedMap`
+             is a fact the tool surface stamps on a result whose capability produced the map and
+             completed — the same kind of fact as `endsTurn`. The loop reads the flag, not the
+             tool's name, so it still knows nothing about what any tool means. The bounce is a typed
+             note in the transcript, never shown to the reader; it costs a step and is bounded. */
+          const wantsMap = (answerMode === 'map' || answerMode === 'mixed');
+          const drew = results.some((r) => r && r.ok !== false && r.changedMap === true);
+          if (wantsMap && !drew && mapGateBounces < lim.maxMapGate && (step + 1) < lim.maxSteps && !outOfTime()) {
+            mapGateBounces++; trace.mapGate++;
+            trace.steps.push({ step, toolCalls: 0, bounced: 'map_not_drawn' });
+            transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [] });
+            transcript.push({ role: 'tool', content: [{ ok: false, error: 'map_not_drawn',
+              message: 'You declared answer_mode "' + answerMode + '", but nothing in this turn has drawn on or moved the map, '
+                + 'so the reader would get words about a map that is not there. Either draw it now — compose_map puts the places, '
+                + 'their roles and the links between them on the map in ONE call (highlight / map_view are the smaller tools) — '
+                + 'and then answer; or, if the map genuinely cannot carry this answer, reply with answer_mode "text" and say so.' }] });
+            continue;
+          }
           trace.steps.push({ step, toolCalls: 0, final: true });
           stopped = stopped || 'answered';
           break;
@@ -466,7 +506,10 @@ export function makeAtlasAgent() {
         } catch (_) { /* keep whatever we have; the caller degrades */ }
       }
 
-      return { text: String(text || ''), calls: trace.calls, results, trace, stopped };
+      /* (#R511) `answerMode` is what Atlas DECLARED, reported as declared. `mapDrawn` is what the
+         machine recorded. When they disagree after the bounces ran out, both are visible here. */
+      return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
+        mapDrawn: results.some((r) => r && r.ok !== false && r.changedMap === true) };
     }
 
     /**
@@ -487,10 +530,13 @@ export function makeAtlasAgent() {
         if (!args || typeof args !== 'object' || Array.isArray(args)) args = {};
         calls.push({ id: 't' + i, name: String(c.name), arguments: args });
       });
-      return { text: String((d && d.final_text) || (d ? '' : (text || ''))), toolCalls: calls };
+      /* (#R511) the declared kind of answer; anything outside the vocabulary is simply not a declaration */
+      const am = d ? String(d.answer_mode || d.answerMode || '').toLowerCase() : '';
+      return { text: String((d && d.final_text) || (d ? '' : (text || ''))), toolCalls: calls,
+        answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '' };
     }
 
-    const API = { LIMITS, TURN_SCHEMA, runTurn, reject, readReply, validateAgainst };
+    const API = { LIMITS, TURN_SCHEMA, ANSWER_MODES, runTurn, reject, readReply, validateAgainst };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

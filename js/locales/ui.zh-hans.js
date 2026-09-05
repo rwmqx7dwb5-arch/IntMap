@@ -253,6 +253,10 @@ window.IntMapLang.define('zh-hans', {
     'map only': '仅地图',
     'The map is not running, so there is nothing to look at.': '地图未在执行，因此没有可以查看的内容。',
     'Could not read the map frame — the renderer gave nothing back.': '无法读取地图画面——算绘引擎没有回传任何内容。',
+    /* (#R511) map.compose — the legend of a map explanation */
+    'Places on the map': '地图上的地点',
+    'Shaded': '填色',
+    'Could not be placed': '无法定位',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
     "{n} lookups left today": "今日剩余解说 {n} 次",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap 有新版本可用。请重新加载以继续。',
