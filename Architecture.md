@@ -966,7 +966,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **13本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **14本**（`_shared/` は関数ではない）
 
 > ⚠ **13本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
@@ -1045,6 +1045,28 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   動けない。**上流へ問い合わせる権利は1つの leaky bucket**（`READ_RATE_PER_S`）が配り、視野・掃引の
   どちらもそこから引く——チャンネルごとの間隔ではない。
 
+- **`ais-feed`** … ライブ**船舶**の**唯一の上流読み取り役**（`--no-verify-jwt`）。
+  provider は2本を**同時に**読む: **Digitraffic / Fintraffic**（バルト海・フィンランド海域。
+  **キーも登録も不要**・CC BY 4.0・CORS 開放）と、**aisstream.io**（全球・`AISSTREAM_API_KEY` が
+  あるときだけ）。⚠ **キーはこの関数の中にしか無く、ブラウザには渡らない。**
+  ⚠ **aisstream は WebSocket なので、1回の呼び出しの中で開いて数秒吸って閉じる**——
+  `EdgeRuntime.waitUntil` の背景仕事は応答をまたいで生きない（実測）ので、
+  「裏で開きっぱなしにする」設計は単発の試験では正しく見えて本番では1バイトも集めない。
+  呼び出し側が選べるのは**チャンネル（`world` / `view`＝`?bbox=w,s,e,n` / `meta`）だけ**で、URL は渡せない。
+  `view` は世界集合をその箱で切って返す（西>東で日付変更線をまたぐ）——ブラウザは**見ている範囲に余白を
+  足した箱**を訊き、視野がその箱を出たときだけ訊き直す（全球の集合は 1 隻あたり約 65 バイト（gzip 後）
+  なので、視野に関係なく全部を 30 秒ごとに運ぶ設計は携帯で成り立たない）。
+  ⚠ **温かい isolate も TTL（30 秒）を過ぎたら自分で更新する**——その瞬間の呼び出し元が 1 回分の
+  更新（数秒）を待ち、同時に来た呼び出しは 1 つの更新を共有する（`INFLIGHT`）。応答の後に走る仕事は
+  無いので「古いものを返してから裏で更新」は選べない。
+  `x-intmap-coverage` は**設定されている provider ではなく、直近の更新で実際に答えた provider と隻数**
+  （`digitraffic:891` のように）。鍵が拒否されている aisstream は 0 なので名乗らない。
+  共有スナップショットは Storage の `ais` bucket（`world.json`・migration 20260831120000。
+  provider 別の隻数 `p` を同梱するので、hydrate しただけの isolate も被覆を正直に言える）。
+  ⚠ **利用者が自分のキーを設定に入れている場合は、従来どおりブラウザが直接 WebSocket を張る**——
+  そちらのほうが新しいので、既存の挙動は取り上げていない（`AGENTS.md` §3.1）。
+  ⚠ **空の集合は共有スナップショットに書かない**（全利用者の海が同時に消え、上流障害と同じ顔をする）。
+
 - **`volcano-feed`** … 火山の**ブラウザが読めない2本のフィード**の中継（`--no-verify-jwt`・秘密なし）。
   `?feed=weekly` は Smithsonian/USGS 週間火山活動報告（`volcano.si.edu` の RSS）、
   `?feed=ash` は国際 SIGMET（`aviationweather.gov`）のうち**火山灰（`hazard:"VA"`）だけ**。
@@ -1057,7 +1079,7 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ACAO を返すので中継しない**（要らない relay は落ちうるものを1つ増やすだけ）。
   詳細は [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md)。
 
-⚠ **`_shared/relay-guard.js` を共有するのは9本**（`alerts-relay` / `aviation-feed` / `cable-geo` /
+⚠ **`_shared/relay-guard.js` を共有するのは10本**（`ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
 `gdelt-relay` / `news-ingest` / `news-relay` / `routing-relay` / `sv-cov` / `volcano-feed`）**。** そのうち
 `news-ingest` だけが `x-news-ingest-secret` で fail-closed に守られており、**残り8本は無認証**。
 共有しているのは、URL allowlist、**GET 限定**、**期限**（`AbortSignal.timeout`）、
@@ -2574,7 +2596,7 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を13本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を14本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
    for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed news-ingest routing-relay volcano-feed gdelt-relay; do
@@ -2690,7 +2712,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（19本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（20本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表）。

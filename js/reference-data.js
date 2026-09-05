@@ -324,6 +324,7 @@ window.IntMapRefData=(function(){
     {n:'NASA SEDAC GPW v4',u:'https://sedac.ciesin.columbia.edu/'},
     {n:'UNDP / EIU / SIPRI / World Bank',u:'https://hdr.undp.org/'},
     {n:'AISstream.io',u:'https://aisstream.io/'},
+    {n:'Digitraffic / Fintraffic (marine AIS)',u:'https://www.digitraffic.fi/en/marine-traffic/'},
     {n:'adsb.lol',u:'https://www.adsb.lol/'},
     {n:'airplanes.live',u:'https://airplanes.live/'},
     {n:'CelesTrak',u:'https://celestrak.org/'},

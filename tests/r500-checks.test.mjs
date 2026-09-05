@@ -109,10 +109,15 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
       assert.match(r.out, /news-ui/, 'the report does not name the row that disagrees');
     });
 
-    /* ③ 文書でない2か所。⚠ ここが規則の要点である——`eachDoc` はこの2つを見ない。 */
+    /* ③ 文書でない2か所。⚠ ここが規則の要点である——`eachDoc` はこの2つを見ない。
+       ⚠ (#R510) THE ANCHOR CARRIES THE NUMBER THE FILE ACTUALLY STATES, NOT A NUMBER THIS TEST WROTE
+       DOWN. It said «95» — so the day a round added one nightly spec and correctly updated both
+       files to «96», the rule stayed green and THIS test went red for not finding its own anchor:
+       the check that polices four hand-written copies of a derived number was the fifth copy. */
+    const deepNow = (() => { const m = /the deep tier is (\d+) spec files/.exec(readLF(join(ROOT, 'package.json'))); return m ? m[1] : '95'; })();
     for (const [file, from, to, why] of [
-      ['package.json', 'the deep tier is 95 spec files', 'the deep tier is ' + String(86) + ' spec files', 'the npm script commentary'],
-      ['scripts/worktree.mjs', 'The deep tier (95 spec files', 'The deep tier (' + String(82) + ' spec files', 'the banner printed at the start of every session'],
+      ['package.json', 'the deep tier is ' + deepNow + ' spec files', 'the deep tier is ' + String(86) + ' spec files', 'the npm script commentary'],
+      ['scripts/worktree.mjs', 'The deep tier (' + deepNow + ' spec files', 'The deep tier (' + String(82) + ' spec files', 'the banner printed at the start of every session'],
     ]) {
       await t.test(`③ deep-tier-size catches ${file} — ${why}`, () => {
         const r = withBroken([{ file, why, from, to }], () => docFacts('deep-tier-size'));
