@@ -406,7 +406,7 @@ test('R208 ⑧ the space camera can leave the solar system, and the stars have r
    tests/prod-smoke.spec.js, because it needs data this hermetic context deliberately blocks.
 
    ⚠ AND THAT BLOCK IS ITSELF ONE OF THE THINGS THIS ROUND HAS TO PROVE. 「API失敗」 is on the list:
-   with map-tiles.open-meteo.com unreachable, the wind layer must SAY SO rather than show a picture
+   with the model host (js/wx-models.js) unreachable, the wind layer must SAY SO rather than show a picture
    that is not there. This context blocks every host but the two boot CDNs, so it is the honest
    place to ask. */
 

@@ -587,6 +587,39 @@ test('(#R178) prod service worker caches every terrarium DEM alias', async () =>
   expect(missed, `DEM aliases still bypassing the cache: ${missed.join(', ')}`).toEqual([]);
 });
 
+/* ══ ⚠⚠⚠ (#R514) THE HOST THE FIVE TESTS BELOW DEPEND ON, ASKED FIRST AND BY NAME ═══════════════
+   On 2026-09-05 the five ECMWF tests below went red on two deployments in a row, and what they said
+   was 「Target page, context or browser has been closed」, 「field did not load」, 「no metadata」,
+   「Received 0」 and 「Received ""」 — five descriptions of the same absence, none of them naming it.
+   The absence was upstream: Open-Meteo had retired the CDN host the build read from, and its DNS name
+   no longer existed. Nothing in the repository had changed since the last green run.
+   So this asks the precondition ON ITS OWN, of the host the DEPLOYED build names (read out of the
+   page, not spelled here — the spelling lives in js/wx-models.js and nowhere else): does the name
+   resolve and answer the model's metadata, does it let THIS origin read it, and does it serve the
+   ranged reads the field decoder is made of. Each line fails with the URL and the status in it, so
+   the next time the host moves, the first red line says 「host」 rather than 「browser」. */
+test('(#R514) the model host the deployed build names answers, and lets this origin read ranges from it', async () => {
+  const origin = new URL(PROD_URL).origin;
+  const u = await page.evaluate(() => {
+    const M = window.IntMapWxModels;
+    return M ? { meta: M.metaUrl(M.defaultId()), id: M.defaultId() } : null;
+  });
+  expect(u, 'the deployed build publishes its model registry').not.toBeNull();
+  const r = await page.request.get(u.meta, { headers: { Origin: origin }, timeout: 30_000 });
+  expect(r.status(), 'the model host answers its metadata at ' + u.meta).toBe(200);
+  expect(r.headers()['access-control-allow-origin'], 'and lets ' + origin + ' read it').toBe('*');
+  const j = await r.json();
+  expect(Array.isArray(j.valid_times) && j.valid_times.length, 'and the run publishes an axis')
+    .toBeGreaterThan(40);
+  const f = await page.evaluate(([id, ref, vt]) => window.IntMapWxModels.fileUrl(id, ref, vt),
+    [u.id, j.reference_time, j.valid_times[0]]);
+  const rr = await page.request.get(f, { headers: { Origin: origin, Range: 'bytes=0-1023' }, timeout: 30_000 });
+  expect(rr.status(), 'a ranged read of the first field file is served as a range: ' + f).toBe(206);
+  expect(rr.headers()['access-control-allow-origin'], 'across origins').toBe('*');
+  console.log('[R514] model host ' + new URL(u.meta).hostname + ' · run ' + j.reference_time
+    + ' · ' + j.valid_times.length + ' steps · ' + (j.variables || []).length + ' variables');
+});
+
 /* ══ (#R276) THE WEATHER MODEL, AGAINST REAL DATA ════════════════════════════════════════════════
    These three cannot live in tests/smoke.spec.js: that context blocks every host but the two boot
    CDNs, on purpose, and what is being asked here is whether the ECMWF field the live site actually

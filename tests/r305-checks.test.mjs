@@ -272,7 +272,15 @@ test('R305 ⑪ the quiet window restarts when the field lands', () => {
 test('R305 ⑫ the tile SDK and the archive get a name resolution hint', () => {
   const h = read('index.html');
   assert.match(h, /<link rel="dns-prefetch" href="https:\/\/unpkg\.com">/, 'the SDK host');
-  assert.match(h, /<link rel="dns-prefetch" href="https:\/\/map-tiles\.open-meteo\.com">/, 'the archive host');
+  /* ⚠ (#R514) THE ARCHIVE HOST IS READ FROM THE REGISTRY, NOT SPELLED HERE. This line used to pin
+     map-tiles.open-meteo.com — and that name was retired upstream, so the hint it required was a
+     lookup that could only fail. A prefetch is a claim about the host the code will read from;
+     the only place that host is spelled is js/wx-models.js, so that is what the hint is compared
+     against, and a host that moves moves the expectation with it. */
+  const win = {};
+  new Function('window', read('js/wx-models.js')).call(win, win);
+  const archive = new URL(win.IntMapWxModels.HOST).origin;
+  assert.ok(h.includes('<link rel="dns-prefetch" href="' + archive + '">'), 'the archive host (' + archive + ')');
   /* ⚠ a HINT, not a preload — the first view uses neither, which is the rule the block states */
   assert.ok(!/rel="preload"[^>]*unpkg\.com/.test(h), 'nothing is downloaded for a layer nobody switched on');
 });
