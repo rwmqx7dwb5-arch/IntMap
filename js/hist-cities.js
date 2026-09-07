@@ -28,16 +28,43 @@
  *  fails MapLibre's style validation outright («Branch labels must be unique»), which would make
  *  addLayer throw and take the whole label stack with it (#R211 measured exactly that).
  *
+ *  ══ ⚠⚠⚠ AND A SPELLING IS NOT AN IDENTITY (#R521) ══════════════════════════════════════════════
+ *  Until #R521 the match above WAS the whole rule, and a reader travelling to 1950 watched 高知市
+ *  become コーチン. The row is correct — Kochi in Kerala was Cochin until 1996 — and so was every
+ *  gate: the expression simply had nothing in it that could tell one Kochi from another, so every
+ *  city on Earth sharing a spelling with one of the record's thousand-odd keys was in scope. Kirov in
+ *  Kaluga oblast would have become Vyatka; Linden, New Jersey would have become Mackenzie.
+ *
+ *  ⚠ SO EVERY BRANCH IS NOW GUARDED BY POSITION. The value of a branch is not the era name but a
+ *  `case`: take the era name only if MapLibre's `distance` expression puts this feature within the
+ *  row's guard radius of the row's coordinate, and otherwise fall through to the label the tile
+ *  would have had. The radius is not typed by hand — scripts/build-hist-cities.mjs derives it as
+ *  half the distance to the nearest settlement on Earth answering to the same spelling under its
+ *  own name, capped at 20 km — so no row can be given a radius that reaches its own namesake.
+ *
+ *  ⚠ `distance` IS EVALUATED IN THE WORKER, WHERE THE GEOMETRY IS. Symbol layout calls
+ *  `getValueAndResolveTokens('text-field', evaluationFeature, canonical, …)` with
+ *  `evaluationFeature.geometry` already loaded, which is the one condition MapLibre's Distance
+ *  expression needs; without geometry or a canonical tile id it returns NaN, and `['<=', NaN, r]`
+ *  is false — so the failure direction is «the modern name», never «the wrong city's history».
+ *
+ *  ⚠ AND THE FALLTHROUGHS ARE `let` BINDINGS, not copies. A branch that fails its guard has to
+ *  fall back to the OTHER match (and that one to the base expression), and writing those out per
+ *  branch would repeat the base expression once per key inside one layout property. `['let', …]`
+ *  binds each once; the branch says `['var', …]`.
+ *
  *  ══ WHEN IT APPLIES ════════════════════════════════════════════════════════════════════════════
  *  Whenever the master clock is NOT live. ⚠ NOT gated on `IntMapTimeBorders.active()`, which is what
  *  the modern COUNTRY labels hide on: that flag is false for 2020 and later because CShapes ends in
  *  2019, and a city renamed in 2022 (Nur-Sultan → Astana) has nothing to do with the limits of a
  *  border dataset. A name is a fact about a year; this asks the clock about the year.
  *
- *  ⚠ AND ONLY ON `ofm-city`, whose filter is `class in [city, town]`. Districts, boroughs and
- *  suburbs are NOT in that layer, which is what makes several rows safe that would otherwise
- *  collide with a city-sized name somewhere else (see «Latina» in scripts/histcities/europe.mjs).
- *  Widening this to `ofm-other` would silently invalidate those rows' written reasons.
+ *  ⚠ AND ONLY ON `ofm-city`, whose filter is `class in [city, town]`. ⚠ (#R521) That filter used
+ *  to be load-bearing — several rows' written exemptions rested on «a district of Madrid is not in
+ *  this layer» — and it is not any more: the guard radius answers those cases by arithmetic, and
+ *  scripts/build-hist-cities.mjs no longer accepts a reason of that shape. What the filter still
+ *  buys is that `cities500`'s population floor of 500 is comfortably below anything OSM tags
+ *  `place=city|town`, so the evidence covers what the layer draws.
  * ==========================================================================*/
 window.IntMapHistCities = (function () {
   var data = null, loading = null, wired = false, failed = false;
@@ -45,6 +72,9 @@ window.IntMapHistCities = (function () {
   /* the nine language codes are js/lang-registry.js's own — the file carries all of them spelled
      out, so there is no fallback rule here that could drift from the one the build applied. */
   var say = function (n, lang) { return (n && (n[lang] || n.en)) || ''; };
+  /* the two `let` bindings the guarded branches fall through to (#R521). Named, not inlined, so
+     the expression is read the same way by this file and by the tests that walk it. */
+  var VAR_BASE = 'imhcBase', VAR_LOCAL = 'imhcLocal';
 
   /* the clock's instant as the same YYYYMMDD integer the build wrote into `f` / `t` */
   function dnum(d) { return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate(); }
@@ -77,24 +107,40 @@ window.IntMapHistCities = (function () {
     try { return !!(window.IntMapTime && !window.IntMapTime.isLive()); } catch (_) { return false; }
   }
 
-  /* ── the era name of ONE place, for readers that are not the label layer ───────────────────── */
-  function at(spelling, lang) {
-    if (!data || !spelling) return null;
+  /* ── the era name of ONE place, for readers that are not the label layer ─────────────────────
+     ⚠ (#R521) THE POSITION IS REQUIRED, for the reason the label expression now carries a guard:
+     `at('Kochi')` cannot mean anything, because two cities answer to it and they are 6 900 km
+     apart. A caller that knows a spelling but not where it is does not know which city it means,
+     and this returns null rather than guessing. */
+  function at(spelling, lon, lat, lang) {
+    if (!data || !spelling || typeof lon !== 'number' || typeof lat !== 'number') return null;
     var d = traveling() ? dnum(window.IntMapTime.when()) : null;
     if (d == null) return null;
     for (var i = 0; i < data.cities.length; i++) {
       var c = data.cities[i];
       if (c.k.indexOf(spelling) < 0) continue;
+      if (metres(lon, lat, c.lon, c.lat) > (c.g || 0)) continue;
       var n = nameAt(c, d);
       return n ? say(n, lang) : null;
     }
     return null;
   }
 
+  /* great-circle metres. ⚠ NOT bit-identical to MapLibre's `distance`, which uses cheap-ruler's
+     flat-earth approximation — the two agree to about a tenth of a percent, i.e. tens of metres on
+     a 20 km guard, which is far inside the margin the build leaves. */
+  function metres(aLon, aLat, bLon, bLat) {
+    var R = Math.PI / 180;
+    var dLat = (bLat - aLat) * R, dLon = (bLon - aLon) * R;
+    var s = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+      + Math.cos(aLat * R) * Math.cos(bLat * R) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 6371000 * 2 * Math.asin(Math.min(1, Math.sqrt(s)));
+  }
+
   /* ── the `text-field` for js/place-labels.js ───────────────────────────────────────────────── */
   /* `base` is the ordinary language expression (a coalesce over the tile's own name:* keys). It is
-     the DEFAULT of the match, so nothing outside the table changes and «not travelling» is simply
-     the base expression handed straight back. */
+     what BOTH matches and every guarded branch fall through to, so nothing outside the table
+     changes and «not travelling» is simply the base expression handed straight back. */
   function textField(base, lang, mode) {
     if (!traveling()) return base;
     if (!data) { ensure(); return base; }
@@ -105,8 +151,8 @@ window.IntMapHistCities = (function () {
        asking for something the record does not hold. */
     var lg = (mode === 'en' || mode === 'local') ? 'en' : (lang || 'en');
     var d = dnum(window.IntMapTime.when());
-    /* ⚠ THE BASE EXPRESSION IS PART OF THE KEY, not just the date and the language. `base` is the
-       DEFAULT of the match — the label every city outside the record gets — and it is rebuilt by
+    /* ⚠ THE BASE EXPRESSION IS PART OF THE KEY, not just the date and the language. `base` is what
+       everything falls through to — the label every city outside the record gets — and it is rebuilt by
        the caller on every call. 'en' and 'local' both resolve to the English column above, so a
        reader switching 「英語で」→「現地表記で」 while travelling would hit a cache entry whose
        default was still the OTHER mode's expression, and every unlisted city on Earth would keep
@@ -121,14 +167,20 @@ window.IntMapHistCities = (function () {
       var c = data.cities[i];
       var n = nameAt(c, d); if (!n) continue;
       var label = say(n, lg); if (!label) continue;
-      byEn.push(c.k, label); byLocal.push(c.k, label);
+      /* ⚠ (#R521) THE BRANCH IS A QUESTION ABOUT THIS FEATURE'S POSITION, not a constant. Without
+         it «Kochi» renames 高知市, and every other city on Earth that shares a spelling with a row.
+         The failing side of the `case` is the OTHER match (or the base label), never a guess. */
+      var near = ['<=', ['distance', { type: 'Point', coordinates: [c.lon, c.lat] }], c.g || 0];
+      byEn.push(c.k, ['case', near, label, ['var', VAR_LOCAL]]);
+      byLocal.push(c.k, ['case', near, label, ['var', VAR_BASE]]);
       hits++;
     }
     if (!hits) { cache = { key: key, expr: base }; return base; }
-    byLocal.push(base);          /* nothing matched either field → the ordinary label */
-    byEn.push(byLocal);
-    cache = { key: key, expr: byEn };
-    return byEn;
+    byLocal.push(['var', VAR_BASE]);   /* nothing matched either field → the ordinary label */
+    byEn.push(['var', VAR_LOCAL]);
+    var expr = ['let', VAR_BASE, base, ['let', VAR_LOCAL, byLocal, byEn]];
+    cache = { key: key, expr: expr };
+    return expr;
   }
 
   /* ── the clock ─────────────────────────────────────────────────────────────────────────────── */

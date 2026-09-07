@@ -58,9 +58,12 @@ export const ROWS = [
   C('uruma', 127.8578, 26.3792, 'JP', ['Uruma', 'うるま市'], [
     E(0, 2004, N('Gushikawa', '具志川', 'Гусикава', '具志川', '具志川', '구시카와')),
   ]),
+  /* ⚠ (#R521) GeoNames spells this city «Sanyōonoda» — one word, with a macron — and carries
+     neither the hyphenated Latin form OSM uses nor the 市 form, so neither key can be resolved
+     there. The coordinate is the city hall. */
   C('sanyo-onoda', 131.1817, 34.0006, 'JP', ['Sanyo-Onoda', '山陽小野田市'], [
     E(0, 2004, N('Onoda', '小野田', 'Онода', '小野田', '小野田', '오노다')),
-  ]),
+  ], { unlisted: 'GeoNames writes it Sanyōonoda, so neither the hyphenated Latin key nor the 市 form resolves there.' }),
   C('nikko', 139.6186, 36.7198, 'JP', ['Nikko', '日光市'], [
     E(0, 2005, N('Imaichi', '今市', 'Имаити', '今市', '今市', '이마이치')),
   ]),
@@ -96,9 +99,11 @@ export const ROWS = [
   C('nampo', 125.4083, 38.7375, 'KP', ['Nampo', '남포'], [
     E(0, 1946, N('Chinnampo', '鎮南浦', 'Чиннампхо', '鎮南浦', '镇南浦', '진남포')),
   ]),
+  /* ⚠ (#R521) GeoNames files this city under its pre-1951 name, Kimch'aek-si / Sŏngjin, with an
+     apostrophe the tiles do not carry; the Hangul form is not in its alternate list either. */
   C('kimchaek', 129.3358, 40.6711, 'KP', ['Kimchaek', '김책'], [
     E(0, 1951, N('Songjin', '城津', 'Сонджин', '城津', '城津', '성진')),
-  ]),
+  ], { unlisted: 'GeoNames spells it Kimch’aek-si, with an apostrophe no vector tile carries, and lists no Hangul form.' }),
   C('chongjin', 129.7756, 41.7956, 'KP', ['Chongjin', '청진'], [
     E(1911, 1945, N('Seishin', '清津（せいしん）', 'Сэйсин', '清津', '清津', '청진')),
   ]),
@@ -135,7 +140,9 @@ export const ROWS = [
   C('shijiazhuang', 114.5143, 38.0428, 'CN', ['Shijiazhuang', '石家庄'], [
     E(1938, 1946, N('Shihmen', '石門', 'Шимэнь', '石門', '石门', '스먼')),
   ]),
-  C('kunming', 102.8329, 24.8801, 'CN', ['Kunming', '昆明'], [
+  /* ⚠ (#R521) was 102.8329,24.8801 — that is Chenggong, the new district 21 km south-east;
+     the label OpenMapTiles draws for 昆明 sits on the old city. */
+  C('kunming', 102.7183, 25.0389, 'CN', ['Kunming', '昆明'], [
     E(0, 1927, N('Yunnanfu', '雲南府', 'Юньнаньфу', '雲南府', '云南府', '윈난부', { de: 'Yünnanfu', fr: 'Yunnanfou' })),
   ]),
   C('lushunkou', 121.2681, 38.8512, 'CN', ['Lüshunkou', 'Lushunkou', '旅顺口区'], [

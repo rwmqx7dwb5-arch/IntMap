@@ -59,7 +59,11 @@ export const ROWS = [
   C('dovzhansk', 39.6642, 48.0761, 'UA', ['Dovzhansk', 'Довжанськ'], [
     E(1938, 2015, N('Sverdlovsk (Luhansk)', 'スヴェルドロフシク（ルハンシク州）', 'Свердловск (Луганская область)', 0, 0, 0)),
   ]),
-  C('sorokyne', 39.3803, 48.2947, 'UA', ['Sorokyne', 'Сорокине'], [
+  /* ⚠ (#R521) the longitude was 39.3803 — 26 km west of the town, in open steppe outside
+     Luhansk. Under the old build that was invisible (the coordinate was only asked to land
+     within 40 km of a gazetteer row); under the guard radius it would have moved the whole
+     rename off the town and Krasnodon would simply never have appeared. */
+  C('sorokyne', 39.7332, 48.2933, 'UA', ['Sorokyne', 'Сорокине'], [
     E(1938, 2015, N('Krasnodon', 'クラスノドン', 'Краснодон', 0, 0, 0)),
   ]),
   C('holubivka', 38.6417, 48.6394, 'UA', ['Holubivka', 'Голубівка'], [
@@ -92,9 +96,9 @@ export const ROWS = [
   C('chornomorsk', 30.6578, 46.3022, 'UA', ['Chornomorsk', 'Чорноморськ'], [
     E(1952, 2015, N('Illichivsk', 'イリイチウシク', 'Ильичёвск', 0, 0, 0)),
   ]),
-  /* ⚠ «Подільськ!» — the gazetteer's other Подільськ is Podilskyi, a DISTRICT of Kropyvnytskyi
-     (same coordinate as that city), not a settlement; the `place` layer carries no raions. */
-  C('podilsk', 29.5322, 47.7411, 'UA', ['Podilsk', 'Подільськ!'], [
+  /* ⚠ (#R521) Podilskyi, a district of Kropyvnytskyi 220 km away, shares the spelling; the guard
+     radius separates them and the written exemption this row used to need is gone. */
+  C('podilsk', 29.5322, 47.7411, 'UA', ['Podilsk', 'Подільськ'], [
     E(1935, 2015, N('Kotovsk', 'コトフスク', 'Котовск', 0, 0, 0)),
   ]),
   C('berdiansk', 36.7886, 46.7553, 'UA', ['Berdiansk', 'Бердянськ'], [

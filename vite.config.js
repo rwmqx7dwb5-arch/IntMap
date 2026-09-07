@@ -121,6 +121,14 @@ export const STATIC_EXCLUDE = [
      JSON.parse is also the faster of the two: the <script> form makes V8 parse 9.76 MB as JavaScript
      source, on the main thread, where JSON.parse has a dedicated fast path. */
   'data/ecoregions_2017.js',
+  /* ══ (#R521) EVIDENCE FOR THE BUILD, NOT A PAYLOAD FOR THE BROWSER ═══════════════════════════
+     data/histcities-homonyms.json.gz is every settlement on Earth answering to one of the
+     historical-city record's spellings — the file `npm run check:histcities` uses to prove
+     that a row's guard radius reaches its own city and no other. Nothing in js/ or src/ fetches
+     it, and nothing ever should: the answer it certifies is already baked into the `g` field of
+     data/hist-cities.json, which the app does load. Copying it would ship 30 kB to every visitor
+     to re-litigate a question that was settled at build time. */
+  'data/histcities-homonyms.json.gz',
   /* ══ (#R322) THE SAME PICTURE, AND ONLY THE HASHED ONE IS REACHABLE ════════════════════════════
      `ROOT_PNG()` below copies every PNG at the repo root, which is right for the Köppen and precip
      rasters (fetched by name at run time) and wrong for this one. css/intmap.css is BUNDLED, so

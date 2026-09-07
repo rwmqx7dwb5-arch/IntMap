@@ -62,8 +62,14 @@ export const ROWS = [
   C('chinhoyi', 30.2000, -17.3667, 'ZW', ['Chinhoyi'], [
     E(0, 1981, N('Sinoia', 'シノイア', 'Синоя', 0, 0, 0)),
   ]),
-  /* ⚠ KADOMA (formerly Gatooma) IS NOT HERE: 門真市 Kadoma in Osaka Prefecture, 131 727 people,
-     carries the same Latin spelling as its own name. The build found it. */
+  /* ⚠⚠ #R427 DROPPED THIS ROW: 門真市 Kadoma in Osaka Prefecture carries the same Latin spelling
+     as its own `name:en`, and the build was right to refuse a rule that would have written
+     «Gatooma» across a city in Osaka. (#R521) they are 10 000 km apart.
+     Gazetted 18 April 1982 with 31 other places — the same batch as Fort Victoria, Sinoia,
+     Marandellas and Hartley above, which is why this span ends in the same year they do. */
+  C('kadoma-zw', 29.9000, -18.3400, 'ZW', ['Kadoma'], [
+    E(0, 1981, N('Gatooma', 'ガトゥーマ', 'Гатума', 0, 0, 0)),
+  ]),
   C('marondera', 31.5500, -18.1833, 'ZW', ['Marondera'], [
     E(0, 1981, N('Marandellas', 'マランデラス', 'Марандельяс', 0, 0, 0)),
   ]),
@@ -143,7 +149,8 @@ export const ROWS = [
   C('gqeberha', 25.6022, -33.9608, 'ZA', ['Gqeberha'], [
     E(0, 2020, N('Port Elizabeth', 'ポートエリザベス', 'Порт-Элизабет', '伊麗莎白港', '伊丽莎白港', '포트엘리자베스', { de: 'Port Elizabeth', es: 'Port Elizabeth', fr: 'Port Elizabeth' })),
   ]),
-  C('kariega', 25.5728, -33.7658, 'ZA', ['Kariega'], [
+  /* ⚠ (#R521) was 25.5728 — 16 km east of Kariega, in the Zwartkops valley. */
+  C('kariega', 25.4007, -33.7556, 'ZA', ['Kariega'], [
     E(0, 2020, N('Uitenhage', 'ユイテンハーヘ', 'Эйтенхахе', 0, 0, 0)),
   ]),
   C('makhanda', 26.5328, -33.3103, 'ZA', ['Makhanda'], [
@@ -161,7 +168,8 @@ export const ROWS = [
   C('mthatha', 28.7894, -31.5889, 'ZA', ['Mthatha'], [
     E(0, 2003, N('Umtata', 'ウムタタ', 'Умтата', 0, 0, 0)),
   ]),
-  C('kwadukuza', 31.0519, -29.3311, 'ZA', ['KwaDukuza'], [
+  /* ⚠ (#R521) was 31.0519 — 23 km inland of KwaDukuza, which is a coastal town. */
+  C('kwadukuza', 31.2895, -29.3282, 'ZA', ['KwaDukuza'], [
     E(0, 2005, N('Stanger', 'スタンガー', 'Стангер', 0, 0, 0)),
   ]),
   C('musina', 30.0433, -22.3483, 'ZA', ['Musina'], [

@@ -193,7 +193,7 @@ volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLay
 time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
-hist-cities.js                    時計の年の**都市名** IntMapHistCities（608都市・`ofm-city` の text-field を match で包む・記録は data/hist-cities.json）
+hist-cities.js                    時計の年の**都市名** IntMapHistCities（611都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベトナム／中東／ユーゴ）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
@@ -543,6 +543,10 @@ admin1-world.json.gz              世界の第1級行政区画（Natural Earth 1
                                   気象警報レイヤーが「発令なし」を区分単位で塗るための索引で、警報の
                                   形を引く最後の段でもある。生成は scripts/build-admin1.mjs
 gazetteer-world.json.gz           世界の地名の長い尾（cities1000 由来・18言語）。必要になった時に取得する
+histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一致する**世界中の全集落**（cities500 由来・
+                                  重複排除なし）。ブラウザには配信されない——`check:histcities` が
+                                  「その綴りはこの1都市を指すか」を訊く相手。生成は
+                                  scripts/build-histcities-homonyms.mjs
 gazetteer-phone.json.gz           携帯が取りに行くのはこちら。上のファイルの先頭 12,000 行を切り出したもの
 ecoregions_2017.geojson           エコリージョン（自前ホスト）。**配布されるのはこれだけ**
   └ 同内容の JS グローバル版      `ecoregions_2017.js`（#R13b の `file://` 対策・`window.__ECOREGIONS_2017`）。

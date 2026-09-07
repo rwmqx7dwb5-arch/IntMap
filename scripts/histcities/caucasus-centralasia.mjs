@@ -35,9 +35,27 @@ export const ROWS = [
     E(0, 1934, N('Karaklis', 'カラクリス', 'Каракилиса', 0, 0, 0)),
     E(1935, 1991, N('Kirovakan', 'キロヴァカン', 'Кировакан', 0, 0, 0)),
   ]),
-  /* ⚠ ARMAVIR (Armenia) IS NOT HERE, AND THE BUILD IS WHY: Armavir in Krasnodar Krai (199 548
-     people) carries the same spelling as its own current name, so «Hoktemberyan» would be written
-     across a Russian city 589 km away. There is no key that names one and not the other. */
+  /* ⚠⚠ #R427 DROPPED THIS ROW because Armavir in Krasnodar Krai carries the same spelling as its
+     own current name, so «Hoktemberyan» would have been written across a Russian city 589 km away
+     and no key named one and not the other. (#R521) 589 km is thirty times the guard radius.
+     ⚠ THE SPAN ENDS AT 1991, WHICH IS EARLIER THAN ANY SOURCE'S RENAMING YEAR, AND THAT IS
+     DELIBERATE. Sardarapat → Hoktemberyan is firm (2 March 1935, and en/ru agree), but the way
+     back is not: en.wikipedia says 7 November 1995 with the province reform, ru.wikipedia says
+     1992, ja.wikipedia says two years after independence. A span that took the latest of those
+     would print «Hoktemberyan» over years two of the three sources call Armavir. So it stops at
+     the last year they all agree on, and 1992–1995 falls through to the modern label — the same
+     direction the guard fails in, and the only one this record is allowed to fail in.
+     ⚠⚠ AND THE KRASNODAR ARMAVIR WAS NOT THE ONLY ONE. The build found a SECOND Armavir 8.2 km south —
+     the village on the ancient capital's site, 3 428 people, which carries the name as its own.
+     589 km is thirty guard radii; 8.2 km is four, and the derived guard of 4.1 km is below the
+     6 km floor an unmeasured row gets. So this row was measured against a real tile instead of
+     argued about: on 2026-09-07 the OpenFreeMap `place` node for the town sat 0.09 km from this
+     coordinate and the village's sat 7.97 km away, and the village is `class=village`, which
+     `ofm-city` does not draw at all. */
+  C('armavir-am', 44.0378, 40.1553, 'AM', ['Armavir', 'Արմավիր'], [
+    E(1935, 1991, N('Hoktemberyan', 'ホクテンベリアン', 'Октемберян', 0, 0, 0)),
+  ], { measured: { km: 0.09, on: '2026-09-07',
+    why: 'the OpenFreeMap place node for the town is 0.09 km from this coordinate and the village 8 km south is 7.97 km from it, so a 4.1 km guard has about 4 km of room on both sides.' } }),
   C('abovyan', 44.6272, 40.2703, 'AM', ['Abovyan', 'Աբովյան'], [
     E(0, 1960, N('Elar', 'エラル', 'Элар', 0, 0, 0)),
   ]),
@@ -56,7 +74,8 @@ export const ROWS = [
   ]),
   C('artashat', 44.5478, 39.9528, 'AM', ['Artashat', 'Արտաշատ'], [
     E(0, 1944, N('Kamarlu', 'カマルル', 'Камарлу', 0, 0, 0)),
-  ]),
+  ], { waive: [{ key: 'Artashat', place: 'Verin Artashat', cc: 'AM',
+    why: 'the village 6 km upriver is «Upper Artashat»; the bare form is a GeoNames alternate for it, never the name a tile carries.' }] }),
   C('hrazdan', 44.7672, 40.4989, 'AM', ['Hrazdan', 'Հրազդան'], [
     E(0, 1958, N('Akhta', 'アフタ', 'Ахта', 0, 0, 0)),
   ]),

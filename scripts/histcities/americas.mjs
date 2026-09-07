@@ -28,18 +28,22 @@ export const ROWS = [
   C('kinngait', -76.5264, 64.2300, 'CA', ['Kinngait'], [
     E(0, 2019, N('Cape Dorset', 'ケープ・ドーセット', 'Кейп-Дорсет', 0, 0, 0)),
   ]),
+  /* ⚠ (#R521) the four hamlets below are the whole of the record's «GeoNames does not carry
+     this place» list outside Japan and Korea. They are real, they are labelled, and no index
+     with a population floor can prove their coordinate — so each one says so out loud rather
+     than being counted as «unproven» in a total nobody reads. */
   C('qikiqtarjuaq', -64.0333, 67.5583, 'CA', ['Qikiqtarjuaq'], [
     E(0, 1997, N('Broughton Island', 'ブロートン島', 'Остров Броутон', 0, 0, 0)),
-  ]),
+  ], { unlisted: 'GeoNames cities500 has a population floor of 500 and this Nunavut hamlet is below it, under every spelling; OSM carries it as place=town, so the label exists and the rename has to work without gazetteer proof.' }),
   C('kimmirut', -69.8739, 62.8472, 'CA', ['Kimmirut'], [
     E(0, 1995, N('Lake Harbour', 'レイク・ハーバー', 'Лейк-Харбор', 0, 0, 0)),
-  ]),
+  ], { unlisted: 'GeoNames cities500 has a population floor of 500 and this Nunavut hamlet is below it, under every spelling; OSM carries it as place=town, so the label exists and the rename has to work without gazetteer proof.' }),
   C('taloyoak', -93.5333, 69.5372, 'CA', ['Taloyoak'], [
     E(0, 1991, N('Spence Bay', 'スペンス・ベイ', 'Спенс-Бей', 0, 0, 0)),
-  ]),
+  ], { unlisted: 'GeoNames cities500 has a population floor of 500 and this Nunavut hamlet is below it, under every spelling; OSM carries it as place=town, so the label exists and the rename has to work without gazetteer proof.' }),
   C('kugaaruk', -89.8272, 68.5347, 'CA', ['Kugaaruk'], [
     E(0, 1998, N('Pelly Bay', 'ペリー・ベイ', 'Пелли-Бей', 0, 0, 0)),
-  ]),
+  ], { unlisted: 'GeoNames cities500 has a population floor of 500 and this Nunavut hamlet is below it, under every spelling; OSM carries it as place=town, so the label exists and the rename has to work without gazetteer proof.' }),
   C('inukjuak', -78.1000, 58.4539, 'CA', ['Inukjuak'], [
     E(0, 1964, N('Port Harrison', 'ポート・ハリソン', 'Порт-Гаррисон', 0, 0, 0)),
   ]),
@@ -76,10 +80,9 @@ export const ROWS = [
     E(0, 1953, N('Mauch Chunk', 'モーク・チャンク', 'Мок-Чанк', 0, 0, 0)),
   ]),
   /* ── Latin America and the Caribbean ────────────────────────────────────────────────────── */
-  /* ⚠ «Santo Domingo!» — Ecuador's Santo Domingo carries «Santo Domingo de los Colorados» as its
-     own name in the tiles and this spelling only as a GeoNames alternate; the bare form belongs to
-     the Dominican capital. */
-  C('santo-domingo', -69.9312, 18.4861, 'DO', ['Santo Domingo!'], [
+  /* ⚠ (#R521) Ecuador's Santo Domingo was the reason this key once needed a written exemption.
+     It is 1 800 km away, so the guard radius answers it now and the exemption is gone. */
+  C('santo-domingo', -69.9312, 18.4861, 'DO', ['Santo Domingo'], [
     E(1936, 1960, N('Ciudad Trujillo', 'シウダ・トルヒーヨ', 'Сьюдад-Трухильо', '特魯希略城', '特鲁希略城', '시우다드트루히요')),
   ]),
   C('la-plata', -57.9545, -34.9215, 'AR', ['La Plata'], [

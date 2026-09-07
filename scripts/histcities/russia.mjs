@@ -78,11 +78,10 @@ export const ROWS = [
   C('sharypovo', 89.2000, 55.5333, 'RU', ['Sharypovo', 'Шарыпово'], [
     E(1985, 1987, N('Chernenko', 'チェルネンコ', 'Черненко', '契爾年科', '契尔年科', '체르넨코')),
   ]),
-  /* ⚠ «Korolyov!» — the gazetteer's other Korolyov (UA, 114 034) is Корольовський район, a DISTRICT
-     of Zhytomyr, not a settlement; OpenMapTiles' `place` layer does not carry raions, so nothing
-     with that spelling can be relabelled. The town really was called Kaliningrad until 1996 — the
-     second Kaliningrad on a Soviet map, 1 200 km from the first, which is why it is here. */
-  C('korolyov', 37.8256, 55.9142, 'RU', ['Korolyov!', 'Королёв', 'Korolev'], [
+  /* ⚠ The town really was called Kaliningrad until 1996 — the second Kaliningrad on a Soviet map,
+     1 200 km from the first, which is why it is here.
+     (#R521) the Zhytomyr raion that shares the spelling is 900 km away; no exemption needed. */
+  C('korolyov', 37.8256, 55.9142, 'RU', ['Korolyov', 'Королёв', 'Korolev'], [
     E(1938, 1995, N('Kaliningrad', 'カリーニングラード', 'Калининград', '加里寧格勒', '加里宁格勒', '칼리닌그라드')),
   ]),
   C('ivanovo', 40.9739, 56.9991, 'RU', ['Ivanovo', 'Иваново'], [
@@ -171,10 +170,9 @@ export const ROWS = [
   C('ukhta', 53.7036, 63.5672, 'RU', ['Ukhta', 'Ухта'], [
     E(0, 1938, N('Chibyu', 'チビュ', 'Чибью', 0, 0, 0)),
   ]),
-  /* ⚠ «Кировск!» — the other Кировск the gazetteer knows is Holubivka in Ukraine, which
-     carried that name until the 2016 decommunisation; it is in GeoNames' `alt` list for that reason
-     and is not what OpenMapTiles carries as its `name` today (Голубівка). */
-  C('kirovsk-khibiny', 33.6727, 67.6148, 'RU', ['Кировск!'], [
+  /* ⚠ Holubivka in Ukraine carried this name until the 2016 decommunisation and still has it in
+     GeoNames' alternate list. (#R521) it is 2 000 km away, so the guard radius is the answer. */
+  C('kirovsk-khibiny', 33.6727, 67.6148, 'RU', ['Кировск'], [
     E(1931, 1933, N('Khibinogorsk', 'ヒビノゴルスク', 'Хибиногорск', 0, 0, 0)),
   ]),
   C('murmansk', 33.0827, 68.9707, 'RU', ['Murmansk', 'Мурманск'], [
@@ -191,9 +189,8 @@ export const ROWS = [
     E(0, 1917, N('Tsarskoye Selo', 'ツァールスコエ・セロー', 'Царское Село', 0, 0, 0)),
     E(1918, 1936, N('Detskoye Selo', 'デーツコエ・セロー', 'Детское Село', 0, 0, 0)),
   ]),
-  /* ⚠ «Истра!» — the collision is Istres in Provence, whose Russian EXONYM is spelled the same
-     way; its own `name` is «Istres», so no tile carries this spelling for it. */
-  C('istra', 36.8583, 55.9142, 'RU', ['Istra', 'Истра!'], [
+  /* ⚠ (#R521) Istres in Provence has the same Russian exonym, 2 500 km away. Arithmetic now. */
+  C('istra', 36.8583, 55.9142, 'RU', ['Istra', 'Истра'], [
     E(0, 1929, N('Voskresensk (Istra)', 'ヴォスクレセンスク（イストラ）', 'Воскресенск (Истра)', 0, 0, 0)),
   ]),
   C('chapayevsk', 49.7081, 52.9783, 'RU', ['Chapayevsk', 'Чапаевск'], [
@@ -225,10 +222,9 @@ export const ROWS = [
   C('zelenogradsk', 20.4753, 54.9603, 'RU', ['Zelenogradsk', 'Зеленоградск'], [
     E(0, 1945, N('Cranz', 'クランツ', 'Кранц', 0, 0, 0)),
   ]),
-  /* ⚠ «Светлогорск!» — Belarus has a Svetlogorsk too, but it writes its own name in Belarusian
-     (Светлагорск, а not о) and its `name:en` is Svietlahorsk; the Russian spelling reaches it only
-     through GeoNames' alt list. The Latin key is deliberately NOT here for the same reason. */
-  C('svetlogorsk-rauschen', 20.1500, 54.9433, 'RU', ['Светлогорск!'], [
+  /* ⚠ Belarus has a Svetlogorsk too, 900 km away; it writes its own name in Belarusian
+     (Светлагорск, а not о) and its `name:en` is Svietlahorsk. (#R521) the distance decides it. */
+  C('svetlogorsk-rauschen', 20.1500, 54.9433, 'RU', ['Светлогорск'], [
     E(0, 1945, N('Rauschen', 'ラウシェン', 'Раушен', 0, 0, 0)),
   ]),
   /* ── Karelia and the Isthmus: Finnish until 1940/1944 ───────────────────────────────────── */
@@ -241,11 +237,17 @@ export const ROWS = [
   C('svetogorsk', 28.8622, 61.1128, 'RU', ['Svetogorsk', 'Светогорск'], [
     E(0, 1948, N('Enso', 'エンソ', 'Энсо', 0, 0, 0)),
   ]),
-  /* ⚠ TERIJOKI IS NOT HERE, AND THE BUILD IS WHY. Zelenogorsk on the Karelian Isthmus shares
-     BOTH of its spellings — Зеленогорск and Zelenogorsk — with the closed city of the same name in
-     Krasnoyarsk Krai (71 354 people, 3 679 km away), which carries them as its OWN current name.
-     There is no key that names one and not the other, so the row is dropped rather than declared:
-     an «!» would be a claim that the other city cannot be relabelled, and it can. */
+  /* ⚠⚠ #R427 DROPPED THIS ROW, AND #R521 IS WHY IT IS BACK. Zelenogorsk on the Karelian Isthmus
+     shares BOTH of its spellings — Зеленогорск and Zelenogorsk — with the closed city of the same
+     name in Krasnoyarsk Krai, which carries them as its OWN current name. While identity was a
+     spelling there was no key that named one and not the other, and the honest answer was to carry
+     no row at all. The two are 3 679 km apart; the guard radius separates them by arithmetic.
+     Renamed by decree of the RSFSR Supreme Soviet Presidium on 1 October 1948 — nine months of
+     that year were still Terijoki, so the span takes it, which is the rule Царицын/Сталинград
+     follows one screen up. */
+  C('zelenogorsk-terijoki', 29.7031, 60.1953, 'RU', ['Zelenogorsk', 'Зеленогорск'], [
+    E(0, 1948, N('Terijoki', 'テリヨキ', 'Терийоки', 0, 0, 0)),
+  ]),
   /* ── southern Sakhalin: Japanese (Karafuto) 1905–1945 ───────────────────────────────────── */
   C('yuzhno-sakhalinsk', 142.7378, 46.9591, 'RU', ['Yuzhno-Sakhalinsk', 'Южно-Сахалинск'], [
     E(1905, 1945, N('Toyohara', '豊原', 'Тоёхара', '豐原', '丰原', '도요하라')),

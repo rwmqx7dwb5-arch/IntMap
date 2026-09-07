@@ -80,10 +80,9 @@ export const ROWS = [
   C('bolzano', 11.3548, 46.4983, 'IT', ['Bolzano'], [
     E(0, 1918, N('Bozen', 'ボーツェン', 'Боцен', 0, 0, 0)),
   ]),
-  /* ⚠ «Latina!» — the other Latina is a BOROUGH of Madrid (distrito), and the era name is written
-     only onto the `ofm-city` layer, whose filter is `class in [city, town]`; a district of a
-     capital is carried as a suburb and is not in that layer. */
-  C('latina', 12.9033, 41.4676, 'IT', ['Latina!'], [
+  /* ⚠ (#R521) the other Latina is a borough of Madrid, 1 400 km away. That used to need a written
+     exemption resting on `ofm-city`'s class filter; the guard radius settles it without one. */
+  C('latina', 12.9033, 41.4676, 'IT', ['Latina'], [
     E(1932, 1945, N('Littoria', 'リットリア', 'Литтория', 0, 0, 0)),
   ]),
   /* ── the Habsburg successor states ───────────────────────────────────────────────────────── */
@@ -106,9 +105,9 @@ export const ROWS = [
   C('satu-mare', 22.8850, 47.7900, 'RO', ['Satu Mare'], [
     E(0, 1918, N('Szatmárnémeti', 'サトマールネーメティ', 'Сатмарнемети', 0, 0, 0, { de: 'Sathmar' })),
   ]),
-  /* ⚠ «Constanța!» — the collision is Konstanz on the Bodensee, whose ROMANIAN exonym is spelled
-     this way in GeoNames' alternate names; its own name, in every tile, is «Konstanz». */
-  C('constanta', 28.6348, 44.1795, 'RO', ['Constanța!', 'Constanta'], [
+  /* ⚠ (#R521) Konstanz on the Bodensee carries this spelling as its Romanian exonym, 1 400 km
+     away — an exemption before, arithmetic now. */
+  C('constanta', 28.6348, 44.1795, 'RO', ['Constanța', 'Constanta'], [
     E(0, 1877, N('Küstendje', 'キュステンジェ', 'Кюстендже', 0, 0, 0)),
   ]),
   C('drobeta-turnu-severin', 22.6597, 44.6319, 'RO', ['Drobeta-Turnu Severin'], [

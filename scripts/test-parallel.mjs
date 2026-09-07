@@ -88,9 +88,11 @@ const HALVES = [
       ['node', ['scripts/build-wars.mjs', '--check']],
       /* (#R427) the THIRD gate here that reads shipped bytes: data/hist-cities.json is re-derived
          from scripts/histcities/ and compared byte for byte, and on the way every tile key in the
-         record is resolved against the bundled gazetteer — a spelling that also names a populated
-         place somewhere else fails the build, because the label is rewritten by matching that
-         spelling and the other city would be renamed too. */
+         record is bound to a POINT — (#R521) the guard radius, derived as half the distance to the
+         nearest settlement on Earth answering to the same spelling, so that «Kochi» renames Kochi
+         in Kerala and not 高知市. ⚠ The evidence is data/histcities-homonyms.json.gz, not the news
+         locator's gazetteer: that one keeps the most populous homonym and drops the others, which
+         is the right answer for a locator and deletes exactly what this gate exists to find. */
       ['node', ['scripts/build-hist-cities.mjs', '--check']],
       /* ⚠ (#R518) …and the FOURTH reads shipped bytes without being able to re-derive them. The
          1850-1885 border record is built from ~400 MB of Overpass responses that no machine here can

@@ -35,9 +35,13 @@ export const ROWS = [
   C('paide', 25.5572, 58.8856, 'EE', ['Paide'], [
     E(0, 1917, N('Weissenstein', 'ヴァイセンシュタイン', 'Вейсенштейн', 0, 0, 0)),
   ]),
+  /* ⚠ (#R521) Valga and Valka are ONE town cut in two by the 1920 border, 1.2 km apart — no
+     guard radius can separate them, so the claim has to be about the spelling instead, and it
+     has to keep being tested. Hence the waiver rather than a smaller radius. */
   C('valga', 26.0308, 57.7769, 'EE', ['Valga'], [
     E(0, 1917, N('Walk', 'ヴァルク', 'Валк', 0, 0, 0)),
-  ]),
+  ], { waive: [{ key: 'Valga', place: 'Valka', cc: 'LV',
+    why: 'the Latvian half of the same town carries «Valga» only in GeoNames’ alternate list; its own name, in OSM and in every tile, is Valka.' }] }),
   C('voru', 27.0086, 57.8339, 'EE', ['Võru', 'Voru'], [
     E(0, 1917, N('Werro', 'ヴェロ', 'Верро', 0, 0, 0)),
   ]),

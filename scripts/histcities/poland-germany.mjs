@@ -265,9 +265,13 @@ export const ROWS = [
   C('eisenhuettenstadt', 14.6383, 52.1500, 'DE', ['Eisenhüttenstadt', 'Eisenhuttenstadt'], [
     E(1953, 1960, N('Stalinstadt', 'シュターリンシュタット', 'Сталинштадт', 0, 0, 0)),
   ]),
+  /* ⚠ (#R521) Guben and Gubin are the two halves of one town, split by the Neisse in 1945 and
+     0.9 km apart. Position cannot separate them; only the spelling can, so the claim is
+     written down and re-tested on every build. */
   C('guben', 14.7150, 51.9506, 'DE', ['Guben'], [
     E(1961, 1990, N('Wilhelm-Pieck-Stadt Guben', 'ヴィルヘルム・ピーク・シュタット・グーベン', 'Вильгельм-Пик-Штадт-Губен', 0, 0, 0)),
-  ]),
+  ], { waive: [{ key: 'Guben', place: 'Gubin', cc: 'PL',
+    why: 'the Polish half carries «Guben» only in GeoNames’ alternate list, because that is what it was called before 1945; its own name is Gubin.' }] }),
   C('wuppertal', 7.1833, 51.2562, 'DE', ['Wuppertal'], [
     E(1929, 1929, N('Barmen-Elberfeld', 'バルメン・エルバーフェルト', 'Бармен-Эльберфельд', 0, 0, 0)),
   ]),
@@ -349,10 +353,15 @@ export const ROWS = [
   C('nitra', 18.0902, 48.3069, 'SK', ['Nitra'], [
     E(0, 1918, N('Nyitra', 'ニトラ', 'Нитра', 0, 0, 0, { de: 'Neutra' })),
   ]),
-  /* ⚠ «Komárno!» / «Komarno!» — the gazetteer's second Komárno is the OKRES (district) centroid
-     42 km north of the town, in the same country; OpenMapTiles' `place` layer carries no districts,
-     so there is no second settlement with this spelling to relabel. */
-  C('komarno', 18.1281, 47.7639, 'SK', ['Komárno!', 'Komarno!'], [
+  /* ⚠ (#R521) two different namesakes, and only one of them still needs saying. The okres
+     centroid 42 km north is now handled by arithmetic — the guard radius the build derives is
+     half that distance — but Komárom sits 2.4 km across the Danube and no radius reaches that. */
+  C('komarno', 18.1281, 47.7639, 'SK', ['Komárno', 'Komarno'], [
     E(0, 1918, N('Komárom', 'コマーロム', 'Комаром', 0, 0, 0, { de: 'Komorn' })),
-  ]),
+  ], { waive: [
+    { key: 'Komárno', place: 'Komárom', cc: 'HU',
+      why: 'the Hungarian town across the Danube carries «Komárno» only as a GeoNames alternate; its own name is Komárom.' },
+    { key: 'Komarno', place: 'Komárom', cc: 'HU',
+      why: 'same town, same reason — the undecorated Latin form is an alternate there, never its name.' },
+  ] }),
 ];
