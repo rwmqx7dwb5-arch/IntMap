@@ -129,6 +129,33 @@ export function makeMsgTools(CTX){
       if(q){ const rt=document.createElement('button'); rt.innerHTML=rtSvg+'<span>'+L('Retry','再試行','Erneut','Повторить','Reintentar')+'</span>'; rt.title=L('Run this request again','この指示をもう一度実行','Erneut ausführen','Выполнить снова','Ejecutar de nuevo');
         rt.onclick=()=>{ try{ CTX.run(q); }catch(_){} };
         bar.appendChild(rt); }
+      /* ⚠⚠ (#R543) …AND, WHEN THIS REPLY DREW ON THE MAP, THE VIEW IT DREW IN. The overlay snapshot
+         and its chip have existed since #R118: «show that answer's shapes again» already worked.
+         What no snapshot carried was WHERE THE CAMERA WAS AND WHAT THE CLOCK WAS SET TO, so the
+         shapes came back over wherever — and whatever year — the reader had since moved to. For an
+         app whose subject is largely historical that is not the same answer's map, it is a different
+         claim wearing its geometry. The button lives HERE rather than in the reply body because
+         `_atlCompose` rebuilds that body's innerHTML once per tool call and would erase it (#R492);
+         `.atl-msgt` is a SIBLING, so it survives. The applier is loaded only when it is clicked. */
+      if(aiEl.__viewSnap){
+        const vSvg='<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><circle cx="12" cy="12" r="2.6"/></svg>';
+        const vb=document.createElement('button'); vb.type='button';
+        vb.innerHTML=vSvg+'<span>'+L('Map as it was','当時の地図','Karte wie damals','Карта как тогда','Mapa de entonces')+'</span>';
+        vb.title=L('Put the map back the way it was when this answer was written','この回答を書いたときの地図に戻す','Die Karte in den Zustand zurückversetzen, in dem diese Antwort entstand','Вернуть карту в состояние на момент этого ответа','Devolver el mapa al estado en que se escribió esta respuesta');
+        vb.onclick=async()=>{ const sp=vb.querySelector('span'); const was=sp?sp.textContent:'';
+          const say=(t)=>{ if(!sp) return; sp.textContent=t; setTimeout(()=>{ try{ sp.textContent=was; }catch(_){} },2600); };
+          try{
+            await window.IntMapLazy.need('atlasAnswerView');
+            const AV=window.IntMapAnswerView;
+            if(!AV){ say(L('Unavailable','利用できません','Nicht verfügbar','Недоступно','No disponible')); return; }
+            const r=AV.apply(aiEl.__viewSnap);
+            if(!r||!r.ok){ say(L('Could not restore','戻せませんでした','Nicht wiederherstellbar','Не удалось вернуть','No se pudo restaurar')); return; }
+            /* ⚠ honest about the one thing it deliberately did NOT do: layers the reader turned on
+               after this answer stay on, because switching them off destroys their work silently. */
+            if(r.extraLayers&&r.extraLayers.length) say(L('Restored ({n} later layer(s) left on)','戻しました（後から追加の {n} レイヤーはそのまま）','Wiederhergestellt ({n} spätere Ebene(n) bleiben an)','Восстановлено (позже включённых слоёв: {n} — оставлены)','Restaurado ({n} capa(s) posterior(es) siguen activas)').split('{n}').join(r.extraLayers.length));
+            else say(L('Restored','戻しました','Wiederhergestellt','Восстановлено','Restaurado'));
+          }catch(_){ say(L('Could not restore','戻せませんでした','Nicht wiederherstellbar','Не удалось вернуть','No se pudo restaurar')); } };
+        bar.appendChild(vb); }
       aiEl.insertAdjacentElement('afterend',bar);
     }catch(_){} }
   return { copyBtn, editBtn, msgTools };

@@ -6301,5 +6301,21 @@ window.IntMapLang.define('zh', {
   "This browser could not decode that image": "這個瀏覽器無法解碼該圖片",
   "No text could be read from that file": "無法從該檔案讀取任何文字",
   "That file is too large": "這個檔案太大",
+  "{n} row(s) had no usable value and are not drawn": "{n} 列沒有可用的數值，因此未繪出",   /* atlas-chart.js (#R543) */
+  "a {kind} needs at least {min} real points; {n} arrived": "{kind} 至少需要 {min} 個實際資料點，但只收到 {n} 個",   /* atlas-chart.js (#R543) */
+  "a bar chart needs at least {min} labelled values; {n} arrived": "長條圖至少需要 {min} 個具名數值，但只收到 {n} 個",   /* atlas-chart.js (#R543) */
+  "a timeline needs at least {min} dated events; {n} arrived": "年表至少需要 {min} 個有日期的事件，但只收到 {n} 個",   /* atlas-chart.js (#R543) */
+  "chart kind must be one of {kinds}": "圖表種類必須是 {kinds} 其中之一",   /* atlas-chart.js (#R543) */
+  "every chart must say where its numbers came from (source)": "每張圖表都必須說明數字的來源（source）",   /* atlas-chart.js (#R543) */
+  "{kind} chart, {x0} to {x1}, values {y0} to {y1}": "{kind} 圖表，{x0} 至 {x1}，數值 {y0} 至 {y1}",   /* atlas-chart.js (#R543) */
+  "bar chart, {n} values from {y0} to {y1}": "長條圖，{n} 個數值，從 {y0} 至 {y1}",   /* atlas-chart.js (#R543) */
+  "timeline, {n} events from {y0} to {y1}": "年表，{y0} 年至 {y1} 年共 {n} 個事件",   /* atlas-chart.js (#R543) */
+  "The chart renderer could not be loaded.": "無法載入圖表繪製模組。",   /* atlas-console.js (#R543) */
+  "Map as it was": "當時的地圖",   /* atlas-msg-tools.js (#R543) */
+  "Put the map back the way it was when this answer was written": "將地圖還原成撰寫這則回答時的狀態",   /* atlas-msg-tools.js (#R543) */
+  "Restored": "已還原",   /* atlas-msg-tools.js (#R543) */
+  "Restored ({n} later layer(s) left on)": "已還原（之後開啟的 {n} 個圖層維持不變）",   /* atlas-msg-tools.js (#R543) */
+  "Could not restore": "無法還原",   /* atlas-msg-tools.js (#R543) */
+  "Unavailable": "無法使用",   /* atlas-msg-tools.js (#R543) */
   }
 });

@@ -66,7 +66,7 @@ test('R511 ①: a "map" final before anything drew is bounced as map_not_drawn; 
   assert.equal(out.text, 'ホルムズ海峡①を地図に示しました。');
   assert.equal(out.answerMode, 'map');
   assert.equal(out.mapDrawn, true);
-  assert.equal(out.trace.mapGate, 1);
+  assert.equal(out.trace.outputGate, 1);
   assert.equal(model.count(), 3, 'three model calls: the bounced final, the draw, the accepted final');
 });
 
@@ -79,25 +79,25 @@ test('R511 ②: "text" — and an undeclared mode — end the turn on step 0 exa
     assert.equal(out.stopped, 'answered');
     assert.equal(executed, 0);
     assert.equal(model.count(), 1, `mode=${JSON.stringify(mode)}: one call, no bounce`);
-    assert.equal(out.trace.mapGate, 0);
+    assert.equal(out.trace.outputGate, 0);
     assert.equal(out.mapDrawn, false);
   }
 });
 
 /* ══ ③ the bounce is bounded — a model that insists still terminates, and its words are kept ══════ */
-test('R511 ③: after maxMapGate bounces a "mixed" final with nothing drawn is accepted as it stands', async () => {
+test('R511 ③: after maxOutputGate bounces a "mixed" final with nothing drawn is accepted as it stands', async () => {
   const model = scripted([{ text: 'The map would show it.', toolCalls: [], answerMode: 'mixed' }]);
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: true }), messages: [{ role: 'user', content: 'x' }] });
   assert.equal(out.stopped, 'answered');
-  assert.equal(out.trace.mapGate, AGENT.LIMITS.maxMapGate);
-  assert.equal(model.count(), AGENT.LIMITS.maxMapGate + 1);
+  assert.equal(out.trace.outputGate, AGENT.LIMITS.maxOutputGate);
+  assert.equal(model.count(), AGENT.LIMITS.maxOutputGate + 1);
   assert.equal(out.text, 'The map would show it.', 'the reader still gets the sentence');
   assert.equal(out.answerMode, 'mixed');
   assert.equal(out.mapDrawn, false, '…and the record says the map was NOT drawn, so the caller can see the disagreement');
   /* it never bounces into the last step: with maxSteps 2 the first final is accepted */
   const m2 = scripted([{ text: 'x', toolCalls: [], answerMode: 'map' }]);
   const o2 = await AGENT.runTurn({ model: m2, tools: TOOLS, execute: async () => ({ ok: true }), messages: [{ role: 'user', content: 'x' }], limits: { maxSteps: 2 } });
-  assert.equal(o2.trace.mapGate, 1);
+  assert.equal(o2.trace.outputGate, 1);
   assert.equal(o2.stopped, 'answered');
 });
 
@@ -107,9 +107,9 @@ test('R511 ④: readReply reads answer_mode and TURN_SCHEMA declares it as an en
   assert.equal(AGENT.readReply({ final_text: 'a', answer_mode: 'MIXED' }, '', JSON.parse).answerMode, 'mixed');
   assert.equal(AGENT.readReply({ final_text: 'a', answer_mode: 'picture' }, '', JSON.parse).answerMode, '');
   assert.equal(AGENT.readReply({ final_text: 'a' }, '', JSON.parse).answerMode, '');
-  assert.deepEqual(AGENT.TURN_SCHEMA.properties.answer_mode.enum, ['text', 'map', 'mixed']);
+  assert.deepEqual(AGENT.TURN_SCHEMA.properties.answer_mode.enum, ['text', 'map', 'chart', 'mixed']);   /* (#R543) 'chart' joined the vocabulary; the gate below it became one gate over a SET rather than a second gate beside the first */
   assert.deepEqual(AGENT.TURN_SCHEMA.required, ['final_text'], 'declaring a mode is not required — an ordinary answer stays an ordinary answer');
-  assert.deepEqual(AGENT.ANSWER_MODES, ['text', 'map', 'mixed']);
+  assert.deepEqual(AGENT.ANSWER_MODES, ['text', 'map', 'chart', 'mixed']);
 });
 
 /* ══ ⑤ the flag, not the name: only a SUCCESSFUL result with changedMap counts ═══════════════════ */
@@ -120,7 +120,7 @@ test('R511 ⑤: the gate reads `changedMap` on a successful result — a failed 
     { text: 'done', toolCalls: [], answerMode: 'text' },
   ]);
   const out = await AGENT.runTurn({ model, tools: TOOLS, execute: async () => ({ ok: false, error: 'failed', changedMap: true }), messages: [{ role: 'user', content: 'x' }] });
-  assert.equal(out.trace.mapGate, 1, 'the failed draw did not count, so the "map" final was bounced once');
+  assert.equal(out.trace.outputGate, 1, 'the failed draw did not count, so the "map" final was bounced once');
   assert.equal(out.mapDrawn, false);
   /* and a successful one, whatever the tool is called, does */
   const m2 = scripted([
@@ -128,7 +128,7 @@ test('R511 ⑤: the gate reads `changedMap` on a successful result — a failed 
     { text: 'done', toolCalls: [], answerMode: 'map' },
   ]);
   const o2 = await AGENT.runTurn({ model: m2, tools: TOOLS, execute: async () => ({ ok: true, changedMap: true }), messages: [{ role: 'user', content: 'x' }] });
-  assert.equal(o2.trace.mapGate, 0);
+  assert.equal(o2.trace.outputGate, 0);
   assert.equal(o2.mapDrawn, true);
   assert.equal(m2.count(), 2);
 });
@@ -355,7 +355,7 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   const con = R('js/atlas-console.js');
   assert.match(con, /^import \{ makeAtlasMapCompose \} from '\.\/atlas-map-compose\.js';/m, 'imported at line start (scripts/js-reachability.mjs anchors there)');
   assert.match(con, /case 'compose': case 'mapCompose': case 'composeMap': case 'explainOnMap': return await COMPOSE\.run\(a\);/, 'every spelling the registry promises reaches the module');
-  assert.match(con, /"answer_mode":"text"\|"map"\|"mixed"/, 'the REPLY FORMAT tells Atlas the field exists');
+  assert.match(con, /"answer_mode":"text"\|"map"\|"chart"\|"mixed"/, 'the REPLY FORMAT tells Atlas the field exists');
   assert.match(con, /COMPOSE\.linkProse\(head,_cr\)/, 'the answer is linked to the markers it drew');
   assert.match(con, /COMPOSE\.bind\(ai\)/);
   assert.match(con, /case 'reset':[^\n]*COMPOSE\.clear\(\)/, 'clearing highlights clears the composition');
@@ -365,7 +365,7 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   assert.ok(ovl, '_OVL has a compose row');
   const C = makeAtlasMapCompose({});
   assert.deepEqual(ovl[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')), C.LAYERS, '_OVL.compose lists exactly the layers the module draws');
-  assert.ok(con.split(String.fromCharCode(10)).length < 4_910, 'js/atlas-console.js stayed under its shrink-only ceiling — the room came from blank lines');
+  assert.ok(con.split(String.fromCharCode(10)).length < 4_910, 'js/atlas-console.js stayed under its shrink-only ceiling — the room came from blank lines, and #R543 took the last of them');
   assert.match(R('docs/FILES.md'), /atlas-map-compose\.js/, 'docs/FILES.md describes the file');
   assert.match(R('js/atlas-styles.js'), /\.atl-geo-n\{/, 'the badge is styled');
 });
@@ -375,7 +375,14 @@ test('R511 ⑩: no sentence was added to js/atlas-policy.js, and the loop does n
   const pol = R('js/atlas-policy.js');
   assert.ok(!/answer_mode|compose/.test(pol), 'the mechanics live in the REPLY FORMAT and the tool, not in the core instruction');
   const agent = R('js/atlas-agent.js');
-  const gate = agent.slice(agent.indexOf('const wantsMap'), agent.indexOf('continue;', agent.indexOf('const wantsMap')));
-  assert.match(gate, /r\.changedMap === true/);
+  /* (#R543) the gate generalised from one modality to a set, so its opening line is named
+     differently — the CLAIM here is unchanged and is the one that matters: the loop decides from
+     flags stamped on results, never from what a tool is called. */
+  const gate = agent.slice(agent.indexOf('const need = MODE_NEEDS'), agent.indexOf('continue;', agent.indexOf('const need = MODE_NEEDS')));
+  assert.match(gate, /producedBy\(r\)/, 'the gate asks what the results produced');
   assert.ok(!/r\.name|call\.name|tools\[/.test(gate), 'the gate reads a flag on the result, never a name');
+  /* …and the flags it reads are exactly the two the tool surface stamps */
+  const by = agent.slice(agent.indexOf('function producedBy'), agent.indexOf('}', agent.indexOf('return (r.changedMap')));
+  assert.match(by, /r\.producedModes/);
+  assert.match(by, /r\.changedMap === true/, '#R511\'s flag is still honoured as the map member of the set');
 });

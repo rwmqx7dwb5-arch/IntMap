@@ -87,7 +87,7 @@ export function makeAtlasAgent() {
       maxToolCalls: 32,     /* (#R413) 16 → 32: the step count doubled above, so the same headroom per step */
       maxPerStep: 8,        /* tool calls accepted from a single model reply */
       maxMalformed: 3,      /* consecutive steps that produced nothing but rejected calls */
-      maxMapGate: 2,        /* (#R511) how many times a "map"/"mixed" final with nothing drawn is handed back before it is accepted as it stands */
+      maxOutputGate: 2,     /* (#R511→#R543) how many times a final that DECLARED an output it has not produced is handed back before it is accepted as it stands. Was `maxMapGate` while the map was the only output an answer could be */
       toolTimeoutMs: 240000,  /* (#R452) ONE tool call — above the ~200 s a working `analyze` can cost. Past it Atlas is TOLD it did not finish, and chooses again */
       turnBudgetMs: 600000,   /* (#R452) …and the whole turn — three times the longest turn ever measured, so it only ever fires on one that was not going to end */
     };
@@ -118,7 +118,28 @@ export function makeAtlasAgent() {
        arriving before anything this turn changed the map is handed back as a typed note
        (`map_not_drawn`), and Atlas chooses again — draw now, or answer as "text" and say why. That
        is a consistency check between two things the model said, not a rule about meaning. */
-    const ANSWER_MODES = ['text', 'map', 'mixed'];
+    /* ══ ⚠⚠ (#R543) THE MAP WAS THE FIRST OUTPUT, NOT THE ONLY ONE ═══════════════════════════════
+       "chart" joins the vocabulary, and the gate below stops being about maps. The wrong way to add
+       it would have been a second flag and a second bounce beside the first — CONSTITUTION.md §5
+       calls that accumulation by its result, 「互いに矛盾する門が増え、どれが効いたのか誰にも言えなく
+       なる」. So there is ONE gate over a set: a declaration names the outputs that would satisfy it,
+       and a final is held to whichever it named. "mixed" means "the words are not the whole answer"
+       and is satisfied by EITHER — a widening, so nothing it accepted before is refused now. */
+    const ANSWER_MODES = ['text', 'map', 'chart', 'mixed'];
+    const MODE_NEEDS = { map: ['map'], chart: ['chart'], mixed: ['map', 'chart'] };
+    /* the typed note each unmet declaration comes back as. "map_not_drawn" is #R511's spelling and
+       stays exactly that, because it is the one a reader of the transcript already knows. */
+    const GATE_CODE = { map: 'map_not_drawn', chart: 'chart_not_drawn', mixed: 'output_not_produced' };
+    /* ── WHAT ONE RESULT ACTUALLY PRODUCED. js/atlas-toolsurface.js stamps `producedModes` on a call
+          whose capability completed, from its registry `produces` column — so the loop reads a fact,
+          never a tool's name. ⚠ `changedMap` is #R511's name for the map member of exactly this set
+          and is still honoured: it is what a caller driving runTurn with its own `execute` sets, and
+          demoting it to "the old way" would break the contract those callers were given. ────────── */
+    function producedBy(r) {
+      if (!r || r.ok === false) return [];
+      const out = Array.isArray(r.producedModes) ? r.producedModes : [];
+      return (r.changedMap === true && out.indexOf('map') < 0) ? out.concat(['map']) : out;
+    }
     const TURN_SCHEMA = {
       type: 'object',
       required: ['final_text'],
@@ -289,8 +310,8 @@ export function makeAtlasAgent() {
       let malformedRun = 0;
       let stopped = '';
       let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
-      let mapGateBounces = 0;    /* (#R511) how many finals came back as `map_not_drawn` */
-      trace.mapGate = 0;
+      let gateBounces = 0;       /* (#R511→#R543) how many finals came back having declared an output they had not produced */
+      trace.outputGate = 0;
 
       /* (#R452) the turn's clock. `now()` is injected in the node checks, which have no wall time. */
       const now = (typeof opts.now === 'function') ? opts.now : (() => Date.now());
@@ -355,17 +376,24 @@ export function makeAtlasAgent() {
              completed — the same kind of fact as `endsTurn`. The loop reads the flag, not the
              tool's name, so it still knows nothing about what any tool means. The bounce is a typed
              note in the transcript, never shown to the reader; it costs a step and is bounded. */
-          const wantsMap = (answerMode === 'map' || answerMode === 'mixed');
-          const drew = results.some((r) => r && r.ok !== false && r.changedMap === true);
-          if (wantsMap && !drew && mapGateBounces < lim.maxMapGate && (step + 1) < lim.maxSteps && !outOfTime()) {
-            mapGateBounces++; trace.mapGate++;
-            trace.steps.push({ step, toolCalls: 0, bounced: 'map_not_drawn' });
+          const need = MODE_NEEDS[answerMode] || null;
+          const made = !need || need.some((m) => results.some((r) => producedBy(r).indexOf(m) >= 0));
+          if (need && !made && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
+            gateBounces++; trace.outputGate++;
+            const code = GATE_CODE[answerMode] || 'output_not_produced';
+            /* (#R543) the note names the outputs the declaration asked for and the call that makes
+               each one, so the recovery is the same shape whichever was declared: make it now, or
+               answer as "text" and say why it could not be made. */
+            const how = { map: 'draw it now — compose_map puts the places, their roles and the links between them on the map in ONE call (highlight / map_view are the smaller tools)',
+              chart: 'draw it now — chart takes the points, bars or dated events and renders them into this reply (it needs a "source" naming where the numbers came from)',
+              mixed: 'produce one of them now — compose_map for the map, chart for the numbers' }[answerMode];
+            trace.steps.push({ step, toolCalls: 0, bounced: code });
             transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [] });
-            transcript.push({ role: 'tool', content: [{ ok: false, error: 'map_not_drawn',
-              message: 'You declared answer_mode "' + answerMode + '", but nothing in this turn has drawn on or moved the map, '
-                + 'so the reader would get words about a map that is not there. Either draw it now — compose_map puts the places, '
-                + 'their roles and the links between them on the map in ONE call (highlight / map_view are the smaller tools) — '
-                + 'and then answer; or, if the map genuinely cannot carry this answer, reply with answer_mode "text" and say so.' }] });
+            transcript.push({ role: 'tool', content: [{ ok: false, error: code,
+              message: 'You declared answer_mode "' + answerMode + '", but nothing in this turn has produced '
+                + (answerMode === 'mixed' ? 'a map or a chart' : (answerMode === 'map' ? 'anything on the map' : 'a chart'))
+                + ', so the reader would get words about something that is not there. Either ' + how
+                + ' and then answer; or, if it genuinely cannot carry this answer, reply with answer_mode "text" and say so.' }] });
             continue;
           }
           trace.steps.push({ step, toolCalls: 0, final: true });
@@ -506,10 +534,15 @@ export function makeAtlasAgent() {
         } catch (_) { /* keep whatever we have; the caller degrades */ }
       }
 
-      /* (#R511) `answerMode` is what Atlas DECLARED, reported as declared. `mapDrawn` is what the
-         machine recorded. When they disagree after the bounces ran out, both are visible here. */
+      /* (#R511)(#R543) `answerMode` is what Atlas DECLARED, reported as declared. `produced` is what
+         the machine recorded — the whole set now, not one boolean per output, so a third modality
+         needs no new field here. `mapDrawn` is that set's map member under #R511's name, kept
+         because js/atlas-console.js's diagnostic line reads it. When declaration and record
+         disagree after the bounces ran out, both are visible. */
+      const produced = [];
+      results.forEach((r) => producedBy(r).forEach((m) => { if (produced.indexOf(m) < 0) produced.push(m); }));
       return { text: String(text || ''), calls: trace.calls, results, trace, stopped, answerMode,
-        mapDrawn: results.some((r) => r && r.ok !== false && r.changedMap === true) };
+        produced, mapDrawn: produced.indexOf('map') >= 0 };
     }
 
     /**

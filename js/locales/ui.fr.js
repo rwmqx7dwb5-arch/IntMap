@@ -6086,4 +6086,19 @@ window.IntMapLang.define('fr', { ui: {
   "This browser could not decode that image": "Ce navigateur n’a pas pu décoder cette image",
   "No text could be read from that file": "Aucun texte n’a pu être lu dans ce fichier",
   "That file is too large": "Ce fichier est trop volumineux",
+  "{n} row(s) had no usable value and are not drawn": "{n} ligne(s) sans valeur exploitable ne sont pas tracées",   /* atlas-chart.js (#R543) */
+  "a {kind} needs at least {min} real points; {n} arrived": "un {kind} a besoin d’au moins {min} points réels ; {n} reçu(s)",   /* atlas-chart.js (#R543) */
+  "a bar chart needs at least {min} labelled values; {n} arrived": "un diagramme en barres a besoin d’au moins {min} valeurs nommées ; {n} reçue(s)",   /* atlas-chart.js (#R543) */
+  "a timeline needs at least {min} dated events; {n} arrived": "une chronologie a besoin d’au moins {min} événements datés ; {n} reçu(s)",   /* atlas-chart.js (#R543) */
+  "chart kind must be one of {kinds}": "le type de graphique doit être l’un des suivants : {kinds}",   /* atlas-chart.js (#R543) */
+  "every chart must say where its numbers came from (source)": "tout graphique doit indiquer d’où viennent ses chiffres (source)",   /* atlas-chart.js (#R543) */
+  "{kind} chart, {x0} to {x1}, values {y0} to {y1}": "graphique {kind}, de {x0} à {x1}, valeurs de {y0} à {y1}",   /* atlas-chart.js (#R543) */
+  "bar chart, {n} values from {y0} to {y1}": "diagramme en barres, {n} valeurs de {y0} à {y1}",   /* atlas-chart.js (#R543) */
+  "timeline, {n} events from {y0} to {y1}": "chronologie, {n} événements de {y0} à {y1}",   /* atlas-chart.js (#R543) */
+  "The chart renderer could not be loaded.": "Le moteur de rendu des graphiques n’a pas pu être chargé.",   /* atlas-console.js (#R543) */
+  "Map as it was": "Carte d’alors",   /* atlas-msg-tools.js (#R543) */
+  "Put the map back the way it was when this answer was written": "Remettre la carte dans l’état où elle était quand cette réponse a été écrite",   /* atlas-msg-tools.js (#R543) */
+  "Restored": "Carte restaurée",   /* atlas-msg-tools.js (#R543) */
+  "Restored ({n} later layer(s) left on)": "Carte restaurée ({n} calque(s) ajouté(s) depuis restent actifs)",   /* atlas-msg-tools.js (#R543) */
+  "Could not restore": "Restauration impossible",   /* atlas-msg-tools.js (#R543) */
 } });

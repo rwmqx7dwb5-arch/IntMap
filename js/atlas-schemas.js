@@ -222,6 +222,15 @@ export function makeAtlasSchemas() {
       'map.compose': { type: 'object', required: ['items'], properties: { title: str(), camera: one('fit', 'keep'),
         items: list({ type: 'object', required: ['name'], properties: { name: str(), country: str(), kind: str(), stableId: str(), geoId: str(), role: str(), note: str(), color: str(), fill: bool(), style: one('marker', 'fill') } }, 1),
         relations: list({ type: 'object', required: ['from', 'to'], properties: { from: loose(), to: loose(), type: one('flow', 'route', 'supply', 'link', 'influence', 'border', 'claim'), label: str(), color: str() } }) } },
+      /* (#R543) one chart. `source` is REQUIRED and js/atlas-chart.js refuses the call without it —
+         a chart is the most credible shape a claim can take, so it is the shape that has to name
+         where its numbers came from. `points` carry x/y as numbers and an optional label; a timeline
+         takes `events` with an ISO date instead, because its rows are events and not measurements. */
+      'chart.compose': { type: 'object', required: ['kind', 'source'], properties: { kind: one('line', 'bar', 'scatter', 'timeline'), title: str(), source: str(),
+        x: { type: 'object', properties: { label: str(), type: one('number', 'year') } }, y: { type: 'object', properties: { label: str() } },
+        series: list({ type: 'object', required: ['points'], properties: { label: str(),
+          points: list({ type: 'object', properties: { x: num(), y: num(), label: str() } }, 1) } }, 1),
+        events: list({ type: 'object', required: ['t', 'label'], properties: { t: str(), label: str() } }, 2) } },
       'map.highlight': { type: 'object', properties: { targets: list(), groups: list(), iso3: list(), codes: list(), countries: loose(), country: str(), name: str(), place: str(), region: str(), query: str(), interpretation: str(), metric: str(), rankBy: str(), rankMetric: str(), by: str(), order: str(), rankOrder: str(), n: int(1, 40), top: int(1, 40), count: int(1, 40), minPop: loose(), maxPop: loose(), excludeBelowPop: loose(), filter: obj(), color: str(), on: bool() }, anyOf: [{ required: ['targets'] }, { required: ['groups'] }, { required: ['iso3'] }, { required: ['codes'] }, { required: ['countries'] }, { required: ['country'] }, { required: ['name'] }, { required: ['place'] }, { required: ['region'] }, { required: ['query'] }, { required: ['metric'] }, { required: ['rankBy'] }, { required: ['rankMetric'] }, { required: ['by'] }, { required: ['color'] }, { required: ['on'] }] },
       'data.value': { type: 'object', properties: { country: str(), place: str(), name: str(), metric: str(), what: str() }, anyOf: [{ required: ['country'] }, { required: ['place'] }, { required: ['name'] }] },
       'layers.allOff': { type: 'object', properties: { all: bool() } },             /* `layersOff`; all:true drops the base layers too */

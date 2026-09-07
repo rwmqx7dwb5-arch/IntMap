@@ -100,7 +100,7 @@ export const WORDS = [
   ['甘迺迪', '肯尼迪'], ['格達費', '卡扎菲'], ['福克蘭', '馬爾維納斯'],
   ['太空梭', '航天飛機'], ['鄂圖曼', '奧斯曼'], ['盧安達', '盧旺達'],
   ['哈瑪斯', '哈馬斯'], ['希拉瑞', '希拉里'], ['尼克森', '尼克松'],
-  ['複製羊', '克隆羊'], ['曼菲斯', '孟菲斯'], ['韓戰', '朝鮮戰爭'], ['越戰', '越南戰爭'],
+  ['複製羊', '克隆羊'], ['曼菲斯', '孟菲斯'], ['韓戰', '朝鮮戰爭'], ['越戰', '越南戰爭'], ['長條圖', '條形圖'],   /* (#R543) 「長條圖」は台湾の語で、字形変換だけでは「长条图」になる——大陸の標準語は「条形图」。全字が共通字なので変換層からは見えない、このファイルが自ら例に挙げている形 */
   /* ⚠ (#R519) 越戰 IS HERE FOR THE SAME REASON 韓戰 ALREADY WAS. Both are the ordinary Traditional
      abbreviations and both are read on the mainland, but the full names are what mainland writing
      uses, and this table already made that choice once. Adding the war layers without this line

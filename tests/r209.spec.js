@@ -170,6 +170,11 @@ const MEMBER = {
      case in js/atlas-console.js reaches through answer(); a module that arrived and published a
      bare object would still fail here, which is what this table is for. */
   atlasQuery: ['IntMapQuery', 'run'],
+  /* (#R543) the two outputs an answer can BE besides words. Each names the member ITS door calls:
+     the `chart` dispatch case renders through render(), and the per-message tool bar restores a
+     reply's view through apply(). A module that arrived and published half of itself fails here. */
+  atlasChart: ['IntMapAtlasChart', 'render'],
+  atlasAnswerView: ['IntMapAnswerView', 'apply'],
   routeUi: ['IntMapRouteUI', 'open'],
   photoGeo: ['IntMapPhotoGeo', 'open'],
   /* (#R311) the six that moved this round. Each names the member its OWN doors call, so a module

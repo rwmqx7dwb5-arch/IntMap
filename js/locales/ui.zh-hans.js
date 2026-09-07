@@ -585,7 +585,7 @@ window.IntMapLang.define('zh-hans', {
     'Back to the map': "回到地图",   /* space.js */
     'Back to the normal layout': "回到一般版面",   /* atlas-console.js */
     'Bank': "倾斜",   /* aircraft-detail.js */
-    'Bar chart': "长条图",   /* stats-compare.js */
+    'Bar chart': "条形图",   /* stats-compare.js */
     'barely felt': "几乎无感",   /* seismic.js */
     'base': "基准",   /* sims.js */
     'Base map & labels': "底图与标注",   /* map-ui.js */
@@ -2024,7 +2024,7 @@ window.IntMapLang.define('zh-hans', {
     'Source: AI-estimated (neither OpenStreetMap nor Wikidata had matching entries here — positions are approximate, verify before relying on them)': "来源：AI 推估（此处 OpenStreetMap 与 Wikidata 都没有相符的项目 — 位置为概略值，采用前请自行查证）",   /* atlas-console.js */
     'Source: Our World in Data — Ember (electricity) and the Energy Institute Statistical Review (primary energy). The map shades the low-carbon share of electricity, and the fossil share of primary energy; the bar is the mix itself, because nine sources are not one color.': "来源：Our World in Data — Ember（电力）与 Energy Institute Statistical Review（一次能源）。地图着色为电力的低碳占比，以及一次能源的化石占比；长条则是能源结构本身，因为九种来源不能用一种颜色表示。",   /* world-packs.js */
     'Sources': "来源",   /* atlas-console.js space.js */
-    'Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)': "各指标的来源：世界银行／IMF WEO／内置参考数据（在长条图与时间序列检视中标示）",   /* stats-compare.js */
+    'Sources per indicator: World Bank / IMF WEO / bundled reference (shown in bar & time-series views)': "各指标的来源：世界银行／IMF WEO／内置参考数据（在条形图与时间序列检视中标示）",   /* stats-compare.js */
     'Sources: NOAA CoastWatch blended sea-surface geostrophic currents from multi-mission satellite altimetry (0.25°); NOAA NCEI blended wind stress, turned into the Ekman surface current by the drifter-fitted relation of Ralph & Niiler (1999); and NOAA OISST v2.1 sea-surface temperature. All U.S. Government works in the public domain; altimetric products generated using AVISO+. This layer is a FIXED dataset that ships with the app: a climatological mean of fields spread across the whole record, on the source\'s own 0.25° grid, with each named current traced through that measured field from a published seed on its core. Warm / cold / zonal is MEASURED, not asserted — it is the current\'s own temperature against the zonal mean at the same latitude. Because it is a mean, it does not follow the app clock: it is the climatological picture, the same every time you open it.': "来源：NOAA CoastWatch 由多任务卫星测高融合而成的海表地转流（0.25°）；NOAA NCEI 融合风应力，并依 Ralph & Niiler（1999）以漂流浮标拟合的关系换算为艾克曼表层流；以及 NOAA OISST v2.1 海面水温。以上皆为美国政府公有领域作品；测高产品使用 AVISO+ 产制。本图层是随应用一并提供的固定数据集：以整段纪录期间的场求气候平均，采用来源本身的 0.25° 网格，每一条具名海流都是从其核心上已发表的种子点，在该实测场中追踪而成。暖流／寒流／东西流是实测而非宣称 — 它是该海流自身的水温与同纬度纬向平均的比较。由于是平均值，它不随应用时钟变动：它是气候平均的样貌，每次开启都相同。",   /* ocean-currents.js */
     'Sources: OpenStreetMap (facilities, city population tags — coverage varies by region), USGS (earthquakes), IntMap country statistics. Pins are clickable; the circle marks the analysis radius.': "来源：OpenStreetMap（设施、城市人口标记 — 各地涵盖程度不一）、USGS（地震）、IntMap 国家统计。图钉可点击；圆形标示分析半径。",   /* atlas-console.js */
     'south': "南",   /* atlas-console.js */
@@ -6305,5 +6305,21 @@ window.IntMapLang.define('zh-hans', {
   "This browser could not decode that image": "这个浏览器无法解码该图片",
   "No text could be read from that file": "无法从该文件读取任何文字",
   "That file is too large": "这个文件太大",
+  "{n} row(s) had no usable value and are not drawn": "{n} 列没有可用的数值，因此未绘出",   /* atlas-chart.js (#R543) */
+  "a {kind} needs at least {min} real points; {n} arrived": "{kind} 至少需要 {min} 个实际数据点，但只收到 {n} 个",   /* atlas-chart.js (#R543) */
+  "a bar chart needs at least {min} labelled values; {n} arrived": "条形图至少需要 {min} 个具名数值，但只收到 {n} 个",   /* atlas-chart.js (#R543) */
+  "a timeline needs at least {min} dated events; {n} arrived": "年表至少需要 {min} 个有日期的事件，但只收到 {n} 个",   /* atlas-chart.js (#R543) */
+  "chart kind must be one of {kinds}": "图表种类必须是 {kinds} 其中之一",   /* atlas-chart.js (#R543) */
+  "every chart must say where its numbers came from (source)": "每张图表都必须说明数字的来源（source）",   /* atlas-chart.js (#R543) */
+  "{kind} chart, {x0} to {x1}, values {y0} to {y1}": "{kind} 图表，{x0} 至 {x1}，数值 {y0} 至 {y1}",   /* atlas-chart.js (#R543) */
+  "bar chart, {n} values from {y0} to {y1}": "条形图，{n} 个数值，从 {y0} 至 {y1}",   /* atlas-chart.js (#R543) */
+  "timeline, {n} events from {y0} to {y1}": "年表，{y0} 年至 {y1} 年共 {n} 个事件",   /* atlas-chart.js (#R543) */
+  "The chart renderer could not be loaded.": "无法加载图表绘制模块。",   /* atlas-console.js (#R543) */
+  "Map as it was": "当时的地图",   /* atlas-msg-tools.js (#R543) */
+  "Put the map back the way it was when this answer was written": "将地图还原成撰写这则回答时的状态",   /* atlas-msg-tools.js (#R543) */
+  "Restored": "已还原",   /* atlas-msg-tools.js (#R543) */
+  "Restored ({n} later layer(s) left on)": "已还原（之后开启的 {n} 个图层维持不变）",   /* atlas-msg-tools.js (#R543) */
+  "Could not restore": "无法还原",   /* atlas-msg-tools.js (#R543) */
+  "Unavailable": "无法使用",   /* atlas-msg-tools.js (#R543) */
   }
 });

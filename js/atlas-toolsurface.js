@@ -64,6 +64,12 @@ export function makeAtlasToolSurface(deps) {
          geocoder second, files what it resolved back with its ROLE, and reports by name what it
          could not place. It never takes a coordinate from the model (js/atlas-map-compose.js). */
       { name: 'compose_map', cap: 'map.compose', desc: 'Draw a whole map explanation in ONE call: `items` are the places in the order to number them (name + country, optional kind / role — what this place IS in your answer — / color / fill:true to shade a country or region); `relations` are links between items (from/to = an item name or its number; type "flow" or "route" draws an arrow, "influence"/"border" dashes, "link" a plain line; optional label); `title` heads the legend. IntMap resolves every name itself (ledger first, then geocoder — never write coordinates), numbers the markers, draws the arcs, frames the camera over everything that landed, shows a legend with the same numbers, and links the names in your final_text to the markers. The result lists what was placed and — by name — what could NOT be; say so in your answer rather than describing an unplaced place as shown. Use it whenever the map carries part of your answer; use highlight / map_view for a single colour or a single move.' },
+      /* ══ ⚠⚠ (#R543) THE OTHER OUTPUT, IN CORE FOR THE SAME REASON. `compose_map` is above because a
+         map answer that costs six decisions is one the model does not choose; a chart answer left
+         behind `find_capability` is the same bargain with a different picture. It also has to be
+         here for the loop to be coherent: the output gate tells a "chart" final to draw one now, and
+         a recovery that names a tool the model cannot see is not a recovery. */
+      { name: 'chart', cap: 'chart.compose', desc: 'Draw the numbers as a figure INSIDE your reply, in ONE call: "kind" is "bar" (a ranked comparison — keep your own order and label every row), "line"/"scatter" (points of x against y), or "timeline" (dated events on a time axis, for a stretch of history the map can only show one instant of). Pass `series:[{label,points:[{x,y,label}]}]`, or `events:[{t:ISO_DATE,label}]` for a timeline. "source" is REQUIRED — name where the numbers came from (the capability whose result you are drawing, the dataset, or your own knowledge said plainly) and the call is refused without it. It draws into the answer and touches nothing on the map, so it combines freely with compose_map. ⚠ Never invent a value to fill a curve: a line needs 3 real points, a bar 2 labelled values, a timeline 2 dated events, and below that the call is refused rather than drawn thin. Values that are not numbers are dropped and the caption says how many.' },
       { name: 'set_layer', cap: 'layers.toggle', desc: 'Turn a named map layer on or off.' },
       { name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations. Use for anything current, contested or beyond your own knowledge. This renders its own sourced answer to the reader.' },
       /* ⚠ (#R413) THE EXISTING CAPABILITY, PROMOTED — NOT A NEW ONE. `view.locate` has read the
@@ -300,7 +306,15 @@ export function makeAtlasToolSurface(deps) {
          a capability whose registry row PRODUCES the map, and whose run the observer marked
          completed (a `partial` — nothing painted — is not a change). js/atlas-agent.js holds a
          "map"/"mixed" `answer_mode` to it; nothing here decides whether the map SHOULD change. */
-      if (ok && out.status === 'completed' && Array.isArray(out.produced) && out.produced.indexOf('map') >= 0) out.changedMap = true;
+      /* ⚠ (#R543) …AND THE SAME FACT FOR EVERY OTHER OUTPUT AN ANSWER CAN BE. The line below used to
+         read the single string 'map', which made the map the only modality the loop could hold a
+         declaration to — a chart would have needed a second flag, a second gate and a second name.
+         The registry's `produces` column already IS the general answer; this just stops discarding
+         the rest of it. `changedMap` stays as the map member's #R511 name. */
+      if (ok && out.status === 'completed' && Array.isArray(out.produced)) {
+        out.producedModes = out.produced.slice();
+        if (out.producedModes.indexOf('map') >= 0) out.changedMap = true;
+      }
       if (!ok) {
         out.error = meta.code || 'failed';
         /* (#R413) …and not clipped at 400 either. This is the reason a call FAILED, read by the

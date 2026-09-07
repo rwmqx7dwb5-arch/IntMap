@@ -165,6 +165,10 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
          says it dropped — so it observes the map and the objects on it. What it deliberately does
          NOT do is call a query that matched nothing a `no_change`: see js/atlas-capabilities.js. */
       queryRows: ['map', 'object', 'explanation'],
+      /* (#R543) the "chart" observer counts the `data-mark` stamps in the figure the reply will
+         actually carry, so it observes the chart itself — the one output on this list that lives in
+         the answer rather than on the map. */
+      chart: ['chart', 'explanation'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
     const bad = [];
     J.capabilities.forEach((c) => {
@@ -285,7 +289,16 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
     const bad = [];
     const all = docs.text(null);
     if (!all.length) bad.push('the catalogue is empty');
-    docs.blocks().forEach((b, i) => { if (!b.bytes) bad.push(`catalogue block ${i} is empty`); });
+    /* ⚠⚠ (#R543) INDEXED, NOT forEach. `forEach` SKIPS A HOLE, and a hole is exactly what a stray
+       comma in an array literal makes — js/atlas-catalog-text.js carried one between the gloss block
+       and the compose block (`… },,`). `length` reported 46, forty-five blocks existed, and THIS
+       check — whose entire job is "no block is empty" — could not see the empty one, because the
+       iterator it was written with declines to visit it. Architecture.md had copied the 46 down. */
+    const bl = docs.blocks();
+    for (let i = 0; i < bl.length; i++) {
+      if (!bl[i]) { bad.push(`catalogue block ${i} does not exist — the array literal has a hole`); continue; }
+      if (!bl[i].bytes) bad.push(`catalogue block ${i} is empty`);
+    }
     /* a selection returns WHOLE blocks or none — never a prefix */
     const one = docs.text(['routing.route']);
     if (one && !all.includes(one)) bad.push('a selected catalogue is not a subsequence of the full one — selection is rewriting blocks');
