@@ -213,6 +213,13 @@ window.IntMapRefData=(function(){
        calls a day; open.er-api.com — ExchangeRate-API's keyless endpoint — is the first choice for
        both the FX widget and the bottom ticker, and fxratesapi is the fallback an API key restores. */
     {n:'Market data (ER-API / fxratesapi · gold-api · CoinGecko · alternative.me)',u:'https://www.exchangerate-api.com/'},
+    /* (#R533) ⚠ THE HOST IS UNCHANGED AND THE PATH IN FRONT OF IT IS NOT. The Companies tab asks
+       IntMap's own Supabase Edge Function `quotes-relay` first and drops to the shared public CORS
+       relay ladder only when that cannot be reached; the bottom ticker keeps the ladder it always
+       had. Upstream is still Yahoo's keyless v8/finance/spark & v8/finance/chart, and a ticker
+       symbol is still the whole of the request — which is why the NAME of the source did not change
+       here: what changed is who carries the bytes, and the description (sourceUse) is where a
+       reader is told so. */
     {n:'Yahoo Finance',u:'https://finance.yahoo.com/'},
     /* (#R354) the company atlas — docs/COMPANIES.md §10. All four are read at BUILD time and
        shipped as data/companies/; the browser calls none of them. OSM's ODbL makes the second
@@ -222,7 +229,15 @@ window.IntMapRefData=(function(){
     {n:"SEC EDGAR — XBRL company facts",u:'https://www.sec.gov/edgar/sec-api-documentation'},
     {n:"GLEIF — Global LEI Index",u:'https://www.gleif.org/en/lei-data/gleif-golden-copy'},
     {n:"Natural Earth (admin-0 boundaries, build time only)",u:'https://www.naturalearthdata.com/'},
-    {n:'Clearbit Logo API / Google favicons',u:'https://logo.clearbit.com/'},
+    /* (#R533) ⚠ THE NAME THAT STOOD HERE WAS A HOST THAT NO LONGER EXISTS. Clearbit's Logo API was
+       deprecated 2025-03-18 and shut down 2025-12-08 after the HubSpot acquisition; logo.clearbit.com
+       resolves on NO public resolver today (8.8.8.8 / 1.1.1.1 / 9.9.9.9 each answer with the
+       authoritative SOA and no A or CNAME), and one opening of the Companies tab in production
+       produced 189 net::ERR_NAME_NOT_RESOLVED. WHICH image is a company's logo is now Wikidata's
+       answer (property P154), resolved at BUILD time into data/companies/ — 435 of 533 companies
+       have one — and the bytes are SERVED by Wikimedia Commons. Google's favicon service is the
+       fallback for the rest, a monogram is the floor, and the browser asks Wikidata nothing. */
+    {n:"Company logos — Wikidata (P154) via Wikimedia Commons, Google favicons as fallback",u:'https://commons.wikimedia.org/'},
     {n:'Wikipedia (Wikimedia REST API)',u:'https://www.wikipedia.org/'},
     {n:'Live cameras — OpenStreetMap (Overpass API)',u:'https://wiki.openstreetmap.org/wiki/Key:contact:webcam'},
     /* (#R388) the railway atlas. ⚠ THIS REPLACED A NATURAL EARTH LAYER, SO THE TERMS CHANGED WITH IT:

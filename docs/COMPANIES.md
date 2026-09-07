@@ -4,8 +4,10 @@
 > 生成パイプライン・カバレッジ判定**。UI の置き場所は `Architecture.md` §8、ファイル台帳は
 > [`FILES.md`](FILES.md)、レイヤーの描画は [`MAP-LAYERS.md`](MAP-LAYERS.md)。
 >
-> ⚠ **ライブ時価総額（Yahoo）と curated な 190 行の表は `js/companies.js` が正本**であって、
+> ⚠ **ライブ株価・時価総額（Yahoo）と curated な 190 行の表は `js/companies.js` が正本**であって、
 > ここではない。この文書が足すのは**その上に載る恒久的なプロフィールと拠点**。
+> 株価がどの経路で運ばれるか（Edge Function `quotes-relay` → 公開リレー梯子）は
+> `Architecture.md` §6.2 と §8.1.1。
 
 ---
 
@@ -86,6 +88,7 @@
       "dom": "apple.com",
       "hq":  [-122.009, 37.3348],// 本社 [lon, lat]。無ければ null
       "hqc": "Cupertino",        // 本社の都市名（英）
+      "lg":  "https://commons.wikimedia.org/…",  // ロゴ（§4.3）。無ければ ""
       "fac": 42,                 // この企業のプロフィールが持つ拠点の数
       "ctry": 17,                // 拠点が存在する国の数
       "cov": "full",             // §6 のカバレッジ段位
@@ -110,7 +113,7 @@
     "industry": ["consumer electronics", "software"],   // Wikidata P452 のラベル（分類はしない）
     "founded": "1976-04-01",        // 精度どおり。"1976" / "1976-04" もある
     "website": "https://www.apple.com/",
-    "logo": "https://commons.wikimedia.org/…",           // P154。無ければ省略
+    "logo": "https://commons.wikimedia.org/…",           // P154（§4.3）。無ければ空
     "legalForm": "corporation",
     "listed": true,
     "exchanges": [ { "name": "Nasdaq", "ticker": "AAPL" } ],
@@ -173,6 +176,23 @@
 
 ⚠ `src` は `sources[]` の**添字**。文字列 URL を各項目に書き写さない
 （500 社ぶん重複すると索引より大きくなり、片方だけ古くなる）。
+
+### 4.3 ロゴ — **ビルド時に解決し、索引とプロフィールの両方が同じ 1 本を読む**
+
+ロゴも他の事実と同じ扱いで、**上流に訊くのはビルド時だけ**。`scripts/companies/build.mjs` が
+Wikidata の **P154（logo image）** を取り、Wikimedia Commons のファイルパス
+（`https://commons.wikimedia.org/wiki/Special:FilePath/<file>`）にして書く。
+
+- プロフィールの `identity.logo` と索引の `lg` は、**このファイルの同じ 1 行から出る**——
+  索引は `profile.identity.logo` **そのもの**を写すので、同じ URL を 2 回組み立てることはない。
+- 現在の充足は **533 社中 435 社**（P154 を持たない企業は空）。
+- 索引に載せてあるのは、**一覧が企業を開かずにロゴを描けるようにする**ため。プロフィールは
+  その企業を選んだときにしか取らないので、索引しか持っていない一覧からは見えなかった。
+
+表示側の段（Commons → Google favicon → モノグラム）と、そこで**何が外部へ送られるか**は
+`Architecture.md` §8.1.1。⚠ **ロゴのホストを実行時に推測しない**——企業のドメインから
+ロゴ URL を組み立てる第三者 API は、この経路には 1 つも無い。理由は
+[`../DECISIONS.md`](../DECISIONS.md)。
 
 ---
 
@@ -307,8 +327,13 @@ TSMC・Siemens で工場と R&D が実際に出ることを見る。**
 ⚠ **Wikipedia 本文の大量スクレイピングはしない。Google Maps 等の規約に反する取得もしない。**
 現在の実装が実際に叩くのは **WDQS・wbgetentities・data.sec.gov・api.gleif.org の 4 つだけ**。
 
-⚠ **ブラウザは 1 つも叩かない。** 上流は全部ビルド時。実行時に企業クリックで外部 API を
-呼ぶのは、既存の Yahoo 価格取得（`js/companies.js`）だけで、これは今回変えていない。
+⚠ **プロフィールと拠点の上流は、全部ビルド時。** 実行時にブラウザが外へ出るのは 2 つだけで、
+どちらも「事実を取りに行く」経路ではない:
+
+1. **株価**（`js/companies.js`）— Edge Function `quotes-relay` を第一経路に Yahoo の
+   鍵不要エンドポイントを読む。上流へ渡るのは**ティッカー記号と期間だけ**（`Architecture.md` §6.2）。
+2. **ロゴの最終段**（`js/companies-ui.js`）— §4.3 の Commons ロゴを持たない企業に限り、
+   Google の favicon にドメイン名だけを送る。取れなければモノグラムで、要求は出ない。
 
 ---
 

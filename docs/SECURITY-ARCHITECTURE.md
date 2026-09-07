@@ -157,10 +157,11 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are fourteen Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are fifteen Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All fourteen are declared there now
-(`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353).
+flag that lives in a comment is not configuration. All fifteen are declared there now
+(`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
+`quotes-relay` #R533).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
 `relay-guard.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
 `news-geo-prompt.js`, `news-ingest.js`, `volcano-parse.js`) that the CLI bundles into the functions that import it.
@@ -177,17 +178,30 @@ flag that lives in a comment is not configuration. All fourteen are declared the
 | `news-relay` | false | none — keyless public relay of Google News RSS | — | — |
 | `routing-relay` | false | none — public, but **keyed upstream**: it is the only relay that holds a provider token | — | `MAPBOX_TOKEN`, server env only, never returned |
 | `sv-cov` | false | none — keyless public relay of Google Street-View coverage tiles | — | — |
+| `quotes-relay` | false | none — keyless public relay of two Yahoo Finance v8 endpoints (share prices) | — | — (those endpoints need no key) |
 | `aviation-feed` | false | none — keyless; serves live ADS-B to signed-out readers | — | provider key (when a provider needs one) + `AVIATION_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** |
 | `ais-feed` | false | none — keyless; serves live ships to signed-out readers. The caller may pass a viewport box, never a URL | — | `AISSTREAM_API_KEY` (optional; Digitraffic needs none) + `AIS_STORAGE_KEY` for the snapshot object: **server env only, never returned, never logged** — the diagnostic trace reports the key's LENGTH and whether it is alphanumeric, never the key |
 
-**`aviation-feed` is keyless but is NOT a fifth relay**, and the distinction is a security
+**`aviation-feed` is keyless but is NOT one of the relays**, and the distinction is a security
 property rather than a naming one. A relay forwards a URL **the caller named**, which is why the
-four below need an allow-list. `aviation-feed` names its own upstreams — the caller may choose
+five below need an allow-list. `aviation-feed` names its own upstreams — the caller may choose
 only a channel (`world` / `view` / `meta`) — so no caller-supplied string ever reaches `fetch()`
 and there is no allow-list to get wrong. It takes the rest of `relay-guard.js` unchanged: GET
 only, a deadline, a byte ceiling, a content-type check, and errors that name a bound and never an
 exception. Its `?meta=1` channel reports the PRESENCE of its credentials as booleans and never
 their values.
+
+`ais-feed` is the same shape: a channel and a viewport box, never a URL.
+
+⚠ **(#R533) `quotes-relay` IS a relay — it forwards a caller-named URL — and its allow-list is
+therefore the whole of its security.** It is written structurally rather than as a prefix test,
+because `startsWith` on a whitelisted string is not a test of where a URL points: the string is
+parsed with `URL`, the host must be one of two Yahoo hosts, the path must be `/v8/finance/spark`
+or `/v8/finance/chart/<symbol>`, **every** query parameter must be one of five known keys (any
+other key, and any fragment, rejects the request outright rather than being dropped), symbols
+match a character class and are capped in count, and timestamps must be digits. The upstream
+needs no key, so there is no credential here to leak; what crosses the boundary is which tickers
+a reader's board is showing. Everything else is `relay-guard.js` as for the others.
 
 ⚠ **(#R347) `routing-relay` is the first relay that is not keyless, and it differs in three ways.**
 (1) It holds `MAPBOX_TOKEN`, so it is the one relay a caller could try to use as a **general Mapbox
@@ -206,11 +220,13 @@ boundary; the real ceiling remains the provider account's usage alerts.
 ⚠ **With no key set the function is inert**: `?probe=1` answers `{"mapbox":false}` and every route
 request returns `provider_unavailable`, so the app falls back to the open routers and says so.
 
-**The four keyless relays are not protected by a login and must not be** — they serve map
-layers to signed-out readers. What stands in front of them is `_shared/relay-guard.js`, shared
-so the four cannot drift apart: a URL **allow-list** (exact strings for cable-geo, an
+**The five keyless relays are not protected by a login and must not be** — they serve map
+layers, and now share prices, to signed-out readers. What stands in front of them is
+`_shared/relay-guard.js`, shared
+so the five cannot drift apart: a URL **allow-list** (exact strings for cable-geo, an
 endpoint-shaped rule for news-relay, host+path for alerts-relay, host+path+`lyrs`+a z/x/y that
-must be **on the pyramid** for sv-cov), **GET only**, a **deadline** on every upstream fetch, a
+must be **on the pyramid** for sv-cov, host+path+a closed parameter set for quotes-relay),
+**GET only**, a **deadline** on every upstream fetch, a
 **byte ceiling** enforced on `content-length` *and* while streaming (an upstream may omit the
 length), a **content-type** rule, and **generic outward errors** — the caller learns which
 bound was hit and never what the exception said (CodeQL `js/stack-trace-exposure`).
@@ -321,6 +337,23 @@ weather, routing, statistics, news, geocoding, market data, live cameras, AI pro
   request; no personal data is sent. (#R214) `corsfix` was added because a relay that works is not
   a relay that works for every target: Google served the `en-US` news edition through `corsproxy.io`
   and answered the same proxy with its bot-block page for `ja-JP`.
+  ⚠ **(#R533) No feature depends on that ladder alone any more.** Share prices used to reach Yahoo
+  through a private three-rung ladder inside `js/companies.js`; measured 2026-09-07, the direct
+  call returned 200 with no `Access-Control-Allow-Origin`, `corsproxy.io` returned 403 and
+  `api.allorigins.win` returned 522 — three rungs, no answer. Our own function goes first now and
+  the shared public ladder (`js/proxy-fetch.js`) stands behind it, which is the same arrangement
+  news and GDELT already had. See `../DECISIONS.md`.
+- **(#R533) Company logos are shipped, not asked for.** The Companies tab used to name a
+  third-party logo API (`logo.clearbit.com`) once per company, which both told that host which
+  companies a reader was looking at and, after the service was shut down on 2025-12-08, produced
+  189 `ERR_NAME_NOT_RESOLVED` failures per open — the host no longer resolves at all. The logo is
+  now resolved at **build** time from Wikidata P154 to Wikimedia Commons and shipped in
+  `data/companies/` (435 of 533 companies); the remaining companies fall back to Google's favicon
+  service, which is sent the company's domain and nothing else, and then to a monogram, which
+  sends nothing. For a company that ships a logo the tab makes **no third-party request at all**,
+  where before it made one per row; only the 98 Wikidata has no P154 for still reach a stranger,
+  and what they send is a domain name.
+  The reasoning is in `../DECISIONS.md`; the data path is in `COMPANIES.md` §4.3.
 - **No PII in URL query strings**; error monitoring (Sentry, dormant) strips PII / tokens /
   query strings and only reports IntMap's own exceptions.
 - Analytics: **paused.** Google Analytics (gtag) and Microsoft Clarity are still in `index.html`

@@ -56,16 +56,16 @@ function docFacts() {
 const CASES = [
   /* ① 手書き一覧に一度も入っていなかった文書。これがこの回の報告そのもの。 */
   { rule: 'edge-count', file: 'docs/FILES.md', why: 'the ledger that drifted was never in the list',
-    from: 'Edge Function は全14本をここに宣言する', to: 'Edge Function は全11本をここに宣言する' },
+    from: 'Edge Function は全15本をここに宣言する', to: 'Edge Function は全11本をここに宣言する' },
 
   /* ① 同じ文書の**2つ目**の出現。§6.2 の見出しは正しいまま残す——`.match()` が最初の1件で
      満足していた穴は、まさにこの形でしか再現しない。 */
   { rule: 'edge-count', file: 'Architecture.md', why: 'the second claim in a file whose first claim is right',
-    from: '**Edge Functions を14本デプロイする**', to: '**Edge Functions を10本デプロイする**' },
+    from: '**Edge Functions を15本デプロイする**', to: '**Edge Functions を10本デプロイする**' },
 
   /* ① 英単語で書かれた数。`SECURITY.md` は外部の報告者向けで、日本語の needle では読めない。 */
   { rule: 'edge-count', file: 'SECURITY.md', why: 'a count spelled as an English word',
-    from: '**fourteen** Edge Functions', to: '**eight** Edge Functions' },
+    from: '**fifteen** Edge Functions', to: '**eight** Edge Functions' },
 
   /* ② `_shared/` の一覧から1本抜く。`_shared` は関数ではないので①の分母には入らない。 */
   { rule: 'edge-shared', file: 'docs/FILES.md', why: 'a name dropped from the _shared roster',
@@ -110,8 +110,8 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
     const originalBytes = rd('Architecture.md');
     const original = readLF(join(ROOT, 'Architecture.md'));
     const silent = original
-      .replace(anchorRe('### 6.2 Edge Functions — **14本**'), () => '### 6.2 Edge Functions')
-      .replace(anchorRe('**Edge Functions を14本デプロイする**'), () => '**Edge Functions をすべてデプロイする**');
+      .replace(anchorRe('### 6.2 Edge Functions — **15本**'), () => '### 6.2 Edge Functions')
+      .replace(anchorRe('**Edge Functions を15本デプロイする**'), () => '**Edge Functions をすべてデプロイする**');
     assert.notEqual(silent, original, 'Architecture.md no longer states the count in either place');
     try {
       writeFileSync(join(ROOT, 'Architecture.md'), silent);

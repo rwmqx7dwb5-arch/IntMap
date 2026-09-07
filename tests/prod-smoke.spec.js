@@ -620,6 +620,97 @@ test('(#R514) the model host the deployed build names answers, and lets this ori
     + ' · ' + j.valid_times.length + ' steps · ' + (j.variables || []).length + ' variables');
 });
 
+/* ══ ⚠⚠⚠ (#R533) EVERY THIRD-PARTY HOST THE DELIVERED BUILD NAMES MUST ACTUALLY ANSWER ══════════
+   #R514 asked this of ONE host, because one host had vanished. Then a second one had: Clearbit's
+   free Logo API shut down on 2025-12-08 and `logo.clearbit.com` left DNS entirely, and the
+   Companies tab went on asking for it 189 times per visit. Nothing went red. #R353's production
+   verification had even WRITTEN IT DOWN — 「logo.clearbit.com が到達不能（96 リクエスト）」 — and
+   the round moved on, because no gate turned that observation into a failure.
+
+   ⚠ SO THE QUESTION IS NOT ASKED OF A LIST OF HOSTS. A list spelled here is a list that says
+   nothing about the host somebody adds next week, and #R529 is this repository's own lesson about
+   hand-written lists that guardians then defend. The hosts are DISCOVERED from the JavaScript the
+   site actually delivered, and every one of them is asked whether it resolves and answers.
+
+   What "answers" means is deliberately weak: any HTTP status at all. A 404 for one company's
+   favicon is that company's business; a name that does not resolve is the build naming a host that
+   no longer exists, which is the failure this test is for. */
+test('(#R533) every third-party host the delivered build names still resolves and answers', async () => {
+  /* the modules the browser actually loaded, read back from the page — not a glob over the repo,
+     because what matters is what was DELIVERED */
+  const scripts = await page.evaluate(() => performance.getEntriesByType('resource')
+    .map((e) => e.name).filter((n) => /\.js(\?|$)/.test(n)));
+  expect(scripts.length, 'the deployed page loaded JavaScript modules').toBeGreaterThan(5);
+
+  const origin = new URL(PROD_URL).origin;
+  /* Hosts that a same-origin page reaches through its own relay, and hosts this suite has no
+     business probing (analytics, payment) are not in the build's data path; everything else that
+     appears as an absolute https:// URL inside the delivered code is. */
+  const SKIP = /^(?:localhost|127\.|.*\.supabase\.co$|.*\.github\.io$|.*\.github\.com$|schema\.org$|www\.w3\.org$)/;
+  const hosts = new Set();
+  for (const src of scripts) {
+    if (!src.startsWith(origin)) continue;
+    const r = await page.request.get(src, { timeout: 30_000 });
+    if (!r.ok()) continue;
+    const txt = await r.text();
+    for (const m of txt.matchAll(/https:\/\/([a-z0-9][a-z0-9.-]*\.[a-z]{2,})[/'"`)]/gi)) {
+      const h = m[1].toLowerCase();
+      if (!SKIP.test(h)) hosts.add(h);
+    }
+  }
+  expect(hosts.size, 'the delivered build names third-party hosts').toBeGreaterThan(3);
+
+  const dead = [];
+  const checked = [];
+  for (const h of [...hosts].sort()) {
+    let status = null;
+    try {
+      const r = await page.request.get('https://' + h + '/', { timeout: 20_000, failOnStatusCode: false });
+      status = r.status();
+    } catch (e) {
+      /* a refused connection is a live name behind a closed door; a name that does not resolve is
+         the thing this test exists to catch, and Playwright says so in the message */
+      const msg = String((e && e.message) || '');
+      if (/ERR_NAME_NOT_RESOLVED|getaddrinfo|ENOTFOUND|EAI_AGAIN|Could not resolve/i.test(msg)) {
+        dead.push(h);
+        continue;
+      }
+    }
+    checked.push(h + (status == null ? ' (no status, name resolves)' : ' ' + status));
+  }
+  console.log('[R533] third-party hosts named by the delivered build (' + checked.length + '): '
+    + checked.join(', '));
+  expect(dead, 'the delivered build names hosts that no longer exist in DNS: ' + dead.join(', '))
+    .toEqual([]);
+});
+
+/* ══ (#R533) …and the Companies tab in particular, whose two upstreams both failed in production ══
+   The logo now comes from the shipped index (Wikidata P154 → Wikimedia Commons, resolved at build
+   time) rather than from a stranger's API, and the share prices go through this project's own
+   relay. Both are asked of the DEPLOYED artefacts, not of the repository. */
+test('(#R533) the Companies tab ships resolved Commons logos and no dead logo host', async () => {
+  const origin = new URL(PROD_URL).origin;
+  const idx = await page.request.get(new URL('data/companies/index.json', PROD_URL).href, { timeout: 30_000 });
+  expect(idx.status(), 'the deployed build serves the company index').toBe(200);
+  const j = await idx.json();
+  const rows = j.companies || [];
+  const withLogo = rows.filter((c) => c.lg);
+  expect(rows.length, 'the index holds companies').toBeGreaterThan(400);
+  expect(withLogo.length, 'and most of them ship a resolved logo URL').toBeGreaterThan(300);
+
+  const bad = withLogo.filter((c) => !/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//.test(c.lg));
+  expect(bad.map((c) => c.id + '=' + c.lg), 'every shipped logo points at Wikimedia Commons').toEqual([]);
+
+  /* one of them, actually fetched, with this origin asking — a logo that 403s across origins is a
+     logo the page cannot draw */
+  const one = withLogo[0];
+  const img = await page.request.get(one.lg, { headers: { Origin: origin }, timeout: 30_000 });
+  expect(img.status(), 'Commons serves ' + one.id + "'s logo at " + one.lg).toBe(200);
+  expect(String(img.headers()['content-type'] || ''), 'as an image').toMatch(/image\//);
+  console.log('[R533] company logos: ' + withLogo.length + '/' + rows.length
+    + ' shipped from Commons · sample ' + one.id + ' ' + img.headers()['content-type']);
+});
+
 /* ══ (#R276) THE WEATHER MODEL, AGAINST REAL DATA ════════════════════════════════════════════════
    These three cannot live in tests/smoke.spec.js: that context blocks every host but the two boot
    CDNs, on purpose, and what is being asked here is whether the ECMWF field the live site actually

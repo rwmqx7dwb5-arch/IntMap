@@ -836,6 +836,15 @@ async function main() {
       ctry: presence.length,
       cov,
       wd: q,
+      /* (#R533) THE LOGO THE LIST DRAWS, resolved here and shipped — not fetched from a stranger.
+         It is `profile.identity.logo` ITSELF, not a second construction of the same URL: the shape
+         lives at exactly one place in this file (the `identity.logo` line above), so the index and
+         the profile cannot drift apart. Empty for a company Wikidata has no P154 for.
+         ⚠ WHY IT IS HERE AND NOT ONLY IN THE PROFILE. profiles/<id>.json is fetched only when a
+         company is OPENED, so the list could not see it — which is why the list kept its own logo
+         ladder pointing at logo.clearbit.com, a host that stopped answering on 2025-12-08 and no
+         longer resolves at all. The index is fetched once; the list now reads the logo from it. */
+      lg: profile.identity.logo || '',
     });
     if (++n % 50 === 0) log('  built ' + n + '/' + rows.length);
   }

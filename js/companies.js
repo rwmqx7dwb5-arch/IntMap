@@ -235,13 +235,57 @@ window.IntMapModules.companies=function(HOST){
        match this table). The UI states it that way instead of implying one shared reporting date. */
     const CURATED_ASOF='2026-07-20';
     const CURATED_FY='FY2024';
-    const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
-    async function _fjson(u){ for(const p of PROX){ try{ const r=await fetch(p(u)); if(r&&r.ok) return await r.json(); }catch(_){} } return null; }
+    /* (#R533) —— ONE RELAY LADDER, NOT A PRIVATE COPY OF ONE —————————————————————
+     *
+     * This file used to carry its own three rungs — direct, then corsproxy.io, then
+     * api.allorigins.win — tried strictly in order with no deadline and no race. Measured on the
+     * live site 2026-09-07, all three failed together: Yahoo answers 200 with no
+     * Access-Control-Allow-Origin (a browser cannot read it), corsproxy.io answered 403 and
+     * api.allorigins.win answered 522. Every reader's live market caps silently fell back to the
+     * reported snapshots.
+     *
+     * ⚠ THE BUG WAS THE COPY, NOT THE RUNGS. js/proxy-fetch.js already holds this project's ONE
+     * relay ladder: our own Edge Function first, four public relays raced behind it with an 8 s
+     * deadline each, losers aborted, and a check that what came back is the JSON that was asked
+     * for rather than a relay's error envelope. None of that reached the Companies tab, because
+     * the tab had its own. #R533 gives Yahoo a relay of its own (supabase/functions/quotes-relay)
+     * and routes this file through the shared ladder, so there is one place left that knows how
+     * this project reaches a host a browser may not.
+     *
+     * `as:'json'` is what makes a relay's 「domain_not_registered」 body fail to count as a quote.
+     *
+     * ⚠ `direct` IS DELIBERATELY NOT SET. Yahoo answers 200 without ACAO, so the direct attempt
+     * cannot ever succeed from a page — and #R464 measured that such a refusal is NOT free: the
+     * browser waits out the whole round trip before refusing to show it. Paying for a rung that
+     * is known to fail is the same mistake this round removed from the logo ladder.
+     */
+    async function _fjson(u){
+      try{
+        const txt=await HOST.fetchViaProxy(u,{as:'json',budgetMs:20000});
+        return txt?JSON.parse(txt):null;
+      }catch(_){ return null; }
+    }
     /* (#R151) BATCHED multi-symbol quote via Yahoo's keyless "spark" endpoint — ONE request for up to ~40 tickers instead
        of one-per-name, so live prices paint far faster (低遅延) and time-machine year-scrubbing no longer refetches ~150
        symbols per year. Robust to both spark response shapes (nested spark.result[].response[] and the older flat
        {TK:{timestamp,close,...}} form). Returns Map<tk,{ts:number[],close:number[],price:number}>. */
-    async function _spark(syms, range, interval){ const out=new Map(); const B=40;
+    /* (#R533) THE UPSTREAM'S OWN LIMIT, IN THE UPSTREAM'S OWN WORDS.
+     *   observation  — 2026-09-07, query1.finance.yahoo.com/v8/finance/spark answers a 24-symbol
+     *                  request with 400 and the body
+     *                  {"spark":{"result":null,"error":{"code":"Bad Request",
+     *                   "description":"Number of symbols needs to be less than or equal to 20"}}}
+     *                  20 returns 200. This file asked for 40.
+     *   expires when — Yahoo changes that sentence; the relay's cap (supabase/functions/
+     *                  quotes-relay, SPARK_MAX_SYMBOLS) is the same number and must move with it.
+     *   canonical    — the upstream error text above. It is not a guess or a tuning knob.
+     *
+     * ⚠ THIS IS WHY 「ライブ株価の最初の数手は必ず失敗する」 (#R353's production verification) WAS TRUE.
+     * Every batch was over the limit, so every batch 400'd and the whole tab fell through to the
+     * per-symbol chart fallback below — roughly 150 separate requests to do one job. The public
+     * proxies were blamed for it; they were only carrying a request the upstream had already
+     * refused. */
+    const SPARK_MAX_SYMBOLS=20;
+    async function _spark(syms, range, interval){ const out=new Map(); const B=SPARK_MAX_SYMBOLS;
       for(let i=0;i<syms.length;i+=B){ const batch=syms.slice(i,i+B);
         const u='https://query1.finance.yahoo.com/v8/finance/spark?symbols='+batch.map(encodeURIComponent).join(',')+'&range='+range+'&interval='+interval;
         let j=null; try{ j=await _fjson(u); }catch(_){} if(!j) continue;

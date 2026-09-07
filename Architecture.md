@@ -1012,9 +1012,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **14本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **15本**（`_shared/` は関数ではない）
 
-> ⚠ **13本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **15本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
@@ -1125,10 +1125,25 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ACAO を返すので中継しない**（要らない relay は落ちうるものを1つ増やすだけ）。
   詳細は [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md)。
 
-⚠ **`_shared/relay-guard.js` を共有するのは10本**（`ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
-`gdelt-relay` / `news-ingest` / `news-relay` / `routing-relay` / `sv-cov` / `volcano-feed`）**。** そのうち
-`news-ingest` だけが `x-news-ingest-secret` で fail-closed に守られており、**残り8本は無認証**。
-共有しているのは、URL allowlist、**GET 限定**、**期限**（`AbortSignal.timeout`）、
+- **`quotes-relay`** … Companies タブの**株価**の ACAO 付与中継（`--no-verify-jwt`・秘密なし）。
+  中継するのは Yahoo Finance の鍵不要エンドポイント 2 つだけ——`query1`/`query2.finance.yahoo.com`
+  の `/v8/finance/spark` と `/v8/finance/chart/<記号>`。⚠ **allowlist は接頭辞一致ではなく
+  構造で見る**（`URL` に解いてホスト・パス・パラメータを 1 つずつ検査し、
+  `symbols` / `range` / `interval` / `period1` / `period2` **以外は 1 つでもあれば拒否**、
+  記号は形と本数で縛る）——`startsWith` で見る allowlist は、細工した文字列に別の上流を
+  通させる。**上流へ渡るのは結局ティッカー記号と期間だけで、読者を識別するものは 1 つも無い。**
+  ⚠ **CORS を通すためだけの関数ではない。** Yahoo は 200 を返すが **ACAO を返さない**ので
+  ブラウザからは構造的に読めず、公開 CORS プロキシに単独で依存しない理由は
+  [`DECISIONS.md`](DECISIONS.md) にある。この関数が落ちたときだけ、ブラウザは
+  `js/proxy-fetch.js` の公開リレー梯子へ退避する（＝以前の挙動）。
+  ⚠ **上流の「拒否」を答えとして返さない**——呼び出し側が実際に読む 3 つの封筒
+  （chart・spark・ティッカーを直接キーにした平坦形）のどれでもなければ通さない。
+  キャッシュは 60 秒（`s-maxage`）で、同時に開いた読者の集中を 1 回の上流要求に畳む。
+
+⚠ **`_shared/relay-guard.js` を共有するのは11本**（`ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+`gdelt-relay` / `news-ingest` / `news-relay` / `quotes-relay` / `routing-relay` / `sv-cov` / `volcano-feed`）**。** そのうち
+`news-ingest` だけが `x-news-ingest-secret` で fail-closed に守られており、**残り10本は無認証**。
+共有しているのは、URL allowlist（相手先 URL を呼び出し側が名指す中継だけ）、**GET 限定**、**期限**（`AbortSignal.timeout`）、
 **バイト上限**（`content-length` とストリーム読み出しの両方——上流は length を返さないことがある）、
 **Content-Type** 判定、そして**外向きエラーはコード1語**（上流の例外文言・スタックは返さない）。
 ⚠ **公開レイヤーなのでログイン必須にはしない**（署名前の読者に地図を出せなくなる）。
@@ -1931,9 +1946,17 @@ IntMapOS の `company.open`（`js/session-tabs.js`。id・ticker・企業名の�
 1px も動かない（`CONSTITUTION.md` §3）。枠に収めるときは**開いているパネルの実寸**を避け、
 経度は最短の弧で囲む（min/max で囲むと太平洋をまたぐ企業が地球を 2 周する）。
 
-⚠ **既存の `js/companies.js`（curated 190 行 ＋ Yahoo のライブ時価総額）は変えていない。**
-企業アトラスはその上に載る。データモデル・出典・パイプライン・カバレッジ判定の正本は
+`js/companies.js` は curated 190 行と **Yahoo のライブ株価・時価総額**を持ち、企業アトラスはその上に
+載る。データモデル・出典・パイプライン・カバレッジ判定の正本は
 [`docs/COMPANIES.md`](docs/COMPANIES.md)。
+
+**ロゴと株価は、どちらも「閲覧時に第三者へ問い合わせない」側に寄せてある**（一覧は
+`js/companies-ui.js`、詳細パネルは `js/company-panel.js`。どちらも同じ 1 つの解決結果を読む）:
+
+| 何 | 経路 |
+|---|---|
+| **ロゴ** | **段 0**＝ビルド時に Wikidata **P154** から解決して同梱した Wikimedia Commons の画像（`scripts/companies/build.mjs`。索引の `lg` とプロフィールの `identity.logo` は**同じ 1 行から出る**ので食い違わない）。**段 1**＝Commons に画像が無い企業だけ Google の favicon（送るのはドメイン名のみ）。**段外**＝頭文字のモノグラム（外部要求ゼロ）。⚠ **索引が届く前の行はモノグラムを描く**——索引は遅延なので、間に合わせに URL を吐くと「失敗すると分かっている要求」を毎回出すことになる |
+| **株価** | 第一経路は Edge Function **`quotes-relay`**（§6.2）。落ちたときだけ `js/proxy-fetch.js` の公開リレー梯子へ退避する。⚠ **`js/companies.js` は自前のプロキシ梯子を持たない**——同じ判断（どの公開リレーを、どの順で、どこで見切るか）を 2 か所に置かない。⚠ **直接続行の段は置かない**（Yahoo は ACAO を返さないので、その 1 往復は必ず捨てられる）。⚠ **1 回の spark 要求は 20 記号まで**——上流自身が 400 の本文で述べる上限で、クライアントと relay が**同じ数**を持ち、検査が両者を結ぶ |
 
 ### 8.2 Panels タブ（ドック）
 
@@ -2719,10 +2742,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を14本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を15本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed news-ingest routing-relay volcano-feed gdelt-relay; do
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```

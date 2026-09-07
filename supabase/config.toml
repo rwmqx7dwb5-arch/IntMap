@@ -153,6 +153,15 @@ verify_jwt = false
 [functions.news-relay]
 verify_jwt = false
 
+# quotes-relay (#R533) is the Companies tab's share-price path. Yahoo's keyless v8 endpoints
+# answer a browser with 200 and no Access-Control-Allow-Origin, so the page cannot read them
+# directly; this fetches them server-side and hands them back with the header. Keyless and
+# world-readable like the other relays, and an allow-list of two endpoints rather than an open
+# proxy — only ticker symbols pass through it. The public CORS relays stay behind it in
+# js/proxy-fetch.js, so an outage here falls back to what the app did before.
+[functions.quotes-relay]
+verify_jwt = false
+
 # aviation-feed (#R341) is the single upstream reader for live air traffic: it polls the configured
 # provider (adsb.lol by default; OpenSky when OPENSKY_AGREEMENT=1) and hands every IntMap browser
 # the same IMAV/1 binary snapshot. Keyless and no user data, so --no-verify-jwt — a login for a

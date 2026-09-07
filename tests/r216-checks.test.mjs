@@ -30,18 +30,44 @@ const read = (p) => (p === 'js/i18n.js'
    block comments taken out, or the note about the bug would trip the test for the bug. */
 const code = (p) => read(p).replace(/\/\*[\s\S]*?\*\//g, ' ');
 
-/* ── ① the news relay: our own origin first, and the URL allow-list is real ──────────── */
+/* ── ① the news relay: our own origin first, and the URL allow-list is real ────────────
+   ⚠ (#R533) THIS TEST USED TO PIN FOUR SPELLINGS, AND ALL FOUR WERE HOW IT HAPPENED TO BE WRITTEN.
+   It required the literal `news-relay?u=`, the byte offset of that literal against
+   `api.allorigins.win`, the exact ternary `? [(x) => \`${base}/functions/v1/news-relay`, and a
+   `relayable = (u) => /^https:\/\/news\.google\.com` binding. When #R533 generalised the single
+   hard-coded relay into the OWN_RELAYS table — because the Companies tab's share prices needed the
+   same treatment, and a second caller is evidence that the first was never a special case — every
+   one of those four went red WITHOUT ANY GUARANTEE CHANGING.
+   #R488's lesson: pin the fact, not the characters. What #R216 actually bought is three facts, and
+   they are what is asserted now. */
 test('① proxy-fetch offers the Supabase relay FIRST, and reads SUPABASE_URL at call time', () => {
   const s = read('js/proxy-fetch.js');
-  assert.match(s, /news-relay\?u=/, 'the Edge Function relay is not wired in');
-  /* it must be built inside a function — a base captured when the module is evaluated would be ''
-     for the whole session, because src/vendor.js may not have run yet */
+
+  /* (a) the list is built INSIDE a function — a base captured when the module is evaluated would
+     be '' for the whole session, because src/vendor.js may not have run yet */
   assert.match(s, /const\s+proxiesFor\s*=\s*\(\s*u\s*\)\s*=>/, 'the proxy list is not computed per call');
-  const first = s.indexOf('news-relay?u='), pub = s.indexOf('api.allorigins.win');
-  assert.ok(first > 0 && pub > 0, 'both entries must exist');
-  assert.match(s, /\?\s*\[\s*\(x\)\s*=>\s*`\$\{base\}\/functions\/v1\/news-relay/, 'the relay is not the head of the list');
-  /* and it is only offered for the URLs the function will actually answer */
-  assert.match(s, /relayable\s*=\s*\(u\)\s*=>\s*\/\^https:\\\/\\\/news\\\.google\\\.com/, 'the relay is offered for URLs it does not serve');
+  assert.match(s, /const\s+supaBase\s*=\s*\(\)\s*=>[\s\S]{0,120}window\.SUPABASE_URL/,
+    'SUPABASE_URL must be read at call time, not at module evaluation');
+
+  /* (b) our own Edge Functions are offered BEFORE the public relays */
+  assert.match(s, /return \[\.\.\.mine\.map\([\s\S]{0,160}?\), \.\.\.PUBLIC_PROXIES\];/,
+    'our own relays must be the head of the list, not a tail behind the public ones');
+  assert.match(s, /\$\{base\}\/functions\/v1\/\$\{r\.fn\}\?u=/,
+    'the relay URL is built from the table entry against the runtime base');
+
+  /* (c) …and each is offered only for the URLs its own allow-list will answer. Read out of the
+     table and EVALUATED against a real URL, rather than matched as text. */
+  const tbl = /const OWN_RELAYS = \[([\s\S]*?)\n {2}\];/.exec(s);
+  assert.ok(tbl, 'js/proxy-fetch.js must publish the table of our own relays');
+  const rows = [...tbl[1].matchAll(/fn: '([a-z-]+)',\s*test: \(u\) => (\/[^\n]*?\/)\.test\(u\)/g)]
+    .map(([, fn, re]) => ({ fn, re: new RegExp(re.slice(1, -1)) }));
+  assert.ok(rows.length, 'the table has entries');
+  const news = rows.find((r) => r.fn === 'news-relay');
+  assert.ok(news, 'the Google News relay is still wired in');
+  assert.ok(news.re.test('https://news.google.com/rss/search?q=x'),
+    'news-relay is offered for the feed URLs it serves');
+  assert.ok(!news.re.test('https://example.com/rss/search?q=x'),
+    'news-relay is NOT offered for URLs it would refuse');
 });
 
 test('① the news-relay function is an allow-list, and refuses a non-feed body', () => {

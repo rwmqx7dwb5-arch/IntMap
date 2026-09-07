@@ -68,15 +68,28 @@ export const fetchViaProxy = (() => {
     (u) => `https://proxy.corsfix.com/?${u}`,
     (u) => `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,
   ];
-  /* the relay only forwards news.google.com/rss/… (it is an allow-list, not an open proxy), so it
-     is offered only for the URLs it will actually answer */
-  const relayable = (u) => /^https:\/\/news\.google\.com\/rss\//.test(String(u || ''));
+  /* (#R533) OUR OWN RELAYS, AND THE URLS EACH ONE WILL ACTUALLY ANSWER.
+     Every one of these is an allow-list on its own side rather than an open proxy, so offering one
+     a URL it will refuse only spends a round trip to earn a 400. This table is therefore the
+     browser-side half of a rule the function already enforces — keep the two in step.
+
+     ⚠ IT IS A TABLE BECAUSE IT STOPPED BEING ONE CASE. It was written as a single `relayable()`
+     regex for news.google.com, and when the Companies tab needed the same treatment for its share
+     prices the shape of the mistake was to give that tab its own private proxy ladder instead
+     (js/companies.js, removed in #R533: three entries, no deadline, no race, and both of its
+     public relays down at once on the live site). A second caller is not a special case; it is the
+     evidence that the first one was never one either. */
+  const OWN_RELAYS = [
+    { fn: 'news-relay',   test: (u) => /^https:\/\/news\.google\.com\/rss\//.test(u) },
+    { fn: 'quotes-relay', test: (u) => /^https:\/\/query[12]\.finance\.yahoo\.com\/v8\/finance\/(?:spark\?|chart\/)/.test(u) },
+  ];
   const supaBase = () => { try { return String(window.SUPABASE_URL || '').replace(/\/$/, ''); } catch (_) { return ''; } };
   const proxiesFor = (u) => {
     const base = supaBase();
-    return (base && relayable(u))
-      ? [(x) => `${base}/functions/v1/news-relay?u=${encodeURIComponent(x)}`, ...PUBLIC_PROXIES]
-      : PUBLIC_PROXIES;
+    if (!base) return PUBLIC_PROXIES;
+    const mine = OWN_RELAYS.filter((r) => r.test(String(u || '')));
+    if (!mine.length) return PUBLIC_PROXIES;
+    return [...mine.map((r) => (x) => `${base}/functions/v1/${r.fn}?u=${encodeURIComponent(x)}`), ...PUBLIC_PROXIES];
   };
   /* ══ ⚠⚠⚠ (#R464) GDELT HAS ITS OWN RELAY, AND IT IS NOT IN THE RACE ABOVE ═══════════════════════
      news-relay can ride inside `race()` because Google News answers in ~700 ms, comfortably inside

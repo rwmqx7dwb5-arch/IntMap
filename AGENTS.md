@@ -188,9 +188,9 @@ supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac --use-api
 経過時間ではなく `supabase functions list` の `version` / `updated_at` で見る。**実測と理由は
 [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9。
 
-**Edge Functions は 14 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
-`delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `refresh-news` /
-`routing-relay` / `sv-cov` / `volcano-feed`）。14 本すべてが
+**Edge Functions は 15 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+`delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
+`refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed`）。15 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 ⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・

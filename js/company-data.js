@@ -166,6 +166,28 @@ window.IntMapModules.companyData = function (HOST) {
     const get = (id) => _byId.get(id) || null;
     const byTicker = (tk) => _byTicker.get(String(tk || '').toUpperCase()) || null;
 
+    /* (#R533) THE COMPANY'S LOGO, or '' — the one lookup for every surface that draws one.
+     *
+     * `lg` is written by scripts/companies/build.mjs from Wikidata P154 and points at Wikimedia
+     * Commons. It is RESOLVED AT BUILD TIME and shipped in the index, which is the whole point:
+     * drawing a logo costs one request to Commons for the image, and tells nobody which company
+     * the reader is looking at.
+     *
+     * ⚠ WHY THIS FUNCTION EXISTS RATHER THAN `.lg` AT THE CALL SITES. The Companies list is keyed
+     * by TICKER and the company atlas is keyed by ID, and the curated list holds a few names the
+     * index does not (measured: 186 of its 190 tickers are in the index). A caller that reaches
+     * for `.lg` itself has to know both of those things; this one does, once. Domain is the last
+     * join because two companies never share one, and the curated table carries it for every row.
+     */
+    function logoFor(key, domain) {
+      const row = resolve(key);
+      if (row && row.lg) return row.lg;
+      const d = String(domain || '').trim().toLowerCase();
+      if (!d || !_index) return '';
+      const hit = _index.companies.find((c) => String(c.dom || '').toLowerCase() === d);
+      return (hit && hit.lg) || '';
+    }
+
     /* Resolve whatever the caller has — an id, a ticker, or a company name — to
        an index row. Used by the existing Companies list, whose rows are keyed by
        ticker, and by Atlas, which has only a name. */
@@ -298,7 +320,7 @@ window.IntMapModules.companyData = function (HOST) {
     }
 
     return {
-      index, indexReady, get, byTicker, resolve, search,
+      index, indexReady, get, byTicker, resolve, search, logoFor,
       profile, profileReady,
       facilityGeoJSON, facilityBounds, groupOf, GROUPS,
       typeLabel, groupLabel, kindLabel, statusLabel, groupColor,

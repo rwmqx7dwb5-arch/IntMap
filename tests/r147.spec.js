@@ -65,11 +65,19 @@ test('#11/#6 Atlas go button is white and feature on/off renders the standard sw
 });
 
 // ---- #3 Companies logo cache (no flicker) --------------------------------
-test('#3 Companies logos are cached — a re-render never restarts the clearbit ladder', async () => {
+// ⚠ (#R533) THIS TEST NAMED A HOST, AND THE HOST WENT AWAY. It counted rows still at step 0 with
+// `clearbit` in the src — so when #R533 deleted that rung the count became 0 by construction and the
+// assertion went on passing while measuring nothing. That is #R488's failure exactly: a check that
+// fixes a SPELLING keeps its colour after the thing it guarded is gone.
+// The invariant #R147 actually bought is spelling-free and is what is asserted now: once a row's
+// logo has resolved, a re-render emits the RESOLVED result — no row goes back to step 0 to start
+// the ladder again. It reads dataset.step, which is the code's own word for "not resolved yet",
+// and never mentions who is at the other end of it.
+test('#3 Companies logos are cached — a re-render never restarts the logo ladder', async () => {
   const r = await page.evaluate(() => {
     document.getElementById('btn-info').click();
-    // Deterministically drive every logo through its Clearbit→favicon→monogram ladder to the terminal
-    // (cached) state — dispatching the error synchronously avoids depending on hermetic network timing.
+    // Deterministically drive every logo through its ladder to the terminal (cached) state —
+    // dispatching the error synchronously avoids depending on hermetic network timing.
     for (let k = 0; k < 4 && document.querySelectorAll('.co-logo').length; k++) {
       document.querySelectorAll('.co-logo').forEach((img) => img.dispatchEvent(new Event('error')));
     }
@@ -80,13 +88,21 @@ test('#3 Companies logos are cached — a re-render never restarts the clearbit 
     const logos = [...document.querySelectorAll('.co-logo')];
     return {
       resolvedMonos,
-      step0clearbit: logos.filter((i) => i.dataset.step === '0' && /clearbit/.test(i.src || '')).length,
+      // rows that came back UNRESOLVED after the re-render — i.e. the ladder started over
+      restarted: logos.filter((i) => i.dataset.step === '0').length,
+      logosAfterRerender: logos.length,
       monosAfterRerender: document.querySelectorAll('.co-mono').length,
     };
   });
   expect(r.resolvedMonos).toBeGreaterThan(0);          // the ladder settled
-  // the resolved result comes straight from cache on re-render → zero rows re-request the failed Clearbit url
-  expect(r.step0clearbit).toBe(0);
+  // ⚠ THE LOAD-BEARING ASSERTION IS THIS ONE. With the network hermetic every row settles to a
+  // monogram, so «no row is at step 0» would be true simply because no <img> survives — the same
+  // vacuum the old clearbit count fell into. What distinguishes a working cache from a broken one
+  // here is that the re-render emits NO <img> AT ALL: it draws the resolved monogram straight from
+  // _coLogoCache instead of re-emitting an image to walk the ladder again. Break the cache and
+  // this is a row count, not zero.
+  expect(r.logosAfterRerender).toBe(0);
+  expect(r.restarted).toBe(0);
   expect(r.monosAfterRerender).toBeGreaterThan(0);     // cached monograms emitted directly (no flicker)
 });
 

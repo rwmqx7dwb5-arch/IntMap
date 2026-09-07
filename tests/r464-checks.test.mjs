@@ -223,8 +223,25 @@ test('R464 ⑧: gdelt-relay is not one of the raced proxies', () => {
   assert.ok(proxiesFor, 'proxiesFor must still exist');
   assert.ok(!proxiesFor[1].includes('gdelt-relay'),
     'gdelt-relay must be tried on its own clock, ahead of the ladder, not inside it');
-  /* …and news-relay must still be in there: Google News answers in ~700 ms and racing it is right */
-  assert.match(src, /news-relay\?u=/, 'news-relay stays inside the race it has always been in');
+  /* …and news-relay must still be in there: Google News answers in ~700 ms and racing it is right.
+     ⚠ (#R533) THIS LINE USED TO BE `assert.match(src, /news-relay\?u=/)`, WHICH IS A SPELLING.
+     `proxiesFor` now builds every one of our relays from an OWN_RELAYS table — the generalisation
+     the Companies tab's share prices forced — so the literal became `${base}/functions/v1/${r.fn}`
+     and this went red while the guarantee stood untouched. Third time in this round (see
+     tests/r216-checks ① and tests/r452-checks ④), so it is worth saying plainly: what belongs in
+     an assertion is the fact, and the fact here is that a Google News URL is offered to a relay of
+     ours inside the raced list. */
+  const tbl = /const OWN_RELAYS = \[([\s\S]*?)\n {2}\];/.exec(src);
+  assert.ok(tbl, 'proxy-fetch must publish the table of our own relays');
+  const rows = [...tbl[1].matchAll(/fn: '([a-z-]+)',\s*test: \(u\) => (\/[^\n]*?\/)\.test\(u\)/g)]
+    .map(([, fn, re]) => ({ fn, re: new RegExp(re.slice(1, -1)) }));
+  const news = rows.find((r) => r.fn === 'news-relay');
+  assert.ok(news, 'news-relay stays inside the race it has always been in');
+  assert.ok(news.re.test('https://news.google.com/rss/search?q=x'),
+    'and it is still the relay offered for Google News feed URLs');
+  /* gdelt-relay is NOT in that table — it is tried ahead of the ladder on its own longer clock */
+  assert.ok(!rows.some((r) => r.fn === 'gdelt-relay'),
+    'gdelt-relay must not be in the raced table; it has its own path above');
 });
 
 /* ── ⑨ the relay only remembers what GDELT actually answered ───────────────────────────────────── */

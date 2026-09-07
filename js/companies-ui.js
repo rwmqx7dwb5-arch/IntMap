@@ -328,18 +328,68 @@ window.IntMapModules.companiesUi=function(HOST){
 
   const _coLogoCache=new Map();
 
-  function _coLogoInner(dom,nm,hue){
+  /* (#R533) —— THE LOGO LADDER, AND WHY ITS FIRST RUNG IS GONE ——————————————————
+   *
+   * This used to start at `https://logo.clearbit.com/<domain>`. Clearbit's free Logo API was
+   * deprecated on 2025-03-18 and SHUT DOWN on 2025-12-08, and the host is now gone from DNS
+   * outright — measured 2026-09-07 against 8.8.8.8, 1.1.1.1 and 9.9.9.9, all three returning the
+   * clearbit.com SOA and no A and no CNAME for `logo.`. On the live site that was 189 guaranteed
+   * `ERR_NAME_NOT_RESOLVED` failures, one per company, every time this tab was opened.
+   *
+   * ⚠ THE FIX WAS NOT «FIND ANOTHER LOGO HOST». The correct, licensed logo for these companies
+   * was ALREADY IN THIS REPOSITORY and had been for as long as the company atlas has existed:
+   * scripts/companies/build.mjs resolves Wikidata P154 to a Wikimedia Commons file at build time
+   * and js/company-panel.js has always drawn it (measured: 435 of 533 profiles carry one). The
+   * list could not see it only because it lived in profiles/<id>.json, which is fetched when a
+   * company is OPENED. #R533 puts it in the index too (`lg`), so the answer this project already
+   * had reaches the surface that was asking a stranger for it.
+   *
+   * The rungs are now:
+   *   0  Commons, from the shipped index — no third party is told which company is being viewed
+   *   1  Google's favicon service — only for a company Wikidata has no logo for; sends the domain
+   *   —  monogram — no request at all
+   *
+   * ⚠ A ROW WHOSE LOGO IS NOT KNOWN YET DRAWS THE MONOGRAM, NOT A GUESS. The index is lazy
+   * (`IntMapLazy.need('companyData')`), so the first paint usually has no logos; _coLogoLoad below
+   * re-renders once it lands. Emitting a speculative URL in the meantime is exactly the mistake
+   * this round is removing — a request that is expected to fail is not a fallback, it is noise.
+   */
+
+  let _coLogoIdxP=null, _coLogoIdx=false;
+  /* Ask for the company index once, then repaint. Failure is not retried in a loop: the monogram
+     is a correct answer, and a broken index must not become a request storm. */
+  function _coLogoLoad(){
+    if(_coLogoIdxP) return;
+    try{
+      _coLogoIdxP=window.IntMapLazy.need('companyData')
+        .then(()=>window.IntMapCompanyData.index())
+        .then(()=>{ _coLogoIdx=true; _coRerenderSoon(); })
+        .catch(()=>{});
+    }catch(_){ _coLogoIdxP=Promise.resolve(); }
+  }
+  /* '' when the index has not landed or holds no logo for this company. */
+  function _coLogoSrc(tk,dom){
+    if(!_coLogoIdx) return '';
+    try{ return window.IntMapCompanyData.logoFor(tk,dom)||''; }catch(_){ return ''; }
+  }
+
+  function _coLogoInner(dom,nm,hue,tk){
     const d=String(dom||''), r=_coLogoCache.get(d);
-    if(r==='mono'){ const ch=(String(nm||'?').trim().slice(0,1)||'?').toUpperCase(); return '<span class="co-mono" style="background:hsl('+hue+',55%,45%)">'+IntMapSafe.html(ch)+'</span>'; }
-    const step=r?'1':'0';   /* a cached url is already resolved → on any later error skip straight to the monogram */
-    const src=r||('https://logo.clearbit.com/'+encodeURIComponent(d));
+    const mono=()=>{ const ch=(String(nm||'?').trim().slice(0,1)||'?').toUpperCase(); return '<span class="co-mono" style="background:hsl('+hue+',55%,45%)">'+IntMapSafe.html(ch)+'</span>'; };
+    if(r==='mono') return mono();
+    _coLogoLoad();
+    /* step 0 = the shipped Commons logo; step 1 = the favicon fallback. A cached url is already
+       resolved → on any later error skip straight to the monogram. */
+    const src=r||_coLogoSrc(tk,d);
+    if(!src) return mono();
+    const step=r?'1':'0';
     return '<img class="co-logo" alt="" data-dom="'+IntMapSafe.html(d)+'" data-name="'+IntMapSafe.html(nm)+'" data-hue="'+hue+'" data-step="'+step+'" src="'+IntMapSafe.html(src)+'">';
   }
 
   function _coWireLogo(img){ if(!img) return;
     img.onload=function(){ try{ if(this.src && this.dataset.dom) _coLogoCache.set(this.dataset.dom,this.src); }catch(_){} };
     img.onerror=function(){ const s=+this.dataset.step||0, dom=this.dataset.dom||'';
-      if(s===0){ this.dataset.step='1'; this.src='https://www.google.com/s2/favicons?domain='+encodeURIComponent(dom)+'&sz=64'; }
+      if(s===0&&dom){ this.dataset.step='1'; this.src='https://www.google.com/s2/favicons?domain='+encodeURIComponent(dom)+'&sz=64'; }
       else { this.onerror=null; try{ if(dom) _coLogoCache.set(dom,'mono'); }catch(_){} const mono=document.createElement('span'); mono.className='co-mono'; mono.textContent=(this.dataset.name||'?').trim().slice(0,1).toUpperCase(); try{ mono.style.background='hsl('+(this.dataset.hue||0)+',55%,45%)'; }catch(_){} this.replaceWith(mono); } };
   }
 
@@ -387,7 +437,7 @@ window.IntMapModules.companiesUi=function(HOST){
       const cn=_coCountry(c.cc), fl=_coFlag(c.cc);
       const sub=_coSec(c.sec)+(cn?(' / '+(fl?fl+' ':'')+cn):'');
       const hue=[...nm].reduce((a,ch)=>a+ch.charCodeAt(0),0)%360;
-      const logo=_coLogoInner(c.dom,nm,hue);   /* (#R147) cached-logo builder — no flicker */
+      const logo=_coLogoInner(c.dom,nm,hue,c.tk);   /* (#R147) cached-logo builder — no flicker; (#R533) ticker joins to the shipped Commons logo */
       html+=`<div class="stat-row co-row${HOST.coCompareSet.has(c.tk)?' compare-on':''}" data-tk="${IntMapSafe.html(c.tk)}" title="${IntMapSafe.html(nm)}">${(window.imShowRank!=='off')?`<span class="stat-rank">${_rankOf.get(c.tk)||'—'}</span>`:''}<span class="stat-flag co-logo-box">${logo}</span><div class="stat-main"><div class="stat-name">${IntMapSafe.html(nm)}</div><div class="stat-sub">${IntMapSafe.html(sub)}</div></div><div class="stat-val">${_coMetric(c,key)}${_coAsOfChip(c,key)}</div></div>`;
     });
     const st0=feed.scrollTop;
@@ -436,7 +486,7 @@ window.IntMapModules.companiesUi=function(HOST){
       [HOST._coL('Headquarters','本社','Hauptsitz','Штаб-квартира','Sede'), (_coFlag(c.cc)?_coFlag(c.cc)+' ':'')+_coCountry(c.cc)] ];
     const site='https://'+c.dom;
     ov.innerHTML=`<div class="co-detail" role="dialog" aria-modal="true"><button class="co-detail-x" type="button" aria-label="${window.IntMapLang.t(HOST.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')}">×</button>`+
-      `<div class="co-detail-head"><span class="co-logo-box co-logo-lg">${_coLogoInner(c.dom,nm,hue)}</span>`+
+      `<div class="co-detail-head"><span class="co-logo-box co-logo-lg">${_coLogoInner(c.dom,nm,hue,c.tk)}</span>`+
       `<div class="co-detail-title"><div class="co-detail-name">${IntMapSafe.html(nm)}</div><div class="co-detail-tk">${IntMapSafe.html(c.tk)}</div></div></div>`+
       `<div class="co-detail-btns"><button class="co-detail-btn${HOST.coCompareSet.has(c.tk)?' on':''}" data-cmp="1" type="button">${HOST.coCompareSet.has(c.tk)?HOST._coL('In comparison','比較中','Im Vergleich','В сравнении','En comparación'):HOST._coL('Compare','比較する','Vergleichen','Сравнить','Comparar')}${HOST.coCompareSet.size?` (${HOST.coCompareSet.size}/8)`:''}</button>`+
       /* (#R354) the door to the company ATLAS — full profile plus every facility this company

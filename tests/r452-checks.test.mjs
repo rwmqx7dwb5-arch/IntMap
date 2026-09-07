@@ -153,8 +153,23 @@ test('R452 ④: Atlas fetches evidence through the app’s ONE relay ladder', ()
   for (const f of ['js/atlas-sources.js', 'js/atlas-deadlines.js']) {
     assert.match(code(f), /fetchViaProxy\(/, `${f} must reach the relays through the one module that clocks them`);
   }
-  /* …and the module it now uses is the one that puts OUR Edge Function first (#R216) */
-  assert.match(read('js/proxy-fetch.js'), /news-relay\?u=/);
+  /* …and the module it now uses is the one that puts OUR Edge Function first (#R216)
+     ⚠ (#R533) THIS LINE USED TO READ `assert.match(…, /news-relay\?u=/)`, AND THAT IS A SPELLING.
+     When #R533 generalised the single hard-coded relay into the OWN_RELAYS table — because a
+     second caller (the Companies tab's share prices) needed the same treatment — the literal
+     `news-relay?u=` became `${r.fn}?u=` and this assertion went red WITHOUT ANYTHING BREAKING.
+     #R488's lesson, one more time: pin the fact, not the characters. The fact #R216 bought is that
+     a URL one of our own relays can serve is offered to that relay BEFORE any public one. */
+  const pf = read('js/proxy-fetch.js');
+  const tbl = /const OWN_RELAYS = \[([\s\S]*?)\n {2}\];/.exec(pf);
+  assert.ok(tbl, 'js/proxy-fetch.js publishes the table of our own relays');
+  const rows = [...tbl[1].matchAll(/fn: '([a-z-]+)',\s*test: \(u\) => (\/[^\n]*?\/)\.test\(u\)/g)]
+    .map(([, fn, re]) => ({ fn, re: new RegExp(re.slice(1, -1)) }));
+  assert.ok(rows.length, 'the table has entries');
+  const news = rows.find((r) => r.re.test('https://news.google.com/rss/search?q=x'));
+  assert.ok(news, 'a Google News RSS URL is still routed through one of our own Edge Functions');
+  assert.match(pf, /return \[\.\.\.mine\.map\([\s\S]*?\), \.\.\.PUBLIC_PROXIES\];/,
+    'and our own relays are tried BEFORE the public ones, not after');
 });
 
 /* ── ⑤ every await between the tool call and the drawing has a deadline ────────────────────────── */
