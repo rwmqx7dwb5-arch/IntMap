@@ -102,6 +102,13 @@ const HALVES = [
          in ci.yml) because a `check:*` script with no caller is what #R381 found had let
          data/wars.json say anything for fifteen rounds. */
       ['node', ['scripts/build-hist-borders.mjs', '--check']],
+      /* (#R538) the FOURTH gate here that reads shipped bytes. The language layer had none, and
+         the failure it needed one for was silent by construction: names the old hand table did
+         not recognise were dropped rather than reported, so the country took the next language
+         down and every test stayed green. This one asks whether `top` IS the largest measured
+         share, whether a country without one says so, whether every Glottocode resolves, and
+         whether every row of the resolution ledger has a reason written next to it. */
+      ['node', ['scripts/build-language.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

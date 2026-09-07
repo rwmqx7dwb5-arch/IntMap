@@ -3669,7 +3669,6 @@ window.IntMapLang.define('ko', { ui: {
   "PM2.5 air pollution": "PM2.5 대기오염",
   "Polar — warmest month < 10 °C": "한대 — 최난월 10 °C 미만",
   "Polynesia": "폴리네시아",
-  "Primary language": "주요 언어",
   "Projected coastline change if sea level rises by the chosen amount — areas below that height flood.": "선택한 해수면 상승 시 예상되는 해안선 변화 — 그 높이 아래 지역이 침수됩니다.",
   "Prosumer quadcopter (~1 kg)": "준전문가용 쿼드콥터(약 1 kg)",
   "Public webcams worldwide, loaded live from OpenStreetMap for the current view — pan/zoom for more. Click a point: YouTube/image/panorama cams play in the popup, others open the operator page.": "전 세계 공개 웹캠을 현재 화면 범위에 맞춰 OpenStreetMap에서 실시간으로 불러옵니다(이동·확대하면 더 불러옵니다). 지점을 누르면 YouTube·이미지·파노라마는 창에서 재생되고, 그 외는 운영자 페이지가 열립니다.",
@@ -3989,6 +3988,23 @@ window.IntMapLang.define('ko', { ui: {
   "Tint raised / lowered ground": "높인 곳·깎은 곳에 색 입히기",
   "Unspecified / no answer": "미상·무응답",
   "year not stated": "연도 미기재",
+  "Most spoken language": "최다 사용 언어",   /* (#R538) */
+  "No share published": "비율 미공표",   /* (#R538) */
+  "The source publishes no shares for this country": "출처가 이 나라의 비율을 공표하지 않습니다",   /* (#R538) */
+  "Named by the source": "출처가 제시한 언어",   /* (#R538) */
+  "Also named, without a share": "그 밖에 제시된 언어(비율 없음)",   /* (#R538) */
+  "Not named by the source": "출처가 명시하지 않은 부분",   /* (#R538) */
+  "official": "공용어",   /* (#R538) */
+  "co-official": "공동 공용어",   /* (#R538) */
+  "de facto official": "사실상의 공용어",   /* (#R538) */
+  "regional official": "지역 공용어",   /* (#R538) */
+  "national": "국어",   /* (#R538) */
+  "lingua franca": "공통어",   /* (#R538) */
+  "working": "실무 언어",   /* (#R538) */
+  "minority": "소수 언어",   /* (#R538) */
+  "Each country is coloured by its most spoken language. Where the source publishes no percentages the country is grey — it is not coloured by whichever language happens to be listed first. Tap a country for the languages the source names and the standing it gives them. Sources: CIA World Factbook (public domain) and Glottolog (CC BY 4.0).": "각 나라는 가장 많이 쓰이는 언어의 색으로 칠합니다. 출처가 비율을 공표하지 않은 나라는 회색입니다 — 맨 앞에 실린 언어로 칠하지 않습니다. 나라를 누르면 출처가 제시한 언어와 그 언어에 부여한 지위가 나옵니다. 출처: CIA World Factbook(퍼블릭 도메인), Glottolog(CC BY 4.0).",   /* (#R538) */
+  ", of which ": ", 그중 ",   /* (#R538) */
+  " without a published share.": "개국은 비율 미공표.",   /* (#R538) */
   "Fula": "풀라어",
   "Cook Islands Māori": "쿡 제도 마오리어",
   "Gilbertese": "키리바시어",

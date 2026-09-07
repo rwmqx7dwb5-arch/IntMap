@@ -1,0 +1,327 @@
+{
+  "//": "THE RESOLUTION LEDGER (#R538). scripts/build-language.mjs resolves the language names the CIA World Factbook prints to Glottocodes by stated rules (see scripts/lib/glottolog.mjs: primary name, alternative name, country, lowest common ancestor, ISO 639-3 macrolanguage, word order, Bantu class prefix, spelling). This file holds the two things a rule cannot decide. 'ignore' lists phrases that are the Factbook declining to name a language, or naming a grouping Glottolog has no single node for — their share is counted as unnamed, never assigned. 'bind' pins a name the rules leave ambiguous to one Glottocode, and every binding must say why. A name in neither the rules nor this file FAILS THE BUILD: the failure this rebuild exists to fix was a language silently going missing, so nothing may go missing silently again. A key is a normalised name, optionally name@ISO2 when the answer differs by country.",
+  "ignore": [
+    "Indian",
+    "Gurage",
+    "Kavango",
+    "Nilo-Saharan",
+    "Liberian English variants",
+    "Melanesian-Polynesian",
+    "Zambezi"
+  ],
+  "ignoreWhy": {
+    "Indian": "«Indian dialects» (Oman) and «Indian languages» (Guyana) name a country of origin, not a language. Glottolog has no such node and picking one of India's 400 languages would be an invention.",
+    "Gurage": "The Factbook's «Gurage» is a cluster whose members sit in TWO different branches of South Ethiopic — Sebat Bet Gurage under Outer South Ethiopic, Silt'e under Harari-East Gurage. There is no single Glottolog node that means it, so its share is counted as unnamed rather than given to one of the four.",
+    "Kavango": "«Kavango languages» (Namibia, 10.4%) covers Rukwangali, Gciriku, Sambyu and Thimbukushu. Kwangali-Diriku covers two of the four; binding the name to it would claim the source said something it did not.",
+    "Nilo-Saharan": "Glottolog does not recognise Nilo-Saharan as a genealogical unit — it is a proposal, not a family in this catalogue. Uganda's «Nilo-Saharan languages» therefore has no node to point at.",
+    "Liberian English variants": "Glottolog carries no languoid for Liberian English; the nearest nodes are Standard English and Liberian Grebo, and neither is what Liberia's census counted.",
+    "Melanesian-Polynesian": "New Caledonia's «33 Melanesian-Polynesian dialects» is a count, not a name.",
+    "Zambezi": "Namibia's «Zambezi languages 4.9%» names the languages of the Zambezi Region — Silozi, Subiya, Yeyi and others across two branches. No single Glottolog node means it, and the alternative-name index reaches Tonga (Zambia), which is not what Namibia counted."
+  },
+  "bind": {
+    "chinese": {
+      "g": "sini1245",
+      "why": "The Factbook writes «Chinese» for the Sinitic languages collectively — where it distinguishes them it names Mandarin, Yue, Wu, Min and Hakka separately in the same sentence. Sinitic is Glottolog's node for that group, and using it is what stops six languages sharing one tag the way they did under «zh»."
+    },
+    "chinese dialects": {
+      "g": "sini1245",
+      "why": "Same phrase as «Chinese», written with the word the Factbook uses for varieties it is not enumerating."
+    },
+    "wu": {
+      "g": "wuch1236",
+      "why": "«Wu» in China's entry is Wu Chinese; the only other candidate, Central Bai, shares the name only as an alternative spelling and their common ancestor is all of Sino-Tibetan."
+    },
+    "minbei": {
+      "g": "minb1244",
+      "why": "The Factbook's «Minbei (Fuzhou)» is the Min Bei group; Glottolog spells it Min Beic."
+    },
+    "bosnian": {
+      "g": "bosn1245",
+      "why": "Glottolog holds Bosnian, Croatian, Montenegrin and Serbian as four standards of one language. The map has always drawn them apart because the source does, and Bosnian Standard is the node for this one."
+    },
+    "montenegrin": {
+      "g": "mont1282",
+      "why": "As Bosnian: Montenegrin Standard is one of the four standards under Serbian-Croatian-Bosnian."
+    },
+    "croatian": {
+      "g": "croa1245",
+      "why": "⚠ WITHOUT THIS THE FOUR STANDARDS COLLAPSE BACK INTO ONE. «Croatian» is an alternative name of the LANGUAGE Serbian-Croatian-Bosnian in Glottolog, and the language tier outranks the dialect tier — so Croatia's 95.2% Croatian and its 1.2% Serbian were adding up to one 96.4% figure. The Factbook separates them and so does the map."
+    },
+    "serbian": {
+      "g": "serb1264",
+      "why": "As Croatian: Serbian Standard is the node, not the language that carries «Serbian» as an alternative name."
+    },
+    "serbo-croatian": {
+      "g": "sout1528",
+      "why": "Where a country's census says «Serbo-Croatian» it means the language rather than one of its four standards, and that is exactly the node Glottolog calls Serbian-Croatian-Bosnian."
+    },
+    "oshiwambo": {
+      "g": "ndon1253",
+      "why": "Namibia's largest entry is «Oshiwambo languages 49.7%» — the Ovambo group, which Glottolog calls Ndonga (R.20) and which contains Kuanyama, Central Wambo and Kwambi-Ndonga. Binding it to Ndonga the single language would give one member the whole group's share."
+    },
+    "hebrew": {
+      "g": "hebr1245",
+      "why": "«Hebrew» in a census of living speakers is Modern Hebrew; the group node Hebrewic also contains Ancient Hebrew, which nobody counted."
+    },
+    "maya": {
+      "g": "maya1287",
+      "why": "Belize and Guatemala both write «Maya languages» for the family rather than for Mopan or Yucatec in particular."
+    },
+    "quechua": {
+      "g": "quec1387",
+      "why": "Peru and Bolivia count «Quechua» as one thing; ISO 639-3 calls it the macrolanguage que and Glottolog's node for the whole is the Quechuan family."
+    },
+    "malay": {
+      "g": "stan1306",
+      "why": "Singapore's and Brunei's «Malay» is the standard language, not one of the regional Malayic varieties that share the name."
+    },
+    "khmer": {
+      "g": "cent1989",
+      "why": "Cambodia's «Khmer» is Central Khmer; Northern Khmer is spoken in Thailand."
+    },
+    "azerbaijani": {
+      "g": "nort2697",
+      "why": "The Factbook's «Azerbaijani» in Azerbaijan is North Azerbaijani; South Azerbaijani is Iran's, and Iran's entry names it differently."
+    },
+    "persian": {
+      "g": "west2369",
+      "why": "«Persian» in Iran and the Gulf states is Western Farsi. Dari, the other member of the Farsic group, is named «Dari» in the entries that mean it."
+    },
+    "farsi": {
+      "g": "west2369",
+      "why": "The same word as «Persian», which the Gulf states and Iran use interchangeably; both name Western Farsi."
+    },
+    "tamazight": {
+      "g": "berb1260",
+      "why": "Algeria, Libya and Tunisia write «Tamazight» for Berber as a whole, and Algeria's own entry lists Kabyle, Shawiya, Mzab and Tuareg as its dialects — so the group, not one of them, is what is being named."
+    },
+    "kikongo": {
+      "g": "kiko1235",
+      "why": "Angola's and the DRC's «Kikongo» is the Kikongo Language Cluster; the two individual candidates are members of it."
+    },
+    "monokutuba": {
+      "g": "kitu1245",
+      "why": "Monokutuba is the Congolese name for Kituba, the Kikongo-based vehicular language of both Congos."
+    },
+    "creole@ht": {
+      "g": "hait1244",
+      "why": "Haiti's creole is Haitian."
+    },
+    "creole@bs": {
+      "g": "baha1260",
+      "why": "The Bahamas' creole is Bahamas Creole English."
+    },
+    "creole@bz": {
+      "g": "beli1260",
+      "why": "Belize's creole is Belize Kriol English."
+    },
+    "french creole@pa": {
+      "g": "sanm1305",
+      "why": "Panama's French creole is San Miguel Creole French, spoken on the Río Bayano."
+    },
+    "french patois@dm": {
+      "g": "less1242",
+      "why": "«French patois» in Dominica is Lesser Antillean French Creole, not French."
+    },
+    "french patois@gd": {
+      "g": "less1242",
+      "why": "As Dominica: Grenada's «French patois» is Lesser Antillean French Creole."
+    },
+    "french patois@vc": {
+      "g": "less1242",
+      "why": "As Dominica: Saint Vincent's «French patois» is Lesser Antillean French Creole."
+    },
+    "antiguan creole@ag": {
+      "g": "anti1245",
+      "why": "Antigua and Barbuda Creole English."
+    },
+    "saint lucian creole@lc": {
+      "g": "sain1246",
+      "why": "Saint Lucian Creole French."
+    },
+    "crioulo@cv": {
+      "g": "kabu1256",
+      "why": "Cabo Verde's Crioulo is Kabuverdianu; the other candidate, Uaçá Creole French, is Brazilian."
+    },
+    "cabo verdian@st": {
+      "g": "kabu1256",
+      "why": "São Tomé's «Cabo Verdian» is Kabuverdianu, spoken by the Cape Verdean community there."
+    },
+    "portuguese-based creole@gw": {
+      "g": "uppe1455",
+      "why": "Guinea-Bissau's Portuguese-based creole is Upper Guinea Crioulo."
+    },
+    "lunguie@st": {
+      "g": "prin1242",
+      "why": "Lung'Ie is the endonym of Principense."
+    },
+    "guarani@py": {
+      "g": "para1311",
+      "why": "Paraguay's Guaraní is Paraguayan Guaraní, an official language with millions of speakers; the other candidates are Bolivian and Mbyá."
+    },
+    "guarani@bo": {
+      "g": "east2555",
+      "why": "Bolivia's Guaraní is Eastern Bolivian Guaraní."
+    },
+    "oromo@et": {
+      "g": "nucl1736",
+      "why": "Ethiopia counts «Oromo» as one language; its three Glottolog members all sit under Nuclear Oromo."
+    },
+    "sara@td": {
+      "g": "sarr1246",
+      "why": "Chad's entry says «Sara (in south)», which is the Sar language; Ngambay and Kaba are separate Saraic languages the entry does not name."
+    },
+    "fiote@ao": {
+      "g": "vili1238",
+      "why": "Fiote is the Angolan name for Vili."
+    },
+    "kwanhama@ao": {
+      "g": "kuan1247",
+      "why": "Kwanhama is a spelling of Kuanyama (Oshikwanyama)."
+    },
+    "muhumbi@ao": {
+      "g": "nkhu1238",
+      "why": "Angola's «Muhumbi» is Nkhumbi, of the Nyaneka-Nkhumbi group."
+    },
+    "kingwana@cd": {
+      "g": "cong1236",
+      "why": "The Factbook itself glosses Kingwana as «a dialect of Kiswahili»; Glottolog's node for that variety is Congo Swahili."
+    },
+    "dangme@gh": {
+      "g": "adan1247",
+      "why": "Dangme is Adangme; the other candidate, Ga, is its sister in Ga-Dangme."
+    },
+    "dagarte@gh": {
+      "g": "sout2789",
+      "why": "Ghana's «Dagarte» is Central Dagaare."
+    },
+    "kokomba@gh": {
+      "g": "konk1269",
+      "why": "Kokomba is a spelling of Konkomba."
+    },
+    "akyem@gh": {
+      "g": "akan1250",
+      "why": "Akyem is one of the Akan dialects; Glottolog holds Akan as one language."
+    },
+    "boron@gh": {
+      "g": "abro1238",
+      "why": "Ghana's entry prints «Boron (Brong)». Brong (Bono) is Glottolog's Abron — not the unrelated Boro the spelling rule reaches first."
+    },
+    "maninka@gn": {
+      "g": "east2426",
+      "why": "Guinea's Maninka is Eastern Maninkakan."
+    },
+    "malinke@ml": {
+      "g": "mand1435",
+      "why": "Mali's «Malinke» spans several Maninkakan varieties; Manding is the Glottolog node that contains exactly them."
+    },
+    "tamacheq@ml": {
+      "g": "tuar1240",
+      "why": "Tamacheq is a spelling of Tamasheq, and ISO 639-3 gives the Tuareg node the macrolanguage code tmh."
+    },
+    "tamashek@ne": {
+      "g": "tuar1240",
+      "why": "Tamashek is a spelling of Tamasheq, as Mali’s Tamacheq is; ISO 639-3 gives the Tuareg node the macrolanguage code tmh."
+    },
+    "fufulde@ne": {
+      "g": "fula1264",
+      "why": "Fufulde is a spelling of Fulfulde; ISO 639-3 gives the Fula node the macrolanguage code ful."
+    },
+    "kanuri@ne": {
+      "g": "cent2050",
+      "why": "Niger's Kanuri is Central Kanuri, the largest of the five Kanuri languages and the one ISO calls knc."
+    },
+    "gurmancema@ne": {
+      "g": "gour1243",
+      "why": "Gurmancema is a spelling of Gourmanchéma."
+    },
+    "gurunsi@bf": {
+      "g": "grus1239",
+      "why": "Burkina Faso's «Gurunsi» is the Grusi group."
+    },
+    "dagara@bf": {
+      "g": "daga1276",
+      "why": "Burkina Faso's «Dagara» covers Northern Dagara and Central Dagaare together; Dagaaric is the node that contains them."
+    },
+    "san@bf": {
+      "g": "mand1437",
+      "why": "Burkina Faso's «San» is the Samo people's language — the three Samo varieties sit under Mande Samo. It is not the unrelated San of southern Africa."
+    },
+    "bisa@zm": {
+      "g": "lala1264",
+      "why": "Zambia's Bisa is Lala-Bisa; the West African Bissa and Busa share only the spelling."
+    },
+    "melanesian pidgin@sb": {
+      "g": "piji1239",
+      "why": "Solomon Islands Melanesian Pidgin is Pijin."
+    },
+    "itaukei@fj": {
+      "g": "fiji1243",
+      "why": "iTaukei is the constitutional name for the Fijian language."
+    },
+    "shikomoro@km": {
+      "g": "como1260",
+      "why": "Shikomoro is Comorian, which Glottolog splits into four island languages; Comorian Bantu is the node for all of them, and the Comoros counts them together. The class-prefix rule alone would land on Maore Comorian, which is Mayotte's."
+    },
+    "ezidian@am": {
+      "g": "nort2641",
+      "why": "Armenia's «Ezidian» is the Yazidi community's Kurmanji, i.e. Northern Kurdish."
+    },
+    "bisaya-binisaya@ph": {
+      "g": "bisa1268",
+      "why": "The Philippine census lists «Bisaya/Binisaya» alongside Cebuano, Hiligaynon and Waray, so it is the residual Bisayan category rather than any one of them; Bisayan is the family node."
+    },
+    "castilian spanish@es": {
+      "g": "stan1288",
+      "why": "Castilian Spanish is Spanish; Spain's entry uses the constitutional name."
+    },
+    "bokmal norwegian@no": {
+      "g": "norw1259",
+      "why": "Norwegian Bokmål, one of the two written standards Glottolog holds as dialects of Norwegian."
+    },
+    "nynorsk norwegian@no": {
+      "g": "norw1262",
+      "why": "Norwegian Nynorsk, the other written standard."
+    },
+    "pashaie@af": {
+      "g": "pash1270",
+      "why": "Pashaie is Pashayi, a group of four languages in eastern Afghanistan."
+    },
+    "lhotshamkha@bt": {
+      "g": "nepa1254",
+      "why": "Lhotshamkha is Bhutan's name for the Nepali spoken by the Lhotshampa."
+    },
+    "maithali@np": {
+      "g": "mait1250",
+      "why": "Maithali is a spelling of Maithili."
+    },
+    "nepalbhasha@np": {
+      "g": "newa1247",
+      "why": "Nepal Bhasa is Newar."
+    },
+    "magar dhut@np": {
+      "g": "maga1261",
+      "why": "Magar Dhut is the Magar group; Glottolog writes the name the other way round and holds it as a family of two."
+    },
+    "tamang@np": {
+      "g": "tama1367",
+      "why": "Nepal counts «Tamang» as one language; its three Glottolog members all sit under Tamangic."
+    },
+    "malagasy@mg": {
+      "g": "plat1254",
+      "why": "Madagascar's official Malagasy is Plateau Malagasy; Bara Malagasy is one of the regional varieties the entry does not name."
+    },
+    "panamanian english creole@pa": {
+      "g": "jama1262",
+      "why": "Panama's entry glosses it as «also known as Guari Guari and Colon Creole». Glottolog records Jamaican Creole English as spoken in Panama, and Colón Creole is that language — there is no separate Panamanian node."
+    },
+    "french lingala and monokutuba@cg": {
+      "gs": [
+        "stan1290",
+        "ling1263",
+        "kitu1245"
+      ],
+      "why": "Congo-Brazzaville's entry is missing a comma: it reads «French Lingala and Monokutuba (trade languages)» where it means French, Lingala and Monokutuba (Kituba). Three languages, and no share to divide between them."
+    }
+  }
+}

@@ -268,6 +268,7 @@ window.IntMapRefData=(function(){
     {n:'Annual precipitation, 1981–2010 normal — CHELSA V2.1 bio12 (30 arc-seconds, ~1 km)',u:'https://chelsa-climate.org/'},
     {n:'Annual precipitation by year, 1981–2020 — GPCC Full Data Monthly V2022, Deutscher Wetterdienst (0.5°, gauge analysis over land)',u:'https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/05/'},
     {n:'Religion and language composition by country — CIA World Factbook (US Government work, public domain)',u:'https://www.cia.gov/the-world-factbook/'},
+    {n:'Language identity, genealogical classification and endangerment status — Glottolog (CC BY 4.0)',u:'https://glottolog.org/'},
     {n:'Weather warnings, Canada — Environment and Climate Change Canada (OGC API — Features)',u:'https://api.weather.gc.ca/collections/weather-alerts'},
     {n:'Weather warnings, Europe — MeteoAlarm (EUMETNET), 35 national services',u:'https://feeds.meteoalarm.org/'},
     {n:'Weather warnings, China — China Meteorological Administration public warning list',u:'https://www.nmc.cn/'},

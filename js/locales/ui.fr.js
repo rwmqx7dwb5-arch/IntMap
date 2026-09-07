@@ -3679,7 +3679,6 @@ window.IntMapLang.define('fr', { ui: {
   "PM2.5 air pollution": "Pollution de l’air PM2,5",
   "Polar — warmest month < 10 °C": "Polaire — mois le plus chaud < 10 °C",
   "Polynesia": "Polynésie",
-  "Primary language": "Langue principale",
   "Projected coastline change if sea level rises by the chosen amount — areas below that height flood.": "Évolution prévue du littoral si le niveau de la mer monte du montant choisi — les zones sous cette altitude sont inondées.",
   "Prosumer quadcopter (~1 kg)": "Quadricoptère semi-professionnel (~1 kg)",
   "Public webcams worldwide, loaded live from OpenStreetMap for the current view — pan/zoom for more. Click a point: YouTube/image/panorama cams play in the popup, others open the operator page.": "Webcams publiques du monde entier, chargées en direct depuis OpenStreetMap pour la vue actuelle — déplacez/zoomez pour en charger d’autres. Cliquez sur un point : les caméras YouTube/image/panorama se lisent dans la fenêtre, les autres ouvrent le site de l’exploitant.",
@@ -3999,6 +3998,23 @@ window.IntMapLang.define('fr', { ui: {
   "Tint raised / lowered ground": "Colorer le terrain rehaussé / abaissé",
   "Unspecified / no answer": "Non précisé / sans réponse",
   "year not stated": "année non précisée",
+  "Most spoken language": "Langue la plus parlée",   /* (#R538) */
+  "No share published": "Pourcentage non publié",   /* (#R538) */
+  "The source publishes no shares for this country": "La source ne publie aucun pourcentage pour ce pays",   /* (#R538) */
+  "Named by the source": "Cités par la source",   /* (#R538) */
+  "Also named, without a share": "Également cités, sans pourcentage",   /* (#R538) */
+  "Not named by the source": "Non identifié par la source",   /* (#R538) */
+  "official": "officielle",   /* (#R538) */
+  "co-official": "co-officielle",   /* (#R538) */
+  "de facto official": "officielle de fait",   /* (#R538) */
+  "regional official": "officielle régionale",   /* (#R538) */
+  "national": "nationale",   /* (#R538) */
+  "lingua franca": "langue véhiculaire",   /* (#R538) */
+  "working": "de travail",   /* (#R538) */
+  "minority": "minoritaire",   /* (#R538) */
+  "Each country is coloured by its most spoken language. Where the source publishes no percentages the country is grey — it is not coloured by whichever language happens to be listed first. Tap a country for the languages the source names and the standing it gives them. Sources: CIA World Factbook (public domain) and Glottolog (CC BY 4.0).": "Chaque pays est coloré selon sa langue la plus parlée. Là où la source ne publie aucun pourcentage, le pays reste gris — il n’est pas coloré selon la langue citée en premier. Touchez un pays pour voir les langues citées par la source et le statut qu’elle leur accorde. Sources : CIA World Factbook (domaine public) et Glottolog (CC BY 4.0).",   /* (#R538) */
+  ", of which ": ", dont ",   /* (#R538) */
+  " without a published share.": " sans pourcentage publié.",   /* (#R538) */
   "Fula": "Peul",
   "Cook Islands Māori": "Maori des îles Cook",
   "Gilbertese": "Gilbertin",

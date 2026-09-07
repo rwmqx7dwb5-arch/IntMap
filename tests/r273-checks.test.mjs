@@ -242,7 +242,27 @@ test('R273 ⑨ every × in the app is U+00D7, which Inter actually draws', () =>
 /* ── ⑩ the Serbo-Croatian standards are one hue ────────────────────────────────────────────── */
 test('R273 ⑩ Serbian, Croatian, Bosnian and Montenegrin are near-identical colours', () => {
   const s = codeOnly(read('js/layer-packs.js'));
-  assert.match(s, /const FAM_BCMS=\{ sr:0, cnr:1, bs:2, hr:3, sh:4 \}/, 'the family must be named');
+  /* ⚠ (#R538) THIS USED TO PIN «{ sr:0, cnr:1, bs:2, hr:3, sh:4 }» — five ISO 639-1 tags that no
+     longer exist. Pinning them would have asserted the old model, not the family. The family is a
+     fact in the data, so it is asked of the data: the five members must be real languoids, exactly
+     one of them must be the LANGUAGE, and the other four must be its immediate standards. */
+  const mF = /const FAM_BCMS=\{([^}]*)\}/.exec(s);
+  assert.ok(mF, 'the family must be named');
+  const fam = [...mF[1].matchAll(/([a-z0-9]{4}\d{4})\s*:/g)].map((x) => x[1]);
+  assert.equal(fam.length, 5, 'five members: four standards and the language they are standards of');
+  const T = JSON.parse(read('data/language-tree.json'));
+  const at = new Map(T.g.map((g, i) => [g, i]));
+  for (const g of fam) assert.ok(at.has(g), `${g} must exist in the language tree`);
+  const lang = fam.filter((g) => T.lv[at.get(g)] === T.levels.indexOf('language'));
+  assert.equal(lang.length, 1, 'exactly one member is the language');
+  /* ⚠ NOT «immediate»: Glottolog puts an intermediate node (Eastern Herzegovinian Shtokavian)
+     between the four standards and the language. Descent is the relation that matters — it is what
+     lets the family tree draw them together and the hue say so. */
+  const ancestors = (g) => { const out = []; let i = at.get(g); while (T.p[i] >= 0) { i = T.p[i]; out.push(T.g[i]); } return out; };
+  for (const g of fam) if (g !== lang[0]) {
+    assert.ok(ancestors(g).includes(lang[0]), `${g} must descend from ${lang[0]}`);
+    assert.equal(T.lv[at.get(g)], T.levels.indexOf('dialect'), `${g} must be a standard, not a language of its own`);
+  }
   const m = /const FAM_COL=\[([^\]]*)\]/.exec(s);
   assert.ok(m, 'the family palette must exist');
   const cols = [...m[1].matchAll(/'(#[0-9a-f]{6})'/g)].map((c) => c[1]);

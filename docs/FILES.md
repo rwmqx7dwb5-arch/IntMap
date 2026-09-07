@@ -605,7 +605,9 @@ data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoric
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
-religion.json / language.json     宗教・言語の分布
+religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
+language-tree.json                Glottolog の分類全体（族・言語・国が指す標準／親・カテゴリ・存続状態）
+language-aliases.json             名前解決の台帳——規則で決まらない名前を、理由つきで Glottocode に結ぶ
 osm-space.json / osm-diplo.json   宇宙基地・地上局／外交公館の全球スナップショット
 ocean-currents*.bin.gz / .json    海流の場
 stars.bin / stars.json / deep-sky.json / planets/ / planets.json / moons.json /
@@ -647,6 +649,13 @@ scripts/
   atlas-catalog.mjs               **Atlas の操作カタログのゲート**（`PRODUCT.md` §3.4・ディスパッチャ ⇄ SYS）
   arch-files-check.mjs            Architecture §3 と js/ の突き合わせ
   build-maddison.mjs              `data/maddison.json` を MPD2020 から 1850 まで**延長**する（1900 以降は一字も書き換えない）
+  build-culture.mjs               Factbook の「Religions」欄 → `data/religion.json`
+  build-language.mjs              Factbook の「Languages」欄＋Glottolog → `data/language.json` /
+                                  `data/language-tree.json`（`npm run build:language`・`npm run check:languages`）。
+                                  ⚠ **名前は規則か台帳でしか解決しない**——どちらでもない名前はビルドを落とす
+  lib/factbook.mjs                Factbook の読み取り（国名の対応・節の解析・年）を両方のビルドで1つに
+  lib/glottolog.mjs               Glottolog の languoid 登録簿と、名前 → Glottocode の解決規則
+  lib/cldf.mjs / lib/cldr.mjs     CLDF の取得とキャッシュ／ISO 3166 alpha-3↔2 と CLDR の領域データ
   build-wars.mjs                  `scripts/wars/` の記録 → `data/wars.json`。⚠ **証明できないものは書かない**——
                                   地名・gwcode・戦線が切る国・都市がどちらの側に落ちるかを全部検査する
   build-hist-borders.mjs          OpenHistoricalMap の `admin_level=2` 境界関係 → `data/hist-borders.js`（1850–1885）。

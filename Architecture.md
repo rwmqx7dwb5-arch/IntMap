@@ -1194,11 +1194,25 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   置く（`interpolate` は値について線形）。タイルのサムネイルも同じランプを層から読む（`IntMapWB.rampOf`）。
 - **1分類＝1色。** `js/layer-packs.js` の `paletteOf(n)` は手で選んだ30色を使い切ったあと
   **黄金角 137.508°** で色相を進め、明度・彩度を3通り循環させ、既出の色なら明度をずらして必ず一意にする。
-  実測: 89言語 → **89色・重複0**。`IntMapCulture.palette(n)` / `.colourOf(k,cat)` が公開する。
+  実測: 言語レイヤーは **360 言語（Glottocode）**を持ち、そのうち**どこかの国で最多話者である 69 言語**が
+  凡例の行と色を持つ（＋「割合の公表なし」の1行。実測で重複0）。
+  `IntMapCulture.palette(n)` / `.colourOf(k,cat)` が公開する。
   ⚠ **同じ語族は同じ色相**（`js/layer-packs.js` の `FAM_COL`）。セルビア・クロアチア・ボスニア語などの
   5標準は同一色相の明度差で並び、その色は生成パレットから**予約**して他言語に渡らないようにする
   ——一意なだけでは足りない。**無関係な色は「無関係だ」と主張してしまう。**
   ⚠ **見本が区別できない鍵は鍵ではない**（同じ見本が3行に付くと、その色に付く名前は最初の行のものになる）。
+- **言語レイヤーの分類は Glottocode であって ISO 639-1 タグではない。**
+  `data/language.json` が国ごとの記録（`top`／`pct`／`shareType`／`mix`／`listed`／`roles`／`unnamed`／`y`／`src`）と
+  使っている言語の名前を持ち、`data/language-tree.json` が Glottolog の分類全体（族・言語・国が指す標準、
+  親・ISO 639-3・カテゴリ・存続状態つき）を持つ。**地図と系統樹は 1 つのモデルの 2 つの表示**であり、
+  モデル自身への問い合わせは `IntMapCulture.langName / isoOf / tree / lineage / noShare`。
+  ⚠ **`top` は「最大の実測シェア」であって「最初に列挙された言語」ではない。** 出典が割合を公表していない
+  国（実測 204 か国中 107 か国）は `top:null` で、地図では専用の色（`NO_SHARE`）に塗り、凡例と
+  ポップアップがそう言う。⚠ **系統樹は 726 kB あるので、レイヤーを入れたときにだけ取りに行く。**
+  ⚠ 名前の解決は `scripts/lib/glottolog.mjs` の**明示された規則**（主名・別名・国・最小共通祖先・
+  ISO 639-3 マクロ言語・語順・バントゥ語類接頭辞・綴りの類似）か、`data/language-aliases.json` に
+  **理由を書いた判断**のどちらかでしか行わない。どちらでもない名前は**ビルドを落とす**
+  （ゲート＝`npm run check:languages`）。
 - **長い凡例は `.im-more`（`<details>`）で畳む**（`css/intmap.css`）。
 - **レイヤーを切り替えてもカメラは動かない。例外は `js/layer-home.js` の表だけ**。
   `window.IntMapLayerHome.arrive(<checkbox id>)` が、**データが1つの地域にしか存在しないレイヤー**

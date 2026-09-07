@@ -88,6 +88,14 @@ jobs:
       # what it therefore cannot see.
       - name: 1850-1885 borders (the bundled record is sound, and no year of it is empty)
         run: npm run check:histborders
+      # (#R538) The language layer never had a gate. What it needed one for is what went wrong:
+      # the old build resolved Factbook prose through a hand table of regular expressions and
+      # dropped what it did not recognise, so a country was coloured by the next language down
+      # and 3,136 tests stayed green. This asserts that `top` IS the largest measured share,
+      # that a country with no measured share says so, that every Glottocode resolves in the
+      # tree, and that every ledger row has a written reason. Offline, no build, ~1 s.
+      - name: Language layer (largest share, resolved identity, and a reason for every binding)
+        run: npm run check:languages
       # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
       # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
       # Every previous round fixed test time for that round and the suite grew back, because the

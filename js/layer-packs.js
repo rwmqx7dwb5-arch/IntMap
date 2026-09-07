@@ -953,8 +953,20 @@ window.IntMapModules.religionLang=function(HOST){
        → BCMS gets ONE HUE and separates by lightness alone: the map reads as one area at a glance
        and the key still answers which standard a given shade is. The colours are RESERVED before the
        generated palette runs, so nothing else can be handed the same value. */
-    const FAM_BCMS={ sr:0, cnr:1, bs:2, hr:3, sh:4 };
+    /* (#R538) the four standards are Glottocodes now — serb1264 / mont1282 / bosn1245 / croa1245
+       are the dialect-level nodes Glottolog holds under sout1528, the language they are standards
+       of. The identity changed; the reason for the shared hue did not. */
+    const FAM_BCMS={ serb1264:0, mont1282:1, bosn1245:2, croa1245:3, sout1528:4 };
     const FAM_COL=['#7b2e8e','#8f3fa3','#a453b7','#b96ccb','#cd88dd'];
+    /* ══ ⚠⚠⚠ (#R538) «NO SHARE PUBLISHED» IS A CATEGORY, NOT A GAP ═══════════════════════════════
+       For 107 of 204 countries the Factbook publishes a list of languages and no percentages at
+       all. The old build answered that by calling the FIRST NAME IN THE LIST the country's primary
+       language, so Kenya was «English», Nigeria «English», the DRC «French» — official languages
+       presented as the most spoken ones, on a map whose key says «largest share». Those countries
+       are drawn in their own colour now and say so when tapped. The languages the source does name
+       are still there, under their stated roles. */
+    const NO_SHARE='@no-share';
+    const NO_SHARE_COL='#b8bec6';
     const _palCache={};
     function paletteOf(n){
       n=Math.max(0,n|0);
@@ -978,10 +990,15 @@ window.IntMapModules.religionLang=function(HOST){
        `crp` is not in the CLDR list at all and came back as the raw string «crp».
        These three are named here; everything else stays with the platform, which is right about the
        other seventy-nine. */
+    /* ⚠ (#R538) RE-KEYED TO GLOTTOCODES, NOT RETIRED. The reasons below are still true — the
+       platform still has no name for Gilbertese or Tok Pisin in most of IntMap's languages, and
+       still calls Montenegrin 「セルビア語 (モンテネグロ)」. What changed is the key: ISO 639-1 tags
+       could not tell Mauritian Creole from Haitian, so the categories are Glottocodes now. One
+       entry did retire — `crp` «Creoles & pidgins» was a bucket that existed because the tags could
+       not name the creoles; each of them is its own languoid here, so there is nothing to bucket. */
     const LANG_FIX={
-      sh:LA('Serbo-Croatian','セルビア・クロアチア語','Serbokroatisch','Сербскохорватский','Serbocroata'),
-      cnr:LA('Montenegrin','モンテネグロ語','Montenegrinisch','Черногорский','Montenegrino'),
-      crp:LA('Creoles & pidgins','クレオール語・ピジン語','Kreol- und Pidginsprachen','Креольские и пиджины','Criollos y pidgins'),
+      sout1528:LA('Serbo-Croatian','セルビア・クロアチア語','Serbokroatisch','Сербскохорватский','Serbocroata'),
+      mont1282:LA('Montenegrin','モンテネグロ語','Montenegrinisch','Черногорский','Montenegrino'),
       /* ⚠ (#R268) …AND TWELVE THAT THE BROWSER SIMPLY HAS NO NAME FOR. MEASURED in the running page
          over all 102 codes the data carries: `Intl.DisplayNames` returns the CODE ITSELF for these
          twelve in EVERY one of the app's languages — Chromium ships the «modern» CLDR subset — and
@@ -989,22 +1006,39 @@ window.IntMapModules.religionLang=function(HOST){
          Marshall Islands, Tuvalu, Papua New Guinea, Greenland, Bhutan, the Cook Islands, Niue), so
          the legend and the tap read 「gil」「na」「bi」 for those countries. Named here, so a small
          country's language is a word rather than a code. */
-      ff:LA('Fula','フラ語','Fulfulde','Фула','Fulfulde'),
-      rar:LA('Cook Islands Māori','クック諸島マオリ語','Cookinseln-Maori','Кукский маори','Maorí de las Islas Cook'),
-      gil:LA('Gilbertese','キリバス語','Gilbertesisch','Кирибати','Gilbertés'),
-      niu:LA('Niuean','ニウエ語','Niueanisch','Ниуэ','Niueano'),
-      bi:LA('Bislama','ビスラマ語','Bislama (Vanuatu)','Бислама','bislama (Vanuatu)'),
-      na:LA('Nauruan','ナウル語','Nauruisch','Науруанский','Nauruano'),
-      pau:LA('Palauan','パラオ語','Palauisch','Палауский','Palauano'),
-      mh:LA('Marshallese','マーシャル語','Marshallesisch','Маршалльский','Marshalés'),
-      tvl:LA('Tuvaluan','ツバル語','Tuvaluisch','Тувалу','Tuvaluano'),
-      tpi:LA('Tok Pisin','トク・ピシン語','Neumelanesisch','Ток-писин','tok pisin'),
-      kl:LA('Greenlandic','グリーンランド語','Grönländisch','Гренландский','Groenlandés'),
-      dz:LA('Dzongkha','ゾンカ語','Dzongkha (Bhutan)','Дзонг-кэ','dzongkha'),};
-    const langName=(tag)=>{ if(LANG_FIX[tag]) return LPK.arr(LANG_FIX[tag]);
-      let nm=null;
-      try{ nm=new Intl.DisplayNames([window.IntMapLang.htmlTag(HOST.lang)],{type:'language'}).of(tag); }catch(_){}
-      return (nm&&nm!==tag)?nm:tag; };
+      fula1264:LA('Fula','フラ語','Fulfulde','Фула','Fulfulde'),
+      raro1241:LA('Cook Islands Māori','クック諸島マオリ語','Cookinseln-Maori','Кукский маори','Maorí de las Islas Cook'),
+      gilb1244:LA('Gilbertese','キリバス語','Gilbertesisch','Кирибати','Gilbertés'),
+      niue1239:LA('Niuean','ニウエ語','Niueanisch','Ниуэ','Niueano'),
+      bisl1239:LA('Bislama','ビスラマ語','Bislama (Vanuatu)','Бислама','bislama (Vanuatu)'),
+      naur1243:LA('Nauruan','ナウル語','Nauruisch','Науруанский','Nauruano'),
+      pala1344:LA('Palauan','パラオ語','Palauisch','Палауский','Palauano'),
+      mars1254:LA('Marshallese','マーシャル語','Marshallesisch','Маршалльский','Marshalés'),
+      tuva1244:LA('Tuvaluan','ツバル語','Tuvaluisch','Тувалу','Tuvaluano'),
+      tokp1240:LA('Tok Pisin','トク・ピシン語','Neumelanesisch','Ток-писин','tok pisin'),
+      kala1399:LA('Greenlandic','グリーンランド語','Grönländisch','Гренландский','Groenlandés'),
+      dzon1239:LA('Dzongkha','ゾンカ語','Dzongkha (Bhutan)','Дзонг-кэ','dzongkha'),};
+    /* ══ ⚠⚠⚠ (#R538) A LANGUAGE IS A GLOTTOCODE NOW, AND THREE SOURCES CAN NAME IT ══════════════
+       The categories used to be ISO 639-1 tags, which is why `Intl.DisplayNames` could name them —
+       and why six Sinitic languages had to share one tag to BE nameable. They are Glottocodes now,
+       so the name comes from, in order:
+         1. Glottolog's own name in the reader's language, where it has one (data/language.json
+            ships them only for the codes this map uses, for the nine languages IntMap speaks);
+         2. the platform, asked with the languoid's ISO 639-3 code — this is what keeps «German»,
+            「ドイツ語」 and «Alemán» rather than falling back to English for the common languages;
+         3. Glottolog's English name, which every languoid has.
+       ⚠ AND NOTHING IS MACHINE-TRANSLATED. A language whose name none of the three knows in the
+       reader's language is shown under the name its own catalogue gives it, not under a guess. */
+    const langName=(g)=>{
+      if(LANG_FIX[g]) return LPK.arr(LANG_FIX[g]);
+      const D=DATA.language; if(!D) return g;
+      const ui=(()=>{ try{ return window.IntMapLang.htmlTag(HOST.lang); }catch(_){ return 'en'; } })();
+      const base=(ui||'en').split('-')[0];
+      const loc=(D.loc&&D.loc[g])||null;
+      if(loc){ if(loc[ui]) return loc[ui]; if(loc[base]) return loc[base]; }
+      const iso=(D.iso&&D.iso[g])||'';
+      if(iso){ try{ const nm=new Intl.DisplayNames([ui],{type:'language'}).of(iso); if(nm&&nm!==iso) return nm; }catch(_){} }
+      return (D.names&&D.names[g])||g; };
     /* ══ ⚠⚠⚠ (#R270) THE SHARED FILL IS WHAT KEPT THE KEY SAYING «SERBIAN» ═══════════════════════
        「凡例はまだ単に『セルビア語』のまま」 (confirmed: 色の凡例のこと).
 
@@ -1026,8 +1060,10 @@ window.IntMapModules.religionLang=function(HOST){
         nm:LA('Dominant religion','宗教分布（主流）','Vorherrschende Religion','Преобладающая религия','Religión predominante'),
         label:(k)=>LPK.arr(REL_LBL[k]||REL_LBL.other), col:(k)=>REL_COL[k]||REL_COL.other },
       language:{ file:'data/language.json', ids:['cat-lang-f','cat-lang-l'], src:'cat-lang',
-        nm:LA('Primary language','言語分布（主要）','Vorherrschende Sprache','Основной язык','Idioma principal'),
-        label:(k)=>langName(k), col:null }
+        nm:LA('Most spoken language','言語分布（最多話者）','Meistgesprochene Sprache','Самый распространённый язык','Idioma más hablado'),
+        label:(k)=>(k===NO_SHARE
+          ? LPK('No share published','割合の公表なし','Kein Anteil veröffentlicht','Доля не опубликована','Sin porcentaje publicado')
+          : langName(k)), col:null }
     };
     const state={religion:false,language:false};
     const order={};      /* key -> [category, …] most-led first; decides the colour AND the legend */
@@ -1037,13 +1073,41 @@ window.IntMapModules.religionLang=function(HOST){
       const u=(()=>{ try{ return new URL(C.file,document.baseURI).toString(); }catch(_){ return C.file; } })();
       return fetch(u).then(r=>r.json()).then(j=>{
         DATA[key]=j;
-        const n={}; Object.values(j.countries||{}).forEach(v=>{ n[v.top]=(n[v.top]||0)+1; });
+        /* ⚠ (#R538) A COUNTRY WITH NO PUBLISHED SHARE LEADS NO LANGUAGE. It used to lead whichever
+           one the source happened to print first, which is how «English» came to lead 85 of them.
+           Those countries count towards the no-share category and towards nothing else, so the
+           order — which decides both the colours and the order of the key — is now a ranking of
+           languages that a source actually measured. */
+        const n={}; Object.values(j.countries||{}).forEach(v=>{ if(v.top) n[v.top]=(n[v.top]||0)+1; });
         order[key]=Object.keys(n).sort((a,b)=>(n[b]-n[a])||(a<b?-1:1));
+        if(key==='language') loadTree();
         return j; }).catch(()=>null);
+    }
+    /* ══ (#R538) THE LANGUAGE'S PLACE IN THE WORLD, NOT ONLY ITS SHARE OF A COUNTRY ══════════════
+       data/language-tree.json is Glottolog's whole classification — every family and language, plus
+       the standards a country record points at. It is what makes the map and the family tree two
+       views of ONE model, and the first thing it is used for is the smallest: the popup can say
+       that Serbian is South Slavic is Slavic is Balto-Slavic is Indo-European.
+       ⚠ IT IS FETCHED WHEN THE LAYER IS TURNED ON, NOT AT STARTUP. It is 726 kB, and a reader who
+       never opens the language layer must not pay for it. */
+    let TREE=null,_treePending=false;
+    function loadTree(){ if(TREE||_treePending) return; _treePending=true;
+      const u=(()=>{ try{ return new URL('data/language-tree.json',document.baseURI).toString(); }catch(_){ return 'data/language-tree.json'; } })();
+      fetch(u).then(r=>r.json()).then(t=>{ const at=new Map(t.g.map((g,i)=>[g,i])); TREE={t,at};
+        try{ if(state.language) legend('language'); }catch(_){}
+      }).catch(()=>{ _treePending=false; });
+    }
+    /* root → … → the languoid itself, as [glottocode, name] pairs */
+    function lineageOf(g){ if(!TREE||!TREE.at.has(g)) return [];
+      const {t,at}=TREE; const out=[]; let i=at.get(g);
+      for(let guard=0;guard<64&&i>=0;guard++){ out.unshift([t.g[i],t.n[i]]); i=t.p[i]; }
+      return out;
     }
     /* (#R270) one category, one colour — see the note by LANG_FIX. #R268's family-grouping is gone
        with the shared fill it existed for; a rank in the most-led order IS the colour now. */
     const colOf=(key,cat)=>{ const C=CFG[key]; if(C.col) return C.col(cat);
+      /* (#R538) the countries whose source published no percentages */
+      if(key==='language'&&cat===NO_SHARE) return NO_SHARE_COL;
       /* (#R273) the Serbo-Croatian standards share a hue — see FAM_COL */
       if(key==='language'&&FAM_BCMS[cat]!=null) return FAM_COL[FAM_BCMS[cat]];
       const ord=order[key]||[];
@@ -1052,7 +1116,9 @@ window.IntMapModules.religionLang=function(HOST){
       const pal=paletteOf(ord.length);
       return pal[i]||'#9aa0a6'; };
     function colorExpr(key){ const e=['match',['get','cat']];
-      (order[key]||[]).forEach(cat=>{ e.push(cat,colOf(key,cat)); }); e.push('#9aa0a6'); return e; }
+      (order[key]||[]).forEach(cat=>{ e.push(cat,colOf(key,cat)); });
+      if(key==='language') e.push(NO_SHARE,NO_SHARE_COL);
+      e.push('#9aa0a6'); return e; }
 
     /* ══ (#R268) THE TAP IS A BAR CHART, AND IT CARRIES THE YEAR ══════════════════════════════════
        「宗教分布レイヤーで国をクリックしたときのポップアップに棒グラフを入れろ。また、データの年も
@@ -1069,23 +1135,62 @@ window.IntMapModules.religionLang=function(HOST){
       if(!rec) return '<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>';
       const mix=Object.entries(rec.mix||{}).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
       const top=mix.length?mix[0][1]:0;
+      const isLang0=(key==='language');
+      const ROLE_L={ official:LPK('official','公用語','Amtssprache','официальный','oficial'),
+        'co-official':LPK('co-official','共同公用語','Ko-Amtssprache','со-официальный','cooficial'),
+        'de-facto-official':LPK('de facto official','事実上の公用語','de facto Amtssprache','де-факто официальный','oficial de facto'),
+        'regional-official':LPK('regional official','地域公用語','regionale Amtssprache','региональный официальный','oficial regional'),
+        national:LPK('national','国語','Nationalsprache','национальный','nacional'),
+        'lingua-franca':LPK('lingua franca','共通語','Verkehrssprache','лингва франка','lengua franca'),
+        working:LPK('working','実務言語','Arbeitssprache','рабочий','de trabajo'),
+        minority:LPK('minority','少数言語','Minderheitensprache','миноритарный','minoritario') };
+      const roleTag=(g)=>{ const rs=(isLang0&&rec.roles&&rec.roles[g])||null; if(!rs||!rs.length) return '';
+        return '<span style="font-size:9.5px;color:var(--text-muted);border:1px solid currentColor;border-radius:999px;padding:0 4px;margin-left:4px;opacity:.75;">'
+          +esc(rs.map(r=>ROLE_L[r]||r).join(' · '))+'</span>'; };
       const rows=mix.map(([k,v])=>{
         const w=top>0?Math.max(1.5,v/top*100):0;
         return '<div style="font-size:11.5px;padding:2px 0;">'
           +'<div style="display:flex;align-items:center;gap:6px;">'
             +'<span style="width:9px;height:9px;border-radius:2px;flex:none;background:'+esc(colOf(key,k))+';"></span>'
-            +'<span style="flex:1;">'+esc(C.label(k))+'</span>'
+            +'<span style="flex:1;">'+esc(C.label(k))+roleTag(k)+'</span>'
             +'<b style="font-variant-numeric:tabular-nums;">'+(Math.round(v*10)/10)+'%</b></div>'
           +'<div style="height:6px;border-radius:3px;background:rgba(128,128,128,0.18);margin:2px 0 0 15px;overflow:hidden;">'
             +'<div style="height:100%;width:'+w.toFixed(1)+'%;background:'+esc(colOf(key,k))+';border-radius:3px;"></div></div>'
           +'</div>'; }).join('');
       const yr=rec.y?('<span style="font-variant-numeric:tabular-nums;">'+esc(String(rec.y))+'</span>')
         :esc(LPK('year not stated','年の記載なし','Jahr nicht angegeben','год не указан','año no indicado'));
+      /* ══ (#R538) WHAT THE SOURCE SAID, SEPARATED FROM WHAT IT MEASURED ═════════════════════════
+         Three things the old popup could not say, because the model had one field for all of them:
+         that a country's languages carry STANDINGS the source states («official», «lingua franca»);
+         that part of a country's composition was never named by the source at all («other 6.6%»);
+         and that for half the world there is no measured share to show. All three are printed. */
+      const isLang=isLang0;
+      const listed=isLang?(rec.listed||[]).filter((g,i,a)=>a.indexOf(g)===i&&!(rec.mix&&rec.mix[g]>0)):[];
+      const listRows=listed.length?('<div style="margin-top:6px;font-size:11.5px;">'
+        +'<div style="color:var(--text-muted);font-size:10.5px;margin-bottom:2px;">'
+        +esc(mix.length?LPK('Also named, without a share','ほかに挙げられている言語（割合なし）','Ebenfalls genannt, ohne Anteil','Также названы, без доли','También citados, sin porcentaje')
+                       :LPK('Named by the source','出典が挙げている言語','Von der Quelle genannt','Названы источником','Citados por la fuente'))+'</div>'
+        +listed.map(g=>'<div style="display:flex;align-items:center;gap:6px;padding:1px 0;">'
+          +'<span style="width:9px;height:9px;border-radius:2px;flex:none;background:'+esc(colOf(key,g))+';opacity:.55;"></span>'
+          +'<span>'+esc(C.label(g))+'</span>'+roleTag(g)+'</div>').join('')+'</div>'):'';
+      const unnamed=(isLang&&rec.unnamed>0)?('<div style="margin-top:4px;font-size:10.5px;color:var(--text-muted);">'
+        +esc(LPK('Not named by the source','出典が名指していない分','Von der Quelle nicht benannt','Не названо источником','No identificado por la fuente'))
+        +': <b style="font-variant-numeric:tabular-nums;">'+(Math.round(rec.unnamed*10)/10)+'%</b></div>'):'';
+      /* the genealogical path of the country's leading language, root first */
+      const path=(isLang&&rec.top)?lineageOf(rec.top):[];
+      const lineage=path.length>1?('<div style="margin-top:6px;font-size:10.5px;color:var(--text-muted);line-height:1.6;">'
+        +path.slice(0,-1).map(([,nm])=>esc(nm)).join(' <span style="opacity:.5;">›</span> ')
+        +' <span style="opacity:.5;">›</span> <b style="color:var(--text-main);">'+esc(path[path.length-1][1])+'</b></div>'):'';
+      const head=(isLang&&!rec.top)
+        ? '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'
+          +esc(LPK('The source publishes no shares for this country','この国について出典は割合を公表していない','Die Quelle veröffentlicht für dieses Land keine Anteile','Источник не публикует доли для этой страны','La fuente no publica porcentajes para este país'))+'</div>'
+        : '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+esc(LPK.arr(C.nm))+': <b style="color:var(--text-main);">'+esc(C.label(rec.top))+'</b>'
+          +(rec.pct!=null?(' '+(Math.round(rec.pct*10)/10)+'%'):'')+roleTag(rec.top)+'</div>';
       return '<div style="font-weight:700;font-size:13px;color:var(--text-main);">'+esc(nm)+'</div>'
-        +'<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">'+esc(LPK.arr(C.nm))+': <b style="color:var(--text-main);">'+esc(C.label(rec.top))+'</b>'
-        +(rec.pct!=null?(' '+(Math.round(rec.pct*10)/10)+'%'):'')+'</div>'
+        +head+lineage
         +'<div style="font-size:10.5px;color:var(--text-muted);margin-top:1px;">'+esc(LPK('Data year','データの年','Datenjahr','Год данных','Año de los datos'))+': '+yr+'</div>'
         +(rows?('<div style="margin-top:6px;">'+rows+'</div>'):'')
+        +listRows+unnamed
         +'<details class="im-more"><summary>'+esc(LPK('Source text','出典の原文','Quelltext','Текст источника','Texto de la fuente'))+'</summary>'
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.5;">'+esc(rec.src||'')+'</div></details>';
     }
@@ -1097,7 +1202,7 @@ window.IntMapModules.religionLang=function(HOST){
       const cg=(typeof HOST.countryGeo!=='undefined'&&HOST.countryGeo)||window.countryGeo;
       if(!cg||!Array.isArray(cg.features)){ setTimeout(()=>build(key),1200); return; }
       const M=j.countries||{};
-      const feats=cg.features.filter(f=>f.id!=null&&M[f.id]).map(f=>({type:'Feature',geometry:f.geometry,properties:{cat:M[f.id].top,iso:f.id}}));
+      const feats=cg.features.filter(f=>f.id!=null&&M[f.id]).map(f=>({type:'Feature',geometry:f.geometry,properties:{cat:M[f.id].top||(key==='language'?NO_SHARE:null),iso:f.id}}));
       try{
         GE().layers.addSource(C.src,{type:'geojson',data:{type:'FeatureCollection',features:feats}});
         GE().layers.add({id:C.ids[0],type:'fill',source:C.src,layout:{visibility:'none'},paint:{'fill-color':colorExpr(key),'fill-opacity':0.62}},before());
@@ -1123,12 +1228,27 @@ window.IntMapModules.religionLang=function(HOST){
         /* ⚠ the language key can be 85 rows long — that is the point of 「表示言語数も増やして」 —
            so it scrolls inside the legend rather than growing the legend past the screen. */
         k.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;margin-top:6px;font-size:10.5px;color:var(--text-main);max-height:30vh;overflow:auto;';
-        const cats=order[key]||[];
+        /* (#R538) the no-share swatch is LAST, because it is not a language and must not sit among
+           them — but it is IN the key, because a fifth of the map is drawn in it */
+        const cats=(order[key]||[]).concat(key==='language'?[NO_SHARE]:[]);
         k.innerHTML=cats.map(cat=>'<div style="display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:3px;flex:none;background:'
           +esc(colOf(key,cat))+';"></span>'+esc(C.label(cat))+'</div>').join('');
         let n=el.querySelector('.cat-note');
         if(!n){ n=document.createElement('div'); n.className='cat-note'; n.style.cssText='font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:6px;'; el.appendChild(n); }
         const j=DATA[key];
+        if(key==='language'){
+          const cs=Object.values((j&&j.countries)||{});
+          const noShare=cs.filter(r=>!r.top).length;
+          n.textContent=LPK('Each country is coloured by its most spoken language. Where the source publishes no percentages the country is grey — it is not coloured by whichever language happens to be listed first. Tap a country for the languages the source names and the standing it gives them. Sources: CIA World Factbook (public domain) and Glottolog (CC BY 4.0).',
+            '各国は最も話者の多い言語で色分けしています。出典が割合を公表していない国は灰色です——最初に列挙された言語で塗ることはしません。国をタップすると、出典が挙げている言語とその位置づけが出ます。出典: CIA World Factbook（パブリックドメイン）と Glottolog（CC BY 4.0）。',
+            'Jedes Land ist nach seiner meistgesprochenen Sprache eingefärbt. Wo die Quelle keine Anteile veröffentlicht, bleibt das Land grau — es wird nicht nach der zuerst genannten Sprache eingefärbt. Land antippen für die genannten Sprachen und ihren Status. Quellen: CIA World Factbook (gemeinfrei) und Glottolog (CC BY 4.0).',
+            'Каждая страна окрашена по самому распространённому языку. Там, где источник не публикует доли, страна серая — она не окрашивается по первому в списке языку. Нажмите страну, чтобы увидеть названные языки и их статус. Источники: CIA World Factbook (общественное достояние) и Glottolog (CC BY 4.0).',
+            'Cada país se colorea por su idioma más hablado. Donde la fuente no publica porcentajes el país queda en gris: no se colorea por el idioma que aparezca primero. Toque un país para ver los idiomas citados y su condición. Fuentes: CIA World Factbook (dominio público) y Glottolog (CC BY 4.0).')
+            +' '+cs.length+LPK(' countries','か国',' Länder',' стран',' países')
+            +LPK(', of which ',' のうち ',', davon ',', из них ',', de los cuales ')+noShare
+            +LPK(' without a published share.',' か国は割合の公表なし。',' ohne veröffentlichten Anteil.',' без опубликованной доли.',' sin porcentaje publicado.');
+          return;
+        }
         n.textContent=LPK('Each country is coloured by the group with the largest share; tap a country for the full composition. Source: CIA World Factbook (public domain).',
           '各国は最大シェアのグループで色分けしています。国をタップすると内訳が出ます。出典: CIA World Factbook（パブリックドメイン）。',
           'Jedes Land ist nach der größten Gruppe eingefärbt; Land antippen für die volle Zusammensetzung. Quelle: CIA World Factbook (gemeinfrei).',
@@ -1162,7 +1282,19 @@ window.IntMapModules.religionLang=function(HOST){
          swatch» is a thing a test can assert rather than a thing a comment claims */
       colourOf:(k,cat)=>colOf(k,cat), palette:(n)=>paletteOf(n).slice(),
       /* (#R273) the Serbo-Croatian standards and the one hue they share */
-      family:()=>Object.keys(FAM_BCMS).slice(), familyColours:()=>FAM_COL.slice() };
+      family:()=>Object.keys(FAM_BCMS).slice(), familyColours:()=>FAM_COL.slice(),
+      /* ══ (#R538) THE LANGUAGE MODEL ITSELF, NOT THE PAINT ═══════════════════════════════════
+         Everything above answers «what colour is this country». These answer «what IS this
+         language» — its name in the reader's language, its ISO 639-3 code, and its path from the
+         root of its family. Atlas and the tests ask the MODEL rather than reverse-engineering a
+         paint expression, which is what lets the map and the family tree be two views of one thing.
+         `noShare` is the category a country with no published percentage is drawn in; it is not a
+         language, and code that treats it as one is wrong. */
+      langName:(g)=>langName(g),
+      isoOf:(g)=>((DATA.language&&DATA.language.iso&&DATA.language.iso[g])||null),
+      tree:()=>(TREE?TREE.t:null), treeReady:()=>{ loadTree(); return !!TREE; },
+      lineage:(g)=>lineageOf(g).map(([code,nm])=>({ g:code, name:nm })),
+      noShare:()=>NO_SHARE };
   })();
 };
 

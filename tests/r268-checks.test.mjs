@@ -179,15 +179,33 @@ test('R268 ⑦ the two-epoch rasters can be switched too', () => {
 
 /* ── ⑧ religion / language ─────────────────────────────────────────────────────────────────── */
 test('R268 ⑧ the ex-Yugoslav standards are separate names with one fill', () => {
-  const L = json('data/language.json');
-  assert.equal(L.countries.SRB.top, 'sr', 'Serbia leads in Serbian');
-  assert.equal(L.countries.HRV.top, 'hr', 'Croatia leads in Croatian');
-  assert.equal(L.countries.BIH.top, 'bs', 'Bosnia leads in Bosnian');
-  assert.ok(L.countries.MNE.mix.cnr > 0, 'Montenegrin must appear in Montenegro');
-  /* `sh` survives ONLY where the source itself says Serbo-Croat */
+  const L = json('data/language.json'), T = json('data/language-tree.json');
+  /* ⚠ (#R538) THIS USED TO PIN THE ISO TAGS sr / hr / bs / cnr / sh, AND THE TAGS ARE GONE — the
+     categories are Glottocodes now, because ISO 639-1 could not tell Mauritian Creole from Haitian.
+     Pinning the spelling would only have asserted that the old model was still there. What #R268
+     was ABOUT is a property, and the property is checked instead: the three countries lead in three
+     DIFFERENT standards, and those standards are siblings under the one language Glottolog holds
+     them as standards of — which is the fact the family tree and the shared hue both rest on.
+     ⚠ It caught a real regression the day it was rewritten: with the ledger unwritten, «Croatian»
+     and «Serbian» both resolved to that parent LANGUAGE, and Croatia's 95.2% Croatian and 1.2%
+     Serbian silently added up to one 96.4% figure. */
+  const at = new Map(T.g.map((g, i) => [g, i]));
+  const ancestors = (g) => { const out = []; let i = at.get(g); while (T.p[i] >= 0) { i = T.p[i]; out.push(T.g[i]); } return out; };
+  /* the nearest ancestor Glottolog calls a LANGUAGE — the four standards are dialects of it, with
+     one intermediate node (Eastern Herzegovinian Shtokavian) in between */
+  const langOf = (g) => ancestors(g).find((a) => T.lv[at.get(a)] === T.levels.indexOf('language')) || null;
+  const lead = ['SRB', 'HRV', 'BIH'].map((k) => L.countries[k].top);
+  for (const g of lead) assert.ok(at.has(g), `${g} must exist in the language tree`);
+  assert.equal(new Set(lead).size, 3, 'Serbia, Croatia and Bosnia must lead in three different standards');
+  const joint = langOf(lead[0]);
+  assert.ok(joint, 'the standards must descend from the language they are standards of');
+  for (const g of lead) assert.equal(langOf(g), joint, `${g} must be a standard of ${joint}`);
+  const cnr = Object.keys(L.countries.MNE.mix).find((g) => !lead.includes(g) && g !== joint && langOf(g) === joint);
+  assert.ok(cnr, 'Montenegrin must appear in Montenegro as a fourth standard of the same language');
+  /* the joint language itself survives ONLY where the source says Serbo-Croat */
   for (const [iso, rec] of Object.entries(L.countries)) {
-    if (!(rec.mix || {}).sh) continue;
-    assert.match(rec.src, /Serbo[- ]?Croat/i, `${iso} is bucketed as sh without the source saying so`);
+    if (!(rec.mix || {})[joint]) continue;
+    assert.match(rec.src, /Serbo[- ]?Croat/i, `${iso} is bucketed as the joint standard without the source saying so`);
   }
   const s = codeOnly(read('js/layer-packs.js'));
   /* ⚠ (#R270) THE ONE FILL IS GONE, AND THAT IS THE SAME INSTRUCTION CARRIED ONE STEP FURTHER.
@@ -198,30 +216,38 @@ test('R268 ⑧ the ex-Yugoslav standards are separate names with one fill', () =
      key. What #R268 is about — the NAMES are separated and nothing merges them again — is checked
      below and unchanged. */
   assert.ok(!/LANG_ONE_COLOUR/.test(s), 'the shared fill must be gone (#R270), not merely unused');
-  /* the platform's own name for `sh` is the risky one this round is about */
-  assert.match(s, /sh:LA\('Serbo-Croatian'/, 'sh must be named Serbo-Croatian, not Serbian (Latin)');
-  assert.match(s, /cnr:LA\('Montenegrin'/, 'cnr must be named Montenegrin');
+  /* the platform's own name for the joint standard is the risky one this round is about */
+  assert.match(s, /[a-z0-9]{8}:LA\('Serbo-Croatian'/, 'the joint standard must be named Serbo-Croatian, not Serbian (Latin)');
+  assert.match(s, /[a-z0-9]{8}:LA\('Montenegrin'/, 'Montenegrin must be named Montenegrin');
 });
 
 test('R268 ⑧ every language code the data carries has a name to show', () => {
   const L = json('data/language.json');
   const s = read('js/layer-packs.js');
-  const fixed = new Set([...s.matchAll(/^\s{6}'?([a-z]{2,3})'?:LA\(/gm)].map((m) => m[1]));
-  /* the twelve Chromium's «modern» CLDR subset leaves unresolved, measured in the running page */
-  for (const c of ['ff', 'rar', 'gil', 'niu', 'bi', 'na', 'pau', 'mh', 'tvl', 'tpi', 'kl', 'dz', 'sh', 'cnr', 'crp']) {
-    assert.ok(fixed.has(c), `language code ${c} has no name in LANG_FIX`);
-  }
+  /* ⚠ (#R538) THE QUESTION IS THE SAME AND THE ANSWER IS NO LONGER A LIST OF TWELVE. Every
+     category used to need a hand-written name because `Intl.DisplayNames` has none for a Pacific
+     language; now the data ships Glottolog's own name for every code it uses, so the check is over
+     ALL of them rather than over a list somebody remembered to extend. */
   const codes = new Set();
-  for (const r of Object.values(L.countries)) { codes.add(r.top); Object.keys(r.mix || {}).forEach((k) => codes.add(k)); }
-  for (const c of ['ff', 'gil', 'na', 'bi', 'pau', 'mh', 'tvl', 'tpi', 'kl', 'dz']) {
-    assert.ok(codes.has(c), `${c} is named but no longer in the data — drop it or keep the data`);
+  for (const r of Object.values(L.countries)) { if (r.top) codes.add(r.top); Object.keys(r.mix || {}).forEach((k) => codes.add(k)); (r.listed || []).forEach((k) => codes.add(k)); }
+  assert.ok(codes.size > 250, `only ${codes.size} languages in the data — the old hand table carried 89`);
+  for (const c of codes) {
+    assert.ok(L.names[c] && L.names[c].length > 1, `language ${c} has no name to show`);
+    assert.match(c, /^[a-z0-9]{4}\d{4}$/, `${c} is not a Glottocode`);
   }
+  /* the hand-written names are still needed and still reachable: each one must name a language the
+     data actually carries, or it is a translation nobody will ever see */
+  const fixed = [...s.matchAll(/^\s{6}([a-z0-9]{4}\d{4}):LA\(/gm)].map((m) => m[1]);
+  assert.ok(fixed.length >= 14, `LANG_FIX names only ${fixed.length} languages`);
+  for (const c of fixed) assert.ok(codes.has(c), `${c} is named by hand but no longer in the data — drop it or keep the data`);
 });
 
 test('R268 ⑧ the composition popup is a bar chart and states the year', () => {
   const s = codeOnly(read('js/layer-packs.js'));
   const i = s.indexOf('function popupHTML(');
-  const body = s.slice(i, i + 3000);
+  /* (#R538) the popup grew — it prints the standing the source gives each language and the share
+     it never names — so the window that reads it grew with it */
+  const body = s.slice(i, i + 8000);
   assert.match(body, /width:'\+w\.toFixed\(1\)\+'%/, 'each row must carry a bar scaled to the largest share');
   assert.match(body, /rec\.y\?/, 'the year must come from the record');
   assert.match(body, /'Data year','データの年'/, 'the year must be labelled');

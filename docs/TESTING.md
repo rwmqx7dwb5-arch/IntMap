@@ -23,6 +23,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **103 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
+`npm run test:checks` runs **295 Node test files** with no browser at all (counted from
 
 > ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
 > `tests/r505-checks.test.mjs` ① は 13 本すべての `supabase/functions/*/index.ts` を

@@ -206,8 +206,9 @@ test('R270 ⑤ each South-Slavic standard has its own colour, so the key can nam
   assert.ok(m, 'colOf() must exist');
   assert.ok(!/group/.test(m[1]), 'a category’s colour must be its own rank, with no family branch');
   /* the names #R268 separated are still separate — this round must not have undone that */
-  assert.match(s, /sh:LA\('Serbo-Croatian'/, 'the joint standard keeps its own name');
-  assert.match(s, /cnr:LA\('Montenegrin'/, 'Montenegrin keeps its own name');
+  /* (#R538) keyed by Glottocode now, not by ISO 639-1 — the NAMES are what this asserts */
+  assert.match(s, /[a-z0-9]{4}\d{4}:LA\('Serbo-Croatian'/, 'the joint standard keeps its own name');
+  assert.match(s, /[a-z0-9]{4}\d{4}:LA\('Montenegrin'/, 'Montenegrin keeps its own name');
 });
 
 /* ── ⑥ the shelves ──────────────────────────────────────────────────────────────────────────── */

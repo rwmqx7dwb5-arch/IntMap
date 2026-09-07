@@ -3896,7 +3896,6 @@ window.IntMapLang.define('zh-hans', {
   "PM2.5 air pollution": "PM2.5 空气污染",
   "Polar — warmest month < 10 °C": "极地 — 最暖月低于 10 °C",
   "Polynesia": "波利尼西亚",
-  "Primary language": "主要语言",
   "Projected coastline change if sea level rises by the chosen amount — areas below that height flood.": "依所选海平面上升幅度推估的海岸线变化 — 低于该高度的地区将被淹没。",
   "Prosumer quadcopter (~1 kg)": "半专业四旋翼机（约 1 公斤）",
   "Public webcams worldwide, loaded live from OpenStreetMap for the current view — pan/zoom for more. Click a point: YouTube/image/panorama cams play in the popup, others open the operator page.": "全球公开网络摄影机，依目前画面范围自 OpenStreetMap 实时加载（平移或缩放可加载更多）。点击一个点：YouTube、影像与全景会在窗口中播放，其余则开启营运者页面。",
@@ -4216,6 +4215,23 @@ window.IntMapLang.define('zh-hans', {
   "Tint raised / lowered ground": "为填高／挖低处着色",
   "Unspecified / no answer": "未说明／未作答",
   "year not stated": "未注明年份",
+  "Most spoken language": "最多人使用的语言",   /* (#R538) */
+  "No share published": "未公布比例",   /* (#R538) */
+  "The source publishes no shares for this country": "出处未公布此国家的比例",   /* (#R538) */
+  "Named by the source": "出处列出的语言",   /* (#R538) */
+  "Also named, without a share": "另有列出，未附比例",   /* (#R538) */
+  "Not named by the source": "出处未指明的部分",   /* (#R538) */
+  "official": "官方语言",   /* (#R538) */
+  "co-official": "共同官方语言",   /* (#R538) */
+  "de facto official": "事实上的官方语言",   /* (#R538) */
+  "regional official": "地区官方语言",   /* (#R538) */
+  "national": "国家语言",   /* (#R538) */
+  "lingua franca": "通用语",   /* (#R538) */
+  "working": "工作语言",   /* (#R538) */
+  "minority": "少数语言",   /* (#R538) */
+  "Each country is coloured by its most spoken language. Where the source publishes no percentages the country is grey — it is not coloured by whichever language happens to be listed first. Tap a country for the languages the source names and the standing it gives them. Sources: CIA World Factbook (public domain) and Glottolog (CC BY 4.0).": "各国以使用人数最多的语言上色；出处未公布比例的国家为灰色——不会以最先列出的语言上色。点击国家可看出处列出的语言及其地位。数据来源：CIA World Factbook（公有领域）与 Glottolog（CC BY 4.0）。",   /* (#R538) */
+  ", of which ": "，其中 ",   /* (#R538) */
+  " without a published share.": " 个未公布比例。",   /* (#R538) */
   "Fula": "富拉语",
   "Cook Islands Māori": "库克群岛毛利语",
   "Gilbertese": "吉尔伯特语",
