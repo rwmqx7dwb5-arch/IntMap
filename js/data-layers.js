@@ -6536,7 +6536,13 @@ window.IntMapModules.dataLayers=function(HOST){
         'cb-poi':['ofm-poi','ofm-poi-dot'],   /* (#R186) shop/facility names — audited like every other label group */
         'cb-borders':['borders-only-line','borders-only-casing'],'cb-countries':['country-fill'],
         'cb-coast':['coast-only-line','coast-only-casing'],   /* (#R289) same source, same race, same heal */
-        'cb-admin1':['ref-admin1'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
+        /* (#R530) the province row paints ONE of two layers depending on the clock — the live vector
+           line at Now, the dated one while travelling (js/time-admin1.js). Both ids are listed because
+           `painted()` asks "is ANY of them on", and a list holding only the modern id would read a
+           correctly-travelling map as «checked but blank» and pulse the box off→on every few seconds.
+           ⚠ Listing both is only safe because this row is one switch in BOTH directions: unchecked
+           hides the era line too, so the hide branch can never fight the time machine. */
+        'cb-admin1':['ref-admin1','imta-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];
       /* (#R85) NEVER FIGHT THE USER. The checked-but-blank heal pulses a layer off→on to force a re-add; the

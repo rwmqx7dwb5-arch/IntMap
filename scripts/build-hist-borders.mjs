@@ -18,7 +18,7 @@
  *  Because there is no other snapshot. The upstream repo's file list was re-read on 2026-09-07:
  *  world_1815 and world_1880 with nothing between them, exactly as the code says. CShapes starts
  *  1886. Euratlas and the MPIDR collection are not redistributable. OpenHistoricalMap is:
- *  ODbL 1.0, and — this is the point — its 19th-century boundary relations carry `start_date` and
+ *  CC0 1.0, and — this is the point — its 19th-century boundary relations carry `start_date` and
  *  `end_date` to the DAY, which is the same shape data/cshapes.js already has, so the day-exact
  *  machinery #R421 built for 1886–2019 extends downward instead of being duplicated.
  *
@@ -257,7 +257,7 @@ async function build({ report } = {}) {
   }
 
   const body = JSON.stringify({ v: 1,
-    src: 'OpenHistoricalMap (openhistoricalmap.org) · ODbL 1.0',
+    src: 'OpenHistoricalMap (openhistoricalmap.org) · CC0 1.0',   /* ⚠ (#R530) CC0, not ODbL. OHM's own /copyright page describes the project as «dedicated to the public domain» and its Overpass API answers «The data is made available under CC0» — both measured 2026-09-07. #R518 shipped ODbL here and in the Sources registry; correcting it was unavoidable this round, because #R530 draws a SECOND dataset from the same source and the page would otherwise have listed one organisation twice under two licences. */
     window: [Y_MIN, Y_MAX], rings, feats });
   writeFileSync(OUT, 'window.__HISTB=' + body + ';\n');
 
@@ -297,7 +297,7 @@ function check() {
   ok(d && Array.isArray(d.rings) && d.rings.length > 0, 'rings missing');
   ok(d && Array.isArray(d.feats) && d.feats.length > 0, 'feats missing');
   ok(d && d.window && d.window[0] === Y_MIN && d.window[1] === Y_MAX, 'window must be [1850,1885]');
-  ok(d && /OpenHistoricalMap/.test(d.src) && /ODbL/.test(d.src), 'src must name OpenHistoricalMap and ODbL');
+  ok(d && /OpenHistoricalMap/.test(d.src) && /CC0/.test(d.src), 'src must name OpenHistoricalMap and CC0');
   if (bad.length) { fail(bad); return; }
   d.rings.forEach((r, i) => {
     if (!Array.isArray(r) || r.length < 3) bad.push('ring ' + i + ' has ' + (r && r.length) + ' points');

@@ -905,6 +905,16 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   ⚠ **クリック／ホバーの一覧に入っている**（地図の上では都市名と見分けがつかないので、答えないラベルは
   壊れた機能である）。4つの一覧（レイヤー別クリック・カーソル・厳密ヒット・パディング付きタップ）は
   `PLACE_LBL` / `ALL_LBL` から**導出**するので、片方だけ更新できない。
+  ⚠ **時間旅行中は隠れ、代わりに<b>その日付の区分名</b>（`imta-lbl`・`js/time-admin1.js`）が出る**（§7.7）。
+  書体・文字色・ハローは `ofm-admin1` と同じ値をこの関数が**まとめて**決める——`imta-lbl` の
+  `text-font` / `text-color` / `text-halo-*` はここが持ち、`text-field` は `js/time-admin1.js`、
+  `visibility` は `window._applyAdmin1()` が持つ（1つの値に持ち主を2つ作らない）。
+  書体は `placeFont()` ではなく **`readerFont()`**——era の地物は `name:*` キーを1つも持たず、
+  名前は既に読み手の言語で焼き込まれている（昔の国名ラベルと同じ理由）。
+- ⚠⚠ **「旅行中か」は `ofm-country` と `ofm-admin1` で<b>別々に</b>訊く。** 国名側は
+  `IntMapTimeBorders.active()`、区分名側は `IntMapTimeAdmin1.active()`。国境は CShapes が 2019 年で
+  終わるので旗はそこで false へ戻るが、区分の記録は現在まで続く——1枚の旗で両方を隠していると、
+  **2020〜2025 年に現代の県名と当時の区分名が同じ点へ二重に出る**。
 - **ポップアップは名前を2つ出す**：「現地名（地図がそう描いた名前）」。`showPopup(…,{title})` は
   **見出しだけ**を差し替え、`name`（コピー・Wikipedia 照会・AI ブリーフ・境界検索が使う識別子）は
   タイルの `name` のまま。2つ目の名前は `applyLabelLang()` が `text-field` を組むのと**同じ**
@@ -979,6 +989,69 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   決める（`top:50%` は位置指定の祖先に解決されるため、包み箱と入力欄の高さが違うとずれる）。
 
 ### 7.7 レイヤー個別の注意
+
+- **地方区分の境界**（`cb-admin1`「州・県境」・既定 ON）— **行は1つだが、描く層は時計で入れ替わる。**
+  現代は `ref-admin1`（OpenFreeMap のベクタタイル `boundary` 層・`admin_level` 3〜4・`js/app-body.js`）、
+  過去は `imta-line`（同梱の日付つき区分・`js/time-admin1.js`）。**規則は国境線とまったく同じ**で、
+  可視性を決めるのは `window._applyAdmin1()` ただ1つ（`window._applyBorders()` の双子）。
+  ⚠ **その関数は `js/app-body.js` ではなく `js/time-admin1.js` にある**——app-shell 6本には合計行数の
+  予算があり（`tests/r168-checks` #8。`r350` ⑨c と `r479` ⑧ が同じ数の写しを持つ）、余白は1行だった。
+  ⚠ **現代の区分「名」`ofm-admin1` の可視性もこの関数が書く。** `applyLabelLang` も書くが、あれは
+  `styledata`・地名表示・言語変更で走り**時計では走らない**ので、任せると Now への復帰で州境だけが
+  先に戻る（実測 0.8〜2.9 秒の差）。同じ2つの入力から同じ規則を書くので持ち主は増えていない。
+
+  | 時計 | `ref-admin1`（現代） | `imta-line`（その日付） | `imta-lbl`（区分名） |
+  |---|---|---|---|
+  | Now（ライブ／今年以降） | `cb-admin1` に従う | 非表示 | 非表示 |
+  | 過去の日付 | **常に非表示** | `cb-admin1` に従う | `cb-names` に従う |
+
+  ⚠ **1つの機能に1つのスイッチ、しかも両方向**——`cb-admin1` を OFF にすると**歴史側の線も消える**。
+  国境側の「旅行中は toggle に関わらず歴史国境を出す」例外は**採らない**（あの例外は旅行中に地図が
+  境界を失わないための保険で、区分を切っても国境線と海岸線は残る）。
+  ⚠ **線は `cb-admin1`、名前は `cb-names`。** 現代側の `ref-admin1`（線）と `ofm-admin1`（名前）の
+  分担そのままで、時間旅行がスイッチの割り当てを切り直さない。
+  ⚠ **チェックボックスの `apply()` は自分で `visibility` を書いた後に `_applyAdmin1()` を呼び戻す**——
+  そうしないと、箱の操作・4回の再表明・`sourcedata` の自己修復が走るたびに、過去の年の上へ
+  現代の区分線が戻ってくる。
+  ⚠ **レイヤー監査表は両方の id を持つ**（`js/data-layers.js` の `'cb-admin1':['ref-admin1','imta-line']`）。
+  `painted()` は「どれか1つでも見えているか」を訊くので、現代側の id だけだと**正しく旅行中の地図を
+  「checked なのに空」と誤診し、4秒ごとにチェックボックスを off→on する**。両方を並べてよいのは、
+  この行が**両方向の1スイッチ**だからである（OFF なら era 側も消えるので、自己修復が時計と喧嘩しない）。
+  ⚠ **描画は現代側と同じ値**（`js/border-style.js` の `ADMIN1_COLOR` / 幅の梯子・破線 `[3,2]`・
+  不透明度 0.82）。**時間旅行が変えるのは境界が<b>どこを走るか</b>であって、境界の<b>見た目</b>ではない。**
+  `imta-line` は `imtb-lbl` / `ofm-admin1` / `ofm-country` / `ofm-city` のうち最初に在るものの**下**へ
+  入れる（国境が区分の上に来る順序＝現代の `ref-admin1` と `borders-only-line` の順序）。
+  ⚠ 基図の入れ替え（globe / 平面 / 衛星）で層が消えたときだけ再表明する——判定は
+  **`imta-line` が無いこと**で、`styledata` のたびに再表明すると `setLayout` 自身が `styledata` を
+  起こして点滅の輪になる。
+- ⚠⚠ **歴史区分のデータは `data/hist-admin1.js`（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`）で、
+  被覆は部分的である。地図はそれを埋めずに<b>言う</b>。** 生成は `scripts/build-hist-admin1.mjs`
+  （Overpass の `relation[boundary=administrative][admin_level~"^(3|4)$"]` を
+  Douglas–Peucker 0.02°≒2.2 km・座標3桁で簡略化・**3,053件／rings 4,643**）。
+  対象は**時計の下限と同じ 1850 年以降**（`__HISTADM1.since`）。実測の在force 件数:
+
+  | 日付 | 1850 | 1870 | 1900 | 1914 | 1938 | 1950 | 1990 | 2020 |
+  |---|---|---|---|---|---|---|---|---|
+  | 区分 | 543 | 638 | 642 | 689 | 676 | 690 | 726 | 747 |
+
+  現代の第1級行政区分は Natural Earth 10m が数えて 4,596 件なので、**多くの国は過去の日付で
+  区分線が引かれない**（同じ出典から作った現代の索引 `data/admin1-world.json.gz` が 4,515 区分なのは、
+  そちらが気象警報のために国コードの付くものだけを採っているため）。
+  ⚠ **埋めない。** 現代の区分を過去の日付に描くこと（これがこの機構の直した欠陥そのもの——
+  1900 年へ送ると 1900 年の国境の上に 2026 年の州境が紫の破線で残っていた）も、現代の区分を
+  その時代の国境で切り抜くこと（誰も測っていない境界に線の権威を与える）も、`CONSTITUTION.md` の
+  「偽物・ハリボテ禁止」が禁じている。代わりに `IntMapTimeAdmin1.coverage()` が在force 件数を返し、
+  `note()` が9言語の一文を返して「州・県境」の行の `title` に出る——**線が無い国は「区分が無かった」
+  のではなく「記録がまだ無い」。**
+  ⚠ **全球の歴史 admin-1 境界を完成させた出典は存在しない**（候補と実測は
+  `scripts/build-hist-admin1.mjs` の冒頭に全部書いてある——historical-basemaps は主権国家のみ、
+  Who's On First の region は `edtf:inception` が全件 `uuuu`、Natural Earth 10m admin-1 は日付
+  フィールドが 0、CHGIS は 1911 で終わり非営利限定、HGIS de las Indias は 1701–1808、
+  GISCO NUTS は最古が 2003、Newberry AHCB は日単位で優秀だが米国1国のみ）。
+  ⇒ **OHM だけが全球・日付つき・開放ライセンス**であり、出典は `js/reference-data.js` と
+  `js/locales/pages.*.js`（9言語）に登録してある。
+  ⚠ **束の先読み（idle・携帯と Data Saver / 2G ではしない）と、日付の解決・エポック索引は
+  `Architecture.md` §7.4** が正本——ここに書き写さない。
 
 - **世界の鉄道**（`beta-dl-rail` / `js/railways.js`）— **仕様の正本は `Architecture.md` §7.3c**。
   ここに書くのはレイヤー欄からだけ見える3点。
@@ -2009,7 +2082,7 @@ layer は `imtb-fill`（ほぼ透明なクリック対象）・`imtb-line`・`im
 | 年 | 出典 | 粒度 |
 |---|---|---|
 | 1886–2019 | `data/cshapes.js`（CShapes 2.0） | 日単位 |
-| **1850–1885** | **`data/hist-borders.js`（OpenHistoricalMap・ODbL 1.0）** | **日単位** |
+| **1850–1885** | **`data/hist-borders.js`（OpenHistoricalMap・CC0 1.0）** | **日単位** |
 | どちらかの束が読めなかったとき | historical-basemaps のスナップショット（`nearest()`） | 年の飛び飛び |
 
 ⚠ **2020 年以降と `Now` では層ごと消す**（現代の国境のほうが正確なので）。

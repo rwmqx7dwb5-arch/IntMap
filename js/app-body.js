@@ -1920,7 +1920,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R38) Apply from the LIVE box state, and re-assert several times + when the OFM vector tiles arrive.
        Root of "Roads/Railways/State borders をチェックしても表示されない、再読み込みで治る": the `ofm` source/layer
        often settled AFTER the single 400ms retry, so the visibility set hit nothing and never re-ran. */
-    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(GE().layers.has(layerId)) GE().layers.setLayout(layerId,'visibility',on?'visible':'none'); if(GE().layers.has(layerId+'-dash')) GE().layers.setLayout(layerId+'-dash','visibility',on?'visible':'none'); }catch(_){} };
+    const apply=()=>{ try{ const on=cb.checked; if(on) ensureRefLayers(); if(GE().layers.has(layerId)) GE().layers.setLayout(layerId,'visibility',on?'visible':'none'); if(GE().layers.has(layerId+'-dash')) GE().layers.setLayout(layerId+'-dash','visibility',on?'visible':'none'); if(layerId==='ref-admin1'){ try{ window._applyAdmin1&&window._applyAdmin1(); }catch(_){} }   /* (#R530) the province row also owns an ERA layer, so the box hands the decision straight back to the switchboard (js/time-admin1.js) — otherwise this line would re-show today's boundaries over a past year every time the box, the four retries or the `sourcedata` heal re-fired. */ }catch(_){} };
     cb.__refApply=apply;
     cb.addEventListener('change',()=>{
       if(cb.checked && !canDraw()){ GE().events.once('idle',apply); }
@@ -4218,7 +4218,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      before the year; the repo jumps 1960→1994, so 1960 covers the late-Cold-War world incl. the USSR). The
      modern boundary line + country labels are hidden while a past year is shown and restored at "Now". ===== */
   /* (#R163) moved to js/time-borders.js — see Architecture.md §3.1. */
-  window.IntMapTimeBorders=window.IntMapModules.timeBorders(IM_HOST);
+  window.IntMapTimeBorders=window.IntMapModules.timeBorders(IM_HOST); window.IntMapTimeAdmin1=window.IntMapModules.timeAdmin1(IM_HOST); try{ window._applyAdmin1(); }catch(_){}
 
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an

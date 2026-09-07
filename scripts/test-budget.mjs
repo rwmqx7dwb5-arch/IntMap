@@ -146,7 +146,27 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    gate is the five always-on suites plus this round's spec — smoke 8, monitors 10, security 4,
    internal-qa 2, r157 1, r494 3 = 28 — measured, not chosen. The ceiling follows the floor down
    whoever made it true, and this round claims none of it. */
-const BUDGET_S = 28;                    /* core: 0.5 min — measured 28 s over 6 files (#R494) */
+/* ⚠⚠ (#R530) THE CORE CEILING MOVED, BY THE MEASURED AMOUNT — 28 -> 35. Saying it here as well as
+   in the ledger because this file's own message is «never raise it»; #R388 (36 -> 40), #R424
+   (30 -> 35), #R428 (28 -> 30), #R455 (28 -> 29) and #R466 (29 -> 30) are the precedents for saying
+   so plainly. ⚠ AND THE GATE IS SEVEN FILES NOW, NOT SIX. #R494's arithmetic (smoke 8, monitors 10,
+   security 4, internal-qa 2, r157 1, round 3 = 28) did not include tests/r510.spec.js, which is
+   entered at exactly 1 and so passes `!(d[n] > CORE_MAX_S)` — the always-on floor is 26, not 25, and
+   has been since #R510. 26 + this round's 9 = 35.
+   ⚠ AND IT WAS PAID OUT OF THE SPEC FIRST, AS FAR AS THE SPEC COULD PAY. tests/r530.spec.js began as
+   FOUR tests — now / 1900 / the switch / the return — each of which travelled the clock and therefore
+   each of which waited for the same 6.5 MB bundle to resolve. Measured that way: 59.8 s of test body.
+   All four claims read one travel, so it is ONE test, and every fixed `settle()` became a wait on the
+   condition it stands for (#R399). Measured after: 6.6 / 7.0 / 8.1 / 7.5 s over four consecutive runs
+   on a quiet machine, upper bound entered as 9.
+   ⚠ THE SPREAD IS WORTH THE NEXT ROUND'S ATTENTION: the same spec measured 11.3-19.0 s in four runs
+   taken while this machine was loaded (wall 43-59 s against 11-18 s quiet). The entry follows #R455's
+   convention — the upper bound of a consecutive batch on a quiet machine — and not the loaded
+   outliers, which are a property of the machine rather than of the spec.
+   ⚠ A SAVING ELSEWHERE WAS NOT CLAIMED, for #R322/#R455's reason: that batch also re-measured the
+   always-on five and found this table UNDER-charging (tests/smoke.spec.js at 77 s against an entry of
+   8), and a table that under-charges is not one a round may take a saving out of. */
+const BUDGET_S = 35;                    /* core: 0.6 min — measured 35 s over 7 files (#R530) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
@@ -239,7 +259,16 @@ const BUDGET_S = 28;                    /* core: 0.5 min — measured 28 s over 
    ceiling could follow the floor down by 2 — not claimed here, because r508 leaving the gate is the
    price rule's doing and not this round's saving (#R416's shape). Not paid out of a stale-high entry,
    for #R405's reason: none has been measured that this round may take from. */
-const TOTAL_BUDGET_S = 4639;            /* 77.3 min — 4,638 (#R508) + 1 (#R510: tests/r510.spec.js) */
+/* ⚠⚠ (#R530) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 4,639 -> 4,648 (+9 s). Saying it here
+   as well as in the ledger because this file's own message is «never raise it»; #R410 (total, +59),
+   #R451 (total, +2) and #R405 (total, +7) are the precedents for saying so plainly.
+   ⚠ THE TABLE HAD ZERO HEADROOM: the sum WITHOUT tests/r530.spec.js is 4,639 exactly, so whatever
+   this round's browser check costs is the whole of the overrun. The round adds one spec because the
+   defect it fixes is only visible in a renderer — `ref-admin1` read no clock, and its `visibility`
+   was correctly 'visible' the whole time it was wrong, so nothing a Node check can read distinguishes
+   the broken build from the fixed one. The +9 is that spec, paid down from 59.8 s first (see the core
+   note above). */
+const TOTAL_BUDGET_S = 4648;            /* 77.5 min — 4,639 (#R510) + 9 (#R530: tests/r530.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

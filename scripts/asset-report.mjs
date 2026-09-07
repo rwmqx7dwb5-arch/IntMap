@@ -81,6 +81,15 @@ const ALLOW = {
   sizeCeiling: 6 * 1024 * 1024,
   bigFile: [
     { match: /^data\/ecoregions_2017\.geojson$/, why: 'the WWF terrestrial ecoregions layer — one file is the dataset (#R311 removed its duplicate)' },
+    /* (#R530) the admin-1 twin of data/cshapes.js (5.3 MB), and it is over the ceiling for the same
+       reason that one is near it: one file IS the dataset — 3,053 dated subdivisions with the days
+       they were in force, ring-pooled so neighbours share their common line. It was priced against
+       the country bundle rather than accepted at whatever it came out at: 0.008° / 4 decimals built
+       15.46 MB, and 0.02° / 3 decimals builds this, which is the coarsest step that still keeps every
+       unit (0.025° drops 13 of them under MIN_AREA). ⚠ It is NOT on the boot path and not in any
+       chunk: js/time-admin1.js injects it as a <script> at idle, and skips even that on a phone or
+       Data Saver, exactly as #R192/#R201 settled for CShapes. */
+    { match: /^data\/hist-admin1\.js$/, why: 'the dated first-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, fetched at idle by js/time-admin1.js and never bundled (#R530)' },
   ],
 };
 

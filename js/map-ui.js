@@ -2159,10 +2159,18 @@ window.IntMapModules.labelPopup=function(HOST){
        `onLabel(false)`, which is what `ofm-city` and `ofm-other` already get: the same popup, the same
        Copy / Wikipedia / AI brief / Isolate / Move row, and the same real boundary from IntMapOutline
        (a region HAS an area, so the area tools are not suppressed the way water/terrain labels are). */
-    const PLACE_LBL=['ofm-country','ofm-admin1','ofm-city','ofm-other'];
+    /* ══ (#R530) …AND THE ERA PROVINCE LABEL IS THE SAME PLACE LABEL, ON THE SAME MAP ═══════════
+       js/time-admin1.js replaces `ofm-admin1` with `imta-lbl` for every past date, so without this
+       line a prefecture name that answers a tap at Now stops answering it the moment the clock
+       moves — which is #R201's own report («クリック可能ではない！ほかの地名ラベルと違う挙動に
+       するな！») re-created for the years the time machine is on. It gets `onLabel(false)`, exactly
+       what `ofm-admin1` gets: same popup, same Copy / Wikipedia / AI brief row, area tools not
+       suppressed. ⚠ Registering before the layer exists is fine — `onLayer` resolves the id at
+       EVENT time, and the era layer is created lazily on the first travel. */
+    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','ofm-city','ofm-other'];
     const ALL_LBL=PLACE_LBL.concat(['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak']);
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
-      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false));   /* (#R530) the era one, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */

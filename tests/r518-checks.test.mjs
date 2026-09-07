@@ -195,14 +195,28 @@ test('④ the change-date API asks BOTH records', () => {
 });
 
 /* ⑤ attribution — ODbL is share-alike, so naming the source is the licence, not politeness -----*/
-test('⑤ OpenHistoricalMap and ODbL are credited on the map and on the Sources page', () => {
-  assert.match(TB, /attribution:'[^']*OpenHistoricalMap \(ODbL\)[^']*'/, 'the map source no longer credits OHM');
-  assert.match(rd('js/reference-data.js'), /OpenHistoricalMap \(ODbL 1\.0\)/, 'the Sources registry has no OHM row');
+/* ⚠ (#R530) THE LICENCE THIS PINS WAS WRONG, AND A CHECK THAT PINS A WRONG FACT KEEPS IT.
+   OpenHistoricalMap is CC0, not ODbL: its own /copyright page calls the project «dedicated to the
+   public domain» and its Overpass API answers «The data is made available under CC0» (both measured
+   2026-09-07). The rows below now read CC0 — the claim they defend is unchanged: the source must be
+   credited on the map and on the Sources page, in all nine languages. */
+test('⑤ OpenHistoricalMap and its licence are credited on the map and on the Sources page', () => {
+  assert.match(TB, /attribution:'[^']*OpenHistoricalMap \(CC0\)[^']*'/, 'the map source no longer credits OHM');
+  assert.match(rd('js/reference-data.js'), /OpenHistoricalMap \(CC0 1\.0\)/, 'the Sources registry has no OHM row');
   const missing = [];
   for (const c of ['en', 'ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hant', 'zh-hans']) {
     const s = rd('js/locales/pages.' + c + '.js');
-    if (!s.includes('OpenHistoricalMap (ODbL 1.0)')) missing.push(c + ' (key)');
-    else if (!/ODbL 1\.0\./.test(s)) missing.push(c + ' (licence line)');
+    if (!s.includes('OpenHistoricalMap (CC0 1.0)')) missing.push(c + ' (key)');
+    /* ⚠ (#R530) ASK THE ENTRY, NOT THE FILE. This used to be `/ODbL 1\.0\./.test(s)` over the WHOLE
+       locale — which every one of these files satisfies through its OpenStreetMap and mledoze rows,
+       so it never once said anything about OpenHistoricalMap. It passed while the licence named here
+       was wrong, and it would have gone on passing if the OHM row had carried no licence at all.
+       The description itself must name CC0. */
+    else {
+      const entry = new RegExp('["\']OpenHistoricalMap \\(CC0 1\\.0\\)["\']\\s*:\\s*(["\'])((?:\\\\.|(?!\\1)[^\\\\])*)\\1').exec(s);
+      if (!entry) missing.push(c + ' (unreadable entry)');
+      else if (!/CC0/.test(entry[2])) missing.push(c + ' (licence line)');
+    }
     /* the claim this round made false must be gone from every language, not just English */
     if (/1880[^"']{0,40}(?:borders|Grenzen|fronteras|frontières|границ|국경|国境|國界|国界)/.test(s)
         && !/hist-borders|OpenHistoricalMap/.test(s)) missing.push(c + ' (still says 1880 answers the era)');

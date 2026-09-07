@@ -191,6 +191,13 @@ beta-overlays.js                  ベータのオーバーレイ IntMapModules.b
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,043件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
 volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
 time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
+time-admin1.js                    時間軸の上の歴史的**地方区分**（第1級行政区分）IntMapTimeAdmin1。上の双子——
+                                  同じ時計・同じ 45ms・同じ日単位エポック索引・同じ「旅行中か」の判定で、
+                                  旅行中は現代の `ref-admin1` と `ofm-admin1` を隠し、その日付の
+                                  `imta-line` / `imta-lbl` を描く。切替盤 `window._applyAdmin1` もここが持つ
+                                  （app-shell に行数の余白が無い）。被覆は部分的なので `coverage()` /
+                                  `note()`（9言語）が「線が無い国は記録がまだ無い」と言う
+                                  （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 hist-cities.js                    時計の年の**都市名** IntMapHistCities（611都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
@@ -591,7 +598,11 @@ country-facts.json                国詳細カードの6欄——首都・通貨
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
-data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・ODbL 1.0／`scripts/build-hist-borders.mjs`）
+data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）
+data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
+                                  3,053件／rings 4,643・6.55 MB＝brotli 0.67 MB）。上と**同じリングプール形式の
+                                  JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
+                                  ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教・言語の分布

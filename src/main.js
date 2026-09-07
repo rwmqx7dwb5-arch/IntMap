@@ -116,7 +116,7 @@ import '../js/routing.js';
    capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
    built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
 import '../js/routing-ops.js';
-import '../js/time-borders.js';
+import '../js/time-borders.js'; import '../js/time-admin1.js';   /* (#R530) …and the subdivisions of that same year — a factory on window.IntMapModules instantiated once from js/app-body.js, exactly like its twin, and the owner of window._applyAdmin1. The 6.5 MB bundle it reads (data/hist-admin1.js) is NOT here: fetched at idle, and not at all on a phone or Data Saver, for the reasons #R192/#R201 measured for data/cshapes.js. ONE line because the app shell has a line budget (tests/r168 #8). */
 /* (#R192) the main-thread side of the satellite tile worker (src/sat-worker.js) — it publishes
    window.IntMapSatWorker and starts nothing until js/app-body.js asks for a tile. */
 import './sat-worker-client.js';
@@ -352,7 +352,7 @@ import '../js/app-body.js';
       earlier file created it) while the feature it carries is gone. ── */
 const MODULE_FACTORIES = [
   'maddison', 'histStates', 'histId', 'layerPreviews', 'monitors', 'companies',
-  'compare', 'routing', 'timeBorders',
+  'compare', 'routing', 'timeBorders', 'timeAdmin1',   /* (#R530) the subdivisions of the year on the clock — js/time-admin1.js */
   'dataLayers', 'workspace', 'widgets', 'wbLayers', 'betaOverlays', 'cameras',
   'layerRegistry', 'layerSidebar', 'ticker', 'layerPresets', 'labelPopup',
   'geojsonUpload', 'viewHash', 'share', 'projView', 'drawTool',

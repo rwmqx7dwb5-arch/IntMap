@@ -366,9 +366,18 @@ window.IntMapRefData=(function(){
     {n:'NASA GIBS — OMPS SO₂, upper troposphere & stratosphere',u:'https://www.earthdata.nasa.gov/'},
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
-    /* (#R518) the borders of 1850-1885. A source the map draws has to be reachable from here — and this
-       one carries a SHARE-ALIKE licence (ODbL 1.0), so naming it is not courtesy, it is the terms. */
-    {n:'OpenHistoricalMap (ODbL 1.0)',u:'https://www.openhistoricalmap.org/'},
+    /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
+       from OHM — the day-exact borders of 1850-1885 (data/hist-borders.js) and the first-level
+       subdivisions of whatever year the clock shows (data/hist-admin1.js, baked from OHM's dated
+       admin_level 3–4 relations) — so two rows meant the same name carrying two licences.
+       ⚠ THE LICENCE IS CC0 1.0, NOT ODbL. Measured 2026-09-07: openhistoricalmap.org/copyright
+       says the project is «dedicated to the public domain», and every Overpass response says «The
+       data is made available under CC0». Naming it is provenance, not the terms — the row is here
+       because the map draws this data. ⚠ THE SUBDIVISION COVERAGE IS PARTIAL and the description
+       says so instead of filling it in: 642 units are in force in 1900 against the ~4,600
+       present-day ones, so a country drawn with no subdivision line in a past year is one the
+       record is still silent about. */
+    {n:'OpenHistoricalMap (CC0 1.0)',u:'https://www.openhistoricalmap.org/'},
     {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/'},
     /* ⚠ (#R409) THE MAP NAMED THIS SOURCE AND THIS PAGE DID NOT LIST IT. The two world-war layers
        credit «the documented record, compiled in scripts/wars/» in their MapLibre attribution and

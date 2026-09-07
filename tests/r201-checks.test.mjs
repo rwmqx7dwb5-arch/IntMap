@@ -96,8 +96,18 @@ test('r201 ②a ofm-admin1 is wired for click, cursor, exact hit and padded tap'
   /* the four lists are DERIVED from the file: two named arrays and the two uses of the wider one */
   const place = JSON.parse((fn.match(/const PLACE_LBL=(\[[^\]]+\]);/) || [])[1].replace(/'/g, '"'));
   assert.ok(place.includes('ofm-admin1'), 'a prefecture name is a place name');
-  assert.deepEqual(place, ['ofm-country', 'ofm-admin1', 'ofm-city', 'ofm-other'],
-    'and it sits between the country and the city, the way the label stack does');
+  /* ⚠ (#R530) THIS WAS A LITERAL FOUR-ELEMENT LIST, AND THE RULE IT STOOD FOR IS AN ORDER, NOT A
+     LENGTH. `imta-lbl` — the era province name js/time-admin1.js draws for every past date — had to
+     join the list for #R201's own reason (a label that answers a tap at Now must not stop answering
+     it when the clock moves), and a `deepEqual` against four names turns that into a failure while
+     the property it defends is untouched ([[intmap-r488-lessons]]). So the property is asked
+     directly: a province name — of either era — sits between the country and the city. */
+  assert.ok(place.includes('imta-lbl'), "…and so is the era one it is replaced by while travelling (#R530)");
+  for (const a1 of ['ofm-admin1', 'imta-lbl']) {
+    assert.ok(place.indexOf('ofm-country') < place.indexOf(a1), `${a1} sits below the country name`);
+    assert.ok(place.indexOf(a1) < place.indexOf('ofm-city'), `${a1} sits above the city name`);
+  }
+  assert.equal(place[place.length - 1], 'ofm-other', 'and the smallest places stay last');
   assert.ok(/const ALL_LBL=PLACE_LBL\.concat\(/.test(fn), 'the wider list is BUILT from the narrower one');
   /* the per-layer click handler exists and is the ordinary (non-country) one */
   assert.ok(/onLayer\('click','ofm-admin1',onLabel\(false\)\)/.test(fn),

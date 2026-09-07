@@ -505,7 +505,7 @@ window.IntMapModules.timeBorders=function(HOST){
     /* the names follow the borders on every push — one state, two sources. */
     function _pushLbl(fc){ try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (ODbL) · historical-basemaps (aourednik)'});
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik)'});
       /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
          of its own: it is the same datasets, already credited by the source it is derived from, whose
          `imtb-line` is on screen in exactly the moments these labels are. */

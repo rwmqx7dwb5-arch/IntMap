@@ -533,8 +533,17 @@ window.IntMapModules.placeLabels=function(HOST){
        own position, and every other label on Earth comes out byte-identical.
        ⚠ `ofm-city` ONLY — the record's collision reasons are written against that layer's
        `class in [city, town]` filter; see the header of js/hist-cities.js. */
+    /* ══ ⚠ (#R530) THE TWO TRAVELLERS ARE NOW ASKED SEPARATELY ═══════════════════════════════════
+       `_travelingLbl` above is the COUNTRY time machine, and until this round it also decided whether
+       the PROVINCE names hid — which was right only while nothing drew era provinces. Now that
+       js/time-admin1.js draws them (`imta-lbl`), the two windows differ: the country side returns to
+       the modern borders above CShapes' last year (2019, js/time-borders.js), while the subdivision
+       record runs to today. Between those, one flag would have shown `ofm-admin1` AND `imta-lbl` at
+       once — today's prefecture name printed beside the era's, on the same point. Each layer is
+       hidden by ITS OWN time machine. */
+    const _travelingAdm=!!(window.IntMapTimeAdmin1&&window.IntMapTimeAdmin1.active&&window.IntMapTimeAdmin1.active());
     ['ofm-country','ofm-admin1','ofm-city','ofm-other'].forEach(id=>{ if(!GE().layers.has(id)) return;
-      const _showThis=((id==='ofm-country'||id==='ofm-admin1')&&_travelingLbl)?false:show;
+      const _showThis=((id==='ofm-country'&&_travelingLbl)||(id==='ofm-admin1'&&_travelingAdm))?false:show;
       GE().layers.setLayout(id,'visibility',_showThis?'visible':'none');
       let _fld=nameExpr;
       if(id==='ofm-city'){ try{ const HC=window.IntMapHistCities; if(HC) _fld=HC.textField(nameExpr,HOST.lang,mode); }catch(_){ _fld=nameExpr; } }
@@ -570,6 +579,21 @@ window.IntMapModules.placeLabels=function(HOST){
         GE().layers.setPaint(id,'text-halo-color', _eraLight?'rgba(0,0,0,0.9)':'rgba(255,255,255,0.96)');
         GE().layers.setPaint(id,'text-halo-width', 1.7);
       }); }catch(_){}
+    /* (#R530) …and the ERA PROVINCE label is a province label, so it takes the province tier's face
+       for the same reason and its colour from the line that draws the region (#R252). It is created
+       with those values (js/time-admin1.js), but this function is the ONE place that re-decides them
+       when the basemap or the language changes, so it drives `imta-lbl` too.
+       ⚠ Same division of ownership as the two lines above: face and colours here, `text-field` in
+       js/time-admin1.js, `visibility` in `window._applyAdmin1` — never two owners for one value. And
+       `visibility` is re-asserted from here because THIS is where `cb-names` is handled, and the era
+       province names follow that switch exactly as `ofm-admin1` does. */
+    try{ if(GE().layers.has('imta-lbl')){
+        GE().layers.setLayout('imta-lbl','text-font',fontSea);
+        GE().layers.setPaint('imta-lbl','text-color',A1_TEXT());
+        GE().layers.setPaint('imta-lbl','text-halo-color','rgba(0,0,0,0.9)');
+        GE().layers.setPaint('imta-lbl','text-halo-width',1.45);
+      } }catch(_){}
+    try{ window._applyAdmin1&&window._applyAdmin1(); }catch(_){}
   }
   return { applyLabelLang, ensurePlaceLabels };
 };

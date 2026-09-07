@@ -145,8 +145,20 @@ test('R198 ②b: it is wired into every list a place-label layer belongs to', ()
   const pl = read('js/place-labels.js');
   assert.ok(/\['ofm-country','ofm-admin1','ofm-city','ofm-other'\]/.test(pl),
     'applyLabelLang localises and shows/hides it with the other place names');
-  assert.ok(/id==='ofm-country'\|\|id==='ofm-admin1'/.test(pl),
-    "it hides while the time machine is travelling, for #R103's reason");
+  /* ⚠ (#R530) THIS USED TO PIN THE SPELLING `id==='ofm-country'||id==='ofm-admin1'`, AND THE
+     SPELLING IS GONE WHILE THE GUARANTEE IS NOT. The two tiers now ask DIFFERENT time machines —
+     the country names hide on IntMapTimeBorders, the province names on IntMapTimeAdmin1 — because
+     the country side returns to modern borders above CShapes' last year while the subdivision
+     record runs to today, so one flag printed today's prefecture name beside the era's for every
+     year in between. A check that fixes the characters cannot survive a change that keeps the rule
+     ([[intmap-r488-lessons]]), so this asks the rule: the decision must still name ofm-admin1, and
+     what switches it off must still be a travelling test. */
+  const decide = pl.split('\n').find((l) => l.includes("id==='ofm-admin1'") && l.includes('_showThis'));
+  assert.ok(decide, 'the per-layer visibility decision still names ofm-admin1');
+  assert.ok(/id==='ofm-country'\s*&&\s*\w+/.test(decide), 'the country tier hides on a travelling flag');
+  assert.ok(/id==='ofm-admin1'\s*&&\s*\w+/.test(decide), 'the province tier hides on a travelling flag');
+  assert.ok(/IntMapTimeBorders[\s\S]{0,80}active\(\)/.test(pl), "…and the country tier's flag is the country time machine");
+  assert.ok(/IntMapTimeAdmin1[\s\S]{0,80}active\(\)/.test(pl), "…and the province tier's flag is the admin-1 one (#R530)");
 });
 
 /* ═══ ③ THE WORLD GAZETTEER ═══════════════════════════════════════════════════════════════════ */

@@ -20,8 +20,8 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
-gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
-**102 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
+gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
+**103 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 
 > ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
@@ -567,7 +567,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **96 spec files** against core's 6, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **96 spec files** against core's 7, because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.
