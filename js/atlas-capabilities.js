@@ -123,6 +123,14 @@ export function makeAtlasCapabilities(HOST) {
          過去30日でM5以上の地震があった都市」 is a question about four at once. `read` and `none`: it
          measures and pins, it changes no setting the reader has to undo. */
       ['data.query',                 'query',          'crossQuery,dataQuery',                                        'data',    'queryRows','map.object',           'map,explanation',     'session','none',   '',         'atlasQuery'],
+      /* ⚠⚠ (#R543) THE CHART — the second thing an answer is allowed to BE. #R511 made the map an
+         output of the answer rather than a side effect of it; the numbers stayed prose. Every row
+         above that ranks, compares, relates or queries produces values, and the only way any of them
+         reached the reader as a picture was if one of three panels happened to be the thing opened.
+         `writes` is empty and `risk` is `read` on purpose: a chart changes nothing the reader has to
+         undo — it is drawn INTO the reply, which is also why its observer is `chart` and not `paint`
+         (nothing on the map moves, so a map observer would call every chart `not_rendered`). */
+      ['chart.compose',              'chart',          'chartCompose,plot,graph',                                     'data',    'chart',   '',                       'chart,explanation',   'read',    'none',   '',         'atlasChart'],
       ['data.rank',                  'rank',           '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
       ['data.ratio',                 'ratio',          '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
       ['data.relate',                'relate',         '',                                                            'data',    'paint',   'map.choropleth',         'map,explanation',     'session', 'none',   'metric',   ''],
@@ -467,6 +475,27 @@ export function makeAtlasCapabilities(HOST) {
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ ⚠⚠ (#R543) A CHART IS PRODUCED INTO THE REPLY, NOT ONTO THE MAP ═══════════════════════
+         So `observe()` has nothing global to sample — `paintNow()` would report the same numbers
+         before and after and call every chart `not_rendered`. What CAN be observed is the artefact
+         itself: js/atlas-chart.js stamps `data-mark` on every point, bar and event it actually
+         emits, and reports how many it drew. This counts the marks IN THE HTML THE READER WILL
+         RECEIVE and holds that against the renderer's own count. ⚠ THE COUNT IS THE EVIDENCE, THE
+         REPORT IS ONLY THE CLAIM: a renderer that returns `ok` around an empty figure is `partial /
+         not_rendered`, the same verdict `paint` gives a draw that painted nothing. This is why the
+         mark is an attribute and not a class — #R488's dead selector passed every spelling check. */
+      chart: {
+        observe: function () { return null; },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: (raw && raw.html) || '' };
+          var html = (raw && raw.html) || '';
+          var marks = (html.match(/data-mark="1"/g) || []).length;
+          var claimed = (raw && raw.meta && raw.meta.chart && +raw.meta.chart.plotted) || 0;
+          if (!marks) return { status: 'partial', code: 'not_rendered', observed: { chart: { marks: 0, claimed: claimed } }, html: html };
+          if (claimed && marks !== claimed) return { status: 'partial', code: 'not_rendered', observed: { chart: { marks: marks, claimed: claimed } }, html: html };
+          return { status: 'completed', code: 'ok', observed: { chart: { marks: marks, kind: (raw.meta && raw.meta.chart && raw.meta.chart.kind) || '' } }, html: html };
         }
       },
       camera: {

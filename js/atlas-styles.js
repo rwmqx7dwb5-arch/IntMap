@@ -110,6 +110,37 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'.atl-md-table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.5;}'
       +'.atl-md-table th,.atl-md-table td{border:1px solid var(--glass-border,rgba(128,128,128,.18));padding:5px 10px;text-align:left;vertical-align:top;white-space:nowrap;}'
       +'.atl-md-table thead th{background:rgba(120,120,128,.14);font-weight:600;}'   /* (#R159) header row: semibold, not bold */
+      /* ══ (#R543) THE CHART. It lives HERE and not in css/intmap.css for a measured reason: the
+         stylesheet budget in tests/perf-baseline.json has 2,048 bytes of slack, and this stylesheet
+         rides in the Atlas async chunk instead, which a session that never opens Atlas never fetches.
+         ⚠ THE SERIES PALETTE IS A TOKEN, NOT A LITERAL — js/atlas-chart.js writes `var(--chart-cat-N)`
+         and knows no colour, so dark mode is a token swap here rather than a branch there. The ten
+         hues are the ones #R71 chose for the country-comparison chart; a second palette would be a
+         second answer to "how do we tell series apart". ⚠ AND COLOUR IS NEVER THE ONLY CARRIER: the
+         legend names every series and every bar prints its own value. */
+      +'#atlas-panel{--chart-cat-1:#0a84ff;--chart-cat-2:#ff9500;--chart-cat-3:#34c759;--chart-cat-4:#bf5af2;--chart-cat-5:#ff453a;--chart-cat-6:#5ac8fa;--chart-cat-7:#c9a227;--chart-cat-8:#ff2d92;--chart-cat-9:#30b0c7;--chart-cat-10:#a2845e;}'
+      +'[data-theme="dark"] #atlas-panel{--chart-cat-1:#4aa8ff;--chart-cat-2:#ffb340;--chart-cat-3:#5ee07f;--chart-cat-4:#d08bf7;--chart-cat-5:#ff6f68;--chart-cat-6:#7ed6fb;--chart-cat-7:#ffd60a;--chart-cat-8:#ff6bb0;--chart-cat-9:#5fcada;--chart-cat-10:#c3a488;}'
+      +'.atl-ch{margin:.6em 0;padding:0;}'
+      +'.atl-ch-t{font-size:12.5px;font-weight:600;color:var(--text-main);margin:0 0 3px;}'
+      +'.atl-ch-s{display:block;width:100%;height:auto;overflow:visible;}'
+      +'.atl-ch-g{stroke:var(--widget-chart-grid,rgba(128,128,128,.26));stroke-width:.7;vector-effect:non-scaling-stroke;}'
+      +'.atl-ch-0{stroke:var(--text-muted);stroke-width:1;opacity:.55;vector-effect:non-scaling-stroke;}'
+      +'.atl-ch-tl{stroke:var(--text-muted);stroke-width:1.2;opacity:.7;vector-effect:non-scaling-stroke;}'
+      +'.atl-ch-tk{stroke:var(--widget-chart-grid,rgba(128,128,128,.26));stroke-width:.7;vector-effect:non-scaling-stroke;}'
+      +'.atl-ch-ax{font-size:8.5px;fill:var(--text-muted);}'
+      +'.atl-ch-ev{font-size:9px;fill:var(--text-main);}'
+      +'.atl-ch-l{fill:none;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;}'
+      +'.atl-ch-p{stroke:var(--popup-bg,#fff);stroke-width:.8;}'
+      +'.atl-ch-lg{display:flex;flex-wrap:wrap;gap:2px 10px;margin:3px 0 0;font-size:11px;color:var(--text-muted);}'
+      +'.atl-ch-lgi{display:inline-flex;align-items:center;gap:4px;}'
+      +'.atl-ch-sw{width:9px;height:9px;border-radius:2px;display:inline-block;flex:0 0 auto;}'
+      +'.atl-ch-c{font-size:10.5px;line-height:1.45;color:var(--text-muted);margin-top:4px;}'
+      +'.atl-ch-bs{display:flex;flex-direction:column;gap:3px;margin:2px 0;}'
+      +'.atl-ch-br{display:grid;grid-template-columns:minmax(0,7.5em) 1fr auto;align-items:center;gap:6px;font-size:11.5px;}'
+      +'.atl-ch-bl{color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+      +'.atl-ch-bt{position:relative;height:9px;border-radius:5px;background:rgba(120,120,128,.16);overflow:hidden;}'
+      +'.atl-ch-bf{position:absolute;top:0;bottom:0;border-radius:5px;}'
+      +'.atl-ch-bv{color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap;}'
       +'.atl-md-table tbody tr:nth-child(2n){background:rgba(120,120,128,.06);}'
       /* (#R492) the in-reply notes and their one floating card. Unscoped for the same reason as the block
          above: the card is appended to document.body and the marks appear on all three Atlas surfaces. */

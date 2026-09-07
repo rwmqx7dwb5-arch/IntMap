@@ -307,6 +307,28 @@ atlas-geo-ledger.js               **この会話が解決した場所の台帳**
                                   ⚠ 地点の**形**は `atlas-geo-object.js` のもの（provenance ごと受け取る）。
                                   ⚠ 従来ターンを越えたのは `actLabel` の**26文字**だけで、次のターンは
                                   同じ地名を自分の文章から**文字列として**取り直していた
+atlas-answer-view.js              **回答が描かれたときの視点**（#R543）— `window.IntMapAnswerView`。
+                                  重ね描きのスナップショットとチップは #R118 からあり「その回答の図形をもう一度描く」は
+                                  動いていた。**どのスナップショットも持っていなかったのが「視点」**——カメラの位置と、
+                                  この製品では何より**時計**。1950 年の回答の図形が 2026 年の基図の上に描き直されるのは、
+                                  その回答の地図ではなく別の主張である。⚠ **カメラ・時計・基図・投影は正確に戻し、
+                                  レイヤーは点けるだけで消さない**——後から読者が点けたレイヤーを黙って消すのは、
+                                  画面に何も出ないまま読者の作業を壊すこと。代わりに `extraLayers` として報告し、
+                                  呼び出し元が「同一の視点だ」と言い張らずに済むようにする。⚠ できなかったことは
+                                  `skipped` に理由つきで残す（レンダラ不在・時計不在・消えたレイヤー）。
+                                  撮るのは `IntMapAtlasState.snapshot` そのもの（#R397 から camera / time /
+                                  activeLayers を読んでいる観測器）で、私有の読み手を作らない＝状態ブロックと食い違わない。
+                                  遅延ロード（`atlasAnswerView`）——押されたときだけ運ぶ
+atlas-chart.js                    **数字を図にする層**（#R543）— `chart.compose`（中核ツール `chart`）。
+                                  line / bar / scatter / timeline を **HTML 文字列**として返す（返答本文は
+                                  `_atlCompose` が毎回組み直すので、DOM を後から挿す装飾は次の操作で消える）。
+                                  ⚠ **出所 (`source`) の無いグラフは拒む**——最も信じられやすい形だから、根拠を必ず載せる。
+                                  ⚠ **線は実点3・棒は2・年表は日付つき2件**を下回ると描かずに拒む（widget-render.js の
+                                  「与えられていない傾向は描かない」と同じ規律・同じ理由）。数でない値は落とし、
+                                  **何件落としたかを caption に書く**。目盛りは 1/2/2.5/5×10^k の nice-number（js/ で唯一）。
+                                  色は `--chart-cat-1..10`（atlas-styles.js）で、この層は色を1つも知らない。
+                                  描いた点・棒・出来事に `data-mark` を刻み、**観測器はその成果物を数える**（主張ではなく）。
+                                  遅延ロード（`atlasChart`）——起動グラフの modules 284 を動かさないため
 atlas-map-compose.js              **地図説明を1回で合成する層**（#R511）— `map.compose`（中核ツール `compose_map`）。
                                   地点（役割つき・番号順）・地点間の関係（大円の弧・流れは矢印・影響は破線）・
                                   塗り分け（highlight 経路へ委譲）・全体を収めるカメラ・同じ番号の凡例を
@@ -325,10 +347,10 @@ atlas-admin1.js                   **第1レベル行政境界を、同梱ファ�
 atlas-agent.js                    **ターンの進行**（#R406）— Atlas が1手ごとに「最終回答」か「tool 呼び出し」を
                                   選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・
                                   回数の上限だけを見て、意味は一切決めない。DOM も network も触らない。
-                                  `answer_mode`（text / map / mixed）は **Atlas が宣言**し、ループは
+                                  `answer_mode`（text / map / chart / mixed）は **Atlas が宣言**し、ループは
                                   「map / mixed と言ったのに何も描いていない final」を `map_not_drawn` として
                                   差し戻す（自分の宣言との整合＝schema 検査と同じ種類。回数は `maxMapGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核8ツール＋`find_capability`（レジストリの全131を検索・到達可能 130）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全132を検索・到達可能 131）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
@@ -339,7 +361,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 131能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 132能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、

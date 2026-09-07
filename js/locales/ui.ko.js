@@ -6076,4 +6076,19 @@ window.IntMapLang.define('ko', { ui: {
   "This browser could not decode that image": "이 브라우저에서 해당 이미지를 디코딩할 수 없습니다",
   "No text could be read from that file": "해당 파일에서 텍스트를 읽을 수 없습니다",
   "That file is too large": "이 파일은 용량이 너무 큽니다",
+  "{n} row(s) had no usable value and are not drawn": "{n}개 행은 값을 읽을 수 없어 그리지 않았습니다",   /* atlas-chart.js (#R543) */
+  "a {kind} needs at least {min} real points; {n} arrived": "{kind}에는 실제 데이터 점이 최소 {min}개 필요하지만 {n}개만 있습니다",   /* atlas-chart.js (#R543) */
+  "a bar chart needs at least {min} labelled values; {n} arrived": "막대그래프에는 이름이 있는 값이 최소 {min}개 필요하지만 {n}개만 있습니다",   /* atlas-chart.js (#R543) */
+  "a timeline needs at least {min} dated events; {n} arrived": "연표에는 날짜가 있는 사건이 최소 {min}개 필요하지만 {n}개만 있습니다",   /* atlas-chart.js (#R543) */
+  "chart kind must be one of {kinds}": "그래프 종류는 {kinds} 중 하나여야 합니다",   /* atlas-chart.js (#R543) */
+  "every chart must say where its numbers came from (source)": "그래프에는 숫자의 출처(source)가 반드시 필요합니다",   /* atlas-chart.js (#R543) */
+  "{kind} chart, {x0} to {x1}, values {y0} to {y1}": "{kind} 그래프, {x0}부터 {x1}까지, 값은 {y0}부터 {y1}까지",   /* atlas-chart.js (#R543) */
+  "bar chart, {n} values from {y0} to {y1}": "막대그래프, 값 {n}개, {y0}부터 {y1}까지",   /* atlas-chart.js (#R543) */
+  "timeline, {n} events from {y0} to {y1}": "연표, {y0}년부터 {y1}년까지 사건 {n}건",   /* atlas-chart.js (#R543) */
+  "The chart renderer could not be loaded.": "그래프 렌더러를 불러오지 못했습니다.",   /* atlas-console.js (#R543) */
+  "Map as it was": "당시 지도",   /* atlas-msg-tools.js (#R543) */
+  "Put the map back the way it was when this answer was written": "이 답변을 작성했을 때의 지도 상태로 되돌립니다",   /* atlas-msg-tools.js (#R543) */
+  "Restored": "되돌렸습니다",   /* atlas-msg-tools.js (#R543) */
+  "Restored ({n} later layer(s) left on)": "되돌렸습니다 (이후 켠 레이어 {n}개는 그대로)",   /* atlas-msg-tools.js (#R543) */
+  "Could not restore": "되돌릴 수 없습니다",   /* atlas-msg-tools.js (#R543) */
 } });
