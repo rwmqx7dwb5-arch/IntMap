@@ -495,6 +495,24 @@ export function makeAtlasState(HOST) {
        the whole prompt. 「制限を増やす方向、例外を増やす方向に持っていくな」 — CONSTITUTION.md §5. */
     var RENDER_LIMITS = { maxTitle: 140, maxBody: 2600 };
     var PROJ_WORD = { '3d-terrain': '3D terrain', 'flat': 'flat', 'globe': 'globe' };
+    /* (#R534) THE TWO FIELDS IN WHICH A SIMULATION ASSERTS THAT IT IS ON. The provider
+       (js/atlas-console.js's `_simulationState`) probes every module with `state()`, `isOpen()` and
+       `painted()` and records what came back, so the answer is ALREADY in the snapshot — and these
+       are the only two names it can arrive under. `open` comes from seismic, tsunami, terrainWater,
+       LOS and nightSky (their panel, or in nightSky's case its full-screen overlay, is up) and from
+       radiation, which is the one module whose `isOpen()` looks at the map itself: panel up OR its
+       plume source holds features (js/sims.js:273). `painted` comes from insolation alone, inside
+       `state()` (js/insolation.js:333), and is the one field here that means a raster was actually
+       laid down.
+       ⚠ MEASURED (#R534): NOT ONE of the eight modules implements a `painted()` METHOD — insolation
+       spells it `isPainted` — so that probe never fires and `painted` reaches the snapshot only
+       through `state()`. The probe is kept because it is the contract a module may still answer.
+       ⚠ IT MUST BE THESE TWO AND NOT "ANY TRUTHY FIELD": every other key in those objects is a
+       PARAMETER, and a parameter is truthy for free — js/viewshed.js:745 publishes obsH 2,
+       rangeKm 60 and k 1.3333 while its panel is shut, so a truthiness rule would restate this very
+       falsehood in a new shape. A module that begins asserting presence under a THIRD name belongs
+       here, and tests/r534-checks.test.mjs reads the provider to make that loud instead of silent. */
+    var SIM_PRESENT = ['open', 'painted'];
     API.renderPrompt = function (snap, opts) {
       snap = snap || {};
       var lim = Object.assign({}, RENDER_LIMITS, opts || {});
@@ -624,8 +642,22 @@ export function makeAtlasState(HOST) {
           'The map centre is NOT a substitute for it, and the reader is not the one who has to type it.');
       }
 
+      /* ⚠ (#R534) THE KEYS WERE NOT THE CLAIM. This printed `Object.keys(sim)`, so a module that had
+         merely been LOADED was announced as OPEN. `{radiation:{open:false}, insolation:{painted:false}}`
+         — the honest answer to "is anything of yours on the map?", asked and recorded — rendered as
+         «Simulations open: radiation, insolation.», and Atlas, asked what the map was showing,
+         answered with a radiation or insolation simulation that was not on it. The state was right
+         the whole way down and the sentence threw it away at the last step: presence is a VALUE the
+         modules publish, never the existence of the key that carries it. */
       var sim = snap.simulations;
-      if (sim && Object.keys(sim).length) lines.push('Simulations open: ' + Object.keys(sim).join(', ') + '.');
+      if (sim) {
+        var simOn = Object.keys(sim).filter(function (k) {
+          var st = sim[k];
+          if (!st || typeof st !== 'object') return false;
+          return SIM_PRESENT.some(function (f) { return st[f] === true; });
+        });
+        if (simOn.length) lines.push('Simulations open: ' + simOn.join(', ') + '.');
+      }
 
       var pend = snap.pendingOperations;
       if (pend && pend.length) lines.push('Operations still RUNNING from an earlier turn: ' +
