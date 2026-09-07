@@ -173,6 +173,13 @@
     var v = M.verdict(list, o.verdict);
     return {
       ok: true, aborted: aborted, verdict: v, candidates: list.slice(0, o.results || RESULTS),
+      /* ⚠ (#R547) THE LIST SAYS WHAT ORDERED IT. The panel used to print `agreement` beside every
+         candidate while the order came from `score` — two agreements with different denominators
+         (`score` divides by every column the reader supplied, `agreement` only by the ones that
+         could be evaluated), so the column headed «agreement» read out of order and nothing on
+         screen explained why. The ranking quantity is not renamed and not changed — §4.3 measured
+         what changing it costs — it is NAMED, and js/photo-geo.js prints the one this says. */
+      rankedBy: RANK,
       stats: {
         coarsePointsPlanned: total, coarsePointsVisited: done, coarsePointsEvaluated: evaluated,
         offGrid: offGrid, spacingM: spacing, fineSpacingM: Math.max(o.minFineSpacingM || 25, spacing / 4),
@@ -235,7 +242,28 @@
     return out;
   }
 
+  /* ⚠ (#R547) THE PANEL ASKS THE SEARCH WHICH NUMBER ORDERED THE LIST — it does not decide.
+     A display that names its own quantity is a display that can disagree with the sort, which is
+     exactly what it did: «agreement» printed beside a list ordered by `score`. Both callers now read
+     the order out of the same field, so «the number shown is the number sorted on» is true by
+     construction rather than by two files happening to agree.
+     `rankedBy` is absent on a result produced before this existed; `score` is what ranked those. */
+  function rankValue(result, cand) {
+    if (!cand) return NaN;
+    var k = (result && result.rankedBy) || 'score';
+    var v = +cand[k];
+    return isFinite(v) ? v : +cand.score;
+  }
+  /* is this list actually in the order it claims? The panel does not need to ask — but a test does,
+     and so does anyone adding a second place that reorders candidates. */
+  function orderedByRank(result) {
+    var c = (result && result.candidates) || [];
+    for (var i = 1; i < c.length; i++) if (rankValue(result, c[i]) > rankValue(result, c[i - 1]) + 1e-9) return false;
+    return true;
+  }
+
   var API = {
+    rankValue: rankValue, orderedByRank: orderedByRank,
     DEFAULT_BUDGET: DEFAULT_BUDGET, COARSE_NAZ: COARSE_NAZ, FINE_NAZ: FINE_NAZ,
     areaMetres: areaMetres, plan: plan, run: run, predictedSkyline: predictedSkyline
   };

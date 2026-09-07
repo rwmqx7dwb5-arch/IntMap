@@ -476,7 +476,8 @@ routing-cards.js                  経路候補カード／手順／区間の共�
 routing-export.js                 GPX・GeoJSON・共有状態 window.IntMapRouteExport
 photo-geo.js                      写真の撮影地点探索パネル（Layers ▸ Tools ▸ Photo location・遅延取得）window.IntMapPhotoGeo
 photo-geo-terrain.js              写真照合用の地形——terrarium DEM を局所ラスタへ、方位別の稜線仰角
-photo-geo-skyline.js              写真から空と山の境界を抽出（画像適応しきい値＋動的計画法）
+photo-geo-skyline.js              写真から空と山の境界を抽出（画像適応しきい値＋動的計画法・与えられた境界の画素吸着）
+photo-geo-vision.js               視覚モデルに稜線を訊く（schema・返答の検証・折れ線→案内線・送信の同意と表明）window.IntMapPhotoVision
 photo-geo-match.js                カメラモデルと稜線の一致度・方位探索・判定
 photo-geo-search.js               矩形の走査（粗→細）・候補の抑制・見積り
 photo-geo-exif.js                 EXIF の向き・焦点距離・GPS（GPS は結果に使わず表示のみ）

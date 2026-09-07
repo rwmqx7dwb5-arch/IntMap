@@ -81,7 +81,12 @@
     var sa = [0, 0, 0], sqa = [0, 0, 0], na = 0, sb = [0, 0, 0], sqb = [0, 0, 0], nb = 0;
     for (var x = 0; x < w; x++) {
       var base = x * (h + 1) * 6, by = bound[x];
-      if (by < 0) by = 0; if (by > h) by = h;
+      /* ⚠ a column with no boundary in it is SKIPPED, not read as «the boundary is at the top».
+         Clamping -1 to 0 would file that whole column under the ground class and quietly bias the
+         colour model — and a guide from js/photo-geo-vision.js is -1 wherever the model said
+         nothing, which is precisely where the model is being honest. */
+      if (by < 0) continue;
+      if (by > h) by = h;
       var oA = base + by * 6, oT = base + h * 6;
       for (var c = 0; c < 3; c++) {
         sa[c] += sums[oA + c]; sqa[c] += sums[oA + 3 + c];
@@ -111,26 +116,22 @@
     return b;
   }
 
-  function extract(img, opt) {
+  /* ── ⚠ STEP 4 IS A FUNCTION OF A BOUNDARY, WHICH IS THE WHOLE REASON A MODEL CAN DRIVE IT ──────
+     Steps 1–3 exist only to GUESS a boundary from pixels. Step 4 — fit two colours either side of
+     it, then re-trace with a smoothness penalty — does not care where that guess came from. So it
+     lives here on its own, and js/photo-geo-vision.js hands it a polyline traced by a vision model
+     instead. Copying step 4 into the model path would have meant two dynamic programs drifting
+     apart; there is one, and both callers get the same trace, the same `use`, the same `quality`.
+       `guide` is one row per column, or -1 for «no opinion in this column».
+       `bandPx`, when given, is a HARD limit on how far the refinement may move from the guide: the
+     pixels say exactly where the ridge is, but only near where the model said it was. Without it
+     the tree line two hundred pixels below would win on edge strength alone, which is the failure
+     the model path exists to avoid. */
+  function traceUnder(img, g, gmax, sums, guide, opt) {
     var o = opt || {};
     var w = img.width, h = img.height;
-    var g = edgeMap(img);
-    var sums = columnSums(img);
-
-    /* --- step 1-3: let the image choose its own edge threshold ------------------------------- */
-    var gmax = 0;
-    for (var i = 0; i < g.length; i++) if (g[i] > gmax) gmax = g[i];
-    var best = null;
-    for (var k = 1; k <= N_THRESHOLDS; k++) {
-      var t = gmax * k / (N_THRESHOLDS + 1);
-      var b = boundaryForThreshold(g, w, h, t);
-      var sep = separation(sums, b, w, h);
-      if (!best || sep.j > best.sep.j) best = { t: t, bound: b, sep: sep };
-    }
-    if (!best) return null;
-
-    /* --- step 4: a two-class colour model, then a dynamic program ----------------------------- */
-    var mA = best.sep.meanA || [1, 1, 1], mB = best.sep.meanB || [0, 0, 0];
+    var sep = separation(sums, guide, w, h);
+    var mA = sep.meanA || [1, 1, 1], mB = sep.meanB || [0, 0, 0];
     var d = img.data;
     /* skyCost[y*w+x] is small where the pixel looks like the ABOVE class; groundCost the reverse */
     var above = new Float32Array(w * h);
@@ -165,10 +166,23 @@
 
     var D = Math.max(2, Math.round(h * MAX_SLOPE_FRAC));
     var lam = SMOOTHNESS;
+    /* the rows this column is allowed to end on. Without a band that is the whole column; with one
+       it is the guide ± bandPx, and the guide has already been slope-limited to D per column
+       (`slopeLimit`) so consecutive bands always overlap within one step — a band the trace cannot
+       get through is a search with no answer at all, not a tighter one. */
+    var band = o.bandPx > 0 ? Math.max(1, Math.round(o.bandPx)) : 0;
+    var lim = new Int32Array(w * 2);
+    for (var xb = 0; xb < w; xb++) {
+      var gy = band && guide ? guide[xb] : -1;
+      lim[xb * 2] = gy >= 0 ? Math.max(0, gy - band) : 0;
+      lim[xb * 2 + 1] = gy >= 0 ? Math.min(h - 1, gy + band) : h - 1;
+    }
     var cost = new Float32Array(w * h), back = new Int32Array(w * h);
-    for (var y3 = 0; y3 < h; y3++) cost[y3] = unary(0, y3);
+    for (var y3 = 0; y3 < h; y3++) cost[y3] = (y3 >= lim[0] && y3 <= lim[1]) ? unary(0, y3) : Infinity;
     for (var x4 = 1; x4 < w; x4++) {
+      var alo = lim[x4 * 2], ahi = lim[x4 * 2 + 1];
       for (var y4 = 0; y4 < h; y4++) {
+        if (y4 < alo || y4 > ahi) { cost[x4 * h + y4] = Infinity; back[x4 * h + y4] = y4; continue; }
         var bestC = Infinity, bestY = y4;
         var lo = Math.max(0, y4 - D), hi = Math.min(h - 1, y4 + D);
         for (var yp = lo; yp <= hi; yp++) {
@@ -179,7 +193,7 @@
         back[x4 * h + y4] = bestY;
       }
     }
-    var endY = 0, endC = Infinity;
+    var endY = lim[(w - 1) * 2], endC = Infinity;
     for (var y5 = 0; y5 < h; y5++) if (cost[(w - 1) * h + y5] < endC) { endC = cost[(w - 1) * h + y5]; endY = y5; }
     var sky = new Int32Array(w);
     sky[w - 1] = endY;
@@ -195,22 +209,82 @@
       /* a trace pinned to the very top or the very bottom of the frame is not a skyline, it is the
          dynamic program running out of image — those columns are excluded, not reported as found */
       var ok = yy > 1 && yy < h - 2;
+      /* a caller that already knows a column is hidden (a stretch the vision model marked, or the
+         reader masked) keeps it out of the evidence here rather than after the fact */
+      if (ok && o.use && !o.use[x6]) ok = false;
       use[x6] = ok ? 1 : 0;
       if (ok) { edgeSum += e; used++; }
     }
     var meanEdge = used ? edgeSum / used : 0;
     return {
       width: w, height: h, sky: sky, use: use, conf: conf,
+      source: o.source || 'auto',
       quality: {
         /* how cleanly the picture divides into two colours — low means «no sky/ground split here» */
-        separation: best.sep.j,
+        separation: sep.j,
         /* how sharp the boundary is where it was traced */
         meanEdge: meanEdge,
         /* how much of the frame width produced a usable trace */
         coverage: used / w,
-        threshold: best.t / (gmax || 1)
+        threshold: o.threshold != null ? o.threshold : null
       }
     };
+  }
+
+  /* ⚠ a guide the trace physically cannot follow is not a constraint, it is an empty search. A real
+     skyline never moves more than D rows per column (that is what MAX_SLOPE_FRAC asserts), so a
+     polyline that does is flattened to what a skyline can do BEFORE it becomes a band. */
+  function slopeLimit(guide, w, D) {
+    var g = Int32Array.from(guide);
+    var i, prev = -1;
+    for (i = 0; i < w; i++) {
+      if (g[i] < 0) { continue; }
+      if (prev >= 0 && g[i] - prev > D) g[i] = prev + D;
+      prev = g[i];
+    }
+    prev = -1;
+    for (i = w - 1; i >= 0; i--) {
+      if (g[i] < 0) { continue; }
+      if (prev >= 0 && g[i] - prev > D) g[i] = prev + D;
+      prev = g[i];
+    }
+    return g;
+  }
+
+  function extract(img, opt) {
+    var o = opt || {};
+    var w = img.width, h = img.height;
+    var g = edgeMap(img);
+    var sums = columnSums(img);
+
+    /* --- step 1-3: let the image choose its own edge threshold ------------------------------- */
+    var gmax = 0;
+    for (var i = 0; i < g.length; i++) if (g[i] > gmax) gmax = g[i];
+    var best = null;
+    for (var k = 1; k <= N_THRESHOLDS; k++) {
+      var t = gmax * k / (N_THRESHOLDS + 1);
+      var b = boundaryForThreshold(g, w, h, t);
+      var sep = separation(sums, b, w, h);
+      if (!best || sep.j > best.sep.j) best = { t: t, bound: b, sep: sep };
+    }
+    if (!best) return null;
+    return traceUnder(img, g, gmax, sums, best.bound,
+      { source: 'auto', threshold: best.t / (gmax || 1), use: o.use || null });
+  }
+
+  /* The model path's entry point: a boundary somebody else believes in, snapped to the pixels
+     without being allowed to leave its neighbourhood. */
+  function refineFromBoundary(img, guide, opt) {
+    var o = opt || {};
+    var w = img.width, h = img.height;
+    if (!guide || guide.length !== w) return null;
+    var g = edgeMap(img), sums = columnSums(img);
+    var gmax = 0;
+    for (var i = 0; i < g.length; i++) if (g[i] > gmax) gmax = g[i];
+    var D = Math.max(2, Math.round(h * MAX_SLOPE_FRAC));
+    var lim = slopeLimit(guide, w, D);
+    return traceUnder(img, g, gmax, sums, lim,
+      { source: o.source || 'llm', bandPx: o.bandPx, use: o.use || null, threshold: null });
   }
 
   /* Replace a stretch of the trace with points the reader drew. `pts` is [[x,y],...] in analysis
@@ -249,6 +323,7 @@
   var API = {
     MAX_SLOPE_FRAC: MAX_SLOPE_FRAC, SMOOTHNESS: SMOOTHNESS,
     edgeMap: edgeMap, extract: extract,
+    refineFromBoundary: refineFromBoundary, slopeLimit: slopeLimit,
     applyStroke: applyStroke, maskColumns: maskColumns, usableColumns: usableColumns
   };
   if (typeof globalThis !== 'undefined') globalThis.IntMapPhotoSkyline = API;

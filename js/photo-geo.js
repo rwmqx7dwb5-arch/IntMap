@@ -33,6 +33,7 @@
 import './photo-geo-terrain.js';
 import './photo-geo-match.js';
 import './photo-geo-skyline.js';
+import './photo-geo-vision.js';
 import './photo-geo-exif.js';
 import './photo-geo-search.js';
 import '../src/photo-geo-worker-client.js';
@@ -51,6 +52,19 @@ window.IntMapModules.photoGeo = function (HOST) {
 
   let panel = null, state = null, job = null, drawing = null;
 
+  /* ── WHICH DETECTOR TRACES THE RIDGE ────────────────────────────────────────────────────────────
+     Two, and the reader picks. `llm` asks a vision model where the sky stops and snaps its answer to
+     the pixels (js/photo-geo-vision.js); `cv` is #R527's own edge-and-colour detector, which reads
+     nothing but this photograph and sends nothing anywhere. The model is the default because the
+     measured failure of this feature is the trace — nine of twelve evaluated photographs produced no
+     answer and the recorded reason is a trace that followed a tree line (docs/PHOTO-GEOLOCATION.md
+     §9.1) — and telling a conifer from a mountain is a recognition question.
+     ⚠ THE MODEL PATH SENDS THE PHOTOGRAPH. That is asked for once, remembered per browser, and
+     stated afterwards in the result's provenance — see visionConsent / provenanceBlock. */
+  const CONSENT_KEY = 'im-photogeo-vision-consent';
+  function consentGiven() { try { return localStorage.getItem(CONSENT_KEY) === '1'; } catch (_) { return false; } }
+  function setConsent(v) { try { v ? localStorage.setItem(CONSENT_KEY, '1') : localStorage.removeItem(CONSENT_KEY); } catch (_) { } }
+
   function blank() {
     return {
       file: null, exif: null, orig: null, analysis: null, skyline: null,
@@ -58,6 +72,8 @@ window.IntMapModules.photoGeo = function (HOST) {
       phase: 'idle',          /* idle | ready | planning | searching | aborted | done | failed */
       progress: null, error: null,
       edit: 'none',           /* none | draw | mask | unmask */
+      method: 'llm',          /* llm | cv */
+      detecting: false, visionNote: null, visionError: null,
       tuned: null, tuning: false, usingWorker: null
     };
   }
@@ -68,7 +84,10 @@ window.IntMapModules.photoGeo = function (HOST) {
       state.error = L('That file is not an image.', 'その ファイルは画像ではありません。', 'Diese Datei ist kein Bild.', 'Этот файл не является изображением.', 'Ese archivo no es una imagen.');
       render(); return;
     }
-    state = Object.assign(blank(), { area: state && state.area, phase: 'ready' });
+    /* the rectangle and the chosen detector belong to the reader, not to the file */
+    state = Object.assign(blank(), {
+      area: state && state.area, method: (state && state.method) || 'llm', phase: 'ready'
+    });
     state.file = { name: file.name, size: file.size, type: file.type };
     try {
       const buf = await file.arrayBuffer();
@@ -95,18 +114,88 @@ window.IntMapModules.photoGeo = function (HOST) {
       state.orig = { width: ow, height: oh, url: cv.toDataURL('image/jpeg', 0.9) };
       state.analysis = { width: aw, height: ah, data: cx.getImageData(0, 0, aw, ah).data };
       try { bmp.close(); } catch (_) { }
-      retrace();
+      /* ⚠ THE FREE, LOCAL TRACE FIRST, ALWAYS. The panel must never be empty while a network call is
+         in flight, and a reader who has not consented to sending the picture — or has no account,
+         or is offline — still gets a working feature. If the model path is available it then runs
+         and replaces this one; if it is not, the reason is shown beside the trace that is there. */
+      retraceCV();
+      if (state.method === 'llm' && consentGiven() && HOST.user) retraceLLM();
+      else if (state.method === 'llm' && !consentGiven()) state.visionError = null;
     } catch (e) {
       state.error = L('The image could not be read.', '画像を読み込めませんでした。', 'Das Bild konnte nicht gelesen werden.', 'Не удалось прочитать изображение.', 'No se pudo leer la imagen.');
     }
     render();
   }
 
-  function retrace() {
-    if (!state.analysis || !window.IntMapPhotoSkyline) return;
+  /* ── the two detectors ─────────────────────────────────────────────────────────────────────────
+     `retraceCV` is #R527's: pixels only, instant, offline, and it can be fooled by a tree line.
+     `retraceLLM` asks a vision model and then snaps its polyline to the real edge under a hard band
+     (js/photo-geo-vision.js). It costs one AI use, needs an account, and SENDS THE PHOTOGRAPH — so
+     it never runs without recorded consent, and the trace it produces is stamped `source:'llm'`,
+     which is what the provenance line is computed from. */
+  function retraceCV() {
+    if (!state.analysis || !window.IntMapPhotoSkyline) return null;
     state.skyline = window.IntMapPhotoSkyline.extract(state.analysis);
+    state.visionNote = null;
     state.result = null;
+    return state.skyline;
+  }
+
+  async function retraceLLM() {
+    const V = window.IntMapPhotoVision, S = window.IntMapPhotoSkyline;
+    if (!state.analysis || !V || !S) return;
+    const g = V.gate({ consent: consentGiven(), online: navigator.onLine !== false });
+    if (!g.allowed) { state.visionError = gateMsg(g.why); render(); return; }
+    if (!HOST.user) { state.visionError = gateMsg('needs_account'); render(); return; }
+    state.detecting = true; state.visionError = null; state.error = null; render();
+    try {
+      const env = await HOST.askAIJSONEnvelope(
+        V.prompt({ width: state.analysis.width, height: state.analysis.height }),
+        V.SYSTEM, [state.orig.url], V.callOptions());
+      const norm = V.normalise(env && env.data, state.analysis.width, state.analysis.height);
+      if (!norm.ok) {
+        /* ⚠ A REJECTED REPLY LEAVES THE PREVIOUS TRACE ALONE. «This photograph has no skyline» is an
+           answer worth keeping (#R527 §5.3), and overwriting a good trace with a flat line because
+           one reply was unusable would turn a refusal into a wrong place. */
+        state.visionError = replyMsg(norm.why, norm.note);
+        state.detecting = false; render(); return;
+      }
+      const guided = V.toGuide(norm, state.analysis.width, state.analysis.height);
+      const sk = S.refineFromBoundary(state.analysis, guided.guide,
+        { bandPx: guided.bandPx, use: guided.use, source: 'llm' });
+      if (!sk) { state.visionError = replyMsg('unreadable'); state.detecting = false; render(); return; }
+      sk.vision = { confidence: norm.confidence, note: norm.note, points: norm.points.length, excluded: norm.excluded.length };
+      state.skyline = sk;
+      state.visionNote = norm.note || null;
+      state.result = null;
+    } catch (e) {
+      /* askAI already opened the sign-in modal or named the quota; this only has to say that the
+         other detector is still there and costs nothing */
+      state.visionError = String((e && e.message) || e);
+    }
+    state.detecting = false;
     render();
+  }
+
+  /* why the model could not be asked — each reason is a different thing for the reader to do */
+  function gateMsg(why) {
+    if (why === 'needs_consent') return L('The photograph has not been sent — allow it above first.', '写真はまだ送信していません。上で許可してください。', 'Das Foto wurde nicht gesendet — bitte oben zustimmen.', 'Фотография не отправлена — сначала разрешите выше.', 'La fotografía no se ha enviado: autorícelo arriba primero.');
+    if (why === 'offline') return L('No connection. The image-processing detector still works offline.', 'オフラインです。画像処理による検出はオフラインでも使えます。', 'Keine Verbindung. Die Bildverarbeitung funktioniert offline weiter.', 'Нет соединения. Детектор на обработке изображения работает офлайн.', 'Sin conexión. El detector por procesamiento de imagen sigue funcionando.');
+    return L('An account is needed to ask the model. The image-processing detector needs none.', 'モデルに訊くにはアカウントが必要です。画像処理による検出は不要です。', 'Für das Modell wird ein Konto benötigt; für die Bildverarbeitung nicht.', 'Для запроса к модели нужен аккаунт; для обработки изображения — нет.', 'Se necesita una cuenta para preguntar al modelo; el detector por imagen no la requiere.');
+  }
+  /* …and why a reply was refused. «No skyline here» is an ANSWER and is worded as one. */
+  function replyMsg(why, note) {
+    const tail = note ? ' — ' + note : '';
+    if (why === 'no_skyline') return L('The model found no sky-and-land boundary in this photograph.', 'この写真に空と地面の境界は見つかりませんでした。', 'Das Modell fand in diesem Foto keine Grenze zwischen Himmel und Land.', 'Модель не нашла границы неба и земли на этом фото.', 'El modelo no encontró un límite entre cielo y tierra en esta foto.') + tail;
+    if (why === 'too_few_points') return L('The reply traced too few points to be a ridge.', '返ってきた点が少なすぎて稜線になりません。', 'Die Antwort enthielt zu wenige Punkte für einen Grat.', 'В ответе слишком мало точек для гребня.', 'La respuesta trazó muy pocos puntos para ser una cresta.');
+    if (why === 'too_narrow') return L('The traced ridge covers too little of the frame to search with.', '描かれた稜線が画面のごく一部しか覆っていません。', 'Der gezeichnete Grat deckt zu wenig des Bildes ab.', 'Обведённый гребень покрывает слишком малую часть кадра.', 'La cresta trazada cubre muy poco del encuadre.');
+    return L('The reply could not be read.', '返答を読み取れませんでした。', 'Die Antwort war nicht lesbar.', 'Не удалось прочитать ответ.', 'No se pudo leer la respuesta.');
+  }
+
+  function retrace() {
+    if (!state.analysis) return;
+    if (state.method === 'llm') return retraceLLM();
+    retraceCV(); render();
   }
 
   /* ═══ the search rectangle ═════════════════════════════════════════════════════════════════════ */
@@ -335,7 +424,9 @@ window.IntMapModules.photoGeo = function (HOST) {
       redraw: L('Redraw ridge', '稜線を描き直す', 'Grat neu zeichnen', 'Перерисовать гребень', 'Redibujar la cresta'),
       mask: L('Mask out', '除外する', 'Ausblenden', 'Исключить', 'Excluir'),
       unmask: L('Include again', '再び含める', 'Wieder einbeziehen', 'Снова включить', 'Incluir de nuevo'),
-      auto: L('Re-detect', '自動検出しなおす', 'Neu erkennen', 'Определить заново', 'Detectar de nuevo'),
+      auto: L('Re-detect', '検出しなおす', 'Neu erkennen', 'Определить заново', 'Detectar de nuevo'),
+      mLlm: L('Vision model', 'AI（視覚モデル）', 'Bildmodell', 'Модель зрения', 'Modelo de visión'),
+      mCv: L('Image processing', '画像処理', 'Bildverarbeitung', 'Обработка изображения', 'Procesamiento de imagen'),
       close: L('Close', '閉じる', 'Schließen', 'Закрыть', 'Cerrar')
     };
     let h = '<div class="pg-head"><span class="pg-title">' + esc(T_.title) + '</span><button class="pg-x" data-act="close" title="' + esc(T_.close) + '">×</button></div><div class="pg-body">';
@@ -422,16 +513,54 @@ window.IntMapModules.photoGeo = function (HOST) {
     return h + '</div>';
   }
 
+  /* ⚠ THE SENTENCE THAT ASKS IS THE SENTENCE THAT IS TRUE. Consent is asked for in the words of what
+     actually happens — a downscaled copy of this photograph is sent to the AI provider IntMap calls
+     — and it is asked before the first send, not buried in a policy the reader would have to go
+     looking for. Withdrawing it is one click and stops every later send. */
+  function methodBlock(T_) {
+    const on = (m) => state.method === m ? ' pg-on' : '';
+    let h = '<div class="pg-tools">';
+    h += '<button class="pg-btn' + on('llm') + '" data-act="method-llm">' + esc(T_.mLlm) + '</button>';
+    h += '<button class="pg-btn' + on('cv') + '" data-act="method-cv">' + esc(T_.mCv) + '</button>';
+    h += '</div>';
+    if (state.method === 'llm') {
+      if (!consentGiven()) {
+        h += '<div class="pg-warn"><b>' + esc(L('This sends your photograph.', 'この方式は写真を送信します。', 'Dabei wird Ihr Foto gesendet.', 'При этом фотография отправляется.', 'Esto envía su fotografía.')) + '</b><br>' +
+          esc(L('A reduced copy of the picture goes to the AI provider IntMap calls, to be traced. It is not stored. The image-processing detector sends nothing at all.',
+            '縮小した写真が、IntMap が呼び出す AI 提供事業者へ稜線検出のために送信されます。保存はされません。画像処理による検出は何も送信しません。',
+            'Eine verkleinerte Kopie geht an den von IntMap genutzten KI-Anbieter und wird nicht gespeichert. Die Bildverarbeitung sendet nichts.',
+            'Уменьшенная копия отправляется ИИ-провайдеру, которого вызывает IntMap, и не сохраняется. Детектор на обработке изображения не отправляет ничего.',
+            'Una copia reducida va al proveedor de IA que IntMap utiliza y no se almacena. El detector por procesamiento de imagen no envía nada.')) +
+          '<br><button class="pg-btn pg-primary" data-act="vision-allow">' + esc(L('Allow and detect', '許可して検出する', 'Zustimmen und erkennen', 'Разрешить и определить', 'Permitir y detectar')) + '</button></div>';
+      } else {
+        h += '<div class="pg-hint">' + esc(L('Sending the photograph is allowed on this browser.', 'この端末では写真の送信を許可済みです。', 'Das Senden des Fotos ist in diesem Browser erlaubt.', 'Отправка фотографии в этом браузере разрешена.', 'El envío de la fotografía está permitido en este navegador.')) +
+          ' <button class="pg-btn" data-act="vision-revoke">' + esc(L('Withdraw', '取り消す', 'Widerrufen', 'Отозвать', 'Retirar')) + '</button></div>';
+      }
+    }
+    if (state.detecting) h += '<div class="pg-hint">' + esc(L('Asking the model where the sky stops…', 'モデルに稜線を訊いています…', 'Das Modell wird nach der Kammlinie gefragt…', 'Модель определяет линию горизонта…', 'Preguntando al modelo dónde termina el cielo…')) + '</div>';
+    if (state.visionError) h += '<div class="pg-warn">' + esc(state.visionError) + '</div>';
+    return h;
+  }
+
   function skylineBlock(T_) {
-    if (!state.skyline) return '';
+    let h = methodBlock(T_);
+    if (!state.skyline) return h;
     const q = state.skyline.quality;
     const usable = window.IntMapPhotoSkyline.usableColumns(state.skyline);
-    let h = '<div class="pg-tools">';
+    h += '<div class="pg-tools">';
     h += '<button class="pg-btn' + (state.edit === 'draw' ? ' pg-on' : '') + '" data-act="edit-draw">' + esc(T_.redraw) + '</button>';
     h += '<button class="pg-btn' + (state.edit === 'mask' ? ' pg-on' : '') + '" data-act="edit-mask">' + esc(T_.mask) + '</button>';
     h += '<button class="pg-btn' + (state.edit === 'unmask' ? ' pg-on' : '') + '" data-act="edit-unmask">' + esc(T_.unmask) + '</button>';
     h += '<button class="pg-btn" data-act="retrace">' + esc(T_.auto) + '</button>';
     h += '</div><div class="pg-hint">' + esc(L('Drag across the photo to apply the selected tool.', '写真の上をドラッグすると選んだ操作を適用します。', 'Über das Foto ziehen, um das Werkzeug anzuwenden.', 'Проведите по фото, чтобы применить инструмент.', 'Arrastre sobre la foto para aplicar la herramienta.')) + '</div>';
+    /* ⚠ WHICH DETECTOR DREW THIS IS PART OF THE TRACE, NOT PART OF THE PANEL'S MEMORY. The reader can
+       switch method, edit by hand, and reload a photo; the only thing that still knows what produced
+       the line on screen is the line itself. */
+    h += '<div class="pg-meta">' + esc(L('Traced by', '検出方法', 'Erkannt durch', 'Определено', 'Detectado por')) + ': <b>' +
+      esc(state.skyline.source === 'llm' ? T_.mLlm : T_.mCv) + '</b>' +
+      (state.skyline.vision && state.skyline.vision.confidence != null
+        ? ' · ' + esc(L('model confidence', 'モデルの確信度', 'Modellvertrauen', 'уверенность модели', 'confianza del modelo')) + ' ' + Math.round(state.skyline.vision.confidence * 100) + '%' : '') + '</div>';
+    if (state.visionNote) h += '<div class="pg-hint">' + esc(state.visionNote) + '</div>';
     h += '<div class="pg-meta">' + esc(L('Usable columns', '使用可能な列', 'Nutzbare Spalten', 'Пригодных столбцов', 'Columnas utilizables')) + ': ' + usable + ' / ' + state.analysis.width +
       ' · ' + esc(L('edge', 'エッジ', 'Kante', 'край', 'borde')) + ' ' + q.meanEdge.toFixed(2) +
       ' · ' + esc(L('separation', '分離度', 'Trennung', 'разделение', 'separación')) + ' ' + q.separation.toFixed(1) + '</div>';
@@ -473,6 +602,8 @@ window.IntMapModules.photoGeo = function (HOST) {
     }[v.code] || v.code;
     h += '<div class="' + vClass + '"><b>' + esc(vName) + '</b>' + (v.reason ? '<br>' + esc(v.reason) : '') + '</div>';
     if (r.aborted) h += '<div class="pg-warn">' + esc(L('The search was stopped before it finished — these are the places it had reached.', '検索は途中で中止されました。ここまでに調べた地点です。', 'Die Suche wurde vorzeitig beendet.', 'Поиск был прерван.', 'La búsqueda se detuvo antes de terminar.')) + '</div>';
+    /* which number ordered this list is the search's fact, not the panel's choice — see rankValue */
+    const ranked = (c) => window.IntMapPhotoSearch.rankValue(r, c);
     h += '<ol class="pg-list">';
     r.candidates.forEach((c, i) => {
       h += '<li class="pg-cand' + (i === state.selected ? ' pg-selc' : '') + '" data-act="sel" data-i="' + i + '">' +
@@ -483,7 +614,12 @@ window.IntMapModules.photoGeo = function (HOST) {
         ' · ' + esc(L('tilt', '仰角', 'Neigung', 'наклон', 'inclinación')) + ' ' + c.pitchDeg.toFixed(1) + '°</div>' +
         '<div class="pg-cm">' + esc(L('Skyline explained', '一致した稜線', 'Erklärte Kammlinie', 'Объяснено линии', 'Cumbres explicadas')) + ': <b>' + c.explainedDeg.toFixed(0) + '°</b> ' +
         esc(L('of', '／', 'von', 'из', 'de')) + ' ' + c.spanDeg.toFixed(0) + '° · ' +
-        esc(L('agreement', '一致度', 'Übereinstimmung', 'совпадение', 'concordancia')) + ' ' + (c.agreement * 100).toFixed(0) + '%' +
+        /* ⚠ THE NUMBER SHOWN AS «AGREEMENT» IS THE NUMBER THIS LIST IS SORTED BY, read from the
+           result rather than chosen here, so the list is descending in it by construction. The other
+           agreement — the same sum over only the columns that could be evaluated — is still shown,
+           under its own name, because it is what the fine-tuning panel recomputes. */
+        esc(L('agreement', '一致度', 'Übereinstimmung', 'совпадение', 'concordancia')) + ' <b>' + (ranked(c) * 100).toFixed(0) + '%</b>' +
+        ' · ' + esc(L('over evaluated columns', '評価できた列で', 'über bewertete Spalten', 'по оценённым столбцам', 'sobre columnas evaluadas')) + ' ' + (c.agreement * 100).toFixed(0) + '%' +
         ' · RMS ' + (c.rmsDeg || 0).toFixed(2) + '°</div>' +
         '</li>';
     });
@@ -526,7 +662,8 @@ window.IntMapModules.photoGeo = function (HOST) {
       '<span class="pg-badge">' + TUNE_STEP_M + ' m</span></div>';
     if (t) {
       h += '<div class="pg-meta">' + cur.lat.toFixed(5) + ', ' + cur.lon.toFixed(5) + ' · ' +
-        esc(L('agreement', '一致度', 'Übereinstimmung', 'совпадение', 'concordancia')) + ' ' + (t.agreement * 100).toFixed(0) + '%' +
+        esc(L('agreement', '一致度', 'Übereinstimmung', 'совпадение', 'concordancia')) + ' ' +
+        ((state.result && state.result.rankedBy === 'agreement' ? t.agreement : (isFinite(+t.score) ? t.score : t.agreement)) * 100).toFixed(0) + '%' +
         ' · ' + esc(L('explained', '説明角', 'erklärt', 'объяснено', 'explicado')) + ' ' + t.explainedDeg.toFixed(0) + '°' +
         ' · RMS ' + (t.rmsDeg || 0).toFixed(2) + '°' +
         (t.groundM != null ? ' · ' + esc(L('ground', '標高', 'Boden', 'высота', 'suelo')) + ' ' + Math.round(t.groundM) + ' m' : '') + '</div>';
@@ -585,12 +722,22 @@ window.IntMapModules.photoGeo = function (HOST) {
   /* ⚠ EVERY NUMBER THAT LIMITS THE ANSWER, IN ONE PLACE AND ALWAYS SHOWN. */
   function provenanceBlock(r) {
     const s = r.stats, a = r.attribution;
-    /* ⚠ WHERE THE PHOTOGRAPH WENT, WHICH IS NOWHERE. Everything that reads pixels runs in this
-       browser: the trace, the camera model and the match. The only thing fetched is public elevation
-       tiles, and those are requested BY COORDINATE — the picture is never uploaded, to IntMap or to
-       anyone else. A feature that examines a personal photograph has to say so where it is used. */
+    /* ⚠ WHERE THE PHOTOGRAPH WENT — COMPUTED, NEVER REMEMBERED. Until #R547 this was one sentence
+       saying the picture never left the browser, which was true of every path there was. It is now
+       true of one of two, so the sentence is CHOSEN by js/photo-geo-vision.js privacyNote() from the
+       source stamped on the trace that produced this answer. A path that sent the photograph cannot
+       reach the sentence that says it did not — that is the point of deriving it. The camera model,
+       the sweep and the match still run entirely in this browser either way, and the elevation tiles
+       are still requested by coordinate alone. */
+    const sent = window.IntMapPhotoVision.privacyNote(state.skyline ? state.skyline.source : 'auto') === 'sent_to_provider';
     let h = '<details class="pg-prov" open><summary>' + esc(L('How this answer was produced', 'この結果の出どころ', 'Wie dieses Ergebnis entstand', 'Как получен этот результат', 'Cómo se obtuvo este resultado')) + '</summary>';
-    h += '<div class="pg-ok">' + esc(L('Your photograph stayed on this device. Only public elevation tiles were fetched, by coordinate.', 'この写真は端末の外に出ていません。取得したのは座標で指定した公開の標高タイルだけです。', 'Ihr Foto hat dieses Gerät nicht verlassen. Geholt wurden nur öffentliche Höhenkacheln, nach Koordinate.', 'Фотография не покидала это устройство. Загружались только общедоступные тайлы высот по координатам.', 'Su fotografía no salió de este dispositivo. Solo se descargaron teselas públicas de elevación, por coordenada.')) + '</div>';
+    h += sent
+      ? '<div class="pg-warn">' + esc(L('A reduced copy of your photograph was sent to the AI provider IntMap calls, to trace the ridge. It was not stored. Everything after that — the camera model, the sweep and the match — ran in this browser, and the elevation tiles were fetched by coordinate.',
+        '稜線を描くため、縮小した写真が IntMap の呼び出す AI 提供事業者へ送信されました。保存はされていません。それ以降（カメラモデル・走査・照合）はすべてこのブラウザの中で行われ、標高タイルは座標で取得しています。',
+        'Eine verkleinerte Kopie Ihres Fotos wurde zum Nachzeichnen des Grats an den von IntMap genutzten KI-Anbieter gesendet und nicht gespeichert. Alles Weitere lief in diesem Browser; die Höhenkacheln wurden nach Koordinate geholt.',
+        'Уменьшенная копия фотографии была отправлена ИИ-провайдеру, которого вызывает IntMap, чтобы обвести гребень, и не сохранялась. Всё остальное выполнено в этом браузере, а тайлы высот запрошены по координатам.',
+        'Se envió una copia reducida de su fotografía al proveedor de IA que IntMap utiliza, para trazar la cresta, y no se almacenó. Todo lo demás se ejecutó en este navegador y las teselas de elevación se pidieron por coordenada.')) + '</div>'
+      : '<div class="pg-ok">' + esc(L('Your photograph stayed on this device. Only public elevation tiles were fetched, by coordinate.', 'この写真は端末の外に出ていません。取得したのは座標で指定した公開の標高タイルだけです。', 'Ihr Foto hat dieses Gerät nicht verlassen. Geholt wurden nur öffentliche Höhenkacheln, nach Koordinate.', 'Фотография не покидала это устройство. Загружались только общедоступные тайлы высот по координатам.', 'Su fotografía no salió de este dispositivo. Solo se descargaron teselas públicas de elevación, por coordenada.')) + '</div>';
     h += '<div>' + esc(L('Elevation data', '標高データ', 'Höhendaten', 'Данные высот', 'Datos de elevación')) + ': ' + esc(a.name) + ' — ' + esc(a.sources) + '</div>';
     h += '<div>' + esc(L('Native resolution', '元解像度', 'Native Auflösung', 'Исходное разрешение', 'Resolución nativa')) + ': ≈' + a.nativeResolutionM + ' m · ' + esc(L('sharp summits read low', '鋭い山頂は低めに出ます', 'scharfe Gipfel werden zu niedrig gemessen', 'острые вершины занижены', 'las cumbres afiladas se leen bajas')) + '</div>';
     h += '<div>' + esc(L('Searched', '探索済み', 'Durchsucht', 'Пройдено', 'Explorado')) + ': ' + s.coarsePointsVisited + ' / ' + s.coarsePointsPlanned + ' ' +
@@ -715,6 +862,10 @@ window.IntMapModules.photoGeo = function (HOST) {
     if (a === 'go') return search();
     if (a === 'stop') return abort();
     if (a === 'retrace') return retrace();
+    if (a === 'method-llm') { state.method = 'llm'; state.visionError = null; return render(); }
+    if (a === 'method-cv') { state.method = 'cv'; state.visionError = null; retraceCV(); return render(); }
+    if (a === 'vision-allow') { setConsent(true); state.visionError = null; return retraceLLM(); }
+    if (a === 'vision-revoke') { setConsent(false); return render(); }
     if (a === 'edit-draw') { state.edit = state.edit === 'draw' ? 'none' : 'draw'; return render(); }
     if (a === 'edit-mask') { state.edit = state.edit === 'mask' ? 'none' : 'mask'; return render(); }
     if (a === 'edit-unmask') { state.edit = state.edit === 'unmask' ? 'none' : 'unmask'; return render(); }
@@ -772,14 +923,29 @@ window.IntMapModules.photoGeo = function (HOST) {
       photo: state.file ? { name: state.file.name, width: state.orig.width, height: state.orig.height, hasExifGps: !!(state.exif && state.exif.gps) } : null,
       area: state.area || null,
       plan: state.plan ? { spacingM: Math.round(state.plan.spacingM), points: state.plan.coarsePoints, tiles: state.plan.tiles } : null,
-      skyline: state.skyline ? { usableColumns: window.IntMapPhotoSkyline.usableColumns(state.skyline), columns: state.analysis.width } : null,
+      /* ⚠ Atlas must be able to say which detector drew the ridge and whether the photograph was
+         sent — a capability that reports the answer but not how it was reached would let Atlas
+         repeat #R527's privacy sentence about a trace that no longer earns it. */
+      method: state.method,
+      skyline: state.skyline ? {
+        usableColumns: window.IntMapPhotoSkyline.usableColumns(state.skyline),
+        columns: state.analysis.width,
+        source: state.skyline.source || 'auto',
+        photoSent: window.IntMapPhotoVision.privacyNote(state.skyline.source) === 'sent_to_provider',
+        modelConfidence: state.skyline.vision ? state.skyline.vision.confidence : null,
+        note: state.skyline.vision ? state.skyline.vision.note : null
+      } : null,
+      rankedBy: r ? (r.rankedBy || 'score') : null,
       phase: state.phase,
       progress: state.progress ? { phase: state.progress.phase, done: state.progress.done, total: state.progress.total } : null,
       verdict: r ? r.verdict.code : null,
       candidates: r ? r.candidates.map((c, i) => ({
         rank: i + 1, lat: +c.lat.toFixed(5), lon: +c.lon.toFixed(5),
         bearingDeg: Math.round(c.yawDeg), hfovDeg: Math.round(c.hfovDeg),
-        explainedDeg: +c.explainedDeg.toFixed(1), agreement: +c.agreement.toFixed(3),
+        explainedDeg: +c.explainedDeg.toFixed(1),
+        /* `score` is the quantity the list is ordered by; `agreement` is the same sum over only the
+           columns that could be evaluated. Both, named, so Atlas never has to guess which is which */
+        score: +c.score.toFixed(3), agreement: +c.agreement.toFixed(3),
         foundAtSpacingM: Math.round(c.foundAtSpacingM), selected: i === state.selected
       })) : null
     };
@@ -789,6 +955,14 @@ window.IntMapModules.photoGeo = function (HOST) {
     open, close, isOpen, state: snapshot,
     setArea: (a) => { state = state || blank(); state.area = a; drawArea(); doPlan(); render(); return true; },
     select, search, abort,
+    /* switching the detector is a reader/Atlas decision; SENDING the photograph is not — that stays
+       behind the consent gate in retraceLLM, so this can never become a way to upload a picture */
+    setMethod: (m) => {
+      if (m !== 'llm' && m !== 'cv') return false;
+      state = state || blank(); state.method = m; state.visionError = null;
+      if (m === 'cv' && state.analysis) retraceCV();
+      render(); return true;
+    },
     hasPhoto: () => !!(state && state.analysis),
     hasArea: () => !!(state && state.area),
     plan: () => (state && state.plan) || null

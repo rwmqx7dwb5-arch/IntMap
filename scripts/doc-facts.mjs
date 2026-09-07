@@ -797,7 +797,28 @@ const FILES = BODY.get('docs/FILES.md') || '';
     for (const asset of ['privacy.html', 'terms.html', 'js/legal-text.js', 'js/legal-page.js']) {
       if (!vite.includes("'" + asset + "'")) fail('legal', 'vite.config.js STATIC_ASSETS does not copy ' + asset + ' — it would be absent from dist/');
     }
-    if (!problems.some((x) => x.startsWith('legal'))) ok('legal', 'one copy of the policy, read by the modal and by both public pages, all shipped');
+    /* ⚠ (#R547) THE PHOTOGRAPH LEAVES THE DEVICE ON ONE PATH, AND THE POLICY MUST SAY SO ON EXACTLY
+       THAT CONDITION. #R527 shipped a feature whose panel and policy both promised the picture never
+       left the browser — true of every path it had. Adding a detector that sends it makes that
+       promise false in one sentence and true in another, and the failure mode is not that someone
+       writes the wrong sentence: it is that nobody writes anything and the old one keeps standing
+       (#R502 is the round where two analytics vendors ran while the disclosure listed neither).
+       So the disclosure is bound to the code that performs the send, in both directions. */
+    const sends = has('js/photo-geo-vision.js') && /askAIJSONEnvelope|askAI\b/.test(has('js/photo-geo.js') ? rd('js/photo-geo.js') : '');
+    const saysJa = /写真の撮影地点を探す」機能[\s\S]{0,120}AIプロバイダへ送信/.test(text);
+    const saysEn = /vision-model detector[\s\S]{0,160}sent to the AI provider/.test(text);
+    if (sends && !(saysJa && saysEn)) {
+      fail('legal', 'js/photo-geo.js can send the photograph to the AI provider (js/photo-geo-vision.js exists) but the privacy policy does not say so in ' +
+        (saysJa ? '' : 'Japanese') + (!saysJa && !saysEn ? ' or ' : '') + (saysEn ? '' : 'English'));
+    }
+    if (!sends && (saysJa || saysEn)) {
+      fail('legal', 'the privacy policy says the photo-location feature sends the photograph to the AI provider, but no code does that any more');
+    }
+    /* …and the panel's own claim must be COMPUTED, never a literal beside the send. */
+    if (sends && !/privacyNote\(/.test(rd('js/photo-geo.js'))) {
+      fail('legal', 'js/photo-geo.js states where the photograph went without asking IntMapPhotoVision.privacyNote() — the claim must be derived from the trace, not written next to it');
+    }
+    if (!problems.some((x) => x.startsWith('legal'))) ok('legal', 'one copy of the policy, read by the modal and by both public pages, all shipped' + (sends ? ' · the photo-location send is disclosed in both languages and the panel derives its own claim' : ''));
   }
 }
 
