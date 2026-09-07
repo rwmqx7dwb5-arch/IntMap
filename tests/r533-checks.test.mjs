@@ -141,6 +141,11 @@ test('⑦ quotes-relay accepts the URLs the app builds and refuses everything el
     'https://query1.finance.yahoo.com/v8/finance/spark?symbols=AAPL,MSFT&range=1mo&interval=1d',
     'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=1d&interval=1d',
     'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?period1=100&period2=200&interval=1mo',
+    /* ⚠ BEFORE 1970 IS A REAL WINDOW, AND THE FIRST ALLOW-LIST REFUSED IT. The compare view's time
+       series goes back to 1962, so period1/period2 are negative there. Production measured 112 of
+       135 calls answered 400 for exactly this, with the graph still drawing because the public
+       relays picked up what our own relay had refused — a defect that hides behind its fallback. */
+    'https://query1.finance.yahoo.com/v8/finance/chart/KO?period1=-473385600&period2=-441936000&interval=1mo',
   ]) assert.ok(allowed(u), 'should relay ' + u);
 
   for (const u of [

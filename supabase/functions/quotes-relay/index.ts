@@ -84,8 +84,14 @@ function allowed(raw) {
         break;
       case "period1":
       case "period2":
-        /* a unix timestamp, never a payload */
-        if (!/^[0-9]{1,11}$/.test(v)) return false;
+        /* A unix timestamp, never a payload — AND IT MAY BE NEGATIVE. The first cut of this
+           allow-list wrote `^[0-9]{1,11}$`, which is every instant since 1970 and nothing before
+           it. The Companies compare view offers a time series back to 1962, so every pre-1970
+           request was refused here with 400 and had to be carried by the public relays instead —
+           measured on the live site with the clock at 1955: 112 of 135 calls to this function were
+           that 400. The graph still drew, which is exactly why it would have stayed hidden.
+           ⚠ The bound that matters is the LENGTH, and it is unchanged. */
+        if (!/^-?[0-9]{1,11}$/.test(v)) return false;
         break;
       default:
         return false;
