@@ -95,14 +95,14 @@ window.IntMapPhotoGeoWorker = (function () {
     await new Promise(function (r) { setTimeout(r, 0); });
     var origin = { lat: (req.area.south + req.area.north) / 2, lon: (req.area.west + req.area.east) / 2 };
     var field = T.buildField(origin, req.area, pageTiles, req.options || {});
-    /* ⚠ THE SWEEP MUST YIELD. Q.run is synchronous by design (it is the same function the worker
-       calls), so on the page it is driven a slice at a time by giving it a shouldAbort that stops
-       it at a deadline and resuming from where it stopped is not possible — instead the whole run
-       happens in one task, and the honest thing to do is warn rather than pretend. js/photo-geo.js
-       shows the «no Worker» notice for exactly this reason. */
-    var res = Q.run(field, { sky: req.sky, use: req.use, w: req.w, h: req.h },
+    /* Q.run yields to the caller every few points (see its header), so on the page that is a frame
+       between slices rather than one long block — and the stop button works here for the same reason
+       it works in the worker. It is still slower than the worker, which is why js/photo-geo.js shows
+       the «no Worker» notice. */
+    var res = await Q.run(field, { sky: req.sky, use: req.use, w: req.w, h: req.h },
       Object.assign({ spacingM: plan.spacingM }, req.options || {}),
-      { shouldAbort: function () { return fallbackAbort && fallbackAbort(); }, onProgress: function (d, t, b, ph) { if (hooks.onProgress) hooks.onProgress({ phase: ph, done: d, total: t, best: b }); } });
+      { tick: function () { return new Promise(function (r) { setTimeout(r, 0); }); },
+        shouldAbort: function () { return fallbackAbort && fallbackAbort(); }, onProgress: function (d, t, b, ph) { if (hooks.onProgress) hooks.onProgress({ phase: ph, done: d, total: t, best: b }); } });
     if (!res || res.ok === false) throw new Error((res && res.reason) || 'search failed');
     var eye = (req.options && req.options.observerHeightM != null) ? req.options.observerHeightM : 1.6;
     res.overlays = res.candidates.map(function (c) {

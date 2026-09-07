@@ -920,14 +920,21 @@ window.IntMapModules.photoGeo = function (HOST) {
     const r = state.result;
     return {
       open: isOpen(),
-      photo: state.file ? { name: state.file.name, width: state.orig.width, height: state.orig.height, hasExifGps: !!(state.exif && state.exif.gps) } : null,
+      /* ⚠ state.file IS SET BEFORE state.orig EXISTS. Between the drop and the end of the decode
+         there is a window — MEASURED at about a second on production for a 600 kB photograph — in
+         which this read `state.orig.width` and threw «Cannot read properties of null». A public
+         accessor that Atlas polls must never throw in a transient state; it reports what is true
+         so far instead. */
+      photo: (state.file && state.orig)
+        ? { name: state.file.name, width: state.orig.width, height: state.orig.height, hasExifGps: !!(state.exif && state.exif.gps) }
+        : (state.file ? { name: state.file.name, width: null, height: null, hasExifGps: false, decoding: true } : null),
       area: state.area || null,
       plan: state.plan ? { spacingM: Math.round(state.plan.spacingM), points: state.plan.coarsePoints, tiles: state.plan.tiles } : null,
       /* ⚠ Atlas must be able to say which detector drew the ridge and whether the photograph was
          sent — a capability that reports the answer but not how it was reached would let Atlas
          repeat #R527's privacy sentence about a trace that no longer earns it. */
       method: state.method,
-      skyline: state.skyline ? {
+      skyline: (state.skyline && state.analysis) ? {
         usableColumns: window.IntMapPhotoSkyline.usableColumns(state.skyline),
         columns: state.analysis.width,
         source: state.skyline.source || 'auto',

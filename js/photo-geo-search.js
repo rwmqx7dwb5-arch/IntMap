@@ -91,8 +91,22 @@
   /* ── the sweep ──────────────────────────────────────────────────────────────────────────────────
      `hooks.onProgress(done, total, best)` is called as it goes and `hooks.shouldAbort()` is asked;
      an aborted run RETURNS WHAT IT HAS, labelled aborted, because a partial search is a real result
-     and pretending otherwise would make the stop button destructive. */
-  function run(field, photo, opts, hooks) {
+     and pretending otherwise would make the stop button destructive.
+
+     ⚠ AND IT MUST BE ASKED FROM A LOOP THAT YIELDS, WHICH THIS ONE DID NOT. `shouldAbort` was called
+     on every point from a synchronous loop, which is correct on the page (the predicate reads a
+     variable the same thread just set) and USELESS IN A WORKER: the flag a worker sets lives in
+     `self.onmessage`, and a worker running a synchronous loop never returns to its event loop, so
+     the message is still sitting in the queue when the search finishes. MEASURED on production three
+     times — the stop button was pressed during the sweep and ignored every time, the run went to
+     completion and reported `done`/`match` rather than `aborted`. The one place it DID work was
+     during tile loading, because that path awaits fetches and therefore drains the queue.
+     So `hooks.tick()` is awaited every `tickEvery` points. ⚠ IT MUST RESOLVE ON A MACROTASK —
+     a bare `Promise.resolve()` drains microtasks only and would leave the message exactly where it
+     was. The callers pass setTimeout(…, 0); see src/photo-geo-worker.js.
+     Making `run` async costs the page path nothing and buys it the same thing: a frame between
+     slices instead of one long block. */
+  async function run(field, photo, opts, hooks) {
     if (!deps()) return null;
     var o = opts || {}, hk = hooks || {};
     var t0 = Date.now();
@@ -109,9 +123,11 @@
     var cands = [], done = 0, aborted = false;
     var total = (Math.floor(2 * extE / spacing) + 1) * (Math.floor(2 * extN / spacing) + 1);
     var evaluated = 0, offGrid = 0;
+    var tickEvery = o.tickEvery || 12, sinceTick = 0;
     for (var n = -extN; n <= extN + 1e-6; n += spacing) {
       if (aborted) break;
       for (var e = -extE; e <= extE + 1e-6; e += spacing) {
+        if (++sinceTick >= tickEvery) { sinceTick = 0; if (hk.tick) await hk.tick(); }
         if (hk.shouldAbort && hk.shouldAbort()) { aborted = true; break; }
         var H = T.horizon(field, e, n, { nAz: o.coarseNAz || COARSE_NAZ, observerHeightM: eye });
         done++;
@@ -151,6 +167,7 @@
     if (!aborted) {
       var fine = Math.max(o.minFineSpacingM || 25, spacing / 4);
       for (var i = 0; i < short.length; i++) {
+        if (hk.tick) await hk.tick();
         if (hk.shouldAbort && hk.shouldAbort()) { aborted = true; break; }
         var c = short[i], bestC = c;
         /* a 5 x 5 box at a quarter of the coarse spacing, centred on the coarse winner */
@@ -161,6 +178,7 @@
             if (Math.abs(ee) > extE || Math.abs(nn) > extN) continue;
             var H2 = T.horizon(field, ee, nn, { nAz: o.fineNAz || FINE_NAZ, observerHeightM: eye });
             if (!H2) continue;
+            if (hk.tick) await hk.tick();
             var r2 = M.matchOne(curveSet, photo, H2, { nYaw: o.nYaw || 360, tauDeg: o.tauDeg });
             if (r2 && r2[RANK] > bestC[RANK]) bestC = mk(field, ee, nn, r2, fine, H2);
           }

@@ -94,7 +94,11 @@ import '../js/photo-geo-search.js';
       var photo = { sky: m.sky, use: m.use, w: m.w, h: m.h };
       var opts = Object.assign({ spacingM: plan.spacingM }, m.options || {});
       var last = 0;
-      var res = Q.run(field, photo, opts, {
+      var res = await Q.run(field, photo, opts, {
+        /* ⚠ A MACROTASK, NOT A MICROTASK. Returning to the event loop is the whole point: it is what
+           lets self.onmessage deliver the 'abort' this predicate then reads. Promise.resolve() would
+           drain microtasks and leave the message queued. */
+        tick: function () { return new Promise(function (r) { setTimeout(r, 0); }); },
         shouldAbort: function () { return jobs[id] && jobs[id].abort; },
         onProgress: function (done, total, best, phase) {
           var now = Date.now();
