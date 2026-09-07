@@ -252,15 +252,24 @@ export function makeAtlasVerify(HOST, CTX) {
           if(alreadyMapped(it)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; }   /* already on the map from the plan — counts as mapped, not re-pinned */
           if(newPins.length>=14){ spots.push({name:it.name,verdict:'unplaced',src:it.src}); continue; }
           if((Date.now()-pin0)>=PINPASS_BUDGET_MS){ spots.push({name:it.name,verdict:'unplaced',src:it.src}); continue; }
-          let g=null;
+          let g=null, ambiguous=false;
           /* ⚠⚠⚠ (#R397) A COORDINATE THAT ARRIVED IS NOT RE-RESOLVED: a second lookup can only agree
              (wasted) or DISAGREE, and when it disagreed the correct position lost. ⚠ A centroid does
              not qualify — `pointLike` excludes it, so an area is still reported as an area. */
-          if(GEOBJ.pointLike(it)){ g={lng:it.lng,lat:it.lat,name:it.name}; }
-          else if(ledger){ try{ const k=ledger.resolve(it.name,{countryCode:it.countryCode}); if(k&&k.lng!=null) g={lng:k.lng,lat:k.lat,name:k.canonicalName||k.name}; }catch(_){} }   /* (#R489) a place THIS conversation already resolved is not sent to a geocoder again */
-          else if(it.src==='structured'){ try{ const r=await geocode([it.name,it.country].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; }
-            if(!g){ const s=await _atlGeocodeStrict(it.name,it.country); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; } }
-          else { const s=await _atlGeocodeStrict(it.name,''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; } else if(s.reason==='network') infraFail++; }
+          /* ⚠⚠⚠ (#R536) EVERY RUNG ASKS «DID THE RUNG ABOVE ANSWER», NEVER «DOES THE RUNG ABOVE EXIST».
+             #R489 inserted the ledger as `else if(ledger)`, and `ledger` is an object js/atlas-console.js
+             ALWAYS passes — so that arm was taken for every place without a coordinate, and when the ledger
+             did not hold the name (the normal case: it only holds what an earlier turn already resolved) the
+             chain ENDED there with g still null. `geocode` and `_atlGeocodeStrict` below it were unreachable
+             in the running app. Measured on this module: six 京阪神 prefectures and cities produced ZERO
+             lookups and six 「未配置」, while the same call with `ledger:null` made six. That is why every
+             node check stayed green — they exercised the shape the app never runs. A rung that cannot answer
+             must not be able to end the ladder, so each one asks `!g` and the ladder ends only at the bottom. */
+          if(GEOBJ.pointLike(it)) g={lng:it.lng,lat:it.lat,name:it.name};
+          if(!g&&ledger){ try{ const k=ledger.resolve(it.name,{countryCode:it.countryCode}); if(k&&k.lng!=null) g={lng:k.lng,lat:k.lat,name:k.canonicalName||k.name}; }catch(_){} }   /* (#R489) a place THIS conversation already resolved is not sent to a geocoder again */
+          if(!g&&it.src==='structured'){ try{ const r=await geocode([it.name,it.country].filter(Boolean).join(', ')); if(r&&isFinite(+r.lng)&&_atlNameOk(it.name,r.name)) g={lng:+r.lng,lat:+r.lat,name:r.name}; }catch(_){ infraFail++; } }
+          if(!g){ const s=await _atlGeocodeStrict(it.name,it.src==='structured'?it.country:''); if(s.ok) g={lng:s.lng,lat:s.lat,name:s.name}; else if(s.ambiguous) ambiguous=true; else if(s.reason==='network') infraFail++; }
+          if(ambiguous){ spots.push({name:it.name,verdict:'ambiguous',src:it.src}); continue; }
           if(g){ const cell=Math.round(g.lng*20)+','+Math.round(g.lat*20); if(seenCell.has(cell)){ spots.push({name:it.name,verdict:'mapped',src:it.src}); continue; } seenCell.add(cell);
             newPins.push({lng:g.lng,lat:g.lat,name:String(it.name).slice(0,90),kind:String(it.kind||'').slice(0,60),sum:String(it.summary||'')}); if(ledger){ try{ ledger.record({kind:String(it.kind||''),name:String(it.name||''),canonicalName:g.name||String(it.name||''),countryName:String(it.country||''),lng:g.lng,lat:g.lat,summary:String(it.summary||''),source:'answer',provenance:(GEOBJ.pointLike(it)?it.provenance:'geocoded_point')}); }catch(_){} }   /* (#R489) …and what it DID resolve is filed, so the next turn is handed an identifier instead of a string */ spots.push({name:it.name,verdict:'mapped',src:it.src}); }
           else spots.push({name:it.name,verdict:'unplaced',src:it.src}); }
