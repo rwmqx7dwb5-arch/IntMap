@@ -27,6 +27,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import { isStructural } from './i18n-pages-audit.mjs';
+import { dominantEol, normaliseEol } from './eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LOCALES = join(ROOT, 'js', 'locales');
@@ -89,6 +90,12 @@ const target = join(LOCALES, `pages.${tag}.js`);
    js/page-i18n.js falls back per key, so an English string here is the same thing a missing one
    would be, and the file is valid and complete at every point in the work. */
 if (!existsSync(target)) {
+  /* ⚠ (#R548) THE HEADER IS PUNCTUATED LIKE THE BODY IT IS GLUED TO. These two strings come from
+     different places — the header is a literal in a .mjs (LF, forced by .gitattributes), the body
+     is sliced out of a .js that git checks out with CRLF on Windows — and concatenating them wrote
+     a locale file with two line-ending conventions in it. scripts/i18n-dead-key-codemod.mjs
+     crashed on exactly such a file; the nine js/locales/pages.*.js this shape has already written
+     are why tests/r548-checks.test.mjs measures the SHAPE and not one script. */
   const head = `/* ============================================================================\n`
     + ` *  IntMap · Reading pages — ${tag}   (#R239)\n`
     + ` * ----------------------------------------------------------------------------\n`
@@ -98,7 +105,7 @@ if (!existsSync(target)) {
     + ` *      node scripts/i18n-pages-audit.mjs --missing ${tag}\n`
     + ` * ========================================================================== */\n`;
   const body = enSrc.slice(enSrc.indexOf('window.IntMapPageI18N'));
-  writeFileSync(target, head + body.replace(/\.define\('en',/, `.define('${tag}',`));
+  writeFileSync(target, normaliseEol(head, dominantEol(body)) + body.replace(/\.define\('en',/, `.define('${tag}',`));
   console.log(`created ${target} from the English document`);
 }
 

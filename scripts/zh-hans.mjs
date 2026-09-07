@@ -27,6 +27,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { dominantEol, normaliseEol } from './eol.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 /* ══ (#R231) TWO FILES NOW, NOT ONE ═══════════════════════════════════════════════════════════════
@@ -259,7 +260,22 @@ const HEAD = `/* ===============================================================
  * ==========================================================================*/
 `;
 
-function build(job) {
+/* ⚠⚠ (#R548) THE HEADER IS PUNCTUATED LIKE THE BODY IT IS GLUED TO. This used to paste HEAD — a
+   template literal in THIS file, a .mjs, which .gitattributes forces to LF — in front of a body
+   sliced straight out of a .js, which git checks out CRLF on Windows. The result was fourteen LF
+   lines followed by 6,271 CRLF ones: a file no tool that decides an ending from
+   `includes('\r\n')` can index by line, and scripts/i18n-dead-key-codemod.mjs crashed on exactly
+   that (#R548). On Linux the two conventions coincide, so CI never saw it — the generated file was
+   only ever malformed on the machine that generated it.
+   ⚠ THE FIX PUNCTUATES THE HEADER, NOT THE FILE. The body is the source's own bytes and this
+   script has no business re-punctuating lines it did not write — a generator that normalised the
+   whole output would hand the next reviewer a whole-file diff for a one-word translation fix, and
+   would quietly launder defects that belong to the source (js/locales/pages.zh-hant.js carries a
+   stray lone CR of its own, from a different tool; it is NOT this script's to swallow). So the
+   header adopts the body's dominant ending and the body is copied through untouched: the
+   derivation introduces no terminator its source does not already use, which is the property
+   tests/r548-checks.test.mjs measures. */
+export function build(job) {
   const src = readFileSync(resolve(ROOT, job.src), 'utf8');
   /* the body starts at the define() call — the header above replaces the source file's own */
   const at = src.indexOf(job.from);
@@ -289,23 +305,31 @@ function build(job) {
   });
   body = toHans(body).replace(/\u0000K(\d+)\u0000/g, (m, i) => keys[+i]);
   body = body.replace(job.from, job.to);
-  return HEAD.split('UI STRINGS').join(job.what)
+  const head = HEAD.split('UI STRINGS').join(job.what)
     .split('js/locales/ui.zh.js').join(job.src)
-    .split('ui.zh.js').join(job.src.split('/').pop()) + body;
+    .split('ui.zh.js').join(job.src.split('/').pop());
+  return normaliseEol(head, dominantEol(body)) + body;
 }
+
+/* ⚠ (#R548) THE REWRITE IS NO LONGER A TOP-LEVEL SIDE EFFECT — tests/r548-checks.test.mjs drives
+   `build()` on a synthetic CRLF source, and importing this file must not rewrite two locales to do
+   it. tests/r335 reads the tables out of the AST for its own reasons and is unaffected. */
+const IS_MAIN = (() => { try { return resolve(process.argv[1] || '') === fileURLToPath(import.meta.url); } catch { return false; } })();
 
 const CHECK = process.argv.includes('--check');
 let stale = 0;
-for (const job of JOBS) {
+if (IS_MAIN) for (const job of JOBS) {
 const OUT = resolve(ROOT, job.out);
 const want = build(job);
 if (CHECK) {
   let have = '';
   try { have = readFileSync(OUT, 'utf8'); } catch (_) {}
   /* ⚠ (#R225) COMPARE THE TEXT, NOT THE LINE ENDINGS. Git checks these files out with CRLF on
-     Windows and LF on Linux, and this script writes LF — so a byte comparison called a perfectly
-     current file «out of date» on one platform and not the other. What the check is for is that the
-     two TABLES agree; a carriage return is not a translation. */
+     Windows and LF on Linux — so a byte comparison called a perfectly current file «out of date»
+     on one platform and not the other. What the check is for is that the
+     two TABLES agree; a carriage return is not a translation. (#R548 made the output adopt the
+     source's ending, so the two now agree byte for byte as well — but that is a property of the
+     writer, and this check is not the place to depend on it.) */
   const norm = (t) => String(t).split(String.fromCharCode(13)).join('');
   if (norm(have) !== norm(want)) { console.error(job.out + ' is out of date — run: node scripts/zh-hans.mjs'); stale++; }
   else console.log(job.out + ' is in sync with ' + job.src);

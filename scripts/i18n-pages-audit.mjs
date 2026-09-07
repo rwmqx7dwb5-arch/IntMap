@@ -39,6 +39,7 @@ import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
+import { dominantEol, normaliseEol } from './eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LOCALES = join(ROOT, 'js', 'locales');
@@ -181,6 +182,12 @@ function main() {
     const p = join(LOCALES, `pages.${html}.js`);
     if (existsSync(p)) { console.error(`${p} already exists — refusing to overwrite a translation`); process.exit(1); }
     const src = readFileSync(join(LOCALES, 'pages.en.js'), 'utf8');
+    /* ⚠ (#R548) THE HEADER IS PUNCTUATED LIKE THE BODY IT IS GLUED TO. These two strings come from
+       different places — the header is a literal in a .mjs (LF, forced by .gitattributes), the body
+       is sliced out of a .js that git checks out with CRLF on Windows — and concatenating them wrote
+       a locale file with two line-ending conventions in it. scripts/i18n-dead-key-codemod.mjs
+       crashed on exactly such a file; the nine js/locales/pages.*.js this shape has already written
+       are why tests/r548-checks.test.mjs measures the SHAPE and not one script. */
     const head = `/* ============================================================================\n`
       + ` *  IntMap · Reading pages — ${html}   (template written by scripts/i18n-pages-audit.mjs)\n`
       + ` * ----------------------------------------------------------------------------\n`
@@ -193,7 +200,7 @@ function main() {
     const body = src.slice(src.indexOf("window.IntMapPageI18N=window.IntMapPageI18N") >= 0
       ? src.indexOf('window.IntMapPageI18N=window.IntMapPageI18N')
       : src.indexOf('window.IntMapPageI18N.define'));
-    writeFileSync(p, head + body.replace(/\.define\('en',/, `.define('${html}',`));
+    writeFileSync(p, normaliseEol(head, dominantEol(body)) + body.replace(/\.define\('en',/, `.define('${html}',`));
     console.log(`wrote ${p} — ${work.length} strings to translate`);
     return;
   }

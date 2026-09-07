@@ -17,6 +17,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
+import { dominantEol } from './eol.mjs';
 
 const [, , target, jsonPath] = process.argv;
 if (!target || !jsonPath) { console.error('usage: i18n-append-inline.mjs <ui.xx.js> <additions.json>'); process.exit(2); }
@@ -39,7 +40,12 @@ const fresh = Object.keys(add).filter((k) => !have.has(k));
 if (!fresh.length) { console.log(target + ': nothing new'); process.exit(0); }
 
 /* insert before the object's closing brace, preserving whatever line ending the file uses */
-const eol = src.includes('\r\n') ? '\r\n' : '\n';
+/* ⚠ (#R548) THE MAJORITY, NOT «ANY CRLF ANYWHERE». `includes('\r\n')` said CRLF for a file with
+   one stray CRLF among ten thousand LF lines, and it is the same guess that made
+   scripts/i18n-dead-key-codemod.mjs crash on a mixed js/locales/ui.zh-hans.js. This one only
+   ever punctuated the rows being ADDED, so it never crashed — it wrote the wrong ending into
+   an otherwise consistent file, silently. scripts/eol.mjs answers it for both. */
+const eol = dominantEol(src);
 const q = (s) => JSON.stringify(s);
 const body = fresh.map((k) => `  ${q(k)}: ${q(add[k])},`).join(eol);
 /* ⚠ THE INSERTION POINT IS *AFTER* ANY TRAILING COMMA, NOT BEFORE IT. acorn's `last.end` is the end

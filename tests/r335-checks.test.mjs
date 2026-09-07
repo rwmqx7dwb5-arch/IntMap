@@ -33,9 +33,11 @@ const cn = OpenCC.Converter({ from: 'tw', to: 'cn' });
 
 /* ⚠ (#R323) THE TABLE IS READ FROM THE AST, NOT WITH A REGEX OVER THE FILE. A pattern that can
    match anywhere in a file answers a different question from the one being asked — #R323 spent a
-   round on exactly that. And it must not be `import`ed either: scripts/zh-hans.mjs REWRITES the two
-   generated files as a top-level side effect, so importing it here would make this test the thing
-   that keeps them in sync. tests/r224 ④ is what checks they are in sync. */
+   round on exactly that. Reading them out of the AST also keeps this test from being the thing that
+   keeps the generated files in sync: tests/r224 ④ is what checks that. (Until #R548 there was a
+   second reason — scripts/zh-hans.mjs rewrote both generated files as a TOP-LEVEL side effect, so
+   importing it here would have regenerated them. #R548 put the rewrite behind IS_MAIN and exported
+   `build()`, so the file is importable now; the AST read stays for the first reason.) */
 function tableOf(name) {
   const src = read('scripts/zh-hans.mjs');
   const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });

@@ -1137,6 +1137,19 @@ and were red on every local run and green in CI, which is worse than no check at
 failure list that is always red is a failure list nobody reads. `tests/r283-checks.test.mjs`
 holds the rule, and it fails on **both** platforms if a raw byte read comes back.
 
+⚠ **A tool that counts LINES asks a different question, and `lf()` is the wrong answer to it.**
+`readLF`/`sameText` are for «do these two texts say the same thing»; a codemod that indexes its
+own array with a parser's `loc.line` needs «which line is this», and that has one right answer:
+ECMAScript's LineTerminatorSequence — `<LF>`, `<CR>`, `<CR><LF>`, `<LS>`, `<PS>` — which is the
+set acorn advances `loc.line` on. Use **`splitLines` / `joinLines` from `scripts/eol.mjs`**, which
+splits on exactly that set and carries each line's own terminator, so a rewritten file keeps the
+endings it came with instead of being re-punctuated wholesale. Deciding one terminator for a whole
+file (`src.includes('\r\n') ? '\r\n' : '\n'`) is what `scripts/i18n-dead-key-codemod.mjs` did, and
+on a generated file with an LF header in front of a CRLF body it counted 6,272 lines where acorn
+counted 6,286: a crash past the desync, and a silently wrong line read before it.
+`tests/r548-checks.test.mjs` holds that rule and **evaluates** the scripts rather than reading
+them, because the broken and the fixed spelling are nearly the same text.
+
 **…nor on the prose around the code.** A source-level check that looks for a CALL must read
 `codeOnly(src)` from **`scripts/code-only.mjs`**, never the raw file: every file that explains why
 a call was added, removed, or built differently spells that call in its comment, so the pattern
