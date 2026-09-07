@@ -279,6 +279,16 @@ export function makeAtlasCapabilities(HOST) {
          a row appended after it would never have its lazy module checked. */
       ['data.volcano',               'volcano',        'volcanoCard,volcanoInfo',                                     'data',    'panel',   'panel.volcano',          'panel',               'session', 'none',   'text',     'volcanoIntel'],
       ['map.volcanoFilter',          'volcanoFilter',  'volcanoMode,volcanoTime',                                     'map',     'paint',   'map.volcano',            'map',                 'session', 'none',   '',         'volcanoIntel'],
+      /* (#R527) 「山並み写真から撮影地点・撮影方向を探す」 — js/photo-geo.js. It traces the ridge in a
+         photograph and matches it against the TERRAIN; an EXIF coordinate in the file is shown and
+         never used as the answer, which is the whole honesty of the feature.
+         ⚠ COLUMN 9 IS EMPTY ON PURPOSE, AND THAT IS NOT «no input needed». The two things this
+         needs — a photograph and a search rectangle — are ones only the READER can hand over, so
+         there is no place name that starts it and nothing for the map centre to stand in for
+         (#R302). An argument-less call opens the panel and asks; it does not refuse in a sentence.
+         `panel` observes it because the panel IS what one call delivers: the sweep that follows is
+         minutes long and is reported through the `photoGeo` state section (js/atlas-state.js). */
+      ['photo.locate',               'photoLocate',    'photoGeolocate,whereWasThisTaken,skylineMatch',               'photo',   'panel',   'panel.photoGeo',         'panel,explanation',   'session', 'none',   '',         'photoGeo'],
       ['dialog.answer',              'answer',         '',                                                            'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         '']
     ];
 
@@ -890,6 +900,7 @@ export function makeAtlasCapabilities(HOST) {
       research: 'research|analyze|explain|news|report|history|調べ|分析|説明|ニュース|歴史|recherche|analysieren|erklären|nachrichten|geschichte|исследов|анализ|объясн|новост|истори|investigar|analizar|explicar|noticias|historia|研究|分析|說明|新聞|歷史|说明|新闻|历史|recherche|analyser|expliquer|actualités|histoire|조사|분석|설명|뉴스|역사',
       map: 'highlight|draw|pin|circle|polygon|clear|colour|color|ハイライト|描|ピン|円|消し|色|hervorheben|zeichnen|stecknadel|kreis|löschen|farbe|выдел|нарисов|метк|круг|очист|цвет|resaltar|dibujar|marcador|círculo|borrar|color|標示|繪製|圖釘|圓|清除|顏色|标示|绘制|图钉|清除|颜色|surligner|dessiner|épingle|cercle|effacer|couleur|강조|그리|핀|원|지우|색',
       panel: 'open|close|panel|settings|window|開|閉じ|パネル|設定|öffnen|schließen|fenster|einstellungen|откр|закр|панель|настройк|abrir|cerrar|panel|ajustes|開啟|關閉|面板|設定|打开|关闭|设置|ouvrir|fermer|panneau|paramètres|열기|닫기|패널|설정',
+      photo: 'photo|picture|image|skyline|ridge|mountain|where was this taken|viewpoint|camera|写真|画像|山並み|稜線|尾根|撮影地|撮影地点|撮影方向|foto|bild|kammlinie|grat|berg|aufnahmeort|standort|фото|снимок|силуэт гор|гребень|гора|место съёмки|imagen|cumbres|cresta|montaña|lugar de la foto|照片|山稜|稜線|拍攝地點|拍攝方向|山脊|拍摄地点|拍摄方向|photo|image|crête|montagne|lieu de prise de vue|사진|능선|산등성이|촬영 위치|촬영 방향',
       settings: 'theme|dark|light|language|unit|accent|テーマ|ダーク|ライト|言語|単位|thema|dunkel|hell|sprache|einheit|тема|тёмн|светл|язык|единиц|tema|oscuro|claro|idioma|unidad|主題|深色|淺色|語言|單位|主题|深色|浅色|语言|单位|thème|sombre|clair|langue|unité|테마|어두운|밝은|언어|단위',
       time: 'time|date|year|past|history|時刻|日付|年|過去|zeit|datum|jahr|vergangen|время|дата|год|прошл|tiempo|fecha|año|pasado|時間|日期|年|過去|时间|日期|过去|temps|date|année|passé|시간|날짜|년|과거',
     };

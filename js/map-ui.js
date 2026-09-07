@@ -1080,6 +1080,7 @@ window.IntMapModules.layerSidebar=function(HOST){
     /* (#R261) the five below — see the ⚠⚠⚠ note on SIM_TOOLS */
     const SVG_DRONE=_svg('<circle cx="12" cy="12" r="2.4"/><path d="M10 10L6.5 6.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/><circle cx="5" cy="5" r="2.1"/><circle cx="19" cy="5" r="2.1"/><circle cx="5" cy="19" r="2.1"/><circle cx="19" cy="19" r="2.1"/>');
     /* (#R291) a signpost: the fork this app has been unable to show anybody for seven rounds */
+    const SVG_PHOTO_LOCATE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 18l5-6 3.5 4L15 11l6 7z"/><rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><circle cx="8" cy="9" r="1.6"/></svg>';
     const SVG_DIRECTIONS=_svg('<path d="M12 21.5v-6.2"/><path d="M12 15.3L6.6 9.9V5.4"/><path d="M12 15.3l5.4-5.4V5.4"/><circle cx="6.6" cy="4" r="1.6"/><circle cx="17.4" cy="4" r="1.6"/>');
     /* ══ ⚠⚠⚠ (#R298) A TOOL THAT NEEDS A POINT ASKS FOR THE POINT ═════════════════════════════════
        「地点を選ばないといけない系のツール、押したら勝手に地図中心を選択しているものとして結果を出すのを
@@ -1201,6 +1202,15 @@ window.IntMapModules.layerSidebar=function(HOST){
         dot:()=>{ try{ return !!(window.IntMapRouteStore&&window.IntMapRouteStore.hasRoute()); }catch(_){ return false; } },
         label:()=>T('Directions','経路','Route','Маршрут','Cómo llegar'),
         hint:()=>T('Plan routes by car, transit, walking or cycling','車・公共交通・徒歩・自転車の経路を検索','Routen mit Auto, ÖPNV, zu Fuß oder Rad planen','Маршруты на авто, транспорте, пешком или на велосипеде','Rutas en coche, transporte, a pie o en bici') },
+      /* ══ (#R527) 「山並み写真から撮影地点・撮影方向を探す」 ═══════════════════════════════════════
+         The panel is a lazy chunk and so is everything it computes with; this row costs the shell a
+         label. docs/PHOTO-GEOLOCATION.md says what it can and cannot do. */
+      { id:'tool.photoLocate', mod:'IntMapPhotoGeo', ic:SVG_PHOTO_LOCATE, en:'Photo location', group:'tool',
+        keys:'photo picture skyline mountain where taken geolocate camera 写真 山並み 稜線 撮影地 撮影地点 撮影方向 位置特定 Foto Berg Kammlinie Aufnahmeort фото гора горизонт место съёмки foto montaña cumbres lugar',
+        run:_lazy('photoGeo',()=>window.IntMapPhotoGeo&&window.IntMapPhotoGeo.open()),
+        dot:()=>{ try{ return !!(window.IntMapPhotoGeo&&window.IntMapPhotoGeo.hasPhoto()); }catch(_){ return false; } },
+        label:()=>T('Photo location','写真の撮影地点','Aufnahmeort eines Fotos','Место съёмки фото','Lugar de la foto'),
+        hint:()=>T('Match a mountain skyline in a photo against the terrain','写真の山並みを地形と照合して撮影地点を探す','Kammlinie eines Fotos mit dem Gelände abgleichen','Сопоставить линию гор на фото с рельефом','Comparar la línea de cumbres de una foto con el terreno') },
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },

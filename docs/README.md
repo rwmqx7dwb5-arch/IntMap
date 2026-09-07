@@ -44,6 +44,7 @@
 | [`SHIPS-ARCHITECTURE.md`](SHIPS-ARCHITECTURE.md) | 船舶を触る人 | **船舶プラットフォームの構造** — サーバー側の鍵1本と共有スナップショット、鍵不要の Digitraffic と全球の aisstream、1回の呼び出しの中で開閉する WebSocket、BYOK を残した理由 | 船舶の取得・配信・描画の仕組みを変えたとき |
 | [`AVIATION-DATA-SOURCES.md`](AVIATION-DATA-SOURCES.md) | 同上 | **航空データ源の正本** — どの provider が何を返すか、ライセンスと利用条件、実測した上限、採用しなかった候補と理由、出典表記の義務 | provider を足す・変える・条件が変わったとき |
 | [`VOLCANO-INTELLIGENCE.md`](VOLCANO-INTELLIGENCE.md) | 火山を触る人 | **火山の深さの正本** — GVP の同梱データと結合鍵、現在の警戒レベルの4段（USGS／気象庁／週間報告／沈黙）、火山灰 SIGMET、公表されたハザード域だけを描く規則、SO₂、周辺人口・空港・地震 | データ源を足す・変える、段を足す、気象庁↔GVP の結合表を変えたとき |
+| [`PHOTO-GEOLOCATION.md`](PHOTO-GEOLOCATION.md) | 写真の撮影地点探索を触る人 | **山並み照合の正本** — 二つの矩形（探索範囲と地形取得範囲）、terrarium の欠陥と尖りの除去、順位付け規則がなぜ explainedDeg なのか、実写真 12 枚の評価と適用範囲。⚠ **撮影地点を特定できる完成品ではない**（12 枚中 3 枚しか答えを出さない）ことを最初に書いてある | 照合ロジック・閾値・評価集合を変えたとき |
 | [`AREA-MONITORS.md`](AREA-MONITORS.md) | 同上 | 地域監視の設計・DB・cron。⚠ **現在は利用者から到達できる入口が無い**（撤去であって削除ではない） | 監視の仕組みを変えたとき／復帰させたとき |
 
 ## 運用

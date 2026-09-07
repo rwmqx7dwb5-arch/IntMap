@@ -167,7 +167,11 @@ test('R495 ③: data.query is a capability, a schema, a catalogue block, a dispa
   assert.match(lazy, /atlasQuery: 'IntMapQuery'/, 'the lazy registry knows what it publishes');
   assert.match(lazy, /case 'atlasQuery': return import\('\.\/atlas-query\.js'\);/, '…and how to fetch it');
   assert.match(lazy, /case 'atlasQuery': window\.IntMapQuery=window\.IntMapModules\.atlasQuery\(IM_HOST\); return true;/, '…and how to mount it');
-  assert.match(read('src/main.js'), /'atlasQuery'\]/, 'the one list of every factory the program has');
+  /* ⚠ MEMBERSHIP, NOT POSITION. This read /'atlasQuery'\]/ — true only because atlasQuery
+     happened to be the LAST entry the day it was written, so #R527 broke it merely by appending a
+     new lazy factory after it. The property this line exists for is that «the one list of every
+     factory the program has» knows about atlasQuery; that is what it asserts now. */
+  assert.match(read('src/main.js'), /const LAZY_FACTORIES = \[[^\]]*'atlasQuery'/, 'the one list of every factory the program has');
 });
 
 test('R495 ③: the catalogue sends multi-condition questions HERE instead of to the essay writers', () => {

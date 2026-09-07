@@ -223,6 +223,21 @@ export function makeAtlasState(HOST) {
         return out;
       });
 
+      /* (#R527) the photograph search — js/photo-geo.js. Everything Atlas may say about it is here:
+         whether the panel is up, whether a photograph and a rectangle exist AT ALL (it can supply
+         neither, so «what is missing» is the fact it needs most), how coarse the grid it is about
+         to walk is, how far the run has got, the verdict, and the candidates with their bearings.
+         ⚠ THE MODULE IS LAZY, SO ITS ABSENCE IS AN ANSWER, NOT AN ERROR. Reading `.state()` off an
+         undefined global would throw inside the snapshot every provider is folded into; a reader
+         who has never opened the panel gets {open:false}, which is exactly what the module's own
+         snapshot returns before a photograph is loaded — so the two agree instead of differing by
+         whether a chunk happens to have been fetched. */
+      reg('photoGeo', function () {
+        var PG = GLOBAL('IntMapPhotoGeo');
+        if (!PG || typeof PG.state !== 'function') return { open: false };
+        return PG.state();
+      });
+
       /* The one master clock (js/chronos.js). `travelDate` is null while live, so "the map is showing a
          past date" is a fact with exactly one representation instead of a truthiness test on a Date. */
       reg('time', function () {

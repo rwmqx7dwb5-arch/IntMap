@@ -5092,3 +5092,221 @@ body.nvg-on #route-panel{ display:none !important; }
   border-radius:8px;background:var(--input-bg);color:var(--text-main);font-size:12px;font-weight:600;
   line-height:1.5;cursor:pointer;-webkit-appearance:none;appearance:none;font-family:inherit;}
 .cop-mkt:hover{background:var(--card-bg);}
+
+/* ══ (#R527) THE PHOTO-GEOLOCATION PANEL — js/photo-geo.js ════════════════════════════════════
+   A floating window like every other one in this app: `HOST.makeDraggable` on `.pg-head`, so the
+   window manager registers it (js/window-manager.js) and writes `left` / `top` / `z-index` INLINE
+   the moment it is dragged or touched. Everything below is therefore the panel's STARTING geometry
+   and its material — never a position the reader is held to.
+   ⚠ NO `!important` AND NOTHING ABOVE THE WINDOW BAND. §「WHO IS IN FRONT」 gives cards 2200,
+   sidebars 2600, the panel being used 2650 and modals 9999+; `bringToFront` counts from 2200 and is
+   capped at 2599. #R508 is what that costs when it is ignored: one `z-index:…!important` at 2650
+   caught `position:fixed` dialogs too and sank a 9999 settings modal BEHIND the panel. This window
+   opens at the card level and lets the window manager raise it from there.
+   ⚠ NO NEW COLOUR TOKENS. --text-main / --text-muted / --primary-color / --input-bg / --card-bg /
+   --panel-bg / --glass-* / --shadow, plus the two status hues this sheet already uses elsewhere
+   (`.rtp-err`'s amber and `.mon-btn-danger`'s red), so dark mode needs no second copy of any of it.
+   ══════════════════════════════════════════════════════════════════════════════════════════════ */
+.pg-panel{
+  display:none; position:fixed; z-index:2200;
+  width:clamp(320px, 32vw, 440px); max-width:calc(100vw - 28px); box-sizing:border-box;
+  flex-direction:column; overflow:hidden;
+  background:var(--panel-bg,var(--card-bg)); color:var(--text-main);
+  border:1px solid var(--glass-border,rgba(128,128,128,0.24)); border-radius:18px;
+  box-shadow:var(--shadow); font-size:14px; line-height:1.45;
+}
+.pg-panel.pg-open{ display:flex; }
+/* ⚠ WHERE IT OPENS, NOT WHERE IT STAYS. `data-dragged` is the window manager's own mark, and this
+   is the shape `.koppen-legend:not([data-dragged])` already uses further up: the sheet places a
+   window that has never been moved and never touches it again. It opens on the RIGHT because
+   `.rtp` opens at left:14px / top:74px, and two windows that open in the same rectangle look like
+   one window that failed to open. */
+#photogeo-panel:not([data-dragged]){ top:74px; right:14px; left:auto; bottom:auto; }
+/* the reader's Settings ▸ サイドバーの質感 choice, the same way `.rtp` reads it: opaque unless glass
+   was asked for — 「経路ポップアップは無条件で透過するな」 (#R296) is a rule about every panel. */
+body.sidebar-translucent .pg-panel, body.sidebar-glass2 .pg-panel{
+  background:var(--glass-fill);
+  backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));
+  -webkit-backdrop-filter:saturate(var(--glass-sat)) blur(var(--glass-blur));
+  border-color:var(--glass-border);
+}
+/* a photograph dragged over the window — the whole panel is the drop target (js/photo-geo.js) */
+.pg-panel.pg-drag{ border-color:var(--primary-color); box-shadow:0 0 0 2px color-mix(in srgb, var(--primary-color) 34%, transparent), var(--shadow); }
+
+/* ── title bar: the drag handle, and the one control that must stay a control ───────────────── */
+.pg-head{
+  flex:0 0 auto; display:flex; align-items:center; gap:9px; padding:7px 8px 6px 14px;
+  border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.16));
+  cursor:move; user-select:none; touch-action:none;
+}
+.pg-title{ flex:1 1 auto; min-width:0; font-size:15px; font-weight:650; letter-spacing:-0.2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pg-x{
+  flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; min-width:34px; padding:0;
+  border:none; border-radius:9px; background:transparent; color:var(--text-muted);
+  font:inherit; font-size:18px; line-height:1; cursor:pointer;
+  transition:background .13s ease, color .13s ease;
+}
+.pg-x:hover{ background:var(--input-bg); color:var(--text-main); }
+
+/* ── the body is the only scroller: the panel grows to its content until this cap ───────────── */
+.pg-body{
+  flex:1 1 auto; min-height:0;
+  max-height:min(62dvh, calc(100dvh - 152px));
+  overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+  padding:12px 14px 14px;
+}
+.pg-sec + .pg-sec{ margin-top:12px; padding-top:12px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); }
+.pg-h{ font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); margin:0 0 8px; }
+
+/* ── buttons ───────────────────────────────────────────────────────────────────────────────── */
+.pg-btn{
+  min-height:36px; margin:0 5px 5px 0; padding:0 13px; box-sizing:border-box;
+  display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  border:1px solid var(--glass-border,rgba(128,128,128,0.28)); border-radius:18px;
+  background:transparent; color:var(--text-muted); font:inherit; font-size:13px; cursor:pointer;
+  transition:background .13s ease, color .13s ease, border-color .13s ease, filter .13s ease;
+}
+.pg-btn:hover:not(:disabled){ color:var(--text-main); border-color:var(--glass-border,rgba(128,128,128,0.5)); }
+.pg-btn:disabled{ opacity:0.45; cursor:not-allowed; }
+.pg-btn:focus-visible{ outline:2px solid var(--primary-color); outline-offset:2px; }
+/* the step's own action, filled the way `.rtp-go` is — one per section, never two */
+.pg-btn.pg-primary{
+  min-height:44px; padding:0 18px; border-radius:12px; border-color:transparent;
+  background:var(--primary-color); color:#fff; font-size:15px; font-weight:650; letter-spacing:-0.2px;
+}
+.pg-btn.pg-primary:hover:not(:disabled){ color:#fff; border-color:transparent; filter:brightness(1.08); }
+.pg-btn.pg-primary:active:not(:disabled){ filter:brightness(0.94); }
+.pg-btn.pg-danger{ color:#ff453a; border-color:rgba(255,69,58,0.4); }
+.pg-btn.pg-danger:hover:not(:disabled){ background:#ff453a; border-color:#ff453a; color:#fff; }
+/* the skyline tool that is armed — a mode, so it is filled while it lasts */
+.pg-btn.pg-on{ background:var(--primary-color); border-color:var(--primary-color); color:#fff; font-weight:600; }
+.pg-btn.pg-on:hover{ color:#fff; border-color:var(--primary-color); }
+.pg-tools{ display:flex; flex-wrap:wrap; gap:6px; }
+.pg-tools .pg-btn{ margin:0; }
+
+/* ── the quiet voices: a hint under a control, a measurement under a picture ────────────────── */
+.pg-hint{ display:block; font-size:12.5px; color:var(--text-muted); line-height:1.55; margin:6px 0 0; }
+.pg-meta{ font-size:12.5px; color:var(--text-muted); line-height:1.5; margin:7px 0 0; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+
+/* ── the three states a section can report ─────────────────────────────────────────────────── */
+.pg-ok, .pg-warn, .pg-err{ margin:8px 0 0; padding:9px 11px; border-radius:11px; font-size:13px; line-height:1.5; color:var(--text-main); }
+.pg-ok{ background:rgba(52,199,89,0.14); border:1px solid rgba(52,199,89,0.34); }
+.pg-warn{ background:rgba(255,159,10,0.12); border:1px solid rgba(255,159,10,0.35); }
+.pg-err{ background:rgba(255,69,58,0.10); border:1px solid rgba(255,69,58,0.34); }
+.pg-ok .pg-hint, .pg-warn .pg-hint, .pg-err .pg-hint{ margin-top:4px; }
+
+/* ── what the file itself claims ───────────────────────────────────────────────────────────── */
+.pg-exif{ display:flex; flex-direction:column; gap:3px; margin:8px 0 0; font-size:12.5px; color:var(--text-muted); line-height:1.5; }
+.pg-exif b{ color:var(--text-main); font-weight:650; }
+/* ⚠ the EXIF coordinate is SHOWN and NOT USED (js/photo-geo-exif.js). It is set apart from the
+   answer for exactly that reason — a quoted fact, never a result. */
+.pg-gps{
+  margin:4px 0 0; padding:8px 11px; border-radius:11px;
+  background:var(--input-bg); border-left:2px solid var(--info-choke);
+  color:var(--text-main); font-variant-numeric:tabular-nums; overflow-wrap:anywhere;
+}
+
+/* ── the plan: every number that limits the search, before it starts ────────────────────────── */
+.pg-plan{
+  display:flex; flex-direction:column; gap:3px; margin:8px 0 0; padding:9px 11px;
+  border-radius:12px; background:var(--input-bg);
+  font-size:12.5px; color:var(--text-muted); line-height:1.5; font-variant-numeric:tabular-nums;
+}
+.pg-plan b{ color:var(--text-main); font-weight:650; }
+.pg-plan .pg-warn{ margin-top:5px; }
+
+/* ── the photograph, with the traced skyline drawn over it ─────────────────────────────────── */
+.pg-photowrap{ position:relative; display:block; margin:2px 0 0; border-radius:12px; overflow:hidden; background:var(--input-bg); line-height:0; }
+.pg-photo{ display:block; width:100%; max-width:100%; height:auto; }
+/* the canvas takes the pointer: dragging across it redraws or masks the ridge */
+.pg-ov{ position:absolute; inset:0; width:100%; height:100%; pointer-events:auto; cursor:default; }
+/* ⚠ `touch-action` ONLY WHILE A TOOL IS ARMED. js/photo-geo.js ignores a drag when `state.edit` is
+   `none`, so holding the gesture from the browser at all times would cost a phone the ability to
+   scroll the body by touching the photograph — which is most of the panel. The armed tool wears
+   `.pg-on`, and that is the state the sheet reads. */
+.pg-panel:has(.pg-btn.pg-on) .pg-ov{ touch-action:none; cursor:crosshair; }
+
+/* ── progress ──────────────────────────────────────────────────────────────────────────────── */
+.pg-prog{ margin:10px 0 0; height:6px; border-radius:999px; background:var(--input-bg); overflow:hidden; }
+.pg-bar{ display:block; width:0; height:100%; border-radius:inherit; background:var(--primary-color); transition:width .25s ease; }
+
+/* ── candidates: the rank in the list is the rank drawn on the map ──────────────────────────── */
+.pg-list{ list-style:none; margin:9px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; counter-reset:pg-rank; }
+.pg-cand{
+  counter-increment:pg-rank; position:relative; box-sizing:border-box;
+  padding:9px 11px 9px 38px; border-radius:12px;
+  border:1px solid transparent; background:var(--input-bg); cursor:pointer;
+  transition:background .18s ease, border-color .18s ease;
+}
+.pg-cand::before{
+  content:counter(pg-rank); position:absolute; left:10px; top:10px;
+  display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
+  border-radius:50%; background:var(--primary-color); color:#fff;
+  font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1;
+}
+.pg-cand:hover{ border-color:var(--primary-color); }
+.pg-cand.pg-selc{ border-color:var(--primary-color); background:color-mix(in srgb, var(--primary-color) 12%, var(--input-bg)); }
+.pg-cr{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; font-size:13.5px; color:var(--text-main); }
+.pg-cr b{ font-weight:650; font-variant-numeric:tabular-nums; }
+.pg-cm{ font-size:12.5px; color:var(--text-muted); line-height:1.5; margin-top:2px; overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.pg-cm b{ color:var(--text-main); font-weight:650; }
+/* ⚠ the grid a place was found on travels with the place — a coordinate is never printed finer
+   than the sweep that produced it, so the badge is part of the answer, not decoration. */
+.pg-badge{ margin-left:auto; padding:2px 8px; border-radius:999px; background:rgba(128,128,128,0.16); color:var(--text-muted); font-size:12px; font-weight:600; white-space:nowrap; }
+
+/* ── how the answer was produced ───────────────────────────────────────────────────────────── */
+/* (#R527) fine tuning: label, minus, value, plus — the value column is fixed so the number does not
+   jump as it changes width, and the row wraps rather than overflowing on a narrow sheet. */
+.pg-tune-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0;font-size:13px}
+.pg-tune-row>span:first-child{flex:1 1 40%;min-width:96px;color:var(--text-secondary,#8a8a8e)}
+.pg-tune-row>b{min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
+.pg-tune-row .pg-btn{min-width:34px;padding:4px 8px}
+@media (max-width:767px){.pg-tune-row .pg-btn{min-width:44px;min-height:44px}}
+.pg-prov{ margin:11px 0 0; padding-top:9px; border-top:1px solid var(--glass-border,rgba(128,128,128,0.16)); font-size:12.5px; color:var(--text-muted); line-height:1.5; font-variant-numeric:tabular-nums; }
+.pg-prov > summary{ cursor:pointer; list-style:none; display:flex; align-items:center; gap:6px; padding:2px 0; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); user-select:none; }
+.pg-prov > summary::-webkit-details-marker{ display:none; }
+.pg-prov > summary::before{ content:'▸'; font-size:12px; transition:transform .15s ease; }
+.pg-prov[open] > summary::before{ transform:rotate(90deg); }
+.pg-prov > div{ padding:2px 0; overflow-wrap:anywhere; }
+.pg-prov b{ color:var(--text-main); font-weight:650; }
+
+/* ══ THE PHONE — the same window, edge to edge along the bottom ════════════════════════════════
+   The breakpoint `.rtp` and `.nvg` use. ⚠ The header is still the drag handle here, because
+   js/photo-geo.js binds `makeDraggable` on every screen; a drag writes `left`/`top` inline and the
+   window manager clamps it inside the viewport, so a moved sheet stays reachable. */
+@media (max-width:767px){
+  #photogeo-panel:not([data-dragged]){ left:0; right:0; bottom:0; top:auto; }
+  .pg-panel{
+    width:auto; max-width:100%;
+    border-radius:20px 20px 0 0; border-left:none; border-right:none; border-bottom:none;
+  }
+  .pg-body{ max-height:min(76dvh, calc(100dvh - 132px)); padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px)); }
+  /* every control a finger has to hit is at least 44 px (WCAG 2.2 target size) */
+  .pg-x{ width:44px; height:44px; min-width:44px; }
+  .pg-btn{ min-height:44px; padding:0 15px; }
+  .pg-btn.pg-primary{ min-height:48px; width:100%; margin-right:0; font-size:16px; }
+  .pg-cand{ padding-top:11px; padding-bottom:11px; }
+  /* ⚠ 「10〜11pxの主要文字を使わない」 — the readings a reader acts on take 13 px on a phone; the
+     hint under a control keeps the 12.5 px footnote voice `.rtp-help` established. */
+  .pg-meta, .pg-plan, .pg-cm, .pg-prov{ font-size:13px; }
+}
+@media (max-width:359px){
+  .pg-body{ padding-left:12px; padding-right:12px; }
+  .pg-head{ padding-left:12px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .pg-bar, .pg-btn, .pg-cand, .pg-prov > summary::before{ transition:none; }
+}
+@media (prefers-reduced-transparency:reduce){
+  .pg-panel{ background:var(--card-bg); backdrop-filter:none; -webkit-backdrop-filter:none; }
+}
+@media (forced-colors:active){
+  .pg-panel{ background:Canvas; border:1px solid CanvasText; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+  .pg-btn{ border:1px solid CanvasText; background:ButtonFace; color:ButtonText; }
+  .pg-btn.pg-on, .pg-btn.pg-primary{ background:Highlight; color:HighlightText; }
+  /* the states carried by hue alone need an edge when the OS owns the colours (§16/§18) */
+  .pg-ok, .pg-warn, .pg-err, .pg-badge, .pg-gps{ border:1px solid CanvasText; }
+  .pg-cand.pg-selc{ border:1px solid CanvasText; }
+  .pg-bar{ background:Highlight; }
+}

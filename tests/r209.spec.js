@@ -171,6 +171,7 @@ const MEMBER = {
      bare object would still fail here, which is what this table is for. */
   atlasQuery: ['IntMapQuery', 'run'],
   routeUi: ['IntMapRouteUI', 'open'],
+  photoGeo: ['IntMapPhotoGeo', 'open'],
   /* (#R311) the six that moved this round. Each names the member its OWN doors call, so a module
      that loaded and registered half of itself is still a failure here: the data-center row calls
      toggle(), the aircraft click open(), the Measure tool setRing(), the comparison panel open(),

@@ -284,6 +284,19 @@ export function makeAtlasSchemas() {
          change: a colour mode, a filter flag, or the map's year. */
       'data.volcano': { type: 'object', properties: { name: str(), text: str(), query: str(), place: str() }, anyOf: [{ required: ['name'] }, { required: ['text'] }, { required: ['query'] }, { required: ['place'] }] },
       'map.volcanoFilter': { type: 'object', properties: { mode: one('recency', 'vei', 'status', 'people'), time: bool(), year: int(), spoken: bool(), elevated: bool(), big: bool(), recent: bool(), clear: bool() }, anyOf: [{ required: ['mode'] }, { required: ['time'] }, { required: ['year'] }, { required: ['spoken'] }, { required: ['elevated'] }, { required: ['big'] }, { required: ['recent'] }, { required: ['clear'] }] },
+      /* (#R527) 写真の撮影地点。EVERY ARGUMENT IS OPTIONAL, AND THAT IS THE SHAPE OF THE FEATURE,
+         not a relaxation of rule (3): the two inputs that decide the answer — the photograph and
+         the ridge traced on it — cannot travel in an action at all, because the reader supplies
+         them in the panel. What CAN come from a call is the rectangle to search, which candidate
+         to look at, and whether to start or stop; a call carrying none of them opens the panel,
+         which is a correct thing to do with an empty argument set. `area` is validated corner by
+         corner (js/atlas-executor.js recurses into nested `properties`), so a half-written
+         rectangle is refused before the dispatch draws one. `place` is deliberately ABSENT: this
+         file may not name an argument the case does not read (#R406), and nothing here resolves a
+         place name into a search area.
+         ⚠ `action` IS A CLOSED ASCII SET the dispatch really compares against — rule (2) is
+         satisfied because the case lower-cases the value and tests it against exactly these. */
+      'photo.locate': { type: 'object', properties: { action: one('open', 'search', 'abort', 'select'), select: int(1), area: { type: 'object', properties: { south: lat(), north: lat(), west: lng(), east: lng() }, required: ['south', 'north', 'west', 'east'] } } },
       'dialog.answer': { type: 'object', properties: { text: str(), contentClass: str(), checks: list(obj()), places: list(obj()) }, required: ['text'] }
     };
 
