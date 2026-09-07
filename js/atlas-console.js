@@ -20,7 +20,7 @@
    order: the bundler resolves each binding by name, so a missing or renamed export is a BUILD error rather than a silent undefined at runtime. See DEV-NOTES #R199. */
 import { makeAtlasReply } from './atlas-reply.js';
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. Every system prompt below opens with personaPrompt('<its task role>') and adds ONLY its task rules. */
-import { attachLightbox, atlFileKind, atlFmtBytes, atlReadText } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer */
+import { attachLightbox, atlFmtBytes, ATL_FILE } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer; (#R540) ATL_FILE asks the BYTES what a file is */
 import { makeMsgTools } from './atlas-msg-tools.js';   /* (#R298) the per-message tool bar + the in-place editor */   import { makeAtlasGloss } from './atlas-gloss.js';   /* (#R491) select a phrase in a reply → a dictionary card for it. ⚠ ON THIS LINE because the kernel has no headroom (tests/r318 ⑨b) and a feature moves out, never the ceiling up */
 import { atlasPanelCSS } from './atlas-styles.js';   /* (#R313) the panel's stylesheet — moved out so this file stays under a ceiling that is never raised */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
@@ -4013,11 +4013,15 @@ window.IntMapModules.atlasConsole=function(HOST){
     /* ---- UI ---- */
     let panel=null, chatEl=null, inEl=null, styled=false;
     let _atlImgs=[];   /* (#R149) pending pasted/attached image data-URLs to send with the next message (vision) */
-    let _atlFiles=[];  /* (#R158) pending NON-image, text-extractable file attachments {name,text,size,truncated} — their text is fed to the model with the next message */
-    /* (#R158) which files Atlas accepts. Images → the vision channel (OpenAI input_image). Text-extractable files
-       (text/*, code, data) → their content is read client-side and given to the model. Binary types we can't decode
-       (pdf/docx/zip) are declined honestly (the vision channel is image-only; no document parser is loaded). */
-    const _ATL_FILE_MAX=60000;   /* per-file text cap; larger files are truncated with a note. (#R232) atlFileKind / atlReadText / atlFmtBytes moved to js/atlas-attach.js. */
+    let _atlFiles=[];  /* (#R158/#R540) pending NON-image attachments, as ATL_FILE.read returned them: kind:'text' {name,text,size,truncated,encoding,from} or kind:'doc' {name,mime,b64} */
+    /* (#R540) WHICH FILES ATLAS ACCEPTS IS NO LONGER A LIST — js/atlas-attach.js asks the BYTES (its header has the whole argument). Images → the vision
+       channel. PDFs → the providers' own document block. Anything a text encoding decodes, including what a .docx/.xlsx/.pptx/.odt/.kmz/.zip holds → the attachment channel. Everything else is refused BY REASON. */
+    const _atlWhy=(d)=>{ const w=d&&d.why; if(w==='too-big') return L('That file is too large','そのファイルは大きすぎます','Diese Datei ist zu groß','Этот файл слишком велик','Ese archivo es demasiado grande')+' ('+atlFmtBytes((d&&d.limit)||ATL_FILE.LIMITS.docBytes)+')';
+      if(w==='legacy-office') return L('Old Office files (.doc/.xls/.ppt) cannot be read — save as .docx/.xlsx/.pptx or PDF','旧形式の Office ファイル（.doc/.xls/.ppt）は読めません。.docx/.xlsx/.pptx か PDF で保存し直してください','Alte Office-Dateien (.doc/.xls/.ppt) sind nicht lesbar — als .docx/.xlsx/.pptx oder PDF speichern','Старые файлы Office (.doc/.xls/.ppt) не читаются — сохраните как .docx/.xlsx/.pptx или PDF','Los archivos antiguos de Office (.doc/.xls/.ppt) no se pueden leer — guárdalos como .docx/.xlsx/.pptx o PDF');
+      if(w==='docs-total') return L('Those documents are too large to send together','これらの文書は合計が大きすぎて一度に送れません','Diese Dokumente sind zusammen zu groß zum Senden','Эти документы вместе слишком велики для отправки','Esos documentos son demasiado grandes para enviarlos juntos')+' ('+atlFmtBytes(ATL_FILE.LIMITS.docsBytes)+')';
+      if(w==='media') return L('Audio and video cannot be attached','音声・動画は添付できません','Audio und Video können nicht angehängt werden','Аудио и видео прикрепить нельзя','No se pueden adjuntar audio ni vídeo');
+      if(w==='image-undecodable') return L('This browser could not decode that image','この画像形式はこのブラウザで読み取れませんでした','Dieser Browser konnte dieses Bild nicht dekodieren','Этот браузер не смог декодировать это изображение','Este navegador no pudo decodificar esa imagen');
+      return L('No text could be read from that file','そのファイルからテキストを取り出せませんでした','Aus dieser Datei konnte kein Text gelesen werden','Из этого файла не удалось извлечь текст','No se pudo leer texto de ese archivo'); };
     /* (#R313) the whole stylesheet is js/atlas-styles.js — the ceiling on this file is never raised,
        so a subject moves out instead (see the note there). Nothing about the CSS changed. */
     function ensureStyle(){ if(styled) return; styled=true; const s=document.createElement('style');
@@ -4048,7 +4052,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'<div class="atl-ex"></div>'
         +'<div class="atl-chat"></div>'
         +'<div class="atl-imgrow" style="display:none;"></div>'   /* (#R149) pasted/attached image thumbnails + (#R158) file chips appear here */
-        +'<div class="atl-inbar"><button class="atl-attach" title="'+L('Attach a file (image or text)','ファイルを添付（画像・テキスト）','Datei anhängen (Bild oder Text)','Прикрепить файл (изображение/текст)','Adjuntar archivo (imagen o texto)')+'" aria-label="'+L('Attach a file','ファイルを添付','Datei anhängen','Прикрепить файл','Adjuntar archivo')+'"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-mic" title="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'" aria-label="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
+        +'<div class="atl-inbar"><button class="atl-attach" title="'+L('Attach a file (image, PDF, document or text)','ファイルを添付（画像・PDF・文書・テキスト）','Datei anhängen (Bild, PDF, Dokument oder Text)','Прикрепить файл (изображение, PDF, документ или текст)','Adjuntar archivo (imagen, PDF, documento o texto)')+'" aria-label="'+L('Attach a file','ファイルを添付','Datei anhängen','Прикрепить файл','Adjuntar archivo')+'"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button><textarea class="atl-in" rows="1" placeholder="'+L('Ask Atlas anything…','Atlasに指示…','Atlas fragen…','Спросить Atlas…','Pregunta a Atlas…')+'"></textarea><button class="atl-mic" title="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'" aria-label="'+L('Voice input','音声入力','Spracheingabe','Голосовой ввод','Entrada de voz')+'"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg></button><button class="atl-go idle" title="'+L('Send','送信','Senden','Отправить','Enviar')+'"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg></button></div>'
         +'<div class="atl-ainote">'+L('Atlas can be inaccurate — verify important facts.','Atlasの回答は不正確な場合があります。重要な情報は確認してください。','Atlas kann ungenau sein — wichtige Fakten prüfen.','Atlas может ошибаться — проверяйте важные факты.','Atlas puede equivocarse — verifica los datos importantes.')+'</div>'
         +'<button class="atl-jump" title="'+L('Jump to latest','最新へ移動','Zum Neuesten','К последнему','Ir al final')+'"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m5.5 12.5 6.5 6.5 6.5-6.5"/></svg></button>';
       (document.getElementById('map-container')||document.body).appendChild(panel);
@@ -4246,17 +4250,14 @@ window.IntMapModules.atlasConsole=function(HOST){
         _atlRenderImgs(); _atlSyncGo(); }; });
     }catch(_){} }
     function _atlSyncGo(){ try{ if(!panel) return; const go=panel.querySelector('.atl-go'); if(!go||go.classList.contains('busy')) return; go.classList.toggle('idle', !((inEl&&inEl.value.trim())||_atlImgs.length||_atlFiles.length)); }catch(_){} }
-    async function _atlAddFiles(files){ try{ files=[...(files||[])].filter(Boolean); if(!files.length) return; let unsupported=0;
-      for(const f of files){ const kind=atlFileKind(f);
-        if(kind==='image'){ if(_atlImgs.length>=4){ try{ aiToast(L('Up to 4 images per message','1メッセージにつき画像は4枚まで','Bis zu 4 Bilder pro Nachricht','До 4 изображений на сообщение','Hasta 4 imágenes por mensaje')); }catch(_){} continue; }
-          /* (#R156) HI-FIDELITY encode for OCR/math: the old 1100px / q0.72 JPEG dissolved small text, fraction bars and
-             subscripts. 2000px / q0.9 preserves fine detail; combined with detail:"high" server-side it reads dense docs. */
-          try{ const u=await compressImage(f,2000,0.9); if(u&&/^data:image\//.test(u)) _atlImgs.push(u); }catch(_){}
-        } else if(kind==='text'){ if(_atlFiles.length>=4){ try{ aiToast(L('Up to 4 files per message','1メッセージにつきファイルは4件まで','Bis zu 4 Dateien pro Nachricht','До 4 файлов на сообщение','Hasta 4 archivos por mensaje')); }catch(_){} continue; }
-          let txt=await atlReadText(f); const truncated=txt.length>_ATL_FILE_MAX; if(truncated) txt=txt.slice(0,_ATL_FILE_MAX);
-          _atlFiles.push({name:String((f&&f.name)||'file'),text:txt,size:(f&&f.size)||txt.length,truncated});
-        } else { unsupported++; } }
-      if(unsupported){ try{ aiToast(L('Only images and text-based files can be attached','添付できるのは画像とテキスト系ファイルのみです','Nur Bilder und textbasierte Dateien können angehängt werden','Прикреплять можно только изображения и текстовые файлы','Solo se pueden adjuntar imágenes y archivos de texto')); }catch(_){} }
+    async function _atlAddFiles(files){ try{ files=[...(files||[])].filter(Boolean); if(!files.length) return; let bad=null; const nOf=(k)=>_atlFiles.filter(x=>x&&x.kind===k).length;
+      /* (#R156) HI-FIDELITY encode for OCR/math: 1100px/q0.72 dissolved small text, fraction bars and subscripts; 2000px/q0.9 keeps them, and with detail:"high" server-side it reads dense documents. ⚠ (#R540) IT IS ALSO THE TEST OF WHETHER THIS IS AN IMAGE AT ALL — a format this canvas cannot draw returns nothing, and the reader is TOLD, instead of the picture vanishing silently between here and the provider's four accepted rasters. */
+      for(const f of files){ const d=await ATL_FILE.read(f,{encodeImage:(x)=>compressImage(x,2000,0.9)});
+        if(d.kind==='image'){ if(_atlImgs.length>=ATL_FILE.LIMITS.images){ try{ aiToast(L('Up to 4 images per message','1メッセージにつき画像は4枚まで','Bis zu 4 Bilder pro Nachricht','До 4 изображений на сообщение','Hasta 4 imágenes por mensaje')); }catch(_){} continue; } _atlImgs.push(d.dataUrl); }
+        else if(d.kind==='doc'){ const _tot=_atlFiles.reduce((n,x)=>n+((x&&x.kind==='doc')?(x.size||0):0),0); if(_tot+(d.size||0)>ATL_FILE.LIMITS.docsBytes){ try{ aiToast(_atlWhy({why:'docs-total'})); }catch(_){} continue; } if(nOf('doc')>=ATL_FILE.LIMITS.docs){ try{ aiToast(L('Up to 4 documents per message','1メッセージにつき文書は4件まで','Bis zu 4 Dokumente pro Nachricht','До 4 документов на сообщение','Hasta 4 documentos por mensaje')); }catch(_){} continue; } _atlFiles.push(d); }
+        else if(d.kind==='text'){ if(nOf('text')>=ATL_FILE.LIMITS.files){ try{ aiToast(L('Up to 8 files per message','1メッセージにつきファイルは8件まで','Bis zu 8 Dateien pro Nachricht','До 8 файлов на сообщение','Hasta 8 archivos por mensaje')); }catch(_){} continue; } _atlFiles.push(d); }
+        else bad=d; }
+      if(bad){ try{ aiToast(_atlWhy(bad)); }catch(_){} }
       _atlRenderImgs(); _atlSyncGo(); try{ inEl&&inEl.focus(); }catch(_){}
     }catch(_){} }
     function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice(); if(v||imgs.length||files.length){ inEl.value=''; _atlImgs=[]; _atlFiles=[]; try{ _atlRenderImgs(); }catch(_){} try{ inEl.__autoGrow&&inEl.__autoGrow(); }catch(_){} try{ const g=panel&&panel.querySelector('.atl-go'); if(g) g.classList.add('idle'); }catch(_){} run(v,imgs,files); } }   /* (#R149/#R158) send text + any pasted/attached images and files */
@@ -4633,8 +4634,8 @@ window.IntMapModules.atlasConsole=function(HOST){
          work order: "AI処理上どうしても既定指示が必要なら、API境界でのみ非表示のシステム指示として付与する". */
       const _imgDefault=L('Read and analyze this image. If it is a document, a maths/science problem, a table or text, transcribe it accurately and solve or explain it.','この画像を読み取って分析してください。文書・数学／理科の問題・表・テキストであれば、正確に書き起こして解くか説明してください。','Lies und analysiere dieses Bild. Wenn es ein Dokument, eine Mathe-/Naturwissenschaftsaufgabe, eine Tabelle oder Text ist, transkribiere es genau und löse oder erkläre es.','Прочитайте и проанализируйте это изображение. Если это документ, математическая/научная задача, таблица или текст — точно расшифруйте и решите или объясните.','Lee y analiza esta imagen. Si es un documento, un problema de matemáticas/ciencias, una tabla o texto, transcríbelo con precisión y resuélvelo o explícalo.');
       return (q?('The user says: '+q+'\n\n'):('[No text was typed — default instruction] '+_imgDefault+'\n\n'))+'Read the attached image(s) carefully and respond per your instructions: classify the content, transcribe any text/math EXACTLY (flag uncertain glyphs), solve or analyze it with LaTeX + Markdown, emit verifiable checks for any computable result, and include "places" ONLY if the content is genuinely geographic.'; }
-    async function _atlVisionTurn(ai, q, imgs, gen){
-      const opts={task:'vision_read',effortHint:'high',imageDetail:'high',signal:(_abortCtl?_abortCtl.signal:undefined)};
+    async function _atlVisionTurn(ai, q, imgs, gen, atts){
+      const opts=Object.assign({task:'vision_read',effortHint:'high',imageDetail:'high',signal:(_abortCtl?_abortCtl.signal:undefined)},atts||{});   /* (#R540) the re-examination round reuses this very object, so the attachments ride along with it */
       try{ ai.innerHTML=stageDots('read'); }catch(_){}
       let env=null; try{ env=await askAIJSONEnvelope(_visionPrompt(q),_visionSYS(),imgs,opts); }
       catch(e){ if(gen===_runGen){ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; recordTurn(q,'',[{type:'answer'}],[{type:'answer'}]); } return; }
@@ -4661,11 +4662,10 @@ window.IntMapModules.atlasConsole=function(HOST){
       if(gen===_runGen){ ai.innerHTML=html; recordTurn(q,'',[{type:'answer',contentClass:cls}],[]); }
     }
     async function run(q,imgs,files){ q=String(q||'').trim(); imgs=(Array.isArray(imgs)?imgs:[]).filter(u=>typeof u==='string'&&/^data:image\//.test(u)).slice(0,4);   /* (#R149) optional pasted/attached images (vision) */
-      files=(Array.isArray(files)?files:[]).filter(f=>f&&typeof f.text==='string').slice(0,4);   /* (#R158) optional text-file attachments — their content is given to the model */
+      files=(Array.isArray(files)?files:[]).filter(f=>f&&(f.kind==='doc'?typeof f.b64==='string':typeof f.text==='string')).slice(0,ATL_FILE.LIMITS.files+ATL_FILE.LIMITS.docs);   /* (#R158/#R540) text attachments AND provider-native documents */
       if(!q&&!imgs.length&&!files.length) return;
-      /* (#R158) the attached files' content, given to the model at the API boundary only (not shown in the bubble, not stored
-         in history verbatim — the bubble/history keep the user's own words + a file chip). */
-      const _fileBlock=files.length?('\n\n[ATTACHED FILE'+(files.length>1?'S':'')+' — the user attached the following file'+(files.length>1?'s':'')+'. Use the content to answer; do not claim you cannot read attachments.]\n'+files.map(f=>'----- '+String(f.name||'file')+' -----\n'+String(f.text||'')+(f.truncated?'\n…(truncated — file was longer)':'')).join('\n\n')):'';
+      /* ⚠⚠ (#R540) THE ATTACHMENTS ARE THEIR OWN CHANNELS NOW, NOT MORE PROMPT TEXT. #R158 glued them into the prompt, which ai-proxy slices at MAX_PROMPT (24,000) — so four 60,000-character files were cut mid-word with nothing said to the reader OR the model. Same shape as #R285's system prompt, same fix: a bound of their own. The bubble and history still keep only the reader's own words plus a chip. */
+      const _atts={ files:files.filter(f=>f.kind!=='doc').map(f=>({name:String(f.name||'file'),text:String(f.text||''),truncated:!!f.truncated})), docs:files.filter(f=>f.kind==='doc').map(f=>({name:String(f.name||'file'),mime:String(f.mime||''),b64:String(f.b64||'')})) };
       /* (#R157) IMAGE-ONLY: do NOT fabricate a user message. The old default text ("Read and analyze this image…") was
          written into `q` here and then SHOWN in the user bubble + saved to history — the "勝手にテキストが添付される" the
          user found unpleasant. `q` now stays EMPTY: the user bubble shows only the image, history stores no invented
@@ -4714,7 +4714,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         const ai3=bubble('a',''); try{ ai3.innerHTML='<div style="font-size:12px;line-height:1.55;">'+esc((typeof HOST.user!=='undefined'&&HOST.user)?aiLimitMsg():aiLoginMsg())+'</div>'; }catch(_){} msgTools(ai3,q); return;
       }
       /* (#R156) IMAGE → the dedicated vision pipeline, which is its own reader and not this loop. */
-      if(imgs.length){ const aiv=bubble('a',stageDots('read')); try{ await _atlVisionTurn(aiv,q+_fileBlock,imgs,gen); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen) msgTools(aiv,q); return; }
+      if(imgs.length){ const aiv=bubble('a',stageDots('read')); try{ await _atlVisionTurn(aiv,q,imgs,gen,_atts); }catch(e){ if(gen===_runGen) aiv.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; } if(gen===_runGen) msgTools(aiv,q); return; }
       const ai=bubble('a',stageDots('think'));
       const _cplx=(q.length>80)||(((q.match(/(、|。|,|;| and | then |して|してから|した上で|それから|さらに|かつ|比較|それぞれ|全部|すべて)/g)||[]).length>=2));   /* (#R117) reasoning budget, not meaning: it picks an effort tier and decides nothing about the request */
       /* ⚠ ONE TOOL CALL BECOMES THE SAME ACTION OBJECT THE DISPATCH HAS ALWAYS RUN, so every pin,
@@ -4738,7 +4738,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          of its three branches, so a native call would be returned as empty text and become a 502.
          The envelope rides the JSON-schema path that already works, and `webMode:'auto'` means the
          model — not a regular expression here — decides whether this turn needs the live web. */
-      const _model=async(req)=>{ const env=await askAIJSONEnvelope(_agentPrompt(req,q)+_fileBlock,_sys,VFRAMES.urls(),{task:'atlas_turn',schema:TURN_SCHEMA,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* ⚠ (#R493) THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */
+      const _model=async(req)=>{ const env=await askAIJSONEnvelope(_agentPrompt(req,q),_sys,VFRAMES.urls(),{task:'atlas_turn',files:_atts.files,docs:_atts.docs,schema:TURN_SCHEMA,webMode:'auto',effortHint:_cplx?'high':undefined,turnId:_turnKey,signal:(_abortCtl?_abortCtl.signal:undefined)});   /* ⚠ (#R493) THE THIRD ARGUMENT WAS `null` AND IS NOW THE FRAMES — the vision channel js/ai-core.js has had since #R149 and supabase/functions/ai-proxy turns into `input_image`. Nothing new is built for it: from the step after an `inspect`, the model is reading the reader's actual screen. */
         try{ _curPlanCites=(Array.isArray(env&&env.citations)?env.citations:[]).filter(c=>c&&_atlCleanUrl(c.url)); }catch(_){ _curPlanCites=[]; }
         return AGENT.readReply(env&&env.data, env&&env.text, aiParseJSON); };
       try{

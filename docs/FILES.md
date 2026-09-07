@@ -267,7 +267,7 @@ atlas-highlight.js                Atlas — コードブロックのシンタッ
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
-atlas-attach.js                   Atlas — 添付ファイルの正体判定と全画面ビューア
+atlas-attach.js                   Atlas — 添付ファイルの正体をバイト列に訊く判定器 `ATL_FILE` と全画面ビューア
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
 atlas-gloss.js                    Atlas — 回答文の語句を選択→右クリック（タッチは長押し→「解説」）で開く
                                   用語カード。意味・**この文での意味**・背景を AI が生成する。文脈は描画済みの

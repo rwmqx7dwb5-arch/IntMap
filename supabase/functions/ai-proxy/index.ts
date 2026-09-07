@@ -163,15 +163,48 @@ const MAX_IMAGES = 4;
        JPEG at q=0.9, i.e. ~0.5-2 MB, base64'd to ~0.7-2.7 MB — and slices the list to 4.
      · the prompt string is already clamped to MAX_PROMPT (24 kB) and, since #R285, the system string
        to MAX_SYSTEM (160 kB) — together still four orders of magnitude under the body ceiling below.
-   So the realistic worst case is ~11 MB of body; the ceiling is 20 MB, and a request over it is
-   refused before it is read rather than after it is parsed. */
-const MAX_BODY_BYTES = 20 * 1024 * 1024;
+   (#R540) Attachments changed that arithmetic: a request may now also carry up to MAX_DOCS_BYTES of
+   PDF and MAX_FILES_TEXT of extracted text, and base64 costs a third on top. The ceiling is 32 MB —
+   the figure Anthropic itself puts on ONE Messages request, deliberately not a byte above it. It is
+   a real bound rather than a notional one: filling the raster channel (12 MB decoded → ~16 MB
+   base64) AND the document channel (12 MB → ~16 MB) in the same request does not fit, and such a
+   request is refused before it is read rather than after it is parsed. */
+const MAX_BODY_BYTES = 32 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;        // ONE decoded image (2000 px q0.9 JPEG is well under)
 const MAX_IMAGES_BYTES = 12 * 1024 * 1024;      // …and all of them together
 /* The four raster formats the providers accept. The old regex was `image/[a-zA-Z0-9.+-]+`, which also
    said yes to image/svg+xml — a document format with script in it — and to any string shaped like a
    MIME type, for a value that is pasted straight into the provider request. */
 const IMAGE_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+/* ══ ⚠⚠⚠ (#R540) AN ATTACHMENT IS ITS OWN CHANNEL, AND IT GETS ITS OWN BOUND ══════════════════════
+   The only attachment that ever reached this function was an image. A text file was pasted by the
+   client INTO `prompt` as an «[ATTACHED FILE …]» section — and `prompt` is sliced to MAX_PROMPT
+   (24 kB), while the client will read 60 kB from each of four files. So most of what the reader
+   attached was cut, mid-word, with nothing said about it to the reader OR to the model, which then
+   answered about the part that survived as though it were the whole. That is exactly the shape
+   #R285 found in `system`, and it has the same fix: the field that carries the user's TYPED text
+   keeps its 24 kB, and every other channel is given a bound of ITS OWN.
+     · files — text THIS app extracted (txt/csv/md/json/docx/xlsx/…); the provider sees it as text.
+     · docs  — bytes the PROVIDER parses. PDF is what all three read as a document (Anthropic
+       `document`, OpenAI `input_file`, Gemini `inline_data`), in the same sense that png/jpeg/webp/
+       gif is what all three read as a raster. DOC_MIME states that upstream fact; it is not a list
+       of cases, and a format is added to it only when all three providers accept it.
+   OBSERVED (2026-09-07, provider documentation): Anthropic's Messages API caps one REQUEST at 32 MB
+   and one PDF at 600 pages (100 on the 200k-context models). 8 MB sits well inside a single PDF's
+   share of that, and four documents plus four images stay inside MAX_BODY_BYTES above.
+   EXPIRES WHEN: a provider moves its request ceiling, or a second document format becomes readable
+   by all three — then these numbers and DOC_MIME are re-measured, not extended case by case.
+   CANONICAL: here. The client holds the same numbers in js/atlas-attach.js `ATL_FILE.LIMITS`
+   (images/files/docs, textPerFile/textTotal, docBytes/docsBytes) and tests/r540 asserts the two are
+   EQUAL rather than re-stating either — a client that trims to a wider bound than the server
+   enforces is precisely how an attachment gets cut silently again. */
+const MAX_FILES = 8;                             // text attachments in ONE request
+const MAX_FILE_TEXT = 120_000;                   // ONE extracted file
+const MAX_FILES_TEXT = 400_000;                  // …and all of them together
+const MAX_DOCS = 4;                              // provider-native documents in ONE request
+const MAX_DOC_BYTES = 8 * 1024 * 1024;           // ONE document, decoded
+const MAX_DOCS_BYTES = 12 * 1024 * 1024;         // …and all of them together, decoded
+const DOC_MIME = new Set(["application/pdf"]);   // what all three providers read AS a document
 /* ⚠ A TASK IS A KEY INTO FOUR CONFIGURATION TABLES, and it arrived as an arbitrary string:
    `String(payload.task || "free_text").toLowerCase()`, then `TASK_MAX_OUTPUT[task] ?? FALLBACK`. So an
    unknown task silently ran on fallback budgets, was echoed back in `meta.task`, and — because a
@@ -502,6 +535,12 @@ function maxOutputFor(task: string, requestedCount?: number): number {
 }
 
 interface ImgPart { mime: string; b64: string; }
+/* (#R540) The two attachment channels (see MAX_FILES above). `truncated` is the report that the
+   file was cut — by the client at ATL_FILE.LIMITS.textPerFile, or here at MAX_FILE_TEXT — and it is
+   carried all the way to the model because a model that cannot see the cut answers about the part
+   it was given as if that were the whole file. */
+interface FilePart { name: string; text: string; truncated: boolean; }
+interface DocPart { name: string; mime: string; b64: string; }
 // (#R131) A single hosted-web-search citation the model emitted (Responses API url_citation
 // annotation). Kept end-to-end so the client can show the sources the model ACTUALLY read/cited
 // this turn, distinct from the articles IntMap gathered on the client. The old code threw these
@@ -524,6 +563,25 @@ function parseDataUrl(d: string): ImgPart | null {
   if (b64.length % 4 !== 0) return null;
   if (b64Bytes(b64) > MAX_IMAGE_BYTES) return null;
   return { mime, b64 };
+}
+/* (#R540) ONE wording, three providers. The attached text is a `text` block on Anthropic, an
+   `input_text` on OpenAI and a plain text part on Gemini; written at each of those three sites the
+   wording would drift, and the models would be told three different things about the same files.
+   The frame names the attachment explicitly because a model handed a wall of pasted text with
+   nothing around it does sometimes reply that it cannot read attachments — about text it is holding.
+   Empty in, empty out: a caller with no text attachments must push no block at all. */
+function filesBlock(files: FilePart[]): string {
+  if (!files.length) return "";
+  const out: string[] = [
+    "[ATTACHED FILE" + (files.length > 1 ? "S" : "") +
+    " — the user attached the following. Use the content to answer; do not claim you cannot read attachments.]",
+  ];
+  for (const f of files) {
+    out.push("----- " + f.name + " -----");
+    out.push(f.text);
+    if (f.truncated) out.push("…(truncated — file was longer)");
+  }
+  return out.join("\n");
 }
 
 // (#R113b) A hung/slow provider fetch must NOT run the isolate into the Edge-Function wall-clock limit (which
@@ -610,9 +668,14 @@ function classifyGemini(status: number, bodyText: string, finishReason: string, 
 // ---------------------------------------------------------------------------
 //  Provider calls (key lives only here, in the function's env).
 // ---------------------------------------------------------------------------
-async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string }> {
+async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string }> {
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
+  /* (#R540) documents → attached text → the user's prompt. The question is asked ABOUT material the
+     model has already been handed, so the material comes first. */
+  for (const dp of docs) content.push({ type: "document", source: { type: "base64", media_type: dp.mime, data: dp.b64 } });
+  const attached = filesBlock(files);
+  if (attached) content.push({ type: "text", text: attached });
   content.push({ type: "text", text: prompt });
   const body: Record<string, unknown> = { model, max_tokens: maxTokens, messages: [{ role: "user", content }] };
   if (system) body.system = system;
@@ -634,13 +697,19 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   return { text, finishReason };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", _isFallback = false, schemaFormat: Record<string, unknown> | null = null): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", _isFallback = false, schemaFormat: Record<string, unknown> | null = null): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
   // (#R156) input_image `detail`: "high" tiles the image so the model reads SMALL text / fraction bars /
   // subscripts (the vision_read OCR/maths win); "auto" (default) is unchanged for every other caller.
-  const content: unknown[] = [{ type: "input_text", text: prompt }];
+  /* (#R540) documents → attached text → the user's prompt (same order as the other two providers);
+     the images keep their place after the prompt, where they have always been. */
+  const content: unknown[] = [];
+  for (const dp of docs) content.push({ type: "input_file", filename: dp.name, file_data: "data:" + dp.mime + ";base64," + dp.b64 });
+  const attached = filesBlock(files);
+  if (attached) content.push({ type: "input_text", text: attached });
+  content.push({ type: "input_text", text: prompt });
   const _detail = (imageDetail === "high" || imageDetail === "low") ? imageDetail : "auto";
   for (const ip of imgs) content.push({ type: "input_image", image_url: `data:${ip.mime};base64,${ip.b64}`, detail: _detail });
 
@@ -721,7 +790,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (!_isFallback && (r.status === 403 || r.status === 404) && model !== FALLBACK_MODEL &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
       try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: FALLBACK_MODEL, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, true, schemaFormat);
+      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, true, schemaFormat);
     }
     const pe = classifyGemini(r.status, t, "", "");
     /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written
@@ -791,8 +860,13 @@ interface GeminiOpts {
   noTools?: boolean;         // hardened retry: never attach a tool
 }
 
-async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
-  const parts: unknown[] = [{ text: prompt }];
+async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
+  /* (#R540) documents → attached text → the user's prompt; the images keep their place after it. */
+  const parts: unknown[] = [];
+  for (const dp of docs) parts.push({ inline_data: { mime_type: dp.mime, data: dp.b64 } });
+  const attached = filesBlock(files);
+  if (attached) parts.push({ text: attached });
+  parts.push({ text: prompt });
   for (const ip of imgs) parts.push({ inline_data: { mime_type: ip.mime, data: ip.b64 } });
 
   const generationConfig: Record<string, unknown> = {
@@ -851,11 +925,11 @@ async function callGemini(model: string, key: string, prompt: string, system: st
 // (#R113c) Transient Google errors — 503 "the model is overloaded" / other 5xx / rate-limit — are common for a busy
 // model and usually clear on a retry (Gemini's own guidance is to retry with backoff). Retry those up to twice with a
 // short backoff. Timeouts and MALFORMED are handled elsewhere (retrying a timeout would just burn another 45s).
-async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
+async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
   const MAX = 3;   // 1 attempt + up to 2 retries
   for (let attempt = 1; ; attempt++) {
     try {
-      return await callGemini(model, key, prompt, system, imgs, opts);
+      return await callGemini(model, key, prompt, system, imgs, files, docs, opts);
     } catch (e) {
       const ps = (e instanceof ProviderError && e.meta && typeof e.meta.providerStatus === "number") ? e.meta.providerStatus as number : 0;
       // (#R113e) Retry ONLY a 5xx overload — NOT a 429. Retrying a rate/quota 429 immediately just consumes another
@@ -974,6 +1048,9 @@ Deno.serve(async (req) => {
   // web policy per feature — instead of one MAX_TOKENS / one boolean for everything.
   let payload: {
     prompt?: string; system?: string; images?: string[]; lang?: string;
+    /* (#R540) the two attachment channels — extracted text, and documents the provider parses */
+    files?: { name?: string; text?: string; truncated?: boolean }[];
+    docs?: { name?: string; mime?: string; b64?: string }[];
     web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
     effortHint?: string; turnId?: string;
   } = {};
@@ -1036,13 +1113,56 @@ Deno.serve(async (req) => {
       imgs.push(part);
     }
   }
-  if (!prompt && !imgs.length) {
+  /* ⚠ (#R540) THESE DO NOT SHARE THE PROMPT'S CEILING. That sharing is the whole bug: the client
+     used to paste file text into `prompt`, which is sliced to 24 kB. Each channel here counts its
+     own items, bounds each item and stops on its own running total (the image loop's argument,
+     applied to text and to documents). */
+  const files: FilePart[] = [];
+  {
+    let total = 0;
+    for (const f of (Array.isArray(payload.files) ? payload.files : [])) {
+      if (files.length >= MAX_FILES) break;
+      if (!f || typeof f !== "object") continue;
+      const raw = String(f.text || "");
+      const text = raw.slice(0, MAX_FILE_TEXT);
+      if (!text) continue;                                   // an empty extraction is not an attachment
+      if (total + text.length > MAX_FILES_TEXT) break;
+      total += text.length;
+      /* the client says whether IT cut the file; a cut made HERE is added to that claim rather than
+         replacing it, because the model must be told about either one. */
+      files.push({ name: String(f.name || "file").slice(0, 200), text, truncated: f.truncated === true || raw.length > text.length });
+    }
+  }
+  const docs: DocPart[] = [];
+  {
+    let total = 0;
+    for (const d of (Array.isArray(payload.docs) ? payload.docs : [])) {
+      if (docs.length >= MAX_DOCS) break;
+      if (!d || typeof d !== "object") continue;
+      const mime = String(d.mime || "").toLowerCase();
+      const b64 = String(d.b64 || "");
+      /* the three questions parseDataUrl asks of an image, asked of a document: is it a format the
+         providers read, is the payload actually base64, and is it a size somebody could have made. */
+      if (!DOC_MIME.has(mime)) continue;
+      if (b64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) continue;
+      const n = b64Bytes(b64);
+      if (n > MAX_DOC_BYTES) continue;
+      if (total + n > MAX_DOCS_BYTES) break;
+      total += n;
+      docs.push({ name: String(d.name || "document").slice(0, 200), mime, b64 });
+    }
+  }
+  /* ⚠ (#R540) A REQUEST CAN NOW BE ALL ATTACHMENT. "Read this PDF" with the question in the file,
+     or a dropped file with no typed text, is a real request — not an empty one. */
+  if (!prompt && !imgs.length && !files.length && !docs.length) {
     await refund();
     return json({ error: "empty" }, 400);
   }
   /* (#R491) ...and what the cheap lane may NOT ask for. An image read or a hosted web search costs
-     what `vision_read` and `brief` cost, and neither is a dictionary lookup. */
-  if (isGloss && (imgs.length || web)) {
+     what `vision_read` and `brief` cost, and neither is a dictionary lookup.
+     (#R540) Nor is reading a PDF or a spreadsheet: the attachment channels are the same kind of
+     expensive input the images are, so the gloss lane takes text only. */
+  if (isGloss && (imgs.length || docs.length || files.length || web)) {
     await refund();
     return json({ error: "bad_lane", message: "The gloss lane takes text only." }, 400);
   }
@@ -1076,13 +1196,13 @@ Deno.serve(async (req) => {
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
+        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
         // budget (still capped) instead of surfacing "empty response" to the user.
         if (e instanceof ProviderError && e.code === "provider_empty" && e.retryable) {
-          out = await callOpenAI(model, key, prompt, system, imgs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
+          out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, Math.min(HARD_MAX_OUTPUT, maxTokens + 1200), wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
         } else {
           throw e;
         }
@@ -1091,7 +1211,7 @@ Deno.serve(async (req) => {
       const key = Deno.env.get("GEMINI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "GEMINI_API_KEY not set", 502, false, {});
       try {
-        out = await callGeminiRetry(model, key, prompt, system, imgs, { maxTokens, web, searchEnabled, wantJson, responseSchema });
+        out = await callGeminiRetry(model, key, prompt, system, imgs, files, docs, { maxTokens, web, searchEnabled, wantJson, responseSchema });
       } catch (e) {
         // (#R113) MALFORMED_FUNCTION_CALL → retry ONCE with tools stripped, a hardened
         // "do not call functions" system suffix, and JSON mode forced. No further retries.
@@ -1100,12 +1220,12 @@ Deno.serve(async (req) => {
             "No web-search or function-calling tool is attached to this request. Do NOT call tools or functions. " +
             "The action/type names in the instructions are plain JSON string values, not callable functions. " +
             "Return the final answer directly" + (wantJson ? " as valid JSON." : ".");
-          out = await callGemini(model, key, prompt, hardened, imgs, { maxTokens, web: false, searchEnabled: false, wantJson, responseSchema, noTools: true });
+          out = await callGemini(model, key, prompt, hardened, imgs, files, docs, { maxTokens, web: false, searchEnabled: false, wantJson, responseSchema, noTools: true });
         } else if (e instanceof ProviderError && responseSchema && e.meta && e.meta.providerStatus === 400) {
           // (#R113) A 400 while a responseSchema was attached is most likely a schema-dialect rejection by this
           // model — retry ONCE without the schema. responseMimeType:"application/json" still forces valid JSON,
           // and the prompt + client-side validation enforce the shape, so map_report keeps working either way.
-          out = await callGemini(model, key, prompt, system, imgs, { maxTokens, web, searchEnabled, wantJson, responseSchema: undefined });
+          out = await callGemini(model, key, prompt, system, imgs, files, docs, { maxTokens, web, searchEnabled, wantJson, responseSchema: undefined });
         } else {
           throw e;
         }
@@ -1113,7 +1233,7 @@ Deno.serve(async (req) => {
     } else {
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "ANTHROPIC_API_KEY not set", 502, false, {});
-      out = await callAnthropic(model, key, prompt, system, imgs, web, maxTokens);
+      out = await callAnthropic(model, key, prompt, system, imgs, files, docs, web, maxTokens);
     }
     // (#R350) 5a) A structured answer that will not parse is a TYPED failure, refunded like any
     // other provider failure — the client must never be handed prose it cannot audit.

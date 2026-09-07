@@ -92,12 +92,22 @@ test('R158 #10 → R160 sidebar open/close — per-frame/anchor machinery delete
 });
 
 test('R158 #4 Atlas attach button is "+" and accepts non-image (text) files', () => {
-  ok("L('Attach a file (image or text)','ファイルを添付（画像・テキスト）'", 'button relabelled Attach a file (5 languages)');
+  ok("L('Attach a file (image, PDF, document or text)','ファイルを添付（画像・PDF・文書・テキスト）", 'button says what it now takes (5 languages; the other 4 come from the inline tables)');
   ok('let _atlFiles=[];', 'pending non-image file attachments');
   /* (#R232) moved to js/atlas-attach.js with the rest of the attachment subject (js/atlas-console.js
      has a line ceiling). The property is that ONE classifier decides image / text / unsupported. */
-  ok('export function atlFileKind(f){', 'image / text / unsupported classifier');
-  ok("const _fileBlock=files.length?('\\n\\n[ATTACHED FILE'", 'attached file text is given to the model at the API boundary');
+  /* (#R540) ONE CLASSIFIER IS STILL THE PROPERTY — it is no longer a list of 75 extensions but a
+     question asked of the bytes, so the name changed. What must NOT come back is a second one:
+     js/atlas-console.js decides nothing about what a file is, it only asks. tests/r540 ② evaluates
+     the classifier itself on real bytes rather than reading either name (#R505). */
+  ok('export const ATL_FILE = (function () {', 'one classifier decides image / doc / text / unsupported');
+  gone('export function atlFileKind', 'the extension-list classifier is gone, not shadowed by a second one, not shadowed by a second classifier');
+  /* ⚠ (#R540) THE ATTACHED TEXT REACHES THE MODEL THROUGH ITS OWN CHANNEL, NOT THROUGH THE PROMPT.
+     #R158 concatenated it into `prompt`, which ai-proxy slices at MAX_PROMPT — so the assertion below
+     was true of a path that silently threw the content away. The block is built server-side now, once,
+     for all three providers. */
+  ok('files:_atts.files,docs:_atts.docs', 'the attachments travel as their own channels');
+  ok('if(Array.isArray(opts.files)&&opts.files.length) body.files=opts.files;', 'js/ai-core.js puts them on the wire');
   gone("fi.type='file'; fi.accept='image/*'; fi.multiple=true;", 'the image-only picker restriction is removed');
   ok('function fire(){ const v=inEl.value.trim(); const imgs=_atlImgs.slice(); const files=_atlFiles.slice();', 'files are sent with the message');
 });

@@ -401,7 +401,7 @@ window.IntMapLang.define('ko', { ui: {
   "by the area the service names": "발표 기관이 지정한 구역 단위",   /* (#R275) */
   "continuous — never stops": "지속 — 멈추지 않음",   /* (#R275) */
     "live web search":"실시간 웹 검색", "Stopped":"중지됨", "Voice input":"음성 입력",
-    "Attach a file":"파일 첨부", "Attach a file (image or text)":"파일 첨부 (이미지 또는 텍스트)",
+    "Attach a file":"파일 첨부", 
     "Ask Atlas anything…":"Atlas에게 무엇이든 물어보세요…", "Thinking…":"생각 중…",
     "Research: ":"조사: ", "Researching…":"조사 중…", "Regenerate":"다시 생성",
     "Suggested questions":"추천 질문", "Ask a follow-up…":"이어서 질문하기…",
@@ -1912,7 +1912,6 @@ window.IntMapLang.define('ko', { ui: {
   "on your left": "왼쪽에",
   "on your right": "오른쪽에",
   "One shot": "한 번만",
-  "Only images and text-based files can be attached": "이미지와 텍스트 기반 파일만 첨부할 수 있습니다",
   "Only one route was returned — there is nothing to compare.": "경로가 하나만 나와 비교할 대상이 없습니다.",
   "Only the first 10 countries are compared": "앞의 10개국만 비교합니다",
   "opacity": "불투명도",
@@ -2423,7 +2422,6 @@ window.IntMapLang.define('ko', { ui: {
   "Unsupported method": "지원하지 않는 방식",
   "UP": "상승",
   "up to": "최대",
-  "Up to 4 files per message": "메시지당 파일 4개까지",
   "Up to 4 images per message": "메시지당 이미지 4장까지",
   "Updated": "갱신",
   "Uploaded data": "업로드한 데이터",
@@ -5975,7 +5973,6 @@ window.IntMapLang.define('ko', { ui: {
   "rows are not single points, so a distance join cannot be measured against them": "행이 단일 지점이 아니므로 거리 기반 결합을 측정할 수 없습니다",
   "Earthquake magnitude": "지진 규모",
   "Last known eruption": "마지막 확인된 분화",
-
   /* (#R527) photo.locate — js/photo-geo.js · js/map-ui.js · js/atlas-console.js */
   "1 · Photo": "1 · 사진",
   "2 · Search area": "2 · 탐색 범위",
@@ -6070,4 +6067,13 @@ window.IntMapLang.define('ko', { ui: {
   "explained": "설명된 각도",
   "ground": "지면",
   "Your photograph stayed on this device. Only public elevation tiles were fetched, by coordinate.": "사진은 이 기기를 벗어나지 않았습니다. 좌표로 지정한 공개 고도 타일만 내려받았습니다.",
+  "Attach a file (image, PDF, document or text)": "파일 첨부 (이미지, PDF, 문서 또는 텍스트)",
+  "Up to 8 files per message": "메시지당 파일 8개까지",
+  "Up to 4 documents per message": "메시지당 문서 4개까지",
+  "Those documents are too large to send together": "이 문서들은 함께 보내기에 용량이 너무 큽니다",
+  "Old Office files (.doc/.xls/.ppt) cannot be read — save as .docx/.xlsx/.pptx or PDF": "구형 Office 파일(.doc/.xls/.ppt)은 읽을 수 없습니다 — .docx/.xlsx/.pptx 또는 PDF로 저장하세요",
+  "Audio and video cannot be attached": "오디오와 동영상은 첨부할 수 없습니다",
+  "This browser could not decode that image": "이 브라우저에서 해당 이미지를 디코딩할 수 없습니다",
+  "No text could be read from that file": "해당 파일에서 텍스트를 읽을 수 없습니다",
+  "That file is too large": "이 파일은 용량이 너무 큽니다",
 } });

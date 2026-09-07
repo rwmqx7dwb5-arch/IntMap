@@ -76,7 +76,11 @@ test('R149 #9 image paste/vision wired on the client (transport + proxy already 
   assert.match(html, /let _atlImgs=\[\]/, 'pending image buffer');
   assert.match(html, /inEl\.addEventListener\('paste'/, 'paste handler on the input');
   assert.match(html, /async function _atlAddFiles\(files\)/, 'add-files helper');
-  assert.match(html, /compressImage\(f,2000,0\.9\)/, 'reuses compressImage → JPEG data URL (R156 hi-fi 2000/0.9 for OCR/maths, was 1100/0.72)');
+  /* (#R540) THE PROPERTY IS THE 2000/0.9 TUPLE, NOT THE PARAMETER NAME. The attach path injects the
+     encoder into ATL_FILE.read now, so the argument is named x; a check written against f was pinning a
+     spelling that carries no meaning (#R488). tests/r540 ① evaluates what that injection DOES — an
+     encoder that returns nothing must not yield an image. */
+  assert.match(html, /encodeImage:\(x\)=>compressImage\(x,2000,0\.9\)/, 'the attach path still encodes at R156 hi-fi 2000/0.9 for OCR/maths (was 1100/0.72)');
   // run() takes the images the paste/attach handlers collected
   assert.match(html, /async function run\(q,imgs,files\)\{/, 'run accepts images (and R158 file attachments)');
   /* «the planner call gets imgs» removed in #R406: the planner is deleted, and that assertion had been guarding a path that could never run — `if(imgs.length){ … _atlVisionTurn … return; }` returns BEFORE the model call, so an image has never reached the planner; the pipeline the images do reach is the one asserted above. */

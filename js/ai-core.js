@@ -206,6 +206,13 @@ window.IntMapModules.aiCore=function(HOST){
       if(opts.schema && typeof opts.schema==='object') body.schema=opts.schema;
       if(opts.effortHint) body.effortHint=String(opts.effortHint);   /* (#R117) complexity hint → planner/analysis may think at "high" server-side */
       if(opts.imageDetail) body.imageDetail=String(opts.imageDetail);   /* (#R156) "high" → OpenAI input_image detail:high (small-text/math OCR); server clamps by task */
+      /* ══ (#R540) THE TWO ATTACHMENT CHANNELS — DELIBERATELY NOT THE PROMPT ═══════════════════
+         Until now an attached file's text was concatenated into `prompt` by js/atlas-console.js, and
+         ai-proxy slices `prompt` at MAX_PROMPT — so the content was cut with nothing said. `files`
+         (extracted text) and `docs` (a PDF the provider reads itself) each get their own bound
+         server-side, the way `system` did in #R285. js/atlas-attach.js decides what a file IS. */
+      if(Array.isArray(opts.files)&&opts.files.length) body.files=opts.files;
+      if(Array.isArray(opts.docs)&&opts.docs.length) body.docs=opts.docs;
       /* ══ (#R318) THE TURN KEY — ONE USER REQUEST, ONE USE ══════════════════════════════════════
          Atlas finishes one question with up to three calls: the planner, then up to two bounded
          repairs (or, for an image, the read and its self-check re-read). Every one of them used to

@@ -473,6 +473,40 @@ IntMap が記事を 1 本も持たない問いでは空である**。空のと�
 action であって、その action が誰の目的に仕えていたかは誰も訊いていなかった。
 各操作それ自体の結果表示は今までどおり回答の下に残る（隠さない）。
 
+### 2.2b 添付ファイル (Attachments) — `js/atlas-attach.js` の `ATL_FILE`
+
+入口は3つ（＋ボタン・貼り付け・パネルへのドロップ）で、どれも `_atlAddFiles` に集まり、
+判定は **`ATL_FILE.read(file, {encodeImage})` の1か所**だけ。`<input>` に `accept` は書かない。
+
+**判定はファイルの名前ではなく中身に対して行う**（順に、最初に当たったもの）:
+
+| 問い | どう答えるか | 結果 |
+|---|---|---|
+| PDF か | `%PDF-` 署名（先頭1 kB 内。ISO 32000-1 §7.5.2 は先頭に他のバイトを許す） | `doc` — provider が文書として直接読む |
+| 旧 Office か | OLE2 署名 `D0 CF 11 E0…` | 拒否（`legacy-office`） |
+| コンテナか | ZIP／gzip 署名 → 中の**部品**が何を持つかで docx / xlsx / pptx / odf / kmz / 一般 zip を決める | `text` |
+| 画像か | **エンコーダに渡してみる**。png/jpeg/webp/gif の data URL が返れば画像 | `image` |
+| テキストか | バイト列を復号する（BOM → UTF-8 → WHATWG のレガシー符号化を誤復号の少ない順に） | `text` |
+| どれでもない | — | 拒否（`media` / `image-undecodable` / `binary`）——**理由が利用者に出る** |
+
+⚠ **画像かどうかを MIME 型に訊かない**のは、`image/*` が真でもブラウザが描けない形式（HEIC 等）が
+あり、その data URL は ai-proxy の `IMAGE_MIME`（png/jpeg/webp/gif）に落ちるから。**描けたかどうかが
+唯一の答え**で、描けなければそう言う。
+
+**モデルへの渡り方は3チャネル**（`js/ai-core.js` → `supabase/functions/ai-proxy`）:
+
+| チャネル | 中身 | サーバ側の枠 |
+|---|---|---|
+| `images` | data URL（長辺2000px・q0.9 の JPEG） | `MAX_IMAGES` / `MAX_IMAGE_BYTES` / `MAX_IMAGES_BYTES` |
+| `docs` | `{name,mime,b64}`。3 provider それぞれの文書ブロックになる | `MAX_DOCS` / `MAX_DOC_BYTES` / `MAX_DOCS_BYTES` |
+| `files` | `{name,text,truncated}`。`filesBlock()` が1か所で組み立て、3 provider が使う | `MAX_FILES` / `MAX_FILE_TEXT` / `MAX_FILES_TEXT` |
+
+⚠ **添付の中身は `prompt` の枠を共有しない。** 共有していた間、`prompt` の `MAX_PROMPT` が
+添付を無通知で切り落としていた（`system` に `MAX_SYSTEM` を与えたのと同じ理由・同じ解）。
+
+⚠ **上限はクライアントとサーバの両方が持つ**——クライアントは理由を出すために、サーバは
+クライアントを信じないために。**両者が等しいことは検査が見る**（写しを増やさない）。
+
 ### 2.3 返答の中の小注釈 (In-reply notes) — `js/atlas-annotate.js`
 
 **返答の本文そのものが、読みながら引ける。** Atlas の答えに現れた三種類の綴りには、

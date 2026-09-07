@@ -411,7 +411,7 @@ window.IntMapLang.define('fr', { ui: {
   "by the area the service names": "par zone désignée par le service",   /* (#R275) */
   "continuous — never stops": "continue — ne s’arrête pas",   /* (#R275) */
     "live web search":"recherche web en direct", "Stopped":"Arrêté", "Voice input":"Saisie vocale",
-    "Attach a file":"Joindre un fichier", "Attach a file (image or text)":"Joindre un fichier (image ou texte)",
+    "Attach a file":"Joindre un fichier", 
     "Ask Atlas anything…":"Demandez ce que vous voulez à Atlas…", "Thinking…":"Réflexion…",
     "Research: ":"Recherche : ", "Researching…":"Recherche en cours…", "Regenerate":"Régénérer",
     "Suggested questions":"Questions suggérées", "Ask a follow-up…":"Poser une question complémentaire…",
@@ -1922,7 +1922,6 @@ window.IntMapLang.define('fr', { ui: {
   "on your left": "sur votre gauche",
   "on your right": "sur votre droite",
   "One shot": "Une seule fois",
-  "Only images and text-based files can be attached": "Seuls des images et des fichiers texte peuvent être joints",
   "Only one route was returned — there is nothing to compare.": "Un seul itinéraire a été renvoyé — il n'y a rien à comparer.",
   "Only the first 10 countries are compared": "Seuls les 10 premiers pays sont comparés",
   "opacity": "opacité",
@@ -2433,7 +2432,6 @@ window.IntMapLang.define('fr', { ui: {
   "Unsupported method": "Méthode non prise en charge",
   "UP": "HAUT",
   "up to": "jusqu'à",
-  "Up to 4 files per message": "4 fichiers au maximum par message",
   "Up to 4 images per message": "4 images au maximum par message",
   "Updated": "Mis à jour",
   "Uploaded data": "Données importées",
@@ -5985,7 +5983,6 @@ window.IntMapLang.define('fr', { ui: {
   "rows are not single points, so a distance join cannot be measured against them": "les lignes ne sont pas des points uniques ; une jointure par distance n'est pas mesurable",
   "Earthquake magnitude": "Magnitude du séisme",
   "Last known eruption": "Dernière éruption connue",
-
   /* (#R527) photo.locate — js/photo-geo.js · js/map-ui.js · js/atlas-console.js */
   "1 · Photo": "1 · Photo",
   "2 · Search area": "2 · Zone de recherche",
@@ -6080,4 +6077,13 @@ window.IntMapLang.define('fr', { ui: {
   "explained": "expliqué",
   "ground": "sol",
   "Your photograph stayed on this device. Only public elevation tiles were fetched, by coordinate.": "Votre photographie n'a pas quitté cet appareil. Seules des tuiles d'altitude publiques ont été téléchargées, par coordonnée.",
+  "Attach a file (image, PDF, document or text)": "Joindre un fichier (image, PDF, document ou texte)",
+  "Up to 8 files per message": "8 fichiers au maximum par message",
+  "Up to 4 documents per message": "4 documents au maximum par message",
+  "Those documents are too large to send together": "Ces documents sont trop volumineux pour être envoyés ensemble",
+  "Old Office files (.doc/.xls/.ppt) cannot be read — save as .docx/.xlsx/.pptx or PDF": "Les anciens fichiers Office (.doc/.xls/.ppt) ne sont pas lisibles — enregistrez-les en .docx/.xlsx/.pptx ou PDF",
+  "Audio and video cannot be attached": "Les fichiers audio et vidéo ne peuvent pas être joints",
+  "This browser could not decode that image": "Ce navigateur n’a pas pu décoder cette image",
+  "No text could be read from that file": "Aucun texte n’a pu être lu dans ce fichier",
+  "That file is too large": "Ce fichier est trop volumineux",
 } });

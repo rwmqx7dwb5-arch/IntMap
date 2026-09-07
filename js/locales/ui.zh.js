@@ -563,7 +563,7 @@ window.IntMapLang.define('zh', {
     'Atlas can be inaccurate — verify important facts.': "Atlas 可能出錯 — 重要事實請自行查證。",   /* atlas-console.js */
     'Atlas console': "Atlas 主控台",   /* keyboard-shortcuts.js */
     'Attach a file': "附加檔案",   /* atlas-console.js */
-    'Attach a file (image or text)': "附加檔案（圖片或文字）",   /* atlas-console.js */
+    /* atlas-console.js */
     'Aug': "8月",   /* ocean-currents.js */
     'auto': "自動",   /* terrain-water.js */
     /* seismic.js */
@@ -1506,7 +1506,7 @@ window.IntMapLang.define('zh', {
     /* atlas-console.js */
     /* sims.js */
     'One shot': "單次",   /* terrain-water.js */
-    'Only images and text-based files can be attached': "只能附加圖片與純文字類檔案",   /* atlas-console.js */
+    /* atlas-console.js */
     'Only one route was returned — there is nothing to compare.': "只回傳了一條路線 — 沒有可比較的對象。",   /* routing.js */
     'Only the first 10 countries are compared': "只比較前 10 個國家",   /* atlas-console.js */
     'opacity': "不透明度",   /* atlas-console.js */
@@ -2305,7 +2305,7 @@ window.IntMapLang.define('zh', {
     'Unsupported method': "不支援的方法",   /* atlas-controls.js */
     'UP': "上",   /* flight-sim.js */
     'up to': "最多",   /* atlas-console.js */
-    'Up to 4 files per message': "每則訊息最多 4 個檔案",   /* atlas-console.js */
+    /* atlas-console.js */
     'Up to 4 images per message': "每則訊息最多 4 張圖片",   /* atlas-console.js */
     'Updated': "已更新",   /* weather.js */
     'Uploaded data': "上傳的資料",   /* map-tools.js */
@@ -6197,7 +6197,6 @@ window.IntMapLang.define('zh', {
   "rows are not single points, so a distance join cannot be measured against them": "各列不是單一地點，因此無法以距離進行結合",
   "Earthquake magnitude": "地震規模",
   "Last known eruption": "最後一次已知噴發",
-
   /* (#R527) photo.locate — js/photo-geo.js · js/map-ui.js · js/atlas-console.js */
   "1 · Photo": "1 · 照片",
   "2 · Search area": "2 · 搜尋範圍",
@@ -6293,5 +6292,14 @@ window.IntMapLang.define('zh', {
   "explained": "已說明",
   "ground": "地面",
   "Your photograph stayed on this device. Only public elevation tiles were fetched, by coordinate.": "您的照片沒有離開這台裝置。只依座標下載了公開的高程圖磚。",
+  "Attach a file (image, PDF, document or text)": "附加檔案（圖片、PDF、文檔或文字）",
+  "Up to 8 files per message": "每則訊息最多 8 個檔案",
+  "Up to 4 documents per message": "每則訊息最多 4 份文檔",
+  "Those documents are too large to send together": "這些文檔合計太大，無法一起傳送",
+  "Old Office files (.doc/.xls/.ppt) cannot be read — save as .docx/.xlsx/.pptx or PDF": "舊版 Office 檔案（.doc/.xls/.ppt）無法讀取 — 請另存為 .docx/.xlsx/.pptx 或 PDF",
+  "Audio and video cannot be attached": "無法附加音訊和影片",
+  "This browser could not decode that image": "這個瀏覽器無法解碼該圖片",
+  "No text could be read from that file": "無法從該檔案讀取任何文字",
+  "That file is too large": "這個檔案太大",
   }
 });

@@ -98,8 +98,12 @@ test('R491 ④ ai-proxy verifies the declared lane against the parsed task, and 
   assert.match(after, /bad_lane/);
 
   /* …and the cheap lane may not buy the expensive inputs */
-  assert.match(fn, /isGloss\s*&&\s*\(imgs\.length\s*\|\|\s*web\)/,
-    'the gloss lane refuses images and hosted web search — those cost what vision_read and brief cost');
+  /* (#R540) …and the list of expensive inputs GREW: a document the provider reads and a file whose
+     text we extracted cost what vision_read costs, so the gloss lane refuses those too. The
+     assertion names all four rather than the two it was written with — a check that keeps naming
+     the old two would go quiet the day a fifth is added and not refused. */
+  assert.match(fn, /isGloss\s*&&\s*\(imgs\.length\s*\|\|\s*docs\.length\s*\|\|\s*files\.length\s*\|\|\s*web\)/,
+    'the gloss lane refuses images, documents, attached files and hosted web search — those cost what vision_read and brief cost');
   assert.match(fn, /consume_ai_gloss/);
   assert.match(fn, /refund_ai_gloss/);
 });

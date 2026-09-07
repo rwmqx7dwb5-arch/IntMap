@@ -95,11 +95,17 @@ test('R156 #4 exact-rational deterministic verification', () => {
 });
 
 test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner)', () => {
-  assert.match(html, /async function _atlVisionTurn\(ai, q, imgs, gen\)\{/, 'dedicated vision turn');
+  assert.match(html, /async function _atlVisionTurn\(ai, q, imgs, gen, atts\)\{/, 'dedicated vision turn');
   assert.match(html, /function _visionSYS\(\)\{/, 'vision system prompt (classify → transcribe → solve → verify → map-only-if-geo)');
   assert.match(html, /task:'vision_read',effortHint:'high',imageDetail:'high'/, 'vision call: vision_read task + high effort + detail:high');
   // run() routes images to the vision turn, NOT the generic planner
-  assert.match(html, /if\(imgs\.length\)\{ const aiv=bubble\('a',stageDots\('read'\)\); try\{ await _atlVisionTurn\(aiv,q\+_fileBlock,imgs,gen\);/, 'run() routes an attached image to the vision pipeline (R158: file text rides along)');
+  /* ⚠ (#R540) THE PROPERTY IS THE ROUTING, AND IT IS UNCHANGED — an attached image still goes to
+     this pipeline and still returns before the planner. What changed is HOW the other attachments
+     ride along: #R158 concatenated their text into `q`, where ai-proxy sliced it away at
+     MAX_PROMPT; they are channels now (`_atts`, merged into the same opts object the
+     re-examination round reuses). A check written against the concatenation was pinning the
+     defect rather than the property. */
+  assert.match(html, /if\(imgs\.length\)\{ const aiv=bubble\('a',stageDots\('read'\)\); try\{ await _atlVisionTurn\(aiv,q,imgs,gen,_atts\);/, 'run() routes an attached image to the vision pipeline (R540: the files/docs channels ride along)');
   // ONE image re-examination round when a deterministic check fails
   assert.match(html, /\[SELF-CHECK FAILED\] Your emitted check\(s\) did NOT hold/, 'failed check triggers an image re-examination round');
   // neutral default prompt (no forced mapping)

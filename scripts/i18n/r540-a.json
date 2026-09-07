@@ -1,0 +1,76 @@
+{
+  "_": "(#R540) Atlas' attachment picker was rebuilt: it now takes PDFs and office documents beside images and plain text, so the ＋ button's title, the two per-message limits and six new refusal toasts are new strings in js/atlas-console.js. de/ru/es are the arguments already written at the L(…) call sites and are copied here verbatim; fr, ko and zh-Hant are the new work. ⚠ «That file is too large» and «Those documents are too large to send together» are followed at run time by a byte size the app appends — ' (8.0 MB)' / ' (12.0 MB)' — so NEITHER may end in a full stop or a bracket in any language. ⚠ File extensions (.doc/.xls/.ppt/.docx/.xlsx/.pptx) and the format name PDF are product names and stay Latin in every language. ⚠ zh-Hant keeps IntMap's own distinction — 檔案 is a file (as in the existing 'Attach a file' → 附加檔案) and 文檔 is a document — NOT 文件, which the existing vision prompt at ui.zh.js:1711 uses, because scripts/zh-hans.mjs maps 檔案→文件 and the mainland reader would otherwise be told to «attach a 文件 (image, PDF, 文件 or text)»; 文檔→文档 is the mainland word and stays distinct; Columns: de, ru, es, fr, ko, zh-Hant.",
+
+  "Attach a file (image, PDF, document or text)": [
+    "Datei anhängen (Bild, PDF, Dokument oder Text)",
+    "Прикрепить файл (изображение, PDF, документ или текст)",
+    "Adjuntar archivo (imagen, PDF, documento o texto)",
+    "Joindre un fichier (image, PDF, document ou texte)",
+    "파일 첨부 (이미지, PDF, 문서 또는 텍스트)",
+    "附加檔案（圖片、PDF、文檔或文字）"
+  ],
+  "Up to 8 files per message": [
+    "Bis zu 8 Dateien pro Nachricht",
+    "До 8 файлов на сообщение",
+    "Hasta 8 archivos por mensaje",
+    "8 fichiers au maximum par message",
+    "메시지당 파일 8개까지",
+    "每則訊息最多 8 個檔案"
+  ],
+  "Up to 4 documents per message": [
+    "Bis zu 4 Dokumente pro Nachricht",
+    "До 4 документов на сообщение",
+    "Hasta 4 documentos por mensaje",
+    "4 documents au maximum par message",
+    "메시지당 문서 4개까지",
+    "每則訊息最多 4 份文檔"
+  ],
+  "That file is too large": [
+    "Diese Datei ist zu groß",
+    "Этот файл слишком велик",
+    "Ese archivo es demasiado grande",
+    "Ce fichier est trop volumineux",
+    "이 파일은 용량이 너무 큽니다",
+    "這個檔案太大"
+  ],
+  "Those documents are too large to send together": [
+    "Diese Dokumente sind zusammen zu groß zum Senden",
+    "Эти документы вместе слишком велики для отправки",
+    "Esos documentos son demasiado grandes para enviarlos juntos",
+    "Ces documents sont trop volumineux pour être envoyés ensemble",
+    "이 문서들은 함께 보내기에 용량이 너무 큽니다",
+    "這些文檔合計太大，無法一起傳送"
+  ],
+  "Old Office files (.doc/.xls/.ppt) cannot be read — save as .docx/.xlsx/.pptx or PDF": [
+    "Alte Office-Dateien (.doc/.xls/.ppt) sind nicht lesbar — als .docx/.xlsx/.pptx oder PDF speichern",
+    "Старые файлы Office (.doc/.xls/.ppt) не читаются — сохраните как .docx/.xlsx/.pptx или PDF",
+    "Los archivos antiguos de Office (.doc/.xls/.ppt) no se pueden leer — guárdalos como .docx/.xlsx/.pptx o PDF",
+    "Les anciens fichiers Office (.doc/.xls/.ppt) ne sont pas lisibles — enregistrez-les en .docx/.xlsx/.pptx ou PDF",
+    "구형 Office 파일(.doc/.xls/.ppt)은 읽을 수 없습니다 — .docx/.xlsx/.pptx 또는 PDF로 저장하세요",
+    "舊版 Office 檔案（.doc/.xls/.ppt）無法讀取 — 請另存為 .docx/.xlsx/.pptx 或 PDF"
+  ],
+  "Audio and video cannot be attached": [
+    "Audio und Video können nicht angehängt werden",
+    "Аудио и видео прикрепить нельзя",
+    "No se pueden adjuntar audio ni vídeo",
+    "Les fichiers audio et vidéo ne peuvent pas être joints",
+    "오디오와 동영상은 첨부할 수 없습니다",
+    "無法附加音訊和影片"
+  ],
+  "This browser could not decode that image": [
+    "Dieser Browser konnte dieses Bild nicht dekodieren",
+    "Этот браузер не смог декодировать это изображение",
+    "Este navegador no pudo decodificar esa imagen",
+    "Ce navigateur n’a pas pu décoder cette image",
+    "이 브라우저에서 해당 이미지를 디코딩할 수 없습니다",
+    "這個瀏覽器無法解碼該圖片"
+  ],
+  "No text could be read from that file": [
+    "Aus dieser Datei konnte kein Text gelesen werden",
+    "Из этого файла не удалось извлечь текст",
+    "No se pudo leer texto de ese archivo",
+    "Aucun texte n’a pu être lu dans ce fichier",
+    "해당 파일에서 텍스트를 읽을 수 없습니다",
+    "無法從該檔案讀取任何文字"
+  ]
+}

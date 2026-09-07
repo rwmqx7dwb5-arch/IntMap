@@ -567,7 +567,7 @@ window.IntMapLang.define('zh-hans', {
     'Atlas can be inaccurate — verify important facts.': "Atlas 可能出错 — 重要事实请自行查证。",   /* atlas-console.js */
     'Atlas console': "Atlas 主控台",   /* keyboard-shortcuts.js */
     'Attach a file': "附加文件",   /* atlas-console.js */
-    'Attach a file (image or text)': "附加文件（图片或文字）",   /* atlas-console.js */
+    /* atlas-console.js */
     'Aug': "8月",   /* ocean-currents.js */
     'auto': "自动",   /* terrain-water.js */
     /* seismic.js */
@@ -1510,7 +1510,7 @@ window.IntMapLang.define('zh-hans', {
     /* atlas-console.js */
     /* sims.js */
     'One shot': "单次",   /* terrain-water.js */
-    'Only images and text-based files can be attached': "只能附加图片与纯文字类文件",   /* atlas-console.js */
+    /* atlas-console.js */
     'Only one route was returned — there is nothing to compare.': "只回传了一条路线 — 没有可比较的对象。",   /* routing.js */
     'Only the first 10 countries are compared': "只比较前 10 个国家",   /* atlas-console.js */
     'opacity': "不透明度",   /* atlas-console.js */
@@ -2309,7 +2309,7 @@ window.IntMapLang.define('zh-hans', {
     'Unsupported method': "不支持的方法",   /* atlas-controls.js */
     'UP': "上",   /* flight-sim.js */
     'up to': "最多",   /* atlas-console.js */
-    'Up to 4 files per message': "每则讯息最多 4 个文件",   /* atlas-console.js */
+    /* atlas-console.js */
     'Up to 4 images per message': "每则讯息最多 4 张图片",   /* atlas-console.js */
     'Updated': "已更新",   /* weather.js */
     'Uploaded data': "上传的数据",   /* map-tools.js */
@@ -6201,7 +6201,6 @@ window.IntMapLang.define('zh-hans', {
   "rows are not single points, so a distance join cannot be measured against them": "各列不是单一地点，因此无法以距离进行结合",
   "Earthquake magnitude": "地震规模",
   "Last known eruption": "最后一次已知喷发",
-
   /* (#R527) photo.locate — js/photo-geo.js · js/map-ui.js · js/atlas-console.js */
   "1 · Photo": "1 · 照片",
   "2 · Search area": "2 · 搜索范围",
@@ -6297,5 +6296,14 @@ window.IntMapLang.define('zh-hans', {
   "explained": "已说明",
   "ground": "地面",
   "Your photograph stayed on this device. Only public elevation tiles were fetched, by coordinate.": "您的照片没有离开这台设备。只依坐标下载了公开的高程瓦片。",
+  "Attach a file (image, PDF, document or text)": "附加文件（图片、PDF、文档或文字）",
+  "Up to 8 files per message": "每则讯息最多 8 个文件",
+  "Up to 4 documents per message": "每则讯息最多 4 份文档",
+  "Those documents are too large to send together": "这些文档合计太大，无法一起传送",
+  "Old Office files (.doc/.xls/.ppt) cannot be read — save as .docx/.xlsx/.pptx or PDF": "旧版 Office 文件（.doc/.xls/.ppt）无法读取 — 请另存为 .docx/.xlsx/.pptx 或 PDF",
+  "Audio and video cannot be attached": "无法附加音频和视频",
+  "This browser could not decode that image": "这个浏览器无法解码该图片",
+  "No text could be read from that file": "无法从该文件读取任何文字",
+  "That file is too large": "这个文件太大",
   }
 });
