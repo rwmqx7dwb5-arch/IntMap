@@ -82,6 +82,12 @@ jobs:
         run: npm run check:wars
       - name: Historical city names (the record matches, and no key names two cities)
         run: npm run check:histcities
+      # (#R518) The 1850-1885 border record cannot be re-derived here — the build needs ~400 MB of
+      # OpenHistoricalMap Overpass responses — so this proves the committed file's invariants, and
+      # above all that every single year of the window has a world to draw. See docs/TESTING.md for
+      # what it therefore cannot see.
+      - name: 1850-1885 borders (the bundled record is sound, and no year of it is empty)
+        run: npm run check:histborders
       # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
       # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
       # Every previous round fixed test time for that round and the suite grew back, because the

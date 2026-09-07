@@ -366,6 +366,9 @@ window.IntMapRefData=(function(){
     {n:'NASA GIBS — OMPS SO₂, upper troposphere & stratosphere',u:'https://www.earthdata.nasa.gov/'},
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
+    /* (#R518) the borders of 1850-1885. A source the map draws has to be reachable from here — and this
+       one carries a SHARE-ALIKE licence (ODbL 1.0), so naming it is not courtesy, it is the terms. */
+    {n:'OpenHistoricalMap (ODbL 1.0)',u:'https://www.openhistoricalmap.org/'},
     {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/'},
     /* ⚠ (#R409) THE MAP NAMED THIS SOURCE AND THIS PAGE DID NOT LIST IT. The two world-war layers
        credit «the documented record, compiled in scripts/wars/» in their MapLibre attribution and

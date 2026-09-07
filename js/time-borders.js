@@ -59,9 +59,14 @@ window.IntMapModules.timeBorders=function(HOST){
     /* (#R349) 1815 and 1880 are new. The clock's floor moved to 1850 (js/chronos.js) and CShapes —
        the YEARLY source below — starts at 1886, so without these two the whole of 1850-1885 had no
        era polygons at all and would have rendered the PRESENT-DAY world under a 19th-century year.
-       They are the only two the upstream repo has in that reach: world_1815 and world_1880 exist,
-       nothing between them does, so 1850-1885 is honestly a two-frame range and the Sources page
-       says so. */
+       They are the only two the upstream repo has in that reach (re-read 2026-09-07: world_1815 and
+       world_1880 exist, nothing between them does).
+       ⚠ (#R518) AND THAT IS NOW THE FALLBACK'S JOB ONLY. 1850-1885 has its own day-exact bundle
+       (data/hist-borders.js, `hbFC` below), so these snapshots answer that window only when it fails
+       to load — exactly the role they already played above 1886. What they must never again be is
+       the ANSWER: `nearest()` sends every year of 1850-1885 to world_1880, because the 1815/1880
+       switch is at the midpoint 1847.5 and the floor is 1850, so 1815 is unreachable from the clock
+       and 1850 was drawn with the borders of 1880 — one frame for thirty-six years. */
     const YEARS=[1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the Tibet display-year merge state (see _eraCorrect) */
@@ -78,13 +83,13 @@ window.IntMapModules.timeBorders=function(HOST){
       if(prev===null) return next!=null?next:YEARS[0];
       if(next===null) return prev;
       if((next-y)>=(y-prev)) return prev;
-      /* ⚠ (#R349) MAXGAP GUARDS A FALLBACK, NOT A SOURCE — so it does not apply below CShapes.
-         Above CS_MIN these snapshots only run when data/cshapes.js failed to load, and the guard is
-         there so that degraded mode never answers 1980 with the post-Soviet 1994 map. BELOW CS_MIN
-         they are not a fallback: they are the only borders that exist, so the nearer of the two
-         neighbours is simply the best available answer and refusing it would answer 1875 with the
-         Congress-of-Vienna map — sixty years stale — for no gain. The 1815/1880 gap is 65 years
-         wide, which is exactly what would have tripped the guard. */
+      /* ⚠ (#R349/#R518) MAXGAP GUARDS A FALLBACK, NOT A SOURCE — so it does not apply below CShapes.
+         These snapshots now run ONLY when the bundle for the band failed to load (data/cshapes.js
+         above 1886, data/hist-borders.js from 1850 to 1885), and the guard is there so that degraded
+         mode never answers 1980 with the post-Soviet 1994 map. Below CS_MIN the gap between the two
+         available snapshots is 65 years wide — exactly what would trip the guard — and refusing the
+         forward jump would answer a degraded 1875 with the Congress-of-Vienna map, sixty years stale,
+         for no gain. */
       return (y<CS_MIN || (next-prev)<=MAXGAP) ? next : prev; };
     /* ===== (#R117) DAY-EXACT borders 1886–2019 from CShapes 2.0 (Schvitz et al. 2022, ETH Zürich — international
        borders with per-feature validity DATES). Self-hosted simplified copy (data/cshapes.js, ring-pooled).
@@ -120,10 +125,12 @@ window.IntMapModules.timeBorders=function(HOST){
       return _csBnd; }
     /* the epoch a date falls in = the last boundary at or before it. Two dates inside one epoch share a
        cache key, so scrubbing a quiet decade re-renders NOTHING while 1920 now steps thirteen times. */
-    function csEpoch(d,y,m,dd){ const t=_ymd(y,m,dd), b=csBounds(d);
-      let lo=0,hi=b.length-1,ans=b.length?b[0]:t;
+    /* (#R518) the search itself, once — the 1850-1885 record below asks the same question of its own
+       boundary list, and a second copy of a binary search is a second place for it to be wrong. */
+    function _epochIn(b,t){ let lo=0,hi=b.length-1,ans=b.length?b[0]:t;
       while(lo<=hi){ const mid=(lo+hi)>>1; if(b[mid]<=t){ ans=b[mid]; lo=mid+1; } else hi=mid-1; }
       return ans; }
+    function csEpoch(d,y,m,dd){ return _epochIn(csBounds(d),_ymd(y,m,dd)); }
     let _csD=null,_csP=null; const _csGeom=new Map();
     function csLoad(){ if(_csD) return Promise.resolve(_csD); if(_csP) return _csP;
       _csP=new Promise(res=>{ if(window.__CSHAPES){ _csD=window.__CSHAPES; res(_csD); return; }
@@ -222,6 +229,52 @@ window.IntMapModules.timeBorders=function(HOST){
         if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<t) continue;
         const NAME=_csName(f[0],f[1],year);
         feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:{NAME:NAME,name:NAME,_gw:f[1]}}); }
+      return {type:'FeatureCollection',features:feats}; }
+    /* ══ (#R518) …AND BELOW CShapes, THE SAME MACHINERY ON A SECOND RECORD ═════════════════════════
+       「1850–1885の国境を本気で埋めて」 The clock's floor is 1850 (js/chronos.js) and CShapes begins on
+       1886-01-01, so the thirty-six years between them had NO bundled polygons at all — not "coarse
+       ones", none. `nearest()` answered every single one of them with the same remote aourednik file,
+       world_1880 (1815 is unreachable: the switch is at the midpoint 1847.5, below the floor), so
+       1850 was drawn with the borders of 1880 and the whole era was ONE FRAME.
+       data/hist-borders.js is OpenHistoricalMap's admin_level=2 boundaries for exactly that window,
+       into the same ring-pooled shape data/cshapes.js has. scripts/build-hist-borders.mjs writes
+       494 records, 216 transition dates inside the window, 164-216 polities on any 15 June of it.
+       ⚠ ITS END DATE IS EXCLUSIVE AND CShapes' IS NOT. Measured on the source: 151 of the 180
+       consecutive same-entity successions in this window have `end_date === the successor's
+       start_date`, so reading it the CShapes way would draw both polygons on the changeover day.
+       `hbFC` is therefore `s <= t < e` and `csFC` is `s <= t <= e`, and `hbBounds` takes the end
+       AS a boundary where `csBounds` takes the day after it. The two are not interchangeable. */
+    const HB_MIN=1850, HB_MAX=1885;
+    let _hbD=null,_hbP=null,_hbBnd=null; const _hbGeom=new Map();
+    function hbLoad(){ if(_hbD) return Promise.resolve(_hbD); if(_hbP) return _hbP;
+      _hbP=new Promise(res=>{ if(window.__HISTB){ _hbD=window.__HISTB; res(_hbD); return; }
+        const s=document.createElement('script'); s.src='data/hist-borders.js'; s.async=true;
+        s.onload=()=>{ _hbD=window.__HISTB||null; res(_hbD); };
+        s.onerror=()=>{ _hbP=null; res(null); };
+        document.head.appendChild(s); });
+      return _hbP; }
+    function hbBounds(d){ if(_hbBnd) return _hbBnd;
+      const set=new Set();
+      for(const f of d.feats){ set.add(_ymd(f[2],f[3],f[4])); set.add(_ymd(f[5],f[6],f[7])); }
+      _hbBnd=[...set].filter(k=>k>=_ymd(HB_MIN,1,1)&&k<=_ymd(HB_MAX,12,31)).sort((a,b)=>a-b);
+      return _hbBnd; }
+    function hbEpoch(d,y,m,dd){ return _epochIn(hbBounds(d),_ymd(y,m,dd)); }
+    function _hbGeomOf(d,idx){ let g=_hbGeom.get(idx); if(g) return g;
+      const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
+      g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
+      _hbGeom.set(idx,g); return g; }
+    /* ⚠ THE NAMES TRAVEL WITH THE POLYGON, in nine languages, because they have to. The era labels are
+       otherwise localized by MATCHING an English name against the tables further down this file — which
+       works for «Germany» and cannot work for «Kurhessen», «Zuid-Afrikaansche Republiek» or «Rupert's
+       Land». OHM carries name:en/ja/de/ru/es/zh/fr/ko on 274-435 of these 494 records, so `_i18n` rides
+       along on the feature and `tagSame` reads it before it reaches `_eraLocName`. It is re-read on
+       every apply(), so switching language re-labels without re-selecting anything. */
+    function hbFC(d,year,mon,day){ const feats=[];
+      const M=(mon>=1&&mon<=12)?mon:7, D=(day>=1&&day<=31)?day:1, t=_ymd(year,M,D);
+      for(let i=0;i<d.feats.length;i++){ const f=d.feats[i];
+        if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<=t) continue;   /* start <= t < end — the end is EXCLUSIVE here */
+        const NAME=f[0].en;
+        feats.push({type:'Feature',geometry:_hbGeomOf(d,i),properties:{NAME:NAME,name:NAME,_i18n:f[0]}}); }
       return {type:'FeatureCollection',features:feats}; }
     /* (#R105) vanished entities that occupy a modern country's territory (shared by the click resolver + the era
        correction) — a point-in-polygon would mis-resolve them to the modern occupant. */
@@ -332,7 +385,7 @@ window.IntMapModules.timeBorders=function(HOST){
         const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · historical-basemaps (aourednik)'});
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (ODbL) · historical-basemaps (aourednik)'});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
       if(!GE().layers.has('imtb-fill')) GE().layers.add({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
@@ -815,7 +868,12 @@ window.IntMapModules.timeBorders=function(HOST){
         if(!hit) hit=cur.get(_normNm(nm));
         if(hit){ f.properties._same=1; f.properties._modName=hit; }   /* unchanged → its present-day localized name */
         else { f.properties._same=0; f.properties._modName=null;      /* renamed / vanished → era name (imtb-lbl) */
-          const loc=_eraLocName(nm); if(loc) f.properties._locName=loc; else if('_locName' in f.properties) delete f.properties._locName; }   /* (#R107) localized era label when known */
+          /* ⚠ (#R518) THE SOURCE'S OWN NAME FIRST. `_eraLocName` localizes by RECOGNISING an English
+             name, so for the 1850-1885 record — «Kurhessen», «Rupert's Land», «Zuid-Afrikaansche
+             Republiek» — it can only ever return null, and this branch would then DELETE the name the
+             data already carries. The nine-language tuple rides on the feature (hbFC); read it here. */
+          const own=(f.properties._i18n&&(f.properties._i18n[lg]||null))||null;
+          const loc=own||_eraLocName(nm); if(loc) f.properties._locName=loc; else if('_locName' in f.properties) delete f.properties._locName; }   /* (#R107) localized era label when known */
       }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
@@ -856,6 +914,15 @@ window.IntMapModules.timeBorders=function(HOST){
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) don't silently give up when the style is mid-load — retry once ready */
           let fc=cache.get(key); if(!fc){ try{ fc=csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc){ shownY=key; shownCorr=false; apply(fc); return; } } }
+      /* (#R518) 1850–1885 → the same day-exact treatment, off data/hist-borders.js. Same shape as the
+         block above on purpose: the aourednik snapshot below stays the fallback for both bands, so a
+         bundle that fails to load still leaves a world on the screen instead of a blank one. */
+      if(year>=HB_MIN&&year<=HB_MAX){ const d=await hbLoad();
+        if(my!==seq||!active) return;
+        if(d){ let key; try{ key='hb'+hbEpoch(d,year,mon,day); }catch(_){ key='hb'+year; }
+          if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }
+          let fc=cache.get(key); if(!fc){ try{ fc=hbFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
+          if(fc&&fc.features.length){ shownY=key; shownCorr=false; apply(fc); return; } } }
       const ny=nearest(year);
       /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
       const corr=(year>=1951);
@@ -989,7 +1056,11 @@ window.IntMapModules.timeBorders=function(HOST){
     function resolveHist(nm,lngLat){ const lg=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
       const out={ name:nm, wiki:String(nm||'').replace(/\s*\([^)]*\)\s*$/,'')||nm, code:null, geometry:null };   /* (#R117) fallback Wikipedia title without the "(France)/(UK)…" possessor suffix — "French Sudan (France)" → "French Sudan" */
       let gwCode=null;   /* (#R128) the era feature's CShapes Gleditsch-Ward code (properties._gw), for deterministic resolution below */
-      try{ const ftr=featureAt(nm,lngLat); if(ftr){ if(ftr.geometry) out.geometry=ftr.geometry; if(ftr.properties&&ftr.properties._gw!=null) gwCode=ftr.properties._gw; } }catch(_){}
+      /* (#R518) …and, for a polygon from the 1850-1885 record, ITS OWN identity — the English name the
+         Wikipedia title is built from, and the current language's name. See the restore below. */
+      let hbEn=null, hbLoc=null;
+      try{ const ftr=featureAt(nm,lngLat); if(ftr){ if(ftr.geometry) out.geometry=ftr.geometry; if(ftr.properties&&ftr.properties._gw!=null) gwCode=ftr.properties._gw;
+        const i18=ftr.properties&&ftr.properties._i18n; if(i18&&i18.en){ hbEn=i18.en; hbLoc=i18[lg]||i18.en; } } }catch(_){}
       let code=null, empire=false;
       /* 1) empires / former states — the era polygon NAME matches a former-state regex. The historical basemap is
          AUTHORITATIVE about identity, so use the registry's canonical era name + Wikipedia even when the state has
@@ -1067,11 +1138,24 @@ window.IntMapModules.timeBorders=function(HOST){
            displayed name stays the map's era name; former states with their own registry entry never reach here). */
         try{ const y=(window.IntMapTime&&!window.IntMapTime.isLive())?window.IntMapTime.year():null;
           if(code&&y!=null&&isFinite(y)){ const spans=_ERA_WIKI[code]; if(spans){ for(const sp of spans){ if(y>=sp[0]&&y<=sp[1]){ out.wiki=sp[2]; break; } } } } }catch(_){}
+        /* ⚠ (#R518) …AND THE 1850-1885 RECORD'S OWN IDENTITY OUTRANKS ITS CARRIER'S. Everything above
+           resolves a polygon to a MODERN country so the statistics have somewhere to come from, and then
+           overwrites name and Wikipedia with that country's. For 1886-2019 that is usually right — the
+           polygon really is «Germany». For this window it is usually wrong: measured before the fix, a
+           click on the Kingdom of the Two Sicilies in 1860 answered «Italy» with the article for the
+           Kingdom of Sardinia, and the Papal States answered the same. The carrier is still used for the
+           numbers (`code` is untouched); the NAME and the ARTICLE go back to the polity that was clicked.
+           ⚠ Only when the two really are different states — a record whose English name IS the carrier's
+           keeps the carrier's LOCALIZED name, which is the better label. ⚠ And the carrier's flag is
+           dropped with it: the Two Sicilies did not fly the Italian tricolour. */
+        try{ if(hbEn&&hbLoc){ const s=code&&countryStats[code];
+          const same=s&&String(s.nameEn||'').toLowerCase().trim()===hbEn.toLowerCase().trim();
+          if(!same){ out.name=hbLoc; out.wiki=hbEn.replace(/\s*\([^)]*\)\s*$/,'').trim().replace(/\s+/g,'_'); out.flag=null; out._own=1; } } }catch(_){}
       }
       /* (#R127) surface the entity's flag (the era flag IntMapHistId/HistStates put on countryStats[code], e.g. the
          German Empire's flag on DEU, Siam's on THA) so the click popup can show it — the historical click path only
          passed name+wiki before, so historical flags never appeared on the map ("国旗…まだ詰められる箇所が大量にある"). */
-      try{ if(!out.flag&&out.code&&countryStats[out.code]&&countryStats[out.code].flag) out.flag=countryStats[out.code].flag; }catch(_){}
+      try{ if(!out.flag&&!out._own&&out.code&&countryStats[out.code]&&countryStats[out.code].flag) out.flag=countryStats[out.code].flag; }catch(_){}   /* ⚠ (#R518) `_own` = the identity came from the 1850-1885 record, not from the carrier — the carrier's flag is the wrong flag for it */
       return out; }
     /* (#R116) curated era→article table (the time machine's whole window; en.wikipedia titles). Ranges are the
        state-form's lifespan; anything outside every range keeps the modern article. Kept to well-established,
@@ -1287,17 +1371,30 @@ window.IntMapModules.timeBorders=function(HOST){
        parsed yet; every one of these resolves to `null` rather than throwing if it never loads. */
     const _kToDate=k=>{ const y=Math.floor(k/10000), m=Math.floor(k/100)%100, d=k%100; return new Date(y,m-1,d,12,0,0); };
     const _kOf=w=>{ const d=(w instanceof Date&&!isNaN(w.getTime()))?w:new Date(); return _ymd(d.getFullYear(),d.getMonth()+1,d.getDate()); };
-    async function changeAfter(when){ try{ const d=await csLoad(); if(!d) return null;
-      const t=_kOf(when), b=csBounds(d); for(const k of b) if(k>t) return _kToDate(k); return null; }catch(_){ return null; } }
-    async function changeBefore(when){ try{ const d=await csLoad(); if(!d) return null;
-      const t=_kOf(when), b=csBounds(d); for(let i=b.length-1;i>=0;i--) if(b[i]<t) return _kToDate(b[i]); return null; }catch(_){ return null; } }
+    /* ⚠ (#R518) BOTH RECORDS, ONE LIST. The stepper is how the dense stretches are reached at all, and
+       until this round its list stopped at 1886-01-01 — so inside 1850–1885 «next border change» had
+       nothing to answer with and the stepper was dead for the whole era the clock could reach. The two
+       bundles are asked together and their boundary lists merged; either may fail to load without
+       taking the other's dates with it. */
+    async function _allBounds(){ const out=[];
+      try{ const h=await hbLoad(); if(h) for(const k of hbBounds(h)) out.push(k); }catch(_){}
+      try{ const c=await csLoad(); if(c) for(const k of csBounds(c)) out.push(k); }catch(_){}
+      return out.sort((a,b)=>a-b); }
+    async function changeAfter(when){ try{ const t=_kOf(when), b=await _allBounds();
+      for(const k of b) if(k>t) return _kToDate(k); return null; }catch(_){ return null; } }
+    async function changeBefore(when){ try{ const t=_kOf(when), b=await _allBounds();
+      for(let i=b.length-1;i>=0;i--) if(b[i]<t) return _kToDate(b[i]); return null; }catch(_){ return null; } }
     /* the day the CURRENTLY DRAWN world came into being — what the panel prints under the stepper */
-    async function changeAt(when){ try{ const d=await csLoad(); if(!d) return null;
+    async function changeAt(when){ try{
       const w=(when instanceof Date&&!isNaN(when.getTime()))?when:null; if(!w) return null;
-      const y=w.getFullYear(); if(y<CS_MIN||y>CS_MAX) return null;
+      const y=w.getFullYear();
+      if(y>=HB_MIN&&y<=HB_MAX){ const h=await hbLoad(); if(!h) return null;
+        return _kToDate(hbEpoch(h,y,w.getMonth()+1,w.getDate())); }
+      if(y<CS_MIN||y>CS_MAX) return null;
+      const d=await csLoad(); if(!d) return null;
       return _kToDate(csEpoch(d,y,w.getMonth()+1,w.getDate())); }catch(_){ return null; } }
-    async function changeDates(){ try{ const d=await csLoad(); if(!d) return []; return csBounds(d).map(_kToDate); }catch(_){ return []; } }
+    async function changeDates(){ try{ return (await _allBounds()).map(_kToDate); }catch(_){ return []; } }
     return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest,
-             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:CS_MIN,max:CS_MAX}) };
+             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:HB_MIN,max:CS_MAX}) };   /* (#R518) the range is now both records, floor to CShapes' last year */
   })();
 };

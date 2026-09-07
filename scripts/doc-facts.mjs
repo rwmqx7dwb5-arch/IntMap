@@ -1536,6 +1536,74 @@ if (RULE && RULE !== 'i18n-open-gap') {
   }
 }
 
+/* ========================================================================================
+ *  (#R518) THE 1850-1885 BORDER RECORD — the numbers the prose quotes are the file's own
+ * ----------------------------------------------------------------------------------------
+ *  data/hist-borders.js is the 正本 for how many polities and how many transition dates the
+ *  1850-1885 window holds, and both numbers are quoted in prose in several places (Architecture,
+ *  PRODUCT, and the Sources page in nine languages). #R500's finding was that a prose copy of a
+ *  machine's number always parts from it eventually, so the file is measured here and every LINE
+ *  that names the record is held to it.
+ *
+ *  ⚠ A NUMBER COUNTS AS A CLAIM ONLY IN A LINE THAT NAMES THIS RECORD, and only when it wears one
+ *  of the units below. A sentence that phrases the count some other way goes unchecked — that
+ *  residual is written down in docs/TESTING.md rather than papered over with a looser regex, which
+ *  would start reading CShapes' own 710 records as a claim about this file.
+ * ======================================================================================== */
+{
+  let HB = null;
+  try { const w = {}; new Function('window', rd('data/hist-borders.js'))(w); HB = w.__HISTB; } catch (_) { HB = null; }
+  if (!HB || !Array.isArray(HB.feats)) {
+    fail('histb-count', 'data/hist-borders.js would not load — it is the 正本 for these numbers and it could not be measured');
+  } else {
+    const k = (y, m, d) => y * 10000 + m * 100 + d;
+    const RECORDS = HB.feats.length;
+    const bounds = new Set();
+    for (const f of HB.feats) { bounds.add(k(f[2], f[3], f[4])); bounds.add(k(f[5], f[6], f[7])); }
+    const DATES = [...bounds].filter((x) => x >= k(HB.window[0], 1, 1) && x <= k(HB.window[1], 12, 31)).length;
+
+    const CLAIM = [
+      [RECORDS, 'records', [/(\d{2,5})\s*(?:件の記録|records\b)/g, /記録\s*\**(\d{2,5})\**\s*件/g]],
+      [DATES, 'transition dates', [/(\d{2,5})\s*(?:件の変化日|(?:distinct\s+)?transition dates?\b)/g, /変化日\s*\**(\d{2,5})\**\s*件/g]],
+    ];
+    const SOURCES = [...DOCS.map((d) => [d, BODY.get(d)]),
+      ...['en', 'ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hant', 'zh-hans'].map((c) => ['js/locales/pages.' + c + '.js', rd('js/locales/pages.' + c + '.js')]),
+      /* ⚠ AND THE CODE'S OWN COMMENTS. The header of `js/time-borders.js` quotes these numbers to
+         explain why the band exists, and it is not a document, so the sweep above never reads it —
+         measured: two of its figures were already stale on the round that introduced them. */
+      ['js/time-borders.js', rd('js/time-borders.js')],
+      ['scripts/build-hist-borders.mjs', rd('scripts/build-hist-borders.mjs')]];
+
+    let checked = 0, carriers = 0;
+    for (const [file, body] of SOURCES) {
+      let saw = false;
+      for (const line of String(body || '').split(/\r?\n/)) {
+        if (!/hist-borders(?:\.js)?|OpenHistoricalMap/.test(line)) continue;
+        saw = true;
+        for (const [want, what, res] of CLAIM) {
+          for (const re of res) {
+            re.lastIndex = 0;
+            for (const m of line.matchAll(re)) {
+              checked++;
+              if (Number(m[1]) !== want) fail('histb-count', file + ' says «' + m[0].trim() + '» — the record holds ' + want + ' ' + what);
+            }
+          }
+        }
+      }
+      if (saw) carriers++;
+    }
+    /* the 正本 chapter must actually carry both numbers — a paragraph reworded out of the shapes
+       above would otherwise take the fact with it and nothing here would notice */
+    const archLines = ARCH.split(/\r?\n/).filter((l) => /hist-borders(?:\.js)?|OpenHistoricalMap/.test(l)).join('\n');
+    for (const [want, what, res] of CLAIM) {
+      if (!res.some((re) => { re.lastIndex = 0; return re.test(archLines); }))
+        fail('histb-count', 'Architecture.md no longer states how many ' + what + ' the 1850-1885 border record holds — it is the 正本 for that number');
+    }
+    if (!problems.some((x) => x.startsWith('histb-count')))
+      ok('histb-count', checked + ' stated number(s) across ' + carriers + ' source(s) — ' + RECORDS + ' records, ' + DATES + ' transition dates in ' + HB.window[0] + '-' + HB.window[1]);
+  }
+}
+
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */
 /* (#R407) `--rule=` narrows what is REPORTED as well as what is run. ⚠ A name that matched no rule
    at all must be an error: a typo would otherwise exit 0 and let a mutation test prove nothing. */

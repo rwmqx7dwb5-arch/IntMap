@@ -580,7 +580,8 @@ country-facts.json                国詳細カードの6欄——首都・通貨
                                   `--check` で上流と byte 比較）。カードを開いたときだけ取りに行く
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
-data/cshapes.js                   歴史的国境
+data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
+data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・ODbL 1.0／`scripts/build-hist-borders.mjs`）
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 wars.json                         両大戦の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教・言語の分布
@@ -627,6 +628,14 @@ scripts/
   build-maddison.mjs              `data/maddison.json` を MPD2020 から 1850 まで**延長**する（1900 以降は一字も書き換えない）
   build-wars.mjs                  `scripts/wars/` の記録 → `data/wars.json`。⚠ **証明できないものは書かない**——
                                   地名・gwcode・戦線が切る国・都市がどちらの側に落ちるかを全部検査する
+  build-hist-borders.mjs          OpenHistoricalMap の `admin_level=2` 境界関係 → `data/hist-borders.js`（1850–1885）。
+                                  ⚠ **`--check` は再生成しない**——ビルドには CI に置けない約 400 MB の Overpass 応答が
+                                  要るので、代わりに**同梱ファイルの不変条件**を測る（窓の中に収まっているか・リング番号が
+                                  解決するか・日付の順序・英語名の有無・**窓のどの年にも描く世界があるか**）。
+                                  `--fetch` が取得、無印がビルド、`--report` が被覆表。
+  histborders/                    その部品（`fetch.mjs` Overpass の取得とキャッシュ／`geom.mjs` リングの縫合と簡略化。
+                                  ⚠ 縫合は**前後両方向へ伸ばす**——片方向だと穴の開いた輪郭が種を置いた場所で刻まれ、
+                                  実測でチリ 1861–1866 が18片に割れて最大の1片が「閉じない」として捨てられていた）
   wars/                           両大戦の記録そのもの（`places.mjs` 座標／`lang.mjs` 語彙・陣営・**種別 KINDS**と規則／
                                   `ww1.mjs` `ww2.mjs` 支配・戦線・作戦／`source.mjs` 組み立て）
   master-sync.mjs                 **原本（main worktree）が merge 後の状態か**を見る（`npm run master:check` / `master:sync`）。

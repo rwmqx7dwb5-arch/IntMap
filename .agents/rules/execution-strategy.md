@@ -71,6 +71,7 @@
 | `js/` のファイルを足した・消した | `npm run check:archfiles` |
 | 紛争データ | `npm run check:wars` |
 | 歴史都市名（`scripts/histcities/`） | `npm run check:histcities` |
+| 1850–1885 の歴史国境（`data/hist-borders.js`） | `npm run check:histborders` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |
 | 起動費用（**build が要る**） | `npm run check:perf` |

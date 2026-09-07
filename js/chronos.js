@@ -42,8 +42,9 @@ window.IntMapTime=(function(){
      （1900までと完全に同様に。単に対応年を延長するだけです。）」 Every subsystem below reaches as far
      back as ITS OWN SOURCE reaches and says so where it stops — the kernel does not pretend they all
      stop together, and it never clamps a reader to the shortest of them:
-       · borders      CShapes 2.0 is yearly 1886-2019; 1850-1885 falls to the historical-basemaps
-                      snapshots (1815 / 1880), which is the SAME fallback 1900 already used.
+       · borders      day-exact for the WHOLE reach since #R518: CShapes 2.0 from 1886-01-01 to 2019,
+                      OpenHistoricalMap (data/hist-borders.js) from 1850 to 1885. The
+                      historical-basemaps snapshots are now only the fallback for both bands.
        · GDP / pop    Maddison Project 2020, now carried back to 1850 (data/maddison.json — measured, not
                       declared: js/history.js reads the smallest year in the shipped file).
        · climate era  the oldest Köppen period that exists is 1901-1930; earlier years show it and

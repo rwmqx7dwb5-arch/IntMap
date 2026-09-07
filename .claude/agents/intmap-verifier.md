@@ -28,6 +28,7 @@ tools: Bash, Read, Grep, Glob
 | `npm run check:archfiles` | `Architecture.md` とファイル台帳の一致 |
 | `npm run check:wars` | 紛争データの生成物と定義の一致 |
 | `npm run check:histcities` | 歴史都市名の生成物と記録の一致・綴りが2都市を指さないこと |
+| `npm run check:histborders` | 1850–1885 の歴史国境の同梱ファイルの不変条件（窓の中か・リング番号が解決するか・**窓のどの年にも描く世界があるか**）。⚠ 再生成はしない（CI に置けない約 400 MB の上流応答が要る） |
 | `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |
 | `npm run check:perf` | 起動費用の天井（**build が要る**） |
 | `npm run check:assets` | 配られる全ファイルに読み手がいる（**build が要る**） |

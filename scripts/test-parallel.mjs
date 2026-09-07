@@ -92,6 +92,14 @@ const HALVES = [
          place somewhere else fails the build, because the label is rewritten by matching that
          spelling and the other city would be renamed too. */
       ['node', ['scripts/build-hist-cities.mjs', '--check']],
+      /* ⚠ (#R518) …and the FOURTH reads shipped bytes without being able to re-derive them. The
+         1850-1885 border record is built from ~400 MB of Overpass responses that no machine here can
+         hold, so `--check` proves the committed file's INVARIANTS instead — every record inside the
+         window, every ring index resolvable, and a world to draw in every single year of it. That
+         residual is written down in docs/TESTING.md rather than implied. It is registered HERE (and
+         in ci.yml) because a `check:*` script with no caller is what #R381 found had let
+         data/wars.json say anything for fifteen rounds. */
+      ['node', ['scripts/build-hist-borders.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],
