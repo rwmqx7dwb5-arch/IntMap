@@ -260,6 +260,27 @@ export function makeAtlasState(HOST) {
           });
           if (dl.length) out.layerDates = dl;
         }
+        /* ⚠ (#R550) THE NIGHT-LIGHTS LAYER'S YEAR IS NOT ITS CLOCK YEAR, AND ATLAS HAS TO KNOW WHICH
+           IS WHICH. 「2014年の中国の夜間光を見せて」 sets the clock to 2014 and turns the layer on; what
+           the map then DRAWS is the nearest epoch the product actually publishes, and an assistant that
+           reports 2014 back would be describing a picture that does not exist. The epoch is asked of
+           js/night-lights.js — the same answer the legend prints — rather than inferred from the clock.
+           It is only reported when something is showing it: the manual layer, or the globe's night side. */
+        try {
+          var NL = GLOBAL('IntMapNightLights');
+          if (NL && typeof NL.state === 'function') {
+            var cbN = doc && doc.getElementById('dl-nightsat');
+            var NS = GLOBAL('IntMapNightSide'), nsOn = false;
+            try { nsOn = !!(NS && NS.state && NS.state().built); } catch (_) { }
+            if ((cbN && cbN.checked) || nsOn) {
+              var st = NL.state();
+              out.nightLights = { epoch: st.epoch, dataYear: st.year, clockYear: st.clockYear,
+                                  matches: st.matches, product: st.product, sensor: st.sensor,
+                                  source: st.source, eraFrom: st.eraFrom,
+                                  shownBy: (cbN && cbN.checked ? 'layer' : '') + (nsOn ? (cbN && cbN.checked ? '+globe' : 'globe') : '') };
+            }
+          }
+        } catch (_) { }
         return out;
       });
 
@@ -602,6 +623,15 @@ export function makeAtlasState(HOST) {
         ' (not today). "now/current" requests may need timeTravel reset. IMPORTANT: this date is a DISPLAY setting of the map. It is NOT the data year of any statistic, highlight or reply — NEVER present it as "the year of the data".');
       if (tm.layerDates && tm.layerDates.length) lines.push('Dated raster layers showing: ' +
         tm.layerDates.map(function (d) { return d.layer + '=' + d.date; }).join(', ') + ' (changeable via control "date: <layer>").');
+      /* (#R550) …and the night lights say BOTH years, because they are allowed to differ */
+      var nl = tm.nightLights;
+      if (nl) lines.push(nl.dataYear == null
+        ? ('Night lights: NO DATA — the clock is at ' + (nl.clockYear == null ? 'now' : nl.clockYear) +
+           ' and no satellite night-lights record exists before ' + nl.eraFrom + '. Say so rather than describing lights.')
+        : ('Night lights on screen (' + nl.shownBy + '): ' + nl.product + ' ' + nl.dataYear + ' (' + nl.sensor + ', ' + nl.source + ')' +
+           (nl.matches ? ' — the clock year and the data year agree.'
+                       : ('; the clock is at ' + (nl.clockYear == null ? 'now' : nl.clockYear) +
+                          ', so this is the NEAREST published epoch. Report ' + nl.dataYear + ' as the year of the image, never the clock year.'))));
 
       if (str(sel.searchBox).trim()) lines.push('Search box contains: "' + str(sel.searchBox).trim() + '".');
 

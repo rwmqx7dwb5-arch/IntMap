@@ -1008,6 +1008,7 @@ window.IntMapLang.define('zh-hans', {
     'FOLLOW': "追随",   /* flight-sim.js */
     'Follow terrain': "贴合地形",   /* drone-nav.js */
     'Follow the app clock — the sky as it is right now': "跟随应用时钟 — 呈现此刻的天空",   /* space.js */
+    'following the clock': "跟随时钟",   /* data-layers.js */
     'Follows the real road network (Valhalla / OpenStreetMap) — not a distance circle.': "依循真实道路网（Valhalla／OpenStreetMap）— 不是距离圆。",   /* map-tools.js */
     'Footprint finished — map clicks no longer add points.': "范围已完成 — 点击地图不会再加入点。",   /* tool-panel.js */
     'Footprint radius': "覆盖半径",   /* satellite-detail.js */
@@ -1346,6 +1347,7 @@ window.IntMapLang.define('zh-hans', {
     'near Earth': "近地",   /* satellite-detail.js */
     'near source': "近震源",   /* tsunami.js */
     'nearby': "附近",   /* drone-nav.js */
+    'nearest available data': "最接近的可用数据",   /* data-layers.js */
     'Need a base and a top altitude': "需要基准高度与顶部高度",   /* atlas-console.js */
     'Need a launch site and a target': "需要发射地点与目标",   /* atlas-console.js */
     'Need a route with at least two waypoints': "需要至少两个航点的路线",   /* atlas-console.js */
@@ -1376,6 +1378,7 @@ window.IntMapLang.define('zh-hans', {
     'Next run': "下次执行",   /* monitors.js */
     'Night side of the Earth': "地球的夜侧",   /* atlas-console.js */
     'Night sky': "星空",   /* tool-panel.js */
+    'Night-lights tiles could not be loaded': "无法加载夜间灯光瓦片",   /* data-layers.js */
     'No': "否",   /* countries-ui.js */
     'No aircraft matching': "没有符合的航机",   /* atlas-console.js */
     'No area selected.': "未选取任何区域。",   /* monitors.js */
@@ -1429,6 +1432,7 @@ window.IntMapLang.define('zh-hans', {
     'No route yet': "尚无路线",   /* atlas-console.js */
     'No runs yet.': "尚未执行过。",   /* monitors.js */
     'No satellite matching': "没有符合的卫星",   /* atlas-console.js */
+    'no satellite night-lights record exists before {y}': "{y} 年之前没有卫星夜间灯光纪录",   /* data-layers.js */
     'No Street View coverage here': "此处没有街景涵盖",   /* street-view.js */
     /* sims.js */
     /* sims.js */

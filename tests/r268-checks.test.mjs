@@ -162,8 +162,22 @@ test('R268 ⑦ the GIBS date range is measured data, and every dated layer has o
 
 test('R268 ⑦ the two-epoch rasters can be switched too', () => {
   const dl = codeOnly(read('js/data-layers.js'));
-  assert.match(dl, /const NIGHTSAT_EPOCHS=\['2016-01-01','2012-01-01'\]/, 'night lights: the two epochs GIBS serves');
-  assert.match(dl, /gibs\('VIIRS_Black_Marble',8,'png',window\._nightsatEpoch\)/, 'the URL must use the chosen epoch');
+  /* ⚠ (#R550) THIS USED TO PIN `NIGHTSAT_EPOCHS` AND `window._nightsatEpoch` BY SPELLING, AND BOTH
+     ARE GONE. The night-lights year is a function of Chronos now (js/night-lights.js): the private
+     epoch variable was a second clock for one layer, and it had already produced the defect a second
+     clock produces — js/night-side.js went on compositing 2016 of the SAME product while this layer
+     drew 2012. Pinning the old spelling would assert only that the old model is still there.
+     What #R268 was ABOUT is a property, and the property is what is checked: this raster still
+     publishes more than one epoch, the two GIBS actually serves are still among them, and the tile
+     URL is still built FROM the chosen one rather than from a fixed date. The BEHAVIOUR — which year
+     a given clock year selects — is exercised by running the module, in tests/r550-checks.test.mjs. */
+  const nl = codeOnly(read('js/night-lights.js'));
+  const epochs = [...nl.matchAll(/id:'(\d{4}-\d{2}-\d{2})'/g)].map((m) => m[1]);
+  assert.ok(epochs.length >= 2, `night lights: expected an epoch list, found ${epochs.length}`);
+  for (const d of ['2012-01-01', '2016-01-01'])
+    assert.ok(epochs.includes(d), `night lights: ${d} is an epoch GIBS serves and must still be offered`);
+  assert.match(nl, /\+e\.gibs\+'\/default\/'\+e\.id\b/, 'the URL must be built from the chosen epoch');
+  assert.match(dl, /setSourceTiles\('src-nightsat',tiles\)/, '…and the layer must re-point to it');
   /* (#R268 追記) …and the 1 km population grid, which GIBS publishes as one product PER EPOCH.
      Probed one tile each: 2000 / 2005 / 2010 / 2015 / 2020 all answer 200. */
   assert.match(dl, /const POPGRID_EPOCHS=\['2020','2015','2010','2005','2000'\]/, 'the five GPW epochs');

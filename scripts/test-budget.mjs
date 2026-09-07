@@ -176,7 +176,37 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    tests/r545.spec.js rather than tests/r545-correlate.spec.js precisely so that it does —
    `currentRoundSpec()` matches /^r(\d+)$/, and a regression test that only runs at night does not
    guard the push it was written for. */
-const BUDGET_S = 31;                    /* core: 0.5 min — measured 31 s over 7 files (#R545) */
+/* ⚠⚠ (#R550) THE CORE CEILING MOVED, BY THE MEASURED AMOUNT — 31 -> 38. Saying it here as well as
+   in the ledger because this file's own message is «never raise it»; #R388 (36 -> 40), #R424
+   (30 -> 35), #R428 (28 -> 30), #R455 (28 -> 29) and #R466 (29 -> 30) are the precedents for saying
+   so plainly. The six always-on entries did not move (monitors 10, smoke 8, security 4, internal-qa 2,
+   r157 1, r510 1 = 26); the seventh is `currentRoundSpec()`, and this round's spec has to move the
+   MASTER CLOCK, which is the one thing a night-lights spec cannot avoid doing — measured on this
+   build, a single `IntMapTime.setYear` costs ~1.5 s of app-wide time travel (borders, countries,
+   admin-1 and the era rasters all rebuild), and the claims need six of them.
+   ⚠ AND IT WAS PAID OUT OF THE SPEC TWICE BEFORE IT WAS PAID OUT OF THE CEILING.
+     · The first draft read Atlas' state sentence IN THE BROWSER, which means loading the 1 MB Atlas
+       kernel: body 19.2 / 24.6 / 29.3 s over three runs. The same claim is now made by RUNNING
+       js/atlas-state.js in Node (tests/r550-checks.test.mjs ⑦b/⑦c, on the harness
+       tests/r534-checks.test.mjs established) — a STRONGER check, because it evaluates the provider
+       as well as the renderer, at no browser cost at all.
+     · The second draft WAITED FOR NASA. Body 12.6 / 20.7 / 39.3 s, and back-to-back runs made GIBS
+       answer 429 Too Many Requests, so the spec failed on the service's mood rather than on this
+       product. The tile requests are intercepted now: the claim is «which year did it ASK for»,
+       which is a fact about the REQUEST, so the response was never part of it.
+     · Two clock moves that restated a claim already made were removed (8 -> 6).
+     · AND THE FOURTH DRAFT IS THE FAST ONE. Two full `npm test` runs found the spec red once, on the
+       claim «crossing into the other epoch asks for it»: it SAMPLED the intercepted requests after a
+       fixed 500 ms instead of WAITING for the one it asserts (#R399's rule). The product was right
+       both times — the `waitForFunction` above it had already proved the source pointed at the new
+       epoch — so what was being measured was «did the network move within half a second», which is
+       not the claim. `expect.poll` returns the moment the request arrives, which is both correct and
+       cheaper than always paying the sleep.
+   Measured after all four: 9.7 / 10.5 / 11.4 s over three runs; entered at the upper bound, 12.
+   ⚠ A SAVING ELSEWHERE WAS NOT LOOKED FOR, for #R455's reason and #R466's precedent: that round
+   measured this table UNDER-charging (smoke 77.2 s against an entry of 8), and a table that
+   under-charges is not a table a round may take a saving out of. */
+const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 7 files (#R550) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
@@ -301,7 +331,7 @@ const BUDGET_S = 31;                    /* core: 0.5 min — measured 31 s over 
        entries and the gap between local and table seconds is ROUNDING, not hardware.
        1.62 × 3.331 = 5.39; ceil(max) = 4. ENTERED AS 5 — the ceiling of the batch plus the same
        one-second margin #R494 and #R508 added at this spot. */
-const TOTAL_BUDGET_S = 4653;            /* 77.5 min — 4,639 (#R510) + 9 (#R530) + 5 (#R545: tests/r545.spec.js) */
+const TOTAL_BUDGET_S = 4665;            /* 77.8 min — 4,653 (#R545) + 12 (#R550: tests/r550.spec.js, measured) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

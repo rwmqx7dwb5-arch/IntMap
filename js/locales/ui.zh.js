@@ -1004,6 +1004,7 @@ window.IntMapLang.define('zh', {
     'FOLLOW': "追隨",   /* flight-sim.js */
     'Follow terrain': "貼合地形",   /* drone-nav.js */
     'Follow the app clock — the sky as it is right now': "跟隨應用時鐘 — 呈現此刻的天空",   /* space.js */
+    'following the clock': "跟隨時鐘",   /* data-layers.js */
     'Follows the real road network (Valhalla / OpenStreetMap) — not a distance circle.': "依循真實道路網（Valhalla／OpenStreetMap）— 不是距離圓。",   /* map-tools.js */
     'Footprint finished — map clicks no longer add points.': "範圍已完成 — 點擊地圖不會再加入點。",   /* tool-panel.js */
     'Footprint radius': "覆蓋半徑",   /* satellite-detail.js */
@@ -1342,6 +1343,7 @@ window.IntMapLang.define('zh', {
     'near Earth': "近地",   /* satellite-detail.js */
     'near source': "近震源",   /* tsunami.js */
     'nearby': "附近",   /* drone-nav.js */
+    'nearest available data': "最接近的可用資料",   /* data-layers.js */
     'Need a base and a top altitude': "需要基準高度與頂部高度",   /* atlas-console.js */
     'Need a launch site and a target': "需要發射地點與目標",   /* atlas-console.js */
     'Need a route with at least two waypoints': "需要至少兩個航點的路線",   /* atlas-console.js */
@@ -1372,6 +1374,7 @@ window.IntMapLang.define('zh', {
     'Next run': "下次執行",   /* monitors.js */
     'Night side of the Earth': "地球的夜側",   /* atlas-console.js */
     'Night sky': "星空",   /* tool-panel.js */
+    'Night-lights tiles could not be loaded': "無法載入夜間燈光圖磚",   /* data-layers.js */
     'No': "否",   /* countries-ui.js */
     'No aircraft matching': "沒有符合的航機",   /* atlas-console.js */
     'No area selected.': "未選取任何區域。",   /* monitors.js */
@@ -1425,6 +1428,7 @@ window.IntMapLang.define('zh', {
     'No route yet': "尚無路線",   /* atlas-console.js */
     'No runs yet.': "尚未執行過。",   /* monitors.js */
     'No satellite matching': "沒有符合的衛星",   /* atlas-console.js */
+    'no satellite night-lights record exists before {y}': "{y} 年之前沒有衛星夜間燈光紀錄",   /* data-layers.js */
     'No Street View coverage here': "此處沒有街景涵蓋",   /* street-view.js */
     /* sims.js */
     /* sims.js */

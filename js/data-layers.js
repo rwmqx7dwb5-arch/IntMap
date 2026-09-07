@@ -13,6 +13,7 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 import { everyTick, stopTick } from './runtime.js';   /* the one timer wheel — js/runtime.js */
+import './night-lights.js';   /* (#R550) which night-lights epoch is on screen — window.IntMapNightLights */
 /* ── (#R186) THE DATA LAYERS THAT ARE ON BEFORE ANYONE TOUCHES ANYTHING ──────────────────────────
    「デフォルトでは、ケッペンと海底ケーブルレイヤーがオンが初期状態に。」
    Three readers need this list and they must not disagree, so it is stated once, here, above the
@@ -660,6 +661,13 @@ window.IntMapModules.dataLayers=function(HOST){
     lgdSnow=makeLegend('snow',140,(window.IntMapLang.t(HOST.lang,'Snow & ice','積雪・海氷','Schnee & Eis','Снег и лёд','Nieve y hielo')),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[window.IntMapLang.t(HOST.lang,'Low','少','Wenig','Мало','Bajo'),window.IntMapLang.t(HOST.lang,'High','多','Viel','Много','Alto')], 'MODIS NDSI');
     lgdAod=makeLegend('aod',140,(window.IntMapLang.t(HOST.lang,'Aerosol / haze','エアロゾル / 煙霧','Aerosol / Dunst','Аэрозоль / дымка','Aerosol / bruma')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[window.IntMapLang.t(HOST.lang,'Clean air','清浄','Klar','Чисто','Limpio'),window.IntMapLang.t(HOST.lang,'Hazy','濃い','Trüb','Мутно','Brumoso')], 'MODIS AOD');
     lgdNightsat=makeLegend('nightsat',140,(window.IntMapLang.t(HOST.lang,'Night lights','夜間光（衛星）','Nachtlichter','Ночные огни','Luces nocturnas')),'linear-gradient(to right,#05050f,#241a40,#7a5a1e,#ffd27f,#ffffff)',[window.IntMapLang.t(HOST.lang,'Dark','暗','Dunkel','Темно','Oscuro'),window.IntMapLang.t(HOST.lang,'Bright','明','Hell','Ярко','Brillante')], 'VIIRS Black Marble');
+    /* ⚠ (#R550) THE YEAR ROW HERE IS THE SAME ONE THE SIX CHOROPLETHS GOT IN #R270, AND IT IS THE
+       SAME CLOCK. #R268's private two-option <select> is what it replaces: every year that picker
+       could reach is still reachable, and now the whole app travels with it instead of this one
+       layer disagreeing with the globe beside it. The floor is the SENSOR's — offering 1850 on a
+       control whose product starts in 2012 would be a menu of years that draw nothing — and the
+       line beneath it names the clock's own year whatever it is, so nothing is hidden by the floor. */
+    try{ legendClockYear(lgdNightsat,{min:(window.IntMapNightLights&&window.IntMapNightLights.eraFrom())||2012}); }catch(_){}
     /* EEZ legend — one row per boundary TYPE (kept distinct), swatches match the BRIGHT SLD colours in addEEZ */
     lgdEEZ=document.createElement('div'); lgdEEZ.className='data-legend'; lgdEEZ.id='data-legend-eez'; lgdEEZ.style.bottom='140px';
     /* (#R79g) restored per-type colour coding (flattening it to one colour was wrong) — but now each type is a
@@ -1140,15 +1148,21 @@ window.IntMapModules.dataLayers=function(HOST){
       set:(id,iso)=>{ const g=_applyLayerDate(id,iso); _syncDateUI(id); try{ _refreshLegendDates(); }catch(_){} return g; },
       live:id=>!!(_liveDomain[id]&&_liveDomain[id].length), load:id=>{ _ensureDateDomain(id); }
     };
-    /* ══ (#R268) THE NIGHT-LIGHTS EPOCHS, MEASURED ════════════════════════════════════════════════
-       「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — and night
-       lights is the layer where a decade of difference is the whole subject (a city that was dark in
-       2012 and lit in 2016). GIBS's `VIIRS_Black_Marble` is not a daily product: probed one tile per
-       candidate year, **2012-01-01 and 2016-01-01 answer 200 and every other year answers 404**, so
-       those two are the choice and the picker offers exactly them rather than a calendar that would
-       mostly draw nothing. */
-    const NIGHTSAT_EPOCHS=['2016-01-01','2012-01-01'];
-    if(!window._nightsatEpoch) window._nightsatEpoch=NIGHTSAT_EPOCHS[0];
+    /* ══ (#R268 → #R550) THE NIGHT-LIGHTS EPOCH IS THE CLOCK'S, AND IT IS NOT KEPT HERE ══════════
+       「年を変えることに意味があるレイヤーは一つ残らずすべて、変えられるようにしろ。」 — #R268's
+       answer was a two-option <select> and `window._nightsatEpoch` to remember what it said. That is
+       a second clock for one layer, which is the pair #R265 and #R267 each had to remove elsewhere,
+       and it had already produced the defect it always produces: this layer could be moved to 2012
+       while js/night-side.js went on compositing 2016 of the SAME product onto the globe.
+
+       ⚠ Both are gone. 「いまどの epoch か」 is a FUNCTION of Chronos, computed in js/night-lights.js
+       and nowhere else — the epoch list, the tile URL, the 「2012年より前に VIIRS は無い」 floor and
+       the nearest-epoch rule all live there, and js/night-side.js and js/compare.js read the same
+       answer. The legend's year row (legendClockYear, #R270) MOVES Chronos rather than holding a
+       year of its own, so there is one authority and this file only reacts to it. */
+    const NL=()=>window.IntMapNightLights;
+    const nightsatEpoch=()=>{ try{ return NL().current(); }catch(_){ return null; } };
+    let _nightsatErr=false;   /* 「取得失敗とデータ未提供を同じ状態にしないこと」 — see the error hook below */
     /* ══ (#R268 追記) …AND THE 1 km POPULATION GRID HAS FIVE ═════════════════════════════════════
        Reviewing 「年を変えることに意味があるレイヤーは一つ残らずすべて」 against the whole panel after
        the round shipped: 1人当たりGDP・合計特殊出生率・人口・平均寿命・軍事費 already travel with the
@@ -1179,6 +1193,72 @@ window.IntMapModules.dataLayers=function(HOST){
        just show the as-of text; temp gets a month picker; sst/snow/aod a date picker; thermal a 24/48/72 h
        window select. Each writes layerDates[id] / _thermalWindow and reloads the dated layer. */
     const _today=()=>new Date(Date.now()-2*864e5).toISOString().slice(0,10);
+    /* ══ (#R550) WHAT THE NIGHT-LIGHTS LEGEND SAYS ═══════════════════════════════════════════════
+       「Chronos年と、表示中データの年を混同しないこと。」 Three states, and they are three because
+       they are three different facts about the world:
+         · a picture     — product, sensor, source, native resolution, and the DATA year
+         · no record     — the clock is before VIIRS existed. Nothing is drawn, and the line says why
+         · a failure     — the tiles were asked for and did not arrive. NOT the same as «no record»,
+                           which is why `_nightsatErr` is a separate flag and not an empty picture. */
+    function _nightsatWhenHTML(){
+      /* ⚠ (#R550) `window.IntMapLang.t(HOST.lang, …)` IS SPELLED OUT AT EVERY CALL, and the first
+         draft of this function did not — it took `const T=window.IntMapLang.t` for brevity. MEASURED
+         consequence, and it is #R535's defect exactly: scripts/i18n-audit.mjs recognises a positional
+         call by its SHAPE, and an Identifier alias reads as offset 0, so all six strings below fell
+         out of BOTH the inline and the positional audit. fr / ko / 中文 would have stayed English
+         for ever while the gate went on reporting 100 %. The abbreviation is not worth a language. */
+      const lg=HOST.lang;
+      let ep=null,y=null; try{ ep=NL().current(); y=NL().clockYear(); }catch(_){}
+      const clockTxt=(y==null)?window.IntMapLang.t(lg,'now','現在','jetzt','сейчас','ahora'):String(y);
+      if(!ep){ let from=2012; try{ from=NL().eraFrom(); }catch(_){}
+        /* ⚠ the year is a PLACEHOLDER, not concatenation: a key built with `+` matches no inline
+           table, which is the other half of the same measured defect. */
+        const noRec=window.IntMapLang.t(lg,'no satellite night-lights record exists before {y}',
+                         '{y}年より前の衛星夜間光の記録はありません',
+                         'vor {y} existiert keine Satelliten-Nachtlichtaufnahme',
+                         'до {y} года спутниковых снимков ночных огней не существует',
+                         'no existe registro satelital de luces nocturnas anterior a {y}').replace('{y}',from);
+        return '<b>'+escapeHtml(window.IntMapLang.t(lg,'No data','データなし','Keine Daten','Нет данных','Sin datos'))+'</b><br>'
+          +escapeHtml('Chronos: '+clockTxt+' — '+noRec);
+      }
+      const head='<b>'+escapeHtml(ep.product+' · '+ep.year)+'</b><br>'
+        +escapeHtml(ep.sensor+' · '+ep.source+' · '+ep.resM+' m')+'<br>';
+      if(_nightsatErr) return head+'<span style="color:var(--danger,#e5534b);">'+escapeHtml(
+        window.IntMapLang.t(lg,'Night-lights tiles could not be loaded','夜間光のタイルを取得できませんでした','Nachtlicht-Kacheln konnten nicht geladen werden','Не удалось загрузить тайлы ночных огней','No se pudieron cargar las teselas de luces nocturnas'))+'</span>';
+      if(y==null||y===ep.year) return head+escapeHtml('Chronos: '+clockTxt+' — '
+        +window.IntMapLang.t(lg,'following the clock','時計に追従中','folgt der Uhr','следует за часами','sigue el reloj'));
+      return head+escapeHtml('Chronos: '+y+' → '
+        +window.IntMapLang.t(lg,'nearest available data','最も近い記録','nächstgelegene Daten','ближайшие доступные данные','datos disponibles más cercanos')+': '+ep.year);
+    }
+    /* ══ (#R550) THE ONE PLACE THE NIGHT-LIGHTS SOURCE IS POINTED AT A YEAR ══════════════════════
+       ⚠ IT READS THE EPOCH, IT NEVER CARRIES ONE. `whenStyleReady()` resolves on an idle and the
+       reader may have scrubbed three decades by then, so a captured epoch would be exactly the
+       「古いリクエストが後から到着して表示を巻き戻す」 the brief forbids. Asking at the moment of
+       application makes a stale application unrepresentable rather than merely unlikely.
+       ⚠ AND IT RETURNS EARLY WHEN THE LAYER IS OFF, which is the whole of 「夜間光OFF時は追加通信0」:
+       no source is created, so the renderer has nothing to fetch. */
+    let _nlWired=false;
+    function _applyNightsat(){
+      let on=false; try{ const cb=document.getElementById('dl-nightsat'); on=!!(cb&&cb.checked); }catch(_){}
+      if(!on) return false;
+      const ep=nightsatEpoch();
+      if(!ep){ try{ if(GE().layers.has('lyr-nightsat')) setVis('lyr-nightsat',false); }catch(_){}
+        try{ _refreshLegendDates(); }catch(_){} return false; }
+      _nightsatErr=false;
+      const tiles=NL().tiles(ep);
+      if(!_nlWired){ _nlWired=true;
+        /* the renderer is the only thing that knows a tile did not arrive */
+        try{ GE().events.on('error',(e)=>{ try{ if(e&&e.sourceId==='src-nightsat'){ _nightsatErr=true; _refreshLegendDates(); } }catch(_){} }); }catch(_){} }
+      try{ addRaster('nightsat',tiles,ep.maxzoom); }catch(_){}     /* first time only — addRaster returns if the source exists */
+      try{ GE().layers.setSourceTiles('src-nightsat',tiles); }catch(_){}
+      try{ setVis('lyr-nightsat',true); }catch(_){}
+      try{ _refreshLegendDates(); }catch(_){}
+      return true;
+    }
+    /* the source moves only when the EPOCH moves (js/night-lights.js coalesces); the legend's text
+       also names the CLOCK's year, so it re-reads on every clock event — text costs no network */
+    try{ NL().on(()=>{ _applyNightsat(); }); }catch(_){}
+    try{ window.IntMapTime.on(()=>{ try{ _refreshLegendDates(); }catch(_){} }); }catch(_){}
     function _refreshLegendDates(){
       [['thermal',lgdThermal],['radar',lgdRadar],['sst',lgdSST],['snow',lgdSnow],['aod',lgdAod],['nightsat',lgdNightsat],['popgrid',lgdPopGrid]].forEach(([id,lg])=>{
         if(!lg) return;
@@ -1189,12 +1269,10 @@ window.IntMapModules.dataLayers=function(HOST){
           if(id==='radar'){ w.innerHTML='🕒 <span class="dl-when-t"></span>'; }
           else if(id==='thermal'){ w.innerHTML='🕒 <span>'+(window.IntMapLang.t(HOST.lang,'Time window','期間','Zeitfenster','Окно','Ventana'))+'</span> <select class="dl-win" style="'+inSty+'"><option value="24">24 h</option><option value="48">48 h</option><option value="72">72 h</option></select>';
             const s=w.querySelector('.dl-win'); s.value=window._thermalWindow||'24'; s.addEventListener('change',()=>{ window._thermalWindow=s.value; try{ window._refreshThermal&&window._refreshThermal(); }catch(_){} _refreshLegendDates(); }); }
-          else if(id==='nightsat'){ w.innerHTML='🕒 <span>'+(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
-              +NIGHTSAT_EPOCHS.map(d=>'<option value="'+d+'">'+d.slice(0,4)+'</option>').join('')+'</select>';
-            const e=w.querySelector('.dl-epoch'); e.value=window._nightsatEpoch;
-            e.addEventListener('change',()=>{ window._nightsatEpoch=e.value;
-              try{ GE().layers.setSourceTiles('src-nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch)); }catch(_){}
-              _refreshLegendDates(); }); }
+          /* (#R550) no <select> of its own any more — the year row above it moves Chronos, and this
+             line says what Chronos' year actually PUT ON THE MAP: product, sensor, source, the data
+             year, and — when they differ — both years, so 2017 drawing 2016 is never silent. */
+          else if(id==='nightsat'){ w.innerHTML='🕒 <span class="dl-nl-when" style="line-height:1.5;"></span>'; }
           else if(id==='popgrid'){ w.innerHTML='🕒 <span>'+(window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año'))+'</span> <select class="dl-epoch" style="'+inSty+'">'
               +POPGRID_EPOCHS.map(y=>'<option value="'+y+'">'+y+'</option>').join('')+'</select>';
             const e=w.querySelector('.dl-epoch'); e.value=window._popgridYear;
@@ -1212,7 +1290,8 @@ window.IntMapModules.dataLayers=function(HOST){
         const dt=w.querySelector('.dl-date');
         if(dt){ if(DATED_SPEC[id]) _syncDateUI(id); else dt.value = layerDates[id]||_today(); }   /* (#R298) value AND bounds AND step state, both boxes at once */
         const wn=w.querySelector('.dl-win'); if(wn) wn.value=window._thermalWindow||'24';
-        const ep=w.querySelector('.dl-epoch'); if(ep) ep.value=(id==='popgrid')?window._popgridYear:window._nightsatEpoch;
+        const ep=w.querySelector('.dl-epoch'); if(ep) ep.value=window._popgridYear;
+        const nlw=w.querySelector('.dl-nl-when'); if(nlw) nlw.innerHTML=_nightsatWhenHTML();
         const tt=w.querySelector('.dl-when-t'); if(tt) tt.textContent=_legendWhenText(id);
       });
     }
@@ -6055,7 +6134,7 @@ window.IntMapModules.dataLayers=function(HOST){
         else if(id==='snow'){ lgdSnow.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('snow',gibs('MODIS_Terra_NDSI_Snow_Cover',8,'png',layerDates.snow),8); }catch(_){} try{ setVis('lyr-snow',true); }catch(_){} }); }
         else if(id==='aod'){ lgdAod.style.display='block'; tileLegends(); whenStyleReady().then(()=>{ try{ addRaster('aod',gibs('MODIS_Combined_Value_Added_AOD',6,'png',layerDates.aod),6); }catch(_){} try{ setVis('lyr-aod',true); }catch(_){} }); }
         /* Night-time satellite (#R9/#39) — VIIRS "Black Marble" city-lights composite via NASA GIBS. */
-        else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); try{ _refreshLegendDates(); }catch(_){} whenStyleReady().then(()=>{ try{ addRaster('nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch),8); }catch(_){} try{ GE().layers.setSourceTiles('src-nightsat',gibs('VIIRS_Black_Marble',8,'png',window._nightsatEpoch)); }catch(_){} try{ setVis('lyr-nightsat',true); }catch(_){} }); }
+        else if(id==='nightsat'){ lgdNightsat.style.display='block'; tileLegends(); try{ _refreshLegendDates(); }catch(_){} whenStyleReady().then(()=>{ _applyNightsat(); }); }
         else if(id==='popgrid'){
           lgdPopGrid.style.display='block'; tileLegends();
           try{ _refreshLegendDates(); }catch(_){}

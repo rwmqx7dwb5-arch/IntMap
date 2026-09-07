@@ -63,6 +63,9 @@
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+/* (#R550) …and the ONE answer to 「いまどの epoch か」. The date used to be spelled inside the tile
+   URL below, which is why the globe could composite 2016 while dl-nightsat drew 2012. */
+import './night-lights.js';
 window.IntMapNightSide=(function(){
   'use strict';
   const GE=()=>window.IntMapGeoEngine;
@@ -98,6 +101,8 @@ window.IntMapNightSide=(function(){
   const UNLIT=[6,7,17], UNLIT_HEX='#060711';
 
   let built=false, lights=null, lightsZ=0, lightsBusy=false, lastKey='', enabled=true, wired=false, lastErr=null;
+  let lightsEpoch='';                       /* (#R550) WHICH year the mosaic in `lights` actually is */
+  const nlEpoch=()=>{ try{ return window.IntMapNightLights.current(); }catch(_){ return null; } };
 
   /* ── the Sun, by the same formulae the Earth Replay terminator uses (js/sims.js) ──────────────── */
   const J1970=2440588, J2000=2451545, dayMs=86400000, ecl=23.4397*D;
@@ -226,9 +231,20 @@ window.IntMapNightSide=(function(){
      while the reader is still reaching the whole-Earth zoom; 64 tiles is the resolution the desktop
      canvas can actually show. Painting z2 first and z3 when it lands means the lights appear early
      and sharpen, instead of being absent for as long as the larger fetch takes. */
+  /* ⚠ (#R550) THE YEAR IS THE CLOCK'S, AND THE MOSAIC REMEMBERS WHICH YEAR IT IS. The URL used to
+     carry '2016-01-01' as a literal, so travelling to 2012 moved the manual layer and left the globe
+     compositing the other epoch of the same product — two years of one photograph in one frame.
+     ⚠ AND A LATE ARRIVAL NEVER REPAINTS. 64 image loads take as long as they take; if the reader
+     scrubbed into another epoch meanwhile, the finished mosaic is DISCARDED and the epoch that is
+     current NOW is fetched instead. The test is against the clock AT COMPLETION rather than against
+     a value captured at the start, so 「古いリクエストが後から到着して表示を巻き戻す」 is not merely
+     unlikely here — there is no path that paints it. */
   function loadLights(z){
-    if(lightsBusy||lights&&lightsZ>=z) return Promise.resolve(lights);
+    const ep=nlEpoch();
+    if(!ep){ lights=null; lightsZ=0; lightsEpoch=''; return Promise.resolve(null); }
+    if(lightsBusy||(lights&&lightsZ>=z&&lightsEpoch===ep.id)) return Promise.resolve(lights);
     lightsBusy=true;
+    const want=ep.id;
     const n=1<<z, W=n*LIGHT_TILE;
     const cv=document.createElement('canvas'); cv.width=W; cv.height=W;
     const cx=cv.getContext('2d',{willReadFrequently:true});
@@ -236,14 +252,18 @@ window.IntMapNightSide=(function(){
       const im=new Image(); im.crossOrigin='anonymous';
       im.onload=()=>{ try{ cx.drawImage(im,x*LIGHT_TILE,y*LIGHT_TILE,LIGHT_TILE,LIGHT_TILE); }catch(_){} res(true); };
       im.onerror=()=>res(false);
-      im.src='https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/'
-        +'GoogleMapsCompatible_Level8/'+z+'/'+y+'/'+x+'.png';
+      /* the SAME template dl-nightsat points its raster source at, so the browser's own HTTP cache
+         serves both and the globe is never a second download of a tile the layer already fetched */
+      im.src=window.IntMapNightLights.tileURL(z,x,y,ep);
     });
     const jobs=[]; for(let y=0;y<n;y++) for(let x=0;x<n;x++) jobs.push(one(x,y));
     return Promise.all(jobs).then((oks)=>{
       lightsBusy=false;
+      const now=nlEpoch();
+      if(!now){ lights=null; lightsZ=0; lightsEpoch=''; return null; }
+      if(now.id!==want) return loadLights(z);
       if(!oks.some(Boolean)){ lastErr='lights'; return lights; }
-      try{ lights={ w:W, h:W, d:cx.getImageData(0,0,W,W).data }; lightsZ=z; lastErr=null; }
+      try{ lights={ w:W, h:W, d:cx.getImageData(0,0,W,W).data }; lightsZ=z; lightsEpoch=want; lastErr=null; }
       catch(_){ lastErr='lights-cors'; }
       return lights;
     }).catch(()=>{ lightsBusy=false; lastErr='lights'; return lights; });
@@ -480,6 +500,14 @@ window.IntMapNightSide=(function(){
        back has to rebuild them, because a restyle drops every added layer anyway. */
     try{ GE().events.on('styledata',()=>{ try{ consider(); }catch(_){} }); }catch(_){}
     try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(()=>{ refresh(true); }); }catch(_){}
+    /* (#R550) …and when the clock crosses into ANOTHER EPOCH the PICTURE has to change, not only the
+       terminator. Nothing is fetched unless the night side is actually built, which is what keeps a
+       session that never leaves street level — or that turned the effect off — at zero requests. */
+    try{ if(window.IntMapNightLights&&window.IntMapNightLights.on) window.IntMapNightLights.on(()=>{
+      if(!built) return;
+      if(!nlEpoch()){ lights=null; lightsZ=0; lightsEpoch=''; refresh(true); return; }   /* before VIIRS: an unlit night, which is correct */
+      loadLights(Math.max(2,lightsZ||2)).then(()=>{ if(built) refresh(true); });
+    }); }catch(_){}
     /* the sub-solar point moves 15° an hour — the same cadence app-body re-aims the light on */
     /* (#R408) …and the hidden tab is the WHEEL's answer now, not a second copy of it here:
        js/runtime.js skips a task whose document is hidden and runs it ONCE on the way back. */
@@ -512,6 +540,9 @@ window.IntMapNightSide=(function(){
 
   return { apply, refresh:()=>refresh(true), setEnabled, destroy, isOn:()=>enabled,
     state:()=>({ built, enabled, lights:!!lights, lightsZoom:lightsZ, err:lastErr, zoom:zoomNow(),
+                 /* (#R550) the epoch the mosaic on screen IS, and the one the clock is asking for —
+                    a test can compare them with dl-nightsat's without trusting either to be right */
+                 epoch:lightsEpoch||null, wantEpoch:(nlEpoch()||{}).id||null,
                  zMax:ZMAX, twilightEnd:TWILIGHT_END, imgSize:imgSize(), capWedges:CAP_WEDGES,
                  capLat:CAP_LAT, ramp:RAMP_STOPS.map((s)=>s.slice()), unlit:UNLIT.slice() }),
     /* pure, so the arithmetic can be checked without a renderer */

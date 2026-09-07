@@ -156,6 +156,7 @@ theme-sky.js                      テーマと空——アプリの色と、太�
 sky-model.js                      空自身の色（Rayleigh ＋ Mie を march する）
 limb-layer.js                     このアプリが描く大気の縁 IntMapModules.limbLayer
 night-side.js                     地球の夜側 window.IntMapNightSide
+night-lights.js                   夜間光がいつの絵かを決める唯一の場所 window.IntMapNightLights
 world-base.js                     全球衛星ベース window.IntMapWorldBase
 satellite.js                      衛星画像コントローラ
 sat-proto.js                      衛星タイルの imapsat:// スキーム
