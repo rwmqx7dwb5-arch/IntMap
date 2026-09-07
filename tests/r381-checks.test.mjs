@@ -51,8 +51,19 @@ test('R381 ①: both wars carry a front for every theatre they name a place in',
 });
 
 /* ── ② the record is dense enough to be called day by day ────────────────────────────────────── */
-test('R381 ②: no year of either war is left without a dated line and an operation', () => {
-  for (const w of wars.wars) {
+test('R381 ②: no year of either world war is left without a dated line and an operation', () => {
+  /* ⚠ (#R519) THIS LOOP USED TO SAY `wars.wars`, AND THAT WAS A GENERALISATION NOBODY MADE ON PURPOSE.
+     The title has always said «either war» and the claim is a property of the SUBJECT, not of the
+     format: the two world wars were fought continuously, so a year with no dated line really is a
+     year the author stopped writing. Four discontinuous conflicts arrived in #R519 and the same loop
+     began demanding a front line in 1952 — the twenty months after the truce line was agreed at
+     Panmunjom, when the front divided neither Korea and `control` alone carried the two colours —
+     and in every one of the twenty-two years the Middle East was not at war.
+     ⚠ THE FIX IS NOT TO WEAKEN THIS. Filling those years would mean writing lines for days nobody
+     recorded, which is the one thing scripts/wars/lang.mjs refuses. So this keeps saying exactly what
+     it says, about the wars it was written about, and the claim that covers ALL SIX — that no year of
+     any war is a blank map — is tests/r519-checks ⑦, which cannot be satisfied by silence either. */
+  for (const w of [war('ww1'), war('ww2')]) {
     const y0 = +w.from.slice(0, 4), y1 = +w.to.slice(0, 4);
     const lineYears = new Set(), evYears = new Set();
     for (const F of w.fronts) for (const D of F.dates) lineYears.add(+D.d.slice(0, 4));

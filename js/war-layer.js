@@ -62,7 +62,6 @@ import { everyTick, stopTick } from './runtime.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.warLayer = function (HOST) {
-  const LA = window.IntMapLang.pickArgs();
   const L = window.IntMapLang.pick(() => HOST.lang);
   const GE = () => window.IntMapGeoEngine;
 
@@ -792,11 +791,15 @@ window.IntMapModules.warLayer = function (HOST) {
     };
   }
 
-  /* the row's own name, in one place, because both the Layers row and the legend title say it */
+  /* The row's own name, because both the Layers row and the legend title say it. ⚠ (#R519) IT IS
+     ASKED FOR, NOT REPEATED. This was a two-branch ternary — `id === 'ww1' ? … : …` — which is not
+     a lookup but a default, and the default was the Second World War: the day a third war existed,
+     its legend would have opened under 「第二次世界大戦（日ごと）」 with every gate still green. The
+     names now live once, in js/war-fronts.js's ROWS, which is the module that loads this one. */
   function rowName(id) {
-    return id === 'ww1'
-      ? LA('World War I (day by day)', '第一次世界大戦（日ごと）', 'Erster Weltkrieg (Tag für Tag)', 'Первая мировая война (по дням)', 'Primera Guerra Mundial (día a día)')
-      : LA('World War II (day by day)', '第二次世界大戦（日ごと）', 'Zweiter Weltkrieg (Tag für Tag)', 'Вторая мировая война (по дням)', 'Segunda Guerra Mundial (día a día)');
+    try { const n = window.IntMapWarFronts && window.IntMapWarFronts.label(id); if (n) return n; } catch (_) { }
+    const W = warById(id);
+    return W ? say(W.name) : id;
   }
 
   function inst(id) {

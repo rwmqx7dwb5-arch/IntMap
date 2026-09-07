@@ -100,7 +100,12 @@ export const WORDS = [
   ['甘迺迪', '肯尼迪'], ['格達費', '卡扎菲'], ['福克蘭', '馬爾維納斯'],
   ['太空梭', '航天飛機'], ['鄂圖曼', '奧斯曼'], ['盧安達', '盧旺達'],
   ['哈瑪斯', '哈馬斯'], ['希拉瑞', '希拉里'], ['尼克森', '尼克松'],
-  ['複製羊', '克隆羊'], ['曼菲斯', '孟菲斯'], ['韓戰', '朝鮮戰爭'],
+  ['複製羊', '克隆羊'], ['曼菲斯', '孟菲斯'], ['韓戰', '朝鮮戰爭'], ['越戰', '越南戰爭'],
+  /* ⚠ (#R519) 越戰 IS HERE FOR THE SAME REASON 韓戰 ALREADY WAS. Both are the ordinary Traditional
+     abbreviations and both are read on the mainland, but the full names are what mainland writing
+     uses, and this table already made that choice once. Adding the war layers without this line
+     would have shipped 朝鲜战争 beside 越战 — one war named in full and the next abbreviated, from
+     one list, for one reader. */
   ['金恩', '馬丁·路德·金'], ['蓋達', '基地'], ['華生', '沃森'],
   ['川普', '特朗普'], ['康邊', '貢比涅'], ['桃莉', '多莉'],
   ['韋伯', '韋布'], ['加薩', '加沙'], ['飛彈', '導彈'], ['日圓', '日元'],

@@ -31,12 +31,26 @@ window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.warFronts = function (HOST) {
   const L = window.IntMapLang.pick(() => HOST.lang);
 
-  /* the two rows, and the only place their order, ids and swatches are written */
+  /* the rows, and the only place their order, ids, swatches and names are written.
+     ⚠ (#R519) `os` IS HERE BECAUSE IT USED TO BE A TERNARY. The IntMapOS labels below were written
+     `(R.id === 'ww1' ? 'I' : 'II')` back when two rows were all there could be, and a ternary over an
+     id is not a table: the third war would have registered itself as «World war II · show / hide»
+     and nothing would have failed. Same for the name — it was a two-branch ternary in
+     js/war-layer.js as well, so a new war would have been labelled World War II in the legend it
+     opened. One row, one entry, and both of those become impossible. */
   const ROWS = [
-    { id: 'ww1', sw: 'linear-gradient(90deg,#4a7fbd 50%,#b4544a 50%)',
+    { id: 'ww1', sw: 'linear-gradient(90deg,#4a7fbd 50%,#b4544a 50%)', os: 'World war I',
       label: () => L('World War I (day by day)', '第一次世界大戦（日ごと）', 'Erster Weltkrieg (Tag für Tag)', 'Первая мировая война (по дням)', 'Primera Guerra Mundial (día a día)') },
-    { id: 'ww2', sw: 'linear-gradient(90deg,#4a7fbd 46%,#c97f6e 46%,#c97f6e 58%,#b4544a 58%)',
+    { id: 'ww2', sw: 'linear-gradient(90deg,#4a7fbd 46%,#c97f6e 46%,#c97f6e 58%,#b4544a 58%)', os: 'World war II',
       label: () => L('World War II (day by day)', '第二次世界大戦（日ごと）', 'Zweiter Weltkrieg (Tag für Tag)', 'Вторая мировая война (по дням)', 'Segunda Guerra Mundial (día a día)') },
+    { id: 'korea', sw: 'linear-gradient(90deg,#4a7fbd 50%,#b4544a 50%)', os: 'Korean War',
+      label: () => L('Korean War (day by day)', '朝鮮戦争（日ごと）', 'Koreakrieg (Tag für Tag)', 'Корейская война (по дням)', 'Guerra de Corea (día a día)') },
+    { id: 'vietnam', sw: 'linear-gradient(90deg,#4a7fbd 38%,#c9963c 38%,#c9963c 62%,#b4544a 62%)', os: 'Vietnam War',
+      label: () => L('Vietnam War (day by day)', 'ベトナム戦争（日ごと）', 'Vietnamkrieg (Tag für Tag)', 'Война во Вьетнаме (по дням)', 'Guerra de Vietnam (día a día)') },
+    { id: 'mideast', sw: 'linear-gradient(90deg,#4a7fbd 50%,#b4544a 50%)', os: 'Arab-Israeli wars',
+      label: () => L('Arab–Israeli Wars (day by day)', '中東戦争（日ごと）', 'Nahostkriege (Tag für Tag)', 'Арабо-израильские войны (по дням)', 'Guerras árabe-israelíes (día a día)') },
+    { id: 'yugoslavia', sw: 'linear-gradient(90deg,#4a7fbd 34%,#c9963c 34%,#c9963c 50%,#7a9e6b 50%,#7a9e6b 66%,#b4544a 66%)', os: 'Yugoslav wars',
+      label: () => L('Yugoslav Wars (day by day)', 'ユーゴスラビア紛争（日ごと）', 'Jugoslawienkriege (Tag für Tag)', 'Югославские войны (по дням)', 'Guerras yugoslavas (día a día)') },
   ];
 
   let body = null, pending = null;
@@ -108,8 +122,8 @@ window.IntMapModules.warFronts = function (HOST) {
   }
   try {
     for (const R of ROWS) {
-      window.IntMapOS.register(R.id + '.toggle', (ctx) => osToggle(R.id, ctx), { label: 'World war ' + (R.id === 'ww1' ? 'I' : 'II') + ' · show / hide', group: 'layers' });
-      window.IntMapOS.register(R.id + '.show', (ctx) => osShow(R.id, ctx), { label: 'World war ' + (R.id === 'ww1' ? 'I' : 'II') + ' · show a date', group: 'layers' });
+      window.IntMapOS.register(R.id + '.toggle', (ctx) => osToggle(R.id, ctx), { label: R.os + ' · show / hide', group: 'layers' });
+      window.IntMapOS.register(R.id + '.show', (ctx) => osShow(R.id, ctx), { label: R.os + ' · show a date', group: 'layers' });
     }
     /* ⚠ THE OLD NAMES STILL ANSWER. `wars.toggle` / `wars.show` were the only way in before the
        split, and a saved plan or an older Atlas turn may still say them. `wars.show` picks the war
@@ -119,8 +133,19 @@ window.IntMapModules.warFronts = function (HOST) {
       const d = ctx && ctx.params && ctx.params.date;
       const iso = d ? String(d).slice(0, 10) : '';
       need().then((b) => {
-        const w = (b && b.wars().find((x) => iso >= x.span[0] && iso <= x.span[1])) || null;
-        const id = w ? w.id : (iso && iso < '1930' ? 'ww1' : 'ww2');
+        /* ⚠ (#R519) THE FALLBACK USED TO BE `iso < '1930' ? 'ww1' : 'ww2'`, and with two wars that was
+           a coin toss between the only two answers. With six it would have sent every date after
+           1930 — Korea, Vietnam, Suez, Sarajevo — to the Second World War. A date outside every span
+           now picks the war whose span it is NEAREST to, which is the same answer for 1914 and 1946
+           and a defensible one for 1953. */
+        const wars = (b && b.wars()) || [];
+        const w = wars.find((x) => iso >= x.span[0] && iso <= x.span[1]) || null;
+        let id = w ? w.id : (wars[0] ? wars[0].id : 'ww2');
+        if (!w && iso && wars.length) {
+          const far = (x) => (iso < x.span[0] ? Date.parse(x.span[0]) - Date.parse(iso) : Date.parse(iso) - Date.parse(x.span[1]));
+          let best = Infinity;
+          for (const x of wars) { const d = far(x); if (d < best) { best = d; id = x.id; } }
+        }
         osShow(id, ctx);
       });
     }, { label: 'World wars · show a date in whichever war it falls in', group: 'layers' });
@@ -128,6 +153,12 @@ window.IntMapModules.warFronts = function (HOST) {
 
   window.IntMapWarFronts = {
     rows: () => ROWS.map((R) => R.id),
+    /* ⚠ (#R519) THE ROW NAME LIVES HERE AND NOWHERE ELSE. js/war-layer.js says the same name in the
+       legend title it opens, and used to carry its own two-branch copy of it — two lists of wars
+       that could disagree, and the way they would disagree is a Korean War legend headed 「第二次世界
+       大戦（日ごと）」. This module is eager and the layer is lazy-loaded BY it, so the layer can always
+       read this. */
+    label: (id) => { const R = ROWS.find((x) => x.id === id); return R ? R.label() : ''; },
     toggle,
     ready: need,
     isOn: (id) => !!(body && body.isOn(id)),

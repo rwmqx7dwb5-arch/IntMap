@@ -5131,7 +5131,7 @@ window.IntMapLang.define('zh-hans', {
   "1973 oil crisis": "1973年石油危机",   /* analysis-world-events.js (#R322) */
   "OPEC embargo quadruples oil prices.": "石油输出国组织禁运，油价暴涨四倍。",   /* analysis-world-events.js (#R322) */
   "Fall of Saigon": "西贡陷落",   /* analysis-world-events.js (#R322) */
-  "Vietnam War ends.": "越战就此结束。",   /* analysis-world-events.js (#R322) */
+  "Vietnam War ends.": "越南战争就此结束。",   /* analysis-world-events.js (#R322) */
   "Iranian Revolution": "伊朗革命",   /* analysis-world-events.js (#R322) */
   "Shah falls; Islamic Republic founded.": "巴列维王朝垮台，伊斯兰共和国成立。",   /* analysis-world-events.js (#R322) */
   "Soviet invasion of Afghanistan": "苏联入侵阿富汗",   /* analysis-world-events.js (#R322) */
@@ -5424,6 +5424,10 @@ window.IntMapLang.define('zh-hans', {
   'This layer draws the days of one war. Move its slider, or jump to the first day:': '这个图层描绘一场战争的每一天。请移动下方的滑杆，或跳到开战的第一天：',   /* war-layer.js (#R409) */
   'World War I (day by day)': '第一次世界大战（逐日）',   /* war-fronts.js war-layer.js (#R409) */
   'World War II (day by day)': '第二次世界大战（逐日）',   /* war-fronts.js war-layer.js (#R409) */
+  'Korean War (day by day)': '朝鲜战争（逐日）',   /* war-fronts.js war-layer.js (#R519) */
+  'Vietnam War (day by day)': '越南战争（逐日）',   /* war-fronts.js war-layer.js (#R519) */
+  'Arab–Israeli Wars (day by day)': '阿以战争（逐日）',   /* war-fronts.js war-layer.js (#R519) */
+  'Yugoslav Wars (day by day)': '南斯拉夫战争（逐日）',   /* war-fronts.js war-layer.js (#R519) */
   '{n} more running today': '另有 {n} 件在同一天进行',   /* war-layer.js (#R409) */
   " ash area(s) in force": " 个火山灰区域生效中",
   " eruptions": " 次喷发",

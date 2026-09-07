@@ -156,7 +156,12 @@ test('R349 ⑥: data/wars.json is shaped the way js/war-fronts.js reads it', () 
      because a reader of this file that has not been taught the new members would drop them
      silently, and a bump is the one thing that says «go and look». */
   assert.equal(wars.v, 2);
-  assert.deepEqual(wars.wars.map((w) => w.id), ['ww1', 'ww2'], 'both wars, in order');
+  /* (#R519) 「朝鮮戦争、ベトナム戦争、中東戦争、ユーゴ紛争などを同じwar-layer形式へ追加すると」 — four more.
+     ⚠ THIS LITERAL IS THE POINT OF THE ASSERTION AND IS MEANT TO BE EDITED. It is not a count that
+     should be relaxed to `>= 2`: what it says is that the shipped record contains exactly the wars
+     somebody curated, in the order they happened, so a half-written war cannot appear on the map by
+     being merely importable. Widening it to a length check would delete the only statement here. */
+  assert.deepEqual(wars.wars.map((w) => w.id), ['ww1', 'ww2', 'korea', 'vietnam', 'mideast', 'yugoslavia'], 'every curated war, in the order they happened');
   const LANGS = ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko'];
   const full = (o, what) => { for (const k of LANGS) assert.ok(o && o[k], `${what} has no ${k}`); };
   for (const w of wars.wars) {

@@ -5196,6 +5196,10 @@ window.IntMapLang.define('ko', { ui: {
   'This layer draws the days of one war. Move its slider, or jump to the first day:': '이 레이어는 한 전쟁의 나날을 그립니다. 아래 슬라이더를 움직이거나, 개전일로 이동하세요:',   /* war-layer.js (#R409) */
   'World War I (day by day)': '제1차 세계 대전(일별)',   /* war-fronts.js war-layer.js (#R409) */
   'World War II (day by day)': '제2차 세계 대전(일별)',   /* war-fronts.js war-layer.js (#R409) */
+  'Korean War (day by day)': '6·25 전쟁(일별)',   /* war-fronts.js war-layer.js (#R519) */
+  'Vietnam War (day by day)': '베트남 전쟁(일별)',   /* war-fronts.js war-layer.js (#R519) */
+  'Arab–Israeli Wars (day by day)': '중동 전쟁(일별)',   /* war-fronts.js war-layer.js (#R519) */
+  'Yugoslav Wars (day by day)': '유고슬라비아 전쟁(일별)',   /* war-fronts.js war-layer.js (#R519) */
   '{n} more running today': '이 밖에 {n}건이 진행 중',   /* war-layer.js (#R409) */
   " ash area(s) in force": "건의 화산재 구역이 유효",
   " eruptions": "회 분화",

@@ -5206,6 +5206,10 @@ window.IntMapLang.define('fr', { ui: {
   'This layer draws the days of one war. Move its slider, or jump to the first day:': 'Cette couche montre les jours d’une guerre. Déplacez son curseur, ou sautez au premier jour :',   /* war-layer.js (#R409) */
   'World War I (day by day)': 'Première Guerre mondiale (jour par jour)',   /* war-fronts.js war-layer.js (#R409) */
   'World War II (day by day)': 'Seconde Guerre mondiale (jour par jour)',   /* war-fronts.js war-layer.js (#R409) */
+  'Korean War (day by day)': 'Guerre de Corée (jour par jour)',   /* war-fronts.js war-layer.js (#R519) */
+  'Vietnam War (day by day)': 'Guerre du Viêt Nam (jour par jour)',   /* war-fronts.js war-layer.js (#R519) */
+  'Arab–Israeli Wars (day by day)': 'Guerres israélo-arabes (jour par jour)',   /* war-fronts.js war-layer.js (#R519) */
+  'Yugoslav Wars (day by day)': 'Guerres de Yougoslavie (jour par jour)',   /* war-fronts.js war-layer.js (#R519) */
   '{n} more running today': '{n} autres ce jour-là',   /* war-layer.js (#R409) */
   " ash area(s) in force": " zone(s) de cendres en vigueur",
   " eruptions": " éruptions",

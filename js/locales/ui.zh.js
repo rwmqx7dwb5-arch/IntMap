@@ -5420,6 +5420,10 @@ window.IntMapLang.define('zh', {
   'This layer draws the days of one war. Move its slider, or jump to the first day:': '這個圖層描繪一場戰爭的每一天。請移動下方的滑桿，或跳到開戰的第一天：',   /* war-layer.js (#R409) */
   'World War I (day by day)': '第一次世界大戰（逐日）',   /* war-fronts.js war-layer.js (#R409) */
   'World War II (day by day)': '第二次世界大戰（逐日）',   /* war-fronts.js war-layer.js (#R409) */
+  'Korean War (day by day)': '韓戰（逐日）',   /* war-fronts.js war-layer.js (#R519) */
+  'Vietnam War (day by day)': '越戰（逐日）',   /* war-fronts.js war-layer.js (#R519) */
+  'Arab–Israeli Wars (day by day)': '阿以戰爭（逐日）',   /* war-fronts.js war-layer.js (#R519) */
+  'Yugoslav Wars (day by day)': '南斯拉夫戰爭（逐日）',   /* war-fronts.js war-layer.js (#R519) */
   '{n} more running today': '另有 {n} 件在同一天進行',   /* war-layer.js (#R409) */
   " ash area(s) in force": " 個火山灰區域生效中",
   " eruptions": " 次噴發",

@@ -8,5 +8,9 @@
  * ==========================================================================*/
 import { WW1 } from './ww1.mjs';
 import { WW2 } from './ww2.mjs';
+import { KOREA } from './korea.mjs';
+import { VIETNAM } from './vietnam.mjs';
+import { MIDEAST } from './mideast.mjs';
+import { YUGOSLAVIA } from './yugoslavia.mjs';
 
-export const WARS = [WW1, WW2];
+export const WARS = [WW1, WW2, KOREA, VIETNAM, MIDEAST, YUGOSLAVIA];

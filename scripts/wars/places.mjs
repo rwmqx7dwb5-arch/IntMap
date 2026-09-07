@@ -25,6 +25,16 @@
  *  population floor, so it does not carry Ypres or Kursk — the check covers what it covers, and the
  *  build prints how many of the entries it was able to prove.
  * ==========================================================================*/
+/* ⚠ (#R519) THE NEW THEATRES ARRIVE AS THEIR OWN FILES, and this one stays the merge point. Four
+   wars were written at once, in four checkouts; one shared table would have meant four authors
+   editing one file, which is the thing .agents/rules/execution-strategy.md §3 forbids. The export
+   is unchanged — tests/r381 ④ still compares THIS object against every anchor data/wars.json
+   quotes — so nothing downstream learns that the table is now assembled rather than typed. */
+import { PLACES_KOREA } from './places-korea.mjs';
+import { PLACES_VIETNAM } from './places-vietnam.mjs';
+import { PLACES_MIDEAST } from './places-mideast.mjs';
+import { PLACES_YUGOSLAVIA } from './places-yugoslavia.mjs';
+
 export const PLACES = {
   /* ── Western Front (both wars) ───────────────────────────────────────────────────────────── */
   'Nieuwpoort': [2.750, 51.130, 'BE'], 'Diksmuide': [2.862, 51.032, 'BE'], 'Ypres': [2.885, 50.851, 'BE'],
@@ -335,4 +345,8 @@ export const PLACES = {
   'Hechi': [108.062, 24.693, 'CN'], 'Dushan': [107.545, 25.827, 'CN'],
   /* ── WW2 · the Trasimene Line, the position between Rome and the Arno ───────────────────── */
   'Cecina': [10.517, 43.306, 'IT'], 'Perugia': [12.389, 43.112, 'IT'],
+  ...PLACES_KOREA,
+  ...PLACES_VIETNAM,
+  ...PLACES_MIDEAST,
+  ...PLACES_YUGOSLAVIA,
 };

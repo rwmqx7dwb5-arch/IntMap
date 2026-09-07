@@ -195,8 +195,8 @@ time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 hist-cities.js                    時計の年の**都市名** IntMapHistCities（608都市・`ofm-city` の text-field を match で包む・記録は data/hist-cities.json）
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
-war-fronts.js                     両大戦の**2行**（WW1／WW2）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ）
-war-layer.js                      両大戦の層そのもの（**on-demand**・`__imWarFronts`・大戦ごとに1インスタンス／凡例に日スライダーと再生）
+war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベトナム／中東／ユーゴ）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
+war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
 industry-web.js                   産業の相関 window.IntMapIndustry
 companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
@@ -583,7 +583,7 @@ maddison.json                     マディソン・プロジェクトの歴史 
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
 data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・ODbL 1.0／`scripts/build-hist-borders.mjs`）
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
-wars.json                         両大戦の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
+wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教・言語の分布
 osm-space.json / osm-diplo.json   宇宙基地・地上局／外交公館の全球スナップショット
 ocean-currents*.bin.gz / .json    海流の場
@@ -636,8 +636,10 @@ scripts/
   histborders/                    その部品（`fetch.mjs` Overpass の取得とキャッシュ／`geom.mjs` リングの縫合と簡略化。
                                   ⚠ 縫合は**前後両方向へ伸ばす**——片方向だと穴の開いた輪郭が種を置いた場所で刻まれ、
                                   実測でチリ 1861–1866 が18片に割れて最大の1片が「閉じない」として捨てられていた）
-  wars/                           両大戦の記録そのもの（`places.mjs` 座標／`lang.mjs` 語彙・陣営・**種別 KINDS**と規則／
-                                  `ww1.mjs` `ww2.mjs` 支配・戦線・作戦／`source.mjs` 組み立て）
+  wars/                           戦争の記録そのもの。`lang.mjs` 語彙・**種別 KINDS**・3種類の事実が何を主張してよいかの規則／
+                                  `ww1.mjs` `ww2.mjs` `korea.mjs` `vietnam.mjs` `mideast.mjs` `yugoslavia.mjs` 支配・戦線・作戦
+                                  （陣営表は各戦争が自分で持つ）／`places.mjs` 座標——戦域ごとの `places-<戦争>.mjs` を束ねる／
+                                  `source.mjs` 組み立て
   master-sync.mjs                 **原本（main worktree）が merge 後の状態か**を見る（`npm run master:check` / `master:sync`）。
                                   原本の場所はハードコードせず `git rev-parse --git-common-dir` から導出する。
                                   ⚠ **branch を切り替えない。** 原本は「`main` の置き場」で作業場ではない

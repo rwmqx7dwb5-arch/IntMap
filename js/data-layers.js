@@ -1779,7 +1779,13 @@ window.IntMapModules.dataLayers=function(HOST){
              (#R409) 「WW1とWW2でレイヤーを分けろ。」 — one row became two, side by side and in the
              order the wars happened. The old single id `wars` is gone from the panel; a share link
              that still names it opens both (js/map-ui.js). */
-          ['lyrGrpPolitics',['dem','cpi','eez','uselect','eu','ww2','ww1','tz','wbwomparl','osmdiplo'],6],
+          /* (#R519) 「朝鮮戦争、ベトナム戦争、中東戦争、ユーゴ紛争などを同じwar-layer形式へ追加すると、既存基盤を
+             そのまま使える」 — four more day-by-day wars, in the order they happened, beside the two that
+             were already here. ⚠ THE 6 IS NOT BUMPED. That number is how many ids the reader named
+             (#R469), and `ww1` already folds under 「その他N件」 with it; raising it to keep the new rows
+             visible would be re-writing a list the reader wrote by hand, which #R255/#R258/#R261 all
+             refuse to do. The new wars fold exactly where ww1 folds. */
+          ['lyrGrpPolitics',['dem','cpi','eez','uselect','eu','ww2','ww1','korea','vietnam','mideast','yugoslavia','tz','wbwomparl','osmdiplo'],6],
           /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
              「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
 
