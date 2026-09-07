@@ -28,7 +28,7 @@
  *  "data".
  *
  *  Exposed as a global by a classic <script> (admin.html is a no-build page); importing this file in
- *  Node sets the same global, which is how tests/security-logic.mjs exercises it.
+ *  Node sets the same global, which is how tests/security-logic.test.mjs exercises it.
  * ==========================================================================*/
 (function (root) {
   'use strict';

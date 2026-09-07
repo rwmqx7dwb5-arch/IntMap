@@ -146,8 +146,9 @@ test('⑤b the alert ladder is four distinct steps, and its top is not a hospita
 
 /* ── ⑥ the surface is actually RUN ─────────────────────────────────────────────────────────────
    #R301: a check that no list names never executes, and is therefore not a weaker check — it is
-   not a check. This one has two registries to be in. */
-test('⑥ the collision surface is wired into the one i18n gate and into test:checks', () => {
+   not a check. #R529 retired the hand-maintained list, so the i18n gate is the registry that
+   remains — and a surface the gate does not run is still not a check. */
+test('⑥ the collision surface is wired into the one i18n gate', () => {
   const gate = read('scripts/i18n-audit.mjs');
   assert.ok(gate.includes(`run('i18n-key-collision-audit.mjs')`),
     'scripts/i18n-audit.mjs no longer runs the key-collision surface — `npm run check:i18n` would not see it');
@@ -155,8 +156,4 @@ test('⑥ the collision surface is wired into the one i18n gate and into test:ch
     'scripts/i18n-audit.mjs runs the surface but no longer FAILS on it');
   assert.ok(/collide\.stale\.length\)\s*problems\.push/.test(gate),
     'scripts/i18n-audit.mjs no longer fails on a stale BENIGN entry — the ratchet is one-directional');
-
-  const pkg = JSON.parse(read('package.json'));
-  assert.ok(pkg.scripts['test:checks'].includes('tests/r370-checks.test.mjs'),
-    'tests/r370-checks.test.mjs is not in test:checks — it would never run');
 });

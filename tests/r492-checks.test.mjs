@@ -227,5 +227,4 @@ test('R492 ⑦: the ambiguous spellings are refused on purpose', () => {
 /* ── ⑧ 台帳 ──────────────────────────────────────────────────────────────── */
 test('R492 ⑧: the new module is in the file ledger', () => {
   assert.ok(R('docs/FILES.md').indexOf('atlas-annotate.js') > 0, 'docs/FILES.md must name js/atlas-annotate.js');
-  assert.ok(R('package.json').indexOf('tests/r492-checks.test.mjs') > 0, 'this file must be in test:checks or it never runs');
 });

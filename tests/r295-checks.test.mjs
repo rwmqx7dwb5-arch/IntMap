@@ -202,14 +202,6 @@ test('#R295 ⑦ scripts/worktree.mjs offers a round number nobody has claimed', 
     `worktree.mjs offers R${offered} but R${highest} is already claimed somewhere`);
 });
 
-/* ── ⑧ THIS FILE IS ACTUALLY RUN ───────────────────────────────────────────────────────────────
-   #R260 ⑥ found this the hard way: a per-round checks file that nobody added to `test:checks` is
-   green for ever, because it never runs. */
-test('#R295 ⑧ tests/r295-checks.test.mjs is in the test:checks list', () => {
-  const pkg = JSON.parse(read('package.json'));
-  assert.match(pkg.scripts['test:checks'], /tests\/r295-checks\.test\.mjs/);
-});
-
 /* ── ⑨ THE STANDING INSTRUCTIONS POINT AT THE CONFIGURATION ────────────────────────────────────
    The rule, the agents and the skill are only reachable if AGENTS.md and the document index say
    they exist. ⚠ read as CONTENT (line endings normalised), and AGENTS.md is prose, so no comment
