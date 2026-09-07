@@ -360,6 +360,13 @@ window.IntMapModules.shakeMap = function (HOST) {
     head.levels = lows.slice().sort((a, b) => a - b);
     cur = head;
     drawContours(cj); if (img) drawField(img);
+    /* ⚠ (#R549) THE LEGEND IS PART OF OPENING, NOT A SEPARATE COURTESY. It was
+       mounted only by `show()`, so anything that called `open(id, metric)` — the
+       API, and anything that will call it later — left the reader looking at the
+       PREVIOUS measure's swatches and units while the map drew the new one.
+       Measured in production: after `open(id,'pga')` the state said pga / pctg /
+       [0.2…50] and the legend still read MMI 2.5…7.5. */
+    try { mountLegend(); } catch (_) { }
     fire();
     return state();
   }
@@ -477,6 +484,14 @@ window.IntMapModules.shakeMap = function (HOST) {
     if (!cur || !window._registerLayerOpacity) return null;
     const el = window._registerLayerOpacity(LEG_ID, legendName(), [LYR_IMG]);
     if (!el) return null;
+    /* ⚠ (#R549) …AND THE HEADING HAS TO BE WRITTEN, NOT JUST PASSED. The name
+       handed to `_registerLayerOpacity` reaches `ensureGenericLegend`, which only
+       builds the <h4> when it CREATES the box — a second call with a new name
+       leaves the old heading in place. So the box said «ShakeMap（USGS） · MMI»
+       over PGA's swatches, and over PSA(1.0)'s, for the rest of the session
+       (measured in production). The body below is rebuilt every call already;
+       the heading is the one thing that was not. */
+    try { const h = el.querySelector('h4'); if (h) h.textContent = legendName(); } catch (_) { }
     let box = el.querySelector('.shk-ctl');
     if (!box) { box = document.createElement('div'); box.className = 'shk-ctl'; box.style.cssText = 'margin-top:6px;'; el.appendChild(box); }
     const s = state();
@@ -492,14 +507,16 @@ window.IntMapModules.shakeMap = function (HOST) {
         'Для этой величины USGS не публикует цветовую шкалу, поэтому она нарисована только изолиниями.',
         'El USGS no publica una escala de color para esta medida, por lo que se dibuja solo con isolíneas.'))) + '</div>')
       + '<div style="margin-top:7px;"><button data-shk-x="1" style="border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:10.5px;cursor:pointer;">' + IntMapSafe.html(_LT.arr(LA('Close ShakeMap', 'ShakeMap を閉じる', 'ShakeMap schließen', 'Закрыть ShakeMap', 'Cerrar ShakeMap'))) + '</button></div>';
-    box.querySelectorAll('[data-shk-m]').forEach(b => { b.onclick = () => { open(cur.id, b.getAttribute('data-shk-m')).then(mountLegend).catch(() => { }); }; });
+    box.querySelectorAll('[data-shk-m]').forEach(b => { b.onclick = () => { open(cur.id, b.getAttribute('data-shk-m')).catch(() => { });   /* (#R549) `open` mounts the legend itself now */ }; });
     const x = box.querySelector('[data-shk-x]'); if (x) x.onclick = () => { close(); };
     return el;
   }
   function unmountLegend() { try { window._hideGenericLegend && window._hideGenericLegend(LEG_ID); } catch (_) { } }
 
   /* one door for the map's click handler: load, draw, and show the legend */
-  async function show(eventId, metric) { const s = await open(eventId, metric); try { mountLegend(); } catch (_) { } return s; }
+  /* kept as the map click handler's door, and as the name the dispatch calls; opening
+     IS drawing the legend since #R549, so this is now `open` under its other name. */
+  async function show(eventId, metric) { return await open(eventId, metric); }
 
   /* ── the Atlas capability (map.shakemap) ─────────────────────────────────
      ⚠ THIS LIVES HERE AND NOT IN js/atlas-console.js because that file is at its

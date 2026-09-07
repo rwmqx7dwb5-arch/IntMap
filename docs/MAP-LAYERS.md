@@ -1133,6 +1133,11 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   レイヤーは3本 — `shk-field`（震度の面・`image` source）・`shk-cont`（等値線）・`shk-cont-lbl`（等値線の値）。
   凡例は共通の generic legend（`_registerLayerOpacity('shk', …)`）に載り、**不透明度スライダは面だけ**を
   動かす（読ませる線を一緒に薄くしないため）。
+  ⚠ **凡例を載せるのは「開く」ことの一部**（`open()` が自分で行う）。以前は `show()` だけが載せていたので、
+  `open(id, metric)` を直に呼ぶと**地図は新しい指標・凡例は前の指標**という状態になった（本番で実測）。
+  ⚠ **見出しの `<h4>` は毎回書き直す。** `_registerLayerOpacity` に渡した名前は `ensureGenericLegend` が
+  **箱を作るときにしか**使わないので、2 回目以降の名前は捨てられる——渡した値が使われたかどうかは
+  渡した側からは見えない。
   - **色も等値線の刻みも上流のもの。** `cont_<指標>.json` の各 feature が `value` / `units` / `color` /
     `weight` を持つので、この app は色表を1つも持たない。面を塗るのは
     **USGS が `preferredPalette` を配っている指標だけ**（実測では MMI のみ）で、配っていない指標
