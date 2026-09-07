@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **102 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
-`npm run test:checks` runs **294 Node test files** with no browser at all (counted from
+`npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 
 > ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
 > `tests/r505-checks.test.mjs` ① は 13 本すべての `supabase/functions/*/index.ts` を
@@ -40,7 +40,7 @@ gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **w
 > （1900 年で 151 か国＝1,583 環）だったが、`tests/r309`（宣言の突き合わせ）も `tests/r410`
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
-`package.json`, which since #R385 may not name the same file twice — see below). The nightly
+`node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
 **deep** tier — **96 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
@@ -62,7 +62,7 @@ rather than depend on which is currently the default.
 > `.spec.js` cannot be added until the same time or more is taken out of an existing one — the
 > ceiling only moves down. Node checks (`*.test.mjs`) are **not** governed by this budget, so
 > logic that can be checked without a browser belongs there. ⚠ Every **count** in the paragraph above
-> is now compared against the repository — `N Node test files` by `node-tests`, and the three tier
+> is now compared against the repository — the three tier
 > sizes by `deep-tier-size` (#R500), which also reads `package.json` and `scripts/worktree.mjs`
 > because those are not documents and `eachDoc` cannot see them. Before that rule existed the
 > numbers went stale every time: by 3 spec files when #R334 looked, by **19 spec files and 10.8
@@ -81,7 +81,10 @@ rather than depend on which is currently the default.
 
 ## Requirements
 
-- **Node.js ≥ 20** (CI and the pinned local version use Node 24 — see `.nvmrc`).
+- **Node.js ≥ 24** — the version `.nvmrc` pins, CI installs and `package.json`'s `engines`
+  declares. ⚠ The floor was `>=20` until #R529, when `test:checks` became
+  `node --test "tests/**/*.test.mjs"`: **Node 20 searches directories and does not accept a
+  glob** (Node ≥21 does), so the declared floor had to become a version the command runs on.
 - That is all. `npm ci` installs both halves of `package.json`: `dependencies` are the
   libraries the browser ships (MapLibre, Turf, TopoJSON, Supabase, KaTeX, html2canvas — all
   version-pinned, all bundled by Vite since #R175), and `devDependencies` are the build and
@@ -639,34 +642,25 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   build. The Supabase **publishable** (anon) key is public on purpose and is allowlisted.
 - **Referenced assets** — a static `src`/`href`/`url(...)` in `index.html` / `admin.html`
   pointing at a missing local file fails (dynamic `'+x+'` refs are ignored).
-- **The node-test list** (#R301, `scripts/check-test-list.mjs`) — `test:checks` is one long
-  hand-maintained literal in `package.json`, and a `tests/*.test.mjs` file left out of it is not a
-  weaker test, it is **not a test**: it never runs, so it never fails and never passes. Measured
-  in #R301, `tests/r210-checks.test.mjs` and `tests/r211-checks.test.mjs` had never once been
-  executed — and when they finally were, **five of r211's twelve tests failed**, the earliest of
-  them broken by #R212, ninety rounds before anybody saw it. The check compares the list against
-  `tests/` **in both directions** (unlisted test
-  file → fail; listed path that is not on disk → fail, because `node --test` takes the whole
-  tier down for that).
-  ⚠ **Since #R390 what counts as a test file is read from the SOURCE, not from the name.** The rule
-  was `/\.test\.mjs$/` and nothing else, so the one file of tests here that predates the convention
-  — `tests/security-logic.mjs`, 31 tests hand-named in #R138 — was outside anything the guard could
-  demand. Measured: `ed058ca` (#R377) dropped it from the literal as collateral, it was still absent
-  through #R379, and `82b7a0e` (#R380) put it back while doing something else. For those rounds the
-  31 tests did not run and **every gate in the repository was green**, this one included. A `.mjs`
-  under `tests/` that imports **`node:test`** declares tests whatever it is called and must be
-  listed; the name rule is kept alongside it, so a `*.test.mjs` that has not written its first
-  `test(…)` yet is still demanded. Fixtures, corpora and the shared helpers import nothing of the
-  kind and are still not demanded.
-  Since #R385 it also compares the list **against itself**: a path named **more than once** fails.
-  Both of the original directions are satisfied by a list that says the same true thing twice, and
-  the guard could not see it by construction — its first act was `new Set(listed)`. Measured: from
-  #R356 to #R379 the literal named `tests/r356-checks.test.mjs` twice and the gate stayed green for
-  twenty-two rounds, running that file twice on every CI run and inflating by one the entry count
-  the paragraph at the top of this file is checked against by `scripts/doc-facts.mjs`.
-  ⚠ It lives **here** rather than in `test:checks` on purpose: a guard for a list cannot be an
-  entry in the list it guards. `tests/r260-checks.test.mjs` ⑥ asks the same question about itself
-  — which only ever protected the rounds whose author was already thinking about the hazard.
+- **Test discovery** (#R529, `scripts/static-checks.mjs`) — `test:checks` is
+  `node --test "tests/**/*.test.mjs"`, so the runner finds the files itself and a file cannot be
+  left out of a list that no longer exists. Until #R529 it **was** a list: one hand-written literal
+  in `package.json` naming all 292 files, and a `tests/*.test.mjs` left out of it was not a weaker
+  test, it was **not a test** — it never ran, so it never failed and never passed. Measured in
+  #R301, `tests/r210-checks.test.mjs` and `tests/r211-checks.test.mjs` had never once been
+  executed, and when they finally were, **five of r211's twelve tests failed**, the earliest of
+  them broken by #R212 ninety rounds before anybody saw it. Two more guards were then stacked on
+  the literal rather than on the hazard: #R385 compared the list against **itself** after it named
+  `tests/r356-checks.test.mjs` twice for twenty-two green rounds, and #R390 read the **source**
+  instead of the name after `security-logic.mjs` — 31 tests hand-named in #R138 — was
+  dropped from the literal for three rounds with every gate in the repository green. #R529 removed
+  the literal, and all three guards went with it.
+  ⚠ **One question survives, and it is #R390's.** The runner's idea of a test file is its **name**,
+  so a `.mjs` under `tests/` that imports **`node:test`** under any other name is invisible to it:
+  it never runs, so it never fails and never passes. That file was renamed to
+  `tests/security-logic.test.mjs` so the convention has no exception left, and this check asks the
+  **disk** — not a list — that none appears again. Fixtures, corpora and the shared helpers import
+  nothing of the kind and are not demanded.
 
 It deliberately does **not** reformat or style-lint existing code.
 
@@ -750,7 +744,6 @@ reader here for this list; adding a rule means adding a row.
 | `news-path` | the privacy policy describes a news path the switches in `js/app-body.js` do not take |
 | `csp` | the CSP as `index.html` writes it is not the CSP the documents describe |
 | `db-tables` | the migrations, the pgTAP structure test and the documents disagree about the tables |
-| `node-tests` | a stated size of the node tier is not what `test:checks` runs |
 | `legal` | the policy text has more than one copy, or a page stops loading it |
 | `doc-index` | a prose document is missing from `docs/README.md` |
 | `i18n-open-gap` | `Architecture.md` §10.1's open-gap numbers disagree with `scripts/i18n-pair-audit.mjs` |
@@ -1180,7 +1173,7 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
 | Command | What it proves | Runtime |
 |---|---|---|
 | `npm run check:static` | no committed secrets, no SQL PII, workflows least-privilege, **every remote action SHA-pinned** (no exemption), valid JSON/YAML/JS/TS | Node only |
-| `npm run test:security` (`node --test tests/security-logic.mjs`) | refresh-news is fail-closed / header-only / constant-time; ai-proxy needs a JWT + caps input + never logs secrets | Node only |
+| `npm run test:security` (`node --test tests/security-logic.test.mjs`) | refresh-news is fail-closed / header-only / constant-time; ai-proxy needs a JWT + caps input + never logs secrets | Node only |
 | `npx playwright test tests/security.spec.js` | XSS payloads stay **inert in a real browser**; `IntMapSafe.url` blocks bad schemes; i18n renders; CSP present | Chromium |
 | `supabase test db` (or `db.yml` in CI) | RLS + privilege + the `feedback.rating` CHECK (pgTAP) | Postgres |
 | CodeQL (`.github/workflows/security.yml`) | SAST for JS/TS (XSS, injection) → Security tab | CI |
@@ -1195,7 +1188,7 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
   there is no exemption; `actions/*` and `github/*` were exempt once, which is where all of this
   repo's actions live, so the rule ran on an empty set and passed by looking at nothing), asset
   existence.
-- **`tests/security-logic.mjs`** (`node:test`) — unit-tests the constant-time compare, then
+- **`tests/security-logic.test.mjs`** (`node:test`) — unit-tests the constant-time compare, then
   **reads the Edge-Function sources** and asserts their invariants so a future edit cannot
   silently reintroduce a fail-open guard, a URL-query secret, an unauthenticated ai-proxy, or
   an uncapped prompt/image. (No Deno runtime needed — this is the CI-friendly substitute.)
@@ -1240,7 +1233,7 @@ Docker + the Supabase CLI (`supabase db start && supabase db reset --local && su
 - **New XSS sink?** Route the untrusted value through `IntMapSafe.html()` (text/attr) or
   `IntMapSafe.html(IntMapSafe.url(v,{allowData}))` (href/src/style). Add its payload/context to
   `XSS_PAYLOADS` in `tests/security.spec.js` if it exercises a new context.
-- **New Edge-Function auth rule?** Add an assertion to `tests/security-logic.mjs` (unit or a
+- **New Edge-Function auth rule?** Add an assertion to `tests/security-logic.test.mjs` (unit or a
   source regression guard).
 - **New RLS / constraint?** Add to `supabase/tests/03_security_test.sql` using the existing
   pgTAP helpers (`throws_ok`/`lives_ok`/`ok`/`has_*_privilege`) — see 02 for the impersonation
@@ -1275,4 +1268,4 @@ long place names must survive `html()` unchanged.
 - **座標 `0,0`**——「値が無い」をギニア湾の一点として書いたもの
 
 `--report` は指示書 §14 の形のカバレッジ表を出す（`--all` で全社）。
-回帰は `tests/r354-checks.test.mjs`（`test:checks` に登録済み）。
+回帰は `tests/r354-checks.test.mjs`。

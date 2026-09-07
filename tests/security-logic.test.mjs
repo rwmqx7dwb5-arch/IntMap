@@ -14,7 +14,7 @@
 //  ⚠ EVERY ASSERTION HERE IS A RELATION, NEVER THIS ROUND'S LITERAL. Eight tests in
 //  this repo went red on the hardening they were written to protect because they
 //  pinned an expression instead of the property; that lesson applies here first.
-//  Run: node --test tests/security-logic.mjs   (also part of `npm test`).
+//  Run: node --test tests/security-logic.test.mjs   (also part of `npm test`).
 // ============================================================================
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

@@ -274,10 +274,8 @@ test('⑭ one profile is one company, and it is small enough to fetch on a tap',
   });
 
 /* ── ⑮ 検査そのものが `npm test` から走ること ───────────────────────────── */
-test('⑮ this file and the company gate are actually wired into the test run', () => {
+test('⑮ the company gate is actually wired into the test run', () => {
   const pkg = JSON.parse(rd('package.json'));
-  assert.match(pkg.scripts['test:checks'] || '', /r354-checks\.test\.mjs/,
-    'tests/r354-checks.test.mjs is not in test:checks — a file left out of that list never runs (#R301)');
   assert.ok(pkg.scripts['check:companies'], 'npm run check:companies does not exist');
   const parallel = rd('scripts/test-parallel.mjs') + rd('scripts/static-checks.mjs');
   assert.ok(/check:companies|companies-audit/.test(parallel + JSON.stringify(pkg.scripts)),

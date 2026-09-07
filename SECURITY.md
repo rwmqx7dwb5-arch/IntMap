@@ -67,7 +67,7 @@ Every PR runs, in CI:
   privilege, and **action SHA-pinning**. The pinning rule is an **error**, and it covers
   `actions/*` and `github/*` too: it used to exempt them, which is where every remote action
   in this repo lives, so it had nothing to check.
-- `node --test tests/security-logic.mjs` — the Edge-Function, service-worker, admin-console
+- `node --test tests/security-logic.test.mjs` — the Edge-Function, service-worker, admin-console
   and CSP invariants, plus real unit tests of the constant-time compare and of the admin
   console's data-literal parser (the one that replaced `eval`).
 - `tests/security.spec.js` (Playwright) — XSS payloads are neutralised in a **real browser**

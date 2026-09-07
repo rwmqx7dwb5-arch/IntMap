@@ -97,8 +97,10 @@ node scripts/worktree.mjs new <slug>
 **段とコマンドの表は [`.agents/rules/execution-strategy.md`](../../rules/execution-strategy.md) §4
 が正本。**ここには書き写さない——そこを見て、この工程では段 0 から順に上げる。
 
-このラウンド固有の義務だけ書く: その回の回帰検査 `tests/r<N>-checks.test.mjs` を書いたら、**`package.json` の `test:checks` の
-一覧に足す**——足し忘れたファイルは永久に緑になる（#R260 ⑥ が実際に赤で捕まえた）。
+このラウンド固有の義務だけ書く: その回の回帰検査は **`tests/r<N>-checks.test.mjs` という名前で置く**だけでよい
+——`test:checks` は `node --test "tests/**/*.test.mjs"` なので、名前が合っていれば登録なしに走る（#R529）。
+⚠ **`tests/` に置く `.mjs` で `node:test` を import するものは、必ず `*.test.mjs` と名づける。**
+それ以外の名前は runner から見えず、一度も走らないまま永久に緑になる（`check:static` が捕まえる）。
 
 大量ログの読み分けは `intmap-verifier` に渡す。
 

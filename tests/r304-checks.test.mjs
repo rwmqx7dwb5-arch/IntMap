@@ -195,11 +195,3 @@ test('R304 ⑦ worktree.mjs status reports the nightly, and cannot break a sessi
   assert.match(st, /if \(nb && !nb\.ok\)/, 'the SessionStart hook line shouts when it is red');
   assert.match(st, /不明/, 'and the full status distinguishes «green» from «could not ask»');
 });
-
-/* ── ⑧ THIS FILE RUNS ─────────────────────────────────────────────────────────────────────────
-   The round's own subject, applied to itself: a check that is not in the list nobody runs it. */
-test('R304 ⑧ this round\'s checks are in package.json\'s test:checks list', () => {
-  const pkg = JSON.parse(read('package.json'));
-  assert.match(pkg.scripts['test:checks'], /tests\/r304-checks\.test\.mjs/,
-    'tests/r304-checks.test.mjs is in test:checks');
-});

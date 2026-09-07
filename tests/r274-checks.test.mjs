@@ -122,7 +122,7 @@ test('③ a violating document really does fail the gate', async () => {
 });
 
 /* ── ④ the gate is wired into the run, so it cannot quietly stop running ─────────────────── */
-test('④ the gate runs as part of `npm test`, and this file runs as part of test:checks', () => {
+test('④ the gate runs as part of `npm test`', () => {
   const chain = read('scripts/test-parallel.mjs');
   assert.match(chain, /scripts\/doc-facts\.mjs', '--check'/,
     'scripts/doc-facts.mjs is not in the source-level chain — it would never run');
@@ -130,8 +130,6 @@ test('④ the gate runs as part of `npm test`, and this file runs as part of tes
     'scripts/arch-files-check.mjs is not in the source-level chain — §3 could drift silently');
   const pkg = JSON.parse(read('package.json'));
   assert.equal(pkg.scripts['check:docs'], 'node scripts/doc-facts.mjs --check');
-  assert.ok(pkg.scripts['test:checks'].includes('tests/r274-checks.test.mjs'),
-    'this file is not in test:checks — it will never run, so it asserts nothing');
 });
 
 /* ── ⑤ Architecture.md is a specification, not a changelog ───────────────────────────────── */

@@ -288,5 +288,4 @@ test('R282 (6) master:check and master:sync are exposed, and not wired into npm 
   for (const key of ['test', 'test:seq', 'test:checks']) {
     assert.ok(!/master-sync|master:check|master:sync/.test(pkg.scripts[key] || ''), `${key} must not run the master gate`);
   }
-  assert.match(pkg.scripts['test:checks'] || '', /tests\/r282-checks\.test\.mjs/, 'this file runs in the suite');
 });

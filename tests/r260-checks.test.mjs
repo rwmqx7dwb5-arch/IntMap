@@ -134,12 +134,3 @@ test('#R260 ⑤ CONSTITUTION.md and Architecture.md record the finish procedure'
       `${f} no longer mentions the finish procedure — the rule documents have drifted apart`);
   }
 });
-
-/* ── ⑥ the new checks file is actually in the list npm test runs ────────────────────────────── */
-test('#R260 ⑥ tests/r260-checks.test.mjs is wired into `npm run test:checks`', () => {
-  /* ⚠ a per-round checks file that nobody added to this list is a test that never runs and
-     therefore never fails — the exact shape of "the instrument was green because it was blind". */
-  const pkg = JSON.parse(read('package.json'));
-  assert.ok(pkg.scripts['test:checks'].includes('tests/r260-checks.test.mjs'),
-    'this file is not in test:checks — it will never run, so it asserts nothing');
-});

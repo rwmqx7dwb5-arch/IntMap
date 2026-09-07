@@ -2873,7 +2873,7 @@ supabase db diff --schema public             # driftゼロ確認
   これは**受け入れて追跡している残存リスク**で、理由・影響・軽減策は
   `docs/SECURITY-ARCHITECTURE.md §8` の 1 番に測定日つきで書いてある。
   ⚠ **`admin.html` はそのどちらも持たない**（SDK 同梱＋データリテラル・パーサ）。
-  `tests/security-logic.mjs` が admin 側に `'unsafe-eval'` が戻らないことを毎回検査する。
+  `tests/security-logic.test.mjs` が admin 側に `'unsafe-eval'` が戻らないことを毎回検査する。
   ⚠ **新しい CDN ホストを CSP に足さない。** 実行時依存は npm から取り `src/vendor.js` が再公開する
   （§1.1）。現在残っている 8 つは、その方針より前からある計測・地図・タイル系のタグである。
   ⚠ 不在の directive は「許可」ではなく「**不在**」であり、それが意図かどうかを policy が言えない。
@@ -2891,7 +2891,7 @@ supabase db diff --schema public             # driftゼロ確認
 ### 17.4 CI
 
 **CodeQL**（`security.yml`）＋ `check:static` の **Action SHA 固定検査（全リモート Action・error・除外なし）**
-＋ `tests/security-logic.mjs`（Edge Function／SW／admin／CSP の不変条件とパーサのユニットテスト）
+＋ `tests/security-logic.test.mjs`（Edge Function／SW／admin／CSP の不変条件とパーサのユニットテスト）
 ＋ pgTAP。`npm test` で全部走る。
 
 ⚠ **「X は消えたか」を検査するときは、X が書かれていた構文で書く。** 検査のパターンが、

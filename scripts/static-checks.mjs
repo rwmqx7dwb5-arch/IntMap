@@ -561,20 +561,27 @@ try {
   err('split-scope', 'could not run the split-scope check: ' + (e && e.message));
 }
 
-// ── 10. (#R301) every node test file on disk is in the list `npm test` actually runs ──
-// A per-round checks file that nobody added to `test:checks` is not a weaker test — it is not a
-// test. tests/r260-checks.test.mjs ⑥ asks that question about ITSELF, so it only protects the
-// rounds whose author was already thinking about the hazard; tests/r210 and tests/r211 were both
-// left out anyway, and r211 sat RED with five failing assertions for ninety rounds.
-// ⚠ IT LIVES HERE AND NOT IN `test:checks` ON PURPOSE: a guard for a list cannot be an entry in
-// the list it guards. The comparison itself is in scripts/check-test-list.mjs so that
-// tests/r301-checks.test.mjs can EXERCISE it on a repository that is wrong on purpose, rather
-// than grep this file for the call and count that as proof.
-try {
-  const { checkTestListHere } = await import('./check-test-list.mjs');
-  for (const p of checkTestListHere(ROOT)) err('node-tests', p.msg);
-} catch (e) {
-  err('node-tests', 'could not run the test-list check: ' + (e && e.message));
+// ── 10. (#R529) a file of tests the runner will never look at ──
+// `test:checks` used to be one hand-written literal naming all 292 files, and this slot held the
+// comparison between that literal and the disk — #R301, after tests/r210 and tests/r211 were found
+// never to have run at all, then #R385 and #R390 as the literal found two further ways to be wrong.
+// #R529 deleted the literal instead: `node --test "tests/**/*.test.mjs"` discovers the files itself,
+// so «in the list» and «not in the list» stopped being states a file can be in, and the three
+// guards stacked on that literal went with it.
+// ⚠ WHAT SURVIVES IS THE OTHER HALF OF #R390. The runner's idea of a test file is its NAME, so a
+// `.mjs` under tests/ that imports `node:test` under any other name is invisible: it never runs, so
+// it never fails and never passes. That is exactly what tests/security-logic.mjs (31 tests, #R138)
+// was for three rounds while every gate in this repository stayed green. #R529 renamed it to
+// tests/security-logic.test.mjs so the convention has no exception left — and this asks the DISK,
+// not a list, that it stays that way. A helper, a fixture or a corpus imports nothing of the kind
+// and is not demanded.
+const DECLARES_NODE_TESTS =
+  /(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*|^\s*import\s+)['"]node:test['"]/m;
+for (const f of ALL) {
+  if (f.ext !== '.mjs' || !f.rel.startsWith('tests/') || f.rel.endsWith('.test.mjs')) continue;
+  if (!DECLARES_NODE_TESTS.test(read(f))) continue;
+  err('node-tests', `${f.rel} imports node:test but is not named *.test.mjs — test:checks discovers`
+    + ' tests/**/*.test.mjs by NAME, so this file never runs');
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────

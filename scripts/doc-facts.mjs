@@ -768,17 +768,6 @@ const FILES = BODY.get('docs/FILES.md') || '';
   if (!problems.some((x) => x.startsWith('db-tables'))) ok('db-tables', created.size + ' tables, all of them asserted by the pgTAP structure test');
 }
 
-/* ═══ 18. the size of the node-test tier, as package.json defines it ══════════════════════ */
-{
-  const n = JSON.parse(rd('package.json')).scripts['test:checks'].split(/\s+/).filter((x) => x.endsWith('.mjs')).length;
-  eachDoc((f, s) => {
-    const mm = s.match(/\*\*(\d+) Node test files\*\*/);
-    if (mm && Number(mm[1]) !== n) fail('node-tests', f + ' says ' + mm[1] + ' Node test files; test:checks runs ' + n);
-  });
-  if (!/Node test files/.test(BODY.get('docs/TESTING.md') || '')) fail('node-tests', 'docs/TESTING.md no longer states how large the node tier is');
-  if (!problems.some((x) => x.startsWith('node-tests'))) ok('node-tests', n + ' node test files, stated correctly');
-}
-
 /* ═══ 19. the legal text has exactly ONE copy ═════════════════════════════════════════════
    The modal and the two public pages must all read js/legal-text.js. The moment one of them
    carries its own paragraph, the app and the linkable policy can say different things — and the

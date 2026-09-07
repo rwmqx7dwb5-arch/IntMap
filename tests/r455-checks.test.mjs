@@ -352,13 +352,6 @@ test('R455 ④c the map tooltip is NOT the button, and is deliberately left alon
    the round’s own bookkeeping
    ═══════════════════════════════════════════════════════════════════════ */
 
-test('R455 ⑤ this file is in the checks list, or it is green for ever', () => {
-  /* #R260 ⑥ caught exactly this: a check nobody runs. */
-  const pkg = JSON.parse(rd('package.json'));
-  assert.ok(String(pkg.scripts['test:checks']).includes('r455-checks.test.mjs'),
-    'package.json test:checks names this file');
-});
-
 test('R455 ⑥ the preview count and byte total match what is on disk', () => {
   /* the same equality #R408 ①d asserts, restated here because this round changed both sides of it */
   const imgs = readdirSync(ROOT).filter((f) => /^preview_.*\.png$/.test(f));
