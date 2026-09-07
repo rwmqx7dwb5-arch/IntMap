@@ -1797,6 +1797,8 @@ window.IntMapLang.define('ko', { ui: {
   "Name": "이름",
   "named currents · ": "개 해류 · ",
   "Named in the answer but not placed (couldn’t locate precisely): ": "답변에 언급했지만 지도에 놓지 않음 (정확한 위치를 알 수 없음): ",
+  "Named in the answer but not placed (the map lookup did not answer — not a judgement about the place): ": "답변에 언급했지만 지도에 놓지 않음 (지도 조회가 응답하지 않았기 때문이며, 장소를 특정할 수 없다는 뜻은 아닙니다): ",
+  "Named in the answer but not placed (this answer reached its lookup limit — not a judgement about the place): ": "답변에 언급했지만 지도에 놓지 않음 (이번 답변의 조회 한도에 도달했기 때문이며, 장소를 특정할 수 없다는 뜻은 아닙니다): ",
   "NASA FIRMS · MODIS + VIIRS (real, near-real-time)": "NASA FIRMS · MODIS + VIIRS (실측, 준실시간)",
   "NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.": "NASA SEDAC GPW v4 (2020, 약 1 km). 국경과 무관한 실제 분포입니다.",
   "National park": "국립공원",

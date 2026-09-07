@@ -1334,6 +1334,8 @@ window.IntMapLang.define('zh', {
     'Name': "名稱",   /* monitors.js satellite-detail.js */
     'named currents · ': "條具名海流・",   /* ocean-currents.js */
     'Named in the answer but not placed (couldn’t locate precisely): ': "回答中提到但未標繪（無法精確定位）：",   /* atlas-verify.js */
+    'Named in the answer but not placed (the map lookup did not answer — not a judgement about the place): ': "回答中提到但未標繪（地圖查詢未回應，並非表示無法確定該地點）：",   /* atlas-verify.js */
+    'Named in the answer but not placed (this answer reached its lookup limit — not a judgement about the place): ': "回答中提到但未標繪（本次回答已達查詢上限，並非表示無法確定該地點）：",   /* atlas-verify.js */
     'national borders': "國界",   /* atlas-console.js */
     'National park': "國家公園",   /* drone-ops.js */
     'Nature reserve': "自然保護區",   /* drone-ops.js */

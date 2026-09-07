@@ -179,7 +179,33 @@ window.IntMapModules.analysisCorrelate=function(HOST){
     }
     /* (#R40) Residual map: paint each country by how far it sits ABOVE (blue) or BELOW (red) the regression
        line — deeper = larger residual. Uses the `countries` source via a per-code match expression. */
-    function ensureCountriesSrc(cb){ try{ if(GE().layers.hasSource('countries')){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>{ try{ if(typeof addCountryLayers==='function'&&!GE().layers.hasSource('countries')&&_imCanDraw()) addCountryLayers(); }catch(_){} setTimeout(cb,200); }); return; } }catch(_){} cb(); }
+    /* ══ ⚠⚠⚠ (#R545) A STAGE ASKS «DID THE STAGE ABOVE DELIVER?», NEVER «DOES THE DEPENDENCY EXIST» ══
+       Both fallback chains in this file — this one and open() — branched on
+       `typeof loadCountryData==='function'`, and that test CANNOT BE FALSE: js/app-body.js publishes
+       `get loadCountryData(){ return loadCountryData; }` over a hoisted function declaration, so the
+       arm after it (the trailing `cb()` here, the `else go()` there) was unreachable from the day it
+       was written. What the chain had no arm for at all is the case that actually breaks it: the
+       promise REJECTS. With no rejection handler the chain simply stops — and residualMap() hides
+       the chooser FIRST, so the reader asked for a map, watched the dialog close, and got nothing:
+       no paint, no retry, no failure pill, nothing in the console.
+       So the load is one stage that collapses «no loader», «threw», «did not return a promise» and
+       «rejected» into a single falsy answer — the shape fromLedger() uses in js/atlas-map-compose.js
+       to collapse «no ledger» and «no entry» into null. The existence test survives only INSIDE the
+       call, where it decides whether to call, and every caller then branches on what it GOT. */
+    function requestCountryData(){ let p=null;
+      try{ if(typeof loadCountryData==='function') p=loadCountryData(); }catch(_){ p=null; }
+      return (p&&typeof p.then==='function')?Promise.resolve(p).then(()=>true,()=>false):Promise.resolve(false); }
+    /* what open() is really waiting for: the records it plots, not the promise that was to fetch them */
+    function haveCountryData(){ try{ return !!(window.countryGeo&&Object.keys(countryStats||{}).length); }catch(_){ return false; } }
+    function ensureCountriesSrc(cb){ try{ if(GE().layers.hasSource('countries')){ cb(); return; } }catch(_){}
+      requestCountryData().then(ok=>{
+        /* ⚠ cb() ON EVERY PATH. paint() is the one that decides whether the source arrived — it
+           re-checks and either retries or shows the pill — and it can only do that if it is called.
+           A load that did not deliver has nothing to add and nothing to settle, so it falls straight
+           through instead of waiting out the 200 ms the style needs after a source really was added. */
+        if(!ok){ cb(); return; }
+        try{ if(typeof addCountryLayers==='function'&&!GE().layers.hasSource('countries')&&_imCanDraw()) addCountryLayers(); }catch(_){}
+        setTimeout(cb,200); }); }
     /* (#R41) Diverging RdBu ramp — the residual map now uses a GRADED multi-hue scale (deep red → orange →
        light → light blue → deep blue), not the old two flat colors with faint alpha ("青と赤二色だけで塗れと
        なんかいっていない"). n∈[-1,1]: +1 = far ABOVE the fit (deep blue), −1 = far BELOW (deep red), 0 ≈ on the
@@ -204,8 +230,12 @@ window.IntMapModules.analysisCorrelate=function(HOST){
       ensureCountriesSrc(()=>setTimeout(paint,0));
     }
     window._refreshResidualColors=()=>{ try{ if(GE().layers.has('corr-resid-fill')&&GE().layers.getLayout('corr-resid-fill','visibility')==='visible'&&_lastFit&&_lastFit.mb) residualMap(); }catch(_){} };
+    /* (#R545) the one sentence this panel has for «the country data did not arrive» — named because
+       open() now says it too when its own load fails, and one notice in nine languages must not
+       become two. */
+    const loadFailMsg=()=>tr('Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.');
     function residPill(mx,my,err){ let pill=document.getElementById('corr-resid-pill'); if(!pill){ pill=document.createElement('div'); pill.id='corr-resid-pill'; pill.style.cssText='position:absolute;bottom:96px;left:50%;transform:translateX(-50%);z-index:1700;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.2));border-radius:14px;padding:9px 14px;font-size:11px;box-shadow:var(--shadow);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;flex-direction:column;align-items:stretch;gap:6px;max-width:min(440px,calc(100vw - 24px));'; (document.getElementById('map-container')||document.body).appendChild(pill); }
-      if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+tr('Could not load country data — try again.','国データを取得できませんでした。再度お試しください。','Länderdaten konnten nicht geladen werden.','Не удалось загрузить данные стран.','No se pudieron cargar los datos de países.')+'</span><button style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">×</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
+      if(err){ pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span>'+loadFailMsg()+'</span><button style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;">×</button></div>'; pill.querySelector('button').onclick=()=>{ pill.style.display='none'; }; pill.style.display='flex'; return; }
       /* (#R41) graded diverging legend bar (matches the RdBu fill) + a one-line "what is this" note */
       const grad='linear-gradient(to right,rgb(103,0,31),rgb(178,24,43),rgb(239,138,98),rgb(247,247,247),rgb(103,169,207),rgb(33,102,172),rgb(5,48,97))';
       pill.innerHTML='<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;"><span style="font-weight:600;">'+esc(ml(my))+' '+tr('vs','対','vs','от','vs')+' '+esc(ml(mx))+'</span><button aria-label="'+tr('Close','閉じる','Schließen','Закрыть','Cerrar')+'" style="background:none;border:none;color:var(--primary-color);font-weight:700;cursor:pointer;font-size:13px;line-height:1;">×</button></div>'
@@ -214,10 +244,16 @@ window.IntMapModules.analysisCorrelate=function(HOST){
         +'<div style="font-size:10px;color:var(--text-muted);line-height:1.4;">'+tr('Each country is shaded by its regression residual — how far its '+ml(my)+' sits above/below what its '+ml(mx)+' predicts.','各国を回帰残差で塗り分け：その国の'+ml(my)+'が'+ml(mx)+'からの予測値より上振れ/下振れしている度合い。','Jedes Land ist nach dem Regressionsresiduum gefärbt — wie weit sein Wert über/unter der Erwartung liegt.','Каждая страна окрашена по остатку регрессии — насколько значение выше/ниже ожидаемого.','Cada país se sombrea por el residuo de la regresión: cuánto se sitúa por encima/debajo de lo previsto.')+'</div>';
       pill.querySelector('button').onclick=()=>{ try{ if(GE().layers.has('corr-resid-fill')) GE().layers.setLayout('corr-resid-fill','visibility','none'); }catch(_){} pill.style.display='none'; };
       pill.style.display='flex'; }
-    function open(){ ensure(); ov.classList.add('show'); const go=()=>reRender();
-      if(window.countryGeo&&Object.keys(countryStats||{}).length) go();
-      else if(typeof loadCountryData==='function'){ ov.querySelector('.corr-svg-wrap').innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+t('loadingData')+'</div>'; loadCountryData().then(go); }
-      else go(); }
+    function open(){ ensure(); ov.classList.add('show');
+      const say=m=>{ const w=ov.querySelector('.corr-svg-wrap'); if(w) w.innerHTML='<div style="padding:46px;text-align:center;color:var(--text-muted);">'+m+'</div>'; };
+      if(haveCountryData()){ reRender(); return; }
+      say(t('loadingData'));
+      /* ⚠ (#R545) the second half of the shape described above requestCountryData(). This was
+         `loadCountryData().then(go)` with no rejection arm, so a load that failed left the card
+         reading «Loading country data…» for ever — the panel never gave up and never said so. And
+         the condition is the DATA, not the promise: a load that resolves with nothing is answered
+         as honestly as one that rejects, with the notice the residual map already carries. */
+      requestCountryData().then(()=>{ if(haveCountryData()) reRender(); else say(loadFailMsg()); }); }
     /* (#R322) the half of the boot-time `intmap-lang` handler that needs the overlay. The listener
        itself stays in the shell — it has to relabel #btn-correlate whether or not this file was ever
        fetched — and this is the branch it guarded with `if(ov)`, which could only ever do anything

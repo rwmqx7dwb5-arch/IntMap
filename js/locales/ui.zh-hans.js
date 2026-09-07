@@ -1338,6 +1338,8 @@ window.IntMapLang.define('zh-hans', {
     'Name': "名称",   /* monitors.js satellite-detail.js */
     'named currents · ': "条具名海流・",   /* ocean-currents.js */
     'Named in the answer but not placed (couldn’t locate precisely): ': "回答中提到但未标绘（无法精确定位）：",   /* atlas-verify.js */
+    'Named in the answer but not placed (the map lookup did not answer — not a judgement about the place): ': "回答中提到但未标绘（地图查询未回应，并非表示无法确定该地点）：",   /* atlas-verify.js */
+    'Named in the answer but not placed (this answer reached its lookup limit — not a judgement about the place): ': "回答中提到但未标绘（本次回答已达查询上限，并非表示无法确定该地点）：",   /* atlas-verify.js */
     'national borders': "国界",   /* atlas-console.js */
     'National park': "国家公园",   /* drone-ops.js */
     'Nature reserve': "自然保护区",   /* drone-ops.js */

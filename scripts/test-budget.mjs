@@ -166,7 +166,17 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    ⚠ A SAVING ELSEWHERE WAS NOT CLAIMED, for #R322/#R455's reason: that batch also re-measured the
    always-on five and found this table UNDER-charging (tests/smoke.spec.js at 77 s against an entry of
    8), and a table that under-charges is not one a round may take a saving out of. */
-const BUDGET_S = 35;                    /* core: 0.6 min — measured 35 s over 7 files (#R530) */
+/* ⚠ (#R545) THE CORE CEILING FELL, 35 -> 31, AND THE FALL IS NOT A SAVING THIS ROUND MADE. The gate
+   is seven files, and one of the seven is whichever spec `currentRoundSpec()` names; this round's
+   costs 5 where #R530's cost 9, so the floor dropped by 4 on its own. It is recorded as a fall
+   because the rule here is that the ceiling follows the floor DOWN (#R494 took 30 -> 28 for exactly
+   this reason) — a ceiling left at the height of the most expensive round stops measuring anything.
+   ⚠ AND THE NEW SPEC IS IN THE GATE ONLY BECAUSE OF ITS NAME: its entry is 5, well over
+   CORE_MAX_S = 1, so it stands here as the current round's spec and nothing else. It is named
+   tests/r545.spec.js rather than tests/r545-correlate.spec.js precisely so that it does —
+   `currentRoundSpec()` matches /^r(\d+)$/, and a regression test that only runs at night does not
+   guard the push it was written for. */
+const BUDGET_S = 31;                    /* core: 0.5 min — measured 31 s over 7 files (#R545) */
 /* ⚠⚠ (#R410) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,536 -> 4,595 (+59 s).
    Saying it here as well as in the ledger because this file's own message is «never raise it»;
    #R388 (core) and #R405 (total, +7) are the precedents for saying so plainly. The round adds the
@@ -268,7 +278,30 @@ const BUDGET_S = 35;                    /* core: 0.6 min — measured 35 s over 
    was correctly 'visible' the whole time it was wrong, so nothing a Node check can read distinguishes
    the broken build from the fixed one. The +9 is that spec, paid down from 59.8 s first (see the core
    note above). */
-const TOTAL_BUDGET_S = 4648;            /* 77.5 min — 4,639 (#R510) + 9 (#R530: tests/r530.spec.js) */
+/* ⚠⚠ (#R545) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 4,648 -> 4,653 (+5). Saying it here
+   as well as in the ledger because this file's own message is «never raise it»; #R405 (+7), #R410
+   (+59), #R451 (+2), #R455 (+4), #R466 (+5), #R493 (+2), #R494 (+3) and #R508 (+3) are the
+   precedents for saying so plainly rather than quietly.
+   ⚠ AND THE SPEC COULD NOT RIDE AN EXISTING FILE. What it asserts is that a REJECTED country-data
+   load reaches an honest answer — the panel says it failed instead of reading «Loading country
+   data…» for ever, and the residual map shows its pill instead of stopping silently behind a dialog
+   it already closed. That needs a browser and a loader that can be made to fail at its seam; the
+   node checks cannot see it at all, because the defect is not in any value a source file holds — it
+   is a promise with no rejection arm.
+     · MEASURED, five consecutive runs, server already up, all five green (3/3 each), testcase time
+       summed: 3.231 / 3.609 / 2.766 / 3.331 / 3.430 s — median 3.331, max 3.609.
+     · CALIBRATED the way #R451, #R474 and #R508 did rather than copied. Two committed entries were
+       re-measured in the SAME session: tests/r494.spec.js (entry 3) at median 1.853 s → 1.62 table-
+       seconds per local second, and tests/r508.spec.js (entry 3) at median 1.222 s → 2.46. They
+       disagree by half again, and the 2.46 is the weaker anchor: #R508's own note says it chose 3
+       for a file costing «less than half» of r494's, i.e. that entry already carries a conservative
+       +1, and dividing by it counts the same padding twice. A third, independent check settles it —
+       tests/r530.spec.js (entry 9) measured 7.149 s here against the 6.6/7.0/8.1/7.5 s #R530
+       recorded on a quiet machine, so this machine is not slower than the one that wrote these
+       entries and the gap between local and table seconds is ROUNDING, not hardware.
+       1.62 × 3.331 = 5.39; ceil(max) = 4. ENTERED AS 5 — the ceiling of the batch plus the same
+       one-second margin #R494 and #R508 added at this spot. */
+const TOTAL_BUDGET_S = 4653;            /* 77.5 min — 4,639 (#R510) + 9 (#R530) + 5 (#R545: tests/r545.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

@@ -1807,6 +1807,8 @@ window.IntMapLang.define('fr', { ui: {
   "Name": "Nom",
   "named currents · ": "courants nommés · ",
   "Named in the answer but not placed (couldn’t locate precisely): ": "Cités dans la réponse mais non placés (localisation imprécise) : ",
+  "Named in the answer but not placed (the map lookup did not answer — not a judgement about the place): ": "Cités dans la réponse mais non placés (la consultation de la carte n'a pas répondu — ce n'est pas un jugement sur le lieu) : ",
+  "Named in the answer but not placed (this answer reached its lookup limit — not a judgement about the place): ": "Cités dans la réponse mais non placés (cette réponse a atteint sa limite de recherches — ce n'est pas un jugement sur le lieu) : ",
   "NASA FIRMS · MODIS + VIIRS (real, near-real-time)": "NASA FIRMS · MODIS + VIIRS (réel, quasi temps réel)",
   "NASA SEDAC GPW v4 (2020, ~1 km). Real distribution, independent of borders.": "NASA SEDAC GPW v4 (2020, ~1 km). Répartition réelle, indépendante des frontières.",
   "National park": "Parc national",

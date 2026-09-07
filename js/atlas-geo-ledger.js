@@ -196,8 +196,17 @@ export function makeAtlasGeoLedger(deps) {
     /**
      * resolve(name, opts) -> entity | null
      *
-     * The lookup the geocoders try FIRST. `opts.kind` / `opts.countryCode` narrow it, so 「モスクワ」
-     * asked for as an admin1 does not come back as the city a previous turn pinned.
+     * The lookup the geocoders try FIRST. `opts.kind` / `opts.countryCode` / `opts.countryName`
+     * narrow it, so 「モスクワ」 asked for as an admin1 does not come back as the city a previous
+     * turn pinned.
+     *
+     * ⚠⚠ (#R545) THE NARROWING KEYS ARE THE ONES CALLERS ACTUALLY HOLD. Every caller that could
+     * narrow was passing a key this function did not read, so the hint was structurally dead at
+     * all of them: js/atlas-verify.js passed `countryCode: it.countryCode` off a mapper that
+     * copies name/country/kind/summary/lng/lat/provenance/src and no code at all (always
+     * undefined), and js/atlas-console.js passed `countryName`, which this function ignored.
+     * An entity HAS a `countryName` — record() stores it — so reading it is what closes the gap;
+     * inventing a code the caller cannot supply would only move the dead key.
      */
     function resolve(name, opts) {
       const k = norm(name);
@@ -205,9 +214,13 @@ export function makeAtlasGeoLedger(deps) {
       const o = opts || {};
       const wantKind = str(o.kind);
       const wantCC = codeOf(o.countryCode);
+      const wantCN = norm(o.countryName);
       const direct = byId[str(name)] || byId[byAlias[k]];
+      /* an entity that does not KNOW its country is never excluded by a country hint — the hint
+         narrows between things this conversation has already told apart, it does not invent facts */
       const fits = (e) => !!e && (!wantKind || e.kind === wantKind)
-        && (!wantCC || !e.countryCode || e.countryCode === wantCC);
+        && (!wantCC || !e.countryCode || e.countryCode === wantCC)
+        && (!wantCN || !e.countryName || norm(e.countryName) === wantCN);
       if (fits(direct)) return direct;
       /* an alias shared by two entities points at the FIRST one recorded, so a narrowed search
          still has somewhere to go: walk the list and take the newest match that fits. */

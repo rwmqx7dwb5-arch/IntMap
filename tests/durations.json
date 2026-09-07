@@ -104,5 +104,6 @@
  "tests/r510.spec.js": 1,
  "tests/security.spec.js": 4,
  "tests/r530.spec.js": 9,
+ "tests/r545.spec.js": 5,
  "tests/smoke.spec.js": 8
 }
