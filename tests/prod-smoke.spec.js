@@ -636,6 +636,10 @@ test('(#R514) the model host the deployed build names answers, and lets this ori
    favicon is that company's business; a name that does not resolve is the build naming a host that
    no longer exists, which is the failure this test is for. */
 test('(#R533) every third-party host the delivered build names still resolves and answers', async () => {
+  /* Reading dozens of modules and then probing every host they name is more work than the file's
+     default allows, even done concurrently: the ceiling below is the concurrency's WORST case
+     (one module read + one probe, both at their own timeouts) plus room, not a guess at the mean. */
+  test.setTimeout(120_000);
   /* the modules the browser actually loaded, read back from the page — not a glob over the repo,
      because what matters is what was DELIVERED */
   const scripts = await page.evaluate(() => performance.getEntriesByType('resource')
@@ -648,11 +652,17 @@ test('(#R533) every third-party host the delivered build names still resolves an
      appears as an absolute https:// URL inside the delivered code is. */
   const SKIP = /^(?:localhost|127\.|.*\.supabase\.co$|.*\.github\.io$|.*\.github\.com$|schema\.org$|www\.w3\.org$)/;
   const hosts = new Set();
-  for (const src of scripts) {
-    if (!src.startsWith(origin)) continue;
-    const r = await page.request.get(src, { timeout: 30_000 });
-    if (!r.ok()) continue;
-    const txt = await r.text();
+  /* same-origin, so these are fast — but there are dozens of them and they do not depend on each
+     other either (see the note on the probes below) */
+  const bodies = await Promise.all(scripts
+    .filter((src) => src.startsWith(origin))
+    .map(async (src) => {
+      try {
+        const r = await page.request.get(src, { timeout: 30_000 });
+        return r.ok() ? await r.text() : '';
+      } catch (_) { return ''; }
+    }));
+  for (const txt of bodies) {
     for (const m of txt.matchAll(/https:\/\/([a-z0-9][a-z0-9.-]*\.[a-z]{2,})[/'"`)]/gi)) {
       const h = m[1].toLowerCase();
       if (!SKIP.test(h)) hosts.add(h);
@@ -660,24 +670,29 @@ test('(#R533) every third-party host the delivered build names still resolves an
   }
   expect(hosts.size, 'the delivered build names third-party hosts').toBeGreaterThan(3);
 
-  const dead = [];
-  const checked = [];
-  for (const h of [...hosts].sort()) {
-    let status = null;
+  /* ⚠ THE PROBES RUN AT ONCE, AND THE FIRST VERSION OF THIS TEST DID NOT. Walking the hosts in a
+     `for` loop with a 20 s timeout each is O(hosts x 20 s); measured on the deployed build that is
+     several minutes against a 90 s test timeout, so the FIRST run of this check turned the
+     production deploy red by timing out rather than by finding anything. A liveness probe of N
+     independent hosts is N independent probes — they wait on each other for no reason. */
+  const probe = async (h) => {
     try {
-      const r = await page.request.get('https://' + h + '/', { timeout: 20_000, failOnStatusCode: false });
-      status = r.status();
+      const r = await page.request.get('https://' + h + '/', { timeout: 15_000, failOnStatusCode: false });
+      return { h, note: String(r.status()) };
     } catch (e) {
-      /* a refused connection is a live name behind a closed door; a name that does not resolve is
-         the thing this test exists to catch, and Playwright says so in the message */
+      /* A refused connection, a TLS complaint or a timeout is a live NAME behind a closed door, and
+         this test is not an uptime monitor — it asks only whether the build names somewhere that
+         still exists. A name that does not resolve is the thing it exists to catch. */
       const msg = String((e && e.message) || '');
       if (/ERR_NAME_NOT_RESOLVED|getaddrinfo|ENOTFOUND|EAI_AGAIN|Could not resolve/i.test(msg)) {
-        dead.push(h);
-        continue;
+        return { h, dead: true };
       }
+      return { h, note: 'no status, name resolves' };
     }
-    checked.push(h + (status == null ? ' (no status, name resolves)' : ' ' + status));
-  }
+  };
+  const results = await Promise.all([...hosts].sort().map(probe));
+  const dead = results.filter((r) => r.dead).map((r) => r.h);
+  const checked = results.filter((r) => !r.dead).map((r) => r.h + ' ' + r.note);
   console.log('[R533] third-party hosts named by the delivered build (' + checked.length + '): '
     + checked.join(', '));
   expect(dead, 'the delivered build names hosts that no longer exist in DNS: ' + dead.join(', '))
@@ -701,14 +716,26 @@ test('(#R533) the Companies tab ships resolved Commons logos and no dead logo ho
   const bad = withLogo.filter((c) => !/^https:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\//.test(c.lg));
   expect(bad.map((c) => c.id + '=' + c.lg), 'every shipped logo points at Wikimedia Commons').toEqual([]);
 
-  /* one of them, actually fetched, with this origin asking — a logo that 403s across origins is a
-     logo the page cannot draw */
-  const one = withLogo[0];
-  const img = await page.request.get(one.lg, { headers: { Origin: origin }, timeout: 30_000 });
-  expect(img.status(), 'Commons serves ' + one.id + "'s logo at " + one.lg).toBe(200);
-  expect(String(img.headers()['content-type'] || ''), 'as an image').toMatch(/image\//);
+  /* …and they are actually fetchable, with this origin asking — a logo that 403s across origins is
+     a logo the page cannot draw.
+     ⚠ THREE SAMPLES, NOT ONE, AND THE CLAIM IS ABOUT COMMONS RATHER THAN ABOUT A FILE. Asking for
+     exactly one file made this test hostage to that one request: measured, it went flaky when the
+     host-liveness test above had just probed Wikimedia among everything else, and Commons answered
+     the follow-up with a throttle. What is being asserted is 「Commons serves the logos this build
+     ships, across origins」, so a sample of three answers it and a single transient 429 does not
+     masquerade as a broken data path. All three failing still fails, which is the real defect. */
+  const samples = [withLogo[0], withLogo[Math.floor(withLogo.length / 2)], withLogo[withLogo.length - 1]];
+  const got = await Promise.all(samples.map(async (c) => {
+    try {
+      const r = await page.request.get(c.lg, { headers: { Origin: origin }, timeout: 30_000 });
+      return { id: c.id, status: r.status(), type: String(r.headers()['content-type'] || '') };
+    } catch (e) { return { id: c.id, status: 0, type: String((e && e.message) || 'threw').slice(0, 60) }; }
+  }));
+  const ok = got.filter((g) => g.status === 200 && /image\//.test(g.type));
+  expect(ok.length, 'Commons must serve the shipped logos to ' + origin + ' — got '
+    + got.map((g) => g.id + '=' + g.status + ' ' + g.type).join(', ')).toBeGreaterThan(0);
   console.log('[R533] company logos: ' + withLogo.length + '/' + rows.length
-    + ' shipped from Commons · sample ' + one.id + ' ' + img.headers()['content-type']);
+    + ' shipped from Commons · sampled ' + got.map((g) => g.id + '=' + g.status).join(', '));
 });
 
 /* ══ (#R276) THE WEATHER MODEL, AGAINST REAL DATA ════════════════════════════════════════════════
