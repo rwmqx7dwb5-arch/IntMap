@@ -384,8 +384,132 @@ window.IntMapModules.timeBorders=function(HOST){
         if(!r.ok) continue; const j=await r.json(); if(!j||!Array.isArray(j.features)) continue;
         const cj=_correctEra(j,year); cache.set(year,cj); try{ window.IntMapCache&&window.IntMapCache.set('hb_'+year,cj); }catch(_){} return cj;
       }catch(_){} } return null; }
+    /* ══ (#R520) 一国につき一つ — THE ERA NAMES GET THEIR OWN POINT SOURCE ══════════════════════
+       「昔の国名ラベルが1国につき何十個も出る。」 `imtb-lbl` / `imtb-lbl2` took their text FROM THE
+       BORDER POLYGONS — `source:'imtb-src'` with `symbol-placement:'point'` — and that is not one
+       label per country. maplibre-gl's symbol bucket (dist/…-worker-dev.js, `addFeature`) does this
+       with a polygon:
+           else if (feature.type === 'Polygon') {
+             for (const polygon of classifyRings(feature.geometry, 0)) {
+               const poi = findPoleOfInaccessibility(polygon, 16);
+               addSymbolAtAnchor(…, new Anchor(poi.x, poi.y, 0));
+             } }
+       — ONE label candidate PER OUTER RING. MEASURED against the data this app actually ships,
+       data/cshapes.js, which answers every year 1886–2019:
+           1900-07-01   151 features → 1,583 outer rings   (Japan 30 · Korea 7 · China 21 · Canada 268)
+           1914-07-01   150 features → 1,642 outer rings
+           1938-07-01   173 features → 1,671 outer rings   (Canada 268 · Indonesia 136 · Chile 124)
+       — and it is not one dataset's shape. data/hist-borders.js, the OpenHistoricalMap window #R518
+       gave 1850–1885, is worse:
+           1860-06-15   210 features → 1,934 outer rings
+           1875-06-15   167 features → 2,192 outer rings
+       and the remote aourednik snapshots, which answer whatever those two do not, are the same:
+       world_1900 has 166 distinct names spread over 516 outer rings, world_1938's «Empire of Japan»
+       alone has 62. So the collision grid was being asked to place ten times more country names than
+       there were countries, and every island with room around it kept its own copy — the reported
+       thicket of 「大日本帝国」「朝鮮」 over the Japanese and Korean archipelagos.
+       ⚠ THIS IS NOT A COLLISION-DETECTION BUG, and `text-padding` is not the answer. `text-allow-overlap`
+       is off, the two layers are mutually exclusive on `_same`, and collision only ever sees candidates
+       that were already made. Widening the padding hides candidates that should never have existed —
+       and hides real countries along with them. The candidates are what is wrong.
+       The fix is the shape modern `ofm-country` has had all along: its names come from the vector
+       tiles' `place` layer, which is POINT data — one point per country. So the era names get a point
+       source of their own, one Point per era identity, rebuilt from `imtb-src` on every push.
+       `imtb-src` itself is untouched: it is still the borders, the fill, the click target, the Compare
+       paint and `resolveHist`'s geometry, and it is still the source that carries the attribution for
+       both (its `imtb-line` is visible in exactly the moments the labels are). */
+    const _lblPt=(typeof WeakMap!=='undefined')?new WeakMap():null;   /* geometry object → its label anchor. `_csGeomOf` memoizes ONE geometry object per CShapes record, so a decade of travel pays for a country's pole once. */
+    function _ringArea(r){ let s=0; for(let i=0,j=r.length-1;i<r.length;j=i++) s+=(r[j][0]-r[i][0])*(r[j][1]+r[i][1]); return Math.abs(s/2); }
+    /* the one polygon (outer ring + its holes) a country's name belongs on: the largest of its parts.
+       Honshū for Japan, the mainland for Chile — not whichever ring the data happens to list first. */
+    function _mainPoly(geom){ try{ const t=geom&&geom.type, cs=geom&&geom.coordinates; if(!cs) return null;
+      const polys=(t==='Polygon')?[cs]:(t==='MultiPolygon')?cs:null; if(!polys) return null;
+      let best=null,bestA=-1; for(const p of polys){ const r=p&&p[0]; if(!r||r.length<4) continue; const a=_ringArea(r); if(a>bestA){ bestA=a; best=p; } }
+      return best?{poly:best,area:bestA}:null; }catch(_){ return null; } }
+    /* signed distance from a point to a polygon's edges — positive inside, negative outside (the ray
+       cast and the nearest edge in one pass). This is the function the pole below maximizes. */
+    function _segD2(x,y,a,b){ let px=a[0],py=a[1],dx=b[0]-px,dy=b[1]-py;
+      if(dx||dy){ const t=((x-px)*dx+(y-py)*dy)/(dx*dx+dy*dy); if(t>1){ px=b[0]; py=b[1]; } else if(t>0){ px+=dx*t; py+=dy*t; } }
+      dx=x-px; dy=y-py; return dx*dx+dy*dy; }
+    function _polyD(x,y,poly){ let inside=false,min=Infinity;
+      for(let k=0;k<poly.length;k++){ const r=poly[k];
+        for(let i=0,j=r.length-1;i<r.length;j=i++){ const a=r[i],b=r[j];
+          if((a[1]>y)!==(b[1]>y)&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])) inside=!inside;
+          const dd=_segD2(x,y,a,b); if(dd<min) min=dd; } }
+      return (min===Infinity?0:(inside?1:-1)*Math.sqrt(min)); }
+    /* max-heap on a cell's optimistic bound — the priority queue the search below needs. Scanning the
+       array for the best cell is O(n) per pop and turns one snapshot into seconds. */
+    function _qPush(q,v){ q.push(v); let i=q.length-1; while(i>0){ const p=(i-1)>>1; if(q[p].m>=q[i].m) break; const t=q[p]; q[p]=q[i]; q[i]=t; i=p; } }
+    function _qPop(q){ const top=q[0], last=q.pop(); if(q.length){ q[0]=last; let i=0; for(;;){ const l=2*i+1,r=l+1; let m=i;
+      if(l<q.length&&q[l].m>q[m].m) m=l; if(r<q.length&&q[r].m>q[m].m) m=r; if(m===i) break; const t=q[m]; q[m]=q[i]; q[i]=t; i=m; } } return top; }
+    /* pole of inaccessibility (Mapbox's polylabel, in lng/lat): the interior point furthest from any
+       edge. The SAME quantity MapLibre computes per ring, so a country's one label lands where its
+       biggest part's label already landed — the duplicates are simply never made. */
+    function _pole(poly){ let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+      for(const p of poly[0]){ if(p[0]<x0)x0=p[0]; if(p[1]<y0)y0=p[1]; if(p[0]>x1)x1=p[0]; if(p[1]>y1)y1=p[1]; }
+      const w=x1-x0,h=y1-y0,cell=Math.min(w,h); if(!(cell>0)) return null;
+      const prec=Math.max(Math.max(w,h)/1000,1e-4);
+      const mk=(x,y,hh)=>{ const dd=_polyD(x,y,poly); return {x:x,y:y,h:hh,d:dd,m:dd+hh*Math.SQRT2}; };
+      const q=[], hh0=cell/2;
+      for(let x=x0;x<x1;x+=cell) for(let y=y0;y<y1;y+=cell) _qPush(q,mk(x+hh0,y+hh0,hh0));
+      let best=mk(x0+w/2,y0+h/2,0);
+      while(q.length){ const c=_qPop(q); if(c.d>best.d) best=c; if(c.m-best.d<=prec) continue;
+        const g=c.h/2; _qPush(q,mk(c.x-g,c.y-g,g)); _qPush(q,mk(c.x+g,c.y-g,g)); _qPush(q,mk(c.x-g,c.y+g,g)); _qPush(q,mk(c.x+g,c.y+g,g)); }
+      return (best.d>0)?[best.x,best.y]:null; }
+    /* a ring of more than `n` points costs `n` distance tests per cell, and Russia's mainland ring has
+       7,371 of them. Thinning the long ones halves a snapshot (MEASURED over CShapes 1914: 107 ms →
+       59 ms for 150 countries) and moves the largest country's pole by 0.4°. ⚠ A thinned ring is a
+       DIFFERENT polygon, so the answer is tested against the real one and recomputed exactly when it
+       fell off the land: the label may be approximate, it may not be in the sea. */
+    function _thinRing(r,n){ if(r.length<=n) return r; const o=[], st=r.length/n; for(let i=0;i<n;i++) o.push(r[Math.floor(i*st)]); o.push(r[0]); return o; }
+    function _anchor(geom,mp){ try{ if(_lblPt&&_lblPt.has(geom)) return _lblPt.get(geom); }catch(_){}
+      let pt=null;
+      try{ if(mp){ const lean=mp.poly.map(r=>_thinRing(r,600));
+        pt=_pole(lean);
+        if(!pt||_polyD(pt[0],pt[1],mp.poly)<=0) pt=_pole(mp.poly);
+        if(pt&&_polyD(pt[0],pt[1],mp.poly)<=0) pt=null; } }catch(_){ pt=null; }
+      if(!pt){ try{ const p=_interiorPts(geom,1); pt=(p&&p[0])||null; }catch(_){} }   /* degenerate / self-intersecting ring → the sampler that already answers this question elsewhere */
+      try{ if(_lblPt&&pt) _lblPt.set(geom,pt); }catch(_){}
+      return pt; }
+    /* ONE Point per era identity. The grouping key is `NAME`, which is the identity the rest of this
+       module already resolves by (`featureAt`, `geomFor`, `resolveHist`, `tagSame`), so a country whose
+       snapshot lists it as several features still gets one name — and the point carries that feature's
+       OWN properties, so `_same` (which of the two layers draws it), `_locName` / `_modName` (what it
+       says) and `NAME` (what a click opens) are exactly what they were.
+       ⚠ `_corrected` features are skipped: those are the ones `_mergeTibet` / `_mergeEastPrussia`
+       renamed into their successor with `_modName:''`, i.e. whose label is deliberately empty already.
+       ⚠⚠⚠ THE PROPERTIES ARE COPIED, AND THAT `Object.assign` IS LOAD-BEARING. Handing the point the
+       polygon's own properties object costs nothing and reads better — and it makes this source
+       UNWRITEABLE. js/geo-command-log.js `_sourceHolds` compares what a source already holds against
+       what it is being handed, and skips a write that would change nothing; its own comment says why
+       that needs care — «an object that was mutated is the same object». `tagSame` mutates each
+       feature's properties IN PLACE when the late-arriving identities land (#R410), so a shared
+       reference means the collection the source is holding changes at the same instant as the one
+       being built from it: deep-equal, write skipped, tiles never re-parsed. `imtb-src` is exempt only
+       because it is handed the very same object every time and `_sourceHolds` rule ① refuses to treat
+       identity as equality. MEASURED at 1916: `imtb-src` re-parsed with «Austria-Hungary», the era
+       labels kept drawing the untagged name, and the push that should have fixed them ran, built its
+       151 features, and was dropped one layer below. A copy is a different object, so a real change is
+       a real difference — and an unchanged year still skips, which is the point of that comparison. */
+    function _labelFC(fc){ const feats=[];
+      try{ const by=new Map();
+        for(const f of ((fc&&fc.features)||[])){ const p=f.properties||{};
+          if(p._corrected||!f.geometry) continue;
+          const key=String((p.NAME||p.name)||'').trim(); if(!key) continue;
+          const mp=_mainPoly(f.geometry); if(!mp) continue;
+          const cur=by.get(key); if(!cur||mp.area>cur.area) by.set(key,{f:f,mp:mp,area:mp.area}); }
+        by.forEach(v=>{ const pt=_anchor(v.f.geometry,v.mp); if(!pt) return;
+          feats.push({type:'Feature',geometry:{type:'Point',coordinates:[pt[0],pt[1]]},properties:Object.assign({},v.f.properties)}); });
+      }catch(_){}
+      return {type:'FeatureCollection',features:feats}; }
+    /* the names follow the borders on every push — one state, two sources. */
+    function _pushLbl(fc){ try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (ODbL) · historical-basemaps (aourednik)'});
+      /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
+         of its own: it is the same datasets, already credited by the source it is derived from, whose
+         `imtb-line` is on screen in exactly the moments these labels are. */
+      if(!GE().layers.hasSource('imtb-lbl-src')) GE().layers.addSource('imtb-lbl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       const before=['ofm-country','ofm-city','ofm-other'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       /* whole-country click target (near-invisible fill) + a highlight fill (shown on click, like modern countries) */
       if(!GE().layers.has('imtb-fill')) GE().layers.add({id:'imtb-fill',type:'fill',source:'imtb-src',paint:{'fill-color':'#000000','fill-opacity':0.001}}, before);
@@ -417,13 +541,28 @@ window.IntMapModules.timeBorders=function(HOST){
          all, so it would send every era label to the pan-Han face. The colours below are the literals
          `ofm-country` is born with; `applyLabelLang` now re-applies them per basemap for these two too. */
       const _ERAFONT=(function(){ try{ return window.IntMapMapTypography.readerFont(); }catch(_){ return ['Noto Sans SC']; } })();
+      /* ⚠ (#R520) ONE CANDIDATE IS ONE CHANCE, AND THAT IS THE COST OF THE POINT SOURCE. Before this
+         round a country had one label candidate per outer ring, so when the best one was blocked another
+         island's copy was placed instead — the thicket was also, accidentally, the redundancy. MEASURED
+         at 1916 over Europe the moment the duplicates went away: «German Empire» disappeared entirely,
+         because Germany's pole of inaccessibility is 40 km from Kassel and its collision box lands on
+         `ofm-city`'s «Frankfurt am Main», which wins. A country that had three parts kept its name; a
+         country that has one never would have.
+         `text-variable-anchor` is MapLibre's own answer to that: ONE symbol that may be placed at any of
+         several positions around its anchor, rather than several symbols. The label stays single and
+         stays on its country; it just steps aside from whatever is already there. `text-justify:'auto'`
+         is required with it (otherwise a wrapped name keeps centre justification while sitting on the
+         left of its anchor). ⚠ `ofm-country` does not need this and does not have it: its anchors come
+         from OSM's `place` layer, where a cartographer put them in clear space. These anchors are
+         computed from a border, which knows nothing about what else is drawn. */
+      const _ERAVAR={'text-variable-anchor':['center','top','bottom','left','right'],'text-radial-offset':0.65,'text-justify':'auto'};
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire).
          Filtered to _same!=1 (see tagSame). */
-      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-src',maxzoom:7,filter:['!=',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
+      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-lbl-src',maxzoom:7,filter:['!=',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
-      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-src',maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:{'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
+      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-lbl-src',maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!_clickWired){ _clickWired=true;
@@ -885,8 +1024,8 @@ window.IntMapModules.timeBorders=function(HOST){
          with the layers missing, and this early return then bypassed ensure() forever — the "年代を変えても歴史的
          国境が表示されない" report (data was being set on a source no layer drew). Layers gone → fall through to
          ensure(), which idempotently recreates them. */
-      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
-      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} try{ window._applyBorders(); }catch(_){} _afterApply(); }
+      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); _pushLbl(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
+      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
          ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls + hard-resolves after
@@ -898,6 +1037,7 @@ window.IntMapModules.timeBorders=function(HOST){
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
       try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
+      try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
     /* (#R421) `go` takes the INSTANT now, not the year. Callers that still hand it a number keep the old
@@ -955,7 +1095,7 @@ window.IntMapModules.timeBorders=function(HOST){
     window.addEventListener('intmap-hist-identity',()=>{ try{ if(!active||!shownFC||!Array.isArray(shownFC.features)) return;
       const sig=()=>JSON.stringify(shownFC.features.map(f=>{ const p=f.properties||{}; return [p._same||0,p._modName||'',p._locName||'']; }));
       const before=sig(); tagSame(shownFC,shownYear); if(sig()===before) return;
-      if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')) GE().layers.setSourceData('imtb-src',shownFC);
+      if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',shownFC); _pushLbl(shownFC); }
     }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
@@ -993,7 +1133,7 @@ window.IntMapModules.timeBorders=function(HOST){
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
-    GE().events.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!GE().layers.has('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!GE().layers.has('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} } window._applyBorders(); } }catch(_){} },160); });
+    GE().events.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!GE().layers.has('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!GE().layers.has('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} _pushLbl(fc); } window._applyBorders(); } }catch(_){} },160); });
     /* (#R94h) geometry of the era polygon whose NAME matches — used to paint compared former states.
        (#R94o) pick the LARGEST match, not the first: a broad regex like the British-Raj `/^india$/` also hits a
        tiny mislabeled "India" sliver in the 1900 data (a 28-pt strip near the Iran border), and `.find()` grabbed

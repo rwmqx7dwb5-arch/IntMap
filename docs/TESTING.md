@@ -22,7 +22,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
 **102 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
-`npm run test:checks` runs **292 Node test files** with no browser at all (counted from
+`npm run test:checks` runs **293 Node test files** with no browser at all (counted from
 
 > ⚠ **(#R505) そのうち1本は、ソースを読むのではなく Edge Function を「走らせる」。**
 > `tests/r505-checks.test.mjs` ① は 13 本すべての `supabase/functions/*/index.ts` を
@@ -30,6 +30,16 @@ gates a push is **6 spec files / 0.5 min** against a ceiling of 0.5 min; the **w
 > 一覧はディレクトリから発見）。#R504 は `const` を、それが読む `const` の 45 行**上**に置いて
 > 出荷し、**本番の全リクエストが 500 `WORKER_ERROR`** になった——それでも `check:static`・
 > `npm test` 3,136 本・CI は全部緑だった。**構文を読む検査は、順序を見ない。**
+
+> ⚠ **(#R520) もう1本、ソースを読むかわりに「取り出して走らせる」検査がある。**
+> `tests/r520-checks.test.mjs` は出荷される `js/time-borders.js`（module ではなく IIFE）から
+> `_labelFC` とその補助関数を**文字列のまま `vm` に取り出して評価し**、同梱の `data/cshapes.js` から
+> 組み立てた本物のスナップショットに当てる。主張は「1国につきラベル1個」「1国も落ちない」
+> 「全アンカーが自国の陸の上（**検査側に独立に書いた point-in-polygon で**訊く）」。
+> 直前まで `imtb-lbl` / `imtb-lbl2` は国境ポリゴンから描かれていて**外環1つにつき1ラベル**
+> （1900 年で 151 か国＝1,583 環）だったが、`tests/r309`（宣言の突き合わせ）も `tests/r410`
+> （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
+> 数を数えるものがどこにも無かった。
 `package.json`, which since #R385 may not name the same file twice — see below). The nightly
 **deep** tier — **96 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).

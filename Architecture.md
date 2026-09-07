@@ -1540,6 +1540,15 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   1916 年の «Russia» は地図でもクリックでも「ロシア帝国」になる。
   `countryStats` がまだ届いていない回のために、`js/time-countries.js` は身元が変わるたび
   **`intmap-hist-identity`** を投げ、ラベルは表示中のスナップショットを**貼り直す**（札が動いたときだけ）。
+- ⚠ **昔の国名ラベルは、国境ポリゴンとは別の点ソース（`imtb-lbl-src`）から描く。** ポリゴンに
+  `symbol-placement:'point'` を当てると、レンダラは**外環ひとつにつき1個**ラベル候補を作るので、
+  ラベルの数が国の数ではなく**島の数**になる。`js/time-borders.js` の `_labelFC()` が、境界を書くたびに
+  `imtb-src` から **1 identity（`NAME`）＝1 Point** を作り直す。点はその地物の properties をそのまま持ち、
+  アンカーは**最大の部分**の pole of inaccessibility（geometry ごとに `WeakMap` で記憶）。
+  点の properties は**写し**で、共有すると `_sourceHolds` が「変わっていない」と判定して書き込みが
+  飛ぶ。候補が1つになったぶん、2層は `text-variable-anchor` で**写しを増やさずに置き場所を増やす**。
+  レイヤーの見た目・クリック・パディング付きタップ・`applyLabelLang()` の塗り直しは変わらない。
+  詳細と実測値は [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md)。
 - **都市名ラベルも時計に従う**（`js/hist-cities.js` の `window.IntMapHistCities`・記録は
   `scripts/histcities/` → `data/hist-cities.json`・**608都市／685の歴史名**・9言語すべて）。
   1942年のヴォルゴグラードは**スターリングラード**、1867年の東京は**江戸**、1960年のサンクトペテルブルクは

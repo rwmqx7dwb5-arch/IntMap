@@ -930,6 +930,36 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   era の文字列は `_locName` / `_modName` として**すでに読み手の言語**で焼き込まれており、地物に
   `name:*` キーが1つも無いので、`placeFont()` の per-label `case` は必ず汎 Han 面へ倒れてしまう。
   （`visibility` だけは `window._applyBorders()` の持ち物——時間旅行中は**常に**表示する。#R94l）
+- ⚠⚠⚠ **昔の国名は、国境ポリゴン（`imtb-src`）ではなく専用の点ソース `imtb-lbl-src` から描く。**
+  `symbol-placement:'point'` を Polygon に当てると、MapLibre は `classifyRings()` で分けた
+  **外環ひとつにつき1個**ラベル候補を作る（`findPoleOfInaccessibility` を各環に当てる）ので、
+  ラベルの数は**国の数ではなく島の数**になる。実測（`data/cshapes.js`・1900-07-01）**151 か国＝
+  1,583 外環**——日本 30・朝鮮 7・カナダ 268。⚠ **これは衝突判定の不具合ではない**（`text-allow-overlap`
+  は off・2層は `_same` で排他）。`text-padding` を広げても、**作ってはいけない候補を隠す**だけで、
+  ついでに本物の国も隠す。`_labelFC()` が `imtb-src` から **1 identity（`NAME`）＝1 Point** を作り直し、
+  点は**その地物自身の properties をそのまま持つ**（`_same`・`_locName`/`_modName`・`NAME`）。
+  アンカーは**最大の部分**の pole of inaccessibility（本州・チリ本土）で、`WeakMap` に地物の geometry で
+  覚える（CShapes は記録ごとに geometry を1つだけ作るので、10年ぶんの移動で1回しか解かない）。
+  ⚠ **境界を書くたびに名前も書く**——2つのソースは1つの状態で、片方だけ書くと**名前が前の年のまま残る**。
+  出典表記は `imtb-src` が持ち続ける（同じ2つのデータで、`imtb-line` はラベルが出ている間つねに画面にある）。
+- ⚠⚠⚠ **点の properties は写しである**（`Object.assign`）。ポリゴンの properties オブジェクトを
+  そのまま持たせると、**この source は書けなくなる**。`js/geo-command-log.js` の `_sourceHolds` は
+  「source が今持っているもの」と「渡されたもの」を比べて、変わらない書き込みを飛ばす——そして
+  その関数自身が書いているとおり「**mutate されたオブジェクトは同じオブジェクト**」である。
+  `tagSame` は身元が遅れて届いたとき（#R410）properties を**その場で書き換える**ので、参照を共有すると
+  「source が持っているもの」も同時に変わり、deep-equal ＝ 書き込みは飛ばされ、タイルは再解析されない。
+  `imtb-src` が助かっているのは**毎回まったく同じオブジェクトを渡していて**、`_sourceHolds` の規則①が
+  「同一性は等値の証明にならない」と拒むから。実測（1916）: `imtb-src` は «Austria-Hungary» で
+  再解析されたのに、era ラベルは tag 前の名前を描き続け、直すはずの push は走って 151 件を組み立てて
+  1つ下の層で捨てられていた。
+- ⚠⚠ **候補が1つということは、機会が1つということ**。以前は環ごとに候補があったので、最良の位置が
+  塞がれていても別の島の写しが置かれた——**あの茂みは、同時に冗長性でもあった**。重複が消えた瞬間の実測:
+  1916 のヨーロッパで «German Empire» が**丸ごと消えた**（ドイツの pole of inaccessibility はカッセルの
+  近くで、`ofm-city` の «Frankfurt am Main» に負ける）。そこで 2 層は
+  **`text-variable-anchor`**（＋ `text-radial-offset` 0.65・`text-justify:'auto'`）を持つ:
+  **写しを増やさずに置き場所を増やす**、MapLibre 自身の仕組み。⚠ `ofm-country` にこれは要らないし、
+  付いてもいない——あちらのアンカーは OSM の `place` ＝人が空いている所に置いた点で、こちらは
+  **国境から計算した点**で、他に何が描かれているかを知らない。
 - ⚠ **昔の国名ラベルのクリックは `claimClick` を必ず呼ぶ。** 配線があってもポップアップは出ない——
   `js/map-ui.js` の汎用クリック fallback は「自分の `ALL_LBL` に当たらなかった」ときに `clearHL()` を
   呼び、それがポップアップを**消す**。fallback は microtask（`_deferLabel`）なので、同期で開いた

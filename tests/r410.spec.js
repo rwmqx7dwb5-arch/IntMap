@@ -76,14 +76,23 @@ const READ = () => {
     return '';
   };
   const drawn = {};
+  /* (#R520) …and HOW MANY TIMES each was drawn. `drawn` is keyed by polygon name, so it collapses
+     copies — and the copies were the defect: the two layers read the border POLYGONS, and a symbol
+     layer answers a polygon with one anchor PER OUTER RING, so a country was named once per island.
+     Measured on the build before #R520, at this camera: France ×2, Italy ×2, Spain ×2, Greece ×2. */
+  const copies = {};
   for (const id of ['imtb-lbl', 'imtb-lbl2']) {
     let tf = null; try { tf = map.getLayoutProperty(id, 'text-field'); } catch (_) { }
     let fs = []; try { fs = map.queryRenderedFeatures({ layers: [id] }); } catch (_) { }
-    for (const f of fs) drawn[String(f.properties.NAME || f.properties.name || '')] = evalTF(tf, f.properties);
+    for (const f of fs) {
+      const nm = String(f.properties.NAME || f.properties.name || '');
+      drawn[nm] = evalTF(tf, f.properties);
+      copies[nm] = (copies[nm] || 0) + 1;
+    }
   }
   const list = [];
   document.querySelectorAll('.stat-row .stat-name').forEach((n) => list.push(n.textContent.trim()));
-  return { drawn, list, listOpen: !!(window._countriesActive && window._countriesActive()) };
+  return { drawn, copies, list, listOpen: !!(window._countriesActive && window._countriesActive()) };
 };
 
 /* ⚠ THE WAITS BELOW ARE BUILD-INDEPENDENT ON PURPOSE. Waiting for «German Empire» to appear would be
@@ -157,6 +166,20 @@ test('R410 ① 1939 へ進んでから 1916 へ戻すと、描かれた国名も
   expect(seen, 'the 1939 name must not survive the move back to 1916').not.toContain('Nazi Germany');
   expect(seen, 'the Spanish Republic did not exist in 1916').not.toContain('Spanish Republic');
 
+  await test.step('R520 一国につき一つ: 同じ国名が二度描かれない', async () => {
+    /* ⚠ THE STAGE IS ALREADY PAID FOR — a booted app, travelled to 1916, over Europe — and this is
+       the same subject as the test around it: the era country labels. The claim it adds is the one
+       nothing in the repository was making. `queryRenderedFeatures` returns the symbols that were
+       PLACED, so this counts what a reader actually sees, not what the source holds.
+       Measured on the build before #R520, at this camera and this year: 17 labels for 13 countries —
+       France, Italy, Spain and Greece each named twice, and four other countries losing their place
+       in the collision grid to those copies. */
+    const twice = Object.entries(r.copies).filter(([, n]) => n > 1);
+    expect(twice.map(([nm, n]) => `${nm}×${n}`),
+      'a country is named once. More than one label for the same polygon means the labels are being made per RING again')
+      .toEqual([]);
+    expect(Object.keys(r.copies).length, 'and there really were labels on screen to count').toBeGreaterThan(5);
+  });
 
   await page.evaluate(() => window.IntMapTime.setNow({ source: 'test' }));
   await page.waitForTimeout(400);
