@@ -39,6 +39,9 @@
  *    feed_coordinate         a coordinate a data feed published for this object (USGS, GVP, ADS-B).
  *    event_location          the position an event record carries.
  *    geocoded_point          a gazetteer hit for a NAME that resolves to a point (a station, a port).
+ *    web_verified            a point a LIVE WEB SEARCH vouched for, for a name no gazetteer holds
+ *                            (#R515). It denotes a spot, so it is POINT_LIKE — but it is weaker than a
+ *                            gazetteer feature and must stay distinguishable from one.
  *    resolved_place_centroid a representative point STANDING IN for an area. NOT a location.
  *    model_named             a name the model produced and nothing has resolved yet. lat/lng null.
  *
@@ -58,10 +61,10 @@ export function makeAtlasGeoObject() {
     /* Ordered most-specific-first: `best()` prefers an earlier class when two records describe the
        same object, so a feed coordinate is never replaced by a centroid for the same name. */
     var PROVENANCE = ['user_specified', 'map_click', 'feed_coordinate', 'event_location',
-      'geocoded_point', 'resolved_place_centroid', 'model_named'];
+      'geocoded_point', 'web_verified', 'resolved_place_centroid', 'model_named'];   /* (#R515) */
 
     /* The classes that denote an actual spot. A centroid denotes an AREA and is excluded on purpose. */
-    var POINT_LIKE = ['user_specified', 'map_click', 'feed_coordinate', 'event_location', 'geocoded_point'];
+    var POINT_LIKE = ['user_specified', 'map_click', 'feed_coordinate', 'event_location', 'geocoded_point', 'web_verified'];
 
     /* Only a coordinate the reader themselves supplied may be called theirs. */
     var USER_POINT = ['user_specified', 'map_click'];

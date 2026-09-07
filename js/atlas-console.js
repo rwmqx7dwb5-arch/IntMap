@@ -975,7 +975,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       /* (#R130) web-verify ambiguous / water / fuzzy targets ONCE (lazy, cached, fail-open). Used as a Nominatim
          ANCHOR (disambiguate the 8 candidates) and to REJECT wrong-place geometry below. The exact-country and
          region-group rungs above already returned, so this only runs for the genuinely uncertain long tail. */
-      let _gv=null,_gvTried=false; const _getGV=async()=>{ if(!_gvTried){ _gvTried=true; try{ _gv=await geoVerify(nm); }catch(_){ _gv=null; } } return _gv; };
+      let _gv=null,_gvTried=false; const _getGV=async()=>{ if(!_gvTried){ _gvTried=true; try{ _gv=await geoVerify(nm,{turnId:_curTurnKey}); }catch(_){ _gv=null; }   /* (#R515) inside the reader's paid turn (#R318), not a use of its own */ } return _gv; };
       /* (#R136) if the name is a CURATED macro-region (Patagonia, Siberia, Sahel…), a Nominatim hit that sits OUTSIDE
          that reviewed extent is a homonym (Patagonia the Arizona town, ~13000 km from the South-American region) —
          reject it so we fall through to the curated gazetteer box below instead of painting the wrong-place homonym. */
@@ -1185,7 +1185,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _setLast=h=>{ if(h&&h.lng!=null&&h.lat!=null){ _lastPlace={lng:+h.lng,lat:+h.lat,name:h.name||''}; } return h; };
     /* (#R199) ↳ js/atlas-geo-resolve.js — place / region resolution and camera framing.
        Moved whole; the 16 names below are what the rest of this file still calls. */
-    const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geocode, parseDirectional, placeExtent, regionBox, sliceBox } = makeAtlasGeoResolve(HOST, { GE, L, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
+    const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox } = makeAtlasGeoResolve(HOST, { GE, L, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
     const { clickId, controlCatalog, doControl, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
@@ -1764,7 +1764,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        a captured value: this closure REPLACES the array, so a copy would go stale. */
     const _pinReplyPlaces = makePinReplyPlaces({ GE, GEOBJ, L, geocode, paintPois, ledger: GLEDGER,   /* (#R489) the audit RESOLVES places and then threw the result away — it is the one pass that sees every place an answer named, so it is where the conversation learns them (js/atlas-geo-ledger.js) */
       getPois: () => _pois, setPois: (v) => { _pois = v; } });
-    const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } } });   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
+    const COMPOSE = makeAtlasMapCompose({ GE, L, esc, geocode, verifyPlaces: (names, ms) => geoVerifyMany(names, { turnId: _curTurnKey, timeoutMs: ms }), verifyStrong: _gvStrong, ledger: GLEDGER, geoObject: GEOBJ.geoObject, parseColor, dispatch: (x) => dispatch(x), countryCodeAt: (lng, lat) => { try { return (typeof codeAtPoint === 'function') ? (codeAtPoint(lng, lat) || '') : ''; } catch (_) { return ''; } } });   /* (#R511) js/atlas-map-compose.js — the ledger it files into is the one the pin audit and `pin` read, so a place composed here is data for the next turn. `dispatch` is hoisted; the lambda is read at run time. */
     /* ---- dispatch (every action maps to REAL existing engine code — "IntMapの全動作") ---- */
     async function dispatch(a){ if(!a||!a.type) return R(true,''); switch(a.type){
         case 'gloss': return GLOSS.dispatch(a);   /* (#R491) 「この言葉の意味は」 — the same card the reader raises by right-clicking a phrase. Spends the gloss lane, not a question; paints nothing */

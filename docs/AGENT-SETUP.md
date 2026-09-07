@@ -200,3 +200,18 @@ node --test tests/r503-checks.test.mjs
 `check:agents` が落ちる典型は 3 つ——**天井に当たった**（§1）、
 **生成物を直接編集した**（`--write` で戻る）、**`CLAUDE.md` の `@AGENTS.md` を消した**
 （Claude Code のセッションが恒久指示ごと無くなる）。
+
+## 9. Edge Function の deploy に `--use-api` が要る理由（実測）
+
+`AGENTS.md` §5.1 のコマンドが `--use-api` を持っているのは、このマシンの状態を測った結果である。
+
+- 既定のバンドルは **Docker** を使う。`docker --version` は **29.6.1** を返す（＝CLI は入っている）が、
+  止まっているのは**デーモン**で、`docker info` は `failed to connect to the docker API at npipe:…`
+  を返す（実測 2026-08-24）。
+- 旗が無いと **標準出力が 1 バイトも出ないまま 600 秒経っても終わらない**ので、「まだ実行中」と
+  「詰まっている」の区別がつかない。
+- ⚠ **進んでいるかどうかは経過時間ではなく `supabase functions list` の `version` / `updated_at`**
+  で判定する。
+
+⚠ この節は `AGENTS.md` から移してきたものである（#R515）。**`AGENTS.md` には 32,768 バイトの天井が
+あり、超えた分は無言で落ちる**ので、測定の詳細はここが正本で、`AGENTS.md` は 1 行で指すだけにする。

@@ -17,6 +17,7 @@
 | [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定 | 対応する製品・その設定が変わったとき |
 | [`../CONSTITUTION.md`](../CONSTITUTION.md) | 同上 | **何を守るか** — 製品の不文律、壊れやすい罠、地図・モバイルの作法、鍵とニュースの方針、文書の分担 | ユーザーが方針を変えたとき |
 | [`../.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) | 作業する AI | **どう速く・安全にやるか** — 依頼の分解、並列化と委譲の判断基準、並列編集の隔離、検証の段、context の節約（`AGENTS.md` §5.0 の正本） | 並列化・委譲・検証の方針が変わったとき |
+| [`../.agents/rules/no-ad-hoc-hardcoding.md`](../.agents/rules/no-ad-hoc-hardcoding.md) | 作業する AI | **場当たりのハードコーディングの禁止** — 報告された 1 件のための分岐・特例・埋め込み一覧を足さず、その事例を生んだ構造を直す。着手前の 3 問、定数に必ず書く 3 点、実測された失敗の形（`AGENTS.md` §3 の 9 の正本） | 新しい「場当たりの形」を実測したとき（表に 1 行足す） |
 | [`../.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) | 同上 | **ラウンド 1 本を通す具体的な手順**（Claude `/intmap-round`／Codex `$intmap-round`）— 着手前・作業場・実装・文書・検証・PR・merge・deployment・終了処理の実行順。規則ではなく**順番とコマンド** | 工程の順やコマンドが変わったとき |
 | `../.agents/roles/*.md` | 同上 | **専用 subagent の定義**（scout / verifier / i18n / implementer / prod-verifier）。本文は起動されたときだけ読まれるので、詳しい手順はここに置く。⚠ **`.claude/agents/` と `.codex/agents/` はここからの生成物**（`npm run check:agents`） | 役割を足す・変えるとき |
 | `../CLAUDE.local.md` | このマシンだけ | 資格情報とローカル固有の情報（**追跡対象外**。リポジトリは public） | 資格情報が変わったとき |

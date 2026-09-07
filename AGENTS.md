@@ -121,6 +121,10 @@ node scripts/worktree.mjs status
 8. **各指示について、要求された作業を可能な限り 1 回のパスで完了する。**
    不必要に作業を分割し、同じ種類の確認・修正・テスト・deployment をユーザーに何度も要求してはならない。
 
+9. **場当たりのハードコーディングで逐事的に対処してはならない。** 報告された 1 件のための分岐・特例・
+   埋め込み一覧を足さず、**その事例を生んだ構造**を直す。判断はデータ・上流・Atlas に訊き、コードは
+   根拠のないものを拒む。正本 `.agents/rules/no-ad-hoc-hardcoding.md`。
+
 ---
 
 ## 4. テストとデータベース
@@ -180,12 +184,9 @@ node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなけ�
 supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac --use-api
 ```
 
-⚠ **`--use-api` を省くと無言でハングする。** 既定のバンドルは Docker を使うが、このマシンでは
-**デーモンが動いていない**（実測 2026-08-24: `docker --version` は **29.6.1** を返す＝CLI は入って
-いる。止まっているのはデーモンで、`docker info` は `failed to connect to the docker API at
-npipe:…` を返す）。旗が無いと**標準出力が 1 バイトも出ないまま 600 秒経っても終わらない**ので、
-「まだ実行中」と区別がつかない。⚠ **進んでいるかどうかは経過時間ではなく
-`supabase functions list` の `version` / `updated_at` で判定する。**
+⚠ **`--use-api` を省くと無言でハングする**（Docker デーモンが止まっている）。⚠ **進んでいるかは
+経過時間ではなく `supabase functions list` の `version` / `updated_at` で見る。**実測と理由は
+[`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9。
 
 **Edge Functions は 14 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
 `delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `refresh-news` /

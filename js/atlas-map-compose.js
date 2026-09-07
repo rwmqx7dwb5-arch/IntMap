@@ -22,7 +22,11 @@
  *  The prose Atlas writes afterwards is linked to those numbers by code (`linkProse`): hovering a
  *  name in the answer lights its marker; hovering a marker lights the name.
  *
- *  ⚠ THE MODEL NAMES PLACES; IT NEVER WRITES A COORDINATE. Every item is resolved the way
+ *  ⚠ THE MODEL NAMES PLACES; IT NEVER WRITES A COORDINATE — but deciding WHAT a name means is its
+ *  work, not the gazetteer's (#R515). Three rungs: the ledger, then OSM, then ONE web-search-grounded
+ *  verification carrying EVERY name OSM could not place — one question, one wait, one call. A point that
+ *  only the web could vouch for is placed as `web_verified`, never as a gazetteer feature, and a name
+ *  no rung can ground is still `unplaced`. Every item is resolved the way
  *  js/atlas-geo-ledger.js already resolves: a place this conversation has seen is taken from the
  *  ledger (no second lookup), anything else is geocoded by name+country with the #R489 rule that the
  *  country is appended only when it is not already there, and a place that cannot be resolved in
@@ -47,6 +51,21 @@ export function makeAtlasMapCompose(deps) {
     const esc = (typeof deps.esc === 'function') ? deps.esc
       : ((s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]));
     const geocode = deps.geocode;             /* async (query) -> {lng,lat,name,bbox?} | null */
+    /* ⚠ (#R515) THE GAZETTEER IS A SHORTCUT, NOT THE AUTHORITY ON WHAT A NAME MEANS.
+       js/atlas-geo-resolve.js's geoVerify — one web-search-grounded question per name, cached,
+       fail-open — has existed since #R130 and had exactly ONE caller: the highlight resolver. The
+       map explanation, which is the one place an ANSWER puts named points in front of the reader,
+       was given the weakest resolver in the file and nothing else, so 「宇部港」 was whatever OSM's
+       free-text search happened to rank first. Deciding what a place IS is Atlas's work; the code's
+       work is to refuse what cannot be grounded. `verifyStrong` is #R130's own bar (the web search
+       actually ran, and the confidence is not a shrug) — the same predicate the highlight path
+       rejects geometry on, not a second opinion invented here.
+       ⚠ IT TAKES THE WHOLE LIST, NOT ONE NAME. supabase/functions/ai-proxy charges ONE USER TURN =
+       ONE USE (#R318) and bounds a turn at TURN_MAX_CALLS; a call per missing name would have spent
+       a map's worth of the reader's daily allowance and could have run the turn out of calls. */
+    const verifyPlaces = deps.verifyPlaces;   /* async (names[], ms) -> Map<name, {found,lat,lng,kind,country,altNames,confidence,webUsed}|null> */
+    const verifyStrong = (typeof deps.verifyStrong === 'function') ? deps.verifyStrong
+      : ((gv) => !!(gv && gv.found && gv.webUsed && (gv.confidence == null || gv.confidence >= 0.5)));
     const ledger = deps.ledger || null;       /* js/atlas-geo-ledger.js */
     const geoObject = deps.geoObject || null; /* js/atlas-geo-object.js — provenance classes */
     const dispatch = deps.dispatch;           /* the console's dispatch, for fills (highlight) */
@@ -56,6 +75,9 @@ export function makeAtlasMapCompose(deps) {
     /* ── Budgets: measured against js/atlas-verify.js's pinning pass (8 s a name, 20 s a pass) ── */
     const ITEM_TIMEOUT_MS = Math.max(1000, +deps.itemTimeoutMs || 8000);
     const PASS_BUDGET_MS = Math.max(2000, +deps.passBudgetMs || 26000);
+    /* the escalation runs ONCE for all the names the gazetteer missed, together — so the cost is one
+       verification's latency, not one per name (geoVerify aborts itself at 11 s). */
+    const VERIFY_BUDGET_MS = Math.max(0, deps.verifyBudgetMs == null ? 14000 : +deps.verifyBudgetMs);
     const MAX_ITEMS = 24;
     const MAX_RELATIONS = 24;
 
@@ -257,6 +279,8 @@ export function makeAtlasMapCompose(deps) {
       const withCountry = !!(country && norm(name).indexOf(norm(country)) < 0);
       const tries = withCountry ? [name + ', ' + country, name] : [name];
       let g = null;
+      /* (#R515) the spellings that were actually asked for. A `not_found` is a fact about THE NAME, and
+         the model is the only party that can supply a different one — so it is told which it has spent. */
       for (const q of tries) {
         const remain = deadline - now();
         if (remain <= 0) return { ok: false, reason: 'timeout' };
@@ -265,7 +289,7 @@ export function makeAtlasMapCompose(deps) {
         if (g && num(g.lng) != null && num(g.lat) != null) break;
         g = null;
       }
-      if (!g) return { ok: false, reason: 'not_found' };
+      if (!g) return { ok: false, reason: 'not_found', tried: tries.slice() };
       const bbox = (g.bbox && Array.isArray(g.bbox) && g.bbox.length === 2) ? [g.bbox[0][0], g.bbox[0][1], g.bbox[1][0], g.bbox[1][1]] : null;
       let cc = '';
       try { if (typeof deps.countryCodeAt === 'function') cc = str(deps.countryCodeAt(+g.lng, +g.lat), 3); } catch (_) { cc = ''; }
@@ -361,6 +385,43 @@ export function makeAtlasMapCompose(deps) {
       const base = records.length;
       const placed = [], unplaced = [], fills = [];
 
+      /* ── pass 1: the ledger and the gazetteer, in order (each is cached or one bounded request) ── */
+      const resolved = [];
+      for (let i = 0; i < items.length; i++) resolved[i] = await resolveOne(items[i], deadline);
+
+      /* ── pass 2: every name the gazetteer could not place goes to Atlas and the live web AT ONCE ──
+         ⚠ ONE QUESTION CARRYING THE WHOLE LIST — not one per name. Six misses are one verification's
+         wait and one call inside the reader's already-paid turn. A name that was never in OSM
+         (「宇部港」) is exactly the case the reader asked about, and dropping it is not a better answer
+         than misplacing it — only an honester one. */
+      if (typeof verifyPlaces === 'function' && VERIFY_BUDGET_MS > 0) {
+        const misses = [], asked = [];
+        for (let i = 0; i < resolved.length; i++) {
+          if (resolved[i].ok || resolved[i].reason !== 'not_found') continue;
+          misses.push(i);
+          asked.push((resolved[i].tried && resolved[i].tried[0]) || str(items[i].name, 120));
+        }
+        if (misses.length) {
+          let found = null;
+          try { found = await withTimeout(verifyPlaces(asked.slice(), VERIFY_BUDGET_MS), VERIFY_BUDGET_MS + 1000); } catch (_) { found = null; }
+          const get = (q) => { try { return (found && typeof found.get === 'function') ? found.get(q) : (found ? found[q] : null); } catch (_) { return null; } };
+          misses.forEach((i, k) => {
+            const it = items[i];
+            const gv = get(asked[k]);
+            if (!verifyStrong(gv) || num(gv.lng) == null || num(gv.lat) == null) {
+              resolved[i] = { ok: false, reason: 'not_found', tried: resolved[i].tried, verified: false };
+              return;
+            }
+            let cc = '';
+            try { if (typeof deps.countryCodeAt === 'function') cc = str(deps.countryCodeAt(+gv.lng, +gv.lat), 3); } catch (_) { cc = ''; }
+            resolved[i] = { ok: true, lng: +gv.lng, lat: +gv.lat, canonical: str(it.name, 120), cc,
+              provenance: 'web_verified', bbox: null, source: 'web_verify', confidence: gv.confidence,
+              altNames: Array.isArray(gv.altNames) ? gv.altNames.slice(0, 6).map((x) => str(x, 120)).filter(Boolean) : [] };
+          });
+        }
+      }
+
+      /* ── pass 3: the records, IN ITEM ORDER — the numbering is the order Atlas listed them ── */
       for (let i = 0; i < items.length; i++) {
         const it = items[i];
         const role = str(it.role || it.note, 120);
@@ -370,14 +431,14 @@ export function makeAtlasMapCompose(deps) {
           const f = await fill(it, colour, a);
           fills.push({ name: str(it.name, 120), ok: f.ok, reason: f.reason || '' });
         }
-        const res = await resolveOne(it, deadline);
-        if (!res.ok) { unplaced.push({ name: str(it.name, 120), reason: res.reason }); continue; }
+        const res = resolved[i];
+        if (!res.ok) { unplaced.push({ name: str(it.name, 120), reason: res.reason, ...(res.tried ? { tried: res.tried } : null), ...(res.verified === false ? { webVerified: false } : null) }); continue; }
         const sid = fileInLedger(it, res, role);
         const rec = { id: sid || (composeId + ':' + (base + placed.length + 1)), n: base + placed.length + 1, name: str(it.name, 120), canonical: res.canonical,
           kind: str(it.kind, 40), country: str(it.country, 90), role: role, color: colour, lng: res.lng, lat: res.lat, provenance: res.provenance,
           bbox: res.bbox, source: res.source, compose: composeId, run: prun,
           item: i + 1,   /* the 1-based position in THIS call's `items` — what a numeric `from`/`to` refers to (see below) */
-          spellings: [str(it.name, 120), res.canonical].filter(Boolean) };
+          spellings: [str(it.name, 120), res.canonical].concat(res.altNames || []).filter(Boolean) };
         placed.push(rec);
       }
       records = records.concat(placed);
@@ -413,9 +474,9 @@ export function makeAtlasMapCompose(deps) {
       const anyFill = fills.some((f) => f.ok);
       const ok = anyDrawn || anyFill;
       const exec = { status: ok ? (unplaced.length || skipped.length ? 'partial' : 'ok') : 'failed', compose: composeId,
-        placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance })),
+        placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
         unplaced, relationsDrawn: drawn.length, relationsSkipped: skipped, fills: fills.length ? fills : undefined,
-        note: unplaced.length ? 'The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown.' : undefined };
+        note: unplaced.length ? 'The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown. `not_found` means the gazetteer holds no feature under the spellings in `tried` — IntMap will not stand a stranger in for a name it cannot find (#R515), so nothing was placed and no relation touching it was drawn. If another name means the same place — the municipality or ward it is in, its official or local spelling, the facility rather than the district — you may call compose_map again with that name; otherwise tell the reader it could not be placed. `webVerified:false` means the live-web check was also asked and could not ground the name.' : undefined };   /* (#R515) the code stops guessing, so the model is handed the fact AND the move that is still open to it */
       const html = ok ? legendHtml(a.title, placed, drawn, unplaced, fills) : '';
       const meta = { code: ok ? 'ok' : 'PLACE_NOT_FOUND', produced: ok ? ['map', 'explanation'] : [], compose: { id: composeId, placed: placed.map(pub), unplaced, relations: drawn.length, fills: fills.length } };
       if (!ok) { meta.category = 'input'; meta.retryable = true; meta.message = 'None of the named places could be placed.'; }

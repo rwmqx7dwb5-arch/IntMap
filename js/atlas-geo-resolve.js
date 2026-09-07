@@ -80,6 +80,59 @@ export function makeAtlasGeoResolve(HOST, CTX) {
     function _coordPlace(place){ const m=COORD_RE.exec(place); if(!m) return null;
       const lat=+m[1], lng=+m[2]; if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180) return null;
       return {lng,lat,name:lat.toFixed(4)+', '+lng.toFixed(4)}; }
+    /* ⚠ (#R515) A NAME NOMINATIM CANNOT FIND COMES BACK AS SOMETHING ELSE, AND IT COMES BACK 200 OK.
+       Measured on the live gazetteer, with the query the map explanation actually sends:
+         「宇部港, 日本」      → 日本郵便 — a POST BOX in 浜松市 (importance 0.00007)
+         「岩国・大竹地区, 日本」→ 国立がん研究センター中央病院, 築地, 東京都
+         「徳山下松港, 日本」   → 福岡下山門団地郵便局, 福岡市
+         「新居浜港, 日本」     → 西日本鉄道多々良工場, 福岡市
+       Free-text search DROPS the terms it cannot match and ranks what is left, so a place that is
+       simply not in OSM under that name returns a stranger rather than nothing — and `limit=1` hid
+       even the possibility of comparing. The reader then saw the right LABEL over the wrong point,
+       and js/atlas-map-compose.js drew great-circle relations between those points: the reported
+       「無意味な線」. The sibling resolver in this same file (_nomExtent) has had candidates, a class
+       penalty, an exact-name bonus and an honest-miss guard since #R53/#R116/#R136 — the POINT path
+       never got them, which is why a rule that exists in the file did not protect the map.
+       So: ask for CANDIDATES, and keep only one whose OWN NAME agrees with what was asked for.
+       ⚠ AGREEMENT IS MEASURED AGAINST THE FEATURE'S NAMES, NOT ITS ADDRESS. 「新居浜港」 appears in
+       コープ's display_name because the shop stands on 新居浜港線 — matching the address would have
+       kept exactly the class of answer this fixes. The one exception is a query carrying a HOUSE
+       NUMBER (「1600 Pennsylvania Avenue NW」), which by construction lives in the address and not in
+       any feature's name; that case is gated on the digit and needs near-total coverage. */
+    const NAME_NOISE_RE=/[\s\u3000.,\u30fb\uff65\u3001\u3002'\u2019"\u201c\u201d()\uff08\uff09\[\]\u3014\u3015\-\u2013\u2014_/\\|:;!?\uff01\uff1f]+/g;
+    /* fold width, case and diacritics so 「Rīga」/「Riga」 and 「ｱ」/「ア」 are one spelling */
+    function _nkey(x){ try{ return String(x==null?'':x).normalize('NFKC').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(NAME_NOISE_RE,''); }catch(_){ return String(x==null?'':x).toLowerCase().replace(/\s+/g,''); } }
+    function _bigrams(x){ const o=[]; for(let i=0;i<x.length-1;i++) o.push(x.slice(i,i+2)); return o; }
+    /* Dice over character bigrams — the one similarity that works for a script without spaces and for
+       one with them, so 「宇部港」vs「日本郵便」 and "Riga" vs "Town of Riga" are judged the same way. */
+    function _dice(a,b){ if(a.length<2||b.length<2) return a===b?1:0; const A=_bigrams(a),B=_bigrams(b),m=new Map();
+      for(const g of A) m.set(g,(m.get(g)||0)+1); let h=0; for(const g of B){ const c=m.get(g)||0; if(c>0){ h++; m.set(g,c-1); } }
+      return (2*h)/(A.length+B.length); }
+    function _coverage(q,t){ if(q.length<2) return t.indexOf(q)>=0?1:0; const T=new Set(_bigrams(t)); const Q=_bigrams(q); let h=0; for(const g of Q) if(T.has(g)) h++; return h/Q.length; }
+    /* namedetails carries every language the feature is named in, which is what lets an ENGLISH query
+       agree with a JAPANESE result ("Mount Fuji" → 富士山 via name:en) without forcing an
+       accept-language that would change the label every other caller already displays. `ref`, `brand`
+       and `operator` are not names — 「宇-12」 on that post box is a collection code. */
+    const NAME_KEY_RE=/^(name|name:[a-z_-]+|alt_name|alt_name:[a-z_-]+|official_name|official_name:[a-z_-]+|int_name|short_name|old_name|loc_name|nat_name|reg_name)$/i;
+    function _candNames(o){ const out=[]; const add=v=>{ if(typeof v==='string'&&v.trim()) out.push(v); };
+      add(o.name); add(String(o.display_name||'').split(',')[0]);
+      const nd=o.namedetails; if(nd&&typeof nd==='object'){ for(const k of Object.keys(nd)) if(NAME_KEY_RE.test(k)) add(nd[k]); }
+      return out; }
+    const NAME_AGREE_MIN=0.45;
+    function _nameAgreement(core,o){ const q=_nkey(core); if(!q||!o) return 0; let best=0;
+      for(const n of _candNames(o)){ const k=_nkey(n); if(!k) continue;
+        if(k.indexOf(q)>=0||q.indexOf(k)>=0) return 1; const d=_dice(q,k); if(d>best) best=d; }
+      if(/\d/.test(q)){ const c=_coverage(q,_nkey(o.display_name)); if(c>=0.9) best=Math.max(best,0.9); }
+      return best; }
+    /* the query as the caller means it: 「宇部港, 日本」 asks for 宇部港 — the country only narrows it
+       (#R489), and letting 日本 count as agreement is how 日本郵便 scored in the first place. */
+    function _queryCore(place){ const t=String(place||'').trim(); const i=t.indexOf(','); return (i>0?t.slice(0,i):t).trim(); }
+    function _pickNominatim(place,j){ if(!Array.isArray(j)||!j.length) return null; const core=_queryCore(place);
+      let best=null,bs=-Infinity;
+      for(const o of j){ if(!o||!isFinite(+o.lat)||!isFinite(+o.lon)) continue;
+        const ag=_nameAgreement(core,o); if(ag<NAME_AGREE_MIN) continue;   /* the honest miss lives here */
+        const sc=(+o.importance||0)+_classBonus(o)+0.5*ag; if(sc>bs){ bs=sc; best=o; } }
+      return best; }
     async function geocode(place){ place=String(place||'').trim();
       /* ⚠ (#R413) A REFUSED GPS USED TO BECOME THE MAP CENTRE, AND THE CALLER WAS NEVER TOLD.
          「現在地から大阪駅まで」 with location blocked fell through the two branches below and
@@ -101,7 +154,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
       try{ if(typeof localFuzzyPlaces==='function'){ const h=localFuzzyPlaces(place); if(h&&h.length){ _fz={lng:+h[0].lng,lat:+h[0].lat,name:h[0].name,kind:h[0].kind||''}; if(_fz.kind!=='capital') return _setLast(_fz); } } }catch(_){}
       /* (#R46) Nominatim returns a boundingbox [S,N,W,E] + class/type — use them to FIT the view to the place's
          real extent so a continent zooms out and a city zooms in (was: everything pinned at country-zoom ~6). */
-      try{ await NominatimGate.nominatimSlot(); const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(j&&j[0]){ const b=j[0].boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+j[0].lon,lat:+j[0].lat,name:(j[0].display_name||'').split(',')[0],bbox,kind:(j[0].addresstype||j[0].type||j[0].class||'')}); } }catch(_){}
+      try{ await NominatimGate.nominatimSlot(); const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&namedetails=1&limit=8&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); const hit=_pickNominatim(place,j); if(hit){ const b=hit.boundingbox; let bbox=null; if(Array.isArray(b)&&b.length===4){ const s=+b[0],n=+b[1],w=+b[2],e=+b[3]; if([s,n,w,e].every(v=>typeof v==='number'&&isFinite(v))) bbox=[[w,s],[e,n]]; } return _setLast({lng:+hit.lon,lat:+hit.lat,name:(hit.display_name||'').split(',')[0],bbox,kind:(hit.addresstype||hit.type||hit.class||'')}); } }catch(_){}   /* (#R515) candidates, not the first hit — and NOTHING rather than a stranger */
       if(_fz) return _setLast(_fz);   /* capital match + Nominatim unreachable → fall back to the coarse centroid */
       return null; }
     function _bboxOK(b){ try{ const w=b[0][0],s=b[0][1],e=b[1][0],n=b[1][1]; if(![w,s,e,n].every(v=>typeof v==='number'&&isFinite(v))) return false; if(e<=w||n<=s) return false; if((e-w)>355||(n-s)>175) return false; return true; }catch(_){ return false; } }
@@ -207,23 +260,43 @@ export function makeAtlasGeoResolve(HOST, CTX) {
        Fail-OPEN: any error / logout / quota / timeout / no-web → null, and the caller keeps its current behaviour, so
        this can only CATCH wrong-place results, never break a working highlight. Cached per normalized name. */
     const _geoVerifyCache={};
-    async function geoVerify(name){ const key=_lnorm(name); if(!key) return null; if(key in _geoVerifyCache) return _geoVerifyCache[key];
-      let out=null;
-      /* (#R132) REAL AbortController timeout (was a 9 s Promise.race that discarded the winner but left the fetch
-         running in the background — burning usage/cost + racing _aiLastMeta). Now the timeout ABORTS the fetch, and
-         meta.webUsed is read from THIS call's envelope, not the shared global. Still fail-OPEN (any error → null). */
+    /* ⚠ (#R515) ONE QUESTION FOR N NAMES, AND IT MUST CARRY THE TURN KEY.
+       supabase/functions/ai-proxy meters ONE USER TURN = ONE USE (#R318): the first call stamped with
+       `x-intmap-turn` pays, the rest of that turn are free, up to TURN_MAX_CALLS. geoVerify passed NO
+       turnId, so every verification opened its own charged turn — invisible while the only caller asked
+       once per highlight, and a bill the reader never agreed to the moment js/atlas-map-compose.js
+       started escalating a whole map's worth of missing names (free plan = 10 uses a day).
+       So: the batch is the implementation and `geoVerify` is the batch of one — one prompt, one parser,
+       one cache. The DEADLINE belongs to the caller, because only the caller knows what it is inside. */
+    async function geoVerifyMany(names, opts){ opts=opts||{};
+      const out=new Map(); const ask=[]; const seen=Object.create(null);
+      for(const raw of (Array.isArray(names)?names:[names])){ const n=String(raw==null?'':raw).trim(); if(!n) continue;
+        const k=_lnorm(n); if(!k||seen[k]) continue; seen[k]=1;
+        if(k in _geoVerifyCache){ out.set(n,_geoVerifyCache[k]); continue; } ask.push(n); }
+      if(!ask.length) return out;
+      const ms=Math.max(1000, +opts.timeoutMs||11000);
       try{
-        const sys=personaPrompt('verifying a place against the live web for the IntMap world map',{mode:'internal'})/* (#R285) machine-read output */+'For the EXACT place the user names, web-search its single most authoritative CURRENT real-world location and return STRICT JSON ONLY: {"found":true|false,"lat":<number>,"lng":<number>,"kind":"country|admin1|admin2|city|water|region|river|basin|mountain|island|unknown","country":"<English name of the country it is in, or empty>","altNames":["<other names>"],"confidence":<0..1>}. lat/lng = a representative interior point on/inside the feature (for a country or region its centroid; for a bay/strait/river/range a point ON the feature). If the name is ambiguous, choose the most likely and put alternates in altNames. If you cannot verify it from a source, set found=false. Output JSON only, no prose.';
-        const ctl=('AbortController' in window)?new AbortController():null; let timer=null; if(ctl){ timer=setTimeout(()=>{ try{ ctl.abort(); }catch(_){} }, 11000); }
-        let env=null; try{ env=await askAIJSONEnvelope('Place: "'+String(name).slice(0,120)+'"', sys, null, {task:'geo_verify', webMode:'required', signal:ctl?ctl.signal:null}); } finally { if(timer) clearTimeout(timer); }
+        const sys=personaPrompt('verifying places against the live web for the IntMap world map',{mode:'internal'})+'For EACH place the user lists, web-search its single most authoritative CURRENT real-world location and return STRICT JSON ONLY: {"places":[{"query":"<the name EXACTLY as given>","found":true|false,"lat":<number>,"lng":<number>,"kind":"country|admin1|admin2|city|water|region|river|basin|mountain|island|port|facility|unknown","country":"<English name of the country it is in, or empty>","altNames":["<other names>"],"confidence":<0..1>}]}. One entry per input, in the SAME ORDER, with "query" copied verbatim. lat/lng = a representative interior point on/inside the feature (for a country or region its centroid; for a bay/strait/river/range/port a point ON the feature). If a name is ambiguous, choose the most likely and put alternates in altNames. If you cannot verify one from a source, set found=false for THAT entry — never drop it. Output JSON only, no prose.';
+        const ctl=('AbortController' in window)?new AbortController():null; let timer=null; if(ctl){ timer=setTimeout(()=>{ try{ ctl.abort(); }catch(_){} }, ms); }
+        let env=null; try{ env=await askAIJSONEnvelope('Places:\n'+ask.map((n,i)=>(i+1)+'. "'+n.slice(0,120)+'"').join('\n'), sys, null, {task:'geo_verify', webMode:'required', turnId:opts.turnId||undefined, signal:ctl?ctl.signal:null}); } finally { if(timer) clearTimeout(timer); }
         const j=env&&env.data; const meta=(env&&env.meta)||{};
-        if(j && typeof j==='object' && j.found && isFinite(+j.lat) && isFinite(+j.lng) && Math.abs(+j.lat)<=90 && Math.abs(+j.lng)<=180){
-          out={ found:true, lat:+j.lat, lng:+j.lng, kind:String(j.kind||'unknown').toLowerCase(), country:String(j.country||'').trim(),
-                altNames:(Array.isArray(j.altNames)?j.altNames.map(x=>String(x||'').trim()).filter(Boolean):[]),
-                confidence:(typeof j.confidence==='number'?j.confidence:(meta.webUsed?0.7:0.35)), webUsed:!!meta.webUsed };
-        }
+        const rows=(j&&Array.isArray(j.places))?j.places:[];
+        rows.forEach((r,i)=>{ if(!r||typeof r!=='object') return;
+          const asked=(typeof r.query==='string'&&_lnorm(r.query))?String(r.query).trim():(ask[i]||'');
+          if(!asked) return; const key=_lnorm(asked); if(!key) return;
+          let v=null;
+          if(r.found && isFinite(+r.lat) && isFinite(+r.lng) && Math.abs(+r.lat)<=90 && Math.abs(+r.lng)<=180){
+            v={ found:true, lat:+r.lat, lng:+r.lng, kind:String(r.kind||'unknown').toLowerCase(), country:String(r.country||'').trim(),
+                altNames:(Array.isArray(r.altNames)?r.altNames.map(x=>String(x||'').trim()).filter(Boolean):[]),
+                confidence:(typeof r.confidence==='number'?r.confidence:(meta.webUsed?0.7:0.35)), webUsed:!!meta.webUsed }; }
+          _geoVerifyCache[key]=v; out.set(asked,v); });
       }catch(_){}
-      _geoVerifyCache[key]=out; return out; }
+      /* fail-OPEN, per name: anything the answer did not cover stays uncached and simply missing */
+      for(const n of ask) if(!out.has(n)) out.set(n,null);
+      return out; }
+    /* the single-name case IS the batch of one — nothing here re-implements the question or the parse */
+    async function geoVerify(name, opts){ const key=_lnorm(name); if(!key) return null; if(key in _geoVerifyCache) return _geoVerifyCache[key];
+      const m=await geoVerifyMany([name], opts); const v=m.get(String(name).trim()); return v==null?null:v; }
     /* is this verification trustworthy enough to REJECT geometry on? require the web search to have actually run +
        a real point; otherwise we only USE it as a soft anchor, never to reject. */
     const _gvStrong=gv=>!!(gv&&gv.found&&gv.webUsed&&(gv.confidence==null||gv.confidence>=0.5));
@@ -529,5 +602,5 @@ export function makeAtlasGeoResolve(HOST, CTX) {
      js/atlas-console.js destructures, because a name in one and not the other is a silent
      `undefined`. So `SELFLOC_WORDS`, `SELFLOC_RE` and `_coordPlace` are NOT exported for the test's
      benefit: tests/r413-checks reaches them the way the app does, through `geocode()`. */
-  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geocode, parseDirectional, placeExtent, regionBox, sliceBox };
+  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox };
 }

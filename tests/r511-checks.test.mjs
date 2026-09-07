@@ -228,7 +228,7 @@ test('R511 ⑦b: what cannot be resolved is UNPLACED by name — never guessed, 
   const r = await C.run({ items: [{ name: 'Strait of Hormuz', country: 'Iran' }, { name: 'Nowhere Reef', country: 'Atlantis' }] });
   assert.equal(r.ok, true, 'one placed is enough to draw');
   assert.equal(r.exec.status, 'partial');
-  assert.deepEqual(r.exec.unplaced, [{ name: 'Nowhere Reef', reason: 'not_found' }]);
+  assert.deepEqual(r.exec.unplaced, [{ name: 'Nowhere Reef', reason: 'not_found', tried: ['Nowhere Reef, Atlantis', 'Nowhere Reef'] }]   /* (#R515) `tried` = the spellings that were actually spent — the model is the only party that can supply another */);
   assert.match(r.exec.note, /NOT on the map/);
   assert.match(r.html, /Nowhere Reef/, 'the reader is told too');
   assert.equal(eng.data().features.length, 1, 'nothing was drawn for it');
