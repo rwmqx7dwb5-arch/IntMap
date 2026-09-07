@@ -120,7 +120,7 @@ export function makeLazyModules(HOST) {
       analysisEdu: '__imAnalysisEdu', warLayer: '__imWarFronts',   /* (#R349) the war layer's BODY — its Layers row (js/war-fronts.js) is eager, this is not */
       /* (#R347) navigation's eight files ride in ONE chunk (all are needed within the same tick of starting); routingTraffic is first called by js/routing.js's `_kickProbe()`. DEV-NOTES #R347. */
       navigation: 'IntMapNavigation',
-      routingTraffic: 'IntMapRouteTraffic', newsEvents: 'IntMapNewsEvents',   /* (#R386) 出来事単位の News — News タブを開くまで 1 バイトも降ってこない（docs/NEWS-EVENTS.md §12） */   photoGeo: 'IntMapPhotoGeo',   /* (#R527) 写真の撮影地点探索パネルと、その静的 import が連れて来る計算 5 本＋worker client。パネルを開くまで 1 バイトも降らず、worker 本体は最初の検索が始まって初めて届く（docs/PHOTO-GEOLOCATION.md）。⚠ ON THIS LINE for the shell budget — tests/r168 #8 */
+      routingTraffic: 'IntMapRouteTraffic', newsEvents: 'IntMapNewsEvents',   /* (#R386) 出来事単位の News — News タブを開くまで 1 バイトも降ってこない（docs/NEWS-EVENTS.md §12） */   photoGeo: 'IntMapPhotoGeo',   shakeMap: 'IntMapShakeMap',   /* (#R527) 写真の撮影地点探索パネルと、その静的 import が連れて来る計算 5 本＋worker client。パネルを開くまで 1 バイトも降らず、worker 本体は最初の検索が始まって初めて届く（docs/PHOTO-GEOLOCATION.md）。⚠ ON THIS LINE for the shell budget — tests/r168 #8 */
     };
 
     function record(name, why) {
@@ -151,7 +151,7 @@ export function makeLazyModules(HOST) {
         case 'streetView': return import('./street-view.js');
         case 'nightSky': return import('./night-sky.js');
         case 'atlasConsole': return import('./atlas-console.js');   case 'atlasQuery': return import('./atlas-query.js');   case 'atlasChart': return import('./atlas-chart.js');   case 'atlasAnswerView': return import('./atlas-answer-view.js');   /* (#R495) — same reason as the PUBLISHES line above */
-        case 'routeUi': return import('./routing-ui.js');   case 'photoGeo': return import('./photo-geo.js');   /* (#R527) same line, same reason */
+        case 'routeUi': return import('./routing-ui.js');   case 'photoGeo': return import('./photo-geo.js');   case 'shakeMap': return import('./shakemap.js');   /* (#R527) same line, same reason */
         case 'dataCenters': return import('./datacenters.js');   case 'railways': return import('./railways.js');
         case 'aircraftDetail': return import('./aircraft-detail.js');
         case 'volume3d': return import('./volume3d.js');
@@ -187,7 +187,7 @@ export function makeLazyModules(HOST) {
         case 'los': window.IntMapModules.los(IM_HOST); return true;
         case 'streetView': window.IntMapStreetView=window.IntMapModules.streetView(IM_HOST); return true;
         case 'atlasConsole': window.IntMapConsole=window.IntMapModules.atlasConsole(IM_HOST); return true;   case 'atlasQuery': window.IntMapQuery=window.IntMapModules.atlasQuery(IM_HOST); return true;   case 'atlasChart': window.IntMapAtlasChart=window.IntMapModules.atlasChart(IM_HOST); return true;   case 'atlasAnswerView': window.IntMapAnswerView=window.IntMapModules.atlasAnswerView(IM_HOST); return true;   /* (#R495) */
-        case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;   case 'photoGeo': window.IntMapPhotoGeo=window.IntMapModules.photoGeo(IM_HOST); return true;   /* (#R527) */
+        case 'routeUi': window.IntMapRouteUI=window.IntMapModules.routeUi(IM_HOST); return true;   case 'photoGeo': window.IntMapPhotoGeo=window.IntMapModules.photoGeo(IM_HOST); return true;   case 'shakeMap': window.IntMapShakeMap=window.IntMapModules.shakeMap(IM_HOST); return true;   /* (#R527) */
         case 'dataCenters': window.IntMapModules.dataCenters(IM_HOST); return true;   case 'railways': window.IntMapModules.railways(IM_HOST); return true;
         case 'aircraftDetail': window.IntMapAircraftPanel=window.IntMapModules.aircraftDetail(IM_HOST); return true;
         case 'volume3d': window.IntMapVolume3D=window.IntMapModules.volume3d(IM_HOST); return true;

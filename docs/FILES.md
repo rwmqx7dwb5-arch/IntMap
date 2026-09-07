@@ -350,7 +350,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   `answer_mode`（text / map / chart / mixed）は **Atlas が宣言**し、ループは
                                   「map / mixed と言ったのに何も描いていない final」を `map_not_drawn` として
                                   差し戻す（自分の宣言との整合＝schema 検査と同じ種類。回数は `maxMapGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全132を検索・到達可能 131）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全133を検索・到達可能 132）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
@@ -361,7 +361,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 132能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 133能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
@@ -444,6 +444,8 @@ tool-panel.js                     計測／半径ツールのパネルと地図�
 elevation-profile.js              標高断面のパネル
 sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散・範囲人口・
                                   日照・鉄道の到達圏）
+shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・
+                                  範囲内の都市と人口・遅延取得）window.IntMapShakeMap
 seismic.js                        地震波シミュレータ（477 KB）
 seismic-events.js                 過去の地震——公表された震源パラメータ
 seismic-site.js                   場址項は周波数の関数である window.IntMapSiteAmp

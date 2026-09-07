@@ -6091,4 +6091,22 @@ window.IntMapLang.define('ko', { ui: {
   "Restored": "되돌렸습니다",   /* atlas-msg-tools.js (#R543) */
   "Restored ({n} later layer(s) left on)": "되돌렸습니다 (이후 켠 레이어 {n}개는 그대로)",   /* atlas-msg-tools.js (#R543) */
   "Could not restore": "되돌릴 수 없습니다",   /* atlas-msg-tools.js (#R543) */
+  "Close ShakeMap": "ShakeMap 닫기",
+  "Could not load the ShakeMap": "ShakeMap을 불러오지 못했습니다",
+  "Could not load the ShakeMap.": "ShakeMap을 불러오지 못했습니다.",
+  "Counted by sampling the USGS ShakeMap intensity grid at each named city in the GeoNames gazetteer. It is the population of those cities, not everyone inside the contour.": "GeoNames 지명록의 각 도시 위치에서 USGS ShakeMap 진도 격자를 표본화해 센 값입니다. 등치선 안의 모든 사람이 아니라 그 도시들의 인구입니다.",
+  "Ground shaking (ShakeMap)": "지반 흔들림(ShakeMap)",
+  "Measure drawn": "그린 지표",
+  "No earthquake in the USGS catalogue matched that description.": "USGS 목록에서 그 설명에 맞는 지진을 찾지 못했습니다.",
+  "Peak intensity (MMI)": "최대 진도(MMI)",
+  "Population of those cities": "해당 도시들의 인구",
+  "ShakeMap": "ShakeMap",
+  "ShakeMap (USGS)": "ShakeMap(USGS)",
+  "ShakeMap closed.": "ShakeMap을 닫았습니다.",
+  "Shaking at or above MMI": "MMI 이상 흔들림",
+  "This ShakeMap carries no intensity grid, so who felt what cannot be counted from it.": "이 ShakeMap에는 진도 격자가 없어 누가 얼마나 흔들렸는지 셀 수 없습니다.",
+  "USGS published no ShakeMap for that earthquake — only a catalogue entry (location, depth, magnitude).": "해당 지진에 대해 USGS는 ShakeMap을 발행하지 않았고 목록 항목(위치·깊이·규모)만 있습니다.",
+  "USGS published no ShakeMap for this earthquake": "이 지진에 대해 USGS는 ShakeMap을 발행하지 않았습니다",
+  "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — 관측 기록·체감 보고·지반 조건에서 추정한 지반 운동이며, 규모를 그림으로 옮긴 것이 아닙니다.",
+  "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "USGS가 이 지표의 색상 척도를 제공하지 않으므로 등치선으로만 그립니다.",
 } });

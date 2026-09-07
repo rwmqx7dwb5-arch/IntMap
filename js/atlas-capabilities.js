@@ -223,6 +223,11 @@ export function makeAtlasCapabilities(HOST) {
          (`atl-compose-src`, in paintNow below) to know it drew. Writes the highlight key too,
          because a shaded item goes through the highlight path. */
       ['map.compose',                'compose',        'mapCompose,composeMap,explainOnMap',                          'map',     'paint',   'map.compose,map.highlight', 'map,explanation',  'session', 'none',   '',         ''],
+      /* (#R546) one earthquake's ground-motion FIELD from USGS ShakeMap — the contours, the painted
+         intensity surface, and who was inside which shaking. `paint`: the observer counts the contour
+         source, which is the one every metric produces (a metric USGS ships no palette for has lines
+         and no surface, and `state().painted` is how Atlas tells those two apart). Lazy: js/shakemap.js. */
+      ['map.shakemap',               'shakemap',       'shakeMap,groundShaking,intensityMap,shaking',                  'map',     'paint',   'map.shakemap',           'map,explanation',     'session', 'none',   '',         'shakeMap'],
       ['data.value',                 'value',          'stat,lookup',                                                 'data',    'none',    '',                       'explanation',         'read',    'none',   'country',  ''],
       ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
       ['map.clear',                  'clear',          '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'none',   '',         ''],
@@ -460,6 +465,7 @@ export function makeAtlasCapabilities(HOST) {
       return { poly: sourceFeatureCount('nlq-poly-src'), line: sourceFeatureCount('nlq-line-src'),
         pins: sourceFeatureCount('user-pins'), poi: sourceFeatureCount('nlq-poi-src'),
         compose: sourceFeatureCount('atl-compose-src'),   /* (#R511) js/atlas-map-compose.js — the ONE source every compose layer reads */
+        shakemap: sourceFeatureCount('shk-cont-src'),    /* (#R546) js/shakemap.js — the contour source every metric produces */
         visible: visibleLayerIds().length, objects: objectIds().length };
     }
 

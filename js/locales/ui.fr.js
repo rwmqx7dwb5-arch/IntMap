@@ -6101,4 +6101,22 @@ window.IntMapLang.define('fr', { ui: {
   "Restored": "Carte restaurée",   /* atlas-msg-tools.js (#R543) */
   "Restored ({n} later layer(s) left on)": "Carte restaurée ({n} calque(s) ajouté(s) depuis restent actifs)",   /* atlas-msg-tools.js (#R543) */
   "Could not restore": "Restauration impossible",   /* atlas-msg-tools.js (#R543) */
+  "Close ShakeMap": "Fermer ShakeMap",
+  "Could not load the ShakeMap": "Impossible de charger le ShakeMap",
+  "Could not load the ShakeMap.": "Impossible de charger le ShakeMap.",
+  "Counted by sampling the USGS ShakeMap intensity grid at each named city in the GeoNames gazetteer. It is the population of those cities, not everyone inside the contour.": "Compté en échantillonnant la grille d'intensité ShakeMap de l'USGS à chaque ville nommée du répertoire GeoNames. C'est la population de ces villes, non toutes les personnes situées à l'intérieur de la courbe.",
+  "Ground shaking (ShakeMap)": "Secousses du sol (ShakeMap)",
+  "Measure drawn": "Grandeur tracée",
+  "No earthquake in the USGS catalogue matched that description.": "Aucun séisme du catalogue de l'USGS ne correspond à cette description.",
+  "Peak intensity (MMI)": "Intensité maximale (MMI)",
+  "Population of those cities": "Population de ces villes",
+  "ShakeMap": "ShakeMap",
+  "ShakeMap (USGS)": "ShakeMap (USGS)",
+  "ShakeMap closed.": "ShakeMap fermé.",
+  "Shaking at or above MMI": "Secousses à partir de MMI",
+  "This ShakeMap carries no intensity grid, so who felt what cannot be counted from it.": "Ce ShakeMap ne comporte pas de grille d'intensité : impossible d'en déduire qui a ressenti quoi.",
+  "USGS published no ShakeMap for that earthquake — only a catalogue entry (location, depth, magnitude).": "L'USGS n'a pas publié de ShakeMap pour ce séisme — seulement une entrée de catalogue (lieu, profondeur, magnitude).",
+  "USGS published no ShakeMap for this earthquake": "L'USGS n'a pas publié de ShakeMap pour ce séisme",
+  "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — mouvement du sol estimé à partir d'enregistrements, de témoignages ressentis et des conditions de site ; ce n'est pas un dessin de la magnitude.",
+  "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "L'USGS ne publie pas d'échelle de couleurs pour cette mesure : elle est donc tracée uniquement en isolignes.",
 } });

@@ -361,7 +361,21 @@ window.IntMapModules.wbLayers=function(HOST){
         /* (#R32) className 'plc-popup' → themed dark/light bg + readable text. The default white maplibre popup
            inherited the page text color (near-white in dark mode) = white-on-white "ポップアップがダークモードで
            は見えない". */
-        GE().ui.attach(GE().ui.popup({closeButton:true,className:'plc-popup'}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;color:var(--text-main);"><b style="color:#ff453a;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+IntMapSafe.html(p.place||'')+'<br><span style="color:var(--text-muted);">'+when+'</span></div>')); }); GE().events.onLayer('mouseenter','eq-pt',()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave','eq-pt',()=>{ GE().render.canvas().style.cursor=''; }); }catch(_){} }
+        /* ⚠ (#R546) THE EVENT ID IS NOT `e.features[0].id`. A geojson source only carries feature ids
+           maplibre can use when they are numeric or `promoteId` is set, and USGS ids are strings; the
+           catalogue does hand every event its network and code, and `net+code` IS the id every USGS
+           URL is built from (measured: nc + 72282711 → nc72282711). `ids` is the fallback for a feed
+           row that carries the merged list instead. */
+        const eid=((p.net||'')+(p.code||''))||String(p.ids||'').split(',').filter(Boolean)[0]||'';
+        GE().ui.attach(GE().ui.popup({closeButton:true,className:'plc-popup'}).setLngLat(e.lngLat).setHTML('<div style="font-size:12.5px;line-height:1.5;color:var(--text-main);"><b style="color:#ff453a;">M '+(p.mag!=null?(+p.mag).toFixed(1):'?')+'</b><br>'+IntMapSafe.html(p.place||'')+'<br><span style="color:var(--text-muted);">'+when+'</span>'+(eid?('<br><button data-shk-open="'+IntMapSafe.html(eid)+'" style="margin-top:6px;border:1px solid rgba(128,128,128,0.3);background:var(--input-bg);color:var(--text-main);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;">'+IntMapSafe.html(window.IntMapLang.t(HOST.lang,"Ground shaking (ShakeMap)","揺れの分布（ShakeMap）","Bodenerschütterung (ShakeMap)","Сотрясения грунта (ShakeMap)","Sacudida del suelo (ShakeMap)"))+'</button>'):'')+'</div>')); }); GE().events.onLayer('mouseenter','eq-pt',()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave','eq-pt',()=>{ GE().render.canvas().style.cursor=''; });
+        /* ONE delegated listener for every popup this layer will ever open — a popup's DOM is rebuilt
+           on each click, so a handler bound to the button would have to be re-bound every time. */
+        document.addEventListener('click',(ev)=>{ const b=ev.target&&ev.target.closest&&ev.target.closest('[data-shk-open]'); if(!b) return;
+          const id=b.getAttribute('data-shk-open'); b.disabled=true;
+          Promise.resolve().then(()=>window.IntMapLazy.need('shakeMap')).then(()=>window.IntMapShakeMap.show(id))
+            .catch(err=>{ try{ b.disabled=false; if(typeof imToast==='function') imToast(err&&err.code==='NO_SHAKEMAP'
+              ? window.IntMapLang.t(HOST.lang,"USGS published no ShakeMap for this earthquake","この地震について USGS は ShakeMap を公開していません","Für dieses Beben hat USGS keine ShakeMap veröffentlicht","Для этого землетрясения USGS не публиковал ShakeMap","El USGS no publicó un ShakeMap para este sismo")
+              : window.IntMapLang.t(HOST.lang,"Could not load the ShakeMap","ShakeMap を取得できませんでした","ShakeMap konnte nicht geladen werden","Не удалось загрузить ShakeMap","No se pudo cargar el ShakeMap")); }catch(_){} }); }); }catch(_){} }
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('eq',LA('Earthquakes (USGS)','地震（USGS）','Erdbeben (USGS)','Землетрясения (USGS)','Terremotos (USGS)'),['eq-pt'],'bx-eq');
         if(el){ let ctl=el.querySelector('.bx-eqwin'); if(!ctl){ ctl=document.createElement('div'); ctl.className='bx-eqwin'; ctl.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;'; el.appendChild(ctl); }
           const opts=[['day',window.IntMapLang.t(HOST.lang,"24h","24時間","24 h","24 ч","24 h")],['week',window.IntMapLang.t(HOST.lang,"7d","7日","7 T","7 дн","7 d")],['month',window.IntMapLang.t(HOST.lang,"30d M4.5+","30日(M4.5+)","30 T M4,5+","30 дн M4.5+","30 d M4,5+")],['year',window.IntMapLang.t(HOST.lang,"1yr M6+","1年(M6+)","1 J M6+","1 год M6+","1 año M6+")]];

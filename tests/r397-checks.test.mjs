@@ -31,7 +31,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { codeOnly } from '../scripts/code-only.mjs';
@@ -104,12 +104,40 @@ test('R397 ②: every source id the paint observer counts is a source some file 
   assert.ok(body.length > 50, 'paintNow() is gone — the paint observer has no population');
   const ids = [...body.matchAll(/sourceFeatureCount\('([^']+)'\)/g)].map((m) => m[1]);
   assert.ok(ids.length >= 4, `paintNow() counts only ${ids.length} sources — it counted four (poly, line, pins, poi)`);
-  /* Where a source is CREATED is the authority. Searched across the app, not guessed. */
-  const creators = ['js/app-body.js', 'js/atlas-console.js', 'js/map-tools.js', 'js/data-layers.js', 'js/atlas-map-compose.js' /* (#R511) atl-compose-src */]
-    .map((f) => codeOnly(read(f))).join('\n');
+  /* Where a source is CREATED is the authority — and BOTH halves of how that was
+     asked here were the shape #R488/#R533 keep costing this project:
+       · the creators were a HAND-WRITTEN list of five files, so a source created
+         by a sixth read as "created by nobody";
+       · the match was the LITERAL `addSource('<id>'`, so a file that names its
+         source in a constant (`const SRC_LN = 'shk-cont-src'; … addSource(SRC_LN`)
+         could not be seen at all — which is exactly how #R546 arrived: the
+         observer was right, the module really creates the source, and this check
+         reported the opposite.
+     So: discover every file in js/ from DISK, and resolve single-assignment
+     string constants before asking. MUTATION THAT MUST GO RED: change either id
+     in paintNow() back to 'nlq-pin-src' / 'atl-poi-src', or delete the addSource
+     call in the module that creates one of them. */
+  const JS_DIR = resolve(ROOT, 'js');
+  const creators = readdirSync(JS_DIR).filter((f) => f.endsWith('.js')).map((f) => codeOnly(read('js/' + f)));
+  const created = new Set();
+  for (const src of creators) {
+    const konst = new Map();
+    /* DECLARATIONS only, and the first binding wins: a later unrelated assignment to
+       the same name must not be able to invent a source id that nothing creates. */
+    for (const m of src.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*'([^'\n]+)'|,\s*([A-Za-z_$][\w$]*)\s*=\s*'([^'\n]+)'/g)) {
+      const nm = m[1] || m[3], val = m[2] || m[4];
+      if (nm && !konst.has(nm)) konst.set(nm, val);
+    }
+    /* ⚠ `removeSource` is NOT evidence of creation — a file may only tear one down. */
+    for (const m of src.matchAll(/\b(?:add|has)Source\(\s*(?:'([^'\n]+)'|([A-Za-z_$][\w$]*))/g)) {
+      if (m[1]) created.add(m[1]);
+      else if (konst.has(m[2])) created.add(konst.get(m[2]));
+    }
+  }
+  assert.ok(created.size > 40, `only ${created.size} sources were discovered in js/ — the sweep itself is broken`);
   for (const id of ids) {
-    assert.ok(creators.indexOf("addSource('" + id + "'") >= 0 || creators.indexOf("hasSource('" + id + "'") >= 0,
-      `paintNow() counts features in '${id}', and no file creates a source by that name — sourceFeatureCount() returns -1 for it on every call`);
+    assert.ok(created.has(id),
+      `paintNow() counts features in '${id}', and no file in js/ creates a source by that name — sourceFeatureCount() returns -1 for it on every call`);
   }
 });
 

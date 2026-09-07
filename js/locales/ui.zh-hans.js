@@ -6321,5 +6321,23 @@ window.IntMapLang.define('zh-hans', {
   "Restored ({n} later layer(s) left on)": "已还原（之后开启的 {n} 个图层维持不变）",   /* atlas-msg-tools.js (#R543) */
   "Could not restore": "无法还原",   /* atlas-msg-tools.js (#R543) */
   "Unavailable": "无法使用",   /* atlas-msg-tools.js (#R543) */
+  "Close ShakeMap": "关闭 ShakeMap",
+  "Could not load the ShakeMap": "无法加载 ShakeMap",
+  "Could not load the ShakeMap.": "无法加载 ShakeMap。",
+  "Counted by sampling the USGS ShakeMap intensity grid at each named city in the GeoNames gazetteer. It is the population of those cities, not everyone inside the contour.": "以 GeoNames 地名录中每座具名城市的位置，对 USGS ShakeMap 震度网格采样后计得。这是那些城市的人口，不是等值线内的所有人。",
+  "Ground shaking (ShakeMap)": "地面摇晃（ShakeMap）",
+  "Measure drawn": "绘制的指标",
+  "No earthquake in the USGS catalogue matched that description.": "USGS 目录中没有符合该描述的地震。",
+  "Peak intensity (MMI)": "最大震度（MMI）",
+  "Population of those cities": "这些城市的人口",
+  "ShakeMap": "ShakeMap",
+  "ShakeMap (USGS)": "ShakeMap（USGS）",
+  "ShakeMap closed.": "已关闭 ShakeMap。",
+  "Shaking at or above MMI": "震度（MMI）达到",
+  "This ShakeMap carries no intensity grid, so who felt what cannot be counted from it.": "此 ShakeMap 没有震度网格，因此无法据以计算谁感受到多强的摇晃。",
+  "USGS published no ShakeMap for that earthquake — only a catalogue entry (location, depth, magnitude).": "USGS 未为该地震发布 ShakeMap，只有目录记载（位置、深度、规模）。",
+  "USGS published no ShakeMap for this earthquake": "USGS 未为此次地震发布 ShakeMap",
+  "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — 由观测记录、体感回报与场址条件推估的地动，并非把规模画成图。",
+  "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "USGS 未提供此量的色阶，因此仅以等值线绘制。",
   }
 });

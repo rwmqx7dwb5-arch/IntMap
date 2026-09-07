@@ -264,6 +264,14 @@ for (const p of ['NASA GIBS · MODIS Terra', 'NASA GIBS · VIIRS (SNPP)', 'NASA 
   'Sentinel Hub (S2 / Landsat)', 'Mapbox Satellite']) {
   SAME_AS_EN.de.add(p); SAME_AS_EN.ru.add(p); SAME_AS_EN.es.add(p);
 }
+/* ⚠ (#R546) THE USGS PRODUCT NAME. «ShakeMap» is what the agency calls the thing in every
+   language — its own German, Russian and Spanish material carries the name untranslated — so the
+   de / ru / es argument at js/shakemap.js's title and heading sites equals the English by rights.
+   ⚠ ONLY THE NAME. Every sentence around it is translated; this excuses the label and the
+   «(USGS)» attribution tag, nothing else. */
+for (const p of ['ShakeMap', 'ShakeMap (USGS)']) {
+  SAME_AS_EN.de.add(p); SAME_AS_EN.ru.add(p); SAME_AS_EN.es.add(p);
+}
 const hasLetter = (s) => /\p{L}/u.test(s);
 /* ══ ⚠ (#R243) A MODEL INSTRUCTION IS NOT A SCREEN ═══════════════════════════════════════════════
    Two call sites in js/app-body.js carry the SYSTEM PROMPT for the imagery-comparison and the

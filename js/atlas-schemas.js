@@ -232,6 +232,11 @@ export function makeAtlasSchemas() {
           points: list({ type: 'object', properties: { x: num(), y: num(), label: str() } }, 1) } }, 1),
         events: list({ type: 'object', required: ['t', 'label'], properties: { t: str(), label: str() } }, 2) } },
       'map.highlight': { type: 'object', properties: { targets: list(), groups: list(), iso3: list(), codes: list(), countries: loose(), country: str(), name: str(), place: str(), region: str(), query: str(), interpretation: str(), metric: str(), rankBy: str(), rankMetric: str(), by: str(), order: str(), rankOrder: str(), n: int(1, 40), top: int(1, 40), count: int(1, 40), minPop: loose(), maxPop: loose(), excludeBelowPop: loose(), filter: obj(), color: str(), on: bool() }, anyOf: [{ required: ['targets'] }, { required: ['groups'] }, { required: ['iso3'] }, { required: ['codes'] }, { required: ['countries'] }, { required: ['country'] }, { required: ['name'] }, { required: ['place'] }, { required: ['region'] }, { required: ['query'] }, { required: ['metric'] }, { required: ['rankBy'] }, { required: ['rankMetric'] }, { required: ['by'] }, { required: ['color'] }, { required: ['on'] }] },
+      /* (#R546) ShakeMap. `eventId` is a USGS event id and is the exact form; everything else is how
+         to FIND one in the USGS catalogue when the reader described the quake instead of naming it.
+         `metric` is not an enum: the roster is discovered from the product, so a period USGS adds
+         tomorrow must be passable today. */
+      'map.shakemap': { type: 'object', properties: { action: one('open', 'close', 'exposure'), eventId: str(), metric: str(), place: str(), from: str(), to: str(), minMagnitude: num(0, 10), minMMI: num(1, 12), limit: int(1, 200) } },
       'data.value': { type: 'object', properties: { country: str(), place: str(), name: str(), metric: str(), what: str() }, anyOf: [{ required: ['country'] }, { required: ['place'] }, { required: ['name'] }] },
       'layers.allOff': { type: 'object', properties: { all: bool() } },             /* `layersOff`; all:true drops the base layers too */
       'map.clear': { type: 'object', properties: { what: str(), target: str() } },  /* no `what` = everything, which is the case's own default */
