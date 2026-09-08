@@ -154,6 +154,24 @@ export function makeAtlasTurnResults(deps) {
       return 'call:' + nm + ':' + ks.map((k) => k + '=' + stable(a[k])).join('&');
     }
 
+    /**
+     * revisionOf(res) — the artifact this result is a revision of, and which revision it is.
+     *
+     * ⚠⚠⚠ (#R551) A REVISIONED ARTEFACT IS NOT RANKED, IT IS SUCCEEDED. `score()` decides between
+     * two results for one goal by how good each looks, and for an artefact the app is HOLDING that
+     * is the wrong question: the map is showing revision 2, so a reply that shows revision 1 —
+     * because revision 1 happened to place more, or because revision 2 admitted to a gap and lost
+     * two points for `meta.partial` — describes markers that are not there. The reader's copy has
+     * to be the one the app kept. Only a result that DECLARES an artefact and a revision gets this
+     * rule; everything else keeps #R441's ranking exactly as it was.
+     */
+    function revisionOf(res) {
+      const art = res && res.meta && res.meta.artifact;
+      if (!art || !art.id) return null;
+      const n = Number(art.revision);
+      return isFinite(n) ? { id: String(art.id), revision: n } : null;
+    }
+
     /** score(res) — #R159's ranking of two results for the same goal, unchanged. */
     function score(res) {
       const m = (res && res.meta) || {};
@@ -187,12 +205,15 @@ export function makeAtlasTurnResults(deps) {
         /* ANSWER: the best wins and a tie keeps the answer already written (#R159's repair).
            OPERATION: an equal re-run wins, because it is the one the app is still holding — but a
            re-run that FAILED never displaces a run that succeeded. */
+        /* (#R551) two revisions of one artefact: the later one is what the app is holding. */
+        const rv = revisionOf(res), rv0 = revisionOf(out[i]);
+        if (!ak && rv && rv0 && rv.id === rv0.id) { if (rv.revision >= rv0.revision) out[i] = res; return; }
         if (ak ? (score(res) > score(out[i])) : (score(res) >= score(out[i]))) out[i] = res;
       });
       return out;
     }
 
-    const API = { ANSWER_TYPES, answerKey, opKey, callKey, score, keep };
+    const API = { ANSWER_TYPES, answerKey, opKey, callKey, revisionOf, score, keep };
     try { window.IntMapAtlasTurnResults = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

@@ -140,7 +140,11 @@ test('R511 ⑥: compose_map is a CORE tool over map.compose, and the surface sta
     ran.push(a);
     if (a.type === 'compose') return { ok: true, html: '<div/>', meta: { status: 'completed', produced: ['map', 'explanation'] } };
     if (a.type === 'analyze') return { ok: true, html: '<div/>', meta: { status: 'completed', produced: ['explanation'] } };
-    if (a.type === 'highlight') return { ok: true, html: '', meta: { status: 'partial', produced: ['map'], unverified: true } };
+    /* ⚠ (#R551) A PARTIAL THAT PAINTED NOTHING NOW SAYS SO. Every verifier in js/atlas-capabilities.js
+       that cannot see its postcondition returns `produced: []`, because 「完成したか」 and 「何か出たか」
+       stopped being the same question the moment map.compose could be partial with markers really on
+       the map. This fixture stands in for that kernel, so it declares what that kernel declares. */
+    if (a.type === 'highlight') return { ok: true, html: '', meta: { status: 'partial', produced: [], unverified: true } };
     return { ok: false, meta: { code: 'failed' }, error: 'no' };
   } });
   const core = surface.CORE.find((c) => c.name === 'compose_map');
@@ -159,7 +163,7 @@ test('R511 ⑥: compose_map is a CORE tool over map.compose, and the surface sta
   const b = await exec({ name: 'research', arguments: { question: 'why' } });
   assert.equal(b.changedMap, undefined, 'an explanation-only capability did not');
   const c = await exec({ name: 'highlight', arguments: { countries: ['Iran'] } });
-  assert.equal(c.changedMap, undefined, 'a partial (nothing painted) did not');
+  assert.equal(c.changedMap, undefined, 'a partial that painted nothing did not — because it DECLARED that, not because it was partial (#R551)');
   /* schema: a call with no items is rejected before anything runs */
   const bad = AGENT.reject({ name: 'compose_map', arguments: { title: 'x' } }, tools);
   assert.equal(bad && bad.code, 'invalid_arguments');
@@ -309,14 +313,21 @@ test('R511 ⑦d: a fill goes through the highlight path with the run stamp, and 
   assert.equal(dispatched.length, 1);
   assert.equal(dispatched[0].type, 'highlight');
   assert.deepEqual(dispatched[0].countries, ['Iran']);
-  assert.equal(dispatched[0].__paintRun, 'run7', 'additive within the turn — the #R489 stamp travels');
+  /* (#R551) the stamp is now the REVISION's, not the turn's: several fills inside one revision share
+     it (js/atlas-console.js's _hlAdd keeps them all), and the next revision gets a new one so its
+     fills REPLACE rather than pile onto the draft they are correcting. Asserted as the property it
+     has to have, not as a literal — the artefact id is derived, and a spelling is not the point. */
+  assert.equal(typeof dispatched[0].__paintRun, 'string');
+  assert.match(dispatched[0].__paintRun, /^map:run7#r1$/, 'the run it belongs to, plus which revision of that map');
   assert.equal(r.exec.fills[0].ok, true);
   assert.match(r.html, /Iran/);
   const { C: C2 } = makeCompose({ hang: /Malacca/, itemTimeoutMs: 40 });
   const t0 = Date.now();
   const r2 = await C2.run({ items: [{ name: 'Strait of Malacca', country: 'Malaysia' }, { name: 'Strait of Hormuz', country: 'Iran' }] });
   assert.ok(Date.now() - t0 < 2000, 'did not wait on the hung lookup');
-  assert.deepEqual(r2.exec.unplaced, [{ name: 'Strait of Malacca', reason: 'timeout' }]);
+  /* (#R551) …and it carries the spellings it SPENT: 「時計が尽きた」 is only useful to Atlas if it also
+     says what was being asked, and it is the same question the web rung is handed next. */
+  assert.deepEqual(r2.exec.unplaced, [{ name: 'Strait of Malacca', reason: 'timeout', tried: ['Strait of Malacca, Malaysia', 'Strait of Malacca'] }]);
   assert.equal(r2.exec.placed.length, 1, 'the other one still landed');
 });
 
@@ -344,7 +355,9 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   const cap = CAPS.resolve('compose');
   assert.ok(cap && cap.id === 'map.compose');
   assert.deepEqual(cap.produces, ['map', 'explanation']);
-  assert.equal(cap.observerKind, 'paint');
+  /* (#R551) not `paint`: that verifier asks 「何か動いたか」, and 5 of 16 places moves the count just
+     as well as 16 of 16. map.compose has a verifier that reads requested-vs-placed. */
+  assert.equal(cap.observerKind, 'mapCompose');
   for (const alias of ['mapCompose', 'composeMap', 'explainOnMap']) assert.equal(CAPS.resolve(alias).id, 'map.compose', alias);
   assert.ok(SCHEMAS.schemaFor('map.compose'), 'a schema of its own');
   assert.ok(makeAtlasCatalogText({}, {}).idsCovered().includes('map.compose'), 'the catalogue describes it');
@@ -354,7 +367,7 @@ test('R511 ⑨: map.compose is registered, documented, observed, dispatched and 
   assert.match(mod, /const SRC = 'atl-compose-src'/, '…and that is the source the module writes');
   const con = R('js/atlas-console.js');
   assert.match(con, /^import \{ makeAtlasMapCompose \} from '\.\/atlas-map-compose\.js';/m, 'imported at line start (scripts/js-reachability.mjs anchors there)');
-  assert.match(con, /case 'compose': case 'mapCompose': case 'composeMap': case 'explainOnMap': return await COMPOSE\.run\(a\);/, 'every spelling the registry promises reaches the module');
+  assert.match(con, /case 'compose': case 'mapCompose': case 'composeMap': case 'explainOnMap': return await COMPOSE\.run\(a,dctx\);/, 'every spelling the registry promises reaches the module — with the execution context (#R551)');
   assert.match(con, /"answer_mode":"text"\|"map"\|"chart"\|"mixed"/, 'the REPLY FORMAT tells Atlas the field exists');
   assert.match(con, /COMPOSE\.linkProse\(head,_cr\)/, 'the answer is linked to the markers it drew');
   assert.match(con, /COMPOSE\.bind\(ai\)/);

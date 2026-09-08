@@ -80,6 +80,15 @@ export function makeAtlasMapCompose(deps) {
     const VERIFY_BUDGET_MS = Math.max(0, deps.verifyBudgetMs == null ? 14000 : +deps.verifyBudgetMs);
     const MAX_ITEMS = 24;
     const MAX_RELATIONS = 24;
+    /* ⚠⚠ (#R551) WHY A NAME IS NOT ON THE MAP YET, AND WHETHER ANOTHER RUNG CAN STILL SAVE IT.
+       `not_found` is a fact about the NAME — the gazetteer holds no such feature. `timeout` and
+       `not_attempted` are facts about the CLOCK: sixteen names through a gazetteer with a 1,100 ms
+       rate floor (js/nominatim-gate.js) is 17–35 s of queueing against a 26 s pass, so the names at
+       the BACK of the list were never asked at all. Filing those as 「見つからない」 is a false
+       statement about the world, and — worse — it used to exclude them from the one rung that could
+       still have placed them. All three go to the web-verification pass, which carries the whole
+       list in ONE call: adding a timed-out name to it costs nothing. */
+    const RECOVERABLE = { not_found: 1, timeout: 1, not_attempted: 1 };
 
     /* ── Sources and layers. ONE source; every layer reads it and filters by `t`. ──────────────
        ⚠ THE SOURCE ID IS ALSO IN js/atlas-capabilities.js paintNow(): the `paint` observer counts
@@ -97,6 +106,18 @@ export function makeAtlasMapCompose(deps) {
     let records = [];          /* placed items, in numbering order — what the legend and the prose link read */
     let relations = [];        /* drawn relations */
     let seq = 0;               /* compose counter, for stable record ids across a session */
+    /* ⚠⚠⚠ (#R551) THE ARTIFACT THIS MODULE IS HOLDING, AND WHICH REVISION OF IT.
+       One request = one map. A second compose_map in the SAME turn is not a second map — the map
+       cannot hold two, because every compose layer reads ONE source (`SRC`) and the second call
+       overwrites the first. It is the next REVISION of the one artifact, and the reply must show
+       the revision the map is actually holding (js/atlas-turn-results.js reads `meta.artifact`).
+       ⚠ A REVISION RESTATES THE WHOLE MAP. Not an append (two runs of the same sixteen places would
+       stand thirty-two markers) and not a merge (「君津製鉄所」 retried as 「君津市」 is the same place
+       under two names, and only Atlas knows that — code matching them by spelling would be guessing).
+       Restating is CHEAP because everything already placed is in the ledger: re-listing it costs no
+       lookup and no wait. `exec.note` tells Atlas exactly that. */
+    let artifact = { id: '', revision: 0 };
+    let soloSeq = 0;           /* composes that arrive with no turn to belong to (a bare dispatch, the node checks) */
     let hoverId = '';
     let mapBound = false;
 
@@ -259,10 +280,23 @@ export function makeAtlasMapCompose(deps) {
       return (e && e.lng != null && e.lat != null) ? e : null;
     }
 
+    /* ⚠⚠ (#R551) THE SPELLINGS THIS ITEM IS ASKED UNDER — ONE RULE, TWO RUNGS.
+       (#R489) the country is appended only when it is not already there (「Kotovsk, Russia, Russia」
+       returns 0), and (#R515) the bare name is the SECOND try, not the only one — 「Strait of Hormuz,
+       Iran」 returns nothing because a strait is not IN a country, while 「Strait of Hormuz」 resolves
+       at once. The web rung used to re-derive the question from `tried[0]`, which does not exist when
+       the clock ran out before a single query was sent: a timed-out 「君津製鉄所」 went to the verifier
+       as 「君津製鉄所」 with the country stripped off — a DIFFERENT question from the one that failed.
+       One function, so the two rungs cannot drift. */
+    function queries(it) {
+      const name = str(it.name, 120);
+      const country = str(it.country, 90);
+      return (country && norm(name).indexOf(norm(country)) < 0) ? [name + ', ' + country, name] : [name];
+    }
+
     async function resolveOne(it, deadline) {
       const name = str(it.name, 120);
       if (!name) return { ok: false, reason: 'no_name' };
-      const country = str(it.country, 90);
       const kind = str(it.kind, 40).toLowerCase();
       const known = fromLedger(it);
       if (known) {
@@ -271,21 +305,16 @@ export function makeAtlasMapCompose(deps) {
       }
       if (typeof geocode !== 'function') return { ok: false, reason: 'no_geocoder' };
       const left = deadline - now();
-      if (left <= 0) return { ok: false, reason: 'timeout' };
-      /* (#R489) the country is appended only when it is not already there — 「Kotovsk, Russia, Russia」 returns 0.
-         ⚠ AND THE BARE NAME IS THE SECOND TRY, NOT THE ONLY ONE. Measured on the live gazetteer:
-         「Strait of Hormuz, Iran」 returns nothing — a strait is not IN a country — while 「Strait of
-         Hormuz」 resolves at once. The country narrows a town; it disqualifies a sea. */
-      const withCountry = !!(country && norm(name).indexOf(norm(country)) < 0);
-      const tries = withCountry ? [name + ', ' + country, name] : [name];
+      if (left <= 0) return { ok: false, reason: 'timeout', tried: queries(it) };
+      const tries = queries(it);
       let g = null;
       /* (#R515) the spellings that were actually asked for. A `not_found` is a fact about THE NAME, and
          the model is the only party that can supply a different one — so it is told which it has spent. */
       for (const q of tries) {
         const remain = deadline - now();
-        if (remain <= 0) return { ok: false, reason: 'timeout' };
+        if (remain <= 0) return { ok: false, reason: 'timeout', tried: tries.slice() };
         try { g = await withTimeout(geocode(q), Math.min(ITEM_TIMEOUT_MS, remain)); } catch (_) { g = null; }
-        if (g === undefined) return { ok: false, reason: 'timeout' };
+        if (g === undefined) return { ok: false, reason: 'timeout', tried: tries.slice() };
         if (g && num(g.lng) != null && num(g.lat) != null) break;
         g = null;
       }
@@ -308,10 +337,14 @@ export function makeAtlasMapCompose(deps) {
     }
 
     /* ── Fills: a shaded region goes through the highlight path that already knows every border. ─ */
-    async function fill(it, colour, act) {
+    /* ⚠ (#R551) THE STAMP IS THE REVISION'S, NOT THE TURN'S. js/atlas-console.js's `_hlAdd` keeps
+       every fill that shares a stamp and clears when the stamp changes (#R489). A revision restates
+       the whole map, so its fills must REPLACE the previous revision's — while the several fills
+       WITHIN one revision still accumulate. One token per revision says both at once. */
+    async function fill(it, colour, token) {
       if (typeof dispatch !== 'function') return { ok: false, reason: 'no_dispatch' };
       const kind = str(it.kind, 40).toLowerCase();
-      const sub = { type: 'highlight', color: colour, interpretation: str(it.role || it.note, 120) || undefined, __paintRun: act && act.__paintRun };
+      const sub = { type: 'highlight', color: colour, interpretation: str(it.role || it.note, 120) || undefined, __paintRun: token || undefined };
       if (kind === 'country' || !kind) sub.countries = [str(it.name, 120)]; else sub.place = str(it.name, 120);
       let r = null;
       try { r = await withTimeout(dispatch(sub), ITEM_TIMEOUT_MS * 2); } catch (_) { r = null; }
@@ -371,23 +404,46 @@ export function makeAtlasMapCompose(deps) {
      */
     async function run(a, ctx) {
       a = a || {}; ctx = ctx || {};
-      const items = (Array.isArray(a.items) ? a.items : []).filter((x) => x && str(x.name)).slice(0, MAX_ITEMS);
-      const wantRels = (Array.isArray(a.relations) ? a.relations : []).filter((x) => x && (x.from != null) && (x.to != null)).slice(0, MAX_RELATIONS);
+      const askedItems = (Array.isArray(a.items) ? a.items : []).filter((x) => x && str(x.name));
+      const askedRels = (Array.isArray(a.relations) ? a.relations : []).filter((x) => x && (x.from != null) && (x.to != null));
+      const items = askedItems.slice(0, MAX_ITEMS);
+      const wantRels = askedRels.slice(0, MAX_RELATIONS);
+      /* ⚠ (#R551) WHAT DID NOT FIT IS REPORTED, NOT DROPPED. `.slice(0, MAX_ITEMS)` used to be the
+         whole of it: a 25-item explanation lost its 25th place with nothing said to Atlas and
+         nothing shown to the reader, which is the same defect as claiming a success that did not
+         happen. The cap stays (the gazetteer's rate floor is real); the silence does not. */
+      const overflow = askedItems.slice(MAX_ITEMS).map((x) => ({ name: str(x.name, 120), reason: 'over_item_limit' }));
       if (!items.length) {
         return { ok: false, html: '', meta: { code: 'PLACE_NOT_FOUND', category: 'input', retryable: false, produced: [] },
           exec: { status: 'failed', reason: 'no_items', message: 'compose needs at least one item with a name.' } };
       }
       const composeId = 'c' + (++seq);
       const deadline = now() + PASS_BUDGET_MS;
-      /* additive within one turn, replaced between turns — the #R489 rule the highlight paths follow */
-      const prun = a.__paintRun || null;
-      if (!(prun != null && records.length && records[0].run === prun)) { records = []; relations = []; }
-      const base = records.length;
+      /* ⚠⚠⚠ (#R551) WHICH MAP THIS IS A REVISION OF — from the EXECUTION CONTEXT, not the arguments.
+         The turn id arrives as the third argument js/atlas-executor.js hands every capability and
+         js/atlas-capabilities.js's legacy adapter forwards; `a.__paintRun` is the older stamp, kept
+         for the direct-dispatch door that has no executor above it. ⚠ IT USED TO ARRIVE AS NEITHER:
+         runActions stamped `__paintRun` on the action and then built the executor's arguments with
+         `k.slice(0,2)!=='__'`, stripping the stamp it had just written — so `prun` was ALWAYS null on
+         the live path, and the 「additive within one turn」 branch below had never once run in
+         production. A compose with no turn to belong to is its own artifact, which is what a bare
+         dispatch (and the node checks) should get. */
+      const turnKey = str((ctx && ctx.turnId) || a.__paintRun || '', 80);
+      const artifactId = turnKey ? ('map:' + turnKey) : ('map:solo' + (++soloSeq));
+      if (artifact.id !== artifactId) artifact = { id: artifactId, revision: 0 };
+      const revision = ++artifact.revision;
+      const paintToken = artifactId + '#r' + revision;
+      /* a revision restates the whole map (see `artifact` above) */
+      records = []; relations = [];
       const placed = [], unplaced = [], fills = [];
 
       /* ── pass 1: the ledger and the gazetteer, in order (each is cached or one bounded request) ── */
       const resolved = [];
-      for (let i = 0; i < items.length; i++) resolved[i] = await resolveOne(items[i], deadline);
+      for (let i = 0; i < items.length; i++) {
+        /* ⚠ (#R551) the clock can run out mid-list; the names behind it were never asked. Saying so
+           is what lets pass 2 pick them up — and what stops the reader being told they do not exist. */
+        resolved[i] = (now() >= deadline) ? { ok: false, reason: 'not_attempted' } : await resolveOne(items[i], deadline);
+      }
 
       /* ── pass 2: every name the gazetteer could not place goes to Atlas and the live web AT ONCE ──
          ⚠ ONE QUESTION CARRYING THE WHOLE LIST — not one per name. Six misses are one verification's
@@ -397,9 +453,13 @@ export function makeAtlasMapCompose(deps) {
       if (typeof verifyPlaces === 'function' && VERIFY_BUDGET_MS > 0) {
         const misses = [], asked = [];
         for (let i = 0; i < resolved.length; i++) {
-          if (resolved[i].ok || resolved[i].reason !== 'not_found') continue;
+          /* ⚠⚠ (#R551) EVERY RECOVERABLE MISS, NOT ONLY `not_found`. This line read
+             `!== 'not_found'`, so the names the gazetteer never got to — the whole back half of a
+             long list — skipped the one rung that could still place them and went straight to the
+             reader as 「配置できなかった」. The call carries the entire list either way. */
+          if (resolved[i].ok || !RECOVERABLE[resolved[i].reason]) continue;
           misses.push(i);
-          asked.push((resolved[i].tried && resolved[i].tried[0]) || str(items[i].name, 120));
+          asked.push((resolved[i].tried && resolved[i].tried[0]) || queries(items[i])[0]);
         }
         if (misses.length) {
           let found = null;
@@ -409,7 +469,9 @@ export function makeAtlasMapCompose(deps) {
             const it = items[i];
             const gv = get(asked[k]);
             if (!verifyStrong(gv) || num(gv.lng) == null || num(gv.lat) == null) {
-              resolved[i] = { ok: false, reason: 'not_found', tried: resolved[i].tried, verified: false };
+              /* the reason it FIRST failed is kept — 「時間が足りなかった」 and 「そんな名前は無い」 are
+                 different facts about the world, and Atlas repairs them differently. */
+              resolved[i] = { ok: false, reason: resolved[i].reason, tried: resolved[i].tried, verified: false };
               return;
             }
             let cc = '';
@@ -425,18 +487,18 @@ export function makeAtlasMapCompose(deps) {
       for (let i = 0; i < items.length; i++) {
         const it = items[i];
         const role = str(it.role || it.note, 120);
-        const colour = colourOf(it.color, base + placed.length);
+        const colour = colourOf(it.color, placed.length);
         const wantFill = it.fill === true || String(it.style || '').toLowerCase() === 'fill';
         if (wantFill) {
-          const f = await fill(it, colour, a);
+          const f = await fill(it, colour, paintToken);
           fills.push({ name: str(it.name, 120), ok: f.ok, reason: f.reason || '' });
         }
         const res = resolved[i];
         if (!res.ok) { unplaced.push({ name: str(it.name, 120), reason: res.reason, ...(res.tried ? { tried: res.tried } : null), ...(res.verified === false ? { webVerified: false } : null) }); continue; }
         const sid = fileInLedger(it, res, role);
-        const rec = { id: sid || (composeId + ':' + (base + placed.length + 1)), n: base + placed.length + 1, name: str(it.name, 120), canonical: res.canonical,
+        const rec = { id: sid || (composeId + ':' + (placed.length + 1)), n: placed.length + 1, name: str(it.name, 120), canonical: res.canonical,
           kind: str(it.kind, 40), country: str(it.country, 90), role: role, color: colour, lng: res.lng, lat: res.lat, provenance: res.provenance,
-          bbox: res.bbox, source: res.source, compose: composeId, run: prun,
+          bbox: res.bbox, source: res.source, compose: composeId, artifact: artifactId, revision: revision,
           item: i + 1,   /* the 1-based position in THIS call's `items` — what a numeric `from`/`to` refers to (see below) */
           spellings: [str(it.name, 120), res.canonical].concat(res.altNames || []).filter(Boolean) };
         placed.push(rec);
@@ -460,7 +522,7 @@ export function makeAtlasMapCompose(deps) {
         const A = endpoint(x.from), B = endpoint(x.to);
         if (!A || !B || A === B) { skipped.push({ from: str(x.from, 80), to: str(x.to, 80), reason: (!A || !B) ? 'endpoint_unplaced' : 'same_endpoint' }); return; }
         const type = str(x.type, 20).toLowerCase() || 'link';
-        const rel = { from: A.id, to: B.id, fromN: A.n, toN: B.n, type, label: str(x.label, 120), color: colourOf(x.color, base + placed.length + i),
+        const rel = { from: A.id, to: B.id, fromN: A.n, toN: B.n, type, label: str(x.label, 120), color: colourOf(x.color, placed.length + i),
           w: type === 'flow' || type === 'route' ? 3 : 2.2, dash: type === 'influence' || type === 'border' || type === 'claim', arrow: type === 'flow' || type === 'route' || type === 'supply',
           geo: splitAntimeridian(gcPoints(A, B)) };
         relations.push(rel); drawn.push(rel);
@@ -473,12 +535,34 @@ export function makeAtlasMapCompose(deps) {
       const anyDrawn = painted && (placed.length > 0 || drawn.length > 0);
       const anyFill = fills.some((f) => f.ok);
       const ok = anyDrawn || anyFill;
-      const exec = { status: ok ? (unplaced.length || skipped.length ? 'partial' : 'ok') : 'failed', compose: composeId,
+      /* ⚠ (#R551) WHAT WAS ASKED FOR AND IS NOT ON THE MAP — including what never fit. */
+      const missing = unplaced.concat(overflow);
+      const counts = { requested: askedItems.length, placed: placed.length, unplaced: missing.length,
+        relationsRequested: askedRels.length, relationsDrawn: drawn.length };
+      /* ⚠⚠⚠ (#R551) PARTIAL IS THE WHOLE POINT, AND IT USED TO STOP HERE. `exec.status` said
+         'partial' already — but js/atlas-capabilities.js's `paint` verifier reads `meta.partial`,
+         and this module never set it, so five of sixteen places came out of the kernel as
+         `completed`: the compose source went 0 → 5 features, something moved, verdict passed.
+         A COUNT DELTA IS NOT COMPLETENESS. `map.compose` now has a verifier of its own that reads
+         these counts, and this flag is what tells every generic reader the same thing. */
+      const partial = ok && (missing.length > 0 || skipped.length > 0);
+      const exec = { status: ok ? (partial ? 'partial' : 'ok') : 'failed', compose: composeId,
+        artifact: artifactId, revision: revision, counts: counts,
         placed: placed.map((r) => ({ n: r.n, id: r.id, name: r.name, provenance: r.provenance })),   /* (#R515) `web_verified` = no gazetteer holds this name and a live web search placed it; say where a point came from if it matters to the answer */
-        unplaced, relationsDrawn: drawn.length, relationsSkipped: skipped, fills: fills.length ? fills : undefined,
-        note: unplaced.length ? 'The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown. `not_found` means the gazetteer holds no feature under the spellings in `tried` — IntMap will not stand a stranger in for a name it cannot find (#R515), so nothing was placed and no relation touching it was drawn. If another name means the same place — the municipality or ward it is in, its official or local spelling, the facility rather than the district — you may call compose_map again with that name; otherwise tell the reader it could not be placed. `webVerified:false` means the live-web check was also asked and could not ground the name.' : undefined };   /* (#R515) the code stops guessing, so the model is handed the fact AND the move that is still open to it */
-      const html = ok ? legendHtml(a.title, placed, drawn, unplaced, fills) : '';
-      const meta = { code: ok ? 'ok' : 'PLACE_NOT_FOUND', produced: ok ? ['map', 'explanation'] : [], compose: { id: composeId, placed: placed.map(pub), unplaced, relations: drawn.length, fills: fills.length } };
+        unplaced: missing, relationsDrawn: drawn.length, relationsSkipped: skipped, fills: fills.length ? fills : undefined,
+        note: missing.length ? ("The places listed under `unplaced` are NOT on the map. Say so to the reader; do not describe them as shown. `reason` says WHY, and the three are different problems: `not_found` = the gazetteer holds no feature under the spellings in `tried`, and IntMap will not stand a stranger in for a name it cannot find (#R515). `timeout` / `not_attempted` = the lookup ran out of clock, NOT evidence the place does not exist. `over_item_limit` = more than 24 items were sent and these did not fit. `webVerified:false` means the live-web check was also asked and could not ground the name.\\nTO FINISH THIS MAP, call compose_map ONE more time with the COMPLETE list of places you want shown — the ones already placed AND new spellings for the ones that failed. Re-listing a place that is already placed is FREE: it is in the ledger, so it costs no lookup and no wait. That call becomes the next REVISION of this same map (artifact `{ART}`), it REPLACES this one on the map and in your reply, and the reader sees ONE finished map instead of a draft followed by a correction. Do NOT send only the failures: a revision states the whole map, so anything you leave out disappears from it.\\nIf a different name means the same place — the municipality or ward it is in, its official or local spelling, the facility rather than the district — you may use it. ⚠ BUT A TOWN IS NOT A FACTORY: if you place a works by naming the city around it, the point is an APPROXIMATE location, and you must say so in your answer rather than let the reader read it as the site itself.").replace('{ART}', artifactId) : undefined };
+      const html = ok ? legendHtml(a.title, placed, drawn, missing, fills) : '';
+      /* ⚠⚠⚠ (#R551) `resultKey` IS WHAT STOPS THE READER SEEING THE DRAFT AND THE FINISHED MAP AT
+         ONCE. js/atlas-turn-results.js identifies an operation by its ARGUMENTS unless the result
+         declares an identity of its own — and a repair necessarily changes the arguments (that is
+         what makes it a repair), so 「日本の主な製鉄所」 5件 and 「日本の主要製鉄所・製鉄地区」 16件 were
+         two operations, both kept, stacked in one reply. They are two revisions of ONE map, and this
+         is the identity that says so. `meta.artifact.revision` breaks the tie: the reply must show
+         the revision the MAP is holding, which is the latest one, whatever its score. */
+      const meta = { code: ok ? 'ok' : 'PLACE_NOT_FOUND', produced: ok ? ['map', 'explanation'] : [],
+        resultKey: 'map.compose:' + artifactId, artifact: { id: artifactId, revision: revision },
+        partial: partial || undefined, counts: counts,
+        compose: { id: composeId, artifact: artifactId, revision: revision, placed: placed.map(pub), unplaced: missing, relations: drawn.length, fills: fills.length } };
       if (!ok) { meta.category = 'input'; meta.retryable = true; meta.message = 'None of the named places could be placed.'; }
       return { ok, html, meta, exec };
     }

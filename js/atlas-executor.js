@@ -352,6 +352,13 @@ function makeAtlasExecutor(HOST, CTX) {
           var raw;
           try {
             raw = cap.execute(Caps.context(), args, {
+              /* ⚠⚠ (#R551) WHICH TURN THIS BELONGS TO, AS EXECUTION CONTEXT — never as an argument.
+                 js/atlas-console.js used to stamp `__paintRun` onto the ACTION and then build the
+                 executor's arguments with `k.slice(0,2)!=='__'`, which stripped the stamp it had just
+                 written: the one fact a capability needs to know 「これはさっきと同じ依頼か」 was
+                 destroyed at the kernel boundary. It is not a user argument — it does not belong in
+                 a schema and the model must never write it — so it travels here, beside the signal. */
+              turnId: op.turnId, source: op.source,
               signal: signal, operationId: operationId,
               progress: function (p) { op.progress = p; phase(op, 'progress', { progress: p }); }
             });

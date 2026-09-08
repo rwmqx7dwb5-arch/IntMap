@@ -67,14 +67,28 @@ test('R376 ① a raster-source capability is not verified by counting features',
 /* ── ① b the audit knows what the new observer can witness ────────────────────────────────────
    An observer kind that is not in these two tables makes ⑦ and ⑱ fail — which is the mechanism
    that stopped #R376 from declaring `produces:'map'` against something that cannot see a map. */
-test('R376 ①b the new observer is declared in the audit’s own tables', () => {
+test('R376 ①b the new observer is declared in the audit’s own tables', async () => {
   const a = AUDIT();
   assert.match(a, /wxModel: \['map', 'explanation'\]/, 'OBSERVABLE says what it can witness');
   /* ⚠ (#R495) MEMBERSHIP, NOT POSITION. This read `[^\]]*'wxModel'\]` — which also required
      `wxModel` to be the LAST entry, so adding a second map observer (`queryRows`) failed a test
      whose subject is whether `wxModel` is in the list at all. The rule is unchanged; what is gone
-     is an incidental fact about where in the array it sits. */
-  assert.match(a, /const MAP_OBS = \[[^\]]*'wxModel'[^\]]*\]/, 'and MAP_OBS counts it as a map observer');
+     is an incidental fact about where in the array it sits.
+     ⚠⚠ (#R551) …AND NOT A LITERAL AT ALL ANY MORE. The second assert then read
+     `/const MAP_OBS = \[[^\]]*'wxModel'[^\]]*\]/` — a hand-written ARRAY — and #R551 removed that
+     array: `MAP_OBS` and `OBSERVABLE` were two lists of one fact, so a new observer had to be added
+     to both or the audit contradicted itself, and `MAP_OBS` is now DERIVED from the table asserted
+     above. The check went red on a change that made the thing it guards structurally true, which is
+     the #R488 / #R529 / #R546 shape. So it stops reading the source and RUNS THE AUDIT: the question
+     was never 「その配列にこう書いてあるか」 but 「監査は wxModel を地図の観測器として扱うか」. */
+  const { audit } = await import('../scripts/atlas-capability-audit.mjs');
+  const rep = await audit();
+  const mv = rep.checks.find((c) => c.id === 'map-verified');
+  assert.ok(mv, 'the audit still runs the map-verified check');
+  const wx = rep.caps.toJSON().capabilities.filter((c) => c.observerKind === 'wxModel' && c.produces.includes('map'));
+  assert.ok(wx.length, 'there is a live capability that promises the map and is watched by wxModel');
+  wx.forEach((c) => assert.ok(!mv.failures.some((f) => String(f).startsWith(c.id + ':')),
+    c.id + ' is counted as map-verified — wxModel is a map observer, however MAP_OBS is spelled'));
 });
 
 /* ── ② a waiter is only woken by the commit it is waiting for ─────────────────────────────────*/

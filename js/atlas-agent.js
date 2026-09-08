@@ -481,8 +481,15 @@ export function makeAtlasAgent() {
           trace.executed++;
           const rec = Object.assign({ id: call.id, name: call.name }, out);
           /* ⚠ ONLY A SUCCESS IS REMEMBERED. Freezing a failure would turn a transient network error
-             into a permanent one for the rest of the turn, which is the opposite of the point. */
-          if (ckey && rec.ok !== false) doneCalls[ckey] = rec;
+             into a permanent one for the rest of the turn, which is the opposite of the point.
+             ⚠⚠⚠ (#R551) AND A PARTIAL IS NOT A SUCCESS. `ok` is derived from `status` (#R318), so a
+             capability that placed five of sixteen and honestly said `partial` still reaches here
+             with `ok !== false` — and freezing THAT is worse than freezing a failure: the turn is
+             told 「この呼び出しは済んでいる」 for a call that has not finished its job, so re-asking the
+             identical question returns the identical half-done answer and the only move left is to
+             change the arguments, which is precisely how one request became two maps in the reply.
+             A call that still owes something must be allowed to be made again. */
+          if (ckey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') doneCalls[ckey] = rec;
           stepResults.push(rec);
           results.push(rec);
           /* the TOOL may declare it, or the RESULT may — the second is how a generic invoker

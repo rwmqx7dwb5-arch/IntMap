@@ -59,7 +59,7 @@ export function makeAtlasSchemas() {
     function num(min, max) { var o = { type: 'number' }; if (min != null) o.minimum = min; if (max != null) o.maximum = max; return o; }
     function int(min, max) { var o = { type: 'integer' }; if (min != null) o.minimum = min; if (max != null) o.maximum = max; return o; }
     function one() { return { type: 'string', enum: [].slice.call(arguments) }; }
-    function list(item, min) { var o = { type: 'array' }; if (item) o.items = item; if (min != null) o.minItems = min; return o; }
+    function list(item, min, max) { var o = { type: 'array' }; if (item) o.items = item; if (min != null) o.minItems = min; if (max != null) o.maxItems = max; return o; }
     function obj() { return { type: 'object' }; }
     function lat() { return { type: 'number', minimum: -90, maximum: 90 }; }
     function lng() { return { type: 'number', minimum: -180, maximum: 180 }; }
@@ -220,8 +220,8 @@ export function makeAtlasSchemas() {
          or its 1-based NUMBER — both are how a person refers to «the second one». No coordinate
          field exists here and none may be added: the model names, IntMap resolves. */
       'map.compose': { type: 'object', required: ['items'], properties: { title: str(), camera: one('fit', 'keep'),
-        items: list({ type: 'object', required: ['name'], properties: { name: str(), country: str(), kind: str(), stableId: str(), geoId: str(), role: str(), note: str(), color: str(), fill: bool(), style: one('marker', 'fill') } }, 1),
-        relations: list({ type: 'object', required: ['from', 'to'], properties: { from: loose(), to: loose(), type: one('flow', 'route', 'supply', 'link', 'influence', 'border', 'claim'), label: str(), color: str() } }) } },
+        items: list({ type: 'object', required: ['name'], properties: { name: str(), country: str(), kind: str(), stableId: str(), geoId: str(), role: str(), note: str(), color: str(), fill: bool(), style: one('marker', 'fill') } }, 1, 24),
+        relations: list({ type: 'object', required: ['from', 'to'], properties: { from: loose(), to: loose(), type: one('flow', 'route', 'supply', 'link', 'influence', 'border', 'claim'), label: str(), color: str() } }, null, 24) } },
       /* (#R543) one chart. `source` is REQUIRED and js/atlas-chart.js refuses the call without it —
          a chart is the most credible shape a claim can take, so it is the shape that has to name
          where its numbers came from. `points` carry x/y as numbers and an optional label; a timeline

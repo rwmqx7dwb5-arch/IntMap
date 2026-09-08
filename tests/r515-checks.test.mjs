@@ -164,9 +164,16 @@ test('R515 ③: a relation whose endpoint could not be placed is not drawn, and 
   assert.equal(r.exec.relationsDrawn, 1, 'only the relation between two real places');
   assert.equal(r.exec.relationsSkipped.length, 1);
   assert.equal(r.exec.relationsSkipped[0].reason, 'endpoint_unplaced');
-  /* and the note names the move that is still open, instead of leaving the miss as a dead end */
+  /* and the note names the move that is still open, instead of leaving the miss as a dead end.
+     ⚠ (#R551) ASKED AS A FACT, NOT AS A SENTENCE. This read `/compose_map again/` — a literal — and
+     went red when the note was rewritten to say the same thing in different words («call compose_map
+     ONE more time with the COMPLETE list…»). A check that pins wording cannot tell a rewrite from a
+     regression, so it asks instead for the two things that make the note useful: the TOOL that makes
+     the next move, and the ARTEFACT that move would be the next revision of. */
   assert.match(r.exec.note, /not_found/);
-  assert.match(r.exec.note, /compose_map again/);
+  assert.match(r.exec.note, /compose_map/, 'the note names the tool that finishes the map');
+  assert.ok(r.exec.artifact, 'the result knows which map it is');
+  assert.ok(r.exec.note.includes(r.exec.artifact), 'and the note says which map the next call would revise');
 });
 
 /* ══ ④ what the model is TOLD about relations — the standard was never written down ═════════════ */

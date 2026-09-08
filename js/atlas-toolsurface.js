@@ -311,7 +311,19 @@ export function makeAtlasToolSurface(deps) {
          declaration to — a chart would have needed a second flag, a second gate and a second name.
          The registry's `produces` column already IS the general answer; this just stops discarding
          the rest of it. `changedMap` stays as the map member's #R511 name. */
-      if (ok && out.status === 'completed' && Array.isArray(out.produced)) {
+      /* ⚠⚠⚠ (#R551) 「PARTIAL ＝ 何も描かれていない」 WAS AN ASSUMPTION, AND map.compose BROKE IT.
+         Every partial in js/atlas-capabilities.js used to mean 「事後条件が観測できなかった」, so
+         requiring `completed` here was the same test as 「何か出たか」. It is not any more: a
+         composition that placed five of sixteen names is `partial` — honestly, because nine are
+         missing — while five markers really are on the map. Under the old line the loop was told
+         NOTHING was produced, so an `answer_mode:"map"` answer got bounced as `map_not_drawn`
+         about a map the reader was looking at, and the only way out was another compose call:
+         the very second card this round exists to remove.
+         ⚠ THE TEST IS NOW WHAT THE VERIFIER OBSERVED, NOT HOW COMPLETE IT WAS. A verdict that did
+         not see its postcondition says `produced: []` (all seventeen of them now do, which changes
+         none of their behaviour — they never reached this line), so an empty list is the honest
+         「何も出ていない」 and a non-empty one is the honest 「出た」. */
+      if ((out.status === 'completed' || out.status === 'partial') && Array.isArray(out.produced) && out.produced.length) {
         out.producedModes = out.produced.slice();
         if (out.producedModes.indexOf('map') >= 0) out.changedMap = true;
       }

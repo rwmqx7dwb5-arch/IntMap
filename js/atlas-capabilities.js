@@ -222,7 +222,7 @@ export function makeAtlasCapabilities(HOST) {
          shaded regions, one frame, a legend. `paint`: the observer counts its own source
          (`atl-compose-src`, in paintNow below) to know it drew. Writes the highlight key too,
          because a shaded item goes through the highlight path. */
-      ['map.compose',                'compose',        'mapCompose,composeMap,explainOnMap',                          'map',     'paint',   'map.compose,map.highlight', 'map,explanation',  'session', 'none',   '',         ''],
+      ['map.compose',                'compose',        'mapCompose,composeMap,explainOnMap',                          'map',     'mapCompose', 'map.compose,map.highlight', 'map,explanation', 'session', 'none',   '',         ''],
       /* (#R546) one earthquake's ground-motion FIELD from USGS ShakeMap — the contours, the painted
          intensity surface, and who was inside which shaking. `paint`: the observer counts the contour
          source, which is the one every metric produces (a metric USGS ships no palette for has lines
@@ -499,8 +499,8 @@ export function makeAtlasCapabilities(HOST) {
           var html = (raw && raw.html) || '';
           var marks = (html.match(/data-mark="1"/g) || []).length;
           var claimed = (raw && raw.meta && raw.meta.chart && +raw.meta.chart.plotted) || 0;
-          if (!marks) return { status: 'partial', code: 'not_rendered', observed: { chart: { marks: 0, claimed: claimed } }, html: html };
-          if (claimed && marks !== claimed) return { status: 'partial', code: 'not_rendered', observed: { chart: { marks: marks, claimed: claimed } }, html: html };
+          if (!marks) return { status: 'partial', produced: [], code: 'not_rendered', observed: { chart: { marks: 0, claimed: claimed } }, html: html };
+          if (claimed && marks !== claimed) return { status: 'partial', produced: [], code: 'not_rendered', observed: { chart: { marks: marks, claimed: claimed } }, html: html };
           return { status: 'completed', code: 'ok', observed: { chart: { marks: marks, kind: (raw.meta && raw.meta.chart && raw.meta.chart.kind) || '' } }, html: html };
         }
       },
@@ -509,12 +509,12 @@ export function makeAtlasCapabilities(HOST) {
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           if (!hasRenderer()) return { status: 'failed', code: 'unavailable', html: (raw && raw.html) || '' };
-          if (!before || !after) return { status: 'partial', code: 'no_change', html: (raw && raw.html) || '' };
+          if (!before || !after) return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
           /* a camera op that asked for no movement (a re-assert) is complete when nothing moved;
              one that asked for movement is complete only when the camera really is somewhere else. */
           var wantsMove = !!(args && (args.place || args.lng != null || args.to != null || args.delta != null ||
             args.deg != null || args.dir != null || args.direction != null || args.zoom != null || args.toward));
-          if (wantsMove && !changed(before, after)) return { status: 'partial', code: 'no_change', html: (raw && raw.html) || '' };
+          if (wantsMove && !changed(before, after)) return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: { camera: after }, html: (raw && raw.html) || '' };
         }
       },
@@ -524,7 +524,7 @@ export function makeAtlasCapabilities(HOST) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           /* #R73's real question, kept: the dispatch case already polls the style for a delta and
              flags `meta.unverified` when nothing painted. Honour that flag rather than re-deriving. */
-          if (raw && raw.meta && raw.meta.unverified) return { status: 'partial', code: 'no_change', html: raw.html || '' };
+          if (raw && raw.meta && raw.meta.unverified) return { status: 'partial', produced: [], code: 'no_change', html: raw.html || '' };
           if (raw && raw.meta && raw.meta.already) return { status: 'completed', code: 'ok', html: raw.html || '' };
           return { status: 'completed', code: 'ok', observed: { layers: after }, html: (raw && raw.html) || '' };
         }
@@ -533,12 +533,47 @@ export function makeAtlasCapabilities(HOST) {
         observe: function () { return paintNow(); },
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
-          if (raw && raw.meta && raw.meta.partial) return { status: 'partial', code: 'not_rendered', html: raw.html || '', unresolved: (raw.exec && raw.exec.unresolved) || [] };
+          if (raw && raw.meta && raw.meta.partial) return { status: 'partial', produced: [], code: 'not_rendered', html: raw.html || '', unresolved: (raw.exec && raw.exec.unresolved) || [] };
           /* a clear-shaped op is complete when the canvases came DOWN; a draw-shaped one when they
              went UP. Anything that moved is evidence; nothing moving is `not_rendered`. */
           if (!before || !after) return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
           if (changed(before, after)) return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
-          return { status: 'partial', code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+          return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ ⚠⚠⚠ (#R551) A COUNT THAT WENT UP IS NOT A MAP THAT IS FINISHED ═══════════════════════
+         `map.compose` was declared `paint`, and `paint` asks one question: did anything move? For a
+         composition that is the wrong question in BOTH directions.
+           · Sixteen places were asked for and five landed. The compose source went 0 → 5, something
+             moved, so the verdict was `completed` — and js/atlas-agent.js filed the call as a
+             finished success it need not repeat. The module had said `exec.status:'partial'` all
+             along; nothing above it was reading that.
+           · Sixteen markers redrawn at CORRECTED coordinates is 16 → 16. Nothing moved by the
+             count, so a real repair would have been called `not_rendered`.
+         So this verifier does not diff a tally. It reads what was ASKED FOR against what is ON THE
+         MAP RIGHT NOW (`after.compose` is the live feature count of the one source every compose
+         layer reads), and it reports the names that are still missing as `unresolved` so the repair
+         loop and Atlas both get them by name rather than as a number. */
+      mapCompose: {
+        observe: function () { return paintNow(); },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: (raw && raw.html) || '' };
+          var ex = (raw && raw.exec) || {};
+          var counts = ex.counts || {};
+          var missing = Array.isArray(ex.unplaced) ? ex.unplaced : [];
+          var names = missing.map(function (u) { return (u && u.name) || String(u || ''); }).filter(Boolean);
+          var filled = Array.isArray(ex.fills) && ex.fills.some(function (f) { return f && f.ok; });
+          var drew = !!(after && +after.compose > 0);
+          var obs = { compose: { requested: +counts.requested || 0, placed: +counts.placed || 0,
+            unplaced: names.length, features: (after && +after.compose) || 0,
+            artifact: ex.artifact || '', revision: +ex.revision || 0 } };
+          /* nothing is on the map and nothing was shaded: the claim is not backed by anything */
+          if (!drew && !filled) return { status: 'partial', produced: [], code: 'not_rendered', observed: obs, unresolved: names, html: (raw && raw.html) || '' };
+          /* something is there, but not what was asked for */
+          if (ex.status === 'partial' || names.length || (raw && raw.meta && raw.meta.partial)) {
+            return { status: 'partial', code: 'incomplete', observed: obs, unresolved: names, html: (raw && raw.html) || '' };
+          }
+          return { status: 'completed', code: 'ok', observed: obs, html: (raw && raw.html) || '' };
         }
       },
       /* ══ ⚠⚠⚠ (#R376) A RASTER SOURCE SWAP DRAWS THE SAME NUMBER OF FEATURES IT DREW BEFORE ══════
@@ -579,7 +614,7 @@ export function makeAtlasCapabilities(HOST) {
           if (before && after && changed(before, after)) return { status: 'completed', code: 'ok', observed: { wxModel: after }, html: (raw && raw.html) || '' };
           /* ⚠ 「まだ出ていない」 is a real state and gets its own code — the map may still be building
              the new slot, and `not_rendered` would be a claim about painting we cannot make. */
-          return { status: 'partial', code: 'not_displayed', observed: { wxModel: after }, html: (raw && raw.html) || '' };
+          return { status: 'partial', produced: [], code: 'not_displayed', observed: { wxModel: after }, html: (raw && raw.html) || '' };
         }
       },
       panel: {
@@ -605,8 +640,8 @@ export function makeAtlasCapabilities(HOST) {
              them (hasRoute / painted / visible); the old dispatch collapsed all three into ok:true —
              and #R291 measured a route that was computed and never drawn. */
           if (!after.hasRoute) return { status: 'failed', code: 'no_route', html: (raw && raw.html) || '' };
-          if (!after.painted) return { status: 'partial', code: 'not_rendered', observed: { routing: after }, html: (raw && raw.html) || '' };
-          if (!after.visible) return { status: 'partial', code: 'not_visible', observed: { routing: after }, html: (raw && raw.html) || '' };
+          if (!after.painted) return { status: 'partial', produced: [], code: 'not_rendered', observed: { routing: after }, html: (raw && raw.html) || '' };
+          if (!after.visible) return { status: 'partial', produced: [], code: 'not_visible', observed: { routing: after }, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: { routing: after }, html: (raw && raw.html) || '' };
         }
       },
@@ -622,7 +657,7 @@ export function makeAtlasCapabilities(HOST) {
           if (raw && raw.objectIds && raw.objectIds.length) made = raw.objectIds.slice();
           if (before && after && !changed(before.ids, after.ids) && !made.length) {
             /* a removal is a change too; only "nothing at all happened" is a non-event */
-            return { status: 'partial', code: 'no_change', html: (raw && raw.html) || '' };
+            return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
           }
           return { status: 'completed', code: 'ok', objectIds: made, observed: { objects: after }, html: (raw && raw.html) || '' };
         }
@@ -645,7 +680,7 @@ export function makeAtlasCapabilities(HOST) {
           if (!made.length) return { status: 'completed', code: 'ok', html: (raw && raw.html) || '' };
           var have = (after && after.ids) || [];
           var landed = made.filter(function (id) { return have.indexOf(id) >= 0; });
-          if (!landed.length) return { status: 'partial', code: 'not_rendered', observed: { objects: after }, html: (raw && raw.html) || '' };
+          if (!landed.length) return { status: 'partial', produced: [], code: 'not_rendered', observed: { objects: after }, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', objectIds: landed, observed: { objects: after }, html: (raw && raw.html) || '' };
         }
       },
@@ -671,7 +706,7 @@ export function makeAtlasCapabilities(HOST) {
           /* A simulation that is still computing says so. `raw.running` is what a migrated executor
              sets; a legacy case cannot, so its absence is not evidence of completion — the canvas is. */
           if (raw && raw.running) return { status: 'running', code: 'running', progress: raw.progress || null, html: raw.html || '' };
-          if (before && after && !changed(before, after)) return { status: 'partial', code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+          if (before && after && !changed(before, after)) return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
         }
       },
@@ -685,8 +720,8 @@ export function makeAtlasCapabilities(HOST) {
           if (!before || !after) return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
           var panelMoved = changed(before.panels, after.panels);
           var mapMoved = changed(before.paint, after.paint);
-          if (!panelMoved && !mapMoved) return { status: 'partial', code: 'no_change', html: (raw && raw.html) || '' };
-          if (panelMoved && !mapMoved) return { status: 'partial', code: 'not_rendered', observed: { panels: after.panels }, html: (raw && raw.html) || '' };
+          if (!panelMoved && !mapMoved) return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
+          if (panelMoved && !mapMoved) return { status: 'partial', produced: [], code: 'not_rendered', observed: { panels: after.panels }, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: after, html: (raw && raw.html) || '' };
         }
       },
@@ -700,7 +735,7 @@ export function makeAtlasCapabilities(HOST) {
           /* §14: 「`click()`後にpostconditionを検証する。対象操作にpostconditionが無ければ
              `completed`を返さない。」 The generic control fallback has no declared postcondition of
              its own, so the ONLY evidence available is that the app changed at all. */
-          if (before && after && !changed(before, after)) return { status: 'partial', code: 'no_change', html: (raw && raw.html) || '' };
+          if (before && after && !changed(before, after)) return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', html: (raw && raw.html) || '' };
         }
       }
@@ -738,10 +773,13 @@ export function makeAtlasCapabilities(HOST) {
          · a UI button calls IntMapOS.execute(id) → here → the same case
        so there is exactly one path from either shell to the engine, and it is observed. */
     function legacyExecute(cap) {
-      return function (ctx, args) {
+      return function (ctx, args, opts) {
         if (!runtime.dispatch) return Promise.resolve({ ok: false, meta: { code: 'unavailable' } });
         var a = Object.assign({}, args, { type: cap.legacy || cap.id });
-        return runtime.dispatch(a);
+        /* ⚠ (#R551) the execution context travels as dispatch's SECOND argument, so a legacy case
+           that needs to know which turn it is serving can ask — and one that does not is unchanged. */
+        return runtime.dispatch(a, { turnId: (opts && opts.turnId) || null, source: (opts && opts.source) || '',
+          operationId: (opts && opts.operationId) || '', capabilityId: cap.id });
       };
     }
 

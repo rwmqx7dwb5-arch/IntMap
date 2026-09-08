@@ -338,7 +338,11 @@ atlas-map-compose.js              **地図説明を1回で合成する層**（#R
                                   **名前で `unplaced`** として Atlas と読者に報告する（座標を発明しない）。
                                   `linkProse()` が回答文中の地名に番号バッジを付け、hover で地図の印と双方向に光る。
                                   ⚠ 描画元は `atl-compose-src` 1本——`atlas-capabilities.js` の paintNow が
-                                  この source を数えて「描いたか」を観測する
+                                  この source を数えて「描いたか」を観測する。
+                                  ⚠ **1つの依頼＝1つの地図**（#R551）— 同じターンの2回目は2枚目ではなく
+                                  **同じ地図の次の版**（`meta.artifact`）。版は地図全体を言い直す。
+                                  未配置の理由は not_found / timeout / not_attempted / over_item_limit に
+                                  分かれ、**回復可能なものは全部** Web 検証の1回の問い合わせへ載る
 atlas-admin1.js                   **第1レベル行政境界を、同梱ファイルから**（#R489）—
                                   `data/admin1-world.json.gz`（4,515 ユニット／247か国・#R290 で同梱）を
                                   **セッション1回**読み、名前・現地名・ISO 3166-2・HASC で引く。
@@ -377,7 +381,10 @@ atlas-turn-results.js             **1つの操作は、返信の中で1ブロッ
                                   同点なら先に書いたもの）。②**同じ操作の繰り返しは最後のもの**——同一性は
                                   action の型と引数、または結果が自分で名乗った `meta.resultKey`。
                                   ⚠ 唯一の防壁が「描画済み HTML の文字列比較」だったので、経路は素通りした
-                                  （`data-rset` が経路セットごとに変わる）。Atlas の呼び出し回数は制限しない
+                                  （`data-rset` が経路セットごとに変わる）。Atlas の呼び出し回数は制限しない。
+                                  ③**版を持つ成果物は順位づけない**（#R551）— `meta.artifact` を名乗る2件は
+                                  `revision` の大きいほうが残る。アプリが保持しているのが最新版なのだから、
+                                  点数で古い版を選べば「もう無い印」を説明する返信になる
 atlas-executor.js                 IntMapOS.execute() の中身（#R318）— 解決・可用性・引数検証・入力要求・
                                   前後の観測・完了待ち・事後条件・構造化結果・ライフサイクル・競合の直列化
 atlas-results.js                  全操作が返す1つの形（#R318）。`ok` は `status==='completed'` からの導出で書けない

@@ -151,9 +151,11 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
       `${lazy.length} capabilities need a lazy module`);
   }
 
-  /* ⑦ what a capability says it PRODUCES is something its verifier can observe */
-  {
-    const OBSERVABLE = { camera: ['camera', 'map'], layer: ['map'], paint: ['map', 'object'], panel: ['panel', 'file'],
+  /* ⚠⚠ (#R551) ONE TABLE, TWO CHECKS. `OBSERVABLE` (⑦) and `MAP_OBS` (⑱) were two hand-written
+     lists of the same fact — which observers watch the map — and a new observer had to be added to
+     BOTH or the audit disagreed with itself. `MAP_OBS` is now derived from this table, so
+     registering an observer once is registering it everywhere. */
+  const OBSERVABLE = { camera: ['camera', 'map'], layer: ['map'], paint: ['map', 'object'], panel: ['panel', 'file'],
       route: ['route', 'map', 'panel'], object: ['object', 'map'], setting: ['setting'], time: ['map', 'time'],
       panelPaint: ['panel', 'map', 'object'],
       /* (#R376) the "wxModel" observer reads which forecast model each weather MAP LAYER is
@@ -169,7 +171,15 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
          actually carry, so it observes the chart itself — the one output on this list that lives in
          the answer rather than on the map. */
       chart: ['chart', 'explanation'],
+      /* (#R551) the "mapCompose" observer reads the compose source's live feature count and holds it
+         against the number of places the call ASKED for — an observation of the map that a count
+         DELTA cannot make: five of sixteen moves the tally, and sixteen redrawn at corrected
+         coordinates does not. It also carries the still-missing names out as `unresolved`. */
+      mapCompose: ['map', 'object'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
+
+  /* ⑦ what a capability says it PRODUCES is something its verifier can observe */
+  {
     const bad = [];
     J.capabilities.forEach((c) => {
       if (!c.produces.length) return;
@@ -377,7 +387,7 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
        object ledger, and treats a query that matched nothing — and therefore drew nothing — as the
        COMPLETE answer it is rather than as `no_change`. See js/atlas-capabilities.js for why the
        generic observers report that correct run as a partial one. */
-    const MAP_OBS = ['paint', 'camera', 'layer', 'sim', 'route', 'object', 'time', 'panelPaint', 'wxModel', 'queryRows'];
+    const MAP_OBS = Object.keys(OBSERVABLE).filter((k) => k !== 'none' && OBSERVABLE[k].includes('map'));
     add('map-verified', 'a capability that promises the map is checked against the map',
       J.capabilities.filter((c) => c.produces.includes('map') && !MAP_OBS.includes(c.observerKind))
         .map((c) => `${c.id}: promises "map" but its observer is "${c.observerKind}"`));
