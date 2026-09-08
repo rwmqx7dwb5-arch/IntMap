@@ -4882,7 +4882,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          'atlas-kernel-not-loaded' — a true statement, which is the point: a capability is never
          silently absent. `docs` is the 58 kB catalogue the planner reads (js/atlas-catalog-text.js);
          it lives in THIS chunk because only the planner needs it. */
-      try{ CAPS.bindRuntime({ dispatch:a=>dispatch(a), docs:_DOCS, schemas:SCHEMAS }); }catch(_){}
+      try{ CAPS.bindRuntime({ dispatch:(a,c)=>dispatch(a,c), docs:_DOCS, schemas:SCHEMAS });   /* ⚠⚠⚠ (#R551) FORWARD THE CONTEXT, NOT JUST THE ACTION. This bound a ONE-ARGUMENT wrapper, so the execution context the kernel passes as dispatch's second argument was dropped at the door and every compose in a turn became its own artifact — the whole of #R551 was inert in the browser while every node check stayed green, because the checks bound a two-argument dispatch and the shipping console did not. A wrapper that narrows its callee's signature is a silent lossy adapter. */ }catch(_){}
       /* the state this file OWNS — everything else publishes its own (js/atlas-state.js §8) */
       try{ ASTATE.registerStateProvider('selection', _selectionState);
            ASTATE.registerStateProvider('atlas', _atlasOverlayState);

@@ -338,3 +338,61 @@ test('R551 ⑪: a partial compose that really painted still counts as having pro
     { ok: true, exec: { status: 'partial', counts: { requested: 2, placed: 1 }, unplaced: [{ name: 'x' }] } });
   assert.ok(!some.produced || some.produced.length, 'something on the map: the registry\u2019s produces stands');
 });
+
+/* ══ ⑫ THE CONTEXT MUST SURVIVE THE DOOR IT IS HANDED THROUGH ═════════════════════════════════
+   ⚠⚠⚠ MEASURED ON PRODUCTION, AFTER #R551 SHIPPED. Everything above was green and the fix was
+   INERT in the browser: js/atlas-console.js bound the kernel's dispatcher as `dispatch:a=>dispatch(a)`
+   — a ONE-ARGUMENT wrapper — so the execution context the kernel passes as the SECOND argument was
+   dropped at the door. `ctx.turnId` never arrived, every compose in a turn fell back to its own
+   `map:solo<n>` artefact, and the reader would have got the two stacked cards again.
+
+   ⚠ WHY NOTHING CAUGHT IT: ⑧ binds its own two-argument dispatch and asserts the ADAPTER forwards
+   the context. It does — the adapter was never the problem. The shipping console's wrapper is
+   NARROWER THAN THE FUNCTION IT WRAPS, and a fixture that is more capable than the real caller
+   cannot see that. So this asks the console's own binding, structurally: a wrapper standing between
+   the kernel and `dispatch` may not accept fewer arguments than it is called with, nor pass on
+   fewer than it accepts. It is parsed, not grepped — the spelling of the parameters is not the fact. */
+test('R551 ⑫: the console does not narrow the kernel dispatcher it binds', async () => {
+  const acorn = await import('acorn');
+  const src = R('js/atlas-console.js');
+  const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
+
+  let bound = null;
+  (function walk(n) {
+    if (!n || typeof n !== 'object') return;
+    if (n.type === 'CallExpression' && n.callee && n.callee.type === 'MemberExpression'
+      && n.callee.property && n.callee.property.name === 'bindRuntime') {
+      const arg = n.arguments && n.arguments[0];
+      if (arg && arg.type === 'ObjectExpression') {
+        const p = arg.properties.find((x) => x.key && (x.key.name || x.key.value) === 'dispatch');
+        if (p) bound = p.value;
+      }
+    }
+    for (const k of Object.keys(n)) {
+      const v = n[k];
+      if (Array.isArray(v)) v.forEach(walk); else if (v && typeof v === 'object' && v.type) walk(v);
+    }
+  })(ast);
+
+  assert.ok(bound, 'the console binds a dispatcher into the capability registry');
+  assert.ok(bound.type === 'ArrowFunctionExpression' || bound.type === 'FunctionExpression'
+    || bound.type === 'Identifier', 'and it is a function');
+
+  if (bound.type === 'Identifier') return;   /* the dispatcher itself, unwrapped — nothing to lose */
+
+  /* js/atlas-capabilities.js calls it with (action, context) */
+  assert.ok(bound.params.length >= 2,
+    'the wrapper accepts the context the kernel passes as the second argument (it took ' + bound.params.length + ')');
+
+  /* …and hands on everything it took: a wrapper that accepts ctx and drops it is the same defect */
+  const inner = bound.body && bound.body.type === 'CallExpression' ? bound.body
+    : (bound.body && bound.body.type === 'BlockStatement'
+      ? (bound.body.body.map((st) => (st.type === 'ReturnStatement' ? st.argument : null))
+        .find((e) => e && e.type === 'CallExpression'))
+      : null);
+  if (inner) {
+    assert.ok(inner.arguments.length >= bound.params.length,
+      'it forwards every argument it accepted (accepted ' + bound.params.length
+      + ', forwarded ' + inner.arguments.length + ')');
+  }
+});
