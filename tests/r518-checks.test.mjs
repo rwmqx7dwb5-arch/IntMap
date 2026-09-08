@@ -29,6 +29,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { codeOnly } from '../scripts/code-only.mjs';
+import { liftFunction } from './helpers/lift-function.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -101,12 +103,15 @@ test('② OHM end dates really are exclusive in this data', () => {
 });
 
 test('② the selector reads the end exclusively, and csFC still reads its own inclusively', () => {
-  const hb = TB.match(/function hbFC\(d,year,mon,day\)\{[\s\S]*?\n {6}return \{type:'FeatureCollection'/);
-  const cs = TB.match(/function csFC\(d,year,mon,day\)\{[\s\S]*?\n {6}return \{type:'FeatureCollection'/);
-  assert.ok(hb && cs, 'hbFC / csFC not found in the shape this check reads');
-  assert.match(hb[0], /_ymd\(f\[5\],f\[6\],f\[7\]\)<=t/, 'hbFC must skip a record whose end is at or before the day');
-  assert.match(cs[0], /_ymd\(f\[5\],f\[6\],f\[7\]\)<t/, 'csFC must keep a record whose end IS the day');
-  assert.doesNotMatch(cs[0], /_ymd\(f\[5\],f\[6\],f\[7\]\)<=t/, 'csFC must not adopt the exclusive reading');
+  /* ⚠ (#R531) THE BODY IS TAKEN BY BRACE, NOT BY WHAT IT RETURNS. This used to end the match at
+     `return {type:'FeatureCollection'`; when csFC started returning a local instead, the lazy match
+     ran past its end, swallowed hbFC, and this check failed on hbFC's `<=t` while csFC was fine.
+     tests/helpers/lift-function.mjs is the one matcher. */
+  const hb = liftFunction(codeOnly(TB), 'hbFC');
+  const cs = liftFunction(codeOnly(TB), 'csFC');
+  assert.match(hb, /_ymd\(f\[5\],f\[6\],f\[7\]\)<=t/, 'hbFC must skip a record whose end is at or before the day');
+  assert.match(cs, /_ymd\(f\[5\],f\[6\],f\[7\]\)<t/, 'csFC must keep a record whose end IS the day');
+  assert.doesNotMatch(cs, /_ymd\(f\[5\],f\[6\],f\[7\]\)<=t/, 'csFC must not adopt the exclusive reading');
 });
 
 test('② and no day of the window draws the same entity twice', () => {

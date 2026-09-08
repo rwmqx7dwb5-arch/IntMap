@@ -56,9 +56,8 @@
 | 4 | 3-D・Cesium・物理・シミュレータを触ったとき | `npm run test:deep` |
 
 ⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、`npm run check:docs` の
-`gate-lists` 規則が両者を突き合わせる）。かつてここには 5 件しか無く、しかも
-`.agents/roles/intmap-verifier.md` が「この表が**唯一の正本**・ここには書き写さない」と
-宣言していた——**書き写しを禁じた分だけ、正本の穴がそのまま固定されていた。**
+`gate-lists` 規則が両者を突き合わせる）。**ゲートを足したらこの表と
+`.agents/roles/intmap-verifier.md` の両方に書く**（経緯は `DEV-NOTES.md` #R403 §6）。
 
 | 触った主題 | ゲート |
 |---|---|
@@ -73,6 +72,7 @@
 | 言語レイヤー | `npm run check:languages` |
 | 歴史都市名 | `npm run check:histcities` |
 | 1850–1885 の歴史国境 | `npm run check:histborders` |
+| 歴史国境のどの辺を描くか | `npm run check:bordercoast` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |
 | 起動費用（**build が要る**） | `npm run check:perf` |

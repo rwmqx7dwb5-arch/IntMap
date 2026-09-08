@@ -625,6 +625,8 @@ hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
 data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）
+data/border-coast.js              歴史的国境の各辺が「国境」か「その記録が持つ海岸線の写し」かの印（両方の束の
+                                  全 4,830 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` はこの印の run だけを描く
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
                                   3,053件／rings 4,643・6.55 MB＝brotli 0.67 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
@@ -689,6 +691,10 @@ scripts/
                                   要るので、代わりに**同梱ファイルの不変条件**を測る（窓の中に収まっているか・リング番号が
                                   解決するか・日付の順序・英語名の有無・**窓のどの年にも描く世界があるか**）。
                                   `--fetch` が取得、無印がビルド、`--report` が被覆表。
+  build-border-coast.mjs          同梱の海岸線（`data/coastline.json.gz`）に照らして、歴史国境の各辺が国境か海岸線の
+                                  写しかを印す → `data/border-coast.js`。⚠ **`--check` は全リングを再導出して突き合わせる**
+                                  （上流不要）。`--report` が唯一の定数 `INLAND_KM` を読み取る分布を出す
+  bordercoast/                    その部品（`water.mjs` 海岸線の記録から陸／海の判定と最寄りの水際までの距離）
   histborders/                    その部品（`fetch.mjs` Overpass の取得とキャッシュ／`geom.mjs` リングの縫合と簡略化。
                                   ⚠ 縫合は**前後両方向へ伸ばす**——片方向だと穴の開いた輪郭が種を置いた場所で刻まれ、
                                   実測でチリ 1861–1866 が18片に割れて最大の1片が「閉じない」として捨てられていた）

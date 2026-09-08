@@ -1,7 +1,5 @@
 {
- "solo": [
-  "-cesium.*.spec.js$"
- ],
+ "tests/r531.spec.js": 4,
  "tests/internal-qa.spec.js": 2,
  "tests/monitors.spec.js": 10,
  "tests/r142.spec.js": 13,
@@ -106,5 +104,8 @@
  "tests/r530.spec.js": 9,
  "tests/r545.spec.js": 5,
  "tests/smoke.spec.js": 8,
- "tests/r550.spec.js": 12
+ "tests/r550.spec.js": 12,
+ "solo": [
+  "-cesium.*.spec.js$"
+ ]
 }

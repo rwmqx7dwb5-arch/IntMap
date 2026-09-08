@@ -331,7 +331,17 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
        entries and the gap between local and table seconds is ROUNDING, not hardware.
        1.62 × 3.331 = 5.39; ceil(max) = 4. ENTERED AS 5 — the ceiling of the batch plus the same
        one-second margin #R494 and #R508 added at this spot. */
-const TOTAL_BUDGET_S = 4665;            /* 77.8 min — 4,653 (#R545) + 12 (#R550: tests/r550.spec.js, measured) */
+/* ⚠⚠ (#R531) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT — 4,665 -> 4,669 (+4 s). Saying it here
+   as well as in the ledger because this file's own message is «never raise it»; #R410, #R451, #R405,
+   #R530 and #R545 are the precedents for saying so plainly. tests/r531.spec.js is the gate half of
+   «the historical border is not drawn out at sea» — the marks in data/border-coast.js are re-derived
+   exhaustively by tests/r531-checks.test.mjs, and the one thing that cannot be asked of a file is
+   whether those marks REACH the layer; before this round nothing measured whether `imtb-line` had any
+   geometry at all, so an empty line source was green. Measured the way #R405/#R416/#R510 measured
+   theirs — warm server, one worker, the reporter's own test-body durations — 3.44 s + 0.55 s, entered
+   as 4. The CORE ceiling did not move: at 4 s against CORE_MAX_S this file does not stand in the gate.
+   Not paid out of a stale-high entry (#R405: none has been measured that this round may take from). */
+const TOTAL_BUDGET_S = 4669;            /* 77.8 min — 4,665 (#R550) + 4 (#R531: tests/r531.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

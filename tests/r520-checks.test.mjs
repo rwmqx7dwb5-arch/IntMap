@@ -28,29 +28,18 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { liftFunction } from './helpers/lift-function.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 const TB = read('js/time-borders.js');
 const TBC = codeOnly(TB);
 
-/* ── lift a function declaration out of the shipped file, body and all ─────────────────────────────
-   ⚠ Not a copy of the algorithm: the text below IS the text that ships. A brace matcher that steps
-   over string literals, run on the comment-stripped source, so a `{` inside a comment or a quoted
-   'FeatureCollection' cannot end a function early. */
+/* the brace matcher moved to tests/helpers/lift-function.mjs in #R531, when a SECOND check needed
+   it and had grown its own regex instead — see that file for what the regex did. */
 const lift = (name) => {
-  const head = 'function ' + name + '(';
-  const at = TBC.indexOf(head);
-  assert.ok(at >= 0, 'js/time-borders.js no longer declares ' + name);
-  let i = TBC.indexOf('{', at), depth = 0, q = null;
-  for (; i < TBC.length; i++) {
-    const c = TBC[i];
-    if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
-    if (c === '"' || c === "'" || c === '`') { q = c; continue; }
-    if (c === '{') depth++;
-    else if (c === '}') { depth--; if (!depth) return TBC.slice(at, i + 1); }
-  }
-  throw new Error('unbalanced body for ' + name);
+  try { return liftFunction(TBC, name); }
+  catch (e) { assert.fail('js/time-borders.js: ' + e.message); }
 };
 
 const NEEDED = ['_ringArea', '_mainPoly', '_segD2', '_polyD', '_qPush', '_qPop', '_pole', '_thinRing',
@@ -217,18 +206,29 @@ test('R520 ③: every push of the borders pushes the names with them', () => {
      declaration, so a build that dropped the call from ONE site still counted high enough. Asked per
      site instead — every write of the polygons is followed, before the statement list moves on, by a
      write of the points. That also survives a new push site being added, which a named list would not. */
+  /* ⚠ (#R531) THREE SOURCES NOW, AND THE WINDOW IS NOT THE CLAIM. The stroked outline moved to
+     `imtb-ln-src`, so a site that writes the polygons and neither the names nor the line leaves the
+     map showing one year's borders under another year's names — or no borders at all. The window
+     also has to be wide enough for three writes; it was 160 characters, which the line write alone
+     pushed the label write out of. Measured from the file, not guessed: the widest site is taken and
+     a margin added, so adding a fourth companion write cannot silently un-check the other two. */
   const sites = [...TBC.matchAll(/setSourceData\('imtb-src'/g)].map((m) => m.index);
   assert.ok(sites.length >= 5, 'js/time-borders.js writes imtb-src at ' + sites.length + ' sites — fewer than the five this check was written against');
-  const missed = sites.filter((i) => !/_pushLbl\(|setSourceData\('imtb-lbl-src'/.test(TBC.slice(i, i + 160)));
-  assert.equal(missed.length, 0, missed.length + ' of the ' + sites.length +
-    ' imtb-src writes do not push the names with them — those will keep showing the previous year: ' +
-    missed.map((i) => JSON.stringify(TBC.slice(i, i + 60))).join(' / '));
+  const WIN = 420;
+  for (const [what, re] of [['the names', /_pushLbl\(|setSourceData\('imtb-lbl-src'/], ['the outline', /setSourceData\('imtb-ln-src'/]]) {
+    const missed = sites.filter((i) => !re.test(TBC.slice(i, i + WIN)));
+    assert.equal(missed.length, 0, missed.length + ' of the ' + sites.length +
+      ' imtb-src writes do not push ' + what + ' with them — those will keep showing the previous year: ' +
+      missed.map((i) => JSON.stringify(TBC.slice(i, i + 60))).join(' / '));
+  }
 
   /* clear() must empty BOTH: an era name left over the present map is the same bug as an era border */
   const clr = /function clear\(\)\{[\s\S]*?_restoreBase\(\);/.exec(TBC);
   assert.ok(clr, 'clear() cannot be read');
   assert.ok(/setSourceData\('imtb-lbl-src',\{type:'FeatureCollection',features:\[\]\}\)/.test(clr[0]),
     'returning to Now empties the borders but leaves the era names on the map');
+  assert.ok(/setSourceData\('imtb-ln-src',\{type:'FeatureCollection',features:\[\]\}\)/.test(clr[0]),
+    'returning to Now empties the polygons but leaves the era border LINE on the present map (#R531)');
 });
 
 test('R520 ③: the anchor is cached on the geometry, so a decade of travel pays once', () => {

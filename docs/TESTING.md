@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
-**105 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
+**106 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **295 Node test files** with no browser at all (counted from
 
@@ -42,7 +42,7 @@ gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **w
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **98 spec files** — is the whole suite minus core
+**deep** tier — **99 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -568,7 +568,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **98 spec files** against core's 7, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **99 spec files** against core's 7, because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.
@@ -716,6 +716,27 @@ America), so a record that quietly reverted to the modern world fails even thoug
 The one thing neither can see is a border that is in the right shape and the wrong place. That is
 what #R146 measured the hard way for the inner-German border, and the same warning holds here:
 internal consistency is not geographic accuracy.
+
+### `npm run check:bordercoast` — 描かれる辺を、実物の海岸線に照らす (#R531)
+
+⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
+入力は同梱の `data/cshapes.js` / `data/hist-borders.js` / `data/coastline.json.gz` だけなので、
+**両方の束の全 4,830 リングを判定し直して `data/border-coast.js` とバイト単位で突き合わせる**
+（約 16 秒）。上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
+**「描かれる線は本当に陸の上にあるか」**を問う。#R531 の実測はその区別そのものだった:
+1900 年のフランスの輪郭にある 40 km の弦は海の上をまっすぐ横切りながら、上の門の条件を
+**全部満たしていた**。
+
+`tests/r531-checks.test.mjs`（8 本）が同じ束から独立に測る——報告された辺
+`[3.547,43.32] → [3.965,43.541]` が記録に存在し、かつ**描かれない**こと／描かれる長さのうち
+水上にあるのは **1% 未満**であること（ゼロではない: 北緯 49 度線やアラスカ条約線は本物の
+境界で、水を渡る）／run の構造／そして #R505 と #R520 の作法どおり、出荷される
+`js/time-borders.js` から `_ringLines` を**取り出して評価し**、`data/cshapes.js`（環が閉じている）と
+`data/hist-borders.js`（閉じていない）の**両方の綴り**で run が 1 ずれないことを確かめる。
+
+`tests/r531.spec.js` はその門の**ブラウザ側の半分**で、これだけはファイルに訊けない——
+印がレイヤーへ**届いているか**。#R531 以前は `imtb-line` に幾何があるかを測る spec が 1 本も
+無かったので、**線の source が空でも全部緑**だった。
 
 ## 文書の検査 — `npm run check:docs` の規則一覧 (`scripts/doc-facts.mjs`)
 

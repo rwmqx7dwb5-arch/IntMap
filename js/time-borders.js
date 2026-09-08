@@ -216,11 +216,68 @@ window.IntMapModules.timeBorders=function(HOST){
     function _csName(nm,gw,y){ const rules=_CS_ERA[gw];
       if(rules){ for(const r of rules){ if(y<r[0]) return r[1]; } }
       return String(nm||'').replace(/\s*\([^)]*\)\s*$/,''); }   /* default: drop the "(…)" gloss (e.g. "Madagascar (Malagasy)") */
+    /* ══ (#R531) WHICH EDGES OF AN OUTLINE ARE BORDER ═════════════════════════════════════════════
+       data/border-coast.js marks, for every pooled ring of BOTH bundles, the runs that are a
+       boundary between polities rather than the record's own copy of the coastline. The measurement,
+       the rule and the one constant in it are in scripts/build-border-coast.mjs; here it is only read.
+       ⚠ IT IS OPTIONAL. Without it every ring is stroked whole — which is what shipped before this
+       round, and is what the aourednik fallback still gets, since there is no build step to mark a
+       collection fetched from GitHub at the moment it is drawn.
+       ⚠ THE CLOSED RING IS THE INDEX. data/cshapes.js repeats a ring's first point and
+       data/hist-borders.js does not, so a run [a,b] is read off the ring CLOSED — the same walk the
+       marks were measured on. Reading it off the raw ring would slide every run by one on one of the
+       two records. */
+    /* ⚠ DECLARED HERE, ABOVE THE ONLY THING THAT CLEARS THEM (#R505): a `const` further down the
+       module would be in its temporal dead zone for `bcLoad`'s onload if the marks ever arrived
+       during evaluation. */
+    const _csLn=new Map(), _hbLn=new Map();
+    let _bcD=null,_bcP=null;
+    function bcLoad(){ if(_bcD) return Promise.resolve(_bcD); if(_bcP) return _bcP;
+      _bcP=new Promise(res=>{ if(window.__IMBCOAST){ _bcD=window.__IMBCOAST; res(_bcD); return; }
+        const s=document.createElement('script'); s.src='data/border-coast.js'; s.async=true;
+        s.onload=()=>{ _bcD=window.__IMBCOAST||null; if(_bcD){ _csLn.clear(); _hbLn.clear(); } res(_bcD); };
+        /* ⚠ DROP THE PROMISE ON FAILURE, the way csLoad/hbLoad do. Keeping a resolved-null promise
+           would make one lost request permanent for the session — and because the line geometry is
+           MEMOISED per record, the map would then be pinned to the whole-ring drawing (the picture
+           this round removed) until a reload. Clearing the memo on a late arrival is the other half
+           of the same point. */
+        s.onerror=()=>{ _bcP=null; res(null); };
+        document.head.appendChild(s); });
+      return _bcP; }
+    function _bcMarks(set){ try{ return (_bcD&&_bcD.sets&&_bcD.sets[set]&&_bcD.sets[set].draw)||null; }catch(_){ return null; } }
+    const _closedRing=r=>{ const n=r.length; return (n>1&&r[0][0]===r[n-1][0]&&r[0][1]===r[n-1][1])?r:r.concat([r[0]]); };
+    /* the border runs of one ring, as LineString coordinate arrays */
+    function _ringLines(ring,mark){ const V=_closedRing(ring);
+      if(mark===0) return [];
+      if(mark===1||!Array.isArray(mark)) return [V];
+      const out=[]; for(const run of mark){ const seg=V.slice(run[0],run[1]+1); if(seg.length>1) out.push(seg); }
+      return out; }
+    function _lineGeom(d,idx,marks){ const lines=[];
+      for(const poly of d.feats[idx][8]) for(const ri of poly){ for(const l of _ringLines(d.rings[ri],marks?marks[ri]:1)) lines.push(l); }
+      return lines.length?{type:'MultiLineString',coordinates:lines}:null; }
+    /* an unmarked collection (the aourednik fallback, or a bundle drawn before the marks arrive):
+       every ring of every feature, stroked whole — the outline this file drew before #R531. */
+    function _wholeLines(fc){ const feats=[];
+      for(const f of ((fc&&fc.features)||[])){ const g=f.geometry; if(!g) continue;
+        const polys=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:null); if(!polys) continue;
+        const lines=[]; for(const p of polys) for(const r of p) if(r&&r.length>1) lines.push(_closedRing(r));
+        if(lines.length) feats.push({type:'Feature',geometry:{type:'MultiLineString',coordinates:lines},properties:{}}); }
+      return {type:'FeatureCollection',features:feats}; }
+    const _lineFeat=g=>({type:'Feature',geometry:g,properties:{}});
+    /* ⚠ THE OUTLINE HANGS OFF THE COLLECTION, NOT ON IT. A `fc._lines` property would ride inside
+       every `setSourceData('imtb-src', fc)` — structured-cloned to the worker with the polygons it
+       duplicates, and walked by js/geo-command-log.js's deep-equal (#R520). A WeakMap keyed by the
+       same collection the year cache holds carries it without touching what is sent. */
+    const _lnOf=new WeakMap();
+    function _linesFor(fc){ let v=_lnOf.get(fc); if(v) return v;
+      v=_wholeLines(fc); _lnOf.set(fc,v); return v; }   /* unmarked (the aourednik fallback): stroke every ring */
     function _csGeomOf(d,idx){ let g=_csGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
       _csGeom.set(idx,g); return g; }
-    function csFC(d,year,mon,day){ const feats=[];
+    function _csLineOf(d,idx){ if(_csLn.has(idx)) return _csLn.get(idx);
+      const g=_lineGeom(d,idx,_bcMarks('cs')); _csLn.set(idx,g); return g; }
+    function csFC(d,year,mon,day){ const feats=[],lines=[];
       /* (#R421) `mon`/`day` absent = the old July-1 sample, kept so the aourednik-fallback and any
          year-only caller still get a defined instant rather than January 1. */
       const M=(mon>=1&&mon<=12)?mon:7, D=(day>=1&&day<=31)?day:1, t=_ymd(year,M,D);
@@ -228,8 +285,11 @@ window.IntMapModules.timeBorders=function(HOST){
         /* active ON that date: started at or before it, and not yet ended (CShapes end dates are inclusive) */
         if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<t) continue;
         const NAME=_csName(f[0],f[1],year);
-        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:{NAME:NAME,name:NAME,_gw:f[1]}}); }
-      return {type:'FeatureCollection',features:feats}; }
+        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:{NAME:NAME,name:NAME,_gw:f[1]}});
+        const lg=_csLineOf(_csD,i); if(lg) lines.push(_lineFeat(lg)); }
+      const fc={type:'FeatureCollection',features:feats};
+      _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
+      return fc; }
     /* ══ (#R518) …AND BELOW CShapes, THE SAME MACHINERY ON A SECOND RECORD ═════════════════════════
        「1850–1885の国境を本気で埋めて」 The clock's floor is 1850 (js/chronos.js) and CShapes begins on
        1886-01-01, so the thirty-six years between them had NO bundled polygons at all — not "coarse
@@ -259,6 +319,8 @@ window.IntMapModules.timeBorders=function(HOST){
       _hbBnd=[...set].filter(k=>k>=_ymd(HB_MIN,1,1)&&k<=_ymd(HB_MAX,12,31)).sort((a,b)=>a-b);
       return _hbBnd; }
     function hbEpoch(d,y,m,dd){ return _epochIn(hbBounds(d),_ymd(y,m,dd)); }
+    function _hbLineOf(d,idx){ if(_hbLn.has(idx)) return _hbLn.get(idx);
+      const g=_lineGeom(d,idx,_bcMarks('hb')); _hbLn.set(idx,g); return g; }
     function _hbGeomOf(d,idx){ let g=_hbGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
@@ -269,13 +331,16 @@ window.IntMapModules.timeBorders=function(HOST){
        Land». OHM carries name:en/ja/de/ru/es/zh/fr/ko on 274-435 of these 494 records, so `_i18n` rides
        along on the feature and `tagSame` reads it before it reaches `_eraLocName`. It is re-read on
        every apply(), so switching language re-labels without re-selecting anything. */
-    function hbFC(d,year,mon,day){ const feats=[];
+    function hbFC(d,year,mon,day){ const feats=[],lines=[];
       const M=(mon>=1&&mon<=12)?mon:7, D=(day>=1&&day<=31)?day:1, t=_ymd(year,M,D);
       for(let i=0;i<d.feats.length;i++){ const f=d.feats[i];
         if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<=t) continue;   /* start <= t < end — the end is EXCLUSIVE here */
         const NAME=f[0].en;
-        feats.push({type:'Feature',geometry:_hbGeomOf(d,i),properties:{NAME:NAME,name:NAME,_i18n:f[0]}}); }
-      return {type:'FeatureCollection',features:feats}; }
+        feats.push({type:'Feature',geometry:_hbGeomOf(d,i),properties:{NAME:NAME,name:NAME,_i18n:f[0]}});
+        const lg=_hbLineOf(d,i); if(lg) lines.push(_lineFeat(lg)); }
+      const fc={type:'FeatureCollection',features:feats};
+      _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
+      return fc; }
     /* (#R105) vanished entities that occupy a modern country's territory (shared by the click resolver + the era
        correction) — a point-in-polygon would mis-resolve them to the modern occupant. */
     /* (#R128) flags for the vanished entities (were name+wiki only). Inline SVG data-URIs, no external assets —
@@ -506,6 +571,22 @@ window.IntMapModules.timeBorders=function(HOST){
     function _pushLbl(fc){ try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik)'});
+      /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
+         「昔の国境は海岸より先まであるのが気持ち悪い。」 A political record's ring is two kinds of edge in
+         one loop: the boundaries between polities, which only that record knows, and the polity's own
+         copy of the COASTLINE, which the planet knows better. Measured on France 1900-07-01, the
+         second kind runs up to 5.3 km from the real shore and contains one 40 km straight chord
+         across open water from Sète to Le Grau-du-Roi — drawn in the same colour and the same width
+         as `coast-only-line`, which was on screen at the same moment showing the true coast from the
+         vector tiles. Two identical-looking lines, kilometres apart.
+         So the coast copy is not corrected, it is not STROKED: `imtb-line` moved off the polygons to
+         this line source, which carries only the BORDER runs (data/border-coast.js, built by
+         scripts/build-border-coast.mjs). `imtb-fill` keeps the polygons — the click target and the
+         label anchors are about the territory, which has not changed.
+         ⚠ AND THE CREDIT MOVES WITH THE LINE. `imtb-src` kept the attribution because it was what
+         drew; after this it only holds the click target, and the visible line would have come from a
+         source that credits nobody. Both carry it — MapLibre folds identical strings into one. */
+      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik)'});
       /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
          of its own: it is the same datasets, already credited by the source it is derived from, whose
          `imtb-line` is on screen in exactly the moments these labels are. */
@@ -518,7 +599,7 @@ window.IntMapModules.timeBorders=function(HOST){
          runs, not what a border looks like. The literals are the fallback for a page where the module
          has not been evaluated, and they are the same numbers. */
       const _BS=(window.IntMapBorderStyle||{});
-      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_BS.color||'#d9dbe0','line-opacity':0.95,'line-width':_BS.width||['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]}}, before);
+      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-ln-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_BS.color||'#d9dbe0','line-opacity':0.95,'line-width':_BS.width||['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]}}, before);
       /* == (#R309) A PAST COUNTRY'S NAME IS A COUNTRY NAME ======================================
          「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 #R101 gave the RENAMED half its
          own smaller "era style" (that request was about the UNCHANGED half keeping the normal one), so
@@ -576,6 +657,11 @@ window.IntMapModules.timeBorders=function(HOST){
              river), defer to that label so the PLACE opens — not the country. An era country-NAME label click
              (imtb-lbl / imtb-lbl2) still opens the country as before. */
           const _lyr=(e.features&&e.features[0]&&e.features[0].layer&&e.features[0].layer.id)||'';
+          /* ⚠ (#R531) `_clk` IS BOUND TO THE NAME LAYERS ONLY (`onLayer('click','imtb-lbl'…)` below), so
+             neither branch id here is reachable today. If one is ever bound again, bind `imtb-fill`:
+             the line's features carry NO properties now — its geometry comes from `imtb-ln-src`, which
+             is one MultiLineString per polity and nothing else — so `_openEra` would read an empty name
+             off it and do nothing. The territory is what a click is about, and that is the fill. */
           if(_lyr==='imtb-fill'||_lyr==='imtb-line'){
             try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
               if(specific.length&&e.point&&GE().coords.queryRenderedFeatures(e.point,{layers:specific}).length) return; }catch(_){}
@@ -1024,8 +1110,12 @@ window.IntMapModules.timeBorders=function(HOST){
          with the layers missing, and this early return then bypassed ensure() forever — the "年代を変えても歴史的
          国境が表示されない" report (data was being set on a source no layer drew). Layers gone → fall through to
          ensure(), which idempotently recreates them. */
-      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); _pushLbl(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
-      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); }
+      /* (#R531) the polygons and the stroked outline are two sources now, and the outline is derived
+         from the collection, so a collection that arrived without marks (the aourednik fallback)
+         still has one — computed once and kept on the object the year cache holds. */
+      const _ln=()=>{ try{ return _linesFor(fc); }catch(_){ return {type:'FeatureCollection',features:[]}; } };
+      try{ if(GE().layers.hasSource('imtb-src')&&GE().layers.hasSource('imtb-ln-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); _pushLbl(fc); window._applyBorders(); _afterApply(); return; } }catch(_){}
+      if(ensure()){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_ln()); }catch(_){} _pushLbl(fc); try{ window._applyBorders(); }catch(_){} _afterApply(); }
       /* (#R140) was map.once('idle',…) — a ONE-SHOT 'idle' that NEVER fires on a busy/backgrounded map (another source
          still tile-loading), so the era layers were never created and the borders stayed absent until a reload
          ("歴史的国境が表示されない・再読み込みで治る"). Reuse the app's own whenStyleReady() (polls + hard-resolves after
@@ -1037,6 +1127,7 @@ window.IntMapModules.timeBorders=function(HOST){
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
       try{ GE().layers.setSourceData('imtb-src',{type:'FeatureCollection',features:[]}); }catch(_){}
+      try{ GE().layers.setSourceData('imtb-ln-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ GE().layers.setSourceData('imtb-lbl-src',{type:'FeatureCollection',features:[]}); }catch(_){}
       try{ ['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility','none'); }); }catch(_){}
       _restoreBase(); try{ window._applyBorders&&window._applyBorders(); }catch(_){} }
@@ -1048,7 +1139,7 @@ window.IntMapModules.timeBorders=function(HOST){
       shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years. ⚠ (#R421) it is derived from the INSTANT now, so it still answers "which year is on screen" while the borders under it moved to day precision. */
       /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the aourednik snapshot path
          below if the CShapes bundle can't be loaded. */
-      if(year>=CS_MIN&&year<=CS_MAX){ const d=await csLoad();
+      if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
         if(my!==seq||!active) return;
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing */
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) don't silently give up when the style is mid-load — retry once ready */
@@ -1057,7 +1148,7 @@ window.IntMapModules.timeBorders=function(HOST){
       /* (#R518) 1850–1885 → the same day-exact treatment, off data/hist-borders.js. Same shape as the
          block above on purpose: the aourednik snapshot below stays the fallback for both bands, so a
          bundle that fails to load still leaves a world on the screen instead of a blank one. */
-      if(year>=HB_MIN&&year<=HB_MAX){ const d=await hbLoad();
+      if(year>=HB_MIN&&year<=HB_MAX){ const d=(await Promise.all([hbLoad(),bcLoad()]))[0];   /* (#R531) as above */
         if(my!==seq||!active) return;
         if(d){ let key; try{ key='hb'+hbEpoch(d,year,mon,day); }catch(_){ key='hb'+year; }
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }
@@ -1095,11 +1186,16 @@ window.IntMapModules.timeBorders=function(HOST){
     window.addEventListener('intmap-hist-identity',()=>{ try{ if(!active||!shownFC||!Array.isArray(shownFC.features)) return;
       const sig=()=>JSON.stringify(shownFC.features.map(f=>{ const p=f.properties||{}; return [p._same||0,p._modName||'',p._locName||'']; }));
       const before=sig(); tagSame(shownFC,shownYear); if(sig()===before) return;
-      if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',shownFC); _pushLbl(shownFC); }
+      if(GE().layers.hasSource('imtb-src')&&GE().layers.has('imtb-line')){ GE().layers.setSourceData('imtb-src',shownFC);
+        /* (#R531) the identities changed, not the geometry — but this path also runs when the layers
+           were rebuilt underneath, so the outline is re-asserted with them rather than left empty. */
+        try{ if(GE().layers.hasSource('imtb-ln-src')) GE().layers.setSourceData('imtb-ln-src',_linesFor(shownFC)); }catch(_){}
+        _pushLbl(shownFC); }
     }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
-    (function warm(){ const pf=()=>{ csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
+    (function warm(){ const pf=()=>{ bcLoad();   /* (#R531) 85 KB of marks, beside the 5.5 MB it marks */
+      csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
         let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); };
       /* (#R122) load the CShapes bundle EAGERLY (was idle-gated up to 6 s) so the FIRST time-travel doesn't block on
          parsing it — the reported "年代を変えてから国境が出るまで遅い". A short delay keeps it off the critical boot path.
@@ -1133,7 +1229,7 @@ window.IntMapModules.timeBorders=function(HOST){
     /* re-assert ONLY when a base-style swap (globe/flat/satellite) WIPED our layers — detected by a missing
        imtb-line. Re-asserting on EVERY styledata would loop, because our own setLayoutProperty fires styledata
        (that was the fast-blink). */
-    GE().events.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!GE().layers.has('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!GE().layers.has('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ GE().layers.setSourceData('imtb-src',fc); }catch(_){} _pushLbl(fc); } window._applyBorders(); } }catch(_){} },160); });
+    GE().events.on('styledata',()=>{ if(active&&shownY!=null&&_imCanDraw()&&!GE().layers.has('imtb-line')) setTimeout(()=>{ try{ if(active&&_imCanDraw()&&!GE().layers.has('imtb-line')){ ensure(); const fc=cache.get(shownY); if(fc){ try{ GE().layers.setSourceData('imtb-src',fc); GE().layers.setSourceData('imtb-ln-src',_linesFor(fc)); }catch(_){} _pushLbl(fc); } window._applyBorders(); } }catch(_){} },160); });
     /* (#R94h) geometry of the era polygon whose NAME matches — used to paint compared former states.
        (#R94o) pick the LARGEST match, not the first: a broad regex like the British-Raj `/^india$/` also hits a
        tiny mislabeled "India" sliver in the 1900 data (a 28-pt strip near the Iran border), and `.find()` grabbed
