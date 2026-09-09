@@ -62,27 +62,43 @@
  *  frame life, one block re-randomised every 8 frames. Trail decay is a MULTIPLY of the whole
  *  back buffer by 0.905 per frame, not a translucent quad over it.
  *
- *  ⚠ WHAT DRIVES THE SPEED IS OURS, NOT THEIRS. Windy's wave tiles carry a velocity vector in R,G
- *  whose physical quantity is not stated anywhere in the bundle; all that is visible is that it is
- *  normalised by glMaxSpeedParam = 10 and floored at glMinSpeedParam = 0.5. We rebuild the field
- *  from `wave_period` and `wave_direction`, and the speed is the deep-water GROUP velocity
- *  cg = gT/4π ≈ 0.78·T m/s — the speed the ENERGY of a swell travels at, which is the thing an
- *  animated particle stands for. It is half the phase speed c = gT/2π a crest moves at.
- *  MEASURED on the 2026-09-09 06Z ecmwf_wam025 grid (665,628 sea nodes with a period): phase speed
- *  puts 565,426 of them — 84.9% — hard against the 10 m/s ceiling, so an 8 s wind sea and a 20 s
- *  Pacific swell would animate at exactly the same speed; group speed saturates 41,663, i.e. 6.3%.
- *  ⚠ SO THE PARTICLES HERE ARE ABOUT HALF THE SPEED OF WINDY'S, DELIBERATELY. Windy's own arithmetic
- *  is reproduced exactly (below); the difference is which physical speed feeds it.
+ *  ⚠⚠⚠ THE SPEED IS THE WAVE PERIOD IN SECONDS, AND `g` NEVER APPEARS IN IT. Windy's wave tiles
+ *  carry a vector in R,G, and THEIR OWN DECODER SAYS WHAT ITS MAGNITUDE IS — read out of the live
+ *  bundle on 2026-09-10, verbatim:
+ *      W.utils.wave2obj = ([e,t,n]) => ({ period: hypot(e,t), dir: …(e,t,10), size: n })
+ *  so the LENGTH of the R,G vector IS the wave period in seconds, its bearing is the direction, and
+ *  B is the significant height. Not inferred from the picture: it is the name Windy's own function
+ *  gives the quantity. MEASURED by decoding six live `waves-surface.png` tiles from ims.windy.com
+ *  (283,490 sea pixels, 2026-09-10): hypot(R,G) runs p5 3.84 / p25 7.70 / p50 9.37 / p75 11.18 /
+ *  p95 14.27, max 22.58 — that is a period distribution in seconds, not a velocity in m/s — while
+ *  B runs p5 0.26 / p50 2.17 / p95 6.53 with a declared per-tile range of 0.023…3.34 m, i.e. a wave
+ *  height. ⚠ THEREFORE `glMaxSpeedParam = 10` READS AS 「ten SECONDS is full speed」, and the
+ *  normalised speed the shader is fed is, with glSpeedCurvePowParam = 1 (linear),
+ *      clamp(T / glMaxSpeedParam, glMinSpeedParam/glMaxSpeedParam = 0.05, 1)
+ *  ⚠ TWO PHYSICAL VELOCITIES WERE TRIED HERE BEFORE THIS AND BOTH WERE WRONG. Until #R577 this file
+ *  used the phase speed c = gT/2π ≈ 1.56·T m/s; #R577 replaced it with the deep-water GROUP speed
+ *  cg = gT/4π ≈ 0.78·T because the phase speed pinned 84.9% of the ocean against the ceiling. Both
+ *  arguments were about physics, and the ceiling is not about physics: it is ten of whatever units
+ *  the field is in, and those units are seconds. ⚠ IF THE PRESENT LAW LOOKS PHYSICALLY WRONG, IT IS:
+ *  a period is not a speed. The reader asked for 「全部 Windy と同じ挙動に」 and Windy animates the
+ *  period, so putting a velocity back here is a PRODUCT decision to stop matching Windy, not a bug
+ *  fix — make it deliberately or not at all (#R622).
+ *  MEASURED on our own field with the same statistic (ecmwf_wam025, run 2026-09-09 12Z, 665,628 sea
+ *  nodes carrying a period): p5 4.50 / p25 7.05 / p50 8.60 / p75 10.25 / p95 13.60 s, mean 8.85,
+ *  min 1.25, max 25.0 — and 28.5% of it at or over the 10 s ceiling, against the 38.7% measured in
+ *  Windy's own tiles. (The two are different samples: ours is every sea node on the globe, theirs is
+ *  six tiles, so the ceiling shares are of the same order rather than the same number.)
  *
  *  ⚠ THE SPEED ARITHMETIC IS THEIRS, READ OUT OF `plugins/gl-particles.js` (v51.2.1, 2026-09-09):
  *      frameTime = min(now − last, 0.1) s          ← the 0.1 clamp is Windy's, not a guess of ours
- *      timeScale = glVelocity · glSpeedPx · zoom2speed[zoom] · ratioScale,  ratioScale = the map's
- *                  pixel ratio, glVelocity = 1 for `waves`
+ *      timeScale = glVelocity · glSpeedPx · zoom2speed[tileZoom] · ratioScale,  ratioScale = the
+ *                  map's pixel ratio, glVelocity = 1 for `waves`
  *      o = frameTime · timeScale / canvas.width     ← canvas.width is DEVICE pixels
- *  so a full-speed particle covers `timeScale` DEVICE pixels per second: at z3 that is
- *  8 × 0.6 × dpr = 4.8 px/s at dpr 1 and 9.6 px/s at dpr 2. ⚠ A px/s figure measured off a Windy
- *  screencast on a hidpi screen is therefore already doubled by `ratioScale`, and is not evidence of
- *  a faster integrator — that is what the「Windy is 11 px/s」reading was.
+ *  so a full-speed particle covers `timeScale` DEVICE pixels per second: at MapLibre z3 — where
+ *  `tileZoom` is 4, see `windyZoom` — that is 8 × 0.7 × dpr = 5.6 px/s at dpr 1 and 11.2 at dpr 2.
+ *  ⚠ A px/s figure measured off a Windy screencast on a hidpi screen is therefore already doubled by
+ *  `ratioScale`, and is not evidence of a faster integrator — that is what the「Windy is 11 px/s」
+ *  reading was.
  *
  *  ── THE GLOBE ────────────────────────────────────────────────────────────────────────────────────
  *  ⚠ WINDY REFUSES THIS PICTURE AND WE DO NOT. Their overlays carry a `globeNotSupported` flag and
@@ -146,6 +162,72 @@
     maxParticles: 15000
   };
   var LIFE_FRAMES = W.blocks * W.blockFrames;   /* 128 */
+
+  /* ══ ⚠⚠⚠ WINDY'S ZOOM IS NOT MAPLIBRE'S ZOOM, AND BOTH THE COUNT AND THE SPEED ARE INDEXED BY IT ═
+     Every zoom-indexed number in the preset above — `multiplier` and `zoom2speed` — is looked up in
+     the bundle by `this.tileParams.zoom`, which is `SwitchableTileCache.lastZoom`, which is
+     `Math.round(map.getZoom())` of WINDY'S OWN map facade. That facade counts in 256-px tiles while
+     MapLibre counts in 512-px ones, so it is MapLibre's zoom PLUS ONE.
+     ⚠ MEASURED IN THE LIVE APP, not inferred (2026-09-10, headless Chromium on
+     `https://www.windy.com/?waves,40,-40,3`): `W.map.map.getZoom()` = 3 while
+     `W.map.map.maplibreMap.getZoom()` = 2 for the same view. Their own code says the same thing in
+     the other direction — `plugins/gl-particles.js` writes `maplibreMap.getZoom() + 1` wherever it
+     needs the facade's number, and `index.js` computes the world size as `256 * 2**(getZoom()+1)`.
+     What it costs to get wrong, at the view IntMap opens the layer at (MapLibre z3):
+       · the count divisor is `50 · 1.3^(z − 2)`, so one zoom step is a factor of 1.3 — reading it
+         at z instead of z+1 draws 1.30× TOO MANY PARTICLES at every zoom under the 15,000 cap.
+       · `zoom2speed` reads 0.6 where Windy reads 0.7, i.e. the animation runs at 0.86× their rate.
+     Both were live until #R622; the count is half of why the sea looked grainier than Windy's.
+     (#R577 recorded the +1 as a SUSPICION about `zoom2speed` and left it out for want of proof.
+     The measurement above is the proof, and it applies to the count as well.) */
+  /* ══ ⚠⚠⚠ THE NORMALISED PARTICLE SPEED IS THE WAVE PERIOD, IN SECONDS, OVER `glMaxSpeedParam` ══
+     THE EVIDENCE IS WINDY'S OWN DECODER, not a reading of their animation. `W.utils.wave2obj`, read
+     out of the live bundle on 2026-09-10, is
+         ([e,t,n]) => ({ period: hypot(e,t), dir: …(e,t,10), size: n })
+     — the R,G vector their particle shader is steered by has the WAVE PERIOD for its magnitude and
+     the direction for its bearing, and B is the significant height. MEASURED over 283,490 sea pixels
+     of six live `waves-surface.png` tiles: hypot(R,G) p5 3.84 / p25 7.70 / p50 9.37 / p75 11.18 /
+     p95 14.27, max 22.58, which is seconds; B p5 0.26 / p50 2.17 / p95 6.53 with a per-tile declared
+     range of 0.023…3.34 m, which is metres of swell. So `glMaxSpeedParam = 10` is TEN SECONDS,
+     `glMinSpeedParam = 0.5` is half a second, `glSpeedCurvePowParam = 1` makes the map linear, and
+     full speed is a ten-second period.
+     ⚠ 38.7% of those sea pixels (109,593 of 283,490) sit at or over the ceiling, so Windy's own
+     picture spends better than a third of the ocean saturated. That is not a defect to be designed
+     away here: it is what their animation looks like, and their animation is what was asked for.
+     ⚠ DO NOT PUT A VELOCITY BACK. This file used the phase speed c = gT/2π ≈ 1.56·T until #R577 and
+     the deep-water GROUP speed cg = gT/4π ≈ 0.78·T until #R622; both were reasoned from physics, and
+     physics is not what the ceiling is denominated in — it is ten of whatever units the field is in,
+     and those units are seconds. A period is not a speed, so this function is deliberately not a
+     dispersion relation: changing it is a decision to stop matching Windy, not a bug fix (#R622). */
+  /* ══ ⚠⚠ WINDY DRAWS HALF AS MANY PARTICLES, AND LETS THEM LINGER LONGER, OFF THE DESKTOP ════
+     Two lines of theirs sit inside `platform !== 'desktop'` (read out of `plugins/gl-particles.js`,
+     v51.2.1, 2026-09-10): the particle count is halved, and `glBlending` is multiplied by 1.15 —
+     1.15 for `waves` where every other overlay gets 1.06, so a wave line survives noticeably longer
+     when there are half as many of them. Both are in force here from #R622.
+     ⚠ THE DEVICE QUESTION IS NOT ASKED AGAIN HERE. `window._imPhoneClass` is the answer js/app-body.js
+     publishes for exactly this case — modules that hold no HOST — and #R232/#R498 are about why it is
+     the DEVICE and not the viewport width (a phone turned sideways is 844 px wide and is still a
+     phone GPU). Writing another media query here would be a second copy of that judgement.
+     ⚠ IT IS NARROWER THAN WINDY'S. Theirs is 「not desktop」, which includes tablets; this repo's is
+     「phone-class」. A tablet therefore gets the desktop count here and the mobile count there. That
+     is deliberate: the halving is a GPU budget, and this repo already decides GPU budgets that way.
+     In a page that has no such answer — the harness, node — the desktop numbers stand. */
+  function phoneClass() {
+    try { return typeof root._imPhoneClass === 'function' ? !!root._imPhoneClass() : false; }
+    catch (e) { return false; }
+  }
+
+
+  function speedParam(periodSeconds) {
+    var T = periodSeconds;
+    if (!(T === T) || !isFinite(T) || T <= 0) return 0;   /* no period: the shader's own floor takes over */
+    return Math.min(W.glMaxSpeedParam, Math.max(W.glMinSpeedParam, T)) / W.glMaxSpeedParam;
+  }
+
+
+  function windyZoom(mapZoom) {
+    return Math.max(0, Math.min(24, Math.round(mapZoom) + 1));
+  }
 
   /* ── the raster program ─────────────────────────────────────────────────────────────────────── */
 
@@ -378,8 +460,8 @@
        proportional to the SIGNIFICANT WAVE HEIGHT, in units of "twelve metres = full speed".
        MEASURED (#R577, headless Chromium/SwiftShader, z3 over the North Atlantic, uniform synthetic
        direction so every particle drifts the same way): 0.9 px/s against the 4.8 px/s this file's
-       own constants predict — the factor being exactly the mean of height/12 over the visible
-       ocean. It also explains the deaths: `TRESH` kills a particle whose step is under 0.025
+       constants predicted AT THE TIME (5.6 since #R622 corrected the zoom index) — the
+       factor being exactly the mean of height/12 over the visible ocean. It also explains the deaths: `TRESH` kills a particle whose step is under 0.025
        thousandths of a screen, which at this scale is everything under about 1.1 m of swell, so
        calm water went blank. Two symptoms, one wrong channel letter. */
     '  float spd = max(s.a, ' + (W.glMinSpeedParam / W.glMaxSpeedParam).toFixed(6) + ');',
@@ -665,6 +747,14 @@
     var alphaTab = alphaLut();
     var blockIndex = 0, blockTimer = 0, timeFrame = 0;
     var lastT = 0, accum = 0;
+    /* ══ ⚠ THE PASS FADES IN, IT DOES NOT APPEAR ══════════════════════════════════════
+       Windy's `alpha += frameTime * 1.8`, clamped at 1, multiplies the whole particle composite
+       on its way to the map — so a switch-on takes 1/1.8 = 0.56 s to reach full strength instead
+       of arriving whole. It is not the same thing as the trail filling up: the trail decays 0.905
+       per FRAME, so on a fast machine it is full in a third of a second and on a slow one it is
+       not, whereas this ramp is in SECONDS and looks the same on both. Reset whenever the pass is
+       switched on, so every switch-on fades rather than only the first (#R622). */
+    var appear = 0;
     var drawnPerBlock = 0;
     var dpr = (root.devicePixelRatio || 1);
     /* what the integrator actually ran on, per frame — see `positions()` on why this is kept */
@@ -675,7 +765,8 @@
        shader's clamp bites in the same places and the LUT is indexed directly by R.
        G = 1 where the model has a value, 0 where it does not (land, outside the domain).
        B = mean wave direction as a turn in [0,1).
-       A = the GROUP speed cg = gT/4π divided by glMaxSpeedParam, clamped — see the header on why. */
+       A = `speedParam(wave_period)` — the PERIOD IN SECONDS over glMaxSpeedParam, clamped. Windy's
+           own tiles carry the same quantity in the same place; see `speedParam` and the header. */
     function setData(d) {
       if (!d || !d.values || !d.grid) return false;
       var g = d.grid;
@@ -686,21 +777,6 @@
       if (vals.length < n) return false;
       var buf = new Uint8Array(n * 4);
       var maxH = root.IntMapWavePalette ? root.IntMapWavePalette.MAX : 12;
-      /* ══ ⚠⚠⚠ GROUP VELOCITY, NOT PHASE VELOCITY ═══════════════════════════════════════════════
-         cg = g·T/4π ≈ 0.78·T m/s, which is half the phase speed c = g·T/2π ≈ 1.56·T this file used
-         until #R577. Two independent reasons, and both matter:
-           ① IT IS THE PHYSICS OF WHAT IS BEING DRAWN. In deep water the ENERGY of a wave train —
-              the swell you watch cross an ocean, and the thing an animated particle stands for —
-              travels at the group velocity. The phase speed is the speed of an individual crest
-              inside the train, which no viewer is tracking and which no forecast is about.
-           ② IT DOES NOT SATURATE. The shader normalises by `glMaxSpeedParam` = 10 m/s and clamps.
-              MEASURED, and RE-MEASURED inside the running renderer on 2026-09-10 to the same three
-              figures, on the run of 2026-09-09 06Z (ecmwf_wam025, 1440×721, 665,628 sea nodes that
-              carry a period): with 1.56·T, 565,426 of them — 84.9% — were pinned at the ceiling,
-              i.e. an 8 s wind sea and a 20 s Pacific swell were animated at exactly the same speed.
-              With 0.78·T the ceiling is reached only above T = 12.8 s and 41,663 nodes — 6.3% — sit
-              there, so the band is actually used and long swell reads as faster than short. */
-      var GT = 9.80665 / (4 * Math.PI);      /* cg = g·T / 4π */
       for (var i = 0; i < n; i++) {
         var h = vals[i];
         var ok = (h === h) && isFinite(h);       /* NaN is land; the model publishes it that way */
@@ -709,9 +785,7 @@
         buf[i * 4 + 1] = ok ? 255 : 0;
         var dg = dirs ? dirs[i] : NaN;
         buf[i * 4 + 2] = (dg === dg && isFinite(dg)) ? Math.round(((dg % 360) + 360) % 360 / 360 * 255) : 0;
-        var T = pers ? pers[i] : NaN;
-        var cg = (T === T && isFinite(T)) ? GT * T : 0;
-        buf[i * 4 + 3] = Math.max(0, Math.min(255, Math.round(cg / W.glMaxSpeedParam * 255)));
+        buf[i * 4 + 3] = Math.round(speedParam(pers ? pers[i] : NaN) * 255);
       }
       grid = { nx: nx, ny: ny, lonMin: g.lonMin, latMin: g.latMin, dx: g.dx, dy: g.dy };
       pending = buf;
@@ -744,9 +818,18 @@
       state1 = tex(gl, W.stateW, W.stateW, full, gl.NEAREST);
     }
 
-    /* Windy's count: screen area over a zoom-dependent divisor, capped, then scaled per block. */
+    /* Windy's count: screen area over a zoom-dependent divisor, capped, then scaled per block.
+       ⚠ `w`, `h` are CSS pixels — Windy's `getAmount` is handed `this._map.getSize()`, which is the
+       map's CSS size, NOT the drawing buffer. ⚠ `zoom` is MAPLIBRE's zoom and is converted to
+       Windy's by `windyZoom` (see the note there); passing a zoom that has already been shifted
+       would shift it twice. The result is per BLOCK: sixteen blocks are drawn, so the total is
+       sixteen times this, which is `amount · glCountMul` — that is what makes `relativeAmount`
+       (a fraction of the whole 256×256 state) and `drawn_per_block` (a fraction of one 256×16
+       block) the same quantity in Windy's arithmetic and in ours. */
     function particleCount(w, h, zoom) {
-      var amount = Math.min(W.maxParticles, Math.round(w * h / (W.multiplierConstant * Math.pow(W.multiplierPow, zoom - W.multiplierZoom))));
+      var amount = Math.min(W.maxParticles, Math.round(w * h / (W.multiplierConstant * Math.pow(W.multiplierPow, windyZoom(zoom) - W.multiplierZoom))));
+      /* ⚠ halved OFF THE DESKTOP, after the cap — Windy's own order (see `phoneClass`) */
+      if (phoneClass()) amount = Math.max(1, Math.round(amount * 0.5));
       var rel = amount / (W.stateW * W.stateW) * W.glCountMul;
       return Math.max(1, Math.min(W.stateW * W.stateH, Math.round(rel * W.stateW * W.stateH)));
     }
@@ -911,6 +994,7 @@
              frames60 = Math.max(1, Math.round(frames60timer * 60));
              frames60timer -= frames60 * 0.0166667;
          i.e. it subtracts what it spent. This now does the same. */
+      appear = Math.min(1, appear + dt * 1.8);   /* Windy's own rate — see `appear` */
       accum += dt;
       var frames60 = Math.max(1, Math.round(accum * 60));
       accum = Math.max(0, accum - frames60 / 60);
@@ -950,7 +1034,9 @@
         gl.uniformMatrix4fv(pu.u.uProj, false, f32(projData.mainMatrix));
         gl.uniformMatrix4fv(pu.u.uProjInv, false, inv);
       }
-      var speedPx = W.glSpeedPx * W.zoom2speed[Math.min(W.zoom2speed.length - 1, zoom)] * dpr;
+      /* ⚠ `zoom2speed` is Windy's `zoomWindFactor`, and their own line is
+         `c.zoom2speed[this._cache.lastZoom]` — the TILE zoom, i.e. MapLibre's + 1 (see `windyZoom`). */
+      var speedPx = W.glSpeedPx * W.zoom2speed[Math.min(W.zoom2speed.length - 1, windyZoom(zoom))] * dpr;
       /* ══ WHAT THE INTEGRATOR ACTUALLY DELIVERS, MEASURED RATHER THAN ASSUMED (#R577) ═════════════
          Two things were in doubt and both are now closed by measurement, not by argument:
            ① THE STEP IS NOT LOST TO THE 16-BIT POSITION ENCODING. Over one-second windows, with the
@@ -962,11 +1048,26 @@
            ② THE CLOCK COVERS REAL TIME. Σdt over three 4-second windows was 3.94, 3.98, 3.97 s —
               98.2%, 99.3%, 98.9% of the wall clock, with 0–2 frames hitting the 0.1 s clamp. The
               `accum` remainder is kept (below), so the cohort clock does not drift either.
-         So at z3 and dpr 1 the layer runs at speedPx × the field's own normalised speed: 4.8 × 0.535
-         (the median over the visible ocean, group velocity) ≈ 2.6 px/s, against Windy's 4.8 × ~1
-         (phase velocity, 85% of it pinned at the ceiling) — and 9.6 at the dpr 2 their screencast
-         was recorded at, which is the「11 px/s」that reading came to. The remaining factor is not a
-         defect: it is the group velocity, deliberately (see `setData`). */
+           ③ AND THE WHOLE LAW IS NOW CONFIRMED IN THE RUNNING RENDERER, not only on paper. MEASURED
+              2026-09-10 at MapLibre z3, 1200×800 CSS, dpr 1, 45N 40W, by reading `positions()` back
+              over 32 rendered frames and dividing by the integrator's own Σdt — with the period field
+              forced to one value, and then as it comes:
+                  T = 10 s everywhere → 5.60 px/s   (= speedPx: the ceiling is ten SECONDS)
+                  T =  5 s everywhere → 2.78 px/s   (×0.50)
+                  T =  2 s everywhere → 1.12 px/s   (×0.20)
+                  the real field      → 3.79 px/s   (×0.677, and the field's own median in view is
+                                                     6.95 s → 0.695 — the same number)
+              ⚠ DIVIDE BY Σdt, NOT BY THE WALL CLOCK, when the GPU is a software one. In headless
+              SwiftShader the same window read 1.0 px/s against the wall, because MapLibre renders in
+              bursts there and the gaps between them are cut to 0.1 s by Windy's own frameTime clamp.
+              The clamp is correct and the integrator is exact; it is the frame supply that is not.
+         Windy's own figure for the same view is 5.6 × the same normalised speed, because both the
+         arithmetic above and the field are now the same: sampled through their
+         `W.interpolator.getLatLonInterpolator()` and decoded by their own `W.utils.wave2obj` over the
+         open North Atlantic, their median period is 7.40 s against our 7.35 s (see the header).
+         ⚠ 5.6 and 11.2 were 4.8 and 9.6 until #R622, when the zoom index was found to be Windy's tile
+         zoom rather than MapLibre's (`windyZoom`). ⚠ The remaining「half speed」of #R577 is gone with
+         the group velocity it came from (see `speedParam`). */
       gl.uniform2f(pu.u.uStep, dt * speedPx / cw, dt * speedPx / chh);
       gl.uniform2f(pu.u.uRate, speedPx / cw, speedPx / chh);
       stats.frames++; stats.dtSum += dt; stats.dtLast = dt;
@@ -1005,13 +1106,48 @@
       gl.enableVertexAttribArray(pd.a.aVec);
       gl.vertexAttribPointer(pd.a.aVec, 4, gl.UNSIGNED_BYTE, false, 4, 0);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, partIdx);
-      var wpx = (widthPx + 1) / backW * 2, hpx = (widthPx + 1) / backH * 2;
-      /* ⚠ the same pixels→clip factor of 2 the width term uses. Without it the head/tail extension
-         was half a pixel instead of `glParticleLengthEx` pixels — invisible either way, but wrong. */
-      var lex = W.glParticleLengthEx * dpr;
-      var lx = lex / backW * 2, ly = lex / backH * 2;
-      gl.uniform4f(pd.u.uVP1, wpx / 255, hpx / 255, -wpx * 0.5, -hpx * 0.5);
-      gl.uniform4f(pd.u.uVP2, 2 * lx / 255, 2 * ly / 255, -lx, -ly);
+      /* ══ ⚠⚠⚠ THE QUAD'S TWO EXTENTS ARE WINDY'S OWN FOUR LINES, AND THEY DIVIDE BY THE CANVAS ═══
+         Read out of `drawParticles` in `plugins/gl-particles.js` (v51.2.1, 2026-09-10) verbatim:
+             i = widthFactor + 1
+             a = i / lastClientWidth              o = i / lastClientHeight
+             s = glParticleLengthEx / lastClientWidth   c = glParticleLengthEx / lastClientHeight
+             uVPars1 = (a·2/255, o·2/255, −a, −o)   uVPars2 = (s·2/255, c·2/255, −s, −c)
+         and `lastClientWidth` is `gl.canvas.width` — the DRAWING BUFFER, in device pixels — while
+         the pass is drawn into a trail texture that is only 0.8× of it on hidpi and capped at 2048.
+         Dividing by the canvas rather than by that texture is not an oversight of theirs: the quad
+         then comes out proportionally smaller in the smaller buffer and lands at the SAME on-screen
+         size once the trail is blitted back up. Dividing by the trail texture instead — which this
+         file did until #R622 — inflates the particle by `canvas/back` = 1.25× on any hidpi screen.
+         ⚠ AND THE LENGTH CARRIES NO `ratioScale`. The width does (`widthFactor` is
+         `getLineWidth(zoom) · glParticleWidth · ratioScale`); `glParticleLengthEx` is used raw. So
+         Windy's mark is `widthFactor + 1` device px ACROSS the direction of travel and exactly
+         `glParticleLengthEx` = 1 device px ALONG it — a hair, not a dash, because the per-frame
+         displacement it is drawn over (5.6–11.2 px/s ÷ 60 Hz ≈ 0.1–0.2 px) adds nothing to the length.
+         ⚠ #R577 read the old `2 · lex / backW` as a fix for a half-pixel extension and called the
+         difference 「invisible either way」. It is not: with `lex = glParticleLengthEx · dpr` and the
+         extra factor of two, the mark was `2·dpr·(canvas/back)` times too thick along its motion —
+         2× at dpr 1 and 5× at dpr 2 — which is precisely the reported 「短く太いダッシュ」 against
+         Windy's 「細く疎な毛髪状の線」. MEASURED at MapLibre z3, 1200×800 CSS, dpr 1, by differencing
+         a frame against the same frame with the particles switched off: the ocean crop went from
+         37.2% covered (535 merged blobs, median 44 px² each) to 22.2–25.5% (≈1,100–2,200 blobs,
+         median 25–26 px²), against windy.com 19.4–22.3% measured the same way.
+         ⚠ THAT COMPARISON IS OF BOTH FIXES TOGETHER: the count is 1.30× of it (`windyZoom`) and the
+         thickness the rest. Windy's own `drawn_per_block` for that viewport is 1,065 and so is ours
+         now; it was 1,385.
+         ⚠ THE COVERAGE FIGURE IS A RANGE BECAUSE IT IS NOT REPEATABLE TO BETTER THAN ±3 POINTS, and
+         the range is the honest number. Two runs of this same measurement, in two different windows,
+         gave 23.5% vs 22.3% and 25.5% vs 19.4% for the same pair — a ratio of 1.05 and one of 1.30.
+         It is a screen statistic over a moving, decaying smear: it depends on which frames the
+         browser happened to deliver, and it moves again with the basemap under the crop. It also
+         cannot be compared across METHODS at all — a canvas read-back of the very frame that a page
+         screenshot scored 25.5% scores 11.6%. So: ours is heavier than Windy's, somewhere between
+         1.05× and 1.3×, and WHY is not established. ⚠ Do not close that gap with a coefficient —
+         `glCountMul` and `glParticleWidth` are Windy's own numbers and match their bundle. The
+         prose version of this, with the method, is docs/MAP-LAYERS.md §7.14. */
+      var wA = (widthPx + 1) / cw, wB = (widthPx + 1) / chh;
+      var lA = W.glParticleLengthEx / cw, lB = W.glParticleLengthEx / chh;
+      gl.uniform4f(pd.u.uVP1, wA * 2 / 255, wB * 2 / 255, -wA, -wB);
+      gl.uniform4f(pd.u.uVP2, lA * 2 / 255, lB * 2 / 255, -lA, -lB);
       gl.uniform2f(pd.u.uSide, (2 * half) / 255, -half);
       for (var k = 0; k < W.blocks; k++) {
         var f = (timeFrame - k * W.blockFrames + LIFE_FRAMES) % LIFE_FRAMES;
@@ -1028,7 +1164,7 @@
       }
 
       /* ── decay the trail: a MULTIPLY of the buffer, not a translucent wash ── */
-      var glB = W.glBlending;
+      var glB = W.glBlending * (phoneClass() ? 1.15 : 1);   /* Windy's mobile boost — see `phoneClass` */
       var fade = Math.min(0.9 + 0.5 * (glB - 0.92), 0.98);
       gl.blendEquation(gl.FUNC_ADD);
       gl.blendFunc(gl.ZERO, gl.CONSTANT_ALPHA);
@@ -1044,11 +1180,30 @@
       var mulRGB = W.glOpacity * 0.7 + 0.4;
       var mulA = W.glOpacity > 1 ? (2 - W.glOpacity) : W.glOpacity;
       mulA += 0.1;
+      var mr = 0.4 * mulRGB, mg = 0.4 * mulRGB, mb = 0.4 * mulRGB, ma = 0.4 * mulA, add = -0.1;
+      /* ══ ⚠⚠⚠ CLOSE IN, WINDY STOPS TINTING THE TRAIL AND PAINTS THE PARTICLES ONE COLOUR ══════
+         Their condition is on the MapLibre zoom alone — `maplibreMap.getZoom() >= grayMapZoomEnd - 0.5`
+         with `grayMapZoomEnd = 11`, i.e. z >= 10.5 — and the composite becomes
+             (0.5, 0, 0.4, glOpacity * 0.44 + 0.3)      = (0.5, 0, 0.4, 1.004) for `waves`
+         ⚠ THE NAME SAYS 「grey basemap」 AND THE TEST DOES NOT ASK ABOUT ONE. It is the zoom at which
+         Windy's own basemap has finished turning grey, but nothing in the branch reads the basemap,
+         so a renderer that matches their behaviour matches the zoom. IntMap's basemap does not turn
+         grey, so this purple is drawn over a colour map here; MEASURED at z11 over the Kanto coast
+         (screenshot, #R622) the marks read as dark violet hairs and stay legible over both the wave
+         ramp and the land. ⚠ The threshold is a RAW zoom, not the rounded `zoom` above — half a
+         level is exactly what it is about.
+         ⚠ AND THE WHOLE COMPOSITE IS SCALED BY `appear` (both the multiply and the bias), because the
+         blend is premultiplied: scaling only the alpha would leave the colour arriving at full
+         strength. */
+      if (map && typeof map.getZoom === 'function' && map.getZoom() >= 10.5) {
+        var mulAZoomed = W.glOpacity * 0.44 + 0.3;
+        mr = 0.5; mg = 0; mb = 0.4; ma = mulAZoomed; add = 0;
+      }
       var pc = progCopy;
       gl.useProgram(pc.prog);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, backTex); gl.uniform1i(pc.u.uTex, 0);
-      gl.uniform4f(pc.u.uMul, 0.4 * mulRGB, 0.4 * mulRGB, 0.4 * mulRGB, 0.4 * mulA);
-      gl.uniform4f(pc.u.uAdd, -0.1, -0.1, -0.1, -0.1);
+      gl.uniform4f(pc.u.uMul, mr * appear, mg * appear, mb * appear, ma * appear);
+      gl.uniform4f(pc.u.uAdd, add * appear, add * appear, add * appear, add * appear);
       drawQuad(pc);
     }
 
@@ -1056,7 +1211,7 @@
       setData: setData,
       hasData: function () { return !!(dataTex || pending); },
       setOpacity: function (o) { opacity = Math.max(0, Math.min(1, o)); },
-      setParticles: function (on) { particlesOn = !!on; },
+      setParticles: function (on) { if (on && !particlesOn) appear = 0; particlesOn = !!on; },
       particleCount: particleCount,
       alphaTable: function () { return alphaTab; },
       /* ══ THE MEASUREMENT HOOK ═══════════════════════════════════════════════════════════════════
@@ -1155,6 +1310,9 @@
     PRESET: W,
     LIFE_FRAMES: LIFE_FRAMES,
     alphaLut: alphaLut,
+    /* ⚠ the speed law, exported for the same reason `alphaLut` is: it is a pure function of the
+       preset, it decides what the animation looks like, and it can be checked without a GPU. */
+    speedParam: speedParam,
     shaders: { RASTER_FS: RASTER_FS, UPDATE_FS: UPDATE_FS, DRAW_VS: DRAW_VS }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

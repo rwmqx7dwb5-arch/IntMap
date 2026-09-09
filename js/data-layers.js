@@ -2195,6 +2195,20 @@ window.IntMapModules.dataLayers=function(HOST){
     else window.reorganizeLayerPanel();
 
     const beforeId = GE().layers.has('tool-poly') ? 'tool-poly' : undefined;
+    /* ══ (#R622) THE TOP OF THE DATA BAND — ONE ANSWER, PUBLISHED ═══════════════════════════════
+       The id a full-coverage data image is added BEFORE so that it lands UNDER the place-name /
+       border label stack js/label-occlusion.js keeps on top (#R24/#R25, 「ケッペンを重ねると国名
+       ラベルが後ろに隠れる」). The same five ids were already written out three times — here for the
+       Köppen raster, in js/layer-packs.js (`beforeLabels`) and in js/precip-annual.js — and #R622
+       needed a fourth caller: js/waves.js, whose sea state was being painted over by whichever ocean
+       raster the reader had switched on first, because it was anchored at the BOTTOM of this band
+       (js/wx-ecmwf.js `before()`, 「just above the night shading」) instead of the top of it.
+       A fourth copy of a list is how the first one goes stale, so this is the one answer and the
+       Köppen anchor below reads it.
+       ⚠ THE LIST IS IN STACK ORDER AND THE FIRST ONE PRESENT WINS, so a style that has retired the
+       Esri label raster (js/theme-sky.js) still gets an anchor rather than none. */
+    window.IntMapBelowLabels = () => ['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other']
+      .find(id=>{ try{ return !!GE().layers.get(id); }catch(_){ return false; } }) || beforeId;
     const setVis=(l,on)=>{ if(GE().layers.has(l)) GE().layers.setLayout(l,'visibility',on?'visible':'none'); };
     /* Verified: IMERG date-only URL (e.g. .../IMERG_Precipitation_Rate/default/2026-05-26/...)
        returns 200 OK for tile (0,0,0). The "blank" appearance was because there is little global
@@ -3393,7 +3407,7 @@ window.IntMapModules.dataLayers=function(HOST){
         if(!GE().layers.has('lyr-climate')){
           /* (#R24) insert the raster BELOW the place-name / border label stack so Köppen never hides the
              country labels ("ケッペンを重ねると国名ラベルが後ろに隠れる"); raise() still self-heals as a backstop. */
-          const _lblAnchor=['layer-sat-labels','borders-only-line','ofm-country','ofm-city','ofm-other'].find(id=>GE().layers.get(id))||beforeId;
+          const _lblAnchor=window.IntMapBelowLabels();   /* (#R622) the one answer, above */
           GE().layers.add({id:'lyr-climate',type:'raster',source:'src-climate',layout:{visibility:'visible'},paint:{'raster-opacity':opacities.climate,'raster-fade-duration':0}},_lblAnchor);
         }
         setVis('lyr-climate',true);

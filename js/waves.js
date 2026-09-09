@@ -78,7 +78,8 @@ window.IntMapModules.waves = function (HOST) {
     loading: null,               /* what is being built right now, or null */
     displayed: null,             /* ⚠ what is actually painted — everything the reader is told comes from here */
     orientation: '',             /* how the row order was decided: 'sampler' | 'declared' */
-    blocked: ''                  /* why nothing is painted, when nothing is: 'globe' | 'renderer' | '' */
+    blocked: '',                 /* why nothing is painted, when nothing is: 'globe' | 'renderer' | '' */
+    failure: null                /* (#R622) why the last attempt ended in the toast — see `fail` */
   };
   st.modelId = (MODELS()[0] || {}).id || '';
 
@@ -114,14 +115,57 @@ window.IntMapModules.waves = function (HOST) {
     return renderer;
   }
   function hasLayer() { try { return GE().layers.has(LYR); } catch (_) { return false; } }
+
+  /* ══ ⚠⚠⚠ (#R622) WHERE THE SEA STATE SITS, AND WHY 「THE WEATHER ANCHOR」 WAS THE WRONG ONE ═════
+     MEASURED on the built page (sea surface temperature on, then the waves): `IntMapWaves.state()`
+     answered `painted:true` for a layer NOTHING OF WHICH WAS ON THE SCREEN. The style's own order:
+
+         … im-night-shade, **im-waves**, lyr-sst, coast-only-casing, borders-only-line, ofm-* …
+
+     `E.before()` answers 「the first layer above the night shading」 — the BOTTOM of the band the
+     data layers live in — and every GIBS raster the reader switches on is added at the TOP and then
+     sunk to just under the label stack by js/label-occlusion.js. So the sea state was placed under
+     whatever full-coverage image happened to be in that band, and an opaque raster over the ocean
+     painted over all of it. ⚠ NOTHING ABOUT SST: the same is true of any ocean image (relief, sea
+     ice, chlorophyll, the next one added), which is why nothing here names a layer.
+
+     THE RULE, AND IT IS NOT A NEW ONE: the sea state is a full-coverage DATA IMAGE, so it is placed
+     exactly where every other full-coverage data image in this app is placed — directly under the
+     label stack, through `window.IntMapBelowLabels()` (js/data-layers.js), which is the one answer
+     the Köppen raster, js/layer-packs.js and js/precip-annual.js were each keeping their own copy
+     of. That keeps it above the ocean rasters and under the place names and the borders (#R24/#R25,
+     「地名や国境はどのレイヤーよりも最前部に」). A reader who wants to see both fields at once has the
+     opacity slider in this legend — the control that exists for exactly that, and which can only
+     work from above.
+     ⚠ THE WEATHER ANCHOR IS THE FALLBACK, NOT THE RULE. `E.before()` is still the right answer for
+     the wind and the surface fields, which are a shading UNDER the map's own reference layers; it
+     is what this returns when the label stack is not in the style at all. */
+  function styleLayers() { try { return ((GE().scene.getStyle() || {}).layers) || []; } catch (_) { return []; } }
+  function anchorFor() {
+    let a;
+    try { a = window.IntMapBelowLabels ? window.IntMapBelowLabels() : null; } catch (_) { a = null; }
+    if (a) return a;
+    try { const E = EC(); return (E && E.before) ? (E.before() || undefined) : undefined; } catch (_) { return undefined; }
+  }
+  /* ⚠ THE SIGNATURE IS THE STYLE'S OWN LAYER ORDER, AND A CUSTOM LAYER IS NOT IN IT. `getStyle()`
+     cannot serialise a custom layer, so this list does not move when WE move — which is what makes
+     re-taking our place on `styledata` idempotent instead of a feedback loop: the signature only
+     changes when somebody ELSE adds, removes or reorders a layer, and that is exactly the moment
+     an image can have been inserted between this layer and its anchor. */
+  let placedOrder = '';
+  function styleOrder() { return styleLayers().map(l => l.id).join('|'); }
+  function place() {
+    if (!hasLayer()) return false;
+    try { GE().layers.move(LYR, anchorFor()); } catch (_) { return false; }
+    placedOrder = styleOrder();
+    return true;
+  }
   function addLayer() {
     if (hasLayer() || !renderer) return false;
-    let before = null;
-    /* the same anchor every weather field is placed at, so the sea state sits under the labels and
-       the borders rather than over them */
-    try { const E = EC(); before = E && E.before ? E.before() : null; } catch (_) { }
-    try { GE().layers.add(renderer.layer(LYR), before); } catch (_) { return false; }
-    return hasLayer();
+    try { GE().layers.add(renderer.layer(LYR), anchorFor()); } catch (_) { return false; }
+    if (!hasLayer()) return false;
+    placedOrder = styleOrder();
+    return true;
   }
   function dropLayer() {
     /* ⚠ removing the layer calls the renderer's own `onRemove`, which destroys its GL objects — so
@@ -188,6 +232,35 @@ window.IntMapModules.waves = function (HOST) {
      whole viewport against it, so a band would leave the rest of the screen with no data at all —
      and a wave grid is 1440×721 (WAM 0.25°, MEASURED 1.43 MB a step), which is a fifth of what the
      9 km surface fields cost the wind layer. */
+  /* ══ ⚠⚠⚠ (#R622) TWO READS IN ONE TICK CANCEL THE FIRST OF THEM ═══════════════════════════════
+     THE FIRST TOGGLE AFTER A PAGE LOAD ALWAYS FAILED — reported from production, reproduced here on
+     the built page, twice out of two:
+
+         6007 ms  load(wave_height) called          6007 ms  load(wave_period) called
+         6010 ms  load(wave_height) → NULL  (3 ms, NOT ONE REQUEST SENT)
+         8363 ms  load(wave_period) → frame
+
+     `E.load()` SUPERSEDES: every foreground read takes a ticket (`mine = ++seq`, js/wx-ecmwf.js)
+     and a read holding a ticket that is no longer the newest answers with a frame OF ITS OWN
+     VARIABLE — 「a superseded picture is still a picture that loaded」 — or, when there is none,
+     null. The ticket counts READS OF A MODEL, not reads of a variable, so `Promise.all([height,
+     period])` handed the height an already-stale ticket in the same tick; on a cold layer it has no
+     earlier frame, so it answered null in three milliseconds having asked for nothing. That is why
+     the fault left no request, no exception and no console line to find it by.
+     ⚠ THE SECOND CLICK WORKED FOR THE SAME REASON, WHICH IS WHY THIS LOOKED LIKE A RACE: by then
+     the period frame was in hand, `load` returned it from `frameCovering` BEFORE taking a ticket,
+     and the height's ticket stayed newest.
+     → the variables are read ONE AFTER ANOTHER. It costs nothing: js/wx-ecmwf.js puts every read
+     through ONE serial queue, so these two were never running together — only competing. A third
+     variable added to the list inherits the rule rather than re-opening the defect. */
+  function loadEach(E, vars) {
+    const out = [];
+    return vars.reduce((p, v) => p
+      .then(() => E.load(v, null, null))
+      .then(f => { out.push(f || null); }), Promise.resolve())
+      .then(() => out);
+  }
+
   function paint() {
     if (!st.on) return Promise.resolve(false);
     if (!canDraw()) { dropLayer(); st.displayed = null; st.loading = null; render(); return Promise.resolve(false); }
@@ -196,14 +269,14 @@ window.IntMapModules.waves = function (HOST) {
     st.loading = { modelId: E.DOMAIN, modelName: (WXM().get(E.DOMAIN) || {}).nameKey || E.DOMAIN };
     render();
     return E.ready()
-      .then(() => Promise.all([E.load(VAR_H, null, null), E.load(VAR_P, null, null)]))
+      .then(() => loadEach(E, [VAR_H, VAR_P]))
       .then(fr => {
         if (mine !== paintSeq || !st.on) return false;
         const fh = fr[0], fp = fr[1];
-        if (!fh || !fh.data || !fh.data.values) return fail();
-        const g = gridFor(E, fh); if (!g) return fail();
+        if (!fh || !fh.data || !fh.data.values) return fail('no_field', VAR_H);
+        const g = gridFor(E, fh); if (!g) return fail('grid_mismatch', E.DOMAIN);
         const flip = rowsAreFlipped(E, g, fh.data.values);
-        if (!ensureRenderer()) return fail();
+        if (!ensureRenderer()) return fail('no_renderer');
         const ok = renderer.setData({
           values: orient(fh.data.values, g, flip),
           directions: orient(fh.data.directions || null, g, flip),
@@ -211,21 +284,32 @@ window.IntMapModules.waves = function (HOST) {
             ? orient(fp.data.values, g, flip) : null,
           grid: g
         });
-        if (!ok) return fail();
+        if (!ok) return fail('upload_rejected');
         addLayer();
         st.displayed = WXM().provenance({ modelId: E.DOMAIN, validTime: E.validTime(), referenceTime: E.referenceTime(), variable: VAR_H });
         st.loading = null;
+        st.failure = null;
         render(); repaint();
         return true;
       })
-      .catch(() => fail());
+      .catch(e => fail('exception', e));
   }
   /* a read that did not produce a picture says so, once, and puts the row back — the same shape
      js/weather.js uses, for the same reason: a checkbox that is on over a map with nothing on it is
-     the failure this project keeps paying for. */
-  function fail() {
+     the failure this project keeps paying for.
+     ⚠⚠⚠ (#R622) …AND IT SAYS WHY, TO SOMETHING OTHER THAN THE READER. This was `.catch(() => fail())`
+     with a `fail()` that took no argument, so five different endings — a superseded read, a grid the
+     renderer cannot take, a dead GL context, a rejected upload, a thrown exception — all arrived as
+     one sentence in a toast and NOTHING ELSE. A production session that hooked `console.error`,
+     `console.warn` and `unhandledrejection` recorded not one line while this fired, and the defect
+     above took a patched `E.load` to find because of it. The reason now reaches three places that
+     outlive the toast: the console, `state().failure`, and (through it) anything that asks this
+     module what happened — while the words the reader sees are unchanged. */
+  function fail(why, detail) {
     if (!st.on) return false;
     st.loading = null;
+    st.failure = { why: String(why || 'unknown'), detail: detail == null ? '' : String((detail && detail.message) || detail), at: Date.now() };
+    try { console.warn('[waves] not drawn: ' + st.failure.why + (st.failure.detail ? ' — ' + st.failure.detail : '')); } catch (_) { }
     try { HOST.satToast(L('Could not load the wave forecast', '波の予報データを読み込めませんでした', 'Wellenvorhersage konnte nicht geladen werden', 'Не удалось загрузить прогноз волнения', 'No se pudo cargar la previsión del oleaje')); } catch (_) { }
     setRow(false);
     toggle(false);
@@ -252,7 +336,11 @@ window.IntMapModules.waves = function (HOST) {
       if (!st.on) return;
       const ok = canDraw();
       if (ok && !hasLayer()) { paint(); return; }
-      if (!ok && hasLayer()) { dropLayer(); st.displayed = null; render(); }
+      if (!ok && hasLayer()) { dropLayer(); st.displayed = null; render(); return; }
+      /* (#R622) somebody else changed the stack — an ocean raster switched on after this layer is
+         inserted ABOVE it (js/label-occlusion.js sinks it to just under the labels, which is where
+         this layer is), so the sea state takes its place back. See `place`. */
+      if (ok && hasLayer() && styleOrder() !== placedOrder) { place(); repaint(); }
     };
     try { GE().events.on('moveend', check); GE().events.on('styledata', () => setTimeout(check, 80)); } catch (_) { }
   }
@@ -477,8 +565,9 @@ window.IntMapModules.waves = function (HOST) {
     name,
     /* what is on the screen, in the same shape every weather layer answers with */
     provenance: () => st.displayed,
-    state: () => ({ on: st.on, opacity: st.op, particles: st.particles, model: st.modelId, displayed: st.displayed, blocked: st.blocked, orientation: st.orientation, painted: hasLayer() }),
+    state: () => ({ on: st.on, opacity: st.op, particles: st.particles, model: st.modelId, displayed: st.displayed, blocked: st.blocked, orientation: st.orientation, painted: hasLayer(), failure: st.failure }),
     /* test seams — never called by the app */
-    _variables: () => [VAR_H, VAR_P], _ticks: () => TICKS_M.slice(), _gridFor: gridFor, _rowsAreFlipped: rowsAreFlipped, _orient: orient
+    _variables: () => [VAR_H, VAR_P], _ticks: () => TICKS_M.slice(), _gridFor: gridFor, _rowsAreFlipped: rowsAreFlipped, _orient: orient,
+    _anchorFor: anchorFor, _layerId: () => LYR
   };
 };

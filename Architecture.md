@@ -1403,6 +1403,15 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ISO 639-3 マクロ言語・語順・バントゥ語類接頭辞・綴りの類似）か、`data/language-aliases.json` に
   **理由を書いた判断**のどちらかでしか行わない。どちらでもない名前は**ビルドを落とす**
   （ゲート＝`npm run check:languages`）。
+- ⚠⚠ **全面を覆うデータ画像は「ラベルの直下」に載せ、その位置を訊く先は 1 つ——
+  `window.IntMapBelowLabels()`（`js/data-layers.js`）。** 気象のアンカー `E.before()` は
+  **データ帯の底**（基図の参照レイヤーの下に敷く陰影のための位置）なので、そこに置いた全面画像は
+  あとから点いた別の全面ラスタに上から塗り潰される——`js/label-occlusion.js` がラスタを
+  ラベル直下まで沈めるからで、レイヤー 1 本に固有の話ではない。
+  ⚠ **置いて終わりではない**——`styledata` で**スタイル自身のレイヤー順の署名が変わったときだけ**
+  位置を取り直す（custom layer は `getStyle()` に載らないので自分の移動は署名を動かさず、
+  帰還ループにならない）。実測と、波（海況）がこれで画面から消えていた経緯は
+  [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) §7.14。
 - **長い凡例は `.im-more`（`<details>`）で畳む**（`css/intmap.css`）。
 - **レイヤーを切り替えてもカメラは動かない。例外は `js/layer-home.js` の表だけ**。
   `window.IntMapLayerHome.arrive(<checkbox id>)` が、**データが1つの地域にしか存在しないレイヤー**

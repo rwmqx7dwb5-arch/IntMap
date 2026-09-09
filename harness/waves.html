@@ -18,6 +18,46 @@
        ?particles=0       raster only
        ?land=1            paint Windy's grey over land, for a side-by-side against windy.com
        ?globe=1           the GLOBE projection — IntMap's default, and the one Windy refuses (#R565)
+
+     ⚠ HOW THE PARTICLE TEXTURE IS MEASURED AGAINST WINDY'S (#R586). Neither「how many」nor「how
+     thick」can be read off a screenshot of the layer: the trail buffer is a decaying smear over a
+     colour field, so a threshold on the picture measures the colour ramp. What CAN be measured is
+     the DIFFERENCE the particles make. Grab a frame inside `map.once('render')` (a WebGL canvas has
+     no drawing buffer to read outside it), call `__waves.setParticles(false)`, grab the same frame
+     again, and the |Δ| > 12 mask IS the particle pass. Its coverage, its connected-component count
+     and their median area are then comparable numbers.
+     ⚠ windy.com answers the same question the same way, and this is the only reason the comparison
+     is quantitative rather than an opinion: `W.store.set('particlesAnim','off')` stops their
+     animation without touching the overlay, and their map is `W.map.map.maplibreMap`. ⚠ THEIR ZOOM
+     IS ONE MORE THAN MAPLIBRE'S, so `windy.com/?waves,45,-40,4` is this harness's `?z=3` — measured,
+     not assumed: `W.map.map.getZoom()` reads 4 there while `…maplibreMap.getZoom()` reads 3.
+     MEASURED at 1200×800 CSS, dpr 1, 45N 40W: Windy 22.3% covered / 1,252 blobs / 25 px² median,
+     this renderer 23.5% / 1,178 / 26 — where before #R586 it was 37.2% / 535 / 44. RE-MEASURED
+     2026-09-10 through PAGE SCREENSHOTS rather than a canvas read-back, over the same 800×500 ocean
+     crop of both pages: Windy 19.4% / 2,688 / 19 px², this renderer 22.2% / 2,368 / 23 px².
+     ⚠ THE TWO ROUTES DO NOT GIVE THE SAME NUMBER (the canvas read-back of one `once('render')` frame
+     answered 11.6% for the very frame a screenshot called 22.2%), so a coverage figure is only
+     comparable against another one taken THE SAME WAY, in the same session.
+
+     ⚠⚠⚠ THE FIELD ITSELF CAN BE COMPARED, AND THAT IS WORTH MORE THAN THE PICTURE (#R586).
+     windy.com publishes its own sampler: `const f = await W.interpolator.getLatLonInterpolator()`,
+     then `await f({lat, lon})` gives the raw tile triple and `W.utils.wave2obj(triple)` turns it into
+     `{period, dir, size}` — THEIR decode of THEIR data, so nothing about it is our reading of their
+     picture. MEASURED 2026-09-10 every 0.25° over the open North Atlantic (25–60N, 55–15W), against
+     this harness's own `__wavePayload.periods` on the same box:
+         quantile      p5     p25    p50    p75    p95    mean     n
+         Windy       6.21    6.84   7.40   7.91   8.69    7.37    22,690
+         ours        6.30    6.90   7.35   7.80   8.70    7.38    22,617
+     — the same distribution to about 1%, which is what establishes that the magnitude of their R,G
+     vector is the WAVE PERIOD IN SECONDS (see js/waves-gl.js `speedParam`). ⚠ SAMPLE OVER OPEN SEA
+     ONLY: over land their interpolator answers with a filler (a constant 14.87 s period beside a
+     2.7 cm wave height), and a viewport-wide sample of North America and Africa reported「25% of the
+     ocean is at the 10 s ceiling」on the strength of it.
+     ⚠ AND A PARTICLE'S SPEED CANNOT BE MEASURED BY CROSS-CORRELATING TWO FRAMES. Tried, 2026-09-10,
+     on both pages: the correlation surface of the |Δ| masks two seconds apart is flat to about 2%
+     (windy peak 0.0508 against 0.0499 at zero shift), and its「peak」put this renderer at 7.6 px/s
+     when `positions()` — the integrator's own state — says 3.8. The smear autocorrelates with itself;
+     use the read-back, and for windy.com use their arithmetic on their sampled field instead.
      ========================================================================== -->
 <meta charset="utf-8">
 <title>IntMap · waves harness (#R558)</title>
