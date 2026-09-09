@@ -311,7 +311,12 @@ window.IntMapModules.newsContext=function(HOST){
        that coverage must not be able to move a place the curated table already knows. */
     try{ const GZ=window.IntMapGazetteer;
       if(GZ&&GZ.warm){
-        const w=GZ.world&&GZ.world();
+        /* ⚠ (#R600) THE MATCHABLE VIEW, NOT THE WHOLE LIST. `world()` now includes the rows whose
+           name a curated table already carries — they were being deleted from the file, which made
+           78 places above a million people invisible to every DATA reader of it. What the LOCATOR
+           may see is unchanged: `worldMatchable()` withholds exactly those rows, so the curated
+           coordinate still wins. This is the only place the world rows enter the matcher. */
+        const w=GZ.worldMatchable&&GZ.worldMatchable();
         if(w===null){ if(!rebuildGeoIndex._worldHooked){ rebuildGeoIndex._worldHooked=true;
             try{ window.addEventListener('intmap-gazetteer-world',()=>{ try{ rebuildGeoIndex(); }catch(_){} },{once:true}); }catch(_){} }
           GZ.warm(); }
