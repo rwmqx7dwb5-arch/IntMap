@@ -272,6 +272,12 @@ for (const p of ['NASA GIBS · MODIS Terra', 'NASA GIBS · VIIRS (SNPP)', 'NASA 
 for (const p of ['ShakeMap', 'ShakeMap (USGS)']) {
   SAME_AS_EN.de.add(p); SAME_AS_EN.ru.add(p); SAME_AS_EN.es.add(p);
 }
+/* ⚠ (#R567) THE TWO WORLD HERITAGE CATEGORIES THAT SPANISH SPELLS THE ENGLISH WAY. UNESCO's own
+   Spanish List calls the three categories «Cultural», «Natural» and «Mixto» — so at
+   js/beta-overlays.js's WHS_CAT the third argument differs and the first two do not, which is what
+   makes this a claim about the two WORDS and not about two forgotten arguments. German
+   (Kultur/Natur/Gemischt) and Russian (Культурный/Природный/Смешанный) differ in all three. */
+for (const p of ['Cultural', 'Natural']) SAME_AS_EN.es.add(p);
 const hasLetter = (s) => /\p{L}/u.test(s);
 /* ══ ⚠ (#R243) A MODEL INSTRUCTION IS NOT A SCREEN ═══════════════════════════════════════════════
    Two call sites in js/app-body.js carry the SYSTEM PROMPT for the imagery-comparison and the

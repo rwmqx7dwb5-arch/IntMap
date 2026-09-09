@@ -292,6 +292,12 @@ export function makeAtlasCapabilities(HOST) {
          a row appended after it would never have its lazy module checked. */
       ['data.volcano',               'volcano',        'volcanoCard,volcanoInfo',                                     'data',    'panel',   'panel.volcano',          'panel',               'session', 'none',   'text',     'volcanoIntel'],
       ['map.volcanoFilter',          'volcanoFilter',  'volcanoMode,volcanoTime',                                     'map',     'paint',   'map.volcano',            'map',                 'session', 'none',   '',         'volcanoIntel'],
+      /* (#R567) THE WORLD HERITAGE PAIR, and it is the volcano pair's shape for the volcano pair's
+         reason: one opens the record for a NAMED property, the other narrows which properties are
+         drawn. Column 10 is empty because the layer is not lazy — it lives in js/beta-overlays.js,
+         which is eager, so both commands exist from boot rather than after a download. */
+      ['data.heritage',              'heritage',       'worldHeritage,heritageInfo',                                  'data',    'panel',   'panel.heritage',         'panel',               'session', 'none',   'text',     ''],
+      ['map.heritageFilter',         'heritageFilter', '',                                                            'map',     'paint',   'map.heritage',           'map',                 'session', 'none',   '',         ''],
       /* (#R527) 「山並み写真から撮影地点・撮影方向を探す」 — js/photo-geo.js. It traces the ridge in a
          photograph and matches it against the TERRAIN; an EXIF coordinate in the file is shown and
          never used as the answer, which is the whole honesty of the feature.

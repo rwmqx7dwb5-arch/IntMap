@@ -445,6 +445,7 @@ window.IntMapPageI18N.define('ja', {
      js/reference-data.js の `use:{en,jp}` から移設。英語版と同じ場所に置くことで
      scripts/i18n-pages-audit.mjs の測定対象（＝英語文書の全パス）に入る。 */
   sourceUse: {
+    "UNESCO World Heritage Centre": "世界遺産一覧そのもの——登録物件 1,273 件と、この層が描く構成資産 6,009 地点——は、ユネスコ世界遺産センターが公表しているデータそのもの。ただし「いま危機遺産か」は同じフィードからは採っていない：センターの danger 列が 2014 年以降更新されていないことを実測したため、その 1 点だけを Wikidata に訊き、両方を出典として表記している。名称はユネスコ自身が一覧を公表している言語（英・仏・西・露・中・日）でそのまま出し、ドイツ語・韓国語・繁体字中国語はユネスコが公表していないので英語名になる。",
     "Smithsonian / USGS Weekly Volcanic Activity Report": "火山の状況の「世界の段」。今週どの火山について観測機関が報告し、何を述べたか。各項目が GVP 火山番号を持つので、名前ではなく番号でカタログに結び付く。volcano.si.edu は CORS ヘッダを返さないため supabase/functions/volcano-feed が中継する。",
     "USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)": "「米国の段」。現在発効している航空カラーコードと火山警戒レベル、および直近1年間のすべての VONA（航空関係者向け火山情報）。この API は Access-Control-Allow-Origin を返すのでブラウザが直接読む。",
     "USGS Volcano Hazards Program — published volcano hazard zones": "機械可読な火山ハザード域として見つかった唯一の公的サービス。カリフォルニアの7火山地域について、降灰・ラハール・洪水・火口近傍・溶岩流の各ポリゴンを公表している。存在する分だけを描き、それ以外の火山については「公表されていない」と明言する（推定の円は一切描かない）。",

@@ -29,7 +29,12 @@ window.IntMapSourcesList = (function () {
     ['hazard',  /(earthquake|seismic|tsunami|volcan|warning|alert|hazard|gdacs|地震|津波|火山|警報|災害)/i],
     ['space',   /(satellite|tle|orbit|star|planet|ephemer|space|宇宙|衛星|恒星|惑星|天文)/i],
     ['econ',    /(world bank|gdp|population|energy|electric|trade|crop|統計|経済|人口|エネルギー|貿易|作物|収量)/i],
-    ['geo',     /(natural earth|boundar|border|country|gazetteer|geonames|nominatim|place name|国境|境界|地名|国名)/i],
+    /* ⚠ (#R567) `heritage` / 「世界遺産」 IS IN THE *geo* ROW, AND ABOVE `news`, ON PURPOSE. The UNESCO
+       World Heritage Centre's description says the danger column is not taken «from that same
+       feed», and `feed` is a `news` pattern — so without a word of its own the List would be filed
+       under «News & reference» because of a subordinate clause. Named places with published
+       coordinates belong with «Countries, boundaries, place names». */
+    ['geo',     /(natural earth|boundar|border|country|gazetteer|geonames|nominatim|place name|heritage|国境|境界|地名|国名|世界遺産)/i],
     ['transit', /(routing|osrm|valhalla|transit|motis|flight|aircraft|adsb|ais|vessel|railway|airport|経路|鉄道|航空|船)/i],
     ['news',    /(news|rss|wikipedia|wikidata|feed|ニュース|報道|百科)/i]
   ];
