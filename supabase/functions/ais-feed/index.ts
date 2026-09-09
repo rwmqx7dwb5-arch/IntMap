@@ -112,9 +112,15 @@ function credentialCandidates(rawV: string): Cand[] {
   const v = String(rawV == null ? "" : rawV).trim();
   /* the value as stored, always first: a clean secret must cost nothing */
   add("stored", v);
-  /* wrapped in quotes a shell did not strip */
-  const q = v.match(new RegExp('^["\'' + BACKTICK + ']([\s\S]*)["\'' + BACKTICK + ']$'));
-  if (q) add("dequoted", q[1]);
+  /*  wrapped in quotes a shell did not strip.
+      WARN NOT A REGEXP, AND THIS IS WHY. The first version built one by concatenation and put
+      '([\\s\\S]*)' inside a SINGLE-QUOTED string, where \\s and \\S are just the letters s and S —
+      so the pattern only ever matched a quoted value whose contents were entirely s and S. No test
+      here could see it (the value this round had to recover was not quoted); CodeQL could, and did.
+      Comparing the two characters says what is meant and says it better: the closing quote must be
+      the SAME character as the opening one. */
+  const QUOTES = ['"', "'", BACKTICK];
+  if (v.length >= 2 && QUOTES.indexOf(v[0]) >= 0 && v[v.length - 1] === v[0]) add("dequoted", v.slice(1, -1));
   /* a whole NAME=value line, or a "key: value" copied out of a dashboard */
   const kv = v.match(/[=:][ \t]*([^=:\s]+)[ \t]*$/);
   if (kv) add("after-delimiter", kv[1]);

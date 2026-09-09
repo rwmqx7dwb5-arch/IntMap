@@ -138,6 +138,33 @@ test('R556 ② a credential wrapped in something else is recovered, and the wrap
     '…and the shape of each candidate');
 });
 
+/* ── ②b a quoted secret is unwrapped ────────────────────────────────────────────────────────── */
+test('R556 ②b quotes a shell did not strip are removed, and the quotes must match', async () => {
+  /* ⚠ THIS EXISTS BECAUSE CODEQL FOUND WHAT NO TEST HERE COULD. The first implementation built the
+     unwrapping pattern by string concatenation and wrote '([\\s\\S]*)' inside a single-quoted
+     string — where \\s and \\S are the letters s and S — so it only matched a quoted value made
+     entirely of s and S. The value THIS round had to recover was not quoted, so every test passed. */
+  const real = 'abcdef0123456789abcdef0123456789abcdef01';
+  for (const q of ['"', "'"]) {
+    const r = await runRelay({
+      env: { SUPABASE_URL: 'http://sb.test', AISSTREAM_API_KEY: q + real + q, AIS_STORAGE_KEY: 'svc' },
+      locations: DT, wsMsgs: [POS(412000001, 24.2, 121.9)], acceptKey: real,
+      requests: [{ q: '?ws=1200' }, { q: '?meta=1' }],
+    });
+    const meta = JSON.parse(r.out[1].body);
+    assert.equal(JSON.parse(r.out[0].body).p.aisstream, 1, 'a value wrapped in ' + q + ' still connects');
+    assert.equal(meta.aisstreamCredential.acceptedForm, 'dequoted');
+  }
+  /* mismatched quotes are NOT a quoted value — stripping them would invent a credential */
+  const odd = await runRelay({
+    env: { SUPABASE_URL: 'http://sb.test', AISSTREAM_API_KEY: '"' + real + "'", AIS_STORAGE_KEY: 'svc' },
+    locations: DT, wsMsgs: [POS(412000001, 24.2, 121.9)], acceptKey: real,
+    requests: [{ q: '?meta=1' }],
+  });
+  const forms = JSON.parse(odd.out[0].body).aisstreamCredential.candidates.map((c) => c.form);
+  assert.ok(!forms.includes('dequoted'), 'an opening quote is only a quote if the same character closes it');
+});
+
 /* ── ③ one socket at a time: the fourth connection dies without a word ───────────────────────── */
 test('R556 ③ candidates are tried one socket at a time', async () => {
   const real = 'ffffffffffffffffffffffffffffffffffffffff';
@@ -177,13 +204,19 @@ test('R556 ⑤ every AIS socket in the browser reads the frame it was actually s
   let sockets = 0;
   for (const f of files) {
     const src = rd('js/' + f);
-    if (src.indexOf('aisstream.io') < 0) continue;
+    if (!/aisstream/.test(src)) continue;
     const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
     walk.simple(ast, {
       NewExpression(node) {
         if (node.callee.type !== 'Identifier' || node.callee.name !== 'WebSocket') return;
         const a = node.arguments[0];
-        if (!a || a.type !== 'Literal' || String(a.value).indexOf('aisstream.io') < 0) return;
+        /* the HOST, not a substring: 'aisstream.io.evil.example' is a different server, and a check
+           that only asks "does the URL contain aisstream.io" would happily bless a socket pointed
+           somewhere else (CodeQL js/incomplete-url-substring-sanitization — it is right). */
+        if (!a || a.type !== 'Literal') return;
+        let host = '';
+        try { host = new URL(String(a.value)).hostname; } catch (_) { return; }
+        if (host !== 'stream.aisstream.io') return;
         sockets++;
         const near = src.slice(node.start, node.start + 400);
         assert.match(near, /binaryType\s*=\s*['"]arraybuffer['"]/,
