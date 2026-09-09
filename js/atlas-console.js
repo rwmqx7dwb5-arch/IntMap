@@ -1066,7 +1066,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        exported factory per file, nothing private at a module's top level, and the API attached to
        window so the browser spec can drive the REAL renderer rather than a Node copy of it. */
     const { runStructuredAnswer, auditMeta } = makeAtlasAnswerPipeline();
-    const { renderAnswer, answerPlainText, answerCSS } = makeAtlasAnswerRender();
+    const ARENDER = makeAtlasAnswerRender(); const { renderAnswer, answerPlainText, answerCSS } = ARENDER;   /* (#R576) the whole surface too, because _atlCompose needs demoteProseLinks */
     const { makeEvidenceRegistry } = makeAtlasEvidence();
     const { normalizeAnswer } = makeAtlasAnswerContract();
     const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
@@ -1624,7 +1624,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       visionSys:function(){ try{ return _visionSYS(); }catch(_){ return ''; } } }; }catch(_){}
     /* (#R199) ↳ js/atlas-sources.js — external evidence sources — leaders, live news, POI catalogues.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { _OP_EPS, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, WEB_BUDGET_MS, turnSignal });
+    const { _OP_EPS, overpassRaw, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs } = makeAtlasSources(HOST, { _fetchJSON, askAIJSON, countryStats, nm, EVIDENCE_BUDGET_MS, WEB_BUDGET_MS, turnSignal });
     let _pois=[], _poiColor=null;
     function ensurePoiLayer(){ try{ if(!GE().layers.hasSource('nlq-poi-src')) GE().layers.addSource('nlq-poi-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
       if(GE().layers.has('nlq-poi-c')) return true;
@@ -1703,7 +1703,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        by SEMANTIC key (not JSON-exact) so translation-only retries and world-substitutions can't recur. Pure helpers
        are covered by IntMapAtlasQA.run(); the researchMap dispatch case is below with the other actions. */
     let _atlasDbg=null;          /* last-turn diagnostics for window.IntMapAtlasDebug.lastPlan() */
-    let _atlasOutcomes=null;     /* current-turn per-action outcome sink (array while a run() turn executes) */ const VFRAMES=makeViewCapture({ GE:GE, L:L, esc:esc, waitIdle:HOST.aiWaitMapIdle, snapshot:()=>{ try{ return ASTATE.snapshot(); }catch(_){ return null; } } });   /* (#R493) the per-turn frame ledger — the pixels Atlas captured, kept OUT of the transcript (js/atlas-view-capture.js says why that separation IS the design) */
+    let _atlasOutcomes=null;     /* current-turn per-action outcome sink (array while a run() turn executes) */ const VFRAMES=makeViewCapture({ GE:GE, L:L, esc:esc, waitIdle:HOST.aiWaitMapIdle, snapshot:()=>{ try{ return ASTATE.snapshot(); }catch(_){ return null; } }, overpass:(q)=>overpassRaw(q,20000) });   /* (#R493) the per-turn frame ledger — the pixels Atlas captured, kept OUT of the transcript (js/atlas-view-capture.js says why that separation IS the design). ⚠⚠⚠ (#R576) `overpass` IS THE LOOKUP THAT MAKES «これなに» ANSWERABLE: without it view.inspect hands the model a picture and eleven camera numbers, which is how a 355,000 m² warehouse in 名古屋 came back as a supermarket with an invented tenant and a citation nobody fetched (js/atlas-view-ground.js measures why). The fetch is js/atlas-sources.js's, beside the mirror list it races — this file is shrink-only (tests/r419 ⑨d), and the kernel shrinks by moving. */
     /* geo_resolve-style structured output for the research_map task (the model returns NO coordinates/URLs). */
     const RESEARCH_MAP_SCHEMA={ type:'OBJECT', properties:{
       title:{type:'STRING'}, explanation:{type:'STRING'}, temporalBasis:{type:'STRING'},
@@ -4507,7 +4507,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          asking whose goal each served, and #R406 gives that judgement back to the one thing that
          knows the reader's goal. What could not be done is said in the answer, in words.
          ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
-      let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):''; try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results */
+      let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):''; try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); if(head) head=ARENDER.demoteProseLinks(head,_curPlanCites,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results. ⚠⚠⚠ (#R576) AND AN ANCHOR IN THAT PROSE CLAIMS INTMAP FETCHED THE PAGE: the structured path builds every link from the registry, this one renders what Atlas wrote, which is how 「(mapion.co.jp)」 shipped as a live link to a page nothing in the turn had requested. The rule, and the set of hosts this turn actually retrieved, are js/atlas-answer-render.js. */
       if(ai.__atlCancelled) head=_cancelledNote()+head;
       ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
       try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
