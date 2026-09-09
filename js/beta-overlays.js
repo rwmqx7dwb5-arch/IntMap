@@ -715,6 +715,28 @@ window.IntMapModules.betaOverlays=function(HOST){
       Natural:LA('Natural','自然遺産','Natur','Природный','Natural'),
       Mixed:LA('Mixed','複合遺産','Gemischt','Смешанный','Mixto')};
     let whsDoc=null, whsFC=null, whsLoading=false, whsPopup=null;
+    /* ⚠⚠⚠ ONE WRITE PER TICK, AND THE SAME COLLECTION IS NEVER WRITTEN TWICE. Measured in
+       production (#R567 verification): a language change put FIVE `setSourceData('whs-src',…)`
+       calls into the same tick — the lang listener rebuilds, the style event that the relabel
+       causes runs the self-heal, and the self-heal calls whsLoad(), which writes again. Every one
+       of them carried the CORRECT new collection, and the map still drew the old language: the
+       burst leaves MapLibre's geojson worker holding the tiles it had, and 66 seconds of polling,
+       a triggerRepaint() and a jump to another continent did not shift it. A single hand-made
+       setData with the SAME data fixed it within four seconds — so the data was never wrong and
+       the number of calls was.
+       ⚠ THE FIX IS NOT «call it less often somewhere». Four independent places are all correct to
+       want the source refreshed; what none of them can know is whether another one is about to ask
+       in the same tick. So they all ask HERE, and this is the only place that writes: it collapses
+       a tick's worth of asks into one, and skips a write of the collection it last wrote (whsBuild
+       makes a NEW object every time, so a genuine rebuild is never mistaken for a repeat). */
+    let whsQueued=false, whsWrote=null;
+    function whsPush(){
+      if(whsQueued) return; whsQueued=true;
+      Promise.resolve().then(()=>{ whsQueued=false;
+        if(!whsFC||whsWrote===whsFC) return;
+        try{ GE().layers.setSourceData('whs-src',whsFC); whsWrote=whsFC; }catch(_){}
+      });
+    }
     let whsDetail=null, whsDetailTag='', whsDetailPending=null;
     const whsOff=new Set();        /* category terms the reader has switched off */
     let whsDangerOnly=false;
@@ -777,6 +799,10 @@ window.IntMapModules.betaOverlays=function(HOST){
     }
     function whsEnsure(){ if(GE().layers.hasSource('whs-src')) return true; if(!_imCanDraw()) return false;
       try{
+        /* ⚠ a NEW source holds nothing this module wrote, so the «already wrote that» memory has
+           to be dropped with it — otherwise a basemap swap leaves the skip believing the empty
+           source already carries the collection. */
+        whsWrote=null;
         GE().layers.addSource('whs-src',{type:'geojson',data:whsFC||{type:'FeatureCollection',features:[]},
           attribution:'UNESCO World Heritage Centre'});
         const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
@@ -801,13 +827,13 @@ window.IntMapModules.betaOverlays=function(HOST){
       }catch(_){ return false; } }
 
     async function whsLoad(){
-      if(whsDoc){ if(!whsFC) whsBuild(); try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){} return; }
+      if(whsDoc){ if(!whsFC) whsBuild(); whsPush(); return; }
       if(whsLoading) return; whsLoading=true;
       try{
         const r=await fetch('data/whc-sites.json'); const j=await r.json();
         if(j&&Array.isArray(j.sites)&&Array.isArray(j.points)){
           whsDoc=j; whsBuild();
-          try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){}
+          whsPush();
           try{ if(GE().layers.has('whs-pt')) GE().layers.setPaint('whs-pt','circle-color',whsColour()); }catch(_){}
           whsApplyFilter(); whsLegend();
         }
@@ -962,7 +988,7 @@ window.IntMapModules.betaOverlays=function(HOST){
       /* the composed collection itself, so «did the language event recompose the names?» can be
          asked of THIS module rather than of the renderer's tile cache — two different questions,
          and only the first one is ours. */
-      fc:()=>whsFC };
+      fc:()=>whsFC, wrote:()=>whsWrote, push:whsPush };
     /* ══ THE KERNEL COMMANDS ════════════════════════════════════════════════════════
        CONSTITUTION §: the button and Atlas call the SAME registered command — Atlas does not
        simulate a click. Registered here, beside the layer, because this file is eager: a command
@@ -1059,7 +1085,7 @@ window.IntMapModules.betaOverlays=function(HOST){
     window.addEventListener('intmap-lang',()=>setTimeout(()=>{ try{
       if(!whsDoc) return;
       whsDetail=null; whsDetailTag=''; whsDetailPending=null;
-      whsBuild(); try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){}
+      whsBuild(); whsPush();
       whsLegend();
     }catch(_){} },20));
     /* self-heal across basemap swaps */
@@ -1075,7 +1101,7 @@ window.IntMapModules.betaOverlays=function(HOST){
          whsLoad() is idempotent (it returns early once the file is in hand and guards its own
          in-flight fetch), so the invariant can simply be stated: the layer is on, therefore its data
          is loaded. */
-      if(state.whs&&whsEnsure()){ setVis(WHS_IDS,true); if(whsFC){ try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){} } whsApplyFilter(); whsLoad(); }
+      if(state.whs&&whsEnsure()){ setVis(WHS_IDS,true); whsPush(); whsApplyFilter(); whsLoad(); }
     },80); } });
     /* (#R21) under memory pressure, keep only the displayed year's borders */
     window.addEventListener('intmap-mem-pressure',()=>{ try{ const keep=hbCache.get(hbYear); hbCache.clear(); if(keep&&state.hist) hbCache.set(hbYear,keep); }catch(_){} });
