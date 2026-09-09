@@ -34,6 +34,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -85,17 +86,21 @@ async function breaking(file, mutate, fn) {
 /* 木を読むだけでも、他のファイルの変異の最中に走らせれば他人の赤を自分の赤として読む。
    ⚠ **「ゲートが赤だった」だけの失敗は、読み手に何も渡さない。** この回はまさにその形で
    4件を追いかけた——どの規則が落ちたのかも、木が汚れていたのかも分からない主張だった。
-   赤いときは**ゲートの言い分**と**そのとき木が汚れていたか**を一緒に出す（後者が答えを分ける:
-   汚れていれば錠の破れ、汚れていなければゲート自身の問題）。 */
+   赤いときは**ゲートの言い分**と**誰を疑うべきか**を一緒に出す。
+
+   ⚠⚠⚠ **そしてその「誰を疑うか」を、#R623 まで逆に言っていた。** ここは `docFacts()` が
+   **返ったあとで** `git status` を採り、「汚れていれば錠の破れ・汚れていなければゲート自身
+   の問題」と読む約束になっていた。ところが妨害する書き込みは**ゲートの実行中に入れて戻される**
+   ——それが変異テストという仕事そのもの——なので、採ったときには木はもう綺麗に戻っている。
+   **捕まえるために置いた当の場合で `(clean)` と印字した。** 実測: CI run 34389623083 で
+   `tests/r403 ①` が `tests/r399 ②` の意図的な変異を自分の赤として報告し、この診断が読み手を
+   ゲートへ送った。判断は `tests/helpers/gate-precondition.mjs` へ移した——**木ではなく錠に訊く**
+   （書き手は全員錠を取るので、「他に誰か書けたか」の答えを持っているのは錠のほう）。 */
 function green(msg) {
   return withTreeLock(() => {
-    const r = docFacts();
+    const r = runGate(docFacts);
     if (r.code === 0) return;
-    let dirty = '(git status unavailable)';
-    try {
-      dirty = execFileSync('git', ['status', '--porcelain'], { cwd: ROOT, encoding: 'utf8' }).trim() || '(clean)';
-    } catch { /* leave the placeholder */ }
-    assert.fail(`${msg}\n--- check:docs said ---\n${r.out}\n--- working tree at that moment ---\n${dirty}`);
+    assert.fail(`${msg}\n--- check:docs said ---\n${r.out}\n--- who to suspect ---\n${r.explain()}`);
   });
 }
 const BEFORE = 'check:docs must be green before any of this means anything';

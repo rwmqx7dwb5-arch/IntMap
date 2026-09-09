@@ -1,7 +1,7 @@
 /* ============================================================================
  *  tests/helpers/gate-lock.mjs — one writer at a time for the working tree
  * ----------------------------------------------------------------------------
- *  Four files prove that a gate actually FAILS when a fact is wrong, and they do it the only way
+ *  Several files prove that a gate actually FAILS when a fact is wrong, and they do it the only way
  *  that proves anything: make the fact wrong on disk, run the gate, put it back. `node --test` runs
  *  test FILES in parallel, so without this they overlap — one file's probe is present while another
  *  is asserting the tree is clean, and the failure looks like a defect in whichever one lost the
@@ -31,6 +31,30 @@
  *    gates through `execFileSync`, so the event loop is blocked for the whole hold and no timer
  *    would fire. Asking the operating system whether the holder still exists has neither problem.
  *
+ *  ⚠⚠⚠ A HALF-WRITTEN STAMP READS AS A DEAD OWNER — AND «DEAD» IS A LICENCE TO DELETE. The pid
+ *    was published with `writeFileSync`, which opens the file with O_TRUNC and then writes: for
+ *    the microseconds in between it EXISTS and is EMPTY. A waiter reading it there got `''`,
+ *    `Number('')` is 0, 0 is not a live pid — so `abandoned()` reported that the LIVE holder was
+ *    gone and the waiter removed its lock and walked in. It is the clock bug above wearing a
+ *    different hat: a momentary failure to read the owner was treated as proof there is none.
+ *    MEASURED (#R623), eight processes taking the lock in turn with holds that block the event
+ *    loop, as the gates do: the old code read `''` on 13 of 480 handovers (2.7%) and produced
+ *    24 breaches of mutual exclusion in 320 holds — one bad reclaim cascades, because the robbed
+ *    holder still removes «its» lock at the end and hands the same wound to the next waiter.
+ *    The fix is not to retry the read: it is that THE STAMP IS NEVER VISIBLE INCOMPLETE. It is
+ *    written under a unique name inside the lock and RENAMED into place, and rename is atomic —
+ *    so a reader sees the whole stamp or no stamp at all. An unreadable stamp is treated as «not
+ *    published yet», never as «dead», so no future way of failing to read one can license a
+ *    deletion either. Same harness after the change: 480 holds, 0 breaches.
+ *
+ *  ⚠⚠⚠ RECLAIMING IS A CLAIM, NOT A DELETION. `abandoned()` judges the lock at one instant and
+ *    `rmSync` removes whatever stands at that path at another. Two waiters that both judged the
+ *    same dead lock would both delete — and the second one deletes the LIVE lock the first has
+ *    just taken. So the reclaim first RENAMES THE STAMP: rename is atomic, exactly one waiter can
+ *    move a given file, and no live holder can appear in between because taking the lock needs
+ *    `mkdir` and the directory is still standing. Only the waiter holding the stamp removes the
+ *    directory; the losers get ENOENT and simply look again.
+ *
  *  ⚠⚠⚠ ON WINDOWS THE RACE RETURNS EPERM, NOT EEXIST. A `mkdir` issued while another process is
  *    removing that same directory hits it in a pending-delete state and fails with EPERM. The old
  *    code rethrew anything that was not EEXIST, so that ordinary race killed the test outright —
@@ -38,11 +62,11 @@
  *    holds were few and long; it appeared as soon as they became many and short. A failure to take
  *    the lock is a failure to take the lock, whatever errno the platform picks for it.
  * ==========================================================================*/
-import { mkdirSync, rmSync, statSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, rmSync, renameSync, statSync, existsSync, writeFileSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -65,6 +89,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK = join(tmpdir(), 'intmap-tree-lock-' + createHash('sha1').update(ROOT).digest('hex').slice(0, 12));
 const OWNER = join(LOCK, 'pid');
 
+/* Where this checkout's lock actually is. Exported so a test can drive the lock's own failure
+   modes without RE-DERIVING the path from the rule above — a second copy of that derivation is
+   exactly the hand-written duplicate `.agents/rules/no-ad-hoc-hardcoding.md` §1 names, and it
+   would keep passing on the day the derivation changes. */
+export const lockPaths = () => ({ lock: LOCK, owner: OWNER });
+
 /* Only for a lock whose owner never got as far as writing its pid — a window of microseconds.
    A lock with a live owner is NEVER reclaimed, however long it has been held. */
 const UNCLAIMED_MS = 30_000;
@@ -83,13 +113,51 @@ const alive = (pid) => {
   catch (e) { return e.code === 'EPERM'; }                 // exists, but owned by someone else
 };
 
+/* A stamp names the pid AND the hold, so one hold is distinguishable from the next hold of the
+   same process — which is what lets a holder ask whether the lock it took is still the lock it
+   has (`lockIntact()` below), rather than merely whether some lock is there. */
+const newStamp = () => process.pid + ' ' + randomBytes(8).toString('hex');
+
+/* the pid a stamp names, or 0 when there is no readable stamp.
+   ⚠⚠⚠ 0 MEANS «NOT PUBLISHED YET», NEVER «DEAD». Everything above turns on that distinction. */
+const stampPid = (text) => {
+  const n = Number(String(text).trim().split(/\s+/)[0]);
+  return Number.isInteger(n) && n > 0 ? n : 0;
+};
+
+/* Publish the stamp so that no reader can ever see it half-written: write it under a name nobody
+   looks at, then rename it into place. */
+function publishStamp(text) {
+  const tmp = OWNER + '.writing.' + process.pid + '.' + randomBytes(4).toString('hex');
+  writeFileSync(tmp, text);
+  renameSync(tmp, OWNER);
+}
+
 /* true when the lock is held by a process that is gone, or was never claimed at all */
 function abandoned() {
   try {
     if (!existsSync(LOCK)) return false;
-    if (existsSync(OWNER)) return !alive(Number(readFileSync(OWNER, 'utf8').trim()));
+    if (existsSync(OWNER)) {
+      const pid = stampPid(readFileSync(OWNER, 'utf8'));
+      /* ⚠ NOT «dead»: a stamp we cannot read is one we have not read YET. Falling through to the
+         clock is right — it is the same state as a lock whose owner has not stamped it. */
+      if (!pid) return Date.now() - statSync(LOCK).mtimeMs > UNCLAIMED_MS;
+      /* ⚠ NOT «dead»: a stamp we cannot read is one we have not read YET. Falling through to the
+         clock is right — it is the same state as a lock whose owner has not stamped it. */
+      return !alive(pid);
+    }
     return Date.now() - statSync(LOCK).mtimeMs > UNCLAIMED_MS;
   } catch { return false; }                                // it changed under us — just re-loop
+}
+
+/* Take the abandoned lock away from its dead owner — see the header. The stamp is the claim, so
+   only one waiter can ever be the one that removes the directory. Returns nothing: whether it
+   worked is answered by the next `mkdir`, not by us. */
+function reclaim() {
+  try {
+    if (existsSync(OWNER)) renameSync(OWNER, OWNER + '.dead.' + process.pid);
+    rmSync(LOCK, { recursive: true, force: true });
+  } catch { /* another waiter claimed it first, or it changed under us — look again */ }
 }
 
 /* ⚠ REENTRANT, because the alternative is worse in both directions. A helper that mutates one fact
@@ -100,6 +168,33 @@ function abandoned() {
    this whole file exists to remove. Tests inside one file run sequentially, so a plain depth
    counter is the whole of it. */
 let depth = 0;
+
+/* The exact stamp of the hold this process owns, or null when it holds nothing. */
+let heldStamp = null;
+
+/* ⚠⚠⚠ WHY A HOLDER NEEDS TO ASK. A test that finds a gate red under the lock has two very
+   different failures in front of it — «the gate is wrong» and «somebody else wrote the tree while
+   I held the lock» — and until #R623 the only way it tried to tell them apart was to sample
+   `git status` after the gate had already finished. That sample cannot see a mutation that was
+   made and restored while the gate ran, so it printed «(clean)» for the one case it existed to
+   catch and sent the reader after the gate. MEASURED: run 34389623083 cost this round a day that
+   way, `tests/r403 ①` reporting `tests/r399 ②`'s deliberate mutation as its own.
+   The lock can answer directly. Every writer takes it, so a hold that survived intact means no
+   other writer was inside — and a hold that did NOT survive names the breakage outright. */
+export function lockIntact() {
+  if (heldStamp == null) return { intact: false, held: false, why: 'this process is not holding the tree lock' };
+  let now;
+  try { now = readFileSync(OWNER, 'utf8'); }
+  catch (e) {
+    return { intact: false, held: true,
+      why: 'the lock we created is gone (' + (e && e.code) + ') — another process removed it while we were inside it' };
+  }
+  if (now !== heldStamp) {
+    return { intact: false, held: true,
+      why: 'the lock was taken over while we were inside it — it now stamps «' + now.trim() + '», ours was «' + heldStamp.trim() + '»' };
+  }
+  return { intact: true, held: true, why: 'held continuously by this process' };
+}
 
 export async function withTreeLock(fn, { timeoutMs = TIMEOUT_MS } = {}) {
   if (depth > 0) { depth++; try { return await fn(); } finally { depth--; } }
@@ -119,7 +214,8 @@ export async function withTreeLock(fn, { timeoutMs = TIMEOUT_MS } = {}) {
          that after UNCLAIMED_MS, handing the tree to a second writer while we are still mutating it.
          Treating the write as best-effort turns a loud, momentary failure into the silent corruption
          this file exists to prevent. Release and try again instead. */
-      try { writeFileSync(OWNER, String(process.pid)); }
+      const stamp = newStamp();
+      try { publishStamp(stamp); heldStamp = stamp; }
       catch {
         try { rmSync(LOCK, { recursive: true, force: true }); } catch { /* it will age out */ }
         await sleep(25);
@@ -127,7 +223,7 @@ export async function withTreeLock(fn, { timeoutMs = TIMEOUT_MS } = {}) {
       }
       break;
     }
-    if (abandoned()) { try { rmSync(LOCK, { recursive: true, force: true }); } catch { /* someone beat us to it */ } continue; }
+    if (abandoned()) { reclaim(); continue; }
     if (Date.now() > deadline) throw new Error('gate-lock: waited ' + timeoutMs + 'ms for the tree lock');
     await sleep(25);
   }
@@ -135,6 +231,7 @@ export async function withTreeLock(fn, { timeoutMs = TIMEOUT_MS } = {}) {
   try { return await fn(); }
   finally {
     depth = 0;
+    heldStamp = null;
     try { rmSync(LOCK, { recursive: true, force: true }); } catch { /* already gone */ }
   }
 }

@@ -952,10 +952,17 @@ rest of the file exists.
 
 ### Tests that break the tree on purpose, and the lock they share (`tests/helpers/gate-lock.mjs`)
 
-Four files prove a gate really fails by making a fact wrong on disk, running the gate, and putting
-it back: `tests/r274`, `tests/r280`, `tests/r399`, `tests/r403`. `node --test` runs files in
-parallel, so they share one lock — a directory, because `mkdir` is atomic. Two rules about using it,
-both of which #R403 got wrong first and measured:
+Several files prove a gate really fails by making a fact wrong on disk, running the gate, and
+putting it back. ⚠ **Which ones is a question for the tree, not for this sentence** — it said "four:
+r274, r280, r399, r403" while nine files were importing the helper, because a hand-written list goes
+stale the day one is added and nothing says so. Ask instead:
+
+```bash
+grep -l "helpers/gate-lock.mjs" tests/*.test.mjs
+```
+
+`node --test` runs files in parallel, so they share one lock — a directory, because `mkdir` is
+atomic. Two rules about using it, both of which #R403 got wrong first and measured:
 
 - **Take it per mutation, not per test.** Holds are serialised across every file in the suite, so a
   hold spanning a whole test blocks three other files for its whole length — measured at 82 s for
@@ -977,6 +984,35 @@ holder's own worktree walks in, and two processes mutate that tree at once. Meas
 with three other worktrees running suites concurrently: `Architecture.md` carried another test's
 probe while this file's tests held the lock, and results on one unchanged tree moved 12 → 8 → 4 →
 **0** → 8 → 10 across runs. ⚠ A single green run is not evidence against an intermittent red.
+
+⚠⚠⚠ **And the lock was still letting two writers in, 2.7% of the time it changed hands (#R623).**
+The owner's pid was published with `writeFileSync`, which opens the file with `O_TRUNC` and *then*
+writes — so for the microseconds in between it exists and is **empty**. A waiter that read it there
+got `''`, `Number('')` is `0`, `0` is not a live pid, and so the liveness check reported that the
+**live** holder was gone: the waiter deleted its lock and walked in. It is the #R403 clock bug in a
+new costume — a momentary failure to *read* the owner treated as proof there **is** no owner — and
+one bad reclaim cascades, because the robbed holder still removes "its" lock at the end and hands
+the same wound to the next waiter. Measured with eight processes taking the lock in turn with holds
+that block the event loop, as the gates do: `''` on **13 of 480 handovers**, and **24 breaches of
+mutual exclusion in 320 holds**. After the fix, **1,080 holds, 0 breaches**.
+
+The lock now publishes its stamp by writing it under a unique name and **renaming it into place**,
+so a reader sees the whole stamp or no stamp at all; an unreadable stamp counts as *not published
+yet*, never as *dead*; and a reclaim **claims** the stale stamp by renaming it before removing the
+directory, so two waiters that both judged the same dead lock cannot both delete — which is what
+would otherwise let the second one delete the live lock the first had just taken.
+
+⚠⚠ **The diagnostic used to point the wrong way, and that cost more than the bug.** When a mutation
+test found its gate red under the lock, `tests/r403-checks` sampled `git status --porcelain` **after
+the gate had returned** and told the reader that a clean tree means the gate itself is wrong. But
+the interfering write is made *and put back* inside the gate run — that is what a mutation test is —
+so the sample printed `(clean)` in exactly the case it existed to catch. Measured on CI run
+34389623083, on a branch that touched none of this: `tests/r403 ①` reported `tests/r399 ②`'s
+deliberate "Architecture.md no longer states how many Edge Functions there are" as its own failure.
+`tests/helpers/gate-precondition.mjs` now asks the **lock** instead of the tree — every writer takes
+it, so a hold that survived intact means nobody else was inside, and a hold that did not says so
+outright — and it names the one case it still cannot see (a writer that mutates and restores inside
+the gate run *without* taking the lock) rather than quietly excluding it.
 
 ⚠ **A local full-suite run is not a trustworthy instrument while other sessions are working.** Under
 that contention it measures the machine, not the change — `tests/r274 ③` was measured anywhere from

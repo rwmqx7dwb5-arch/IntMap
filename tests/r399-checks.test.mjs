@@ -32,6 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -80,7 +81,13 @@ test('R399 ① every hole this round closed goes RED when its fact is made wrong
   /* ⚠ 木は共有されている。tests/r274 ③ と tests/r280 ② が同じことを同じ理由でやっており、
      `node --test` は3ファイルを同時に走らせる——tests/helpers/gate-lock.mjs 参照。 */
   await withTreeLock(() => {
-    assert.equal(docFacts().code, 0, 'check:docs must be green before any of this means anything');
+    /* ⚠ (#R623) この前提が落ちたとき、読み手の前には2つの別々の失敗がある——「ゲートが赤い」と
+       「錠が破れて他人の変異を自分の赤として読んだ」。木ではなく**錠**に訊く: 書き手は全員錠を
+       取るので、「他に誰か書けたか」の答えを持っているのは錠のほうである。
+       判断は `tests/helpers/gate-precondition.mjs`。 */
+    const pre = runGate(docFacts);
+    assert.equal(pre.code, 0, 'check:docs must be green before any of this means anything:\n'
+      + pre.out + '\n--- who to suspect ---\n' + pre.explain());
 
     for (const c of CASES) {
       const originalBytes = rd(c.file);
