@@ -265,12 +265,28 @@ test('R322 ⑧ every capability defined in js/ supplies all three verbs and a pu
 });
 
 /* ── ⑨ the instrument does not ship switched on ─────────────────────────────── */
-test('R322 ⑨ the command census is off unless it is asked for', () => {
+test('R322 ⑨ the command census is off unless it is asked for', async () => {
   const m = /const CMD\s*=\s*\{([\s\S]*?)\n  \};/.exec(CENSUSC);
   assert.ok(m, 'the census configuration is gone');
   assert.ok(/\bon:\s*false/.test(m[1]), 'counting must be off by default — it is an instrument, not a feature');
   assert.ok(/\bdetail:\s*false/.test(m[1]), 'the per-id string tables must be off by default');
-  assert.ok(/cmdlog\|perf/.test(CENSUSC), 'nothing turns the census on any more');
+  /* ⚠ (#R671) THE DOOR, ASKED OF THE MODULE INSTEAD OF OF ITS SPELLING. This line used to be
+     `/cmdlog\|perf/.test(CENSUSC)` — one regexp literal pinned. #R671 SPLIT that literal, because
+     `?perf=1` (the on-device HUD) was buying `detail` as well, i.e. a JSON.stringify of every source
+     payload on the phone being measured; the spelling check went red for a change that strengthened
+     the very thing it was defending. The claim is unchanged and now executed: there is still a URL
+     that switches this on, it is off for a page that did not ask, and the tables
+     scripts/frame-profile.mjs --commands reads are still reachable by the URL it opens. */
+  const { makeCommandCensus } = await import('../js/geo-command-log.js');
+  const asPage = (search) => {
+    const prev = globalThis.location; globalThis.location = { search };
+    try { return makeCommandCensus().CMD; } finally { if (prev === undefined) delete globalThis.location; else globalThis.location = prev; }
+  };
+  assert.equal(asPage('').on, false, 'counting must be off in a page that did not ask');
+  assert.equal(asPage('').detail, false, 'and so must the per-id tables');
+  assert.equal(asPage('?cmdlog=1').on, true, 'nothing turns the census on any more');
+  assert.equal(asPage('?cmdlog=1').detail, true,
+    'scripts/frame-profile.mjs --commands opens ?cmdlog=1 and reads byId / msCall / msCmp — that URL must still buy them');
   /* the timing probes are the expensive part and must be behind DETAIL, never behind `on` alone */
   const probes = CENSUSC.match(/performance\.now\(\)/g) || [];
   assert.ok(probes.length > 0, 'the timing probes are gone — the round could not be re-measured');

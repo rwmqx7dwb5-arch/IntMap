@@ -1486,6 +1486,19 @@ and lives in ONE module so the tenth occurrence cannot be a new copy of it.
 `tests/r345-checks.test.mjs` holds the rule and proves each clause with a fixture carrying the
 defect, in both directions.
 
+**And ask the question through a door the OLD code can answer too.** A regression check earns its
+name by failing on the code before the fix — but a check written entirely against a new API fails
+on the old code because the API is missing, which proves nothing about the defect. The DEM tile
+store (`tests/r671-dem-store-checks.test.mjs`) had three defects that were all orderings — the trim ran
+before the insert, the completion path never ran it, and nothing bounded how many requests were
+outstanding — so the checks EXECUTE `js/map-readout.js`'s factory in a `vm` against a fake `Image`
+the test fires by hand. Two of the measurements deliberately avoid the new statistics function:
+how many `Image` objects the module constructed, and how many tiles still answer `demElevAt()`
+after everything has landed. Both are questions the pre-fix module answers, and it answered **480
+Images** and **480 of 480 still resident against a ceiling of 140** — the report's own numbers,
+reproduced by the shipped code rather than by a model of it. A check that can only be run against
+the fix is a description of the fix, not a test of the defect.
+
 ---
 
 ## Security testing
