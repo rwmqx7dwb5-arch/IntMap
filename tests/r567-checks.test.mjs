@@ -141,6 +141,39 @@ test('R567 ⑦ the category vocabulary lives in the data — the code keys table
   assert.deepEqual(bad, [], 'a UNESCO category name is used as something other than a table key in js/beta-overlays.js');
 });
 
+test('R567 ⑩ the description sanitiser cannot re-form what it removed', async () => {
+  /* ⚠ CodeQL alert 136 (js/incomplete-multi-character-sanitization, high) named this function, and
+     the fix is the remedy that rule itself documents: repeat the replacement until it changes
+     nothing. #R540 recorded the same shape a round earlier, in a different file.
+     ⚠ AND HERE IS WHAT THIS TEST DOES *NOT* CLAIM. Mutating the fix back to a single pass leaves
+     every case below green — measured. `/<[^>]*>/g` is greedy across an inner `<`, so
+     `<scr<script>ipt>` is eaten whole rather than re-formed, and `unent()` already ran to a fixed
+     point, so no input tried here survives one pass. No witness was found that the old code
+     actually leaked; what is asserted is therefore the PROPERTY (nothing tag-shaped survives, and
+     the output is a fixed point of the sanitiser) rather than a reproduction of a leak. Writing
+     that down is the point: a green mutation here means the case set is not discriminating, not
+     that the loop is decoration.
+     ⚠ THE SHIPPED FUNCTION IS CALLED, NOT A COPY OF IT. Rebuilding the regex here would measure
+     this test's idea of the sanitiser rather than the one that writes data/ (#R552). */
+  const { plain } = await import('../scripts/build-whs.mjs');
+  const cases = [
+    '<scr<script>ipt>alert(1)</scr</script>ipt>',
+    '&amp;lt;script&amp;gt;alert(1)&amp;lt;/script&amp;gt;',
+    '&lt;scr&lt;script&gt;ipt&gt;alert(1)',
+    '<<script>script>alert(1)</script>',
+  ];
+  for (const c of cases) {
+    const out = plain(c);
+    assert.ok(!/<\s*script/i.test(out), `sanitiser left a script tag in: ${JSON.stringify(out)}`);
+    assert.ok(!/<\s*[a-z]/i.test(out), `sanitiser left a tag in: ${JSON.stringify(out)}`);
+    /* the fixed point itself: sanitising the output again must change nothing */
+    assert.equal(plain(out), out, `sanitiser is not idempotent on: ${JSON.stringify(c)}`);
+  }
+  /* …and it still does its actual job */
+  assert.equal(plain('&lt;p&gt;Hello &amp; goodbye&lt;/p&gt;'), 'Hello & goodbye');
+  assert.equal(plain('&lt;p&gt;a&lt;br&gt;b&lt;/p&gt;'), 'a\nb');
+});
+
 test('R567 ⑨ «clear» resets the narrowing and lets the same call apply the rest', () => {
   /* ⚠ MEASURED IN THE BROWSER, NOT IMAGINED: `heritage.filter {clear:true, danger:true}` answered
      «6,009 shown» — every property — because the clear branch RETURNED. A caller that says «start

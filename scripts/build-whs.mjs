@@ -70,7 +70,7 @@ import zlib from 'node:zlib';
 import os from 'node:os';
 import vm from 'node:vm';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { toHans } from './zh-hans.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -180,11 +180,26 @@ const rowsOf = (xml) => {
 /* the description is HTML (<p>…</p>, the occasional <em>). The panel renders text, so the tags come
    off here rather than at 1,273 call sites; block ends become paragraph breaks so the text keeps
    its shape. */
+/* ⚠⚠ A SINGLE PASS RE-FORMS WHAT IT REMOVED, and this project has paid for that shape before
+   (#R540): `<scr<script>ipt>` loses its inner tag and becomes `<script>`. CodeQL alert 136 named
+   exactly the line below. UNESCO also DOUBLE-ENCODES its markup (`&lt;p&gt;`), so one entity decode
+   is not even enough to SEE a tag: a decode can reveal a tag the previous strip could not see, and a
+   strip can leave an entity the next decode turns back into `<`. Alternating the two until nothing
+   changes is what makes both true at once. */
+function stripTags(s) {
+  let prev, out = s;
+  do { prev = out; out = out.replace(/<[^>]*>/g, ''); } while (out !== prev);
+  return out;
+}
 function plain(html) {
-  return unent(html)
-    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
-    .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, '\n\n')
-    .replace(/<[^>]*>/g, '')
+  let prev, s = String(html);
+  do {
+    prev = s;
+    s = stripTags(unent(s)
+      .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+      .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, '\n\n'));
+  } while (s !== prev);
+  return s
     .replace(/[ \t ]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -401,4 +416,14 @@ function round(x, n) { const m = 10 ** n; return Math.round(x * m) / m; }
 function Vocab() { const at = new Map(); this.list = [];
   this.id = (s) => { if (at.has(s)) return at.get(s); at.set(s, this.list.length); this.list.push(s); return this.list.length - 1; }; }
 
-main().catch((e) => { console.error('build-whs failed:', e.message); process.exit(1); });
+/* ⚠ `plain` IS EXPORTED AND `main` RUNS ONLY WHEN THIS FILE IS THE ENTRY POINT. #R515 settled that
+   a decision function should not be exported merely so a test can reach it — the test should go
+   through the path the product uses. This one has no product path: it is a build-time sanitiser, and
+   CodeQL alert 136 was about the sanitiser itself. So the only way to measure the shipped function
+   is to call it, and the only way to call it is to stop the module fetching 16 MB on import. Both
+   halves of that belong here rather than in the test — a test that rebuilds the function from source
+   is measuring its own copy (#R552). */
+export { plain };
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  main().catch((e) => { console.error('build-whs failed:', e.message); process.exit(1); });
+}
