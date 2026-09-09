@@ -237,6 +237,16 @@ window.IntMapModules.layerRegistry=function(HOST){
     register('heritage',{ label:()=>L5('World Heritage','世界遺産','Welterbe','Всемирное наследие','Patrimonio Mundial'),
       on:()=>{ try{ return !!(GE().layers.has('whs-pt')&&GE().layers.getLayout('whs-pt','visibility')!=='none'); }catch(_){ return false; } },
       featuresIn:b=>_srcFeatsIn('whs-src',b), source:()=>'UNESCO World Heritage Centre' });
+    /* (#R578) MEASURED radiation, so that 「いま画面に見えている観測局は？」 has an answer. The
+       summary states the RANGE rather than a count: with ~8,500 stations on the map the number in
+       view says nothing, while «71–140 nSv/h» is the reading a person actually wanted. `source`
+       names the networks that answered, because which ones did is not fixed. */
+    register('radiation',{ label:()=>L5('Measured radiation','実測放射線','Gemessene Strahlung','Измеренная радиация','Radiación medida'),
+      on:()=>{ try{ return !!(GE().layers.has('imrad-obs-pt')&&GE().layers.getLayout('imrad-obs-pt','visibility')!=='none'); }catch(_){ return false; } },
+      featuresIn:b=>_srcFeatsIn('imrad-obs-src',b),
+      summary:()=>{ try{ const f=_srcFeatsIn('imrad-obs-src',null)||[]; const v=f.map(x=>x&&x.properties&&x.properties.v).filter(x=>typeof x==='number');
+        if(!v.length) return null; return Math.min.apply(null,v)+'–'+Math.max.apply(null,v)+' nSv/h ('+v.length+')'; }catch(_){ return null; } },
+      source:()=>{ try{ return (window.IntMapRadiationObs.sources()||[]).filter(s=>s.read).map(s=>s.attribution||s.name).join(', ')||null; }catch(_){ return null; } } });
     register('elevation',{ label:()=>L5('Elevation','標高','Höhe','Высота','Elevación'), on:()=>true,
       sampleAt:(x,y)=>{ try{ const v=(typeof demElevAt==='function')?demElevAt(x,y):null; return (v==null)?null:(Math.round(v)+' m'); }catch(_){ return null; } }, source:()=>'Mapzen/AWS terrarium DEM' });
     /* ---- (#R120) live traffic layers — the REAL features currently on the map (same geojson the symbols paint) ---- */

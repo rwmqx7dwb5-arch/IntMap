@@ -57,6 +57,12 @@ export const PINNED = ['著名', '著作', '著者', '顯著', '土著', '編著
    ⚠ Every entry is a term where the mainland reader would otherwise be given a word that is either
    wrong or foreign. Words that are simply shared (按鈕/預覽/區域/範圍/警告/錯誤…) are NOT here. */
 export const WORDS = [
+  /* (#R578) radiation protection — the ICRU operational quantity has a different NAME on each side:
+     Taiwan writes 等效劑量率, the mainland standard (GB/T) writes 劑量當量率. The row is the BARE term,
+     not 周圍…率: a qualifier can sit inside the phrase (周圍γ等效劑量率) and a longer key would
+     silently miss it. Without this row one of the two readerships is handed the other's term for
+     the thing the whole layer measures. */
+  ['等效劑量率', '劑量當量率'],
   /* computing & UI */
   ['網際網路', '互聯網'], ['重新整理', '刷新'], ['工作階段', '會話'], ['行動裝置', '移動設備'],
   ['解析度', '分辨率'], ['演算法', '算法'], ['伺服器', '服務器'], ['使用者', '用戶'],

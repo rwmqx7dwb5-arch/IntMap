@@ -203,6 +203,10 @@ border-coast.js                   歴史的な輪郭のどの辺が「国境／�
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
                                   切り出した——同じ読み方を time-admin1.js にも配るため（写さない）
+radiation-layer.js                実測放射線 window.IntMapRadiationObs（遅延）——各国の観測網が公開する周辺γ線量率を
+                                  nSv/h に正規化した1つの尺度で描く。凡例・観測局ポップアップと時系列・時計連動・
+                                  near() による「この地点の周りの観測局」。⚠ js/sims.js の拡散simulationとは別物
+                                  （あちらは模型、これは観測）。正本 docs/RADIATION.md
 time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
 time-admin1.js                    時間軸の上の歴史的**地方区分**（第1級行政区分）IntMapTimeAdmin1。上の双子——
                                   同じ時計・同じ 45ms・同じ日単位エポック索引・同じ「旅行中か」の判定で、
@@ -372,7 +376,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   `answer_mode`（text / map / chart / mixed）は **Atlas が宣言**し、ループは
                                   「map / mixed と言ったのに何も描いていない final」を `map_not_drawn` として
                                   差し戻す（自分の宣言との整合＝schema 検査と同じ種類。回数は `maxMapGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全135を検索・到達可能 134）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全137を検索・到達可能 136）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
@@ -383,7 +387,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 135能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 137能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
@@ -699,11 +703,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全15本をここに宣言する
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全16本をここに宣言する
   migrations/*.sql                DB の唯一の設計図（20本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表。8本）
-  functions/<name>/index.ts       Edge Functions（15本。一覧と各本の役割は Architecture.md §6.2）
+  functions/<name>/index.ts       Edge Functions（16本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（newsgeo.js / relay-guard.js /
                                   atlas-persona.js / aviation-codec.js / aviation-model.js /
                                   news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）

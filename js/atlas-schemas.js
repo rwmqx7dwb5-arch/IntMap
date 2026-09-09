@@ -305,6 +305,13 @@ export function makeAtlasSchemas() {
          in Danger, `clear` drops every narrowing. */
       'data.heritage': { type: 'object', properties: { name: str(), text: str(), query: str(), place: str(), id: int() }, anyOf: [{ required: ['name'] }, { required: ['text'] }, { required: ['query'] }, { required: ['place'] }, { required: ['id'] }] },
       'map.heritageFilter': { type: 'object', properties: { categories: { type: 'array', items: str() }, category: str(), danger: bool(), clear: bool() }, anyOf: [{ required: ['categories'] }, { required: ['category'] }, { required: ['danger'] }, { required: ['clear'] }] },
+      /* (#R578) 実測放射線。Switching the layer takes nothing — `on` defaults to true, which is what
+         「放射線量を見せて」 means. The reading-around-a-point call REQUIRES a real coordinate and
+         takes no place name: a dose rate quoted for the wrong town is worse than no answer, so
+         resolving the name is the caller's job and this schema refuses to paper over it. `km`
+         defaults in the code to 150 and is capped here at the width of a national network. */
+      'map.radiation': { type: 'object', properties: { on: bool() } },
+      'data.radiationNear': { type: 'object', properties: { lat: num(-90, 90), lon: num(-180, 180), km: num(1, 1000) }, required: ['lat', 'lon'] },
       /* (#R527) 写真の撮影地点。EVERY ARGUMENT IS OPTIONAL, AND THAT IS THE SHAPE OF THE FEATURE,
          not a relaxation of rule (3): the two inputs that decide the answer — the photograph and
          the ridge traced on it — cannot travel in an action at all, because the reader supplies

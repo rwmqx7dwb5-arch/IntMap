@@ -43,9 +43,16 @@ const sw = read('sw.js');
 const adminHtml = read('admin.html');
 const indexHtml = read('index.html');
 const RELAYS = ['alerts-relay', 'cable-geo', 'news-relay', 'sv-cov'];
-/* (#R533) …and quotes-relay, the fifteenth. This list is the one the every-function checks below
-   walk; a function missing from it is a function nothing in this file inspects. */
-const FUNCTIONS = ['ai-proxy', 'ais-feed', 'alerts-relay', 'aviation-feed', 'cable-geo', 'delete-account', 'gdelt-relay', 'monitor-run', 'news-ingest', 'news-relay', 'quotes-relay', 'refresh-news', 'routing-relay', 'sv-cov', 'volcano-feed'];
+/* (#R578) DISCOVERED, NOT TYPED. This was a hand-written array, and its own comment said what was
+   wrong with it: «a function missing from it is a function nothing in this file inspects». A list a
+   human must remember to extend is a list that will silently stop covering the next function —
+   `.agents/rules/no-ad-hoc-hardcoding.md` §1. So the roster is read off disk, and then checked
+   against the declarations in supabase/config.toml, which is the OTHER place a function has to be
+   named. Either one alone can be forgotten; disagreeing with each other cannot pass. */
+const FN_DIR = join(ROOT, 'supabase', 'functions');
+const FUNCTIONS = readdirSync(FN_DIR, { withFileTypes: true })
+  .filter((e) => e.isDirectory() && e.name !== '_shared' && existsSync(join(FN_DIR, e.name, 'index.ts')))
+  .map((e) => e.name).sort();
 
 // ---- Mirror of refresh-news timingSafeEqual (kept in lock-step; unit-tested here) ----
 function timingSafeEqual(a, b) {
@@ -344,7 +351,13 @@ test('every Edge Function in the tree is declared in config.toml, and _shared is
   const dirs = readdirSync(join(ROOT, 'supabase/functions'), { withFileTypes: true })
     .filter((d) => d.isDirectory() && !d.name.startsWith('_'))
     .map((d) => d.name).sort();
-  assert.deepEqual(dirs, FUNCTIONS, 'the set of Edge Functions changed — update config.toml and this list');
+  /* ⚠ (#R578) THIS LINE USED TO COMPARE DISK TO A TYPED ARRAY. The array is now derived from disk
+     too, so comparing them would be a tautology — a check that cannot fail. The relation that still
+     has two independent sides is disk vs. the DECLARATIONS in config.toml, so that is what is
+     measured; an undeclared function is one that never deploys. */
+  const declared = [...cfg.matchAll(/^\[functions\.([a-z0-9-]+)\]/gm)].map((m) => m[1]).sort();
+  assert.deepEqual(dirs, declared, 'the set of Edge Functions on disk and the set declared in config.toml disagree');
+  assert.ok(dirs.length >= 15, `only ${dirs.length} functions were discovered; the tree held 15 at #R533, so the discovery itself is broken`);
   for (const fn of dirs) assert.match(cfg, new RegExp(`\\[functions\\.${fn}\\]`), `${fn} is not declared in config.toml`);
   assert.ok(!/\[functions\._shared\]/.test(cfg), '_shared is a library directory, not a deployable function');
 });

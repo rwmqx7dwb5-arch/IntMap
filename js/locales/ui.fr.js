@@ -6240,4 +6240,26 @@ window.IntMapLang.define('fr', { ui: {
   "This renderer cannot draw the wave layer.": "Ce moteur de rendu ne peut pas dessiner la couche des vagues.",
   "no wave data": "pas de données de vagues",
   "not a wave model": "pas un modèle de vagues",
+  /* ══ (#R578) MEASURED RADIATION — the ambient gamma dose rate layer ══ */
+  "Measured radiation": "Rayonnement mesuré",   /* map-ui.js (#R578) */
+  "Measured radiation — ambient gamma dose rate": "Rayonnement mesuré — débit de dose gamma ambiant",   /* beta-overlays.js radiation-layer.js (#R578) */
+  "stations": "stations",   /* radiation-layer.js (#R578) */
+  "unavailable: ": "indisponible : ",   /* atlas-controls.js (#R578) */
+  "Loading history…": "Chargement de l’historique…",   /* radiation-layer.js (#R578) */
+  "No history published for this station.": "Aucun historique n’est publié pour cette station.",   /* radiation-layer.js (#R578) */
+  "Could not reach the networks.": "Impossible de joindre les réseaux.",   /* radiation-layer.js (#R578) */
+  "Radiation measurements are unavailable right now.": "Les mesures de rayonnement sont indisponibles pour le moment.",   /* beta-overlays.js (#R578) */
+  "{n} stations within {k} km": "{n} stations dans un rayon de {k} km",   /* atlas-controls.js (#R578) */
+  "No monitoring station within {k} km publishes an open-licensed reading. That is a gap in coverage, not a statement about the radiation there.": "Aucune station de surveillance à moins de {k} km ne publie de mesure sous licence ouverte. C’est une lacune de couverture, et non une affirmation sur le niveau de rayonnement à cet endroit.",   /* atlas-controls.js (#R578) */
+  "Measured radiation on — {n} stations from {m} networks": "Rayonnement mesuré activé — {n} stations issues de {m} réseaux",   /* atlas-controls.js (#R578) */
+  "Measured radiation layer off.": "Calque du rayonnement mesuré désactivé.",   /* atlas-controls.js (#R578) */
+  "Give a coordinate to measure around.": "Indiquez une coordonnée autour de laquelle mesurer.",   /* atlas-controls.js (#R578) */
+  "50–200 nSv/h is normal natural background almost everywhere. Rain alone can lift a station up to three times higher for a few hours, and most of these readings are published unvalidated — so one high station is not evidence of a release.": "50–200 nSv/h correspond au fond naturel normal presque partout. La pluie à elle seule peut multiplier par trois la valeur d’une station pendant quelques heures, et la plupart de ces mesures sont publiées sans validation — une seule station élevée n’est donc pas la preuve d’un rejet.",   /* radiation-layer.js (#R578) */
+  "{n} more stations publish a period average, not a current reading — set the clock to their year to see them.": "{n} autres stations publient une moyenne de période, et non une mesure actuelle — réglez l’horloge sur leur année pour les afficher.",   /* radiation-layer.js (#R578) */
+  "below this detector’s stated range": "sous la plage de mesure déclarée de ce détecteur",   /* radiation-layer.js (#R578) */
+  "published average for a period — not a current reading": "moyenne publiée pour une période — ce n’est pas une mesure actuelle",   /* radiation-layer.js (#R578) */
+  "still loading one network…": "un réseau est encore en cours de chargement…",   /* radiation-layer.js (#R578) */
+  "Measured right now near the source": "Mesuré en ce moment près de la source",   /* atlas-console.js (#R578) */
+  "That name also matches {o}; this run uses {u}.": "Ce nom correspond aussi à {o} ; cette exécution utilise {u}.",   /* atlas-console.js (#R578) */
+  "These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.": "Ce sont des observations, et non une partie du modèle ci-dessus. 50–200 nSv/h correspond au fond naturel ordinaire, et la pluie à elle seule peut tripler la valeur d’une station pendant quelques heures.",   /* atlas-console.js (#R578) */
 } });
