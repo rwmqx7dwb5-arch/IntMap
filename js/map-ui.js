@@ -262,9 +262,47 @@ window.IntMapModules.layerRegistry=function(HOST){
        properties (R121: PIP over the source data when the point is off screen), and the ~40 bx World-Bank
        choropleths report through window._imBxChoroValueAt (registered by their own module). ---- */
     /* shared point-in-polygon (Polygon/MultiPolygon with holes) — also used by choroValueAt & the bx module */
+    /* ⚠⚠ (#R566) IT READ EVERY VERTEX OF EVERY SHAPE, EVERY TIME. Five call sites share this one
+       predicate — js/data-layers.js's `choroValueAt`, this file's World-Bank fallback below,
+       js/layer-packs.js's `offsetAt`, js/wb-layers.js's `_imBxChoroValueAt` and js/datacenters.js's
+       "which country is this card in" — and the heaviest of them walks `countryGeo`: 258 features and
+       ~548,000 vertices once the idle swap to the 10 m outlines lands (that count is measured in
+       js/countries-ui.js:470). On the main thread, for every hover readout and every mobile moveend.
+       A bounding box answers "no" for nearly all of it without touching a single ring.
+       ⚠ THE ANSWER DOES NOT CHANGE — THE BOX ONLY EVER SAYS NO. Being inside a box proves nothing, so a
+       point in the box still goes through exactly the ray-cast below. Rejection is EXACT for this
+       algorithm: outside the y-span no edge can satisfy `(yi>y)!==(yj>y)`, and left of the x-span every
+       crossing edge passes the `x < …` test, which for a closed ring is an even number of toggles. So no
+       true hit can be discarded — including across the antimeridian, where Natural Earth clips Russia,
+       Fiji and the USA at ±180 and the box merely becomes the whole world (the rejection stops helping,
+       it never becomes wrong). Holes need no box of their own: a hole lies inside its own outer ring.
+       The boxes are memoised on the coordinate ARRAYS THEMSELVES, so when `countryGeo` is replaced by the
+       10 m data the old arrays — and their boxes — are unreachable and collected. There is nothing to
+       invalidate by hand, which is the whole reason the key is the array and not a feature id. (These
+       arrays come from parsed GeoJSON and are never edited in place; a changed length is caught anyway.) */
+    const _bbCache=new WeakMap();
+    /* ⚠ A SHAPE WITH ONE UNUSABLE COORDINATE GETS NO BOX AT ALL — `{bad:1}`, and the old full walk decides.
+       MEASURED by tests/r566 ① against the naive walk: a ring containing [NaN,NaN] (or [null,null], which
+       JSON.parse produces from a truncated file) breaks the "a closed ring crosses a ray an even number of
+       times" identity the rejection rests on — the NaN edges silently drop out of the count, so such a ring
+       CAN report "inside" for a point far outside the box its finite vertices span. Refusing to box it is
+       the only answer that cannot change what the predicate says. */
+    const _bbCalc=a=>{ const p0=a[0]; if(!p0||!p0.length) return {bad:1};
+      let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+      if(typeof p0[0]==='number'){ for(let i=0;i<a.length;i++){ const p=a[i]; if(!p) return {bad:1};   /* a ring of positions */
+          const px=p[0],py=p[1]; if(!Number.isFinite(px)||!Number.isFinite(py)) return {bad:1};
+          if(px<x0)x0=px; if(px>x1)x1=px; if(py<y0)y0=py; if(py>y1)y1=py; } }
+      else { for(let i=0;i<a.length;i++){ const s=_bbOf(a[i]); if(!s) return {bad:1};   /* rings of a polygon / parts of a multipolygon */
+          if(s.x0<x0)x0=s.x0; if(s.x1>x1)x1=s.x1; if(s.y0<y0)y0=s.y0; if(s.y1>y1)y1=s.y1; } }
+      return (x0<=x1&&y0<=y1)?{x0,y0,x1,y1}:{bad:1}; };
+    const _bbOf=a=>{ if(!a||!a.length) return null; const c=_bbCache.get(a); if(c&&c.n===a.length) return c.bad?null:c;
+      const b=_bbCalc(a); b.n=a.length; _bbCache.set(a,b); return b.bad?null:b; };
+    const _bbOut=(x,y,b)=>!!b&&(x<b.x0||x>b.x1||y<b.y0||y>b.y1);
     window._imPipGeo=function(x,y,g){ const ring=r=>{ let ins=false; for(let i=0,j=r.length-1;i<r.length;j=i++){ const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) ins=!ins; } return ins; };
-      const poly=p=>{ if(!p||!p.length||!ring(p[0])) return false; for(let k=1;k<p.length;k++){ if(ring(p[k])) return false; } return true; };
-      try{ if(!g) return false; if(g.type==='Polygon') return poly(g.coordinates); if(g.type==='MultiPolygon') return g.coordinates.some(poly); }catch(_){} return false; };
+      const poly=p=>{ if(!p||!p.length||_bbOut(x,y,_bbOf(p))||!ring(p[0])) return false; for(let k=1;k<p.length;k++){ if(ring(p[k])) return false; } return true; };
+      try{ if(!g) return false; if(g.type==='Polygon') return poly(g.coordinates);
+        /* the whole shape first, then each part: one box rejects an archipelago's every island at once */
+        if(g.type==='MultiPolygon') return _bbOut(x,y,_bbOf(g.coordinates))?false:g.coordinates.some(poly); }catch(_){} return false; };
     const _WBF={ 'wb-cpi-f':{src:'wb-cpi',lb:()=>L5('Corruption (control, WGI)','汚職・腐敗指標','Korruptionsindex','Индекс коррупции','Índice de corrupción'),fmt:p=>Math.round(+p.s)+' / 100'},
       'wb-le-f':{src:'wb-le',lb:()=>L5('Life expectancy','平均寿命','Lebenserwartung','Продолжительность жизни','Esperanza de vida'),fmt:p=>(+p.raw).toFixed(1)+' '+L5('yrs','年','J.','лет','años')},
       'wb-unemp-f':{src:'wb-unemp',lb:()=>L5('Unemployment','失業率','Arbeitslosenquote','Безработица','Desempleo'),fmt:p=>(+p.raw).toFixed(1)+'%'},

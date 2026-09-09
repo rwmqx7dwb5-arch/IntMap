@@ -98,8 +98,13 @@ test('② the DEM cache exempts pinned tiles, and the field pins + releases them
   /* (#R223) …and the same grid, minus the tiles whose whole footprint the bundled land mask says is
      sea — the field never paints the ocean, so it must not wait for it either. */
   assert.ok(/demTilePoints\(W,Ss,E,Nn,z,_keepTile\)/.test(se), 'the field must warm the tile grid, not a fixed lattice');
-  assert.ok(/warmDEMTiles\([^)]*,true\)/.test(se) || /warmDEMTiles\(warm,z,_ms,\(f\)=>prog\(6\+34\*\(\+f\|\|0\)\),true\)/.test(se),
-    'the field must warm with hold=true');
+  /* (#R566) THE PIN IS A LEASE NOW, so this stopped being a question about the literal `true` and
+     became a question about whether the warm-up asks for a pin AT ALL. Asking it of every call —
+     rather than of one spelling — is also what catches a fourth warm-up added without one. */
+  const warms = se.match(/warmDEMTiles\(/g) || [];
+  const held = (se.match(/warmDEMTiles\([^;]*?,\s*(true|fldLease\|\|true)\)/g) || []).length;
+  assert.ok(warms.length >= 3, 'the field warms the far window, the main field and its retry passes');
+  assert.ok(held >= 3, 'the field must warm with a hold — a pin, not a bare fetch');
   assert.ok(/releaseDEMHold/.test(se), 'the field must release the pin');
   /* …and the release must be in the `finally`, or an aborted build pins tiles for ever */
   const fin = se.indexOf('} finally {');
