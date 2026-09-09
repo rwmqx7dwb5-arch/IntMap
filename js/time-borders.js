@@ -231,38 +231,22 @@ window.IntMapModules.timeBorders=function(HOST){
        module would be in its temporal dead zone for `bcLoad`'s onload if the marks ever arrived
        during evaluation. */
     const _csLn=new Map(), _hbLn=new Map();
-    let _bcD=null,_bcP=null;
-    function bcLoad(){ if(_bcD) return Promise.resolve(_bcD); if(_bcP) return _bcP;
-      _bcP=new Promise(res=>{ if(window.__IMBCOAST){ _bcD=window.__IMBCOAST; res(_bcD); return; }
-        const s=document.createElement('script'); s.src='data/border-coast.js'; s.async=true;
-        s.onload=()=>{ _bcD=window.__IMBCOAST||null; if(_bcD){ _csLn.clear(); _hbLn.clear(); } res(_bcD); };
-        /* ⚠ DROP THE PROMISE ON FAILURE, the way csLoad/hbLoad do. Keeping a resolved-null promise
-           would make one lost request permanent for the session — and because the line geometry is
-           MEMOISED per record, the map would then be pinned to the whole-ring drawing (the picture
-           this round removed) until a reload. Clearing the memo on a late arrival is the other half
-           of the same point. */
-        s.onerror=()=>{ _bcP=null; res(null); };
-        document.head.appendChild(s); });
-      return _bcP; }
-    function _bcMarks(set){ try{ return (_bcD&&_bcD.sets&&_bcD.sets[set]&&_bcD.sets[set].draw)||null; }catch(_){ return null; } }
-    const _closedRing=r=>{ const n=r.length; return (n>1&&r[0][0]===r[n-1][0]&&r[0][1]===r[n-1][1])?r:r.concat([r[0]]); };
-    /* the border runs of one ring, as LineString coordinate arrays */
-    function _ringLines(ring,mark){ const V=_closedRing(ring);
-      if(mark===0) return [];
-      if(mark===1||!Array.isArray(mark)) return [V];
-      const out=[]; for(const run of mark){ const seg=V.slice(run[0],run[1]+1); if(seg.length>1) out.push(seg); }
-      return out; }
-    function _lineGeom(d,idx,marks){ const lines=[];
-      for(const poly of d.feats[idx][8]) for(const ri of poly){ for(const l of _ringLines(d.rings[ri],marks?marks[ri]:1)) lines.push(l); }
-      return lines.length?{type:'MultiLineString',coordinates:lines}:null; }
-    /* an unmarked collection (the aourednik fallback, or a bundle drawn before the marks arrive):
-       every ring of every feature, stroked whole — the outline this file drew before #R531. */
-    function _wholeLines(fc){ const feats=[];
-      for(const f of ((fc&&fc.features)||[])){ const g=f.geometry; if(!g) continue;
-        const polys=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:null); if(!polys) continue;
-        const lines=[]; for(const p of polys) for(const r of p) if(r&&r.length>1) lines.push(_closedRing(r));
-        if(lines.length) feats.push({type:'Feature',geometry:{type:'MultiLineString',coordinates:lines},properties:{}}); }
-      return {type:'FeatureCollection',features:feats}; }
+    /* ⚠ (#R564) THE READING OF THE MARKS MOVED TO js/border-coast.js, AND NOTHING ELSE MOVED WITH IT.
+       #R564 had to do the same thing to the SUBDIVISION record (js/time-admin1.js), and copying the
+       loader, the mark lookup and the ring slicer across would have put one fact in two files. The
+       rule and the constant are still scripts/build-border-coast.mjs's; the loading, the late-arrival
+       notice and the ring→LineString slice are now one owner's. These six names stay because they are
+       what this file reads them by — they are the CALL, not a second copy. */
+    const _BC=()=>window.IntMapBorderCoast;
+    function bcLoad(){ try{ return _BC().load(); }catch(_){ return Promise.resolve(null); } }
+    function _bcMarks(set){ try{ return _BC().marks(set); }catch(_){ return null; } }
+    const _closedRing=r=>_BC().closedRing(r);
+    const _ringLines=(ring,mark)=>_BC().ringLines(ring,mark);
+    const _lineGeom=(d,idx,marks)=>_BC().lineGeom(d,idx,marks);
+    const _wholeLines=fc=>_BC().wholeLines(fc);
+    /* the memo is per record, so a late copy of the marks has to throw it away — otherwise one lost
+       request pins the map to the whole-ring drawing until a reload. */
+    try{ _BC().onArrive(()=>{ _csLn.clear(); _hbLn.clear(); }); }catch(_){}
     const _lineFeat=g=>({type:'Feature',geometry:g,properties:{}});
     /* ⚠ THE OUTLINE HANGS OFF THE COLLECTION, NOT ON IT. A `fc._lines` property would ride inside
        every `setSourceData('imtb-src', fc)` — structured-cloned to the worker with the polygons it

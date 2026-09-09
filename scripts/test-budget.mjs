@@ -341,7 +341,24 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
    theirs — warm server, one worker, the reporter's own test-body durations — 3.44 s + 0.55 s, entered
    as 4. The CORE ceiling did not move: at 4 s against CORE_MAX_S this file does not stand in the gate.
    Not paid out of a stale-high entry (#R405: none has been measured that this round may take from). */
-const TOTAL_BUDGET_S = 4669;            /* 77.8 min — 4,665 (#R550) + 4 (#R531: tests/r531.spec.js) */
+/* ⚠⚠ (#R564) THE TOTAL CEILING MOVED AGAIN, BY THE MEASURED AMOUNT — 4,669 -> 4,695 (+26 s), and the
+   entry it went into is tests/r530.spec.js: 9 -> 35. Written out because this file's own message is
+   «never raise it», and the precedents for saying so plainly are #R410, #R451, #R405, #R530, #R545
+   and #R531 immediately above.
+   MEASURED the way those measured theirs — warm server, one worker, the reporter's own test-body
+   duration, three runs on one machine: the file as it stood ran 11.6 s (its ledger entry said 9, so
+   the ledger was 2.6 s optimistic before this round touched it); with the three #R564 assertions
+   appended it ran 72.8 s; with the deeper tier waited on as a SOURCE rather than as paint, and the
+   click moved ahead of the zoom so the camera never has to come back, 34.3 s. ENTERED AS 35 — the
+   ceiling of the measurement plus the one-second margin #R494/#R508/#R531 add at this spot.
+   WHAT THE 26 s BUYS is the half no file can be asked: (1) that the border/coast marks REACH the
+   subdivision layer — #R531 bought exactly this for the country line, for 4 s, and #R564 found the
+   subdivisions had never been marked at all; (2) that the 10.2 MB deeper tier is NOT fetched at a zoom
+   where it is not drawn — a claim about the reader's bytes that only a camera can make; (3) that
+   clicking an era subdivision highlights the RECORD's polygon rather than today's namesake, which is
+   the defect the round was reported for. Nothing was paid out of a stale-high entry: none has been
+   measured that this round may take from (#R405's rule). */
+const TOTAL_BUDGET_S = 4695;            /* 78.3 min — 4,669 (#R531) + 26 (#R564: tests/r530.spec.js 9 -> 35) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

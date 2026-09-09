@@ -90,7 +90,32 @@ test('④ the era layer is created, and it is NOT a second copy of the province 
   const canon = /ADMIN1_COLOR\s*=\s*'([^']+)'/.exec(BS);
   assert.ok(canon, 'js/border-style.js still declares ADMIN1_COLOR');
   assert.ok(TA.includes(canon[1]), `the fallback literal must equal ADMIN1_COLOR (${canon[1]})`);
-  assert.match(TA, /'line-dasharray':\s*\[3,\s*2\]/, 'the era province line keeps the dash the modern one uses');
+  /* ⚠ (#R564) ASKED OF THE VALUE, NOT OF THE SPELLING. #R564 gave the era line a second, DEEPER tier
+     drawn at a lower weight, so the dash became `cfg.deep ? [2,2] : [3,2]` and a check pinned to the
+     literal failed on a file that still drew the first tier exactly as before. The claim was never
+     about a literal: it is that the era FIRST-LEVEL line looks like the present-day one. So the paint
+     block is evaluated for the first tier, and compared with what js/app-body.js gives ref-admin1. */
+  const paint = (deep) => {
+    const at = TA.indexOf('id: cfg.line');
+    assert.ok(at >= 0, 'the era line layer is not created in the shape this check reads');
+    const pAt = TA.indexOf('paint: {', at);
+    assert.ok(pAt > at, 'the era line layer no longer carries a paint block');
+    let depth = 0, k = TA.indexOf('{', pAt);
+    const src = TA;
+    for (; k < src.length; k++) { const c = src[k]; if (c === '{') depth++; else if (c === '}') { depth--; if (!depth) break; } }
+    const box = { cfg: { deep }, COL: '#cba6f7', W: ['modern-width-ladder'], DEEP_Z: 6, out: null };
+    vm.createContext(box);
+    vm.runInContext('out = ' + src.slice(src.indexOf('{', pAt), k + 1) + ';', box);
+    return JSON.parse(JSON.stringify(box.out));
+  };
+  const modernDash = /'line-dasharray':\s*(\[[^\]]*\])/.exec(/ref-admin1'[\s\S]{0,900}/.exec(APP)[0]);
+  assert.ok(modernDash, 'js/app-body.js no longer declares ref-admin1 with a dash to compare against');
+  assert.deepEqual(paint(false)['line-dasharray'], JSON.parse(modernDash[1]),
+    'the era first-level line no longer keeps the dash the modern province line uses');
+  assert.deepEqual(paint(false)['line-width'], ['modern-width-ladder'],
+    'the era first-level line no longer uses the shared width ladder');
+  assert.notDeepEqual(paint(true)['line-dasharray'], paint(false)['line-dasharray'],
+    'the deeper tier is drawn identically to the first level — a county reads as a state');
   for (const id of ['imta-src', 'imta-line', 'imta-lbl']) assert.ok(TA.includes(id), `${id} is defined`);
 });
 
@@ -105,13 +130,36 @@ const SWITCHBOARD = () => {
   return m[0];
 };
 
+/* ⚠ (#R564) RUN, NOT READ. The switchboard used to name each layer on its own line, so a regex could
+   pin the gate beside the id. It now walks the tier list, and both ids live in the tier configuration
+   two hundred lines away — a spelling check would have to be loosened to something that no longer says
+   anything. Evaluating it says MORE than the old one did: it asserts the visibility every layer
+   actually receives in every combination of the two boxes and the clock. */
+function runSwitchboard({ traveling, on = true, namesOn = true }) {
+  const seen = {};
+  const box = {
+    active: traveling, ensureModernDeep() {}, note: () => 'coverage sentence',
+    TIERS: [{ cfg: { line: 'imta-line', lbl: 'imta-lbl' } }, { cfg: { line: 'imta2-line', lbl: 'imta2-lbl' } }],
+    GE: () => ({ hasRenderer: () => true, layers: { has: () => true, setLayout: (id, k, v) => { seen[id] = v; } } }),
+    document: { getElementById: (id) => ({ checked: id === 'cb-admin1' ? on : namesOn, closest: () => null }) },
+    window: {},
+  };
+  vm.createContext(box);
+  vm.runInContext(SWITCHBOARD() + '\nwindow._applyAdmin1();', box);
+  return seen;
+}
+
 test('⑤ ⚠ the modern province line hides while travelling — the defect this round exists for', () => {
   const body = SWITCHBOARD();
   assert.ok(!/window\._applyAdmin1\s*=/.test(APP), 'and it is NOT in the app shell — see the note above');
-  /* ref-admin1 shows only when the box is on AND we are NOT travelling. */
-  assert.match(body, /ref-admin1'[^\n]*\(on && !traveling\)/, 'ref-admin1 is gated on !traveling');
-  /* the era line shows only when the box is on AND we ARE travelling. */
-  assert.match(body, /imta-line'[^\n]*\(on && traveling\)/, 'imta-line is gated on traveling');
+  const past = runSwitchboard({ traveling: true }), now = runSwitchboard({ traveling: false });
+  assert.equal(now['ref-admin1'], 'visible', "today's province line must be drawn at Now");
+  assert.equal(past['ref-admin1'], 'none', "today's province line must hide the moment the clock leaves Now — the defect this file exists for");
+  assert.equal(past['imta-line'], 'visible', 'the era province line must draw while travelling');
+  assert.equal(now['imta-line'], 'none', 'the era province line must not survive the return to Now');
+  /* one feature, one switch, in BOTH directions (#R94g without #R94l's carve-out) */
+  const off = runSwitchboard({ traveling: true, on: false });
+  assert.equal(off['imta-line'], 'none', 'unchecking the province row must switch the era line off too');
   /* and `traveling` is this module's own state — never the COUNTRY time machine's. */
   assert.match(body, /const traveling = active;/, "traveling is the admin-1 module's own `active`");
   assert.ok(!/IntMapTimeBorders/.test(body), 'it must not ask the COUNTRY time machine about provinces');
@@ -131,10 +179,16 @@ test('⑦ one feature, one switch — and the NAMES follow the switch the modern
   const body = SWITCHBOARD();
   assert.match(body, /cb-admin1/, 'the line follows cb-admin1');
   assert.match(body, /cb-names/, 'the era names follow cb-names, as ofm-admin1 does (#R198)');
-  assert.match(body, /imta-lbl'[^\n]*\(namesOn && traveling\)/, 'era province names are gated on cb-names');
+  const past = runSwitchboard({ traveling: true }), noNames = runSwitchboard({ traveling: true, namesOn: false });
+  assert.equal(past['imta-lbl'], 'visible', 'era province names must draw while travelling');
+  assert.equal(noNames['imta-lbl'], 'none', 'era province names must follow cb-names');
   /* ⚠ …and TODAY'S province name is driven from here too, or it returns to Now seconds after the
      boundary it belongs to — measured 0.8-2.9 s late while `applyLabelLang` owned that half alone. */
-  assert.match(body, /ofm-admin1'[^\n]*\(namesOn && !traveling\)/, "today's province names are on the same switchboard");
+  assert.equal(runSwitchboard({ traveling: false })['ofm-admin1'], 'visible', "today's province names are on the same switchboard");
+  assert.equal(past['ofm-admin1'], 'none', "today's province names must go with today's province line");
+  /* ⚠ (#R564) the LINE follows cb-admin1 and the NAME follows cb-names — unchecking the names must
+     not take the boundaries with it. */
+  assert.equal(noNames['imta-line'], 'visible', 'unchecking place names took the era boundaries with it');
 });
 
 test('⑧ ⚠ the two time machines are asked SEPARATELY for the two label tiers', () => {
@@ -150,8 +204,13 @@ test('⑧ ⚠ the two time machines are asked SEPARATELY for the two label tiers
 test('⑨ the layer audit knows the row paints one of TWO layers', () => {
   /* `painted()` asks "is ANY of these visible". With only the modern id listed, a correctly
      travelling map reads as «checked but blank» and the audit pulses the box off→on. */
-  assert.match(DL, /'cb-admin1':\['ref-admin1','imta-line'\]/,
-    "the audit table lists both the modern and the era province layer");
+  /* (#R564) the row now paints FOUR layers (a deeper tier on each side of the clock), so the claim is
+     that the audit knows about both sides — not that the list has exactly two entries. Which four is
+     derived from the module itself in tests/r564-checks ⑥. */
+  const listed = (/'cb-admin1':\[([^\]]*)\]/.exec(DL) || [])[1] || '';
+  for (const id of ['ref-admin1', 'imta-line']) {
+    assert.ok(listed.includes("'" + id + "'"), 'the audit table does not list ' + id);
+  }
 });
 
 test('⑩ the module is imported, registered, and instantiated exactly once', () => {
@@ -181,7 +240,10 @@ test('⑫ the 6.5 MB bundle is not on the boot path, and not fetched on a phone 
   const importsIt = src => /\bimport\s*\(?\s*['"][^'"]*hist-admin1/.test(src) || /\bfrom\s*['"][^'"]*hist-admin1/.test(src);
   assert.ok(!importsIt(MAIN), 'the data file is never imported into the bundle');
   assert.ok(!importsIt(TA), '…and its own module reads it as a <script>, not as a module');
-  assert.match(TA, /createElement\('script'\)[\s\S]{0,120}hist-admin1\.js/, 'it is injected, so the browser parses it off the main graph');
+  /* (#R564) the URL is the tier's, not a literal beside the injection — so the two halves are asked
+     separately: it IS injected as a script, and the URL it injects is this bundle's. */
+  assert.match(TA, /createElement\('script'\)[\s\S]{0,120}s\.src = cfg\.file/, 'it is injected, so the browser parses it off the main graph');
+  assert.match(TA, /file: 'data\/hist-admin1\.js', global: '__HISTADM1'/, 'the first tier no longer names the bundle it reads');
   const bytes = fs.statSync(path.join(ROOT, 'data/hist-admin1.js')).size;
   assert.ok(bytes < 9 * 1024 * 1024, `the bundle must stay in the country bundle's class — ${bytes} B`);
 });
@@ -217,7 +279,7 @@ test('⑬ nine languages, in the order IntMapLang actually uses', () => {
 
 test('⑭ the coverage is REPORTED rather than filled in', () => {
   assert.match(TA, /function coverage\(/, 'coverage() exists');
-  assert.match(TA, /units:\s*shownFC\.features\.length/, 'it counts what is actually drawn');
+  assert.match(TA, /units:\s*fc\.features\.length/, 'it counts what is actually drawn, not a denominator');
   const body = SWITCHBOARD();
   assert.match(body, /traveling \? note\(\) : ''/, 'the province row carries the sentence while travelling');
   assert.match(body, /removeAttribute\('title'\)/, 'and drops it at Now, so it never states a stale date');

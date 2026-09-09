@@ -2136,10 +2136,22 @@ window.IntMapModules.labelPopup=function(HOST){
         return local||shown||name;
       }catch(_){ return name; }
     }
+    /* ══ (#R564) AN ERA LABEL IS ANSWERED WITH THE ERA POLYGON ════════════════════════════════════
+       The popup draws «this place's real boundary» through IntMapOutline, and IntMapOutline asked by
+       NAME answers with TODAY'S namesake. For `ofm-admin1` that is right; for the era layers it means
+       a 1900 click is answered with a 2026 outline — #R530's defect moved from the line to the click.
+       The era polygon is in memory (js/time-admin1.js `geomAt`), so it is handed over as
+       `opts.geojson`, which is the SAME door the era COUNTRY label has used since #R94m. Returns null
+       for every other layer, so nothing else changes shape. */
+    function _eraGeom(f){ try{ const id=(f&&f.layer&&f.layer.id)||'';
+      if(id!=='imta-lbl'&&id!=='imta2-lbl') return null;
+      return (window.IntMapTimeAdmin1&&window.IntMapTimeAdmin1.geomAt)?window.IntMapTimeAdmin1.geomAt(f.properties||{}):null;
+    }catch(_){ return null; } }
     function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       const f=e.features[0];
-      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,{title:_bothNames(p,name)})); }; }
+      const eg=_eraGeom(f);
+      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name),geojson:eg}:{title:_bothNames(p,name)})); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
@@ -2167,10 +2179,12 @@ window.IntMapModules.labelPopup=function(HOST){
        what `ofm-admin1` gets: same popup, same Copy / Wikipedia / AI brief row, area tools not
        suppressed. ⚠ Registering before the layer exists is fine — `onLayer` resolves the id at
        EVENT time, and the era layer is created lazily on the first travel. */
-    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','ofm-city','ofm-other'];
+    /* (#R564) …and `imta2-lbl`, the deeper era tier, for the same reason `imta-lbl` is here: a name
+       that answers a tap at one zoom must not stop answering it at the next. */
+    const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-other'];
     const ALL_LBL=PLACE_LBL.concat(['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak']);
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
-      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false));   /* (#R530) the era one, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
+      GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
       ALL_LBL.forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
@@ -2196,7 +2210,8 @@ window.IntMapModules.labelPopup=function(HOST){
             const nm=(lid==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||p['name_en']||'');
             /* (#R252) the padded tap is the same click, so it gets the same two-name heading */
             const ttl=(lid==='geo-sea')?nm:_bothNames(p,nm);
-            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:{title:ttl});
+            const peg=_eraGeom(near[0]);   /* (#R564) the padded tap is the same click, so it gets the same era polygon */
+            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:(peg?{title:ttl,geojson:peg}:{title:ttl}));
               if(lid==='ofm-river') highlightRiver(p,e.lngLat);   /* (#R210) the padded tap is the same click */
               return; } }
         }

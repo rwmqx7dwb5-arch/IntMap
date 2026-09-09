@@ -6658,7 +6658,12 @@ window.IntMapModules.dataLayers=function(HOST){
            correctly-travelling map as «checked but blank» and pulse the box off→on every few seconds.
            ⚠ Listing both is only safe because this row is one switch in BOTH directions: unchecked
            hides the era line too, so the hide branch can never fight the time machine. */
-        'cb-admin1':['ref-admin1','imta-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
+        /* (#R564) …and the DEEPER tier of the same row, on both sides of the clock: `ref-admin2`
+           (live tiles, admin_level 5-6) and `imta2-line` (the dated record). They carry a minzoom, so
+           at a continental view they are legitimately invisible while `ref-admin1` is painted — which
+           is why `painted()` asking "is ANY of them on" is the right question here and a per-id
+           assertion would not be. */
+        'cb-admin1':['ref-admin1','ref-admin2','imta-line','imta2-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];
       /* (#R85) NEVER FIGHT THE USER. The checked-but-blank heal pulses a layer off→on to force a re-add; the

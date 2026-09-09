@@ -139,9 +139,21 @@ function water() {
   return buildWater(JSON.parse(gunzipSync(readFileSync(join(ROOT, 'data', 'coastline.json.gz')))));
 }
 
+/* ⚠ (#R564) THE SUBDIVISION BUNDLES ARE MARKED BY THE SAME RULE AND THE SAME CONSTANT, because the
+   defect is the same defect. A province's ring is the same two kinds of edge welded into one loop:
+   the boundary it shares with the next province, which only the record knows, and the polity's own
+   copy of the COASTLINE, which the planet knows better and js/coast-line.js already draws. #R531
+   marked only the two country bundles, so js/time-admin1.js went on stroking whole rings and every
+   coastal province drew a second, wrong, shore a few kilometres out to sea.
+   The cut is NOT re-chosen here. Sweeping it over the admin-1 bundle at 1900 / 1950 / 1990 (2.5 3 4
+   5 6 7 8 10 14 km) moves the drawn length by 0.2% per km at every step — the curve has no elbow of
+   its own, because a province's coast copy is a small share of a mostly inland outline. One rule,
+   one authority, one constant. */
 const SETS = [
   { key: 'cs', file: 'cshapes.js', global: '__CSHAPES' },
   { key: 'hb', file: 'hist-borders.js', global: '__HISTB' },
+  { key: 'ha', file: 'hist-admin1.js', global: '__HISTADM1' },
+  { key: 'ha2', file: 'hist-admin2.js', global: '__HISTADM2' },
 ];
 
 function markAll(W, cut) {
@@ -200,7 +212,7 @@ function build() {
   const sets = markAll(W, INLAND_KM);
   const doc = {
     v: 1,
-    src: 'derived: data/cshapes.js + data/hist-borders.js against data/coastline.json.gz',
+    src: 'derived: ' + SETS.map((s2) => 'data/' + s2.file).join(' + ') + ' against data/coastline.json.gz',
     authority: 'Natural Earth 1:10m physical — coastline (public domain), 2 km tolerance',
     inlandKm: INLAND_KM,
     sampleKm: SAMPLE_KM,
@@ -215,7 +227,14 @@ function build() {
 }
 
 /* ── --check: re-derive and compare, offline ──────────────────────────────────────────────────── */
-function check() {
+/* ⚠ (#R564) `--sample N` RE-DERIVES EVERY Nth RING INSTEAD OF ALL OF THEM, and it exists because
+   this round took the marked population from 4,830 rings to 25,516. The exhaustive run is what
+   `npm run check:bordercoast` does in CI; the copy inside `npm test` (tests/r531-checks ①) samples,
+   so the suite pays about what it paid before. Sampling changes only HOW MANY rings are re-derived
+   — the shape checks below still walk every entry, and a wrong mark anywhere is still a wrong mark
+   the CI gate fails on. Without the flag the check is exhaustive, so the default cannot rot. */
+function check(step) {
+  step = Math.max(1, parseInt(step, 10) || 1);
   const w = {}; new Function('window', readFileSync(OUT, 'utf8'))(w);
   const D = w.__IMBCOAST;
   const fail = [];
@@ -233,7 +252,7 @@ function check() {
     ok(got && got.rings === d.rings.length, s.key + ': ring count matches ' + s.file);
     ok(got && got.draw.length === d.rings.length, s.key + ': one entry per ring');
     if (!got || got.draw.length !== d.rings.length) continue;
-    let mism = 0, badShape = 0;
+    let mism = 0, badShape = 0, tried = 0;
     for (let i = 0; i < d.rings.length; i++) {
       const V = closedRing(d.rings[i]), E = V.length - 1, v = got.draw[i];
       if (v !== 0 && v !== 1) {
@@ -244,11 +263,13 @@ function check() {
           prev = b;
         }
       }
+      if (i % step) continue;
+      tried++;
       const re = markRing(W, d.rings[i], INLAND_KM);
       if (JSON.stringify(re) !== JSON.stringify(v)) mism++;
     }
     ok(badShape === 0, s.key + ': every entry is 0, 1 or ordered in-range runs (' + badShape + ' bad)');
-    ok(mism === 0, s.key + ': the committed marks re-derive from the bundles (' + mism + ' rings differ)');
+    ok(mism === 0, s.key + ': the committed marks re-derive from the bundles (' + mism + ' of ' + tried + ' rings differ)');
   }
   if (fail.length) { console.error(fail.map((m) => '✗ ' + m).join('\n')); process.exit(1); }
   const t = tally(D.sets);
@@ -256,6 +277,7 @@ function check() {
 }
 
 const arg = process.argv[2] || '';
+const sampleAt = process.argv.indexOf('--sample');
 if (arg === '--report') report();
-else if (arg === '--check') check();
+else if (arg === '--check') check(sampleAt >= 0 ? process.argv[sampleAt + 1] : 1);
 else build();

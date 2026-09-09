@@ -191,11 +191,18 @@ cameras.js                        ライブカメラ層 IntMapModules.cameras
 beta-overlays.js                  ベータのオーバーレイ IntMapModules.betaOverlays（火山レイヤー本体＝色モード4種・VEIによる大きさ・凡例・volcano.* コマンド）
 volcano-intel.js                  火山の深さ window.IntMapVolcano（遅延）——噴火履歴11,043件・警戒レベルの4段・気象庁↔GVPの結合・詳細カード
 volcano-layers.js                 火山の3レイヤー window.IntMapVolcanoLayers（遅延）——火山灰SIGMET・USGSハザード域・衛星SO₂
+border-coast.js                   歴史的な輪郭のどの辺が「国境／区分境界」で、どの辺が「その記録が持つ海岸線の
+                                  写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
+                                  （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
+                                  切り出した——同じ読み方を time-admin1.js にも配るため（写さない）
 time-borders.js                   時間軸の上の歴史的国境 IntMapTimeBorders
 time-admin1.js                    時間軸の上の歴史的**地方区分**（第1級行政区分）IntMapTimeAdmin1。上の双子——
                                   同じ時計・同じ 45ms・同じ日単位エポック索引・同じ「旅行中か」の判定で、
-                                  旅行中は現代の `ref-admin1` と `ofm-admin1` を隠し、その日付の
-                                  `imta-line` / `imta-lbl` を描く。切替盤 `window._applyAdmin1` もここが持つ
+                                  旅行中は現代の `ref-admin1` / `ref-admin2` と `ofm-admin1` を隠し、その日付の
+                                  `imta-line` / `imta-lbl`（第1級）と、z6 以上では `imta2-line` / `imta2-lbl`
+                                  （第2級・別束・ズームで初めて取得）を描く。線は多角形ではなく
+                                  `imta-ln-src` / `imta2-ln-src`＝**国境の run だけ**（js/border-coast.js）。
+                                  切替盤 `window._applyAdmin1` もここが持つ
                                   （app-shell に行数の余白が無い）。被覆は部分的なので `coverage()` /
                                   `note()`（9言語）が「線が無い国は記録がまだ無い」と言う
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
@@ -632,12 +639,16 @@ hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
 data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）
-data/border-coast.js              歴史的国境の各辺が「国境」か「その記録が持つ海岸線の写し」かの印（両方の束の
-                                  全 4,830 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` はこの印の run だけを描く
+data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（4つの束の
+                                  全 25,506 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
+                                  `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
-                                  3,053件／rings 4,643・6.55 MB＝brotli 0.67 MB）。上と**同じリングプール形式の
+                                  3,049件／rings 4,640・6.48 MB＝brotli 0.67 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
+data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM2`・
+                                  16,236件／rings 16,036・10.2 MB）。同じ生成器の `--levels 5,6`。**z6 未満では
+                                  取得もしない**——描かない縮尺で 10 MB を払わせないため（docs/MAP-LAYERS.md §7.7）
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
