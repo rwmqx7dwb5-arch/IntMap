@@ -172,6 +172,14 @@ test('R198 ②b: it is wired into every list a place-label layer belongs to', ()
 const WORLD = join(ROOT, 'data', 'gazetteer-world.json.gz');
 const worldDoc = () => JSON.parse(gunzipSync(readFileSync(WORLD)).toString('utf8'));
 
+/* ⚠ (#R620) THE LOCATOR IS FED THE MATCHABLE VIEW, SO THESE TESTS FEED IT THE SAME THING.
+   `world()` is now the list of places that EXIST — including the ones whose name a curated table
+   already carries, which the build used to delete outright and which no data reader could see
+   (MEASURED: 78 places above a million people). What the matcher may see is `worldMatchable()`:
+   the same rows minus `cur=1`. Registering the full list here would measure a wiring the app does
+   not have, and would report a precision loss the app cannot suffer. */
+const matchable = (rows) => rows.filter((r) => r[11] !== 1);
+
 test('R198 ③a: the built table is ten times the curated one, and every row is usable', () => {
   assert.ok(existsSync(WORLD), 'data/gazetteer-world.json.gz is built (scripts/build-gazetteer.mjs)');
   const doc = worldDoc();
@@ -182,16 +190,50 @@ test('R198 ③a: the built table is ten times the curated one, and every row is 
     `${doc.rows.length} + ${curated} curated is not 10× ${curated} — 「Gazetteerを今の10倍の網羅性に」`);
   assert.ok(/GeoNames/.test(doc.attribution),
     'the sources are named in the file itself (standing instruction 4)');
-  const seen = new Set();
+  const seen = new Set(), seenGid = new Set();
   for (const r of doc.rows) {
-    const [en, ja, iso2, lng, lat, pop] = r;
+    const [en, ja, iso2, lng, lat, pop, alt, gid, fcode, disp, cur] = r;
     assert.ok(en && typeof en === 'string', 'every row has an English name');
     assert.ok(lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90, `${en}: coordinates in range`);
     assert.ok(pop >= 0, `${en}: a real population`);
     assert.ok(iso2 && iso2.length === 2, `${en}: a country`);
     assert.ok(!seen.has(en.toLowerCase()), `${en} appears twice — a homonym would scatter the pin`);
     seen.add(en.toLowerCase());
+    /* ── (#R620) the four appended fields, each of which something downstream now depends on ── */
+    /* the geonameid, because the array index is a POSITION and a rebuild reshuffles it: anything
+       that remembers a place across builds has to remember something the publisher assigned. */
+    assert.ok(/^\d+$/.test(gid), `${en}: gid is a GeoNames id, got ${JSON.stringify(gid)}`);
+    assert.ok(!seenGid.has(gid), `${en}: geonameid ${gid} appears twice — it is the row's identity`);
+    seenGid.add(gid);
+    /* the feature code, because without it a section of a city is a city (MEASURED: fourteen
+       `PPLX` rows above a million people, e.g. `Al Mawşil al Jadīdah` inside Mosul). */
+    assert.ok(fcode && typeof fcode === 'string', `${en}: no feature code`);
+    assert.ok(doc.placeKinds && doc.placeKinds[fcode] && doc.placeKinds[fcode].kind,
+      `${en}: feature code ${fcode} is not described in doc.placeKinds — the classification has to ` +
+      'ship with the rows, because the browser cannot fetch featureCodes_en.txt');
+    /* the curated-collision flag, which is what lets one list serve both the matcher and the data */
+    assert.ok(cur === 0 || cur === 1, `${en}: cur is a flag, got ${JSON.stringify(cur)}`);
+    /* the display name, empty when it would only repeat the ASCII key */
+    assert.equal(typeof disp, 'string', `${en}: disp is a string (empty means "same as en")`);
+    assert.notEqual(disp, en, `${en}: disp repeats en — it is stored empty in that case`);
+    void ja; void alt;
   }
+  assert.deepEqual(doc.fields.slice(0, 7), ['en', 'ja', 'iso2', 'lng', 'lat', 'pop', 'alt'],
+    'the first seven fields keep their #R198/#R208/#R495 index — every reader hard-codes them');
+  assert.deepEqual(doc.fields.slice(7), ['gid', 'fcode', 'disp', 'cur'], 'the v3 tail is declared');
+  for (const [code, k] of Object.entries(doc.placeKinds)) {
+    assert.ok(['settlement', 'part', 'defunct'].includes(k.kind), `${code}: unknown kind ${k.kind}`);
+    assert.ok(k.desc, `${code}: GeoNames' own description is what classified it, so it is carried`);
+  }
+  /* the classification is only useful if it actually SEPARATES something: a section of a place is
+     the case that motivated the field, and it is present in the data at scale. */
+  const parts = new Set(Object.entries(doc.placeKinds).filter(([, k]) => k.kind === 'part').map(([c]) => c));
+  assert.ok(parts.size >= 1, 'at least one feature code is a section-of-a-place');
+  assert.ok(doc.rows.some((r) => parts.has(r[8]) && r[5] > 1e6),
+    'the rows that made this necessary are still in the file, now labelled rather than mistaken');
+  assert.ok(doc.rows.some((r) => r[10] === 1 && r[5] > 1e6),
+    'a place above a million people whose name a curated table carries is IN the file now — ' +
+    'deleting those is what made Lagos, Mumbai, Tokyo and Cairo invisible to every query');
   assert.ok(new Set(doc.rows.map((r) => r[2])).size >= 200,
     'the long tail covers the world, not one continent');
   assert.ok(doc.rows.filter((r) => r[1]).length > 5000, 'thousands of rows carry a real Japanese name');
@@ -213,6 +255,30 @@ test('R198 ③b: the client turns those rows into the shape the locator already 
   const before = GZ.index();
   assert.ok(!before.town, 'nothing is a `town` until the world rows land');
   assert.ok(before.city.length > 200, 'the curated rows are there synchronously, as ever');
+  /* ── (#R620) the tail survives the conversion, and the two views are actually different ────── */
+  const src = read('js/gazetteer.js');
+  assert.match(src, /out\.push\(\[pop>=250000\?'city':'town', terms, lng, lat, en, ja\|\|en, pop, iso2, gid, fcode, disp\|\|en, cur\]\)/,
+    'the appended fields ride BEHIND the eight every existing reader destructures');
+  for (const r of rows.slice(0, 200)) {
+    assert.equal(r.length, 12, 'twelve fields');
+    assert.ok(/^\d+$/.test(r[8]), 'the geonameid survives the conversion');
+    assert.ok(r[9], 'so does the feature code');
+    assert.ok(r[10], 'the display name falls back to `en` rather than being empty in the row');
+    assert.ok(r[11] === 0 || r[11] === 1, 'and the curated-collision flag is a flag');
+  }
+  assert.ok(typeof GZ.worldMatchable === 'function', 'the matching view is published (#R620)');
+  const all = rows.length, may = matchable(rows).length;
+  assert.ok(may < all, `worldMatchable withholds nothing (${may} of ${all}) — a curated name must ` +
+    'not have a second entry in the matcher');
+  assert.ok(may > all * 0.9, `only ${may} of ${all} rows are matchable — the flag has gone wrong`);
+  /* ⚠ and the shipped filter is the one this file simulates: same field, same value. */
+  assert.match(src, /_worldRows\.filter\(r=>r\[11\]!==1\)/,
+    'worldMatchable filters on the curated-collision flag, which is field 11');
+  /* v2 files (a cache warmed before the rebuild) still read, as "no id, no kind, collides with
+     nothing" — which is what they meant when they were written. */
+  const v2 = GZ._rowsFrom({ rows: [['Testville', '', 'JP', 139.7, 35.7, 1234, []]] });
+  assert.equal(v2.length, 1);
+  assert.deepEqual(v2[0].slice(8), ['', '', 'Testville', 0], 'a v2 row degrades rather than throwing');
 });
 
 test('R198 ③c: the world rows cost the deterministic locator NOTHING', async () => {
@@ -225,7 +291,7 @@ test('R198 ③c: the world rows cost the deterministic locator NOTHING', async (
 
   const win = { addEventListener() {} };
   new Function('window', 'document', read('js/gazetteer.js'))(win, { baseURI: 'https://example.test/' });
-  const rows = win.IntMapGazetteer._rowsFrom(worldDoc());
+  const rows = matchable(win.IntMapGazetteer._rowsFrom(worldDoc()));
   const added = NG.register(rows.map(([type, terms, lng, lat, en, jp]) =>
     ({ terms, lng, lat, type, name_en: en, name_jp: jp })));
   assert.ok(added > 10_000, `only ${added} rows registered`);

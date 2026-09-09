@@ -11,6 +11,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
@@ -33,15 +35,60 @@ test('① the regression shards cover 1..n exactly once, for one n', () => {
   assert.deepEqual(shards, legs.map((_, i) => i + 1), `shards are ${shards.join(',')} — every index from 1 to ${legs.length} must appear exactly once`);
 });
 
-test('② each shard runs the SAME glob the local suite runs, only sharded', () => {
+test('② sharding actually SHARDS — measured through the shipped runner', () => {
+  /* ⚠ THE FIRST VERSION OF THIS CHECK READ THE COMMAND AND BELIEVED IT. It asserted that the step
+     carried a --test-shard argument built from the matrix — which it did — while the flag was being
+     SILENTLY IGNORED: `npm run … --` can only APPEND, and node ignores an option that arrives after
+     the positional. Three CI runners each ran the whole suite and the shard numbers in their names
+     were decoration. Measured on Node 24.18 over tests/r5*-checks.test.mjs:
+         --test-shard=1/3 BEFORE the glob → 155 tests
+         --test-shard=1/3 AFTER  the glob → 441 tests   (= unsharded)
+     So this asks the runner to shard something and COUNTS what came back.
+
+     ⚠ It shards a handful of throwaway files rather than the real suite: sharding 3,510 tests three
+     times to learn one arithmetic fact would cost half an hour, and the fact does not depend on
+     which files they are. */
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'im-shard-'));
+  try {
+    for (let i = 0; i < 6; i++) {
+      fs.writeFileSync(path.join(dir, 'p' + i + '.test.mjs'),
+        "import test from 'node:test';\ntest('t" + i + "', () => {});\n");
+    }
+    const count = (args) => {
+      const r = spawnSync(process.execPath, [path.join(ROOT, 'scripts/test-checks.mjs')].concat(args), {
+        cwd: ROOT, encoding: 'utf8',
+        /* ⚠ NODE_TEST_CONTEXT MUST NOT REACH THE CHILD. The runner sets it, and a nested
+           `node --test` that sees it switches to the v8-serialised child protocol — the probe then
+           reads no counts at all and reports «blind» on a runner that is working perfectly. */
+        env: (() => { const e = Object.assign({}, process.env, { IM_CHECKS_GLOB: path.join(dir, '*.test.mjs') });
+          delete e.NODE_TEST_CONTEXT; return e; })(),
+      });
+      /* node's default reporter prints «ℹ pass N»; the TAP one prints «# pass N» — accept either */
+      const m = /^(?:#|ℹ) pass (\d+)\s*$/m.exec(r.stdout || String(r.stderr || ""));
+      return m ? Number(m[1]) : null;
+    };
+    const whole = count([]);
+    assert.equal(whole, 6, 'the probe could not run its own fixtures (got ' + whole + ') — this check is blind, fix it rather than deleting it');
+    const a = count(['--test-shard=1/2']);
+    const b = count(['--test-shard=2/2']);
+    assert.ok(a !== null && b !== null, 'a shard run produced no count');
+    assert.ok(a < whole && b < whole,
+      'sharding changed nothing: 1/2 saw ' + a + ', 2/2 saw ' + b + ', the whole is ' + whole + ' — the flag is being ignored');
+    assert.equal(a + b, whole,
+      'the halves are ' + a + ' + ' + b + ' = ' + (a + b) + ' but the whole is ' + whole + ' — shards must PARTITION the suite, not sample it');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('②b the shard step delegates the file set to the one script that owns it', () => {
   const step = CI.jobs.checks.steps.find((s) => typeof s.run === 'string' && s.run.includes('test:checks'));
   assert.ok(step, 'no step in the sharded job runs test:checks');
-  /* ⚠ THE FILE SET IS THE npm SCRIPT'S, NOT A LIST HERE. If this step ever names files directly it
-     stops being the same set `npm test` runs, and the two drift the way #R166 describes. */
+  /* the file set is the npm script's; naming files here would make CI and `npm test` two lists */
   assert.match(step.run, /npm run test:checks --/, 'the shard step must delegate to the npm script, so the glob has one owner');
   assert.match(step.run, /--test-shard=\$\{\{ matrix\.shard \}\}\/\$\{\{ matrix\.of \}\}/, 'the shard argument must come from the matrix, not be written per leg');
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-  assert.match(pkg.scripts['test:checks'], /--test\b/, 'test:checks no longer invokes the node test runner');
+  assert.match(pkg.scripts['test:checks'], /scripts\/test-checks\.mjs/, 'test:checks must go through the runner that puts options in front of the glob');
 });
 
 test('③ a required check names the whole suite, not one leg', () => {
