@@ -71,7 +71,16 @@ const OUT   = path.resolve(ROOT, argOf('--out', 'data/hist-admin1.js'));
 const TOL   = parseFloat(argOf('--tol', '0.02'));        /* ~2.2 km — see the size note in the header */
 const SINCE = parseInt(argOf('--since', '1850'), 10);    /* the clock's own floor (js/chronos.js) */
 const BATCH = parseInt(argOf('--batch', '20'), 10);
-const CACHE = path.resolve(ROOT, argOf('--cache', path.join(process.env.TEMP || '/tmp', 'ohm-adm1-cache')));
+/* (#R564) THE LEVELS ARE AN ARGUMENT, AND THERE IS ONE FILE PER TIER. The first-level tier (3,4) is
+   what the province row draws at every zoom; the deeper tier is fetched only when the reader zooms
+   past it (js/time-admin1.js). ONE script, because the two bundles are the SAME record read with the
+   same rules - a second script would be a second place to change the day OHM changes a tag. The cache
+   is keyed by the level set for the reason the tag sweep is cached at all: re-simplifying must cost
+   nothing but CPU. */
+const LEVELS = String(argOf('--levels', '3,4')).split(',').map(v => parseInt(v, 10)).filter(Number.isFinite);
+const LVLRE  = '^(' + LEVELS.join('|') + ')$';
+const GLOBAL = argOf('--global', '__HISTADM1');
+const CACHE = path.resolve(ROOT, argOf('--cache', path.join(process.env.TEMP || '/tmp', 'ohm-adm' + LEVELS.join('') + '-cache')));
 const QUANT = Math.pow(10, parseInt(argOf('--dec', '3'), 10));   /* --dec 3 = ~110 m at the equator */
 const MIN_AREA = 1e-5;                                   /* deg^2 — drop slivers, keep small city-states */
 
@@ -222,7 +231,7 @@ function polysOf(rings) {
   if (fs.existsSync(tf)) { console.error('· tags (cached)'); tagJson = JSON.parse(fs.readFileSync(tf, 'utf8')); }
   else {
     console.error('· tags …');
-    tagJson = await overpass('[out:json][timeout:600];relation["boundary"="administrative"]["admin_level"~"^(3|4)$"];out tags;');
+    tagJson = await overpass('[out:json][timeout:600];relation["boundary"="administrative"]["admin_level"~"' + LVLRE + '"];out tags;');
     fs.writeFileSync(tf, JSON.stringify(tagJson));
   }
   const all = (tagJson.elements || []).filter(e => e.type === 'relation' && e.tags);
@@ -232,14 +241,24 @@ function polysOf(rings) {
      ended before it can never be shown, and one with no dates at all is a present-day
      unit that `ref-admin1` already draws from the live vector tiles. */
   const want = [];
+  let backwards = 0;
   for (const el of all) {
     const t = el.tags;
+    if (!LEVELS.includes(parseInt(t.admin_level, 10))) continue;   /* (#R564) the cache is per level set, but the filter is stated where it is read */
     const s = edtf(t.start_date, 'start'), e = edtf(t.end_date, 'end');
     if (!s && !e) continue;
     if (e && e[0] < SINCE) continue;
+    /* ⚠ (#R564) A SPAN THAT ENDS BEFORE IT STARTS IS NOT A SPAN, and upstream has some: measured
+       2026-09-09, two at levels 3-4 (名東県 1881-12-26 → 1873-02-20; Mexican Cession 1850-12-12 →
+       1850-09-09) and five at 5-6 (four Burnett County rows and Merionethshire, each ending the day
+       before it starts). Such a record can never be in force, so it draws nothing — but it was
+       shipped, and every one of its two dates entered the EPOCH INDEX, which is what decides when the
+       map re-renders. Dropping them here is not a special case for those seven: it is the rule that a
+       record must describe an interval, applied where the interval is read. */
+    if (s && e && (s[0] * 10000 + s[1] * 100 + s[2]) > (e[0] * 10000 + e[1] * 100 + e[2])) { backwards++; continue; }
     want.push({ el, s, e });
   }
-  console.error('  datable & reachable from', SINCE, '→', want.length);
+  console.error('  datable & reachable from', SINCE, '→', want.length, '| dropped for a backwards span:', backwards);
 
   /* geometry, in resumable id batches */
   const geom = new Map();
@@ -291,9 +310,9 @@ function polysOf(rings) {
   }
 
   const src = 'OpenHistoricalMap contributors (CC0) · openhistoricalmap.org';
-  const body = 'window.__HISTADM1=' + JSON.stringify({
+  const body = 'window.' + GLOBAL + '=' + JSON.stringify({
     v: 1, src, built: new Date().toISOString().slice(0, 10), since: SINCE, tolerance: TOL,
-    rings: pool, feats
+    levels: LEVELS, rings: pool, feats
   }) + ';\n';
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, body);

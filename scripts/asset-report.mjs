@@ -90,6 +90,14 @@ const ALLOW = {
        chunk: js/time-admin1.js injects it as a <script> at idle, and skips even that on a phone or
        Data Saver, exactly as #R192/#R201 settled for CShapes. */
     { match: /^data\/hist-admin1\.js$/, why: 'the dated first-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, fetched at idle by js/time-admin1.js and never bundled (#R530)' },
+    /* (#R564) …and the DEEPER tier of the same record. It is bigger than the first level and it is
+       also the one nobody pays for unless they ask: js/time-admin1.js does not fetch it until the
+       camera passes z6, where a county is a shape rather than a smudge, and it is not in the idle
+       warm-up at all (that would be a speculative copy of a speculative copy). It was priced the same
+       way its twin was, on the same extract: 0.02°/3 dec built 6.27 MB but lost 183 units under
+       MIN_AREA, 0.008°/4 dec built 13.99 MB, and 0.012°/4 dec — 1.3 km, finer than the first tier,
+       because this one is only ever read zoomed IN — builds this and loses 82. */
+    { match: /^data\/hist-admin2\.js$/, why: 'the dated second-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, and js/time-admin1.js fetches it only once the camera passes z6 (#R564)' },
   ],
 };
 
