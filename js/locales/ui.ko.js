@@ -6135,4 +6135,21 @@ window.IntMapLang.define('ko', { ui: {
   "USGS published no ShakeMap for this earthquake": "이 지진에 대해 USGS는 ShakeMap을 발행하지 않았습니다",
   "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — 관측 기록·체감 보고·지반 조건에서 추정한 지반 운동이며, 규모를 그림으로 옮긴 것이 아닙니다.",
   "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "USGS가 이 지표의 색상 척도를 제공하지 않으므로 등치선으로만 그립니다.",
+  /* (#R565) internet-health — js/net-health.js (layer rows, toast) · js/net-health-live.js
+     (legend, popup, coverage line). «outage» = a loss of connectivity, «probe» = a RIPE Atlas
+     measurement node, and «below its own recent normal» is a RATIO against that country's own
+     recent baseline — not a fixed threshold. */
+  "Internet outages": "인터넷 장애",
+  "Network reachability (measurement probes)": "네트워크 도달성(측정 프로브)",
+  "Could not load the internet-health data": "인터넷 상태 데이터를 불러오지 못했습니다",
+  "All signals": "모든 신호",
+  "below its own recent normal": "자체 최근 평상시 수준 대비 저하",
+  "{p}% below its own recent normal — {s} ({l})": "자체 최근 평상시 수준보다 {p}% 낮음 — {s} ({l})",
+  "{a} ASNs, {b} IPv4 and {c} IPv6 prefixes visible in RIPE routing data ({d})": "RIPE 라우팅 데이터에서 보이는 ASN {a}개, IPv4 프리픽스 {b}개, IPv6 프리픽스 {c}개 ({d})",
+  "showing {n} of {t} probes that report «{s}»": "«{s}» 를 보고한 프로브 {t}대 중 {n}대 표시",
+  "The readings arrived but the map could not draw them": "측정값은 도착했지만 지도에 표시할 수 없었습니다",
+  "{a} alerts, {b} drawn, {c} not placed": "경보 {a}건, 표시 {b}건, 위치 미확정 {c}건",
+  "No outage alerts in the last three hours": "최근 3시간 동안 장애 경보 없음",
+  "This source does not publish that scope": "이 정보원은 해당 범위를 공개하지 않습니다",
+  "The source could not be reached — this is not an all-clear": "정보원에 연결하지 못했습니다 — 장애가 없다는 뜻은 아닙니다",
 } });

@@ -1900,7 +1900,7 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R273) −high-tech exports (→ Economy: it is a share of EXPORTS, i.e. a trade
              statistic), − 3-D city buildings (→ the always-on view switches at the top: it is a way
              of DRAWING the map, like Roads and Place names, not a statistic about technology). */
-          ['lyrGrpTech',['subcables','dc','wbnet','wbmobile','wbbbnd','wbrnd','wbresearch','wbpatent','osmtelecom'],1],
+          ['lyrGrpTech',['subcables','dc','nethlth','netreach','wbnet','wbmobile','wbbbnd','wbrnd','wbresearch','wbpatent','osmtelecom'],1],
           /* ══ ⚠⚠ (#R261) FOUR NEW SHELVES, AND «OTHERS» AND «BETA» EMPTIED INTO THEM ═══════════════
              「追加すべきと思うレイヤーカテゴリはありますか？あれば作り、Others, Betaも含め既存レイヤーの
                再編のほか、新レイヤー…全部任せる。結局何もしませんはやめろ。」
