@@ -6361,6 +6361,44 @@ window.IntMapLang.define('zh', {
   "USGS published no ShakeMap for this earthquake": "USGS 未為此次地震發布 ShakeMap",
   "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — 由觀測記錄、體感回報與場址條件推估的地動，並非把規模畫成圖。",
   "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "USGS 未提供此量的色階，因此僅以等值線繪製。",
+  /* (#R566) js/outbreaks.js — the WHO Disease Outbreak News layer. «Disease Outbreak News» is
+     the name of a WHO publication, so it stays in the original. */
+  "No outline on this map for": "此地圖沒有輪廓的國家：",   /* outbreaks.js (#R566) */
+  "Time window": "期間",   /* outbreaks.js (#R566) */
+  "1 year": "1 年",   /* outbreaks.js (#R566) */
+  "5 years": "5 年",   /* outbreaks.js (#R566) */
+  "90 days": "90 天",   /* outbreaks.js (#R566) */
+  "all pathogens": "所有病原體",   /* outbreaks.js (#R566) */
+  "Archive built": "存檔建立於",   /* outbreaks.js (#R566) */
+  "cases": "病例",   /* outbreaks.js (#R566) */
+  "checked WHO for newer items": "已向 WHO 查詢較新的公告",   /* outbreaks.js (#R566) */
+  "Circle size = WHO notes in the window · colour = how recent the newest is.": "圓的大小＝期間內的 WHO 公告數 · 顏色＝最新一則有多新。",   /* outbreaks.js (#R566) */
+  "Closed the outbreak layer.": "已關閉疾病爆發圖層。",   /* outbreaks.js (#R566) */
+  "could not check WHO for newer items": "無法向 WHO 查詢較新的公告",   /* outbreaks.js (#R566) */
+  "Could not load the outbreak archive.": "無法載入疾病爆發存檔。",   /* outbreaks.js (#R566) */
+  "Could not load the WHO outbreak archive.": "無法載入 WHO 的疾病爆發存檔。",   /* outbreaks.js (#R566) */
+  "Countries drawn": "已繪製的國家",   /* outbreaks.js (#R566) */
+  "countries on the map": "個國家在地圖上",   /* outbreaks.js (#R566) */
+  "deaths": "死亡",   /* outbreaks.js (#R566) */
+  "Disease outbreaks (WHO)": "疾病爆發（WHO）",   /* outbreaks.js (#R566) */
+  "Everything up to this date": "到這一天為止的全部",   /* outbreaks.js (#R566) */
+  "listed, not placed": "僅列於清單，未標於地圖",   /* outbreaks.js (#R566) */
+  "Most notes": "最多",   /* outbreaks.js (#R566) */
+  "not extracted yet": "尚未擷取",   /* outbreaks.js (#R566) */
+  "Not one country": "非單一國家",   /* outbreaks.js (#R566) */
+  "not stated by WHO": "WHO 未載明",   /* outbreaks.js (#R566) */
+  "Outbreak": "發生日",   /* outbreaks.js (#R566) */
+  "Pathogen": "病原體",   /* outbreaks.js (#R566) */
+  "Read the WHO item": "閱讀 WHO 原文",   /* outbreaks.js (#R566) */
+  "Reported": "通報數",   /* outbreaks.js (#R566) */
+  "Source: WHO Disease Outbreak News": "來源：WHO Disease Outbreak News（世界衛生組織）",   /* outbreaks.js (#R566) */
+  "Tap a circle for the items behind it.": "點按圓圈，即可看到其中的項目。",   /* outbreaks.js (#R566) */
+  "WHO note": "WHO 公告",   /* outbreaks.js (#R566) */
+  "WHO notes": "WHO 公告",   /* outbreaks.js (#R566) */
+  "WHO published no Disease Outbreak News about that in this window.": "在這段期間內，WHO 沒有就此發布 Disease Outbreak News。",   /* outbreaks.js (#R566) */
+  "WHO published no Disease Outbreak News in this window.": "在這段期間內，WHO 沒有發布 Disease Outbreak News。",   /* outbreaks.js (#R566) */
+  "WHO published these about a region or the whole world, so they are listed and not placed.": "這些是 WHO 就某個區域或整個世界發布的，因此只列於清單，不標在地圖上。",   /* outbreaks.js (#R566) */
+  "Window ending": "期間結束於",   /* outbreaks.js (#R566) */
   /* (#R565) internet-health — js/net-health.js (layer rows, toast) · js/net-health-live.js
      (legend, popup, coverage line). «outage» = a loss of connectivity, «probe» = a RIPE Atlas
      measurement node, and «below its own recent normal» is a RATIO against that country's own

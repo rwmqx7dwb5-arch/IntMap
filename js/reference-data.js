@@ -390,6 +390,10 @@ window.IntMapRefData=(function(){
     {n:'噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)',u:'https://www.jma.go.jp/bosai/map.html#contents=volcano'},
     {n:'International SIGMET (volcanic ash) — NOAA Aviation Weather Center',u:'https://aviationweather.gov/'},
     {n:'NASA GIBS — OMPS SO₂, upper troposphere & stratosphere',u:'https://www.earthdata.nasa.gov/'},
+    /* (#R566) WHO Disease Outbreak News — the layer's own archive (data/who-don.json.gz, built by
+       scripts/build-who-don.mjs) AND the live tail the page reads straight from WHO. ONE ROW: it is
+       one publication from one organisation, whichever of the two paths a given item arrived by. */
+    {n:'WHO Disease Outbreak News',u:'https://www.who.int/emergencies/disease-outbreak-news'},
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come

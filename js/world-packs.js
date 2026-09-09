@@ -127,7 +127,11 @@ window.IntMapModules.worldPacks=function(HOST){
     function centroidOf(iso3){
       if(_cent[iso3]!==undefined) return _cent[iso3];
       const g=HOST.countryGeo; if(!g||!g.features) return null;
-      const f=g.features.find(x=>String(x.id)===String(iso3)); if(!f||!f.geometry) return (_cent[iso3]=null);
+      /* ⚠ (#R566) A MISS IS NOT CACHED. `hiResCountries()` swaps the collection for the detailed
+         set, so a unit the 110 m stand-in does not carry can appear later — and this line used to
+         freeze the first «no» for the session, which meant a layer that asked early drew that
+         country never. A hit is still cached; only ignorance is re-asked. */
+      const f=g.features.find(x=>String(x.id)===String(iso3)); if(!f||!f.geometry) return null;
       const polys=(f.geometry.type==='Polygon')?[f.geometry.coordinates]:(f.geometry.type==='MultiPolygon'?f.geometry.coordinates:[]);
       let best=null, bestA=-1;
       polys.forEach(p=>{ const r=p&&p[0]; if(!r||r.length<4) return; const a=ringArea(r); if(a>bestA){ bestA=a; best=r; } });
@@ -6787,7 +6791,12 @@ window.IntMapModules.worldPacks=function(HOST){
     /* (#R220) …and `onRestyle`, because a style reload drops every added layer and the ocean-current
        plate — the only member of this family that lives in its own file — had no way to hear about
        it. #R219 found the same hole in the tide shading; this closes it for the sixth layer too. */
-    const _ui={ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, onRestyle, L };
+    /* (#R566) …and `centroidOf`, because js/outbreaks.js anchors a WHO Disease Outbreak News item
+       to the country WHO tagged it with, which is the same question the trade layer asks of the same
+       countryGeo three hundred lines above (`const home=centroidOf(iso)`). Writing it again there
+       would be the second copy of the ring-area centroid in the project and the second place a
+       country's map position is decided — the exact duplication the paragraph above exists to stop. */
+    const _ui={ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, onRestyle, centroidOf, withCountryGeo, hiResCountries, L };
     return Object.assign({ _ui, state:()=>({ trade:STATE.trade&&STATE.trade(), energy:STATE.energy&&STATE.energy(),
       alerts:STATE.alerts&&STATE.alerts(), tides:STATE.tides&&STATE.tides(), crops:STATE.crops&&STATE.crops(),
       year:nowYear() }) }, STATE);

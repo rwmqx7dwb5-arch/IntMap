@@ -297,6 +297,10 @@ export function makeAtlasSchemas() {
          has none. The other changes WHICH volcanoes are drawn, and refuses when told nothing to
          change: a colour mode, a filter flag, or the map's year. */
       'data.volcano': { type: 'object', properties: { name: str(), text: str(), query: str(), place: str() }, anyOf: [{ required: ['name'] }, { required: ['text'] }, { required: ['query'] }, { required: ['place'] }] },
+      /* (#R566) EVERY ARGUMENT IS OPTIONAL, and that is the shape of the feature rather than a
+         relaxation of rule (3): 「感染症のアウトブレイクを見せて」 is a complete request, and the
+         layer answers it with WHO's most recent year. The arguments only NARROW it. */
+      'map.outbreaks': { type: 'object', properties: { action: one('open', 'close'), pathogen: str(), country: str(), days: int(), all: bool() } },
       'map.volcanoFilter': { type: 'object', properties: { mode: one('recency', 'vei', 'status', 'people'), time: bool(), year: int(), spoken: bool(), elevated: bool(), big: bool(), recent: bool(), clear: bool() }, anyOf: [{ required: ['mode'] }, { required: ['time'] }, { required: ['year'] }, { required: ['spoken'] }, { required: ['elevated'] }, { required: ['big'] }, { required: ['recent'] }, { required: ['clear'] }] },
       /* (#R527) 写真の撮影地点。EVERY ARGUMENT IS OPTIONAL, AND THAT IS THE SHAPE OF THE FEATURE,
          not a relaxation of rule (3): the two inputs that decide the answer — the photograph and

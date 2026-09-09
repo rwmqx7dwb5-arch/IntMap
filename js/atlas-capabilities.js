@@ -302,6 +302,14 @@ export function makeAtlasCapabilities(HOST) {
          `panel` observes it because the panel IS what one call delivers: the sweep that follows is
          minutes long and is reported through the `photoGeo` state section (js/atlas-state.js). */
       ['photo.locate',               'photoLocate',    'photoGeolocate,whereWasThisTaken,skylineMatch',               'photo',   'panel',   'panel.photoGeo',         'panel,explanation',   'session', 'none',   '',         'photoGeo'],
+      /* (#R566) WHO Disease Outbreak News as an event layer — js/outbreaks.js. It PAINTS (one
+         circle per country the window holds items for) and it EXPLAINS (the counts, the leading
+         countries, and the items themselves in `meta.items`), which is why column 7 carries both.
+         ⚠ COLUMN 11 IS EMPTY BECAUSE THE MODULE IS EAGER, not because it was forgotten: the layer
+         row has to exist before anyone can ask for it, so js/outbreaks.js rides the shell the way
+         js/industry-web.js and js/ocean-currents.js do. The 3,195-item archive it reads is the part
+         that is deferred — nothing is fetched until the layer is switched on. */
+      ['map.outbreaks',              'outbreaks',      'diseaseOutbreaks,outbreakLayer,epidemics,whoOutbreaks,diseaseMap', 'map', 'paint', 'map.outbreaks',          'map,explanation',     'session', 'none',   '',         ''],
       ['dialog.answer',              'answer',         '',                                                            'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         '']
     ];
 

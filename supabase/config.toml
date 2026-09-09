@@ -213,3 +213,18 @@ verify_jwt = false
 # is one more thing to be down. Keyless & public; no user data reaches it.
 [functions.volcano-feed]
 verify_jwt = false
+
+# who-don (#R566) holds the ONE field WHO does not publish as a field. Pathogen, country, onset and
+# publication date are structured fields in WHO's own OData service and travel with
+# data/who-don.json.gz; case and death totals exist only as English prose inside each report's
+# Overview, and picking the cumulative figure out of a paragraph that also states provinces, health
+# zones, contacts traced and patients recovered is a judgement, so it is asked of a model whose
+# answer is then validated (see the function's own header and _shared/who-don-extract.js).
+# ⚠ THE FEED ITSELF IS NOT RELAYED — measured, WHO answers Access-Control-Allow-Origin: *, so the
+# page reads it directly and a relay would only be one more thing to be down (#R266).
+# verify_jwt is OFF because the two callers need two different credentials and neither is a JWT: GET
+# is the public read of already-extracted counts, offered to signed-out readers like every other map
+# layer, and POST is the ingest step, which the function guards itself with x-who-don-secret,
+# fail-closed (an unset secret answers 401, never "open").
+[functions.who-don]
+verify_jwt = false
