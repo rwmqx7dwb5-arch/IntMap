@@ -240,6 +240,8 @@ industry-web.js                   産業の相関 window.IntMapIndustry
 outbreaks.js                      感染症アウトブレイク window.IntMapOutbreaks（**eager**——行と Atlas 命令が
                                   起動時に要る）。WHO Disease Outbreak News 3,195件（1996〜）を
                                   国ごとの点に。同梱の `data/who-don.json.gz` ＋ WHO から直接読む最新分。
+                                  ⚠ **病名の正規化規則（`window.IntMapWhoDonName`）はこのファイルの最上位**
+                                  にあり、`scripts/build-who-don.mjs` が `node:vm` で読む（#R660）。
                                   病原体・国・発生日・公表日は WHO の構造化フィールド、
                                   症例数・死亡数だけが散文なので `supabase/functions/who-don` が読む
                                   （docs/MAP-LAYERS.md §7.15）

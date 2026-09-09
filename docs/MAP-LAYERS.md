@@ -2564,6 +2564,38 @@ Esri のラベルラスタを退役させたスタイル（`js/theme-sky.js`）�
 照合できない尾はそのまま残す（#R515: 測って、測れなければ拒む）。結果 3,195 件すべてが名前を持ち、
 **裸の年は 0 件**（`--check` がこれを門にしている）。
 
+⚠⚠ **区切りで意味を持つ空白は、ダッシュの「後ろ」であって「前」ではない。** 最初の版は前の空白を
+要求していたので、WHO が前を詰めて書いた題名——「Mpox (monkeypox)- Democratic Republic of the Congo」
+「Rift Valley fever- Mauritania and Senegal」「Marburg virus disease– United Republic of Tanzania」——は
+場所が切れず、**絞り込みの一覧に国名つきの「病名」として並んでいた**（本番で観測・実測 22 件）。
+後ろの空白は残す——それが `MERS-CoV`・`Crimean-Congo`・`vaccine-derived`・`COVID-19` を割らせない条件。
+区切りはさらに 2 つの構造的な条件を満たしたときだけ切る:
+
+- **括弧の中の区切りは区切りではない**（名前の一部）。「Seychelles – Suspected Plague (Ex- Madagascar)」は
+  括弧の中の国名が照合するので、切ると**語の途中・括弧の途中**で名前が終わる。
+- **切った頭がそれ自体 WHO の場所名（完全一致）なら、それは病名ではない**ので切らない。
+  完全一致にするのは、包含だと `Crimean-Congo haemorrhagic fever` が「Congo」を含むだけで拒まれるから。
+
+区切りどうしは**重ならない**（「1999 - Cholera, in Madagascar」は `, ` と ` in ` が同じ空白を共有する。
+両方を取ると後ろで切って病名が「Cholera,」になる）。実測: 名前は 541 → 533 種類、
+**ダッシュが詰まったまま残る件数は 22 → 13**（残りは `Global` など、WHO の語彙に無いので意図的に切らない側）。
+
+⚠⚠⚠ **この規則の持ち主は `js/outbreaks.js` で、ビルドスクリプトがそのファイルを読む。** #R650 は規則を
+`scripts/build-who-don.mjs` に置き、両方のヘッダに「`js/outbreaks.js` は名前を導出しない」と書いた。
+**その文は誤りで、誤りであること自体がバグだった**——**ライブ末尾**（`fetchTail`。WHO が公表した最新分を
+ページが直接読む経路）は `EmergencyEvent.Title` を**生のまま**病名にしていた。WHO の最新 100 件で実測すると、
+**26 件が同梱コーパスと違う名前**になる: **25 件が `null`**（題名への退避が無い）、1 件が
+「Mpox (monkeypox)- Democratic Republic of the Congo」——**利用者が本番で見た文字列そのもの**。
+⇒ **実装は 1 つ、読み手は 2 つ**。`js/outbreaks.js` の最上位が `window.IntMapWhoDonName`
+（`eventName` ＝装飾を外す規則、`donName` ＝ `EmergencyEvent.Title` と DON 自身の題名の**どちらを使うか**）を
+公開し、`scripts/build-who-don.mjs` は `node:vm` でこのファイルを評価してそれを取る
+（`scripts/build-whs.mjs` が `js/lang-registry.js` に対してやっているのと同じ）。
+照合に使う**場所の語彙はコーパスが運ぶ**（`places`——WHO 自身の国名・地域名を正規化した一覧。
+ブラウザは 226 件の country を毎回ページングできない）。**コーパスの schema は v2。**
+検査 ⑪ が、①両者の関数ソースが一致すること ②ビルド側が自前の `SEP`/`REVISION`/`BARE_YEAR` を
+**持たない**こと ③レイヤー側が `ev.Title` を**読まない**こと ④同梱の `places` だけで実際の題名が切れることを測る
+（**4 つとも変異試験で赤**）。
+
 ⚠ **国は「名前の一致」ではなく join である。** DON が持つ `regionscountries` は国の id ではなく
 **taxon の GUID** で、`countries` を Id で引くと**3,233件すべてが不一致**になる（実測）。
 解決するのは「同じ taxon が Country 側にも付いている」という事実のほうで、
