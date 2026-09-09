@@ -76,6 +76,7 @@ src/
   sat-worker.js / sat-worker-client.js      衛星の軌道計算（SGP4/SDP4）をワーカーで回す
   tsunami-worker.js / tsunami-worker-client.js  津波の伝播計算をワーカーで回す
   aviation-worker.js / aviation-worker-client.js  ライブ航空機の在庫（デコード・格納・時効・フィルタ・GPU バッファの pack）をワーカーで回す
+  radiation-worker.js / radiation-worker-client.js  放射性プルームのラグランジュ solve をワーカーで回す（物理は js/radiation-model.js・worker が無ければページ側が少ない粒子で解き、run がそう名乗る）
   satellite-wasm-stub.js            satellite.js の wasm 経路を使わないためのスタブ
 fonts/                              Inter（サブセット woff2 ＋ MapLibre 用 pbf グリフ）と Pretendard
 ```
@@ -459,8 +460,12 @@ widget-smart.js                   Smart Stack IntMapWidgetSmart —— 文脈に
                                   「なぜ表示されたか」の説明、切替のちらつき防止
 tool-panel.js                     計測／半径ツールのパネルと地図のコンテキストメニュー
 elevation-profile.js              標高断面のパネル
-sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散・範囲人口・
-                                  日照・鉄道の到達圏）
+sims.js                           物理シミュレーションと太陽幾何（放射性物質拡散のパネル・地図・
+                                  アニメーション／範囲人口／日照／鉄道の到達圏）
+radiation-model.js                放射性物質拡散のモデル本体（風の場の入れ子ネスト・高度別の風・
+                                  ラグランジュ solve・沈着格子・区分・線量積分）。DOM も window も
+                                  持たない純粋モジュールで、ページと worker が同じものを import
+                                  する。数の出所は docs/RADIATION-MODEL.md（export const RAD）
 shakemap.js                       USGS ShakeMap——1つの地震の地震動そのもの（等値線・震度の面・
                                   範囲内の都市と人口・遅延取得）window.IntMapShakeMap
 seismic.js                        地震波シミュレータ（477 KB）

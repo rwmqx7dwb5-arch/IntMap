@@ -125,7 +125,7 @@ import './sat-worker-client.js';
 import './tsunami-worker-client.js';
 /* (#R341) …and the aviation worker's, which publishes window.IntMapAviationWorker and starts
    nothing until the aircraft layer asks for a poll (src/aviation-worker.js). */
-import './aviation-worker-client.js';
+import './aviation-worker-client.js'; import './radiation-worker-client.js';   /* (#R568) …and the radioactive-plume solver's, which publishes window.IntMapRadiationWorker and starts nothing until the dispersion panel (js/sims.js) asks for a run. The physics is js/radiation-model.js, imported by js/sims.js AND by src/radiation-worker.js — one copy, on whichever thread ends up running it. ⚠ ON THIS LINE rather than its own: the app shell (index.html + this + vendor + app-body + geo-engine) is budgeted to 8,050 lines by tests/r168 #8, and it had five to spare. */
 import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */

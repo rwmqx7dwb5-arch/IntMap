@@ -15,6 +15,8 @@
  * ==========================================================================*/
 /* (#R408) the program's one timer wheel (js/runtime.js), not a private timer of this file's own. */
 import { everyTick, stopTick } from './runtime.js';
+/* (#R568) the plume model itself — the same module src/radiation-worker.js runs off the page. */
+import { RAD } from './radiation-model.js';
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.radiation=function(HOST){
@@ -28,8 +30,12 @@ window.IntMapModules.radiation=function(HOST){
     const LL=window.IntMapLang.pick(()=>HOST.lang);
     const SRC='imrad-src', DEP='imrad-dep-src'; let _run=null, _gen=0;
     /* (#R85) isotope + source-term presets ("放出量や放出時間、日時等も選べるように"). Half-lives in HOURS. */
-    const ISOTOPES={ 'cs137':{n:'Cs-137',h:264289,dose:2.0e-6}, 'i131':{n:'I-131',h:192.5,dose:1.5e-6}, 'cs134':{n:'Cs-134',h:18045,dose:5.4e-6}, 'sr90':{n:'Sr-90',h:252648,dose:0.2e-6} };
-    const SOURCES={ 'chernobyl':{n:'Chernobyl-scale',bq:8.5e16,ll:[30.0997,51.3892]}, 'fukushima':{n:'Fukushima-scale',bq:1.5e16,ll:[141.0329,37.4211]}, 'dirtybomb':{n:'Dirty bomb (RDD)',bq:3.7e13}, 'research':{n:'Small/research',bq:1e12} };
+    const ISOTOPES=RAD.ISOTOPES;
+    /* ⚠ (#R568 ⑧) SOURCES is a source × ISOTOPE table now — `SOURCES.chernobyl.bq` no longer
+       exists, because there is no such quantity: 85 PBq is Chernobyl's Cs-137 and 1,760 PBq is its
+       I-131. Callers ask `sourceTerm(source, isotope)`; the presets keep `.n` and `.ll` so the
+       gazetteer fallback and the pickers read exactly as before. */
+    const SOURCES=RAD.SOURCE_TERMS;
     /* (#R85b) built-in gazetteer of major nuclear sites so "福島第一原発 / Fukushima Daiichi / Chernobyl / Zaporizhzhia"
        ALWAYS resolve even when the online geocoder truncates/misses the name ("Where is the release source?"). */
     const SITES=[
@@ -47,13 +53,31 @@ window.IntMapModules.radiation=function(HOST){
       {re:/ohi|大飯|takahama|高浜|sendai\s*nuclear|川内原発|hamaoka|浜岡/i, ll:[135.6520,35.5420], n:'Ōi / Kansai NPP'}
     ];
     function resolveSite(q){ q=String(q||'').trim(); if(!q) return null; for(const s of SITES){ if(s.re.test(q)) return {lng:s.ll[0],lat:s.ll[1],name:s.n}; } return null; }
-    /* Cs-137 ground-deposition zones — the real Chernobyl thresholds (Ci/km² → kBq/m²): 40/15/5/1 */
+    /* ── the legend's WORDS ─────────────────────────────────────────────────────────────────────
+       ⚠ (#R568 ⑨) WHICH LADDER IS SHOWN IS THE MODEL'S DECISION (RAD.zonesFor), because it depends
+       on whether a deposition-density law exists for the chosen isotope: it does for Cs-137 (37 /
+       185 / 555 / 1480 kBq/m² — identical in the Russian, Ukrainian and Belarusian statutes) and for
+       Sr-90 (different in each of the three; Ukraine's are used and the legend says so). It does NOT
+       for I-131 or Cs-134 — those statutes enumerate caesium, strontium and plutonium and nothing
+       else — so those isotopes get decades of density with no policy word attached to them, which is
+       the whole of the fix: the old code painted «強制移住» on an iodine deposit.
+       The keys are the model's; only the language is here, so there is one ladder and one wording. */
     const LA=window.IntMapLang.pickArgs();   /* (#R241) see `pickArgs` in js/lang-registry.js */
-    const ZONES=[ {min:1480,c:'#8a0f0f',n:LA('Exclusion — permanent resettlement','立入禁止（強制移住）','Sperrzone','Зона отчуждения','Exclusión'),mSv:'>5'},
-      {min:555,c:'#ff453a',n:LA('Mandatory evacuation','義務的避難','Zwangsumsiedlung','Обязательное отселение','Evacuación obligatoria'),mSv:'1–5'},
-      {min:185,c:'#ff9f0a',n:LA('Relocation right / monitoring','移住権・要監視','Umsiedlungsrecht','Право на отселение','Reubicación'),mSv:'0.5–1'},
-      {min:37,c:'#ffd60a',n:LA('Enhanced monitoring','要観察','Verstärkte Überwachung','Усиленный контроль','Vigilancia'),mSv:'0.1–0.5'},
-      {min:2,c:'#b7f7b0',n:LA('Trace deposition','微量沈着','Spuren','Следы','Trazas'),mSv:'<0.1'} ];
+    const ZONE_LABEL={
+      'z-exclusion':LA('Exclusion — permanent resettlement','立入禁止（強制移住）','Sperrzone','Зона отчуждения','Exclusión'),
+      'z-evacuation':LA('Mandatory evacuation','義務的避難','Zwangsumsiedlung','Обязательное отселение','Evacuación obligatoria'),
+      'z-relocation':LA('Relocation right / monitoring','移住権・要監視','Umsiedlungsrecht','Право на отселение','Reubicación'),
+      'z-monitoring':LA('Enhanced monitoring','要観察','Verstärkte Überwachung','Усиленный контроль','Vigilancia'),
+      'z-trace':LA('Trace deposition','微量沈着','Spuren','Следы','Trazas'),
+      'z-sr-mandatory':LA('Sr-90: mandatory resettlement (UA)','Sr-90：無条件移住（ウクライナ法）','Sr-90: Zwangsumsiedlung (UA)','Sr-90: обязательное отселение (UA)','Sr-90: reasentamiento obligatorio (UA)'),
+      'z-sr-voluntary':LA('Sr-90: guaranteed voluntary resettlement (UA)','Sr-90：保証付き自主移住（ウクライナ法）','Sr-90: freiwillige Umsiedlung (UA)','Sr-90: добровольное отселение (UA)','Sr-90: reasentamiento voluntario (UA)'),
+      'z-sr-control':LA('Sr-90: enhanced radioecological control (UA)','Sr-90：強化放射線生態管理（ウクライナ法）','Sr-90: verstärkte Kontrolle (UA)','Sr-90: усиленный контроль (UA)','Sr-90: control reforzado (UA)'),
+      'd-1e4':LA('Very heavy deposition','極めて高い沈着','Sehr hohe Deposition','Очень высокое выпадение','Deposición muy alta'),
+      'd-1e3':LA('Heavy deposition','高い沈着','Hohe Deposition','Высокое выпадение','Deposición alta'),
+      'd-1e2':LA('Moderate deposition','中程度の沈着','Mittlere Deposition','Умеренное выпадение','Deposición moderada'),
+      'd-1e1':LA('Light deposition','低い沈着','Geringe Deposition','Низкое выпадение','Deposición baja'),
+      'd-1e0':LA('Trace deposition','微量沈着','Spuren','Следы','Trazas') };
+
     async function fetchJSON(url){
       /* (#R276) An Open-Meteo URL goes through the app's ONE guarded client — cache, request
          coalescing and the daily-quota circuit breaker (js/wx-source.js). A proxy ladder in front of
@@ -72,87 +96,101 @@ window.IntMapModules.radiation=function(HOST){
       GE().layers.add({id:'imrad-srcpt',type:'circle',source:SRC,filter:['==',['get','src'],1],paint:{'circle-radius':7,'circle-color':'#ffe000','circle-stroke-color':'#8a0f0f','circle-stroke-width':3}});
       return true; }catch(_){ return false; } }
     function clear(){ if(_run){ _run.cancel=true; _run=null; } try{ GE().layers.setSourceData(SRC,{type:'FeatureCollection',features:[]}); }catch(_){} try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:[]}); }catch(_){} }
-    /* wind/precip/temperature field — FORECAST (now / next 3 days) or, for a PAST start date, the ERA5 ARCHIVE.
-       Returns hourly u,v,precip,temp on a 6×6 grid; startHour = the field-hour the release begins at. */
-    async function fetchField(cx,cy,opts){ opts=opts||{}; const nx=6, ny=6, half=2.6; const lons=[],lats=[];
-      for(let i=0;i<nx;i++) lons.push(cx-half+(2*half)*i/(nx-1)); for(let j=0;j<ny;j++) lats.push(cy-half+(2*half)*j/(ny-1));
-      const LA=[],LO=[]; for(let j=0;j<ny;j++) for(let i=0;i<nx;i++){ LO.push(+lons[i].toFixed(3)); LA.push(+lats[j].toFixed(3)); }
-      const hourly='wind_speed_10m,wind_direction_10m,precipitation,temperature_2m';
-      let url, startHour=0, startISO=null;
-      const dt=opts.date?new Date(opts.date):null, now=Date.now();
-      if(dt&&isFinite(dt.getTime())&&dt.getTime()<now-3*3600e3){   /* past → archive (ERA5) */
-        const d0=new Date(dt.getTime()); const sD=d0.toISOString().slice(0,10); const eD=new Date(dt.getTime()+ (Math.min(72,+opts.hours||48)+6)*3600e3).toISOString().slice(0,10);
-        url='https://archive-api.open-meteo.com/v1/archive?latitude='+LA.join(',')+'&longitude='+LO.join(',')+'&start_date='+sD+'&end_date='+eD+'&hourly='+hourly+'&wind_speed_unit=ms';
-        startISO=dt.toISOString();
-      } else {   /* now / future within the forecast window */
-        url='https://api.open-meteo.com/v1/forecast?latitude='+LA.join(',')+'&longitude='+LO.join(',')+'&hourly='+hourly+'&forecast_days=3&wind_speed_unit=ms';
-        if(dt&&isFinite(dt.getTime())) startISO=dt.toISOString();
-      }
-      const j=await fetchJSON(url); if(!j) return null; const arr=Array.isArray(j)?j:[j]; if(!arr.length||!arr[0].hourly) return null;
-      const times=arr[0].hourly.time||[]; const H=Math.min(80,times.length||48);
-      if(startISO&&times.length){ const target=startISO.slice(0,13); let idx=times.findIndex(t=>String(t).slice(0,13)===target); if(idx<0){ idx=times.findIndex(t=>new Date(t).getTime()>=new Date(startISO).getTime()); } if(idx>0) startHour=idx; }
-      const u=[],v=[],pr=[],tp=[]; for(let h=0;h<H;h++){ u.push(new Float32Array(nx*ny)); v.push(new Float32Array(nx*ny)); pr.push(new Float32Array(nx*ny)); tp.push(new Float32Array(nx*ny)); }
-      arr.forEach((loc,idx)=>{ const hh=loc.hourly||{}; const ws=hh.wind_speed_10m||[], wd=hh.wind_direction_10m||[], pp=hh.precipitation||[], tt=hh.temperature_2m||[];
-        for(let h=0;h<H;h++){ const sp=+ws[h]||0, dr=(+wd[h]||0)*Math.PI/180; u[h][idx]=-sp*Math.sin(dr); v[h][idx]=-sp*Math.cos(dr); pr[h][idx]=+pp[h]||0; tp[h][idx]=(tt[h]!=null?+tt[h]:15); } });
-      return {nx,ny,lons,lats,H,u,v,pr,tp,dLon:(2*half)/(nx-1),dLat:(2*half)/(ny-1),cx,cy,half,startHour,startISO,times}; }
-    function sample(F,lng,lat,h){ let fx=(lng-F.lons[0])/F.dLon, fy=(lat-F.lats[0])/F.dLat;
-      fx=Math.max(0,Math.min(F.nx-1.001,fx)); fy=Math.max(0,Math.min(F.ny-1.001,fy));
-      const i0=Math.floor(fx), j0=Math.floor(fy), tx=fx-i0, ty=fy-j0, hi=Math.max(0,Math.min(F.H-1,Math.floor(h)));
-      const id=(i,j)=>j*F.nx+i; const bil=A=>{ const a=A[id(i0,j0)],b=A[id(i0+1,j0)],c=A[id(i0,j0+1)],d=A[id(i0+1,j0+1)]; return a*(1-tx)*(1-ty)+b*tx*(1-ty)+c*(1-tx)*ty+d*tx*ty; };
-      return { u:bil(F.u[hi]), v:bil(F.v[hi]), pr:bil(F.pr[hi]), tp:bil(F.tp[hi]) }; }
-    function estimateWet(F){ try{ for(let h=0;h<F.H;h++){ const pr=F.pr[h]; for(let i=0;i<pr.length;i++){ if(pr[i]>0.1) return true; } } }catch(_){} return false; }
+    /* ── THE WIND FIELD, FETCHED ────────────────────────────────────────────────────────────────
+       TWO nests and TWO requests (#R568 ③④). The inner nest is fixed and fine; the outer one is
+       sized from the wind the inner one has just measured, so the DOMAIN FOLLOWS THE PLUME instead
+       of the plume being clamped to the domain — which is what the old single ±2.6° box did, and
+       what let a run print a 900 km reach while every particle past 290 km was being pushed by the
+       boundary cell's wind for ever.
+       Both requests go through the app's ONE guarded Open-Meteo client (js/wx-source.js): cache,
+       request coalescing and the daily-quota breaker.
+       ⚠ THE NEST SIZES ARE A BUDGET, AND ARE STATED AS ONE. Open-Meteo bills per location × variable;
+       7×7 and 9×9 is 130 locations against the old 36, for ~4× the resolution near the source and a
+       domain that grows with the window. Finer is not free and is not this model's to spend. */
+    const FC_LEVELS=[10,80,180], AR_LEVELS=[10,100];
+    function hourlyVars(levels,wantPBL){ const v=[];
+      for(const l of levels) v.push('wind_speed_'+l+'m','wind_direction_'+l+'m');
+      v.push('precipitation','temperature_2m'); if(wantPBL) v.push('boundary_layer_height'); return v.join(','); }
+    function omURL(plan,levels,q){ const pts=RAD.planPoints(plan);
+      const base='latitude='+pts.LA.join(',')+'&longitude='+pts.LO.join(',')+'&wind_speed_unit=ms&timezone=GMT';
+      return q.archive
+        ? 'https://archive-api.open-meteo.com/v1/archive?'+base+'&start_date='+q.sD+'&end_date='+q.eD+'&hourly='+hourlyVars(levels,false)
+        : 'https://api.open-meteo.com/v1/forecast?'+base+'&forecast_days='+q.days+'&hourly='+hourlyVars(levels,true); }
+    /* Did the provider actually answer with wind? ERA5 is ~1.5 days behind real time, so a "past"
+       start inside that gap comes back as a well-formed body full of nulls — which is not a field,
+       and must not be modelled as a calm. */
+    function hasWind(json,levels){ try{ const a=Array.isArray(json)?json:[json];
+      const h=a[0]&&a[0].hourly; if(!h) return false;
+      const s=h['wind_speed_'+levels[0]+'m']||[];
+      return s.some(x=>x!=null&&isFinite(+x)); }catch(_){ return false; } }
+    async function fetchField(cx,cy,opts){
+      const hours=opts.hours;
+      const asked=opts.date?new Date(opts.date).getTime():NaN;
+      const startMs=isFinite(asked)?asked:Date.now();
+      const startISO=new Date(startMs).toISOString();
+      /* ERA5 lags; anything inside the lag is still the forecast provider's business. */
+      const archive=isFinite(asked)&&startMs<Date.now()-36*3600e3;
+      const levels=archive?AR_LEVELS:FC_LEVELS;
+      let q;
+      if(archive){ q={archive:true, sD:new Date(startMs-2*3600e3).toISOString().slice(0,10),
+                      eD:new Date(startMs+(hours+6)*3600e3).toISOString().slice(0,10)}; }
+      else { const midnight=Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate());
+        const span=(startMs+(hours+3)*3600e3-midnight)/86400e3;
+        q={archive:false, days:Math.max(2,Math.min(16,Math.ceil(span)+1))}; }
+
+      const inPlan=RAD.innerPlan(cx,cy);
+      const jIn=await fetchJSON(omURL(inPlan,levels,q));
+      if(!jIn||!hasWind(jIn,levels)) return null;
+      const times=(Array.isArray(jIn)?jIn[0]:jIn).hourly.time||[];
+      const s0=RAD.resolveStart(times,startISO);
+      const need=Math.ceil(hours)+2;
+      const inner=RAD.buildNest(inPlan,jIn,levels,s0,need);
+      if(!inner) return null;
+
+      /* the outer nest, sized by what the inner one measured over the window it will be used for */
+      let sum=0,n=0;
+      for(let h=0;h<inner.H;h++){ const u=inner.u[0][h],v=inner.v[0][h];
+        for(let i=0;i<u.length;i++){ sum+=Math.hypot(u[i],v[i]); n++; } }
+      const meanSpd=n?sum/n:5;
+      const outPlan=RAD.outerPlan(cx,cy,meanSpd,hours);
+      let outer=null;
+      try{ const jOut=await fetchJSON(omURL(outPlan,levels,q));
+        if(jOut&&hasWind(jOut,levels)) outer=RAD.buildNest(outPlan,jOut,levels,s0,need); }catch(_){ outer=null; }
+      /* ⚠ If the far field is unavailable the run does NOT silently pretend the near field extends
+         for ever — the inner nest becomes the whole domain, particles leave it early, and the report
+         says what fraction left. A small honest domain beats a large invented one. */
+      return { inner, outer:outer||inner, outerOK:!!outer, startHour:0, startISO,
+        times:times.slice(s0,s0+need), archive, levels, meanSpd,
+        half:(outer||inner).half, cx, cy };
+    }
+    /* Was there rain anywhere in the field? Read off the nest the particles actually fly through. */
+    function estimateWet(F){ try{ for(let h=0;h<F.inner.H;h++){ const pr=F.inner.pr[h];
+      for(let i=0;i<pr.length;i++){ if(pr[i]>0.1) return true; } } }catch(_){} return false; }
     const grnd=()=>{ const u1=Math.random()||1e-6,u2=Math.random(); return Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); };
-    /* (#R85) FULL Lagrangian run computed once (fast, headless) → the FINAL DEPOSITION field (Bq/m² per cell) that
-       both the settled-ground map layer AND the dose report read from. q0 = per-particle activity so a real Bq
-       source term maps to a real deposition density. */
-    function computeDeposition(F,src,opts){ const maxP=opts.pN||2600, hours=opts.hours, emitHours=Math.min(hours,opts.emitHours), halfLifeH=opts.halfLifeHours;
-      /* (#R85d) higher-quality model: only a DEPOSITABLE FRACTION of the source term is ground-depositable particulate
-         (the rest is noble gas / stays aloft), so near-source deposition isn't an unrealistic solid blob; a modest
-         PLUME RISE + gravitational settling velocity per particle; a size-dependent dry-deposition velocity. */
-      const DEP_FRAC=0.55, q0=opts.bq*DEP_FRAC/maxP;
-      const steps=Math.max(72,Math.round(hours*3)), dH=hours/steps, depRes=opts.depRes||0.03, base=opts.startHour||0;
-      const key=(lng,lat)=>Math.round(lng/depRes)+'_'+Math.round(lat/depRes);
-      const parts=[], dep=new Map(); let emitted=0; const perStep=Math.max(1,Math.ceil(maxP/Math.max(1,emitHours/dH)));
-      for(let st=0;st<=steps;st++){ const simH=st*dH;
-        if(simH<=emitHours&&emitted<maxP){ const want=Math.min(maxP-emitted,perStep); for(let k=0;k<want;k++){ parts.push({lng:src.lng+(Math.random()-0.5)*0.012,lat:src.lat+(Math.random()-0.5)*0.012,z:200+Math.random()*600,vs:0.002+Math.random()*0.02,act:1,dead:false}); emitted++; } }
-        for(const p of parts){ if(p.dead) continue; const s=sample(F,p.lng,p.lat,base+simH);
-          const stab=Math.max(0.4,Math.min(2.2,0.6+(s.tp-5)/25)), K=380*stab, sig=Math.sqrt(2*K*dH*3600);
-          const mLat=111000, mLon=111000*Math.cos(p.lat*Math.PI/180)||1;
-          p.lng+=(s.u*dH*3600+grnd()*sig)/mLon; p.lat+=(s.v*dH*3600+grnd()*sig)/mLat;
-          p.z=Math.max(0,p.z - p.vs*dH*3600 + grnd()*Math.sqrt(2*20*dH*3600));   /* settle + vertical turbulence */
-          p.act*=Math.pow(0.5,dH/halfLifeH);
-          let dv=false; if(s.pr>0.05&&Math.random()<Math.min(0.96,s.pr*0.18*dH)) dv=true;    /* wet scavenging */
-          else if(p.z<=40) dv=true;                                                          /* touched ground */
-          else if(Math.random()<0.006*dH*(p.z<300?2:1)) dv=true;                             /* dry deposition (faster low) */
-          if(dv){ p.dead=true; const kk=key(p.lng,p.lat); dep.set(kk,(dep.get(kk)||0)+p.act*q0); } }
-      }
-      for(const p of parts){ if(p.dead) continue; const kk=key(p.lng,p.lat); dep.set(kk,(dep.get(kk)||0)+p.act*q0*0.5); }   /* settle the remainder */
-      return {dep,depRes}; }
-    function depFeatures(res,iso){ const {dep,depRes}=res; const feats=[]; const zoneKm2=[0,0,0,0,0]; let peak=0,peakLL=null,totBq=0;
-      dep.forEach((bq,kk)=>{ const [gx,gy]=kk.split('_').map(Number); const lng=gx*depRes, lat=gy*depRes;
-        const wM=depRes*111320*Math.cos(lat*Math.PI/180), hM=depRes*111320, areaM2=Math.max(1,wM*hM);
-        const densBqM2=bq/areaM2, densKBqM2=densBqM2/1000; totBq+=bq;
-        if(densKBqM2>peak){ peak=densKBqM2; peakLL=[lng,lat]; }
-        let zi=-1; for(let z=0;z<ZONES.length;z++){ if(densKBqM2>=ZONES[z].min){ zi=z; break; } } if(zi<0) return;
-        zoneKm2[zi]+=areaM2/1e6;
-        const hw=depRes/2, hh=depRes/2;
-        feats.push({type:'Feature',geometry:{type:'Polygon',coordinates:[[[lng-hw,lat-hh],[lng+hw,lat-hh],[lng+hw,lat+hh],[lng-hw,lat+hh],[lng-hw,lat-hh]]]},properties:{c:ZONES[zi].c,z:zi,d:densKBqM2}}); });
-      const doseK=(iso&&iso.dose)||2.0e-6; const peakDoseUSvH=peak*1000*doseK;   /* µSv/h at peak (density kBq→Bq/m² × conv) */
-      return {feats,zoneKm2,peak,peakLL,peakDoseUSvH,totBq}; }
-    /* visual plume animation (eye-candy over the already-drawn deposition) */
+
+    /* ── the plume you WATCH, over the deposition that was SOLVED ───────────────────────────────
+       The animation is a second, tiny ensemble drawn for the eye; the numbers come from the solve.
+       ⚠ It now uses the SAME wind the solve used — `RAD.windAt` at the particle's own height — so
+       the picture and the report cannot disagree about which way the plume went. */
     function animate(F,src,secs,simHours,opts){
-      const maxP=700, emitHours=Math.min(simHours,+opts.emitHours||8), halfLifeH=(+opts.halfLifeHours>0)?+opts.halfLifeHours:264289;
+      const maxP=700, emitHours=Math.min(simHours,+opts.emitHours||8);
+      const halfLifeH=(+opts.halfLifeHours>0)?+opts.halfLifeHours:RAD.ISOTOPES.cs137.hl;
+      const zTop=Math.max(20,+opts.releaseHeight||300), zBot=zTop*0.25;
       const parts=[]; const rn={cancel:false}; _run=rn; const base=opts.startHour||0;
       const t0=performance.now(), dur=secs*1000; let lastH=0;
       const frame=now=>{ if(rn.cancel) return;
         const tau=Math.min(1,(now-t0)/dur), simH=tau*simHours, dH=Math.max(0,simH-lastH); lastH=simH; const dtSec=dH*3600;
-        if(simH<=emitHours){ const want=Math.min(maxP-parts.length,Math.ceil(maxP/emitHours*dH)+1); for(let k=0;k<want;k++) parts.push({lng:src.lng+(Math.random()-0.5)*0.015,lat:src.lat+(Math.random()-0.5)*0.015,act:1,dead:false}); }
-        for(const p of parts){ if(p.dead) continue; const s=sample(F,p.lng,p.lat,base+simH);
-          const stab=Math.max(0.4,Math.min(2.2,0.6+(s.tp-5)/25)); const K=380*stab; const sig=Math.sqrt(2*K*dtSec);
+        if(simH<=emitHours){ const want=Math.min(maxP-parts.length,Math.ceil(maxP/emitHours*dH)+1);
+          for(let k=0;k<want;k++) parts.push({lng:src.lng+(Math.random()-0.5)*0.015,lat:src.lat+(Math.random()-0.5)*0.015,z:zBot+Math.random()*(zTop-zBot),act:1,dead:false}); }
+        for(const p of parts){ if(p.dead) continue;
+          const w=RAD.windAt(F,p.lng,p.lat,base+simH,p.z), e=w?RAD.envAt(F,p.lng,p.lat,base+simH):null;
+          if(!w||!e){ p.dead=true; continue; }                               /* left the domain */
+          const ust=RAD.frictionVelocity(Math.hypot(w.u,w.v)*0.6+0.5);
+          const K=Math.max(50,4*ust*ust*Math.max(60,0.15*600/(2*ust))), sig=Math.sqrt(2*K*dtSec);
           const mLat=111000, mLon=111000*Math.cos(p.lat*Math.PI/180)||1;
-          p.lng+=(s.u*dtSec+grnd()*sig)/mLon; p.lat+=(s.v*dtSec+grnd()*sig)/mLat;
+          p.lng+=(w.u*dtSec+grnd()*sig)/mLon; p.lat+=(w.v*dtSec+grnd()*sig)/mLat;
           p.act*=Math.pow(0.5,dH/halfLifeH);
-          if(s.pr>0.05&&Math.random()<Math.min(0.9,s.pr*0.14*dH)) p.dead=true;
+          if(e.pr>0.05&&Math.random()<Math.min(0.9,e.pr*0.14*dH)) p.dead=true;
           if(Math.random()<0.008*dH) p.dead=true; }
         const feats=[{type:'Feature',geometry:{type:'Point',coordinates:[src.lng,src.lat]},properties:{src:1,w:1,c:'#ffe000'}}];
         for(const p of parts){ if(p.dead) continue; const a=p.act; feats.push({type:'Feature',geometry:{type:'Point',coordinates:[p.lng,p.lat]},properties:{w:Math.max(0.15,a),c:(a>0.7?'#ff453a':a>0.4?'#ff9f0a':'#ffe08a')}}); }
@@ -160,34 +198,74 @@ window.IntMapModules.radiation=function(HOST){
         if(tau>=1) return; requestAnimationFrame(frame); };
       requestAnimationFrame(frame); }
     let _lastRun=null;   /* (#R214) what the last plume was ASKED, so a link can reproduce it */
+    /* How many particles the solve gets. ⚠ (#R568 ⑦) THIS IS AN ACCURACY SETTING, NOT A SPEED ONE:
+       the peak-deposition figure's Monte-Carlo error is what it buys, which is why the run reports
+       `engine` and `peakRelSE` rather than quietly giving the page-thread path the same voice. */
+    const PARTICLES_WORKER=20000, PARTICLES_PAGE=4000;
     async function run(src,opts){ opts=opts||{}; clear(); const myGen=++_gen;
       try{ _lastRun={ s:{lng:+src.lng,lat:+src.lat,name:src.name||''}, o:Object.assign({},opts) }; }catch(_){}
-      const iso=ISOTOPES[String(opts.isotope||'cs137').toLowerCase()]||ISOTOPES.cs137;
-      const bq=(opts.bq!=null&&isFinite(+opts.bq)&&+opts.bq>0)?+opts.bq:(SOURCES[String(opts.source||'').toLowerCase()]||SOURCES.fukushima).bq;
-      const hours=Math.max(6,Math.min(80,+opts.hours||48)), emitHours=Math.max(0.25,Math.min(hours,+opts.emitHours||8));
-      const halfLifeHours=(+opts.halfLifeHours>0)?+opts.halfLifeHours:iso.h;
+      const isoKey=String(opts.isotope||'cs137').toLowerCase();
+      const iso=RAD.ISOTOPES[isoKey]||RAD.ISOTOPES.cs137;
+      const srcKey=String(opts.source||'').toLowerCase();
+      /* ⚠⚠⚠ (#R568 ⑧) THE PRESET IS READ WITH THE ISOTOPE IN HAND. It used to be read without one,
+         so «Chernobyl» meant 8.5e16 Bq of whatever was selected — a number that is only true of
+         Cs-137. A preset that has no figure for the chosen isotope does not substitute another
+         one's; it leaves the caller's `bq`, or falls back to the model's own default source. */
+      const st=RAD.sourceTerm(srcKey,isoKey)||RAD.sourceTerm('fukushima',isoKey);
+      const bq=(opts.bq!=null&&isFinite(+opts.bq)&&+opts.bq>0)?+opts.bq:(st?st.bq:1e15);
+      const hours=Math.max(6,Math.min(80,+opts.hours||48));
+      const emitHours=Math.max(0.25,Math.min(hours,+opts.emitHours||(st&&st.emitHours)||8));
+      const releaseHeight=Math.max(10,Math.min(3000,+opts.releaseHeight||(st&&st.rise)||300));
+      const halfLifeHours=(+opts.halfLifeHours>0)?+opts.halfLifeHours:iso.hl;
       /* (#R85b) DECOUPLE the model from the map ("放射線拡散シミュレーションが使えない" — the old code returned
          reason:'style' and gave up if map.isStyleLoaded() was briefly false when the sim was launched). Fetch the
          wind + compute the deposition FIRST (both map-independent); return the dose report immediately; then PAINT
          the layers when the style is ready, retrying up to ~14 s + on the next idle. The report never depends on the
          layer being paintable at that instant. */
       const F=await fetchField(src.lng,src.lat,{date:opts.date,hours}); if(!F) return {ok:false,reason:'wind'};
-      const P={bq,hours,emitHours,halfLifeHours,startHour:F.startHour,depRes:0.03,pN:2600};
-      const dr=computeDeposition(F,src,P); const dz=depFeatures(dr,iso);
-      const s0=sample(F,src.lng,src.lat,F.startHour); const spd=Math.hypot(s0.u,s0.v), toward=(Math.atan2(s0.u,s0.v)*180/Math.PI+360)%360;
-      const estReach=Math.round(Math.min(spd*hours*3600/1000,900)), wet=estimateWet(F);
+      const P={bq,hours,emitHours,halfLifeHours,startHour:F.startHour,depRes:0.03,
+        isotope:isoKey,releaseHeight,dtSec:600,particles:PARTICLES_WORKER};
+      let res=null, engine='worker';
+      const W=window.IntMapRadiationWorker;
+      try{ if(W&&W.available()) res=await W.run(F,{lng:+src.lng,lat:+src.lat},P,opts.onProgress); }catch(_){ res=null; }
+      if(!res){ engine='page';
+        res=RAD.simulate(F,{lng:+src.lng,lat:+src.lat},Object.assign({},P,{particles:PARTICLES_PAGE}),null); }
+      const dz=RAD.report(res,isoKey);
+      /* the legend's WORDS are the page's, the legend's NUMBERS are the model's — so the model file
+         stays free of the language registry and the two cannot drift into two ladders. */
+      const zones=dz.zones.map(z=>Object.assign({},z,{n:ZONE_LABEL[z.k]||ZONE_LABEL['d-1e0']}));
+      const w0=RAD.windAt(F,src.lng,src.lat,F.startHour,releaseHeight)||{u:0,v:0};
+      const spd=Math.hypot(w0.u,w0.v), toward=(Math.atan2(w0.u,w0.v)*180/Math.PI+360)%360;
+      /* ⚠ (#R568 ④) THE REACH IS MEASURED, not `speed × hours` capped at 900 km. */
+      const estReach=Math.round(res.maxDistKm), wet=estimateWet(F);
       const secs=Math.max(15,Math.min(60,+opts.seconds||38));
       let painted=false;
       const paint=()=>{ if(myGen!==_gen) return true; if(painted) return true; if(!ensureLayers()) return false; painted=true;
         try{ GE().layers.setSourceData(DEP,{type:'FeatureCollection',features:dz.feats}); }catch(_){}
         try{ if(dz.feats.length){ let a2=180,b2=90,c2=-180,d2=-90; dz.feats.forEach(f=>f.geometry.coordinates[0].forEach(p=>{ a2=Math.min(a2,p[0]);b2=Math.min(b2,p[1]);c2=Math.max(c2,p[0]);d2=Math.max(d2,p[1]); })); GE().camera.fitBounds([[a2,b2],[c2,d2]],{padding:70,maxZoom:8,duration:900}); } else GE().camera.flyTo({center:[src.lng,src.lat],zoom:Math.max(GE().camera.getZoom(),6),duration:800}); }catch(_){}
-        animate(F,src,secs,hours,{emitHours,halfLifeHours,startHour:F.startHour}); return true; };
+        animate(F,src,secs,hours,{emitHours,halfLifeHours,startHour:F.startHour,releaseHeight}); return true; };
       /* (#R408) the generation is IN THE KEY: one Map holds every timer and a second `everyTick`
          on the same key replaces the first, so a superseded run's stop must not be able to reach
          into the run that replaced it. */
       if(!paint()){ let n=0; const t=everyTick('sims:radiation-paint:'+myGen,250,()=>{ if(myGen!==_gen||paint()||n++>56){ stopTick(t); } }); try{ GE().events.once('idle',paint); }catch(_){} }
       return {ok:true,reachKm:estReach,windSpeed:spd,windToward:toward,wet,hours,emitHours,bq,iso:iso.n,halfLifeHours,
-        zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones:ZONES}; }
+        zoneKm2:dz.zoneKm2,peakKBqM2:dz.peak,peakDoseUSvH:dz.peakDoseUSvH,peakLL:dz.peakLL,startISO:F.startISO,zones,
+        /* ── what the model now says about ITSELF (#R568 ④⑥⑦⑨⑩) ───────────────────────────────
+           Every one of these exists because a caller was previously free to print a figure without
+           being able to find out how much of one it was. */
+        isotope:isoKey, releaseHeight, sourceExact:!!(st&&st.exact), sourceLo:st&&st.lo, sourceHi:st&&st.hi,
+        sourceProvisional:(st&&st.provisional)||null,
+        engine, particles:res.particles, peakN:dz.peakN, peakRelSE:dz.peakRelSE,
+        peakWellSampled:dz.peakWellSampled, minPeakN:dz.minPeakN,
+        externalMeaningful:dz.externalMeaningful, firstYearMSv:dz.firstYearMSv,
+        zonesAreLegal:dz.zonesAreLegal, zoneJurisdiction:dz.zoneJurisdiction,
+        /* ⚠ two different questions: `escapedFrac` is how many PARTICLES left, `escapedMassFrac`
+           how much ACTIVITY left with them — and only the second one is a statement about the
+           deposition map, so it is the one the wording uses. */
+        airborneFrac:res.airborneFrac, escapedFrac:res.escapedFrac, escapedMassFrac:res.escapedMassFrac,
+        windLevels:F.levels, windHeight:releaseHeight, pblEstimated:res.pblEstimated,
+        domainHalfDeg:F.half, domainComplete:F.outerOK, archive:!!F.archive}; }
+
     try{ GE().events.on('styledata',()=>{ setTimeout(()=>{ try{ const d=GE().layers.sourceData(SRC); if(d&&d.features&&d.features.length) ensureLayers(); }catch(_){} },160); }); }catch(_){}
     /* ══ ⚠⚠⚠ (#R296) THE PANEL #R264 MEASURED MISSING, BUILT ═══════════════════════════════════════
        #R264 measured that the Tools row for this simulator calls `openPanel()` and that this module
@@ -203,7 +281,12 @@ window.IntMapModules.radiation=function(HOST){
        window come from the controls, and the presets are the ones this module already publishes
        (`SOURCES`), named as the scales they are. */
     let panel=null, site=null, picking=false, pickH=null;
-    let uiSrc='fukushima', uiIso='cs137', uiEmit=8, uiHours=48;
+    /* ⚠ (#R568 ⑧) the release HEIGHT is a control now. It is the single largest thing separating a
+       vented release from a burning core, the old model hid it as 200–800 m for everything, and it is
+       exactly the kind of number this panel exists to let the reader state. It follows the source
+       preset until the reader touches it, so choosing «Chernobyl» moves it. */
+    let uiSrc='fukushima', uiIso='cs137', uiEmit=8, uiHours=48, uiRise=300, uiRiseTouched=false;
+    const presetRise=()=>{ const t=RAD.sourceTerm(uiSrc,uiIso); return (t&&t.rise)||300; };
     const _esc=(x)=>String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     function _endPick(){ picking=false; try{ if(pickH) GE().events.off('click',pickH); }catch(_){} pickH=null;
       try{ const P=window.IntMapPick; if(P&&P.active()) P.abort(); }catch(_){}
@@ -240,6 +323,7 @@ window.IntMapModules.radiation=function(HOST){
         +'<label style="'+LB+'">'+LL('Release (h)','放出時間 (h)','Freisetzung (h)','Выброс (ч)','Emisión (h)')+'<input class="rad-emit" type="number" min="0.25" max="80" step="0.25" value="'+uiEmit+'" style="'+IN+'"></label>'
         +'<label style="'+LB+'">'+LL('Window (h)','追跡時間 (h)','Zeitfenster (h)','Окно (ч)','Ventana (h)')+'<input class="rad-hours" type="number" min="6" max="80" step="1" value="'+uiHours+'" style="'+IN+'"></label>'
         +'</div>'
+        +'<label style="'+LB+'">'+LL('Release height (m)','放出高度 (m)','Freisetzungshöhe (m)','Высота выброса (м)','Altura de emisión (m)')+'<input class="rad-rise" type="number" min="10" max="3000" step="10" value="'+(uiRiseTouched?uiRise:presetRise())+'" style="'+IN+'"></label>'
         +'<button class="rad-go" style="height:34px;border:none;border-radius:9px;background:'+(site?'var(--primary-color)':'var(--input-bg)')+';color:'+(site?'#fff':'var(--text-muted)')+';font-size:12.5px;font-weight:700;cursor:'+(site?'pointer':'default')+';">'
           +LL('Run the dispersion','拡散を実行','Ausbreitung rechnen','Рассчитать','Ejecutar')+'</button>'
         +'<div class="rad-stat" style="font-size:11.5px;color:var(--text-main);min-height:16px;">'+_esc(state||'')+'</div>'
@@ -249,15 +333,21 @@ window.IntMapModules.radiation=function(HOST){
           +LL('Lagrangian dispersion over the live wind field, with decay and wet deposition. Educational — in a real emergency follow the official authorities.','実際の風の場でのラグランジュ拡散（減衰・湿性沈着を含む）。教育目的の近似です。実際の災害時は公的機関の指示に従ってください。','Lagrange-Ausbreitung im echten Windfeld. Nur zu Bildungszwecken.','Лагранжева модель в реальном поле ветра. Только для обучения.','Dispersión lagrangiana con viento real. Solo educativo.')+'</div></div>';
       p.querySelector('.rad-x').onclick=()=>closePanel();
       p.querySelector('.rad-pick').onclick=()=>startPick();
-      p.querySelector('.rad-src').onchange=(e)=>{ uiSrc=e.target.value; };
-      p.querySelector('.rad-iso').onchange=(e)=>{ uiIso=e.target.value; };
+      p.querySelector('.rad-src').onchange=(e)=>{ uiSrc=e.target.value; renderPanel(''); };
+      p.querySelector('.rad-iso').onchange=(e)=>{ uiIso=e.target.value; renderPanel(''); };
       p.querySelector('.rad-emit').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)) uiEmit=Math.max(0.25,Math.min(80,v)); };
+      p.querySelector('.rad-rise').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)){ uiRise=Math.max(10,Math.min(3000,v)); uiRiseTouched=true; } };
       p.querySelector('.rad-hours').onchange=(e)=>{ const v=+e.target.value; if(isFinite(v)) uiHours=Math.max(6,Math.min(80,v)); };
       p.querySelector('.rad-clr').onclick=()=>{ clear(); renderPanel(''); };
       p.querySelector('.rad-go').onclick=async ()=>{ if(!site) return;
         renderPanel(LL('Computing…','計算中…','Berechne…','Расчёт…','Calculando…'));
-        let r=null; try{ r=await run(site,{source:uiSrc,isotope:uiIso,emitHours:uiEmit,hours:uiHours}); }catch(_){ r=null; }
-        if(r&&r.ok) renderPanel(LL('Reach','到達','Reichweite','Дальность','Alcance')+' ~'+r.reachKm+' km · '+LL('wind','風','Wind','ветер','viento')+' '+r.windSpeed.toFixed(1)+' m/s');
+        let r=null; try{ r=await run(site,{source:uiSrc,isotope:uiIso,emitHours:uiEmit,hours:uiHours,releaseHeight:(uiRiseTouched?uiRise:presetRise())}); }catch(_){ r=null; }
+        /* ⚠ (#R568) the status line reports the RUN: how far material actually got, the wind AT THE
+           RELEASE HEIGHT rather than at 10 m, and — when it happens — that a share of the plume left
+           the modelled domain, which is the one thing deciding whether the map under it is complete. */
+        if(r&&r.ok){ let ln=LL('Reach','到達','Reichweite','Дальность','Alcance')+' ~'+r.reachKm+' km · '+LL('wind','風','Wind','ветер','viento')+' '+r.windSpeed.toFixed(1)+' m/s @'+Math.round(r.windHeight)+' m';
+          if(r.escapedMassFrac>0.02) ln+=' · '+Math.round(r.escapedMassFrac*100)+'% '+LL('left the modelled area','領域外へ流出','außerhalb','вышло за область','fuera del área');
+          renderPanel(ln); }
         else renderPanel(LL('Could not run — the live wind field was unavailable.','実行できませんでした（風のデータを取得できません）。','Nicht möglich — keine Winddaten.','Не удалось — нет данных о ветре.','No se pudo — sin datos de viento.')); };
       try{ if(typeof HOST.makeDraggable==='function') HOST.makeDraggable(p,p.querySelector('.rad-head')); }catch(_){}
       return p; }
@@ -272,7 +362,11 @@ window.IntMapModules.radiation=function(HOST){
        lights when EITHER is true — a panel the reader opened, or a plume Atlas drew without one. */
     const isOpen=()=>{ if(panelOpen()) return true; try{ const d=GE().layers.sourceData(SRC); return !!(d&&d.features&&d.features.length); }catch(_){ return false; } };
     return { run, clear, isOpen, openPanel, closePanel,
-      close:()=>{ if(!isOpen()) return false; closePanel(); clear(); return true; }, ISOTOPES, SOURCES, ZONES, resolveSite,
+      close:()=>{ if(!isOpen()) return false; closePanel(); clear(); return true; }, ISOTOPES, SOURCES, resolveSite,
+      /* (#R568) the two the console needs to stop guessing with: which ladder this isotope has, and
+         what THIS accident released of THIS nuclide. Nothing outside read `ZONES` (checked), and it
+         could not have stayed correct — there is no single ladder any more. */
+      zonesFor:RAD.zonesFor, sourceTerm:RAD.sourceTerm,
       /* ⚠ (#R214) THE ONLY WAY TO RESTORE A PLUME IS TO RUN IT AGAIN. There is no stored field to
          reopen: the answer is a Lagrangian solve over a LIVE wind field, so the state of this
          module is the QUESTION, not the picture. `set` therefore re-runs — which is the honest

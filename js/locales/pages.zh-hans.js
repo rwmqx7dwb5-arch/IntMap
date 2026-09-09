@@ -478,7 +478,7 @@ window.IntMapPageI18N.define('zh-hans', {
     "Country facts — IANA Time Zone Database (standard-time offsets, build time only)": "国家详细卡片上的标准时间 UTC 偏移（data/country-facts.json），在建置阶段自 IANA 时区数据库推导：数据库归属于该国的每一个时区，都解析为其标准时间偏移，而非今日实际采行的时间。公有领域；由 scripts/build-country-facts.mjs 产生。",
     "NASA FIRMS": "活跃火点与热异常",
     "RainViewer": "实时降水雷达——最近两小时，每 10 分钟一张，可播放动画",
-    "Open-Meteo": "海拔高度（含 Atlas 标示海平面上下范围所用的 Copernicus-DEM 网格）、风场、右键实时天气弹出窗口（当前实况＋5 日预报），以及小工具与 Atlas 整合分析所用的实时天气／空气质量／海温／高度数值；还有驱动 Atlas 辐射扩散模拟的时空风场、气温与降水场。动画风场与预报气象图层改读 Open-Meteo 的空间模式文件，而且每个图层各自选择要读哪一个模式——ECMWF IFS HRES（约 9 公里、6 天）、NOAA GFS（约 13 公里、16 天）或 DWD ICON（约 13 公里、5 天）；色面、粒子与地点值全部来自同一个模式的同一次初始时刻与同一有效时刻，而该模式未发布的变量会附上理由拒绝，不会画出空白的地图",
+    "Open-Meteo": "海拔高度（含 Atlas 标示海平面上下范围所用的 Copernicus-DEM 网格）、风场、右键实时天气弹出窗口（当前实况＋5 日预报），以及小工具与 Atlas 整合分析所用的实时天气／空气质量／海温／高度数值；还有驱动放射性物质扩散模拟的时空场——两层巢状网格上 10／80／180 米的风、降水、气温与边界层高度（起始时间为过去时则改用 ERA5 文件库的 10／100 米风，该数据没有边界层高度）。动画风场与预报气象图层改读 Open-Meteo 的空间模式文件，而且每个图层各自选择要读哪一个模式——ECMWF IFS HRES（约 9 公里、6 天）、NOAA GFS（约 13 公里、16 天）或 DWD ICON（约 13 公里、5 天）；色面、粒子与地点值全部来自同一个模式的同一次初始时刻与同一有效时刻，而该模式未发布的变量会附上理由拒绝，不会画出空白的地图",
     "Open-Meteo Marine": "潮汐图层所用、相对平均海平面的逐时海面高度；以及 洋流图层绘制箭头与判定暖流／寒流所依据的洋流流速、流向与海表温度（温度会与同一模式在沿流上游约 110 公里处的值比较）",
     "MET Norway (Locationforecast)": "当 Open-Meteo 无法使用时，定点天气窗口自动改用的备援来源（NLOD/CC-BY 4.0）",
     "OSRM (Open Source Routing Machine)": "Atlas 的道路路线规划——在 OpenStreetMap 道路数据上计算开车／步行／单车的逐步导航路线（公开示范服务器 router.project-osrm.org 与 routing.openstreetmap.de；ODbL）",
