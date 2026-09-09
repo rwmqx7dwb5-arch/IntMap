@@ -108,7 +108,10 @@ test('#R250 ③ the far raster\'s tile budget is its own, and a missing tile cha
     'the far site term dropped #R190\'s 2 km rule — a flattened gradient biases toward the softest bin');
 
   /* the pin is released — buildFar runs inside buildField's try, whose finally releases it */
-  assert.match(s, /finally \{ try\{ HOST\.releaseDEMHold\(\); \}catch\(_\)\{\}/,
+  /* ⚠ (#R572) the release now names the lease THIS build opened, so it takes an argument. That the
+     release happens in the finally is the claim; which lease it names is asserted by
+     tests/r572-checks ⑩, which parses js/seismic.js rather than spelling it. */
+  assert.match(s, /finally \{ try\{ HOST\.releaseDEMHold\([^)]*\); \}catch\(_\)\{\}/,
     'the DEM pin is no longer released — #R221\'s eviction defect returns');
 });
 

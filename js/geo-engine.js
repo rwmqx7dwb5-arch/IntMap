@@ -1199,15 +1199,15 @@ function _m(){ return window.__imap||null; }
       }
       return { on:CMD.on, detail:CMD.detail, phase:CMD.phase, skip:Object.assign({},CMD.skip) };
     },
-    sceneStats(){ const m=_m();
-      try{
-        const st=m&&m.getStyle&&m.getStyle(); if(!st) return null;
-        let tiles=0;
-        try{ const sc=m.style&&m.style.sourceCaches; if(sc) for(const k in sc){ const t=sc[k]&&sc[k]._tiles; if(t) tiles+=Object.keys(t).length; } }catch(_){}
-        return { layers:st.layers.length,
-                 visible:st.layers.filter(l=>!l.layout||l.layout.visibility!=='none').length,
-                 sources:Object.keys(st.sources).length, tiles,
-                 ids:st.layers.filter(l=>!l.layout||l.layout.visibility!=='none').map(l=>l.id) };
+    sceneStats(){ const m=_m(); if(!m) return null;   /* ⚠⚠ (#R572) counts WITHOUT copying the style, and a `tiles` that answers null rather than 0 when the tile holder is neither of the two below (5.x tileManagers · ≤4.x sourceCaches). The measurements, and why each one is shaped this way, are in js/perf-hud.js's header — the shell has a line ceiling (tests/r168 #8) and this file is in it. */
+      try{ const S=m.style||{}; let tiles=null,held=null,srcN=null,tvia='unknown';
+        for(const [own,live,cache] of [[S.tileManagers,(c)=>c._inViewTiles&&c._inViewTiles._tiles,(c)=>c._outOfViewCache&&c._outOfViewCache.order],[S.sourceCaches,(c)=>c._tiles,(c)=>c._cache&&c._cache.order]]){
+          if(!own) continue; const keys=Object.keys(own); tiles=0; held=0; srcN=keys.length; tvia='private';
+          for(const k of keys){ const c=own[k]; if(!c) continue; let a=null,b=null; try{ a=live(c); }catch(_){} try{ b=cache(c); }catch(_){} if(a) tiles+=Object.keys(a).length; if(b&&b.length!=null) held+=b.length; } break; }
+        let all=null; if(typeof m.getLayersOrder==='function'&&typeof m.getLayoutProperty==='function') try{ all=m.getLayersOrder(); }catch(_){ all=null; }
+        if(all&&srcN!=null){ const ids=[]; for(const id of all){ let v=true; try{ v=m.getLayoutProperty(id,'visibility')!=='none'; }catch(_){} if(v) ids.push(id); } return { layers:all.length, visible:ids.length, sources:srcN, tiles, tilesHeld:held, tilesVia:tvia, ids, allIds:all, via:'api' }; }
+        const st=m.getStyle&&m.getStyle(); if(!st) return null; const vis=st.layers.filter(l=>!l.layout||l.layout.visibility!=='none');   /* the fallback, and it says so */
+        return { layers:st.layers.length, visible:vis.length, sources:Object.keys(st.sources).length, tiles, tilesHeld:held, tilesVia:tvia, ids:vis.map(l=>l.id), allIds:st.layers.map(l=>l.id), via:'style-copy' };
       }catch(_){ return null; } },
     /* (#R322) the second operation with no guard of its own — and the one whose comparison is not a
        value comparison, because feature state MERGES (skipState, js/geo-command-log.js). */

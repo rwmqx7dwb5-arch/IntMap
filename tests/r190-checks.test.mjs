@@ -182,8 +182,11 @@ test('R190 seismic: opacity, a compute button, LOS-style progress, and no borrow
   /* (#R221) the call gained the tile-grid warm list, a deadline that scales with the tile count, and
      the PIN that stops the field evicting its own tiles. The progress callback — which is what this
      assertion is about — is unchanged. */
-  assert.match(src, /await warmDEMTiles\(warm,z,[^,]+,\(f\)=>prog\(6\+34\*\(\+f\|\|0\)\),true\)/,
-    'driven by the DEM warm’s own progress');
+  /* ⚠ (#R572) THE PIN IS A LEASE NOW, so the fifth argument is the build's own token rather than
+     the literal `true`. What this line asserts — the progress callback is the warm-up's own, and the
+     call asks for a pin — is unchanged; only the spelling it used to fix has moved. */
+  assert.match(src, /await warmDEMTiles\(warm,z,[^,]+,\(f\)=>prog\(6\+34\*\(\+f\|\|0\)\),[^)]+\)/,
+    'driven by the DEM warm’s own progress, with a hold');
   /* the shared draw tool is borrowed without its panel.
      ⚠ (#R207) THIS PINNED THE CALL SITE'S SHAPE, NOT THE FACT. #R207 gave the same call a second
      option (`onFinish`, so the drawn loop becomes the rupture without a second button press) and

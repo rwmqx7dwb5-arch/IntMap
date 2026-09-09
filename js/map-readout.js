@@ -421,12 +421,198 @@ window.IntMapModules.mapReadout=function(HOST){
      A build now PINS the tiles it is depending on. Pinned keys are exempt from the trim and the
      ceiling floats above them, so an ordinary mouse-move over the map still evicts normally and
      nothing about the steady state changes — the pin exists only between `hold` and `release`. */
-  const _demHold=new Set();
-  function _demCap(){ return HOST._DEM_CACHE_MAX+_demHold.size; }
-  function _demCacheTrim(){ if(_demCache.size<=_demCap()) return;
-    for(const k of _demCache.keys()){ if(_demCache.size<=_demCap()) break;
-      if(_demHold.has(k)) continue;                       /* a build is reading this one */
-      const v=_demCache.get(k); if(v==='loading') continue; _demCache.delete(k); } }
+  /* ══ ⚠⚠⚠ (#R572) THE CEILING WAS NOT A CEILING ═══════════════════════════════════════════════
+     「スマホでズームやホバーが遅い。操作によってはブラウザが落ちる。」
+
+     #R221 pinned the tiles a build depends on and #R223 shrank a cached tile from half a megabyte
+     of canvas to one 262,144-byte Float32Array. Neither closed the thing that lets this cache go
+     PAST ITS OWN NUMBER, and there were three doors, all of them in the control flow rather than in
+     the arithmetic:
+
+       · the trim skipped every entry whose value was 'loading' and NOTHING bounded how many
+         requests could be outstanding, so a build that asks for 480 tiles registers 480 entries the
+         trim is forbidden to touch. They are exempt from the trim, not from memory — each becomes a
+         256 KiB Float32Array the moment its image lands.
+       · the completion path never trimmed. Those entries stayed resident after the build that
+         wanted them was over, until some later call happened to ask for an uncached tile — the only
+         thing that ran the trim at all.
+       · the trim ran BEFORE the insert, so the steady state was the ceiling plus one.
+
+     ⚠ AND NOTHING BOUNDED THE PEAK. These requests are bare Image objects; they do not go through
+     the renderer's image queue (js/app-body.js _imgConcurrency), so one Image, one in-flight
+     response and one decode existed per REQUESTED tile rather than per outstanding one.
+
+     The store below is the same cache with its states written down — QUEUED (wanted, not yet asked
+     for), LOADING (asked, in flight), READY (a Float32Array), FAILED (asked, got nothing; expires
+     so the next build asks again, #R221) — with the ceiling checked on every transition, after the
+     insert rather than before. Admission is bounded in both dimensions: how much may be RESIDENT,
+     and how much may be OUTSTANDING.
+
+     ⚠ LEASES, NOT ONE GLOBAL FLAG. #R221's pin was a single Set emptied by a single
+     releaseDEMHold(), so of two overlapping builds the first to finish unpinned the other's tiles.
+     A lease is a token with its own key set and a refcount per key; releasing one cannot unpin what
+     another still holds. Every warmDEMTiles call now takes one for its own duration, so the loop
+     #R221 named — a warm-up evicting the tiles it warmed a moment earlier — is closed for the six
+     callers that never passed `hold`, not only for the intensity field. */
+  /* ══ THE TWO CEILINGS, AND WHY THEY ARE THOSE NUMBERS ══════════════════════════════════════════
+     js/app-body.js declares both, beside each other, because they are one budget:
+
+       _DEM_CACHE_MAX   what may stay resident for ordinary browsing — 140 tiles on a phone, 560
+                        otherwise. At 262,144 B a tile that is 35 MiB / 140 MiB.
+       _DEM_LEASE_MAX   how far that ceiling may FLOAT while a build pins — 608 / 2,112, i.e.
+                        152 MiB / 528 MiB on top. #R221 exempted a build's tiles from the trim and
+                        #R223 measured what one costs, but nothing ever said HOW MANY may be exempt,
+                        so the ceiling was whatever the last caller had asked for.
+
+     ⚠ 608 and 2,112 are not chosen: they are the working set ONE intensity field pins, which is
+     js/seismic.js TILE_BUDGET (480 / 1,600, the main field) plus TILE_BUDGET_FAR (128 / 512, the
+     far annulus) — two windows out of one lease. Granting less would refuse the field tiles it has
+     already decided it needs, and it would paint the concentric rings #R221 was about.
+     ⚠ EXPIRES if either of those budgets moves. tests/r572-checks ⑨ re-derives this from them, so
+     the two files cannot drift apart. */
+  const DEM_TILE_BYTES=65536*4;      /* one decoded tile: 256×256 Float32. EXACT, not an estimate */
+  const _demHold=new Map();          /* key → how many live leases pin it */
+  const _demLeases=new Map();        /* lease token → the Set of keys that lease pins */
+  const _demWant=new Map();          /* key → {z,x,y,lng,lat,onReady} for a request not yet started */
+  const _demQueue=[];                /* keys admitted but not yet requested, oldest first */
+  let _demLeaseSeq=0, _demInflight=0;
+  const _demStats={ requested:0, decoded:0, errors:0, evicted:0, dropped:0, stale:0, timedOut:0, refusedPin:0, peakInflight:0, peakResident:0 };
+  /* OUTSTANDING REQUESTS — derived, not chosen. A browser opens at most six connections to one host
+     over HTTP/1.1, and #R223 spread this DEM over four host names for exactly that reason, so this
+     is the number the network was going to run anyway: capping here changes the PEAK (Images,
+     responses and decodes alive at once) and not the throughput.
+     ⚠ Expires if _DEM_HOSTS changes size or the transport stops being HTTP/1.1. 正本: this line. */
+  const _demMaxInflight=()=>Math.max(1,_DEM_HOSTS.length*6);
+  /* ⚠ A SLOT MUST NOT BE HELD FOR EVER. Bounding how many requests are outstanding is only safe if
+     every one of them ends: an <img> that neither loads nor errors (a connection a phone leaves open
+     across a network change) would otherwise hold its slot for the session and, 24 of them, stop the
+     DEM entirely — a failure the unbounded version could not have. This is the LONGEST deadline any
+     caller in this repository passes to warmDEMTiles (45,000 ms, js/viewshed.js), so when it fires
+     nobody is still waiting for the tile and the slot is certainly wasted. The request is not
+     cancelled — it is disowned, and the guard in _demStart discards it if it ever lands.
+     ⚠ Expires if a caller starts passing a longer deadline. 正本: this line. */
+  const DEM_REQUEST_TIMEOUT_MS=45000;
+  /* HOW MUCH ONE BUILD MAY PIN, on top of the browsing budget. 正本 is js/app-body.js, beside the
+     _DEM_CACHE_MAX it sits with. It has to be at least as large as the working set the intensity
+     field pins (js/seismic.js TILE_BUDGET + TILE_BUDGET_FAR — the two windows of one build share one
+     lease), or the field would be refused tiles it needs and paint the concentric rings #R221 was
+     about; tests/r572-checks re-derives it from those two numbers so the pair cannot drift apart.
+     ⚠ Absent or zero means NO PIN IS GRANTED, which is the honest reading of "this shell does not
+     publish a ceiling" — not "pin as much as you like". */
+  const _demLeaseMax=()=>{ const v=+HOST._DEM_LEASE_MAX; return (v>0)?v:0; };
+  const _demPending=v=>(v==='queued'||v==='loading');
+  function _demCap(){ return HOST._DEM_CACHE_MAX+Math.min(_demHold.size,_demLeaseMax()); }
+  /* Ready tiles are the bytes; a queued entry is a key and a loading one is a request. */
+  function _demBytes(){ let n=0; _demCache.forEach(v=>{ if(_demPix(v)) n+=DEM_TILE_BYTES; }); return n; }
+  function _demDrop(k,v){
+    _demCache.delete(k);
+    if(v==='queued'){ _demStats.dropped++; _demWant.delete(k); const i=_demQueue.indexOf(k); if(i>=0) _demQueue.splice(i,1); }
+    else if(v==='loading'){ _demStats.dropped++; }   /* the request lands and _demStart discards it */
+    else _demStats.evicted++;
+  }
+  /* ⚠ READY FIRST, IN FLIGHT LAST. A ready tile is 256 KiB and a loading one is a pending request,
+     so evicting ready ones frees the memory; dropping an in-flight entry frees nothing yet and
+     makes the app ask for it again, which is the re-fetch loop this must not become. That pass runs
+     only when nothing else can give — and never over a leased key, in either pass. */
+  function _demCacheTrim(){
+    if(_demCache.size<=_demCap()) return;
+    for(const k of Array.from(_demCache.keys())){
+      if(_demCache.size<=_demCap()) break;
+      if(_demHold.has(k)) continue;                       /* a lease is reading this one */
+      const v=_demCache.get(k); if(v==='loading') continue;
+      _demDrop(k,v);
+    }
+    if(_demCache.size<=_demCap()) return;
+    for(const k of Array.from(_demCache.keys())){
+      if(_demCache.size<=_demCap()) break;
+      if(_demHold.has(k)) continue;
+      const v=_demCache.get(k); if(v!=='loading') continue;
+      _demDrop(k,v);
+    }
+  }
+  function _demPump(){
+    while(_demInflight<_demMaxInflight()&&_demQueue.length){
+      const key=_demQueue.shift();
+      if(_demCache.get(key)!=='queued') continue;         /* dropped while it waited its turn */
+      _demStart(key);
+    }
+  }
+  function _demStart(key){
+    const w=_demWant.get(key);
+    if(!w){ _demCache.delete(key); return; }
+    _demCache.set(key,'loading'); _demWant.delete(key);
+    _demInflight++; _demStats.requested++;
+    if(_demInflight>_demStats.peakInflight) _demStats.peakInflight=_demInflight;
+    if(_demCache.size>_demStats.peakResident) _demStats.peakResident=_demCache.size;
+    const img=_demNewImage(); img.crossOrigin='anonymous';
+    let settled=false;
+    const settle=()=>{ if(settled) return false; settled=true; clearTimeout(tmo); _demInflight--; return true; };
+    const tmo=setTimeout(()=>{ if(!settle()) return; _demStats.timedOut++;
+      if(_demCache.get(key)==='loading'){ _demCache.delete(key); _demStats.dropped++; }
+      _demPump(); },DEM_REQUEST_TIMEOUT_MS);
+    /* ⚠ A REQUEST THAT OUTLIVED ITS ENTRY MUST NOT RESURRECT IT. If the trim dropped this key while
+       the image was in flight, the answer is discarded rather than inserted above the ceiling —
+       otherwise cancelling work would be a way of putting data back (#R572). */
+    const live=()=>_demCache.get(key)==='loading';
+    /* (#R223) decode straight to elevations and let the <img> go — see _decodeTile */
+    img.onload=()=>{
+      /* the pending record's fields under the names the rest of this file uses — the void chase
+         below is #R265's statement unchanged, and it should not have to be re-read to be recognised */
+      const lng=w.lng, lat=w.lat, onReady=w.onReady, z=w.z;
+      let r=null; try{ r=live()?_decodeTile(img):null; }catch(_){ r=null; }
+      if(!settle()) return;
+      if(!live()){ _demStats.stale++; _demPump(); return; }
+      _demCache.set(key,(r&&r.el)||null);
+      if(r&&r.el) _demStats.decoded++; else _demStats.errors++;
+      _demCacheTrim();                                    /* ⚠ THE COMPLETION PATH TRIMS. #R221's did not. */
+      _demPump();
+      /* (#R265) a tile with holes in it: ask for its PARENT now, so the fallback below has real
+         ground to read by the time anything samples this place. One extra tile per holed tile. */
+      if(r&&r.voids&&z>DEM_VOID_MIN_Z){ try{ demElevAt(lng,lat,onReady,z-1,0); }catch(_){} }
+      if(r&&r.el&&onReady){ try{ onReady(); }catch(_){} }
+    };
+    /* ⚠ (#R221) A FAILED TILE USED TO BE DEAD FOR THE WHOLE SESSION. null is the "asked and got
+       nothing" marker, and nothing ever cleared it — so one dropped request (a phone changing
+       network, a 503 from the tile host) left a permanent hole that every later intensity field
+       painted with the fallback site class. The marker is kept, so the field being built right now
+       still sees a definite answer rather than waiting, and it EXPIRES a few seconds later so the
+       next build asks again. Bounded: one retry per tile per 4 s, never a loop. */
+    img.onerror=()=>{
+      if(!settle()) return;
+      if(!live()){ _demStats.stale++; _demPump(); return; }
+      _demCache.set(key,null); _demStats.errors++;
+      setTimeout(()=>{ if(_demCache.get(key)===null) _demCache.delete(key); },4000);
+      _demCacheTrim(); _demPump();
+    };
+    img.src=_demURL(w.z,w.x,w.y);
+  }
+  /* the one place a DEM request is constructed, so a test can watch what this store actually asks
+     for rather than reading the source and believing it (#R505) */
+  function _demNewImage(){ return new Image(); }
+  function _demLeaseOpen(){ const t='dem'+(++_demLeaseSeq); _demLeases.set(t,new Set()); return t; }
+  function _demLeasePin(token,key){
+    const set=_demLeases.get(token); if(!set||set.has(key)) return false;
+    /* ⚠ the pin has a ceiling of its own. Without one, "exempt from the trim" is the same sentence
+       as "unbounded", which is what #R221 shipped. */
+    if(!_demHold.has(key)&&_demHold.size>=_demLeaseMax()){ _demStats.refusedPin++; return false; }
+    set.add(key); _demHold.set(key,(_demHold.get(key)||0)+1); return true;
+  }
+  function _demLeaseClose(token){
+    const set=_demLeases.get(token); if(!set) return false;
+    _demLeases.delete(token);
+    set.forEach(k=>{ const n=(_demHold.get(k)||0)-1; if(n>0) _demHold.set(k,n); else _demHold.delete(k); });
+    _demCacheTrim();
+    return true;
+  }
+  /* What is actually retained, for anything that reports memory. ⚠ bytes counts DECODED tiles only:
+     a queued entry is a key and a loading one is a request, and neither is 256 KiB yet. */
+  function demStoreStats(){
+    let ready=0,queued=0,loading=0,failed=0;
+    _demCache.forEach(v=>{ if(v==='queued') queued++; else if(v==='loading') loading++; else if(_demPix(v)) ready++; else failed++; });
+    return Object.assign({ entries:_demCache.size, ready, queued, loading, failed, bytes:_demBytes(),
+      held:_demHold.size, leases:_demLeases.size, cap:_demCap(), browseCap:HOST._DEM_CACHE_MAX,
+      leaseCap:_demLeaseMax(), inflight:_demInflight, maxInflight:_demMaxInflight(), tileBytes:DEM_TILE_BYTES },_demStats);
+  }
   /* ══ ⚠⚠ (#R223) A CACHED TILE IS 65,536 ELEVATIONS, NOT A CANVAS AND AN RGBA COPY ═══════════════
      「モバイル版がまだ劇的に遅い。…ブラウザが落ちることもある。」
 
@@ -535,27 +721,18 @@ window.IntMapModules.mapReadout=function(HOST){
     if(xi<0||yi<0||xi>=tl.n||yi>=tl.n||lat>85||lat<-85) return null;
     const key=z+'/'+xi+'/'+yi; let c=_demCache.get(key);
     if(c===undefined){
+      /* (#R572) ADMIT, then trim, then pump. The old order asked for the tile immediately and
+         trimmed BEFORE inserting, so the cache settled at the ceiling plus one and a burst of
+         requests was a burst of Image objects. The tile is now queued, the ceiling is applied to a
+         cache that already contains it, and _demPump starts it when a connection is free. */
+      _demCache.set(key,'queued');
+      _demWant.set(key,{ z, x:xi, y:yi, lng, lat, onReady });
+      _demQueue.push(key);
       _demCacheTrim();
-      _demCache.set(key,'loading');
-      const img=new Image(); img.crossOrigin='anonymous';
-      /* (#R223) decode straight to elevations and let the <img> go — see _decodeTile */
-      img.onload=()=>{ const r=_decodeTile(img); _demCache.set(key,(r&&r.el)||null);
-        /* (#R265) a tile with holes in it: ask for its PARENT now, so the fallback below has real
-           ground to read by the time anything samples this place. One extra tile per holed tile. */
-        if(r&&r.voids&&z>DEM_VOID_MIN_Z){ try{ demElevAt(lng,lat,onReady,z-1,0); }catch(_){} }
-        if(r&&r.el&&onReady) onReady(); };
-      /* ⚠ (#R221) A FAILED TILE USED TO BE DEAD FOR THE WHOLE SESSION. `null` is the "asked and got
-         nothing" marker, and nothing ever cleared it — so one dropped request (a phone changing
-         network, a 503 from the tile host) left a permanent hole that every later intensity field
-         painted with the fallback site class. The marker is kept, so the field being built right now
-         still sees a definite answer rather than waiting, and it EXPIRES a few seconds later so the
-         next build asks again. Bounded: one retry per tile per 4 s, never a loop. */
-      img.onerror=()=>{ _demCache.set(key,null);
-        setTimeout(()=>{ if(_demCache.get(key)===null) _demCache.delete(key); },4000); };
-      img.src=_demURL(z,xi,yi);
+      _demPump();
       return null;
     }
-    if(c==='loading'||c===null) return null;
+    if(_demPending(c)||c===null) return null;
     /* (#R19) read from the per-tile decoded buffer — no per-sample getImageData
        (#R223) …which is now a Float32Array of metres, so the read is one index */
     const d=_demPix(c); if(!d) return null;
@@ -589,20 +766,53 @@ window.IntMapModules.mapReadout=function(HOST){
   function _demZoomForSpan(km){ return Math.max(5, Math.min(13, Math.round(Math.log2(481000/Math.max(1,km))))); }
   /* (#R18) onProgress(frac 0..1) lets callers (Line of Sight / elevation profile) show a real % + bar
      while the covering DEM tiles load — the slow part of a viewshed ("計算の進捗をパーセントで表示"). */
-  /* (#R221) `hold` pins every tile this call warms until `releaseDEMHold()` — see _demCacheTrim.
-     ⚠ The caller MUST release in a `finally`, or the cache keeps growing for the rest of the session. */
+  /* (#R221) `hold` pins every tile this call warms so the trim cannot take them back.
+     (#R572) THE PIN IS A LEASE NOW, and every call takes one:
+       · hold falsy  → the lease lasts exactly as long as this call and closes itself when the
+                       promise settles. The six callers that never passed `hold` (the viewshed, the
+                       elevation profile, the terrain sculptor, the insolation model, the tsunami
+                       refinement, the routing profile) get the same protection the intensity field
+                       asked for in #R221 — a warm-up can no longer evict the tiles it just warmed.
+       · hold set    → the lease OUTLIVES the call, because the intensity field keeps reading these
+                       tiles through demSnapshot afterwards. Pass a token from demLeaseOpen() and
+                       close it with releaseDEMHold(token) in a `finally`; passing `true` opens an
+                       anonymous one that releaseDEMHold() with no argument closes.
+     ⚠ A lease that is never closed is a leak, exactly as before. What is no longer possible is one
+     build's release unpinning ANOTHER build's tiles: keys are refcounted per lease. */
   function warmDEMTiles(points, z, timeoutMs, onProgress, hold){
     const keys=new Set();
     points.forEach(p=>{ if(!p) return; const tl=_ll2tile(p[0],p[1],z); const xi=Math.floor(tl.x), yi=Math.floor(tl.y); if(xi>=0&&yi>=0&&xi<tl.n&&yi<tl.n){ keys.add(z+'/'+xi+'/'+yi); } });
-    if(hold) keys.forEach(k=>_demHold.add(k));
-    /* ⚠ PIN FIRST, REQUEST SECOND. `demElevAt` calls `_demCacheTrim` before it inserts, so asking
-       for the tiles while building the key set means the first requests of a big field are evicted
-       by its own later ones — the exact loop this pin exists to break. */
+    const named=(typeof hold==='string'&&hold);
+    const own=!hold;                       /* no hold asked for → this call owns the lease it opens */
+    /* a named lease is created on first use: the caller's own name for it IS the token, so nothing
+       has to be handed out and two warm-ups of one build share it by saying the same name */
+    const token=named?(_demLeases.has(hold)?hold:(_demLeases.set(hold,new Set()),hold)):_demLeaseOpen();
+    if(!own&&!named) _demAnon.add(token);   /* hold:true (the pre-#R572 shape) → releaseDEMHold() closes it */
+    /* ⚠ PIN FIRST, REQUEST SECOND. The trim runs on every admission, so asking for the tiles while
+       the key set is still being built means the first requests of a big field are evicted by its
+       own later ones — the exact loop this pin exists to break. */
+    keys.forEach(k=>_demLeasePin(token,k));
     points.forEach(p=>{ if(p) demElevAt(p[0],p[1],null,z); });
     const total=keys.size||1;
-    return new Promise(res=>{ const t0=Date.now(); (function poll(){ let pending=0; keys.forEach(k=>{ const c=_demCache.get(k); if(c===undefined||c==='loading') pending++; }); if(onProgress){ try{ onProgress((total-pending)/total); }catch(_){} } if(pending===0||Date.now()-t0>(timeoutMs||9000)) res(); else setTimeout(poll,90); })(); });
+    const done=()=>{ if(own) _demLeaseClose(token); };
+    return new Promise(res=>{ const t0=Date.now(); (function poll(){
+      let pending=0;
+      /* ⚠ a key the trim dropped is SETTLED, not pending. Counting a dropped key as pending is how
+         a warm-up waits out its whole timeout for a tile nobody is going to fetch. */
+      keys.forEach(k=>{ const c=_demCache.get(k); if(_demPending(c)) pending++; });
+      if(onProgress){ try{ onProgress((total-pending)/total); }catch(_){} }
+      if(pending===0||Date.now()-t0>(timeoutMs||9000)){ done(); res(); } else setTimeout(poll,90);
+    })(); });
   }
-  function releaseDEMHold(){ _demHold.clear(); _demCacheTrim(); }
+  const _demAnon=new Set();
+  /* (#R572) with a token, releases THAT lease; with none, releases every anonymous lease — which is
+     what `warmDEMTiles(...,true)` opens, so the pre-#R572 call shape still means what it meant. */
+  function releaseDEMHold(token){
+    if(token){ _demAnon.delete(token); return _demLeaseClose(token); }
+    let n=0; Array.from(_demAnon).forEach(t=>{ _demAnon.delete(t); if(_demLeaseClose(t)) n++; });
+    if(!n) _demCacheTrim();
+    return n>0;
+  }
   /* (#R221) ONE POINT PER TILE over the rectangle demSnapshot will read — INCLUDING the ±1 tile
      margin it expands by. The intensity field used to warm a fixed 33 × 33 lattice of positions,
      which is neither necessary (many samples land in the same tile) nor sufficient (a field whose
@@ -946,5 +1156,5 @@ window.IntMapModules.mapReadout=function(HOST){
      `tiles` entirely void, `holedTiles` with any hole, `cells` no-data samples decoded, `fallbacks`
      samples answered one level down, `unfilled` samples no level could answer. */
   function demVoidStats(){ return Object.assign({},_demVoid); }
-  return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demTilePoints, demVoidStats, demZoomForMap, releaseDEMHold, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles };
+  return { _demZoomForSpan, demElevAt, demElevBilinear, demSnapshot, demTilePoints, demVoidStats, demZoomForMap, releaseDEMHold, fetchBathymetry, fmtElevVal, fmtLL, handleMapClick, refreshGrid, renderCoordReadout, setGrid, showMeasureTip, updateCompass, updateCoord, updateLayerReadout, warmDEMTiles, demStoreStats };
 };
