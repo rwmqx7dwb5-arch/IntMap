@@ -358,7 +358,21 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
    clicking an era subdivision highlights the RECORD's polygon rather than today's namesake, which is
    the defect the round was reported for. Nothing was paid out of a stale-high entry: none has been
    measured that this round may take from (#R405's rule). */
-const TOTAL_BUDGET_S = 4695;            /* 78.3 min — 4,669 (#R531) + 26 (#R564: tests/r530.spec.js 9 -> 35) */
+/* ⚠ (#R575) THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT — 4,695 -> 4,700 (+5 s) — for
+   tests/r575.spec.js, the pandemic simulator's browser half. The arithmetic moved to
+   js/pandemic-model.js this round and 13 node checks measure it there, so this spec asserts only
+   what node cannot see at all: that the module is actually imported by the running app, that a map
+   click reaches the engine, that the day advances, and that the dots and the HUD name the SAME two
+   populations (the old code drew E+I and printed «Infected = I»).
+     · MEASURED the way #R510 and #R530 measured theirs — warm server, one worker, worker-scoped
+       page, the reporter's own test-body duration: 3.167 s.
+     · ENTERED AS 5, the conservative end of #R508's calibration (a local second has been worth
+       1.4–2.4 table-seconds on this machine).
+   ⚠ THE CORE CEILING DID NOT MOVE and could follow the floor down: the gate is 28 s of entries
+   against BUDGET_S = 38. Not claimed here — the headroom is tests/r564.spec.js leaving the gate as
+   `currentRoundSpec()` passes to this file, which is the price rule's doing and not this round's
+   saving (#R510's shape). */
+const TOTAL_BUDGET_S = 4700;            /* 78.3 min — 4,695 (#R564) + 5 (#R575: tests/r575.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

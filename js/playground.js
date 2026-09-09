@@ -20,6 +20,11 @@
  *  Every factory is called at the exact spot its block used to occupy, so execution order is
  *  unchanged. The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
+/* (#R575) The Pandemic Simulator's arithmetic — a pure, seeded, node-testable SEIR metapopulation
+   engine. Static, not lazy: this whole file is already behind js/lazy-modules.js's playground
+   door, so the model is downloaded exactly when the playground is and never before. */
+import { PANDEMIC_PRESETS, createPandemicModel, scatterCases } from './pandemic-model.js';
+
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.playground=function(HOST){
@@ -63,7 +68,7 @@ window.IntMapModules.playground=function(HOST){
       const modes=[
         {svg:SV.globe,bg:'linear-gradient(135deg,#0a84ff,#34c759)',t:(window.IntMapLang.t(HOST.lang,'Satellite Drop','サテライトドロップ','Satelliten-Absprung','Спутниковый десант','Salto por satélite')),d:(window.IntMapLang.t(HOST.lang,'A satellite where-am-I geography game — dropped somewhere on Earth, guess your location.','衛星写真からスタート地点を推理する地理ゲーム。ランダムな地点へ飛び、現在地を当てる。','Ein Satelliten-Geografiespiel: irgendwo auf der Erde abgesetzt — errate deinen Standort.','Географическая игра «где я»: вас забрасывает в случайную точку Земли по спутниковому снимку — угадайте, где вы.','Un juego de geografía «dónde estoy»: te suelta en algún punto de la Tierra a partir de una imagen satelital — adivina tu ubicación.')),go:()=>{ ov.remove(); window._pgWorldExplorer&&window._pgWorldExplorer(); }},
         {svg:SV.plane,bg:'linear-gradient(135deg,#5e5ce6,#0a84ff)',t:window.IntMapLang.t(HOST.lang,"Flight Simulator","フライトシミュレーター","Flugsimulator","Авиасимулятор","Simulador de vuelo"),d:window.IntMapLang.t(HOST.lang,"A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.","6自由度の本格フライトモデル。機体と空港を選び、実際の地形の上を滑走路から離陸・着陸。","Ein vollständiges 6-DOF-Flugmodell — Flugzeug und Flughafen wählen, dann über echtem 3-D-Gelände starten und landen.","Полная модель полёта с 6 степенями свободы — выберите самолёт и аэропорт, взлетайте и садитесь над настоящим 3-D-рельефом.","Un modelo de vuelo completo de 6 grados de libertad: elija avión y aeropuerto y despegue y aterrice sobre el relieve 3-D real."),go:()=>{ ov.remove(); window.IntMapLazy.need('flightSim').then(()=>{ try{ window.IntMapFlightSim&&window.IntMapFlightSim.setup&&window.IntMapFlightSim.setup(); }catch(_){} }); }},
-        {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:window.IntMapLang.t(HOST.lang,"Pandemic Simulator","パンデミック・シミュレーター","Pandemie-Simulator","Симулятор пандемии","Simulador de pandemia"),d:window.IntMapLang.t(HOST.lang,"Seed an outbreak and watch a scientific model spread it across real countries until a vaccine arrives.","感染源を置き、交通網で世界へ広がる感染症を科学的に可視化。ワクチン開発まで。","Setzen Sie einen Ausbruch und sehen Sie zu, wie ein wissenschaftliches Modell ihn über echte Länder verbreitet, bis ein Impfstoff kommt.","Задайте очаг вспышки и смотрите, как научная модель разносит её по реальным странам, пока не появится вакцина.","Siembre un brote y observe cómo un modelo científico lo extiende por países reales hasta que llega una vacuna."),go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
+        {svg:SV.virus,bg:'linear-gradient(135deg,#ff3b30,#ff9500)',t:window.IntMapLang.t(HOST.lang,"Pandemic Simulator","パンデミック・シミュレーター","Pandemie-Simulator","Симулятор пандемии","Simulador de pandemia"),d:window.IntMapLang.t(HOST.lang,"Seed an outbreak and watch a stochastic SEIR model carry it between real countries — vaccines, variants and lockdowns included.","感染源を置き、確率的SEIRモデルで国から国への広がりを可視化。ワクチン・変異株・封鎖まで。","Setzen Sie einen Ausbruch und sehen Sie zu, wie ein stochastisches SEIR-Modell ihn zwischen echten Ländern trägt — mit Impfstoffen, Varianten und Lockdowns.","Задайте очаг вспышки и смотрите, как стохастическая модель SEIR переносит её между реальными странами — с вакцинами, вариантами и локдаунами.","Siembre un brote y observe cómo un modelo SEIR estocástico lo lleva entre países reales: vacunas, variantes y confinamientos incluidos."),go:()=>{ ov.remove(); window._pgPandemic&&window._pgPandemic(); }},
         {svg:SV.cap,bg:'linear-gradient(135deg,#34c759,#0a84ff)',t:window.IntMapLang.t(HOST.lang,"Quiz mode","クイズモード","Quizmodus","Режим викторины","Modo cuestionario"),d:window.IntMapLang.t(HOST.lang,"Test your world geography: flags, capitals, map-clicks, silhouettes & duels.","国旗・首都・地図・シルエットなど、世界地理クイズで腕試し。","Testen Sie Ihre Weltgeografie: Flaggen, Hauptstädte, Kartenklicks, Umrisse und Duelle.","Проверьте знание географии мира: флаги, столицы, клики по карте, силуэты и дуэли.","Ponga a prueba su geografía mundial: banderas, capitales, clics en el mapa, siluetas y duelos."),go:()=>{ ov.remove();
           /* (#R33) Close the layer-selection panel/sheet when entering Quiz mode. */
           try{ const dd=document.getElementById('layer-dropdown'); if(dd) dd.classList.remove('show'); document.querySelectorAll('.m-sheet.show,#mo-sheet.show,#tools-sheet.show,.m-scrim.show').forEach(s=>s.classList.remove('show')); }catch(_){}
@@ -212,18 +217,25 @@ window.IntMapModules.playground=function(HOST){
     }
 
     /* ===================== PANDEMIC SIMULATOR ===================== */
-    /* (#R30) Scientifically-grounded SEIR metapopulation model. Per-country S/E/I/R/D/V compartments;
-       transmission from R0 + incubation + infectious period; sanitation (HDI/GDP) drives healthcare
-       overload & care speed; seasonality + behavioural distancing + automatic lockdowns / border closures
-       + waning immunity + random VARIANTS produce long, chaotic, VARIED outcomes — not the old short
-       "everyone dies" curve. Spread shows as RED CASE DOTS that multiply & spread (no country-wide red
-       fill, per spec). Vaccine + treatment arrive on a luck-driven timeline. */
-    const PG_PRESETS={
-      flu:{ n:LA('Influenza','インフルエンザ','Influenza','Грипп','Gripe'), r0:1.4, inc:2, inf:5, ifr:0.001, immMo:8, seas:0.35 },
-      covid:{ n:LA('COVID-19','COVID-19','COVID-19','COVID-19','COVID-19'), r0:3.2, inc:5, inf:9, ifr:0.007, immMo:9, seas:0.18 },
-      sars:{ n:LA('SARS','SARS','SARS','ТОРС','SARS'), r0:2.6, inc:5, inf:10, ifr:0.1, immMo:36, seas:0.12 },
-      ebola:{ n:LA('Ebola','エボラ出血熱','Ebola','Эбола','Ébola'), r0:1.9, inc:9, inf:10, ifr:0.5, immMo:120, seas:0 },
-      measles:{ n:LA('Measles','麻疹','Masern','Корь','Sarampión'), r0:14, inc:11, inf:8, ifr:0.002, immMo:600, seas:0.05 }
+    /* (#R575) The MAP and the CONTROLS live here; the epidemiology lives in js/pandemic-model.js and
+       nothing in this file may do arithmetic on a compartment. That split is the point of the round:
+       an external audit found six defects that made the old in-closure model contradict itself —
+       playback speed changed the epidemic, «immunity 0» produced NaN, «latent 0» and every
+       re-importation produced PEOPLE FROM NOTHING, a run ended while a million were still incubating,
+       and the printed attack rate FELL whenever immunity waned. None of it was reachable by a test.
+       ⚠ `speed` BELONGS TO setTimeout AND TO NOTHING ELSE. It decides how often step() is called.
+       It must never reach a probability again — tests/r575-checks.test.mjs ⑬ watches this file for it. */
+    /* ⚠ EVERY USER-FACING STRING BELOW IS WRITTEN OUT AS window.IntMapLang.t(HOST.lang, …), and a
+       local alias for it would be a defect, not a tidy-up: scripts/i18n-audit.mjs extracts LITERAL
+       call sites, so a renamed helper takes its strings out of the census entirely — the total stops
+       growing and the missing translations never show as holes (#R548). Measured here: with an alias,
+       44 of this round's 45 new strings were invisible to `npm run check:i18n`. */
+    const PG_LABELS={
+      flu:LA('Influenza','インフルエンザ','Influenza','Грипп','Gripe'),
+      covid:LA('COVID-19','COVID-19','COVID-19','COVID-19','COVID-19'),
+      sars:LA('SARS','SARS','SARS','ТОРС','SARS'),
+      ebola:LA('Ebola','エボラ出血熱','Ebola','Эбола','Ébola'),
+      measles:LA('Measles','麻疹','Masern','Корь','Sarampión')
     };
     window._pgPandemic=function(){
       if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
@@ -234,141 +246,197 @@ window.IntMapModules.playground=function(HOST){
         try{ document.body.classList.add('pg-sim'); }catch(_){}
         const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
         const resolve=(p)=>{ const c=[p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3,p.SOV_A3].map(String).find(x=>cs[x]); return c?cs[c]:null; };
-        const N=feats.length, cent=[], bbs=[], pop=[], dev=[], st=[], nm=[]; let WORLDPOP=0;
-        feats.forEach((f,i)=>{ const bb=bboxOf(f); bbs[i]=bb; cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const s=resolve(f.properties||{}); const Pp=(s&&s.pop&&s.pop>0)?s.pop:3e6; pop[i]=Pp; WORLDPOP+=Pp; dev[i]=(s&&s.gdppc)?Math.min(1,Math.max(0.12,s.gdppc/55000)):(s&&s.hdi?s.hdi:0.5); nm[i]=cName(f)||'?'; st[i]={S:Pp,E:0,I:0,R:0,D:0,V:0,seeded:false,closed:false,lock:0,pool:null,fatigue:0}; });
+        const N=feats.length, cent=[], bbs=[], pools=[], world=[];
+        feats.forEach((f,i)=>{ const bb=bboxOf(f); bbs[i]=bb; cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const s=resolve(f.properties||{});
+          const pop=(s&&s.pop&&s.pop>0)?s.pop:3e6;
+          /* ⚠ ONE PROXY, FOUR MEANINGS — and the engine keeps them apart from here on. GDP per head
+             (or HDI) stands in for medical capacity, travel connectivity, policy capacity and vaccine
+             delivery because IntMap has no separate data for the other three yet; js/pandemic-model.js
+             stores them as four fields so that the day one of them gets its own source, one formula
+             changes instead of every formula. */
+          const dev=(s&&s.gdppc)?Math.min(1,Math.max(0.12,s.gdppc/55000)):(s&&s.hdi?s.hdi:0.5);
+          world[i]={name:cName(f)||'?', pop, dev, lat:cent[i][1], lng:cent[i][0]}; pools[i]=null; });
+        const nm=world.map(c=>c.name);
         /* CASE-DOT layers (no country fill). A soft glow under crisp dots. */
         try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots')) GE().layers.removeSource('pg-dots'); }catch(_){}
         try{ GE().layers.addSource('pg-dots',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-          /* (#R31) Finer, more UNIFORM dots ("大きさ差を小さく") — small fixed glow + tiny crisp dot. */
-          GE().layers.add({id:'pg-dots-glow',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,5],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff5a3c',1,'#7a0010'],'circle-blur':0.9,'circle-opacity':0.28}});
-          GE().layers.add({id:'pg-dots',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,1.6,5,2.9],'circle-color':['interpolate',['linear'],['get','sev'],0,'#ff3b30',0.5,'#e01010',1,'#7a0010'],'circle-stroke-color':'rgba(255,255,255,0.45)','circle-stroke-width':0.25,'circle-opacity':0.95}});
+          /* (#R31) Finer, more UNIFORM dots ("大きさ差を小さく") — small fixed glow + tiny crisp dot.
+             (#R575) …and TWO COLOURS, because the map draws E+I while the HUD used to print I: an
+             orange dot is somebody incubating, a red one somebody infectious. Same dots, but the
+             legend can now name what each one is. */
+          const CLS=(inf,exp)=>['case',['==',['get','cls'],0],exp,inf];
+          GE().layers.add({id:'pg-dots-glow',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,5],'circle-color':CLS(['interpolate',['linear'],['get','sev'],0,'#ff5a3c',1,'#7a0010'],'#ff9f0a'),'circle-blur':0.9,'circle-opacity':0.28}});
+          GE().layers.add({id:'pg-dots',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,1.6,5,2.9],'circle-color':CLS(['interpolate',['linear'],['get','sev'],0,'#ff3b30',0.5,'#e01010',1,'#7a0010'],'#ff9f0a'),'circle-stroke-color':'rgba(255,255,255,0.45)','circle-stroke-width':0.25,'circle-opacity':0.95}});
         }catch(e){ console.warn('pandemic dots',e); }
         /* (#R31) Place case dots on REAL places — the capital + gazetteer cities inside the country —
            then jittered clusters around them ("感染者単位で実際の場所に置いて"). Falls back to random
-           in-polygon points only when no city is known for that country. */
+           in-polygon points only when no city is known for that country.
+           (#R575) …and the jitter is CHECKED. It never was, so a coastal or border city scattered
+           cases into the sea and into the neighbour — see scatterCases() in js/pandemic-model.js. */
         function genPts(i,n){ const f=feats[i], bb=bbs[i]; const span=Math.min(2.0,Math.max(0.1,Math.max(bb[2]-bb[0],bb[3]-bb[1])*0.09)); const anchors=[];
-          try{ const s=resolve(f.properties||{}); if(s&&s.latlng){ const cl=[s.latlng[1],s.latlng[0]]; if(pig(cl[0],cl[1],f.geometry)) anchors.push(cl); } }catch(_){}
-          try{ const gz=(typeof HOST.geoDB!=='undefined'&&HOST.geoDB)||window.geoDB||[]; for(let q=0;q<gz.length && anchors.length<64;q++){ const c=gz[q]&&gz[q].loc; if(!c) continue; if(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3]) continue; if(pig(c[0],c[1],f.geometry)) anchors.push([c[0],c[1]]); } }catch(_){}
-          const out=[];
-          if(anchors.length){ for(let d=0; d<n; d++){ const a=anchors[d%anchors.length]; const jit=d<anchors.length?0:1; out.push([a[0]+(Math.random()-0.5)*span*jit, a[1]+(Math.random()-0.5)*span*jit]); } return out; }
-          let tries=0; while(out.length<n && tries<n*16){ tries++; const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(pig(lng,lat,f.geometry)) out.push([lng,lat]); } if(!out.length) out.push(cent[i]); return out; }
+          const inside=(lng,lat)=>pig(lng,lat,f.geometry);
+          try{ const s=resolve(f.properties||{}); if(s&&s.latlng){ const cl=[s.latlng[1],s.latlng[0]]; if(inside(cl[0],cl[1])) anchors.push(cl); } }catch(_){}
+          try{ const gz=(typeof HOST.geoDB!=='undefined'&&HOST.geoDB)||window.geoDB||[]; for(let q=0;q<gz.length && anchors.length<64;q++){ const c=gz[q]&&gz[q].loc; if(!c) continue; if(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3]) continue; if(inside(c[0],c[1])) anchors.push([c[0],c[1]]); } }catch(_){}
+          if(anchors.length) return scatterCases(n,anchors,span,Math.random,inside);
+          const out=[]; let tries=0; while(out.length<n && tries<n*16){ tries++; const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(inside(lng,lat)) out.push([lng,lat]); }
+          /* ⚠ NOT the bbox centre: for a crescent, an archipelago or a country with overseas
+             territory that point is in the sea or in somebody else. If no point inside the polygon
+             could be found at all, this country draws nothing rather than drawing a lie. */
+          return out; }
 
-        let P=Object.assign({},PG_PRESETS.covid), immMo=P.immMo, seasAmp=P.seas;
-        let day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', R0_BASE=P.r0;
-        let vaxProg=0, vaxDay=-1, vaxRate=0, treat=false, pheic=false, hit10=false, variants=0, closeAnn=0, lockAnn=0, d1m=false, d10m=false;
-        const vaxDifficulty=0.7+Math.random()*0.9;   // luck: some runs get a fast vaccine, some slow
-        /* (#R35) REALISM: a vaccine can NEVER be approved before ~8 months. The R&D-progress race alone let a
-           massive early outbreak unlock a vaccine in ~1 month ("ありえないことが多すぎる") — but the real record
-           (COVID mRNA, genome→first EUA) is ~270 days. Gate approval behind a realistic floor of 240–360 days. */
-        const VAX_MIN_DAY=240+Math.floor(Math.random()*120);
-        const peakDay=(lat)=> lat>=0 ? 20 : 202;
-        function totals(){ let I=0,E=0,R=0,D=0,V=0,aff=0; for(let i=0;i<N;i++){ const s=st[i]; I+=s.I; E+=s.E; R+=s.R; D+=s.D; V+=s.V; if(s.seeded&&(s.I+s.E)>0.5) aff++; } return {I,E,R,D,V,aff}; }
-        function seed(i,amount){ const s=st[i]; const k=Math.min(s.S, amount||Math.max(40,pop[i]*1e-6)); s.S-=k; s.E+=k; s.seeded=true; }
-        function news(html,kind){ lastEvt=html; try{ pgNews(html,kind); }catch(_){} const el=hud&&hud.querySelector('#pg-evt'); if(el) el.textContent=html.replace(/<[^>]+>/g,''); }
+        /* ── the run's settings. The engine is built when patient zero is placed, from exactly these. */
+        let presetKey='covid', scenario='naive', advanced=false;
+        let cfg=freshParams('covid','naive');
+        let runSeed=(Date.now()^Math.floor(Math.random()*1e9))>>>0;
+        function freshParams(key,mode){ const pr=PANDEMIC_PRESETS[key]; return {
+          scenario:mode, r0:pr.transmission.r0, latentDays:pr.transmission.latentDays,
+          infectiousDays:pr.transmission.infectiousDays, baseFatality:pr.severity.value,
+          naturalImmunityMonths:pr.immunity.lifelong?600:pr.immunity.naturalMonths,
+          seasonality:pr.transmission.seasonality, startDayOfYear:1, initialCases:100,
+          initialImmunity:mode==='real-world'?(pr.baselineImmunity||0):0,
+          mobility:1, interventions:'adaptive', vaccineAtStart:mode==='real-world'&&!!pr.vaccine.availableAtStart
+        }; }
 
-        function step(){ day++;
-          const gamE=1/Math.max(0.5,P.inc), gam=1/Math.max(1,P.inf), omega=immMo>=400?0:1/(immMo*30);
-          /* vaccine R&D — driven by global infections in capable (high-GDP) countries + time (luck-gated) */
-          if(vaxDay<0){ let drive=0; for(let i=0;i<N;i++){ if(dev[i]>0.6) drive+=st[i].I; } vaxProg+=0.0016+Math.min(0.02,drive/4e8);
-            if(vaxProg>vaxDifficulty && day>=VAX_MIN_DAY){ vaxDay=day; let best=-1,bv=-1; for(let i=0;i<N;i++){ if(dev[i]>0.62){ const v=st[i].I*dev[i]+Math.random()*1e6; if(v>bv){bv=v;best=i;} } } const cn=best>=0?nm[best]:'a leading lab';
-              news((jp()?(cn+'がワクチンを承認。接種が始まります。'):(cn+' approves a vaccine — rollout begins.')),'good'); } }
-          if(vaxDay>=0) vaxRate=Math.min(0.012, vaxRate+0.00035);
-          let totI=0;
-          for(let i=0;i<N;i++){ const s=st[i]; if(!s.seeded) continue; const live=s.S+s.E+s.I+s.R+s.V||1;
-            const seas=1+seasAmp*Math.cos(2*Math.PI*((day-peakDay(cent[i][1]))/365));
-            const sick=s.I/live; const behav=1-0.55*Math.min(1,sick*90)-0.25*s.lock;
-            const beta=P.r0*gam*seas*Math.max(0.12,behav);
-            const newE=Math.min(s.S, beta*s.I*s.S/live), toI=gamE*s.E;
-            const overload=1+Math.min(1.1,(sick*55)*(1-dev[i]));              /* (#R32) gentler hospital overload */
-            const medImprove=Math.max(0.5,1-day*0.00045);                      /* (#R32) care/CFR improves over time (realistic) */
-            const ifrEff=Math.min(0.85,P.ifr*overload*(treat?0.4:1)*medImprove*(1.2-0.4*dev[i]));
-            const out=gam*s.I, dead=out*ifrEff, rec=out-dead, vac=Math.min(s.S,vaxRate*s.S*0.9), wane=omega*s.R;
-            s.S+= -newE - vac + wane; s.E+= newE - toI; s.I+= toI - out; s.R+= rec - wane; s.D+= dead; s.V+= vac;
-            if(s.S<0)s.S=0; if(s.E<0)s.E=0; if(s.I<0)s.I=0; if(s.R<0)s.R=0;
-            totI+=s.I;
-            /* automatic interventions (the lockdown / border-screening the spec asked for) */
-            if(!s.closed && sick>0.0008 && Math.random()<0.04+0.16*dev[i]){ s.closed=true; if(closeAnn<6 && pop[i]>8e6){ closeAnn++; news((jp()?(nm[i]+'が国境を封鎖。'):(nm[i]+' closes its borders.')),'info'); } }
-            if(s.lock<0.85 && sick>0.004 && s.fatigue<3){ s.lock=Math.min(0.85,s.lock+0.08); if(lockAnn<6 && pop[i]>1.2e7 && s.lock>0.45 && Math.random()<0.25){ lockAnn++; news((jp()?(nm[i]+'がロックダウンを発令。'):(nm[i]+' enters lockdown.')),'info'); } }
-            else if(s.lock>0 && sick<0.0015){ s.lock=Math.max(0,s.lock-0.04); s.fatigue+=0.01; }
-            /* between-country spread — gravity + transport, throttled by border closures */
-            if(s.I>live*0.0004){ const tries=2+Math.floor(P.r0/2); for(let t=0;t<tries;t++){ const j=Math.floor(Math.random()*N); if(j===i) continue; const d=haversine(cent[i],cent[j])+1; const air=Math.exp(-d/3200)*0.55, hub=0.04*dev[j]; let pHop=(P.r0/3)*(air+hub)*Math.min(1,s.I/live*120); if(s.closed) pHop*=0.18; if(st[j].closed) pHop*=0.25; if(Math.random()<pHop*speed*0.12){ if(!st[j].seeded) seed(j,Math.max(20,pop[j]*4e-7)); else st[j].E+=Math.min(st[j].S,30); } } }
-          }
-          /* VARIANTS — random emergence with immune escape → new waves. (#R32b) REALISM: a real variant
-             raises R0 ~1.1–1.4× (Omicron-ish), not 1.6× repeatedly, and the cumulative R0 is capped so it
-             can't balloon to impossible values ("ありえないことが多すぎる"). Cap 4 variants. */
-          if(variants<4 && totI>5e5 && Math.random()<0.0014*speed){ variants++;
-            let best=-1,bv=-1; for(let i=0;i<N;i++){ if(st[i].I>bv){bv=st[i].I;best=i;} }
-            const moreInf=Math.random()<0.7; P.r0=Math.min(R0_BASE*2.2,16,Math.max(0.8,P.r0*(moreInf?(1.08+Math.random()*0.3):(0.88+Math.random()*0.08))));
-            const escape=0.15+Math.random()*0.3; for(let i=0;i<N;i++){ const mv=st[i].R*escape; st[i].R-=mv; st[i].S+=mv; const vv=st[i].V*escape*0.5; st[i].V-=vv; st[i].S+=vv; }
-            if(Math.random()<0.4) P.ifr*=(0.7+Math.random()*0.6);
-            const gl=String.fromCharCode(944+variants);
-            news((jp()?('新変異株（'+gl+'）を'+(best>=0?nm[best]:'?')+'で確認。'+(moreInf?'感染力が上昇。':'')):('New variant ('+gl+') detected in '+(best>=0?nm[best]:'?')+'.'+(moreInf?' More transmissible.':''))),'alert');
-          }
-          const T=totals();
-          if(!hit10 && T.aff>=10){ hit10=true; news((window.IntMapLang.t(HOST.lang,"Outbreak has reached 10 countries.","感染が10カ国に拡大。","Der Ausbruch hat 10 Länder erreicht.","Вспышка достигла 10 стран.","El brote ha llegado a 10 países.")),'alert'); }
-          if(!pheic && (T.I+T.R+T.D)>3e6){ pheic=true; news((window.IntMapLang.t(HOST.lang,"WHO declares a global health emergency (PHEIC).","WHOが「国際的に懸念される公衆衛生上の緊急事態（PHEIC）」を宣言。","Die WHO erklärt eine gesundheitliche Notlage internationaler Tragweite (PHEIC).","ВОЗ объявляет чрезвычайную ситуацию в области общественного здравоохранения, имеющую международное значение (PHEIC).","La OMS declara una emergencia de salud pública de importancia internacional (ESPII).")),'alert'); }
-          if(!treat && totI>2e6 && Math.random()<0.0009*speed){ treat=true; news((window.IntMapLang.t(HOST.lang,"An effective treatment is found — fatality rate falls.","有効な治療法が確立。致死率が低下します。","Eine wirksame Behandlung wird gefunden — die Sterblichkeit sinkt.","Найдено эффективное лечение — летальность снижается.","Se encuentra un tratamiento eficaz: la letalidad cae.")),'good'); }
-          if(!d1m && T.D>1e6){ d1m=true; news((window.IntMapLang.t(HOST.lang,"Global death toll passes 1 million.","世界の死者が100万人を突破。","Die weltweite Zahl der Todesopfer übersteigt 1 Million.","Число погибших в мире превысило 1 миллион.","El número global de muertes supera el millón.")),'alert'); }
-          if(!d10m && T.D>1e7){ d10m=true; news((window.IntMapLang.t(HOST.lang,"Global death toll passes 10 million.","世界の死者が1000万人を突破。","Die weltweite Zahl der Todesopfer übersteigt 10 Millionen.","Число погибших в мире превысило 10 миллионов.","El número global de muertes supera los 10 millones.")),'alert'); }
-          const now=Date.now(); if(now-lastDots>140){ lastDots=now; buildDots(); } updateHud(T);
-          /* (#R32) richer, VARIED end states ("オチが毎回同じ…をやめて") with the final toll + attack rate. */
-          const attack=WORLDPOP?((T.R+T.D+T.I)/WORLDPOP):0;
-          if(day>40 && totI<150 && T.aff<=1 && day<300){ buildDots(); stop(); news((jp()?('封じ込め成功 — 死者'+fmt(T.D)+'。世界的流行には至りませんでした。'):('Contained — '+fmt(T.D)+' deaths; it never became a pandemic.')),'good'); renderRun(true); }
-          else if(day>40 && totI<200){ buildDots(); stop(); const verdict=attack<0.05?(window.IntMapLang.t(HOST.lang,"a minor outbreak","小規模な流行で終息","ein kleinerer Ausbruch","небольшая вспышка","un brote menor")):attack<0.25?(window.IntMapLang.t(HOST.lang,"the outbreak has ended","流行は終息","der Ausbruch ist vorbei","вспышка закончилась","el brote ha terminado")):(window.IntMapLang.t(HOST.lang,"a devastating pandemic, now over","壊滅的な大流行を経て終息","eine verheerende Pandemie, jetzt vorbei","разрушительная пандемия, теперь завершившаяся","una pandemia devastadora, ya terminada")); news((jp()?(verdict+' — 累計死者'+fmt(T.D)+'（世界の'+(attack*100).toFixed(1)+'%が感染）。'):('It was '+verdict+' — '+fmt(T.D)+' deaths, '+(attack*100).toFixed(1)+'% of the world infected.')),attack<0.25?'good':'alert'); renderRun(true); }
-          else if(day>365*8){ stop(); news((jp()?('風土病として定着（長期均衡）。累計死者'+fmt(T.D)+'。'):('Now endemic (long-run equilibrium) — '+fmt(T.D)+' cumulative deaths.')),'info'); renderRun(true); }
+        let model=null, day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', perDotNow=0;
+        function preset(){ return PANDEMIC_PRESETS[presetKey]; }
+        function news(text,kind){ lastEvt=text; try{ pgNews(text,kind); }catch(_){} const el=hud&&hud.querySelector('#pg-evt'); if(el) el.textContent=text; }
+
+        /* Events come out of the engine as data ({t:'variant', c:12, …}); the words are made here, in
+           nine languages, because a model that spoke English would have to be translated to be read. */
+        function announce(e){
+          const who=(e.c>=0&&nm[e.c])?nm[e.c]:window.IntMapLang.t(HOST.lang,'a leading lab','ある研究機関','einem führenden Labor','ведущей лаборатории','un laboratorio destacado');
+          if(e.t==='vaccine') return news(jp()?(who+'がワクチンを承認。接種が始まります。'):(who+' approves a vaccine — rollout begins.'),'good');
+          if(e.t==='variant'){ const gl=String.fromCharCode(944+e.n);
+            return news(jp()?('新変異株（'+gl+'）を'+who+'で確認。'+(e.moreTransmissible?'感染力が上昇。':'')+'——まだその国だけ。'):('New variant ('+gl+') detected in '+who+'.'+(e.moreTransmissible?' More transmissible.':'')+' It is only there, for now.'),'alert'); }
+          if(e.t==='border') return news(jp()?(who+'が国境を封鎖。'):(who+' closes its borders.'),'info');
+          if(e.t==='reopen') return news(jp()?(who+'が国境を再開。'):(who+' reopens its borders.'),'info');
+          if(e.t==='lockdown') return news(jp()?(who+'がロックダウンを発令。'):(who+' enters lockdown.'),'info');
+          if(e.t==='tenCountries') return news(window.IntMapLang.t(HOST.lang,"Outbreak has reached 10 countries.","感染が10カ国に拡大。","Der Ausbruch hat 10 Länder erreicht.","Вспышка достигла 10 стран.","El brote ha llegado a 10 países."),'alert');
+          /* ⚠ NOT «WHO declares a PHEIC». Under the IHR that is a judgement by the Director-General
+             on the advice of an Emergency Committee — never a case count — and the old code declared
+             one at exactly 3,000,000 cases. This is the simulation's own threshold, and it says so. */
+          if(e.t==='emergency') return news(window.IntMapLang.t(HOST.lang,"Global health emergency threshold reached — international spread is sustained.","国際的な警戒レベルに到達 — 各国への拡大が継続しています。","Schwelle für einen globalen Gesundheitsnotstand erreicht — die internationale Ausbreitung hält an.","Достигнут порог глобальной чрезвычайной ситуации — международное распространение продолжается.","Se alcanza el umbral de emergencia sanitaria mundial: la propagación internacional se mantiene."),'alert');
+          if(e.t==='treatment') return news(window.IntMapLang.t(HOST.lang,"An effective treatment is found — fatality rate falls.","有効な治療法が確立。致死率が低下します。","Eine wirksame Behandlung wird gefunden — die Sterblichkeit sinkt.","Найдено эффективное лечение — летальность снижается.","Se encuentra un tratamiento eficaz: la letalidad cae."),'good');
+          if(e.t==='deaths') return news(e.n>=1e7
+            ? window.IntMapLang.t(HOST.lang,"Global death toll passes 10 million.","世界の死者が1000万人を突破。","Die weltweite Zahl der Todesopfer übersteigt 10 Millionen.","Число погибших в мире превысило 10 миллионов.","El número global de muertes supera los 10 millones.")
+            : window.IntMapLang.t(HOST.lang,"Global death toll passes 1 million.","世界の死者が100万人を突破。","Die weltweite Zahl der Todesopfer übersteigt 1 Million.","Число погибших в мире превысило 1 миллион.","El número global de muertes supera el millón."),'alert');
+          if(e.t==='end') return endRun(e.kind);
         }
-        /* (#R32) Dots now scale with the ACTUAL case count ("感染者の人数単位で") — each dot ≈ `perDot`
-           active cases, allocated proportionally per country up to a global budget (perf), placed on REAL
-           cities. Far MORE dots than the old log-capped 30 ("数を増やして"); uniform small size kept. */
+        function endRun(kind){
+          const T=model.totals(); buildDots(); stop();
+          const attack=T.worldPop?(T.cumInf/T.worldPop*100):0;
+          if(kind==='contained') news(jp()?('封じ込め成功 — 死者'+fmt(T.D)+'。世界的流行には至りませんでした。'):('Contained — '+fmt(T.D)+' deaths; it never became a pandemic.'),'good');
+          else if(kind==='endemic') news(jp()?('3年経過 — 流行は続いています。累計死者'+fmt(T.D)+'。'):('Three years on, it is still circulating — '+fmt(T.D)+' cumulative deaths.'),'info');
+          else { const verdict=attack<5?window.IntMapLang.t(HOST.lang,"a minor outbreak","小規模な流行で終息","ein kleinerer Ausbruch","небольшая вспышка","un brote menor"):attack<25?window.IntMapLang.t(HOST.lang,"the outbreak has ended","流行は終息","der Ausbruch ist vorbei","вспышка закончилась","el brote ha terminado"):window.IntMapLang.t(HOST.lang,"a devastating pandemic, now over","壊滅的な大流行を経て終息","eine verheerende Pandemie, jetzt vorbei","разрушительная пандемия, теперь завершившаяся","una pandemia devastadora, ya terminada");
+            news(jp()?(verdict+' — 累計死者'+fmt(T.D)+'（延べ感染は世界人口の'+attack.toFixed(1)+'%）。'):('It was '+verdict+' — '+fmt(T.D)+' deaths; infections totalled '+attack.toFixed(1)+'% of world population.'),attack<25?'good':'alert'); }
+          renderRun(true);
+        }
+        function tick(){ if(!model) return; const ev=model.step(); day=model.day; for(let k=0;k<ev.length;k++) announce(ev[k]);
+          const now=Date.now(); if(now-lastDots>140||model.ended){ lastDots=now; buildDots(); } updateHud(); }
+
+        /* (#R32) Dots scale with the ACTUAL case count ("感染者の人数単位で") — each dot ≈ `perDot`
+           active cases, allocated per country up to a global budget (perf), placed on REAL cities.
+           (#R575) …and `perDot` is now PRINTED, because it moves: at the start one dot is 60 cases
+           and in a full pandemic it is thousands, and a reader who is not told cannot read the map. */
         const PG_POOL=80, PG_DOTCAP=4800, PG_CASES_PER_DOT=60;
-        function buildDots(){ let totAct=0; for(let i=0;i<N;i++){ const s=st[i]; if(s.seeded) totAct+=s.I+s.E; }
-          /* (#R32) each dot ≈ a fixed number of cases (so a small outbreak shows a FEW dots and grows
-             visibly as cases rise), with the global budget only kicking in once the pandemic is huge. */
-          const perDot=Math.max(PG_CASES_PER_DOT, totAct/PG_DOTCAP); const out=[];
-          for(let i=0;i<N;i++){ const s=st[i]; if(!s.seeded) continue; const act=s.I+s.E; if(act<1 && s.D<1) continue;
-            let k=Math.round(act/perDot); if(k<1 && (act>=1||s.D>0)) k=1; if(k>PG_POOL) k=PG_POOL;
-            if(!s.pool) s.pool=genPts(i,PG_POOL); const sev=s.D>0?Math.min(1,s.D/(s.I+s.R+s.D+1)*3):0;
-            for(let d=0; d<k && d<s.pool.length; d++) out.push({type:'Feature',geometry:{type:'Point',coordinates:s.pool[d]},properties:{sev}}); }
+        function buildDots(){ if(!model) return; let totAct=0; for(let i=0;i<N;i++){ const a=model.active(i); if(a.seeded) totAct+=a.E+a.I; }
+          const perDot=Math.max(PG_CASES_PER_DOT, totAct/PG_DOTCAP); perDotNow=perDot; const out=[];
+          for(let i=0;i<N;i++){ const a=model.active(i); if(!a.seeded) continue; const act=a.E+a.I; if(act<1 && a.D<1) continue;
+            let k=Math.round(act/perDot); if(k<1 && (act>=1||a.D>0)) k=1; if(k>PG_POOL) k=PG_POOL;
+            if(!pools[i]) pools[i]=genPts(i,PG_POOL); if(!pools[i].length) continue;
+            const sev=a.D>0?Math.min(1,a.D/(a.I+a.D+1)*3):0;
+            /* Split the country's dots the way its cases are actually split. */
+            const kE=act>0?Math.round(k*(a.E/act)):0;
+            for(let d=0; d<k && d<pools[i].length; d++) out.push({type:'Feature',geometry:{type:'Point',coordinates:pools[i][d]},properties:{sev,cls:d<kE?0:1}}); }
           try{ GE().layers.setSourceData('pg-dots',{type:'FeatureCollection',features:out}); }catch(_){} }
-        function loop(){ clearTimeout(timer); if(!running) return; step(); if(running) timer=setTimeout(loop, Math.max(70,440/speed)); }
-        function start(){ if(running) return; running=true; loop(); }
+        /* ⚠ THE ONLY THING `speed` TOUCHES. */
+        function loop(){ clearTimeout(timer); if(!running) return; tick(); if(model&&model.ended){ running=false; return; } if(running) timer=setTimeout(loop, Math.max(70,440/speed)); }
+        function start(){ if(running||!model||model.ended) return; running=true; loop(); }
         function stop(){ running=false; clearTimeout(timer); }
 
         const hud=document.createElement('div'); hud.id='pg-pan-hud';
-        hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(540px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;';
+        hud.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom));z-index:5810;width:min(540px,94vw);box-sizing:border-box;background:var(--popup-bg);color:var(--text-main);border:1px solid var(--glass-border,rgba(128,128,128,0.25));border-radius:16px;box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:12px 14px;font-size:12.5px;max-height:70dvh;overflow-y:auto;';
         (document.getElementById('map-container')||document.body).appendChild(hud);
         function fmt(n){ n=Math.round(n); if(n>=1e9)return (n/1e9).toFixed(2)+'B'; if(n>=1e6)return (n/1e6).toFixed(2)+'M'; if(n>=1e3)return (n/1e3).toFixed(1)+'k'; return ''+n; }
-        function updateHud(T){ const el=hud.querySelector('#pg-pan-stats'); if(!el) return; const vpct=WORLDPOP?Math.round(T.V/WORLDPOP*100):0;
-          el.innerHTML='<span style="color:#f03b20;">'+(window.IntMapLang.t(HOST.lang,"Infected","感染","Infiziert","Заражено","Infectados"))+' <b>'+fmt(T.I)+'</b></span> · '+
-          '<span style="color:#7a0010;">'+(window.IntMapLang.t(HOST.lang,"Dead","死亡","Tote","Умерло","Fallecidos"))+' <b>'+fmt(T.D)+'</b></span> · '+
-          '<span style="color:#2ca25f;">'+(window.IntMapLang.t(HOST.lang,"Recovered","回復","Genesen","Выздоровело","Recuperados"))+' <b>'+fmt(T.R)+'</b></span> · '+
-          '<span style="color:#0a84ff;">'+(window.IntMapLang.t(HOST.lang,"Vaccinated","接種","Geimpft","Вакцинировано","Vacunados"))+' <b>'+vpct+'%</b></span><br>'+
-          '<span>'+(window.IntMapLang.t(HOST.lang,"Countries","国","Länder","Страны","Países"))+' <b>'+T.aff+'</b></span> · '+(window.IntMapLang.t(HOST.lang,"Day","経過","Tag","День","Día"))+' <b>'+day+'</b>'+(variants?' · '+(window.IntMapLang.t(HOST.lang,"variants","変異株","Varianten","варианты","variantes"))+' <b>'+variants+'</b>':'')+(vaxDay>=0?' · 💉':(vaxProg>0?' · '+(window.IntMapLang.t(HOST.lang,"vaccine R&D","ワクチン開発","Impfstoffentwicklung","разработка вакцины","I+D de vacunas"))+' '+Math.round(Math.min(1,vaxProg/vaxDifficulty,day/VAX_MIN_DAY)*100)+'%':'')); }   /* (#R35) progress also bounded by the realistic time floor */
-        function mk(lab,val,min,max,stp,fmtv,set){ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 104px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=stp; r.value=val; r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.textContent=fmtv(+val); v.style.cssText='flex:0 0 50px;text-align:right;'; r.oninput=()=>{ v.textContent=fmtv(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); }
+        function grp(n){ try{ return Math.round(n).toLocaleString(window.IntMapLang.htmlLang?window.IntMapLang.htmlLang(HOST.lang):undefined); }catch(_){ return fmt(n); } }
+        function updateHud(){ const el=hud.querySelector('#pg-pan-stats'); if(!el||!model) return; const T=model.totals();
+          const vpct=T.worldPop?Math.round(T.V/T.worldPop*100):0, attack=T.worldPop?(T.cumInf/T.worldPop*100):0;
+          el.innerHTML='<span style="color:#f03b20;">'+window.IntMapLang.t(HOST.lang,"Infectious","感染性","Ansteckend","Заразны","Contagiosos")+' <b>'+fmt(T.I)+'</b></span> · '+
+          '<span style="color:#ff9f0a;">'+window.IntMapLang.t(HOST.lang,"Incubating","潜伏中","Inkubierend","Инкубация","Incubando")+' <b>'+fmt(T.E)+'</b></span> · '+
+          '<span style="color:#7a0010;">'+window.IntMapLang.t(HOST.lang,"Dead","死亡","Tote","Умерло","Fallecidos")+' <b>'+fmt(T.D)+'</b></span> · '+
+          '<span style="color:#0a84ff;">'+window.IntMapLang.t(HOST.lang,"Vaccinated","接種","Geimpft","Вакцинировано","Vacunados")+' <b>'+vpct+'%</b></span><br>'+
+          '<span>'+window.IntMapLang.t(HOST.lang,"Countries","国","Länder","Страны","Países")+' <b>'+T.affected+'</b></span> · '+window.IntMapLang.t(HOST.lang,"Day","経過","Tag","День","Día")+' <b>'+day+'</b>'+
+          /* ⚠ CUMULATIVE INFECTION EVENTS, AND THE LABEL SAYS SO. Reinfections count again, so this
+             is not «the share of people who have ever been infected» and must not be printed as one. */
+          ' · '+window.IntMapLang.t(HOST.lang,"cumulative infections","延べ感染","kumulierte Infektionen","суммарно заражений","infecciones acumuladas")+' <b>'+attack.toFixed(1)+'%</b>'+
+          (T.variants?' · '+window.IntMapLang.t(HOST.lang,"variants","変異株","Varianten","варианты","variantes")+' <b>'+T.variants+'</b>':'')+
+          (T.vaccine?' · 💉':(model.vaccineProgress()>0?' · '+window.IntMapLang.t(HOST.lang,"vaccine R&D","ワクチン開発","Impfstoffentwicklung","разработка вакцины","I+D de vacunas")+' '+Math.round(model.vaccineProgress()*100)+'%':''))+
+          '<br><span style="color:var(--text-muted);font-size:10.5px;">'+window.IntMapLang.t(HOST.lang,"1 dot ≈ ","1点 ≈ ","1 Punkt ≈ ","1 точка ≈ ","1 punto ≈ ")+grp(perDotNow)+' '+window.IntMapLang.t(HOST.lang,"active cases · red = infectious, orange = incubating","人の現感染者 · 赤=感染性、橙=潜伏中","aktive Fälle · rot = ansteckend, orange = inkubierend","активных случаев · красный — заразные, оранжевый — инкубация","casos activos · rojo = contagiosos, naranja = incubando")+'</span>'; }
+        function mk(lab,val,min,max,stp,fmtv,set){ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 118px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=stp; r.value=val; r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.textContent=fmtv(+val); v.style.cssText='flex:0 0 54px;text-align:right;'; r.oninput=()=>{ v.textContent=fmtv(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); }
+        function pills(items,isOn,pick){ const row=document.createElement('div'); row.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;';
+          items.forEach(it=>{ const on=isOn(it.k); const b=document.createElement('button'); b.textContent=it.t; b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(on?'var(--primary-color)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>pick(it.k); row.appendChild(b); }); hud.appendChild(row); return row; }
         function renderConfig(){ hud.innerHTML='';
           const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=window.IntMapLang.t(HOST.lang,"Outbreak setup","パンデミック設定","Ausbruch einrichten","Настройка вспышки","Configuración del brote"); tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='×'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
-          const presetRow=document.createElement('div'); presetRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;';
-          Object.keys(PG_PRESETS).forEach(k=>{ const pr=PG_PRESETS[k]; const on=(P.n&&P.n[0])===pr.n[0]; const b=document.createElement('button'); b.textContent=L.arr(pr.n); b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(on?'var(--primary-color)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>{ P=Object.assign({},pr); immMo=P.immMo; seasAmp=P.seas; renderConfig(); }; presetRow.appendChild(b); }); hud.appendChild(presetRow);
-          mk(window.IntMapLang.t(HOST.lang,"Infectivity R₀","基本再生産数R₀","Basisreproduktionszahl R₀","Базовое репродуктивное число R₀","Número reproductivo básico R₀"),P.r0,0.6,18,0.1,v=>v.toFixed(1),v=>P.r0=v);
-          mk(window.IntMapLang.t(HOST.lang,"Lethality %","致死率(IFR)%","Letalität %","Летальность %","Letalidad %"),+(P.ifr*100).toFixed(1),0,60,0.1,v=>v+'%',v=>P.ifr=v/100);
-          mk(window.IntMapLang.t(HOST.lang,"Incubation (d)","潜伏(日)","Inkubation (T)","Инкубация (дн.)","Incubación (d)"),P.inc,0,21,1,v=>''+v,v=>P.inc=v);
-          mk(window.IntMapLang.t(HOST.lang,"Infectious (d)","感染期(日)","Ansteckend (T)","Заразность (дн.)","Contagiosidad (d)"),P.inf,1,21,1,v=>''+v,v=>P.inf=v);
-          mk(window.IntMapLang.t(HOST.lang,"Immunity (mo)","免疫(月)","Immunität (Mon.)","Иммунитет (мес.)","Inmunidad (meses)"),Math.min(120,immMo),0,120,1,v=>v>=120?'∞':(''+v),v=>immMo=(v>=120?600:v));
-          const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=window.IntMapLang.t(HOST.lang,"▶ Tap a country on the map to place patient zero","▶ 地図で感染源となる国をタップ","▶ Auf der Karte ein Land antippen, um Patient null zu setzen","▶ Нажмите страну на карте, чтобы поместить нулевого пациента","▶ Toque un país en el mapa para colocar al paciente cero"); hud.appendChild(hint);
+          pills(Object.keys(PANDEMIC_PRESETS).map(k=>({k,t:L.arr(PG_LABELS[k])})),k=>k===presetKey,k=>{ presetKey=k; cfg=freshParams(k,scenario); renderConfig(); });
+          /* ⚠ THE SCENARIO IS PART OF THE DISEASE'S IDENTITY. «Measles with nobody immune» is not
+             measles — 84% of the world's children have had MCV1 — it is a measles-LIKE novel
+             pathogen, and the old simulator only ever ran that one and called it by the real name. */
+          pills([{k:'naive',t:window.IntMapLang.t(HOST.lang,"Novel pathogen","未知の病原体","Neuartiger Erreger","Новый патоген","Patógeno nuevo")},{k:'real-world',t:window.IntMapLang.t(HOST.lang,"Today's world","現在の世界","Heutige Welt","Сегодняшний мир","El mundo de hoy")}],k=>k===scenario,k=>{ scenario=k; cfg=freshParams(presetKey,k); renderConfig(); });
+          const note=document.createElement('div'); note.style.cssText='font-size:10.5px;color:var(--text-muted);margin:-4px 0 8px;line-height:1.4;';
+          note.textContent=scenario==='naive'
+            ? window.IntMapLang.t(HOST.lang,"Nobody is immune, and no vaccine or treatment exists yet.","誰も免疫を持たず、ワクチンも治療法もまだ存在しない世界。","Niemand ist immun, und es gibt weder Impfstoff noch Behandlung.","Ни у кого нет иммунитета, вакцины и лечения ещё не существует.","Nadie es inmune y todavía no existe vacuna ni tratamiento.")
+            : window.IntMapLang.t(HOST.lang,"Starts from the immunity, vaccines and treatments this disease actually has in 2026.","2026年時点でこの病気に実際にある免疫・ワクチン・治療法から始める。","Beginnt mit der Immunität, den Impfstoffen und Behandlungen, die es 2026 für diese Krankheit wirklich gibt.","Начинается с иммунитета, вакцин и методов лечения, которые реально существуют для этой болезни в 2026 году.","Parte de la inmunidad, las vacunas y los tratamientos que esta enfermedad realmente tiene en 2026.");
+          hud.appendChild(note);
+          mk(window.IntMapLang.t(HOST.lang,"Infectivity R₀","基本再生産数R₀","Basisreproduktionszahl R₀","Базовое репродуктивное число R₀","Número reproductivo básico R₀"),cfg.r0,0.6,18,0.1,v=>v.toFixed(1),v=>cfg.r0=v);
+          /* ⚠ «BASE», BECAUSE IT IS NOT THE DEATH RATE THE RUN WILL SHOW: hospital overload raises it,
+             treatment and a milder variant lower it. And the preset's own number may be a CFR, which
+             has a smaller denominator than an IFR — so the metric is printed next to the slider. */
+          mk(window.IntMapLang.t(HOST.lang,"Base fatality","基準致死率","Basisletalität","Базовая летальность","Letalidad base")+' ('+preset().severity.metric+')',+(cfg.baseFatality*100).toFixed(1),0,60,0.1,v=>v+'%',v=>cfg.baseFatality=v/100);
+          /* ⚠ LATENT, NOT INCUBATION. Incubation is infection→symptoms; this is infection→infectious,
+             which is the one SEIR needs, and for influenza and COVID-19 it is the SHORTER of the two. */
+          mk(window.IntMapLang.t(HOST.lang,"Latent (d)","感染力を持つまで(日)","Latenz (T)","Латентный период (дн.)","Latencia (d)"),cfg.latentDays,0,21,1,v=>''+v,v=>cfg.latentDays=v);
+          mk(window.IntMapLang.t(HOST.lang,"Infectious (d)","感染期(日)","Ansteckend (T)","Заразность (дн.)","Contagiosidad (d)"),cfg.infectiousDays,1,21,1,v=>''+v,v=>cfg.infectiousDays=v);
+          mk(window.IntMapLang.t(HOST.lang,"Immunity (mo)","免疫(月)","Immunität (Mon.)","Иммунитет (мес.)","Inmunidad (meses)"),Math.min(120,cfg.naturalImmunityMonths),0,120,1,v=>v>=120?'∞':(v<=0?'—':(''+v)),v=>cfg.naturalImmunityMonths=(v>=120?600:v));
+          const adv=document.createElement('button'); adv.textContent=(advanced?'▾ ':'▸ ')+window.IntMapLang.t(HOST.lang,"Advanced","詳細設定","Erweitert","Дополнительно","Avanzado"); adv.style.cssText='border:none;background:none;color:var(--primary-color);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 0;'; adv.onclick=()=>{ advanced=!advanced; renderConfig(); }; hud.appendChild(adv);
+          if(advanced){
+            mk(window.IntMapLang.t(HOST.lang,"Initial immunity","初期免疫","Anfangsimmunität","Начальный иммунитет","Inmunidad inicial"),Math.round(cfg.initialImmunity*100),0,95,1,v=>v+'%',v=>cfg.initialImmunity=v/100);
+            /* ⚠ IT IS A CLUSTER, NOT A PATIENT ZERO. The old UI said «patient zero» and seeded up to
+               a few thousand exposed people, which is a different thing and a different epidemic. */
+            mk(window.IntMapLang.t(HOST.lang,"Initial cases","初期感染者数","Anfangsfälle","Начальные случаи","Casos iniciales"),cfg.initialCases,1,5000,1,v=>grp(v),v=>cfg.initialCases=v);
+            mk(window.IntMapLang.t(HOST.lang,"Seasonality","季節性","Saisonalität","Сезонность","Estacionalidad"),Math.round(cfg.seasonality*100),0,60,1,v=>v+'%',v=>cfg.seasonality=v/100);
+            mk(window.IntMapLang.t(HOST.lang,"Start month","開始月","Startmonat","Месяц начала","Mes de inicio"),Math.round(cfg.startDayOfYear/30.4)+1,1,12,1,v=>''+v,v=>cfg.startDayOfYear=Math.round((v-1)*30.4)+1);
+            mk(window.IntMapLang.t(HOST.lang,"Travel","移動量","Reisen","Поездки","Viajes"),Math.round(cfg.mobility*100),0,300,5,v=>v+'%',v=>cfg.mobility=v/100);
+            pills([{k:'none',t:window.IntMapLang.t(HOST.lang,"No response","対策なし","Keine Maßnahmen","Без мер","Sin respuesta")},{k:'adaptive',t:window.IntMapLang.t(HOST.lang,"Adaptive","状況に応じて","Adaptiv","Адаптивные","Adaptativa")},{k:'strong',t:window.IntMapLang.t(HOST.lang,"Strong","強い対策","Streng","Строгие","Estricta")}],k=>k===cfg.interventions,k=>{ cfg.interventions=k; renderConfig(); });
+            const sd=document.createElement('div'); sd.style.cssText='display:flex;align-items:center;gap:8px;font-size:11.5px;margin:5px 0;';
+            const sl=document.createElement('span'); sl.textContent=window.IntMapLang.t(HOST.lang,"Seed","乱数シード","Zufallsstartwert","Зерно","Semilla"); sl.style.cssText='flex:0 0 118px;color:var(--text-muted);';
+            const si=document.createElement('input'); si.type='text'; si.value=String(runSeed); si.inputMode='numeric'; si.style.cssText='flex:1;min-width:0;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:8px;padding:5px 8px;font-size:11.5px;';
+            si.oninput=()=>{ const v=parseInt(si.value,10); if(isFinite(v)) runSeed=v>>>0; };
+            sd.appendChild(sl); sd.appendChild(si); hud.appendChild(sd);
+            const src=document.createElement('div'); src.style.cssText='font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.4;'; src.textContent=(preset().sources||[]).join(' · '); hud.appendChild(src);
+          }
+          const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=window.IntMapLang.t(HOST.lang,"▶ Tap a country on the map to start the outbreak there","▶ 地図で最初に流行が始まる国をタップ","▶ Tippen Sie auf der Karte ein Land an, in dem der Ausbruch beginnt","▶ Нажмите на карте страну, где начнётся вспышка","▶ Toque en el mapa el país donde comenzará el brote"); hud.appendChild(hint);
+          hud.appendChild(disclaimer());
         }
+        /* ⚠ SAY WHAT IT IS. CDC says it of its own measles simulator, and this one simplifies far
+           more: one well-mixed compartment set per country, and importation from distance + a
+           development proxy rather than from airline routes or passenger volumes. */
+        function disclaimer(){ const d=document.createElement('div'); d.style.cssText='margin-top:8px;font-size:10px;color:var(--text-muted);line-height:1.4;'; d.textContent=window.IntMapLang.t(HOST.lang,"Simplified educational model (stochastic SEIR, one compartment set per country). Not a forecast.","教育目的の簡略モデル（確率的SEIR・国ごとに1区画）。予測ではありません。","Vereinfachtes Lehrmodell (stochastisches SEIR, ein Kompartimentsatz je Land). Keine Prognose.","Упрощённая учебная модель (стохастическая SEIR, один набор отсеков на страну). Это не прогноз.","Modelo educativo simplificado (SEIR estocástico, un conjunto de compartimentos por país). No es una previsión."); return d; }
         function renderRun(ended){ hud.innerHTML='';
           const stats=document.createElement('div'); stats.id='pg-pan-stats'; stats.style.cssText='margin-bottom:7px;line-height:1.65;'; hud.appendChild(stats);
-          const evt=document.createElement('div'); evt.id='pg-evt'; evt.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:8px;min-height:14px;line-height:1.35;'; evt.textContent=lastEvt.replace(/<[^>]+>/g,''); hud.appendChild(evt);
+          const evt=document.createElement('div'); evt.id='pg-evt'; evt.style.cssText='font-size:11px;color:var(--text-muted);margin-bottom:8px;min-height:14px;line-height:1.35;'; evt.textContent=lastEvt; hud.appendChild(evt);
           const row=document.createElement('div'); row.style.cssText='display:flex;gap:8px;align-items:center;';
           if(ended){ const again=document.createElement('button'); again.textContent=window.IntMapLang.t(HOST.lang,"New outbreak","もう一度","Neuer Ausbruch","Новая вспышка","Nuevo brote"); again.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:10px;font-weight:700;cursor:pointer;'; again.onclick=()=>{ exit(); setTimeout(()=>window._pgPandemic&&window._pgPandemic(),120); }; row.appendChild(again); }
-          else { const play=document.createElement('button'); const setPlay=()=>play.textContent=running?(window.IntMapLang.t(HOST.lang,"⏸ Pause","⏸ 一時停止","⏸ Pause","⏸ Пауза","⏸ Pausa")):(window.IntMapLang.t(HOST.lang,"▶ Play","▶ 再開","▶ Abspielen","▶ Воспроизвести","▶ Reproducir")); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
+          else { const play=document.createElement('button'); const setPlay=()=>play.textContent=running?window.IntMapLang.t(HOST.lang,"⏸ Pause","⏸ 一時停止","⏸ Pause","⏸ Пауза","⏸ Pausa"):window.IntMapLang.t(HOST.lang,"▶ Play","▶ 再開","▶ Abspielen","▶ Воспроизвести","▶ Reproducir"); play.style.cssText='flex:1;border:none;border-radius:10px;background:var(--primary-color);color:#fff;padding:9px;font-weight:700;cursor:pointer;'; play.onclick=()=>{ if(running) stop(); else start(); setPlay(); }; setPlay(); row.appendChild(play);
+            /* ⚠ WALL CLOCK ONLY. ×8 shows the same epidemic sooner; it does not make a different one. */
             const spd=document.createElement('button'); spd.textContent='⏩ x'+speed; spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=8?1:speed*2; spd.textContent='⏩ x'+speed; }; row.appendChild(spd); }
           const ex=document.createElement('button'); ex.textContent='×'; ex.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;cursor:pointer;'; ex.onclick=exit; row.appendChild(ex);
-          hud.appendChild(row); updateHud(totals());
+          hud.appendChild(row); hud.appendChild(disclaimer()); updateHud();
         }
         function onPick(e){ if(!picking) return; let hit=null; for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } }
-          if(hit==null) return; picking=false; R0_BASE=P.r0; seed(hit,Math.max(60,pop[hit]*2e-6)); buildDots(); renderRun(false); start();
-          news((window.IntMapLang.t(HOST.lang,"Patient zero confirmed in ","最初の感染者が確認されました — ","Patient null bestätigt in ","Нулевой пациент подтверждён в ","Paciente cero confirmado en "))+nm[hit]+'.','alert');
+          if(hit==null) return; picking=false;
+          model=createPandemicModel({countries:world,preset:preset(),params:cfg,seed:runSeed});
+          model.seed(hit,cfg.initialCases); day=model.day; buildDots(); renderRun(false); start();
+          news(jp()?('最初の集団感染が'+nm[hit]+'で確認されました（'+grp(cfg.initialCases)+'人）。'):('First cluster confirmed in '+nm[hit]+' ('+grp(cfg.initialCases)+' cases).'),'alert');
         }
         GE().events.on('click',onPick);
         function exit(){ stop(); try{ GE().events.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(GE().layers.has(id))GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots'))GE().layers.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }
