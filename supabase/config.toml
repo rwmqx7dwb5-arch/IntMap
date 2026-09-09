@@ -213,3 +213,13 @@ verify_jwt = false
 # is one more thing to be down. Keyless & public; no user data reaches it.
 [functions.volcano-feed]
 verify_jwt = false
+
+# radiation-feed (#R574) merges the MEASURED ambient gamma dose rate published by six national
+# networks — BfS (DE), NRA/RAMIS (JP), STUK via FMI (FI), HKO (HK), RIVM (NL) and EPA RadNet (US) —
+# into one array in one unit (nSv/h). Two of the six send no usable CORS header at all (RAMIS
+# answers with its own origin; RadNet sends none), and the other four arrive in four different
+# encodings, so the normalisation happens here rather than as four parsers in the boot bundle.
+# ⚠ The registry is _shared/radiation-sources.js, which is a LIBRARY and must never get a
+# [functions.*] block of its own. Keyless & public; no user data reaches it.
+[functions.radiation-feed]
+verify_jwt = false

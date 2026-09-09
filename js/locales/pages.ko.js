@@ -603,5 +603,12 @@ window.IntMapPageI18N.define('ko', {
     "Weather warnings, China — China Meteorological Administration public warning list": "경보 레이어가 실시간으로 읽음: 중국기상국이 공개하는 발효 중 경보 목록입니다. 도형이 없으므로 국가는 발효 중 최고 등급으로 칠하고, 누르면 성(省)별로 묶어 나열합니다. CORS 헤더를 보내지 않아 앱 자체 중계 함수를 통합니다.",
     "Weather warnings worldwide — national meteorological services via the WMO Severe Weather Information Centre (CAP)": "위 표에 자체 피드가 없는 모든 나라에 대해 경보 레이어가 실시간으로 읽습니다. 각국 기상기관이 직접 발표한 경보를, 그 기관이 그린 폴리곤·그 기관의 표현·그 기관이 매긴 CAP 심각도 그대로 WMO가 재배포한 것입니다. WMO는 전달 경로일 뿐 작성자가 아니며, 패널은 발표 기관의 이름을 표시합니다.",
     "WMO Members and their CAP implementation status (which national service files CAP, and which does not)": "세션당 한 번 읽습니다. 어느 회원국의 CAP 구현이 완료되었는지에 대한 WMO 자체 기록입니다. 완료로 기록된 나라만 대응 국가로 그립니다.",
+    "Bundesamt für Strahlenschutz (BfS) — ODL-Messnetz (Datenlizenz Deutschland – Namensnennung – Version 2.0)": "실측 방사선 레이어가 실시간으로 읽습니다: 독일 ODL 관측망 약 1,700개 측점의 주변선량당량률 H*(10). 상류는 µSv/h의 시간 평균이며, 서버에서 한 번만 nSv/h로 정규화합니다. 약 1년치를 거슬러 볼 수 있어 레이어가 시계를 따라갑니다. ⚠ BfS는 2025년 7월 1일에 관측망 전체를 다시 계산했으므로, 그 날짜를 가로지르는 계열에는 14~25%의 단차가 있습니다 — 방사선이 아니라 교정이 바뀐 결과입니다.",
+    "原子力規制委員会 — 放射線モニタリング情報 (Nuclear Regulation Authority, Japan; 政府標準利用規約 2.0)": "실측 방사선 레이어가 실시간으로 읽습니다: 일본 원자력규제위원회가 RAMIS로 공개하는 모니터링 포스트의 현재값 — 약 5,400개 측점, µSv/h를 nSv/h로 정규화합니다. 앱 자체 중계 함수를 통해 가져오며, 이 인터페이스가 해당 구간의 모든 표본을 돌려주므로 측점마다 가장 최근 값만 남깁니다.",
+    "Säteilyturvakeskus (STUK) via Ilmatieteen laitos open data (CC BY 4.0)": "실측 방사선 레이어가 실시간으로 읽습니다: 핀란드 외부방사선 감시망 약 240개 측점의 H*(10). 핀란드 기상연구소의 공개 데이터가 10분 평균으로 제공하는 값을 nSv/h로 정규화합니다. 공개된 보관 기록은 2010년 이후 분이 남아 있어, 시계를 과거로 크게 옮겨도 계속 답하는 관측망입니다.",
+    "US EPA RadNet": "실측 방사선 레이어가 읽습니다: 미국 RadNet 고정 관측소의 시간 평균값(nSv/h). ⚠ RadNet은 관측소별·연도별로 CSV 파일을 하나씩 배포하므로, 미국은 기본 일괄 요청에 들어가지 않습니다 — 앱이 다섯 곳씩 나누어 가져옵니다. 채취 시각은 출처가 적은 그대로, 시간대 표기가 없는 현지 시각으로 보존합니다.",
+    "RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)": "⚠ 이것은 2011년 연평균이며 현재값이 아닙니다. 네덜란드 국가 방사능 감시망 151개 측점에 대해 RIVM이 연평균 선량률을 nSv/h로 공개한 값입니다(RIVM 자신의 실시간 표시는 재구축 중입니다). IntMap은 이를 현재값과 분리된 집합으로 보관하고 현재값 색 눈금으로 칠하지 않습니다 — 20분 전의 측정값과 15년 전의 연평균이 같은 것으로 보이지 않게 하기 위해서입니다.",
+    "Hong Kong Observatory — ambient gamma radiation (data.gov.hk)": "실측 방사선 레이어가 실시간으로 읽습니다: 홍콩천문대 11개 관측소의 주변 감마선량률 일평균값. 전날 자 공보에서 읽어(µSv/h) nSv/h로 정규화합니다.",
+    "SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)": "⚠ 출처 목록에는 남겨 두었지만, 현재 이 출처의 값은 지도에 하나도 올라 있지 않습니다. 우크라이나의 공개 데이터는 관측 지점 좌표와 측정값 일괄 보관본으로 이루어져 있고, 현재값을 돌려주는 공개 엔드포인트가 없습니다(SaveEcoBot 자체 API는 키를 요구합니다). 측정값 없는 좌표 목록은 선량 지도가 아니므로 우크라이나는 채우지 않고 비워 두었으며, 그 공백을 감추지 않고 밝히기 위해 이 출처를 여기에 남겨 둡니다.",
   }
 });

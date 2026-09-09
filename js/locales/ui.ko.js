@@ -6192,4 +6192,26 @@ window.IntMapLang.define('ko', { ui: {
   "left the modelled area": "모델 영역 밖으로 유출",
   "still airborne when the window closed": "계산 종료 시점에 아직 대기 중",
   "Not on this map": "이 지도에 포함되지 않은 것",
+  /* ══ (#R574) MEASURED RADIATION — the ambient gamma dose rate layer ══ */
+  "Measured radiation": "실측 방사선",   /* map-ui.js (#R574) */
+  "Measured radiation — ambient gamma dose rate": "실측 방사선 — 주변선량당량률(감마)",   /* beta-overlays.js radiation-layer.js (#R574) */
+  "stations": "개소",   /* radiation-layer.js (#R574) */
+  "unavailable: ": "가져올 수 없음: ",   /* atlas-controls.js (#R574) */
+  "Loading history…": "이력을 불러오는 중…",   /* radiation-layer.js (#R574) */
+  "No history published for this station.": "이 관측소는 이력을 공개하지 않습니다.",   /* radiation-layer.js (#R574) */
+  "Could not reach the networks.": "관측망에 연결할 수 없습니다.",   /* radiation-layer.js (#R574) */
+  "Radiation measurements are unavailable right now.": "지금은 방사선 실측값을 가져올 수 없습니다.",   /* beta-overlays.js (#R574) */
+  "{n} stations within {k} km": "{k} km 이내 관측소 {n}개",   /* atlas-controls.js (#R574) */
+  "No monitoring station within {k} km publishes an open-licensed reading. That is a gap in coverage, not a statement about the radiation there.": "{k} km 이내에는 개방형 라이선스로 측정값을 공개하는 감시 관측소가 없습니다. 이는 관측망의 공백일 뿐, 그곳의 방사선량에 대한 언급이 아닙니다.",   /* atlas-controls.js (#R574) */
+  "Measured radiation on — {n} stations from {m} networks": "실측 방사선을 켰습니다 — 관측망 {m}개의 관측소 {n}개",   /* atlas-controls.js (#R574) */
+  "Measured radiation layer off.": "실측 방사선 레이어를 껐습니다.",   /* atlas-controls.js (#R574) */
+  "Give a coordinate to measure around.": "측정 기준이 될 좌표를 지정하세요.",   /* atlas-controls.js (#R574) */
+  "50–200 nSv/h is normal natural background almost everywhere. Rain alone can lift a station up to three times higher for a few hours, and most of these readings are published unvalidated — so one high station is not evidence of a release.": "50–200 nSv/h는 거의 모든 지역에서 정상적인 자연 방사선 준위입니다. 비만 내려도 몇 시간 동안 관측값이 최대 3배까지 올라갈 수 있고, 이 값들은 대부분 검증되지 않은 채로 공개됩니다 — 따라서 한 관측소의 값이 높다는 것이 방출의 증거가 되지는 않습니다.",   /* radiation-layer.js (#R574) */
+  "{n} more stations publish a period average, not a current reading — set the clock to their year to see them.": "다른 {n}개 관측소는 현재 값이 아니라 기간 평균을 공표합니다 — 시계를 해당 연도로 맞추면 표시됩니다.",   /* radiation-layer.js (#R574) */
+  "below this detector’s stated range": "이 검출기의 표시 측정 범위 미만",   /* radiation-layer.js (#R574) */
+  "published average for a period — not a current reading": "기간 평균으로 공표된 값 — 현재 값이 아닙니다",   /* radiation-layer.js (#R574) */
+  "still loading one network…": "한 관측망을 아직 불러오는 중…",   /* radiation-layer.js (#R574) */
+  "Measured right now near the source": "지금 방출원 부근에서 실측된 값",   /* atlas-console.js (#R574) */
+  "That name also matches {o}; this run uses {u}.": "이 이름은 {o}에도 해당합니다. 이번 실행에서는 {u}을(를) 사용했습니다.",   /* atlas-console.js (#R574) */
+  "These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.": "이 값들은 관측값이며 위 모델의 일부가 아닙니다. 50–200 nSv/h는 통상적인 자연 방사선 준위이고, 비만 내려도 한 관측소의 값이 몇 시간 동안 3배가 될 수 있습니다.",   /* atlas-console.js (#R574) */
 } });

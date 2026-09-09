@@ -27,7 +27,7 @@ window.IntMapModules.betaOverlays=function(HOST){
   (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
-    const state={ukr:false,bldg:false,hist:false,volc:false,whs:false};
+    const state={ukr:false,bldg:false,hist:false,volc:false,whs:false,radobs:false};
     const PROX=[x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`];
     const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
 
@@ -1038,6 +1038,47 @@ window.IntMapModules.betaOverlays=function(HOST){
         },{label:'Narrow the World Heritage list',group:'heritage',btn:'beta-dl-whs'});
       }
     }catch(_){}
+    /* ---------- (#R574) MEASURED RADIATION — the row is here, the layer is not -------------------
+       Same split as the volcano overlays: the Layers row and the IntMapOS command must exist from
+       boot (a command that appears only after its module is downloaded is a capability Atlas can
+       never offer — see the note above volcano.open), while js/radiation-layer.js and the ~8,500
+       station readings it fetches arrive on the FIRST switch-on and not a byte before.
+       ⚠ This is the MEASURED layer. The plume SIMULATION is IntMapRadiation in js/sims.js and the
+       two are deliberately different things; docs/RADIATION.md says why they must not share a ramp. */
+    function radobsToggle(on){
+      state.radobs=!!on;
+      return window.IntMapLazy.need('radiationLayer').then(ok=>{
+        if(!ok||!window.IntMapRadiationObs){
+          /* a feature that silently stops existing is this project's most expensive recurring
+             defect — so the row un-checks itself rather than sitting on with nothing under it. */
+          try{ const cb=document.getElementById('beta-dl-radobs'); if(cb&&cb.checked){ cb.checked=false; cb.closest('.lyr-row').classList.remove('on'); } }catch(_){}
+          try{ imToast(L(LA('Radiation measurements are unavailable right now.','放射線の実測値をいま取得できません。','Strahlungsmesswerte sind derzeit nicht verfügbar.','Измерения радиации сейчас недоступны.','Las mediciones de radiación no están disponibles ahora.'))); }catch(_){}
+          return false;
+        }
+        return window.IntMapRadiationObs.toggle(state.radobs);
+      });
+    }
+    try{
+      const OS=window.IntMapOS;
+      if(OS&&OS.register){
+        OS.register('radiation.observed',(ctx)=>{
+          const on=((ctx&&ctx.params)||{}).on!==false;
+          try{ const cb=document.getElementById('beta-dl-radobs'); if(cb&&cb.checked!==on){ cb.checked=on; cb.dispatchEvent(new Event('change')); return {ok:true}; } }catch(_){}
+          return Promise.resolve(radobsToggle(on)).then(ok=>({ok:!!ok}));
+        },{label:'Measured radiation (ambient gamma dose rate)',group:'radiation',btn:'beta-dl-radobs'});
+        /* the join that makes 「原発 → 実測線量 → 風 → 拡散」 one chain rather than four features:
+           any point on earth, and the instruments that are actually reading around it. */
+        OS.register('radiation.near',(ctx)=>{
+          const p=(ctx&&ctx.params)||{};
+          if(typeof p.lat!=='number'||typeof p.lon!=='number') return {ok:false,err:'no point given'};
+          return window.IntMapLazy.need('radiationLayer').then(ok=>{
+            if(!ok||!window.IntMapRadiationObs) return {ok:false,err:'radiation module unavailable'};
+            const go=()=>({ok:true,stations:window.IntMapRadiationObs.near(p.lat,p.lon,p.km).slice(0,40)});
+            return window.IntMapRadiationObs.state().stations?go():window.IntMapRadiationObs.load(null).then(go);
+          });
+        },{label:'Measuring stations around a point',group:'radiation'});
+      }
+    }catch(_){}
 
     /* ---------- rows in the Layers panel (histb/ukrfront now file into "Strategic geography" via
        reorganizeLayerPanel — promoted out of beta (#R20); bldg3d + volc2 stay in Others(beta)) ---------- */
@@ -1049,7 +1090,8 @@ window.IntMapModules.betaOverlays=function(HOST){
       volcash:LA('Volcanic ash areas in force (SIGMET)','有効な火山灰域（SIGMET）','Gültige Vulkanasche-Gebiete (SIGMET)','Действующие зоны вулканического пепла (SIGMET)','Zonas de ceniza volcánica vigentes (SIGMET)'),
       volchaz:LA('Volcano hazard zones (USGS)','火山ハザード域（USGS）','Vulkangefahrenzonen (USGS)','Зоны вулканической опасности (USGS)','Zonas de peligro volcánico (USGS)'),
       volcso2:LA('Satellite SO₂ column (OMPS)','衛星 SO₂ 全量（OMPS）','Satelliten-SO₂-Säule (OMPS)','Столб SO₂ со спутника (OMPS)','Columna de SO₂ satelital (OMPS)'),
-      whs:LA('World Heritage — every UNESCO property','世界遺産 — ユネスコの全登録物件','Welterbe — alle UNESCO-Stätten','Всемирное наследие — все объекты ЮНЕСКО','Patrimonio Mundial — todos los bienes de la UNESCO')};
+      whs:LA('World Heritage — every UNESCO property','世界遺産 — ユネスコの全登録物件','Welterbe — alle UNESCO-Stätten','Всемирное наследие — все объекты ЮНЕСКО','Patrimonio Mundial — todos los bienes de la UNESCO'),
+      radobs:LA('Measured radiation — ambient gamma dose rate','実測放射線 — 周辺γ線量率','Gemessene Strahlung — Umgebungs-Gammadosisleistung','Измеренная радиация — мощность амбиентной дозы гамма-излучения','Radiación medida — tasa de dosis gamma ambiental')};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-ukrfront')) return;
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       /* ⚠ (#R353) THE COUNT CAME OUT OF THE ROW LABEL. It read 「全1,215座」 in five languages while
@@ -1060,7 +1102,8 @@ window.IntMapModules.betaOverlays=function(HOST){
          fetches js/volcano-layers.js on its FIRST switch-on and nothing before that. */
       [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['volc2','#ff6a3d',volcToggle],
        ['volcash','#7b5cff',(on)=>volcOverlay('ash',on)],['volchaz','#d1381f',(on)=>volcOverlay('hazard',on)],
-       ['volcso2','#8ad3c8',(on)=>volcOverlay('so2',on)],['whs','#c9903a',whsToggle]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
+       ['volcso2','#8ad3c8',(on)=>volcOverlay('so2',on)],['whs','#c9903a',whsToggle],
+       ['radobs','#39c07c',radobsToggle]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
         const cb=row('beta-dl-'+k, L.arr(BLBL[k]), sw);
         cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); fn(e.target.checked); });
       });

@@ -179,6 +179,8 @@ const MEMBER = {
   photoGeo: ['IntMapPhotoGeo', 'open'],
   shakeMap: ['IntMapShakeMap', 'open'],
   netHealthLive: ['__imNetHealth', 'report'],   /* (#R546) */
+  shakeMap: ['IntMapShakeMap', 'open'],   /* (#R546) */
+  radiationLayer: ['IntMapRadiationObs', 'toggle'],   /* (#R574) the measured-radiation layer's door is its toggle — docs/RADIATION.md */
   /* (#R311) the six that moved this round. Each names the member its OWN doors call, so a module
      that loaded and registered half of itself is still a failure here: the data-center row calls
      toggle(), the aircraft click open(), the Measure tool setRing(), the comparison panel open(),

@@ -394,6 +394,21 @@ window.IntMapRefData=(function(){
     {n:'噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)',u:'https://www.jma.go.jp/bosai/map.html#contents=volcano'},
     {n:'International SIGMET (volcanic ash) — NOAA Aviation Weather Center',u:'https://aviationweather.gov/'},
     {n:'NASA GIBS — OMPS SO₂, upper troposphere & stratosphere',u:'https://www.earthdata.nasa.gov/'},
+    /* (#R574) MEASURED RADIATION — the national gamma dose-rate networks. Attribution is a LICENCE
+       CONDITION for most of these, not a courtesy, so the layer legend also names whichever of them
+       actually answered. The roster and the licence text are canonical in docs/RADIATION.md; the
+       machine-readable roster is supabase/functions/_shared/radiation-sources.js.
+       ⚠ EURDEP IS DELIBERATELY ABSENT. Its data stays under each national provider's copyright and
+       may not be reused without their prior written agreement — and BfS's own site policy says the
+       same thing about the third-party data it mirrors, which is why its `eurdep_latestValue` layer
+       is not carried either even though it fetches. */
+    {n:'Bundesamt für Strahlenschutz (BfS) — ODL-Messnetz (Datenlizenz Deutschland – Namensnennung – Version 2.0)',u:'https://odlinfo.bfs.de/'},
+    {n:'原子力規制委員会 — 放射線モニタリング情報 (Nuclear Regulation Authority, Japan; 政府標準利用規約 2.0)',u:'https://www.ramis.nra.go.jp/'},
+    {n:'Säteilyturvakeskus (STUK) via Ilmatieteen laitos open data (CC BY 4.0)',u:'https://en.ilmatieteenlaitos.fi/open-data'},
+    {n:'US EPA RadNet',u:'https://www.epa.gov/radnet'},
+    {n:'RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)',u:'https://www.rivm.nl/nationaal-meetnet-radioactiviteit'},
+    {n:'Hong Kong Observatory — ambient gamma radiation (data.gov.hk)',u:'https://data.weather.gov.hk/'},
+    {n:'SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)',u:'https://data.gov.ua/'},
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
