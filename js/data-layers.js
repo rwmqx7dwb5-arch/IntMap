@@ -1473,6 +1473,39 @@ window.IntMapModules.dataLayers=function(HOST){
       }
     });
 
+    /* ══ (#R577) THE WAVE ROW — THE SWITCH IS EAGER, THE LAYER IS NOT ═══════════════════════════
+       js/waves.js carries a WebGL renderer, Windy's colour ramp and the forecast plumbing, so it is a
+       LAZY module (js/lazy-modules.js): a session that never ticks this box downloads none of it. A
+       lazy module cannot create its own row — nothing would ever have fetched it — so the row is here
+       and the first tick is what fetches the body. Everything the reader can then change (opacity,
+       the ECMWF WAM ⇄ NOAA GFS Wave picker, the animation, the forecast hour) lives in that layer's
+       own legend, which the module owns.
+       ⚠ NO SLIDER IN THIS ROW. #R16's rule (docs/MAP-LAYERS.md §7.10) puts a per-layer control in
+       that layer's LEGEND, and css/intmap.css hides Layers-panel sliders regardless — a slider here
+       would be wired, correct and unreachable, which is exactly what #R290 measured on the ECMWF rows. */
+    (function mountWaveRow(){
+      if(!dd||document.getElementById('lyrrow-waves')) return;
+      const nm=()=>window.IntMapLang.t(HOST.lang,'Waves','波','Wellen','Волны','Olas');
+      const w=document.createElement('div'); w.className='lyr-row'; w.id='lyrrow-waves';
+      w.innerHTML='<label class="layer-option"><input type="checkbox" id="dl-waves"> <span class="wv-lbl"></span></label>';
+      w.querySelector('.wv-lbl').textContent=nm();
+      dd.appendChild(w);
+      const cb=w.querySelector('#dl-waves');
+      cb.addEventListener('change',()=>{
+        const on=cb.checked; w.classList.toggle('on',on);
+        /* ⚠ THE DOOR AWAITS, AND A FAILED FETCH PUTS THE BOX BACK (#R209). `need()` answers false when
+           the module could not be downloaded; leaving the box ticked over a map with nothing on it is
+           this project's most expensive recurring defect. */
+        Promise.resolve().then(()=>window.IntMapLazy.need('waves')).then(ok=>{
+          if(!ok){ if(on){ cb.checked=false; w.classList.remove('on'); } return null; }
+          return window.IntMapWaves.toggle(on);
+        }).catch(()=>{});
+      });
+      /* the reader is in the panel the layer is in — start the download, wait on nothing */
+      w.addEventListener('pointerenter',()=>{ try{ window.IntMapLazy.hint('waves'); }catch(_){} });
+      window.addEventListener('intmap-lang',()=>{ try{ const s=w.querySelector('.wv-lbl'); if(s) s.textContent=nm(); }catch(_){} });
+    })();
+
     /* (#R13) Re-classify the WHOLE layer panel into one coherent taxonomy. The static "Strategic
        geography / networks" groups, the dynamic data layers, the ECMWF rows and the land-cover rows are
        all appended from different places (static HTML + several IIFEs), so rather than rewrite each
@@ -1773,7 +1806,11 @@ window.IntMapModules.dataLayers=function(HOST){
           /* (#R261) `planes` LEFT for Transport & mobility (it is aircraft, not ocean); tides and
              ocean currents ARRIVED from the beta sweep — both are finished world-packs layers with
              their own panel, legend and sources, and neither was ever demoted by an instruction. */
-          ['lyrGrpMaritime',['sst','currents','gxsstanom','tides','gxseaice'],3],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
+          /* (#R577) 波 `waves` — significant wave height + the wave-direction animation (js/waves.js).
+             ⚠ IT MUST BE NAMED HERE OR IT IS NOT A MARITIME LAYER: the safety sweep at the end of this
+             function files every row nobody claimed under 「その他 (beta)」, so an unlisted row lands in
+             Beta while looking like it was placed. */
+          ['lyrGrpMaritime',['sst','waves','currents','gxsstanom','tides','gxseaice'],3],   /* (#R184) the live-satellite layer filed beside live aircraft — 「Live aircraft trafficの要領で」; moved to lyrGrpOrbit in #R202. (#R42b) chlorophyll-a DEMOTED to Others(beta) per request — stays out of the real group, swept into beta below */
           /* ⚠ (#R469) TWO ROWS LEFT THIS SHELF AND NEITHER WENT TO ANOTHER ONE.
              · 等高線 `contours` — 「等高線レイヤーは廃止し、標高（カラー段彩）、陰影起伏（標高）、
                カラー段彩・陰影（ASTER）の凡例内でトグルでオンオフできるように統合。」 It is a switch

@@ -84,14 +84,33 @@
                  even though its data is live and the reader could otherwise use it — a
                  share-alike obligation on the map's own presentation is a decision this
                  round is not entitled to make on the reader's behalf.
-     `roles`     which parts of the app may offer this model at all.                      */
+     `roles`     which parts of the app may offer this model at all. One of `surface`
+                 (the ordinary weather layers), `pressure` (the upper-level ones) or
+                 `wave` (#R577 — the sea state, which shares no variable with either).
+                 ⚠ A model is offered by a picker only if it carries that picker's role,
+                 so this is what keeps a wave model out of the temperature model list.  */
   var MODELS = [
     { id: 'ecmwf_ifs',   nameKey: 'ECMWF IFS HRES', km: 9,  agency: 'ECMWF',
       licence: 'CC-BY-4.0', roles: ['surface'], map: true, point: true, order: 1 },
     { id: 'ncep_gfs013', nameKey: 'NOAA GFS',       km: 13, agency: 'NOAA NCEP',
       licence: 'NOAA-open', roles: ['surface'], map: true, point: true, order: 2 },
     { id: 'dwd_icon',    nameKey: 'DWD ICON',       km: 13, agency: 'DWD',
-      licence: 'CC-BY-4.0', roles: ['surface', 'pressure'], map: true, point: true, order: 3 }
+      licence: 'CC-BY-4.0', roles: ['surface', 'pressure'], map: true, point: true, order: 3 },
+
+    /* ── the sea state (#R577) ─────────────────────────────────────────────────────────────────
+       ⚠ THESE ARE NOT ALTERNATIVE SOURCES FOR THE SAME LAYER THE OTHERS SERVE. A wave model
+       publishes `wave_height` / `wave_direction` / `wave_period` and NOT ONE of the surface
+       variables, so `roles` keeps them out of every existing picker: offering GFS Wave where the
+       reader is choosing a temperature model would list a model that cannot draw the layer.
+       Two of them, because the reader asked for a switch between them — ECMWF WAM is the family
+       Windy draws (so the numbers should be closest to it) and GFS Wave is the independent check.
+       MEASURED 2026-09-09 on the S3 upstream: WAM 0.25° carries 4 variables over 85 valid times at
+       1.43 MB a step; GFS Wave 0.25° carries 15 over 209 at 6.07 MB. Both are 1440×721 regular
+       grids the SDK's domain table already knows, so neither needs anything added to the SDK. */
+    { id: 'ecmwf_wam025',    nameKey: 'ECMWF WAM',  km: 28, agency: 'ECMWF',
+      licence: 'CC-BY-4.0', roles: ['wave'], map: true, point: false, order: 4 },
+    { id: 'ncep_gfswave025', nameKey: 'NOAA GFS Wave', km: 28, agency: 'NOAA NCEP',
+      licence: 'NOAA-open', roles: ['wave'], map: true, point: false, order: 5 }
   ];
 
   var BY_ID = Object.create(null);

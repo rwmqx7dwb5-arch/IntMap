@@ -6232,4 +6232,12 @@ window.IntMapLang.define('fr', { ui: {
   "left the modelled area": "sorti de la zone modélisée",
   "still airborne when the window closed": "encore en suspension à la fin de la fenêtre de calcul",
   "Not on this map": "Absent de cette carte",
+  "Waves": "Vagues",   /* data-layers.js waves.js (#R577) */
+  "Significant wave height, with the mean wave direction animated over it.": "Hauteur significative des vagues, avec la direction moyenne des vagues animée par-dessus.",
+  "Colours follow Windy’s wave scale.": "Les couleurs suivent l'échelle des vagues de Windy.",
+  "Wave animation": "Animation des vagues",
+  "Could not load the wave forecast": "Impossible de charger la prévision des vagues",
+  "This renderer cannot draw the wave layer.": "Ce moteur de rendu ne peut pas dessiner la couche des vagues.",
+  "no wave data": "pas de données de vagues",
+  "not a wave model": "pas un modèle de vagues",
 } });
