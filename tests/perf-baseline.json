@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4696101,
-    "gzip": 1568314,
-    "brotli": 1194636,
+    "raw": 4696191,
+    "gzip": 1568335,
+    "brotli": 1194439,
     "requests": 6,
     "modules": 293,
     "cssRaw": 340305,
     "cssGzip": 57266
   },
   "async": {
-    "raw": 10094557,
-    "gzip": 3297158,
+    "raw": 10095888,
+    "gzip": 3297664,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24512,
@@ -78,12 +78,12 @@
       "volcano-layers": 15115,
       "volume3d": 15905,
       "war-layer": 29088,
-      "waves": 34023
+      "waves": 35354
     }
   },
   "dist": {
-    "total": 244911514,
+    "total": 244912935,
     "data": 189514316,
-    "assets": 17508873
+    "assets": 17510294
   }
 }
