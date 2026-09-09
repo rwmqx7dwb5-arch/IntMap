@@ -141,16 +141,29 @@ test('R628 the three new document rules actually go red', { timeout: 900_000 }, 
       assert.equal(r.code, 1, 'a roster in the alias spelling was accepted');
       assert.match(r.out, /alias/, 'the report does not say the spelling is an alias');
     });
+
+    /* ⑤b 変異していない木では、この回が足した規則が緑であること。
+       ⚠ **この主張はロックの中でしか成り立たない。** 最初はロックを取らない ⑥ に置いていて、
+       全件並列で赤くなった——`tests/r274-checks` ③ は**ロックを取ったうえで未追跡の文書を
+       `docs/` に書き下ろす**負の証拠で、#R628 が母集合に未追跡分を足したことで、その 334 秒の
+       あいだ `doc-index` は正しく赤い。**木の状態についての主張は、木を止めてから訊く。** */
+    await t.test('⑤b the rules this round added are green on the unmutated tree', () => {
+      for (const rule of ['section-refs', 'gate-callers', 'bordercoast-rings', 'doc-index', 'languages']) {
+        assert.equal(only(rule).code, 0, `${rule} is not green on the unmutated tree`);
+      }
+    });
   });
 });
 
 /* ── ⑥ 近道そのものが黙らないこと ────────────────────────────────────────────────────────
-   ⚠ ロックも変異も要らない主張なので**取らない**。読むだけの検査がロックを待つ理由は無い
-   （#R407 実測: そこで取った版は、他ファイルが 182 秒握っている間に 180 秒で落ちた）。 */
+   ⚠ ロックを**取らない**。読むだけの検査がロックを待つ理由は無い（#R407 実測: そこで取った版は、
+   他ファイルが 182 秒握っている間に 180 秒で落ちた）。
+   ⚠ **だからここで木の状態を訊いてはならない。** 綴りを間違えた `--rule` は、どの規則が緑かに
+   関係なく exit 2 でなければならない——それが「近道が黙らない」という主張のすべてで、
+   木が緑かどうかは別の主張（⑤b）である。両方をここに置いた最初の版は、`tests/r274-checks` ③ が
+   未追跡の負の証拠を置いている 334 秒のあいだ、正しく赤い `doc-index` を自分の失敗として読んだ。 */
 test('R628 ⑥ --rule= with a name that matches nothing is an error, not a pass', () => {
   const r = docFacts('--rule=section-ref');            /* 本物は section-refs */
   assert.equal(r.code, 2, 'a misspelt --rule exited as though the rule had passed');
-  for (const rule of ['section-refs', 'gate-callers', 'doc-index', 'languages']) {
-    assert.equal(only(rule).code, 0, `${rule} is not green on the unmutated tree`);
-  }
+  assert.match(r.out, /matched no rule/, 'the report does not say the name matched nothing');
 });
