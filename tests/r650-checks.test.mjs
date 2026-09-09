@@ -1,5 +1,5 @@
 /* ============================================================================
- *  #R590 — WHO Disease Outbreak News as an event layer
+ *  #R650 — WHO Disease Outbreak News as an event layer
  * ----------------------------------------------------------------------------
  *  ⚠ THESE ASK THE DATA AND THE FUNCTIONS, NOT THE SPELLING. #R488 / #R521 / #R546 all record the
  *  same failure: a check that fixes a literal keeps passing while the thing it names dies. So the
@@ -127,7 +127,7 @@ test('④ the shipped corpus is a corpus, and it still holds the three states', 
   assert.ok(c.events.every((e) => Array.isArray(e.c)), 'every item has a country list, even an empty one');
   assert.ok(c.events.every((e) => !e.s || /^\d{4}-\d{2}-\d{2}$/.test(e.s)));
 
-  /* ⚠⚠⚠ THE ONE THAT #R590's FIRST BUILD FAILED. `EmergencyEvent.Title` is PRESENT on 98.3 % of
+  /* ⚠⚠⚠ THE ONE THAT #R650's FIRST BUILD FAILED. `EmergencyEvent.Title` is PRESENT on 98.3 % of
      items and is a BARE YEAR on 2,700 of them — every item published in 2014 said «2014» — so the
      layer's pathogen filter offered years as diseases (#R534: a field's presence read as its
      meaning). Every event must carry a name, and no name may be a year. */

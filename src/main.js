@@ -74,7 +74,7 @@ import '../js/map-typography.js';
 import '../js/compass.js';
 /* (#R289) CHRONOS — the one master clock, window.IntMapTime. Published at IMPORT time now, which
    is strictly earlier than the closure it used to live in. See js/chronos.js. */
-import '../js/chronos.js';
+import '../js/chronos.js'; import '../js/hist-scale.js';   /* (#R604) …and the deep-time ARITHMETIC the clock and the Chronos panel both read: decimal years, the OpenHistoricalMap date filter, the year rail. No DOM, no map, no clock, so tests/r604-checks can evaluate it — which is the whole reason it is not three helpers inside its two readers (#R570). ON THIS LINE because the app shell has a line budget (tests/r168 #8) and it is full. */
 import '../js/layer-home.js';   /* (#R313) the SET of layers allowed to move the camera on a toggle — CONSTITUTION §3's one exception, and the one table that holds it */
 /* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
    「今後IntMapの設定言語を追加するのが、1発で終わるように。」
@@ -218,7 +218,7 @@ import '../js/industry-web.js';
    nothing here depends on load order beyond "defined before first use". Both ocean-current layers
    (the World-data plate and the older data-layers row) read the same grid through it. */
 import '../js/ocean-currents-field.js';
-import '../js/ocean-currents.js'; import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R590) …and the WHO Disease Outbreak News layer, ON THIS LINE for the shell budget (tests/r168 #8) and after world-packs for the same toolkit reason. */
+import '../js/ocean-currents.js'; import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R650) …and the WHO Disease Outbreak News layer, ON THIS LINE for the shell budget (tests/r168 #8) and after world-packs for the same toolkit reason. */
 import '../js/precip-annual.js';   /* (#R266) 年降水量 — CHELSA 1 km normal + GPCC per-year, both bundled rasters */
 /* (#R322) the SHELL only. #R311 measured that two of this file's five factories build Layers-panel
    buttons at boot, so it cannot be deferred whole; the five bodies live in
@@ -388,7 +388,7 @@ const MODULE_FACTORIES = [
    (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
    GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
    the aircraft layer, aircraft search or an Atlas aviation command asks for it. (#R353) …and the two volcano modules — see js/lazy-modules.js and docs/VOLCANO-INTELLIGENCE.md. (#R354) …and the three company-atlas modules — docs/COMPANIES.md §3. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers', 'companyData', 'companyPanel', 'companyFacilities', 'newsEvents', 'railways', 'atlasQuery', 'atlasChart', 'atlasAnswerView', 'photoGeo', 'shakeMap', 'netHealthLive', 'waves', 'radiationLayer']; const CARRIED_FACTORIES = ['aircraftPoints'];   /* (#R408) the third kind: registered by a file nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically, so it rides that chunk). It fits neither list above — absent at boot, and not a key js/lazy-modules.js can be asked for — so it had nowhere to be, which is how it stayed invisible. ON THIS LINE for the shell budget; the reasoning is in DEV-NOTES #R408. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers', 'companyData', 'companyPanel', 'companyFacilities', 'newsEvents', 'railways', 'atlasQuery', 'atlasChart', 'atlasAnswerView', 'photoGeo', 'shakeMap', 'netHealthLive', 'waves', 'radiationLayer']; const CARRIED_FACTORIES = ['aircraftPoints'];   /* (#R408) the third kind: registered by a file nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically, so it rides that chunk). It fits neither list above — absent at boot, and not a key js/lazy-modules.js can be asked for — so it had nowhere to be, which is how it stayed invisible. ON THIS LINE for the shell budget; the reasoning is in DEV-NOTES #R408. */
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};

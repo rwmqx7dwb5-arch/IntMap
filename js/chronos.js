@@ -31,20 +31,43 @@
  *  climate era and the day/night terminator) SUBSCRIBES to it (IntMapTime.on) and
  *  reconstructs itself for the chosen instant. `newsDate` stays the recent-archive
  *  facet (kept in lock-step) so every existing news/raster reader is untouched; the
- *  kernel adds deep-time reach (back to 1850 — #R349; it was 1900) for the subsystems that carry a real
+ *  kernel adds deep-time reach (back to year 1 — #R604; it was 1850 in #R349 and 1900 before that) for the
+ *  subsystems that carry a real
  *  historical series. Single source of truth = _when (a Date, or null = LIVE/now).
  *  When LIVE, every subsystem holds its own independent default; the moment you travel
  *  to a past instant they all sync to it, and returning to "Now" releases them. ====== */
 window.IntMapTime=(function(){
   function ymdISO(d){ return d.toISOString().slice(0,10); }
-  const subs=[]; let _when=null; let _bcast=false; const YMIN=1850;
-  /* ⚠ (#R349) THE FLOOR IS THE CLOCK'S, NOT ANY ONE SUBSYSTEM'S. 「1850年までさかのぼれるように。
-     （1900までと完全に同様に。単に対応年を延長するだけです。）」 Every subsystem below reaches as far
-     back as ITS OWN SOURCE reaches and says so where it stops — the kernel does not pretend they all
-     stop together, and it never clamps a reader to the shortest of them:
+  const subs=[]; let _when=null; let _bcast=false; const YMIN=1;
+  /* ⚠⚠⚠ (#R604) `new Date(Date.UTC(y,…))` IS NOT A DATE IN YEAR y WHEN y < 100 — IT IS y+1900.
+     ECMA-262's Date.UTC applies the two-digit-year rule to its first argument, so Date.UTC(1,0,1)
+     is 1901-01-01 and Date.UTC(50,…) is 1950. That silent shift is the whole reason a clock floor
+     below 100 is not just a smaller number: every construction of an instant in this kernel has to
+     go through `setUTCFullYear`, which does NOT apply the rule. Measured before the fix — asking for
+     year 1 landed the map in 1901 and drew 1901's boundaries under the label «1年».
+  ⚠ AND IT HAS TWO CALLERS, so the rule lives in js/hist-scale.js (`utcAt`) rather than here: the
+     Chronos panel's own floor was still going through `Date.UTC` after this file was fixed, and a
+     copy here is exactly what made that invisible. The local body is the fallback for a page on
+     which js/hist-scale.js has not evaluated, and it is the same four lines. */
+  function atUTC(y,mo,d,h,mi,s){
+    try{ const HS=window.IntMapHistScale; if(HS&&HS.utcAt) return HS.utcAt(y,mo,d,h,mi,s); }catch(_){}
+    const t=new Date(0); t.setUTCFullYear(y,mo,d); t.setUTCHours(h||0,mi||0,s||0,0); return t; }
+  /* ⚠ (#R349, lowered again #R604) THE FLOOR IS THE CLOCK'S, NOT ANY ONE SUBSYSTEM'S.
+     「1850年までさかのぼれるように。（1900までと完全に同様に。単に対応年を延長するだけです。）」(#R349)
+     「歴史的地方区分の境界線のcoverageがくそ。全時代、全地域で完璧に網羅しろ。」(#R604)
+     Every subsystem below reaches as far back as ITS OWN SOURCE reaches and says so where it stops —
+     the kernel does not pretend they all stop together, and it never clamps a reader to the shortest
+     of them:
+       · subdivisions the deepest reach on the map, and the reason the floor moved to 1 (#R604):
+                      OpenHistoricalMap's own vector tiles, date-filtered per frame, hold dated
+                      admin_level 3-6 units in every century — measured on a 160-tile z5 sweep,
+                      936 line segments in force in year 1, 1,195 in 1000, 3,712 in 1500, 8,341 in
+                      1900. Older centuries are REGIONALLY thin (year 1 touches 14 of those tiles
+                      against 1900's 66) and the layer row says so rather than filling it in.
        · borders      day-exact for the WHOLE reach since #R518: CShapes 2.0 from 1886-01-01 to 2019,
                       OpenHistoricalMap (data/hist-borders.js) from 1850 to 1885. The
-                      historical-basemaps snapshots are now only the fallback for both bands.
+                      historical-basemaps snapshots are now only the fallback for both bands, and
+                      before 1850 they are the only country answer there is.
        · GDP / pop    Maddison Project 2020, now carried back to 1850 (data/maddison.json — measured, not
                       declared: js/history.js reads the smallest year in the shipped file).
        · climate era  the oldest Köppen period that exists is 1901-1930; earlier years show it and
@@ -74,12 +97,12 @@ window.IntMapTime=(function(){
   OS.set=function(d,opts){ opts=opts||{};
     let nd=(d instanceof Date)?new Date(d):(d!=null?new Date(d):null);
     if(nd && isNaN(nd.getTime())) return OS;
-    if(nd){ const floor=new Date(Date.UTC(YMIN,0,1)); if(nd<floor) nd=floor;
+    if(nd){ const floor=atUTC(YMIN,0,1); if(nd<floor) nd=floor;
       if(!opts.allowFuture){ const n=now(); if(nd.getTime()>n.getTime()) nd=null; } }   /* future → live */
     _when=nd; return broadcast(opts.source), OS; };
   OS.setYear=function(y,opts){ y=Math.round(+y); if(!(y>=YMIN)) return OS;
     const n=now(); if(y>=n.getFullYear()) return OS.setNow(opts);
-    return OS.set(new Date(Date.UTC(y,5,15,12,0,0)), opts); };   /* mid-June noon UTC: neutral season/terminator */
+    return OS.set(atUTC(y,5,15,12,0,0), opts); };   /* mid-June noon UTC: neutral season/terminator */
   OS.setDaysAgo=function(days,opts){ days=Math.round(+days||0);
     if(days<=0) return OS.setNow(opts);
     const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-days); return OS.set(d,opts); };

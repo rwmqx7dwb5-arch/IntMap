@@ -287,8 +287,8 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
   assert.match(iw, /window\.IntMapWorld && window\.IntMapWorld\._ui/, 'the panel/row toolkit is handed over by js/world-packs.js');
   /* (#R220) …plus `onRestyle`: a style reload drops every added layer, and the current plate — the
      one member of this family in its own file — had no way to hear about it. */
-  /* ══ ⚠⚠⚠ (#R590) THIS ASKED FOR A SPELLING AND HAS BEEN CHANGED TO ASK FOR THE FACT ═══════════
-     It pinned the `_ui` literal member for member, so it went RED when #R590 handed `centroidOf`,
+  /* ══ ⚠⚠⚠ (#R650) THIS ASKED FOR A SPELLING AND HAS BEEN CHANGED TO ASK FOR THE FACT ═══════════
+     It pinned the `_ui` literal member for member, so it went RED when #R650 handed `centroidOf`,
      `withCountryGeo` and `hiResCountries` over to a FOURTH consumer — i.e. it failed on the very
      act this paragraph exists to encourage (borrow, do not copy), while it would have stayed green
      if a member had been renamed and every consumer quietly fell back. That is #R488's shape.

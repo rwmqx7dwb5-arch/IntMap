@@ -127,7 +127,7 @@ window.IntMapModules.worldPacks=function(HOST){
     function centroidOf(iso3){
       if(_cent[iso3]!==undefined) return _cent[iso3];
       const g=HOST.countryGeo; if(!g||!g.features) return null;
-      /* ⚠ (#R590) A MISS IS NOT CACHED. `hiResCountries()` swaps the collection for the detailed
+      /* ⚠ (#R650) A MISS IS NOT CACHED. `hiResCountries()` swaps the collection for the detailed
          set, so a unit the 110 m stand-in does not carry can appear later — and this line used to
          freeze the first «no» for the session, which meant a layer that asked early drew that
          country never. A hit is still cached; only ignorance is re-asked. */
@@ -6791,7 +6791,7 @@ window.IntMapModules.worldPacks=function(HOST){
     /* (#R220) …and `onRestyle`, because a style reload drops every added layer and the ocean-current
        plate — the only member of this family that lives in its own file — had no way to hear about
        it. #R219 found the same hole in the tide shading; this closes it for the sixth layer too. */
-    /* (#R590) …and `centroidOf`, because js/outbreaks.js anchors a WHO Disease Outbreak News item
+    /* (#R650) …and `centroidOf`, because js/outbreaks.js anchors a WHO Disease Outbreak News item
        to the country WHO tagged it with, which is the same question the trade layer asks of the same
        countryGeo three hundred lines above (`const home=centroidOf(iso)`). Writing it again there
        would be the second copy of the ring-area centroid in the project and the second place a

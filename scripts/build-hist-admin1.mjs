@@ -79,7 +79,18 @@ const BATCH = parseInt(argOf('--batch', '20'), 10);
    nothing but CPU. */
 const LEVELS = String(argOf('--levels', '3,4')).split(',').map(v => parseInt(v, 10)).filter(Number.isFinite);
 const LVLRE  = '^(' + LEVELS.join('|') + ')$';
-const GLOBAL = argOf('--global', '__HISTADM1');
+/* == (#R604) THE GLOBAL IS DERIVED FROM THE OUTPUT FILE, NOT DEFAULTED TO THE FIRST TIER =========
+   `--global` used to default to `__HISTADM1` whatever `--out` said, so building the deeper tier
+   without remembering that flag wrote data/hist-admin2.js containing `window.__HISTADM1=` - a file
+   that loads, parses, reports no error, and REPLACES the first tier's record with the second's the
+   moment js/time-admin1.js injects it. Measured here on 2026-09-10: a 15 MB bundle whose every
+   assertion about itself was true and whose name was wrong. The two are not independent facts -
+   data/hist-adminN.js holds `__HISTADMN` by convention - so the name is READ OFF the convention and
+   `--global` stays only as an override for an output the convention does not cover. */
+const GLOBAL = argOf('--global', (function () {
+  const m = /hist-admin(\d+)\.js$/i.exec(OUT);
+  return m ? '__HISTADM' + m[1] : '__HISTADM1';
+})());
 const CACHE = path.resolve(ROOT, argOf('--cache', path.join(process.env.TEMP || '/tmp', 'ohm-adm' + LEVELS.join('') + '-cache')));
 const QUANT = Math.pow(10, parseInt(argOf('--dec', '3'), 10));   /* --dec 3 = ~110 m at the equator */
 const MIN_AREA = 1e-5;                                   /* deg^2 — drop slivers, keep small city-states */
@@ -260,10 +271,28 @@ function polysOf(rings) {
   }
   console.error('  datable & reachable from', SINCE, '→', want.length, '| dropped for a backwards span:', backwards);
 
-  /* geometry, in resumable id batches */
-  const geom = new Map();
+  /* ring pool: identical rings are shared, which is where most of the saving is -
+     a province and its neighbour trace the same line from opposite sides. */
+  const pool = [], poolIx = new Map();
+  const put = r => { const k = JSON.stringify(r); let ix = poolIx.get(k); if (ix === undefined) { ix = pool.length; pool.push(r); poolIx.set(k, ix); } return ix; };
+
+  /* == (#R604) EACH BATCH IS SIMPLIFIED AS IT ARRIVES, AND THE RAW GEOMETRY IS DROPPED =========
+     This loop used to fill a `Map` with every relation's RAW Overpass geometry and simplify the whole
+     planet afterwards. That is bounded by how much UPSTREAM holds, not by how much this script needs,
+     and at `--since 1 --levels 5,6` upstream holds 22,807 relations: measured 2026-09-10, the build
+     died at 14,000 of them with "Ineffective mark-compacts near heap limit" against V8's ~4 GB
+     default, after eighteen minutes of downloading that all had to be thrown away.
+     WARNING - THE FIX IS NOT A BIGGER `--max-old-space-size`. That is a number somebody has to raise
+     again the next time OHM grows, on every machine that runs this, and has to remember to. Nothing
+     here ever needs two relations at once: a batch is fetched, each relation in it becomes pooled
+     ring indices, and its raw geometry arrives and leaves inside ONE iteration. What is retained is
+     the OUTPUT (the ring pool and the feature rows), which is the size of the file being written.
+     The disk cache is untouched and still resumable, which is what made those eighteen minutes
+     recoverable rather than lost. */
+  const feats = [];
+  let dropped = 0, fetched = 0;
+  const owed = new Map(want.map(w => [w.el.id, w]));
   const ids = want.map(w => w.el.id);
-  let fetched = 0;
   for (let i = 0; i < ids.length; i += BATCH) {
     const chunk = ids.slice(i, i + BATCH);
     const cf = path.join(CACHE, 'g' + chunk[0] + '-' + chunk.length + '.json');
@@ -274,21 +303,21 @@ function polysOf(rings) {
       fs.writeFileSync(cf, JSON.stringify(j));
       fetched++;
     }
-    for (const el of (j.elements || [])) if (el.type === 'relation') geom.set(el.id, el);
-    process.stderr.write('\r  geom ' + Math.min(i + BATCH, ids.length) + '/' + ids.length + ' (net ' + fetched + ')   ');
+    for (const el of (j.elements || [])) {
+      if (el.type !== 'relation') continue;
+      const w = owed.get(el.id); if (!w) continue;
+      owed.delete(el.id);
+      absorb(w, el);
+    }
+    j = null;   /* the batch's raw geometry is dead HERE, not at the end of the planet */
+    process.stderr.write('\r  geom ' + Math.min(i + BATCH, ids.length) + '/' + ids.length + ' (net ' + fetched + ', kept ' + feats.length + ')   ');
   }
+  /* asked for and never returned - counted exactly as the old loop counted a missing id, so the
+     "dropped" figure the build prints still means the same thing. */
+  dropped += owed.size;
   process.stderr.write('\n');
 
-  /* ring pool: identical rings are shared, which is where most of the saving is —
-     a province and its neighbour trace the same line from opposite sides. */
-  const pool = [], poolIx = new Map();
-  const put = r => { const k = JSON.stringify(r); let ix = poolIx.get(k); if (ix === undefined) { ix = pool.length; pool.push(r); poolIx.set(k, ix); } return ix; };
-
-  const feats = [];
-  let dropped = 0;
-  for (const w of want) {
-    const el = geom.get(w.el.id);
-    if (!el) { dropped++; continue; }
+  function absorb(w, el) {
     const polys = polysOf(ringsOf(el));
     const idx = [];
     for (const poly of polys) {
@@ -299,7 +328,7 @@ function polysOf(rings) {
       }
       if (ringIx.length) idx.push(ringIx);
     }
-    if (!idx.length) { dropped++; continue; }
+    if (!idx.length) { dropped++; return; }
     const t = w.el.tags;
     const s = w.s || [SINCE - 200, 1, 1];    /* open start = already there when the clock begins */
     const e = w.e || [9999, 12, 31];         /* open end  = still in force */

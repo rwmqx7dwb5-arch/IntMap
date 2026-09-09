@@ -1,5 +1,5 @@
 -- ============================================================================
---  R590 — WHO Disease Outbreak News の「症例数・死亡数」だけを置く表
+--  R650 — WHO Disease Outbreak News の「症例数・死亡数」だけを置く表
 -- ----------------------------------------------------------------------------
 --  WHO の OData は病原体・国・発生日・公表日を**構造化した項目**として持っており、それらは
 --  scripts/build-who-don.mjs が data/who-don.json.gz に焼く（DB は 1 行も要らない）。
@@ -92,23 +92,23 @@ create index if not exists who_don_extracts_extracted_at_idx
   on public.who_don_extracts (extracted_at desc);
 
 comment on table public.who_don_extracts is
-  'WHO Disease Outbreak News の散文から抽出した累計症例数・死亡数。WHO が構造化して持たない唯一の項目で、他の 5 項目は data/who-don.json.gz にある。#R590';
+  'WHO Disease Outbreak News の散文から抽出した累計症例数・死亡数。WHO が構造化して持たない唯一の項目で、他の 5 項目は data/who-don.json.gz にある。#R650';
 comment on column public.who_don_extracts.url_name is
-  'WHO の DON slug（UrlName）。data/who-don.json.gz の events[].u と同じ鍵。#R590';
+  'WHO の DON slug（UrlName）。data/who-don.json.gz の events[].u と同じ鍵。#R650';
 comment on column public.who_don_extracts.cases is
-  '報告が述べる累計症例数。⚠ null は「WHO が累計を書いていない / 検証を通る答えが得られなかった」であって 0 件ではない。#R590';
+  '報告が述べる累計症例数。⚠ null は「WHO が累計を書いていない / 検証を通る答えが得られなかった」であって 0 件ではない。#R650';
 comment on column public.who_don_extracts.deaths is
-  '報告が述べる累計死亡数。⚠ null は 0 ではない（cases と同じ）。#R590';
+  '報告が述べる累計死亡数。⚠ null は 0 ではない（cases と同じ）。#R650';
 comment on column public.who_don_extracts.as_of is
-  'その累計が「いつ時点」であるかとして報告自身が述べている日付。公表日で代用しない。#R590';
+  'その累計が「いつ時点」であるかとして報告自身が述べている日付。公表日で代用しない。#R650';
 comment on column public.who_don_extracts.scope is
-  'その数が覆う範囲: country / multi / global。判別できなければ null。#R590';
+  'その数が覆う範囲: country / multi / global。判別できなければ null。#R650';
 comment on column public.who_don_extracts.confidence is
-  'モデル自身が申告した 0..1 の確度。⚠ 正しさの証明ではなく、低い値の行を後から選り分けるための計器。#R590';
+  'モデル自身が申告した 0..1 の確度。⚠ 正しさの証明ではなく、低い値の行を後から選り分けるための計器。#R650';
 comment on column public.who_don_extracts.source_hash is
-  '抽出に使った散文（切り詰めた後の、実際にモデルへ送った文字列）の SHA-256。これが変わったときだけ再抽出する。#R590';
+  '抽出に使った散文（切り詰めた後の、実際にモデルへ送った文字列）の SHA-256。これが変わったときだけ再抽出する。#R650';
 comment on column public.who_don_extracts.attempts is
-  'この DON に対して抽出を試みた回数。source_hash が同じ限り再試行しないので、増えるのは WHO が報告を書き直したときだけ。#R590';
+  'この DON に対して抽出を試みた回数。source_hash が同じ限り再試行しないので、増えるのは WHO が報告を書き直したときだけ。#R650';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 --  RLS — 読むのは誰でも、書くのは service_role だけ

@@ -56,7 +56,7 @@ is the human explanation.
 | `geo_pins` | News-geolocation gazetteer. | Everyone. | Admin (+ service_role). |
 | `dashboard_cards` | Curated strategic-location cards. | Everyone. | Admin (+ service_role). |
 | `current_news` | Server-refreshed, pre-geolocated news. | Everyone. | **service_role only** (`refresh-news`). |
-| `who_don_extracts` *(#R590)* | The case and death counts read out of each WHO Disease Outbreak News item — the one field WHO does not publish as data. `cases`/`deaths` are **nullable on purpose**: NULL means «WHO states no cumulative total», which is not zero. `source_hash` is the hash of the prose the model was actually given, so a rewritten item re-extracts and an unchanged one is never paid for twice. | Everyone. | **service_role only** (`who-don`). |
+| `who_don_extracts` *(#R650)* | The case and death counts read out of each WHO Disease Outbreak News item — the one field WHO does not publish as data. `cases`/`deaths` are **nullable on purpose**: NULL means «WHO states no cumulative total», which is not zero. `source_hash` is the hash of the prose the model was actually given, so a rewritten item re-extracts and an unchanged one is never paid for twice. | Everyone. | **service_role only** (`who-don`). |
 
 ### Area monitors (#R141 / #R144)
 | Table | Purpose | Read | Write |

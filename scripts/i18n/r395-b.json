@@ -16,14 +16,6 @@
     "지도의 연도에 분화",
     "在地圖年份噴發"
   ],
-  "GVP records {n} volcano(es) as erupting in {y}. The clock reaches back to 1850; the card shows every eruption in the record.": [
-    "Das GVP führt {n} Vulkan(e) als im Jahr {y} ausbrechend. Die Uhr reicht bis 1850 zurück; die Karte zeigt jeden Ausbruch des Datensatzes.",
-    "По данным GVP в {y} году извергались {n} вулкан(ов). Часы доходят до 1850 года; в карточке есть все извержения записи.",
-    "El GVP registra {n} volcán(es) en erupción en {y}. El reloj llega hasta 1850; la ficha muestra todas las erupciones del registro.",
-    "Le GVP recense {n} volcan(s) en éruption en {y}. L’horloge remonte jusqu’à 1850 ; la fiche montre toutes les éruptions du registre.",
-    "GVP 기록에서 {y}년에 분화 중이던 화산은 {n}곳입니다. 시계는 1850년까지 거슬러 올라가며, 카드에는 기록에 있는 모든 분화가 나옵니다.",
-    "GVP 記錄中，{y} 年正在噴發的火山有 {n} 座。時鐘可回溯至 1850 年；卡片會顯示紀錄中的所有噴發。"
-  ],
   "Has produced VEI 4+": [
     "Hat VEI 4+ erzeugt",
     "Производил VEI 4+",

@@ -1,5 +1,5 @@
 /* ============================================================================
- *  R590 — WHO Disease Outbreak News, in a real browser
+ *  R650 — WHO Disease Outbreak News, in a real browser
  *   ① the layer really DRAWS: one circle per country the window holds items for, and the panel's
  *      numbers are the same numbers the source carries (a legend that disagrees with the map is
  *      #R551's whole lesson)
@@ -11,7 +11,7 @@
  *  failure is printed rather than thrown (#R499). A gate that goes red because who.int had a bad
  *  afternoon is a gate people learn to ignore (the #R341 rule).
  *
- *  ⚠ AND THE DRAWING IS ASKED OF THE RENDERER, NOT OF THE SOURCE CODE. tests/r590-checks.test.mjs
+ *  ⚠ AND THE DRAWING IS ASKED OF THE RENDERER, NOT OF THE SOURCE CODE. tests/r650-checks.test.mjs
  *  reads the file; this asks whether the layers exist and how many features are in them, because
  *  #R488 records what a spelling check is worth when the thing it names has stopped working.
  * ==========================================================================*/
@@ -46,7 +46,7 @@ async function outbreaksOn(page) {
   );
 }
 
-test('R590 ① the layer draws one circle per country, and the panel agrees with the map', async ({ app }) => {
+test('R650 ① the layer draws one circle per country, and the panel agrees with the map', async ({ app }) => {
   const page = app.page;
   await outbreaksOn(page);
 
@@ -104,7 +104,7 @@ test('R590 ① the layer draws one circle per country, and the panel agrees with
   expect(body).toContain(String(seen.st.shown));
 });
 
-test('R590 ② the items that are not about one country are listed and NOT placed', async ({ app }) => {
+test('R650 ② the items that are not about one country are listed and NOT placed', async ({ app }) => {
   const page = app.page;
   await outbreaksOn(page);
 
@@ -136,7 +136,7 @@ test('R590 ② the items that are not about one country are listed and NOT place
   expect(body).toContain(String(r.unplaced));
 });
 
-test('R590 ③ the master clock moves the window, and the map follows it', async ({ app }) => {
+test('R650 ③ the master clock moves the window, and the map follows it', async ({ app }) => {
   const page = app.page;
   await outbreaksOn(page);
   await page.evaluate(() => window.IntMapOutbreaks.setWindow(365));

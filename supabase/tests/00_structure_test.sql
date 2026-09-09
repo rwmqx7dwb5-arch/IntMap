@@ -50,7 +50,7 @@ from unnest(array[
   -- profiles with the owner's rights and bypassed its RLS; it is a table holding only the four
   -- public columns, so there is no bypass left for a future column to inherit.
   'profiles_public',
-  -- (#R590) the case and death counts read out of each WHO Disease Outbreak News item. Public
+  -- (#R650) the case and death counts read out of each WHO Disease Outbreak News item. Public
   -- read (it is WHO's own published number), service_role write.
   'who_don_extracts'
 ]) as t;                                                    -- 34 assertions
@@ -72,7 +72,7 @@ from unnest(array[
   'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs',
   'news_event_admin_actions',
   'profiles_public',                                        -- (#R507) see the note above
-  'who_don_extracts'                                        -- (#R590) see the note above
+  'who_don_extracts'                                        -- (#R650) see the note above
 ]) as t;                                                    -- 34 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;

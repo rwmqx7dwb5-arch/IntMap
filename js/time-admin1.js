@@ -1,9 +1,37 @@
 /* ============================================================================
- *  time-admin1.js — the SUBDIVISIONS of the year on the clock  (#R530, #R564)
+ *  time-admin1.js — the SUBDIVISIONS of the year on the clock  (#R530, #R564, #R604)
  * ----------------------------------------------------------------------------
  *  「国境線だけでなく地方区分の境界もChronosに完全対応させるように。完全対応。」  (#R530)
  *  「歴史的地方区分境界のcoverageがまだ全然。もっと充実させろ。また、現在のものは海上に境界線が
  *    ないのに、昔のはある。それにクリック時の挙動が違う。全部同じにしろ。」        (#R564)
+ *  「歴史的地方区分の境界線のcoverageがくそ。全時代、全地域で完璧に網羅しろ。
+ *    線の解像度も低すぎる。」                                                    (#R604)
+ *
+ *  ══ ⚠⚠⚠ (#R604) BOTH COMPLAINTS WERE TRUE, AND BOTH WERE THE BUNDLE'S ══════
+ *  #R564 answered 「coverage が足りない」 by measuring upstream and reporting that the
+ *  thinness was OHM's. That was true of the ONE YEAR it measured (1900) and it hid two
+ *  things that were entirely ours:
+ *  ① THE RESOLUTION WAS THE BUILD'S, NOT UPSTREAM'S. Measured 2026-09-10 against OHM's
+ *     Overpass: 伊豆国 (relation 2687374) is 2,800 vertices, 787 km of perimeter, 281 m
+ *     mean spacing. The shipped bundle drew it with TWENTY-NINE — 0.02° Douglas-Peucker
+ *     and 3 decimals, chosen so a world-wide polygon file stays parseable. A bundle has
+ *     one resolution; a map has twenty. No tolerance fixes that, so the line stopped
+ *     coming from the bundle: OHM publishes the same records as VECTOR TILES
+ *     (vtiles.openhistoricalmap.org, TileJSON maps/ohm.json, z0-20, CC0) whose admin
+ *     lines carry `start_decdate`/`end_decdate` as numbers. The era boundary is now
+ *     drawn from those at the tile's own geometry, and travelling is a `setFilter`.
+ *  ② THE ERAS WERE THE BUILD'S TOO. `--since 1850` dropped every unit that ENDED before
+ *     the clock's floor, so the record held almost nothing for any earlier century — and
+ *     the floor itself was 1850. Both moved: js/chronos.js reaches year 1 (#R604), the
+ *     bundles are rebuilt with `--since 1` (levels 3-4: 3,049 → 4,679 units, and the number of
+ *     them in force in a given June: year 1 → 64, 1000 → 113, 1500 → 393, 1800 → 411, where the
+ *     old bundle held none before 1850), and the tiles were never limited to begin with.
+ *  ⚠ AND THE THINNESS THAT IS REALLY UPSTREAM'S IS STILL REPORTED, NOT FILLED IN. On a
+ *  160-tile z5 sweep of the tiles, dated admin_level≥3 segments in force number 936 in
+ *  year 1, 3,712 in 1500 and 8,341 in 1900, touching 14, 23 and 66 of those tiles — the
+ *  older the century, the more REGIONAL the record. `coverage()` counts it and the layer
+ *  row says it in nine languages. A country with no line is a country the record is
+ *  silent about, in every century.
  *
  *  ══ ⚠⚠⚠ WHAT #R530 FIXED, MEASURED ═════════════════════════════════════════
  *  The province layer (`ref-admin1`, js/app-body.js) is drawn from OpenFreeMap's
@@ -123,6 +151,56 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        FETCHED: 10.2 MB is not a speculative cost a reader looking at a continent should pay. */
     const DEEP_Z = 6;
 
+    /* ══ (#R604) THE LINE COMES FROM OPENHISTORICALMAP'S OWN TILES, NOT FROM THE BUNDLE ═══════════
+       「歴史的地方区分の境界線のcoverageがくそ。全時代、全地域で完璧に網羅しろ。線の解像度も低すぎる。」
+       Both halves of that were measured, and both were true of the BUNDLE rather than of upstream:
+
+       · RESOLUTION. scripts/build-hist-admin1.mjs simplifies at 0.02° (~2.2 km) and quantises to 3
+         decimals (~110 m) to keep the file parseable. Measured 2026-09-10 against OHM's Overpass,
+         伊豆国 (relation 2687374) is 2,800 vertices / 787 km of perimeter / 281 m mean spacing
+         upstream; the shipped bundle draws it with 29. That is not a boundary at any zoom past a
+         country view, and no tolerance that keeps a 7 MB file can fix it — a bundle has ONE
+         resolution and a map has twenty.
+       · COVERAGE. The build's `--since` dropped every unit that ENDED before the clock's floor, so
+         with the floor at 1850 the record held essentially nothing for any earlier century. Measured
+         on OHM's Overpass the same day: 4,841 dated relations at admin_level 3-4 and 22,808 at 5-6,
+         of which 1,142 and 1,600 end before 1800.
+
+       ⚠ THE FIX IS NOT A BIGGER BUNDLE. OHM publishes the same records as VECTOR TILES —
+       vtiles.openhistoricalmap.org, TileJSON `maps/ohm.json`, minzoom 0 / maxzoom 20, CC0 — and every
+       admin line in them carries `start_decdate` / `end_decdate` as numbers. So the era boundary is
+       drawn at the tile's own native geometry at whatever zoom the reader is at, for every level and
+       every century upstream has, and TRAVELLING IS A `setFilter`, not a re-fetch: one tile cache
+       serves all 2,000 years.
+       ⚠ `maritime` IS UPSTREAM'S OWN ANSWER, and that is why it is used here. #R564 had to derive
+       "which run of this ring is a border rather than a coast" against Natural Earth
+       (data/border-coast.js) because a polygon bundle does not say. The tiles say — the same clause
+       `ref-admin1` and `ref-admin2` already carry at Now, so the two eras stop at the shore for the
+       same stated reason instead of two of them.
+       ⚠ THE BUNDLE IS NOT DELETED AND IS NOT DEAD. It is still the label (nine languages, which the
+       tiles do not carry — they hold a bare `name`), still the answer to a click (`geomAt`), still
+       what `coverage()` counts, and still the line when the tiles do not arrive: a reader offline, or
+       behind a filter that blocks the host, keeps the coarse line rather than losing the layer. */
+    const VT_SRC = 'ohm-vt', VT_LAYER = 'land_ohm_lines';
+    const VT_TILES = 'https://vtiles.openhistoricalmap.org/maps/ohm/{z}/{x}/{y}.pbf';
+    const VT_ATTR = '<a href="https://www.openhistoricalmap.org/copyright" target="_blank" rel="noopener">OpenHistoricalMap</a> (CC0)';
+
+    /* ⚠ (#R604) THE ARITHMETIC IS NOT HERE, AND THAT IS THE POINT. `decYear` and `ohmFilter` live in
+       js/hist-scale.js because a function inside this factory cannot be evaluated by a check — it
+       needs a map, a language table and a HOST to exist at all — and #R570 measured what that costs:
+       six wrong invariants in one round, none of them reachable by a test. One owner, two readers
+       (js/news-timeline.js reads the rail half). */
+    const HS = () => window.IntMapHistScale;
+    const _dec = (y, m, d) => HS().decYear(y, m, d);
+    const _vtFilter = (lo, hi, t) => HS().ohmFilter(lo, hi, t);
+    function ensureVTSource() {
+      try {
+        if (GE().layers.hasSource(VT_SRC)) return true;
+        GE().layers.addSource(VT_SRC, { type: 'vector', tiles: [VT_TILES], minzoom: 0, maxzoom: 20, attribution: VT_ATTR });
+        return true;
+      } catch (_) { return false; }
+    }
+
     /* ── the tier ──────────────────────────────────────────────────────────
        ⚠ ONE FACTORY, TWO INSTANCES, AND THE MEMOS LIVE INSIDE IT. Before #R564 the epoch index and
        the assembled-geometry memo were module-level singletons keyed by FEATURE INDEX — which is
@@ -214,6 +292,68 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         return { type: 'FeatureCollection', features: feats };
       }
 
+      /* ══ (#R604) POINT THE TILE LAYER AT A DATE, AND ASK THE MAP WHETHER IT ANSWERED ═══════════
+         ⚠⚠⚠ THE BUNDLE'S LINE IS NOT SHOWN UNTIL THE TILES HAVE BEEN GIVEN A CHANCE TO FAIL, AND
+         THAT ORDER IS THE WHOLE DESIGN. The first version showed the fallback immediately and hid it
+         once the tiles were seen painting — which measured, in tests/r530.spec.js, as BOTH lines on
+         screen at once: the same boundary struck twice, in the same violet dashes, at two different
+         resolutions, for as long as the tiles took to arrive. A fallback that is visible before the
+         thing it stands in for has failed is not a fallback; it is a second map.
+         So the state has three values, not two. `unknown` draws the tiles and nothing else — the
+         correct picture the moment the tiles land, and a bare map for a second or two if they never
+         do. `live` is latched the first time the tile layer is MEASURED painting (#R565: the number
+         comes from the map, never from the fact that a request was made). `absent` is only reached
+         after GRACE_MS of travelling with the tile layer painting nothing while the bundle has
+         something to draw — i.e. on evidence, and it is given up again the moment a tile does paint,
+         because a reader who walks back into coverage must not keep the coarse line. */
+      let vtState = 'unknown', vtAt = null, vtSince = 0;
+      /* ⚠ MEASURED, NOT GUESSED: on this machine a cold z5 view over Germany has the first OHM tile
+         painting 0.9-2.1 s after the clock moves. Six seconds is that with room for a slow link;
+         below the round trip it would declare failure on a page that was merely loading, and far
+         above it a genuinely offline reader waits with no line at all. EXPIRES if the tile host's
+         latency changes character — the symptom is a coarse line that appears and then swaps. */
+      const GRACE_MS = 6000;
+      function vtAim(y, m, dd) {
+        try {
+          if (!ensure()) return;
+          const t = _dec(y, m, dd);
+          if (vtAt === t) return;
+          vtAt = t; if (!vtSince) vtSince = Date.now();
+          GE().layers.setFilter(cfg.vtLine, _vtFilter(cfg.lo, cfg.hi, t));
+          vtPoll();
+        } catch (_) {}
+      }
+      /* ⚠ `idle` ALONE IS NOT ENOUGH TO ASK THE QUESTION, and that was measured: the map goes idle
+         while the first OHM tiles are still in flight, and then — nothing having changed on screen
+         since — never goes idle again. The state stayed `unknown` with the tile layer visibly
+         painting (tests/r530.spec.js read 1,700 features from the layer whose supply this had never
+         noticed). So the question is also asked on a short poll for as long as the answer is unknown,
+         which is at most GRACE_MS of 400 ms ticks and stops the moment there is an answer. */
+      let _pollT = 0;
+      function vtPoll() {
+        clearTimeout(_pollT);
+        if (!active || vtState === 'live') return;
+        /* 400 ms while there is no answer at all; once there is one ('absent' — the tiles did not
+           come) the question is only "have they come back?", which nobody is waiting on. */
+        _pollT = setTimeout(() => { _pollT = 0; if (!active) return; vtProbe(); vtPoll(); },
+                            vtState === 'unknown' ? 400 : 3000);
+      }
+      /* asked every time the map settles, and on the poll above. Latches to `live` and stays there;
+         `absent` is reversible, because a reader who walks back into coverage must not keep the
+         coarse line. */
+      function vtProbe() {
+        try {
+          if (vtState === 'live' || !GE().layers.has(cfg.vtLine)) return vtState;   /* latched — stop paying for the query */
+          const n = (GE().coords.queryRenderedFeatures(undefined, { layers: [cfg.vtLine] }) || []).length;
+          const was = vtState;
+          if (n > 0) vtState = 'live';
+          else if (vtState !== 'live' && vtSince && (Date.now() - vtSince) > GRACE_MS
+                   && shownFC && shownFC.features && shownFC.features.length) vtState = 'absent';
+          if (vtState !== was) _applyNow();
+        } catch (_) {}
+        return vtState;
+      }
+
       /* ── layers ────────────────────────────────────────────────────────────
          ⚠ (#R212's rule, applied to the province line) Travelling in time must change
          WHERE a boundary runs, not what a boundary LOOKS like. Every value below is the
@@ -235,10 +375,22 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
              reads on top of a provincial one — the order `ref-admin1`/`borders-only-line`
              already have at Now. */
           const before = ['imtb-lbl', 'ofm-admin1', 'ofm-country', 'ofm-city'].find(id => { try { return !!GE().layers.has(id); } catch (_) { return false; } });
+          const PAINT = { 'line-color': COL, 'line-opacity': cfg.deep ? 0.55 : 0.82, 'line-dasharray': cfg.deep ? [2, 2] : [3, 2], 'line-width': cfg.deep ? ['interpolate', ['linear'], ['zoom'], 6, 0.5, 10, 0.9, 13, 1.3] : W };
           if (!GE().layers.has(cfg.line)) GE().layers.add(Object.assign({
             id: cfg.line, type: 'line', source: cfg.lnSrc,
             layout: { visibility: 'none', 'line-join': 'round' },
-            paint: { 'line-color': COL, 'line-opacity': cfg.deep ? 0.55 : 0.82, 'line-dasharray': cfg.deep ? [2, 2] : [3, 2], 'line-width': cfg.deep ? ['interpolate', ['linear'], ['zoom'], 6, 0.5, 10, 0.9, 13, 1.3] : W }
+            paint: PAINT
+          }, cfg.deep ? { minzoom: DEEP_Z } : {}), before);
+          /* (#R604) the same line, at upstream's own resolution and for every century it holds.
+             Identical paint to the bundle fallback above on purpose: which SOURCE answered must
+             never be visible as a change of style — #R212's rule applied to the supply, not to the
+             clock. It is added AFTER the fallback so it draws on top of it in the rare frame where
+             both are briefly visible. */
+          if (ensureVTSource() && !GE().layers.has(cfg.vtLine)) GE().layers.add(Object.assign({
+            id: cfg.vtLine, type: 'line', source: VT_SRC, 'source-layer': VT_LAYER,
+            filter: _vtFilter(cfg.lo, cfg.hi, _dec(1900, 7, 1)),
+            layout: { visibility: 'none', 'line-join': 'round' },
+            paint: PAINT
           }, cfg.deep ? { minzoom: DEEP_Z } : {}), before);
           /* the era unit's NAME, in the style `ofm-admin1` uses for the present-day one —
              same zoom window, same size ladder, same colour-of-its-own-boundary (#R252),
@@ -287,10 +439,11 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       }
 
       function clear() {
-        active = false; shownKey = null; shownFC = null; shownWhen = null;
+        active = false; shownKey = null; shownFC = null; shownWhen = null; vtSince = 0;
+        clearTimeout(_pollT); _pollT = 0;
         try { GE().layers.setSourceData(cfg.src, { type: 'FeatureCollection', features: [] }); } catch (_) {}
         try { GE().layers.setSourceData(cfg.lnSrc, { type: 'FeatureCollection', features: [] }); } catch (_) {}
-        try { [cfg.line, cfg.lbl].forEach(id => { if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', 'none'); }); } catch (_) {}
+        try { [cfg.line, cfg.vtLine, cfg.lbl].forEach(id => { if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', 'none'); }); } catch (_) {}
       }
 
       async function go(when) {
@@ -299,6 +452,12 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         const y = isD ? when.getFullYear() : Math.round(+when);
         const m = isD ? (when.getMonth() + 1) : 7, dd = isD ? when.getDate() : 1;
         shownWhen = isD ? when : new Date(y, 6, 1, 12, 0, 0);
+        /* ══ (#R604) THE TILE LINE IS AIMED BEFORE THE BUNDLE IS EVEN ASKED FOR ══════════════════
+           The date the reader chose is known synchronously; the 6.9 MB bundle is not, and on a cold
+           page it is seconds away (the window #R530 measured as modern provinces painted over 1900).
+           A `setFilter` on a source the map already has costs nothing and needs nothing, so the era
+           boundary is on screen while the label half is still downloading. */
+        vtAim(y, m, dd);
         const d = (await Promise.all([load(), BC() ? BC().load() : null]))[0];   /* (#R564) the marks settle before the first collection is built, so nothing is cached unmarked */
         if (my !== seq || !active) return;
         if (!d) { setTimeout(() => { try { if (active && my === seq) go(when); } catch (_) {} }, 4000); return; }
@@ -332,7 +491,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       }
 
       return {
-        cfg, load, go, clear, refreshLines, relocalize, reassert, ensure,
+        cfg, load, go, clear, refreshLines, relocalize, reassert, ensure, vtProbe, vtState: () => vtState,
         setActive: v => { active = v; }, isActive: () => active, key: () => shownKey,
         fc: () => shownFC, when: () => shownWhen, data: () => _D,
         geom: ix => { try { return _D ? geomOf(_D, ix) : null; } catch (_) { return null; } }
@@ -360,15 +519,25 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       return nm[tag] || nm.en || f[0] || '';
     }
 
-    const T1 = makeTier({ key: 'a1', file: 'data/hist-admin1.js', global: '__HISTADM1', set: 'ha',
-                          src: 'imta-src', lnSrc: 'imta-ln-src', line: 'imta-line', lbl: 'imta-lbl', deep: false });
-    const T2 = makeTier({ key: 'a2', file: 'data/hist-admin2.js', global: '__HISTADM2', set: 'ha2',
-                          src: 'imta2-src', lnSrc: 'imta2-ln-src', line: 'imta2-line', lbl: 'imta2-lbl', deep: true });
+    /* ⚠ (#R604) `lo`/`hi` ARE THE SAME LEVELS THE BUNDLE WAS BUILT FROM, and they are stated here
+       rather than inside the filter because the two supplies must answer for the same tier or the
+       fallback would be a different map. Levels 1-2 are the COUNTRY border and belong to
+       js/time-borders.js; levels 7-9 exist in the tiles but not at Now (`ref-admin2` stops at 6), and
+       #R212's rule is that travelling may not change what KIND of thing the map is willing to show. */
+    const T1 = makeTier({ key: 'a1', file: 'data/hist-admin1.js', global: '__HISTADM1', set: 'ha', lo: 3, hi: 4,
+                          src: 'imta-src', lnSrc: 'imta-ln-src', line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl', deep: false });
+    const T2 = makeTier({ key: 'a2', file: 'data/hist-admin2.js', global: '__HISTADM2', set: 'ha2', lo: 5, hi: 6,
+                          src: 'imta2-src', lnSrc: 'imta2-ln-src', line: 'imta2-line', vtLine: 'imta2-vt-line', lbl: 'imta2-lbl', deep: true });
     const TIERS = [T1, T2];
     let active = false, lastWhen = null;
 
     /* the marks may land after a bundle has already been drawn whole */
     try { BC().onArrive(() => { for (const t of TIERS) t.refreshLines(); }); } catch (_) {}
+
+    /* (#R604) the tiles answer on their own schedule, so the question "did they?" is asked every
+       time the map settles rather than once after a guessed delay. `vtProbe` latches, so this costs
+       one queryRenderedFeatures per idle until the first tile paints and nothing afterwards. */
+    try { GE().events.on('idle', () => { if (active) for (const t of TIERS) t.vtProbe(); }); } catch (_) {}
 
     /* ══ (#R564) THE PRESENT-DAY DEEPER TIER — the same kind of thing at the same zoom ═══════════
        `ref-admin1` (js/app-body.js) filters the live tiles to admin_level 3-4. Without this the map
@@ -421,7 +590,13 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         if (GE().layers.has('ref-admin1')) GE().layers.setLayout('ref-admin1', 'visibility', (on && !traveling) ? 'visible' : 'none');
         if (GE().layers.has('ref-admin2')) GE().layers.setLayout('ref-admin2', 'visibility', (on && !traveling) ? 'visible' : 'none');
         for (const t of TIERS) {
-          if (GE().layers.has(t.cfg.line)) GE().layers.setLayout(t.cfg.line, 'visibility', (on && traveling) ? 'visible' : 'none');
+          /* ⚠ (#R604) TWO SUPPLIES, ONE LINE ON SCREEN. The tile layer is the boundary; the bundle
+             layer is what is shown INSTEAD of it, and only while the tiles have never been observed
+             painting. Showing both would double-strike every boundary that exists in both, at two
+             different resolutions, which is worse than either. */
+          const stand = (t.vtState() === 'absent');   /* the bundle stands in ONLY on evidence */
+          if (GE().layers.has(t.cfg.vtLine)) GE().layers.setLayout(t.cfg.vtLine, 'visibility', (on && traveling) ? 'visible' : 'none');
+          if (GE().layers.has(t.cfg.line)) GE().layers.setLayout(t.cfg.line, 'visibility', (on && traveling && stand) ? 'visible' : 'none');
           if (GE().layers.has(t.cfg.lbl)) GE().layers.setLayout(t.cfg.lbl, 'visibility', (namesOn && traveling) ? 'visible' : 'none');
         }
         /* ⚠ THE PRESENT-DAY PROVINCE NAME IS SET HERE TOO, AND THAT IS NOT A SECOND OWNER — it is the
@@ -546,15 +721,15 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       const c = coverage(); if (!c.active) return '';
       const n = String(c.units);
       return _LT.arr(LA(
-        n + ' dated subdivisions are in force on this date. OpenHistoricalMap has not mapped every country yet, so a country with no line here is one the record is silent about — not one without subdivisions. Zoom in for the second-level units the record also holds.',
-        'この日付で記録のある地方区分は ' + n + ' 件。OpenHistoricalMap はまだ全ての国を網羅していないため、境界線が無い国は「区分が無かった」のではなく「記録がまだ無い」。拡大すると、記録が持つ下位の区分も出る。',
-        n + ' datierte Verwaltungseinheiten gelten an diesem Datum. OpenHistoricalMap hat noch nicht jedes Land erfasst: Ein Land ohne Linie ist eines, zu dem die Quelle schweigt — nicht eines ohne Untergliederungen. Hineinzoomen zeigt die Einheiten der zweiten Ebene.',
-        'На эту дату действует ' + n + ' датированных единиц. OpenHistoricalMap охватывает ещё не все страны: страна без линии — это страна, о которой источник молчит, а не страна без единиц. При приближении показываются единицы второго уровня.',
-        n + ' subdivisiones fechadas están en vigor en esta fecha. OpenHistoricalMap aún no cubre todos los países: un país sin línea es aquel del que no hay registro, no uno sin subdivisiones. Al acercar aparecen las unidades de segundo nivel.',
-        '此日期有記錄的行政區共 ' + n + ' 個。OpenHistoricalMap 尚未涵蓋所有國家，因此沒有界線的國家是記錄從缺，而非沒有行政區。放大後會顯示記錄中的次級行政區。',
-        '此日期有记录的行政区共 ' + n + ' 个。OpenHistoricalMap 尚未涵盖所有国家，因此没有界线的国家是记录从缺，而非没有行政区。放大后会显示记录中的次级行政区。',
-        n + ' subdivisions datées sont en vigueur à cette date. OpenHistoricalMap ne couvre pas encore tous les pays : un pays sans tracé est un pays sur lequel la source est muette, non un pays sans subdivisions. En zoomant apparaissent les unités de second niveau.',
-        '이 날짜에 기록이 있는 행정구역은 ' + n + '개입니다. OpenHistoricalMap이 아직 모든 나라를 담지 못했으므로, 경계선이 없는 나라는 구역이 없었던 것이 아니라 기록이 아직 없는 것입니다. 확대하면 기록이 가진 하위 행정구역도 나타납니다.'
+        n + ' dated subdivisions are in force on this date. The older the year, the more geographically uneven the record is, so an area with no line here is one OpenHistoricalMap is still silent about — not one without subdivisions. Zoom in for the second-level units the record also holds.',
+        'この日付で記録のある地方区分は ' + n + ' 件。古い年代ほど記録は地理的に偏るため、境界線が無い地域は「区分が無かった」のではなく「記録がまだ無い」。拡大すると、記録が持つ下位の区分も出る。',
+        n + ' datierte Verwaltungseinheiten gelten an diesem Datum. Je weiter das Jahr zurückliegt, desto ungleichmäßiger ist die Überlieferung geografisch verteilt: Ein Gebiet ohne Linie ist eines, zu dem die Quelle noch schweigt — nicht eines ohne Untergliederungen. Hineinzoomen zeigt die Einheiten der zweiten Ebene.',
+        'На эту дату действует ' + n + ' датированных единиц. Чем древнее год, тем неравномернее записи распределены географически: местность без линии — это местность, о которой источник пока молчит, а не местность без единиц. При приближении показываются единицы второго уровня.',
+        n + ' subdivisiones fechadas están en vigor en esta fecha. Cuanto más antiguo es el año, más desigual es la cobertura geográfica del registro: una zona sin línea es aquella sobre la que la fuente aún calla, no una sin subdivisiones. Al acercar aparecen las unidades de segundo nivel.',
+        '此日期有記錄的行政區共 ' + n + ' 個。年代越久遠，記錄的地理分布越不均，因此沒有界線的地區是記錄從缺，而非沒有行政區。放大後會顯示記錄中的次級行政區。',
+        '此日期有记录的行政区共 ' + n + ' 个。年代越久远，记录的地理分布越不均，因此没有界线的地区是记录从缺，而非没有行政区。放大后会显示记录中的次级行政区。',
+        n + ' subdivisions datées sont en vigueur à cette date. Plus l’année est ancienne, plus la couverture du registre est géographiquement inégale : une zone sans tracé est une zone sur laquelle la source se tait encore, non une zone sans subdivisions. En zoomant apparaissent les unités de second niveau.',
+        '이 날짜에 기록이 있는 행정구역은 ' + n + '개입니다. 연대가 오래될수록 기록은 지리적으로 치우치므로, 경계선이 없는 지역은 구역이 없었던 것이 아니라 기록이 아직 없는 것입니다. 확대하면 기록이 가진 하위 행정구역도 나타납니다.'
       ));
     }
 
@@ -586,8 +761,19 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       _clear: () => { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _applyNow(); },
       active: () => active, current: () => T1.key(),
       currentFC: () => T1.fc(), deepFC: () => T2.fc(), refresh: _applyNow, coverage, note, geomAt,
+      /* (#R604) which supply is drawing the era line: 'unknown' (tiles asked, not yet seen),
+         'live' (tiles measured painting) or 'absent' (the grace period passed with nothing, so the
+         bundle's coarse line stands in). Read by tests/r530.spec.js, which cannot see a closure. */
+      tileState: () => (T1.vtState() === 'live' || T2.vtState() === 'live') ? 'live'
+                     : (T1.vtState() === 'absent' ? 'absent' : T1.vtState()),
       deepZoom: () => DEEP_Z,
-      range: () => { try { const d = T1.data(); return { min: (d && d.since) || 1850, max: new Date().getFullYear() }; } catch (_) { return { min: 1850, max: new Date().getFullYear() }; } }
+      /* ⚠ (#R604) THE FLOOR IS THE KERNEL'S WHEN THE BUNDLE HAS NOT LANDED, NOT A TYPED 1850. The
+         drawn line is the tiles now, and they reach every century upstream holds, so a `range()`
+         that answered 1850 while the label bundle was still downloading would understate the layer
+         to Atlas and to the panel — and would go on understating it forever on a page that never
+         fetches the bundle at all. */
+      range: () => { const kern = (function(){ try { const m = +window.IntMapTime.min; return isFinite(m) ? m : 1; } catch (_) { return 1; } })();
+        try { const d = T1.data(); return { min: Math.min(kern, (d && d.since) || kern), max: new Date().getFullYear() }; } catch (_) { return { min: kern, max: new Date().getFullYear() }; } }
     };
   })();
 };

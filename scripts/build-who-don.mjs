@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · build-who-don — WHO Disease Outbreak News, as a bundled event corpus  (#R590)
+ *  IntMap · build-who-don — WHO Disease Outbreak News, as a bundled event corpus  (#R650)
  * ----------------------------------------------------------------------------
  *  「感染症アウトブレイク。WHOのDisease Outbreak Newsを地理化。病原体 / 国・地域 / 発生日 /
  *    WHO公表日 / 症例数 / 死亡数 のイベントレイヤー。WHO自身に現在JSON APIがあります。」
@@ -119,7 +119,7 @@ export function buildTaxonIndex(countries) {
    not the rate at which it says a disease. MEASURED on the built corpus: **2,700 of those 3,141
    values are a bare year** — every one of the 206 items published in 2014 had `EmergencyEvent.Title
    === '2014'`. The layer's pathogen filter therefore offered «2014 · 2013» as diseases, and
-   tests/r590.spec.js ③ is what found it. That is #R534's shape exactly (a field's PRESENCE read as
+   tests/r650.spec.js ③ is what found it. That is #R534's shape exactly (a field's PRESENCE read as
    its MEANING), and it is why the check below counts named events rather than non-null ones.
 
    ⚠ WHO'S HEALTH-TOPIC TAXONOMY DOES NOT RESCUE THEM. `EmergencyEvent.healthtopics` joins to the
@@ -272,7 +272,7 @@ function summarise(c) {
   const placed = c.events.filter((e) => e.c.length).length;
   const withStart = c.events.filter((e) => e.s).length;
   const withPathogen = c.events.filter((e) => e.d).length;
-  /* ⚠ THE CHECK THAT #R590's OWN FIRST VERSION FAILED: a name that is a bare year is not a name. */
+  /* ⚠ THE CHECK THAT #R650's OWN FIRST VERSION FAILED: a name that is a bare year is not a name. */
   const yearNames = c.events.filter((e) => e.d && /^\d{4}$/.test(e.d)).length;
   const pct = (n) => (100 * n / c.events.length).toFixed(1) + '%';
   return [

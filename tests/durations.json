@@ -1,5 +1,5 @@
 {
- "tests/r590.spec.js": 9,
+ "tests/r650.spec.js": 9,
  "tests/r531.spec.js": 4,
  "tests/internal-qa.spec.js": 2,
  "tests/monitors.spec.js": 10,
@@ -102,7 +102,7 @@
  "tests/r508.spec.js": 3,
  "tests/r510.spec.js": 1,
  "tests/security.spec.js": 4,
- "tests/r530.spec.js": 35,
+ "tests/r530.spec.js": 160,
  "tests/r545.spec.js": 5,
  "tests/smoke.spec.js": 8,
  "tests/r550.spec.js": 12,

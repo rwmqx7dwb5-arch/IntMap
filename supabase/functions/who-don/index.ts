@@ -1,7 +1,7 @@
 // ============================================================================
 //  IntMap · who-don — the case and death counts WHO holds only as prose  (Supabase Edge Function, Deno)
 // ----------------------------------------------------------------------------
-//  (#R590) 「感染症アウトブレイク。WHO の Disease Outbreak News を地理化。病原体 / 国・地域 /
+//  (#R650) 「感染症アウトブレイク。WHO の Disease Outbreak News を地理化。病原体 / 国・地域 /
 //    発生日 / WHO 公表日 / 症例数 / 死亡数 のイベントレイヤー。」
 //
 //  ── WHY THIS DOES NOT RELAY THE FEED ─────────────────────────────────────────────────────────

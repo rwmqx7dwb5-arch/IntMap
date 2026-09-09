@@ -4106,7 +4106,7 @@ window.IntMapLang.define('zh', {
   "Live news map": "即時新聞地圖",
   "World headlines pinned to where they actually happen": "把世界頭條釘在真正發生的地點",
   "Globe, satellite & time machine": "地球儀、衛星與時光機",
-  "3D terrain, real imagery, and travel back to 1850": "3D 地形、實拍影像，回溯至 1850 年",
+  "3D terrain, real imagery, and time travel back to AD 1": "3D 地形、實拍影像，時光可回到西元 1 年",
   "Atlas AI & country data": "Atlas AI 與國家資料",
   "Ask in plain language, compare countries, even fly a jet": "用日常語言提問、比較國家，甚至駕駛噴射機",
   "Start exploring": "開始探索",
@@ -6077,7 +6077,7 @@ window.IntMapLang.define('zh', {
   "継続": "維持",
   "Above normal": "高於平常",
   "Erupting in the map’s year": "在地圖年份噴發",
-  "GVP records {n} volcano(es) as erupting in {y}. The clock reaches back to 1850; the card shows every eruption in the record.": "GVP 記錄中，{y} 年正在噴發的火山有 {n} 座。時鐘可回溯至 1850 年；卡片會顯示紀錄中的所有噴發。",
+  "GVP records {n} volcano(es) as erupting in {y}. The record reaches further back than the clock does, so the card shows every eruption in it.": "GVP 記錄中，{y} 年正在噴發的火山有 {n} 座。記錄比時鐘回溯得更早，因此卡片會顯示記錄中的所有噴發。",
   "Has produced VEI 4+": "曾達 VEI 4 以上",
   "Largest recorded VEI: {v}, from {n} eruptions on record": "已記錄的最大 VEI：{v}（共 {n} 次噴發紀錄）",
   "Last eruption: {y}": "最近噴發：{y}",
@@ -6377,44 +6377,44 @@ window.IntMapLang.define('zh', {
   "USGS published no ShakeMap for this earthquake": "USGS 未為此次地震發布 ShakeMap",
   "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — 由觀測記錄、體感回報與場址條件推估的地動，並非把規模畫成圖。",
   "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "USGS 未提供此量的色階，因此僅以等值線繪製。",
-  /* (#R590) js/outbreaks.js — the WHO Disease Outbreak News layer. «Disease Outbreak News» is
+  /* (#R650) js/outbreaks.js — the WHO Disease Outbreak News layer. «Disease Outbreak News» is
      the name of a WHO publication, so it stays in the original. */
-  "No outline on this map for": "此地圖沒有輪廓的國家：",   /* outbreaks.js (#R590) */
-  "Time window": "期間",   /* outbreaks.js (#R590) */
-  "1 year": "1 年",   /* outbreaks.js (#R590) */
-  "5 years": "5 年",   /* outbreaks.js (#R590) */
-  "90 days": "90 天",   /* outbreaks.js (#R590) */
-  "all pathogens": "所有病原體",   /* outbreaks.js (#R590) */
-  "Archive built": "存檔建立於",   /* outbreaks.js (#R590) */
-  "cases": "病例",   /* outbreaks.js (#R590) */
-  "checked WHO for newer items": "已向 WHO 查詢較新的公告",   /* outbreaks.js (#R590) */
-  "Circle size = WHO notes in the window · colour = how recent the newest is.": "圓的大小＝期間內的 WHO 公告數 · 顏色＝最新一則有多新。",   /* outbreaks.js (#R590) */
-  "Closed the outbreak layer.": "已關閉疾病爆發圖層。",   /* outbreaks.js (#R590) */
-  "could not check WHO for newer items": "無法向 WHO 查詢較新的公告",   /* outbreaks.js (#R590) */
-  "Could not load the outbreak archive.": "無法載入疾病爆發存檔。",   /* outbreaks.js (#R590) */
-  "Could not load the WHO outbreak archive.": "無法載入 WHO 的疾病爆發存檔。",   /* outbreaks.js (#R590) */
-  "Countries drawn": "已繪製的國家",   /* outbreaks.js (#R590) */
-  "countries on the map": "個國家在地圖上",   /* outbreaks.js (#R590) */
-  "deaths": "死亡",   /* outbreaks.js (#R590) */
-  "Disease outbreaks (WHO)": "疾病爆發（WHO）",   /* outbreaks.js (#R590) */
-  "Everything up to this date": "到這一天為止的全部",   /* outbreaks.js (#R590) */
-  "listed, not placed": "僅列於清單，未標於地圖",   /* outbreaks.js (#R590) */
-  "Most notes": "最多",   /* outbreaks.js (#R590) */
-  "not extracted yet": "尚未擷取",   /* outbreaks.js (#R590) */
-  "Not one country": "非單一國家",   /* outbreaks.js (#R590) */
-  "not stated by WHO": "WHO 未載明",   /* outbreaks.js (#R590) */
-  "Outbreak": "發生日",   /* outbreaks.js (#R590) */
-  "Pathogen": "病原體",   /* outbreaks.js (#R590) */
-  "Read the WHO item": "閱讀 WHO 原文",   /* outbreaks.js (#R590) */
-  "Reported": "通報數",   /* outbreaks.js (#R590) */
-  "Source: WHO Disease Outbreak News": "來源：WHO Disease Outbreak News（世界衛生組織）",   /* outbreaks.js (#R590) */
-  "Tap a circle for the items behind it.": "點按圓圈，即可看到其中的項目。",   /* outbreaks.js (#R590) */
-  "WHO note": "WHO 公告",   /* outbreaks.js (#R590) */
-  "WHO notes": "WHO 公告",   /* outbreaks.js (#R590) */
-  "WHO published no Disease Outbreak News about that in this window.": "在這段期間內，WHO 沒有就此發布 Disease Outbreak News。",   /* outbreaks.js (#R590) */
-  "WHO published no Disease Outbreak News in this window.": "在這段期間內，WHO 沒有發布 Disease Outbreak News。",   /* outbreaks.js (#R590) */
-  "WHO published these about a region or the whole world, so they are listed and not placed.": "這些是 WHO 就某個區域或整個世界發布的，因此只列於清單，不標在地圖上。",   /* outbreaks.js (#R590) */
-  "Window ending": "期間結束於",   /* outbreaks.js (#R590) */
+  "No outline on this map for": "此地圖沒有輪廓的國家：",   /* outbreaks.js (#R650) */
+  "Time window": "期間",   /* outbreaks.js (#R650) */
+  "1 year": "1 年",   /* outbreaks.js (#R650) */
+  "5 years": "5 年",   /* outbreaks.js (#R650) */
+  "90 days": "90 天",   /* outbreaks.js (#R650) */
+  "all pathogens": "所有病原體",   /* outbreaks.js (#R650) */
+  "Archive built": "存檔建立於",   /* outbreaks.js (#R650) */
+  "cases": "病例",   /* outbreaks.js (#R650) */
+  "checked WHO for newer items": "已向 WHO 查詢較新的公告",   /* outbreaks.js (#R650) */
+  "Circle size = WHO notes in the window · colour = how recent the newest is.": "圓的大小＝期間內的 WHO 公告數 · 顏色＝最新一則有多新。",   /* outbreaks.js (#R650) */
+  "Closed the outbreak layer.": "已關閉疾病爆發圖層。",   /* outbreaks.js (#R650) */
+  "could not check WHO for newer items": "無法向 WHO 查詢較新的公告",   /* outbreaks.js (#R650) */
+  "Could not load the outbreak archive.": "無法載入疾病爆發存檔。",   /* outbreaks.js (#R650) */
+  "Could not load the WHO outbreak archive.": "無法載入 WHO 的疾病爆發存檔。",   /* outbreaks.js (#R650) */
+  "Countries drawn": "已繪製的國家",   /* outbreaks.js (#R650) */
+  "countries on the map": "個國家在地圖上",   /* outbreaks.js (#R650) */
+  "deaths": "死亡",   /* outbreaks.js (#R650) */
+  "Disease outbreaks (WHO)": "疾病爆發（WHO）",   /* outbreaks.js (#R650) */
+  "Everything up to this date": "到這一天為止的全部",   /* outbreaks.js (#R650) */
+  "listed, not placed": "僅列於清單，未標於地圖",   /* outbreaks.js (#R650) */
+  "Most notes": "最多",   /* outbreaks.js (#R650) */
+  "not extracted yet": "尚未擷取",   /* outbreaks.js (#R650) */
+  "Not one country": "非單一國家",   /* outbreaks.js (#R650) */
+  "not stated by WHO": "WHO 未載明",   /* outbreaks.js (#R650) */
+  "Outbreak": "發生日",   /* outbreaks.js (#R650) */
+  "Pathogen": "病原體",   /* outbreaks.js (#R650) */
+  "Read the WHO item": "閱讀 WHO 原文",   /* outbreaks.js (#R650) */
+  "Reported": "通報數",   /* outbreaks.js (#R650) */
+  "Source: WHO Disease Outbreak News": "來源：WHO Disease Outbreak News（世界衛生組織）",   /* outbreaks.js (#R650) */
+  "Tap a circle for the items behind it.": "點按圓圈，即可看到其中的項目。",   /* outbreaks.js (#R650) */
+  "WHO note": "WHO 公告",   /* outbreaks.js (#R650) */
+  "WHO notes": "WHO 公告",   /* outbreaks.js (#R650) */
+  "WHO published no Disease Outbreak News about that in this window.": "在這段期間內，WHO 沒有就此發布 Disease Outbreak News。",   /* outbreaks.js (#R650) */
+  "WHO published no Disease Outbreak News in this window.": "在這段期間內，WHO 沒有發布 Disease Outbreak News。",   /* outbreaks.js (#R650) */
+  "WHO published these about a region or the whole world, so they are listed and not placed.": "這些是 WHO 就某個區域或整個世界發布的，因此只列於清單，不標在地圖上。",   /* outbreaks.js (#R650) */
+  "Window ending": "期間結束於",   /* outbreaks.js (#R650) */
   "▶ Tap a country on the map to start the outbreak there": "▶ 在地圖上點選疫情開始的國家",
   "1 dot ≈ ": "1 點 ≈ ",
   "a leading lab": "一家頂尖實驗室",

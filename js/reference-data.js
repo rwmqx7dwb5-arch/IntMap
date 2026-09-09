@@ -423,7 +423,7 @@ window.IntMapRefData=(function(){
     {n:'RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)',u:'https://www.rivm.nl/nationaal-meetnet-radioactiviteit'},
     {n:'Hong Kong Observatory — ambient gamma radiation (data.gov.hk)',u:'https://data.weather.gov.hk/'},
     {n:'SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)',u:'https://data.gov.ua/'},
-    /* (#R590) WHO Disease Outbreak News — the layer's own archive (data/who-don.json.gz, built by
+    /* (#R650) WHO Disease Outbreak News — the layer's own archive (data/who-don.json.gz, built by
        scripts/build-who-don.mjs) AND the live tail the page reads straight from WHO. ONE ROW: it is
        one publication from one organisation, whichever of the two paths a given item arrived by. */
     {n:'WHO Disease Outbreak News',u:'https://www.who.int/emergencies/disease-outbreak-news'},
@@ -436,10 +436,18 @@ window.IntMapRefData=(function(){
        ⚠ THE LICENCE IS CC0 1.0, NOT ODbL. Measured 2026-09-07: openhistoricalmap.org/copyright
        says the project is «dedicated to the public domain», and every Overpass response says «The
        data is made available under CC0». Naming it is provenance, not the terms — the row is here
-       because the map draws this data. ⚠ THE SUBDIVISION COVERAGE IS PARTIAL and the description
-       says so instead of filling it in: 642 units are in force in 1900 against the ~4,600
-       present-day ones, so a country drawn with no subdivision line in a past year is one the
-       record is still silent about. */
+       because the map draws this data. ⚠ (#R604) IT IS ALSO THE TILE SERVER. The era subdivision
+       LINE is no longer drawn from the bundle at all — it comes from OHM's own vector tiles
+       (vtiles.openhistoricalmap.org, same project, same CC0), date-filtered per frame, because a
+       bundle has one resolution and a map has twenty (伊豆国: 2,800 vertices upstream, 29 in the
+       bundle). One row still, because it is one source under one licence; the bundles remain the
+       nine-language labels and the answer to a click.
+       ⚠ THE SUBDIVISION COVERAGE IS PARTIAL and the description says so instead of filling it in.
+       It is partial in a way that varies by CENTURY: measured on a 160-tile z5 sweep 2026-09-10,
+       dated admin_level≥3 segments in force number 936 in year 1 and 8,341 in 1900, touching 14 and
+       66 of those tiles. The older the date, the more regional the record — so a country drawn with
+       no subdivision line in a past year is one the record is still silent about, not one that had
+       no subdivisions. */
     {n:'OpenHistoricalMap (CC0 1.0)',u:'https://www.openhistoricalmap.org/'},
     {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/'},
     /* ⚠ (#R409) THE MAP NAMED THIS SOURCE AND THIS PAGE DID NOT LIST IT. The two world-war layers

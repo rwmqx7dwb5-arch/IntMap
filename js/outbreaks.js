@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · DISEASE OUTBREAKS — window.IntMapOutbreaks  (#R590)
+ *  IntMap · DISEASE OUTBREAKS — window.IntMapOutbreaks  (#R650)
  * ----------------------------------------------------------------------------
  *  「感染症アウトブレイク。WHOのDisease Outbreak Newsを地理化。病原体 / 国・地域 / 発生日 /
  *    WHO公表日 / 症例数 / 死亡数 のイベントレイヤー。WHO自身に現在JSON APIがあります。」
@@ -192,10 +192,10 @@ window.IntMapModules.outbreaks = function (HOST) {
     /* ── the picture ─────────────────────────────────────────────────────────────────────────────
        ONE point per country, carrying the whole window's items for it. Overlapping three thousand
        identical dots would not be an event map, it would be a smear. */
-    /* ══ ⚠⚠⚠ (#R590) ONE SNAPSHOT, READ BY BOTH THE MAP AND THE PANEL ═════════════════════════════
+    /* ══ ⚠⚠⚠ (#R650) ONE SNAPSHOT, READ BY BOTH THE MAP AND THE PANEL ═════════════════════════════
        `collection()` used to be called separately by `publish()` and by `open()`, and the panel
        therefore described a DIFFERENT computation from the one the renderer was holding. Measured by
-       tests/r590.spec.js ①: the map carried 18 countries from the 110 m outlines while the panel's
+       tests/r650.spec.js ①: the map carried 18 countries from the 110 m outlines while the panel's
        `noOutline` came from a later run against the detailed set, so «drawn + undrawable» came to 19
        against the 20 countries WHO named — a legend that does not describe the map on screen, which
        is #R551's whole lesson. `rebuild()` is now the only place either number is produced. */
@@ -212,7 +212,7 @@ window.IntMapModules.outbreaks = function (HOST) {
       const nowMs = clockDay().getTime();
       byIso.forEach((evs, i) => {
         const pt = centroidOf(i);
-        /* ══ ⚠⚠ (#R590) A COUNTRY THE MAP HAS NO OUTLINE FOR IS A FOURTH STATE, AND IT IS SAID ═════
+        /* ══ ⚠⚠ (#R650) A COUNTRY THE MAP HAS NO OUTLINE FOR IS A FOURTH STATE, AND IT IS SAID ═════
            Not «placed», not «WHO published about no one country», not «not looked at» — this is
            «WHO named a country and countryGeo does not carry it» (measured: ESH, XKX, GRL among
            others; the collection holds 258 units). Dropping it silently is how a reader counts the
@@ -482,11 +482,11 @@ window.IntMapModules.outbreaks = function (HOST) {
     }
 
     /* ── the switch ──────────────────────────────────────────────────────────────────────────────*/
-    /* ══ ⚠⚠⚠ (#R590) THE OUTLINES ARRIVE OVER THE NETWORK, AND THE FIRST DRAW HAD NOT WAITED ═══════
+    /* ══ ⚠⚠⚠ (#R650) THE OUTLINES ARRIVE OVER THE NETWORK, AND THE FIRST DRAW HAD NOT WAITED ═══════
        `centroidOf` reads `HOST.countryGeo`, which js/countries-ui.js fetches from Natural Earth.
        Switching the layer on before it lands made EVERY centroid null and the layer drew NOTHING —
        and nothing put it back, because the only things that called `publish()` were the switch, the
-       window buttons and a restyle. MEASURED by tests/r590.spec.js ①: 0 features with two playwright
+       window buttons and a restyle. MEASURED by tests/r650.spec.js ①: 0 features with two playwright
        workers, 18 of 20 with one — i.e. a race whose slow side is what CI would see.
        ⇒ wait for the collection, and repaint again when `hiResCountries` swaps in the detailed set
        (a unit the 110 m stand-in lacks can only appear then — see the ⚠ on `centroidOf`). */
@@ -500,7 +500,7 @@ window.IntMapModules.outbreaks = function (HOST) {
          file's own header calls best-effort. That is the shape #R499 names: a fetch that failed
          being allowed to stand for «there is nothing». The archive is on disk and needs no network,
          so it is drawn as soon as the outlines are here; the tail re-renders when (and if) it
-         lands. tests/r590.spec.js ① is what caught it — the gate saw 0 features for 1.6 s. */
+         lands. tests/r650.spec.js ① is what caught it — the gate saw 0 features for 1.6 s. */
       Promise.all([load(), withCountryGeo()])
         .then(() => {
           if (!on) return;

@@ -297,7 +297,7 @@ export function makeAtlasSchemas() {
          has none. The other changes WHICH volcanoes are drawn, and refuses when told nothing to
          change: a colour mode, a filter flag, or the map's year. */
       'data.volcano': { type: 'object', properties: { name: str(), text: str(), query: str(), place: str() }, anyOf: [{ required: ['name'] }, { required: ['text'] }, { required: ['query'] }, { required: ['place'] }] },
-      /* (#R590) EVERY ARGUMENT IS OPTIONAL, and that is the shape of the feature rather than a
+      /* (#R650) EVERY ARGUMENT IS OPTIONAL, and that is the shape of the feature rather than a
          relaxation of rule (3): 「感染症のアウトブレイクを見せて」 is a complete request, and the
          layer answers it with WHO's most recent year. The arguments only NARROW it. */
       'map.outbreaks': { type: 'object', properties: { action: one('open', 'close'), pathogen: str(), country: str(), days: int(), all: bool() } },

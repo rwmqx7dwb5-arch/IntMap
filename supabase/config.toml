@@ -222,7 +222,7 @@ verify_jwt = false
 # ⚠ The registry is _shared/radiation-sources.js, which is a LIBRARY and must never get a
 # [functions.*] block of its own. Keyless & public; no user data reaches it.
 [functions.radiation-feed]
-# who-don (#R590) holds the ONE field WHO does not publish as a field. Pathogen, country, onset and
+# who-don (#R650) holds the ONE field WHO does not publish as a field. Pathogen, country, onset and
 # publication date are structured fields in WHO's own OData service and travel with
 # data/who-don.json.gz; case and death totals exist only as English prose inside each report's
 # Overview, and picking the cumulative figure out of a paragraph that also states provinces, health
