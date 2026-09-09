@@ -192,6 +192,20 @@ window.IntMapRefData=(function(){
     {n:'RainViewer',u:'https://www.rainviewer.com/'},
     {n:'Open-Meteo',u:'https://open-meteo.com/'},
     {n:'Open-Meteo Marine',u:'https://open-meteo.com/en/docs/marine-weather-api'},
+    /* (#R572) THE SEA STATE. The wave layer draws two models, and the reader switches between them
+       (js/wx-models.js `roles:['wave']`); both arrive through the same Open-Meteo S3 path the other
+       forecast layers use, so what is new here is the DATA, not a delivery route. The agency
+       spellings are js/wx-models.js's, because that registry is where a model declares who made it.
+       ⚠ THE THIRD ROW IS A COLOUR SCALE, NOT A DATA SOURCE, AND IT SAYS SO. The ramp in
+       js/waves-palette.js reproduces windy.com's published wave scale byte for byte — twelve stops
+       over 0–12 m — because the reader asked for that picture. NOTHING ELSE OF WINDY'S IS USED:
+       no tile, no forecast, no request. Their tiles need a 48-hour JWT and their terms do not allow
+       third-party use, so the credit is for the twelve numbers and the row is worded so that a
+       reader cannot conclude the sea state itself came from there. The legend says the same thing
+       in the reader's own language. */
+    {n:'ECMWF WAM — ocean wave model (significant wave height, mean direction and period; via Open-Meteo, CC-BY-4.0)',u:'https://www.ecmwf.int/en/research/modelling-and-prediction/marine'},
+    {n:'NOAA NCEP GFS Wave — ocean wave model (significant wave height, mean direction and period; via Open-Meteo)',u:'https://polar.ncep.noaa.gov/waves/'},
+    {n:'Wave-height colour scale — windy.com (the published twelve-stop scale only; no Windy tiles, forecasts or requests)',u:'https://www.windy.com/'},
     {n:'MET Norway (Locationforecast)',u:'https://api.met.no/'},
     {n:'OSRM (Open Source Routing Machine)',u:'https://project-osrm.org/'},
     {n:'Transitous / MOTIS',u:'https://transitous.org/'},

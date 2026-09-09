@@ -6423,5 +6423,13 @@ window.IntMapLang.define('zh-hans', {
   "left the modelled area": "流出模拟范围",
   "still airborne when the window closed": "计算结束时仍在大气中",
   "Not on this map": "未包含在此地图中",
+  "Waves": "海浪",   /* data-layers.js waves.js (#R572) */
+  "Significant wave height, with the mean wave direction animated over it.": "有效波高，并在其上以动画显示平均波向。",
+  "Colours follow Windy’s wave scale.": "配色依循 Windy 的波浪色阶。",
+  "Wave animation": "海浪动画",
+  "Could not load the wave forecast": "无法加载海浪预报",
+  "This renderer cannot draw the wave layer.": "此算绘引擎无法绘制海浪图层。",
+  "no wave data": "没有海浪数据",
+  "not a wave model": "不是海浪模式",
   }
 });
