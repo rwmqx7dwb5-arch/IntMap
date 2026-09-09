@@ -6457,5 +6457,27 @@ window.IntMapLang.define('zh', {
   "This renderer cannot draw the wave layer.": "此算繪引擎無法繪製海浪圖層。",
   "no wave data": "沒有海浪資料",
   "not a wave model": "不是海浪模式",
+  /* ══ (#R585) MEASURED RADIATION — the ambient gamma dose rate layer ══ */
+  "Measured radiation": "實測輻射",   /* map-ui.js (#R585) */
+  "Measured radiation — ambient gamma dose rate": "實測輻射 — 周圍γ等效劑量率",   /* beta-overlays.js radiation-layer.js (#R585) */
+  "stations": "個測站",   /* radiation-layer.js (#R585) */
+  "unavailable: ": "無法取得：",   /* atlas-controls.js (#R585) */
+  "Loading history…": "正在載入歷史資料…",   /* radiation-layer.js (#R585) */
+  "No history published for this station.": "此測站未公開歷史資料。",   /* radiation-layer.js (#R585) */
+  "Could not reach the networks.": "無法連線至監測網。",   /* radiation-layer.js (#R585) */
+  "Radiation measurements are unavailable right now.": "目前無法取得輻射實測值。",   /* beta-overlays.js (#R585) */
+  "{n} stations within {k} km": "{k} 公里內 {n} 個測站",   /* atlas-controls.js (#R585) */
+  "No monitoring station within {k} km publishes an open-licensed reading. That is a gap in coverage, not a statement about the radiation there.": "{k} 公里內沒有任何監測站以開放授權公開量測值。這是監測網的覆蓋空白，並非對當地輻射量的陳述。",   /* atlas-controls.js (#R585) */
+  "Measured radiation on — {n} stations from {m} networks": "已開啟實測輻射 — 來自 {m} 個監測網的 {n} 個測站",   /* atlas-controls.js (#R585) */
+  "Measured radiation layer off.": "已關閉實測輻射圖層。",   /* atlas-controls.js (#R585) */
+  "Give a coordinate to measure around.": "請指定作為測量中心的座標。",   /* atlas-controls.js (#R585) */
+  "50–200 nSv/h is normal natural background almost everywhere. Rain alone can lift a station up to three times higher for a few hours, and most of these readings are published unvalidated — so one high station is not evidence of a release.": "50–200 nSv/h 在幾乎所有地方都是正常的天然背景輻射。單是降雨就可能讓某個測站的讀數在數小時內升高到三倍，而且這些數值多半未經驗證即予公開 — 因此單一測站數值偏高並不能證明發生了放射性物質釋放。",   /* radiation-layer.js (#R585) */
+  "{n} more stations publish a period average, not a current reading — set the clock to their year to see them.": "另有 {n} 個測站公布的是期間平均值，而非目前的量測值 — 將時鐘調到該年份即可顯示。",   /* radiation-layer.js (#R585) */
+  "below this detector’s stated range": "低於此偵測器標示的量測範圍",   /* radiation-layer.js (#R585) */
+  "published average for a period — not a current reading": "公布的期間平均值 — 並非目前的量測值",   /* radiation-layer.js (#R585) */
+  "still loading one network…": "仍在載入其中一個觀測網…",   /* radiation-layer.js (#R585) */
+  "Measured right now near the source": "目前在釋放源附近的實測值",   /* atlas-console.js (#R585) */
+  "That name also matches {o}; this run uses {u}.": "這個名稱也符合 {o}；本次執行使用的是 {u}。",   /* atlas-console.js (#R585) */
+  "These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.": "這些是觀測值，並非上述模型的一部分。50–200 nSv/h 屬於一般的天然背景輻射，單是降雨就可能讓某個測站的數值在數小時內變為三倍。",   /* atlas-console.js (#R585) */
   }
 });

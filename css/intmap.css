@@ -1336,6 +1336,26 @@
     .volc-dot{ width:11px; height:11px; border-radius:50%; flex:none; border:1px solid rgba(255,255,255,0.5); }
     .volc-key-note{ font-size:10px; line-height:1.45; color:var(--text-muted); }
     .volc-key-src{ font-size:10px; color:var(--text-muted); }
+    /* (#R559) measured radiation — the legend key and the station popup. The band is a single row
+       of swatches because the ramp is ONE scale over every country: a per-network key would say the
+       opposite of what the layer does. `.rad-src.off` is a network that could not be read, kept
+       visible rather than dropped — a missing row reads as "that country is fine". */
+    .rad-key{ display:flex; flex-direction:column; gap:5px; margin-top:6px; font-size:11px; color:var(--text-main); }
+    .rad-band{ display:flex; flex-wrap:wrap; gap:6px; }
+    .rad-k{ display:inline-flex; align-items:center; gap:4px; font-size:10px; color:var(--text-muted); white-space:nowrap; }
+    .rad-k i{ width:10px; height:10px; border-radius:3px; flex:none; border:1px solid rgba(255,255,255,0.35); }
+    .rad-note{ font-size:10px; line-height:1.45; color:var(--text-muted); }
+    .rad-when{ font-size:10px; color:var(--text-main); font-variant-numeric:tabular-nums; }
+    .rad-src{ font-size:10px; color:var(--text-muted); line-height:1.4; }
+    .rad-src.off{ opacity:0.55; text-decoration:line-through; }
+    .rad-err{ font-size:10px; color:#e0332f; }
+    .rad-pop-h{ font-weight:600; margin-bottom:2px; }
+    .rad-pop-v{ font-size:19px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.2; }
+    .rad-pop-v span{ font-size:11px; font-weight:400; color:var(--text-muted); }
+    .rad-pop-t,.rad-pop-s{ font-size:10px; color:var(--text-muted); }
+    .rad-pop-x{ margin-top:6px; font-size:10px; color:var(--text-muted); }
+    .rad-spark{ display:block; }
+    .rad-spark-r{ font-size:10px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
     .pin-popup{ display:none; position:absolute; z-index:1300; background:var(--popup-bg); border:1px solid rgba(128,128,128,0.18); color:var(--text-main); font-size:12px; border-radius:12px; padding:10px 12px; box-shadow:var(--shadow); backdrop-filter:blur(15px); min-width:200px; transform:translate(-50%,calc(-100% - 24px)); }
     .pin-popup-row{ display:flex; justify-content:space-between; gap:8px; margin:2px 0; } .pin-popup-row b{ color:var(--text-main); font-weight:600; }
     .pin-popup-close{ position:absolute; top:4px; right:6px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 4px; } .pin-popup-close:hover{ color:var(--text-main); }
