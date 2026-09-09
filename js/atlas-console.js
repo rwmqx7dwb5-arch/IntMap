@@ -1132,7 +1132,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       'aurora':'l9-dl-aurora','northern lights':'l9-dl-aurora','オーロラ':'l9-dl-aurora',
       'night lights':'dl-nightsat','nightlights':'dl-nightsat','city lights':'dl-nightsat','夜間光':'dl-nightsat','夜景':'dl-nightsat',
       'day night':'dl-nightside','day/night':'dl-nightside','昼夜':'dl-nightside','terminator':'dl-nightside','night side':'dl-nightside','夜側':'dl-nightside',
-      'volcano':'beta-dl-volc2','volcanoes':'beta-dl-volc2','火山':'beta-dl-volc2',
+      'volcano':'beta-dl-volc2','volcanoes':'beta-dl-volc2','火山':'beta-dl-volc2',   'world heritage':'beta-dl-whs','heritage':'beta-dl-whs','unesco':'beta-dl-whs','世界遺産':'beta-dl-whs','遺産':'beta-dl-whs','welterbe':'beta-dl-whs','patrimoine mondial':'beta-dl-whs','patrimonio mundial':'beta-dl-whs','всемирное наследие':'beta-dl-whs','世界遗产':'beta-dl-whs','세계유산':'beta-dl-whs',
       /* (#R353) …and the three Volcano Intelligence overlays, by the words a reader would use */
       'volcanic ash':'beta-dl-volcash','ash cloud':'beta-dl-volcash','ash':'beta-dl-volcash','sigmet':'beta-dl-volcash','火山灰':'beta-dl-volcash','vulkanasche':'beta-dl-volcash','пепел':'beta-dl-volcash','ceniza volcánica':'beta-dl-volcash',
       'volcano hazard':'beta-dl-volchaz','hazard zones':'beta-dl-volchaz','lahar':'beta-dl-volchaz','ハザード':'beta-dl-volchaz','火山ハザード':'beta-dl-volchaz','ラハール':'beta-dl-volchaz',
@@ -1188,7 +1188,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox } = makeAtlasGeoResolve(HOST, { GE, L, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { clickId, controlCatalog, doControl, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
+    const { clickId, controlCatalog, doControl, doHeritage, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
     const { TURN_SCHEMA } = AGENT;   /* (#R406) the reply shape of one step — js/atlas-agent.js */
     /* (#R406) ONE tool surface for the module, not one per turn. What IS per-turn is where a call
        lands: `_turnRunAction` is the running turn's executor, so the surface can be built (and
@@ -1973,7 +1973,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(vals.length) hh+=note(vals.map(v=>'<b>'+esc(v.label)+'</b>: '+esc(String(v.value))).join('<br>'));
           if(featLines.length) hh+=note(featLines.map(esc).join('<br>'));
           return R(true, hh); }
-        case 'volcano': case 'volcanoCard': case 'volcanoInfo': case 'volcanoFilter': case 'volcanoMode': case 'volcanoTime': return doVolcano(a);   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */
+        case 'volcano': case 'volcanoCard': case 'volcanoInfo': case 'volcanoFilter': case 'volcanoMode': case 'volcanoTime': return doVolcano(a);   case 'heritage': case 'worldHeritage': case 'heritageInfo': case 'heritageFilter': return doHeritage(a);   /* (#R567) ON THIS LINE, not a new one: js/atlas-console.js stands at 4,908 against a ceiling of 4,910 that only ever comes down (#R199/#R318/#R491), and a subject whose answers are thirty lines long belongs in js/atlas-controls.js beside doVolcano anyway. */   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */
         /* (#R118) MAP-OBJECT operations by id (see IntMapObjects.list in the state context) */
         case 'object': case 'mapObject': {
           const O=window.IntMapObjects; if(!O||!O.list) return R(false, warn('⚠'));

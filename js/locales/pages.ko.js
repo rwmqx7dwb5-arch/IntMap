@@ -445,6 +445,7 @@ window.IntMapPageI18N.define('ko', {
      (js/reference-data.js)의 이름을 키로 삼으며, 없는 항목은 위의 본문과 똑같이 키 단위로
      영어로 되돌아갑니다. */
   sourceUse: {
+    "UNESCO World Heritage Centre": "세계유산 목록 자체 — 등재 유산 1,273건과 이 레이어가 그리는 구성 자산 6,009곳 — 는 유네스코 세계유산센터가 공표한 데이터 그대로입니다. 다만 ‘지금 위험에 처한 유산인가’는 같은 피드에서 가져오지 않습니다. 센터의 위험 항목이 2014년 이후 갱신되지 않는다는 것을 실측했기 때문에, 그 한 가지 사실만 Wikidata에 물어 두 출처를 함께 밝힙니다. 명칭은 유네스코가 직접 목록을 공표하는 언어(영어·프랑스어·스페인어·러시아어·중국어·일본어)로 그대로 보여 주며, 독일어·한국어·번체 중국어로는 공표하지 않으므로 그 독자에게는 영어 명칭이 표시됩니다.",
     "Smithsonian / USGS Weekly Volcanic Activity Report": "화산 상황의 「세계 단계」. 이번 주에 어떤 화산에 대해 관측 기관이 보고했고 무엇을 말했는지. 각 항목이 GVP 화산 번호를 가지므로 이름이 아니라 번호로 카탈로그와 연결됩니다. volcano.si.edu는 CORS 헤더를 보내지 않으므로 supabase/functions/volcano-feed가 중계합니다.",
     "USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)": "「미국 단계」. 현재 발효 중인 항공 색상 코드와 화산 경계 수준, 그리고 최근 1년간의 모든 VONA(항공용 화산 정보). 이 API는 Access-Control-Allow-Origin을 보내므로 브라우저가 직접 읽습니다.",
     "USGS Volcano Hazards Program — published volcano hazard zones": "기계가 읽을 수 있는 화산 재해 구역으로 확인된 유일한 공적 서비스. 캘리포니아의 7개 화산 지역에 대해 강회·라하르·홍수·화구 근처·용암류 폴리곤을 공표합니다. 존재하는 것만 그리고, 그 밖의 화산에 대해서는 「공표되어 있지 않다」고 명시하며 추정 원은 결코 그리지 않습니다.",

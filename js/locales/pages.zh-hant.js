@@ -444,6 +444,7 @@ window.IntMapPageI18N.define('zh-hant', {
      譯自帶有英文原文的 pages.en.js `sourceUse`。每一則以登錄表（js/reference-data.js）中的
      名稱為鍵；缺少的項目會逐鍵回退為英文，與上方正文的規則相同。 */
   sourceUse: {
+    "UNESCO World Heritage Centre": "《世界遺產名錄》本身——1,273 項列入名錄的遺產，以及本圖層繪出的 6,009 處構成資產——即 UNESCO 世界遺產中心公布的資料。但「目前是否為瀕危遺產」並非取自同一份資料：實測發現該中心的瀕危欄位自 2014 年起未再更新，因此僅這一項改向 Wikidata 查詢，並同時標註兩個出處。名稱以 UNESCO 自行公布名錄的語言（英文、法文、西班牙文、俄文、中文、日文）原樣顯示；德文、韓文與繁體中文 UNESCO 並未公布，因此那些讀者看到的是英文名稱。",
     "Smithsonian / USGS Weekly Volcanic Activity Report": "火山狀態的「世界層級」：本週有哪些火山被觀測機構通報，以及機構說了什麼。每一則都帶有 GVP 火山編號，因此報告是以編號而非名稱與目錄連結。由於 volcano.si.edu 不送出 CORS 標頭，改由 supabase/functions/volcano-feed 中繼。",
     "USGS Volcano Hazards Program — HANS (alert levels, aviation colour codes, VONA)": "「美國層級」：目前生效的航空色碼與火山警戒等級，以及過去一年的所有 VONA（航空用火山資訊）。此服務會送出 Access-Control-Allow-Origin，因此由瀏覽器直接讀取。",
     "USGS Volcano Hazards Program — published volcano hazard zones": "目前找到唯一權威且機器可讀的火山災害範圍服務：加州七個火山區的降灰、火山泥流、洪水、火口近旁與熔岩流多邊形。有資料者才繪出；其餘火山則在資訊卡中明確說明沒有公布資料，且絕不繪製推估的圓圈。",

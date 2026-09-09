@@ -298,6 +298,13 @@ export function makeAtlasSchemas() {
          change: a colour mode, a filter flag, or the map's year. */
       'data.volcano': { type: 'object', properties: { name: str(), text: str(), query: str(), place: str() }, anyOf: [{ required: ['name'] }, { required: ['text'] }, { required: ['query'] }, { required: ['place'] }] },
       'map.volcanoFilter': { type: 'object', properties: { mode: one('recency', 'vei', 'status', 'people'), time: bool(), year: int(), spoken: bool(), elevated: bool(), big: bool(), recent: bool(), clear: bool() }, anyOf: [{ required: ['mode'] }, { required: ['time'] }, { required: ['year'] }, { required: ['spoken'] }, { required: ['elevated'] }, { required: ['big'] }, { required: ['recent'] }, { required: ['clear'] }] },
+      /* (#R567) THE WORLD HERITAGE PAIR. One opens the record for a NAMED property — the case
+         refuses with «name a World Heritage site» when it has none. The other changes WHICH
+         properties are drawn: `categories` NAMES THE ONES TO KEEP (the vocabulary is UNESCO's own
+         and travels in the data file, so it is not enumerated here), `danger` narrows to the List
+         in Danger, `clear` drops every narrowing. */
+      'data.heritage': { type: 'object', properties: { name: str(), text: str(), query: str(), place: str(), id: int() }, anyOf: [{ required: ['name'] }, { required: ['text'] }, { required: ['query'] }, { required: ['place'] }, { required: ['id'] }] },
+      'map.heritageFilter': { type: 'object', properties: { categories: { type: 'array', items: str() }, category: str(), danger: bool(), clear: bool() }, anyOf: [{ required: ['categories'] }, { required: ['category'] }, { required: ['danger'] }, { required: ['clear'] }] },
       /* (#R527) 写真の撮影地点。EVERY ARGUMENT IS OPTIONAL, AND THAT IS THE SHAPE OF THE FEATURE,
          not a relaxation of rule (3): the two inputs that decide the answer — the photograph and
          the ridge traced on it — cannot travel in an action at all, because the reader supplies

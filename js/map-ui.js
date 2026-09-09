@@ -234,6 +234,9 @@ window.IntMapModules.layerRegistry=function(HOST){
       featuresIn:b=>_srcFeatsIn('news-points',b), summary:()=>{ const f=_srcFeatsIn('news-points',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
     register('volcanoes',{ label:()=>L5('Volcanoes','火山','Vulkane','Вулканы','Volcanes'), on:()=>{ try{ return !!(GE().layers.has('volc2-pt')&&GE().layers.getLayout('volc2-pt','visibility')!=='none'); }catch(_){ return false; } },
       featuresIn:b=>_srcFeatsIn('volc2-src',b), source:()=>'Smithsonian GVP' });
+    register('heritage',{ label:()=>L5('World Heritage','世界遺産','Welterbe','Всемирное наследие','Patrimonio Mundial'),
+      on:()=>{ try{ return !!(GE().layers.has('whs-pt')&&GE().layers.getLayout('whs-pt','visibility')!=='none'); }catch(_){ return false; } },
+      featuresIn:b=>_srcFeatsIn('whs-src',b), source:()=>'UNESCO World Heritage Centre' });
     register('elevation',{ label:()=>L5('Elevation','標高','Höhe','Высота','Elevación'), on:()=>true,
       sampleAt:(x,y)=>{ try{ const v=(typeof demElevAt==='function')?demElevAt(x,y):null; return (v==null)?null:(Math.round(v)+' m'); }catch(_){ return null; } }, source:()=>'Mapzen/AWS terrarium DEM' });
     /* ---- (#R120) live traffic layers — the REAL features currently on the map (same geojson the symbols paint) ---- */

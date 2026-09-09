@@ -248,5 +248,56 @@ export function makeAtlasControls(HOST, CTX) {
     return R(true, note('✓ '+esc(did.join(' · ')+tail)));
   }
 
-  return { clickId, controlCatalog, doControl, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel };
+
+  /* ══ (#R567) THE WORLD HERITAGE ANSWERS ═══════════════════════════════════════════════════════
+     Beside doVolcano, for the reason its note gives: js/atlas-console.js has one line of headroom
+     against a ceiling that only ever comes down (#R199/#R318/#R491), and both of these need more
+     than one line of answer.
+     ⚠ EVERY CHANGE GOES THROUGH THE KERNEL COMMAND THE LEGEND BUTTON ALSO PRESSES (#R82), so the
+     sentence Atlas writes and the panel the reader looks at cannot drift apart. */
+  async function doHeritage(a){
+    const OSk=window.IntMapOS, W=()=>window.__imWhsLayer;
+    if(a.type==='heritageFilter'){
+      if(!OSk||!OSk.has('heritage.filter')) return R(false, warn('⚠'));
+      const p={};
+      if(a.clear) p.clear=true;
+      if(a.danger!=null) p.danger=a.danger!==false;
+      const cats=Array.isArray(a.categories)?a.categories:(a.category?[a.category]:null);
+      if(cats&&cats.length) p.categories=cats.map(String);
+      if(!Object.keys(p).length) return R(false, warn('⚠ '+esc(L('Say what to narrow the World Heritage layer to: a category, or the List in Danger.','世界遺産レイヤーを何で絞るか指定してください（区分、または危機遺産）。','Sagen Sie, worauf das Welterbe eingegrenzt werden soll: eine Kategorie oder die Rote Liste.','Укажите, по чему сузить слой: категория или список под угрозой.','Indique cómo acotar el Patrimonio Mundial: una categoría o la Lista en Peligro.'))));
+      const r=await OSk.exec('heritage.filter',{source:'atlas',params:p});
+      /* ⚠ A NAME THE VOCABULARY DOES NOT HOLD IS ANSWERED WITH THE VOCABULARY, not with silence —
+         the categories come from the data file, so the reply can always say what the choices are. */
+      if(!r||!r.ok) return R(false, warn('⚠ '+esc((r&&r.categories)?(L('Categories are: {c}','区分は {c} です','Kategorien: {c}','Категории: {c}','Las categorías son: {c}').split('{c}').join(r.categories.join(', '))):((r&&r.err)||'error'))));
+      return R(true, note('✓ '+esc(L('{n} World Heritage points shown','世界遺産 {n} 地点を表示','{n} Welterbe-Punkte sichtbar','показано точек: {n}','{n} puntos del Patrimonio Mundial mostrados').split('{n}').join(r.shown==null?'':r.shown))));
+    }
+    const q=String(a.name||a.text||a.query||a.place||'').trim();
+    if(!q&&a.id==null) return R(false, warn('⚠ '+esc(L('Name a World Heritage property.','世界遺産の名前を指定してください。','Nennen Sie eine Welterbestätte.','Назовите объект всемирного наследия.','Indique un bien del Patrimonio Mundial.'))));
+    if(!OSk||!OSk.has('heritage.open')) return R(false, warn('⚠'));
+    const r=await OSk.exec('heritage.open',{source:'atlas',params:a.id!=null?{id:a.id}:{name:q}});
+    const w=W();
+    if(!r||!r.ok){
+      /* ⚠ «NO COORDINATE» IS NOT «NOT FOUND», and saying so is the answer. Three inscribed
+         properties publish none; scripts/build-whs.mjs names them. */
+      if(r&&r.id!=null&&w){ const s2=w.site(r.id);
+        if(s2) return R(false, warn('⚠ '+esc(L('UNESCO publishes no coordinate for “{q}”, so it is inscribed but cannot be put on the map.','「{q}」はユネスコが座標を公表していないため、登録されていますが地図には出せません。','Die UNESCO veröffentlicht für „{q}“ keine Koordinate — eingeschrieben, aber nicht kartierbar.','Для «{q}» ЮНЕСКО не публикует координат, поэтому объект нельзя показать на карте.','La UNESCO no publica coordenadas de «{q}», así que no puede situarse en el mapa.').split('{q}').join(s2.n[w.locale()]||s2.n.en))));
+      }
+      return R(false, warn('⚠ '+esc(L('No World Heritage property called “{q}” is on the List this map carries.','この地図が収録する世界遺産一覧に「{q}」はありません。','Keine Welterbestätte namens „{q}“ steht auf der Liste dieser Karte.','Объекта «{q}» нет в списке, который содержит эта карта.','Ningún bien llamado «{q}» está en la Lista que incluye este mapa.').split('{q}').join(q))));
+    }
+    const s=w&&w.site(r.id); if(!s) return R(true, note('✓'));
+    const cats=w.categories(), cat=cats[s.c]||'';
+    const ln=[];
+    ln.push('<b>'+esc(s.n[w.locale()]||s.n.en)+'</b>'+(cat?(' — '+esc(cat)):''));
+    if(s.y) ln.push(esc(L('Inscribed {y}','{y}年登録','Eingeschrieben {y}','Внесён в {y}','Inscrito en {y}').split('{y}').join(s.y))
+      +(s.cr&&s.cr.length?(' · '+esc(s.cr.map(c=>'('+c+')').join(''))):''));
+    if(s.d) ln.push(esc(s.d>0
+      ?L('On the List of World Heritage in Danger since {y}','{y}年から危機遺産','Seit {y} auf der Roten Liste','В списке под угрозой с {y} года','En la Lista en Peligro desde {y}').split('{y}').join(s.d)
+      :L('On the List of World Heritage in Danger','危機遺産','Auf der Roten Liste','В списке под угрозой','En la Lista en Peligro')));
+    /* the number of component parts IS the property, for the 484 that have more than one */
+    const parts=(function(){ const d=w.data(); if(!d) return 0; const i=d.sites.indexOf(s); let n=0;
+      for(let k=0;k<d.points.length;k+=4) if(d.points[k]===i) n++; return n; })();
+    if(parts>1) ln.push(esc(L('{n} component parts are drawn for it.','構成資産 {n} 地点を描画しています。','{n} Bestandteile sind dafür gezeichnet.','Для него показано составных частей: {n}.','Se dibujan {n} partes componentes.').split('{n}').join(parts)));
+    return R(true, note(ln.join('<br>')));
+  }
+  return { clickId, controlCatalog, doControl, doHeritage, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel };
 }
