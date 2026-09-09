@@ -6159,6 +6159,44 @@ window.IntMapLang.define('ko', { ui: {
   "USGS published no ShakeMap for this earthquake": "이 지진에 대해 USGS는 ShakeMap을 발행하지 않았습니다",
   "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — 관측 기록·체감 보고·지반 조건에서 추정한 지반 운동이며, 규모를 그림으로 옮긴 것이 아닙니다.",
   "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "USGS가 이 지표의 색상 척도를 제공하지 않으므로 등치선으로만 그립니다.",
+  /* (#R650) js/outbreaks.js — the WHO Disease Outbreak News layer. «Disease Outbreak News» is
+     the name of a WHO publication, so it stays in the original. */
+  "No outline on this map for": "이 지도에 윤곽이 없는 국가:",   /* outbreaks.js (#R650) */
+  "Time window": "기간",   /* outbreaks.js (#R650) */
+  "1 year": "1년",   /* outbreaks.js (#R650) */
+  "5 years": "5년",   /* outbreaks.js (#R650) */
+  "90 days": "90일",   /* outbreaks.js (#R650) */
+  "all pathogens": "모든 병원체",   /* outbreaks.js (#R650) */
+  "Archive built": "아카이브 생성",   /* outbreaks.js (#R650) */
+  "cases": "사례",   /* outbreaks.js (#R650) */
+  "checked WHO for newer items": "WHO의 최신 항목 확인 완료",   /* outbreaks.js (#R650) */
+  "Circle size = WHO notes in the window · colour = how recent the newest is.": "원 크기 = 해당 기간의 WHO 공표 건수 · 색 = 가장 최근 것이 얼마나 최근인지.",   /* outbreaks.js (#R650) */
+  "Closed the outbreak layer.": "질병 발생 레이어를 닫았습니다.",   /* outbreaks.js (#R650) */
+  "could not check WHO for newer items": "WHO의 최신 항목을 확인하지 못했습니다",   /* outbreaks.js (#R650) */
+  "Could not load the outbreak archive.": "질병 발생 아카이브를 불러오지 못했습니다.",   /* outbreaks.js (#R650) */
+  "Could not load the WHO outbreak archive.": "WHO 질병 발생 아카이브를 불러오지 못했습니다.",   /* outbreaks.js (#R650) */
+  "Countries drawn": "지도에 그린 국가",   /* outbreaks.js (#R650) */
+  "countries on the map": "개국을 지도에",   /* outbreaks.js (#R650) */
+  "deaths": "사망",   /* outbreaks.js (#R650) */
+  "Disease outbreaks (WHO)": "질병 발생 (WHO)",   /* outbreaks.js (#R650) */
+  "Everything up to this date": "이 날짜까지 전부",   /* outbreaks.js (#R650) */
+  "listed, not placed": "목록에만 있고 지도에는 없음",   /* outbreaks.js (#R650) */
+  "Most notes": "최다",   /* outbreaks.js (#R650) */
+  "not extracted yet": "아직 추출되지 않음",   /* outbreaks.js (#R650) */
+  "Not one country": "한 국가가 아님",   /* outbreaks.js (#R650) */
+  "not stated by WHO": "WHO가 밝히지 않음",   /* outbreaks.js (#R650) */
+  "Outbreak": "발생일",   /* outbreaks.js (#R650) */
+  "Pathogen": "병원체",   /* outbreaks.js (#R650) */
+  "Read the WHO item": "WHO 원문 읽기",   /* outbreaks.js (#R650) */
+  "Reported": "보고 수",   /* outbreaks.js (#R650) */
+  "Source: WHO Disease Outbreak News": "출처: WHO Disease Outbreak News (세계보건기구)",   /* outbreaks.js (#R650) */
+  "Tap a circle for the items behind it.": "원을 누르면 그 안의 항목이 나옵니다.",   /* outbreaks.js (#R650) */
+  "WHO note": "WHO 공표",   /* outbreaks.js (#R650) */
+  "WHO notes": "WHO 공표",   /* outbreaks.js (#R650) */
+  "WHO published no Disease Outbreak News about that in this window.": "이 기간에 그에 관한 WHO Disease Outbreak News는 없습니다.",   /* outbreaks.js (#R650) */
+  "WHO published no Disease Outbreak News in this window.": "이 기간에 WHO Disease Outbreak News는 없습니다.",   /* outbreaks.js (#R650) */
+  "WHO published these about a region or the whole world, so they are listed and not placed.": "WHO가 특정 지역이나 전 세계에 대해 공표한 것이어서, 지도에 두지 않고 목록으로만 보여 줍니다.",   /* outbreaks.js (#R650) */
+  "Window ending": "기간 종료일",   /* outbreaks.js (#R650) */
   "▶ Tap a country on the map to start the outbreak there": "▶ 지도에서 유행이 시작될 나라를 탭하세요",
   "1 dot ≈ ": "점 1개 ≈ ",
   "a leading lab": "선도적인 연구소",

@@ -6169,6 +6169,44 @@ window.IntMapLang.define('fr', { ui: {
   "USGS published no ShakeMap for this earthquake": "L'USGS n'a pas publié de ShakeMap pour ce séisme",
   "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — mouvement du sol estimé à partir d'enregistrements, de témoignages ressentis et des conditions de site ; ce n'est pas un dessin de la magnitude.",
   "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "L'USGS ne publie pas d'échelle de couleurs pour cette mesure : elle est donc tracée uniquement en isolignes.",
+  /* (#R650) js/outbreaks.js — the WHO Disease Outbreak News layer. «Disease Outbreak News» is
+     the name of a WHO publication, so it stays in the original. */
+  "No outline on this map for": "Aucun contour sur cette carte pour",   /* outbreaks.js (#R650) */
+  "Time window": "Période",   /* outbreaks.js (#R650) */
+  "1 year": "1 an",   /* outbreaks.js (#R650) */
+  "5 years": "5 ans",   /* outbreaks.js (#R650) */
+  "90 days": "90 jours",   /* outbreaks.js (#R650) */
+  "all pathogens": "tous les agents pathogènes",   /* outbreaks.js (#R650) */
+  "Archive built": "Archive constituée le",   /* outbreaks.js (#R650) */
+  "cases": "cas",   /* outbreaks.js (#R650) */
+  "checked WHO for newer items": "recherche de nouvelles notes de l'OMS effectuée",   /* outbreaks.js (#R650) */
+  "Circle size = WHO notes in the window · colour = how recent the newest is.": "Taille du cercle = notes de l'OMS sur la période · couleur = ancienneté de la plus récente.",   /* outbreaks.js (#R650) */
+  "Closed the outbreak layer.": "Calque des flambées épidémiques fermé.",   /* outbreaks.js (#R650) */
+  "could not check WHO for newer items": "impossible de rechercher de nouvelles notes de l'OMS",   /* outbreaks.js (#R650) */
+  "Could not load the outbreak archive.": "Impossible de charger l'archive des flambées épidémiques.",   /* outbreaks.js (#R650) */
+  "Could not load the WHO outbreak archive.": "Impossible de charger l'archive des flambées épidémiques de l'OMS.",   /* outbreaks.js (#R650) */
+  "Countries drawn": "Pays tracés",   /* outbreaks.js (#R650) */
+  "countries on the map": "pays sur la carte",   /* outbreaks.js (#R650) */
+  "deaths": "décès",   /* outbreaks.js (#R650) */
+  "Disease outbreaks (WHO)": "Flambées épidémiques (OMS)",   /* outbreaks.js (#R650) */
+  "Everything up to this date": "Tout jusqu'à cette date",   /* outbreaks.js (#R650) */
+  "listed, not placed": "listées, non localisées",   /* outbreaks.js (#R650) */
+  "Most notes": "Le plus de notes",   /* outbreaks.js (#R650) */
+  "not extracted yet": "pas encore extrait",   /* outbreaks.js (#R650) */
+  "Not one country": "Pas un pays précis",   /* outbreaks.js (#R650) */
+  "not stated by WHO": "non précisé par l'OMS",   /* outbreaks.js (#R650) */
+  "Outbreak": "Début",   /* outbreaks.js (#R650) */
+  "Pathogen": "Agent pathogène",   /* outbreaks.js (#R650) */
+  "Read the WHO item": "Lire la note de l'OMS",   /* outbreaks.js (#R650) */
+  "Reported": "Notifié",   /* outbreaks.js (#R650) */
+  "Source: WHO Disease Outbreak News": "Source : WHO Disease Outbreak News (OMS)",   /* outbreaks.js (#R650) */
+  "Tap a circle for the items behind it.": "Touchez un cercle pour voir les notes qu'il regroupe.",   /* outbreaks.js (#R650) */
+  "WHO note": "Note de l'OMS",   /* outbreaks.js (#R650) */
+  "WHO notes": "notes de l'OMS",   /* outbreaks.js (#R650) */
+  "WHO published no Disease Outbreak News about that in this window.": "L'OMS n'a publié aucune Disease Outbreak News à ce sujet sur cette période.",   /* outbreaks.js (#R650) */
+  "WHO published no Disease Outbreak News in this window.": "L'OMS n'a publié aucune Disease Outbreak News sur cette période.",   /* outbreaks.js (#R650) */
+  "WHO published these about a region or the whole world, so they are listed and not placed.": "L'OMS les a publiées à propos d'une région ou du monde entier : elles sont donc listées et non localisées.",   /* outbreaks.js (#R650) */
+  "Window ending": "Période se terminant le",   /* outbreaks.js (#R650) */
   "▶ Tap a country on the map to start the outbreak there": "▶ Touchez sur la carte le pays où débutera l’épidémie",
   "1 dot ≈ ": "1 point ≈ ",
   "a leading lab": "un laboratoire de premier plan",

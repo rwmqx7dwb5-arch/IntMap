@@ -412,7 +412,16 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
    median because a network-bound spec that fails the budget on a slow day teaches people to re-run
    the gate rather than read it.
    The CORE ceiling did not move: at 160 s against CORE_MAX_S this file is nowhere near the gate. */
-const TOTAL_BUDGET_S = 4847;            /* 80.8 min — 4841 (main) + 6 (#R620: tests/r620.spec.js, measured) */
+/* ⚠ (#R650) THE TOTAL MOVED BY THE MEASUREMENT, NOT BY THE SHORTFALL. tests/r650.spec.js is the
+   WHO Disease Outbreak News layer's own spec, and it is the only thing that found either of that
+   round's two real defects — years offered as disease names, and a layer that drew nothing because
+   it had chained itself behind a live feed. Measured the way the entries above were: warm server,
+   the reporter's own test-body durations over three consecutive runs (6.4 s / 7.5 s / 8.4 s),
+   entered as 9. The CORE ceiling did NOT move: at 9 s against CORE_MAX_S = 10 this file stands in
+   the gate, which is where a round's own spec belongs, and it is paid for at its own price rather
+   than at the p75 an unmeasured file is charged. Not paid out of a stale-high entry (#R405: none
+   has been measured this round that it may take from). */
+const TOTAL_BUDGET_S = 4859;            /* — 4850 (main) + 9 (#R580: tests/r580.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

@@ -451,6 +451,7 @@ window.IntMapPageI18N.define('zh-hant', {
     "噴火警報・予報 — 気象庁 (JMA volcano warnings and eruption warning levels)": "「日本層級」：目前發布的噴發警戒等級（1〜5），未實施等級的火山則直接顯示其文字警報。氣象廳以自身的單位發布 —— 例如「櫻島」，而非包含它的「姶良」破火山口 —— 因此資訊卡顯示氣象廳的單位名稱，地圖則為包含它的 GVP 火山上色。",
     "International SIGMET (volcanic ash) — NOAA Aviation Weather Center": "實際生效中的火山灰區域：飛航情報區依 VAAC 諮詢電文發布的 SIGMET，連同其發布時的多邊形與高度帶（飛航空層）。由 supabase/functions/volcano-feed 中繼，只保留火山灰類別。",
     "NASA GIBS — OMPS SO₂, upper troposphere & stratosphere": "衛星觀測的二氧化硫總量，取的是噴煙出現的高度帶，而非工業霾所在的邊界層。GVP 自身的 SO₂ 排放量資料表雖在 WFS 中宣告，但上游已損壞，因此實際存在的觀測是這一項。",
+    "WHO Disease Outbreak News": "WHO 的 Disease Outbreak News，自 1996 年至今共 3,195 則，作為地圖上的事件圖層。病原體、國家、發生日期與 WHO 公布日期都取自 WHO 自身的結構化欄位；國家不是靠名稱比對，而是把 WHO 的分類（taxon）與 WHO 的國家清單相接以取得 ISO 代碼——3,195 則中有 3,016 則（94.4 %）能解析到國家。歷史資料隨應用程式一併提供（data/who-don.json.gz，由 scripts/build-who-don.mjs 產生），只有最新的部分由頁面直接向 WHO 的 API 讀取；WHO 允許 CORS，因此沒有中繼。唯有病例數與死亡數 WHO 未以結構化方式保存，只存在於各份報告的內文，因此由 supabase/functions/who-don 從內文讀出並保存；讀不出來的顯示為「未擷取」，而不是 0。並非針對單一國家撰寫的 179 則（「Yellow fever – Global」「Cholera – Multi-country」）會列在清單中，但不放上地圖：把它們落在 WHO 區域的重心，等於裝出 WHO 並未公布的精度。",
     "CRUST1.0 — global crustal model": "隨應用程式一併提供（data/crust1.bin.gz）：1° 網格的全球地殼模型——沉積層、結晶質地殼與最上部地函，各層皆有自己的剪力波速度、密度與層界深度。地震模擬器據此建立各地點 30 公尺以下的速度剖面，這正是盆地能放大長週期的原因。",
     "USGS Slab2 — subduction zone geometry": "隨應用程式一併提供（data/slab2.bin.gz）：全部 27 個活躍隱沒帶的板塊上表面深度、走向與傾角。地震模擬器以此區分板塊界面地震與隱沒板塊內部地震——在地球上任何地方都用同一套判準。",
     "Bird (2003) PB2002 plate boundaries": "隨應用程式一併提供（data/tectonics.bin.gz）：到最近板塊邊界的距離、該邊界的類型，以及廣義變形帶（orogen）多邊形。用於判定地震的大地構造分區，並據此選用已發表的地動參數。",

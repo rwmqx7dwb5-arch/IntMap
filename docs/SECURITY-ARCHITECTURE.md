@@ -157,14 +157,14 @@ CodeQL runs the JS XSS queries.
 
 ## 5. Edge Functions & `service_role` usage
 
-**There are sixteen Edge Functions, and this table used to list two.** `supabase/config.toml` used
+**There are seventeen Edge Functions, and this table used to list two.** `supabase/config.toml` used
 to declare five and the other three carried their deploy flag only in a header comment — a deploy
-flag that lives in a comment is not configuration. All sixteen are declared there now
+flag that lives in a comment is not configuration. All seventeen are declared there now
 (`aviation-feed` #R341, `routing-relay` #R347, `news-ingest` #R351, `volcano-feed` #R353,
 `quotes-relay` #R533).
 ⚠ `supabase/functions/_shared/` is **not** a function: it is a library directory (`newsgeo.js`,
 `relay-guard.js`, `atlas-persona.js`, `aviation-codec.js`, `aviation-model.js`, `news-cluster.js`,
-`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`) that the CLI bundles into the functions that import it.
+`news-geo-prompt.js`, `news-ingest.js`, `radiation-sources.js`, `volcano-parse.js`, `who-don-extract.js`) that the CLI bundles into the functions that import it.
 
 | Function | `verify_jwt` | Auth | Uses `service_role` for | Provider key |
 |---|---|---|---|---|
