@@ -605,5 +605,12 @@ window.IntMapPageI18N.define('zh-hant', {
     "Weather warnings, China — China Meteorological Administration public warning list": "警報圖層即時讀取：中國氣象局公開的發布中警報清單。其中不含圖形，因此國家以發布中的最高等級上色，點選後依省份彙整列出。因該服務不回傳 CORS 標頭，透過應用程式自有的中繼函式取得。",
     "Weather warnings worldwide — national meteorological services via the WMO Severe Weather Information Centre (CAP)": "警報圖層即時讀取——適用於上表沒有自有來源的每個國家：各國氣象機關自己發布的警報，連同該機關繪製的多邊形、該機關的用語與其 CAP 嚴重度，由 WMO 原樣轉發。WMO 是傳輸管道而非作者，面板會標示發布機關的名稱。",
     "WMO Members and their CAP implementation status (which national service files CAP, and which does not)": "每個工作階段讀取一次：WMO 自己記錄的各會員國 CAP 實作是否已完成。只有記錄為已完成的國家才會被視為已支援。",
+    "Bundesamt für Strahlenschutz (BfS) — ODL-Messnetz (Datenlizenz Deutschland – Namensnennung – Version 2.0)": "實測輻射圖層即時讀取：德國 ODL 觀測網約 1,700 個測點的周圍γ等效劑量率 H*(10)。上游以 µSv/h 的每小時平均值發布，在伺服器端一次正規化為 nSv/h。可回溯約一年，因此圖層會跟著時間軸走。⚠ 聯邦輻射防護局於 2025 年 7 月 1 日重新計算了整個觀測網，跨越該日期的序列會出現 14～25% 的落差——那是校正的改變，不是輻射的改變。",
+    "原子力規制委員会 — 放射線モニタリング情報 (Nuclear Regulation Authority, Japan; 政府標準利用規約 2.0)": "實測輻射圖層即時讀取：日本原子力規制委員會透過 RAMIS 公開的監測點現值——約 5,400 個不同的測點，以 µSv/h 提供並正規化為 nSv/h。透過應用程式自有的中繼函式取得；由於該介面會回傳時間窗內的所有取樣，每個測點只保留最新的一筆。",
+    "Säteilyturvakeskus (STUK) via Ilmatieteen laitos open data (CC BY 4.0)": "實測輻射圖層即時讀取：芬蘭外部輻射監測網約 240 個測點的 H*(10)，由芬蘭氣象研究所的開放資料以十分鐘平均值提供，並正規化為 nSv/h。其公開存檔自 2010 年起提供，因此時間軸大幅往回移動時，仍然會作答的就是這個觀測網。",
+    "US EPA RadNet": "實測輻射圖層讀取：美國 RadNet 固定測站的每小時平均值（nSv/h）。⚠ RadNet 以「每站每年一個 CSV 檔案」的方式發布，因此美國不在預設的整批取得之內——應用程式改以每五站一批分次取得。採樣時刻依來源所寫的原樣保留，是沒有時區標示的當地時間。",
+    "RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)": "⚠ 這是 2011 年的年平均值，不是現值。荷蘭國家放射性監測網 151 個測點的年平均劑量率由 RIVM 以 nSv/h 公開（RIVM 自己的即時顯示正在重建）。IntMap 將其放在與現值分開的集合中，現值的色階不會為它上色——避免把二十分鐘前的量測值與十五年前的年平均當成同一回事。",
+    "Hong Kong Observatory — ambient gamma radiation (data.gov.hk)": "實測輻射圖層即時讀取：香港天文台十一個監測站的周圍γ劑量率日平均值，取自前一日的公報（µSv/h，正規化為 nSv/h）。",
+    "SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)": "⚠ 保留在來源清單中，但目前地圖上沒有任何一個數值來自這裡。烏克蘭的開放資料由測點座標與量測值的整批封存檔組成，並沒有回傳現值的公開端點（SaveEcoBot 自有的 API 需要金鑰）。只有座標而沒有量測值的清單並不是劑量圖，因此烏克蘭維持空白而非填補，並把這個來源留在此處，讓這個空缺被說出來而不是被掩蓋。",
   }
 });

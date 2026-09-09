@@ -298,6 +298,15 @@ export function makeAtlasCapabilities(HOST) {
          which is eager, so both commands exist from boot rather than after a download. */
       ['data.heritage',              'heritage',       'worldHeritage,heritageInfo',                                  'data',    'panel',   'panel.heritage',         'panel',               'session', 'none',   'text',     ''],
       ['map.heritageFilter',         'heritageFilter', '',                                                            'map',     'paint',   'map.heritage',           'map',                 'session', 'none',   '',         ''],
+      /* (#R585) MEASURED radiation. Two rows, and they are not one row: switching the layer on is a
+         claim about the MAP, while «what are the instruments around Zaporizhzhia reading» is a claim
+         about DATA and must be answerable without the reader having the layer on. The same split
+         volcano needed for the same reason.
+         ⚠ NEITHER OF THESE IS THE PLUME SIMULATION. `sim.radiation` models where material would go;
+         these report what was measured. Keeping them distinct in the registry is what stops the
+         planner answering a question about a real reading with a model — docs/RADIATION.md. */
+      ['map.radiation',              'radiationObserved','radiationLayer,doseRate,gammaDoseRate',                     'map',     'paint',   'map.radiation',          'map',                 'session', 'none',   '',         'radiationLayer'],
+      ['data.radiationNear',         'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    'radiationLayer'],
       /* (#R527) 「山並み写真から撮影地点・撮影方向を探す」 — js/photo-geo.js. It traces the ridge in a
          photograph and matches it against the TERRAIN; an EXIF coordinate in the file is shown and
          never used as the answer, which is the whole honesty of the feature.

@@ -1188,7 +1188,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox } = makeAtlasGeoResolve(HOST, { GE, L, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { clickId, controlCatalog, doControl, doHeritage, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
+    const { clickId, controlCatalog, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
     const { TURN_SCHEMA } = AGENT;   /* (#R406) the reply shape of one step — js/atlas-agent.js */
     /* (#R406) ONE tool surface for the module, not one per turn. What IS per-turn is where a call
        lands: `_turnRunAction` is the running turn's executor, so the surface can be built (and
@@ -1973,7 +1973,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(vals.length) hh+=note(vals.map(v=>'<b>'+esc(v.label)+'</b>: '+esc(String(v.value))).join('<br>'));
           if(featLines.length) hh+=note(featLines.map(esc).join('<br>'));
           return R(true, hh); }
-        case 'volcano': case 'volcanoCard': case 'volcanoInfo': case 'volcanoFilter': case 'volcanoMode': case 'volcanoTime': return doVolcano(a);   case 'heritage': case 'worldHeritage': case 'heritageInfo': case 'heritageFilter': return doHeritage(a);   /* (#R567) ON THIS LINE, not a new one: js/atlas-console.js stands at 4,908 against a ceiling of 4,910 that only ever comes down (#R199/#R318/#R491), and a subject whose answers are thirty lines long belongs in js/atlas-controls.js beside doVolcano anyway. */   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */
+        case 'volcano': case 'volcanoCard': case 'volcanoInfo': case 'volcanoFilter': case 'volcanoMode': case 'volcanoTime': return doVolcano(a);   case 'heritage': case 'worldHeritage': case 'heritageInfo': case 'heritageFilter': return doHeritage(a);   /* (#R567) ON THIS LINE, not a new one: js/atlas-console.js stands at 4,908 against a ceiling of 4,910 that only ever comes down (#R199/#R318/#R491), and a subject whose answers are thirty lines long belongs in js/atlas-controls.js beside doVolcano anyway. */   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */   /* (#R395) the answers are in js/atlas-controls.js — this file's ceiling is full (#R199/#R318) and a subject that needs thirty lines belongs beside the other control-surface helpers */   case 'radiationObserved': case 'radiationLayer': case 'doseRate': case 'gammaDoseRate': case 'radiationNear': case 'measuringStations': case 'doseNear': return doRadiationObs(a);   /* (#R585) MEASURED radiation — the body is in js/atlas-controls.js for the same ceiling reason. ⚠ NOT the plume simulation, which is `sim`/`radiation` above; docs/RADIATION.md says why they must stay two answers */
         /* (#R118) MAP-OBJECT operations by id (see IntMapObjects.list in the state context) */
         case 'object': case 'mapObject': {
           const O=window.IntMapObjects; if(!O||!O.list) return R(false, warn('⚠'));
@@ -2165,11 +2165,11 @@ window.IntMapModules.atlasConsole=function(HOST){
              built-in nuclear-site gazetteer → online geocode → simplified retry → source-preset default coords. */
           const _place=String(a.place||a.from||a.at||a.source||'').trim();
           let ll=(a.lng!=null&&isFinite(+a.lng)&&a.lat!=null)?{lng:+a.lng,lat:+a.lat,name:a.place||''}:null;
-          if(!ll){ try{ ll=window.IntMapRadiation.resolveSite&&window.IntMapRadiation.resolveSite(_place); }catch(_){} }
+          if(!ll){ try{ ll=window.IntMapRadiation.resolveSite&&await window.IntMapRadiation.resolveSite(_place); }catch(_){} }   /* (#R585) the nuclear gazetteer is now the discovered registry (data/npp.json) and resolving is async — the rung below this one already awaited */
           if(!ll&&_place){ try{ ll=await geocode(_place); }catch(_){} }
           if(!ll&&_place){ /* strip generic words the geocoder chokes on (原発/nuclear/power plant/npp…) and retry */
             const _clean=_place.replace(/(原子力発電所|原発|発電所|nuclear\s*power\s*(plant|station)?|power\s*(plant|station)|nuclear|npp|reactor|станция|аэс)/ig,'').replace(/\s{2,}/g,' ').trim();
-            if(_clean&&_clean!==_place){ try{ ll=window.IntMapRadiation.resolveSite&&window.IntMapRadiation.resolveSite(_clean); }catch(_){} if(!ll){ try{ ll=await geocode(_clean); }catch(_){} } } }
+            if(_clean&&_clean!==_place){ try{ ll=window.IntMapRadiation.resolveSite&&await window.IntMapRadiation.resolveSite(_clean); }catch(_){} if(!ll){ try{ ll=await geocode(_clean); }catch(_){} } } }
           if(!ll){ const _sp=(window.IntMapRadiation.SOURCES||{})[String(a.source||'').toLowerCase()]; if(_sp&&_sp.ll) ll={lng:_sp.ll[0],lat:_sp.ll[1],name:_sp.n}; }   /* fall back to the preset's own location */
           if(!ll) return R(false, warn('⚠ '+L('Where is the release source? Name a plant/place, or right-click a point.','放出源はどこですか？（原発名・地名の指定、または地点を右クリック）','Wo ist die Quelle?','Где источник выброса?','¿Dónde está la fuente?')));
           /* (#R85) selectable source term / emission duration / isotope / start date-time + a FINAL deposition map
@@ -2191,7 +2191,7 @@ window.IntMapModules.atlasConsole=function(HOST){
             +(r.startISO?('<div>🕒 '+L('Release start','放出開始','Freisetzungsbeginn','Начало','Inicio')+': '+esc(new Date(r.startISO).toLocaleString(window.IntMapLang.locale(HOST.lang,"en-GB")))+'</div>'):'')
             +'<div>💨 '+L('Surface wind','地上風','Bodenwind','Приземный ветер','Viento')+': '+r.windSpeed.toFixed(1)+' m/s '+L('toward the','→ ','Richtung ','на ','hacia el ')+dirName(r.windToward)+' · '+L('plume reach','到達','Reichweite','дальность','alcance')+' ~'+r.reachKm+' km</div>'
             +'<div>🌧 '+L('Wet deposition','湿性沈着（降雨洗浄）','Nassdeposition','Влажное осаждение','Deposición húmeda')+': '+(r.wet?L('active — rain washing particles down','あり — 降雨が粒子を洗い落とし','aktiv','активно','activa'):L('none in area','領域内でなし','keine','нет','ninguna'))+'</div>'
-            +'</div>';
+            +'</div>';   h+=await radiationChain(ll);   /* (#R585) the measured half of the chain — the body is in js/atlas-controls.js, because this file shrinks only by MOVING (tests/r419 ⑨d, tests/r511 ⑨) */
           /* final deposition dose zones */
           const zLbls=r.zones||[]; const rows=[];
           for(let z=0;z<zLbls.length;z++){ const km2=(r.zoneKm2&&r.zoneKm2[z])||0; if(km2<=0) continue;

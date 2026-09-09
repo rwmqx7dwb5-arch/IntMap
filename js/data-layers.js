@@ -1860,7 +1860,7 @@ window.IntMapModules.dataLayers=function(HOST){
              It is not a hazard overlay, it is which half of the planet the Sun is on, so it belongs with
              the other always-there view switches (place names, borders, roads, grid) at the top of the
              panel. Moved by name into that list below, not duplicated: one row, one owner. */
-          ['lyrGrpHazard',['alerts','eq','volc2','thermal','osmemg'],3],   /* (#R270) +emergency response bases — see the note below */   /* (#R273) +live weather & disaster warnings — one national agency per country, GDACS removed */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
+          ['lyrGrpHazard',['alerts','eq','volc2','thermal','osmemg','radobs'],3],   /* (#R585) +measured radiation — docs/RADIATION.md */   /* (#R270) +emergency response bases — see the note below */   /* (#R273) +live weather & disaster warnings — one national agency per country, GDACS removed */   /* (#R232) the flat 'night' disc row became the day/night SHADING switch */
           /* ══ ⚠ (#R255) FOUR NEW CATEGORIES, AND «Geopolitics & defense» SPLIT INTO TWO OF THEM ══════
              「政治、軍事、医療・衛生、IT・テックレイヤーカテゴリを追加し、レイヤーの再編や追加を行うように。
                それぞれのレイヤーカテゴリの名前は任せる。」 (naming delegated; reorganisation confirmed
