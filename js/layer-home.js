@@ -70,6 +70,18 @@
        box that contains all three is mostly ocean, and the reader asked to be taken to the map. */
     return [[-127, 23], [-65, 50]];
   };
+  HOMES['dl-elect'] = function () {
+    /* ⚠ (#R588) THE NATIONAL-ELECTIONS LAYER HOLDS ONE POLITY AT A TIME, so «where does this
+       layer's data live» has a different answer after every change of the country selector. The
+       geometry actually loaded is the truest answer — measured, per the header's preference — and
+       the box the pack recorded is the fallback for the instant before it lands. */
+    try {
+      const E = window.IntMapElections;
+      if (!E) return null;
+      const b = bboxOfFC(E.fc(), false);
+      return b || E.homeBox() || null;
+    } catch (_) { return null; }
+  };
   HOMES['beta-dl-ukrfront'] = function () {
     try {
       const fc = window.IntMapUkrFrontFC && window.IntMapUkrFrontFC();
@@ -141,8 +153,30 @@
     } catch (_) { return false; }
   }
 
+  /* ══ (#R588) THE READER NAMED A PLACE, INSIDE A LAYER ══════════════════════════════════════
+     `arrive` answers 「the reader switched this layer on」 and is deliberately once per session.
+     The elections layer poses a second question this file did not have a word for: the reader has
+     just picked a different COUNTRY from the layer's own selector. That is not a layer toggle —
+     it is a direct request for a place, made explicitly, and answering it once and then refusing
+     would leave the selector pointing at Japan while the map still showed Germany.
+     ⚠ IT IS STILL NOT A HOLE IN CONSTITUTION §3. It moves only for a checkbox already in `HOMES`,
+     which is the same audited set, and only when something the reader operated calls it — nothing
+     polls it, no data arrival triggers it, and a layer not in the table cannot reach it at all. */
+  function goTo(cbId) {
+    try {
+      const fn = HOMES[cbId];
+      if (!fn) return false;
+      const box = fn();
+      if (!box) return false;
+      flown[cbId] = 1;                      /* the reader has now been taken there at least once */
+      GE().camera.fitBounds(box, { padding: 40, duration: 900 });
+      return true;
+    } catch (_) { return false; }
+  }
+
   window.IntMapLayerHome = {
     arrive: arrive,
+    goTo: goTo,
     /* the published set, so a test can ask 「which layers are allowed to do this」 without grepping */
     ids: () => Object.keys(HOMES),
     boxOf: (id) => { try { return HOMES[id] ? HOMES[id]() : null; } catch (_) { return null; } },

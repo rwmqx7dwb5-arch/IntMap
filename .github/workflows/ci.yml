@@ -96,6 +96,13 @@ jobs:
       # tree, and that every ledger row has a written reason. Offline, no build, ~1 s.
       - name: Language layer (largest share, resolved identity, and a reason for every binding)
         run: npm run check:languages
+      # (#R588) the national-elections packs. Deliberately offline: it reads only the committed
+      # bytes and asserts the schema, the party table, the seat arithmetic (districts + list =
+      # chamber) and the district↔result join in BOTH directions — a district with no result would
+      # paint a hole, and a hole in a choropleth reads as 「nobody won here」. Registered from the
+      # first day because #R243's `--check` was never wired anywhere and so never ran. ~0.5 s.
+      - name: National elections (schema, licences, and the district↔result join both ways)
+        run: npm run check:elections
       # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
       # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
       # Every previous round fixed test time for that round and the suite grew back, because the
