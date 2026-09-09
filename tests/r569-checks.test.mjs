@@ -40,25 +40,46 @@ const { makeAtlasCapabilities } = await import('../js/atlas-capabilities.js');
 const { makeAtlasPolicy } = await import('../js/atlas-policy.js');
 const caps = makeAtlasCapabilities({});
 
+/* The index, READ THE WAY THE READER OF IT WOULD — parsed back into the set of ids it names.
+   ⚠ NOT a substring search, and not a regex built out of an id. Substring lets `map.clear` be
+   "found" inside `map.clearAll`, so the weaker check would pass an index that had lost a
+   capability; and building a pattern from data is how this file first shipped, which CodeQL
+   correctly failed as incomplete sanitisation (a `.` in an id matched any character). Parsing is
+   the honest question anyway: what SET does this text hand Atlas? */
+function indexed(text) {
+  const out = new Set();
+  String(text).split('\n').slice(1).forEach((line) => {
+    const colon = line.indexOf(': ');
+    if (colon < 0) return;
+    line.slice(colon + 2).replace(/\.$/, '').split(',').forEach((id) => {
+      const t = id.trim();
+      if (t) out.add(t);
+    });
+  });
+  return out;
+}
+
 /* ① EVERY capability is named, and the expectation is DERIVED from the registry rather than
       written down here. A list typed into a test is a second source of truth that goes stale on
       the next round that adds a capability — .agents/rules/no-ad-hoc-hardcoding.md §2.4. */
-test('R569 ① the index names every capability the registry holds', () => {
-  const idx = caps.index();
+test('R569 ① the index names every capability the registry holds, and nothing else', () => {
+  const shown = indexed(caps.index());
   const expected = caps.all().filter((c) => !c.withdrawn).map((c) => c.id);
   assert.ok(expected.length > 100, 'the registry should hold the whole surface, not a slice');
-  const missing = expected.filter((id) => !new RegExp('(^|[ :])' + id.replace(/\./g, '\\.') + '[,.]').test(idx));
-  assert.deepEqual(missing, [], 'capabilities absent from the index Atlas is shown');
+  assert.deepEqual(expected.filter((id) => !shown.has(id)), [],
+    'capabilities absent from the index Atlas is shown');
+  assert.deepEqual([...shown].filter((id) => !caps.has(id)), [],
+    'the index names something the registry does not have');
 });
 
 /* ② A WITHDRAWN capability must NOT be advertised. `system.monitor` was removed in #R231 and
       returns FEATURE_WITHDRAWN; naming it would send Atlas to a door that answers with an error. */
 test('R569 ② withdrawn capabilities are not advertised', () => {
-  const idx = caps.index();
+  const shown = indexed(caps.index());
   const gone = caps.withdrawn();
   assert.ok(gone.length >= 1, 'this check is vacuous if nothing is withdrawn');
   gone.forEach((id) => {
-    assert.ok(idx.indexOf(id) < 0, id + ' is withdrawn but is offered to Atlas');
+    assert.ok(!shown.has(id), id + ' is withdrawn but is offered to Atlas');
   });
 });
 
@@ -68,10 +89,10 @@ test('R569 ② withdrawn capabilities are not advertised', () => {
       happens to checks that pin a spelling); it is that the count Atlas sees equals the count
       IntMap has. */
 test('R569 ③ every simulator IntMap has is visible before Atlas decides', () => {
-  const idx = caps.index();
+  const shown = indexed(caps.index());
   const sims = caps.all().filter((c) => !c.withdrawn && c.category === 'sim').map((c) => c.id);
   assert.ok(sims.length >= 13, 'expected the sim category to be populated, got ' + sims.length);
-  const seen = sims.filter((id) => idx.indexOf(id) >= 0);
+  const seen = sims.filter((id) => shown.has(id));
   assert.equal(seen.length, sims.length,
     'Atlas is shown ' + seen.length + ' of ' + sims.length + ' simulators; the reported defect was 0');
 });
