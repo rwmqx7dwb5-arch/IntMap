@@ -159,7 +159,7 @@ window.IntMapLang.define('en', { ui: {
       lyrTFR:"Total fertility rate",
       lyrSeaLevel:"Sea-level change",
       favLayers:"Favorite layers",
-      uploadGeoJSON:"Upload GeoJSON",
+      importGeoFile:"Import map data",
       screenshotBtn:"Map screenshot (hides controls, keeps legends)",
       lblSidebarStyle:"Sidebar appearance",
       sidebarOpaque:"Solid (default)",

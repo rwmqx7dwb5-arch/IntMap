@@ -234,7 +234,7 @@ window.IntMapLang.define('fr', { ui: {
       tkgCrypto:"Crypto",
       tkgFx:"Devises",
       tkgIdx:"Indices",
-      uploadGeoJSON:"Importer un GeoJSON",
+      importGeoFile:"Importer des données cartographiques",
       viewKbd:"⌨ Voir les raccourcis clavier (ou appuyez sur ?)",
       viewScience:"Comment fonctionne chaque simulation ↗",
       viewSourcesPage:"Ouvrir la page des sources ↗",
@@ -2887,9 +2887,21 @@ window.IntMapLang.define('fr', { ui: {
   "Preset name:": "Nom du préréglage :",
   "Preset applied": "Préréglage appliqué",
   "Failed to add layer": "Échec de l’ajout de la couche",
-  "GeoJSON added: ": "GeoJSON ajouté : ",
-  "Could not parse JSON": "Impossible d’analyser le JSON",
-  "Not valid GeoJSON": "GeoJSON non valide",
+  "Added: ": "Ajouté : ",   /* map-ui.js (#R576) */
+  "columns": "colonnes",   /* map-ui.js (#R576) */
+  "skipped": "ignorés",   /* map-ui.js (#R576) */
+  "No latitude/longitude columns found": "Aucune colonne de latitude/longitude trouvée",   /* map-ui.js (#R576) */
+  "Shapefile is not supported yet": "Le format Shapefile n’est pas encore pris en charge",   /* map-ui.js (#R576) */
+  "File is too large to read": "Le fichier est trop volumineux pour être lu",   /* map-ui.js (#R576) */
+  "Too many features to draw": "Trop d’entités à dessiner",   /* map-ui.js (#R576) */
+  "No usable coordinates in this file": "Aucune coordonnée utilisable dans ce fichier",   /* map-ui.js (#R576) */
+  "The file has no map features": "Le fichier ne contient aucune entité cartographique",   /* map-ui.js (#R576) */
+  "This KML only links to data held elsewhere": "Ce KML ne fait que renvoyer à des données externes",   /* map-ui.js (#R576) */
+  "This JSON is not GeoJSON": "Ce JSON n’est pas du GeoJSON",   /* map-ui.js (#R576) */
+  "Unsupported XML format": "Format XML non pris en charge",   /* map-ui.js (#R576) */
+  "Unsupported file format": "Format de fichier non pris en charge",   /* map-ui.js (#R576) */
+  "The file is empty": "Le fichier est vide",   /* map-ui.js (#R576) */
+  "Could not read this file": "Impossible de lire ce fichier",   /* map-ui.js (#R576) */
   "AUTO": "AUTO",
   "Intro demo:": "Démo d’introduction :",
   "End the intro demo": "Terminer la démo d’introduction",
@@ -6203,7 +6215,7 @@ window.IntMapLang.define('fr', { ui: {
   "No World Heritage property called “{q}” is on the List this map carries.": "Aucun bien nommé « {q} » ne figure sur la Liste que porte cette carte.",
   "UNESCO publishes no coordinate for “{q}”, so it is inscribed but cannot be put on the map.": "L’UNESCO ne publie aucune coordonnée pour « {q} » : le bien est inscrit, mais ne peut pas être placé sur la carte.",
   "{n} component parts are drawn for it.": "{n} éléments constitutifs sont dessinés pour ce bien.",
-  /* (#R568) radiological dispersion — release height, the deposition ladders (statutory and density-only), the peak's error bar and what the map does not contain. */
+  /* (#R576) radiological dispersion — release height, the deposition ladders (statutory and density-only), the peak's error bar and what the map does not contain. */
   "Release height (m)": "Hauteur de rejet (m)",
   "Very heavy deposition": "Dépôt très important",
   "Heavy deposition": "Dépôt important",

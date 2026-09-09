@@ -159,7 +159,7 @@ window.IntMapLang.define('jp', { ui: {
       lyrTFR:"合計特殊出生率",
       lyrSeaLevel:"海面変動",
       favLayers:"お気に入りレイヤー",
-      uploadGeoJSON:"GeoJSONを読み込む",
+      importGeoFile:"地図データを読み込む",
       screenshotBtn:"地図のスクリーンショット（操作ボタンを隠し凡例は残す）",
       lblSidebarStyle:"サイドバーの外観",
       sidebarOpaque:"不透過（デフォルト）",

@@ -199,7 +199,7 @@ window.IntMapLang.define('zh', {
     "tkgCrypto":"加密資產",
     "tkgFx":"外匯",
     "tkgIdx":"指數",
-    "uploadGeoJSON":"上傳 GeoJSON",
+    "importGeoFile":"匯入地圖資料",
     "viewKbd":"⌨ 檢視鍵盤快速鍵（或按 ?）",
     "viewScience":"每一項模擬如何運作 ↗",
     "viewSourcesPage":"開啟資料來源頁面 ↗",
@@ -3103,9 +3103,21 @@ window.IntMapLang.define('zh', {
   "Preset name:": "預設組合名稱：",
   "Preset applied": "已套用預設組合",
   "Failed to add layer": "無法加入圖層",
-  "GeoJSON added: ": "已加入 GeoJSON：",
-  "Could not parse JSON": "無法解析 JSON",
-  "Not valid GeoJSON": "不是有效的 GeoJSON",
+  "Added: ": "已加入：",   /* map-ui.js (#R576) */
+  "columns": "欄位",   /* map-ui.js (#R576) */
+  "skipped": "已略過",   /* map-ui.js (#R576) */
+  "No latitude/longitude columns found": "找不到緯度／經度欄位",   /* map-ui.js (#R576) */
+  "Shapefile is not supported yet": "尚未支援 Shapefile",   /* map-ui.js (#R576) */
+  "File is too large to read": "檔案太大，無法讀取",   /* map-ui.js (#R576) */
+  "Too many features to draw": "地物太多，無法繪製",   /* map-ui.js (#R576) */
+  "No usable coordinates in this file": "這個檔案沒有可用的座標",   /* map-ui.js (#R576) */
+  "The file has no map features": "這個檔案沒有可繪製的地物",   /* map-ui.js (#R576) */
+  "This KML only links to data held elsewhere": "這個 KML 只連結到外部資料",   /* map-ui.js (#R576) */
+  "This JSON is not GeoJSON": "這個 JSON 不是 GeoJSON",   /* map-ui.js (#R576) */
+  "Unsupported XML format": "不支援的 XML 格式",   /* map-ui.js (#R576) */
+  "Unsupported file format": "不支援的檔案格式",   /* map-ui.js (#R576) */
+  "The file is empty": "檔案是空的",   /* map-ui.js (#R576) */
+  "Could not read this file": "無法讀取這個檔案",   /* map-ui.js (#R576) */
   "AUTO": "自動播放",
   "Intro demo:": "初次導覽：",
   "End the intro demo": "結束導覽",
@@ -6420,7 +6432,7 @@ window.IntMapLang.define('zh', {
   "No World Heritage property called “{q}” is on the List this map carries.": "本地圖收錄的世界遺產名錄中沒有「{q}」。",
   "UNESCO publishes no coordinate for “{q}”, so it is inscribed but cannot be put on the map.": "UNESCO 未公布「{q}」的座標，因此雖已列入名錄，卻無法標示在地圖上。",
   "{n} component parts are drawn for it.": "已為此遺產繪出 {n} 處構成資產。",
-  /* (#R568) radiological dispersion — release height, the deposition ladders (statutory and density-only), the peak's error bar and what the map does not contain. */
+  /* (#R576) radiological dispersion — release height, the deposition ladders (statutory and density-only), the peak's error bar and what the map does not contain. */
   "Release height (m)": "釋放高度（公尺）",
   "Very heavy deposition": "極高沉降",
   "Heavy deposition": "高度沉降",
