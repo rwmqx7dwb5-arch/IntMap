@@ -183,6 +183,7 @@ const MEMBER = {
   /* (#R577) the sea state. Its member is `toggle` — the door the layer row calls; a module that
      arrived and published only its state getters would light the checkbox and draw nothing. */
   waves: ['IntMapWaves', 'toggle'],
+  radiationLayer: ['IntMapRadiationObs', 'toggle'],   /* (#R585) the measured-radiation layer's door is its toggle — docs/RADIATION.md */
   /* (#R311) the six that moved this round. Each names the member its OWN doors call, so a module
      that loaded and registered half of itself is still a failure here: the data-center row calls
      toggle(), the aircraft click open(), the Measure tool setRing(), the comparison panel open(),

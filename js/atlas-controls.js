@@ -299,5 +299,69 @@ export function makeAtlasControls(HOST, CTX) {
     if(parts>1) ln.push(esc(L('{n} component parts are drawn for it.','構成資産 {n} 地点を描画しています。','{n} Bestandteile sind dafür gezeichnet.','Для него показано составных частей: {n}.','Se dibujan {n} partes componentes.').split('{n}').join(parts)));
     return R(true, note(ln.join('<br>')));
   }
-  return { clickId, controlCatalog, doControl, doHeritage, doModule, doVolcano, findControl, kexec, moduleCatalog, setSel };
+  /* ── (#R585) MEASURED RADIATION ────────────────────────────────────────────────────────────
+     Two questions, one handler, because they share the module they must wait for.
+       · switch the layer on/off — through the SAME kernel command the Layers checkbox presses
+       · what are the instruments around a point reading — the join that makes
+         「原発 → 実測線量 → 風 → 拡散シミュレーション」 one chain instead of four features
+     ⚠ THIS NEVER ANSWERS WITH THE SIMULATION. `sim.radiation` models where material would go; a
+     question about a real reading gets real readings or it gets a refusal. And the refusal names
+     WHY: 「no station within N km」 is a fact about coverage, not about safety, and the two must
+     not be allowed to sound alike — docs/RADIATION.md. */
+  async function doRadiationObs(a){
+    const OSk=window.IntMapOS;
+    const t=String(a.type||'');
+    if(t==='radiationNear'||t==='measuringStations'||t==='doseNear'){
+      const lat=+a.lat, lon=+a.lon;
+      if(!(lat>=-90&&lat<=90)||!(lon>=-180&&lon<=180)) return R(false, warn('⚠ '+esc(L('Give a coordinate to measure around.','中心となる座標を指定してください。','Geben Sie eine Koordinate an.','Укажите координату.','Indique una coordenada.'))));
+      if(!OSk||!OSk.has('radiation.near')) return R(false, warn('⚠'));
+      const r=await OSk.exec('radiation.near',{source:'atlas',params:{lat,lon,km:(a.km!=null?+a.km:undefined)}});
+      const st=(r&&r.stations)||[];
+      const km=(a.km!=null?+a.km:150);
+      if(!r||r.ok===false) return R(false, warn('⚠'));
+      if(!st.length) return R(true, note(esc(L('No monitoring station within {k} km publishes an open-licensed reading. That is a gap in coverage, not a statement about the radiation there.','{k} km 以内に、オープンライセンスで実測値を公開している観測局はありません。これは観測網の空白であって、そこの放射線量についての言明ではありません。','Keine Messstation innerhalb von {k} km veröffentlicht einen offen lizenzierten Messwert. Das ist eine Lücke in der Abdeckung, keine Aussage über die dortige Strahlung.','Ни одна станция в радиусе {k} км не публикует измерения под открытой лицензией. Это пробел в покрытии, а не утверждение об уровне радиации там.','Ninguna estación dentro de {k} km publica una lectura con licencia abierta. Es una laguna de cobertura, no una afirmación sobre la radiación allí.').split('{k}').join(km))));
+      const rows=st.slice(0,12).map(s=>esc(s.name||s.code)+' — <b>'+esc(s.nsvh==null?'—':s.nsvh)+' nSv/h</b> <span style="color:var(--text-muted);">'+esc(s.km.toFixed(0)+' km · '+(s.src||''))+'</span>');
+      const head=esc(L('{n} stations within {k} km','{k} km 以内に {n} 局','{n} Stationen innerhalb von {k} km','{n} станций в радиусе {k} км','{n} estaciones dentro de {k} km').split('{n}').join(st.length).split('{k}').join(km));
+      return R(true, note('<b>'+head+'</b><br>'+rows.join('<br>')));
+    }
+    if(!OSk||!OSk.has('radiation.observed')) return R(false, warn('⚠'));
+    const on=a.on!==false;
+    await OSk.exec('radiation.observed',{source:'atlas',params:{on}});
+    const S=window.IntMapRadiationObs&&window.IntMapRadiationObs.state?window.IntMapRadiationObs.state():null;
+    if(!on) return R(true, note('✓ '+esc(L('Measured radiation layer off.','実測放射線レイヤーをオフにしました。','Messschicht aus.','Слой измерений выключен.','Capa de mediciones desactivada.'))));
+    /* ⚠ WHICH NETWORKS ANSWERED IS PART OF THE ANSWER. A count with no roster behind it is how a
+       reader concludes that a country with no dot has no radiation (#R536's shape). */
+    const live=S?(S.sources||[]).filter(s=>s.read):[];
+    const dead=S?(S.sources||[]).filter(s=>!s.read):[];
+    const tail=dead.length?(' · '+esc(L('unavailable: ','取得できず: ','nicht verfügbar: ','недоступно: ','no disponible: '))+esc(dead.map(s=>s.id).join(', '))):'';
+    return R(true, note('✓ '+esc(L('Measured radiation on — {n} stations from {m} networks','実測放射線をオンにしました — {m} の観測網から {n} 局','Gemessene Strahlung an — {n} Stationen aus {m} Netzen','Измерения включены — {n} станций из {m} сетей','Radiación medida activada — {n} estaciones de {m} redes')
+      .split('{n}').join((S&&S.stations)||0).split('{m}').join(live.length))+tail));
+  }
+
+  /* ── (#R585) THE CHAIN, SAID IN ONE ANSWER ───────────────────────────────────────────────────
+     Appended to the dispersion model's own reply. The model says where material WOULD go; this says
+     what is actually known — which site the name resolved to when more than one matched, and what
+     the instruments around it are reading RIGHT NOW.
+     ⚠ THE TWO ARE LABELLED AND KEPT APART. A measurement and a hypothesis in one paragraph is the
+     single thing docs/RADIATION.md forbids, so the observations arrive under their own heading with
+     their own caveat, never folded into the model's numbers.
+     ⚠ IT LIVES HERE, NOT IN THE DISPATCH, because js/atlas-console.js is shrink-only at 4,910 lines
+     (tests/r419-checks ⑨d, tests/r511-checks ⑨) and #R199's rule is that the kernel shrinks by
+     MOVING. Returns a STRING and touches no DOM, so the caller stays one line. */
+  async function radiationChain(ll){
+    let out='';
+    try{
+      if(!ll) return '';
+      if(ll.ambiguous&&ll.alt&&ll.alt[0]) out+='<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">⚠ '+esc(L('That name also matches {o}; this run uses {u}.','この名前は「{o}」にも一致します。この実行では「{u}」を使いました。','Der Name passt auch auf {o}; dieser Lauf nutzt {u}.','Это название подходит также к {o}; здесь использовано {u}.','Ese nombre también coincide con {o}; esta ejecución usa {u}.').split('{o}').join(ll.alt[0].name).split('{u}').join(ll.name))+'</div>';
+      const obs=await window.IntMapRadiation.observedAround(+ll.lat,+ll.lng,200);
+      if(obs.length){
+        const top=obs.slice(0,3).map(s=>esc((s.name||s.code)+' '+(s.nsvh==null?'—':s.nsvh)+' nSv/h ('+s.km.toFixed(0)+' km)')).join(' · ');
+        out+='<div style="font-size:11.5px;margin-top:4px;">📟 '+esc(L('Measured right now near the source','いま放出源の近くで実測されている値','Aktuell nahe der Quelle gemessen','Измерено сейчас рядом с источником','Medido ahora cerca de la fuente'))+': '+top+'</div>'
+          +'<div style="font-size:10.5px;color:var(--text-muted);">'+esc(L('These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.','これは観測値であって、上のモデルの一部ではありません。50〜200 nSv/h は通常の自然放射線量で、降雨だけでも数時間は3倍になりえます。','Das sind Messwerte, nicht Teil des Modells oben. 50–200 nSv/h ist normaler Untergrund, und Regen allein kann eine Station für Stunden verdreifachen.','Это измерения, а не часть модели выше. 50–200 нЗв/ч — обычный фон, и один только дождь может утроить показания на несколько часов.','Son observaciones, no parte del modelo anterior. 50–200 nSv/h es fondo natural normal, y la lluvia sola puede triplicar una estación durante horas.'))+'</div>';
+      }
+    }catch(_){ /* the measured half is an addition to the answer, never a reason to lose it */ }
+    return out;
+  }
+
+  return { clickId, controlCatalog, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel };
 }
