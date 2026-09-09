@@ -27,7 +27,7 @@ window.IntMapModules.betaOverlays=function(HOST){
   (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
-    const state={ukr:false,bldg:false,hist:false,volc:false};
+    const state={ukr:false,bldg:false,hist:false,volc:false,whs:false};
     const PROX=[x=>x, x=>`https://corsproxy.io/?url=${encodeURIComponent(x)}`, x=>`https://api.allorigins.win/raw?url=${encodeURIComponent(x)}`];
     const setVis=(ids,on)=>ids.forEach(id=>{ try{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility',on?'visible':'none'); }catch(_){} });
 
@@ -686,6 +686,333 @@ window.IntMapModules.betaOverlays=function(HOST){
       }
     }catch(_){}
 
+    /* ══ UNESCO WORLD HERITAGE — THE WHOLE LIST, AND EVERY COMPONENT PART OF IT ═════════════════
+       「世界遺産をすべてマッピングしたレイヤーを作って。」 data/whc-sites.json, built by
+       scripts/build-whs.mjs from the World Heritage Centre's own XML (that file carries the whole
+       measurement: why the feed cannot be read from the browser, why the languages are probed, and
+       why the <danger> column in it is not used).
+
+       ⚠ «すべて» IS 6,009 POINTS, NOT 1,273. 484 of the inscribed properties are serial or
+       transboundary and UNESCO publishes a coordinate for EACH component part — the 93 beech
+       forests in 18 countries are one property and ninety-three places. A layer that drew one pin
+       per row would leave two thirds of what is inscribed off the map, and would put the single pin
+       for the Routes of Santiago in the middle of France. So the file ships the parts, and the
+       feature carries the property id that owns it.
+
+       ⚠ AND THE POINTS ARE A FLAT NUMBER ARRAY, NOT GeoJSON. The names are needed in one language
+       at a time and the geometry is needed in all of them, so the file holds `sites` (the facts and
+       every language's name, once each) and `points` ([siteIndex, lng, lat, countryIndex] × 6,009),
+       and the FeatureCollection is composed here in whatever language the reader is in. Switching
+       language rebuilds it; it does not re-download anything. */
+    const WHS_IDS=['whs-halo','whs-pt','whs-lbl'];
+    /* ⚠ KEYED BY THE VOCABULARY UPSTREAM PUBLISHES, AND THE FILE CARRIES THAT VOCABULARY, NOT THIS
+       LINE. `whsDoc.categories` is whatever the List actually used this build; a category these two
+       tables do not know is still drawn (in the neutral colour) and still named (with UNESCO's own
+       word), so a new one appears on the map instead of disappearing from it. */
+    const WHS_COLOUR={Cultural:'#c9903a',Natural:'#2fa87a',Mixed:'#5a8fe6'};
+    const WHS_NEUTRAL='#8e8e93', WHS_DANGER='#e0332f';
+    const WHS_CAT={Cultural:LA('Cultural','文化遺産','Kultur','Культурный','Cultural'),
+      Natural:LA('Natural','自然遺産','Natur','Природный','Natural'),
+      Mixed:LA('Mixed','複合遺産','Gemischt','Смешанный','Mixto')};
+    let whsDoc=null, whsFC=null, whsLoading=false, whsPopup=null;
+    let whsDetail=null, whsDetailTag='', whsDetailPending=null;
+    const whsOff=new Set();        /* category terms the reader has switched off */
+    let whsDangerOnly=false;
+
+    /* ⚠ THE READER'S TAG, NOT ITS FIRST TWO LETTERS. js/lang-registry.js settled (#R223) that
+       handing one script's reader the other because the prefix matches is a guess, and UNESCO
+       publishes no Traditional Chinese List — so a zh-Hant reader is shown the English name, which
+       is true, rather than a Simplified one, which would be the guess. */
+    function whsLocale(){
+      let t='en'; try{ t=window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){}
+      const has=(whsDoc&&whsDoc.locales)||['en'];
+      return has.indexOf(t)>=0?t:'en';
+    }
+    const whsCatName=(i)=>{ const c=whsDoc&&whsDoc.categories[i]; if(c==null) return '';
+      return WHS_CAT[c]?L.arr(WHS_CAT[c]):c; };
+
+    function whsBuild(){
+      if(!whsDoc) return null;
+      const lc=whsLocale(), P=whsDoc.points, S=whsDoc.sites, out=[];
+      for(let i=0;i<P.length;i+=4){
+        const s=S[P[i]]; if(!s) continue;
+        out.push({type:'Feature',geometry:{type:'Point',coordinates:[P[i+1],P[i+2]]},
+          properties:{id:s.id,n:s.n[lc]||s.n.en,c:s.c,d:s.d,y:s.y,t:s.t}});
+      }
+      whsFC={type:'FeatureCollection',features:out};
+      return whsFC;
+    }
+    /* the colour ladder is built from the file's vocabulary for the same reason the labels are */
+    function whsColour(){
+      const cats=(whsDoc&&whsDoc.categories)||[];
+      if(!cats.length) return WHS_NEUTRAL;
+      const e=['match',['get','c']];
+      cats.forEach((c,i)=>{ e.push(i,WHS_COLOUR[c]||WHS_NEUTRAL); });
+      e.push(WHS_NEUTRAL); return e;
+    }
+    function whsTerms(){
+      const t=[];
+      if(whsDangerOnly) t.push(['!=',['get','d'],0]);
+      if(whsOff.size&&whsDoc){
+        const keep=whsDoc.categories.map((c,i)=>i).filter(i=>!whsOff.has(whsDoc.categories[i]));
+        t.push(['in',['get','c'],['literal',keep]]);
+      }
+      return t;
+    }
+    /* ⚠ THE HALO IS A SECOND CLAIM ABOUT THE SAME DOT, so it carries the reader's narrowing too —
+       a danger ring left under a point the filter has removed is a ring round nothing. */
+    function whsApplyFilter(){
+      const t=whsTerms();
+      try{ if(GE().layers.has('whs-pt')) GE().layers.setFilter('whs-pt',t.length?['all'].concat(t):null); }catch(_){}
+      try{ if(GE().layers.has('whs-lbl')) GE().layers.setFilter('whs-lbl',t.length?['all'].concat(t):null); }catch(_){}
+      try{ if(GE().layers.has('whs-halo')) GE().layers.setFilter('whs-halo',['all',['!=',['get','d'],0]].concat(t)); }catch(_){}
+    }
+    function whsShown(){
+      if(!whsFC) return 0;
+      const t=whsTerms(); if(!t.length) return whsFC.features.length;
+      return whsFC.features.filter(f=>{ const p=f.properties;
+        if(whsDangerOnly&&!p.d) return false;
+        if(whsOff.size&&whsDoc&&whsOff.has(whsDoc.categories[p.c])) return false;
+        return true; }).length;
+    }
+    function whsEnsure(){ if(GE().layers.hasSource('whs-src')) return true; if(!_imCanDraw()) return false;
+      try{
+        GE().layers.addSource('whs-src',{type:'geojson',data:whsFC||{type:'FeatureCollection',features:[]},
+          attribution:'UNESCO World Heritage Centre'});
+        const before=GE().layers.has('tool-poly')?'tool-poly':undefined;
+        const r=['interpolate',['linear'],['zoom'],2,2.2,5,3.6,9,5.8,14,8.5];
+        GE().layers.add({id:'whs-halo',type:'circle',source:'whs-src',layout:{visibility:'none'},
+          filter:['all',['!=',['get','d'],0]],
+          paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,5,5,7.5,9,11,14,15],
+                 'circle-color':WHS_DANGER,'circle-opacity':0.26,'circle-blur':0.5}},before);
+        GE().layers.add({id:'whs-pt',type:'circle',source:'whs-src',layout:{visibility:'none'},
+          paint:{'circle-radius':r,'circle-color':whsColour(),
+                 'circle-stroke-color':'rgba(255,255,255,0.88)','circle-stroke-width':0.9,'circle-opacity':0.94}},before);
+        GE().layers.add({id:'whs-lbl',type:'symbol',source:'whs-src',minzoom:6,layout:{visibility:'none',
+          'text-field':['get','n'],'text-size':window.IntMapLabelScale.sub(0.8),'text-offset':[0,1.05],
+          'text-anchor':'top','text-font':['literal',['Noto Sans Regular']],'text-max-width':11},
+          paint:{'text-color':'#f0dcb8','text-halo-color':'rgba(0,0,0,0.8)','text-halo-width':1.2}},before);
+        GE().events.onLayer('click','whs-pt',e=>{ const f=e.features&&e.features[0]; if(!f) return;
+          whsPanel(f,(f.properties||{}).id); });
+        GE().events.onLayer('mouseenter','whs-pt',()=>{ GE().render.canvas().style.cursor='pointer'; });
+        GE().events.onLayer('mouseleave','whs-pt',()=>{ GE().render.canvas().style.cursor=''; });
+        whsApplyFilter();
+        return true;
+      }catch(_){ return false; } }
+
+    async function whsLoad(){
+      if(whsDoc){ if(!whsFC) whsBuild(); try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){} return; }
+      if(whsLoading) return; whsLoading=true;
+      try{
+        const r=await fetch('data/whc-sites.json'); const j=await r.json();
+        if(j&&Array.isArray(j.sites)&&Array.isArray(j.points)){
+          whsDoc=j; whsBuild();
+          try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){}
+          try{ if(GE().layers.has('whs-pt')) GE().layers.setPaint('whs-pt','circle-color',whsColour()); }catch(_){}
+          whsApplyFilter(); whsLegend();
+        }
+      }catch(_){ try{ imToast(window.IntMapLang.t(HOST.lang,'Could not load the World Heritage list','世界遺産の一覧を読み込めませんでした','Die Welterbeliste konnte nicht geladen werden','Не удалось загрузить список всемирного наследия','No se pudo cargar la lista del Patrimonio Mundial')); }catch(_){} }
+      whsLoading=false;
+    }
+    /* ⚠ THE DESCRIPTIONS ARE ONE FILE PER LANGUAGE and the reader fetches one of them, once, on the
+       first panel — see the note in scripts/build-whs.mjs. The URL is computed from the locale, so
+       scripts/asset-report.mjs classifies these files as `prefix` rather than `exact`; the stem is
+       written out here in one literal so the classification can be made at all. */
+    function whsDetailLoad(){
+      const lc=whsLocale();
+      if(whsDetail&&whsDetailTag===lc) return Promise.resolve(whsDetail);
+      if(whsDetailPending&&whsDetailPending.tag===lc) return whsDetailPending.p;
+      if(typeof DecompressionStream!=='function') return Promise.reject(new Error('DecompressionStream unavailable'));
+      const p=fetch('data/whc-detail.'+lc+'.json.gz').then(r=>{
+        if(!r.ok||!r.body) throw new Error('whc detail '+r.status);
+        return new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text();
+      }).then(t=>JSON.parse(t)).then(j=>{ whsDetail=j; whsDetailTag=lc; whsDetailPending=null; return j; })
+        .catch(e=>{ whsDetailPending=null; throw e; });
+      whsDetailPending={tag:lc,p}; return p;
+    }
+    const whsSite=(id)=>{ if(!whsDoc) return null; const n=+id;
+      return whsDoc.sites.find(s=>s.id===n)||null; };
+    function whsByName(q){ if(!whsDoc||!q) return [];
+      const needle=String(q).toLowerCase(), lc=whsLocale();
+      return whsDoc.sites.filter(s=>{ const a=(s.n[lc]||'').toLowerCase(), b=(s.n.en||'').toLowerCase();
+        return a.indexOf(needle)>=0||b.indexOf(needle)>=0; });
+    }
+    /* the first component part of a property, for «show me this site» */
+    function whsWhere(id){ if(!whsDoc) return null; const i=whsDoc.sites.findIndex(s=>s.id===+id); if(i<0) return null;
+      const P=whsDoc.points; for(let k=0;k<P.length;k+=4) if(P[k]===i) return [P[k+1],P[k+2]];
+      return null; }
+
+    function whsPanel(f,id){
+      const s=whsSite(id); if(!s) return;
+      const SF=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
+      const lc=whsLocale();
+      const seg=(whsDoc&&whsDoc.localePath&&whsDoc.localePath[lc])||'en';
+      const head=(d)=>{
+        const bits=[whsCatName(s.c)];
+        if(d&&d.st) bits.push(d.st);
+        const yr=s.y?L('Inscribed {y}','{y}年登録','Eingeschrieben {y}','Внесён в {y}','Inscrito en {y}').split('{y}').join(s.y):'';
+        if(yr) bits.push(yr);
+        if(s.cr&&s.cr.length) bits.push(s.cr.map(c=>'('+c+')').join(''));
+        let html='<div style="font-weight:700;font-size:14px;color:var(--text-main);">'+SF(s.n[lc]||s.n.en)+'</div>'
+          +'<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">'+SF(bits.filter(Boolean).join(' · '))+'</div>';
+        if(s.d) html+='<div style="font-size:12px;color:'+WHS_DANGER+';margin-top:3px;font-weight:600;">'+SF(
+          s.d>0?L('On the List in Danger since {y}','{y}年から危機遺産','Seit {y} auf der Roten Liste','В списке под угрозой с {y} года','En la Lista en Peligro desde {y}').split('{y}').join(s.d)
+               :L('On the List in Danger','危機遺産','Auf der Roten Liste','В списке под угрозой','En la Lista en Peligro'))+'</div>';
+        return html;
+      };
+      const show=(html)=>{ try{ if(whsPopup) whsPopup.remove(); }catch(_){}
+        try{ whsPopup=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,className:'plc-popup',maxWidth:'320px'})
+          .setLngLat(f.geometry.coordinates).setHTML('<div style="min-width:200px;max-width:300px;">'+html+'</div>')); }catch(_){} };
+      /* the panel opens with what the LAYER file already knows, and fills in the description when
+         the language's description file lands — a card that waits for a 340 kB fetch before showing
+         anything is a card that looks broken on a slow connection. */
+      show(head(null));
+      whsDetailLoad().then(j=>{
+        const d=j&&j.sites&&j.sites[String(s.id)]; if(!d) return;
+        let html=head(d);
+        if(d.img) html+='<img src="'+SF(d.img)+'" alt="" loading="lazy" style="width:100%;border-radius:8px;margin-top:8px;display:block;">';
+        if(d.d) html+='<div style="font-size:12px;color:var(--text-main);margin-top:8px;line-height:1.5;max-height:190px;overflow:auto;">'+SF(d.d)+'</div>';
+        html+='<div style="margin-top:8px;"><a href="https://whc.unesco.org/'+SF(seg)+'/list/'+SF(s.id)
+          +'/" target="_blank" rel="noopener" style="font-size:12px;">'+SF(L('UNESCO page','ユネスコの解説ページ','UNESCO-Seite','Страница ЮНЕСКО','Página de la UNESCO'))+' ↗</a></div>';
+        show(html);
+      }).catch(()=>{});
+    }
+    /* Atlas and the kernel command: bring the property into view AND open its card. A card about a
+       dot the reader cannot see is half an answer (the volcano rule above, #R353). */
+    function whsOpen(id){
+      const at=whsWhere(id); if(!at) return false;
+      try{ GE().camera.flyTo({center:at,zoom:Math.max(GE().camera.getZoom(),8)}); }catch(_){}
+      whsPanel({geometry:{coordinates:at}},id); return true;
+    }
+    function whsSetCategory(term,on){
+      if(!whsDoc||whsDoc.categories.indexOf(term)<0) return false;
+      if(on) whsOff.delete(term); else whsOff.add(term);
+      whsApplyFilter(); whsLegend(); return true;
+    }
+    function whsSetDanger(on){ whsDangerOnly=!!on; whsApplyFilter(); whsLegend(); return true; }
+
+    function whsLegend(){
+      if(!state.whs){ try{ window._hideGenericLegend&&window._hideGenericLegend('whs'); }catch(_){} return; }
+      try{
+        if(!window._registerLayerOpacity) return;
+        const el=window._registerLayerOpacity('whs',LA('World Heritage (UNESCO)','世界遺産（ユネスコ）','Welterbe (UNESCO)','Всемирное наследие (ЮНЕСКО)','Patrimonio Mundial (UNESCO)'),WHS_IDS,'beta-dl-whs');
+        if(!el) return;
+        let key=el.querySelector('.volc-key');
+        if(!key){ key=document.createElement('div'); key.className='volc-key';
+          const op=el.querySelector('.dl-op-row'); if(op) el.insertBefore(key,op); else el.appendChild(key);
+          key.addEventListener('click',(ev)=>{ const t=ev.target&&ev.target.closest?ev.target:null; if(!t) return;
+            const c=t.closest('[data-whscat]'); if(c){ whsSetCategory(c.dataset.whscat,whsOff.has(c.dataset.whscat)); return; }
+            const d=t.closest('[data-whsdanger]'); if(d) whsSetDanger(!whsDangerOnly); }); }
+        const SF=(v)=>{ try{ return window.IntMapSafe.html(v==null?'':String(v)); }catch(_){ return ''; } };
+        const dot=(c)=>'<span class="volc-dot" style="background:'+c+'"></span>';
+        const cats=(whsDoc&&whsDoc.categories)||[];
+        let body='<div class="volc-filters">'+cats.map((c,i)=>'<button type="button" class="volc-filter'
+          +(whsOff.has(c)?'':' on')+'" data-whscat="'+SF(c)+'">'+dot(WHS_COLOUR[c]||WHS_NEUTRAL)+SF(whsCatName(i))+'</button>').join('')
+          +'<button type="button" class="volc-filter'+(whsDangerOnly?' on':'')+'" data-whsdanger="1">'
+          +SF(L('In danger','危機遺産','In Gefahr','Под угрозой','En peligro'))+'</button></div>';
+        /* ⚠ ONE STRING WITH PLACEHOLDERS (#R355), and every number in it is READ FROM THE FILE. The
+           three properties that publish no coordinate at all are counted here rather than quietly
+           dropped: a map that shows 1,270 of 1,273 and says «1,273» is telling the reader something
+           it did not do. */
+        const NUMF=(x)=>{ try{ return x.toLocaleString(window.IntMapLang.locale(HOST.lang,'en-GB')); }catch(_){ return String(x); } };
+        if(whsDoc){
+          const drawn=new Set(); for(let i=0;i<whsDoc.points.length;i+=4) drawn.add(whsDoc.points[i]);
+          const undrawn=whsDoc.sites.length-drawn.size;
+          const dang=whsDoc.sites.filter(s=>s.d).length;
+          body+='<div class="volc-key-note">'+SF(L(
+            '{s} inscribed properties, drawn as {p} component parts. {d} are on the List in Danger.',
+            '登録物件 {s} 件を、構成資産 {p} 地点として描いています。うち {d} 件が危機遺産です。',
+            '{s} eingeschriebene Stätten, gezeichnet als {p} Bestandteile. {d} stehen auf der Roten Liste.',
+            '{s} объектов, показанных как {p} составных частей. {d} — в списке под угрозой.',
+            '{s} bienes inscritos, dibujados como {p} partes componentes. {d} están en la Lista en Peligro.')
+            .split('{s}').join(NUMF(whsDoc.sites.length)).split('{p}').join(NUMF(whsFC?whsFC.features.length:0))
+            .split('{d}').join(NUMF(dang)))+'</div>';
+          if(undrawn) body+='<div class="volc-key-note">'+SF(L(
+            'UNESCO publishes no coordinate for {n} of them, so they are not on the map.',
+            'そのうち {n} 件はユネスコが座標を公表しておらず、地図には出ていません。',
+            'Für {n} davon veröffentlicht die UNESCO keine Koordinate; sie fehlen auf der Karte.',
+            'Для {n} из них ЮНЕСКО не публикует координат, поэтому их нет на карте.',
+            'La UNESCO no publica coordenadas de {n} de ellos, así que no están en el mapa.')
+            .split('{n}').join(NUMF(undrawn)))+'</div>';
+          /* the name a reader sees is the name UNESCO publishes in that language — when it does. */
+          const lc=whsLocale();
+          if(lc==='en'&&(whsDoc.locales||[]).length>1) body+='<div class="volc-key-note">'+SF(L(
+            'UNESCO publishes the List in English, French, Spanish, Russian, Arabic, Chinese and Japanese only, so the names here are in English.',
+            'ユネスコが一覧を公表しているのは英・仏・西・露・アラビア・中・日の各語だけなので、ここでは英語名で表示しています。',
+            'Die UNESCO veröffentlicht die Liste nur auf Englisch, Französisch, Spanisch, Russisch, Arabisch, Chinesisch und Japanisch — die Namen stehen deshalb auf Englisch.',
+            'ЮНЕСКО публикует список только на английском, французском, испанском, русском, арабском, китайском и японском, поэтому названия даны по-английски.',
+            'La UNESCO publica la Lista solo en inglés, francés, español, ruso, árabe, chino y japonés, por lo que los nombres aparecen en inglés.'))+'</div>';
+        }
+        body+='<div class="volc-key-src">'+SF('UNESCO World Heritage Centre'
+          +((whsDoc&&whsDoc.danger&&whsDoc.danger.attribution)?' · '+whsDoc.danger.attribution:''))+'</div>';
+        key.innerHTML=body;
+      }catch(_){}
+    }
+    function whsToggle(on){ state.whs=on;
+      const a=()=>{ if(!whsEnsure()){ GE().events.once('idle',a); return; } setVis(WHS_IDS,on); if(on) whsLoad(); };
+      a(); whsLegend();
+    }
+    /* the same reasoning as `__imVolcLayer` above: NOT an `IntMap*` name, because
+       js/atlas-controls.js enumerates those to build the module catalog (#R320). */
+    window.__imWhsLayer={ data:()=>whsDoc, on:()=>state.whs, locale:whsLocale,
+      count:()=>whsDoc?whsDoc.sites.length:0, points:()=>whsFC?whsFC.features.length:0,
+      categories:()=>whsDoc?whsDoc.categories.slice():[], off:()=>[...whsOff], setCategory:whsSetCategory,
+      dangerOnly:()=>whsDangerOnly, setDangerOnly:whsSetDanger, shown:whsShown,
+      byName:whsByName, site:whsSite, where:whsWhere, open:whsOpen, load:whsLoad, filterTerms:whsTerms,
+      /* the composed collection itself, so «did the language event recompose the names?» can be
+         asked of THIS module rather than of the renderer's tile cache — two different questions,
+         and only the first one is ours. */
+      fc:()=>whsFC };
+    /* ══ THE KERNEL COMMANDS ════════════════════════════════════════════════════════
+       CONSTITUTION §: the button and Atlas call the SAME registered command — Atlas does not
+       simulate a click. Registered here, beside the layer, because this file is eager: a command
+       that only exists once something has been downloaded is a capability Atlas cannot offer. */
+    try{
+      const OS2=window.IntMapOS;
+      if(OS2&&OS2.register){
+        const whsOn=()=>{ try{ const cb=document.getElementById('beta-dl-whs'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change')); } }catch(_){} };
+        OS2.register('heritage.open',(ctx)=>{
+          const p2=(ctx&&ctx.params)||{};
+          whsOn();
+          const go=()=>{
+            let id=p2.id!=null?+p2.id:null;
+            if(id==null&&p2.name){ const hit=whsByName(p2.name)[0]; if(hit) id=hit.id; }
+            if(id==null) return {ok:false,err:'no World Heritage property named'};
+            const s2=whsSite(id);
+            if(!s2) return {ok:false,err:'no such World Heritage property'};
+            /* ⚠ A PROPERTY WITH NO PUBLISHED COORDINATE IS NOT A FAILURE TO FIND IT. Three of them
+               exist; saying so is the answer, and pretending the lookup failed is not. */
+            if(!whsWhere(id)) return {ok:false,err:'UNESCO publishes no coordinate for this property',id};
+            return { ok:whsOpen(id), id };
+          };
+          return whsDoc?Promise.resolve(go()):whsLoad().then(go);
+        },{label:'World Heritage property card',group:'heritage',btn:'beta-dl-whs'});
+        OS2.register('heritage.filter',(ctx)=>{
+          const p2=(ctx&&ctx.params)||{};
+          whsOn();
+          const go=()=>{
+            let any=false;
+            /* ⚠ `clear` RESETS AND THEN LETS THE REST OF THE CALL APPLY — it is a starting point,
+               not a terminator. Returning here made {clear:true,danger:true} answer «all 6,009 of
+               them», which is the opposite of what that call asks for (measured in the browser). */
+            if(p2.clear){ whsOff.clear(); whsSetDanger(false); any=true; }
+            if(p2.danger!=null){ whsSetDanger(p2.danger!==false); any=true; }
+            const cats=Array.isArray(p2.categories)?p2.categories:(p2.category?[p2.category]:null);
+            if(cats&&whsDoc){
+              /* naming the categories to KEEP is the whole request — the ones not named go off */
+              const want=cats.map(c=>String(c));
+              const known=whsDoc.categories.filter(c=>want.some(w=>w.toLowerCase()===c.toLowerCase()));
+              if(!known.length) return {ok:false,err:'no such category',categories:whsDoc.categories.slice()};
+              whsOff.clear(); whsDoc.categories.forEach(c=>{ if(known.indexOf(c)<0) whsOff.add(c); });
+              whsApplyFilter(); whsLegend(); any=true;
+            }
+            return any?{ok:true,shown:whsShown()}:{ok:false,err:'no World Heritage filter named'};
+          };
+          return whsDoc?Promise.resolve(go()):whsLoad().then(go);
+        },{label:'Narrow the World Heritage list',group:'heritage',btn:'beta-dl-whs'});
+      }
+    }catch(_){}
+
     /* ---------- rows in the Layers panel (histb/ukrfront now file into "Strategic geography" via
        reorganizeLayerPanel — promoted out of beta (#R20); bldg3d + volc2 stay in Others(beta)) ---------- */
     /* ⚠ (#R251) ENGLISH FIRST, AND RESOLVED THROUGH pick(). These four were `[ja, en]` read by
@@ -695,7 +1022,8 @@ window.IntMapModules.betaOverlays=function(HOST){
     const BLBL={ukrfront:LA('Ukraine frontline (live)','ウクライナ前線（リアルタイム）','Ukraine-Frontlinie (live)','Линия фронта в Украине (в реальном времени)','Frente de Ucrania (en vivo)'),bldg3d:LA('3D buildings (cities)','3D建物（都市）','3D-Gebäude (Städte)','3D-здания (города)','Edificios 3D (ciudades)'),histb:LA('Historical borders','過去の国境','Historische Grenzen','Исторические границы','Fronteras históricas'),volc2:LA('Volcanoes — the Smithsonian GVP catalog','火山 — スミソニアンGVPカタログ','Vulkane — der Smithsonian-GVP-Katalog','Вулканы — каталог Смитсоновского GVP','Volcanes — el catálogo del Smithsonian GVP'),
       volcash:LA('Volcanic ash areas in force (SIGMET)','有効な火山灰域（SIGMET）','Gültige Vulkanasche-Gebiete (SIGMET)','Действующие зоны вулканического пепла (SIGMET)','Zonas de ceniza volcánica vigentes (SIGMET)'),
       volchaz:LA('Volcano hazard zones (USGS)','火山ハザード域（USGS）','Vulkangefahrenzonen (USGS)','Зоны вулканической опасности (USGS)','Zonas de peligro volcánico (USGS)'),
-      volcso2:LA('Satellite SO₂ column (OMPS)','衛星 SO₂ 全量（OMPS）','Satelliten-SO₂-Säule (OMPS)','Столб SO₂ со спутника (OMPS)','Columna de SO₂ satelital (OMPS)')};
+      volcso2:LA('Satellite SO₂ column (OMPS)','衛星 SO₂ 全量（OMPS）','Satelliten-SO₂-Säule (OMPS)','Столб SO₂ со спутника (OMPS)','Columna de SO₂ satelital (OMPS)'),
+      whs:LA('World Heritage — every UNESCO property','世界遺産 — ユネスコの全登録物件','Welterbe — alle UNESCO-Stätten','Всемирное наследие — все объекты ЮНЕСКО','Patrimonio Mundial — todos los bienes de la UNESCO')};
     function buildUI(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('beta-dl-ukrfront')) return;
       function row(id,label,sw){ const w=document.createElement('div'); w.className='lyr-row'; w.innerHTML='<label class="layer-option"><input type="checkbox" id="'+id+'"> <span class="lyr-sw" style="background:'+sw+'"></span> <span id="'+id+'-lbl">'+label+'</span></label>'; dd.appendChild(w); return w.querySelector('input'); }
       /* ⚠ (#R353) THE COUNT CAME OUT OF THE ROW LABEL. It read 「全1,215座」 in five languages while
@@ -706,7 +1034,7 @@ window.IntMapModules.betaOverlays=function(HOST){
          fetches js/volcano-layers.js on its FIRST switch-on and nothing before that. */
       [['ukrfront','#d62b2b',ukrToggle],['bldg3d','#8794ad',bldgToggle],['volc2','#ff6a3d',volcToggle],
        ['volcash','#7b5cff',(on)=>volcOverlay('ash',on)],['volchaz','#d1381f',(on)=>volcOverlay('hazard',on)],
-       ['volcso2','#8ad3c8',(on)=>volcOverlay('so2',on)]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
+       ['volcso2','#8ad3c8',(on)=>volcOverlay('so2',on)],['whs','#c9903a',whsToggle]].forEach(([k,sw,fn])=>{   /* (#R122) 'histb' (Historical borders overlay) removed per request — the time-machine's own past-year borders remain */
         const cb=row('beta-dl-'+k, L.arr(BLBL[k]), sw);
         cb.addEventListener('change',e=>{ e.target.closest('.lyr-row').classList.toggle('on',e.target.checked); fn(e.target.checked); });
       });
@@ -724,15 +1052,33 @@ window.IntMapModules.betaOverlays=function(HOST){
        WARNING a two-branch ternary cannot serve nine languages whichever way round it is. */
     function relabel(){ Object.keys(BLBL).forEach(k=>{ const e=document.getElementById('beta-dl-'+k+'-lbl'); if(e) e.textContent=L.arr(BLBL[k]); }); }
     window.addEventListener('intmap-lang',()=>setTimeout(relabel,20));
+    /* ⚠ THE HERITAGE NAMES ARE IN THE DATA, NOT IN THE UI TABLES, so a language event has to
+       recompose the FeatureCollection — the label layer reads `n` off the feature and nothing else
+       can change it. Nothing is re-downloaded: every language's name is already in the file. The
+       description file IS per language, so the cached one is dropped and refetched on the next card. */
+    window.addEventListener('intmap-lang',()=>setTimeout(()=>{ try{
+      if(!whsDoc) return;
+      whsDetail=null; whsDetailTag=''; whsDetailPending=null;
+      whsBuild(); try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){}
+      whsLegend();
+    }catch(_){} },20));
     /* self-heal across basemap swaps */
-    GE().events.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist||state.volc){ setTimeout(()=>{
+    GE().events.on('styledata',()=>{ if(state.ukr||state.bldg||state.hist||state.volc||state.whs){ setTimeout(()=>{
       if(state.ukr&&ukrEnsure()){ setVis(UKR_IDS,true); if(ukrFC){ try{ GE().layers.setSourceData('ukr-src',ukrFC); }catch(_){} } }
       if(state.bldg&&bldgEnsure()) setVis(['ofm-bldg-3d'],true);
       if(state.hist&&hbEnsure()){ setVis(HB_IDS,true); const fc=hbCache.get(hbYear); if(fc){ try{ GE().layers.setSourceData('hb-src',fc); }catch(_){} } }
       if(state.volc&&volcEnsure()){ setVis(VL_IDS,true); if(volcFC){ try{ GE().layers.setSourceData('volc2-src',volcFC); }catch(_){} } }
+      /* ⚠ THE SELF-HEAL LOADS THE DATA TOO, and that is not belt-and-braces — it is the only path
+         that survives an ENGINE SWAP. Measured: switching Globe→Flat re-creates the renderer, so the
+         `once('idle')` retry whsToggle() registered on the old one never fires; the layers came back
+         through this handler with an empty source and the reader saw an empty map with the switch on.
+         whsLoad() is idempotent (it returns early once the file is in hand and guards its own
+         in-flight fetch), so the invariant can simply be stated: the layer is on, therefore its data
+         is loaded. */
+      if(state.whs&&whsEnsure()){ setVis(WHS_IDS,true); if(whsFC){ try{ GE().layers.setSourceData('whs-src',whsFC); }catch(_){} } whsApplyFilter(); whsLoad(); }
     },80); } });
     /* (#R21) under memory pressure, keep only the displayed year's borders */
     window.addEventListener('intmap-mem-pressure',()=>{ try{ const keep=hbCache.get(hbYear); hbCache.clear(); if(keep&&state.hist) hbCache.set(hbYear,keep); }catch(_){} });
-    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
+    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,whsToggle,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
   })();
 };

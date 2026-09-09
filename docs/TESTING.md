@@ -1163,6 +1163,34 @@ function allows; the ambiguity guard; `_shared` never counted as a function), in
 assertion that the production-side test still exists — a check that deletes itself is
 indistinguishable from one that passes.
 
+## Bundled data whose upstream stopped maintaining a column (`tests/r567-checks.test.mjs`)
+
+A snapshot of somebody else's dataset can be checked for shape — every index resolves, every
+row has a name — and that is worth doing, but it cannot catch the failure that actually costs
+something: a column upstream still publishes and no longer updates.
+
+The World Heritage feed has one. Its `danger` column is empty for Palmyra, Sana'a, Kyiv and
+Odesa, and its newest entry of any kind is `Y 2014`; a layer that read it would put a decade-old
+snapshot on the map under a present-tense label. The status is therefore taken from Wikidata,
+and **the test does not pin the count** — a pinned 52 goes red the next time the Committee
+meets, which teaches everyone to update the number rather than to look. It asserts instead that
+**at least one property was listed in danger after 2014**. A build that went back to the
+abandoned column cannot satisfy that, whatever the count happens to be, because the column has
+nothing newer in it. The property is structural; the number is free to move.
+
+Two of the other seven are the same kind of question rather than a spelling:
+
+- **«すべて» is measured, not asserted.** UNESCO publishes one coordinate per COMPONENT PART, so
+  a build that read only the first of each row would produce exactly as many points as rows.
+  The test requires more points than properties and at least one property drawn as several —
+  neither of which names a number.
+- **The category vocabulary must stay in the data.** `tests/r567-checks.test.mjs` ⑦ parses
+  `js/beta-overlays.js` with acorn and requires every occurrence of a category name to be either
+  a lookup-table key or a member of a translation tuple. A comparison, a filter or a paint ladder
+  that spells one out is the #R515 shape — the layer would stop reading `whsDoc.categories`, and
+  a category UNESCO adds would silently vanish from the map instead of appearing in grey.
+  Verified by mutation: adding one `categories[i] === 'Cultural'` turns it red.
+
 ## Determinism
 
 Tests are order-independent and repeatable: a fresh browser context per file (no leaked

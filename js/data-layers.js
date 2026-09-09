@@ -1934,7 +1934,7 @@ window.IntMapModules.dataLayers=function(HOST){
           ['lyrGrpEconomy',['gdppc','trade','wbgini','industry','wbgdpgrow','wbinfl','wbtrade','wbtax','wbdebt','wbmanuf','wbhitech','wbfdi','wbunemp','wbgni','wbpov','wbflfp','wbremit','wbtour','pharma'],3],
           /* (#R273) +HDI (← Population: it is the human-development composite), and −poverty,
              −Gini, −female labour participation (→ Economy). */
-          ['lyrGrpSociety',['hdi','wbhomicide','cat-language','wblit','wbschool','wbtert','wbedu','osmedu','cat-religion'],3],   /* (#R270) +homicide rate, +fertility rate — see the note above */
+          ['lyrGrpSociety',['hdi','wbhomicide','cat-language','whs','wblit','wbschool','wbtert','wbedu','osmedu','cat-religion'],3],   /* (#R567) +World Heritage — by the rule this block states, a layer belongs to the subject it measures, and what the List measures is cultural and natural heritage; it sits beside the language and religion rows for that reason and not because UNESCO produced it. */   /* (#R270) +homicide rate, +fertility rate — see the note above */
           /* (#R273) +live cameras (← Beta, where it had no shelf rather than a demotion): the feeds
              are road and traffic cameras — TfL JamCams, Caltrans, the DOT 「511」 networks. */
           ['lyrGrpTransport',['planes','rail','ships','oxrail','oxsea','osmair','osmport','webcams'],2],

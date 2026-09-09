@@ -381,6 +381,10 @@ window.IntMapRefData=(function(){
     {n:'Inter / Pretendard (bundled, SIL OFL 1.1)',u:'https://rsms.me/inter/'},
     {n:'ESA WorldCover',u:'https://esa-worldcover.org/'},
     {n:'RESOLVE / WWF Ecoregions 2017',u:'https://ecoregions.appspot.com/'},
+    {n:'UNESCO World Heritage Centre',u:'https://whc.unesco.org/en/list/'},
+    /* (#R567) the List itself is UNESCO's; whether a property is on the List in Danger TODAY is
+       not — the Centre's own XML has not maintained that column since 2014 (scripts/build-whs.mjs
+       names the four measured cases), so the layer asks Wikidata for it and credits both. */
     {n:'Smithsonian GVP',u:'https://volcano.si.edu/'},
     /* (#R353) Volcano Intelligence — the five live sources beside the bundled GVP catalog. Four of
        them the browser reads directly; the two without CORS go through supabase/functions/volcano-feed. */
