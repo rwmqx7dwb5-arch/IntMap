@@ -972,7 +972,7 @@ window.IntMapLang.define('zh', {
     'field loading…': "流向場載入中…",   /* ocean-currents.js */
     'filled from ': "補自 ",   /* stats-compare.js */
     'Filter bodies…': "篩選天體…",   /* space.js */
-    'Final ground deposition (Cs-137-equivalent zones)': "最終地面沉降（銫-137 當量分區）",   /* atlas-console.js */
+    /* atlas-console.js */
     'Find runways': "尋找跑道",   /* tool-panel.js */
     'findings': "項發現",   /* atlas-console.js */
     'Fine': "細",   /* terrain-water.js */
@@ -6402,5 +6402,22 @@ window.IntMapLang.define('zh', {
   "No World Heritage property called “{q}” is on the List this map carries.": "本地圖收錄的世界遺產名錄中沒有「{q}」。",
   "UNESCO publishes no coordinate for “{q}”, so it is inscribed but cannot be put on the map.": "UNESCO 未公布「{q}」的座標，因此雖已列入名錄，卻無法標示在地圖上。",
   "{n} component parts are drawn for it.": "已為此遺產繪出 {n} 處構成資產。",
+  /* (#R568) radiological dispersion — release height, the deposition ladders (statutory and density-only), the peak's error bar and what the map does not contain. */
+  "Release height (m)": "釋放高度（公尺）",
+  "Very heavy deposition": "極高沉降",
+  "Heavy deposition": "高度沉降",
+  "Moderate deposition": "中度沉降",
+  "Light deposition": "輕度沉降",
+  "Sr-90: mandatory resettlement (UA)": "Sr-90：無條件（強制）遷離——烏克蘭法",
+  "Sr-90: guaranteed voluntary resettlement (UA)": "Sr-90：保證自願遷離——烏克蘭法",
+  "Sr-90: enhanced radioecological control (UA)": "Sr-90：加強放射生態管制——烏克蘭法",
+  "Final ground deposition — statutory zones": "最終地面沉降——法定分區",
+  "Final ground deposition — density only (this nuclide has no statutory zoning)": "最終地面沉降——僅沉降密度（此核種沒有法定分區）",
+  "too few particles reached this cell to quote a value": "到達此格點的粒子太少，無法給出數值",
+  "first year": "第一年",
+  "external dose from this deposit is minor — Sr-90/Y-90 are beta emitters, and the hazard is ingestion, not ground shine": "此沉降造成的外部劑量很小——Sr-90／Y-90 是β放射核種，危害在於攝入，而非地表輻射",
+  "left the modelled area": "流出模擬範圍",
+  "still airborne when the window closed": "計算結束時仍在大氣中",
+  "Not on this map": "未包含在此地圖中",
   }
 });
