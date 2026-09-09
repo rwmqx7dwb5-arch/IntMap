@@ -29,6 +29,7 @@ tools: Bash, Read, Grep, Glob
 | `npm run check:wars` | 紛争データの生成物と定義の一致 |
 | `npm run check:histcities` | 歴史都市名の生成物と記録の一致・綴りが2都市を指さないこと |
 | `npm run check:histborders` | 1850–1885 の歴史国境の同梱ファイルの不変条件（窓の中か・リング番号が解決するか・**窓のどの年にも描く世界があるか**）。⚠ 再生成はしない（CI に置けない約 400 MB の上流応答が要る） |
+| `npm run check:elections` | 国政選挙のデータ（`data/elections/`）: 形式・政党表・出典とライセンスの記載・議席の算術（小選挙区＋比例＝総定数）・**選挙区と結果の結合を両方向**（結果の無い選挙区は「誰も勝たなかった」と読める穴になる）。オフラインで走る |
 | `npm run check:languages` | 言語レイヤー: `top` が最大の実測シェアであること・実測が無い国はそう言うこと・全 Glottocode が系統樹に存在すること・解決台帳の全行に理由が書かれていること |
 | `npm run check:bordercoast` | 歴史国境の各辺が「国境」か「その記録が持つ海岸線の写し」かの印（`data/border-coast.js`）。⚠ こちらは**同梱データだけから全リングを再導出して突き合わせる**（上流不要・約 16 秒） |
 | `npm run check:catalog` | Atlas catalogue（押せるのに届かない機能が出ない） |

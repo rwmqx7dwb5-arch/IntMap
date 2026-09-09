@@ -220,6 +220,7 @@ hist-cities.js                    時計の年の**都市名** IntMapHistCities�
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
+elections.js                      各国の**国政選挙** IntMapElections（選挙区で塗り、凡例は議会全体・国と選挙を選ぶ／**国名も政党名も1つも持たない**——すべて data/elections/ から来る。正本 docs/ELECTIONS.md）
 war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベトナム／中東／ユーゴ）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
@@ -681,6 +682,7 @@ data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoric
                                   16,236件／rings 16,036・10.2 MB）。同じ生成器の `--levels 5,6`。**z6 未満では
                                   取得もしない**——描かない縮尺で 10 MB を払わせないため（docs/MAP-LAYERS.md §7.7）
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
+elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
 religion.json / language.json     宗教の分布／言語の分布（国ごとの記録＋言語名・ISO 639-3・訳）
 language-tree.json                Glottolog の分類全体（族・言語・国が指す標準／親・カテゴリ・存続状態）

@@ -130,7 +130,7 @@ import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */
 import '../js/wb-layers.js';
-import '../js/us-elections.js'; import '../js/war-fronts.js'; import '../js/net-health.js';   /* (#R349) …and the two world wars' Layers ROW, on this line for the shell budget — the layer itself (js/war-layer.js) is lazy */
+import '../js/us-elections.js'; import '../js/elections.js'; import '../js/war-fronts.js'; import '../js/net-health.js';   /* (#R584) …and the national-elections layer beside the presidential one: a different question (parliaments, by district) on a different data contract, sharing this line for the shell budget. (#R349) …and the two world wars' Layers ROW, on this line for the same reason — the layer itself (js/war-layer.js) is lazy */
 import '../js/beta-overlays.js';
 import '../js/cameras.js';
 /* (#R224) js/atlas-console.js is NOT imported here any more — it is the ninth on-demand module
@@ -369,7 +369,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
   'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'usElections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
+  'oceanCurrents', 'usElections', 'elections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These files are not in the import list above: they are fetched by js/lazy-modules.js the
