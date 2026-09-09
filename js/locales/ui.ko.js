@@ -226,7 +226,7 @@ window.IntMapLang.define('ko', { ui: {
       tkgCrypto:"암호화폐",
       tkgFx:"환율",
       tkgIdx:"주가지수",
-      uploadGeoJSON:"GeoJSON 불러오기",
+      importGeoFile:"지도 데이터 가져오기",
       viewKbd:"⌨ 단축키 목록 보기 (? 키로도 열립니다)",
       viewScience:"각 시뮬레이션의 계산 방법 보기 ↗",
       viewSourcesPage:"데이터 출처 페이지 열기 ↗",
@@ -2877,9 +2877,21 @@ window.IntMapLang.define('ko', { ui: {
   "Preset name:": "프리셋 이름:",
   "Preset applied": "프리셋을 적용했습니다",
   "Failed to add layer": "레이어를 추가하지 못했습니다",
-  "GeoJSON added: ": "GeoJSON을 표시했습니다: ",
-  "Could not parse JSON": "JSON을 해석하지 못했습니다",
-  "Not valid GeoJSON": "유효한 GeoJSON이 아닙니다",
+  "Added: ": "불러왔습니다: ",   /* map-ui.js (#R576) */
+  "columns": "열",   /* map-ui.js (#R576) */
+  "skipped": "제외됨",   /* map-ui.js (#R576) */
+  "No latitude/longitude columns found": "위도·경도 열을 찾을 수 없습니다",   /* map-ui.js (#R576) */
+  "Shapefile is not supported yet": "Shapefile은 아직 지원하지 않습니다",   /* map-ui.js (#R576) */
+  "File is too large to read": "파일이 너무 커서 읽을 수 없습니다",   /* map-ui.js (#R576) */
+  "Too many features to draw": "지물이 너무 많아 그릴 수 없습니다",   /* map-ui.js (#R576) */
+  "No usable coordinates in this file": "이 파일에는 사용할 수 있는 좌표가 없습니다",   /* map-ui.js (#R576) */
+  "The file has no map features": "지도에 그릴 지물이 없습니다",   /* map-ui.js (#R576) */
+  "This KML only links to data held elsewhere": "이 KML은 외부 데이터에 대한 링크만 담고 있습니다",   /* map-ui.js (#R576) */
+  "This JSON is not GeoJSON": "이 JSON은 GeoJSON이 아닙니다",   /* map-ui.js (#R576) */
+  "Unsupported XML format": "지원하지 않는 XML 형식입니다",   /* map-ui.js (#R576) */
+  "Unsupported file format": "지원하지 않는 파일 형식입니다",   /* map-ui.js (#R576) */
+  "The file is empty": "파일이 비어 있습니다",   /* map-ui.js (#R576) */
+  "Could not read this file": "이 파일을 읽지 못했습니다",   /* map-ui.js (#R576) */
   "AUTO": "자동 재생",
   "Intro demo:": "첫 데모:",
   "End the intro demo": "데모 종료",
@@ -6193,7 +6205,7 @@ window.IntMapLang.define('ko', { ui: {
   "No World Heritage property called “{q}” is on the List this map carries.": "이 지도가 수록한 세계유산 목록에 ‘{q}’은(는) 없습니다.",
   "UNESCO publishes no coordinate for “{q}”, so it is inscribed but cannot be put on the map.": "‘{q}’은(는) 유네스코가 좌표를 공표하지 않아, 등재되어 있지만 지도에 표시할 수 없습니다.",
   "{n} component parts are drawn for it.": "구성 자산 {n}곳을 표시하고 있습니다.",
-  /* (#R568) radiological dispersion — release height, the deposition ladders (statutory and density-only), the peak's error bar and what the map does not contain. */
+  /* (#R576) radiological dispersion — release height, the deposition ladders (statutory and density-only), the peak's error bar and what the map does not contain. */
   "Release height (m)": "방출 고도 (m)",
   "Very heavy deposition": "매우 높은 침착",
   "Heavy deposition": "높은 침착",
