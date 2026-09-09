@@ -563,6 +563,9 @@ sidebar-style.js                  左サイドバーの材質（不透明／フ�
 search-geocode.js                 検索欄——問い合わせの前処理・ジオコーディング・結果カード
 compare.js                        並べて／スワイプで比べる地図 IntMapCompare
 playground.js                     Playground (beta) IntMapModules.playground
+pandemic-model.js                 パンデミック・シミュレーターの**数理**——種を取る確率的 SEIR メタ個体群エンジン
+                                  （DOM も window も Math.random も持たないので node が直に回せる。
+                                  疾患プリセットもここのデータ。描画と UI は playground.js）
 flight-sim.js                     フライトシミュレーター IntMapFlightSim（238 KB）
 street-view.js                    ストリートビューのパネルと実カバレッジ IntMapStreetView
 community.js                      コミュニティのフィード
