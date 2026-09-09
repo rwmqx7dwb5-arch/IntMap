@@ -371,7 +371,7 @@ getter なので、観測していない成功を呼び出し側が書き込む�
 
 | 部品 | 何の正本か |
 |---|---|
-| 表 (tables) | `cities`（GeoNames cities1000・147,924 件・同梱）／`countries`（Countries タブの記録）／`earthquakes`（USGS FDSN・生）／`volcanoes`（Smithsonian GVP・同梱）／`facilities`（OpenStreetMap＋Wikidata・生。`kind` 必須） |
+| 表 (tables) | `cities`（GeoNames cities1000・同梱。**都市であるものだけ**——§下記）／`countries`（Countries タブの記録）／`earthquakes`（USGS FDSN・生）／`volcanoes`（Smithsonian GVP・同梱）／`facilities`（OpenStreetMap＋Wikidata・生。`kind` 必須） |
 | 列 (columns) | 行が持つもの（`pop`・`country`・`mag`・`depthKm`）／同梱データから測るもの（`precipMm`＝CHELSA、`coastKm`・`seaKm`＝`js/coastline.js`）／ネットワークで訊くもの（`elevM`・`tempC`・`windKmh`・`humidity`・`rainMm`＝Open-Meteo）／**国の統計**（`gdppc`・`hdi`・`dem`・`tfr`・`lifeExp`… を都市の ISO-2 から引く）／**任意の World Bank 指標**（`wb:SP.POP.GROW` のように書く） |
 | 演算子 | `>=` `>` `<=` `<` `==` `!=` `between` `in` `contains` |
 | 空間結合 | `near:[{of:表, withinKm:数, require?:bool, …その表の絞り込み}]`。結合先には**候補の外接矩形＋半径**しか要求しない |
@@ -379,7 +379,7 @@ getter なので、観測していない成功を呼び出し側が書き込む�
 **⚠ 計画は費用の安い順である。** 列には費用（0＝行が持っている／1＝1 回の取得で以後ただ／2＝行ごとの
 ネットワーク）があり、条件はその順に評価される。「標高1500m以上・人口50万人以上・年降水量300mm未満」
 は、メモリ上の 934 件 → ラスタ参照 934 件 → **残った数十件にだけ**標高の問い合わせ、となる。
-147,924 件を Open-Meteo に送る実装は、この順序が無ければ避けられない。
+十数万件を Open-Meteo に送る実装は、この順序が無ければ避けられない。
 
 **⚠ この操作が守る 3 つのこと**（`js/atlas-query.js` の冒頭に同じ文がある）:
 
@@ -389,6 +389,34 @@ getter なので、観測していない成功を呼び出し側が書き込む�
    **評価できなかった条件は表の上に警告として出す**——下に小さく書くのでは、69 行が 3 条件すべてを
    満たしたように読める。
 3. **数値をモデルに訊かない。** この操作の中に AI 呼び出しは 1 つも無い。
+4. **1 つの操作は、返答の中で 1 ブロックである。** 結果は `meta.resultKey` として**何を解決したか**
+   （表・条件・国スコープ・結合・並び・上限）を名乗る。`show` は入らない——表示列は「どう描いたか」
+   であって「何をしたか」ではないので、同じ行を別の列づけで 2 回求めた結果は 1 本に畳まれ、読者は
+   **後の 1 本**を見る（畳み込みの正本は `js/atlas-turn-results.js`）。
+
+**⚠ `cities` は「場所の一覧」であって「feature class が P のレコードの一覧」ではない。**
+GeoNames の feature code のうち、`PPLX`（section of populated place ＝ ある都市の一区画）と
+`PPLH`／`PPLQ`／`PPLW`／`PPLCH`（歴史上・廃棄・破壊・旧首都）は**都市として数えない**。分類は
+コードの綴りをどこにも書かず、**GeoNames 自身が公開している `featureCodes_en.txt` の説明文**から
+3 つの述語（`section of …` → 一部分／`historical|abandoned|destroyed|former` → 消滅／その他 → 集落）
+で導き、`scripts/build-gazetteer.mjs` が結果を `placeKinds` として同梱する。分類の無いコードは
+**採用する**（「まだ分類されていない」は欠陥の証拠ではない）。上流が説明を持たないコードを出したら
+ビルドが落ちる。
+
+**⚠ 表示名と照合 surface は別の列である。** gazetteer の `en`（GeoNames `asciiname`）はニュース
+照合器が使う機械向けの翻字で、読者に見せるものではない（`Ürümqi` が `UEruemqi` になる）。表示は
+`disp`＝「英語 preferred name → GeoNames の UTF-8 name → asciiname」。⚠ **英語名は表示名の選定に
+だけ読み、照合 surface には 1 件も足さない**（`LANGS` は不変）ので、ニュース照合の精度は構造的に
+不変。行の id は GeoNames の geonameid（`geonames:<id>`）。
+
+**⚠ 判定方法は 4 つの数を別々に言う。** 「元レコード → それ自体で 1 つの場所 → 評価 → 該当」。
+評価数は**国スコープを適用した後**に数える——全球の件数を出しながら数百件しか調べていない表示は、
+作業量ではなく**探索範囲**を偽る。
+
+**⚠ 列は「どこから来たか」だけでなく「何をして得たか」を名乗る**（`origin`）:
+`raw`（出典レコードの項目の写し）／`sampled`（この地点で格子を読んだ）／`computed`（公開形状から
+計測した）／`network`（この行について問い合わせた）／`derived`（この行の国を鍵に引いた）。
+⚠ `cost` からは導けない——`precipMm` と `coastKm` はどちらも cost 1 で、標本と計測である。
 
 **⚠ `coastKm` と `seaKm` は別の答えであり、選択は読者に見せる。** Natural Earth の海岸線には
 カスピ海が含まれる。テヘランはカスピ海から 109 km・ペルシャ湾から 611 km なので、

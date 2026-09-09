@@ -427,7 +427,7 @@ window.IntMapGazetteer=(function(){
   const PHONE_FILE='data/gazetteer-phone.json.gz';
   const WORLD_URL=(function(){ const f=_isMobile()?PHONE_FILE:WORLD_FILE; try{ return new URL(f,
     (window.IM_HOST&&window.IM_HOST.base)||document.baseURI).toString(); }catch(_){ return f; } })();
-  let _worldRows=null, _worldPromise=null, _worldMeta=null;
+  let _worldRows=null, _worldPromise=null, _worldMeta=null, _worldMatchable=null;
   /* population → the same `type` vocabulary the curated rows use. A city of two million and a town
      of twenty thousand are not the same claim about a headline, and the scorer already knows how to
      rank `city` above `country`; this is the only judgement the conversion makes. */
@@ -455,6 +455,10 @@ window.IntMapGazetteer=(function(){
     for(const r of (doc&&doc.rows)||[]){
       if(out.length>=cap) break;
       const en=r[0], ja=r[1], iso2=r[2]||'', lng=+r[3], lat=+r[4], pop=+r[5]||0, alt=r[6]||[];
+      /* (#R576) v3 tail. A v2 file — a warmed cache from before the rebuild — has none of these,
+         and reads as "no id, no kind, no separate label, collides with nothing", which is exactly
+         what it meant when it was written. */
+      const gid=r[7]||'', fcode=r[8]||'', disp=r[9]||'', cur=r[10]===1?1:0;
       if(!en||!isFinite(lng)||!isFinite(lat)) continue;
       const terms=[en]; if(ja) terms.push(ja);
       for(const a of alt){ if(a&&terms.indexOf(a)<0) terms.push(a); }
@@ -468,7 +472,15 @@ window.IntMapGazetteer=(function(){
          thing a caller could ask about a place was where it is and how many people live there —
          which is why 「GDP/人が2万ドル未満の…都市」 had no way to reach the country statistics this
          app already holds. js/atlas-query.js joins `cities` to `countries` on this field. */
-      out.push([pop>=250000?'city':'town', terms, lng, lat, en, ja||en, pop, iso2]);
+      /* ⚠ (#R576) …AND FOUR MORE, APPENDED FOR THE SAME REASON THE SEVENTH AND EIGHTH WERE.
+         `gid` is GeoNames' geonameid — a stable identity for a row, where the array index is only
+         a position that a rebuild reshuffles. `fcode` is what KIND of populated place this is
+         (`worldMeta().placeKinds` says what each code means, in GeoNames' own words): without it a
+         section of a city — MEASURED, fourteen above a million people, e.g. `Al Mawşil al Jadīdah`
+         inside Mosul — is indistinguishable from a city. `disp` is the accented spelling for a
+         reader («Ürümqi», where `en` is the ASCII matching key «UEruemqi»), empty when identical.
+         `cur` says a curated row already owns this name — see worldMatchable() below. */
+      out.push([pop>=250000?'city':'town', terms, lng, lat, en, ja||en, pop, iso2, gid, fcode, disp||en, cur]);
     }
     return out;
   }
@@ -494,9 +506,12 @@ window.IntMapGazetteer=(function(){
             .pipeThrough(new DecompressionStream('gzip'))).text();
         } else { text=new TextDecoder().decode(bytes); }
         const doc=JSON.parse(text);
-        _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length,langs:doc.langs||[]};
-        _worldRows=_rowsFrom(doc);
-      }catch(e){ _worldRows=[]; try{ console.warn('[IntMap] world gazetteer unavailable —',e.message); }catch(_){} }
+        /* (#R576) `placeKinds` is the publisher's own description of each feature code, resolved at
+           build time because the browser cannot fetch featureCodes_en.txt. `null` on a v2 file. */
+        _worldMeta={v:doc.v,built:doc.built,attribution:doc.attribution,count:(doc.rows||[]).length,
+          langs:doc.langs||[],placeKinds:doc.placeKinds||null};
+        _worldRows=_rowsFrom(doc); _worldMatchable=null;
+      }catch(e){ _worldRows=[]; _worldMatchable=null; try{ console.warn('[IntMap] world gazetteer unavailable —',e.message); }catch(_){} }
       try{ window.dispatchEvent(new Event('intmap-gazetteer-world')); }catch(_){}
       return _worldRows;
     })();
@@ -519,6 +534,24 @@ window.IntMapGazetteer=(function(){
      148,083 rows to a bag-of-words matcher would not only cost that — it would make it WORSE, since
      a thousand-person village name is exactly the false positive #R161 replaced it to avoid.
      The rows are sorted by population, so the cap keeps the places a publisher string might name. */
+  /* ══ (#R576) TWO VIEWS OVER ONE LIST, BECAUSE THEY ARE TWO DIFFERENT QUESTIONS ════════════════
+     `world()` is THE LIST OF PLACES THAT EXIST. Every row in it is a real inhabited place with real
+     coordinates and a real population, and the things that read it as data — js/atlas-query.js's
+     `cities` table, the seismic observation points, the ShakeMap panel — are asking "what is there".
+     `worldMatchable()` is the subset a TEXT MATCHER may see. A row whose name a curated table
+     already carries (`cur=1`) has to be withheld from it: the curated coordinate is the verified
+     one, and two entries for «Tokyo» make the locator choose between them.
+     ⚠ Those used to be the same list, because the build DELETED the colliding rows. That made the
+     matcher right and the data wrong: MEASURED, 78 places above a million people — Lagos, Mumbai,
+     São Paulo, Karachi, Delhi, Moscow, Seoul, Tokyo, Cairo, Baghdad, Kabul, Riyadh, Kyiv, Paris —
+     did not exist as far as any query over this file was concerned. The rule was never about what
+     exists; it was about what may be matched. So it is applied here, where matching happens. */
+  function worldMatchable(){
+    if(_worldMatchable) return _worldMatchable;
+    if(!_worldRows) return _worldRows;                 /* null = not loaded yet, as world() reports */
+    _worldMatchable=_worldRows.filter(r=>r[11]!==1);
+    return _worldMatchable;
+  }
   const INDEX_WORLD_CAP=15000;
   let _index=null;
   function index(){
@@ -526,10 +559,13 @@ window.IntMapGazetteer=(function(){
     const acc={};
     const feed=(rows,cap)=>{ const n=cap==null?rows.length:Math.min(cap,rows.length);
       for(let i=0;i<n;i++){ const [type,terms,lng,lat,en,jp]=rows[i]; (acc[type]=acc[type]||[]).push({terms,loc:[lng,lat],name:{en,jp}}); } };
-    feed(_BUILTIN_GZ); feed(_EXTRA_GZ); if(_worldRows&&_worldRows.length) feed(_worldRows,INDEX_WORLD_CAP);
+    /* (#R576) …the MATCHABLE view: this index is a bag-of-words matcher, so a row a curated entry
+       already names must not be in it. */
+    const w=worldMatchable();
+    feed(_BUILTIN_GZ); feed(_EXTRA_GZ); if(w&&w.length) feed(w,INDEX_WORLD_CAP);
     _index=acc; return acc;
   }
-  try{ window.addEventListener('intmap-gazetteer-world',()=>{ _index=null; }); }catch(_){}
+  try{ window.addEventListener('intmap-gazetteer-world',()=>{ _index=null; _worldMatchable=null; }); }catch(_){}
   return { builtin:_BUILTIN_GZ, extra:_EXTRA_GZ, warm, index,
-    world:()=>_worldRows, worldMeta:()=>_worldMeta, worldUrl:WORLD_URL, _rowsFrom };
+    world:()=>_worldRows, worldMatchable, worldMeta:()=>_worldMeta, worldUrl:WORLD_URL, _rowsFrom };
 })();
