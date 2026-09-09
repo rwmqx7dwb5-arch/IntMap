@@ -25,7 +25,10 @@
  *  resolve by ID rather than by re-reading a sentence. #R119 put `lastObjects` on `_wctx` for
  *  exactly one of these; this is that idea for all of them.
  * ==========================================================================*/
+import { makeViewGround } from './atlas-view-ground.js';   /* (#R574) the coordinate precision the zoom actually earns — see the note at the state line below */
+
 export function makeAtlasState(HOST) {
+  var GROUND = makeViewGround();
   return (function () {
     var API = {};
 
@@ -542,7 +545,14 @@ export function makeAtlasState(HOST) {
 
       var cam = snap.camera;
       if (cam && isFinite(cam.lat) && isFinite(cam.lng) && isFinite(cam.zoom)) {
-        lines.push('Map center ≈ ' + (+cam.lat).toFixed(2) + ',' + (+cam.lng).toFixed(2) + ' · zoom ' + (+cam.zoom).toFixed(1) +
+        /* ⚠⚠⚠ (#R574) NOT toFixed(2) — AND THIS IS THE COPY THAT GOES INTO EVERY TURN. Two decimals is
+           1.1 km square in mid-latitudes, so 'Map center' named forty city blocks at the zoom where the
+           reader is looking at one building; it is the same defect that let 「これなに」 be answered from
+           imagination, in the block Atlas reads even when it never calls look_at_map. The precision is
+           derived from the zoom in js/atlas-view-ground.js — one pixel of the view being described.
+           ⚠ the '≈' stays: a centre IS approximate, and the sign says so without lying about how much. */
+        var _dp = GROUND.coordDecimals(cam.zoom);
+        lines.push('Map center ≈ ' + (+cam.lat).toFixed(_dp) + ',' + (+cam.lng).toFixed(_dp) + ' · zoom ' + (+cam.zoom).toFixed(1) +
           ' · ' + (cam.base || 'map') + ' base · ' + (PROJ_WORD[cam.projection] || 'globe') +
           ' view · bearing ' + Math.round(+cam.bearing || 0) + '°.');
       }
@@ -643,8 +653,12 @@ export function makeAtlasState(HOST) {
 
       /* ── (#R397) THE SIX THAT REACHED THE MODEL AS NOTHING, PLUS THE THREE THIS ROUND ADDED ──── */
       var vp = snap.viewport;
-      if (vp && isFinite(vp.west)) lines.push('Visible bounds: W ' + (+vp.west).toFixed(2) + ', S ' + (+vp.south).toFixed(2) +
-        ', E ' + (+vp.east).toFixed(2) + ', N ' + (+vp.north).toFixed(2) + ' (this is the frame the reader can actually see).');
+      /* ⚠⚠ (#R574) same derivation as 'Map center' above, for the same reason: this line claims to state
+         THE FRAME THE READER CAN SEE, and two decimals described a 1.1 km grid regardless of how far in
+         they were. The zoom is the camera's, because the frame and the camera are the same view. */
+      var _vdp = GROUND.coordDecimals(cam ? cam.zoom : undefined);   /* `cam && cam.zoom` would hand it null, which Number() turns into zoom 0 */
+      if (vp && isFinite(vp.west)) lines.push('Visible bounds: W ' + (+vp.west).toFixed(_vdp) + ', S ' + (+vp.south).toFixed(_vdp) +
+        ', E ' + (+vp.east).toFixed(_vdp) + ', N ' + (+vp.north).toFixed(_vdp) + ' (this is the frame the reader can actually see).');
 
       var rt = snap.routing;
       if (rt && (rt.hasRoute || rt.painted || rt.mode)) lines.push('ROUTE on the map: ' +

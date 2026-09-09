@@ -1066,7 +1066,8 @@ window.IntMapModules.atlasConsole=function(HOST){
        exported factory per file, nothing private at a module's top level, and the API attached to
        window so the browser spec can drive the REAL renderer rather than a Node copy of it. */
     const { runStructuredAnswer, auditMeta } = makeAtlasAnswerPipeline();
-    const { renderAnswer, answerPlainText, answerCSS } = makeAtlasAnswerRender();
+    const ARENDER = makeAtlasAnswerRender();
+    const { renderAnswer, answerPlainText, answerCSS } = ARENDER;   /* (#R574) the whole surface, because _atlCompose needs demoteUnfetchedLinks too */
     const { makeEvidenceRegistry } = makeAtlasEvidence();
     const { normalizeAnswer } = makeAtlasAnswerContract();
     const GEOBJ = makeAtlasGeoObject();   /* (#R397) geoObject / placed / pointLike / describesUserPoint / mergeKnown */
@@ -1703,7 +1704,18 @@ window.IntMapModules.atlasConsole=function(HOST){
        by SEMANTIC key (not JSON-exact) so translation-only retries and world-substitutions can't recur. Pure helpers
        are covered by IntMapAtlasQA.run(); the researchMap dispatch case is below with the other actions. */
     let _atlasDbg=null;          /* last-turn diagnostics for window.IntMapAtlasDebug.lastPlan() */
-    let _atlasOutcomes=null;     /* current-turn per-action outcome sink (array while a run() turn executes) */ const VFRAMES=makeViewCapture({ GE:GE, L:L, esc:esc, waitIdle:HOST.aiWaitMapIdle, snapshot:()=>{ try{ return ASTATE.snapshot(); }catch(_){ return null; } } });   /* (#R493) the per-turn frame ledger — the pixels Atlas captured, kept OUT of the transcript (js/atlas-view-capture.js says why that separation IS the design) */
+    let _atlasOutcomes=null;     /* current-turn per-action outcome sink (array while a run() turn executes) */ /* (#R493) the per-turn frame ledger — the pixels Atlas captured, kept OUT of the transcript (js/atlas-view-capture.js says why that separation IS the design) */
+    const VFRAMES=makeViewCapture({ GE:GE, L:L, esc:esc, waitIdle:HOST.aiWaitMapIdle, snapshot:()=>{ try{ return ASTATE.snapshot(); }catch(_){ return null; } },
+      /* ⚠⚠⚠ (#R574) THE LOOKUP THAT MAKES «これなに» ANSWERABLE. Without it view.inspect hands the model
+         a picture and eleven camera numbers, which is how a 355,000 m² warehouse in 名古屋 came back as
+         a supermarket with an invented tenant and a citation nobody fetched (js/atlas-view-ground.js).
+         ⚠ `_OP_EPS` is REUSED, not respelled — js/atlas-sources.js owns the mirror list, and this file
+         racing its own copy is how two spellings of «which Overpass» start to drift apart. */
+      overpass:async(q)=>{ for(const ep of _OP_EPS){
+          try{ const ctl=new AbortController(); const tt=setTimeout(()=>ctl.abort(),20000);
+            try{ const r2=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q),signal:ctl.signal}); if(!r2.ok) continue; return await r2.json(); }
+            finally{ clearTimeout(tt); } }catch(_){}
+        } throw new Error('every Overpass mirror refused'); } });
     /* geo_resolve-style structured output for the research_map task (the model returns NO coordinates/URLs). */
     const RESEARCH_MAP_SCHEMA={ type:'OBJECT', properties:{
       title:{type:'STRING'}, explanation:{type:'STRING'}, temporalBasis:{type:'STRING'},
@@ -4508,6 +4520,15 @@ window.IntMapModules.atlasConsole=function(HOST){
          knows the reader's goal. What could not be done is said in the answer, in words.
          ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
       let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):''; try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results */
+      /* ⚠⚠⚠ (#R574) AN ANCHOR IN THIS PROSE IS A CLAIM THAT INTMAP FETCHED THE PAGE. The structured
+         path has always built its links from the registry; this one renders what Atlas wrote, which is
+         how 「(mapion.co.jp)」 shipped as a live link to a page nothing in the turn had requested. The
+         host set is what this turn ACTUALLY retrieved — the planner's own citations plus the records
+         its results carry — and nothing else. Not a site allow-list: js/atlas-answer-render.js says
+         why that would be the same bug wearing a roster. The sentence is untouched either way. */
+      try{ const _hosts=[]; _curPlanCites.forEach(c=>{ try{ _hosts.push(new URL(_atlCleanUrl(c.url)).hostname); }catch(_){} });
+        (COMPOSE.recordsFor(keep)||[]).forEach(r=>{ try{ if(r&&(r.host||r.finalUrl)) _hosts.push(r.host||new URL(r.finalUrl).hostname); }catch(_){} });
+        if(head) head=ARENDER.demoteUnfetchedLinks(head,_hosts); }catch(_){}
       if(ai.__atlCancelled) head=_cancelledNote()+head;
       ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.'));
       try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
