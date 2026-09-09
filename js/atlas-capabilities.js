@@ -1034,6 +1034,53 @@ export function makeAtlasCapabilities(HOST) {
       return runtime.docs.text(ids);
     };
     API.catalogBytes = function (ids) { return API.catalogText(ids).length; };
+    /* ══ index() — WHAT INTMAP CAN DO, AT THE MOMENT ATLAS DECIDES  (#R569) ══════════════════════
+       ⚠ THIS IS NOT THE CATALOGUE COMING BACK. #R406 removed 64,250 characters of prose from the
+       prompt and put it behind find_capability, and that was right: a model does not need the
+       argument documentation of 135 capabilities in order to answer 「ありがとう」. But it took
+       something else out with it, and nothing replaced that. What SYS() then said about the other
+       124 was one sentence on one tool — «Search everything IntMap can do» — which names the DOOR
+       and not one thing behind it. A door is not an inventory. Atlas cannot decide to open it for a
+       capability it has no reason to believe exists, and every decision it makes BEFORE opening it
+       is made about an IntMap with nine tools in it.
+
+       MEASURED (#R569): 「エンゲルス空軍基地からナッシュビルまでICBM」 was answered with a refusal
+       to help plan a strike. IntMap's answer to that request is sim.ballistic — a Keplerian
+       trajectory solve with Allen–Eggers drag, a Coriolis-curved ground track and optional blast
+       rings (js/atlas-sims.js), documented in js/atlas-catalog-text.js as the thing to use for
+       exactly this — and sim.ballistic has NO UI ENTRY POINT ANYWHERE IN THE PRODUCT. Asking Atlas
+       is the only way to reach it. So the request was not so much mis-answered as answered about a
+       different application: one in which the simulator does not exist, where the sentence is only
+       a sentence about a real air base and a real city. js/atlas-policy.js §② already tells Atlas to
+       TRANSFORM AND EXECUTE rather than refuse — it can only do that with a tool it has been given a
+       reason to look for. NOTHING IS ADDED TO THE POLICY HERE, and CONSTITUTION.md §5 is why: the
+       defect is that a capability was unreachable, and the repair is to make it reachable.
+
+       ⚠ IT IS AN INDEX AND DELIBERATELY NOT A DESCRIPTION. Ids only, grouped by category: 2.5 kB
+       for all 135, against the 81,951 the prose costs. run_capability takes these strings verbatim,
+       and find_capability turns any one of them into its schema and its documentation. Enough to
+       know what exists; not enough to call one blind.
+
+       ⚠ AND IT IS DERIVED. It is the table above, not a list anyone maintains. A capability added to
+       the table is in the prompt on the next turn; a hand-written list would be the failure this
+       file's own header describes («A list that a human must remember to update is a list that will
+       be wrong»), which is .agents/rules/no-ad-hoc-hardcoding.md §2.4. tests/r569-checks.test.mjs
+       derives the expected set from the registry rather than naming it, so no capability can be
+       added to IntMap without appearing here. */
+    API.index = function () {
+      var byCat = {};
+      API.all().forEach(function (c) {
+        if (!c || c.withdrawn) return;
+        var k = c.category || 'other';
+        (byCat[k] || (byCat[k] = [])).push(c.id);
+      });
+      var cats = Object.keys(byCat).sort();
+      if (!cats.length) return '';
+      return '[WHAT INTMAP CAN DO] Every capability id IntMap has, by category. They are not tools you '
+        + 'may call directly: find_capability turns one into its arguments and its documentation, and '
+        + 'run_capability then runs it. Nothing outside this list exists; everything in it does.\n'
+        + cats.map(function (k) { return k + ': ' + byCat[k].join(', ') + '.'; }).join('\n') + '\n';
+    };
 
     /* ══ THE MACHINE-READABLE AUDIT (§2) ═════════════════════════════════════════════════════════ */
     API.toJSON = function () {
