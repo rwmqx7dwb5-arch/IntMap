@@ -138,20 +138,33 @@ test('R500 ①〜④ the three new rules go red when the fact drifts, and when i
 
     /* ④ 黙るのは合格ではない（#R399 の形）。数を消したら、規則は「正本が言わなくなった」で落ちる。 */
     await t.test('④ a 正本 that stops stating the number is a failure, not a pass', () => {
-      /* ⚠ 正本は同じ数を4つの形で言っているので、1つ消しても規則は「まだ言っている」と読む
-         ——それは正しい。黙ったことを確かめるには**全部**消す必要がある。 */
-      const a = withBroken([
-        { file: 'Architecture.md', why: 'the registry size in the table row',
-          from: '**' + REG + ' 能力**', to: '**能力の一覧**' },
-        { file: 'Architecture.md', why: 'the schema count',
-          from: '**' + REG + ' 能力ぶんの引数定義**', to: '**各能力ぶんの引数定義**' },
-        { file: 'Architecture.md', why: 'the size in the tool-surface row',
-          from: '（レジストリの全 ' + REG + ' を検索・返るのは撤去済み 1 を除く **' + REACH + '** から・**打ち切り無し**）',
-          to: '（レジストリ全体を検索・**打ち切り無し**）' },
-        { file: 'Architecture.md', why: 'the size in §5',
-          from: '**レジストリの全 ' + REG + ' を検索**し（返るのは撤去済み 1 を除く **' + REACH + '** から）',
-          to: '**レジストリ全体を検索**し' },
-      ], () => docFacts('capability-count'));
+      /* ⚠ 正本は同じ数を**いくつもの形**で言っているので、1つ消しても規則は「まだ言っている」と読む
+         ——それは正しい。黙ったことを確かめるには**全部**消す必要がある。
+         ⚠⚠ (#R588) その「全部」は、ここに手で並べた4か所ではない。#R500 が書いた時点では 4 で足りて
+         いたが、能力数を述べる箇所は 12 から 17 に増え、4 つ消しても Architecture.md はまだ別の形で
+         数を述べていた——すると規則は緑のままで、**この検査は「黙っても落ちる」ことを一度も測れなく
+         なった**（実測: clean な origin/main でも同じように落ちる）。手で並べた一覧が次に足された
+         ものを黙って落とす、`.agents/rules/no-ad-hoc-hardcoding.md` §2.4 の形そのもの。
+         ⇒ 消す場所は **規則自身の CLAIM 表から発見する**。scripts/doc-facts.mjs が「これは能力数の
+         主張である」と認める形を全部読み、Architecture.md のその全一致から数字を抜く。規則が形を
+         1 つ足せば、この変異も自動でそれを追う。 */
+      const claims = [...rd('scripts/doc-facts.mjs')
+        .slice(rd('scripts/doc-facts.mjs').indexOf('const CLAIMS = ['))
+        .split('];')[0]
+        .matchAll(/\{\s*src:\s*'((?:[^'\\]|\\.)*)'/g)]
+        .map((m) => m[1].replace(/\\\\/g, '\\'));
+      assert.ok(claims.length >= 4, 'the CLAIM shapes were read out of scripts/doc-facts.mjs (' + claims.length + ')');
+      const arch = readLF(join(ROOT, 'Architecture.md'));
+      let silent = arch, hits = 0;
+      for (const src of claims) {
+        silent = silent.replace(new RegExp(src, 'g'), (m) => { hits++; return m.replace(/\d+/g, 'N'); });
+      }
+      assert.ok(hits >= 4, 'Architecture.md states the size in ' + hits + ' place(s) — the mutation found them');
+      const a = (() => {
+        const saved = readFileSync(join(ROOT, 'Architecture.md'));
+        try { writeFileSync(join(ROOT, 'Architecture.md'), silent); return docFacts('capability-count'); }
+        finally { writeFileSync(join(ROOT, 'Architecture.md'), saved); }
+      })();
       assert.equal(a.code, 1, 'Architecture.md may drop the registry size in silence');
 
       const b = withBroken([{ file: 'Architecture.md', why: 'the prompt total disappears',
