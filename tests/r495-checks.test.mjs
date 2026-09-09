@@ -249,7 +249,7 @@ test('R495 ④: the planner really is cost-ordered — a network column is never
 
 test('R495 ⑤: the gazetteer still hands over the country, and precip still exposes its value grid', () => {
   const gz = read('js/gazetteer.js');
-  assert.match(gz, /out\.push\(\[pop>=250000\?'city':'town', terms, lng, lat, en, ja\|\|en, pop, iso2\]\)/,
+  assert.match(gz, /out\.push\(\[pop>=250000\?'city':'town', terms, lng, lat, en, ja\|\|en, pop, iso2[,\]]/,
     'the eighth field is the ISO-2 country — without it `cities` cannot join to `countries`');
   assert.match(gz, /const en=r\[0\], ja=r\[1\], iso2=r\[2\]\|\|''/, '…read from the source row it was always in');
   const pr = read('js/precip-annual.js');
