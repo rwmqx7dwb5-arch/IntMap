@@ -19,6 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -59,8 +60,12 @@ function docFacts() {
    it — a reader of a shared invariant is exactly that, and nothing about WHAT is asserted below
    changes. */
 test('R280 ① check:docs is green on the committed tree', async () => {
-  const r = await withTreeLock(() => docFacts());
-  assert.equal(r.code, 0, 'npm run check:docs must pass as committed:\n' + r.out);
+  /* ⚠ (#R623) 「as committed」を主張できるのは、読んでいた間ずっと**錠が自分のものだった**とき
+     だけである。木を後から見ても分からない——妨害する変異はゲートの実行中に入って戻されるので、
+     あとで `git status` を採ると `(clean)` と出る。それが #R623 で1日を溶かした形。 */
+  const r = await withTreeLock(() => runGate(docFacts));
+  assert.equal(r.code, 0, 'npm run check:docs must pass as committed:\n' + r.out
+    + '\n--- who to suspect ---\n' + r.explain());
 });
 
 test('R280 ② every rule this round added FAILS when its fact is made wrong', async () => {
