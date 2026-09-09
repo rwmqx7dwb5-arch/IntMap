@@ -1,9 +1,9 @@
 {
  "source": "CelesTrak GP (active)",
- "objects": 16025,
+ "objects": 16021,
  "newestEpoch": "2026-09-11T00:03:17.843Z",
- "medianElementAgeHours": 9,
- "builtAt": "2026-09-08T18:41:30.783Z",
+ "medianElementAgeHours": 14.6,
+ "builtAt": "2026-09-09T08:09:53.880Z",
  "note": "Bundled fallback for the live satellite layer. Real element sets; SGP4 propagates them in real time and the app shows their age.",
  "errors": []
 }
