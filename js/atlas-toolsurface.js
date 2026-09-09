@@ -276,6 +276,20 @@ export function makeAtlasToolSurface(deps) {
       };
     }
 
+    /* (#R663) the text of a rendered result, for the reason above. `<template>` content is inert —
+       it is parsed, never connected, so nothing in it loads, runs or paints. Without a DOM (the node
+       checks) the tags come off directly; either way this reads what is there and invents nothing. */
+    function textOf(html) {
+      var h = String(html || ''); if (!h) return '';
+      try {
+        if (typeof document !== 'undefined' && document.createElement) {
+          var t = document.createElement('template'); t.innerHTML = h;
+          return String((t.content && t.content.textContent) || '').replace(/\s+/g, ' ').trim();
+        }
+      } catch (_) { /* fall through to the DOM-less reading */ }
+      return h.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;|&#\d+;/gi, ' ').replace(/\s+/g, ' ').trim();
+    }
+
     /* The tool RESULT Atlas reads. Mechanical only: what IntMap observed, never an interpretation.
        ⚠ `rendered` IS LOAD-BEARING. A research answer draws itself, with its sources, into the
        reader's bubble; Atlas needs to know that so its closing words frame that answer instead of
@@ -332,7 +346,19 @@ export function makeAtlasToolSurface(deps) {
         /* (#R413) …and not clipped at 400 either. This is the reason a call FAILED, read by the
            thing that has to decide what to do next; half a reason is how a turn picks the wrong
            recovery. CONSTITUTION.md §5. */
-        out.message = String((res && res.error) || meta.message || '') || undefined;
+        /* ══ ⚠⚠⚠ (#R663) …AND FOR MOST FAILURES THERE WAS NO REASON HERE AT ALL ════════════════
+           The line above has been right since #R413 and was reading a field almost nothing sets.
+           A dispatch case refuses by returning `R(false, warn('⚠ …'))`: the reason goes into the
+           HTML the READER sees, and neither `res.error` nor `meta.message` exists — so what reached
+           Atlas was the bare word `failed`. Measured on 「東北沖でM9の地震…津波の伝播をシミュレー
+           ションして見せて」 (the request that named #R663): `geocode('東北沖（日本海溝）')` has no
+           gazetteer entry to find, the case answers 「震源はどこですか（地名または経緯度）」, Atlas is
+           told `failed` — and it permuted the arguments and retried SEVEN times until the step
+           budget ran out, with the answer it needed on the screen the whole time.
+           ⚠ NOTHING IS SYNTHESISED HERE. It is the sentence IntMap already wrote, as text. That is
+           why it needs no per-case `message:` anywhere (.agents/rules/no-ad-hoc-hardcoding.md §2):
+           every case that can refuse already says why, to somebody. */
+        out.message = String((res && res.error) || meta.message || textOf(res && res.html) || '') || undefined;
       }
       if (res && res.exec) {
         /* the deterministic candidates IntMap found but did NOT apply — Atlas decides */

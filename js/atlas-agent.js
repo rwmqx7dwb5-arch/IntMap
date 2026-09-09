@@ -140,12 +140,41 @@ export function makeAtlasAgent() {
       const out = Array.isArray(r.producedModes) ? r.producedModes : [];
       return (r.changedMap === true && out.indexOf('map') < 0) ? out.concat(['map']) : out;
     }
+    /* ══ ⚠⚠⚠ (#R663) THE END OF A TURN WAS EXPRESSED BY OMISSION, AND THE ANSWER WAS WRITTEN FIRST ══
+       Measured on the live site, logged in, with the request body read off the wire: 「東北沖でM9の
+       地震が起きたときの津波の伝播をシミュレーションして見せて」 came back as ONE model call, ZERO tool
+       calls, and the sentence 「まず、利用可能な津波シミュレーション機能の設定を確認します。」 — a reply
+       that NAMES the capability it is about to reach and then ends the turn without reaching it.
+       `window.IntMapTsunami` stayed undefined. #R582's capability index was in that prompt and was
+       not the problem: the existence of the tool was recognised in the sentence itself.
+
+       TWO THINGS IN THE WIRE SHAPE MADE THAT REPLY WELL FORMED.
+
+       ① `final_text` was the FIRST property of the schema, and a strict json_schema is generated in
+          property order — so every step wrote the reader's sentence BEFORE it reached `tool_calls`,
+          and by then it had already committed to prose framed as a whole reply. The order below is
+          now the order of the decision: what this reply IS, then what it DOES, then what it says.
+          Nothing is forbidden by this; the same reply is still expressible. It is generated in the
+          order it is decided in.
+       ② There was no way to say 「これは答えではなく、途中である」. The turn ended when `tool_calls`
+          came back empty — the CHEAPEST thing a model can emit — so "I am about to act" and "I am
+          done" were the same wire state, and the only place left to put the intention was the
+          sentence the reader gets. `turn` is Atlas SAYING which of the two this reply is. The loop
+          neither infers it nor reads a word of the prose: it holds Atlas to its own declaration,
+          exactly as `answer_mode` above is held to what the results actually produced, and by the
+          SAME gate — a declared "continuing" that issued no calls comes back as a typed note.
+       ⚠ IT IS NOT REQUIRED (see `required` below, unchanged). A model that never declares it behaves
+          exactly as it did before, and no reply Atlas could make is refused — CONSTITUTION.md §5. */
+    const TURN_STATES = ['final', 'continuing'];
     const TURN_SCHEMA = {
       type: 'object',
       required: ['final_text'],
       properties: {
-        final_text: { type: 'string' },
-        answer_mode: { type: 'string', enum: ANSWER_MODES },
+        turn: { type: 'string', enum: TURN_STATES,
+          description: 'What THIS reply is. "final": final_text is the complete answer and the turn ends here. '
+            + '"continuing": final_text is NOT the answer yet — the work continues in tool_calls, which must not be '
+            + 'empty. A reply that says what you are about to do is "continuing", and the calls that do it belong in '
+            + 'this same reply.' },
         tool_calls: {
           type: 'array',
           items: {
@@ -154,6 +183,8 @@ export function makeAtlasAgent() {
             properties: { name: { type: 'string' }, arguments_json: { type: 'string' } },
           },
         },
+        answer_mode: { type: 'string', enum: ANSWER_MODES },
+        final_text: { type: 'string' },
       },
     };
 
@@ -365,7 +396,16 @@ export function makeAtlasAgent() {
         }
 
         const calls = (reply && Array.isArray(reply.toolCalls)) ? reply.toolCalls.slice(0, lim.maxPerStep) : [];
-        if (reply && typeof reply.text === 'string' && reply.text.trim()) text = reply.text;
+        /* (#R663) what Atlas said THIS reply is — a fact about this step, so unlike `answerMode` it
+           does not carry over to the next one. '' when it did not say. */
+        const turnState = (reply && TURN_STATES.indexOf(reply.turnState) >= 0) ? reply.turnState : '';
+        /* ⚠ (#R663) A SENTENCE ATLAS MARKED AS NOT-THE-ANSWER IS NOT THE ANSWER. The reader was
+           shown 「まず〜を確認します」 as the reply to their question partly because any non-empty text
+           from any step became the turn's answer, so a note-to-self written on the way through
+           survived to the bubble. Text from a step that declared itself mid-turn is kept out — and
+           if such a step turns out to end the turn anyway (the gate below runs out of bounces), the
+           accepting branch takes it back, so nothing can render an empty answer. */
+        if (reply && typeof reply.text === 'string' && reply.text.trim() && turnState !== 'continuing') text = reply.text;
         if (reply && ANSWER_MODES.indexOf(reply.answerMode) >= 0) answerMode = reply.answerMode;
 
         /* ── ZERO TOOL CALLS IS A COMPLETE TURN. This is the branch the old planner had no shape
@@ -378,24 +418,45 @@ export function makeAtlasAgent() {
              note in the transcript, never shown to the reader; it costs a step and is bounded. */
           const need = MODE_NEEDS[answerMode] || null;
           const made = !need || need.some((m) => results.some((r) => producedBy(r).indexOf(m) >= 0));
-          if (need && !made && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
+          /* ══ ⚠⚠ (#R663) …OR SAID THIS REPLY IS NOT THE ANSWER AND THEN ENDED THE TURN WITH IT ═══
+             The second declaration a final can contradict is its own. `turnState` is Atlas saying
+             this reply is mid-turn; an empty `tool_calls` is the machine's record that nothing is
+             continuing it. That is the SAME disagreement the clause above catches — a declaration
+             against the turn's record — so it is the same gate, with the same bounded budget and
+             the same typed note, rather than a second mechanism beside it (CONSTITUTION.md §5:
+             「互いに矛盾する門が増え、どれが効いたのか誰にも言えなくなる」). Nothing here reads a word
+             of the prose: 「まず確認します」 and 「フランスの首都はパリです」 are the same bytes to this
+             loop, and what separates them is which of the two Atlas said the reply was. */
+          const code = (need && !made) ? (GATE_CODE[answerMode] || 'output_not_produced')
+            : ((turnState === 'continuing') ? 'no_calls_issued' : '');
+          if (code && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
             gateBounces++; trace.outputGate++;
-            const code = GATE_CODE[answerMode] || 'output_not_produced';
             /* (#R543) the note names the outputs the declaration asked for and the call that makes
                each one, so the recovery is the same shape whichever was declared: make it now, or
                answer as "text" and say why it could not be made. */
             const how = { map: 'draw it now — compose_map puts the places, their roles and the links between them on the map in ONE call (highlight / map_view are the smaller tools)',
               chart: 'draw it now — chart takes the points, bars or dated events and renders them into this reply (it needs a "source" naming where the numbers came from)',
               mixed: 'produce one of them now — compose_map for the map, chart for the numbers' }[answerMode];
-            trace.steps.push({ step, toolCalls: 0, bounced: code });
-            transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [] });
-            transcript.push({ role: 'tool', content: [{ ok: false, error: code,
-              message: 'You declared answer_mode "' + answerMode + '", but nothing in this turn has produced '
+            /* (#R663) …and the same shape again for the other declaration: do it now, or say this
+               reply was the answer after all. Neither branch tells Atlas what to conclude. */
+            const msg = (code === 'no_calls_issued')
+              ? 'You marked this reply "continuing" — final_text is not the answer yet and the work goes on in '
+                + 'tool_calls — but tool_calls was empty, so nothing ran, and the reader would be left with a sentence '
+                + 'about something that has not happened. Make those calls now, in this reply (find_capability finds '
+                + 'anything the nine core tools do not cover, and run_capability runs it); or, if the answer is '
+                + 'already complete as it stands, mark this reply "final".'
+              : 'You declared answer_mode "' + answerMode + '", but nothing in this turn has produced '
                 + (answerMode === 'mixed' ? 'a map or a chart' : (answerMode === 'map' ? 'anything on the map' : 'a chart'))
                 + ', so the reader would get words about something that is not there. Either ' + how
-                + ' and then answer; or, if it genuinely cannot carry this answer, reply with answer_mode "text" and say so.' }] });
+                + ' and then answer; or, if it genuinely cannot carry this answer, reply with answer_mode "text" and say so.';
+            trace.steps.push({ step, toolCalls: 0, bounced: code });
+            transcript.push({ role: 'assistant', content: (reply && reply.text) || '', toolCalls: [] });
+            transcript.push({ role: 'tool', content: [{ ok: false, error: code, message: msg }] });
             continue;
           }
+          /* (#R663) accepted as the end of the turn — so whatever it says IS the answer, including
+             the text held back above when this reply called itself mid-turn and the bounces ran out. */
+          if (reply && typeof reply.text === 'string' && reply.text.trim()) text = reply.text;
           trace.steps.push({ step, toolCalls: 0, final: true });
           stopped = stopped || 'answered';
           break;
@@ -572,11 +633,15 @@ export function makeAtlasAgent() {
       });
       /* (#R511) the declared kind of answer; anything outside the vocabulary is simply not a declaration */
       const am = d ? String(d.answer_mode || d.answerMode || '').toLowerCase() : '';
+      /* (#R663) …and what this reply IS, read the same way: a word outside the vocabulary, or none
+         at all, is no declaration — and no declaration is exactly the behaviour that shipped. */
+      const ts = d ? String(d.turn || d.turnState || '').toLowerCase() : '';
       return { text: String((d && d.final_text) || (d ? '' : (text || ''))), toolCalls: calls,
-        answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '' };
+        answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
+        turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '' };
     }
 
-    const API = { LIMITS, TURN_SCHEMA, ANSWER_MODES, runTurn, reject, readReply, validateAgainst };
+    const API = { LIMITS, TURN_SCHEMA, ANSWER_MODES, TURN_STATES, runTurn, reject, readReply, validateAgainst };
     try { window.IntMapAtlasAgent = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

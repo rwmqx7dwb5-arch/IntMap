@@ -390,9 +390,12 @@ atlas-admin1.js                   **第1レベル行政境界を、同梱ファ�
 atlas-agent.js                    **ターンの進行**（#R406）— Atlas が1手ごとに「最終回答」か「tool 呼び出し」を
                                   選び、機械的な結果を受けて次を選ぶ。ツール名の実在・引数の型・必須引数・
                                   回数の上限だけを見て、意味は一切決めない。DOM も network も触らない。
-                                  `answer_mode`（text / map / chart / mixed）は **Atlas が宣言**し、ループは
-                                  「map / mixed と言ったのに何も描いていない final」を `map_not_drawn` として
-                                  差し戻す（自分の宣言との整合＝schema 検査と同じ種類。回数は `maxMapGate`）
+                                  返答は `{"turn","tool_calls","answer_mode","final_text"}` で、**決める順に**
+                                  並ぶ（strict schema はプロパティ順に生成される・#R663）。`answer_mode`
+                                  （text / map / chart / mixed）と `turn`（final / continuing）はどちらも
+                                  **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
+                                  `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
+                                  として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
 atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全138を検索・到達可能 137）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
