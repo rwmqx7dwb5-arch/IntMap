@@ -29,28 +29,48 @@ import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
-const YMIN = +/const YMIN\s*=\s*(\d{4})\s*;/.exec(R('js/chronos.js'))[1];
+const YMIN = +/const YMIN\s*=\s*(\d{1,4})\s*;/.exec(R('js/chronos.js'))[1];
 
 /* ── ① the reach is one number, and no shipped sentence names a different one ─────────────────── */
 test('R380 ①: every place that TELLS a reader how far the clock reaches names the kernel’s floor', () => {
-  assert.equal(YMIN, 1850, 'the kernel floor moved — this file and js/chronos.js must move together');
+  /* ⚠ (#R604) THIS PINNED 1850 AND THE FILE STOPPED RUNNING WHEN THE FLOOR MOVED. The regex above
+     wanted four digits, so `const YMIN=1;` made `.exec()` return null and the WHOLE file threw at
+     import — every sweep in it, including this one, silently stopped being run on the exact round it
+     was written to police. What R380 asserts is that no shipped sentence names a reach OTHER than the
+     kernel's, and that claim does not have a number in it. */
+  assert.ok(YMIN >= 1 && YMIN <= 2000, `the kernel floor is not a year this file can read: ${YMIN}`);
   const files = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js'))
     .map((f) => 'js/' + f)
     .concat(readdirSync(join(ROOT, 'js', 'locales')).filter((f) => f.endsWith('.js')).map((f) => 'js/locales/' + f));
   /* the shapes a reach-claim takes in this codebase, in every language it is written in */
-  const CLAIM = /(?:reaches back to|travel back to|travel|deep time,|remonte jusqu'à|回溯到|回溯至|走到现在|走到現在|zurück bis|Chronos \()\s*(\d{4})|(\d{4})\s*(?:→now|→heute|→сейчас|→ahora|年まで遡|년까지)/g;
+  /* WARNING (#R604) THE POSITIVE HALF COUNTED FOUR-DIGIT LITERALS, AND THE FLOOR IS NOW ONE DIGIT.
+     R380's claim is «no shipped sentence tells a reader a reach OTHER than the kernel's», and its
+     second assertion existed to prove the scan was actually reaching the files - otherwise an empty
+     `bad` proves nothing. Both halves were written when the floor was 1850, i.e. when every correct
+     sentence carried a four-digit year equal to it. At a floor of 1 that is impossible: a sentence
+     naming the reach either fills it from `IntMapTime.min` at runtime (the {y} placeholder #R380
+     itself introduced) or spells it in the language's own era notation. Counting literals therefore
+     made the two halves contradictory - the round that lowered the floor could not pass its own
+     check no matter what it wrote.
+     So the scan now counts CLAIM SENTENCES, whether the year in them is a literal or a placeholder,
+     and the negative half is unchanged: a literal that is not the floor is still a lie. */
+  const CLAIM = /(?:reaches back to|travel back to|time travel back to|deep time,|remonte jusqu'à|回溯到|回溯至|zurück bis|Chronos \()\s*(\{y\}|\d{4})|(\d{4})\s*(?:→now|→heute|→сейчас|→ahora|年まで遡|년까지)/g;
   const bad = [], seen = [];
   for (const f of files) {
     const src = R(f);
     for (const m of src.matchAll(CLAIM)) {
-      const y = +(m[1] || m[2]);
+      const raw = m[1] || m[2];
+      seen.push(f + ':' + raw);
+      /* a claim that is FILLED from the kernel at runtime cannot be stale - that is the whole point
+         of the placeholder, and R380 ② separately proves it is filled from `T.min`. */
+      if (raw === '{y}') continue;
+      const y = +raw;
       if (!Number.isFinite(y) || y < 1500 || y > 2100) continue;
-      seen.push(f + ':' + y);
       if (y !== YMIN) bad.push(f + ' → ' + y + '  «' + src.slice(Math.max(0, m.index - 30), m.index + 40).replace(/\s+/g, ' ') + '»');
     }
   }
   /* the positive half: the scan must actually be finding the claims, or the negative proves nothing */
-  assert.ok(seen.length >= 8, `the scan found only ${seen.length} reach-claims — it is not reaching the files`);
+  assert.ok(seen.length >= 8, `the scan found only ${seen.length} reach-claim sentences — it is not reaching the files`);
   assert.deepEqual(bad, [], 'these still tell the reader a different floor:\n' + bad.join('\n'));
 });
 
@@ -80,18 +100,29 @@ test('R380 ③: the comparison panel’s time-travel floor is the kernel’s, no
   assert.equal((fn.match(/\b19\d\d\b/g) || []).length, 0, `_ttYear still carries a hard-coded 19xx floor: ${fn}`);
 });
 
-/* ── ④ Maddison's floor and the clock's floor are the same number, measured ───────────────────── */
-test('R380 ④: the shipped Maddison file starts exactly where the clock does', () => {
+/* ── ④ Maddison's floor is inside the clock's reach, and is MEASURED rather than declared ─────── */
+/* ⚠ (#R604) THE TWO ARE NO LONGER ONE NUMBER, BY DESIGN. #R380 could assert "exactly where the clock
+   does" while both said 1850. The clock now reaches year 1 because the SUBDIVISIONS reach there
+   (js/chronos.js), and js/chronos.js's own contract has always been that each subsystem reaches as
+   far back as ITS OWN SOURCE does and says where it stops — the kernel never clamps every reader to
+   the shortest of them. Maddison stops at 1850 because Maddison stops at 1850. What must still hold,
+   and is what this check was really defending, is that nothing DECLARES a floor the shipped file does
+   not have. */
+test('R380 ④: the shipped Maddison file starts inside the clock’s reach, and js/history.js measures it', () => {
   const mad = JSON.parse(readFileSync(join(ROOT, 'data', 'maddison.json'), 'utf8'));
   let lo = Infinity, hi = -Infinity, rows = 0;
   for (const c of Object.keys(mad)) for (const y of Object.keys(mad[c])) { const n = +y; rows++; if (n < lo) lo = n; if (n > hi) hi = n; }
   assert.ok(rows > 15000 && Object.keys(mad).length === 168, `${rows} cells over ${Object.keys(mad).length} codes — the file is not the shipped one`);
-  assert.equal(lo, YMIN, `Maddison starts at ${lo} while the clock starts at ${YMIN}`);
+  assert.ok(lo >= YMIN, `Maddison starts at ${lo}, before the clock's floor of ${YMIN} — unreachable data`);
+  assert.equal(lo, 1850, 'the shipped Maddison file no longer starts at 1850 — every sentence that names its reach must move with it');
   /* and js/history.js MEASURES that floor rather than declaring it (its declared value is only the
      answer given before the file lands, so it must not be lower than the file's own start) */
   const hist = R('js/history.js');
-  const decl = +/let _minY\s*=\s*(\d{4})\s*;/.exec(hist)[1];
-  assert.equal(decl, YMIN, `js/history.js answers ${decl} before the file arrives, the file says ${lo}`);
+  const decl = +/let _minY\s*=\s*(\d{1,4})\s*;/.exec(hist)[1];
+  /* ⚠ (#R604) the declared value is the answer given BEFORE data/maddison.json lands, so what it owes
+     is the FILE's floor, not the clock's — those were the same number until this round. Declaring the
+     clock's floor here would claim GDP for year 1. */
+  assert.equal(decl, lo, `js/history.js answers ${decl} before the file arrives, the file says ${lo}`);
   assert.ok(/for\s*\(const y of Object\.keys\(data\[c\]\)\)/.test(hist), 'the floor is no longer measured from the file');
 });
 
@@ -241,14 +272,22 @@ test('R380 ⑧: the Sources page says the snapshots are the ONLY border source b
      between the clock's floor and it resolves to (js/time-borders.js YEARS + nearest()) */
   const tb = R('js/time-borders.js');
   assert.ok(/const CS_MIN\s*=\s*1886\s*,/.test(tb), 'CShapes no longer starts at 1886 — the Sources page says it does');
-  assert.ok(/const YEARS=\[1815,1880,1900,/.test(tb), 'the snapshot list changed — the Sources page names 1815 and 1880');
+  /* ⚠ (#R604) THE LIST IS NOT PINNED ANY MORE — IT IS READ, AND THE PAGE IS CHECKED AGAINST WHAT IT
+     SAYS. The snapshots went from 12 to the 36 the upstream repo publishes (js/time-borders.js), so a
+     regex naming two of them would have to be edited by every round that adds one, which is the same
+     as asserting nothing. What the Sources page owes the reader is the SHAPE of the series and its
+     two ends, and those are derived here. */
+  const YEARS = JSON.parse(/const YEARS=(\[[^\]]+\])/.exec(tb)[1]);
+  assert.ok(YEARS.length >= 12 && YEARS[0] < 1815, `the snapshot series lost its deep end: ${YEARS[0]}`);
+  const OLDEST = String(YEARS[0]);
   for (const lg of LANGS) {
     const src = R('js/locales/pages.' + lg + '.js');
     const i = src.indexOf('historical-basemaps (aourednik)');
     assert.ok(i > 0, `pages.${lg}.js has no historical-basemaps entry`);
     const entry = src.slice(i, src.indexOf('\n', i));
     assert.ok(entry.includes('1886'), `pages.${lg}.js does not say where CShapes stops`);
-    assert.ok(entry.includes('1880') && entry.includes('1815'), `pages.${lg}.js does not name the two frames`);
-    assert.ok(entry.includes('1850'), `pages.${lg}.js does not say which years are drawn with the 1880 frame`);
+    assert.ok(entry.includes(OLDEST), `pages.${lg}.js does not say how far back the snapshots go (${OLDEST})`);
+    assert.ok(entry.includes('1815'), `pages.${lg}.js does not name the frame that answers the years below CShapes`);
+    assert.ok(entry.includes('1850'), `pages.${lg}.js does not say where the day-exact record starts`);
   }
 });

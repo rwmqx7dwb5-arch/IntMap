@@ -110,8 +110,21 @@ test('R378 ③ the wall clock it shows is the zone the reader chose, and its bou
   assert.ok(!/new Date\(jumpEl\.value/.test(js), 'the value is parsed as a device-local string');
 
   /* the floor is the kernel's and is read live — #R349 removed four copies of `1900` from this file
-     for exactly this reason, and a fifth copy would be the same defect */
-  assert.match(js, /const floorMs=\(\)=>Date\.UTC\(YMIN\(\),0,1\)/, 'the floor is not the kernel’s');
+     for exactly this reason, and a fifth copy would be the same defect.
+     WARNING (#R604) THIS NAMED THE IMPLEMENTATION AND THE IMPLEMENTATION WAS WRONG. It asserted the
+     exact text `const floorMs=()=>Date.UTC(YMIN(),0,1)` — and `Date.UTC(1,0,1)` is 1901, so once the
+     kernel floor came down to year 1 this check REQUIRED the bug: the panel advertised a floor
+     nineteen centuries above the one it claimed to read, and this line went green over it. Two
+     properties are what R378 actually meant, and neither of them is a spelling:
+       - the floor is read from the kernel at call time, never held here (#R349);
+       - it is not built through `Date.UTC`, which silently rewrites any year under 100.
+     The instant it produces is asserted end-to-end by tests/smoke.spec.js R378 ①, which reads the
+     `min` attribute the control ends up with — the only place the two-digit-year rule was visible. */
+  const floor = /const floorMs\s*=\s*\(\)\s*=>\s*([\s\S]*?);\n/.exec(js);
+  assert.ok(floor, 'floorMs is gone or was renamed — this check has to follow it');
+  assert.match(floor[1], /YMIN\(\)/, 'the floor is not the kernel’s — it must be read live, not held here');
+  assert.ok(!/Date\.UTC\s*\(\s*YMIN\(\)/.test(floor[1]),
+    'the floor is built with Date.UTC, which turns a year under 100 into that year plus 1900 (#R604)');
   assert.match(js, /if\(Y<YMIN\(\)\) return new Date\(floorMs\(\)\)/,
     'a year still being typed ("0019") is not clamped — `new Date(19,…)` is 1919, a real wrong instant');
 

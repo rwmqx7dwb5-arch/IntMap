@@ -27,9 +27,19 @@ const R = (p) => readLF(join(ROOT, p));
 /* ── ① the floor is one number, and the UI reads it rather than repeating it ─────────────────── */
 test('R349 ①: the clock reaches 1850, and js/news-timeline.js has no second copy of the floor', () => {
   const chronos = R('js/chronos.js');
-  const m = chronos.match(/const YMIN\s*=\s*(\d{4})\s*;/);
+  /* (#R604) THE FLOOR MOVED AGAIN (1850 -> 1) AND THIS CHECK NO LONGER NAMES IT. R349's claim was
+     never "the number is 1850" — it was "there is ONE floor and everything reads it". A check that
+     pins the digits has to be edited by every round that lowers it, which is the same round that
+     would have to notice if it broke something, so it asserts nothing and costs an edit. What is
+     asserted instead is the property: the kernel declares a floor, it is not below year 1 (a year 0
+     does not exist in the calendar OHM dates against), and it reaches AT LEAST as far as R349
+     promised. tests/r604-checks ① proves the kernel actually TRAVELS there, which is the half the
+     source cannot show. */
+  const m = chronos.match(/const YMIN\s*=\s*(\d{1,4})\s*;/);
   assert.ok(m, 'js/chronos.js must declare YMIN');
-  assert.equal(m[1], '1850', 'the kernel floor is 1850');
+  const FLOOR = parseInt(m[1], 10);
+  assert.ok(FLOOR >= 1, 'the floor must be a year the calendar has');
+  assert.ok(FLOOR <= 1850, `the clock no longer reaches 1850 — R349's promise, floor is ${FLOOR}`);
 
   const ntl = R('js/news-timeline.js');
   assert.match(ntl, /const YMIN\s*=\s*\(\)\s*=>\s*\{[^}]*IntMapTime\.min/,
@@ -39,8 +49,13 @@ test('R349 ①: the clock reaches 1850, and js/news-timeline.js has no second co
   for (const re of [/slider\.min\s*=\s*'1900'/, /y\s*>=\s*1900/, /Math\.max\(1900,/, /<span>1900<\/span>/]) {
     assert.doesNotMatch(ntl, re, 'a hard-coded 1900 came back to js/news-timeline.js: ' + re);
   }
-  /* index.html's attribute is only the pre-JS value, but it must not contradict the kernel either */
-  assert.match(R('index.html'), /id="ntl-slider"[^>]*min="1850"/, 'the slider markup starts at the floor');
+  /* index.html's attribute is only the pre-JS value, but it must not contradict the panel either.
+     (#R604) In Year mode the rail carries a POSITION, not a year (js/hist-scale.js), so the markup
+     starts at 0 and the ruler's own divisor is that rail's length — a year in this attribute would
+     now be a value the slider can never mean. */
+  assert.match(R('index.html'), /id="ntl-slider"[^>]*min="0"[^>]*max="1000"/,
+    'the pre-JS slider attribute must be the rail, not a year');
+  assert.doesNotMatch(ntl, /const YPOS\s*=\s*\d/, 'the rail length is read from js/hist-scale.js, not typed here');
 });
 
 /* ── ② the snapshot fallback reaches below CShapes, and picks the NEARER of the two down there ── */

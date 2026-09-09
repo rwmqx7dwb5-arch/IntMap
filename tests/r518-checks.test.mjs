@@ -182,9 +182,22 @@ test('④ go() serves 1850-1885 from the bundle, above the snapshot fallback', (
   assert.ok(band < fall, 'the snapshot fallback is reached before the bundle');
 });
 
-test('④ the floor of the clock and the floor of the record are the same number', () => {
-  assert.match(rd('js/chronos.js'), /const YMIN=1850;/);
-  assert.equal(HB.window[0], 1850, 'the record starts somewhere the clock cannot reach');
+/* ⚠ (#R604) THE TWO FLOORS ARE NO LONGER ONE NUMBER, AND THAT IS THE POINT OF THIS ROUND.
+   #R518's claim was «the day-exact country record starts where the clock does», which was true while
+   both said 1850. The clock now reaches year 1 (js/chronos.js) because the SUBDIVISIONS reach there;
+   data/hist-borders.js still starts at 1850 because that is where its own record starts, and below it
+   the country answer is the aourednik snapshot series (js/time-borders.js `YEARS`, extended this round
+   to the 36 the repo publishes). So the assertion is not «same number» but «the record is REACHABLE
+   and does not start above the clock» — a record whose floor sat under the clock's would be the
+   defect #R518 removed, and one whose floor sat above it is now normal and is answered elsewhere. */
+test('④ the day-exact country record is reachable from the clock, and says where it stops', () => {
+  const floor = +/const YMIN\s*=\s*(\d{1,4})\s*;/.exec(rd('js/chronos.js'))[1];
+  assert.ok(floor >= 1, 'the kernel declares no floor');
+  assert.ok(HB.window[0] >= floor, 'the record starts somewhere the clock cannot reach');
+  assert.equal(HB.window[0], 1850, 'data/hist-borders.js no longer covers the band #R518 built it for');
+  const YEARS = JSON.parse(/const YEARS=(\[[^\]]+\])/.exec(rd('js/time-borders.js'))[1]);
+  assert.ok(YEARS[0] <= floor + 99,
+    `nothing answers the years between the clock's floor (${floor}) and the oldest snapshot (${YEARS[0]})`);
 });
 
 test('④ the change-date API asks BOTH records', () => {

@@ -769,6 +769,7 @@ test('R378 ① Chronos has a direct year-month-day-hour picker outside the Year/
     /* WRITE — the whole instant, named from the tab that can only name a year */
     const z = document.getElementById('ntl-zone');
     z.value = 'UTC'; z.dispatchEvent(new Event('change', { bubbles: true }));
+    out.kernelMin = window.IntMapTime.min;
     document.getElementById('ntl-mode-year').click();
     jump.value = '1943-08-05T14:30';
     jump.dispatchEvent(new Event('change', { bubbles: true }));
@@ -779,12 +780,17 @@ test('R378 ① Chronos has a direct year-month-day-hour picker outside the Year/
     window.IntMapTime.setYear(1972, { source: 'test' });
     await wait(300);
     out.readBack = jump.value;
-    /* a year still being typed ("0019") is the floor, NOT `new Date(19,…)` = 1919 */
+    /* (#R604) a year still being typed ("0019") is now a LEGAL year, and must mean year 19 —
+       `new Date(19,…)` and `Date.UTC(19,…)` are both 1919, which is what it meant before this round */
     jump.value = '0019-03-02T00:00';
     jump.dispatchEvent(new Event('change', { bubbles: true }));
     await wait(700);
     out.clampedMs = window.IntMapTime.when().getTime();
-    out.floorMs = Date.UTC(window.IntMapTime.min, 0, 1);
+    /* WARNING (#R604) THIS WAS `Date.UTC(min, 0, 1)` AND IT COMPUTED 1901 — the same two-digit-year
+       trap the product was being checked for, in the check. An expectation built with the broken
+       call cannot see the broken call. The floor comes from the kernel itself now. */
+    out.floorMs = (function () { const t = new Date(0); t.setUTCFullYear(window.IntMapTime.min, 0, 1); t.setUTCHours(0, 0, 0, 0); return t.getTime(); })();
+    out.typedYear = window.IntMapTime.when().getUTCFullYear();
     window.IntMapTime.setNow({ source: 'test' });
     z.value = 'user'; z.dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('ntl-mode-year').click();
@@ -796,11 +802,28 @@ test('R378 ① Chronos has a direct year-month-day-hour picker outside the Year/
   expect(r.label, 'and the row says what it is').toBeTruthy();
   expect(r.inModes, 'it is not one of the tabs').toBe(false);
   expect(r.shownIn, '「外に」 — every tab can reach it').toEqual({ year: true, date: true, time: true });
-  expect(r.min, 'it reaches the kernel’s floor').toMatch(/^18(49|50)-/);
+  /* WARNING (#R604) THE FLOOR MOVED TO YEAR 1, AND THIS ASSERTION IS WHAT CAUGHT THE BUG.
+     floorMs() in js/news-timeline.js was still Date.UTC(YMIN(),0,1), which for year 1 is
+     1901-01-01 - the exact two-digit-year trap js/chronos.js had just been fixed for, surviving
+     in the SECOND caller. This check saw it because it reads the ATTRIBUTE the control ends up
+     with rather than the source that sets it.
+     WARNING - and the expected value is DERIVED, not typed: a datetime-local value pads the year
+     to four digits, so a floor of 1 is 0001-. A literal here would have to be edited by the next
+     round that moves the floor, which is the round that would need this check to fail. */
+  expect(r.min, 'it reaches the kernel floor')
+    .toBe(String(r.kernelMin).padStart(4, '0') + '-01-01T00:00');
   expect(r.setISO, 'with UTC chosen, 1943-08-05 14:30 is that instant').toBe('1943-08-05T14:30');
   expect(r.live, '…and the clock is no longer live').toBe(false);
   expect(r.readBack, 'a clock moved elsewhere is reflected back into the field').toMatch(/^1972-/);
-  expect(r.clampedMs, 'a half-typed year is the floor, never 1919').toBe(r.floorMs);
+  /* WARNING (#R604) THE CLAIM MOVED WITH THE FLOOR. #R378 clamped a half-typed year because every
+     year a keyboard walks through on the way to 1990 (0001, 0019, 0199) was BELOW the floor and so
+     illegal; what made it dangerous was that `new Date(19,…)` is 1919, i.e. a real, wrong instant.
+     At a floor of 1 those years are legal requests, and the debounce #R378 added is what stops the
+     intermediate ones reaching the kernel. So the clamp no longer fires here — and the thing that
+     must still be true is the half it was protecting: year 19 must MEAN year 19.
+     Measured before the fix: it meant 1919. */
+  expect(r.typedYear, 'a two-digit year must name itself, not itself plus 1900').toBe(19);
+  expect(r.clampedMs, 'and it is not silently rounded to the floor').not.toBe(r.floorMs);
 });
 
 test('R289 ㉓ the merged rows really repaint, and the year colouring really changes the fill', async () => {
@@ -1737,18 +1760,27 @@ test('#R296 the widget board scrolls, and the cards tile without a fillable hole
    themselves cost almost nothing on a page that is already up. Nothing about what they assert
    changed in the move. */
 
-test('#R349 the clock reaches 1850 — the slider drags there, and the deep past answers', async () => {
+test('#R349/#R604 the clock reaches the deep past — the slider drags there, and it answers', async () => {
   const r = await page.evaluate(async () => {
     const tl = document.getElementById('news-timeline');
     tl.classList.remove('collapsed');
     document.getElementById('ntl-mode-year').click();
     await new Promise((res) => setTimeout(res, 60));
     const sl = document.getElementById('ntl-slider');
-    const min = sl.min;
-    sl.value = '1850';
+    const min = sl.min, max = sl.max;
+    /* ⚠ (#R604) THE SLIDER CARRIES A POSITION, NOT A YEAR. The rail is piecewise since the floor
+       came down to year 1 (js/hist-scale.js), so writing «1850» into the value would ask for
+       position 1850 — off the end of a 0…1000 rail, silently clamped to «now». The reader's gesture
+       is «drag to 1850», and the position that means 1850 is what the rail says it is. */
+    const HS = window.IntMapHistScale;
+    const wanted = HS.rail.toPos(1850, window.IntMapTime.min, new Date().getFullYear());
+    sl.value = String(wanted);
     sl.dispatchEvent(new Event('input', { bubbles: true }));
     await new Promise((res) => setTimeout(res, 120));
-    const ticks = [...document.querySelectorAll('#ntl-scale span')].map((s) => s.textContent);
+    /* the Year tab moved from `.ntl-scale` (evenly spaced, which a piecewise rail makes false) to the
+       positioned ruler the Time tab already used */
+    const ticks = [...document.querySelectorAll('#ntl-ticks b')].map((s) => s.textContent);
+    const deepest = (() => { const t = HS.rail.toYear(0, window.IntMapTime.min, new Date().getFullYear()); return t; })();
     /* the shipped snapshot resolver, run in the shipped bundle */
     const N = window.IntMapTimeBorders._nearest;
     const nearest = { y1875: N(1875), y1850: N(1850), y1830: N(1830), y1980: N(1980) };
@@ -1756,16 +1788,22 @@ test('#R349 the clock reaches 1850 — the slider drags there, and the deep past
     const M = window.IntMapMaddison;
     await M.load();
     const mad = { min: M.minYear, deu1875: M.gdppc('DEU', 1875), gbr1850: M.gdppc('GBR', 1850) };
-    return { min, settled: sl.value, applied: window.IntMapTime.year(), ticks, nearest, mad, kernelMin: window.IntMapTime.min };
+    return { min, max, wanted: String(wanted), settled: sl.value, applied: window.IntMapTime.year(),
+             ticks, deepest, nearest, mad, kernelMin: window.IntMapTime.min };
   });
   /* tests/r349-checks proves the kernel's floor and that the panel READS it. None of that proves a
      reader can drag to 1850: `applyMode` rewrites the attribute at runtime and a range input
      silently clamps a value below its own `min`. */
-  expect(r.kernelMin).toBe(1850);
-  expect(r.min).toBe('1850');
-  expect(r.settled).toBe('1850');
+  /* (#R604) the floor is year 1 now; 1850 is the MIDDLE of the rail, and it is still reachable —
+     which is the whole of what this test was ever about. */
+  expect(r.kernelMin).toBe(1);
+  expect(r.min).toBe('0');
+  expect(r.max).toBe('1000');
+  expect(r.settled).toBe(r.wanted);
   expect(r.applied).toBe(1850);
-  expect(r.ticks[0]).toBe('1850');
+  expect(r.deepest).toBe(1);
+  expect(r.ticks.length, 'the year ruler lost its labels').toBeGreaterThan(2);
+  expect(r.ticks[0], 'the first labelled tick is the floor the kernel declares').toMatch(/^0*1(年)?$/);
   /* 1886 is where the yearly source starts; below it the only frames that exist are 1815 and 1880 */
   expect(r.nearest.y1875).toBe(1880);
   expect(r.nearest.y1850).toBe(1880);      /* the midpoint of that 65-year gap is 1847.5 */

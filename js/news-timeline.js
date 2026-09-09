@@ -38,6 +38,27 @@ window.IntMapModules.newsTimeline=function(HOST){
        it disagrees is silent: a slider that stops at 1900 over a kernel that reaches 1850 simply
        cannot be dragged to 1850, and nothing anywhere reports a fault. Read it live. */
     const YMIN=()=>{ try{ const m=+window.IntMapTime.min; return isFinite(m)?m:1850; }catch(_){ return 1850; } };
+    /* ══ ⚠⚠⚠ (#R604) THE YEAR RAIL IS NOT LINEAR ANY MORE, AND THAT IS FORCED BY THE FLOOR ═══════
+       #R604 lowered the kernel's floor from 1850 to 1 so the era subdivisions can be asked for in
+       any century they exist in (js/chronos.js). A rail that maps one year to one step then spends
+       91% of its length on the 1,849 years before 1850 and leaves the whole of 1850-2026 in the last
+       8.7% — measured on this panel's own 340 px track, 176 years in 30 px, i.e. six years per pixel
+       exactly where the map has the most to show. Extending the reach must not take away precision
+       that was already there, so the slider carries a POSITION and the year is a function of it.
+       ⚠ THAT FUNCTION IS NOT DECLARED HERE. It is js/hist-scale.js's, with the measurements the
+       breakpoints come from — a function inside this factory cannot be evaluated by any check, and
+       #R570 measured what happens to arithmetic nothing can assert. This file supplies the two ends
+       it owns (the kernel's floor, the current year) and reads the rail back.
+       ⚠ AND `YPOS` IS READ FROM IT, NOT TYPED. `slider.max` and the ruler's `--p` divisor must be the
+       same number the mapping uses, and a literal here is a second copy that can disagree in silence. */
+    const HS = () => window.IntMapHistScale;
+    /* the year-safe UTC instant, in milliseconds — js/hist-scale.js owns the rule; the fallback is
+       the same four lines, for a page on which that module has not evaluated. */
+    const HSutc = (y, mo, d, h, mi) => { try { return HS().utcAt(y, mo, d, h, mi, 0).getTime(); }
+      catch (_) { const t = new Date(0); t.setUTCFullYear(y, mo, d); t.setUTCHours(h || 0, mi || 0, 0, 0); return t.getTime(); } };
+    const YPOS = (function(){ try{ const v=+HS().rail.POS; return isFinite(v)&&v>0?v:1000; }catch(_){ return 1000; } })();
+    const p2y = p => { try { return HS().rail.toYear(p, YMIN(), curY); } catch (_) { return curY; } };
+    const y2p = y => { try { return HS().rail.toPos(y, YMIN(), curY); } catch (_) { return 0; } };
     const bigval=document.getElementById('ntl-bigval');
     /* (#R313) the Time tab's date line — a SECOND element beside the big value, not a longer
        string inside it: #ntl-bigval is what tests/smoke.spec.js reads to prove the panel prints the
@@ -141,7 +162,15 @@ window.IntMapModules.newsTimeline=function(HOST){
     function tzOffMs(d,tz){ try{
       const f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
       const o={}; f.formatToParts(d).forEach(x=>{ if(x.type!=='literal') o[x.type]=x.value; });
-      const asUTC=Date.UTC(+o.year,+o.month-1,+o.day,(+o.hour)%24,+o.minute,+o.second);
+      /* WARNING (#R604) THIS WAS `Date.UTC(+o.year, …)`, AND IT IS WHY THE PICKER SAID 1901.
+         The formatter answers «1» for a year-1 instant and Date.UTC turns that back into 1901, so the
+         computed offset was +1900 years: `floorMs()` was correct, `jumpValue(new Date(floorMs()))`
+         was not, and the control advertised a floor nineteen centuries above the kernel's. Measured
+         through the shipped page (min="1901-01-01T00:00" against IntMapTime.min === 1).
+         It is the FOURTH place this round found the same rule — the kernel, the panel floor,
+         zInstant, and here — which is the argument for js/hist-scale.js owning it rather than each
+         caller spelling it out. */
+      const asUTC=HSutc(+o.year,+o.month-1,+o.day,(+o.hour)%24,+o.minute)+((+o.second)*1000);
       return asUTC-(Math.floor(d.getTime()/1000)*1000); }catch(_){ return 0; } }
     /* an instant → its wall-clock fields in the chosen zone */
     function zFields(d){ const sp=zSpec();
@@ -150,9 +179,16 @@ window.IntMapModules.newsTimeline=function(HOST){
       const t=new Date(d.getTime()+shift);
       return {Y:t.getUTCFullYear(),M:t.getUTCMonth()+1,D:t.getUTCDate(),h:t.getUTCHours(),m:t.getUTCMinutes()}; }
     /* wall-clock fields in the chosen zone → the instant they name */
+    /* WARNING (#R604) BOTH CONSTRUCTIONS BELOW APPLIED THE TWO-DIGIT-YEAR RULE. `new Date(19,…)` and
+       `Date.UTC(19,…)` are both 1919, and until this round that was harmless because no year under
+       1850 could be named. The floor is year 1 now, so a reader who asks for year 19 was handed 1919
+       — measured by tests/smoke.spec.js R378 ①, which types a year the way a keyboard does.
+       The UTC half goes through js/hist-scale.js (`utcAt`), the one owner of this rule; the LOCAL
+       half has no UTC equivalent, so it is built the same way `atUTC` builds its own and then read
+       back in local terms via setFullYear, which is not subject to the rule either. */
     function zInstant(F){ const sp=zSpec();
-      if(sp.local) return new Date(F.Y,F.M-1,F.D,F.h,F.m,0,0);
-      const naive=Date.UTC(F.Y,F.M-1,F.D,F.h,F.m,0,0);
+      if(sp.local){ const d=new Date(0); d.setFullYear(F.Y,F.M-1,F.D); d.setHours(F.h,F.m,0,0); return d; }
+      const naive=HSutc(F.Y,F.M-1,F.D,F.h,F.m);
       if(sp.off!=null) return new Date(naive-sp.off*3600000);
       let t=naive-tzOffMs(new Date(naive),sp.tz);
       t=naive-tzOffMs(new Date(t),sp.tz);            /* one correction: the offset depends on the instant */
@@ -167,12 +203,19 @@ window.IntMapModules.newsTimeline=function(HOST){
        control walks the value through 0001 → 0019 → 0199 → 1990, and `new Date(19,…)` is 1919, not
        19 — so a half-typed year would name a real, wrong instant rather than an impossible one. Any
        year under the kernel's floor is therefore the floor, which is also what the kernel would do
-       with it (js/chronos.js clamps to `Date.UTC(min,0,1)`). */
+       with it (js/chronos.js clamps to the same floor, through the same `utcAt`). */
     function jumpParse(v){ const m=/^(\d{4,6})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(v||''));
       if(!m) return null;
       const Y=+m[1]; if(Y<YMIN()) return new Date(floorMs());
       return zInstant({Y:Y,M:+m[2],D:+m[3],h:+m[4],m:+m[5]}); }
-    const floorMs=()=>Date.UTC(YMIN(),0,1);   /* the kernel's own floor, read live (#R349) */
+    /* ⚠⚠⚠ (#R604) THIS WAS `Date.UTC(YMIN(),0,1)` AND IT ANSWERED 1901. The kernel's floor is year 1
+       since #R604, and ECMA-262's two-digit-year rule turns Date.UTC(1,0,1) into 1901-01-01 — so the
+       date control's `min` and the clamp below both sat 1,900 years above the floor they claim to be,
+       on the very round that lowered it. Measured by tests/smoke.spec.js R378 ①, and found only
+       because that check reads the ATTRIBUTE the control ends up with rather than the source.
+       ⚠ The rule is js/hist-scale.js's (`utcAt`), not a second copy here — one copy per caller is how
+       the kernel got fixed while this line stayed wrong. */
+    const floorMs=()=>{ try{ return HS().utcAt(YMIN(),0,1).getTime(); }catch(_){ const t=new Date(0); t.setUTCFullYear(YMIN(),0,1); t.setUTCHours(0,0,0,0); return t.getTime(); } };
     /* what the reader should see this zone called */
     function zoneName(k){
       if(k==='user'){ let u=null; try{ u=HOST.userTZ; }catch(_){}
@@ -452,6 +495,24 @@ window.IntMapModules.newsTimeline=function(HOST){
        that value, not at a typed 1440, so a future round that shortens the axis moves the ruler
        with it instead of leaving marks pointing at minutes the slider cannot reach. */
     function buildTicks(){ if(!ticks) return;
+      /* ══ (#R604) THE YEAR TAB JOINS THE RULER, FOR THE REASON THE RULER EXISTS ══════════════════
+         `.ntl-scale` is a flex row spaced by `justify-content:space-between`, i.e. it places labels
+         EVENLY. That was near enough while the year rail was linear and is simply false now that it
+         is piecewise (`y2p` above) — «1500» would sit at the middle of a track whose middle is 1850.
+         The comment on the Time tab already says it: the position has to be COMPUTED FROM THE VALUE.
+         Same element, same marks, same class names; only the list of values differs.
+         ⚠ The tick list is CLIPPED to the kernel's floor rather than typed twice, so a future round
+         that raises or lowers `IntMapTime.min` moves the ruler with it. */
+      if(mode==='year'){
+        const a=YMIN(), want=[1,500,1000,1250,1500,1650,1750,1800,1850,1900,1950,2000],
+              maj=[1,1000,1500,1800,1900,2000];
+        let h='';
+        for(const y of want){ if(y<a||y>curY) continue;
+          h+='<span class="ntl-tk'+(maj.indexOf(y)>=0?' maj':'')+(y===a?' first':'')+'" style="--p:'
+            +(y2p(y)/YPOS).toFixed(4)+'"><i></i>'+(maj.indexOf(y)>=0?('<b>'+yLabel(y)+'</b>'):'')+'</span>'; }
+        h+='<span class="ntl-tk maj last" style="--p:1.0000"><i></i><b>'+L5('Now','現在','Jetzt','Сейчас','Ahora')+'</b></span>';
+        ticks.innerHTML=h; ticks.style.display=''; if(scale) scale.style.display='none'; return;
+      }
       if(mode!=='time'){ ticks.innerHTML=''; ticks.style.display='none'; if(scale) scale.style.display=''; return; }
       const mx=_timeMaxMins()||1439;
       let h='';
@@ -471,7 +532,7 @@ window.IntMapModules.newsTimeline=function(HOST){
       if(modeTime) modeTime.classList.toggle('on',m==='time');
       if(datePicker) datePicker.style.display=(m==='date')?'':'none';
       if(timePicker) timePicker.style.display=(m==='time')?'':'none';
-      if(m==='year'){ slider.min=String(YMIN()); slider.max=String(curY); slider.step='1'; }
+      if(m==='year'){ slider.min='0'; slider.max=String(YPOS); slider.step='1'; }   /* (#R604) a POSITION, read through p2y/y2p */
       else if(m==='time'){ slider.min='0'; slider.max=String(_timeMaxMins()); slider.step='1'; _updTimeMax(); }   /* (#R137) minutes-of-day; (#R210) the whole day, today included */
       else { slider.min='0'; slider.max='3650'; slider.step='1'; }
       if(m!=='time') _tmTerminator(false);   /* (#R137) leaving Time mode clears the day/night overlay */
@@ -495,7 +556,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        「時刻」 tab, which is where the model's transport now lives (「わざわざ分けるな」, twice over) */
     window._imTimeMachineForecast=()=>{ try{ tl.classList.remove('collapsed'); localizeChrome(); applyMode('time'); }catch(_){} };
     slider.addEventListener('input',()=>{ if(_self) return;
-      if(mode==='year'){ const y=parseInt(slider.value,10); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) window.IntMapTime.setYear(y,{source:'ui'}); }
+      if(mode==='year'){ const y=p2y(parseInt(slider.value,10)); if(y>=curY) window.IntMapTime.setNow({source:'ui'}); else if(y>=YMIN()) window.IntMapTime.setYear(y,{source:'ui'}); }
       else if(mode==='time'){ _applyTimeOfDay(parseInt(slider.value,10)||0); }   /* (#R137) minutes-of-day → clock */
       else { window.IntMapTime.setDaysAgo(3650-parseInt(slider.value,10),{source:'ui'}); } });
     if(datePicker) datePicker.addEventListener('change',()=>{ if(_self) return; if(!datePicker.value){ window.IntMapTime.setNow({source:'ui'}); } else { const d=new Date(datePicker.value+'T00:00:00'); if(!isNaN(d.getTime())) window.IntMapTime.set(d,{source:'ui'}); } });
@@ -549,11 +610,11 @@ window.IntMapModules.newsTimeline=function(HOST){
       else if(e.isLive){ tl.classList.remove('active'); if(datePicker) datePicker.value='';
         if(bigdate) bigdate.textContent='';   /* (#R313) Year prints a year and Date prints the date itself — neither has a second line */
         bigval.textContent=(mode==='year')?yLabel(curY):L5('Today','今日','Heute','Сегодня','Hoy');
-        if(mode==='year'){ if(+slider.value!==curY) slider.value=curY; } else { if(+slider.value!==3650) slider.value=3650; } }
+        if(mode==='year'){ if(+slider.value!==YPOS) slider.value=YPOS; } else { if(+slider.value!==3650) slider.value=3650; } }
       else { tl.classList.add('active');
         if(bigdate) bigdate.textContent='';   /* (#R313) — as above */
         const today=new Date(); today.setHours(0,0,0,0); const t=new Date(e.when); t.setHours(0,0,0,0); const da=Math.round((today-t)/864e5);
-        if(mode==='year'){ bigval.textContent=yLabel(e.year); const sv=Math.max(YMIN(),Math.min(curY,e.year)); if(+slider.value!==sv) slider.value=sv; }
+        if(mode==='year'){ bigval.textContent=yLabel(e.year); const sv=y2p(e.year); if(+slider.value!==sv) slider.value=sv; }
         else { bigval.textContent=_dateText(e.when);   /* (#R289) in the chosen zone */
           const sv=Math.max(0,Math.min(3650,3650-da)); if(+slider.value!==sv) slider.value=sv; }
         if(datePicker) datePicker.value=(da>=0&&da<=3650)?ymdISO(e.when):'';   /* deep-past has no valid recent-picker value */

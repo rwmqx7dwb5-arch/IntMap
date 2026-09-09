@@ -19,6 +19,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { codeOnly } from '../scripts/code-only.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -95,17 +96,24 @@ test('④ the era layer is created, and it is NOT a second copy of the province 
      literal failed on a file that still drew the first tier exactly as before. The claim was never
      about a literal: it is that the era FIRST-LEVEL line looks like the present-day one. So the paint
      block is evaluated for the first tier, and compared with what js/app-body.js gives ref-admin1. */
+  /* ⚠ (#R604) AND AGAIN, FOR THE SAME REASON. This walked to «the next `paint: {` after
+     `id: cfg.line`», and #R604 gave the era line TWO layers from ONE paint object (`const PAINT = {…}`
+     — the bundle fallback and the OpenHistoricalMap tile layer must be indistinguishable on screen,
+     so they share it literally). The walk then sailed past both line layers and evaluated the LABEL
+     layer's paint, which has no dash at all. The claim is still «the era first-level line looks like
+     the present-day one», so the block is found by the name the layers actually read. */
   const paint = (deep) => {
-    const at = TA.indexOf('id: cfg.line');
-    assert.ok(at >= 0, 'the era line layer is not created in the shape this check reads');
-    const pAt = TA.indexOf('paint: {', at);
-    assert.ok(pAt > at, 'the era line layer no longer carries a paint block');
-    let depth = 0, k = TA.indexOf('{', pAt);
+    const at = TA.indexOf('const PAINT = {');
+    assert.ok(at >= 0, 'the era line layers no longer share one named paint object — this check reads it by name');
+    const usedBy = (TA.match(/paint: PAINT(?![A-Za-z0-9_])/g) || []).length;
+    assert.ok(usedBy >= 2, `both era line layers must draw with the SAME paint — found ${usedBy} users`);
+    const pAt = TA.indexOf('{', at);
+    let depth = 0, k = pAt;
     const src = TA;
     for (; k < src.length; k++) { const c = src[k]; if (c === '{') depth++; else if (c === '}') { depth--; if (!depth) break; } }
     const box = { cfg: { deep }, COL: '#cba6f7', W: ['modern-width-ladder'], DEEP_Z: 6, out: null };
     vm.createContext(box);
-    vm.runInContext('out = ' + src.slice(src.indexOf('{', pAt), k + 1) + ';', box);
+    vm.runInContext('out = ' + src.slice(pAt, k + 1) + ';', box);
     return JSON.parse(JSON.stringify(box.out));
   };
   const modernDash = /'line-dasharray':\s*(\[[^\]]*\])/.exec(/ref-admin1'[\s\S]{0,900}/.exec(APP)[0]);
@@ -135,11 +143,17 @@ const SWITCHBOARD = () => {
    two hundred lines away — a spelling check would have to be loosened to something that no longer says
    anything. Evaluating it says MORE than the old one did: it asserts the visibility every layer
    actually receives in every combination of the two boxes and the clock. */
-function runSwitchboard({ traveling, on = true, namesOn = true }) {
+function runSwitchboard({ traveling, on = true, namesOn = true, vtState = 'live' }) {
   const seen = {};
   const box = {
     active: traveling, ensureModernDeep() {}, note: () => 'coverage sentence',
-    TIERS: [{ cfg: { line: 'imta-line', lbl: 'imta-lbl' } }, { cfg: { line: 'imta2-line', lbl: 'imta2-lbl' } }],
+    /* ⚠ (#R604) THE TIER IS ASKED WHICH SUPPLY ANSWERED. The era line comes from OpenHistoricalMap's
+       tiles (`imta-vt-line`); the bundle's `imta-line` is what stands in when they never arrive, and
+       the switchboard reads `t.vtState()` to decide. A stub without it made `_applyAdmin1` throw into
+       its own catch, so `imta-*` was never set at all and every assertion here read `undefined` —
+       green-looking source, silent switchboard. `vtState` is a parameter of the scenario now. */
+    TIERS: [{ cfg: { line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl' }, vtState: () => vtState },
+            { cfg: { line: 'imta2-line', vtLine: 'imta2-vt-line', lbl: 'imta2-lbl' }, vtState: () => vtState }],
     GE: () => ({ hasRenderer: () => true, layers: { has: () => true, setLayout: (id, k, v) => { seen[id] = v; } } }),
     document: { getElementById: (id) => ({ checked: id === 'cb-admin1' ? on : namesOn, closest: () => null }) },
     window: {},
@@ -155,11 +169,21 @@ test('⑤ ⚠ the modern province line hides while travelling — the defect thi
   const past = runSwitchboard({ traveling: true }), now = runSwitchboard({ traveling: false });
   assert.equal(now['ref-admin1'], 'visible', "today's province line must be drawn at Now");
   assert.equal(past['ref-admin1'], 'none', "today's province line must hide the moment the clock leaves Now — the defect this file exists for");
-  assert.equal(past['imta-line'], 'visible', 'the era province line must draw while travelling');
-  assert.equal(now['imta-line'], 'none', 'the era province line must not survive the return to Now');
+  assert.equal(past['imta-vt-line'], 'visible', 'the era province line must draw while travelling');
+  assert.equal(now['imta-vt-line'], 'none', 'the era province line must not survive the return to Now');
+  /* ⚠ (#R604) TWO SUPPLIES, ONE LINE ON SCREEN. While the tiles are painting, the bundle's coarse
+     line must NOT be drawn beside them — the same boundary struck twice at two resolutions. It
+     appears only once the tiles have been given a grace period and produced nothing ('absent'). */
+  assert.equal(past['imta-line'], 'none', "the bundle's fallback line is painting beside the tiles");
+  const noTiles = runSwitchboard({ traveling: true, vtState: 'absent' });
+  assert.equal(noTiles['imta-line'], 'visible', 'a reader the tiles never reach must keep a line');
+  assert.equal(runSwitchboard({ traveling: true, vtState: 'unknown' })['imta-line'], 'none',
+    'the fallback must not be shown before the tiles have had a chance — that is a second map, not a fallback');
   /* one feature, one switch, in BOTH directions (#R94g without #R94l's carve-out) */
   const off = runSwitchboard({ traveling: true, on: false });
-  assert.equal(off['imta-line'], 'none', 'unchecking the province row must switch the era line off too');
+  assert.equal(off['imta-vt-line'], 'none', 'unchecking the province row must switch the era line off too');
+  assert.equal(runSwitchboard({ traveling: true, on: false, vtState: 'absent' })['imta-line'], 'none',
+    '…and the fallback too — one feature, one switch');
   /* and `traveling` is this module's own state — never the COUNTRY time machine's. */
   assert.match(body, /const traveling = active;/, "traveling is the admin-1 module's own `active`");
   assert.ok(!/IntMapTimeBorders/.test(body), 'it must not ask the COUNTRY time machine about provinces');
@@ -188,7 +212,9 @@ test('⑦ one feature, one switch — and the NAMES follow the switch the modern
   assert.equal(past['ofm-admin1'], 'none', "today's province names must go with today's province line");
   /* ⚠ (#R564) the LINE follows cb-admin1 and the NAME follows cb-names — unchecking the names must
      not take the boundaries with it. */
-  assert.equal(noNames['imta-line'], 'visible', 'unchecking place names took the era boundaries with it');
+  assert.equal(noNames['imta-vt-line'], 'visible', 'unchecking place names took the era boundaries with it');
+  assert.equal(runSwitchboard({ traveling: true, namesOn: false, vtState: 'absent' })['imta-line'], 'visible',
+    '…and the same for a reader on the fallback line');
 });
 
 test('⑧ ⚠ the two time machines are asked SEPARATELY for the two label tiers', () => {
@@ -214,13 +240,18 @@ test('⑨ the layer audit knows the row paints one of TWO layers', () => {
 });
 
 test('⑩ the module is imported, registered, and instantiated exactly once', () => {
-  assert.match(MAIN, /import '\.\.\/js\/time-admin1\.js';/, 'src/main.js imports it');
+  /* ⚠ (#R604) READ THE CODE, NOT THE FILE. This measured `indexOf('js/time-admin1.js')`, which a
+     COMMENT naming the file can satisfy — and #R604 added one above the imports, so the "twin is
+     imported first" claim below started reading a sentence instead of a statement. `codeOnly()` is
+     what the rest of this suite uses for exactly this. */
+  const MAINC = codeOnly(MAIN);
+  assert.match(MAINC, /import '\.\.\/js\/time-admin1\.js';/, 'src/main.js imports it');
   assert.match(MAIN, /'timeAdmin1'/, 'it is in MODULE_FACTORIES, so a missing file is reported at boot');
   assert.match(TA, /window\.IntMapModules\.timeAdmin1\s*=\s*function/, 'it registers the factory');
   const inst = APP.match(/window\.IntMapTimeAdmin1\s*=\s*window\.IntMapModules\.timeAdmin1\(/g) || [];
   assert.equal(inst.length, 1, 'instantiated exactly once');
   /* the country twin is imported before it, because app-body instantiates them in that order */
-  assert.ok(MAIN.indexOf("js/time-borders.js") < MAIN.indexOf("js/time-admin1.js"), 'after its twin');
+  assert.ok(MAINC.indexOf("js/time-borders.js") < MAINC.indexOf("js/time-admin1.js"), 'after its twin');
 });
 
 test('⑪ the clock is read as an INSTANT, and the debounce is the country side\'s number', () => {
@@ -245,7 +276,18 @@ test('⑫ the 6.5 MB bundle is not on the boot path, and not fetched on a phone 
   assert.match(TA, /createElement\('script'\)[\s\S]{0,120}s\.src = cfg\.file/, 'it is injected, so the browser parses it off the main graph');
   assert.match(TA, /file: 'data\/hist-admin1\.js', global: '__HISTADM1'/, 'the first tier no longer names the bundle it reads');
   const bytes = fs.statSync(path.join(ROOT, 'data/hist-admin1.js')).size;
-  assert.ok(bytes < 9 * 1024 * 1024, `the bundle must stay in the country bundle's class — ${bytes} B`);
+  /* ⚠ (#R604) THE CEILING MOVED, 9 -> 11 MB, BY THE MEASURED AMOUNT AND FOR A STATED REASON.
+     The bundle was rebuilt with the all-eras flag because the clock now reaches year 1: building it
+     from 1850 dropped every unit that ENDED before that floor, so no century before 1850 had a single name on
+     it. Measured — 3,049 units -> 4,679 (+53%), 6,858,109 B -> 9,588,712 B (+40%).
+     ⚠ AND ITS JOB IS SMALLER NOW, WHICH IS WHY THE GROWTH IS ACCEPTABLE: it no longer supplies the
+     drawn boundary (OpenHistoricalMap tiles do), so what these bytes buy is the nine-language label,
+     the answer to a click and the coverage count. It is still fetched at idle, still skipped on a
+     phone and on Data Saver, and still never imported into a chunk — the three properties above,
+     which are what «not on the boot path» actually means, are unchanged and still measured here.
+     ⚠ The headroom is deliberate and small: at 11 MB a further era-widening would have to come back
+     here and say why, rather than drifting. */
+  assert.ok(bytes < 11 * 1024 * 1024, `the bundle must stay in the country bundle's class — ${bytes} B`);
 });
 
 test('⑬ nine languages, in the order IntMapLang actually uses', () => {
