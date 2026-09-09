@@ -170,7 +170,8 @@ window.IntMapModules.betaOverlays=function(HOST){
        Mapping them to a nearby year would misrepresent the borders, so we drop the two dead years and add
        1930 (which exists) — every offered year now actually loads. */
     /* (#R349) 1815 and 1880 join the picker for the same reason js/time-borders.js gained them: the
-       clock now reaches 1850 and those are the only two snapshots the upstream repo has below 1900.
+       clock reaches below 1900 (#R604 took its floor down to AD 1 — `IntMapTime.min`), and those are
+       the only two snapshots the upstream repo has below 1900.
        Both were verified to load (world_1815.geojson / world_1880.geojson exist) — the rule this list
        has carried since #R23 is that every year OFFERED here actually resolves, and a year that 404s
        is worse than an absent one because it shows an empty map and says nothing. */
@@ -444,8 +445,9 @@ window.IntMapModules.betaOverlays=function(HOST){
        both for «still going» and for «not recorded», so a blank end counts for the start year alone
        unless the volcano is one the catalog still lists as active — anything else would paint a
        19th-century eruption across every year since.
-       ⚠ AND THE CLOCK'S FLOOR IS 1850 (js/chronos.js), which is stated in the legend rather than
-       silently truncating the record: the card still shows every eruption back to −10450. */
+       ⚠ AND THE CLOCK NO LONGER TRUNCATES THE RECORD. Its floor is `IntMapTime.min` (js/chronos.js;
+       AD 1 since #R604), while GVP's dated record starts far earlier — so the legend states that the
+       record reaches further back than the clock does, and the card still shows every eruption in it. */
     const volcTime={ on:false, index:null, year:null, off:null };
     function volcTimeIndex(doc){
       const m=new Map();
@@ -531,11 +533,11 @@ window.IntMapModules.betaOverlays=function(HOST){
              not literals the inline tables can hold. */
           const shown=volcFC?volcFC.features.filter(f=>f.properties.ty!=null).length:0;
           body+='<div class="volc-key-note">'+SF(volcTime.index
-            ?L('GVP records {n} volcano(es) as erupting in {y}. The clock reaches back to 1850; the card shows every eruption in the record.',
-              'GVP の記録で {y} 年に噴火していた火山は {n} 座です。時計は1850年までさかのぼれます（カードにはそれ以前の噴火も出ます）。',
-              'Das GVP führt {n} Vulkan(e) als im Jahr {y} ausbrechend. Die Uhr reicht bis 1850 zurück; die Karte zeigt jeden Ausbruch des Datensatzes.',
-              'По данным GVP в {y} году извергались {n} вулкан(ов). Часы доходят до 1850 года; в карточке есть все извержения записи.',
-              'El GVP registra {n} volcán(es) en erupción en {y}. El reloj llega hasta 1850; la ficha muestra todas las erupciones del registro.')
+            ?L('GVP records {n} volcano(es) as erupting in {y}. The record reaches further back than the clock does, so the card shows every eruption in it.',
+              'GVP の記録で {y} 年に噴火していた火山は {n} 座です。記録は時計よりさらに古くまでさかのぼるので、カードには記録上のすべての噴火が出ます。',
+              'Das GVP führt {n} Vulkan(e) als im Jahr {y} ausbrechend. Der Datensatz reicht weiter zurück als die Uhr, daher zeigt die Karte jeden darin verzeichneten Ausbruch.',
+              'По данным GVP в {y} году извергались {n} вулкан(ов). Запись уходит глубже в прошлое, чем часы, поэтому в карточке есть все её извержения.',
+              'El GVP registra {n} volcán(es) en erupción en {y}. El registro se remonta más atrás que el reloj, por eso la ficha muestra todas sus erupciones.')
               .split('{n}').join(shown).split('{y}').join(nowYear())
             :L('Reading the eruption record…','噴火記録を読み込み中…','Ausbruchsdatensatz wird gelesen…','Чтение записи извержений…','Leyendo el registro de erupciones…'))+'</div>';
         }

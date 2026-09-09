@@ -372,7 +372,47 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
    against BUDGET_S = 38. Not claimed here — the headroom is tests/r564.spec.js leaving the gate as
    `currentRoundSpec()` passes to this file, which is the price rule's doing and not this round's
    saving (#R510's shape). */
-const TOTAL_BUDGET_S = 4716;            /* 78.6 min — 4,705 (#R576) + 11 (#R588: tests/r588.spec.js) */
+/* == (#R604) THE TOTAL CEILING MOVED, BY THE MEASURED AMOUNT - 4,716 -> 4,841 (+125 s), and the entry
+   it went into is the same one #R564 last moved: tests/r530.spec.js 35 -> 160. Written out plainly
+   because this file's own message is "never raise it"; #R405 (+7), #R410 (+59), #R451 (+2),
+   #R455 (+4), #R466 (+5), #R493 (+2), #R494 (+3), #R508 (+3), #R530 (+9), #R531 (+4), #R545 (+5)
+   and #R564 (+26) are the precedents for saying so rather than hiding it.
+
+   WHAT THE SPEC NOW HAS TO DO. #R604 moved the era subdivision LINE off the bundle and onto
+   OpenHistoricalMap's own vector tiles, and moved the clock's floor from 1850 to year 1. Neither
+   claim is visible to a Node check: "the tiles are the supply", "the tile line carries more vertices
+   in view than the bundle's", "the bundle's coarse line is NOT painting beside it" and "a date in
+   1500 draws boundaries and names" are all statements about what a renderer has on screen, and the
+   first three are exactly the shape #R530 wrote this spec for - a build with the defect has the
+   correct `visibility` throughout. The spec also now waits on a NETWORK it did not use before.
+
+   WHY IT IS NOT A SECOND FILE. It rides tests/r530.spec.js because every one of those assertions is
+   read out of the SAME journey the file already makes (Now -> 1900 -> switch -> back), and a second
+   spec would pay for the boot and the 9 MB first-tier bundle again. That is the consolidation this
+   ceiling exists to force, and it is why the entry grew instead of the file count.
+
+   WHAT WAS TAKEN OUT FIRST, so the +125 is what is left rather than the whole bill:
+     · the click block scanned the canvas on an 8 px grid, one queryRenderedFeatures per point - up
+       to ~14,000 calls, and it paid all of them on any run where the first label sat bottom-right.
+       It now asks the layer for its rendered features once and projects them, confirming with ONE
+       point query per candidate that the click really lands on that label.
+     · the deep-tier block waited for data/hist-admin2.js to RESOLVE (14.9 MB since this round).
+       #R564's promise is that the camera triggers the fetch, not that it finishes inside a test, so
+       it now waits for the REQUEST and for the deep tile line to paint. A test whose duration is set
+       by the size of a record is a test that gets slower every time the record grows.
+     · the fixed 1.5 s sleep after the click became a wait for the outline, which is both faster on a
+       quick run and correct on a slow one (it was already failing at 4,679 units).
+   Not paid out of a stale-high entry, for #R405's reason: none has been measured that this round may
+   take from.
+
+   MEASURED the way #R531/#R545 measured theirs - warm server, one worker, three consecutive green
+   runs of the whole file, wall clock as the line reporter prints it: 150 s / 120 s / 108 s. The
+   spread is the OHM tile host, which this file now depends on; 160 is ceil(max) plus the same
+   one-second-class margin the entries above carry, taken at the top of the spread rather than the
+   median because a network-bound spec that fails the budget on a slow day teaches people to re-run
+   the gate rather than read it.
+   The CORE ceiling did not move: at 160 s against CORE_MAX_S this file is nowhere near the gate. */
+const TOTAL_BUDGET_S = 4841;            /* 80.7 min — 4,716 (main) + 125 (this round: tests/r530.spec.js 35 -> 160) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

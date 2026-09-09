@@ -67,7 +67,29 @@ window.IntMapModules.timeBorders=function(HOST){
        the ANSWER: `nearest()` sends every year of 1850-1885 to world_1880, because the 1815/1880
        switch is at the midpoint 1847.5 and the floor is 1850, so 1815 is unreachable from the clock
        and 1850 was drawn with the borders of 1880 — one frame for thirty-six years. */
-    const YEARS=[1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
+    /* ══ ⚠⚠⚠ (#R604) THE LIST WAS TWELVE BECAUSE THE CLOCK STOPPED AT 1850, NOT BECAUSE UPSTREAM
+       HAS TWELVE. #R604 lowered the floor to year 1 so the era SUBDIVISIONS could be asked for in any
+       century (js/chronos.js), and the first thing that showed was this: `nearest(1500)` found no
+       snapshot at or below 1500, returned the earliest it had — 1815 — and the map drew the
+       Congress of Vienna, labelled 1500, in Bavaria and Prussia and the Austrian Empire. Measured on
+       screen before the fix. A boundary nobody surveyed for that year, wearing the authority of a
+       drawn line, is what CONSTITUTION §「偽物・ハリボテ禁止」 forbids, and lowering the floor is what
+       made it reachable.
+       ⚠ THE ANSWER WAS ALREADY IN THE SOURCE. Re-read 2026-09-10 (`GET
+       api.github.com/repos/aourednik/historical-basemaps/contents/geojson`, filtering `world_*.geojson`):
+       the repo publishes THIRTY-SIX snapshots, from year 100 to 2010. Every one of the twenty-four
+       below 1815 was fetched and parsed here the same day — all present, all the same shape, 204 to
+       1,946 features each. The old note beside this list («world_1815 and world_1880 exist, nothing
+       between them does») was true and is still true: it was answering about the 1850-1885 window,
+       which is the only window anyone had asked about.
+       ⚠ SO THE ERROR IS NOW THE DATASET'S OWN GRANULARITY, NOT THE LIST'S. A year in the deep past is
+       answered by a snapshot at most ~50 years away (century steps before 1000, and 1279/1492/1530/
+       1715/1783 where upstream chose to be finer). Years 1-99 are below the oldest snapshot and take
+       world_100, which is that dataset's resolution there rather than a jump past anything it holds.
+       ⚠ RE-MEASURE, DO NOT EDIT BY HAND: the list is what upstream publishes, so if it grows, read it
+       from the repo's own directory rather than adding the one year somebody happened to notice. */
+    const YEARS=[100,200,300,400,500,600,700,800,900,1000,1100,1200,1279,1300,1400,1492,1500,1530,
+                 1600,1650,1700,1715,1783,1800,1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
     const cache=new Map(); let active=false, shownY=null, seq=0, shownCorr=false;   /* (#R106) shownCorr = the Tibet display-year merge state (see _eraCorrect) */
     /* (#R410) the YEAR the reader is on (shownY is the SNAPSHOT key, and one aourednik snapshot answers many

@@ -139,7 +139,15 @@ map-typography.js                 このアプリの文字——どの書体が�
 place-labels.js                   地名・海洋名ラベルと、そのローカライズ
 label-scale.js                    ラベルの大きさ window.IntMapLabelScale
 compass.js                        方位の呼び名（9言語・16方位）window.IntMapCompass
-chronos.js                        Chronos＝統一時間カーネル window.IntMapTime
+chronos.js                        Chronos＝統一時間カーネル window.IntMapTime。⚠ 下限は**西暦1年**で、
+                                  100 年未満の瞬間は `atUTC()`（`setUTCFullYear`）で作る
+                                  ——`Date.UTC(1,…)` は 1901 年になるから（#R604）
+hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
+                                  言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
+                                  OpenHistoricalMap が書く10進年（実測 103,093 件に当てて決めた「その日の中点」）
+                                  ②`ohmFilter()`/`inForce()`＝その瞬間にどの境界を描くか（式と述語の2つの読み手が
+                                  同じ答えを返すことを tests/r604-checks ④ が測る）③`rail`＝Chronos の年スライダーの
+                                  位置↔年（区分線形。折れ点は記録密度の実測）
 label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す
 border-style.js                   国境線を1本にまとめるスタイル層
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
