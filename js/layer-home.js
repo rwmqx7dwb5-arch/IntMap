@@ -72,14 +72,24 @@
   };
   HOMES['dl-elect'] = function () {
     /* ⚠ (#R588) THE NATIONAL-ELECTIONS LAYER HOLDS ONE POLITY AT A TIME, so «where does this
-       layer's data live» has a different answer after every change of the country selector. The
-       geometry actually loaded is the truest answer — measured, per the header's preference — and
-       the box the pack recorded is the fallback for the instant before it lands. */
+       layer's data live» has a different answer after every change of the country selector.
+       ⚠⚠ (#R603) AND THE ANSWER IS THE PACK'S OWN BOX, NOT THE EXTENT OF WHAT IS DRAWN. #R588 read
+       it the other way round — measure the loaded FeatureCollection, fall back to the recorded box
+       — because this file's header prefers a measurement to a typed number. MEASURED IN PRODUCTION:
+       choosing France put the camera at 2.99 °W / 18.53 °N, z3 — the Atlantic off West Africa, with
+       no constituency on screen at all. France's 559 constituencies include Réunion (55 °E) and
+       Guyane (53 °W), so the extent of what is drawn IS most of the planet and its centre is ocean.
+       The same shape waits for the United States (Alaska, Hawaii, the territories).
+       ⚠ THIS IS THE SAME LESSON THE EU ENTRY ABOVE ALREADY RECORDS — 「EU IS FRAMED BY EACH MEMBER'S
+       LARGEST LANDMASS, WHICH IS NOT THE SAME AS ITS EXTENT」 — and `mainlandOnly` cannot fix it
+       here: it keeps the biggest ring PER FEATURE, and Réunion's constituencies are features of
+       their own. What frames a polity is a fact about that polity, so the pack states it (`home` in
+       scripts/lib/elections-schema.mjs, which the gate requires and checks for inversion). The
+       drawn extent stays as the fallback for a polity whose pack somehow lacks one. */
     try {
       const E = window.IntMapElections;
       if (!E) return null;
-      const b = bboxOfFC(E.fc(), false);
-      return b || E.homeBox() || null;
+      return E.homeBox() || bboxOfFC(E.fc(), false) || null;
     } catch (_) { return null; }
   };
   HOMES['beta-dl-ukrfront'] = function () {
