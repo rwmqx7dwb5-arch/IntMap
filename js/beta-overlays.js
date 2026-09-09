@@ -1052,7 +1052,7 @@ window.IntMapModules.betaOverlays=function(HOST){
           /* a feature that silently stops existing is this project's most expensive recurring
              defect — so the row un-checks itself rather than sitting on with nothing under it. */
           try{ const cb=document.getElementById('beta-dl-radobs'); if(cb&&cb.checked){ cb.checked=false; cb.closest('.lyr-row').classList.remove('on'); } }catch(_){}
-          try{ imToast(L(LA('Radiation measurements are unavailable right now.','放射線の実測値をいま取得できません。','Strahlungsmesswerte sind derzeit nicht verfügbar.','Измерения радиации сейчас недоступны.','Las mediciones de radiación no están disponibles ahora.'))); }catch(_){}
+          try{ imToast(L('Radiation measurements are unavailable right now.','放射線の実測値をいま取得できません。','Strahlungsmesswerte sind derzeit nicht verfügbar.','Измерения радиации сейчас недоступны.','Las mediciones de radiación no están disponibles ahora.')); }catch(_){}
           return false;
         }
         return window.IntMapRadiationObs.toggle(state.radobs);

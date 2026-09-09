@@ -64,7 +64,7 @@
     "test:profile": "node -e \"process.env.IM_PROFILE='1';const{spawnSync}=require('child_process');const r=spawnSync(process.platform==='win32'?'npx.cmd':'npx',['playwright','test','--workers=1'],{stdio:'inherit',env:process.env,shell:process.platform==='win32'});if(r.error)throw r.error;process.exit(r.status==null?1:r.status)\"",
     "test:security": "node --test tests/security-logic.test.mjs",
     "test:monitor": "node --test tests/monitor-logic.test.mjs",
-    "test:checks": "node --test \"tests/**/*.test.mjs\"",
+    "test:checks": "node scripts/test-checks.mjs",
     "test": "node scripts/test-parallel.mjs",
     "//test:seq": "(#R205) the same steps in the old sequential order, for when an interleaved log is in the way of reading a failure.",
     "test:seq": "node scripts/static-checks.mjs && node scripts/engine-coupling.mjs --gate && node scripts/atlas-catalog.mjs --check && node scripts/companies-audit.mjs --gate && node scripts/build-wars.mjs --check && node scripts/build-hist-cities.mjs --check && node scripts/test-budget.mjs && npm run test:checks && node scripts/run-tests.mjs && node scripts/perf-budget.mjs",

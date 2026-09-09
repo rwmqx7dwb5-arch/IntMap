@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4666107,
-    "gzip": 1557887,
-    "brotli": 1186735,
+    "raw": 4666104,
+    "gzip": 1557889,
+    "brotli": 1186890,
     "requests": 6,
     "modules": 291,
     "cssRaw": 340305,
     "cssGzip": 57266
   },
   "async": {
-    "raw": 10067253,
-    "gzip": 3285809,
+    "raw": 10074256,
+    "gzip": 3289111,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24512,
@@ -22,10 +22,11 @@
       "atlas-answer-view": 2599,
       "atlas-attach": 14280,
       "atlas-chart": 10777,
-      "atlas-console": 1013895,
-      "atlas-executor": 43339,
+      "atlas-console": 1015448,
+      "atlas-executor": 43473,
       "atlas-query": 29952,
-      "atlas-view-capture": 7296,
+      "atlas-view-capture": 8558,
+      "atlas-view-ground": 3808,
       "aviation-live": 22678,
       "cesium": 4840419,
       "cesium-engine": 65892,
@@ -50,7 +51,7 @@
       "photo-geo": 82112,
       "plane-glyph": 887,
       "playground": 59392,
-      "radiation-layer": 12944,
+      "radiation-layer": 13190,
       "railways": 27977,
       "routing-traffic": 12309,
       "routing-ui": 58153,
@@ -81,8 +82,8 @@
     }
   },
   "dist": {
-    "total": 235756347,
+    "total": 235763428,
     "data": 180446271,
-    "assets": 17451494
+    "assets": 17458575
   }
 }

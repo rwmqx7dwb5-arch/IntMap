@@ -148,6 +148,7 @@ window.IntMapModules.radiationLayer = function (HOST) {
      the background, after the map already has everything else — the reader sees the world at once
      and the thin source fills in. It runs once per session; the legend says while it is running. */
   const chunkState = { running: 0, done: 0, total: 0 };
+  const dead = new Set();
   let chunkedOnce = false;
   function chunked() {
     if (chunkedOnce || !feed) return; chunkedOnce = true;
@@ -160,15 +161,27 @@ window.IntMapModules.radiationLayer = function (HOST) {
     const step = () => {
       if (at >= jobs.length) { chunkState.running--; if (!chunkState.running) legend(); return; }
       const [id, i] = jobs[at++];
+      if (dead.has(id)) { chunkState.done++; step(); return; }
       const u = feedUrl('mode=latest&provider=' + encodeURIComponent(id) + '&chunk=' + i);
-      fetch(u).then(r => r.ok ? r.json() : null).then(j => {
+      fetch(u).then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))).then(j => {
         if (j && j.v === 1 && Array.isArray(j.stations) && j.stations.length) {
           feed.stations = feed.stations.concat(j.stations);
           const src = (feed.sources || []).find(x => x.id === id);
           if (src) { src.n = (src.n || 0) + j.stations.length; src.read = true; }
           paint();
         }
-      }).catch(() => { }).then(() => { chunkState.done++; if (chunkState.done % 6 === 0) legend(); step(); });
+      }).catch(() => {
+        /* ⚠ (#R602) ONE FAILURE ENDS THE SWEEP FOR THAT SOURCE, AND SAYS SO. Measured in production:
+           all twenty-eight RadNet chunks answered 502 `upstream_unreachable` — the relay's own
+           network cannot reach radnet.epa.gov, though the host answers fine from a desktop. The
+           first version caught and ignored each one, so the reader got twenty-eight silent failures,
+           an empty United States, and a legend that said nothing at all about why. An empty country
+           on a radiation map reads as a safe one; «取得できず» is the only honest thing to print. */
+        dead.add(id);
+        const src = (feed.sources || []).find(x => x.id === id);
+        if (src) { src.read = false; src.reason = 'unreachable'; }
+        legend();
+      }).then(() => { chunkState.done++; if (chunkState.done % 6 === 0) legend(); step(); });
     };
     /* four at a time: enough to finish in a few seconds, few enough that the reader's own panning
        is not competing with twenty-eight of our requests. */
@@ -222,18 +235,31 @@ window.IntMapModules.radiationLayer = function (HOST) {
        instrument is incapable of making, and dropping the station would delete seven working
        monitors. The feed marks them and the popup says what the number means. */
     const val = '<div class="rad-pop-v">' + (p.b ? ('&lt; ' + S(p.v)) : (p.v == null ? '—' : S(p.v))) + ' <span>nSv/h</span></div>'
-      + (p.b ? ('<div class="rad-pop-t">' + S(L(LA('below this detector’s stated range', 'この検出器の測定下限未満', 'unter dem angegebenen Messbereich', 'ниже заявленного диапазона детектора', 'por debajo del rango declarado del detector'))) + '</div>') : '')
-      + (p.k === 'period-mean' ? ('<div class="rad-pop-t">' + S(L(LA('published average for a period — not a current reading', '期間平均として公表された値 — 現在値ではありません', 'veröffentlichter Zeitraum-Mittelwert — kein aktueller Messwert', 'опубликованное среднее за период — не текущее показание', 'promedio publicado de un periodo — no es una lectura actual'))) + '</div>') : '');
+      + (p.b ? ('<div class="rad-pop-t">' + S(L('below this detector’s stated range', 'この検出器の測定下限未満', 'unter dem angegebenen Messbereich', 'ниже заявленного диапазона детектора', 'por debajo del rango declarado del detector')) + '</div>') : '')
+      + (p.k === 'period-mean' ? ('<div class="rad-pop-t">' + S(L('published average for a period — not a current reading', '期間平均として公表された値 — 現在値ではありません', 'veröffentlichter Zeitraum-Mittelwert — kein aktueller Messwert', 'опубликованное среднее за период — не текущее показание', 'promedio publicado de un periodo — no es una lectura actual')) + '</div>') : '');
     const when = p.t ? ('<div class="rad-pop-t">' + S(new Date(p.t).toLocaleString()) + q + '</div>') : '';
     const who = src ? ('<div class="rad-pop-s">' + S(src.attribution || src.name) + (src.licence ? (' · ' + S(src.licence)) : '') + '</div>') : '';
     const hist = (src && src.historyDays > 0) ? ('<div class="rad-pop-x" data-rad-series="' + S(p.c) + '">' +
-      S(L(LA('Loading history…', '履歴を読み込み中…', 'Verlauf wird geladen…', 'Загрузка истории…', 'Cargando historial…'))) + '</div>') : '';
+      S(L('Loading history…', '履歴を読み込み中…', 'Verlauf wird geladen…', 'Загрузка истории…', 'Cargando historial…')) + '</div>') : '';
     let el = null;
-    try { el = GE().popup({ lngLat: f.geometry.coordinates, html: '<div class="rad-pop country-popup">' + head + val + when + who + hist + '</div>' }); } catch (_) { }
+    /* ⚠ (#R602) `GE().popup` DOES NOT EXIST. The renderer contract puts the renderer-owned UI
+       objects behind `ui` — `GE().ui.popup(options)` returns a bare popup that the caller positions
+       and fills, and `GE().ui.attach(...)` puts it on the map (js/geo-engine.js, and every other
+       call site: js/app-body.js, js/atlas-console.js, js/beta-overlays.js). This round invented a
+       one-call shape that resolved to `undefined`, the surrounding try/catch swallowed the
+       TypeError, and NOT ONE station popup opened in production — no value, no quantity, no
+       licence, no history, and no «below this detector's stated range». Found by production
+       verification, after every local check was green: the checks read the source and never asked
+       the shipped facade whether the door they name is a door (#R552's shape, again). */
+    try {
+      el = GE().ui.attach(GE().ui.popup({ closeButton: true, closeOnClick: true, className: 'plc-popup', maxWidth: '280px' })
+        .setLngLat(f.geometry.coordinates)
+        .setHTML('<div class="rad-pop country-popup">' + head + val + when + who + hist + '</div>'));
+    } catch (_) { }
     if (hist) series(p.c).then(rows => {
       try {
         const host = document.querySelector('[data-rad-series="' + CSS.escape(p.c) + '"]'); if (!host) return;
-        host.innerHTML = rows && rows.length ? spark(rows) : S(L(LA('No history published for this station.', 'この観測局の履歴は公開されていません。', 'Für diese Station wird kein Verlauf veröffentlicht.', 'Для этой станции история не публикуется.', 'No se publica historial para esta estación.')));
+        host.innerHTML = rows && rows.length ? spark(rows) : S(L('No history published for this station.', 'この観測局の履歴は公開されていません。', 'Für diese Station wird kein Verlauf veröffentlicht.', 'Для этой станции история не публикуется.', 'No se publica historial para esta estación.'));
       } catch (_) { }
     });
     return el;
@@ -278,29 +304,29 @@ window.IntMapModules.radiationLayer = function (HOST) {
          own state: #R499 and #R536 both cost a round because "could not read" and "read, nothing
          there" were collapsed into one silence. */
       const rows = (feed && feed.sources || []).map(s => '<div class="rad-src' + (s.read ? '' : ' off') + '">' +
-        S(s.attribution || s.name) + ' · ' + (s.read ? (S(s.n) + ' ' + S(L(LA('stations', '局', 'Stationen', 'станций', 'estaciones')))) :
-          S(L(LA('unavailable', '取得できず', 'nicht verfügbar', 'недоступно', 'no disponible')))) +
+        S(s.attribution || s.name) + ' · ' + (s.read ? (S(s.n) + ' ' + S(L('stations', '局', 'Stationen', 'станций', 'estaciones'))) :
+          S(L('unavailable', '取得できず', 'nicht verfügbar', 'недоступно', 'no disponible'))) +
         (s.licence ? (' · ' + S(s.licence)) : '') + '</div>').join('');
-      const note = '<div class="rad-note">' + S(L(LA(
+      const note = '<div class="rad-note">' + S(L(
         '50–200 nSv/h is normal natural background almost everywhere. Rain alone can lift a station up to three times higher for a few hours, and most of these readings are published unvalidated — so one high station is not evidence of a release.',
         '50〜200 nSv/h はほぼ全世界で通常の自然放射線量です。降雨だけでも数時間、最大3倍まで上がることがあり、これらの値の多くは未検証で公開されています。1局が高いことは放出の証拠にはなりません。',
         '50–200 nSv/h ist fast überall normale natürliche Hintergrundstrahlung. Allein Regen kann eine Station für einige Stunden bis auf das Dreifache heben, und die meisten dieser Werte sind unvalidiert veröffentlicht — eine einzelne hohe Station ist kein Beleg für eine Freisetzung.',
         '50–200 нЗв/ч — обычный природный фон почти везде. Один только дождь может на несколько часов поднять показания станции втрое, а большинство этих значений публикуется без верификации — одна станция с высоким показанием не является доказательством выброса.',
-        '50–200 nSv/h es el fondo natural normal en casi todo el mundo. La lluvia por sí sola puede triplicar la lectura de una estación durante unas horas, y la mayoría de estos valores se publican sin validar: una estación alta no es prueba de una emisión.'))) + '</div>';
+        '50–200 nSv/h es el fondo natural normal en casi todo el mundo. La lluvia por sí sola puede triplicar la lectura de una estación durante unas horas, y la mayoría de estos valores se publican sin validar: una estación alta no es prueba de una emisión.')) + '</div>';
       const clock = state.iso ? ('<div class="rad-when">' + S(state.iso) + '</div>') : '';
       /* the two states a reader would otherwise mistake for "that country has no radiation": a
          source still arriving, and a source whose values are a published average for a year the
          clock is not on. */
       const busy = (chunkState.total && chunkState.done < chunkState.total)
-        ? ('<div class="rad-src">' + S(L(LA('still loading one network…', 'ある観測網を読み込み中…', 'ein Netz wird noch geladen…', 'одна сеть ещё загружается…', 'aún cargando una red…'))) + ' ' + chunkState.done + '/' + chunkState.total + '</div>') : '';
+        ? ('<div class="rad-src">' + S(L('still loading one network…', 'ある観測網を読み込み中…', 'ein Netz wird noch geladen…', 'одна сеть ещё загружается…', 'aún cargando una red…')) + ' ' + chunkState.done + '/' + chunkState.total + '</div>') : '';
       const nRef = (feed && feed.reference || []).length, nShown = refRows(feed).length;
-      const ref = (nRef && !nShown) ? ('<div class="rad-src">' + S(L(LA(
+      const ref = (nRef && !nShown) ? ('<div class="rad-src">' + S(L(
         '{n} more stations publish a period average, not a current reading — set the clock to their year to see them.',
         'ほかに {n} 局が、現在値ではなく期間平均を公表しています。時計をその年に合わせると表示されます。',
         '{n} weitere Stationen veröffentlichen einen Zeitraum-Mittelwert statt eines aktuellen Werts — stellen Sie die Uhr auf ihr Jahr.',
         'Ещё {n} станций публикуют среднее за период, а не текущее показание — установите часы на их год.',
-        'Otras {n} estaciones publican un promedio de periodo, no una lectura actual — ajuste el reloj a su año.')).split('{n}').join(nRef)) + '</div>') : '';
-      const err = state.err ? ('<div class="rad-err">' + S(L(LA('Could not reach the networks.', '観測網に到達できませんでした。', 'Netze nicht erreichbar.', 'Не удалось связаться с сетями.', 'No se pudo contactar con las redes.'))) + '</div>') : '';
+        'Otras {n} estaciones publican un promedio de periodo, no una lectura actual — ajuste el reloj a su año.').split('{n}').join(nRef)) + '</div>') : '';
+      const err = state.err ? ('<div class="rad-err">' + S(L('Could not reach the networks.', '観測網に到達できませんでした。', 'Netze nicht erreichbar.', 'Не удалось связаться с сетями.', 'No se pudo contactar con las redes.')) + '</div>') : '';
       key.innerHTML = '<div class="rad-band">' + band + '</div>' + note + clock + rows + busy + ref + err;
     } catch (_) { }
   }
