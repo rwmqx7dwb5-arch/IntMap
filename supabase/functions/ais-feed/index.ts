@@ -82,6 +82,101 @@ const ATTRIBUTION = {
    with no message at all — which is indistinguishable from a wrong key. Measured (#R510). */
 function env(k: string): string { try { return (Deno.env.get(k) || "").trim(); } catch (_) { return ""; } }
 
+/*  WARN (#R556) THE STORED VALUE IS NOT ALWAYS THE CREDENTIAL.
+ *  #R510 measured a secret that was 79 characters and not alphanumeric, which is not the shape
+ *  aisstream issues, and concluded "the value had something else in it" -- then left this function
+ *  reading that value verbatim for ever. A credential travels through a shell, a clipboard and a
+ *  dashboard field before it lands here, and every one of those can wrap it: quotes a shell did not
+ *  strip, a whole NAME=value line, the URL of the page it was copied from, a label glued in front.
+ *
+ *  WARN THE ANSWER IS NOT TO GUESS THE KEY. It is to try the credentials the stored value ACTUALLY
+ *  CONTAINS and let the upstream say which one it accepts. Nothing here knows any key: every
+ *  candidate is derived from the value by structure alone, so the day the value is replaced with a
+ *  clean one, "stored" is the first candidate, it works, and nothing else is ever tried.
+ *
+ *  WARN NEVER A SUBSTRING IN A RESPONSE. The shape report is length and character CLASSES only.
+ *  Two different keys of the same length report identically; no key can be reconstructed from it.
+ */
+type Cand = { form: string; key: string };
+const CRED_MIN = 8, CRED_MAX = 200;
+const BACKTICK = String.fromCharCode(96);
+function credentialCandidates(rawV: string): Cand[] {
+  const out: Cand[] = [];
+  const seen = new Set<string>();
+  const add = (form: string, key: string | undefined) => {
+    const k = String(key == null ? "" : key).trim();
+    if (k.length < CRED_MIN || k.length > CRED_MAX || seen.has(k)) return;
+    seen.add(k);
+    out.push({ form, key: k });
+  };
+  const v = String(rawV == null ? "" : rawV).trim();
+  /* the value as stored, always first: a clean secret must cost nothing */
+  add("stored", v);
+  /* wrapped in quotes a shell did not strip */
+  const q = v.match(new RegExp('^["\'' + BACKTICK + ']([\s\S]*)["\'' + BACKTICK + ']$'));
+  if (q) add("dequoted", q[1]);
+  /* a whole NAME=value line, or a "key: value" copied out of a dashboard */
+  const kv = v.match(/[=:][ \t]*([^=:\s]+)[ \t]*$/);
+  if (kv) add("after-delimiter", kv[1]);
+  /* the last path segment of a URL -- the page the key was read from */
+  const u = v.match(/^[a-z][a-z0-9+.-]*:\/\/\S*?\/([^/?#\s]+)[/?#]*$/i);
+  if (u) add("url-tail", u[1]);
+  /* a UUID sitting inside something else */
+  const uu = v.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  if (uu) add("uuid", uu[0]);
+  /* the longest unbroken alphanumeric run */
+  const runs = v.match(/[A-Za-z0-9]{16,}/g) || [];
+  let longest = "";
+  for (const r of runs) if (r.length > longest.length) longest = r;
+  if (longest) add("longest-alnum", longest);
+  return out;
+}
+/*  WARN (#R556) A WEBSOCKET FRAME IS TEXT OR IT IS BYTES, AND THE READER DOES NOT CHOOSE WHICH.
+    Reading it as whatever it actually is costs nothing; assuming cost this layer every vessel
+    outside the Baltic. Returns "" for a frame that carries no text, so the caller can tell
+    "nothing to read" from "read it and it was not JSON". */
+const FRAME_DECODER = new TextDecoder();
+function frameText(data: unknown): string {
+  if (typeof data === "string") return data;
+  if (data instanceof ArrayBuffer) return FRAME_DECODER.decode(new Uint8Array(data));
+  if (ArrayBuffer.isView(data as any)) {
+    const v = data as ArrayBufferView;
+    return FRAME_DECODER.decode(new Uint8Array(v.buffer, v.byteOffset, v.byteLength));
+  }
+  return "";
+}
+function shapeOf(k: string): string {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(k)) return "uuid";
+  if (/^[0-9a-f]+$/i.test(k)) return "hex";
+  if (/^[A-Za-z0-9]+$/.test(k)) return "alnum";
+  return "other";
+}
+/* length and character CLASSES -- never a character of the value itself */
+function credentialShape(rawV: string): Record<string, unknown> {
+  const orig = String(rawV == null ? "" : rawV);
+  const v = orig.trim();
+  const cls: Record<string, number> = {
+    alnum: 0, dash: 0, dot: 0, colon: 0, equals: 0, slash: 0, quote: 0, space: 0, other: 0,
+  };
+  for (const ch of v) {
+    if (/[A-Za-z0-9]/.test(ch)) cls.alnum++;
+    else if (ch === "-" || ch === "_") cls.dash++;
+    else if (ch === ".") cls.dot++;
+    else if (ch === ":") cls.colon++;
+    else if (ch === "=") cls.equals++;
+    else if (ch === "/") cls.slash++;
+    else if (ch === '"' || ch === "'" || ch === BACKTICK) cls.quote++;
+    else if (/\s/.test(ch)) cls.space++;
+    else cls.other++;
+  }
+  return {
+    len: v.length,
+    rawLen: orig.length,
+    classes: cls,
+    candidates: credentialCandidates(v).map((c) => ({ form: c.form, len: c.key.length, shape: shapeOf(c.key) })),
+  };
+}
+
 // ── state that survives between requests in one isolate ─────────────────────
 //  Everything here is a CACHE that a cold isolate rebuilds from the shared snapshot — never a
 //  source of truth. Supabase hands out cold isolates constantly (#R341 measured it, #R504 paid for
@@ -96,6 +191,8 @@ const STATE = {
   lastNote: "",
   /* (#R510) what happened to the WebSocket, in order. See the note in readAisstream. */
   wsTrace: [] as string[],
+  /* (#R556) which candidate FORM aisstream accepted, once one has. A form, never a key. */
+  credForm: "" as string,
   /* vessels per provider in the last refresh (or from the snapshot's `p`) — coverageLine reads it */
   counts: {} as Record<string, number>,
   stats: { refreshes: 0, served: 0, hydrated: 0, saved: 0, wsMessages: 0, wsVessels: 0, dtVessels: 0, fails: 0 },
@@ -268,10 +365,21 @@ async function readDigitraffic(nowMs: number): Promise<number> {
  *  in the background" would look right in every single test and never collect a byte in production.
  *  What does work is a stream opened, drained and closed WITHIN one invocation.
  */
-function readAisstream(key: string, ms: number, nowMs: number): Promise<number> {
-  return new Promise((resolve) => {
+type Probe = { n: number; verdict: string };
+type Attempt = { refused: Promise<boolean>; done: Promise<Probe> };
+/*  WARN (#R556) ONE SOCKET PER CANDIDATE, AND IT IS THE SAME SOCKET THAT GOES ON TO DO THE WORK.
+    The first version of this probed a candidate on one socket and then opened a SECOND to drain it,
+    which is how a working credential ended up looking silent: aisstream caps a key at three
+    concurrent connections and refuses the fourth WITHOUT SAYING ANYTHING (#R510) -- the exact
+    picture of "open | sent | nothing" this was trying to interpret. So the decision and the drain
+    now share one connection, and the next candidate is not opened until this one has closed. */
+function attemptAisstream(cand: Cand, ms: number, decideMs: number, nowMs: number): Attempt {
+  const key = cand.key;
+  let markRefused: (v: boolean) => void = () => {};
+  const refused = new Promise<boolean>((r) => { markRefused = r; });
+  const done = new Promise<Probe>((resolve) => {
     let ws: WebSocket;
-    let n = 0, done = false;
+    let n = 0, done = false, rejected = false, frames = 0;
     /* ⚠ (#R510) THE SOCKET SAYS WHAT HAPPENED TO IT, AND THAT IS THE WHOLE DIFFERENCE BETWEEN
        "aisstream is not answering" AND "aisstream is refusing this key". Measured, both from here
        and from a laptop with a deliberately WRONG key, the refusal looks like this:
@@ -283,19 +391,43 @@ function readAisstream(key: string, ms: number, nowMs: number): Promise<number> 
        the stored secret measured 79 characters and was not alphanumeric, which is not the shape
        aisstream issues — the value had something else in it. A digest of the credential would have
        said nothing, and the credential itself must never reach a response, a log or a header. */
-    STATE.wsTrace = ["start"];
-    const finish = () => {
+    STATE.wsTrace.push("try:" + cand.form + ":len" + key.length + ":" + shapeOf(key));
+    /*  WARN (#R556) HOW THE SOCKET ENDED IS THE ANSWER, NOT HOW MANY FRAMES IT CARRIED.
+        A REFUSED credential is closed on us within a moment and never sends anything (#R510:
+        open | sent | error | close, zero frames). An ACCEPTED one simply stays open -- and may
+        still be silent for the first seconds of a short probe, because the firehose starts when it
+        starts. Judging a candidate by "did it deliver in 3 s" therefore throws away the credential
+        that actually works, which is exactly what happened here before this was written. */
+    const finish = (verdict: string) => {
       if (done) return;
       done = true;
+      clearTimeout(decider);
+      /* WARN (#R556) HOW MANY FRAMES ARRIVED IS ALWAYS SAID. Without it, "the socket stayed open"
+         and "the socket stayed open and carried thousands of vessels we could not read" are the
+         same line in the trace -- and only one of them is a credential problem. */
+      STATE.wsTrace.push("end:" + verdict + ":frames" + frames + ":pos" + n);
       try { ws.close(); } catch (_) { /* already closing */ }
       STATE.stats.wsVessels = n;
-      resolve(n);
+      const v = rejected ? "rejected" : verdict;
+      markRefused(n === 0 && v !== "alive" && v !== "full");
+      resolve({ n, verdict: v });
     };
-    const timer = setTimeout(finish, Math.max(1000, Math.min(WS_MS_MAX, ms)));
-    try { ws = new WebSocket("wss://stream.aisstream.io/v0/stream"); } catch (_) { clearTimeout(timer); resolve(0); return; }
+    const timer = setTimeout(() => finish("alive"), Math.max(1000, Math.min(WS_MS_MAX, ms)));
+    /*  the decision point: a refusal has already happened by now, or it is not coming */
+    const decider = setTimeout(() => markRefused(false), Math.max(500, Math.min(ms, decideMs)));
+    try {
+      ws = new WebSocket("wss://stream.aisstream.io/v0/stream");
+      /*  WARN (#R556) AISSTREAM SENDS BINARY FRAMES, AND A BINARY FRAME IS NOT A STRING.
+          The default binaryType is "blob", so String(ev.data) on a delivered vessel is the literal
+          text "[object Blob]" -- JSON.parse throws, the catch swallows it, and the layer shows an
+          empty ocean while the socket is in fact carrying THOUSANDS of ships. Measured here:
+          `end:alive:frames1224:pos0` with a credential that was working the whole time.
+          Asking for arraybuffer makes the frame decodable synchronously; frameText below still
+          handles a string, because nothing promises which one arrives. */
+      ws.binaryType = "arraybuffer";
+    } catch (_) { clearTimeout(timer); clearTimeout(decider); markRefused(true); resolve({ n: 0, verdict: "nosocket" }); return; }
     ws.onopen = () => {
-      STATE.wsTrace.push("open:rs" + ws.readyState + ":klen" + key.length +
-        ":kshape" + (/^[A-Za-z0-9]+$/.test(key) ? "alnum" : "other"));
+      STATE.wsTrace.push("open:rs" + ws.readyState);
       try {
         ws.send(JSON.stringify({
           APIKey: key,
@@ -305,16 +437,16 @@ function readAisstream(key: string, ms: number, nowMs: number): Promise<number> 
           FilterMessageTypes: ["PositionReport", "ShipStaticData"],
         }));
         STATE.wsTrace.push("sent");
-      } catch (e) { STATE.wsTrace.push("sendfail:" + String((e as any)?.message || "").slice(0, 60)); finish(); }
+      } catch (e) { STATE.wsTrace.push("sendfail:" + String((e as any)?.message || "").slice(0, 60)); finish("sendfail"); }
     };
     ws.onmessage = (ev: MessageEvent) => {
-      STATE.stats.wsMessages++;
+      STATE.stats.wsMessages++; frames++;
       let m: any = null;
-      const raw = String(ev.data);
-      try { m = JSON.parse(raw); } catch (_) { if (STATE.wsTrace.length < 6) STATE.wsTrace.push("nonjson:" + raw.slice(0, 90)); return; }
+      const raw = frameText(ev.data);
+      try { m = JSON.parse(raw); } catch (_) { if (frames <= 3) STATE.wsTrace.push("nonjson:" + raw.slice(0, 90)); return; }
       /* aisstream answers a bad subscription with an error object rather than a close reason */
-      if (m && m.error) { if (STATE.wsTrace.length < 6) STATE.wsTrace.push("err:" + String(m.error).slice(0, 90)); return; }
-      if (STATE.wsTrace.length < 6) STATE.wsTrace.push("msg:" + String((m && m.MessageType) || "?").slice(0, 30));
+      if (m && m.error) { if (frames <= 3) STATE.wsTrace.push("err:" + String(m.error).slice(0, 90)); rejected = true; return; }
+      if (frames <= 3) STATE.wsTrace.push("msg:" + String((m && m.MessageType) || "?").slice(0, 30));
       const md = m.MetaData || m.metadata || {};
       const mmsi = Number(md.MMSI || md.mmsi);
       if (!(mmsi > 0)) return;
@@ -345,11 +477,52 @@ function readAisstream(key: string, ms: number, nowMs: number): Promise<number> 
         if (p.MaximumStaticDraught != null) rec.draught = Number(p.MaximumStaticDraught);
         if (p.ImoNumber != null) rec.imo = Number(p.ImoNumber);
       }
-      if (STATE.ships.size >= AIS_MAX) finish();
+      if (STATE.ships.size >= AIS_MAX) finish("full");
     };
-    ws.onerror = (e: any) => { STATE.wsTrace.push("error:" + String((e && e.message) || "").slice(0, 90)); finish(); };
-    ws.onclose = (e: any) => { STATE.wsTrace.push("close:" + (e && e.code) + ":" + String((e && e.reason) || "").slice(0, 90)); clearTimeout(timer); finish(); };
+    ws.onerror = (e: any) => { STATE.wsTrace.push("error:" + String((e && e.message) || "").slice(0, 90)); finish("error"); };
+    ws.onclose = (e: any) => { STATE.wsTrace.push("close:" + (e && e.code) + ":" + String((e && e.reason) || "").slice(0, 90)); clearTimeout(timer); finish("closed"); };
   });
+  return { refused, done };
+}
+
+/*  WARN (#R556) ONE SECRET, SEVERAL CREDENTIALS TO TRY -- AND THE UPSTREAM DECIDES.
+ *  aisstream refuses a wrong key with no message (#R510: open | sent | error | close, zero frames),
+ *  so the only thing that can tell a good credential from a bad one is aisstream itself. This tries
+ *  each candidate the stored value contains, SHORTLY, and stops at the first that delivers a frame.
+ *
+ *  WARN THE WINNING FORM IS REMEMBERED FOR THE ISOLATE, so the cost of probing is paid once per
+ *  cold isolate, not once per refresh -- and a clean secret pays nothing at all, because "stored"
+ *  is tried first and answers first.
+ *
+ *  WARN THE PROBING IS BUDGETED. A caller is waiting on this. Six candidates at the full window
+ *  would hold an invocation open for two minutes; the budget is what stops that.
+ */
+const WS_DECIDE_MS = 3000;
+const PROBE_BUDGET_MS = 25000;
+/* aisstream allows three connections per key; opening the next candidate before the last one has
+   let go is how a good credential gets refused in silence. This settles between attempts. */
+const SOCKET_SETTLE_MS = 400;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+async function readAisstream(rawKey: string, ms: number, nowMs: number): Promise<number> {
+  const cands = credentialCandidates(rawKey);
+  if (!cands.length) { STATE.wsTrace.push("nocandidate"); return 0; }
+  /* the form that worked last time goes first: a clean secret never pays for the others */
+  cands.sort((a, b) => (b.form === STATE.credForm ? 1 : 0) - (a.form === STATE.credForm ? 1 : 0));
+  const started = Date.now();
+  for (const c of cands) {
+    const at = attemptAisstream(c, ms, WS_DECIDE_MS, nowMs);
+    const refused = await at.refused;
+    if (!refused) {
+      STATE.credForm = c.form;
+      const r = await at.done;      /* the SAME socket goes on to drain the full window */
+      return r.n;
+    }
+    await at.done;                  /* let the refused socket go before opening another */
+    if (STATE.credForm === c.form) STATE.credForm = "";
+    await sleep(SOCKET_SETTLE_MS);
+    if (Date.now() - started > PROBE_BUDGET_MS) { STATE.wsTrace.push("budget"); break; }
+  }
+  return 0;
 }
 
 // ── building the wire form ──────────────────────────────────────────────────
@@ -357,6 +530,30 @@ function readAisstream(key: string, ms: number, nowMs: number): Promise<number> 
  *  The identity half travels separately because a name changes at most once a voyage while a
  *  position changes every message — the same split the aviation codec makes, for the same reason.
  */
+/*  WARN (#R556) THE SET SAYS HOW FAR IT REACHES, AND IT SAYS IT FROM THE VESSELS THEMSELVES.
+    An empty answer is two completely different facts -- "no ship is there" and "nothing here can
+    see there" -- and a reader shown an empty ocean cannot tell them apart (#R510 fixed exactly this
+    for the coverage HEADER and left the browser with no way to act on it). The envelope of the
+    vessels actually held is the honest, derived answer: no place name, no hardcoded sea, nothing to
+    go stale. The day aisstream answers, this IS the world and the note stops appearing on its own.
+    WARN IT CAN ONLY OVER-CLAIM. An envelope covers gaps inside it, so a sparse sea inside the box
+    reads as "covered, and empty" -- which is the safe direction: it never tells a reader that a sea
+    this function can actually see is out of range. */
+function coverageBox(): number[] | null {
+  let w = 181, e = -181, s2 = 91, n2 = -91, seen = 0;
+  for (const rec of STATE.ships.values()) {
+    if (rec.lon == null || rec.lat == null) continue;
+    if (rec.lon < w) w = rec.lon;
+    if (rec.lon > e) e = rec.lon;
+    if (rec.lat < s2) s2 = rec.lat;
+    if (rec.lat > n2) n2 = rec.lat;
+    seen++;
+  }
+  if (!seen) return null;
+  const r = (x: number) => Math.round(x * 100) / 100;
+  return [r(w), r(s2), r(e), r(n2)];
+}
+
 function build(nowMs: number): string {
   const a: any[] = [];
   const id: any[] = [];
@@ -368,12 +565,17 @@ function build(nowMs: number): string {
   }
   /* `p` = how many vessels each provider contributed to the LAST refresh, carried in the snapshot
      so a cold isolate that only hydrated can still say what its set is made of (coverageLine) */
-  return JSON.stringify({ v: 1, t: nowMs, n: a.length, a, id, p: STATE.counts });
+  /* `cf` is the candidate FORM the upstream accepted — a word like "after-delimiter", never a
+     credential. Supabase hands out cold isolates constantly (#R341/#R504), and without this every
+     one of them re-tries the broken stored value first, burning a socket and seconds of the
+     listening window on a candidate that is already known to be refused. */
+  return JSON.stringify({ v: 1, t: nowMs, n: a.length, a, id, p: STATE.counts, cov: coverageBox(), cf: STATE.credForm || undefined });
 }
 
 function hydrate(j: any): number {
   if (!j || !Array.isArray(j.a)) return 0;
   const nowMs = Date.now();
+  if (typeof j.cf === "string" && /^[a-z-]{1,32}$/.test(j.cf)) STATE.credForm = j.cf;
   if (j.p && typeof j.p === "object") {
     const c: Record<string, number> = {};
     for (const k of Object.keys(j.p)) if (/^[a-z]+$/.test(k) && Number(j.p[k]) >= 0) c[k] = Number(j.p[k]);
@@ -426,6 +628,7 @@ async function refresh(wsMs: number): Promise<void> {
   notes.push("digitraffic=" + dt);
   const counts: Record<string, number> = { digitraffic: dt };
   if (key) {
+    STATE.wsTrace = [];
     const got = await readAisstream(key, wsMs, now);
     counts.aisstream = got;
     notes.push("aisstream=" + got + "[" + STATE.wsTrace.join("|") + "]");
@@ -498,7 +701,9 @@ function buildInBox(box: number[], nowMs: number): { text: string; n: number } {
     a.push(row(rec, nowMs));
     const ir = idRow(rec); if (ir) id.push(ir);
   }
-  return { text: JSON.stringify({ v: 1, t: nowMs, n: a.length, a, id, p: STATE.counts }), n: a.length };
+  /* `cov` describes the WHOLE set, never the box that was asked for: a caller who got nothing needs
+     to know what this function can see, not what it just failed to find. */
+  return { text: JSON.stringify({ v: 1, t: nowMs, n: a.length, a, id, p: STATE.counts, cov: coverageBox() }), n: a.length };
 }
 /* what ACTUALLY answered, by count — not which providers are configured. A configured key that
    aisstream refuses contributes 0, and saying "digitraffic+aisstream" over a Baltic-only set would
@@ -530,6 +735,13 @@ Deno.serve(async (req) => {
         providers: providers(),
         attribution: providers().map((p) => (ATTRIBUTION as any)[p]).filter(Boolean),
         aisstreamConfigured: !!env("AISSTREAM_API_KEY"),
+        /* (#R556) PRESENCE AND SHAPE, NEVER THE VALUE -- length and character classes only, plus
+           which derived candidates exist. This is what says whether a refused key is the wrong
+           credential or a right one with something wrapped around it. */
+        aisstreamCredential: {
+          ...credentialShape(Deno.env.get("AISSTREAM_API_KEY") || ""),
+          acceptedForm: STATE.credForm || null,
+        },
         world: {
           ships: STATE.ships.size,
           ageMs: STATE.builtAt ? now - STATE.builtAt : null,

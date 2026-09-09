@@ -89,8 +89,11 @@ test('R510 ③ the key’s length and shape are reported; the key is not', () =>
   const code = codeOnly(rd(FN));
   /* the trace says how long the secret is and whether it is alphanumeric — the two facts that
      actually diagnosed a rejected key — and never the secret */
-  assert.match(code, /":klen" \+ key\.length/, 'the trace reports the length');
-  assert.match(code, /kshape" \+ \(\/\^\[A-Za-z0-9\]\+\$\/\.test\(key\)/, '…and the shape');
+  /* ⚠ (#R556) THIS USED TO PIN THE SPELLING (`":klen" + key.length`), so it guarded one expression
+     rather than the fact — and it went red when #R556 moved the same two facts into the per-attempt
+     line. What must hold is that the trace NAMES a length and a shape and carries no key. */
+  assert.match(code, /len" \+ key\.length/, 'the trace reports the length');
+  assert.match(code, /shapeOf\(key\)/, '…and the shape');
   /* nothing may put the key itself into a header, a body or the meta channel */
   assert.ok(!/AISSTREAM_API_KEY[^)]*\)\s*[,}]\s*$/m.test(code) || true, 'sanity');
   const meta = /if \(url\.searchParams\.get\("meta"\)[\s\S]*?headers: \{ \.\.\.CORS/.exec(code);
@@ -217,8 +220,16 @@ test('R510 ⑩ coverage names what ANSWERED, by count — a refused key contribu
   const world = r.out[0], meta = JSON.parse(r.out[1].body);
   assert.equal(world.headers['x-intmap-coverage'], 'digitraffic:2', 'aisstream answered nothing, so it is not claimed');
   assert.equal(world.headers['x-intmap-provider'], 'digitraffic+aisstream', 'the provider header still says what is configured');
-  assert.match(world.headers['x-intmap-note'], /aisstream=0\[start\|open:rs1:klen16:kshapealnum\|sent\|close:1000:\]/,
-    'the note carries the socket trace with the key’s length and shape, never the key');
+  const note = world.headers['x-intmap-note'];
+  /* ⚠ (#R556) the FACTS, not the spelling: the note names the candidate's length and shape, records
+     that the socket opened, was written to and then closed, and says how many frames arrived. */
+  assert.match(note, /aisstream=0\[/, 'aisstream contributed nothing and the note says so');
+  assert.match(note, /len16/, 'the length of the credential that was tried');
+  assert.match(note, /:(hex|alnum|uuid|other)/, '…and its shape');
+  assert.match(note, /open:rs1/, 'the socket opened');
+  assert.match(note, /sent/, 'the subscription was sent');
+  assert.match(note, /frames0/, 'and not one frame arrived — the rejected-key picture');
+  assert.match(note, /close:1000:/, 'the close is recorded with its code');
   assert.ok(!world.headers['x-intmap-note'].includes('abcdef0123456789'), 'the key is not in any header');
   assert.deepEqual(meta.world.byProvider, { digitraffic: 2, aisstream: 0 });
   assert.equal(meta.world.coverage, 'digitraffic:2');
