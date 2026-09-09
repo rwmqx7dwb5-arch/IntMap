@@ -1047,6 +1047,28 @@ node scripts/atlas-capability-audit.mjs --json     # machine-readable: registry 
 `tests/r318-checks.test.mjs` feeds each one a fixture with the defect deliberately present and
 asserts that it fails. A check that cannot be made to fail is deleted, not kept.
 
+### What Atlas can SEE, as distinct from what it can reach (`tests/r581-checks.test.mjs`)
+
+Twenty questions above ask whether a capability is *reachable*. #R581 measured a different thing and
+found it at zero: whether Atlas is shown that the capability **exists**, at the moment it decides what
+kind of request it has. `SYS()` named eleven tools and represented the other hundred-odd with one
+sentence on `find_capability` — the name of a door, and not one thing behind it. A model does not open
+a door for something it has no reason to believe is there, so `sim.ballistic` (a real simulator with no
+UI entry point anywhere in the product) was answered as if IntMap had no simulator at all.
+
+Six checks, and the shape of each is deliberate:
+
+| # | it fails when |
+|---|---|
+| 1 | the index Atlas is shown omits a capability the registry holds — the expectation is **derived from the registry**, never a list typed into the test |
+| 2 | a withdrawn capability is advertised (the door would answer `FEATURE_WITHDRAWN`) |
+| 3 | the number of simulators Atlas can see ≠ the number IntMap has — a **count**, not a spelling, because #R488 is what happens to checks that pin one |
+| 4 | `SYS()` does not actually concatenate the index, or the index is not read from the registry — asked of the **syntax tree**, since a builder left defined and unwired still passes a grep |
+| 5 | the index grows back into the 81,951-byte catalogue #R406 removed |
+| 6 | `js/atlas-policy.js` gains or loses a clause, or its text names a weapon — the guard against answering the next refusal report with one more sentence (`CONSTITUTION.md` §5) |
+
+Mutation-tested: unwiring the concatenation reddens ④; dropping one category from `index()` reddens ①③.
+
 ## Internal QA harnesses (classification)
 
 IntMap exposes several self-diagnostic entry points. They are classified by what they
