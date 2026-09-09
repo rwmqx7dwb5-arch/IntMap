@@ -6365,5 +6365,22 @@ window.IntMapLang.define('zh-hans', {
   "USGS published no ShakeMap for this earthquake": "USGS 未为此次地震发布 ShakeMap",
   "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — 由观测记录、体感回报与场址条件推估的地动，并非把规模画成图。",
   "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "USGS 未提供此量的色阶，因此仅以等值线绘制。",
+  /* (#R565) internet-health — js/net-health.js (layer rows, toast) · js/net-health-live.js
+     (legend, popup, coverage line). «outage» = a loss of connectivity, «probe» = a RIPE Atlas
+     measurement node, and «below its own recent normal» is a RATIO against that country's own
+     recent baseline — not a fixed threshold. */
+  "Internet outages": "互联网中断",
+  "Network reachability (measurement probes)": "网络可达性（测量探针）",
+  "Could not load the internet-health data": "无法加载互联网健康状态数据",
+  "All signals": "所有信号",
+  "below its own recent normal": "低于自身近期常态",
+  "{p}% below its own recent normal — {s} ({l})": "较自身近期常态低 {p}%——{s}（{l}）",
+  "{a} ASNs, {b} IPv4 and {c} IPv6 prefixes visible in RIPE routing data ({d})": "RIPE 路由数据中可见 {a} 个 ASN、{b} 个 IPv4 前缀与 {c} 个 IPv6 前缀（{d}）",
+  "showing {n} of {t} probes that report «{s}»": "显示回报「{s}」的 {t} 个探针中的 {n} 个",
+  "The readings arrived but the map could not draw them": "已取得观测值，但地图无法绘制",
+  "{a} alerts, {b} drawn, {c} not placed": "警报 {a} 件、已绘制 {b} 件、未定位 {c} 件",
+  "No outage alerts in the last three hours": "过去三小时内没有中断警报",
+  "This source does not publish that scope": "此数据来源不发布该范围",
+  "The source could not be reached — this is not an all-clear": "无法连接到数据来源——这不代表一切正常",
   }
 });

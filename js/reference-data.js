@@ -328,6 +328,16 @@ window.IntMapRefData=(function(){
     /* ⚠ THE NAME IS THE KEY. `js/locales/pages.<code>.js` describes every row by its `n`, and
        tests/r218-checks ⑤ requires all nine — so renaming a row is renaming it in nine files. */
     {n:'TeleGeography Submarine Cable Map',u:'https://www.submarinecablemap.com/'},
+    /* ══ (#R565) THE INTERNET ITSELF, AS A THING THAT CAN BE MEASURED ═══════════════════════════
+       The cables above are the plant; these three are the observation of whether traffic is moving
+       over it. All three are read DIRECTLY BY THE READER'S BROWSER and nothing is mirrored here —
+       which is not only a performance choice: RIPE's own terms forbid re-distributing their data,
+       and reading live is what satisfies that. IODA's payload states its own copyright, so it is
+       reproduced verbatim rather than paraphrased. docs/INTERNET-HEALTH.md holds the terms of each
+       and the measured reason Cloudflare Radar and OONI are not in this list. */
+    {n:'IODA — Internet Outage Detection and Analysis (Georgia Tech)',u:'https://ioda.inetintel.cc.gatech.edu/'},
+    {n:'RIPE Atlas',u:'https://atlas.ripe.net/'},
+    {n:'RIPEstat (RIPE NCC)',u:'https://stat.ripe.net/'},
     {n:'NOAA Office for Coastal Management — Marine Cadastre',u:'https://marinecadastre.gov/'},
     {n:'EMODnet Human Activities — submarine cables',u:'https://emodnet.ec.europa.eu/en/human-activities'},
     {n:'ACMA / Geoscience Australia — Australian submarine cable locations',u:'https://www.arcgis.com/home/item.html?id=bc1e7fb37fca40faa5dafbc8a5a4dc3c'},
