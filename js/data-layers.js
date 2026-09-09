@@ -1901,7 +1901,14 @@ window.IntMapModules.dataLayers=function(HOST){
              (#R469), and `ww1` already folds under 「その他N件」 with it; raising it to keep the new rows
              visible would be re-writing a list the reader wrote by hand, which #R255/#R258/#R261 all
              refuse to do. The new wars fold exactly where ww1 folds. */
-          ['lyrGrpPolitics',['dem','cpi','eez','uselect','eu','ww2','ww1','korea','vietnam','mideast','yugoslavia','tz','wbwomparl','osmdiplo'],6],
+          /* (#R588) `elect` (national parliamentary elections) is the FIRST row after the six the
+             reader named, not the fifth. ⚠ IT WAS WRITTEN NEXT TO `uselect` FIRST — a reader who has
+             found one election map is looking for the other — and tests/r469 ④ was right to refuse
+             it: the 6 is how many ids the reader listed BY HAND, so inserting inside that run does
+             not «add a row», it silently DEMOTES 第二次世界大戦 out of what the panel shows unfolded.
+             #R519 left the same number alone for the same reason when it added four wars. This row
+             folds under 「その他N件」 exactly where `ww1` folds. */
+          ['lyrGrpPolitics',['dem','cpi','eez','uselect','eu','ww2','elect','ww1','korea','vietnam','mideast','yugoslavia','tz','wbwomparl','osmdiplo'],6],
           /* ══ ⚠ (#R270) THREE ROWS WERE ON THE WRONG SHELF, AND ONLY THREE ═════════════════════════
              「レイヤーのカテゴリ分類があきらかに不適切なレイヤーがいくつかある。任せる。」
 

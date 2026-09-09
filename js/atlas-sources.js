@@ -138,6 +138,19 @@ export function makeAtlasSources(HOST, CTX) {
     function poiSelectors(kindStr){ const s2=String(kindStr||''); for(const k of POI_KINDS){ if(k[0].test(s2)) return {sel:k[1],named:true}; }
       const safe=s2.replace(/["\\]/g,'').trim(); if(!safe) return null; return {sel:['nwr["name"~"'+safe+'",i]'],named:false}; }
     const _OP_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+    /* ⚠ (#R589) A RAW OVERPASS QUERY, RACED OVER THE SAME MIRRORS. `look_at_map` asks «what named
+       features overlap this frame», which is not a POI-kind search, so `overpassPOIs` above cannot serve
+       it — but the ENDPOINT LIST must not be spelled a second time, and this file is where it lives.
+       Lives here rather than in js/atlas-console.js because that file is shrink-only (tests/r419 ⑨d):
+       the kernel is a door, and the fetching belongs with the sources. */
+    async function overpassRaw(q,ms){ const t=Math.max(1000,+ms||20000);
+      for(const ep of _OP_EPS){
+        try{ const ctl=new AbortController(); const tt=setTimeout(()=>ctl.abort(),t);
+          try{ const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q),signal:ctl.signal}); if(!r.ok) continue; return await r.json(); }
+          finally{ clearTimeout(tt); } }catch(_){ /* next mirror */ }
+      }
+      throw new Error('every Overpass mirror refused');
+    }
     async function overpassPOIs(kindStr,box,lite,areaRel){ const ps=poiSelectors(kindStr); if(!ps) return null;
       /* (#R64) whole-admin-area coverage ("地点が一部地域だけ"): when the place resolved to a real OSM admin
          relation (a country/state), query by AREA — every tagged facility in the whole territory, not a clamped
@@ -232,5 +245,5 @@ export function makeAtlasSources(HOST, CTX) {
         }catch(_){} }
         return out;   /* [] = source answered, nothing tagged; null = source failed */
       }catch(_){ return null; } }
-  return { _OP_EPS, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs };
+  return { _OP_EPS, overpassRaw, _gdeltNews, _gnewsNews, _leaderData, _wikiSummary, aiFacilities, overpassPOIs, wikidataPOIs };
 }

@@ -70,6 +70,7 @@
 | `js/` のファイルを足した・消した | `npm run check:archfiles` |
 | 紛争データ | `npm run check:wars` |
 | 言語レイヤー | `npm run check:languages` |
+| 国政選挙のデータ | `npm run check:elections` |
 | 歴史都市名 | `npm run check:histcities` |
 | 1850–1885 の歴史国境 | `npm run check:histborders` |
 | 歴史国境のどの辺を描くか | `npm run check:bordercoast` |

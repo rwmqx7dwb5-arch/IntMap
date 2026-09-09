@@ -381,7 +381,7 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
    the gate, which is where a round's own spec belongs, and it is paid for at its own price rather
    than at the p75 an unmeasured file is charged. Not paid out of a stale-high entry (#R405: none
    has been measured this round that it may take from). */
-const TOTAL_BUDGET_S = 4714;            /* — 4705 (main) + 9 (#R590: tests/r590.spec.js) */
+const TOTAL_BUDGET_S = 4725;            /* — 4716 (main) + 9 (#R590: tests/r590.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum
@@ -450,6 +450,35 @@ const TOTAL_BUDGET_S = 4714;            /* — 4705 (main) + 9 (#R590: tests/r59
    recorded as 10 s, so 5 s is that ratio. ⚠ The corpus is not this machine's wall clock — it must
    be calibrated, not copied, and a future round re-measuring on CI should correct it. */
 const HISTORY = [
+  ['#R588', 4716, "\u26a0\u26a0 THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT \u2014 4,705 -> 4,716 (+11 s) \u2014 AND "
+    + "THE CORE CEILING DID NOT MOVE AT ALL. Saying both plainly, because this file's own message is \u00abnever "
+    + "raise it\u00bb and #R405 / #R416 / #R435 / #R455 / #R493 / #R494 are the precedents for saying so. CORE IS "
+    + "MEASURED, NOT CHOSEN: the five always-on suites did not move (monitors 10, smoke 8, security 4, "
+    + "internal-qa 2, r157 1 = 25) and the sixth is `currentRoundSpec()`, which this round is \u2014 "
+    + "tests/r588.spec.js at 11 gives 36 against BUDGET_S = 38. \u26a0 THE 11 s IS THE SPEC'S OWN MEASUREMENT, "
+    + "taken the way #R416 / #R428 / #R435 / #R439 / #R455 / #R494 took theirs: warm server, one worker, "
+    + "worker-scoped page, the reporter's own duration for the TEST BODY, summed over the file's three tests "
+    + "\u2014 10.2 / 8.9 / 6.4 s over three consecutive runs, upper bound 10.2, entered at the conservative 11. "
+    + "\u26a0 AND IT WAS PAID OUT OF THE SPEC FIRST, TWICE. The first draft was SEVEN tests and 1.9 min of body: "
+    + "every one of them re-ran `autoReset` and re-loaded the same era file to look at one render, and three of "
+    + "them waited on fixed sleeps (1.6 s for a flight, 1.5 s for a frame). It is three tests now, every sleep is "
+    + "a poll on the condition it was standing in for, and the press in \u2462 is RETRIED rather than slept before "
+    + "\u2014 measured 1.5 s worked and 0.6 s did not, so a fixed wait there is a guess about a frame. The second "
+    + "cut moved the attribution assertion out of \u2460 and into \u2461, which already loads a second polity: "
+    + "\u2460 fell from 4.3\u20138.3 s to 3.3\u20135.3 s because it stopped fetching a second era file for a fact "
+    + "another test was going to establish anyway. 13.3 s of upper bound became 10.2. \u26a0 AND A SAVING WAS "
+    + "LOOKED FOR AND DECLINED, for the reason #R455 / #R494 recorded and this round did not re-litigate: this "
+    + "corpus UNDER-charges (smoke measured 77 s against an entry of 8 in #R455), so claiming a second from "
+    + "another entry is arithmetic rather than a saving, and #R322's rule forbids it. \u26a0 WHAT THE SPEC BUYS "
+    + "IS THE ONE CLASS OF DEFECT THIS ROUND CANNOT REACH FROM NODE. tests/r588-checks.test.mjs (22 checks) "
+    + "holds the data contract and proves js/elections.js names no country \u2014 both from source. Neither can "
+    + "answer whether a PRESS on the map reaches the handler, which is exactly the shape #R552 measured one "
+    + "round ago: a fix that was correct in every node check and did not run in the shipped browser, because "
+    + "the checks bound their own copy of the wiring. So \u2460 reads the rendered source and asserts that EVERY "
+    + "district the map drew carries a colour (a hole in a choropleth reads as \u00abnobody won here\u00bb), "
+    + "\u2461 changes the country selector and asserts the camera followed AND that the credit line changed with "
+    + "it \u2014 several of these licences make attribution the CONDITION of the right to redistribute \u2014 and "
+    + "\u2462 presses the canvas at a point computed to be INSIDE a constituency and reads the popup that opens."],
   ['#R494', 4635, "⚠⚠ THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT — 4,632 -> 4,635 (+3 s) — AND THE CORE CEILING FELL BY TWO (30 -> 28), WHICH IS NOT THIS ROUND'S SAVING. Saying both plainly, because this file's own message is «never raise it» and #R388 / #R405 / #R416 / #R424 / #R428 / #R435 / #R439 / #R455 are the precedents for saying so. THE CORE FALL IS THE SHAPE #R416 AND #R435 RECORDED: tests/r494.spec.js is `currentRoundSpec()`, so tests/r466.spec.js loses that free pass and, at 5 s against CORE_MAX_S = 1, leaves the gate — smoke 8, monitors 10, security 4, internal-qa 2, r157 1, r494 3 = 28, measured rather than chosen. ⚠ THE 3 s IS THE SPEC'S OWN MEASUREMENT, taken the way #R416 / #R428 / #R435 / #R439 / #R455 took theirs: warm server, one worker, worker-scoped page, the reporter's own duration for the TEST BODY, summed over the file's five tests — 1,049 / 1,173 / 1,480 / 2,192 ms over four consecutive runs, upper bound 2,192, entered at the conservative 3. The tool that writes this table (`shard-plan --update`, which rounds each testcase before summing) would have written 1 from every one of those four runs; 3 is deliberately the expensive reading. ⚠ AND A SAVING WAS LOOKED FOR, MEASURED, AND DECLINED — twice. tests/r159.spec.js, whose #1 this round could have deleted outright (it asserts on an mdMini STRING and needs no browser; tests/r494-checks ⑥ now holds the same rule in node), measures 0.031 s for that test and 6 s for the file against an entry of 5: the test is free and the FILE is stale-LOW, so deleting a test there would have bought nothing and claiming a second from the entry would have been arithmetic on a table that under-charges. That is the third measurement in this ledger agreeing with #R384, #R388, #R439 and #R455 that this corpus under-charges, and #R322's rule forbids taking a saving out of it. ⚠ AND IT WAS NOT PAID OUT OF THE SPEC EITHER — the spec is FIVE tests on ONE boot with no fixed sleeps, and the payload in #3 was already cut from 400 to 120 characters when that turned out not to be where the time was. ⚠ WHAT THE SPEC BUYS IS THE ONE CLAIM THIS ROUND MAKES THAT NO SOURCE-SHAPE GATE CAN REACH. #R232's defect was that a heading was spaced TWICE — its own margin plus the paragraph spacer the renderer emitted on each side of it, 2.05em + 1.5em — and #R232's fix was a POST-PASS that deleted the spacer element from the finished HTML. Its test asserted the TEXT OF THAT POST-PASS, which proves a regex is present and says nothing about the gap. #R494 deletes both the spacer and the post-pass: the gap is a `<p>`'s bottom margin against an `<h2>`'s top margin, and adjacent margins COLLAPSE. Only a browser can confirm that they did, and #1 does it by reading `getBoundingClientRect()` and asserting the gap is the MAX of the two margins and strictly less than their SUM — an assertion that fails if collapsing ever stops happening. The other four are the same kind: computed `list-style-type` and a measured indent for the nested list (a `<div>` with a `•` had no notion of either), the `white-space` and `scrollWidth` a Wrap toggle actually changes, and the six source cards that were being dropped silently by `slice(0,6)` now revealed by their chip."],
   ['#R493', 4632, "⚠⚠ THE TOTAL CEILING MOVED BY THE MEASURED AMOUNT — 4,630 -> 4,632 (+2 s) — AND THE CORE "
     + "CEILING DID NOT MOVE AT ALL. Saying both plainly, because this file's own message is «never raise it»; "
