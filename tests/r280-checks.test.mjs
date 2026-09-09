@@ -88,9 +88,10 @@ test('R280 ② every rule this round added FAILS when its fact is made wrong', a
          again. The mutation is unchanged in kind: take a table OUT of the list the rule reads.
          (#R491) ai_gloss_usage joined them, 31 → 32, and the anchor moved once more.
          (#R507) profiles_public stopped being a VIEW and became a table, so it joined both lists
-         too, 32 → 33 — and it is now the last name in list #1, so the anchor is on it. */
-      from: "  'profiles_public'\n]) as t;                                                    -- 33 assertions\n\n-- 2)",
-      to: "]) as t;                                                    -- 33 assertions\n\n-- 2)" },
+         too, 32 → 33 — and it is now the last name in list #1, so the anchor is on it.
+         (#R590) who_don_extracts joined them, 33 → 34, and the anchor moved onto it. */
+      from: "  'who_don_extracts'\n]) as t;                                                    -- 34 assertions\n\n-- 2)",
+      to: "]) as t;                                                    -- 34 assertions\n\n-- 2)" },
     { rule: 'legal', file: 'privacy.html',
       from: '<script src="./js/legal-text.js"></script>\n', to: '' },
     { rule: 'doc-index', file: 'docs/README.md',

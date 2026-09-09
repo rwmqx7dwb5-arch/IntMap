@@ -4,7 +4,7 @@
 --  Executed by `supabase test db` (see docs/DATABASE.md).
 -- ============================================================================
 begin;
-select plan(86);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
+select plan(88);   -- (#R334) +16: the eight Event tables join the has_table list and the RLS list
                    -- (#R351) +2: news_ingest_runs joins both lists too. A table missing from the
                    -- list cannot fail the list (#R280) — that is why the count moves with the table.
                    -- (#R386) +6: news_event_admin_actions joins BOTH lists (+2), and the four operator
@@ -49,8 +49,11 @@ from unnest(array[
   -- (#R507) the public author card. Until now this name was a SECURITY DEFINER view, which read
   -- profiles with the owner's rights and bypassed its RLS; it is a table holding only the four
   -- public columns, so there is no bypass left for a future column to inherit.
-  'profiles_public'
-]) as t;                                                    -- 33 assertions
+  'profiles_public',
+  -- (#R590) the case and death counts read out of each WHO Disease Outbreak News item. Public
+  -- read (it is WHO's own published number), service_role write.
+  'who_don_extracts'
+]) as t;                                                    -- 34 assertions
 
 -- 2) RLS is ENABLED on every one of them (fail-closed: a table with RLS off fails).
 select ok(
@@ -68,8 +71,9 @@ from unnest(array[
   -- rather than public: admin reads it, service_role writes it.
   'news_cluster_decisions','news_event_i18n','saved_news_events','news_ingest_runs',
   'news_event_admin_actions',
-  'profiles_public'                                         -- (#R507) see the note above
-]) as t;                                                    -- 33 assertions
+  'profiles_public',                                        -- (#R507) see the note above
+  'who_don_extracts'                                        -- (#R590) see the note above
+]) as t;                                                    -- 34 assertions
 
 -- (#R386) 2b) The operator RPCs exist. The admin console has buttons wired to these four names;
 --   a button that calls a function which is not there fails at the moment an operator needs it.

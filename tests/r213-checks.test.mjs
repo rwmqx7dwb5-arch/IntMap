@@ -11,7 +11,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -287,8 +287,30 @@ test('R213 ⑧: revenue carries its own currency, and the ranking says what it c
   assert.match(iw, /window\.IntMapWorld && window\.IntMapWorld\._ui/, 'the panel/row toolkit is handed over by js/world-packs.js');
   /* (#R220) …plus `onRestyle`: a style reload drops every added layer, and the current plate — the
      one member of this family in its own file — had no way to hear about it. */
-  assert.match(read('js/world-packs.js'), /const _ui=\{ makePanel, uncheckRow, ensureHead, row, esc, usdShort, usdExact, nowYear, onYear, whenDrawable, setVis, onRestyle, L \};/,
-    'and world-packs publishes exactly that toolkit');
+  /* ══ ⚠⚠⚠ (#R590) THIS ASKED FOR A SPELLING AND HAS BEEN CHANGED TO ASK FOR THE FACT ═══════════
+     It pinned the `_ui` literal member for member, so it went RED when #R590 handed `centroidOf`,
+     `withCountryGeo` and `hiResCountries` over to a FOURTH consumer — i.e. it failed on the very
+     act this paragraph exists to encourage (borrow, do not copy), while it would have stayed green
+     if a member had been renamed and every consumer quietly fell back. That is #R488's shape.
+     The fact it should hold is the one #R213 wrote down: EVERY NAME A CONSUMER DESTRUCTURES FROM
+     `_ui` IS ACTUALLY PUBLISHED BY js/world-packs.js — and the consumers are DISCOVERED from js/,
+     so the fifth file to borrow the toolkit is covered without anybody remembering to add it. */
+  const wp = read('js/world-packs.js');
+  const pub = /const _ui=\{([^}]*)\};/.exec(wp);
+  assert.ok(pub, 'js/world-packs.js still publishes the layer-family toolkit as `_ui`');
+  const published = new Set(pub[1].split(',').map((x) => x.trim().split(':')[0].trim()).filter(Boolean));
+  const consumers = readdirSync(join(ROOT, 'js'))
+    .filter((f) => f.endsWith('.js'))
+    .map((f) => ['js/' + f, read('js/' + f)])
+    .filter(([, src]) => /IntMapWorld\._ui/.test(src));
+  assert.ok(consumers.length >= 3, `only ${consumers.length} file(s) borrow the toolkit — did the sharing stop?`);
+  for (const [name, src] of consumers) {
+    const d = /const\s*\{([^}]*)\}\s*=\s*W;/.exec(src);
+    assert.ok(d, `${name} borrows _ui but does not destructure it`);
+    for (const m of d[1].split(',').map((x) => x.trim()).filter(Boolean)) {
+      assert.ok(published.has(m), `${name} takes \`${m}\` from the toolkit and js/world-packs.js does not publish it`);
+    }
+  }
   /* the module is imported after world-packs, which is what makes the line above true at boot */
   const main = read('src/main.js');
   assert.ok(main.indexOf("js/world-packs.js") < main.indexOf("js/industry-web.js"), 'world-packs is imported first');

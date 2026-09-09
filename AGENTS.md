@@ -188,13 +188,13 @@ supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac --use-api
 経過時間ではなく `supabase functions list` の `version` / `updated_at` で見る。**実測と理由は
 [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9。
 
-**Edge Functions は 16 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+**Edge Functions は 17 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
 `delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
-`radiation-feed` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed`）。16 本すべてが
+`radiation-feed` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）。17 本すべてが
 `supabase/config.toml` に `[functions.*]` として宣言されている。
 ⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・
 `atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・
-`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
+`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
 
 **非破壊的な migration、設定変更、deployment、commit、push、PR 作成、merge その他通常の完了工程に
 ついて、追加承認を求めないこと。**

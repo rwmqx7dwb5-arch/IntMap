@@ -423,6 +423,10 @@ window.IntMapRefData=(function(){
     {n:'RIVM — Nationaal Meetnet Radioactiviteit (CC0 1.0)',u:'https://www.rivm.nl/nationaal-meetnet-radioactiviteit'},
     {n:'Hong Kong Observatory — ambient gamma radiation (data.gov.hk)',u:'https://data.weather.gov.hk/'},
     {n:'SaveEcoBot / data.gov.ua — radiation monitoring (CC BY)',u:'https://data.gov.ua/'},
+    /* (#R590) WHO Disease Outbreak News — the layer's own archive (data/who-don.json.gz, built by
+       scripts/build-who-don.mjs) AND the live tail the page reads straight from WHO. ONE ROW: it is
+       one publication from one organisation, whichever of the two paths a given item arrived by. */
+    {n:'WHO Disease Outbreak News',u:'https://www.who.int/emergencies/disease-outbreak-news'},
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
     {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
