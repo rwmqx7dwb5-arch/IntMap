@@ -93,9 +93,23 @@ const CMD = {
          cache for an operation nobody calls asserts nothing. OFF. */
   skip: { sourceData: true, filter: false, paint: false, layout: false, featureState: false },
 };
+/* ⚠⚠⚠ (#R568) COUNTING AND DESCRIBING ARE TWO SWITCHES, AND ONE URL USED TO ASK FOR BOTH.
+   `?perf=1` opens the on-device HUD (js/perf-hud.js) — the instrument for 「スマホが遅い」 — and it
+   also set `detail`, which runs `_contentSig` on every source update: a synchronous JSON.stringify
+   of the WHOLE payload plus a walk of the resulting string, O(bytes) per call, on the phone whose
+   slowness is the thing being measured. A reading taken under `?perf=1` was therefore NOT a reading
+   of what a plain load does, and the two could not be compared — the instrument was part of the
+   scene it was describing.
+   So the two are separated at the door: `?perf=1` COUNTS (integers, one boolean test per call) and
+   nothing more. The O(n)-per-call tables are asked for BY NAME, and the name stays `?cmdlog=1`
+   because scripts/frame-profile.mjs --commands opens exactly that URL and reads byId / msCall /
+   msCmp out of it — that harness is the reason detail exists at all. `?cmddetail=1` is the same
+   request spelled for a human who is already looking at the HUD. */
 try {
   const q = (typeof location !== 'undefined' && location.search) || '';
-  if (/[?&](cmdlog|perf)=1\b/.test(q)) { CMD.on = true; CMD.detail = true; }
+  const wantDetail = /[?&](cmdlog|cmddetail)=1\b/.test(q);
+  if (wantDetail || /[?&]perf=1\b/.test(q)) CMD.on = true;
+  if (wantDetail) CMD.detail = true;
   if (typeof window !== 'undefined' && window.__imCmdLog) CMD.on = true;
   /* `?cmdskip=off` and `?cmdskip=sourceData,paint` — the A/B lever. One build measures both arms,
      which is the only way two arms can differ by the change and by nothing else. */
@@ -264,6 +278,14 @@ function skipData(cmd, id, s, data, opts, mem) {
   if (opts && opts.revision !== undefined) mem.rev[id] = opts.revision; else delete mem.rev[id];
   return false;
 }
+/* ⚠ (#R568) AND THIS ONE IS DELIBERATELY NOT CAPPED — the reason, so the next round does not add a
+   cap 「for symmetry」. Every key here is a SOURCE id, and the adapter DELETES the key when the source
+   goes: `addSource` and `removeSource` both call `forget(id)` (js/geo-engine.js). The id space is the
+   app's own vocabulary — `src-<catalogue id>`, `cmpx-<id>`, `ox-<id>` — composed from fixed lists, so
+   the table cannot outgrow the style no matter how long the tab lives. That is exactly what the
+   per-id TALLY below does not have: its keys are never deleted, which is why that one is capped and
+   this one is not. If a caller ever mints source ids per feature, this note stops being true and the
+   cap belongs here too. */
 function makeSourceMemory() {
   /* (#R344) `diff` is per-source permission to send {add,remove} instead of the whole collection:
      the whole write that declared itself `diffable` sets it and `forget` clears it, so a source that
@@ -275,10 +297,27 @@ function makeSourceMemory() {
 
 /* One tally per adapter — the compare pane and the flight simulator's minimap each get their own,
    for the same reason every other piece of adapter state is per-adapter (#R179). */
+/* ⚠⚠ (#R568) THE PER-ID AND PER-PHASE TABLES HAVE A CEILING, because they had none and their keys
+   are never deleted: `op + ' ' + id` and `phase + ' ' + op` accumulate for the life of the tab and
+   only `reset()` empties them. A diagnostic left running is exactly the session where that matters,
+   so the instrument could become the largest object in a tab it was opened to make smaller.
+     · 観測 — a row is two short strings plus four integers; measured as JSON on this repo's own row
+       shape it is ~90 B, and a JS object with two strings is on the order of 200 B. 512 rows across
+       both tables is therefore ~200 KB, which is small against the heap this HUD reports in MB, and
+       far more rows than a session can produce meaningfully: the keys are the app's layer and source
+       ids crossed with five operations, and the biggest single-scenario tally #R322 measured was
+       1,946 CALLS over a handful of ids.
+     · 失効条件 — `folded` is published by read(). The moment it is non-zero in a real session, this
+       number is wrong for that session (or something is minting ids per feature), and the instrument
+       says so instead of quietly truncating. It is a ceiling on what is RETAINED, never on what is
+       counted: the totals above are exact whatever happens here.
+     · 正本 — here. js/perf-hud.js keeps no table of its own and must not grow one. */
+const _MAX_ROWS = 512;
+const _FOLDED = '… (over cap)';
 function makeCommandLog() {
   const tot = Object.create(null);
   for (const k of CMD_OPS) tot[k] = { attempted: 0, sent: 0, applied: 0, same: 0, absent: 0, sameRef: 0, sameShape: 0, sameContent: 0, repeatBytes: 0, msCall: 0, msCmp: 0 };
-  let byId = Object.create(null), byPhase = Object.create(null);
+  let byId = Object.create(null), byPhase = Object.create(null), nId = 0, nPhase = 0, foldId = 0, foldPhase = 0;
   function note(op, id, outcome, extra) {
     const t = tot[op];
     /* `applied` classifies (this value is NEW); `sent` counts what actually reached the
@@ -287,10 +326,18 @@ function makeCommandLog() {
     if (extra) { if (extra.ref) t.sameRef++; if (extra.shape) t.sameShape++; if (extra.content) { t.sameContent++; t.repeatBytes += (extra.bytes || 0); } }
     if (!CMD.detail) return;
     const ki = op + ' ' + id;
-    const r = byId[ki] || (byId[ki] = { op, id: String(id), attempted: 0, applied: 0, same: 0, absent: 0 });
+    let r = byId[ki];
+    if (!r) {
+      if (nId >= _MAX_ROWS) { foldId++; r = byId[_FOLDED] || (byId[_FOLDED] = { op: '*', id: _FOLDED, attempted: 0, applied: 0, same: 0, absent: 0 }); }
+      else { nId++; r = byId[ki] = { op, id: String(id), attempted: 0, applied: 0, same: 0, absent: 0 }; }
+    }
     r.attempted++; r[outcome]++;
     const kp = CMD.phase + ' ' + op;
-    const q = byPhase[kp] || (byPhase[kp] = { phase: CMD.phase, op, attempted: 0, applied: 0, same: 0, absent: 0 });
+    let q = byPhase[kp];
+    if (!q) {
+      if (nPhase >= _MAX_ROWS) { foldPhase++; q = byPhase[_FOLDED] || (byPhase[_FOLDED] = { phase: _FOLDED, op: '*', attempted: 0, applied: 0, same: 0, absent: 0 }); }
+      else { nPhase++; q = byPhase[kp] = { phase: CMD.phase, op, attempted: 0, applied: 0, same: 0, absent: 0 }; }
+    }
     q.attempted++; q[outcome]++;
   }
   /* (#R322) the number a boot clock is too noisy to show: main-thread milliseconds actually spent
@@ -311,12 +358,15 @@ function makeCommandLog() {
       if (CMD.detail) {
         out.byId = Object.keys(byId).map((k) => byId[k]).sort((a, b) => b.same - a.same || b.attempted - a.attempted);
         out.byPhase = Object.keys(byPhase).map((k) => byPhase[k]);
+        /* (#R568) what the cap cost this reading — calls that got no row of their own. Zero is the
+           expected value, and anything else says the cap above is wrong for this session. */
+        out.folded = { byId: foldId, byPhase: foldPhase, cap: _MAX_ROWS };
       }
       return out;
     },
     reset() {
       for (const k of CMD_OPS) { const t = tot[k]; t.attempted = t.sent = t.applied = t.same = t.absent = t.sameRef = t.sameShape = t.sameContent = t.repeatBytes = t.msCall = t.msCmp = t.diffed = 0; }
-      byId = Object.create(null); byPhase = Object.create(null);
+      byId = Object.create(null); byPhase = Object.create(null); nId = nPhase = foldId = foldPhase = 0;
     },
   };
 }

@@ -1091,6 +1091,12 @@ window.IntMapModules.seismic=function(HOST){
        on the sea), cells with no DEM fall back to the panel's site class and are counted, and past
        MMI_MAX_KM nothing is painted at all — the same range statement the table already makes. */
     let fld=null, fldSeq=0, fldBusy=false, fldT=null;
+    /* (#R568) THE PIN THIS BUILD HOLDS ON THE DEM STORE. #R221 pinned into one global Set that one
+       argument-less releaseDEMHold() emptied, so a second build starting while this one ran unpinned
+       the first one's tiles — the pin stopped protecting exactly when two things needed it. A lease
+       is per build: the three warm-ups below (the far window, the main field and its retry passes)
+       share this token, and the finally releases THIS token and no other. */
+    let fldLease=null;
     const VS30_BINS=[[1e-4,180],[2.2e-3,240],[6.3e-3,300],[0.018,360],[0.05,490],[0.10,620],[0.138,760]];
     function vs30FromSlope(s){
       if(!(s>0)||s<VS30_BINS[0][0]) return 180;
@@ -1773,7 +1779,7 @@ window.IntMapModules.seismic=function(HOST){
           farTiles=warmF.length;
           if(farTiles){
             const msF=Math.max(8000,Math.min(30000,600*Math.sqrt(farTiles)*1.6));
-            await warmDEMTiles(warmF,zF,msF,null,true);
+            await warmDEMTiles(warmF,zF,msF,null,fldLease||true);
             if(seq!==fldSeq) return;
             snapFar=(typeof demSnapshot==='function')?demSnapshot(winW,winS,winE,winN,zF,_farKeep):null;
           }
@@ -1962,6 +1968,8 @@ window.IntMapModules.seismic=function(HOST){
       const seq=++fldSeq;
       if(!epi){ _revoke(fld&&fld.url); _revoke(fldFar&&fldFar.url); fld=null; fldFar=null; paintField(); paintFar(); return; }
       fldBusy=true; fldStale=false; fldPct=0; if(opened) report();
+      try{ if(fldLease) HOST.releaseDEMHold(fldLease); }catch(_){}
+      fldLease='seis-field-'+seq;   /* this build's own name for its pin — see js/map-readout.js */
       const t0=performance.now();
       /* ⚠ (#R263) BOTH OF THESE ARE RESOLVED ONCE, HERE, AND NEVER INSIDE THE CELL LOOP. The regime
          is a property of the hypocentre and the site bank is a property of the region, so a build is
@@ -2340,7 +2348,7 @@ window.IntMapModules.seismic=function(HOST){
              a phone fetching 400 tiles over mobile data is not a 12-second job and the old constant
              is what turned a slow network into a ring pattern. */
           const _ms=Math.max(12000,Math.min(45000,600*Math.sqrt(warm.length)*1.6));
-          await warmDEMTiles(warm,z,_ms,(f)=>prog(6+34*(+f||0)),true);
+          await warmDEMTiles(warm,z,_ms,(f)=>prog(6+34*(+f||0)),fldLease||true);
         }catch(_){}
         prog(40);
         if(seq!==fldSeq) return;
@@ -2394,7 +2402,7 @@ window.IntMapModules.seismic=function(HOST){
            lost them again to the same ceiling. */
         for(let pass=0; pass<2 && snap && snap.missing>Math.max(4,snap.want*0.08); pass++){
           try{
-            await warmDEMTiles(HOST.demTilePoints(W,Ss,E,Nn,z,_keepTile),z,10000,null,true);
+            await warmDEMTiles(HOST.demTilePoints(W,Ss,E,Nn,z,_keepTile),z,10000,null,fldLease||true);
             if(seq!==fldSeq) return;
             const s2=demSnapshot(W,Ss,E,Nn,z,_keepTile);
             if(s2&&s2.have>=snap.have) snap=s2;
@@ -2589,7 +2597,7 @@ window.IntMapModules.seismic=function(HOST){
         await buildFar(profAt,{W,E,Ss,Nn},rFine,rEdgeSurf,seq,farWin);
         if(fld&&fld.stats) fld.stats.ms=Math.round(performance.now()-t0);
         prog(100);
-      } finally { try{ HOST.releaseDEMHold(); }catch(_){}   /* (#R221) the pin is for THIS build only */
+      } finally { try{ HOST.releaseDEMHold(fldLease||undefined); }catch(_){} fldLease=null;   /* (#R221) the pin is for THIS build only — (#R568) and for this build ALONE */
         if(seq===fldSeq){ fldBusy=false;
         /* (#R190) the build warmed the DEM around the epicentre, so the tsunami screening may have an
            answer now that it did not have when the panel was drawn — see syncTsunami. */
