@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（271本・12.4 MB）＋ `src/`（12本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（272本・12.4 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -610,9 +610,59 @@ worker client を含む）が届き、worker 本体は最初の検索が始ま�
 **正直さの規約**（`docs/PHOTO-GEOLOCATION.md` §7 が正本）——EXIF の座標を結果にしない／格子間隔より
 細かい座標を主張しない／範囲を裏で狭めない／中止しても途中結果を返す／欠損と出典を必ず出す。
 
+### 2.5 放射性物質の拡散 (Radioactive dispersion) — `js/radiation-model.js`
+
+**数の正本は [`docs/RADIATION-MODEL.md`](docs/RADIATION-MODEL.md)**——事故 × 核種ごとの放出量、
+地表沈着から線量率への係数を**どの慣習で採ったか**、沈着密度による法定区分が**核種ごとに存在したり
+しなかったりする**こと、環境半減期、乱流と境界層、モンテカルロ誤差、気象場の解像度と領域の上限、
+そして**このモデルがやらないこと**はそこにある。ここは構成と公開契約だけ。
+
+⚠ **HYSPLIT / FLEXPART の代わりではない。** 系統（ラグランジュ粒子輸送＋乱流拡散＋乾性湿性沈着）は
+同じだが、気象場は公開 API の格子点であって数値予報モデルの全格子ではなく、化学も地形の効果も
+入っていない。入口は Layers ▸ Tools ▸ 放射性プルーム拡散、Atlas からは capability `sim.radiation`
+（回答は `js/atlas-console.js` の `case 'radiation'`）。
+
+| ファイル | 役割 |
+|---|---|
+| `js/radiation-model.js` | **モデル本体**——風の場の入れ子ネストの構築、高度別の風の内挿、ラグランジュ solve、沈着格子、ゾーン、線量積分。**DOM も window も言語レジストリも触らない純粋モジュール**で、出すのは `export const RAD` 1 本だけ |
+| `src/radiation-worker.js` | worker 入口。`../js/radiation-model.js` を import するだけで**物理を 1 行も持たない**。結果の 3 本の typed array は transfer で返す |
+| `src/radiation-worker-client.js` | ページ側 `window.IntMapRadiationWorker`。`new Worker(new URL('./radiation-worker.js', import.meta.url), {type:'module'})`——`src/` に置くのは、バンドラに worker を切り出させられる形がこれだけだから。`src/main.js` が sat / tsunami / aviation と同じ並びで eager import する |
+| `js/sims.js` | パネル UI・Open-Meteo の取得（2 枚のネストを 2 リクエストで）・地図レイヤー・プルームのアニメーション・共有状態。`window.IntMapRadiation` |
+
+**縮退し、縮退したことを言う。** worker があれば 20,000 粒子、無ければページ上で 4,000 粒子。
+粒子数は速度の設定ではなく**ピーク沈着のモンテカルロ誤差の設定**なので、どちらで走ったかを
+`engine` として返す——誤差の違うものを同じ声で言わないため。
+
+**`IntMapRadiation.run(src, opts)` が返すもの（公開契約）。** 失敗は `{ok:false, reason}`
+（`reason:'wind'` は気象場が取れなかったとき。⚠ **地図が塗れるかどうかには依存しない**——
+沈着の報告は先に返り、レイヤーは塗れるようになった時点で塗られる）。成功したときは:
+
+| 何についての値か | フィールド |
+|---|---|
+| 場と時刻 | `startISO` `hours` `emitHours` `windSpeed` `windToward` `windHeight` `windLevels` `wet` `archive` `pblEstimated` `domainHalfDeg` `domainComplete` |
+| 放出 | `iso` `isotope` `halfLifeHours` `bq` `releaseHeight` `sourceExact` `sourceLo` `sourceHi` `sourceProvisional` |
+| 沈着と線量 | `zones` `zoneKm2` `peakKBqM2` `peakLL` `peakDoseUSvH` `firstYearMSv` `externalMeaningful` `zonesAreLegal` `zoneJurisdiction` |
+| どれだけの計算だったか | `engine` `particles` `peakN` `peakRelSE` `peakWellSampled` `minPeakN` |
+| **この地図に入っていないもの** | `airborneFrac` `escapedFrac` `escapedMassFrac` `reachKm` |
+
+不変条件——**呼び出し側が、持っていない精度を印字できないようにするためにある**:
+
+- ⚠ **`reachKm` は粒子から測った実測値**であって `windSpeed × hours` ではない。領域を出た粒子は
+  座標をクランプせずに**退役して数える**（`escapedFrac` は粒子の割合、`escapedMassFrac` は放射能の
+  割合で、沈着地図について言えるのは後者だけ）。
+- ⚠ **`windSpeed` は放出高度の風**であって 10 m 風ではない（`windHeight` がその高度）。
+- ⚠ **計算終了時に浮遊分を地面へ落とさない。** 落とすと、同じ放出について 48 時間の run と
+  80 時間の run が過去について違うことを言う。終了時に空にある分は `airborneFrac` として報告する。
+- ⚠ **ピークは誤差棒つきでしか名乗らない。** 寄与した相異なる粒子の数が `minPeakN` に満たないセルは
+  `peakWellSampled:false` になり、パネルも Atlas もそこでは数値を出さない。
+- ⚠ **凡例の語はページのもの、段の数はモデルのもの。** `js/sims.js` が `RAD.zonesFor()` の返す段に
+  9 言語のラベルを貼る——だからモデルは言語レジストリを持たず、はしごが 2 本に分かれない。
+- ⚠ **法定区分の無い核種に政策の語を使わない**（`zonesAreLegal` / `zoneJurisdiction`）。
+  I-131 と Cs-134 に出るのは、政策の語を持たない密度の段だけである。
+
 ## 3. ファイル構成 (Files)
 
-**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 195 本あり、1行説明を
+**ファイル台帳の正本は [`docs/FILES.md`](docs/FILES.md)。** `js/` だけで 269 本あり、1行説明を
 全部ここに置くと仕様書の 4 分の 1 が台帳になるので分けた。節番号は向こうでも `§3.1`〜`§3.13` の
 ままで、他の文書からの `§3.x` 参照はそのまま通る。`node scripts/arch-files-check.mjs --check` が
 `js/` の実体と台帳を突き合わせる。
@@ -1259,6 +1309,9 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 周辺人口・空港・地震、**カードの分類語を9言語で言う規則と散文を訳さない理由**、
 **カタログを問いに絞る4つの条件とマスタークロックに載せた噴火記録**は
 [`docs/VOLCANO-INTELLIGENCE.md`](docs/VOLCANO-INTELLIGENCE.md) が正本。
+
+⚠ **放射性物質の拡散も同じ形**——ツールとしての不変条件は §7.9（あちら）、**モジュールの分担と
+`run()` の公開契約は §2.5**、**モデルの数の出所は [`docs/RADIATION-MODEL.md`](docs/RADIATION-MODEL.md)**。
 ### 7.2 レイヤー欄の分類・7.5 地図の初期化
 
 **どちらも [`docs/MAP-LAYERS.md`](docs/MAP-LAYERS.md) へ移した**（節番号は同じ）。§7.2 は 18 の棚と
