@@ -48,14 +48,34 @@ const posix = (p) => p.split(String.fromCharCode(92)).join('/');
 const DECLARES_NODE_TESTS =
   /(?:\bfrom\s*|\brequire\s*\(\s*|\bimport\s*\(\s*|^\s*import\s+)['"]node:test['"]/m;
 
-/* the pattern is read OUT of the script, never restated here: a check that carries its own copy
-   of the glob would pass against a pattern nobody runs (#R500) */
+/* the pattern is read OUT of whatever runs it, never restated here: a check that carries its own
+   copy of the glob would pass against a pattern nobody runs (#R500)
+
+   ⚠ (#R621) IT FOLLOWS ONE DELEGATION NOW. `test:checks` used to be `node --test "<glob>"`, and CI
+   sharded it with `npm run test:checks -- --test-shard=i/n` — which does not shard, because npm can
+   only APPEND and node ignores an option that lands after the positional (measured: 155 tests with
+   the flag in front, 441 with it behind, 441 with no flag at all). So the glob moved into
+   scripts/test-checks.mjs, which puts arguments in front of it.
+   ⚠ THE RULE #R529 WROTE IS UNCHANGED: ONE pattern, discovered, and no test file named anywhere.
+   Only its address moved, and this reads it from the new address rather than from a copy. */
 const patternInUse = () => {
   const s = pkg().scripts['test:checks'];
-  assert.match(s, /^node --test /, 'test:checks no longer starts the node runner');
-  const args = s.replace(/^node --test /, '').trim().split(/\s+/);
+  let src, where;
+  const direct = /^node --test (.+)$/.exec(s.trim());
+  if (direct) { src = direct[1]; where = 'package.json test:checks'; }
+  else {
+    const via = /^node ([\w./-]+\.mjs)$/.exec(s.trim());
+    assert.ok(via, 'test:checks neither starts the node runner nor delegates to a single runner script: ' + s);
+    const runner = read(via[1]);
+    /* the runner must hand the pattern to `node --test`, and hold exactly one */
+    assert.match(runner, /'--test'/, via[1] + ' does not start the node test runner');
+    const g = /export const GLOB = '([^']+)';/.exec(runner);
+    assert.ok(g, via[1] + ' does not export a single GLOB — the file set must have one written home');
+    src = '"' + g[1] + '"'; where = via[1] + ' GLOB';
+  }
+  const args = src.trim().split(/\s+/);
   assert.equal(args.length, 1,
-    `test:checks takes ${args.length} arguments — one pattern, discovered, is the whole of #R529`);
+    where + ' carries ' + args.length + ' arguments — one pattern, discovered, is the whole of #R529');
   assert.match(args[0], /^".+"$/,
     'the pattern is not double-quoted — an unquoted glob is expanded by some shells and passed through by others');
   return args[0].slice(1, -1);
