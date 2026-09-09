@@ -210,6 +210,8 @@ time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 hist-cities.js                    時計の年の**都市名** IntMapHistCities（611都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
+net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
+net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
 war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベトナム／中東／ユーゴ）IntMapWarFronts（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）

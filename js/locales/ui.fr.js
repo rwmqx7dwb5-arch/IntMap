@@ -6145,4 +6145,21 @@ window.IntMapLang.define('fr', { ui: {
   "USGS published no ShakeMap for this earthquake": "L'USGS n'a pas publié de ShakeMap pour ce séisme",
   "USGS ShakeMap — ground motion estimated from recordings, felt reports and site conditions, not a drawing of the magnitude.": "USGS ShakeMap — mouvement du sol estimé à partir d'enregistrements, de témoignages ressentis et des conditions de site ; ce n'est pas un dessin de la magnitude.",
   "USGS ships no colour scale for this measure, so it is drawn as contour lines only.": "L'USGS ne publie pas d'échelle de couleurs pour cette mesure : elle est donc tracée uniquement en isolignes.",
+  /* (#R565) internet-health — js/net-health.js (layer rows, toast) · js/net-health-live.js
+     (legend, popup, coverage line). «outage» = a loss of connectivity, «probe» = a RIPE Atlas
+     measurement node, and «below its own recent normal» is a RATIO against that country's own
+     recent baseline — not a fixed threshold. */
+  "Internet outages": "Pannes d'internet",
+  "Network reachability (measurement probes)": "Accessibilité du réseau (sondes de mesure)",
+  "Could not load the internet-health data": "Impossible de charger les données de santé de l'internet",
+  "All signals": "Tous les signaux",
+  "below its own recent normal": "sous son niveau normal récent",
+  "{p}% below its own recent normal — {s} ({l})": "{p} % en dessous de son propre niveau normal récent — {s} ({l})",
+  "{a} ASNs, {b} IPv4 and {c} IPv6 prefixes visible in RIPE routing data ({d})": "{a} ASN, {b} préfixes IPv4 et {c} préfixes IPv6 visibles dans les données de routage RIPE ({d})",
+  "showing {n} of {t} probes that report «{s}»": "{n} sondes sur {t} rapportant «{s}» affichées",
+  "The readings arrived but the map could not draw them": "Les mesures sont arrivées, mais la carte n'a pas pu les dessiner",
+  "{a} alerts, {b} drawn, {c} not placed": "{a} alertes, {b} tracées, {c} non localisées",
+  "No outage alerts in the last three hours": "Aucune alerte de panne au cours des trois dernières heures",
+  "This source does not publish that scope": "Cette source ne publie pas ce périmètre",
+  "The source could not be reached — this is not an all-clear": "La source n'a pas pu être jointe — cela ne veut pas dire que tout va bien",
 } });
