@@ -156,7 +156,38 @@ export function makeAtlasAnswerRender() {
   .atl-aux{margin-top:.7em;font-size:.82em;line-height:1.5;color:var(--text-muted);}
   `;
 
-    const API = { answerCSS, answerPlainText, renderAnswer, stripModelUrls };
+  /* ── (#R574) A LINK IS A CLAIM THAT SOMETHING WAS FETCHED ───────────────────────────────────────
+     「これなに」 over 名古屋 came back citing 「(mapion.co.jp)」 — a live, clickable anchor to a page no
+     part of the turn had ever requested. `stripModelUrls` above could not stop it, because the model
+     did not write a bare URL: it wrote a markdown link, and js/atlas-markdown.js turns `[text](url)`
+     into a real anchor exactly as it is supposed to. The structured path never showed it because that
+     path builds every anchor from the registry; the CONVERSATIONAL path renders the prose as written,
+     and that is the whole difference between the two.
+
+     ⚠⚠⚠ THIS DOES NOT DELETE A SENTENCE AND MUST NEVER START TO. The words stay, the reader keeps the
+     answer, and Atlas keeps every capability it had — cf. the standing rule that Atlas gets no new
+     limits. What it removes is the FALSE PART: the assertion, carried by the anchor rather than by the
+     prose, that IntMap went and looked. An unfetched host degrades to plain text.
+
+     ⚠ `allowed` is the set of hosts THIS TURN actually retrieved. Not an allow-list of sites — there
+     is deliberately no such list here, and there must not become one; a hand-written roster of
+     «trustworthy domains» is the case-by-case hardcoding .agents/rules/no-ad-hoc-hardcoding.md
+     forbids, and it would bless an invented mapion.co.jp link the moment mapion appeared on it. */
+  function demoteUnfetchedLinks(html, allowed) {
+    const ok = new Set();
+    (allowed || []).forEach((h) => { const s = String(h || '').toLowerCase().replace(/^www\./, ''); if (s) ok.add(s); });
+    return String(html == null ? '' : html).replace(
+      /<a\s+href="([^"]*)"([^>]*)>([\s\S]*?)<\/a>/gi,
+      (m, href, attrs, label) => {
+        /* citation pills are built from the registry, never from prose — they are not this rule's business */
+        if (/atl-cite/.test(attrs)) return m;
+        const h = hostOf(href);
+        if (!h || ok.has(h)) return m;
+        return label;   /* the readable half survives; the unearned claim does not */
+      });
+  }
+
+    const API = { answerCSS, answerPlainText, renderAnswer, stripModelUrls, demoteUnfetchedLinks };
     try { window.IntMapAnswerRender = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();
