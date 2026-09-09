@@ -130,7 +130,7 @@ import '../js/data-layers.js';
 import '../js/workspace.js';
 import '../js/widgets.js';   /* (#R292) …and with it the ten js/widget-*.js modules it imports itself: the platform's load order is the PLATFORM's business, so the entry keeps the one line it had before the board was split. Roles: docs/FILES.md §3; structure: Architecture.md §7.5 */
 import '../js/wb-layers.js';
-import '../js/us-elections.js'; import '../js/war-fronts.js';   /* (#R349) …and the two world wars' Layers ROW, on this line for the shell budget — the layer itself (js/war-layer.js) is lazy */
+import '../js/us-elections.js'; import '../js/war-fronts.js'; import '../js/net-health.js';   /* (#R349) …and the two world wars' Layers ROW, on this line for the shell budget — the layer itself (js/war-layer.js) is lazy */
 import '../js/beta-overlays.js';
 import '../js/cameras.js';
 /* (#R224) js/atlas-console.js is NOT imported here any more — it is the ninth on-demand module
@@ -369,7 +369,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
   'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'usElections', 'precipAnnual', 'warFronts', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
+  'oceanCurrents', 'usElections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These files are not in the import list above: they are fetched by js/lazy-modules.js the
@@ -388,7 +388,7 @@ const MODULE_FACTORIES = [
    (#R341) …and `aviationLive`, which carries the whole live-aircraft platform: the controller, the
    GPU primitive it imports, and the worker that owns the fleet. Nothing of it is downloaded until
    the aircraft layer, aircraft search or an Atlas aviation command asks for it. (#R353) …and the two volcano modules — see js/lazy-modules.js and docs/VOLCANO-INTELLIGENCE.md. (#R354) …and the three company-atlas modules — docs/COMPANIES.md §3. */
-const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers', 'companyData', 'companyPanel', 'companyFacilities', 'newsEvents', 'railways', 'atlasQuery', 'atlasChart', 'atlasAnswerView', 'photoGeo', 'shakeMap']; const CARRIED_FACTORIES = ['aircraftPoints'];   /* (#R408) the third kind: registered by a file nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically, so it rides that chunk). It fits neither list above — absent at boot, and not a key js/lazy-modules.js can be asked for — so it had nowhere to be, which is how it stayed invisible. ON THIS LINE for the shell budget; the reasoning is in DEV-NOTES #R408. */
+const LAZY_FACTORIES = ['flightSim', 'playground', 'seismic', 'tsunami', 'terrainWater', 'los', 'streetView', 'atlasConsole', 'routeUi', 'dataCenters', 'aircraftDetail', 'volume3d', 'statsCompare', 'satellitesLive', 'satelliteDetail', 'analysisTimeSeries', 'analysisResearch', 'analysisCorrelate', 'analysisEvents', 'analysisEdu', 'aviationLive', 'warLayer', 'volcanoIntel', 'volcanoLayers', 'companyData', 'companyPanel', 'companyFacilities', 'newsEvents', 'railways', 'atlasQuery', 'atlasChart', 'atlasAnswerView', 'photoGeo', 'shakeMap', 'netHealthLive']; const CARRIED_FACTORIES = ['aircraftPoints'];   /* (#R408) the third kind: registered by a file nobody fetches on its own (js/aviation-live.js imports js/aircraft-points.js statically, so it rides that chunk). It fits neither list above — absent at boot, and not a key js/lazy-modules.js can be asked for — so it had nowhere to be, which is how it stayed invisible. ON THIS LINE for the shell budget; the reasoning is in DEV-NOTES #R408. */
 (function () {
   const miss = ['IntMapI18N', 'IntMapGazetteer', 'IntMapRefData', 'IntMapTables', 'IntMapModules', 'IntMapWx', 'IntMapPlaceFraming', 'IntMapLabelScale', 'IntMapCosmos', 'IntMapFaultGeom', 'IntMapRouteStore', 'IntMapRouteProviders', 'IntMapRouteGeocode', 'IntMapRouteCards', 'IntMapRouteExport', 'IntMapRouteErrors', 'IntMapRouteClock'].filter((k) => !window[k]);
   const M = window.IntMapModules || {};
