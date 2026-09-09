@@ -115,12 +115,27 @@ test('#R252 ④ the place popup shows both names, and still queries by the local
   /* ⚠ ALL THREE ROUTES INTO THE POPUP CARRY IT. #R210 records that the padded tap is a second door
      into the same popup and #R201 that admin-1 came in through a third; a caption on one of them is
      a caption a reader sees only sometimes. */
-  assert.match(mu, /showPopup\(labelAnchor\(f,e\),name,isCountry,\{title:_bothNames\(p,name\)\}\)/,
-    'the label click (ofm-country / admin1 / city / other) lost the two-name caption');
-  assert.match(mu, /showPopup\(labelAnchor\(f,e\),name,false,\{noOutline:true,noAreaTools:true,title:both\}\)/,
-    'the water / river / peak label lost the two-name caption');
-  assert.match(mu, /showPopup\(labelAnchor\(near\[0\],e\),nm,lid==='ofm-country',geoLbl\?\{noOutline:true,noAreaTools:true,title:ttl\}:\{title:ttl\}\)/,
-    'the padded (finger) tap lost the two-name caption');
+  /* ⚠ (#R564) ASKED OF EVERY CALL, NOT OF THREE SPELLINGS. This used to pin the exact argument text of
+     the three known routes, and #R564 changed one of them (the era subdivision label now also hands
+     over its own polygon) — a change that keeps the caption and broke the check. Worse, a FOURTH route
+     added tomorrow would satisfy all three patterns by not existing. So the question is asked of every
+     showPopup call there is: each one passes a title, because a caption on some of the doors is a
+     caption the reader sees only sometimes. */
+  const calls = [];
+  for (let at = mu.indexOf('showPopup('); at >= 0; at = mu.indexOf('showPopup(', at + 1)) {
+    if (/[A-Za-z0-9_$.]/.test(mu[at - 1] || '') || /function\s$/.test(mu.slice(Math.max(0, at - 12), at))) continue;          /* the declaration and `_showPopup` are not calls */
+    let depth = 0, k = at + 'showPopup'.length;
+    for (; k < mu.length; k++) { const c = mu[k]; if (c === '(') depth++; else if (c === ')') { depth--; if (!depth) break; } }
+    calls.push(mu.slice(at, k + 1));
+  }
+  assert.ok(calls.length >= 3, 'only ' + calls.length + ' showPopup call(s) found — the reader of this check has drifted from the file');
+  /* a call that FORWARDS an options object it was given (the `window._imPlacePopup` bridge) is
+     transparent — the caption is its caller's business. A call that BUILDS one must put it in. */
+  const builders = calls.filter((c) => c.includes('{'));
+  assert.ok(builders.length >= 3, 'only ' + builders.length + ' showPopup call(s) build their own options — the reader of this check has drifted from the file');
+  for (const c of builders) {
+    assert.ok(/title:/.test(c), 'a showPopup call carries no two-name caption: ' + c.slice(0, 160));
+  }
 
   /* the exported key list is published before any label exists, not as a side effect of the sea gazetteer */
   assert.match(code(read('js/place-labels.js')), /function ensurePlaceLabels\(\)\{[\s\S]{0,400}?window\.IntMapOsmNameKeys=OSM_NAME_KEYS/,

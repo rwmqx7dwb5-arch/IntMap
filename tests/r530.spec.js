@@ -107,6 +107,58 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
   expect(/Prussia|Preußen|Bavaria|Bayern|Saxony|Sachsen|Baden|Württemberg|Hesse|Hessen|Westphalia|Westfalen|Posen|Silesia|Schlesien|Schleswig|Mecklenburg|Hanover|Rhine|Rhein/i.test(joined),
     `expected an 1900-era German subdivision among: ${joined}`).toBe(true);
 
+  /* ══ (#R564) ここから 3 つは同じ 1 回の時間旅行から読める ════════════════════════════════
+     ⚠ どれも**ブラウザにしか訊けない**。①「印がレイヤーへ届いているか」は node からは見えず
+     （#R531 が同じ理由で spec を要求した）、②「z6 未満では 10.2 MB を取りに行かない」は
+     カメラが要る、③「クリックの輪郭が記録の多角形か」は IntMapOutline が要る。 */
+  const r564 = await page.evaluate(() => {
+    const m = window.__imap;
+    const cnt = (id) => { try { return m.getSource(id).serialize().data.features.length; } catch (_) { return -1; } };
+    return { lineSource: (m.getLayer("imta-line") || {}).source, poly: cnt("imta-src"), line: cnt("imta-ln-src"),
+             deepLoaded: !!window.__HISTADM2, deepDrawn: m.queryRenderedFeatures({ layers: ["imta2-line"] }).length };
+  });
+  /* ① 線は多角形ではなく「境界と印された run」だけ — 沿岸の区分が海に二本目の海岸線を引かない */
+  expect(r564.lineSource, "imta-line must stroke the border runs, not the polygons").toBe("imta-ln-src");
+  expect(r564.line, "the line collection is empty — nothing is drawn").toBeGreaterThan(0);
+  expect(r564.line, "every polygon still produced a whole outline — the coastline copies are back")
+    .toBeLessThan(r564.poly);
+  /* ② 深い層は、描かない縮尺では取得もしない */
+  expect(r564.deepDrawn, "the deeper tier must not draw below its zoom").toBe(0);
+  expect(r564.deepLoaded, "the deeper tier was fetched at a zoom where it is not drawn — 10.2 MB nobody sees").toBe(false);
+
+  /* ③ 区分名のクリックは、今日の同名地物ではなく**その日付の多角形**を輪郭にする */
+  const outline = await page.evaluate(async () => {
+    const m = window.__imap, c = m.getCanvas(), r = c.getBoundingClientRect();
+    let hit = null;
+    for (let x = 10; x < r.width - 10 && !hit; x += 8) for (let y = 10; y < r.height - 10; y += 8) {
+      const f = m.queryRenderedFeatures([x, y], { layers: ["imta-lbl"] });
+      if (f.length) { hit = { x, y, props: f[0].properties }; break; }
+    }
+    if (!hit) return { hit: false };
+    for (const t of ["mousedown", "mouseup", "click"]) c.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: r.left + hit.x, clientY: r.top + hit.y, button: 0, buttons: t === "mousedown" ? 1 : 0 }));
+    await new Promise((z) => setTimeout(z, 1500));
+    const cur = window.IntMapOutline && window.IntMapOutline.current && window.IntMapOutline.current();
+    const era = window.IntMapTimeAdmin1.geomAt(hit.props);
+    return { hit: true, same: !!(cur && cur.geo && era && JSON.stringify(cur.geo) === JSON.stringify(era)),
+             drew: !!(cur && cur.geo), name: String(hit.props.NAME || "") };
+  });
+  expect(outline.hit, "no era subdivision label on screen to click").toBe(true);
+  expect(outline.drew, `clicking ${outline.name} highlighted nothing`).toBe(true);
+  expect(outline.same, `clicking ${outline.name} highlighted a shape that is not the record's — today's namesake, the defect this round removed`).toBe(true);
+  await page.evaluate(() => { document.querySelectorAll(".plc-popup .maplibregl-popup-close-button").forEach((b) => b.click()); });
+
+  /* ④ 深い層は z6 を越えて初めて取りに行く。
+     ⚠ 待つのは「線コレクションが載ったか」であって「画面に出たか」ではない。placement は 10.2 MB の
+     解決より**あとに**来るので、描画まで待つと同じ 1 つの主張に 55 秒かかる（実測）——suite の天井には
+     余白がほとんど無い（scripts/test-budget.mjs）。「z6 を越えたら取りに行き、境界の run を積む」までが
+     この層の約束で、その source から線レイヤーが描くことは tests/r564-checks ④ が別に測っている。
+     ⚠ この最後に置くのは、ズームを戻さずに済ませるため——以下の節はどちらのカメラでも成り立つ。 */
+  await page.evaluate(() => window.__imap.jumpTo({ center: [10.4, 51.0], zoom: 6.2 }));
+  await page.waitForFunction(() => {
+    try { return window.__imap.getSource("imta2-ln-src").serialize().data.features.length > 0; } catch (_) { return false; }
+  }, null, { timeout: 90000, polling: 250 });
+  await eraDrawn(page);
+
   /* ── ③ 1つの機能に1つのスイッチ、両方向 ────────────────────────────────── */
   await flip(page, 'cb-admin1', false);
   await page.waitForFunction(() => {

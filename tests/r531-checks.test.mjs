@@ -31,7 +31,12 @@ const bundle = (file, global) => { const w = {}; new Function('window', rd('data
 const CS = bundle('cshapes.js', '__CSHAPES');
 const HB = bundle('hist-borders.js', '__HISTB');
 const BC = bundle('border-coast.js', '__IMBCOAST');
+const HA = bundle('hist-admin1.js', '__HISTADM1');
+const HA2 = bundle('hist-admin2.js', '__HISTADM2');
 const TB = rd('js/time-borders.js');
+/* (#R564) the READING of the marks moved out of js/time-borders.js so that js/time-admin1.js could
+   call it instead of copying it — one fact, one owner. These checks follow the 正本. */
+const BCJ = codeOnly(rd('js/border-coast.js'));
 const TBC = codeOnly(TB);
 
 const closed = (r) => { const n = r.length; return (n > 1 && r[0][0] === r[n - 1][0] && r[0][1] === r[n - 1][1]) ? r : r.concat([r[0]]); };
@@ -42,13 +47,16 @@ const edgeKm = (a, b) => { const kx = KM_PER_DEG * Math.cos((a[1] + b[1]) * 0.5 
 
 /* ── ① the marks are a fact about the bundles, not a file somebody once wrote ──────────────────── */
 test('① scripts/build-border-coast.mjs --check re-derives the committed marks', () => {
-  const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'build-border-coast.mjs'), '--check'],
+  const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'build-border-coast.mjs'), '--check', '--sample', '8'],
     { cwd: ROOT, encoding: 'utf8' });
   assert.match(out, /re-derives/, out);
 });
 
 test('① every ring of both bundles has an entry, and every run is ordered and in range', () => {
-  for (const [key, d] of [['cs', CS], ['hb', HB]]) {
+  /* (#R564) …and the two SUBDIVISION bundles, which this round put under the same rule. The list is
+     the bundles themselves, so a fifth one added to scripts/build-border-coast.mjs without marks fails
+     here rather than shipping a coastline copy nobody measured. */
+  for (const [key, d] of [['cs', CS], ['hb', HB], ['ha', HA], ['ha2', HA2]]) {
     const set = BC.sets[key];
     assert.ok(set, 'data/border-coast.js has no marks for ' + key);
     assert.equal(set.rings, d.rings.length, key + ': the mark count and the bundle disagree');
@@ -125,7 +133,7 @@ test('④ _ringLines slices the CLOSED ring, for both spellings of a ring', () =
      so a run [a,b] read off the raw array would slide by one on the OHM bundle alone — half the map,
      one era, silently wrong. */
   const sandbox = { Array }; vm.createContext(sandbox);
-  vm.runInContext(liftFunction(TBC, '_ringLines').replace(/^function/, 'var _closedRing=(r)=>{const n=r.length;return (n>1&&r[0][0]===r[n-1][0]&&r[0][1]===r[n-1][1])?r:r.concat([r[0]]);};\nfunction') + '\nvar RL=_ringLines;', sandbox);
+  vm.runInContext(liftFunction(BCJ, 'ringLines').replace(/^function/, 'var closedRing=(r)=>{const n=r.length;return (n>1&&r[0][0]===r[n-1][0]&&r[0][1]===r[n-1][1])?r:r.concat([r[0]]);};\nfunction') + '\nvar RL=ringLines;', sandbox);
   /* ⚠ the vm builds its arrays in another realm, so deepEqual fails on identical content — compare
      the values, not the objects. */
   const RL = (ring, mark) => JSON.parse(JSON.stringify(sandbox.RL(ring, mark)));
@@ -166,9 +174,15 @@ test('⑤ the source that draws carries the credit', () => {
 
 test('⑤ the marks are lazy, like the bundles they mark', () => {
   assert.ok(!/border-coast\.js/.test(rd('index.html')), 'data/border-coast.js is on the boot path — it belongs with the bundles it marks');
-  assert.match(TBC, /src='data\/border-coast\.js'/, 'js/time-borders.js no longer loads the marks');
-  /* a lost request must not be latched: the line geometry is memoised, so one failure would pin the
-     session to the whole-ring drawing this round removed. */
-  const load = liftFunction(TBC, 'bcLoad');
-  assert.match(load, /onerror=\(\)=>\{\s*_bcP=null/, 'bcLoad latches a failed load — one lost request would last the session');
+  assert.ok(BCJ.includes("src = 'data/border-coast.js'"), 'js/border-coast.js no longer loads the marks');
+  /* a lost request must not be latched: the line geometry is memoised BY BOTH CALLERS now, so one
+     failure would pin the session to the whole-ring drawing this round removed. */
+  const load = liftFunction(BCJ, 'load');
+  assert.ok(load.includes('onerror = () => { _P = null'), 'load latches a failed load — one lost request would last the session');
+  /* (#R564) …and there is exactly ONE reader of the marks. A second copy is how one fact starts
+     having two owners, which is the thing this round removed. */
+  const owners = ['js/border-coast.js', 'js/time-borders.js', 'js/time-admin1.js', 'js/map-ui.js',
+                  'js/app-body.js', 'js/place-labels.js', 'js/data-layers.js']
+    .filter((p) => codeOnly(rd(p)).includes('__IMBCOAST'));
+  assert.deepEqual(owners, ['js/border-coast.js'], 'more than one file reads window.__IMBCOAST');
 });

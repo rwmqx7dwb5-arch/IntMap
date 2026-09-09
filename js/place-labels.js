@@ -587,11 +587,13 @@ window.IntMapModules.placeLabels=function(HOST){
        js/time-admin1.js, `visibility` in `window._applyAdmin1` — never two owners for one value. And
        `visibility` is re-asserted from here because THIS is where `cb-names` is handled, and the era
        province names follow that switch exactly as `ofm-admin1` does. */
-    try{ if(GE().layers.has('imta-lbl')){
-        GE().layers.setLayout('imta-lbl','text-font',fontSea);
-        GE().layers.setPaint('imta-lbl','text-color',A1_TEXT());
-        GE().layers.setPaint('imta-lbl','text-halo-color','rgba(0,0,0,0.9)');
-        GE().layers.setPaint('imta-lbl','text-halo-width',1.45);
+    /* (#R564) BOTH era tiers, from one list. A second copy of these four lines for `imta2-lbl` would
+       be a second owner of the same four values the day one of them changes. */
+    try{ for(const _id of ['imta-lbl','imta2-lbl']){ if(!GE().layers.has(_id)) continue;
+        GE().layers.setLayout(_id,'text-font',fontSea);
+        GE().layers.setPaint(_id,'text-color',A1_TEXT());
+        GE().layers.setPaint(_id,'text-halo-color','rgba(0,0,0,0.9)');
+        GE().layers.setPaint(_id,'text-halo-width',1.45);
       } }catch(_){}
     try{ window._applyAdmin1&&window._applyAdmin1(); }catch(_){}
   }
