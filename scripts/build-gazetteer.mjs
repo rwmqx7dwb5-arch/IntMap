@@ -29,6 +29,32 @@
  *  · GeoNames `alternateNamesV2` (CC BY 4.0) — the NAMES, keyed on the same geonameid and tagged
  *    with their language. Historic and colloquial forms are dropped; a name flagged
  *    `isPreferredName` wins its language.
+ *  · GeoNames `featureCodes_en` (CC BY 4.0) — WHAT EACH KIND OF ROW IS, in the publisher's own
+ *    words. See "THE ROW IS NOT DROPPED, THE CODE IS KEPT" below.
+ *
+ *  ── (#R580) THE ROW IS NOT DROPPED, THE CODE IS KEPT ────────────────────────────────────────
+ *  This build used to look at column 6 (`fclass === 'P'`) and throw column 7 (the feature code)
+ *  away, so every kind of populated place became the same kind of row. MEASURED: fourteen places
+ *  above a million people were `PPLX` — «section of populated place», i.e. a DISTRICT — and stood
+ *  in the list beside cities. `Al Mawşil al Jadīdah` (2,065,597) is a quarter of Mosul, and the
+ *  real Mosul (99072, PPLA, 1,683,000) is a different row. A query for "the largest cities of
+ *  Iraq" answered with a neighbourhood.
+ *  The fix is not a list of codes to skip. A section of a place IS a place, and news is written
+ *  about Kowloon; the gazetteer is the list of PLACES THAT EXIST and dropping rows from it makes
+ *  the locator blind. So the code is carried (`fcode`), the publisher's own description is what
+ *  classifies it (`placeKinds`, below), and deciding which kinds may answer "name a city" is the
+ *  CONSUMER's job — js/atlas-query.js reads the field this build now ships.
+ *
+ *  ── (#R580) …AND THE CURATED COLLISION IS A FLAG, NOT A DELETION ────────────────────────────
+ *  `admit()` used to REJECT any row whose English name a curated table already carried. For the
+ *  matcher that is right (the curated coordinate wins). But js/atlas-query.js's `cities` table
+ *  reads THIS FILE ONLY, so the rule was also deleting the places the world is most about:
+ *  MEASURED, 78 rows above a million people were missing, among them Lagos (15.4 M), Mumbai,
+ *  São Paulo, Karachi, Delhi, Moscow, Seoul, Tokyo, Cairo, Baghdad, Kabul, Riyadh, Kyiv, Paris.
+ *  The collision is now recorded as `cur=1` and the row is kept. js/gazetteer.js publishes two
+ *  views over the same rows — `world()` (every place that exists, for data consumers) and
+ *  `worldMatchable()` (`cur!==1`, for the locator) — so the precision rule survives unchanged
+ *  while the list stops lying about what exists.
  *
  *  ── WHICH LANGUAGES, AND WHY NOT MORE ───────────────────────────────────────────────────────
  *  Only the ones the MATCHER can read. js/newsgeo.js tokenises Latin, Greek and Cyrillic, and runs
@@ -41,7 +67,8 @@
  *  reading "Nice"/"Split"/"Mobile"/"Reading" as places is worse than one that knows fewer. So:
  *    · a Latin surface form shorter than 4 characters is dropped (an acronym is not a town);
  *    · a surface form that is an ordinary word in any of the five UI languages is dropped (STOP);
- *    · a name already carried by the curated tables is dropped — the curated coordinate wins;
+ *    · a name already carried by the curated tables is flagged `cur=1` and kept out of the MATCHING
+ *      view (`worldMatchable()`) — the curated coordinate wins, but the place still exists;
  *    · the same name in two places keeps the more populous one only, so "Springfield" resolves to
  *      one point instead of scattering.
  *  scripts/newsgeo-eval.mjs is the gate that says whether that was enough: it must stay at 100 %.
@@ -64,10 +91,18 @@ const OUT = join(ROOT, 'data', 'gazetteer-world.json.gz');
 const CACHE = join(ROOT, 'node_modules', '.cache', 'intmap-gazetteer');
 const SRC = 'https://download.geonames.org/export/dump/cities1000.zip';
 const ALT = 'https://download.geonames.org/export/dump/alternateNamesV2.zip';
+const FCODES = 'https://download.geonames.org/export/dump/featureCodes_en.txt';
 const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap) gazetteer-build';
 
 /* The languages js/newsgeo.js can actually match (see the header). `ja` is kept in its own column
-   because the app's UI is bilingual and every caller reads row[1] as "the Japanese name". */
+   because the app's UI is bilingual and every caller reads row[1] as "the Japanese name".
+   ⚠ (#R580) `en` IS DELIBERATELY NOT IN HERE AND MUST NOT BE ADDED. This list is the set of
+   languages whose names are put into the row's MATCHING surfaces (`extra[]` is built by iterating
+   it), and the English display name added this round — `disp` — is a LABEL, not a surface: it is
+   the accented spelling («Ürümqi», «São Paulo») of a name whose ASCII form is already the row's
+   matching key. Feeding both to the locator would double the surfaces for no new coverage and let
+   a diacritic decide a pin. `alternateNames()` scans for 'en' by adding it to its own `want` set,
+   which is why that widening cannot reach `extra[]`. */
 const LANGS = ['ja', 'de', 'ru', 'es', 'fr', 'pt', 'it', 'nl', 'pl', 'tr', 'uk', 'zh', 'el', 'sv', 'cs', 'ro', 'id', 'vi'];
 
 const argv = process.argv.slice(2);
@@ -158,8 +193,11 @@ async function alternateNames(keepIds) {
   const buf = method === 0 ? raw : inflateRawSync(raw, { maxOutputLength: 1.5e9 });
   console.log(`${(buf.length / 1e6).toFixed(0)} MB`);
 
-  const want = new Set(LANGS);
-  const out = new Map();            // gid → { lang → name }
+  /* ⚠ (#R580) 'en' is added HERE and only here — see the note on LANGS. It rides in the same map
+     as the matching languages because it is the same file and the same lookup, and it is kept out
+     of `extra[]` structurally: that loop iterates LANGS, which does not contain it. */
+  const want = new Set([...LANGS, 'en']);
+  const out = new Map();            // gid → { lang → name }  ('en' = the preferred English LABEL)
   const preferred = new Set();      // gid+'|'+lang already settled by isPreferredName
   const TAB = 9, NL = 10;
   let start = 0, seen = 0, took = 0;
@@ -180,6 +218,11 @@ async function alternateNames(keepIds) {
       const isColloq = t.length >= 6 && buf.toString('latin1', t[5] + 1, t[6] === undefined ? end : t[6]) === '1';
       const isHist = t.length >= 7 && buf.toString('latin1', t[6] + 1, t[7] === undefined ? end : t[7]) === '1';
       if (isColloq || isHist) break parse;
+      /* (#R580) English is read for the DISPLAY name only, and the header's rule for it is
+         "the `en` alternate flagged isPreferredName". An unflagged English alternate is one of
+         dozens of spellings with nothing to choose between them, so it is not a label; when there
+         is no preferred one the caller falls back to GeoNames' own UTF-8 name. */
+      if (lang === 'en' && !isPref) break parse;
       const value = buf.toString('utf8', t[2] + 1, t.length >= 4 ? t[3] : end).trim();
       if (!value) break parse;
       const key = gid + '|' + lang;
@@ -193,6 +236,41 @@ async function alternateNames(keepIds) {
   }
   console.log(`  ${seen.toLocaleString()} alternate-name rows scanned, ${took.toLocaleString()} kept `
     + `for ${out.size.toLocaleString()} of the ${keepIds.size.toLocaleString()} places`);
+  return out;
+}
+
+/* ══ (#R580) WHAT KIND OF PLACE A FEATURE CODE IS — ANSWERED BY THE PUBLISHER, NOT BY A LIST ═══
+   GeoNames ships `featureCodes_en.txt`: one line per code, `P.PPLX <TAB> short name <TAB> long
+   description`. That file is the definition of the codes, so it — and not a table typed here — is
+   what says whether `PPLX` is a place or a piece of one. Three predicates read the published
+   English, and NO CODE IS SPELLED ANYWHERE IN THEM: a code GeoNames adds next year is classified
+   by the sentence GeoNames writes about it, not by whoever remembers to edit this file.
+
+   The classification is written into the artefact (`doc.placeKinds`) because the browser cannot
+   fetch featureCodes_en.txt; what ships is the upstream judgement, resolved at build time. */
+function classifyFeature(text) {
+  /* "section of populated place" — GeoNames says «section of …» exactly when the row is a PART of
+     another row (a district, a quarter), so the phrase, anchored, is the whole test. Anchored
+     because "…is a section of the city" appears in descriptions of things that are not sections. */
+  if (/^section of\b/i.test(text)) return 'part';
+  /* "historical …", "a populated place that no longer exists", "abandoned", "destroyed" — the four
+     words GeoNames uses to say a place is no longer inhabited. A row like this is a real answer to
+     "where did X happen" and a wrong answer to "which cities are in this country". */
+  if (/\b(historical|abandoned|destroyed|former)\b/i.test(text)) return 'defunct';
+  /* everything else in class P is somewhere people live now */
+  return 'settlement';
+}
+
+async function featureCodes() {
+  const txt = (await cached(FCODES, 'featureCodes_en.txt')).toString('utf8');
+  const out = new Map();            // 'PPLX' → { kind, desc }
+  for (const line of txt.split('\n')) {
+    const c = line.split('\t');
+    if (!c[0] || !c[0].startsWith('P.')) continue;
+    const desc = (c[1] || '').trim();
+    out.set(c[0].slice(2), { kind: classifyFeature(desc + ' ' + (c[2] || '')), desc });
+  }
+  console.log(`  feature codes in class P: ${out.size}`);
   return out;
 }
 
@@ -258,19 +336,31 @@ function curatedSurfaces() {
 
 async function main() {
   const text = await geonames();
+  const fcodes = await featureCodes();
   const curated = curatedSurfaces();
   console.log(`  curated surface forms to avoid: ${curated.size.toLocaleString()}`);
 
   /* GeoNames columns: 0 id, 1 name, 2 ascii, 3 alternates, 4 lat, 5 lng, 6 fclass, 7 fcode,
      8 country, …, 14 population */
   const rows = [];
+  const unknownCodes = new Set();
   for (const line of text.split('\n')) {
     if (!line) continue;
     const c = line.split('\t');
     if (c[6] !== 'P') continue;
     const pop = +c[14] || 0, lat = +c[4], lng = +c[5];
     if (!isFinite(lat) || !isFinite(lng)) continue;
-    rows.push({ gid: c[0], en: c[2] || c[1], local: c[1], iso2: c[8], lat, lng, pop });
+    const fcode = (c[7] || '').trim();
+    if (!fcodes.has(fcode)) unknownCodes.add(fcode);
+    rows.push({ gid: c[0], en: c[2] || c[1], local: c[1], iso2: c[8], lat, lng, pop, fcode });
+  }
+  /* ⚠ (#R580) A CODE WITH NO PUBLISHED DESCRIPTION IS NOT QUIETLY A SETTLEMENT. If cities1000
+     starts carrying a code featureCodes_en.txt does not define, nothing here can say what it means,
+     and defaulting is exactly how a section-of-a-place became a city in the first place. */
+  if (unknownCodes.size) {
+    throw new Error('cities1000 uses feature code(s) GeoNames does not describe: '
+      + [...unknownCodes].map((c) => c || '(empty)').join(', ')
+      + ' — featureCodes_en.txt cannot classify them, so this build refuses to guess');
   }
   rows.sort((a, b) => b.pop - a.pop);
   console.log(`  populated places in the source: ${rows.length.toLocaleString()}`);
@@ -293,8 +383,12 @@ async function main() {
   const admit = (r) => {
     const key = r.en.toLowerCase();
     if (seenName.has(key)) return false;          /* the more populous homonym already won */
-    if (curated.has(key)) return false;           /* a curated row owns this name */
     if (isLatin(r.en) && (r.en.length < 4 || STOP.has(key))) return false;
+    /* ⚠ (#R580) a curated row owns this NAME, so the locator must not see this row — but the row
+       is still a real place, and js/atlas-query.js's `cities` table is built from this file alone.
+       The collision is recorded rather than acted on; js/gazetteer.js's `worldMatchable()` is what
+       applies it, and applies it to the matcher only. See the header. */
+    r.cur = curated.has(key) ? 1 : 0;
     seenName.add(key); keep.push(r); seenCountry.add(r.iso2); return true;
   };
   for (const r of rows) { if (keep.length >= TARGET) break; admit(r); }
@@ -324,15 +418,31 @@ async function main() {
     }
     const ja = (L.ja && !curated.has(L.ja.toLowerCase())) ? L.ja : '';
     if (ja) perLang.ja = (perLang.ja || 0) + 1;
-    return [r.en, ja, r.iso2, +r.lng.toFixed(4), +r.lat.toFixed(4), r.pop, extra];
+    /* ⚠ (#R580) THE DISPLAY NAME IS A DIFFERENT COLUMN FROM THE MATCHING KEY, deliberately.
+       `en` (column 0) is the ASCII name, and it has to stay that way: it is the de-duplication key
+       `admit()` used, the surface the locator matches on, and what every existing reader reads.
+       But it is also «UEruemqi» and «Sao Paulo» — GeoNames' asciiname transliterates rather than
+       strips — and 37 places above a million people were being LABELLED with it. `disp` carries
+       the spelling a reader should see, and is empty when it would only repeat `en`. */
+    const label = L.en || r.local || r.en;
+    const disp = (label && label !== r.en) ? label : '';
+    return [r.en, ja, r.iso2, +r.lng.toFixed(4), +r.lat.toFixed(4), r.pop, extra,
+      r.gid, r.fcode, disp, r.cur ? 1 : 0];
   });
 
+  /* the upstream classification of every code that actually survived, carried into the artefact so
+     the browser has the publisher's judgement without the publisher's file */
+  const placeKinds = {};
+  for (const r of keep) if (!placeKinds[r.fcode]) placeKinds[r.fcode] = { ...fcodes.get(r.fcode) };
+
   const doc = {
-    v: 2,
+    v: 3,
     built: new Date().toISOString().slice(0, 10),
-    attribution: 'Places, populations and names: GeoNames (cities1000 + alternateNamesV2, CC BY 4.0).',
+    attribution: 'Places, populations and names: GeoNames (cities1000 + alternateNamesV2 + featureCodes_en, CC BY 4.0).',
     langs: LANGS,
-    fields: ['en', 'ja', 'iso2', 'lng', 'lat', 'pop', 'alt'],
+    /* ⚠ 0–6 are #R198/#R208/#R495 order and are read by index everywhere. New fields APPEND. */
+    fields: ['en', 'ja', 'iso2', 'lng', 'lat', 'pop', 'alt', 'gid', 'fcode', 'disp', 'cur'],
+    placeKinds,
     rows: out
   };
   const json = Buffer.from(JSON.stringify(doc), 'utf8');
@@ -345,6 +455,15 @@ async function main() {
   console.log(`  ${withJa.toLocaleString()} with a Japanese name, ${withAlt.toLocaleString()} with at least one other`);
   console.log('  names per language: ' + Object.entries(perLang).sort((a, b) => b[1] - a[1])
     .map(([k, v]) => k + ' ' + v.toLocaleString()).join(', '));
+  const byKind = {};
+  for (const r of keep) { const k = fcodes.get(r.fcode).kind; byKind[k] = (byKind[k] || 0) + 1; }
+  console.log('  by kind: ' + Object.entries(byKind).sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => k + ' ' + v.toLocaleString()).join(', ')
+    + ` (across ${Object.keys(placeKinds).length} feature codes)`);
+  console.log(`  ${out.filter((r) => r[10] === 1).length.toLocaleString()} rows collide with a curated `
+    + 'name (cur=1) — kept as places, withheld from the matcher by worldMatchable()');
+  console.log(`  ${out.filter((r) => r[9]).length.toLocaleString()} rows carry a display name that `
+    + 'differs from the ASCII matching key');
 
   /* (#R217) …and the phone's slice of the same file, so the two artefacts can never drift apart:
      a rebuild that produced a new world list and left an old phone list would ship a phone a

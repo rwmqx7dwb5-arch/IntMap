@@ -64,7 +64,14 @@ export function buildPhoneGazetteer() {
     }
   }
   const out = {
+    /* ⚠⚠ (#R580) `placeKinds` IS PART OF THE HEADER, NOT AN EXTRA. It is GeoNames' own verdict on
+       every feature code in the rows below — «is this a place, a section of one, or somewhere that no
+       longer exists» — and js/atlas-query.js reads it to decide what `cities` means. A phone slice
+       that carried the feature codes and not the verdicts would ship a reader the codes with nothing
+       able to read them: the phone would put districts back in the answer while the desktop refused
+       them, from the same build, with nothing in either file saying so. */
     v: doc.v, built: doc.built, attribution: doc.attribution, langs: doc.langs, fields: doc.fields,
+    placeKinds: doc.placeKinds,
     /* what this file IS, carried in the file, so nothing has to infer it from the name */
     slice: { of: 'gazetteer-world', rows: cap, by: 'population desc' },
     rows: rows.slice(0, cap),
