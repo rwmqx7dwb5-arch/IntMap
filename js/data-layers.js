@@ -4551,6 +4551,14 @@ window.IntMapModules.dataLayers=function(HOST){
          at which it has nothing to say — telling a reader to zoom in would be false. */
       if(on&&aisKey&&GE().camera.getZoom()<SHIPS_MIN_ZOOM){ el.textContent=t('shipsZoomHint'); el.style.display='block'; } else el.style.display='none';
     }
+    /* (#R556) a frame is text or it is bytes, and the reader does not get to choose which */
+    const _AIS_DEC=(typeof TextDecoder!=='undefined')?new TextDecoder():null;
+    function _aisFrameText(data){
+      if(typeof data==='string') return data;
+      if(_AIS_DEC&&data instanceof ArrayBuffer) return _AIS_DEC.decode(new Uint8Array(data));
+      if(_AIS_DEC&&ArrayBuffer.isView&&ArrayBuffer.isView(data)) return _AIS_DEC.decode(new Uint8Array(data.buffer,data.byteOffset,data.byteLength));
+      return '';
+    }
     function aisBBox(){ const b=GE().camera.getBounds(); return [[[b.getSouth(),b.getWest()],[b.getNorth(),b.getEast()]]]; }
     function stopAIS(){
       stopAisPoll();
@@ -4591,10 +4599,17 @@ window.IntMapModules.dataLayers=function(HOST){
     function connectAIS(){
       if(!aisKey||!GE().hasRenderer()) return;
       stopAIS(); shipsByMMSI={}; shipsData=[]; refreshTrafficLayer('ships');
-      let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); }catch(e){ imToast((window.IntMapLang.t(HOST.lang,'AIS connect failed: ','AIS接続失敗: ','AIS-Verbindung fehlgeschlagen: ','Сбой подключения AIS: ','Fallo de conexión AIS: '))+((e&&e.message)||e)); return; }
+      /* (#R556) ⚠ AISSTREAM SENDS BINARY FRAMES. The default binaryType is 'blob', so JSON.parse(ev.data)
+         parses the literal string "[object Blob]", throws, and the catch below swallows it — the reader
+         with their OWN key saw exactly the empty ocean the keyless reader saw, for exactly the same
+         reason (measured in the relay: 1,224 frames arrived, 0 vessels were kept). Asking for an
+         ArrayBuffer makes the frame readable here and now; _aisFrameText still accepts a string,
+         because nothing promises which of the two arrives. */
+      let ws; try{ ws=new WebSocket('wss://stream.aisstream.io/v0/stream'); ws.binaryType='arraybuffer'; }catch(e){ imToast((window.IntMapLang.t(HOST.lang,'AIS connect failed: ','AIS接続失敗: ','AIS-Verbindung fehlgeschlagen: ','Сбой подключения AIS: ','Fallo de conexión AIS: '))+((e&&e.message)||e)); return; }
       aisWS=ws;
       ws.onopen=()=>{ try{ ws.send(JSON.stringify({APIKey:aisKey, BoundingBoxes:aisBBox(), FilterMessageTypes:['PositionReport','ShipStaticData']})); }catch(_){} };
-      ws.onmessage=(ev)=>{ if(ws!==aisWS) return; try{ handleAIS(JSON.parse(ev.data)); scheduleShipRefresh(); }catch(_){} };
+      ws.onmessage=(ev)=>{ if(ws!==aisWS) return; const txt=_aisFrameText(ev.data); if(!txt) return;
+        try{ handleAIS(JSON.parse(txt)); scheduleShipRefresh(); }catch(_){} };
       ws.onerror=()=>{};
       ws.onclose=()=>{ if(ws!==aisWS) return; aisReconnectT=setTimeout(()=>{ if(GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'&&aisKey&&GE().camera.getZoom()>=SHIPS_MIN_ZOOM) connectAIS(); },4000); };
     }
@@ -4654,8 +4669,29 @@ window.IntMapModules.dataLayers=function(HOST){
     function shipsLayerOn(){ try{ return GE().layers.has('lyr-ships')&&GE().layers.getLayout('lyr-ships','visibility')==='visible'; }catch(_){ return false; } }
     /* the relay's compact wire → the very records shipMaterialize already produces, so the glyphs,
        the tooltip and the card do not learn a second vocabulary (§22.1) */
+    /* (#R556) the envelope of what the relay actually holds, as the relay derived it from its own
+       vessels — never a place name and never a constant here. Null until an answer has arrived. */
+    let aisCoverage=null, aisOutside=false;
+    function _aisInCoverage(){
+      if(!aisCoverage) return true;      /* nothing claimed ⇒ claim nothing */
+      try{
+        const b=GE().camera.getBounds();
+        const cx=(b.getWest()+b.getEast())/2, cy=(b.getSouth()+b.getNorth())/2;
+        return cy>=aisCoverage[1]&&cy<=aisCoverage[3]&&_aisLonIn(cx,aisCoverage[0],aisCoverage[2]);
+      }catch(_){ return true; }
+    }
+    /* ⚠ AN EMPTY ANSWER IS TWO DIFFERENT FACTS. "No ship is there" and "nothing here can see there"
+       look identical on a map, and #R510 §8 taught the RELAY to tell them apart while leaving the
+       browser unable to act on it: a 200 carrying zero vessels went through `if(r.ok)` and drew an
+       empty ocean in silence. Said ONCE, on the transition — a poll every 30 s must not nag. */
+    function _aisSayWhyEmpty(count){
+      const outside=(count===0)&&!_aisInCoverage();
+      if(outside&&!aisOutside) imToast(t('aisOutsideCoverage'));
+      aisOutside=outside;
+    }
     function aisApply(j){
       if(!j||!Array.isArray(j.a)) return 0;
+      aisCoverage=(Array.isArray(j.cov)&&j.cov.length===4&&j.cov.every(v=>typeof v==='number'))?j.cov:null;
       const now=Date.now(), names=new Map();
       for(const it of (j.id||[])) names.set(it[0],it);
       const out=[];
@@ -4675,6 +4711,7 @@ window.IntMapModules.dataLayers=function(HOST){
       }
       shipsData=out;
       refreshTrafficLayer('ships');
+      _aisSayWhyEmpty(out.length);
       return out.length;
     }
     async function pollAis(){
