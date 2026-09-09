@@ -589,6 +589,13 @@ wx-models.js                      予報モデルのレジストリ window.IntMa
 wx-source.js                      ガードされた唯一の気象／UV ソース window.IntMapWx
 wx-ecmwf.js                       ECMWF IFS モデル本体 window.IntMapECMWF——予報時刻軸・.om URL・復号済みの場・配色表
 wx-wind.js                        風の粒子レンダラ window.IntMapWindGL——WebGL 1描画呼び出し／実経過時間基準
+waves.js                          波レイヤー window.IntMapWaves（遅延）——行と凡例、モデル切替（`roles:['wave']` の全モデル）、
+                                  js/wx-ecmwf.js の読みと下のレンダラの結線。自分では描かず、取りに行かない
+waves-gl.js                       波のレンダラ window.IntMapWavesGL——MapLibre の custom layer。ラスタ（4×4 Catmull-Rom・
+                                  LUT の線形フェッチ・海岸線は 0.66 の二値化）と波向きの粒子。
+                                  球の投影には描けない（docs/MAP-LAYERS.md §7.14）
+waves-palette.js                  波高→色 window.IntMapWavePalette——12 ストップ・0〜12 m・1024 段の LUT と
+                                  凡例用の CSS グラデーション。色の写しはここにしか無い
 place-framing.js                  どこまで寄るか window.IntMapPlaceFraming
 country-extent.js                 その国が「在る場所」の枠 window.IntMapCountryExtent——遠い海外領土を外し、±180 をまたぐ範囲を区間として書き下す
 proxy-fetch.js                    CORS プロキシ経由の取得（相手先ごとに効くものが違う）。
