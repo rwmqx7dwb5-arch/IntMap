@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（277本・13.1 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（278本・13.1 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1352,8 +1352,12 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 - **長い凡例は `.im-more`（`<details>`）で畳む**（`css/intmap.css`）。
 - **レイヤーを切り替えてもカメラは動かない。例外は `js/layer-home.js` の表だけ**。
   `window.IntMapLayerHome.arrive(<checkbox id>)` が、**データが1つの地域にしか存在しないレイヤー**
-  （EU members / NATO members / U.S. presidential elections / Ukraine frontline）を
+  （EU members / NATO members / U.S. presidential elections / National elections / Ukraine frontline）を
   **セッション中1回だけ**果に収める。
+  ☠ **扉は2つある。** `arrive()` は「レイヤーが ON になった」で、セッション1回。`goTo()` は
+  **「読者がレイヤーの中で場所そのものを選んだ」**——国政選挙レイヤーの国セレクタだけが使う入口で、
+  毎回動く（選択を変えたのに地図が前の国のままでは、セレクタが嘘になる）。**どちらも同じ表の
+  チェックボックスにしか効かず、表に無いレイヤーからは到達できない。**
   ☠ **各レイヤーのファイルに `fitBounds` を書かない**——表が1つだから「1回だけ」も「利用者が
   操作したか」も 1 つの定義で済む。セッション復元は `js/session-tabs.js` がチェックボックスに
   `__imRestored` を付け、`arrive` がそれを**使い切って飛ばない**（復元は利用者の操作ではない）。

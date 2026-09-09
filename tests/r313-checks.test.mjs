@@ -38,7 +38,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
@@ -241,15 +241,28 @@ test('R313 ⑤ exactly one file moves the camera on a layer toggle, and it is th
   /* the ids in the table are ids the app really uses, not ids somebody typed.
      ⚠ (#R337) 「NATO membersレイヤーをオンにしたら、自動的にNATOに行くように。」 added a fourth. The
      list is UPDATED rather than loosened: the point of this assertion is that the exception stays a
-     NAMED set the constitution can enumerate, so it has to go red when the set changes. */
+     NAMED set the constitution can enumerate, so it has to go red when the set changes.
+     ⚠ (#R582) …and a fifth, for a layer that holds ONE polity at a time (national elections). It is
+     also the first entry to need a SECOND door: `arrive()` answers 「the layer was switched on」 and
+     is once per session, while `goTo()` answers 「the reader picked a different country inside the
+     layer」 and fires every time — because a selector that says Japan over a map of Germany is a
+     selector that lies. Both doors live in js/layer-home.js, which is the whole point of the file,
+     and both are reachable only for a checkbox in this same set. */
   const ids = [...home.matchAll(/HOMES\['([^']+)'\]/g)].map((m) => m[1]);
-  assert.deepEqual(ids.sort(), ['beta-dl-ukrfront', 'dl-eu', 'dl-nato', 'dl-uselect']);
-  const previews = read('js/layer-previews.js');
+  assert.deepEqual(ids.sort(), ['beta-dl-ukrfront', 'dl-elect', 'dl-eu', 'dl-nato', 'dl-uselect']);
+  assert.match(home, /function goTo\(/, 'the second door is in the same file as the first');
+  assert.doesNotMatch(code('js/elections.js'), /camera\.fitBounds|flyTo|jumpTo|easeTo/,
+    'js/elections.js does not carry its own frame either');
+  /* ⚠ (#R582) THE FILES ARE DISCOVERED, NOT LISTED. This was four hand-written paths, and the
+     fifth layer to join the table owns its row in a file none of them named — so a correct entry
+     was reported as 「an id somebody typed」. A list of places to look is the shape
+     `.agents/rules/no-ad-hoc-hardcoding.md` §2.4 forbids: it silently fails the next thing added.
+     The question is 「does some file in js/ actually create this checkbox」, so every file in js/
+     is asked. */
+  const jsFiles = readdirSync(resolve(ROOT, 'js')).filter((f) => f.endsWith('.js'));
+  assert.ok(jsFiles.length > 50, 'js/ was actually read');
   for (const id of ids) {
-    const used = previews.includes("'" + id + "'")
-      || code('js/data-layers.js').includes(id)
-      || code('js/beta-overlays.js').includes(id)
-      || code('js/us-elections.js').includes(id);
+    const used = jsFiles.some((f) => code('js/' + f).includes("'" + id + "'") || read('js/' + f).includes('"' + id + '"'));
     assert.ok(used, id + ' is a checkbox id the app actually has');
   }
 

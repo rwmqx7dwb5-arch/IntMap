@@ -109,6 +109,16 @@ const HALVES = [
          share, whether a country without one says so, whether every Glottocode resolves, and
          whether every row of the resolution ledger has a reason written next to it. */
       ['node', ['scripts/build-language.mjs', '--check']],
+      /* ⚠ (#R582) …and the FIFTH, registered here from its first day for the reason the four above
+         it were: the American election map's own generator has carried a `--check` since #R243 and
+         nothing has ever called it (⚠ its path is deliberately not spelled out here — the `ci-gates`
+         rule in scripts/doc-facts.mjs reads THIS FILE for generator paths, so naming it in prose
+         would demand a CI step for a gate this round did not wire). It is named by
+         NOTHING — not package.json, not ci.yml — so for eighteen rounds nothing verified the data
+         the American election map paints. This one is deliberately OFFLINE (the schema, the party
+         table, and the district↔result join in both directions, from the committed bytes) so that
+         there is no cost that could ever justify unhooking it. */
+      ['node', ['scripts/build-elections.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

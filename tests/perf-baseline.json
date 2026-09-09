@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4643647,
-    "gzip": 1551099,
-    "brotli": 1181513,
+    "raw": 4659667,
+    "gzip": 1555460,
+    "brotli": 1184519,
     "requests": 6,
-    "modules": 290,
+    "modules": 291,
     "cssRaw": 339194,
     "cssGzip": 57066
   },
   "async": {
-    "raw": 10030499,
-    "gzip": 3270256,
+    "raw": 10034289,
+    "gzip": 3271836,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24512,
@@ -65,12 +65,12 @@
       "tsunami": 37658,
       "ui.de": 16408,
       "ui.es": 16652,
-      "ui.fr": 417220,
+      "ui.fr": 418281,
       "ui.jp": 17865,
-      "ui.ko": 411073,
+      "ui.ko": 412058,
       "ui.ru": 23860,
-      "ui.zh": 367477,
-      "ui.zh-hans": 367513,
+      "ui.zh": 368349,
+      "ui.zh-hans": 368385,
       "viewshed": 32683,
       "volcano-intel": 107369,
       "volcano-layers": 15115,
@@ -80,8 +80,8 @@
     }
   },
   "dist": {
-    "total": 168629670,
-    "data": 113433043,
-    "assets": 17391124
+    "total": 235361795,
+    "data": 180141100,
+    "assets": 17410934
   }
 }
