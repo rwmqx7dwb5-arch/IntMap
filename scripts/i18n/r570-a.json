@@ -1,0 +1,210 @@
+{
+ "▶ Tap a country on the map to start the outbreak there": [
+  "▶ Tippen Sie auf der Karte ein Land an, in dem der Ausbruch beginnt",
+  "▶ Нажмите на карте страну, где начнётся вспышка",
+  "▶ Toque en el mapa el país donde comenzará el brote",
+  "▶ Touchez sur la carte le pays où débutera l’épidémie",
+  "▶ 지도에서 유행이 시작될 나라를 탭하세요",
+  "▶ 在地圖上點選疫情開始的國家"
+ ],
+ "1 dot ≈ ": [
+  "1 Punkt ≈ ",
+  "1 точка ≈ ",
+  "1 punto ≈ ",
+  "1 point ≈ ",
+  "점 1개 ≈ ",
+  "1 點 ≈ "
+ ],
+ "a leading lab": [
+  "einem führenden Labor",
+  "ведущей лаборатории",
+  "un laboratorio destacado",
+  "un laboratoire de premier plan",
+  "선도적인 연구소",
+  "一家頂尖實驗室"
+ ],
+ "active cases · red = infectious, orange = incubating": [
+  "aktive Fälle · rot = ansteckend, orange = inkubierend",
+  "активных случаев · красный — заразные, оранжевый — инкубация",
+  "casos activos · rojo = contagiosos, naranja = incubando",
+  "cas actifs · rouge = contagieux, orange = en incubation",
+  "명의 현재 감염자 · 빨강=감염성, 주황=잠복 중",
+  "名現症病例 · 紅＝具傳染性、橙＝潛伏中"
+ ],
+ "Adaptive": [
+  "Adaptiv",
+  "Адаптивные",
+  "Adaptativa",
+  "Adaptatives",
+  "상황에 따라",
+  "視情況調整"
+ ],
+ "Advanced": [
+  "Erweitert",
+  "Дополнительно",
+  "Avanzado",
+  "Avancé",
+  "고급 설정",
+  "進階設定"
+ ],
+ "Base fatality": [
+  "Basisletalität",
+  "Базовая летальность",
+  "Letalidad base",
+  "Létalité de base",
+  "기준 치명률",
+  "基準致死率"
+ ],
+ "cumulative infections": [
+  "kumulierte Infektionen",
+  "суммарно заражений",
+  "infecciones acumuladas",
+  "infections cumulées",
+  "누적 감염",
+  "累計感染"
+ ],
+ "Global health emergency threshold reached — international spread is sustained.": [
+  "Schwelle für einen globalen Gesundheitsnotstand erreicht — die internationale Ausbreitung hält an.",
+  "Достигнут порог глобальной чрезвычайной ситуации — международное распространение продолжается.",
+  "Se alcanza el umbral de emergencia sanitaria mundial: la propagación internacional se mantiene.",
+  "Seuil d’urgence sanitaire mondiale atteint — la propagation internationale se poursuit.",
+  "국제적 공중보건 비상사태 기준에 도달 — 국가 간 확산이 계속되고 있습니다.",
+  "已達到國際公共衛生緊急事件門檻 — 國際間傳播持續擴大。"
+ ],
+ "Incubating": [
+  "Inkubierend",
+  "Инкубация",
+  "Incubando",
+  "En incubation",
+  "잠복 중",
+  "潛伏中"
+ ],
+ "Infectious": [
+  "Ansteckend",
+  "Заразны",
+  "Contagiosos",
+  "Contagieux",
+  "감염성",
+  "具傳染性"
+ ],
+ "Initial cases": [
+  "Anfangsfälle",
+  "Начальные случаи",
+  "Casos iniciales",
+  "Cas initiaux",
+  "초기 감염자 수",
+  "初始病例數"
+ ],
+ "Initial immunity": [
+  "Anfangsimmunität",
+  "Начальный иммунитет",
+  "Inmunidad inicial",
+  "Immunité initiale",
+  "초기 면역",
+  "初始免疫"
+ ],
+ "Latent (d)": [
+  "Latenz (T)",
+  "Латентный период (дн.)",
+  "Latencia (d)",
+  "Latence (j)",
+  "잠재기(일)",
+  "潛隱期(日)"
+ ],
+ "No response": [
+  "Keine Maßnahmen",
+  "Без мер",
+  "Sin respuesta",
+  "Aucune mesure",
+  "대책 없음",
+  "無防疫措施"
+ ],
+ "Nobody is immune, and no vaccine or treatment exists yet.": [
+  "Niemand ist immun, und es gibt weder Impfstoff noch Behandlung.",
+  "Ни у кого нет иммунитета, вакцины и лечения ещё не существует.",
+  "Nadie es inmune y todavía no existe vacuna ni tratamiento.",
+  "Personne n’est immunisé et il n’existe encore ni vaccin ni traitement.",
+  "아무도 면역이 없고, 백신도 치료법도 아직 없습니다.",
+  "沒有人具備免疫力，也還沒有疫苗或治療方法。"
+ ],
+ "Novel pathogen": [
+  "Neuartiger Erreger",
+  "Новый патоген",
+  "Patógeno nuevo",
+  "Agent pathogène inédit",
+  "신종 병원체",
+  "新型病原體"
+ ],
+ "Seasonality": [
+  "Saisonalität",
+  "Сезонность",
+  "Estacionalidad",
+  "Saisonnalité",
+  "계절성",
+  "季節性"
+ ],
+ "Seed": [
+  "Zufallsstartwert",
+  "Зерно",
+  "Semilla",
+  "Graine aléatoire",
+  "난수 시드",
+  "隨機種子"
+ ],
+ "Seed an outbreak and watch a stochastic SEIR model carry it between real countries — vaccines, variants and lockdowns included.": [
+  "Setzen Sie einen Ausbruch und sehen Sie zu, wie ein stochastisches SEIR-Modell ihn zwischen echten Ländern trägt — mit Impfstoffen, Varianten und Lockdowns.",
+  "Задайте очаг вспышки и смотрите, как стохастическая модель SEIR переносит её между реальными странами — с вакцинами, вариантами и локдаунами.",
+  "Siembre un brote y observe cómo un modelo SEIR estocástico lo lleva entre países reales: vacunas, variantes y confinamientos incluidos.",
+  "Déclenchez un foyer épidémique et observez un modèle SEIR stochastique le propager entre pays réels — vaccins, variants et confinements compris.",
+  "발생 지점을 놓고 확률적 SEIR 모델이 실제 국가들 사이로 퍼뜨리는 과정을 지켜보세요 — 백신·변이·봉쇄까지 포함합니다.",
+  "設定疫情起點，觀看隨機 SEIR 模型如何在真實國家之間擴散 — 含疫苗、變異株與封鎖。"
+ ],
+ "Simplified educational model (stochastic SEIR, one compartment set per country). Not a forecast.": [
+  "Vereinfachtes Lehrmodell (stochastisches SEIR, ein Kompartimentsatz je Land). Keine Prognose.",
+  "Упрощённая учебная модель (стохастическая SEIR, один набор отсеков на страну). Это не прогноз.",
+  "Modelo educativo simplificado (SEIR estocástico, un conjunto de compartimentos por país). No es una previsión.",
+  "Modèle pédagogique simplifié (SEIR stochastique, un jeu de compartiments par pays). Ce n’est pas une prévision.",
+  "교육용으로 단순화한 모델(확률적 SEIR, 국가당 구획 1세트). 예측이 아닙니다.",
+  "教學用簡化模型（隨機 SEIR，每國一組隔室）。並非預測。"
+ ],
+ "Start month": [
+  "Startmonat",
+  "Месяц начала",
+  "Mes de inicio",
+  "Mois de départ",
+  "시작 월",
+  "起始月份"
+ ],
+ "Starts from the immunity, vaccines and treatments this disease actually has in 2026.": [
+  "Beginnt mit der Immunität, den Impfstoffen und Behandlungen, die es 2026 für diese Krankheit wirklich gibt.",
+  "Начинается с иммунитета, вакцин и методов лечения, которые реально существуют для этой болезни в 2026 году.",
+  "Parte de la inmunidad, las vacunas y los tratamientos que esta enfermedad realmente tiene en 2026.",
+  "Part de l’immunité, des vaccins et des traitements dont cette maladie dispose réellement en 2026.",
+  "2026년 현재 이 질병에 실제로 존재하는 면역·백신·치료법에서 시작합니다.",
+  "以 2026 年這種疾病實際擁有的免疫力、疫苗與治療方法為起點。"
+ ],
+ "Strong": [
+  "Streng",
+  "Строгие",
+  "Estricta",
+  "Strictes",
+  "강력한 대책",
+  "嚴格防疫"
+ ],
+ "Today's world": [
+  "Heutige Welt",
+  "Сегодняшний мир",
+  "El mundo de hoy",
+  "Le monde d’aujourd’hui",
+  "현재 세계",
+  "現今世界"
+ ],
+ "Travel": [
+  "Reisen",
+  "Поездки",
+  "Viajes",
+  "Déplacements",
+  "이동량",
+  "人員流動"
+ ]
+}

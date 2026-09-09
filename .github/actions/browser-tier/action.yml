@@ -46,7 +46,19 @@ runs:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
     - name: Install Playwright Chromium (+ OS deps)
-      run: npx playwright install --with-deps chromium
+      # ⚠ (#R570) `--with-deps` RUNS `apt-get update`, AND THE RUNNER IMAGE SHIPS AN APT SOURCE THIS
+      # PROJECT DOES NOT USE. On 2026-09-09 dl.google.com served a Release file (17:16:59) that did
+      # not agree with the Packages.gz behind it (09:41), apt exited 100, and EVERY pull request in
+      # this repository went red at this step for the rest of the afternoon — measured on five
+      # unrelated branches, and a rerun 15 minutes later failed identically. Nothing was wrong with
+      # any of them, and no gate had an opinion about it.
+      # Playwright downloads its OWN Chromium build into ~/.cache/ms-playwright; the Google Chrome
+      # apt repository is only there because the image installs the browser. Dropping the source
+      # list before the update removes a dependency the tests never had — it does not weaken a gate,
+      # and `--with-deps` still installs every OS library Chromium needs from Ubuntu's own archives.
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/google-chrome*.list /etc/apt/sources.list.d/google-chrome*.sources || true
+        npx playwright install --with-deps chromium
       shell: bash
     # (#R195) the file list comes from the measured plan, not from --shard. The planner FAILS on an
     # empty group rather than returning nothing, because `playwright test` with no paths runs the

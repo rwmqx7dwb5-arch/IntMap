@@ -21,7 +21,7 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
-**106 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
+**107 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **295 Node test files** with no browser at all (counted from
 
@@ -42,7 +42,7 @@ gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **w
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **99 spec files** — is the whole suite minus core
+**deep** tier — **100 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -568,7 +568,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **99 spec files** against core's 7, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **100 spec files** against core's 7, because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.
@@ -749,6 +749,23 @@ internal consistency is not geographic accuracy.
 どれも「綴りを固定していたので、正しい変更で落ちた」もので、緩めるのではなく**問い方を事実へ**
 移した（可視性は式を読むのではなく**切替盤を評価**して確かめ、破線は literal ではなく
 `ref-admin1` の値と**照合**する）。
+
+`tests/r570-checks.test.mjs`（13 本）はパンデミック・シミュレーターの**数理そのもの**を測る——
+外部監査が挙げた 12 の性質を、ソースを読むのではなく **engine を node で走らせて**確かめる:
+人口保存（各国・毎 step・`S+E+I+R+V+D = 初期人口`）／**再生速度から独立**（engine の中に `speed`
+という語が無いこと、および 1 回で 400 日回した状態と 50 日を 8 回回した状態が完全一致すること）／
+免疫 0 か月で NaN も Infinity も負も出ないこと／潜伏 0 日でも人口が増えないこと／**I が 0 でも E が
+残っていれば終わらない**こと／累計感染が単調であり `R+D+I` と一致しないこと／移動量 0 なら他国へ
+渡らないこと／同じ種は同じ流行・別の種は別の流行になること／R₀<1 は減り R₀>1 は増えること／
+初期免疫を上げるほど流行が単調に小さくなること／**新しい変異株を持つ国はその時点でちょうど 1 国**で
+あること／点の散らしが多角形の外へ出ないこと。⚠ 13 本目は UI 側の契約で、`js/playground.js` に
+`speed` を掛けた確率と `T.R+T.D+T.I` の攻撃率が**戻ってこない**ことを見張る。
+
+`tests/r570.spec.js` はその**ブラウザ側の 1 本**——engine を別ファイルへ出した以上、「import が
+届いていない」「HUD がボタンを描かない」「地図のクリックが engine に届かない」は node からは
+原理的に見えない。設定画面が出て、地図の click で流行が始まり、**日が進み**、点が 2 種類
+（赤＝感染性・橙＝潜伏中）だけを名乗り、HUD がその両方と「1 点＝何人ぶんか」を印字し、例外が
+1 つも出ないことを 1 回の起動で読む。
 
 `tests/r530.spec.js` はその**ブラウザ側の半分**で、#R564 で 3 つ増えた——どれも node からは
 原理的に訊けない: **印がレイヤーへ届いているか**（線の source が `imta-ln-src` で、しかも多角形の
