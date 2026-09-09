@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（272本・12.4 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（273本・12.4 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -248,9 +248,9 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 
 | 部品 | ファイル | 何の正本か |
 |---|---|---|
-| Capability Registry | `js/atlas-capabilities.js` | **135 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
+| Capability Registry | `js/atlas-capabilities.js` | **136 能力**。ID・別名（**440 綴り**＝ID＋別名の重複を除いた実測。**照合は camelCase を語に割ってから**——割らないと `myLocation` は「my location」で引けず、実測 143 綴り中 60 がどの言語からも届かなかった）・分類・副作用（`writes`＝競合キー）・生成物・危険度・確認要否・**必要な対象**・遅延モジュール・観測器・検証器 |
 | 能力の説明文 | `js/atlas-catalog-text.js` | 46 ブロック。**各ブロックがどの能力を説明しているか**を持つ。`find_capability` が要求されたときだけ返す |
-| 引数の schema | `js/atlas-schemas.js` | **135 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
+| 引数の schema | `js/atlas-schemas.js` | **136 能力ぶんの引数定義**。型・列挙・範囲と、`required` / `anyOf`（「地点 か 緯度経度」）|
 | 実行 | `js/atlas-executor.js` | `IntMapOS.execute()` の 11 段 |
 | 結果の形 | `js/atlas-results.js` | 全操作が返す 1 つの構造。7 つの status |
 | 状態 | `js/atlas-state.js` | 18 セクションの合成スナップショットと**ターン台帳** |
@@ -259,7 +259,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | 外部証拠の取得 | `js/proxy-fetch.js`（唯一の梯子） | 自前の Edge Function を先頭に、公開 relay 4 本を**競争**させ、勝った時点で残りを中断する。⚠ **締切は本文を読み終わるまで掛かる**（ヘッダが着いた時点で解除すると、200 を返してから止まった相手を止めるものが無くなる）。呼び出し側は `budgetMs` で**梯子全体の上限**を、`signal` で**停止**を渡す。Atlas の 1 取得 14 秒／証拠集め全体 32 秒／GDELT の梯子 20 秒 |
 | 締切つきの単発取得 | `js/fetch-deadline.js` | `jsonWithin(url, ms, init)`。Nominatim のように relay を要さない相手のための 1 回の取得。**呼び出し側の signal は置き換えず連結する** |
 | 証拠集めの予算 | `js/atlas-deadlines.js` | Atlas の 1 取得 14 秒／gather 全体 32 秒／GDELT の梯子 20 秒。締切つきの `settleWithin(jobs, ms)` は**まだ飛んでいる件数**を返し、それが読み手に見える「取得不可」の1行になる。⚠ `js/atlas-console.js` は**縮小のみの行数上限**にあるので、この主題はここに置く（上限を上げるのではなく主題を出す） |
-| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 9 ツール**（`my_location`、画面そのものを見る `look_at_map`、地図説明を 1 回で描く `compose_map` を含む）＋`find_capability`（レジストリの全 135 を検索・返るのは撤去済み 1 を除く **134** から・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 11 本。`ask_user` は `endsTurn`＝**ターンを終える道具**で、旗は**結果にも**載る（`run_capability` が `dialog.ask` を ID で呼ぶ経路では、呼びの名前は `run_capability` だから）。同じ場所で結果に `changedMap` を刻む——**その能力が `map` を生成し、観測器が completed と言ったとき**だけ。監査に削られた回答は `status:'degraded'` と削除件数で返す |
+| 道具の面 | `js/atlas-toolsurface.js` | そのターンに渡す**中核 9 ツール**（`my_location`、画面そのものを見る `look_at_map`、地図説明を 1 回で描く `compose_map` を含む）＋`find_capability`（レジストリの全 136 を検索・返るのは撤去済み 1 を除く **135** から・**打ち切り無し**）／`run_capability`（ID 指定で起動）＝計 11 本。`ask_user` は `endsTurn`＝**ターンを終える道具**で、旗は**結果にも**載る（`run_capability` が `dialog.ask` を ID で呼ぶ経路では、呼びの名前は `run_capability` だから）。同じ場所で結果に `changedMap` を刻む——**その能力が `map` を生成し、観測器が completed と言ったとき**だけ。監査に削られた回答は `status:'degraded'` と削除件数で返す |
 | 地図説明の合成 | `js/atlas-map-compose.js` | **`map.compose`（tool 名 `compose_map`）は「地図で説明する」という 1 つの行為を 1 回の呼び出しにしたもの。** 地点（番号順・役割つき）・地点間の関係（大円の弧。flow / route は矢印、influence / border は破線）・塗り分け（highlight 経路へ委譲）・全体を収めるカメラ・同じ番号の凡例。地名は**台帳 → ジオコーダ**の順にコードが解決し（国名は既に含まれていなければ 1 回だけ付け、国名付きで見つからなければ裸の名前で再試行する——海峡は国の中に無い）、解決したものは**役割ごと**台帳へ戻す。解決できなかった地名は **`unplaced` に名前で**残り、Atlas にも読者にも見える——座標は発明しない。**理由は 3 つに分かれる**——`not_found`（その綴りの地物が無い）／`timeout`・`not_attempted`（時計が尽きただけで、存在の否定ではない）／`over_item_limit`（上限 24 を超えた分。黙って落とさない）。**回復可能な 3 つはすべて**、Web 検証の 1 回の問い合わせへ載る。⚠ **1 つの依頼は 1 つの地図**——同じターンの 2 回目の `compose_map` は 2 枚目ではなく**同じ地図の次の版 (revision)** で、`meta.artifact` が名乗り、`js/atlas-turn-results.js` が**最新版だけ**を返信に残す（地図が保持しているのは最新版なのだから、返信もそれでなければ嘘になる）。**版は地図全体を言い直す**（差分でも追加でもない。置いた地点は台帳にあるので言い直しは無料）。どのターンかは**実行文脈**として届く——引数ではない。一部だけ置けたときは `exec.status:'partial'` と `meta.partial` の**両方**で名乗り、`map.compose` 専用の観測器が「頼まれた数」対「地図に載っている数」で判定する（**増減の差分では見ない**——5/16 でも増えるし、16 件を正しい座標へ直しても増えない）。描画元は `atl-compose-src` 1 本で、`paintNow()` がそれを数える。`linkProse()` が回答文の**最初の言及**に番号バッジを付け（テキストノードだけ・リンクやコードの中は触らない）、hover で地図の印と双方向に光る |
 | 数字の図の合成 | `js/atlas-chart.js` | **`chart.compose`（tool 名 `chart`）は「数字で説明する」という 1 つの行為を 1 回の呼び出しにしたもの。** line / bar / scatter / timeline を **HTML 文字列**で返し、返答本文へそのまま入る（`_atlCompose` が本文を毎回組み直すので、描画後に DOM を触る装飾は次の操作で消える）。⚠ **出所 (`source`) を宣言しないグラフは拒む**——グラフは主張が取り得る最も信じられやすい形なので、根拠を必ず伴わせる。⚠ **線と散布は実点 3・棒は名前つき 2・年表は日付つき 2 件**を下回ると、薄く描くのではなく**拒んで理由を返す**（`js/widget-render.js` の「与えられていない傾向は描かない」と同じ規律・同じ数）。数でない値は落とし、**何件落としたかを caption に明記する**（黙って通った行だけを描かない）。目盛りは 1/2/2.5/5×10^k の nice-number で、`js/` にある唯一の目盛り生成器。数の整形は `Intl` のみ（ロケールに訊く）。色は `--chart-cat-1..10` の CSS 変数だけを書き、この層は色を 1 つも知らない＝ダークモードは token の入れ替えで済む。描いた点・棒・出来事には `data-mark` を刻み、**観測器は「描いたと言っているか」ではなく「実際に成果物へ何個入ったか」を数える**——空の図を `ok` で返せば `not_rendered`。遅延ロード（`atlasChart`）で、起動グラフには入らない |
 | 回答が描かれた視点 | `js/atlas-answer-view.js` | **その回答が地図を描いたときの視点を、あとから戻せるようにする層。** 重ね描きのスナップショットとそれを描き直すチップは以前から存在し、図形は戻せていた。**どのスナップショットも「視点」を持っていなかった**——カメラの位置と、この製品では何より**時計**。1950 年についての回答の図形が 2026 年の基図の上に描き直されるのは、その回答の地図ではなく別の主張である。撮るのは `IntMapAtlasState.snapshot({only:[camera,time,activeLayers]})` そのもので（私有の読み手を作らないので状態ブロックと食い違わない）、返答バブルが既に持っていた `__ovlSnap` の隣に置く。⚠ **カメラ・時計・基図・投影は正確に戻し、レイヤーは点けるだけで消さない**——後から読者が点けたレイヤーを消すのは、画面に何も出ないまま読者の作業を壊すことであり、しかもカメラと違って取り消す手段が見えない。代わりに `extraLayers` として報告する。⚠ できなかったことは `skipped` に理由つきで残し、成功に数えない。ボタンは `.atl-msgt`（バブルの**兄弟**）に置く——本文は `_atlCompose` が毎回組み直すので、本文の中に置いた操作子は次のツール呼び出しで消える |
@@ -308,7 +308,7 @@ getter なので、観測していない成功を呼び出し側が書き込む�
 
 **⚠ カタログは押し付けず、訊かれたときに返す。**
 そのターンに渡すのは**中核 8 ツールとその schema だけ**（約 7 千文字）。それ以外の能力は
-`find_capability(query)` が**レジストリの全 135 を検索**し（返るのは撤去済み 1 を除く **134** から）、**得点したものを全部** schema 付きで返し（**打ち切り無し**——説明文は 46 ブロック共有なので、能力ごとに引くと同じブロックが繰り返される。**まとめて 1 回引いて重複を落とす**：実測 67,600 → 24,519 B・1 文字も切らずに）、`run_capability(id, args)`
+`find_capability(query)` が**レジストリの全 136 を検索**し（返るのは撤去済み 1 を除く **135** から）、**得点したものを全部** schema 付きで返し（**打ち切り無し**——説明文は 46 ブロック共有なので、能力ごとに引くと同じブロックが繰り返される。**まとめて 1 回引いて重複を落とす**：実測 67,600 → 24,519 B・1 文字も切らずに）、`run_capability(id, args)`
 が起動する——**到達できる範囲は全部のままで、送る量だけが減る**。
 ⚠ **以前は全能力の説明文（64,250 文字）を毎回入れていた。**「関連する能力だけ」に絞る仕組みは
 あったが、選別を決めていたのは `produces:'explanation'` に付く加点で、実測では
@@ -1118,19 +1118,20 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 ### 6.1 テーブル
 
 **表の一覧・列・関係・RLS 方針の正本は [`docs/DATABASE.md`](docs/DATABASE.md)**（pgTAP による
-実証手順も同じファイル）。現在 **33 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
+実証手順も同じファイル）。現在 **34 表**（`profiles` / `profiles_public` / `current_news` / `geo_pins` / `favorites` /
 `user_prefs` / `dashboard_cards` / `ai_usage` / `ai_turns` / `ai_gloss_usage` /
 `community_*` 5 表 / `feedback` /
 `bug_reports` / `donations` / Area Monitors の 5 表 / News Events の 8 表
 ＝`news_sources` / `news_source_feeds` / `news_articles` / `news_events` /
 `news_event_articles` / `news_cluster_decisions` / `news_event_i18n` / `saved_news_events`
-＋取り込みの計測 `news_ingest_runs` ＋運用者の監査証跡 `news_event_admin_actions`）。
+＋取り込みの計測 `news_ingest_runs` ＋運用者の監査証跡 `news_event_admin_actions`
+＋ WHO Disease Outbreak News の症例数・死亡数 `who_don_extracts`）。
 
 **DB の設計図は `supabase/migrations/` だけ**（全テーブル・制約・index・RLS・grants・トリガ・RPC）。
 本番へ手で SQL を流さない。手順は [`docs/MIGRATIONS.md`](docs/MIGRATIONS.md)。
-### 6.2 Edge Functions — **15本**（`_shared/` は関数ではない）
+### 6.2 Edge Functions — **16本**（`_shared/` は関数ではない）
 
-> ⚠ **15本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
+> ⚠ **16本すべてを `supabase/config.toml` に `[functions.*]` として宣言する。**
 > ファイルのヘッダコメントに書いた deploy フラグは設定ではない。
 > `supabase/functions/_shared/` は `newsgeo.js`・`relay-guard.js`・`volcano-parse.js` などを置く
 > ライブラリ用ディレクトリで、import した関数の中に CLI がバンドルする。
@@ -1246,6 +1247,21 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   そちらのほうが新しいので、既存の挙動は取り上げていない（`AGENTS.md` §3.1）。
   ⚠ **空の集合は共有スナップショットに書かない**（全利用者の海が同時に消え、上流障害と同じ顔をする）。
 
+- **`who-don`** … WHO Disease Outbreak News の**症例数・死亡数だけ**を散文から読み出して貯める
+  （§7.14 / `docs/MAP-LAYERS.md` §7.14）。⚠ **フィード自体は中継しない**——WHO は
+  `Access-Control-Allow-Origin: *` を返すのでブラウザが直接読める（実測）。この関数がある理由は
+  ただ1つ、**WHO が構造化して持っていない唯一の項目**が `Overview` の散文の中にしか無く、
+  それを読む provider の鍵はサーバーにしか置けないから。
+  **GET は公開・鍵なし**（`?ids=` で `who_don_extracts` の行を返すだけ。⚠ **未抽出は `missing` に入り
+  `rows` には出ない**——0 と「まだ読んでいない」を混ぜない）。
+  **POST だけが取り込み段**で、`--no-verify-jwt` ＋ **fail-closed**：`WHO_DON_SECRET` 未設定なら
+  全 POST を拒否する。秘密は `x-who-don-secret` **ヘッダのみ**・**定数時間比較**。
+  `WHO_DON_EXTRACT=off` で停止でき、壁時計の予算で打ち切って残りを次の run に回す。
+  ⚠ **数を正規表現で拾わない**——同じ文に「54 to 60 health zones」「104 contacts」
+  「1314 patients have recovered」が必ず混ざる。判断は AI に訊き、`_shared/who-don-extract.js` の
+  `parseExtract` が**非負整数か・`deaths <= cases` か・`asOf` が実在する日付か**を検証して、
+  1つでも破れば捨てる。`source_hash`（モデルへ実際に送った文字列のハッシュ）が、
+  同じ散文への再課金と無限再試行の両方を止める。
 - **`volcano-feed`** … 火山の**ブラウザが読めない2本のフィード**の中継（`--no-verify-jwt`・秘密なし）。
   `?feed=weekly` は Smithsonian/USGS 週間火山活動報告（`volcano.si.edu` の RSS）、
   `?feed=ash` は国際 SIGMET（`aviationweather.gov`）のうち**火山灰（`hazard:"VA"`）だけ**。
@@ -1273,8 +1289,8 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   （chart・spark・ティッカーを直接キーにした平坦形）のどれでもなければ通さない。
   キャッシュは 60 秒（`s-maxage`）で、同時に開いた読者の集中を 1 回の上流要求に畳む。
 
-⚠ **`_shared/relay-guard.js` を共有するのは11本**（`ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
-`gdelt-relay` / `news-ingest` / `news-relay` / `quotes-relay` / `routing-relay` / `sv-cov` / `volcano-feed`）**。** そのうち
+⚠ **`_shared/relay-guard.js` を共有するのは12本**（`ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+`gdelt-relay` / `news-ingest` / `news-relay` / `quotes-relay` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）**。** そのうち
 `news-ingest` だけが `x-news-ingest-secret` で fail-closed に守られており、**残り10本は無認証**。
 共有しているのは、URL allowlist（相手先 URL を呼び出し側が名指す中継だけ）、**GET 限定**、**期限**（`AbortSignal.timeout`）、
 **バイト上限**（`content-length` とストリーム読み出しの両方——上流は length を返さないことがある）、
@@ -2963,10 +2979,10 @@ AST で確かめる。委譲が消えるか条件付きになった瞬間にゲ�
    supabase db diff --schema public # drift がゼロであることを確認
    ```
    ローカル検証は `supabase start && supabase db reset`（migrations ＋ `supabase/seed.sql`）。
-4. **Edge Functions を15本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
+4. **Edge Functions を16本デプロイする**（`verify_jwt` は `supabase/config.toml` の宣言に従う）：
    ```bash
    for f in ai-proxy delete-account; do supabase functions deploy $f --project-ref <REF>; done
-   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay; do
+   for f in refresh-news monitor-run sv-cov alerts-relay cable-geo news-relay aviation-feed ais-feed news-ingest routing-relay volcano-feed gdelt-relay quotes-relay who-don; do
      supabase functions deploy $f --no-verify-jwt --project-ref <REF>
    done
    ```
@@ -3079,7 +3095,7 @@ DB 構造を**コード化**し、RLS／権限を**自動テスト**し、バッ
 - `supabase/config.toml` — ローカル／CI 用（**本番非接続**）。
   ⚠ **`db.major_version` は本番と一致していない**（宣言 15 / 本番 17.6）。ローカル再現の忠実度に関わるので、
   上げるときは `supabase db reset` の通過を確認してから行う。
-- `supabase/migrations/*.sql` — **唯一の設計図**（20本）。冪等・非破壊
+- `supabase/migrations/*.sql` — **唯一の設計図**（21本）。冪等・非破壊
   （`if not exists` / `create or replace` / `drop policy if exists`）。
 - `supabase/seed.sql` — **100% 合成**（`.test` ドメイン・プレースホルダ UUID）。
 - `supabase/tests/*_test.sql` — pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ Monitors ＋ 権限昇格 ＋ News Events ＋ 公開プロフィール表）。

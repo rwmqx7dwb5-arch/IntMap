@@ -217,6 +217,12 @@ war-fronts.js                     戦争の**6行**（WW1／WW2／朝鮮／ベ�
 war-layer.js                      戦争の層そのもの（**on-demand**・`__imWarFronts`・戦争ごとに1インスタンス／凡例に日スライダーと再生）
 war-geom.js                       戦線の線で国の輪郭を切る幾何 `WarGeom`（ビルドとブラウザが同じ1本を使う）
 industry-web.js                   産業の相関 window.IntMapIndustry
+outbreaks.js                      感染症アウトブレイク window.IntMapOutbreaks（**eager**——行と Atlas 命令が
+                                  起動時に要る）。WHO Disease Outbreak News 3,195件（1996〜）を
+                                  国ごとの点に。同梱の `data/who-don.json.gz` ＋ WHO から直接読む最新分。
+                                  病原体・国・発生日・公表日は WHO の構造化フィールド、
+                                  症例数・死亡数だけが散文なので `supabase/functions/who-don` が読む
+                                  （docs/MAP-LAYERS.md §7.14）
 companies.js                      企業データセットと時価総額のライブ算出 IntMapCompanies
 company-data.js                   企業アトラスの読み口（索引1枚＋1社ぶんのプロフィールを遅延取得・施設語彙の正本） IntMapCompanyData
 reference-data.js                 参照データ表
@@ -365,7 +371,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   `answer_mode`（text / map / chart / mixed）は **Atlas が宣言**し、ループは
                                   「map / mixed と言ったのに何も描いていない final」を `map_not_drawn` として
                                   差し戻す（自分の宣言との整合＝schema 検査と同じ種類。回数は `maxMapGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全135を検索・到達可能 134）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全136を検索・到達可能 135）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
@@ -376,7 +382,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 135能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 136能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
@@ -682,11 +688,11 @@ tle/                              衛星の軌道要素カタログ（定期生�
 
 ```
 supabase/
-  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全15本をここに宣言する
-  migrations/*.sql                DB の唯一の設計図（20本）。本番変更は必ずここを通す
+  config.toml                     ローカル/CI 用（本番非接続）。⚠ Edge Function は全16本をここに宣言する
+  migrations/*.sql                DB の唯一の設計図（21本）。本番変更は必ずここを通す
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表。8本）
-  functions/<name>/index.ts       Edge Functions（15本。一覧と各本の役割は Architecture.md §6.2）
+  functions/<name>/index.ts       Edge Functions（16本。一覧と各本の役割は Architecture.md §6.2）
   functions/_shared/              関数ではないライブラリ（newsgeo.js / relay-guard.js /
                                   atlas-persona.js / aviation-codec.js / aviation-model.js /
                                   news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）

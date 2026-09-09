@@ -218,7 +218,7 @@ import '../js/industry-web.js';
    nothing here depends on load order beyond "defined before first use". Both ocean-current layers
    (the World-data plate and the older data-layers row) read the same grid through it. */
 import '../js/ocean-currents-field.js';
-import '../js/ocean-currents.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is */
+import '../js/ocean-currents.js'; import '../js/outbreaks.js';   /* (#R216) 世界の海流 — same World-data toolkit; AFTER world-packs for the same reason industry-web is. (#R570) …and the WHO Disease Outbreak News layer, ON THIS LINE for the shell budget (tests/r168 #8) and after world-packs for the same toolkit reason. */
 import '../js/precip-annual.js';   /* (#R266) 年降水量 — CHELSA 1 km normal + GPCC per-year, both bundled rasters */
 /* (#R322) the SHELL only. #R311 measured that two of this file's five factories build Layers-panel
    buttons at boot, so it cannot be deferred whole; the five bodies live in
@@ -369,7 +369,7 @@ const MODULE_FACTORIES = [
   'mapReadout', 'mapTooltip', 'elevationProfile', 'viewControls', 'solid3d', 'droneNav',
   'droneOps', 'routingOps',
   'satProto', 'tileWarm', 'orbitPoints', 'limbLayer', 'newsSources', 'industryWeb',
-  'oceanCurrents', 'usElections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
+  'oceanCurrents', 'outbreaks', 'usElections', 'precipAnnual', 'warFronts', 'netHealth', 'worldPacks', 'facilities', 'insolation', 'space',   /* (#R408) four that were never in either list, all eager and all called at boot — ON THIS LINE for the shell budget (#R255's rule); why, in DEV-NOTES #R408. tests/r408 ④ derives the comparison now, so a fifth cannot sit here unread. */
 ];
 /* ── (#R209) …AND THE ONES THAT ARE NOT HERE YET, ON PURPOSE ────────────────────────────────────
    These files are not in the import list above: they are fetched by js/lazy-modules.js the
