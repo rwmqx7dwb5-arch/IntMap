@@ -169,6 +169,28 @@ test('R650 ③ the master clock moves the window, and the map follows it', async
      and the first version of this layer offered «2014 · 2013» as diseases (#R534's shape: a field's
      PRESENCE read as its MEANING). This is the assertion that found it. */
   expect(then.pathogens.filter((p) => /^\d{4}$/.test(p))).toEqual([]);
+  /* ⚠⚠⚠ AND THE RULE THAT KEEPS IT SO MUST BE IN THE SHIPPED BUNDLE (#R660). The node checks read
+     js/outbreaks.js from disk; this one asks the PAGE. The live tail names every DON WHO publishes
+     after the last build, and until #R660 it took `EmergencyEvent.Title` RAW — 26 of WHO’s newest
+     100 items came out named differently from the archive beside them, one of them the glued
+     «Mpox (monkeypox)- Democratic Republic of the Congo» a reader saw in production. */
+  const rule = await page.evaluate(() => {
+    const N = window.IntMapWhoDonName;
+    if (!N || typeof N.donName !== 'function') return { there: false };
+    const places = new Set(['democratic republic of the congo', 'senegal']);
+    return {
+      there: true,
+      cut: N.donName({ Title: 'Mpox (monkeypox)- Democratic Republic of the Congo' }, places),
+      uncut: N.donName({ Title: 'Mpox (monkeypox)- Democratic Republic of the Congo' }, new Set()),
+      fallback: N.donName({ Title: 'Yellow fever in Senegal', EmergencyEvent: { Title: '2014' } }, places),
+    };
+  });
+  expect(rule.there).toBe(true);
+  expect(rule.cut).toBe('Mpox (monkeypox)');
+  /* an unverified tail is LEFT ATTACHED, never guessed away */
+  expect(rule.uncut).toBe('Mpox (monkeypox)- Democratic Republic of the Congo');
+  /* a bare EmergencyEvent.Title falls back to the DON’s own title */
+  expect(rule.fallback).toBe('Yellow fever');
 
   await page.evaluate(() => window.IntMapTime.setNow());
 });

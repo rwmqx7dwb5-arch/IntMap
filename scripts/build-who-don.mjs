@@ -23,7 +23,8 @@
  *  that a Country content item is TAGGED WITH THE SAME TAXON: `countries?$filter=regionscountries/
  *  any(x: x eq <guid>)` returns Democratic Republic of the Congo, `Code: "COD"`. So the country
  *  identity comes from WHO's own taxonomy joined to WHO's own ISO code, and this file contains no
- *  list of country names, no spelling table and no regular expression over a title
+ *  list of country names, no spelling table, and no rule of its own for reading a title — the one
+ *  rule there is lives in js/outbreaks.js and this file evaluates that file for it (#R660)
  *  (.agents/rules/no-ad-hoc-hardcoding.md §1: an embedded list of names derivable from the data).
  *
  *  ⚠ A DON THAT RESOLVES TO NO COUNTRY IS KEPT WITH AN EMPTY LIST, NOT DROPPED AND NOT GUESSED.
@@ -54,6 +55,7 @@
  * ==========================================================================*/
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { gzipSync, gunzipSync } from 'node:zlib';
+import vm from 'node:vm';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -71,7 +73,10 @@ export const WHO_ITEM_BASE = 'https://www.who.int/emergencies/disease-outbreak-n
 const PAGE = 100;
 const UA = 'IntMap/build-who-don (+https://github.com/rwmqx7dwb5-arch/IntMap)';
 
-const SCHEMA_VERSION = 1;
+/* v2 (#R660): the corpus now carries `places`, the vocabulary a title's tail is verified against.
+   The browser needs it because js/outbreaks.js's live tail runs the same rule, and it cannot page
+   WHO's 226 country items on every open to learn WHO's own spellings. */
+const SCHEMA_VERSION = 2;
 
 async function odata(path, params) {
   const q = new URLSearchParams(params);
@@ -127,64 +132,26 @@ export function buildTaxonIndex(countries) {
    resolves for 199 of 240 emergency events — but **all 25 year-titled events resolve to nothing**.
    The disease name for those items exists in exactly one place: the DON's own title.
 
-   ⚠ SO THE TITLE IS PARSED, AND THE PARSE IS VERIFIED RATHER THAN TRUSTED. A DON title is
-   `<event>` with WHO's own decorations around it — an optional year prefix («1998 - Cholera»), an
-   optional revision marker («… – update», «Avian influenza – situation») and, usually, the place
-   («Nipah virus disease - India», «Yellow fever in Senegal»). The place is cut off ONLY when the
-   tail verifies against WHO'S OWN vocabulary — the country titles from the taxon join and the
-   region titles from `whoregions`. Nothing here holds a list of countries, diseases or spellings;
-   a tail that does not verify is left attached rather than guessed away (#R515: measure, and refuse
-   when the measurement fails). Measured: 2,7xx of 3,195 titles verify.
-
-   ⚠ THE TWO REVISION WORDS ARE THE ONE CONVENTION THIS FILE ENCODES, so they carry what
-   .agents/rules/no-ad-hoc-hardcoding.md §4 asks of a constant:
-     · OBSERVED — «update» and «situation» are how WHO marks a re-issue of the same event; they end
-       349 + ~200 titles in the 2026-09-09 corpus and appear in no other position.
-     · EXPIRES — if WHO stops decorating titles this way the rule simply stops firing; the head is
-       required to be non-empty, so a title that IS one of these words is left whole.
-     · SOURCE OF TRUTH — this function. `js/outbreaks.js` never re-derives a name. */
-const NORM = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
-const SEP = /\s[-–—:]\s*|,\s|\s+in\s+/g;
-const REVISION = /[\s,\-–—:(]*\b(update[ds]?|situation)\b[\s\d)]*$/i;
-const YEAR_PREFIX = /^\d{4}\s*[-–—:]\s*/;
-const BARE_YEAR = /^\d{4}$/;
-
-/** Strip WHO's decorations from one title. `places` is a Set of NORM-ed country and region names. */
-export function eventName(title, places) {
-  /* ⚠ THE MARKERS ARE STRIPPED TWICE, BEFORE AND AFTER THE PLACE IS CUT, and the second pass is not
-     belt-and-braces — «Avian influenza – situation in Cambodia – update» (251 items) leaves
-     «Avian influenza – situation» when only the first pass runs, which is how a decoration became
-     the 2nd most common «disease» in the corpus. */
-  const strip = (x) => {
-    let t = String(x || '').trim().replace(YEAR_PREFIX, '').trim();
-    for (let i = 0; i < 4; i++) {
-      const s = t.replace(REVISION, '').trim();
-      if (s === t || !s) break;               /* a title that IS the marker keeps its whole self */
-      t = s;
-    }
-    return t;
-  };
-  let t = strip(title);
-  if (!t || BARE_YEAR.test(t)) return null;
-  const cuts = [];
-  let m; SEP.lastIndex = 0;
-  while ((m = SEP.exec(t))) cuts.push([m.index, m.index + m[0].length]);
-  for (let i = cuts.length - 1; i >= 0; i--) {
-    const tail = NORM(t.slice(cuts[i][1]));
-    if (!tail) continue;
-    for (const v of places) {
-      if (!v) continue;
-      /* containment either way, because WHO writes both «African Region (AFRO)» and «African
-         Region», and both «Democratic Republic of the Congo» and «Congo, Democratic Republic» */
-      if (v === tail || tail.includes(v) || v.includes(tail)) {
-        const head = strip(t.slice(0, cuts[i][0]));
-        if (head && !BARE_YEAR.test(head)) return { name: head, placeRemoved: true };
-      }
-    }
+   ⚠⚠⚠ THE RULE ITSELF IS NOT WRITTEN HERE ANY MORE (#R660). It is `window.IntMapWhoDonName` in
+   `js/outbreaks.js`, and this script EVALUATES that file to get it — the same thing
+   scripts/build-whs.mjs does with js/lang-registry.js. #R650 kept the rule here and asserted that
+   the layer «never re-derives a name»; the layer's live tail was in fact taking
+   `EmergencyEvent.Title` raw, so the two readers disagreed on 26 of WHO's newest 100 items and a
+   corpus rebuild could not reach the one a reader actually saw. One implementation, two readers
+   (.agents/rules/no-ad-hoc-hardcoding.md §2.3). */
+const NAME = (() => {
+  const ctx = vm.createContext({ window: {} });
+  vm.runInContext(readFileSync(join(ROOT, 'js', 'outbreaks.js'), 'utf8'), ctx,
+    { filename: 'js/outbreaks.js' });
+  const n = ctx.window.IntMapWhoDonName;
+  if (!n || typeof n.eventName !== 'function' || typeof n.donName !== 'function') {
+    throw new Error('js/outbreaks.js no longer publishes window.IntMapWhoDonName');
   }
-  return { name: t, placeRemoved: false };
-}
+  return n;
+})();
+export const NORM = NAME.NORM;
+export const eventName = NAME.eventName;
+export const donName = NAME.donName;
 
 /* A DON row → the record the layer reads. Every field is either present in WHO's answer or null;
    nothing here derives a value from another. */
@@ -204,12 +171,10 @@ export function toEvent(d, byTaxon, places) {
     p: day(d.PublicationDateAndTime) || day(d.PublicationDate),
     s: ev ? day(ev.EmergencyEventStartDate) : null,
     c: iso.sort(),
-    /* ⚠ THE EVENT NAME IS CLEANED WHICHEVER SOURCE IT CAME FROM. `EmergencyEvent.Title` is the
-       better source when it says something — but it too carries WHO's revision markers («Avian
-       influenza – situation», 349 items), so it goes through the same function. When it is a bare
-       year, `eventName` returns null and the DON's own title answers instead. */
-    d: (ev && ev.Title ? (eventName(ev.Title, places) || {}).name : null) ||
-      (eventName(d.Title, places) || {}).name || null,
+    /* ⚠ THE EVENT NAME IS CLEANED WHICHEVER SOURCE IT CAME FROM, and the CHOICE between the two
+       sources is part of the rule rather than something each reader re-assembles — `donName` in
+       js/outbreaks.js holds both, and the layer's live tail calls the very same function (#R660). */
+    d: NAME.donName(d, places),
     e: ev && ev.EventId ? String(ev.EventId).trim() : null,
   };
 }
@@ -255,6 +220,10 @@ export async function fetchCorpus(log) {
   return {
     v: SCHEMA_VERSION,
     built: new Date().toISOString().slice(0, 10),
+    /* ⚠ WHO'S OWN COUNTRY AND REGION TITLES, NORMALISED — not a spelling table anyone typed. It is
+       the same Set this build verified 3,195 titles against, travelling so the live tail can verify
+       the next one the same way. */
+    places: [...places].sort(),
     source: 'WHO Disease Outbreak News',
     api: WHO_API + 'diseaseoutbreaknews',
     itemBase: WHO_ITEM_BASE,

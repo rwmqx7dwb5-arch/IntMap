@@ -7,7 +7,8 @@
  *  ══ FIVE OF THE SIX FIELDS ARE WHO'S OWN STRUCTURED DATA ═══════════════════════════════════════
  *  Measured 2026-09-09 against https://www.who.int/api/news/ (Sitefinity OData), 3,195 items back
  *  to 1996. `scripts/build-who-don.mjs` explains the shape and the taxon join in full; what matters
- *  here is that NOTHING on this layer is parsed out of a headline:
+ *  here is that only ONE of the six is read out of prose at all, and the rule that reads it lives in
+ *  this file (#R660 — see window.IntMapWhoDonName below; the build script evaluates it):
  *
  *      病原体      EmergencyEvent.Title            98.3 %
  *      国・地域    regionscountries → countries    94.4 % resolve to an ISO-3166 alpha-3 code
@@ -40,6 +41,112 @@
  *  selected are the SAME box — the app's own `.data-legend.generic-legend`, through `makePanel`.
  *  Its × unchecks the layer row and the layer row drives the layer.
  * ==========================================================================*/
+/* ══ ⚠⚠⚠ THE NAME RULE LIVES HERE, AND `scripts/build-who-don.mjs` READS THIS FILE FOR IT (#R660) ═══
+   #R650 put the rule in the build script and wrote «js/outbreaks.js never re-derives a name» in
+   both headers. That sentence was false, and the falseness was the bug: `fetchTail` below took
+   `EmergencyEvent.Title` RAW. Measured against WHO's newest 100 items, that path named 26 of them
+   differently from the corpus — 25 as `null` (it had no fallback to the DON's own title) and one as
+   «Mpox (monkeypox)- Democratic Republic of the Congo», which is the exact string a reader reported
+   standing in the pathogen filter. So rebuilding the corpus could not fix the layer: the next DON
+   WHO publishes comes through HERE.
+   ⇒ ONE implementation, TWO readers. The build script evaluates this file with `node:vm` and takes
+   `window.IntMapWhoDonName` (the same thing scripts/build-whs.mjs does with js/lang-registry.js), so
+   there is no second copy of the judgement to drift — .agents/rules/no-ad-hoc-hardcoding.md §2.3.
+   The place vocabulary the rule verifies against travels in the corpus as `places`, because it is
+   WHO's own country and region titles and the browser cannot page 226 country items to learn them.
+   ⚠ THIS BLOCK IS AT TOP LEVEL ON PURPOSE. Everything below is inside the module factory and needs a
+   renderer, a HOST and js/world-packs.js; `vm` can run none of that. Nothing here touches the DOM,
+   the map or `HOST`. */
+window.IntMapWhoDonName = (function () {
+  const NORM = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/^the\s+/, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  /* ⚠⚠ THE SPACE THAT MATTERS IS THE ONE AFTER THE DASH, NOT THE ONE BEFORE IT (#R660). #R650 wrote
+     `/\s[-–—:]\s*|…/` — a leading space REQUIRED — and WHO does not always write one, so 22 items
+     kept their country glued to the disease. The TRAILING space is what keeps a hyphenated NAME
+     whole («MERS-CoV», «Crimean-Congo», «vaccine-derived», «COVID-19»), and it stays required.
+       · EXPIRES — if WHO ever writes «X -Y» that title simply stops being cut; the tail below is
+         verified against WHO's own vocabulary and an unverified tail is left attached, never guessed.
+       · SOURCE OF TRUTH — this file. */
+  const SEP = /\s*[-–—:]\s+|,\s|\s+in\s+/g;
+  /* the two revision words are the one convention encoded here: «update» and «situation» are how WHO
+     marks a re-issue, they end ~550 titles in the 2026-09-09 corpus and appear in no other position,
+     and the head is required to be non-empty so a title that IS one of them keeps itself. */
+  const REVISION = /[\s,\-–—:(]*\b(update[ds]?|situation)\b[\s\d)]*$/i;
+  const YEAR_PREFIX = /^\d{4}\s*[-–—:]\s*/;
+  const BARE_YEAR = /^\d{4}$/;
+
+  /* ⚠ THE MARKERS COME OFF TWICE, BEFORE AND AFTER THE PLACE IS CUT. «Avian influenza – situation in
+     Cambodia – update» (251 items) leaves «Avian influenza – situation» with only the first pass,
+     which is how a decoration became the 2nd most common «disease» in the corpus. */
+  function strip(x) {
+    let t = String(x || '').trim().replace(YEAR_PREFIX, '').trim();
+    for (let i = 0; i < 4; i++) {
+      const s = t.replace(REVISION, '').trim();
+      if (s === t || !s) break;
+      t = s;
+    }
+    return t;
+  }
+
+  /** Strip WHO's decorations from one title. `places` is a Set of NORM-ed country and region names. */
+  function eventName(title, places) {
+    const t = strip(title);
+    if (!t || BARE_YEAR.test(t)) return null;
+    const pl = places || new Set();
+    const cuts = [];
+    /* ⚠ A SEPARATOR INSIDE A BRACKET IS NOT A SEPARATOR — it is part of the name. «Seychelles –
+       Suspected Plague (Ex- Madagascar)» is the measured case: the country inside the parenthesis
+       verifies, so cutting there ends the name mid-word and mid-bracket («… Plague (Ex»). Depth is
+       counted rather than a case being named, so it holds for any bracketed aside.
+       ⚠ AND A MATCHED SEPARATOR IS CONSUMED. Testing every index instead makes the cuts OVERLAP, and
+       the loop below takes the RIGHTMOST verifying one: «1999 - Cholera, in Madagascar» then offers
+       both «, » and « in », cuts at the later, and names the disease «Cholera,». This is `SEP.exec`'s
+       own non-overlapping walk, with brackets stepped over. */
+    let depth = 0;
+    for (let i = 0; i < t.length;) {
+      const ch = t[i];
+      if (ch === '(' || ch === '[') { depth++; i++; continue; }
+      if (ch === ')' || ch === ']') { depth = Math.max(0, depth - 1); i++; continue; }
+      if (depth) { i++; continue; }
+      SEP.lastIndex = i;
+      const r = SEP.exec(t);
+      if (r && r.index === i) { cuts.push([i, i + r[0].length]); i += r[0].length; continue; }
+      i++;
+    }
+    for (let i = cuts.length - 1; i >= 0; i--) {
+      const tail = NORM(t.slice(cuts[i][1]));
+      if (!tail) continue;
+      for (const v of pl) {
+        if (!v) continue;
+        /* containment either way, because WHO writes both «African Region (AFRO)» and «African
+           Region», and both «Democratic Republic of the Congo» and «Congo, Democratic Republic» */
+        if (v === tail || tail.includes(v) || v.includes(tail)) {
+          const head = strip(t.slice(0, cuts[i][0]));
+          /* ⚠ A HEAD THAT IS ITSELF A PLACE IS NOT AN EVENT NAME — the same vocabulary asked of the
+             other side of the cut, so «Seychelles – …» keeps its whole title instead of offering the
+             country «Seychelles» as a disease. EXACT equality only: containment would refuse
+             «Crimean-Congo haemorrhagic fever» for holding «Congo». */
+          if (head && !BARE_YEAR.test(head) && !pl.has(NORM(head))) {
+            return { name: head, placeRemoved: true };
+          }
+        }
+      }
+    }
+    return { name: t, placeRemoved: false };
+  }
+
+  /** One WHO row → its event name. ⚠ THE COMPOSITION IS PART OF THE RULE, not something each reader
+      re-assembles: `EmergencyEvent.Title` is the better source when it says something, but it too
+      carries WHO's decorations, and when it is a bare year the DON's own title has to answer. */
+  function donName(row, places) {
+    const ev = row && row.EmergencyEvent;
+    return (ev && ev.Title ? (eventName(ev.Title, places) || {}).name : null)
+      || (eventName(row && row.Title, places) || {}).name || null;
+  }
+
+  return { NORM, eventName, donName };
+})();
+
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.outbreaks = function (HOST) {
   const GE = () => window.IntMapGeoEngine;
@@ -123,6 +230,15 @@ window.IntMapModules.outbreaks = function (HOST) {
        bundle so the country join is local (see scripts/build-who-don.mjs).
        ⚠ A FAILED TAIL IS NOT AN EMPTY TAIL. `tail.err` is kept and printed; the archive still draws.
        #R499: a fetch that failed must never be counted as a fetch that found nothing. */
+    /* WHO's own country and region titles, normalised, as the corpus shipped them (#R660). A Set is
+       built once and kept, because `eventName` walks it for every candidate cut. ⚠ An older corpus
+       without the field verifies nothing, so a tail is left whole rather than cut at a guess. */
+    let placeSet = null;
+    function places() {
+      if (!placeSet) placeSet = new Set((corpus && corpus.places) || []);
+      return placeSet;
+    }
+
     async function fetchTail() {
       if (!corpus) return;
       if (Date.now() - tail.at < 600000 && !tail.err) return;
@@ -153,7 +269,14 @@ window.IntMapModules.outbreaks = function (HOST) {
           corpus.events.push({
             u, n: String(d.DonId || '').trim() || null, t: String(d.Title || '').trim(),
             p: day(d.PublicationDateAndTime), s: ev ? day(ev.EmergencyEventStartDate) : null,
-            c: c.sort(), d: ev && ev.Title ? String(ev.Title).trim() : null,
+            /* ⚠⚠⚠ THE SAME RULE THE ARCHIVE WAS BUILT WITH (#R660). This line used to be
+               `ev && ev.Title ? String(ev.Title).trim() : null` — raw. Measured against WHO's newest
+               100 items that named 26 of them differently from the corpus beside them: 25 as `null`,
+               because there was no fallback to the DON's own title when WHO leaves the event unnamed
+               or names it a bare year, and one as «Mpox (monkeypox)- Democratic Republic of the
+               Congo». A layer whose newest items are named by a different rule than its archive is a
+               layer whose pathogen filter disagrees with itself. */
+            c: c.sort(), d: window.IntMapWhoDonName.donName(d, places()),
             e: ev && ev.EventId ? String(ev.EventId).trim() : null,
           });
           added++;
