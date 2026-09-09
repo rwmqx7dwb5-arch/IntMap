@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<!-- ============================================================================
+     IntMap · harness for the wave renderer  (#R558)
+     ----------------------------------------------------------------------------
+     NOT part of the shipped site. This page exists so js/waves-gl.js can be run against the REAL
+     upstream grid, in a REAL WebGL context, beside a real basemap — the only way to find out
+     whether its shaders compile, whether the picture lands where the coastline is, and whether the
+     particles go the way Windy's go.
+
+     It deliberately does NOT go through js/wx-ecmwf.js: that module carries an axis, a queue, a
+     block cache and a dozen other things this page has no use for, and dragging them in would mean
+     debugging them too. What it does copy is the ONE thing that matters — the shape of the SDK
+     call: getProtocolInstance -> getOrCreateState -> ensureData, with GridFactory for the grid.
+
+     Query parameters (so one file serves every comparison):
+       ?lon=&lat=&z=      the view                       (default -40 / 45 / 3)
+       ?t=<index>         index into latest.json's valid_times   (default 0)
+       ?particles=0       raster only
+       ?land=1            paint Windy's grey over land, for a side-by-side against windy.com
+       ?globe=1           the GLOBE projection — IntMap's default, and the one Windy refuses (#R565)
+     ========================================================================== -->
+<meta charset="utf-8">
+<title>IntMap · waves harness (#R558)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1020; }
+  #map { position: absolute; inset: 0; }
+  #hud {
+    position: absolute; left: 8px; top: 8px; z-index: 5; max-width: 46ch;
+    font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #eaf0ff; background: rgba(10,16,32,.78); padding: 8px 10px; border-radius: 8px;
+    white-space: pre-wrap; pointer-events: none;
+  }
+  #hud.err { background: rgba(120,10,20,.85); }
+</style>
+<div id="map"></div>
+<div id="hud">booting…</div>
+
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@openmeteo/weather-map-layer@0.0.19/dist/index.js"></script>
+<script src="../js/waves-palette.js"></script>
+<script src="../js/waves-gl.js"></script>
+<script>
+(function () {
+  'use strict';
+  var qs = new URLSearchParams(location.search);
+  var num = function (k, d) { var v = parseFloat(qs.get(k)); return isFinite(v) ? v : d; };
+  var LON = num('lon', -40), LAT = num('lat', 45), Z = num('z', 3);
+  var TI = num('t', 0) | 0;
+  var hud = document.getElementById('hud');
+  var lines = [];
+  function say(s, bad) {
+    lines.push(s); if (lines.length > 14) lines.shift();
+    hud.textContent = lines.join('\n');
+    if (bad) hud.className = 'err';
+    console.log('[harness] ' + s);
+  }
+  /* the harness must not swallow anything — an exception here is the finding */
+  window.addEventListener('error', function (e) { say('WINDOW ERROR: ' + (e.message || e), true); });
+  window.addEventListener('unhandledrejection', function (e) {
+    say('UNHANDLED REJECTION: ' + ((e.reason && e.reason.message) || e.reason), true);
+  });
+
+  /* ── the map ─────────────────────────────────────────────────────────────────────────────────
+     A basemap is needed, because half of what is being checked is WHERE the colour stops relative
+     to a coastline. Carto's positron has no key requirement for the raster PNG endpoint used here
+     (#R479 is about the vector style), and this page never ships. */
+  var map = new maplibregl.Map({
+    container: 'map',
+    style: {
+      version: 8,
+      sources: {
+        base: {
+          type: 'raster', tileSize: 256, maxzoom: 19,
+          tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                  'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],
+          attribution: 'CARTO / OpenStreetMap'
+        }
+      },
+      layers: [{ id: 'base', type: 'raster', source: 'base' }]
+    },
+    center: [LON, LAT], zoom: Z, attributionControl: false
+  });
+  /* ⚠ AFTER THE STYLE HAS LOADED. `setProjection` on a map whose style is still loading throws
+     «Style is not done loading» (MEASURED, maplibre-gl 5.24.0) and the harness then proves nothing
+     at all. `getProjection()` is printed at layer-add time so the page states which regime it is
+     actually in rather than which one was asked for. */
+  if (qs.get('globe') === '1') map.once('load', function () { map.setProjection({ type: 'globe' }); });
+  window.__map = map;
+
+  var renderer = window.IntMapWavesGL.create({ landGrey: qs.get('land') === '1' });
+  window.__waves = renderer;
+  renderer.setParticles(qs.get('particles') !== '0');
+
+  /* ── the data ────────────────────────────────────────────────────────────────────────────────
+     Three variables off one .om file. `ensureData` re-points the SDK's single reader at the file
+     each time, so the three reads are run one after another rather than concurrently. */
+  var HOST = 'https://openmeteo.s3.amazonaws.com/data_spatial';
+  var DOMAIN = 'ecmwf_wam025';
+  /* ══ ⚠⚠⚠ `wave_direction` DOES NOT COME BACK IN `data.values` ══════════════════════════════════
+     MEASURED (#R558), and it cost an hour: asking the SDK for `wave_direction` returns
+     `wave_height`'s numbers — 0.00…10.70 m, byte-identical to the height read, whichever order the
+     two are read in. It is not a cache fault and not a bad variable name. The SDK's reader has a
+     DERIVATION RULE for this pair (0.0.19, `readVariable` → `findDerivationRule`):
+
+         { pattern: /wave_(?:height|direction)/,
+           getSourceVars: v => [v.replace('wave_direction','wave_height'),
+                                v.replace('wave_height','wave_direction')],
+           process: (a, b) => ({ values: a, directions: b }) }
+
+     so EITHER name reads BOTH files and answers `{values: height, directions: direction}` — the
+     same shape it uses for wind u/v. One read therefore yields two fields, and the direction is on
+     `.directions`. `wave_period` matches no rule and is read on its own.
+     ⚠ Anything that reads this variable through js/wx-ecmwf.js's `load()` inherits this: `load`
+     keeps the whole `data` object on the frame, so `.directions` is there, but a caller that
+     assumes `values` is what it asked for gets the height twice. */
+  var VARS = (qs.get('vars') || 'wave_height,wave_period').split(',');
+
+  function p2(n) { return ('0' + n).slice(-2); }
+  function fileUrl(ref, valid) {
+    var r = new Date(Date.parse(ref)), t = new Date(Date.parse(/[zZ]$/.test(valid) ? valid : valid + 'Z'));
+    return HOST + '/' + DOMAIN + '/'
+      + r.getUTCFullYear() + '/' + p2(r.getUTCMonth() + 1) + '/' + p2(r.getUTCDate()) + '/'
+      + p2(r.getUTCHours()) + '00Z/'
+      + t.getUTCFullYear() + '-' + p2(t.getUTCMonth() + 1) + '-' + p2(t.getUTCDate())
+      + 'T' + p2(t.getUTCHours()) + '00.om';
+  }
+
+  var sdk = window.OMWeatherMapLayer;
+  if (!sdk) { say('SDK did not load (window.OMWeatherMapLayer missing)', true); return; }
+  say('SDK ok. domainOptions: ' + sdk.domainOptions.length);
+
+  var dom = sdk.domainOptions.find(function (d) { return d.value === DOMAIN; });
+  if (!dom) { say('no domainOptions entry for ' + DOMAIN, true); return; }
+  say('domain grid: ' + JSON.stringify(dom.grid));
+
+  var t0 = performance.now();
+  fetch(HOST + '/' + DOMAIN + '/latest.json').then(function (r) { return r.json(); }).then(function (meta) {
+    var valid = meta.valid_times[Math.max(0, Math.min(meta.valid_times.length - 1, TI))];
+    var f = fileUrl(meta.reference_time, valid);
+    say('run ' + meta.reference_time + '  step ' + valid);
+    var inst = sdk.getProtocolInstance(sdk.defaultOmProtocolSettings);
+    var out = {};
+    var chain = Promise.resolve();
+    VARS.forEach(function (v) {
+      chain = chain.then(function () {
+        var st = sdk.getOrCreateState(inst.stateByKey, f + '?variable=' + v, { domain: dom, variable: v }, f);
+        var rdr = inst.omFileReader;
+        return Promise.resolve(rdr.setToOmFile(f)).then(function () {
+          return sdk.ensureData(st, rdr, undefined);
+        }).then(function (data) {
+          if (!data || !data.values) throw new Error(v + ': no values');
+          out[v] = data.values;
+          if (data.directions) out[v + '__dir'] = data.directions;
+          out['_grid_' + v] = sdk.GridFactory.create(st.dataOptions.domain.grid, st.ranges);
+          /* ⚠ the range is printed AT READ TIME, not afterwards. A variable that came back as some
+             other variable's numbers is invisible in the picture (it just looks wrong) and this is
+             where it can still be told apart from a renderer fault. */
+          var lo = Infinity, hi = -Infinity;
+          for (var i = 0; i < data.values.length; i += 13) {
+            var x = data.values[i];
+            if (x === x && isFinite(x)) { if (x < lo) lo = x; if (x > hi) hi = x; }
+          }
+          say(v + ': ' + data.values.length + ' samples, ' + lo.toFixed(2) + '…' + hi.toFixed(2)
+              + (data.directions ? ' (+directions)' : '')
+              + ' (' + Math.round(performance.now() - t0) + ' ms)');
+        });
+      });
+    });
+    return chain.then(function () { return out; });
+  }).then(function (out) {
+    var g = dom.grid;
+    var vals = out.wave_height;
+    /* ⚠ ORIENTATION IS NOT ASSUMED — and it is not asked of the SDK's grid object either, because
+       0.0.19's grid exposes no public point read (MEASURED: `getNearestNeighborValue` is not a
+       function on it). It is decided by the DATA: a wave model has values over sea and NaN over
+       land, so seven points whose land/sea answer is not in doubt separate the two readings
+       outright. Whichever reading agrees with all seven is the one the array is in. */
+    function seaAt(a, lat, lon, north) {
+      var ix = Math.round((lon - g.lonMin) / g.dx);
+      var iy = Math.round((lat - g.latMin) / g.dy);
+      if (north) iy = g.ny - 1 - iy;
+      var v = a[iy * g.nx + ix];
+      return v === v && isFinite(v);
+    }
+    var PROBES = [
+      [45, -40, true],    /* North Atlantic          */
+      [20, -60, true],    /* Atlantic off the Antilles */
+      [-20, -60, false],  /* Bolivia / western Brazil  */
+      [45, 100, false],   /* Mongolia                  */
+      [-45, 100, true],   /* Southern Indian Ocean     */
+      [0, 20, false],     /* Congo basin               */
+      [0, -140, true]     /* central Pacific           */
+    ];
+    function score(north) {
+      var n = 0;
+      PROBES.forEach(function (p) { if (seaAt(vals, p[0], p[1], north) === p[2]) n++; });
+      return n;
+    }
+    var sSouth = score(false), sNorth = score(true);
+    say('orientation probe: southFirst ' + sSouth + '/7, northFirst ' + sNorth + '/7');
+    if (sSouth === sNorth) { say('ORIENTATION UNDECIDED', true); }
+    var flip = sNorth > sSouth;
+    say('row order: ' + (flip ? 'NORTH first -> flipping' : 'SOUTH first -> as is'));
+
+    function orient(a) {
+      if (!flip || !a) return a;
+      var o = new Float32Array(a.length);
+      for (var y = 0; y < g.ny; y++) o.set(a.subarray((g.ny - 1 - y) * g.nx, (g.ny - y) * g.nx), y * g.nx);
+      return o;
+    }
+
+    /* ⚠ `?synth=<deg>` REPLACES THE DIRECTION FIELD WITH ONE CONSTANT, and it is the only way the
+       sign of the particle motion could be measured here. The real field turns over a few hundred
+       kilometres, so a cross-correlation of two frames over a 192 px crop averages several
+       directions and — with the animation as slow as it currently is (2 px in 2.4 s, measured) —
+       the answer is buried in noise. A uniform field makes every particle in the crop move the
+       same way, so even a 2 px drift is coherent. The renderer is untouched; only its input is. */
+    var synth = qs.get('synth');
+    var dirs = orient(out.wave_height__dir);
+    if (synth !== null) {
+      var sd = parseFloat(synth) || 0;
+      var src = dirs, cst = new Float32Array(src.length);
+      for (var q = 0; q < src.length; q++) cst[q] = (src[q] === src[q]) ? sd : NaN;
+      dirs = cst;
+      say('SYNTHETIC direction field: ' + sd + ' deg everywhere');
+    }
+
+    /* ⚠ `?delta=1` REPLACES THE HEIGHT FIELD WITH ONE LIT GRID NODE. A coastline cannot answer
+       「is the field displaced by half a cell」 — the model's own land mask is 0.25° blocky, so a
+       14 km shift hides inside it. A single node can: Catmull-Rom reconstructs a delta symmetrically
+       about the node, so the brightness centroid of what is drawn IS where the renderer thinks that
+       node lives, and it can be compared with where MapLibre projects the node's true lon/lat.
+       Validity stays 1 everywhere so nothing is discarded and the lobe is not clipped. */
+    var vals2 = orient(out.wave_height);
+    if (qs.get('delta') === '1') {
+      var jx = Math.round((LON - g.lonMin) / g.dx), jy = Math.round((LAT - g.latMin) / g.dy);
+      var d2 = new Float32Array(vals2.length);
+      for (var z2 = 0; z2 < d2.length; z2++) d2[z2] = 0;
+      d2[jy * g.nx + jx] = 12;
+      vals2 = d2;
+      window.__deltaNode = { lon: g.lonMin + jx * g.dx, lat: g.latMin + jy * g.dy };
+      say('DELTA at node ' + window.__deltaNode.lon + ',' + window.__deltaNode.lat);
+    }
+
+    var payload = {
+      values: vals2,
+      directions: dirs,
+      periods: orient(out.wave_period),
+      grid: { nx: g.nx, ny: g.ny, lonMin: g.lonMin, latMin: g.latMin, dx: g.dx, dy: g.dy }
+    };
+    window.__wavePayload = payload;
+    var ok = renderer.setData(payload);
+    say('setData -> ' + ok);
+
+    function add() {
+      var lyr = renderer.layer('im-waves');
+      /* ⚠ THE SPY IS A MEASURING DEVICE, NOT A PATCH. What MapLibre hands `render` is the whole
+         question on the globe — which shader variant, which prelude, which matrices — and it cannot
+         be read from outside the call. The original render still runs, unchanged and first-class;
+         this only writes down what it was given. */
+      var innerRender = lyr.render;
+      lyr.render = function (ctx, args) {
+        var sd = args && args.shaderData, P = args && args.defaultProjectionData;
+        window.__renderArgs = {
+          variantName: sd && sd.variantName,
+          define: sd && sd.define,
+          prelude: sd && sd.vertexShaderPrelude,
+          projectionData: P ? Object.keys(P) : null,
+          transition: P && P.projectionTransition,
+          webgl2: (typeof WebGL2RenderingContext !== 'undefined') && (ctx instanceof WebGL2RenderingContext)
+        };
+        return innerRender.call(this, ctx, args);
+      };
+      map.addLayer(lyr);
+      say('layer added; projection ' + JSON.stringify(map.getProjection()));
+      window.__wavesReady = true;
+    }
+    if (map.isStyleLoaded()) add(); else map.once('load', add);
+  }).catch(function (e) {
+    say('FAILED: ' + (e && e.message ? e.message : e), true);
+    window.__wavesError = String(e && e.stack || e);
+  });
+})();
+</script>

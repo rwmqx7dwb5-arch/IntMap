@@ -6222,4 +6222,12 @@ window.IntMapLang.define('ko', { ui: {
   "left the modelled area": "모델 영역 밖으로 유출",
   "still airborne when the window closed": "계산 종료 시점에 아직 대기 중",
   "Not on this map": "이 지도에 포함되지 않은 것",
+  "Waves": "파도",   /* data-layers.js waves.js (#R577) */
+  "Significant wave height, with the mean wave direction animated over it.": "유의파고이며, 그 위에 평균 파향을 애니메이션으로 겹쳐 보여줍니다.",
+  "Colours follow Windy’s wave scale.": "색상은 Windy의 파고 척도를 따릅니다.",
+  "Wave animation": "파도 애니메이션",
+  "Could not load the wave forecast": "파도 예보를 불러오지 못했습니다",
+  "This renderer cannot draw the wave layer.": "이 렌더러는 파도 레이어를 그릴 수 없습니다.",
+  "no wave data": "파도 데이터 없음",
+  "not a wave model": "파도 모델이 아님",
 } });
