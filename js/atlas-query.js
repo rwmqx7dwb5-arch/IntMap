@@ -102,27 +102,70 @@ window.IntMapModules.atlasQuery = function (HOST) {
     return _iso2to3[String(a2).toUpperCase()] || '';
   }
 
+  /* ══ WHICH GEONAMES RECORDS ARE A CITY ═══════════════════════════════════════════════════════
+     ⚠⚠⚠ (#R572) `cities` USED TO MEAN «every GeoNames record whose feature CLASS is P», and that
+     is not a list of cities. MEASURED against the published cities1000: fourteen records with a
+     population over a million are `PPLX` — «section of populated place» — so 「人口100万人以上の
+     都市」 answered with Kowloon, New Territories, Puxi, Navi Mumbai, Pest, and 『Al Mawşil al
+     Jadīdah』 (2,065,597) standing in for Mosul, which exists SEPARATELY in the same file as
+     PPLA / 1,683,000. A district of a city is not a city, and neither is a place GeoNames records
+     as historical, abandoned or destroyed.
+
+     ⚠ THE RULE IS NOT A LIST OF CODES HERE. The build reads GeoNames' own `featureCodes_en.txt`,
+     classifies each code BY ITS PUBLISHED DESCRIPTION («section of …» → a part, «historical /
+     abandoned / destroyed» → defunct, otherwise a settlement) and ships that verdict beside the
+     rows (`worldMeta().placeKinds`). So a code GeoNames adds tomorrow is classified by GeoNames'
+     sentence about it, and this file never grows a spelling. A code the shipped table does not
+     know is ADMITTED — the honest default, because «unclassified» is not evidence of a defect. */
+  /* GeoNames' own verdict on each feature code, as the build shipped it beside the rows. Held
+     here so a row can name its own record type after the table has been built. */
+  let _kinds = null;
+  function placeKindOf(kinds, fcode) {
+    if (!kinds || !fcode) return '';
+    const k = kinds[fcode];
+    return (k && k.kind) ? String(k.kind) : '';
+  }
+
   async function cityRows() {
     const G = window.IntMapGazetteer;
     if (!G || !G.warm) return { rows: [], note: null };
     const raw = await G.warm();
+    const meta = G.worldMeta ? G.worldMeta() : null;
+    const kinds = (meta && meta.placeKinds) || null;
+    _kinds = kinds;
     const rows = [];
+    let loaded = 0, notACity = 0;
     for (let i = 0; i < raw.length && rows.length < SCAN_CAP; i++) {
       const r = raw[i];
       if (!r || !isFinite(r[2]) || !isFinite(r[3])) continue;
-      rows.push({ id: 'c' + i, name: r[4], nameLocal: r[5], lng: +r[2], lat: +r[3], pop: +r[6] || 0, iso2: r[7] || '' });
+      loaded++;
+      const fcode = r[9] || '';
+      const kind = placeKindOf(kinds, fcode);
+      if (kind && kind !== 'settlement') { notACity++; continue; }
+      /* ⚠ (#R572) THE ROW ID IS THE GEONAMES ID, not this loop's index. `c1234` meant «the 1234th
+         row of whichever build happens to be loaded», so the same city had a different identity
+         after every rebuild and after the phone's MOBILE_CAP cut the list. */
+      rows.push({ id: r[8] ? ('geonames:' + r[8]) : ('c' + i), geonameId: r[8] || '', featureCode: fcode,
+        /* ⚠ (#R572) DISPLAY NAME ≠ MATCHING SURFACE. `r[4]` is GeoNames' `asciiname`, which is a
+           transliteration for machines — it is what printed 「UEruemqi」 for Ürümqi. `r[10]` is the
+           name chosen for a reader (English preferred name → the canonical UTF-8 name → asciiname). */
+        name: r[10] || r[4], asciiName: r[4], nameLocal: r[5],
+        lng: +r[2], lat: +r[3], pop: +r[6] || 0, iso2: r[7] || '' });
     }
     /* the phone deliberately holds the head of the same list (js/gazetteer.js MOBILE_CAP) — say so
        rather than letting an answer look like it searched every place on Earth */
-    const meta = G.worldMeta ? G.worldMeta() : null;
-    const full = meta && meta.count ? meta.count : rows.length;
-    return { rows, note: (full > rows.length)
+    const full = meta && meta.count ? meta.count : loaded;
+    /* ⚠ (#R572) THE THREE COUNTS ARE DIFFERENT FACTS and were printed as one. «147,924 evaluated»
+       was the size of the SOURCE LIST, which is not how many rows were offered to the conditions
+       once the non-cities were removed, and not how many survived a country scope either. */
+    return { rows, universe: { full, loaded, eligible: rows.length, notACity, classified: !!kinds },
+      note: (full > loaded)
       ? (L('Only part of the place list is loaded in this session — the most populous places first.',
         'このセッションには地名表の一部（人口の多い順）しか読み込まれていません。',
         'In dieser Sitzung ist nur ein Teil der Ortsliste geladen — die bevölkerungsreichsten zuerst.',
         'В этой сессии загружена только часть списка мест — сначала самые населённые.',
         'En esta sesión solo hay parte de la lista de lugares — los más poblados primero.')
-        + ' ' + rows.length.toLocaleString() + ' / ' + full.toLocaleString()) : null };
+        + ' ' + loaded.toLocaleString() + ' / ' + full.toLocaleString()) : null };
   }
 
   async function countryRows() {
@@ -238,8 +281,44 @@ window.IntMapModules.atlasQuery = function (HOST) {
      2 = a network call per batch of rows. `ensure(rows)` fills `row.v[id]` for every row it can and
      returns what the reader has to be told about the attempt. */
 
-  function col(id, tables, label, unit, cost, ensure, source, kind) {
-    return { id, tables, label, unit, cost, ensure, source, kind: kind || 'number' };
+  /* ⚠⚠ (#R572) `source` NAMES THE DATASET; `origin` NAMES WHAT WAS DONE TO IT. Rule ② got the
+     reader as far as «this number came from CHELSA», which is not enough to check an answer: a
+     figure READ OUT of a record, a raster SAMPLED at a coordinate, and a distance COMPUTED from a
+     simplified coastline fail in completely different ways and carry completely different error.
+     Printing all three as «— CHELSA V2.1» invites the reader to trust them equally.
+       raw       the value is a field of the source record, copied
+       sampled   a grid was read at this row's coordinate (the grid's resolution is the error)
+       computed  measured here from published geometry (that geometry's tolerance is the error)
+       network   an endpoint was asked about this row (and may have declined — see the caps)
+       derived   looked up in another dataset through a key on this row (e.g. its country)
+     ⚠ It is DECLARED, not guessed from `cost`: precipMm and coastKm are both cost 1 and are a
+     sample and a computation respectively. */
+  const ORIGINS = ['raw', 'sampled', 'computed', 'network', 'derived'];
+  function col(id, tables, label, unit, cost, ensure, source, kind, origin, fmt) {
+    const c = { id, tables, label, unit, cost, ensure, source, kind: kind || 'number', origin: origin || 'raw' };
+    /* ⚠ A MISSPELLED ORIGIN MUST NOT REACH THE READER AS A BLANK. `originLabel` falls back to
+       «copied from the source record» for anything it does not recognise, which would quietly
+       describe a network call as a copy — so the vocabulary is closed HERE, where the column is
+       built, and a typo stops the module from loading rather than printing a false sentence. */
+    if (ORIGINS.indexOf(c.origin) < 0) throw new Error('atlas-query: column ' + id + ' declares an unknown origin: ' + c.origin);
+    if (fmt) c.fmt = fmt;
+    return c;
+  }
+
+  /* the ISO 3166-1 alpha-2 a city row carries, as the country's name in the reader's language.
+     ⚠ THE VALUE STAYS THE CODE — 「country == 'CN'」 has to keep working, and a predicate that
+     matched a localised name would break the moment the reader changed language. This is a
+     FORMATTER: it changes what is printed, never what is compared. */
+  function countryLabel(a2) {
+    const raw = String(a2 == null ? '' : a2);
+    if (!raw) return '';
+    try {
+      const code = iso2to3(raw);
+      const cs = code && D.countryStats ? D.countryStats() : null;
+      const s = cs ? cs[code] : null;
+      if (!s) return raw;
+      return (D.countryName ? D.countryName(s) : (s.nameEn || raw)) || raw;
+    } catch (_) { return raw; }
   }
 
   const intrinsic = (id, pick) => (rows) => { for (const r of rows) r.v[id] = pick(r); return {}; };
@@ -341,24 +420,27 @@ window.IntMapModules.atlasQuery = function (HOST) {
   }
 
   const COLUMNS = [
-    col('pop', ['cities'], LA('Population', '人口', 'Bevölkerung', 'Население', 'Población'), '', 0, intrinsic('pop', (r) => r.pop), 'GeoNames cities1000'),
-    col('name', ['cities', 'countries', 'earthquakes', 'volcanoes', 'facilities'], LA('Name', '名称', 'Name', 'Название', 'Nombre'), '', 0, intrinsic('name', (r) => r.name), '', 'text'),
-    col('country', ['cities'], LA('Country', '国', 'Land', 'Страна', 'País'), '', 0, intrinsic('country', (r) => r.iso2), '', 'text'),
-    col('lat', ['cities', 'countries', 'earthquakes', 'volcanoes', 'facilities'], LA('Latitude', '緯度', 'Breite', 'Широта', 'Latitud'), '°', 0, intrinsic('lat', (r) => r.lat), ''),
-    col('lng', ['cities', 'countries', 'earthquakes', 'volcanoes', 'facilities'], LA('Longitude', '経度', 'Länge', 'Долгота', 'Longitud'), '°', 0, intrinsic('lng', (r) => r.lng), ''),
-    col('mag', ['earthquakes'], LA('Earthquake magnitude', 'マグニチュード', 'Erdbebenmagnitude', 'Магнитуда землетрясения', 'Magnitud del terremoto'), '', 0, intrinsic('mag', (r) => r.mag), 'USGS'),
-    col('depthKm', ['earthquakes'], LA('Depth', '深さ', 'Tiefe', 'Глубина', 'Profundidad'), 'km', 0, intrinsic('depthKm', (r) => r.depthKm), 'USGS'),
-    col('precipMm', ['cities', 'volcanoes', 'facilities'], LA('Annual precipitation', '年降水量', 'Jahresniederschlag', 'Годовые осадки', 'Precipitación anual'), 'mm', 1, (rows) => ensurePrecip(rows), 'CHELSA V2.1'),
-    col('coastKm', ['cities', 'volcanoes', 'facilities'], LA('Distance to the ocean', '海（外洋）からの距離', 'Entfernung zum Ozean', 'Расстояние до океана', 'Distancia al océano'), 'km', 1, (rows) => ensureCoast(rows, 'coastKm'), 'Natural Earth 1:10m coastline'),
-    col('seaKm', ['cities', 'volcanoes', 'facilities'], LA('Distance to any sea', '海（内海含む）からの距離', 'Entfernung zu einem Meer', 'Расстояние до моря', 'Distancia a cualquier mar'), 'km', 1, (rows) => ensureCoast(rows, 'seaKm'), 'Natural Earth 1:10m coastline'),
-    col('elevM', ['cities', 'facilities'], LA('Elevation', '標高', 'Höhe', 'Высота', 'Altitud'), 'm', 2, (rows) => ensureElev(rows), 'Open-Meteo elevation API'),
-    col('elevM', ['volcanoes'], LA('Elevation', '標高', 'Höhe', 'Высота', 'Altitud'), 'm', 0, intrinsic('elevM', (r) => r.elevM), 'Smithsonian GVP'),
+    col('pop', ['cities'], LA('Population', '人口', 'Bevölkerung', 'Население', 'Población'), '', 0, intrinsic('pop', (r) => r.pop), 'GeoNames cities1000 population field', 'number', 'raw'),
+    col('name', ['cities', 'countries', 'earthquakes', 'volcanoes', 'facilities'], LA('Name', '名称', 'Name', 'Название', 'Nombre'), '', 0, intrinsic('name', (r) => r.name), '', 'text', 'raw'),
+    /* ⚠ (#R572) the VALUE is the ISO-2 code (so `country == 'CN'` still matches); `countryLabel`
+       only decides what the reader sees. The table used to print the code twice — once glued to
+       the name cell and once in this column — which is where 「Wuzhong CN | CN」 came from. */
+    col('country', ['cities'], LA('Country', '国', 'Land', 'Страна', 'País'), '', 0, intrinsic('country', (r) => r.iso2), 'GeoNames cities1000 country code', 'text', 'raw', (v) => countryLabel(v)),
+    col('lat', ['cities', 'countries', 'earthquakes', 'volcanoes', 'facilities'], LA('Latitude', '緯度', 'Breite', 'Широта', 'Latitud'), '°', 0, intrinsic('lat', (r) => r.lat), '', 'number', 'raw'),
+    col('lng', ['cities', 'countries', 'earthquakes', 'volcanoes', 'facilities'], LA('Longitude', '経度', 'Länge', 'Долгота', 'Longitud'), '°', 0, intrinsic('lng', (r) => r.lng), '', 'number', 'raw'),
+    col('mag', ['earthquakes'], LA('Earthquake magnitude', 'マグニチュード', 'Erdbebenmagnitude', 'Магнитуда землетрясения', 'Magnitud del terremoto'), '', 0, intrinsic('mag', (r) => r.mag), 'USGS', 'number', 'raw'),
+    col('depthKm', ['earthquakes'], LA('Depth', '深さ', 'Tiefe', 'Глубина', 'Profundidad'), 'km', 0, intrinsic('depthKm', (r) => r.depthKm), 'USGS', 'number', 'raw'),
+    col('precipMm', ['cities', 'volcanoes', 'facilities'], LA('Annual precipitation', '年降水量', 'Jahresniederschlag', 'Годовые осадки', 'Precipitación anual'), 'mm', 1, (rows) => ensurePrecip(rows), 'CHELSA V2.1', 'number', 'sampled'),
+    col('coastKm', ['cities', 'volcanoes', 'facilities'], LA('Distance to the ocean', '海（外洋）からの距離', 'Entfernung zum Ozean', 'Расстояние до океана', 'Distancia al océano'), 'km', 1, (rows) => ensureCoast(rows, 'coastKm'), 'Natural Earth 1:10m coastline', 'number', 'computed'),
+    col('seaKm', ['cities', 'volcanoes', 'facilities'], LA('Distance to any sea', '海（内海含む）からの距離', 'Entfernung zu einem Meer', 'Расстояние до моря', 'Distancia a cualquier mar'), 'km', 1, (rows) => ensureCoast(rows, 'seaKm'), 'Natural Earth 1:10m coastline', 'number', 'computed'),
+    col('elevM', ['cities', 'facilities'], LA('Elevation', '標高', 'Höhe', 'Высота', 'Altitud'), 'm', 2, (rows) => ensureElev(rows), 'Open-Meteo elevation API', 'number', 'network'),
+    col('elevM', ['volcanoes'], LA('Elevation', '標高', 'Höhe', 'Высота', 'Altitud'), 'm', 0, intrinsic('elevM', (r) => r.elevM), 'Smithsonian GVP', 'number', 'raw'),
     /* (#R497) the two facts the GVP row carries that nothing could ask for: which country it is in
        (a NAME here, not an ISO code — the file has no code) and the year of its last known eruption. */
-    col('country', ['volcanoes'], LA('Country', '国', 'Land', 'Страна', 'País'), '', 0, intrinsic('country', (r) => r.country), 'Smithsonian GVP', 'text'),
-    col('lastEruptionYear', ['volcanoes'], LA('Last known eruption', '最後の噴火', 'Letzter bekannter Ausbruch', 'Последнее известное извержение', 'Última erupción conocida'), '', 0, intrinsic('lastEruptionYear', (r) => (r.lastEruption === '' ? null : +r.lastEruption)), 'Smithsonian GVP'),
+    col('country', ['volcanoes'], LA('Country', '国', 'Land', 'Страна', 'País'), '', 0, intrinsic('country', (r) => r.country), 'Smithsonian GVP', 'text', 'raw'),
+    col('lastEruptionYear', ['volcanoes'], LA('Last known eruption', '最後の噴火', 'Letzter bekannter Ausbruch', 'Последнее известное извержение', 'Última erupción conocida'), '', 0, intrinsic('lastEruptionYear', (r) => (r.lastEruption === '' ? null : +r.lastEruption)), 'Smithsonian GVP', 'number', 'raw'),
   ];
-  for (const w in WX) COLUMNS.push(col(w, ['cities', 'facilities', 'volcanoes'], WX[w][1], WX[w][2], 2, (rows) => ensureWx(rows, [w]), 'Open-Meteo forecast API'));
+  for (const w in WX) COLUMNS.push(col(w, ['cities', 'facilities', 'volcanoes'], WX[w][1], WX[w][2], 2, (rows) => ensureWx(rows, [w]), 'Open-Meteo forecast API', 'number', 'network'));
 
   /* `country.<metric>` and `wb:<CODE>` are open families rather than rows in the table above — the
      first is every metric the Countries record carries, the second is every World Bank indicator
@@ -369,13 +451,15 @@ window.IntMapModules.atlasQuery = function (HOST) {
     if (fixed) return fixed;
     if (/^wb:/i.test(key)) {
       const code = key.slice(3).trim().toUpperCase();
-      return col(key, [table], LA(code, code, code, code, code), '', 2, (rows) => ensureWB(rows, code), 'World Bank ' + code);
+      return col(key, [table], LA(code, code, code, code, code), '', 2, (rows) => ensureWB(rows, code), 'World Bank ' + code, 'number', 'network');
     }
     const m = /^(?:country\.)?(.+)$/.exec(key);
     const spec = (m && D.metricSpec) ? D.metricSpec(m[1]) : null;
     if (spec && (table === 'cities' || table === 'countries')) {
       const cid = 'country.' + spec.key;
-      return { id: cid, tables: [table], label: spec.m.label, unit: '', cost: 1, kind: 'number',
+      /* `derived`: the row does not carry this number — it is looked up in the countries record
+         through the row's own country code (see `ensureCountryMetric`). */
+      return { id: cid, tables: [table], label: spec.m.label, unit: '', cost: 1, kind: 'number', origin: 'derived',
         ensure: (rows) => ensureCountryMetric(rows, spec.key), source: 'the Countries statistics record',
         fmt: (v) => (D.fmtVal ? D.fmtVal(spec.key, v) : v) };
     }
@@ -424,7 +508,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
     const base = await T.rows(spec && spec.scope ? spec.scope : spec);
     if (base.unavailable) return { ok: false, error: base.unavailable, table: from };
     let rows = base.rows.map((r) => Object.assign({ v: Object.create(null), joins: {} }, r));
-    const scanned = rows.length;
+    const offered = rows.length;
     if (base.note) notes.push(base.note);
     sources.push({ what: T.label, src: base.source || T.source });
     if (base.capped) caps.push({ what: T.label, cap: base.capped });
@@ -442,6 +526,12 @@ window.IntMapModules.atlasQuery = function (HOST) {
           + ': ' + Array.from(codes).join(', '));
       }
     }
+    /* ⚠⚠ (#R572) «EVALUATED» IS COUNTED HERE, NOT ABOVE. It used to be the size of the whole base
+       table, so 「日本の都市で…」 reported 「都市 147,924 件を評価」 while the conditions had in
+       fact been asked about a few hundred rows. A count that large under a scoped question does
+       not overstate the work — it overstates the SEARCH, which is the reader's evidence that the
+       answer is complete. */
+    const scanned = rows.length;
 
     /* ③ THE PLAN — conditions cheapest first, so an expensive column is only ever asked about the
        rows that survived everything cheaper (the reason this scales past a demo) */
@@ -471,7 +561,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
           'no disponible en esta sesión; la condición NO se aplicó') + ' (' + info.unavailable + ')');
         continue;
       }
-      if (info.source) sources.push({ what: c._col.label, src: info.source });
+      if (info.source) sources.push({ what: c._col.label, src: info.source, origin: c._col.origin });
       const kept = target.filter((r) => passes(c, r.v[c._col.id], c._col.kind));
       rows = kept;
     }
@@ -557,7 +647,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
         const target = (c.cost >= 2 && rows.length > NET_CAP) ? rows.slice(0, NET_CAP) : rows;
         if (c.cost >= 2 && rows.length > NET_CAP) caps.push({ what: c.label, cap: NET_CAP, of: rows.length });
         const info = await c.ensure(target) || {};
-        if (info.source && !sources.find((s) => s.src === info.source)) sources.push({ what: c.label, src: info.source });
+        if (info.source && !sources.find((s) => s.src === info.source)) sources.push({ what: c.label, src: info.source, origin: c.origin });
       }
     }
     const ord = spec && (spec.order || spec.sort);
@@ -576,12 +666,90 @@ window.IntMapModules.atlasQuery = function (HOST) {
     const lim = Math.max(1, Math.min(OUT_CAP, +(spec && spec.limit) || 50));
     if (rows.length > lim) { caps.push({ what: LA('Rows shown', '表示行数', 'Angezeigte Zeilen', 'Показано строк', 'Filas mostradas'), cap: lim, of: matched }); rows = rows.slice(0, lim); }
 
-    return { ok: true, table: from, tableLabel: T.label, scanned, matched, rows, columns: shown, unapplied,
+    /* ══ (#R572) WHAT THIS RUN RESOLVED — the identity the turn's result list dedupes on ═════════
+       ⚠⚠⚠ THE READER SAW THE SAME 34 CITIES TWICE, in two tables, one of them carrying latitude
+       and longitude and one not. Nothing rendered them twice: `js/atlas-turn-results.js` keeps one
+       result per OPERATION, and its own docstring says an operation is «what it did, not how it
+       rendered» — but without a `meta.resultKey` it has to fall back on the ARGUMENTS, and `show`
+       is an argument. So one run asked for the coordinates and one did not, the two got different
+       keys, and both tables survived into the reply. (#R551 built `resultKey` for exactly this
+       shape of failure and this case never declared one.)
+
+       So: everything that decides WHICH ROWS COME BACK is in the key — the table, the conditions
+       (normalised, so `gte` and `>=` are one query), the country scope, the joins, the ordering
+       and the row limit. `show` and `columns` are deliberately NOT: they decide what is printed
+       beside a row that was already resolved, and two runs that differ only there are two drafts
+       of one answer, of which the reader should see the later.
+       ⚠ NOT «the rows that came back», which would merge two genuinely different questions that
+       happen to have the same answer today, and would stop matching the moment a live table moved. */
+    const keyOf = (v) => { try { return JSON.stringify(v == null ? null : v); } catch (_) { return String(v); } };
+    /* the conditions, NORMALISED, so `gte` and `>=` are one query rather than two */
+    const condKey = conds.map((c) => (c._col ? c._col.id : String(c.col || c.column || c.metric || c.field || '?'))
+      + c._op + keyOf(c.value != null ? c.value : (c.min != null || c.max != null ? [c.min, c.max] : (c.from != null || c.to != null ? [c.from, c.to] : c.v)))).sort();
+    /* ⚠ EVERYTHING ELSE IS IN THE KEY BY EXCLUSION, NOT BY A LIST OF FIELDS I REMEMBERED. The
+       first draft named `in`, `near`, `order` and `limit` explicitly and was WRONG for the live
+       tables: `quakeRows` reads `sinceDays` / `minMagnitude` / `bbox` straight off the spec (and
+       `facilityRows` reads `kind`), none of which are in the schema's property list — so two
+       earthquake queries a month apart in their window would have collapsed into one answer.
+       A field that decides which rows come back is the norm; a field that decides only how they
+       are printed is the exception, and there are exactly two of those. `limit` is taken from the
+       CLAMPED value below, because `limit: 1000` and `limit: 200` resolve to the same 200 rows. */
+    const DISPLAY_ONLY = { show: 1, columns: 1, where: 1, conditions: 1, limit: 1 };
+    const rest = Object.keys(spec || {})
+      .filter((k) => !DISPLAY_ONLY[k] && k.slice(0, 2) !== '__' && spec[k] !== undefined)
+      .sort().map((k) => k + '=' + keyOf(spec[k])).join('&');
+    const resultKey = 'data.query:' + [from, condKey.join('&'), rest, 'limit=' + lim].join('|');
+
+    return { ok: true, table: from, tableLabel: T.label, offered, scanned, matched, rows, columns: shown, unapplied,
+      universe: base.universe || null, resultKey,
       joins: joins.map((j) => String(j.as || j.of || '')), notes, sources, caps, spec };
   }
 
   function colName(c) { try { return L.arr(c.label); } catch (_) { return c.id; } }
   function tableName(t) { try { return L.arr(t.label); } catch (_) { return t.id; } }
+
+  /* (#R572) `origin` as a sentence a reader can act on. It is deliberately about HOW THE NUMBER
+     WAS OBTAINED and not about how good it is — the error belongs to the dataset line beside it. */
+  function originLabel(o) {
+    switch (String(o || 'raw')) {
+      case 'sampled': return L('a grid sampled at this row coordinate', 'この地点で格子を読み取った値',
+        'ein Raster, an dieser Koordinate abgetastet', 'сетка, считанная в этой точке', 'una malla muestreada en esta coordenada');
+      case 'computed': return L('measured here from the published geometry', '公開された形状からここで計測した値',
+        'hier aus der veröffentlichten Geometrie gemessen', 'измерено здесь по опубликованной геометрии', 'medido aquí a partir de la geometría publicada');
+      case 'network': return L('requested from the endpoint for this row', 'この行についてエンドポイントに問い合わせた値',
+        'für diese Zeile beim Endpunkt angefragt', 'запрошено у сервиса для этой строки', 'solicitado al servicio para esta fila');
+      case 'derived': return L('looked up through the country this row is in', 'この行の国を鍵に別の記録から引いた値',
+        'über das Land dieser Zeile nachgeschlagen', 'найдено по стране этой строки', 'obtenido a través del país de esta fila');
+      default: return L('a field of the source record, copied', '出典レコードの項目をそのまま写した値',
+        'ein Feld des Quelldatensatzes, unverändert', 'поле исходной записи, без изменений', 'un campo del registro de origen, sin cambios');
+    }
+  }
+  function colProvenance(c) {
+    const bits = [colName(c)];
+    if (c.source) bits.push(String(c.source));
+    bits.push(originLabel(c.origin));
+    return bits.join(' · ');
+  }
+
+  /* which record in the source dataset this row IS. Only what the row actually carries — a table
+     whose rows have no published identity says nothing rather than inventing one. */
+  function rowProvenance(r) {
+    const bits = [];
+    /* ⚠ (#R572) THE ASCII TRANSLITERATION IS NOT PROVENANCE AND DOES NOT GO HERE. The first draft
+       put it in, reasoning that it stays «reachable»; tests/r572.spec.js ③ then failed, because it
+       asks of the WHOLE fragment whether 「UEruemqi」 reaches the reader, and a tooltip reaches the
+       reader. It was the spec that was right: `asciiname` is the key the news matcher joins on, it
+       tells a reader nothing about where the number came from, and putting it on screen is the
+       defect this round removed, one hover further away. What identifies the record is the record
+       type and the id. */
+    if (r.featureCode) {
+      const k = _kinds && _kinds[r.featureCode];
+      bits.push(L('Record type', 'レコード種別', 'Datensatzart', 'Тип записи', 'Tipo de registro')
+        + ': ' + r.featureCode + (k && k.desc ? (' — ' + k.desc) : ''));
+    }
+    if (r.geonameId) bits.push('GeoNames ID: ' + r.geonameId);
+    return bits.join(' · ');
+  }
 
   /* what the planner is allowed to name — read by js/atlas-catalog-text.js's query block and by the
      capability audit, so the prompt and the code cannot drift apart */
@@ -600,8 +768,11 @@ window.IntMapModules.atlasQuery = function (HOST) {
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function fmt(c, v) {
     if (v == null) return '—';
-    if (c.kind === 'text') return esc(v);
+    /* ⚠ (#R572) THE COLUMN'S OWN FORMATTER RUNS FIRST, for text columns too. It used to be reached
+       only by numbers, so a `text` column could not choose how it printed — which is why the
+       country column had no way to show a country's NAME while still comparing on its code. */
     if (c.fmt) { try { return esc(c.fmt(v)); } catch (_) { } }
+    if (c.kind === 'text') return esc(v);
     const n = +v;
     const s = Math.abs(n) >= 1000 ? Math.round(n).toLocaleString() : (Math.round(n * 100) / 100).toLocaleString();
     return esc(s + (c.unit ? (' ' + c.unit) : ''));
@@ -609,13 +780,24 @@ window.IntMapModules.atlasQuery = function (HOST) {
 
   function tableHtml(res) {
     const cols = res.columns.filter((c) => c.id !== 'name');
+    /* ⚠⚠ (#R572) THE NAME CELL AND THE COUNTRY COLUMN WERE BOTH PRINTING THE SAME CODE — 「Wuzhong
+       CN | CN」. The code beside the name exists to disambiguate a bare name; when the reader has
+       asked for the country as its own column, that job is already done and the second copy is
+       noise. Asked of the COLUMNS the answer is showing, not of the table it came from, because
+       that is the thing that decides whether the country is already on screen. */
+    const hasCountryCol = cols.some((c) => c.id === 'country');
     const head = '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;">#</th>'
       + '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;">' + esc(L('Name', '名称', 'Name', 'Название', 'Nombre')) + '</th>'
-      + cols.map((c) => '<th style="text-align:right;padding:4px 0 4px 8px;font-weight:600;white-space:nowrap;">' + esc(colName(c)) + '</th>').join('')
+      + cols.map((c) => '<th title="' + esc(colProvenance(c)) + '" style="text-align:right;padding:4px 0 4px 8px;font-weight:600;white-space:nowrap;">' + esc(colName(c)) + '</th>').join('')
       + res.joins.map((j) => '<th style="text-align:right;padding:4px 0 4px 8px;font-weight:600;white-space:nowrap;">' + esc(j) + '</th>').join('');
     const body = res.rows.map((r, i) => '<tr style="border-top:1px solid rgba(128,128,128,0.14);">'
       + '<td style="padding:4px 8px 4px 0;color:var(--text-muted);">' + (i + 1) + '</td>'
-      + '<td style="padding:4px 8px 4px 0;">' + esc(r.name || '') + (r.iso2 ? ' <span style="color:var(--text-muted);font-size:10.5px;">' + esc(r.iso2) + '</span>' : '') + '</td>'
+      /* (#R572) …and WHICH RECORD this row is, on the row itself. A population is only checkable
+         against the record it came from, and «Wuzhong 7,202,654» is GeoNames' own figure for a
+         PPLA2 — a prefecture seat — which is a different thing from a built-up area. Saying which
+         record answered is not the same as redefining city population, and it is what lets a
+         reader go and look. */
+      + '<td title="' + esc(rowProvenance(r)) + '" style="padding:4px 8px 4px 0;">' + esc(r.name || '') + ((r.iso2 && !hasCountryCol) ? ' <span style="color:var(--text-muted);font-size:10.5px;">' + esc(r.iso2) + '</span>' : '') + '</td>'
       + cols.map((c) => '<td style="padding:4px 0 4px 8px;text-align:right;white-space:nowrap;">' + fmt(c, r.v[c.id]) + '</td>').join('')
       + res.joins.map((j) => { const jj = r.joins[j];
         return '<td style="padding:4px 0 4px 8px;text-align:right;white-space:nowrap;">'
@@ -628,15 +810,43 @@ window.IntMapModules.atlasQuery = function (HOST) {
 
   function methodHtml(res) {
     const line = (s) => '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.55;">' + s + '</div>';
+    /* ⚠⚠ (#R572) FOUR COUNTS, NOT ONE. «都市 147,924 · 件を評価 → 34 · 件が該当» said one number
+       and meant the source list, so a reader could not tell how many records the source holds from
+       how many of them are cities from how many the conditions were actually asked about. Those
+       separate the moment a non-city is removed or a country scope is applied, and the reader is
+       entitled to see where each drop happened. The chain degrades to the old single figure for a
+       table that publishes no `universe` — saying less is allowed, saying it wrongly is not. */
+    const u = res.universe;
+    const steps = [];
+    if (u && u.classified) {
+      steps.push(esc(tableName(TABLES[res.table]) + ' ' + u.loaded.toLocaleString() + ' · '
+        + L('source records', '件の元レコード', 'Quelldatensätze', 'исходных записей', 'registros de origen')));
+      steps.push(esc(u.eligible.toLocaleString() + ' · '
+        + L('are a place in its own right', '件がそれ自体で1つの場所', 'sind ein eigenständiger Ort', 'являются самостоятельным местом', 'son un lugar por sí mismo')));
+    } else {
+      steps.push(esc(tableName(TABLES[res.table]) + ' ' + (u ? u.loaded : res.offered).toLocaleString() + ' · '
+        + L('source records', '件の元レコード', 'Quelldatensätze', 'исходных записей', 'registros de origen')));
+    }
+    steps.push(esc(res.scanned.toLocaleString() + ' · '
+      + L('evaluated', '件を評価', 'ausgewertet', 'проверено', 'evaluadas')));
+    steps.push(esc(res.matched.toLocaleString() + ' · '
+      + L('match', '件が該当', 'Treffer', 'совпадений', 'coinciden')));
     let h = line('<b>' + esc(L('How this was decided', '判定方法', 'Wie das entschieden wurde', 'Как это определено', 'Cómo se decidió')) + '</b> · '
-      + esc(tableName(TABLES[res.table]) + ' ' + res.scanned.toLocaleString() + ' · '
-        + L('evaluated', '件を評価', 'ausgewertet', 'проверено', 'evaluadas') + ' → ' + res.matched.toLocaleString() + ' · '
-        + L('match', '件が該当', 'Treffer', 'совпадений', 'coinciden')));
+      + steps.join(' → '));
+    if (u && u.classified && u.notACity) {
+      h += line(esc(L('Records that GeoNames marks as a section of another place, or as historical, abandoned or destroyed, are not counted as a place',
+        'GeoNames が「他の場所の一部」「歴史上の・廃棄された・破壊された場所」としている記録は、場所として数えていません',
+        'Datensätze, die GeoNames als Teil eines anderen Ortes oder als historisch, verlassen oder zerstört führt, zählen nicht als Ort',
+        'Записи, помеченные GeoNames как часть другого места либо как исторические, заброшенные или разрушенные, местом не считаются',
+        'Los registros que GeoNames marca como parte de otro lugar, o como históricos, abandonados o destruidos, no cuentan como lugar')
+        + ' (−' + u.notACity.toLocaleString() + ')'));
+    }
     const seen = new Set();
     for (const s of res.sources) {
       const what = (typeof s.what === 'string') ? s.what : L.arr(s.what);
       const k = what + '|' + s.src; if (!s.src || seen.has(k)) continue; seen.add(k);
-      h += line(esc(what + ' — ' + s.src));
+      /* (#R572) …and HOW, not only WHERE FROM (see `origin` at the column registry). */
+      h += line(esc(what + ' — ' + s.src + (s.origin ? (' · ' + originLabel(s.origin)) : '')));
     }
     for (const c of res.caps) {
       h += line('⚠ ' + esc(L.arr(c.what) + ' — ' + L('limited to', '制限', 'begrenzt auf', 'ограничено до', 'limitado a')
@@ -697,7 +907,8 @@ window.IntMapModules.atlasQuery = function (HOST) {
         'Keine Zeile erfüllt alle Bedingungen — jede wurde tatsächlich ausgewertet.',
         'Ни одна строка не удовлетворяет всем условиям — каждое было действительно проверено.',
         'Ninguna fila cumple todas las condiciones — cada una fue evaluada.')) + '</div>';
-    return { ok: true, html: gap + title + (res.matched ? tableHtml(res) : none) + methodHtml(res), objectIds: ids, result: res };
+    return { ok: true, html: gap + title + (res.matched ? tableHtml(res) : none) + methodHtml(res),
+      objectIds: ids, resultKey: res.resultKey, result: res };
   }
 
   const API = { run, answer, catalogue, colName, tableName, distKm, human,
