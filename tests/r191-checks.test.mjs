@@ -214,8 +214,14 @@ test('R191 seismic: the intensity field reads a FROZEN DEM, so it cannot come ou
      now warms the TILE GRID rather than a fixed lattice of positions. */
   /* (#R265) `demVoidStats` joined the list between them — how much of the published elevation data
      was a hole, so a void tile is reportable instead of silent. The property is that the snapshot is
-     exported at all, not what its neighbours are. */
-  assert.match(ro, /demElevBilinear, demSnapshot, demTilePoints, demVoidStats, demZoomForMap/, 'and is exported');
+     exported at all, not what its neighbours are.
+     ⚠ (#R569) …and this line USED TO SPELL OUT THE NEIGHBOURS, one comment under the sentence that
+     says they are not the property. It went red when the store gained demLeaseOpen/demStoreStats —
+     a correct addition reported as a defect. It now asks the question the comment asks. */
+  const exported = (Array.from(ro.matchAll(/return \{([^{}]*)\};/g)).map(m => m[1])
+    .find(b => /\bdemElevAt\b/.test(b)) || '').split(',').map(s2 => s2.trim().replace(/:.*$/, ''));
+  for (const name of ['demElevBilinear', 'demSnapshot', 'demTilePoints', 'demVoidStats', 'demZoomForMap'])
+    assert.ok(exported.includes(name), name + ' must be exported by js/map-readout.js');
   assert.match(read('js/app-body.js'), /get demSnapshot\(\)\{ return demSnapshot; \}/, 'through the host contract');
 });
 

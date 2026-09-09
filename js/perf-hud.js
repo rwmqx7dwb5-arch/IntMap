@@ -36,6 +36,34 @@
  *
  *  ⚠ IT MEASURES, IT DOES NOT DECIDE. Nothing here changes what ships; the toggles live for the life
  *  of the tab and are gone on reload.
+ *
+ *  ══ ⚠⚠⚠ (#R569) AND AN INSTRUMENT THAT COSTS WHAT IT MEASURES IS NOT AN INSTRUMENT ══════════════
+ *  The mobile report's §7. Three of the four things it found were here or one call away:
+ *
+ *    · `?perf=1` ALSO SWITCHED ON THE COMMAND CENSUS'S DETAIL MODE, which JSON.stringify()s the whole
+ *      payload of every source update, synchronously, per call. So «the same phone, with and without
+ *      ?perf=1» was never an A/B: the arm with the instrument was doing O(bytes) of extra work on the
+ *      main thread. The census now separates counting from describing (js/geo-command-log.js), and
+ *      `?cmdlog=1` — the URL scripts/frame-profile.mjs opens — is what still buys the tables.
+ *    · `sceneStats()` DEEP-COPIED THE WHOLE STYLE for four integers, once a second, on that same
+ *      phone: getStyle() serialises every layer, every paint expression and every source definition.
+ *      The public API answers the same question directly (getLayersOrder + the one layout property
+ *      `visible` depends on), and the style copy is now only the fallback — which is why the reading
+ *      NAMES the path it came from (`via`). A number whose provenance is not on screen gets compared
+ *      against a number taken the other way.
+ *    · `tiles` READ A FIELD THAT NO LONGER EXISTS. It summed `style.sourceCaches[*]._tiles`; MEASURED
+ *      against the installed maplibre-gl 5.24.0, the string `sourceCaches` does not appear anywhere
+ *      in that build — 5.x holds tiles in `style.tileManagers[*]._inViewTiles._tiles` with the
+ *      retained ones in `._outOfViewCache`. So this readout printed a hard 0 for every session since
+ *      that upgrade, and 0 is indistinguishable from 「nothing resident」. Both holders are private,
+ *      cannot be derived, and are therefore listed in the adapter; when neither is present the answer
+ *      is null and this HUD prints `n/a`. 失効条件: renamed again → `tilesVia` says `unknown`.
+ *      ⚠ AND THE NUMBER IS LABELLED, because it is the renderer's own caches — in view plus retained
+ *      out of view — and NOT everything the tab holds: not this app's DEM cache, not image bitmaps.
+ *    · `navigator.deviceMemory` IS THE DEVICE'S RAM, not this page's usage, and iOS Safari does not
+ *      expose it at all — where it printed `?GB`, i.e. on every iPhone this HUD exists to measure.
+ *      Every quantity that could not be obtained now prints `n/a`; a 0 is a measurement and gets
+ *      quoted as one.
  * ==========================================================================*/
 /* ⚠ NOT A FACTORY. It takes nothing from the shell and it must not cost a line of js/app-body.js's
    budget (#R200 ⑤) to exist, so it starts itself at import — behind the flag, which is one regexp
@@ -154,7 +182,23 @@ window.IntMapPerfHud = (function () {
       } else if (glassStyle) { glassStyle.remove(); glassStyle = null; }
     } catch (_) { }
   }
-  let hidden = [];
+  /* ⚠⚠ (#R569) THE «app layers» SWITCH IS AN UNDO, AND IT USED TO BE A BLANKET SHOW. It collected
+     ids and then, on the way back, called setVisible(id, true) on all of them — so the arm that is
+     supposed to restore the map could only ever produce ONE state, «everything the prefix matches is
+     visible», which is not the state it found. Two ways that is wrong, and the second one is the
+     defect the A/B itself creates: a layer the reader turns OFF in the layer panel while the switch
+     is off comes back ON when they turn it on again, and a layer that was already off before the
+     switch was touched is indistinguishable from one this file hid.
+     So the snapshot is PER ID and it records both halves — `was` (the state to return to) and `left`
+     (the state this file left it in). On the way back a layer is restored only while it still holds
+     `left`; if anything else has moved it since, that actor owns it now and this instrument does not
+     overwrite them. Nothing is inferred from the prefix alone.
+     ⚠ AND WHAT THIS SWITCH IS: it stops those layers being DRAWN. It does not free a tile, a buffer
+     or a worker — MapLibre keeps everything a hidden layer's source holds — so the difference it
+     measures is paint cost, not memory. The HUD says so on screen, because «app layers: off» read as
+     «those layers are gone» is how a paint measurement gets quoted as a memory one. */
+  const APP_LAYER = /^(lyr-|im-|wp-|dl-)/;               /* the app's own layers, not the basemap's */
+  let hidden = [];                                       /* [{ id, was, left }] */
   function setLayersOn(on) {
     sw.layers = on;
     try {
@@ -162,12 +206,23 @@ window.IntMapPerfHud = (function () {
       if (!on) {
         hidden = [];
         const st = GE().render.sceneStats();
-        for (const id of (st && st.ids) || []) {
-          if (!/^(lyr-|im-|wp-|dl-)/.test(id)) continue;      /* the app's own layers, not the basemap's */
-          hidden.push(id); L.setVisible(id, false);
+        /* every app layer, not only the visible ones — a layer that is already off has to be
+           recorded as off, or the way back cannot tell it from one this file switched. */
+        for (const id of (st && (st.allIds || st.ids)) || []) {
+          if (!APP_LAYER.test(id)) continue;
+          let was = true;
+          try { was = L.isVisible(id); } catch (_) { }
+          if (was) { try { L.setVisible(id, false); } catch (_) { } }
+          hidden.push({ id, was, left: false });
         }
       } else {
-        for (const id of hidden) { try { L.setVisible(id, true); } catch (_) { } }
+        for (const h of hidden) {
+          try {
+            if (!L.has(h.id)) continue;                  /* the layer went away — nothing to restore */
+            if (L.isVisible(h.id) !== h.left) continue;  /* someone else moved it since; it is theirs */
+            if (h.was !== h.left) L.setVisible(h.id, h.was);
+          } catch (_) { }
+        }
         hidden = [];
       }
     } catch (_) { }
@@ -212,7 +267,16 @@ window.IntMapPerfHud = (function () {
   }
   requestAnimationFrame(tick);
 
-  let tiles = 0, srcs = 0, vis = 0, ratio = null;
+  /* ⚠ (#R569) A QUANTITY THIS INSTRUMENT COULD NOT OBTAIN IS PRINTED AS `n/a`, NEVER AS 0. The tile
+     count read a renderer field that no longer exists and so reported 0 for every session on the
+     current MapLibre; `device mem` printed `?GB` for every iPhone, on the platform this HUD exists
+     to measure. A zero is a measurement and gets quoted as one — that is the whole reason the two
+     are spelled differently here. `sceneStats` answers null for what it cannot see (js/geo-engine.js). */
+  const NA = (v, unit) => (typeof v === 'number' && isFinite(v) ? v + (unit || '') : 'n/a');
+  /* (#R569) what the DEM tile store is holding, published by js/app-body.js. A shell that does not
+     publish it answers nothing rather than zero — see the readout below. */
+  const dem = () => { try { return typeof window.__imDemStore === 'function' ? window.__imDemStore() : null; } catch (_) { return null; } };
+  let scene = null, ratio = null;
   /* (#R408) the one timer wheel (js/runtime.js) — with the caveat its header names, and this is one
      of the two sites it names: the IIFE above runs at IMPORT, and js/app-body.js does not build
      window.IntMapRuntime until it boots, so `everyTick` arms a real interval here rather than
@@ -223,7 +287,7 @@ window.IntMapPerfHud = (function () {
     wrapRender();
     try {
       const st = GE().render.sceneStats();
-      if (st) { vis = st.visible; srcs = st.sources; tiles = st.tiles; }
+      if (st) scene = st;
       ratio = GE().render.getRenderScale();
     } catch (_) { }
     const c = takeCensus();
@@ -235,10 +299,21 @@ window.IntMapPerfHud = (function () {
       + 'map._render  med ' + N(rm, 2) + '  p90 ' + N(rp, 2) + ' ms  (n=' + rend.length + ')\n'
       + 'frame gap    med ' + N(med(frames), 1) + ' ms   longtask ' + N(long, 0) + ' ms/s\n'
       + 'buffer ratio ' + N(ratio, 2) + '   dpr ' + N(devicePixelRatio, 2) + '   ' + innerWidth + 'x' + innerHeight + '\n'
-      + 'layers vis ' + vis + '   sources ' + srcs + '   tiles ' + tiles + '\n'
+      + 'layers vis ' + NA(scene && scene.visible) + '/' + NA(scene && scene.layers)
+        + '   sources ' + NA(scene && scene.sources) + '   via ' + ((scene && scene.via) || 'n/a') + '\n'
+      + 'tiles in view ' + NA(scene && scene.tiles) + '   held out of view ' + NA(scene && scene.tilesHeld)
+        + '   (renderer only, not total memory)\n'
+      + (sw.layers ? '' : 'app layers hidden: paint is off, tiles and buffers are still held\n')
+      /* (#R569) THE OTHER RETAINED THING. The renderer's tile count says nothing about the DEM tile
+         store (js/map-readout.js), which is where a phone's elevation readout, the terrain sculptor
+         and the intensity field all keep their 262,144-byte tiles — and which was the memory the
+         crash report was about. Absent shell → n/a, never 0. */
+      + 'DEM store   ' + (dem() ? (dem().ready + '/' + dem().cap + ' tiles  ' + N(dem().bytes / 1048576, 1)
+        + ' MiB  pinned ' + dem().held + '  in flight ' + dem().inflight + '/' + dem().maxInflight) : 'n/a') + '\n'
       + 'backdrop-filter ' + c.n + ' el, ' + c.cov + '% of viewport (on screen)\n'
       + '  biggest ' + c.top + '   img conc ' + (sw.imgHi ? IMG_HIGH : IMG_BASE()) + '\n'
-      + 'device mem ' + (navigator.deviceMemory || '?') + 'GB  cores ' + (navigator.hardwareConcurrency || '?') + '\n'
+      + 'device RAM ' + NA(navigator.deviceMemory, 'GB') + ' (device, not this page)'
+        + '   cores ' + NA(navigator.hardwareConcurrency) + '\n'
       + 'A/B medians ' + JSON.stringify(runs);
     syncs.forEach((f) => f());
   });
