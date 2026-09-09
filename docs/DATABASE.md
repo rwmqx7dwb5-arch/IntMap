@@ -8,7 +8,7 @@ is the human explanation.
 > **Reconstruction note.** The project had no migrations — the schema lived only in the
 > live database. The baseline migration was rebuilt from the application + Edge Function
 > code. To confirm it matches production and bring prod under migration control, run the
-> read-only reconcile in [`MIGRATIONS.md`](MIGRATIONS.md#making-the-baseline-authoritative).
+> read-only reconcile in [`MIGRATIONS.md`](MIGRATIONS.md#why-not-db-push--the-baseline-is-not-recorded-in-production).
 
 ## At a glance
 

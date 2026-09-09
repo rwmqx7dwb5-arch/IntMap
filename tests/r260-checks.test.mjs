@@ -35,9 +35,19 @@ test('#R260 ① AGENTS.md has §11 作業終了処理 and still has 本ファイ
     'AGENTS.md §11 (作業終了処理) is gone — the session has no defined end again');
   assert.match(md, /^## 12\. 本ファイル自体の保守/m,
     '§12 本ファイル自体の保守 disappeared when §11 was inserted — the renumbering dropped a section');
-  /* §10 has to hand off to it, or the backup line quietly stops appearing in reports */
-  assert.ok(md.includes('§11.8'),
-    '§10 no longer points at §11.8 — the final report can omit the backup status and look complete');
+  /* §10 has to hand off to it, or the backup line quietly stops appearing in reports.
+     ⚠ (#R628) THIS USED TO FIX THE SPELLING «§11.8», AND §11 HAS ONLY EVER HAD FOUR SUBSECTIONS.
+     So the one test guarding the hand-off was pinning a number with no section behind it: the
+     instruction that every final report must follow pointed nowhere, and this assertion was what
+     kept it pointing nowhere. Ask the question that actually matters — §10 names a subsection of
+     §11, and that subsection exists. */
+  const ref = md.match(/§11\.(\d+)/g);
+  assert.ok(ref && ref.length, '§10 no longer points into §11 — the final report can omit the backup status and look complete');
+  for (const r of new Set(ref)) {
+    const n = r.slice(1);
+    assert.match(md, new RegExp('^### ' + n.replace('.', '\\.') + ' ', 'm'),
+      `AGENTS.md points at §${n}, and §11 has no such subsection — the hand-off has an empty address`);
+  }
 });
 
 /* ── ② every clause of the procedure survived ───────────────────────────────────────────────── */

@@ -70,7 +70,7 @@ node scripts/worktree.mjs status
 | 開発記録 | `DEV-NOTES.md`（**最新 `R###` エントリを先頭に足す**） |
 | 過去記録 | `DEV-NOTES-ARCHIVE.md`（読むだけ・追記しない） |
 | 統治原則 | `CONSTITUTION.md` |
-| 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE,AREA-MONITORS}.md` |
+| 運用ドキュメント | `docs/{TESTING,RELEASE,MONITORING,INCIDENT-RESPONSE,DATABASE,MIGRATIONS,BACKUP-RESTORE,SECURITY-ARCHITECTURE}.md` |
 | Stripe 寄付 (EN) | https://donate.stripe.com/5kQdR2d2m1oa1lAadk5gc01?locale=en |
 | Stripe 寄付 (JA) | https://donate.stripe.com/8x29AM9Qa2se7JYetA5gc00?locale=ja |
 
@@ -111,7 +111,8 @@ node scripts/worktree.mjs status
    同時に更新すること。
 
 5. **UI・文言・応答その他ユーザーに表示される内容の変更は、現在対応している全言語すべてに反映する。**
-   対応言語: **en / ja / de / ru / es / zh-Hant / zh-Hans / fr / ko（9言語）**。
+   対応言語: **de / en / es / fr / jp / ko / ru / zh / zh-hans（9言語）**——
+   ⚠ **実装のコードそのまま**（日本語は `jp`、繁体字は `zh`。正本 `js/locales/_langs.js`）。
    ゲートは `npm run check:i18n`（`npm test` に内包）。
 
 6. **許可なく絵文字を追加してはならない。**
@@ -188,13 +189,8 @@ supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac --use-api
 経過時間ではなく `supabase functions list` の `version` / `updated_at` で見る。**実測と理由は
 [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9。
 
-**Edge Functions は 17 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
-`delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
-`radiation-feed` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）。17 本すべてが
-`supabase/config.toml` に `[functions.*]` として宣言されている。
-⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・
-`atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・
-`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
+**Edge Functions の名簿**（何本あり・何という名前で・`_shared/` をどう扱うか）は
+[`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9 が正本。ここには書き写さない。
 
 **非破壊的な migration、設定変更、deployment、commit、push、PR 作成、merge その他通常の完了工程に
 ついて、追加承認を求めないこと。**
@@ -235,7 +231,7 @@ GitHub は共有と CI のための remote、USB は §11 のバックアップ�
   早送りが触らないファイル（**他セッションのマシン固有ファイルなど**）は素通りする。
   実際に上書きになる場合だけ `git merge --ff-only` 自身の理由を出して止まる。
   `--check` も「遅れている」と「汚れている」を分け、**汚れは警告として印字するが exit 0 を妨げない**
-  （USB ミラーは作業ディレクトリをそのまま写すので、汚れたまま写すのが §11.5 の要求）。
+  （USB ミラーは作業ディレクトリをそのまま写すので、汚れたまま写すのが §11.3 の要求）。
   ⚠ 以前は「汚れていれば何であれ拒否」だった。**正しい作業がゲートを迂回した実例がある**
   ——用心深く見える拒否は、安全を足さずに**ツールを迂回する習慣を教える**。
 
@@ -346,7 +342,7 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
 
 **作業が正常に完了した場合は、ユーザーによる追加作業が不要であることも明示する。**
 
-**最終報告の末尾には、§11.8 のバックアップ状態を必ず記載する。**
+**最終報告の末尾には、§11.4 のバックアップ状態を必ず記載する。**
 
 ---
 

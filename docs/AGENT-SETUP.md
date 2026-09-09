@@ -14,6 +14,7 @@
 |---|---|---|---|
 | 恒久指示（§0〜§12） | **`AGENTS.md`** | `CLAUDE.md` の `@AGENTS.md` import | **そのまま自動**（設定も信頼も要らない） |
 | 実行戦略 | **`.agents/rules/execution-strategy.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
+| 場当たりのハードコーディングの禁止 | **`.agents/rules/no-ad-hoc-hardcoding.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
 | GPT 受け渡し規約 | **`.agents/rules/gpt-handoff.md`** | 同上 | 同上 |
 | ラウンドの手順 | **`.agents/skills/intmap-round/`** | `.claude/skills/`（生成）→ `/intmap-round` | **そのまま自動**（`$intmap-round`） |
 | 専用 subagent 5 役 | **`.agents/roles/*.md`** | `.claude/agents/*.md`（生成） | `.codex/agents/*.toml`（生成・**要 trust**） |
@@ -213,5 +214,16 @@ node --test tests/r503-checks.test.mjs
 - ⚠ **進んでいるかどうかは経過時間ではなく `supabase functions list` の `version` / `updated_at`**
   で判定する。
 
-⚠ この節は `AGENTS.md` から移してきたものである（#R515）。**`AGENTS.md` には 32,768 バイトの天井が
-あり、超えた分は無言で落ちる**ので、測定の詳細はここが正本で、`AGENTS.md` は 1 行で指すだけにする。
+### Edge Function の名簿（**ここが正本**）
+
+**Edge Functions は 17 本**（`ai-proxy` / `ais-feed` / `alerts-relay` / `aviation-feed` / `cable-geo` /
+`delete-account` / `gdelt-relay` / `monitor-run` / `news-ingest` / `news-relay` / `quotes-relay` /
+`radiation-feed` / `refresh-news` / `routing-relay` / `sv-cov` / `volcano-feed` / `who-don`）。17 本すべてが
+`supabase/config.toml` に `[functions.*]` として宣言されている。
+⚠ **`_shared/` は関数ではない**——ライブラリ用ディレクトリ（`newsgeo.js`・`relay-guard.js`・
+`atlas-persona.js`・`aviation-codec.js`・`aviation-model.js`・`news-cluster.js`・`news-geo-prompt.js`・
+`news-ingest.js`・`radiation-sources.js`・`volcano-parse.js`・`who-don-extract.js`）で、import した関数の中に CLI がバンドルする。`[functions._shared]` を書いてはならない。
+
+⚠ この節は `AGENTS.md` から移してきたものである（deploy の実測は #R515、名簿は #R628）。
+**`AGENTS.md` には 32,768 バイトの天井があり、超えた分は無言で落ちる**ので、測定の詳細も名簿も
+ここが正本で、`AGENTS.md` は 1 行で指すだけにする。**数と名前を 2 か所に置かない。**

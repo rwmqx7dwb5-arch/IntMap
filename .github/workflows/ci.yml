@@ -88,6 +88,14 @@ jobs:
       # what it therefore cannot see.
       - name: 1850-1885 borders (the bundled record is sound, and no year of it is empty)
         run: npm run check:histborders
+      # (#R628) …AND WHICH EDGE OF A HISTORICAL BORDER IS DRAWN. `check:bordercoast` was declared in
+      # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
+      # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
+      # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
+      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 33,600 rings, offline;
+      # MEASURED 32 s on this machine, which is why the sampled form existed and why it is not enough.
+      - name: Historical border coastlines (every ring re-derived, not a sample)
+        run: npm run check:bordercoast
       # (#R538) The language layer never had a gate. What it needed one for is what went wrong:
       # the old build resolved Factbook prose through a hand table of regular expressions and
       # dropped what it did not recognise, so a country was coloured by the next language down

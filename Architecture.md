@@ -1684,7 +1684,7 @@ zip と gzip は開いて中身を見る。
   「その政体が持つ海岸線の写し」は基図のほうが正確に知っている。同梱の海岸線
   （`data/coastline.json.gz`＝Natural Earth 1:10m・2 km 許容）に対して、**ある辺のどこか1点でも
   `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写し**と判定し、
-  4つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2`）の全リング **25,506 本**に
+  4つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2`）の全リング **33,600 本**に
   ついて「描く run」を印す。印の**読み手は `js/border-coast.js`** ただ1つで、`js/time-borders.js` と
   `js/time-admin1.js` の両方がそれを呼ぶ——同じ読み方を2か所に持たせないため。各モジュールはその
   run だけをつないだ MultiLineString を線用の source（`imtb-ln-src` / `imta-ln-src` / `imta2-ln-src`）

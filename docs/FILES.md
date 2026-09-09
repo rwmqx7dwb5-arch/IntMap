@@ -697,7 +697,7 @@ maddison.json                     マディソン・プロジェクトの歴史 
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
 data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（4つの束の
-                                  全 25,506 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
+                                  全 33,600 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
                                   3,049件／rings 4,640・6.48 MB＝brotli 0.67 MB）。上と**同じリングプール形式の
@@ -781,7 +781,7 @@ scripts/
   master-sync.mjs                 **原本（main worktree）が merge 後の状態か**を見る（`npm run master:check` / `master:sync`）。
                                   原本の場所はハードコードせず `git rev-parse --git-common-dir` から導出する。
                                   ⚠ **branch を切り替えない。** 原本は「`main` の置き場」で作業場ではない
-                                  （`CLAUDE.md` §6）。`main` 以外にいるときは何もせず報告する。
+                                  （`AGENTS.md` §6）。`main` 以外にいるときは何もせず報告する。
                                   ⚠ **未コミットの変更が「邪魔か」を判定するのは git。** 早送りが触らない
                                   ファイル（かつては他セッションの `.claude/launch.json` が定番の例だった。#R338 で追跡から外した）は素通りさせ、実際に
                                   上書きになるときだけ `git merge --ff-only` 自身の理由を出して止まる。
@@ -789,7 +789,7 @@ scripts/
                                   ⚠ **早送りだけ＝冪等**なので並行セッションが同時に走らせてよく、
                                   排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
-  worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`CLAUDE.md` §6 が
+  worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`AGENTS.md` §6 が
                                   手作業で求めていた 6 工程——空きラウンド番号・branch・OneDrive 外の
                                   worktree・`node_modules` の junction・preview 設定——を 1 コマンドにする。
                                   原本の場所は `master-sync.mjs` と同じく `--git-common-dir` から導出。

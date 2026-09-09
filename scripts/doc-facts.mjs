@@ -77,11 +77,46 @@ const walkMd = (rel, out = []) => {
   return out;
 };
 
-/* the prose documents: the ones docs/README.md indexes (rule 20 below is about exactly these) */
-const PROSE_DOCS = [
-  ...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f)),
-  ...(has('docs') ? readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f) : []),
-].filter((f) => f !== 'CLAUDE.local.md');
+/* the prose documents: the ones docs/README.md indexes (rule 20 below is about exactly these)
+   (#R628) ⚠ THIS USED TO BE TWO readdirSync CALLS — the repository root and `docs/`, neither
+   recursive — and that hand-drawn universe is not the same thing as "the documents". MEASURED:
+   `fonts/README.md` is a current-state document carrying a permanent instruction 「IntMap内の
+   すべての文字は…」 AND the OFL notice the licence requires to travel with the bundled fonts, and
+   it sat outside the index, outside rule 20 and outside every fact sweep in this file — not
+   excluded, simply never looked at, because it is one directory over. So was
+   `.github/pull_request_template.md`. A universe written by hand does not grow when the repository
+   does; it silently keeps answering about the tree it was written for.
+   The universe is now DISCOVERED — git's own list of tracked `*.md` — and what is left out is
+   left out for a written reason, which is the difference between an exclusion and a blind spot. */
+const EXCLUDED = [
+  [/^DEV-NOTES/, 'history: it legitimately quotes text that was true once (see the header)'],
+  [/^\.agents\//, 'the instruction documents — swept as AGENT_DOCS below, not indexed by docs/README.md'],
+  [/^\.(claude|codex)\//, 'rendered from .agents/ by scripts/agent-sync.mjs; check:agents holds the copies to their source'],
+  [/^CLAUDE\.local\.md$/, 'machine-local and untracked — the credentials file (.gitignore)'],
+];
+/* ⚠ TRACKED IS NOT THE SAME AS PRESENT, and the difference is the document being written RIGHT NOW.
+   MEASURED (#R628, by tests/r274-checks ③): the first version of this asked git only for tracked
+   files, so a `.md` added this round — the one the round is most likely to get wrong — was invisible
+   to the gate until it was committed. The negative probe that exists to prove the sweep can fail
+   sat in `docs/` and the sweep reported all-green. Ask for both halves: what git tracks, and what
+   git can see but does not yet track (`--others --exclude-standard`, so ignored paths stay out). */
+const listMd = (...args) => {
+  try {
+    return execFileSync('git', ['ls-files', '-z', ...args, '*.md'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .split('\0').filter(Boolean);
+  } catch { return []; }
+};
+const trackedMd = () => [...new Set([...listMd(), ...listMd('--others', '--exclude-standard')])];
+const PROSE_DOCS = (() => {
+  const tracked = trackedMd();
+  /* ⚠ an empty list must not pass everything. If git is not answering (a tarball, a broken
+     checkout) fall back to the old hand-drawn universe rather than sweeping nothing. */
+  const all = tracked.length
+    ? tracked
+    : [...readdirSync(ROOT).filter((f) => f.endsWith('.md')),
+       ...(has('docs') ? readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f) : [])];
+  return all.filter((f) => !EXCLUDED.some(([re]) => re.test(f)) && has(f)).sort();
+})();
 /* the instruction documents: read by the session, not by a person browsing docs/.
    (#R503) The SOURCES live under `.agents/` — provider-neutral, so Codex reads them too. What is
    left under `.claude/` is RENDERED from them by scripts/agent-sync.mjs, and scanning a copy as
@@ -172,10 +207,24 @@ const FILES = BODY.get('docs/FILES.md') || '';
   }
   if (declared.includes('_shared')) fail('edge-functions', 'config.toml declares [functions._shared] — that directory is a library, not a function');
 
-  /* the two documents that promise the complete roster must name every function */
-  for (const f of ['AGENTS.md', 'Architecture.md']) {
+  /* the 正本 must name every function, and the standing instructions must REACH one that does.
+     (#R628) ⚠ This used to demand the full roster of `AGENTS.md` itself, which made the ceiling in
+     that file (32,768 bytes, measured #R503) and this rule pull against each other: AGENTS.md is
+     「どう働くか」 and was carrying the deploy inventory because a hand-written pair of document
+     names said it had to. AGENTS.md §12 says the answer to the ceiling is to MOVE the 正本, so the
+     demand here is the one that actually matters to a session about to deploy — the instruction it
+     reads must lead to a complete roster, in that file or in the document it sends the reader to. */
+  const names = (body) => dir.filter((n) => !body.includes('`' + n + '`'));
+  const reaches = (body) => !names(body).length
+    || [...body.matchAll(/`?([A-Za-z0-9_.\-\/]+\.md)`?/g)]
+      .map((m) => BODY.get(m[1]) || BODY.get('docs/' + m[1].split('/').pop()) || '')
+      .some((linked) => linked && !names(linked).length);
+  if (!reaches(BODY.get('AGENTS.md') || '')) {
+    fail('edge-functions', `AGENTS.md neither names ${names(BODY.get('AGENTS.md') || '').join(', ')} nor points at a document that does`);
+  }
+  for (const f of ['Architecture.md']) {
     const body = BODY.get(f) || '';
-    const missing = dir.filter((n) => !body.includes('`' + n + '`'));
+    const missing = names(body);
     if (missing.length) fail('edge-functions', `${f} does not name ${missing.join(', ')}`);
   }
   if (same(dir, declared)) ok('edge-functions', `${dir.length} functions, declared and documented: ${dir.join(', ')}`);
@@ -458,6 +507,36 @@ const FILES = BODY.get('docs/FILES.md') || '';
         fail('languages', `README marks a language as unfinished (${line.trim()}) but IntMapLangBeta is empty`);
       }
     }
+  }
+  /* (#R628) …AND THE SPELLINGS, NOT ONLY HOW MANY. Everything above counts. What #R588 measured is
+     that the COUNT can be right while every name in it is a spelling the code does not key on:
+     this app's Japanese is `jp` and its traditional Chinese is `zh`, with `ja` / `zh-Hant` accepted
+     only as aliases by js/lang-registry.js. An election pack written against the alias set shipped
+     113 elections whose Japanese and Chinese notes reached nobody, and every instrument was green
+     because the fallback is a real string. AGENTS.md §3, PRODUCT.md and the i18n role each carried
+     a roster of the nine — in the alias spelling — and a session that copies the roster it was
+     given writes the same defect again. So: where a document writes the roster out, it writes the
+     codes the code uses. A document naming an alias to EXPLAIN the alias is the point of
+     docs/ELECTIONS.md, so only a full nine-name roster is read as a roster. */
+  {
+    const alias = { ja: 'jp', 'zh-Hant': 'zh', 'zh-hant': 'zh', 'zh-TW': 'zh' };
+    const SEP = '[ \\t]*[/·,、][ \\t]*';
+    const TOK = '[A-Za-z-]{2,7}';
+    const ROSTER = new RegExp(`(?:^|[^A-Za-z-])(${TOK}(?:${SEP}${TOK}){${codes.length - 1}})(?![A-Za-z-])`, 'gm');
+    eachDoc((f, s) => {
+      if (f === 'docs/README.md') return;
+      for (const m of s.replace(/\*\*/g, '').matchAll(ROSTER)) {
+        const names = m[1].split(/[ \t]*[/·,、][ \t]*/);
+        const norm = names.map((n) => alias[n] || n).sort();
+        if (norm.join() !== codes.join()) continue;            /* not this project's nine languages */
+        const wrong = names.filter((n) => !codes.includes(n));
+        if (wrong.length) {
+          fail('languages', `${f} writes the language roster as «${m[1].trim()}» — ${wrong.join(', ')} `
+            + `${wrong.length > 1 ? 'are aliases' : 'is an alias'} js/lang-registry.js accepts but nothing keys on; `
+            + `the codes are ${codes.join(', ')} (#R588)`);
+        }
+      }
+    });
   }
   if (!problems.some((p) => p.startsWith('languages'))) ok('languages', `${codes.length} languages (${codes.join(', ')}), beta: ${beta.length ? beta.join(', ') : 'none'}`);
 }
@@ -1612,6 +1691,137 @@ if (RULE && RULE !== 'i18n-open-gap') {
     if (!problems.some((x) => x.startsWith('histb-count')))
       ok('histb-count', checked + ' stated number(s) across ' + carriers + ' source(s) — ' + RECORDS + ' records, ' + DATES + ' transition dates in ' + HB.window[0] + '-' + HB.window[1]);
   }
+}
+
+/* ═══ 34. how many rings the border/coast record marks ════════════════════════════════════
+ *  (#R628) Three documents — Architecture.md, docs/FILES.md and docs/TESTING.md — state the size
+ *  of the population `check:bordercoast` re-derives, and all three said 25,506 while the record
+ *  held 33,600. The number came from #R564's own completion line and was copied out three times;
+ *  the bundles have grown since and none of the copies moved. It is the shape this whole file is
+ *  for, and it was sitting inside the paragraph explaining a gate — the same gate this round found
+ *  had no caller. The record itself is the 正本, and it can be counted. */
+{
+  if (!has('data/border-coast.js')) fail('bordercoast-rings', 'data/border-coast.js is gone — the record the historical borders decide their strokes from');
+  else {
+    const src = rd('data/border-coast.js');
+    const sets = [...src.matchAll(/"rings":(\d+)/g)].map((m) => Number(m[1]));
+    if (!sets.length) fail('bordercoast-rings', 'data/border-coast.js no longer states a per-bundle ring count — this rule can no longer count it');
+    else {
+      const rings = sets.reduce((a, b) => a + b, 0);
+      let stated = 0;
+      eachDoc((f, s) => {
+        /* both orders — 「25,506 リング」 and 「全リング **25,506 本**」. Architecture.md writes the
+           second, and a needle that only knew the first left the 正本 as the one stale copy. */
+        for (const m of [...s.matchAll(/(\d[\d,]*)\s*(?:本の)?リング/g), ...s.matchAll(/リング[^\n。]{0,4}?\*{0,2}(\d[\d,]*)\s*本/g)]) {
+          const n = Number(m[1].replace(/,/g, ''));
+          if (n < 1000) continue;                       /* a sample size or a per-bundle figure */
+          stated++;
+          if (n !== rings) fail('bordercoast-rings', `${f} says ${m[1]} リング; data/border-coast.js marks ${rings.toLocaleString('en-US')} (${sets.join(' + ')})`);
+        }
+      });
+      if (!problems.some((p) => p.startsWith('bordercoast-rings'))) ok('bordercoast-rings', `${rings.toLocaleString('en-US')} rings across ${sets.length} bundles, stated correctly in ${stated} place(s)`);
+    }
+  }
+}
+
+/* ═══ 32. a cross-document §-reference points at a section that exists ═════════════════════
+ *  (#R628) The standing instructions address each other by section number, and nothing resolved
+ *  those numbers. MEASURED, in the documents a session reads BEFORE it does anything:
+ *    · AGENTS.md 「最終報告の末尾には、§11.8 のバックアップ状態を必ず記載する」 — §11 ends at 11.4.
+ *      That is an instruction to be followed at the end of EVERY round, and its address was empty.
+ *    · AGENTS.md 「汚れたまま写すのが §11.5 の要求」 — same section, same kind of hole.
+ *    · docs/FILES.md pointed twice at `CLAUDE.md` §6, three rounds after #R503 moved the standing
+ *      instructions out of CLAUDE.md; the file it names now stops at §A-5.
+ *  A dead section number is not a typo. It reads as a promise that the rule is written down
+ *  somewhere, and the reader who goes looking finds a document that never mentions it.
+ *
+ *  ⚠ ONLY REFERENCES THAT NAME THEIR DOCUMENT ARE CHECKED. 「指示書 §22.2」 is a document
+ *    outside this repository and 「§6」 on its own is a self-reference whose meaning depends on
+ *    the sentence. Both are left alone: this rule is about the addresses that ARE resolvable.
+ *  ⚠ THREE DOCUMENTS SHARE ONE NUMBER SPACE — Architecture.md, docs/FILES.md and
+ *    docs/MAP-LAYERS.md, declared as such in CONSTITUTION.md §6, so `docs/FILES.md §15.5` is a
+ *    real address even though the heading lives in Architecture.md. They resolve as one pool.
+ *  ⚠ AND 「§3.5」 IS SOMETIMES ITEM 5 OF SECTION 3 rather than a heading — AGENTS.md §3 is a
+ *    numbered list, and three documents address its items that way. That form is accepted only
+ *    when the numbered list under §X actually has a Y-th item, which is the half that can rot:
+ *    the round that inserts an item renumbers every reference to the ones below it. */
+{
+  const SHARED = ['Architecture.md', 'docs/FILES.md', 'docs/MAP-LAYERS.md'];
+  const byBase = new Map();                                   /* README.md → docs/README.md, … */
+  for (const f of DOCS) byBase.set(f.split('/').pop(), f);
+  /* the numbered headings of one document: `## 1.` `### 7.1` `## 3.13` `## A-1` `## 11.2` */
+  const headings = (body) => new Set([...body.matchAll(/^#{1,6}[ \t]+(?:§[ \t]*)?([0-9]+(?:\.[0-9]+)*|[A-Z]-[0-9]+)(?=[.．、 \t]|$)/gm)].map((m) => m[1]));
+  /* how many items the numbered list under §X holds — for the 「§3 の 5 番」 form */
+  const itemsUnder = (body, sec) => {
+    /* ⚠ NO `m` FLAG. With it `$` ends at the first line break, so the lazy body matched one line
+       and every item reference below looked like an address into an empty section. */
+    const re = new RegExp('(?:^|\\n)#{1,6}[ \\t]+(?:§[ \\t]*)?' + sec.replace(/\./g, '\\.') + '(?=[.．、 \\t\\n])[^\\n]*\\n([\\s\\S]*?)(?=\\n#{1,6}[ \\t]|$)');
+    const m = body.match(re);
+    if (!m) return 0;
+    return Math.max(0, ...[...m[1].matchAll(/^[ \t]*(\d+)\.[ \t]/gm)].map((x) => Number(x[1])));
+  };
+  const HEAD = new Map(DOCS.map((f) => [f, headings(BODY.get(f) || '')]));
+  const sharedPool = new Set(SHARED.flatMap((f) => [...(HEAD.get(f) || [])]));
+  /* `AGENTS.md` §5.1 · [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9 · CONSTITUTION.md §6 */
+  /* ⚠ THE GAP MUST NOT STEP OVER ANOTHER DOCUMENT'S NAME. AGENTS.md §9 writes
+     「[`docs/README.md`](docs/README.md) と `CONSTITUTION.md` §6」 — a gap that allowed backticks
+     read that §6 as an address into README.md, which has no numbered sections at all. */
+  const REF = /(?:`([A-Za-z0-9_.\-\/]+\.md)`|\]\(([^)\s]+\.md)\))[^\n§`\]]{0,24}?§[ \t]*([0-9]+(?:\.[0-9]+)*|[A-Z]-[0-9]+)/g;
+  let checked = 0;
+  eachDoc((f, s) => {
+    for (const m of s.matchAll(REF)) {
+      const named = (m[1] || m[2]).split('/').pop().replace(/[#?].*$/, '');
+      const target = byBase.get(named);
+      if (!target) continue;                                   /* a document this sweep does not read */
+      const sec = m[3];
+      checked++;
+      const pool = SHARED.includes(target) ? sharedPool : HEAD.get(target);
+      if (pool.has(sec)) continue;
+      const dot = sec.lastIndexOf('.');
+      if (dot > 0) {                                           /* 「§3 の 5 番」 — item, not heading */
+        const parent = sec.slice(0, dot), item = Number(sec.slice(dot + 1));
+        if (pool.has(parent) && itemsUnder(BODY.get(target) || '', parent) >= item) continue;
+      }
+      fail('section-refs', `${f} points at ${named} §${sec}, and ${named} has no such section`
+        + ` — the numbered sections it does have stop at §${[...pool].sort().pop() || '(none)'}`);
+    }
+  });
+  if (checked < 20) fail('section-refs', `only ${checked} cross-document section references were resolved — the sweep is not reaching them`);
+  else if (!problems.some((p) => p.startsWith('section-refs'))) ok('section-refs', `${checked} cross-document §-references, all resolving to a section that exists`);
+}
+
+/* ═══ 33. every gate the repository declares has something that runs it ════════════════════
+ *  (#R628) Rule 28 above asks whether CI runs what `npm test` runs, and `gate-lists` asks whether
+ *  both instruction documents name every `check:*`. Between those two questions is a seam, and
+ *  docs/TESTING.md names it: a `check:*` script with no caller at all. MEASURED: `check:bordercoast`
+ *  was in package.json, in both instruction tables, and in NEITHER ci.yml nor scripts/test-parallel
+ *  — eighteen gates and exactly one of them ran only when someone typed its name. Its own source
+ *  said 「as `npm run check:bordercoast` does in CI」. That is the #R381 shape the repository has
+ *  already been bitten by once, and it is checkable from the side neither existing rule looks at:
+ *  the declaration itself. The universe is package.json — a gate cannot hide from the list it is
+ *  declared in, the way it can hide from a hand-written table. */
+{
+  const pkg = JSON.parse(rd('package.json')).scripts || {};
+  /* ⚠ COMMENTS ARE NOT CALLERS. The step this rule made CI grow carries a comment quoting the very
+     line 「as `npm run check:bordercoast` does in CI」 that the gate's own source had been telling
+     itself for three rounds — and with the comments left in, deleting the step still passed,
+     because the sentence explaining the absence looked exactly like the presence. */
+  const ci = rd('.github/workflows/ci.yml').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  const par = has('scripts/test-parallel.mjs') ? rd('scripts/test-parallel.mjs') : '';
+  const gates = Object.keys(pkg).filter((k) => /^check:/.test(k));
+  const orphan = gates.filter((g) => {
+    if (ci.includes('npm run ' + g)) return false;
+    const body = pkg[g] || '';
+    /* CI may reach the same script directly, or `npm test` may run it out of test-parallel */
+    for (const m of body.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)) {
+      if (ci.includes('scripts/' + m[1] + '.mjs') || par.includes('scripts/' + m[1] + '.mjs')) return false;
+    }
+    return true;
+  });
+  if (gates.length < 10) fail('gate-callers', `only ${gates.length} check:* scripts were read out of package.json — this rule needs rewriting`);
+  else if (orphan.length) fail('gate-callers', `package.json declares ${orphan.map((g) => 'npm run ' + g).join(', ')}, and nothing runs ${orphan.length > 1 ? 'them' : 'it'}`
+    + ' — a gate nobody calls is a script, and it goes on passing by never running');
+  else ok('gate-callers', `all ${gates.length} declared check:* gates have a caller in ci.yml or npm test`);
 }
 
 /* ── report ──────────────────────────────────────────────────────────────────────────────── */

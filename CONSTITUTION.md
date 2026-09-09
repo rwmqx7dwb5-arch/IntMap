@@ -57,7 +57,8 @@
   公開元ではない**——`AGENTS.md` §6。merge のあとは原本も最新化する（§5 の最終工程）。
 - **既定のレンダラは MapLibre GL。Cesium は設定で選べる第2エンジン**（設定 ▸ 地図の動作 ▸ 地図エンジン）。
   MapLibre is the default renderer; Cesium is a second engine the user can select. どちらも消さない。
-  ⚠ レンダラの名を出してよいファイルは `js/geo-engine.js` だけ（`npm run check:engine`）。
+  ⚠ レンダラの名を出してよいのは、**そのエンジンのアダプタ層だけ**（`npm run check:engine`）。
+  どのファイルがそれに当たるかの正本は `scripts/engine-coupling.mjs` の `ADAPTER_FILES`。
 - **テキストに勝手に影を付けない。** Do not add text-shadows / "contrast halos" to panels, legends, popups.
 - **🫐 等の余計な装飾・絵文字を勝手に足さない。** Don't add gratuitous decoration the user didn't ask for.
 

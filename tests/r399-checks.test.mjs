@@ -72,8 +72,11 @@ const CASES = [
   { rule: 'edge-shared', file: 'docs/FILES.md', why: 'a name dropped from the _shared roster',
     from: 'news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）', to: 'news-cluster.js / news-ingest.js）' },
 
-  /* ② AGENTS.md 側の同じ一覧。括弧の形に直したのは、この検査が読める形にするため。 */
-  { rule: 'edge-shared', file: 'AGENTS.md', why: 'the same roster in the standing instructions',
+  /* ② 指示側の同じ一覧。⚠ (#R628) これは長く AGENTS.md にあったが、そのファイルの 32,768 バイトの
+     天井と `edge-functions` 規則が引っぱり合っていたので、名簿の正本ごと docs/AGENT-SETUP.md §9 へ移した
+     （AGENTS.md §12 が「天井に当たったら上げるのではなく正本を移す」と要求している形）。**変異の足場は
+     正本について置く**——写しの側に置くと、正本が動いた次のラウンドで足場だけが残る。 */
+  { rule: 'edge-shared', file: 'docs/AGENT-SETUP.md', why: 'the same roster in the setup document',
     from: '`atlas-persona.js`・`aviation-codec.js`', to: '`aviation-codec.js`' },
 ];
 
