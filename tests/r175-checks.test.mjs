@@ -250,7 +250,38 @@ test('R175 ③: no js/ module has an UNEXPORTED top-level declaration, and every
     for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\//g)) {
       for (const n of m[1].split(',')) { const nm = n.trim().split(/\s+as\s+/)[0].trim(); if (nm) importedNames.add(nm); }
     }
+    /* ⚠ (#R576) …AND THE OTHER FORM OF "IMPORTED BY NAME", WHICH THIS TEST COULD NOT SEE.
+       A module that must NOT join the startup bundle is reached with a dynamic import and its
+       export read off the namespace object:
+
+           const CAP = (await import('./atlas-view-capture.js')).makeViewCapture({ … });   js/screenshot.js:44
+
+       That is the same fact as a static `import { makeViewCapture }` — the export is reached, by
+       name, from js/ — and the regex above cannot match it. It has never mattered until now only
+       because js/atlas-console.js ALSO imports that one statically, so the name arrived in the set
+       for an unrelated reason. js/geo-import.js (#R576) has no such second caller by design: a
+       static import of it from js/map-ui.js would pull the whole decoder into the eager graph and
+       break the `eager/modules` budget (`npm run check:perf`), which is the entire reason the
+       import is dynamic. So the question this test asks stays the same — "does any js/ module reach
+       this export?" — and the second way of reaching one is now counted too. (#R488: a check that
+       fixes a SPELLING of a live path stops seeing the path the day the spelling changes.) */
     const ast = acorn.parse(src, { ecmaVersion: 'latest', sourceType: 'module' });
+    (function walk(node, seen) {
+      if (!node || typeof node !== 'object' || seen.has(node)) return;
+      seen.add(node);
+      /* (await import('./x.js')).NAME  —  and  (await import('./x.js')).NAME.member */
+      if (node.type === 'MemberExpression' && !node.computed && node.property && node.property.name) {
+        const o = node.object;
+        const imp = (o && o.type === 'AwaitExpression') ? o.argument : o;
+        if (imp && imp.type === 'ImportExpression' && imp.source && typeof imp.source.value === 'string'
+          && imp.source.value.startsWith('./')) importedNames.add(node.property.name);
+      }
+      for (const k of Object.keys(node)) {
+        const v = node[k];
+        if (Array.isArray(v)) v.forEach((c) => walk(c, seen));
+        else if (v && typeof v === 'object' && typeof v.type === 'string') walk(v, seen);
+      }
+    })(ast, new Set());
     for (const n of ast.body) {
       if (n.type === 'ExportNamedDeclaration' && n.declaration) {
         const d = n.declaration;

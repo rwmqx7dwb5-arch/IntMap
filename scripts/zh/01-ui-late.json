@@ -15,4 +15,4 @@
 "ui:srcModalSub":"IntMap 匯整以下第三方資料、影像與 API。所有商標均屬各自所有人。","ui:srcModalTitle":"資料來源與出處","ui:tickerOff":"關閉（預設）","ui:tickerOn":"開啟 — 地圖下方的細長條",
 "ui:tiltHint":"選「不限制」可讓你把視角傾過地平線，直到相機朝正上方。超過 180° 後畫面會重複且方位反轉，因此可在羅盤上按右鍵輸入 0 到 360 的任意角度。","ui:tiltStandard":"標準 — 最高 78°（預設）","ui:tiltUnlimited":"不限制 — 完整 0–180° 範圍",
 "ui:tkItems":"顯示的項目","ui:tkNews":"新聞標題","ui:tkgCom":"商品","ui:tkgCrypto":"加密資產","ui:tkgFx":"外匯","ui:tkgIdx":"指數",
-"ui:uploadGeoJSON":"上傳 GeoJSON","ui:viewKbd":"⌨ 檢視鍵盤快速鍵（或按 ?）","ui:viewScience":"每一項模擬如何運作 ↗","ui:viewSourcesPage":"開啟資料來源頁面 ↗","ui:wsHint":"新聞、國家、地圖、圖層與 Atlas 各自成為獨立視窗，可自由移動、調整大小、收合與堆疊。你的版面配置會被儲存。"}
+"ui:viewKbd":"⌨ 檢視鍵盤快速鍵（或按 ?）","ui:viewScience":"每一項模擬如何運作 ↗","ui:viewSourcesPage":"開啟資料來源頁面 ↗","ui:wsHint":"新聞、國家、地圖、圖層與 Atlas 各自成為獨立視窗，可自由移動、調整大小、收合與堆疊。你的版面配置會被儲存。"}

@@ -541,7 +541,11 @@ export const ATL_FILE = (function () {
     try { const u = await fn(file); return (typeof u === 'string' && /^data:image\/(png|jpeg|webp|gif);base64,/.test(u)) ? u : null; } catch (_) { return null; }
   }
 
-  return { LIMITS: LIMITS, DOC_MIME: DOC_MIME, sniff: sniff, decodeText: decodeText, zipOpen: zipOpen, containerText: containerText, read: read };
+  /* ⚠ gunzip AND zipOpen ARE SHARED, NOT COPIED. js/geo-import.js (#R576) needs the same three
+     answers this file already computes — what container is this, what text does it decode as, and
+     what is inside the archive — and a second implementation of any of them is a second thing to
+     fix. The map imports THESE. */
+  return { LIMITS: LIMITS, DOC_MIME: DOC_MIME, sniff: sniff, decodeText: decodeText, zipOpen: zipOpen, gunzip: gunzip, xmlText: xmlText, containerText: containerText, read: read };
 })();
 
 /* Read a file as text. ⚠ KEPT FOR THE ONE CALLER THAT ALREADY HOLDS TEXT — ATL_FILE.read is what

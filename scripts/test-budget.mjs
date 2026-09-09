@@ -372,7 +372,7 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
    against BUDGET_S = 38. Not claimed here — the headroom is tests/r564.spec.js leaving the gate as
    `currentRoundSpec()` passes to this file, which is the price rule's doing and not this round's
    saving (#R510's shape). */
-const TOTAL_BUDGET_S = 4700;            /* 78.3 min — 4,695 (#R564) + 5 (#R575: tests/r575.spec.js) */
+const TOTAL_BUDGET_S = 4705;            /* 78.4 min — 4,700 (origin/main) + 5 (#R576: tests/r576.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

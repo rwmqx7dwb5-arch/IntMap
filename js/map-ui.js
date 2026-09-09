@@ -2245,15 +2245,17 @@ window.IntMapModules.geojsonUpload=function(HOST){
     const PALETTE=['#ff9500','#34c759','#5856d6','#ff2d55','#00b8d4','#ffcc00','#af52de','#0a84ff'];
     const jp=()=>HOST.lang==='jp';
     const toast=(m)=>{ try{ imToast(m); }catch(_){} };
-    const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.accept='.geojson,.json,application/geo+json,application/json'; fileInput.multiple=true; fileInput.style.display='none'; document.body.appendChild(fileInput);
-    function toFC(g){ if(!g||typeof g!=='object') return null;
-      if(g.type==='FeatureCollection' && Array.isArray(g.features)) return g;
-      if(g.type==='Feature') return {type:'FeatureCollection',features:[g]};
-      if(g.type && g.coordinates) return {type:'FeatureCollection',features:[{type:'Feature',geometry:g,properties:{}}]};
-      if(Array.isArray(g.features)) return {type:'FeatureCollection',features:g.features};
-      return null; }
+    /* ⚠ (#R576) NO `accept`, DELIBERATELY — the same decision js/atlas-console.js made in #R158.
+       An accept list is a list of extensions, and js/geo-import.js decides what a file is by
+       reading it. Filtering the picker by name would hide from the reader exactly the files the
+       decoders can now read (a .txt that is a CSV, a .xml that is a GPX, a name with no suffix). */
+    const fileInput=document.createElement('input'); fileInput.type='file'; fileInput.multiple=true; fileInput.style.display='none'; document.body.appendChild(fileInput);
+    /* (#R576) the four shapes this function used to normalise now live in js/geo-import.js's
+       GeoJSON decoder, alongside the other formats, so every path gets the same coordinate repair. */
     function fit(fc){ try{ if(typeof turf!=='undefined'){ const bb=turf.bbox(fc); if(bb.every(isFinite) && bb[0]>=-180 && bb[2]<=180) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:60,duration:900,maxZoom:12}); } }catch(_){} }
-    function addFC(fc,name){
+    /* (#R576) `r` is js/geo-import.js's report. Optional: window.GeoJSONUpload.add(fc,name) is
+       called by other code with a FeatureCollection it built itself, and that still works. */
+    function addFC(fc,name,r){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
       try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(window.IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return; }
       const before = GE().layers.has('tool-poly')?'tool-poly':undefined;
@@ -2264,7 +2266,15 @@ window.IntMapModules.geojsonUpload=function(HOST){
       }catch(_){}
       items.push({n,sid,name,col}); renderList(); fit(fc);
       try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}   /* (#R120) uploads join Atlas's "さっき作ったやつ" deixis */
-      toast((window.IntMapLang.t(HOST.lang,"GeoJSON added: ","GeoJSONを表示: ","GeoJSON hinzugefügt: ","GeoJSON добавлен: ","GeoJSON añadido: "))+name);
+      /* ⚠ (#R576) THE TOAST NAMES WHAT WAS INFERRED, BECAUSE IT WAS INFERRED. When the reader
+         drops a CSV, two of its columns were CHOSEN as the coordinates; if the guess is wrong the
+         pins are wrong, and the only way to notice is to be told which columns were used. */
+      const num=fc.features.length.toLocaleString(window.IntMapLang.locale(HOST.lang));
+      let msg=(window.IntMapLang.t(HOST.lang,"Added: ","読み込みました: ","Hinzugefügt: ","Добавлено: ","Añadido: "))+name;
+      if(r&&r.format) msg+=' · '+String(r.format).toUpperCase().replace('-',' ')+' · '+num;
+      if(r&&r.stats&&r.stats.lat) msg+=' · '+window.IntMapLang.t(HOST.lang,"columns","列","Spalten","столбцы","columnas")+': '+r.stats.lat+' / '+r.stats.lon;
+      if(r&&r.stats&&r.stats.dropped>0) msg+=' · '+r.stats.dropped+' '+window.IntMapLang.t(HOST.lang,"skipped","を除外","übersprungen","пропущено","omitidos");
+      toast(msg);
     }
     function removeItem(n){ const i=items.findIndex(x=>x.n===n); if(i<0) return; const it=items[i];
       [it.sid+'-fill',it.sid+'-line',it.sid+'-pt'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
@@ -2273,15 +2283,52 @@ window.IntMapModules.geojsonUpload=function(HOST){
     function renderList(){ if(!listEl) return;
       listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${String(it.name).replace(/[<>&]/g,'')}</span><button data-rm="${it.n}" title="${window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`).join('');
       listEl.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>removeItem(+b.getAttribute('data-rm'))); }
-    function handleFiles(files){ Array.from(files||[]).forEach(f=>{ const r=new FileReader();
-      r.onload=()=>{ let g=null; try{ g=JSON.parse(r.result); }catch(_){ toast(window.IntMapLang.t(HOST.lang,"Could not parse JSON","JSONの解析に失敗しました","JSON konnte nicht gelesen werden","Не удалось разобрать JSON","No se pudo analizar el JSON")); return; }
-        const fc=toFC(g); if(!fc||!fc.features||!fc.features.length){ toast(window.IntMapLang.t(HOST.lang,"Not valid GeoJSON","有効なGeoJSONではありません","Kein gültiges GeoJSON","Некорректный GeoJSON","GeoJSON no válido")); return; }
-        addFC(fc, f.name||'GeoJSON'); };
-      r.readAsText(f); }); }
+    /* ══ (#R576) WHY THE FILE COULD NOT BE READ, IN THE READER'S LANGUAGE ═══════════════════
+       js/geo-import.js returns a CODE. The sentences are here because a decoder has no business
+       knowing what UI it is in — and because the sentence has to be a SENTENCE: "not valid
+       GeoJSON" was told to every KML, GPX, CSV and Shift_JIS spreadsheet ever dropped on this map,
+       and it was wrong about all of them. Every code below names what the file actually is. */
+    function reasonText(why,detail){
+      if(why==='no-coordinate-columns'||why==='coordinates-not-identifiable'){
+        /* ⚠ SAY WHICH COLUMNS WERE CONSIDERED. A refusal the reader cannot act on is a dead end;
+           this one names the columns and lets them fix the header or the file. */
+        const cols=((detail&&detail.considered)||[]).map(c=>c.column).slice(0,8).join(', ');
+        const head=window.IntMapLang.t(HOST.lang,"No latitude/longitude columns found","緯度・経度の列が見つかりません","Keine Breiten-/Längengrad-Spalten gefunden","Столбцы широты и долготы не найдены","No se encontraron columnas de latitud/longitud");
+        return cols?head+' ('+cols+')':head; }
+      if(why==='shapefile') return window.IntMapLang.t(HOST.lang,"Shapefile is not supported yet","Shapefile はまだ対応していません","Shapefile wird noch nicht unterstützt","Shapefile пока не поддерживается","Shapefile aún no es compatible");
+      if(why==='too-big') return window.IntMapLang.t(HOST.lang,"File is too large to read","ファイルが大きすぎて読み込めません","Die Datei ist zu groß zum Lesen","Файл слишком велик для чтения","El archivo es demasiado grande");
+      if(why==='too-many-features') return window.IntMapLang.t(HOST.lang,"Too many features to draw","地物が多すぎて描画できません","Zu viele Objekte zum Zeichnen","Слишком много объектов для отрисовки","Demasiados elementos para dibujar");
+      if(why==='no-valid-coordinates') return window.IntMapLang.t(HOST.lang,"No usable coordinates in this file","このファイルに使える座標がありません","Keine brauchbaren Koordinaten in dieser Datei","В этом файле нет пригодных координат","No hay coordenadas utilizables en este archivo");
+      if(why==='no-features') return window.IntMapLang.t(HOST.lang,"The file has no map features","地図に描ける地物がありません","Die Datei enthält keine Kartenobjekte","В файле нет картографических объектов","El archivo no contiene elementos de mapa");
+      if(why==='kml-network-link-only') return window.IntMapLang.t(HOST.lang,"This KML only links to data held elsewhere","この KML は外部データへのリンクだけです","Dieses KML verweist nur auf externe Daten","Этот KML только ссылается на внешние данные","Este KML solo enlaza a datos externos");
+      if(why==='json-not-geojson') return window.IntMapLang.t(HOST.lang,"This JSON is not GeoJSON","この JSON は GeoJSON ではありません","Dieses JSON ist kein GeoJSON","Этот JSON не является GeoJSON","Este JSON no es GeoJSON");
+      if(why==='xml-unknown'||why==='xml-no-parser') return window.IntMapLang.t(HOST.lang,"Unsupported XML format","対応していない XML 形式です","Nicht unterstütztes XML-Format","Неподдерживаемый формат XML","Formato XML no compatible");
+      if(why==='not-geodata'||why==='not-text'||why==='unrecognised'||why==='archive'||why==='not-a-table') return window.IntMapLang.t(HOST.lang,"Unsupported file format","対応していないファイル形式です","Nicht unterstütztes Dateiformat","Неподдерживаемый формат файла","Formato de archivo no compatible");
+      if(why==='empty') return window.IntMapLang.t(HOST.lang,"The file is empty","ファイルが空です","Die Datei ist leer","Файл пуст","El archivo está vacío");
+      if(why==='unreadable') return window.IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo");
+      return window.IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo");
+    }
+    /* What the layer is CALLED. The file name, plus the entry when it came out of an archive —
+       "route.kmz › doc.kml" says where the shape on screen came from without the reader guessing. */
+    function labelFor(f,r){ const base=(f&&f.name)||'data'; return r.entry?base+' › '+r.entry:base; }
+    async function handleFiles(files){
+      const list=Array.from(files||[]);
+      if(!list.length) return;
+      let readGeoFile=null;
+      /* on demand: nothing about reading a dropped file belongs in the startup bundle */
+      try{ readGeoFile=(await import('./geo-import.js')).GEO_IMPORT.readGeoFile; }
+      catch(_){ toast(window.IntMapLang.t(HOST.lang,"Could not read this file","このファイルを読み込めませんでした","Diese Datei konnte nicht gelesen werden","Не удалось прочитать этот файл","No se pudo leer este archivo")); return; }
+      for(const f of list){
+        let r=null;
+        try{ r=await readGeoFile(f); }catch(_){ r={ok:false,why:'unreadable'}; }
+        if(!r||!r.ok){ toast(reasonText(r&&r.why,r&&r.detail)); continue; }
+        addFC(r.fc, labelFor(f,r), r);
+      }
+    }
     fileInput.addEventListener('change',()=>{ handleFiles(fileInput.files); fileInput.value=''; });
     function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-upload-geojson')) return;
       const wrap=document.createElement('div'); wrap.id='ugj-mount'; wrap.style.marginTop='6px';
-      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" class="ai-test-btn" style="width:100%;">📂 <span data-i18n="uploadGeoJSON">Upload GeoJSON</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
+      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" class="ai-test-btn" style="width:100%;">📂 <span data-i18n="importGeoFile">Import map data</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
       dd.appendChild(wrap); listEl=wrap.querySelector('#ugj-list');
       wrap.querySelector('#btn-upload-geojson').onclick=()=>fileInput.click();
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
