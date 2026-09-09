@@ -197,7 +197,7 @@ test('R232 seismic: the wavefronts are named, and the observation points are cit
      ⚠ (#R495) …and the ISO-2 country now rides behind it, for js/atlas-query.js's `cities`→`countries`
      join. The field this test is about is `pop`, and it is still the SEVENTH — appending an eighth
      cannot move it, which is the property worth asserting rather than the exact end of the line. */
-  assert.match(read('js/gazetteer.js'), /out\.push\(\[pop>=250000\?'city':'town', terms, lng, lat, en, ja\|\|en, pop(, iso2)?\]\)/,
+  assert.match(read('js/gazetteer.js'), /out\.push\(\[pop>=250000\?'city':'town', terms, lng, lat, en, ja\|\|en, pop(, iso2)?[,\]]/,
     'the row carries its population, in the seventh slot');
 });
 

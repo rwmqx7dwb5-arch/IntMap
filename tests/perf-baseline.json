@@ -24,7 +24,7 @@
       "atlas-chart": 10777,
       "atlas-console": 1015558,
       "atlas-executor": 43473,
-      "atlas-query": 29952,
+      "atlas-query": 35125,
       "atlas-view-capture": 8558,
       "atlas-view-ground": 3808,
       "aviation-live": 22678,
@@ -82,8 +82,8 @@
     }
   },
   "dist": {
-    "total": 243496393,
-    "data": 188172668,
+    "total": 244780506,
+    "data": 189444490,
     "assets": 17464581
   }
 }

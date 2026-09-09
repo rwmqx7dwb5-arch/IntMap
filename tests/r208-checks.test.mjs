@@ -35,7 +35,13 @@ function locator() {
   const gz = { addEventListener() { } };
   new Function('window', 'document', read('js/gazetteer.js'))(gz, { baseURI: 'https://example.test/' });
   const doc = JSON.parse(gunzipSync(readFileSync(join(ROOT, 'data', 'gazetteer-world.json.gz'))).toString('utf8'));
-  NG.register(gz.IntMapGazetteer._rowsFrom(doc).map(([type, terms, lng, lat, en, jp]) =>
+  /* ⚠ (#R620) THE MATCHABLE VIEW, WHICH IS WHAT js/news-context.js HANDS OVER. The build no longer
+     deletes a row whose name a curated table already carries — deleting them made 78 places above
+     a million people invisible to every data reader of the file — it flags them (`cur`, field 11)
+     and js/gazetteer.js's `worldMatchable()` withholds them from the matcher instead. Registering
+     the whole list here would put a second «Tokyo» in a locator the app never puts one in. */
+  const rows = gz.IntMapGazetteer._rowsFrom(doc).filter((r) => r[11] !== 1);
+  NG.register(rows.map(([type, terms, lng, lat, en, jp]) =>
     ({ terms, lng, lat, type, name_en: en, name_jp: jp })));
   return NG;
 }
@@ -439,15 +445,23 @@ test('R208 ⑦b: the legacy regex index is capped; the growth goes to the locato
   const gz = read('js/gazetteer.js');
   assert.ok(/INDEX_WORLD_CAP\s*=\s*15000/.test(gz),
     'the matcher-shaped index takes the head of the world list');
-  assert.ok(/feed\(_worldRows,\s*INDEX_WORLD_CAP\)/.test(gz), 'and the cap is applied');
+  /* ⚠ (#R620) the rows the cap is applied TO are the matchable ones — this index is itself a
+     bag-of-words matcher, so a row a curated entry already names must not reach it either. What is
+     asserted is that the cap is applied to whatever world rows this index is fed, not the spelling
+     of the variable holding them. */
+  assert.ok(/feed\((?:w|_worldRows),\s*INDEX_WORLD_CAP\)/.test(gz), 'and the cap is applied');
+  assert.ok(/const w=worldMatchable\(\);/.test(gz), 'and it is fed the matchable view (#R620)');
   /* ⚠ the reason is not tidiness: js/news-context.js compiles a RegExp per term from this index and
      SCANS it per news item, and js/search-geocode.js walks it with a Levenshtein per query. At
      148,083 rows the boot stopped finishing — measured, the page hung building the RegExps.
-     The deterministic locator gets all of them instead, through `world()`. */
-  assert.ok(/world:\(\)=>_worldRows/.test(gz), 'the full list is still published for the locator');
+     The deterministic locator gets all of them instead, through `worldMatchable()`. */
+  assert.ok(/world:\(\)=>_worldRows/.test(gz), 'the full list is still published for the data readers');
+  assert.ok(/worldMatchable,/.test(gz), '…and the matchable view for the locator (#R620)');
   const nc = read('js/news-context.js');
   assert.ok(/registerSlices\(w\)/.test(nc),
     'and the locator is fed the FULL row array, not the capped index');
+  assert.ok(/const w=GZ\.worldMatchable&&GZ\.worldMatchable\(\);/.test(nc),
+    'that array being the matchable view — the curated coordinate still wins (#R620)');
 });
 
 /* ═══ ⑧ OCEAN CURRENTS ════════════════════════════════════════════════════════════════════════ */
