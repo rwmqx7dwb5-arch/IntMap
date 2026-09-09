@@ -52,9 +52,16 @@
  * js/atlas-console.js imports THAT by name, and the button opens the same one at the moment it is
  * pressed. Publishing the three pieces separately would have made two of them look dead.
  */
+import { makeViewGround } from './atlas-view-ground.js';   /* (#R577) the measurements that turn a picture into an answerable question — and the sentence that says when it is not one */
+
 export function makeViewCapture(deps) {
   deps = deps || {};
   var GE = deps.GE, L = deps.L, esc = deps.esc, snapshot = deps.snapshot, waitIdle = deps.waitIdle;
+  /* (#R577) `overpass` is the ONE optional dep: js/screenshot.js builds this factory for the save
+     button, which wants a PNG and no lookup at all. Absent, the framed-feature channel simply does
+     not run — and says so in the block, rather than reading as «nothing is there». */
+  var overpass = deps.overpass;
+  var GROUND = makeViewGround();
 
   /* the class js/screenshot.js has always used to take the controls out of the picture and leave the
      legends in. Reused rather than re-declared: a second spelling would hide a different set. */
@@ -194,6 +201,56 @@ export function makeViewCapture(deps) {
     function reset() { frames = []; }
     function urls() { return frames.length ? frames.slice(-SENT).map(function (f) { return f.url; }) : null; }
 
+    /* ── (#R577) WHAT THE RENDERER PUT ON SCREEN ──────────────────────────────────────────────────
+       The cheapest source there is, and the only one that knows what the reader can literally read:
+       the style's own labels, already drawn, already in memory. Read through the engine facade rather
+       than the raw map so a Cesium view answers about itself (js/geo-engine.js is the one door).
+       ⚠ ordered by distance from the CENTRE, because 「これ」 means the middle of the frame — the wrong
+       answer was assembled out of a label near the bottom edge, which was the only one legible. */
+    function drawnLabels(cam) {
+      var feats = null;
+      try { feats = GE().coords.queryRenderedFeatures(); } catch (_) { return null; }
+      if (!feats || !feats.length) return { kept: [], dropped: 0, total: 0 };
+      var centrePx = null;
+      try { if (cam && isFinite(cam.lat)) centrePx = GE().coords.project({ lng: +cam.lng, lat: +cam.lat }); } catch (_) { /* the distance is a nicety; the names are the point */ }
+      var withPx = feats.map(function (f) {
+        var px = null;
+        try {
+          var g = f && f.geometry, c = g && g.coordinates;
+          while (Array.isArray(c) && Array.isArray(c[0])) c = c[0];   /* Point / LineString / Polygon / Multi* alike */
+          if (Array.isArray(c) && isFinite(c[0])) px = GE().coords.project({ lng: +c[0], lat: +c[1] });
+        } catch (_) { /* unprojectable: still a name on screen, just an unranked one */ }
+        return { properties: f && f.properties, sourceLayer: f && f.sourceLayer, px: px };
+      });
+      return GROUND.shapeDrawnLabels(withPx, centrePx);
+    }
+
+    /* ── (#R577) WHAT OPENSTREETMAP SAYS IS IN THE FRAME ──────────────────────────────────────────
+       The channel that would have answered the question that was actually asked. Best-effort by
+       construction: every failure below becomes a `framedError` STRING that the prompt block prints,
+       because the one thing this must never do is fail silently into a block reading «nothing here». */
+    async function framedFeatures(facts) {
+      var frame = facts && facts.bbox;
+      if (!frame) return { framedError: 'no viewport bounds' };
+      if (!overpass) return { framedError: 'no lookup available in this context' };
+      var budget = GROUND.framedBudget(frame);
+      if (!budget.ok) return { framedError: budget.reason };
+      try {
+        var j = await overpass(GROUND.overpassFramedQuery(frame, 25));
+        if (!j || !j.elements) return { framedError: 'OpenStreetMap did not answer' };
+        return { framed: GROUND.rankFramed(j.elements, frame) };
+      } catch (e) {
+        return { framedError: String((e && e.message) || e).slice(0, 80) };
+      }
+    }
+
+    async function gatherGround(facts) {
+      var g = {};
+      try { g.drawn = drawnLabels(facts && facts.center); } catch (_) { /* the framed channel still runs */ }
+      try { Object.assign(g, await framedFeatures(facts)); } catch (_) { g.framedError = 'lookup threw'; }
+      return g;
+    }
+
     /* captureFrame(a) -> {ok:true, html, facts} | {ok:false, message}
        `a` is the validated action: {include?:'screen'|'map', reason?:string}. */
     async function captureFrame(a) {
@@ -240,6 +297,12 @@ export function makeViewCapture(deps) {
         layersOn: (layers && layers.length) ? layers : undefined,
         chronos: (tm && tm.travelDate) || undefined
       };
+      /* ⚠⚠⚠ (#R577) ASK THE MAP WHAT IS THERE — the step whose absence produced 「八田フランテ館」.
+         Everything above this line describes the CAMERA; none of it describes the WORLD, and a
+         question like 「これなに」 is about the world. See js/atlas-view-ground.js for the measured
+         failure and why the empty result is reported as loudly as a full one. */
+      facts.ground = await gatherGround(facts);
+
       frames.push({ url: url, facts: facts });
 
       /* ⚠ THE READER SEES WHAT ATLAS WAS GIVEN. A capability that reads the screen and says nothing
@@ -262,8 +325,13 @@ export function makeViewCapture(deps) {
       var p = '[VIEW FRAMES ATTACHED TO THIS MESSAGE — real screenshots of IntMap, taken by your own inspect calls, in this order]\n';
       take.forEach(function (fr, i) {
         var f = fr.facts, bits = [];
-        if (f.bbox) bits.push('visible bounds W ' + f.bbox.west.toFixed(2) + ', S ' + f.bbox.south.toFixed(2) + ', E ' + f.bbox.east.toFixed(2) + ', N ' + f.bbox.north.toFixed(2));
-        if (f.center) bits.push('centre ' + f.center.lat.toFixed(2) + ',' + f.center.lng.toFixed(2));
+        /* ⚠⚠⚠ (#R577) NOT toFixed(2). Two decimals is 1.1 km square at this latitude, so at the zoom
+           16 that produced 「八田フランテ館」 the coordinate named forty city blocks and the model could
+           not have identified the building even in principle. The precision is DERIVED from the zoom
+           — one pixel of the frame we are attaching — in js/atlas-view-ground.js. */
+        var dp = GROUND.coordDecimals(f.zoom);
+        if (f.bbox) bits.push('visible bounds W ' + f.bbox.west.toFixed(dp) + ', S ' + f.bbox.south.toFixed(dp) + ', E ' + f.bbox.east.toFixed(dp) + ', N ' + f.bbox.north.toFixed(dp));
+        if (f.center) bits.push('centre ' + f.center.lat.toFixed(dp) + ',' + f.center.lng.toFixed(dp));
         if (f.zoom != null) bits.push('zoom ' + f.zoom);
         if (f.bearing != null) bits.push('bearing ' + f.bearing + '°');
         if (f.pitch != null) bits.push('pitch ' + f.pitch + '°');
@@ -275,6 +343,10 @@ export function makeViewCapture(deps) {
           + ((f.include === 'map') ? 'renderer frame only — no legends, no DOM overlays'
             : 'the whole screen: map + legends, scale, markers, bands, timebar; controls hidden') + ')'
           + (f.reason ? (' · you asked for it to: ' + f.reason) : '') + (bits.length ? (' · ' + bits.join(' · ')) : '') + '\n';
+        /* ⚠⚠⚠ (#R577) THE GROUND TRUTH FOR THIS FRAME — what the map can actually say is in it, and
+           an explicit statement when the answer is «nothing». Without these lines the model has a
+           picture and no way to tell «I was not told» from «there is nothing to tell». */
+        try { p += GROUND.groundBlock(f.ground); } catch (_) { /* the camera lines still stand */ }
       });
       if (dropped > 0) p += '(' + dropped + ' earlier frame' + (dropped === 1 ? ' is' : 's are') + ' NOT attached — only the '
         + take.length + ' most recent are. Their records are in the turn log below.)\n';

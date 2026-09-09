@@ -374,6 +374,11 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   差し戻す（自分の宣言との整合＝schema 検査と同じ種類。回数は `maxMapGate`）
 atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全135を検索・到達可能 134）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
+atlas-view-ground.js              **見たものの裏づけ**（#R577）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
+                                  ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
+                                  （`cover`／`inView` という2つの尺度で順位づけ）。**タグの許可表は持たない**——
+                                  タグをそのまま渡し、判断は Atlas に返す。**見つからなかったことは文として書く**
+                                  （空欄は「知らされていない」と「そこには無い」を区別できない）。座標の桁数もここが決める
 atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャプチャ1本と、1ターン分のフレーム台帳。
                                   **入口は `makeViewCapture(deps)` の1つだけ**（tests/r175 ③ が
                                   「動的 import でしか届かない export は死んだ export」と見るため）。
