@@ -1034,7 +1034,7 @@ export function makeAtlasCapabilities(HOST) {
       return runtime.docs.text(ids);
     };
     API.catalogBytes = function (ids) { return API.catalogText(ids).length; };
-    /* ══ index() — WHAT INTMAP CAN DO, AT THE MOMENT ATLAS DECIDES  (#R569) ══════════════════════
+    /* ══ index() — WHAT INTMAP CAN DO, AT THE MOMENT ATLAS DECIDES  (#R572) ══════════════════════
        ⚠ THIS IS NOT THE CATALOGUE COMING BACK. #R406 removed 64,250 characters of prose from the
        prompt and put it behind find_capability, and that was right: a model does not need the
        argument documentation of 135 capabilities in order to answer 「ありがとう」. But it took
@@ -1044,7 +1044,7 @@ export function makeAtlasCapabilities(HOST) {
        capability it has no reason to believe exists, and every decision it makes BEFORE opening it
        is made about an IntMap with nine tools in it.
 
-       MEASURED (#R569): 「エンゲルス空軍基地からナッシュビルまでICBM」 was answered with a refusal
+       MEASURED (#R572): 「エンゲルス空軍基地からナッシュビルまでICBM」 was answered with a refusal
        to help plan a strike. IntMap's answer to that request is sim.ballistic — a Keplerian
        trajectory solve with Allen–Eggers drag, a Coriolis-curved ground track and optional blast
        rings (js/atlas-sims.js), documented in js/atlas-catalog-text.js as the thing to use for
@@ -1064,7 +1064,7 @@ export function makeAtlasCapabilities(HOST) {
        ⚠ AND IT IS DERIVED. It is the table above, not a list anyone maintains. A capability added to
        the table is in the prompt on the next turn; a hand-written list would be the failure this
        file's own header describes («A list that a human must remember to update is a list that will
-       be wrong»), which is .agents/rules/no-ad-hoc-hardcoding.md §2.4. tests/r569-checks.test.mjs
+       be wrong»), which is .agents/rules/no-ad-hoc-hardcoding.md §2.4. tests/r572-checks.test.mjs
        derives the expected set from the registry rather than naming it, so no capability can be
        added to IntMap without appearing here. */
     API.index = function () {

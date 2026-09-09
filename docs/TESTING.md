@@ -1030,9 +1030,9 @@ node scripts/atlas-capability-audit.mjs --json     # machine-readable: registry 
 `tests/r318-checks.test.mjs` feeds each one a fixture with the defect deliberately present and
 asserts that it fails. A check that cannot be made to fail is deleted, not kept.
 
-### What Atlas can SEE, as distinct from what it can reach (`tests/r569-checks.test.mjs`)
+### What Atlas can SEE, as distinct from what it can reach (`tests/r572-checks.test.mjs`)
 
-Twenty questions above ask whether a capability is *reachable*. #R569 measured a different thing and
+Twenty questions above ask whether a capability is *reachable*. #R572 measured a different thing and
 found it at zero: whether Atlas is shown that the capability **exists**, at the moment it decides what
 kind of request it has. `SYS()` named eleven tools and represented the other hundred-odd with one
 sentence on `find_capability` — the name of a door, and not one thing behind it. A model does not open
