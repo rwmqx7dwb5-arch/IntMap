@@ -4002,10 +4002,10 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'it OBSERVED, and you then decide whether to call more tools or to answer. Arguments are checked against each '
         +'tool\'s schema before anything runs; a rejected call comes back to you to fix and is never shown to the reader. '
         +'Write final_text in '+_langLine()+'.\n'
-        +'[TOOLS]\n'+_toolBlock(tools)+'\n';
+        +_capIndex()+'[TOOLS] The nine below, plus find_capability and run_capability, are the whole call surface; every id in the index above is reached through those two.\n'+_toolBlock(tools)+'\n';
     }
     /* The tools as compact JSON \u2014 name, one line of purpose, and the schema its arguments must match.
-       js/atlas-toolsurface.js builds them; `find_capability` reaches the other hundred-odd. */
+       js/atlas-toolsurface.js builds them; `find_capability` reaches the other hundred-odd. */   function _capIndex(){ try{ return String(CAPS.index()||''); }catch(_){ return ''; } }   /* (#R582) the registry's OWN index of every capability id, derived from js/atlas-capabilities.js. Without it SYS() named the door (find_capability) and not one thing behind it, so every decision Atlas took BEFORE deciding to search was taken about an IntMap with nine tools in it. ⚠ ON THIS LINE because the kernel has no headroom — same reason as the GLOSS import above. */
     function _toolBlock(tools){ try{
       return Object.keys(tools||{}).map(function(k){ var t=tools[k];
         return JSON.stringify({ name:t.name, description:t.description, parameters:t.parameters }); }).join('\n');
