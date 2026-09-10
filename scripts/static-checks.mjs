@@ -584,6 +584,24 @@ for (const f of ALL) {
     + ' tests/**/*.test.mjs by NAME, so this file never runs');
 }
 
+// ── 11. (#R672) a filename another session is about to create too ──
+// A round's own files used to be named for the round and nothing else, and a round number is not
+// a name: every parallel session takes «the next free number» from the same scan and takes it
+// again whenever origin/main moves. #R671 measured seven renumberings in one round and an add/add
+// conflict on tests/r568-checks.test.mjs whose markers were committed, leaving a whole file of
+// regressions unparseable. The rule, the two legacy numbers and why they are numbers rather than
+// a list of 416 spellings all live in scripts/round-names.mjs; the walk stays here because this
+// is the file that already has one.
+try {
+  const { roundNameProblems } = await import('./round-names.mjs');
+  const testNames = ALL
+    .filter((f) => f.rel.startsWith('tests/') && !f.rel.slice('tests/'.length).includes('/'))
+    .map((f) => f.rel.slice('tests/'.length));
+  for (const p of roundNameProblems(testNames)) err('round-name', p);
+} catch (e) {
+  err('round-name', 'could not run the round-artefact name check: ' + (e && e.message));
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byCheck = (arr) => arr.reduce((m, x) => ((m[x.check] = (m[x.check] || 0) + 1), m), {});
 console.log(`\nIntMap static checks — scanned ${ALL.length} files (${codeFiles.length} JS/TS, ${yamlFiles.length} YAML)\n`);

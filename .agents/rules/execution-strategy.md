@@ -40,6 +40,31 @@
 - ⚠ **製品のハーネスが作る worktree を隔離に使わない。** それはリポジトリの中
   （＝ OneDrive の中）にできる（`docs/AGENT-SETUP.md` §5）。
   `scripts/worktree.mjs` は OneDrive の外に作る。
+- ⚠ **このラウンドで作るファイルに、ラウンド番号だけの名前を付けない。主題を入れる。**
+  番号は**このセッションのものではない**——並列セッションは全員が同じ走査から「次の空き番号」を
+  取り、`origin/main` が動くたびに取り直す。**衝突は例外ではなく定常状態**（#R671 は 7 回、
+  同じ時期の別セッションは 4 回改番した）。実測された被害:
+  - `tests/r568-checks.test.mjs` を 2 セッションが**両方新規作成**して git が add/add を立て、
+    自動化がそれを取り込んで**衝突マーカーごと commit した**。ファイルは `SyntaxError` で
+    1 本も走らなくなった（#R420 の再演。パイプで exit code を隠したのが直接の原因）。
+  - memory の `intmap-r<N>-lessons.md` を改番のたびに rename していて、**別セッションのものに
+    重ねて自分の記憶を失った**（#R565 と #R671 で**2 回**）。
+  ⇒ **番号 ＋ 主題**で名づける。番号は改番で動くが、主題は動かない:
+
+  | 何 | 名前 | 例 |
+  |---|---|---|
+  | この回の回帰検査 | `tests/r<N>-<主題>-checks.test.mjs` | `tests/r671-dem-store-checks.test.mjs` |
+  | この回の spec | `tests/r<N>-<主題>.spec.js` | `tests/r180-cesium.spec.js` |
+  | memory | `memory/intmap-<主題>.md`（**番号を入れない**） | `memory/intmap-dem-tile-store-budget.md` |
+
+  ⚠ **memory はリポジトリの外**なので、どの門も守れない——**番号は書かず主題だけで名づける**
+  （改名が要らなくなるので、改番のたびに rename する経路そのものが消える）。
+  リポジトリ側は `npm run check:static` の `round-name` が拒む（何を測っているかは
+  [`docs/TESTING.md`](../../docs/TESTING.md) の Static checks）。既存の番号だけの名前は**過去のもの**として
+  据え置き、**数と最大ラウンドの 2 つで下向きにだけ動く**ように留めてある。
+  ⚠ **改番の道具に「全文置換」を使わない**——`R<from>` → `R<to>` の一括置換は**他人のラウンドの
+  文まで書き換える**（実測: `docs/TESTING.md` の見出しと `DEV-NOTES.md` の 1 行）。動かすのは
+  **自分のファイル名だけ**を対象にしたパターン（`r\d+-<自分の主題>`）。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`AGENTS.md` §6）。
 - ラウンド番号は `node scripts/worktree.mjs status` が示す**空き番号**を使い、**push の直前に取り直す**

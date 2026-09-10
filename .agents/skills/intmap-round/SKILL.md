@@ -97,8 +97,16 @@ node scripts/worktree.mjs new <slug>
 **段とコマンドの表は [`.agents/rules/execution-strategy.md`](../../rules/execution-strategy.md) §4
 が正本。**ここには書き写さない——そこを見て、この工程では段 0 から順に上げる。
 
-このラウンド固有の義務だけ書く: その回の回帰検査は **`tests/r<N>-checks.test.mjs` という名前で置く**だけでよい
-——`test:checks` は `node --test "tests/**/*.test.mjs"` なので、名前が合っていれば登録なしに走る（#R529）。
+このラウンド固有の義務だけ書く: その回の回帰検査は **`tests/r<N>-<主題>-checks.test.mjs`**
+（spec なら `tests/r<N>-<主題>.spec.js`）という名前で置くだけでよい——`test:checks` は
+`node --test "tests/**/*.test.mjs"` なので、名前が合っていれば登録なしに走る（#R529）。
+⚠ **`<主題>` を落とさない。ラウンド番号は改番で動くうえ、他セッションが同じ番号を持っている。**
+実測（#R671）: 2 セッションが `tests/r568-checks.test.mjs` を両方作って add/add になり、
+自動化が**衝突マーカーごと commit** してファイルが 1 本も走らなくなった。`npm run check:static` の
+`round-name` が拒む。規約の正本は
+[`.agents/rules/execution-strategy.md`](../../rules/execution-strategy.md) §3
+（**memory の名づけも同じ規約**——そちらはリポジトリの外なので門が無い）。
+名前は `node scripts/worktree.mjs new <slug>` が番号を取るときに印字する。
 ⚠ **`tests/` に置く `.mjs` で `node:test` を import するものは、必ず `*.test.mjs` と名づける。**
 それ以外の名前は runner から見えず、一度も走らないまま永久に緑になる（`check:static` が捕まえる）。
 

@@ -39,6 +39,7 @@ import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSy
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { roundArtefactNames } from './round-names.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -265,6 +266,23 @@ function makeNew(slug) {
 
   console.log('\n  作業ディレクトリ（以降の編集は全部この中で）:');
   console.log('    ' + dir);
+  /* (#R672) …AND THE NAMES THIS ROUND'S FILES MUST CARRY. The round number is the one part of the
+     name that is NOT this session's to keep: every parallel session takes «the next free number»
+     from the same scan, so two of them routinely hold the same one and the renumbering treadmill
+     moves it again before the push (#R671 was renumbered seven times). MEASURED there: two sessions
+     both created tests/r568-checks.test.mjs, git raised an add/add conflict, and the automation
+     committed the markers — the file stopped parsing and a whole file of regressions was gone.
+     The slug is the half that IS this session's, so the name is handed out here rather than left
+     to be improvised at test-writing time. `check:static` (round-name) refuses the bare form.
+     ⚠ The number printed here is the one taken a moment ago; the SUBJECT is what survives a
+       renumbering, and only that part has to stay put. */
+  const names = roundArtefactNames(n, slug);
+  console.log('\n  この回の検査ファイルの名前（番号だけの名前は他セッションと衝突する）:');
+  console.log(`    ${names.checks}        node --test で走る回帰`);
+  console.log(`    ${names.spec}                Playwright の spec（要るなら）`);
+  console.log('  ⚠ 主題を落とした tests/r<N>-checks.test.mjs は check:static が拒む');
+  console.log('    （.agents/rules/execution-strategy.md §3。memory も同じ規約）');
+
   console.log('\n  並列実装をするなら、この絶対パスと「触ってよいファイルの一覧」を');
   console.log('  intmap-implementer に渡す。同じファイルを2体に書かせない。');
 }
