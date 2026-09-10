@@ -119,6 +119,14 @@ const HALVES = [
          table, and the district↔result join in both directions, from the committed bytes) so that
          there is no cost that could ever justify unhooking it. */
       ['node', ['scripts/build-elections.mjs', '--check']],
+      /* ⚠ (#R667) …and the SIXTH, for the one bundle in the repository IntMap DERIVED rather than
+         received. data/hist-kuni.js is the fifteen provinces of Japan OpenHistoricalMap does not
+         hold, vectorised from a CC0 raster that is 130 MB and is NOT in the repository — so this
+         gate proves the shipped bytes (a null relation id on every row, nine-language names, rings
+         that close, and NOT ONE unit that data/hist-admin1.js also holds, which is what would draw
+         a boundary twice) and re-derives from upstream only on a machine that has the raster. Both
+         halves print which one ran. */
+      ['node', ['scripts/build-hist-kuni.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

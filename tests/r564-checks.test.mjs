@@ -178,9 +178,19 @@ test('⑦ _eraGeom answers for the era labels and for nothing else', () => {
 test('⑦ the popup is handed that polygon, on the per-layer click AND on the padded tap', () => {
   /* two doors into the same popup (#R210): a fix applied to one of them is half a fix. */
   assert.ok(MU.includes('const eg=_eraGeom(f);'), 'the per-layer click no longer asks for the era polygon');
-  assert.ok(MU.includes('eg?{title:_bothNames(p,name),geojson:eg}'), 'the per-layer click drops the era polygon on the floor');
   assert.ok(MU.includes('const peg=_eraGeom(near[0]);'), 'the padded tap no longer asks for the era polygon');
-  assert.ok(MU.includes('peg?{title:ttl,geojson:peg}'), 'the padded tap drops the era polygon on the floor');
+  /* ⚠ (#R667) …AND WHAT THEY HAND OVER, WHICH IS THE HALF THIS TEST NEARLY MISSED. _eraGeom now
+     returns { geo, refine } — the coarse shape to draw at once and the promise of upstream's own
+     geometry — and the per-layer door was updated while the padded one went on passing the WRAPPER as
+     `geojson`. Measured: IntMapOutline's `/Polygon/.test(type)` is then false, so a tap near an era
+     label fell back to today's namesake, which is the exact defect #R564 exists to remove, alive again
+     on one of the two doors. Pinning the old spelling could not see it (it failed for the spelling, not
+     for the defect), so both doors are asked the same question: do you pass the SHAPE, and the refine? */
+  for (const [door, expr] of [['per-layer click', 'geojson:eg.geo,refine:eg.refine'],
+                              ['padded tap', 'geojson:peg.geo,refine:peg.refine']]) {
+    assert.ok(MU.includes(expr), 'the ' + door + ' does not hand the era polygon (and its refinement) to the popup');
+  }
+  assert.ok(/return\s*\{\s*geo,\s*refine:/.test(MU), '_eraGeom must return both halves for either door to pass them');
   /* and the era label is a place label in every list, at both tiers */
   const lbls = (MU.match(/const PLACE_LBL=\[([^\]]*)\]/) || [])[1] || '';
   for (const id of ['imta-lbl', 'imta2-lbl']) assert.ok(lbls.includes(id), id + ' is not a place label — a tap on it does nothing');
