@@ -74,7 +74,7 @@ import '../js/map-typography.js';
 import '../js/compass.js';
 /* (#R289) CHRONOS — the one master clock, window.IntMapTime. Published at IMPORT time now, which
    is strictly earlier than the closure it used to live in. See js/chronos.js. */
-import '../js/chronos.js'; import '../js/hist-scale.js';   /* (#R604) …and the deep-time ARITHMETIC the clock and the Chronos panel both read: decimal years, the OpenHistoricalMap date filter, the year rail. No DOM, no map, no clock, so tests/r604-checks can evaluate it — which is the whole reason it is not three helpers inside its two readers (#R570). ON THIS LINE because the app shell has a line budget (tests/r168 #8) and it is full. */
+import '../js/chronos.js'; import '../js/hist-scale.js'; import '../js/ohm-rings.js';   /* (#R604) …and the deep-time ARITHMETIC the clock and the Chronos panel both read: decimal years, the OpenHistoricalMap date filter, the year rail. No DOM, no map, no clock, so tests/r604-checks can evaluate it — which is the whole reason it is not three helpers inside its two readers (#R570). ON THIS LINE because the app shell has a line budget (tests/r168 #8) and it is full. (#R668) js/ohm-rings.js rides it for the same reason: it is the ONE owner of «an OpenHistoricalMap relation, as a polygon» — the click highlight assembles upstream geometry with it and scripts/build-hist-admin1.mjs evaluates the same file rather than carrying a second copy. */
 import '../js/layer-home.js';   /* (#R313) the SET of layers allowed to move the camera on a toggle — CONSTITUTION §3's one exception, and the one table that holds it */
 /* ══ (#R232) THE LANGUAGE REGISTRY, THEN THE DIRECTORY THAT IS THE LANGUAGE LIST ═══════════════
    「今後IntMapの設定言語を追加するのが、1発で終わるように。」

@@ -154,6 +154,13 @@ const SETS = [
   { key: 'hb', file: 'hist-borders.js', global: '__HISTB' },
   { key: 'ha', file: 'hist-admin1.js', global: '__HISTADM1' },
   { key: 'ha2', file: 'hist-admin2.js', global: '__HISTADM2' },
+  /* ⚠ (#R668) …AND THE FOURTH BUNDLE, WHICH IS THE ONE IntMap DERIVED ITSELF. data/hist-kuni.js is
+     the fifteen provinces of Japan OpenHistoricalMap holds no relation for. Leaving it out of this
+     ledger does not make its line safe — it makes it the one era line on the map that strokes the
+     record's own copy of the COASTLINE as if it were a boundary, which is the exact claim #R531
+     removed from the country line and #R564 removed from the provinces. Japan is almost entirely
+     coast, so «almost entirely» is how much of that line would have been wrong. */
+  { key: 'hk', file: 'hist-kuni.js', global: '__HISTKUNI' },
 ];
 
 function markAll(W, cut) {

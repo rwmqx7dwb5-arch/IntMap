@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（282本・13.1 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（283本・13.3 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1646,7 +1646,13 @@ zip と gzip は開いて中身を見る。
   ガード・目盛りは全部 `IntMapTime.min` を実行時に読む（`js/news-timeline.js`）。
   下限より下に何があるかは**各出典が決める**のであって、時計は最短のものに揃えない:
   **地方区分は下限まで届く**——OpenHistoricalMap のベクタタイルを日付で絞って描くので、
-  上流が記録を持つどの世紀にも線が出る（7.5）／
+  上流が記録を持つどの世紀にも線が出る（7.5）。上流が単位そのものを持たない範囲は、
+  IntMap が CC0 の出典から自分で導いた区分（`data/hist-kuni.js`＝日本の令制国 15 国）が
+  `imta-gap-line` で埋め、塗りは上流由来の線と同一である——どの供給が答えたかは読者に見えない。
+  ⚠ **区分をクリックしたときの輪郭は、束の簡略形ではなく上流の原寸**（束の行が持つ
+  OpenHistoricalMap の relation id で 1 件だけ取り直す。粗い形を先に出し、届いたら同じ source を
+  差し替える）。relation → 多角形の規則は `js/ohm-rings.js` ただ 1 本で、ブラウザとビルドが
+  同じ実装を使う（docs/MAP-LAYERS.md §7.7）／
   **歴史国境は 1850 まで日単位**——CShapes 2.0 が 1886-01-01 から 2019 年まで、
   OpenHistoricalMap（`data/hist-borders.js`）が 1850–1885（下の項）。それより前は
   historical-basemaps の年別スナップショット（**西暦 100 年から 2010 年までの 36 枚**）だけが答える／
@@ -1698,7 +1704,7 @@ zip と gzip は開いて中身を見る。
   「その政体が持つ海岸線の写し」は基図のほうが正確に知っている。同梱の海岸線
   （`data/coastline.json.gz`＝Natural Earth 1:10m・2 km 許容）に対して、**ある辺のどこか1点でも
   `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写し**と判定し、
-  4つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2`）の全リング **33,600 本**に
+  5つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-kuni`）の全リング **40,117 本**に
   ついて「描く run」を印す。印の**読み手は `js/border-coast.js`** ただ1つで、`js/time-borders.js` と
   `js/time-admin1.js` の両方がそれを呼ぶ——同じ読み方を2か所に持たせないため。各モジュールはその
   run だけをつないだ MultiLineString を線用の source（`imtb-ln-src` / `imta-ln-src` / `imta2-ln-src`）

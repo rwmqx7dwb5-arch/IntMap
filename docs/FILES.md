@@ -148,6 +148,14 @@ hist-scale.js                     深い時間の**算術**だけを持つ純関
                                   ②`ohmFilter()`/`inForce()`＝その瞬間にどの境界を描くか（式と述語の2つの読み手が
                                   同じ答えを返すことを tests/r604-checks ④ が測る）③`rail`＝Chronos の年スライダーの
                                   位置↔年（区分線形。折れ点は記録密度の実測）
+ohm-rings.js                      OpenHistoricalMap の relation を多角形にする**唯一の持ち主**
+                                  window.IntMapOhmRings。①`ringsOf()`＝member の way を、順序も向きも
+                                  ばらばらのまま閉じたリングへ縫う ②`polysOf(rings, minArea)`＝入れ子を
+                                  見て外環と穴に分ける。⚠ **面積下限の既定は 0**——クリックでは、その
+                                  小片こそが押された単位かもしれない（下限を渡すのは束のビルドだけ）。
+                                  DOM もネットワークも時計も触らない純関数なので、ブラウザのクリック
+                                  経路（js/map-ui.js の `_eraGeom`）と scripts/build-hist-admin1.mjs が
+                                  **同じ 1 本**を使い、tests/r668-checks.test.mjs が**評価**できる
 label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す
 border-style.js                   国境線を1本にまとめるスタイル層
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
@@ -222,6 +230,9 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   `imta-line` / `imta-lbl`（第1級）と、z6 以上では `imta2-line` / `imta2-lbl`
                                   （第2級・別束・ズームで初めて取得）を描く。線は多角形ではなく
                                   `imta-ln-src` / `imta2-ln-src`＝**国境の run だけ**（js/border-coast.js）。
+                                  relation id を持たない単位（data/hist-kuni.js）はタイルが運びようがないので、
+                                  `imta-gap-line`（source `imta-gap-src`）が**タイルの生死に関係なく**描く——
+                                  塗りは `imta-line` / `imta-vt-line` と同一（docs/MAP-LAYERS.md §7.7）。
                                   切替盤 `window._applyAdmin1` もここが持つ
                                   （app-shell に行数の余白が無い）。被覆は部分的なので `coverage()` /
                                   `note()`（9言語）が「線が無い国は記録がまだ無い」と言う
@@ -710,15 +721,25 @@ maddison.json                     マディソン・プロジェクトの歴史 
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
 data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（4つの束の
-                                  全 33,600 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
+                                  全 40,117 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
-                                  3,049件／rings 4,640・6.48 MB＝brotli 0.67 MB）。上と**同じリングプール形式の
+                                  4,820件／rings 7,186・9.83 MB＝brotli 0.97 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
+                                  ⚠ **各行の列 10 は OHM の relation id**——クリックしたとき、その 1 件だけを
+                                  上流から原寸で取り直すために要る（名前ではなく id で訊く）
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
 data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM2`・
-                                  16,236件／rings 16,036・10.2 MB）。同じ生成器の `--levels 5,6`。**z6 未満では
-                                  取得もしない**——描かない縮尺で 10 MB を払わせないため（docs/MAP-LAYERS.md §7.7）
+                                  22,708件／rings 21,676・14.8 MB・列 10 は同じく relation id）。同じ生成器の
+                                  `--levels 5,6`。**z6 未満では取得もしない**——描かない縮尺で 10 MB 以上を
+                                  払わせないため（docs/MAP-LAYERS.md §7.7）
+data/hist-kuni.js                 **IntMap 自身が導出した**日本の令制国 15 国（`window.__HISTKUNI`・1.67 MB・
+                                  閉じた輪郭 6,425 本・82,199 頂点）。上と同じリングプール形式で、束（__HISTADM1）に
+                                  **追記**される——第2の索引もラベル層もクリック経路も作らない。
+                                  ⚠ **relation id を持たない**（列 10 が null）＝タイルが運びようがないので、
+                                  線は `imta-gap-line` が描く。範囲は Asukana/Ryoseikoku_20230626_TSV（CC0 1.0）の
+                                  z10 ラスタ、名前は Wikidata（CC0）。生成は scripts/build-hist-kuni.mjs
+                                  （docs/MAP-LAYERS.md §7.7 に、なぜ同梱できる既製データセットが無いか）
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
@@ -780,6 +801,16 @@ scripts/
                                   要るので、代わりに**同梱ファイルの不変条件**を測る（窓の中に収まっているか・リング番号が
                                   解決するか・日付の順序・英語名の有無・**窓のどの年にも描く世界があるか**）。
                                   `--fetch` が取得、無印がビルド、`--report` が被覆表。
+  build-hist-kuni.mjs             上流が持っていない日本の令制国 15 国 → `data/hist-kuni.js`。範囲は
+                                  Asukana/Ryoseikoku_20230626_TSV（**CC0 1.0**）の 663 枚の z10 タイルを
+                                  ベクタ化（1 セル＝経度 0.001373°≒112 m・セル境界を厳密に辿り→共線を潰し→
+                                  半セルの Douglas–Peucker）、リングの入れ子は js/ohm-rings.js の `polysOf`、
+                                  名前は **Wikidata（CC0）**の令制国クラス Q860290 から**ラスタの年に有効な
+                                  ものだけ**を採る。⚠ **手書きの一覧を1つも持たない**——「OHM が既に持つ国は
+                                  出さない」の判定は名前の表ではなく `data/hist-admin1.js` との join なので、
+                                  上流に登録された日この build は自動的にその国を出さなくなる。
+                                  ⚠ **`--check` は 130 MB のラスタを要求しない**（`npm run check:kuni`・
+                                  残余は docs/TESTING.md）
   build-border-coast.mjs          同梱の海岸線（`data/coastline.json.gz`）に照らして、歴史国境の各辺が国境か海岸線の
                                   写しかを印す → `data/border-coast.js`。⚠ **`--check` は全リングを再導出して突き合わせる**
                                   （上流不要）。`--report` が唯一の定数 `INLAND_KM` を読み取る分布を出す

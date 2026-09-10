@@ -96,6 +96,8 @@ jobs:
       # MEASURED 32 s on this machine, which is why the sampled form existed and why it is not enough.
       - name: Historical border coastlines (every ring re-derived, not a sample)
         run: npm run check:bordercoast
+      - name: Historical provinces IntMap derived itself (data/hist-kuni.js)
+        run: npm run check:kuni
       # (#R538) The language layer never had a gate. What it needed one for is what went wrong:
       # the old build resolved Factbook prose through a hand table of regular expressions and
       # dropped what it did not recognise, so a country was coloured by the next language down

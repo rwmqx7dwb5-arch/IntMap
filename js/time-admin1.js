@@ -183,6 +183,9 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        behind a filter that blocks the host, keeps the coarse line rather than losing the layer. */
     const VT_SRC = 'ohm-vt', VT_LAYER = 'land_ohm_lines';
     const VT_TILES = 'https://vtiles.openhistoricalmap.org/maps/ohm/{z}/{x}/{y}.pbf';
+    /* the derived units carry their own attribution: the raster is CC0 and Wikidata is CC0, and a
+       derived work still says where it came from. */
+    const GAP_ATTR = '令制国: <a href="https://github.com/Asukana/Ryoseikoku_20230626_TSV" target="_blank" rel="noopener">Asukana/Ryoseikoku</a> (CC0) · <a href="https://www.wikidata.org/" target="_blank" rel="noopener">Wikidata</a> (CC0)';
     const VT_ATTR = '<a href="https://www.openhistoricalmap.org/copyright" target="_blank" rel="noopener">OpenHistoricalMap</a> (CC0)';
 
     /* ⚠ (#R604) THE ARITHMETIC IS NOT HERE, AND THAT IS THE POINT. `decYear` and `ohmFilter` live in
@@ -222,9 +225,43 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         _P = new Promise(res => {
           if (window[cfg.global]) { _D = window[cfg.global]; res(_D); return; }
           const s = document.createElement('script'); s.src = cfg.file; s.async = true;
-          s.onload = () => { _D = window[cfg.global] || null; res(_D); };
+          s.onload = () => { _D = window[cfg.global] || null; if (_D && cfg.gapFile) { addGap(); return; } res(_D); };
           s.onerror = () => { _P = null; res(null); };
           document.head.appendChild(s);
+          /* == (#R668) THE SUBDIVISIONS UPSTREAM DOES NOT HOLD, SPLICED INTO THE SAME RECORD =======
+             「日本は北半分の令制国が全滅。」 Measured: OpenHistoricalMap holds 53 of the 68 classical
+             provinces of Japan and no relation at all for the other fifteen — the whole of 東山道 and
+             北陸道. data/hist-kuni.js is those fifteen, derived by scripts/build-hist-kuni.mjs from a
+             CC0 raster at ~112 m per cell and named from Wikidata.
+             (!) IT IS APPENDED TO _D, NOT HELD BESIDE IT. A second record beside this one would need a
+             second epoch index, a second label layer, a second click path and a second count — four
+             places to disagree with each other. Appended, every one of those already works, and the
+             ONE thing that differs about these units is already in the row: their relation id is
+             null, because there is no relation. */
+          function addGap() {
+            const g = document.createElement('script'); g.src = cfg.gapFile; g.async = true;
+            const finish = () => { res(_D); };
+            g.onload = () => {
+              try {
+                const X = window[cfg.gapGlobal];
+                if (X && X.rings && X.feats) {
+                  const off = _D.rings.length;
+                  for (const r of X.rings) _D.rings.push(r);
+                  /* ⚠ column 11 is the row's index in the KUNI bundle, not in _D. js/border-coast.js
+                     marks each set's rings against its own file, so the run that says «this edge is a
+                     border and that one is the coast» is addressed by the index the marks were built
+                     from — the spliced index would read another unit's answer. */
+                  for (let k = 0; k < X.feats.length; k++) { const f = X.feats[k];
+                    _D.feats.push([f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7],
+                      f[8].map(poly => poly.map(ri => ri + off)), f[9], null, k]); }
+                  _D.gapSrc = X.src || null;
+                }
+              } catch (_) {}
+              finish();
+            };
+            g.onerror = finish;
+            document.head.appendChild(g);
+          }
         });
         return _P;
       }
@@ -268,7 +305,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           const f = d.feats[i];
           if (_ymd(f[2], f[3], f[4]) > t || _ymd(f[5], f[6], f[7]) < t) continue;
           const NAME = nameOf(f);
-          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, _lvl: f[1], _ix: i, _tier: cfg.key } });
+          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11] } });
         }
         return { type: 'FeatureCollection', features: feats };
       }
@@ -281,6 +318,40 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          builds the LineString collection the line layer strokes. A collection built before the
          marks land is drawn whole and rebuilt when they arrive (`_onMarks`), which is the same
          "never latch the un-measured picture" rule the country side has. */
+      /* (!) (#R668) A UNIT WITH NO UPSTREAM RELATION HAS NO UPSTREAM LINE EITHER. The era line is
+         OpenHistoricalMap's own tiles (#R604) and the bundle line stands in only when the tiles are
+         measured absent — which is right for every unit OHM holds and wrong for the fifteen it does
+         not: those would have a label and a click and no boundary at all. So they get a line of
+         their own, from the same rings, drawn whenever the layer is on. The rule is not «Japan» and
+         not a list of names — it is _gap, which is «this row has no relation id», which is «the
+         tiles cannot be carrying it». */
+      function gapLinesFor(fc) {
+        /* ⚠ AND IT IS NOT THE POLYGON EITHER. Stroking these rings whole draws the record's own copy
+           of the coastline in the same violet dashes as a real provincial border — the claim #R531
+           took off the country line and #R564 took off the provinces, and Japan is almost all coast.
+           data/border-coast.js carries the marks for this bundle too (set 'hk'), addressed by the
+           row's index in the KUNI file. Marks that have not landed yet mean the line is drawn whole
+           for a moment and rebuilt when they arrive (refreshLines) — the same «never latch the
+           un-measured picture» rule the rest of this file follows. */
+        const K = window[cfg.gapGlobal];
+        const m = (BC() && K) ? BC().marks('hk') : null;
+        const feats = [];
+        for (const f of (fc.features || [])) {
+          if (!f.properties || !f.properties._gap) continue;
+          if (m && f.properties._gapIx >= 0) {
+            const g = BC().lineGeom(K, f.properties._gapIx, m);
+            if (g) { feats.push({ type: 'Feature', geometry: g, properties: {} }); continue; }
+          }
+          const g = f.geometry; if (!g) continue;
+          const polys = (g.type === 'Polygon') ? [g.coordinates] : (g.coordinates || []);
+          for (const poly of polys) for (const ring of poly) feats.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: ring }, properties: {} });
+        }
+        return { type: 'FeatureCollection', features: feats };
+      }
+      function _setGap(fc) {
+        try { if (cfg.gapFile && GE().layers.hasSource(cfg.gapSrc)) GE().layers.setSourceData(cfg.gapSrc, gapLinesFor(fc)); } catch (_) {}
+      }
+
       function linesFor(fc) {
         const m = BC() ? BC().marks(cfg.set) : null;
         if (!_D || !m) { try { return BC().wholeLines(fc); } catch (_) { return { type: 'FeatureCollection', features: [] }; } }
@@ -371,6 +442,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           const W = BS.admin1Width || ['interpolate', ['linear'], ['zoom'], 1, 0.45, 4, 0.75, 8, 1.15, 12, 1.6];
           if (!GE().layers.hasSource(cfg.src)) GE().layers.addSource(cfg.src, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: 'OpenHistoricalMap (CC0)' });
           if (!GE().layers.hasSource(cfg.lnSrc)) GE().layers.addSource(cfg.lnSrc, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: 'OpenHistoricalMap (CC0)' });
+          if (cfg.gapFile && !GE().layers.hasSource(cfg.gapSrc)) GE().layers.addSource(cfg.gapSrc, { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: GAP_ATTR });
           /* below the labels, and below the era COUNTRY line, so a national border always
              reads on top of a provincial one — the order `ref-admin1`/`borders-only-line`
              already have at Now. */
@@ -389,6 +461,13 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           if (ensureVTSource() && !GE().layers.has(cfg.vtLine)) GE().layers.add(Object.assign({
             id: cfg.vtLine, type: 'line', source: VT_SRC, 'source-layer': VT_LAYER,
             filter: _vtFilter(cfg.lo, cfg.hi, _dec(1900, 7, 1)),
+            layout: { visibility: 'none', 'line-join': 'round' },
+            paint: PAINT
+          }, cfg.deep ? { minzoom: DEEP_Z } : {}), before);
+          /* (#R668) …and the same paint again for the units upstream does not hold, so that WHICH
+             record answered is never visible as a change of style (#R212 applied to the supply). */
+          if (cfg.gapFile && !GE().layers.has(cfg.gapLine)) GE().layers.add(Object.assign({
+            id: cfg.gapLine, type: 'line', source: cfg.gapSrc,
             layout: { visibility: 'none', 'line-join': 'round' },
             paint: PAINT
           }, cfg.deep ? { minzoom: DEEP_Z } : {}), before);
@@ -424,10 +503,10 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         const my = seq; shownFC = fc;
         try {
           if (GE().layers.hasSource(cfg.src) && GE().layers.has(cfg.line)) {
-            GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _applyNow(); return;
+            GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); _applyNow(); return;
           }
         } catch (_) {}
-        if (ensure()) { try { GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); } catch (_) {} _applyNow(); }
+        if (ensure()) { try { GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} _applyNow(); }
         /* (#R140's shape) the style was mid-load — don't latch the era units absent until a reload. */
         else whenStyleReady().then(() => { if (active && seq === my) apply(fc); });
       }
@@ -435,7 +514,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       /* the marks landed after a collection had already been drawn whole: re-derive the lines from
          the collection on screen. The identities did not change, so the polygons are left alone. */
       function refreshLines() {
-        try { if (shownFC && GE().layers.hasSource(cfg.lnSrc)) GE().layers.setSourceData(cfg.lnSrc, linesFor(shownFC)); } catch (_) {}
+        try { if (shownFC && GE().layers.hasSource(cfg.lnSrc)) { GE().layers.setSourceData(cfg.lnSrc, linesFor(shownFC)); _setGap(shownFC); } } catch (_) {}
       }
 
       function clear() {
@@ -443,7 +522,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         clearTimeout(_pollT); _pollT = 0;
         try { GE().layers.setSourceData(cfg.src, { type: 'FeatureCollection', features: [] }); } catch (_) {}
         try { GE().layers.setSourceData(cfg.lnSrc, { type: 'FeatureCollection', features: [] }); } catch (_) {}
-        try { [cfg.line, cfg.vtLine, cfg.lbl].forEach(id => { if (GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', 'none'); }); } catch (_) {}
+        try { if (cfg.gapFile && GE().layers.hasSource(cfg.gapSrc)) GE().layers.setSourceData(cfg.gapSrc, { type: 'FeatureCollection', features: [] }); } catch (_) {}
+        try { [cfg.line, cfg.vtLine, cfg.gapLine, cfg.lbl].forEach(id => { if (id && GE().layers.has(id)) GE().layers.setLayout(id, 'visibility', 'none'); }); } catch (_) {}
       }
 
       async function go(when) {
@@ -484,7 +564,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         try {
           if (active && _imCanDraw() && !GE().layers.has(cfg.line)) {
             ensure(); const fc = cache.get(shownKey);
-            if (fc) { try { GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); } catch (_) {} }
+            if (fc) { try { GE().layers.setSourceData(cfg.src, fc); GE().layers.setSourceData(cfg.lnSrc, linesFor(fc)); _setGap(fc); } catch (_) {} }
             _applyNow();
           }
         } catch (_) {}
@@ -525,6 +605,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        js/time-borders.js; levels 7-9 exist in the tiles but not at Now (`ref-admin2` stops at 6), and
        #R212's rule is that travelling may not change what KIND of thing the map is willing to show. */
     const T1 = makeTier({ key: 'a1', file: 'data/hist-admin1.js', global: '__HISTADM1', set: 'ha', lo: 3, hi: 4,
+                          gapFile: 'data/hist-kuni.js', gapGlobal: '__HISTKUNI', gapSrc: 'imta-gap-src', gapLine: 'imta-gap-line',
                           src: 'imta-src', lnSrc: 'imta-ln-src', line: 'imta-line', vtLine: 'imta-vt-line', lbl: 'imta-lbl', deep: false });
     const T2 = makeTier({ key: 'a2', file: 'data/hist-admin2.js', global: '__HISTADM2', set: 'ha2', lo: 5, hi: 6,
                           src: 'imta2-src', lnSrc: 'imta2-ln-src', line: 'imta2-line', vtLine: 'imta2-vt-line', lbl: 'imta2-lbl', deep: true });
@@ -597,6 +678,9 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           const stand = (t.vtState() === 'absent');   /* the bundle stands in ONLY on evidence */
           if (GE().layers.has(t.cfg.vtLine)) GE().layers.setLayout(t.cfg.vtLine, 'visibility', (on && traveling) ? 'visible' : 'none');
           if (GE().layers.has(t.cfg.line)) GE().layers.setLayout(t.cfg.line, 'visibility', (on && traveling && stand) ? 'visible' : 'none');
+          /* (!) (#R668) NOT gated on `stand`. The tiles being alive is exactly why the bundle line is
+             hidden, and exactly why these fifteen would vanish if they were hidden along with it. */
+          if (t.cfg.gapLine && GE().layers.has(t.cfg.gapLine)) GE().layers.setLayout(t.cfg.gapLine, 'visibility', (on && traveling) ? 'visible' : 'none');
           if (GE().layers.has(t.cfg.lbl)) GE().layers.setLayout(t.cfg.lbl, 'visibility', (namesOn && traveling) ? 'visible' : 'none');
         }
         /* ⚠ THE PRESENT-DAY PROVINCE NAME IS SET HERE TOO, AND THAT IS NOT A SECOND OWNER — it is the
@@ -720,16 +804,24 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
     function note() {
       const c = coverage(); if (!c.active) return '';
       const n = String(c.units);
+      /* ⚠ (#R668) The derived provinces are COUNTED, not spelled out. data/hist-kuni.js exists
+         because OpenHistoricalMap holds no relation for those 令制国, and how many of them are in
+         force depends on the date the reader is standing on — a literal «15» would be a fact about
+         one instant printed at every instant. _gap is the same flag the gap LINE is drawn from
+         («this row has no relation id»), so the sentence and the line can never disagree. */
+      let g = 0;
+      try { const fc = T1.fc(); if (fc) for (const f of fc.features) if (f.properties && f.properties._gap) g++; } catch (_) { g = 0; }
+      const gs = String(g);
       return _LT.arr(LA(
-        n + ' dated subdivisions are in force on this date. The older the year, the more geographically uneven the record is, so an area with no line here is one OpenHistoricalMap is still silent about — not one without subdivisions. Zoom in for the second-level units the record also holds.',
-        'この日付で記録のある地方区分は ' + n + ' 件。古い年代ほど記録は地理的に偏るため、境界線が無い地域は「区分が無かった」のではなく「記録がまだ無い」。拡大すると、記録が持つ下位の区分も出る。',
-        n + ' datierte Verwaltungseinheiten gelten an diesem Datum. Je weiter das Jahr zurückliegt, desto ungleichmäßiger ist die Überlieferung geografisch verteilt: Ein Gebiet ohne Linie ist eines, zu dem die Quelle noch schweigt — nicht eines ohne Untergliederungen. Hineinzoomen zeigt die Einheiten der zweiten Ebene.',
-        'На эту дату действует ' + n + ' датированных единиц. Чем древнее год, тем неравномернее записи распределены географически: местность без линии — это местность, о которой источник пока молчит, а не местность без единиц. При приближении показываются единицы второго уровня.',
-        n + ' subdivisiones fechadas están en vigor en esta fecha. Cuanto más antiguo es el año, más desigual es la cobertura geográfica del registro: una zona sin línea es aquella sobre la que la fuente aún calla, no una sin subdivisiones. Al acercar aparecen las unidades de segundo nivel.',
-        '此日期有記錄的行政區共 ' + n + ' 個。年代越久遠，記錄的地理分布越不均，因此沒有界線的地區是記錄從缺，而非沒有行政區。放大後會顯示記錄中的次級行政區。',
-        '此日期有记录的行政区共 ' + n + ' 个。年代越久远，记录的地理分布越不均，因此没有界线的地区是记录从缺，而非没有行政区。放大后会显示记录中的次级行政区。',
-        n + ' subdivisions datées sont en vigueur à cette date. Plus l’année est ancienne, plus la couverture du registre est géographiquement inégale : une zone sans tracé est une zone sur laquelle la source se tait encore, non une zone sans subdivisions. En zoomant apparaissent les unités de second niveau.',
-        '이 날짜에 기록이 있는 행정구역은 ' + n + '개입니다. 연대가 오래될수록 기록은 지리적으로 치우치므로, 경계선이 없는 지역은 구역이 없었던 것이 아니라 기록이 아직 없는 것입니다. 확대하면 기록이 가진 하위 행정구역도 나타납니다.'
+        n + ' subdivisions are in force on this date. The older the year, the more geographically uneven the record is, so an area with no line here is one OpenHistoricalMap is still silent about — not one without subdivisions. Zoom in for the second-level units the record also holds.' + (g ? ' OpenHistoricalMap holds no record for ' + gs + ' of Japan’s provinces, so IntMap derives those outlines itself from CC0 data (Asukana/Ryoseikoku, Wikidata) rather than taking them from upstream.' : ''),
+        'この日付で有効な地方区分は ' + n + ' 件。古い年代ほど記録は地理的に偏るため、境界線が無い地域は「区分が無かった」のではなく「記録がまだ無い」。拡大すると、記録が持つ下位の区分も出る。' + (g ? '日本の令制国のうち ' + gs + ' 国は OpenHistoricalMap に記録が無いため、上流から取るのではなく、CC0 のデータ（Asukana/Ryoseikoku・Wikidata）から IntMap 自身が導出して描いている。' : ''),
+        n + ' Verwaltungseinheiten gelten an diesem Datum. Je weiter das Jahr zurückliegt, desto ungleichmäßiger ist die Überlieferung geografisch verteilt: Ein Gebiet ohne Linie ist eines, zu dem die Quelle noch schweigt — nicht eines ohne Untergliederungen. Hineinzoomen zeigt die Einheiten der zweiten Ebene.' + (g ? ' Zu ' + gs + ' japanischen Provinzen liegt in OpenHistoricalMap kein Eintrag vor; IntMap leitet diese Umrisse deshalb selbst aus CC0-Daten (Asukana/Ryoseikoku, Wikidata) ab, statt sie von der Quelle zu übernehmen.' : ''),
+        'На эту дату действует ' + n + ' единиц. Чем древнее год, тем неравномернее записи распределены географически: местность без линии — это местность, о которой источник пока молчит, а не местность без единиц. При приближении показываются единицы второго уровня.' + (g ? ' Для ' + gs + ' японских провинций в OpenHistoricalMap записи нет, поэтому эти контуры IntMap выводит сам из данных CC0 (Asukana/Ryoseikoku, Wikidata), а не берёт из источника.' : ''),
+        n + ' subdivisiones están en vigor en esta fecha. Cuanto más antiguo es el año, más desigual es la cobertura geográfica del registro: una zona sin línea es aquella sobre la que la fuente aún calla, no una sin subdivisiones. Al acercar aparecen las unidades de segundo nivel.' + (g ? ' OpenHistoricalMap no tiene registro de ' + gs + ' provincias japonesas, así que IntMap deriva esos contornos por sí mismo a partir de datos CC0 (Asukana/Ryoseikoku, Wikidata) en lugar de tomarlos de la fuente.' : ''),
+        '此日期有效的行政區共 ' + n + ' 個。年代越久遠，記錄的地理分布越不均，因此沒有界線的地區是記錄從缺，而非沒有行政區。放大後會顯示記錄中的次級行政區。' + (g ? '其中 ' + gs + ' 個日本令制國在 OpenHistoricalMap 中沒有記錄，因此這些輪廓並非取自上游，而是由 IntMap 依 CC0 資料（Asukana/Ryoseikoku、Wikidata）自行推導繪製。' : ''),
+        '此日期有效的行政区共 ' + n + ' 个。年代越久远，记录的地理分布越不均，因此没有界线的地区是记录从缺，而非没有行政区。放大后会显示记录中的次级行政区。' + (g ? '其中 ' + gs + ' 个日本令制国在 OpenHistoricalMap 中没有记录，因此这些轮廓并非取自上游，而是由 IntMap 依 CC0 数据（Asukana/Ryoseikoku、Wikidata）自行推导绘制。' : ''),
+        n + ' subdivisions sont en vigueur à cette date. Plus l’année est ancienne, plus la couverture du registre est géographiquement inégale : une zone sans tracé est une zone sur laquelle la source se tait encore, non une zone sans subdivisions. En zoomant apparaissent les unités de second niveau.' + (g ? ' OpenHistoricalMap ne conserve aucun enregistrement pour ' + gs + ' provinces japonaises : IntMap dérive lui-même ces tracés à partir de données CC0 (Asukana/Ryoseikoku, Wikidata) au lieu de les reprendre de la source.' : ''),
+        '이 날짜에 유효한 행정구역은 ' + n + '개입니다. 연대가 오래될수록 기록은 지리적으로 치우치므로, 경계선이 없는 지역은 구역이 없었던 것이 아니라 기록이 아직 없는 것입니다. 확대하면 기록이 가진 하위 행정구역도 나타납니다.' + (g ? ' 일본 율령국 가운데 ' + gs + '개국은 OpenHistoricalMap에 기록이 없어, 상류 기록을 가져온 것이 아니라 IntMap이 CC0 데이터(Asukana/Ryoseikoku, Wikidata)에서 직접 도출해 그린 것입니다.' : '')
       ));
     }
 
@@ -748,6 +840,65 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       } catch (_) { return null; }
     }
 
+    /* ══ ⚠⚠⚠ (#R668) …AND AT THE LINE'S OWN RESOLUTION, WHICH THE BUNDLE CANNOT GIVE ═════════════
+       「クリックしたときのハイライト線が線に比べて解像度が低い。」
+       Measured, and true. #R604 moved the LINE off the bundle and onto OpenHistoricalMap's vector
+       tiles precisely because «a bundle has ONE resolution and a map has twenty» — and left the
+       CLICK on the bundle. So a reader taps 伊豆国, and the highlight that appears over the tile
+       line is the same boundary drawn with 29 vertices against upstream's 2,800: a hundredfold
+       coarser, in the same view, at the same instant, in the accent colour that says «this is the
+       thing you tapped».
+       ⚠ THE FIX IS NOT A FINER BUNDLE. #R604 priced that: 0.008° / 4 decimals is 15.5 MB for the
+       first tier alone, and it would STILL be one resolution. What is different about a click is
+       that it names ONE record, and one record can be fetched whole — 伊豆国 measured 148 KB and
+       789 ms from the same Overpass the build uses, which is a fair price for a deliberate tap and
+       is paid once per unit per session.
+       ⚠ AND IT IS FETCHED BY ID, NOT BY NAME. Column 10 of every feature row is the OHM relation id
+       (scripts/build-hist-admin1.mjs). Asking upstream for «the thing called 伊豆国» is the mistake
+       #R515 exists to forbid; asking it for relation 2687374 cannot return a different unit.
+       ⚠ THE COARSE SHAPE IS STILL DRAWN FIRST. The reader gets an outline on the tap, not after a
+       round trip, and js/map-tools.js replaces it in place when the true one lands — the same
+       "never latch the un-measured picture" rule the line itself follows. If the fetch fails, the
+       coarse outline is what stays, which is exactly what shipped before this round. */
+    const OHM_EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
+    const _fullGeom = new Map();   /* relation id → Promise<geometry|null>, one flight per unit */
+    function idAt(props) {
+      try {
+        if (!props || props._ix == null) return null;
+        const t = (props._tier === 'a2') ? T2 : T1;
+        const d = t.data(); if (!d || !d.feats) return null;
+        const f = d.feats[props._ix]; if (!f) return null;
+        const id = f[10];
+        return Number.isFinite(id) ? id : null;
+      } catch (_) { return null; }
+    }
+    function geomFullAt(props) {
+      const id = idAt(props);
+      if (id == null) return Promise.resolve(null);
+      let p = _fullGeom.get(id); if (p) return p;
+      p = (async function () {
+        try {
+          const r = await fetch(OHM_EP, { method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                                          body: '[out:json][timeout:60];relation(id:' + id + ');out geom;' });
+          if (!r.ok) return null;
+          const j = await r.json();
+          const el = (j.elements || []).find(e => e.type === 'relation');
+          if (!el) return null;
+          const R = window.IntMapOhmRings; if (!R) return null;
+          return R.geometryOf(el);   /* no area floor: the sliver may BE the unit the reader tapped */
+        } catch (_) { return null; }
+      })();
+      /* a failed flight is not remembered as an answer — the next click may succeed */
+      p.then(g => { if (!g) _fullGeom.delete(id); });
+      _fullGeom.set(id, p);
+      /* ⚠ AN UPSTREAM POLYGON IS BIG (148 KB for 伊豆国) AND A SESSION IS LONG. The memo exists so
+         that re-tapping the unit you just tapped costs nothing, not so that every unit a reader has
+         ever opened is held for the life of the page — that is a leak with a cache's name on it.
+         Oldest out, insertion order being what Map iterates in. */
+      while (_fullGeom.size > 24) { const k = _fullGeom.keys().next().value; if (k === id) break; _fullGeom.delete(k); }
+      return p;
+    }
+
     /* ⚠ THERE IS DELIBERATELY NO `changeAfter` / `featureAt` HERE, AND THE OMISSION IS THE POINT.
        js/time-borders.js exposes four "step to the next date the world changed" helpers because the
        Chronos panel has a row that calls them — and that row is NAMED «Borders / 国境 / Grenzen /
@@ -760,7 +911,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       _go: w => { lastWhen = w; active = true; for (const t of TIERS) t.setActive(true); T1.go(w); _deep(); },
       _clear: () => { active = false; lastWhen = null; for (const t of TIERS) t.clear(); _applyNow(); },
       active: () => active, current: () => T1.key(),
-      currentFC: () => T1.fc(), deepFC: () => T2.fc(), refresh: _applyNow, coverage, note, geomAt,
+      currentFC: () => T1.fc(), deepFC: () => T2.fc(), refresh: _applyNow, coverage, note, geomAt, idAt, geomFullAt,
       /* (#R604) which supply is drawing the era line: 'unknown' (tiles asked, not yet seen),
          'live' (tiles measured painting) or 'absent' (the grace period passed with nothing, so the
          bundle's coarse line stands in). Read by tests/r530.spec.js, which cannot see a closure. */

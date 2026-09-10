@@ -456,6 +456,18 @@ window.IntMapRefData=(function(){
        no subdivision line in a past year is one the record is still silent about, not one that had
        no subdivisions. */
     {n:'OpenHistoricalMap (CC0 1.0)',u:'https://www.openhistoricalmap.org/'},
+    /* ⚠ (#R668) AND WHERE OHM IS SILENT, THE MAP SAYS WHOSE RECORD IT USED INSTEAD. Measured
+       2026-09-10, OHM holds 53 of the 68 classical provinces of Japan and no relation at all for
+       the other fifteen — 陸奥 出羽 信濃 越後 上野 下野 美濃 飛騨 若狭 越前 加賀 能登 越中 佐渡
+       隠岐, the whole of 東山道 and 北陸道 (OSM proper holds 53 too, and their union is 54). The two
+       datasets that hold all 68 are CC BY-NC and cannot be shipped from a public repository, so
+       IntMap DERIVES those fifteen itself (scripts/build-hist-kuni.mjs): the extent is vectorised
+       from a CC0 raster of province codes at web-mercator zoom 10 (~112 m a cell, finer than the
+       281 m OHM draws 伊豆国 with), and the names come from Wikidata, also CC0.
+       ⚠ TWO ROWS, BECAUSE THEY ARE TWO PUBLISHERS. The derivation is IntMap's; the records are
+       theirs, and a derived work still says whose. */
+    {n:'令制国 raster — Asukana/Ryoseikoku (CC0 1.0)',u:'https://github.com/Asukana/Ryoseikoku_20230626_TSV'},
+    {n:'Wikidata (CC0 1.0)',u:'https://www.wikidata.org/'},
     {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/'},
     /* ⚠ (#R409) THE MAP NAMED THIS SOURCE AND THIS PAGE DID NOT LIST IT. The two world-war layers
        credit «the documented record, compiled in scripts/wars/» in their MapLibre attribution and

@@ -60,6 +60,7 @@
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -148,7 +149,6 @@ function simplifyRing(pts, tol) {
   for (let i = 0; i < pts.length; i++) if (keep[i]) out.push(pts[i]);
   return out;
 }
-const ringArea = r => { let a = 0; for (let i = 0, n = r.length - 1; i < n; i++) a += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1]; return Math.abs(a / 2); };
 const quant = r => {
   const o = []; let px = NaN, py = NaN;
   for (const p of r) {
@@ -181,54 +181,24 @@ async function overpass(ql, tries = 5) {
   throw last || new Error('overpass exhausted');
 }
 
-/* member ways → closed rings. OHM relation members arrive as unordered open ways. */
-function ringsOf(el) {
-  const segs = [];
-  for (const m of (el.members || [])) {
-    if (m.type !== 'way' || !Array.isArray(m.geometry)) continue;
-    if (m.role && m.role !== 'outer' && m.role !== 'inner') continue;
-    const g = m.geometry.filter(p => p && Number.isFinite(p.lon) && Number.isFinite(p.lat)).map(p => [p.lon, p.lat]);
-    if (g.length >= 2) segs.push(g);
-  }
-  const key = p => p[0].toFixed(7) + ',' + p[1].toFixed(7);
-  const rings = [], used = new Array(segs.length).fill(false);
-  for (let i = 0; i < segs.length; i++) {
-    if (used[i]) continue;
-    used[i] = true;
-    let cur = segs[i].slice();
-    let grew = true;
-    while (grew) {
-      grew = false;
-      if (cur.length > 3 && key(cur[0]) === key(cur[cur.length - 1])) break;
-      for (let j = 0; j < segs.length; j++) {
-        if (used[j]) continue;
-        const s = segs[j], a = key(cur[cur.length - 1]), b = key(cur[0]);
-        if (key(s[0]) === a)                 { cur = cur.concat(s.slice(1)); used[j] = true; grew = true; }
-        else if (key(s[s.length - 1]) === a) { cur = cur.concat(s.slice(0, -1).reverse()); used[j] = true; grew = true; }
-        else if (key(s[s.length - 1]) === b) { cur = s.slice(0, -1).concat(cur); used[j] = true; grew = true; }
-        else if (key(s[0]) === b)            { cur = s.slice(1).reverse().concat(cur); used[j] = true; grew = true; }
-        if (grew) break;
-      }
-    }
-    if (cur.length >= 4) { if (key(cur[0]) !== key(cur[cur.length - 1])) cur.push([cur[0][0], cur[0][1]]); rings.push(cur); }
-  }
-  return rings;
-}
-/* outer rings become polygons; a ring wholly inside a bigger one becomes its hole. */
-const bboxOf = r => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of r) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; } return [x0, y0, x1, y1]; };
-const inside = (a, b) => a[0] >= b[0] && a[1] >= b[1] && a[2] <= b[2] && a[3] <= b[3];
-function polysOf(rings) {
-  const rs = rings.map(r => ({ r, a: ringArea(r), bb: bboxOf(r) })).filter(o => o.a >= MIN_AREA).sort((p, q) => q.a - p.a);
-  const polys = [], taken = new Array(rs.length).fill(false);
-  for (let i = 0; i < rs.length; i++) {
-    if (taken[i]) continue;
-    taken[i] = true;
-    const poly = [rs[i].r];
-    for (let j = i + 1; j < rs.length; j++) if (!taken[j] && inside(rs[j].bb, rs[i].bb)) { taken[j] = true; poly.push(rs[j].r); }
-    polys.push(poly);
-  }
-  return polys;
-}
+/* ══ (#R668) THE RING ASSEMBLER IS js/ohm-rings.js, EVALUATED — NOT COPIED HERE ═══════════════
+   The click highlight now fetches ONE relation from the same Overpass and has to turn the same
+   unordered open member ways into the same polygon (js/time-admin1.js). Two implementations of
+   «which runs of these ways are the same ring» are two answers to one question the first day one of
+   them is touched, so this build evaluates the browser's file the way scripts/build-whs.mjs
+   evaluates js/lang-registry.js. */
+const OHMR = (function () {
+  const sandbox = { window: {}, console, Number, Array, Math, JSON };
+  sandbox.window.window = sandbox.window;
+  const ctx = vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'ohm-rings.js'), 'utf8'), ctx, { filename: 'ohm-rings.js' });
+  const R = sandbox.window.IntMapOhmRings;
+  if (!R || typeof R.ringsOf !== 'function' || typeof R.polysOf !== 'function') throw new Error('js/ohm-rings.js did not define IntMapOhmRings');
+  return R;
+})();
+const ringsOf  = el => OHMR.ringsOf(el);
+const ringArea = r => OHMR.ringArea(r);
+const polysOf  = rings => OHMR.polysOf(rings, MIN_AREA);
 
 (async function main() {
   fs.mkdirSync(CACHE, { recursive: true });
@@ -242,22 +212,47 @@ function polysOf(rings) {
   if (fs.existsSync(tf)) { console.error('· tags (cached)'); tagJson = JSON.parse(fs.readFileSync(tf, 'utf8')); }
   else {
     console.error('· tags …');
-    tagJson = await overpass('[out:json][timeout:600];relation["boundary"="administrative"]["admin_level"~"' + LVLRE + '"];out tags;');
+    /* ══ (#R668) THE CLAIM IS THE LEVEL, AND A MISSING `boundary` TAG IS A MISSING TAG ══════════
+       Measured on OHM 2026-09-10: 28,211 relations carry admin_level 3-6 and 27,662 of them are
+       `boundary=administrative`. Of the 549 that are not, 538 are a DIFFERENT KIND OF OBJECT that
+       merely borrows the level column — religious_administration (431), census (79), statistical
+       (18), election, disputed — and those are correctly none of this layer's business. The other
+       ELEVEN are first-level subdivisions with the tag simply absent, and they were being dropped
+       for it: 直隸 Chihli (admin_level 4, 1644-1911), CdZ-Gebiet Elsaß, «Augustan Italian provinces»
+       among them. `type=boundary` with a level and no competing `boundary` value is an
+       administrative boundary whose tagger did not write the word down. */
+    tagJson = await overpass('[out:json][timeout:600];('
+      + 'relation["boundary"="administrative"]["admin_level"~"' + LVLRE + '"];'
+      + 'relation["type"="boundary"][!"boundary"]["admin_level"~"' + LVLRE + '"];'
+      + ');out tags;');
     fs.writeFileSync(tf, JSON.stringify(tagJson));
   }
   const all = (tagJson.elements || []).filter(e => e.type === 'relation' && e.tags);
   console.error('  relations', all.length);
 
   /* Which of them can EVER be on screen? The clock floor is `--since`, so a unit that
-     ended before it can never be shown, and one with no dates at all is a present-day
-     unit that `ref-admin1` already draws from the live vector tiles. */
+     ended before it can never be shown.
+     ══ ⚠⚠⚠ (#R668) AN UNDATED RECORD IS NOT A PRESENT-DAY RECORD ═══════════════════════════════
+     This loop used to `continue` on `!s && !e`, and the reason written here was that a relation
+     with no dates «is a present-day unit that `ref-admin1` already draws from the live vector
+     tiles». Measured 2026-09-10, that is false of every one of the thirteen it dropped: 安房国 and
+     壱岐国 (provinces abolished in 1871), 東海道 · 山陰道 · 西海道 (the circuits they belonged to),
+     Ziemia Płocka, Ziemia Wyszogrodzka, Stockholm, Dahme-Spreewald, Bodenwerder, Столінскі раён,
+     граница and one unnamed row. None of them is a present-day first-level unit and `ref-admin1`
+     draws none of them.
+     ⚠ AND THE LINE WAS ALREADY DRAWING THEM. js/hist-scale.js `ohmFilter` lets a tile feature with
+     no `start_decdate` through at EVERY date — deliberately, because a record that states no span
+     cannot be excluded from one. So the era line has been striking 安房国 all along while the
+     bundle held no label for it, no answer to a click on it and no count of it: the drop did not
+     remove the unit from the map, it removed the map's ability to say what the unit was.
+     An absent edge is already handled below — `w.s || [SINCE - 200, …]`, `w.e || [9999, …]` — so
+     an undated record is simply one with BOTH edges open, which is what upstream is saying. */
   const want = [];
   let backwards = 0;
   for (const el of all) {
     const t = el.tags;
     if (!LEVELS.includes(parseInt(t.admin_level, 10))) continue;   /* (#R564) the cache is per level set, but the filter is stated where it is read */
     const s = edtf(t.start_date, 'start'), e = edtf(t.end_date, 'end');
-    if (!s && !e) continue;
     if (e && e[0] < SINCE) continue;
     /* ⚠ (#R564) A SPAN THAT ENDS BEFORE IT STARTS IS NOT A SPAN, and upstream has some: measured
        2026-09-09, two at levels 3-4 (名東県 1881-12-26 → 1873-02-20; Mexican Cession 1850-12-12 →
@@ -293,23 +288,58 @@ function polysOf(rings) {
   let dropped = 0, fetched = 0;
   const owed = new Map(want.map(w => [w.el.id, w]));
   const ids = want.map(w => w.el.id);
+  /* ══ ⚠⚠⚠ (#R668) THE CACHE IS KEYED BY THE RECORD, NOT BY ITS POSITION IN THIS RUN'S LIST ══════
+     It used to be keyed by the batch — `g<first id>-<length>.json` — which addresses a relation's
+     geometry by WHERE that relation happened to fall in the id list of the run that downloaded it.
+     Admitting ONE more relation (which is exactly what the two coverage fixes above do) shifts every
+     later batch boundary by one, so every later file becomes unfindable and a resumable build that
+     already holds 4,699 of 4,776 relations on disk re-downloads all of them: measured on this
+     machine, 3.4 GB and about forty minutes of Overpass for a change that needed eighteen records.
+     A relation's geometry is a fact about that relation, so it is stored under that relation's id.
+     Existing batch files are exploded into per-id files once and removed, so nothing already paid
+     for is lost, and the build stays resumable for the reason it always was. */
+  const RELDIR = path.join(CACHE, 'rel');
+  fs.mkdirSync(RELDIR, { recursive: true });
+  const relFile = id => path.join(RELDIR, id + '.json');
+  (function seedFromBatches() {
+    const olds = fs.readdirSync(CACHE).filter(f => /^g\d+-\d+\.json$/.test(f));
+    if (!olds.length) return;
+    console.error('· re-keying ' + olds.length + ' cached batches by relation id …');
+    let n = 0;
+    for (const f of olds) {
+      const full = path.join(CACHE, f);
+      try {
+        const j = JSON.parse(fs.readFileSync(full, 'utf8'));
+        for (const el of (j.elements || [])) {
+          if (el.type !== 'relation') continue;
+          const rf = relFile(el.id);
+          if (!fs.existsSync(rf)) { fs.writeFileSync(rf, JSON.stringify(el)); n++; }
+        }
+      } catch (_) { /* a truncated batch is simply re-fetched below */ }
+      try { fs.unlinkSync(full); } catch (_) { }
+    }
+    console.error('  ' + n + ' relations re-keyed');
+  })();
   for (let i = 0; i < ids.length; i += BATCH) {
     const chunk = ids.slice(i, i + BATCH);
-    const cf = path.join(CACHE, 'g' + chunk[0] + '-' + chunk.length + '.json');
-    let j;
-    if (fs.existsSync(cf)) { try { j = JSON.parse(fs.readFileSync(cf, 'utf8')); } catch (_) { j = null; } }
-    if (!j) {
-      j = await overpass('[out:json][timeout:900];relation(id:' + chunk.join(',') + ');out geom;');
-      fs.writeFileSync(cf, JSON.stringify(j));
+    const missing = chunk.filter(id => !fs.existsSync(relFile(id)));
+    if (missing.length) {
+      const j = await overpass('[out:json][timeout:900];relation(id:' + missing.join(',') + ');out geom;');
+      for (const el of (j.elements || [])) if (el.type === 'relation') fs.writeFileSync(relFile(el.id), JSON.stringify(el));
+      /* an id upstream no longer answers for is recorded as answered-with-nothing, so a resumed
+         build does not ask for it again forever. It stays `owed`, so it is still counted as dropped. */
+      for (const id of missing) if (!fs.existsSync(relFile(id))) fs.writeFileSync(relFile(id), 'null');
       fetched++;
     }
-    for (const el of (j.elements || [])) {
-      if (el.type !== 'relation') continue;
-      const w = owed.get(el.id); if (!w) continue;
-      owed.delete(el.id);
+    for (const id of chunk) {
+      const w = owed.get(id); if (!w) continue;
+      let el = null;
+      try { el = JSON.parse(fs.readFileSync(relFile(id), 'utf8')); } catch (_) { el = null; }
+      if (!el || el.type !== 'relation') continue;
+      owed.delete(id);
       absorb(w, el);
+      el = null;   /* the record's raw geometry is dead HERE, not at the end of the planet */
     }
-    j = null;   /* the batch's raw geometry is dead HERE, not at the end of the planet */
     process.stderr.write('\r  geom ' + Math.min(i + BATCH, ids.length) + '/' + ids.length + ' (net ' + fetched + ', kept ' + feats.length + ')   ');
   }
   /* asked for and never returned - counted exactly as the old loop counted a missing id, so the
@@ -334,8 +364,14 @@ function polysOf(rings) {
     const e = w.e || [9999, 12, 31];         /* open end  = still in force */
     const names = {};
     for (const code of Object.keys(LANGS)) { const v = t[LANGS[code]]; if (v) names[code] = v; }
+    /* ══ (#R668) COLUMN 10 IS THE OHM RELATION ID, AND IT IS WHAT MAKES THE CLICK SHARP ═════════
+       The shipped ring is simplified at `--tol` because a planet-wide bundle has to be; the unit a
+       reader just tapped is ONE record, and one record can be fetched whole. js/time-admin1.js asks
+       Overpass for this id and re-draws the highlight at upstream's own geometry (伊豆国: 29
+       vertices here, 2,800 there). Without the id the click would have to find the record by NAME,
+       which is the mistake #R515 forbade. */
     feats.push([String(t.name || t['name:en'] || '').trim(), parseInt(t.admin_level, 10) || 4,
-                s[0], s[1], s[2], e[0], e[1], e[2], idx, names]);
+                s[0], s[1], s[2], e[0], e[1], e[2], idx, names, w.el.id]);
   }
 
   const src = 'OpenHistoricalMap contributors (CC0) · openhistoricalmap.org';
