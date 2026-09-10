@@ -17,6 +17,15 @@
 > ⚠ **`js/` の一覧は `node scripts/arch-files-check.mjs --check` が実体と突き合わせる。**
 > ファイルを足す・改名する・分割するときは、ここも同じコミットで直すこと。
 > 各ファイルの1行説明は、そのファイル自身の先頭コメント（`IntMap · …`）と同じ主題にする。
+>
+> ⚠ **その検査は「どの段が `js/` の話か」を §3.x の見出しに訊く**（#R694）。見出しがバッククォートで
+> 名乗るディレクトリがその段の主語であり、`js/` を名乗る段の中の行頭の `名前.js` だけを `js/` の
+> モジュール宣言と読む。**だから見出しからディレクトリ名を落とすと、その段は丸ごと検査の外に出る。**
+> 逆に、`js/` のモジュールを他の段（§3.12 の `supabase/` など）に書いても「記述した」ことにならない。
+> 以前は §3.1 以下の**行頭の綴り**を無差別に読み、`js/` でないものを手書きの控除表で引いていたので、
+> §3.12 の `_shared/` 名簿を折り返して行頭を `radiation-sources.js` にしただけで**正しい文書の上で
+> 赤**になった——名簿は「たまたま `js/` にも同名がある5つ」でしか改行できず、**体裁の制約が検査から
+> 漏れ出していた**。控除表は3つとも要らなくなった。
 
 ### 3.1 ルート
 
@@ -815,9 +824,10 @@ supabase/
   seed.sql                        100% 合成のシードデータ
   tests/*_test.sql                pgTAP（構造 ＋ RLS/権限マトリクス ＋ 関数 ＋ 公開プロフィール表。8本）
   functions/<name>/index.ts       Edge Functions（17本。一覧と各本の役割は Architecture.md §6.2）
-  functions/_shared/              関数ではないライブラリ（newsgeo.js / relay-guard.js /
-                                  atlas-persona.js / aviation-codec.js / aviation-model.js /
-                                  news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）
+  functions/_shared/              関数ではないライブラリ（atlas-persona.js / aviation-codec.js /
+                                  aviation-model.js / news-cluster.js / news-geo-prompt.js /
+                                  news-ingest.js / newsgeo.js / radiation-sources.js /
+                                  relay-guard.js / volcano-parse.js / who-don-extract.js）
                                   ⚠ news-cluster.js は**サーバー専用**——クライアントの
                                   バンドルに入れない（docs/NEWS-EVENTS.md §5）
 docs/
@@ -835,7 +845,12 @@ scripts/
   static-checks.mjs               構文・JSON・YAML・マージ衝突・秘密検出・HTML 参照の存在
   doc-facts.mjs                   **文書間の固定事実の照合**（§15.5）
   atlas-catalog.mjs               **Atlas の操作カタログのゲート**（`PRODUCT.md` §3.4・ディスパッチャ ⇄ SYS）
-  arch-files-check.mjs            Architecture §3 と js/ の突き合わせ
+  arch-files-check.mjs            §3 と js/ の突き合わせ。**どの段が js/ の話かは §3.x の見出しに訊く**
+                                  （下の ⚠ を見よ）。以前は行頭の綴りで見分けて控除表で引いていた
+  shared-roster.mjs               `supabase/functions/_shared/` の目録を名乗る一節を見つけ、実体と
+                                  照合する**唯一の実装**（#R694）。`doc-facts.mjs` の `edge-shared`
+                                  と `tests/r694-shared-roster-facts-checks` が**同じ関数**を使う
+                                  ——規則を書き写すと規則が2つになる
   build-maddison.mjs              `data/maddison.json` を MPD2020 から 1850 まで**延長**する（1900 以降は一字も書き換えない）
   build-culture.mjs               Factbook の「Religions」欄 → `data/religion.json`
   build-language.mjs              Factbook の「Languages」欄＋Glottolog → `data/language.json` /
@@ -1028,8 +1043,8 @@ tests/
   helpers/fn-cors.js              Edge Function の CORS 契約を**リポジトリから**読む（node 検査と
                                   prod-smoke の両方が使う）。⚠ 読むのは `codeOnly()` を通した
                                   コードだけ——コメントの中の `corsFor()` は契約ではない
-  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（262本）
-  *.spec.js                       ブラウザ回帰（100本）
+  r<n>-checks.test.mjs            ラウンドごとに追加された Node の回帰検査（349本）
+  *.spec.js                       ブラウザ回帰（114本）
 .github/workflows/
   ci.yml                          PR ＋ push main ＋ 手動。静的検査＋hermetic ブラウザ試験
   deploy.yml                      本番公開（**有効**。§15.4）
