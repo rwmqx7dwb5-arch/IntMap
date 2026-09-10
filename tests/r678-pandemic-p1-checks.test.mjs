@@ -1,5 +1,5 @@
 /* ============================================================================
- *  R679 · THE FOUR P1 ITEMS OF THE THIRD PANDEMIC AUDIT
+ *  R678 · THE FOUR P1 ITEMS OF THE THIRD PANDEMIC AUDIT
  * ----------------------------------------------------------------------------
  *  #R673 fixed the arithmetic and #R675 made the model legible. The audit's remaining P1 items are
  *  about the model's INPUTS: where the case dots go, which country an outbreak reaches next, what
@@ -24,7 +24,7 @@ const HEALTH = JSON.parse(read('data/health.json'));
 function lcg(seed) { let s = seed >>> 0 || 1; return () => { s = (s * 1103515245 + 12345) >>> 0; return s / 4294967296; }; }
 
 /* ── ① the weighted scatter still reduces EXACTLY to the round-robin it replaced ───────────── */
-test('R679 ①: equal or absent anchor weights place dots exactly where round-robin did', () => {
+test('R678 ①: equal or absent anchor weights place dots exactly where round-robin did', () => {
   /* This is the property that made it safe to put a weight on `scatterCases` instead of adding a
      second function. Largest-remainder allocation with equal weights gives floor(n/A) to everybody
      and the remainder to the lowest indices, and the emission is round-robin — which is what the
@@ -43,7 +43,7 @@ test('R679 ①: equal or absent anchor weights place dots exactly where round-ro
 });
 
 /* ── ② …and a weight actually moves the dots, in proportion ────────────────────────────────── */
-test('R679 ②: dots are shared out in proportion to how many people live at each anchor', () => {
+test('R678 ②: dots are shared out in proportion to how many people live at each anchor', () => {
   /* The defect: Canada, Russia and Australia scattered cases over tundra, taiga and desert because
      every anchor got the same number. A 90/9/1 population split must produce a 90/9/1 dot split. */
   const anchors = [[0, 0, 9e6], [10, 10, 9e5], [20, 20, 1e5]];
@@ -66,7 +66,7 @@ test('R679 ②: dots are shared out in proportion to how many people live at eac
 });
 
 /* ── ③ a jittered dot is still inside the country ──────────────────────────────────────────── */
-test('R679 ③: weighting did not cost the «is it still inside the country» guarantee', () => {
+test('R678 ③: weighting did not cost the «is it still inside the country» guarantee', () => {
   /* The #R675 invariant: a case dot drawn in the sea or in the neighbour is a claim about where
      people are ill. `accept` must be asked about every jittered point, and an anchor that cannot
      find an accepted jitter falls back to itself. */
@@ -78,7 +78,7 @@ test('R679 ③: weighting did not cost the «is it still inside the country» gu
 });
 
 /* ── ④ the committed route table is a country-pair table, and it is honest about being 2014 ── */
-test('R679 ④: data/mobility.json carries a real bilateral network and says what it is not', () => {
+test('R678 ④: data/mobility.json carries a real bilateral network and says what it is not', () => {
   assert.equal(MOB.routesSnapshot, '2014-06');
   assert.ok(/june 2014/i.test(MOB['//']), 'the file must say when the routes stopped being updated');
   assert.ok(/NOT a passenger matrix/i.test(MOB['//']), 'and that it is not a passenger matrix');
@@ -103,7 +103,7 @@ test('R679 ④: data/mobility.json carries a real bilateral network and says wha
 });
 
 /* ── ⑤ the route table reaches the outbreak, and does not make anywhere unreachable ────────── */
-test('R679 ⑤: routes redirect an importation without arithmetically stranding anybody', () => {
+test('R678 ⑤: routes redirect an importation without arithmetically stranding anybody', () => {
   /* Four countries in a line. A and D are far apart, B is next to A. Without routes the distance
      kernel sends almost everything from A to B. With a route table that says A flies to D and not
      to B, D must gain a lot — and B must NOT go to zero, because the blend is what represents the
@@ -135,7 +135,7 @@ test('R679 ⑤: routes redirect an importation without arithmetically stranding 
 });
 
 /* ── ⑥ the four capacities are read from their own tables, per country ─────────────────────── */
-test('R679 ⑥: an observed capacity beats the development proxy, and only for the country that has one', () => {
+test('R678 ⑥: an observed capacity beats the development proxy, and only for the country that has one', () => {
   /* The defect: `health`, `response` and `delivery` were all GDP per head ÷ 55 000. Two countries
      with the same GDP and very different health systems were identical in every formula. */
   const cs = [
@@ -160,7 +160,7 @@ test('R679 ⑥: an observed capacity beats the development proxy, and only for t
 });
 
 /* ── ⑦ every source names a parameter the preset actually has ──────────────────────────────── */
-test('R679 ⑦: a source attribution points at a real field of its own preset', () => {
+test('R678 ⑦: a source attribution points at a real field of its own preset', () => {
   /* `for` is a KEY, checked against the object it is attached to — so an attribution cannot drift
      into naming a parameter that was renamed or removed, the way prose would. */
   let total = 0;
@@ -187,7 +187,7 @@ test('R679 ⑦: a source attribution points at a real field of its own preset', 
 });
 
 /* ── ⑧ the health table is per country, current, and does not invent COVID-19 immunity ─────── */
-test('R679 ⑧: data/health.json is ISO3, in range, recent, and silent where it should be', () => {
+test('R678 ⑧: data/health.json is ISO3, in range, recent, and silent where it should be', () => {
   const now = new Date().getUTCFullYear();
   let n = 0;
   for (const [iso, c] of Object.entries(HEALTH.countries)) {
@@ -212,7 +212,7 @@ test('R679 ⑧: data/health.json is ISO3, in range, recent, and silent where it 
 });
 
 /* ── ⑨ per-country starting immunity keeps the slider's meaning ────────────────────────────── */
-test('R679 ⑨: observed immunity supplies the shape, the slider still sets the world mean', () => {
+test('R678 ⑨: observed immunity supplies the shape, the slider still sets the world mean', () => {
   /* The defect: one number for every country and every age, so a measles outbreak started in South
      Sudan and in Portugal from the same place — on a world map, which is the one place that
      difference is the whole point. */
@@ -239,7 +239,7 @@ test('R679 ⑨: observed immunity supplies the shape, the slider still sets the 
 });
 
 /* ── ⑩ the world the shipped tables actually build ─────────────────────────────────────────── */
-test('R679 ⑩: the committed tables join to each other on the codes the model uses', () => {
+test('R678 ⑩: the committed tables join to each other on the codes the model uses', () => {
   /* The failure this catches is the quiet one: a rebuild that changes a key convention leaves every
      lookup returning undefined, every country on its fallback, and every gate green. */
   const facts = JSON.parse(read('data/country-facts.json')).countries;

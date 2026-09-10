@@ -374,14 +374,14 @@ window.IntMapRefData=(function(){
        the line is a statement of provenance rather than a licence obligation; it is here because a
        reader must be able to see that the connectivity figure is INFRASTRUCTURE, not traffic. */
     {n:'OurAirports — airport size class & scheduled service (runway geometry at run time; per-country air connectivity at build time; public domain)',u:'https://ourairports.com/data/'},
-    /* (#R679) ⚠ THE ROUTE NETWORK IS A LICENCE OBLIGATION, NOT ONLY A COURTESY. OpenFlights is
+    /* (#R678) ⚠ THE ROUTE NETWORK IS A LICENCE OBLIGATION, NOT ONLY A COURTESY. OpenFlights is
        ODbL 1.0 — share-alike — so a derived database that is published has to name it and carry the
        same terms. data/mobility.json is that derived database (per-country-pair route counts), and
        it weights which country the pandemic simulator's outbreak reaches next.
        ⚠ AND THE ROW SAYS THE DATE, because the reader needs it: the upstream stopped being updated
        in June 2014 and says so itself. A credit that hid that would be the wrong credit. */
     {n:'OpenFlights — airline route database (country-pair route counts for the pandemic simulator; snapshot of June 2014, no longer updated; ODbL 1.0)',u:'https://openflights.org/data.php'},
-    /* (#R679) WHO Global Health Observatory — the UHC service coverage index (SDG 3.8.1) and IHR
+    /* (#R678) WHO Global Health Observatory — the UHC service coverage index (SDG 3.8.1) and IHR
        SPAR capacity 7, which give the pandemic simulator each country's medical capacity and
        emergency-response capability instead of the GDP proxy all four capacities used to share.
        CC BY-NC-SA 3.0 IGO, so the attribution is required rather than optional. The immunisation

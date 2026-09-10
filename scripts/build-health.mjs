@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · WHAT EACH COUNTRY CAN ACTUALLY DO ABOUT AN EPIDEMIC  (#R679)
+ *  IntMap · WHAT EACH COUNTRY CAN ACTUALLY DO ABOUT AN EPIDEMIC  (#R678)
  * ----------------------------------------------------------------------------
  *  js/pandemic-model.js has kept FOUR capacities apart since #R666 — medical capacity (`health`),
  *  travel connectivity (`connectivity`), policy response (`response`) and vaccine delivery
@@ -55,7 +55,7 @@
  *    node scripts/build-health.mjs --check    fetch, derive, compare with the committed file
  *
  *  ⚠ NOT IN `npm test`. It needs the network. The committed file is validated OFFLINE by
- *  tests/r679-pandemic-p1-checks.test.mjs.
+ *  tests/r678-pandemic-p1-checks.test.mjs.
  *
  *  SOURCES
  *    · WHO Global Health Observatory (CC BY-NC-SA 3.0 IGO) — https://ghoapi.azureedge.net/api/

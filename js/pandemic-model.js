@@ -54,13 +54,13 @@
    ratios — deaths per DETECTED case — and the denominator of an infection fatality ratio is larger.
    Printing a CFR under the label «IFR» silently changes what it means, so the label travels with it.
 
-   ══ ⚠⚠⚠ (#R679) A SOURCE NAMES THE PARAMETER IT STANDS BEHIND. `sources` was a flat list of
+   ══ ⚠⚠⚠ (#R678) A SOURCE NAMES THE PARAMETER IT STANDS BEHIND. `sources` was a flat list of
    strings, joined with « · » into one 10 px line inside a collapsed fold, and it therefore could
    not answer the only question a reader has when they look at «R₀ 1.95»: where did 1.95 come
    from? Each entry is now `{ for, name }`, where `for` is A FIELD OF THIS PRESET — so the
    attribution is checkable against the object it is attached to rather than being prose, and the
    UI can also work out which parameters have NO named source and say so. Some do not. That is a
-   fact about this preset table and the reader is entitled to it (tests/r679-pandemic-p1-checks ⑦).
+   fact about this preset table and the reader is entitled to it (tests/r678-pandemic-p1-checks ⑦).
    ⚠ `for` IS A KEY, NOT A LABEL. This file is pure and has no language; js/playground.js turns
    the key into words in nine of them. */
 export const PANDEMIC_PRESETS = {
@@ -264,7 +264,7 @@ export function createPandemicModel(cfg) {
   /* Floor on a destination's attractiveness, so that the least-connected country on Earth is still
      reachable rather than arithmetically excluded. A share of the world mean. */
   const ATTRACT_FLOOR = 0.02;
-  /* ══ ⚠⚠⚠ (#R679) HOW MUCH OF «WHICH COUNTRY» COMES FROM THE OBSERVED ROUTE NETWORK ══════════
+  /* ══ ⚠⚠⚠ (#R678) HOW MUCH OF «WHICH COUNTRY» COMES FROM THE OBSERVED ROUTE NETWORK ══════════
      The distance kernel above is ISOTROPIC: it cannot know that France–Senegal, Portugal–Brazil,
      Spain–Argentina and the United Kingdom–India carry far more people than their kilometres
      allow, because what puts people on those aircraft is language, empire and diaspora, and none
@@ -318,7 +318,7 @@ export function createPandemicModel(cfg) {
 
      The older note, kept because it is still the reason this is a blend and not a replacement, by what
      it does to real rows. MEASURED on the 177-country world at 0.5, the qualitative facts it
-     exists to produce are the ones distance alone gets wrong: see tests/r679-pandemic-p1-checks.
+     exists to produce are the ones distance alone gets wrong: see tests/r678-pandemic-p1-checks.
      ⚠ IT APPLIES PER ORIGIN. A country the route table has no outbound row for keeps the pure
      distance kernel — «not in a 2014 table» must not read as «flies nowhere» (#R262 again). */
   const ROUTE_MIX = 0.35;
@@ -612,7 +612,7 @@ export function createPandemicModel(cfg) {
      `overload` and `delivery` degenerate rather than merely bad. */
   const cap = (raw, fallback) => { const v = num(raw, NaN); return (isFinite(v) && v > 0) ? Math.min(1, Math.max(0.05, v / 100)) : fallback; };
 
-  /* ══ ⚠⚠⚠ (#R679) INITIAL IMMUNITY IS A PLACE, NOT A NUMBER ══════════════════════════════════
+  /* ══ ⚠⚠⚠ (#R678) INITIAL IMMUNITY IS A PLACE, NOT A NUMBER ══════════════════════════════════
      `P.initialImmunity` was applied to every country and every age at once, so a measles outbreak
      started in South Sudan and in Portugal from exactly the same place — on a WORLD MAP, which is
      the one place that difference is the whole point. Measles is the one preset whose real-world
@@ -681,7 +681,7 @@ export function createPandemicModel(cfg) {
          today — that is honest and it is written down — but medical capacity, travel connectivity,
          policy response and vaccine delivery are different things, and a model that spells them as
          one number can never be improved without touching every formula that used it.
-         ⚠⚠ (#R679) THREE OF THE FOUR ARE NOW OBSERVED, and each by the indicator that is about the
+         ⚠⚠ (#R678) THREE OF THE FOUR ARE NOW OBSERVED, and each by the indicator that is about the
          thing the field actually drives — not the one that was easiest to get:
            · `health`   drives hospital overload and baseline fatality  ← WHO UHC service coverage
                         index (SDG 3.8.1), 195 countries
@@ -929,7 +929,7 @@ export function createPandemicModel(cfg) {
     /* Airport capacity per million people, averaged over PEOPLE and not over countries: a mean over
        rows is a mean over two hundred rows of which a third are islands with one airstrip. */
     const apcRef = anyAir ? (airSum * 1e6) / popSum : 0;
-    /* ══ ⚠⚠⚠ (#R679) THE OBSERVATION KEEPS THE COMPRESSION, AND THE REASON IS NOT THE OLD ONE ═══
+    /* ══ ⚠⚠⚠ (#R678) THE OBSERVATION KEEPS THE COMPRESSION, AND THE REASON IS NOT THE OLD ONE ═══
        AIR_EXP's own comment says the square root «expires with any source that counts seats or
        passengers rather than runways», and observed arrivals ARE such a source. The first version of
        this line therefore took them linearly. IT WAS MEASURED AND IT WAS WRONG, in two ways that
@@ -1519,7 +1519,7 @@ export function snapToStep(val, min, max, step) {
    It lives in this file, and is exported, for one reason: node can call it. A rule that only exists
    inside a DOM closure is a rule no test can measure (#R505).
 
-   ══ ⚠⚠⚠ (#R679) AN ANCHOR MAY CARRY A WEIGHT, AND THE WEIGHT IS HOW MANY PEOPLE LIVE THERE ═══
+   ══ ⚠⚠⚠ (#R678) AN ANCHOR MAY CARRY A WEIGHT, AND THE WEIGHT IS HOW MANY PEOPLE LIVE THERE ═══
    The dots were spread ROUND-ROBIN over the anchors: every anchor got the same number of cases.
    On a world map that is wrong in a way a reader can see from across the room — Canada, Russia and
    Australia had cases scattered evenly over tundra, taiga and desert, because an anchor in Alert

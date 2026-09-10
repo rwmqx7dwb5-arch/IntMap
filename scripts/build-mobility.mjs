@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
- *  IntMap · WHERE PEOPLE ACTUALLY FLY, AND HOW MANY OF THEM  (#R679)
+ *  IntMap · WHERE PEOPLE ACTUALLY FLY, AND HOW MANY OF THEM  (#R678)
  * ----------------------------------------------------------------------------
  *  The pandemic simulator draws an importation's destination from a weight per ordered pair
  *  (js/pandemic-model.js, `MOB_CUM`). Until this file existed, that weight had no bilateral term
@@ -71,7 +71,7 @@
  *    node scripts/build-mobility.mjs --check    fetch, derive, compare with the committed file
  *
  *  ⚠ NOT IN `npm test`. It needs the network, like build-airports.mjs and build-country-facts.mjs.
- *  The committed file is validated OFFLINE by tests/r679-pandemic-p1-checks.test.mjs, which also
+ *  The committed file is validated OFFLINE by tests/r678-pandemic-p1-checks.test.mjs, which also
  *  RUNS the model to check the routes actually reach the outbreak.
  *
  *  SOURCES
@@ -242,7 +242,7 @@ async function build() {
      observed ratio spans 0.000 (Benin — a reporting gap, not a fact) to 20.1 (Qatar).
      Making that column usable needs the clamp's meaning rethought and the emission rate
      re-calibrated. Until then it would be shipped and unused, so it is not shipped. See
-     DEV-NOTES.md #R679. */
+     DEV-NOTES.md #R678. */
   for (const iso of Object.keys(arr).sort()) {
     vol[iso] = { arr: Math.round(arr[iso][0]), arrY: arr[iso][1] };
   }

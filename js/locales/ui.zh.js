@@ -6604,42 +6604,42 @@ window.IntMapLang.define('zh', {
   "Susceptible": "易感（未感染）",   /* playground.js (#R675) */
   "Tap any country for its own numbers.": "點選任一國家即可查看該國的數字。",   /* playground.js (#R675) */
   "treatment available": "有治療方法",   /* playground.js (#R675) */
-  "Sources and assumptions": "出處與假設",   /* playground.js (#R679) */
-  "Disease parameters": "疾病參數",   /* playground.js (#R679) */
-  "How fast it spreads": "傳播速度",   /* playground.js (#R679) */
-  "How deadly it is": "致死率",   /* playground.js (#R679) */
-  "How long immunity lasts": "免疫持續時間",   /* playground.js (#R679) */
-  "Vaccine": "疫苗",   /* playground.js (#R679) */
-  "Treatment": "治療",   /* playground.js (#R679) */
-  "Starting immunity": "初始免疫",   /* playground.js (#R679) */
-  "No named source in this table": "本表未載明出處者",   /* playground.js (#R679) */
-  "The world this run uses": "本次模擬所用的世界",   /* playground.js (#R679) */
-  "Land borders and capitals": "陸上國界與首都",   /* playground.js (#R679) */
-  "Airport capacity": "機場容量",   /* playground.js (#R679) */
-  "Airline route network": "航空航線網",   /* playground.js (#R679) */
-  "June 2014 snapshot, no longer updated": "2014 年 6 月的快照，已不再更新",   /* playground.js (#R679) */
-  "How many travellers arrive in each country": "各國入境旅客人數",   /* playground.js (#R679) */
-  "Medical capacity, emergency response, vaccine delivery": "醫療量能、緊急應變、疫苗供應",   /* playground.js (#R679) */
-  "Where the case dots are drawn": "病例點的繪製位置",   /* playground.js (#R679) */
-  "Assumptions, not measurements": "這是假設，不是測量值",   /* playground.js (#R679) */
-  "Route counts stand in for passenger flows": "以航線數代替旅客流量",   /* playground.js (#R679) */
-  "No open, current bilateral passenger matrix exists. Part of each origin's air weight comes from the 2014 route network and the rest from a distance model, which is also how a country with no direct flight is still reachable.": "並不存在公開且現行的國對國旅客矩陣。各出發國航空權重的一部分來自 2014 年的航線網，其餘來自距離模型；沒有直航的國家仍可能被波及，也是因為如此。",   /* playground.js (#R679) */
-  "Case dots sit on cities, not on a population surface": "病例點落在城市上，而非人口分布面上",   /* playground.js (#R679) */
-  "Dots are shared out between a country's places in proportion to how many people live in each. A city gazetteer knows where towns are, not where the countryside is.": "點會依各地居住人數的比例分配到該國各處。城市地名資料庫知道的是城鎮的位置，而不是鄉間的分布。",   /* playground.js (#R679) */
-  "Measles starts from WHO/UNICEF first-dose coverage per country. That is childhood coverage read as whole-population immunity: this model has no age structure.": "麻疹以 WHO/UNICEF 各國第一劑接種率為起點。那是把兒童接種率當成全人口免疫來讀，本模型沒有年齡結構。",   /* playground.js (#R679) */
-  "One assumed figure for every country and every age. Nobody publishes per-country protection against infection, so this is the coarsest shape a one-compartment immunity can take — not an estimate anyone made.": "對所有國家、所有年齡都套用同一個假設值。沒有機構公布各國對感染的防護比例，這是只有單一免疫區間的模型所能呈現最粗略的形式，並非任何人的估計值。",   /* playground.js (#R679) */
-  "Severity is applied to every infection": "嚴重度會套用到每一起感染",   /* playground.js (#R679) */
-  "Presets whose severity is a CFR have a smaller denominator than an IFR does, and this model has no detection layer to tell them apart. The setting shows which metric a preset uses so it can be lowered.": "以 CFR 作為嚴重度的病種設定，其分母小於 IFR，而本模型沒有偵測層可以區分兩者。設定畫面會顯示所採用的是哪一種指標，以便讀者調低。",   /* playground.js (#R679) */
-  "Medical capacity": "醫療量能",   /* playground.js (#R679) */
-  "Emergency response": "緊急應變",   /* playground.js (#R679) */
-  "Vaccine delivery": "疫苗供應",   /* playground.js (#R679) */
-  "estimated from GDP per head — this country is not in the WHO or World Bank table": "由人均 GDP 推估——本國不在 WHO 或世界銀行的表中",   /* playground.js (#R679) */
-  "loaded": "已載入",   /* playground.js (#R679) */
-  "loaded for some countries": "僅部分國家已載入",   /* playground.js (#R679) */
-  "did not load": "未能載入",   /* playground.js (#R679) */
-  "still loading": "載入中",   /* playground.js (#R679) */
-  "International spread is weighted by land borders, by how many travellers each country actually receives, and by the airline route network as it stood in 2014 — the newest one that is openly published. Route counts are not seats or passenger numbers.": "國際傳播依陸上國界、各國實際接待的旅客人數，以及 2014 年當時的航空航線網加權——那是公開發布中最新的一份。航線數不是座位數，也不是旅客人數。",   /* playground.js (#R679) */
-  "International spread is weighted by land borders, airport capacity and the airline route network as it stood in 2014. The observed traveller volumes did not load.": "國際傳播依陸上國界、機場容量與 2014 年當時的航空航線網加權。實測旅客量未能載入。",   /* playground.js (#R679) */
-  "International spread is weighted by land borders and by how many travellers each country actually receives. The route network did not load, so distance decides which country an outbreak reaches next.": "國際傳播依陸上國界與各國實際接待的旅客人數加權。航空航線網未能載入，因此下一個被波及的國家由距離決定。",   /* playground.js (#R679) */
+  "Sources and assumptions": "出處與假設",   /* playground.js (#R678) */
+  "Disease parameters": "疾病參數",   /* playground.js (#R678) */
+  "How fast it spreads": "傳播速度",   /* playground.js (#R678) */
+  "How deadly it is": "致死率",   /* playground.js (#R678) */
+  "How long immunity lasts": "免疫持續時間",   /* playground.js (#R678) */
+  "Vaccine": "疫苗",   /* playground.js (#R678) */
+  "Treatment": "治療",   /* playground.js (#R678) */
+  "Starting immunity": "初始免疫",   /* playground.js (#R678) */
+  "No named source in this table": "本表未載明出處者",   /* playground.js (#R678) */
+  "The world this run uses": "本次模擬所用的世界",   /* playground.js (#R678) */
+  "Land borders and capitals": "陸上國界與首都",   /* playground.js (#R678) */
+  "Airport capacity": "機場容量",   /* playground.js (#R678) */
+  "Airline route network": "航空航線網",   /* playground.js (#R678) */
+  "June 2014 snapshot, no longer updated": "2014 年 6 月的快照，已不再更新",   /* playground.js (#R678) */
+  "How many travellers arrive in each country": "各國入境旅客人數",   /* playground.js (#R678) */
+  "Medical capacity, emergency response, vaccine delivery": "醫療量能、緊急應變、疫苗供應",   /* playground.js (#R678) */
+  "Where the case dots are drawn": "病例點的繪製位置",   /* playground.js (#R678) */
+  "Assumptions, not measurements": "這是假設，不是測量值",   /* playground.js (#R678) */
+  "Route counts stand in for passenger flows": "以航線數代替旅客流量",   /* playground.js (#R678) */
+  "No open, current bilateral passenger matrix exists. Part of each origin's air weight comes from the 2014 route network and the rest from a distance model, which is also how a country with no direct flight is still reachable.": "並不存在公開且現行的國對國旅客矩陣。各出發國航空權重的一部分來自 2014 年的航線網，其餘來自距離模型；沒有直航的國家仍可能被波及，也是因為如此。",   /* playground.js (#R678) */
+  "Case dots sit on cities, not on a population surface": "病例點落在城市上，而非人口分布面上",   /* playground.js (#R678) */
+  "Dots are shared out between a country's places in proportion to how many people live in each. A city gazetteer knows where towns are, not where the countryside is.": "點會依各地居住人數的比例分配到該國各處。城市地名資料庫知道的是城鎮的位置，而不是鄉間的分布。",   /* playground.js (#R678) */
+  "Measles starts from WHO/UNICEF first-dose coverage per country. That is childhood coverage read as whole-population immunity: this model has no age structure.": "麻疹以 WHO/UNICEF 各國第一劑接種率為起點。那是把兒童接種率當成全人口免疫來讀，本模型沒有年齡結構。",   /* playground.js (#R678) */
+  "One assumed figure for every country and every age. Nobody publishes per-country protection against infection, so this is the coarsest shape a one-compartment immunity can take — not an estimate anyone made.": "對所有國家、所有年齡都套用同一個假設值。沒有機構公布各國對感染的防護比例，這是只有單一免疫區間的模型所能呈現最粗略的形式，並非任何人的估計值。",   /* playground.js (#R678) */
+  "Severity is applied to every infection": "嚴重度會套用到每一起感染",   /* playground.js (#R678) */
+  "Presets whose severity is a CFR have a smaller denominator than an IFR does, and this model has no detection layer to tell them apart. The setting shows which metric a preset uses so it can be lowered.": "以 CFR 作為嚴重度的病種設定，其分母小於 IFR，而本模型沒有偵測層可以區分兩者。設定畫面會顯示所採用的是哪一種指標，以便讀者調低。",   /* playground.js (#R678) */
+  "Medical capacity": "醫療量能",   /* playground.js (#R678) */
+  "Emergency response": "緊急應變",   /* playground.js (#R678) */
+  "Vaccine delivery": "疫苗供應",   /* playground.js (#R678) */
+  "estimated from GDP per head — this country is not in the WHO or World Bank table": "由人均 GDP 推估——本國不在 WHO 或世界銀行的表中",   /* playground.js (#R678) */
+  "loaded": "已載入",   /* playground.js (#R678) */
+  "loaded for some countries": "僅部分國家已載入",   /* playground.js (#R678) */
+  "did not load": "未能載入",   /* playground.js (#R678) */
+  "still loading": "載入中",   /* playground.js (#R678) */
+  "International spread is weighted by land borders, by how many travellers each country actually receives, and by the airline route network as it stood in 2014 — the newest one that is openly published. Route counts are not seats or passenger numbers.": "國際傳播依陸上國界、各國實際接待的旅客人數，以及 2014 年當時的航空航線網加權——那是公開發布中最新的一份。航線數不是座位數，也不是旅客人數。",   /* playground.js (#R678) */
+  "International spread is weighted by land borders, airport capacity and the airline route network as it stood in 2014. The observed traveller volumes did not load.": "國際傳播依陸上國界、機場容量與 2014 年當時的航空航線網加權。實測旅客量未能載入。",   /* playground.js (#R678) */
+  "International spread is weighted by land borders and by how many travellers each country actually receives. The route network did not load, so distance decides which country an outbreak reaches next.": "國際傳播依陸上國界與各國實際接待的旅客人數加權。航空航線網未能載入，因此下一個被波及的國家由距離決定。",   /* playground.js (#R678) */
   }
 });

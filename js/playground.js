@@ -247,14 +247,14 @@ window.IntMapModules.playground=function(HOST){
        ⚠ THE AIRPORT LOADER IS HERE BECAUSE THIS IS ITS ONLY READER. If a second one appears it
        belongs beside IntMapCountryFacts in js/countries-ui.js, which is the same shape. */
     let _airP=null, _airT=null;
-    /* ══ (#R679) TWO MORE TABLES, THE SAME SHAPE ════════════════════════════════════════════
+    /* ══ (#R678) TWO MORE TABLES, THE SAME SHAPE ════════════════════════════════════════════
        data/mobility.json is WHERE people fly (OpenFlights 2014 route counts per country pair) and
        HOW MANY of them travel (World Bank arrivals, departures and boardings, pre-2020).
        data/health.json is WHAT a country can do about an epidemic (WHO UHC service coverage index,
        WHO IHR SPAR health emergency management, WHO/UNICEF DTP3 and MCV1 coverage).
        ⚠ THEY LOAD LIKE data/airports.json AND FAIL LIKE IT: a table that does not arrive leaves
        the model exactly where it was before this round, and the panel says so per table. */
-    /* ══ ⚠⚠⚠ (#R679) WHERE THE PEOPLE ARE — THE ONE POPULATION SURFACE IntMap ACTUALLY HAS ══════
+    /* ══ ⚠⚠⚠ (#R678) WHERE THE PEOPLE ARE — THE ONE POPULATION SURFACE IntMap ACTUALLY HAS ══════
        The case dots were spread evenly over whatever anchors a country happened to produce, so
        Canada, Russia and Australia got cases scattered across tundra, taiga and desert. The fix
        needs a population surface, and MEASURED 2026-09-10 this project has no population RASTER at
@@ -538,7 +538,7 @@ window.IntMapModules.playground=function(HOST){
            cases into the sea and into the neighbour — see scatterCases() in js/pandemic-model.js. */
         function genPts(i,n){ const f=feats[i], bb=bbs[i]; const span=Math.min(2.0,Math.max(0.1,Math.max(bb[2]-bb[0],bb[3]-bb[1])*0.09)); const anchors=[];
           const inside=(lng,lat)=>pig(lng,lat,f.geometry);
-          /* ══ ⚠⚠⚠ (#R679) CASES GO WHERE THE PEOPLE ARE ═════════════════════════════════════════
+          /* ══ ⚠⚠⚠ (#R678) CASES GO WHERE THE PEOPLE ARE ═════════════════════════════════════════
              Everything below this block spreads dots EVENLY over its anchors, which on a world map
              is wrong in a way a reader can see from across the room: Canada, Russia and Australia
              had cases scattered over tundra, taiga and desert, because an anchor in Alert and an
@@ -591,7 +591,7 @@ window.IntMapModules.playground=function(HOST){
 
         let model=null, day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', perDotNow=0;
         function preset(){ return PANDEMIC_PRESETS[presetKey]; }
-        /* ══ ⚠⚠⚠ (#R679) THE WORLD A PRESET STARTS IN ══════════════════════════════════════════
+        /* ══ ⚠⚠⚠ (#R678) THE WORLD A PRESET STARTS IN ══════════════════════════════════════════
            `world` is the geography and it is the same for every disease. The STARTING IMMUNITY is
            not: it is a property of the disease AND the place, and for exactly one preset there is
            a measured per-country figure rather than an assumed global one.
@@ -946,7 +946,7 @@ window.IntMapModules.playground=function(HOST){
               +insRow(window.IntMapLang.t(HOST.lang,"Lockdown","ロックダウン","Ausgangssperre","Локдаун","Confinamiento"),Math.round(r.lock*100)+'%');
           /* ⚠ HOSPITAL PRESSURE IS A MULTIPLIER ON FATALITY, not a bed count — IntMap has no bed data
              and the panel must not imply it does. ×1.00 is «coping». */
-          /* ⚠⚠ (#R679) THREE CAPACITIES, AND WHERE EACH ONE CAME FROM. `capacityFrom` is a bitmask
+          /* ⚠⚠ (#R678) THREE CAPACITIES, AND WHERE EACH ONE CAME FROM. `capacityFrom` is a bitmask
              the engine sets per country: 1 = medical capacity observed, 2 = emergency response
              observed, 4 = vaccine delivery observed. A country outside a table falls back to the
              development proxy, and «Chad's medical capacity» read off the UHC index and read off GDP
@@ -1143,7 +1143,7 @@ window.IntMapModules.playground=function(HOST){
             const si=document.createElement('input'); si.type='text'; si.value=String(runSeed); si.inputMode='numeric'; si.style.cssText='flex:1;min-width:0;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:8px;padding:5px 8px;font-size:11.5px;';
             si.oninput=()=>{ const v=parseInt(si.value,10); if(isFinite(v)) runSeed=v>>>0; };
             sd.appendChild(sl); sd.appendChild(si); hud.appendChild(sd);
-            /* ⚠⚠⚠ (#R679) THE SOURCES WERE ONE LINE, INSIDE A FOLD, IN 10 px GREY. `sources` was
+            /* ⚠⚠⚠ (#R678) THE SOURCES WERE ONE LINE, INSIDE A FOLD, IN 10 px GREY. `sources` was
                joined with « · » into an unlabelled div: no URL, no date, and — the part that made it
                useless rather than merely terse — NO SAY WHICH NUMBER EACH ONE SUPPORTS. A reader
                looking at «R₀ 1.95» could not find out where 1.95 came from, and the parameters that
@@ -1252,7 +1252,7 @@ window.IntMapModules.playground=function(HOST){
           const eb=document.createElement('button'); eb.textContent='📊'; eb.title=window.IntMapLang.t(HOST.lang,"How much of this is chance?","この結果はどこまで偶然か","Wie viel davon ist Zufall?","Насколько это случайность?","¿Cuánto de esto es azar?");
           eb.style.cssText='border:none;border-radius:10px;background:'+(ensOpen?'var(--primary-color)':'var(--input-bg)')+';color:'+(ensOpen?'#fff':'var(--text-main)')+';padding:9px 11px;font-size:11.5px;cursor:pointer;';
           eb.onclick=()=>{ ensOpen=!ensOpen; renderRun(ended); }; row.appendChild(eb);
-          /* ⚠ (#R679) THE SOURCES USED TO VANISH THE MOMENT THE RUN STARTED — `renderRun()` clears
+          /* ⚠ (#R678) THE SOURCES USED TO VANISH THE MOMENT THE RUN STARTED — `renderRun()` clears
              `hud` and the one line lived in the config panel's «Advanced» fold, which is not
              redrawn. The run is when a reader is actually looking at the numbers, so it is the one
              screen where «where does this come from» must be answerable. */
@@ -1300,7 +1300,7 @@ window.IntMapModules.playground=function(HOST){
               ? window.IntMapLang.t(HOST.lang,"International spread is weighted by population, distance and airport capacity. The land-border table did not load.","国際伝播の重みは人口・距離・空港規模によるものです。陸上の国境データは読み込めませんでした。","Die internationale Ausbreitung ist nach Bevölkerung, Entfernung und Flughafenkapazität gewichtet. Die Landgrenzentabelle wurde nicht geladen.","Международное распространение взвешено по населению, расстоянию и мощности аэропортов. Таблица сухопутных границ не загрузилась.","La propagación internacional se pondera por población, distancia y capacidad aeroportuaria. No se cargó la tabla de fronteras terrestres.")
               : window.IntMapLang.t(HOST.lang,"International spread is weighted by population, distance and land borders. The airport table did not load.","国際伝播の重みは人口・距離・陸上の国境によるものです。空港データは読み込めませんでした。","Die internationale Ausbreitung ist nach Bevölkerung, Entfernung und Landgrenzen gewichtet. Die Flughafentabelle wurde nicht geladen.","Международное распространение взвешено по населению, расстоянию и сухопутным границам. Таблица аэропортов не загрузилась.","La propagación internacional se pondera por población, distancia y fronteras terrestres. No se cargó la tabla de aeropuertos.");
             return d; }
-          /* ⚠⚠ (#R679) THE SENTENCE CHANGED BECAUSE THE MODEL DID. It used to end «not by flight
+          /* ⚠⚠ (#R678) THE SENTENCE CHANGED BECAUSE THE MODEL DID. It used to end «not by flight
              routes or passenger numbers», which was true and is no longer: data/mobility.json
              carries both a route network and observed passenger volumes. What has to be said now is
              narrower and more awkward — the routes are REAL and they are TWELVE YEARS OLD — and a
