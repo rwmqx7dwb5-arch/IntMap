@@ -2013,7 +2013,7 @@ window.IntMapModules.labelPopup=function(HOST){
         if(!opts.noOutline){
           /* (#R122) the place-label click highlight uses the user's ACCENT colour (falls back to the default blue). */
           try{ if(window.IntMapOutline&&window.IntMapOutline.setColor){ const ac=(window.imAccent&&/^#[0-9a-fA-F]{6}$/.test(window.imAccent))?window.imAccent:'#0a84ff'; window.IntMapOutline.setColor(ac); } }catch(_){}
-          if(opts.geojson){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{geojson:opts.geojson,lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }   /* (#R94m) caller-supplied polygon (historical era border) */
+          if(opts.geojson){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{geojson:opts.geojson,refine:opts.refine,lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }   /* (#R94m) caller-supplied polygon (historical era border) — (#R669) `refine`: upstream's own geometry for the same unit, drawn in place when it arrives */
           else if(!isCountry){ try{ window.IntMapOutline && window.IntMapOutline.show && window.IntMapOutline.show(name,{lng:lngLat.lng,lat:lngLat.lat,fit:false}); }catch(_){} }
           /* (#R62) "国名のラベルをクリックしても国の範囲がハイライトされない" — countries now outline too, from the
              LOCAL countryGeo polygon (point-in-polygon; no network, no wrong-namesake risk). */
@@ -2156,15 +2156,25 @@ window.IntMapModules.labelPopup=function(HOST){
        The era polygon is in memory (js/time-admin1.js `geomAt`), so it is handed over as
        `opts.geojson`, which is the SAME door the era COUNTRY label has used since #R94m. Returns null
        for every other layer, so nothing else changes shape. */
+    /* ══ (#R669) …AND WITH THE SHARP ONE FOLLOWING IT ════════════════════════════════════════════
+       The polygon in memory is the BUNDLE's, simplified at ~2.2 km; the line the reader is looking
+       at is OpenHistoricalMap's own tile geometry (#R604). Handing over only the first is what made
+       the highlight visibly coarser than the boundary it is tracing — 伊豆国 measured 29 vertices
+       against upstream's 2,800. So both go: `geo` is drawn on the tap, `refine` is the same unit
+       fetched whole from upstream BY ITS RELATION ID and replaces it in place when it lands
+       (js/map-tools.js). Returns null for every other layer, so nothing else changes shape. */
     function _eraGeom(f){ try{ const id=(f&&f.layer&&f.layer.id)||'';
       if(id!=='imta-lbl'&&id!=='imta2-lbl') return null;
-      return (window.IntMapTimeAdmin1&&window.IntMapTimeAdmin1.geomAt)?window.IntMapTimeAdmin1.geomAt(f.properties||{}):null;
+      const TA=window.IntMapTimeAdmin1; if(!TA||!TA.geomAt) return null;
+      const props=f.properties||{};
+      const geo=TA.geomAt(props); if(!geo) return null;
+      return { geo, refine:(TA.geomFullAt?TA.geomFullAt(props):null) };
     }catch(_){ return null; } }
     function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       const f=e.features[0];
       const eg=_eraGeom(f);
-      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name),geojson:eg}:{title:_bothNames(p,name)})); }; }
+      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name),geojson:eg.geo,refine:eg.refine}:{title:_bothNames(p,name)})); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
@@ -2216,7 +2226,7 @@ window.IntMapModules.labelPopup=function(HOST){
            "モバイル版では出ない". Re-query a small box around the tap (bigger on touch) and open the nearest
            label's popup. Skipped while a measurement/draw tool owns the gesture. */
         if(typeof HOST.toolMode==='undefined' || !HOST.toolMode){
-          /* ⚠ (#R668) THIS ONE IS NEITHER A WIDTH NOR A DEVICE QUESTION — IT IS A POINTER QUESTION.
+          /* ⚠ (#R669) THIS ONE IS NEITHER A WIDTH NOR A DEVICE QUESTION — IT IS A POINTER QUESTION.
              How much slop a tap needs is decided by what is doing the tapping: a fingertip covers
              about 15 px of map, a mouse cursor about 6. `isMobile()` is a `(max-width:768px)` media
              query, so an iPhone held sideways (844 px) was answered «mouse» and got the 6 px box —
@@ -2235,7 +2245,7 @@ window.IntMapModules.labelPopup=function(HOST){
             /* (#R252) the padded tap is the same click, so it gets the same two-name heading */
             const ttl=(lid==='geo-sea')?nm:_bothNames(p,nm);
             const peg=_eraGeom(near[0]);   /* (#R564) the padded tap is the same click, so it gets the same era polygon */
-            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:(peg?{title:ttl,geojson:peg}:{title:ttl}));
+            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:(peg?{title:ttl,geojson:peg.geo,refine:peg.refine}:{title:ttl}));
               if(lid==='ofm-river') highlightRiver(p,e.lngLat);   /* (#R210) the padded tap is the same click */
               return; } }
         }
