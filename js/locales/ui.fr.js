@@ -6387,4 +6387,41 @@ window.IntMapLang.define('fr', { ui: {
   "Susceptible": "Susceptibles (non immunisés)",   /* playground.js (#R675) */
   "Tap any country for its own numbers.": "Touchez un pays pour voir ses propres chiffres.",   /* playground.js (#R675) */
   "treatment available": "traitement disponible",   /* playground.js (#R675) */
+  "Sources and assumptions": "Sources et hypothèses",   /* playground.js (#R679) */
+  "Disease parameters": "Paramètres de la maladie",   /* playground.js (#R679) */
+  "How fast it spreads": "Vitesse de propagation",   /* playground.js (#R679) */
+  "How deadly it is": "Létalité",   /* playground.js (#R679) */
+  "How long immunity lasts": "Durée de l’immunité",   /* playground.js (#R679) */
+  "Vaccine": "Vaccin",   /* playground.js (#R679) */
+  "Treatment": "Traitement",   /* playground.js (#R679) */
+  "Starting immunity": "Immunité initiale",   /* playground.js (#R679) */
+  "No named source in this table": "Aucune source nommée dans cette table",   /* playground.js (#R679) */
+  "The world this run uses": "Le monde utilisé par cette simulation",   /* playground.js (#R679) */
+  "Land borders and capitals": "Frontières terrestres et capitales",   /* playground.js (#R679) */
+  "Airport capacity": "Capacité aéroportuaire",   /* playground.js (#R679) */
+  "Airline route network": "Réseau de lignes aériennes",   /* playground.js (#R679) */
+  "June 2014 snapshot, no longer updated": "instantané de juin 2014, plus mis à jour",   /* playground.js (#R679) */
+  "How many travellers arrive in each country": "Nombre de voyageurs qui arrivent dans chaque pays",   /* playground.js (#R679) */
+  "Medical capacity, emergency response, vaccine delivery": "Capacité médicale, réponse d’urgence, distribution des vaccins",   /* playground.js (#R679) */
+  "Where the case dots are drawn": "Où sont dessinés les points de cas",   /* playground.js (#R679) */
+  "Assumptions, not measurements": "Des hypothèses, pas des mesures",   /* playground.js (#R679) */
+  "Route counts stand in for passenger flows": "Le nombre de lignes tient lieu de flux de passagers",   /* playground.js (#R679) */
+  "No open, current bilateral passenger matrix exists. Part of each origin's air weight comes from the 2014 route network and the rest from a distance model, which is also how a country with no direct flight is still reachable.": "Il n’existe aucune matrice bilatérale de passagers ouverte et à jour. Une partie du poids aérien de chaque origine provient du réseau de lignes de 2014 et le reste d’un modèle de distance, ce qui explique aussi qu’un pays sans vol direct reste atteignable.",   /* playground.js (#R679) */
+  "Case dots sit on cities, not on a population surface": "Les points de cas se posent sur les villes, pas sur une surface de population",   /* playground.js (#R679) */
+  "Dots are shared out between a country's places in proportion to how many people live in each. A city gazetteer knows where towns are, not where the countryside is.": "Les points sont répartis entre les localités d’un pays au prorata du nombre d’habitants de chacune. Un répertoire de villes sait où sont les villes, pas où sont les campagnes.",   /* playground.js (#R679) */
+  "Measles starts from WHO/UNICEF first-dose coverage per country. That is childhood coverage read as whole-population immunity: this model has no age structure.": "La rougeole part de la couverture par première dose de l’OMS/UNICEF, pays par pays. Il s’agit d’une couverture infantile lue comme l’immunité de toute la population : ce modèle n’a pas de structure par âge.",   /* playground.js (#R679) */
+  "One assumed figure for every country and every age. Nobody publishes per-country protection against infection, so this is the coarsest shape a one-compartment immunity can take — not an estimate anyone made.": "Un seul chiffre supposé pour tous les pays et tous les âges. Personne ne publie la protection contre l’infection pays par pays : c’est donc la forme la plus grossière que puisse prendre une immunité à un seul compartiment — et non l’estimation de quiconque.",   /* playground.js (#R679) */
+  "Severity is applied to every infection": "La gravité est appliquée à toutes les infections",   /* playground.js (#R679) */
+  "Presets whose severity is a CFR have a smaller denominator than an IFR does, and this model has no detection layer to tell them apart. The setting shows which metric a preset uses so it can be lowered.": "Les préréglages dont la gravité est un taux de létalité des cas (CFR) ont un dénominateur plus petit qu’un taux de létalité de l’infection (IFR), et ce modèle n’a aucune couche de détection pour les distinguer. Le réglage indique quelle mesure utilise chaque préréglage, afin de pouvoir l’abaisser.",   /* playground.js (#R679) */
+  "Medical capacity": "Capacité médicale",   /* playground.js (#R679) */
+  "Emergency response": "Réponse d’urgence",   /* playground.js (#R679) */
+  "Vaccine delivery": "Distribution des vaccins",   /* playground.js (#R679) */
+  "estimated from GDP per head — this country is not in the WHO or World Bank table": "estimé à partir du PIB par habitant — ce pays ne figure pas dans la table de l’OMS ni de la Banque mondiale",   /* playground.js (#R679) */
+  "loaded": "chargé",   /* playground.js (#R679) */
+  "loaded for some countries": "chargé pour certains pays",   /* playground.js (#R679) */
+  "did not load": "n’a pas pu être chargé",   /* playground.js (#R679) */
+  "still loading": "chargement en cours",   /* playground.js (#R679) */
+  "International spread is weighted by land borders, by how many travellers each country actually receives, and by the airline route network as it stood in 2014 — the newest one that is openly published. Route counts are not seats or passenger numbers.": "La propagation internationale est pondérée par les frontières terrestres, par le nombre de voyageurs que chaque pays reçoit réellement et par le réseau de lignes aériennes tel qu’il était en 2014 — le plus récent publié en libre accès. Le nombre de lignes n’est ni un nombre de sièges ni un nombre de passagers.",   /* playground.js (#R679) */
+  "International spread is weighted by land borders, airport capacity and the airline route network as it stood in 2014. The observed traveller volumes did not load.": "La propagation internationale est pondérée par les frontières terrestres, la capacité aéroportuaire et le réseau de lignes aériennes tel qu’il était en 2014. Les volumes de voyageurs observés n’ont pas pu être chargés.",   /* playground.js (#R679) */
+  "International spread is weighted by land borders and by how many travellers each country actually receives. The route network did not load, so distance decides which country an outbreak reaches next.": "La propagation internationale est pondérée par les frontières terrestres et par le nombre de voyageurs que chaque pays reçoit réellement. Le réseau de lignes aériennes n’a pas pu être chargé : c’est donc la distance qui décide du prochain pays atteint par l’épidémie.",   /* playground.js (#R679) */
 } });

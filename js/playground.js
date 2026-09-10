@@ -247,6 +247,77 @@ window.IntMapModules.playground=function(HOST){
        ⚠ THE AIRPORT LOADER IS HERE BECAUSE THIS IS ITS ONLY READER. If a second one appears it
        belongs beside IntMapCountryFacts in js/countries-ui.js, which is the same shape. */
     let _airP=null, _airT=null;
+    /* ══ (#R679) TWO MORE TABLES, THE SAME SHAPE ════════════════════════════════════════════
+       data/mobility.json is WHERE people fly (OpenFlights 2014 route counts per country pair) and
+       HOW MANY of them travel (World Bank arrivals, departures and boardings, pre-2020).
+       data/health.json is WHAT a country can do about an epidemic (WHO UHC service coverage index,
+       WHO IHR SPAR health emergency management, WHO/UNICEF DTP3 and MCV1 coverage).
+       ⚠ THEY LOAD LIKE data/airports.json AND FAIL LIKE IT: a table that does not arrive leaves
+       the model exactly where it was before this round, and the panel says so per table. */
+    /* ══ ⚠⚠⚠ (#R679) WHERE THE PEOPLE ARE — THE ONE POPULATION SURFACE IntMap ACTUALLY HAS ══════
+       The case dots were spread evenly over whatever anchors a country happened to produce, so
+       Canada, Russia and Australia got cases scattered across tundra, taiga and desert. The fix
+       needs a population surface, and MEASURED 2026-09-10 this project has no population RASTER at
+       all: NASA GIBS GPW is a rendered PNG tile whose pixels nothing reads back, and WorldPop is a
+       remote per-polygon API that answers in tens of seconds. What it does have is
+       data/gazetteer-world.json.gz — 148,630 GeoNames places, 139,056 of them with a population,
+       already shipped, already lazily loadable, and keyed by country.
+
+       ⚠ POINTS, NOT A SURFACE, and the screen says so. A city gazetteer knows where towns are, not
+       where the countryside is; js/shakemap.js already names the same limitation of the same table
+       for the same reason. It is nonetheless the difference between «cases are in the places
+       Canadians live» and «cases are anywhere inside Canada».
+
+       ⚠ `PPLX` ROWS ARE DROPPED. GeoNames codes a SECTION of a city as PPLX and gives it its own
+       population — fourteen of them are above a million (js/gazetteer.js says so). Keeping them
+       would count those people twice, once in the section and once in the city that contains it.
+
+       ⚠ THERE IS NO ANCHOR CAP, and there does not need to be one. `scatterCases` allocates by
+       weight, so at most `n` anchors can receive a dot for `n` dots; taking the `n` largest by
+       population is exactly sufficient and loses nothing. A fixed cap WOULD have lost something —
+       MEASURED, a cap of 160 anchors drops 29.8% of the world's gazetteer population, and 66.6% of
+       France's. Sorting once per country and walking as far as the dots need is both cheaper and
+       lossless. */
+    let _plP=null, _plByIso=null;
+    function loadPlaces(){
+      if(_plP) return _plP;
+      const G=window.IntMapGazetteer;
+      if(!G||!G.warm){ _plP=Promise.resolve(false); return _plP; }
+      _plP=Promise.resolve(G.warm()).then(()=>{
+        const rows=(G.world&&G.world())||[];
+        if(!rows.length) return false;
+        /* row shape is js/gazetteer.js `_rowsFrom`: [type, terms, lng, lat, en, ja, pop, iso2, gid, fcode, …] */
+        const by=Object.create(null);
+        for(let q=0;q<rows.length;q++){
+          const r=rows[q], pop=+r[6];
+          if(!(pop>0)) continue;
+          const iso=r[7]; if(!iso) continue;
+          if(String(r[9]||'').indexOf('PPLX')===0) continue;
+          (by[iso]||(by[iso]=[])).push([+r[2],+r[3],pop]);
+        }
+        const ks=Object.keys(by);
+        if(!ks.length) return false;
+        for(let q=0;q<ks.length;q++) by[ks[q]].sort((a,b)=>b[2]-a[2]);
+        _plByIso=by; return true;
+      }).catch(e=>{ try{ console.error('[IntMap] place populations unavailable: '+((e&&e.message)||e)); }catch(_){} return false; });
+      return _plP;
+    }
+    let _mobP=null, _mobJ=null;
+    function loadMobility(){
+      if(_mobP) return _mobP;
+      _mobP=fetch('data/mobility.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(j=>{ if(!j||!j.vol||!j.pairs) throw new Error('no vol/pairs in data/mobility.json'); _mobJ=j; return j.vol; })
+        .catch(e=>{ _mobP=null; _mobJ=null; try{ console.error('[IntMap] travel volumes unavailable: '+((e&&e.message)||e)); }catch(_){} return null; });
+      return _mobP;
+    }
+    let _hlthP=null;
+    function loadHealth(){
+      if(_hlthP) return _hlthP;
+      _hlthP=fetch('data/health.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(j=>{ const c=j&&j.countries; if(!c||!Object.keys(c).length) throw new Error('no countries in data/health.json'); return c; })
+        .catch(e=>{ _hlthP=null; try{ console.error('[IntMap] health capacity unavailable: '+((e&&e.message)||e)); }catch(_){} return null; });
+      return _hlthP;
+    }
     function loadAirports(){
       if(_airP) return _airP;
       _airP=fetch('data/airports.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
@@ -323,20 +394,50 @@ window.IntMapModules.playground=function(HOST){
            not load») and not an unlabelled second world that happens to look like the first.
            ⚠ SETTLED, NOT SUCCEEDED. A dead table must not lock the reader out of the simulator; it
            must be named. `dataState` is what the panel prints and what the run carries. */
-        const dataState={ borders:'pending', airports:'pending', policy:'pending' };
+        const dataState={ borders:'pending', airports:'pending', policy:'pending', volumes:'pending', health:'pending', routes:'pending', places:'pending' };
         function settle(p,key,fill){
           return Promise.resolve(p).then(t=>{ if(!t) { dataState[key]='failed'; return; }
             let hit=0; for(let i=0;i<N;i++){ const c=world[i].code; const row=c&&t[c]; if(row&&fill(world[i],row)) hit++; }
             dataState[key]=hit?(hit===N?'ok':'partial'):'failed'; })
             .catch(()=>{ dataState[key]='failed'; });
         }
-        let worldReady=false, factsT=null;
+        let worldReady=false, factsT=null, routesT=null;
         const factsP=Promise.resolve((window.IntMapCountryFacts&&window.IntMapCountryFacts.load)?window.IntMapCountryFacts.load():null)
           .then(t=>{ factsT=t||null; return t; }).catch(()=>{ factsT=null; return null; });
         Promise.all([
           settle(factsP,'borders',(w,row)=>{ if(row.capital) w.capital=row.capital; if(row.borders&&row.borders.length){ w.borders=row.borders; return true; } return false; }),
-          settle(loadAirports(),'airports',(w,row)=>{ if(row.cap>0){ w.air=row.cap; return true; } return false; })
-        ]).then(()=>{ assignActors(); worldReady=true; if(picking&&hud.isConnected&&!model) renderConfig(); });
+          settle(loadAirports(),'airports',(w,row)=>{ if(row.cap>0){ w.air=row.cap; return true; } return false; }),
+          /* ⚠ (#R673) THESE JOIN THE SNAPSHOT, they do not fill in afterwards. The mobility matrix
+             and every country's capacities freeze at `createPandemicModel`, so a table that lands
+             after the reader has tapped would be a second, unlabelled world — which is exactly the
+             defect that made the seed field a false promise. */
+          settle(loadMobility(),'volumes',(w,row)=>{ if(row.arr>0){ w.arr=row.arr; return true; } return false; }),
+          settle(loadHealth(),'health',(w,row)=>{
+            let any=false;
+            if(row.uhc>0){ w.uhc=row.uhc; any=true; }
+            if(row.spar>0){ w.spar=row.spar; any=true; }
+            if(row.dtp3>0){ w.dtp3=row.dtp3; any=true; }
+            /* ⚠ MCV1 IS CARRIED, NOT APPLIED. It is an initial condition for ONE preset, so it is
+               attached under its own name and `presetWorld()` decides whether this run is the one
+               where a measured measles coverage is the right starting immunity. */
+            if(row.mcv1>0){ w.mcv1=row.mcv1; any=true; }
+            return any; })
+        ]).then(()=>{
+          /* ⚠ THE ROUTE TABLE IS NOT A PER-COUNTRY TABLE, so `settle()` — which walks the world
+             row by row — cannot report it. It is keyed by ORDERED PAIR, and how much of it reached
+             the matrix is a question only the engine can answer, because a destination code naming
+             a country that is not on this map is dropped there. `model.mobility.stats` answers it,
+             and this only records whether the file arrived at all. */
+          routesT=(_mobJ&&_mobJ.pairs)||null;
+          dataState.routes=routesT?(dataState.volumes==='failed'?'partial':'ok'):'failed';
+          assignActors(); worldReady=true; if(picking&&hud.isConnected&&!model) renderConfig(); });
+        /* ⚠⚠ THE GAZETTEER IS DELIBERATELY *NOT* IN THE SNAPSHOT ABOVE. It decides where the dots
+           are DRAWN, not what the epidemic does — the compartments never see it — and it is a 5 MB
+           download that would hold the reader at «loading» for no epidemiological reason. It is
+           started here and lands when it lands; when it does, the placement pools are dropped so
+           that the countries already drawn are re-scattered against it rather than keeping an
+           unweighted placement for the rest of the run. */
+        loadPlaces().then(ok=>{ dataState.places=ok?'ok':'failed'; if(ok){ for(let i=0;i<N;i++) pools[i]=null; } });
 
         /* ══ ⚠⚠⚠ (#R675) WHO ANSWERS FOR EACH ROW — DERIVED, NOT LISTED ═════════════════════════════
            The screenshot that opened this round had 「Antarcticaが国境を封鎖。」 in it, and it was not a
@@ -437,6 +538,27 @@ window.IntMapModules.playground=function(HOST){
            cases into the sea and into the neighbour — see scatterCases() in js/pandemic-model.js. */
         function genPts(i,n){ const f=feats[i], bb=bbs[i]; const span=Math.min(2.0,Math.max(0.1,Math.max(bb[2]-bb[0],bb[3]-bb[1])*0.09)); const anchors=[];
           const inside=(lng,lat)=>pig(lng,lat,f.geometry);
+          /* ══ ⚠⚠⚠ (#R679) CASES GO WHERE THE PEOPLE ARE ═════════════════════════════════════════
+             Everything below this block spreads dots EVENLY over its anchors, which on a world map
+             is wrong in a way a reader can see from across the room: Canada, Russia and Australia
+             had cases scattered over tundra, taiga and desert, because an anchor in Alert and an
+             anchor in Toronto counted the same. In a well-mixed compartment model cases are
+             proportional to POPULATION, so the anchors are weighted by it.
+             ⚠ THE COUNTRY COMES FROM THE GAZETTEER'S OWN ISO2, not from a polygon test. GeoNames
+             says which country a place is in; asking Natural Earth's 10 m outline instead would
+             disagree at the margins and would cost a point-in-polygon call for all 148,630 rows.
+             ⚠ ONLY THE ANCHORS THAT CAN RECEIVE A DOT ARE TESTED. `scatterCases` allocates by
+             weight, so at most `n` of them can, and they are the `n` largest — so the walk stops
+             there and `inside()` is asked about those only. A city the outline puts outside this
+             feature is skipped and the walk continues, which is what keeps enclaves and disputed
+             edges from placing a dot in the neighbour. */
+          const iso2=(()=>{ const p=f.properties||{}; const a=p.ISO_A2_EH||p.ISO_A2; return (a&&String(a).length===2&&a!=='-9')?String(a).toUpperCase():null; })();
+          const bank=(_plByIso&&iso2)?_plByIso[iso2]:null;
+          if(bank&&bank.length){
+            const wa=[];
+            for(let q=0;q<bank.length&&wa.length<n;q++){ const c=bank[q]; if(inside(c[0],c[1])) wa.push(c); }
+            if(wa.length) return scatterCases(n,wa,span,Math.random,inside);
+          }
           /* ⚠ (#R673) `resolve()` RETURNS `{code, s}`, NOT THE STATS ROW. #R666 changed it to carry the
              ISO code back and this call site kept reading `.latlng` off the WRAPPER, which is
              `undefined` — so the country's own label point (Natural Earth LABEL_X/Y, the anchor
@@ -453,7 +575,7 @@ window.IntMapModules.playground=function(HOST){
           return out; }
 
         /* ── the run's settings. The engine is built when patient zero is placed, from exactly these. */
-        let presetKey='covid', scenario='naive', advanced=false;
+        let presetKey='covid', scenario='naive', advanced=false, srcOpen=false;
         let cfg=freshParams('covid','naive');
         let runSeed=(Date.now()^Math.floor(Math.random()*1e9))>>>0;
         function freshParams(key,mode){ const pr=PANDEMIC_PRESETS[key]; return {
@@ -469,6 +591,30 @@ window.IntMapModules.playground=function(HOST){
 
         let model=null, day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', perDotNow=0;
         function preset(){ return PANDEMIC_PRESETS[presetKey]; }
+        /* ══ ⚠⚠⚠ (#R679) THE WORLD A PRESET STARTS IN ══════════════════════════════════════════
+           `world` is the geography and it is the same for every disease. The STARTING IMMUNITY is
+           not: it is a property of the disease AND the place, and for exactly one preset there is
+           a measured per-country figure rather than an assumed global one.
+
+           Measles immunity in the real world IS a vaccination coverage, and WHO/UNICEF publish it
+           per country (MCV1, data/health.json). Every other preset's «current world» immunity is a
+           stated assumption — COVID-19's 0.9 stands for hybrid immunity, which nobody publishes per
+           country and which this file therefore does not invent (Architecture.md §8.5).
+
+           ⚠ THE SLIDER IS STILL THE MEAN. The engine scales the observed shape so its
+           population-weighted mean lands on `cfg.initialImmunity`, which starts at the preset's own
+           stated world figure. So the DEFAULT run has the same world average it always had and a
+           distribution it never had — South Sudan and Portugal stop starting from the same place.
+           ⚠ AND ONLY IN THE REAL-WORLD SCENARIO. «Novel pathogen» means nobody is immune; handing
+           it a vaccination coverage would make it a different question with the same name. */
+        function presetWorld(){
+          if(scenario!=='real-world'||preset().id!=='measles') return world;
+          let any=false;
+          const out=new Array(N);
+          for(let i=0;i<N;i++){ const w=world[i];
+            if(w.mcv1>0){ any=true; out[i]=Object.assign({},w,{immunity:Math.min(1,w.mcv1/100)}); } else out[i]=w; }
+          return any?out:world;
+        }
 
         /* ══ ⚠⚠⚠ (#R675) THE MAP IS THE THING THE READER CAME FOR, AND THE TICKER WAS COVERING IT ═══
            `news()` used to call `pgNews()` for EVERY event, and `pgNews()` appends to a column in
@@ -800,6 +946,17 @@ window.IntMapModules.playground=function(HOST){
               +insRow(window.IntMapLang.t(HOST.lang,"Lockdown","ロックダウン","Ausgangssperre","Локдаун","Confinamiento"),Math.round(r.lock*100)+'%');
           /* ⚠ HOSPITAL PRESSURE IS A MULTIPLIER ON FATALITY, not a bed count — IntMap has no bed data
              and the panel must not imply it does. ×1.00 is «coping». */
+          /* ⚠⚠ (#R679) THREE CAPACITIES, AND WHERE EACH ONE CAME FROM. `capacityFrom` is a bitmask
+             the engine sets per country: 1 = medical capacity observed, 2 = emergency response
+             observed, 4 = vaccine delivery observed. A country outside a table falls back to the
+             development proxy, and «Chad's medical capacity» read off the UHC index and read off GDP
+             per head are different claims — only one of them was measured in Chad. */
+          const cf=r.capacityFrom|0;
+          const obsMark=(bit)=>(cf&bit)?'':' ~';
+          body+=insRow(window.IntMapLang.t(HOST.lang,"Medical capacity","医療の対応力","Medizinische Kapazität","Медицинский потенциал","Capacidad médica"),Math.round(r.health*100)+'%'+obsMark(1))
+            +insRow(window.IntMapLang.t(HOST.lang,"Emergency response","緊急対応","Notfallreaktion","Экстренное реагирование","Respuesta de emergencia"),Math.round(r.response*100)+'%'+obsMark(2))
+            +insRow(window.IntMapLang.t(HOST.lang,"Vaccine delivery","ワクチン供給","Impfstoffverteilung","Доставка вакцин","Entrega de vacunas"),Math.round(r.delivery*100)+'%'+obsMark(4));
+          if(cf!==7) body+='<div style="font-size:10px;color:var(--text-muted);margin:2px 0 4px;">~ '+window.IntMapLang.t(HOST.lang,"estimated from GDP per head — this country is not in the WHO or World Bank table","1人あたりGDPからの推定——この国はWHO・世界銀行の表に載っていません","aus dem BIP pro Kopf geschätzt — dieses Land steht nicht in der WHO- oder Weltbanktabelle","оценено по ВВП на душу населения — этой страны нет в таблице ВОЗ или Всемирного банка","estimado a partir del PIB per cápita: este país no está en la tabla de la OMS ni del Banco Mundial")+'</div>';
           body+=insRow(window.IntMapLang.t(HOST.lang,"Hospital pressure","医療の逼迫","Belastung der Kliniken","Нагрузка на больницы","Presión hospitalaria"),'×'+r.overload.toFixed(2),r.overload>1.3?'#ff3b30':'')
             +insRow(window.IntMapLang.t(HOST.lang,"Dominant variant","優勢な変異株","Vorherrschende Variante","Доминирующий вариант","Variante dominante"),(r.variant===0?window.IntMapLang.t(HOST.lang,"original","元の病原体","Ursprungsvariante","исходный","cepa original"):String.fromCharCode(944+r.variant))+' '+Math.round(r.variantShare*100)+'%');
           box.innerHTML=head+'<div style="font-size:11px;line-height:1.5;">'+body+'</div>';
@@ -834,7 +991,7 @@ window.IntMapModules.playground=function(HOST){
             if(ensStop||!hud.isConnected){ ensBusy=false; if(runs.length) ensSum=summariseEnsemble(runs); renderEns(); return; }
             if(!m){
               if(ensDone>=ensN){ ensBusy=false; ensMs=Date.now()-t0; ensSum=summariseEnsemble(runs); renderEns(); return; }
-              m=createPandemicModel({countries:world,preset:preset(),params:cfg,seed:ensMix(runSeed,ensDone+1)});
+              m=createPandemicModel({countries:presetWorld(),routes:routesT,preset:preset(),params:cfg,seed:ensMix(runSeed,ensDone+1)});
               m.seed(ensOrigin,cfg.initialCases);
             }
             const slice=Date.now();
@@ -986,7 +1143,18 @@ window.IntMapModules.playground=function(HOST){
             const si=document.createElement('input'); si.type='text'; si.value=String(runSeed); si.inputMode='numeric'; si.style.cssText='flex:1;min-width:0;background:var(--input-bg);color:var(--text-main);border:1px solid rgba(128,128,128,0.25);border-radius:8px;padding:5px 8px;font-size:11.5px;';
             si.oninput=()=>{ const v=parseInt(si.value,10); if(isFinite(v)) runSeed=v>>>0; };
             sd.appendChild(sl); sd.appendChild(si); hud.appendChild(sd);
-            const src=document.createElement('div'); src.style.cssText='font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.4;'; src.textContent=(preset().sources||[]).join(' · '); hud.appendChild(src);
+            /* ⚠⚠⚠ (#R679) THE SOURCES WERE ONE LINE, INSIDE A FOLD, IN 10 px GREY. `sources` was
+               joined with « · » into an unlabelled div: no URL, no date, and — the part that made it
+               useless rather than merely terse — NO SAY WHICH NUMBER EACH ONE SUPPORTS. A reader
+               looking at «R₀ 1.95» could not find out where 1.95 came from, and the parameters that
+               are ASSUMPTIONS rather than measurements were indistinguishable from the ones that
+               are not. It also vanished the moment the run started. It is now a drawer, it opens
+               from both screens, and it says of every source WHAT IT IS FOR. */
+            const sb=document.createElement('button'); sb.textContent='📖 '+window.IntMapLang.t(HOST.lang,"Sources and assumptions","出典と仮定","Quellen und Annahmen","Источники и допущения","Fuentes y supuestos");
+            sb.style.cssText='border:none;background:none;color:var(--primary-color);font-size:11px;font-weight:600;cursor:pointer;padding:4px 0;display:block;';
+            sb.onclick=()=>{ srcOpen=!srcOpen; renderConfig(); };
+            hud.appendChild(sb);
+            if(srcOpen) hud.appendChild(sourcesPanel());
           }
           /* ⚠ (#R673) THE HINT IS DERIVED FROM `worldReady`, because until the world is settled there
              is nothing to tap and a run started anyway would not be the run its seed names. */
@@ -1000,6 +1168,74 @@ window.IntMapModules.playground=function(HOST){
         /* ⚠ SAY WHAT IT IS. CDC says it of its own measles simulator, and this one simplifies far
            more: one well-mixed compartment set per country, and importation from distance + a
            development proxy rather than from airline routes or passenger volumes. */
+        /* ══ (P1-7) WHERE EVERY NUMBER ON THIS SCREEN CAME FROM ══════════════════════════════════
+           Three groups, because there are three KINDS of provenance and collapsing them is what the
+           old one-line join did:
+             · the disease parameters — published estimates, named per preset;
+             · the world — the tables this run actually loaded, with what happened to each;
+             · the assumptions — the things that are NOT measurements, said out loud.
+           ⚠ THE THIRD GROUP IS THE POINT. A source list that only lists sources implies everything
+           on screen has one. */
+        function srcRow(head,body,col){ const d=document.createElement('div'); d.style.cssText='margin:4px 0;line-height:1.45;';
+          const h=document.createElement('div'); h.textContent=head; h.style.cssText='font-size:10.5px;font-weight:600;color:'+(col||'var(--text-main)')+';';
+          const b=document.createElement('div'); b.textContent=body; b.style.cssText='font-size:10px;color:var(--text-muted);';
+          d.appendChild(h); d.appendChild(b); return d; }
+        function srcHead(t){ const d=document.createElement('div'); d.textContent=t; d.style.cssText='font-size:10.5px;font-weight:700;color:var(--text-main);margin:9px 0 2px;'; return d; }
+        function stateWord(k){ const v=dataState[k];
+          return v==='ok'?window.IntMapLang.t(HOST.lang,"loaded","読み込み済み","geladen","загружено","cargado")
+            :v==='partial'?window.IntMapLang.t(HOST.lang,"loaded for some countries","一部の国のみ","für einige Länder geladen","загружено для части стран","cargado para algunos países")
+            :v==='failed'?window.IntMapLang.t(HOST.lang,"did not load","読み込めませんでした","nicht geladen","не загрузилось","no se cargó")
+            :window.IntMapLang.t(HOST.lang,"still loading","読み込み中","wird geladen","загружается","cargando"); }
+        function sourcesPanel(){
+          const box=document.createElement('div'); box.id='pg-sources';
+          box.style.cssText='margin-top:6px;border-top:1px solid rgba(128,128,128,0.2);padding-top:6px;';
+          box.appendChild(srcHead(window.IntMapLang.t(HOST.lang,"Disease parameters","疾患のパラメータ","Krankheitsparameter","Параметры болезни","Parámetros de la enfermedad")));
+          /* ⚠ THE VOCABULARY IS THE PRESET'S OWN FIELD NAMES. `paramWord` maps them to words, and
+             the SAME list is what «which parameters have no named source» is computed against — so
+             a field added to a preset without a source shows up here instead of being invisible
+             (#R628: a母集合 handed to the check is a母集合 that cannot notice what was added). */
+          const PARAM_KEYS=['transmission','severity','immunity','vaccine','treatment','baselineImmunity'];
+          const paramWord=(k)=>k==='transmission'?window.IntMapLang.t(HOST.lang,"How fast it spreads","広がりやすさ","Wie schnell es sich ausbreitet","Скорость распространения","Con qué rapidez se propaga")
+            :k==='severity'?window.IntMapLang.t(HOST.lang,"How deadly it is","致死率","Wie tödlich es ist","Летальность","Cuán letal es")
+            :k==='immunity'?window.IntMapLang.t(HOST.lang,"How long immunity lasts","免疫の持続","Wie lange Immunität anhält","Длительность иммунитета","Cuánto dura la inmunidad")
+            :k==='vaccine'?window.IntMapLang.t(HOST.lang,"Vaccine","ワクチン","Impfstoff","Вакцина","Vacuna")
+            :k==='treatment'?window.IntMapLang.t(HOST.lang,"Treatment","治療","Behandlung","Лечение","Tratamiento")
+            :k==='baselineImmunity'?window.IntMapLang.t(HOST.lang,"Starting immunity","初期免疫","Anfangsimmunität","Начальный иммунитет","Inmunidad inicial")
+            :k;
+          const ss=preset().sources||[];
+          for(let q=0;q<ss.length;q++){ const s=ss[q];
+            /* A source may be a plain string (the older shape) or {for, name} — both are rendered,
+               and the labelled one says which parameter it stands behind. */
+            if(s&&typeof s==='object') box.appendChild(srcRow(paramWord(s.for)||'—',s.name||''));
+            else box.appendChild(srcRow('—',String(s))); }
+          /* ⚠⚠ WHAT IS *NOT* SOURCED IS ALSO PROVENANCE. A list that only lists sources implies
+             every number on the screen has one, and several do not — COVID-19's R₀ of 3.2 and its
+             IFR of 0.7% carry no named citation in the preset table. Derived from the preset's own
+             fields, so it cannot go stale the way a hand-written note would. */
+          const pr0=preset();
+          const missing=PARAM_KEYS.filter(k=>pr0[k]!==undefined&&!ss.some(s=>s&&s.for===k)).map(paramWord);
+          if(missing.length) box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"No named source in this table","この表に出典が書かれていないもの","Keine benannte Quelle in dieser Tabelle","Без указанного источника в этой таблице","Sin fuente indicada en esta tabla"),missing.join(' · '),'#ff9f0a'));
+
+          box.appendChild(srcHead(window.IntMapLang.t(HOST.lang,"The world this run uses","この実行が使う世界","Die Welt dieses Laufs","Мир этого прогона","El mundo de esta simulación")));
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Land borders and capitals","陸上の国境と首都","Landgrenzen und Hauptstädte","Сухопутные границы и столицы","Fronteras terrestres y capitales"),'data/country-facts.json · mledoze/countries (ODbL 1.0) — '+stateWord('borders')));
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Airport capacity","空港規模","Flughafenkapazität","Мощность аэропортов","Capacidad aeroportuaria"),'data/airports.json · OurAirports (public domain) — '+stateWord('airports')));
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Airline route network","航空路線網","Streckennetz","Сеть авиамаршрутов","Red de rutas aéreas"),'data/mobility.json · OpenFlights (ODbL 1.0), '+window.IntMapLang.t(HOST.lang,"June 2014 snapshot, no longer updated","2014年6月時点・更新停止","Stand Juni 2014, nicht mehr aktualisiert","снимок за июнь 2014 года, больше не обновляется","instantánea de junio de 2014, ya no se actualiza")+' — '+stateWord('routes')));
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"How many travellers arrive in each country","各国に到着する旅行者数","Wie viele Reisende in jedem Land ankommen","Сколько путешественников прибывает в каждую страну","Cuántos viajeros llegan a cada país"),'data/mobility.json · World Bank ST.INT.ARVL (CC BY 4.0) — '+stateWord('volumes')));
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Medical capacity, emergency response, vaccine delivery","医療の対応力・緊急対応・ワクチン供給","Medizinische Kapazität, Notfallreaktion, Impfstoffverteilung","Медицинский потенциал, экстренное реагирование, доставка вакцин","Capacidad médica, respuesta de emergencia, entrega de vacunas"),'data/health.json · WHO GHO (CC BY-NC-SA 3.0 IGO) + World Bank / WUENIC (CC BY 4.0) — '+stateWord('health')));
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Where the case dots are drawn","症例の点を描く場所","Wo die Fallpunkte gezeichnet werden","Где рисуются точки случаев","Dónde se dibujan los puntos de casos"),'data/gazetteer-world.json.gz · GeoNames (CC BY 4.0) — '+stateWord('places')));
+
+          box.appendChild(srcHead(window.IntMapLang.t(HOST.lang,"Assumptions, not measurements","測定ではなく仮定","Annahmen, keine Messungen","Допущения, а не измерения","Supuestos, no mediciones")));
+          const warn='#ff9f0a';
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Route counts stand in for passenger flows","路線数が旅客流動の代わりになっている","Streckenzahlen stehen für Passagierströme","Число маршрутов заменяет пассажиропотоки","El número de rutas sustituye a los flujos de pasajeros"),window.IntMapLang.t(HOST.lang,"No open, current bilateral passenger matrix exists. Part of each origin's air weight comes from the 2014 route network and the rest from a distance model, which is also how a country with no direct flight is still reachable.","公開されていて現行の国×国の旅客行列は存在しません。各出発国の航空重みの一部は2014年の路線網から、残りは距離モデルから来ます。直行便の無い国に届くのもそのためです。","Es gibt keine offene, aktuelle bilaterale Passagiermatrix. Ein Teil des Luftgewichts jedes Herkunftslands stammt aus dem Streckennetz von 2014, der Rest aus einem Entfernungsmodell — deshalb ist auch ein Land ohne Direktflug erreichbar.","Открытой и актуальной двусторонней пассажирской матрицы не существует. Часть авиавеса каждой страны отправления берётся из сети маршрутов 2014 года, остальное — из модели расстояния; поэтому страна без прямого рейса тоже достижима.","No existe una matriz bilateral de pasajeros abierta y actual. Parte del peso aéreo de cada origen procede de la red de rutas de 2014 y el resto de un modelo de distancia, que es también cómo sigue siendo alcanzable un país sin vuelo directo."),warn));
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Case dots sit on cities, not on a population surface","症例の点は都市に置かれ、人口の面ではない","Fallpunkte liegen auf Städten, nicht auf einer Bevölkerungsfläche","Точки случаев стоят на городах, а не на поверхности населения","Los puntos de casos están sobre ciudades, no sobre una superficie de población"),window.IntMapLang.t(HOST.lang,"Dots are shared out between a country's places in proportion to how many people live in each. A city gazetteer knows where towns are, not where the countryside is.","点は、その国の各地に住む人数に比例して配分されます。都市の地名辞典が知っているのは町の位置であって、農村部の分布ではありません。","Punkte werden im Verhältnis zur Einwohnerzahl auf die Orte eines Landes verteilt. Ein Städteverzeichnis weiß, wo Städte liegen, nicht wo das Land liegt.","Точки распределяются между населёнными пунктами страны пропорционально числу жителей. Справочник городов знает, где города, а не где сельская местность.","Los puntos se reparten entre los lugares de un país en proporción a cuánta gente vive en cada uno. Un nomenclátor de ciudades sabe dónde están los pueblos, no dónde está el campo."),warn));
+          if(scenario==='real-world'){
+            box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Starting immunity","初期免疫","Anfangsimmunität","Начальный иммунитет","Inmunidad inicial"),preset().id==='measles'
+              ? window.IntMapLang.t(HOST.lang,"Measles starts from WHO/UNICEF first-dose coverage per country. That is childhood coverage read as whole-population immunity: this model has no age structure.","麻疹はWHO/UNICEFの国別・第1回接種率から始まります。これは小児の接種率を全人口の免疫として読んだものです——このモデルは年齢構造を持ちません。","Masern starten von der länderweisen Erstdosis-Abdeckung von WHO/UNICEF. Das ist Kinderabdeckung, gelesen als Immunität der Gesamtbevölkerung: dieses Modell hat keine Altersstruktur.","Корь стартует от охвата первой дозой по странам (ВОЗ/ЮНИСЕФ). Это детский охват, прочитанный как иммунитет всего населения: у модели нет возрастной структуры.","El sarampión parte de la cobertura de primera dosis por país (OMS/UNICEF). Es cobertura infantil leída como inmunidad de toda la población: este modelo no tiene estructura de edad.")
+              : window.IntMapLang.t(HOST.lang,"One assumed figure for every country and every age. Nobody publishes per-country protection against infection, so this is the coarsest shape a one-compartment immunity can take — not an estimate anyone made.","全ての国・全ての年齢に当てた1つの仮定値です。国別の感染防御割合を公表している機関は無く、これは免疫を1区画しか持たないこのモデルで表せる最も粗い形であって、誰かの推定値ではありません。","Eine angenommene Zahl für jedes Land und jedes Alter. Niemand veröffentlicht länderweisen Infektionsschutz; dies ist die gröbste Form, die eine Ein-Kompartiment-Immunität annehmen kann — keine Schätzung von irgendjemandem.","Одно предполагаемое значение для всех стран и всех возрастов. Защиту от заражения по странам никто не публикует, так что это самая грубая форма, которую может принять иммунитет из одного отсека, — а не чья-либо оценка.","Una cifra supuesta para todos los países y todas las edades. Nadie publica la protección frente a la infección por país, así que esta es la forma más burda que puede tomar una inmunidad de un solo compartimento: no es la estimación de nadie."),warn));
+          }
+          box.appendChild(srcRow(window.IntMapLang.t(HOST.lang,"Severity is applied to every infection","重症度はすべての感染に当てられる","Die Schwere wird auf jede Infektion angewendet","Тяжесть применяется ко всем заражениям","La gravedad se aplica a todas las infecciones"),window.IntMapLang.t(HOST.lang,"Presets whose severity is a CFR have a smaller denominator than an IFR does, and this model has no detection layer to tell them apart. The setting shows which metric a preset uses so it can be lowered.","重症度がCFRのプリセットは、IFRより分母が小さくなります。このモデルには検出・報告を扱う層が無く、両者を区別できません。設定画面はどちらの指標かを示すので、読者が下げられます。","Presets mit CFR haben einen kleineren Nenner als eine IFR, und dieses Modell hat keine Erkennungsebene, die beide unterscheidet. Die Einstellung zeigt, welche Kennzahl gilt, damit sie gesenkt werden kann.","Пресеты, где тяжесть задана как CFR, имеют меньший знаменатель, чем IFR, а слоя выявления, который их различал бы, в модели нет. Настройка показывает используемую метрику, чтобы её можно было снизить.","Los presets cuya gravedad es una CFR tienen un denominador menor que una IFR, y este modelo no tiene una capa de detección que los distinga. El ajuste muestra qué métrica usa cada preset para poder bajarla."),warn));
+          return box;
+        }
         function disclaimer(){ const d=document.createElement('div'); d.style.cssText='margin-top:8px;font-size:10px;color:var(--text-muted);line-height:1.4;'; d.textContent=window.IntMapLang.t(HOST.lang,"Simplified educational model (stochastic SEIR, one well-mixed compartment set per country or territory, and one run out of many possible ones). Not a forecast.","教育目的の簡略モデル（確率的SEIR・国／地域ごとに1つの均一混合区画・起こりうる多数のうちの1本）。予測ではありません。","Vereinfachtes Lehrmodell (stochastisches SEIR, ein durchmischter Kompartimentsatz je Land oder Gebiet, ein Lauf von vielen möglichen). Keine Prognose.","Упрощённая учебная модель (стохастическая SEIR, один равномерно смешанный набор отсеков на страну или территорию, один прогон из многих возможных). Это не прогноз.","Modelo educativo simplificado (SEIR estocástico, un conjunto de compartimentos bien mezclado por país o territorio, y una simulación entre muchas posibles). No es una previsión."); return d; }
         function renderRun(ended){ hud.innerHTML='';
           const stats=document.createElement('div'); stats.id='pg-pan-stats'; stats.style.cssText='margin-bottom:6px;line-height:1.6;'; hud.appendChild(stats);
@@ -1016,12 +1252,21 @@ window.IntMapModules.playground=function(HOST){
           const eb=document.createElement('button'); eb.textContent='📊'; eb.title=window.IntMapLang.t(HOST.lang,"How much of this is chance?","この結果はどこまで偶然か","Wie viel davon ist Zufall?","Насколько это случайность?","¿Cuánto de esto es azar?");
           eb.style.cssText='border:none;border-radius:10px;background:'+(ensOpen?'var(--primary-color)':'var(--input-bg)')+';color:'+(ensOpen?'#fff':'var(--text-main)')+';padding:9px 11px;font-size:11.5px;cursor:pointer;';
           eb.onclick=()=>{ ensOpen=!ensOpen; renderRun(ended); }; row.appendChild(eb);
+          /* ⚠ (#R679) THE SOURCES USED TO VANISH THE MOMENT THE RUN STARTED — `renderRun()` clears
+             `hud` and the one line lived in the config panel's «Advanced» fold, which is not
+             redrawn. The run is when a reader is actually looking at the numbers, so it is the one
+             screen where «where does this come from» must be answerable. */
+          const sb2=document.createElement('button'); sb2.textContent='📖';
+          sb2.title=window.IntMapLang.t(HOST.lang,"Sources and assumptions","出典と仮定","Quellen und Annahmen","Источники и допущения","Fuentes y supuestos");
+          sb2.style.cssText='border:none;border-radius:8px;background:'+(srcOpen?'var(--primary-color)':'var(--input-bg)')+';color:'+(srcOpen?'#fff':'var(--text-main)')+';padding:3px 9px;font-size:11px;cursor:pointer;';
+          sb2.onclick=()=>{ srcOpen=!srcOpen; renderRun(ended); }; row.appendChild(sb2);
           const ex=document.createElement('button'); ex.textContent='×'; ex.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;cursor:pointer;'; ex.onclick=exit; row.appendChild(ex);
           hud.appendChild(row);
           const hint=document.createElement('div'); hint.style.cssText='margin-top:6px;font-size:10.5px;color:var(--text-muted);line-height:1.4;';
           hint.textContent=window.IntMapLang.t(HOST.lang,"Tap any country for its own numbers.","国をタップすると、その国の数字が見られます。","Tippen Sie ein Land an, um seine eigenen Zahlen zu sehen.","Нажмите на страну, чтобы увидеть её показатели.","Toque un país para ver sus propias cifras."); hud.appendChild(hint);
           const ins=document.createElement('div'); ins.id='pg-inspect'; ins.style.cssText='margin-top:8px;border-top:1px solid rgba(128,128,128,0.2);padding-top:7px;display:none;'; hud.appendChild(ins);
           const fd=document.createElement('div'); fd.id='pg-feed'; fd.style.cssText='margin-top:8px;border-top:1px solid rgba(128,128,128,0.2);padding-top:7px;display:none;'; hud.appendChild(fd);
+          if(srcOpen) hud.appendChild(sourcesPanel());
           const en=document.createElement('div'); en.id='pg-ens'; en.style.cssText='margin-top:8px;border-top:1px solid rgba(128,128,128,0.2);padding-top:7px;display:none;'; hud.appendChild(en);
           hud.appendChild(disclaimer()); hud.appendChild(mobilityNote()); hud.appendChild(policyNote());
           renderFeedBadge(); renderFeedList(); renderEns(); updateHud();
@@ -1055,7 +1300,21 @@ window.IntMapModules.playground=function(HOST){
               ? window.IntMapLang.t(HOST.lang,"International spread is weighted by population, distance and airport capacity. The land-border table did not load.","国際伝播の重みは人口・距離・空港規模によるものです。陸上の国境データは読み込めませんでした。","Die internationale Ausbreitung ist nach Bevölkerung, Entfernung und Flughafenkapazität gewichtet. Die Landgrenzentabelle wurde nicht geladen.","Международное распространение взвешено по населению, расстоянию и мощности аэропортов. Таблица сухопутных границ не загрузилась.","La propagación internacional se pondera por población, distancia y capacidad aeroportuaria. No se cargó la tabla de fronteras terrestres.")
               : window.IntMapLang.t(HOST.lang,"International spread is weighted by population, distance and land borders. The airport table did not load.","国際伝播の重みは人口・距離・陸上の国境によるものです。空港データは読み込めませんでした。","Die internationale Ausbreitung ist nach Bevölkerung, Entfernung und Landgrenzen gewichtet. Die Flughafentabelle wurde nicht geladen.","Международное распространение взвешено по населению, расстоянию и сухопутным границам. Таблица аэропортов не загрузилась.","La propagación internacional se pondera por población, distancia y fronteras terrestres. No se cargó la tabla de aeropuertos.");
             return d; }
-          d.textContent=window.IntMapLang.t(HOST.lang,"International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.","国際伝播の重みは人口・陸上の国境・空港規模によるもので、路線や旅客数によるものではありません。","Die internationale Ausbreitung ist nach Bevölkerung, Landgrenzen und Flughafenkapazität gewichtet — nicht nach Flugrouten oder Passagierzahlen.","Международное распространение взвешено по населению, сухопутным границам и мощности аэропортов — не по авиамаршрутам и не по пассажиропотоку.","La propagación internacional se pondera por población, fronteras terrestres y capacidad aeroportuaria, no por rutas aéreas ni número de pasajeros.");
+          /* ⚠⚠ (#R679) THE SENTENCE CHANGED BECAUSE THE MODEL DID. It used to end «not by flight
+             routes or passenger numbers», which was true and is no longer: data/mobility.json
+             carries both a route network and observed passenger volumes. What has to be said now is
+             narrower and more awkward — the routes are REAL and they are TWELVE YEARS OLD — and a
+             reader is owed the awkward version, because «weighted by flight routes» on its own
+             would be read as «weighted by this year's flight routes». */
+          const rt=dataState.routes==='ok'||dataState.routes==='partial';
+          const vol=dataState.volumes==='ok'||dataState.volumes==='partial';
+          d.textContent=(rt&&vol)
+            ? window.IntMapLang.t(HOST.lang,"International spread is weighted by land borders, by how many travellers each country actually receives, and by the airline route network as it stood in 2014 — the newest one that is openly published. Route counts are not seats or passenger numbers.","国際伝播の重みは、陸上の国境・各国が実際に受け入れている旅行者数・2014年時点の航空路線網（公開されているもので最新）によるものです。路線数は座席数でも旅客数でもありません。","Die internationale Ausbreitung ist nach Landgrenzen, beobachteten Reisendenzahlen und dem Streckennetz von 2014 gewichtet — dem neuesten offen veröffentlichten. Streckenzahlen sind keine Sitzplätze und keine Passagierzahlen.","Международное распространение взвешено по сухопутным границам, наблюдаемым объёмам поездок и сети авиамаршрутов по состоянию на 2014 год — самой свежей из открыто опубликованных. Число маршрутов — это не кресла и не пассажиры.","La propagación internacional se pondera por fronteras terrestres, volúmenes de viajeros observados y la red de rutas aéreas de 2014, la más reciente publicada abiertamente. El número de rutas no son asientos ni pasajeros.")
+            : rt
+            ? window.IntMapLang.t(HOST.lang,"International spread is weighted by land borders, airport capacity and the airline route network as it stood in 2014. The observed traveller volumes did not load.","国際伝播の重みは、陸上の国境・空港規模・2014年時点の航空路線網によるものです。実測の旅行者数は読み込めませんでした。","Die internationale Ausbreitung ist nach Landgrenzen, Flughafenkapazität und dem Streckennetz von 2014 gewichtet. Die beobachteten Reisendenzahlen wurden nicht geladen.","Международное распространение взвешено по сухопутным границам, мощности аэропортов и сети авиамаршрутов 2014 года. Наблюдаемые объёмы поездок не загрузились.","La propagación internacional se pondera por fronteras terrestres, capacidad aeroportuaria y la red de rutas aéreas de 2014. No se cargaron los volúmenes de viajeros observados.")
+            : vol
+            ? window.IntMapLang.t(HOST.lang,"International spread is weighted by land borders and by how many travellers each country actually receives. The route network did not load, so distance decides which country an outbreak reaches next.","国際伝播の重みは、陸上の国境と実測の旅行者数によるものです。路線網は読み込めなかったため、次にどの国へ届くかは距離が決めています。","Die internationale Ausbreitung ist nach Landgrenzen und beobachteten Reisendenzahlen gewichtet. Das Streckennetz wurde nicht geladen, daher entscheidet die Entfernung, welches Land als Nächstes erreicht wird.","Международное распространение взвешено по сухопутным границам и наблюдаемым объёмам поездок. Сеть маршрутов не загрузилась, поэтому следующую страну определяет расстояние.","La propagación internacional se pondera por fronteras terrestres y volúmenes de viajeros observados. La red de rutas no se cargó, así que la distancia decide a qué país llega después.")
+            : window.IntMapLang.t(HOST.lang,"International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.","国際伝播の重みは人口・陸上の国境・空港規模によるもので、路線や旅客数によるものではありません。","Die internationale Ausbreitung ist nach Bevölkerung, Landgrenzen und Flughafenkapazität gewichtet — nicht nach Flugrouten oder Passagierzahlen.","Международное распространение взвешено по населению, сухопутным границам и мощности аэропортов — не по авиамаршрутам и не по пассажиропотоку.","La propagación internacional se pondera por población, fronteras terrestres y capacidad aeroportuaria, no por rutas aéreas ni número de pasajeros.");
           return d; }
         /* ⚠ (#R673) `worldReady` IS A PRECONDITION OF THE RUN, NOT A SPINNER. Until both tables have
            settled there is no answer to «which world is this», and a run started without one cannot
@@ -1070,7 +1329,7 @@ window.IntMapModules.playground=function(HOST){
           if(hit==null) return;
           if(!picking){ if(!model) return; inspectIdx=(inspectIdx===hit?-1:hit); renderInspect(); return; }
           picking=false; ensOrigin=hit;
-          model=createPandemicModel({countries:world,preset:preset(),params:cfg,seed:runSeed});
+          model=createPandemicModel({countries:presetWorld(),routes:routesT,preset:preset(),params:cfg,seed:runSeed});
           /* ⚠ (#R673) `start()` BEFORE `renderRun()`, BECAUSE THE BUTTON'S CAPTION IS DERIVED FROM
              `running` AT DRAW TIME. It was drawn first and never redrawn, so a run that was already
              playing offered the reader a 「▶ 再開」 button — the control and the state disagreed from

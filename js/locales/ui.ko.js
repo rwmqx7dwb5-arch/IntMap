@@ -6377,4 +6377,41 @@ window.IntMapLang.define('ko', { ui: {
   "Susceptible": "미감염(감수성)",   /* playground.js (#R675) */
   "Tap any country for its own numbers.": "국가를 탭하면 그 국가의 수치를 볼 수 있습니다.",   /* playground.js (#R675) */
   "treatment available": "치료법 있음",   /* playground.js (#R675) */
+  "Sources and assumptions": "출처와 가정",   /* playground.js (#R679) */
+  "Disease parameters": "질병 파라미터",   /* playground.js (#R679) */
+  "How fast it spreads": "전파 속도",   /* playground.js (#R679) */
+  "How deadly it is": "치명률",   /* playground.js (#R679) */
+  "How long immunity lasts": "면역 지속 기간",   /* playground.js (#R679) */
+  "Vaccine": "백신",   /* playground.js (#R679) */
+  "Treatment": "치료",   /* playground.js (#R679) */
+  "Starting immunity": "초기 면역",   /* playground.js (#R679) */
+  "No named source in this table": "이 표에 출처가 적혀 있지 않은 항목",   /* playground.js (#R679) */
+  "The world this run uses": "이번 실행이 쓰는 세계",   /* playground.js (#R679) */
+  "Land borders and capitals": "육상 국경과 수도",   /* playground.js (#R679) */
+  "Airport capacity": "공항 수용력",   /* playground.js (#R679) */
+  "Airline route network": "항공 노선망",   /* playground.js (#R679) */
+  "June 2014 snapshot, no longer updated": "2014년 6월 시점 · 갱신 중단",   /* playground.js (#R679) */
+  "How many travellers arrive in each country": "각 국가에 입국하는 여행자 수",   /* playground.js (#R679) */
+  "Medical capacity, emergency response, vaccine delivery": "의료 대응력 · 긴급 대응 · 백신 공급",   /* playground.js (#R679) */
+  "Where the case dots are drawn": "증례 점을 그리는 위치",   /* playground.js (#R679) */
+  "Assumptions, not measurements": "측정이 아니라 가정",   /* playground.js (#R679) */
+  "Route counts stand in for passenger flows": "노선 수가 여객 흐름을 대신합니다",   /* playground.js (#R679) */
+  "No open, current bilateral passenger matrix exists. Part of each origin's air weight comes from the 2014 route network and the rest from a distance model, which is also how a country with no direct flight is still reachable.": "공개되어 있고 현행인 국가 간 여객 행렬은 존재하지 않습니다. 각 출발국 항공 가중치의 일부는 2014년 노선망에서, 나머지는 거리 모형에서 옵니다. 직항이 없는 나라에도 전파가 닿는 것은 그 때문입니다.",   /* playground.js (#R679) */
+  "Case dots sit on cities, not on a population surface": "증례 점은 인구 분포면이 아니라 도시 위에 찍힙니다",   /* playground.js (#R679) */
+  "Dots are shared out between a country's places in proportion to how many people live in each. A city gazetteer knows where towns are, not where the countryside is.": "점은 그 나라 각 지역에 사는 인구 수에 비례해 배분됩니다. 도시 지명 사전이 아는 것은 도시의 위치이지 농촌이 어디인지가 아닙니다.",   /* playground.js (#R679) */
+  "Measles starts from WHO/UNICEF first-dose coverage per country. That is childhood coverage read as whole-population immunity: this model has no age structure.": "홍역은 WHO/UNICEF의 국가별 1차 접종률에서 출발합니다. 이는 소아 접종률을 전체 인구의 면역으로 읽은 것으로, 이 모형에는 연령 구조가 없습니다.",   /* playground.js (#R679) */
+  "One assumed figure for every country and every age. Nobody publishes per-country protection against infection, so this is the coarsest shape a one-compartment immunity can take — not an estimate anyone made.": "모든 국가와 모든 연령에 적용한 하나의 가정값입니다. 국가별 감염 방어율을 공표하는 곳은 없으며, 이는 면역을 한 칸으로만 다루는 이 모형이 취할 수 있는 가장 거친 형태일 뿐 누군가의 추정치가 아닙니다.",   /* playground.js (#R679) */
+  "Severity is applied to every infection": "중증도는 모든 감염에 적용됩니다",   /* playground.js (#R679) */
+  "Presets whose severity is a CFR have a smaller denominator than an IFR does, and this model has no detection layer to tell them apart. The setting shows which metric a preset uses so it can be lowered.": "중증도를 CFR로 잡은 프리셋은 IFR보다 분모가 작지만, 이 모형에는 둘을 구분할 검출 층이 없습니다. 설정 화면은 프리셋이 어느 지표를 쓰는지 보여 주므로 값을 낮출 수 있습니다.",   /* playground.js (#R679) */
+  "Medical capacity": "의료 대응력",   /* playground.js (#R679) */
+  "Emergency response": "긴급 대응",   /* playground.js (#R679) */
+  "Vaccine delivery": "백신 공급",   /* playground.js (#R679) */
+  "estimated from GDP per head — this country is not in the WHO or World Bank table": "1인당 GDP로 추정 — 이 국가는 WHO나 세계은행 표에 없습니다",   /* playground.js (#R679) */
+  "loaded": "불러옴",   /* playground.js (#R679) */
+  "loaded for some countries": "일부 국가만 불러옴",   /* playground.js (#R679) */
+  "did not load": "불러오지 못함",   /* playground.js (#R679) */
+  "still loading": "불러오는 중",   /* playground.js (#R679) */
+  "International spread is weighted by land borders, by how many travellers each country actually receives, and by the airline route network as it stood in 2014 — the newest one that is openly published. Route counts are not seats or passenger numbers.": "국제 전파는 육상 국경, 각국이 실제로 받아들이는 여행자 수, 그리고 공개된 것 중 가장 최신인 2014년 시점의 항공 노선망으로 가중합니다. 노선 수는 좌석 수도 승객 수도 아닙니다.",   /* playground.js (#R679) */
+  "International spread is weighted by land borders, airport capacity and the airline route network as it stood in 2014. The observed traveller volumes did not load.": "국제 전파는 육상 국경, 공항 수용력, 그리고 2014년 시점의 항공 노선망으로 가중합니다. 관측된 여행자 규모는 불러오지 못했습니다.",   /* playground.js (#R679) */
+  "International spread is weighted by land borders and by how many travellers each country actually receives. The route network did not load, so distance decides which country an outbreak reaches next.": "국제 전파는 육상 국경과 각국이 실제로 받아들이는 여행자 수로 가중합니다. 항공 노선망을 불러오지 못해, 다음에 어느 나라로 번지는지는 거리가 결정합니다.",   /* playground.js (#R679) */
 } });
