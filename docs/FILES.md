@@ -766,10 +766,12 @@ data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoric
                                   ⚠ **各行の列 10 は OHM の relation id**——クリックしたとき、その 1 件だけを
                                   上流から原寸で取り直すために要る（名前ではなく id で訊く）
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
+                                  門は `npm run check:histadmin`（残余は docs/TESTING.md）
 data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM2`・
                                   22,708件／rings 21,676・14.8 MB・列 10 は同じく relation id）。同じ生成器の
                                   `--levels 5,6`。**z6 未満では取得もしない**——描かない縮尺で 10 MB 以上を
-                                  払わせないため（docs/MAP-LAYERS.md §7.7）
+                                  払わせないため（docs/MAP-LAYERS.md §7.7）。門は第1級と同じ
+                                  `npm run check:histadmin`——1 つの build が両方を焼くので、門も 1 つ
 data/hist-kuni.js                 **IntMap 自身が導出した**日本の令制国 15 国（`window.__HISTKUNI`・1.67 MB・
                                   閉じた輪郭 6,425 本・82,199 頂点）。上と同じリングプール形式で、束（__HISTADM1）に
                                   **追記**される——第2の索引もラベル層もクリック経路も作らない。
@@ -848,6 +850,13 @@ scripts/
                                   要るので、代わりに**同梱ファイルの不変条件**を測る（窓の中に収まっているか・リング番号が
                                   解決するか・日付の順序・英語名の有無・**窓のどの年にも描く世界があるか**）。
                                   `--fetch` が取得、無印がビルド、`--report` が被覆表。
+  build-hist-admin1.mjs           OpenHistoricalMap の `admin_level` 3–6 の境界関係 → `data/hist-admin1.js`
+                                  （`--levels 3,4`）と `data/hist-admin2.js`（`--levels 5,6`）。**1 本の build が
+                                  両方の層を焼く**ので、門も 1 本（`npm run check:histadmin`）。⚠ 出力の global は
+                                  `--out` の綴りから導く——`--global` の既定値だった頃、第2級が `__HISTADM1` を
+                                  名乗って第1級を置き換えた（#R604）。⚠ **`--check` は再生成しない**——OHM の
+                                  3–6 抽出そのもの（28,211 relation・実測 3.4 GB）が要るので、代わりに
+                                  **同梱バイトの不変条件**を測る（層は data/ から発見する。残余は docs/TESTING.md）
   build-hist-kuni.mjs             上流が持っていない日本の令制国 15 国 → `data/hist-kuni.js`。範囲は
                                   Asukana/Ryoseikoku_20230626_TSV（**CC0 1.0**）の 663 枚の z10 タイルを
                                   ベクタ化（1 セル＝経度 0.001373°≒112 m・セル境界を厳密に辿り→共線を潰し→

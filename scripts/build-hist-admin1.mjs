@@ -55,7 +55,8 @@
  *  paid mostly in main-thread PARSE, not in transfer — which is why the raw column is
  *  the one that decided it. 0.02 deg keeps every unit the coarser step drops.
  *
- *  Usage:  node scripts/build-hist-admin1.mjs [--out data/hist-admin1.js]
+ *  Usage:  node scripts/build-hist-admin1.mjs --check           # verify the COMMITTED bundles, offline (#R680)
+ *          node scripts/build-hist-admin1.mjs [--out data/hist-admin1.js]
  *                                            [--tol 0.02] [--dec 3] [--since 1850] [--batch 20]
  * ==========================================================================*/
 import fs from 'node:fs';
@@ -200,7 +201,178 @@ const ringsOf  = el => OHMR.ringsOf(el);
 const ringArea = r => OHMR.ringArea(r);
 const polysOf  = rings => OHMR.polysOf(rings, MIN_AREA);
 
-(async function main() {
+
+/* ══ ── CHECK (offline) ─────────────────────────────────────────────────────────────────────────
+   (#R680) THE TWO LARGEST BUNDLES IN data/ HAD NO GATE AT ALL. data/hist-admin1.js (10.3 MB) and
+   data/hist-admin2.js (15.5 MB) are where the map gets every first- and second-level line, every
+   label on one, every answer to a click on one and every coverage count — 25.8 MB of shipped bytes
+   that `npm test` and CI weighed nothing of. Each of the four neighbouring historical bundles has
+   a gate (`check:histborders`, `check:histeras`, `check:kuni`, `check:bordercoast`); these two were
+   written after those and were simply never given one, so a bundle that broke — or that quietly
+   went stale — would have said so to nobody.
+
+   ⚠ THIS RE-DERIVES NOTHING, AND SAYS SO. Same judgement and same measured reason as
+   `check:histborders` / `check:histeras`: the build consumes OHM's whole admin_level 3–6 extract
+   (28,211 relations; one resumed run measured 3.4 GB of Overpass), which CI cannot hold. What is
+   proved is that the COMMITTED bytes are internally sound and still joined to the files that read
+   them. The residual — a bundle that has drifted from upstream still passes — is written out in
+   docs/TESTING.md rather than left to be inferred.
+
+   ⚠ THE TIERS ARE DISCOVERED, NOT LISTED. `data/hist-admin<N>.js` holds `window.__HISTADM<N>` at
+   admin_level 2N+1 and 2N+2; that convention is what #R604's accident violated and what `--global`
+   above already reads off the file name. A hand-written pair of filenames here would silently skip
+   a third tier the day one is added, so the list is the directory.
+
+   ⚠ TWO JOINS THIS GATE DOES NOT OWN, and does not restate:
+     · data/hist-kuni.js must not name a unit these bundles already hold (it would be drawn twice).
+       正本 is `check:kuni` — it measures that from the derived side, where the decision is made.
+     · every ring's border/coastline marks. 正本 is `check:bordercoast`, which RE-DERIVES all of
+       them against the bundled coastline. What is kept here is the O(1) half it cannot state
+       cheaply: that the marks were built against THIS many rings — i.e. that the bundle has not
+       been rebuilt without them. */
+const TIERRE = /^hist-admin(\d+)\.js$/;
+function tiers() {
+  return fs.readdirSync(path.join(ROOT, 'data')).filter(f => TIERRE.test(f)).sort()
+    .map(f => { const n = parseInt(TIERRE.exec(f)[1], 10);
+      return { file: 'data/' + f, n, global: '__HISTADM' + n, levels: [2 * n + 1, 2 * n + 2] }; });
+}
+/* ⚠ (#R680) A CEILING, NOT A WAIVER LIST. Three shipped records carry no name in any language —
+   OHM relations 2698257 (level 3, 1918–1921) and 2735085 / 2735454 (level 6, 1895–1923). A reader
+   cannot be told anything about such a unit: it has no label, and a click on it answers with a
+   blank. Naming those three ids here would be the per-case rule .agents/rules/no-ad-hoc-hardcoding.md
+   forbids, and asserting nothing would let the next rebuild ship four hundred of them — the #R669
+   shape, where a build silently dropped what it did not recognise.
+     観測   3, measured 2026-09-11 over the committed bundles (1 in tier 1, 2 in tier 2).
+     失効   the moment the builder refuses to emit a nameless record, or upstream names these —
+            then this goes to 0 and stays there. It only ever moves DOWN, like scripts/test-budget.mjs.
+     正本   this line. Nothing else states a nameless budget. */
+const NAMELESS_MAX = 3;
+
+function bcSets() {
+  const f = path.join(ROOT, 'data', 'border-coast.js');
+  if (!fs.existsSync(f)) return null;
+  const w = {}; new Function('window', fs.readFileSync(f, 'utf8'))(w);
+  return (w.__IMBCOAST || {}).sets || null;
+}
+
+function check() {
+  const bad = [];
+  const list = tiers();
+  if (list.length < 2) bad.push('data/ holds ' + list.length + ' hist-admin tier(s) — the map reads at least two');
+  const sets = bcSets();
+  if (!sets) bad.push('data/border-coast.js does not declare the ring-mark sets these bundles are joined to');
+  const owner = new Map();          /* OHM relation id → the tier that already claimed it */
+  let nameless = 0, feats = 0, rings = 0, pts = 0;
+  const nowY = new Date().getUTCFullYear();
+
+  for (const t of list) {
+    const p = path.join(ROOT, t.file);
+    if (!fs.existsSync(p)) { bad.push(t.file + ' does not exist'); continue; }
+    const w = {};
+    try { new Function('window', fs.readFileSync(p, 'utf8'))(w); }
+    catch (e) { bad.push(t.file + ' does not evaluate: ' + e.message); continue; }
+    /* ⚠ (#R604) THE FILE MUST NAME ITSELF. Building the deeper tier without `--global` wrote
+       `window.__HISTADM1=` into data/hist-admin2.js — 15 MB whose every assertion about itself was
+       true and whose name was wrong, replacing the first tier's record the moment it loaded.
+       tests/r604-checks ⑦ watches this from the shipped side; the build's own gate watches it too,
+       because the build is where the name is chosen. */
+    const named = Object.keys(w).filter(k => /^__HISTADM/.test(k));
+    if (named.length !== 1 || named[0] !== t.global) {
+      bad.push(t.file + ' defines ' + (named.join(', ') || 'no __HISTADM* global') + ' — it must define ' + t.global + ' and nothing else');
+      continue;
+    }
+    const d = w[t.global];
+
+    if (d.v !== 1) bad.push(t.file + ': v is ' + d.v + ', expected 1');
+    if (!/OpenHistoricalMap/i.test(d.src || '') || !/CC0/.test(d.src || ''))
+      bad.push(t.file + ': src must name OpenHistoricalMap and the CC0 licence it is redistributed under');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.built || '')) || isNaN(Date.parse(d.built)))
+      bad.push(t.file + ': built is ' + d.built + ', expected an ISO date');
+    if (!Number.isInteger(d.since)) bad.push(t.file + ': since is ' + d.since + ', expected an integer year');
+    if (!(Number.isFinite(d.tolerance) && d.tolerance > 0)) bad.push(t.file + ': tolerance is ' + d.tolerance);
+    /* the tier a file NAMES and the tier it HOLDS are one fact — see the convention above */
+    if (String(d.levels) !== String(t.levels))
+      bad.push(t.file + ': declares levels ' + JSON.stringify(d.levels) + ', but its name says ' + JSON.stringify(t.levels));
+    if (!Array.isArray(d.rings) || !d.rings.length) { bad.push(t.file + ': no rings'); continue; }
+    if (!Array.isArray(d.feats) || !d.feats.length) { bad.push(t.file + ': no feats'); continue; }
+
+    const say = (i, f, m) => bad.push(t.file + ' feat ' + i + ' (' + ((f && f[0]) || (f && f[9] && Object.values(f[9])[0]) || 'rel ' + (f && f[10])) + '): ' + m);
+    d.rings.forEach((r, i) => {
+      if (!Array.isArray(r) || r.length < 4) { bad.push(t.file + ' ring ' + i + ' has ' + (r && r.length) + ' points — a closed ring needs four'); return; }
+      if (r.some(q => !Array.isArray(q) || q.length !== 2 || !isFinite(q[0]) || !isFinite(q[1]) ||
+                      q[0] < -180.001 || q[0] > 180.001 || q[1] < -90.001 || q[1] > 90.001))
+        bad.push(t.file + ' ring ' + i + ' leaves the globe');
+      else if (r[0][0] !== r[r.length - 1][0] || r[0][1] !== r[r.length - 1][1])
+        bad.push(t.file + ' ring ' + i + ' does not close');
+    });
+
+    const used = new Set();
+    d.feats.forEach((f, i) => {
+      if (!Array.isArray(f) || f.length !== 11) { say(i, f, 'has ' + (f && f.length) + ' columns, expected 11'); return; }
+      if (!d.levels.includes(f[1])) say(i, f, 'is admin_level ' + f[1] + ', which this tier does not hold');
+      const s = f[2] * 10000 + f[3] * 100 + f[4], e = f[5] * 10000 + f[6] * 100 + f[7];
+      if (!(f[3] >= 1 && f[3] <= 12 && f[6] >= 1 && f[6] <= 12 && f[4] >= 1 && f[4] <= 31 && f[7] >= 1 && f[7] <= 31))
+        say(i, f, 'has a month or day outside the calendar');
+      else if (!(s <= e)) say(i, f, 'ends before it starts');   /* both ends inclusive, like data/cshapes.js */
+      if (f[5] < d.since) say(i, f, 'ended before ' + d.since + ', the floor this bundle was built to');
+      if (!Array.isArray(f[8]) || !f[8].length) say(i, f, 'has no polygons');
+      else for (const poly of f[8]) for (const ri of poly) {
+        if (!(Number.isInteger(ri) && ri >= 0 && ri < d.rings.length)) say(i, f, 'points at ring ' + ri + ', which is not in the pool');
+        else used.add(ri);
+      }
+      const nm = f[9] || {};
+      for (const k of Object.keys(nm)) if (!Object.prototype.hasOwnProperty.call(LANGS, k))
+        say(i, f, 'carries a name under ' + k + ', which is not one of the languages this build reads');
+      /* U+FFFD is what a mis-decoded upstream response leaves behind — check:histeras measures the
+         same thing on the era snapshots, for the same reason: it renders, so nothing else notices. */
+      for (const v of [f[0]].concat(Object.values(nm))) if (/�/.test(String(v || ''))) say(i, f, 'has a replacement character in a name');
+      if (!f[0] && !Object.keys(nm).length) nameless++;
+      /* column 10 is what makes the click sharp (#R669): one record, fetched whole from upstream.
+         Two records under one id would send the reader's tap to the wrong geometry. */
+      if (!(Number.isInteger(f[10]) && f[10] > 0)) say(i, f, 'has no OpenHistoricalMap relation id');
+      else if (owner.has(f[10])) say(i, f, 'reuses relation ' + f[10] + ', already held by ' + owner.get(f[10]));
+      else owner.set(f[10], t.file);
+    });
+    if (used.size !== d.rings.length)
+      bad.push(t.file + ': ' + (d.rings.length - used.size) + ' of ' + d.rings.length + ' pooled rings are referenced by no feature — bytes shipped for nothing');
+
+    /* ⚠ A PROPERTY, NOT A HEADCOUNT. `check:histborders` asks the same question of its 36-year
+       window year by year; here the reach is the whole calendar, so the unit is the century. How
+       MANY units a century holds is upstream's business and moves every time OHM grows — that
+       every century the bundle claims to cover has SOMETHING to draw is this file's own business. */
+    for (let y = Math.max(1, d.since); y <= nowY; y += 100) {
+      const t15 = y * 10000 + 615;
+      if (!d.feats.some(f => (f[2] * 10000 + f[3] * 100 + f[4]) <= t15 && (f[5] * 10000 + f[6] * 100 + f[7]) >= t15))
+        bad.push(t.file + ': nothing is in force on ' + y + '-06-15 — a century this bundle claims to reach draws nothing');
+    }
+
+    /* the O(1) half of the border/coastline join — see the note above; check:bordercoast owns the rest */
+    if (sets) {
+      const set = Object.values(sets).find(v => v && v.file === t.file);
+      if (!set) bad.push(t.file + ' has no ring-mark set in data/border-coast.js — every edge of it would be stroked as a border');
+      else if (set.rings !== d.rings.length)
+        bad.push(t.file + ' holds ' + d.rings.length + ' rings and data/border-coast.js was built against ' + set.rings
+          + ' — the marks are indexed by ring, so they now describe other polygons. Re-run scripts/build-border-coast.mjs.');
+    }
+    feats += d.feats.length; rings += d.rings.length; pts += d.rings.reduce((a, r) => a + r.length, 0);
+  }
+
+  if (nameless > NAMELESS_MAX)
+    bad.push(nameless + ' features carry no name in any language, over the ceiling of ' + NAMELESS_MAX
+      + ' — a unit with no name has no label and answers a click with a blank');
+
+  if (bad.length) {
+    console.error('hist-admin: ' + bad.length + ' problem(s)');
+    for (const b of bad.slice(0, 25)) console.error('  ' + b);
+    if (bad.length > 25) console.error('  … and ' + (bad.length - 25) + ' more');
+    process.exit(1);
+  }
+  console.log('✓ hist-admin — ' + list.length + ' tiers, ' + feats + ' units, ' + rings + ' pooled rings, '
+    + pts + ' vertices; every century covered, every ring used, every unit joined to its OHM relation'
+    + (nameless ? ' (' + nameless + '/' + NAMELESS_MAX + ' nameless)' : ''));
+}
+
+async function main() {
   fs.mkdirSync(CACHE, { recursive: true });
   /* ⚠ THE TAG SWEEP IS CACHED TOO. It was not, and a rebuild at a different --tol
      therefore had to re-ask Overpass for the whole 5.6 MB index — which is the one
@@ -388,4 +560,7 @@ const polysOf  = rings => OHMR.polysOf(rings, MIN_AREA);
   console.error('· wrote', path.relative(ROOT, OUT), (body.length / 1048576).toFixed(2) + ' MB',
                 '| feats', feats.length, '| rings', pool.length, '| dropped', dropped);
   console.error('· in force:', years.map(y => y + '=' + alive(y)).join(' '));
-})().catch(e => { console.error('FAILED', e); process.exit(1); });
+}
+
+if (args.includes('--check')) check();
+else main().catch(e => { console.error('FAILED', e); process.exit(1); });

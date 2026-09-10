@@ -127,6 +127,13 @@ const HALVES = [
          a boundary twice) and re-derives from upstream only on a machine that has the raster. Both
          halves print which one ran. */
       ['node', ['scripts/build-hist-kuni.mjs', '--check']],
+      /* ⚠ (#R680) …and the SEVENTH, for the two bundles that are BIGGER THAN ALL THE OTHERS PUT
+         TOGETHER and had no gate whatsoever. 25.8 MB of first- and second-level subdivisions, and
+         until this round nothing in `npm test` or in ci.yml read one byte of them. It is offline and
+         measured 0.8 s, so there is no cost that could later justify unhooking it — the same reason
+         #R588 gave for the elections gate above. What it proves and what it deliberately cannot see
+         are in docs/TESTING.md. */
+      ['node', ['scripts/build-hist-admin1.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],
