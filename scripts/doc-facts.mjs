@@ -1650,10 +1650,11 @@ if (RULE && RULE !== 'i18n-open-gap') {
 }
 
 /* ========================================================================================
- *  (#R518) THE 1850-1885 BORDER RECORD — the numbers the prose quotes are the file's own
+ *  (#R518, widened #R688) THE DAY-EXACT BORDER RECORD BELOW CShapes — the numbers the prose quotes
  * ----------------------------------------------------------------------------------------
- *  data/hist-borders.js is the 正本 for how many polities and how many transition dates the
- *  1850-1885 window holds, and both numbers are quoted in prose in several places (Architecture,
+ *  are the file's own. data/hist-borders.js is the 正本 for how many polities and how many transition dates the
+ *  window holds — 1689-1885 since #R688, and the window is read off the file rather than spelled here
+ *  — and both numbers are quoted in prose in several places (Architecture,
  *  PRODUCT, and the Sources page in nine languages). #R500's finding was that a prose copy of a
  *  machine's number always parts from it eventually, so the file is measured here and every LINE
  *  that names the record is held to it.
@@ -1710,7 +1711,7 @@ if (RULE && RULE !== 'i18n-open-gap') {
     const archLines = ARCH.split(/\r?\n/).filter((l) => /hist-borders(?:\.js)?|OpenHistoricalMap/.test(l)).join('\n');
     for (const [want, what, res] of CLAIM) {
       if (!res.some((re) => { re.lastIndex = 0; return re.test(archLines); }))
-        fail('histb-count', 'Architecture.md no longer states how many ' + what + ' the 1850-1885 border record holds — it is the 正本 for that number');
+        fail('histb-count', 'Architecture.md no longer states how many ' + what + ' the day-exact border record holds — it is the 正本 for that number');
     }
     if (!problems.some((x) => x.startsWith('histb-count')))
       ok('histb-count', checked + ' stated number(s) across ' + carriers + ' source(s) — ' + RECORDS + ' records, ' + DATES + ' transition dates in ' + HB.window[0] + '-' + HB.window[1]);

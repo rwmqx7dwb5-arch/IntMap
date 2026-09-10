@@ -112,6 +112,24 @@ const ALLOW = {
        MIN_AREA, 0.008°/4 dec built 13.99 MB, and 0.012°/4 dec — 1.3 km, finer than the first tier,
        because this one is only ever read zoomed IN — builds this and loses 82. */
     { match: /^data\/hist-admin2\.js$/, why: 'the dated second-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, and js/time-admin1.js fetches it only once the camera passes z6 (#R564)' },
+    /* ⚠ (#R688) THE COUNTRY RECORD CROSSED THE CEILING BECAUSE IT STOPPED BEING A 36-YEAR WINDOW.
+       #R518 built data/hist-borders.js for 1850–1885 and it came out at 5.3 MB, just under. The
+       source was never a 19th-century dataset though: 2,101 of OpenHistoricalMap's 3,985
+       admin_level=2 relations END before 1850, so 53% of what it publishes sat below the window and
+       every year of it was answered by a snapshot series that is 100 years apart below AD 1000. The
+       bundle now runs 1689–1885 — 1,411 records against 494, 881 transition dates against 216.
+       ⚠ THE SIZE WAS PRICED, NOT ACCEPTED, and unusually the answer was to KEEP the tolerance rather
+       than take the saving. Re-swept on the widened download: 0.008° builds 18.14 MB, 0.012° builds
+       13.28 MB, 0.015° 11.13 MB, 0.020° 8.82 MB — and every one of those keeps all 1,411 records, so
+       #R530's usual rule («the coarsest step that loses no unit») would say 0.020° and save 4.46 MB.
+       It does not apply here, and the reason is the handover: a reader can step across 1885→1886 one
+       DAY at a time, and at 0.020° the coastline of 1885 would visibly coarsen at that step while the
+       borders of 1886 (data/cshapes.js, 0.012°) stayed fine. The two records are read as one, so they
+       are simplified as one.
+       ⚠ IT IS NOT ON THE BOOT PATH AND NOT IN ANY CHUNK: js/time-borders.js injects it as a <script>
+       the first time the clock asks for a year only it can answer, exactly as #R192/#R201 settled for
+       CShapes and #R679 for the era snapshots. */
+    { match: /^data\/hist-borders\.js$/, why: 'the day-exact country borders below CShapes, 1689–1885 (OpenHistoricalMap, CC0) — one file is the dataset, injected as a <script> only when the clock asks, and simplified at data/cshapes.js\'s own tolerance so the 1885→1886 handover does not change resolution (#R688)' },
   ],
 };
 

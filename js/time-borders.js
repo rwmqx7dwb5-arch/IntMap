@@ -61,8 +61,9 @@ window.IntMapModules.timeBorders=function(HOST){
        era polygons at all and would have rendered the PRESENT-DAY world under a 19th-century year.
        They are the only two the upstream repo has in that reach (re-read 2026-09-07: world_1815 and
        world_1880 exist, nothing between them does).
-       ⚠ (#R518) AND THAT IS NOW THE FALLBACK'S JOB ONLY. 1850-1885 has its own day-exact bundle
-       (data/hist-borders.js, `hbFC` below), so these snapshots answer that window only when it fails
+       ⚠ (#R518) AND THAT IS NOW THE FALLBACK'S JOB ONLY. 1850-1885 had its own day-exact bundle
+       (data/hist-borders.js, `hbFC` below — and #R688 widened that bundle down to 1689), so these
+       snapshots answer that window only when it fails
        to load — exactly the role they already played above 1886. What they must never again be is
        the ANSWER: `nearest()` sends every year of 1850-1885 to world_1880, because the 1815/1880
        switch is at the midpoint 1847.5 and the floor is 1850, so 1815 is unreachable from the clock
@@ -112,7 +113,7 @@ window.IntMapModules.timeBorders=function(HOST){
       if((next-y)>=(y-prev)) return prev;
       /* ⚠ (#R349/#R518) MAXGAP GUARDS A FALLBACK, NOT A SOURCE — so it does not apply below CShapes.
          These snapshots now run ONLY when the bundle for the band failed to load (data/cshapes.js
-         above 1886, data/hist-borders.js from 1850 to 1885), and the guard is there so that degraded
+         above 1886, data/hist-borders.js from 1689 to 1885), and the guard is there so that degraded
          mode never answers 1980 with the post-Soviet 1994 map. Below CS_MIN the gap between the two
          available snapshots is 65 years wide — exactly what would trip the guard — and refusing the
          forward jump would answer a degraded 1875 with the Congress-of-Vienna map, sixty years stale,
@@ -152,7 +153,7 @@ window.IntMapModules.timeBorders=function(HOST){
       return _csBnd; }
     /* the epoch a date falls in = the last boundary at or before it. Two dates inside one epoch share a
        cache key, so scrubbing a quiet decade re-renders NOTHING while 1920 now steps thirteen times. */
-    /* (#R518) the search itself, once — the 1850-1885 record below asks the same question of its own
+    /* (#R518) the search itself, once — the OpenHistoricalMap record below asks the same question of its own
        boundary list, and a second copy of a binary search is a second place for it to be wrong. */
     function _epochIn(b,t){ let lo=0,hi=b.length-1,ans=b.length?b[0]:t;
       while(lo<=hi){ const mid=(lo+hi)>>1; if(b[mid]<=t){ ans=b[mid]; lo=mid+1; } else hi=mid-1; }
@@ -314,8 +315,24 @@ window.IntMapModules.timeBorders=function(HOST){
        consecutive same-entity successions in this window have `end_date === the successor's
        start_date`, so reading it the CShapes way would draw both polygons on the changeover day.
        `hbFC` is therefore `s <= t < e` and `csFC` is `s <= t <= e`, and `hbBounds` takes the end
-       AS a boundary where `csBounds` takes the day after it. The two are not interchangeable. */
-    const HB_MIN=1850, HB_MAX=1885;
+       AS a boundary where `csBounds` takes the day after it. The two are not interchangeable.
+       ══ ⚠⚠⚠ (#R688) …AND THE RECORD WAS NEVER A 19th-CENTURY ONE. THE WINDOW WAS. ═════════════════
+       「1850年より前の国境を、スナップショットから日単位の記録へ」 Measured on the source: 2,101 of its
+       3,985 admin_level=2 relations END before 1850 — 53% of what OHM publishes was BELOW the window
+       #R518 cut, and every one of those years was answered by data/hist-eras.js instead, whose
+       snapshots are 100 years apart below AD 1000 and 30-70 apart above it. The bundle now runs to
+       1689: 1,411 records, 881 transition dates, 164-216 polities on any 15 June of it.
+       ⚠⚠⚠ AND 1689 IS DERIVED, NOT CHOSEN — scripts/build-hist-borders.mjs measures it and writes it
+       into the bundle as `window[0]`. OHM's deep end is THIN (at AD 100 it is thirteen polities over
+       6% of the land), so the builder asks the record next door how much land a WORLD takes —
+       data/cshapes.js draws 12,895-14,660 deg² — and keeps only the years where this record covers
+       as much. 1688 covers 9,371 deg²; 1689 covers 11,314. Below that the snapshot series keeps
+       answering, exactly as it did for the whole era before #R518.
+       ⚠ HB_MIN BELOW IS A COPY OF THAT DERIVED FLOOR, and the only reason it is spelled here at all
+       is that `go()` has to decide whether to inject a 13 MB bundle BEFORE it can read the bundle's
+       own window. tests/r688-histborders-deep-checks.test.mjs holds the two equal; the bundle is the
+       canonical one. */
+    const HB_MIN=1689, HB_MAX=1885;
     let _hbD=null,_hbP=null,_hbBnd=null; const _hbGeom=new Map();
     function hbLoad(){ if(_hbD) return Promise.resolve(_hbD); if(_hbP) return _hbP;
       _hbP=new Promise(res=>{ if(window.__HISTB){ _hbD=window.__HISTB; res(_hbD); return; }
@@ -339,7 +356,7 @@ window.IntMapModules.timeBorders=function(HOST){
     /* ⚠ THE NAMES TRAVEL WITH THE POLYGON, in nine languages, because they have to. The era labels are
        otherwise localized by MATCHING an English name against the tables further down this file — which
        works for «Germany» and cannot work for «Kurhessen», «Zuid-Afrikaansche Republiek» or «Rupert's
-       Land». OHM carries name:en/ja/de/ru/es/zh/fr/ko on 274-435 of these 494 records, so `_i18n` rides
+       Land». OHM carries name:en/ja/de/ru/es/zh/fr/ko on 801-1,229 of these 1,411 records, so `_i18n` rides
        along on the feature and `tagSame` reads it before it reaches `_eraLocName`. It is re-read on
        every apply(), so switching language re-labels without re-selecting anything. */
     function hbFC(d,year,mon,day){ const feats=[],lines=[];
@@ -462,7 +479,8 @@ window.IntMapModules.timeBorders=function(HOST){
          parsed here and they are all present, all the same shape. The clock's floor of year 1 meant
          no reader could ask for them anyway, so nothing complained.
        ⚠ ② EVERY YEAR BELOW 1850 WAS ANSWERED FROM SOMEBODY ELSE'S SERVER, THROUGH SOMEBODY ELSE'S
-         CORS PROXY. 1850-2019 has had bundled polygons since #R518/#R117; the deep past — the part
+         CORS PROXY. 1850-2019 has had bundled polygons since #R518/#R117 (1689-2019 since #R688);
+         the deep past — the part
          with no other answer at all — was the one part that went out over `raw.githubusercontent`
          and, failing that, corsproxy.io or allorigins. A century that only exists while three
          third parties are up is not coverage.
@@ -470,7 +488,8 @@ window.IntMapModules.timeBorders=function(HOST){
          held to its invariants by `npm run check:histeras`. Same lazy <script> shape as the two
          bundles above it, so the deep past costs nothing until a reader travels.
        ⚠ THE REMOTE PATH BELOW IS KEPT AND IS NOW THE FALLBACK — the same demotion #R518 gave these
-       snapshots for 1850-1885. A bundle that fails to load still leaves a world on the screen.
+       snapshots for 1850-1885 and #R688 extended down to 1689. A bundle that fails to load still
+       leaves a world on the screen, and so does a year inside that band the record has nothing for.
        ⚠ THE YEARS IN THE BUNDLE ARE ASTRONOMICAL (bc323 is −322; there is no year 0 in the era
        convention, js/hist-scale.js `era`). The upstream file NAME is carried beside each one, so
        the fallback can still ask for it, and so no second table maps between them. */
@@ -562,7 +581,7 @@ window.IntMapModules.timeBorders=function(HOST){
            1914-07-01   150 features → 1,642 outer rings
            1938-07-01   173 features → 1,671 outer rings   (Canada 268 · Indonesia 136 · Chile 124)
        — and it is not one dataset's shape. data/hist-borders.js, the OpenHistoricalMap window #R518
-       gave 1850–1885, is worse:
+       gave 1850–1885 and #R688 widened to 1689–1885, is worse:
            1860-06-15   210 features → 1,934 outer rings
            1875-06-15   167 features → 2,192 outer rings
        and the remote aourednik snapshots, which answer whatever those two do not, are the same:
@@ -1202,7 +1221,7 @@ window.IntMapModules.timeBorders=function(HOST){
         if(hit){ f.properties._same=1; f.properties._modName=hit; }   /* unchanged → its present-day localized name */
         else { f.properties._same=0; f.properties._modName=null;      /* renamed / vanished → era name (imtb-lbl) */
           /* ⚠ (#R518) THE SOURCE'S OWN NAME FIRST. `_eraLocName` localizes by RECOGNISING an English
-             name, so for the 1850-1885 record — «Kurhessen», «Rupert's Land», «Zuid-Afrikaansche
+             name, so for the OpenHistoricalMap record — «Kurhessen», «Rupert's Land», «Zuid-Afrikaansche
              Republiek» — it can only ever return null, and this branch would then DELETE the name the
              data already carries. The nine-language tuple rides on the feature (hbFC); read it here. */
           const own=(f.properties._i18n&&(f.properties._i18n[lg]||null))||null;
@@ -1254,9 +1273,13 @@ window.IntMapModules.timeBorders=function(HOST){
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) don't silently give up when the style is mid-load — retry once ready */
           let fc=cache.get(key); if(!fc){ try{ fc=csFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc){ shownY=key; shownCorr=false; apply(fc); return; } } }
-      /* (#R518) 1850–1885 → the same day-exact treatment, off data/hist-borders.js. Same shape as the
-         block above on purpose: the aourednik snapshot below stays the fallback for both bands, so a
-         bundle that fails to load still leaves a world on the screen instead of a blank one. */
+      /* (#R518, widened #R688) HB_MIN–1885 → the same day-exact treatment, off data/hist-borders.js.
+         Same shape as the block above on purpose: the aourednik snapshot below stays the fallback for
+         both bands, so a bundle that fails to load still leaves a world on the screen instead of a
+         blank one.
+         ⚠ AND THE FALL-THROUGH IS PER INSTANT, NOT PER BAND — `fc.features.length`. #R688 widened the
+         band by nearly two centuries and the record does not fill it evenly, so a day inside the
+         window for which OHM holds nothing must reach the snapshot below rather than blank the map. */
       if(year>=HB_MIN&&year<=HB_MAX){ const d=(await Promise.all([hbLoad(),bcLoad()]))[0];   /* (#R531) as above */
         if(my!==seq||!active) return;
         if(d){ let key; try{ key='hb'+hbEpoch(d,year,mon,day); }catch(_){ key='hb'+year; }
@@ -1428,7 +1451,7 @@ window.IntMapModules.timeBorders=function(HOST){
     function resolveHist(nm,lngLat){ const lg=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
       const out={ name:nm, wiki:String(nm||'').replace(/\s*\([^)]*\)\s*$/,'')||nm, code:null, geometry:null };   /* (#R117) fallback Wikipedia title without the "(France)/(UK)…" possessor suffix — "French Sudan (France)" → "French Sudan" */
       let gwCode=null;   /* (#R128) the era feature's CShapes Gleditsch-Ward code (properties._gw), for deterministic resolution below */
-      /* (#R518) …and, for a polygon from the 1850-1885 record, ITS OWN identity — the English name the
+      /* (#R518) …and, for a polygon from the OpenHistoricalMap record, ITS OWN identity — the English name the
          Wikipedia title is built from, and the current language's name. See the restore below. */
       let hbEn=null, hbLoc=null;
       try{ const ftr=featureAt(nm,lngLat); if(ftr){ if(ftr.geometry) out.geometry=ftr.geometry; if(ftr.properties&&ftr.properties._gw!=null) gwCode=ftr.properties._gw;
@@ -1527,7 +1550,7 @@ window.IntMapModules.timeBorders=function(HOST){
       /* (#R127) surface the entity's flag (the era flag IntMapHistId/HistStates put on countryStats[code], e.g. the
          German Empire's flag on DEU, Siam's on THA) so the click popup can show it — the historical click path only
          passed name+wiki before, so historical flags never appeared on the map ("国旗…まだ詰められる箇所が大量にある"). */
-      try{ if(!out.flag&&!out._own&&out.code&&countryStats[out.code]&&countryStats[out.code].flag) out.flag=countryStats[out.code].flag; }catch(_){}   /* ⚠ (#R518) `_own` = the identity came from the 1850-1885 record, not from the carrier — the carrier's flag is the wrong flag for it */
+      try{ if(!out.flag&&!out._own&&out.code&&countryStats[out.code]&&countryStats[out.code].flag) out.flag=countryStats[out.code].flag; }catch(_){}   /* ⚠ (#R518) `_own` = the identity came from the OpenHistoricalMap record, not from the carrier — the carrier's flag is the wrong flag for it */
       return out; }
     /* (#R116) curated era→article table (the time machine's whole window; en.wikipedia titles). Ranges are the
        state-form's lifespan; anything outside every range keeps the modern article. Kept to well-established,
@@ -1744,7 +1767,7 @@ window.IntMapModules.timeBorders=function(HOST){
     const _kToDate=k=>{ const y=Math.floor(k/10000), m=Math.floor(k/100)%100, d=k%100; return new Date(y,m-1,d,12,0,0); };
     const _kOf=w=>{ const d=(w instanceof Date&&!isNaN(w.getTime()))?w:new Date(); return _ymd(d.getFullYear(),d.getMonth()+1,d.getDate()); };
     /* ⚠ (#R518) BOTH RECORDS, ONE LIST. The stepper is how the dense stretches are reached at all, and
-       until this round its list stopped at 1886-01-01 — so inside 1850–1885 «next border change» had
+       until this round its list stopped at 1886-01-01 — so inside #R518's window «next border change» had
        nothing to answer with and the stepper was dead for the whole era the clock could reach. The two
        bundles are asked together and their boundary lists merged; either may fail to load without
        taking the other's dates with it. */
@@ -1855,6 +1878,6 @@ window.IntMapModules.timeBorders=function(HOST){
        here so tests/r686-histeras-names-checks.test.mjs can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
     return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName,
-             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:HB_MIN,max:CS_MAX}) };   /* (#R518) the range is now both records, floor to CShapes' last year */
+             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:HB_MIN,max:CS_MAX}) };   /* (#R518) the range is both records, floor to CShapes' last year — and the floor moved down with the record (#R688) */
   })();
 };

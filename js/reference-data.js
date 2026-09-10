@@ -457,7 +457,8 @@ window.IntMapRefData=(function(){
        it, contrary to what several downstream copies assume. What is stated is what was read. */
     {n:'historical-basemaps (aourednik) — GPL-3.0',u:'https://github.com/aourednik/historical-basemaps'},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
-       from OHM — the day-exact borders of 1850-1885 (data/hist-borders.js) and the first-level
+       from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
+       #R688) and the first-level
        subdivisions of whatever year the clock shows (data/hist-admin1.js, baked from OHM's dated
        admin_level 3–4 relations) — so two rows meant the same name carrying two licences.
        ⚠ THE LICENCE IS CC0 1.0, NOT ODbL. Measured 2026-09-07: openhistoricalmap.org/copyright

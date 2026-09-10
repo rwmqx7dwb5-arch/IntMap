@@ -92,9 +92,11 @@ window.IntMapTime=(function(){
                       1900. Older centuries are REGIONALLY thin (year 1 touches 14 of those tiles
                       against 1900's 66) and the layer row says so rather than filling it in.
        · borders      day-exact for the WHOLE reach since #R518: CShapes 2.0 from 1886-01-01 to 2019,
-                      OpenHistoricalMap (data/hist-borders.js) from 1850 to 1885. The
-                      historical-basemaps snapshots are now only the fallback for both bands, and
-                      before 1850 they are the only country answer there is.
+                      OpenHistoricalMap (data/hist-borders.js) from 1689 to 1885 — #R688 widened
+                      that band from 1850, and its floor is DERIVED from how much land the record
+                      covers rather than chosen. The historical-basemaps snapshots are now only the
+                      fallback for both bands, and
+                      before 1689 they are the only country answer there is.
        · GDP / pop    Maddison Project 2020, now carried back to 1850 (data/maddison.json — measured, not
                       declared: js/history.js reads the smallest year in the shipped file).
        · climate era  the oldest Köppen period that exists is 1901-1930; earlier years show it and

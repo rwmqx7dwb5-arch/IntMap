@@ -1657,8 +1657,8 @@ zip と gzip は開いて中身を見る。
   OpenHistoricalMap の relation id で 1 件だけ取り直す。粗い形を先に出し、届いたら同じ source を
   差し替える）。relation → 多角形の規則は `js/ohm-rings.js` ただ 1 本で、ブラウザとビルドが
   同じ実装を使う（docs/MAP-LAYERS.md §7.7）／
-  **歴史国境は 1850 まで日単位**——CShapes 2.0 が 1886-01-01 から 2019 年まで、
-  OpenHistoricalMap（`data/hist-borders.js`）が 1850–1885（下の項）。それより前は
+  **歴史国境は 1689 年まで日単位**——CShapes 2.0 が 1886-01-01 から 2019 年まで、
+  OpenHistoricalMap（`data/hist-borders.js`）が 1689–1885（下の項）。それより前は
   historical-basemaps の年別スナップショット（**紀元前 123000 年から西暦 2010 年までの 53 枚**・
   同梱 `data/hist-eras.js`）だけが答える／
   GDP・人口はマディソン・プロジェクトで 1850 年から／
@@ -1688,10 +1688,16 @@ zip と gzip は開いて中身を見る。
   **国境ステッパー**（`#ntl-bstep`・`js/news-timeline.js`）がそれだけを尋ねる。
   ステッパーは**マスタークロックに書く**のであって、国境レンダラを直接動かさない
   （直接動かせばニュース・統計・気候区と国境がずれる）。
-- **1850–1885 は `data/hist-borders.js`（OpenHistoricalMap・CC0 1.0）で、同じ日単位の機構で引く**
+- **1689–1885 は `data/hist-borders.js`（OpenHistoricalMap・CC0 1.0）で、同じ日単位の機構で引く**
   （`js/time-borders.js` の `hbFC` / `hbBounds` / `hbEpoch`）。OHM の `admin_level=2` 境界関係を
-  `scripts/build-hist-borders.mjs` が CShapes と同じリングプール形式へ落としたもの——**記録 494 件**、窓の中の**変化日 216 件**。
-  各年6月15日に生きている政体は 164〜216。政体名は OHM の `name:xx` から
+  `scripts/build-hist-borders.mjs` が CShapes と同じリングプール形式へ落としたもの——**記録 1411 件**、窓の中の**変化日 881 件**。
+  各年6月15日に生きている政体は 164〜216。
+  ⚠ **窓の下限 1689 は選んだ年ではなく導出された年である。** 上流の深い側は薄い（西暦 100 年で
+  全陸地の 6%・13 政体）ので、ビルドは「世界とはどれだけの陸地か」を**隣の記録 `data/cshapes.js` に訊く**
+  ——実測 12,895〜14,660 deg²——その最小からCShapes 自身のばらつき 1 つ分を引いた値を下限とし、
+  記録がそれを覆う年だけを残す（1688 年は 9,371 deg²、1689 年は 11,314 deg²）。導出した値は束の
+  `window[0]` に書かれ、`js/time-borders.js` の `HB_MIN` はその**写し**にすぎない（門は
+  `tests/r688-histborders-deep-checks.test.mjs`）。政体名は OHM の `name:xx` から
   **9言語**ぶんポリゴンに載って運ばれ（`_i18n`）、`tagSame` が `_eraLocName` より先にそれを読む——
   英語名を照合して訳す仕組みは Kurhessen も Rupert's Land も訳せないから。
 - ⚠ **クリックの答えは、押した政体のもの**（`resolveHist`）。この関数は統計の出どころを得るために
@@ -1709,7 +1715,7 @@ zip と gzip は開いて中身を見る。
   「その政体が持つ海岸線の写し」は基図のほうが正確に知っている。同梱の海岸線
   （`data/coastline.json.gz`＝Natural Earth 1:10m・2 km 許容）に対して、**ある辺のどこか1点でも
   `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写し**と判定し、
-  5つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-kuni`）の全リング **40,117 本**に
+  5つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-kuni`）の全リング **40,820 本**に
   ついて「描く run」を印す。印の**読み手は `js/border-coast.js`** ただ1つで、`js/time-borders.js` と
   `js/time-admin1.js` の両方がそれを呼ぶ——同じ読み方を2か所に持たせないため。各モジュールはその
   run だけをつないだ MultiLineString を線用の source（`imtb-ln-src` / `imta-ln-src` / `imta2-ln-src`）
@@ -1720,11 +1726,11 @@ zip と gzip は開いて中身を見る。
   小さい割合である）。1つの規則・1つの権威・1つの定数。
   ⚠ **印は任意**: 読めなかったときと historical-basemaps のスナップショットには印が無く、
   そこは環を丸ごと描く。
-- ⚠ **スナップショットへの丸め（`nearest`）は、1850 年以上では代替でしかない**（`js/time-borders.js`）。
-  1850–1885 は `data/hist-borders.js`、1886–2019 は `data/cshapes.js` が日単位で答え、
+- ⚠ **スナップショットへの丸め（`nearest`）は、1689 年以上では代替でしかない**（`js/time-borders.js`）。
+  1689–1885 は `data/hist-borders.js`、1886–2019 は `data/cshapes.js` が日単位で答え、
   historical-basemaps はそれらが読めなかったときだけ出る。MAXGAP を 1886 年より下で適用しないのは、
   その退化状態で 1875 年にウィーン会議の地図（60年古い）を出さないため。
-  ⚠⚠⚠ **1850 年より下では、スナップショットが代替ではなく唯一の答えである。** 時計の下限が
+  ⚠⚠⚠ **1689 年より下では、スナップショットが代替ではなく唯一の答えである。** 時計の下限が
   西暦 1 年に降りた以上（7.4）、この系列が薄ければ地図は嘘をつく——実際、`YEARS` が 1815 で
   始まっていた間、1500 年を指すと**ウィーン会議の地図が 1500 年として描かれていた**（実測）。
   上流（aourednik/historical-basemaps）が公開しているのは **53 枚**で、**うち 17 枚は紀元前**
@@ -1734,7 +1740,7 @@ zip と gzip は開いて中身を見る。
   下限は `js/hist-scale.js` の `FLOOR`（天文年 −122999 ＝ 紀元前 123000 年）で、
   `npm run check:histeras` が同梱の束の最古と照合する。
   ⚠ **53 枚は同梱する**（`data/hist-eras.js`・10.6 MB・`scripts/build-hist-eras.mjs`）。
-  1850 年以降は前から自前の束なのに、**他に答えの無い深い過去だけが**
+  1689 年以降は自前の束なのに、**他に答えの無い深い過去だけが**
   `raw.githubusercontent` と第三者の CORS プロキシ 2 本に依存していた。遠隔取得の経路は
   **代替として残してある**（束が読めなかったときだけ動く）。
   ⚠ **ライセンスは GPL-3.0**（上流の LICENSE 全文・GitHub の判定とも。README にライセンス表記は

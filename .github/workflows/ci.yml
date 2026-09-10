@@ -82,11 +82,13 @@ jobs:
         run: npm run check:wars
       - name: Historical city names (the record matches, and no key names two cities)
         run: npm run check:histcities
-      # (#R518) The 1850-1885 border record cannot be re-derived here — the build needs ~400 MB of
-      # OpenHistoricalMap Overpass responses — so this proves the committed file's invariants, and
-      # above all that every single year of the window has a world to draw. See docs/TESTING.md for
+      # (#R518, widened #R688) The day-exact border record below CShapes — 1689-1885 since #R688 —
+      # cannot be re-derived here: the build needs about 2.1 GB of OpenHistoricalMap Overpass
+      # responses. So this proves the committed file's invariants, and
+      # above all that every year of the window covers as much land as data/cshapes.js does — the
+      # same comparison the floor was derived from. See docs/TESTING.md for
       # what it therefore cannot see.
-      - name: 1850-1885 borders (the bundled record is sound, and no year of it is empty)
+      - name: Day-exact borders below CShapes (the bundled record is sound, and no year of it is thin)
         run: npm run check:histborders
       - name: Era snapshots (all eras, incl. BCE)
         run: npm run check:histeras
