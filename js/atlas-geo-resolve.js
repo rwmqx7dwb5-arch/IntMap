@@ -18,7 +18,7 @@ import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and with th
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
 export function makeAtlasGeoResolve(HOST, CTX) {
-  const GE=CTX.GE, L=CTX.L, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, codeAtPoint=CTX.codeAtPoint, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup, resolveCountrySync=CTX.resolveCountrySync;
+  const GE=CTX.GE, L=CTX.L, esc=CTX.esc, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, codeAtPoint=CTX.codeAtPoint, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup, resolveCountrySync=CTX.resolveCountrySync;
     /* (#R452) `geocode()` and `_nomExtent()` both went to Nominatim with no signal and no deadline,
        and `placeExtent()` calls the second up to THREE times in a file — so a host that had stopped
        answering stopped the turn. 8 s is well above Nominatim's own answer time for every query this
@@ -598,9 +598,39 @@ export function makeAtlasGeoResolve(HOST, CTX) {
     function flyToBox(box){ try{ const el=GE().render.container&&GE().render.container(); const W=(el&&el.clientWidth)||1000, H=(el&&el.clientHeight)||700; const pad=Math.max(38, Math.round(Math.min(W,H)*0.09));
       const cam=GE().camera.forBounds(box,{padding:pad,maxZoom:16.5}); if(cam&&cam.center&&isFinite(cam.zoom)){ const z=Math.max(0.6,Math.min(16.5,cam.zoom)); GE().camera.flyTo({center:[cam.center.lng,cam.center.lat], zoom:z, duration:1100}); return true; } }catch(_){}
       try{ GE().camera.fitBounds(box,{padding:46,duration:1100,maxZoom:16}); return true; }catch(_){} return false; }
+  /* ══ ⚠⚠⚠ (#R667) 「場所が渡されていない」 と 「渡された場所が解決できなかった」 IS ONE FACT WITH TWO
+     VALUES, AND EVERY CALLER STATED ONLY THE FIRST ═══════════════════════════════════════════════
+     Measured on the reported request 「東北沖でM9の地震…津波の伝播をシミュレーションして見せて」
+     (#R663 got the call made; this is what the call then hit): `geocode('東北沖（日本海溝）')` finds
+     no gazetteer entry and correctly refuses to accept a stranger (#R515's name-agreement floor).
+     The case then answered 「震源はどこですか（**地名**または経緯度）」 — a question that reads as
+     「何も渡されていない」 to something that had just passed a place. So Atlas re-spelled the place
+     and asked again, seven times, until the step budget ran out. It was answering the question it
+     was asked.
+     ⚠ THE TWO STATES WERE NEVER DISTINGUISHED ANYWHERE: 39 dispatch cases call geocode(), 32 refuse
+     when no point comes back, and NOT ONE of them said which of the two had happened — because
+     `geocode()` returns `null` for both and echoes neither the query nor the reason. There is no
+     shared helper to fix instead; this is that helper, and it lives beside `geocode` because that
+     is the function that knows.
+     ⚠ IT INVENTS NOTHING AND REFUSES NOTHING NEW. Given no place it returns the caller's own
+     sentence, unchanged — every refusal that reads correctly today still reads exactly that way. */
+  function whereMiss(sentence, place) {
+    const q = String(place == null ? '' : place).trim();
+    if (!q) return String(sentence == null ? '' : sentence);
+    const e = (typeof esc === 'function') ? esc(q) : q;
+    /* ⚠ THE KEY IS A LITERAL AND THE NAME TRAVELS AS `{n}`. `pick()` answers fr / ko / zh-Hant /
+       zh-Hans out of `inline[code][argument 0]`, so a key built by concatenation matches nothing and
+       ships English to four of the nine languages with every gate still green (#R548's shape). */
+    return L('“{n}” could not be resolved to a place. Give the point as lng/lat, or name somewhere a gazetteer knows.',
+      '「{n}」は地名として解決できませんでした。経緯度で指定するか、地名辞典にある場所で指定してください。',
+      '„{n}“ konnte keinem Ort zugeordnet werden. Gib den Punkt als lng/lat an oder nenne einen bekannten Ort.',
+      '«{n}» не удалось сопоставить с местом. Укажите точку координатами или назовите известное место.',
+      '«{n}» no se pudo resolver como lugar. Indica el punto como lng/lat o nombra un lugar conocido.').split('{n}').join(e);
+  }
+
   /* ⚠ (#R413) THIS SET IS NOT A CONVENIENCE — tests/r199-checks ② requires it to be EXACTLY what
      js/atlas-console.js destructures, because a name in one and not the other is a silent
      `undefined`. So `SELFLOC_WORDS`, `SELFLOC_RE` and `_coordPlace` are NOT exported for the test's
      benefit: tests/r413-checks reaches them the way the app does, through `geocode()`. */
-  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox };
+  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox , whereMiss };
 }
