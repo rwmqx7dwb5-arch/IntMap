@@ -40,12 +40,29 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 import { entryIndexFor, colourFor, indicesPainted, speedsPainted, nearestEntry, readPixel, explain }
   from './helpers/wind-ramp.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+
+/* ══ ⚠⚠⚠ (#R664) THE TICKET MOVED, SO THIS CHECK STOPPED READING THE SOURCE ═══════════════════════
+   Until #R664 the supersession rule below was asserted as a SPELLING — `var mine = ++seq`, `if
+   (seq === mine)`. That round found the defect those spellings hid: the ticket was taken IN THE
+   CALL while the join was made later, in the `ready()` continuation, so a second call for the SAME
+   read superseded the read it was about to join and both callers were answered null (production:
+   the first switch-on of the first weather layer of a page failed, three times out of three). The
+   fix issues the ticket where the read is IDENTIFIED, and every one of those spellings changed
+   while the property this check was written for did not. A check that pins a spelling can only
+   prove that an implementation is still the one it was written against (#R488), so the property is
+   MEASURED against the shipped module from here on.
+   ⚠ The page it is measured on is tests/helpers/wx-ecmwf-page.mjs — ONE page, shared by the six
+   files that need it, because six copies of one judgement is the shape
+   .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. The browser and the Open-Meteo SDK are
+   stubbed there; nothing else is — the rule under test is the one that ships. */
+
 
 /* ── the shipped anchors, as DATA (no code is executed out of the source file) ────────────────
    ⚠ line-ending agnostic on purpose (#R283): the block is sliced by name, never by a literal
@@ -299,7 +316,7 @@ test('#R287 ⑦ tests/prod-smoke.spec.js asserts both claims and drops the point
    isolation as well as in sequence, and a retry 1.5 s later returned 25.27 °C. Against a local
    build of the same tree the test failed unfixed and passed fixed — the same environment both
    times, so the fix is what moved it.                                                            */
-test('#R287 ⑧ the coalesced time event drops the frame without cancelling the current load', () => {
+test('#R287 ⑧ the coalesced time event drops the frame without cancelling the current load', async () => {
   const src = codeOnly(read('js/wx-ecmwf.js'));
   const i = src.indexOf('function fireTime(');
   assert.ok(i > 0, 'fireTime still exists');
@@ -317,8 +334,27 @@ test('#R287 ⑧ the coalesced time event drops the frame without cancelling the 
      What #R287 established is unchanged and is what is asserted: fireTime cancels nothing. */
   assert.ok(!/held = null/.test(body), 'and the stale frame is not dropped either — it is replaced');
   assert.ok(!/loadingKey/.test(body), 'fireTime touches no load state at all');
-  assert.match(src, /var mine = [^;]*\+\+seq;/, 'which frame is current is explicit instead');
-  assert.match(src, /if \(seq === mine\) \{/, '…and a superseded read still resolves to its caller');
+  /* ⚠⚠⚠ (#R664) THE LAST TWO ASSERTIONS HERE WERE SPELLINGS — `var mine = ++seq` and
+     `if (seq === mine)` — and #R664 moved the ticket from the call to the read, so both changed
+     while what they were for did not (see the header of tests/helpers/wx-ecmwf-page.mjs). The claim is that nothing has
+     to be CANCELLED any more: a read that is superseded while it is in flight still answers its
+     caller with the frame it decoded, and only declines to install itself. Measured against the
+     shipped module, because the production symptom was a value, not a spelling — MEASURED on the
+     deployed build: 8.3 s, data present, result null. */
+  const { calls, ENG } = await coldWxModel({ sdkMs: 80, readMs: 300 });
+  const M = ENG.model('ecmwf_wam025');
+  const p = M.load('wave_height', null, null);
+  /* ⚠ past `ready()`: the bytes are on their way — WAITED FOR, not timed (the header of
+     tests/helpers/wx-ecmwf-page.mjs measures why a duration cannot establish this). */
+  await until(() => calls.ensureData === 1, 'the read to reach the data', { observe: () => calls });
+  assert.equal(calls.ensureData, 1, 'the read must be under way, or this proves nothing');
+  M.release();                          /* the strongest supersession there is: an unqualified drop */
+  const fr = await p;
+  assert.ok(fr && fr.data && fr.data.values.length,
+    'a read that SUCCEEDED was reported to its caller as a failure — the shape js/weather.js turns '
+    + 'into 「データを取得できませんでした」');
+  assert.equal(M._state().frames, 0,
+    'which frame is current is explicit instead: the superseded read resolves, it does not install');
 
   /* what must survive elsewhere: release() is still there for the axis it was written for */
   assert.match(src, /function release\(variable\)/, 'release(variable) itself is untouched');

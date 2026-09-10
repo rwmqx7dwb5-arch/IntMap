@@ -24,6 +24,7 @@ import { assertUnreadNeverGreys } from './wash-tier.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -31,6 +32,22 @@ const WP = () => read('js/world-packs.js');
 /* ⚠ A CHECK THAT SAYS 「this spelling must be gone」 HITS THE COMMENT THAT EXPLAINS WHY IT WENT.
    This project has paid for that twenty-four times; ask the question of the text that RUNS. */
 const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
+
+/* ══ ⚠⚠⚠ (#R664) THE TICKET MOVED, SO THIS CHECK STOPPED READING THE SOURCE ═══════════════════════
+   Until #R664 the supersession rule below was asserted as a SPELLING — `var mine = ++seq`, `if
+   (seq === mine)`. That round found the defect those spellings hid: the ticket was taken IN THE
+   CALL while the join was made later, in the `ready()` continuation, so a second call for the SAME
+   read superseded the read it was about to join and both callers were answered null (production:
+   the first switch-on of the first weather layer of a page failed, three times out of three). The
+   fix issues the ticket where the read is IDENTIFIED, and every one of those spellings changed
+   while the property this check was written for did not. A check that pins a spelling can only
+   prove that an implementation is still the one it was written against (#R488), so the property is
+   MEASURED against the shipped module from here on.
+   ⚠ The page it is measured on is tests/helpers/wx-ecmwf-page.mjs — ONE page, shared by the six
+   files that need it, because six copies of one judgement is the shape
+   .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. The browser and the Open-Meteo SDK are
+   stubbed there; nothing else is — the rule under test is the one that ships. */
+
 const alertsModule = (src) => {
   const a = src.indexOf('(function alerts()'), b = src.indexOf('window.__wpAlerts=', a);
   if (!(a > 0 && b > a)) throw new Error('the alerts module could not be delimited');
@@ -165,20 +182,45 @@ test('R299 ⑥ a frame is kept per TIME, not one per variable — a step back co
   assert.ok(/FRAME_SAMPLES/.test(s.slice(i, i + 900)), 'and the budget still bounds it');
 });
 
-test('R299 ⑥ a read that has been overtaken does not spend the network', () => {
-  const s = read('js/wx-ecmwf.js');
-  /* (#R310) the queued half is assigned to `p` now so the in-flight read can be joined — the
-     block, and everything this check asks of it, is unchanged. */
-  const i = s.indexOf('serial(function () {');
-  assert.ok(i > 0, 'the queued half of load() is still one block');
-  const q = s.slice(i, i + 2600);
-  assert.ok(/seq\s*!==\s*mine/.test(q), 'the queue checks its generation before it reads');
-  assert.ok(/ahead/.test(q), '(#R310) …and an ahead read is the one case that has no generation to be behind');
-  /* ⚠ BEFORE it reads, not after: the point is that the ranged requests are never issued. */
-  assert.ok(q.indexOf('seq !== mine') < q.indexOf('ensureData'), 'the check comes before the fetch');
-  /* ⚠ and it must NOT answer falsy: js/weather.js reads falsy as 「fetch failed」 and runs a retry
-     ladder that ends in a toast the reader reported in #R298. */
-  assert.ok(/frames\./.test(q) || /held/.test(q), '…and answers with a frame rather than a failure');
+test('R299 ⑥ a read that has been overtaken does not spend the network', async () => {
+  /* ⚠⚠⚠ (#R664) THIS USED TO READ THE SOURCE: `seq !== mine` had to appear in the queued block,
+     and to appear BEFORE `ensureData` in it. #R664 moved the ticket from the call to the read
+     (see the header of tests/helpers/wx-ecmwf-page.mjs), so the spelling is `seq !== ticket.mine` and the two string
+     positions say nothing about the order the module is EVALUATED in anyway (#R505). Both halves
+     are measured instead, on the queue itself: the overtaken read spends no decode — which is what
+     made dragging the slider across twenty steps cost twenty reads — and it does not answer falsy,
+     because js/weather.js reads falsy as 「the data is unavailable」 and runs the retry ladder that
+     ends in the toast reported in #R298.
+     ⚠ tests/r664-checks.test.mjs ② measures the first half on a COLD model (one read, no frame to
+     fall back on); this one is the case that has a frame, which is where 「answers with a frame
+     rather than a failure」 can be observed at all. */
+  const { page, calls, ENG } = await coldWxModel({ sdkMs: 60, readMs: 300 });
+  const M = ENG.model('ecmwf_wam025');
+  await M.meta();                       /* the axis, so every hour below has a file name */
+  const first = await M.load('wave_height', 0, null);
+  assert.ok(first && first.data, 'the hour the reader started on is read');
+  /* ⚠ THE ORDER IS THE WHOLE ARRANGEMENT, AND IT IS NOT MADE OF MILLISECONDS. Each step waits for
+     the fact that puts the next call in the position this case is about — the running read has to
+     be AT the data before the next is asked for, and the overtaken one has to have taken its ticket
+     and joined the queue before the one that overtakes it is asked for. `rec.states` is the mark of
+     that second moment: the module asks for the state between taking the ticket and queueing the
+     job (see the header of tests/helpers/wx-ecmwf-page.mjs). */
+  const running = M.load('wave_height', 1, null);      /* one foreground read at a time — this one runs */
+  await until(() => calls.ensureData === 2, 'the foreground read to hold the lane', { observe: () => calls });
+  const overtaken = M.load('wave_height', 2, null);    /* …so this one waits in the queue behind it */
+  await until(() => page.rec.states.length === 3, 'the overtaken read to take its ticket and queue',
+    { observe: () => page.rec.states });
+  const wanted = M.load('wave_height', 3, null);       /* …and is overtaken while it is still waiting */
+  const [o, w] = await Promise.all([overtaken, wanted]);
+  await running;
+  assert.ok(w && w.data && w.data.values, 'the hour the reader stopped on must be read');
+  assert.equal(calls.ensureData, 3,
+    'the overtaken hour spent its ranged requests and its decode — dragging the slider across '
+    + 'twenty steps must still cost one read per hour the reader actually stopped on (#R299)');
+  assert.ok(o && o.data && o.data.values,
+    'an overtaken read answered falsy, which js/weather.js reads as 「fetch failed」 (#R298)');
+  assert.notEqual(o.file, w.file,
+    '…it answers with a frame it has, never with the newer hour it did not read');
 });
 
 test('R299 ⑥ the wide read is a staircase gated on stillness, and it still gets there', () => {

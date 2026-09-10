@@ -25,6 +25,7 @@ import { assertUnreadIsTheHatch } from './wash-tier.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -36,6 +37,22 @@ const EC = () => codeOnly(read('js/wx-ecmwf.js'));
 /* (#R293) js/wx-reanalysis.js is gone — see ⑩ and ⑪ */
 const DL = () => codeOnly(read('js/data-layers.js'));
 const TL = () => codeOnly(read('js/news-timeline.js'));
+
+/* ══ ⚠⚠⚠ (#R664) THE TICKET MOVED, SO THIS CHECK STOPPED READING THE SOURCE ═══════════════════════
+   Until #R664 the supersession rule below was asserted as a SPELLING — `var mine = ++seq`, `if
+   (seq === mine)`. That round found the defect those spellings hid: the ticket was taken IN THE
+   CALL while the join was made later, in the `ready()` continuation, so a second call for the SAME
+   read superseded the read it was about to join and both callers were answered null (production:
+   the first switch-on of the first weather layer of a page failed, three times out of three). The
+   fix issues the ticket where the read is IDENTIFIED, and every one of those spellings changed
+   while the property this check was written for did not. A check that pins a spelling can only
+   prove that an implementation is still the one it was written against (#R488), so the property is
+   MEASURED against the shipped module from here on.
+   ⚠ The page it is measured on is tests/helpers/wx-ecmwf-page.mjs — ONE page, shared by the six
+   files that need it, because six copies of one judgement is the shape
+   .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. The browser and the Open-Meteo SDK are
+   stubbed there; nothing else is — the rule under test is the one that ships. */
+
 
 /* ── ① 未対応 もしくは データがまだ入っていない → 灰色斜線 ──────────────────────────────────────
    #R284 answered 「対応国まで斜線で塗るのを辞めろ」 by drawing NOTHING for a wired-but-unread
@@ -278,7 +295,7 @@ test('#R288 ⑥b the resampled ramp lands on its anchors and never steps visibly
 });
 
 /* ── ⑦ a read that succeeded is not reported as a failure ───────────────────────────────────── */
-test('#R288 ⑦ load() returns its own frame, and a time change no longer drops the held one', () => {
+test('#R288 ⑦ load() returns its own frame, and a time change no longer drops the held one', async () => {
   const src = EC();
   /* (#R305) …and a fourth argument that says whether the READER is waiting for this read */
   const i = src.indexOf('function load(variable, i, bounds');
@@ -287,7 +304,24 @@ test('#R288 ⑦ load() returns its own frame, and a time change no longer drops 
   assert.match(body, /var frame = \{ key: key2, variable: variable, file: f, data: data, grid: g, band: band \};/);
   assert.match(body, /return frame;/, 'the handler returns what IT decoded');
   assert.ok(!/\breturn held;\s*\}\);/.test(body), 'never the module-level slot');
-  assert.match(body, /if \(seq === mine\) \{/, 'a superseded read still resolves, it just does not install');
+  /* ⚠⚠⚠ (#R664) `if (seq === mine)` WAS THE SPELLING OF THIS RULE AND THE SPELLING MOVED (see the
+     header of tests/helpers/wx-ecmwf-page.mjs), so the rule is measured — and measured on the case the two defects ① and
+     ② above are about: ANOTHER variable's frame is in hand when the read is superseded, and the
+     handler must still answer with the one IT decoded rather than with the module-level slot. */
+  const { calls, ENG } = await coldWxModel({ sdkMs: 80, readMs: 300 });
+  const M = ENG.model('ecmwf_wam025');
+  await M.load('temperature_2m', null, null);
+  assert.equal(M._state().variable, 'temperature_2m', 'a frame of ANOTHER variable is in hand');
+  const p = M.load('wave_height', null, null);
+  /* the wave read is running — the fact, waited for, rather than a duration that usually contains
+     it (see the header of tests/helpers/wx-ecmwf-page.mjs) */
+  await until(() => calls.ensureData === 2, 'the wave read to reach the data', { observe: () => calls });
+  M.release();                          /* …and is superseded before its bytes land */
+  const fr = await p;
+  assert.equal(fr && fr.variable, 'wave_height',
+    'the handler answered with something other than the frame it decoded');
+  assert.ok(fr.data && fr.data.values.length, '…and it is a frame, not a failure');
+  assert.equal(M._state().frames, 0, 'a superseded read still resolves, it just does not install');
   const ft = src.indexOf('function fireTime()');
   const ftBody = src.slice(ft, src.indexOf('function _clock()', ft));
   assert.ok(!/release\(\)/.test(ftBody), 'a time change must not throw the current frame away');
