@@ -2491,10 +2491,16 @@ UI・Atlas・要求組み立ての3つが**同じ表**を読むので、「押�
 ### 8.5 パンデミック・シミュレーター (Pandemic Simulator)
 
 **Layers ▸ Tools の「パンデミック・シミュレーター」から 1 タップで起動する**（Playground ハブの
-中のカードからも開ける）。ボタンは `js/data-layers.js` が Tools の帯に置き、押すと OS アクション
-`sim.pandemic`（`js/app-body.js`）を実行する——**ボタン・コマンドパレット・Atlas の 3 つが同じ 1 本の
-コマンドを押す**（地震シミュレーターの `sim.seismic` と同じ形）。モジュールは遅延読み込みなので、
-押したときに取りに行く。
+中のカードからも開ける）。押すと OS アクション `sim.pandemic`（`js/app-body.js`）を実行する
+——**行・コマンドパレット・Atlas の 3 つが同じ 1 本のコマンドを押す**（地震シミュレーターの
+`sim.seismic` と同じ形）。モジュールは遅延読み込みなので、押したときに取りに行く。
+⚠ **行の正本は `js/map-ui.js` のツール一覧**である。`js/data-layers.js` が `#layer-tools` に置く
+ボタンは**クラシックのレイヤードロップダウン用**で、`imLayerPanel` の既定は `right` なので既定の
+読者には描かれない（`display:none` の祖先の中で `0×0`）。**レイヤー欄から開けることを主張できるのは
+`js/map-ui.js` の行のほうだけ**で、この不変条件は「登録済みの `sim.*` コマンドを数え上げて、
+そのすべてが行を持つか」を測る検査が守る（手で書いた一覧ではない）。
+行は走行中に点灯し、もう一度押すと閉じる——`js/playground.js` が `window.IntMapPandemic`
+（`isOpen` / `close`）を**自分の扉の中から**公開する（描いただけで遅延モジュールが読まれてはならない）。
 
 **数理は `js/pandemic-model.js`、地図と HUD は `js/playground.js`** で、この境界は動かさない
 ——`playground.js` は区画（S/SV/E/I/R/V/D）に対して算術をしてはならない。

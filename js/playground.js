@@ -528,6 +528,11 @@ window.IntMapModules.playground=function(HOST){
         GE().events.on('click',onPick);
         function exit(){ stop(); try{ GE().events.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow','pg-dots-heat'].forEach(id=>{ if(GE().layers.has(id))GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots'))GE().layers.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }
         window._pgPandemicExit=exit;
+        /* ⚠ (#R670) THE CONTRACT THE TOOLS ROW ASKS (js/map-ui.js `_toolOn` / `_toolOff`): is it open,
+           and close it. Published from INSIDE this function, so before the reader has ever opened the
+           simulator the global is absent and the row is unlit — which is the truth, and is also why
+           the row cannot make the lazy module load just by being drawn (#R209). */
+        window.IntMapPandemic={ isOpen:()=>!!document.getElementById('pg-pan-hud'), close:()=>{ exit(); return true; } };
         renderConfig();
       });
     };

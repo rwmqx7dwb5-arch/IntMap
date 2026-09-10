@@ -3247,6 +3247,7 @@ window.IntMapLang.define('zh-hans', {
   "Display": "显示",
   "peak ahead": "稍后最高",
   "Place a source and watch the shaking spread": "设置震源，观看摇晃如何扩散",
+  "Seed an outbreak and watch it cross real borders": "设置疫情起点，观看它如何跨越真实国界",
   "U.S. presidential elections": "美国总统选举",
   "Electoral votes": "选举人票",
   "majority": "过半数",

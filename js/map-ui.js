@@ -1090,6 +1090,8 @@ window.IntMapModules.layerSidebar=function(HOST){
     const SVG_SUN=_svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/>');
     const SVG_STAR=_svg('<path d="M12 3l1.9 4.6 5 .4-3.8 3.3 1.2 4.9L12 13.6 7.7 16.2l1.2-4.9L5.1 8l5-.4z"/>');
     const SVG_PLUME=_svg('<path d="M4 20c0-5 3-6 3-9a3 3 0 016 0c0 4 4 3 4 7"/><path d="M3 20h18"/>');
+    /* (#R670) a virion: a body with the spikes that make it one rather than a plain circle */
+    const SVG_VIRUS=_svg('<circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>');
     /* (#R261) the five below — see the ⚠⚠⚠ note on SIM_TOOLS */
     const SVG_DRONE=_svg('<circle cx="12" cy="12" r="2.4"/><path d="M10 10L6.5 6.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/><circle cx="5" cy="5" r="2.1"/><circle cx="19" cy="5" r="2.1"/><circle cx="5" cy="19" r="2.1"/><circle cx="19" cy="19" r="2.1"/>');
     /* (#R291) a signpost: the fork this app has been unable to show anybody for seven rounds */
@@ -1227,6 +1229,26 @@ window.IntMapModules.layerSidebar=function(HOST){
       { id:'sim.seismic', mod:'IntMapSeismic', ic:SVG_QUAKE, run:null,   /* registered in js/app-body.js beside the OS kernel */
         label:()=>T('Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos'),
         hint:()=>T('Place a source and watch the shaking spread','震源を置いて揺れの広がりを見る','Herd setzen und die Erschütterung verfolgen','Задайте очаг и смотрите, как расходятся колебания','Coloque una fuente y vea propagarse el temblor') },
+      /* ══ ⚠⚠⚠ (#R670) 「LayersのToolsからアクセスできるように。」 — AND THE ROW GOES *HERE* ═══════════
+         #R666 answered that instruction by appending a button to `#layer-tools`, and the note thirty
+         lines above this file's tool CSS is the reason that was wrong: `#layer-tools` lives inside
+         `#layer-dropdown`, the CLASSIC dropdown, and `imLayerPanel` has defaulted to `'right'` since
+         #R154. MEASURED on the shipped R666 build: `#btn-pandemic-sim` exists, its handler opens the
+         simulator correctly, `IntMapOS.has('sim.pandemic')` is true — and the button's bounding rect
+         is 0×0 because its ancestor is `display:none` for every reader on the default setting. The
+         reader's Tools list had ten rows and none of them was this one.
+         ⚠ THIS IS THE SECOND TIME THE SAME ANSWER WAS GIVEN TO THE SAME INSTRUCTION. #R242 did it for
+         the earthquake simulator and #R243 had to re-do it here. What makes a tool reachable is a row
+         in THIS list, because this is the list the panel a reader opens is built from.
+         ⚠ `mod` IS WHY THE ROW LIGHTS AND A SECOND PRESS CLOSES (#R264). js/playground.js publishes
+         `window.IntMapPandemic` with `isOpen` / `close` for exactly the contract `_toolOn`/`_toolOff`
+         ask for; before the lazy module has ever run, the global is absent and the row is simply
+         unlit, which is the truth. The OPEN goes through `IntMapOS.exec('sim.pandemic')` like every
+         other row — one door, and the Layers button, the palette and Atlas all press it. */
+      { id:'sim.pandemic', mod:'IntMapPandemic', ic:SVG_VIRUS, run:null,   /* registered in js/app-body.js beside the OS kernel */
+        keys:'pandemic epidemic outbreak virus disease infection seir パンデミック 感染症 流行 感染 疫病 ウイルス Pandemie Seuche Ausbruch пандемия эпидемия вспышка вирус pandemia epidemia brote virus',
+        label:()=>T('Pandemic Simulator','パンデミック・シミュレーター','Pandemie-Simulator','Симулятор пандемии','Simulador de pandemia'),
+        hint:()=>T('Seed an outbreak and watch it cross real borders','流行の発生地点を置いて、実際の国境を越える様子を見る','Einen Ausbruch setzen und über echte Grenzen verfolgen','Задайте очаг и смотрите, как он пересекает реальные границы','Siembre un brote y véalo cruzar fronteras reales') },
       /* ══ ⚠ (#R296) NO ROW FOR THE TSUNAMI — 「津波シミュレータはボタンを設置しないように。（地震シミュ
          レータありきの機能なため、直接アクセスUIは不要。）」 ═════════════════════════════════════════════
          `IntMapTsunami` (js/tsunami.js) is NOT removed and nothing about it changes: it is the shallow-

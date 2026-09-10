@@ -3017,6 +3017,7 @@ window.IntMapLang.define('ko', { ui: {
   "Display": "표시",
   "peak ahead": "이후 최대",
   "Place a source and watch the shaking spread": "진원을 놓고 흔들림이 퍼지는 모습을 보세요",
+  "Seed an outbreak and watch it cross real borders": "발생 지점을 놓고 실제 국경을 넘어 퍼지는 모습을 보세요",
   "U.S. presidential elections": "미국 대통령 선거",
   "Electoral votes": "선거인단 표",
   "majority": "과반",
