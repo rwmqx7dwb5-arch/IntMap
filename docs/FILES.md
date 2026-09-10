@@ -756,7 +756,14 @@ data/hist-borders.js              歴史的国境の 1850–1885（OpenHistorica
 data/hist-eras.js                 全時代の国境スナップショット 53 枚（紀元前 123000 年〜西暦 2010 年・
                                   aourednik/historical-basemaps・**GPL-3.0**・`window.__HISTERAS`・
                                   `scripts/build-hist-eras.mjs`／`npm run check:histeras`）。
-                                  1850 年より前は、これが唯一の国境の答え
+                                  1850 年より前は、これが唯一の国境の答え。
+                                  ⚠ **名前は英語 1 つだけ**——9 言語は下の `data/histeras-names.json`
+data/histeras-names.json          `data/hist-eras.js` が描く政体の名前の、英語以外の 8 言語
+                                  （Wikidata・**CC0 1.0**・`scripts/build-histeras-names.mjs`／
+                                  `npm run check:histeras`）。上流の英語の綴りが鍵で、
+                                  **書いた言語だけを持つ**（`a` が誰が書いたかのビットマスク）。
+                                  無い言語では上流の英語が立つ——`js/time-borders.js` が
+                                  1850–1885 の記録に対してすでにしている扱いと同じ
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（4つの束の
                                   全 40,117 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
@@ -845,6 +852,19 @@ scripts/
   build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 53 枚 → `data/hist-eras.js`。
                                   一覧は上流のディレクトリから発見し、年の規約（`bc323` → 天文年 −322）は
                                   1 関数だけが持つ。`--check` はそれを評価して照合する
+  build-histeras-names.mjs        上の束が描く政体名 → `data/histeras-names.json`（9 言語）。
+                                  `--fetch` が候補を集め、既定が組み立て、`--check` が無ネットワークで
+                                  照合し、`--sweep` が許容幅を測り直す
+  histeras/census.mjs             束から「どの名前を・どこに・いつ描いているか」を導く（訳す単位は
+                                  feature ではなく**名前**——10,212 の feature に 3,028 の綴り）
+  histeras/harvest.mjs            Wikidata の候補（英語のラベルと別名に**一致する項目を全部**。順位も
+                                  先頭採用も無い）。⚠ ダッシュ・アポストロフィの字種違いは導出した
+                                  異綴りでも訊く（上流は `Denmark-Norway`・Wikidata は `Denmark–Norway`）
+  histeras/match.mjs              **純粋**な採否の規則——地理と年代で照合し、決め手が無ければ**拒む**。
+                                  `tests/r686-histeras-names-checks.test.mjs` が**評価**する
+  histeras/time-borders.mjs       `js/time-borders.js` を node で実体化する足場（手書きの名前表が
+                                  何に答えるかを、ソースを読まずに**訊く**ため）
+  histeras/coverage.mjs           手書きの表と束の表が、言語ごとに何件ずつ答えているかを印字する
   build-hist-borders.mjs          OpenHistoricalMap の `admin_level=2` 境界関係 → `data/hist-borders.js`（1850–1885）。
                                   ⚠ **`--check` は再生成しない**——ビルドには CI に置けない約 400 MB の Overpass 応答が
                                   要るので、代わりに**同梱ファイルの不変条件**を測る（窓の中に収まっているか・リング番号が

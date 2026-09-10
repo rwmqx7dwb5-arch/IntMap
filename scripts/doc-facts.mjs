@@ -1330,6 +1330,30 @@ if (RULE && RULE !== 'i18n-open-gap') {
   } else ok('ci-gates', `all ${wanted.length} source-side gates npm test runs are also ci.yml steps`);
 }
 
+/* ═══ 28b. how much of the deep past is named in nine languages ═══════════════════════════
+ *  (#R686) data/histeras-names.json is the only lane that localizes the pre-1850 polity names, and
+ *  its size is a claim the documents make on the reader's behalf: 「どれだけ埋まったのか」. It is
+ *  also a number that MOVES — a rebuild against a later Wikidata will decide differently — so the
+ *  documents that state it are checked against the file rather than against each other. ⚠ AND THE
+ *  ROUND'S OWN PROSE IS IN THE UNIVERSE: DEV-NOTES states both numbers, which is where a stale
+ *  figure would otherwise survive longest. */
+{
+  if (!has('data/histeras-names.json')) {
+    fail('histeras-names', 'data/histeras-names.json is gone — the nine-language names of the deep past');
+  } else {
+    const j = JSON.parse(rd('data/histeras-names.json'));
+    const rows = Object.keys(j.names).length;
+    const strings = Object.values(j.names).reduce((n, r) => n + Object.keys(r.n).length, 0);
+    const num = (s) => Number(String(s).replace(/,/g, ''));
+    eachDoc((f, s) => {
+      for (const m of s.matchAll(/([\d,]{3,6})\s*名前/g)) if (num(m[1]) !== rows) fail('histeras-names', `${f} says ${m[1]} 名前; data/histeras-names.json holds ${rows}`);
+      for (const m of s.matchAll(/([\d,]{3,7})\s*の訳語/g)) if (num(m[1]) !== strings) fail('histeras-names', `${f} says ${m[1]} の訳語; data/histeras-names.json holds ${strings}`);
+    });
+    if (!/histeras-names\.json/.test(BODY.get('Architecture.md') || '')) fail('histeras-names', 'Architecture.md no longer says where the pre-1850 polity names come from');
+    if (!problems.some((x) => x.startsWith('histeras-names'))) ok('histeras-names', `${rows} names / ${strings} localized strings, stated correctly`);
+  }
+}
+
 /* ═══ 29. how many cities carry a historical name ═════════════════════════════════════════
  *  (#R427) The size of data/hist-cities.json is stated in four documents — Architecture.md,
  *  PRODUCT.md, docs/FILES.md and the DEV-NOTES round — because it is the answer to 「数百以上に」
