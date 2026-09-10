@@ -2647,6 +2647,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるように」 — the Layers button, the palette and Atlas, one command (the module is lazy) */
   IntMapOS.register('sim.seismic', (ctx)=>window.IntMapLazy.need('seismic').then(()=>{ try{ return !!(window.IntMapSeismic&&window.IntMapSeismic.open(((ctx&&ctx.params)||{}).at||{})); }catch(_){ return false; } }),
     {label:'Earthquake simulator', btn:'btn-seismic-sim', group:'sim'});
+  IntMapOS.register('sim.pandemic', ()=>window.IntMapLazy.need('playground').then(()=>{ try{ if(typeof window._pgPandemic!=='function') return false; window._pgPandemic(); return true; }catch(_){ return false; } }), {label:'Pandemic Simulator', btn:'btn-pandemic-sim', group:'sim'});   /* (#R666) 「LayersのToolsからアクセスできるように。」 — same shape as the line above and the same reason: the Tools button, the palette and Atlas press ONE command instead of three copies of one open sequence. Why, and what the dead `#btn-playground` listener that stood below used to be, is in tests/r666-checks.test.mjs ①③ and DEV-NOTES #R666. ⚠ the app shell is at its #R168 line budget, which is why this is one line. */
   const applyDockMode=IM_HOST.applyDockMode=IM_WINMGR.wireDock({ setMode, renderUI, saveSettings, clearMode:()=>{ currentMode=null; }, mode:()=>currentMode });   IM_HOST.dockRefresh=()=>{ try{ return IM_WINMGR.dockRefresh(); }catch(_){ return 0; } };   IM_HOST.dockedCount=()=>{ try{ return IM_WINMGR.dockedCount(); }catch(_){ return 0; } };   /* (#R242) the empty line is a readout of this */
   function setMode(mode,btnId){
     /* ⚠ (#R435) A TAB OR SCOPE GESTURE LEAVES THE READING SURFACE. Without this the reader pane stayed
@@ -2926,7 +2927,6 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* (#R29.1) Settings → Feedback & bug report entry points. */
     { const fb=document.getElementById('btn-send-feedback'); if(fb) fb.onclick=()=>{ try{ window._openFeedback&&window._openFeedback(); }catch(_){} }; }
     { const bg=document.getElementById('btn-report-bug'); if(bg) bg.onclick=()=>{ try{ window._openBugReport&&window._openBugReport(); }catch(_){} }; }
-    { const pg=document.getElementById('btn-playground'); if(pg) pg.onclick=()=>{ window.IntMapLazy.need('playground').then(()=>{ try{ window._openPlayground&&window._openPlayground(); }catch(_){} }); }; }
     bm.addEventListener('click',(e)=>{ if(e.target===bm) close(); });
     /* Record a donation INTENT for a logged-in user (so a future paid plan can recognise supporters).
        The actual payment is confirmed by Stripe; a webhook → Supabase can later upgrade this row. */

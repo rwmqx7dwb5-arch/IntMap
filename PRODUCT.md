@@ -426,6 +426,7 @@ Web アプリ**である。アカウント無しで開いてすぐ使え、ロ�
   リアルタイム交通量は未反映」と書く。Atlas の自然言語も同じ状態を読み書きする。
 - **Playground (beta)** — Layers ▸ Tools から起動。World Explorer（衛星版 GeoGuessr）／
   Pandemic Simulator／Statecraft（1900–2026 の国家運営）／World Sandbox／Quiz。
+  **Pandemic Simulator は Layers ▸ Tools に自分の行を持ち、1 タップで開く**（ハブ経由でも開ける）。
   **Pandemic Simulator** は国ごとに 1 組の区画を持つ**確率的 SEIR メタ個体群**（`js/pandemic-model.js`）。
   疾患（インフルエンザ／COVID-19／SARS／エボラ／麻疹）と、**「未知の病原体」か「現在の世界」か**を選び、
   地図で最初の集団感染の場所を指す。R0・感染力を持つまでの日数・感染期・基準致死率・免疫の長さ、

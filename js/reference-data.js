@@ -367,6 +367,13 @@ window.IntMapRefData=(function(){
     {n:'Digitraffic / Fintraffic (marine AIS)',u:'https://www.digitraffic.fi/en/marine-traffic/'},
     {n:'adsb.lol',u:'https://www.adsb.lol/'},
     {n:'airplanes.live',u:'https://airplanes.live/'},
+    /* (#R666) ⚠ THE RUNWAY UPSTREAM HAD NEVER BEEN CREDITED HERE. js/map-extras.js has read
+       OurAirports at run time since #R8c (and the flight sim's real thresholds since #R119); this
+       round added a SECOND, build-time use — data/airports.json, scheduled-airline infrastructure
+       per country, which weights the pandemic simulator's international spread. Public domain, so
+       the line is a statement of provenance rather than a licence obligation; it is here because a
+       reader must be able to see that the connectivity figure is INFRASTRUCTURE, not traffic. */
+    {n:'OurAirports — airport size class & scheduled service (runway geometry at run time; per-country air connectivity at build time; public domain)',u:'https://ourairports.com/data/'},
     {n:'CelesTrak',u:'https://celestrak.org/'},
     {n:'satellite.js',u:'https://github.com/shashwatak/satellite-js'},
     {n:'Planespotters.net',u:'https://www.planespotters.net/photo/api'},

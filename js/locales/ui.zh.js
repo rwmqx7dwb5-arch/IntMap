@@ -3125,6 +3125,8 @@ window.IntMapLang.define('zh', {
   "Experimental interactive modes built on real data.": "以真實資料打造的實驗性互動模式。",
   "A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.": "完整六自由度飛行模型——選擇機型與機場，在真實 3-D 地形上起降。",
   "Pandemic Simulator": "疫情模擬器",
+  "International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.": "國際傳播的權重依人口、陸地邊界與機場規模計算，而非依航線或旅客人數。",   /* playground.js (#R666) */
+  "International spread is weighted by population and distance only — the border and airport tables did not load.": "國際傳播的權重僅依人口與距離計算——邊界與機場資料未能載入。",   /* playground.js (#R666) */
   "Test your world geography: flags, capitals, map-clicks, silhouettes & duels.": "測試你的世界地理：國旗、首都、地圖點選、輪廓與對決。",
   "Breaking": "快訊",
   "Country data unavailable": "無法載入國界資料",

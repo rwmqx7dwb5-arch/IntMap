@@ -266,7 +266,8 @@ test('(#R166) prod playground module loaded (it publishes no window global eithe
   // js/playground.js only installs window._openPlayground / _pgWorldExplorer from inside its
   // factory, so a global-name check cannot see it. Assert the entry point is a real function.
   // ⚠ (#R209) …and that factory now runs only when the module is ASKED FOR — beforeAll asks, which
-  // is the same call `#btn-playground` makes. So this still measures "the file deployed and its
+  // is the same call the Tools strip's `#btn-edu` / `#btn-pandemic-sim` make (#R666 — the
+  // `#btn-playground` this line used to name was an id nothing ever created). So this still measures "the file deployed and its
   // factory ran"; what it no longer measures is "it was in the boot bundle", which this round made
   // deliberately false. Kept rather than folded into the (#R209) test because `_pgWorldExplorer` is
   // a SECOND entry point (js/atlas-console.js reaches for it by name) that the loader's own

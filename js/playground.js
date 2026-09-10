@@ -237,6 +237,23 @@ window.IntMapModules.playground=function(HOST){
       ebola:LA('Ebola','エボラ出血熱','Ebola','Эбола','Ébola'),
       measles:LA('Measles','麻疹','Masern','Корь','Sarampión')
     };
+    /* ══ (#R666) THE TWO TABLES THE INTERNATIONAL SPREAD IS WEIGHTED BY ═════════════════════════
+       Land borders come from data/country-facts.json (already loaded on demand by
+       window.IntMapCountryFacts for the country card) and airport capacity from data/airports.json
+       (built by scripts/build-airports.mjs). Both are fetched WHEN THE SIMULATOR OPENS and filled
+       into the country rows IN PLACE, so nothing waits: a reader who taps the map before they land
+       gets a model weighted by population and distance alone, and `model.mobility.from` says so on
+       screen rather than the screen claiming air connectivity it did not get.
+       ⚠ THE AIRPORT LOADER IS HERE BECAUSE THIS IS ITS ONLY READER. If a second one appears it
+       belongs beside IntMapCountryFacts in js/countries-ui.js, which is the same shape. */
+    let _airP=null, _airT=null;
+    function loadAirports(){
+      if(_airP) return _airP;
+      _airP=fetch('data/airports.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+        .then(j=>{ const c=j&&j.countries; if(!c||!Object.keys(c).length) throw new Error('no countries in data/airports.json'); _airT=c; return c; })
+        .catch(e=>{ _airP=null; try{ console.error('[IntMap] airport capacity unavailable: '+((e&&e.message)||e)); }catch(_){} return null; });
+      return _airP;
+    }
     window._pgPandemic=function(){
       if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
       _pgWeStyle();
@@ -245,9 +262,12 @@ window.IntMapModules.playground=function(HOST){
         /* (#R30) hide the mobile bottom-sheet / FABs so the HUD + map aren't covered ("ボタンがボトムシートに隠れる"). */
         try{ document.body.classList.add('pg-sim'); }catch(_){}
         const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
-        const resolve=(p)=>{ const c=[p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3,p.SOV_A3].map(String).find(x=>cs[x]); return c?cs[c]:null; };
+        /* ⚠ (#R666) THE CODE COMES BACK TOO. It was resolved here and thrown away, so the engine
+           received five fields per country and no way to look one up in any other table — which is
+           why the destination of an importation could only ever be «some index». */
+        const resolve=(p)=>{ const c=[p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3,p.SOV_A3].map(String).find(x=>cs[x]); return c?{code:c,s:cs[c]}:null; };
         const N=feats.length, cent=[], bbs=[], pools=[], world=[];
-        feats.forEach((f,i)=>{ const bb=bboxOf(f); bbs[i]=bb; cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const s=resolve(f.properties||{});
+        feats.forEach((f,i)=>{ const bb=bboxOf(f); bbs[i]=bb; cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const _r=resolve(f.properties||{}); const s=_r&&_r.s;
           const pop=(s&&s.pop&&s.pop>0)?s.pop:3e6;
           /* ⚠ ONE PROXY, FOUR MEANINGS — and the engine keeps them apart from here on. GDP per head
              (or HDI) stands in for medical capacity, travel connectivity, policy capacity and vaccine
@@ -255,16 +275,37 @@ window.IntMapModules.playground=function(HOST){
              stores them as four fields so that the day one of them gets its own source, one formula
              changes instead of every formula. */
           const dev=(s&&s.gdppc)?Math.min(1,Math.max(0.12,s.gdppc/55000)):(s&&s.hdi?s.hdi:0.5);
-          world[i]={name:cName(f)||'?', pop, dev, lat:cent[i][1], lng:cent[i][0]}; pools[i]=null; });
+          world[i]={name:cName(f)||'?', code:(_r&&_r.code)||null, pop, dev, lat:cent[i][1], lng:cent[i][0], borders:null, air:0}; pools[i]=null; });
+        /* filled IN PLACE — `world` is the array createPandemicModel() reads at pick time */
+        try{ if(window.IntMapCountryFacts&&window.IntMapCountryFacts.load) window.IntMapCountryFacts.load().then(t=>{ if(!t) return; for(let i=0;i<N;i++){ const c=world[i].code; const row=c&&t[c]; if(row&&row.borders&&row.borders.length) world[i].borders=row.borders; } }); }catch(_){}
+        try{ loadAirports().then(t=>{ if(!t) return; for(let i=0;i<N;i++){ const c=world[i].code; const row=c&&t[c]; if(row&&row.cap>0) world[i].air=row.cap; } }); }catch(_){}
         const nm=world.map(c=>c.name);
+        /* ⚠ (#R666) DECLARED HERE, NOT BESIDE buildDots' OTHER CONSTANTS — the layer spec below
+           reads it during THIS call, and a `const` further down the same function body is in its
+           temporal dead zone until then (#R505 shipped exactly that once). */
+        const PG_HEAT_Z=3.2;
         /* CASE-DOT layers (no country fill). A soft glow under crisp dots. */
-        try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots')) GE().layers.removeSource('pg-dots'); }catch(_){}
+        try{ ['pg-dots','pg-dots-glow','pg-dots-heat'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots')) GE().layers.removeSource('pg-dots'); }catch(_){}
         try{ GE().layers.addSource('pg-dots',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
           /* (#R31) Finer, more UNIFORM dots ("大きさ差を小さく") — small fixed glow + tiny crisp dot.
              (#R575) …and TWO COLOURS, because the map draws E+I while the HUD used to print I: an
              orange dot is somebody incubating, a red one somebody infectious. Same dots, but the
              legend can now name what each one is. */
           const CLS=(inf,exp)=>['case',['==',['get','cls'],0],exp,inf];
+          /* ══ ⚠ (#R666) A DENSITY SURFACE UNDER THE DOTS, FOR THE ZOOMS A DOT CANNOT SURVIVE ═══════
+             At a whole-globe zoom a 1.6 px dot is smaller than the screen pixel it lands on, so four
+             thousand of them read as one flat smear whose brightness says nothing about how many
+             cases are where. The heatmap says exactly that, and it is ADDED UNDER the dots rather
+             than swapped for them: the HUD's 「1 dot ≈ N」 legend has to go on being true, which it
+             cannot be at a zoom where the dots are not drawn. Above PG_HEAT_Z it fades out and the
+             individual dots are legible on their own.
+             ⚠ SAME SOURCE, SAME FEATURES. It is a second reading of `pg-dots`, not a second upload. */
+          GE().layers.add({id:'pg-dots-heat',type:'heatmap',source:'pg-dots',maxzoom:PG_HEAT_Z,paint:{
+            'heatmap-weight':0.6,
+            'heatmap-intensity':['interpolate',['linear'],['zoom'],0,0.7,PG_HEAT_Z,1.2],
+            'heatmap-radius':['interpolate',['linear'],['zoom'],0,12,PG_HEAT_Z,30],
+            'heatmap-opacity':['interpolate',['linear'],['zoom'],PG_HEAT_Z-1.2,0.75,PG_HEAT_Z,0],
+            'heatmap-color':['interpolate',['linear'],['heatmap-density'],0,'rgba(0,0,0,0)',0.15,'rgba(255,159,10,0.55)',0.45,'#ff3b30',1,'#7a0010']}});
           GE().layers.add({id:'pg-dots-glow',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,2.6,5,5],'circle-color':CLS(['interpolate',['linear'],['get','sev'],0,'#ff5a3c',1,'#7a0010'],'#ff9f0a'),'circle-blur':0.9,'circle-opacity':0.28}});
           GE().layers.add({id:'pg-dots',type:'circle',source:'pg-dots',paint:{'circle-radius':['interpolate',['linear'],['zoom'],1,1.6,5,2.9],'circle-color':CLS(['interpolate',['linear'],['get','sev'],0,'#ff3b30',0.5,'#e01010',1,'#7a0010'],'#ff9f0a'),'circle-stroke-color':'rgba(255,255,255,0.45)','circle-stroke-width':0.25,'circle-opacity':0.95}});
         }catch(e){ console.warn('pandemic dots',e); }
@@ -338,17 +379,52 @@ window.IntMapModules.playground=function(HOST){
            active cases, allocated per country up to a global budget (perf), placed on REAL cities.
            (#R575) …and `perDot` is now PRINTED, because it moves: at the start one dot is 60 cases
            and in a full pandemic it is thousands, and a reader who is not told cannot read the map. */
-        const PG_POOL=80, PG_DOTCAP=4800, PG_CASES_PER_DOT=60;
+        /* ══ ⚠⚠⚠ (#R666) 「1 dot ≈ N」 HAS TO BE TRUE OF EVERY DOT, NOT OF THE FIRST EIGHTY ═════════
+           There was a per-country ceiling of 80 dots on top of a GLOBAL dots-per-case rate, and the
+           two contradict each other the moment one country holds most of the world's cases: at
+           480 000 active cases in one country `perDot` is 100, the country needs 4 800 dots, it drew
+           80 — a reader counting dots against the legend the HUD prints beside them was out by a
+           factor of sixty. The ceiling is now the GLOBAL one that `perDot` is derived from, so the
+           product of the two is the truth by construction. The point pool grows to match, by
+           APPENDING (a regenerated pool would make every existing dot jump).
+           ⚠ AND EVERY DOT NOW HAS AN IDENTITY: country × cap + slot, which is stable because slot d
+           is always the same place. That is what lets the day's change go to the source as a change
+           — `{add,remove}` → `GeoJSONSource.updateData`, re-tiling only what moved — instead of
+           re-uploading four thousand points for the handful that changed colour. `data` is still the
+           whole truth, so an engine that cannot diff falls back to it (js/geo-engine.js). The
+           general form of this is js/world-packs.js `uploadShown`; this is the trivial case of it,
+           because here identity is an index rather than something that has to be hashed.
+           ⚠ `sev` IS ROUNDED TO A TWENTIETH before it becomes part of the signature. Un-rounded it
+           drifts in the tenth decimal every single day and every dot counts as changed, which is the
+           whole-collection upload wearing a diff's clothes. */
+        const PG_POOL_STEP=80, PG_DOTCAP=4800, PG_CASES_PER_DOT=60;
+        const PG_RESYNC=40, PG_DIFF_FRAC=0.35, PG_DIFF_MIN=64;
+        let dotSig=null, dotDiffRun=0;
+        function poolFor(i,need){
+          const have=pools[i]||(pools[i]=[]);
+          if(have.length>=need||have.length>=PG_DOTCAP) return have;
+          const more=genPts(i,Math.min(PG_DOTCAP,Math.max(PG_POOL_STEP,need))-have.length);
+          for(let q=0;q<more.length;q++) have.push(more[q]);
+          return have; }
         function buildDots(){ if(!model) return; let totAct=0; for(let i=0;i<N;i++){ const a=model.active(i); if(a.seeded) totAct+=a.E+a.I; }
-          const perDot=Math.max(PG_CASES_PER_DOT, totAct/PG_DOTCAP); perDotNow=perDot; const out=[];
+          const perDot=Math.max(PG_CASES_PER_DOT, totAct/PG_DOTCAP); perDotNow=perDot; const out=[]; const next=new Map();
           for(let i=0;i<N;i++){ const a=model.active(i); if(!a.seeded) continue; const act=a.E+a.I; if(act<1 && a.D<1) continue;
-            let k=Math.round(act/perDot); if(k<1 && (act>=1||a.D>0)) k=1; if(k>PG_POOL) k=PG_POOL;
-            if(!pools[i]) pools[i]=genPts(i,PG_POOL); if(!pools[i].length) continue;
-            const sev=a.D>0?Math.min(1,a.D/(a.I+a.D+1)*3):0;
+            let k=Math.round(act/perDot); if(k<1 && (act>=1||a.D>0)) k=1; if(k>PG_DOTCAP) k=PG_DOTCAP;
+            const pool=poolFor(i,k); if(!pool.length) continue;
+            const sev=Math.round((a.D>0?Math.min(1,a.D/(a.I+a.D+1)*3):0)*20)/20;
             /* Split the country's dots the way its cases are actually split. */
             const kE=act>0?Math.round(k*(a.E/act)):0;
-            for(let d=0; d<k && d<pools[i].length; d++) out.push({type:'Feature',geometry:{type:'Point',coordinates:pools[i][d]},properties:{sev,cls:d<kE?0:1}}); }
-          try{ GE().layers.setSourceData('pg-dots',{type:'FeatureCollection',features:out}); }catch(_){} }
+            for(let d=0; d<k && d<pool.length; d++){ const cls=d<kE?0:1, id=i*PG_DOTCAP+d;
+              out.push({type:'Feature',id,geometry:{type:'Point',coordinates:pool[d]},properties:{sev,cls}});
+              next.set(id,cls+sev*2); } }
+          let diff=null;
+          if(dotSig&&dotDiffRun<PG_RESYNC){
+            const add=[], remove=[]; const room=Math.max(PG_DIFF_MIN,Math.floor(next.size*PG_DIFF_FRAC));
+            for(let q=0;q<out.length;q++){ const f=out[q]; const was=dotSig.get(f.id); if(was===undefined||was!==next.get(f.id)) add.push(f); }
+            dotSig.forEach((_v,id)=>{ if(!next.has(id)) remove.push(id); });
+            if(add.length+remove.length<=room) diff={add:add,remove:remove}; }
+          dotDiffRun=diff?dotDiffRun+1:0; dotSig=next;
+          try{ GE().layers.setSourceData('pg-dots',{type:'FeatureCollection',features:out},diff?{diffable:true,diff:diff}:{diffable:true}); }catch(_){} }
         /* ⚠ THE ONLY THING `speed` TOUCHES. */
         function loop(){ clearTimeout(timer); if(!running) return; tick(); if(model&&model.ended){ running=false; return; } if(running) timer=setTimeout(loop, Math.max(70,440/speed)); }
         function start(){ if(running||!model||model.ended) return; running=true; loop(); }
@@ -430,8 +506,19 @@ window.IntMapModules.playground=function(HOST){
             /* ⚠ WALL CLOCK ONLY. ×8 shows the same epidemic sooner; it does not make a different one. */
             const spd=document.createElement('button'); spd.textContent='⏩ x'+speed; spd.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;font-weight:700;cursor:pointer;'; spd.onclick=()=>{ speed=speed>=8?1:speed*2; spd.textContent='⏩ x'+speed; }; row.appendChild(spd); }
           const ex=document.createElement('button'); ex.textContent='×'; ex.style.cssText='border:none;border-radius:10px;background:var(--input-bg);color:var(--text-main);padding:9px 12px;cursor:pointer;'; ex.onclick=exit; row.appendChild(ex);
-          hud.appendChild(row); hud.appendChild(disclaimer()); updateHud();
+          hud.appendChild(row); hud.appendChild(disclaimer()); hud.appendChild(mobilityNote()); updateHud();
         }
+        /* ⚠⚠ (#R666) THE SCREEN SAYS WHAT THE INTERNATIONAL SPREAD WAS ACTUALLY WEIGHTED BY, and it
+           asks the engine rather than assuming — data/country-facts.json and data/airports.json are
+           fetched when this panel opens and a reader who starts an outbreak before they land really
+           does get a model with neither. ⚠ AND IT NAMES WHAT IT IS NOT: airport capacity is airline
+           INFRASTRUCTURE, and this project has no routes, no frequencies and no passenger numbers. */
+        function mobilityNote(){ const d=document.createElement('div'); d.style.cssText='margin-top:4px;font-size:10px;color:var(--text-muted);line-height:1.4;';
+          const rich=!!(model&&/airports/.test(model.mobility.from));
+          d.textContent=rich
+            ? window.IntMapLang.t(HOST.lang,"International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.","国際伝播の重みは人口・陸上の国境・空港規模によるもので、路線や旅客数によるものではありません。","Die internationale Ausbreitung ist nach Bevölkerung, Landgrenzen und Flughafenkapazität gewichtet — nicht nach Flugrouten oder Passagierzahlen.","Международное распространение взвешено по населению, сухопутным границам и мощности аэропортов — не по авиамаршрутам и не по пассажиропотоку.","La propagación internacional se pondera por población, fronteras terrestres y capacidad aeroportuaria, no por rutas aéreas ni número de pasajeros.")
+            : window.IntMapLang.t(HOST.lang,"International spread is weighted by population and distance only — the border and airport tables did not load.","国際伝播の重みは人口と距離だけです（国境・空港のデータを読み込めませんでした）。","Die internationale Ausbreitung ist nur nach Bevölkerung und Entfernung gewichtet — die Grenz- und Flughafentabellen wurden nicht geladen.","Международное распространение взвешено только по населению и расстоянию — таблицы границ и аэропортов не загрузились.","La propagación internacional se pondera solo por población y distancia: no se cargaron las tablas de fronteras y aeropuertos.");
+          return d; }
         function onPick(e){ if(!picking) return; let hit=null; for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } }
           if(hit==null) return; picking=false;
           model=createPandemicModel({countries:world,preset:preset(),params:cfg,seed:runSeed});
@@ -439,7 +526,7 @@ window.IntMapModules.playground=function(HOST){
           news(jp()?('最初の集団感染が'+nm[hit]+'で確認されました（'+grp(cfg.initialCases)+'人）。'):('First cluster confirmed in '+nm[hit]+' ('+grp(cfg.initialCases)+' cases).'),'alert');
         }
         GE().events.on('click',onPick);
-        function exit(){ stop(); try{ GE().events.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow'].forEach(id=>{ if(GE().layers.has(id))GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots'))GE().layers.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }
+        function exit(){ stop(); try{ GE().events.off('click',onPick); }catch(_){} try{ ['pg-dots','pg-dots-glow','pg-dots-heat'].forEach(id=>{ if(GE().layers.has(id))GE().layers.remove(id); }); if(GE().layers.hasSource('pg-dots'))GE().layers.removeSource('pg-dots'); }catch(_){} try{ hud.remove(); }catch(_){} try{ document.body.classList.remove('pg-sim'); }catch(_){} }
         window._pgPandemicExit=exit;
         renderConfig();
       });

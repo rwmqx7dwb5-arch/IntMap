@@ -2644,10 +2644,10 @@ window.IntMapModules.atlasConsole=function(HOST){
            actions (verified window fns / element ids), so "open the pandemic simulator", "switch news pins to the
            publisher", "log in", "donate", "send feedback", "report a bug" execute deterministically. */
         case 'playground': case 'game': { const m=String(a.mode||a.name||'').toLowerCase(); let ok=false, lbl='Playground';
-          try{ if(/world|explorer|geo|satellite|drop|guess|どこ|地理/.test(m)&&window._pgWorldExplorer){ window._pgWorldExplorer(); ok=true; lbl='World Explorer'; }
+          try{ await window.IntMapLazy.need('playground'); if(/world|explorer|geo|satellite|drop|guess|どこ|地理/.test(m)&&window._pgWorldExplorer){ window._pgWorldExplorer(); ok=true; lbl='World Explorer'; }   /* ⚠⚠ (#R666) THE MODULE IS FETCHED BEFORE THE MODE IS CHOSEN, NOT INSTEAD OF IT. The two named-mode arms below test `window._pgWorldExplorer` / `window._pgPandemic`, and js/playground.js's factory — which since #R209 runs only when the module is ASKED FOR — is what installs them. So on a page where nobody had opened the Playground yet, both arms were false and 「パンデミック・シミュレーターを開いて」 fell through to the `else`, which fetched the module and opened THE HUB: Atlas answered a request for one simulator with a menu of four. */
             else if(/pandemic|virus|outbreak|epidemic|disease|感染|パンデミック|эпидеми|pandemia/.test(m)&&window._pgPandemic){ window._pgPandemic(); ok=true; lbl='Pandemic Simulator'; }
             else if(/quiz|test|クイズ|викторин|cuestionario/.test(m)&&window.IntMapEdu&&window.IntMapEdu.open){ window.IntMapEdu.open(); ok=true; lbl='Quiz'; }
-            else { await window.IntMapLazy.need('playground'); if(window._openPlayground){ window._openPlayground(); ok=true; } } }catch(_){}
+            else if(window._openPlayground){ window._openPlayground(); ok=true; } }catch(_){}
           return R(ok, ok?note('🎮 '+esc(lbl)):warn('⚠ '+L('Playground unavailable','プレイグラウンドを開けません','Playground nicht verfügbar','Playground недоступен','Playground no disponible'))); }
         case 'news': { const m=String(a.mode||a.name||'').toLowerCase(); let id=null,lbl='';
           /* (#R416) `pinmode-pub` / `pinmode-loc` are gone — the pin is where the story happened. */

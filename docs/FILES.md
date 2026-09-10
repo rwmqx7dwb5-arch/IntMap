@@ -695,6 +695,12 @@ country-facts.json                国詳細カードの6欄——首都・通貨
                                   `js/countries-ui.js` が導くコード。生成は
                                   `scripts/build-country-facts.mjs`（`npm run build:countryfacts`・
                                   `--check` で上流と byte 比較）。カードを開いたときだけ取りに行く
+airports.json                     国ごとの**定期便のある空港の規模**（大規模＋0.25×中規模）。
+                                  パンデミック・シミュレーターの国際伝播が、行き先の「到達魅力」に
+                                  使う（`js/playground.js` がシムを開いたときだけ取りに行く）。
+                                  上流は OurAirports（public domain）＋ mledoze/countries（ISO2→ISO3
+                                  のみ）。生成は `scripts/build-airports.mjs`（`--check` で上流と比較）。
+                                  ⚠ **路線でも便数でも旅客数でもない**——航空インフラの規模である
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）

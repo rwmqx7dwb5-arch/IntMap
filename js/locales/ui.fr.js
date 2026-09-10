@@ -2909,6 +2909,8 @@ window.IntMapLang.define('fr', { ui: {
   "Experimental interactive modes built on real data.": "Modes interactifs expérimentaux fondés sur des données réelles.",
   "A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.": "Un modèle de vol complet à 6 degrés de liberté — choisissez un avion et un aéroport, puis décollez et atterrissez au-dessus du relief 3-D réel.",
   "Pandemic Simulator": "Simulateur de pandémie",
+  "International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.": "La propagation internationale est pondérée par la population, les frontières terrestres et la capacité aéroportuaire — non par les routes aériennes ni par le nombre de passagers.",   /* playground.js (#R666) */
+  "International spread is weighted by population and distance only — the border and airport tables did not load.": "La propagation internationale est pondérée uniquement par la population et la distance — les tables des frontières et des aéroports n’ont pas pu être chargées.",   /* playground.js (#R666) */
   "Test your world geography: flags, capitals, map-clicks, silhouettes & duels.": "Testez votre géographie mondiale : drapeaux, capitales, clics sur la carte, silhouettes et duels.",
   "Breaking": "Dernière minute",
   "Country data unavailable": "Données pays indisponibles",
