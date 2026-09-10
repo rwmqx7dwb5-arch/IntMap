@@ -44,10 +44,16 @@ const aliveOn = (y, m, d) => { const t = ymd(y, m, d);
   return HB.feats.filter((f) => ymd(f[2], f[3], f[4]) <= t && ymd(f[5], f[6], f[7]) > t); };
 
 /* ① the window is full — every single year of it, not just the ends ---------------------------*/
+/* ⚠ (#R690) THE BAND THIS ROUND BUILT IS NOW A PART OF A WIDER ONE, so the claim moves from «the
+   window IS 1850-1885» to «1850-1885 is still inside it and still full». The record reaches 1689
+   now, and the floor is derived rather than typed — tests/r690-histborders-deep-checks.test.mjs
+   holds that half. Pinning the equality here would have made this file fail for the widening it was
+   supposed to survive, which is the #R530 shape: a check that pins a fact keeps it. */
 test('① every year of 1850-1885 has a world to draw', () => {
-  assert.deepEqual(HB.window, [1850, 1885]);
+  assert.ok(HB.window[0] <= 1850 && HB.window[1] >= 1885,
+    'the record no longer covers the band #R518 built it for: ' + JSON.stringify(HB.window));
   const thin = [];
-  for (let y = HB.window[0]; y <= HB.window[1]; y++) {
+  for (let y = 1850; y <= 1885; y++) {
     const n = aliveOn(y, 6, 15).length;
     if (n < 100) thin.push(y + ':' + n);
   }
@@ -175,8 +181,13 @@ test('③ tagSame reads the record\'s own name BEFORE _eraLocName', () => {
 });
 
 /* ④ the band is wired, and the stepper can see it ---------------------------------------------*/
-test('④ go() serves 1850-1885 from the bundle, above the snapshot fallback', () => {
-  assert.match(TB, /const HB_MIN=1850, ?HB_MAX=1885;/);
+test('④ go() serves the day-exact band from the bundle, above the snapshot fallback', () => {
+  /* ⚠ (#R690) THE SPELLING IS NO LONGER A LITERAL PAIR. HB_MIN is a copy of the bundle's derived
+     floor, so what this asserts is that the band is declared AND that it contains #R518's window;
+     that the copy equals the bundle is r690's job. */
+  const m = /const HB_MIN=(-?\d+), ?HB_MAX=(\d+);/.exec(TB);
+  assert.ok(m, 'go() no longer declares the day-exact band');
+  assert.ok(+m[1] <= 1850 && +m[2] >= 1885, 'the declared band no longer contains 1850-1885');
   const go = TB.slice(TB.indexOf('async function go(when)'));
   const band = go.indexOf('year>=HB_MIN&&year<=HB_MAX');
   /* ⚠ (#R679) `nearest` takes the era record's own year list now, so the call reads
@@ -201,7 +212,8 @@ test('④ the day-exact country record is reachable from the clock, and says whe
   const floor = clockFloor();
   assert.ok(Number.isInteger(floor), 'the kernel declares no floor');
   assert.ok(HB.window[0] >= floor, 'the record starts somewhere the clock cannot reach');
-  assert.equal(HB.window[0], 1850, 'data/hist-borders.js no longer covers the band #R518 built it for');
+  assert.ok(HB.window[0] <= 1850 && HB.window[1] >= 1885,
+    'data/hist-borders.js no longer covers the band #R518 built it for: ' + JSON.stringify(HB.window));
   /* ⚠ (#R679) `YEARS` IS THE FALLBACK'S LIST NOW. What answers a year below 1850 is
      data/hist-eras.js, which carries all 53 snapshots upstream publishes including the
      seventeen before the common era; the thirty-six decimal years left in js/time-borders.js

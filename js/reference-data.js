@@ -470,7 +470,8 @@ window.IntMapRefData=(function(){
        what ships, not because a dataset-wide claim was believed. */
     {n:'Pleiades — a gazetteer of past places (CC BY 3.0)',u:'https://pleiades.stoa.org/credits'},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
-       from OHM — the day-exact borders of 1850-1885 (data/hist-borders.js) and the first-level
+       from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
+       #R690) and the first-level
        subdivisions of whatever year the clock shows (data/hist-admin1.js, baked from OHM's dated
        admin_level 3–4 relations) — so two rows meant the same name carrying two licences.
        ⚠ THE LICENCE IS CC0 1.0, NOT ODbL. Measured 2026-09-07: openhistoricalmap.org/copyright

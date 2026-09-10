@@ -753,20 +753,21 @@ health.json                       国別の**エピデミック対応力**——
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
-data/hist-borders.js              歴史的国境の 1850–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）
+data/hist-borders.js              歴史的国境の 1689–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）。
+                                  ⚠ **窓の下限は導出**——束の `window[0]` が正本
 data/hist-eras.js                 全時代の国境スナップショット 53 枚（紀元前 123000 年〜西暦 2010 年・
                                   aourednik/historical-basemaps・**GPL-3.0**・`window.__HISTERAS`・
                                   `scripts/build-hist-eras.mjs`／`npm run check:histeras`）。
-                                  1850 年より前は、これが唯一の国境の答え。
+                                  1689 年より前は、これが唯一の国境の答え。
                                   ⚠ **名前は英語 1 つだけ**——9 言語は下の `data/histeras-names.json`
 data/histeras-names.json          `data/hist-eras.js` が描く政体の名前の、英語以外の 8 言語
                                   （Wikidata・**CC0 1.0**・`scripts/build-histeras-names.mjs`／
                                   `npm run check:histeras`）。上流の英語の綴りが鍵で、
                                   **書いた言語だけを持つ**（`a` が誰が書いたかのビットマスク）。
                                   無い言語では上流の英語が立つ——`js/time-borders.js` が
-                                  1850–1885 の記録に対してすでにしている扱いと同じ
+                                  1689–1885 の記録に対してすでにしている扱いと同じ
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（4つの束の
-                                  全 40,117 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
+                                  全 40,820 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
                                   4,820件／rings 7,186・9.83 MB＝brotli 0.97 MB）。上と**同じリングプール形式の
@@ -866,7 +867,8 @@ scripts/
   histeras/time-borders.mjs       `js/time-borders.js` を node で実体化する足場（手書きの名前表が
                                   何に答えるかを、ソースを読まずに**訊く**ため）
   histeras/coverage.mjs           手書きの表と束の表が、言語ごとに何件ずつ答えているかを印字する
-  build-hist-borders.mjs          OpenHistoricalMap の `admin_level=2` 境界関係 → `data/hist-borders.js`（1850–1885）。
+  build-hist-borders.mjs          OpenHistoricalMap の `admin_level=2` 境界関係 → `data/hist-borders.js`（1689–1885。
+                                  **下限は導出**——記録が `data/cshapes.js` と同じだけの陸地を覆う年まで）。
                                   ⚠ **`--check` は再生成しない**——ビルドには CI に置けない約 400 MB の Overpass 応答が
                                   要るので、代わりに**同梱ファイルの不変条件**を測る（窓の中に収まっているか・リング番号が
                                   解決するか・日付の順序・英語名の有無・**窓のどの年にも描く世界があるか**）。

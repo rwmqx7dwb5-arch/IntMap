@@ -718,7 +718,7 @@ The wiring between the two products, and the four steps that stayed manual, are 
 
 `data/hist-eras.js` は aourednik/historical-basemaps が公開する `world_*.geojson` **53 枚**
 （**紀元前 17 枚**・紀元前 123000 年〜西暦 2010 年）をリングプール形式へ落とした束で、
-**1850 年より前の国境はこれが唯一の答え**である。`.github/workflows/ci.yml` に step があり、
+**1689 年より前の国境はこれが唯一の答え**である。`.github/workflows/ci.yml` に step があり、
 `gate-callers`（#R628）が「宣言されて誰も呼ばない門」を許さない。
 
 ⚠ **この門も再導出しない。** 上流は生で 71.5 MB あり、CI では取得できない。測るのは
@@ -755,7 +755,7 @@ The wiring between the two products, and the four steps that stayed manual, are 
 同点は決着させない・単独候補は地理的実体のときだけ・日付変更線・`zh` は繁体で Wikidata の裸の
 `zh` は簡体・括弧つきラベルは地図のラベルではない・**手書きの表と束の表が言語ごとに重ならない**。
 
-## The 1850–1885 border record — `npm run check:histborders` (`scripts/build-hist-borders.mjs --check`, #R518)
+## The day-exact border record below CShapes — `npm run check:histborders` (`scripts/build-hist-borders.mjs --check`, #R518, widened #R690)
 
 Registered in `scripts/test-parallel.mjs` (so `npm test` runs it) **and** in `.github/workflows/ci.yml`.
 ⚠ A `check:*` script with no caller is what #R381 found had let `data/wars.json` say anything for
@@ -774,18 +774,58 @@ lines before it looks**, and
 that is not tidiness — the first version read them, so deleting the step still passed, because the
 comment explaining the absence contained the very call it was explaining.
 
-⚠ **This gate re-derives nothing, and that is deliberate.** `data/hist-borders.js` is built from
-about 400 MB of OpenHistoricalMap Overpass responses that CI cannot hold, so unlike
+⚠ **This gate re-derives nothing FROM THE SOURCE, and that is deliberate.** `data/hist-borders.js` is built from
+about 2.1 GB of OpenHistoricalMap Overpass responses that CI cannot hold, so unlike
 `check:wars` / `check:histcities` it cannot rebuild the file and compare bytes. What it proves is
-that the **committed file is internally sound**: every record inside 1850–1885, every ring index
+that the **committed file is internally sound**: every record inside the window IT DECLARES, every ring index
 resolvable, every ring on the globe, every span ordered, an English name on every record, and —
 the failure the round exists to fix — **a world to draw in every single year of the window**.
 
-**The residual, stated rather than implied**: a file that has drifted from the upstream source
-still passes. Only a rebuild can catch that, and a rebuild needs the network. `tests/r518-checks.test.mjs`
-narrows the residual from the other side — it names six polities that exist *only* inside this
-window (the Confederate States, the Two Sicilies, the Papal States, Prussia, Hanover, Russian
-America), so a record that quietly reverted to the modern world fails even though it is well-formed.
+⚠ **(#R690) AND «A WORLD» IS NOW MEASURED AGAINST THE RECORD NEXT DOOR, not against a number
+somebody typed.** The window is no longer 1850–1885: the source was never a 19th-century dataset
+(2,101 of OpenHistoricalMap's 3,985 `admin_level=2` relations end before 1850) and the record now
+runs **1689–1885** — 1,411 records, 881 transition dates. **The floor is derived, not chosen.** The
+deep end of the source is thin (at AD 100 it is thirteen polities over 6% of the land), so the build
+asks `data/cshapes.js` — the same kind of record, sovereign states tiling the globe without
+overlapping claims, and the one this file hands over to — how much land a world takes: measured
+**12,895–14,660 deg²**, so the bar is its own minimum less its own spread, **11,131**. 1688 covers
+9,371 deg²; 1689 covers 11,314, and nothing in the record sits in the 1,900 deg² gap between those
+two treads, so a year of noise cannot move the floor. The gate re-runs that comparison on the
+committed bundles, so a rebuild whose deep end thins out fails here even though every structural
+invariant still holds.
+
+⚠ **Two earlier bars were falsified by measurement**, and they are written down in
+`scripts/build-hist-borders.mjs`'s header because each says what this quantity is NOT. «Cover as
+much as the era snapshot bracketing the year» put the floor at **1882** — it would have destroyed
+the window #R518 shipped — because `data/hist-eras.js` draws overlapping colonial claims and
+`world_1815` sums to 18,845 deg², **a third more than there is land on Earth**. A bar built on it
+measures how contested an era was, not how much of the world a record holds.
+
+**The residuals, stated rather than implied**:
+
+1. A file that has drifted from the upstream source still passes. Only a rebuild can catch that, and
+   a rebuild needs the network. `tests/r518-checks.test.mjs` narrows it from the other side — it
+   names six polities that exist *only* inside #R518's window (the Confederate States, the Two
+   Sicilies, the Papal States, Prussia, Hanover, Russian America), and
+   `tests/r690-histborders-deep-checks.test.mjs` names seven more that only the widened band can
+   show (the Holy Roman Empire, the Kingdom of Great Britain, the Republic of Venice,
+   Poland-Lithuania with its three partitions as three separate dated records, the Mughal Empire,
+   Qing, the Ottoman Empire). A record that quietly reverted to the modern world fails even though
+   it is well-formed.
+2. ⚠ **«Why not LOWER than 1689» cannot be checked offline.** The bundle holds only the records that
+   survived the floor, so the half of the derivation that says «the year below does not qualify»
+   needs the download. What IS checked offline is that the floor is tight from above — the shipped
+   record clears the bar in every year of the window — and that the builder computes the floor
+   rather than reading a literal.
+3. ⚠ **OpenHistoricalMap's BC years are written both ways, and this round does not correct them.**
+   The source has 133 relations with a BC date and its authors do not agree about year zero:
+   «Roman Empire `-0027`» is the historical numbering (27 BC) while «Uruk culture `-3999`» and the
+   prehistoric cultures ending in 9 are the astronomical one (4000 BC → −3999). Nothing in the data
+   distinguishes them, so the string is read as written and a BC record may be one year out.
+   Inventing a per-record correction would be exactly the case-by-case hardcoding
+   `.agents/rules/no-ad-hoc-hardcoding.md` forbids. **The derived floor lands far above this, so
+   nothing shipped is affected** — it is recorded because the SOURCE has it, not because the bundle
+   does.
 
 The one thing neither can see is a border that is in the right shape and the wrong place. That is
 what #R146 measured the hard way for the inner-German border, and the same warning holds here:
@@ -795,9 +835,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は同梱の5つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 40,117 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 40,820 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**（実測 31 秒）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 40,117 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 40,820 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -1116,7 +1156,7 @@ reader here for this list; adding a rule means adding a row.
 | `capability-count` | a document states a size for the Atlas capability registry that is not what `js/atlas-capabilities.js` holds |
 | `prompt-count` | `Architecture.md`'s system-prompt total or per-file breakdown disagrees with `EXPECTED_CALLS` in `tests/r285-checks.test.mjs` |
 | `deep-tier-size` | a stated size of a test tier — in a document, in `package.json` or in `scripts/worktree.mjs` — is not what `scripts/tiers.mjs` derives |
-| `histb-count` | a line naming the 1850–1885 border record states a count of records or of transition dates that `data/hist-borders.js` does not hold |
+| `histb-count` | a line naming the day-exact border record below CShapes states a count of records or of transition dates that `data/hist-borders.js` does not hold |
 | `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
 | `section-refs` | a document names another document and a `§` number that document has no section for |
 | `gate-callers` | `package.json` declares a `check:*` script that neither `ci.yml` nor `npm test` ever runs |
