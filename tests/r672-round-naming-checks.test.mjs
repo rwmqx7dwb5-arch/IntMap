@@ -15,7 +15,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, writeFileSync, unlinkSync } from 'node:fs';
+import { readdirSync, writeFileSync, unlinkSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -111,6 +111,9 @@ test('R672 ⑦ check:static actually goes red for a bare name on disk', async ()
     } finally {
       if (created) unlinkSync(victim);
     }
-    assert.equal(gate().code, 0, 'the tree was not restored');
+    /* ⚠ The restore is checked, not re-gated: this mutation is one CREATED file, so «the file
+       is gone» is the whole of «the tree is back» — and check:static costs ~45 s a run, which is
+       a third of this test's wall clock for an assertion the deletion already made. */
+    assert.equal(existsSync(victim), false, 'the tree was not restored');
   });
 });

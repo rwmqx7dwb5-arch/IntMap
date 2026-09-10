@@ -681,7 +681,7 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   handed out monotonically. Either number alone is evadable — add a bare name *and* rename a legacy
   one and the count holds; reuse an unused low number and the round holds — together they are not.
   The rule itself, including the memory files outside this repository that no gate can reach, is
-  [`.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) §3;
+  [`.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) §4;
   `node scripts/worktree.mjs new <slug>` prints the two names when it takes the number.
 
 It deliberately does **not** reformat or style-lint existing code.

@@ -32,7 +32,7 @@
  *  with the 35 subject-bearing files running up to r671. Both numbers EXPIRE the moment a round
  *  legitimately renames legacy files; the third clause below says so rather than going quiet.
  *
- *  正本 (the rule itself, memory files included): .agents/rules/execution-strategy.md §3
+ *  正本 (the rule itself, memory files included): .agents/skills/intmap-round/SKILL.md §4
  *  What this measures: docs/TESTING.md, Static checks.
  * ==========================================================================*/
 
@@ -67,13 +67,13 @@ export function roundNameProblems(basenames) {
         + ' the same free round number routinely (#R671: seven renumberings in one round, and an'
         + ' add/add conflict that committed merge markers into a file of regressions), so give it'
         + ` a subject: r${a.round}-<subject>${a.suffix}`
-        + ' — .agents/rules/execution-strategy.md §3');
+        + ' — .agents/skills/intmap-round/SKILL.md §4');
     }
   }
   if (bare > LEGACY_BARE_COUNT) {
     problems.push(`${bare} files under tests/ are named for their round and nothing else; the`
       + ` recorded legacy snapshot is ${LEGACY_BARE_COUNT} and only goes down. Name the new one`
-      + ' r<N>-<subject> — .agents/rules/execution-strategy.md §3');
+      + ' r<N>-<subject> — .agents/skills/intmap-round/SKILL.md §4');
   } else if (bare < LEGACY_BARE_COUNT) {
     problems.push(`only ${bare} round-number-only files remain under tests/ but LEGACY_BARE_COUNT`
       + ` in scripts/round-names.mjs still says ${LEGACY_BARE_COUNT}. Lower it to ${bare}:`

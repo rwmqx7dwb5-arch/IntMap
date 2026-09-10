@@ -281,7 +281,7 @@ function makeNew(slug) {
   console.log(`    ${names.checks}        node --test で走る回帰`);
   console.log(`    ${names.spec}                Playwright の spec（要るなら）`);
   console.log('  ⚠ 主題を落とした tests/r<N>-checks.test.mjs は check:static が拒む');
-  console.log('    （.agents/rules/execution-strategy.md §3。memory も同じ規約）');
+  console.log('    （.agents/skills/intmap-round/ §4。memory も同じ規約）');
 
   console.log('\n  並列実装をするなら、この絶対パスと「触ってよいファイルの一覧」を');
   console.log('  intmap-implementer に渡す。同じファイルを2体に書かせない。');
