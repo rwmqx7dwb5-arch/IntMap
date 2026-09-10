@@ -1755,7 +1755,12 @@ if (RULE && RULE !== 'i18n-open-gap') {
   const itemsUnder = (body, sec) => {
     /* ⚠ NO `m` FLAG. With it `$` ends at the first line break, so the lazy body matched one line
        and every item reference below looked like an address into an empty section. */
-    const re = new RegExp('(?:^|\\n)#{1,6}[ \\t]+(?:§[ \\t]*)?' + sec.replace(/\./g, '\\.') + '(?=[.．、 \\t\\n])[^\\n]*\\n([\\s\\S]*?)(?=\\n#{1,6}[ \\t]|$)');
+    /* ⚠ ESCAPE THE WHOLE METACHARACTER SET, not just the dot. `sec` can only be digits, dots and
+       `A-1` shapes today — the pattern that produced it says so — but a needle that escapes one
+       character is a claim about its caller rather than about its input, and the next caller does
+       not read this line. (CodeQL js/incomplete-sanitization said the same thing.) */
+    const lit = sec.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('(?:^|\\n)#{1,6}[ \\t]+(?:§[ \\t]*)?' + lit + '(?=[.．、 \\t\\n])[^\\n]*\\n([\\s\\S]*?)(?=\\n#{1,6}[ \\t]|$)');
     const m = body.match(re);
     if (!m) return 0;
     return Math.max(0, ...[...m[1].matchAll(/^[ \t]*(\d+)\.[ \t]/gm)].map((x) => Number(x[1])));
