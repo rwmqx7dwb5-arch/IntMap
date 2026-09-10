@@ -34,6 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
+import { sharedRoster, inventories } from '../scripts/shared-roster.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -53,6 +54,23 @@ function docFacts() {
   }
 }
 
+/* (#R694) 名簿の変異は**実体から導く**。`scripts/shared-roster.mjs` が「どの一節が `_shared/` の
+   目録を名乗っているか」を持っている唯一の実装なので、検査もそれに訊く——規則を書き写すと
+   規則が2つになる（.agents/rules/no-ad-hoc-hardcoding.md §2.3）。落とすのは**最後の1本**:
+   窓で切っていた実装が最初に失うのが名簿の末尾だから（#R690 の形そのもの）。 */
+const dropOneName = (body) => {
+  const roster = sharedRoster(ROOT);
+  const inv = inventories(body).find((i) => i.names.length && i.names.every((n) => roster.includes(n)));
+  if (!inv) return null;
+  const victim = inv.names[inv.names.length - 1];
+  const n = victim.replace(/\./g, '\\.');
+  const SEP = '[ \\t\\r\\n]*[/,・][ \\t\\r\\n]*';
+  for (const re of [new RegExp(SEP + '`?' + n + '`?'), new RegExp('`?' + n + '`?' + SEP)]) {
+    if (re.test(inv.text)) return body.replace(inv.text, () => inv.text.replace(re, () => ''));
+  }
+  return null;
+};
+
 /* 各ケース: 壊す対象・壊し方・報告が**名指すべき規則名**。成否にかかわらずバイト列を戻す。 */
 const CASES = [
   /* ① 手書き一覧に一度も入っていなかった文書。これがこの回の報告そのもの。 */
@@ -68,16 +86,22 @@ const CASES = [
   { rule: 'edge-count', file: 'SECURITY.md', why: 'a count spelled as an English word',
     from: '**seventeen** Edge Functions', to: '**eight** Edge Functions' },
 
-  /* ② `_shared/` の一覧から1本抜く。`_shared` は関数ではないので①の分母には入らない。 */
+  /* ② `_shared/` の一覧から1本抜く。`_shared` は関数ではないので①の分母には入らない。
+     ⚠ (#R694) ここは長く**綴りを錨にしていた**——`'news-cluster.js / news-geo-prompt.js / …'`
+     という当時の並びそのままである。名簿に2本足したら、その並びはもう文書に無い。
+     `assert.ok(re.test(original))` が落ち、**正しい追記が CI を赤くした**（#R488／#R530 の形）。
+     錨が測っていたのは「名簿が正しいか」ではなく「名簿が去年と同じ字で書いてあるか」だった。
+     ⇒ **壊し方で書く**: 実際の `_shared/` を読み、その文書の名簿から**1本落とす**。
+     何が並んでいるかは実体から来るので、正しい追記では錨が外れない。 */
   { rule: 'edge-shared', file: 'docs/FILES.md', why: 'a name dropped from the _shared roster',
-    from: 'news-cluster.js / news-geo-prompt.js / news-ingest.js / volcano-parse.js）', to: 'news-cluster.js / news-ingest.js）' },
+    mutate: (body) => dropOneName(body) },
 
   /* ② 指示側の同じ一覧。⚠ (#R628) これは長く AGENTS.md にあったが、そのファイルの 32,768 バイトの
      天井と `edge-functions` 規則が引っぱり合っていたので、名簿の正本ごと docs/AGENT-SETUP.md §9 へ移した
      （AGENTS.md §12 が「天井に当たったら上げるのではなく正本を移す」と要求している形）。**変異の足場は
      正本について置く**——写しの側に置くと、正本が動いた次のラウンドで足場だけが残る。 */
   { rule: 'edge-shared', file: 'docs/AGENT-SETUP.md', why: 'the same roster in the setup document',
-    from: '`atlas-persona.js`・`aviation-codec.js`', to: '`aviation-codec.js`' },
+    mutate: (body) => dropOneName(body) },
 ];
 
 test('R399 ① every hole this round closed goes RED when its fact is made wrong', async () => {
@@ -95,9 +119,15 @@ test('R399 ① every hole this round closed goes RED when its fact is made wrong
     for (const c of CASES) {
       const originalBytes = rd(c.file);
       const original = readLF(join(ROOT, c.file));
-      const re = anchorRe(c.from);
-      assert.ok(re.test(original), `${c.file} no longer contains the anchor for «${c.why}»`);
-      const broken = original.replace(re, () => c.to);
+      let broken;
+      if (c.mutate) {
+        broken = c.mutate(original);
+        assert.ok(broken, `${c.file}: could not derive the «${c.why}» breakage from the real roster`);
+      } else {
+        const re = anchorRe(c.from);
+        assert.ok(re.test(original), `${c.file} no longer contains the anchor for «${c.why}»`);
+        broken = original.replace(re, () => c.to);
+      }
       assert.notEqual(broken, original, `the «${c.why}» case did not change ${c.file}`);
       try {
         writeFileSync(join(ROOT, c.file), broken);
