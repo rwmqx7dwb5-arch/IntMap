@@ -2205,6 +2205,11 @@ window.IntMapModules.labelPopup=function(HOST){
         if(mode==='local') return String(p.name||'');
         const keys=(mode==='en')?['name:en','name:latin','name_int']
           :((window.IntMapOsmNameKeys&&window.IntMapOsmNameKeys(HOST.lang))||['name:en','name:latin','name_int']);
+        /* ⚠ (#R691) the key order is no longer the whole rule — js/place-labels.js also REFUSES
+           recorded upstream wrecks (`Yüreğir → 良癖`), and a loop here would print the very string
+           the label beside it does not. Ask for the answer; fall back to the loop only if the module
+           has not published yet. */
+        if(window.IntMapOsmName) return String(window.IntMapOsmName(p,keys)||p.name||'');
         for(let i=0;i<keys.length;i++){ const v=p[keys[i]]; if(v) return String(v); }
       }catch(_){}
       return String(p.name||'');

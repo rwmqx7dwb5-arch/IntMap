@@ -136,7 +136,9 @@ map-tooltip.js                  地図のホバー用ツールチップ 1 面（
 map-extras.js                     残りの自己完結した地図表面モジュール
 map-pick.js                       地図上の1点を拾う window.IntMapPick
 map-typography.js                 このアプリの文字——どの書体が描き、どれだけの幅で出るか
-place-labels.js                   地名・海洋名ラベルと、そのローカライズ
+place-labels.js                   地名・海洋名ラベルと、そのローカライズ。⚠ `name:ja` のうち**上流が壊している組**
+                                  （地名の意味を漢字に訳したもの）を拒み、既存の鍵の並びに落とす。表は生成物で、
+                                  正本は `scripts/build-osm-ja-rejects.mjs`
 label-scale.js                    ラベルの大きさ window.IntMapLabelScale
 compass.js                        方位の呼び名（9言語・16方位）window.IntMapCompass
 chronos.js                        Chronos＝統一時間カーネル window.IntMapTime。⚠ 下限は**西暦1年**で、
@@ -867,6 +869,13 @@ scripts/
   histeras/time-borders.mjs       `js/time-borders.js` を node で実体化する足場（手書きの名前表が
                                   何に答えるかを、ソースを読まずに**訊く**ため）
   histeras/coverage.mjs           手書きの表と束の表が、言語ごとに何件ずつ答えているかを印字する
+  build-osm-ja-rejects.mjs        OSM の `name:ja` のうち、ラテン文字名の集落・行政区画に**漢字の意訳**が
+                                  当たっている組を掃き出し、`js/place-labels.js` の生成ブロックへ焼く。
+                                  ⚠ **訂正ではなく拒否**——正しい日本語名を発明せず、既存の鍵の並び
+                                  （`name:en` → `name:latin` → `name_int` → `name`）に落とす。判定基準と、
+                                  なぜ規則ではなく一覧なのかはスクリプト冒頭。⚠ **門にはしていない**
+                                  （Overpass が要るので CI に置けない）。不変条件は
+                                  `tests/r691-osm-ja-name-overrides-checks.test.mjs` が基準を評価して測る
   build-hist-borders.mjs          OpenHistoricalMap の `admin_level=2` 境界関係 → `data/hist-borders.js`（1689–1885。
                                   **下限は導出**——記録が `data/cshapes.js` と同じだけの陸地を覆う年まで）。
                                   ⚠ **`--check` は再生成しない**——ビルドには CI に置けない約 400 MB の Overpass 応答が
