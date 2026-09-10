@@ -6,6 +6,7 @@
     "allow": [
       "Bash(node scripts/worktree.mjs:*)",
       "Bash(node scripts/master-sync.mjs:*)",
+      "Bash(node scripts/agent-memory.mjs:*)",
       "Bash(node scripts/static-checks.mjs:*)",
       "Bash(node scripts/i18n-audit.mjs:*)",
       "Bash(node scripts/doc-facts.mjs:*)",
