@@ -298,9 +298,25 @@ window.IntMapModules.newsTimeline=function(HOST){
        the day the device is on. `zFields` already answers that; formatting the fields back as a
        UTC noon keeps the calendar arithmetic out of the formatter, so no zone can shift the day a
        second time. */
+    /* ⚠⚠⚠ (#R698) `year:'numeric'` DROPS THE ERA SILENTLY, so a date before year 1 came out as the
+       SAME STRING as a date after it. MEASURED in production on 2026-09-11, with the border
+       stepper standing on 3000 BC:
+           ja-JP  {year:'numeric'}            → 「3000年1月1日」      ← says AD 3000
+           ja-JP  {era:'short',year:'numeric'} → 「紀元前3000年1月1日」
+           en-US  {year:'numeric'}            → «Jan 1, 3000»
+           en-US  {era:'short',year:'numeric'} → «Jan 1, 3000 BC»
+       This is the fifth thing #R602 warned about in one sentence: a rule that is right for every
+       year the caller can reach starts lying the moment the floor moves, and nothing goes red.
+       #R695 moved it — the stepper's list now holds the era sheets, so its label reaches 123000 BC
+       — and #R679 had already left the matching note beside `yLabel` below.
+       ⚠ THE ERA IS ASKED FOR ONLY WHEN THERE IS ONE TO SAY. Requesting it unconditionally prints
+       「西暦1990年10月2日」 and «Oct 2, 1990 AD» on every ordinary date, which is noise the reader
+       did not have before. WHERE the word goes is CLDR's answer, not a table of ours — the same
+       rule js/hist-scale.js `yearText` follows for the bare year.
+       ⚠ AND `Date.UTC` IS NOT USED. It maps a year under 100 to 1900+y (#R602 paid for that four
+       times in one round, #R695 twice more), which is reachable here now. */
     function _dateText(d){ try{ const f=zFields(d);
-      return new Date(Date.UTC(f.Y,f.M-1,f.D,12,0,0))
-        .toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-US'),{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'});
+      return HS().dateText(f.Y,f.M,f.D,window.IntMapLang.locale(HOST.lang,'en-US'));
     }catch(_){ return d.toLocaleDateString(); } }
     const L5=window.IntMapLang.pick(()=>HOST.lang);
     /* ⚠ (#R679) A YEAR BELOW 1 IS NOT A NUMBER THE READER CAN READ. This was

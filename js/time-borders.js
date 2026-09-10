@@ -1862,9 +1862,20 @@ window.IntMapModules.timeBorders=function(HOST){
       const y=w.getFullYear();   /* (#R695) LOCAL, like `_kOf` two lines up — one clock per function; mixing UTC and local here would shift a day at the year boundary */
       if(y>=HB_MIN&&y<=HB_MAX){ const h=await hbLoad(); if(!h) return null;
         return _kToDate(hbEpoch(h,y,w.getMonth()+1,w.getDate())); }
-      /* (#R695) below the day-exact window the answer is the sheet the map is actually on —
-         `shownY`, which `go()` has already resolved through `nearest()`. Never a computed guess. */
-      if(y<HB_MIN){ if(!_erD||shownY==null||shownY>=HB_MIN) return null; return _kToDate(_ymd(shownY,1,1)); }
+      /* ⚠⚠⚠ (#R698) THIS ASKED `shownY`, AND `shownY` IS A PROMISE'S OUTPUT. #R695 wrote it as
+         «the sheet the map is actually on — never a computed guess», which sounds like the safe
+         choice and is the opposite: `go()` assigns `shownY` only AFTER `await fetchFC(ny)`, while
+         the panel's `syncBorderStep` is an ordinary clock subscriber that runs immediately. So the
+         label named the PREVIOUS sheet — measured in production 2026-09-11: standing on 3000 BC it
+         read the sheet for 1500, standing on 1500 it read the one before that, and it never caught
+         up because nothing re-runs it when the fetch lands. #R673's shape: reading mutable state
+         that a promise has not written yet.
+         ⇒ ASK THE FUNCTION `go()` ASKS. `nearest()` is pure and is the same call with the same
+         list, so this is not a second opinion about which sheet is shown — it is the same one,
+         available now. (The day-exact branches above already work this way: `hbEpoch`/`csEpoch`
+         answer from the record and the date, never from what has been drawn.) */
+      if(y<HB_MIN){ const e=_erD||window.__HISTERAS||null; if(!e) return null; const ny=nearest(y,erYears(e));   /* (#R698) same availability rule as `_allBounds`: parsed here, or published on window by the <script> tag */
+        return (ny==null||ny>=HB_MIN)?null:_kToDate(_ymd(ny,1,1)); }
       if(y<CS_MIN||y>CS_MAX) return null;
       const d=await csLoad(); if(!d) return null;
       return _kToDate(csEpoch(d,y,w.getMonth()+1,w.getDate())); }catch(_){ return null; } }
