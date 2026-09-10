@@ -755,7 +755,13 @@ window.IntMapModules.timeBorders=function(HOST){
              #R210 built the answer to exactly this collision and this handler simply never used it:
              claim the click, and `_deferLabel`'s own `claimed()` check steps aside. */
           try{ if(e) GE().events.claimClick(e); }catch(_){}
-          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(lngLat,dispName,true,{geojson:geom,wiki:R.wiki||nm,flag:R.flag}); return true; }
+          /* ⚠⚠ (#R682) AND THE OTHER HALF OF «say what is being drawn»: the row's sentence counts how
+             many shapes upstream classified, and a reader who is told «14 of them» has no way to
+             find WHICH without asking one. This is that ask — upstream's own free-text word for the
+             shape that was clicked, VERBATIM and marked as upstream's, on the popup that already
+             opens here. It is passed as finished text so js/map-ui.js gains no string of its own,
+             and a feature upstream did not classify gets no line at all rather than a guess. */
+          if(typeof window._imPlacePopup==='function'){ window._imPlacePopup(lngLat,dispName,true,{geojson:geom,wiki:R.wiki||nm,flag:R.flag,sub:typeNote(f)}); return true; }
           if(R.code&&typeof showCountryDetail==='function'){ showCountryDetail(R.code); return true; }
           return false; }
         /* (#R122) ONLY the era country-NAME labels open the country card — NOT the whole-country fill/line. Clicking
@@ -1174,7 +1180,7 @@ window.IntMapModules.timeBorders=function(HOST){
       }catch(_){} });
       return fc;
       }catch(_){ return fc; } }
-    function apply(fc){ const mySeq=seq; shownFC=fc; try{ fc=tagSame(fc,shownYear); }catch(_){}
+    function apply(fc){ const mySeq=seq; shownFC=fc; _writeNote(); try{ fc=tagSame(fc,shownYear); }catch(_){}
       /* (#R94m) set the data on the EXISTING source directly (not gated by isStyleLoaded) — that gate was why a
          SECOND year change didn't update: ensure() could transiently return false and block setData, so the
          borders stayed on the first year until you went back to Now. No re-assert timeouts → no flicker.
@@ -1195,6 +1201,7 @@ window.IntMapModules.timeBorders=function(HOST){
          from an earlier year can't clobber a newer one ("タイムマシンで変更しても国境線が変化しない"). */
       else whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); }); }
     function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null;
+      _writeNote();   /* (#R682) the row must never state a date the map has left */
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
@@ -1729,7 +1736,88 @@ window.IntMapModules.timeBorders=function(HOST){
       const d=await csLoad(); if(!d) return null;
       return _kToDate(csEpoch(d,y,w.getMonth()+1,w.getDate())); }catch(_){ return null; } }
     async function changeDates(){ try{ return (await _allBounds()).map(_kToDate); }catch(_){ return []; } }
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest,
+    /* ══ ⚠⚠⚠ (#R682) WHAT THIS LAYER IS DRAWING, SAID ON THE MAP AND NOT ONLY ON A SOURCE PAGE ══
+       #R679 lowered the clock to 123000 BC and bundled the seventeen pre-common-era sheets, and its
+       own comment in js/hist-scale.js already wrote down what was still missing: «the era layer says
+       WHICH it is showing rather than letting a drawn line borrow the authority of a border». Until
+       this round it did not. The only place that said so was the source page — a reader who opens
+       123000 BC sees Homo heidelbergensis and Neanderthal inside closed outlines with no statement
+       anywhere on the map that these are not polities. CONSTITUTION「偽物・ハリボテ禁止」.
+       ⚠ THE SENTENCE IS COUNTED OFF THE COLLECTION THAT IS ON THE SOURCE, never spelled out — the
+       same rule js/time-admin1.js `note()` carries for the derived 令制国 (#R669). A literal «141»
+       or «6,892» would be a fact about the whole bundle printed at one instant; `shownFC` is the
+       thing the map is drawing, so the sentence and the lines cannot disagree, and it stays true if
+       upstream republishes a sheet with different contents.
+       ⚠ AND IT SPEAKS ONLY FOR THE SNAPSHOT TIER. `shownY` is a NUMBER only for the aourednik
+       snapshots; the day-exact tiers key it as 'cs…' / 'hb…' strings. That is the whole test — no
+       second flag to fall out of step with which tier answered.
+       ⚠ NOTHING IS INVENTED FOR A SHAPE UPSTREAM DOES NOT CLASSIFY. `TYPE` is upstream's own free
+       text and is reported verbatim and counted; there is no table here that declares Neanderthal a
+       species or Saba a kingdom (.agents/rules/no-ad-hoc-hardcoding.md). Measured across the bundle:
+       141 features carry one, in nine sheets only, and world_bc123000 carries none at all — so the
+       «none» half of this sentence is the half the deepest reader actually gets.
+       ⚠ The neighbouring sheets are read out of the record too (`erYears`), which is how the reader
+       learns there is nothing between 10000 BC and 123000 BC without that gap being typed here. */
+    function coverage(){ try{
+      if(!active||typeof shownY!=='number'||!shownFC||!shownFC.features) return {active:false,era:false};
+      let named=0,blank=0; const ty=new Map();
+      for(const f of shownFC.features){ const p=f.properties||{};
+        if(p.NAME||p.name) named++; else blank++;
+        /* ⚠ upstream spells the same field both ways across its own files (48 `TYPE` / 93 `type`,
+           measured in scripts/build-hist-eras.mjs). The bundle folds them to one; the remote
+           fallback hands them over as upstream wrote them, so both are read here. */
+        const t=p.TYPE||p.type; if(t) ty.set(String(t),(ty.get(String(t))||0)+1); }
+      const ys=erYears(_erD)||[], i=ys.indexOf(shownY);
+      return { active:true, era:true, year:shownY, asked:shownYear, feats:shownFC.features.length,
+               named, blank, types:[...ty.entries()].sort((a,b)=>b[1]-a[1]||(a[0]<b[0]?-1:1)),
+               prev:(i>0)?ys[i-1]:null, next:(i>=0&&i<ys.length-1)?ys[i+1]:null };
+    }catch(_){ return {active:false,era:false}; } }
+    /* the reader's-language year, through the platform — js/hist-scale.js owns the era convention and
+       the tag comes from the registry, because a call site gets `zh` wrong (#R679). */
+    function _yTag(){ try{ return window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } }
+    function _yTxt(y){ try{ return window.IntMapHistScale.yearText(y,_yTag(),HOST.lang==='jp'?'年':null); }catch(_){ return String(y); } }
+    /* the nine-language sentence the layer row carries while the snapshot tier is drawing.
+       ⚠ THE POSITIONS ARE en, jp, de, ru, es, zh-Hant, zh-Hans, fr, ko — not alphabetical and not
+       the language menu's order (js/time-admin1.js:112 records the measurement). */
+    function note(){ const c=coverage(); if(!c.era) return '';
+      const Y=_yTxt(c.year), nb=[c.prev,c.next].filter(y=>y!=null).map(_yTxt).join(' / ');
+      const n=String(c.feats), b=String(c.blank);
+      const tn=c.types.reduce((s,e)=>s+e[1],0), t=String(tn), lst=c.types.map(e=>e[0]+' ×'+e[1]).join(' · ');
+      return _LTB.arr(LA(
+        'What is drawn is upstream’s ' + Y + ' sheet: this record is a series of dated sheets, not a continuous line' + (nb?'; the sheets beside it are ' + nb : '') + '. It holds ' + n + ' shapes, ' + b + ' of which upstream leaves unnamed — those are drawn without a label rather than dropped or given a name here. ' + (tn?('Upstream states the nature of ' + t + ' of them in its own words (' + lst + ') and says nothing about the rest.'):'Upstream states the nature of none of them.') + ' A shape here is not necessarily a state, and nothing upstream does not say is added.',
+        'いま描かれているのは上流の ' + Y + ' の枚。この記録は連続した線ではなく年ごとの枚の連なり' + (nb?'で、隣の枚は ' + nb : '') + '。この枚が持つ形は ' + n + ' 件で、うち ' + b + ' 件は上流が名前を与えていない——捨てるのでも名前を付けるのでもなく、ラベル無しで描いている。' + (tn?('上流自身の言葉でその性質を述べているのは ' + t + ' 件（' + lst + '）で、残りについては何も述べていない。'):'上流は、どの形についてもその性質を述べていない。') + 'ここにある形は必ずしも国家ではなく、上流が言っていないことは足していない。',
+        'Gezeichnet ist das Blatt der Quelle für ' + Y + ': dieser Bestand ist eine Folge datierter Blätter, keine durchgehende Linie' + (nb?'; die benachbarten Blätter sind ' + nb : '') + '. Es enthält ' + n + ' Formen, ' + b + ' davon lässt die Quelle unbenannt — diese werden ohne Beschriftung gezeichnet, statt sie wegzulassen oder hier zu benennen. ' + (tn?('Bei ' + t + ' davon nennt die Quelle deren Wesen mit eigenen Worten (' + lst + '); zu den übrigen sagt sie nichts.'):'Zu keiner einzigen nennt die Quelle deren Wesen.') + ' Eine Form hier ist nicht zwingend ein Staat, und es wird nichts ergänzt, was die Quelle nicht sagt.',
+        'Нарисован лист источника за ' + Y + ': это не непрерывная линия, а ряд датированных листов' + (nb?'; соседние листы — ' + nb : '') + '. На нём ' + n + ' фигур, ' + b + ' из них источник оставляет без названия — они рисуются без подписи, а не отбрасываются и не получают имя здесь. ' + (tn?('Для ' + t + ' из них источник своими словами говорит, что это (' + lst + '), об остальных не говорит ничего.'):'Ни об одной из них источник не говорит, что это.') + ' Фигура здесь не обязательно государство, и ничего сверх сказанного источником не добавлено.',
+        'Lo dibujado es la lámina de ' + Y + ' de la fuente: este registro es una serie de láminas fechadas, no una línea continua' + (nb?'; las láminas contiguas son ' + nb : '') + '. Contiene ' + n + ' formas, ' + b + ' de ellas sin nombre en la fuente: se dibujan sin etiqueta en lugar de descartarlas o nombrarlas aquí. ' + (tn?('De ' + t + ' de ellas la fuente dice con sus propias palabras qué son (' + lst + ') y de las demás no dice nada.'):'De ninguna de ellas dice la fuente qué es.') + ' Una forma de aquí no es necesariamente un Estado, y no se añade nada que la fuente no diga.',
+        '目前描繪的是上游 ' + Y + ' 的圖幅。這份記錄是一系列有年代的圖幅，而非連續的線' + (nb?'；相鄰的圖幅是 ' + nb : '') + '。此幅共有 ' + n + ' 個形狀，其中 ' + b + ' 個上游未給名稱——這些不捨棄也不在此命名，而是不加標籤地描繪。' + (tn?('上游以自己的措辭說明其性質的有 ' + t + ' 個（' + lst + '），其餘則未作任何說明。'):'上游未對任何一個說明其性質。') + '此處的形狀未必是國家，上游沒有說的也不加上去。',
+        '目前描绘的是上游 ' + Y + ' 的图幅。这份记录是一系列有年代的图幅，而非连续的线' + (nb?'；相邻的图幅是 ' + nb : '') + '。此幅共有 ' + n + ' 个形状，其中 ' + b + ' 个上游未给名称——这些不舍弃也不在此命名，而是不加标签地描绘。' + (tn?('上游以自己的措辞说明其性质的有 ' + t + ' 个（' + lst + '），其余则未作任何说明。'):'上游未对任何一个说明其性质。') + '此处的形状未必是国家，上游没有说的也不加上去。',
+        'Ce qui est tracé est la planche de ' + Y + ' de la source : ce fonds est une série de planches datées, non une ligne continue' + (nb?' ; les planches voisines sont ' + nb : '') + '. Elle contient ' + n + ' formes, dont ' + b + ' que la source laisse sans nom — celles-ci sont tracées sans étiquette plutôt qu’écartées ou nommées ici. ' + (tn?('Pour ' + t + ' d’entre elles la source dit avec ses propres mots ce qu’elles sont (' + lst + ') et ne dit rien des autres.'):'Pour aucune d’entre elles la source ne dit ce qu’elle est.') + ' Une forme d’ici n’est pas nécessairement un État, et rien que la source ne dise n’est ajouté.',
+        '지금 그려진 것은 상류의 ' + Y + ' 도엽입니다. 이 기록은 연속된 선이 아니라 연대별 도엽의 이어짐이며' + (nb?', 이웃한 도엽은 ' + nb + '입니다' : '') + '. 이 도엽이 가진 형태는 ' + n + '개이고, 그중 ' + b + '개는 상류가 이름을 주지 않았습니다 — 버리거나 여기서 이름을 붙이는 대신 라벨 없이 그립니다. ' + (tn?('상류가 자기 말로 그 성질을 밝힌 것은 ' + t + '개(' + lst + ')이며, 나머지에 대해서는 아무 말도 하지 않습니다.'):'상류는 어느 것에 대해서도 그 성질을 밝히지 않습니다.') + ' 여기의 형태가 반드시 국가인 것은 아니며, 상류가 말하지 않은 것은 덧붙이지 않습니다.'
+      )); }
+    /* (#R682) upstream's own word for what a shape IS, or nothing. Both spellings are read for the
+       same reason `coverage()` reads both (upstream uses each in its own files).
+       ⚠ Public because it is a real question about the record — the same kind `featureAt` and
+       `geomFor` already answer — not an export made so that a test can reach it (#R175 ③). */
+    function typeNote(f){ try{
+      const p=(f&&f.properties)||{}, t=String(p.TYPE||p.type||'').trim(); if(!t) return '';
+      return _LTB.arr(LA(
+        'Upstream’s own word for this: ' + t, '上流自身の言葉での分類: ' + t,
+        'Bezeichnung der Quelle hierfür: ' + t, 'Слово источника об этом: ' + t,
+        'Palabra de la fuente para esto: ' + t, '上游對此的用語：' + t, '上游对此的用语：' + t,
+        'Le mot de la source pour ceci : ' + t, '이에 대한 상류의 표현: ' + t
+      ));
+    }catch(_){ return ''; } }
+    /* ⚠ THE ROW IS WRITTEN FROM HERE, NOT FROM THE APP SHELL. `window._applyBorders` (js/app-body.js)
+       is the visibility commander for this layer, and putting the sentence there would put the
+       module's own claim in the shell — the split tests/r530-checks.test.mjs ⑤ measures for the
+       admin1 half. `apply()` is the one place a new collection reaches the source, and the language
+       change already routes through it (#R107), so the sentence re-localizes with no new listener. */
+    function _writeNote(){ try{
+      const box=document.getElementById('cb-borders'), lab=(box&&box.closest)?box.closest('label'):null;
+      if(!lab) return; const n=note();
+      if(n) lab.setAttribute('title',n); else lab.removeAttribute('title');
+    }catch(_){} }
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest,
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:HB_MIN,max:CS_MAX}) };   /* (#R518) the range is now both records, floor to CShapes' last year */
   })();
 };
