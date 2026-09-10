@@ -456,6 +456,19 @@ window.IntMapRefData=(function(){
        `gpl-3.0`, and README.md names no licence at all — there is no CC declaration anywhere in
        it, contrary to what several downstream copies assume. What is stated is what was read. */
     {n:'historical-basemaps (aourednik) — GPL-3.0',u:'https://github.com/aourednik/historical-basemaps'},
+    /* ⚠⚠⚠ (#R689) THE CREDIT #R679 WROTE DOWN AS AN INSTRUCTION AND THEN DID NOT PAY. The
+       harvest that produced scripts/histcities/derived-pleiades.mjs put the condition in that
+       file's own header — «sources.html must name Pleiades and its contributors» — and 785 rows
+       shipped inside data/hist-cities.json with no reader-facing page naming Pleiades anywhere.
+       A licence written as prose is addressed to whoever reads the file next, and nothing reads
+       it. It is a VALUE now (scripts/histcities/lang.mjs LIC()), and scripts/build-hist-cities.mjs
+       refuses to write the record unless this row exists — the string below is compared, so the
+       two cannot drift apart. ⚠ THE LICENCE IS READ PER PLACE, NOT PER DATASET: measured
+       2026-09-10, 26,971 Pleiades places state CC BY 3.0 «The Contributors», 15,348 the same with
+       «The Creators», and exactly one is CC BY-SA 3.0 (Ancient World Mapping Center), which the
+       harvest leaves out and counts — so this row can say CC BY 3.0 because that was made true of
+       what ships, not because a dataset-wide claim was believed. */
+    {n:'Pleiades — a gazetteer of past places (CC BY 3.0)',u:'https://pleiades.stoa.org/credits'},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1850-1885 (data/hist-borders.js) and the first-level
        subdivisions of whatever year the clock shows (data/hist-admin1.js, baked from OHM's dated

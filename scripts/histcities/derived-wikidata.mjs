@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · HISTORICAL CITY NAMES — the modern renamings, from Wikidata   (#R679)
+ *  IntMap · HISTORICAL CITY NAMES — the modern renamings, from Wikidata
  * ----------------------------------------------------------------------------
  *  ⚠⚠⚠ MACHINE-GENERATED. Do not edit by hand: the next harvest overwrites it.
  *      node scripts/histcities/harvest.mjs
@@ -12,7 +12,16 @@
  *  spellings. scripts/build-hist-cities.mjs runs the same arithmetic over it that it runs over
  *  data/histcities-homonyms.json.gz for a handwritten row. See scripts/histcities/harvest.mjs.
  * ==========================================================================*/
-import { D, ED } from './lang.mjs';
+import { D, ED, LIC } from './lang.mjs';
+
+export const LICENCE = LIC({
+  "publisher": "Wikidata",
+  "licence": "CC0 1.0 Universal",
+  "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+  "attribution": false,
+  "source": "",
+  "read": "2026-09-10"
+});
 
 export const ROWS = [
   D("wd-q1000033", 16.612, 49.9122, "CZ", ["Lanškroun"], [

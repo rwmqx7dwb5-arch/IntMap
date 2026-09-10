@@ -246,7 +246,7 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
-hist-cities.js                    時計の年の**都市名** IntMapHistCities（4011都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
+hist-cities.js                    時計の年の**都市名** IntMapHistCities（6222都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
@@ -669,8 +669,9 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は
                                   scripts/build-histcities-homonyms.mjs
-hist-cities.json                  時計の年の都市名の記録（4011 都市・5754 の歴史名・113 か国・1.76 MB）。
-                                  手書き＋Wikidata（CC0）＋Pleiades（CC BY 3.0）の和集合で、行ごとに
+hist-cities.json                  時計の年の都市名の記録（6222 都市・8784 の歴史名・125 か国・2.7 MB）。
+                                  手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
+                                  （CC BY 3.0）の和集合で、行ごとに
                                   **出典**と**日付精度**（日／月／年／世紀／不明）を持つ。時計が「今」を
                                   離れた最初の 1 回だけ取得する
 gazetteer-phone.json.gz           携帯が取りに行くのはこちら。上のファイルの先頭 12,000 行を切り出したもの
@@ -843,11 +844,11 @@ scripts/
   build-wars.mjs                  `scripts/wars/` の記録 → `data/wars.json`。⚠ **証明できないものは書かない**——
                                   地名・gwcode・戦線が切る国・都市がどちらの側に落ちるかを全部検査する
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の
-                                  **和集合** → `data/hist-cities.json`（4011 都市／5754 の歴史名／113 か国）。
+                                  **和集合** → `data/hist-cities.json`（6222 都市／8784 の歴史名／125 か国）。
                                   ⚠ **手書きの 611 行は 1 件も落とさない**（`--check` が測る）——実測で、
                                   上流に同じ都市・同じ名前・同じ期間があるのは 4 割
-  histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL と Pleiades の JSON-LD）。生成物は
-  histcities/upstream.mjs         `histcities/derived-wikidata.mjs` / `derived-pleiades.mjs` として
+  histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
+  histcities/upstream.mjs         `histcities/derived-{wikidata,pleiades,ohm}.mjs` として
                                   記録ファイルの形で commit する（`--check` は無ネットワークで再現する）
   build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 53 枚 → `data/hist-eras.js`。
                                   一覧は上流のディレクトリから発見し、年の規約（`bc323` → 天文年 −322）は

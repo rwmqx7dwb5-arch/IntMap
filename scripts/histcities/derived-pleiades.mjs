@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · HISTORICAL CITY NAMES — antiquity, from Pleiades   (#R679)
+ *  IntMap · HISTORICAL CITY NAMES — antiquity, from Pleiades
  * ----------------------------------------------------------------------------
  *  ⚠⚠⚠ MACHINE-GENERATED. Do not edit by hand: the next harvest overwrites it.
  *      node scripts/histcities/harvest.mjs
@@ -12,7 +12,16 @@
  *  spellings. scripts/build-hist-cities.mjs runs the same arithmetic over it that it runs over
  *  data/histcities-homonyms.json.gz for a handwritten row. See scripts/histcities/harvest.mjs.
  * ==========================================================================*/
-import { D, ED } from './lang.mjs';
+import { D, ED, LIC } from './lang.mjs';
+
+export const LICENCE = LIC({
+  "publisher": "Pleiades (pleiades.stoa.org) and its contributors",
+  "licence": "CC BY 3.0",
+  "url": "https://pleiades.stoa.org/credits",
+  "attribution": true,
+  "source": "Pleiades — a gazetteer of past places (CC BY 3.0)",
+  "read": "2026-09-11"
+});
 
 export const ROWS = [
   D("pl-265880", 0.10751, 38.8428, "ES", ["Denia"], [

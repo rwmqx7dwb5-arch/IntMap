@@ -40,14 +40,54 @@ import { createGunzip } from 'node:zlib';
 import { join } from 'node:path';
 import {
   ROOT, cacheFile, cachedFetch, sparqlTSV, tsvRows, term, loadGeoNames, grid,
-  sameName, fold, latin, LANG_MAP, stampAt, daysInMonth,
+  sameName, fold, latin, LANG_MAP, stampAt, daysInMonth, UA,
 } from './upstream.mjs';
 import { km, guardFrom, GUARD_FLOOR_KM, ANCHOR_TOL_KM, SAME_PLACE_KM } from '../histcities-record.mjs';
+import { LIC } from './lang.mjs';
 
 export const HELPER = true;
 
+/* ══ ⚠⚠⚠ (#R689) WHAT EACH UPSTREAM COSTS, DECLARED WHERE IT IS HARVESTED ═══════════════════
+   These travel into the generated record files, and scripts/build-hist-cities.mjs refuses to
+   write data/hist-cities.json unless every one of them that owes attribution is paid by a row of
+   js/reference-data.js's DATA_SOURCES. `source` is that row's `n` string, compared as a value.
+   ⚠ THE PLEIADES READING IS PER RECORD AND THAT IS WHY THE HARVEST FILTERS. Measured 2026-09-10
+   over places-latest: 26 971 places state CC BY 3.0 «The Contributors», 15 348 the same text with
+   «The Creators», and exactly one is CC BY-SA 3.0 (Ancient World Mapping Center) — which is why
+   §5 keeps only plain CC BY and counts the rest. The declaration below can say «CC BY 3.0»
+   because the harvest has already made it true of what ships. */
+const WD_LICENCE = LIC({
+  publisher: 'Wikidata',
+  licence: 'CC0 1.0 Universal',
+  url: 'https://www.wikidata.org/wiki/Wikidata:Licensing',
+  attribution: false,
+  read: '2026-09-10',
+});
+/* ⚠ OHM IS CC0 AND THE HARVEST MAKES THAT TRUE OF WHAT SHIPS: 41,300 of the 122,939 place
+   nodes (33.6%) carry a per-element `license` tag that is NOT CC0 — 39,398 CC-BY-4.0 (one French
+   import) and 1,803 ODbL — and §5b leaves every one of them out. So no credit is owed. The map
+   already carries an OpenHistoricalMap row on the Sources page for the borders and the
+   subdivisions it draws (#R518, #R530); this adds the settlement names to what that row covers. */
+const OHM_LICENCE = LIC({
+  publisher: 'OpenHistoricalMap contributors',
+  licence: 'CC0 1.0 Universal',
+  url: 'https://www.openhistoricalmap.org/copyright',
+  attribution: false,
+  read: '2026-09-11',
+});
+const PL_LICENCE = LIC({
+  publisher: 'Pleiades (pleiades.stoa.org) and its contributors',
+  licence: 'CC BY 3.0',
+  url: 'https://pleiades.stoa.org/credits',
+  attribution: true,
+  source: 'Pleiades — a gazetteer of past places (CC BY 3.0)',
+  read: '2026-09-11',
+});
+
 const TUNE = process.argv.includes('--tune');
-const ONLY = process.argv.includes('--wikidata') ? 'wd' : process.argv.includes('--pleiades') ? 'pl' : null;
+const ONLY = process.argv.includes('--wikidata') ? 'wd'
+  : process.argv.includes('--pleiades') ? 'pl'
+  : process.argv.includes('--ohm') ? 'ohm' : null;
 const TODAY = new Date().toISOString().slice(0, 10);
 
 /* the nine, in the order data/hist-cities.json's `langs` gives them — the attestation bitmask's
@@ -672,6 +712,236 @@ async function harvestPleiades() {
   return rows;
 }
 
+/* ═══ 5b. OPENHISTORICALMAP ═══════════════════════════════════════════════════════════════
+ *  ⚠⚠⚠ #R679 MEASURED THIS UPSTREAM AND TURNED IT DOWN, AND BOTH OF ITS MEASUREMENTS WERE
+ *  ARTEFACTS OF HOW THEY WERE TAKEN. What it wrote was: the era names are not in `old_name`, they
+ *  are separate nodes stacked at the same coordinate; `wikidata` is on 19.6% and the same QID can
+ *  sit on two nodes of different eras; `type=chronology` membership is 5.1% — «so we would have
+ *  to invent our own identity rule», and inventing one was refused. The refusal was right and the
+ *  premise was wrong. Re-measured 2026-09-10 over the same 122,939 `place=city|town|village|hamlet`
+ *  nodes:
+ *
+ *   ① THE NODES ARE NOT STACKED, THEY ARE JITTERED. Volgograd's four are at longitude
+ *      44.5147028 / …27 / …26 / …26. Of the 1,920 QIDs that appear on two or more nodes, only
+ *      4.2% have their nodes at an identical coordinate and 80.1% have them 1–110 m apart. An
+ *      identity test written on exact equality measures a recall of 4.2% BY CONSTRUCTION — it is
+ *      measuring its own tolerance, not the upstream.
+ *   ② THE CHRONOLOGY TEST HAS TO BE HALF-OPEN. OHM chains a succession as `1852..1853` then
+ *      `1853..1889`. Asking whether two closed intervals overlap calls almost every clean chain
+ *      dirty: 78–82% «overlapping» against 96.9% clean when the shared endpoint is read the way
+ *      OHM writes it.
+ *
+ *  ⇒ At a 250 m single-link tolerance, and validated against OHM's OWN `wikidata` tags: 91.1% of
+ *  multi-QID groups hold one QID (n=1,889) and 87.0% of multi-node QIDs land in one group, with
+ *  96.9% of the groups a clean chronology. Distinct settlements are 500 m or more apart 74.4% of
+ *  the time, which is why precision holds at 250 m and collapses to 76.6% at a kilometre.
+ *  ⚠ THE 8.9% IS AN UPPER BOUND ON FALSE BUNDLING, because most of it is Wikidata modelling a
+ *  successor settlement as a separate entity — `Tenōchtitlan 1325..1521 (Q13695)` beside
+ *  `Ciudad de México 1521.. (Q1489)` — which is exactly the bundling a record of NAMES wants.
+ *
+ *  ⚠⚠⚠ AND THE FABRICATED DATES ARE DECLARED BY THE MAPPERS, SO NO HEURISTIC IS WRITTEN HERE.
+ *  #R679 saw thirteen `place=neighbourhood` objects around Tokyo with a made-up 1800/1900 pair and
+ *  concluded a bulk import had to be screened out by shape. World-wide there are seventeen objects
+ *  with that exact pair and ten of them are `place=neighbourhood`, which this query never asks for.
+ *  The real bulk fabrication is 34,836 French communes given `start_date=1800` by one import — and
+ *  every one of them carries `start_date:fixme=arbitrary`. 39,959 nodes (32.5%) flag their start
+ *  as arbitrary, low-confidence or fixme, and OHM writes uncertainty in a `*:edtf` sidecar
+ *  (`?` `~` `..`) while the plain field stays a crisp number. A round-number heuristic finds 394
+ *  nodes and libels genuine `1400..1700` history; the declared fields find all 39,959 and were
+ *  written by the people who know. ⇒ READ WHAT THE UPSTREAM DECLARES (#R650's shape: the rule
+ *  belongs to the publisher's own statement, not to our guess about it).
+ *
+ *  ⚠ THE LICENCE IS CC0 EXCEPT WHERE AN ELEMENT SAYS OTHERWISE, and 33.6% of these nodes carry a
+ *  `license=*` tag (39,398 CC-BY-4.0 — the same French import — and 1,803 ODbL). Same discipline
+ *  as Pleiades: the tag is read per element and anything that is not CC0 is left out and counted,
+ *  so the declaration in WD_LICENCE/OHM_LICENCE is true of what actually ships.
+ *
+ *  ⚠ WHAT THIS DOES NOT BUY IS THE NINE LANGUAGES. Only 945 of the 2,553 usable gap-era nodes
+ *  carry any `name:<lang>` at all, and for IntMap's nine the best served is English at 192. OHM
+ *  supplies the endonym and the DATES; the other eight columns stay unattested, exactly as they do
+ *  for Pleiades, and the attestation bitmask says so rather than the English form being copied
+ *  across and called a translation. */
+const OHM_OVERPASS = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
+/* 15° × 30° tiles. ⚠ NOT AN OPTIMISATION — one planet-wide `node[place=…]` request is refused,
+   and the tile size is what was measured to return on the first attempt for all 144 of them. */
+const OHM_TILE_LON = 15, OHM_TILE_LAT = 30;
+const OHM_CLUSTER_M = 250;
+/* ⚠ CC0 OR NOTHING. OHM's own copyright page: «made available under CC0», with per-element
+   exceptions carried in a `license` tag. These are the strings its elements actually use. */
+const OHM_CC0 = /^(cc0|cc-0|public.?domain|pd)/i;
+
+/** an OSM/OHM date field → the record's stamp, or null when it is not a crisp date.
+ *  ⚠ THE PRECISION IS THE FIELD'S OWN LENGTH. `1589` is a year, `1589-06` a month, `1589-06-07`
+ *  a day — OHM writes exactly what it knows and pads nothing, which is the opposite of what
+ *  WDQS's TSV does (see upstream.mjs stampAt). Measured over 113,378 start dates and 22,778 end
+ *  dates: every one of them is one of these three shapes bar ten typos, and not a single `C18`,
+ *  `~1700`, `1580..1590` or `early 1800s` in either field. */
+function ohmDate(v) {
+  const s = String(v || '').trim();
+  let m = /^(-?)(\d{1,6})$/.exec(s);
+  if (m) return { y: (m[1] ? -1 : 1) * Number(m[2]), m: 0, d: 0, p: 'y' };
+  m = /^(-?)(\d{1,6})-(\d\d)$/.exec(s);
+  if (m) { const mo = Number(m[3]); return mo >= 1 && mo <= 12 ? { y: (m[1] ? -1 : 1) * Number(m[2]), m: mo, d: 0, p: 'm' } : null; }
+  m = /^(-?)(\d{1,6})-(\d\d)-(\d\d)$/.exec(s);
+  if (m) {
+    const mo = Number(m[3]), da = Number(m[4]);
+    if (mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+    return { y: (m[1] ? -1 : 1) * Number(m[2]), m: mo, d: da, p: 'd' };
+  }
+  return null;
+}
+
+/** ⚠ THE UPSTREAM'S OWN DOUBT, IN THE UPSTREAM'S OWN WORDS. `end` picks which endpoint's
+ *  sidecar tags are read, so the rule is attached to the endpoint and not to a call site. */
+function ohmDoubts(t, end) {
+  const k = end ? 'end_date' : 'start_date';
+  if (t[k + ':fixme']) return 'fixme';
+  if (/^low$/i.test(t[k + ':confidence'] || '')) return 'confidence';
+  if (/arbitrary/i.test(t[k + ':source'] || '')) return 'source';
+  if (/[?~]|\.\./.test(t[k + ':edtf'] || '')) return 'edtf';
+  return '';
+}
+
+/** every `place=city|town|village|hamlet` node OHM holds, tile by tile, cached */
+async function ohmNodes() {
+  const seen = new Map();
+  let tiles = 0;
+  for (let lon = -180; lon < 180; lon += OHM_TILE_LON) {
+    for (let lat = -90; lat < 90; lat += OHM_TILE_LAT) {
+      const bbox = `${lat},${lon},${lat + OHM_TILE_LAT},${lon + OHM_TILE_LON}`;
+      const q = `[out:json][timeout:900];node["place"~"^(city|town|village|hamlet)$"](${bbox});out tags center;`;
+      const buf = await cachedFetch(OHM_OVERPASS, `ohm-place-${lon}-${lat}.json`, {
+        method: 'POST',
+        headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(q),
+      });
+      const j = JSON.parse(buf.toString('utf8'));
+      for (const el of j.elements || []) if (!seen.has(el.id)) seen.set(el.id, el);
+      tiles++;
+    }
+  }
+  console.log(`  OHM: ${tiles} tiles, ${seen.size.toLocaleString('en-US')} distinct place nodes`);
+  return [...seen.values()];
+}
+
+/** single-link clusters at OHM_CLUSTER_M, over a degree grid coarse enough to hold the radius */
+function ohmCluster(nodes) {
+  const cell = 0.01;                                   /* ~1.1 km — comfortably over 250 m */
+  const buckets = new Map();
+  const key = (a, b) => a + ':' + b;
+  nodes.forEach((n, i) => {
+    const k = key(Math.floor(n.lat / cell), Math.floor(n.lon / cell));
+    let a = buckets.get(k); if (!a) buckets.set(k, a = []);
+    a.push(i);
+  });
+  const parent = nodes.map((_, i) => i);
+  const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+  const union = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[b] = a; };
+  nodes.forEach((n, i) => {
+    const cy = Math.floor(n.lat / cell), cx = Math.floor(n.lon / cell);
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      for (const j of buckets.get(key(cy + dy, cx + dx)) || []) {
+        if (j <= i) continue;
+        if (km(n.lon, n.lat, nodes[j].lon, nodes[j].lat) * 1000 <= OHM_CLUSTER_M) union(i, j);
+      }
+    }
+  });
+  const groups = new Map();
+  nodes.forEach((_, i) => { const r = find(i); let a = groups.get(r); if (!a) groups.set(r, a = []); a.push(i); });
+  return [...groups.values()].map((ix) => ix.map((i) => nodes[i]));
+}
+
+async function harvestOHM() {
+  const raw = await ohmNodes();
+  const stats = {
+    noName: 0, noDate: 0, badDate: 0, doubted: 0, notCC0: 0,
+    groups: 0, noModern: 0, noAnchor: 0, noEra: 0, eras: 0, zero: 0, sameName: 0, noStart: 0,
+  };
+  /* ── ① what OHM itself says is usable ─────────────────────────────────────────────────── */
+  const usable = [];
+  for (const el of raw) {
+    const t = el.tags || {};
+    const lon = el.lon != null ? el.lon : (el.center && el.center.lon);
+    const lat = el.lat != null ? el.lat : (el.center && el.center.lat);
+    if (lon == null || lat == null) continue;
+    if (!t.name) { stats.noName++; continue; }
+    if (t.license && !OHM_CC0.test(t.license)) { stats.notCC0++; continue; }
+    if (!t.start_date && !t.end_date) { stats.noDate++; continue; }
+    const from = t.start_date ? ohmDate(t.start_date) : null;
+    const to = t.end_date ? ohmDate(t.end_date) : null;
+    if ((t.start_date && !from) || (t.end_date && !to)) { stats.badDate++; continue; }
+    if ((from && ohmDoubts(t, false)) || (to && ohmDoubts(t, true))) { stats.doubted++; continue; }
+    usable.push({ id: el.id, lon, lat, t, from, to, name: t.name });
+  }
+  console.log(`  → ${usable.length.toLocaleString('en-US')} usable nodes; dropped ${stats.noName.toLocaleString('en-US')} unnamed, `
+    + `${stats.noDate.toLocaleString('en-US')} undated, ${stats.badDate} with a date this cannot read, `
+    + `${stats.doubted.toLocaleString('en-US')} the mappers themselves flag as arbitrary/low-confidence/uncertain, `
+    + `${stats.notCC0.toLocaleString('en-US')} under a licence that is not CC0`);
+
+  /* ── ② one place per cluster ───────────────────────────────────────────────────────────── */
+  const rows = [];
+  for (const g of ohmCluster(usable)) {
+    stats.groups++;
+    /* THE PLACE'S PRESENT NAME is the member whose name has not ended. A cluster with none of
+       those is a place that no longer exists under any name, and the label layer draws no tile
+       for it — #R409's «a row that cannot reach the screen». */
+    const modern = g.filter((n) => !n.to || n.to.y >= NOW_Y);
+    if (!modern.length) { stats.noModern++; continue; }
+    const modernNames = dedupe(modern.flatMap((n) => [n.name, n.t['name:en']]).filter(Boolean));
+    const a = anchorFor(modern[0].lon, modern[0].lat, modernNames);
+    if (!a) { stats.noAnchor++; continue; }
+    const cand = [];
+    for (const n of g) {
+      if (!n.to || n.to.y >= NOW_Y) continue;                       /* still current → not an era */
+      if (modernNames.some((m) => fold(m) === fold(n.name)) || sameName(a.p.name, n.name)) { stats.sameName++; continue; }
+      /* ⚠⚠⚠ AND IT HAS TO SAY WHEN IT BEGAN. An era with no start answers every year below its
+         end, and the clock's floor is astronomical year −122 999 — the record already carries
+         2 292 such claims it inherited from the handwritten rows and from Wikidata's silence, and
+         this round measured that they CANNOT be bounded from upstream (Wikidata's inception covers
+         half of them and dates the municipality rather than the place). A third upstream does not
+         get to add more of them when 99.5% of its own nodes DO state a start: 624 of OHM's 122,939
+         carry an end and no start, and 48 of those survived every other test here. What is lost is
+         48 places whose only evidence would have been undatable; what is kept is that every OHM
+         span in the file says when it begins. ⚠ Expires if OHM's end-only share stops being a
+         rounding error — the count is printed on every harvest. */
+      if (!n.from) { stats.noStart++; continue; }
+      if (n.from.y === 0) { stats.zero++; continue; }
+      if (n.to.y === 0) { stats.zero++; continue; }
+      const nm = { en: n.t['name:en'] || n.name };
+      const attested = new Set();
+      if (n.t['name:en']) attested.add('en');
+      for (const [k, v] of Object.entries(n.t)) {
+        const mm = /^name:([A-Za-z-]+)$/.exec(k);
+        if (!mm) continue;
+        const im = LANG_MAP[mm[1].toLowerCase()];
+        if (im && !nm[im]) { nm[im] = v; attested.add(im); }
+      }
+      cand.push({ from: n.from, to: n.to, n: nm, raw: {}, attested: [...attested], _at: instant(n.from, false) });
+    }
+    if (!cand.length) { stats.noEra++; continue; }
+    cand.sort((x, y) => x._at - y._at);
+    /* ⚠ THE CHAIN IS CLOSED BY disjoin(), NOT BY A CONVENTION TYPED HERE. OHM writes a succession
+       as `1852..1853` then `1853..1889`, so the two touch at the shared endpoint; disjoin() clips
+       the earlier one to the day before the later one BEGINS, which is a date the upstream stated.
+       Deciding here whether `end_date` is inclusive or exclusive would be a convention invented to
+       fit — and it would be wrong for the 0.5% of nodes that carry an end and no successor. */
+    const eras = disjoin(cand.map((e) => ({ from: e.from, to: e.to, n: e.n, raw: e.raw, attested: e.attested })));
+    if (!eras.length) { stats.noEra++; continue; }
+    stats.eras += eras.length;
+    rows.push({
+      src: 'ohm', id: 'ohm-' + Math.min(...g.map((n) => n.id)), qid: '',
+      lon: modern[0].lon, lat: modern[0].lat, cc: a.p.cc,
+      keyCand: dedupe([a.p.name, a.p.ascii].concat(modernNames.filter((m) => sameName(m, a.p.name) || sameName(m, a.p.ascii)))),
+      anchor: { name: a.p.name, cc: a.p.cc, km: +a.d.toFixed(2), pop: a.p.pop, fcode: a.p.fcode, lon: a.p.lon, lat: a.p.lat },
+      eras,
+    });
+  }
+  console.log(`  → ${rows.length.toLocaleString('en-US')} candidate rows, ${stats.eras.toLocaleString('en-US')} spans, from ${stats.groups.toLocaleString('en-US')} clusters at ${OHM_CLUSTER_M} m; `
+    + `${stats.noModern.toLocaleString('en-US')} clusters have no name still in use, ${stats.noAnchor.toLocaleString('en-US')} have no settlement the label layer draws within ${ANCHOR_TOL_KM} km, `
+    + `${stats.noEra.toLocaleString('en-US')} have no ended name, ${stats.sameName.toLocaleString('en-US')} ended names are the present name again, ${stats.noStart.toLocaleString('en-US')} ended names never say when they began, ${stats.zero} touch astronomical year 0`);
+  return rows;
+}
+
 /* ═══ 6. THE KEYS, AND THE GUARD EACH ONE EARNS ══════════════════════════════════════════
  *  ⚠ A SPELLING IS NOT AN IDENTITY (#R521). Every key a derived row proposes is resolved against
  *  the whole of cities500 — own name, ASCII name AND alternate list — and the nearest OTHER
@@ -732,8 +1002,14 @@ const bit = (att) => att.reduce((n, l) => n | (1 << LANGS.indexOf(l)), 0);
 
 function stamp(t) { return t ? `[${t.y},${t.m},${t.d},'${t.p}']` : '0'; }
 
-function writeRecord(file, rows, header) {
-  const lines = [header, "import { D, ED } from './lang.mjs';", '', 'export const ROWS = ['];
+/* ⚠⚠⚠ (#R689) THE LICENCE IS WRITTEN AS A VALUE, NOT AS A SENTENCE IN THE HEADER. It was a
+   sentence — «sources.html must name Pleiades and its contributors» — addressed to whoever read
+   the file next, and nobody did: 739 Pleiades cities shipped with no reader-facing credit at all.
+   A `LIC()` declaration is read by scripts/build-hist-cities.mjs, which fails the build unless
+   js/reference-data.js carries the row that pays it. See scripts/histcities/lang.mjs. */
+function writeRecord(file, rows, header, lic) {
+  const licSrc = `export const LICENCE = LIC(${JSON.stringify(lic, null, 2)});`;
+  const lines = [header, "import { D, ED, LIC } from './lang.mjs';", '', licSrc, '', 'export const ROWS = ['];
   for (const r of rows) {
     const eras = r.eras.map((e) => {
       const n = {};
@@ -751,7 +1027,7 @@ function writeRecord(file, rows, header) {
 }
 
 const HEAD = (what, src, lic) => `/* ============================================================================
- *  IntMap · HISTORICAL CITY NAMES — ${what}   (#R679)
+ *  IntMap · HISTORICAL CITY NAMES — ${what}
  * ----------------------------------------------------------------------------
  *  ⚠⚠⚠ MACHINE-GENERATED. Do not edit by hand: the next harvest overwrites it.
  *      node scripts/histcities/harvest.mjs
@@ -778,12 +1054,18 @@ if (MAIN) {
     const rows = resolveKeys(await harvestWikidata());
     writeRecord('derived-wikidata.mjs', rows,
       HEAD('the modern renamings, from Wikidata', 'Wikidata dated name statements (P1448 / P1705 / P2561 / P1813 qualified with P580 / P582), over the human-settlement subclass closure of Q486972',
-        'CC0 1.0 — no attribution required, and none is claimed'));
+        'CC0 1.0 — no attribution required, and none is claimed'), WD_LICENCE);
+  }
+  if (!ONLY || ONLY === 'ohm') {
+    const rows = resolveKeys(await harvestOHM());
+    writeRecord('derived-ohm.mjs', rows,
+      HEAD('the medieval and early-modern renamings, from OpenHistoricalMap', 'OpenHistoricalMap place=city|town|village|hamlet nodes carrying start_date / end_date, over its own Overpass endpoint',
+        'CC0 1.0 — no attribution required; elements declaring any other licence are left out'), OHM_LICENCE);
   }
   if (!ONLY || ONLY === 'pl') {
     const rows = resolveKeys(await harvestPleiades());
     writeRecord('derived-pleiades.mjs', rows,
       HEAD('antiquity, from Pleiades', 'Pleiades gazetteer of the ancient world (pleiades.stoa.org), places-latest JSON-LD',
-        'CC BY 3.0 — ATTRIBUTION IS A CONDITION OF REDISTRIBUTION. sources.html must name Pleiades and its contributors.'));
+        'CC BY 3.0 — ATTRIBUTION IS A CONDITION OF REDISTRIBUTION. sources.html must name Pleiades and its contributors.'), PL_LICENCE);
   }
 }

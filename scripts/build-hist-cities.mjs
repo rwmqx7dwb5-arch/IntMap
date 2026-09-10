@@ -104,7 +104,8 @@
  *     Trakai 5 530, Khankendi 2 100 — Arctic hamlets that are the only settlement for hundreds of
  *     kilometres and are drawn as towns). A 1.5% error rate against known-good rows is too high to
  *     spend on a saving nothing needs: the file is fetched once, lazily, when the clock first
- *     leaves «now», and 377 kB gzipped is a fourteenth of data/gazetteer-world.json.gz.
+ *     leaves «now», and 559 kB gzipped is a seventh of data/gazetteer-world.json.gz (#R689: the
+ *     third upstream took it from 377 kB, and the file is still fetched once and only on demand).
  *     Expires if `ofm-city`'s filter changes, or if the file has to move into the boot bundle.
  * ==========================================================================*/
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -117,6 +118,7 @@ import {
   ANCHOR_TOL_KM, SAME_PLACE_KM,
 } from './histcities-record.mjs';
 import { LANGS } from './histcities/lang.mjs';
+import { sameName, daysInMonth as daysInMonthLocal } from './histcities/upstream.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'hist-cities.json');
@@ -157,7 +159,31 @@ const warnings = [];
 function fail(msg) { console.error('✖ ' + msg); process.exit(1); }
 
 /* ── the record, and the evidence ───────────────────────────────────────────────────────────── */
-const { files: REGIONS, rows: allRows } = await loadRecord();
+const { files: REGIONS, rows: allRows, licences: LICENCES } = await loadRecord();
+
+/* ── ⚠⚠⚠ (#R689) ⑦ EVERY UPSTREAM THAT IS OWED CREDIT IS PAID BY A ROW OF THE SOURCES PAGE ────
+   #R679 harvested Pleiades, whose CC BY 3.0 makes attribution a CONDITION OF REDISTRIBUTION, and
+   wrote that condition into the generated file's header as a sentence: «sources.html must name
+   Pleiades and its contributors». 739 Pleiades cities then shipped inside data/hist-cities.json
+   and no reader-facing page named Pleiades at all. ⚠ NOTHING WAS SUPPOSED TO CATCH IT: the
+   licence was prose, and prose is addressed to whoever reads the file next.
+   ⚠ THE UNIVERSE IS THE RECORD, NOT A LIST. loadRecord() demands a LIC() declaration from any
+   file whose rows are derived, so this gate sees the next upstream on the day it is harvested
+   without anybody remembering to add it here (#R429). What it compares is a VALUE — the exact
+   `n` string of the DATA_SOURCES row — and not two people's idea of the same name. */
+{
+  const reg = readFileSync(join(ROOT, 'js', 'reference-data.js'), 'utf8');
+  const arr = /const DATA_SOURCES=\[[\s\S]*?\n  \];/.exec(reg);
+  if (!arr) problems.push('js/reference-data.js no longer holds DATA_SOURCES as one array literal, so the credit this record owes cannot be proven paid');
+  else {
+    for (const l of LICENCES) {
+      if (!l.attribution) continue;
+      if (!arr[0].includes(l.source)) {
+        problems.push(`scripts/histcities/${l._file} ships ${l.rows} rows from ${l.publisher} under ${l.licence}, which makes credit a condition of redistribution, and js/reference-data.js has no DATA_SOURCES row «${l.source}» to pay it`);
+      }
+    }
+  }
+}
 let HOMONYMS;
 try { HOMONYMS = JSON.parse(gunzipSync(readFileSync(HOM)).toString('utf8')); }
 catch (_) { fail('data/histcities-homonyms.json.gz is missing or unreadable — run `node scripts/build-histcities-homonyms.mjs`'); }
@@ -478,9 +504,132 @@ if (problems.length) {
   process.exit(1);
 }
 
+/* ── ⚠⚠⚠ (#R689) TWO SPANS THAT STATE THE SAME NAME SHARE WHAT EACH OF THEM KNOWS ───────────
+   #R679 shipped the ordering that lets DATED evidence answer before an undated claim, measured
+   what that costs a reader, and left the cost standing: at 1900 Istanbul reads «Цариград» where it
+   used to read «Constantinople» in all nine languages, because the dated span is attested in none
+   of them. It named the open question exactly — «whoever measures whether a name a reader cannot
+   read is worse than a name with a worse date» — and turned down three ways of answering it, all
+   three of which worked by REORDERING the spans, and all three of which therefore risked putting
+   «Constantinople» back in 300 BC.
+
+   ⚠ THE ORDER IS NOT WHAT IS WRONG. Re-measured over 1,634 instants and every city: 324,259
+   answers show a winning span with no form in the reader's language while another covering span
+   has one — and in 67.6% of them THE TWO SPANS ARE STATING THE SAME NAME. Volgograd is the shape:
+   OpenHistoricalMap dates «Царицынъ» to 1589–1917, the handwritten row holds the same name as
+   «Tsaritsyn / Царицын / ツァリーツィン» in eight languages and cannot say when it began. Answering
+   with the Cyrillic form for an English reader is not a date problem and no reordering fixes it;
+   the record simply had the English spelling filed on a different row of the same city.
+
+   ⇒ A span may take a language column from another span OF THE SAME PLACE that states THE SAME
+   NAME. Nothing is reordered, so no year gets a different name and the 300 BC answer cannot come
+   back. Nothing is invented either: every column added was written down by somebody about this
+   name, and the attestation bit that ships says so as truthfully afterwards as before.
+   ⚠ «THE SAME NAME» IS A MEASURE, NOT A TABLE (#R515). It is sameName() — the same bigram
+   agreement the harvest uses to decide whether a settlement answers to a spelling — asked over
+   every distinct form each span offers, so «Царицынъ»/«Царицын» agree and «Βυζάντιον»/
+   «Constantinople» do not. What is left after this pass is the honest residue: Hippo Regius beside
+   Bône, Saldae beside Bougie — DIFFERENT names, where the era's own name is the right answer and
+   the other span is the undated one that should not have been reaching that year anyway.
+   ⚠ AND IT OVERRULES A HANDWRITTEN ZERO, WHICH IS DELIBERATE. N()'s zero says «no established form
+   in this language»; a sibling span of the same name that HAS one is evidence against that, and
+   evidence outranks an absence. The count is printed below. */
+const alias = { spans: 0, cols: 0, hand: 0 };
+for (const r of final) {
+  const formsOf = (e) => [...new Set(LANGS.map((lg) => e.name[lg]).filter(Boolean))];
+  const F = r.eras.map(formsOf);
+  for (let i = 0; i < r.eras.length; i++) {
+    const a = r.eras[i];
+    let got = 0;
+    for (let k = 0; k < r.eras.length; k++) {
+      if (k === i) continue;
+      const b = r.eras[k];
+      /* ⚠⚠⚠ THE TWO SPANS HAVE TO OVERLAP IN TIME, AND THAT IS NOT A DETAIL. A measure of string
+         agreement cannot tell «Царицынъ → Царицын» (one name, an orthographic reform) from
+         «Кирово → Кіровоград» (two names, a renaming) — dice puts both above the floor, in every
+         language, because a city's successor name is usually built out of its predecessor.
+         What tells them apart is the CLOCK: two spans that overlap are two accounts of the same
+         instant, so if they also state the same name they are the same claim; two spans that do
+         not overlap are a SUCCESSION, and a succession of similar strings is exactly the renaming
+         this record exists to show. Measured with the overlap test off: the 1934–1938 «Kirovo» span
+         took Korean 키로보흐라드 — «Kirovohrad», the name it was about to be given — and the
+         «Port Arthur» span (…1904) took Korean 뤼순 from «Ryojun» (1905–1945). Both are the NEXT
+         name, put in front of a reader as the name of a year it did not belong to. */
+      const lo = Math.max(spanOf(a)[0], spanOf(b)[0]), hi = Math.min(spanOf(a)[1], spanOf(b)[1]);
+      if (lo > hi) continue;
+      if (!F[i].some((x) => F[k].some((y) => sameName(x, y)))) continue;
+      for (const lg of LANGS) {
+        if (a.name._has[lg] || !b.name._has[lg] || !b.name[lg]) continue;
+        a.name[lg] = b.name[lg];
+        a.name._has[lg] = true;
+        got++;
+      }
+    }
+    if (got) { alias.spans++; alias.cols += got; if (!r.derived) alias.hand++; }
+  }
+}
+
+/* ── ⚠⚠⚠ (#R689) ONE NAME HELD WITHOUT INTERRUPTION IS ONE SPAN, NOT THREE ─────────────────
+   OpenHistoricalMap files a node per ADMINISTRATIVE event, not per renaming, so Nálepkovo arrives
+   as «Merény 1450–1724 · Merény 1725–1871 · Merény 1872–1918» — three true statements about one
+   uninterrupted name. Measured before this was written: 605 spans across 462 cities are a repeat
+   of the span immediately before them. Nothing a reader sees changes (nameAt() returns the first
+   span containing the instant, and it returned «Merény» either way); what changes is that the file
+   stops calling them three historical names, which is the number every document quoting this
+   record repeats.
+   ⚠ ONLY WHERE THERE IS NO GAP. A name that lapsed and came back is two spans and must stay two —
+   the join is «the next span begins the very day after this one ends», computed the way
+   scripts/histcities/harvest.mjs computes dayBefore(), by integer arithmetic on (y, m, d) and
+   never through Date.UTC, which maps every year under 100 to y + 1900 (#R602).
+   ⚠ AND THE PRECISION FOLLOWS THE ENDPOINT THAT SURVIVES. The merged span keeps the earlier
+   span's start and the later one's end, so `p` is those two endpoints' own precisions and no
+   endpoint gains a certainty its source did not state. */
+const collapsed = { spans: 0, rows: 0 };
+{
+  const dayAfter = (t) => {
+    let { y, m, d } = { y: t.y, m: t.m || 12, d: t.d || 0 };
+    if (!t.d) d = daysInMonthLocal(y, m);
+    d += 1;
+    if (d > daysInMonthLocal(y, m)) { d = 1; m += 1; if (m > 12) { m = 1; y += 1; } }
+    return y * 10000 + m * 100 + d;
+  };
+  for (const r of final) {
+    const out = [];
+    let gone = 0;
+    for (const e of r.eras) {
+      const prev = out[out.length - 1];
+      const same = prev && LANGS.every((lg) => prev.name[lg] === e.name[lg]);
+      /* both must state their ends, and the later must state its start, or «no gap» is not a
+         question this record can answer */
+      if (same && prev.to && e.from && dnum(e.from, false) === dayAfter(prev.to)) {
+        prev.to = e.to;
+        gone++;
+        continue;
+      }
+      out.push(e);
+    }
+    if (gone) { r.eras = out; collapsed.spans += gone; collapsed.rows++; }
+  }
+}
+
 /* ── the file ──────────────────────────────────────────────────────────────────────────────── */
 /* rounded DOWN to 100 m: a derived number that is re-derived from an external dump should not
    churn the shipped file over a metre, and rounding down never lets a guard grow. */
+/* ⚠⚠⚠ (#R689) THE SOURCE LETTER IS DERIVED FROM THE FILE THAT HOLDS THE ROW. It used to read
+   `r._file === 'derived-pleiades.mjs' ? 'p' : 'w'` — a list of one, which answers 'w' for every
+   upstream that is not Pleiades. This round added a third, and that expression would have shipped
+   2,000-odd OpenHistoricalMap rows labelled «Wikidata» with nothing red anywhere. The letter is now
+   the first character of the file's own name, checked for collisions here, so the next upstream is
+   right on the day it is harvested (#R429: the rule belongs to the fact, not to a call site). */
+const SRC_CODE = new Map();
+for (const f of REGIONS) {
+  const m = /^derived-([a-z0-9]+)\.mjs$/.exec(f);
+  if (!m) continue;
+  const code = m[1][0];
+  if (code === 'h') problems.push(`scripts/histcities/${f} would ship under the letter «h», which data/hist-cities.json already spends on the handwritten record — rename the file`);
+  for (const [g, c] of SRC_CODE) if (c === code) problems.push(`scripts/histcities/${f} and ${g} would both ship under the letter «${code}» — the shipped record could not tell them apart`);
+  SRC_CODE.set(f, code);
+}
 const guardOf = (r) => Math.floor(audit.find((a) => a.r === r).guardKm * 10) * 100;
 const bitOf = (name) => {
   let n = 0;
@@ -489,21 +638,26 @@ const bitOf = (name) => {
 };
 const out = {
   v: 3,
-  src: 'scripts/histcities/ — the record: eleven handwritten region files plus derived-wikidata.mjs (CC0) '
-    + 'and derived-pleiades.mjs (CC BY 3.0, Pleiades — attribution required); built by scripts/build-hist-cities.mjs',
+  src: `scripts/histcities/ — ${REGIONS.length - LICENCES.length} handwritten region files plus `
+    + `${LICENCES.length} derived from upstreams; built by scripts/build-hist-cities.mjs`,
+  /* ⚠ (#R689) THE RIGHTS TRAVEL WITH THE DATA. A reader who has this file and not the repository
+     still has to be able to see whose work is in it and under what terms — and a shipped file
+     that carries its own licence is the thing a gate can check against the Sources page. */
+  rights: LICENCES.map((l) => ({ publisher: l.publisher, licence: l.licence, url: l.url, attribution: l.attribution })),
   note: 'Outside every span the modern tile label stands. `g` is the guard radius in metres: a tile label is renamed '
     + 'only if its own spelling is one of `k` AND it lies within `g` of (lon, lat). `f`/`t` are signed YYYYMMDD '
     + '(negative years are astronomical, so -330 is 331 BC). `p` is the precision of those two endpoints — d day, '
     + 'm month, y year, c a period boundary from a vocabulary rather than a date, - open. `a` is a bitmask over '
     + '`langs`: a clear bit means no source writes that name in that language and the English/Latin column stands. '
-    + '`s` is the source: h handwritten, w Wikidata, p Pleiades.',
+    + '`s` is the source: h the handwritten record, '
+    + [...SRC_CODE].map(([f, c]) => `${c} ${/^derived-([a-z0-9]+)/.exec(f)[1]}`).join(', ') + '.',
   langs: LANGS,
   cities: final.map((r) => ({
     id: r.id,
     lon: +r.lon.toFixed(4),
     lat: +r.lat.toFixed(4),
     cc: r.cc,
-    s: r.derived ? (r._file === 'derived-pleiades.mjs' ? 'p' : 'w') : 'h',
+    s: r.derived ? SRC_CODE.get(r._file) : 'h',
     g: guardOf(r),
     k: r.keys.slice(),
     e: r.eras.map((e) => {
@@ -535,9 +689,16 @@ function report() {
   const tight = audit.filter((a) => a.guardKm < GUARD_MAX_KM);
   const unlisted = final.filter((r) => r.unlisted);
   const waived = final.reduce((n, r) => n + (r.waive || []).length, 0);
-  const bySrc = (s) => final.filter((r) => (r.derived ? (r._file === 'derived-pleiades.mjs' ? 'p' : 'w') : 'h') === s);
+  /* ⚠ THE SECOND COPY OF THE SAME RULE, AND IT DRIFTED THE MOMENT A THIRD UPSTREAM ARRIVED.
+     This read `_file === 'derived-pleiades.mjs' ? 'p' : 'w'` too, so the first build that carried
+     OpenHistoricalMap printed «4,906 from Wikidata» for a record holding 2,245 rows that are not
+     Wikidata's. It is the shipped file's own letter now, from the one map that defines it. */
+  const bySrc = (c) => final.filter((r) => (r.derived ? SRC_CODE.get(r._file) : 'h') === c);
+  const named = [...SRC_CODE].map(([f, c]) => `${bySrc(c).length} from ${/^derived-([a-z0-9]+)/.exec(f)[1]}`);
   console.log(`\nhist-cities · ${final.length} cities · ${eraCount} historical names · ${REGIONS.length} record files`);
-  console.log(`  sources: ${bySrc('h').length} handwritten, ${bySrc('w').length} from Wikidata, ${bySrc('p').length} from Pleiades`);
+  console.log(`  sources: ${bySrc('h').length} handwritten, ${named.join(', ')}`);
+  console.log(`  collapsed: ${collapsed.spans} spans were the same name continuing on ${collapsed.rows} cities`);
+  console.log(`  same-name columns shared: ${alias.cols} language forms moved onto ${alias.spans} spans (${alias.hand} of them handwritten)`);
   console.log(`  merged: ${merged.rows} derived rows were the same place as an earlier row (${merged.intoHand} of them a handwritten one); `
     + `${merged.eras} spans were added to a row that already existed and ${merged.dropped} were dropped as already covered`);
   console.log(`  countries: ${new Set(final.map((r) => r.cc)).size}`);

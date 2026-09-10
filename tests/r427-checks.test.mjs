@@ -312,24 +312,33 @@ test('⑩ a namesake elsewhere on Earth keeps its own name', async () => {
      already won its slot in data/gazetteer-world.json.gz. */
   const y1930 = boot('1930-06-15');
   await y1930.window.IntMapHistCities.ensure();
-  /* ══ ⚠⚠⚠ (#R679) THE ANSWER IS THE RUSSIAN FORM NOW, AND THAT IS THE COST OF A RULE THAT ═══════
-     PAYS FOR ITSELF ELSEWHERE. Until this round the handwritten span for Kirov had an OPEN start,
-     and `nameAt` reads an open start as «since the beginning of time» — so it answered every year
-     below 1933, and every DATED span for the same place was discarded by the build as «already
-     covered». Measured on the shipped record: 221 dated spans across 120 cities had been thrown
-     away that way, including all ten of Pleiades' dated spans for Istanbul. The map said
-     «Constantinople» in 300 BC.
+  /* ══ ⚠⚠⚠ (#R679) THE DATED EVIDENCE ANSWERS, AND (#R689) IT NOW ANSWERS IN THE READER'S ══════
+     LANGUAGE. Until #R679 the handwritten span for Kirov had an OPEN start, and `nameAt` reads an
+     open start as «since the beginning of time» — so it answered every year below 1933, and every
+     DATED span for the same place was discarded by the build as «already covered». Measured then:
+     221 dated spans across 120 cities had been thrown away that way, including all ten of
+     Pleiades' dated spans for Istanbul. The map said «Constantinople» in 300 BC.
      ⚠ THE RULE IS #R604's, RESTATED: an absent bound does not constrain that end — it is not a
      claim to occupy all of time. So dated evidence outranks an unbounded assertion.
-     ⚠ THE RESIDUAL WAS MEASURED, NOT ASSUMED, AND THREE STRUCTURAL FIXES FOR IT WERE TRIED AND
-     REJECTED ON MEASUREMENT: ranking by attestation does not help (the ancient evidence is attested
-     in none of the nine languages, so 300 BC goes back to being wrong); thresholding on how close
-     the two spans END has a 27-span band where genuine and duplicate renames are mixed, so the
-     number would have no derivation; and «the last dated span before an open one is the same claim»
-     costs 178 pre-1500 answers (annaba loses Hyppone Regio, zadar loses Iader) to buy 234 modern
-     ones. What is left is a legibility cost, not a correctness one: «Вятка» in 1930 is TRUE, and
-     «Constantinople in 300 BC» was FALSE. CONSTITUTION「偽物・ハリボテ禁止」 ranks those. */
-  assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, where('kirov-vyatka')), 'Вятка');
+     ⚠⚠⚠ AND THE COST #R679 ACCEPTED HERE IS GONE, WITHOUT ANYTHING BEING REORDERED. This line
+     read «Вятка» — the dated span was attested in none of the nine languages, so an English reader
+     got the Cyrillic form while the record held «Vyatka» on the very next span of the same city.
+     #R679 tried three ways out and rejected all three on measurement, and all three worked by
+     RANKING the spans differently, which is why all three risked putting «Constantinople» back in
+     300 BC: ranking by attestation puts it back outright (the ancient evidence is attested in none
+     of the nine); thresholding on how close two spans END has a 27-span band where genuine and
+     duplicate renames are mixed, so the number would have no derivation; and «the last dated span
+     before an open one is the same claim» costs 178 pre-1500 answers to buy 234 modern ones.
+     ⚠ #R689 measured the residual instead of ranking it: over 1,634 instants, 67.6% of the answers
+     whose winning span has no form in the reader’s language are cases where the two spans STATE THE
+     SAME NAME. So a span may take a language column from an OVERLAPPING span of the same place that
+     states the same name (scripts/build-hist-cities.mjs). Nothing is reordered — the span that
+     answers 1930 is the same dated span as before — so 300 BC cannot come back, and the reader gets
+     the spelling the record already had. ⚠ THE OVERLAP IS LOAD-BEARING: without it «Kirovo»
+     (1934–1938) took Korean from «Kirovohrad» (1939–), i.e. the name it was about to be given.
+     What is left after that is the honest residue — Hippo Regius beside Bône — where the two spans
+     are DIFFERENT names and the era’s own name is the right answer. */
+  assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, where('kirov-vyatka')), 'Vyatka');
   assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, [34.3, 54.08]), 'Kirov',
     'Kirov in Kaluga oblast was never Vyatka');
 
