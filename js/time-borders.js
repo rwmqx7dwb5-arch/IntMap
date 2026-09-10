@@ -491,9 +491,15 @@ window.IntMapModules.timeBorders=function(HOST){
        promise resolves with the bundle either way and the names lane resolves to null. */
     let _erN=null;
     function erNames(){ if(_erN!==null) return Promise.resolve(_erN);
-      return fetch('data/histeras-names.json').then(r=>r.ok?r.json():null)
-        .then(j=>{ _erN=(j&&j.names)||{}; return _erN; })
-        .catch(()=>{ _erN={}; return _erN; }); }
+      /* ⚠ THE try/catch IS NOT DECORATION. `fetch(...)` can throw SYNCHRONOUSLY — there is no
+         `fetch` at all in the node harnesses that evaluate this module (tests/r682-* runs it in a
+         vm) — and a synchronous throw here would reject `_erP`, which is the promise the whole
+         era tier awaits. The names lane failing must cost the reader nothing but the names. */
+      try{
+        return fetch('data/histeras-names.json').then(r=>r.ok?r.json():null)
+          .then(j=>{ _erN=(j&&j.names)||{}; return _erN; })
+          .catch(()=>{ _erN={}; return _erN; });
+      }catch(_){ _erN={}; return Promise.resolve(_erN); } }
     function erLoad(){ if(_erD&&_erN!==null) return Promise.resolve(_erD); if(_erP) return _erP;
       _erP=new Promise(res=>{ if(window.__HISTERAS){ _erD=window.__HISTERAS; res(_erD); return; }
         const sc=document.createElement('script'); sc.src='data/hist-eras.js'; sc.async=true;
