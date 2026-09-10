@@ -132,7 +132,11 @@ test('R575 ⑧: the same seed is the same world; a different seed is a different
 
 test('R575 ⑨: R₀ below 1 dies out, above 1 grows — one closed population (Test 9)', () => {
   const one = [{ name: 'X', pop: 5e7, lat: 0, lng: 0, dev: 0.6 }];
-  const base = { scenario: 'naive', mobility: 0, seasonality: 0, interventions: 'none', naturalImmunityMonths: 600, vaccineAtStart: false };
+  /* ⚠ (#R673) `naturalImmunityMonths: 600` USED TO MEAN «FOREVER», and it does not any more: the
+     in-band sentinel is gone and 600 is six hundred months (defect U2 — one field cannot hold both
+     a duration and a category). What this test wants is «immunity does not wane while we watch»,
+     which is now said as itself. */
+  const base = { scenario: 'naive', mobility: 0, seasonality: 0, interventions: 'none', naturalImmunityLifelong: true, vaccineAtStart: false };
   const lo = createPandemicModel({ countries: one, preset: PANDEMIC_PRESETS.sars, params: Object.assign({}, base, { r0: 0.6 }), seed: 5 });
   const hi = createPandemicModel({ countries: one, preset: PANDEMIC_PRESETS.sars, params: Object.assign({}, base, { r0: 2.5 }), seed: 5 });
   lo.seed(0, 50000); hi.seed(0, 50000);

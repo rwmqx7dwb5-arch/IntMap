@@ -23,7 +23,7 @@
 /* (#R575) The Pandemic Simulator's arithmetic — a pure, seeded, node-testable SEIR metapopulation
    engine. Static, not lazy: this whole file is already behind js/lazy-modules.js's playground
    door, so the model is downloaded exactly when the playground is and never before. */
-import { PANDEMIC_PRESETS, createPandemicModel, scatterCases } from './pandemic-model.js';
+import { PANDEMIC_PRESETS, createPandemicModel, scatterCases, caseDotPlan, dotSignature, snapToStep } from './pandemic-model.js';
 
 window.IntMapModules=window.IntMapModules||{};
 
@@ -276,9 +276,34 @@ window.IntMapModules.playground=function(HOST){
              changes instead of every formula. */
           const dev=(s&&s.gdppc)?Math.min(1,Math.max(0.12,s.gdppc/55000)):(s&&s.hdi?s.hdi:0.5);
           world[i]={name:cName(f)||'?', code:(_r&&_r.code)||null, pop, dev, lat:cent[i][1], lng:cent[i][0], borders:null, air:0}; pools[i]=null; });
-        /* filled IN PLACE — `world` is the array createPandemicModel() reads at pick time */
-        try{ if(window.IntMapCountryFacts&&window.IntMapCountryFacts.load) window.IntMapCountryFacts.load().then(t=>{ if(!t) return; for(let i=0;i<N;i++){ const c=world[i].code; const row=c&&t[c]; if(row&&row.borders&&row.borders.length) world[i].borders=row.borders; } }); }catch(_){}
-        try{ loadAirports().then(t=>{ if(!t) return; for(let i=0;i<N;i++){ const c=world[i].code; const row=c&&t[c]; if(row&&row.cap>0) world[i].air=row.cap; } }); }catch(_){}
+        /* ══ ⚠⚠⚠ (#R673) THE WORLD IS A SNAPSHOT, AND IT IS CONFIRMED BEFORE THE RUN EXISTS ═══════
+           These two tables used to be filled IN PLACE while the panel was already accepting taps,
+           and `createPandemicModel` freezes the mobility matrix at construction. So which world you
+           got was decided by how fast your network was: tap within the second and the outbreak
+           spread by population and distance alone, tap after and it spread by airports and land
+           borders, and NOTHING LATER FIXED IT — the tables landed in `world` but the matrix was
+           already built. The seed field promises that the same seed is the same run; it could not
+           be, because the same seed was not the same world.
+
+           ⚠ THE FIX IS NOT «FILL IT FASTER», IT IS «DECIDE WHAT THE WORLD IS FIRST». Picking is
+           closed until both fetches have SETTLED — resolved or failed — and what they settled to is
+           recorded per table, so a failure is a stated fact about this run («the airport table did
+           not load») and not an unlabelled second world that happens to look like the first.
+           ⚠ SETTLED, NOT SUCCEEDED. A dead table must not lock the reader out of the simulator; it
+           must be named. `dataState` is what the panel prints and what the run carries. */
+        const dataState={ borders:'pending', airports:'pending' };
+        function settle(p,key,fill){
+          return Promise.resolve(p).then(t=>{ if(!t) { dataState[key]='failed'; return; }
+            let hit=0; for(let i=0;i<N;i++){ const c=world[i].code; const row=c&&t[c]; if(row&&fill(world[i],row)) hit++; }
+            dataState[key]=hit?(hit===N?'ok':'partial'):'failed'; })
+            .catch(()=>{ dataState[key]='failed'; });
+        }
+        let worldReady=false;
+        Promise.all([
+          settle((window.IntMapCountryFacts&&window.IntMapCountryFacts.load)?window.IntMapCountryFacts.load():null,
+            'borders',(w,row)=>{ if(row.borders&&row.borders.length){ w.borders=row.borders; return true; } return false; }),
+          settle(loadAirports(),'airports',(w,row)=>{ if(row.cap>0){ w.air=row.cap; return true; } return false; })
+        ]).then(()=>{ worldReady=true; if(picking&&hud.isConnected&&!model) renderConfig(); });
         const nm=world.map(c=>c.name);
         /* ⚠ (#R666) DECLARED HERE, NOT BESIDE buildDots' OTHER CONSTANTS — the layer spec below
            reads it during THIS call, and a `const` further down the same function body is in its
@@ -316,7 +341,13 @@ window.IntMapModules.playground=function(HOST){
            cases into the sea and into the neighbour — see scatterCases() in js/pandemic-model.js. */
         function genPts(i,n){ const f=feats[i], bb=bbs[i]; const span=Math.min(2.0,Math.max(0.1,Math.max(bb[2]-bb[0],bb[3]-bb[1])*0.09)); const anchors=[];
           const inside=(lng,lat)=>pig(lng,lat,f.geometry);
-          try{ const s=resolve(f.properties||{}); if(s&&s.latlng){ const cl=[s.latlng[1],s.latlng[0]]; if(inside(cl[0],cl[1])) anchors.push(cl); } }catch(_){}
+          /* ⚠ (#R673) `resolve()` RETURNS `{code, s}`, NOT THE STATS ROW. #R666 changed it to carry the
+             ISO code back and this call site kept reading `.latlng` off the WRAPPER, which is
+             `undefined` — so the country's own label point (Natural Earth LABEL_X/Y, the anchor
+             inside its main landmass) has been silently absent from the anchor list ever since. It
+             did not fail loudly because the gazetteer sweep below usually finds cities, so the dots
+             landed somewhere plausible and nobody could see the anchor that was missing. */
+          try{ const _r=resolve(f.properties||{}); const _s=_r&&_r.s; if(_s&&_s.latlng){ const cl=[_s.latlng[1],_s.latlng[0]]; if(inside(cl[0],cl[1])) anchors.push(cl); } }catch(_){}
           try{ const gz=(typeof HOST.geoDB!=='undefined'&&HOST.geoDB)||window.geoDB||[]; for(let q=0;q<gz.length && anchors.length<64;q++){ const c=gz[q]&&gz[q].loc; if(!c) continue; if(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3]) continue; if(inside(c[0],c[1])) anchors.push([c[0],c[1]]); } }catch(_){}
           if(anchors.length) return scatterCases(n,anchors,span,Math.random,inside);
           const out=[]; let tries=0; while(out.length<n && tries<n*16){ tries++; const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(inside(lng,lat)) out.push([lng,lat]); }
@@ -332,7 +363,9 @@ window.IntMapModules.playground=function(HOST){
         function freshParams(key,mode){ const pr=PANDEMIC_PRESETS[key]; return {
           scenario:mode, r0:pr.transmission.r0, latentDays:pr.transmission.latentDays,
           infectiousDays:pr.transmission.infectiousDays, baseFatality:pr.severity.value,
-          naturalImmunityMonths:pr.immunity.lifelong?600:pr.immunity.naturalMonths,
+          /* ⚠ (#R673) THE DURATION AND THE «FOREVER» ARE TWO FIELDS. `lifelong ? 600 : months` put
+             a sentinel in a numeric field and js/pandemic-model.js decoded it — see U2 there. */
+          naturalImmunityMonths:pr.immunity.naturalMonths, naturalImmunityLifelong:!!pr.immunity.lifelong,
           seasonality:pr.transmission.seasonality, startDayOfYear:1, initialCases:100,
           initialImmunity:mode==='real-world'?(pr.baselineImmunity||0):0,
           mobility:1, interventions:'adaptive', vaccineAtStart:mode==='real-world'&&!!pr.vaccine.availableAtStart
@@ -408,15 +441,23 @@ window.IntMapModules.playground=function(HOST){
           return have; }
         function buildDots(){ if(!model) return; let totAct=0; for(let i=0;i<N;i++){ const a=model.active(i); if(a.seeded) totAct+=a.E+a.I; }
           const perDot=Math.max(PG_CASES_PER_DOT, totAct/PG_DOTCAP); perDotNow=perDot; const out=[]; const next=new Map();
-          for(let i=0;i<N;i++){ const a=model.active(i); if(!a.seeded) continue; const act=a.E+a.I; if(act<1 && a.D<1) continue;
-            let k=Math.round(act/perDot); if(k<1 && (act>=1||a.D>0)) k=1; if(k>PG_DOTCAP) k=PG_DOTCAP;
-            const pool=poolFor(i,k); if(!pool.length) continue;
-            const sev=Math.round((a.D>0?Math.min(1,a.D/(a.I+a.D+1)*3):0)*20)/20;
-            /* Split the country's dots the way its cases are actually split. */
-            const kE=act>0?Math.round(k*(a.E/act)):0;
-            for(let d=0; d<k && d<pool.length; d++){ const cls=d<kE?0:1, id=i*PG_DOTCAP+d;
-              out.push({type:'Feature',id,geometry:{type:'Point',coordinates:pool[d]},properties:{sev,cls}});
-              next.set(id,cls+sev*2); } }
+          /* ══ ⚠⚠⚠ (#R673) THIS LAYER DRAWS PEOPLE WHO ARE ILL NOW, SO THE DEAD CANNOT KEEP IT ALIVE ══
+             The gate was `if (act < 1 && a.D < 1) continue`, and the floor below it was
+             `if (k < 1 && (act >= 1 || a.D > 0)) k = 1`. A country at E = 0, I = 0, D = 100 — an
+             outbreak that is OVER, everyone recovered or dead — passed both: it drew one dot, and
+             because `kE` is 0 when `act` is 0 that dot was RED, which the legend beside it defines
+             as «infectious». The map went on reporting current cases in a country that had none,
+             for the rest of the run, and the number it contradicted was its own HUD.
+             Cumulative deaths are a different quantity and belong to a different layer; they are
+             still what `sev` DARKENS a live dot by, which is a property of the outbreak there. */
+          /* ⚠ (#R673) THE COUNT AND THE SIGNATURE ARE `caseDotPlan` / `dotSignature` IN
+             js/pandemic-model.js — pure, exported, and measured by tests/r673-checks. They lived
+             here, which is why an audit found both of their defects and no test did (#R505). */
+          for(let i=0;i<N;i++){ const plan=caseDotPlan(model.active(i),perDot,PG_DOTCAP); if(!plan) continue;
+            const pool=poolFor(i,plan.k); if(!pool.length) continue;
+            for(let d=0; d<plan.k && d<pool.length; d++){ const cls=d<plan.kE?0:1, id=i*PG_DOTCAP+d;
+              out.push({type:'Feature',id,geometry:{type:'Point',coordinates:pool[d]},properties:{sev:plan.sev,cls}});
+              next.set(id,dotSignature(cls,plan.sevIdx)); } }
           let diff=null;
           if(dotSig&&dotDiffRun<PG_RESYNC){
             const add=[], remove=[]; const room=Math.max(PG_DIFF_MIN,Math.floor(next.size*PG_DIFF_FRAC));
@@ -437,18 +478,48 @@ window.IntMapModules.playground=function(HOST){
         function grp(n){ try{ return Math.round(n).toLocaleString(window.IntMapLang.htmlLang?window.IntMapLang.htmlLang(HOST.lang):undefined); }catch(_){ return fmt(n); } }
         function updateHud(){ const el=hud.querySelector('#pg-pan-stats'); if(!el||!model) return; const T=model.totals();
           const vpct=T.worldPop?Math.round(T.V/T.worldPop*100):0, attack=T.worldPop?(T.cumInf/T.worldPop*100):0;
-          el.innerHTML='<span style="color:#f03b20;">'+window.IntMapLang.t(HOST.lang,"Infectious","感染性","Ansteckend","Заразны","Contagiosos")+' <b>'+fmt(T.I)+'</b></span> · '+
-          '<span style="color:#ff9f0a;">'+window.IntMapLang.t(HOST.lang,"Incubating","潜伏中","Inkubierend","Инкубация","Incubando")+' <b>'+fmt(T.E)+'</b></span> · '+
+          /* ══ ⚠⚠⚠ (#R673) EVERY ONE OF THESE FOUR NAMED SOMETHING IT WAS NOT ═══════════════════════
+             · «Incubating» for E. Incubation is infection→SYMPTOMS; E is infection→INFECTIOUS, and
+               for influenza and COVID-19 they are deliberately different in this very model (the
+               setup panel says so beside the slider). E is «infected, not yet infectious».
+             · «Vaccinated» for V/pop. `V` is the people a dose is PROTECTING RIGHT NOW. It falls
+               when protection wanes, when a variant escapes it and when a vaccinated person is
+               infected anyway, so printing it as «% vaccinated» makes a rising campaign look like
+               people being un-vaccinated. `SV` — reached and not protected — is not in it at all.
+               The engine keeps no dose ledger, so the honest label is the one for what V IS.
+             · «Countries» for `affected`. That is countries with cases RIGHT NOW; it goes down.
+             · «Infectious» is a count of PEOPLE, so it reads as a noun phrase. */
+          el.innerHTML='<span style="color:#f03b20;">'+window.IntMapLang.t(HOST.lang,"Infectious now","感染性あり","Jetzt ansteckend","Заразны сейчас","Contagiosos ahora")+' <b>'+fmt(T.I)+'</b></span> · '+
+          '<span style="color:#ff9f0a;">'+window.IntMapLang.t(HOST.lang,"Infected, not yet infectious","感染済み・未感染性","Infiziert, noch nicht ansteckend","Заражены, ещё не заразны","Infectados, aún no contagiosos")+' <b>'+fmt(T.E)+'</b></span> · '+
           '<span style="color:#7a0010;">'+window.IntMapLang.t(HOST.lang,"Dead","死亡","Tote","Умерло","Fallecidos")+' <b>'+fmt(T.D)+'</b></span> · '+
-          '<span style="color:#0a84ff;">'+window.IntMapLang.t(HOST.lang,"Vaccinated","接種","Geimpft","Вакцинировано","Vacunados")+' <b>'+vpct+'%</b></span><br>'+
-          '<span>'+window.IntMapLang.t(HOST.lang,"Countries","国","Länder","Страны","Países")+' <b>'+T.affected+'</b></span> · '+window.IntMapLang.t(HOST.lang,"Day","経過","Tag","День","Día")+' <b>'+day+'</b>'+
+          '<span style="color:#0a84ff;">'+window.IntMapLang.t(HOST.lang,"Protected by vaccine now","ワクチンで防御中","Derzeit durch Impfung geschützt","Сейчас защищены вакциной","Protegidos por vacuna ahora")+' <b>'+vpct+'%</b></span><br>'+
+          '<span>'+window.IntMapLang.t(HOST.lang,"Countries with cases now","現在流行中の国","Länder mit aktuellen Fällen","Страны со случаями сейчас","Países con casos ahora")+' <b>'+T.affected+'</b></span> · '+window.IntMapLang.t(HOST.lang,"Day","経過","Tag","День","Día")+' <b>'+day+'</b>'+
           /* ⚠ CUMULATIVE INFECTION EVENTS, AND THE LABEL SAYS SO. Reinfections count again, so this
              is not «the share of people who have ever been infected» and must not be printed as one. */
           ' · '+window.IntMapLang.t(HOST.lang,"cumulative infections","延べ感染","kumulierte Infektionen","суммарно заражений","infecciones acumuladas")+' <b>'+attack.toFixed(1)+'%</b>'+
           (T.variants?' · '+window.IntMapLang.t(HOST.lang,"variants","変異株","Varianten","варианты","variantes")+' <b>'+T.variants+'</b>':'')+
           (T.vaccine?' · 💉':(model.vaccineProgress()>0?' · '+window.IntMapLang.t(HOST.lang,"vaccine R&D","ワクチン開発","Impfstoffentwicklung","разработка вакцины","I+D de vacunas")+' '+Math.round(model.vaccineProgress()*100)+'%':''))+
-          '<br><span style="color:var(--text-muted);font-size:10.5px;">'+window.IntMapLang.t(HOST.lang,"1 dot ≈ ","1点 ≈ ","1 Punkt ≈ ","1 точка ≈ ","1 punto ≈ ")+grp(perDotNow)+' '+window.IntMapLang.t(HOST.lang,"active cases · red = infectious, orange = incubating","人の現感染者 · 赤=感染性、橙=潜伏中","aktive Fälle · rot = ansteckend, orange = inkubierend","активных случаев · красный — заразные, оранжевый — инкубация","casos activos · rojo = contagiosos, naranja = incubando")+'</span>'; }
-        function mk(lab,val,min,max,stp,fmtv,set){ const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 118px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=stp; r.value=val; r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.textContent=fmtv(+val); v.style.cssText='flex:0 0 54px;text-align:right;'; r.oninput=()=>{ v.textContent=fmtv(+r.value); set(+r.value); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); }
+          '<br><span style="color:var(--text-muted);font-size:10.5px;">'+window.IntMapLang.t(HOST.lang,"1 dot ≈ ","1点 ≈ ","1 Punkt ≈ ","1 точка ≈ ","1 punto ≈ ")+grp(perDotNow)+' '+/* ⚠ (#R673) THE LEGEND HAS TO USE THE SAME WORDS AS THE COUNTERS ABOVE IT. It said «orange =
+             incubating» while the counter three lines up now says «infected, not yet infectious» —
+             the same compartment, two names, on the same panel. Incubation is infection→SYMPTOMS. */
+            window.IntMapLang.t(HOST.lang,"active cases · red = infectious, orange = infected but not yet infectious","人の現感染者 · 赤=感染性あり、橙=感染済みで未感染性","aktive Fälle · rot = ansteckend, orange = infiziert, aber noch nicht ansteckend","активных случаев · красный — заразные, оранжевый — заражены, но ещё не заразны","casos activos · rojo = contagiosos, naranja = infectados pero aún no contagiosos")+'</span>'; }
+        /* ══ ⚠⚠⚠ (#R673) THE VALUE SHOWN, THE VALUE IN THE INPUT AND THE VALUE IN THE ENGINE ARE ONE ══
+           They were three. Ebola's preset R₀ is 1.95; the slider's step was 0.1, so the browser
+           snapped `range.value` to 2; the readout was `toFixed(1)`, so it printed 1.9; and `cfg.r0`
+           was never touched by any of that, so the engine ran 1.95. MEASURED in an isolated
+           Chromium with these exact three lines: engine 1.95 / input 2 / label 1.9 — three numbers,
+           one parameter, and no way for the reader to find out which one their outbreak used.
+
+           ⚠ THE FIX IS NOT A ROUNDING RULE, IT IS ONE OWNER. `mk` now snaps the incoming value to
+           the grid the input can actually represent and WRITES THAT BACK through `set` before
+           drawing anything, so the engine holds what the slider holds. It is done here rather than
+           at each call site because it must be true of every slider, including the next one
+           somebody adds — a rule on the fact, not on one caller (#R429). Where a preset's precision
+           is worth keeping, the STEP is what changes (R₀ is 0.05 below, so 1.95 survives it).
+           ⚠ `Math.round((val-min)/stp)*stp` is re-rounded to the step's own decimals, or 0.1+0.2
+           puts 1.9500000000000002 in a field whose step is 0.05 and the browser snaps it again. */
+        function mk(lab,val,min,max,stp,fmtv,set){ val=snapToStep(+val,min,max,stp); set(val);
+          const w=document.createElement('div'); w.style.cssText='display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11.5px;'; const l=document.createElement('span'); l.textContent=lab; l.style.cssText='flex:0 0 118px;color:var(--text-muted);'; const r=document.createElement('input'); r.type='range'; r.min=min; r.max=max; r.step=stp; r.value=val; r.style.cssText='flex:1;accent-color:var(--primary-color);'; const v=document.createElement('b'); v.textContent=fmtv(+val); v.style.cssText='flex:0 0 54px;text-align:right;'; r.oninput=()=>{ const x=snapToStep(+r.value,min,max,stp); v.textContent=fmtv(x); set(x); }; w.appendChild(l); w.appendChild(r); w.appendChild(v); hud.appendChild(w); return r; }
         function pills(items,isOn,pick){ const row=document.createElement('div'); row.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;';
           items.forEach(it=>{ const on=isOn(it.k); const b=document.createElement('button'); b.textContent=it.t; b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(on?'var(--primary-color)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>pick(it.k); row.appendChild(b); }); hud.appendChild(row); return row; }
         function renderConfig(){ hud.innerHTML='';
@@ -461,18 +532,46 @@ window.IntMapModules.playground=function(HOST){
           const note=document.createElement('div'); note.style.cssText='font-size:10.5px;color:var(--text-muted);margin:-4px 0 8px;line-height:1.4;';
           note.textContent=scenario==='naive'
             ? window.IntMapLang.t(HOST.lang,"Nobody is immune, and no vaccine or treatment exists yet.","誰も免疫を持たず、ワクチンも治療法もまだ存在しない世界。","Niemand ist immun, und es gibt weder Impfstoff noch Behandlung.","Ни у кого нет иммунитета, вакцины и лечения ещё не существует.","Nadie es inmune y todavía no existe vacuna ni tratamiento.")
-            : window.IntMapLang.t(HOST.lang,"Starts from the immunity, vaccines and treatments this disease actually has in 2026.","2026年時点でこの病気に実際にある免疫・ワクチン・治療法から始める。","Beginnt mit der Immunität, den Impfstoffen und Behandlungen, die es 2026 für diese Krankheit wirklich gibt.","Начинается с иммунитета, вакцин и методов лечения, которые реально существуют для этой болезни в 2026 году.","Parte de la inmunidad, las vacunas y los tratamientos que esta enfermedad realmente tiene en 2026.");
+            /* ⚠⚠ (#R673) «ACTUALLY HAS» WAS TOO STRONG FOR WHAT THIS MODEL CAN HOLD. The vaccines and
+               treatments are real and dated, but the initial immunity is ONE compartment: 90% for
+               COVID-19 means «90% start fully protected», which is this engine's coarsest reading of
+               a real qualitative fact and not a WHO estimate of anything. Measles' 84% is a CHILD
+               MCV1 coverage figure being applied to every age in every country. Both are assumptions
+               a reader may change, and the panel now says which word applies to which. */
+            : window.IntMapLang.t(HOST.lang,"Uses the vaccines and treatments this disease really has in 2026, plus an ASSUMED level of starting immunity — one figure applied to every country and age.","2026年時点でこの病気に実際にあるワクチン・治療法を使い、初期免疫は「仮定した値」——全ての国・全ての年齢に同じ割合を当てています。","Nutzt die Impfstoffe und Behandlungen, die es 2026 für diese Krankheit wirklich gibt, dazu eine ANGENOMMENE Anfangsimmunität — ein Wert für jedes Land und jedes Alter.","Использует вакцины и лечение, которые реально существуют для этой болезни в 2026 году, плюс ПРЕДПОЛАГАЕМЫЙ начальный иммунитет — одна доля для всех стран и возрастов.","Usa las vacunas y los tratamientos que esta enfermedad realmente tiene en 2026, más un nivel SUPUESTO de inmunidad inicial: una sola cifra para cada país y cada edad.");
           hud.appendChild(note);
-          mk(window.IntMapLang.t(HOST.lang,"Infectivity R₀","基本再生産数R₀","Basisreproduktionszahl R₀","Базовое репродуктивное число R₀","Número reproductivo básico R₀"),cfg.r0,0.6,18,0.1,v=>v.toFixed(1),v=>cfg.r0=v);
+          /* ⚠ (#R673) STEP 0.05, NOT 0.1 — because Ebola's pooled R₀ really is 1.95 and a grid that
+             cannot hold it forces the value, the slider and the label apart (see `snapToStep`). Two
+             decimals in the readout for the same reason: 1.95 must not print as 1.9. */
+          mk(window.IntMapLang.t(HOST.lang,"Infectivity R₀","基本再生産数R₀","Basisreproduktionszahl R₀","Базовое репродуктивное число R₀","Número reproductivo básico R₀"),cfg.r0,0.6,18,0.05,v=>v.toFixed(2),v=>cfg.r0=v);
           /* ⚠ «BASE», BECAUSE IT IS NOT THE DEATH RATE THE RUN WILL SHOW: hospital overload raises it,
              treatment and a milder variant lower it. And the preset's own number may be a CFR, which
              has a smaller denominator than an IFR — so the metric is printed next to the slider. */
           mk(window.IntMapLang.t(HOST.lang,"Base fatality","基準致死率","Basisletalität","Базовая летальность","Letalidad base")+' ('+preset().severity.metric+')',+(cfg.baseFatality*100).toFixed(1),0,60,0.1,v=>v+'%',v=>cfg.baseFatality=v/100);
+          /* ══ ⚠⚠⚠ (#R673) THE LABEL SPLIT CFR FROM IFR; THE ARITHMETIC DID NOT ═══════════════════
+             #R575 made `severity.metric` travel with the number, which was right and is not enough:
+             a CFR's denominator is DETECTED CASES and this engine applies the value to every
+             infection that leaves I, detected or not. SARS at 9.6% and Ebola at 50% are therefore
+             being read as infection fatality ratios by the only thing that consumes them. There is
+             no observation model in this simulator — no detection, no reporting, no ascertainment —
+             so the honest move is not a made-up conversion factor (that would be a constant nobody
+             can date) but to SAY which denominator the run is using. The reader can then lower it. */
+          if(preset().severity.metric==='CFR'){ const cn=document.createElement('div'); cn.style.cssText='font-size:10px;color:var(--text-muted);margin:-2px 0 6px;line-height:1.4;';
+            cn.textContent=window.IntMapLang.t(HOST.lang,"This figure is a case fatality ratio (deaths per detected case), but the model applies it to every infection — including undetected ones. Treat it as an assumed severity, not as an observed one.","この値は確認された症例あたりの致死率ですが、モデルは未検出を含むすべての感染に適用します。観測値ではなく仮定した重症度として扱ってください。","Dieser Wert ist eine Fall-Sterblichkeitsrate (Todesfälle je erkanntem Fall), doch das Modell wendet ihn auf jede Infektion an — auch auf unerkannte. Behandeln Sie ihn als angenommene, nicht als beobachtete Schwere.","Это летальность на выявленный случай, но модель применяет её ко всем заражениям, включая невыявленные. Считайте это допущением о тяжести, а не наблюдением.","Esta cifra es una letalidad por caso detectado, pero el modelo la aplica a todas las infecciones, incluidas las no detectadas. Trátela como una gravedad supuesta, no observada.");
+            hud.appendChild(cn); }
           /* ⚠ LATENT, NOT INCUBATION. Incubation is infection→symptoms; this is infection→infectious,
              which is the one SEIR needs, and for influenza and COVID-19 it is the SHORTER of the two. */
           mk(window.IntMapLang.t(HOST.lang,"Latent (d)","感染力を持つまで(日)","Latenz (T)","Латентный период (дн.)","Latencia (d)"),cfg.latentDays,0,21,1,v=>''+v,v=>cfg.latentDays=v);
           mk(window.IntMapLang.t(HOST.lang,"Infectious (d)","感染期(日)","Ansteckend (T)","Заразность (дн.)","Contagiosidad (d)"),cfg.infectiousDays,1,21,1,v=>''+v,v=>cfg.infectiousDays=v);
-          mk(window.IntMapLang.t(HOST.lang,"Immunity (mo)","免疫(月)","Immunität (Mon.)","Иммунитет (мес.)","Inmunidad (meses)"),Math.min(120,cfg.naturalImmunityMonths),0,120,1,v=>v>=120?'∞':(v<=0?'—':(''+v)),v=>cfg.naturalImmunityMonths=(v>=120?600:v));
+          /* ⚠⚠⚠ (#R673) TWO CONTROLS, BECAUSE THERE ARE TWO STATEMENTS. The slider is a DURATION and
+             120 on it means 120 months; «lifelong» is a separate answer with a separate control.
+             One slider carrying both is what let Ebola's real 120-month immunity be drawn as «∞»
+             and then, on a nudge that changed nothing visible, become actually infinite. */
+          mk(window.IntMapLang.t(HOST.lang,"Immunity (mo)","免疫(月)","Immunität (Mon.)","Иммунитет (мес.)","Inmunidad (meses)"),cfg.naturalImmunityMonths,0,120,1,
+            v=>cfg.naturalImmunityLifelong?'∞':(v<=0?'—':(''+v)),v=>cfg.naturalImmunityMonths=v)
+            .disabled=!!cfg.naturalImmunityLifelong;
+          pills([{k:false,t:window.IntMapLang.t(HOST.lang,"Immunity wanes","免疫は減衰する","Immunität lässt nach","Иммунитет ослабевает","La inmunidad decae")},{k:true,t:window.IntMapLang.t(HOST.lang,"Lifelong immunity","終生免疫","Lebenslange Immunität","Пожизненный иммунитет","Inmunidad de por vida")}],
+            k=>k===!!cfg.naturalImmunityLifelong,k=>{ cfg.naturalImmunityLifelong=k; renderConfig(); });
           const adv=document.createElement('button'); adv.textContent=(advanced?'▾ ':'▸ ')+window.IntMapLang.t(HOST.lang,"Advanced","詳細設定","Erweitert","Дополнительно","Avanzado"); adv.style.cssText='border:none;background:none;color:var(--primary-color);font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 0;'; adv.onclick=()=>{ advanced=!advanced; renderConfig(); }; hud.appendChild(adv);
           if(advanced){
             mk(window.IntMapLang.t(HOST.lang,"Initial immunity","初期免疫","Anfangsimmunität","Начальный иммунитет","Inmunidad inicial"),Math.round(cfg.initialImmunity*100),0,95,1,v=>v+'%',v=>cfg.initialImmunity=v/100);
@@ -490,7 +589,13 @@ window.IntMapModules.playground=function(HOST){
             sd.appendChild(sl); sd.appendChild(si); hud.appendChild(sd);
             const src=document.createElement('div'); src.style.cssText='font-size:10px;color:var(--text-muted);margin-top:6px;line-height:1.4;'; src.textContent=(preset().sources||[]).join(' · '); hud.appendChild(src);
           }
-          const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:var(--primary-color);font-weight:600;'; hint.textContent=window.IntMapLang.t(HOST.lang,"▶ Tap a country on the map to start the outbreak there","▶ 地図で最初に流行が始まる国をタップ","▶ Tippen Sie auf der Karte ein Land an, in dem der Ausbruch beginnt","▶ Нажмите на карте страну, где начнётся вспышка","▶ Toque en el mapa el país donde comenzará el brote"); hud.appendChild(hint);
+          /* ⚠ (#R673) THE HINT IS DERIVED FROM `worldReady`, because until the world is settled there
+             is nothing to tap and a run started anyway would not be the run its seed names. */
+          const hint=document.createElement('div'); hint.style.cssText='margin-top:9px;font-size:12px;color:'+(worldReady?'var(--primary-color)':'var(--text-muted)')+';font-weight:600;';
+          hint.textContent=worldReady
+            ? window.IntMapLang.t(HOST.lang,"▶ Tap a country on the map to start the outbreak there","▶ 地図で最初に流行が始まる国をタップ","▶ Tippen Sie auf der Karte ein Land an, in dem der Ausbruch beginnt","▶ Нажмите на карте страну, где начнётся вспышка","▶ Toque en el mapa el país donde comenzará el brote")
+            : window.IntMapLang.t(HOST.lang,"Loading the border and airport tables — the outbreak starts once the world is fixed.","国境・空港のデータを読み込み中——世界が確定してから流行を開始します。","Grenz- und Flughafentabellen werden geladen — der Ausbruch beginnt, sobald die Welt feststeht.","Загружаются таблицы границ и аэропортов — вспышка начнётся, когда мир будет зафиксирован.","Cargando las tablas de fronteras y aeropuertos: el brote comienza cuando el mundo queda fijado.");
+          hud.appendChild(hint);
           hud.appendChild(disclaimer());
         }
         /* ⚠ SAY WHAT IT IS. CDC says it of its own measles simulator, and this one simplifies far
@@ -513,16 +618,33 @@ window.IntMapModules.playground=function(HOST){
            fetched when this panel opens and a reader who starts an outbreak before they land really
            does get a model with neither. ⚠ AND IT NAMES WHAT IT IS NOT: airport capacity is airline
            INFRASTRUCTURE, and this project has no routes, no frequencies and no passenger numbers. */
+        /* ⚠⚠ (#R673) IT ASKS `dataState`, NOT A REGEX OVER A SUMMARY STRING. `/airports/.test(from)`
+           could only ever answer one of two sentences, and `from` is a join of what was USED: a
+           world with borders but no airports reads «population+borders», which does not match
+           /airports/, so the screen said «the border AND airport tables did not load» while the
+           borders were in the matrix. The two tables settle separately (see the snapshot above) and
+           are now reported separately, including «loaded but only for some countries». */
         function mobilityNote(){ const d=document.createElement('div'); d.style.cssText='margin-top:4px;font-size:10px;color:var(--text-muted);line-height:1.4;';
-          const rich=!!(model&&/airports/.test(model.mobility.from));
-          d.textContent=rich
-            ? window.IntMapLang.t(HOST.lang,"International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.","国際伝播の重みは人口・陸上の国境・空港規模によるもので、路線や旅客数によるものではありません。","Die internationale Ausbreitung ist nach Bevölkerung, Landgrenzen und Flughafenkapazität gewichtet — nicht nach Flugrouten oder Passagierzahlen.","Международное распространение взвешено по населению, сухопутным границам и мощности аэропортов — не по авиамаршрутам и не по пассажиропотоку.","La propagación internacional se pondera por población, fronteras terrestres y capacidad aeroportuaria, no por rutas aéreas ni número de pasajeros.")
-            : window.IntMapLang.t(HOST.lang,"International spread is weighted by population and distance only — the border and airport tables did not load.","国際伝播の重みは人口と距離だけです（国境・空港のデータを読み込めませんでした）。","Die internationale Ausbreitung ist nur nach Bevölkerung und Entfernung gewichtet — die Grenz- und Flughafentabellen wurden nicht geladen.","Международное распространение взвешено только по населению и расстоянию — таблицы границ и аэропортов не загрузились.","La propagación internacional se pondera solo por población y distancia: no se cargaron las tablas de fronteras y aeropuertos.");
+          const rich=dataState.airports==='ok'||dataState.airports==='partial';
+          const bord=dataState.borders==='ok'||dataState.borders==='partial';
+          if(!rich||!bord){ d.textContent=window.IntMapLang.t(HOST.lang,"International spread is weighted by population and distance only — the border and airport tables did not load.","国際伝播の重みは人口と距離だけです（国境・空港のデータを読み込めませんでした）。","Die internationale Ausbreitung ist nur nach Bevölkerung und Entfernung gewichtet — die Grenz- und Flughafentabellen wurden nicht geladen.","Международное распространение взвешено только по населению и расстоянию — таблицы границ и аэропортов не загрузились.","La propagación internacional se pondera solo por población y distancia: no se cargaron las tablas de fronteras y aeropuertos.");
+            if(rich||bord) d.textContent=rich
+              ? window.IntMapLang.t(HOST.lang,"International spread is weighted by population, distance and airport capacity. The land-border table did not load.","国際伝播の重みは人口・距離・空港規模によるものです。陸上の国境データは読み込めませんでした。","Die internationale Ausbreitung ist nach Bevölkerung, Entfernung und Flughafenkapazität gewichtet. Die Landgrenzentabelle wurde nicht geladen.","Международное распространение взвешено по населению, расстоянию и мощности аэропортов. Таблица сухопутных границ не загрузилась.","La propagación internacional se pondera por población, distancia y capacidad aeroportuaria. No se cargó la tabla de fronteras terrestres.")
+              : window.IntMapLang.t(HOST.lang,"International spread is weighted by population, distance and land borders. The airport table did not load.","国際伝播の重みは人口・距離・陸上の国境によるものです。空港データは読み込めませんでした。","Die internationale Ausbreitung ist nach Bevölkerung, Entfernung und Landgrenzen gewichtet. Die Flughafentabelle wurde nicht geladen.","Международное распространение взвешено по населению, расстоянию и сухопутным границам. Таблица аэропортов не загрузилась.","La propagación internacional se pondera por población, distancia y fronteras terrestres. No se cargó la tabla de aeropuertos.");
+            return d; }
+          d.textContent=window.IntMapLang.t(HOST.lang,"International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.","国際伝播の重みは人口・陸上の国境・空港規模によるもので、路線や旅客数によるものではありません。","Die internationale Ausbreitung ist nach Bevölkerung, Landgrenzen und Flughafenkapazität gewichtet — nicht nach Flugrouten oder Passagierzahlen.","Международное распространение взвешено по населению, сухопутным границам и мощности аэропортов — не по авиамаршрутам и не по пассажиропотоку.","La propagación internacional se pondera por población, fronteras terrestres y capacidad aeroportuaria, no por rutas aéreas ni número de pasajeros.");
           return d; }
-        function onPick(e){ if(!picking) return; let hit=null; for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } }
+        /* ⚠ (#R673) `worldReady` IS A PRECONDITION OF THE RUN, NOT A SPINNER. Until both tables have
+           settled there is no answer to «which world is this», and a run started without one cannot
+           be reproduced from its seed. */
+        function onPick(e){ if(!picking||!worldReady) return; let hit=null; for(let i=0;i<N;i++){ if(pig(e.lngLat.lng,e.lngLat.lat,feats[i].geometry)){ hit=i; break; } }
           if(hit==null) return; picking=false;
           model=createPandemicModel({countries:world,preset:preset(),params:cfg,seed:runSeed});
-          model.seed(hit,cfg.initialCases); day=model.day; buildDots(); renderRun(false); start();
+          /* ⚠ (#R673) `start()` BEFORE `renderRun()`, BECAUSE THE BUTTON'S CAPTION IS DERIVED FROM
+             `running` AT DRAW TIME. It was drawn first and never redrawn, so a run that was already
+             playing offered the reader a 「▶ 再開」 button — the control and the state disagreed from
+             the first frame. Order is the whole of the defect: `setPlay()` already asks `running`. */
+          model.seed(hit,cfg.initialCases); day=model.day; buildDots(); start(); renderRun(false);
           news(jp()?('最初の集団感染が'+nm[hit]+'で確認されました（'+grp(cfg.initialCases)+'人）。'):('First cluster confirmed in '+nm[hit]+' ('+grp(cfg.initialCases)+' cases).'),'alert');
         }
         GE().events.on('click',onPick);

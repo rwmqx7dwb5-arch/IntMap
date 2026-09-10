@@ -175,18 +175,40 @@ test('R666 ⑦: what arrives in an empty country is 100% of what arrived', () =>
   /* MEASURED on the arithmetic of the model this replaces: `inject()` added the eight arrivals to E
      and THEN asked `mixShare` to weigh them against E+I, which already contained them, so
      w = 8/(8+8+1) = 0.471 — the country came out 52.9% a strain not one case of which had reached
-     it. Measured here through `seed()`, which is the same `inject()` an importation calls. */
+     it. Measured here through `seed()`, which is the same `inject()` an importation calls.
+
+     ⚠⚠⚠ (#R673) THIS TEST WAS TRUE BY CONSTRUCTION AND MEASURED NOTHING. `seed(i, cases)` passed a
+     hard-coded `null` for `fromShare`, and `inject` runs `if (fromShare) mixShare(…)` — so the one
+     test that exists to hold `mixShare` to the fix that named it NEVER CALLED IT. It set a share by
+     hand, seeded, and asserted the share was unchanged, which is what happens when nothing touches
+     it: restoring the #R666 defect underneath left this green. `fromShare` is now part of the
+     public signature and is passed here, so the assertion is about the arithmetic again. */
   const m = createPandemicModel({
     countries: [{ name: 'A', pop: 1e7, dev: 0.6, lat: 0, lng: 0 }, { name: 'B', pop: 1e7, dev: 0.6, lat: 5, lng: 5 }],
     preset: PANDEMIC_PRESETS.covid, params: { ...CLOSED }, seed: 1,
   });
+  /* ⚠ (#R673) A SECOND VARIANT HAS TO EXIST FOR THIS TO BE A QUESTION AT ALL. `mixShare` walks
+     `variants.length`, which is 1 on a fresh model, so an assertion about `share[1]` on a
+     two-element array nobody reads past index 0 is answered by `normalise` alone — the earlier
+     version of this test set `[0.25, 0.75]` and read back 0.75 for that reason and no other. */
+  m.variantList.push({ r0Mult: 1, ifrMult: 1, escape: 0 });
   const a = m.countries[0];
-  a.share = [0.25, 0.75];          /* a second strain exists and A is mostly running it */
+  a.share = [1, 0];                /* A is running the ancestral strain and nothing else */
   const before = a.E.reduce((x, y) => x + y, 0) + a.I.reduce((x, y) => x + y, 0);
   assert.equal(before, 0, 'A must be empty for this to be the case being measured');
-  m.seed(0, 8);
-  assert.ok(Math.abs(a.share[1] - 0.75) < 1e-9,
+  /* 8 cases of a SECOND strain arrive from somewhere that is 100% running it. */
+  m.seed(0, 8, [0, 1]);
+  assert.ok(Math.abs(a.share[1] - 1) < 1e-9,
     'an arrival into an empty country must not be diluted by cases that are not there, got ' + a.share[1]);
+
+  /* …and the same importation into a country that is NOT empty must be weighed against what is
+     there, so that this test cannot be satisfied by a `mixShare` that ignores its arguments. */
+  const b = m.countries[1];
+  b.share = [1, 0];
+  m.seed(1, 100, null);            /* 100 ancestral cases are already here */
+  m.seed(1, 100, [0, 1]);          /* and 100 of the second strain arrive */
+  assert.ok(b.share[1] > 0.3 && b.share[1] < 0.7,
+    'an equal-sized arrival into an occupied country is a mixture, got ' + b.share[1]);
 });
 
 /* ── ⑧ the destination of an importation is a distribution, not a coin flip ────────────────── */
