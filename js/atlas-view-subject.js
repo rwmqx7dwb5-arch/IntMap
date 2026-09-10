@@ -350,6 +350,9 @@ export function makeAtlasViewSubject(CTX) {
       let keys = null;
       try { keys = window.IntMapOsmNameKeys ? window.IntMapOsmNameKeys(CTX.lang ? CTX.lang() : 'en') : null; } catch (_) {}
       if (!keys || !keys.length) keys = ['name:en', 'name:latin', 'name_int'];
+      /* ⚠ (#R691) …and the refusals too, or a chip names a place 「良癖」 while the label under it
+         says Yüreğir. Same door, same answer. */
+      if (window.IntMapOsmName) return String(window.IntMapOsmName(p, keys) || p.name || '');
       for (const k of keys) if (p[k]) return String(p[k]);
       return p.name ? String(p.name) : '';
     };
