@@ -8,7 +8,7 @@ work branch → Pull Request → CI (green) → staging check → merge to main 
                                                                                      rollback
 ```
 
-**Current state (as of R144): production publishes via the CI-gated GitHub Actions workflow**
+**Current state: production publishes via the CI-gated GitHub Actions workflow**
 (`.github/workflows/deploy.yml`). Pages **Source = “GitHub Actions”** and the repo variable
 **`ENABLE_PAGES_DEPLOY = true`** are both set, so every push to `main` runs build → static
 checks → hermetic browser tests → **build the site with Vite and publish `dist/`** (#R175; it
@@ -27,8 +27,8 @@ against the live URL. Confirm a deploy landed with
    green.
 4. **Staging check** (see below).
 5. **Merge to `main`** once CI is green and you have eyeballed staging.
-6. **Deploy** runs (either the existing branch publish, or the gated `deploy.yml` if
-   enabled) and the **post-deploy smoke** verifies the live site.
+6. **Deploy** runs — `deploy.yml` on every push to `main` — and the **post-deploy smoke**
+   verifies the live site.
 
 ## Staging check
 
@@ -86,13 +86,14 @@ never be mistaken for production. Production never shows it.
   production that the tests did not see.
 - **If a deploy ever needs to be reasoned about offline:** `npm ci && npm run build` from the
   deployed commit reproduces `dist/` byte-for-byte apart from the content hashes.
-- **Fallback:** if `ENABLE_PAGES_DEPLOY` is unset, `deploy.yml` skips green and Pages reverts to
-  “Deploy from a branch”. The steps below are how the gated path was turned on (kept for reference).
+- **Fallback (not the current state):** if `ENABLE_PAGES_DEPLOY` is ever unset, `deploy.yml` skips
+  green and Pages reverts to “Deploy from a branch”. That is the stop switch, not how it publishes today.
 
-### Enabling the gated deploy (already done — kept for reference)
+### How the gated deploy was turned on (done 2026-07-18 — kept for reference)
 
-This is the one settings change that upgrades you from “auto-publish on push” to
-“publish only after tests pass”. Do it once:
+> **Nothing to do here: both settings are already in place, and the gated path above is what runs.**
+> This records the one settings change that upgraded the repo from “auto-publish on push” to
+> “publish only after tests pass”:
 
 1. **Settings → Pages → Build and deployment → Source → “GitHub Actions”.**
 2. **Settings → Secrets and variables → Actions → Variables → New repository variable:**
@@ -206,7 +207,7 @@ only ever be an existing commit — so rollback cannot publish arbitrary/injecte
 |------|-------|------|
 | Turn on CI-gated deploy | Settings → Pages | Source = GitHub Actions |
 | Turn on CI-gated deploy | Settings → Secrets and variables → Actions → Variables | `ENABLE_PAGES_DEPLOY=true` |
-| Require CI before merge | Settings → Branches → Branch protection | see [`docs/RELEASE.md` GitHub settings](#branch-protection-optional) |
+| Require CI before merge | Settings → Branches → Branch protection | see [`docs/RELEASE.md` GitHub settings](#branch-protection-optional-but-recommended) |
 | Roll back | Actions → Rollback | Run workflow, enter tag/SHA |
 
 ### Branch protection (optional but recommended)

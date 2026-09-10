@@ -23,8 +23,11 @@ Claude Code 側の対応物は `CLAUDE.md`、両者の対応表は `docs/AGENT-S
 ## C-1. セッションの始め方
 
 - **セッション名は自動生成に任せる。** `/rename` を使わない。
-- `AGENTS.md` §1 の事前確認のうち、**`.agents/rules/` の 2 本は自分で開く**
-  （Claude Code は自動で読み込むが、Codex は読まない）。
+- `AGENTS.md` §1 の事前確認のうち、**`.agents/rules/` は自分で開く**
+  （Claude Code は自動で読み込むが、Codex は読まない）。実体は
+  `execution-strategy.md`・`no-ad-hoc-hardcoding.md`・`gpt-handoff.md`。
+  ⚠ **数ではなくディレクトリで確かめる**——足されたものが黙って落ちないように、
+  `.agents/rules/` にあるファイルは全部読む。
 - 状態は `node scripts/worktree.mjs status` が 1 回で出す。手で数え直さない。
 
 ## C-2. 不明点

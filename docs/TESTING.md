@@ -700,6 +700,18 @@ Registered in `scripts/test-parallel.mjs` (so `npm test` runs it) **and** in `.g
 fifteen rounds; `check:docs`' `gate-lists` and `ci-gates` rules see the two lists, not the gap
 between them and the runner, so registering it is a step of adding it, not a follow-up.
 
+⚠ **(#R628) That gap is now watched — `gate-callers`.** Its universe is the one place a gate cannot
+hide from, the `check:*` scripts `package.json` itself declares, and it requires each of them to be
+reached by `.github/workflows/ci.yml` or by `npm test`. It found exactly one: of the eighteen
+declared gates, `check:bordercoast` (below) was named in both instruction tables and run by nothing
+— `npm test` reached only the one-in-eight sample inside `tests/r531-checks.test.mjs`, while
+`scripts/build-border-coast.mjs` had been telling itself in its own source that CI ran the whole
+thing. #R628 gave CI the step that makes that sentence true: the exhaustive form below, every ring
+of the four bundles re-derived, offline, in half a minute. ⚠ **The rule drops ci.yml's comment
+lines before it looks**, and
+that is not tidiness — the first version read them, so deleting the step still passed, because the
+comment explaining the absence contained the very call it was explaining.
+
 ⚠ **This gate re-derives nothing, and that is deliberate.** `data/hist-borders.js` is built from
 about 400 MB of OpenHistoricalMap Overpass responses that CI cannot hold, so unlike
 `check:wars` / `check:histcities` it cannot rebuild the file and compare bytes. What it proves is
@@ -721,9 +733,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は同梱の4つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2`）と
-`data/coastline.json.gz` だけなので、**全 25,506 リングを判定し直して `data/border-coast.js` と
-バイト単位で突き合わせる**（約 90 秒）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 → 25,506 リングになったので、網羅版は CI の
+`data/coastline.json.gz` だけなので、**全 33,600 リングを判定し直して `data/border-coast.js` と
+バイト単位で突き合わせる**（実測 33〜53 秒）。⚠ **`npm test` の中の写しは `--sample 8`**
+（#R564 で印す対象が一桁増えて **33,600 リング**になり——束が育つたびに動く——網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -817,7 +829,7 @@ reader here for this list; adding a rule means adding a row.
 |---|---|
 | `scan` | the sweep did not reach the tree, or missed a document it is required to read |
 | `app-size` | `Architecture.md` §1's file counts disagree with `index.html` / `js/` / `src/` / `css/` |
-| `edge-functions` | `supabase/functions/` and `supabase/config.toml` disagree, or a roster document drops a name |
+| `edge-functions` | `supabase/functions/` and `supabase/config.toml` disagree, a roster document drops a name, or the standing instructions can no longer reach a document that holds the whole roster |
 | `edge-count` | any document states an inventory size that is not the real one |
 | `edge-roster` | a document writes the roster out and omits a function, or introduces it with a wrong count |
 | `edge-shared` | a document enumerates `_shared/` and the list is not what is in the directory |
@@ -826,7 +838,7 @@ reader here for this list; adding a rule means adding a row.
 | `deploy` | a document still describes the gated Pages deploy as switched off, or `docs/RELEASE.md` stops saying it is on |
 | `build-info` | the published build stamp is spelled with a leading hyphen |
 | `usb` | a document other than `AGENTS.md` states the backup frequency |
-| `languages` | `js/locales/`, `_langs.js`, `Architecture.md` and the README disagree about the languages |
+| `languages` | `js/locales/`, `_langs.js`, `Architecture.md` and the README disagree about the languages, or a document writes the full roster of nine in codes the app only accepts as aliases |
 | `alerts` | the warning-feed counts in `docs/MAP-LAYERS.md` / README disagree with `js/world-packs.js` |
 | `app-shape` | a document still describes the app as one hand-written file with no build step |
 | `anon-key` | a document puts the browser-side Supabase key in the entry page instead of `src/vendor.js` |
@@ -853,11 +865,45 @@ reader here for this list; adding a rule means adding a row.
 | `deep-tier-size` | a stated size of a test tier — in a document, in `package.json` or in `scripts/worktree.mjs` — is not what `scripts/tiers.mjs` derives |
 | `histb-count` | a line naming the 1850–1885 border record states a count of records or of transition dates that `data/hist-borders.js` does not hold |
 | `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
+| `section-refs` | a document names another document and a `§` number that document has no section for |
+| `gate-callers` | `package.json` declares a `check:*` script that neither `ci.yml` nor `npm test` ever runs |
+| `bordercoast-rings` | a document states how many rings the border/coast record marks, and `data/border-coast.js` marks a different number (three documents said 25,506 while the bundles held 33,600 — the number came from #R564 own completion line and none of the three copies moved) |
 
 The last six of the #R403 batch are described below, after the Edge Function rules they grew out of.
 The final three arrived in #R500; `tests/r500-checks.test.mjs` is what proves they actually go red,
 and — as with `deep-tier-when` (#R407) — that test file is the only path by which they reach CI,
-because the static job does not run `check:docs`.
+because the static job does not run `check:docs`. The last two rows arrived in #R628 and
+`tests/r628-checks.test.mjs` (six tests) is theirs, for the same reason and by the same method —
+mutation under the tree lock, with `--rule` so a mutation costs one rule's runtime rather than the
+whole file's.
+
+⚠ **`section-refs` resolves an ADDRESS; it does not read the sentence around it.** It fires only
+where a document *names* the document it is addressing — in backticks or as a Markdown link — and
+what it caught on its first run were addresses a session follows every round. The standing
+instructions sent the end-of-round report to a subsection of §11 that does not exist, and sent the
+USB mirror to another one; that chapter stops at 11.4. `docs/FILES.md` pointed twice at a section of
+the Claude-side file that has stopped at §A-5 since #R503 moved the standing instructions out of it.
+The aviation-source and photo-geolocation documents each carried one more. A dead section number is
+not a typo — it reads as a promise that the rule is written down somewhere, and the reader who goes
+looking finds a document that never mentions it.
+
+⚠ **What it deliberately does not resolve, stated rather than implied**: a bare `§N` with no
+document beside it (a self-reference, whose meaning depends on the sentence it is in) and a section
+of an instruction sheet that is not in this repository. Two forms need more than a table of
+headings: `Architecture.md`, `docs/FILES.md` and `docs/MAP-LAYERS.md` share **one** section-number
+space — `CONSTITUTION.md` §6 declares it — so the three resolve as a single pool; and 「§3 の 5 番」
+addresses an **item** of a numbered list rather than a heading, which is accepted only when the list
+under that section really has a fifth item. That is the half that rots: the round that inserts an
+item renumbers every reference to the ones below it.
+
+⚠ **`languages` compares the SPELLINGS now, not only how many there are.** It used to count, and a
+roster can be the right length with every name in it spelled the way the code does *not* key on:
+this app's Japanese is `jp` and its traditional Chinese is `zh`, with the IETF spellings accepted by
+`js/lang-registry.js` as aliases only. #R588 measured what that costs — an election pack written
+against the alias set shipped 113 elections whose Japanese and Chinese notes reached nobody, and
+every instrument stayed green because the fallback is a real string — and a session copies the
+roster the document in front of it gives. Only a **complete** nine-name roster is read as a roster,
+so a document naming an alias in order to explain the alias is untouched.
 
 ⚠ **Three rows were missing from this table before #R500** (`deep-tier-when`, `hist-cities`,
 `volcano-eruptions`), even though the sentence above says adding a rule means adding a row. Nothing
@@ -874,7 +920,15 @@ repository; `scripts/doc-facts.mjs`'s own header assembles its needles from part
 
 Four rules hold the same fact from different sides. `edge-functions` compares
 `supabase/functions/` with the `[functions.*]` declarations in `supabase/config.toml`, and requires
-`AGENTS.md` and `Architecture.md` to name every one of them in backticks. `edge-count` checks every
+`Architecture.md` to name every one of them in backticks — and the standing instructions to **reach**
+a document that does, whether by naming the roster themselves or by sending the reader to the file
+that holds it. ⚠ **That half used to demand the roster in the instructions themselves, and it pulled
+against the other gate on that file**: `check:agents`' `doc-size` caps `AGENTS.md` at 32,768 bytes
+because Codex drops the overflow silently, and a deploy inventory is 「今どうなっているか」 rather
+than 「どう働くか」. So #R628 moved the 正本 to [`AGENT-SETUP.md`](AGENT-SETUP.md) §9, where the
+deploy command it belongs to already lived, and asked this rule the question that actually matters
+to a session about to deploy — can the instruction it reads lead it to the complete list?
+`edge-count` checks every
 **stated size** of that inventory. `edge-roster` checks every document that **writes the list out**.
 `edge-shared` checks every **enumeration of `_shared/`**, which is a library directory rather than a
 function and so is invisible to the other three.
@@ -888,6 +942,18 @@ rule of this shape:
   looked at at all. The sweep now visits every current-state document and the only filename left in
   the source is `Architecture.md`, named to demand **more**: §6.2 is the 正本 for this number, so if
   it stops stating one, that is a failure rather than a quiet skip.
+  ⚠ **(#R628) …and «every current-state document» was itself hand-drawn until this round.** The
+  universe was two non-recursive `readdirSync` calls — the repository root and `docs/` — which is
+  not the same thing as *the documents*: `fonts/README.md` carries a permanent instruction about
+  every glyph the app draws **and** the copyright and licence notice the OFL requires to travel with
+  the bundled faces, and it sat outside every rule in this file, not excluded but never looked at,
+  because it is one directory over. So did `.github/pull_request_template.md`. The universe is now
+  **discovered** — git's own list of tracked `*.md` — and each exclusion carries the reason it is
+  one (the `DEV-NOTES` history, which legitimately quotes what was true once; `.agents/`, swept
+  separately as the instruction documents; the `.claude/` and `.codex/` renderings, which
+  `check:agents` holds to their source; and the untracked machine-local credentials file). ⚠ An
+  empty answer from `git` falls back to the old two directories, because a sweep that reads nothing
+  passes everything.
 - **A needle that never fires looks exactly like a passing check.** The old pattern required a
   literal asterisk between the noun and the digits. The standing instructions bold the whole phrase
   — asterisks *before* the noun — so their number was never once compared with the tree. It stayed

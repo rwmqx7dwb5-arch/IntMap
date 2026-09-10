@@ -1,6 +1,6 @@
 ---
 name: intmap-i18n
-description: IntMap の 9 言語 (en/ja/de/ru/es/zh-Hant/zh-Hans/fr/ko) 翻訳掃引。利用者に見える文字列を追加・変更したあとの全言語反映、npm run check:i18n の穴埋め、翻訳漏れの調査に使う。表も面も多く出力が長いので必ずこれに渡す。
+description: IntMap の 9 言語 (de/en/es/fr/jp/ko/ru/zh/zh-hans) 翻訳掃引。利用者に見える文字列を追加・変更したあとの全言語反映、npm run check:i18n の穴埋め、翻訳漏れの調査に使う。表も面も多く出力が長いので必ずこれに渡す。
 tools: Read, Edit, Write, Grep, Glob, Bash
 ---
 
@@ -9,8 +9,14 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 
 ## 対象
 
-**en / ja / de / ru / es / zh-Hant / zh-Hans / fr / ko** ——利用者に表示されるものは全部。
+**de / en / es / fr / jp / ko / ru / zh / zh-hans** ——利用者に表示されるものは全部。
 UI・文言・応答・凡例・ツールチップ・`<title>`・`<meta>`・エラー文・読み物ページ。
+
+⚠ **これは実装のコードそのもの**（正本 `js/locales/_langs.js` の `IntMapLangCodes`）。
+**日本語は `jp`、繁体字は `zh`** である。`ja` / `zh-Hant` は `js/lang-registry.js` が別名として
+受理するので**どの計器も落ちない**が、**訳のキーにその綴りを使うとその訳は誰にも届かない**
+（#R588 実測: 選挙パックが `ja` / `zh-Hant` と書いていたため、113 の選挙の日本語・中国語の注記が
+1 件も表示されていなかった）。**訳を書く側では常にこの 9 綴りを使う。**
 
 ## 唯一のゲート
 

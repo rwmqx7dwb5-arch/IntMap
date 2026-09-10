@@ -1,15 +1,21 @@
 # CI-gated production deploy to GitHub Pages.
 #
-# DORMANT BY DEFAULT so it cannot disturb the current "Deploy from branch" setup.
-# It only publishes once BOTH are true (see docs/RELEASE.md):
+# ACTIVE: this workflow IS how production is published. Both switches below were turned on
+# 2026-07-18, so every push to main publishes through the jobs here; the older
+# "Deploy from a branch" default is no longer in use.
+#
+# Publishing still requires BOTH of these to stay true (see docs/RELEASE.md):
 #   1. Repo → Settings → Pages → Source = "GitHub Actions"
 #   2. Repo → Settings → Secrets and variables → Actions → Variables:
 #        ENABLE_PAGES_DEPLOY = true
-# Until then every job below is skipped (green, no-op), and Pages keeps deploying from the
-# branch exactly as it does today.
+# Unsetting the variable is the stop switch: every job below then skips (green, no-op) and
+# Pages falls back to the branch publish.
 #
-# When enabled, the flow is: build → static checks → hermetic browser tests → publish the
-# EXACT committed tree → post-deploy smoke test against the live URL.
+# The flow is: build → static checks → hermetic browser tests → publish the BUILT TREE
+# (`dist/`, from `npm run build`) → post-deploy smoke test against the live URL.
+# ⚠ (#R628) This line said 「publish the EXACT committed tree」, which stopped being true at #R175:
+# what Pages serves is the Vite build, and the committed index.html ends in a module src that is a
+# 404 on Pages. `rollback.yml` says so in its own header; this one had not caught up.
 name: Deploy (production, Pages)
 
 on:

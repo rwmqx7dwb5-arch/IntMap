@@ -136,7 +136,7 @@ supabase functions deploy <name> --project-ref vpekfwdpurzejrrmacac --use-api
 ```
 
 ⚠ **`--use-api` を省くと無言でハングする**（既定は Docker を使うが、このマシンではデーモンが
-動いていない。理由と実測は `AGENTS.md` §5.1）。進んでいるかは経過時間ではなく
+動いていない。理由と実測は [`docs/AGENT-SETUP.md`](../../../docs/AGENT-SETUP.md) §9）。進んでいるかは経過時間ではなく
 `supabase functions list` の `version` で見る。
 
 ⚠ **本数と名前をここに書き写さない。** 正本は [`AGENTS.md`](../../../AGENTS.md) §5.1、

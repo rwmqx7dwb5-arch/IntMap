@@ -88,7 +88,7 @@ GET https://api.airplanes.live/v2/point/50.040/8.570/250
 | 候補 | 理由 |
 |---|---|
 | ADS-B Exchange Enterprise | 商用契約が必要（RapidAPI の基本枠は $10/月・10,000 リクエスト）。全球ストリームは個別見積り |
-| FlightAware Firehose | 月額は個別見積り。**常時接続ストリーム**なので Edge Function では受けられず、常時稼働コンテナが要る（`AGENTS.md` §5.2） |
+| FlightAware Firehose | 月額は個別見積り。**常時接続ストリーム**なので Edge Function では受けられず、常時稼働コンテナが要る（`AGENTS.md` §5.1） |
 | FlightAware AeroAPI | $0.002/クエリ〜。便情報には有力だが、全球位置の主経路には量課金が合わない |
 | Flightradar24 API | 商用契約が必要 |
 | adsb.lol `re-api` | **network 全体を無加工で**返すが、**feeder のみ**・IP 許可制。IntMap は feeder ではない |

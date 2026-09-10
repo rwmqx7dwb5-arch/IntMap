@@ -154,8 +154,8 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
   await withTreeLock(async () => {
     /* 名前を1つ落とす */
     const drop = anchorRe('`routing-relay` / `sv-cov`');
-    assert.ok(drop.test(readLF(join(ROOT, 'AGENTS.md'))), 'AGENTS.md §5.1 no longer writes the roster in the shape this test edits');
-    await breaking('AGENTS.md', (s) => s.replace(drop, () => '`sv-cov`'), (r) => {
+    assert.ok(drop.test(readLF(join(ROOT, 'docs/AGENT-SETUP.md'))), 'docs/AGENT-SETUP.md §9 no longer writes the roster in the shape this test edits');
+    await breaking('docs/AGENT-SETUP.md', (s) => s.replace(drop, () => '`sv-cov`'), (r) => {
       assert.equal(r.code, 1, 'check:docs stayed green with a function missing from the roster');
       assert.ok(r.out.includes('edge-roster') && r.out.includes('routing-relay'),
         'the roster rule did not name the dropped function:\n' + r.out);
@@ -163,8 +163,8 @@ test('R403 ③ a roster that is missing a name, and a count that is wrong, both 
 
     /* 数だけを間違える（名前は12本のまま） */
     const num = anchorRe('**Edge Functions は 17 本**');
-    assert.ok(num.test(readLF(join(ROOT, 'AGENTS.md'))), 'AGENTS.md §5.1 no longer states the count next to the roster');
-    await breaking('AGENTS.md', (s) => s.replace(num, () => '**Edge Functions は 9 本**'), (r) => {
+    assert.ok(num.test(readLF(join(ROOT, 'docs/AGENT-SETUP.md'))), 'docs/AGENT-SETUP.md §9 no longer states the count next to the roster');
+    await breaking('docs/AGENT-SETUP.md', (s) => s.replace(num, () => '**Edge Functions は 9 本**'), (r) => {
       assert.equal(r.code, 1, 'check:docs stayed green with the count wrong beside a correct roster');
       assert.ok(r.out.includes('edge-count') || r.out.includes('edge-roster'),
         'neither count rule fired on a wrong number:\n' + r.out);

@@ -69,8 +69,16 @@ test('② the sweep reaches the whole tree of current-state documents', () => {
   assert.ok(m, 'the gate no longer reports how many documents it scanned, split by kind:\n' + out);
   const [total, prose, instruction] = m.slice(1).map(Number);
 
-  const expectedProse = readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md').length
-    + readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).length;
+  /* ⚠ (#R628) COUNTED THE WAY THE GATE DISCOVERS THEM, NOT THE WAY IT USED TO BE WRITTEN. This
+     used to add up two readdirSync calls — the root and `docs/` — which is exactly the hand-drawn
+     universe #R628 replaced: `fonts/README.md` carries a standing instruction and the OFL notice
+     and was in neither. A test that re-states the old shape would hold the gate to the blind spot
+     it was widened out of, so it asks git for the same two halves (tracked, and present-but-not-
+     yet-tracked — the document being written this round) and applies the same written exclusions. */
+  const EXCL = [/^DEV-NOTES/, /^\.agents\//, /^\.(claude|codex)\//, /^CLAUDE\.local\.md$/];
+  const gitMd = (...a) => execFileSync('git', ['ls-files', '-z', ...a, '*.md'], { cwd: ROOT, encoding: 'utf8' }).split('\0').filter(Boolean);
+  const expectedProse = [...new Set([...gitMd(), ...gitMd('--others', '--exclude-standard')])]
+    .filter((f) => !EXCL.some((re) => re.test(f)) && existsSync(join(ROOT, f))).length;
   assert.equal(prose, expectedProse, 'the gate did not read every prose document it should');
 
   /* ⚠ COUNTED WITH THE SAME RULE THE GATE USES — stop at any directory holding a `.git` entry.
