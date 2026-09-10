@@ -163,6 +163,38 @@ window.IntMapHistScale = (function () {
      return era(a).n + ' BCE';
   }
 
+  /* ══ ⓪d-bis A WHOLE DATE, FOR EVERY YEAR THE CLOCK CAN REACH ═══════════════
+     ⚠⚠⚠ `year:'numeric'` DROPS THE ERA SILENTLY, so a date before year 1 formats
+     to the SAME STRING as one after it. MEASURED in production 2026-09-11 with
+     the border stepper standing on 3000 BC:
+         ja-JP  {year:'numeric'}             → 「3000年1月1日」   ← says AD 3000
+         ja-JP  {era:'short',year:'numeric'} → 「紀元前3000年1月1日」
+         en-US  {year:'numeric'}             → «Jan 1, 3000»
+         en-US  {era:'short',year:'numeric'} → «Jan 1, 3000 BC»
+     `yearText` above already asks the platform for the era word when it prints a
+     bare year; this is the same question for a whole date, and it is HERE for the
+     reason that one is: the caller that needed it (js/news-timeline.js's stepper
+     label) keeps its formatter inside a DOM closure, where nothing could measure
+     what it does (#R575). One owner, evaluated by the gate.
+     ⚠ THE ERA IS ASKED FOR ONLY WHEN THERE IS ONE TO SAY. Requesting it always
+     prints 「西暦1990年10月2日」 and «Oct 2, 1990 AD» on every ordinary date —
+     noise the reader did not have. WHERE the word goes is CLDR's answer.
+     ⚠ AND `Date.UTC` IS NOT USED (it maps a year under 100 to 1900+y — #R602). */
+  function dateText(y, mo, d, tag) {
+    const a = Math.round(+y) || 0;
+    const t = utcAt(a, (mo || 1) - 1, d == null ? 1 : d, 12);
+    const opt = { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' };
+    if (a < 1) opt.era = 'short';
+    try {
+      const out = new Intl.DateTimeFormat(String(tag || 'en'), opt).format(t);
+      if (out) return out;
+    } catch (_) {}
+    /* a runtime whose ICU carries no era data still must not print a date that
+       reads as the other era — the same last resort `yearText` takes. */
+    const p = (n) => String(n).padStart(2, '0');
+    return (a < 1 ? (era(a).n + ' BCE') : String(a)) + '-' + p(mo || 1) + '-' + p(d == null ? 1 : d);
+  }
+
   /* ══ ⓪e WHERE TO PUT THE MARKS ON A RAIL THAT SPANS 125,000 YEARS ══════════
      The Chronos ruler carried a WRITTEN list of years — [1, 500, 1000, 1250, …] —
      clipped to the clock's floor. #R604 wrote it for a floor of 1 and it was fine
@@ -409,6 +441,6 @@ window.IntMapHistScale = (function () {
     return POS;
   }
 
-  return { FLOOR, utcAt, ymd, era, fromEra, yearText, niceTicks, decYear, ohmFilter, inForce,
+  return { FLOOR, utcAt, ymd, era, fromEra, yearText, dateText, niceTicks, decYear, ohmFilter, inForce,
            rail: { POS, breaks, toYear, toPos, DEEP_TOP } };
 })();
