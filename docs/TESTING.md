@@ -740,6 +740,21 @@ The wiring between the two products, and the four steps that stayed manual, are 
 だけで、再取得にはネットワークが要る。そして「形は正しく、場所が違う」国境はどちらにも見えない
 （#R146 の内独国境）。
 
+⚠ **この門は 2 本走る**（#R686）。2 本目は `node scripts/build-histeras-names.mjs --check` で、
+束が描く政体の 9 言語名 `data/histeras-names.json` を**束そのもの**に照合する:
+
+- `src` が **Wikidata** と **CC0** を名乗り、`langs` が `js/locales/_langs.js` を**評価して**得た 9 言語と一致すること
+- **鍵がすべて `data/hist-eras.js` が今も描く名前であること**（2 つのファイルが黙って離れない）
+- 英語を 1 つも運ばないこと（英語は上流のもの）、英語の attestation を主張しないこと
+- 訳語が英語と同一でないこと（同一の行は何も言っていない）・U+FFFD を含まないこと
+
+採否の**規則そのもの**は `tests/r686-histeras-names-checks.test.mjs` が**評価して**測る
+（`scripts/histeras/match.mjs` は純関数なので走らせられる。#R505）。10 件で、
+曖昧さ回避ページの拒否・**座標は形の中でなければならない**・**期間はその辺りのスナップショット
+間隔で測る**（実測の失敗＝1867 年創設の Cheyenne, Wyoming が 1492 年のシャイアン族に答えていた）・
+同点は決着させない・単独候補は地理的実体のときだけ・日付変更線・`zh` は繁体で Wikidata の裸の
+`zh` は簡体・括弧つきラベルは地図のラベルではない・**手書きの表と束の表が言語ごとに重ならない**。
+
 ## The 1850–1885 border record — `npm run check:histborders` (`scripts/build-hist-borders.mjs --check`, #R518)
 
 Registered in `scripts/test-parallel.mjs` (so `npm test` runs it) **and** in `.github/workflows/ci.yml`.

@@ -475,12 +475,38 @@ window.IntMapModules.timeBorders=function(HOST){
        convention, js/hist-scale.js `era`). The upstream file NAME is carried beside each one, so
        the fallback can still ask for it, and so no second table maps between them. */
     let _erD=null,_erP=null; const _erFC=new Map();
-    function erLoad(){ if(_erD) return Promise.resolve(_erD); if(_erP) return _erP;
+    /* ══ (#R686) THE DEEP PAST IN NINE LANGUAGES ═══════════════════════════════════════════════
+       data/hist-eras.js carries ONE name per feature, the upstream cartographer's English, so
+       every polity before 1850 was English in all nine languages — 「Empire of Alexander」 at
+       323 BC, 「Kalmar Union」 at 1500. data/histeras-names.json is the second lane: the
+       upstream's own string → the same polity's name in the other eight languages, each one
+       decided against Wikidata by agreement with THIS bundle's geometry and clock
+       (scripts/histeras/match.mjs) and shipped only where a source actually wrote it.
+       ⚠ IT RIDES ON THE FEATURE AS `_i18n`, which is the shape the 1850-1885 record has used
+       since #R518 — so `tagSame` and `resolveHist` already know what to do with it and this
+       round adds no second rule about which name wins. A name with no row simply has no `_i18n`,
+       and the English the upstream wrote stands, exactly as before.
+       ⚠ AND IT IS NOT A PRECONDITION. The table is small (tens of kB against 10.6 MB) but it is
+       still a second request, so a failure to fetch it must not cost the reader the map: the
+       promise resolves with the bundle either way and the names lane resolves to null. */
+    let _erN=null;
+    function erNames(){ if(_erN!==null) return Promise.resolve(_erN);
+      /* ⚠ THE try/catch IS NOT DECORATION. `fetch(...)` can throw SYNCHRONOUSLY — there is no
+         `fetch` at all in the node harnesses that evaluate this module (tests/r682-* runs it in a
+         vm) — and a synchronous throw here would reject `_erP`, which is the promise the whole
+         era tier awaits. The names lane failing must cost the reader nothing but the names. */
+      try{
+        return fetch('data/histeras-names.json').then(r=>r.ok?r.json():null)
+          .then(j=>{ _erN=(j&&j.names)||{}; return _erN; })
+          .catch(()=>{ _erN={}; return _erN; });
+      }catch(_){ _erN={}; return Promise.resolve(_erN); } }
+    function erLoad(){ if(_erD&&_erN!==null) return Promise.resolve(_erD); if(_erP) return _erP;
       _erP=new Promise(res=>{ if(window.__HISTERAS){ _erD=window.__HISTERAS; res(_erD); return; }
         const sc=document.createElement('script'); sc.src='data/hist-eras.js'; sc.async=true;
         sc.onload=()=>{ _erD=window.__HISTERAS||null; res(_erD); };
-        sc.onerror=()=>{ _erP=null; res(null); };
-        document.head.appendChild(sc); });
+        sc.onerror=()=>{ res(null); };
+        document.head.appendChild(sc); })
+        .then(d=>erNames().then(()=>{ if(!d) _erP=null; return d; }));   /* ⚠ the names never fail the bundle */
       return _erP; }
     /* the reach the record actually has, from the record — never a number typed here */
     function erYears(d){ return (d&&d.snaps)?d.snaps.map(s=>s.y):YEARS; }
@@ -495,8 +521,12 @@ window.IntMapModules.timeBorders=function(HOST){
       const feats=[];
       for(const ft of sn.feats){ const nm=(ft[0]&&ft[0].en)||'', at=ft[1]||{}, ps=poly(ft[2]);
         if(!ps.length) continue;
+        /* (#R686) the nine-language row for this name, when data/histeras-names.json has one. `en`
+           is the upstream's and is put back here, so `_i18n` is the same self-describing tuple the
+           1850-1885 features carry and every reader of it stays one reader. */
+        const row=(_erN&&_erN[nm])||null, i18=row?Object.assign({en:nm},row.n):null;
         feats.push({type:'Feature',
-          properties:Object.assign({NAME:nm},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{}),
+          properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{}),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
       for(const ids of (sn.blank||[])){ const ps=poly(ids); if(!ps.length) continue;
         feats.push({type:'Feature',properties:{NAME:''},
@@ -1736,6 +1766,7 @@ window.IntMapModules.timeBorders=function(HOST){
       const d=await csLoad(); if(!d) return null;
       return _kToDate(csEpoch(d,y,w.getMonth()+1,w.getDate())); }catch(_){ return null; } }
     async function changeDates(){ try{ return (await _allBounds()).map(_kToDate); }catch(_){ return []; } }
+
     /* ══ ⚠⚠⚠ (#R682) WHAT THIS LAYER IS DRAWING, SAID ON THE MAP AND NOT ONLY ON A SOURCE PAGE ══
        #R679 lowered the clock to 123000 BC and bundled the seventeen pre-common-era sheets, and its
        own comment in js/hist-scale.js already wrote down what was still missing: «the era layer says
@@ -1817,7 +1848,13 @@ window.IntMapModules.timeBorders=function(HOST){
       if(!lab) return; const n=note();
       if(n) lab.setAttribute('title',n); else lab.removeAttribute('title');
     }catch(_){} }
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest,
+    /* ⚠ (#R686) THE HAND-WRITTEN NAME TABLES ARE NOW MEASURABLE. `_eraLocName` consults four of
+       them in one order (IntMapHistStates.STATES 19, _VANISHED 8, _ERA_LOC 242, _COLONIZER 26)
+       and nothing outside this closure could ask it anything, so «which era names does the table
+       already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
+       here so tests/r686-histeras-names-checks.test.mjs can hold the bundled table and this one
+       apart: a name answered by both would be one judgement in two places (#R536). */
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName,
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:HB_MIN,max:CS_MAX}) };   /* (#R518) the range is now both records, floor to CShapes' last year */
   })();
 };
