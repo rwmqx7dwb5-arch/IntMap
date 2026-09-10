@@ -38,20 +38,48 @@ const start = doc.indexOf('### 3.1');
 if (start < 0) { console.error(DOC + ': the §3.1 heading is gone — this check needs rewriting'); process.exit(1); }
 const section = doc.slice(start);
 
-/* a listed module is a bare filename at the start of a line, at any indent — the
-   list nests (js/ then the file), and descriptions wrap onto continuation lines */
+/* (#R694) WHICH LINES ARE `js/` DECLARATIONS IS A QUESTION ABOUT THE LEDGER'S STRUCTURE, NOT
+   ABOUT SPELLING. This used to read every «name.js» at the start of a line anywhere below §3.1
+   and then subtract the ones it could recognise as belonging somewhere else — the src/ and
+   scripts/ directories, plus a hand-written `sw|admin|vite.config|playwright|_.*` list for the
+   root files in §3.1. Two things were wrong with that, and both were felt:
+
+     · The subtraction is a list of cases somebody thought of. §3.12 describes `supabase/`, and
+       the moment the `_shared/` roster there wrapped onto a line beginning `radiation-sources.js`
+       the check read it as a js/ module and went red on a CORRECT document. The roster could
+       only be line-wrapped at the five names that happen to also exist in js/ — a formatting
+       constraint leaking out of a checker, which is how you know the checker is measuring the
+       wrong thing (.agents/rules/no-ad-hoc-hardcoding.md §1).
+     · It is silent in the other direction too: a js/ module described ONLY in the supabase or
+       docs block counted as described.
+
+   §3 already says which directory each block is about — that is what its headings ARE:
+   «### 3.4 `js/` — 地図の表面», «### 3.12 `supabase/` / `docs/` / …». So ask the heading.
+   A block declares js/ when `js/` is one of the backticked paths in its own heading; §3.1
+   (ルート), §3.2 (css/, src/, fonts/), §3.11 (data/) and §3.12 (supabase/, …) declare other
+   directories and are not this check's business. With that, all three excuse-lists go away and
+   the answer is unchanged: 284 described, 284 present, nothing missing and nothing stale. */
+const DIR = 'js/';
+const blocks = section.split(/^(?=### )/m);
+const declaresJs = (block) => {
+  const heading = block.slice(0, block.indexOf('\n') + 1 || undefined);
+  return [...heading.matchAll(/`([A-Za-z0-9_./-]+\/)`/g)].some((m) => m[1] === DIR);
+};
+const owned = blocks.filter(declaresJs);
+if (!owned.length) {
+  console.error(DOC + `: no §3 block declares \`${DIR}\` in its heading — this check needs rewriting`);
+  process.exit(1);
+}
+
+/* within a block that declares js/, a listed module is a bare filename at the start of a line,
+   at any indent — descriptions wrap onto continuation lines */
 const listed = new Set();
-for (const m of section.matchAll(/^[ \t]*([A-Za-z0-9_.-]+\.js)\b/gm)) listed.add(m[1]);
+for (const block of owned) for (const m of block.matchAll(/^[ \t]*([A-Za-z0-9_.-]+\.js)\b/gm)) listed.add(m[1]);
 
 const actual = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js'));
 
 const missing = actual.filter((f) => !listed.has(f)).sort();
-/* only complain about names that look like they were meant to be js/ modules —
-   §3 also mentions src/ and scripts/ files, which are not this directory's job */
-const srcDir = new Set(readdirSync(join(ROOT, 'src')).filter((f) => f.endsWith('.js')));
-const scriptsDir = new Set(readdirSync(join(ROOT, 'scripts')).filter((f) => f.endsWith('.js')));
-const stale = [...listed].filter((f) => !actual.includes(f) && !srcDir.has(f) && !scriptsDir.has(f)
-  && !/^(sw|admin|vite\.config|playwright[.a-z]*|_.*)\.js$/.test(f)).sort();
+const stale = [...listed].filter((f) => !actual.includes(f)).sort();
 
 console.log(DOC + ' — modules described: ' + listed.size + ' · js/ holds ' + actual.length);
 if (missing.length) {

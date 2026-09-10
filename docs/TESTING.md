@@ -1217,6 +1217,17 @@ because the static job does not run `check:docs`. The last two rows arrived in #
 mutation under the tree lock, with `--rule` so a mutation costs one rule's runtime rather than the
 whole file's.
 
+⚠ **(#R694) `edge-shared` is now proved by `tests/r694-shared-roster-facts-checks.test.mjs`, and
+NOT through this script.** One run of `doc-facts.mjs` is ~7.5 s, so the sweep that actually matters
+— *every* name in `_shared/`, dropped from *every* roster, is caught and named — would have been
+four minutes and therefore would never have been written. The judgement was moved into
+[`scripts/shared-roster.mjs`](../scripts/shared-roster.mjs), which `doc-facts.mjs` imports and the
+test imports too, so the sweep costs milliseconds and there is still only one copy of the rule. The
+same file also covers `check:archfiles`: that the `_shared/` roster may be line-wrapped at **any**
+of its names, that a `js/` module described in the `supabase/` block does not count as described,
+and that the gate is still red for the defects it exists to catch. This is #R575's lesson in a new
+place — arithmetic nobody can reach is arithmetic nobody measures.
+
 ⚠ **`section-refs` resolves an ADDRESS; it does not read the sentence around it.** It fires only
 where a document *names* the document it is addressing — in backticks or as a Markdown link — and
 what it caught on its first run were addresses a session follows every round. The standing
@@ -1301,6 +1312,24 @@ rule of this shape:
 - **`.match()` answers for a whole file with its first hit.** A document whose first mention is
   correct can carry a second, stale one forever. That is exactly what happened in the deploy runbook,
   directly above a command list that already ran the right number.
+- **(#R694) A window is a length, and a length is not a relevance.** `edge-shared` read a
+  **260-character window** after each `_shared/` mention and needed the closing bracket inside it.
+  `docs/FILES.md` wrapped its roster over three indented lines, the close landed at ~290, the group
+  came back `null`, and the roster was skipped entirely — so the gate printed «_shared/ holds 11: …»,
+  **naming all eleven**, while passing a document that listed nine. Cutting the same roster to eight
+  pulled the close back inside the window and it went red at once: what decided whether an omission
+  was caught was the **length of the text**, not the omission. An inventory is now read to its
+  matching bracket with no cap, and a bracket that never closes is a **failure** — «I could not read
+  it» must never leave as «it is fine». The same rule also excused any list of **fewer than three**
+  names, so dropping nine of eleven was caught and dropping nine of ten was not; the count was never
+  what made a passage an inventory. What does is that the mention is of the **directory** rather than
+  of a file inside it — `_shared/newsgeo.js`（＝ブラウザの `js/newsgeo.js` と1バイト同一） is a true
+  sentence about one file, and reading its bracket as a roster calls it ten names short.
+- **(#R694) A mutation anchored on a spelling measures last year's spelling.** `tests/r399-checks` ①
+  pinned the literal roster text, so **adding two files — correctly, to every document — turned CI
+  red** because the anchor was no longer in the tree (the #R488 / #R530 shape). Mutations are now
+  written as the **breakage**: read the real directory, drop one name from whatever the document
+  actually says. A correct addition cannot invalidate it.
 
 What it deliberately does not read: a bare noun-then-number with no particle between them. In
 Japanese that construction means *one of them does this*, not *there is one*, and `の` / `が` are

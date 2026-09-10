@@ -28,6 +28,7 @@ import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { sharedRoster, auditRoster } from './shared-roster.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
@@ -358,26 +359,27 @@ const FILES = BODY.get('docs/FILES.md') || '';
      Three documents listed it by hand and three had gone stale in different places:
      `docs/FILES.md` was missing aviation-codec/aviation-model/volcano-parse, `AGENTS.md` was
      missing atlas-persona, `docs/SECURITY-ARCHITECTURE.md` was missing volcano-parse.
-     Only a list that PRESENTS ITSELF AS COMPLETE is held to it: a parenthesised run of three or
-     more `.js` names next to the directory. A list that hedges (`など` / `ほか` / `その他` /
-     `etc.`) is honestly partial and is left alone — `Architecture.md` §6.2's prose names three
-     of them followed by `など`, and that sentence is not wrong. */
+
+     ⚠ (#R694) THE RULE ITSELF MOVED TO `scripts/shared-roster.mjs`, because two ways of saying
+     «yes» without looking had to come out of it and the fix had to be measurable:
+       · it read a 260-CHARACTER WINDOW and needed the closing `）` inside it, so docs/FILES.md
+         wrapping its roster over three indented lines put the close at ~290 and skipped the
+         roster ENTIRELY — this gate printed «_shared/ holds 11: …» while passing a document
+         that listed nine. The number of omissions tolerated was decided by the LENGTH of the
+         text. Cutting the same roster to eight brought the close back inside and it went red.
+       · it excused any group naming fewer than THREE files, so dropping nine of eleven names
+         was caught and dropping nine of TEN was not.
+     One run of this script is ~7.5 s, so a sweep of «every name, dropped from every roster»
+     could never be written against it. Against the module it is milliseconds, and
+     `tests/r694-shared-roster-facts-checks.test.mjs` writes exactly that sweep — importing the
+     same function rather than restating the rule (.agents/rules/no-ad-hoc-hardcoding.md §2.3). */
   {
-    const shared = readdirSync(join(ROOT, 'supabase/functions/_shared'))
-      .filter((f) => f.endsWith('.js')).sort();
-    const HEDGE = /など|ほか|その他|etc\.|e\.g\./;
+    const shared = sharedRoster(ROOT);
     eachDoc((f, body) => {
-      for (const at of body.matchAll(/_shared\//g)) {
-        const win = body.slice(at.index, at.index + 260);
-        const group = win.match(/（([^）]*)）/) || win.match(/\(([^)]*)\)/);
-        if (!group) continue;
-        const names = [...new Set([...group[1].matchAll(/([a-z0-9-]+\.js)/g)].map((m) => m[1]))].sort();
-        if (names.length < 3) continue;                 /* a passing mention, not an inventory */
-        if (HEDGE.test(group[0])) continue;             /* says so itself that it is partial */
-        const missing = shared.filter((n) => !names.includes(n));
-        const extra = names.filter((n) => !shared.includes(n));
-        if (missing.length) fail('edge-shared', `${f} lists the contents of _shared/ but omits ${missing.join(', ')}`);
-        if (extra.length) fail('edge-shared', `${f} lists ${extra.join(', ')} in _shared/, which is not there`);
+      for (const p of auditRoster(body, shared)) {
+        if (p.kind === 'unreadable') fail('edge-shared', `${f} opens a parenthesis next to _shared/ that never closes — its inventory cannot be read`);
+        if (p.kind === 'omits') fail('edge-shared', `${f} lists the contents of _shared/ but omits ${p.names.join(', ')}`);
+        if (p.kind === 'extra') fail('edge-shared', `${f} lists ${p.names.join(', ')} in _shared/, which is not there`);
       }
     });
     ok('edge-shared', `_shared/ holds ${shared.length}: ${shared.join(', ')}`);
