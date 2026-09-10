@@ -20,6 +20,7 @@
 | 専用 subagent 5 役 | **`.agents/roles/*.md`** | `.claude/agents/*.md`（生成） | `.codex/agents/*.toml`（生成・**要 trust**） |
 | 製品固有の作法 | `CLAUDE.md` §A / `.codex/config.toml` の `developer_instructions` | 自動 | **要 trust** |
 | セッション開始時の状態 | `scripts/worktree.mjs status --brief` | `.claude/settings.json` の hook | `.codex/hooks.json` の hook（**要 trust ＋ `/hooks` 承認**） |
+| 蓄積メモリ | **`scripts/agent-memory.mjs` が出すディレクトリ**（1 か所） | 自動で読む | `.codex/hooks.json` の hook（**同上**） |
 
 **生成物は編集しない。** `.claude/agents/`・`.claude/skills/`・`.codex/agents/` は
 `node scripts/agent-sync.mjs --write` が `.agents/` から書き、`npm run check:agents` が照合する。
@@ -168,25 +169,28 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 | 原本を信頼する初回の 1 回 | `worktree.mjs new` は自分が作った作業場しか登録しない |
 | モデル / reasoning effort | 費用の判断は利用者のもの |
 | Claude Code 側の `@` import の確認 | 新しいセッションで `/context` を開き、**Memory files** に `CLAUDE.md` と `AGENTS.md` が並ぶことを見る |
-| **蓄積済みメモリの引き継ぎ** | 下記 |
 
-### ⚠ 蓄積済みメモリは自動では渡らない
+### 蓄積メモリは 1 か所で、両方が読み書きする（#R696）
 
-Claude Code は `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/memory/` に**このリポジトリで
-学んだこと**を貯めていて（索引 `MEMORY.md` は毎セッション自動で読まれる）、Codex は**それを読まない**。
-Codex には Codex 自身の `/memories` があり、これから貯まるぶんはそちらに入る。
+⚠ **かつてここは「自動では渡らない」だった。** Claude Code は
+`~/.claude/projects/<原本のパス>/memory/` に**このリポジトリで学んだこと**を貯めていて、Codex は
+それを読まず、自分の `/memories` に別に貯めていた。**実測（#R696）: Codex 側の
+`memories_1.sqlite` に IntMap を含む行は 0 件**——同じ罠を、片方だけが知っている状態だった。
+これは設定の差ではなく、利用者が「別人が作業している」と感じるもの**そのもの**である。
 
-**`AGENTS.md` §1 は「片方で学んだことはもう片方にも書く」を要求している**ので、これから先は
-揃っていく。**既存ぶんを渡すかどうかは利用者の判断**——渡すなら、`.codex/hooks.json` の
-`SessionStart` にもう 1 本足して索引を読ませるのが最短:
+いまは正本が 1 つで、Codex は `SessionStart` hook から読む:
 
-```json
-{ "type": "command", "command": "node -e \"try{process.stdout.write(require('fs').readFileSync(require('os').homedir()+'/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/memory/MEMORY.md','utf8'))}catch{}\"" }
+```bash
+node scripts/agent-memory.mjs --path      # 場所（どの worktree から呼んでも同じ）
+node scripts/agent-memory.mjs             # hook が渡すもの（先頭に場所、続けて索引）
 ```
 
-⚠ **既定では入れていない。** 索引だけで約 7 KB あり、毎ターンではなくセッションごととはいえ
-費用が要る。そして中身は**このマシンの絶対パスに依存する**（追跡対象のファイルにマシン固有の
-パスを増やすのは `AGENTS.md` §2 が避けたがっている形）。入れるなら、上を承知のうえで。
+- **パスはハードコードしていない。** 原本は `git rev-parse --git-common-dir` から導出し、
+  Claude Code の鍵（絶対パスの非英数字を `-` に置換）を組み立てる。だから
+  `AGENTS.md` §2 が避けたがっている「追跡ファイルにマシン固有の絶対パスを増やす」形にならない。
+- **切るときは黙って切らない**（#R694）。`--budget` は落とした文字数と、続きの読み方を印字する。
+- **書く側も同じ場所**（`.codex/config.toml` の C-7）。そこは workspace の外なので、Codex の
+  サンドボックスが書き込みを拒むことがある——そのときは承認を求めて書く。
 
 ---
 

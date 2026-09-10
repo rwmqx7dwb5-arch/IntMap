@@ -24,8 +24,8 @@
 
 作業を開始する前に、以下をすべて確認すること。
 
-- **メモリ**（Claude Code `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/memory/` ／
-  Codex `/memories`。**同じ事実の別の写しなので、片方で学んだことはもう片方にも書く**）
+- **メモリ**（**正本は 1 か所**で、場所は `node scripts/agent-memory.mjs --path` が出す。
+  Claude Code は自動で読み、**Codex は SessionStart hook が読む**——写しを作らず同じ場所へ書く）
   ⚠ **memory は主題で名づける。ラウンド番号だけの名前は使わない**——番号は並行セッションで
   衝突し、改番のたびの rename が**他セッションの記憶を潰した**（#R565・#R671 で 2 回）。
   正本 `.agents/skills/intmap-round/` §4。

@@ -14,7 +14,7 @@
 |---|---|---|---|
 | [`../AGENTS.md`](../AGENTS.md) | 作業する人／AI | **どう働くか** — セッションの始め方、着手前の確認、変更の作法、ワークフロー、報告、**USB バックアップの頻度と手順**。⚠ **32,768 バイトの天井がある**（`npm run check:agents`） | 開発環境・Git 運用・CI/CD・deployment の前提が変わったとき |
 | [`../CLAUDE.md`](../CLAUDE.md) | Claude Code | **`AGENTS.md` を import したうえで、Claude Code でしか意味を持たない作法**（委譲の呼び方・preview ツール・ハーネスの worktree・権限） | Claude Code 側の作法が変わったとき |
-| [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定。**Edge Function の名簿（16 本の名前と `_shared/` の扱い）と `--use-api` の実測もここが正本**（`AGENTS.md` は 1 行で指すだけ） | 対応する製品・その設定が変わったとき／Edge Function を足す・消すとき |
+| [`AGENT-SETUP.md`](AGENT-SETUP.md) | 同上／Codex | **2 製品の配線図** — 何が共通で、何が製品固有で、**何が手作業で残るか**。Codex の初期設定。**Edge Function の名簿（17 本の名前と `_shared/` の扱い）と `--use-api` の実測もここが正本**（`AGENTS.md` は 1 行で指すだけ） | 対応する製品・その設定が変わったとき／Edge Function を足す・消すとき |
 | [`../CONSTITUTION.md`](../CONSTITUTION.md) | 同上 | **何を守るか** — 製品の不文律、壊れやすい罠、地図・モバイルの作法、鍵とニュースの方針、文書の分担 | ユーザーが方針を変えたとき |
 | [`../.agents/rules/execution-strategy.md`](../.agents/rules/execution-strategy.md) | 作業する AI | **どう速く・安全にやるか** — 依頼の分解、並列化と委譲の判断基準、並列編集の隔離、検証の段、context の節約（`AGENTS.md` §5.0 の正本） | 並列化・委譲・検証の方針が変わったとき |
 | [`../.agents/rules/no-ad-hoc-hardcoding.md`](../.agents/rules/no-ad-hoc-hardcoding.md) | 作業する AI | **場当たりのハードコーディングの禁止** — 報告された 1 件のための分岐・特例・埋め込み一覧を足さず、その事例を生んだ構造を直す。着手前の 3 問、定数に必ず書く 3 点、実測された失敗の形（`AGENTS.md` §3 の 9 の正本） | 新しい「場当たりの形」を実測したとき（表に 1 行足す） |
