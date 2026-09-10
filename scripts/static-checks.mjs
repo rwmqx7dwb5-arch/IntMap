@@ -584,7 +584,7 @@ for (const f of ALL) {
     + ' tests/**/*.test.mjs by NAME, so this file never runs');
 }
 
-// ── 11. (#R672) a filename another session is about to create too ──
+// ── 11. (#R674) a filename another session is about to create too ──
 // A round's own files used to be named for the round and nothing else, and a round number is not
 // a name: every parallel session takes «the next free number» from the same scan and takes it
 // again whenever origin/main moves. #R671 measured seven renumberings in one round and an add/add

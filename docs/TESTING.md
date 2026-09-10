@@ -663,7 +663,7 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   **disk** — not a list — that none appears again. Fixtures, corpora and the shared helpers import
   nothing of the kind and are not demanded.
 
-- **Round-artefact names** (#R672, `round-name`) — a per-round file under `tests/` must be named
+- **Round-artefact names** (#R674, `round-name`) — a per-round file under `tests/` must be named
   `r<N>-<subject>-checks.test.mjs` / `r<N>-<subject>.spec.js`. The **round number is not a name**:
   every parallel session takes «the next free number» from the same scan and takes it again
   whenever `origin/main` moves, so two sessions routinely hold the same one. Measured in #R671 —

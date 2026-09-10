@@ -266,7 +266,7 @@ function makeNew(slug) {
 
   console.log('\n  作業ディレクトリ（以降の編集は全部この中で）:');
   console.log('    ' + dir);
-  /* (#R672) …AND THE NAMES THIS ROUND'S FILES MUST CARRY. The round number is the one part of the
+  /* (#R674) …AND THE NAMES THIS ROUND'S FILES MUST CARRY. The round number is the one part of the
      name that is NOT this session's to keep: every parallel session takes «the next free number»
      from the same scan, so two of them routinely hold the same one and the renumbering treadmill
      moves it again before the push (#R671 was renumbered seven times). MEASURED there: two sessions

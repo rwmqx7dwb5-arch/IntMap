@@ -34,7 +34,7 @@ import { readLF, lf } from '../scripts/eol.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/* (#R672) THE FIXTURE'S COPY OF THE SCRIPT IS NOT ONE FILE. ⑫ and ⑭ build a throwaway repository
+/* (#R674) THE FIXTURE'S COPY OF THE SCRIPT IS NOT ONE FILE. ⑫ and ⑭ build a throwaway repository
    and run scripts/worktree.mjs inside it, and they used to seed it by naming that one file. The
    moment worktree.mjs grew a local import (scripts/round-names.mjs, so the tool and its gate share
    one definition of the names it hands out) both tests died with ERR_MODULE_NOT_FOUND — the fixture

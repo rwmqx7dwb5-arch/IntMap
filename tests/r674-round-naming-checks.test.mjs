@@ -1,5 +1,5 @@
 /* ============================================================================
- *  #R672 · the round number is not a name
+ *  #R674 · the round number is not a name
  * ----------------------------------------------------------------------------
  *  Parallel sessions all take «the next free round number» from the same scan, and take it again
  *  whenever origin/main moves. #R671 was renumbered SEVEN times; a second session in the same
@@ -32,7 +32,7 @@ const realNames = () => readdirSync(TESTS, { withFileTypes: true })
   .filter((e) => e.isFile()).map((e) => e.name);
 const NEW = LEGACY_BARE_MAX_ROUND + 1;
 
-test('R672 ① the round number alone is bare; anything else in the name is a subject', () => {
+test('R674 ① the round number alone is bare; anything else in the name is a subject', () => {
   for (const n of [`r${NEW}-checks.test.mjs`, `r${NEW}.spec.js`]) {
     assert.equal(roundArtefact(n)?.bare, true, `${n} carries nothing but its round number`);
   }
@@ -45,18 +45,18 @@ test('R672 ① the round number alone is bare; anything else in the name is a su
   }
 });
 
-test('R672 ② the recorded snapshot matches this tree exactly', () => {
+test('R674 ② the recorded snapshot matches this tree exactly', () => {
   assert.deepEqual(roundNameProblems(realNames()), [],
     'the legacy numbers in scripts/round-names.mjs have drifted from tests/');
 });
 
-test('R672 ③ a bare name above the recorded round is refused by name', () => {
+test('R674 ③ a bare name above the recorded round is refused by name', () => {
   const p = roundNameProblems([...realNames(), `r${NEW}-checks.test.mjs`]);
   assert.ok(p.some((m) => m.includes(`tests/r${NEW}-checks.test.mjs`)),
     'a round-number-only file from a round after the rule landed must be named:\n' + p.join('\n'));
 });
 
-test('R672 ④ …and a bare name at an unused LOW round is refused by count', () => {
+test('R674 ④ …and a bare name at an unused LOW round is refused by count', () => {
   /* the round clause cannot see this one — the whole reason the ratchet is two numbers */
   const low = `r7-checks.test.mjs`;
   assert.equal(roundArtefact(low).round > LEGACY_BARE_MAX_ROUND, false, 'r7 is below the snapshot');
@@ -65,7 +65,7 @@ test('R672 ④ …and a bare name at an unused LOW round is refused by count', (
     'the count must catch what the round number cannot:\n' + p.join('\n'));
 });
 
-test('R672 ⑤ a subject-bearing name from the same new round is accepted', () => {
+test('R674 ⑤ a subject-bearing name from the same new round is accepted', () => {
   /* ⚠ a rule that refuses everything proves nothing. This is the case that must stay GREEN. */
   const { checks, spec } = roundArtefactNames(NEW, 'round-naming');
   const names = [...realNames(), checks.slice('tests/'.length), spec.slice('tests/'.length)];
@@ -73,7 +73,7 @@ test('R672 ⑤ a subject-bearing name from the same new round is accepted', () =
     'the names scripts/worktree.mjs hands out must be names its own gate accepts');
 });
 
-test('R672 ⑥ the ratchet is refused when it is left too high after a rename', () => {
+test('R674 ⑥ the ratchet is refused when it is left too high after a rename', () => {
   const names = realNames();
   const legacy = names.find((n) => roundArtefact(n)?.bare);
   assert.ok(legacy, 'this tree still has at least one legacy bare name');
@@ -82,7 +82,7 @@ test('R672 ⑥ the ratchet is refused when it is left too high after a rename', 
     'a snapshot nobody tightens stops asserting anything:\n' + p.join('\n'));
 });
 
-test('R672 ⑦ check:static actually goes red for a bare name on disk', async () => {
+test('R674 ⑦ check:static actually goes red for a bare name on disk', async () => {
   await withTreeLock(() => {
     const gate = () => {
       try {

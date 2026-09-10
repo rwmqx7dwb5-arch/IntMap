@@ -1,5 +1,5 @@
 /* ============================================================================
- *  IntMap · a filename another session is about to create too   (#R672)
+ *  IntMap · a filename another session is about to create too   (#R674)
  * ----------------------------------------------------------------------------
  *  A round's own regression file used to be named for the round and nothing else —
  *  tests/r<N>-checks.test.mjs — and a round number is NOT a name. Every parallel session takes
@@ -17,7 +17,7 @@
  *  ⚠ THE FIX IS THE NAME, NOT THE MERGE. Nothing in one checkout can prove the other branch
  *    picked a different number — the other branch is not here. What CAN be proved is that the
  *    name carries what the number does not: its SUBJECT. Two sessions do not collide on
- *    r672-round-naming vs r671-dem-store, whatever numbers they end up holding.
+ *    r674-round-naming vs r671-dem-store, whatever numbers they end up holding.
  *
  *  ⚠ THE LEGACY FILES ARE HELD BY TWO NUMBERS, NOT BY A LIST OF SPELLINGS. A list of the 416
  *    names already in the old form would have to be EDITED to admit the 417th, and that edit is
@@ -86,7 +86,7 @@ export function roundNameProblems(basenames) {
    ⚠ THE PRODUCER AND THE JUDGE SHARE ONE DEFINITION. `scripts/worktree.mjs new` prints these when
    it hands out the round number, and roundNameProblems() above judges what ends up on disk — if
    those were two spellings of the same convention, the tool could hand out a name its own gate
-   rejects, which is #R536's shape. tests/r672-round-naming-checks.test.mjs feeds one to the other. */
+   rejects, which is #R536's shape. tests/r674-round-naming-checks.test.mjs feeds one to the other. */
 export const roundArtefactNames = (round, slug) => ({
   checks: `tests/r${round}-${slug}-checks.test.mjs`,
   spec: `tests/r${round}-${slug}.spec.js`,

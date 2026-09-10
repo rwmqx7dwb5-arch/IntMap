@@ -101,7 +101,7 @@ node scripts/worktree.mjs new <slug>
 （spec なら `tests/r<N>-<主題>.spec.js`）という名前で置くだけでよい——`test:checks` は
 `node --test "tests/**/*.test.mjs"` なので、名前が合っていれば登録なしに走る（#R529）。
 
-### ⚠ ラウンド番号は名前ではない（この節が規約の正本・#R672）
+### ⚠ ラウンド番号は名前ではない（この節が規約の正本・#R674）
 
 番号は**このセッションのものではない**——並列セッションは全員が同じ走査（`worktree.mjs` の
 `nextRound`）から「次の空き番号」を取り、`origin/main` が動くたびに取り直す。
