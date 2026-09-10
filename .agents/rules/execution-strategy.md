@@ -54,7 +54,7 @@
 | 3 | **push の直前に 1 回** | `npm test` |
 | 4 | 3-D・Cesium・物理・シミュレータを触ったとき | `npm run test:deep` |
 
-⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、`npm run check:docs` の
+⚠ **下の表が段 1 の全部である**（`package.json` の `check:*` が正本で、
 `gate-lists` 規則が両者を突き合わせる）。**ゲートを足したらこの表と
 `.agents/roles/intmap-verifier.md` の両方に書く**（経緯は `DEV-NOTES.md` #R403 §6）。
 
@@ -65,14 +65,15 @@
 | 利用者に見える文字列 | `npm run check:i18n` |
 | 企業アトラス | `npm run check:companies` |
 | 文書 | `npm run check:docs` |
-| エージェントの文脈（`AGENTS.md`・`.agents/` とその生成物） | `npm run check:agents` |
-| `js/` のファイルを足した・消した | `npm run check:archfiles` |
+| エージェントの文脈（`AGENTS.md`・`.agents/` と生成物） | `npm run check:agents` |
+| `js/` を足した・消した | `npm run check:archfiles` |
 | 紛争データ | `npm run check:wars` |
 | 言語レイヤー | `npm run check:languages` |
 | 国政選挙のデータ | `npm run check:elections` |
 | 歴史都市名 | `npm run check:histcities` |
 | 1850–1885 の国境 | `npm run check:histborders` |
-| 全時代の国境（紀元前を含む） | `npm run check:histeras` |
+| 全時代の国境（紀元前も） | `npm run check:histeras` |
+| 歴史的な行政区分 | `npm run check:histadmin` |
 | 導出した令制国 | `npm run check:kuni` |
 | 国境のどの辺を描くか | `npm run check:bordercoast` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |

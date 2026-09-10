@@ -98,6 +98,14 @@ jobs:
       # MEASURED 32 s on this machine, which is why the sampled form existed and why it is not enough.
       - name: Historical border coastlines (every ring re-derived, not a sample)
         run: npm run check:bordercoast
+      # (#R680) …AND THE TWO BIGGEST BUNDLES OF ALL, which had no gate of any kind. hist-admin1 +
+      # hist-admin2 are 25.8 MB of shipped first- and second-level subdivisions; the map draws every
+      # line, label, click answer and coverage count from them. Re-deriving needs OHM's whole
+      # admin_level 3-6 extract, so this proves the committed bytes — above all that each file
+      # defines the global its own NAME implies (#R604 shipped 15 MB that did not) and that every
+      # century it claims to reach has something in force. Residual: docs/TESTING.md.
+      - name: Historical subdivisions (both tiers name themselves, and no century is empty)
+        run: npm run check:histadmin
       - name: Historical provinces IntMap derived itself (data/hist-kuni.js)
         run: npm run check:kuni
       # (#R538) The language layer never had a gate. What it needed one for is what went wrong:
