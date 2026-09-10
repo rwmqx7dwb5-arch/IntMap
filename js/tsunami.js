@@ -1098,10 +1098,19 @@ window.IntMapModules.tsunami=function(HOST){
        Both names matter: if `API.open` were the same function the definition names, activate would
        call open which would call activate. Routing it this way is what makes `stateOf` true — a
        register that is only told about disposal knows less than the feature it is supposed to own.
-       ⚠ The synchronous `true` is kept: every existing caller reads it that way. */
+       ⚠⚠⚠ (#R667) IT USED TO DISCARD THE RUNTIME'S PROMISE AND RETURN A SYNCHRONOUS `true`, AND THE
+       CALLER BELIEVED IT. `RT.activate` is `load(name).then(…)` — the adoption of `o` happens a tick
+       later — so a caller that opened and then drove the panel drove the module it had BEFORE this
+       event. Measured on the Atlas path, immediately after this function returned `true`:
+       `state()` reported `open:false` and the PREVIOUS epicentre; the `run()` on the next line found
+       no epicentre and set `lastErr='no epicenter'`; 2.5 s later the same arguments solved normally.
+       That is why 「東北沖…津波の伝播をシミュレーションして見せて」 could report a completed call and
+       paint nothing (#R663 measured the whole chain).
+       ⚠ A PROMISE IS TRUTHY, so `if(open(…))` reads exactly as it did before and no caller changes;
+       what is new is that a caller who needs the module to EXIST can now wait for it. */
     function openPublic(o){
       const RT=window.IntMapRuntime;
-      if(RT&&RT.stateOf&&RT.stateOf('sim.tsunami')!==null){ RT.activate('sim.tsunami',o||{}); return true; }
+      if(RT&&RT.stateOf&&RT.stateOf('sim.tsunami')!==null) return RT.activate('sim.tsunami',o||{});
       return open(o);
     }
     function closePublic(){

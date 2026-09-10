@@ -254,6 +254,7 @@ window.IntMapLang.define('zh', {
     'Shaded': '填色',
     'Could not be placed': '無法定位',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    "“{n}” could not be resolved to a place. Give the point as lng/lat, or name somewhere a gazetteer knows.": "無法將「{n}」解析為地點。請以經緯度指定位置，或改用地名資料庫收錄的地點。",   /* #R667 */
     "{n} lookups left today": "今日剩餘解說 {n} 次",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap 有新版本可用。請重新載入以繼續。',
     "AI-generated — verify anything important.": "由 AI 生成，重要資訊請自行查證。",   /* #R491 */

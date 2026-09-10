@@ -254,6 +254,7 @@ window.IntMapLang.define('fr', { ui: {
       'Shaded': 'En couleur',
       'Could not be placed': 'Impossible à placer',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    "“{n}” could not be resolved to a place. Give the point as lng/lat, or name somewhere a gazetteer knows.": "« {n} » n’a pas pu être résolu en lieu. Indique le point en lng/lat, ou nomme un endroit connu d’un répertoire géographique.",   /* #R667 */
     "{n} lookups left today": "{n} explications restantes aujourd’hui",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': "Une nouvelle version d'IntMap est disponible. Rechargez la page pour continuer.",
     "AI-generated — verify anything important.": "Généré par IA — vérifiez ce qui est important.",   /* #R491 */

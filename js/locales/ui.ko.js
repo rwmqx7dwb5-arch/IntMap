@@ -246,6 +246,7 @@ window.IntMapLang.define('ko', { ui: {
       'Shaded': '색 구분',
       'Could not be placed': '위치를 찾지 못한 곳',
     /* (#R372) the reload prompt raised by index.html — a redeploy seen from an already-open tab */
+    "“{n}” could not be resolved to a place. Give the point as lng/lat, or name somewhere a gazetteer knows.": "“{n}”을(를) 지명으로 해석하지 못했습니다. 경도/위도로 지점을 지정하거나 지명 사전에 있는 장소를 말씀해 주세요.",   /* #R667 */
     "{n} lookups left today": "오늘 남은 해설 {n}회",   /* #R491 */
     'A new version of IntMap is available. Reload to continue.': 'IntMap의 새 버전이 배포되었습니다. 계속하려면 새로 고치세요.',
     "AI-generated — verify anything important.": "AI가 생성한 내용입니다. 중요한 정보는 확인하세요.",   /* #R491 */
