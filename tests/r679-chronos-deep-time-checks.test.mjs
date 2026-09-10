@@ -1,5 +1,5 @@
 /* ============================================================================
- *  R677 · Chronos reaches before the common era — the arithmetic, EVALUATED
+ *  R679 · Chronos reaches before the common era — the arithmetic, EVALUATED
  * ----------------------------------------------------------------------------
  *  「Chronosの歴史的地名、境界線coverageを、できる限りすべてを最高レベル品質と精度で
  *    網羅するように。私はあなたにいつの時代までかをここで制限することもしません。」
@@ -42,7 +42,7 @@ function langTags() {
 }
 
 /* ── ① the floor is below the common era, and the clock can actually stand there ── */
-test('R677 ①: the clock reaches before the common era, and the instant it lands on is that year', () => {
+test('R679 ①: the clock reaches before the common era, and the instant it lands on is that year', () => {
   assert.ok(FLOOR < 1, `the floor is not before the common era: ${FLOOR}`);
   /* ⚠ THE HALF SOURCE CANNOT SHOW. #R604's whole lesson was that `YMIN = 1` and
      «the clock is in year 1» are different claims — Date.UTC turned one into 1901.
@@ -56,7 +56,7 @@ test('R677 ①: the clock reaches before the common era, and the instant it land
 });
 
 /* ── ② the calendar date of an instant, for years toISOString writes with a sign ── */
-test('R677 ②: ymd is a date at every year the clock can reach — toISOString().slice(0,10) is not', () => {
+test('R679 ②: ymd is a date at every year the clock can reach — toISOString().slice(0,10) is not', () => {
   /* the defect, stated as the thing it produced: ten characters with no day in them */
   const d = HS.utcAt(-322, 0, 1);
   assert.equal(d.toISOString().slice(0, 10), '-000322-01', 'the trap this exists for has changed shape — re-read the comment');
@@ -74,7 +74,7 @@ test('R677 ②: ymd is a date at every year the clock can reach — toISOString(
 });
 
 /* ── ③ both copies of that rule are gone ─────────────────────────────────────── */
-test('R677 ③: nothing outside its owner truncates an ISO year to ten characters for a clock instant', () => {
+test('R679 ③: nothing outside its owner truncates an ISO year to ten characters for a clock instant', () => {
   for (const f of ['js/chronos.js', 'js/app-body.js']) {
     const src = R(f);
     const m = src.match(/(?:function|const) ymdISO[\s\S]{0,500}/);
@@ -89,7 +89,7 @@ test('R677 ③: nothing outside its owner truncates an ISO year to ten character
 });
 
 /* ── ④ astronomical ⇄ era, and ICU agrees ────────────────────────────────────── */
-test('R677 ④: the era conversion is one function, invertible, and matches ICU', () => {
+test('R679 ④: the era conversion is one function, invertible, and matches ICU', () => {
   assert.deepEqual(HS.era(-322), { bce: true, n: 323 });
   assert.deepEqual(HS.era(0), { bce: true, n: 1 });
   assert.deepEqual(HS.era(1), { bce: false, n: 1 });
@@ -108,7 +108,7 @@ test('R677 ④: the era conversion is one function, invertible, and matches ICU'
 });
 
 /* ── ⑤ the year, in nine languages, with the era word where that language puts it ── */
-test('R677 ⑤: every shipped language gets a real era word below year 1, and a bare year above it', () => {
+test('R679 ⑤: every shipped language gets a real era word below year 1, and a bare year above it', () => {
   const tags = langTags();
   const codes = Object.keys(tags);
   assert.ok(codes.length >= 9, `the registry lists ${codes.length} languages, expected the shipped nine`);
@@ -136,7 +136,7 @@ test('R677 ⑤: every shipped language gets a real era word below year 1, and a 
 });
 
 /* ── ⑥ the rail: reach was added without taking precision away ────────────────── */
-test('R677 ⑥: the deep band is a levy on the whole rail, not a reallocation of the old one', () => {
+test('R679 ⑥: the deep band is a levy on the whole rail, not a reallocation of the old one', () => {
   const R1 = HS.rail;
   const P = (y) => R1.toPos(y, FLOOR, NOW);
   const bands = { deep: P(1) - P(FLOOR), early: P(1500) - P(1), mid: P(1850) - P(1500), modern: P(NOW) - P(1850) };
@@ -150,7 +150,7 @@ test('R677 ⑥: the deep band is a levy on the whole rail, not a reallocation of
   assert.ok(bands.deep <= R1.POS * 0.15, `the deep band took ${bands.deep} of ${R1.POS} — that is a reallocation`);
 });
 
-test('R677 ⑥b: the rail is monotone and invertible across the whole reach', () => {
+test('R679 ⑥b: the rail is monotone and invertible across the whole reach', () => {
   const R1 = HS.rail;
   let prev = -Infinity;
   for (let p = 0; p <= R1.POS; p++) {
@@ -164,7 +164,7 @@ test('R677 ⑥b: the rail is monotone and invertible across the whole reach', ()
 });
 
 /* ── ⑦ THE PROPERTY THIS ROUND IS ABOUT: every era the record has is reachable ── */
-test('R677 ⑦: every era snapshot the map can answer with has a slider position that selects it', () => {
+test('R679 ⑦: every era snapshot the map can answer with has a slider position that selects it', () => {
   /* ⚠ THIS IS THE COVERAGE CLAIM ITSELF, AND IT IS THE ONE THAT CAN QUIETLY FAIL.
      A rail can be smooth, monotone and beautifully even and still leave a snapshot
      with no position that lands nearer to it than to its neighbours — the map would
@@ -182,7 +182,7 @@ test('R677 ⑦: every era snapshot the map can answer with has a slider position
 });
 
 /* ── ⑧ the ruler is derived, and it labels the deep band ─────────────────────── */
-test('R677 ⑧: the ruler’s marks come from the rail, not from a written list', () => {
+test('R679 ⑧: the ruler’s marks come from the rail, not from a written list', () => {
   const t = HS.niceTicks(FLOOR, NOW, 64);
   assert.ok(t.length > 12, `the ruler produced ${t.length} marks`);
   assert.ok(t.every((y, i) => i === 0 || y > t[i - 1]), 'the marks are not strictly increasing');
@@ -205,7 +205,7 @@ test('R677 ⑧: the ruler’s marks come from the rail, not from a written list'
 });
 
 /* ── ⑨ the native date control states its own limit instead of faking one ────── */
-test('R677 ⑨: the datetime-local control clamps to the lowest year HTML can express, not the kernel’s floor', () => {
+test('R679 ⑨: the datetime-local control clamps to the lowest year HTML can express, not the kernel’s floor', () => {
   const ntl = R('js/news-timeline.js');
   assert.match(ntl, /const jumpMinYear=\(\)=>Math\.max\(1,YMIN\(\)\)/,
     'the jump control must derive its floor from the kernel rather than name a year');
@@ -218,7 +218,7 @@ test('R677 ⑨: the datetime-local control clamps to the lowest year HTML can ex
 });
 
 /* ── ⑩ a degraded deep year is blank, not two thousand years wrong ──────────── */
-test('R677 ⑩: with no era bundle, a year before the common era is answered by nothing', () => {
+test('R679 ⑩: with no era bundle, a year before the common era is answered by nothing', () => {
   /* ⚠ THE DEFECT THIS GUARDS IS #R604's, ONE FLOOR DOWN. The remote fallback can only ask for
      snapshots whose upstream file name is a plain decimal year, so its list starts at 100 — and
      `nearest(-322, thatList)` answers 100. Drawing the Roman world of AD 100 under the label
