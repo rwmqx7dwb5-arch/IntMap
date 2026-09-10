@@ -2091,6 +2091,26 @@ window.IntMapModules.dataLayers=function(HOST){
             try{ window.IntMapLazy.need('seismic').then(()=>{ try{ window.IntMapSeismic&&window.IntMapSeismic.open({}); }catch(_){} }); }catch(_){} };
           return b;
         };
+        /* ══ ⚠ (#R666) 「LayersのToolsからアクセスできるように。」 — THE PANDEMIC SIMULATOR ═══════════
+           Up to now it was ONE OF FOUR CARDS inside the Playground hub: a reader who wanted it pressed
+           🎮 プレイグラウンド, read a screen about three other things, and pressed again. The hub keeps
+           its button below; this is the simulator's own row, one press, beside the earthquake
+           simulator it is a sibling of.
+           ⚠ SAME SHAPE AS `_seisBtn` ON PURPOSE — created once and re-used on every rebuild (so
+           `reorganizeLayerPanel` MOVES it rather than making a second one), relabelled in place on a
+           language change, and the open goes through the OS action `sim.pandemic` (js/app-body.js)
+           so this button, the palette and Atlas are one path rather than three copies. */
+        const _panBtn=()=>{
+          let b=document.getElementById('btn-pandemic-sim');
+          const lbl=window.IntMapLang.t(lang,'Pandemic Simulator','パンデミック・シミュレーター','Pandemie-Simulator','Симулятор пандемии','Simulador de pandemia');
+          if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
+          b=document.createElement('button'); b.id='btn-pandemic-sim'; b.type='button'; b.className='ai-test-btn';
+          b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
+          b.innerHTML='<span></span>'; b.querySelector('span').textContent=lbl;
+          b.onclick=()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec&&OS.has&&OS.has('sim.pandemic')){ OS.exec('sim.pandemic',{source:'ui'}); return; } }catch(_){}
+            try{ window.IntMapLazy.need('playground').then(()=>{ try{ window._pgPandemic&&window._pgPandemic(); }catch(_){} }); }catch(_){} };
+          return b;
+        };
         order.push(mkHr());
         const placed=new Set();
         if(nsRow) placed.add(nsRow);   /* (#R233) already in the basic-display block above */
@@ -2163,6 +2183,7 @@ window.IntMapModules.dataLayers=function(HOST){
         const _pr=document.getElementById('lyr-presets');   /* (#R20) rescue the presets host before the wipe */
         const _edu=document.getElementById('edu-mount');    /* (#R20) …and the Education-mode button */
         const _seis=_seisBtn();   /* (#R242) 「地震シミュレータはレイヤー欄からも開けるようにしろ。」 */
+        const _pan=_panBtn();     /* (#R666) 「LayersのToolsからアクセスできるように。」 */
         tools.innerHTML='';
         const th=document.createElement('div'); th.className='lyr-head lyr-section-label'; th.style.marginTop='2px'; th.textContent=(window.IntMapLang.t(lang,'Tools','ツール','Werkzeuge','Инструменты','Herramientas')); tools.appendChild(th);
         /* reset display: these persistent buttons get moved here each rebuild; clear any stale display:none
@@ -2172,9 +2193,10 @@ window.IntMapModules.dataLayers=function(HOST){
         if(upBtn){ upBtn.style.display=''; upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
         if(_seis) tools.appendChild(_seis);   /* (#R242) the seismic simulator, beside the other tools */
+        if(_pan) tools.appendChild(_pan);     /* (#R666) …and the pandemic simulator, one press */
         if(_edu) tools.appendChild(_edu); /* (#R20) Education mode button lives in Tools */
         if(_pr) tools.appendChild(_pr);   /* (#R20) layer presets live in Tools */
-        if(cmpBtn||upBtn||_seis){ order.push(mkHr()); order.push(tools); }
+        if(cmpBtn||upBtn||_seis||_pan){ order.push(mkHr()); order.push(tools); }
         order.forEach(n=>dd.appendChild(n));
         /* (#R64) Active layers is now the sticky-TOP bar ("一番下にあったら意味ない"); its fixed-height chip row
            preserves the R32 zero-movement guarantee. _placeActiveSection (called below) prepends it. */

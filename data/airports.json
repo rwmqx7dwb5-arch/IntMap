@@ -1,0 +1,1190 @@
+{
+ "//": "Built by scripts/build-airports.mjs — do not edit by hand. Scheduled-service airline infrastructure per country. NOT routes, frequencies or passenger numbers; no source in this project has those.",
+ "built": "2026-09-09",
+ "sources": [
+  {
+   "name": "OurAirports",
+   "url": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+   "license": "Public domain",
+   "fields": "type, iso_country, scheduled_service"
+  },
+  {
+   "name": "mledoze/countries",
+   "url": "https://cdn.jsdelivr.net/gh/mledoze/countries@master/countries.json",
+   "license": "ODbL 1.0",
+   "fields": "cca2 to cca3 only"
+  }
+ ],
+ "formula": "cap = large_airport(scheduled) + 0.25 x medium_airport(scheduled)",
+ "mediumWeight": 0.25,
+ "airportsCounted": 3269,
+ "capTotal": 1680.5,
+ "unmatchedIso2": [],
+ "countries": {
+  "ABW": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "AFG": {
+   "lg": 4,
+   "md": 1,
+   "cap": 4.25
+  },
+  "AGO": {
+   "lg": 2,
+   "md": 12,
+   "cap": 5
+  },
+  "AIA": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "ALB": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "ARE": {
+   "lg": 7,
+   "md": 0,
+   "cap": 7
+  },
+  "ARG": {
+   "lg": 13,
+   "md": 30,
+   "cap": 20.5
+  },
+  "ARM": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "ASM": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "ATG": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "AUS": {
+   "lg": 15,
+   "md": 100,
+   "cap": 40
+  },
+  "AUT": {
+   "lg": 6,
+   "md": 0,
+   "cap": 6
+  },
+  "AZE": {
+   "lg": 3,
+   "md": 2,
+   "cap": 3.5
+  },
+  "BDI": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "BEL": {
+   "lg": 3,
+   "md": 2,
+   "cap": 3.5
+  },
+  "BEN": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "BES": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "BFA": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "BGD": {
+   "lg": 3,
+   "md": 5,
+   "cap": 4.25
+  },
+  "BGR": {
+   "lg": 4,
+   "md": 0,
+   "cap": 4
+  },
+  "BHR": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "BHS": {
+   "lg": 3,
+   "md": 19,
+   "cap": 7.75
+  },
+  "BIH": {
+   "lg": 4,
+   "md": 0,
+   "cap": 4
+  },
+  "BLM": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "BLR": {
+   "lg": 2,
+   "md": 2,
+   "cap": 2.5
+  },
+  "BLZ": {
+   "lg": 1,
+   "md": 7,
+   "cap": 2.75
+  },
+  "BMU": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "BOL": {
+   "lg": 6,
+   "md": 7,
+   "cap": 7.75
+  },
+  "BRA": {
+   "lg": 28,
+   "md": 63,
+   "cap": 43.75
+  },
+  "BRB": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "BRN": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "BTN": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "BWA": {
+   "lg": 4,
+   "md": 0,
+   "cap": 4
+  },
+  "CAF": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "CAN": {
+   "lg": 17,
+   "md": 124,
+   "cap": 48
+  },
+  "CCK": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "CHE": {
+   "lg": 2,
+   "md": 3,
+   "cap": 2.75
+  },
+  "CHL": {
+   "lg": 8,
+   "md": 9,
+   "cap": 10.25
+  },
+  "CHN": {
+   "lg": 69,
+   "md": 156,
+   "cap": 108
+  },
+  "CIV": {
+   "lg": 1,
+   "md": 3,
+   "cap": 1.75
+  },
+  "CMR": {
+   "lg": 3,
+   "md": 2,
+   "cap": 3.5
+  },
+  "COD": {
+   "lg": 4,
+   "md": 12,
+   "cap": 7
+  },
+  "COG": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "COK": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "COL": {
+   "lg": 6,
+   "md": 36,
+   "cap": 15
+  },
+  "COM": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "CPV": {
+   "lg": 4,
+   "md": 2,
+   "cap": 4.5
+  },
+  "CRI": {
+   "lg": 2,
+   "md": 8,
+   "cap": 4
+  },
+  "CUB": {
+   "lg": 6,
+   "md": 9,
+   "cap": 8.25
+  },
+  "CUW": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "CXR": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "CYM": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "CYP": {
+   "lg": 3,
+   "md": 0,
+   "cap": 3
+  },
+  "CZE": {
+   "lg": 5,
+   "md": 1,
+   "cap": 5.25
+  },
+  "DEU": {
+   "lg": 22,
+   "md": 7,
+   "cap": 23.75
+  },
+  "DJI": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "DMA": {
+   "lg": 0,
+   "md": 2,
+   "cap": 0.5
+  },
+  "DNK": {
+   "lg": 5,
+   "md": 5,
+   "cap": 6.25
+  },
+  "DOM": {
+   "lg": 4,
+   "md": 4,
+   "cap": 5
+  },
+  "DZA": {
+   "lg": 12,
+   "md": 18,
+   "cap": 16.5
+  },
+  "ECU": {
+   "lg": 4,
+   "md": 8,
+   "cap": 6
+  },
+  "EGY": {
+   "lg": 14,
+   "md": 3,
+   "cap": 14.75
+  },
+  "ERI": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "ESH": {
+   "lg": 2,
+   "md": 1,
+   "cap": 2.25
+  },
+  "ESP": {
+   "lg": 21,
+   "md": 21,
+   "cap": 26.25
+  },
+  "EST": {
+   "lg": 1,
+   "md": 4,
+   "cap": 2
+  },
+  "ETH": {
+   "lg": 4,
+   "md": 11,
+   "cap": 6.75
+  },
+  "FIN": {
+   "lg": 10,
+   "md": 10,
+   "cap": 12.5
+  },
+  "FJI": {
+   "lg": 2,
+   "md": 1,
+   "cap": 2.25
+  },
+  "FLK": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "FRA": {
+   "lg": 17,
+   "md": 29,
+   "cap": 24.25
+  },
+  "FRO": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "FSM": {
+   "lg": 3,
+   "md": 1,
+   "cap": 3.25
+  },
+  "GAB": {
+   "lg": 2,
+   "md": 3,
+   "cap": 2.75
+  },
+  "GBR": {
+   "lg": 17,
+   "md": 23,
+   "cap": 22.75
+  },
+  "GEO": {
+   "lg": 3,
+   "md": 2,
+   "cap": 3.5
+  },
+  "GGY": {
+   "lg": 0,
+   "md": 2,
+   "cap": 0.5
+  },
+  "GHA": {
+   "lg": 3,
+   "md": 3,
+   "cap": 3.75
+  },
+  "GIB": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "GIN": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "GLP": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "GMB": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "GNB": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "GNQ": {
+   "lg": 3,
+   "md": 1,
+   "cap": 3.25
+  },
+  "GRC": {
+   "lg": 9,
+   "md": 16,
+   "cap": 13
+  },
+  "GRD": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "GRL": {
+   "lg": 1,
+   "md": 8,
+   "cap": 3
+  },
+  "GTM": {
+   "lg": 1,
+   "md": 3,
+   "cap": 1.75
+  },
+  "GUF": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "GUM": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "GUY": {
+   "lg": 1,
+   "md": 3,
+   "cap": 1.75
+  },
+  "HKG": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "HND": {
+   "lg": 3,
+   "md": 3,
+   "cap": 3.75
+  },
+  "HRV": {
+   "lg": 6,
+   "md": 2,
+   "cap": 6.5
+  },
+  "HTI": {
+   "lg": 2,
+   "md": 2,
+   "cap": 2.5
+  },
+  "HUN": {
+   "lg": 3,
+   "md": 2,
+   "cap": 3.5
+  },
+  "IDN": {
+   "lg": 19,
+   "md": 52,
+   "cap": 32
+  },
+  "IMN": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "IND": {
+   "lg": 43,
+   "md": 63,
+   "cap": 58.75
+  },
+  "IRL": {
+   "lg": 4,
+   "md": 2,
+   "cap": 4.5
+  },
+  "IRN": {
+   "lg": 15,
+   "md": 27,
+   "cap": 21.75
+  },
+  "IRQ": {
+   "lg": 5,
+   "md": 1,
+   "cap": 5.25
+  },
+  "ISL": {
+   "lg": 2,
+   "md": 6,
+   "cap": 3.5
+  },
+  "ISR": {
+   "lg": 2,
+   "md": 1,
+   "cap": 2.25
+  },
+  "ITA": {
+   "lg": 25,
+   "md": 17,
+   "cap": 29.25
+  },
+  "JAM": {
+   "lg": 2,
+   "md": 2,
+   "cap": 2.5
+  },
+  "JEY": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "JOR": {
+   "lg": 3,
+   "md": 0,
+   "cap": 3
+  },
+  "JPN": {
+   "lg": 28,
+   "md": 55,
+   "cap": 41.75
+  },
+  "KAZ": {
+   "lg": 19,
+   "md": 2,
+   "cap": 19.5
+  },
+  "KEN": {
+   "lg": 4,
+   "md": 7,
+   "cap": 5.75
+  },
+  "KGZ": {
+   "lg": 3,
+   "md": 3,
+   "cap": 3.75
+  },
+  "KHM": {
+   "lg": 4,
+   "md": 1,
+   "cap": 4.25
+  },
+  "KIR": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "KNA": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "KOR": {
+   "lg": 8,
+   "md": 7,
+   "cap": 9.75
+  },
+  "KOS": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "KWT": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "LAO": {
+   "lg": 3,
+   "md": 1,
+   "cap": 3.25
+  },
+  "LBN": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "LBR": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "LBY": {
+   "lg": 3,
+   "md": 3,
+   "cap": 3.75
+  },
+  "LCA": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "LKA": {
+   "lg": 3,
+   "md": 4,
+   "cap": 4
+  },
+  "LSO": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "LTU": {
+   "lg": 3,
+   "md": 0,
+   "cap": 3
+  },
+  "LUX": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "LVA": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "MAC": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "MAF": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "MAR": {
+   "lg": 12,
+   "md": 5,
+   "cap": 13.25
+  },
+  "MDA": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "MDG": {
+   "lg": 4,
+   "md": 9,
+   "cap": 6.25
+  },
+  "MDV": {
+   "lg": 3,
+   "md": 4,
+   "cap": 4
+  },
+  "MEX": {
+   "lg": 29,
+   "md": 30,
+   "cap": 36.5
+  },
+  "MHL": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "MKD": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "MLI": {
+   "lg": 2,
+   "md": 3,
+   "cap": 2.75
+  },
+  "MLT": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "MMR": {
+   "lg": 3,
+   "md": 14,
+   "cap": 6.5
+  },
+  "MNE": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "MNG": {
+   "lg": 1,
+   "md": 10,
+   "cap": 3.5
+  },
+  "MNP": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "MOZ": {
+   "lg": 4,
+   "md": 7,
+   "cap": 5.75
+  },
+  "MRT": {
+   "lg": 2,
+   "md": 1,
+   "cap": 2.25
+  },
+  "MSR": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "MTQ": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "MUS": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "MWI": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "MYS": {
+   "lg": 8,
+   "md": 18,
+   "cap": 12.5
+  },
+  "MYT": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "NAM": {
+   "lg": 2,
+   "md": 7,
+   "cap": 3.75
+  },
+  "NCL": {
+   "lg": 1,
+   "md": 8,
+   "cap": 3
+  },
+  "NER": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "NFK": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "NGA": {
+   "lg": 12,
+   "md": 14,
+   "cap": 15.5
+  },
+  "NIC": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "NIU": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "NLD": {
+   "lg": 5,
+   "md": 0,
+   "cap": 5
+  },
+  "NOR": {
+   "lg": 10,
+   "md": 30,
+   "cap": 17.5
+  },
+  "NPL": {
+   "lg": 3,
+   "md": 6,
+   "cap": 4.5
+  },
+  "NRU": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "NZL": {
+   "lg": 4,
+   "md": 22,
+   "cap": 9.5
+  },
+  "OMN": {
+   "lg": 4,
+   "md": 1,
+   "cap": 4.25
+  },
+  "PAK": {
+   "lg": 11,
+   "md": 8,
+   "cap": 13
+  },
+  "PAN": {
+   "lg": 1,
+   "md": 6,
+   "cap": 2.5
+  },
+  "PER": {
+   "lg": 8,
+   "md": 16,
+   "cap": 12
+  },
+  "PHL": {
+   "lg": 15,
+   "md": 25,
+   "cap": 21.25
+  },
+  "PLW": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "PNG": {
+   "lg": 2,
+   "md": 19,
+   "cap": 6.75
+  },
+  "POL": {
+   "lg": 11,
+   "md": 4,
+   "cap": 12
+  },
+  "PRI": {
+   "lg": 1,
+   "md": 7,
+   "cap": 2.75
+  },
+  "PRK": {
+   "lg": 1,
+   "md": 3,
+   "cap": 1.75
+  },
+  "PRT": {
+   "lg": 5,
+   "md": 13,
+   "cap": 8.25
+  },
+  "PRY": {
+   "lg": 3,
+   "md": 0,
+   "cap": 3
+  },
+  "PYF": {
+   "lg": 1,
+   "md": 24,
+   "cap": 7
+  },
+  "QAT": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "REU": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "ROU": {
+   "lg": 12,
+   "md": 4,
+   "cap": 13
+  },
+  "RUS": {
+   "lg": 43,
+   "md": 82,
+   "cap": 63.5
+  },
+  "RWA": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "SAU": {
+   "lg": 16,
+   "md": 13,
+   "cap": 19.25
+  },
+  "SDN": {
+   "lg": 2,
+   "md": 5,
+   "cap": 3.25
+  },
+  "SEN": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "SGP": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "SHN": {
+   "lg": 0,
+   "md": 2,
+   "cap": 0.5
+  },
+  "SLB": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "SLE": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "SLV": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "SOM": {
+   "lg": 3,
+   "md": 1,
+   "cap": 3.25
+  },
+  "SPM": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "SRB": {
+   "lg": 2,
+   "md": 1,
+   "cap": 2.25
+  },
+  "SSD": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "STP": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "SUR": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "SVK": {
+   "lg": 1,
+   "md": 3,
+   "cap": 1.75
+  },
+  "SVN": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "SWE": {
+   "lg": 11,
+   "md": 23,
+   "cap": 16.75
+  },
+  "SWZ": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "SXM": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "SYC": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "SYR": {
+   "lg": 2,
+   "md": 2,
+   "cap": 2.5
+  },
+  "TCA": {
+   "lg": 1,
+   "md": 3,
+   "cap": 1.75
+  },
+  "TCD": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "TGO": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "THA": {
+   "lg": 10,
+   "md": 23,
+   "cap": 15.75
+  },
+  "TJK": {
+   "lg": 4,
+   "md": 0,
+   "cap": 4
+  },
+  "TKM": {
+   "lg": 3,
+   "md": 3,
+   "cap": 3.75
+  },
+  "TLS": {
+   "lg": 2,
+   "md": 2,
+   "cap": 2.5
+  },
+  "TON": {
+   "lg": 2,
+   "md": 1,
+   "cap": 2.25
+  },
+  "TTO": {
+   "lg": 2,
+   "md": 0,
+   "cap": 2
+  },
+  "TUN": {
+   "lg": 2,
+   "md": 5,
+   "cap": 3.25
+  },
+  "TUR": {
+   "lg": 15,
+   "md": 36,
+   "cap": 24
+  },
+  "TUV": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "TWN": {
+   "lg": 7,
+   "md": 7,
+   "cap": 8.75
+  },
+  "TZA": {
+   "lg": 4,
+   "md": 5,
+   "cap": 5.25
+  },
+  "UGA": {
+   "lg": 1,
+   "md": 4,
+   "cap": 2
+  },
+  "UMI": {
+   "lg": 0,
+   "md": 1,
+   "cap": 0.25
+  },
+  "URY": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "USA": {
+   "lg": 95,
+   "md": 410,
+   "cap": 197.5
+  },
+  "UZB": {
+   "lg": 6,
+   "md": 6,
+   "cap": 7.5
+  },
+  "VCT": {
+   "lg": 1,
+   "md": 4,
+   "cap": 2
+  },
+  "VEN": {
+   "lg": 7,
+   "md": 13,
+   "cap": 10.25
+  },
+  "VGB": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "VIR": {
+   "lg": 1,
+   "md": 1,
+   "cap": 1.25
+  },
+  "VNM": {
+   "lg": 7,
+   "md": 13,
+   "cap": 10.25
+  },
+  "VUT": {
+   "lg": 1,
+   "md": 2,
+   "cap": 1.5
+  },
+  "WLF": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "WSM": {
+   "lg": 1,
+   "md": 0,
+   "cap": 1
+  },
+  "YEM": {
+   "lg": 4,
+   "md": 3,
+   "cap": 4.75
+  },
+  "ZAF": {
+   "lg": 11,
+   "md": 12,
+   "cap": 14
+  },
+  "ZMB": {
+   "lg": 4,
+   "md": 0,
+   "cap": 4
+  },
+  "ZWE": {
+   "lg": 3,
+   "md": 1,
+   "cap": 3.25
+  }
+ }
+}

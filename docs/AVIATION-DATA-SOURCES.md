@@ -37,6 +37,7 @@ GET https://api.airplanes.live/v2/point/50.040/8.570/250
 | **位置（全球・要契約）** | [The OpenSky Network](https://opensky-network.org/) | ToU：**運用利用には事前の書面合意が必要** | OAuth2 | アダプタ完成・既定では無効 |
 | 位置（旧） | airplanes.live | — | 不要 | **403（全リクエスト）** ・既定で無効 |
 | 空港・滑走路 | [OurAirports](https://ourairports.com/) | public domain | 不要 | 稼働（`js/map-extras.js`） |
+| 国別の航空接続性 | [OurAirports](https://ourairports.com/data/) | public domain | 不要 | 稼働（**ビルド時**・`scripts/build-airports.mjs` → `data/airports.json`） |
 | 機体写真 | [Planespotters](https://www.planespotters.net/) | 各写真家 | 不要 | 稼働（`js/aircraft-detail.js`） |
 
 ### 1.1 adsb.lol —— 既定

@@ -2899,6 +2899,8 @@ window.IntMapLang.define('ko', { ui: {
   "Experimental interactive modes built on real data.": "실제 데이터로 만든 실험적 인터랙티브 모드.",
   "A full 6-DOF flight model — pick an aircraft and airport, then take off and land over the real 3-D terrain.": "6자유도 본격 비행 모델. 기체와 공항을 고르고 실제 3-D 지형 위에서 이착륙하세요.",
   "Pandemic Simulator": "팬데믹 시뮬레이터",
+  "International spread is weighted by population, land borders and airport capacity — not by flight routes or passenger numbers.": "국제 전파 가중치는 인구·육상 국경·공항 규모를 기준으로 하며, 항공 노선이나 승객 수는 반영하지 않습니다.",   /* playground.js (#R666) */
+  "International spread is weighted by population and distance only — the border and airport tables did not load.": "국제 전파 가중치는 인구와 거리만을 기준으로 합니다 — 국경·공항 데이터를 불러오지 못했습니다.",   /* playground.js (#R666) */
   "Test your world geography: flags, capitals, map-clicks, silhouettes & duels.": "국기·수도·지도 클릭·실루엣·대결로 세계 지리 실력을 시험해 보세요.",
   "Breaking": "속보",
   "Country data unavailable": "국경 데이터를 불러올 수 없습니다",

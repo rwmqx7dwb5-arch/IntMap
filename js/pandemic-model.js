@@ -153,7 +153,10 @@ export function createPandemicModel(cfg) {
      simulator chains two latent and two infectious stages for exactly this reason; two is the
      cheapest shape that is no longer exponential. Raising these changes the epidemic's speed, not
      its mean durations. */
-  const LATENT_STAGES = 2, INFECTIOUS_STAGES = 2;
+  /* ⚠⚠⚠ (#R666) HOW MANY STAGES IS DECIDED PER DISEASE, BELOW, BECAUSE OF THE SOJOURN TIME.
+     The stage count and the per-stage daily probability are the SAME decision and were split
+     across two places, which is how the mean stopped matching the setting — see the note above
+     `latentStages` / `infectiousStages`. */
 
   /* Above this expected transition size the law of large numbers has already done its work and a
      draw is indistinguishable from its mean, so the arithmetic goes deterministic — a Poisson draw
@@ -167,20 +170,127 @@ export function createPandemicModel(cfg) {
      unanswerable. The remainder is moved to R, so the population is still conserved. */
   const FADEOUT = 0.5;
 
-  /* Importation. Not an airline network: distance decay + a connectivity proxy. The 3200 km scale
-     is the old model's and is kept so that this round changes correctness and not the shape of the
-     map; it expires the moment a real country-to-country mobility matrix exists (PHASE 2). */
-  const AIR_DECAY_KM = 3200, AIR_SCALE = 0.55, HUB_SCALE = 0.04;
-  /* How many destinations one seeded country offers per day. ⚠ FIXED, NOT R0-DERIVED. The old code
-     used 2 + R0/2 tries AND an R0-proportional acceptance, so a more transmissible pathogen made
-     people fly more often. How infectious a pathogen is cannot change how far people travel; it
-     changes whether an imported case establishes, which the local dynamics already decide. */
-  const MOBILITY_TRIES = 3;
-  /* An importation event is a handful of infected travellers, not a wave. */
-  const IMPORT_CASES = 8;
-  /* Below this prevalence a country exports nothing — one case in a hundred thousand does not fill
-     an aircraft. Inherited from the previous model. */
-  const EXPORT_PREVALENCE = 4e-4;
+  /* ══ (#R666) IMPORTATION — PHASE 2. WHERE AN OUTBREAK GOES NEXT IS NOW A DISTRIBUTION ═══════
+     ⚠⚠⚠ WHAT THIS REPLACES. The destination of an importation was `Math.floor(rnd()*N)` — a UNIFORM
+     draw over every country on the map. Distance and a connectivity proxy decided only whether the
+     try was ACCEPTED, so Tuvalu and India were equally likely to be OFFERED the world's next
+     outbreak and the difference between them showed up only as a scaling of one Bernoulli trial.
+     Nothing about that is a mobility model: it is a coin flip with a weight on it.
+
+     Now every ordered pair carries a weight and the destination is drawn from it. The weight has
+     two terms because there are two ways an infection crosses a border, and they are not the same
+     mechanism:
+
+         w_ij  =  attract_j · exp(−d_ij / AIR_DECAY_KM)      ← by air
+                + LAND_MIX · adjacent_ij · popW_j            ← on foot, by road, by rail
+
+     · `attract_j` is country j's SCHEDULED AIRLINE INFRASTRUCTURE relative to the world mean
+       (data/airports.json, built by scripts/build-airports.mjs from OurAirports). A country the
+       host supplies no airport figure for falls back to its population weight, so it is never
+       unreachable — «no data» must not read as «no airports» (#R262).
+     · `popW_j = (pop_j / popMean)^POP_EXP`. Land crossings are driven by how many people live on
+       the other side, not by how many runways.
+     · `adjacent_ij` is a REAL land border (data/country-facts.json's `borders` — 163 countries,
+       322 undirected edges, symmetric and closed), not a distance threshold. Two countries 40 km
+       apart across water are not neighbours, and a distance rule cannot tell the difference.
+
+     ⚠ THE WEIGHT DECIDES WHERE, NOT HOW OFTEN. Anything constant across j cancels when the row is
+     normalised, so country i's own propensity to travel is NOT in here — it is in the acceptance
+     below, where it belongs.
+
+     AIR_DECAY_KM is the old model's 3200 km and keeps its meaning (the e-folding distance of air
+     travel). AIR_SCALE and HUB_SCALE are gone: they scaled a per-destination acceptance that no
+     longer exists. */
+  const AIR_DECAY_KM = 3200;
+  /* Destination population enters sub-linearly, the standard gravity-model convention — twice the
+     people is not twice the arrivals. Not fitted to anything in this project; it expires the day a
+     real passenger matrix does. */
+  const POP_EXP = 0.7;
+  /* How much a shared land border is worth against an average air link at zero distance. A MIXING
+     WEIGHT, not an observation — nothing in this project measures land crossings. MEASURED on the
+     real 177-country world at 2.5: land neighbours take a median 26% of the destination weight a
+     bordered country offers (p25 17%, p75 39%; China 80%, Nepal 70%, Brazil 61%, Germany 31%) and
+     exactly 0% of what each of the 24 landless countries offers, which is the qualitative fact this
+     term exists to produce. Raising it makes an outbreak crawl overland; lowering it makes every
+     border irrelevant. */
+  const LAND_MIX = 2.5;
+  /* Floor on a destination's attractiveness, so that the least-connected country on Earth is still
+     reachable rather than arithmetically excluded. A share of the world mean. */
+  const ATTRACT_FLOOR = 0.02;
+  /* How much of country i's own outbound travel one unit of «airport capacity per million people»
+     buys, relative to the world's population-weighted mean of the same figure. The square root is
+     compression, not a measurement: airport counts are infrastructure, and infrastructure grows
+     more slowly than the traffic through it (Singapore runs one of the world's busiest
+     international airports out of ONE large airport, so a linear reading would call it the least
+     connected country in Asia). Clamped because neither end of an unbounded ratio is credible. */
+  const TRAVEL_EXP = 0.5, TRAVEL_MIN = 0.2, TRAVEL_MAX = 3;
+  /* …and the same compression on a DESTINATION's airport capacity, for the same reason from the
+     other side: the count of airports grows with a country's LAND AREA, and the international
+     traffic through them does not. MEASURED without it, Iceland's most likely destination was
+     Russia at 14.3% and the United Kingdom came sixth at 4.5% — Russia has 63.5 units of capacity
+     spread over eleven time zones, almost all of it domestic. With it the same row reads Russia
+     7.0% / United Kingdom 3.6%, and Japan's reads China 10.4% · South Korea 5.9% · Taiwan 3.6%
+     instead of China 24.4% · United States 9.2%. Expires with any source that counts seats or
+     passengers rather than runways. */
+  const AIR_EXP = 0.5;
+  /* ══ ⚠⚠ (#R666) HOW MUCH BEING INFECTED SUPPRESSES A TRIP ═══════════════════════════════════
+     `INTL_TRIPS_PER_PERSON_DAY` is the rate for the general population. An infected person is not
+     the general population: they may be symptomatic, they may be told to stay home, and screening
+     turns some of them back. This is that suppression, as one factor.
+
+     CALIBRATED AGAINST A REAL EPIDEMIC, not against the model it replaces. COVID-19's own country
+     count is the only global spread curve there is: roughly ten countries by late January 2020,
+     fifty by the end of February, a hundred by mid-March — about day 50, day 80 and day 95 from the
+     first symptom onsets in Wuhan. MEASURED here on the real 177-country world (Natural Earth 110 m
+     + data/country-facts.json + data/airports.json), covid preset, novel-pathogen scenario, 20 cases
+     seeded in Brazil, seeds 1-12, median day the Nth country is reached:
+
+                             10th    50th   100th
+       COVID-19, observed      ~50     ~80     ~95
+         0.30                   54      74      86
+       → 0.15                   59      81      95
+         0.07                   66      92     114
+         0.04                   69      94     131
+       the model this replaces 245     349     402
+
+     ⚠ THE TENTH COUNTRY SATURATES near 50 days however high this goes, because the first hops are
+     paced by how long the source country takes to grow an exportable number of infected people and
+     not by how often anybody flies. That the curve saturates in the right place is the reason to
+     believe the mechanism rather than this constant.
+     ⚠ AND THE MODEL IT REPLACES WAS FIVE TIMES SLOWER THAN THE WORLD. That was not visible while
+     the destination was a uniform draw and the export gate was a prevalence threshold: there was
+     nothing in it that a real epidemic could be compared against. Expires with any real passenger
+     figure. */
+  const TRAVEL_WHEN_INFECTED = 0.15;
+  /* ══ ⚠⚠⚠ (#R666) HOW MANY PEOPLE LEAVE, NOT HOW MANY TRIES A COUNTRY GETS ═══════════════════
+     What stood here was «three destinations a day per seeded country, eight cases if the try lands,
+     and nothing at all below a prevalence of 0.04%». Every part of that is a rule about the SIMULATOR
+     rather than about travel: a country of a hundred million exported NOTHING until forty thousand
+     people were infectious in it, and once it did, it got the same three offers a day as Tuvalu.
+
+     What crosses a border is PEOPLE, and the number of them is the number of infected people times
+     the rate at which people travel abroad. So the day's departures are drawn from the country's own
+     infected pool — which makes the threshold unnecessary (one infected person in a hundred million
+     really does have a small chance of flying, and it is small BECAUSE the pool is small, not because
+     a constant says so) and makes the eight-case chunk unnecessary too (each traveller carries one
+     infection, and whether it establishes is what the local dynamics are for).
+
+     THE RATE. UN Tourism counts about 1.4 billion international tourist arrivals a year against a
+     world population of about 8.1 billion — 4.7 × 10⁻⁴ crossings per person per day. It is an
+     UNDERCOUNT of border crossings (same-day visitors and land commuting are not tourist arrivals)
+     and an OVERCOUNT of distinct travellers (one person's trip is several arrivals), and this model
+     has nothing finer. ⚠ It is scaled per country by `travel[i]`, and by the reader's own mobility
+     slider, and by both governments' border states. Expires with any real passenger figure.
+     ⚠ E TRAVELS TOO. Somebody incubating is exactly the traveller who is not stopped at a border,
+     which is most of what screening misses; the pool is E + I. */
+  const INTL_TRIPS_PER_PERSON_DAY = 4.7e-4;
+  /* A ceiling on how many individual departures one country resolves in one day, so a pandemic with
+     a hundred million infectious people cannot spend a browser frame drawing destinations one at a
+     time. MEASURED as a cost bound, not an epidemiological one: at this point the destination
+     distribution is being sampled a thousand times a day per country and the law of large numbers has
+     long since decided where they land. Above it the remainder is dropped, which can only ever SLOW
+     spread — and by then every country worth reaching has been reached. */
+  const MAX_DEPARTURES = 1000;
 
   /* Border policy. Four states with a real way back — the previous model had `closed = true` and no
      line that ever set it to false, so a border shut on day 60 of an eight-year run stayed shut for
@@ -254,22 +364,42 @@ export function createPandemicModel(cfg) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
   function rrange(a, b) { return a + rnd() * b; }
-  /* Knuth's method. Only ever called with small λ (see STOCHASTIC_MAX), so the loop is short. */
-  function poisson(lam) {
-    if (!(lam > 0)) return 0;
-    const L = Math.exp(-lam);
-    let k = 0, p = 1;
-    do { k++; p *= rnd(); } while (p > L && k < 400);
-    return k - 1;
+  /* ══ ⚠⚠⚠ (#R666) «n PEOPLE, EACH WITH PROBABILITY p» IS BINOMIAL, AND IT WAS POISSON ══════════
+     `min(n, Poisson(n·p))` is the right shape only when p is small. It was being asked about
+     probabilities that are not: with one stage and a 1-day latent period `p` is 1, and even at two
+     stages influenza's latent p was 0.865. MEASURED at n = 1, p = 0.865 — one exposed person, one
+     day — the true chance of moving on is 86.5% and the Poisson answer was
+     P(Poisson(0.865) ≥ 1) = 57.9%. The bias lands exactly where chance decides the outcome: the
+     first handful of cases, and whether a small outbreak fades out at all.
+
+     BINV (Kachitvichyanukul & Schmeiser's inverse-CDF sampler): walk the exact binomial pmf by its
+     recurrence until the uniform is used up. The loop runs about n·p + 1 times, and `draw` only
+     reaches here below STOCHASTIC_MAX, so it is bounded by ~30 iterations. `p` is folded to the
+     smaller side first, so (1−p)^n never underflows and the loop is short at BOTH ends. */
+  function binomial(n, p) {
+    if (n <= 0 || p <= 0) return 0;
+    if (p >= 1) return n;
+    const flip = p > 0.5, pp = flip ? 1 - p : p;
+    const q = 1 - pp, sr = pp / q, a = (n + 1) * sr;
+    let r = Math.pow(q, n), u = rnd(), x = 0;
+    if (!(r > 0)) return flip ? n - Math.round(n * pp) : Math.round(n * pp);   /* unreachable below the cap; a mean rather than a hang */
+    while (u > r && x < n) { u -= r; x++; r *= (a / x - sr); }
+    return flip ? n - x : x;
   }
   /* THE ONE PLACE PEOPLE MOVE. n people, each with probability p, and never more than n of them —
-     which is what makes population conservation a property of the code rather than a hope. */
+     which is what makes population conservation a property of the code rather than a hope.
+     ⚠ n IS REAL. Above STOCHASTIC_MAX the compartments go deterministic and stop being integers, so
+     the whole part is drawn exactly and the fraction is one extra Bernoulli — which is correct in
+     expectation and, more importantly, still cannot exceed n. */
   function draw(n, p) {
     if (!(n > 0) || !(p > 0)) return 0;
     if (p >= 1) return n;
     const m = n * p;
     if (m >= STOCHASTIC_MAX) return m;
-    return Math.min(n, poisson(m));
+    const whole = Math.floor(n), frac = n - whole;
+    let k = binomial(whole, p);
+    if (frac > 0 && rnd() < frac * p) k++;
+    return Math.min(n, k);
   }
   /* Hazard: the chance one individual leaves a compartment during one day, given a mean sojourn
      time. ⚠ THIS REPLACES `rate × population`, WHICH IS WHY «0 days» NO LONGER CREATES PEOPLE:
@@ -313,6 +443,32 @@ export function createPandemicModel(cfg) {
 
   const interventionScale = P.interventions === 'none' ? 0 : P.interventions === 'strong' ? 1.6 : 1;
 
+  /* ══ ⚠⚠⚠ (#R666) THE MEAN SOJOURN TIME MUST BE THE ONE THAT WAS ASKED FOR ═══════════════════
+     MEASURED on the model this replaces: a disease configured with a 1-day latent period spent a
+     mean of 2.31 days latent, a 4-day one spent 5.08, a 9-day infectious period lasted 10.04. Every
+     duration in every preset was about a day too long, and the header of this file claimed the
+     opposite — «raising these changes the epidemic's speed, not its mean durations».
+
+     WHY. The per-stage daily probability was `1 − e^(−S/T)`, the CONTINUOUS-time hazard. In a
+     model that steps one whole day at a time the number of days spent in a stage is GEOMETRIC with
+     mean 1/p, not exponential with mean T/S, and 1/(1 − e^(−r)) ≈ 1/r + ½ — half a day per stage,
+     two stages, one day too long, every time.
+
+     THE FIX IS THE DISCRETE ANSWER TO THE DISCRETE QUESTION: a geometric with mean T/S days is
+     `p = S/T`, so S stages have mean exactly T. Nothing about the SHAPE changes — the sum of S
+     geometrics is the discrete Erlang the two stages were always for — only the calibration.
+
+     ⚠ AND THE STAGE COUNT HAS TO BE PART OF IT. Because a person cannot cross two stages in one
+     day (the loops below run backwards precisely so they cannot), two stages can never have a mean
+     under two days: influenza's 1-day latent period is not representable at two stages AT ALL, at
+     any probability. So a period shorter than two days gets ONE stage, where `p = 1/T` is
+     reachable. The exponential tail that costs is the right price for a mean that is the truth.
+     ⚠ A period under ONE day is not representable by a daily model either; `p` clamps at 1 and the
+     mean is one day. `latentDays: 0` is a different statement — «no latent compartment at all» —
+     and keeps its own branch. */
+  const LATENT_STAGES = P.latentDays >= 2 ? 2 : 1;
+  const INFECTIOUS_STAGES = P.infectiousDays >= 2 ? 2 : 1;
+
   /* ── country state ────────────────────────────────────────────────────────────────────────────
      E and I are ARRAYS — one entry per Erlang stage. `pop0` is kept so that conservation is a
      testable statement about this country and not about a global sum that could hide two errors
@@ -331,8 +487,23 @@ export function createPandemicModel(cfg) {
          policy response and vaccine delivery are different things, and a model that spells them as
          one number can never be improved without touching every formula that used it. */
       health: dev, connectivity: dev, response: dev, delivery: 0.35 + 0.65 * dev,
+      /* ⚠ (#R666) `connectivity` STAYS `dev` AND STOPS BEING READ BY THE MOBILITY. It was doing two
+         different jobs — how attractive this country is as a destination, and how much its own
+         residents travel — with one number derived from GDP per head. Those are now `attract` and
+         `travel`, both built below from airport capacity where the host supplies it. Nothing else
+         reads `connectivity`, and it is left in place because it is what `travel` falls back TO. */
+      air: Math.max(0, num(c.air, 0)),
       pop0: pop, lat: num(c.lat, 0), lng: num(c.lng, 0),
-      S: pop - immune, E: zeros(LATENT_STAGES), I: zeros(INFECTIOUS_STAGES), R: immune, V: 0, D: 0,
+      /* ⚠⚠⚠ (#R666) `SV` — VACCINATED, AND STILL SUSCEPTIBLE. An all-or-nothing vaccine leaves the
+         people it failed to protect in the susceptible pool, and yesterday they went back into `S`,
+         where the rollout drew them again the next day, and the next. A 40% vaccine given to the
+         same person often enough protects them almost surely, so the comment beside the rollout —
+         «which is why a 40% vaccine cannot end an epidemic on its own» — was describing something
+         the code did not do. They are the same thing epidemiologically (they catch it exactly as
+         `S` does) and a different thing administratively (the campaign has already reached them), so
+         they are a compartment rather than a flag. CDC's 2026 measles simulator separates the same
+         group for the same reason. */
+      S: pop - immune, SV: 0, E: zeros(LATENT_STAGES), I: zeros(INFECTIOUS_STAGES), R: immune, V: 0, D: 0,
       /* ⚠ THE ATTACK RATE'S OWN LEDGER. It cannot be read off R+D+I, because waning immunity and
          immune escape both move people OUT of R — which made the old «% of the world infected»
          number go DOWN. This one only ever increases; it counts infection EVENTS, so a reinfection
@@ -359,7 +530,7 @@ export function createPandemicModel(cfg) {
 
   /* ── helpers ──────────────────────────────────────────────────────────────────────────────── */
   function sum(a) { let s = 0; for (let k = 0; k < a.length; k++) s += a[k]; return s; }
-  function alive(s) { return s.S + sum(s.E) + sum(s.I) + s.R + s.V; }
+  function alive(s) { return s.S + s.SV + sum(s.E) + sum(s.I) + s.R + s.V; }
   function haversine(a, b) {
     const R = 6371, toR = Math.PI / 180;
     const dLat = (b.lat - a.lat) * toR, dLon = (b.lng - a.lng) * toR;
@@ -388,18 +559,27 @@ export function createPandemicModel(cfg) {
     const s = st[i];
     const k = Math.min(s.S, Math.max(0, cases));
     if (!(k > 0)) return 0;
+    /* ⚠⚠⚠ (#R666) THE SHARE IS MIXED AGAINST WHAT WAS HERE BEFORE, NOT AFTER. `mixShare` weighs the
+       arrivals against `E + I`, and this function used to ADD them first — so eight cases of a
+       variant arriving in a country with no cases at all mixed 8 against 8, and the country came out
+       47% ancestral strain when not one ancestral case had ever set foot in it. Measured on the
+       arithmetic: w = 8/(8+8+1) = 0.471. */
+    const here = sum(s.E) + sum(s.I);
     s.S -= k;
     if (P.latentDays > 0) s.E[0] += k; else s.I[0] += k;
     s.cumInf += k;
     s.seeded = true;
-    if (fromShare) mixShare(s, fromShare, k);
+    if (fromShare) mixShare(s, fromShare, k, here);
     return k;
   }
   /* An importation carries whatever is circulating where it came from, weighted by how big it is
      relative to what is already here. */
-  function mixShare(s, from, weight) {
-    const here = sum(s.E) + sum(s.I);
-    const w = weight / (weight + here + 1);
+  function mixShare(s, from, weight, here) {
+    /* ⚠ NO «+1» WHEN NOTHING WAS HERE. The old denominator carried a lone +1 to keep it non-zero,
+       which on an empty country turned a pure importation into 47% of something that had never
+       arrived. An empty country simply takes what arrived. */
+    if (!(here > 0)) { for (let k = 0; k < variants.length; k++) s.share[k] = from[k] || 0; normalise(s.share); return; }
+    const w = weight / (weight + here);
     for (let k = 0; k < variants.length; k++) {
       const a = s.share[k] || 0, b = from[k] || 0;
       s.share[k] = a + (b - a) * w;
@@ -412,6 +592,83 @@ export function createPandemicModel(cfg) {
     for (let k = 0; k < sh.length; k++) sh[k] /= t;
   }
 
+  /* ══ (#R666) THE MOBILITY MATRIX — BUILT ONCE, AT CONSTRUCTION ═══════════════════════════════
+     One row per origin, holding the CUMULATIVE destination weight so a draw is one uniform number
+     and one binary search rather than a scan. N is the number of countries on the map (177 at the
+     110 m Natural Earth scale, 252 at 10 m), so the matrix is at most 64 000 doubles — built once
+     and read every day, which is the right way round for something that never changes.
+     ⚠ IT IS SEED-INDEPENDENT AND CONFIG-INDEPENDENT. Two runs with the same world have the same
+     matrix, so `same seed is the same world` (tests/r575-checks ⑧) still means what it said. */
+  const MOB_CUM = new Float64Array(N > 1 ? N * N : 0);
+  const travel = new Float64Array(N);
+  let mobilityFrom = 'population';   /* what the weights were actually built out of — reported */
+  (function buildMobility() {
+    if (N < 1) return;
+    let popSum = 0, airSum = 0, airRootSum = 0, devSum = 0, withAir = 0;
+    for (let i = 0; i < N; i++) { popSum += st[i].pop0; devSum += st[i].connectivity; if (st[i].air > 0) { airSum += st[i].air; airRootSum += Math.pow(st[i].air, AIR_EXP); withAir++; } }
+    const popMean = popSum / N, devMean = (devSum / N) || 1;
+    const anyAir = withAir > 0 && airSum > 0;
+    if (anyAir) mobilityFrom = withAir === N ? 'airports' : 'airports+population';
+    const airMean = anyAir ? airRootSum / withAir : 0;
+    /* Airport capacity per million people, averaged over PEOPLE and not over countries: a mean over
+       rows is a mean over two hundred rows of which a third are islands with one airstrip. */
+    const apcRef = anyAir ? (airSum * 1e6) / popSum : 0;
+
+    const popW = new Float64Array(N), attract = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      popW[i] = Math.pow(Math.max(1, st[i].pop0) / popMean, POP_EXP);
+      /* ⚠ A COUNTRY WITH NO AIRPORT FIGURE IS NOT A COUNTRY WITH NO AIRPORTS. It falls back to its
+         population weight, which is on the same scale (both average to 1 across the world). */
+      attract[i] = Math.max(ATTRACT_FLOOR, (anyAir && st[i].air > 0) ? Math.pow(st[i].air, AIR_EXP) / airMean : popW[i]);
+      travel[i] = (anyAir && st[i].air > 0 && apcRef > 0)
+        ? Math.min(TRAVEL_MAX, Math.max(TRAVEL_MIN, Math.pow((st[i].air * 1e6 / Math.max(1, st[i].pop0)) / apcRef, TRAVEL_EXP)))
+        : Math.min(TRAVEL_MAX, Math.max(TRAVEL_MIN, st[i].connectivity / devMean));
+    }
+
+    /* Land borders, by CODE. The host hands over what data/country-facts.json says; a code naming a
+       country that is not on this map is dropped here rather than being silently indexed as 0 —
+       which is what an unguarded lookup would have done, seeding Afghanistan's neighbours into
+       whatever country happens to be first in the array. */
+    const byCode = Object.create(null);
+    for (let i = 0; i < N; i++) { const c = C[i] && C[i].code; if (c) byCode[String(c).toUpperCase()] = i; }
+    const adj = new Array(N);
+    let edges = 0;
+    for (let i = 0; i < N; i++) {
+      const b = C[i] && C[i].borders;
+      if (!b || !b.length) { adj[i] = null; continue; }
+      const set = new Set();
+      for (let k = 0; k < b.length; k++) { const j = byCode[String(b[k]).toUpperCase()]; if (j != null && j !== i) { set.add(j); edges++; } }
+      adj[i] = set.size ? set : null;
+    }
+    if (edges > 0 && mobilityFrom !== 'population') mobilityFrom += '+borders';
+    else if (edges > 0) mobilityFrom = 'population+borders';
+
+    if (N < 2) return;
+    for (let i = 0; i < N; i++) {
+      const row = i * N, a = adj[i];
+      let acc = 0;
+      for (let j = 0; j < N; j++) {
+        if (j !== i) {
+          const d = haversine(st[i], st[j]);
+          acc += attract[j] * Math.exp(-d / AIR_DECAY_KM) + (a && a.has(j) ? LAND_MIX * popW[j] : 0);
+        }
+        MOB_CUM[row + j] = acc;
+      }
+      /* A world of one reachable country would leave the row flat; `pickDest` answers −1 for it. */
+    }
+  })();
+
+  /* One uniform number, one binary search. Returns −1 when this origin can reach nobody. */
+  function pickDest(i) {
+    if (N < 2) return -1;
+    const row = i * N, total = MOB_CUM[row + N - 1];
+    if (!(total > 0)) return -1;
+    const x = rnd() * total;
+    let lo = 0, hi = N - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (MOB_CUM[row + mid] > x) hi = mid; else lo = mid + 1; }
+    return lo === i ? -1 : lo;
+  }
+
   /* ── one day ──────────────────────────────────────────────────────────────────────────────── */
   function step() {
     if (ended) return [];
@@ -420,8 +677,9 @@ export function createPandemicModel(cfg) {
 
     /* Stage hazards. `latentDays === 0` is not a division: it means the E boxes are bypassed at
        injection, so nothing is sitting in them to move. */
-    const pE = P.latentDays > 0 ? hazard(LATENT_STAGES / P.latentDays) : 1;
-    const pI = hazard(INFECTIOUS_STAGES / P.infectiousDays);
+    /* (#R666) `S/T`, not `1 − e^(−S/T)` — the note beside LATENT_STAGES says why. */
+    const pE = P.latentDays > 0 ? Math.min(1, LATENT_STAGES / P.latentDays) : 1;
+    const pI = Math.min(1, INFECTIOUS_STAGES / P.infectiousDays);
     /* Immunity: ∞ ⇒ never wanes (0/day), 0 ⇒ handled at the recovery step, which sends people
        straight back to S instead of through an infinite rate. */
     const pWane = (P.naturalImmunityDays === Infinity || !(P.naturalImmunityDays > 0)) ? 0 : hazard(1 / P.naturalImmunityDays);
@@ -455,7 +713,12 @@ export function createPandemicModel(cfg) {
       const behav = P.interventions === 'none' ? 1
         : Math.max(0.12, 1 - (0.55 * Math.min(1, prevalence * 90) + 0.25 * s.lock) * interventionScale);
       const beta = localR0(s) / P.infectiousDays * seasonFactor(s.lat) * behav;
-      const newInf = draw(s.S, hazard(beta * Ii / live));
+      /* ⚠ (#R666) TWO SUSCEPTIBLE POOLS, ONE HAZARD. `SV` catches the disease exactly as `S` does,
+         so it is drawn separately at the same probability — which is what «each person independently»
+         means — rather than by splitting one draw, which would correlate the two. */
+      const hInf = hazard(beta * Ii / live);
+      const newInfS = draw(s.S, hInf), newInfSV = draw(s.SV, hInf);
+      const newInf = newInfS + newInfSV;
 
       /* Erlang chains, walked BACKWARDS so a person cannot cross two stages in one day. */
       const eOut = new Array(LATENT_STAGES), iOut = new Array(INFECTIOUS_STAGES);
@@ -474,13 +737,13 @@ export function createPandemicModel(cfg) {
          ⚠ DRAWN FROM WHAT IS LEFT AFTER TODAY'S INFECTIONS. Two independent draws from the same S
          can together exceed it, and «S went slightly negative» is how the clamping that hid the
          other five defects got written in the first place. */
-      const freeS = Math.max(0, s.S - newInf);
+      const freeS = Math.max(0, s.S - newInfS);
       const doses = vaxDay >= 0 ? draw(freeS, Math.min(0.99, vaxRate * s.delivery * P.vaccineRolloutScale)) : 0;
       const protectedDoses = draw(doses, P.vaccineEfficacy);
       const wane = draw(s.R, pWane), vWane = draw(s.V, pVWane);
 
       /* Apply. Every line moves people from one box to another; nothing is created. */
-      s.S -= newInf;
+      s.S -= newInfS; s.SV -= newInfSV;
       if (P.latentDays > 0) {
         s.E[0] += newInf;
         for (let k = 0; k < LATENT_STAGES; k++) {
@@ -497,7 +760,9 @@ export function createPandemicModel(cfg) {
       if (noLastingImmunity) s.S += rec; else s.R += rec;
       s.D += dead; s.cumDead += dead;
       s.cumInf += newInf;
-      s.S -= protectedDoses; s.V += protectedDoses;
+      /* ⚠ (#R666) THE WHOLE DOSE LEAVES `S`: the protected part to `V`, the rest to `SV`, where the
+         rollout will not reach for it again. */
+      s.S -= doses; s.V += protectedDoses; s.SV += doses - protectedDoses;
       s.R -= wane; s.S += wane;
       s.V -= vWane; s.S += vWane;
 
@@ -549,21 +814,27 @@ export function createPandemicModel(cfg) {
 
       /* Export. Collected now, applied after the loop so that a country seeded today cannot also
          export today — the old code let a chain of same-day hops run down the country array. */
-      if (P.mobility > 0 && nowI > live * EXPORT_PREVALENCE) exporters.push(i);
+      if (P.mobility > 0 && (nowI + sum(s.E)) >= 1) exporters.push(i);
     }
 
     /* ── importation ─────────────────────────────────────────────────────────────────────────── */
     for (let x = 0; x < exporters.length; x++) {
       const i = exporters[x], s = st[i];
-      const live = alive(s) || 1, prevalence = sum(s.I) / live;
-      for (let t = 0; t < MOBILITY_TRIES; t++) {
-        const j = Math.floor(rnd() * N);
-        if (j === i || j >= N) continue;
-        const d = haversine(s, st[j]) + 1;
-        const air = Math.exp(-d / AIR_DECAY_KM) * AIR_SCALE, hub = HUB_SCALE * st[j].connectivity;
-        let p = P.mobility * (air + hub) * Math.min(1, prevalence * 120);
-        p *= BORDER_PASS[BORDER_STATES[s.border]] * BORDER_PASS[BORDER_STATES[st[j].border]];
-        if (rnd() < p) inject(j, IMPORT_CASES, s.share);
+      /* ⚠ (#R666) HOW MANY LEAVE comes from here; WHERE THEY GO comes from the matrix. Distance,
+         destination size, destination air capacity and land adjacency are all inside `pickDest` —
+         anything in this line must be a property of the ORIGIN, or it would be counted twice.
+         `travel[i]` is how much this country's residents travel; the origin's border state is its
+         own government's answer and the destination's is asked per traveller below. */
+      const pool = sum(s.E) + sum(s.I);
+      const rate = P.mobility * TRAVEL_WHEN_INFECTED * INTL_TRIPS_PER_PERSON_DAY * travel[i] * BORDER_PASS[BORDER_STATES[s.border]];
+      let leave = draw(pool, Math.min(1, rate));
+      if (leave > MAX_DEPARTURES) leave = MAX_DEPARTURES;
+      for (let t = 0; t < leave; t++) {
+        const j = pickDest(i);
+        if (j < 0) continue;
+        /* the receiving government's answer, per traveller */
+        if (rnd() >= BORDER_PASS[BORDER_STATES[st[j].border]]) continue;
+        inject(j, 1, s.share);
       }
     }
 
@@ -621,13 +892,15 @@ export function createPandemicModel(cfg) {
 
   /* ── read-out ─────────────────────────────────────────────────────────────────────────────── */
   function totals() {
-    let S = 0, E = 0, I = 0, R = 0, D = 0, V = 0, cumInf = 0, affected = 0;
+    /* ⚠ (#R666) `S` IS BOTH SUSCEPTIBLE POOLS, because that is what the word means to a reader; `SV`
+       is reported beside it for anyone who needs «reached by the campaign and not protected». */
+    let S = 0, SV = 0, E = 0, I = 0, R = 0, D = 0, V = 0, cumInf = 0, affected = 0;
     for (let i = 0; i < N; i++) {
       const s = st[i];
-      S += s.S; E += sum(s.E); I += sum(s.I); R += s.R; D += s.D; V += s.V; cumInf += s.cumInf;
+      S += s.S + s.SV; SV += s.SV; E += sum(s.E); I += sum(s.I); R += s.R; D += s.D; V += s.V; cumInf += s.cumInf;
       if (s.seeded && (sum(s.I) + sum(s.E)) > 0.5) affected++;
     }
-    return { S, E, I, R, D, V, cumInf, affected, worldPop, day, variants: variants.length - 1, vaccine: vaxDay >= 0, treatment, emergency };
+    return { S, SV, E, I, R, D, V, cumInf, affected, worldPop, day, variants: variants.length - 1, vaccine: vaxDay >= 0, treatment, emergency };
   }
 
   /* Progress towards a vaccine, for a pathogen that does not have one yet. */
@@ -641,7 +914,7 @@ export function createPandemicModel(cfg) {
   function invariant() {
     for (let i = 0; i < N; i++) {
       const s = st[i];
-      const parts = [s.S, s.R, s.V, s.D].concat(s.E, s.I);
+      const parts = [s.S, s.SV, s.R, s.V, s.D].concat(s.E, s.I);
       for (let k = 0; k < parts.length; k++) {
         if (!isFinite(parts[k])) return 'country ' + i + ': non-finite compartment';
         if (parts[k] < -1e-6) return 'country ' + i + ': negative compartment ' + parts[k];
@@ -662,6 +935,23 @@ export function createPandemicModel(cfg) {
     get worldPop() { return worldPop; },
     seed(i, cases) { return inject(i, cases == null ? P.initialCases : cases, null); },
     step, totals, invariant, vaccineProgress,
+    /* ⚠ (#R666) WHAT THE MOBILITY WAS ACTUALLY BUILT OUT OF — so the HUD can say it rather than
+       assume it. `from` is one of population / airports / airports+population, each optionally
+       «+borders»; a world the host handed no codes and no airport figures for says `population`,
+       and the screen must not then claim air connectivity. `destinations(i)` is the row itself, for
+       a test that wants to measure the distribution instead of reading the formula. */
+    mobility: {
+      get from() { return mobilityFrom; },
+      travel(i) { return travel[i]; },
+      destinations(i) {
+        const out = []; if (N < 2 || i < 0 || i >= N) return out;
+        const row = i * N, total = MOB_CUM[row + N - 1];
+        if (!(total > 0)) return out;
+        let prev = 0;
+        for (let j = 0; j < N; j++) { const w = MOB_CUM[row + j] - prev; prev = MOB_CUM[row + j]; if (j !== i) out.push({ j, p: w / total }); }
+        return out;
+      },
+    },
     /* Active cases in one country, split the way the map draws them. */
     active(i) { const s = st[i]; return { E: sum(s.E), I: sum(s.I), D: s.D, seeded: s.seeded }; }
   };

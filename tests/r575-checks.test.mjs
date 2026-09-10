@@ -158,19 +158,29 @@ test('R575 ⑩: more baseline immunity, smaller outbreak — monotonically (Test
 });
 
 test('R575 ⑪: a variant exists where it emerged, not everywhere at once (Test 11)', () => {
-  const m = build({ scenario: 'naive', mobility: 1 }, 1);
-  m.seed(0, 5000);
+  /* ⚠ (#R666) A FAMILY OF SEEDS, NOT ONE. A variant is a Bernoulli draw at 0.0014/day once half a
+     million people are infected, so one seed over 900 days emerges one about two times in three —
+     this test asserted `seen > 0` on a single seed and was therefore a coin toss that happened to
+     be landing. It was still landing when #R666 changed WHICH country an importation goes to, which
+     reshuffles the same stream, and it stopped. Nothing here is weakened: the invariant is still
+     checked on every real variant the family produces, and «the fixture must actually produce a
+     variant» is still asserted — it is now a statement about the fixture rather than about luck. */
   let seen = 0;
-  for (let d = 0; d < 900 && seen === 0; d++) {
-    const ev = m.step();
-    for (const e of ev) {
-      if (e.t !== 'variant') continue;
-      seen++;
-      const k = e.n;
-      const carriers = m.countries.filter((s) => (s.share[k] || 0) > 0).length;
-      assert.equal(carriers, 1, 'a new variant must start in exactly one country, not ' + carriers);
-      /* …and the rest of the world is still running the pathogen it was running yesterday. */
-      for (const s of m.countries) if ((s.share[k] || 0) === 0) assert.ok(s.share[0] > 0);
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const m = build({ scenario: 'naive', mobility: 1 }, seed);
+    m.seed(0, 5000);
+    for (let d = 0; d < 900; d++) {
+      const ev = m.step();
+      for (const e of ev) {
+        if (e.t !== 'variant') continue;
+        seen++;
+        const k = e.n;
+        const carriers = m.countries.filter((s) => (s.share[k] || 0) > 0).length;
+        assert.equal(carriers, 1, 'a new variant must start in exactly one country, not ' + carriers);
+        /* …and the rest of the world is still running the pathogen it was running yesterday. */
+        for (const s of m.countries) if ((s.share[k] || 0) === 0) assert.ok(s.share[0] > 0);
+      }
+      if (m.ended) break;
     }
   }
   assert.ok(seen > 0, 'the fixture must actually produce a variant, or this test measures nothing');
