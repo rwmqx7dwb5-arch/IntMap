@@ -1367,8 +1367,13 @@ if (RULE && RULE !== 'i18n-open-gap') {
     const j = JSON.parse(rd('data/hist-cities.json'));
     const cities = j.cities.length, names = j.cities.reduce((n, c) => n + c.e.length, 0);
     eachDoc((f, s) => {
-      for (const m of s.matchAll(/(\d{3,4})\s*都市/g)) if (Number(m[1]) !== cities) fail('hist-cities', `${f} says ${m[1]} 都市; data/hist-cities.json holds ${cities}`);
-      for (const m of s.matchAll(/(\d{3,4})\s*の歴史名/g)) if (Number(m[1]) !== names) fail('hist-cities', `${f} says ${m[1]} の歴史名; data/hist-cities.json holds ${names}`);
+      /* ⚠ (#R689) THE SEPARATOR WAS INVISIBLE TO THIS RULE. `\d{3,4}` reading 「6,222 都市」 sees
+         「222」, so a grouped number was compared by its last three digits and passed or failed for a
+         reason nobody wrote — a rule measuring its own regex, which is what #R679 lost a whole check
+         file to one floor over. Separators are stripped before the comparison. */
+      const N = (v) => Number(String(v).replace(/[,，]/g, ""));
+      for (const m of s.matchAll(/([0-9][0-9,，]{2,8})\s*都市/g)) if (N(m[1]) !== cities) fail("hist-cities", `${f} says ${m[1]} 都市; data/hist-cities.json holds ${cities}`);
+      for (const m of s.matchAll(/([0-9][0-9,，]{2,8})\s*の歴史名/g)) if (N(m[1]) !== names) fail("hist-cities", `${f} says ${m[1]} の歴史名; data/hist-cities.json holds ${names}`);
     });
     if (!/都市/.test(BODY.get('Architecture.md') || '')) fail('hist-cities', 'Architecture.md no longer states how large the historical-city record is');
     if (!problems.some((x) => x.startsWith('hist-cities'))) ok('hist-cities', `${cities} cities / ${names} historical names, stated correctly`);

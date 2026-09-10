@@ -21,19 +21,32 @@ export const SRC_DIR = join(HERE, 'histcities');
  *  list of one is still a list: the moment the directory gained upstream.mjs and harvest.mjs,
  *  that rule tried to import a harvester as a region and threw. A file that declares neither
  *  still fails loudly, so a typo cannot make a region file quietly disappear. */
+/*  ⚠⚠⚠ (#R689) AND A FILE WHOSE ROWS ARE SOMEBODY ELSE'S MUST SAY WHOSE. The condition is
+ *  attached to the ROWS, not to a list of derived filenames: `D()` sets `derived` on every row a
+ *  harvest writes, so the day a third upstream is harvested the rule already covers it (#R429).
+ *  What the declaration is for, and what reads it, is in scripts/histcities/lang.mjs `LIC()`. */
 export async function loadRecord() {
   const files = [];
   const rows = [];
+  const licences = [];
   for (const f of readdirSync(SRC_DIR).filter((x) => x.endsWith('.mjs')).sort()) {
     const m = await import(new URL('./histcities/' + f, import.meta.url).href);
     if (m.HELPER === true) continue;
     if (!Array.isArray(m.ROWS)) {
       throw new Error(`scripts/histcities/${f} exports neither a ROWS array nor HELPER — a record file lists cities, a supporting module says so`);
     }
+    if (m.ROWS.some((r) => r.derived)) {
+      if (!m.LICENCE || typeof m.LICENCE.publisher !== 'string') {
+        throw new Error(`scripts/histcities/${f} carries rows harvested from an upstream and exports no LICENCE — a derived record has to say whose it is and what that costs (scripts/histcities/lang.mjs LIC())`);
+      }
+      licences.push(Object.assign({ _file: f, rows: m.ROWS.length }, m.LICENCE));
+    } else if (m.LICENCE) {
+      throw new Error(`scripts/histcities/${f} exports a LICENCE but holds no derived rows — a handwritten record is IntMap's own and claims nobody else's terms`);
+    }
     files.push(f);
     for (const r of m.ROWS) rows.push(Object.assign({ _file: f }, r));
   }
-  return { files, rows };
+  return { files, rows, licences };
 }
 
 /** every distinct spelling the record joins on, sorted — the homonym index's own key set */

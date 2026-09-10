@@ -225,3 +225,41 @@ export function C(id, lon, lat, cc, keys, eras, o) {
   }
   return { id, lon, lat, cc, keys, eras, unlisted: o.unlisted || '', waive: o.waive || [], measured: o.measured || null };
 }
+
+/* ══ ⚠⚠⚠ WHOSE RECORD THIS IS, AND WHAT THAT COSTS US (#R689) ═══════════════════════════════
+ *  #R679 added two DERIVED sources to a record that had been entirely IntMap's own, and one of
+ *  them — Pleiades — is CC BY 3.0, where attribution is a CONDITION OF REDISTRIBUTION. The
+ *  harvest wrote that condition into the generated file's header, in these words: «sources.html
+ *  must name Pleiades and its contributors». ⚠ IT NEVER DID. 739 Pleiades cities shipped inside
+ *  data/hist-cities.json and no reader-facing page named Pleiades anywhere.
+ *
+ *  ⚠⚠⚠ AND NO GATE COULD HAVE CAUGHT IT, because the licence was PROSE. A sentence in a comment
+ *  is addressed to whoever reads the file next, and «whoever reads the file next» is not a
+ *  program. So the declaration is now a VALUE: a derived record file exports one of these, the
+ *  loader refuses a derived file that does not (scripts/histcities-record.mjs), and
+ *  scripts/build-hist-cities.mjs asserts that every publisher whose licence requires attribution
+ *  is named by a row of js/reference-data.js's DATA_SOURCES. The rule is attached to the fact
+ *  «these rows are somebody else's work», not to a list of filenames (#R429), so the next
+ *  upstream anybody harvests is covered on the day it is written.
+ *
+ *    publisher   who is owed the credit, as they name themselves
+ *    licence     the licence as the upstream states it, verbatim
+ *    url         where that statement was read
+ *    attribution true when the licence makes credit a condition of redistribution
+ *    source      ⚠ when attribution is true: the EXACT `n` string of the DATA_SOURCES row that
+ *                carries the credit. Not a description of it — the string, so the gate compares
+ *                values and not two people's idea of the same name.
+ *    read        the ISO date the licence text was read at `url` */
+export function LIC(o) {
+  o = o || {};
+  const need = (k) => { if (typeof o[k] !== 'string' || o[k].length < 3) throw new Error(`LIC(): «${k}» is required and must say something`); };
+  need('publisher'); need('licence'); need('url');
+  if (typeof o.attribution !== 'boolean') throw new Error('LIC(): «attribution» must be true or false — «probably not» is not a licence reading');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(o.read || '')) throw new Error('LIC(): «read» must be the ISO date the licence text was read');
+  if (o.attribution) need('source');
+  /* ⚠ `!o.source`, not `o.source === undefined`: this declaration is written out with
+     JSON.stringify and read back by the loader, and the round trip turns «absent» into «''». A
+     rule that cannot survive its own serialisation is a rule that fires on the generated file. */
+  else if (o.source) throw new Error('LIC(): a licence that owes no attribution names no DATA_SOURCES row');
+  return Object.freeze({ publisher: o.publisher, licence: o.licence, url: o.url, attribution: o.attribution, source: o.source || '', read: o.read });
+}
