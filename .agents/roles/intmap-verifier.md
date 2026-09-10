@@ -31,6 +31,7 @@ codex:
 | `npm run check:archfiles` | `Architecture.md` とファイル台帳の一致 |
 | `npm run check:wars` | 紛争データの生成物と定義の一致 |
 | `npm run check:histcities` | 歴史都市名の生成物と記録の一致・綴りが2都市を指さないこと |
+| `npm run check:histeras` | 全時代の国境スナップショット（aourednik/historical-basemaps 53枚・紀元前17枚を含む）の同梱ファイルの不変条件（紀元前と西暦の両方があるか・`key` から導いた天文年と `y` が一致するか・名前に U+FFFD が無いか・リング番号が解決するか）。⚠ 再生成はしない（上流 71.5 MB の取得が要る） |
 | `npm run check:histborders` | 1850–1885 の歴史国境の同梱ファイルの不変条件（窓の中か・リング番号が解決するか・**窓のどの年にも描く世界があるか**）。⚠ 再生成はしない（CI に置けない約 400 MB の上流応答が要る） |
 | `npm run check:kuni` | **IntMap 自身が導出した**令制国 15 国（data/hist-kuni.js）。出荷したバイトの不変条件（relation id が null か・9言語の名前があるか・リングが閉じるか・**data/hist-admin1.js と 1 件も重ならないか**＝二重に描かないか）。⚠ 元の CC0 ラスタ 130 MB はリポジトリに無いので、再導出はラスタがある機械でだけ走る（どちらが走ったかを印字する） |
 | `npm run check:elections` | 国政選挙のデータ（`data/elections/`）: 形式・政党表・出典とライセンスの記載・議席の算術（小選挙区＋比例＝総定数）・**選挙区と結果の結合を両方向**（結果の無い選挙区は「誰も勝たなかった」と読める穴になる）。オフラインで走る |

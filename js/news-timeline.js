@@ -206,7 +206,7 @@ window.IntMapModules.newsTimeline=function(HOST){
        with it (js/chronos.js clamps to the same floor, through the same `utcAt`). */
     function jumpParse(v){ const m=/^(\d{4,6})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(v||''));
       if(!m) return null;
-      const Y=+m[1]; if(Y<YMIN()) return new Date(floorMs());
+      const Y=+m[1]; if(Y<jumpMinYear()) return new Date(jumpFloorMs());
       return zInstant({Y:Y,M:+m[2],D:+m[3],h:+m[4],m:+m[5]}); }
     /* ⚠⚠⚠ (#R604) THIS WAS `Date.UTC(YMIN(),0,1)` AND IT ANSWERED 1901. The kernel's floor is year 1
        since #R604, and ECMA-262's two-digit-year rule turns Date.UTC(1,0,1) into 1901-01-01 — so the
@@ -216,6 +216,24 @@ window.IntMapModules.newsTimeline=function(HOST){
        ⚠ The rule is js/hist-scale.js's (`utcAt`), not a second copy here — one copy per caller is how
        the kernel got fixed while this line stayed wrong. */
     const floorMs=()=>{ try{ return HS().utcAt(YMIN(),0,1).getTime(); }catch(_){ const t=new Date(0); t.setUTCFullYear(YMIN(),0,1); t.setUTCHours(0,0,0,0); return t.getTime(); } };
+    /* ══ ⚠⚠⚠ (#R679) THE NATIVE CONTROL HAS A FLOOR OF ITS OWN, AND IT IS YEAR 1 ══
+       HTML's date grammar has no sign: a valid date string is four-or-more DIGITS
+       for the year, so `datetime-local` cannot express 323 BC at all — there is no
+       string for it. Feeding it `-000322-01-01T00:00` does not error; the browser
+       simply discards the attribute as invalid, so the control silently loses its
+       `min` on the round that lowered the floor.
+       ⚠ AND THE CLAMP WOULD HAVE BEEN WORSE THAN THE ATTRIBUTE. `jumpParse` sent
+       any year under the KERNEL's floor to the kernel's floor — correct while the
+       two floors were the same number, and with a floor of −122999 it means that
+       typing «0001» into the year segment lands the reader in 123,000 BC. A
+       half-typed year has to become the lowest year THIS CONTROL can name.
+       ⚠ THIS IS A LIMIT, NOT A GAP TO PAPER OVER. Deep time is reached on the Year
+       tab, whose rail carries the whole range; the jump control keeps saying
+       exactly what it can say. CONSTITUTION「偽物・ハリボテ禁止」 cuts the other way
+       here — inventing a signed-year syntax the platform does not parse would be
+       a control that looks like it works. */
+    const jumpMinYear=()=>Math.max(1,YMIN());
+    const jumpFloorMs=()=>{ try{ return HS().utcAt(jumpMinYear(),0,1).getTime(); }catch(_){ const t=new Date(0); t.setUTCFullYear(jumpMinYear(),0,1); t.setUTCHours(0,0,0,0); return t.getTime(); } };
     /* what the reader should see this zone called */
     function zoneName(k){
       if(k==='user'){ let u=null; try{ u=HOST.userTZ; }catch(_){}
@@ -285,7 +303,16 @@ window.IntMapModules.newsTimeline=function(HOST){
         .toLocaleDateString(window.IntMapLang.locale(HOST.lang,'en-US'),{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'});
     }catch(_){ return d.toLocaleDateString(); } }
     const L5=window.IntMapLang.pick(()=>HOST.lang);
-    const yLabel=(y)=>HOST.lang==='jp'?(y+'年'):(''+y);
+    /* ⚠ (#R679) A YEAR BELOW 1 IS NOT A NUMBER THE READER CAN READ. This was
+       `y+'年'` for jp and the bare number for the other eight, which is right for
+       every year the clock could reach until this round and renders «−322» now.
+       The era word, and WHERE it goes relative to the digits, is CLDR's answer,
+       not a table of ours — js/hist-scale.js `yearText` asks the platform. The tag
+       comes from the registry because a call site gets it wrong: `htmlTag('zh')`
+       is `zh-Hant`, and a bare `zh` handed to ICU resolves to Simplified. */
+    const _yTag=()=>{ try{ return window.IntMapLang.htmlTag(HOST.lang)||'en'; }catch(_){ return 'en'; } };
+    const yLabel=(y)=>{ try{ return HS().yearText(y,_yTag(),HOST.lang==='jp'?'年':null); }
+      catch(_){ return HOST.lang==='jp'?(y+'年'):(''+y); } };
     /* ══ (#R421) THE BORDER-CHANGE STEPPER ══════════════════════════════════════════════════════
        「実際の国境変更日にスナップ」. `IntMapTimeBorders` owns the dates — they are the validity edges of
        the very CShapes records the polygons are drawn from, so there is no second list here that could
@@ -463,12 +490,19 @@ window.IntMapModules.newsTimeline=function(HOST){
       try{ localStorage.setItem(ZKEY,zone); }catch(_){}
       zoneEnsure();
       try{ refreshUI(window.IntMapTime.state()); }catch(_){} });
+    /* the ruler's marks, from the rail itself — one owner for both rows below */
+    function _yearTicks(a,b){ try{ return HS().niceTicks(a,b,64); }catch(_){ return [a,b]; } }
     function buildScale(){ if(!scale){ buildTicks(); return; } const now=L5('Now','現在','Jetzt','Сейчас','Ahora');
       /* (#R349) the year ruler starts at the kernel's floor and steps in even fifties to the end of
          the last full century, so extending the clock moves the ticks with it instead of leaving a
          first tick that stands fifty years inside the track. */
-      const yTicks=()=>{ const a=YMIN(); const out=[]; for(let y=Math.ceil(a/50)*50; y<=2000; y+=50) out.push(y);
-        if(out[0]!==a) out.unshift(a); return out.map(y=>'<span>'+y+'</span>').join(''); };
+      /* ⚠ (#R679) THIS WAS A FIFTY-YEAR STEP FROM THE FLOOR. Right for a floor of
+         1850 and then of 1, and with the floor at −122999 it emits 2,499 <span>s —
+         a flex row that spaces them evenly, i.e. 2,499 labels claiming positions
+         they are not at. Same derivation as the ruler, same reason (#R337: the
+         position has to be COMPUTED from the value, and this row cannot compute
+         one — so at least it must not carry more labels than it can place). */
+      const yTicks=()=>_yearTicks(YMIN(),2000).slice(0,8).map(y=>'<span>'+yLabel(y)+'</span>').join('');
       scale.innerHTML=(mode==='year')
         ? yTicks()+'<span>'+now+'</span>'
         : (mode==='time')
@@ -494,6 +528,33 @@ window.IntMapModules.newsTimeline=function(HOST){
        ⚠ `_timeMaxMins()` IS THE ONE PLACE THE RANGE IS STATED (#R210). The last mark is drawn at
        that value, not at a typed 1440, so a future round that shortens the axis moves the ruler
        with it instead of leaving marks pointing at minutes the slider cannot reach. */
+    /* ══ ⚠⚠⚠ (#R679) THE SPACING RULE WAS AN ESTIMATE, AND THE ESTIMATE WAS WRONG ═══════════════
+       The emitter above keeps a label only once a fixed fraction of the rail has passed since the
+       last one — which assumes every label is the same width. It is not: the deep band introduced
+       「123000 BC」/「紀元前123000年」/«123000 г. до н. э.», several times the width of «1880», and
+       MEASURED on the built panel the first two labels overlapped by 22 px.
+       ⚠ A WIDER FRACTION WOULD BE A SECOND ESTIMATE. The width depends on the reader's language,
+       their font, and the panel's own width — three things this code cannot know and the browser
+       already does. So the marks are emitted generously and the LABELS are thinned against their
+       real boxes, once, after layout. #R660's rule: ask the thing that knows.
+       ⚠ «Now» IS THE ONE THAT SURVIVES A COLLISION AT THE END — it is the anchor the reader
+       returns to, and an unlabelled right edge reads as a broken ruler. */
+    function _thinLbl(el){ try{
+      const bs=[...el.querySelectorAll('.ntl-tk b')]; if(bs.length<2) return;
+      const GAPPX=4;   /* the smallest gap that still reads as two labels rather than one word */
+      const box=b=>{ const r=b.getBoundingClientRect(); return {l:r.left,r:r.right}; };
+      const last=bs[bs.length-1], lastBox=box(last);
+      let keptR=-Infinity;
+      for(let i=0;i<bs.length-1;i++){ const bx=box(bs[i]);
+        /* ⚠ THE MARK GOES BACK TO BEING A MINOR ONE. `.ntl-tk.maj i` is taller and darker (css/
+           intmap.css) because it is the one carrying a label; leaving the class on a tick whose
+           label was just dropped draws a major tick with nothing under it, which reads as a label
+           that failed to render rather than as an ordinary graduation. */
+        if(bx.l < keptR+GAPPX || bx.r+GAPPX > lastBox.l){
+          try{ bs[i].parentNode.classList.remove('maj'); }catch(_){}
+          bs[i].remove(); bs[i]=null; continue; }
+        keptR=bx.r; }
+    }catch(_){} }
     function buildTicks(){ if(!ticks) return;
       /* ══ (#R604) THE YEAR TAB JOINS THE RULER, FOR THE REASON THE RULER EXISTS ══════════════════
          `.ntl-scale` is a flex row spaced by `justify-content:space-between`, i.e. it places labels
@@ -504,14 +565,26 @@ window.IntMapModules.newsTimeline=function(HOST){
          ⚠ The tick list is CLIPPED to the kernel's floor rather than typed twice, so a future round
          that raises or lowers `IntMapTime.min` moves the ruler with it. */
       if(mode==='year'){
-        const a=YMIN(), want=[1,500,1000,1250,1500,1650,1750,1800,1850,1900,1950,2000],
-              maj=[1,1000,1500,1800,1900,2000];
-        let h='';
-        for(const y of want){ if(y<a||y>curY) continue;
-          h+='<span class="ntl-tk'+(maj.indexOf(y)>=0?' maj':'')+(y===a?' first':'')+'" style="--p:'
-            +(y2p(y)/YPOS).toFixed(4)+'"><i></i>'+(maj.indexOf(y)>=0?('<b>'+yLabel(y)+'</b>'):'')+'</span>'; }
+        const a=YMIN(), want=_yearTicks(a,curY),
+              maj=null;
+        /* ⚠ (#R679) THE MARKS ARE DERIVED AND THE LABELS ARE THINNED, because the
+           list that used to be here started at 1 and the rail now starts 123,000
+           years earlier — a written list produces NO mark in the whole band it did
+           not know about, and nothing fails when that happens. `niceTicks` walks
+           this rail and rounds to numbers a person recognises (js/hist-scale.js).
+           ⚠ LABELLING EVERY MARK WOULD OVERLAP. The track measures ~340 px and an
+           era-formatted label runs to about ten characters (「紀元前123000年」,
+           «123000 г. до н. э.»), so a label needs roughly an eighth of the track to
+           itself; marks are drawn at every tick and a label is emitted only once
+           that much rail has passed since the last one, and never so close to the
+           end that it collides with «Now». EXPIRES if the panel's width changes. */
+        let h='', lastLbl=-1e9; const LBL=0.12*YPOS;
+        for(const y of want){ if(y<a||y>=curY) continue;
+          const p=y2p(y), lbl=(p-lastLbl)>=LBL&&(YPOS-p)>=LBL; if(lbl) lastLbl=p;
+          h+='<span class="ntl-tk'+(lbl?' maj':'')+(y===a?' first':'')+'" style="--p:'
+            +(p/YPOS).toFixed(4)+'"><i></i>'+(lbl?('<b>'+yLabel(y)+'</b>'):'')+'</span>'; }
         h+='<span class="ntl-tk maj last" style="--p:1.0000"><i></i><b>'+L5('Now','現在','Jetzt','Сейчас','Ahora')+'</b></span>';
-        ticks.innerHTML=h; ticks.style.display=''; if(scale) scale.style.display='none'; return;
+        ticks.innerHTML=h; ticks.style.display=''; if(scale) scale.style.display='none'; _thinLbl(ticks); return;
       }
       if(mode!=='time'){ ticks.innerHTML=''; ticks.style.display='none'; if(scale) scale.style.display=''; return; }
       const mx=_timeMaxMins()||1439;
@@ -628,7 +701,7 @@ window.IntMapModules.newsTimeline=function(HOST){
          arrives minutes after boot. ⚠ And the VALUE is not rewritten while the field has focus: the
          reader typing a year is walking through values the kernel clamps, and a control that is
          reset under the caret cannot be typed into at all. `blur` reconciles it. */
-      if(jumpEl){ const lo=jumpValue(new Date(floorMs())), hi=jumpValue(new Date(fcMaxMs()));
+      if(jumpEl){ const lo=jumpValue(new Date(jumpFloorMs())), hi=jumpValue(new Date(fcMaxMs()));
         if(jumpEl.min!==lo) jumpEl.min=lo;
         if(jumpEl.max!==hi) jumpEl.max=hi;
         if(document.activeElement!==jumpEl){ const v=jumpValue(e.when); if(jumpEl.value!==v) jumpEl.value=v; } }

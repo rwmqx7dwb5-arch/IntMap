@@ -810,8 +810,21 @@ test('R378 ① Chronos has a direct year-month-day-hour picker outside the Year/
      WARNING - and the expected value is DERIVED, not typed: a datetime-local value pads the year
      to four digits, so a floor of 1 is 0001-. A literal here would have to be edited by the next
      round that moves the floor, which is the round that would need this check to fail. */
-  expect(r.min, 'it reaches the kernel floor')
-    .toBe(String(r.kernelMin).padStart(4, '0') + '-01-01T00:00');
+  /* ══ ⚠⚠⚠ (#R679) THIS CONTROL CANNOT REACH THE KERNEL'S FLOOR ANY MORE, AND THAT IS CORRECT ══
+     HTML's date grammar has no sign: a valid date string's year is four-or-more DIGITS, so there is
+     no string a `datetime-local` can hold that means 323 BC. Writing `-000322-01-01T00:00` into the
+     attribute does not error — the browser discards it as invalid — so the control would silently
+     lose its `min` on the round that lowered the floor below zero.
+     ⚠ AND THE OLD CLAMP WOULD HAVE BEEN WORSE THAN THE MISSING ATTRIBUTE: `jumpParse` sent any year
+     under the KERNEL's floor to the kernel's floor, so typing «0001» into the year segment would
+     land the reader in 123,000 BC.
+     ⚠ SO THE INVARIANT CHANGED, AND IT IS NOT WEAKER. What must hold is that this control's floor
+     is DERIVED from the kernel's rather than typed — the lowest year it can name — and that deep
+     time is still reachable, on the Year tab, whose rail carries the whole range (asserted by the
+     #R349/#R604 test below). A control that pretended to a syntax the platform does not parse is
+     what CONSTITUTION「偽物・ハリボテ禁止」 forbids. */
+  expect(r.min, 'the jump control must state the lowest year HTML can express')
+    .toBe(String(Math.max(1, r.kernelMin)).padStart(4, '0') + '-01-01T00:00');
   expect(r.setISO, 'with UTC chosen, 1943-08-05 14:30 is that instant').toBe('1943-08-05T14:30');
   expect(r.live, '…and the clock is no longer live').toBe(false);
   expect(r.readBack, 'a clock moved elsewhere is reflected back into the field').toMatch(/^1972-/);
@@ -1780,6 +1793,22 @@ test('#R349/#R604 the clock reaches the deep past — the slider drags there, an
     /* the Year tab moved from `.ntl-scale` (evenly spaced, which a piecewise rail makes false) to the
        positioned ruler the Time tab already used */
     const ticks = [...document.querySelectorAll('#ntl-ticks b')].map((s) => s.textContent);
+    /* ⚠ (#R679) BOTH OF THESE ARE READ BEFORE THE CLOCK IS MOVED BELOW. js/news-timeline.js writes
+       `slider.value = y2p(e.year)` on every clock change, so a `sl.value` read after the jump to the
+       floor is always «0» — the first draft moved the clock and left `settled` behind it, and the
+       failure looked like the drag not settling. */
+    const applied = window.IntMapTime.year();
+    const settled = sl.value;
+    /* (#R679) the ruler at the DEEP end, where the widest labels live — measured as boxes */
+    window.IntMapTime.setYear(HS.FLOOR, { source: 'test' });
+    await new Promise((res) => setTimeout(res, 200));
+    const bx = [...document.querySelectorAll('#ntl-ticks b')].map((b) => {
+      const q = b.getBoundingClientRect(); return { t: b.textContent, l: q.left, r: q.right };
+    });
+    const labelOverlaps = [];
+    for (let i = 1; i < bx.length; i++) {
+      if (bx[i].l < bx[i - 1].r) labelOverlaps.push(bx[i - 1].t + ' ↔ ' + bx[i].t);
+    }
     const deepest = (() => { const t = HS.rail.toYear(0, window.IntMapTime.min, new Date().getFullYear()); return t; })();
     /* the shipped snapshot resolver, run in the shipped bundle */
     const N = window.IntMapTimeBorders._nearest;
@@ -1788,7 +1817,8 @@ test('#R349/#R604 the clock reaches the deep past — the slider drags there, an
     const M = window.IntMapMaddison;
     await M.load();
     const mad = { min: M.minYear, deu1875: M.gdppc('DEU', 1875), gbr1850: M.gdppc('GBR', 1850) };
-    return { min, max, wanted: String(wanted), settled: sl.value, applied: window.IntMapTime.year(),
+    return { min, max, wanted: String(wanted), settled, applied,
+             labelOverlaps, floorOwner: HS.FLOOR,
              ticks, deepest, nearest, mad, kernelMin: window.IntMapTime.min };
   });
   /* tests/r349-checks proves the kernel's floor and that the panel READS it. None of that proves a
@@ -1796,14 +1826,29 @@ test('#R349/#R604 the clock reaches the deep past — the slider drags there, an
      silently clamps a value below its own `min`. */
   /* (#R604) the floor is year 1 now; 1850 is the MIDDLE of the rail, and it is still reachable —
      which is the whole of what this test was ever about. */
-  expect(r.kernelMin).toBe(1);
+  /* ⚠ (#R679) THE FLOOR MOVED AGAIN — BELOW ZERO. What this line ever asserted is that the panel
+     and the kernel agree, so it reads the kernel rather than naming a year that a later round has
+     to come back and edit. tests/r604-checks ① proves the clock actually travels to it. */
+  expect(r.kernelMin).toBe(r.floorOwner);
+  expect(r.kernelMin, 'the clock no longer reaches before the common era').toBeLessThan(1);
   expect(r.min).toBe('0');
   expect(r.max).toBe('1000');
   expect(r.settled).toBe(r.wanted);
   expect(r.applied).toBe(1850);
-  expect(r.deepest).toBe(1);
+  expect(r.deepest, 'position 0 of the rail is not the floor').toBe(r.kernelMin);
   expect(r.ticks.length, 'the year ruler lost its labels').toBeGreaterThan(2);
-  expect(r.ticks[0], 'the first labelled tick is the floor the kernel declares').toMatch(/^0*1(年)?$/);
+  /* ⚠ (#R679) THE FIRST LABEL IS AN ERA-FORMATTED YEAR NOW, not a bare number — «123000 BC» /
+     「紀元前123000年」 — so what is asserted is that it NAMES the floor, in whatever form this
+     reader's locale writes it, rather than matching one spelling. */
+  expect(r.ticks[0], 'the first labelled tick is the floor the kernel declares')
+    .toContain(String(Math.abs(r.kernelMin) + 1));
+  /* ══ ⚠⚠⚠ (#R679) AND THE LABELS MUST NOT OVERLAP — MEASURED, BECAUSE NOTHING ELSE CAN SEE IT ══
+     The emitter thins labels by rail distance, which assumes they are all the same width. The deep
+     band broke that assumption the moment it arrived: 「紀元前123000年」/«123000 г. до н. э.» is
+     several times «1880», and the first two labels overlapped by 22 px on the built panel. A source
+     scan cannot see a collision and neither can a static check — only boxes on a laid-out page can,
+     which is why the assertion is here and not in tests/r677-…-checks. */
+  expect(r.labelOverlaps, 'the year ruler’s labels overlap: ' + r.labelOverlaps.join(', ')).toEqual([]);
   /* 1886 is where the yearly source starts; below it the only frames that exist are 1815 and 1880 */
   expect(r.nearest.y1875).toBe(1880);
   expect(r.nearest.y1850).toBe(1880);      /* the midpoint of that 65-year gap is 1847.5 */

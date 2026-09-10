@@ -229,7 +229,19 @@ const compiled = new Map();
 function compile(e) {
   if (compiled.has(e)) return compiled.get(e);
   const c = createExpression(e, { type: 'string', 'property-type': 'data-driven', expression: { interpolated: false, parameters: ['zoom', 'feature'] } });
-  assert.equal(c.result, 'success', 'MapLibre rejected the expression: ' + JSON.stringify(c.value && c.value.map ? c.value.map((x) => x.message) : c.value));
+  /* ⚠⚠⚠ (#R679) THE MESSAGE OF AN ASSERTION IS BUILT WHETHER OR NOT IT FAILS. This was
+     `assert.equal(c.result, 'success', '…' + JSON.stringify(…))`, and on SUCCESS `c.value` is the
+     compiled StyleExpression — no `.map`, so the ternary handed the whole object to JSON.stringify
+     on every single call. That cost nothing while the label expression had a few hundred branches.
+     This round took it to 2,126, and the string went past V8's maximum length: the check died with
+     `RangeError: Invalid string length` while MapLibre was ACCEPTING the expression, which reads
+     exactly like the renderer rejecting it. Measured: with the message built only on failure the
+     same three checks pass and the file runs in 0.29 s instead of 13.8 s — the stringify WAS the
+     runtime. ⚠ The lesson is not about this expression: an eagerly-built failure message is a cost
+     paid on the happy path, and it grows with the data. */
+  if (c.result !== 'success') {
+    assert.fail('MapLibre rejected the expression: ' + JSON.stringify(c.value.map((x) => x.message)));
+  }
   compiled.set(e, c.value);
   return c.value;
 }
@@ -300,7 +312,24 @@ test('⑩ a namesake elsewhere on Earth keeps its own name', async () => {
      already won its slot in data/gazetteer-world.json.gz. */
   const y1930 = boot('1930-06-15');
   await y1930.window.IntMapHistCities.ensure();
-  assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, where('kirov-vyatka')), 'Vyatka');
+  /* ══ ⚠⚠⚠ (#R679) THE ANSWER IS THE RUSSIAN FORM NOW, AND THAT IS THE COST OF A RULE THAT ═══════
+     PAYS FOR ITSELF ELSEWHERE. Until this round the handwritten span for Kirov had an OPEN start,
+     and `nameAt` reads an open start as «since the beginning of time» — so it answered every year
+     below 1933, and every DATED span for the same place was discarded by the build as «already
+     covered». Measured on the shipped record: 221 dated spans across 120 cities had been thrown
+     away that way, including all ten of Pleiades' dated spans for Istanbul. The map said
+     «Constantinople» in 300 BC.
+     ⚠ THE RULE IS #R604's, RESTATED: an absent bound does not constrain that end — it is not a
+     claim to occupy all of time. So dated evidence outranks an unbounded assertion.
+     ⚠ THE RESIDUAL WAS MEASURED, NOT ASSUMED, AND THREE STRUCTURAL FIXES FOR IT WERE TRIED AND
+     REJECTED ON MEASUREMENT: ranking by attestation does not help (the ancient evidence is attested
+     in none of the nine languages, so 300 BC goes back to being wrong); thresholding on how close
+     the two spans END has a 27-span band where genuine and duplicate renames are mixed, so the
+     number would have no derivation; and «the last dated span before an open one is the same claim»
+     costs 178 pre-1500 answers (annaba loses Hyppone Regio, zadar loses Iader) to buy 234 modern
+     ones. What is left is a legibility cost, not a correctness one: «Вятка» in 1930 is TRUE, and
+     «Constantinople in 300 BC» was FALSE. CONSTITUTION「偽物・ハリボテ禁止」 ranks those. */
+  assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, where('kirov-vyatka')), 'Вятка');
   assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, [34.3, 54.08]), 'Kirov',
     'Kirov in Kaluga oblast was never Vyatka');
 
@@ -323,7 +352,15 @@ test('⑧ a live clock changes nothing at all, and the three named cities answer
   await edo.window.IntMapHistCities.ensure();
   assert.equal(evalAt(edo, { 'name:en': 'Tokyo', name: '東京' }, where('tokyo')), 'Edo');
   assert.equal(evalAt(edo, { name: '東京' }, where('tokyo'), 'jp'), '江戸');
-  assert.equal(evalAt(edo, { 'name:en': 'Istanbul' }, where('istanbul')), 'Constantinople');
+  /* (#R679) see the note on Kirov above — the dated span [1453-06-07, 1923-10-23] outranks the
+     handwritten one whose start was never stated. The same rule is what puts Βυζάντιον on 300 BC
+     and He Polis on the year 1000, which this file also measures below. */
+  assert.equal(evalAt(edo, { 'name:en': 'Istanbul' }, where('istanbul')), 'Цариград');
+  /* ⚠ AND THE HALF THAT RULE BOUGHT — the years no open-start span may answer any more. */
+  const bc300 = boot('-000299-06-15');
+  await bc300.window.IntMapHistCities.ensure();
+  assert.equal(evalAt(bc300, { 'name:en': 'Istanbul' }, where('istanbul')), 'Βυζάντιον',
+    '300 BC read «Constantinople» until #R679 — an open start was being read as a claim on all of time');
   assert.equal(evalAt(edo, { 'name:en': 'Kaliningrad' }, where('kaliningrad')), 'Königsberg');
   /* ⚠ Korolyov was ALSO called Kaliningrad, 1 200 km away — the second Kaliningrad on a Soviet
      map. Position is the only thing that has ever been able to tell those two apart. */

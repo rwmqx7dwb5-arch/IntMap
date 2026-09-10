@@ -26,10 +26,20 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readLF } from '../scripts/eol.mjs';
 import { codeOnly } from '../scripts/code-only.mjs';
+import { clockFloor } from './helpers/hist-scale.mjs';
+import { eraBundle } from './helpers/hist-eras.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const R = (p) => readLF(join(ROOT, p));
-const YMIN = +/const YMIN\s*=\s*(\d{1,4})\s*;/.exec(R('js/chronos.js'))[1];
+/* ⚠⚠⚠ (#R679) THIS LINE THREW AT IMPORT, AGAIN, AND TOOK THE WHOLE FILE WITH IT.
+   #R604 already recorded the shape: the floor moved, the regex stopped matching, `.exec()`
+   returned null and every sweep in this file stopped running — on the round it existed to
+   police. #R604 widened the regex to `\d{1,4}`. #R679 moved the floor BELOW ZERO and into
+   js/hist-scale.js, and the same line threw for the third time.
+   ⚠ SO IT DOES NOT READ SOURCE ANY MORE. The floor is obtained the way the app obtains it —
+   by evaluating its owner (tests/helpers/hist-scale.mjs) — which is #R505's rule, and which
+   fails LOUDLY if the owner stops publishing one instead of going quiet. */
+const YMIN = clockFloor();
 
 /* ── ① the reach is one number, and no shipped sentence names a different one ─────────────────── */
 test('R380 ①: every place that TELLS a reader how far the clock reaches names the kernel’s floor', () => {
@@ -38,10 +48,24 @@ test('R380 ①: every place that TELLS a reader how far the clock reaches names 
      import — every sweep in it, including this one, silently stopped being run on the exact round it
      was written to police. What R380 asserts is that no shipped sentence names a reach OTHER than the
      kernel's, and that claim does not have a number in it. */
-  assert.ok(YMIN >= 1 && YMIN <= 2000, `the kernel floor is not a year this file can read: ${YMIN}`);
+  assert.ok(Number.isInteger(YMIN) && YMIN <= 1850,
+    `the kernel floor is not a year, or no longer reaches what earlier rounds promised: ${YMIN}`);
   const files = readdirSync(join(ROOT, 'js')).filter((f) => f.endsWith('.js'))
     .map((f) => 'js/' + f)
-    .concat(readdirSync(join(ROOT, 'js', 'locales')).filter((f) => f.endsWith('.js')).map((f) => 'js/locales/' + f));
+    .concat(readdirSync(join(ROOT, 'js', 'locales')).filter((f) => f.endsWith('.js')).map((f) => 'js/locales/' + f))
+    /* ══ ⚠⚠⚠ (#R679) THE UNIVERSE WAS THE PROGRAM, AND THE READER IS TOLD THE REACH IN PROSE ══════
+       PRODUCT.md still read 「さかのぼれるのは 1850 年まで」 — false since #R604 moved the floor to
+       year 1, and doubly false now. This sweep never saw it, because its universe was two readdir
+       calls over js/ and js/locales/. That is the #R628 shape exactly: the file was not excluded,
+       it was never in the母集合. A sentence telling a reader how far the clock goes is a claim about
+       the reach whether it lives in a string literal or in a document — and the document is the one
+       a reader is more likely to read.
+       ⚠ DEV-NOTES IS NOT HERE, AND THAT IS THE POINT OF THAT FILE. It is the history:
+       「それまでこの 36 年は 1880 年の1フレームを共有していた」 is a TRUE sentence about a past state,
+       and a sweep that could not tell current spec from history would force the record to be
+       falsified to stay green. docs/README.md is what says which documents are which. */
+    .concat(['PRODUCT.md', 'README.md', 'Architecture.md'])
+    .concat(readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f));
   /* the shapes a reach-claim takes in this codebase, in every language it is written in */
   /* WARNING (#R604) THE POSITIVE HALF COUNTED FOUR-DIGIT LITERALS, AND THE FLOOR IS NOW ONE DIGIT.
      R380's claim is «no shipped sentence tells a reader a reach OTHER than the kernel's», and its
@@ -54,12 +78,12 @@ test('R380 ①: every place that TELLS a reader how far the clock reaches names 
      check no matter what it wrote.
      So the scan now counts CLAIM SENTENCES, whether the year in them is a literal or a placeholder,
      and the negative half is unchanged: a literal that is not the floor is still a lie. */
-  const CLAIM = /(?:reaches back to|travel back to|time travel back to|deep time,|remonte jusqu'à|回溯到|回溯至|zurück bis|Chronos \()\s*(\{y\}|\d{4})|(\d{4})\s*(?:→now|→heute|→сейчас|→ahora|年まで遡|년까지)/g;
+  const CLAIM = /(?:reaches back to|travel back to|time travel back to|deep time,|remonte jusqu'à|回溯到|回溯至|zurück bis|Chronos \()\s*(\{y\}|\d{4})|(?:さかのぼれるのは|遡れるのは)\s*(\d{4})\s*年まで|(\d{4})\s*(?:→now|→heute|→сейчас|→ahora|年まで遡|년까지)/g;
   const bad = [], seen = [];
   for (const f of files) {
     const src = R(f);
     for (const m of src.matchAll(CLAIM)) {
-      const raw = m[1] || m[2];
+      const raw = m[1] || m[2] || m[3];
       seen.push(f + ':' + raw);
       /* a claim that is FILLED from the kernel at runtime cannot be stale - that is the whole point
          of the placeholder, and R380 ② separately proves it is filled from `T.min`. */
@@ -277,9 +301,21 @@ test('R380 ⑧: the Sources page says the snapshots are the ONLY border source b
      regex naming two of them would have to be edited by every round that adds one, which is the same
      as asserting nothing. What the Sources page owes the reader is the SHAPE of the series and its
      two ends, and those are derived here. */
-  const YEARS = JSON.parse(/const YEARS=(\[[^\]]+\])/.exec(tb)[1]);
-  assert.ok(YEARS.length >= 12 && YEARS[0] < 1815, `the snapshot series lost its deep end: ${YEARS[0]}`);
-  const OLDEST = String(YEARS[0]);
+  /* ══ ⚠⚠⚠ (#R679) THIS READ THE FALLBACK LIST AND THEREFORE CHECKED NOTHING ═══════════════════
+     `js/time-borders.js`'s `YEARS` is the list of file names the REMOTE path can still ask for, and
+     it starts at 100 because upstream names those files with a plain decimal year. The reach is the
+     era record's — data/hist-eras.js, 53 snapshots, seventeen of them before the common era, oldest
+     −122999. So `OLDEST` was «100», and `entry.includes('100')` matched the prose 「100 年刻み」 /
+     «hundred-year steps» in every language: the one assertion meant to prove the page states how
+     far back the series goes passed UNCONDITIONALLY, and went on passing on the very round that
+     took that end 123,000 years deeper. #R488/#R628's shape — a check measuring a spelling that had
+     drifted off the fact it was written for.
+     ⚠ It is derived from the shipped record now, and it is the number a READER sees (the era
+     magnitude, 123000), not the astronomical one (−122999): a page printing «-122999» would be
+     naming a year nobody writes (js/hist-scale.js `era`). */
+  const ERA = eraBundle().snaps.map((x) => x.y).sort((a, b) => a - b);
+  assert.ok(ERA.length >= 53 && ERA[0] < 1, `the era record lost its deep end: ${ERA[0]}`);
+  const OLDEST = String(ERA[0] <= 0 ? 1 - ERA[0] : ERA[0]);
   for (const lg of LANGS) {
     const src = R('js/locales/pages.' + lg + '.js');
     const i = src.indexOf('historical-basemaps (aourednik)');
@@ -287,7 +323,11 @@ test('R380 ⑧: the Sources page says the snapshots are the ONLY border source b
     const entry = src.slice(i, src.indexOf('\n', i));
     assert.ok(entry.includes('1886'), `pages.${lg}.js does not say where CShapes stops`);
     assert.ok(entry.includes(OLDEST), `pages.${lg}.js does not say how far back the snapshots go (${OLDEST})`);
-    assert.ok(entry.includes('1815'), `pages.${lg}.js does not name the frame that answers the years below CShapes`);
+    /* ⚠ (#R679) «1815» IS GONE, AND ITS ABSENCE IS THE POINT. That assertion dates from when the
+       series had two frames below 1850 and one of them answered most of that band. There are
+       fifty-three now, seventeen before the common era, and naming any single frame on the Sources
+       page would tell the reader the answer is a frame rather than a series. What the page owes is
+       the two ends and the shape, which the three assertions around this one measure. */
     assert.ok(entry.includes('1850'), `pages.${lg}.js does not say where the day-exact record starts`);
   }
 });

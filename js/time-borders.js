@@ -88,6 +88,11 @@ window.IntMapModules.timeBorders=function(HOST){
        world_100, which is that dataset's resolution there rather than a jump past anything it holds.
        ⚠ RE-MEASURE, DO NOT EDIT BY HAND: the list is what upstream publishes, so if it grows, read it
        from the repo's own directory rather than adding the one year somebody happened to notice. */
+    /* ⚠ (#R679) THIS LIST IS NOW THE FALLBACK'S, NOT THE REACH. What the map can answer is
+       data/hist-eras.js, which carries all 53 including the seventeen before the common era; these
+       thirty-six are the file names the remote path can still ask `raw.githubusercontent` for when
+       that bundle fails to load. Do not add to it by hand — it is what upstream published as plain
+       decimal years, and the bundle is what upstream published. */
     const YEARS=[100,200,300,400,500,600,700,800,900,1000,1100,1200,1279,1300,1400,1492,1500,1530,
                  1600,1650,1700,1715,1783,1800,1815,1880,1900,1914,1920,1930,1938,1945,1960,1994,2000,2010];
     const PROX=[x=>x, x=>'https://corsproxy.io/?url='+encodeURIComponent(x), x=>'https://api.allorigins.win/raw?url='+encodeURIComponent(x)];
@@ -101,8 +106,8 @@ window.IntMapModules.timeBorders=function(HOST){
        taken across a MODEST gap (≤ MAXGAP yr); the huge 1960→1994 gap keeps the earlier snapshot so the 1980s
        never render a post-Soviet world (the faithful state DATES already live in IntMapHistStates). */
     const MAXGAP=20;
-    const nearest=y=>{ let prev=null,next=null; for(const yy of YEARS){ if(yy<=y){ if(prev===null||yy>prev) prev=yy; } else if(next===null||yy<next) next=yy; }
-      if(prev===null) return next!=null?next:YEARS[0];
+    const nearest=(y,years)=>{ const LIST=(years&&years.length)?years:YEARS; let prev=null,next=null; for(const yy of LIST){ if(yy<=y){ if(prev===null||yy>prev) prev=yy; } else if(next===null||yy<next) next=yy; }
+      if(prev===null) return next!=null?next:LIST[0];
       if(next===null) return prev;
       if((next-y)>=(y-prev)) return prev;
       /* ⚠ (#R349/#R518) MAXGAP GUARDS A FALLBACK, NOT A SOURCE — so it does not apply below CShapes.
@@ -448,7 +453,63 @@ window.IntMapModules.timeBorders=function(HOST){
     function _eraCorrect(fc,year){ try{ if(!(year>=1951)||!fc||!Array.isArray(fc.features)) return fc;
       if(!fc.features.some(f=>{ const p=f.properties||{}; return !p._corrected && _TIBET_RE.test(String((p.NAME||p.name)||'')); })) return fc;
       return _mergeTibet(fc); }catch(_){ return fc; } }
+    /* ══ ⚠⚠⚠ (#R679) THE ERA SNAPSHOTS ARE BUNDLED NOW, AND THAT IS WHAT MADE THE DEEP PAST ══════
+       REACHABLE AT ALL. Two facts, measured 2026-09-10, and the second is the whole round:
+       ⚠ ① The list below said thirty-six. The repository publishes FIFTY-THREE — the other
+         seventeen are BEFORE THE COMMON ERA (world_bc1 … world_bc123000). #R604 read that same
+         directory and reported thirty-six because it filtered to files whose year is a decimal
+         number, and the pre-common-era ones are not; every one of the seventeen was fetched and
+         parsed here and they are all present, all the same shape. The clock's floor of year 1 meant
+         no reader could ask for them anyway, so nothing complained.
+       ⚠ ② EVERY YEAR BELOW 1850 WAS ANSWERED FROM SOMEBODY ELSE'S SERVER, THROUGH SOMEBODY ELSE'S
+         CORS PROXY. 1850-2019 has had bundled polygons since #R518/#R117; the deep past — the part
+         with no other answer at all — was the one part that went out over `raw.githubusercontent`
+         and, failing that, corsproxy.io or allorigins. A century that only exists while three
+         third parties are up is not coverage.
+       ⇒ data/hist-eras.js: all 53, ring-pooled, 10.6 MB, built by scripts/build-hist-eras.mjs and
+         held to its invariants by `npm run check:histeras`. Same lazy <script> shape as the two
+         bundles above it, so the deep past costs nothing until a reader travels.
+       ⚠ THE REMOTE PATH BELOW IS KEPT AND IS NOW THE FALLBACK — the same demotion #R518 gave these
+       snapshots for 1850-1885. A bundle that fails to load still leaves a world on the screen.
+       ⚠ THE YEARS IN THE BUNDLE ARE ASTRONOMICAL (bc323 is −322; there is no year 0 in the era
+       convention, js/hist-scale.js `era`). The upstream file NAME is carried beside each one, so
+       the fallback can still ask for it, and so no second table maps between them. */
+    let _erD=null,_erP=null; const _erFC=new Map();
+    function erLoad(){ if(_erD) return Promise.resolve(_erD); if(_erP) return _erP;
+      _erP=new Promise(res=>{ if(window.__HISTERAS){ _erD=window.__HISTERAS; res(_erD); return; }
+        const sc=document.createElement('script'); sc.src='data/hist-eras.js'; sc.async=true;
+        sc.onload=()=>{ _erD=window.__HISTERAS||null; res(_erD); };
+        sc.onerror=()=>{ _erP=null; res(null); };
+        document.head.appendChild(sc); });
+      return _erP; }
+    /* the reach the record actually has, from the record — never a number typed here */
+    function erYears(d){ return (d&&d.snaps)?d.snaps.map(s=>s.y):YEARS; }
+    /* ⚠ THE UNNAMED POLYGONS ARE DRAWN AND NOT LABELLED, and both halves of that matter. In the
+       deepest snapshots the geometry upstream leaves unnamed covers MORE ground than the named
+       (bc123000: 18,345 deg² against 3,210) — dropping it empties the map — and inventing a name
+       for it would be the thing CONSTITUTION「偽物・ハリボテ禁止」 forbids. So it is shipped as
+       geometry with no name, and the label layers, which key off the name, pass over it. */
+    function erFC(d,y){ const k='er'+y; let fc=_erFC.get(k); if(fc) return fc;
+      const sn=d.snaps.find(s=>s.y===y); if(!sn) return null;
+      const poly=ids=>ids.map(p=>p.map(ri=>d.rings[ri]));
+      const feats=[];
+      for(const ft of sn.feats){ const nm=(ft[0]&&ft[0].en)||'', at=ft[1]||{}, ps=poly(ft[2]);
+        if(!ps.length) continue;
+        feats.push({type:'Feature',
+          properties:Object.assign({NAME:nm},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{}),
+          geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
+      for(const ids of (sn.blank||[])){ const ps=poly(ids); if(!ps.length) continue;
+        feats.push({type:'Feature',properties:{NAME:''},
+          geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
+      fc={type:'FeatureCollection',features:feats}; _erFC.set(k,fc); return fc; }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
+      /* the bundle answers first; `year` here is astronomical and `erFC` keys on that */
+      try{ const d=await erLoad(); if(d){ const b=erFC(d,year);
+        if(b&&b.features.length){ const bc=_correctEra(b,year); cache.set(year,bc); return bc; } } }catch(_){}
+      /* ⚠ THE FALLBACK CAN ONLY ASK FOR WHAT THE FILE NAME IS, and below year 1 it has none to ask
+         for without the bundle that carries them — so a deep year with no bundle is honestly absent
+         rather than answered with the nearest year the old list happened to hold. */
+      if(year<1) return null;
       if(window.IntMapCache){ try{ const c=await window.IntMapCache.get('hb_'+year); if(c&&Array.isArray(c.features)){ const cc=_correctEra(c,year); cache.set(year,cc); return cc; } }catch(_){} }
       for(const wrap of PROX){ try{ const ctrl=('AbortController'in window)?new AbortController():null, to=ctrl?setTimeout(()=>{try{ctrl.abort();}catch(_){}} ,20000):null;
         const r=await fetch(wrap('https://raw.githubusercontent.com/aourednik/historical-basemaps/master/geojson/world_'+year+'.geojson'),ctrl?{signal:ctrl.signal}:undefined); if(to) clearTimeout(to);
@@ -576,7 +637,7 @@ window.IntMapModules.timeBorders=function(HOST){
     /* the names follow the borders on every push — one state, two sources. */
     function _pushLbl(fc){ try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
-      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik)'});
+      if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik, GPL-3.0)'});
       /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
          「昔の国境は海岸より先まであるのが気持ち悪い。」 A political record's ring is two kinds of edge in
          one loop: the boundaries between polities, which only that record knows, and the polity's own
@@ -592,7 +653,7 @@ window.IntMapModules.timeBorders=function(HOST){
          ⚠ AND THE CREDIT MOVES WITH THE LINE. `imtb-src` kept the attribution because it was what
          drew; after this it only holds the click target, and the visible line would have come from a
          source that credits nobody. Both carry it — MapLibre folds identical strings into one. */
-      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik)'});
+      if(!GE().layers.hasSource('imtb-ln-src')) GE().layers.addSource('imtb-ln-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik, GPL-3.0)'});
       /* (#R520) the era NAMES — one Point per country, derived from `imtb-src` (see `_labelFC`). No `attribution`
          of its own: it is the same datasets, already credited by the source it is derived from, whose
          `imtb-line` is on screen in exactly the moments these labels are. */
@@ -1165,7 +1226,22 @@ window.IntMapModules.timeBorders=function(HOST){
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }
           let fc=cache.get(key); if(!fc){ try{ fc=hbFC(d,year,mon,day); cache.set(key,fc); }catch(_){ fc=null; } }
           if(fc&&fc.features.length){ shownY=key; shownCorr=false; apply(fc); return; } } }
-      const ny=nearest(year);
+      /* (#R679) the reach comes from the record, so the seventeen pre-common-era snapshots are
+         selectable the moment the bundle is there and the fallback list still answers without it. */
+      const _erd=await erLoad(); if(my!==seq||!active) return;
+      /* ══ ⚠⚠⚠ (#R679) A DEGRADED DEEP YEAR MUST BE ABSENT, NOT TWO THOUSAND YEARS WRONG ═══════
+         The fallback list holds only the snapshots whose upstream file name is a plain decimal
+         year, so it starts at 100. Ask `nearest` for 323 BC with that list and it answers 100 —
+         and the map would draw the Roman world of AD 100 under the label «323 BC», which is
+         exactly the defect #R604 found at 1500 (the Congress of Vienna drawn as 1500) and exactly
+         what lowering a floor does to a path that was unreachable before.
+         ⚠ #R604's own rule says years 1-99 taking world_100 is fine — that is the dataset's
+         RESOLUTION there. Below year 1 it is not resolution: upstream HAS those snapshots, they
+         are in the bundle, and answering with AD 100 would be jumping past something it holds.
+         So a deep year with no bundle is honestly blank, and the existing four-second retry gets
+         another chance at the file. CONSTITUTION「偽物・ハリボテ禁止」. */
+      if(!_erd&&year<1){ setTimeout(()=>{ try{ if(active&&my===seq) go(when); }catch(_){} },4000); return; }
+      const ny=nearest(year,erYears(_erd));
       /* (#R106) the Tibet merge is DISPLAY-year based — re-apply when it flips (e.g. 1950→1951) even on the same snapshot. */
       const corr=(year>=1951);
       if(shownY===ny&&shownCorr===corr){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===ny&&shownCorr===corr&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) retry once the style is ready instead of latching absent borders */
@@ -1207,7 +1283,11 @@ window.IntMapModules.timeBorders=function(HOST){
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
     (function warm(){ const pf=()=>{ bcLoad();   /* (#R531) 85 KB of marks, beside the 5.5 MB it marks */
       csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
-        let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); };
+        /* (#R679) warming means the BUNDLE now — one 10.6 MB file instead of 53 cross-origin
+           requests through two public proxies. The per-year walk stays for the case where that
+           file is the thing that failed. */
+        erLoad().then(d=>{ if(d) return;
+          let i=0; const nx=()=>{ if(i>=YEARS.length) return; const y=YEARS[i++]; fetchFC(y).catch(()=>{}).then(()=>setTimeout(nx,500)); }; nx(); }); }); };
       /* (#R122) load the CShapes bundle EAGERLY (was idle-gated up to 6 s) so the FIRST time-travel doesn't block on
          parsing it — the reported "年代を変えてから国境が出るまで遅い". A short delay keeps it off the critical boot path.
          ══ (#R192) …EXCEPT 900 ms IS NOT OFF THE BOOT PATH ═══════════════════════════════════════════
