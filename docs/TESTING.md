@@ -673,11 +673,11 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   markers; the file then failed to parse and **every test in it stopped running**. Nothing in one
   checkout can prove the other branch chose a different number — the other branch is not here — so
   what is checked is the half that can be: whether the name carries what the number does not.
-  The **416** files already named the bare way are legacy and stay; they are pinned by two numbers
-  rather than by a list of 416 spellings, because a list would have to be edited to admit the 417th
+  The **417** files already named the bare way are legacy and stay; they are pinned by two numbers
+  rather than by a list of 417 spellings, because a list would have to be edited to admit the next
   and that edit is the one being prevented. `LEGACY_BARE_COUNT` only goes **down** (and says so if
-  it is left too high after a rename), and `LEGACY_BARE_MAX_ROUND` (**670**, measured 2026-09-10;
-  the 35 subject-bearing files run to r671) fails any bare name above it, since round numbers are
+  it is left too high after a rename), and `LEGACY_BARE_MAX_ROUND` (**672**, measured 2026-09-10;
+  the 36 subject-bearing files run to r674) fails any bare name above it, since round numbers are
   handed out monotonically. Either number alone is evadable — add a bare name *and* rename a legacy
   one and the count holds; reuse an unused low number and the round holds — together they are not.
   The rule itself, including the memory files outside this repository that no gate can reach, is

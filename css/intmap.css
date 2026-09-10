@@ -1349,6 +1349,12 @@
     .rad-src{ font-size:10px; color:var(--text-muted); line-height:1.4; }
     .rad-src.off{ opacity:0.55; text-decoration:line-through; }
     .rad-err{ font-size:10px; color:#e0332f; }
+    /* ⚠ (#R624) THE POPUP CARRIED `country-popup` AND WAS THEREFORE INVISIBLE. That class is the
+       COUNTRY PANEL's hidden template — `.country-popup{display:none}` — and nothing turns it back
+       on for a map popup. In production the popup was built correctly, inserted correctly, and
+       measured 20×16 px: the close button and nothing else. It has its own box now, and borrows
+       no other feature's class. */
+    .rad-pop{ min-width:190px; max-width:260px; font-size:12px; line-height:1.5; }
     .rad-pop-h{ font-weight:600; margin-bottom:2px; }
     .rad-pop-v{ font-size:19px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.2; }
     .rad-pop-v span{ font-size:11px; font-weight:400; color:var(--text-muted); }

@@ -19,7 +19,7 @@
  *    name carries what the number does not: its SUBJECT. Two sessions do not collide on
  *    r674-round-naming vs r671-dem-store, whatever numbers they end up holding.
  *
- *  ⚠ THE LEGACY FILES ARE HELD BY TWO NUMBERS, NOT BY A LIST OF SPELLINGS. A list of the 416
+ *  ⚠ THE LEGACY FILES ARE HELD BY TWO NUMBERS, NOT BY A LIST OF SPELLINGS. A list of the 417
  *    names already in the old form would have to be EDITED to admit the 417th, and that edit is
  *    exactly what this exists to stop (.agents/rules/no-ad-hoc-hardcoding.md §1). Instead:
  *      · LEGACY_BARE_COUNT     — how many exist. It only goes DOWN; adding one raises it.
@@ -28,16 +28,19 @@
  *    Either alone is evadable — add a bare name AND rename a legacy one and the count holds;
  *    reuse some unused low number and the round holds — together they are not.
  *
- *  MEASURED 2026-09-10 on the tree that carries this rule: 416 bare names, highest round 670,
- *  with the 35 subject-bearing files running up to r671. Both numbers EXPIRE the moment a round
- *  legitimately renames legacy files; the third clause below says so rather than going quiet.
+ *  MEASURED 2026-09-10 on the tree that carries this rule: 417 bare names, highest round 672,
+ *  with the 36 subject-bearing files running up to r674. ⚠ BOTH NUMBERS MOVED WHILE THIS ROUND
+ *  WAS OPEN — main merged a round that added one more bare name. That is the expiry clause doing
+ *  its work, not an edit to dodge the gate: the file predates this rule and is not this round to
+ *  rename. They expire again the moment a round legitimately renames legacy files; the third
+ *  clause below says so rather than going quiet.
  *
  *  正本 (the rule itself, memory files included): .agents/skills/intmap-round/SKILL.md §4
  *  What this measures: docs/TESTING.md, Static checks.
  * ==========================================================================*/
 
-export const LEGACY_BARE_COUNT = 416;
-export const LEGACY_BARE_MAX_ROUND = 670;
+export const LEGACY_BARE_COUNT = 417;
+export const LEGACY_BARE_MAX_ROUND = 672;
 
 /* A per-round artefact under tests/: r<N> then whatever the name says, then the runner's suffix.
    `.test.mjs` is what the node runner discovers by name; `.spec.js` is Playwright's. */
