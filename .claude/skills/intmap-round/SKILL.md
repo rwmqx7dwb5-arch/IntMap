@@ -97,8 +97,42 @@ node scripts/worktree.mjs new <slug>
 **段とコマンドの表は [`.agents/rules/execution-strategy.md`](../../rules/execution-strategy.md) §4
 が正本。**ここには書き写さない——そこを見て、この工程では段 0 から順に上げる。
 
-このラウンド固有の義務だけ書く: その回の回帰検査は **`tests/r<N>-checks.test.mjs` という名前で置く**だけでよい
-——`test:checks` は `node --test "tests/**/*.test.mjs"` なので、名前が合っていれば登録なしに走る（#R529）。
+このラウンド固有の義務だけ書く: その回の回帰検査は **`tests/r<N>-<主題>-checks.test.mjs`**
+（spec なら `tests/r<N>-<主題>.spec.js`）という名前で置くだけでよい——`test:checks` は
+`node --test "tests/**/*.test.mjs"` なので、名前が合っていれば登録なしに走る（#R529）。
+
+### ⚠ ラウンド番号は名前ではない（この節が規約の正本・#R674）
+
+番号は**このセッションのものではない**——並列セッションは全員が同じ走査（`worktree.mjs` の
+`nextRound`）から「次の空き番号」を取り、`origin/main` が動くたびに取り直す。
+**改番は例外ではなく定常状態**（#R671 は 7 回、同じ時期の別セッションは 4 回）。実測された被害:
+
+- `tests/r568-checks.test.mjs` を **2 セッションが両方新規作成**し、git が add/add を立て、
+  着地の自動化がそれを取り込んで**衝突マーカーごと commit**した（`… | tail -4` が `$?` を
+  `tail` のものにしていた・#R420 の再演）。ファイルは `SyntaxError` で**1 本も走らなくなった**。
+- memory の `intmap-r<N>-lessons.md` を改番のたびに rename していて、**別セッションのファイルに
+  重ねて自分の記憶を失った**（#R565 と #R671 で **2 回**）。
+
+⚠ **直せるのは merge ではなく名前である。** 1 つのチェックアウトの中では「相手が別の番号を
+取ったか」を原理的に証明できない（相手の branch はここに無い）。証明できるのは**名前が番号の
+持たないもの＝主題を持っているか**だけ。⇒ **番号 ＋ 主題**で名づける:
+
+| 何 | 名前 | 例 |
+|---|---|---|
+| その回の回帰検査 | `tests/r<N>-<主題>-checks.test.mjs` | `tests/r671-dem-store-checks.test.mjs` |
+| その回の spec | `tests/r<N>-<主題>.spec.js` | `tests/r180-cesium.spec.js` |
+| **memory** | `intmap-<主題>.md`（**番号を書かない**） | `intmap-dem-tile-store-budget.md` |
+
+- 名前は `node scripts/worktree.mjs new <slug>` が**番号を取ったその場で印字する**。手で組み立てない。
+- リポジトリ側の門は `npm run check:static` の **`round-name`**（機械側の正本は
+  `scripts/round-names.mjs`。何を測っているかは [`docs/TESTING.md`](../../../docs/TESTING.md)）。
+  既存の番号だけの名前は**過去のもの**として据え置いてあり、**数と最大ラウンドの 2 つで下向きに
+  だけ動く**。⚠ **memory はリポジトリの外**なので門が無い——番号を書かないことだけが守る
+  （`AGENTS.md` §1）。
+- ⚠ **改番に「全文置換」を使わない。** `R<from>` → `R<to>` の一括置換は**他人のラウンドの文まで
+  書き換える**（実測: `docs/TESTING.md` の見出しと `DEV-NOTES.md` の 1 行）。動かすのは
+  **自分のファイル名だけ**を対象にしたパターン（`rd+-<自分の主題>`）。
+
 ⚠ **`tests/` に置く `.mjs` で `node:test` を import するものは、必ず `*.test.mjs` と名づける。**
 それ以外の名前は runner から見えず、一度も走らないまま永久に緑になる（`check:static` が捕まえる）。
 

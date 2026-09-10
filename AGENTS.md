@@ -26,6 +26,9 @@
 
 - **メモリ**（Claude Code `~/.claude/projects/C--Users-gyuuk-OneDrive-IntMap/memory/` ／
   Codex `/memories`。**同じ事実の別の写しなので、片方で学んだことはもう片方にも書く**）
+  ⚠ **memory は主題で名づける。ラウンド番号だけの名前は使わない**——番号は並行セッションで
+  衝突し、改番のたびの rename が**他セッションの記憶を潰した**（#R565・#R671 で 2 回）。
+  正本 `.agents/skills/intmap-round/` §4。
 - **`.agents/rules/` の全ファイル**（⚠ Claude Code は import で自動・**Codex は自分で開く**）
 - `DEV-NOTES.md` の**最新ラウンド**
 - `CONSTITUTION.md`（製品の不文律）

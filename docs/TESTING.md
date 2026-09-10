@@ -663,6 +663,27 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   **disk** — not a list — that none appears again. Fixtures, corpora and the shared helpers import
   nothing of the kind and are not demanded.
 
+- **Round-artefact names** (#R674, `round-name`) — a per-round file under `tests/` must be named
+  `r<N>-<subject>-checks.test.mjs` / `r<N>-<subject>.spec.js`. The **round number is not a name**:
+  every parallel session takes «the next free number» from the same scan and takes it again
+  whenever `origin/main` moves, so two sessions routinely hold the same one. Measured in #R671 —
+  which was renumbered **seven** times while a second session in the same window was renumbered
+  four — two sessions both created `tests/r568-checks.test.mjs`, git raised an **add/add** conflict,
+  the landing automation swallowed it (a pipe took `$?` from `tail`, #R420 again) and committed the
+  markers; the file then failed to parse and **every test in it stopped running**. Nothing in one
+  checkout can prove the other branch chose a different number — the other branch is not here — so
+  what is checked is the half that can be: whether the name carries what the number does not.
+  The **418** files already named the bare way are legacy and stay; they are pinned by two numbers
+  rather than by a list of 418 spellings, because a list would have to be edited to admit the next
+  and that edit is the one being prevented. `LEGACY_BARE_COUNT` only goes **down** (and says so if
+  it is left too high after a rename), and `LEGACY_BARE_MAX_ROUND` (**673**, measured 2026-09-10;
+  the 36 subject-bearing files run to r674) fails any bare name above it, since round numbers are
+  handed out monotonically. Either number alone is evadable — add a bare name *and* rename a legacy
+  one and the count holds; reuse an unused low number and the round holds — together they are not.
+  The rule itself, including the memory files outside this repository that no gate can reach, is
+  [`.agents/skills/intmap-round/SKILL.md`](../.agents/skills/intmap-round/SKILL.md) §4;
+  `node scripts/worktree.mjs new <slug>` prints the two names when it takes the number.
+
 It deliberately does **not** reformat or style-lint existing code.
 
 ## The agent context — `npm run check:agents` (`scripts/agent-sync.mjs`, #R503)

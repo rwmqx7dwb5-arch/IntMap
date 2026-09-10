@@ -37,13 +37,12 @@
 - **同じファイルを 2 つの agent に書かせない。** 分解は**ファイル単位**で行い、重なるなら直列にする。
 - 並列実装のときは、`node scripts/worktree.mjs new <slug>` で**作業ごとに worktree を用意**し、
   各 implementer には**その絶対パスと、触ってよいファイルの一覧**を渡す。
-- ⚠ **製品のハーネスが作る worktree を隔離に使わない。** それはリポジトリの中
-  （＝ OneDrive の中）にできる（`docs/AGENT-SETUP.md` §5）。
-  `scripts/worktree.mjs` は OneDrive の外に作る。
+- ⚠ **製品のハーネスが作る worktree を隔離に使わない**——リポジトリの中（＝ OneDrive の中）に
+  できる（`docs/AGENT-SETUP.md` §5）。`scripts/worktree.mjs` は外に作る。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`AGENTS.md` §6）。
-- ラウンド番号は `node scripts/worktree.mjs status` が示す**空き番号**を使い、**push の直前に取り直す**
-  （⚠ 稀ではない。`DEV-NOTES.md` を「改番」で引けば実例が並ぶ）。
+- ラウンド番号は `worktree.mjs status` の**空き番号**を使い、**push の直前に取り直す**（#R671 は 7 回）。
+  ⚠ **番号は名前にならない**——tests・memory を番号だけで名づけない（§6 の skill §4）。
 
 ## 4. 検証は段で上げる——作業中は対象だけ、広い網は 1 回だけ
 
@@ -93,6 +92,6 @@
 
 ## 6. 手順の正本
 
-ラウンド 1 本を通す**具体的な手順**は `.agents/skills/intmap-round/` にある
-（Claude Code `/intmap-round` ／ Codex `$intmap-round`）。
-状態の把握・worktree の用意・後片付けは `node scripts/worktree.mjs`。
+ラウンド 1 本の**具体的な手順**と**この回のファイル名**は
+`.agents/skills/intmap-round/`（Claude `/intmap-round` ／ Codex `$intmap-round`）。
+状態・worktree・片付けは `node scripts/worktree.mjs`。

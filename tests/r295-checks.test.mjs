@@ -26,13 +26,38 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync, statSync, mkdtempSync, rmSync, writeFileSync, mkdirSync, cpSync } from 'node:fs';
-import { resolve, dirname, join, basename } from 'node:path';
+import { resolve, dirname, join, basename, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { readLF, lf } from '../scripts/eol.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+/* (#R674) THE FIXTURE'S COPY OF THE SCRIPT IS NOT ONE FILE. ⑫ and ⑭ build a throwaway repository
+   and run scripts/worktree.mjs inside it, and they used to seed it by naming that one file. The
+   moment worktree.mjs grew a local import (scripts/round-names.mjs, so the tool and its gate share
+   one definition of the names it hands out) both tests died with ERR_MODULE_NOT_FOUND — the fixture
+   was a hand-written list, and a hand-written list silently drops whatever is added next
+   (.agents/rules/no-ad-hoc-hardcoding.md §2.4). So FOLLOW THE IMPORTS instead: seed the entry point
+   and, transitively, every relative specifier it names. Node resolves them the same way. */
+function seedScripts(origin, entry = 'scripts/worktree.mjs') {
+  mkdirSync(join(origin, 'scripts'), { recursive: true });
+  const seen = new Set();
+  const take = (rel) => {
+    if (seen.has(rel)) return;
+    seen.add(rel);
+    const src = resolve(ROOT, rel);
+    cpSync(src, join(origin, rel));
+    const body = readFileSync(src, 'utf8');
+    for (const m of body.matchAll(/\bfrom\s*['"](\.[^'"]+)['"]/g)) {
+      take(join(dirname(rel), m[1]).split(sep).join('/'));
+    }
+  };
+  take(entry);
+  return seen;
+}
+
 const read = (p) => readLF(resolve(ROOT, p));
 const codeOnly = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1 ');
 
@@ -279,8 +304,7 @@ test('#R295 ⑫ worktree.mjs done removes the worktree and its branch, and exits
     g(['init', '-q', '-b', 'main'], origin);
     g(['config', 'user.email', 'r295@test'], origin);
     g(['config', 'user.name', 'r295'], origin);
-    mkdirSync(join(origin, 'scripts'));
-    cpSync(resolve(ROOT, 'scripts/worktree.mjs'), join(origin, 'scripts/worktree.mjs'));
+    seedScripts(origin);
     writeFileSync(join(origin, 'DEV-NOTES.md'), '- **#R100** seed\n');
     g(['add', '-A'], origin);
     g(['commit', '-qm', 'seed'], origin);
@@ -346,8 +370,7 @@ test('#R295 ⑭ done deletes a squash-merged branch but keeps one that still has
     g(['init', '-q', '-b', 'main'], origin);
     g(['config', 'user.email', 'r295@test'], origin);
     g(['config', 'user.name', 'r295'], origin);
-    mkdirSync(join(origin, 'scripts'));
-    cpSync(resolve(ROOT, 'scripts/worktree.mjs'), join(origin, 'scripts/worktree.mjs'));
+    seedScripts(origin);
     writeFileSync(join(origin, 'DEV-NOTES.md'), '- **#R100** seed\n');
     g(['add', '-A'], origin); g(['commit', '-qm', 'seed'], origin);
 
