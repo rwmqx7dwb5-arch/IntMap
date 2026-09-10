@@ -254,7 +254,7 @@ window.IntMapModules.radiationLayer = function (HOST) {
     try {
       el = GE().ui.attach(GE().ui.popup({ closeButton: true, closeOnClick: true, className: 'plc-popup', maxWidth: '280px' })
         .setLngLat(f.geometry.coordinates)
-        .setHTML('<div class="rad-pop country-popup">' + head + val + when + who + hist + '</div>'));
+        .setHTML('<div class="rad-pop">' + head + val + when + who + hist + '</div>'));
     } catch (_) { }
     if (hist) series(p.c).then(rows => {
       try {
@@ -272,7 +272,14 @@ window.IntMapModules.radiationLayer = function (HOST) {
   /* an inline sparkline, drawn as an SVG path rather than a canvas so it survives being written
      into a popup that the renderer may re-create. */
   function spark(rows) {
-    const vs = rows.map(r => r && typeof r.v === 'number' ? r.v : null).filter(v => v != null);
+        /* ⚠ (#R672) THE FEED'S SERIES ROWS ARE `{at, nsvh}`, NOT `{v}`. `?mode=series` returns the
+       provider's own records untouched (radiation-feed/index.ts: `series: r.records`), and a record
+       is built with `nsvh` — the compact `v` only exists on the LATEST wire, where every byte is
+       paid 7,000 times. Reading `.v` here found nothing in every row, so `vs.length < 2` was always
+       true and the sparkline slot was set to the empty string: no line, and not even the «no
+       history published» sentence. Measured in production, where the endpoint was returning 168
+       points quite happily. */
+    const vs = rows.map(r => r && typeof r.nsvh === 'number' ? r.nsvh : null).filter(v => v != null);
     if (vs.length < 2) return '';
     const lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs), span = (hi - lo) || 1;
     const W = 180, H = 34, step = W / (vs.length - 1);
