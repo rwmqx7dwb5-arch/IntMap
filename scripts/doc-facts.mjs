@@ -1332,27 +1332,38 @@ if (RULE && RULE !== 'i18n-open-gap') {
   } else ok('ci-gates', `all ${wanted.length} source-side gates npm test runs are also ci.yml steps`);
 }
 
-/* ═══ 28b. how much of the deep past is named in nine languages ═══════════════════════════
- *  (#R686) data/histeras-names.json is the only lane that localizes the pre-1850 polity names, and
- *  its size is a claim the documents make on the reader's behalf: 「どれだけ埋まったのか」. It is
- *  also a number that MOVES — a rebuild against a later Wikidata will decide differently — so the
- *  documents that state it are checked against the file rather than against each other. ⚠ AND THE
- *  ROUND'S OWN PROSE IS IN THE UNIVERSE: DEV-NOTES states both numbers, which is where a stale
+/* ═══ 28b. how much of the historical map is named in the reader's language ═══════════════
+ *  (#R686, widened #R695) data/histnames.json is the ONE lane that localizes historical polity
+ *  names, and it now answers for all three border records rather than the era snapshots alone. Its
+ *  size is a claim the documents make on the reader's behalf — 「どれだけ埋まったのか」 — and it is
+ *  a number that MOVES, because a rebuild against a later Wikidata decides differently. So the
+ *  documents that state it are checked against the FILE rather than against each other. ⚠ AND THE
+ *  ROUND'S OWN PROSE IS IN THE UNIVERSE: DEV-NOTES states these numbers, which is where a stale
  *  figure would otherwise survive longest. */
 {
-  if (!has('data/histeras-names.json')) {
-    fail('histeras-names', 'data/histeras-names.json is gone — the nine-language names of the deep past');
+  if (!has('data/histnames.json')) {
+    fail('histnames', "data/histnames.json is gone — the historical polity names in the reader's language");
   } else {
-    const j = JSON.parse(rd('data/histeras-names.json'));
-    const rows = Object.keys(j.names).length;
-    const strings = Object.values(j.names).reduce((n, r) => n + Object.keys(r.n).length, 0);
+    const j = JSON.parse(rd('data/histnames.json'));
+    const era = j.byName && j.byName.eras ? Object.keys(j.byName.eras).length : 0;
+    const cs = j.byName && j.byName.cshapes ? Object.keys(j.byName.cshapes).length : 0;
+    const qid = Object.keys(j.byQid || {}).length;
+    const prose = Object.keys(j.prose || {}).length;
+    const rows = era + cs;
+    const strings = [...Object.values(j.byName.eras), ...Object.values(j.byName.cshapes),
+      ...Object.values(j.byQid), ...Object.values(j.prose)].reduce((n, r) => n + Object.keys(r.n).length, 0);
     const num = (s) => Number(String(s).replace(/,/g, ''));
     eachDoc((f, s) => {
-      for (const m of s.matchAll(/([\d,]{3,6})\s*名前/g)) if (num(m[1]) !== rows) fail('histeras-names', `${f} says ${m[1]} 名前; data/histeras-names.json holds ${rows}`);
-      for (const m of s.matchAll(/([\d,]{3,7})\s*の訳語/g)) if (num(m[1]) !== strings) fail('histeras-names', `${f} says ${m[1]} の訳語; data/histeras-names.json holds ${strings}`);
+      for (const m of s.matchAll(/([\d,]{3,6})\s*名前/g)) if (num(m[1]) !== rows) fail('histnames', `${f} says ${m[1]} 名前; data/histnames.json decides ${rows} by measure`);
+      for (const m of s.matchAll(/([\d,]{3,7})\s*の訳語/g)) if (num(m[1]) !== strings) fail('histnames', `${f} says ${m[1]} の訳語; data/histnames.json holds ${strings}`);
+      for (const m of s.matchAll(/([\d,]{2,5})\s*の説明文/g)) if (num(m[1]) !== prose) fail('histnames', `${f} says ${m[1]} の説明文; data/histnames.json holds ${prose}`);
     });
-    if (!/histeras-names\.json/.test(BODY.get('Architecture.md') || '')) fail('histeras-names', 'Architecture.md no longer says where the pre-1850 polity names come from');
-    if (!problems.some((x) => x.startsWith('histeras-names'))) ok('histeras-names', `${rows} names / ${strings} localized strings, stated correctly`);
+    if (!/histnames\.json/.test(BODY.get('Architecture.md') || '')) fail('histnames', 'Architecture.md no longer says where the historical polity names come from');
+    /* ⚠ THE SUPERSEDED FILE MUST NOT COME BACK. Two tables answering for one era name is the state
+       AGENTS.md §9 forbids, and the cost is #R536's: `tagSame` reads one first and the other stops
+       being reachable without anything going red. */
+    if (has('data/histeras-names.json')) fail('histnames', 'data/histeras-names.json is back beside data/histnames.json — one name, two answers');
+    if (!problems.some((x) => x.startsWith('histnames'))) ok('histnames', `${rows} names by measure + ${qid} by identifier + ${prose} descriptions, ${strings} localized strings, stated correctly`);
   }
 }
 

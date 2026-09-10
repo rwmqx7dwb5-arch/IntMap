@@ -92,6 +92,12 @@ jobs:
         run: npm run check:histborders
       - name: Era snapshots (all eras, incl. BCE)
         run: npm run check:histeras
+      # (#R695) …AND THE NAMES THOSE THREE RECORDS ARE READ BY. One table, three lanes of evidence
+      # (a QID the record itself states · #R686's measure against the map's geometry and clock ·
+      # the upstream's own English prose, translated and marked). Its subject is the NAME, not any
+      # one bundle, which is why it is not folded into the gate above it.
+      - name: Historical polity names (one table, three records)
+        run: npm run check:histnames
       # (#R628) …AND WHICH EDGE OF A HISTORICAL BORDER IS DRAWN. `check:bordercoast` was declared in
       # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
       # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote

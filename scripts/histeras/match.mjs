@@ -146,8 +146,20 @@ export function score(row, cand, internal, years) {
     else if (time <= slack * NEAR) { points += 1; corroborated = true; }
   }
 
-  if (cand.geo) points += 1;
+  /* ⚠ (#R695) «IS THIS THE KIND OF THING THE MAP DRAWS» — `subject`. #R686 asked it as `geo`,
+     which is really «does Wikidata say where this is», and for a PEOPLE Wikidata says no such
+     thing, so the deep snapshots' commonest subject scored nothing at all. `subject` is `geo` OR
+     membership of a kind this map draws, discovered from named roots by `wdt:P279*`
+     (scripts/histeras/harvest.mjs `ACCEPT_ROOTS`). It buys the SAME one point `geo` bought — the
+     agreement tests above are untouched — and a candidate with no `subject` field falls back to
+     `geo` so nothing that reads this file without one changes behaviour. */
+  if (isSubject(cand)) points += 1;
   return { points, why: null, space, time, corroborated };
+}
+
+/** Whether the candidate is a kind of thing this map draws. Falls back to #R686's `geo`. */
+export function isSubject(cand) {
+  return (cand && cand.subject !== undefined) ? !!cand.subject : !!(cand && cand.geo);
 }
 
 /**
@@ -158,8 +170,10 @@ export function score(row, cand, internal, years) {
  * The measurable form of that danger is here: how many items carry this English string at all.
  *   · Several candidates → one of them has to WIN on agreement with the map's geometry and clock,
  *     by a margin. No margin, no answer.
- *   · Exactly one candidate, and it is a geographic or political entity → the string is not
- *     ambiguous on Wikidata, and there is nothing for a ranker to get wrong. Taken.
+ *   · Exactly one candidate, and it is a kind of thing this map draws (#R695 `isSubject`: a
+ *     geographic or political entity, OR a people, a historical region, an archaeological
+ *     culture) → the string is not ambiguous on Wikidata, and there is nothing for a ranker to
+ *     get wrong. Taken.
  *   · Exactly one candidate with no geographic or political identity at all → refused; a name is
  *     shared with films, ships and people, and «the only item called X» is not «a polity».
  * @returns {{qid:string, points:number}|{qid:null, why:string}}
@@ -170,7 +184,7 @@ export function decide(row, cands, internal, years) {
   for (const c of cands) {
     const v = score(row, c, internal, years);
     if (v.why) { why = why || v.why; continue; }
-    kept.push({ qid: c.qid, points: v.points, corroborated: v.corroborated, geo: !!c.geo, exact: !!c.exact });
+    kept.push({ qid: c.qid, points: v.points, corroborated: v.corroborated, geo: isSubject(c), exact: !!c.exact });
   }
   if (!kept.length) return { qid: null, why: why || REJECT.BARE };
   kept.sort((a, b) => b.points - a.points || (a.qid < b.qid ? -1 : 1));

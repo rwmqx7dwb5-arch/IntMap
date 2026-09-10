@@ -37,19 +37,22 @@
  *  INLAND_KM is measured, not chosen, and the measurement that settles it is not the histogram —
  *  see the constant below.
  *
- *  ⚠ THE aourednik SNAPSHOTS ARE NOT COVERED, on purpose. They are fetched from GitHub at runtime
- *  and only when a bundle fails to load, so there is no build step to mark them in; js/time-borders.js
- *  draws an unmarked collection whole, exactly as it did before this round.
+ *  ⚠ WHICH BUNDLES ARE MARKED IS NOT WRITTEN DOWN HERE (#R695). It is discovered from data/ — see
+ *  discoverBundles() below and the measurement above it. What is still NOT covered is the aourednik
+ *  snapshots fetched from GitHub AT RUNTIME (js/time-borders.js's proxy fallback, reached only for a
+ *  year data/hist-eras.js does not hold): there is no build step to mark those in, so js/border-coast.js
+ *  draws an unmarked collection whole, exactly as it did before #R531.
  *
  *      node scripts/build-border-coast.mjs --report   # print the measurement INLAND_KM is read off
  *      node scripts/build-border-coast.mjs            # write data/border-coast.js
  *      node scripts/build-border-coast.mjs --check    # re-derive and verify the COMMITTED file (offline)
  * ==========================================================================*/
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
-import { join, dirname } from 'node:path';
+import { join, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildWater } from './bordercoast/water.mjs';
+import { ringArea } from './histborders/geom.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'border-coast.js');
@@ -119,10 +122,31 @@ function deepestInland(W, a, b, cut, cap) {
 
 /* 1 = draw every edge, 0 = draw none, else the runs [a,b] of edge indices to draw (b exclusive):
    the drawn LineString is V.slice(a, b + 1). */
+/* ⚠ (#R695) A RING THAT ENCLOSES NOTHING IS NOT AN OUTLINE, AND ITS EDGES BOUND NOTHING.
+   Measured on data/hist-eras.js: 904 of its 8,814 pooled rings (10.3%) have a signed area of
+   EXACTLY zero at the coordinates the file ships, and 891 of the 904 are paths that double back on
+   themselves — the same vertex appears twice, the ring goes out and comes home along its own
+   track. They are upstream's digitizing artifacts, not shapes: 421 of the 2,730 ring instances are
+   already zero-area in the raw upstream GeoJSON, and the other 2,309 enclose 2.7e-5 deg² BETWEEN
+   THEM — a third of a square kilometre spread over 2,309 rings averaging 190 km of path, i.e.
+   floating-point noise, not slivers. No other bundle in data/ has one.
+   The fill layers already draw nothing for them (there is no interior to fill), so the ONLY thing
+   they put on the map is a line — a boundary claim around no territory, drawn in the colour and
+   width of a border. That is the #R531 defect with a different cause, so it gets the same answer:
+   not stroked.
+   ⚠ AND NOTHING IS DELETED TO ACHIEVE IT. Dropping these rings from data/hist-eras.js was the
+   other option and was measured: it would have removed 2,734 polygon entries, 1,007 of the unnamed
+   `blank` polygons #R679 created that lane for, and 12 named features — of which two, «Andean
+   hunter-gatherers» and «Savanna hunter-gatherers» (1783), have no other polygon in their snapshot
+   and would leave the record entirely. The bundle keeps every ring upstream drew and every name it
+   gave; the marks decide what is stroked, which is this file's job and not the bundle's.
+   ⚠ EXPIRES IF a bundle ever encodes a genuine one-dimensional feature (a boundary line with no
+   territory) as a zero-area ring — then this test would silence it. Nothing in data/ does today. */
 function markRing(W, ring, cut) {
   const V = closedRing(ring);
   const E = V.length - 1;
   if (E < 1) return 0;
+  if (ringArea(V) === 0) return 0;
   const runs = []; let start = -1, drawn = 0;
   for (let i = 0; i < E; i++) {
     const border = deepestInland(W, V[i], V[i + 1], cut, cut) > cut;
@@ -149,25 +173,84 @@ function water() {
    5 6 7 8 10 14 km) moves the drawn length by 0.2% per km at every step — the curve has no elbow of
    its own, because a province's coast copy is a small share of a mostly inland outline. One rule,
    one authority, one constant. */
-const SETS = [
-  { key: 'cs', file: 'cshapes.js', global: '__CSHAPES' },
-  { key: 'hb', file: 'hist-borders.js', global: '__HISTB' },
-  { key: 'ha', file: 'hist-admin1.js', global: '__HISTADM1' },
-  { key: 'ha2', file: 'hist-admin2.js', global: '__HISTADM2' },
-  /* ⚠ (#R669) …AND THE FOURTH BUNDLE, WHICH IS THE ONE IntMap DERIVED ITSELF. data/hist-kuni.js is
-     the fifteen provinces of Japan OpenHistoricalMap holds no relation for. Leaving it out of this
-     ledger does not make its line safe — it makes it the one era line on the map that strokes the
-     record's own copy of the COASTLINE as if it were a boundary, which is the exact claim #R531
-     removed from the country line and #R564 removed from the provinces. Japan is almost entirely
-     coast, so «almost entirely» is how much of that line would have been wrong. */
-  { key: 'hk', file: 'hist-kuni.js', global: '__HISTKUNI' },
-];
+/* ⚠ (#R669) …AND THE BUNDLE IntMap DERIVED ITSELF. data/hist-kuni.js is the fifteen provinces of
+   Japan OpenHistoricalMap holds no relation for. Leaving it out of this ledger does not make its
+   line safe — it makes it an era line that strokes the record's own copy of the COASTLINE as if it
+   were a boundary, which is the exact claim #R531 removed from the country line and #R564 removed
+   from the provinces. Japan is almost entirely coast, so «almost entirely» is how much of that line
+   would have been wrong.
 
-function markAll(W, cut) {
+   ⚠⚠⚠ (#R695) AND THAT IS WHY THE POPULATION IS NO LONGER A LIST. Every round above added its
+   bundle to a hand-written array here, and the round that did not — #R679, which brought the whole
+   deep past in-tree as data/hist-eras.js — left the entire band from 123,000 BC to 1688 out of it
+   WITHOUT ANY GATE NOTICING, because a hand-written population cannot be short. Measured on the
+   shipped file with this file's own rule (INLAND_KM 6, SAMPLE_KM 1): on the 1500 snapshot 364,993
+   of 1,116,501 km of drawn line — 32.7% of the length, 60.3% of the edges — was the record's copy
+   of the coastline, drawn in the same colour and width as a boundary; on 1700, 345,620 of
+   1,407,871 km. That is the #R531 defect, still on the map, for most of the years IntMap reaches.
+   So the bundles are DISCOVERED from data/ by what they ARE — a ring-pooled outline bundle — and a
+   bundle that lands there tomorrow is marked without anyone remembering to come back here.
+   (`--check` fails if the committed file's set of keys is not exactly the discovered one, so the
+   discovery cannot silently narrow either.) */
+
+/* ⚠ THE KEY IS A NAME, NOT THE POPULATION. Four keys were published before this round and two
+   runtime modules ask for them by those names (js/time-borders.js `_bcMarks('cs')`/`('hb')`,
+   js/time-admin1.js `cfg.set`), so the table below FREEZES those spellings — it renames, it never
+   selects. A discovered bundle it does not mention is not skipped; it is published under its own
+   global's name (`__HISTERAS` → `histeras`) and the reader finds it by the `global` field the
+   entry carries, not by knowing the key. */
+const PUBLISHED_KEY = { __CSHAPES: 'cs', __HISTB: 'hb', __HISTADM1: 'ha', __HISTADM2: 'ha2', __HISTKUNI: 'hk' };
+const keyFor = (g) => PUBLISHED_KEY[g] || g.replace(/^__/, '').toLowerCase();
+
+/* what makes a file one of these bundles, asked of the file and not of a list: it assigns ONE
+   global, and that global carries `rings` — a pool of outlines, each an array of [lon,lat] pairs on
+   the globe. data/ecoregions_2017.js is a FeatureCollection and has no pool; data/border-coast.js is
+   this file's own output. Neither can pass, and neither has to be named here to be excluded. */
+function ringPool(d) {
+  if (!d || typeof d !== 'object' || !Array.isArray(d.rings) || !d.rings.length) return false;
+  for (const r of d.rings) {
+    if (!Array.isArray(r) || r.length < 3) return false;
+    const p = r[0];
+    if (!Array.isArray(p) || p.length !== 2 || !isFinite(p[0]) || !isFinite(p[1])) return false;
+    if (p[0] < -180.001 || p[0] > 180.001 || p[1] < -90.001 || p[1] > 90.001) return false;
+  }
+  return true;
+}
+
+function jsFilesUnder(dir, base = dir) {
+  const out = [];
+  for (const e of readdirSync(dir).sort()) {
+    const p = join(dir, e);
+    if (statSync(p).isDirectory()) out.push(...jsFilesUnder(p, base));
+    else if (e.endsWith('.js')) out.push(relative(base, p).split(sep).join('/'));
+  }
+  return out;
+}
+
+/* every ring-pooled bundle in `dir`, in file order. Each is EVALUATED and then dropped again —
+   the six bundles are 56 MB of JSON and holding them all at once is how #R604 met V8's ceiling. */
+export function discoverBundles(dir = join(ROOT, 'data')) {
+  const out = [];
+  for (const file of jsFilesUnder(dir)) {
+    const src = readFileSync(join(dir, file), 'utf8');
+    const m = /^\s*window\.(__[A-Za-z0-9_$]+)\s*=/.exec(src);
+    if (!m) continue;
+    if (!/"rings"\s*:\s*\[/.test(src)) continue;      /* cheap: do not evaluate 9.7 MB to learn it has no pool */
+    let d = null;
+    try { const w = {}; new Function('window', src)(w); d = w[m[1]]; } catch (_) { continue; }
+    if (!ringPool(d)) continue;
+    out.push({ key: keyFor(m[1]), file, global: m[1] });
+  }
+  return out;
+}
+
+function markAll(W, cut, sets) {
   const out = {};
-  for (const s of SETS) {
+  for (const s of sets) {
     const d = loadBundle(s.file, s.global);
-    out[s.key] = { file: 'data/' + s.file, rings: d.rings.length, draw: d.rings.map((r) => markRing(W, r, cut)) };
+    out[s.key] = { file: 'data/' + s.file, global: s.global, rings: d.rings.length, draw: d.rings.map((r) => markRing(W, r, cut)) };
+    const zero = d.rings.reduce((a, r) => a + (ringArea(closedRing(r)) === 0 ? 1 : 0), 0);
+    console.log('  ' + s.key + ': ' + d.rings.length + ' rings, ' + zero + ' of them enclosing no area at the stored precision (not stroked)');
   }
   return out;
 }
@@ -188,7 +271,7 @@ function report() {
   const BINS = [-Infinity, -10, -5, -2, -1, 0, 1, 2, 2.5, 3, 4, 5, 7.5, 10, CAP, Infinity];
   const hist = new Array(BINS.length - 1).fill(0);
   let edges = 0;
-  for (const s of SETS) {
+  for (const s of discoverBundles()) {
     const d = loadBundle(s.file, s.global);
     for (const r of d.rings) {
       const V = closedRing(r);
@@ -216,14 +299,16 @@ function report() {
 /* ── the file ─────────────────────────────────────────────────────────────────────────────────── */
 function build() {
   const W = water();
-  const sets = markAll(W, INLAND_KM);
+  const found = discoverBundles();
+  console.log('bundles discovered in data/:', found.map((s) => s.file + ' → ' + s.key).join(', '));
+  const sets = markAll(W, INLAND_KM, found);
   const doc = {
     v: 1,
-    src: 'derived: ' + SETS.map((s2) => 'data/' + s2.file).join(' + ') + ' against data/coastline.json.gz',
+    src: 'derived: ' + found.map((s2) => 'data/' + s2.file).join(' + ') + ' against data/coastline.json.gz',
     authority: 'Natural Earth 1:10m physical — coastline (public domain), 2 km tolerance',
     inlandKm: INLAND_KM,
     sampleKm: SAMPLE_KM,
-    means: '`draw[i]` for ring i of the named bundle: 1 = stroke every edge, 0 = stroke none, else the runs [a,b] of a CLOSED ring — the drawn line is V.slice(a, b+1).',
+    means: '`draw[i]` for ring i of the named bundle: 1 = stroke every edge, 0 = stroke none, else the runs [a,b] of a CLOSED ring — the drawn line is V.slice(a, b+1). `global` names the window property the bundle assigns, so a reader holding a ring can find its mark without knowing the key.',
     sets,
   };
   writeFileSync(OUT, 'window.__IMBCOAST=' + JSON.stringify(doc) + ';\n');
@@ -253,10 +338,18 @@ function check(step) {
   if (fail.length) { console.error(fail.map((m) => '✗ ' + m).join('\n')); process.exit(1); }
 
   const W = water();
-  for (const s of SETS) {
+  const found = discoverBundles();
+  /* ⚠ (#R695) THE GATE ON THE POPULATION ITSELF. Not "the bundles I remembered are all here" but
+     "the file marks exactly the bundles data/ holds" — the condition #R679's data/hist-eras.js
+     failed silently for two rounds, and the one a seventh bundle cannot fail silently either. */
+  ok(JSON.stringify(found.map((s) => s.key).sort()) === JSON.stringify(Object.keys(D.sets).sort()),
+     'the committed file marks exactly the bundles data/ holds (found ' + found.map((s) => s.key).join(',') +
+     ' — file has ' + Object.keys(D.sets).sort().join(',') + ')');
+  for (const s of found) {
     const d = loadBundle(s.file, s.global);
     const got = D.sets[s.key];
     ok(got && got.rings === d.rings.length, s.key + ': ring count matches ' + s.file);
+    ok(got && got.global === s.global, s.key + ': the entry names the global it marks (' + s.global + ')');
     ok(got && got.draw.length === d.rings.length, s.key + ': one entry per ring');
     if (!got || got.draw.length !== d.rings.length) continue;
     let mism = 0, badShape = 0, tried = 0;
@@ -283,8 +376,13 @@ function check(step) {
   console.log('✓ data/border-coast.js re-derives — rings', t.rings, '| all border', t.whole, '| all coast', t.none, '| mixed', t.part);
 }
 
-const arg = process.argv[2] || '';
-const sampleAt = process.argv.indexOf('--sample');
-if (arg === '--report') report();
-else if (arg === '--check') check(sampleAt >= 0 ? process.argv[sampleAt + 1] : 1);
-else build();
+/* ⚠ (#R695) ONLY WHEN RUN AS A PROGRAM. discoverBundles() is the population every gate has to be
+   able to ask for, and a test that imports it must not thereby spend ten minutes rewriting
+   data/border-coast.js. */
+if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.url))) {
+  const arg = process.argv[2] || '';
+  const sampleAt = process.argv.indexOf('--sample');
+  if (arg === '--report') report();
+  else if (arg === '--check') check(sampleAt >= 0 ? process.argv[sampleAt + 1] : 1);
+  else build();
+}

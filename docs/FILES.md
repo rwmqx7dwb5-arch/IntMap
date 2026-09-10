@@ -237,6 +237,8 @@ border-coast.js                   歴史的な輪郭のどの辺が「国境／�
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
                                   切り出した——同じ読み方を time-admin1.js にも配るため（写さない）
+                                  ⚠ 印は環の索引でも**環そのものの同一性**でも引ける——時代帯は
+                                  collection を丸ごと渡してくるので、束の名前を知らずに印へ辿り着く
 radiation-layer.js                実測放射線 window.IntMapRadiationObs（遅延）——各国の観測網が公開する周辺γ線量率を
                                   nSv/h に正規化した1つの尺度で描く。凡例・観測局ポップアップと時系列・時計連動・
                                   near() による「この地点の周りの観測局」。⚠ js/sims.js の拡散simulationとは別物
@@ -770,16 +772,20 @@ data/hist-eras.js                 全時代の国境スナップショット 53 
                                   aourednik/historical-basemaps・**GPL-3.0**・`window.__HISTERAS`・
                                   `scripts/build-hist-eras.mjs`／`npm run check:histeras`）。
                                   1689 年より前は、これが唯一の国境の答え。
-                                  ⚠ **名前は英語 1 つだけ**——9 言語は下の `data/histeras-names.json`
-data/histeras-names.json          `data/hist-eras.js` が描く政体の名前の、英語以外の 8 言語
-                                  （Wikidata・**CC0 1.0**・`scripts/build-histeras-names.mjs`／
-                                  `npm run check:histeras`）。上流の英語の綴りが鍵で、
-                                  **書いた言語だけを持つ**（`a` が誰が書いたかのビットマスク）。
-                                  無い言語では上流の英語が立つ——`js/time-borders.js` が
-                                  1689–1885 の記録に対してすでにしている扱いと同じ
-data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（4つの束の
-                                  全 40,820 リング分／`scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
+                                  ⚠ **名前は英語 1 つだけ**——訳語は下の `data/histnames.json`
+data/histnames.json               **歴史的な政体名の、記録をまたぐ 1 つの表**（Wikidata・**CC0 1.0**
+                                  ＋ 上流の説明文の訳・`scripts/build-histnames.mjs`／
+                                  `npm run check:histnames`）。`byQid` が `data/hist-borders.js` の
+                                  述べる QID に、`byName.cshapes` / `byName.eras` が綴りに答え、
+                                  `prose` が上流の**説明文**を訳す（`d` の印つき）。
+                                  ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
+                                  `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
+data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
+                                  **発見された**束すべて・いまは6つ・全 49,634 リング分／
+                                  `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
+                                  （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
+                                  内部を持たないので描かない
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
                                   4,820件／rings 7,186・9.83 MB＝brotli 0.97 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
@@ -871,9 +877,20 @@ scripts/
   build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 53 枚 → `data/hist-eras.js`。
                                   一覧は上流のディレクトリから発見し、年の規約（`bc323` → 天文年 −322）は
                                   1 関数だけが持つ。`--check` はそれを評価して照合する
-  build-histeras-names.mjs        上の束が描く政体名 → `data/histeras-names.json`（9 言語）。
-                                  `--fetch` が候補を集め、既定が組み立て、`--check` が無ネットワークで
-                                  照合し、`--sweep` が許容幅を測り直す
+  build-histnames.mjs             3 つの国境記録が描く政体名 → `data/histnames.json`。
+                                  `--fetch` が候補・事実・クラス・QID ラベルを集め、既定が組み立て、
+                                  `--check` が無ネットワークで再現して照合する。
+                                  ⚠ **識別子・尺度・上流の説明文の 3 車線**で、規則は
+                                  `scripts/histeras/match.mjs` を**import する**（写さない）
+  histnames/langs.mjs             出荷する言語の**方針の正本**。問い合わせは常に 9 言語、
+                                  絞るのは出荷だけ——`shipLangs()` を `all` に戻す 1 行で 9 言語へ戻る
+  histnames/records.mjs           cshapes / hist-borders / era snapshot を**同じ census 行の形**に読む。
+                                  規則を記録ではなく名前に付けるための土台
+  histnames/prose.mjs             どの綴りが「名前」ではなく上流の**説明文**かを尺度で決める
+                                  （Wikidata が項目を持たず、かつこの記録自身が 2 名前以上で
+                                  小文字に使う語を含む）。⚠ 母集合は導出、訳語だけが手書き
+  histnames/prose-text.mjs        その説明文の訳語。⚠ **一覧は導出されるので古くなれない**——
+                                  分類器が見つけた綴りに行が無ければ**ビルドが落ちる**
   histeras/census.mjs             束から「どの名前を・どこに・いつ描いているか」を導く（訳す単位は
                                   feature ではなく**名前**——10,212 の feature に 3,028 の綴り）
   histeras/harvest.mjs            Wikidata の候補（英語のラベルと別名に**一致する項目を全部**。順位も
@@ -884,6 +901,7 @@ scripts/
   histeras/time-borders.mjs       `js/time-borders.js` を node で実体化する足場（手書きの名前表が
                                   何に答えるかを、ソースを読まずに**訊く**ため）
   histeras/coverage.mjs           手書きの表と束の表が、言語ごとに何件ずつ答えているかを印字する
+                                  （表の正本は `data/histnames.json` の `byName.eras`）
   build-osm-ja-rejects.mjs        OSM の `name:ja` のうち、ラテン文字名の集落・行政区画に**漢字の意訳**が
                                   当たっている組を掃き出し、`js/place-labels.js` の生成ブロックへ焼く。
                                   ⚠ **訂正ではなく拒否**——正しい日本語名を発明せず、既存の鍵の並び

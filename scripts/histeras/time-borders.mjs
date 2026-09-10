@@ -62,6 +62,12 @@ export function timeBorders(opts = {}) {
   run('js/locales/_langs.js');
   run('js/lang-registry.js');
   run('js/history.js');
+  /* ⚠ (#R695) THE REAL FILE, NOT A STUB. js/time-borders.js reads two things from
+     js/hist-scale.js — the clock's floor and the year-zero-safe date arithmetic — and both of
+     them only matter below year 1, which is precisely where a stub would have quietly stood in
+     for them. Running the owner is cheap (it has no DOM, no map, no clock, no language, by its
+     own stated invariant) and it is what the page does. */
+  run('js/hist-scale.js');
   run('js/time-borders.js');
   w.IntMapHistStates = w.IntMapModules.histStates({});
   const host = { lang: opts.lang || 'jp', canDraw: () => false };

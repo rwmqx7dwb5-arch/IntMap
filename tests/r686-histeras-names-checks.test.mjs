@@ -2,7 +2,7 @@
  *  IntMap · #R686 — the deep past, named in nine languages
  * ----------------------------------------------------------------------------
  *  data/hist-eras.js draws every polity before 1850 and names all of them in English only, so
- *  this round put a second lane beside it (data/histeras-names.json) and a rule that decides what
+ *  this round put a second lane beside it (data/histeras-names.json — moved to data/histnames.json by #R695) and a rule that decides what
  *  may go into that lane (scripts/histeras/match.mjs). What is measured here is the RULE and the
  *  SHIPPED TABLE, both by evaluation:
  *    · the rule, because #R515 was a rule that took a ranker's first hit, and a rule that cannot
@@ -22,7 +22,12 @@ import { score, decide, labelsFor, plainLabel, timeSlack, wdYear, yearGap, LANG_
 import { timeBorders } from '../scripts/histeras/time-borders.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const NAMES = join(ROOT, 'data', 'histeras-names.json');
+/* ⚠ (#R695) THE FILE MOVED AND GREW. #R686 shipped data/histeras-names.json, which answered
+   for one record; the table now answers for all three (data/histnames.json), so the rows this
+   round's ten checks are about are `byName.eras`. Every assertion below is #R686's, unchanged in
+   what it demands — only where it reads from moved. */
+const NAMES = join(ROOT, 'data', 'histnames.json');
+const eraRowsOf = (doc) => doc.byName.eras;
 const NONE = new Set();
 const INTERNAL = new Set(['Q4167410']);            /* Wikimedia disambiguation page */
 
@@ -109,14 +114,14 @@ test('⑦ the bare zh is SIMPLIFIED, and the language list is the app registry',
 });
 
 test('⑧ the shipped table is keyed to the bundle it names', () => {
-  assert.ok(existsSync(NAMES), 'data/histeras-names.json is missing');
+  assert.ok(existsSync(NAMES), 'data/histnames.json is missing');
   const doc = JSON.parse(readFileSync(NAMES, 'utf8'));
   const rows = census(eraBundle(ROOT));
   const known = new Set(rows.map((r) => r.name));
-  const keys = Object.keys(doc.names);
+  const keys = Object.keys(eraRowsOf(doc));
   assert.ok(keys.length > 0);
-  for (const k of keys) assert.ok(known.has(k), `data/histeras-names.json names "${k}", which data/hist-eras.js does not draw`);
-  for (const [k, rec] of Object.entries(doc.names)) {
+  for (const k of keys) assert.ok(known.has(k), `data/histnames.json names "${k}" as an era polity, which data/hist-eras.js does not draw`);
+  for (const [k, rec] of Object.entries(eraRowsOf(doc))) {
     assert.match(rec.q, /^Q\d+$/);
     assert.ok(!('en' in rec.n), `"${k}" carries an English name — English is the upstream's`);
     for (const [lg, v] of Object.entries(rec.n)) {
@@ -128,8 +133,8 @@ test('⑧ the shipped table is keyed to the bundle it names', () => {
   /* ⚠ AND NO LANGUAGE MAY BE CLAIMED THAT NOBODY WROTE. The mask says which languages a source
      attested; a Chinese sibling converted from the other orthography is a name to read, not a
      second attestation, so `a` can only ever be a subset of what Wikidata carried. */
-  const bit = (lg) => 1 << doc.langs.indexOf(lg);
-  assert.equal(Object.values(doc.names).filter((r) => r.a & bit('en')).length, 0,
+  const bit = (lg) => 1 << doc.mask.indexOf(lg);   /* (#R695) the mask counts in the app registry's order, not the shipped one */
+  assert.equal(Object.values(eraRowsOf(doc)).filter((r) => r.a & bit('en')).length, 0,
     'no row may claim an English attestation');
 });
 
@@ -139,11 +144,11 @@ test('⑨ no era name is answered twice — the bundled lane and the hand tables
   for (const lg of doc.langs) {
     if (lg === 'en') continue;
     const { api } = timeBorders({ lang: lg });
-    const both = Object.entries(doc.names).filter(([k, r]) => r.n[lg] && api.eraLocName(k)).map(([k]) => k);
+    const both = Object.entries(eraRowsOf(doc)).filter(([k, r]) => r.n[lg] && api.eraLocName(k)).map(([k]) => k);
     if (both.length) clash[lg] = both.slice(0, 8);
   }
   assert.deepEqual(clash, {},
-    'a name localized by BOTH data/histeras-names.json and the tables in js/time-borders.js has two '
+    'a name localized by BOTH data/histnames.json and the tables in js/time-borders.js has two '
     + 'answers, and only one of them can ever be read (#R536). Drop it from the built table.');
 });
 
@@ -154,7 +159,7 @@ test('⑩ a bracketed qualifier is a disambiguation, and no shipped name carries
   for (const s of ['Kalmar Union', 'ヴェネツィア', '新羅', 'Khanat der Krim']) assert.equal(plainLabel(s), true);
   const doc = JSON.parse(readFileSync(NAMES, 'utf8'));
   const bad = [];
-  for (const [k, rec] of Object.entries(doc.names)) {
+  for (const [k, rec] of Object.entries(eraRowsOf(doc))) {
     for (const [lg, v] of Object.entries(rec.n)) if (!plainLabel(v)) bad.push(k + ' [' + lg + '] ' + v);
   }
   assert.deepEqual(bad, [], 'a map label has no room to carry a disambiguation');
