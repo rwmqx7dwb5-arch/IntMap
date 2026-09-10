@@ -20,6 +20,14 @@ window.IntMapModules=window.IntMapModules||{};
 window.IntMapModules.compare=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   const countryStats=HOST.countryStats, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, t=HOST.t;
+  /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, NOT ABOUT 768 px ═══════════════════════
+     `isMobile()` is a max-width media query, so it answers FALSE for an iPhone held sideways (844 px)
+     — the same phone, the same GPU. Every COST decision that asks it hands that phone the desktop
+     budget; here that means the full-resolution Köppen PNG in a SECOND WebGL context, which is the
+     exact crash #R29.1 fixed. One owner of the answer: js/mem-budget.js (the predicate is NOT copied
+     here — three files that copied it each dropped a clause, #R499). Until the shell has published
+     the page's answer the owner falls back to this file's own `isMobile`, so it is never worse. */
+  const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return typeof isMobile==='function'&&isMobile(); } };
   return (function(){
     /* (#R179) the renderer is asked FOR ITSELF, not named. `typeof maplibregl` was the last
        reference to the library in this file. */
@@ -35,8 +43,11 @@ window.IntMapModules.compare=function(HOST){
     const KC=window.KCOORDS||[[-180,85.0511],[180,85.0511],[180,-85.0511],[-180,-85.0511]];
     /* (#R29.1) Use the MOBILE 4k texture on phones — exactly like the main map's koppenDisplayURL().
        The compare map is a SECOND WebGL context; loading the full-res Köppen PNG there (on top of the main
-       map's) doubled GPU memory and OOM-crashed iPhone Safari ("iPhoneでcompare viewでケッペン…ブラウザが落ちる"). */
-    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(typeof isMobile==='function'&&isMobile()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
+       map's) doubled GPU memory and OOM-crashed iPhone Safari ("iPhoneでcompare viewでケッペン…ブラウザが落ちる").
+       ⚠ (#R668) …and that fix was only in force in PORTRAIT: asked by width, the phone turned sideways
+       took the desktop arm and loaded the full-res PNG into the second context again. It asks the
+       device now (`_phoneDev`, above) — the crash came back with the orientation, not with the phone. */
+    function koppenUrl(){ try{ const p=(window.KOPPEN_PERIODS||[]).find(x=>x[0]===window._koppenPeriod); let u=p?p[1]:'koppen_mercator_1991-2020.png'; if(_phoneDev()) u=u.replace(/\.png$/,'_4k.png'); return u; }catch(_){ return 'koppen_mercator_1991-2020.png'; } }
     function injectCSS(){ if(document.getElementById('cmp-css')) return; const st=document.createElement('style'); st.id='cmp-css'; st.textContent=
       /* ⚠ (#R258) 2200, NOT 4000 — the card band css/intmap.css §「WHO IS IN FRONT」 defines. This is a
          window the reader reaches into, so it has to obey the same rule every other one does: an open
@@ -168,7 +179,13 @@ window.IntMapModules.compare=function(HOST){
         'cmp-carto':{type:'raster',tiles:window.cartoTiles('rastertiles/voyager',{hosts:['a','b','c']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION},
         'cmp-dark':{type:'raster',tiles:window.cartoTiles('dark_all',{hosts:['a','b','c']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION},
         /* (#R34) Same two-host Esri imagery as the MAIN map so compare satellite is byte-identical quality
-           ("Compare viewでも同一品質のレイヤーを") and not throttled to one host. */
+           ("Compare viewでも同一品質のレイヤーを") and not throttled to one host.
+           ⚠ (#R668) `maxzoom` STAYS A WIDTH QUESTION HERE, DELIBERATELY — but it is a COPY of a decision
+           that is documented somewhere else, and an undocumented copy is how two answers drift apart in
+           silence. The reasoning lives at js/app-body.js:145-146: maxZoom (18 on phones, 19 elsewhere)
+           is a CAPABILITY, not a cost, and #R498 asked and was told to leave landscape at 19. If that
+           answer ever changes, it changes in BOTH places — the compare map is supposed to be the same
+           quality as the main one, which is the whole point of the paragraph above. */
         'cmp-sat':{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,maxzoom:(typeof isMobile==='function'&&isMobile())?18:19,attribution:'© Esri'},
         'cmp-koppen':{type:'image',url:koppenUrl(),coordinates:KC},
         'cmp-worldcover':{type:'raster',tiles:['https://wmts.terrascope.be/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=esa-worldcover-map-10m-2021-v2_map&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png&TIME=2021-01-01'],tileSize:256,maxzoom:14,attribution:'ESA WorldCover 2021 · Terrascope'},

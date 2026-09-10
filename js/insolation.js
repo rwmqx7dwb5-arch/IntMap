@@ -43,6 +43,18 @@ window.IntMapModules.insolation=function(HOST){
     const lngOf=x=>x*360-180, latOf=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
     const IMG='insol-src', LYR='insol-shade';
 
+    /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, AND `isMobile()` ANSWERS IT WRONG ═══
+       `HOST.isMobile` is `matchMedia('(max-width:768px)')`. Every use of it in this file sizes a
+       COST — the working grid (280² vs 520², 3.4× the cells), the DEM level and tile budget, the
+       horizon's ray count (180×200 vs 360×400, 4× the samples). A phone turned sideways is 844 px
+       wide, so the media query said «not a phone» about the phone and handed it all four desktop
+       numbers at once. Nothing in this file is laid out from that answer, so unlike js/terrain-water.js
+       there is no second, viewport-shaped use to keep separate: the file asks one question.
+       ⚠ ONE OWNER, NOT A FOURTH COPY: js/mem-budget.js reads `window._imPhoneClass()` (pointer and
+       screen, #R499). The fallback is this file's own old test, so before the shell publishes its
+       answer — and in any page without the module — the behaviour is exactly what it is today. */
+    const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return (typeof isMobile==='function'&&isMobile()); } };
+
     /* The solar position is the one the Sun & shadow panel already uses — one clock, one algorithm
        (the standing 「IntMapTime = ONE master clock」 rule applies to the sun too). */
     function sunPos(date,lat,lng){
@@ -68,7 +80,9 @@ window.IntMapModules.insolation=function(HOST){
       const key=[w.toFixed(4),e.toFixed(4),s.toFixed(4),n.toFixed(4)].join(',');
       if(G&&G.key===key&&!force) return G;
       const xW=mX(w), xE=mX(e)+(mX(e)<mX(w)?1:0), yN=mY(n), yS=mY(s);
-      const mob=(typeof isMobile==='function'&&isMobile());
+      /* (#R668) the device, not the viewport — this one predicate sets the cell count, the DEM level
+         and the tile budget three lines below. */
+      const mob=_phoneDev();
       const NX=mob?280:520, NY=Math.max(16,Math.round(NX*(yS-yN)/Math.max(1e-12,xE-xW)));
       const dx=(xE-xW)/NX, dy=(yS-yN)/NY, cellM=dx*CIRC*Math.cos(midLat*D);
       let z=Math.min(mob?12:14,_demZoomForSpan(Math.max(1,spanKm))+2);
@@ -226,7 +240,9 @@ window.IntMapModules.insolation=function(HOST){
       o=o||{}; const radiusKm=Math.max(2,Math.min(120,o.radiusKm||25)), obsH=+o.obsH||0;
       const key=lng.toFixed(4)+','+lat.toFixed(4)+','+radiusKm+','+obsH;
       if(horCache.has(key)&&!o.force) return horCache.get(key);
-      const mob=(typeof isMobile==='function'&&isMobile());
+      /* (#R668) the device again: the ray fan below is 36,000 samples on a phone against 144,000,
+         and every one of them is a bilinear DEM read on the main thread. */
+      const mob=_phoneDev();
       let z=Math.min(mob?12:14,_demZoomForSpan(radiusKm*2)+2);
       const budget=mob?90:240, latA=Math.abs(lat);
       const est=zz=>{ const tk=40075*Math.max(0.05,Math.cos(latA*D))/Math.pow(2,zz); const nn=(2*radiusKm)/tk+1; return nn*nn*0.85; };

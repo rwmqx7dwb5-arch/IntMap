@@ -44,7 +44,15 @@ window.IntMapCesiumLayers=(function(){
      Terrain, hillshade and colour-relief all want the same terrarium PNGs, and
      the app already pays for them on the MapLibre side. One decoder, one cache. */
   function makeDemCache(){
-    const cache=new Map(), MAX=400;
+    const cache=new Map();
+    /* ══ ⚠ (#R668) 400 WAS THE SAME NUMBER ON A PHONE AND ON A WORKSTATION ═══════════════════════
+       A cached tile here is `Float32Array(n·n)` — 262,144 bytes at the native 256², the same shape
+       four other stores in this app keep. `MAX=400` therefore authorised 105 MB, and it authorised
+       it identically on a device whose whole tab budget may be under a gigabyte. The ceiling now
+       comes from the ONE owner that knows both what a tile costs and what device this is
+       (js/mem-budget.js); it is read on each trim rather than captured once, because the device
+       answer can arrive after this closure is built. */
+    const MAX=()=>{ try{ return window.IntMapMemBudget.demTiles('cesium'); }catch(_){ return 96; } };
     const inflight=new Map();
     let templates=['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'];
     let maxzoom=15;
@@ -86,7 +94,7 @@ window.IntMapCesiumLayers=(function(){
           for(let i=0,j=0;i<out.length;i++,j+=4) out[i]=(px[j]*256+px[j+1]+px[j+2]/256)-32768;
           out.size=n;
           cache.set(k,out);
-          while(cache.size>MAX){ const f=cache.keys().next().value; if(f===k) break; cache.delete(f); }
+          { const cap=MAX(); while(cache.size>cap){ const f=cache.keys().next().value; if(f===k) break; cache.delete(f); } }
           return out;
         }catch(_){ return null; }
         finally{ inflight.delete(k); }
@@ -94,6 +102,11 @@ window.IntMapCesiumLayers=(function(){
       inflight.set(k,p);
       return p;
     }
+    /* (#R668) enrol with the budget so memory pressure reaches this store. Everything here is
+       rebuildable from the network, so giving it back costs a refetch and never correctness — and
+       enrolling is what makes the guard reach it WITHOUT anybody maintaining a list of names. */
+    try{ window.IntMapMemBudget.register('cesium',{ bytes:()=>cache.size*window.IntMapMemBudget.DEM_TILE_BYTES,
+      release:()=>{ cache.clear(); } }); }catch(_){}
     return { get, configure, maxzoom:()=>maxzoom, size:()=>cache.size,
              clear:()=>{ cache.clear(); inflight.clear(); } };
   }

@@ -149,15 +149,23 @@ test('r309 ② an era-label click says that it is spoken for', () => {
 
 test('r309 ② the era labels have the padded tap the modern labels have', () => {
   /* js/map-ui.js has given every place label a padded hit-box since #R23 because "a finger tap
-     almost never lands on the exact label glyph". Read ITS radii and require the same two. */
+     almost never lands on the exact label glyph". Read ITS radii and require the same two.
+     ⚠ (#R668) how much slop a tap needs is a question about the POINTER — not about the window's
+     width and not about the device either (a touchscreen laptop's primary pointer really is a
+     mouse). js/map-ui.js asks `_imTouchPrimary()` now, so the radii are read from the branches of
+     THAT question; the two numbers are unchanged. */
   const MU = code('js/map-ui.js');
-  const pads = [...MU.matchAll(/isMobile\(\)\)\s*\?\s*(\d+)\s*:\s*(\d+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
-  assert.ok(pads.length, 'js/map-ui.js declares a touch radius and a mouse radius');
+  const pads = [...MU.matchAll(/_imTouchPrimary\(\)[^?]*\?\s*(\d+)\s*:\s*(\d+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  assert.ok(pads.length, 'js/map-ui.js declares a touch radius and a mouse radius, chosen by the pointer');
   const [touch, mouse] = pads[0];
   const era = TB.slice(TB.indexOf("['imtb-lbl','imtb-lbl2'].forEach"));
   assert.ok(/queryRenderedFeatures\(\[\[/.test(era), 'the era labels are queried with a BOX, not only a point');
   assert.ok(new RegExp('pad\\s*=\\s*' + mouse + '\\b').test(era), 'the era mouse radius is the one map-ui uses (' + mouse + ')');
   assert.ok(new RegExp('pad\\s*=\\s*' + touch + '\\b').test(era), 'the era touch radius is the one map-ui uses (' + touch + ')');
+  /* ⚠ (#R668) "the same padded tap" is two facts, not one: the same radii AND the same question. An
+     era label that asked the width while map-ui asked the pointer would be back to a 6 px box on a
+     phone in landscape — the defect this round found — with both numbers still matching. */
+  assert.ok(/_imTouchPrimary/.test(era), 'the era labels ask the same pointer question map-ui asks');
 });
 
 /* ══ ⑥ 「Base map & labels」は1つの一覧であり、数える側は全部それを引く ══════════════════════════ */

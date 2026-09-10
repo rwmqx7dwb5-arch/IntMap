@@ -19,6 +19,7 @@
 import '../js/photo-geo-terrain.js';
 import '../js/photo-geo-match.js';
 import '../js/photo-geo-search.js';
+import '../js/mem-budget.js';   /* (#R668) how many decoded tiles this device may hold. It attaches to `globalThis`, touches no DOM and asks no media query, which is what lets the page and this worker share ONE answer instead of keeping two ceilings that disagree. */
 
 (function () {
   'use strict';
@@ -27,7 +28,19 @@ import '../js/photo-geo-search.js';
   /* decoded tiles survive between jobs: moving the rectangle a little, or re-running after the
      reader edits the trace, then costs no network at all */
   var tileCache = new Map();
-  var TILE_CACHE_MAX = 1400;
+  /* ══ ⚠⚠⚠ (#R668) 1400 DECODED TILES IS 367 MB, AND IT WAS THE SAME 1400 ON EVERY DEVICE ═══════
+     A cached tile is `Float32Array(65536)` = 262,144 bytes (js/photo-geo-terrain.js decodeTerrarium),
+     so this ceiling — the largest of the five DEM stores in this app — authorised more memory on its
+     own than a phone tab usually gets in total, and nothing in it ever asked what device it was on.
+     ⚠ A WORKER CANNOT ASK. There is no `matchMedia` and no `window` here, so the page hands the
+     answer over (`type:'device'`, sent by src/photo-geo-worker-client.js as soon as the worker is
+     created). Until it arrives js/mem-budget.js assumes the SMALL device: an unknown device is not
+     a spacious one, which is the rule #R651 established for `navigator.deviceMemory` — `undefined`
+     is what every iPhone reports, always, and reading it as "plenty" is how a phone gets a
+     workstation's ceiling. */
+  var TILE_CACHE_MAX = function () {
+    try { return globalThis.IntMapMemBudget.demTiles('photoSearch'); } catch (_) { return 180; }
+  };
 
   function post(m, transfer) { try { self.postMessage(m, transfer || []); } catch (_) { self.postMessage(m); } }
 
@@ -48,13 +61,35 @@ import '../js/photo-geo-search.js';
         try { bmp.close(); } catch (_) { }
       }
     } catch (_) { el = null; }
-    if (tileCache.size >= TILE_CACHE_MAX) {
-      /* oldest first — a Map iterates in insertion order */
-      var it = tileCache.keys(); var n = 0;
-      while (n++ < 200) { var k = it.next(); if (k.done) break; tileCache.delete(k.value); }
-    }
     tileCache.set(key, el);
+    trimTiles(key);
     return el;
+  }
+
+  /* ══ ⚠⚠ (#R668) THE CEILING MAY NOT EVICT WHAT THE JOB IS STILL BUILDING FROM ══════════════════
+     `runJob` loads every tile of `need.all` and only then calls `buildField(…, tileCache, …)`, so a
+     tile dropped between those two steps is a HOLE IN THE ANSWER, not a cache miss — the search
+     silently scores that ground as unknown. #R221 recorded exactly this failure in the elevation
+     readout's store, where the intensity field came out as perfect concentric rings because the
+     picture's own tiles had been evicted by the picture's own later tiles.
+     So the tiles of the RUNNING job are leased and exempt, and the ceiling governs what survives
+     BETWEEN jobs — which is what the cache is for. ⚠ THE HONEST LIMIT: a single search area larger
+     than the budget still holds its whole area, because it must. The budget bounds what is KEPT,
+     not what one answer costs; bounding the latter means bounding the search area, which is a
+     product decision and not this round's. `pinned` is cleared in `runJob`'s `finally`, so an abort
+     or a throw cannot leave the ceiling permanently lifted (#R651's rule for leases). */
+  var pinned = null;   /* Set of 'z/x/y' the running job needs, or null between jobs */
+
+  function trimTiles(keep) {
+    var cap = TILE_CACHE_MAX();
+    if (tileCache.size <= cap) return;
+    var it = tileCache.keys();
+    while (tileCache.size > cap) {
+      var k = it.next(); if (k.done) break;
+      if (k.value === keep) continue;
+      if (pinned && pinned.has(k.value)) continue;
+      tileCache.delete(k.value);
+    }
   }
 
   async function loadTiles(list, id, onDone) {
@@ -83,6 +118,9 @@ import '../js/photo-geo-search.js';
       var plan = Q.plan(area, m.options || {});
       post({ id: id, type: 'plan', plan: plan });
       var need = T.tilesFor(area, m.options || {});
+      /* (#R668) lease this job's tiles before the first one is fetched — the ceiling must not evict
+         ground the field is about to be built from. Released in `finally`, on every exit. */
+      pinned = new Set(need.all.map(function (t) { return t.z + '/' + t.x + '/' + t.y; }));
       var tl = await loadTiles(need.all, id, null);
       if (jobs[id].abort) { post({ id: id, type: 'aborted' }); delete jobs[id]; return; }
 
@@ -128,6 +166,13 @@ import '../js/photo-geo-search.js';
       post({ id: id, type: 'done', result: res });
     } catch (e) {
       post({ id: id, type: 'error', err: String((e && e.message) || e) });
+    } finally {
+      /* ⚠ (#R668) ON EVERY EXIT, INCLUDING THE EARLY RETURNS ABOVE. A lease that survives its job is
+         a ceiling that has been switched off: `trimTiles` skips pinned keys, so a `pinned` left
+         behind by an abort would exempt that whole area from eviction for the rest of the session.
+         The trim that follows applies the ceiling to what the job just leased. */
+      pinned = null;
+      trimTiles(null);
     }
     delete jobs[id];
   }
@@ -172,6 +217,9 @@ import '../js/photo-geo-search.js';
       catch (e) { post({ id: m.id, type: 'error', err: String(e) }); }
       return;
     }
+    /* (#R668) the page is the only one that can answer 「携帯か」 — there is no media query here. It
+       sends this once, as soon as the worker exists, and the ceiling above follows it from then on. */
+    if (m.type === 'device') { try { globalThis.IntMapMemBudget.adopt(!!m.phone); } catch (_) { } trimTiles(null); return; }
     if (m.type === 'clearCache') { tileCache.clear(); lastField = null; lastKey = ''; return; }
   };
 })();

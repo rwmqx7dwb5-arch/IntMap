@@ -184,7 +184,10 @@ window.IntMapModules.mapReadout=function(HOST){
         let onLabel=false;
         try{ const pt=point||(GE().coords.project([lng,lat]));
           if(pt&&GE().hasRenderer()){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id));
-            if(ls.length){ const pad=(typeof HOST.isMobile==='function'&&HOST.isMobile())?15:6; const near=GE().coords.queryRenderedFeatures([[pt.x-pad,pt.y-pad],[pt.x+pad,pt.y+pad]],{layers:ls}); if(near&&near.length) onLabel=true; } } }catch(_){}
+            /* (#R668) the same tap tolerance as js/map-ui.js's, and the same correction: how much
+               slop a tap needs is a question about the POINTER, not about the viewport width. See
+               the note there. A landscape iPhone was taking the 6 px mouse box. */
+            if(ls.length){ const pad=((typeof window._imTouchPrimary==='function'?window._imTouchPrimary():(typeof HOST.isMobile==='function'&&HOST.isMobile()))?15:6); const near=GE().coords.queryRenderedFeatures([[pt.x-pad,pt.y-pad],[pt.x+pad,pt.y+pad]],{layers:ls}); if(near&&near.length) onLabel=true; } } }catch(_){}
         if(!onLabel){ const code=window.sampleKoppenAt(lng,lat);
           if(code && window.kSelected){
             window.kSelected.has(code)?window.kSelected.delete(code):window.kSelected.add(code);

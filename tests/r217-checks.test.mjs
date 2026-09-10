@@ -206,8 +206,13 @@ test('R217 ⑤b: …and the highlight then rasterises from the work canvas inste
 test('R217 ⑤c: the phone cap and the work-canvas cap are still the same number', () => {
   const d = rd('js/data-layers.js');
   const work = /const KWORK_CAP=(\d+);/.exec(d);
-  const mob = /if\(typeof isMobile==='function'&&isMobile\(\)\) return (\d+);/.exec(d);
-  assert.ok(work && mob, 'both caps are declared where this test can read them');
+  /* ⚠ (#R668) the phone cap is read out of _koppenFullCap's FIRST branch, and that branch asks the
+     DEVICE now: `isMobile()` is a 768 px media query, so an iPhone in landscape (844 px) fell to the
+     desktop arm and was authorised a 4096² output canvas — 67 MB instead of 16 MB — on the phone
+     this cap exists to keep alive. The number did not move; the question it answers did. */
+  const mob = /function _koppenFullCap\(\)\{[\s\S]{0,120}if\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\) return (\d+);/.exec(d);
+  assert.ok(work && mob, 'both caps are declared where this test can read them, and the phone arm of '
+    + '_koppenFullCap() is decided by the device (_phoneDev()/IntMapMemBudget.deviceIsPhone)');
   assert.equal(Number(mob[1]), Number(work[1]),
     'releasing the image is only lossless while the phone\'s highlight cap equals the work canvas — '
     + 'if one of these moves, the other has to move with it or the claim in ⑤a stops being true');

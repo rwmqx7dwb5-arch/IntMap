@@ -839,7 +839,18 @@ window.IntMapModules.layerPreviews=function(countryStats,loadCountryData){
        IS reachable is the query itself, and it is the SAME query string as MOBILE_MQ — which is what
        keeps the two from disagreeing by a scrollbar width — and it is the idiom every other
        host-less js/ module in this repository already uses for the same question. */
-    const _bootMobile=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); }catch(_){ return false; } };
+    /* ⚠⚠ (#R668) …AND «THE SAME QUERY STRING AS MOBILE_MQ» IS THE PROBLEM, NOT THE SAFEGUARD. What
+       the paragraph above got right is that this file cannot reach IM_HOST; what it got wrong is
+       which question is being asked. This gate is not about how wide the panel renders — it decides
+       whether a device that has opened NO panel pays 4,051,978 B of PNG, 16 upstream tile requests
+       and 33 canvas painters. That is a cost question about the DEVICE, and 768 px says "not a
+       phone" about an iPhone held sideways (844 px), so the very device #R408 wrote this gate for
+       stopped being protected by it as soon as the reader rotated. js/mem-budget.js is published on
+       `window` — reachable from a host-less module, which is what the old paragraph needed and did
+       not have — and it answers with js/app-body.js's own `_imPhoneClass`. The width test stays as
+       the fallback for the boot window before the shell publishes it. */
+    const _bootMobile=()=>{ const own=()=>{ try{ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); }catch(_){ return false; } };
+      try{ return !!window.IntMapMemBudget.deviceIsPhone(own); }catch(_){ return own(); } };
     (function(){ const go=()=>{ if(typeof requestIdleCallback==='function') requestIdleCallback(_openQueue,{timeout:9000}); else setTimeout(_openQueue,5000); };
       /* ⚠ (#R408) …AND ON A PHONE THE BOOT PATH DOES NOT OPEN THE GATE AT ALL. The two automatic
          openings below are for a panel nobody has asked for; on a phone they buy 4,051,978 B of PNG,

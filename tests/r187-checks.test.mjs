@@ -71,8 +71,14 @@ test('R187 aircraft: a bigger budget, the same requests per second', () => {
   const src = read('js/data-layers.js');
   assert.match(src, /PLANE_CIRCLE_NM\s*=\s*250\b/, '250 nm is still the API maximum (300 answers 403)');
   assert.match(src, /PLANE_GAP_MS\s*=\s*1200\b/, 'the measured sustainable spacing must NOT move with the budget');
-  const b = /PLANE_CIRCLE_BUDGET=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(src);
-  assert.ok(b, 'the budget must be a two-branch mobile/desktop constant');
+  /* ⚠ (#R668) the PREDICATE moved and the NUMBERS did not: which sweep a device may run is a
+     question about the device, not about the window's width (`isMobile()` is a 768 px media query,
+     so a phone in landscape was authorised the 128-circle sweep on the same radio and the same
+     memory the 24 was measured for). So this reads the two branches and their numbers — the fact —
+     and tolerates any spelling of the device predicate that js/mem-budget.js owns. */
+  const b = /PLANE_CIRCLE_BUDGET=\(\)=>\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?(\d+):(\d+)\)/.exec(src);
+  assert.ok(b, 'the budget must be a two-branch phone/desktop constant decided by the DEVICE '
+    + '(_phoneDev()/IntMapMemBudget.deviceIsPhone), not by a width media query');
   /* (#R188) raised again, to 128 / 24, together with a triangular covering lattice — the report came
      back a third time. What this test is really guarding is that the budget only ever GROWS and that
      the pace never moves with it, so the numbers are checked as a floor rather than as an equality

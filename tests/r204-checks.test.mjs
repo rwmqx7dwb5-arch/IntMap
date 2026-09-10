@@ -110,8 +110,11 @@ test('R204 ④ the intensity mesh is finer than #R203 at its coarsest, and finer
   assert.ok(2000 / N < 3.1, `a 2,000 km field gets ${(2000 / N).toFixed(2)} km cells; #R203 gave 3.1`);
   /* …and a narrow field is NOT made finer for nothing — the floor still governs it */
   assert.equal(Math.max(Number(deskMin), Math.min(Number(deskMax), Math.round(200 / Number(cell)))), Number(deskMin));
-  /* (#R245) hoisted to FAR_N so buildField can snap its box onto this grid — same numbers */
-  const far = /const FAR_N=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\);/.exec(s);
+  /* (#R245) hoisted to FAR_N so buildField can snap its box onto this grid — same numbers
+     ⚠ (#R668) the arm is chosen by the DEVICE now (js/mem-budget.js), not by a width media query;
+     the numbers did not move, so the branches are what is read here. */
+  const far = /const FAR_N=\(\)=>\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?(\d+):(\d+)\);/.exec(s);
+  assert.ok(far, 'FAR_N is still a two-branch phone/desktop constant decided by the device');
   assert.ok(Number(far[2]) >= 1024 && Number(far[1]) >= 512, 'the far field is no coarser than #R203');
 });
 
@@ -119,12 +122,21 @@ test('R204 ④ the intensity mesh is finer than #R203 at its coarsest, and finer
    Deferred in #R202 and #R203 on the grounds that a nested grid means a non-periodic solver. It does
    not, if the nest is a latitude BAND at the full circle — so the check that matters is that the
    solver is untouched and that the band's numbers are what the page claims. */
+/* ⚠ (#R668) the two near-source constants kept their numbers and changed their PREDICATE: the arm a
+   device takes is a question about the device (js/mem-budget.js `deviceIsPhone`), not about the
+   window's width — the 768 px media query read an iPhone in landscape as a desktop and started the
+   20 cells/° run on it. What these tests own is the pair of numbers, so the branches are what is
+   read and the device predicate is required but not spelled out. */
+const NEAR = (name) => new RegExp('const ' + name
+  + "=\\(\\)=>\\((?:_phoneDev\\(\\)|window\\.IntMapMemBudget\\.deviceIsPhone\\([^()]*\\))\\?(\\d+):(\\d+)\\)");
+
 test('R204 ⑤ the near-source scope is a finer grid on the SAME periodic solver', () => {
   const t = rd('js/tsunami.js'), w = rd('src/tsunami-worker.js');
-  assert.match(t, /const NEAR_CPD=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/);
-  const cpd = /const NEAR_CPD=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(t);
-  const band = /const NEAR_BAND=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(t);
-  assert.ok(cpd && band, 'the band and its resolution are declared');
+  const cpd = NEAR('NEAR_CPD').exec(t);
+  const band = NEAR('NEAR_BAND').exec(t);
+  assert.ok(cpd && band,
+    'the band and its resolution are declared, each as a two-branch phone/desktop constant '
+    + 'decided by the device (_phoneDev()/IntMapMemBudget.deviceIsPhone)');
   /* the global grid is 1440 columns over 360° = 4 cells a degree; the near scope must be finer */
   const NX = Number(/const NX=(\d+), NY=(\d+)/.exec(t)[1]);
   for (const i of [1, 2]) assert.ok(Number(cpd[i]) > NX / 360, `near resolution ${cpd[i]}/° is not finer than ${NX / 360}/°`);
@@ -142,8 +154,10 @@ test('R204 ⑤ the near-source scope is a finer grid on the SAME periodic solver
 test('R204 ⑤b the near-source band is a real band, and the run is one the light cone can afford', () => {
   /* re-derive nearDomain() from the file rather than copying its arithmetic */
   const t = rd('js/tsunami.js');
-  const cpd = Number(/const NEAR_CPD=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(t)[2]);
-  const band = Number(/const NEAR_BAND=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(t)[2]);
+  const mCpd = NEAR('NEAR_CPD').exec(t), mBand = NEAR('NEAR_BAND').exec(t);
+  assert.ok(mCpd && mBand, 'the band and its resolution are declared as two-branch device constants');
+  const cpd = Number(mCpd[2]);
+  const band = Number(mBand[2]);
   const dom = (lat) => { let a = Math.max(-80, Math.min(80 - 2 * band, lat - band)); let b = Math.min(80, a + 2 * band); a = Math.max(-80, b - 2 * band); return { nx: Math.round(360 * cpd), ny: Math.round((b - a) * cpd), lat0: a, lat1: b }; };
   for (const lat of [-79, -35, 0, 38.1, 79]) {
     const d = dom(lat);

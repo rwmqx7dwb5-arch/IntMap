@@ -2216,7 +2216,18 @@ window.IntMapModules.labelPopup=function(HOST){
            "モバイル版では出ない". Re-query a small box around the tap (bigger on touch) and open the nearest
            label's popup. Skipped while a measurement/draw tool owns the gesture. */
         if(typeof HOST.toolMode==='undefined' || !HOST.toolMode){
-          const pad=(typeof isMobile==='function'&&isMobile())?15:6;
+          /* ⚠ (#R668) THIS ONE IS NEITHER A WIDTH NOR A DEVICE QUESTION — IT IS A POINTER QUESTION.
+             How much slop a tap needs is decided by what is doing the tapping: a fingertip covers
+             about 15 px of map, a mouse cursor about 6. `isMobile()` is a `(max-width:768px)` media
+             query, so an iPhone held sideways (844 px) was answered «mouse» and got the 6 px box —
+             on the device where the finger is the ONLY pointer, which is why labels became hard to
+             hit in landscape. `_imTouchPrimary()` (js/app-body.js:166) is the predicate that asks
+             the pointer, and it is also right about the case width and device both get wrong: a
+             touchscreen laptop, where the primary pointer really is a mouse.
+             ⚠ IT IS A COST TOO, WHICH IS WHY THIS ROUND FOUND IT: the query box is 31²=961 px²
+             against 13²=169, so the wrong answer also makes every one of these tests 5.7× cheaper
+             than it should be and the reader pays for it in missed taps rather than in frames. */
+          const pad=((typeof window._imTouchPrimary==='function'?window._imTouchPrimary():(typeof isMobile==='function'&&isMobile()))?15:6);
           const near=GE().coords.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ls});
           if(near.length){ const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=/^(geo-sea|ofm-water|ofm-river|ofm-peak)$/.test(lid);
             const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';

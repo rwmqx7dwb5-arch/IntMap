@@ -47,16 +47,23 @@ window.IntMapVs30=(function(){
     catch(_){ return f; }
   }
   /* the shipped manifest decides the grid — see the ⚠ in the header.
-     ⚠ THE PHONE TEST IS THE APP'S OWN, NOT A NEW ONE. js/app-body.js's `_imPhoneGPU` asks
-     «coarse pointer AND no fine pointer available», and #R232 wrote down why it is that and not a
-     width: an iPhone turned sideways is 844 px, so a width test calls it a desktop and hands the
-     same GPU the desktop settings. The question here — «should this device download 4.9 MB and
-     hold 26 M cells» — is the same device question, so it gets the same answer. This file is loaded
-     standalone (like js/land-mask.js) and cannot reach the host factory, so the media query is
-     repeated rather than imported; it is repeated EXACTLY. */
+     ⚠ THE PHONE TEST IS THE APP'S OWN, NOT A NEW ONE. #R232 wrote down why it is a pointer question
+     and not a width: an iPhone turned sideways is 844 px, so a width test calls it a desktop and
+     hands the same GPU the desktop settings. The question here — «should this device download 4.9 MB
+     and hold 26 M cells» — is the same device question, so it gets the same answer.
+     ⚠⚠ (#R668) AND THE SENTENCE THAT USED TO END THIS PARAGRAPH — «the media query is repeated
+     rather than imported; it is repeated EXACTLY» — WAS NOT TRUE. It was true when it was written and
+     stopped being true at #R499, which added a third clause to js/app-body.js:159: a phone with an
+     S Pen out or a Bluetooth mouse paired makes `any-pointer:fine` true, and the two-clause copy here
+     called it a desktop — so exactly the device this ceiling protects pulled the 4.9 MB raster.
+     A claim that a copy is exact is a claim that expires the next time the original is edited, and
+     nothing was measuring it. So the copy is gone: the answer comes from its one owner
+     (js/mem-budget.js, published on `window`, which this standalone file CAN reach even though it
+     never gets a host factory), and the old two-clause query survives only as the fallback for the
+     boot window before js/app-body.js has published `_imPhoneClass`. */
   function isPhone(){
-    try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }
-    catch(_){ return false; }
+    const own=()=>{ try{ return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; } catch(_){ return false; } };
+    try{ return !!window.IntMapMemBudget.deviceIsPhone(own); }catch(_){ return own(); }
   }
   function loadManifest(){
     return fetch(url('data/vs30.json')).then(r=>r.ok?r.json():null).then((m)=>{

@@ -157,7 +157,17 @@ window.IntMapModules.tileWarm=function(HOST){
        2x screen: 18 requests at z12 from the ring, 41 at z13 from the children). */
     try{ predictivePrefetch.lastLevel={ z, bias:_satZBias, mapZoom:Math.round(GE().camera.getZoom()), n:urls.length }; }catch(_){}
     if(!urls.length) return;
-    const _mob=(typeof isMobile==='function'&&isMobile());
+    /* ⚠ (#R668) THIS IS A COST QUESTION, AND A WIDTH ANSWERS IT WRONG IN LANDSCAPE. `_mob` decides
+       nothing about layout — its only two readers are the ring cap below and `_pfMax`, i.e. how many
+       tiles this device is allowed to fetch speculatively and how many URLs it keeps remembering. Ask
+       `isMobile()` (a 768 px media query) and an iPhone turned sideways is 844 px, so the phone that
+       #R196's measurement was taken on takes the DESKTOP budget the moment it is rotated: 150 tiles
+       per idle ring instead of 60, 280 instead of 110 in flight, and a 6,000-URL memo instead of
+       1,500 — on the same radio and the same connection pool as the imagery the reader is looking at.
+       One owner for the device answer (js/mem-budget.js); `isMobile` stays as the fallback for the
+       boot window before js/app-body.js publishes `_imPhoneClass`. */
+    const _mob=(()=>{ const own=()=>(typeof isMobile==='function'&&isMobile());
+      try{ return !!window.IntMapMemBudget.deviceIsPhone(own); }catch(_){ return own(); } })();
     /* ══ (#R196) THE PREFETCH HAD NO MEMORY ══════════════════════════════════════════════════════════
        「モバイル版で、衛星画像が圧倒的に重い。」 MEASURED on an emulated iPhone (390×844, DPR 3),
        satellite over Tokyo at z12, a six-second pan of twenty-four steps:

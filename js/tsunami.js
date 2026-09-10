@@ -91,6 +91,15 @@ window.IntMapModules.tsunami=function(HOST){
      scripts/check-split-scope.mjs exists. */
   const isMobile=HOST.isMobile;
   const warmDEMTiles=HOST.warmDEMTiles, demSnapshot=HOST.demSnapshot;
+  /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, AND `isMobile()` IS A 768 px MEDIA QUERY ══
+     #R232 established it, #R498 swept it, and every use of `isMobile` in this file is a COST: how many
+     frames of the animation are kept, how many pixels each of them holds, and how large the near-source
+     solver's grid is. An iPhone turned sideways reads 844 px, so the width test called it a desktop and
+     handed it all three desktop sizes at once — during a run that is already the heaviest thing this
+     app computes. js/mem-budget.js owns the device answer (`window._imPhoneClass()`: the pointer and
+     the screen, not the window); re-deriving it by hand is how three other files each lost a clause of
+     it (#R499). The fallback is this file's own `isMobile`, so this is never worse than today. */
+  const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return typeof isMobile==='function'&&isMobile(); } };
 
   window.IntMapTsunami=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
@@ -140,8 +149,12 @@ window.IntMapModules.tsunami=function(HOST){
        cases. #R193 shrank the grid on mobile, which changed the answer; this changes only the number
        of pixels the answer is drawn into. */
     const NX=1440, NY=640, LAT0=-80, LAT1=80;
-    function decNow(){ return (typeof isMobile==='function'&&isMobile())?3:2; }
-    function wantFrames(){ return (typeof isMobile==='function'&&isMobile())?90:140; }
+    /* ⚠ (#R668) …and 「半分の絵」 is decided by the DEVICE. dec 3 → 2 is 2.25× the pixels in every
+       frame, 90 → 140 frames is 1.6× as many of them kept at once, so together the film a phone holds
+       grows 3.6× — the whole of the allowance the paragraph above describes, handed back the moment
+       the same phone is turned sideways past 768 px. The physics below is untouched either way. */
+    function decNow(){ return _phoneDev()?3:2; }
+    function wantFrames(){ return _phoneDev()?90:140; }
 
     /* ══ (#R204) A SECOND DOMAIN: THE SOURCE REGION, AT FOUR TIMES THE RESOLUTION ═══════════════════
        「津波シミュレータのシミュレーションの精度をもっと高く。特に震源付近は高解像度シミュレーションに。」
@@ -179,8 +192,12 @@ window.IntMapModules.tsunami=function(HOST){
        SOURCE, the numerics and the arrival field — not the bathymetry, and not the coastline, which
        stays a 0.25° staircase. Refining that means a finer bundled floor; it is written down in
        DEV-NOTES as the next step rather than implied by a finer grid. */
-    const NEAR_BAND=()=>((typeof isMobile==='function'&&isMobile())?8:9);
-    const NEAR_CPD=()=>((typeof isMobile==='function'&&isMobile())?12:20);   /* cells per degree (#R242) */
+    /* ⚠ (#R668) THE SIZE OF THE SECOND DOMAIN IS A DEVICE QUESTION. The band is 360° wide, so its
+       grid is 360·cpd × 2·band·cpd cells: 1/12° over ±8° is 4,320 × 192, 1/20° over ±9° is 7,200 × 360
+       — 2.8× the cells, and the solver holds several planes of each. A 768 px width said "desktop"
+       about a phone in landscape and started that grid on it. */
+    const NEAR_BAND=()=>(_phoneDev()?8:9);
+    const NEAR_CPD=()=>(_phoneDev()?12:20);   /* cells per degree (#R242) */
     const NEAR_MAX_H=3;
     function nearDomain(lat){
       const cpd=NEAR_CPD(), band=NEAR_BAND();
@@ -217,7 +234,10 @@ window.IntMapModules.tsunami=function(HOST){
        image plus #R205's measured patch), and the analysis fields, which have always come back at
        full grid resolution. */
     function nearDec(){ return 1; }
-    const NEAR_WIN_DEG=()=>((typeof isMobile==='function'&&isMobile())?10:12);   /* half-width of the picture window */
+    /* ⚠ (#R668) the window is what each kept frame is cut to, so its half-width multiplies the film:
+       10° → 12° is 1.44× the area per frame across all `wantFrames()` of them. Device, not window —
+       the same phone was getting the larger picture whenever it was held sideways. */
+    const NEAR_WIN_DEG=()=>(_phoneDev()?10:12);   /* half-width of the picture window */
     /* ══ (#R205) THE SEA FLOOR AROUND THE SOURCE, MEASURED RATHER THAN AVERAGED ═══════════════════
        「津波シミュレータのシミュレーションの精度をもっと高く。特に震源付近は高解像度シミュレーションに。」
 

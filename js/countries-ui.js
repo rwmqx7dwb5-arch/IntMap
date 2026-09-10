@@ -504,7 +504,15 @@ window.IntMapModules.countriesUi=function(HOST){
             const go=()=>{ let slow=false;
               try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
                 slow=!!(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))); }catch(_){}
-              try{ if(HOST.isMobile&&HOST.isMobile()) slow=true; }catch(_){}
+              /* ⚠ (#R668) 「携帯か」 IS ASKED OF THE DEVICE HERE, NOT OF THE VIEWPORT. `HOST.isMobile`
+                 is the 768 px media query, so the 390×844 session the measurement above was taken on
+                 answers "desktop" the instant it is turned sideways — and the 4.3 MB of 10 m geometry
+                 goes back to starting at the first idle instead of waiting 15 s, on the same
+                 connection the satellite tiles are still arriving over. Same phone, same 4.3 MB,
+                 opposite schedule. js/mem-budget.js owns the answer; `HOST.isMobile` remains the
+                 fallback for the boot window before `_imPhoneClass` is published. */
+              try{ if(window.IntMapMemBudget.deviceIsPhone(HOST.isMobile)) slow=true; }
+              catch(_){ try{ if(HOST.isMobile&&HOST.isMobile()) slow=true; }catch(__){} }
               const run=()=>{ upgrade().catch(()=>{}); };
               if(slow) setTimeout(run,15000);              /* on Data Saver the 4.3 MB is a real cost */
               else if(typeof requestIdleCallback==='function') requestIdleCallback(run,{timeout:6000});

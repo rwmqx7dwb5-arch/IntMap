@@ -54,6 +54,18 @@ window.IntMapModules.los=function(HOST){
     const lngOf=x=>x*360-180;
     const latOf=y=>360/Math.PI*Math.atan(Math.exp((180-y*360)*D))-90;
 
+    /* ══ ⚠⚠ (#R668) THE COST DECISIONS BELOW ASK ABOUT THE DEVICE, NOT ABOUT THE WINDOW ══════════
+       `HOST.isMobile` is `matchMedia('(max-width:768px)')`, and an iPhone turned sideways is 844 px:
+       the same phone, answered «desktop». Everything this file sizes from that answer is a cost —
+       the raster (480² vs 1,400², 8.5× the cells), the DEM level and tile budget, and `SAMPLE_CAP`,
+       which is 5.7× as many ray-march samples marched on the main thread. Nothing here is laid out
+       from it, so the whole file moves to the device answer with no split needed.
+       ⚠ ONE OWNER: js/mem-budget.js, which reads `window._imPhoneClass()` — the pointer and the
+       screen, not the viewport. Re-deriving it here is what three other files did, and all three
+       dropped a clause. The fallback is this file's own old test, so nothing regresses before the
+       shell publishes its answer. */
+    const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return (typeof isMobile==='function'&&isMobile()); } };
+
     let site=null, panel=null, runSeq=0, last=null;
     /* (#R18) a NEW site reuses the SAME numbers — 「一度数値を設定したら、新地点を押しても同じ数値になるように」 */
     let losH=30,            /* observer/antenna height above ground, m */
@@ -315,7 +327,10 @@ window.IntMapModules.los=function(HOST){
             fMHz=Math.max(0,(opt.mhz!=null?+opt.mhz:losF));
       losH=obsH; losT=tgtH; losR=rangeKm; losK=kFac; losF=fMHz;
       const my=++runSeq, live=()=>my===runSeq;
-      const mob=(typeof isMobile==='function'&&isMobile());
+      /* (#R668) one device answer for the whole run — the raster, the DEM level, the tile budget and
+         the sample cap all have to describe the same machine, or the sweep sizes itself for one
+         device and is evicted by the ceilings of another (see the LRU note at the zoom choice). */
+      const mob=_phoneDev();
       const tick=()=>new Promise(r=>setTimeout(r,0));
       const loadLbl=L('Loading terrain DEM…','地形DEMを取得中…','Gelände-DEM wird geladen…','Загрузка рельефа…','Cargando el DEM…');
       const calcLbl=L('Computing sightlines…','視通を計算中…','Sichtlinien werden berechnet…','Расчёт линий видимости…','Calculando líneas de vista…');
@@ -344,7 +359,11 @@ window.IntMapModules.los=function(HOST){
          ブラウザが落ちます」). Asking for more tiles than that does not fetch more terrain, it EVICTS
          the tiles the sweep is still reading: measured at a 900-tile budget, a 60 km run came back with
          11,282 no-data samples and the next run never finished, because warmDEMTiles polls for tiles
-         that eviction keeps removing. Stay under the cap and the same run is exact. */
+         that eviction keeps removing. Stay under the cap and the same run is exact.
+         ⚠ (#R668) AND «WHICH CAP» IS A DEVICE QUESTION. app-body.js picks 140 or 560 with
+         `_imPhoneClass()`; while `mob` here was a width, a phone in landscape asked for 500 against
+         a cap of 140 — exactly the eviction the paragraph above measured, on the device least able
+         to survive it. Both sides ask the same question now. */
       let z=Math.min(mob?13:15,_demZoomForSpan(rangeKm)+(mob?0:(rangeKm<=12?2:1)));
       const budget=mob?130:500, latA=Math.abs(lat0);
       const estTiles=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(latA*D))/Math.pow(2,zz); const n=(2*rangeKm)/tk+1; return n*n*0.8; };

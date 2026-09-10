@@ -691,7 +691,12 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       const start = () => {
         try { const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
           if (c && (c.saveData === true || /(^|-)2g$/.test(c.effectiveType || ''))) return; } catch (_) {}
-        try { if (HOST.isMobile && HOST.isMobile()) return; } catch (_) {}
+        /* ⚠ (#R668) the phone half of that rule is a question about the DEVICE, and `HOST.isMobile`
+           is a 768 px media query: a phone held sideways is 844 px, answers "desktop", and warms the
+           first tier anyway — the speculative copy this block exists to withhold, on the device it
+           exists to withhold it from. One owner (js/mem-budget.js); `HOST.isMobile` stays as the
+           fallback for the boot window before the shell has published `_imPhoneClass`. */
+        try { if (window.IntMapMemBudget.deviceIsPhone(HOST.isMobile)) return; } catch (_) { try { if (HOST.isMobile && HOST.isMobile()) return; } catch (__) {} }
         if (typeof requestIdleCallback === 'function') requestIdleCallback(pf, { timeout: 8000 }); else setTimeout(pf, 3500);
       };
       let started = false; const once = () => { if (started) return; started = true; start(); };

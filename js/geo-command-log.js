@@ -240,13 +240,27 @@ function skipState(cmd, id, cur, next) {
    the per-adapter memory those two are compared against. `mem` is that memory — one object per
    adapter, so two views never answer for each other. */
 function skipData(cmd, id, s, data, opts, mem) {
-  const started = CMD.detail ? performance.now() : 0;
+  /* ══ ⚠⚠ (#R668) THE CHEAP ANSWER IS ASKED FIRST NOW ═══════════════════════════════════════════
+     `rev` is one `===` against a number the caller volunteered. `_sourceHolds` walks up to
+     _EQ_BUDGET (200,000) nodes of the payload the renderer is holding. Both answer the same
+     question — 「この命令は何も新しいことを言っていない」 — and the expensive one was being asked
+     UNCONDITIONALLY, in front of the free one, on the source-update path.
+     ⚠ THE ORDER IS THE ONLY CHANGE. Both tests still exist, `skippable` is still `held || rev`, and
+     a caller that offers no revision still gets exactly the walk it got before — so nothing is
+     skipped that was not skipped before, and nothing is applied that was not applied before. What
+     goes away is a 200,000-node comparison performed to reach a conclusion already established.
+     ⚠ AND THE TALLY STILL NEEDS `held`. The census reports `ref`/`shape`/`content` to say WHY a
+     command was redundant, so when the instrument is on (`CMD.on`, off in what ships) the walk is
+     still made — measurement may cost what it costs; the shipping path may not. */
+  const rev = !!(opts && opts.revision !== undefined && mem.rev[id] !== undefined && mem.rev[id] === opts.revision);
   let held = false;
-  try { held = _sourceHolds(s, data) === true; } catch (_) { held = false; }
-  if (CMD.detail) cmd.time('sourceData', performance.now() - started, 'cmp');
+  if (!rev || CMD.on) {
+    const started = CMD.detail ? performance.now() : 0;
+    try { held = _sourceHolds(s, data) === true; } catch (_) { held = false; }
+    if (CMD.detail) cmd.time('sourceData', performance.now() - started, 'cmp');
+  }
   /* a caller that keeps ONE object and edits it in place can still say so — but it has to say so;
      nothing infers it, because an object that was mutated is the same object. */
-  const rev = !!(opts && opts.revision !== undefined && mem.rev[id] !== undefined && mem.rev[id] === opts.revision);
   const skippable = held || rev;
   if (CMD.on) {
     const ref = !!(s._data && s._data.geojson === data);
