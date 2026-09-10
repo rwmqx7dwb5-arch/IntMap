@@ -71,7 +71,7 @@
 | 言語レイヤー | `npm run check:languages` |
 | 国政選挙のデータ | `npm run check:elections` |
 | 歴史都市名 | `npm run check:histcities` |
-| 1850–1885 の国境 | `npm run check:histborders` |
+| CShapes より下の国境 | `npm run check:histborders` |
 | 全時代の国境（紀元前も） | `npm run check:histeras` |
 | 歴史的な行政区分 | `npm run check:histadmin` |
 | 導出した令制国 | `npm run check:kuni` |

@@ -313,6 +313,7 @@ test('R380 ⑧: the Sources page says the snapshots are the ONLY border source b
      ⚠ It is derived from the shipped record now, and it is the number a READER sees (the era
      magnitude, 123000), not the astronomical one (−122999): a page printing «-122999» would be
      naming a year nobody writes (js/hist-scale.js `era`). */
+  const HB_FLOOR = (() => { const w = {}; new Function('window', R('data/hist-borders.js'))(w); return w.__HISTB.window[0]; })();
   const ERA = eraBundle().snaps.map((x) => x.y).sort((a, b) => a - b);
   assert.ok(ERA.length >= 53 && ERA[0] < 1, `the era record lost its deep end: ${ERA[0]}`);
   const OLDEST = String(ERA[0] <= 0 ? 1 - ERA[0] : ERA[0]);
@@ -328,6 +329,11 @@ test('R380 ⑧: the Sources page says the snapshots are the ONLY border source b
        fifty-three now, seventeen before the common era, and naming any single frame on the Sources
        page would tell the reader the answer is a frame rather than a series. What the page owes is
        the two ends and the shape, which the three assertions around this one measure. */
-    assert.ok(entry.includes('1850'), `pages.${lg}.js does not say where the day-exact record starts`);
+    /* ⚠ (#R690) AND THIS ONE WAS THE SAME SHAPE ONE LINE LATER. «1850» was typed here, so the round
+       that took the day-exact record down to 1689 would have failed this check for telling the
+       reader the truth — the #R530 form, a check that pins a fact and therefore keeps it. The floor
+       is the bundle's own `window[0]`, derived at build time, so it is read from there. */
+    assert.ok(entry.includes(String(HB_FLOOR)),
+      `pages.${lg}.js does not say where the day-exact record starts (${HB_FLOOR})`);
   }
 });
