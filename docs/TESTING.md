@@ -673,10 +673,10 @@ Fast, dependency-light gate that catches cheap-to-detect breakage before the bro
   markers; the file then failed to parse and **every test in it stopped running**. Nothing in one
   checkout can prove the other branch chose a different number — the other branch is not here — so
   what is checked is the half that can be: whether the name carries what the number does not.
-  The **417** files already named the bare way are legacy and stay; they are pinned by two numbers
-  rather than by a list of 417 spellings, because a list would have to be edited to admit the next
+  The **418** files already named the bare way are legacy and stay; they are pinned by two numbers
+  rather than by a list of 418 spellings, because a list would have to be edited to admit the next
   and that edit is the one being prevented. `LEGACY_BARE_COUNT` only goes **down** (and says so if
-  it is left too high after a rename), and `LEGACY_BARE_MAX_ROUND` (**672**, measured 2026-09-10;
+  it is left too high after a rename), and `LEGACY_BARE_MAX_ROUND` (**673**, measured 2026-09-10;
   the 36 subject-bearing files run to r674) fails any bare name above it, since round numbers are
   handed out monotonically. Either number alone is evadable — add a bare name *and* rename a legacy
   one and the count holds; reuse an unused low number and the round holds — together they are not.
@@ -850,6 +850,35 @@ Layers ▸ Tools がその行を持ちコマンド経由で押すこと、`#btn-
 であること（以前は 47.1%）／行き先が**分布**であり人口・陸境・空港規模を反映すること／
 **有病率の足切り無しに小さな流行も出国でき、出国者の数が感染者の数とともに増える**こと／
 `data/airports.json` と `data/country-facts.json` が閉じていること。
+
+`tests/r673-checks.test.mjs`（11 本）は 3 通目の外部監査が挙げた 9 件を測る。どれも「模型が単純
+すぎる」ではなく、**同じプログラムの 2 か所が同じ問いに違う答えを返していた**箇所である:
+到達していない国でも**免疫が減衰し接種が進む**こと（以前は 1 つの `if (!seeded) continue` が感染の
+算術と一緒にそれも飛ばし、**旅行者が着いた日がその国の公衆衛生の開始日**だった）／未到達国に配らない
+ことが `vaccinateUnreached` という**明示された政策**であること／`S=0・SV>0` の国にも輸入が着くこと
+（国内の感染力は両方から引くのに輸入は `S` しか見ず、**同じ人が隣人には感染し空港には感染しなかった**）
+／`draw()` が**半端な人数でも期待値どおり動かす**こと（n=0.5・p=0.5 で 0.125 ではなく 0.25。
+「1 人まるごとの Bernoulli を引いてから `min(n,k)` で切る」が払い出しを半分にしていた）／
+どんな端数でも人口保存が崩れないこと／**120 か月は 120 か月で、「終生」は別の欄**であること
+（`>=600 ⇒ ∞` の帯域内番兵が、Ebola の実在する 10 年を「∞」と表示させ、**同じ上端を触ると本当に
+無限にしていた**）／**累計死者だけの国は現在症例の点を描かない**こと（描いていて、しかも赤だった）
+／差分の署名が **21×2 の状態すべてを区別する**こと（`cls+sev×2` は 2 組を厳密に衝突させていた）／
+プリセットの値がスライダーの格子を**そのまま通り抜ける**こと（Ebola の R₀ が engine 1.95・入力欄 2・
+ラベル 1.9 の 3 つに割れていた）／「現在の世界」が**実在するワクチンと治療法から始まる**こと
+（COVID-19 だけが両方 `false` で、画面の説明と算術が正面から食い違っていた。SARS は対照——
+実在しないので `false` のまま）。
+⚠ **7 件は変異テストで検出力を確認してある**——修正前の実装を 1 つずつ戻すと、それを名指す検査が
+**7 件とも赤くなる**。「関数名がある」「綴りが一致する」ではなく、**振る舞いを測っている**（#R505）。
+⚠ **`caseDotPlan` / `dotSignature` / `snapToStep` は `js/pandemic-model.js` の export である。**
+DOM のクロージャの中にあったから外部監査に見つかり 11 ラウンドの検査に見つからなかったので、
+`scatterCases()` と同じ理由で外へ出した。
+
+⚠ **`tests/r666-model.test.mjs` ⑦ は、それ自身が構造として無効だった。** `seed(i, cases)` が
+`fromShare` に `null` を**固定で**渡していたので、`inject` の `if (fromShare) mixShare(…)` は
+**一度も走らなかった**——株の割合を手で置き、種を播き、割合が変わっていないことを主張する検査は、
+何も触らなければ必ず通る。#R666 の欠陥を実装に戻しても**緑のままだった**。`fromShare` は公開
+シグネチャに入り、この検査は変異テストで赤くなることを確認してある。**引数が私有なら、その規則は
+間違えようがない**（＝測れない）。
 
 `tests/r575.spec.js` はその**ブラウザ側の 1 本**——engine を別ファイルへ出した以上、「import が
 届いていない」「HUD がボタンを描かない」「地図のクリックが engine に届かない」は node からは

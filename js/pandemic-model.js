@@ -30,8 +30,13 @@
  *
  *  ⚠ WHAT THIS IS NOT. A simplified educational model, not a forecast. It is a country-level
  *  metapopulation — one well-mixed compartment set per country — with a GRAVITY-STYLE importation
- *  heuristic (distance + a development proxy), NOT airline routes, passenger volumes or commuting
- *  data. Nothing in IntMap should describe it as a real transport network until it is one.
+ *  heuristic built from population, REAL LAND BORDERS and SCHEDULED-AIRPORT CAPACITY, and it is
+ *  still NOT airline routes, passenger volumes or commuting data. Nothing in IntMap should describe
+ *  it as a real transport network until it is one.
+ *  ⚠ (#R673) THIS PARAGRAPH SAID «distance + a development proxy» UNTIL TODAY, which is the model
+ *  #R666 replaced — a hundred and fifty lines below it, in the same file, the new weights are
+ *  documented correctly. A file that contradicts itself about its own mechanism is how PRODUCT.md
+ *  came to carry the same dead sentence: the stale copy is the one people read first.
  * ==========================================================================*/
 
 /* ── THE DISEASES ───────────────────────────────────────────────────────────────────────────────
@@ -77,10 +82,23 @@ export const PANDEMIC_PRESETS = {
     transmission: { r0: 3.2, latentDays: 4, incubationDays: 5, infectiousDays: 9, seasonality: 0.18 },
     severity: { metric: 'IFR', value: 0.007 },
     immunity: { naturalMonths: 9 },
-    vaccine: { availableAtStart: false, efficacyInfection: 0.6, waningMonths: 8, developmentDays: 270 },
-    treatment: { availableAtStart: false, mortalityRR: 0.45 },
-    /* WHO's 2026 vaccine policy is written for a world with HIGH population immunity — hybrid
-       immunity plus variant-adapted boosters. That is the real-world scenario, not the naive one. */
+    /* ══ ⚠⚠⚠ (#R673) THE «TODAY'S WORLD» SCENARIO HAS TO CONTAIN TODAY'S MEDICINE ═══════════════
+       These two read `false`, and the panel above them said the scenario «starts from the immunity,
+       vaccines and treatments this disease actually has in 2026». For COVID-19 of all five presets
+       that was the flatly wrong one to say it about: variant-adapted vaccines are what WHO's July
+       2026 position paper is written to recommend, and antivirals have been in guidelines for
+       years. The screen and the arithmetic disagreed about the only thing the scenario is for.
+       ⚠ `availableAtStart` IS ONLY READ IN THE REAL-WORLD SCENARIO — the novel-pathogen run sets
+       both false for every preset by construction, which is what makes the two runs comparable.
+       `developmentDays` therefore describes a hypothetical COVID-like NEW pathogen. */
+    vaccine: { availableAtStart: true, efficacyInfection: 0.6, waningMonths: 8, developmentDays: 270 },
+    treatment: { availableAtStart: true, mortalityRR: 0.45 },
+    /* ⚠ (#R673) AN ASSUMPTION, AND THE PANEL NOW CALLS IT ONE. WHO's 2026 vaccine policy is written
+       for a world with HIGH population immunity — hybrid immunity plus variant-adapted boosters —
+       and this model has one immune compartment, so 0.9 enters as «90% start in R». That is NOT a
+       WHO estimate that 90% of people hold complete protection for nine months; it is this model's
+       coarsest possible reading of a real qualitative fact, and the UI must not print it as an
+       observation. Partial protection would need a compartment this engine does not have. */
     baselineImmunity: 0.9,
     sources: ['WHO COVID-19 vaccine position paper, July 2026', 'WHO TAG-CO-VAC 2026']
   },
@@ -388,18 +406,29 @@ export function createPandemicModel(cfg) {
   }
   /* THE ONE PLACE PEOPLE MOVE. n people, each with probability p, and never more than n of them —
      which is what makes population conservation a property of the code rather than a hope.
-     ⚠ n IS REAL. Above STOCHASTIC_MAX the compartments go deterministic and stop being integers, so
-     the whole part is drawn exactly and the fraction is one extra Bernoulli — which is correct in
-     expectation and, more importantly, still cannot exceed n. */
+
+     ⚠⚠⚠ (#R673) n IS REAL, AND THE FRACTION MUST NOT BE DRAWN AS A WHOLE PERSON. What stood here
+     was «one extra Bernoulli at frac·p, then clamp to n», and the clamp is what broke it: the
+     Bernoulli pays out ONE person while `Math.min(n, k)` cuts the answer back to n, so the payout
+     is worth only the fraction it was supposed to represent. MEASURED at n = 0.5, p = 0.5 over
+     200 000 seeded draws: the mean was 0.1249 against the n·p = 0.25 the whole compartment system
+     is built on — HALF the people that should have moved, every time a compartment held less than
+     one person. It is not an exotic input: every deterministic transition above STOCHASTIC_MAX
+     returns a real number, so real-valued compartments are the normal state of this model and the
+     small ones are exactly where chance is supposed to decide whether an outbreak fades.
+
+     THE FRACTION MOVES IN EXPECTATION INSTEAD. `frac · p` is a real quantity of people, and this
+     model already carries real quantities of people; paying it out exactly is unbiased by
+     construction, is bounded by frac (so the total can never exceed n and the clamp is gone with
+     the bug it was hiding), and leaves the WHOLE part — the part where individual outcomes decide
+     anything — fully stochastic. An integer n is untouched: frac is 0 and this line does nothing. */
   function draw(n, p) {
     if (!(n > 0) || !(p > 0)) return 0;
     if (p >= 1) return n;
     const m = n * p;
     if (m >= STOCHASTIC_MAX) return m;
     const whole = Math.floor(n), frac = n - whole;
-    let k = binomial(whole, p);
-    if (frac > 0 && rnd() < frac * p) k++;
-    return Math.min(n, k);
+    return binomial(whole, p) + frac * p;
   }
   /* Hazard: the chance one individual leaves a compartment during one day, given a mean sojourn
      time. ⚠ THIS REPLACES `rate × population`, WHICH IS WHY «0 days» NO LONGER CREATES PEOPLE:
@@ -416,10 +445,20 @@ export function createPandemicModel(cfg) {
     latentDays: num(inp.latentDays, preset.transmission.latentDays),
     infectiousDays: Math.max(1, num(inp.infectiousDays, preset.transmission.infectiousDays)),
     baseFatality: num(inp.baseFatality, preset.severity.value),
-    /* «Lifelong» is a duration, not a special case: 0 months on the slider means NO lasting
-       immunity (recovery goes straight back to susceptible) and the top of the slider means
-       forever. Neither is expressed as a 1/0 rate any more. */
-    naturalImmunityDays: preset.immunity.lifelong && inp.naturalImmunityMonths == null
+    /* ══ ⚠⚠⚠ (#R673) «LIFELONG» IS ITS OWN FIELD, BECAUSE IT IS NOT A NUMBER OF MONTHS ══════════
+       It used to be one: `monthsToDays` read «≥ 600» as Infinity, so a single slider carried a
+       duration AND a categorical statement in the same variable, and the two collided exactly where
+       a real preset lives. Ebola's `naturalMonths: 120` is TEN YEARS — a finite duration, a real
+       claim — and the panel's slider topped out at 120 and printed «∞» there, so the screen said
+       «lifelong» about a value the engine correctly treated as 3 600 days. Worse, moving the slider
+       to the same end it was already at wrote 600 into the field and the immunity BECAME infinite,
+       with the display unchanged: the same pixel, the same label, two different epidemics.
+
+       So there are two fields. `naturalImmunityMonths` is only ever a duration and 600 means 600,
+       and `naturalImmunityLifelong` is the categorical answer. 0 months keeps its own meaning — no
+       lasting immunity at all, recovery straight back to susceptible — which is a third statement
+       and was never in conflict with the other two. */
+    naturalImmunityDays: (inp.naturalImmunityLifelong != null ? !!inp.naturalImmunityLifelong : !!preset.immunity.lifelong)
       ? Infinity
       : monthsToDays(num(inp.naturalImmunityMonths, preset.immunity.naturalMonths)),
     seasonality: num(inp.seasonality, preset.transmission.seasonality),
@@ -434,12 +473,20 @@ export function createPandemicModel(cfg) {
     interventions: inp.interventions || 'adaptive',
     vaccineAtStart: inp.vaccineAtStart != null ? !!inp.vaccineAtStart : (realWorld && !!preset.vaccine.availableAtStart),
     vaccineEfficacy: num(inp.vaccineEfficacy, preset.vaccine.efficacyInfection),
-    vaccineImmunityDays: preset.vaccine.lifelong ? Infinity : monthsToDays(num(inp.vaccineMonths, preset.vaccine.waningMonths)),
+    vaccineImmunityDays: (inp.vaccineImmunityLifelong != null ? !!inp.vaccineImmunityLifelong : !!preset.vaccine.lifelong)
+      ? Infinity
+      : monthsToDays(num(inp.vaccineMonths, preset.vaccine.waningMonths)),
     vaccineRolloutScale: num(preset.vaccine.rolloutScale, 1),
+    /* (#R673) Does a campaign reach a country the outbreak has not reached? See the note on
+       `stepUnreached`. It is a policy with a default, not a consequence of the loop's shape. */
+    vaccinateUnreached: inp.vaccinateUnreached != null ? !!inp.vaccinateUnreached : true,
     treatmentAtStart: realWorld && !!preset.treatment.availableAtStart,
     treatmentMortalityRR: num(preset.treatment.mortalityRR, 0.45)
   };
-  function monthsToDays(m) { return (m == null || m <= 0) ? 0 : (m >= 600 ? Infinity : m * 30); }
+  /* ⚠ (#R673) NO SENTINEL. This converts months to days and does nothing else; «forever» is
+     `naturalImmunityLifelong`, one field up. The `m >= 600 ? Infinity` that used to live on this
+     line is the whole of defect U2. */
+  function monthsToDays(m) { return (m == null || m <= 0) ? 0 : m * 30; }
 
   const interventionScale = P.interventions === 'none' ? 0 : P.interventions === 'strong' ? 1.6 : 1;
 
@@ -555,17 +602,33 @@ export function createPandemicModel(cfg) {
   /* ── seeding ──────────────────────────────────────────────────────────────────────────────── */
   /* ⚠ THIS ALWAYS TAKES FROM S. The old re-import path added to E without subtracting, so every
      re-importation invented up to thirty people out of nothing. */
+  /* ══ ⚠⚠⚠ (#R673) WHAT AN IMPORTATION IS, SAID ONCE, HERE ═══════════════════════════════════════
+     It is NOT a person moving from one country to another: the origin's E and I are not reduced by
+     it, and never were. It is IMPORTATION PRESSURE — an arriving infected traveller starting a
+     local chain — so what it consumes is a LOCAL SUSCEPTIBLE, and the population of both countries
+     is conserved because nobody was moved. Anything in the UI that describes this as travellers
+     relocating is describing a different model.
+
+     AND «A LOCAL SUSCEPTIBLE» MEANS BOTH POOLS. This took `Math.min(s.S, …)` — plain S only —
+     while the local force of infection has drawn from S and SV at the same hazard since #R666. So
+     the same person was susceptible to their neighbour and immune to the airport: a country whose
+     campaign had reached everyone it could, leaving S = 0 and a large SV, was arithmetically
+     unreachable by importation while being perfectly infectable from within. The two pools are
+     consumed in proportion to their sizes, which is what «an arrival meets a random susceptible»
+     means. */
   function inject(i, cases, fromShare) {
     const s = st[i];
-    const k = Math.min(s.S, Math.max(0, cases));
+    const pool = s.S + s.SV;
+    const k = Math.min(pool, Math.max(0, cases));
     if (!(k > 0)) return 0;
+    const fromS = pool > 0 ? k * (s.S / pool) : k;
     /* ⚠⚠⚠ (#R666) THE SHARE IS MIXED AGAINST WHAT WAS HERE BEFORE, NOT AFTER. `mixShare` weighs the
        arrivals against `E + I`, and this function used to ADD them first — so eight cases of a
        variant arriving in a country with no cases at all mixed 8 against 8, and the country came out
        47% ancestral strain when not one ancestral case had ever set foot in it. Measured on the
        arithmetic: w = 8/(8+8+1) = 0.471. */
     const here = sum(s.E) + sum(s.I);
-    s.S -= k;
+    s.S -= fromS; s.SV -= k - fromS;
     if (P.latentDays > 0) s.E[0] += k; else s.I[0] += k;
     s.cumInf += k;
     s.seeded = true;
@@ -700,10 +763,40 @@ export function createPandemicModel(cfg) {
     }
     if (vaxDay >= 0) vaxRate = Math.min(VAX_RATE_MAX, vaxRate + VAX_RATE_RAMP);
 
+    /* (#R673) The part of a day that is about people rather than about pathogens: immunity fades
+       and a campaign reaches people. Called for every country the outbreak has not reached, and
+       the same three lines run inside the seeded branch below in the same order. */
+    function stepUnreached(s) {
+      if (P.vaccinateUnreached) {
+        const doses = vaxDay >= 0 ? draw(s.S, Math.min(0.99, vaxRate * s.delivery * P.vaccineRolloutScale)) : 0;
+        const protectedDoses = draw(doses, P.vaccineEfficacy);
+        s.S -= doses; s.V += protectedDoses; s.SV += doses - protectedDoses;
+      }
+      const wane = draw(s.R, pWane), vWane = draw(s.V, pVWane);
+      s.R -= wane; s.S += wane;
+      s.V -= vWane; s.S += vWane;
+    }
+
+    /* ══ ⚠⚠⚠ (#R673) THE CLOCK OF A COUNTRY IS NOT STARTED BY THE DISEASE ARRIVING ══════════════
+       `if (!s.seeded) continue` used to skip the WHOLE country, and only two of the things it
+       skipped are about infection. Waning immunity and vaccination are about the POPULATION, and a
+       population does not stop existing because no case has landed on it: a country's day-0
+       immunity stayed frozen at its starting value until the day the first traveller arrived, and a
+       vaccine unlocked on day 270 reached nobody there until the epidemic did. So «the disease has
+       reached here» silently doubled as «this country's calendar has started», which made the
+       arrival date of an infection the start date of that country's public health.
+
+       The loop is now split at the honest seam. Everything that needs E or I is inside `if
+       (s.seeded)`; waning and vaccination are outside it and run everywhere, every day.
+
+       ⚠ WHETHER AN UNREACHED COUNTRY VACCINATES IS A POLICY, AND IT IS NOW WRITTEN AS ONE.
+       `P.vaccinateUnreached` defaults to true — a global rollout is what actually happened in
+       2021 and what WHO's allocation frameworks are written for — and setting it false is a
+       modelling choice a caller states out loud, not a side effect of a control-flow shortcut. */
     let totI = 0, totE = 0; const exporters = [];
     for (let i = 0; i < N; i++) {
       const s = st[i];
-      if (!s.seeded) continue;
+      if (!s.seeded) { stepUnreached(s); continue; }
       const live = alive(s) || 1;
       const Ii = sum(s.I), Ei = sum(s.E);
       const prevalence = Ii / live;
@@ -827,7 +920,13 @@ export function createPandemicModel(cfg) {
          own government's answer and the destination's is asked per traveller below. */
       const pool = sum(s.E) + sum(s.I);
       const rate = P.mobility * TRAVEL_WHEN_INFECTED * INTL_TRIPS_PER_PERSON_DAY * travel[i] * BORDER_PASS[BORDER_STATES[s.border]];
-      let leave = draw(pool, Math.min(1, rate));
+      /* ⚠ (#R673) A DEPARTURE IS A WHOLE PERSON, AND `draw` RETURNS A REAL NUMBER. `for (t = 0;
+         t < leave; t++)` on a leave of 30.2 ran 31 times — the fraction bought a whole traveller,
+         every day, for free. The fraction is now spent as the probability of one more, which is
+         what it is worth. */
+      const leaveReal = draw(pool, Math.min(1, rate));
+      const lw = Math.floor(leaveReal);
+      let leave = lw + (rnd() < leaveReal - lw ? 1 : 0);
       if (leave > MAX_DEPARTURES) leave = MAX_DEPARTURES;
       for (let t = 0; t < leave; t++) {
         const j = pickDest(i);
@@ -933,7 +1032,13 @@ export function createPandemicModel(cfg) {
     get day() { return day; },
     get ended() { return ended; },
     get worldPop() { return worldPop; },
-    seed(i, cases) { return inject(i, cases == null ? P.initialCases : cases, null); },
+    /* ⚠ (#R673) `fromShare` IS PART OF THE SIGNATURE, so that the variant mix an arrival carries is
+       reachable from a test. It was not, and tests/r666-model ⑦ — the one test that exists to hold
+       `mixShare` to the fix that named it — called `seed()`, which passed a hard-coded `null`. The
+       test set a share by hand, seeded, and asserted the share was unchanged: TRUE BY CONSTRUCTION,
+       because the function it was measuring never ran. Restoring the #R666 defect underneath it
+       left it green. A private argument is a rule with no way to be wrong (#R505). */
+    seed(i, cases, fromShare) { return inject(i, cases == null ? P.initialCases : cases, fromShare || null); },
     step, totals, invariant, vaccineProgress,
     /* ⚠ (#R666) WHAT THE MOBILITY WAS ACTUALLY BUILT OUT OF — so the HUD can say it rather than
        assume it. `from` is one of population / airports / airports+population, each optionally
@@ -955,6 +1060,54 @@ export function createPandemicModel(cfg) {
     /* Active cases in one country, split the way the map draws them. */
     active(i) { const s = st[i]; return { E: sum(s.E), I: sum(s.I), D: s.D, seeded: s.seeded }; }
   };
+}
+
+/* ── THE MAP'S ARITHMETIC — HOW MANY DOTS, AND WHICH OF THEM CHANGED ───────────────────────────
+   (#R673) These three lived inside js/playground.js's closure, which is the reason an external
+   audit found them and eleven rounds of tests did not: `scatterCases` was moved out for exactly
+   this reason in #R575 and the rest of the same paragraph was left behind. Every one of them is
+   pure arithmetic over numbers the engine already produces, and node can now run them.
+
+   ⚠ THIS IS NOT EPIDEMIOLOGY AND MUST NOT BECOME IT. Nothing here may touch a compartment; it
+   takes the read-out `active(i)` already returns and answers questions about DRAWING. */
+
+/* How many dots a country gets, and how many of them are the not-yet-infectious colour.
+   ⚠⚠⚠ THIS LAYER IS «WHO IS ILL NOW», SO `D` CANNOT KEEP A COUNTRY ON IT. The gate here used to
+   be `act < 1 && D < 1`, with a floor that lifted k to 1 whenever `D > 0` — so a country whose
+   outbreak was over (E = 0, I = 0, D = 100) drew one dot, and since `kE` is 0 when `act` is 0 that
+   dot came out RED, which the legend printed beside it defines as «infectious». The map reported
+   current cases in a country that had none, permanently, contradicting the HUD above it.
+   Cumulative deaths still DARKEN a live country's dots — that is what `sevIdx` is — because how
+   deadly the outbreak here has been is a property of a place that still has cases. */
+export function caseDotPlan(a, perDot, cap) {
+  if (!a || !a.seeded) return null;
+  const act = a.E + a.I;
+  if (!(act >= 1) || !(perDot > 0)) return null;
+  let k = Math.round(act / perDot);
+  if (k < 1) k = 1;
+  if (k > cap) k = cap;
+  /* 21 discrete darkness levels. Rounded BEFORE it becomes part of a signature, or it drifts in
+     the tenth decimal every day and every dot counts as changed (#R666). */
+  const sevIdx = Math.round((a.D > 0 ? Math.min(1, (a.D / (a.I + a.D + 1)) * 3) : 0) * 20);
+  return { k, kE: Math.round(k * (a.E / act)), sevIdx, sev: sevIdx / 20 };
+}
+
+/* What a dot looks like, as one comparable value, for the day's diff.
+   ⚠⚠⚠ IT MUST SEPARATE EVERY PAIR IT IS ASKED ABOUT, AND `cls + sev*2` DID NOT. With `sev` on
+   twentieths, `sev*2` lands on 0, 0.1 … 2, so (cls 1, sev 0) and (cls 0, sev 0.5) are both exactly
+   1: a dot crossing between those two states counted as UNCHANGED and the diff — whose whole job
+   is to send what moved — sent nothing, leaving the wrong colour on screen until an unrelated
+   full re-sync swept it up. Integers cannot alias. */
+export function dotSignature(cls, sevIdx) { return sevIdx * 2 + cls; }
+
+/* The value a slider can actually hold, so that what the engine runs, what the input shows and
+   what the label prints are one number. See the note beside `mk` in js/playground.js: Ebola's
+   R₀ 1.95 on a 0.1 grid was 1.95 in the engine, 2 in the input and «1.9» on the label. */
+export function snapToStep(val, min, max, step) {
+  const v = Math.min(max, Math.max(min, val));
+  if (!(step > 0)) return v;
+  const dec = Math.max(0, ((String(step).split('.')[1]) || '').length);
+  return +(min + Math.round((v - min) / step) * step).toFixed(dec + 2);
 }
 
 /* ── PLACEMENT — the map's half of the same run ────────────────────────────────────────────────

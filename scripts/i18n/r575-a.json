@@ -23,14 +23,6 @@
   "선도적인 연구소",
   "一家頂尖實驗室"
  ],
- "active cases · red = infectious, orange = incubating": [
-  "aktive Fälle · rot = ansteckend, orange = inkubierend",
-  "активных случаев · красный — заразные, оранжевый — инкубация",
-  "casos activos · rojo = contagiosos, naranja = incubando",
-  "cas actifs · rouge = contagieux, orange = en incubation",
-  "명의 현재 감염자 · 빨강=감염성, 주황=잠복 중",
-  "名現症病例 · 紅＝具傳染性、橙＝潛伏中"
- ],
  "Adaptive": [
   "Adaptiv",
   "Адаптивные",
@@ -70,22 +62,6 @@
   "Seuil d’urgence sanitaire mondiale atteint — la propagation internationale se poursuit.",
   "국제적 공중보건 비상사태 기준에 도달 — 국가 간 확산이 계속되고 있습니다.",
   "已達到國際公共衛生緊急事件門檻 — 國際間傳播持續擴大。"
- ],
- "Incubating": [
-  "Inkubierend",
-  "Инкубация",
-  "Incubando",
-  "En incubation",
-  "잠복 중",
-  "潛伏中"
- ],
- "Infectious": [
-  "Ansteckend",
-  "Заразны",
-  "Contagiosos",
-  "Contagieux",
-  "감염성",
-  "具傳染性"
  ],
  "Initial cases": [
   "Anfangsfälle",
@@ -174,14 +150,6 @@
   "Mois de départ",
   "시작 월",
   "起始月份"
- ],
- "Starts from the immunity, vaccines and treatments this disease actually has in 2026.": [
-  "Beginnt mit der Immunität, den Impfstoffen und Behandlungen, die es 2026 für diese Krankheit wirklich gibt.",
-  "Начинается с иммунитета, вакцин и методов лечения, которые реально существуют для этой болезни в 2026 году.",
-  "Parte de la inmunidad, las vacunas y los tratamientos que esta enfermedad realmente tiene en 2026.",
-  "Part de l’immunité, des vaccins et des traitements dont cette maladie dispose réellement en 2026.",
-  "2026년 현재 이 질병에 실제로 존재하는 면역·백신·치료법에서 시작합니다.",
-  "以 2026 年這種疾病實際擁有的免疫力、疫苗與治療方法為起點。"
  ],
  "Strong": [
   "Streng",
