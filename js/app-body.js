@@ -441,7 +441,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get AI_FREE_DAILY(){ return AI_FREE_DAILY; }, get BUILTIN_GAZETTEER(){ return window.IntMapGazetteer.index(); },
     get SAT_PROVIDERS(){ return SAT_PROVIDERS; },
     get SNAP_PX(){ return SNAP_PX; }, get USE_SERVER_NEWS(){ return USE_SERVER_NEWS; }, get NEWS_EVENT_MODE(){ return NEWS_EVENT_MODE; }, get newsSurfaceMode(){ return newsSurfaceMode; },
-    get _DEMONYM_GZ(){ return _DEMONYM_GZ; }, get _DEM_CACHE_MAX(){ return _DEM_CACHE_MAX; },
+    get _DEMONYM_GZ(){ return _DEMONYM_GZ; }, get _DEM_CACHE_MAX(){ return _DEM_CACHE_MAX; }, get _DEM_LEASE_MAX(){ return _DEM_LEASE_MAX; },
     get _ORG_GZ(){ return _ORG_GZ; }, get _pubMatchers(){ return _pubMatchers; },
     get _spreadDupNewsPins(){ return _spreadDupNewsPins; }, get _stabIdx(){ return _stabIdx; },
     get _wsNewsHidden(){ return _wsNewsHidden; }, get aiButtonSyncers(){ return aiButtonSyncers; },
@@ -769,8 +769,8 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      ⚠ 「実機調整」 CANNOT BE DONE FROM HERE. No environment this project can automate is an iPhone, so
      the value is published for js/perf-hud.js to A/B against on the phone itself (`?perf=1`), which
      is where the four previous rounds' numbers should have come from. */
-  const _imgConcurrency=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?16:256;
-  try{ window.__imImgConcurrency=_imgConcurrency; }catch(_){}
+  const _imgConcurrency=/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)?16:256;   function _tileCacheMax(){ if(!_imPhoneClass()) return _hiDPITiles?2048:8192; const dm=+navigator.deviceMemory; return (isFinite(dm)&&dm>4)?1024:640; }   /* (#R671) the resident-tile budget. ⚠ AN UNKNOWN deviceMemory IS NOT EVIDENCE OF HEADROOM — WebKit does not implement it, so it is undefined on every iPhone and undefined&&… selected the LARGER number: we were not told meant more than 4 GB. The numbers are #R21s; which one an unknown answer picks is what changed. Why, and what it costs: js/map-readout.js */
+  try{ window.__imImgConcurrency=_imgConcurrency; }catch(_){}   try{ window.__imDemStore=()=>IM_READOUT.demStoreStats(); }catch(_){}   /* (#R671) what the DEM tile store is holding, for js/perf-hud.js — the renderer's own tile count says nothing about it */
   try{ GE().scene.setImageConcurrency(_imgConcurrency); }catch(_){}   /* (#R22) desktop 192→256: the user still measures spare bandwidth + idle GPU in 3D — fill the pipe harder */
   /* ══ (#R195) THE SATELLITE TILE PROTOCOL LIVES IN js/sat-proto.js ═══════════════════════════
      259 lines of Esri fetching, placeholder detection, ancestor cropping, the imagery-depth memo
@@ -821,7 +821,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
          「ブラウザが落ちることがないように」. 2048 double-density tiles hold the same bytes 8192 single-
          density ones did, which is the cap #R21 actually decided on. Phones do not take @2x at all
          (see _hiDPITiles), so their numbers are untouched. */
-      fadeDuration:0, maxTileCacheSize:(_imPhoneClass()?((navigator.deviceMemory&&navigator.deviceMemory<=4)?640:1024):(_hiDPITiles?2048:8192)), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
+      fadeDuration:0, maxTileCacheSize:_tileCacheMax(), refreshExpiredTiles:false,   /* (#R21) genuinely low-RAM phones get a smaller resident-tile budget */   /* (#R20) mobile 1536→1024 (~1/3 less resident tile memory vs the OOM tab-kills); (#R21) desktop 6144→8192 — desktop RAM is cheap, 3D pan/tilt-back stays fully cache-hot */
       /* Cap the render resolution on phones (#3): a DPR-3 screen otherwise shades 9× the fragments of
          DPR-1, which is the main cause of pan/zoom stutter on mobile GPUs. 2× stays crisp (retina) while
          roughly halving fragment work, so gestures stay smooth. Desktop keeps full device resolution. */
@@ -1483,7 +1483,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      tiles; each cached 256² canvas+pixels is ~½ MB, and they previously accumulated FOREVER — a real
      mobile OOM vector ("重い動作をすると頻繁にブラウザが落ちます"). Map preserves insertion order, so
      evicting the first non-loading entries is a cheap LRU. */
-  const _DEM_CACHE_MAX=_imPhoneClass()?140:560;   /* (#R21) follows the raised desktop LOS tile budget; (#R498) the DEVICE, not the width */
+  const _DEM_CACHE_MAX=_imPhoneClass()?140:560, _DEM_LEASE_MAX=_imPhoneClass()?(480+128):(1600+512);   /* (#R21) follows the raised desktop LOS tile budget; (#R498) the DEVICE, not the width; (#R671) …and how far the ceiling may float while a build PINS — the two windows one intensity field holds (js/seismic.js TILE_BUDGET + TILE_BUDGET_FAR). Why it must be exactly that, and what it is in bytes: js/map-readout.js */
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
   /* (#R169) moved verbatim to js/elevation-profile.js — see Architecture.md §3.1. */
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */

@@ -246,7 +246,20 @@ test('R498 ③ every phone-COST gate asks the device; the phone-CAPABILITY gate 
   /* #R232's three, under the new name */
   assert.match(b, /antialias:!_imPhoneClass\(\)/, 'MSAA follows the device');
   assert.match(b, /pixelRatio:\(_imPhoneClass\(\)\?Math\.min\(2,window\.devicePixelRatio/, 'so does the DPR cap');
-  assert.match(b, /maxTileCacheSize:\(_imPhoneClass\(\)\?/, 'so does the resident-tile budget');
+  /* ⚠ (#R671) THIS USED TO FIX THE SPELLING OF THE CALL, and it went red when the budget became a
+     named function — a correct implementation reported as a defect (#R488 / #R429's shape). The
+     claim is that the resident-tile budget is decided BY THE DEVICE, so resolve whatever is passed
+     and ask what decides inside it. Writing `_tileCacheMax()` into the pattern instead would stay
+     green if that function went back to asking the width. */
+  const mtc = /maxTileCacheSize:([^,]+),/.exec(b);
+  assert.ok(mtc, 'the map options must still set a resident-tile budget');
+  const fn = /^\s*([A-Za-z_$][\w$]*)\(\)\s*$/.exec(mtc[1]);
+  const decides = fn
+    ? b.slice(b.indexOf('function ' + fn[1] + '()')).split(/\r?\n/)[0]
+    : mtc[1];
+  assert.ok(decides && /_imPhoneClass\(\)/.test(decides), 'the resident-tile budget must ask the device');
+  assert.doesNotMatch(decides, /isMobile\(\)|matchMedia\('\(max-width/,
+    'the resident-tile budget must not ask the width — landscape is the same phone');
   /* …and #R498's five, which a phone held sideways was paying in full */
   assert.match(b, /if\(_imPhoneClass\(\)\) return false;/, 'the @2x tile decision follows the device');
   assert.match(b, /if\(_imPhoneClass\(\)\) return \[4096,4096\]/, 'so does the canvas RAM guard');
