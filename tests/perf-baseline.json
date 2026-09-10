@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4701659,
-    "gzip": 1570297,
-    "brotli": 1195971,
+    "raw": 4709338,
+    "gzip": 1573405,
+    "brotli": 1198040,
     "requests": 6,
-    "modules": 294,
+    "modules": 295,
     "cssRaw": 340305,
     "cssGzip": 57266
   },
   "async": {
     "raw": 10108675,
-    "gzip": 3302649,
+    "gzip": 3302657,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24512,
@@ -82,8 +82,8 @@
     }
   },
   "dist": {
-    "total": 244966329,
-    "data": 189530140,
-    "assets": 17530078
+    "total": 247350080,
+    "data": 191886598,
+    "assets": 17537757
   }
 }

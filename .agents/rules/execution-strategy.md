@@ -73,6 +73,7 @@
 | 国政選挙のデータ | `npm run check:elections` |
 | 歴史都市名 | `npm run check:histcities` |
 | 1850–1885 の歴史国境 | `npm run check:histborders` |
+| 導出した令制国 | `npm run check:kuni` |
 | 歴史国境のどの辺を描くか | `npm run check:bordercoast` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |

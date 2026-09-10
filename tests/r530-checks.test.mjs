@@ -45,7 +45,13 @@ test('① data/hist-admin1.js evaluates and carries the shape js/time-admin1.js 
   assert.ok(Array.isArray(DATA.rings) && DATA.rings.length > 1000, 'ring pool');
   assert.ok(Array.isArray(DATA.feats) && DATA.feats.length > 2000, 'features');
   for (const f of DATA.feats) {
-    assert.equal(f.length, 10, 'feat = [name,lvl,sy,sm,sd,ey,em,ed,polys,names]');
+    /* (#R669) THE ROW GREW A COLUMN AND THIS ASSERTION PINNED ITS LENGTH. Column 10 is the
+       OpenHistoricalMap relation id, which is what lets a click re-fetch the unit at upstream's own
+       resolution instead of drawing the simplified ring. A check that fixes the arity fails on every
+       column anyone ever adds, which teaches «edit the number» rather than «is the row well formed» —
+       so it asks about the columns it actually depends on. What column 10 must be is asserted where
+       it is used (tests/r669-checks.test.mjs ⑨). */
+    assert.ok(f.length >= 10, 'feat = [name,lvl,sy,sm,sd,ey,em,ed,polys,names,…]');
     assert.equal(typeof f[0], 'string');
     assert.ok(f[1] === 3 || f[1] === 4, 'admin_level is 3 or 4');
     for (let i = 2; i <= 7; i++) assert.equal(typeof f[i], 'number', 'date parts are numbers');
@@ -296,24 +302,49 @@ test('⑬ nine languages, in the order IntMapLang actually uses', () => {
   const call = /_LT\.arr\(LA\(([\s\S]*?)\n      \)\);/.exec(TA);
   assert.ok(call, 'note() builds its tuple with LA(…) so the i18n instruments can see it');
   const args = call[1];
+  /* ⚠ (#R669) THIS PINNED THE WORDING, AND THE WORDING IS NOT THE FACT. The nine regular expressions
+     here were nine phrases out of the sentence note() happened to say in 2026-09; the round that
+     corrected the sentence (the layer stopped dropping undated records, so «dated subdivisions» became
+     false) turned all nine red at once while check:i18n stayed green — the #R488 shape, a check that
+     fixes a spelling and therefore reports a rewrite as a defect. What this test exists to catch is the
+     ORDER (#R502: fr and ko are positions 7 and 8, the two Chinese scripts 5 and 6), so it asks each
+     slot for something only that language can satisfy — its own script, or its own function words. */
+  /* ⚠ AND IT IS ASKED OF EACH SLOT, NOT OF THE WHOLE LIST. `args.search(re)` finds the FIRST place a
+     pattern occurs anywhere in the nine, which only tells you the order while every pattern happens to
+     be unique to its own language — «the first CJK character» is in the Japanese slot, not the
+     zh-Hant one. So the argument list is split at its top-level commas and each slot is asked whether
+     it is written in the script that slot is for. */
+  const slots = (() => {
+    const out = []; let depth = 0, q = null, cur = '';
+    for (let i = 0; i < args.length; i++) {
+      const ch = args[i], prev = args[i - 1];
+      if (q) { cur += ch; if (ch === q && prev !== '\\') q = null; continue; }
+      if (ch === "'" || ch === '"' || ch === '`') { q = ch; cur += ch; continue; }
+      if (ch === '(' || ch === '[' || ch === '{') depth++;
+      if (ch === ')' || ch === ']' || ch === '}') depth--;
+      if (ch === ',' && depth === 0) { out.push(cur); cur = ''; continue; }
+      cur += ch;
+    }
+    if (cur.trim()) out.push(cur);
+    return out.map((x) => x.trim()).filter(Boolean);
+  })();
+  assert.equal(slots.length, 9, 'note() must hand LA() exactly nine strings — ' + slots.length + ' found');
   const order = [
-    [/dated subdivisions are in force/, 'en'],
-    [/この日付で記録のある地方区分/, 'jp'],
-    [/datierte Verwaltungseinheiten/, 'de'],
-    [/датированных единиц/, 'ru'],
-    [/subdivisiones fechadas/, 'es'],
-    [/此日期有記錄的行政區/, 'zh-Hant'],
-    [/此日期有记录的行政区/, 'zh-Hans'],
-    [/subdivisions datées/, 'fr'],
-    [/기록이 있는 행정구역/, 'ko']
+    [/[A-Za-z]/, 'en'],
+    [/[\u3040-\u309f]/, 'jp'],
+    [/[äöüß]|Verwaltungseinheiten|Quelle|Untergliederungen/, 'de'],
+    [/[\u0400-\u04ff]/, 'ru'],
+    [/\b(?:est[aá]n?|una|fuente|zona)\b/, 'es'],
+    [/[\u4e00-\u9fff]/, 'zh-Hant'],
+    [/[\u4e00-\u9fff]/, 'zh-Hans'],
+    [/\b(?:sont|une|zone|source|apparaissent)\b/, 'fr'],
+    [/[\uac00-\ud7af]/, 'ko']
   ];
-  let last = -1;
-  for (const [re, code] of order) {
-    const at = args.search(re);
-    assert.ok(at >= 0, `the ${code} string is present`);
-    assert.ok(at > last, `${code} must come after the previous slot — the registry's order, not the alphabet`);
-    last = at;
-  }
+  order.forEach(([re, code], i) => {
+    assert.match(slots[i], re, `slot ${i} must be the ${code} string — the registry's order, not the alphabet`);
+  });
+  /* the two Chinese slots are the same script, so they are told apart by not being each other */
+  assert.notEqual(slots[5], slots[6], 'zh-Hant and zh-Hans must be two sentences, not one written twice');
   /* and it must RESOLVE, not hand the caller the array pickArgs() returns unchanged. */
   assert.match(TA, /const _LT\s*=\s*window\.IntMapLang\.pick\(\(\)\s*=>\s*HOST\.lang\)/,
     'the chooser is pick(getLang) with a LIVE accessor, not a captured value');

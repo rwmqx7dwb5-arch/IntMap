@@ -821,6 +821,22 @@ window.IntMapModules.outline=function(HOST){
         if(myseq!==_seq) return false;
         if(!geo) return false;   /* (#R59) no real polygon → draw NOTHING (no rectangle, no far same-named place) */
         setData({type:'FeatureCollection',features:[{type:'Feature',geometry:geo,properties:{}}]}); _last={name:disp,geo}; _active=true; setVis('visible');
+        /* ══ (#R669) A SHARPER SHAPE MAY ARRIVE AFTER THE OUTLINE IS ALREADY UP ═══════════════════
+           「クリックしたときのハイライト線が線に比べて解像度が低い。」 The era subdivision layer has
+           TWO accounts of the same unit: a bundled ring simplified to ~2.2 km so that a planet fits
+           in a file, and upstream's own geometry, which is what the LINE on screen has been drawn
+           from since #R604. The caller hands over the coarse one immediately — a tap must produce an
+           outline now, not after a round trip — and passes `refine` for the true one. When it lands,
+           and only if this same show() is still the live one, it REPLACES the shape in place.
+           ⚠ Nothing is drawn twice and nothing is cleared in between: it is one source, set again.
+           ⚠ A refine that fails or returns nothing leaves the coarse outline standing, which is
+           exactly what shipped before this round. */
+        if(ctx.refine&&typeof ctx.refine.then==='function'){ try{ ctx.refine.then(better=>{
+          if(myseq!==_seq||!_active) return;
+          if(!better||!/Polygon/.test(better.type||'')) return;
+          _last={name:disp,geo:better};
+          setData({type:'FeatureCollection',features:[{type:'Feature',geometry:better,properties:{}}]});
+        }).catch(()=>{}); }catch(_){} }
         if(ctx.fit!==false){ const bb=bboxOf(geo); if(bb && (bb[1][0]-bb[0][0])<340 && (bb[1][1]-bb[0][1])<170){ try{ const el=GE().render.container&&GE().render.container(); const pad=Math.max(40,Math.round(Math.min((el&&el.clientWidth)||900,(el&&el.clientHeight)||600)*0.08)); GE().camera.fitBounds(bb,{padding:pad,maxZoom:12,duration:900}); }catch(_){} } }
         return true;
       }catch(_){ return false; } }
