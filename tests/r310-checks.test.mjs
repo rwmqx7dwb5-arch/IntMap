@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { coldWxModel, until, settled } from './helpers/wx-ecmwf-page.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -42,6 +43,22 @@ function fnBody(src, name) {
 }
 const EC = () => codeOnly(read('js/wx-ecmwf.js'));
 const WX = () => codeOnly(read('js/weather.js'));
+
+/* ══ ⚠⚠⚠ (#R664) THE TICKET MOVED, SO THIS CHECK STOPPED READING THE SOURCE ═══════════════════════
+   Until #R664 the supersession rule below was asserted as a SPELLING — `var mine = ++seq`, `if
+   (seq === mine)`. That round found the defect those spellings hid: the ticket was taken IN THE
+   CALL while the join was made later, in the `ready()` continuation, so a second call for the SAME
+   read superseded the read it was about to join and both callers were answered null (production:
+   the first switch-on of the first weather layer of a page failed, three times out of three). The
+   fix issues the ticket where the read is IDENTIFIED, and every one of those spellings changed
+   while the property this check was written for did not. A check that pins a spelling can only
+   prove that an implementation is still the one it was written against (#R488), so the property is
+   MEASURED against the shipped module from here on.
+   ⚠ The page it is measured on is tests/helpers/wx-ecmwf-page.mjs — ONE page, shared by the six
+   files that need it, because six copies of one judgement is the shape
+   .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. The browser and the Open-Meteo SDK are
+   stubbed there; nothing else is — the rule under test is the one that ships. */
+
 
 /* ── ① the requests are merged; the block, and therefore the cache, is not made coarser ────────── */
 test('R310 ① adjacent block requests become one request, and the block size is unchanged', () => {
@@ -123,7 +140,7 @@ test('R310 ④ the colour tiles read a file that is already open, through the sa
 });
 
 /* ── ⑤ the next hour is READ, not merely warmed ────────────────────────────────────────────────── */
-test('R310 ⑤ the neighbouring hour is read and held, so stepping onto it is a list lookup', () => {
+test('R310 ⑤ the neighbouring hour is read and held, so stepping onto it is a list lookup', async () => {
   const s = EC(), w = WX();
   const ra = fnBody(s, 'readAhead');
   assert.ok(ra, 'there is one named door for it');
@@ -137,25 +154,76 @@ test('R310 ⑤ the neighbouring hour is read and held, so stepping onto it is a 
   /* …at the band that hour will be read at, which is #R305's rule and is not `band()` (the planet) */
   assert.match(w, /readAhead\(VAR,nx,nearBand\(\)\|\|band\(\)\)/, 'and at the band the step will use');
 
+  const ld = fnBody(s, 'load');
   /* ⚠ IT MUST NOT TAKE PART IN `seq`. An hour nobody has arrived at is newer than everything by
      construction: bumping the generation would supersede the read of the picture ON SCREEN, and
      checking it would cancel the ahead read the moment it becomes useful. */
-  const ld = fnBody(s, 'load');
-  assert.match(ld, /var mine = ahead \? 0 : \+\+seq;/, 'an ahead read takes no generation');
-  assert.match(ld, /!ahead && seq !== mine/, '…and is not superseded by one');
+  /* ⚠⚠⚠ (#R664) THESE TWO WERE SPELLINGS AND THE TICKET MOVED (see the header of tests/helpers/wx-ecmwf-page.mjs), so
+     the two halves are measured on the shipped module, in the arrangement that separates them: a
+     foreground read holds the lane, and the ahead read is queued BEHIND it in the low lane.
+       · it takes no generation  → the picture ON SCREEN still installs itself when it lands;
+       · it is not superseded by one → the ahead read still reads, rather than being answered out
+         of the frame list the moment its turn in the queue comes up.
+     tests/r664-checks.test.mjs ⑥ measures the same rule from the other side (a foreground JOINER
+     must not hand it a ticket either). */
+  const { calls, ENG } = await coldWxModel({ sdkMs: 60, readMs: 250 });
+  const M = ENG.model('ecmwf_wam025');
+  await M.meta();
+  const wanted = M.load('wave_height', 1, null);              /* the hour on screen: it holds the lane */
+  /* ⚠ 「it holds the lane」 is the arrangement, so it is waited for and not timed — with sdkMs 60 the
+     old `await wxDelay(20)` landed on the SDK's own arrival (see the header of
+     tests/helpers/wx-ecmwf-page.mjs), which is where the whole separation comes from. */
+  await until(() => calls.ensureData === 1, 'the foreground read to hold the lane', { observe: () => calls });
+  const ahead = M.load('wave_height', 3, null, true, true);   /* what `readAhead` passes: bg + ahead */
+  const [wf, a] = await Promise.all([wanted, ahead]);
+  assert.equal(calls.ensureData, 2,
+    'the ahead read was answered out of the frame list instead of reading — a generation it never took cancelled it');
+  assert.notEqual(a.key, wf.key, '…it must be the hour NOBODY has arrived at yet');
+  assert.equal(M._state().frames, 2, 'both hours are in hand');
+  assert.equal(M._state().held, wf.key,
+    'the ahead read bumped the generation and superseded the picture ON SCREEN, which never installed itself');
   /* ⚠ AND IT INSTALLS QUIETLY: findable by `sampler()`, but not 「the one that landed last」 */
   assert.match(ld, /keepFrame\(frame, true\)/, 'an ahead frame does not become the held frame');
   assert.match(fnBody(s, 'keepFrame'), /quiet/, '…which is what the second argument is for');
 });
 
-test('R310 ⑥ a step onto the hour being read ahead joins that read instead of starting a second', () => {
+test('R310 ⑥ a step onto the hour being read ahead joins that read instead of starting a second', async () => {
   const s = EC();
   const ld = fnBody(s, 'load');
   assert.match(ld, /var join = reading\[skey\];/, 'an in-flight read of the same key is joined');
   /* ⚠ …AND THE JOIN CARRIES THE JOINER'S PRIORITY. A read-ahead still WAITING in the low lane is,
      by the lane rule, a job that does not start while the reader is waiting for something — so a
      step that joins it without lifting it would be waiting on its own deadlock-shaped rule. */
-  assert.match(ld, /if \(!ahead\) promote\(join\)/, 'a foreground joiner lifts the job out of the low lane');
+  /* ⚠⚠⚠ (#R664) THAT LINE IS NOW `{ promote(join); renew(join); }` — the join also RENEWS the
+     ticket of the read it joins, because the ticket moved from the call to the read (see the header
+     of tests/helpers/wx-ecmwf-page.mjs). The spelling changed; the rule did not, so the rule is measured: a foreground
+     caller that joins a read still WAITING in the low lane lifts it into the lane the reader is
+     waiting on — i.e. it runs BEFORE a foreground read asked for afterwards, instead of behind
+     every one of them, which is the lane rule turned into a wait on a job that by construction
+     does not start while the reader is waiting for something. */
+  const done = [];
+  const mark = (n, p) => { p.then(() => done.push(n)); return p; };
+  const { page, calls, ENG } = await coldWxModel({ sdkMs: 60, readMs: 150 });
+  const M = ENG.model('ecmwf_wam025');
+  await M.meta();
+  /* ⚠ EVERY ONE OF THESE FOUR CALLS IS PLACED BY A FACT, NOT BY A DURATION (see the header of
+     tests/helpers/wx-ecmwf-page.mjs): the foreground read has to be AT the data, the ahead read has
+     to be registered and queued in the low lane, and the join has to have happened — before the
+     next call is made. The join leaves no mark this page can see (it opens no state and starts no
+     read), so it is the one wait made of promise turns rather than of an observation. */
+  const busy = mark('fg1', M.load('wave_height', 1, null));                 /* holds the foreground lane */
+  await until(() => calls.ensureData === 1, 'the foreground read to hold the lane', { observe: () => calls });
+  const ah = mark('ahead', M.load('wave_height', 3, null, true, true));     /* waits in the LOW lane */
+  await until(() => page.rec.states.length === 2, 'the ahead read to be registered and queued in the low lane',
+    { observe: () => ({ states: page.rec.states, calls }) });
+  const joined = mark('joined', M.load('wave_height', 3, null));            /* the reader steps onto it */
+  await settled();
+  const later = mark('fg2', M.load('wave_height', 2, null));                /* …and then asks for another hour */
+  await Promise.all([busy, ah, joined, later]);
+  assert.ok(done.indexOf('ahead') >= 0 && done.indexOf('fg2') >= 0, 'every read answered');
+  assert.ok(done.indexOf('ahead') < done.indexOf('fg2'),
+    'the joined read stayed in the low lane, so the reader was left waiting behind every '
+    + 'foreground read asked for after the join: ' + done.join(' < '));
   const pr = fnBody(s, 'promote');
   assert.match(pr, /qLo\.indexOf\(job\)/, 'only a job that has not started is moved');
   assert.match(pr, /qHi\.push\(job\)/, '…and it is moved to the lane the reader is waiting on');

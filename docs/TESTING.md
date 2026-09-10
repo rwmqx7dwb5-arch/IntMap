@@ -1310,6 +1310,29 @@ implementation through the reference pairs CIE 142 / Sharma et al. publish — t
 the three easy mistakes (the a* rescaling, the mean hue across the 0° wrap, the sign of the rotation
 term) all yield a function that looks right on ordinary colours and is wrong on the deciding ones.
 
+### Evaluating the weather engine instead of pinning its spelling (`tests/helpers/wx-ecmwf-page.mjs`)
+
+`js/wx-ecmwf.js` decides which read wins when several arrive at once, and seven checks across five
+rounds guarded that by matching its SOURCE TEXT — `/var mine = [^;]*\+\+seq;/`, `'seq !== mine'`,
+`/if \(!ahead\) promote\(join\)/`. ⚠ **A correct change made all seven red at once.** The defect
+they were meant to guard was in the placement of that very line: the ticket was taken at the CALL,
+before `ready()`, while the join happened later — so a second request for THE SAME read overtook the
+read it was about to join, and a model with no frames yet had nothing to fall back to. Moving the
+ticket onto the read fixed it and changed every spelling. #R488's lesson again: a check that pins a
+spelling can only guarantee that an implementation CONTINUES, not that it is right.
+
+So the seven now **evaluate the shipped module** — browser and the Open-Meteo SDK stubbed, nothing
+else — and measure the property each round actually cared about: that an overtaken read still
+resolves with the frame it decoded rather than null, that it never reaches `ensureData`, that
+`release()` frees only its own variable, that a read-ahead neither takes a ticket nor is killed by
+one. `coldWxModel()` builds that page; the six files that need it share this one copy, because six
+copies of one judgement is the thing `.agents/rules/no-ad-hoc-hardcoding.md` §2 exists to prevent.
+
+⚠ **The page is deliberately the RICHER of the two that were written** — the one that also carries
+what `js/waves.js` touches. A leaner stub is a second, more forgiving opinion about the same
+browser, and #R552 measured what that costs: a fixture more capable than the shipped wiring cannot,
+in principle, detect that the shipped wiring is broken.
+
 ### What only production can answer (#R333)
 
 `prod-smoke` is also the only place that can catch **half a commit reaching production**. The

@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { coldWxModel, until } from './helpers/wx-ecmwf-page.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -27,6 +28,22 @@ const WIND = () => codeOnly(read('js/wx-wind.js'));
 const WX = () => codeOnly(read('js/weather.js'));
 const DL = () => codeOnly(read('js/data-layers.js'));
 const RO = () => codeOnly(read('js/map-readout.js'));
+
+/* ══ ⚠⚠⚠ (#R664) THE TICKET MOVED, SO THIS CHECK STOPPED READING THE SOURCE ═══════════════════════
+   Until #R664 the supersession rule below was asserted as a SPELLING — `var mine = ++seq`, `if
+   (seq === mine)`. That round found the defect those spellings hid: the ticket was taken IN THE
+   CALL while the join was made later, in the `ready()` continuation, so a second call for the SAME
+   read superseded the read it was about to join and both callers were answered null (production:
+   the first switch-on of the first weather layer of a page failed, three times out of three). The
+   fix issues the ticket where the read is IDENTIFIED, and every one of those spellings changed
+   while the property this check was written for did not. A check that pins a spelling can only
+   prove that an implementation is still the one it was written against (#R488), so the property is
+   MEASURED against the shipped module from here on.
+   ⚠ The page it is measured on is tests/helpers/wx-ecmwf-page.mjs — ONE page, shared by the six
+   files that need it, because six copies of one judgement is the shape
+   .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. The browser and the Open-Meteo SDK are
+   stubbed there; nothing else is — the rule under test is the one that ships. */
+
 
 /* ── ① the forecast hour is in the FILE NAME, because nothing else carries it ──────────────────
    MEASURED before the fix, in the browser, against the shipped SDK:
@@ -497,7 +514,7 @@ test('R276 ⑰ the prefetch is on the time change, not on the first load', () =>
    own, and returned null — an ECMWF layer whose point value went blank for no visible reason. And it
    is not a contrived race: js/map-ui.js re-applies the saved layer set at 700 / 1,800 / 3,200 ms
    after boot, switching OFF anything not in the share hash. */
-test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
+test('R276 ⑱ a layer releases its own frame, never somebody else\'s', async () => {
   const s = EC();
   /* (#R290) …and «the held frame» is now «the frames it holds»: more than one variable can be in
      hand (the wind's, and whichever raster the cursor is over — see the note on `frames`), so a
@@ -525,8 +542,40 @@ test('R276 ⑱ a layer releases its own frame, never somebody else\'s', () => {
      explicit instead of leaving it to a slot that anything could clear. */
   const ft = s.slice(s.indexOf('function fireTime()'), s.indexOf('function _clock()'));
   assert.ok(!/release\(\)/.test(ft), 'a time change no longer throws the current frame away');
-  assert.match(s, /var mine = [^;]*\+\+seq;/, 'which frame is current is explicit');
-  assert.match(s, /if \(seq === mine\) \{/, '…and a superseded read still resolves to its caller');
+  /* ⚠⚠⚠ (#R664) THOSE TWO LINES WERE SPELLINGS (`var mine = ++seq`, `if (seq === mine)`) AND THE
+     SPELLING MOVED — see the header of tests/helpers/wx-ecmwf-page.mjs. What they were here for is a pair of facts about
+     a read that a teardown lands on top of, and both are now measured against the shipped module:
+     somebody else's release must not touch it, and its own release must not turn a read that
+     SUCCEEDED into a failure (MEASURED in #R288 on the deployed build: 8.3 s, data present, result
+     null, and js/weather.js raised 「風データを取得できませんでした」). */
+  const other = await coldWxModel({ sdkMs: 80, readMs: 300 });
+  const M = other.ENG.model('ecmwf_wam025');
+  const p = M.load('wave_height', null, null);
+  /* ⚠ the arrangement is 「the read is past `ready()` and holds a ticket」, so it is WAITED FOR and
+     not timed: `await wxDelay(160)` for a fact that becomes true at 109–125 ms left 35–50 ms of
+     margin, and a 130 ms stall of the event loop reached the assertion below with 0 reads started
+     (see the header of tests/helpers/wx-ecmwf-page.mjs). The assertion itself is unchanged. */
+  await until(() => other.calls.ensureData === 1, 'the read to reach the data',
+    { observe: () => other.calls });
+  assert.equal(other.calls.ensureData, 1, 'the read must be under way, or this proves nothing');
+  assert.equal(M.release('temperature_2m'), false,
+    'a release of a variable this model holds no frame of, and has no read in flight for, does nothing');
+  const fr = await p;
+  assert.ok(fr && fr.data && fr.data.values.length,
+    "another layer's teardown cancelled this read — the defect this check was written for");
+  assert.equal(M._state().frames, 1, '…and the frame it decoded was installed…');
+  assert.equal(M._state().variable, 'wave_height', '…as the current one');
+
+  const own = await coldWxModel({ sdkMs: 80, readMs: 300 });
+  const M2 = own.ENG.model('ecmwf_wam025');
+  const p2 = M2.load('wave_height', null, null);
+  await until(() => own.calls.ensureData === 1, 'the read to reach the data', { observe: () => own.calls });
+  assert.equal(M2.release('wave_height'), true, 'its OWN release does find the read in flight…');
+  const fr2 = await p2;
+  assert.ok(fr2 && fr2.data && fr2.data.values.length,
+    '…and a superseded read still resolves to its caller, with the frame it decoded');
+  assert.equal(M2._state().frames, 0,
+    '…while which frame is current stays explicit: a superseded read does not install itself');
 });
 
 /* ── ⑲ one reader, therefore one queue ────────────────────────────────────────────────────────

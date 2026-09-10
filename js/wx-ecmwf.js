@@ -1497,7 +1497,53 @@ import './wx-models.js';
      reader has not arrived at is newer than everything by construction — bumping it would supersede
      the read of the picture ON SCREEN, and checking it would cancel the ahead read the instant the
      reader stepped, which is the one moment it is about to become useful. */
-  var reading = Object.create(null);      /* skey -> Promise<frame|null> — see the note below */
+  /* ══ ⚠⚠⚠ (#R664) THE TICKET BELONGS TO THE READ, NOT TO THE CALL ═══════════════════════════════
+     THE FIRST SWITCH-ON OF A LAYER AFTER A PAGE LOAD FAILED — reported from production three times
+     out of three for the wave layer, and reproduced here against this very module with the browser
+     and the SDK stubbed and nothing else (tests/r664-checks.test.mjs):
+
+         0 ms      load(wave_height) — the switch-on. `ready()` starts the 340 kB SDK download.
+         300 ms    load(wave_height) — A SECOND CALL FOR THE SAME THING, from a second paint.
+         609 ms    the SDK lands, both continuations run… and BOTH ANSWER null, in three
+                   milliseconds, having asked for nothing.
+
+     The ticket was taken IN THE CALL (`var mine = ++seq` before `ready()`), while the join is made
+     LATER, in the continuation, once the file name exists (`reading[skey]`). So the second call had
+     already superseded the read it was ABOUT TO JOIN: the job woke, found `seq !== mine`, and took
+     the 「the reader has moved on」 exit — whose fallback is 「any frame of this variable」, and on a
+     model nothing has ever been read from THERE ISN'T ONE. The joiner then received that same null.
+     ⚠ A second call for the same read is not the reader moving on. It is the reader asking again.
+
+     WHY IT WAS ONLY EVER THE FIRST SWITCH-ON, AND ONLY OF THE FIRST WEATHER LAYER OF A PAGE: the
+     window is the span between the ticket and the job, which is `ready()` — 600 ms with the SDK
+     cold, and the length of one metadata fetch once ANY weather layer has already pulled the bundle
+     in (`sdk`/`sdkP` are per page). And the fallback only comes back empty while `frames` is empty,
+     which is exactly once per model. Both halves say 「the first one」, which is why a second click
+     always worked and why switching on any other weather layer first hid it entirely.
+     ⚠ #R622 FIXED A DIFFERENT INSTANCE OF THE SAME RULE (`Promise.all([height, period])` handing
+     the height a stale ticket) and this one survived it, because the second call here comes from
+     somewhere else entirely — a second `paint()`, which js/waves.js raises from `styledata`, from
+     `moveend` and from this module's own `time` event. ⚠ THAT EVENT IS REAL AND IT IS ALSO A COLD
+     -INSTANCE EFFECT: `setIndex` guards on `i === idx && idxSet`, so the first live broadcast of
+     window.IntMapTime after the axis lands emits `index` + `time` for an index that never moved.
+     Whichever of the three arrives, the answer must be the same, so it is fixed HERE.
+
+     → the ticket is issued where the read is IDENTIFIED, and a caller that joins a read RENEWS the
+     ticket instead of taking one of its own. Everything the ticket was for is unchanged: a read for
+     a DIFFERENT file, hour or band still takes a newer ticket and still cancels the older read
+     before it spends its turn in the queue (#R299), and `release()` still supersedes everything in
+     flight. What can no longer happen is a read cancelling itself.
+     ⚠ IT CANNOT BE DONE BY IDENTIFYING THE CALL INSTEAD. `i == null` means 「the hour the axis is on」
+     and is resolved late; two such calls are the same request when the axis has not moved and twenty
+     different ones when the reader is dragging the slider, and the call site cannot tell those apart
+     before `ready()` — which is the whole reason the join lives in the continuation. */
+  var reading = Object.create(null);      /* skey -> Promise<frame|null> — see the note above */
+  function renew(p) {
+    var t = p && p._imTicket;
+    if (!t || !t.mine) return false;      /* no ticket, or an `ahead` read: it never took part in seq */
+    t.mine = ++seq;
+    return true;
+  }
   function load(variable, i, bounds, bg, ahead) {
     var band = (bounds && bounds.length === 4) ? bounds : null;
     var key = stateKey(variable, '', i);
@@ -1508,7 +1554,8 @@ import './wx-models.js';
        ⚠ `meta` may not be here yet; `fileUrl` answers '' then and `touch` does nothing. `ready()`
        below warms it the moment the axis lands. */
     touch(i == null ? idx : i);
-    var mine = ahead ? 0 : ++seq;
+    /* (#R664) the ticket is issued below, where `skey` says WHICH READ this is — see the note above */
+    var ticket = { mine: 0 };
     return ready().then(function () {
       var key2 = stateKey(variable, '', i);          /* meta may have arrived meanwhile */
       var h2 = frameCovering(key2, band); if (h2) return h2;
@@ -1531,9 +1578,12 @@ import './wx-models.js';
          where the key is ours and the lifetime is the read's. */
       var join = reading[skey];
       if (join) {
-        if (!ahead) promote(join);      /* the reader is waiting for it now — see `promote` */
+        /* (#R664) …and it is the NEWEST thing the reader has asked for, so the read it is joining
+           holds the newest ticket. Without this the join superseded the very read it joined. */
+        if (!ahead) { promote(join); renew(join); }      /* the reader is waiting for it now — see `promote` */
         return join.then(function (fr) { return fr || null; }, function () { return null; });
       }
+      ticket.mine = ahead ? 0 : ++seq;
       var st = sdk.getOrCreateState(inst.stateByKey, skey, { domain: dom, variable: variable, bounds: band || undefined }, f);
       var p = serial(function () {
         /* the queue may have been waiting a while — if the reader has moved on, so have we */
@@ -1550,7 +1600,7 @@ import './wx-models.js';
            this variable is 「a superseded picture is still a picture that loaded」, which is the
            rule stated below for the reads that DID complete; which hour is current is decided by
            the caller through `sampler()`, and that is keyed on the hour. */
-        if (!ahead && seq !== mine) return frames.filter(function (x) { return x.variable === variable; })[0] || null;
+        if (!ahead && seq !== ticket.mine) return frames.filter(function (x) { return x.variable === variable; })[0] || null;
         /* ⚠ (#R307) THE GLOBE STILL DOES NOT GET THIS, AND THAT IS #R297'S MEASUREMENT, NOT AN
            OVERSIGHT: a global read's ranges are two contiguous blocks, so there is nothing for the
            concurrency to collapse (A/B on production: 16.4 / 7.8 s plain against 7.8 / 9.4 s warmed).
@@ -1578,7 +1628,7 @@ import './wx-models.js';
              for yet, so it must be findable by `sampler()` (that is the whole point) without
              becoming `held` — 「the one that landed last」 belongs to the hour on screen. */
           if (ahead) keepFrame(frame, true);
-          else if (seq === mine) {
+          else if (seq === ticket.mine) {
             keepFrame(frame); loadingKey = '';
             emit('field', { variable: variable, band: band });
             /* (#R325) the reader is looking at this hour now, so the NEXT one's file is opened —
@@ -1590,6 +1640,7 @@ import './wx-models.js';
       }, !!bg);
       var q = p.catch(function () { return null; });
       q._imJob = p._imJob;          /* the handle travels with the promise the joiner receives */
+      q._imTicket = ticket;         /* (#R664) …and so does the ticket, so a joiner can renew it */
       p = q;
       reading[skey] = p;
       p.then(function () { if (reading[skey] === p) delete reading[skey]; },
