@@ -449,7 +449,13 @@ window.IntMapRefData=(function(){
        one publication from one organisation, whichever of the two paths a given item arrived by. */
     {n:'WHO Disease Outbreak News',u:'https://www.who.int/emergencies/disease-outbreak-news'},
     {n:'DeepStateMap',u:'https://deepstatemap.live/'},
-    {n:'historical-basemaps (aourednik)',u:'https://github.com/aourednik/historical-basemaps'},
+    /* ⚠ (#R679) THE LICENCE IS PART OF THE CITATION NOW, BECAUSE IntMap REDISTRIBUTES THIS.
+       Until this round these snapshots were only FETCHED at runtime from the upstream repository;
+       data/hist-eras.js ships them, which is a different act. Read from the repository itself,
+       2026-09-10: LICENSE is the full text of the GNU GPL v3, GitHub's own licence detection says
+       `gpl-3.0`, and README.md names no licence at all — there is no CC declaration anywhere in
+       it, contrary to what several downstream copies assume. What is stated is what was read. */
+    {n:'historical-basemaps (aourednik) — GPL-3.0',u:'https://github.com/aourednik/historical-basemaps'},
     /* (#R518 borders, #R530 subdivisions) ONE ORGANISATION, ONE ROW. Both sets the map draws come
        from OHM — the day-exact borders of 1850-1885 (data/hist-borders.js) and the first-level
        subdivisions of whatever year the clock shows (data/hist-admin1.js, baked from OHM's dated

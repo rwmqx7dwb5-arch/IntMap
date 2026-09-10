@@ -14,6 +14,7 @@
  * ==========================================================================*/
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { clockFloor } from './helpers/hist-scale.mjs';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
@@ -35,10 +36,25 @@ test('R349 ①: the clock reaches 1850, and js/news-timeline.js has no second co
      does not exist in the calendar OHM dates against), and it reaches AT LEAST as far as R349
      promised. tests/r604-checks ① proves the kernel actually TRAVELS there, which is the half the
      source cannot show. */
-  const m = chronos.match(/const YMIN\s*=\s*(\d{1,4})\s*;/);
-  assert.ok(m, 'js/chronos.js must declare YMIN');
+  /* ⚠ (#R679) THE FLOOR IS NO LONGER A LITERAL IN THIS FILE'S REACH, AND THAT IS THE POINT.
+     #R604 already stopped this check pinning the digits; it still pinned the DECLARATION, so
+     when the number moved to its owner (js/hist-scale.js) the match returned null. R349's claim
+     has always been «there is ONE floor and everything reads it», so the assertion is now that
+     the kernel HOLDS no number of its own and the owner publishes one. */
+  assert.doesNotMatch(chronos, /const\s+YMIN\s*=\s*-?\d/,
+    'js/chronos.js must not hold its own copy of the floor — it reads js/hist-scale.js FLOOR');
+  assert.match(chronos, /IntMapHistScale\s*&&\s*window\.IntMapHistScale\.FLOOR|IntMapHistScale\.FLOOR/,
+    'js/chronos.js must read the floor from its owner');
+  const m = [null, String(clockFloor())];
+
   const FLOOR = parseInt(m[1], 10);
-  assert.ok(FLOOR >= 1, 'the floor must be a year the calendar has');
+  /* ⚠ (#R679) THIS SAID `FLOOR >= 1`, on the argument that «year 0 does not exist in the
+     calendar OHM dates against». Measured this round on 40 OHM tiles and 827,391 dated bounds:
+     upstream writes ASTRONOMICAL years, which do have a 0, and it carries units back to −3700.
+     The assertion was defending a fact that was not one. What has to hold is that the floor is
+     a whole year the platform can construct — tests/r604-checks ① proves the clock travels to
+     it, which is the half source cannot show. */
+  assert.ok(Number.isInteger(FLOOR), 'the floor must be a whole year');
   assert.ok(FLOOR <= 1850, `the clock no longer reaches 1850 — R349's promise, floor is ${FLOOR}`);
 
   const ntl = R('js/news-timeline.js');
@@ -67,7 +83,11 @@ test('R349 ②: nearest() answers 1875 with the 1880 snapshot and 1830 with 1815
   assert.ok(YEARS.includes(1815) && YEARS.includes(1880), 'the two pre-1900 snapshots are offered');
 
   /* run the shipped resolver rather than reading it: lift the exact source of `nearest` */
-  const fn = src.match(/const nearest\s*=\s*y\s*=>\s*\{[\s\S]*?\};/);
+  /* ⚠ (#R679) THIS PINNED THE RESOLVER'S ARITY. `nearest` takes the list of snapshot years now,
+     because the reach is the era record's and no longer a literal in this file — so a check that
+     required `y => {` stopped lifting it, on a change that did not touch what R349 asserts. What
+     R349 asserts is what the resolver ANSWERS below CShapes; the parameter list is not the claim. */
+  const fn = src.match(/const nearest\s*=\s*\(?[\w\s,]*\)?\s*=>\s*\{[\s\S]*?\};/);
   assert.ok(fn, 'the nearest() resolver must still be a single expression this test can lift');
   const nearest = new Function('YEARS', 'MAXGAP', 'CS_MIN',
     fn[0].replace(/^const nearest\s*=/, 'const nearest =') + ' return nearest;')(YEARS, 20, 1886);

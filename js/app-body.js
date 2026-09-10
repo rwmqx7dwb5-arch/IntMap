@@ -2448,7 +2448,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      fallback all live there, with the measurements that made them necessary. */
   /* Time-travel state: when newsDate is set (not null), feed URLs gain after:/before: qualifiers */
   let newsDate=null;
-  function ymdISO(d){ return d.toISOString().slice(0,10); }
+  function ymdISO(d){ return window.IntMapHistScale.ymd(d); }   /* (#R679) ONE owner — the second copy broke below year 0 (js/hist-scale.js `ymd`). ⚠ A HOISTED DECLARATION, not a const: js/news-timeline.js binds `HOST.ymdISO` at FACTORY time (tests/r167 ⑤'s dead-zone rule) */
 
   /* (#R289) THE KERNEL MOVED TO js/chronos.js — 「IntMap統一時間機能を、これよりChronosという名称に」,
      and a thing with a name is a subject, which gets its own file (tests/r168 #8: this round adds

@@ -37,8 +37,35 @@
  *  When LIVE, every subsystem holds its own independent default; the moment you travel
  *  to a past instant they all sync to it, and returning to "Now" releases them. ====== */
 window.IntMapTime=(function(){
-  function ymdISO(d){ return d.toISOString().slice(0,10); }
-  const subs=[]; let _when=null; let _bcast=false; const YMIN=1;
+  /* ⚠⚠⚠ (#R679) `toISOString().slice(0,10)` WAS NOT A DATE ONCE THE FLOOR WENT BELOW YEAR 0.
+     ECMA-262 writes a year outside 0…9999 in the expanded form, so an instant in 323 BC comes
+     back as `-000322-01-01T00:00:00.000Z` and its first ten characters are `-000322-01` — a
+     string with no day in it, broadcast to every subscriber as `e.iso`. Measured on Node 24
+     before the fix. Same shape as #R604's `Date.UTC` trap one floor down: a rule that was right
+     for every year the clock could reach starts lying the moment the floor moves, silently.
+     ⚠ AND THERE WERE TWO COPIES — this one and js/app-body.js's, which is what `HOST.ymdISO`
+     hands the news feed and the screenshot filename. The rule now has ONE owner
+     (js/hist-scale.js `ymd`) and both read it; the local body is the same four lines, for a
+     page on which hist-scale has not evaluated. */
+  function ymdISO(d){
+    try{ const HS=window.IntMapHistScale; if(HS&&HS.ymd) return HS.ymd(d); }catch(_){}
+    const y=d.getUTCFullYear(), p=n=>String(n).padStart(2,'0');
+    const ys=(y>=0&&y<=9999)?String(y).padStart(4,'0'):(y<0?'-':'+')+String(Math.abs(y)).padStart(6,'0');
+    return ys+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate()); }
+  /* ⚠ (#R679) THE FLOOR IS NOT A NUMBER THIS FILE OWNS ANY MORE. It is the oldest year the
+     deepest subsystem can answer, and that subsystem's own arithmetic file states it with the
+     measurement and the expiry beside it (js/hist-scale.js `FLOOR`), where a gate compares it
+     against the shipped era bundle. A copy here is what #R604 spent a round undoing. */
+  const subs=[]; let _when=null; let _bcast=false;
+  /* ⚠⚠⚠ READ, NOT CAPTURED. `src/main.js:77` imports THIS FILE BEFORE js/hist-scale.js, so a
+     `const YMIN = HS.FLOOR` evaluated here reads `undefined` and falls back to 1 — the floor
+     would be silently wrong, every deep-time subsystem would be clamped, and nothing would
+     throw. Reordering the two imports would fix this one site and leave the shape (the app
+     shell's order is load-bearing and tests/r175-checks exists because of it); reading the
+     value at CALL time removes the ordering question instead of answering it. Every caller of
+     `ymin()` runs long after both modules have evaluated. */
+  const ymin=()=>{ try{ const v=window.IntMapHistScale&&window.IntMapHistScale.FLOOR;
+    if(Number.isFinite(v)) return Math.round(v); }catch(_){} return 1; };
   /* ⚠⚠⚠ (#R604) `new Date(Date.UTC(y,…))` IS NOT A DATE IN YEAR y WHEN y < 100 — IT IS y+1900.
      ECMA-262's Date.UTC applies the two-digit-year rule to its first argument, so Date.UTC(1,0,1)
      is 1901-01-01 and Date.UTC(50,…) is 1950. That silent shift is the whole reason a clock floor
@@ -91,16 +118,16 @@ window.IntMapTime=(function(){
   OS.iso=()=>ymdISO(_when||now());
   OS.year=()=>(_when||now()).getFullYear();
   OS.isLive=()=>_when==null;
-  OS.min=YMIN;
+  try{ Object.defineProperty(OS,'min',{get:ymin,enumerable:true,configurable:true}); }catch(_){ OS.min=ymin(); }
   OS.state=()=>ev('query');
   OS.on=function(fn){ if(typeof fn==='function'){ subs.push(fn); return ()=>{ const i=subs.indexOf(fn); if(i>=0) subs.splice(i,1); }; } return ()=>{}; };
   OS.set=function(d,opts){ opts=opts||{};
     let nd=(d instanceof Date)?new Date(d):(d!=null?new Date(d):null);
     if(nd && isNaN(nd.getTime())) return OS;
-    if(nd){ const floor=atUTC(YMIN,0,1); if(nd<floor) nd=floor;
+    if(nd){ const floor=atUTC(ymin(),0,1); if(nd<floor) nd=floor;
       if(!opts.allowFuture){ const n=now(); if(nd.getTime()>n.getTime()) nd=null; } }   /* future → live */
     _when=nd; return broadcast(opts.source), OS; };
-  OS.setYear=function(y,opts){ y=Math.round(+y); if(!(y>=YMIN)) return OS;
+  OS.setYear=function(y,opts){ y=Math.round(+y); if(!(y>=ymin())) return OS;
     const n=now(); if(y>=n.getFullYear()) return OS.setNow(opts);
     return OS.set(atUTC(y,5,15,12,0,0), opts); };   /* mid-June noon UTC: neutral season/terminator */
   OS.setDaysAgo=function(days,opts){ days=Math.round(+days||0);

@@ -25,6 +25,8 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { clockFloor } from './helpers/hist-scale.mjs';
+import { eraBundle } from './helpers/hist-eras.mjs';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -177,7 +179,10 @@ test('④ go() serves 1850-1885 from the bundle, above the snapshot fallback', (
   assert.match(TB, /const HB_MIN=1850, ?HB_MAX=1885;/);
   const go = TB.slice(TB.indexOf('async function go(when)'));
   const band = go.indexOf('year>=HB_MIN&&year<=HB_MAX');
-  const fall = go.indexOf('const ny=nearest(year)');
+  /* ⚠ (#R679) `nearest` takes the era record's own year list now, so the call reads
+     `nearest(year,erYears(_erd))` — the ORDER of the two branches is what ④ asserts, not the
+     argument list. */
+  const fall = go.indexOf('const ny=nearest(');
   assert.ok(band > 0, 'go() has no 1850-1885 band');
   assert.ok(band < fall, 'the snapshot fallback is reached before the bundle');
 });
@@ -191,13 +196,22 @@ test('④ go() serves 1850-1885 from the bundle, above the snapshot fallback', (
    and does not start above the clock» — a record whose floor sat under the clock's would be the
    defect #R518 removed, and one whose floor sat above it is now normal and is answered elsewhere. */
 test('④ the day-exact country record is reachable from the clock, and says where it stops', () => {
-  const floor = +/const YMIN\s*=\s*(\d{1,4})\s*;/.exec(rd('js/chronos.js'))[1];
-  assert.ok(floor >= 1, 'the kernel declares no floor');
+  /* (#R679) the floor is evaluated, not grepped — the third round in a row in which a regex
+     over js/chronos.js stopped matching and threw at import. tests/helpers/hist-scale.mjs. */
+  const floor = clockFloor();
+  assert.ok(Number.isInteger(floor), 'the kernel declares no floor');
   assert.ok(HB.window[0] >= floor, 'the record starts somewhere the clock cannot reach');
   assert.equal(HB.window[0], 1850, 'data/hist-borders.js no longer covers the band #R518 built it for');
-  const YEARS = JSON.parse(/const YEARS=(\[[^\]]+\])/.exec(rd('js/time-borders.js'))[1]);
-  assert.ok(YEARS[0] <= floor + 99,
-    `nothing answers the years between the clock's floor (${floor}) and the oldest snapshot (${YEARS[0]})`);
+  /* ⚠ (#R679) `YEARS` IS THE FALLBACK'S LIST NOW. What answers a year below 1850 is
+     data/hist-eras.js, which carries all 53 snapshots upstream publishes including the
+     seventeen before the common era; the thirty-six decimal years left in js/time-borders.js
+     are the file names the remote path can still ask for. Asking the fallback how far the map
+     reaches is asking the spare tyre how far the car goes. */
+  const ERA = eraBundle();
+  const YEARS = ERA.snaps.map((s) => s.y).sort((a, b) => a - b);
+  assert.ok(YEARS.some((y) => y < 1), 'the era record has nothing before the common era');
+  assert.ok(YEARS[0] <= floor,
+    `the clock reaches ${floor} and the oldest thing that can answer is ${YEARS[0]}`);
 });
 
 test('④ the change-date API asks BOTH records', () => {

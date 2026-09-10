@@ -90,6 +90,20 @@ const ALLOW = {
        chunk: js/time-admin1.js injects it as a <script> at idle, and skips even that on a phone or
        Data Saver, exactly as #R192/#R201 settled for CShapes. */
     { match: /^data\/hist-admin1\.js$/, why: 'the dated first-level subdivisions (OpenHistoricalMap, CC0) — one file is the dataset, fetched at idle by js/time-admin1.js and never bundled (#R530)' },
+    /* (#R679) THE ERA SNAPSHOTS, AND THE REASON IS THE ROUND ITSELF. Below 1850 this file is the
+       ONLY country answer there is, and until this round that answer came over the wire from
+       raw.githubusercontent and, failing that, two public CORS proxies — a century that exists
+       only while three third parties are up. It is 53 snapshots, seventeen of them before the
+       common era, ring-pooled like the two bundles above it.
+       ⚠ THE SIZE WAS PRICED, NOT ACCEPTED. Measured across the whole corpus: unsimplified is
+       12.3 MB (712,070 points), and every coarser tolerance saves ~5.7 MB by throwing away 339k
+       points of coastline. The unsimplified form ALREADY fits the budget, so a coarser one buys
+       nothing worth having — the tolerance is therefore derived (one cell of the storage grid,
+       10^-DEC) and the minimum-area filter is zero: nothing is dropped for being small.
+       ⚠ IT IS NOT ON THE BOOT PATH AND NOT IN ANY CHUNK: js/time-borders.js injects it as a
+       <script> the first time the clock asks for a year only it can answer. Measured after:
+       eager requests 6/6 and eager modules 295/295, both unchanged. */
+    { match: /^data\/hist-eras\.js$/, why: 'the era snapshots, 53 of them incl. 17 before the common era (aourednik/historical-basemaps, GPL-3.0) — below 1850 this file is the only country answer, and it replaced a runtime dependency on two public CORS proxies. Injected as a <script> only when the clock asks; eager cost unchanged.' },
     /* (#R564) …and the DEEPER tier of the same record. It is bigger than the first level and it is
        also the one nobody pays for unless they ask: js/time-admin1.js does not fetch it until the
        camera passes z6, where a county is a shape rather than a smudge, and it is not in the idle

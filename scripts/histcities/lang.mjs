@@ -39,6 +39,16 @@
  *  fails the quiet way, with a reader in 日本語 silently getting English.
  * ==========================================================================*/
 
+/** ⚠ NOT A RECORD FILE — scripts/histcities-record.mjs skips a module that says so. */
+export const HELPER = true;
+
+/* ⚠⚠⚠ THE ONE COPY OF THE LANGUAGE LIST, in js/lang-registry.js's own codes and in the order
+   data/hist-cities.json publishes as `langs`. Everything downstream indexes by this order —
+   including the derived rows' attestation bitmask, where a reordering would silently relabel
+   which language somebody attested. A second spelling of this list fails the quiet way, with a
+   reader in 日本語 getting English (the same reason scripts/wars/lang.mjs gives). */
+export const LANGS = ['en', 'jp', 'de', 'ru', 'es', 'zh', 'zh-hans', 'fr', 'ko'];
+
 /* one era name in nine languages. `o` = { de, es, fr } where they differ from the English form. */
 export function N(en, jp, ru, zh, zhHans, ko, o) {
   o = o || {};
@@ -54,16 +64,92 @@ export function N(en, jp, ru, zh, zhHans, ko, o) {
     fr: o.fr || en,
     ko: ko || en,
     /* what the row actually SUPPLIED, so the build can measure coverage instead of guessing it */
-    _has: { jp: !!jp, de: !!o.de, ru: !!ru, es: !!o.es, zh: !!zh, 'zh-hans': !!(zhHans || zh), fr: !!o.fr, ko: !!ko },
+    _has: { en: true, jp: !!jp, de: !!o.de, ru: !!ru, es: !!o.es, zh: !!zh, 'zh-hans': !!(zhHans || zh), fr: !!o.fr, ko: !!ko },
   };
 }
 
 /* one span. `from`/`to` are YEARS, inclusive at both ends; 0 = open at that end.
-   ⚠ The clock's floor is 1850 (js/chronos.js YMIN), so an open `from` means «for as long as this
-   app can travel», not «since the city was founded». */
+   ⚠ (#R679) AN OPEN `from` MEANS «BEFORE THIS RECORD SAYS ANYTHING», NOT «SINCE THE FOUNDING».
+   It used to mean «for as long as this app can travel», and that reading died with the floor it
+   rested on: the clock now reaches astronomical year −122 999 (js/hist-scale.js FLOOR, which
+   scripts/build-hist-cities.mjs evaluates rather than copies). An open start on a row about a
+   nineteenth-century renaming does not assert anything about the Pleistocene; it asserts that
+   nobody wrote down when the name began. */
 export function E(from, to, name) {
   if (from && to && from > to) throw new Error(`E(): ${from} > ${to} for «${name.en}»`);
   return { from: from || 0, to: to || 0, name };
+}
+
+/* ══ ⚠⚠⚠ THE DERIVED VOCABULARY (#R679) ═════════════════════════════════════════════════════
+ *  scripts/histcities/harvest.mjs writes thousands of rows out of Wikidata and Pleiades, and
+ *  they cannot use `C`/`E`/`N` for three reasons, each of which is a claim the derived side is
+ *  not entitled to make:
+ *
+ *   ① `N()` FILLS EVERY MISSING LANGUAGE WITH THE ENGLISH FORM AND FORGETS IT DID. That is right
+ *      for a handwritten row, where a zero is a person saying «there is no established Chinese
+ *      form» — the record's `_has` map records exactly that, and the build measures it. It is
+ *      wrong for a derived row, where a missing language means «the upstream has not written one
+ *      down», and the two must not look the same. Measured over the whole Wikidata corpus, the
+ *      nine languages are served 2 465 (ru) / 919 (ja) / 800 (fr) / 511 (es) / 458 (de) /
+ *      303 (en) / 278 (zh-cn) / 64 (zh) / 5 (ko) times — Korean FIVE — and not one of Volgograd,
+ *      Tokyo, Istanbul, Saint Petersburg, Mumbai or Ho Chi Minh City has all nine. So `ED()`
+ *      takes a MAP plus an attestation bitmask, the file ships the fallback spelled out exactly
+ *      as before (js/hist-cities.js has no fallback rule of its own, and must not grow one), and
+ *      `a` says which of the nine were actually written by somebody.
+ *   ② A DERIVED SPAN HAS A PRECISION. «1868-09-03» and «1868» are different facts and the record
+ *      has to be able to hold both, or the build invents a day (IM-20260824-001: 架空の改称日を
+ *      捏造しない). An endpoint is [year, month, day, precision] with month/day 0 where the
+ *      upstream did not give one, and precision one of 'd' 'm' 'y' 'c' — 'c' meaning the
+ *      endpoint is a PERIOD BOUNDARY out of a vocabulary, which is what every Pleiades date is.
+ *   ③ A DERIVED ROW CARRIES ITS OWN EVIDENCE instead of pointing at the committed homonym index,
+ *      which covers only the handwritten record's spellings. See scripts/histcities/harvest.mjs.
+ *
+ *  ⚠ THE YEAR IS ASTRONOMICAL AND MAY BE NEGATIVE. −330 is 331 BC. There is a year 0 and the
+ *  shipped encoding cannot express it (0 means «open»), so the harvest drops those spans and
+ *  counts them rather than moving anybody's dates by a year. */
+const PRECISIONS = ['d', 'm', 'y', 'c'];
+
+/** one derived endpoint: [y, m, d, precision], or 0 for «open at this end» */
+function stamp(t, what, id) {
+  if (!t || t === 0) return null;
+  if (!Array.isArray(t) || t.length !== 4) throw new Error(`ED(): ${id} — ${what} must be [y, m, d, precision]`);
+  const [y, m, d, p] = t;
+  if (!Number.isInteger(y) || y === 0) throw new Error(`ED(): ${id} — ${what} year ${y} is not a usable astronomical year (0 is the shipped encoding's «open»)`);
+  if (!Number.isInteger(m) || m < 0 || m > 12) throw new Error(`ED(): ${id} — ${what} month ${m}`);
+  if (!Number.isInteger(d) || d < 0 || d > 31) throw new Error(`ED(): ${id} — ${what} day ${d}`);
+  if (!PRECISIONS.includes(p)) throw new Error(`ED(): ${id} — ${what} precision «${p}» is not one of ${PRECISIONS.join(' ')}`);
+  if (p === 'd' && (!m || !d)) throw new Error(`ED(): ${id} — ${what} claims day precision without a day`);
+  if (p === 'm' && !m) throw new Error(`ED(): ${id} — ${what} claims month precision without a month`);
+  return { y, m, d, p };
+}
+
+/** one derived span. `from`/`to` are stamps (or 0); `n` is a partial map; `a` is the bitmask. */
+export function ED(from, to, n, a) {
+  const id = (n && n.en) || '?';
+  const f = stamp(from, 'the start', id), t = stamp(to, 'the end', id);
+  if (!t) throw new Error(`ED(): ${id} has no end — a name that has not ended is the one the tile already carries`);
+  if (!n || typeof n.en !== 'string' || !n.en) throw new Error(`ED(): ${id} has no en form`);
+  if (!Number.isInteger(a) || a < 0 || a >= (1 << 9)) throw new Error(`ED(): ${id} — the attestation bitmask is nine bits`);
+  const name = { _has: {}, _derived: true, _att: a };
+  /* ⚠ INCLUDING ENGLISH. A derived row's English column may be a Latin-script spelling borrowed
+     from whichever languages agreed on it (see harvest.mjs), so bit 0 is a fact to be recorded like
+     the other eight, not a constant. A handwritten row always has one, and N() says so. */
+  for (const [i, lg] of LANGS.entries()) {
+    name[lg] = n[lg] || n.en;
+    name._has[lg] = !!(a & (1 << i));
+  }
+  return { from: f, to: t, name, derived: true };
+}
+
+/** one derived city. `ev` is the guard evidence the harvest measured; the build re-derives from it. */
+export function D(id, lon, lat, cc, keys, eras, ev) {
+  const r = C(id, lon, lat, cc, keys, eras);
+  if (!ev || !Array.isArray(ev.a) || typeof ev.on !== 'string') {
+    throw new Error(`D(): «${id}» carries no guard evidence — a derived row proves its own coordinate`);
+  }
+  r.derived = true;
+  r.ev = ev;
+  return r;
 }
 
 /* one city.

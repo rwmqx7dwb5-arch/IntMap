@@ -714,6 +714,32 @@ load, and losing the import costs a session every standing rule with no error an
 The wiring between the two products, and the four steps that stayed manual, are in
 [`AGENT-SETUP.md`](AGENT-SETUP.md).
 
+## 全時代の国境スナップショット — `npm run check:histeras` (`scripts/build-hist-eras.mjs --check`)
+
+`data/hist-eras.js` は aourednik/historical-basemaps が公開する `world_*.geojson` **53 枚**
+（**紀元前 17 枚**・紀元前 123000 年〜西暦 2010 年）をリングプール形式へ落とした束で、
+**1850 年より前の国境はこれが唯一の答え**である。`.github/workflows/ci.yml` に step があり、
+`gate-callers`（#R628）が「宣言されて誰も呼ばない門」を許さない。
+
+⚠ **この門も再導出しない。** 上流は生で 71.5 MB あり、CI では取得できない。測るのは
+**コミットされたバイトの不変条件**である:
+
+- `v` が期待どおりで、`src` が上流名と**ライセンス**を名乗ること
+- **紀元前と西暦の両方のスナップショットがあること**（数ではなく性質——上流が増えても通る）
+- スナップショットの年が昇順で重複しないこと
+- 全リングが 3 点以上で、地球上にあること
+- 全 feature が名前を持ち、**U+FFFD を 1 つも含まないこと**
+- **`key` から `astroYear()` を実際に評価して得た値と `y` が一致すること**
+
+⚠ **最後の 1 つがこの門の中心である。** `bc323` は**紀元前 323 年 ＝ 天文年 −322**（暦に 0 年が
+無いので 1 ずれる）。⚠ **上流自身の `index.json` は逆の規約**で `world_bc123000` を `-123000` と
+書いているので、素直に写すと紀元前が全部 1 年ずれる。規約の持ち主は build の 1 関数だけで、
+門は**その関数を評価して**照合する（#R505: ソースを読む検査は関数が何を返すか見られない）。
+
+**残る危険を、含みではなく明示で**: 上流から乖離した束でも通る。乖離を捕まえられるのは再取得
+だけで、再取得にはネットワークが要る。そして「形は正しく、場所が違う」国境はどちらにも見えない
+（#R146 の内独国境）。
+
 ## The 1850–1885 border record — `npm run check:histborders` (`scripts/build-hist-borders.mjs --check`, #R518)
 
 Registered in `scripts/test-parallel.mjs` (so `npm test` runs it) **and** in `.github/workflows/ci.yml`.

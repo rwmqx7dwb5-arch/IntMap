@@ -88,6 +88,8 @@ jobs:
       # what it therefore cannot see.
       - name: 1850-1885 borders (the bundled record is sound, and no year of it is empty)
         run: npm run check:histborders
+      - name: Era snapshots (all eras, incl. BCE)
+        run: npm run check:histeras
       # (#R628) …AND WHICH EDGE OF A HISTORICAL BORDER IS DRAWN. `check:bordercoast` was declared in
       # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
       # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote

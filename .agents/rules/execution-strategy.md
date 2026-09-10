@@ -7,7 +7,7 @@
 ## 1. 依頼を受けたら、まず分解する
 
 1. 依頼を**独立な仕事**に分ける（互いの出力を必要としないもの）。
-2. 独立な仕事が 2 つ以上あるなら、**同じメッセージの中で**まとめて起動する。1 つずつ待たない。
+2. 独立な仕事が 2 つ以上あるなら、**同じメッセージで**まとめて起動する。1 つずつ待たない。
 3. 依存のある仕事だけを直列に残す。
 4. 待ちが出たら、その間に**別の独立作業**を進める。**ポーリングしない**（`AGENTS.md` §4）。
 
@@ -17,7 +17,7 @@
 
 | 仕事 | agent |
 |---|---|
-| リポジトリ探索・「この事実は何か所にあるか」の全数調査・呼び出し元の特定 | `intmap-scout` |
+| リポジトリ探索・「何か所にあるか」の全数調査・呼び出し元の特定 | `intmap-scout` |
 | テスト／CI／ビルドの**大量ログ**の解析、ゲートの実行と失敗の切り分け | `intmap-verifier` |
 | 9 言語の翻訳掃引と `check:i18n` の穴埋め | `intmap-i18n` |
 | 本番サイトでの検証（操作・計測・スクリーンショット） | `intmap-prod-verifier` |
@@ -29,15 +29,15 @@
 - 1〜2 コマンドで終わる確認
 - **設計判断・最終判断・利用者への報告**（これは委譲できない）
 
-⚠ **小さい仕事を並列化しない。** 委譲する目安は、**3 ファイル以上を読む**／**出力が 100 行を超える**／
+⚠ **小さい仕事を並列化しない。** 目安は、**3 ファイル以上を読む**／**出力が 100 行超**／
 **独立に 30 秒以上かかる**のいずれか。それ未満は起動費のほうが高い。
 
 ## 3. 並列編集の安全（競合・二重実装・矛盾を防ぐ）
 
-- **同じファイルを 2 つの agent に書かせない。** 分解は**ファイル単位**で行い、重なるなら直列にする。
+- **同じファイルを 2 体に書かせない。** 分解は**ファイル単位**で、重なるなら直列にする。
 - 並列実装のときは、`node scripts/worktree.mjs new <slug>` で**作業ごとに worktree を用意**し、
   各 implementer には**その絶対パスと、触ってよいファイルの一覧**を渡す。
-- ⚠ **製品のハーネスが作る worktree を隔離に使わない**——リポジトリの中（＝ OneDrive の中）に
+- ⚠ **ハーネスが作る worktree を隔離に使わない**——リポジトリの中（＝ OneDrive の中）に
   できる（`docs/AGENT-SETUP.md` §5）。`scripts/worktree.mjs` は外に作る。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`AGENTS.md` §6）。
@@ -71,9 +71,10 @@
 | 言語レイヤー | `npm run check:languages` |
 | 国政選挙のデータ | `npm run check:elections` |
 | 歴史都市名 | `npm run check:histcities` |
-| 1850–1885 の歴史国境 | `npm run check:histborders` |
+| 1850–1885 の国境 | `npm run check:histborders` |
+| 全時代の国境（紀元前を含む） | `npm run check:histeras` |
 | 導出した令制国 | `npm run check:kuni` |
-| 歴史国境のどの辺を描くか | `npm run check:bordercoast` |
+| 国境のどの辺を描くか | `npm run check:bordercoast` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |
 | 起動費用（**build が要る**） | `npm run check:perf` |

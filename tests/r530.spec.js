@@ -220,6 +220,31 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
          確かめてから押す。走査 14,000 回が、候補数回になる。 */
       const at = m.queryRenderedFeatures([p.x, p.y], { layers: ["imta-lbl"] });
       if (!at.length || at[0].properties._ix !== f.properties._ix) continue;
+      /* ══ ⚠⚠⚠ (#R679) ASK THE QUESTION THE APP ASKS, OR THIS GOES RED 40% OF NIGHTS ═══════════
+         js/map-ui.js `onLabel` calls `_ownedByOther(pt)` and RETURNS SILENTLY when any other
+         clickable layer holds that pixel. This loop only asked whether the topmost `imta-lbl`
+         there was the same feature — never whether something else owned the pixel — so it happily
+         picked points sitting under a news pin or an earthquake dot. Those come off live feeds:
+         their positions and their arrival time differ every run. Measured: five runs of this spec,
+         two failed on «clicking Duchy of Limburg highlighted nothing», and the failing runs ended
+         28 s in, having waited the full 15 s for an outline the app had decided not to draw.
+         ⚠ AND A FAILURE HERE COSTS MORE THAN THIS ASSERTION. The file is one test, so everything
+         after line 246 — including #R679’s floor assertions — simply does not run on those
+         nights. A flaky candidate-picker silently deletes the checks below it.
+         The condition below is the same fact, from the renderer: if any SYMBOL or CIRCLE feature
+         is painted above ours at that pixel and it is not one of the era layers, the app will not
+         act on this click — so neither does the test. It uses no private state, so it cannot drift
+         from `clickLayers`; it is stricter than `_ownedByOther`, which is the safe direction for a
+         picker that has other candidates to try. */
+      const stack = m.queryRenderedFeatures([p.x, p.y]);
+      const ERA_LYR = ["imta-lbl", "imta-lbl2", "imta-line", "imta-vt-line", "imta-fill"];
+      let owned = false;
+      for (const q of stack) {
+        if (q.layer && ERA_LYR.indexOf(q.layer.id) >= 0) break;   /* reached ours: nothing above it */
+        const t = q.layer && q.layer.type;
+        if (t === "symbol" || t === "circle") { owned = true; break; }
+      }
+      if (owned) continue;
       hit = { x: p.x, y: p.y, props: f.properties }; break;
     }
     if (!hit) return { hit: false };
@@ -287,6 +312,7 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
   const deep = await page.evaluate(() => ({
     year: window.IntMapTime.year(),
     min: window.IntMapTime.min,
+    floorOwner: window.IntMapHistScale.FLOOR,   /* (#R679) the number's owner, so the two cannot drift */
     vt: window.__imap.queryRenderedFeatures({ layers: ['imta-vt-line'] }).length,
     lbl: window.__imap.queryRenderedFeatures({ layers: ['imta-lbl'] }).length,
     units: window.IntMapTimeAdmin1.coverage().units,
@@ -295,8 +321,14 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
   /* ⚠ 1901 ではなく 1500。`Date.UTC(y,…)` の2桁年規則は3桁以上では効かないが、
      床そのものが 1 に降りたことはここで読む——`min` を読むだけでは #R604 前でも書き換えられる。 */
   expect(deep.year, 'the clock did not travel to 1500').toBe(1500);
-  expect(deep.min, 'the kernel floor never came down').toBe(1);
-  expect(deep.reach, 'the layer still reports 1850 as the earliest year it can answer for').toBe(1);
+  /* ⚠ (#R679) THE FLOOR MOVED AGAIN — BELOW ZERO — AND A LITERAL HERE IS WHAT MAKES THIS CHECK
+     NEED EDITING BY THE VERY ROUND IT SHOULD HAVE CAUGHT. It is a deep-tier spec, so `npm test`
+     does not run it: a stale literal here goes red at NIGHT, hours after the round has landed.
+     What is asserted is the property — the floor is before the common era and the panel and the
+     kernel agree on it — not the number. */
+  expect(deep.min, 'the kernel floor never came down').toBeLessThan(1);
+  expect(deep.min, 'the panel and the kernel disagree about the floor').toBe(deep.floorOwner);
+  expect(deep.reach, 'the layer still reports 1850 as the earliest year it can answer for').toBe(deep.min);
   expect(deep.vt, 'no subdivision boundary at all is drawn in 1500 — the era reach is still 1850').toBeGreaterThan(0);
   expect(deep.units, 'the record holds no dated subdivision in 1500 — the bundle was not rebuilt for all eras').toBeGreaterThan(50);
   expect(deep.lbl, 'the 1500 boundaries are drawn but nameless').toBeGreaterThan(0);

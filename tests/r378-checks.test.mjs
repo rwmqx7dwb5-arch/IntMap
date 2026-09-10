@@ -123,9 +123,18 @@ test('R378 ③ the wall clock it shows is the zone the reader chose, and its bou
   const floor = /const floorMs\s*=\s*\(\)\s*=>\s*([\s\S]*?);\n/.exec(js);
   assert.ok(floor, 'floorMs is gone or was renamed — this check has to follow it');
   assert.match(floor[1], /YMIN\(\)/, 'the floor is not the kernel’s — it must be read live, not held here');
+  /* (#R679) …and the control's own floor is derived from the kernel's, never typed. */
+  assert.match(js, /const jumpMinYear=\(\)=>Math\.max\(1,YMIN\(\)\)/,
+    'the jump control must derive its floor from the kernel, not name a year');
   assert.ok(!/Date\.UTC\s*\(\s*YMIN\(\)/.test(floor[1]),
     'the floor is built with Date.UTC, which turns a year under 100 into that year plus 1900 (#R604)');
-  assert.match(js, /if\(Y<YMIN\(\)\) return new Date\(floorMs\(\)\)/,
+  /* ⚠ (#R679) THIS PINNED THE SPELLING OF THE CLAMP AND THE CLAMP CHANGED FOR A REAL REASON.
+     HTML's date grammar has no sign, so `datetime-local` cannot name a year before 1 at all;
+     with the kernel's floor below zero, sending a half-typed «0001» to the KERNEL's floor puts
+     the reader in 123,000 BC. The control now clamps to the lowest year IT can express. What
+     #R378 asserts is unchanged — a half-typed year becomes a floor rather than a real wrong
+     instant — so the check reads that property, and neither floor may be a literal here. */
+  assert.match(js, /if\(Y<jumpMinYear\(\)\) return new Date\(jumpFloorMs\(\)\)/,
     'a year still being typed ("0019") is not clamped — `new Date(19,…)` is 1919, a real wrong instant');
 
   /* ⚠ ONE STATEMENT OF THE FORWARD REACH. The date picker names days and this one names hours; if
