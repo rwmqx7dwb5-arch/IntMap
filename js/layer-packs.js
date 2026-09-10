@@ -33,6 +33,7 @@ import { everyTick, stopTick } from './runtime.js';
 window.IntMapModules=window.IntMapModules||{};
 
 window.IntMapModules.earthSky=function(HOST){
+
   const LPK=window.IntMapLang.pick(()=>HOST.lang);
   /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. Four tables in this file held
      their translations JP-first and indexed them with a private `{jp:0,en:1,…}` map, i.e. a second
@@ -171,6 +172,17 @@ window.IntMapModules.landCover=function(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, t=HOST.t, isMobile=HOST.isMobile;
+  /* ⚠ (#R668) 「携帯か」 WHEN THE ANSWER DECIDES WHETHER MEMORY IS GIVEN BACK. This toggle releases
+     its parsed GeoJSON on a phone and keeps it warm on a desktop, and it asked `HOST.isMobile()` — a
+     `(max-width:768px)` media query, which reports 844 px and so "desktop" for an iPhone held
+     sideways. On that device the geometry stayed resident after the reader switched the layer OFF,
+     which is precisely the OOM pressure #R20/#R21 added the release for. The device answer has ONE
+     owner (js/mem-budget.js); this is a one-line delegation to it, with this closure's own
+     `isMobile` as the fallback for the boot window before js/app-body.js has published
+     `_imPhoneClass`. ⚠ It lives INSIDE the factory because js/ may hold no unexported top-level
+     declaration — such a name would have been a global before the bundle (tests/r175 ③). */
+  const _phoneDev=()=>{ try{ return !!window.IntMapMemBudget.deviceIsPhone(isMobile); }
+    catch(_){ try{ return typeof isMobile==='function'&&isMobile(); }catch(__){ return false; } } };
   (function(){
     if(!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
@@ -430,8 +442,10 @@ window.IntMapModules.landCover=function(HOST){
       else if(which==='plates'){ retry(()=>{ if(!ensurePlateLayers()) return false; if(on){ loadPlates(()=>setVis(SETS.plates,true)); } else setVis(SETS.plates,false); return true; }); }
       else if(which==='ecoregions'){ if(on){ ensureEco(ok=>{ if(ok) setVis(SETS.ecoregions,true); }); } else { setVis(SETS.ecoregions,false);
         /* (#R20) phones: toggling OFF releases the ~10 MB parsed GeoJSON + the source copy (OOM
-           pressure); it lazily re-fetches/re-parses on the next toggle. Desktop keeps the warm cache. */
-        if(typeof isMobile==='function'&&isMobile()){ try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window._ecoGJ=null; window.__ECOREGIONS_2017=null; }
+           pressure); it lazily re-fetches/re-parses on the next toggle. Desktop keeps the warm cache.
+           ⚠ (#R668) asked of the DEVICE — see `_phoneDev` at the top of this factory for what the width
+           test used to cost a phone in landscape. */
+        if(_phoneDev()){ try{ SETS.ecoregions.forEach(l=>{ if(GE().layers.has(l)) GE().layers.remove(l); }); if(GE().layers.hasSource('eco-regions')) GE().layers.removeSource('eco-regions'); }catch(_){} ecoBuilt=false; window._ecoGJ=null; window.__ECOREGIONS_2017=null; }
       } }
       /* (#R19) opacity slider for these too — worldcover reuses its own class legend, the rest get a generic one */
       try{ const nm=[ECLBL[which][1],ECLBL[which][0],ECLBL[which][2],ECLBL[which][3]];
@@ -458,6 +472,7 @@ window.IntMapModules.landCover=function(HOST){
 };
 
 window.IntMapModules.betaPack2=function(HOST){
+
   const LPK=window.IntMapLang.pick(()=>HOST.lang);
   /* (#R241) the ARRAY form — see `pickArgs` in js/lang-registry.js. The label table below held
      its translations JP-first and subscripted them with a private `{jp:0,en:1,…}` map: a second
@@ -470,6 +485,17 @@ window.IntMapModules.betaPack2=function(HOST){
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, countryStats=HOST.countryStats;
+  /* ⚠ (#R668) 「携帯か」 WHEN THE ANSWER DECIDES WHETHER MEMORY IS GIVEN BACK. This toggle releases
+     its parsed GeoJSON on a phone and keeps it warm on a desktop, and it asked `HOST.isMobile()` — a
+     `(max-width:768px)` media query, which reports 844 px and so "desktop" for an iPhone held
+     sideways. On that device the geometry stayed resident after the reader switched the layer OFF,
+     which is precisely the OOM pressure #R20/#R21 added the release for. The device answer has ONE
+     owner (js/mem-budget.js); this is a one-line delegation to it, with this closure's own
+     `isMobile` as the fallback for the boot window before js/app-body.js has published
+     `_imPhoneClass`. ⚠ It lives INSIDE the factory because js/ may hold no unexported top-level
+     declaration — such a name would have been a global before the bundle (tests/r175 ③). */
+  const _phoneDev=()=>{ try{ return !!window.IntMapMemBudget.deviceIsPhone(isMobile); }
+    catch(_){ try{ return typeof isMobile==='function'&&isMobile(); }catch(__){ return false; } } };
   (function(){
     if(!GE().hasRenderer()||!GE().hasRenderer()) return;
     const jp=()=>HOST.lang==='jp';
@@ -603,8 +629,10 @@ window.IntMapModules.betaPack2=function(HOST){
       const RM=window.IntMapRailways;
       if(!RM||!RM.toggle){ try{ console.warn('IntMapRailways is not loaded — the railway layer cannot draw'); }catch(_){} return; }
       RM.toggle(on);
-      /* (#R21) phones: toggling OFF releases the parsed geojson + source copies. */
-      if(!on&&typeof isMobile==='function'&&isMobile()){ try{ RM.drop(); }catch(_){} cache.rail=null; }
+      /* (#R21) phones: toggling OFF releases the parsed geojson + source copies.
+         ⚠ (#R668) the DEVICE decides that, not the viewport width — `_phoneDev` at the top of this
+         file records what a phone in landscape was keeping resident instead. */
+      if(!on&&_phoneDev()){ try{ RM.drop(); }catch(_){} cache.rail=null; }
       try{ if(on&&window._registerLayerOpacity){ const el=window._registerLayerOpacity('rail2',LA('World railways','世界の鉄道','Eisenbahnen weltweit','Железные дороги мира','Ferrocarriles del mundo'),['rail-ln','rail-det-ln','rail-cons-ln','rail-st','rail-st-lbl'],'beta-dl-rail');
             if(el) railLegend(el,RM); }
          else if(window._hideGenericLegend) window._hideGenericLegend('rail2'); }catch(_){}

@@ -308,7 +308,17 @@ window.IntMapModules.oceanCurrents=function(HOST){
        zoom shows a hemisphere at one pitch and a bay at another, so a zoom→spacing table answers the
        wrong question. (It is also the whole reason 16× the data costs LESS than #R221's 28,208
        fixed points: the renderer never holds more than `CAP` of them.) */
-    const _phone=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
+    /* ⚠⚠ (#R668) …AND WHICH CAP IS A QUESTION ABOUT THE DEVICE, WHICH A WIDTH ANSWERS WRONG. This line
+       used to BE the media query — `(max-width:768px)` written out here — so an iPhone turned sideways
+       (844 px) stopped being a phone and `drawFlow` built 9,000 marks for it instead of 4,200: 2.1× the
+       arrows, each one a GeoJSON feature rebuilt on every pan that clears `boxStale`. #R232 established
+       that 「携帯か」 is about the hardware and #R498 swept it; the predicate now lives in exactly one
+       place (js/mem-budget.js → `window._imPhoneClass()`, which asks the pointer and the screen) rather
+       than being restated here, because a copied predicate drifts — the three files that kept their own
+       copy each lost a clause of it (#R499). The width test stays as the FALLBACK for the moment before
+       the shell has published its answer, so this is never worse than what the line did before. */
+    const _phone=()=>{ const w=()=>{ try{ return window.matchMedia('(max-width:768px)').matches; }catch(_){ return false; } };
+      try{ return window.IntMapMemBudget.deviceIsPhone(w); }catch(_){ return w(); } };
     function viewBox(){
       let b=null; try{ b=GE().camera.getBounds(); }catch(_){}
       if(!b) return { w:-180, e:180, s:-85, n:85 };

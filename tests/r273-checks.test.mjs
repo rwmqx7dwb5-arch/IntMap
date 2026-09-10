@@ -291,8 +291,12 @@ test('R273 ⑪ the flow model has a resolution the reader chooses, and it is kep
   assert.match(s, /const RES_D=\[384,512,768,1024\], RES_M=\[150,192,256,384\]/, 'the steps must be named');
   assert.match(s, /localStorage\.getItem\('im\.twRes'\)/, 'and the choice kept');
   assert.match(s, /const NX=resNX\(\);/, 'the grid must be built at the chosen step');
-  /* the default went UP — 「解像度が低すぎる」 */
-  assert.match(s, /return _mob\(\)\?192:512;/, 'the desktop default must be 512, not 384');
+  /* the default went UP — 「解像度が低すぎる」
+     ⚠ (#R668) …and which of the two defaults a device gets is a question about the DEVICE, not about
+     the window's width: `_mob()` is the 768 px media query, which handed a phone in landscape the
+     512² grid. The numbers are unchanged, so both branches are still pinned here. */
+  assert.match(s, /return (?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?192:512;/,
+    'the desktop default must be 512, not 384 (phone 192), and the device must be what picks');
   /* changing it must not move the working rectangle to wherever the camera happens to be */
   assert.match(s, /if\(opt&&opt\.keep&&G&&G\.bbox\)\{/, 'a resolution rebuild keeps the same rectangle');
   assert.match(s, /build\(\{keep:true\}\)/, '…and the control must use it');

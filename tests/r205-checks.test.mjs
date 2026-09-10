@@ -188,7 +188,12 @@ test('R205 ⑥ the source region gets a measured sea floor, and the bundled one 
   assert.match(t, /fineWhy/, 'an absent patch must say why (#R194)');
   /* the patch has to be finer than BOTH grids it can be asked to feed, or it teaches nothing */
   assert.ok(1 / cpd < 0.25, `the patch cell (1/${cpd}°) must be finer than the bundled 0.25° floor`);
-  const nearCpd = +/const NEAR_CPD=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\)/.exec(t)[2];
+  /* ⚠ (#R668) NEAR_CPD kept its numbers and changed its predicate — the arm is chosen by the DEVICE
+     (js/mem-budget.js `deviceIsPhone`) rather than by a 768 px media query. What this line needs is
+     the desktop resolution, so it reads the branches and accepts either spelling of the predicate. */
+  const mNear = /const NEAR_CPD=\(\)=>\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?(\d+):(\d+)\)/.exec(t);
+  assert.ok(mNear, 'NEAR_CPD is still a two-branch phone/desktop constant decided by the device');
+  const nearCpd = +mNear[2];
   assert.ok(cpd > nearCpd, `the patch (${cpd}/°) must be finer than #R204's near grid (${nearCpd}/°)`);
   /* it is handed over and transferred, and a run without it is the previous round's run */
   assert.match(t, /fine:fine\?\{ w:fine\.w/);

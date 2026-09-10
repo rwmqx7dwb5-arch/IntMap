@@ -38,10 +38,22 @@ export function makeDemSource() {
     'https://s3.dualstack.us-east-1.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
   ];
   /* the same question js/app-body.js asks about the renderer's own settings (#R225/#R232): is this a
-     touch device with no fine pointer at all? */
+     touch device with no fine pointer at all?
+     ⚠ (#R668) …AND ASKING IT HERE GOT THE WRONG ANSWER FOR TWO YEARS. This was a HAND COPY of
+     js/app-body.js:159 made when that predicate had two clauses, and #R499 then added a third —
+     「a phone with a stylus is still a phone」 — which never arrived here. So an iPhone with a paired
+     Bluetooth mouse, or a Galaxy with the S Pen out, makes `any-pointer:fine` true, reads as a
+     desktop, and `maxZoom()` below hands it z15 DEM instead of z13: four times the tiles per axis,
+     sixteen times the decoded elevation, for the same ground. A copied predicate drifts, so this one
+     delegates to the single owner (js/mem-budget.js) and keeps only its own body as the FALLBACK for
+     the boot window before js/app-body.js has published `_imPhoneClass` — never worse than before,
+     correct as soon as the shell is up. Callers are untouched: same name, same signature. */
   function isPhoneGPU() {
-    try { return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }
-    catch (_) { return /Mobi|Android|iPhone|iPad/.test(navigator.userAgent || ''); }
+    const own = () => {
+      try { return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; }
+      catch (_) { return /Mobi|Android|iPhone|iPad/.test(navigator.userAgent || ''); }
+    };
+    try { return !!window.IntMapMemBudget.deviceIsPhone(own); } catch (_) { return own(); }
   }
   function maxZoom() { return isPhoneGPU() ? 13 : 15; }
   /* the whole MapLibre `raster-dem` spec, so a caller cannot half-copy it */

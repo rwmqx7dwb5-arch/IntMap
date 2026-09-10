@@ -183,15 +183,23 @@ test('R203 ⑥ the shaking mesh is finer than the round before, on both classes 
      grid the code can pick — which is what #R203's single number was. */
   const fine = /const CELL_KM=[\d.]+, N_MIN=\(_mob\?(\d+):(\d+)\), N_MAX=\(_mob\?(\d+):(\d+)\);/.exec(s);
   /* (#R245) the far grid is declared once, beside the layer, because buildField now snaps its box
-     onto it — same numbers, hoisted out of buildFar so two functions can agree on them. */
-  const far = /const FAR_N=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?(\d+):(\d+)\);/.exec(s);
-  assert.ok(fine && far, 'both grids are still declared where they were');
+     onto it — same numbers, hoisted out of buildFar so two functions can agree on them.
+     ⚠ (#R668) and it is the DEVICE that picks the arm now, not the window width: the numbers below
+     are unchanged, so this matches the two branches (the fact) and only requires that whatever asks
+     the question be the predicate js/mem-budget.js owns. */
+  const far = /const FAR_N=\(\)=>\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?(\d+):(\d+)\);/.exec(s);
+  assert.ok(fine, 'the fine grid is still declared where it was');
+  assert.ok(far, 'the far grid is still a two-branch phone/desktop constant decided by the device');
   assert.ok(Number(fine[2]) >= 640, `desktop fine mesh floor is ${fine[2]}, #R203 shipped 640`);
   assert.ok(Number(fine[1]) >= 288, `mobile fine mesh floor is ${fine[1]}, #R203 shipped 288`);
   assert.ok(Number(fine[4]) >= Number(fine[2]), 'the desktop ceiling is at least the floor');
   assert.ok(Number(fine[3]) >= Number(fine[1]), 'the mobile ceiling is at least the floor');
   assert.ok(Number(far[2]) >= 1024, `desktop far mesh is ${far[2]}, #R202 shipped 768`);
   assert.ok(Number(far[1]) >= 512, `mobile far mesh is ${far[1]}, #R202 shipped 384`);
+  /* ⚠ (#R668) "both classes of DEVICE" is only true while the `_mob` the fine grid reads is the
+     device predicate — it was the width media query, which reads a phone in landscape as a desktop
+     and hands it the 2,560² mesh the phone cannot hold. */
+  assert.match(s, /_mob=_phoneDev\(\)/, 'the fine grid asks the device, not the window width');
 });
 
 /* ── ⑦ THE BUILD STAMP ─────────────────────────────────────────────────────────────────────────

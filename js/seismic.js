@@ -69,6 +69,17 @@ window.IntMapModules.seismic=function(HOST){
   const warmDEMTiles=HOST.warmDEMTiles, demElevBilinear=HOST.demElevBilinear,
         demElevAt=HOST.demElevAt, _demZoomForSpan=HOST._demZoomForSpan, isMobile=HOST.isMobile,
         demSnapshot=HOST.demSnapshot;   /* (#R191) the frozen DEM the intensity field reads — see buildField */
+  /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, AND `isMobile()` IS A 768 px MEDIA QUERY ══
+     #R232 established the rule and #R498 swept it: an iPhone turned sideways is 844 px, so the width
+     test answers "desktop" about the SAME phone — and this module's four uses of it are all COST, not
+     layout. Together they are the largest allocation in the app: a 1408² far raster (48 MB of RGBA
+     canvas), a 2560² fine grid (16× the cells of the phone's 640²), 512 pinned DEM tiles at 256 kB
+     each. 「操作によってはブラウザが落ちる」 is what that adds up to on a landscape phone.
+     ⚠ THE PREDICATE IS NOT RE-DERIVED HERE — js/mem-budget.js owns it (`window._imPhoneClass()`, which
+     asks the pointer and the screen); the three files that wrote it out by hand each dropped a clause
+     of it (#R499). The fallback is this file's own `isMobile`, so until the shell has published its
+     answer nothing behaves differently from today. */
+  const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return typeof isMobile==='function'&&isMobile(); } };
 
   window.IntMapSeismic=(function(){
     if(!GE().hasRenderer()) return { open(){}, close(){}, state:()=>({open:false}) };
@@ -1396,14 +1407,20 @@ window.IntMapModules.seismic=function(HOST){
        walks it; `buildField` SNAPS the fine image's box to it (see `snapFar` there) so that the two
        rasters tile exactly. A local `const NF` inside buildFar was fine while nobody else needed the
        number, and it stopped being fine the moment the seam had to be exact. */
-    const FAR_N=()=>((typeof isMobile==='function'&&isMobile())?640:1408);
+    /* ⚠ (#R668) …and WHICH of the two sizes is a question about the DEVICE. 640² → 1408² is 4.8× the
+       cells this raster walks and 4.8× the RGBA canvas it is transferred through, so a phone reading
+       844 px in landscape used to build the desktop grid — see FAR_MAX_CELLS for what that costs. */
+    const FAR_N=()=>(_phoneDev()?640:1408);
     /* ⚠ (#R249) THE CEILING ON THE FAR RASTER, IN CELLS — see farWindow. It is the transient RGBA
        canvas (4 bytes a cell) and nothing else: the far field retains no arrays at all, unlike the
        fine field's 10 bytes a cell. 12 M is 48 MB transient on desktop against the fine field's own
        26.2 MB, and it covers every event up to about M9.2 at the fine cell exactly; past that the
        cell is raised and `state().far.step` says by how much. The phone keeps a tab-sized ceiling
-       (#R20: its limit is memory, not patience) — 1.6 M cells is 6.6 MB. */
-    const FAR_MAX_CELLS=()=>((typeof isMobile==='function'&&isMobile())?1.6e6:12e6);
+       (#R20: its limit is memory, not patience) — 1.6 M cells is 6.6 MB.
+       ⚠ (#R668) AND THE CEILING IS THE DEVICE'S, so it is the device that is asked. While this read a
+       768 px width, the phone that #R20 measured the 6.6 MB ceiling for was handed the 48 MB one for
+       no reason other than being held sideways. */
+    const FAR_MAX_CELLS=()=>(_phoneDev()?1.6e6:12e6);
     /* ══ ⚠⚠⚠ (#R248) THE FAR RASTER COVERS THE FIELD, NOT THE PLANET ═══════════════════════════════
        「地震シミュレータでJMA震度分布をある程度の範囲までいったら、そこから解像度が劇的に悪くなる。」
 
@@ -1740,7 +1757,11 @@ window.IntMapModules.seismic=function(HOST){
          ⚠ `slopeUsable` IS THE SAME RULE (#R190): a slope measured finer than the data is a
          fictional slope biased toward the softest bin, so a spacing coarser than 2 km does not
          pretend — those cells take the bundled term, and `siteSpacingM` prints what was achieved. */
-      const _mobF=(typeof isMobile==='function'&&isMobile());
+      /* ⚠ (#R668) TILE_BUDGET_FAR below is memory, so this is the DEVICE and not the window: a pinned
+         tile is 256 kB, and 128 → 512 of them is 32 MB → 128 MB of decoded elevation held while the
+         fine field is holding its own set. 「ブラウザが落ちる」 in #R223's report is that sum, and a
+         768 px width excused a landscape phone from the smaller half of it. */
+      const _mobF=_phoneDev();
       const winW=W0, winE=W0+NX*dxF, winN=latOfY(yT), winS=latOfY(yT+NY*dyF);
       const cosCF=Math.max(0.1,Math.cos(C0[1]*D)), spanFarKm=2*(rEdge+maxReach);
       let zF=Math.max(4,Math.min(12,(_demZoomForSpan?_demZoomForSpan(Math.max(1,spanFarKm)):7)+1));
@@ -2093,7 +2114,13 @@ window.IntMapModules.seismic=function(HOST){
            window depends on `N`; and the fine BOX is then snapped onto the far window's grid (#R245).
            Solving them in any other order needs the same rule written twice, which is
            [[intmap-recurring-lessons]] G — two copies of one quantity means one of them is stale. */
-        const spanKm0=2*halfKm, _mob=(typeof isMobile==='function'&&isMobile());
+        /* ⚠ (#R668) THIS ONE `_mob` DECIDES FOUR ALLOCATIONS AND NOT ONE PIXEL OF LAYOUT: the cell
+           (1.5 km vs 1.0 km), both ends of the grid ladder below, and — 200 lines down — TILE_BUDGET,
+           480 vs 1,600 pinned DEM tiles at 256 kB, i.e. 123 MB vs 410 MB. The fine field retains about
+           10 bytes a cell, so 640² vs 2560² is 4.1 MB vs 65.5 MB on top of that. Every one of the four
+           is a question about what the hardware can hold, which a 768 px width answers wrong for an
+           iPhone in landscape — the device with the least room to be wrong about. */
+        const spanKm0=2*halfKm, _mob=_phoneDev();
         /* the phone keeps #R204's cell, named rather than inlined — see the ⚠ above for why it does
            not move this round. The line below stays the one place the grid rule is declared, which is
            what #R202/#R203/#R204's checks read. */

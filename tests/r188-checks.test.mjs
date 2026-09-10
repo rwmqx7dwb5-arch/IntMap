@@ -33,8 +33,13 @@ test('R188 aircraft: the lattice is triangular, so each request covers 1.36× th
      same 34 at 700 ms gave 12 successes and then 16 consecutive hard failures. */
   assert.match(src, /const PLANE_GAP_MS=1200;/, 'the measured spacing is 1.2 s and is unchanged');
   assert.match(src, /const PLANE_CIRCLE_NM=250;/, 'r=250 is the API maximum (300/500 answer 403)');
-  assert.match(src, /PLANE_CIRCLE_BUDGET=\(\)=>\(\(typeof isMobile==='function'&&isMobile\(\)\)\?24:128\)/,
-    'the budget is 128 circles (mobile 24)');
+  /* ⚠ (#R668) the two numbers are the measurement and are pinned exactly; the predicate in front of
+     them is not a spelling this test owns, only a REQUIREMENT that it be the device one — the width
+     media query handed a phone in landscape (844 px) the desktop sweep. */
+  assert.match(src, /PLANE_CIRCLE_BUDGET=\(\)=>\((?:_phoneDev\(\)|window\.IntMapMemBudget\.deviceIsPhone\([^()]*\))\?24:128\)/,
+    'the budget is 128 circles (phone 24), and which arm a device takes is decided by the device');
+  assert.match(src, /_phoneDev=\(\)=>\{[\s\S]{0,120}window\.IntMapMemBudget\.deviceIsPhone\(/,
+    'and the local `_phoneDev` really delegates to the single owner in js/mem-budget.js');
   /* the long-run rate is 3.5 s a circle whatever the budget — so the ceiling has to clear it */
   const poll = /return Math\.max\(20000,Math\.min\((\d+),Math\.round\(n\*3500\)\)\);/.exec(src);
   assert.ok(poll, 'planePollMs must keep the 3.5 s-a-circle rule');

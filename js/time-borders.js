@@ -716,7 +716,12 @@ window.IntMapModules.timeBorders=function(HOST){
           const ids=['imtb-lbl','imtb-lbl2'].filter(id=>{ try{ return !!GE().layers.get(id); }catch(_){ return false; } });
           if(!ids.length||!e.point) return;
           if(GE().coords.queryRenderedFeatures(e.point,{layers:ids}).length) return;
-          let pad=6; try{ if(HOST.isMobile&&HOST.isMobile()) pad=15; }catch(_){}
+          /* (#R668) the third copy of the same tap tolerance, and the same correction as
+             js/map-ui.js's and js/map-readout.js's: how much slop a tap needs is decided by the
+             POINTER, not by the viewport width. `isMobile()` is a 768 px media query, so an iPhone
+             held sideways was answered «mouse» and got the 6 px box on a device where the finger is
+             the only pointer. `_imTouchPrimary()` (js/app-body.js:166) asks the pointer. */
+          let pad=6; try{ if(typeof window._imTouchPrimary==='function'?window._imTouchPrimary():(HOST.isMobile&&HOST.isMobile())) pad=15; }catch(_){}
           const near=GE().coords.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ids});
           if(near.length) _openEra(near[0],e.lngLat,e);
         }catch(_){} });
@@ -1227,7 +1232,15 @@ window.IntMapModules.timeBorders=function(HOST){
          copy for a feature that has not been asked for. */
       const go=()=>{ try{ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
           if(c&&(c.saveData===true||/(^|-)2g$/.test(c.effectiveType||''))) return; }catch(_){}
-        try{ if(HOST.isMobile&&HOST.isMobile()) return; }catch(_){}
+        /* ⚠ (#R668) …AND THE TEST HAD TO BE ASKED OF THE DEVICE FOR THAT TO HOLD. `HOST.isMobile` is
+           a 768 px media query, so the 390×844 session measured above stops matching the moment it is
+           rotated (844 px) and the 5.5 MB speculative bundle is prefetched again — on the phone the
+           paragraph was written about, while its satellite tiles are still queued. The Data Saver
+           line above it does ask a property of the connection; this one now asks a property of the
+           device, through the one owner (js/mem-budget.js), with `HOST.isMobile` kept as the fallback
+           for the boot window before `_imPhoneClass` exists. */
+        try{ if(window.IntMapMemBudget.deviceIsPhone(HOST.isMobile)) return; }
+        catch(_){ try{ if(HOST.isMobile&&HOST.isMobile()) return; }catch(__){} }
         if(typeof requestIdleCallback==='function') requestIdleCallback(pf,{timeout:6000}); else setTimeout(pf,2500); };
       let started=false; const once=()=>{ if(started) return; started=true; go(); };
       try{ GE().events.once('idle',()=>setTimeout(once,400)); }catch(_){}

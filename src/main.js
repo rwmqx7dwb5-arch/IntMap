@@ -35,7 +35,7 @@ import '../js/geo-engine.js';
    chunk and a MapLibre session transfers none of it. */
 import '../js/engine-select.js';
 
-import '../js/newsgeo.js';
+import '../js/newsgeo.js'; import '../js/mem-budget.js';   /* (#R668) …and, before anything that decodes an elevation tile, the ONE owner of how many of them this device may hold. Five stores kept five hand-written ceilings for the same 262,144-byte tile and four of them never asked what device they were on (about 600 MB authorised on a phone), and it is also where 「携帯か」 is answered for the thirty-nine cost decisions that used to ask the viewport width. No DOM and no `window`, so the photo-search worker imports the same file and the two cannot disagree. ⚠ NOT in the first three slots: tests/r175 ③ pins the renderer contract, the engine choice and newsgeo to positions 0-2. ON THIS LINE because the app shell has a line budget (tests/r168 #8). */
 /* (#R479) CARTO's key, the two tile-URL builders and the basemap credit. Anywhere before
    js/app-body.js works (it builds tile URLs at map setup); the first three slots and the last one
    are pinned by tests/r175-checks, so it sits here among the feature modules. */

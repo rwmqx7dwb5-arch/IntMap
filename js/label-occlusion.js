@@ -99,7 +99,27 @@ export function makeLabelOcclusion(HOST, CTX) {
      ("重い動作をすると頻繁にブラウザが落ちます") — display quality is untouched, everything lazily
      reloads on next use. No-op where the API doesn't exist (iOS Safari). */
   (function(){
-    if(!(typeof isMobile==='function'&&isMobile())) return;
+    /* ══ ⚠⚠⚠ (#R668) THE GUARD THAT WAS SUPPOSED TO SAVE THE TAB ASKED THE WIDTH ══════════════════
+       #R232 established the rule — 「携帯か」 is a question about the DEVICE, and a `(max-width:768px)`
+       media query answers it wrong the moment the phone is turned sideways — and #R498 swept it
+       through `_hiDPITiles`, `maxCanvasSize`, the DEM read budget and the occlusion pass. It did not
+       reach THIS line, which is the one that matters most on the device the report is about: an
+       iPhone in landscape is 844 px, `isMobile()` is false, and the memory-pressure guard was
+       therefore NEVER INSTALLED on the phone it exists to protect. The guard is a COST decision, so
+       it asks `_imPhoneClass()` like every other cost decision in this app.
+       ⚠ THE VALVE IS NOT THE FIX AND MUST NOT BE MISTAKEN FOR ONE. `performance.memory` does not
+       exist in Safari at all, so on an iPhone this block still measures nothing however it is gated.
+       What protects that device is the BUDGET (js/mem-budget.js): ceilings that are already correct
+       before the allocation. This is the second line, and it now reaches every enrolled store
+       instead of the two that happened to be listening. */
+    const _phone=()=>{ try{ return typeof window._imPhoneClass==='function' ? !!window._imPhoneClass()
+      : (typeof isMobile==='function'&&isMobile()); }catch(_){ return typeof isMobile==='function'&&isMobile(); } };
+    /* ⚠ THIS RUNS ON EVERY DEVICE, BEFORE THE PHONE-ONLY RETURN BELOW. The page is where the media
+       queries live; a worker has none, so the budget has to be TOLD, and it has to be told on a
+       desktop too — `js/mem-budget.js` assumes the small device when nobody has said, which is the
+       right default for safety and the wrong answer for a desktop that never speaks up. */
+    try{ window.IntMapMemBudget&&window.IntMapMemBudget.adopt(_phone()); }catch(_){}
+    if(!_phone()) return;
     const frac=()=>{ try{ const m=performance.memory; return m?m.usedJSHeapSize/m.jsHeapSizeLimit:0; }catch(_){ return 0; } };
     let hot=0;
     /* ⚠ whenHidden: a BACKGROUND tab is the one Android discards first, and what a discard costs the
@@ -110,6 +130,10 @@ export function makeLabelOcclusion(HOST, CTX) {
         try{ const cb=document.getElementById('dl-climate'); if(!cb||!cb.checked){
           window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
           window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; } }catch(_){}
+        /* (#R668) the event stays — two caches listen for it by name and keep working — but the
+           stores that hold the BYTES enrol with the budget instead, so a store added later is told
+           by construction rather than by somebody remembering to add a listener. */
+        try{ window.IntMapMemBudget&&window.IntMapMemBudget.relieve(); }catch(_){}
         try{ window.dispatchEvent(new Event('intmap-mem-pressure')); }catch(_){}
       } else hot=0;
     },{whenHidden:true});

@@ -158,6 +158,17 @@ window.IntMapModules.dataLayers=function(HOST){
   const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
   /* stable closure values (never reassigned) — rebound under their original names so the moved body stays verbatim */
   const _collapseGroup=HOST._collapseGroup, _imTouchPrimary=HOST._imTouchPrimary, addCountryLayers=HOST.addCountryLayers, cName=HOST.cName, convTempText=HOST.convTempText, countryStats=HOST.countryStats, ensureMapTooltip=HOST.ensureMapTooltip, ensureTerrainSource=HOST.ensureTerrainSource, escapeHtml=HOST.escapeHtml, fmtPc=HOST.fmtPc, fmtTemp=HOST.fmtTemp, i18n=HOST.i18n, imToast=HOST.imToast, isMobile=HOST.isMobile, loadCountryData=HOST.loadCountryData, positionTooltip=HOST.positionTooltip, renderCoordReadout=HOST.renderCoordReadout, satToast=HOST.satToast, t=HOST.t;
+  /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, AND `isMobile()` IS A 768 px MEDIA QUERY ══
+     Same rule #R232 established and #R498 swept: an iPhone turned sideways is 844 px wide, so
+     `isMobile()` flips FALSE on the very same phone — and every COST / MEMORY / CAPABILITY decision
+     below then hands that phone the DESKTOP budget (a 4096² highlight canvas, a full-resolution Köppen
+     PNG on top of it, a 128-circle aircraft sweep, ~150 MB of sampling buffers never released).
+     There is ONE owner of the answer — js/mem-budget.js — and this asks it rather than restating the
+     predicate: three files that copied the predicate instead all dropped a clause (#R499). The page's
+     own answer is `window._imPhoneClass()`; until the shell has published it the owner falls back to
+     what this file already used, so the answer is never WORSE than it was today.
+     ⚠ LAYOUT still asks `isMobile()`, unchanged — where a control sits is genuinely about the width. */
+  const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return typeof isMobile==='function'&&isMobile(); } };
   (function(){
     if(!GE().hasRenderer()) return;
 
@@ -2213,7 +2224,10 @@ window.IntMapModules.dataLayers=function(HOST){
        used to run synchronously inside the boot path and contributed to the "スタート時の動作がぎこちない"
        jank. On phones it now waits for an idle slice (the panel is reorganized again on every open
        anyway, so nothing can be stale); desktop keeps the immediate call. */
-    if(typeof isMobile==='function'&&isMobile()&&window.requestIdleCallback){ requestIdleCallback(()=>{ try{ window.reorganizeLayerPanel(); }catch(_){} },{timeout:2500}); }
+    /* (#R668) …and WHICH devices get that idle slice is a question about the device, not the width:
+       a phone held sideways ran those few hundred DOM moves synchronously inside boot, on the very
+       hardware #R19 measured the jank on. `_phoneDev()` above. */
+    if(_phoneDev()&&window.requestIdleCallback){ requestIdleCallback(()=>{ try{ window.reorganizeLayerPanel(); }catch(_){} },{timeout:2500}); }
     else window.reorganizeLayerPanel();
 
     const beforeId = GE().layers.has('tool-poly') ? 'tool-poly' : undefined;
@@ -2899,7 +2913,11 @@ window.IntMapModules.dataLayers=function(HOST){
        user zooms past about z5. Phones stay on the 4k for good, as before. */
     function koppenSmallURL(p){ return koppenURLFor(p||window._koppenPeriod).replace(/\.png$/,'_4k.png'); }
     function koppenFullURL(p){ return koppenURLFor(p||window._koppenPeriod); }
-    function koppenPhone(){ try{ return typeof isMobile==='function'&&isMobile(); }catch(_){ return false; } }
+    /* ⚠ (#R668) the GPU that cannot hold the 8192² texture is the same GPU when the phone is turned
+       sideways, so this asks the DEVICE (js/mem-budget.js) and not the 768 px width — otherwise
+       `koppenUpgrade` below loads the full-resolution PNG on top of the 4k one on exactly the hardware
+       #R23 introduced the 4k texture for. */
+    function koppenPhone(){ return _phoneDev(); }
     function koppenDisplayURL(p){ return koppenPhone()?koppenSmallURL(p):koppenSmallURL(p); }
     /* raise the on-screen raster to the full-resolution file once nothing is waiting on the thread */
     let _kUpgraded='';
@@ -3180,11 +3198,21 @@ window.IntMapModules.dataLayers=function(HOST){
        Cap the highlight at 4096² desktop / 2048² mobile (out-canvas ≤67 MB / ≤16 MB). The BASE Köppen
        image stays full 8192² (unhighlighted view = no quality loss); the grayed highlight at 4096² is
        still crisp at any normal zoom. This is what finally stops the "選ぶと落ちて先祖返り" crash. */
+    /* ⚠⚠ (#R668) BOTH TESTS IN HERE READ AN UNKNOWN DEVICE AS A SPACIOUS ONE.
+       ① `isMobile()` is the 768 px media query, so an iPhone in landscape (844 px) fell through to the
+          desktop arm and was authorised a 4096² output canvas — 67 MB instead of 16 MB — on the phone
+          this whole cap exists to keep alive. It asks the device now (js/mem-budget.js, `_phoneDev`).
+       ② `navigator.deviceMemory` is a Chromium-only hint: Safari does not implement it — so on EVERY
+          iPhone, always, and in Firefox — `undefined||0` is 0, `if(0 && …)` is false, and the device
+          that told us NOTHING took the LARGEST of the three canvases. An unknown device must take the
+          smaller budget (the same rule js/mem-budget.js states for the worker that was never told, and
+          the same 3072² the catch below already falls back to); only a device that SAYS it has more
+          than 4 GB gets 4096². */
     function _koppenFullCap(){ try{
-      if(typeof isMobile==='function'&&isMobile()) return 2048;
+      if(_phoneDev()) return 2048;
       const dm=(typeof navigator!=='undefined'&&navigator.deviceMemory)||0;
-      if(dm && dm<=4) return 3072;        /* ≤4 GB → 3072² */
-      return 4096;                        /* desktop → 4096² (≈67 MB out canvas — safe on any machine) */
+      if(!dm || dm<=4) return 3072;       /* ≤4 GB — or a browser that does not say (Safari/Firefox) → 3072² */
+      return 4096;                        /* ≥6 GB desktop → 4096² (≈67 MB out canvas — safe on any machine) */
     }catch(_){ return 3072; } }
     /* (#R14) MEMORY-SAFE full-res highlight — the previous version OOM-crashed the tab (and the page
        reloaded → "先祖返り"): at 8192² it held the 268 MB source pixel array + a 268 MB output ImageData
@@ -4215,7 +4243,10 @@ window.IntMapModules.dataLayers=function(HOST){
     /* (#R188) 48 → 128 (mobile 12 → 24). The long-run request rate does NOT move with this number:
        planePollMs() has always been 3.5 s a circle, so a bigger sweep refreshes less often instead of
        asking faster. What it buys, together with the triangular lattice, is 65.7 million km². */
-    const PLANE_CIRCLE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?24:128);
+    /* (#R668) which of the two sweeps a device may run is about the DEVICE — the width test gave a
+       phone in landscape the 128-circle sweep (and the aircraft it retains) on the same radio and the
+       same memory the 24 was measured for. `_phoneDev()` at the top of this module. */
+    const PLANE_CIRCLE_BUDGET=()=>(_phoneDev()?24:128);
     const PLANE_GAP_MS=1200;                         /* measured sustainable spacing — see above */
     const PLANE_MAX_AIRCRAFT=50000;                  /* was 1,800 = one circle's worth; a continental sweep is many times that */
     /* (#R188) a 128-circle sweep takes ~154 s to ISSUE, so it publishes what it has every few seconds
@@ -6375,7 +6406,10 @@ window.IntMapModules.dataLayers=function(HOST){
              the moment the layer is off — it lazily rebuilds on the next toggle. A big slice of the
              "何か重い動作をすると頻繁にブラウザが落ちます" memory pressure. Desktop keeps it for instant
              re-toggle. The GPU recolor path never needs these buffers at all. */
-          if(typeof isMobile==='function'&&isMobile()){
+          /* ⚠ (#R668) …and WHOSE work-set is dropped is a device question: asked by width, the phone
+             that happened to be sideways when the reader switched Köppen off KEPT all ~150 MB, which
+             is precisely the pressure #R19 was releasing here. `_phoneDev()`. */
+          if(_phoneDev()){
             try{ window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
                  window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; }catch(_){}
           }

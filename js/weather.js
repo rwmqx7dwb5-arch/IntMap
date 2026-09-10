@@ -138,6 +138,13 @@ window.IntMapModules.wind=function(HOST){
   const IC=window.IntMapWxPlayer.IC, _b=window.IntMapWxPlayer.b;   /* (#R284) one declaration, two views of one clock */
   function _imCanDraw(){ try{ return !!HOST.canDraw(); }catch(_){ try{ return !!GE().ready(); }catch(__){ return false; } } }
   const satToast=HOST.satToast, isMobile=HOST.isMobile;
+  /* ══ ⚠⚠ (#R668) 「携帯か」 IS A QUESTION ABOUT THE DEVICE, AND `isMobile()` IS A 768 px MEDIA QUERY ══
+     #R232 established the rule and #R498 swept it: an iPhone turned sideways is 844 px wide, so the
+     width test flips to "desktop" on the same phone — and the particle field below is a per-frame GPU
+     and main-thread cost, not a layout. js/mem-budget.js owns the device answer (`window._imPhoneClass()`,
+     which asks the pointer and the screen); three files that copied the predicate by hand each dropped
+     a clause of it (#R499). The fallback is this file's own `isMobile`, so nothing is worse than today. */
+  const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(isMobile); }catch(_){ return typeof isMobile==='function'&&isMobile(); } };
   const L=window.IntMapLang.pick(()=>HOST.lang);
   window.Wind=(function(){
     const cv=document.getElementById('wind-canvas'); if(!cv) return {toggle(){},stop(){},setOpacity(){}};
@@ -681,8 +688,12 @@ window.IntMapModules.wind=function(HOST){
     function ensureRenderer(){
       if(renderer) return renderer;
       renderer=window.IntMapWindGL.create(cv,{
-        perPixels:isMobile()?900:320,
-        maxParts:isMobile()?2200:6000,
+        /* ⚠ (#R668) BOTH OF THESE ARE WHAT THE HARDWARE CAN DRAW SIXTY TIMES A SECOND, so both ask the
+           DEVICE. One particle per 900 px² instead of per 320 px² is 2.8× the density, and the cap it
+           runs into is 2,200 against 6,000 — each one integrated, sampled against the wind field and
+           re-projected every frame. A phone in landscape reads 844 px and used to take all of it. */
+        perPixels:_phoneDev()?900:320,
+        maxParts:_phoneDev()?2200:6000,
         project:(lng,lat)=>{ try{ return GE().coords.project([lng,lat]); }catch(_){ return null; } },
         visible:visibleLL,
         zoom:()=>{ try{ return GE().camera.getZoom(); }catch(_){ return 2; } },

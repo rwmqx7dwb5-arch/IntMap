@@ -41,6 +41,10 @@ window.IntMapPhotoGeoWorker = (function () {
         jobs.forEach(function (j) { try { j.rej(new Error('photo search worker died')); } catch (_) { } });
         jobs.clear();
       };
+      /* (#R668) tell it what device this is, before any tile is asked for. A worker has no
+         `matchMedia`, so js/mem-budget.js assumes the SMALL device until this arrives — safe, but
+         wrong for a desktop, and this is the one place that knows. */
+      try { it.postMessage({ type: 'device', phone: !!(window._imPhoneClass && window._imPhoneClass()) }); } catch (_) { }
       w = it;
     } catch (_) { w = null; }
     return w;
@@ -71,7 +75,23 @@ window.IntMapPhotoGeoWorker = (function () {
     });
   }
 
+  /* ══ ⚠⚠⚠ (#R668) THE FALLBACK PATH HAD NO CEILING AT ALL ══════════════════════════════════════
+     The worker's store had a ceiling that ignored the device (1400 tiles = 367 MB). This one — the
+     path taken when `new Worker` FAILED — had none to ignore: `pageTiles` grew for the life of the
+     page, one `Float32Array(65536)` per tile, on the main thread's own heap, and the only thing that
+     ever emptied it was `clearCache()`, which nothing in js/ calls.
+     ⚠ AND THIS IS THE WORSE OF THE TWO PLACES FOR THAT. A worker fails to be created exactly on the
+     devices that are short of memory to begin with, so the unbounded store is the one that runs on
+     the phone the report is about, while the bounded one runs on the machine that could afford it.
+     Trimmed AFTER each search rather than during: `buildField` reads the whole area out of this Map
+     (see the call below), so evicting mid-run would put holes in the answer — #R221's defect. */
   var pageTiles = new Map();
+  function trimPageTiles() {
+    var cap = 180;
+    try { cap = window.IntMapMemBudget.demTiles('photoSearch'); } catch (_) { }
+    var it = pageTiles.keys();
+    while (pageTiles.size > cap) { var k = it.next(); if (k.done) break; pageTiles.delete(k.value); }
+  }
   async function runOnPage(req, hooks) {
     var T = window.IntMapPhotoTerrain, Q = window.IntMapPhotoSearch;
     var plan = Q.plan(req.area, req.options || {});
@@ -113,6 +133,17 @@ window.IntMapPhotoGeoWorker = (function () {
     return res;
   }
 
+  /* (#R668) enrol the page-path store with the budget, so memory pressure can reclaim it. The
+     worker's copy is not enrolled from here on purpose — it lives in another heap and answers the
+     `clearCache` message instead; a `bytes()` that lied about which heap it was counting would make
+     the ledger's total meaningless. */
+  try {
+    window.IntMapMemBudget.register('photoSearch.page', {
+      bytes: function () { return pageTiles.size * window.IntMapMemBudget.DEM_TILE_BYTES; },
+      release: function () { pageTiles.clear(); },
+    });
+  } catch (_) { }
+
   function send(type, payload, hooks) {
     var it = worker();
     var id = ++seq;
@@ -123,7 +154,9 @@ window.IntMapPhotoGeoWorker = (function () {
       });
     }
     if (!deps()) return Promise.reject(new Error('photo geolocation modules are not loaded'));
-    if (type === 'search') { fallbackAbort = (hooks && hooks.shouldAbort) || null; return runOnPage(payload, hooks || {}); }
+    /* (#R668) `.finally` rather than a line at the end of runOnPage: the search can throw, and an
+       abort rejects — a ceiling applied only on the happy path is not a ceiling. */
+    if (type === 'search') { fallbackAbort = (hooks && hooks.shouldAbort) || null; return runOnPage(payload, hooks || {}).finally(trimPageTiles); }
     if (type === 'plan') return Promise.resolve(window.IntMapPhotoSearch.plan(payload.area, payload.options || {}));
     return Promise.reject(new Error('unsupported on the page path: ' + type));
   }

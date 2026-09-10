@@ -44,7 +44,17 @@ window.IntMapModules.precipAnnual = function (HOST) {
   let lastPainted = null;
 
   const url = (f) => { try { return new URL(f, document.baseURI).toString(); } catch (_) { return f; } };
-  const phone = () => { try { return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; } catch (_) { return false; } };
+  /* ⚠ (#R668) 「携帯か」 IS A DEVICE QUESTION AND THIS FILE USED TO ANSWER IT ITSELF. The two media
+     queries below were copied from js/app-body.js:159 while it still had two clauses; #R499 added a
+     third (a phone with a stylus or a paired mouse reports `any-pointer:fine`, and is still a phone)
+     which never reached this copy. `climURL()` reads the answer to choose between the phone raster
+     and the full one, so on that hardware the small screen was downloading and decoding the desktop
+     picture. One owner: js/mem-budget.js. The old test stays as the FALLBACK for the boot window
+     before the shell publishes `_imPhoneClass`, so this is never worse than what it replaces. */
+  const phone = () => {
+    const own = () => { try { return window.matchMedia('(pointer:coarse)').matches && !window.matchMedia('(any-pointer:fine)').matches; } catch (_) { return false; } };
+    try { return !!window.IntMapMemBudget.deviceIsPhone(own); } catch (_) { return own(); }
+  };
 
   function manifests() {
     if (mm && yr) return Promise.resolve(true);

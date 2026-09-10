@@ -148,7 +148,14 @@ hist-scale.js                     深い時間の**算術**だけを持つ純関
                                   ②`ohmFilter()`/`inForce()`＝その瞬間にどの境界を描くか（式と述語の2つの読み手が
                                   同じ答えを返すことを tests/r604-checks ④ が測る）③`rail`＝Chronos の年スライダーの
                                   位置↔年（区分線形。折れ点は記録密度の実測）
-label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す
+label-occlusion.js                名前を最前面に、地球の裏側のマーカーを隠す＋メモリ圧の見張り
+                                  （⚠ その見張りは #R668 まで `isMobile()`＝幅で「携帯か」を訊いていたので、
+                                  横向きの iPhone には**設置すらされていなかった**）
+mem-budget.js                     **この端末が復号済み DEM タイルを何枚持ってよいか**（#R668）。同じ 262,144 B の
+                                  タイルを 5 か所が別々の上限で溜めており、うち 4 か所は端末を一切見ていなかった
+                                  （合計約 600 MB を携帯に許可）。1 枚の値段・端末・取り分を 1 か所で持ち、
+                                  `deviceIsPhone()` が「携帯か」の唯一の答え。⚠ DOM も window も使わない——
+                                  src/photo-geo-worker.js も import するため
 border-style.js                   国境線を1本にまとめるスタイル層
 carto-basemap.js                  CARTO 基図の API キー・タイル URL 組み立て・地図上の帰属表示
 coast-line.js                     海岸線・湖岸線——国境線と同じ手法で makeCoastLine()

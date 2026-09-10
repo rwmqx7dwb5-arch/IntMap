@@ -109,8 +109,7 @@
  "tests/r575.spec.js": 5,
  "tests/r576.spec.js": 5,
  "tests/r620.spec.js": 6,
- "solo": [
-  "-cesium.*.spec.js$"
- ],
- "tests/r588.spec.js": 11
+ "solo": ["-cesium.*.spec.js$"],
+ "tests/r588.spec.js": 11,
+ "tests/r668.spec.js": 3
 }

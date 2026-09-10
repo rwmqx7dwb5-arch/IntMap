@@ -125,11 +125,32 @@ window.IntMapModules.terrainWater=function(HOST){
        count goes 384²·r … 1024²·r, i.e. the top step is seven times the work of the default. The
        panel prints the cell size, the grid dimensions and the solve time for whichever is chosen. */
     const RES_D=[384,512,768,1024], RES_M=[150,192,256,384];
+    /* ══ ⚠⚠⚠ (#R668) TWO QUESTIONS THAT WERE WEARING ONE PREDICATE ══════════════════════════════
+       `_mob()` is `HOST.isMobile`, i.e. `matchMedia('(max-width:768px)')`, and this file asked it
+       about two unrelated things: how BIG to draw (row heights, font sizes, touch targets — around
+       :1700 below) and how MUCH WORK to ask the machine for (this resolution list, the working
+       rectangle at :317, the DEM level and budget at :347, the basin lattice, the solver's step and
+       time caps).
+       THE TWO CANNOT SHARE ONE PREDICATE, because they are not questions about the same object.
+       Layout is a question about the VIEWPORT, and a width is the right way to ask it: 768 px really
+       is where these rows have to grow, and a desktop window dragged narrow really does want the
+       bigger targets — so every use below keeps `_mob()`. Cost is a question about the DEVICE, and
+       the viewport answers it wrong in precisely the case that was reported: an iPhone turned
+       sideways is 844 px wide, so the SAME phone gets 512² cells instead of 192², a 60 km rectangle
+       instead of 26, 420 DEM tiles instead of 110, 120,000 solver steps instead of 9,000.
+       ⚠ THE DEVICE ANSWER IS NOT RE-DERIVED HERE. js/mem-budget.js owns it (`window._imPhoneClass()`,
+       which asks the pointer and the screen); three files that wrote the predicate out by hand each
+       dropped a clause of it. The fallback is this file's own old test, so until the shell publishes
+       its answer this behaves exactly as it did before. */
     const _mob=()=>(typeof isMobile==='function'&&isMobile());
-    const resList=()=>(_mob()?RES_M:RES_D);
+    const _phoneDev=()=>{ try{ return window.IntMapMemBudget.deviceIsPhone(_mob); }catch(_){ return _mob(); } };
+    /* COST, not layout: which ladder of cell counts this machine may climb (150…384 vs 384…1024 —
+       the top of one is the bottom of the other, so the wrong answer is 7.1× the cells). */
+    const resList=()=>(_phoneDev()?RES_M:RES_D);
     let simRes=(function(){ try{ const v=+localStorage.getItem('im.twRes');
         if(RES_D.indexOf(v)>=0||RES_M.indexOf(v)>=0) return v; }catch(_){}
-      return _mob()?192:512; })();
+      /* …and where on that ladder an untouched install starts. Same device question (#R668). */
+      return _phoneDev()?192:512; })();
     const resNX=()=>{ const L=resList(); return (L.indexOf(simRes)>=0)?simRes:L[1]; };
     const pourTotal=()=>sources.reduce((s,x)=>s+Math.max(0,x.m3),0);
     /* ══ (#R265) THE TIME-DEPENDENT WATER ════════════════════════════════════════════
@@ -314,7 +335,10 @@ window.IntMapModules.terrainWater=function(HOST){
         const midLat=(n+s)/2;
         /* cap the working area — beyond this the DEM tile budget, not the solver, is the limit */
         const viewKm=Math.max((e-w)*111.32*Math.cos(midLat*D),(n-s)*110.54);
-        const MAXKM=(typeof isMobile==='function'&&isMobile())?26:60;
+        /* (#R668) …and how far the cap sits is a DEVICE question, not a viewport one: this side of
+           it is 5.3× the ground (26² vs 60²), hence 5.3× the DEM tiles and 5.3× the cells the solver
+           steps. A phone held sideways used to be handed the 60 km rectangle. */
+        const MAXKM=_phoneDev()?26:60;
         if(viewKm>MAXKM){ const f=MAXKM/viewKm, cw=(w+e)/2, cn=(n+s)/2;
           w=cw-(e-w)*f/2; e=cw+(e-w)*f/2; s=cn-(n-s)*f/2; n=cn+(n-s)*f/2; }
         /* ══ ⚠⚠⚠ (#R275) THE ELEVATION LEVEL IS CHOSEN FOR THE RECTANGLE, NOT FOR THE CAMERA ════
@@ -344,8 +368,17 @@ window.IntMapModules.terrainWater=function(HOST){
         const NY=Math.max(24,Math.round(NX*(yS-yN)/Math.max(1e-12,xE-xW)));
         const dx=(xE-xW)/NX, dy=(yS-yN)/NY;
         const cellM=dx*CIRC*Math.cos(midLat*D);
-        let z=Math.min((typeof isMobile==='function'&&isMobile())?12:14,_demZoomForSpan(Math.max(1,spanKm))+2);
-        const budget=(typeof isMobile==='function'&&isMobile())?110:420;   /* under the DEM LRU cap (#R176) */
+        /* (#R668) both of these are DEVICE questions. The level ceiling is a factor of 16 in tiles
+           per unit ground (z12 → z14), and the budget below is what may be resident while reading. */
+        let z=Math.min(_phoneDev()?12:14,_demZoomForSpan(Math.max(1,spanKm))+2);
+        /* ⚠ (#R668) 「under the DEM LRU cap (#R176)」 WAS ONLY TRUE ON THE SIDE THAT ASKED CORRECTLY.
+           That cap is `_DEM_CACHE_MAX` in js/app-body.js, which is 140 on a phone and 560 on a
+           desktop — and it decides which it is with `_imPhoneClass()`, the device answer. This line
+           decided with a 768 px media query, so on a phone held sideways the two disagreed and the
+           budget became 420 against an LRU of 140: three times its own stated invariant, i.e. the
+           block evicts itself while it is still being read. Asking the same question the cap asks
+           restores the invariant rather than papering over it. */
+        const budget=_phoneDev()?110:420;   /* under the DEM LRU cap (#R176) */
         const est=(zz)=>{ const tk=40075*Math.max(0.05,Math.cos(Math.abs(midLat)*D))/Math.pow(2,zz); const nn=spanKm/tk+1; return nn*nn*0.85; };
         while(z>5&&est(z)>budget) z--;
         setStat(L('Reading the terrain…','地形を読み込み中…','Gelände wird gelesen…','Чтение рельефа…','Leyendo el terreno…'));
@@ -608,6 +641,12 @@ window.IntMapModules.terrainWater=function(HOST){
        app's own `terrain-dem` exactly as before. */
     const DEM_PROTO='imapterr';
     const _demBase=new Map();   /* z/x/y → Float32Array(256·256), the untouched terrarium tile */
+    /* (#R668) enrol so memory pressure reaches this store too. ⚠ RELEASE KEEPS NOTHING BACK ON
+       PURPOSE: these are the UNTOUCHED base tiles, re-fetchable from the network, and the reader's
+       own edits live in `editDeltaAt` rather than here — so dropping the whole map costs a refetch
+       of what is on screen and loses no brush stroke. */
+    try{ window.IntMapMemBudget.register('terrainEdit',{ bytes:()=>_demBase.size*window.IntMapMemBudget.DEM_TILE_BYTES,
+      release:()=>{ _demBase.clear(); } }); }catch(_){}
     let _demProtoOn=false, _demSrcN=0, _demSrcId=null, _demPrev=null, _demTileV=-1;
     const _demHosts=['https://s3.amazonaws.com/elevation-tiles-prod/terrarium',
       'https://elevation-tiles-prod.s3.amazonaws.com/terrarium',
@@ -636,7 +675,13 @@ window.IntMapModules.terrainWater=function(HOST){
       if(!good) throw new Error('dem tile is entirely no-data');
       if(good<out.length){ const fill=sum/good;
         for(let i=0;i<out.length;i++) if(out[i]!==out[i]) out[i]=fill; }
-      _demBase.set(k,out); if(_demBase.size>360) _demBase.delete(_demBase.keys().next().value);
+      /* ⚠ (#R668) `>360` was 94 MB of `Float32Array(65536)`, and it was the same 360 on a phone as on
+         a workstation. The ceiling comes from js/mem-budget.js, which knows both what a tile costs
+         and what device this is; the trim is a loop rather than a single delete because the ceiling
+         can now go DOWN (the device answer may arrive after the first tiles are already in). */
+      _demBase.set(k,out);
+      { let cap=360; try{ cap=window.IntMapMemBudget.demTiles('terrainEdit'); }catch(_){}
+        while(_demBase.size>cap){ const f=_demBase.keys().next().value; if(f===k) break; _demBase.delete(f); } }
       return out; }
     function ensureDemProto(){ if(_demProtoOn) return true;
       try{ _demProtoOn=!!GE().scene.addProtocol(DEM_PROTO, async (params)=>{
@@ -911,7 +956,11 @@ window.IntMapModules.terrainWater=function(HOST){
     let basinCapped=false, basinGrow=0, basinVoid=0, growPending=false, growFailed=0;
     const GROW_TRIGGER=10;     /* cells of clearance the drawable water may not come inside of */
     const GROW_CELLS=72;       /* …and how much lattice is added when it does */
-    function basinMaxCells(){ return (typeof isMobile==='function'&&isMobile())?360000:1600000; }
+    /* (#R668) how far the lattice may be extended is a DEVICE question — 1.6 M cells is 4.4× the
+       phone's 360 k, and every cell is state the solver holds AND steps, so the wrong answer costs
+       both the memory and the frame. A width cannot see the difference between a phone in landscape
+       and the workstation this number was written for. */
+    function basinMaxCells(){ return _phoneDev()?360000:1600000; }
     function bLng(i){ return lngOf(B.xW+(i+0.5)*B.dx); }
     function bLat(j){ return latOf(B.yN+(j+0.5)*B.dy); }
     /* the basin cell a point falls in (or null) — the same arithmetic cellOf() does for G */
@@ -1084,7 +1133,10 @@ window.IntMapModules.terrainWater=function(HOST){
     /* tiles per block. The LRU holds 560 on a desktop and 140 on a phone (js/app-body.js
        `_DEM_CACHE_MAX`), and a block has to fit inside it WHOLE with room for the readers that share
        it - the same reasoning `build()` uses for its own 420 / 110 tile budget. */
-    const GROW_TILE_BUDGET=()=>((typeof isMobile==='function'&&isMobile())?100:280);
+    /* ⚠ (#R668) …and «which LRU» is decided by `_imPhoneClass()`, so this block size has to be
+       decided by the same device answer or it sizes a phone's block against a desktop's LRU — the
+       one thing the comment above says it must not do. */
+    const GROW_TILE_BUDGET=()=>(_phoneDev()?100:280);
     const GROW_MAX_MS=45000;      /* the whole extension; past it the rest is read from cache only */
     async function growBasin(padW,padE,padN,padS){
       const Bold=B, S0=sim;
@@ -1167,8 +1219,12 @@ window.IntMapModules.terrainWater=function(HOST){
       /* ⚠ (#R275) ⏭ FEEDS THE TAPS TOO. A one-shot source now arrives over time like any other, so
          a settle that did not feed would run the ground dry — the resting state has to be the state
          of ALL the water that was placed, not of whatever had been delivered when ⏭ was pressed. */
-      const r=S.settle({ maxSteps:(typeof isMobile==='function'&&isMobile())?9000:120000,
-                        maxMs:(typeof isMobile==='function'&&isMobile())?2500:6000,
+      /* ⚠ (#R668) THE SETTLE BUDGET IS A DEVICE QUESTION, AND IT IS THE ONE THE READER FEELS. This
+         runs on the main thread, so `maxMs` is how long the page cannot answer a touch: 2.5 s was
+         chosen for a phone and 6 s for a machine that can afford it, and a 768 px media query gave
+         the phone in landscape the 6 s — with 13× the steps to fill it. */
+      const r=S.settle({ maxSteps:_phoneDev()?9000:120000,
+                        maxMs:_phoneDev()?2500:6000,
                         onStep:feedTaps });
       pourSimS=S.tS; settleInfo=r; steady=!r.capped;
       simFrontM=frontDistanceM();
