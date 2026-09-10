@@ -15,18 +15,21 @@
  *  of tiny bundles IS a root as far as it is concerned. That is what makes «an unreferenced ring
  *  fails» a thing this file can prove in milliseconds rather than a thing it can only assert.
  * ==========================================================================*/
+import { registry, shipTags } from '../scripts/histadmin/langs.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, dirname } from 'node:path';
+import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SCRIPT = join(ROOT, 'scripts', 'build-hist-admin1.mjs');
 
 /* a closed, on-globe ring of four points near (lon, lat) */
+const SHIP = shipTags(ROOT, registry(ROOT));   /* the languages this build may ADD a name in */
+
 const ring = (lon, lat) => [[lon, lat], [lon + 1, lat], [lon + 1, lat + 1], [lon, lat]];
 
 /* one well-formed tier: `n` rings, one unit per ring, all of them in force from year 1 to 9999
@@ -35,7 +38,14 @@ function tier(n, opts = {}) {
   const rings = [], feats = [];
   for (let i = 0; i < opts.rings; i++) rings.push(ring(i, i));
   for (let i = 0; i < opts.rings; i++)
-    feats.push(['unit ' + n + '-' + i, 2 * n + 2, 1, 1, 1, 9999, 12, 31, [[i]], { en: 'Unit ' + i }, 1000 * n + i]);
+    /* ⚠ (#R695) A WELL-FORMED WORLD IS NOW ALSO A READABLE ONE. The gate grew an invariant about
+       how much of a tier a reader of a shipped language can actually read, so a fixture that names
+       every unit in English only is not well-formed any more — it would fail check ② and make
+       every mutation below look like it passed for the wrong reason. The languages are READ from
+       the policy (scripts/histadmin/langs.mjs), never listed here, so widening the policy back to
+       nine does not come back through this file. */
+    feats.push(['unit ' + n + '-' + i, 2 * n + 2, 1, 1, 1, 9999, 12, 31, [[i]],
+      Object.fromEntries(SHIP.map((t) => [t, 'Unit ' + i])), 1000 * n + i]);
   return { v: 1, src: 'OpenHistoricalMap contributors (CC0) · openhistoricalmap.org',
            built: '2026-09-11', since: 1, tolerance: 0.02, levels: [2 * n + 1, 2 * n + 2], rings, feats };
 }
@@ -44,9 +54,36 @@ function tier(n, opts = {}) {
 function world(mutate) {
   const dir = mkdtempSync(join(tmpdir(), 'r680-'));
   mkdirSync(join(dir, 'scripts')); mkdirSync(join(dir, 'data')); mkdirSync(join(dir, 'js'));
-  copyFileSync(SCRIPT, join(dir, 'scripts', 'build-hist-admin1.mjs'));
-  /* the builder evaluates js/ohm-rings.js at module load (#R669), so the root needs it */
-  copyFileSync(join(ROOT, 'js', 'ohm-rings.js'), join(dir, 'js', 'ohm-rings.js'));
+  /* ⚠⚠⚠ (#R695) THE SCRIPT'S OWN IMPORTS ARE COPIED BY FOLLOWING THEM, NOT BY LISTING THEM.
+     This harness is the only thing that proves the gate FAILS when the bundle is broken, and it
+     works by running the gate in a root with no node_modules and no siblings. The moment the
+     builder grew local modules (scripts/histadmin/*, scripts/histeras/match.mjs) all ten mutation
+     checks went red with ERR_MODULE_NOT_FOUND — the safety net taken out by a refactor nobody
+     could see from here. A list of files to copy would break again on the next one, so the
+     RELATIVE import graph is walked. (A bare specifier like `opencc-js` is deliberately NOT
+     followed: the builder loads it lazily, and a `--check` that reached it would be a defect this
+     harness should report rather than paper over.) */
+  const copied = new Set();
+  (function follow(abs, rel) {
+    if (copied.has(rel)) return;
+    copied.add(rel);
+    const body = readFileSync(abs, 'utf8');
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    copyFileSync(abs, join(dir, rel));
+    for (const m of body.matchAll(/^\s*(?:import|export)\b[^\r\n]*?from\s*['"](\.[^'"]+)['"]/gm)) {
+      const child = resolve(dirname(abs), m[1]);
+      follow(child, relative(ROOT, child).split(sep).join('/'));
+    }
+  })(SCRIPT, 'scripts/build-hist-admin1.mjs');
+
+  /* ⚠ AND THESE ARE EVALUATED, NOT IMPORTED, so the walk above cannot see them: the builder reads
+     js/ohm-rings.js at module load (#R669) and js/lang-registry.js + js/locales/_langs.js to learn
+     which languages the app has (#R695). They are named because a file that is read by path is
+     named by path — there is no graph to follow. */
+  for (const f of ['js/ohm-rings.js', 'js/lang-registry.js', 'js/locales/_langs.js']) {
+    mkdirSync(dirname(join(dir, f)), { recursive: true });
+    copyFileSync(join(ROOT, f), join(dir, f));
+  }
 
   const bundles = { 1: tier(1, { rings: 3 }), 2: tier(2, { rings: 2 }) };
   const globals = { 1: '__HISTADM1', 2: '__HISTADM2' };

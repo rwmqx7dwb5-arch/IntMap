@@ -37,7 +37,8 @@
  *  two files are read by twin modules and one shape means one set of habits.
  *      window.__HISTADM1 = { v, src, built, rings:[ring…], feats:[feat…] }
  *      feat = [ name, lvl, sy,sm,sd, ey,em,ed, [[ringIdx…]…], names ]
- *      names = { en, ja, de, ru, es, fr, ko, 'zh-Hant', 'zh-Hans' }  (present keys only)
+ *      names = { en, ja, de, ru, es, fr, ko, 'zh-Hant', 'zh-Hans' }  (present keys only — the keys
+ *              are js/lang-registry.js's `html` tags, read off that registry rather than typed)
  *  Dates are inclusive on both ends, exactly like CShapes, so js/time-admin1.js
  *  reuses the epoch index verbatim.
  *
@@ -55,7 +56,16 @@
  *  paid mostly in main-thread PARSE, not in transfer — which is why the raw column is
  *  the one that decided it. 0.02 deg keeps every unit the coarser step drops.
  *
+ *  ── WHAT A UNIT IS CALLED (#R695) ─────────────────────────────────────────
+ *  A line with no readable label is a line the reader cannot ask about. Upstream names most units
+ *  in their own language only — measured 2026-09-11, 20,357 of the second tier's 22,708 rows had no
+ *  `name:<lang>` at all — but 17,120 of those carry a `wikidata` tag, and Wikidata labels the item
+ *  in every language IntMap has. scripts/histadmin/ holds that join: which item may speak for which
+ *  unit (names.mjs), where the labels come from (wikidata.mjs) and which languages ship
+ *  (langs.mjs → scripts/histnames/langs.mjs). Filling only ever ADDS to an empty column.
+ *
  *  Usage:  node scripts/build-hist-admin1.mjs --check           # verify the COMMITTED bundles, offline (#R680)
+ *          node scripts/build-hist-admin1.mjs --names           # refresh every tier's NAMES, geometry untouched
  *          node scripts/build-hist-admin1.mjs [--out data/hist-admin1.js]
  *                                            [--tol 0.02] [--dec 3] [--since 1850] [--batch 20]
  * ==========================================================================*/
@@ -63,6 +73,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { registry, harvestTags, shipTags } from './histadmin/langs.mjs';
+import { itemVerdicts, fillNames, chineseTags, missingByTag } from './histadmin/names.mjs';
+import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
+import { plainLabel } from './histeras/match.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
@@ -80,7 +94,8 @@ const BATCH = parseInt(argOf('--batch', '20'), 10);
    is keyed by the level set for the reason the tag sweep is cached at all: re-simplifying must cost
    nothing but CPU. */
 const LEVELS = String(argOf('--levels', '3,4')).split(',').map(v => parseInt(v, 10)).filter(Number.isFinite);
-const LVLRE  = '^(' + LEVELS.join('|') + ')$';
+const lvlRe = levels => '^(' + levels.join('|') + ')$';
+const cacheOf = levels => path.join(process.env.TEMP || '/tmp', 'ohm-adm' + levels.join('') + '-cache');
 /* == (#R604) THE GLOBAL IS DERIVED FROM THE OUTPUT FILE, NOT DEFAULTED TO THE FIRST TIER =========
    `--global` used to default to `__HISTADM1` whatever `--out` said, so building the deeper tier
    without remembering that flag wrote data/hist-admin2.js containing `window.__HISTADM1=` - a file
@@ -93,13 +108,42 @@ const GLOBAL = argOf('--global', (function () {
   const m = /hist-admin(\d+)\.js$/i.exec(OUT);
   return m ? '__HISTADM' + m[1] : '__HISTADM1';
 })());
-const CACHE = path.resolve(ROOT, argOf('--cache', path.join(process.env.TEMP || '/tmp', 'ohm-adm' + LEVELS.join('') + '-cache')));
+const CACHE = path.resolve(ROOT, argOf('--cache', cacheOf(LEVELS)));
 const QUANT = Math.pow(10, parseInt(argOf('--dec', '3'), 10));   /* --dec 3 = ~110 m at the equator */
 const MIN_AREA = 1e-5;                                   /* deg^2 — drop slivers, keep small city-states */
 
-/* IntMap's nine (AGENTS.md section 3.5). OHM tags them `name:<code>`. */
-const LANGS = { en:'name:en', ja:'name:ja', de:'name:de', ru:'name:ru', es:'name:es',
-                fr:'name:fr', ko:'name:ko', 'zh-Hant':'name:zh-Hant', 'zh-Hans':'name:zh-Hans' };
+/* ══ (#R695) THE LANGUAGE COLUMNS ARE THE APP'S OWN LIST, EVALUATED — NOT TYPED HERE ═════════════
+   This was a literal table of nine `name:<tag>` pairs, and it was WRONG in the way a hand-kept list
+   is always wrong: it had no row for a bare `name:zh`, so 1,807 Chinese names upstream had written
+   were dropped, silently, by a build whose every check was green. The bundle's key alphabet is
+   js/lang-registry.js's `html` column (that is what js/time-admin1.js resolves a reader's language
+   through), so it is READ off that registry — scripts/histadmin/langs.mjs evaluates it, the way
+   scripts/build-whs.mjs evaluates the same file. Add a language to the app and this follows.
+   `name:zh` itself is upstream's, not the app's: see `zhNames` below. */
+const REG = registry(ROOT);
+const TAGS = harvestTags(ROOT, REG);          /* every language the app has, as OSM suffixes */
+const SHIP = shipTags(ROOT, REG);             /* the ones this build may ADD a name in (policy) */
+const LANGS = Object.fromEntries(TAGS.map(t => [t, 'name:' + t]));
+/* ⚠⚠⚠ (#R695) `opencc-js` IS LOADED LAZILY, AND THAT IS NOT A PERFORMANCE CHOICE. #R680's ten
+   mutation checks prove this gate BREAKS when the bundle is broken, and they do it by copying the
+   script into a synthetic root under %TEMP% and running it there — a root with no `node_modules`.
+   A STATIC `import … from 'opencc-js'` therefore threw ERR_MODULE_NOT_FOUND before a single line
+   ran, and all ten went red: the safety net that proves the gate works was taken out by the gate's
+   own new dependency. (Measured: `check:histadmin` itself stayed green throughout, because
+   `--check` never needs a converter — so nothing that reads the shipped bytes could see it.)
+   ⚠ THE TWO NEIGHBOURS ALREADY DO THIS, for the same reason and with the same words:
+   scripts/build-hist-borders.mjs and scripts/build-histnames.mjs both `await import('opencc-js')`
+   inside the path that needs it. This is the third. */
+let _cc = null;
+async function converters() {
+  if (_cc) return _cc;
+  const OpenCC = await import('opencc-js');
+  _cc = { toSimp: OpenCC.Converter({ from: 'tw', to: 'cn' }), toTrad: OpenCC.Converter({ from: 'cn', to: 'tw' }) };
+  return _cc;
+}
+/* ⚠ AND THE FAILURE IS LOUD. A caller that reaches the Chinese rule without having awaited
+   `converters()` gets an exception naming the rule, not a silently unconverted name. */
+const cc = () => { if (!_cc) throw new Error('scripts/build-hist-admin1.mjs: converters() must be awaited before a name:zh is classified'); return _cc; };
 
 /* ── EDTF-lite → [y,m,d] ────────────────────────────────────────────────────
    OHM writes ISO-ish dates with EDTF qualifiers: `1871-05-04`, `1871-05`, `1871`,
@@ -203,9 +247,9 @@ const polysOf  = rings => OHMR.polysOf(rings, MIN_AREA);
 
 
 /* ══ ── CHECK (offline) ─────────────────────────────────────────────────────────────────────────
-   (#R680) THE TWO LARGEST BUNDLES IN data/ HAD NO GATE AT ALL. data/hist-admin1.js (10.3 MB) and
-   data/hist-admin2.js (15.5 MB) are where the map gets every first- and second-level line, every
-   label on one, every answer to a click on one and every coverage count — 25.8 MB of shipped bytes
+   (#R680) THE TWO LARGEST BUNDLES IN data/ HAD NO GATE AT ALL. data/hist-admin1.js (10.4 MB) and
+   data/hist-admin2.js (16.2 MB) are where the map gets every first- and second-level line, every
+   label on one, every answer to a click on one and every coverage count — 26.7 MB of shipped bytes
    that `npm test` and CI weighed nothing of. Each of the four neighbouring historical bundles has
    a gate (`check:histborders`, `check:histeras`, `check:kuni`, `check:bordercoast`); these two were
    written after those and were simply never given one, so a bundle that broke — or that quietly
@@ -248,6 +292,20 @@ function tiers() {
      正本   this line. Nothing else states a nameless budget. */
 const NAMELESS_MAX = 3;
 
+/* ⚠ (#R695) AND A CEILING ON HOW MANY UNITS THE READER CANNOT READ. `NAMELESS_MAX` counts units
+   with no name in ANY language — three of them. It says nothing about the case that was actually
+   shipping: 20,357 second-tier units with a perfectly good Polish or Thai `name` and not one word
+   a Japanese reader could read. Measured before this round: 0.5 % of the second tier carried a
+   Japanese name, 6.5 % an English one, and no invariant anywhere measured that at all.
+     観測   35.2 % — the worst SHIPPED language (Japanese) over both committed tiers,
+            2026-09-11, after the Wikidata fill: 9,684 of 27,528 units.
+     失効   this is a SHARE, not a headcount, so it survives upstream growing; it moves DOWN when
+            the fill improves, exactly like NAMELESS_MAX and scripts/test-budget.mjs, and never up.
+            Widening the shipped set (scripts/histnames/langs.mjs) re-measures it, because a
+            language IntMap has just started shipping starts from wherever upstream left it.
+     正本   this line. Nothing else states a name-coverage budget. */
+const UNREADABLE_MAX_PCT = 35.2;
+
 function bcSets() {
   const f = path.join(ROOT, 'data', 'border-coast.js');
   if (!fs.existsSync(f)) return null;
@@ -262,6 +320,7 @@ function check() {
   const sets = bcSets();
   if (!sets) bad.push('data/border-coast.js does not declare the ring-mark sets these bundles are joined to');
   const owner = new Map();          /* OHM relation id → the tier that already claimed it */
+  const allFeats = [];              /* (#R695) the name budget is one share over the whole record */
   let nameless = 0, feats = 0, rings = 0, pts = 0;
   const nowY = new Date().getUTCFullYear();
 
@@ -355,6 +414,29 @@ function check() {
           + ' — the marks are indexed by ring, so they now describe other polygons. Re-run scripts/build-border-coast.mjs.');
     }
     feats += d.feats.length; rings += d.rings.length; pts += d.rings.reduce((a, r) => a + r.length, 0);
+    for (const f of d.feats) allFeats.push(f);
+  }
+
+  /* ══ (#R695) CAN THE READER READ IT? ════════════════════════════════════════════════════════
+     Two questions, and neither is a list of languages: which ones ship is scripts/histnames/langs.mjs
+     and which tag each of them is stored under is js/lang-registry.js (scripts/histadmin/langs.mjs
+     crosses the two). Restore the nine and both of these follow with no edit here. */
+  if (allFeats.length) {
+    const missing = missingByTag(allFeats, SHIP);
+    let worst = null;
+    for (const tag of SHIP) if (!worst || missing[tag].pct > missing[worst].pct) worst = tag;
+    if (missing[worst].pct > UNREADABLE_MAX_PCT)
+      bad.push(missing[worst].missing + ' of ' + allFeats.length + ' units (' + missing[worst].pct.toFixed(1)
+        + ' %) carry no `' + worst + '` name, over the ceiling of ' + UNREADABLE_MAX_PCT
+        + ' % — a reader of that language is shown a unit they cannot read. Re-run'
+        + ' `node scripts/build-hist-admin1.mjs --names`, or lower the ceiling if upstream really did shrink.');
+    /* ⚠ A PROPERTY, NOT A NUMBER: the languages this build FILLS must be the best covered ones. If a
+       language nobody fills is ahead of one that ships, the fill did not run over these bytes — which
+       is precisely what a stale bundle looks like, and what no count of its own would ever say. */
+    const others = missingByTag(allFeats, TAGS.filter(t => !SHIP.includes(t)));
+    for (const tag of Object.keys(others)) if (others[tag].missing < missing[worst].missing)
+      bad.push('`' + tag + '` is better covered (' + (allFeats.length - others[tag].missing) + ' units) than the shipped `'
+        + worst + '` (' + (allFeats.length - missing[worst].missing) + ') — the name stage has not been run over these bundles');
   }
 
   if (nameless > NAMELESS_MAX)
@@ -367,38 +449,152 @@ function check() {
     if (bad.length > 25) console.error('  … and ' + (bad.length - 25) + ' more');
     process.exit(1);
   }
+  const cov = allFeats.length ? missingByTag(allFeats, SHIP) : {};
   console.log('✓ hist-admin — ' + list.length + ' tiers, ' + feats + ' units, ' + rings + ' pooled rings, '
     + pts + ' vertices; every century covered, every ring used, every unit joined to its OHM relation'
-    + (nameless ? ' (' + nameless + '/' + NAMELESS_MAX + ' nameless)' : ''));
+    + (nameless ? ' (' + nameless + '/' + NAMELESS_MAX + ' nameless)' : '')
+    + '; readable in ' + SHIP.map(t => t + ' ' + (100 - cov[t].pct).toFixed(1) + '%').join(', '));
+}
+
+/* ⚠ THE TAG SWEEP IS CACHED TOO. It was not, and a rebuild at a different --tol
+   therefore had to re-ask Overpass for the whole 5.6 MB index — which is the one
+   request in this script with no id to retry on, so a rate-limited answer killed a
+   build whose 153 geometry batches were all already on disk. Re-simplifying must
+   cost nothing but CPU. Delete the cache directory to re-pull from upstream.
+   ⚠ (#R695) AND IT IS ASKED FOR PER TIER, BY THE TIER'S OWN LEVELS. The name stage below needs
+   every tier's tags at once (an item's claimants are not confined to one bundle), so the sweep
+   that was inlined in the build is a function of the levels it is sweeping. */
+async function tagSweep(levels, cache) {
+  fs.mkdirSync(cache, { recursive: true });
+  const tf = path.join(cache, 'tags.json');
+  if (fs.existsSync(tf)) { console.error('· tags ' + levels.join(',') + ' (cached)'); return JSON.parse(fs.readFileSync(tf, 'utf8')); }
+  console.error('· tags ' + levels.join(',') + ' …');
+  /* ══ (#R669) THE CLAIM IS THE LEVEL, AND A MISSING `boundary` TAG IS A MISSING TAG ══════════
+     Measured on OHM 2026-09-10: 28,211 relations carry admin_level 3-6 and 27,662 of them are
+     `boundary=administrative`. Of the 549 that are not, 538 are a DIFFERENT KIND OF OBJECT that
+     merely borrows the level column — religious_administration (431), census (79), statistical
+     (18), election, disputed — and those are correctly none of this layer's business. The other
+     ELEVEN are first-level subdivisions with the tag simply absent, and they were being dropped
+     for it: 直隸 Chihli (admin_level 4, 1644-1911), CdZ-Gebiet Elsaß, «Augustan Italian provinces»
+     among them. `type=boundary` with a level and no competing `boundary` value is an
+     administrative boundary whose tagger did not write the word down. */
+  const j = await overpass('[out:json][timeout:600];('
+    + 'relation["boundary"="administrative"]["admin_level"~"' + lvlRe(levels) + '"];'
+    + 'relation["type"="boundary"][!"boundary"]["admin_level"~"' + lvlRe(levels) + '"];'
+    + ');out tags;');
+  fs.writeFileSync(tf, JSON.stringify(j));
+  return j;
+}
+const byId = tagJson => new Map((tagJson.elements || [])
+  .filter(e => e.type === 'relation' && e.tags).map(e => [e.id, e.tags]));
+
+/* ── the names UPSTREAM itself wrote about one relation, keyed by the bundle's suffixes ──────────
+   ⚠ `name:zh` is not one of the app's tags and is handled by its own rule — see chineseTags(). */
+function upstreamNames(t) {
+  const names = {};
+  for (const tag of TAGS) { const v = t[LANGS[tag]]; if (v) names[tag] = v; }
+  const zh = String(t['name:zh'] || '').trim();
+  if (zh) for (const tag of chineseTags(zh, cc().toSimp, cc().toTrad)) if (!names[tag]) names[tag] = zh;
+  return names;
+}
+
+/* ══ (#R695) THE NAME STAGE — ONE IMPLEMENTATION, TWO CALLERS ═══════════════════════════════════
+   Both the full build and `--names` end here, because «which item may name which unit» is one
+   question and two answers to it would drift the first day either caller was touched.
+   ⚠ THE UNIVERSE IS EVERY TIER, NOT THE ONE BEING WRITTEN. Q724 (Maine) is claimed by two
+   first-tier units and five second-tier ones, and it is the second tier that reveals the borrowing
+   («Devonshire County»). A build that judged one tier alone would hand «Maine» to units the other
+   tier already showed it cannot describe, and the two bundles would disagree about the same item.
+   @param units [{feats, tagsById, write}]  — every tier; only `write` ones are filled
+ */
+async function nameStage(units) {
+  await converters();   /* (#R695) the Chinese rule below is sync; this is where its dependency is settled */
+  const claims = [];
+  for (const u of units) for (const f of u.feats) {
+    const t = u.tagsById.get(f[10]); if (!t) continue;
+    const q = String(t.wikidata || '').trim();
+    if (q) claims.push({ qid: q, name: f[0] });
+  }
+  const verdicts = itemVerdicts(claims);
+  const usable = [...verdicts].filter(([, v]) => v.ok).map(([q]) => q);
+  const refused = verdicts.size - usable.length;
+  console.error('· wikidata: ' + verdicts.size + ' items claimed by ' + claims.length + ' units; '
+    + refused + ' refused (one item, units that do not agree on a name)');
+  const labels = await labelsFor(usable, ROOT, m => process.stderr.write(m.endsWith('   ') ? m : m + '\n'));
+  const tally = {};
+  for (const u of units) {
+    if (!u.write) continue;
+    for (const f of u.feats) {
+      const t = u.tagsById.get(f[10]); if (!t) continue;
+      const q = String(t.wikidata || '').trim();
+      const v = verdicts.get(q);
+      if (!v || !v.ok) continue;
+      const byTag = labelsByTag(labels.get(q), SHIP, REG);
+      for (const tag of fillNames(f[9], byTag, plainLabel)) tally[tag] = (tally[tag] || 0) + 1;
+    }
+  }
+  console.error('· filled: ' + (Object.keys(tally).map(k => k + '=' + tally[k]).join(' ') || 'nothing'));
+  return tally;
+}
+
+/** one committed tier, loaded: its rows, its upstream tags, and whether this run may write it. */
+async function tierUnit(t, write) {
+  const p = path.join(ROOT, t.file);
+  const w = {};
+  new Function('window', fs.readFileSync(p, 'utf8'))(w);
+  const d = w[t.global];
+  if (!d || !Array.isArray(d.feats)) throw new Error(t.file + ' holds no ' + t.global + ' feature rows');
+  return { tier: t, data: d, feats: d.feats, tagsById: byId(await tagSweep(t.levels, cacheOf(t.levels))), write };
+}
+
+/** every committed tier EXCEPT the one this run is writing — the rest of the item universe. */
+async function otherTiers(global) {
+  const out = [];
+  for (const t of tiers()) if (t.global !== global && fs.existsSync(path.join(ROOT, t.file))) out.push(await tierUnit(t, false));
+  return out;
+}
+
+/* ══ (#R695) `--names` — REFRESH THE NAMES OF EVERY COMMITTED TIER, AND NOTHING ELSE ═════════════
+   ⚠ THIS IS NOT A SECOND BUILD. It runs the SAME upstreamNames() and the SAME nameStage() the full
+   build runs, over rows it read back rather than rows it just made, and it re-serialises the ring
+   pool it was given — byte for byte, because it never looks at a coordinate.
+   ⚠ AND THAT IS THE POINT. The geometry in these bundles is joined to data/border-coast.js BY RING
+   INDEX: `check:bordercoast` re-derives every mark against the bundled coastline, and this build's
+   own gate refuses a bundle whose ring count has moved. Names change far more often than lines do
+   (upstream adds a `name:ja`, Wikidata gains a label), and re-deriving 22,708 simplified polygons —
+   3.6 GB of cached Overpass — to change a string column is both expensive and the one way this
+   round could have moved a line it was not asked to move. */
+async function refreshNames() {
+  await converters();   /* (#R695) `upstreamNames` classifies name:zh synchronously — settle it first */
+  const units = [];
+  for (const t of tiers()) units.push(await tierUnit(t, true));
+  /* upstream's own words first: a suffix the old table did not read (`name:zh`) arrives here, and
+     nothing already in the row is replaced — what the bundle holds, the bundle keeps. */
+  let fromOsm = 0;
+  for (const u of units) for (const f of u.feats) {
+    const t = u.tagsById.get(f[10]); if (!t) continue;
+    const had = Object.keys(f[9] || {}).length;
+    f[9] = Object.assign(upstreamNames(t), f[9] || {});
+    fromOsm += Object.keys(f[9]).length - had;
+  }
+  console.error('· from upstream tags: ' + fromOsm + ' name column(s) the old language table did not read');
+  await nameStage(units);
+  for (const u of units) {
+    const d = u.data;
+    const body = 'window.' + u.tier.global + '=' + JSON.stringify({
+      v: d.v, src: d.src, built: new Date().toISOString().slice(0, 10), since: d.since,
+      tolerance: d.tolerance, levels: d.levels, rings: d.rings, feats: d.feats
+    }) + ';\n';
+    fs.writeFileSync(path.join(ROOT, u.tier.file), body);
+    console.error('· wrote ' + u.tier.file + ' ' + (body.length / 1048576).toFixed(2) + ' MB (rings untouched: '
+      + d.rings.length + ')');
+  }
 }
 
 async function main() {
+  await converters();   /* (#R695) upstreamNames() below classifies name:zh synchronously */
   fs.mkdirSync(CACHE, { recursive: true });
-  /* ⚠ THE TAG SWEEP IS CACHED TOO. It was not, and a rebuild at a different --tol
-     therefore had to re-ask Overpass for the whole 5.6 MB index — which is the one
-     request in this script with no id to retry on, so a rate-limited answer killed a
-     build whose 153 geometry batches were all already on disk. Re-simplifying must
-     cost nothing but CPU. Delete the cache directory to re-pull from upstream. */
-  const tf = path.join(CACHE, 'tags.json');
-  let tagJson;
-  if (fs.existsSync(tf)) { console.error('· tags (cached)'); tagJson = JSON.parse(fs.readFileSync(tf, 'utf8')); }
-  else {
-    console.error('· tags …');
-    /* ══ (#R669) THE CLAIM IS THE LEVEL, AND A MISSING `boundary` TAG IS A MISSING TAG ══════════
-       Measured on OHM 2026-09-10: 28,211 relations carry admin_level 3-6 and 27,662 of them are
-       `boundary=administrative`. Of the 549 that are not, 538 are a DIFFERENT KIND OF OBJECT that
-       merely borrows the level column — religious_administration (431), census (79), statistical
-       (18), election, disputed — and those are correctly none of this layer's business. The other
-       ELEVEN are first-level subdivisions with the tag simply absent, and they were being dropped
-       for it: 直隸 Chihli (admin_level 4, 1644-1911), CdZ-Gebiet Elsaß, «Augustan Italian provinces»
-       among them. `type=boundary` with a level and no competing `boundary` value is an
-       administrative boundary whose tagger did not write the word down. */
-    tagJson = await overpass('[out:json][timeout:600];('
-      + 'relation["boundary"="administrative"]["admin_level"~"' + LVLRE + '"];'
-      + 'relation["type"="boundary"][!"boundary"]["admin_level"~"' + LVLRE + '"];'
-      + ');out tags;');
-    fs.writeFileSync(tf, JSON.stringify(tagJson));
-  }
+  const tagJson = await tagSweep(LEVELS, CACHE);
   const all = (tagJson.elements || []).filter(e => e.type === 'relation' && e.tags);
   console.error('  relations', all.length);
 
@@ -534,8 +730,7 @@ async function main() {
     const t = w.el.tags;
     const s = w.s || [SINCE - 200, 1, 1];    /* open start = already there when the clock begins */
     const e = w.e || [9999, 12, 31];         /* open end  = still in force */
-    const names = {};
-    for (const code of Object.keys(LANGS)) { const v = t[LANGS[code]]; if (v) names[code] = v; }
+    const names = upstreamNames(t);
     /* ══ (#R669) COLUMN 10 IS THE OHM RELATION ID, AND IT IS WHAT MAKES THE CLICK SHARP ═════════
        The shipped ring is simplified at `--tol` because a planet-wide bundle has to be; the unit a
        reader just tapped is ONE record, and one record can be fetched whole. js/time-admin1.js asks
@@ -545,6 +740,9 @@ async function main() {
     feats.push([String(t.name || t['name:en'] || '').trim(), parseInt(t.admin_level, 10) || 4,
                 s[0], s[1], s[2], e[0], e[1], e[2], idx, names, w.el.id]);
   }
+
+  /* the name stage sees this run's tier plus every tier already in data/ — see nameStage() */
+  await nameStage([{ feats, tagsById: byId(tagJson), write: true }].concat(await otherTiers(GLOBAL)));
 
   const src = 'OpenHistoricalMap contributors (CC0) · openhistoricalmap.org';
   const body = 'window.' + GLOBAL + '=' + JSON.stringify({
@@ -563,4 +761,5 @@ async function main() {
 }
 
 if (args.includes('--check')) check();
+else if (args.includes('--names')) refreshNames().catch(e => { console.error('FAILED', e); process.exit(1); });
 else main().catch(e => { console.error('FAILED', e); process.exit(1); });

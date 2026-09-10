@@ -30,6 +30,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { createHash } from 'node:crypto';
 
 export const CACHE = process.env.INTMAP_HISTERAS_NAMES_CACHE || join(tmpdir(), 'intmap-histeras-names-cache');
 const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap; intmapofficial@gmail.com)';
@@ -85,11 +86,37 @@ function cached(key, make) {
   if (existsSync(f)) return JSON.parse(readFileSync(f, 'utf8'));
   return make().then((v) => { writeFileSync(f, JSON.stringify(v)); return v; });
 }
+
+/* ⚠ (#R695) A CACHE KEYED BY WHERE A BATCH SAT IN THE LIST IS REACHABLE AFTER THE LIST CHANGES.
+   #R690 paid for this shape on the OpenHistoricalMap fetch — a key taken from the batch's first
+   id meant every one of 196 files went unreachable the moment the id list moved, and 2.1 GB was
+   about to be re-fetched. Here the failure is the quieter direction: `lab-000240` still EXISTS
+   after a name is added upstream, so it is read, and it answers about the names that used to be
+   in that slot. Nothing is wrong in what comes back — the rows carry the label they answer for,
+   so a mismatched row simply matches no name — but names go SILENTLY unanswered.
+   ⇒ new callers key by the CONTENT of the batch. The old positional keys are still honoured
+   (`legacy`) so #R686's 275 MB cache is not thrown away, and they are verified before use:
+   a cached batch that answers about none of the strings asked for is stale and is refetched. */
+const digest = (parts) => createHash('sha1').update(parts.join(String.fromCharCode(0))).digest('hex').slice(0, 16);
+
+function cachedBatch(ns, batch, verify, make, legacy) {
+  mkdirSync(CACHE, { recursive: true });
+  const f = join(CACHE, ns + '-' + digest(batch) + '.json');
+  if (existsSync(f)) return JSON.parse(readFileSync(f, 'utf8'));
+  if (legacy) {
+    const g = join(CACHE, legacy + '.json');
+    if (existsSync(g)) {
+      const v = JSON.parse(readFileSync(g, 'utf8'));
+      if (verify(v, batch)) { writeFileSync(f, JSON.stringify(v)); return v; }
+    }
+  }
+  return make().then((v) => { writeFileSync(f, JSON.stringify(v)); return v; });
+}
 const esc = (s) => s.replace(/[\\"]/g, (m) => '\\' + m);
 const qid = (u) => String(u).split('/').pop();
 
 /** name → [{qid, exact}] for every item carrying the string as an English label or alias. */
-export async function candidatesFor(names, log = () => {}) {
+export async function candidatesFor(names, log = () => {}, ns = '') {
   const forms = new Map();                       /* query form → the census names it stands for */
   for (const n of names) for (const v of variants(n)) {
     if (!forms.has(v)) forms.set(v, []); forms.get(v).push(n);
@@ -99,10 +126,14 @@ export async function candidatesFor(names, log = () => {}) {
   const B = 120;
   for (let i = 0; i < all.length; i += B) {
     const batch = all.slice(i, i + B);
-    const rows = await cached('lab-' + i.toString().padStart(6, '0'), () => sparql(`SELECT ?lab ?item ?exact WHERE {
+    const ask = () => sparql(`SELECT ?lab ?item ?exact WHERE {
   VALUES ?lab { ${batch.map((s) => '"' + esc(s) + '"@en').join(' ')} }
   { ?item rdfs:label ?lab . BIND(1 AS ?exact) } UNION { ?item skos:altLabel ?lab . BIND(0 AS ?exact) }
-}`));
+}`);
+    /* a cached batch is only this batch's answer if some row answers about a string in it — an
+       empty answer is a legitimate answer and is only trusted from a content-addressed file */
+    const fits = (v, b) => Array.isArray(v) && v.length > 0 && v.some((r) => b.includes(r.lab.value));
+    const rows = await cachedBatch(ns + 'lab', batch, fits, ask, ns ? null : 'lab-' + i.toString().padStart(6, '0'));
     for (const b of rows) {
       const q = qid(b.item.value), ex = b.exact.value === '1';
       for (const n of (forms.get(b.lab.value) || [])) {
@@ -121,9 +152,9 @@ export async function factsFor(qids, log = () => {}) {
   const list = [...qids];
   for (let i = 0; i < list.length; i += 50) {
     const batch = list.slice(i, i + 50);
-    const j = await cached('ent-' + i.toString().padStart(6, '0') + '-' + batch.length, () => api(
+    const j = await cachedBatch('ent', batch, (v, b) => !!(v && v.entities && b.some((q) => v.entities[q])), () => api(
       'action=wbgetentities&props=labels%7Cclaims&languages=' + WD_LANGS.join('%7C') +
-      '&ids=' + encodeURIComponent(batch.join('|'))));
+      '&ids=' + encodeURIComponent(batch.join('|'))), 'ent-' + i.toString().padStart(6, '0') + '-' + batch.length);
     for (const [q, e] of Object.entries(j.entities || {})) {
       if (!e || !e.id) continue;
       const cl = (p) => (e.claims && e.claims[p] || []).map((c) => c.mainsnak && c.mainsnak.datavalue && c.mainsnak.datavalue.value).filter(Boolean);
@@ -161,7 +192,37 @@ export async function factsFor(qids, log = () => {}) {
      statement for. */
 export const REJECT_ROOTS = ['Q17442446', 'Q34770'];
 
-export async function rejectedClasses(classQids, roots = REJECT_ROOTS) {
+/* ── what the map CAN be drawing (#R695) ─────────────────────────────────────
+   ⚠ #R686 ASKED «DOES WIKIDATA SAY WHERE THIS IS?» AND USED THE ANSWER AS A PROXY FOR «IS THIS
+   THE KIND OF THING THE MAP DRAWS» (`geo` in `factsFor` — a coordinate, a country, a continent,
+   a location). For a polity that proxy holds. For the subject the deep snapshots are mostly
+   made of — a PEOPLE — it does not: Wikidata states no coordinate for a people and usually no
+   country either, so the proxy answered «no» for the very things aourednik draws.
+
+   MEASURED (2026-09-11) on the 368 names that #R686 refused as `string-only` while exactly one
+   item on all of Wikidata carried that exact English label, tallied by drawn feature:
+
+       466  Q41710    ethnic group          45  Q3024240  historical country
+        34  Q3449457  subethnic group       24  Q1620908  historical region
+        34  Q103817   indigenous people     18  Q465299   archaeological culture
+        33  Q4533081  ethnolinguistic group 15  Q4204501  historical ethnic group
+        20  Q133311   tribe                 …and, as noise, family name · human · taxon ·
+                                              encyclopedia article · album · given name
+
+   Every accepted kind in that tally sits under one of the four roots below; none of the noise
+   does. So the proxy is replaced by the thing itself, in the SAME shape the rejection already
+   uses — name a root, let `wdt:P279*` find what is under it. A list of QIDs to accept would have
+   to be edited for the next people nobody has met yet, which is the edit
+   `.agents/rules/no-ad-hoc-hardcoding.md` exists to prevent.
+
+   ⚠ THIS LOOSENS NOTHING ABOUT AGREEMENT. Being the right KIND is never enough on its own: it
+   buys the same one point `geo` bought, and the only place it can decide anything alone is the
+   case #R686 already carved out — exactly one item in the world carries this exact English
+   label. There is no ranker there to get it wrong (#R515). */
+export const ACCEPT_ROOTS = ['Q41710', 'Q3024240', 'Q1620908', 'Q465299'];
+
+/** Members of `classQids` that sit under one of `roots` via `wdt:P279*`, per Wikidata. */
+export async function classesUnder(classQids, roots) {
   const list = [...classQids];
   const bad = new Set();
   const tag = roots.join('_');
@@ -175,4 +236,34 @@ export async function rejectedClasses(classQids, roots = REJECT_ROOTS) {
     for (const b of rows) bad.add(qid(b.c.value));
   }
   return bad;
+}
+
+export function rejectedClasses(classQids, roots = REJECT_ROOTS) { return classesUnder(classQids, roots); }
+export function acceptedClasses(classQids, roots = ACCEPT_ROOTS) { return classesUnder(classQids, roots); }
+
+/* ── the identifier lane (#R695) ─────────────────────────────────────────────
+   ⚠ AN IDENTIFIER IS NOT A SPELLING, AND NOTHING ABOVE APPLIES TO IT. Everything else in this
+   file exists because #R515 proved a name alone cannot pick an item: the queries return every
+   item carrying the string, the scorer makes them agree with the map's geometry and clock, and a
+   tie is refused. data/hist-borders.js does not pose that question — OpenHistoricalMap tagged
+   the polity `wikidata=Q…` and 1,305 of its 1,411 features carry it. There is one item, it was
+   named by the record itself, and there is no ranker in the path. So this asks for its labels
+   and stops.
+   ⚠ IT STILL DROPS A BRACKETED LABEL (scripts/histeras/match.mjs `plainLabel`) — that rule is
+   about what a map label can carry, not about which item is right, and it applies to both lanes. */
+export async function labelsByQid(qids, log = () => {}) {
+  const out = {};
+  const list = [...qids];
+  for (let i = 0; i < list.length; i += 50) {
+    const batch = list.slice(i, i + 50);
+    const j = await cachedBatch('qlab', batch, (v, b) => !!(v && v.entities && b.some((q) => v.entities[q])),
+      () => api('action=wbgetentities&props=labels&languages=' + WD_LANGS.join('%7C') +
+        '&ids=' + encodeURIComponent(batch.join('|'))));
+    for (const [q, e] of Object.entries(j.entities || {})) {
+      if (!e || !e.id) continue;
+      out[q] = Object.fromEntries(Object.entries(e.labels || {}).map(([k, v]) => [k, v.value]));
+    }
+    log('qid labels ' + Math.min(i + 50, list.length) + '/' + list.length);
+  }
+  return out;
 }

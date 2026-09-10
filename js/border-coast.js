@@ -78,16 +78,55 @@ window.IntMapBorderCoast = (function () {
     return lines.length ? { type: 'MultiLineString', coordinates: lines } : null;
   }
 
-  /* an UNMARKED collection: every ring of every feature, stroked whole — the outline drawn before
-     #R531, and still the right answer for a record no build step has measured. */
+  /* ⚠⚠⚠ (#R695) A MARK BELONGS TO A RING, AND A RING CAN BE RECOGNISED WITHOUT BEING ASKED FOR BY
+     KEY. The two callers above hand over a bundle and a ring INDEX, which is why they have to know
+     their set's key ('cs', 'hb', …). The era tier does not: js/time-borders.js builds a
+     FeatureCollection out of data/hist-eras.js's pooled rings and hands the COLLECTION here — and
+     so, before this round, the whole band from 123,000 BC to 1688 was stroked whole, every
+     record's copy of the coastline drawn as a boundary. Measured on the 1500 snapshot: 384,167 of
+     1,116,501 km of line (34.4%) is that copy.
+     The rings in that collection are THE SAME ARRAY OBJECTS the bundle pooled, so they can be
+     looked up by identity — and which global holds which pool is not written here either: every
+     entry of data/border-coast.js names the window property its bundle assigns (`global`), so this
+     index is built from the marks themselves and a seventh bundle needs no line of code here.
+     A ring nobody has marked is still stroked whole — the aourednik runtime fallback, which is
+     fetched from GitHub when a year the bundle lacks is asked for, is not measured by any build. */
+  const _byRing = (typeof Map === 'function') ? new Map() : null;
+  const _indexed = {};
+  function _index() {
+    if (!_D || !_byRing || !_D.sets) return;
+    for (const k in _D.sets) {
+      const s = _D.sets[k];
+      if (!s || !s.global || _indexed[s.global]) continue;
+      const b = window[s.global];
+      /* not loaded yet — try again on the next collection, because the bundle and the marks are two
+         separate requests and either can win */
+      if (!b || !Array.isArray(b.rings) || !Array.isArray(s.draw)) continue;
+      /* ⚠ the marks are indexed BY POSITION, so a pool of a different length is a different pool
+         (a rebuilt bundle beside a stale marks file). Index nothing rather than index it wrong. */
+      if (b.rings.length !== s.rings || s.draw.length !== s.rings) { _indexed[s.global] = 1; continue; }
+      for (let i = 0; i < b.rings.length; i++) _byRing.set(b.rings[i], s.draw[i]);
+      _indexed[s.global] = 1;
+    }
+  }
+  function markOf(ring) { _index(); return (_byRing && _byRing.has(ring)) ? _byRing.get(ring) : 1; }
+
+  /* a collection handed over whole: each ring stroked whole unless the marks know it, in which case
+     it is stroked the way the marks say — the outline drawn before #R531 for everything nobody has
+     measured, and the measured answer for everything that has been. */
   function wholeLines(fc) {
+    /* ⚠ the marks may not have been asked for yet on this path (the era tier awaits the bundle, not
+       these), so ask now: a caller that memoizes what it gets back keeps the whole-ring drawing
+       until it rebuilds, and one request started here is what makes that a first frame instead of a
+       session. */
+    if (!_D) { try { load(); } catch (_) {} }
     const feats = [];
     for (const f of ((fc && fc.features) || [])) {
       const g = f.geometry; if (!g) continue;
       const polys = g.type === 'Polygon' ? [g.coordinates] : (g.type === 'MultiPolygon' ? g.coordinates : null);
       if (!polys) continue;
       const lines = [];
-      for (const p of polys) for (const r of p) if (r && r.length > 1) lines.push(closedRing(r));
+      for (const p of polys) for (const r of p) if (r && r.length > 1) for (const l of ringLines(r, markOf(r))) lines.push(l);
       if (lines.length) feats.push({ type: 'Feature', geometry: { type: 'MultiLineString', coordinates: lines }, properties: {} });
     }
     return { type: 'FeatureCollection', features: feats };

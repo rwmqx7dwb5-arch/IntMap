@@ -35,10 +35,9 @@
 ## 3. 並列編集の安全（競合・二重実装・矛盾を防ぐ）
 
 - **同じファイルを 2 体に書かせない。** 分解は**ファイル単位**で、重なるなら直列にする。
-- 並列実装のときは、`node scripts/worktree.mjs new <slug>` で**作業ごとに worktree を用意**し、
-  各 implementer には**その絶対パスと、触ってよいファイルの一覧**を渡す。
-- ⚠ **ハーネスが作る worktree を隔離に使わない**——リポジトリの中（＝ OneDrive の中）に
-  できる（`docs/AGENT-SETUP.md` §5）。`scripts/worktree.mjs` は外に作る。
+- implementer には**作業ディレクトリの絶対パスと、触ってよいファイルの一覧**を渡す。
+  ⚠ **ハーネスが作る worktree を隔離に使わない**（OneDrive の中にできる。`docs/AGENT-SETUP.md` §5）
+  ——`node scripts/worktree.mjs new <slug>` が外に作る。
 - **統合・commit・push・merge はメインだけが行う。** agent にさせない。
 - 他セッションの branch・worktree・未コミット変更・stash に触れない（`AGENTS.md` §6）。
 - ラウンド番号は `worktree.mjs status` の**空き番号**を使い、**push の直前に取り直す**（#R671 は 7 回）。
@@ -73,6 +72,7 @@
 | 歴史都市名 | `npm run check:histcities` |
 | CShapes より下の国境 | `npm run check:histborders` |
 | 全時代の国境（紀元前も） | `npm run check:histeras` |
+| 歴史的な政体名（3 記録に 1 つの表） | `npm run check:histnames` |
 | 歴史的な行政区分 | `npm run check:histadmin` |
 | 導出した令制国 | `npm run check:kuni` |
 | 国境のどの辺を描くか | `npm run check:bordercoast` |

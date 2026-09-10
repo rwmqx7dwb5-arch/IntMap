@@ -107,6 +107,21 @@ export function astroYear(key) {
 const DEC = 3;                        /* coordinate decimals, matching data/cshapes.js and data/hist-borders.js */
 const TOL = Math.pow(10, -DEC);       /* one grid cell — see above; not an independent number */
 const MIN_AREA = 0;                   /* keep every ring that is still a ring after rounding */
+/* ⚠ (#R695) AND «STILL A RING» IS NOT «STILL A SHAPE» — MEASURED, AND THE LINE ABOVE IS WHY IT HAD
+   TO BE. 904 of the 8,814 rings this file ships (10.3%) enclose EXACTLY ZERO signed area at the
+   coordinates it stores, and 891 of them are paths that double back on themselves (the same vertex
+   twice). They are upstream's digitizing artifacts: 421 of the 2,730 ring instances are already
+   zero-area in the raw GeoJSON, and the other 2,309 enclose 2.7e-5 deg² BETWEEN THEM — a third of a
+   square kilometre over 2,309 rings averaging 190 km of path. So the sentence above («a ring that
+   survives rounding with three distinct points is a real island at the precision this file stores»)
+   is true of every ring except these, which have no interior at any precision.
+   ⚠ THEY ARE STILL KEPT, AND MIN_AREA STAYS 0. Dropping them was measured too: it would remove
+   2,734 polygon entries, 1,007 of the unnamed `blank` polygons this file created that lane for, and
+   12 named features — two of which («Andean hunter-gatherers», «Savanna hunter-gatherers», 1783)
+   have no other polygon and would leave the record entirely. Nothing upstream drew is thrown away
+   here; what is decided elsewhere is whether such a ring is STROKED, and the answer is no —
+   scripts/build-border-coast.mjs marks it «stroke nothing», because a ring with no interior is not
+   the boundary of anything. The fill layers already drew nothing for them. */
 
 /* ── U+FFFD ───────────────────────────────────────────────────────────────────────
    ⚠ A STRING CONTAINING U+FFFD IS NOT A NAME. The replacement character is already IN the upstream
@@ -365,6 +380,11 @@ function build({ report, tol = TOL, minArea = MIN_AREA, write = true } = {}) {
     console.log('snapshots ' + snaps.length + ' (BC ' + snaps.filter(s => s.y <= 0).length + ', AD ' + snaps.filter(s => s.y > 0).length + ')' +
       '   features ' + nf + '/' + stat.rawFeats + '   rings ' + rings.length + '   points ' + pts + ' (raw ' + stat.rawPts + ')   bytes ' + text.length);
     console.log('named by their own other fields because NAME was empty: ' + stat.namedBySiblings);
+    /* (#R695) kept, and not stroked — see MIN_AREA above. Printed so it cannot go unnoticed again. */
+    const flat = rings.filter(r => ringArea(r) === 0);
+    console.log('rings enclosing no area at the stored precision: ' + flat.length + ' of ' + rings.length +
+      ' (' + (100 * flat.length / rings.length).toFixed(1) + '%, ' + flat.reduce((a, r) => a + r.length, 0) +
+      ' points) — kept here, marked «stroke nothing» by scripts/build-border-coast.mjs');
     console.log('U+FFFD names: ' + stat.broken + ' broken, ' + stat.repaired + ' repaired from the corpus, ' +
       stat.unrepairable.length + ' unrepairable' + (stat.unrepairable.length ? ' → ' + stat.unrepairable.join(', ') : ''));
     console.log('unnamed upstream polygons carried in the `blank` lane: ' + stat.blank +

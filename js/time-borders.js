@@ -274,7 +274,24 @@ window.IntMapModules.timeBorders=function(HOST){
     const _wholeLines=fc=>_BC().wholeLines(fc);
     /* the memo is per record, so a late copy of the marks has to throw it away — otherwise one lost
        request pins the map to the whole-ring drawing until a reload. */
-    try{ _BC().onArrive(()=>{ _csLn.clear(); _hbLn.clear(); }); }catch(_){}
+    /* ⚠⚠⚠ (#R695) THE ERA COLLECTIONS WERE NOT IN THIS SUBSCRIPTION, AND UNTIL THIS ROUND THAT WAS
+       HARMLESS BECAUSE THEY HAD NO MARKS TO WAIT FOR. data/hist-eras.js is now marked like the
+       other five bundles, so a sheet drawn BEFORE the 480 kB of marks arrive keeps the whole-ring
+       lines it was given — one memo in `_lnOf`, and the coastline stays drawn as a border for that
+       year until the reader travels somewhere else and back. The marks and the 10.6 MB bundle race
+       on a cold load and the marks usually win (`warm()` asks for them at idle, and the era tier
+       has a bundle to parse first), which is exactly the kind of «usually» that stops being true on
+       a slow line. ⇒ the era caches are dropped here too. `_erFC` is keyed by year and holds the
+       features; `_lnOf` is keyed by the collection object, so dropping `_erFC` is what makes the
+       next `_linesFor` see a NEW object and ask again. */
+    /* ⚠⚠ AND CLEARING A CACHE IS NOT A REPAINT. js/time-admin1.js's subscription calls
+       `refreshLines()`; this one only dropped memos, so the year ALREADY on the screen kept the
+       whole-ring lines it was built with until the reader travelled somewhere else and back. That
+       was true of CShapes too — `_csLn.clear()` cannot reach an `_lnOf` entry that was written
+       when the collection was built. `refresh()` is this module's own published way to repaint,
+       and it is only worth doing while the era layers are actually on the map. */
+    try{ _BC().onArrive(()=>{ _csLn.clear(); _hbLn.clear(); _erFC.clear(); cache.clear();
+      if(active){ try{ window._applyBorders(); }catch(_){} } }); }catch(_){}
     const _lineFeat=g=>({type:'Feature',geometry:g,properties:{}});
     /* ⚠ THE OUTLINE HANGS OFF THE COLLECTION, NOT ON IT. A `fc._lines` property would ride inside
        every `setSourceData('imtb-src', fc)` — structured-cloned to the worker with the polygons it
@@ -297,7 +314,10 @@ window.IntMapModules.timeBorders=function(HOST){
         /* active ON that date: started at or before it, and not yet ended (CShapes end dates are inclusive) */
         if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<t) continue;
         const NAME=_csName(f[0],f[1],year);
-        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:{NAME:NAME,name:NAME,_gw:f[1]}});
+        /* (#R695) CShapes names are bare English; the table is what makes 1886-2019 readable in
+           anything else. `_gw` is untouched — it is the record's identifier, not a name. */
+        const i18=hnFor('cshapes',NAME,null,null);
+        feats.push({type:'Feature',geometry:_csGeomOf(_csD,i),properties:Object.assign({NAME:NAME,name:NAME,_gw:f[1]},i18?{_i18n:i18}:{})});
         const lg=_csLineOf(_csD,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
       _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
@@ -364,7 +384,9 @@ window.IntMapModules.timeBorders=function(HOST){
       for(let i=0;i<d.feats.length;i++){ const f=d.feats[i];
         if(_ymd(f[2],f[3],f[4])>t || _ymd(f[5],f[6],f[7])<=t) continue;   /* start <= t < end — the end is EXCLUSIVE here */
         const NAME=f[0].en;
-        feats.push({type:'Feature',geometry:_hbGeomOf(d,i),properties:{NAME:NAME,name:NAME,_i18n:f[0]}});
+        /* (#R695) the record's QID fills the languages OHM did not write. ⚠ `f[0]` goes in LAST
+           in `hnFor`, so what the upstream itself wrote always wins. */
+        feats.push({type:'Feature',geometry:_hbGeomOf(d,i),properties:{NAME:NAME,name:NAME,_i18n:hnFor('histBorders',NAME,f[1],f[0])||f[0]}});
         const lg=_hbLineOf(d,i); if(lg) lines.push(_lineFeat(lg)); }
       const fc={type:'FeatureCollection',features:feats};
       _lnOf.set(fc,{type:'FeatureCollection',features:lines});   /* (#R531) what `imtb-line` strokes */
@@ -508,24 +530,55 @@ window.IntMapModules.timeBorders=function(HOST){
        ⚠ AND IT IS NOT A PRECONDITION. The table is small (tens of kB against 10.6 MB) but it is
        still a second request, so a failure to fetch it must not cost the reader the map: the
        promise resolves with the bundle either way and the names lane resolves to null. */
-    let _erN=null;
-    function erNames(){ if(_erN!==null) return Promise.resolve(_erN);
+    /* ══ (#R695) ONE NAME TABLE FOR ALL THREE RECORDS ══════════════════════════════════════════
+       #R686 built this lane for the era snapshots alone, because that is where it was asked for.
+       Measured afterwards, the band that needed it MOST was the one nobody had looked at: a
+       reader in 1950 is on data/cshapes.js, whose features carry a bare English string, and the
+       hand tables below answered 18.6% of them in French, Korean and Chinese. So the table is now
+       data/histnames.json and it answers for whichever record is drawing:
+         · `byQid`  — data/hist-borders.js states the polity's Wikidata QID (1,305 of 1,411
+           features). No spelling is involved, so nothing has to be made to agree; the row simply
+           fills the languages OpenHistoricalMap left empty. ⚠ IT NEVER OVERWRITES OHM.
+         · `byName.cshapes` / `byName.eras` — the records with no identifier, decided by #R686's
+           measure against the map's own geometry and clock (scripts/histeras/match.mjs).
+         · `prose` — the era cartographer's English DESCRIPTIONS 「Savanna hunter-gatherers」,
+           said in the reader's language and marked `d` so the map can still tell a description
+           from a polity's name (#R682 drew that distinction; this keeps it true of the text).
+       ⚠ IT RIDES ON THE FEATURE AS `_i18n`, the shape the 1689-1885 record has carried since
+       #R518, so `tagSame`, `resolveHist` and `_locName` gain no second rule about which name wins.
+       ⚠ AND IT IS NOT A PRECONDITION. It is tens of kB against 29 MB of bundles, but it is still
+       a second request: a failure to fetch it must cost the reader the names and never the map. */
+    let _hn=null;
+    function histNames(){ return _hn; }
+    function hnLoad(){ if(_hn!==null) return Promise.resolve(_hn);
       /* ⚠ THE try/catch IS NOT DECORATION. `fetch(...)` can throw SYNCHRONOUSLY — there is no
-         `fetch` at all in the node harnesses that evaluate this module (tests/r682-* runs it in a
-         vm) — and a synchronous throw here would reject `_erP`, which is the promise the whole
-         era tier awaits. The names lane failing must cost the reader nothing but the names. */
+         `fetch` at all in the node harnesses that evaluate this module — and a synchronous throw
+         here would reject the promise the era tier awaits. */
       try{
-        return fetch('data/histeras-names.json').then(r=>r.ok?r.json():null)
-          .then(j=>{ _erN=(j&&j.names)||{}; return _erN; })
-          .catch(()=>{ _erN={}; return _erN; });
-      }catch(_){ _erN={}; return Promise.resolve(_erN); } }
-    function erLoad(){ if(_erD&&_erN!==null) return Promise.resolve(_erD); if(_erP) return _erP;
+        return fetch('data/histnames.json').then(r=>r.ok?r.json():null)
+          .then(j=>{ _hn=j||{}; return _hn; })
+          .catch(()=>{ _hn={}; return _hn; });
+      }catch(_){ _hn={}; return Promise.resolve(_hn); } }
+    /* The nine-language tuple for one drawn feature, or null. `own` is what the RECORD itself
+       says (OHM's `name:xx`) and is never overwritten — the table only fills what is empty. */
+    function hnFor(record,en,qid,own){
+      const t=_hn; if(!t) return own||null;
+      const byQ=(qid&&t.byQid&&t.byQid[qid])||null;
+      const byN=(t.byName&&t.byName[record]&&t.byName[record][en])||null;
+      const pr=(t.prose&&t.prose[en])||null;
+      if(!byQ&&!byN&&!pr&&!own) return null;
+      const out=Object.assign({},(byN&&byN.n)||null,(pr&&pr.n)||null,(byQ&&byQ.n)||null,own||null);
+      out.en=en;
+      if(pr) out._d=1;
+      return out; }
+
+    function erLoad(){ if(_erD&&_hn!==null) return Promise.resolve(_erD); if(_erP) return _erP;   /* (#R695) the names lane is shared now — `_hn`, not the era-only `_erN` */
       _erP=new Promise(res=>{ if(window.__HISTERAS){ _erD=window.__HISTERAS; res(_erD); return; }
         const sc=document.createElement('script'); sc.src='data/hist-eras.js'; sc.async=true;
         sc.onload=()=>{ _erD=window.__HISTERAS||null; res(_erD); };
         sc.onerror=()=>{ res(null); };
         document.head.appendChild(sc); })
-        .then(d=>erNames().then(()=>{ if(!d) _erP=null; return d; }));   /* ⚠ the names never fail the bundle */
+        .then(d=>hnLoad().then(()=>{ if(!d) _erP=null; return d; }));   /* ⚠ the names never fail the bundle */
       return _erP; }
     /* the reach the record actually has, from the record — never a number typed here */
     function erYears(d){ return (d&&d.snaps)?d.snaps.map(s=>s.y):YEARS; }
@@ -543,9 +596,9 @@ window.IntMapModules.timeBorders=function(HOST){
         /* (#R686) the nine-language row for this name, when data/histeras-names.json has one. `en`
            is the upstream's and is put back here, so `_i18n` is the same self-describing tuple the
            1850-1885 features carry and every reader of it stays one reader. */
-        const row=(_erN&&_erN[nm])||null, i18=row?Object.assign({en:nm},row.n):null;
+        const i18=hnFor('eras',nm,null,null);
         feats.push({type:'Feature',
-          properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{}),
+          properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{}),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
       for(const ids of (sn.blank||[])){ const ps=poly(ids); if(!ps.length) continue;
         feats.push({type:'Feature',properties:{NAME:''},
@@ -1267,7 +1320,7 @@ window.IntMapModules.timeBorders=function(HOST){
       shownYear=year;   /* (#R410) the reader's year, set BEFORE any early return — `shownY` is a snapshot key and one snapshot answers many years. ⚠ (#R421) it is derived from the INSTANT now, so it still answers "which year is on screen" while the borders under it moved to day precision. */
       /* (#R117/#R421) 1886–2019 → DAY-EXACT CShapes borders. Falls back to the aourednik snapshot path
          below if the CShapes bundle can't be loaded. */
-      if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
+      if(year>=CS_MIN&&year<=CS_MAX){ const d=(await Promise.all([csLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) the marks settle before the first collection is built, so nothing is cached unmarked */
         if(my!==seq||!active) return;
         if(d){ let key; try{ key='cs'+csEpoch(d,year,mon,day); }catch(_){ key='cs'+year; }   /* the EPOCH, not the date: a quiet decade keeps one cache entry and re-renders nothing */
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }   /* (#R140) don't silently give up when the style is mid-load — retry once ready */
@@ -1280,7 +1333,7 @@ window.IntMapModules.timeBorders=function(HOST){
          ⚠ AND THE FALL-THROUGH IS PER INSTANT, NOT PER BAND — `fc.features.length`. #R690 widened the
          band by nearly two centuries and the record does not fill it evenly, so a day inside the
          window for which OHM holds nothing must reach the snapshot below rather than blank the map. */
-      if(year>=HB_MIN&&year<=HB_MAX){ const d=(await Promise.all([hbLoad(),bcLoad()]))[0];   /* (#R531) as above */
+      if(year>=HB_MIN&&year<=HB_MAX){ const d=(await Promise.all([hbLoad(),bcLoad(),hnLoad()]))[0];   /* (#R531) as above */
         if(my!==seq||!active) return;
         if(d){ let key; try{ key='hb'+hbEpoch(d,year,mon,day); }catch(_){ key='hb'+year; }
           if(shownY===key){ try{ if(ensure()) window._applyBorders(); else whenStyleReady().then(()=>{ if(active&&shownY===key&&ensure()) window._applyBorders(); }); }catch(_){} return; }
@@ -1341,7 +1394,7 @@ window.IntMapModules.timeBorders=function(HOST){
     }catch(_){} });
     /* (#R94k) warm the cache in the background so the era borders swap INSTANTLY when a year is entered
        (the aourednik files are a few 100 KB each; once cached in IndexedDB via IntMapCache they load at once). */
-    (function warm(){ const pf=()=>{ bcLoad();   /* (#R531) 85 KB of marks, beside the 5.5 MB it marks */
+    (function warm(){ const pf=()=>{ bcLoad(); hnLoad();   /* (#R531) 85 KB of marks, beside the 5.5 MB it marks */
       csLoad().then(d=>{ if(d) return;   /* (#R117) warm the CShapes bundle; only if it FAILED warm the aourednik fallback snapshots */
         /* (#R679) warming means the BUNDLE now — one 10.6 MB file instead of 53 cross-origin
            requests through two public proxies. The per-year walk stays for the case where that
@@ -1764,16 +1817,40 @@ window.IntMapModules.timeBorders=function(HOST){
        reachable at all — no amount of drag precision lands on 1920-10-28 in a 176-year slider.
        Async because the answer lives in the 5.5 MB bundle, which is warmed at idle and may not be
        parsed yet; every one of these resolves to `null` rather than throwing if it never loads. */
-    const _kToDate=k=>{ const y=Math.floor(k/10000), m=Math.floor(k/100)%100, d=k%100; return new Date(y,m-1,d,12,0,0); };
+    /* ⚠ (#R695) THIS HAD TWO YEAR-ZERO TRAPS IN ONE LINE, and both only fire once the list reaches
+       below year 1 — which is what this round does by putting the era years in it.
+         · `Math.floor(k/100)%100` on a NEGATIVE key gives a negative month (−1229989899 → −99).
+           The remainder has to be taken against the year that was actually floored.
+         · `new Date(y,…)` maps a year under 100 to 1900+y — #R602 paid for that four times in one
+           round. The rule has ONE owner (js/hist-scale.js `utcAt`) and this reads it. */
+    const _kToDate=k=>{ const y=Math.floor(k/10000), r=k-y*10000, m=Math.floor(r/100), d=r%100;
+      try{ const HS=window.IntMapHistScale; if(HS&&HS.utcAt) return HS.utcAt(y,m-1,d,12); }catch(_){}
+      const t=new Date(0); t.setUTCFullYear(y,m-1,d); t.setUTCHours(12,0,0,0); return t; };
     const _kOf=w=>{ const d=(w instanceof Date&&!isNaN(w.getTime()))?w:new Date(); return _ymd(d.getFullYear(),d.getMonth()+1,d.getDate()); };
     /* ⚠ (#R518) BOTH RECORDS, ONE LIST. The stepper is how the dense stretches are reached at all, and
        until this round its list stopped at 1886-01-01 — so inside #R518's window «next border change» had
        nothing to answer with and the stepper was dead for the whole era the clock could reach. The two
        bundles are asked together and their boundary lists merged; either may fail to load without
        taking the other's dates with it. */
+    /* ⚠⚠⚠ (#R695) …AND BELOW 1689 THERE WERE NO DATES AT ALL, SO THE ONLY WAY TO REACH THE NEXT
+       WORLD WAS TO DRAG. #R518's note above is exactly right about why the stepper exists — 「the
+       only way the dense stretches are reachable at all」 — and the stretch it did not reach is the
+       one where dragging is worst: below 1689 the slider is LOGARITHMIC over 124,688 years
+       (js/hist-scale.js), so the 53 sheets between 123000 BC and 1650 sit inside a few pixels each.
+       A reader in 500 AD had no way to ask for the next moment the map actually changes.
+       ⚠ THE ERA YEARS ARE NOT CHANGE DATES AND ARE NOT PRETENDED TO BE. A snapshot states the year
+       it depicts, not the day a border moved, so each contributes ONE key — 1 January of its own
+       year — and the panel goes on printing the date of whatever is drawn. Calling it 「the day the
+       world changed」 for a sheet would be the invention CONSTITUTION「偽物・ハリボテ禁止」 forbids;
+       calling it 「the next moment this record can show you」 is what it is.
+       ⚠ AND IT COSTS NOTHING WHERE IT IS NOT WANTED. The 10.6 MB bundle is only consulted when it
+       is ALREADY THERE — parsed by this module, or published on `window` by the <script> tag that
+       loads it. That is exactly when the map is drawing from it, so the stepper at 1950 does not
+       pull a bundle to answer about 500 AD, and no path here can start a download. */
     async function _allBounds(){ const out=[];
       try{ const h=await hbLoad(); if(h) for(const k of hbBounds(h)) out.push(k); }catch(_){}
       try{ const c=await csLoad(); if(c) for(const k of csBounds(c)) out.push(k); }catch(_){}
+      try{ const e=_erD||window.__HISTERAS||null; if(e) for(const y of erYears(e)) if(y<HB_MIN) out.push(_ymd(y,1,1)); }catch(_){}
       return out.sort((a,b)=>a-b); }
     async function changeAfter(when){ try{ const t=_kOf(when), b=await _allBounds();
       for(const k of b) if(k>t) return _kToDate(k); return null; }catch(_){ return null; } }
@@ -1782,13 +1859,23 @@ window.IntMapModules.timeBorders=function(HOST){
     /* the day the CURRENTLY DRAWN world came into being — what the panel prints under the stepper */
     async function changeAt(when){ try{
       const w=(when instanceof Date&&!isNaN(when.getTime()))?when:null; if(!w) return null;
-      const y=w.getFullYear();
+      const y=w.getFullYear();   /* (#R695) LOCAL, like `_kOf` two lines up — one clock per function; mixing UTC and local here would shift a day at the year boundary */
       if(y>=HB_MIN&&y<=HB_MAX){ const h=await hbLoad(); if(!h) return null;
         return _kToDate(hbEpoch(h,y,w.getMonth()+1,w.getDate())); }
+      /* (#R695) below the day-exact window the answer is the sheet the map is actually on —
+         `shownY`, which `go()` has already resolved through `nearest()`. Never a computed guess. */
+      if(y<HB_MIN){ if(!_erD||shownY==null||shownY>=HB_MIN) return null; return _kToDate(_ymd(shownY,1,1)); }
       if(y<CS_MIN||y>CS_MAX) return null;
       const d=await csLoad(); if(!d) return null;
       return _kToDate(csEpoch(d,y,w.getMonth()+1,w.getDate())); }catch(_){ return null; } }
     async function changeDates(){ try{ return (await _allBounds()).map(_kToDate); }catch(_){ return []; } }
+    /* ⚠ (#R695) THE FLOOR OF THE STEPPER IS NOT A NUMBER THIS FILE OWNS. It is the oldest year any
+       record here can put on the screen, and #R682 recorded that this function was still naming
+       1850 long after the clock reached 123000 BC. It reads the deepest subsystem's own floor
+       (js/hist-scale.js `FLOOR`, which a gate compares against the shipped era bundle) and falls
+       back to the day-exact floor when hist-scale has not evaluated — the same shape js/chronos.js
+       `ymin` uses, and for the same reason. */
+    function _stepMin(){ try{ const HS=window.IntMapHistScale; if(HS&&typeof HS.FLOOR==='number') return HS.FLOOR; }catch(_){} return HB_MIN; }
 
     /* ══ ⚠⚠⚠ (#R682) WHAT THIS LAYER IS DRAWING, SAID ON THE MAP AND NOT ONLY ON A SOURCE PAGE ══
        #R679 lowered the clock to 123000 BC and bundled the seventeen pre-common-era sheets, and its
@@ -1877,7 +1964,7 @@ window.IntMapModules.timeBorders=function(HOST){
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
        here so tests/r686-histeras-names-checks.test.mjs can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName,
-             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:HB_MIN,max:CS_MAX}) };   /* (#R518) the range is both records, floor to CShapes' last year — and the floor moved down with the record (#R690) */
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, loadHistNames:hnLoad,
+             changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 };

@@ -3,7 +3,7 @@
  *  IntMap · who already answers an era name?                                (#R686)
  * ----------------------------------------------------------------------------
  *  Prints, for every app language, how many of data/hist-eras.js's distinct names the HAND-WRITTEN
- *  tables inside js/time-borders.js localize, how many data/histeras-names.json localizes, and —
+ *  tables inside js/time-borders.js localize, how many data/histnames.json localizes, and —
  *  the number this round exists to keep at nothing surprising — how many BOTH answer.
  *
  *      node scripts/histeras/coverage.mjs
@@ -17,8 +17,8 @@ import { timeBorders } from './time-borders.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rows = census(eraBundle(ROOT));
 const langs = JSON.parse(/\[[^\]]*\]/.exec(readFileSync(join(ROOT, 'js', 'locales', '_langs.js'), 'utf8'))[0]);
-const NAMES = join(ROOT, 'data', 'histeras-names.json');
-const table = existsSync(NAMES) ? JSON.parse(readFileSync(NAMES, 'utf8')).names : {};
+const NAMES = join(ROOT, 'data', 'histnames.json');   /* (#R695) one table, three records — the era rows are `byName.eras` */
+const table = existsSync(NAMES) ? (JSON.parse(readFileSync(NAMES, 'utf8')).byName.eras || {}) : {};
 
 const total = rows.reduce((a, r) => a + r.n, 0);
 console.log('data/hist-eras.js — ' + rows.length + ' distinct names over ' + total + ' drawn features\n');

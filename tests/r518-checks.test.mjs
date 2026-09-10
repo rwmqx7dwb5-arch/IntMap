@@ -33,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
+import { timeBorders } from '../scripts/histeras/time-borders.mjs';   /* (#R695) ask the module, not its source (#R488) */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -176,8 +177,16 @@ test('③ tagSame reads the record\'s own name BEFORE _eraLocName', () => {
     'the else-branch of tagSame no longer prefers the record\'s own name over _eraLocName');
   assert.match(TB, /const own=\(f\.properties\._i18n&&\(f\.properties\._i18n\[lg\]\|\|null\)\)\|\|null;/,
     'tagSame no longer reads _i18n for the current language');
-  /* and hbFC must actually put it there */
-  assert.match(TB, /_i18n:f\[0\]/, 'hbFC no longer attaches the name tuple to the feature');
+  /* ⚠ AND hbFC MUST ACTUALLY PUT IT THERE — asked of the FEATURE, not of the spelling. #R518 wrote
+     this as `assert.match(TB, /_i18n:f\[0\]/)`, and #R695 made the record's own tuple the LAST
+     thing merged into a shared table (so the upstream still wins and the empty languages get
+     filled). That is the same fact, spelled differently — the #R488 shape, where a correct change
+     goes red and an incorrect one (dropping the tuple into a variable that is never attached)
+     would have stayed green. So the collection is built and read. */
+  const { api } = timeBorders({ lang: 'jp', year: 1800 });
+  const feat = api.histNameFor('histBorders', 'Kahlur State', 'Q860407', { en: 'Kahlur State', jp: 'カフルール' });
+  assert.equal(feat && feat.en, 'Kahlur State', 'hbFC no longer attaches the name tuple to the feature');
+  assert.equal(feat.jp, 'カフルール', "the record's own name must survive the merge, whatever the table says");
 });
 
 /* ④ the band is wired, and the stepper can see it ---------------------------------------------*/
@@ -235,7 +244,15 @@ test('④ the change-date API asks BOTH records', () => {
     const b = TB.match(new RegExp('function ' + fn + '\\([\\s\\S]{0,260}'));
     assert.match(b[0], /_allBounds/, fn + ' still reads only one record\'s dates');
   }
-  assert.match(TB, /range:\(\)=>\(\{min:HB_MIN,max:CS_MAX\}\)/, 'the published range still starts at CShapes');
+  /* ⚠ (#R695) THE REACH IS ASKED OF THE FUNCTION. #R518's own words for this were «the published
+     range still starts at CShapes» — a claim about a FLOOR, pinned by matching the source text
+     `range:()=>({min:HB_MIN,max:CS_MAX})`. When #R695 put the era sheets in the stepper's list the
+     floor moved DOWN, which is the opposite of the defect this defends, and the spelling-match went
+     red for it while a floor that rose back to CShapes would still have passed. */
+  const { api } = timeBorders({ lang: 'en' });
+  const r = api.range();
+  assert.ok(r.min < 1886, 'the published range still starts at CShapes — everything below it is unreachable from the stepper');
+  assert.equal(r.max, HB.window ? Math.max(r.max, HB.window[1]) : r.max);
 });
 
 /* ⑤ attribution — ODbL is share-alike, so naming the source is the licence, not politeness -----*/

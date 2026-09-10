@@ -589,13 +589,16 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        that used HOST.lang directly would miss Japanese, both Chinese scripts, and nothing else, i.e.
        it would look like it worked. The bare `name` is the last rung on purpose: a province's own
        official name is a better answer than no name at all, and better than a transliteration this
-       file would have to invent. */
-    const OSM_TAG = { jp: 'ja', zh: 'zh-Hant', 'zh-hans': 'zh-Hans' };
+       file would have to invent.
+       ⚠ (#R695) AND THE CROSSING IS NOT WRITTEN HERE. It was — a three-entry table — and the build
+       that WRITES these keys had a nine-entry table of its own, so the bundle's key alphabet was
+       stated twice with nothing joining the two. `IntMapLang.htmlTag` is that alphabet (a language's
+       row already carries its real tag), and scripts/histadmin/langs.mjs evaluates the same registry
+       to key the bundle. A tenth language now needs no edit on either side. */
     function nameOf(f) {
       const nm = f[9] || {};
-      let code = 'en';
-      try { code = window.IntMapLang.normalise(HOST.lang) || 'en'; } catch (_) { try { code = String(HOST.lang || 'en'); } catch (__) {} }
-      const tag = OSM_TAG[code] || code;
+      let tag = 'en';
+      try { tag = window.IntMapLang.htmlTag(HOST.lang) || 'en'; } catch (_) { try { tag = String(HOST.lang || 'en'); } catch (__) {} }
       return nm[tag] || nm.en || f[0] || '';
     }
 

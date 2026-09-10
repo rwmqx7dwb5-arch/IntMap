@@ -29,6 +29,7 @@ tools: Bash, Read, Grep, Glob
 | `npm run check:wars` | 紛争データの生成物と定義の一致 |
 | `npm run check:histcities` | 歴史都市名の生成物と記録の一致・綴りが2都市を指さないこと |
 | `npm run check:histeras` | 全時代の国境スナップショット（aourednik/historical-basemaps 53枚・紀元前17枚を含む）の同梱ファイルの不変条件（紀元前と西暦の両方があるか・`key` から導いた天文年と `y` が一致するか・名前に U+FFFD が無いか・リング番号が解決するか）。⚠ 再生成はしない（上流 71.5 MB の取得が要る） |
+| `npm run check:histnames` | 歴史的な政体名の表 `data/histnames.json` を、それが答える 3 つの記録（cshapes / hist-borders / hist-eras）に照合する。名前はその記録が実際に描くものか・QID は記録自身が述べたものか・誰も書いていない言語を主張していないか。⚠ キャッシュがあれば再導出する（無ければ落ちる） |
 | `npm run check:histborders` | CShapes より下の日単位の歴史国境（1689–1885）の同梱ファイルの不変条件（窓の中か・リング番号が解決するか・**窓のどの年も `data/cshapes.js` と同じだけの陸地を覆うか**）。⚠ 再生成はしない（CI に置けない約 2.1 GB の上流応答が要る） |
 | `npm run check:histadmin` | 歴史的な第1級・第2級行政区分の同梱ファイル（`data/hist-admin1.js` ＋ `data/hist-admin2.js`・合わせて 25.8 MB）の不変条件。**この 2 本は #R680 まで門を 1 つも持っていなかった。** 測るのは、各ファイルが**自分のファイル名が示す global だけ**を名乗るか（#R604 は第2級を `window.__HISTADM1=` として出荷し、読み込んだ瞬間に第1級の記録を置き換えた）・名前が示す admin_level だけを持つか・全リングが閉じて地球上にあり、どれかの単位から参照されているか・リング番号が解決するか・span が順序どおりで到達可能か・全単位が一意の OHM relation id を持つか（クリックの精度・#R669）・**どの世紀にも在force の単位があるか**。⚠ 再生成はしない（OHM の admin_level 3–6 全体＝実測 3.4 GB の取得が要る）。残余は `docs/TESTING.md` |
 | `npm run check:kuni` | **IntMap 自身が導出した**令制国 15 国（data/hist-kuni.js）。出荷したバイトの不変条件（relation id が null か・9言語の名前があるか・リングが閉じるか・**data/hist-admin1.js と 1 件も重ならないか**＝二重に描かないか）。⚠ 元の CC0 ラスタ 130 MB はリポジトリに無いので、再導出はラスタがある機械でだけ走る（どちらが走ったかを印字する） |

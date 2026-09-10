@@ -37,6 +37,8 @@ import { codeOnly } from '../scripts/code-only.mjs';
 import { liftFunction } from './helpers/lift-function.mjs';
 import { migrateBatches, loadGeom } from '../scripts/histborders/fetch.mjs';
 
+import { timeBorders } from '../scripts/histeras/time-borders.mjs';   /* (#R695) ask the module, not its source */
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
 const TB = rd('js/time-borders.js');
@@ -134,9 +136,18 @@ test('③ HB_MIN and HB_MAX are the bundle\'s own window, to the year', () => {
   assert.ok(m, 'js/time-borders.js no longer declares the band');
   assert.equal(+m[1], HB.window[0], 'HB_MIN has drifted from the bundle\'s derived floor');
   assert.equal(+m[2], HB.window[1], 'HB_MAX has drifted from the bundle\'s own top');
-  /* the stepper publishes the same reach — a record that walks real border-change dates has to be
-     able to walk the ones below 1850, and `range()` is what the UI asks */
-  assert.match(TB, /range:\(\)=>\(\{min:HB_MIN,max:CS_MAX\}\)/, 'the published range no longer starts at this record');
+  /* the stepper publishes a reach that CONTAINS this record — a record that walks real
+     border-change dates has to be able to walk the ones below 1850, and `range()` is what the UI
+     asks. ⚠ (#R695) THIS ASKS THE FUNCTION, NOT ITS SPELLING. #R690 wrote it as a match on
+     `range:()=>({min:HB_MIN,max:CS_MAX})`, which is the shape #R488 warns about: the moment the
+     reach legitimately grew — #R695 put the era sheets in the stepper's list, so the floor is now
+     the clock's — a correct change turned this red while a wrong one (a floor ABOVE this record,
+     which would make the whole band unreachable from the stepper) would still have passed. */
+  const { api } = timeBorders({ lang: 'en' });
+  const r = api.range();
+  assert.ok(r && Number.isFinite(r.min) && Number.isFinite(r.max), 'the stepper publishes no reach at all');
+  assert.ok(r.min <= HB.window[0], 'the published range starts above this record — its band is unreachable from the stepper');
+  assert.ok(r.max >= HB.window[1], 'the published range ends below this record');
 });
 
 /* ④ the fall-through is per instant, not per band ---------------------------------------------*/
