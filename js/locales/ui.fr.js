@@ -2930,7 +2930,6 @@ window.IntMapLang.define('fr', { ui: {
   "min zoom ": "zoom min. ",
   "no zoom-out!": "sans dézoom !",
   "Play again": "Rejouer",
-  "Outbreak has reached 10 countries.": "L’épidémie a atteint 10 pays.",
   "An effective treatment is found — fatality rate falls.": "Un traitement efficace est trouvé — la létalité recule.",
   "Global death toll passes 1 million.": "Le bilan mondial dépasse 1 million de morts.",
   "Global death toll passes 10 million.": "Le bilan mondial dépasse 10 millions de morts.",
@@ -6217,7 +6216,6 @@ window.IntMapLang.define('fr', { ui: {
   "Adaptive": "Adaptatives",
   "Advanced": "Avancé",
   "Base fatality": "Létalité de base",
-  "Countries with cases now": "Pays ayant actuellement des cas",
   "cumulative infections": "infections cumulées",
   "Global health emergency threshold reached — international spread is sustained.": "Seuil d’urgence sanitaire mondiale atteint — la propagation internationale se poursuit.",
   "Immunity wanes": "L’immunité décline",
@@ -6237,7 +6235,6 @@ window.IntMapLang.define('fr', { ui: {
   "Seasonality": "Saisonnalité",
   "Seed": "Graine aléatoire",
   "Seed an outbreak and watch a stochastic SEIR model carry it between real countries — vaccines, variants and lockdowns included.": "Déclenchez un foyer épidémique et observez un modèle SEIR stochastique le propager entre pays réels — vaccins, variants et confinements compris.",
-  "Simplified educational model (stochastic SEIR, one compartment set per country). Not a forecast.": "Modèle pédagogique simplifié (SEIR stochastique, un jeu de compartiments par pays). Ce n’est pas une prévision.",
   "Start month": "Mois de départ",
   "Strong": "Strictes",
   "This figure is a case fatality ratio (deaths per detected case), but the model applies it to every infection — including undetected ones. Treat it as an assumed severity, not as an observed one.": "Ce chiffre est un taux de létalité (décès par cas détecté), mais le modèle l’applique à toutes les infections — y compris celles qui ne sont pas détectées. Considérez-le comme une gravité supposée, et non comme une gravité observée.",
@@ -6332,4 +6329,62 @@ window.IntMapLang.define('fr', { ui: {
   "Measured right now near the source": "Mesuré en ce moment près de la source",   /* atlas-console.js (#R585) */
   "That name also matches {o}; this run uses {u}.": "Ce nom correspond aussi à {o} ; cette exécution utilise {u}.",   /* atlas-console.js (#R585) */
   "These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.": "Ce sont des observations, et non une partie du modèle ci-dessus. 50–200 nSv/h correspond au fond naturel ordinaire, et la pluie à elle seule peut tripler la valeur d’une station pendant quelques heures.",   /* atlas-console.js (#R585) */
+  "{c} approves a vaccine — rollout begins.": "{c} homologue un vaccin — la campagne de vaccination commence.",   /* playground.js (#R675) */
+  "{c} enters lockdown.": "{c} instaure un confinement.",   /* playground.js (#R675) */
+  "{c} lifts its entry restrictions.": "{c} lève ses restrictions d’entrée.",   /* playground.js (#R675) */
+  "{c} raises entry restrictions to their highest level.": "{c} porte ses restrictions d’entrée à leur niveau maximal.",   /* playground.js (#R675) */
+  "{n} mapped units with no measured population are not simulated.": "{n} unités cartographiées sans population mesurée ne sont pas simulées.",   /* playground.js (#R675) */
+  "Cases": "Cas",   /* playground.js (#R675) */
+  "Countries and territories reached": "Pays et territoires atteints",   /* playground.js (#R675) */
+  "Countries and territories with cases now": "Pays et territoires avec des cas actuellement",   /* playground.js (#R675) */
+  "Day of the peak": "Jour du pic",   /* playground.js (#R675) */
+  "deaths/day, peak": "décès/jour, au pic",   /* playground.js (#R675) */
+  "Disease": "Maladie",   /* playground.js (#R675) */
+  "Dominant variant": "Variant dominant",   /* playground.js (#R675) */
+  "Each curve is scaled to its own peak, so their shapes can be compared but their heights cannot.": "Chaque courbe est normalisée sur son propre pic : leurs formes sont comparables, mais pas leurs hauteurs.",   /* playground.js (#R675) */
+  "entry restricted": "entrée restreinte",   /* playground.js (#R675) */
+  "Entry rules": "Règles d’entrée",   /* playground.js (#R675) */
+  "Entry rules and lockdowns are decided by governments: {a} places follow the government of another, and {b} have none recorded and make no policy of their own.": "Les règles d’entrée et les confinements sont décidés par les gouvernements : {a} lieux suivent le gouvernement d’un autre, et {b} n’en ont aucun d’enregistré et ne mènent pas de politique propre.",   /* playground.js (#R675) */
+  "Entry rules and lockdowns here are decided by {c}.": "Ici, les règles d’entrée et les confinements sont décidés par {c}.",   /* playground.js (#R675) */
+  "Event log": "Journal des événements",   /* playground.js (#R675) */
+  "Events in this run": "Événements de cette simulation",   /* playground.js (#R675) */
+  "ever reached": "atteints au total",   /* playground.js (#R675) */
+  "Every mapped unit sets its own entry rules in this run — the table of governments did not load.": "Dans cette simulation, chaque unité cartographiée fixe ses propres règles d’entrée — la table des gouvernements n’a pas pu être chargée.",   /* playground.js (#R675) */
+  "First case arrived": "Premier cas arrivé",   /* playground.js (#R675) */
+  "governments restricting entry": "gouvernements restreignant l’entrée",   /* playground.js (#R675) */
+  "highest restrictions": "restrictions maximales",   /* playground.js (#R675) */
+  "Hospital pressure": "Pression hospitalière",   /* playground.js (#R675) */
+  "How much of this is chance?": "Quelle est la part du hasard ?",   /* playground.js (#R675) */
+  "Immune (recovered)": "Immunisés (guéris)",   /* playground.js (#R675) */
+  "in lockdown": "en confinement",   /* playground.js (#R675) */
+  "Lockdown": "Confinement",   /* playground.js (#R675) */
+  "median, then the 10th to 90th percentile, over {n} runs": "médiane, puis du 10e au 90e centile, sur {n} simulations",   /* playground.js (#R675) */
+  "Never left the first country": "N’a jamais quitté le premier pays",   /* playground.js (#R675) */
+  "new infections/day, peak": "nouvelles infections/jour, au pic",   /* playground.js (#R675) */
+  "New variant ({g}) detected in {c} — more transmissible. It is only there, for now.": "Nouveau variant ({g}) détecté : {c} — plus transmissible. Il n’est présent que là, pour l’instant.",   /* playground.js (#R675) */
+  "New variant ({g}) detected in {c}. It is only there, for now.": "Nouveau variant ({g}) détecté : {c}. Il n’est présent que là, pour l’instant.",   /* playground.js (#R675) */
+  "No seat of government is recorded here, so this place makes no policy of its own in the model.": "Aucun siège de gouvernement n’est enregistré ici : dans le modèle, ce lieu ne mène donc aucune politique propre.",   /* playground.js (#R675) */
+  "none yet": "aucun pour l’instant",   /* playground.js (#R675) */
+  "Older entries are not shown.": "Les entrées plus anciennes ne sont pas affichées.",   /* playground.js (#R675) */
+  "open": "ouverte",   /* playground.js (#R675) */
+  "original": "souche d’origine",   /* playground.js (#R675) */
+  "Outbreak has reached 10 countries and territories.": "L’épidémie a atteint 10 pays et territoires.",   /* playground.js (#R675) */
+  "Peak infectious": "Pic de personnes contagieuses",   /* playground.js (#R675) */
+  "R₀ here (with variants)": "R₀ ici (variants inclus)",   /* playground.js (#R675) */
+  "Rₑ (effective)": "Rₑ (effectif)",   /* playground.js (#R675) */
+  "Rₑ = R₀ × season ({s}) × behaviour and lockdown ({b}) × susceptible share ({u})": "Rₑ = R₀ × saison ({s}) × comportements et confinement ({b}) × part de population susceptible ({u})",   /* playground.js (#R675) */
+  "Ran its course and ended": "A suivi son cours et s’est terminée",   /* playground.js (#R675) */
+  "Response": "Réponse",   /* playground.js (#R675) */
+  "ring = entry restrictions (yellow → orange → red), blue core = lockdown": "anneau = restrictions d’entrée (jaune → orange → rouge), cœur bleu = confinement",   /* playground.js (#R675) */
+  "Run": "Lancer",   /* playground.js (#R675) */
+  "Running {a} of {b}": "Simulation {a} sur {b}",   /* playground.js (#R675) */
+  "Runs the same disease, the same world and the same first outbreak again with different random draws. The map keeps showing the single run you are watching.": "Relance la même maladie, le même monde et le même foyer initial avec d’autres tirages aléatoires. La carte continue d’afficher la seule simulation que vous regardez.",   /* playground.js (#R675) */
+  "screening on arrival": "contrôle à l’arrivée",   /* playground.js (#R675) */
+  "Simplified educational model (stochastic SEIR, one well-mixed compartment set per country or territory, and one run out of many possible ones). Not a forecast.": "Modèle pédagogique simplifié (SEIR stochastique, un jeu de compartiments homogène par pays ou territoire, et une simulation parmi de nombreuses possibles). Ce n’est pas une prévision.",   /* playground.js (#R675) */
+  "Spread": "Propagation",   /* playground.js (#R675) */
+  "Still circulating at the time limit": "Encore en circulation à la fin de la période",   /* playground.js (#R675) */
+  "Stop the runs": "Arrêter les simulations",   /* playground.js (#R675) */
+  "Susceptible": "Susceptibles (non immunisés)",   /* playground.js (#R675) */
+  "Tap any country for its own numbers.": "Touchez un pays pour voir ses propres chiffres.",   /* playground.js (#R675) */
+  "treatment available": "traitement disponible",   /* playground.js (#R675) */
 } });
