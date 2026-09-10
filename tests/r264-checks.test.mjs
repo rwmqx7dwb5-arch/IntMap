@@ -161,9 +161,14 @@ test('R264 ⑤: every tool row names a module, and every module can report and c
   assert.match(ui, /if\(p&&typeof p\.then==='function'\) p\.then\(syncTools,syncTools\);/,
     'the row is re-synced when the open actually resolves');
   /* the modules themselves — an isOpen() or a state().open, and a close() */
-  const FILES = ['js/seismic.js', 'js/tsunami.js', 'js/terrain-water.js', 'js/sims.js',
-    'js/viewshed.js', 'js/map-tools.js', 'js/night-sky.js', 'js/drone-nav.js'];
-  const src = FILES.map(read).join('\n');
+  /* ⚠ (#R670) THE EIGHT FILE NAMES THAT STOOD HERE WERE A HAND-WRITTEN LIST, and a hand-written list
+     cannot notice the thing that was not added to it: `sim.pandemic` lives in js/playground.js, and
+     this test failed on «IntMapPandemic is defined in one of the module files» while the module was
+     defining it perfectly well one file over. That is the same shape as the defect tests/r670-checks
+     ① exists to catch one level up. It reads js/ instead — strictly a superset of the eight, so
+     nothing asserted here is weakened, and the next simulation is covered without an edit. */
+  const src = fs.readdirSync(path.join(ROOT, 'js')).filter((f) => f.endsWith('.js'))
+    .map((f) => read('js/' + f)).join(String.fromCharCode(10));
   for (const [, id, mod] of ids) {
     const name = mod.replace(/^IntMap/, '');
     const re = new RegExp('window\\.' + mod + '\\s*=');

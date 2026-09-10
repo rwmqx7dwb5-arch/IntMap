@@ -3243,6 +3243,7 @@ window.IntMapLang.define('zh', {
   "Display": "顯示",
   "peak ahead": "稍後最高",
   "Place a source and watch the shaking spread": "設置震源，觀看搖晃如何擴散",
+  "Seed an outbreak and watch it cross real borders": "設定疫情起點，觀看它如何跨越真實國界",
   "U.S. presidential elections": "美國總統選舉",
   "Electoral votes": "選舉人票",
   "majority": "過半數",

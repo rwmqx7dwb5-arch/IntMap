@@ -3027,6 +3027,7 @@ window.IntMapLang.define('fr', { ui: {
   "Display": "Affichage",
   "peak ahead": "pic à venir",
   "Place a source and watch the shaking spread": "Placez une source et regardez les secousses se propager",
+  "Seed an outbreak and watch it cross real borders": "Déclenchez un foyer épidémique et regardez-le franchir de vraies frontières",
   "U.S. presidential elections": "Élections présidentielles américaines",
   "Electoral votes": "Grands électeurs",
   "majority": "majorité",
