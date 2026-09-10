@@ -723,6 +723,28 @@ airports.json                     国ごとの**定期便のある空港の規�
                                   上流は OurAirports（public domain）＋ mledoze/countries（ISO2→ISO3
                                   のみ）。生成は `scripts/build-airports.mjs`（`--check` で上流と比較）。
                                   ⚠ **路線でも便数でも旅客数でもない**——航空インフラの規模である
+mobility.json                     **国どうしの航空路線数**（有向 4,565 ペア・出発国 230）と、国別の
+                                  **実測の入国旅行者数**（World Bank `ST.INT.ARVL`・2019 年以前の最新年）。
+                                  パンデミック・シミュレーターが「次にどの国へ届くか」を引く重みに使う
+                                  （`js/playground.js` がシムを開いたときだけ取りに行く）。
+                                  上流は OpenFlights（ODbL 1.0）＋ OurAirports（public domain・空港コード→国）
+                                  ＋ World Bank（CC BY 4.0）。生成は `scripts/build-mobility.mjs`（`--check` あり）。
+                                  ⚠⚠ **路線表は 2014 年 6 月で更新が止まっている**（OpenFlights 自身が明記）。
+                                  それでも使うのは、**公開されていて現行の二国間旅客行列が存在しない**から
+                                  （OAG・ICAO TFS・Sabre は商用）。**座席数でも便数でも旅客数でもない**
+                                  ⚠ **0 は「誰も行き来しない」ではない**（乗り継ぎは路線表に写らない）ので、
+                                  モデルは置換ではなく距離カーネルと**混合**する（`ROUTE_MIX`）
+                                  ⚠ 出国者数・搭乗者数の列は**実測したうえで配っていない**——理由は
+                                  スクリプトのヘッダと `DEV-NOTES.md` #R678
+health.json                       国別の**エピデミック対応力**——WHO UHC サービス被覆指数（SDG 3.8.1・195）／
+                                  WHO IHR SPAR 能力7「健康危機管理」（194）／WHO/UNICEF の DTP3・MCV1 接種率（236）。
+                                  パンデミック・シミュレーターの `health` / `response` / `delivery` と、
+                                  麻疹の「現在の世界」の**国別初期免疫**に使う。上流は WHO GHO
+                                  （CC BY-NC-SA 3.0 IGO）＋ World Bank（CC BY 4.0）。生成は
+                                  `scripts/build-health.mjs`（`--check` あり）。
+                                  ⚠ **MCV1 は小児の接種率**を全人口の免疫として読んでいる（モデルは年齢構造を持たない）
+                                  ⚠ **COVID-19 の国別免疫の列は無い**——ハイブリッド免疫は接種率ではなく、
+                                  国別に公表している機関が無いので、作れば観測ではなく発明になる
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）

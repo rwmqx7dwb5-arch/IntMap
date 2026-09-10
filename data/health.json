@@ -1,0 +1,2230 @@
+{
+ "//": "Per-country epidemic capacity for the pandemic simulator. `uhc` is the WHO UHC service coverage index (SDG 3.8.1, 0-100). `spar` is IHR SPAR capacity 7, health emergency management (0-100). `dtp3` and `mcv1` are WHO/UNICEF WUENIC immunisation coverage (percent of one-year-olds). ⚠ `mcv1` is CHILDHOOD coverage used as a whole-population measles immunity, because the model has no age structure — the simulator says so on screen. There is NO per-country observation of COVID-19 immunity and none is invented here. Built by scripts/build-health.mjs. See Architecture.md §8.5.",
+ "built": "2026-09-10",
+ "sources": [
+  "WHO Global Health Observatory (CC BY-NC-SA 3.0 IGO) — UHC service coverage index (SDG 3.8.1)",
+  "WHO Global Health Observatory (CC BY-NC-SA 3.0 IGO) — IHR SPAR capacity 7, health emergency management",
+  "World Bank World Development Indicators (CC BY 4.0) — SH.IMM.IDPT and SH.IMM.MEAS (WHO/UNICEF WUENIC)"
+ ],
+ "fields": {
+  "uhc": "WHO UHC service coverage index (SDG 3.8.1), 0-100 — drives medical capacity",
+  "spar": "WHO IHR SPAR capacity 7, health emergency management, 0-100 — drives policy response",
+  "dtp3": "DTP3 immunisation coverage, % of one-year-olds — drives vaccine delivery",
+  "mcv1": "First-dose measles immunisation coverage, % of one-year-olds — the measles preset's initial immunity"
+ },
+ "counts": {
+  "uhc": 195,
+  "spar": 194,
+  "dtp3": 236,
+  "mcv1": 236,
+  "any": 239
+ },
+ "means": {
+  "uhc": 68.4,
+  "spar": 70,
+  "dtp3": 86.2,
+  "mcv1": 85.4
+ },
+ "countries": {
+  "AFE": {
+   "dtp3": 73.7,
+   "dtp3Y": 2024,
+   "mcv1": 70.4,
+   "mcv1Y": 2024
+  },
+  "AFG": {
+   "uhc": 42,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 59,
+   "dtp3Y": 2024,
+   "mcv1": 55,
+   "mcv1Y": 2024
+  },
+  "AFW": {
+   "dtp3": 74.3,
+   "dtp3Y": 2024,
+   "mcv1": 67.1,
+   "mcv1Y": 2024
+  },
+  "AGO": {
+   "uhc": 44,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 64,
+   "dtp3Y": 2024,
+   "mcv1": 53,
+   "mcv1Y": 2024
+  },
+  "ALB": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 81,
+   "mcv1Y": 2024
+  },
+  "AND": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "ARB": {
+   "dtp3": 77.1,
+   "dtp3Y": 2024,
+   "mcv1": 78.6,
+   "mcv1Y": 2024
+  },
+  "ARE": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "ARG": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 75,
+   "dtp3Y": 2024,
+   "mcv1": 82,
+   "mcv1Y": 2024
+  },
+  "ARM": {
+   "uhc": 69,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "ATG": {
+   "uhc": 81,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "AUS": {
+   "uhc": 89,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 93,
+   "dtp3Y": 2024,
+   "mcv1": 91,
+   "mcv1Y": 2024
+  },
+  "AUT": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 85,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "AZE": {
+   "uhc": 67,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 51,
+   "dtp3Y": 2024,
+   "mcv1": 71,
+   "mcv1Y": 2024
+  },
+  "BDI": {
+   "uhc": 48,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 89,
+   "dtp3Y": 2024,
+   "mcv1": 86,
+   "mcv1Y": 2024
+  },
+  "BEL": {
+   "uhc": 86,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "BEN": {
+   "uhc": 38,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 63,
+   "dtp3Y": 2024,
+   "mcv1": 44,
+   "mcv1Y": 2024
+  },
+  "BFA": {
+   "uhc": 47,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 88,
+   "mcv1Y": 2024
+  },
+  "BGD": {
+   "uhc": 54,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "BGR": {
+   "uhc": 73,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 94,
+   "mcv1Y": 2024
+  },
+  "BHR": {
+   "uhc": 78,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "BHS": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 90,
+   "dtp3Y": 2024,
+   "mcv1": 86,
+   "mcv1Y": 2024
+  },
+  "BIH": {
+   "uhc": 64,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 79,
+   "dtp3Y": 2024,
+   "mcv1": 69,
+   "mcv1Y": 2024
+  },
+  "BLR": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "BLZ": {
+   "uhc": 70,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 88,
+   "dtp3Y": 2024,
+   "mcv1": 84,
+   "mcv1Y": 2024
+  },
+  "BOL": {
+   "uhc": 67,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 59,
+   "dtp3Y": 2024,
+   "mcv1": 67,
+   "mcv1Y": 2024
+  },
+  "BRA": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "BRB": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 88,
+   "mcv1Y": 2024
+  },
+  "BRN": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "BTN": {
+   "uhc": 69,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "BWA": {
+   "uhc": 60,
+   "uhcY": 2023,
+   "spar": 20,
+   "sparY": 2023,
+   "dtp3": 95,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "CAF": {
+   "uhc": 39,
+   "uhcY": 2023,
+   "spar": 33,
+   "sparY": 2023,
+   "dtp3": 42,
+   "dtp3Y": 2024,
+   "mcv1": 41,
+   "mcv1Y": 2024
+  },
+  "CAN": {
+   "uhc": 92,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 92,
+   "dtp3Y": 2024,
+   "mcv1": 92,
+   "mcv1Y": 2024
+  },
+  "CEB": {
+   "dtp3": 90.3,
+   "dtp3Y": 2024,
+   "mcv1": 89.6,
+   "mcv1Y": 2024
+  },
+  "CHE": {
+   "uhc": 87,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "CHL": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 95,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "CHN": {
+   "uhc": 85,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "CIV": {
+   "uhc": 46,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 77,
+   "dtp3Y": 2024,
+   "mcv1": 75,
+   "mcv1Y": 2024
+  },
+  "CMR": {
+   "uhc": 48,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 77,
+   "dtp3Y": 2024,
+   "mcv1": 71,
+   "mcv1Y": 2024
+  },
+  "COD": {
+   "uhc": 41,
+   "uhcY": 2023,
+   "spar": 27,
+   "sparY": 2023,
+   "dtp3": 65,
+   "dtp3Y": 2024,
+   "mcv1": 55,
+   "mcv1Y": 2024
+  },
+  "COG": {
+   "uhc": 45,
+   "uhcY": 2023,
+   "spar": 33,
+   "sparY": 2023,
+   "dtp3": 78,
+   "dtp3Y": 2024,
+   "mcv1": 72,
+   "mcv1Y": 2024
+  },
+  "COK": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023
+  },
+  "COL": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 89,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "COM": {
+   "uhc": 52,
+   "uhcY": 2023,
+   "spar": 33,
+   "sparY": 2023,
+   "dtp3": 75,
+   "dtp3Y": 2024,
+   "mcv1": 70,
+   "mcv1Y": 2024
+  },
+  "CPV": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 93,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "CRI": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "CSS": {
+   "dtp3": 89.7,
+   "dtp3Y": 2024,
+   "mcv1": 89.8,
+   "mcv1Y": 2024
+  },
+  "CUB": {
+   "uhc": 86,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "CYP": {
+   "uhc": 76,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "CZE": {
+   "uhc": 83,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 86,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "DEU": {
+   "uhc": 87,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 89,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "DJI": {
+   "uhc": 47,
+   "uhcY": 2023,
+   "spar": 33,
+   "sparY": 2023,
+   "dtp3": 77,
+   "dtp3Y": 2024,
+   "mcv1": 75,
+   "mcv1Y": 2024
+  },
+  "DMA": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 90,
+   "dtp3Y": 2024,
+   "mcv1": 80,
+   "mcv1Y": 2024
+  },
+  "DNK": {
+   "uhc": 85,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 94,
+   "mcv1Y": 2024
+  },
+  "DOM": {
+   "uhc": 73,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 87,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "DZA": {
+   "uhc": 70,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 92,
+   "dtp3Y": 2024,
+   "mcv1": 94,
+   "mcv1Y": 2024
+  },
+  "EAP": {
+   "dtp3": 87.9,
+   "dtp3Y": 2024,
+   "mcv1": 89.5,
+   "mcv1Y": 2024
+  },
+  "EAR": {
+   "dtp3": 86.7,
+   "dtp3Y": 2024,
+   "mcv1": 88.9,
+   "mcv1Y": 2024
+  },
+  "EAS": {
+   "dtp3": 88.5,
+   "dtp3Y": 2024,
+   "mcv1": 89.8,
+   "mcv1Y": 2024
+  },
+  "ECA": {
+   "dtp3": 92.9,
+   "dtp3Y": 2024,
+   "mcv1": 94.4,
+   "mcv1Y": 2024
+  },
+  "ECS": {
+   "dtp3": 93.3,
+   "dtp3Y": 2024,
+   "mcv1": 94.1,
+   "mcv1Y": 2024
+  },
+  "ECU": {
+   "uhc": 78,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 70,
+   "dtp3Y": 2024,
+   "mcv1": 74,
+   "mcv1Y": 2024
+  },
+  "EGY": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "EMU": {
+   "dtp3": 92.9,
+   "dtp3Y": 2024,
+   "mcv1": 94.8,
+   "mcv1Y": 2024
+  },
+  "ERI": {
+   "uhc": 40,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 95,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "ESP": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "EST": {
+   "uhc": 79,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 81,
+   "dtp3Y": 2024,
+   "mcv1": 83,
+   "mcv1Y": 2024
+  },
+  "ETH": {
+   "uhc": 33,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 73,
+   "dtp3Y": 2024,
+   "mcv1": 72,
+   "mcv1Y": 2024
+  },
+  "EUU": {
+   "dtp3": 92.5,
+   "dtp3Y": 2024,
+   "mcv1": 93.6,
+   "mcv1Y": 2024
+  },
+  "FIN": {
+   "uhc": 86,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 94,
+   "mcv1Y": 2024
+  },
+  "FJI": {
+   "uhc": 69,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 91,
+   "mcv1Y": 2024
+  },
+  "FRA": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "FSM": {
+   "uhc": 65,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 76,
+   "dtp3Y": 2024,
+   "mcv1": 81,
+   "mcv1Y": 2024
+  },
+  "GAB": {
+   "uhc": 48,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 61,
+   "dtp3Y": 2024,
+   "mcv1": 57,
+   "mcv1Y": 2024
+  },
+  "GBR": {
+   "uhc": 88,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 92,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "GEO": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 86,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "GHA": {
+   "uhc": 56,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 95,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "GIN": {
+   "uhc": 43,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 63,
+   "dtp3Y": 2024,
+   "mcv1": 60,
+   "mcv1Y": 2024
+  },
+  "GMB": {
+   "uhc": 53,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 80,
+   "dtp3Y": 2024,
+   "mcv1": 83,
+   "mcv1Y": 2024
+  },
+  "GNB": {
+   "uhc": 43,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 68,
+   "dtp3Y": 2024,
+   "mcv1": 65,
+   "mcv1Y": 2024
+  },
+  "GNQ": {
+   "uhc": 49,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 68,
+   "dtp3Y": 2024,
+   "mcv1": 53,
+   "mcv1Y": 2024
+  },
+  "GRC": {
+   "uhc": 77,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 95,
+   "dtp3Y": 2024,
+   "mcv1": 91,
+   "mcv1Y": 2024
+  },
+  "GRD": {
+   "uhc": 78,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 93,
+   "dtp3Y": 2024,
+   "mcv1": 83,
+   "mcv1Y": 2024
+  },
+  "GTM": {
+   "uhc": 58,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 81,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "GUY": {
+   "uhc": 73,
+   "uhcY": 2023,
+   "spar": 27,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "HND": {
+   "uhc": 64,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 75,
+   "dtp3Y": 2024,
+   "mcv1": 79,
+   "mcv1Y": 2024
+  },
+  "HPC": {
+   "dtp3": 73.9,
+   "dtp3Y": 2024,
+   "mcv1": 70.4,
+   "mcv1Y": 2024
+  },
+  "HRV": {
+   "uhc": 76,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 92,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "HTI": {
+   "uhc": 44,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 60,
+   "dtp3Y": 2024,
+   "mcv1": 77,
+   "mcv1Y": 2024
+  },
+  "HUN": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "IBD": {
+   "dtp3": 90.1,
+   "dtp3Y": 2024,
+   "mcv1": 92.1,
+   "mcv1Y": 2024
+  },
+  "IBT": {
+   "dtp3": 83.9,
+   "dtp3Y": 2024,
+   "mcv1": 83.4,
+   "mcv1Y": 2024
+  },
+  "IDA": {
+   "dtp3": 76.6,
+   "dtp3Y": 2024,
+   "mcv1": 73.4,
+   "mcv1Y": 2024
+  },
+  "IDB": {
+   "dtp3": 78.5,
+   "dtp3Y": 2024,
+   "mcv1": 74.1,
+   "mcv1Y": 2024
+  },
+  "IDN": {
+   "uhc": 67,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 78,
+   "dtp3Y": 2024,
+   "mcv1": 85,
+   "mcv1Y": 2024
+  },
+  "IDX": {
+   "dtp3": 75.7,
+   "dtp3Y": 2024,
+   "mcv1": 73,
+   "mcv1Y": 2024
+  },
+  "IND": {
+   "uhc": 69,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "IRL": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 92,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "IRN": {
+   "uhc": 81,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "IRQ": {
+   "uhc": 64,
+   "uhcY": 2023,
+   "spar": 33,
+   "sparY": 2023,
+   "dtp3": 90,
+   "dtp3Y": 2024,
+   "mcv1": 91,
+   "mcv1Y": 2024
+  },
+  "ISL": {
+   "uhc": 90,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "ISR": {
+   "uhc": 85,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "ITA": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "JAM": {
+   "uhc": 74,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 94,
+   "mcv1Y": 2024
+  },
+  "JOR": {
+   "uhc": 74,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "JPN": {
+   "uhc": 86,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "KAZ": {
+   "uhc": 83,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "KEN": {
+   "uhc": 57,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 88,
+   "mcv1Y": 2024
+  },
+  "KGZ": {
+   "uhc": 74,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 85,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "KHM": {
+   "uhc": 62,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 83,
+   "dtp3Y": 2024,
+   "mcv1": 83,
+   "mcv1Y": 2024
+  },
+  "KIR": {
+   "uhc": 51,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 79,
+   "mcv1Y": 2024
+  },
+  "KNA": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "KOR": {
+   "uhc": 88,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "KWT": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "LAC": {
+   "dtp3": 81.4,
+   "dtp3Y": 2024,
+   "mcv1": 85.7,
+   "mcv1Y": 2024
+  },
+  "LAO": {
+   "uhc": 64,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 67,
+   "dtp3Y": 2024,
+   "mcv1": 69,
+   "mcv1Y": 2024
+  },
+  "LBN": {
+   "uhc": 67,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 49,
+   "dtp3Y": 2024,
+   "mcv1": 67,
+   "mcv1Y": 2024
+  },
+  "LBR": {
+   "uhc": 49,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 83,
+   "dtp3Y": 2024,
+   "mcv1": 82,
+   "mcv1Y": 2024
+  },
+  "LBY": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 86,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "LCA": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 83,
+   "mcv1Y": 2024
+  },
+  "LCN": {
+   "dtp3": 81.8,
+   "dtp3Y": 2024,
+   "mcv1": 86,
+   "mcv1Y": 2024
+  },
+  "LDC": {
+   "dtp3": 74.4,
+   "dtp3Y": 2024,
+   "mcv1": 71.1,
+   "mcv1Y": 2024
+  },
+  "LIE": {
+   "spar": 87,
+   "sparY": 2023
+  },
+  "LKA": {
+   "uhc": 72,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "LMY": {
+   "dtp3": 83.7,
+   "dtp3Y": 2024,
+   "mcv1": 83.3,
+   "mcv1Y": 2024
+  },
+  "LSO": {
+   "uhc": 55,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 86,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "LTE": {
+   "dtp3": 94.8,
+   "dtp3Y": 2024,
+   "mcv1": 94.6,
+   "mcv1Y": 2024
+  },
+  "LTU": {
+   "uhc": 78,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 89,
+   "dtp3Y": 2024,
+   "mcv1": 86,
+   "mcv1Y": 2024
+  },
+  "LUX": {
+   "uhc": 83,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "LVA": {
+   "uhc": 77,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "MAR": {
+   "uhc": 65,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "MCO": {
+   "uhc": 85,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 88,
+   "mcv1Y": 2024
+  },
+  "MDA": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 86,
+   "dtp3Y": 2024,
+   "mcv1": 84,
+   "mcv1Y": 2024
+  },
+  "MDG": {
+   "uhc": 33,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 60,
+   "dtp3Y": 2024,
+   "mcv1": 46,
+   "mcv1Y": 2024
+  },
+  "MDV": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "MEA": {
+   "dtp3": 84.4,
+   "dtp3Y": 2024,
+   "mcv1": 84.4,
+   "mcv1Y": 2024
+  },
+  "MEX": {
+   "uhc": 79,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 78,
+   "dtp3Y": 2024,
+   "mcv1": 80,
+   "mcv1Y": 2024
+  },
+  "MHL": {
+   "uhc": 66,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 85,
+   "dtp3Y": 2024,
+   "mcv1": 88,
+   "mcv1Y": 2024
+  },
+  "MIC": {
+   "dtp3": 87.2,
+   "dtp3Y": 2024,
+   "mcv1": 87.5,
+   "mcv1Y": 2024
+  },
+  "MKD": {
+   "uhc": 69,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 89,
+   "dtp3Y": 2024,
+   "mcv1": 73,
+   "mcv1Y": 2024
+  },
+  "MLI": {
+   "uhc": 41,
+   "uhcY": 2023,
+   "spar": 33,
+   "sparY": 2023,
+   "dtp3": 82,
+   "dtp3Y": 2024,
+   "mcv1": 72,
+   "mcv1Y": 2024
+  },
+  "MLT": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 88,
+   "mcv1Y": 2024
+  },
+  "MMR": {
+   "uhc": 52,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 71,
+   "dtp3Y": 2024,
+   "mcv1": 71,
+   "mcv1Y": 2024
+  },
+  "MNA": {
+   "dtp3": 83.7,
+   "dtp3Y": 2024,
+   "mcv1": 83.6,
+   "mcv1Y": 2024
+  },
+  "MNE": {
+   "uhc": 70,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 81,
+   "dtp3Y": 2024,
+   "mcv1": 23,
+   "mcv1Y": 2024
+  },
+  "MNG": {
+   "uhc": 70,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "MOZ": {
+   "uhc": 50,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 70,
+   "dtp3Y": 2024,
+   "mcv1": 65,
+   "mcv1Y": 2024
+  },
+  "MRT": {
+   "uhc": 40,
+   "uhcY": 2023,
+   "spar": 20,
+   "sparY": 2023,
+   "dtp3": 86,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "MUS": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 93,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "MWI": {
+   "uhc": 52,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "MYS": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 93,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "NAC": {
+   "dtp3": 93.8,
+   "dtp3Y": 2024,
+   "mcv1": 92,
+   "mcv1Y": 2024
+  },
+  "NAM": {
+   "uhc": 66,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 74,
+   "dtp3Y": 2024,
+   "mcv1": 79,
+   "mcv1Y": 2024
+  },
+  "NER": {
+   "uhc": 39,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 86,
+   "dtp3Y": 2024,
+   "mcv1": 81,
+   "mcv1Y": 2024
+  },
+  "NGA": {
+   "uhc": 47,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 67,
+   "dtp3Y": 2024,
+   "mcv1": 57,
+   "mcv1Y": 2024
+  },
+  "NIC": {
+   "uhc": 70,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 89,
+   "dtp3Y": 2023,
+   "mcv1": 85,
+   "mcv1Y": 2023
+  },
+  "NIU": {
+   "uhc": 67,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023
+  },
+  "NLD": {
+   "uhc": 85,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "NOR": {
+   "uhc": 89,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "NPL": {
+   "uhc": 58,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "NRU": {
+   "uhc": 62,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "NZL": {
+   "uhc": 89,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 89,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "OED": {
+   "dtp3": 91.8,
+   "dtp3Y": 2024,
+   "mcv1": 91.4,
+   "mcv1Y": 2024
+  },
+  "OMN": {
+   "uhc": 73,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "OSS": {
+   "dtp3": 85.6,
+   "dtp3Y": 2024,
+   "mcv1": 81.8,
+   "mcv1Y": 2024
+  },
+  "PAK": {
+   "uhc": 56,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 87,
+   "dtp3Y": 2024,
+   "mcv1": 86,
+   "mcv1Y": 2024
+  },
+  "PAN": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 72,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "PER": {
+   "uhc": 68,
+   "uhcY": 2023,
+   "spar": 20,
+   "sparY": 2023,
+   "dtp3": 80,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "PHL": {
+   "uhc": 69,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 71,
+   "dtp3Y": 2024,
+   "mcv1": 80,
+   "mcv1Y": 2024
+  },
+  "PLW": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "PNG": {
+   "uhc": 32,
+   "uhcY": 2023,
+   "spar": 47,
+   "sparY": 2023,
+   "dtp3": 42,
+   "dtp3Y": 2024,
+   "mcv1": 44,
+   "mcv1Y": 2024
+  },
+  "POL": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 92,
+   "mcv1Y": 2024
+  },
+  "PRE": {
+   "dtp3": 72.9,
+   "dtp3Y": 2024,
+   "mcv1": 67.4,
+   "mcv1Y": 2024
+  },
+  "PRK": {
+   "uhc": 77,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "PRT": {
+   "uhc": 83,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "PRY": {
+   "uhc": 79,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 80,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "PSE": {
+   "uhc": 65,
+   "uhcY": 2023,
+   "dtp3": 88,
+   "dtp3Y": 2024,
+   "mcv1": 89,
+   "mcv1Y": 2024
+  },
+  "PSS": {
+   "dtp3": 86.9,
+   "dtp3Y": 2024,
+   "mcv1": 80.9,
+   "mcv1Y": 2024
+  },
+  "PST": {
+   "dtp3": 93.8,
+   "dtp3Y": 2024,
+   "mcv1": 93.1,
+   "mcv1Y": 2024
+  },
+  "QAT": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "ROU": {
+   "uhc": 77,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 79,
+   "dtp3Y": 2024,
+   "mcv1": 78,
+   "mcv1Y": 2024
+  },
+  "RUS": {
+   "uhc": 81,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "RWA": {
+   "uhc": 59,
+   "uhcY": 2023,
+   "spar": 87,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "SAS": {
+   "dtp3": 94.5,
+   "dtp3Y": 2024,
+   "mcv1": 96.9,
+   "mcv1Y": 2024
+  },
+  "SAU": {
+   "uhc": 83,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "SDN": {
+   "uhc": 48,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 39,
+   "dtp3Y": 2024,
+   "mcv1": 46,
+   "mcv1Y": 2024
+  },
+  "SEN": {
+   "uhc": 48,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 87,
+   "mcv1Y": 2024
+  },
+  "SGP": {
+   "uhc": 88,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "SLB": {
+   "uhc": 47,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 87,
+   "dtp3Y": 2024,
+   "mcv1": 78,
+   "mcv1Y": 2024
+  },
+  "SLE": {
+   "uhc": 48,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "SLV": {
+   "uhc": 79,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 95,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "SMR": {
+   "uhc": 74,
+   "uhcY": 2023,
+   "spar": 20,
+   "sparY": 2023,
+   "dtp3": 88,
+   "dtp3Y": 2024,
+   "mcv1": 85,
+   "mcv1Y": 2024
+  },
+  "SOM": {
+   "uhc": 30,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 70,
+   "dtp3Y": 2024,
+   "mcv1": 64,
+   "mcv1Y": 2024
+  },
+  "SRB": {
+   "uhc": 73,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 95,
+   "dtp3Y": 2024,
+   "mcv1": 84,
+   "mcv1Y": 2024
+  },
+  "SSA": {
+   "dtp3": 74,
+   "dtp3Y": 2024,
+   "mcv1": 69.1,
+   "mcv1Y": 2024
+  },
+  "SSD": {
+   "uhc": 41,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 73,
+   "dtp3Y": 2024,
+   "mcv1": 72,
+   "mcv1Y": 2024
+  },
+  "SSF": {
+   "dtp3": 74,
+   "dtp3Y": 2024,
+   "mcv1": 69.1,
+   "mcv1Y": 2024
+  },
+  "SST": {
+   "dtp3": 86.7,
+   "dtp3Y": 2024,
+   "mcv1": 83.2,
+   "mcv1Y": 2024
+  },
+  "STP": {
+   "uhc": 60,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 87,
+   "dtp3Y": 2024,
+   "mcv1": 87,
+   "mcv1Y": 2024
+  },
+  "SUR": {
+   "uhc": 74,
+   "uhcY": 2023,
+   "spar": 60,
+   "sparY": 2023,
+   "dtp3": 69,
+   "dtp3Y": 2024,
+   "mcv1": 73,
+   "mcv1Y": 2024
+  },
+  "SVK": {
+   "uhc": 78,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 94,
+   "mcv1Y": 2024
+  },
+  "SVN": {
+   "uhc": 84,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 90,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "SWE": {
+   "uhc": 85,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 96,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "SWZ": {
+   "uhc": 72,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 84,
+   "dtp3Y": 2024,
+   "mcv1": 85,
+   "mcv1Y": 2024
+  },
+  "SYC": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "SYR": {
+   "uhc": 70,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 73,
+   "dtp3Y": 2024,
+   "mcv1": 81,
+   "mcv1Y": 2024
+  },
+  "TCD": {
+   "uhc": 26,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 68,
+   "dtp3Y": 2024,
+   "mcv1": 66,
+   "mcv1Y": 2024
+  },
+  "TEA": {
+   "dtp3": 87.7,
+   "dtp3Y": 2024,
+   "mcv1": 89.3,
+   "mcv1Y": 2024
+  },
+  "TEC": {
+   "dtp3": 93.5,
+   "dtp3Y": 2024,
+   "mcv1": 94.3,
+   "mcv1Y": 2024
+  },
+  "TGO": {
+   "uhc": 42,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 90,
+   "dtp3Y": 2024,
+   "mcv1": 81,
+   "mcv1Y": 2024
+  },
+  "THA": {
+   "uhc": 82,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 92,
+   "dtp3Y": 2024,
+   "mcv1": 93,
+   "mcv1Y": 2024
+  },
+  "TJK": {
+   "uhc": 72,
+   "uhcY": 2023,
+   "spar": 53,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "TKM": {
+   "uhc": 81,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 98,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "TLA": {
+   "dtp3": 81.6,
+   "dtp3Y": 2024,
+   "mcv1": 85.9,
+   "mcv1Y": 2024
+  },
+  "TLS": {
+   "uhc": 48,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 83,
+   "dtp3Y": 2024,
+   "mcv1": 72,
+   "mcv1Y": 2024
+  },
+  "TMN": {
+   "dtp3": 83.6,
+   "dtp3Y": 2024,
+   "mcv1": 83.6,
+   "mcv1Y": 2024
+  },
+  "TON": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "TSA": {
+   "dtp3": 94.5,
+   "dtp3Y": 2024,
+   "mcv1": 96.9,
+   "mcv1Y": 2024
+  },
+  "TSS": {
+   "dtp3": 74,
+   "dtp3Y": 2024,
+   "mcv1": 69.1,
+   "mcv1Y": 2024
+  },
+  "TTO": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 92,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "TUN": {
+   "uhc": 76,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 96,
+   "mcv1Y": 2024
+  },
+  "TUR": {
+   "uhc": 77,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 95,
+   "mcv1Y": 2024
+  },
+  "TUV": {
+   "uhc": 65,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2021,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "TZA": {
+   "uhc": 49,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 83,
+   "dtp3Y": 2024,
+   "mcv1": 84,
+   "mcv1Y": 2024
+  },
+  "UGA": {
+   "uhc": 54,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  },
+  "UKR": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 88,
+   "dtp3Y": 2024,
+   "mcv1": 91,
+   "mcv1Y": 2024
+  },
+  "URY": {
+   "uhc": 85,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 97,
+   "mcv1Y": 2024
+  },
+  "USA": {
+   "uhc": 88,
+   "uhcY": 2023,
+   "spar": 100,
+   "sparY": 2023,
+   "dtp3": 94,
+   "dtp3Y": 2024,
+   "mcv1": 92,
+   "mcv1Y": 2024
+  },
+  "UZB": {
+   "uhc": 79,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 90,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "VCT": {
+   "uhc": 80,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 99,
+   "dtp3Y": 2024,
+   "mcv1": 99,
+   "mcv1Y": 2024
+  },
+  "VEN": {
+   "uhc": 75,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 62,
+   "dtp3Y": 2024,
+   "mcv1": 71,
+   "mcv1Y": 2024
+  },
+  "VNM": {
+   "uhc": 71,
+   "uhcY": 2023,
+   "spar": 40,
+   "sparY": 2023,
+   "dtp3": 97,
+   "dtp3Y": 2024,
+   "mcv1": 98,
+   "mcv1Y": 2024
+  },
+  "VUT": {
+   "uhc": 52,
+   "uhcY": 2023,
+   "spar": 93,
+   "sparY": 2023,
+   "dtp3": 71,
+   "dtp3Y": 2024,
+   "mcv1": 61,
+   "mcv1Y": 2024
+  },
+  "WLD": {
+   "dtp3": 84.8,
+   "dtp3Y": 2024,
+   "mcv1": 84.3,
+   "mcv1Y": 2024
+  },
+  "WSM": {
+   "uhc": 62,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 85,
+   "dtp3Y": 2024,
+   "mcv1": 85,
+   "mcv1Y": 2024
+  },
+  "YEM": {
+   "uhc": 43,
+   "uhcY": 2023,
+   "spar": 27,
+   "sparY": 2023,
+   "dtp3": 42,
+   "dtp3Y": 2024,
+   "mcv1": 41,
+   "mcv1Y": 2024
+  },
+  "ZAF": {
+   "uhc": 74,
+   "uhcY": 2023,
+   "spar": 73,
+   "sparY": 2023,
+   "dtp3": 74,
+   "dtp3Y": 2024,
+   "mcv1": 76,
+   "mcv1Y": 2024
+  },
+  "ZMB": {
+   "uhc": 62,
+   "uhcY": 2023,
+   "spar": 80,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 88,
+   "mcv1Y": 2024
+  },
+  "ZWE": {
+   "uhc": 59,
+   "uhcY": 2023,
+   "spar": 67,
+   "sparY": 2023,
+   "dtp3": 91,
+   "dtp3Y": 2024,
+   "mcv1": 90,
+   "mcv1Y": 2024
+  }
+ }
+}

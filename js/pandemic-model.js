@@ -54,7 +54,15 @@
    ratios — deaths per DETECTED case — and the denominator of an infection fatality ratio is larger.
    Printing a CFR under the label «IFR» silently changes what it means, so the label travels with it.
 
-   Sources are named per preset; they are shown in the simulator's about line. */
+   ══ ⚠⚠⚠ (#R678) A SOURCE NAMES THE PARAMETER IT STANDS BEHIND. `sources` was a flat list of
+   strings, joined with « · » into one 10 px line inside a collapsed fold, and it therefore could
+   not answer the only question a reader has when they look at «R₀ 1.95»: where did 1.95 come
+   from? Each entry is now `{ for, name }`, where `for` is A FIELD OF THIS PRESET — so the
+   attribution is checkable against the object it is attached to rather than being prose, and the
+   UI can also work out which parameters have NO named source and say so. Some do not. That is a
+   fact about this preset table and the reader is entitled to it (tests/r678-pandemic-p1-checks ⑦).
+   ⚠ `for` IS A KEY, NOT A LABEL. This file is pure and has no language; js/playground.js turns
+   the key into words in nine of them. */
 export const PANDEMIC_PRESETS = {
   flu: {
     id: 'flu',
@@ -73,7 +81,11 @@ export const PANDEMIC_PRESETS = {
     /* Prior exposure + annual vaccination leave a large fraction of the world non-susceptible to
        the circulating strain at any moment. Used only in the real-world scenario. */
     baselineImmunity: 0.35,
-    sources: ['Biggerstaff et al., influenza R0 systematic review', 'CDC 2025–26 influenza guidance', 'WHO influenza fact sheet 2026']
+    sources: [
+      { for: 'transmission', name: 'Biggerstaff et al., influenza R0 systematic review' },
+      { for: 'vaccine', name: 'CDC 2025–26 influenza guidance' },
+      { for: 'severity', name: 'WHO influenza fact sheet 2026' }
+    ]
   },
   covid: {
     id: 'covid',
@@ -100,7 +112,10 @@ export const PANDEMIC_PRESETS = {
        coarsest possible reading of a real qualitative fact, and the UI must not print it as an
        observation. Partial protection would need a compartment this engine does not have. */
     baselineImmunity: 0.9,
-    sources: ['WHO COVID-19 vaccine position paper, July 2026', 'WHO TAG-CO-VAC 2026']
+    sources: [
+      { for: 'vaccine', name: 'WHO COVID-19 vaccine position paper, July 2026' },
+      { for: 'baselineImmunity', name: 'WHO TAG-CO-VAC 2026' }
+    ]
   },
   sars: {
     id: 'sars',
@@ -113,7 +128,13 @@ export const PANDEMIC_PRESETS = {
     vaccine: { availableAtStart: false, efficacyInfection: 0.6, waningMonths: 24, developmentDays: 300 },
     treatment: { availableAtStart: false, mortalityRR: 0.6 },
     baselineImmunity: 0,
-    sources: ['WHO SARS summary (2003)']
+    /* One document backs two fields here, so it appears twice — an attribution is per PARAMETER,
+       and collapsing the duplicate would lose the fact that the incubation period and the case
+       fatality came from the same tally. */
+  sources: [
+      { for: 'transmission', name: 'WHO SARS summary (2003)' },
+      { for: 'severity', name: 'WHO SARS summary (2003)' }
+    ]
   },
   ebola: {
     id: 'ebola',
@@ -129,7 +150,12 @@ export const PANDEMIC_PRESETS = {
     /* mAb114 and REGN-EB3 are strongly recommended by WHO and cut mortality substantially. */
     treatment: { availableAtStart: true, mortalityRR: 0.6 },
     baselineImmunity: 0,
-    sources: ['Ebola R0 meta-analysis (2024)', 'WHO Ebola fact sheet', 'WHO Ebola vaccines (2026-06-25)', 'WHO Ebola therapeutics guideline']
+    sources: [
+      { for: 'transmission', name: 'Ebola R0 meta-analysis (2024)' },
+      { for: 'severity', name: 'WHO Ebola fact sheet' },
+      { for: 'vaccine', name: 'WHO Ebola vaccines (2026-06-25)' },
+      { for: 'treatment', name: 'WHO Ebola therapeutics guideline' }
+    ]
   },
   measles: {
     id: 'measles',
@@ -145,7 +171,10 @@ export const PANDEMIC_PRESETS = {
        that starts from a fully susceptible world is a scenario about a measles-LIKE novel pathogen,
        which is exactly why the two scenarios are named differently in the UI. */
     baselineImmunity: 0.84,
-    sources: ['CDC Interactive Measles Outbreak Simulator (2026)', 'WHO Immunization coverage (2026-07-15)']
+    sources: [
+      { for: 'transmission', name: 'CDC Interactive Measles Outbreak Simulator (2026)' },
+      { for: 'baselineImmunity', name: 'WHO Immunization coverage (2026-07-15)' }
+    ]
   }
 };
 
@@ -235,6 +264,64 @@ export function createPandemicModel(cfg) {
   /* Floor on a destination's attractiveness, so that the least-connected country on Earth is still
      reachable rather than arithmetically excluded. A share of the world mean. */
   const ATTRACT_FLOOR = 0.02;
+  /* ══ ⚠⚠⚠ (#R678) HOW MUCH OF «WHICH COUNTRY» COMES FROM THE OBSERVED ROUTE NETWORK ══════════
+     The distance kernel above is ISOTROPIC: it cannot know that France–Senegal, Portugal–Brazil,
+     Spain–Argentina and the United Kingdom–India carry far more people than their kilometres
+     allow, because what puts people on those aircraft is language, empire and diaspora, and none
+     of those is a function of distance. data/mobility.json carries the one openly licensed
+     bilateral fact there is: how many distinct airline routes flew between each pair of countries
+     in the OpenFlights snapshot.
+
+     ⚠⚠ THAT SNAPSHOT IS FROZEN AT JUNE 2014, and it counts ROUTES, not seats, flights or
+     passengers. OpenFlights says so itself. It is used anyway because the alternative is not a
+     better bilateral source — MEASURED 2026-09-10, there is none that is open and current; OAG,
+     ICAO TFS and Sabre are all commercial — the alternative is NO bilateral term at all, which is
+     what the model had.
+
+     ⚠⚠⚠ AND THIS IS WHY IT IS A BLEND AND NOT A REPLACEMENT. A zero in the route table means «no
+     DIRECT flight between these two countries in 2014». It does not mean nobody travels: most
+     long pairs are flown with a connection, and a route table cannot see an itinerary. At m = 1
+     Japan → Bolivia would be arithmetically impossible. The distance kernel is exactly the
+     «everything else, including connections and everything that has changed since 2014» channel,
+     so it always keeps half the row.
+
+     A MIXING WEIGHT, not an observation — like LAND_MIX above, and CALIBRATED THE SAME WAY LAND_MIX
+     was: by what it does to real rows, and against the one global spread curve there is.
+
+     MEASURED on the real 177-country world (Natural Earth 110 m + the four tables), covid preset,
+     novel-pathogen scenario, 20 cases seeded in Brazil, seeds 1-12. WHAT IT BUYS, at 0.35 against
+     0 — these are the rows distance decay gets flatly wrong:
+       · Australia's most likely destination becomes NEW ZEALAND (12.0%), which at 0 was not in its
+         top six AT ALL — Malaysia was first. Distance decay cannot see that 2,000 km of ocean to a
+         country Australians actually fly to beats 6,000 km to one they do not.
+       · The United States enters the United Kingdom's top six (4.1%) and Japan's (5.6%). At 0
+         neither row contained it.
+       · Portugal → Brazil goes 0.19% → 1.07%, and the United Kingdom → India 0.29% → 0.46%.
+     ⚠ AND WHAT IT DOES NOT BUY, because a measurement that only lists its successes is an
+     advertisement: France → Senegal does not move at all (0.18% at every value of this constant).
+     The 2014 table has too few France–Senegal routes for the blend to lift it, so the diaspora
+     corridor this term was partly meant to capture is still missing.
+
+     ⚠⚠⚠ AND WHAT IT COSTS, MEASURED. The median day the Nth country is reached moves from
+     60 / 81 / 100 (10th / 50th / 100th, before this round) to 60 / 85 / 116. The observed COVID-19
+     curve — the target the whole importation model is calibrated against — is 50 / 80 / 95. So the
+     first two points are unchanged and the HUNDREDTH-COUNTRY POINT GETS WORSE: a 5% overshoot
+     becomes a 22% one. That is the price and it is not hidden: the countries reached last are
+     exactly the ones with no direct flight in the table, and half of each origin's air weight is
+     now allocated to the two dozen partners it does fly to.
+     ⚠ 0.25 COSTS THE SAME 116 AND BUYS LESS; 0.5 COSTS 120 AND BUYS LITTLE MORE. 0.35 is the most
+     structure available at the smallest measured cost, which is why it is the number.
+     ⚠ THE SCALE CONSTANT CANNOT FIX THIS AND IT WAS TRIED. Raising TRAVEL_WHEN_INFECTED by 70%
+     moves the hundredth-country point by 11 days (140 → 129 in the variant that was measured):
+     what the route table changes is the SHAPE of the reachable set, not the rate, and a rate
+     constant does not absorb a shape.
+
+     The older note, kept because it is still the reason this is a blend and not a replacement, by what
+     it does to real rows. MEASURED on the 177-country world at 0.5, the qualitative facts it
+     exists to produce are the ones distance alone gets wrong: see tests/r678-pandemic-p1-checks.
+     ⚠ IT APPLIES PER ORIGIN. A country the route table has no outbound row for keeps the pure
+     distance kernel — «not in a 2014 table» must not read as «flies nowhere» (#R262 again). */
+  const ROUTE_MIX = 0.35;
   /* How much of country i's own outbound travel one unit of «airport capacity per million people»
      buys, relative to the world's population-weighted mean of the same figure. The square root is
      compression, not a measurement: airport counts are infrastructure, and infrastructure grows
@@ -520,6 +607,54 @@ export function createPandemicModel(cfg) {
      E and I are ARRAYS — one entry per Erlang stage. `pop0` is kept so that conservation is a
      testable statement about this country and not about a global sum that could hide two errors
      cancelling out. */
+  /* An observed 0-100 indicator as a 0-1 capacity, or the development proxy when this country is
+     not in the table. Floored at 0.05 like `dev` is: a capacity of exactly zero would make
+     `overload` and `delivery` degenerate rather than merely bad. */
+  const cap = (raw, fallback) => { const v = num(raw, NaN); return (isFinite(v) && v > 0) ? Math.min(1, Math.max(0.05, v / 100)) : fallback; };
+
+  /* ══ ⚠⚠⚠ (#R678) INITIAL IMMUNITY IS A PLACE, NOT A NUMBER ══════════════════════════════════
+     `P.initialImmunity` was applied to every country and every age at once, so a measles outbreak
+     started in South Sudan and in Portugal from exactly the same place — on a WORLD MAP, which is
+     the one place that difference is the whole point. Measles is the one preset whose real-world
+     immunity IS a measured vaccination coverage, so it is the one where a per-country figure
+     exists rather than being assumed: `c.immunity` is WHO/UNICEF MCV1 coverage (data/health.json),
+     and the host supplies it for that preset only.
+
+     ⚠ THE SLIDER STILL MEANS WHAT IT SAYS. It sets the POPULATION-WEIGHTED MEAN; the observations
+     supply the SHAPE. Every country is scaled by the same factor so the world mean lands on the
+     slider, and the slider starts on the preset's own stated world figure — so the DEFAULT run has
+     the world average it always had, and a DISTRIBUTION it never had. Dragging it to 20% then asks «what if the world were far less
+     vaccinated, in the pattern it actually has» — a question worth being able to ask. The
+     alternatives either take the slider away or let it silently overwrite the data.
+
+     ⚠ THE CLAMP IS NOT FREE, AND IS NOT CORRECTED. Scaling up pushes well-covered countries past
+     the 0.99 ceiling, and a clamped country stops contributing its share, so the realised mean
+     sits at or below the slider. Iterating to hit the mean exactly would move countries the data
+     did not move, which is the thing this whole block exists to stop doing.
+
+     ⚠ THERE IS NO PER-COUNTRY OBSERVATION OF COVID-19 IMMUNITY, and none is invented. Hybrid
+     immunity is not a vaccination coverage and no source publishes it per country, so covid's 0.9
+     stays the flat, stated assumption it always was: `c.immunity` is simply absent there and every
+     country falls back to `P.initialImmunity`. */
+  let immunityScale = 1, immunityObserved = 0;
+  (function calibrateImmunity() {
+    let wSum = 0, obsSum = 0;
+    for (let i = 0; i < N; i++) {
+      const c = C[i], p = +(c && c.pop);
+      const v = num(c && c.immunity, NaN);
+      if (!(p > 0) || !isFinite(v) || v < 0) continue;
+      wSum += p; obsSum += p * Math.min(1, v); immunityObserved++;
+    }
+    if (!(wSum > 0) || !immunityObserved) { immunityObserved = 0; return; }
+    const obsMean = obsSum / wSum;
+    immunityScale = obsMean > 0 ? P.initialImmunity / obsMean : 0;
+  })();
+  function immunityOf(c) {
+    const v = num(c && c.immunity, NaN);
+    if (!immunityObserved || !isFinite(v) || v < 0) return P.initialImmunity;
+    return Math.min(0.99, Math.max(0, Math.min(1, v) * immunityScale));
+  }
+
   const st = new Array(N);
   let worldPop = 0;
   for (let i = 0; i < N; i++) {
@@ -539,20 +674,44 @@ export function createPandemicModel(cfg) {
       throw new TypeError('createPandemicModel: country ' + i + ' (' + (c.name || c.code || '?') + ') has no population; a row with no measured population cannot be a compartment set');
     }
     worldPop += pop;
-    const immune = pop * P.initialImmunity;
+    const immune = pop * immunityOf(c);
     const dev = Math.min(1, Math.max(0.05, num(c.dev, 0.5)));
     st[i] = {
       /* ⚠ FOUR CAPACITIES, NOT ONE «dev». They are all proxied from the same development figure
          today — that is honest and it is written down — but medical capacity, travel connectivity,
          policy response and vaccine delivery are different things, and a model that spells them as
-         one number can never be improved without touching every formula that used it. */
-      health: dev, connectivity: dev, response: dev, delivery: 0.35 + 0.65 * dev,
+         one number can never be improved without touching every formula that used it.
+         ⚠⚠ (#R678) THREE OF THE FOUR ARE NOW OBSERVED, and each by the indicator that is about the
+         thing the field actually drives — not the one that was easiest to get:
+           · `health`   drives hospital overload and baseline fatality  ← WHO UHC service coverage
+                        index (SDG 3.8.1), 195 countries
+           · `response` drives how fast a government tightens its border, and whether it can run a
+                        vaccine programme at all  ← WHO IHR SPAR capacity 7, health emergency
+                        management, 194 countries
+           · `delivery` drives the share of the susceptible reached per day once a vaccine exists
+                        ← WHO/UNICEF DTP3 coverage, 236 countries. «What share of this country's
+                        one-year-olds actually received three doses of a vaccine that already
+                        exists and is already scheduled» IS the last-mile capability this field
+                        models, which is why a rich country with a weak routine programme and a
+                        poor one with a strong programme now come out the right way round.
+         ⚠ A COUNTRY THE HOST HAS NO FIGURE FOR IS NOT A COUNTRY WITH NO CAPACITY. `cap()` falls
+         back to the development proxy FOR THAT COUNTRY ALONE — «no data» must not read as «no
+         hospitals» (#R262), and the fallback is per country, never per world. */
+      health: cap(c.uhc, dev), response: cap(c.spar, dev), delivery: cap(c.dtp3, 0.35 + 0.65 * dev),
+      connectivity: dev,
       /* ⚠ (#R666) `connectivity` STAYS `dev` AND STOPS BEING READ BY THE MOBILITY. It was doing two
          different jobs — how attractive this country is as a destination, and how much its own
          residents travel — with one number derived from GDP per head. Those are now `attract` and
          `travel`, both built below from airport capacity where the host supplies it. Nothing else
          reads `connectivity`, and it is left in place because it is what `travel` falls back TO. */
+      /* Which of the three capacities above came from an observation rather than the proxy.
+         Recorded per country because the tables do not cover the same countries. */
+      capacityFrom: (isFinite(num(c.uhc, NaN)) ? 1 : 0) + (isFinite(num(c.spar, NaN)) ? 2 : 0) + (isFinite(num(c.dtp3, NaN)) ? 4 : 0),
       air: Math.max(0, num(c.air, 0)),
+      /* How many people arrive here from abroad in a year — a World Bank observation
+         (data/mobility.json), and OPTIONAL: the mobility build below says how many countries had
+         one, and a country without one falls back to its airport capacity. */
+      arr: Math.max(0, num(c.arr, 0)),
       pop0: pop, lat: num(c.lat, 0), lng: num(c.lng, 0),
       /* ⚠⚠⚠ (#R666) `SV` — VACCINATED, AND STILL SUSCEPTIBLE. An all-or-nothing vaccine leaves the
          people it failed to protect in the susceptible pool, and yesterday they went back into `S`,
@@ -743,11 +902,26 @@ export function createPandemicModel(cfg) {
      matrix, so `same seed is the same world` (tests/r575-checks ⑧) still means what it said. */
   const MOB_CUM = new Float64Array(N > 1 ? N * N : 0);
   const travel = new Float64Array(N);
-  let mobilityFrom = 'population';   /* what the weights were actually built out of — reported */
+  let mobilityFrom = 'population';
+  /* HOW MUCH of the matrix each source actually reached — counted while the rows are built, not
+     inferred from the table sizes. «data/mobility.json has a row for Chad» and «that row survived
+     being indexed against the countries on THIS map» are different facts, and only the second one
+     is in the matrix. The screen reports these, so a reader is never told the model used an
+     observation it did not have. */
+  const mobilityStats = { routedOrigins: 0, routedPairs: 0, obsAttract: 0, withArr: 0 };   /* what the weights were actually built out of — reported */
   (function buildMobility() {
     if (N < 1) return;
     let popSum = 0, airSum = 0, airRootSum = 0, devSum = 0, withAir = 0;
-    for (let i = 0; i < N; i++) { popSum += st[i].pop0; devSum += st[i].connectivity; if (st[i].air > 0) { airSum += st[i].air; airRootSum += Math.pow(st[i].air, AIR_EXP); withAir++; } }
+    /* Observed World Bank volumes, and the population they belong to, so each reference mean is a
+       mean over PEOPLE rather than over rows (a mean over rows is a mean over two hundred rows of
+       which a third are islands). */
+    let arrSum = 0, withArr = 0;
+    for (let i = 0; i < N; i++) {
+      popSum += st[i].pop0; devSum += st[i].connectivity;
+      if (st[i].air > 0) { airSum += st[i].air; airRootSum += Math.pow(st[i].air, AIR_EXP); withAir++; }
+      if (st[i].arr > 0) { arrSum += st[i].arr; withArr++; }
+
+    }
     const popMean = popSum / N, devMean = (devSum / N) || 1;
     const anyAir = withAir > 0 && airSum > 0;
     if (anyAir) mobilityFrom = withAir === N ? 'airports' : 'airports+population';
@@ -755,13 +929,48 @@ export function createPandemicModel(cfg) {
     /* Airport capacity per million people, averaged over PEOPLE and not over countries: a mean over
        rows is a mean over two hundred rows of which a third are islands with one airstrip. */
     const apcRef = anyAir ? (airSum * 1e6) / popSum : 0;
+    /* ══ ⚠⚠⚠ (#R678) THE OBSERVATION KEEPS THE COMPRESSION, AND THE REASON IS NOT THE OLD ONE ═══
+       AIR_EXP's own comment says the square root «expires with any source that counts seats or
+       passengers rather than runways», and observed arrivals ARE such a source. The first version of
+       this line therefore took them linearly. IT WAS MEASURED AND IT WAS WRONG, in two ways that
+       only a measurement could have shown:
+
+       · `attract_j` is not «how many people arrive in j». It is «given that somebody is leaving
+         country i, how likely is j». Half of France's ninety million arrivals are short repeat trips
+         from its neighbours — which the DISTANCE TERM and the LAND-BORDER TERM already carry. Taken
+         linearly the same regional traffic is counted twice, and the compression is what stops it.
+       · The near-zero end is a REPORTING GAP, not a fact. MEASURED, the World Bank series puts
+         Benin at 0.000 international departures per head and Malawi at 0.001. Nobody leaves Benin is
+         not an observation anyone made; it is a series that is incomplete. Reading it as zero is the
+         same error as #R675's three million invented people, in the other direction.
+
+       With the compression, arrivals-as-attractiveness costs the calibration almost nothing
+       (10th / 50th / 100th country at 60 / 83 / 104 against 60 / 81 / 100 before) while replacing an
+       INFRASTRUCTURE PROXY with a MEASUREMENT OF TRAFFIC, which is what AIR_EXP's comment asked for.
+
+       ⚠⚠⚠ AND THE OTHER HALF OF THE SAME IDEA WAS MEASURED AND NOT SHIPPED. Driving `travel[i]` —
+       how much country i's own residents travel — from the same World Bank departures and boardings
+       moved the 50th- and 100th-country days to 92 and 124 (linear: 106 and 144), and the scale
+       constant could not pull them back (see ROUTE_MIX above). 53% of countries landed on one of the
+       two clamps because [TRAVEL_MIN, TRAVEL_MAX] was chosen for a compressed proxy ratio and the
+       observed ratio spans 0.000 to 20.1. Making that data usable needs the clamp's meaning
+       rethought and the emission rate re-calibrated — a piece of work with its own measurements,
+       not a line changed here. `travel[i]` therefore still comes from airport capacity, and
+       data/mobility.json ships only the column that is used. */
+    const arrMean = withArr > 0 ? arrSum / withArr : 0;
+    mobilityStats.withArr = withArr;
 
     const popW = new Float64Array(N), attract = new Float64Array(N);
     for (let i = 0; i < N; i++) {
       popW[i] = Math.pow(Math.max(1, st[i].pop0) / popMean, POP_EXP);
       /* ⚠ A COUNTRY WITH NO AIRPORT FIGURE IS NOT A COUNTRY WITH NO AIRPORTS. It falls back to its
          population weight, which is on the same scale (both average to 1 across the world). */
-      attract[i] = Math.max(ATTRACT_FLOOR, (anyAir && st[i].air > 0) ? Math.pow(st[i].air, AIR_EXP) / airMean : popW[i]);
+      /* ⚠ A LADDER, NOT A CHOICE. Each rung is a strictly better answer to «how many people arrive
+         here» than the one below it, and a country takes the highest rung IT has — the tables do
+         not cover the same countries, so a per-world choice would throw away the good rows to
+         match the bad ones. */
+      if (arrMean > 0 && st[i].arr > 0) { attract[i] = Math.max(ATTRACT_FLOOR, Math.pow(st[i].arr / arrMean, AIR_EXP)); mobilityStats.obsAttract++; }
+      else attract[i] = Math.max(ATTRACT_FLOOR, (anyAir && st[i].air > 0) ? Math.pow(st[i].air, AIR_EXP) / airMean : popW[i]);
       travel[i] = (anyAir && st[i].air > 0 && apcRef > 0)
         ? Math.min(TRAVEL_MAX, Math.max(TRAVEL_MIN, Math.pow((st[i].air * 1e6 / Math.max(1, st[i].pop0)) / apcRef, TRAVEL_EXP)))
         : Math.min(TRAVEL_MAX, Math.max(TRAVEL_MIN, st[i].connectivity / devMean));
@@ -782,17 +991,58 @@ export function createPandemicModel(cfg) {
       for (let k = 0; k < b.length; k++) { const j = byCode[String(b[k]).toUpperCase()]; if (j != null && j !== i) { set.add(j); edges++; } }
       adj[i] = set.size ? set : null;
     }
+    if (mobilityStats.obsAttract > 0) mobilityFrom = mobilityFrom === 'population' ? 'arrivals' : mobilityFrom + '+arrivals';
     if (edges > 0 && mobilityFrom !== 'population') mobilityFrom += '+borders';
     else if (edges > 0) mobilityFrom = 'population+borders';
+
+    /* ── the observed route network, indexed against THIS world ─────────────────────────────
+       `byCode` above already maps a country code to its row. A destination code naming a country
+       that is not on this map is dropped here rather than silently indexed as 0 — the same guard
+       the land borders take, for the same reason. */
+    const ROUTES = (cfg && cfg.routes) || null;
+    const rowBuf = ROUTES ? new Float64Array(N) : null;
+    /* counters live on mobilityStats, in the outer closure, so nothing depends on the order these blocks appear in */
+    function routeRow(i) {
+      if (!rowBuf) return null;
+      const code = C[i] && C[i].code;
+      const from = code ? ROUTES[String(code).toUpperCase()] : null;
+      if (!from) return null;
+      rowBuf.fill(0);
+      let any = 0;
+      for (const to in from) {
+        const j = byCode[String(to).toUpperCase()];
+        if (j == null || j === i) continue;
+        const v = +from[to];
+        if (v > 0) { rowBuf[j] += v; any++; }
+      }
+      return any ? rowBuf : null;
+    }
 
     if (N < 2) return;
     for (let i = 0; i < N; i++) {
       const row = i * N, a = adj[i];
+      /* ── PASS 1: the two row totals the blend needs ────────────────────────────────────────
+         ⚠ THE BLEND IS BETWEEN SHARES, AND IT IS SCALED BACK TO THE GRAVITY ROW'S OWN TOTAL. That
+         is what keeps LAND_MIX meaning what it was measured to mean: the land term is added on
+         the air term's scale, so if the air term's row total moved, every land border on the map
+         would silently change value. Only the allocation WITHIN the air term changes here. */
+      const rr = routeRow(i);
+      let gravSum = 0, routeSum = 0;
+      for (let j = 0; j < N; j++) {
+        if (j === i) continue;
+        gravSum += attract[j] * Math.exp(-haversine(st[i], st[j]) / AIR_DECAY_KM);
+        if (rr) routeSum += rr[j];
+      }
+      const m = (rr && routeSum > 0 && gravSum > 0) ? ROUTE_MIX : 0;
+      if (m > 0) { mobilityStats.routedOrigins++; for (let j = 0; j < N; j++) if (j !== i && rr[j] > 0) mobilityStats.routedPairs++; }
+      /* ── PASS 2: the row itself ────────────────────────────────────────────────────────── */
       let acc = 0;
       for (let j = 0; j < N; j++) {
         if (j !== i) {
           const d = haversine(st[i], st[j]);
-          acc += attract[j] * Math.exp(-d / AIR_DECAY_KM) + (a && a.has(j) ? LAND_MIX * popW[j] : 0);
+          const grav = attract[j] * Math.exp(-d / AIR_DECAY_KM);
+          const air = m > 0 ? (1 - m) * grav + m * gravSum * (rr[j] / routeSum) : grav;
+          acc += air + (a && a.has(j) ? LAND_MIX * popW[j] : 0);
         }
         MOB_CUM[row + j] = acc;
       }
@@ -1158,7 +1408,8 @@ export function createPandemicModel(cfg) {
        and the screen must not then claim air connectivity. `destinations(i)` is the row itself, for
        a test that wants to measure the distribution instead of reading the formula. */
     mobility: {
-      get from() { return mobilityFrom; },
+      get from() { return mobilityFrom + (mobilityStats.routedOrigins > 0 ? '+routes' : ''); },
+      get stats() { return Object.assign({}, mobilityStats); },
       travel(i) { return travel[i]; },
       destinations(i) {
         const out = []; if (N < 2 || i < 0 || i >= N) return out;
@@ -1192,7 +1443,11 @@ export function createPandemicModel(cfg) {
         /* Health pressure is the multiplier hospital overload is putting on this country's fatality
            right now — 1.0 is «coping», and it is the same expression `step()` applies. */
         overload: 1 + Math.min(1.1, (prevalence * 55) * (1 - s.health)),
-        health: s.health, delivery: s.delivery,
+        health: s.health, delivery: s.delivery, response: s.response,
+        /* Whether those three are this country's own observations or the development proxy. The
+           panel says which, because «Chad's medical capacity» read off GDP and read off the UHC
+           index are different claims and only one of them was measured in Chad. */
+        capacityFrom: s.capacityFrom,
         /* Policy, and WHOSE. `actor === i` is a government speaking for itself; anything else is
            somebody else's decision arriving here, and the panel says which. */
         actor: s.actor, selfGoverning: s.actor === i,
@@ -1262,20 +1517,81 @@ export function snapToStep(val, min, max, step) {
    that cannot find an accepted point falls back to the anchor, which was accepted by construction.
 
    It lives in this file, and is exported, for one reason: node can call it. A rule that only exists
-   inside a DOM closure is a rule no test can measure (#R505). */
+   inside a DOM closure is a rule no test can measure (#R505).
+
+   ══ ⚠⚠⚠ (#R678) AN ANCHOR MAY CARRY A WEIGHT, AND THE WEIGHT IS HOW MANY PEOPLE LIVE THERE ═══
+   The dots were spread ROUND-ROBIN over the anchors: every anchor got the same number of cases.
+   On a world map that is wrong in a way a reader can see from across the room — Canada, Russia and
+   Australia had cases scattered evenly over tundra, taiga and desert, because an anchor in Alert
+   and an anchor in Toronto counted the same. In a well-mixed compartment model cases are
+   proportional to POPULATION, so the anchors have to be too.
+
+   `anchors[k]` is `[lng, lat]` or `[lng, lat, weight]`. Quotas are allocated by LARGEST REMAINDER
+   over the weights, and then emitted round-robin over the anchors that still have quota left.
+   ⚠ THE EMISSION ORDER IS PART OF THE CONTRACT, not a detail. `buildDots()` colours the first
+   `kE` dots of the pool as exposed and the rest as infectious, so grouping a city's dots together
+   would put every exposed case in one city. Round-robin interleaving keeps them mixed.
+   ⚠ EQUAL OR ABSENT WEIGHTS REPRODUCE THE OLD BEHAVIOUR EXACTLY — largest remainder with equal
+   weights gives `floor(n/A)` to everybody and the remainder to the lowest indices, which is what
+   round-robin did. That is a property a test can hold, and it is the reason this is one function
+   with a weight rather than two functions. */
 export function scatterCases(n, anchors, span, rnd, accept) {
   const out = [];
-  if (!anchors || !anchors.length) return out;
+  if (!anchors || !anchors.length || !(n > 0)) return out;
   const TRIES = 8;   /* enough for a coastal anchor; beyond that the anchor itself is the honest answer */
-  for (let d = 0; d < n; d++) {
-    const a = anchors[d % anchors.length];
-    if (d < anchors.length) { out.push([a[0], a[1]]); continue; }
-    let placed = null;
-    for (let t = 0; t < TRIES && !placed; t++) {
-      const p = [a[0] + (rnd() - 0.5) * span, a[1] + (rnd() - 0.5) * span];
-      if (!accept || accept(p[0], p[1])) placed = p;
+  const A = anchors.length;
+
+  /* ── quotas, by largest remainder ────────────────────────────────────────────────────────
+     A weight that is absent, negative or not a number counts as 1: an anchor the caller could
+     not size is still a place people live, and dropping it would silently shrink the country. */
+  const w = new Array(A);
+  let wSum = 0;
+  for (let k = 0; k < A; k++) {
+    const a = anchors[k];
+    const v = (a && a.length > 2) ? +a[2] : 1;
+    w[k] = (isFinite(v) && v > 0) ? v : (a && a.length > 2 ? 0 : 1);
+    wSum += w[k];
+  }
+  if (!(wSum > 0)) { for (let k = 0; k < A; k++) w[k] = 1; wSum = A; }
+
+  const quota = new Array(A), frac = new Array(A);
+  let given = 0;
+  for (let k = 0; k < A; k++) {
+    const exact = n * w[k] / wSum;
+    quota[k] = Math.floor(exact);
+    frac[k] = exact - quota[k];
+    given += quota[k];
+  }
+  /* The remainder goes to the largest fractional parts, ties to the LOWER INDEX. With equal
+     weights every fraction is identical, so the remainder lands on 0, 1, 2 … — exactly the
+     round-robin allocation this replaced. */
+  if (given < n) {
+    const order = [];
+    for (let k = 0; k < A; k++) order.push(k);
+    order.sort((p, q) => (frac[q] - frac[p]) || (p - q));
+    for (let t = 0; t < order.length && given < n; t++) { quota[order[t]]++; given++; }
+  }
+
+  /* ── emission, round-robin over the anchors that still have quota ─────────────────────── */
+  const used = new Array(A).fill(0);
+  while (out.length < n) {
+    let progressed = false;
+    for (let k = 0; k < A && out.length < n; k++) {
+      if (used[k] >= quota[k]) continue;
+      progressed = true;
+      const a = anchors[k];
+      if (used[k] === 0) out.push([a[0], a[1]]);   /* the anchor itself was accepted by construction */
+      else {
+        let placed = null;
+        for (let t = 0; t < TRIES && !placed; t++) {
+          const p = [a[0] + (rnd() - 0.5) * span, a[1] + (rnd() - 0.5) * span];
+          if (!accept || accept(p[0], p[1])) placed = p;
+        }
+        out.push(placed || [a[0], a[1]]);
+      }
+      used[k]++;
     }
-    out.push(placed || [a[0], a[1]]);
+    if (!progressed) break;   /* every quota spent — only reachable if the arithmetic above is wrong */
   }
   return out;
 }
