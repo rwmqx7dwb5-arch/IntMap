@@ -2920,7 +2920,6 @@ window.IntMapLang.define('ko', { ui: {
   "min zoom ": "최소 줌 ",
   "no zoom-out!": "축소 없음!",
   "Play again": "다시 하기",
-  "Outbreak has reached 10 countries.": "감염이 10개국으로 확산되었습니다.",
   "An effective treatment is found — fatality rate falls.": "효과적인 치료법이 확립되어 치명률이 낮아집니다.",
   "Global death toll passes 1 million.": "전 세계 사망자가 100만 명을 넘었습니다.",
   "Global death toll passes 10 million.": "전 세계 사망자가 1000만 명을 넘었습니다.",
@@ -6207,7 +6206,6 @@ window.IntMapLang.define('ko', { ui: {
   "Adaptive": "상황에 따라",
   "Advanced": "고급 설정",
   "Base fatality": "기준 치명률",
-  "Countries with cases now": "현재 환자가 있는 국가",
   "cumulative infections": "누적 감염",
   "Global health emergency threshold reached — international spread is sustained.": "국제적 공중보건 비상사태 기준에 도달 — 국가 간 확산이 계속되고 있습니다.",
   "Immunity wanes": "면역이 감소함",
@@ -6227,7 +6225,6 @@ window.IntMapLang.define('ko', { ui: {
   "Seasonality": "계절성",
   "Seed": "난수 시드",
   "Seed an outbreak and watch a stochastic SEIR model carry it between real countries — vaccines, variants and lockdowns included.": "발생 지점을 놓고 확률적 SEIR 모델이 실제 국가들 사이로 퍼뜨리는 과정을 지켜보세요 — 백신·변이·봉쇄까지 포함합니다.",
-  "Simplified educational model (stochastic SEIR, one compartment set per country). Not a forecast.": "교육용으로 단순화한 모델(확률적 SEIR, 국가당 구획 1세트). 예측이 아닙니다.",
   "Start month": "시작 월",
   "Strong": "강력한 대책",
   "This figure is a case fatality ratio (deaths per detected case), but the model applies it to every infection — including undetected ones. Treat it as an assumed severity, not as an observed one.": "이 수치는 확진 사례당 사망자를 나타내는 치명률이지만, 모델은 이를 미확인 감염을 포함한 모든 감염에 적용합니다. 관측된 값이 아니라 가정된 중증도로 보십시오.",
@@ -6322,4 +6319,62 @@ window.IntMapLang.define('ko', { ui: {
   "Measured right now near the source": "지금 방출원 부근에서 실측된 값",   /* atlas-console.js (#R585) */
   "That name also matches {o}; this run uses {u}.": "이 이름은 {o}에도 해당합니다. 이번 실행에서는 {u}을(를) 사용했습니다.",   /* atlas-console.js (#R585) */
   "These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.": "이 값들은 관측값이며 위 모델의 일부가 아닙니다. 50–200 nSv/h는 통상적인 자연 방사선 준위이고, 비만 내려도 한 관측소의 값이 몇 시간 동안 3배가 될 수 있습니다.",   /* atlas-console.js (#R585) */
+  "{c} approves a vaccine — rollout begins.": "{c}에서 백신이 승인되었습니다 — 접종이 시작됩니다.",   /* playground.js (#R675) */
+  "{c} enters lockdown.": "{c}에서 봉쇄가 시작되었습니다.",   /* playground.js (#R675) */
+  "{c} lifts its entry restrictions.": "{c}에서 입국 제한이 해제되었습니다.",   /* playground.js (#R675) */
+  "{c} raises entry restrictions to their highest level.": "{c}에서 입국 제한이 최고 수준으로 강화되었습니다.",   /* playground.js (#R675) */
+  "{n} mapped units with no measured population are not simulated.": "인구가 측정되지 않은 지도상 단위 {n}곳은 시뮬레이션하지 않습니다.",   /* playground.js (#R675) */
+  "Cases": "감염 사례",   /* playground.js (#R675) */
+  "Countries and territories reached": "도달한 국가·지역",   /* playground.js (#R675) */
+  "Countries and territories with cases now": "현재 사례가 있는 국가·지역",   /* playground.js (#R675) */
+  "Day of the peak": "정점의 날",   /* playground.js (#R675) */
+  "deaths/day, peak": "일일 사망자, 정점",   /* playground.js (#R675) */
+  "Disease": "질병",   /* playground.js (#R675) */
+  "Dominant variant": "우세 변이",   /* playground.js (#R675) */
+  "Each curve is scaled to its own peak, so their shapes can be compared but their heights cannot.": "각 곡선은 자체 정점을 기준으로 정규화되어 있어, 모양은 비교할 수 있지만 높이는 비교할 수 없습니다.",   /* playground.js (#R675) */
+  "entry restricted": "입국 제한",   /* playground.js (#R675) */
+  "Entry rules": "입국 규정",   /* playground.js (#R675) */
+  "Entry rules and lockdowns are decided by governments: {a} places follow the government of another, and {b} have none recorded and make no policy of their own.": "입국 규정과 봉쇄는 정부가 결정합니다: {a}곳은 다른 정부의 결정을 따르고, {b}곳은 기록된 정부가 없어 자체 정책을 시행하지 않습니다.",   /* playground.js (#R675) */
+  "Entry rules and lockdowns here are decided by {c}.": "이곳의 입국 규정과 봉쇄는 {c}에서 결정합니다.",   /* playground.js (#R675) */
+  "Event log": "사건 기록",   /* playground.js (#R675) */
+  "Events in this run": "이번 실행의 사건",   /* playground.js (#R675) */
+  "ever reached": "누적 도달",   /* playground.js (#R675) */
+  "Every mapped unit sets its own entry rules in this run — the table of governments did not load.": "이번 실행에서는 지도상 모든 단위가 각자 입국 규정을 정합니다 — 정부 표를 불러오지 못했습니다.",   /* playground.js (#R675) */
+  "First case arrived": "첫 사례 발생",   /* playground.js (#R675) */
+  "governments restricting entry": "입국을 제한 중인 정부",   /* playground.js (#R675) */
+  "highest restrictions": "최고 수준 제한",   /* playground.js (#R675) */
+  "Hospital pressure": "의료 부담",   /* playground.js (#R675) */
+  "How much of this is chance?": "이 결과는 얼마나 우연일까?",   /* playground.js (#R675) */
+  "Immune (recovered)": "면역 보유(회복)",   /* playground.js (#R675) */
+  "in lockdown": "봉쇄 중",   /* playground.js (#R675) */
+  "Lockdown": "봉쇄",   /* playground.js (#R675) */
+  "median, then the 10th to 90th percentile, over {n} runs": "{n}회 실행의 중앙값, 이어서 10~90 백분위수",   /* playground.js (#R675) */
+  "Never left the first country": "첫 국가를 벗어나지 않음",   /* playground.js (#R675) */
+  "new infections/day, peak": "일일 신규 감염, 정점",   /* playground.js (#R675) */
+  "New variant ({g}) detected in {c} — more transmissible. It is only there, for now.": "{c}에서 새 변이({g}) 확인 — 전파력이 더 강합니다. 지금은 그곳에만 있습니다.",   /* playground.js (#R675) */
+  "New variant ({g}) detected in {c}. It is only there, for now.": "{c}에서 새 변이({g}) 확인. 지금은 그곳에만 있습니다.",   /* playground.js (#R675) */
+  "No seat of government is recorded here, so this place makes no policy of its own in the model.": "이곳에는 기록된 정부 소재지가 없어, 모형에서 자체 정책을 시행하지 않습니다.",   /* playground.js (#R675) */
+  "none yet": "아직 없음",   /* playground.js (#R675) */
+  "Older entries are not shown.": "이보다 오래된 기록은 표시하지 않습니다.",   /* playground.js (#R675) */
+  "open": "제한 없음",   /* playground.js (#R675) */
+  "original": "원래 병원체",   /* playground.js (#R675) */
+  "Outbreak has reached 10 countries and territories.": "발병이 10개 국가·지역으로 확산되었습니다.",   /* playground.js (#R675) */
+  "Peak infectious": "감염성 보유자 정점",   /* playground.js (#R675) */
+  "R₀ here (with variants)": "이곳의 R₀(변이 포함)",   /* playground.js (#R675) */
+  "Rₑ (effective)": "Rₑ(실효 재생산지수)",   /* playground.js (#R675) */
+  "Rₑ = R₀ × season ({s}) × behaviour and lockdown ({b}) × susceptible share ({u})": "Rₑ = R₀ × 계절({s}) × 행동 변화와 봉쇄({b}) × 감수성 인구 비율({u})",   /* playground.js (#R675) */
+  "Ran its course and ended": "끝까지 유행한 뒤 종식됨",   /* playground.js (#R675) */
+  "Response": "대응",   /* playground.js (#R675) */
+  "ring = entry restrictions (yellow → orange → red), blue core = lockdown": "고리 = 입국 제한(노랑 → 주황 → 빨강), 파란 중심 = 봉쇄",   /* playground.js (#R675) */
+  "Run": "실행",   /* playground.js (#R675) */
+  "Running {a} of {b}": "{b}회 중 {a}회 실행 중",   /* playground.js (#R675) */
+  "Runs the same disease, the same world and the same first outbreak again with different random draws. The map keeps showing the single run you are watching.": "같은 질병, 같은 세계, 같은 최초 발생을 무작위 값만 바꿔 다시 실행합니다. 지도에는 지금 보고 있는 한 번의 실행이 계속 표시됩니다.",   /* playground.js (#R675) */
+  "screening on arrival": "입국 시 검역",   /* playground.js (#R675) */
+  "Simplified educational model (stochastic SEIR, one well-mixed compartment set per country or territory, and one run out of many possible ones). Not a forecast.": "단순화한 교육용 모형(확률적 SEIR, 국가·지역마다 균일 혼합 구획 한 벌, 가능한 여러 실행 중 한 번). 예측이 아닙니다.",   /* playground.js (#R675) */
+  "Spread": "확산",   /* playground.js (#R675) */
+  "Still circulating at the time limit": "기간 상한에서도 계속 유행 중",   /* playground.js (#R675) */
+  "Stop the runs": "실행 중지",   /* playground.js (#R675) */
+  "Susceptible": "미감염(감수성)",   /* playground.js (#R675) */
+  "Tap any country for its own numbers.": "국가를 탭하면 그 국가의 수치를 볼 수 있습니다.",   /* playground.js (#R675) */
+  "treatment available": "치료법 있음",   /* playground.js (#R675) */
 } });

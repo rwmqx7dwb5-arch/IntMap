@@ -135,14 +135,6 @@
   "발생 지점을 놓고 확률적 SEIR 모델이 실제 국가들 사이로 퍼뜨리는 과정을 지켜보세요 — 백신·변이·봉쇄까지 포함합니다.",
   "設定疫情起點，觀看隨機 SEIR 模型如何在真實國家之間擴散 — 含疫苗、變異株與封鎖。"
  ],
- "Simplified educational model (stochastic SEIR, one compartment set per country). Not a forecast.": [
-  "Vereinfachtes Lehrmodell (stochastisches SEIR, ein Kompartimentsatz je Land). Keine Prognose.",
-  "Упрощённая учебная модель (стохастическая SEIR, один набор отсеков на страну). Это не прогноз.",
-  "Modelo educativo simplificado (SEIR estocástico, un conjunto de compartimentos por país). No es una previsión.",
-  "Modèle pédagogique simplifié (SEIR stochastique, un jeu de compartiments par pays). Ce n’est pas une prévision.",
-  "교육용으로 단순화한 모델(확률적 SEIR, 국가당 구획 1세트). 예측이 아닙니다.",
-  "教學用簡化模型（隨機 SEIR，每國一組隔室）。並非預測。"
- ],
  "Start month": [
   "Startmonat",
   "Месяц начала",

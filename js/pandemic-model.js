@@ -524,7 +524,20 @@ export function createPandemicModel(cfg) {
   let worldPop = 0;
   for (let i = 0; i < N; i++) {
     const c = C[i] || {};
-    const pop = (c.pop > 0) ? c.pop : 3e6;
+    /* ══ ⚠⚠⚠ (#R675) A PLACE WHOSE POPULATION NOBODY MEASURED IS NOT AN EPIDEMIOLOGICAL UNIT ══════
+       This read `(c.pop > 0) ? c.pop : 3e6`, and every quantity below is a share of that number: a
+       row the host had no population figure for was given THREE MILLION INVENTED PEOPLE, who then
+       caught the disease, died of it, closed their border and appeared in the world totals. It was
+       measurable on screen — Antarctica, whose real resident population is a few thousand seasonal
+       staff, was one of them, and the reader saw it announce a national lockdown.
+       ⚠ THE FIX IS NOT A BETTER DEFAULT. There is no honest number here; a default of any size is a
+       claim about a place the source is silent on. The host decides what the world is (it holds the
+       tables), and this refuses to model a row that cannot be modelled, out loud, rather than
+       inventing the one field everything else divides by. */
+    const pop = +c.pop;
+    if (!(pop > 0) || !isFinite(pop)) {
+      throw new TypeError('createPandemicModel: country ' + i + ' (' + (c.name || c.code || '?') + ') has no population; a row with no measured population cannot be a compartment set');
+    }
     worldPop += pop;
     const immune = pop * P.initialImmunity;
     const dev = Math.min(1, Math.max(0.05, num(c.dev, 0.5)));
@@ -557,11 +570,57 @@ export function createPandemicModel(cfg) {
          counts again, and the UI says so. */
       cumInf: 0, cumDead: 0,
       seeded: false, lock: 0, fatigue: 0, border: 0, quiet: 0,
+      /* ══ ⚠⚠⚠ (#R675) WHO DECIDES THIS ROW'S BORDER AND ITS LOCKDOWN ════════════════════════════
+         Every row used to decide its own, because every row was «a country». The map's rows are
+         Natural Earth admin-0 units, which include dependencies, disputed areas and Antarctica —
+         so the news ticker announced that Antarctica had closed its borders, and it was not a
+         display bug: the run really did give a continent with no government a border policy, and
+         the traffic multiplier that came with it.
+         `actor` is the INDEX OF THE GOVERNMENT that answers for this row — itself when it is an
+         independent state, its sovereign's row when it is a dependency of one that is in the world,
+         and −1 when there is no government to ask. A row with no actor never escalates, never
+         relaxes and never emits a policy event; a dependency's border is its sovereign's border,
+         which is what a dependency's border is.
+         ⚠ THE HOST SUPPLIES IT FROM DATA (data/country-facts.json's `ind` + Natural Earth's own
+         SOV_A3), not from a list of names, and a host that supplies nothing gets `i` — every row
+         its own actor, which is exactly the behaviour before this round. */
+      actor: (c.actor === null || c.actor === undefined) ? i : ((c.actor >= 0 && c.actor < N) ? (c.actor | 0) : -1),
+      /* The day the first infection landed here, −1 while it never has. Read by the country
+         inspector; it is a fact about the run and the run is the only thing that knows it. */
+      day0: -1,
       /* Per-variant share of what is circulating HERE. Index 0 is the original pathogen. A variant
          that emerges in Brazil does not change Japan's R0 until it arrives in Japan. */
       share: [1], escApplied: 0
     };
   }
+  /* ⚠ (#R675) ACTORS ARE FLATTENED HERE, ONCE, so that `st[s.actor]` is always a row that decides
+     for itself. A host is allowed to say «this row follows that one» without checking whether THAT
+     row follows a third: a chain would make the daily propagation depend on array order, which is
+     the shape of bug this field exists to remove. Two passes cover any chain Natural Earth can
+     produce; a cycle resolves to «no actor», which is the honest reading of a cycle. */
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < N; i++) { const a = st[i].actor; if (a >= 0 && a !== i) st[i].actor = st[a].actor; }
+  }
+  for (let i = 0; i < N; i++) { const a = st[i].actor; if (a >= 0 && st[a].actor !== a) st[i].actor = -1; }
+
+  /* ══ (#R675) A FOLLOWER'S POLICY IS ITS ACTOR'S POLICY, WHENEVER ANYBODY CAN LOOK ════════════════
+     Called once here and once at the end of every `step()`, never in the middle of the country loop:
+     inside it the answer would depend on whether the sovereign's index happens to be lower than the
+     dependency's, and «what is Greenland's border» would be settled by array order. Because the
+     transmission and export terms are evaluated before it, a follower spends each day under the
+     rules its actor had at the start of that day — which is also what a dependency's day is like —
+     and is never OBSERVED holding a different answer from the government it is under. */
+  function syncFollowers() {
+    for (let i = 0; i < N; i++) {
+      const s = st[i];
+      if (s.actor === i) continue;
+      if (s.actor < 0) { s.border = 0; s.lock = 0; continue; }
+      const a = st[s.actor];
+      s.border = a.border; s.lock = a.lock;
+    }
+  }
+  syncFollowers();
+
   function zeros(n) { const a = new Array(n); for (let k = 0; k < n; k++) a[k] = 0; return a; }
 
   /* ── variants ─────────────────────────────────────────────────────────────────────────────── */
@@ -599,6 +658,25 @@ export function createPandemicModel(cfg) {
   function localR0(s) { let m = 0; for (let k = 0; k < s.share.length; k++) m += s.share[k] * variants[k].r0Mult; return P.r0 * m; }
   function localIfrMult(s) { let m = 0; for (let k = 0; k < s.share.length; k++) m += s.share[k] * variants[k].ifrMult; return m; }
 
+  /* ══ ⚠⚠⚠ (#R675) THE TRANSMISSION TERM HAS ONE OWNER, BECAUSE TWO THINGS NOW ASK IT ═════════════
+     `step()` needs β to advance the day. The country inspector needs the EFFECTIVE reproduction
+     number, which is the same β read as a per-generation quantity against the susceptible share —
+     the number a reader actually wants when they ask «is it still growing here», and the one the
+     R₀ slider does NOT answer once immunity, season, behaviour, lockdown and a variant have all
+     moved it. Writing the formula twice is how #R536 and #R660 happened: the copy drifts, and the
+     screen then disagrees with the simulation it is describing. So both callers go through here. */
+  function behaviourOf(s, prevalence) {
+    return P.interventions === 'none' ? 1
+      : Math.max(0.12, 1 - (0.55 * Math.min(1, prevalence * 90) + 0.25 * s.lock) * interventionScale);
+  }
+  function betaOf(s, behav) { return localR0(s) / P.infectiousDays * seasonFactor(s.lat) * behav; }
+  /* Rₑ = β · D · (susceptible share). `P.infectiousDays` is D, so the division inside `betaOf` and
+     the multiplication here cancel by construction — which is the point: they cannot drift apart. */
+  function rEffOf(s) {
+    const live = alive(s) || 1;
+    return betaOf(s, behaviourOf(s, sum(s.I) / live)) * P.infectiousDays * ((s.S + s.SV) / live);
+  }
+
   /* ── seeding ──────────────────────────────────────────────────────────────────────────────── */
   /* ⚠ THIS ALWAYS TAKES FROM S. The old re-import path added to E without subtracting, so every
      re-importation invented up to thirty people out of nothing. */
@@ -631,6 +709,7 @@ export function createPandemicModel(cfg) {
     s.S -= fromS; s.SV -= k - fromS;
     if (P.latentDays > 0) s.E[0] += k; else s.I[0] += k;
     s.cumInf += k;
+    if (!s.seeded) s.day0 = day;
     s.seeded = true;
     if (fromShare) mixShare(s, fromShare, k, here);
     return k;
@@ -738,6 +817,7 @@ export function createPandemicModel(cfg) {
     day++;
     const events = [];
 
+
     /* Stage hazards. `latentDays === 0` is not a division: it means the E boxes are bypassed at
        injection, so nothing is sitting in them to move. */
     /* (#R666) `S/T`, not `1 − e^(−S/T)` — the note beside LATENT_STAGES says why. */
@@ -803,9 +883,8 @@ export function createPandemicModel(cfg) {
 
       /* Behaviour: people change what they do when the epidemic is visible, and a lockdown adds to
          that. With interventions off, neither happens. */
-      const behav = P.interventions === 'none' ? 1
-        : Math.max(0.12, 1 - (0.55 * Math.min(1, prevalence * 90) + 0.25 * s.lock) * interventionScale);
-      const beta = localR0(s) / P.infectiousDays * seasonFactor(s.lat) * behav;
+      const behav = behaviourOf(s, prevalence);
+      const beta = betaOf(s, behav);
       /* ⚠ (#R666) TWO SUSCEPTIBLE POOLS, ONE HAZARD. `SV` catches the disease exactly as `S` does,
          so it is drawn separately at the same probability — which is what «each person independently»
          means — rather than by splitting one draw, which would correlate the two. */
@@ -888,8 +967,12 @@ export function createPandemicModel(cfg) {
       const nowI = sum(s.I), nowE = sum(s.E);
       totI += nowI; totE += nowE;
 
-      /* Policy. Borders escalate and — unlike before — come back down. */
-      if (P.interventions !== 'none') {
+      /* Policy. Borders escalate and — unlike before — come back down.
+         ⚠ (#R675) ONLY A GOVERNMENT DECIDES. `s.actor === i` is true of every independent state and
+         of nothing else; a dependency was given its sovereign's decision at the top of the day and
+         a row with no government was given none. This is also what stops a policy EVENT naming a
+         place that cannot hold a press conference. */
+      if (P.interventions !== 'none' && s.actor === i) {
         const pv = nowI / (alive(s) || 1);
         if (s.border < 3 && pv > BORDER_TIGHTEN[s.border] / interventionScale && rnd() < 0.04 + 0.16 * s.response) {
           s.border++; s.quiet = 0;
@@ -985,7 +1068,30 @@ export function createPandemicModel(cfg) {
       ended = { kind: 'endemic' };
       events.push({ t: 'end', kind: 'endemic' });
     }
+    syncFollowers();
+    record(T);
     return events;
+  }
+
+  /* ══ ⚠⚠⚠ (#R675) THE RUN'S OWN TIME SERIES, KEPT BY THE THING THAT KNOWS THE DAYS ══════════════
+     The panel could show «now» and nothing else, which is the wrong shape for an epidemic: whether
+     6.4% cumulative infections is the start of a wave or the end of one is not readable from 6.4%.
+     A chart drawn from a series the UI accumulated itself would drift the moment a frame is dropped
+     — `tick()` is a setTimeout and skips days under load — so the series is kept HERE, one record
+     per `step()`, and is therefore exactly as long as the run is old.
+     ⚠ THE DAILY FLOWS ARE DIFFERENCES OF LEDGERS, NOT SUMS OF THE PATHS. `cumInf` and `D` are
+     already monotone totals that every path (local transmission, importation, re-infection) has to
+     go through, so differencing them cannot miss a path the way adding up call sites can — which is
+     the defect #R673 found in the old attack-rate arithmetic, pointed the other way. */
+  const hist = [];
+  let lastCum = 0, lastD = 0;
+  function record(T) {
+    hist.push({
+      day, I: T.I, E: T.E, D: T.D, R: T.R, V: T.V, cumInf: T.cumInf,
+      newInf: Math.max(0, T.cumInf - lastCum), newDead: Math.max(0, T.D - lastD),
+      affected: T.affected, reached: T.reached, locked: T.locked, restricted: T.restricted, variants: T.variants
+    });
+    lastCum = T.cumInf; lastD = T.D;
   }
   function dominant(s) { let b = 0; for (let k = 1; k < s.share.length; k++) if (s.share[k] > s.share[b]) b = k; return b; }
 
@@ -993,13 +1099,19 @@ export function createPandemicModel(cfg) {
   function totals() {
     /* ⚠ (#R666) `S` IS BOTH SUSCEPTIBLE POOLS, because that is what the word means to a reader; `SV`
        is reported beside it for anyone who needs «reached by the campaign and not protected». */
-    let S = 0, SV = 0, E = 0, I = 0, R = 0, D = 0, V = 0, cumInf = 0, affected = 0;
+    let S = 0, SV = 0, E = 0, I = 0, R = 0, D = 0, V = 0, cumInf = 0, affected = 0, reached = 0;
+    /* ⚠ (#R675) THE RESPONSE IS COUNTED IN GOVERNMENTS, NOT IN ROWS. A dependency carrying its
+       sovereign's lockdown is the same lockdown, and counting it again would print «47 lockdowns»
+       for a world in which 31 governments had ordered one. */
+    let locked = 0, restricted = 0, closed = 0, actors = 0;
     for (let i = 0; i < N; i++) {
       const s = st[i];
       S += s.S + s.SV; SV += s.SV; E += sum(s.E); I += sum(s.I); R += s.R; D += s.D; V += s.V; cumInf += s.cumInf;
       if (s.seeded && (sum(s.I) + sum(s.E)) > 0.5) affected++;
+      if (s.seeded) reached++;
+      if (s.actor === i) { actors++; if (s.lock > 0.45) locked++; if (s.border >= 2) restricted++; if (s.border === 3) closed++; }
     }
-    return { S, SV, E, I, R, D, V, cumInf, affected, worldPop, day, variants: variants.length - 1, vaccine: vaxDay >= 0, treatment, emergency };
+    return { S, SV, E, I, R, D, V, cumInf, affected, reached, locked, restricted, closed, actors, units: N, worldPop, day, variants: variants.length - 1, vaccine: vaxDay >= 0, treatment, emergency };
   }
 
   /* Progress towards a vaccine, for a pathogen that does not have one yet. */
@@ -1058,7 +1170,37 @@ export function createPandemicModel(cfg) {
       },
     },
     /* Active cases in one country, split the way the map draws them. */
-    active(i) { const s = st[i]; return { E: sum(s.E), I: sum(s.I), D: s.D, seeded: s.seeded }; }
+    active(i) { const s = st[i]; return { E: sum(s.E), I: sum(s.I), D: s.D, seeded: s.seeded }; },
+    /* The day-by-day series. Returned as the live array — the caller reads it, nobody else writes
+       it — because copying 1 095 records on every animation frame is a cost with no reader. */
+    history() { return hist; },
+    /* ══ (#R675) EVERYTHING ONE COUNTRY IS, FOR THE INSPECTOR ═══════════════════════════════════
+       ⚠ IT IS BUILT HERE. The panel that shows it must not do arithmetic on a compartment (that
+       rule is the whole of #R575), and Rₑ in particular is not something a UI can reconstruct: it
+       needs β, the season, the behaviour term, the lockdown and the local variant mix, all of which
+       are this module's and would have to be copied out to be read. */
+    report(i) {
+      const s = st[i]; if (!s) return null;
+      const live = alive(s) || 1, Ii = sum(s.I), Ei = sum(s.E);
+      const prevalence = Ii / live;
+      const dom = dominant(s);
+      return {
+        i, pop: s.pop0, alive: live, S: s.S, SV: s.SV, E: Ei, I: Ii, R: s.R, V: s.V, D: s.D,
+        cumInf: s.cumInf, seeded: s.seeded, arrivalDay: s.day0,
+        r0: localR0(s), rEff: rEffOf(s), prevalence,
+        season: seasonFactor(s.lat), behaviour: behaviourOf(s, prevalence),
+        /* Health pressure is the multiplier hospital overload is putting on this country's fatality
+           right now — 1.0 is «coping», and it is the same expression `step()` applies. */
+        overload: 1 + Math.min(1.1, (prevalence * 55) * (1 - s.health)),
+        health: s.health, delivery: s.delivery,
+        /* Policy, and WHOSE. `actor === i` is a government speaking for itself; anything else is
+           somebody else's decision arriving here, and the panel says which. */
+        actor: s.actor, selfGoverning: s.actor === i,
+        border: s.actor < 0 ? null : BORDER_STATES[s.border], borderPass: s.actor < 0 ? 1 : BORDER_PASS[BORDER_STATES[s.border]],
+        lock: s.actor < 0 ? 0 : s.lock, fatigue: s.fatigue,
+        variant: dom, variantShare: s.share[dom] || 0
+      };
+    }
   };
 }
 
@@ -1134,6 +1276,151 @@ export function scatterCases(n, anchors, span, rnd, accept) {
       if (!accept || accept(p[0], p[1])) placed = p;
     }
     out.push(placed || [a[0], a[1]]);
+  }
+  return out;
+}
+
+/* ══ ⚠⚠⚠ (#R675) THE EVENT VOCABULARY, AND WHICH EVENTS ARE ALLOWED TO INTERRUPT A READER ═══════
+   The simulator's news ticker stacked a card for EVERY event in the middle of the screen, and the
+   number of events a day is roughly the number of governments reacting — so the map was covered
+   exactly when there was most to see on it. Measured on the screenshot that opened this round:
+   twelve cards, all of them «X closes its borders» / «X enters lockdown», over the world map.
+
+   ⚠ THE SPLIT IS NOT «IMPORTANT» VS «UNIMPORTANT». It is a property of the event: a `world` event
+   changes the rules everybody is playing under and happens a handful of times in a run (a vaccine
+   exists; a variant is named; the emergency threshold is passed), and a `country` policy event is
+   one government reacting to its own prevalence and happens as often as there are governments.
+   The first is worth stopping for. The second is a LIST — it belongs in a list.
+
+   ⚠ THIS TABLE IS THE VOCABULARY, AND tests/r675-pandemic-checks HOLDS IT TO THE EMITTERS: every
+   `events.push({ t: … })` literal in this file must have a row here, and every row here must be
+   emitted somewhere. A new event kind that forgets to declare itself would otherwise default to
+   whatever the `||` on the lookup happened to say, which is how a routine event ends up back in
+   the middle of the map. */
+/* ⚠ THE TABLE LIVES INSIDE THE FUNCTION THAT READS IT. Every other constant in this module does
+   too (`BORDER_STATES`, `VAX_RATE_MAX`, `MAX_DEPARTURES` …): a module-private top-level declaration
+   is the one shape tests/r175-checks ③ forbids outright, because it is what used to be a global.
+   Eleven keys rebuilt per call, and events are counted in hundreds per run, not per frame.
+   ⚠ AN UNDECLARED KIND ANSWERS `null` RATHER THAN GUESSING. That is what lets a test say «every
+   kind this engine emits is declared» without being handed the list of keys to compare against —
+   the shape that goes stale (#R628). The SAFE DEFAULT lives at the call site, and it is `routine`:
+   js/playground.js writes `eventKind(t) || { tier: 'routine', scope: 'country' }`, where a reader
+   can see it. Guessing «major» covers the map; guessing «routine» loses one line of a list. */
+export function eventKind(t) {
+  return ({
+    vaccine:      { scope: 'world',   tier: 'major' },
+    treatment:    { scope: 'world',   tier: 'major' },
+    emergency:    { scope: 'world',   tier: 'major' },
+    tenCountries: { scope: 'world',   tier: 'major' },
+    deaths:       { scope: 'world',   tier: 'major' },
+    end:          { scope: 'world',   tier: 'major' },
+    /* A variant is named in ONE country and changes the pathogen everybody will meet — country-scoped
+       in its subject, world-scoped in its consequence, and the reason `scope` and `tier` are two
+       columns rather than one. */
+    variant:      { scope: 'country', tier: 'major' },
+    border:       { scope: 'country', tier: 'routine' },
+    reopen:       { scope: 'country', tier: 'routine' },
+    lockdown:     { scope: 'country', tier: 'routine' }
+  })[t] || null;
+}
+
+/* ══ ⚠⚠⚠ (#R675) A SINGLE RUN IS ONE DRAW FROM A DISTRIBUTION, AND THE PANEL SAID OTHERWISE ══════
+   Everything in this engine is stochastic — that is the point of `STOCHASTIC_MAX`, of the seed
+   field, of the fade-out rule — and yet the only thing a reader ever saw was one realisation,
+   printed as flatly as a measurement. «257 territories on day 208» reads as a fact about the
+   pathogen; it is a fact about seed 812734.
+
+   These two functions are the whole of the uncertainty arithmetic, and they are here rather than in
+   the panel for the reason everything else in this file is: node can call them (#R505). */
+/* `runs` is one object per replicate. Every numeric field present on the FIRST run is summarised;
+   fields are not named here, so a run that starts carrying a new number is summarised without this
+   function being edited (a list of field names is the shape #R628 caught: the census and the thing
+   being censused drift apart). */
+export function summariseEnsemble(runs) {
+  /* ⚠ NESTED, NOT TOP-LEVEL AND NOT EXPORTED. `summariseEnsemble` is the surface, and everything
+     worth holding this function to is visible through it; an export whose only importer is a test is
+     dead code to the program, and a module-private top-level declaration is what tests/r175-checks ③
+     forbids. Both readings point the same way — measure the thing a reader can reach. */
+  function quantile(sorted, p) {
+    const n = sorted.length;
+    if (!n) return NaN;
+    if (n === 1) return sorted[0];
+    /* Linear interpolation between order statistics (the «type 7» definition R and NumPy default to).
+       ⚠ NOT `sorted[Math.floor(p*n)]`: with ten runs that returns the same value for p = 0.10 and
+       p = 0.19 and never returns anything at all for p = 1. */
+    const h = (n - 1) * Math.min(1, Math.max(0, p));
+    const lo = Math.floor(h), hi = Math.ceil(h);
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (h - lo);
+  }
+  const out = { n: runs.length, metrics: {}, outcomes: {} };
+  if (!runs.length) return out;
+  const keys = Object.keys(runs[0]).filter(k => typeof runs[0][k] === 'number' && isFinite(runs[0][k]));
+  for (let q = 0; q < keys.length; q++) {
+    const k = keys[q];
+    const v = [];
+    for (let r = 0; r < runs.length; r++) { const x = runs[r][k]; if (typeof x === 'number' && isFinite(x)) v.push(x); }
+    v.sort((a, b) => a - b);
+    out.metrics[k] = { p10: quantile(v, 0.1), p25: quantile(v, 0.25), p50: quantile(v, 0.5), p75: quantile(v, 0.75), p90: quantile(v, 0.9), min: v[0], max: v[v.length - 1], n: v.length };
+  }
+  /* How often each ending happened, as a share of the replicates — the number a reader actually
+     wants («does this thing get out?»), which no single run can answer at all. */
+  for (let r = 0; r < runs.length; r++) { const k = runs[r].kind || 'unknown'; out.outcomes[k] = (out.outcomes[k] || 0) + 1; }
+  Object.keys(out.outcomes).forEach(k => { out.outcomes[k] = out.outcomes[k] / runs.length; });
+  return out;
+}
+
+/* ══ (#R675) THE CHART'S GEOMETRY, WHICH IS ARITHMETIC AND SO DOES NOT LIVE IN THE DOM ═══════════
+   Returns an SVG points string for `values` drawn into `w × h` with y = 0 at the bottom. `max` is
+   passed in rather than derived, because two series drawn on one pair of axes have to share it and
+   a function that took its own maximum would silently draw them on different ones.
+   ⚠ MORE DAYS THAN PIXELS IS THE NORMAL CASE (1 095 days into ~300 px). The reduction takes the
+   MAXIMUM of each bucket, not the first or the mean: a one-day peak that a mean would flatten is
+   the single most important feature of an epidemic curve. */
+export function chartPoints(values, w, h, max) {
+  const n = values.length;
+  if (!n || !(w > 0) || !(h > 0)) return '';
+  const m = max > 0 ? max : 1;
+  const cols = Math.min(n, Math.max(2, Math.round(w)));
+  const pts = new Array(cols);
+  for (let c = 0; c < cols; c++) {
+    const a = Math.floor(c * n / cols), b = Math.max(a + 1, Math.floor((c + 1) * n / cols));
+    let peak = 0;
+    for (let k = a; k < b && k < n; k++) { const v = values[k]; if (v > peak) peak = v; }
+    const x = cols === 1 ? 0 : (c * w / (cols - 1));
+    pts[c] = x.toFixed(1) + ',' + (h - Math.min(1, peak / m) * h).toFixed(1);
+  }
+  return pts.join(' ');
+}
+
+/* ══ ⚠⚠⚠ (#R675) WHO GOVERNS EACH MAPPED UNIT — DERIVED FROM DATA, TESTABLE IN NODE ══════════════
+   `rows` is one entry per simulated unit, in the order the model will see them:
+     · `admin`   what this unit calls itself (Natural Earth ADMIN)
+     · `sov`     the unit Natural Earth says administers it (SOVEREIGNT); equal to `admin` for a
+                 unit that administers itself
+     · `capital` the seat of government the facts table records, or null/undefined for none
+   Returns the `actor` field each row should carry: its own index, the index of the row that
+   governs it, or −1 for «there is no government to ask».
+
+   ⚠ TWO FACTS, EACH DOING ONE JOB, AND IN THIS ORDER.
+     1. If another PRESENT row calls itself this row's sovereign, this row is under that government.
+        Greenland under Denmark, Puerto Rico under the United States, Macao under China. That is the
+        upstream map's own topology and it cannot go stale the way a list of dependency names would.
+     2. Otherwise, a row is its own government IF a seat of government is recorded for it. Taiwan,
+        Kosovo and Western Sahara all have one and no present row administers them, so they decide
+        for themselves — which is what the border-policy question is actually about, and what a
+        «UN member states» test would have got wrong in three places. Antarctica, Bir Tawil, the
+        Spratlys and the sovereign base areas have none, and make no policy.
+   ⚠ `haveCapitals` IS THE «THE TABLE DID NOT LOAD» ANSWER. When it is false nothing is demoted and
+   every self-administered row is its own actor — the behaviour of every run before this round —
+   because «we could not look it up» is not evidence of «there is nobody there» (#R623). */
+export function policyActors(rows, haveCapitals) {
+  const n = rows.length, out = new Array(n);
+  const byAdmin = new Map();
+  for (let i = 0; i < n; i++) { const a = rows[i] && rows[i].admin; if (a != null && !byAdmin.has(a)) byAdmin.set(a, i); }
+  for (let i = 0; i < n; i++) {
+    const r = rows[i] || {};
+    if (r.sov != null && r.sov !== r.admin && byAdmin.has(r.sov) && byAdmin.get(r.sov) !== i) { out[i] = byAdmin.get(r.sov); continue; }
+    out[i] = (haveCapitals && !r.capital) ? -1 : i;
   }
   return out;
 }

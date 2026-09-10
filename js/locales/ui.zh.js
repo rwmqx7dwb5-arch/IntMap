@@ -3146,7 +3146,6 @@ window.IntMapLang.define('zh', {
   "min zoom ": "最小縮放 ",
   "no zoom-out!": "沒有縮小！",
   "Play again": "再玩一次",
-  "Outbreak has reached 10 countries.": "疫情已擴散至 10 個國家。",
   "An effective treatment is found — fatality rate falls.": "找到有效療法——致死率下降。",
   "Global death toll passes 1 million.": "全球死亡人數突破 100 萬。",
   "Global death toll passes 10 million.": "全球死亡人數突破 1000 萬。",
@@ -6434,7 +6433,6 @@ window.IntMapLang.define('zh', {
   "Adaptive": "視情況調整",
   "Advanced": "進階設定",
   "Base fatality": "基準致死率",
-  "Countries with cases now": "目前有病例的國家",
   "cumulative infections": "累計感染",
   "Global health emergency threshold reached — international spread is sustained.": "已達到國際公共衛生緊急事件門檻 — 國際間傳播持續擴大。",
   "Immunity wanes": "免疫力會衰退",
@@ -6454,7 +6452,6 @@ window.IntMapLang.define('zh', {
   "Seasonality": "季節性",
   "Seed": "隨機種子",
   "Seed an outbreak and watch a stochastic SEIR model carry it between real countries — vaccines, variants and lockdowns included.": "設定疫情起點，觀看隨機 SEIR 模型如何在真實國家之間擴散 — 含疫苗、變異株與封鎖。",
-  "Simplified educational model (stochastic SEIR, one compartment set per country). Not a forecast.": "教學用簡化模型（隨機 SEIR，每國一組隔室）。並非預測。",
   "Start month": "起始月份",
   "Strong": "嚴格防疫",
   "This figure is a case fatality ratio (deaths per detected case), but the model applies it to every infection — including undetected ones. Treat it as an assumed severity, not as an observed one.": "這個數字是病死率（每一名確診病例的死亡數），但模型會把它套用到所有感染——包括未被偵測到的感染。請將它視為假設的嚴重程度，而非觀測到的嚴重程度。",
@@ -6549,5 +6546,63 @@ window.IntMapLang.define('zh', {
   "Measured right now near the source": "目前在釋放源附近的實測值",   /* atlas-console.js (#R585) */
   "That name also matches {o}; this run uses {u}.": "這個名稱也符合 {o}；本次執行使用的是 {u}。",   /* atlas-console.js (#R585) */
   "These are observations, not part of the model above. 50–200 nSv/h is ordinary natural background, and rain alone can treble a station for a few hours.": "這些是觀測值，並非上述模型的一部分。50–200 nSv/h 屬於一般的天然背景輻射，單是降雨就可能讓某個測站的數值在數小時內變為三倍。",   /* atlas-console.js (#R585) */
+  "{c} approves a vaccine — rollout begins.": "{c} 核准疫苗——開始接種。",   /* playground.js (#R675) */
+  "{c} enters lockdown.": "{c} 進入封鎖。",   /* playground.js (#R675) */
+  "{c} lifts its entry restrictions.": "{c} 解除入境限制。",   /* playground.js (#R675) */
+  "{c} raises entry restrictions to their highest level.": "{c} 將入境限制提高到最高等級。",   /* playground.js (#R675) */
+  "{n} mapped units with no measured population are not simulated.": "有 {n} 個地圖單位沒有實測人口，未納入模擬。",   /* playground.js (#R675) */
+  "Cases": "病例",   /* playground.js (#R675) */
+  "Countries and territories reached": "曾波及的國家與地區",   /* playground.js (#R675) */
+  "Countries and territories with cases now": "目前有病例的國家與地區",   /* playground.js (#R675) */
+  "Day of the peak": "高峰日",   /* playground.js (#R675) */
+  "deaths/day, peak": "每日死亡數，高峰",   /* playground.js (#R675) */
+  "Disease": "疾病",   /* playground.js (#R675) */
+  "Dominant variant": "主流變異株",   /* playground.js (#R675) */
+  "Each curve is scaled to its own peak, so their shapes can be compared but their heights cannot.": "每條曲線都以各自的高峰標準化，因此可比較形狀，但不能比較高度。",   /* playground.js (#R675) */
+  "entry restricted": "入境受限",   /* playground.js (#R675) */
+  "Entry rules": "入境規定",   /* playground.js (#R675) */
+  "Entry rules and lockdowns are decided by governments: {a} places follow the government of another, and {b} have none recorded and make no policy of their own.": "入境規定與封鎖由政府決定：{a} 個地方依循其他政府的決定，{b} 個沒有記錄到政府，不制定自己的政策。",   /* playground.js (#R675) */
+  "Entry rules and lockdowns here are decided by {c}.": "此地的入境規定與封鎖由 {c} 決定。",   /* playground.js (#R675) */
+  "Event log": "事件紀錄",   /* playground.js (#R675) */
+  "Events in this run": "本次執行的事件",   /* playground.js (#R675) */
+  "ever reached": "累計波及",   /* playground.js (#R675) */
+  "Every mapped unit sets its own entry rules in this run — the table of governments did not load.": "本次執行中，每個地圖單位各自訂定入境規定——政府對照表未能載入。",   /* playground.js (#R675) */
+  "First case arrived": "首例出現",   /* playground.js (#R675) */
+  "governments restricting entry": "實施入境限制的政府",   /* playground.js (#R675) */
+  "highest restrictions": "最高等級限制",   /* playground.js (#R675) */
+  "Hospital pressure": "醫療負荷",   /* playground.js (#R675) */
+  "How much of this is chance?": "這個結果有多少是偶然？",   /* playground.js (#R675) */
+  "Immune (recovered)": "具免疫力（已康復）",   /* playground.js (#R675) */
+  "in lockdown": "封鎖中",   /* playground.js (#R675) */
+  "Lockdown": "封鎖",   /* playground.js (#R675) */
+  "median, then the 10th to 90th percentile, over {n} runs": "中位數，以及第 10 至第 90 百分位數，共 {n} 次執行",   /* playground.js (#R675) */
+  "Never left the first country": "從未離開最初的國家",   /* playground.js (#R675) */
+  "new infections/day, peak": "每日新增感染，高峰",   /* playground.js (#R675) */
+  "New variant ({g}) detected in {c} — more transmissible. It is only there, for now.": "在 {c} 偵測到新變異株（{g}）——傳播力更強。目前僅出現在當地。",   /* playground.js (#R675) */
+  "New variant ({g}) detected in {c}. It is only there, for now.": "在 {c} 偵測到新變異株（{g}）。目前僅出現在當地。",   /* playground.js (#R675) */
+  "No seat of government is recorded here, so this place makes no policy of its own in the model.": "此地未記錄政府所在地，因此在模型中不會自行制定政策。",   /* playground.js (#R675) */
+  "none yet": "尚未出現",   /* playground.js (#R675) */
+  "Older entries are not shown.": "更早的紀錄不予顯示。",   /* playground.js (#R675) */
+  "open": "無限制",   /* playground.js (#R675) */
+  "original": "原始病原體",   /* playground.js (#R675) */
+  "Outbreak has reached 10 countries and territories.": "疫情已擴散至 10 個國家與地區。",   /* playground.js (#R675) */
+  "Peak infectious": "具傳染性人數的高峰",   /* playground.js (#R675) */
+  "R₀ here (with variants)": "此地的 R₀（含變異株）",   /* playground.js (#R675) */
+  "Rₑ (effective)": "Rₑ（有效再生數）",   /* playground.js (#R675) */
+  "Rₑ = R₀ × season ({s}) × behaviour and lockdown ({b}) × susceptible share ({u})": "Rₑ = R₀ × 季節（{s}）× 行為與封鎖（{b}）× 易感人口比例（{u}）",   /* playground.js (#R675) */
+  "Ran its course and ended": "疫情完整流行後結束",   /* playground.js (#R675) */
+  "Response": "應對",   /* playground.js (#R675) */
+  "ring = entry restrictions (yellow → orange → red), blue core = lockdown": "外環＝入境限制（黃 → 橙 → 紅），藍色核心＝封鎖",   /* playground.js (#R675) */
+  "Run": "執行",   /* playground.js (#R675) */
+  "Running {a} of {b}": "執行第 {a} 次，共 {b} 次",   /* playground.js (#R675) */
+  "Runs the same disease, the same world and the same first outbreak again with different random draws. The map keeps showing the single run you are watching.": "以相同的疾病、相同的世界與相同的最初疫情，改用不同的隨機抽樣重新執行。地圖仍會顯示你正在觀看的那一次執行。",   /* playground.js (#R675) */
+  "screening on arrival": "入境時檢疫",   /* playground.js (#R675) */
+  "Simplified educational model (stochastic SEIR, one well-mixed compartment set per country or territory, and one run out of many possible ones). Not a forecast.": "簡化的教學用模型（隨機 SEIR，每個國家或地區一組均勻混合的隔室，而且只是眾多可能結果中的一次執行）。這不是預測。",   /* playground.js (#R675) */
+  "Spread": "擴散",   /* playground.js (#R675) */
+  "Still circulating at the time limit": "在時間上限時仍在流行",   /* playground.js (#R675) */
+  "Stop the runs": "停止執行",   /* playground.js (#R675) */
+  "Susceptible": "易感（未感染）",   /* playground.js (#R675) */
+  "Tap any country for its own numbers.": "點選任一國家即可查看該國的數字。",   /* playground.js (#R675) */
+  "treatment available": "有治療方法",   /* playground.js (#R675) */
   }
 });
