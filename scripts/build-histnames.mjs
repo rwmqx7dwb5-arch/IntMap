@@ -180,8 +180,80 @@ function byMeasure(rows, years, store, langs, cc, why) {
   return { out, dropped };
 }
 
+/* ══ ⚠⚠⚠ THE GATE WITHOUT THE HARVEST ══════════════════════════════════════════════════════════
+   The first version of `--check` REBUILT from the cache and compared. That is the strongest check
+   there is and it is the one to run on a machine that has the cache — and it is also why CI went
+   red the first time this gate ran there: a GitHub runner has no `%TEMP%/intmap-histeras-names-…`,
+   so the gate failed on its own absence rather than on anything about the shipped bytes. Every
+   neighbouring historical gate says «THIS RE-DERIVES NOTHING» for the same reason at a larger
+   scale (check:histborders would need ~2.1 GB of OpenHistoricalMap, check:histeras 71.5 MB of
+   aourednik). This one is cheap enough to re-derive, so it does — WHEN IT CAN — and proves the
+   committed bytes on their own when it cannot.
+   ⚠ WHAT THE OFFLINE HALF CANNOT SEE, stated rather than glossed: a table that was built from a
+   STALE Wikidata still passes it. Only the rebuild catches that, and only where the cache is. */
+function checkShipped() {
+  if (!existsSync(OUT)) throw new Error('data/histnames.json is not shipped');
+  const t = readJSON(OUT);
+  const langs = attestedLangs(ROOT), authored = shipLangs(ROOT), all = appLangs(ROOT);
+  const bad = [];
+  const say = (m) => bad.push(m);
+  if (t.v !== V) say('version is ' + t.v + ', not ' + V);
+  if (JSON.stringify(t.langs) !== JSON.stringify(langs)) say('langs is not the app registry');
+  if (JSON.stringify(t.authored) !== JSON.stringify(authored)) say('authored is not the shipped policy');
+  if (JSON.stringify(t.mask) !== JSON.stringify(all)) say('the attestation mask no longer counts in the registry order');
+  if (!t.src || !/CC0/.test(t.src.wikidata || '')) say('the Wikidata lane does not state its licence');
+  if (!/IntMap/.test((t.src && t.src.prose) || '')) say('the prose lane does not say whose words it carries');
+
+  /* every key must be something one of the three records actually draws */
+  const csRows = censusCShapes(ROOT).rows, eraRows = census(eraBundle(ROOT));
+  const csNames = new Set(csRows.map((r) => r.name)), erNames = new Set(eraRows.map((r) => r.name));
+  const gaps = histBordersQidGaps(langs, ROOT);
+  for (const k of Object.keys(t.byName.cshapes)) if (!csNames.has(k)) say('cshapes lane names "' + k + '", which data/cshapes.js does not draw');
+  for (const k of Object.keys(t.byName.eras)) if (!erNames.has(k)) say('era lane names "' + k + '", which data/hist-eras.js does not draw');
+  for (const k of Object.keys(t.prose)) if (!erNames.has(k)) say('prose lane names "' + k + '", which data/hist-eras.js does not draw');
+  for (const [q, row] of Object.entries(t.byQid)) {
+    if (!gaps.has(q)) { say('the identifier lane answers ' + q + ', which data/hist-borders.js has no gap for'); continue; }
+    for (const lg of Object.keys(row.n)) if (!gaps.get(q).has(lg)) say(q + ' is answered in ' + lg + ', which the record already wrote everywhere');
+  }
+  /* a row says something, in a language the app has, and never in English */
+  for (const [fromWikidata, lane] of [[1, t.byName.cshapes], [1, t.byName.eras], [1, t.byQid], [0, t.prose]]) {
+    for (const [k, r] of Object.entries(lane)) {
+      if (!r.n || !Object.keys(r.n).length) say('"' + k + '" localizes nothing');
+      for (const [lg, v] of Object.entries(r.n || {})) {
+        if (lg === 'en') say('"' + k + '" carries an English name — English is the upstream\'s');
+        if (!all.includes(lg)) say('"' + k + '" carries "' + lg + '", which is not an app language');
+        if (String(v).includes('�')) say('"' + k + '" carries U+FFFD in ' + lg);
+        /* ⚠ `plainLabel` IS ABOUT WIKIDATA, NOT ABOUT BRACKETS. It exists because a bracketed
+           Wikidata label is Wikidata DISAMBIGUATING («Montana (New Jersey)»), and a map label has
+           nowhere to carry that. The prose lane translates the upstream cartographer's OWN string,
+           and three of those have brackets in the upstream itself — «Arakan (Indian princely
+           state)». Refusing them here would demand that a translation differ in shape from the
+           thing it translates. */
+        if (fromWikidata && !plainLabel(v)) say('"' + k + '" carries a bracketed qualifier in ' + lg);
+      }
+    }
+  }
+  /* ⚠ AND THE PROSE LANE IS EXACTLY WHAT THE CLASSIFIER SAYS IT IS — the half that keeps an
+     authored table from going stale is checkable with no network at all. A shipped prose key is
+     one Wikidata carries nothing for, so «has an item» is false for every one of them by
+     construction; what is measured here is the other half of the rule and the coverage. */
+  const common = commonWords(eraRows.map((r) => r.name));
+  for (const k of Object.keys(t.prose)) {
+    if (!isProse(k, false, common)) say('"' + k + '" is shipped as the upstream\'s prose but no longer classifies as prose');
+    if (t.prose[k].d !== 1) say('"' + k + '" is a description and must say so');
+    for (const lg of authored) { if (lg === 'en' || !PROSE[lg]) continue; if (!PROSE[lg][k]) say('"' + k + '" has no line in scripts/histnames/prose-text.mjs for ' + lg); }
+  }
+  if (bad.length) throw new Error('data/histnames.json — ' + bad.length + ' problem(s):\n  ' + bad.slice(0, 20).join('\n  '));
+  console.log('data/histnames.json — ' + Object.keys(t.byQid).length + ' by identifier, '
+    + (Object.keys(t.byName.cshapes).length + Object.keys(t.byName.eras).length) + ' by measure, '
+    + Object.keys(t.prose).length + ' prose; every key is drawn by the record it names.'
+    + '\n  ⚠ the harvest cache is absent, so this did NOT re-derive — run it where the cache is to prove the rows themselves.');
+  return t;
+}
+
 async function build({ check = false } = {}) {
   if (!existsSync(CAND) || !existsSync(CS_CAND) || !existsSync(QLAB)) {
+    if (check) return checkShipped();
     throw new Error('no harvest cache — run `node scripts/build-histnames.mjs --fetch` first');
   }
   /* ⚠ TWO LANGUAGE SETS, BECAUSE THE AMENDMENT IS ABOUT AUTHORING (scripts/histnames/langs.mjs).
