@@ -122,7 +122,12 @@ window.IntMapModules.placeLabels=function(HOST){
        label exists so js/map-ui.js's popup can ask it rather than keep a second list of languages
        ([[intmap-recurring-lessons]] B). It used to be set as a side effect of the sea gazetteer's
        first build, which is a fragile place for a fact two modules need. */
-    try{ window.IntMapOsmNameKeys=OSM_NAME_KEYS; }catch(_){}
+    /* ⚠ (#R687) …AND THE ANSWER ITSELF, not just the key order. The key order alone was enough while
+       every `name:*` value could be trusted; it stopped being enough the moment one of them had to be
+       REFUSED, because a caller that loops the keys itself cannot know about the refusal. The two
+       callers that did loop (js/map-ui.js's popup, js/atlas-view-subject.js's chips) now ask
+       `IntMapOsmName(properties, keys)` and get the string the map is drawing. */
+    try{ window.IntMapOsmNameKeys=OSM_NAME_KEYS; window.IntMapOsmName=OSM_NAME_PICK; }catch(_){}
     /* ⚠ (#R64/#R67 — moved here #R252) THE WATER LABEL-ANCHOR INDEX AND ITS READ-ONLY DUMP.
        Lake/sea label geometry genuinely differs per tile zoom (OpenMapTiles stores LineString label
        lines), so each water name is pinned to its FIRST-SEEN coordinate in a stable geojson source —
@@ -458,6 +463,125 @@ window.IntMapModules.placeLabels=function(HOST){
     return own.concat(['name:en','name:latin','name_int']);
   }
 
+  /* ══ ⚠⚠⚠ (#R687) A `name:ja` IS NOT AUTOMATICALLY A JAPANESE NAME ════════════════════════════
+     Reported with a screenshot of Adana: 「クソごみ」. Every neighbourhood on screen was labelled
+     with the Turkish words TRANSLATED into kanji — 平和 (Barış), 征服者 (Fatih), 新弾幕 (Yenibaraj),
+     白家 (Beyazevler), 園都市 (Bahçeşehir), 失礼顎鬚 (Kabasakal), 良癖 (Yüreğir), 強川 (Seyhan).
+     None of those is a name; 強川 is what you get from reading that Seyhan means a strong river.
+     Measured (scripts/build-osm-ja-rejects.mjs): 78 label-bearing `name:ja` in Adana province, 73 of
+     them last written by ONE account, 45 of those in kanji. The two that are RIGHT — Adana → アダナ,
+     Ceyhan → ジェイハン — are the two written by somebody else.
+     ⚠ THE RENDERER CANNOT DECIDE THIS. There is no expression that separates 黒海 (correct, the
+     Black Sea) from 平和 (not a name), and MapLibre expressions have no regular expressions anyway.
+     So the criterion runs ONCE, against live OSM, in the build script — and what ships is the
+     observation. .agents/rules/no-ad-hoc-hardcoding.md §6 is the clause this lives under, and its
+     three requirements are met there: what the case is, when it was seen, and what removes it.
+     ⚠ AND IT IS A REFUSAL, NOT A CORRECTION. IntMap does not know what Kabasakal is called in
+     Japanese and does not invent one. A refused pair falls through the SAME key chain everything
+     else uses, so the label becomes `Kabasakal` — exactly what the thousands of Turkish places with
+     no `name:ja` at all already show.
+     ⚠ IT EXPIRES BY ITSELF: the whole PAIR must match. The day OSM carries a different `name:ja`,
+     the row stops matching and the new upstream value is used with no edit here. That already
+     happened to `Adana → 亜駄名` and `Toros → 強山` between the report and the sweep. */
+/* ══ BEGIN GENERATED osm-ja-rejects — node scripts/build-osm-ja-rejects.mjs ═══════════════
+     Observed 2026-09-10 over Türkiye (the reported contamination, Adana province): 49 upstream records
+     in which a Latin-named settlement carries a Japanese name that translates the words instead of
+     transliterating the name. The criterion, why this is a list rather than a rule, and why the
+     list expires by itself are all in scripts/build-osm-ja-rejects.mjs — not restated here.
+     ⚠ EDIT THE SCRIPT, NOT THIS BLOCK. Re-run it to re-observe.
+     @i18n-entity-data  ONE PACKED RECORD PER ROW — `name|name:ja`, the fingerprint of an upstream
+     record, exactly the shape js/newsgeo.js's matcher tables carry and for the same reason: the key
+     is INSIDE the string. ⚠ The two halves are NOT a translation pair. The right half is the value
+     being REFUSED and the left half is what identifies the record it sits on; translating either
+     would destroy the match. Nothing here is ever shown to a reader in any language. */
+  const OSM_JA_REFUSED = [
+    "2000 Evler|二千家たち",
+    "2000 Evler Mahallesi|二千家たち",
+    "Ahmet Remzi Yüreğir|良癖アフメットレムジ",
+    "Aydınlar|光人",
+    "Bahçelievler|庭有家",
+    "Bahçeşehir|園都市",
+    "Barış|平和",
+    "Belediye Evleri Mahallesi|公営住宅",
+    "Beyazevler|白家",
+    "Bozcalar|簿図茶羅流",
+    "Çukurova|洞平原",
+    "Denizli|海有",
+    "Dörtler|四部",
+    "Döşeme|床",
+    "Esentepe Mahallesi|風丘",
+    "Fadıl|歯出知流",
+    "Fatih|征服者",
+    "Gökkuyu|空井戸",
+    "Güzelyalı Mahallesi|美水辺",
+    "Huzurevleri Mahallesi|養護施設",
+    "Kabasakal|失礼顎鬚",
+    "Karahan|黒半",
+    "Karslılar Mahallesi|蚊流酢人達",
+    "Kaşoba|眉宿",
+    "Kayalıbağ|石有庭",
+    "Kocatepe|大丘",
+    "Küçük Çınar|小平面",
+    "Kurtuluş|解放",
+    "Memişli|胸有",
+    "Örcün|尾流杶",
+    "Pirili|卑理々",
+    "Pınar|春",
+    "Salbaş|差流頭",
+    "Salbaş Esentepe|差流頭風丘",
+    "Şambayadı|水地古",
+    "Şambayadı Mahallesi|水地古",
+    "Sarıçam|黄松",
+    "Seyhan|強川",
+    "Tellidere|線有川",
+    "Toros Mahallesi|強山",
+    "Yeni Mahalle|新",
+    "Yeni Mahalle|新近所",
+    "Yenibaraj|新弾幕",
+    "Yenimahalle|新近所",
+    "Yeşilevler|緑家",
+    "Yeşilyurt|緑国",
+    "Yüreğir|良癖",
+    "Yurt Mahallesi|国",
+    "Yüzüncüyıl Mahallesi|百周年"
+  ];
+/* ══ END GENERATED osm-ja-rejects ═══════════════════════════════════════════════════════ */
+  /* the table is keyed by the name field it distrusts, so a second language with a second wrecked
+     field adds a row to the script's output and nothing here. */
+  const OSM_NAME_REFUSED_BY_KEY={ 'name:ja':OSM_JA_REFUSED };
+  /* the field separator inside a packed record — the same one the sweep wrote (FIELD there). */
+  const SEP='|';
+  let _refSets=null;
+  function _refSet(key){
+    if(!_refSets){ _refSets=Object.create(null);
+      for(const k of Object.keys(OSM_NAME_REFUSED_BY_KEY)) _refSets[k]=new Set(OSM_NAME_REFUSED_BY_KEY[k]); }
+    return _refSets[key]||null;
+  }
+  /** true when THIS feature's value for THIS key is one of the recorded upstream wrecks. */
+  function OSM_NAME_REFUSED(key,p){
+    const s=_refSet(key); if(!s||!s.size||!p) return false;
+    const v=p[key]; if(!v) return false;
+    return s.has(String(p.name||'')+SEP+String(v));
+  }
+  /** the JS half: one feature's properties → the label the map would draw. */
+  function OSM_NAME_PICK(p,keys){
+    if(!p) return '';
+    const ks=keys&&keys.length?keys:['name:en','name:latin','name_int'];
+    for(let i=0;i<ks.length;i++){ const v=p[ks[i]]; if(v&&!OSM_NAME_REFUSED(ks[i],p)) return String(v); }
+    return String(p.name||'');
+  }
+  /** the renderer half: the same answer as a MapLibre `text-field` expression. */
+  function OSM_NAME_EXPR(keys){
+    const chain=ks=>['coalesce'].concat(ks.map(k=>['get',k]),[['get','name']]);
+    let expr=chain(keys);
+    for(const k of keys){
+      const rows=OSM_NAME_REFUSED_BY_KEY[k]; if(!rows||!rows.length) continue;
+      const probe=['concat',['coalesce',['get','name'],''],SEP,['coalesce',['get',k],'']];
+      expr=['case',['match',probe,rows.slice(),true,false],chain(keys.filter(x=>x!==k)),expr];
+    }
+    return expr;
+  }
+
   /* (#R242) the curated sea/ocean rows, resolved for the CURRENT language through `pick()` — one
      answer per feature (`lbl`), so the style needs no language expression and a language past the
      five columns falls to its inline table rather than to English. `mode==='en'|'local'` are the
@@ -476,7 +600,7 @@ window.IntMapModules.placeLabels=function(HOST){
     let nameExpr;
     if(mode==='en') nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name_int'],['get','name']];
     else if(mode==='local') nameExpr=['get','name'];
-    else nameExpr=['coalesce'].concat(OSM_NAME_KEYS(HOST.lang).map(k=>['get',k]),[['get','name']]);
+    else nameExpr=OSM_NAME_EXPR(OSM_NAME_KEYS(HOST.lang));   /* (#R687) …minus the recorded upstream wrecks */
     const sat=(HOST.mapType==='sat');
     /* Show vector labels in satellite mode (always — replaces ugly Esri) and on the map for jp/local. */
     const show = HOST.namesOn && (sat || HOST.mapLabelsViaVector());
