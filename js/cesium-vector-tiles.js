@@ -47,6 +47,22 @@ window.IntMapVectorTiles=(function(){
     return Math.floor((1-Math.log(Math.tan(l*D2R)+1/Math.cos(l*D2R))/Math.PI)/2*Math.pow(2,z));
   }
 
+  const merc=lat=>Math.log(Math.tan(Math.PI/4+lat*D2R/2));
+  const lat=m=>(2*Math.atan(Math.exp(m))-Math.PI/2)/D2R;
+  const project=p=>[p[0]*D2R,merc(p[1])];
+  function denseLine(points){
+    const out=[];
+    for(let i=0;i<points.length-1;i++){
+      const a=points[i],b=points[i+1];
+      /* Cesium's default granularity is one degree. Follow the Mercator edge
+         rather than a great-circle shortcut between distant tile vertices. */
+      const steps=Math.max(1,Math.ceil(Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]))/D2R));
+      for(let j=0;j<steps;j++){ const t=j/steps; out.push([(a[0]+(b[0]-a[0])*t)/D2R,lat(a[1]+(b[1]-a[1])*t)]); }
+    }
+    if(points.length){ const p=points[points.length-1]; out.push([p[0]/D2R,lat(p[1])]); }
+    return out;
+  }
+
   /* MVT polygons include a drawing buffer beyond their tile. MapLibre clips it
      in tile space; handing it straight to Cesium lets z1 ocean rings exceed a
      hemisphere (observed -182.8125…2.8125°) and cover the wrong side of Earth.
@@ -54,31 +70,58 @@ window.IntMapVectorTiles=(function(){
      quarter-hemisphere cells before Cesium's local-plane triangulation. */
   function polygonGeometry(geometry,x,y,z,clip=_clip){
     if(!geometry||!['Polygon','MultiPolygon'].includes(geometry.type)) return geometry;
-    const merc=lat=>Math.log(Math.tan(Math.PI/4+lat*D2R/2));
-    const lat=m=>(2*Math.atan(Math.exp(m))-Math.PI/2)/D2R;
     const input=(geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates)
-      .map(poly=>poly.map(ring=>ring.map(p=>[p[0]*D2R,merc(p[1])])));
+      .map(poly=>poly.map(ring=>ring.map(project)));
     const n=2**z, parts=2**Math.max(0,2-z), out=[];
     const west=-Math.PI+x*2*Math.PI/n, north=Math.PI-y*2*Math.PI/n, span=2*Math.PI/n;
     for(let dx=0;dx<parts;dx++) for(let dy=0;dy<parts;dy++){
       const w=west+span*dx/parts,e=west+span*(dx+1)/parts;
       const t=north-span*dy/parts,b=north-span*(dy+1)/parts;
       const pieces=clip.intersection(input,[[[w,b],[e,b],[e,t],[w,t],[w,b]]]);
-      for(const poly of pieces) out.push(poly.map(ring=>{
-        const dense=[];
-        for(let i=0;i<ring.length-1;i++){
-          const a=ring[i],b=ring[i+1];
-          /* Cesium's default polygon granularity is one degree. Sample the
-             actual Mercator edge at that spacing, rather than letting a long
-             tile edge become a great-circle shortcut across land. */
-          const steps=Math.max(1,Math.ceil(Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]))/D2R));
-          for(let j=0;j<steps;j++){ const t=j/steps; dense.push([(a[0]+(b[0]-a[0])*t)/D2R,lat(a[1]+(b[1]-a[1])*t)]); }
-        }
-        if(dense.length) dense.push([...dense[0]]);
-        return dense;
-      }));
+      for(const poly of pieces) out.push(poly.map(denseLine));
     }
     return {type:'MultiPolygon',coordinates:out};
+  }
+
+  /* Stroke ORIGINAL edges clipped to the tile, never the closure edges created
+     by polygon intersection. A buffered ocean ring can surround the whole tile
+     without contributing a single coastline segment inside it. */
+  function polygonLineGeometry(geometry,x,y,z){
+    if(!geometry||!['Polygon','MultiPolygon'].includes(geometry.type)) return geometry;
+    const span=2*Math.PI/2**z, w=-Math.PI+x*span, e=w+span, t=Math.PI-y*span, b=t-span;
+    function segment(a,c){
+      const dx=c[0]-a[0],dy=c[1]-a[1]; let lo=0,hi=1;
+      /* Liang–Barsky: each half-plane restricts the original edge parameter. */
+      for(const [p,q] of [[-dx,a[0]-w],[dx,e-a[0]],[-dy,a[1]-b],[dy,t-a[1]]]){
+        if(p===0){ if(q<0) return null; continue; }
+        const u=q/p;
+        if(p<0) lo=Math.max(lo,u); else hi=Math.min(hi,u);
+        if(lo>=hi) return null;
+      }
+      const at=u=>[Math.max(w,Math.min(e,a[0]+dx*u)),Math.max(b,Math.min(t,a[1]+dy*u))];
+      return [at(lo),at(hi)];
+    }
+    /* Adjacent edges calculate the shared endpoint separately; tolerate only
+       floating-point roundoff in projected radians, not a geographic snap. */
+    const same=(a,b)=>a.every((v,i)=>Math.abs(v-b[i])<=32*Number.EPSILON*Math.max(1,Math.abs(v),Math.abs(b[i])));
+    const polys=geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates, out=[];
+    for(const poly of polys) for(const ring of poly){
+      const points=ring.map(project), chains=[]; let chain=[];
+      const flush=()=>{ if(chain.length>1) chains.push(chain); chain=[]; };
+      for(let i=1;i<points.length;i++){
+        const edge=segment(points[i-1],points[i]);
+        if(!edge){ flush(); continue; }
+        if(chain.length&&same(chain[chain.length-1],edge[0])) chain.push(edge[1]);
+        else { flush(); chain=edge; }
+      }
+      flush();
+      /* The ring's chosen start vertex is not a physical break in a coastline. */
+      if(chains.length>1&&same(chains[chains.length-1].at(-1),chains[0][0])){
+        const first=chains.shift(); chains[chains.length-1].push(...first.slice(1));
+      }
+      out.push(...chains.map(denseLine));
+    }
+    return {type:'MultiLineString',coordinates:out};
   }
 
   /* ── ONE SOURCE ────────────────────────────────────────────────────────────
@@ -164,7 +207,10 @@ window.IntMapVectorTiles=(function(){
                the ONE thing toGeoJSON does not carry over. */
             /* Fill clipping introduces closure edges; line layers must keep
                stroking the original geometry, never those artificial edges. */
-            if(['Polygon','MultiPolygon'].includes(g.geometry.type)) g.fillGeometry=polygonGeometry(g.geometry,x,y,z);
+            if(['Polygon','MultiPolygon'].includes(g.geometry.type)){
+              g.fillGeometry=polygonGeometry(g.geometry,x,y,z);
+              g.lineGeometry=polygonLineGeometry(g.geometry,x,y,z);
+            }
             g.sourceLayer=name;
             g.tileKey=k;
             feats.push(g);
@@ -267,5 +313,5 @@ window.IntMapVectorTiles=(function(){
     return { id, spec, want, sig, update, current, stats, destroy, isReady:()=>state.ready };
   }
 
-  return { makeSource, lib, _tileX:tileX, _tileY:tileY, polygonGeometry };
+  return { makeSource, lib, _tileX:tileX, _tileY:tileY, polygonGeometry, polygonLineGeometry };
 })();
