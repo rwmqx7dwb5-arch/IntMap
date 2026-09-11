@@ -1,0 +1,21 @@
+{
+  "_source": "⚠ 正本。.claude/settings.json の hooks.SessionStart と .codex/hooks.json は、これを node scripts/agent-sync.mjs --write が描く生成物（npm run check:agents が照合）。足すならここへ足す——片方の製品にだけ足せる場所は、もう無い。",
+  "description": "IntMap — what a session is told at startup, in both products: branch, uncommitted changes, the free round number, last night's deep-tier verdict, and the accumulated memory (#R696). ⚠ Codex records hook trust against the hook's HASH — a new or edited hook is listed but SKIPPED until it is trusted once with /hooks (docs/AGENT-SETUP.md §7).",
+  "commands": [
+    {
+      "command": "node scripts/worktree.mjs status --brief",
+      "statusMessage": "IntMap · reading the working state",
+      "timeout": 20,
+      "codexContextLimit": 2000,
+      "products": ["claude", "codex"]
+    },
+    {
+      "command": "node scripts/agent-memory.mjs --budget 36000",
+      "statusMessage": "IntMap · reading the accumulated memory",
+      "timeout": 20,
+      "codexContextLimit": 40000,
+      "products": ["codex"],
+      "why": "⚠ 「両方が要る事実」と「両方が hook を要る」は別。Claude Code はこの索引を自分で読み込む（設定不要）ので、hook をもう1本足すと同じ 43 KB を二度渡すことになる。除外の理由は製品の実装であって、事実の側ではない——だから正本はここに残り、宛先だけが 1 つになる。"
+    }
+  ]
+}

@@ -19,12 +19,20 @@
 | ラウンドの手順 | **`.agents/skills/intmap-round/`** | `.claude/skills/`（生成）→ `/intmap-round` | **そのまま自動**（`$intmap-round`） |
 | 専用 subagent 5 役 | **`.agents/roles/*.md`** | `.claude/agents/*.md`（生成） | `.codex/agents/*.toml`（生成・**要 trust**） |
 | 製品固有の作法 | `CLAUDE.md` §A / `.codex/config.toml` の `developer_instructions` | 自動 | **要 trust** |
-| セッション開始時の状態 | `scripts/worktree.mjs status --brief` | `.claude/settings.json` の hook | `.codex/hooks.json` の hook（**要 trust ＋ `/hooks` 承認**） |
-| 蓄積メモリ | **`scripts/agent-memory.mjs` が出すディレクトリ**（1 か所） | 自動で読む | `.codex/hooks.json` の hook（**同上**） |
+| セッション開始時に何を伝えるか | **`.agents/session-start.json`** | `.claude/settings.json` の `hooks.SessionStart`（生成） | `.codex/hooks.json`（生成・**要 trust ＋ `/hooks` 承認**） |
+| 蓄積メモリ | **`scripts/agent-memory.mjs` が出すディレクトリ**（1 か所） | **自動で読む**（hook は要らない） | 上の正本の `products` が Codex だけに配る |
 
-**生成物は編集しない。** `.claude/agents/`・`.claude/skills/`・`.codex/agents/` は
-`node scripts/agent-sync.mjs --write` が `.agents/` から書き、`npm run check:agents` が照合する。
-写しを直しても、次の生成で消える——**直す場所は `.agents/` の側**。
+**生成物は編集しない。** `.claude/agents/`・`.claude/skills/`・`.codex/agents/`・**両製品の
+SessionStart hook** は `node scripts/agent-sync.mjs --write` が `.agents/` から書き、
+`npm run check:agents` が照合する。写しを直しても、次の生成で消える——**直す場所は `.agents/` の側**。
+
+⚠ **(#R699) hook が最後まで手書きの写しだった。** #R696 までは `.claude/settings.json` と
+`.codex/hooks.json` が同じ起動コマンドを別々に持っており、**片方の製品にだけ hook を足せる状態**
+だった——それは #R696 が直した「メモリの正本が 2 つあった」のと同じ形で、配線のほうに残っていた。
+正本は `.agents/session-start.json` 1 つになり、**どの製品に配るかは各コマンドの `products`**、
+**配らない理由は `why`** が持つ。実際の非対称は 1 つだけある: Claude Code は `MEMORY.md` を自分で
+読み込むので、メモリの hook は Codex にしか要らない（両方に配ると同じ 43 KB を二度渡す）。
+**「両方に要る事実」と「両方が hook を要る」は別**であり、除外の理由は製品の実装の側にある。
 
 ### ⚠ `AGENTS.md` には 32,768 バイトの天井がある
 
