@@ -29,6 +29,18 @@
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
+/* ══ ⚠⚠⚠ (#R700) THE FIXTURE'S CLOCK IS RELATIVE, BECAUSE THE FEED HAS A FRESHNESS CUT ═══════════
+   これらの記事は **2026-08-24 の絶対時刻**で書かれていた。js/app-body.js の `computeFilteredNews`
+   は `NEWS_MAX_AGE_MS`（72 時間）より古い項目を一覧から落とすので、fixture は**書かれた日から
+   3 日で**「読み込みは成功しているのに一覧が空」になり、実際に #R402/#R405/#R416/#R435/#R455 の
+   5 本が同じ日に同じ形で落ちた（実測: `loadedEventCount:1 / visibleEventCount:0`）。
+   ⚠ 日付を新しい日付へ書き換えるのは同じ時限装置を巻き直すだけなので、**時刻は `Date.now()`
+   からの相対**にする。⚠ 検査は 72 という数を写さない——写せばその数が動いた日に fixture の
+   ほうが正しいまま赤くなる。要るのは「**十分に新しい**」ことだけで、ここは全部 12 時間以内。
+   相対値は元の固定時刻の**並び**（どの記事が新しいか）をそのまま保っている。 */
+const AGO = (mins) => new Date(Date.now() - mins * 60e3).toISOString();
+
+
 test.describe.configure({ mode: 'serial' });
 
 /* ── 応答の型は本番の列と同じ（tests/r386.spec.js と同型・件数だけ絞った） ───────────────── */
@@ -48,22 +60,22 @@ const EVENTS = [
     representative_article_id: 11, primary_category: 'disasters', secondary_categories: [],
     category_confidence: 0.8, category_evidence: { by: 'classifier' },
     rep_lng: -119.81, rep_lat: 39.53, rep_place_name_en: 'Reno', location_confidence: 0.7,
-    first_published_at: '2026-08-24T06:00:00Z', last_article_at: '2026-08-24T11:00:00Z',
-    materially_updated_at: '2026-08-24T11:00:00Z', article_count: 2, independent_source_count: 2,
+    first_published_at: AGO(360), last_article_at: AGO(60),
+    materially_updated_at: AGO(60), article_count: 2, independent_source_count: 2,
     cluster_confidence: 0.62, manual_lock: false, status: 'active', merged_into: null,
     news_event_articles: [
-      mem(11, 'bbc', 'Fast-moving Reno wildfire forces thousands to flee', '2026-08-24T06:00:00Z'),
-      mem(12, 'apnews', 'Human-started wildfire nears Reno, Nevada', '2026-08-24T07:30:00Z'),
+      mem(11, 'bbc', 'Fast-moving Reno wildfire forces thousands to flee', AGO(360)),
+      mem(12, 'apnews', 'Human-started wildfire nears Reno, Nevada', AGO(270)),
     ] },
   { id: 2, public_id: 'e402b', representative_title: 'Canada says it will match new US tariffs',
     representative_article_id: 21, primary_category: 'business', secondary_categories: [],
     category_confidence: 1, category_evidence: { by: 'feed' },
     rep_lng: -106.3, rep_lat: 56.1, rep_place_name_en: 'Canada', location_confidence: 0.4,
-    first_published_at: '2026-08-24T04:00:00Z', last_article_at: '2026-08-24T05:00:00Z',
-    materially_updated_at: '2026-08-24T05:00:00Z', article_count: 1, independent_source_count: 1,
+    first_published_at: AGO(480), last_article_at: AGO(420),
+    materially_updated_at: AGO(420), article_count: 1, independent_source_count: 1,
     cluster_confidence: 0.71, manual_lock: false, status: 'active', merged_into: null,
     news_event_articles: [
-      mem(21, 'apnews', 'Canada to match US tariffs dollar for dollar', '2026-08-24T04:00:00Z'),
+      mem(21, 'apnews', 'Canada to match US tariffs dollar for dollar', AGO(480)),
     ] },
 ];
 

@@ -23,9 +23,10 @@
  *  ② THE ERAS WERE THE BUILD'S TOO. `--since 1850` dropped every unit that ENDED before
  *     the clock's floor, so the record held almost nothing for any earlier century — and
  *     the floor itself was 1850. Both moved: js/chronos.js reaches year 1 (#R604), the
- *     bundles are rebuilt with `--since 1` (levels 3-4: 3,049 → 4,679 units, and the number of
- *     them in force in a given June: year 1 → 64, 1000 → 113, 1500 → 393, 1800 → 411, where the
- *     old bundle held none before 1850), and the tiles were never limited to begin with.
+ *     bundles are rebuilt with `--since 1` (levels 3-4: 3,049 → 4,820 units as shipped today, and
+ *     the number of them in force in a given June: year 1 → 73, 1000 → 118, 1500 → 401, 1800 → 420,
+ *     where the old bundle held none before 1850 — counted 2026-09-11 off data/hist-admin1.js
+ *     itself), and the tiles were never limited to begin with.
  *  ⚠ AND THE THINNESS THAT IS REALLY UPSTREAM'S IS STILL REPORTED, NOT FILLED IN. On a
  *  160-tile z5 sweep of the tiles, dated admin_level≥3 segments in force number 936 in
  *  year 1, 3,712 in 1500 and 8,341 in 1900, touching 14, 23 and 66 of those tiles — the
@@ -144,11 +145,12 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        The second tier is admin_level 5-6 — Prussian Regierungsbezirke, United States counties,
        Peruvian provinces. They are second-level units, so they may never stand in for the first
        level; they may only ADD, and only where they are legible. Measured on the shipped bundle:
-       the median unit of the deeper tier spans 0.42° of longitude, which at z5 is 30 px and at z6
-       is 61 px — the point at which a unit is a shape rather than a smudge, and the point at which
+       the median unit of the deeper tier spans 0.66° of longitude (measured 2026-09-11 over every
+       unit in data/hist-admin2.js), which on 512-px tiles — 45.5 px per degree at z5 — is 30 px at z5
+       and 60 px at z6: the point at which a unit is a shape rather than a smudge, and the point at which
        the first tier's own labels (minzoom 4, maxzoom 9) are still on screen so the two tiers read
        as one hierarchy rather than as a replacement. Below it the tier is not drawn AND NOT
-       FETCHED: 10.2 MB is not a speculative cost a reader looking at a continent should pay. */
+       FETCHED: 15.5 MB is not a speculative cost a reader looking at a continent should pay. */
     const DEEP_Z = 6;
 
     /* ══ (#R604) THE LINE COMES FROM OPENHISTORICALMAP'S OWN TILES, NOT FROM THE BUNDLE ═══════════
@@ -159,12 +161,51 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          decimals (~110 m) to keep the file parseable. Measured 2026-09-10 against OHM's Overpass,
          伊豆国 (relation 2687374) is 2,800 vertices / 787 km of perimeter / 281 m mean spacing
          upstream; the shipped bundle draws it with 29. That is not a boundary at any zoom past a
-         country view, and no tolerance that keeps a 7 MB file can fix it — a bundle has ONE
+         country view, and no tolerance that keeps a 10 MB file can fix it — a bundle has ONE
          resolution and a map has twenty.
        · COVERAGE. The build's `--since` dropped every unit that ENDED before the clock's floor, so
          with the floor at 1850 the record held essentially nothing for any earlier century. Measured
          on OHM's Overpass the same day: 4,841 dated relations at admin_level 3-4 and 22,808 at 5-6,
          of which 1,142 and 1,600 end before 1800.
+
+       ══ (#R700) THE TWO TIERS ARE CUT AT DIFFERENT TOLERANCES, AND THE COARSER ONE IS THE PARENT ═══
+       Each bundle states its own: `tolerance` is 0.02° (~2.2 km, 3 decimals) in data/hist-admin1.js
+       and 0.012° (~1.3 km, 4 decimals) in data/hist-admin2.js — so the FIRST-level record is cut more
+       coarsely than the second-level one that sits inside it, and a prefecture's outline is a rougher
+       claim than the outline of a district within it. That is not an oversight of the build:
+       scripts/asset-report.mjs states the reason where it exempts the deeper file — a tier that is
+       never drawn below z6 is read at a scale where 2 km of tolerance is a visible corner, and a tier
+       read from z1 is not.
+       ⚠ IT IS REAL IN THE BYTES, AND THE WRONG MEASURE HIDES IT. Measured 2026-09-11 over every ring
+       either file stores: the median drawn segment is 8.44 km in the first tier against 5.02 km in the
+       deeper one (576,514 and 719,686 segments). Asked instead for vertices per 100 km of path, the
+       same two files answer 11.50 and 11.82 — a 3% difference, because Douglas-Peucker keeps no vertex
+       on a straight run, so density reports the TERRAIN and not the tolerance. A scale chosen badly
+       does not report a smaller defect; it reports a different subject.
+       ⚠⚠⚠ AND THE INVERSION IS NOT ON THE READER'S SCREEN — WHICH IS THE WHOLE REASON IT IS NOT BOUGHT
+       OUT. Evaluated, not read: tests/r700-admin-tier-checks.test.mjs drives THIS factory against a
+       stub map and reads the visibilities back. While the tiles are `unknown` or `live`, `imta-line`
+       and `imta2-line` are BOTH `none` — the line the reader sees is OHM's tiles at their own
+       resolution, and these rings are the label anchor, the answer to a click and the coverage count,
+       none of which has a resolution the eye can compare. The two bundle lines are on one screen only
+       when four things hold at once: the layer is on, the clock is in the past, the tiles have been
+       MEASURED absent for GRACE_MS, and the camera is past `imta2-line`'s `minzoom` (DEEP_Z). That
+       state is a reader who is offline or behind a filter that blocks vtiles.openhistoricalmap.org,
+       and it is given up again the moment one tile paints.
+       ⚠ THE PRICE OF LEVELLING THEM, MEASURED RATHER THAN GUESSED. The first tier is 10,433,200 B for
+       583,700 vertices at 0.02° / 3 decimals; the deeper one is 16,224,964 B for 741,362 at 0.012° / 4.
+       Re-cutting the first at the deeper tolerance therefore lands it in the second file's class,
+       several megabytes past the 11 MB ceiling tests/r530-checks.test.mjs holds THIS file to — and it
+       cannot be done from anything committed here in any case: the build consumes OHM's whole
+       admin_level 3-6 extract (package.json records 3.4 GB of Overpass on one resumed run). So the
+       tolerances stay where they are, with the reason written down, instead of a rebuild that would
+       cost several megabytes to remove something nobody is looking at.
+       ⚠ EXPIRES WHEN: (a) the tiles stop arriving as a RULE rather than as an accident — a `vtState()`
+       that latches `absent` in ordinary use makes the bundle line the DRAWN line, and then the coarser
+       parent is exactly what the reader sees, so this judgement must be re-measured; (b) the deeper
+       tier loses its `minzoom`, or either tier begins drawing its bundle line at Now; (c) either
+       bundle is rebuilt at another tolerance. (c) cannot drift in silence: the check reads each
+       bundle's DECLARED `tolerance` and the geometry it actually stores, and fails if they part.
 
        ⚠ THE FIX IS NOT A BIGGER BUNDLE. OHM publishes the same records as VECTOR TILES —
        vtiles.openhistoricalmap.org, TileJSON `maps/ohm.json`, minzoom 0 / maxzoom 20, CC0 — and every
@@ -533,7 +574,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         const m = isD ? (when.getMonth() + 1) : 7, dd = isD ? when.getDate() : 1;
         shownWhen = isD ? when : new Date(y, 6, 1, 12, 0, 0);
         /* ══ (#R604) THE TILE LINE IS AIMED BEFORE THE BUNDLE IS EVEN ASKED FOR ══════════════════
-           The date the reader chose is known synchronously; the 6.9 MB bundle is not, and on a cold
+           The date the reader chose is known synchronously; the 10 MB bundle is not, and on a cold
            page it is seconds away (the window #R530 measured as modern provinces painted over 1900).
            A `setFilter` on a source the map already has costs nothing and needs nothing, so the era
            boundary is on screen while the label half is still downloading. */
@@ -708,7 +749,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
     function _applyNow() { try { window._applyAdmin1(); } catch (_) {} }
 
     /* ══ (#R564) THE DEEPER TIER IS FETCHED BY THE CAMERA, NOT BY THE CLOCK ═══════════════════════
-       10.2 MB is not a cost a reader looking at a continent should pay for units that are not drawn
+       15.5 MB is not a cost a reader looking at a continent should pay for units that are not drawn
        at that scale. `_deep()` is called from the clock AND from `zoomend`, and it is idempotent —
        once the tier is on the year it needs, calling it again costs a map lookup. Going back out
        does NOT clear it: the bytes are already paid for and the layer's own `minzoom` hides it. */
@@ -741,7 +782,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          MEASURED as an intermittent failure of tests/r530.spec.js ① — 1 run in 3, and only ever the
          COLD one, with four modern province lines still painted over 1900. The window is exactly the
          time `load()` takes: `active` becomes true inside `go()`, but the switchboard is only called
-         from `apply()` / `clear()`, i.e. AFTER the 6.5 MB bundle has been fetched and parsed. On a warm
+         from `apply()` / `clear()`, i.e. AFTER the 10 MB bundle has been fetched and parsed. On a warm
          page that is a few milliseconds and invisible; on a cold one it is seconds of a past date
          wearing the present-day boundaries — which is the very defect this file exists to remove.
          ⚠ The fix is a RULE, not a longer wait: the instant the clock says "past", today's provinces
@@ -771,7 +812,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        speculative copy for a feature that has not been asked for, and on a phone it
        queues in front of the tiles the reader is actually looking at. `load()` below
        is what draws, so nothing is lost by skipping it — only the head start.
-       ⚠ ONLY THE FIRST TIER IS WARMED. The deeper one is 10.2 MB and is not drawn until the reader
+       ⚠ ONLY THE FIRST TIER IS WARMED. The deeper one is 15.5 MB and is not drawn until the reader
        has zoomed past z6, so warming it would be a speculative copy of a speculative copy. */
     (function warm() {
       const pf = () => { T1.load().catch(() => {}); };
@@ -910,7 +951,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
     /* ⚠ THERE IS DELIBERATELY NO `changeAfter` / `featureAt` HERE, AND THE OMISSION IS THE POINT.
        js/time-borders.js exposes four "step to the next date the world changed" helpers because the
        Chronos panel has a row that calls them — and that row is NAMED «Borders / 国境 / Grenzen /
-       Границы / Fronteras» in js/news-timeline.js. The subdivisions carry 1,750 change dates against
+       Границы / Fronteras» in js/news-timeline.js. The subdivisions carry 3,323 change dates against
        the borders' 369, so folding them into that row would make its own label false, and giving them
        a row of their own is a change to a panel nobody asked about. Writing the four functions anyway,
        with no caller, would be untested surface that looks like a feature — so the module ends at what

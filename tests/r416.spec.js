@@ -15,6 +15,18 @@
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
+/* ══ ⚠⚠⚠ (#R700) THE FIXTURE'S CLOCK IS RELATIVE, BECAUSE THE FEED HAS A FRESHNESS CUT ═══════════
+   これらの記事は **2026-08-24 の絶対時刻**で書かれていた。js/app-body.js の `computeFilteredNews`
+   は `NEWS_MAX_AGE_MS`（72 時間）より古い項目を一覧から落とすので、fixture は**書かれた日から
+   3 日で**「読み込みは成功しているのに一覧が空」になり、実際に #R402/#R405/#R416/#R435/#R455 の
+   5 本が同じ日に同じ形で落ちた（実測: `loadedEventCount:1 / visibleEventCount:0`）。
+   ⚠ 日付を新しい日付へ書き換えるのは同じ時限装置を巻き直すだけなので、**時刻は `Date.now()`
+   からの相対**にする。⚠ 検査は 72 という数を写さない——写せばその数が動いた日に fixture の
+   ほうが正しいまま赤くなる。要るのは「**十分に新しい**」ことだけで、ここは全部 12 時間以内。
+   相対値は元の固定時刻の**並び**（どの記事が新しいか）をそのまま保っている。 */
+const AGO = (mins) => new Date(Date.now() - mins * 60e3).toISOString();
+
+
 const SOURCES = [
   { id: 'guardian', name: 'The Guardian', slug: 'guardian', source_type: 'newspaper', country: 'GB', hq_lng: -0.12, hq_lat: 51.53, source_family: 'guardian', homepage_url: 'https://theguardian.com' },
   { id: 'dw', name: 'DW', slug: 'dw', source_type: 'broadcaster', country: 'DE', hq_lng: 6.96, hq_lat: 50.94, source_family: 'dw', homepage_url: 'https://dw.com' },
@@ -44,11 +56,11 @@ const EVENTS = [
     representative_title: 'Volcanic fissure reopens north of the capital, officials say',
     representative_article_id: 11, primary_category: 'disasters',
     rep_lng: -21.94, rep_lat: 64.15, rep_place_name_en: 'Reykjavik',
-    first_published_at: '2026-08-24T01:00:00Z', last_article_at: '2026-08-24T02:00:00Z',
-    materially_updated_at: '2026-08-24T02:00:00Z', article_count: 2, independent_source_count: 2,
+    first_published_at: AGO(660), last_article_at: AGO(600),
+    materially_updated_at: AGO(600), article_count: 2, independent_source_count: 2,
     news_event_articles: [
-      mem(11, 'guardian', 'Volcanic fissure reopens north of the capital, officials say', '2026-08-24T01:00:00Z'),
-      mem(12, 'dw', 'Fissure reopens near Reykjavik', '2026-08-24T02:00:00Z'),
+      mem(11, 'guardian', 'Volcanic fissure reopens north of the capital, officials say', AGO(660)),
+      mem(12, 'dw', 'Fissure reopens near Reykjavik', AGO(600)),
     ],
   },
   {
@@ -56,18 +68,18 @@ const EVENTS = [
     representative_title: 'Rail operator restores the cross-border timetable',
     representative_article_id: 21, primary_category: 'business',
     rep_lng: 151.2, rep_lat: -33.87, rep_place_name_en: 'Sydney',
-    first_published_at: '2026-08-24T03:00:00Z', last_article_at: '2026-08-24T03:30:00Z',
-    materially_updated_at: '2026-08-24T03:30:00Z', article_count: 1, independent_source_count: 1,
-    news_event_articles: [mem(21, 'dw', 'Rail operator restores the cross-border timetable', '2026-08-24T03:00:00Z')],
+    first_published_at: AGO(540), last_article_at: AGO(510),
+    materially_updated_at: AGO(510), article_count: 1, independent_source_count: 1,
+    news_event_articles: [mem(21, 'dw', 'Rail operator restores the cross-border timetable', AGO(540))],
   },
   {
     ...base, id: 3, public_id: 'r416evt03',
     representative_title: 'Court orders the ministry to publish the review',
     representative_article_id: 31, primary_category: 'politics',
     rep_lng: -58.38, rep_lat: -34.6, rep_place_name_en: 'Buenos Aires',
-    first_published_at: '2026-08-24T04:00:00Z', last_article_at: '2026-08-24T04:20:00Z',
-    materially_updated_at: '2026-08-24T04:20:00Z', article_count: 1, independent_source_count: 1,
-    news_event_articles: [mem(31, 'guardian', 'Court orders the ministry to publish the review', '2026-08-24T04:00:00Z')],
+    first_published_at: AGO(480), last_article_at: AGO(460),
+    materially_updated_at: AGO(460), article_count: 1, independent_source_count: 1,
+    news_event_articles: [mem(31, 'guardian', 'Court orders the ministry to publish the review', AGO(480))],
   },
 ];
 

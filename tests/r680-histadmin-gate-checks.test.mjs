@@ -10,7 +10,7 @@
  *  gate notices, which is the only way to learn that an assertion is reachable at all (#R673:
  *  a rule nothing can violate is a rule nothing measures).
  *
- *  ⚠ THE MUTATIONS RUN AGAINST A SYNTHETIC TREE, NOT AGAINST THE 25.8 MB. The gate derives its
+ *  ⚠ THE MUTATIONS RUN AGAINST A SYNTHETIC TREE, NOT AGAINST THE 25.4 MB. The gate derives its
  *  ROOT from its own path, so a temporary directory holding a copy of the script and a handful
  *  of tiny bundles IS a root as far as it is concerned. That is what makes «an unreferenced ring
  *  fails» a thing this file can prove in milliseconds rather than a thing it can only assert.

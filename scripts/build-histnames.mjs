@@ -44,7 +44,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { census, eraBundle } from './histeras/census.mjs';
+import { census, eraBaseCensus, eraBundle } from './histeras/census.mjs';
 import { candidatesFor, factsFor, rejectedClasses, acceptedClasses, labelsByQid, CACHE } from './histeras/harvest.mjs';
 import { decide, labelsFor, plainLabel } from './histeras/match.mjs';
 import { timeBorders } from './histeras/time-borders.mjs';
@@ -57,6 +57,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'histnames.json');
 const CAND = join(CACHE, 'candidates.json');
 const CS_CAND = join(CACHE, 'candidates-cshapes.json');
+/* ⚠⚠⚠ (#R700) THE BASE LANE GETS ITS OWN FILE, AND THAT IS NOT TIDINESS. The era store's
+   `byName` is what `isProse` is asked «does Wikidata carry an item for this string?» with, so
+   writing the base names' candidates into it would answer that question for strings it was
+   never asked about: a description that happens to be the base of a glossed name would flip to
+   «has an item» and its 「サバンナの狩猟採集民」 row would leave the table without a word. The
+   two questions are different questions and they are stored apart. */
+const EB_CAND = join(CACHE, 'candidates-era-base.json');
 const QLAB = join(CACHE, 'qid-labels.json');
 
 export const V = 1;
@@ -93,9 +100,11 @@ function candsOf(store, name) {
 async function fetchAll() {
   const log = (s) => process.stderr.write('  ' + s + '\r');
   const eraRows = census(eraBundle(ROOT));
+  const eraBase = eraBaseCensus(eraRows);
   const cs = censusCShapes(ROOT);
 
-  for (const [what, rows, file, ns] of [['era', eraRows, CAND, ''], ['cshapes', cs.rows, CS_CAND, 'cs']]) {
+  for (const [what, rows, file, ns] of [['era', eraRows, CAND, ''], ['cshapes', cs.rows, CS_CAND, 'cs'],
+                                        ['era-base', eraBase, EB_CAND, 'eb']]) {
     process.stderr.write(what + ': ' + rows.length + ' names\n');
     const byName = await candidatesFor(rows.map((r) => r.name), log, ns);
     const qids = new Set(); for (const m of byName.values()) for (const q of m.keys()) qids.add(q);
@@ -207,16 +216,25 @@ function checkShipped() {
   /* every key must be something one of the three records actually draws */
   const csRows = censusCShapes(ROOT).rows, eraRows = census(eraBundle(ROOT));
   const csNames = new Set(csRows.map((r) => r.name)), erNames = new Set(eraRows.map((r) => r.name));
+  /* ⚠ (#R700) THE BASE LANE IS HELD TO THE OPPOSITE FACT. Every other lane must name something a
+     record DRAWS; this one must name something it does not — a base exists only because a
+     `Base (Gloss)` feature needs it, and a base the record draws on its own belongs to the era
+     lane. A key in both would be one name with two answers (#R536). */
+  const ebNames = new Set(eraBaseCensus(eraRows).map((r) => r.name));
   const gaps = histBordersQidGaps(langs, ROOT);
   for (const k of Object.keys(t.byName.cshapes)) if (!csNames.has(k)) say('cshapes lane names "' + k + '", which data/cshapes.js does not draw');
   for (const k of Object.keys(t.byName.eras)) if (!erNames.has(k)) say('era lane names "' + k + '", which data/hist-eras.js does not draw');
+  for (const k of Object.keys(t.byName.eraBase || {})) {
+    if (!ebNames.has(k)) say('the base lane names "' + k + '", which no `Base (Gloss)` era name asks about');
+    if (erNames.has(k)) say('"' + k + '" is in the base lane and is drawn in its own right — it belongs to the era lane');
+  }
   for (const k of Object.keys(t.prose)) if (!erNames.has(k)) say('prose lane names "' + k + '", which data/hist-eras.js does not draw');
   for (const [q, row] of Object.entries(t.byQid)) {
     if (!gaps.has(q)) { say('the identifier lane answers ' + q + ', which data/hist-borders.js has no gap for'); continue; }
     for (const lg of Object.keys(row.n)) if (!gaps.get(q).has(lg)) say(q + ' is answered in ' + lg + ', which the record already wrote everywhere');
   }
   /* a row says something, in a language the app has, and never in English */
-  for (const [fromWikidata, lane] of [[1, t.byName.cshapes], [1, t.byName.eras], [1, t.byQid], [0, t.prose]]) {
+  for (const [fromWikidata, lane] of [[1, t.byName.cshapes], [1, t.byName.eras], [1, t.byName.eraBase || {}], [1, t.byQid], [0, t.prose]]) {
     for (const [k, r] of Object.entries(lane)) {
       if (!r.n || !Object.keys(r.n).length) say('"' + k + '" localizes nothing');
       for (const [lg, v] of Object.entries(r.n || {})) {
@@ -245,7 +263,8 @@ function checkShipped() {
   }
   if (bad.length) throw new Error('data/histnames.json — ' + bad.length + ' problem(s):\n  ' + bad.slice(0, 20).join('\n  '));
   console.log('data/histnames.json — ' + Object.keys(t.byQid).length + ' by identifier, '
-    + (Object.keys(t.byName.cshapes).length + Object.keys(t.byName.eras).length) + ' by measure, '
+    + (Object.keys(t.byName.cshapes).length + Object.keys(t.byName.eras).length
+      + Object.keys(t.byName.eraBase || {}).length) + ' by measure, '
     + Object.keys(t.prose).length + ' prose; every key is drawn by the record it names.'
     + '\n  ⚠ the harvest cache is absent, so this did NOT re-derive — run it where the cache is to prove the rows themselves.');
   return t;
@@ -270,6 +289,20 @@ async function build({ check = false } = {}) {
 
   const eras = byMeasure(eraRows, eraB.snaps.map((s) => s.y), eraStore, langs, cc, whyEra);
   const cshapes = byMeasure(cs.rows, cs.years, csStore, langs, cc, whyCs);
+
+  /* ── the base lane ──────────────────────────────────────────────────────
+     «Ceylon (Dutch)» is a polity and its possessor in one string, and js/time-borders.js puts the
+     two halves back together for the reader (`window.IntMapEraName`). Asked about the whole
+     string, Wikidata has nothing; asked about «Ceylon», it has the polity — so the base is asked
+     too, scored against the boxes and years of the GLOSSED feature, and answered in its own lane.
+     ⚠ IT IS ABSENT UNTIL THE HARVEST HAS RUN FOR IT, rather than empty or approximated: a machine
+     with #R695's cache and not this one must still reproduce exactly what is shipped, or the gate
+     would fail on the absence of a question instead of on an answer (the mistake `checkShipped`
+     exists to undo). `--fetch` fills it; until then the lane simply is not in the document. */
+  const whyEb = {};
+  const eraBase = existsSync(EB_CAND)
+    ? byMeasure(eraBaseCensus(eraRows), eraB.snaps.map((s) => s.y), readJSON(EB_CAND), langs, cc, whyEb)
+    : { out: {}, dropped: 0 };
 
   /* ── the identifier lane ────────────────────────────────────────────────
      Keyed by QID, not by name: two hist-borders features can share a polity and disagree about
@@ -312,7 +345,11 @@ async function build({ check = false } = {}) {
        mask already written would start naming other languages. The bit order is the app
        registry's, always. */
     v: V, src: SRC, built: new Date().toISOString().slice(0, 10), langs, authored, mask: appLangs(ROOT),
-    byQid, byName: { cshapes: cshapes.out, eras: eras.out }, prose,
+    byQid,
+    byName: Object.keys(eraBase.out).length
+      ? { cshapes: cshapes.out, eras: eras.out, eraBase: eraBase.out }
+      : { cshapes: cshapes.out, eras: eras.out },
+    prose,
   };
   const json = JSON.stringify(doc);
 
@@ -325,7 +362,7 @@ async function build({ check = false } = {}) {
     if (diffs.length) throw new Error('data/histnames.json differs from a rebuild in: ' + diffs.join(', '));
     console.log('data/histnames.json — reproduces from the cache; '
       + Object.keys(byQid).length + ' by identifier, '
-      + (Object.keys(cshapes.out).length + Object.keys(eras.out).length) + ' by measure, '
+      + (Object.keys(cshapes.out).length + Object.keys(eras.out).length + Object.keys(eraBase.out).length) + ' by measure, '
       + Object.keys(prose).length + ' prose');
     return doc;
   }
@@ -336,6 +373,10 @@ async function build({ check = false } = {}) {
   console.log('  identifier lane  ' + Object.keys(byQid).length + ' QIDs of ' + gaps.size + ' with a gap');
   console.log('  measure · cshapes ' + Object.keys(cshapes.out).length + ' of ' + cs.rows.length
     + ' — refused: ' + Object.entries(whyCs).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + v).join(' · '));
+  console.log('  measure · eraBase ' + Object.keys(eraBase.out).length
+    + (existsSync(EB_CAND) ? ' of ' + eraBaseCensus(eraRows).length
+      + ' — refused: ' + Object.entries(whyEb).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + v).join(' · ')
+      : ' — not harvested yet (run --fetch); the glossed features fall back to the base rows the era lane already holds'));
   console.log('  measure · eras    ' + Object.keys(eras.out).length + ' of ' + eraRows.length
     + ' — refused: ' + Object.entries(whyEra).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + v).join(' · '));
   console.log('  prose            ' + Object.keys(prose).length + ' descriptions');

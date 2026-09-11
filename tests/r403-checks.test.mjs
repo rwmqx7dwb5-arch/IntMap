@@ -324,7 +324,12 @@ test('R403 ⑨ `--gate --todo <code>` actually asserts something', async () => {
         writeFileSync(join(ROOT, P), '');
         const withGate = audit('--gate', '--todo', 'fr');
         assert.equal(withGate.code, 1, '`--gate --todo fr` stayed GREEN on a tree with a hole in fr');
-        assert.ok(/incomplete language\(s\)/.test(withGate.out), 'it failed but never said which language:\n' + withGate.out);
+        /* ⚠ (#R700) THE FACT IS «IT NAMED THE LANGUAGE», NOT «IT SAID THESE TWO WORDS».
+           `incomplete language(s)` was the gate's phrasing while every language was held to 100 %.
+           CONSTITUTION.md §7 narrowed AUTHORING to en+jp, so a carried language now fails through
+           the floor instead — «fr» lost 463 row(s) of the reading pages — and the old needle went
+           red on an output that says exactly what this line exists to demand. Ask for the language. */
+        assert.ok(/(^|\W)(«fr»|\bfr\b)/.test(withGate.out), 'it failed but never said which language:\n' + withGate.out);
         /* …and `--todo` ALONE is still a listing, not a gate — that half must not have changed */
         assert.equal(audit('--todo', 'fr').code, 0, '`--todo fr` alone became a gate; it is a listing for a person to read');
       } finally {

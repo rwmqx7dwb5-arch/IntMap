@@ -20,7 +20,7 @@ const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 const TB = read('js/time-borders.js');
 
-/* The bundle is 5.5 MB of literal assigned to window.__CSHAPES; load it the way the browser does. */
+/* The bundle is 5.6 MB of literal assigned to window.__CSHAPES; load it the way the browser does. */
 let CS = null;
 function cshapes() {
   if (CS) return CS;

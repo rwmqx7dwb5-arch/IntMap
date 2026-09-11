@@ -21,6 +21,7 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { timeBorders } from './time-borders.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -105,4 +106,50 @@ export function census(bundle = eraBundle()) {
     }
   }
   return [...rows.values()].sort((a, b) => b.n - a.n || (a.name < b.name ? -1 : 1));
+}
+
+/* ── the second question a glossed name asks ────────────────────────────────
+   ⚠⚠⚠ «Ceylon (Dutch)» IS TWO QUESTIONS, AND ONLY ONE OF THEM WAS EVER ASKED. The era
+   cartographer writes a polity and its possessor in one string — 314 of the 3,028 spellings, 372
+   drawn features — and every lane downstream is keyed by the whole string, so Wikidata was asked
+   about «Ceylon (Dutch)», found nothing under that spelling, and the base went unasked.
+   ⚠ THE ORIGINAL ROW IS NOT REPLACED. It is sometimes the one that matches («Mandatory Palestine
+   (UK)» is a thing Wikidata knows by a name of its own), so the base is an ADDITIONAL question and
+   never a substitution — and a base the record already draws on its own is already in `census()`,
+   so only the ones it does not are returned here.
+   ⚠ AND THE RULE FOR WHERE THE NAME STOPS IS NOT WRITTEN HERE. js/time-borders.js owns it
+   (`window.IntMapEraName`), because that file is what decides what the READER is shown: it
+   localizes the two halves separately and puts the bracket back, so a census that simply stripped
+   the bracket would ask about a spelling nobody is ever shown. The module is EVALUATED for it
+   (#R505) rather than read, and nothing about the rule is restated in this file.
+   ⚠ THE BOXES AND THE YEARS ARE THE GLOSSED FEATURE'S. That is the whole safeguard: the base
+   answer still has to agree with WHERE the map drew the shape and WHEN (#R515), and the only
+   places the map ever draws «Ceylon» are the places it drew «Ceylon (Dutch)». */
+let _eraName = null;
+export function eraNameRule() {
+  if (_eraName) return _eraName;
+  const R = timeBorders().window.IntMapEraName;
+  if (!R || typeof R.split !== 'function' || typeof R.join !== 'function' || typeof R.compose !== 'function') {
+    throw new Error('js/time-borders.js publishes no IntMapEraName — the `Base (Gloss)` rule is unreadable, and a build that restated it would be one judgement in two files (#R536)');
+  }
+  return (_eraName = R);
+}
+
+/** The base names a `Base (Gloss)` era name asks about and the record never draws on its own. */
+export function eraBaseCensus(rows = census()) {
+  const R = eraNameRule();
+  const drawn = new Set(rows.map((r) => r.name));
+  const out = new Map();
+  for (const row of rows) {
+    const p = R.split(row.name);
+    if (!p || drawn.has(p.base)) continue;
+    let b = out.get(p.base);
+    if (!b) { b = { name: p.base, n: 0, snaps: [], y0: Infinity, y1: -Infinity, boxes: [], glossed: [] }; out.set(p.base, b); }
+    b.n += row.n;
+    b.y0 = Math.min(b.y0, row.y0); b.y1 = Math.max(b.y1, row.y1);
+    for (const k of row.snaps) if (!b.snaps.includes(k)) b.snaps.push(k);
+    for (const box of row.boxes) b.boxes.push(box);
+    if (!b.glossed.includes(row.name)) b.glossed.push(row.name);
+  }
+  return [...out.values()].sort((a, b) => b.n - a.n || (a.name < b.name ? -1 : 1));
 }
