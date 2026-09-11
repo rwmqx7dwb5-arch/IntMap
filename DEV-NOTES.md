@@ -530,6 +530,9 @@ Cesium実画面の1500年に現代サハラの境界らしい線が残り、歴�
 
 `npm test` を全件実行し、source 3,980成功・5失敗、browser 81成功・1失敗。未使用export、popup検証環境、説明数値、背景出典の固定期待値を修正し、失敗したR175/R564/R700とsmoke 52件の再実行はすべて成功した。build・perf・assets・docsも成功。実画面で携帯の遮蔽解消とCesiumの1500年への境界更新を確認した。全deepは同じ選択規則のCI shardで実行し、CIと公開後検証の結果はPR・完了報告に記録する。
 
+通常PR CI（head `90a44`）は成功。全deep（run `34608905340`）は442成功・8失敗・11 flaky・1 skip・1 did not runで、全成功ではない。失敗のうちR186・R410 late・R424は検査fixtureを修正し、単独で各1件成功した。残るR174軌跡・R170 Countries・R388 rail・R379 aircraftは旧mainでも失敗またはflakyを確認し、R166 WRITE-THROUGHはローカル単独で1件成功したがCI timeoutの原因は未確定。全deep実行後に製品コードは変更していない。
+
+
 ## R704 — **配線は 3 ラウンドかけて正しくなっていた。スイッチは一度も入っていなかった**
 
 〈「あなたに普段任せている IntMap の開発を、Codex でも完全に同じ使用感でやりたい」〉

@@ -117,7 +117,9 @@ const READ_ROWS = () => {
 
 async function openCard(page, lang, code = HIST) {
   await page.evaluate(() => { const b = document.getElementById('cp-close'), p = document.getElementById('country-popup'); if (b && p && p.style.display === 'block') b.click(); });
-  await page.dblclick(`.stat-row[data-ccn="${code}"]`);
+  /* The list can replace its rows between browser automation pointer events.
+     Exercise the row's actual two-click handler in one task, on the same row. */
+  await page.locator(`.stat-row[data-ccn="${code}"]`).evaluate(row => { row.click(); row.click(); });
   await page.waitForFunction(() => {
     const p = document.getElementById('country-popup');
     return !!(p && p.style.display === 'block' && p.querySelectorAll('.cm-row').length);
