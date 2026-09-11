@@ -169,21 +169,40 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 
    恒久的にするなら `~/.codex/config.toml` に `model_reasoning_effort = "high"`。
 
-### 手作業が残るもの（**#R703 で実測し直した**）
+### 手作業が残るもの（**#R704 で実測し直した**）
 
 | 事項 | いまも手作業か | 実測 |
 |---|---|---|
-| hook の trust（`/hooks`） | **残る（ただし理由が違う）** | ⚠ ここは長く「設定ファイルからは与えられない」と書いてあったが、**それは誤りだった**。trust の実体は `~/.codex/config.toml` の `[hooks.state."<key>"] trusted_hash` で、アプリ自身がそこへ書く（`config/batchWrite` の `keyPath:"hooks.state"`・`filePath:null`＝グローバル）。判定は `trustedHash === currentHash` の**完全一致**。残る理由は「書けない」ではなく、**`key` と `currentHash` をアプリが計算する**ので、リポジトリのファイルからは導けないこと。**`.codex/hooks.json` を変えるたびに hash が変わる**ので、そのたびに 1 回要る |
+| hook の trust（`/hooks`） | **残る（1 回だけ・届かない間の代替がある）** | ⚠⚠⚠ **#R704 実測: `[hooks.state]` は 1 件も無く、この hook は一度も走っていなかった**——`~/.codex/sessions` の 2026-09-01 以降の全 rollout に「IntMap · 蓄積メモリの索引」は **0 件**、状態行が出てくる唯一の箇所は `[external_agent_tool_result]` の中＝**Claude Code の記録を取り込んだもの**だった。配線は正しく、スイッチが入っていなかっただけ。⚠ trust の実体は `~/.codex/config.toml` の `[hooks.state."<key>"] trusted_hash`（`struct HookStateToml` ＝ `enabled` ＋ `trusted_hash`）で、アプリ自身が `config/batchWrite` でそこへ書く。判定は完全一致なので、**`.codex/hooks.json` を変えるたびに 1 回要る**。残る理由は「設定ファイルに書けない」ではなく、**`key` と hash をアプリが計算する**こと——対象も算法も exe の文字列からは決まらなかった（`sha256` の実在箇所は hook と無関係な SigV4・TLS ばかり）。⚠ **届いていない間は「メモリが無い」ではない**——`AGENTS.md` §0 の 4 と `.codex/config.toml` C-0 が、同じ中身を自分で取る手順を持つ |
 | 原本を信頼する初回の 1 回 | **もう手作業ではない** | `~/.codex/config.toml` に `[projects.'…\IntMap'] trust_level = "trusted"` として実在し、`scripts/worktree.mjs` が作業場に同じ形を書いている。**機械が書ける形**なので、この行はかつての状態を写したままだった |
-| モデル / reasoning effort | 残る（**意図的に**） | 費用の判断は利用者のもの。技術的には `model` / `model_reasoning_effort` で完全に与えられる |
+| モデル / reasoning effort | **残る（アプリが所有している鍵だった）** | 費用の判断は利用者のものなので、勝手には上げない。#R704 で利用者が `high` を選んだ。⚠⚠ **`~/.codex/config.toml` に書いても持続しない**——`high` を書いた数分後に、**起動中の Codex が `low` を書き戻した**（実測 #R704）。この鍵はアプリのモデル選択 UI の写しなので、**UI で選ぶ**のが唯一の与え方で、`codex-setup.mjs` は**書かずに食い違いを報告する**（持続しない修正は、報告が嘘になるぶん修正が無いことより悪い）。⚠ **仕事ごとに自動で変える手段も無い**——`[projects."…"]` が持てるのは `trust_level` 1 つだけ（exe の `struct ProjectConfig with 1 element`）で、絞れる単位は profile のみ |
+| 承認とサンドボックス | **もう手作業ではない** | `AGENTS.md` §5.1 は commit・push・PR・merge・deployment に追加承認を求めないことを要求するが、#R704 実測で `approval_policy` も `sandbox_mode` も**未設定**＝アプリ既定に委ねられていた。`codex-setup.mjs --apply` が `workspace-write` ＋ `network_access = true` ＋ `approval_policy = "on-failure"` を書く |
+| workspace の外へ書くこと | **もう手作業ではない** | メモリの正本・`~/.intmap-handoff`・`%LOCALAPPDATA%\Temp\intmap-worktrees` は**どの workspace にも入っていない**ので、`workspace-write` では書けない。`codex-setup.mjs` が 3 つとも**導出して** `writable_roots` に入れる（手で並べない）。⚠ USB ミラーだけは入れない——ドライブ文字はバックアップ時にラベルで見つけるものなので、今日の文字は明日の誤りになる。そこは `approval_policy` が 1 回訊く側に残す |
 | Codex アプリの "Choose project" | **残る（設定ファイルでは与えられない）** | `~/.codex/config.toml` にも CLI にも「起動時にこのプロジェクトを開く」キーは**見つからなかった**。アプリ所有の state（`~/.codex/.codex-global-state.json` の `selected-project`）でだけ与えられる——**設定面ではないので、リポジトリのスクリプトからは書かない** |
 | Claude Code 側の `@` import の確認 | 残る | 新しいセッションで `/context` を開き、**Memory files** に `CLAUDE.md` と `AGENTS.md` が並ぶことを見る |
 
-⚠ **trust を丸ごと外す経路は 2 つ実在するが、どちらもこのアプリは使わない**——CLI フラグ
-`--dangerously-bypass-hook-trust` と app-server の `bypass_hook_trust` override。デスクトップアプリの
-バンドルにはどちらの綴りも無い。**全自動にできる唯一の経路は管理層**
+⚠⚠ **「バンドルにはどちらの綴りも無い」は #R704 の実測で誤りだった。** build 0.153.4 の `codex.exe` に
+CLI フラグ `--dangerously-bypass-hook-trust`・環境変数 `BYPASS_HOOK_TRUST`・app-server の
+`bypass_hook_trust` override が**3 つとも実在する**（説明文ごと: 「DANGEROUS. Intended only for
+automation that already vets hook sources」）。**それでも採らない**——効く範囲が IntMap ではなく
+**このマシンの全プロジェクト**で、`/hooks` の 1 回と引き換えに払う代償として釣り合わない。
+⚠ **全自動にできる唯一の経路は管理層**
 （Windows なら `%ProgramData%\OpenAI\Codex\requirements.toml` の managed hook）で、管理者権限が要り、
 **hook の正本がリポジトリの外へ出る**——`.agents/` を 1 つの正本にした #R699 と逆向きなので採らない。
+
+### このマシン側を 1 コマンドで揃える（#R704）
+
+`npm run check:agents` が見るのはリポジトリの中だけで、上の表の残り半分は `~/.codex/config.toml`
+——**リポジトリの外**にある。そこを測って揃えるのが:
+
+```bash
+npm run setup:codex          # 何が揃っていて、何が手作業で残っているかを印字（何も書かない）
+npm run setup:codex:apply    # 揃える（変更前を config.toml.r704.bak に残す・冪等）
+```
+
+⚠ **値の一覧をここに書き写さない。** 機械の正本は `scripts/codex-setup.mjs` の `SETTINGS` 1 か所で、
+そこには値と**なぜその値なのか**が並んでいる。⚠ **パスも書き写さない**——原本・メモリ・handoff・
+worktree の場所は、それぞれを所有しているものに訊いて導出する。
 
 ### 蓄積メモリは 1 か所で、両方が読み書きする（#R696）
 
