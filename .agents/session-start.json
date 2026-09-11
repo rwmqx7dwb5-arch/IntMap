@@ -7,15 +7,31 @@
       "statusMessage": "IntMap · reading the working state",
       "timeout": 20,
       "codexContextLimit": 2000,
-      "products": ["claude", "codex"]
+      "products": [
+        "claude",
+        "codex"
+      ]
     },
     {
       "command": "node scripts/agent-memory.mjs --budget 36000",
       "statusMessage": "IntMap · reading the accumulated memory",
       "timeout": 20,
       "codexContextLimit": 40000,
-      "products": ["codex"],
+      "products": [
+        "codex"
+      ],
       "why": "⚠ 「両方が要る事実」と「両方が hook を要る」は別。Claude Code はこの索引を自分で読み込む（設定不要）ので、hook をもう1本足すと同じ 43 KB を二度渡すことになる。除外の理由は製品の実装であって、事実の側ではない——だから正本はここに残り、宛先だけが 1 つになる。"
+    },
+    {
+      "command": "node scripts/agent-memory.mjs --check",
+      "statusMessage": "IntMap · measuring the memory index against the ceiling that cuts it",
+      "timeout": 20,
+      "codexContextLimit": 500,
+      "products": [
+        "claude",
+        "codex"
+      ],
+      "why": "⚠ 索引を切るのはこのスクリプトの budget ではなく、索引を自分で読み込む製品の側の上限である（#R703 実測: 25,710 文字の MEMORY.md に「25.1KB (limit: 24.4KB) — Only part of it was loaded.」）。詰め直しだけでは 3 度目まで再発した（#R236・#R548・#R703）ので、毎セッション実測を述べる。⚠ 両方に配る理由: 索引は共有の store の性質であって、どちらのセッションでも詰められる。"
     }
   ]
 }

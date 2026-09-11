@@ -28,6 +28,14 @@
  *      node scripts/agent-memory.mjs            # the pointer + the index (what SessionStart shows)
  *      node scripts/agent-memory.mjs --path     # the memory directory, nothing else
  *      node scripts/agent-memory.mjs --budget N # cut to N characters, saying what was cut
+ *      node scripts/agent-memory.mjs --check    # is the index still short enough to be LOADED whole
+ *
+ *  ⚠ THE BINDING CEILING IS NOT THIS SCRIPT'S BUDGET (#R703). The product that owns the store
+ *  reads MEMORY.md by itself, with its own limit, and when the index passes it the TAIL IS
+ *  DROPPED with a warning only that session sees. The index has overflowed three times now
+ *  (#R236, #R548, and the session that opened #R703), and each time the fix was to repack it —
+ *  which is why it came back: nothing was measuring the index against the limit that actually
+ *  cuts it. --check does, and SessionStart runs it in both products.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -54,6 +62,27 @@ export const projectKey = (dir) => dir.replace(/[^A-Za-z0-9]/g, '-');
 export const memoryDir = (dir = master()) =>
   dir ? path.join(homedir(), '.claude', 'projects', projectKey(dir), 'memory') : null;
 
+/* ── how long the index may be before the host stops loading all of it ──────────────────────
+   OBSERVED 2026-09-11: a Claude Code session opened with a 25,710-character MEMORY.md and was
+   told «MEMORY.md is 25.1KB (limit: 24.4KB) — Only part of it was loaded.» 25710/1024 = 25.10,
+   so the host counts CHARACTERS in units of 1024 and stops at 24.4 of them. The number kept
+   here is therefore the host's own pair, not a guess at its internals.
+   EXPIRES IF: the host changes that limit (the warning states it — if it ever disagrees with
+   this constant, the warning is right and this is stale) or a second product starts
+   auto-loading the index with a lower one.
+   CANONICAL: here. Nothing else may carry the number — docs cite this file (#R500). */
+export const INDEX_CEILING_KB = 24.4;
+export const INDEX_CEILING = Math.floor(INDEX_CEILING_KB * 1024);
+
+/* ⚠ Reports the measurement whether or not it is over (#R699: a needle that matches nothing
+   prints green, and «no overflow» must not be the same output as «never looked»). */
+export const indexVerdict = (chars) => ({
+  chars,
+  ceiling: INDEX_CEILING,
+  over: chars > INDEX_CEILING,
+  margin: INDEX_CEILING - chars,
+});
+
 /* ⚠ Importable: the rules above are what the gate measures, so the CLI must not run on import. */
 const isCLI = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isCLI) {
@@ -69,6 +98,27 @@ if (isCLI) {
   if (!existsSync(INDEX)) {
     console.log(`IntMap · 蓄積メモリ: ${DIR} に MEMORY.md が無い（このマシンではまだ空か、別の場所にある）。`);
     console.log('新しく学んだことは、そのディレクトリを作って 1 事実 1 ファイルで書く（AGENTS.md §1）。');
+    process.exit(0);
+  }
+
+  /* ⚠ --check は「超えているか」ではなく「何文字か」を毎回述べる。超えていないことと、
+     一度も測っていないことを、同じ出力にしない（#R699）。 */
+  if (has('--check')) {
+    /* 正規化しない——ホストが読み込むのはファイルそのもので、実測 25,710 文字が 25.1KB と
+       報告された（1KB = 1024 文字）。ここで改行を畳むと、報告された数と別のものを測る。 */
+    const v = indexVerdict(readFileSync(INDEX, 'utf8').length);
+    const n = (x) => x.toLocaleString('en-US');
+    if (v.over) {
+      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字  ⚠ ${n(-v.margin)} 文字の超過`);
+      console.log(`  この超過ぶんは読み込まれない——索引の末尾から無言で落ちる（実体の .md は 1 本も消えていない）。`);
+      console.log(`  直し方: 古い側の行を「思い出す鍵」だけに詰める。実体は消さない。  ${INDEX}`);
+    } else if (v.margin < 1000) {
+      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字（余白 ${n(v.margin)}）  ⚠ まもなく末尾が落ち始める`);
+    } else {
+      console.log(`IntMap · 蓄積メモリの索引 ${n(v.chars)} / ${n(v.ceiling)} 文字（余白 ${n(v.margin)}）`);
+    }
+    /* ⚠ 0 で終える。これは門ではなく、セッションが起動時に受け取る観測であって、
+       ここで非 0 を返すと「起動に失敗した」という別の意味になる（npm test 側が門を持つ）。 */
     process.exit(0);
   }
 

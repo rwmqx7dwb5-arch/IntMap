@@ -197,6 +197,16 @@ node scripts/agent-memory.mjs             # hook が渡すもの（先頭に場�
   Claude Code の鍵（絶対パスの非英数字を `-` に置換）を組み立てる。だから
   `AGENTS.md` §2 が避けたがっている「追跡ファイルにマシン固有の絶対パスを増やす」形にならない。
 - **切るときは黙って切らない**（#R694）。`--budget` は落とした文字数と、続きの読み方を印字する。
+- ⚠ **索引には天井がある。切るのは `--budget` ではなく、索引を自分で読み込む製品の側の上限**
+  （#R703 実測: 25,710 文字の `MEMORY.md` に「Only part of it was loaded.」）。**数の正本は
+  `scripts/agent-memory.mjs` の `INDEX_CEILING` 1 か所**で、ここには書き写さない。両製品の
+  `SessionStart` が毎回これを実測して述べる:
+
+  ```bash
+  node scripts/agent-memory.mjs --check    # 索引 N / 天井 M 文字（超えていなくても述べる）
+  ```
+
+  超えていたら**詰めるのは索引の古い側だけ**——実体の `.md` は 1 本も消さない。
 - **書く側も同じ場所**（`.codex/config.toml` の C-7）。そこは workspace の外なので、Codex の
   サンドボックスが書き込みを拒むことがある——そのときは承認を求めて書く。
 
