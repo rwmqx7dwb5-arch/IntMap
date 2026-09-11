@@ -258,7 +258,18 @@ test('a lifted aircraft can be hovered and clicked where it is drawn, and its tr
   expect(legs.length, 'the track has legs standing in the air').toBeGreaterThan(1);
   expect(Math.min(...legs), 'each at the altitude it was flown at').toBeGreaterThan(10000);
 
-  await page.mouse.click(60, 700); await page.waitForTimeout(900);
+  /* ══ ⚠⚠⚠ (#R700) 「どこも無いところ」は #map の実測矩形から取る ═══════════════════════════════
+     ここは `page.mouse.click(60, 700)` という字面だった。700 は `#map` が 720 px のビューポートの
+     下端まで伸びていたころの数で、#R485 が `#map-credit` を通常フローに入れてから `#map` は
+     697 px までしかない——つまりこのクリックは**地図の外**（クレジット帯）に落ちており、
+     「選択が外れる」を一度も試さないまま緑を返せる位置にいた（実測: 選択は外れなかった）。
+     ⚠ 新しい数を書かない。空いている場所は地図自身の矩形から測り、機体からも十分離す。 */
+  const mapBox = await page.locator('#map').boundingBox();
+  expect(mapBox, 'the map has a box to click inside').not.toBeNull();
+  const away = { x: Math.round(mapBox.x + 60), y: Math.round(mapBox.y + mapBox.height - 20) };
+  expect(Math.hypot(away.x - pos.x, away.y - pos.y),
+    'the empty spot really is away from the aircraft').toBeGreaterThan(60);
+  await page.mouse.click(away.x, away.y); await page.waitForTimeout(900);
   expect(await page.evaluate(() => window.IntMapPlanes3D.selected()), 'clicking away puts it back').toBeNull();
 
   /* …and the aeroplane's FOOTPRINT — the post standing under it — selects it too. This is the case that

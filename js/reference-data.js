@@ -502,7 +502,24 @@ window.IntMapRefData=(function(){
        theirs, and a derived work still says whose. */
     {n:'令制国 raster — Asukana/Ryoseikoku (CC0 1.0)',u:'https://github.com/Asukana/Ryoseikoku_20230626_TSV'},
     {n:'Wikidata (CC0 1.0)',u:'https://www.wikidata.org/'},
-    {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/'},
+    /* ⚠⚠⚠ (#R700) THE LICENCE AND THE CITATION ARE VALUES ON THE ROW, NOT A SENTENCE SOMEBODY
+       REMEMBERED TO WRITE. CShapes is CC BY-NC-SA 4.0 — attribution is a CONDITION of redistributing
+       it, and IntMap redistributes it as 5.6 MB of committed bytes (data/cshapes.js) rather than as
+       a live call. This row named the publisher and said nothing about what shipping their record
+       costs, which is exactly the shape #R689 measured on Pleiades: the obligation was prose, and
+       prose is addressed to whoever reads the file next, who is not a program.
+       ⚠ The neighbouring rows carry the licence INSIDE `n` («Wikidata (CC0 1.0)»), and `n` cannot
+       take it here: it is the lookup key of the nine `sourceUse` dictionaries in js/locales/pages.*.js,
+       so changing it would blank this source's description in nine languages. So the licence and the
+       citation are their own fields and `useText` below appends them — one implementation, reaching
+       both readers (the in-app dialog and the Sources page) without either of them changing.
+       ⚠ NEITHER IS TRANSLATED, and that is not an omission: a licence name and a bibliographic
+       reference are spelled the way the publisher spells them, in every language.
+       ⚠ scripts/build-cshapes.mjs `--check` holds both equal to its own LIC() value, so this row
+       cannot drift from the licence the build declares. */
+    {n:'CShapes 2.0 (Schvitz et al., ETH Zürich)',u:'https://icr.ethz.ch/data/cshapes/',
+     lic:'CC BY-NC-SA 4.0',
+     cite:'Schvitz, Guy, Seraina Rüegger, Luc Girardin, Lars-Erik Cederman, Nils Weidmann, and Kristian Skrede Gleditsch. 2022. "Mapping The International System, 1886-2017: The CShapes 2.0 Dataset." Journal of Conflict Resolution 66(1): 144–61.'},
     /* ⚠ (#R409) THE MAP NAMED THIS SOURCE AND THIS PAGE DID NOT LIST IT. The two world-war layers
        credit «the documented record, compiled in scripts/wars/» in their MapLibre attribution and
        in their legend, and until this round a reader who followed that credit to the Sources page
@@ -528,8 +545,17 @@ window.IntMapRefData=(function(){
      the tag comes from the registry — which is also what keeps a raw code out of the <script> src. */
   const _pgCode=(l)=>{ try{ return String(window.IntMapLang.htmlTag(l)||l).toLowerCase(); }catch(_){ return l==='jp'?'ja':l; } };
   const _pgDoc=(l)=>{ try{ const P=window.IntMapPageI18N; return (P&&P.doc&&P.doc(_pgCode(l)))||null; }catch(_){ return null; } };
+  /* ⚠ (#R700) AND THE TERMS TRAVEL WITH THE DESCRIPTION. A row that declares `lic` (and optionally
+     `cite`) is a row whose upstream makes credit a condition of redistribution, so the licence name
+     and the publisher's own citation are appended here — where BOTH readers already are — instead of
+     in each of them. Punctuation only: no label is introduced, because a label would be a new
+     user-visible word owing nine translations, while a licence name and a bibliographic reference
+     are the source's own spelling in every language. */
   const useText=(name,lang)=>{ const d=_pgDoc(lang), e=_pgDoc('en');
-    return (d&&d.sourceUse&&d.sourceUse[name])||(e&&e.sourceUse&&e.sourceUse[name])||''; };
+    const base=(d&&d.sourceUse&&d.sourceUse[name])||(e&&e.sourceUse&&e.sourceUse[name])||'';
+    const row=DATA_SOURCES.find(s=>s.n===name);
+    if(!row||!row.lic) return base;
+    return (base?base+' — ':'')+row.lic+(row.cite?' · '+row.cite:''); };
   /* fetch the English document and the reader's, then call back; already-loaded languages are free */
   const ensureDocs=(lang,cb)=>{ const one=(l)=>{ if(_pgDoc(l)){ cb(); return; }
       const c=_pgCode(l); let ok=false; try{ ok=(window.IntMapLang.list()||[]).some(r=>String(r.html).toLowerCase()===c); }catch(_){}

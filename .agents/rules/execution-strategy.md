@@ -70,7 +70,7 @@
 | 言語レイヤー | `npm run check:languages` |
 | 国政選挙のデータ | `npm run check:elections` |
 | 歴史都市名 | `npm run check:histcities` |
-| CShapes より下の国境 | `npm run check:histborders` |
+| CShapes の国境と、その下 | `npm run check:cshapes` `npm run check:histborders` |
 | 全時代の国境（紀元前も） | `npm run check:histeras` |
 | 歴史的な政体名（3 記録に 1 つの表） | `npm run check:histnames` |
 | 歴史的な行政区分 | `npm run check:histadmin` |

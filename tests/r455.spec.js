@@ -15,6 +15,18 @@
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
+/* ══ ⚠⚠⚠ (#R700) THE FIXTURE'S CLOCK IS RELATIVE, BECAUSE THE FEED HAS A FRESHNESS CUT ═══════════
+   これらの記事は **2026-08-24 の絶対時刻**で書かれていた。js/app-body.js の `computeFilteredNews`
+   は `NEWS_MAX_AGE_MS`（72 時間）より古い項目を一覧から落とすので、fixture は**書かれた日から
+   3 日で**「読み込みは成功しているのに一覧が空」になり、実際に #R402/#R405/#R416/#R435/#R455 の
+   5 本が同じ日に同じ形で落ちた（実測: `loadedEventCount:1 / visibleEventCount:0`）。
+   ⚠ 日付を新しい日付へ書き換えるのは同じ時限装置を巻き直すだけなので、**時刻は `Date.now()`
+   からの相対**にする。⚠ 検査は 72 という数を写さない——写せばその数が動いた日に fixture の
+   ほうが正しいまま赤くなる。要るのは「**十分に新しい**」ことだけで、ここは全部 12 時間以内。
+   相対値は元の固定時刻の**並び**（どの記事が新しいか）をそのまま保っている。 */
+const AGO = (mins) => new Date(Date.now() - mins * 60e3).toISOString();
+
+
 const SOURCES = [
   { id: 'guardian', name: 'The Guardian', slug: 'guardian', source_type: 'newspaper', country: 'GB', hq_lng: -0.12, hq_lat: 51.53, source_family: 'guardian', homepage_url: 'https://theguardian.com' },
   { id: 'dw', name: 'DW', slug: 'dw', source_type: 'broadcaster', country: 'DE', hq_lng: 6.96, hq_lat: 50.94, source_family: 'dw', homepage_url: 'https://dw.com' },
@@ -31,7 +43,7 @@ const mem = (id, source_id, title, at) => ({
 
 const base = {
   status: 'active', category: 'disaster', subject_lng: -13.7, subject_lat: 9.5,
-  subject_name_en: 'Conakry', subject_type: 'city', first_seen_at: '2026-08-24T01:00:00Z',
+  subject_name_en: 'Conakry', subject_type: 'city', first_seen_at: AGO(660),
 };
 
 /* ⚠ TWO EVENTS, AND THE COUNTS ARE 3 AND 1 ON PURPOSE — the singular half of the label has its own
@@ -39,19 +51,19 @@ const base = {
 const EVENTS = [
   {
     ...base, id: 1, public_id: 'r455a', representative_title: 'Landslide at Conakry landfill kills 30',
-    last_seen_at: '2026-08-24T06:00:00Z', materially_updated_at: '2026-08-24T06:00:00Z',
+    last_seen_at: AGO(360), materially_updated_at: AGO(360),
     article_count: 3, independent_source_count: 3,
     news_event_articles: [
-      mem(11, 'guardian', 'Landslide at Conakry landfill kills 30', '2026-08-24T01:00:00Z'),
-      mem(12, 'dw', 'Thirty dead in Conakry landslide', '2026-08-24T02:00:00Z'),
-      mem(13, 'reuters', 'Guinea landslide toll rises', '2026-08-24T03:00:00Z'),
+      mem(11, 'guardian', 'Landslide at Conakry landfill kills 30', AGO(660)),
+      mem(12, 'dw', 'Thirty dead in Conakry landslide', AGO(600)),
+      mem(13, 'reuters', 'Guinea landslide toll rises', AGO(540)),
     ],
   },
   {
     ...base, id: 2, public_id: 'r455b', representative_title: 'A single outlet reports a rail deal',
-    last_seen_at: '2026-08-24T05:00:00Z', materially_updated_at: '2026-08-24T05:00:00Z',
+    last_seen_at: AGO(420), materially_updated_at: AGO(420),
     article_count: 1, independent_source_count: 1,
-    news_event_articles: [mem(21, 'dw', 'A single outlet reports a rail deal', '2026-08-24T04:00:00Z')],
+    news_event_articles: [mem(21, 'dw', 'A single outlet reports a rail deal', AGO(480))],
   },
 ];
 

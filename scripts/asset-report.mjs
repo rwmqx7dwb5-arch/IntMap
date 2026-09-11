@@ -82,7 +82,7 @@ const ALLOW = {
   bigFile: [
     { match: /^data\/ecoregions_2017\.geojson$/, why: 'the WWF terrestrial ecoregions layer — one file is the dataset (#R311 removed its duplicate)' },
     /* (#R530) the admin-1 twin of data/cshapes.js (5.3 MB), and it is over the ceiling for the same
-       reason that one is near it: one file IS the dataset — 3,053 dated subdivisions with the days
+       reason that one is near it: one file IS the dataset — 4,820 dated subdivisions with the days
        they were in force, ring-pooled so neighbours share their common line. It was priced against
        the country bundle rather than accepted at whatever it came out at: 0.008° / 4 decimals built
        15.46 MB, and 0.02° / 3 decimals builds this, which is the coarsest step that still keeps every
@@ -129,6 +129,36 @@ const ALLOW = {
        ⚠ IT IS NOT ON THE BOOT PATH AND NOT IN ANY CHUNK: js/time-borders.js injects it as a <script>
        the first time the clock asks for a year only it can answer, exactly as #R192/#R201 settled for
        CShapes and #R679 for the era snapshots. */
+    /* ⚠⚠⚠ (#R700) …AND THE SAME QUESTION AT THE OTHER END OF THIS RECORD HAS THE OPPOSITE ANSWER,
+       BECAUSE THE NEIGHBOUR THERE IS NOT A TOLERANCE, IT IS AN UPSTREAM. The argument above — «a
+       reader steps across the handover one DAY at a time, so the two records are simplified as one»
+       — was put to 1688→1689, where this record hands over to data/hist-eras.js, and it does not
+       reach. Measured through js/time-borders.js's own dispatch on the shipped bundles (Iberia
+       −10..3°E / 36..44°N and Japan 129..146°E / 30..46°N, every shipped ring edge, an edge two
+       polygons share counted once):
+           1688-07-01  era sheet 1700   4.19 vertices/100 km, median segment 20.8 km  (Japan 5.41 / 16.6 km)
+           1689-07-01  THIS record     11.88                                6.6 km  (Japan 11.26 /  7.1 km)
+       — a 2.83× step (Japan 2.08×) in one day, against 0.77× (Japan 0.83×) at 1885→1886 where the
+       two tolerances already match. ⚠ EQUAL TOLERANCES DO NOT MAKE EQUAL DENSITY: #R690 equalized
+       what WE contribute, and 0.77× is what is left of the two upstreams under it.
+       ⚠ THE COARSE SIDE IS ALREADY UPSTREAM'S OWN, so no tolerance of ours can close this one. The
+       raw aourednik world_1700.geojson measures 4.36 / 6.15 in those same two windows: the bundle
+       ships 96% / 88% of the vertices upstream drew, and its tolerance is not a taste but the
+       storage grid (10^-DEC — scripts/build-hist-eras.mjs), whose own sweep puts the whole corpus
+       unsimplified at 712,070 points against the 607,558 shipped. Making our simplification finer
+       cannot put vertices into a record that never had them.
+       ⚠ SO THE STEP CANNOT BE REMOVED, ONLY MOVED — and moving it costs the handover #R690 bought.
+       Re-simplifying THIS record alone (scripts/histborders/geom.mjs, the build's own function) at
+       0.020° pulls 1688→1689 down to 1.90× and pushes 1885→1886 from 0.77× to 1.15×, sign reversed;
+       at 0.050° the pair becomes 0.82× and 2.67×. Coarsening to MEET the era sheet means being
+       coarser than data/cshapes.js — the fidelity reduction AGENTS.md §3-1 does not allow without
+       asking — and interpolating across the handover would invent vertices no record holds
+       (CONSTITUTION「偽物・ハリボテ禁止」). The tolerance therefore stays at 0.012°, and the step is
+       STATED rather than hidden: docs/MAP-LAYERS.md §7.13 carries the measurement, and
+       tests/r700-seam-density-checks.test.mjs holds the property behind it (the step sits ON the
+       record boundary, and moving our simplification on one side alone changes its size or its sign).
+       ⚠ ITS POSITION IS NOT CHOSEN EITHER: 1689 is derived from coverage by
+       scripts/build-hist-borders.mjs, so the step moves down the moment OHM fills in below it. */
     { match: /^data\/hist-borders\.js$/, why: 'the day-exact country borders below CShapes, 1689–1885 (OpenHistoricalMap, CC0) — one file is the dataset, injected as a <script> only when the clock asks, and simplified at data/cshapes.js\'s own tolerance so the 1885→1886 handover does not change resolution (#R690)' },
   ],
 };

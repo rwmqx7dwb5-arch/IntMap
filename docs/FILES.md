@@ -787,14 +787,14 @@ data/border-coast.js              歴史的な輪郭の各辺が「境界」か�
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
                                   内部を持たないので描かない
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
-                                  4,820件／rings 7,186・9.83 MB＝brotli 0.97 MB）。上と**同じリングプール形式の
+                                  4,820件／rings 7,186・9.95 MB＝brotli 0.99 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
                                   ⚠ **各行の列 10 は OHM の relation id**——クリックしたとき、その 1 件だけを
                                   上流から原寸で取り直すために要る（名前ではなく id で訊く）
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
                                   門は `npm run check:histadmin`（残余は docs/TESTING.md）
 data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM2`・
-                                  22,708件／rings 21,676・14.8 MB・列 10 は同じく relation id）。同じ生成器の
+                                  22,708件／rings 21,676・15.47 MB・列 10 は同じく relation id）。同じ生成器の
                                   `--levels 5,6`。**z6 未満では取得もしない**——描かない縮尺で 10 MB 以上を
                                   払わせないため（docs/MAP-LAYERS.md §7.7）。門は第1級と同じ
                                   `npm run check:histadmin`——1 つの build が両方を焼くので、門も 1 つ

@@ -79,9 +79,36 @@ test('R575: 発生地点をクリックすると engine が走り、地図と HU
     });
     expect(shown.n).toBeGreaterThan(0);
     for (const k of Object.keys(shown.cls)) expect(['0', '1']).toContain(k);
-    /* 感染性と潜伏中の両方が HUD に出ている（旧版は I しか出さずに E+I を描いていた）。 */
-    expect(shown.hud).toMatch(/Infectious|感染性|Ansteckend|Заразны|Contagiosos/);
-    expect(shown.hud).toMatch(/Incubating|潜伏中|Inkubierend|Инкубация|Incubando/);
+    /* ══ ⚠⚠⚠ (#R700) 段の「名前」ではなく、段が何であるかを測る ═══════════════════════════════════
+       ここは HUD に `/Incubating|潜伏中|…/` が出ていることを要求していた。#R673 が**意図して**
+       改名している（js/playground.js: incubation は感染→発症であり、E は感染→感染性。だから
+       「Infected, not yet infectious」）ので、この検査は**正しい訂正を退行として報告**していた。
+       ⚠ 綴りを新しい綴りへ写し替えれば、次に言葉が良くなった日にまた同じことが起きる。#R575 が
+       ここで守っていたのは文字列ではなく「**地図が描いている分画を HUD が黙って落とさない**」
+       （旧版は E+I を描きながら I しか出さなかった）という 1 つの事実なので、そちらへ付け直す。
+       束ねているのは**色**——分画ごとの点の色は地図の paint 式が持っており、HUD は同じ色で同じ
+       分画の数を出す。だから「cls=0 の点に地図が使っている色」を engine に訊き、その色の欄が
+       HUD にあって数を名乗っていることを要求する。⚠ 色そのものも書き写さない。 */
+    const named = await page.evaluate(() => {
+      /* 地図が cls=0（=E）に使う色。`['case',['==',['get','cls'],0], <exposed>, <infectious>]` */
+      const paint = window.IntMapGeoEngine.layers.getPaint('pg-dots', 'circle-color');
+      const exposed = (Array.isArray(paint) && paint[0] === 'case') ? paint[2] : null;
+      const norm = (c) => { const d = document.createElement('div'); d.style.color = String(c);
+        document.body.appendChild(d); const v = getComputedStyle(d).color; d.remove(); return v; };
+      const el = document.querySelector('#pg-pan-stats');
+      const fields = [...el.querySelectorAll('[style*="color"]')]
+        .filter((x) => x.querySelector('b'))
+        .map((x) => ({ colour: getComputedStyle(x).color,
+                       digits: /\d/.test(x.querySelector('b').textContent || '') }));
+      return { exposed: exposed ? norm(exposed) : null, fields };
+    });
+    expect(typeof named.exposed, 'the dot layer states the colour it draws cls=0 in').toBe('string');
+    const forExposed = named.fields.filter((f) => f.colour === named.exposed);
+    expect(forExposed.length,
+      'the HUD carries a figure in the very colour the map draws the exposed dots in').toBeGreaterThan(0);
+    expect(forExposed.some((f) => f.digits), '…and that figure is a number').toBe(true);
+    expect(named.fields.some((f) => f.colour !== named.exposed && f.digits),
+      '…and it is not the only compartment the HUD names').toBe(true);
     /* 1点が何人ぶんかを必ず言う。旧版は流行の規模で 60→数千に動かしながら黙っていた。 */
     expect(shown.hud).toMatch(/1 dot|1点|1 Punkt|1 точка|1 punto/);
 

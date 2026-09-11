@@ -90,6 +90,12 @@ jobs:
       # what it therefore cannot see.
       - name: Day-exact borders below CShapes (the bundled record is sound, and no year of it is thin)
         run: npm run check:histborders
+      # (#R700) …and the record that line derives its floor FROM. data/cshapes.js had no build and
+      # no gate: nothing said where its bytes came from, and nothing said what shipping them costs
+      # — CShapes 2.0 is CC BY-NC-SA 4.0, so attribution is a condition of redistribution and the
+      # source row carried none. This proves the committed bytes and that the credit is paid.
+      - name: CShapes 1886-2019 (the bundled record is sound, and its licence is credited)
+        run: npm run check:cshapes
       - name: Era snapshots (all eras, incl. BCE)
         run: npm run check:histeras
       # (#R695) …AND THE NAMES THOSE THREE RECORDS ARE READ BY. One table, three lanes of evidence
@@ -102,12 +108,12 @@ jobs:
       # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
       # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
       # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
-      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 33,600 rings, offline;
-      # MEASURED 32 s on this machine, which is why the sampled form existed and why it is not enough.
+      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 49,634 rings, offline;
+      # MEASURED 49 s on this machine (2026-09-11), which is why the sampled form existed and why it is not enough.
       - name: Historical border coastlines (every ring re-derived, not a sample)
         run: npm run check:bordercoast
       # (#R680) …AND THE TWO BIGGEST BUNDLES OF ALL, which had no gate of any kind. hist-admin1 +
-      # hist-admin2 are 25.8 MB of shipped first- and second-level subdivisions; the map draws every
+      # hist-admin2 are 25.4 MB of shipped first- and second-level subdivisions; the map draws every
       # line, label, click answer and coverage count from them. Re-deriving needs OHM's whole
       # admin_level 3-6 extract, so this proves the committed bytes — above all that each file
       # defines the global its own NAME implies (#R604 shipped 15 MB that did not) and that every
