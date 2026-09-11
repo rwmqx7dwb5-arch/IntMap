@@ -23,7 +23,7 @@
  *      node scripts/doc-facts.mjs           # report
  *      node scripts/doc-facts.mjs --check   # exit 1 if a fact has drifted (CI)
  * ==========================================================================*/
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -2075,6 +2075,256 @@ if (RULE && RULE !== 'i18n-open-gap') {
       });
       if (!problems.some((p) => p.startsWith('bordercoast-rings'))) ok('bordercoast-rings', `${rings.toLocaleString('en-US')} rings across ${sets.length} bundles, stated correctly in ${stated} place(s)`);
     }
+  }
+}
+
+/* ═══ 35. the Chronos bundles: how many sheets, how many units, how many bytes ═════════════
+ *  (#R707) The historical bundles are rebuilt every few rounds, and every rebuild moves a number
+ *  that a dozen sentences state on the reader's behalf. NOTHING IN THIS FILE WAS WATCHING ANY OF
+ *  THEM. Measured when this rule was written: `data/hist-eras.js` had grown a snapshot and six
+ *  documents still said the upstream publishes one fewer; `data/hist-admin1.js` had grown 19 units
+ *  and `package.json` still named the count from two rebuilds ago; the byte figures for the two
+ *  admin tiers were the ones they had at #R680, three rebuilds behind; and the in-force table in
+ *  docs/MAP-LAYERS.md — twenty-four measured cells — was wrong in all twenty-four.
+ *  None of that is a document being careless. It is #R500's shape: a number the machine holds and
+ *  the prose copies WILL separate, and the only question is whether anything says so.
+ *  ⚠ THE BUNDLES ARE DISCOVERED, NOT LISTED (the `discoverBundles()` rule `border-coast` already
+ *    lives by): `data/` is read, the global each file assigns is taken from the file itself, and a
+ *    third admin tier is checked the day it is added.
+ *  ⚠ AND EVERY SUB-RULE PRINTS HOW MANY CLAIMS IT ACTUALLY READ, and fails at zero. A needle that
+ *    matches nothing reports green (#R699 ⑬), and these needles are the kind that stop matching
+ *    when a sentence is reworded. */
+/* ⚠ …and it costs real time: evaluating 41 MB of bundles plus sweeping every block of every
+   document is ~4 s. The mutation tests run this whole file ONCE PER MUTATION while holding the
+   tree lock (see `--rule` at the top), so a rule that is not the one being mutated steps aside. */
+if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
+  const dataFiles = has('data') ? readdirSync(join(ROOT, 'data')) : [];
+  /* the global is what the file itself assigns — not a name written down here (#R604 shipped the
+     second tier under the first tier's global, so the two are genuinely separate facts) */
+  const loadBundle = (file) => {
+    const src = rd('data/' + file);
+    const g = (src.match(/^window\.(__[A-Z0-9_]+)\s*=/) || [])[1];
+    if (!g) return null;
+    try {
+      const w = {};
+      new Function('window', src)(w);
+      return { file, global: g, d: w[g], bytes: statSync(join(ROOT, 'data', file)).size };
+    } catch { return null; }
+  };
+
+  const eras = dataFiles.includes('hist-eras.js') ? loadBundle('hist-eras.js') : null;
+  /* the admin tiers, ordered by the administrative level they hold — which is what 「第1級」 /
+     「第2級」 / 「first-level」 mean. Ordering by the DECLARED levels rather than by the digit in the
+     file name keeps the ordinal true if a tier is ever renamed or inserted. */
+  const tiers = dataFiles.filter((f) => /^hist-admin\d+\.js$/.test(f)).map(loadBundle)
+    .filter((b) => b && Array.isArray(b.d && b.d.feats) && Array.isArray(b.d.rings) && Array.isArray(b.d.levels))
+    .sort((a, b) => Math.min(...a.d.levels) - Math.min(...b.d.levels));
+
+  /* ── the unit of reading: a BLOCK (one bullet, one table row, one paragraph) and, inside it, a
+        SENTENCE. Neither is a fixed number of characters — #R694's lesson is that a window measured
+        in characters lets the LENGTH of the prose decide how much of it is checked. */
+  const blockCache = new Map();
+  const blocksOf = (s) => {
+    if (blockCache.has(s)) return blockCache.get(s);
+    const out = []; let cur = [];
+    for (const line of s.split('\n')) {
+      /* …and a JSON key line opens one too: package.json is read here as well, and it has no
+         continuation lines — every note is complete on the line that names the gate it is about. */
+      /* ⚠ …and an entry in a two-column listing opens one as well. docs/FILES.md describes every
+         file in a fenced block of 「name  description」 rows whose continuations are indented, and
+         without this the whole listing is ONE block: the 663 rasters `build-hist-kuni.mjs` reads
+         were being read as a claim about the snapshots `build-hist-eras.mjs` reads, forty rows
+         above. Two or more spaces after the first token is what makes that shape a row. */
+      const opens = /^\s*$/.test(line) || /^\S/.test(line) || /^\s*"/.test(line) || /^\s*\S+\s{2,}\S/.test(line) || /^\s*(?:[-*+]\s|[|#>]|\d+\.\s)/.test(line);
+      if (opens) { if (cur.length) out.push(cur.join('\n')); cur = [line]; } else cur.push(line);
+    }
+    if (cur.length) out.push(cur.join('\n'));
+    const kept = out.filter((b) => b.trim());
+    blockCache.set(s, kept);
+    return kept;
+  };
+  /* 「。」 ends a Japanese sentence; a full stop ends an English one (package.json's gate notes are
+     English). A sentence break is where a subject stops being in scope: 「…を覆うか）。⚠ 再生成は
+     しない（上流 26.3 MB…」 states the size of an UPSTREAM response, not of the bundle before the 。 */
+  const sentencesOf = (b) => b.split(/。|(?<=\.)\s/);
+
+  /* package.json's `//check:*` notes are prose about the same facts, and #R680's numbers were
+     stalest there — so it is read alongside the documents rather than exempted for being JSON. */
+  const CARRIERS = [...BODY.entries(), ['package.json', rd('package.json')]];
+  const num = (s) => Number(String(s).replace(/,/g, ''));
+
+  /* ── 35a. how many snapshots the era record holds ─────────────────────────────────────── */
+  if (!eras || !Array.isArray(eras.d && eras.d.snaps)) {
+    fail('chronos-sheets', 'data/hist-eras.js no longer evaluates to a record with snapshots — the only answer for borders before 1689');
+  } else {
+    const snaps = eras.d.snaps;
+    const SHEETS = snaps.length, BC = snaps.filter((s) => s.y <= 0).length, AD = SHEETS - BC;
+    /* the upstream is named by the record itself, so the anchor moves if the source is replaced */
+    const slug = (String(eras.d.src || '').match(/[a-z0-9-]+\/([a-z0-9-]+)/) || [])[1];
+    const anchors = [/hist-eras/, new RegExp(eras.global)].concat(slug ? [new RegExp(slug)] : []);
+    /* ⚠ A FLOOR, AND IT IS DERIVED. Anchored blocks also name SUBSETS of the sheets — 「紀元前
+       700〜10000 年の 9 枚だけ」 is the nine snapshots upstream gave a TYPE to, and that is not a
+       claim about the size of the record. The floor is the smaller half of the record itself:
+       below that, a number of sheets cannot be describing the whole of it.
+       ⚠ EXPIRES if a document ever names a subset at least as large as the smaller half — then that
+       sentence has to name its own subject, the way the others here do. */
+    const FLOOR = Math.min(BC, AD);
+    let sheetClaims = 0, subsets = 0;
+    for (const [f, s] of CARRIERS) for (const b of blocksOf(s)) {
+      if (!anchors.some((r) => r.test(b))) continue;
+      for (const m of b.matchAll(/(紀元前の?\s*)?(\d[\d,]*)\s*枚(\s*(?:は|が|を)?\s*紀元前)?/g)) {
+        const n = num(m[2]);
+        const bc = Boolean(m[1] || m[3]);
+        /* ⚠ THE FLOOR IS FOR QUANTITIES THAT DID NOT NAME THEIR SUBJECT. A number the sentence
+           itself calls 紀元前 has named it, so it is read however small it is — measured when this
+           rule was written: with the floor applied first, restating the BC half as one fewer than
+           the record holds went through unseen, because the floor IS the BC half. */
+        if (!bc && n < FLOOR) { subsets++; continue; }
+        sheetClaims++;
+        if (bc && n !== BC) fail('chronos-sheets', `${f} says ${m[2]} 枚 are BC; data/hist-eras.js holds ${BC} of ${SHEETS}`);
+        else if (!bc && n !== SHEETS && n !== AD) fail('chronos-sheets', `${f} says ${m[2]} 枚; data/hist-eras.js holds ${SHEETS} (${BC} BC + ${AD} AD)`);
+      }
+    }
+    if (!sheetClaims) fail('chronos-sheets', 'no document states how many snapshots data/hist-eras.js holds — the number nine documents were carrying is now checked by nothing');
+    if (!problems.some((p) => p.startsWith('chronos-sheets')))
+      ok('chronos-sheets', `${SHEETS} snapshots (${BC} BC + ${AD} AD), stated correctly in ${sheetClaims} place(s); ${subsets} subset figure(s) below the floor of ${FLOOR} left alone`);
+  }
+
+  /* ── 35b. how many units the admin tiers and the era record hold ───────────────────────── */
+  if (tiers.length < 2) {
+    fail('chronos-units', `only ${tiers.length} historical admin tier(s) were read out of data/ — the record every province and district line is drawn from`);
+  } else {
+    const ord = ['first', 'second', 'third', 'fourth'];
+    const blank = eras && Array.isArray(eras.d && eras.d.snaps)
+      ? eras.d.snaps.reduce((n, sn) => n + (sn.blank ? sn.blank.length : 0), 0) : null;
+    let unitClaims = 0;
+    for (const [f, s] of CARRIERS) {
+      /* ① the pair 「N件／rings M」 names its own tier: no two tiers hold the same pair */
+      for (const m of s.matchAll(/(\d[\d,]*)\s*件／rings\s*(\d[\d,]*)/g)) {
+        unitClaims++;
+        if (!tiers.some((t) => t.d.feats.length === num(m[1]) && t.d.rings.length === num(m[2])))
+          fail('chronos-units', `${f} says ${m[1]}件／rings ${m[2]}; data/ holds `
+            + tiers.map((t) => `${t.file} ${t.d.feats.length}/${t.d.rings.length}`).join(', '));
+      }
+      /* ② the tier named by its ordinal, in either language */
+      for (const m of s.matchAll(/第([1-9])級[^。\n]{0,10}?(\d[\d,]{2,})\s*(?:件|単位)/g)) {
+        const t = tiers[Number(m[1]) - 1];
+        if (!t) continue;
+        unitClaims++;
+        if (num(m[2]) !== t.d.feats.length) fail('chronos-units', `${f} says 第${m[1]}級 ${m[2]}; ${t.file} holds ${t.d.feats.length}`);
+      }
+      for (const m of s.matchAll(/(\d[\d,]*)\s+(first|second|third|fourth)-level\s+(?:units|ones)/g)) {
+        const t = tiers[ord.indexOf(m[2])];
+        if (!t) continue;
+        unitClaims++;
+        if (num(m[1]) !== t.d.feats.length) fail('chronos-units', `${f} says ${m[1]} ${m[2]}-level units; ${t.file} holds ${t.d.feats.length}`);
+      }
+      /* ③ the era polygons upstream gave no name to — the count the map itself states (#R679) */
+      if (blank != null) for (const m of s.matchAll(/名前(?:の無い|を持たない|なし)[^。\n]{0,40}?(\d[\d,]{3,})\s*件/g)) {
+        unitClaims++;
+        if (num(m[1]) !== blank) fail('chronos-units', `${f} says ${m[1]} 件 carry no name; data/hist-eras.js holds ${blank} unnamed polygon(s)`);
+      }
+    }
+    if (!unitClaims) fail('chronos-units', 'no document states the size of the historical admin tiers or of the unnamed era polygons — three needles matched nothing, which is not the same as agreeing');
+    if (!problems.some((p) => p.startsWith('chronos-units')))
+      ok('chronos-units', `${unitClaims} stated size(s) across the documents — `
+        + tiers.map((t) => `${t.file} ${t.d.feats.length} units / ${t.d.rings.length} rings`).join(', ')
+        + (blank == null ? '' : `, ${blank} unnamed era polygon(s)`));
+  }
+
+  /* ── 35c. how many bytes each bundle weighs ────────────────────────────────────────────── */
+  /* ⚠ TWO CONVENTIONS ARE IN USE AND THIS RULE ACCEPTS EITHER. Measured when it was written:
+     docs/FILES.md writes MiB (10.60 for 11,116,066 bytes) while docs/TESTING.md, docs/MAP-LAYERS.md
+     and package.json write decimal MB (16.2 for 16,224,963 bytes). Unifying them is a change to
+     text nobody asked for (AGENTS.md §3-2), so the rule measures both and asks whether the stated
+     figure is either one ROUNDED TO THE PRECISION THE DOCUMENT ITSELF WROTE. The two conventions
+     differ by 4.8%; every drift this rule exists to catch has been far larger (10.4 → 11.1,
+     16.2 → 19.4, 25.4 → 30.5), so accepting both costs nothing this rule would otherwise see.
+     ⚠ EXPIRES if the repository ever decides on one convention — then this reads the one it chose,
+       and the other becomes a failure instead of an alternative. */
+  {
+    const sized = new Map();
+    for (const f of dataFiles) {
+      try { const st = statSync(join(ROOT, 'data', f)); if (st.isFile()) sized.set('data/' + f, st.size); } catch { /* unreadable */ }
+    }
+    const adminSum = tiers.reduce((n, t) => n + t.bytes, 0);
+    const fits = (stated, bytes) => {
+      const prec = (stated.split('.')[1] || '').length;
+      return (bytes / 1e6).toFixed(prec) === stated || (bytes / 1048576).toFixed(prec) === stated;
+    };
+    let byteClaims = 0, other = 0;
+    for (const [f, s] of CARRIERS) for (const b of blocksOf(s)) {
+      for (const sent of sentencesOf(b)) {
+        /* the combined weight of the admin tiers belongs to no single file, so it needs a subject of
+           its own: the sentence either names the gate that guards the pair, or names both of them */
+        const sumHere = tiers.length > 1 && (/check:histadmin/.test(sent) || tiers.every((t) => sent.includes('data/' + t.file)));
+        let path = null, taken = false;
+        for (const m of sent.matchAll(/(data\/[A-Za-z0-9._-]+)|(\d+(?:\.\d+)?)\s*MB/g)) {
+          if (m[1]) { path = sized.has(m[1]) ? m[1] : null; taken = false; continue; }
+          const cand = [];
+          if (path && !taken) { cand.push([sized.get(path), path]); taken = true; }
+          if (sumHere) cand.push([adminSum, tiers.map((t) => t.file).join(' + ')]);
+          /* a size with no bundle in scope is about something else — an upstream response, a raster,
+             a browser budget — and this rule does not pretend to have read it. ⚠ So is a SECOND size
+             in the same sentence: docs/FILES.md states the brotli weight beside the raw one. That
+             residual is written down in docs/TESTING.md rather than left to be discovered. */
+          if (!cand.length) { other++; continue; }
+          byteClaims++;
+          if (!cand.some(([bytes]) => fits(m[2], bytes)))
+            fail('chronos-bytes', `${f} says ${m[2]} MB of ${cand.map(([, w]) => w).join(' / ')}; measured `
+              + cand.map(([bytes]) => `${(bytes / 1e6).toFixed(2)} MB = ${(bytes / 1048576).toFixed(2)} MiB`).join(' / '));
+        }
+      }
+    }
+    if (!byteClaims) fail('chronos-bytes', 'no document states the weight of any bundle in data/ — the needle matched nothing, which is not the same as agreeing');
+    if (!problems.some((p) => p.startsWith('chronos-bytes')))
+      ok('chronos-bytes', `${byteClaims} stated byte size(s) checked against data/ (${other} further MB figure(s) name something other than a bundle)`);
+  }
+
+  /* ── 35d. the in-force table: what the bundles actually draw on a given date ───────────── */
+  /* ⚠ THIS IS THE ONE THAT WAS WRONG IN EVERY CELL. docs/MAP-LAYERS.md carries a table of how many
+     units each tier holds in force on twelve dates, and it is the answer to 「被覆は部分的である」 —
+     the reader's only way to see HOW partial. Twenty-four measured cells, twenty-four of them wrong
+     by the time anything asked, because two rebuilds moved every one of them.
+     The probe is the builder's own: `scripts/build-hist-admin1.mjs` asks each century for something
+     in force on YYYY-06-15 with the end date INCLUSIVE — even though the stored semantics are
+     exclusive-end — and this must ask the same question, or the table and the gate that guards the
+     bundles would mean different things by 「在force」. */
+  if (tiers.length >= 2) {
+    const inForce = (t, y) => {
+      const at = y * 10000 + 615;
+      return t.d.feats.filter((f) => (f[2] * 10000 + f[3] * 100 + f[4]) <= at && (f[5] * 10000 + f[6] * 100 + f[7]) >= at).length;
+    };
+    let cells = 0, tables = 0;
+    for (const [f, s] of CARRIERS) {
+      const lines = s.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const head = lines[i].match(/^\s*\|\s*日付\s*\|(.+)\|\s*$/);
+        if (!head) continue;
+        const years = head[1].split('|').map((c) => c.trim()).filter((c) => /^\d+$/.test(c)).map(Number);
+        if (years.length < 2) continue;
+        tables++;
+        for (let j = i + 1; j < lines.length && /^\s*\|/.test(lines[j]); j++) {
+          const row = lines[j].split('|').map((c) => c.replace(/\*/g, '').trim());
+          const lvl = (row[1] || '').match(/第([1-9])級/);
+          if (!lvl) continue;
+          const t = tiers[Number(lvl[1]) - 1];
+          if (!t) continue;
+          for (let k = 0; k < years.length; k++) {
+            const cell = row[k + 2];
+            if (cell === undefined) { fail('histadmin-inforce', `${f}: the 第${lvl[1]}級 row has no cell for ${years[k]}`); continue; }
+            cells++;
+            const want = inForce(t, years[k]);
+            const said = /^[—–-]$/.test(cell) ? 0 : num(cell);
+            if (!Number.isFinite(said) || said !== want)
+              fail('histadmin-inforce', `${f}: 第${lvl[1]}級 in ${years[k]} is stated as ${cell}; ${t.file} holds ${want.toLocaleString('en-US')} in force on ${years[k]}-06-15`);
+          }
+        }
+      }
+    }
+    if (!cells) fail('histadmin-inforce', 'no document carries the in-force table for the historical admin tiers — the only place a reader can see how partial the coverage is');
+    if (!problems.some((p) => p.startsWith('histadmin-inforce')))
+      ok('histadmin-inforce', `${cells} in-force cell(s) across ${tables} table(s), re-derived from ` + tiers.map((t) => t.file).join(' + '));
   }
 }
 

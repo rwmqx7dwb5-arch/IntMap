@@ -716,7 +716,7 @@ The wiring between the two products, and the four steps that stayed manual, are 
 
 ## 全時代の国境スナップショット — `npm run check:histeras` (`scripts/build-hist-eras.mjs --check`)
 
-`data/hist-eras.js` は aourednik/historical-basemaps が公開する `world_*.geojson` **53 枚**
+`data/hist-eras.js` は aourednik/historical-basemaps が公開する `world_*.geojson` **54 枚**
 （**紀元前 17 枚**・紀元前 123000 年〜西暦 2010 年）をリングプール形式へ落とした束で、
 **1689 年より前の国境はこれが唯一の答え**である。`.github/workflows/ci.yml` に step があり、
 `gate-callers`（#R628）が「宣言されて誰も呼ばない門」を許さない。
@@ -739,6 +739,39 @@ The wiring between the two products, and the four steps that stayed manual, are 
 **残る危険を、含みではなく明示で**: 上流から乖離した束でも通る。乖離を捕まえられるのは再取得
 だけで、再取得にはネットワークが要る。そして「形は正しく、場所が違う」国境はどちらにも見えない
 （#R146 の内独国境）。
+
+### 上流がまだ同じ集合か — `node scripts/build-hist-eras.mjs --check-upstream`（夜間のみ・ネットワーク）
+
+⚠⚠⚠ **上の門が「数ではなく性質」を測るのは意図どおりで、だからこそ上流が育ったことは誰にも
+見えなかった。** 一覧は `--fetch` が上流のディレクトリを読んで**発見する**が、`--fetch` を走らせるのは
+束を作り直すときだけである。#R679 はそのとき公開されていた枚を全部発見して全部出荷し、そのあと
+上流が `world_1878.geojson` を足したので、**束は上流より 1 枚少ないまま、全部の門が緑だった**。
+発見した一覧は発見されたままではいられない——それは**一度撮ったディレクトリの写真**である。
+
+そこで「出荷している集合は、いまも上流の集合全部か」に専用の計器を与えた。ディレクトリを取り直し、
+
+- **上流にあって束に無い枚があれば落第する**。深い過去は第 2 の記録が無い唯一の帯なので、
+  欠けた枚はそのまま**欠けた地図**である。直し方も落第の文が印字する
+  （`--fetch` → 再ビルド → `build-border-coast.mjs` と `build-histnames.mjs`。印と名前の表は
+  この束のリングに索引で結ばれている）。
+- **束にあって上流がもう並べていない枚は、印字するだけで落第にしない**。上流が 1 枚取り下げたことは、
+  その年を描くのをやめる理由にならない（消すこと自体 `CONSTITUTION.md` §0 の 3 の縮小に当たる）。
+- **一覧は答えたのに `world_*.geojson` が 1 件も一致しなかった場合は落第する**——空のディレクトリでは
+  なく**形が変わった**ということなので、黙って「差分なし」と言わせない。
+
+⚠ **これは `.github/workflows/ci.yml` の `schedule` / `workflow_dispatch` だけで走り、PR では走らない。**
+理由は 2 つあり、どちらもこの計器に固有: **ネットワークが要る**ことと、**赤が「上流が何かを公開した」
+であって「この PR が壊した」ではない**こと。PR に付ければ、他人のコミットが他人のブランチを赤にする。
+⚠ `npm run check:histeras`（オフライン・決定的）は今までどおり全 PR で走る。この 2 つは**別の問い**で、
+片方をもう片方で置き換えない。
+
+⚠⚠⚠ **そして、このスクリプトの CLI には入口の判定が要る。** 隣の 2 本
+（`scripts/build-cshapes.mjs` / `scripts/build-border-coast.mjs`）は同じ理由で既に持っていたが、
+これだけ持っておらず**既定の分岐**を持っていたので、検査が `upstreamGap` を import しただけで
+`node --test` が **`data/hist-eras.js`（10.6 MB）を作り直した**（実測）。無駄な 1 分が危険なのではない——
+`npm test` は `scripts/test-parallel.mjs` で並列に走り、**他の検査がその束を読んでいる最中に
+書き換わる**。ビルドスクリプトは「値も export するプログラム」なので、**プログラムの側は
+「自分が node に実行を命じられた当のファイルか」を訊かなければならない**。
 
 ⚠ **かつてこの門は 2 本走っていた**（#R686）。2 本目は束が描く政体名の表を照合するものだったが、
 その表は #R695 で **3 つの記録すべてに答えるもの**になったので、束の門から**独立した**
@@ -904,9 +937,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 49,653 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 49,665 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 49,653 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 49,665 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -945,10 +978,10 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 上流に訊くか／**粗い形を先に渡し、鋭い形が届いたら渡し直す**か／その差し替えが**同じ source の
 置き換えであって第2のレイヤーではない**か。
 
-### `npm run check:histadmin` — 25.4 MB の行政区分に、初めて門を付ける (#R680)
+### `npm run check:histadmin` — 30.5 MB の行政区分に、初めて門を付ける (#R680)
 
-`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（10.4 MB・第1級 4,820 単位）と
-`data/hist-admin2.js`（16.2 MB・第2級 22,708 単位）の不変条件を測る。**この 2 本は #R680 まで
+`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（11.1 MB・第1級 4,839 単位）と
+`data/hist-admin2.js`（19.4 MB・第2級 22,708 単位）の不変条件を測る。**この 2 本は #R680 まで
 `--check` を持たず、`package.json` にも `ci.yml` にも該当ステップが無かった。** 歴史的な束は 5 本あり、
 残り 3 本（`hist-borders` / `hist-eras` / `hist-kuni`）と `border-coast` にはそれぞれ門がある——
 この 2 本はそれらの門が書かれた**あとに**生まれ、そのまま与えられなかっただけである。地図は線・ラベル・
@@ -960,7 +993,7 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 
 - **各ファイルが、自分のファイル名が示す global だけを名乗ること。** ⚠ これは実際に起きた事故で、
   #R604 が `--global` を渡し忘れて `data/hist-admin2.js` が `window.__HISTADM1=` を名乗り、
-  **読み込んだ瞬間に第1級の記録を第2級で置き換えた**（15 MB の、自分についての主張が全部正しく
+  **読み込んだ瞬間に第1級の記録を第2級で置き換えた**（19 MB の、自分についての主張が全部正しく
   名前だけ間違ったファイル）。`tests/r604-checks ⑦` が出荷物の側から見ているが、**名前を選ぶのは
   build なので、build の門もこれを見る。**
 - `v` / `src`（上流名と **CC0**）／`built`（ISO 日付）／`since`／`tolerance` が名乗りどおりであること
@@ -1050,8 +1083,8 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 文脈に載せ、同梱の `data/hist-eras.js` を `window.__HISTERAS` として渡し、時計を実在の年へ動かして
 `note()` / `coverage()` / `typeNote()` に訊く。そうしないと測れないのがこの回の性質だから:
 **文の数は、source に載っている当の FeatureCollection の数である**（`shownFC`）。ソースに「141」や
-「6,892」が書いてあることを確かめる検査は、**文と線が食い違った日にも緑**で、それがまさに防ぎたい
-壊れ方（#R669 が令制国に立てた規則と同じ）。⚠ 53 枚**すべて**について名前あり／名前なし／分類の
+名前なしの「6,955 件」が書いてあることを確かめる検査は、**文と線が食い違った日にも緑**で、それがまさに防ぎたい
+壊れ方（#R669 が令制国に立てた規則と同じ）。⚠ `data/hist-eras.js` の 54 枚**すべて**について名前あり／名前なし／分類の
 内訳を束自身と突き合わせるので、1 枚について正しいだけでは通らない。枚どうしの空白も
 「紀元前 10000 年と 123000 年の間には何も無い」という**数**ではなく、記録の隣り合う 2 項の関係として
 測る（上流が間に 1 枚出した日に書き直さなくてよい）。⚠ **綴りは 1 つも固定していない**（#R488）——
@@ -1209,6 +1242,27 @@ import し、worker が無ければページで解いて `engine` で名乗る�
 落としてから**当てる——直しの上の注記は消した式をわざと引用しているので、区別できない grep は
 「その欠陥を説明すること」を禁じてしまう。
 
+## 位置引数の i18n 監査 — 要求する引数の個数と、床の分母
+
+門そのもの（`npm run check:i18n` ＝ `scripts/i18n-audit.mjs --gate` と、その子の計器 13 本）の全体像は
+`Architecture.md` §10.1 が正本。ここに書くのは、**その計器が何を数えているか**である。
+
+- **「引数が足りない」の判定は、方針から導く。** `scripts/i18n-positional-audit.mjs` は
+  `scripts/lang-policy.mjs` の `authoredLangs()` を読み、`pick()` が位置で解く 5 言語
+  （en / jp / de / ru / es）のうち**方針がまだ書く最後の位置＋1** を要求する。いまは 2（en+jp）で、
+  方針が 9 言語へ戻れば自動的に 5 へ戻る。⚠ **ここが 5 という直値だった間、憲法の改正どおり
+  en+jp だけで書いた新しい文字列は「欠陥」として報告されていた**——方針が実行できない状態である。
+  実測では当時 short なサイトは 0 件だったので、**改正後に最初の位置引数を書くまで誰も気づけなかった**。
+- **言語別の被覆（＝床）の分母は「5 言語ぶんの組を実際に持つサイト」である。** 解析できた call site を
+  そのまま分母にすると、ドイツ語の引数を 1 つも持たないサイトが「翻訳済みのドイツ語の行」として
+  数えられ、**存在しない翻訳が、翻訳を削除から守っている当の数に積まれる**（実測: 改正後の最初の
+  2 サイトで de/es/ru が 7,341 → 7,343 に上がり、門は床をそこまで上げろと言った）。
+  組を持たないサイトは「未翻訳」でもない——**この計測の外**にあるので、数える前に返る。
+- ⚠ **だから `tests/i18n-coverage-floor.json` の de/es/ru が 7,341 → 7,332 に下がっているのは、
+  計測の訂正であって削除ではない。** 翻訳の行は 1 つも消えていない。
+  ⚠ **「英語と同一の引数」を測る側は狭めていない**——ドイツ語の引数を実際に渡しているサイトは、
+  今もドイツ語を渡し続けなければならない。これが「床」であって天井ではない、ということの中身である。
+
 ## 文書の検査 — `npm run check:docs` の規則一覧 (`scripts/doc-facts.mjs`)
 
 Every rule this gate applies, by the name it reports itself under. `Architecture.md` §15.5 sends the
@@ -1257,6 +1311,10 @@ reader here for this list; adding a rule means adding a row.
 | `section-refs` | a document names another document and a `§` number that document has no section for |
 | `gate-callers` | `package.json` declares a `check:*` script that neither `ci.yml` nor `npm test` ever runs |
 | `bordercoast-rings` | a document states how many rings the border/coast record marks, and `data/border-coast.js` marks a different number (three documents said 25,506 while the bundles held 33,600 — the number came from #R564 own completion line and none of the three copies moved) |
+| `chronos-sheets` | a document states how many year snapshots `data/hist-eras.js` holds — or how many of them are BC — and the record holds a different number |
+| `chronos-units` | a stated unit or ring count for one of the historical admin tiers, or the count of era polygons upstream gave no name to, is not what the bundle holds |
+| `chronos-bytes` | a stated MB weight of a bundle in `data/`, or of the two admin tiers together, is not what the files weigh in either convention (see below) |
+| `histadmin-inforce` | a cell of the in-force table in `docs/MAP-LAYERS.md` is not what that tier holds in force on that year — re-derived with the builder’s own probe |
 
 The last six of the #R403 batch are described below, after the Edge Function rules they grew out of.
 The final three arrived in #R500; `tests/r500-checks.test.mjs` is what proves they actually go red,
@@ -1265,6 +1323,21 @@ because the static job does not run `check:docs`. The last two rows arrived in #
 `tests/r628-checks.test.mjs` (six tests) is theirs, for the same reason and by the same method —
 mutation under the tree lock, with `--rule` so a mutation costs one rule's runtime rather than the
 whole file's.
+
+⚠ **(#R707) 上の 4 行が見ていないもの（残余を隠さず書く）。** Chronos の束の数は、その束を名指す
+**文**または**ブロック**（1 つの箇条書き・1 つの表の行・1 つの段落）の中にあるときだけ主張として読まれる。
+したがって:
+
+- **同じ文の 2 つ目の MB は読まない。** `docs/FILES.md` は生のバイト数の隣に brotli 後の重さを書くので、
+  最初の 1 つだけを「そのファイルの重さ」として扱う（brotli を毎回測り直すと実測 15.6 秒かかり、門が
+  2 倍以上遅くなる）。2 つ目以降は報告行の「further MB figure(s)」に数え上げられる。
+- **束を名指さない文の数は、主張として読まれない。** 実測 (#R707): `PRODUCT.md` の
+  「…枚が数ピクセルずつしか占めない」は `data/hist-eras.js` も上流の名前も名乗らないので、この規則の
+  外にある。数を足すときは、その数が何についての数かも同じ文に書く。
+- **MB の慣習は 2 つあり、規則はどちらも受ける。** 実測: `docs/FILES.md` は MiB（11,116,066 バイトを
+  10.60 と書く）、`docs/TESTING.md` / `docs/MAP-LAYERS.md` / `package.json` は 10 進（16,224,963 バイトを
+  16.2 と書く）。差は 4.8% で、この規則が捕まえた drift はどれも桁が違う（10.4 → 11.1・16.2 → 19.4・
+  25.4 → 30.5）。**どちらかに統一するのは文章の変更なので、指示なしには行っていない**（`AGENTS.md` §3-2）。
 
 ⚠ **(#R694) `edge-shared` is now proved by `tests/r694-shared-roster-facts-checks.test.mjs`, and
 NOT through this script.** One run of `doc-facts.mjs` is ~7.5 s, so the sweep that actually matters
@@ -2219,3 +2292,11 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 ### Chronos の収録と精度
 
 `tests/r705-chronos-*-checks.test.mjs` は同名別都市の地点判定、OHM終了日の排他判定・2桁年・日付精度保持、境界の出典精度が形状から線へ渡ること、歴史背景と現在背景の切替を実行して検証する。年別スナップショットの精度分類は歴史的正しさの証明ではなく出典属性の保持を測る。
+
+`tests/r707-chronos-*-checks.test.mjs` は、名前の無い形のクリック（譲る条件と、カードが述べるのが
+上流の語だけであること）・ラベルのアンカー（既存の点が 1 度も動かないこと、離れた大きな領土にだけ
+点が増えること）・区分ラベルの衝突順位・上流の集合との差分を測る。⚠ **どれも出荷したモジュールを
+出荷した束の上で<b>評価</b>する**（#R505）。⚠ **規則を書き写さない**——下限や間隔を計算し直す検査は
+同じ判断を 2 か所に置くことになり（#R536）、どちらが何を言っても一致してしまう。国名の綴りも
+固定しない（#R488）。代わりに測るのは、**記録そのものが「離れた巨大な領土」を持つ状況が実在すること**と、
+そのときに点が増えること。

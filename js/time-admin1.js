@@ -255,6 +255,79 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
       } catch (_) { return false; }
     }
 
+    /* ══ (#R707) WHICH NAME SURVIVES A COLLISION — AND WHY IT MUST NOT BE THE FILE'S ROW ORDER ═══
+       The era label layers carry `text-optional: true`, so a name that collides with one already
+       placed is dropped IN SILENCE. With no `symbol-sort-key` MapLibre resolves that collision by
+       the order the features reach the source, which here is the order of the rows in
+       data/hist-admin{1,2}.js — the order OpenHistoricalMap's Overpass happened to answer the build
+       in. So WHICH province a reader of 1900 ever sees the name of was decided by an upstream query
+       plan. The present-day counterpart does not work that way: `ofm-admin1`
+       (js/place-labels.js) sorts by `['coalesce',['get','rank'],6]`, because OpenMapTiles publishes
+       a rank. This record publishes none — a row is [name, admin_level, dates…, rings, names, id]
+       and nothing in it ranks two units — so the key is DERIVED, from the one quantity the record
+       states about every unit and the reader is actually looking at: the AREA IT DRAWS, largest
+       first. ⚠ MapLibre places the SMALLEST key first, so the key is the negative log of the area;
+       inverting it would hide every large unit and keep the slivers.
+
+       ⚠ MEASURED, NOT ASSUMED — THE ROW ORDER CARRIES NO INFORMATION. Spearman rank correlation
+       between a row's index in the bundle and the area that row draws, computed 2026-09-12 over
+       every row of both shipped files: +0.076 (data/hist-admin1.js, 4,839 units) and −0.061
+       (data/hist-admin2.js, 22,708). The order the labels were being prioritised in was noise.
+
+       ⚠ `admin_level` WAS MEASURED AS THE KEY AND REJECTED, and that is the point of writing this
+       down. It looks like the record's own hierarchy, but OSM's levels are a PER-COUNTRY tagging
+       convention, not a global rank: of the 648 first-tier units in force on 1900-06-15, 37 are
+       level 3 and 611 are level 4, and the SMALLEST of those level-3 rows is the Germany-Luxembourg
+       condominium at 10.5 km² while the largest level-4 row on the same date is the North-West
+       Territories at 5,602,445 km². Banding the key by level would put the condominium's name ahead
+       of a fifth of Canada's, in the same view, at every zoom the labels live in. Where levels
+       genuinely nest — a level-3 region holding that same country's level-4 units — the container
+       is the larger shape, so area already orders them the way the hierarchy would.
+
+       ⚠ IT CHANGES THE ORDER THINGS ARE TRIED IN, NOT WHAT IS DRAWN. Nothing here filters; a unit
+       that had room keeps its name, and a unit that never had room still loses it — to a bigger
+       neighbour now, instead of to a smaller one that happened to be earlier in the file.
+
+       ⚠ ONE RULE, BOTH TIERS. `sortKeyOf` is written once, at module scope, and `fcAt` stamps
+       SORT_PROP on every feature of both bundles — the tiers are separated by their own
+       minzoom/maxzoom windows (4-9 and DEEP_Z+1-12), so the key is never asked to compare a
+       province with a county.
+       ⚠ EXPIRES WHEN: the bundle starts carrying an upstream rank (scripts/build-hist-admin1.mjs
+       writes the columns; OHM tags `wikidata`, from which a population or a prominence could be
+       joined). A rank the record STATES is a claim by the record and outranks anything derived
+       here, exactly as `ofm-admin1` prefers OpenMapTiles' own. */
+    /* Mean Earth radius, IUGG: 6,371.0088 km. The spherical-excess sum below is the same one
+       @turf/area and geojson-area use (Chamberlain & Duquette, JPL 2007) — chosen over a
+       degrees-squared box because a unit 60° from the equator would otherwise weigh twice what it
+       draws. It is an ORDERING, so the ellipsoid's 0.3% is far below anything that could reorder
+       two units. EXPIRES only if this stops being a ranking and starts being a reported figure. */
+    const R_KM = 6371.0088, D2R = Math.PI / 180;
+    function ringAreaKm2(ring) {
+      let s = 0;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++)
+        s += (ring[i][0] - ring[j][0]) * D2R * (2 + Math.sin(ring[j][1] * D2R) + Math.sin(ring[i][1] * D2R));
+      return Math.abs(s * R_KM * R_KM / 2);
+    }
+    /* first ring of a polygon is the outer one, the rest are holes — the shape the reader sees is
+       what is left, so an enclave does not inflate the unit that surrounds it. */
+    function areaKm2(geom) {
+      try {
+        const polys = (geom.type === 'Polygon') ? [geom.coordinates] : (geom.coordinates || []);
+        let a = 0;
+        for (const poly of polys) for (let k = 0; k < poly.length; k++) {
+          const r = ringAreaKm2(poly[k]); a += (k === 0) ? r : -r;
+        }
+        return a > 0 ? a : 0;
+      } catch (_) { return 0; }
+    }
+    const SORT_PROP = '_sort';
+    /* The measured spread is 0.5526 km² to 20,578,796 km² — 7.57 orders of magnitude (2026-09-12,
+       every row of both bundles) — so the key is the order of magnitude rather than the raw area: any
+       strictly decreasing function of area induces the same collision order, and this one stays a
+       small, readable number that a check can compare against the record.
+       The floor keeps `log10` finite for a degenerate ring; no unit measures anywhere near it. */
+    function sortKeyOf(km2) { return -Math.log10(Math.max(km2, 1e-6)); }
+
     /* ── the tier ──────────────────────────────────────────────────────────
        ⚠ ONE FACTORY, TWO INSTANCES, AND THE MEMOS LIVE INSIDE IT. Before #R564 the epoch index and
        the assembled-geometry memo were module-level singletons keyed by FEATURE INDEX — which is
@@ -349,6 +422,15 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         g = (polys.length === 1) ? { type: 'Polygon', coordinates: polys[0] } : { type: 'MultiPolygon', coordinates: polys };
         _geom.set(ix, g); return g;
       }
+      /* (#R707) …and the area of that geometry, memoised the same way and for the same reason: it
+         is a property of the UNIT, not of the instant, so a scrub across fifty epochs measures each
+         unit once. (Same closure as `_geom`, so index 12 cannot mean one province in one bundle and
+         another in the other — #R564.) */
+      const _area = new Map();
+      function areaOf(d, ix) {
+        let a = _area.get(ix); if (a !== undefined) return a;
+        a = areaKm2(geomOf(d, ix)); _area.set(ix, a); return a;
+      }
 
       function fcAt(d, y, m, dd) {
         const t = _ymd(y, m, dd), feats = [];
@@ -359,7 +441,10 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           /* Keep the source's precision beside the rendered feature. The normalized bounds
              select geometry; they must never masquerade as day-exact source dates. */
           const dates = d.dates && d.dates[f[10]];
-          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, ...(dates ? { dates: dates, dateSemantics: d.dateSemantics } : {}), _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11] } });
+          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, ...(dates ? { dates: dates, dateSemantics: d.dateSemantics } : {}), _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11],
+            /* (#R707) the collision order of the NAME — see sortKeyOf above. Stamped here, on the
+               feature, because the layer must not have to know which bundle it is drawing. */
+            [SORT_PROP]: sortKeyOf(areaOf(d, i)) } });
         }
         return { type: 'FeatureCollection', features: feats };
       }
@@ -539,7 +624,12 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
             layout: {
               visibility: 'none', 'symbol-placement': 'point', 'text-field': ['coalesce', ['get', 'NAME'], ['get', 'name'], ''],
               'text-font': FONT, 'text-size': SIZE, 'text-letter-spacing': 0.06, 'text-max-width': 8,
-              'text-padding': 4, 'text-optional': true
+              'text-padding': 4, 'text-optional': true,
+              /* (#R707) …and with `text-optional` the loser of a collision disappears without a
+                 word, so the order the placer tries them in is a decision about what the reader
+                 sees. `sortKeyOf` above is that decision; 0 is «one square kilometre», i.e. the
+                 bottom, for a feature that somehow arrived without a measured area. */
+              'symbol-sort-key': ['coalesce', ['get', SORT_PROP], 0]
             },
             paint: { 'text-color': COL, 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': 1.5, 'text-opacity': cfg.deep ? 0.8 : 1 }
           });

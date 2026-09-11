@@ -85,15 +85,23 @@ test('R241 ① the seventh surface is a line in the ONE gate, not a seventh inst
   assert.doesNotMatch(code(g), /acorn/, 'the gate still parses nothing itself');
 });
 
-test('R241 ① every language is complete on every surface, and the universe is the bigger one', () => {
+test('R241 ① every language is held to the policy, and the universe is the bigger one', async () => {
   const out = JSON.parse(execFileSync(process.execPath,
     [join(ROOT, 'scripts', 'i18n-audit.mjs'), '--json'], { encoding: 'utf8' }));
+  /* ⚠ (#R707) the bar is read from scripts/lang-policy.mjs, not kept as a second copy of it —
+     see the note on ① . Authored languages 100 %, carried languages at or above their floor. */
+  const { authoredLangs, carriedLangs } = await import('../scripts/lang-policy.mjs');
+  const AUTHORED = new Set(authoredLangs(ROOT));
+  const CARRIED = new Set(carriedLangs(ROOT));
+  const FLOOR = JSON.parse(readFileSync(join(ROOT, 'tests', 'i18n-coverage-floor.json'), 'utf8')).langs;
+  let seenA = 0, seenC = 0;
   for (const r of out.rows) {
-    assert.equal(r.keyed[0], r.keyed[1], `${r.code}: keyed table`);
-    if (r.inline) assert.equal(r.inline[0], r.inline[1], `${r.code}: inline table`);
-    if (r.positional) assert.equal(r.positional[0], r.positional[1], `${r.code}: positional arguments`);
-    assert.equal(r.pages[0], r.pages[1], `${r.code}: reading pages`);
+    const surfaces = ['keyed', 'inline', 'positional', 'pages'].filter((k) => r[k]);
+    if (AUTHORED.has(r.code)) { for (const k of surfaces) { assert.equal(r[k][0], r[k][1], `${r.code}: ${k} — IntMap authors this language`); seenA++; } }
+    else if (CARRIED.has(r.code)) { const f = FLOOR[r.code] || {}; for (const k of surfaces) { if (f[k] == null) continue; assert.ok(r[k][0] >= f[k], `${r.code}: ${k} fell to ${r[k][0]}, below the floor of ${f[k]}`); seenC++; } }
+    else assert.fail(`${r.code} is neither authored nor carried by scripts/lang-policy.mjs`);
   }
+  assert.ok(seenA > 0 && seenC > 0, 'one side of the policy measured nothing');
   assert.equal(out.positionalArrays, 0, 'no tuple is held as data');
   /* ⚠ AND THE COUNTS MAY NOT SHRINK. A round that "fixes" a gap by making the instrument see less
      is the failure this file exists to prevent — the inline universe was 2,136 before this round

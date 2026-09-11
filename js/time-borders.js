@@ -60,6 +60,10 @@ window.IntMapModules.timeBorders=function(HOST){
   const _LTB=window.IntMapLang.pick(()=>HOST.lang);
   /* (#R178) module state, not renderer state — it was map.__imtbClick (see data-layers.js) */
   let _clickWired=false;
+  /* (#R707) the popup for a shape upstream did not name — module state for the same reason, and it
+     is closed rather than left behind whenever the collection under it stops being what is drawn. */
+  let _blankPop=null;
+  function _blankClose(){ try{ if(_blankPop&&_blankPop.remove) _blankPop.remove(); }catch(_){} _blankPop=null; }
  const GE=()=>window.IntMapGeoEngine;   /* (#R178) the renderer, through the contract — never the raw handle */
 
   /* (#R170) "Is it safe to addSource/addLayer right now?" — the app-wide predicate declared in index.html.
@@ -721,14 +725,71 @@ window.IntMapModules.timeBorders=function(HOST){
        `imtb-src` itself is untouched: it is still the borders, the fill, the click target, the Compare
        paint and `resolveHist`'s geometry, and it is still the source that carries the attribution for
        both (its `imtb-line` is visible in exactly the moments the labels are). */
-    const _lblPt=(typeof WeakMap!=='undefined')?new WeakMap():null;   /* geometry object → its label anchor. `_csGeomOf` memoizes ONE geometry object per CShapes record, so a decade of travel pays for a country's pole once. */
+    const _lblParts=(typeof WeakMap!=='undefined')?new WeakMap():null;   /* geometry object → its parts, with their areas and their label anchors. `_csGeomOf` memoizes ONE geometry object per CShapes record, so a decade of travel pays for a country's poles once. */
     function _ringArea(r){ let s=0; for(let i=0,j=r.length-1;i<r.length;j=i++) s+=(r[j][0]-r[i][0])*(r[j][1]+r[i][1]); return Math.abs(s/2); }
-    /* the one polygon (outer ring + its holes) a country's name belongs on: the largest of its parts.
-       Honshū for Japan, the mainland for Chile — not whichever ring the data happens to list first. */
-    function _mainPoly(geom){ try{ const t=geom&&geom.type, cs=geom&&geom.coordinates; if(!cs) return null;
-      const polys=(t==='Polygon')?[cs]:(t==='MultiPolygon')?cs:null; if(!polys) return null;
-      let best=null,bestA=-1; for(const p of polys){ const r=p&&p[0]; if(!r||r.length<4) continue; const a=_ringArea(r); if(a>bestA){ bestA=a; best=p; } }
-      return best?{poly:best,area:bestA}:null; }catch(_){ return null; } }
+    /* EVERY polygon (outer ring + its holes) a geometry is made of, largest first, so that
+       `list[0]` is the one #R520 named: Honshū for Japan, the mainland for Chile — not whichever
+       ring the data happens to list first. ⚠ That order is what chooses the ANCHOR EVERY EXISTING
+       LABEL ALREADY HAS, so it is the old `_mainPoly`'s comparison unchanged: square degrees,
+       first of equals (`sort` is stable, and the parts arrive in the record's own order). */
+    function _partsOf(geom){ try{ if(_lblParts&&_lblParts.has(geom)) return _lblParts.get(geom); }catch(_){}
+      let out=[];
+      try{ const t=geom&&geom.type, cs=geom&&geom.coordinates;
+        const polys=(t==='Polygon')?[cs]:(t==='MultiPolygon')?cs:null;
+        if(polys) for(const p of polys){ const r=p&&p[0]; if(!r||r.length<4) continue; out.push({poly:p,area:_ringArea(r)}); }
+        out.sort((a,b)=>b.area-a.area);
+      }catch(_){ out=[]; }
+      try{ if(_lblParts) _lblParts.set(geom,out); }catch(_){}
+      return out; }
+    /* ══ ⚠ (#R707) THE AREA A PART COVERS ON THE PLANET, WHICH SQUARE DEGREES ARE NOT ══════════
+       One square degree is 12,364 km² at the equator and 1,078 at 80°N, so in `_ringArea`'s units
+       Ellesmere Island and the Deccan are the same size. The rule below has to tell an Arctic
+       island of a country that already has its name from a territory on another continent that
+       does not, so it asks the sphere. Spherical excess, with dλ wrapped into (-180,180] so a ring
+       crossing the antimeridian is measured rather than wrapped around the world.
+       ⚠ The OUTER ring only, exactly as `_ringArea` does: a hole can only make a part look bigger
+       than it is, never smaller, and no hole in this record is anywhere near the floor below. */
+    const _R_KM=6371.0088, _D2R=Math.PI/180, _KM2_PER_DEG2=(_R_KM*Math.PI/180)*(_R_KM*Math.PI/180);
+    function _ringKm2(r){ let s=0;
+      for(let i=0,j=r.length-1;i<r.length;j=i++){ let dl=r[i][0]-r[j][0];
+        if(dl>180) dl-=360; else if(dl<-180) dl+=360;
+        s+=dl*_D2R*(2+Math.sin(r[j][1]*_D2R)+Math.sin(r[i][1]*_D2R)); }
+      return Math.abs(s/2)*_R_KM*_R_KM; }
+    function _partKm2(part){ if(part.km==null) part.km=_ringKm2(part.poly[0]); return part.km; }
+    /* where the territory IS — the 3-D mean of its outline, put back on the sphere. ⚠ NOT the
+       label anchor: `_pole` maximizes distance-to-edge, so on a concave body it lands nowhere near
+       the middle (Canada's mainland anchor is at 119°W, its centre of outline at 90°W — 1,500 km
+       apart), and the rule below asks where the two TERRITORIES are, not where their ink went.
+       The 3-D mean needs no antimeridian case: a ring either side of 180° averages correctly. */
+    function _partMid(part){ if(part.mid===undefined){ let x=0,y=0,z=0,n=0;
+        for(const p of part.poly[0]){ const l=p[0]*_D2R,q=p[1]*_D2R,c=Math.cos(q); x+=c*Math.cos(l); y+=c*Math.sin(l); z+=Math.sin(q); n++; }
+        part.mid=n?[Math.atan2(y/n,x/n)/_D2R,Math.atan2(z/n,Math.hypot(x/n,y/n))/_D2R]:null; }
+      return part.mid; }
+    function _gcKm(a,b){ const p1=a[1]*_D2R,p2=b[1]*_D2R,dl=(b[0]-a[0])*_D2R,dp=p2-p1;
+      const sp=Math.sin(dp/2), sl=Math.sin(dl/2);
+      return 2*_R_KM*Math.asin(Math.min(1,Math.sqrt(sp*sp+Math.cos(p1)*Math.cos(p2)*sl*sl))); }
+    /* the radius of the disc of the same area — how wide the territory itself is, in the unit the
+       distance between two territories’ centres is measured in. */
+    const _discKm=(km2)=>Math.sqrt(km2/Math.PI);
+    /* ══ ⚠⚠⚠ (#R707) THE ONE NUMBER IN THE RULE BELOW, AND WHAT IT WAS MEASURED AGAINST ══════
+       OBSERVATION (2026-09-12, over the three shipped bundles — data/cshapes.js 1890-2015 by five,
+       data/hist-borders.js 1690-1885 by five, and every sheet of data/hist-eras.js: 120 sheets,
+       20,037 labels, 123,844 parts that are not their polity's largest):
+         · every territory whose NAMELESSNESS is the defect is larger than this. The smallest is
+           French Algeria (410,285 km², 1,304 km from the centre of France); above it sit Danish
+           Greenland (404,671 km² / 2,201 km, 1800), Ottoman Tripolitania (883,277 / 2,091, 1900),
+           Alaska (1,380,982 / 5,087, 1960) and Russian America (1,652,360 / 4,702, 1800).
+         · every island the #R520 report was about is smaller, so none of them is renamed:
+           Hokkaidō 78,061 km², Ireland 83,362, Luzon 94,455, Newfoundland 109,970, the South
+           Island 113,916, Sulawesi 170,184.
+       Any floor between 170,184 and 410,285 km² draws the same line for those two classes; this
+       one sits inside that band. Its measured cost: +436 points on 20,033 (+2.2%), at most 7 added
+       to any one sheet, and no polity in any bundle reaching five labels.
+       EXPIRES when a bundle starts carrying territories BETWEEN those two sizes that belong to the
+       other class — which is why the gate re-measures the two classes rather than this number
+       (tests/r707-chronos-labelplacement-checks.test.mjs).
+       CANONICAL: here. Nothing else in the app asks this question. */
+    const _LBL_MIN_KM2=250000;
     /* signed distance from a point to a polygon's edges — positive inside, negative outside (the ray
        cast and the nearest edge in one pass). This is the function the pole below maximizes. */
     function _segD2(x,y,a,b){ let px=a[0],py=a[1],dx=b[0]-px,dy=b[1]-py;
@@ -765,20 +826,31 @@ window.IntMapModules.timeBorders=function(HOST){
        DIFFERENT polygon, so the answer is tested against the real one and recomputed exactly when it
        fell off the land: the label may be approximate, it may not be in the sea. */
     function _thinRing(r,n){ if(r.length<=n) return r; const o=[], st=r.length/n; for(let i=0;i<n;i++) o.push(r[Math.floor(i*st)]); o.push(r[0]); return o; }
-    function _anchor(geom,mp){ try{ if(_lblPt&&_lblPt.has(geom)) return _lblPt.get(geom); }catch(_){}
+    /* (#R707) ONE PART's anchor, memoized on the part — which is the same thing it was memoized on
+       before, since a one-part geometry has exactly one part. `fbGeom` is what the degenerate-ring
+       sampler falls back to: the whole geometry for the part that already carried the name (so that
+       path is bit-for-bit what it was), the part alone for any added one. */
+    function _anchor(part,fbGeom){ if(part.pt) return part.pt;
       let pt=null;
-      try{ if(mp){ const lean=mp.poly.map(r=>_thinRing(r,600));
+      try{ const lean=part.poly.map(r=>_thinRing(r,600));
         pt=_pole(lean);
-        if(!pt||_polyD(pt[0],pt[1],mp.poly)<=0) pt=_pole(mp.poly);
-        if(pt&&_polyD(pt[0],pt[1],mp.poly)<=0) pt=null; } }catch(_){ pt=null; }
-      if(!pt){ try{ const p=_interiorPts(geom,1); pt=(p&&p[0])||null; }catch(_){} }   /* degenerate / self-intersecting ring → the sampler that already answers this question elsewhere */
-      try{ if(_lblPt&&pt) _lblPt.set(geom,pt); }catch(_){}
+        if(!pt||_polyD(pt[0],pt[1],part.poly)<=0) pt=_pole(part.poly);
+        if(pt&&_polyD(pt[0],pt[1],part.poly)<=0) pt=null; }catch(_){ pt=null; }
+      if(!pt){ try{ const p=_interiorPts(fbGeom||{type:'Polygon',coordinates:part.poly},1); pt=(p&&p[0])||null; }catch(_){} }   /* degenerate / self-intersecting ring → the sampler that already answers this question elsewhere */
+      if(pt) part.pt=pt;
       return pt; }
-    /* ONE Point per era identity. The grouping key is `NAME`, which is the identity the rest of this
+    /* ══ ⚠⚠⚠ ONE Point per era identity — AND (#R707) ONE MORE WHERE THAT IDENTITY IS SOMEWHERE ELSE
+       The grouping key is `NAME`, which is the identity the rest of this
        module already resolves by (`featureAt`, `geomFor`, `resolveHist`, `tagSame`), so a country whose
        snapshot lists it as several features still gets one name — and the point carries that feature's
        OWN properties, so `_same` (which of the two layers draws it), `_locName` / `_modName` (what it
        says) and `NAME` (what a click opens) are exactly what they were.
+       ⚠ #R520 stopped at ONE point, and that is one CHANCE: `text-allow-overlap` is off, so a name
+       whose single candidate loses the collision is not moved, it is GONE — and a record that puts
+       a polity on two continents drew the second one with nothing on it. The parts that clear the
+       two tests below (`_LBL_MIN_KM2`, and standing further from every kept part than the two are
+       wide) get a point of their own; nothing else does, and the FIRST of them is bit-for-bit the
+       point that was already there.
        ⚠ `_corrected` features are skipped: those are the ones `_mergeTibet` / `_mergeEastPrussia`
        renamed into their successor with `_modName:''`, i.e. whose label is deliberately empty already.
        ⚠⚠⚠ THE PROPERTIES ARE COPIED, AND THAT `Object.assign` IS LOAD-BEARING. Handing the point the
@@ -799,14 +871,53 @@ window.IntMapModules.timeBorders=function(HOST){
         for(const f of ((fc&&fc.features)||[])){ const p=f.properties||{};
           if(p._corrected||!f.geometry) continue;
           const key=String((p.NAME||p.name)||'').trim(); if(!key) continue;
-          const mp=_mainPoly(f.geometry); if(!mp) continue;
-          const cur=by.get(key); if(!cur||mp.area>cur.area) by.set(key,{f:f,mp:mp,area:mp.area}); }
-        by.forEach(v=>{ const pt=_anchor(v.f.geometry,v.mp); if(!pt) return;
-          feats.push({type:'Feature',geometry:{type:'Point',coordinates:[pt[0],pt[1]]},properties:Object.assign({},v.f.properties)}); });
+          const ps=_partsOf(f.geometry); if(!ps.length) continue;
+          /* ⚠ (#R707) EVERY part of EVERY feature of the name, not the largest feature's largest
+             part. A record is free to list one polity as several features (Denmark and Greenland
+             in the OHM window are two), and the old grouping dropped all but one of them before
+             the question of where the name goes was even asked. */
+          const cur=by.get(key)||[]; for(const part of ps) cur.push({part:part,f:f,geom:f.geometry}); by.set(key,cur); }
+        by.forEach(list=>{
+          /* largest first, across the features — so `list[0]` is the part the old code picked
+             (the winning feature's main polygon IS the largest part of the name) and its anchor,
+             the one label that exists today, does not move by a single degree. */
+          list.sort((a,b)=>b.part.area-a.part.area);
+          const own=list[0].f, kept=[];
+          for(let i=0;i<list.length;i++){ const it=list[i];
+            if(i>0){
+              /* the sphere is only ever asked about a part that could clear the floor. A square
+                 degree is at most _KM2_PER_DEG2 (at the equator), the list is sorted by square
+                 degrees, so once that bound falls short nothing below it can pass either. */
+              if(it.part.area*_KM2_PER_DEG2<_LBL_MIN_KM2) break;
+              if(_partKm2(it.part)<_LBL_MIN_KM2) continue;
+              /* …and two names must not read as one — which is NOT a second threshold, it is the
+                 two territories measured against themselves. Their centres have to stand further
+                 apart than the territories are wide: the sum of the radii of the discs of the same
+                 area. Baffin Island (512,641 km², 1,099 km from the centre of the Canadian
+                 mainland) fails on 404+1,606 km of radius, which is why «Canada» stays one label;
+                 Alaska passes on 663+1,586 against 5,087 km. MEASURED over the three bundles: with
+                 this rule «Canada», «Japan», «Philippines», «New Zealand», «United Kingdom» and
+                 «French Polynesia (France)» gain no second label on any sheet of any of them.
+                 ⚠ IT IS ASKED BEFORE THE POLE IS SEARCHED FOR. A rejected candidate must not pay
+                 for an answer that is thrown away: Canada alone offers three islands over the floor
+                 on every CShapes sheet, and `_pole` is the expensive half of this file. */
+              const mid=_partMid(it.part);
+              if(!mid||!kept.every(k=>{ const km=_partMid(k); return km&&_gcKm(mid,km)>_discKm(it.part.km)+_discKm(_partKm2(k)); })) continue;
+            }
+            const pt=_anchor(it.part,i===0?it.geom:null); if(!pt) continue;
+            kept.push(it.part);
+            /* every point of a name carries the SAME feature's properties — the one the single
+               label carried before — so `_same` still decides which of the two layers draws it,
+               `_locName`/`_modName` still say the same words, and `_clk` opens the same country
+               from whichever of them was tapped. The copy is #R520's: see the note above. */
+            feats.push({type:'Feature',geometry:{type:'Point',coordinates:[pt[0],pt[1]]},properties:Object.assign({},own.properties)}); } });
       }catch(_){}
       return {type:'FeatureCollection',features:feats}; }
     /* the names follow the borders on every push — one state, two sources. */
-    function _pushLbl(fc){ try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
+    /* (#R707) …and the unnamed-shape popup goes with them. It states what upstream says about ONE
+       shape of the collection that was on the source; a new collection (another year, or the same
+       year re-localized) makes that statement describe something that is no longer drawn. */
+    function _pushLbl(fc){ _blankClose(); try{ if(GE().layers.hasSource('imtb-lbl-src')) GE().layers.setSourceData('imtb-lbl-src',_labelFC(fc)); }catch(_){} }
     function ensure(){ try{ if(!_imCanDraw()) return false;
       if(!GE().layers.hasSource('imtb-src')) GE().layers.addSource('imtb-src',{type:'geojson',data:{type:'FeatureCollection',features:[]},attribution:'CShapes 2.0 (Schvitz et al.) · OpenHistoricalMap (CC0) · historical-basemaps (aourednik, GPL-3.0)'});
       /* ══ (#R531) THE STROKED OUTLINE IS NOT THE POLYGON ═══════════════════════════════════════
@@ -942,6 +1053,61 @@ window.IntMapModules.timeBorders=function(HOST){
            ("国名でも地名ラベルでもない場所をクリックしたら、強制的に国名をクリックした判定になる"). This mirrors the
            modern map, where clicking bare land opens nothing. The name labels (imtb-lbl / imtb-lbl2) remain clickable. */
         ['imtb-lbl','imtb-lbl2'].forEach(id=>{ GE().events.onLayer('click',id,_clk); GE().events.onLayer('mouseenter',id,()=>{ try{ GE().render.canvas().style.cursor='pointer'; }catch(_){} }); GE().events.onLayer('mouseleave',id,()=>{ try{ GE().render.canvas().style.cursor=''; }catch(_){} }); });
+        /* (#R668/#R707) ONE reading of the tap tolerance for this file. Both users below are the
+           same question — how much slop a tap needs — and it is decided by the POINTER, not by the
+           viewport width: `isMobile()` is a 768 px media query, so an iPhone held sideways (844 px)
+           was answered «mouse» on the device where the finger is the only pointer.
+           `_imTouchPrimary()` (js/app-body.js:166) asks the pointer. */
+        const _tapPad=()=>{ let pad=6; try{ if(typeof window._imTouchPrimary==='function'?window._imTouchPrimary():(HOST.isMobile&&HOST.isMobile())) pad=15; }catch(_){} return pad; };
+        /* ══ ⚠⚠⚠ (#R707) THE SHAPE UPSTREAM DID NOT NAME IS STILL A SHAPE A READER MAY ASK ABOUT ══
+           #R682 put「この枚の何件が無名か」into the layer row's sentence — and that sentence is a
+           `title` attribute, so reaching it takes a HOVER, which a finger cannot produce. In the
+           deep sheets the unnamed geometry is the MAJORITY of what is drawn (world_bc123000:
+           18,345 deg² unnamed against 3,210 named), so over most of the map the only statement
+           about what the reader was looking at was unreachable on the device most readers hold.
+           `imtb-fill` has been the click target since #R94k and has never had a handler — the note
+           beside `_clk` above says so in its own words («If one is ever bound again, bind
+           `imtb-fill`»). This is that binding, and it is for the UNNAMED shapes ONLY.
+           ⚠ A NAMED SHAPE IS UNCHANGED, AND THE TWO REASONS ARE BOTH HERE. `imtb-lbl`/`imtb-lbl2`
+           are bound ABOVE, so a click on an era name has already run `_openEra` and CLAIMED the DOM
+           event before this handler is reached — the first line steps aside on that. And a click
+           landing INSIDE a named polygon returns without opening anything, which is #R122's rule
+           kept exactly as it was (「国名でも地名ラベルでもない場所をクリックしたら、強制的に国名を
+           クリックした判定になる」). Nothing about the country card changes.
+           ⚠ AND IT YIELDS TO EVERY OTHER OWNER OF THE TAP, IN BOTH OF #R210's SHAPES. This fill
+           covers most of the globe in a deep sheet, so «is something else under this point» must not
+           be a hand-written list of layer ids that a later round has to remember to extend: it is
+           asked of the engine's own registry of click-wired layers (`events.clickLayers()`, the same
+           question js/map-ui.js `_ownedByOther` asks), at the same tolerance as the padded tap
+           below, minus this layer's own four. The owners that listen at MAP level instead and hit-
+           test themselves (live aircraft, satellites, the seismic pickers, the tsunami read-out, the
+           terrain brush) appear in no such registry and are heard ONE MICROTASK LATER through
+           `clickClaimed` — the first moment at which the whole synchronous dispatch has run. */
+        const _ERA_LAYERS=['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'];
+        const _ownedElsewhere=(pt)=>{ try{
+          if(!pt||!GE().hasRenderer()) return false;
+          const all=(GE().events.clickLayers?GE().events.clickLayers():[])
+            .filter(id=>_ERA_LAYERS.indexOf(id)<0)
+            .filter(id=>{ try{ return !!GE().layers.get(id)&&GE().layers.getLayout(id,'visibility')!=='none'; }catch(_){ return false; } });
+          if(!all.length) return false;
+          const pad=_tapPad();
+          const hit=GE().coords.queryRenderedFeatures([[pt.x-pad,pt.y-pad],[pt.x+pad,pt.y+pad]],{layers:all});
+          return !!(hit&&hit.length);
+        }catch(_){ return false; } };
+        const _named=(f)=>{ const p=(f&&f.properties)||{}; return !!String(p.NAME||p.name||'').trim(); };
+        GE().events.onLayer('click','imtb-fill',(e)=>{ try{
+          if(!active) return;
+          if(GE().events.clickClaimed&&GE().events.clickClaimed(e)) return;
+          if(window.IntMapIsolate&&window.IntMapIsolate.active&&window.IntMapIsolate.active()) return;
+          const fs=(e&&e.features)||[]; if(!fs.length) return;
+          if(fs.some(_named)) return;
+          if(_ownedElsewhere(e.point)) return;
+          const f=fs[0], ll=e.lngLat;
+          Promise.resolve().then(()=>{ try{
+            if(GE().events.clickClaimed&&GE().events.clickClaimed(e)) return;
+            if(_openBlank(f,ll)){ try{ GE().events.claimClick(e); }catch(_){} }
+          }catch(_){} });
+        }catch(_){} });
         /* == (#R309) THE PADDED TAP - THE OTHER HALF OF "the same as today's labels" ==============
            js/map-ui.js has given every modern place label a padded hit-box since #R23 (6 px on a
            mouse, 15 px on a finger) because "a finger tap almost never lands on the exact label
@@ -957,11 +1123,9 @@ window.IntMapModules.timeBorders=function(HOST){
           if(!ids.length||!e.point) return;
           if(GE().coords.queryRenderedFeatures(e.point,{layers:ids}).length) return;
           /* (#R668) the third copy of the same tap tolerance, and the same correction as
-             js/map-ui.js's and js/map-readout.js's: how much slop a tap needs is decided by the
-             POINTER, not by the viewport width. `isMobile()` is a 768 px media query, so an iPhone
-             held sideways was answered «mouse» and got the 6 px box on a device where the finger is
-             the only pointer. `_imTouchPrimary()` (js/app-body.js:166) asks the pointer. */
-          let pad=6; try{ if(typeof window._imTouchPrimary==='function'?window._imTouchPrimary():(HOST.isMobile&&HOST.isMobile())) pad=15; }catch(_){}
+             js/map-ui.js's and js/map-readout.js's — (#R707) now read from `_tapPad()` above, so
+             this file asks the pointer in ONE place rather than two that can drift. */
+          const pad=_tapPad();
           const near=GE().coords.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ids});
           if(near.length) _openEra(near[0],e.lngLat,e);
         }catch(_){} });
@@ -1377,6 +1541,7 @@ window.IntMapModules.timeBorders=function(HOST){
       else whenStyleReady().then(()=>{ if(active&&seq===mySeq) apply(fc); }); }
     function clear(){ const was=active; active=false; shownY=null; shownCorr=false; shownYear=null; shownFC=null;
       _writeNote();   /* (#R682) the row must never state a date the map has left */
+      _blankClose();  /* (#R707) …and no popup may keep describing a shape the map has stopped drawing */
       /* (#R101) empty the era polygons + hide the near-invisible imtb-fill click-target so a returned-to-Now map has
          NO stale full-country interactive fill left over the present map (which would swallow place-label clicks —
          the "現在でも地名ラベルをクリックできない" half of the report). */
@@ -2046,6 +2211,47 @@ window.IntMapModules.timeBorders=function(HOST){
         'Le mot de la source pour ceci : ' + t, '이에 대한 상류의 표현: ' + t
       ))+(precision?' · '+precision:'');
     }catch(_){ return ''; } }
+    /* ══ ⚠⚠⚠ (#R707) WHAT CAN BE SAID ABOUT A SHAPE UPSTREAM DID NOT NAME ══════════════════════
+       The same question `typeNote` answers, asked of the half of the record that has no name to
+       hang an answer on — and it is the bigger half where a reader is most likely to be looking:
+       in world_bc123000 the unnamed geometry covers 18,345 deg² against the named 3,210 (measured
+       on data/hist-eras.js).
+       ⚠ THE HEADING STATES THE ABSENCE; IT DOES NOT FILL IT. Upstream gave this shape no name, so
+       neither does IntMap — CONSTITUTION「偽物・ハリボテ禁止」. Everything under the heading is
+       upstream's own: `typeNote` (its `TYPE` verbatim, and its `BORDERPRECISION` classification)
+       and the two relations it may state about a shape, `SUBJECTO` and `PARTOF`. Both spellings
+       are read for the reason `coverage()` reads both — the bundle folds them to upper case, the
+       remote fallback hands them over as upstream wrote them.
+       ⚠ AND «NOTHING WAS SAID» IS SAID, rather than left as an empty card. #R699's shape: a reader
+       who gets a blank popup cannot tell «upstream states nothing» from «nothing was asked».
+       ⚠ Public for the same reason `typeNote` is — it is a real question about the record, of the
+       kind `featureAt` / `geomFor` already answer, not an export made so a test can reach in
+       (#R175 ③). The popup below is the only caller in js/, and it owns placement, not wording.
+       ⚠ NEW TEXT IS en + jp (CONSTITUTION §7, 2026-09-11; scripts/lang-policy.mjs `authoredLangs`).
+       The nine-language tuples already in this file are frozen, not withdrawn, and `typeNote`'s
+       nine reach this card unchanged. */
+    function blankNote(f){ const p=(f&&f.properties)||{}, lines=[];
+      const tn=typeNote(f); if(tn) lines.push(tn);
+      const sj=String(p.SUBJECTO||p.subjecto||'').trim();
+      if(sj) lines.push(_LTB.arr(LA('Upstream states this is subject to: '+sj,'上流は、これが次に従属すると述べている: '+sj)));
+      const pa=String(p.PARTOF||p.partof||'').trim();
+      if(pa) lines.push(_LTB.arr(LA('Upstream states this is part of: '+pa,'上流は、これが次の一部だと述べている: '+pa)));
+      if(!lines.length) lines.push(_LTB.arr(LA(
+        'Upstream states nothing further about this shape — not what it is, and not how precisely its boundary is drawn.',
+        '上流はこの形について、これ以上何も述べていない——それが何であるかも、境界がどれだけ正確に引かれているかも。')));
+      return { title:_LTB.arr(LA('Upstream draws this shape without giving it a name','この形を、上流は名前を与えずに描いている')),
+               lines:lines }; }
+    /* the card itself. `plc-popup` is the app's popup skin (js/map-ui.js owns the CSS), so this
+       looks like every other popup on the map without a style of its own. */
+    function _openBlank(f,lngLat){ try{
+      const esc=(s)=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+      const n=blankNote(f);
+      const body=n.lines.map(t=>'<div style="font-size:10.5px;color:var(--text-muted);line-height:1.45;margin-top:5px;">'+esc(t)+'</div>').join('');
+      const html='<div style="min-width:148px;"><div style="font-weight:700;font-size:13px;color:var(--text-main);padding-right:30px;line-height:1.35;">'+esc(n.title)+'</div>'+body+'</div>';
+      _blankClose();
+      _blankPop=GE().ui.attach(GE().ui.popup({closeButton:true,closeOnClick:true,maxWidth:'268px',className:'plc-popup'}).setLngLat(lngLat).setHTML(html));
+      return !!_blankPop;
+    }catch(_){ return false; } }
     /* ⚠ THE ROW IS WRITTEN FROM HERE, NOT FROM THE APP SHELL. `window._applyBorders` (js/app-body.js)
        is the visibility commander for this layer, and putting the sentence there would put the
        module's own claim in the shell — the split tests/r530-checks.test.mjs ⑤ measures for the
@@ -2062,7 +2268,7 @@ window.IntMapModules.timeBorders=function(HOST){
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
        here so tests/r686-histeras-names-checks.test.mjs can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, blankNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 };

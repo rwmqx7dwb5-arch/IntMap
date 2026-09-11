@@ -12,10 +12,34 @@ function fn(name, source = admin) {
   for (; depth; end++) { if (source[end] === '{') depth++; if (source[end] === '}') depth--; }
   return source.slice(start, end);
 }
+/* the module's own constants, READ rather than retyped — a value this harness invents is a value
+   that can disagree with the shipped one on the first edit (#R536). */
+function constOf(name, source = admin) {
+  let k = -1;
+  for (let p = source.indexOf(name); p >= 0; p = source.indexOf(name, p + 1)) {
+    const before = p === 0 ? ' ' : source[p - 1];
+    if (/[A-Za-z0-9_$]/.test(before)) continue;
+    let q = p + name.length;
+    while (q < source.length && source[q] === ' ') q++;
+    if (source[q] !== '=' || source[q + 1] === '=') continue;
+    k = q + 1; break;
+  }
+  assert.ok(k >= 0, 'js/time-admin1.js: no declaration of ' + name);
+  let e = k;
+  while (e < source.length && source[e] !== ',' && source[e] !== ';') e++;
+  return source.slice(k, e).trim();
+}
+
 function runtime() {
-  const ctx = vm.createContext({ window: { IntMapHistScale: { FLOOR: -123000 } }, cfg: { key: 'a1' }, nameOf: f => f[0], geomOf: () => null });
-  vm.runInContext('const _ymd=(y,m,d)=>y*10000+m*100+d; let _bnd=null; ' +
-    ['bounds', 'epoch', 'fcAt'].map(n => fn(n)).join('\n'), ctx);
+  const ctx = vm.createContext({ window: { IntMapHistScale: { FLOOR: -123000 } }, cfg: { key: 'a1' }, nameOf: f => f[0], geomOf: () => null, Math, Map });
+  /* ⚠ `fcAt` stamps the collision order of the name on every feature, so the harness that
+     evaluates it has to carry the three names that ordering is made of. They are LIFTED from the
+     shipped module, not stubbed: a hand-written `sortKeyOf` is free to disagree with the real one
+     and this file would still be green (#R621 — a fixture more capable than the real thing cannot
+     see the real thing’s defect). `geomOf` stays stubbed to null because the SUBJECT here is the
+     clock, and `areaKm2` answers 0 for a geometry that is not there. */
+  vm.runInContext('const _ymd=(y,m,d)=>y*10000+m*100+d; let _bnd=null; const _area=new Map(); const SORT_PROP=' + constOf('SORT_PROP') + '; '
+    + ['areaKm2', 'sortKeyOf', 'areaOf', 'bounds', 'epoch', 'fcAt'].map(n => fn(n)).join('\n'), ctx);
   return ctx;
 }
 const row = (name, start, end) => [name, 4, ...start, ...end, [], {}, 123];
