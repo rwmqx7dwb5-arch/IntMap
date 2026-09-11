@@ -693,7 +693,7 @@ window.IntMapCesiumLayers=(function(){
                   material=new Cesium.PolylineDashMaterialProperty({color:c4,dashLength:total*w,dashPattern:pattern});
                 }
               }
-              for(const ln of lines(g)){
+              for(const ln of lines(f.lineGeometry||g)){
                 const pos=deg(ln); if(pos.length<4) continue;
                 add({ id:def.id+'/l'+ents.values.length, properties:f.properties,
                   polyline:{ positions:Cesium.Cartesian3.fromDegreesArray(pos), width:w, material,
