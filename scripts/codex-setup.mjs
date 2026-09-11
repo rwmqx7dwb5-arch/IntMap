@@ -114,7 +114,10 @@ function setBareKey(text, key, value) {
 }
 
 function setTableKey(text, table, key, valueLiteral) {
-  const head = new RegExp(`^\\[${table.replace(/[.[\]]/g, '\\$&')}\\]\\s*$`, 'm');
+  /* ⚠ escape EVERY regex metacharacter, «\» included — a partial sanitiser is the one CodeQL
+     calls js/incomplete-sanitization, and «escapes the characters I happen to use today» is the
+     same shape as a hand-written list of cases (.agents/rules/no-ad-hoc-hardcoding.md). */
+  const head = new RegExp(`^\\[${table.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\]\\s*$`, 'm');
   const line = `${key} = ${valueLiteral}`;
   if (!head.test(text)) return { text: `${text.replace(/\s*$/, '')}\n\n[${table}]\n${line}\n`, changed: true, was: null };
   const start = text.search(head);
