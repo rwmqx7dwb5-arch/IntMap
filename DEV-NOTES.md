@@ -562,6 +562,27 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 **数字は主張ではない。** 針は主張の綴り（`INDEX_CEILING` / `24.4 * 1024`）を探す——#R699 が
 「主題＋区切り＋数」で拾っていたのと同じ形の、逆向きの失敗。
 
+### 6. ⚠⚠⚠ ついでに測ったら、この文書が 3 年ぶんの「手作業」を誤って載せていた
+
+利用者の「Codex でも完全に同じ使用感に。取れる手段はすべて考慮して」を受けて、
+`docs/AGENT-SETUP.md` §7 の「手作業が残るもの」4 行を**実測し直した**。2 行が現状と違っていた。
+
+| 行 | 書いてあったこと | 実測 |
+|---|---|---|
+| hook の trust | 「設定ファイルからは**与えられない**」 | **誤り。** 実体は `~/.codex/config.toml` の `[hooks.state."<key>"] trusted_hash` で、アプリ自身が `config/batchWrite`（`filePath:null` ＝グローバル）で書く。判定は `trustedHash === currentHash` の完全一致 |
+| 原本の信頼 | 「初回に 1 回、手で」 | **もう手作業ではない。** `[projects.'…\IntMap'] trust_level = "trusted"` が実在し、`scripts/worktree.mjs` が作業場に同じ形を書いている |
+
+⚠ **それでも hook の承認は残る。理由が入れ替わっただけである**——書けないからではなく、
+`key` と `currentHash` を**アプリが計算する**ので、リポジトリのファイルからは導けない。
+`.codex/hooks.json` を編集すれば hash は変わるから、**編集のたびに 1 回**。
+実測時点で `hooks.state` は **0 件**＝IntMap の hook はまだ一度も trust されていなかった
+（＝Codex 側はこのラウンドまで、起動時に**何も受け取っていなかった**）。
+
+⚠ trust を丸ごと外す経路は 2 つ実在するが、**デスクトップアプリはどちらも使わない**
+（CLI の `--dangerously-bypass-hook-trust` と app-server の `bypass_hook_trust`。バンドルに綴り 0 件）。
+全自動にできるのは管理層（`%ProgramData%\OpenAI\Codex\requirements.toml` の managed hook）だけで、
+**hook の正本がリポジトリの外へ出る**——`.agents/` を 1 つの正本にした #R699 と逆向きなので採らない。
+
 ## R701 — **門の針が「日本語と英語」でできていたので、出荷している 9 言語のうち 7 言語は最初から外にいた**
 
 〈`scripts/doc-facts.mjs` の `histb-count` 規則を、出荷している 9 言語すべてに届かせる〉
