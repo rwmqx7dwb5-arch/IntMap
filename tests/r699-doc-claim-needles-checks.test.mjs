@@ -250,16 +250,34 @@ test('⑪ every capture group the alerts rule takes is compared against the code
   const src = rd('scripts/doc-facts.mjs');
   const block = src.slice(src.indexOf('let alertClaims = 0;'), src.indexOf("ok('alerts'"));
   assert.ok(block.length > 0, 'the alerts sweep moved — this test is pointing at nothing');
-  let loops = 0;
-  /* each 「for (const m of body.matchAll(/…/g)) { … }」: read the pattern, then the loop body */
-  for (const m of block.matchAll(/body\.matchAll\(\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\])+)\/[gimsuy]*\)\)\s*\{/g)) {
-    loops++;
-    const groups = (m[1].match(/\((?!\?)/g) || []).length;
-    const body = block.slice(m.index + m[0].length, block.indexOf('\n      }', m.index));
+  /* ⚠ Read each regex literal with a LINEAR SCAN, not with a regex.
+     The first version of this matched 「/…/」 with a nested alternation
+     (an escape, or a character class, or an ordinary character — repeated), and CodeQL was right
+     to call it: that shape backtracks catastrophically on input it cannot finish matching, and
+     the input here is a source file that will be edited by people who have never read this test.
+     A scanner that walks the characters once cannot do that, and it is easier to read besides. */
+  const literals = [];
+  const OPEN = 'body.matchAll(/';
+  for (let at = block.indexOf(OPEN); at >= 0; at = block.indexOf(OPEN, at + 1)) {
+    let i = at + OPEN.length, inClass = false, end = -1;
+    for (; i < block.length; i++) {
+      const c = block[i];
+      if (c === '\\') { i++; continue; }            /* an escape covers the next character */
+      if (c === '[') inClass = true;
+      else if (c === ']') inClass = false;
+      else if (c === '/' && !inClass) { end = i; break; }
+      else if (c === '\n') break;                    /* a literal does not span lines */
+    }
+    if (end > 0) literals.push({ src: block.slice(at + OPEN.length, end), after: end });
+  }
+  const loops = literals.length;
+  for (const lit of literals) {
+    const groups = (lit.src.match(/\((?!\?)/g) || []).length;
+    const body = block.slice(lit.after, block.indexOf('\n      }', lit.after));
     const read = new Set([...body.matchAll(/m\[(\d+)\]/g)].map((x) => Number(x[1])));
     for (let g = 1; g <= groups; g++) {
       assert.ok(read.has(g),
-        `capture group ${g} of /${m[1]}/ is taken and never read — the old README needle did`
+        `capture group ${g} of /${lit.src}/ is taken and never read — the old README needle did`
         + ' exactly this with the feed count, so any number of feeds would have passed');
     }
   }
