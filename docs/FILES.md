@@ -351,7 +351,7 @@ atlas-gloss.js                    Atlas — 回答文の語句を選択→右ク
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  125 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  138 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
@@ -857,6 +857,11 @@ scripts/
                                   照合する**唯一の実装**（#R694）。`doc-facts.mjs` の `edge-shared`
                                   と `tests/r694-shared-roster-facts-checks` が**同じ関数**を使う
                                   ——規則を書き写すと規則が2つになる
+  doc-claims.mjs                  散文の中の数量が**何を数えているか**を、名詞修飾連鎖を左に歩いて
+                                  答える（#R699）。`doc-facts.mjs` はこれに訊く。以前は主題と数を
+                                  **手書きの区切り文字の集合**で結んでおり、その集合が規則の見える
+                                  範囲を決めていた——集合の外の文は誤りとも正しいとも判定されず、
+                                  **見られなかった**（`docs/README.md` の「16 本」が緑だった）
   build-maddison.mjs              `data/maddison.json` を MPD2020 から 1850 まで**延長**する（1900 以降は一字も書き換えない）
   build-culture.mjs               Factbook の「Religions」欄 → `data/religion.json`
   build-language.mjs              Factbook の「Languages」欄＋Glottolog → `data/language.json` /
@@ -1038,7 +1043,7 @@ scripts/
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 6 本 / deep 59 本。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 7 本 / deep 105 本。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

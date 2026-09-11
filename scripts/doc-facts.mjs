@@ -28,7 +28,8 @@ import { gunzipSync } from 'node:zlib';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
-import { sharedRoster, auditRoster } from './shared-roster.mjs';
+import { sharedRoster, auditRoster, inventories } from './shared-roster.mjs';
+import { claims, CHECKED } from './doc-claims.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
@@ -140,6 +141,9 @@ for (const must of ['.agents/skills/intmap-round/SKILL.md', '.agents/rules/execu
   if (!BODY.has(must)) fail('scan', `${must} was not scanned — the instruction documents are inside the sweep now`);
 }
 if (AGENT_DOCS.length < 3) fail('scan', `only ${AGENT_DOCS.length} instruction document(s) under .agents/ were read`);
+/* (#R699) …and it says so on a green run, so that the roster `tests/r274-checks` ① derives can
+   see it at all — see the note on `sql-path` below. */
+ok('scan', `${PROSE_DOCS.length} prose + ${AGENT_DOCS.length} instruction documents reached`);
 
 const ARCH = BODY.get('Architecture.md') || '';
 /* (#R280) §3 (the file ledger) and most of §7 (the layer implementation) moved to documents of
@@ -306,52 +310,49 @@ const FILES = BODY.get('docs/FILES.md') || '';
     eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17,
     eighteen: 18, nineteen: 19, twenty: 20,
   };
-  /* An inventory claim BINDS the number to the noun with a particle or punctuation:
-       「… は 12 本」  「— **12本**」  「を10本デプロイする」  「（9本。§6.2）」  "eight Edge Functions"
-     ⚠ BARE JUXTAPOSITION IS NOT ONE, and the difference is the whole reason this is not a
-       looser pattern: `docs/NEWS-EVENTS.md` §12.1 opens "**Edge Function 1 本**（…）", which
-       says ONE FUNCTION DOES THIS, not that one exists. A needle that read that as an
-       inventory claim would report the roster as wrong on a sentence that is correct.
-     ⚠ `の` and `が` are deliberately NOT separators — 「Edge Function の 1 本」 is partitive
-       ("one OF the functions"), the same trap in the other direction. A future document that
-       phrases the count that way goes unchecked here; the roster check above still holds the
-       names, and that residual is written down in `docs/TESTING.md` rather than papered over. */
-  const SEP = '(?:は|を|—|–|-|:|：|（|\\()';
-  const JA = new RegExp('Edge Functions?[ \\t]*\\**[ \\t]*' + SEP + '[ \\t]*\\**[ \\t]*(?:全|約)?[ \\t]*(\\d+)[ \\t]*(?:本|函数)', 'g');
-  /* ⚠ the lookbehind is load-bearing: without it the §6.2 HEADING —「### 6.2 Edge Functions …」—
-     reads as a claim that there are two, and the 正本 reports itself as wrong. A section number,
-     a `§` and a `#R` round number are addresses, not counts. (Measured: this fired before the
-     documents below were touched at all.) */
-  const EN = /(?<![\d.§#])\**\b([A-Za-z]+|\d+)\b\**[ \t]+Edge Functions?\b/g;
-
-  const stated = (body) => {
-    const out = [];
-    for (const m of body.matchAll(JA)) out.push({ text: m[0].trim(), n: Number(m[1]) });
-    for (const m of body.matchAll(EN)) {
-      const raw = m[1].toLowerCase();
-      const n = /^\d+$/.test(raw) ? Number(raw) : WORD[raw];
-      if (n != null) out.push({ text: m[0].trim(), n });
-    }
-    return out;
-  };
-
+  /* ⚠ (#R699) THIS USED TO BE A HAND-WRITTEN SET OF SEPARATORS —
+       `Edge Functions?` · one of 「は を — – - : ： （ (」 · a number · 「本」 —
+     and that set, not the documents, decided what the rule could see. MEASURED: `docs/README.md`
+     said 「Edge Function の名簿（**16 本**の名前…）」 while there were seventeen, and the gate was
+     green, because 「の」 was deliberately kept out of the set (it makes 「… の 1 本」 partitive).
+     Putting 16 back today still leaves the old needle green — proved in
+     `tests/r699-doc-claim-needles-checks.test.mjs`. Sentences outside the set were not judged
+     wrong and not judged right: they were never looked at, and the report said 「7 stated counts,
+     all 17」 about the ones that happened to fit. Same shape as the 260-character window #R694
+     took out of the `_shared/` gate — a property of the NEEDLE deciding the rule's coverage.
+     `scripts/doc-claims.mjs` asks the question the other way round: it finds every quantity
+     carrying one of the subject's counters and WALKS THE NOUN-MODIFIER CHAIN LEFT to see what the
+     quantity is counting. Partitive and bare-juxtaposition come back classified rather than
+     unseen, so the two sentences that motivated the old set are still excluded — by name, and
+     counted in the report. MEASURED over the same 44 documents: 7 claims → 9, zero false ones. */
+  const SUBJECT = { noun: 'Edge Functions?', units: ['本', '函数'], words: WORD };
   let checked = 0, wrong = 0;
+  const tally = {};
   eachDoc((f, body) => {
-    for (const c of stated(body)) {
+    const { items } = claims(body, SUBJECT);
+    for (const c of items) {
+      tally[c.kind] = (tally[c.kind] || 0) + 1;
+      if (!CHECKED.includes(c.kind)) continue;
       checked++;
       if (c.n !== dir.length) {
         wrong++;
-        fail('edge-count', `${f} says «${c.text}» — there are ${dir.length} Edge Functions`);
+        fail('edge-count', `${f} says «${c.text}» (${c.why}) — there are ${dir.length} Edge Functions`);
       }
     }
   });
 
   /* the 正本 must actually carry the number: a heading reworded out of the shape above would
      otherwise take the fact with it and nothing would notice (§6.2, per docs/README.md) */
-  if (!stated(ARCH).length) {
+  if (!claims(ARCH, SUBJECT).items.some((c) => CHECKED.includes(c.kind))) {
     fail('edge-count', 'Architecture.md no longer states how many Edge Functions there are — §6.2 is the 正本 for that number');
   } else if (!wrong) {
-    ok('edge-count', `${checked} stated counts across the documents, all ${dir.length}`);
+    /* ⚠ THE CLASSES THAT WERE NOT CHECKED ARE PRINTED TOO. A rule that reports only what it
+       agreed with cannot tell「nothing disagreed」from「nothing was looked at」, and 17 of the
+       rules in this file still say only the former (docs/TESTING.md lists them). */
+    const aside = Object.entries(tally).filter(([k]) => !CHECKED.includes(k) && k !== 'other')
+      .map(([k, v]) => `${v} ${k}`).join(', ');
+    ok('edge-count', `${checked} stated counts across the documents, all ${dir.length}`
+      + ` (of ${tally.other || 0} other quantities${aside ? '; ' + aside : ''})`);
   }
 
   /* ── 2b. a document that ENUMERATES `_shared/` names all of it ──────────────────────────── */
@@ -375,14 +376,25 @@ const FILES = BODY.get('docs/FILES.md') || '';
      same function rather than restating the rule (.agents/rules/no-ad-hoc-hardcoding.md §2.3). */
   {
     const shared = sharedRoster(ROOT);
+    /* ⚠ (#R699) THE GREEN LINE HERE READ THE ROSTER OUT WITHOUT SAYING HOW MANY DOCUMENTS IT HAD
+       AUDITED, so a run that found no inventory at all printed the same eleven names as a run
+       that checked three. That is the half of #R694 that was left standing: #R694 removed the
+       260-character window that decided how many omissions were tolerated, but the sentence it
+       criticised — a gate 「naming all eleven」 while proving nothing about any document — could
+       still be printed by a sweep that audited nothing. Count the inventories, print the count,
+       and fail on zero: three documents enumerate this directory and a session reads them to
+       find out what it may import. */
+    let audited = 0;
     eachDoc((f, body) => {
+      audited += inventories(body).length;
       for (const p of auditRoster(body, shared)) {
         if (p.kind === 'unreadable') fail('edge-shared', `${f} opens a parenthesis next to _shared/ that never closes — its inventory cannot be read`);
         if (p.kind === 'omits') fail('edge-shared', `${f} lists the contents of _shared/ but omits ${p.names.join(', ')}`);
         if (p.kind === 'extra') fail('edge-shared', `${f} lists ${p.names.join(', ')} in _shared/, which is not there`);
       }
     });
-    ok('edge-shared', `_shared/ holds ${shared.length}: ${shared.join(', ')}`);
+    if (!audited) fail('edge-shared', 'no document enumerates _shared/ any more — docs/FILES.md, AGENTS.md and docs/SECURITY-ARCHITECTURE.md each tell a session what it may import from there');
+    else ok('edge-shared', `${audited} document inventory(ies) audited against the ${shared.length} in _shared/: ${shared.join(', ')}`);
   }
 }
 
@@ -396,13 +408,30 @@ const FILES = BODY.get('docs/FILES.md') || '';
   ok('migrations', `${n} migration files`);
 
   /* a named SQL file the restore procedure tells the reader to run must actually exist */
+  let seen = 0;
   eachDoc((f, s) => {
     for (const hit of s.matchAll(/`(supabase\/[A-Za-z0-9_./-]+\.sql)`/g)) {
       const p = hit[1];
+      seen++;
       if (!p.includes('*') && !has(p)) fail('sql-path', `${f} tells the reader to run ${p}, which does not exist`);
     }
   });
+  /* ⚠ (#R699) THIS RULE HAD NO `ok()`, AND THAT PUT IT OUTSIDE THE TEST THAT WATCHES THE RULES.
+     `tests/r274-checks` ① derives the roster of rules from this file's own `ok('…')` calls —
+     #R403 replaced a hand-typed list of twelve with that derivation for exactly the right
+     reason — but a rule that can only FAIL never appears in it, so「a rule that does not run
+     cannot fail」was never asserted for this one or for `scan`. Deriving the universe from one
+     of the two sides is the same shape as the separator set in rule 2a: the answer is bounded
+     by where you looked. The test now takes `fail(` ∪ `ok(`. */
+  ok('sql-path', `${seen} sql path(s) named in the documents all exist`);
 }
+
+/* ⚠ (#R699) FROM HERE DOWN, EVERY `ok()` STATES HOW BIG THE THING IT SWEPT WAS. A rule that
+   reports 「no document says X」 without saying how many documents it read cannot tell 「nothing
+   has drifted」 apart from 「nothing was looked at」: an empty universe passes in silence, and the
+   green line reads exactly the same either way. That is the defect #R694 found in `edge-shared`,
+   which read 「_shared/ holds 11」 aloud while passing a document that wrote nine. The counters
+   below only count — no rule's verdict changes — and a sweep that reaches nothing now fails. */
 
 /* ═══ 4. what is actually served ══════════════════════════════════════════════════════════ */
 {
@@ -416,7 +445,8 @@ const FILES = BODY.get('docs/FILES.md') || '';
 
   /* nothing may still describe the repository tree itself as the thing that is served */
   const ROOT_SERVE = ['OneDrive 直配信', 'リポジトリ直配信'];
-  eachDoc((f, s) => { for (const n of ROOT_SERVE) if (s.includes(n)) fail('serving', `${f} still says the site is served straight from the repository (${n})`); });
+  let servedSwept = 0;
+  eachDoc((f, s) => { servedSwept++; for (const n of ROOT_SERVE) if (s.includes(n)) fail('serving', `${f} still says the site is served straight from the repository (${n})`); });
 
   /* ⚠ A LIST OF EXACT SUBSTRINGS ONLY CATCHES THE WORDING SOMEBODY ALREADY THOUGHT OF. The two
      needles above missed the sentence that was actually sitting in CONSTITUTION.md §1 —
@@ -429,8 +459,9 @@ const FILES = BODY.get('docs/FILES.md') || '';
     if (m) fail('serving', `${f} says production is served from OneDrive («${m[0]}») — Pages serves dist/, and OneDrive is the master working directory`);
   });
 
+  if (!servedSwept) fail('serving', 'no document was swept for the "served from the repository" claims — the universe is empty');
   if (!/dist\//.test(ARCH)) fail('serving', 'Architecture.md never mentions dist/, which is what GitHub Pages actually serves');
-  else ok('serving', 'dist/ is gitignored, built by deploy.yml, and named in Architecture.md');
+  else if (servedSwept) ok('serving', `dist/ is gitignored, built by deploy.yml, and named in Architecture.md · ${servedSwept} documents swept for ${ROOT_SERVE.length + 1} "served from" claims`);
 }
 
 /* ═══ 5. the production deploy is ACTIVE — no document may still call it dormant ═══════════ */
@@ -445,42 +476,55 @@ const FILES = BODY.get('docs/FILES.md') || '';
 
   /* the word that used to be wrong, assembled so this file is not itself a match */
   const DORMANT = 'DOR' + 'MANT';
+  let deploySwept = 0;
   eachDoc((f, s) => {
     if (f === 'docs/RELEASE.md') return;
+    deploySwept++;
     const bad = s.split('\n').filter((l) => (l.includes(DORMANT) || l.includes('休眠')) && /deploy\.yml|Pages/.test(l));
     if (bad.length) fail('deploy', `${f} still calls the Pages deploy ${DORMANT} while it is enabled`);
     if (/push で branch 自動公開/.test(s)) fail('deploy', `${f} still describes the old "publish from a branch" default`);
   });
-  if (releaseSaysActive) ok('deploy', 'the gated Pages deploy is described as active');
+  if (!deploySwept) fail('deploy', 'no document was swept for the old "dormant deploy" wording — the universe is empty');
+  else if (releaseSaysActive) ok('deploy', `the gated Pages deploy is described as active · ${deploySwept} documents swept (docs/RELEASE.md owns the fact)`);
 }
 
 /* ═══ 6. the build stamp file, spelled correctly ══════════════════════════════════════════ */
 {
   const NEEDLE = '-' + 'build-info.json';         // assembled: this file must not be a match itself
+  let stampDocs = 0, stampLines = 0;
   eachDoc((f, s) => {
-    for (const line of s.split('\n')) {
+    stampDocs++;
+    const lines = s.split('\n');
+    stampLines += lines.length;
+    for (const line of lines) {
       if (!line.includes(NEEDLE)) continue;
       if (/[A-Za-z0-9_]-build-info\.json/.test(line)) continue;   // e.g. post-build-info.json, a different name
       fail('build-info', `${f} spells the stamp file with a leading hyphen: ${line.trim().slice(0, 90)}`);
     }
   });
+  if (!stampLines) fail('build-info', 'not one line was read while looking for the hyphenated spelling — the universe is empty');
   if (!/\/build-info\.json/.test(BODY.get('docs/RELEASE.md') || '')) fail('build-info', 'docs/RELEASE.md no longer says how to check which build is live');
-  else ok('build-info', 'the published stamp is named consistently');
+  else if (stampLines) ok('build-info', `the published stamp is named consistently · ${stampLines} lines across ${stampDocs} documents read`);
 }
 
 /* ═══ 7. the USB backup procedure has ONE owner ═══════════════════════════════════════════ */
 {
   const FREQ = [/1\s*日\s*1\s*回/, /1日に1回/, /一日一回/, /毎日\s*1\s*回/];
+  let usbDocs = 0, usbLines = 0;
   eachDoc((f, s) => {
     if (f === 'AGENTS.md') return;               // the owner may say whatever it likes
+    usbDocs++;
     if (!/USB/.test(s)) return;
     for (const line of s.split('\n')) {
       if (!/USB/.test(line)) continue;
+      usbLines++;
       if (FREQ.some((re) => re.test(line))) fail('usb', `${f} states a backup frequency; the owner of that fact is AGENTS.md §11`);
     }
   });
+  /* ⚠ zero USB lines outside the owner is a legitimate state — zero DOCUMENTS read is not. */
+  if (!usbDocs) fail('usb', 'no document other than the owner was swept for a backup frequency — the universe is empty');
   if (!/USB/.test(BODY.get('AGENTS.md') || '')) fail('usb', 'AGENTS.md no longer describes the USB backup at all');
-  else ok('usb', 'the backup frequency is stated in AGENTS.md only');
+  else if (usbDocs) ok('usb', `the backup frequency is stated in AGENTS.md only · ${usbLines} USB line(s) in ${usbDocs} other documents checked against ${FREQ.length} spellings`);
 }
 
 /* ═══ 8. the languages ════════════════════════════════════════════════════════════════════ */
@@ -493,8 +537,18 @@ const FILES = BODY.get('docs/FILES.md') || '';
 
   if (codes.join() !== generated.join()) fail('languages', `js/locales/ holds [${codes}] but _langs.js was generated for [${generated}] — run scripts/i18n-langs.mjs`);
 
-  const archN = (ARCH.match(/対応 UI 言語は(\d+)つ/) || [])[1];
-  if (archN && Number(archN) !== codes.length) fail('languages', `Architecture says ${archN} UI languages; js/locales/ holds ${codes.length}`);
+  /* ⚠ (#R699) THIS NEEDLE MATCHED NOTHING IN THE WHOLE REPOSITORY, AND THEREFORE PASSED.
+     It required 「対応 UI 言語は」 with half-width spaces around 「UI」; `Architecture.md` §2 writes
+     「**対応UI言語は9つ**」 without them, so the match was null, `if (archN && …)` stepped over it,
+     and the rule that exists to hold the language count to `js/locales/` had been checking NOTHING.
+     MEASURED: zero matches across all 44 documents. Spacing around a Latin word inside Japanese is
+     a typographic choice a writer makes sentence by sentence, so it cannot be part of the pattern.
+     ⚠ AND THE SILENT SKIP IS THE OTHER HALF. 「the 正本 does not state it」 and 「the 正本 states it
+     correctly」 came out of this rule as the same green line. §2 owns this number: if the sentence
+     is gone, that is a failure, the way `edge-count` already demands it of Architecture.md §6.2. */
+  const archN = (ARCH.match(/対応\s*UI\s*言語は\s*\**\s*(\d+)\s*つ/) || [])[1];
+  if (!archN) fail('languages', 'Architecture.md §2 no longer states how many UI languages there are — it is the 正本 for that number');
+  else if (Number(archN) !== codes.length) fail('languages', `Architecture says ${archN} UI languages; js/locales/ holds ${codes.length}`);
 
   /* the README names them; count the bullets in its Languages section */
   const readme = BODY.get('README.md') || '';
@@ -540,7 +594,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
       }
     });
   }
-  if (!problems.some((p) => p.startsWith('languages'))) ok('languages', `${codes.length} languages (${codes.join(', ')}), beta: ${beta.length ? beta.join(', ') : 'none'}`);
+  if (!problems.some((p) => p.startsWith('languages'))) ok('languages', `${codes.length} languages (${codes.join(', ')}), beta: ${beta.length ? beta.join(', ') : 'none'} · Architecture §2 says ${archN}, README lists ${bullets}`);
 }
 
 /* ═══ 9. the weather-warning feeds ════════════════════════════════════════════════════════ */
@@ -558,13 +612,46 @@ const FILES = BODY.get('docs/FILES.md') || '';
   if (!national.length || !ma.length) {
     fail('alerts', 'could not read FEEDS / MA out of js/world-packs.js — this rule needs rewriting');
   } else {
-    const archFeeds = (LAYERS.match(/自前フィードは\s*\*\*(\d+)本\*\*/) || [])[1];
-    if (archFeeds && Number(archFeeds) !== feedCount) fail('alerts', `docs/MAP-LAYERS.md says ${archFeeds} feeds; the code has ${feedCount}`);
-    const archMA = (LAYERS.match(/MeteoAlarm が EUMETNET の残り\s*(\d+)\s*か国/) || [])[1];
-    if (archMA && Number(archMA) !== ma.length) fail('alerts', `docs/MAP-LAYERS.md says MeteoAlarm carries ${archMA} countries; the code has ${ma.length}`);
-    const readme = BODY.get('README.md') || '';
-    const rmN = (readme.match(/(\d+)\s+countries over (\w+) feeds/) || [])[1];
-    if (rmN && Number(rmN) !== countries) fail('alerts', `README says ${rmN} countries; the code has ${countries}`);
+    /* ⚠ (#R699) THE COUNTER NOUN IS NOT ALWAYS ENOUGH TO NAME THE SUBJECT, AND THIS RULE IS
+       WHERE THAT WAS MEASURED. Elsewhere in this file the fix for an over-anchored needle is to
+       bind the number to what it counts — 「N 能力」, 「N 都市」, 「N リング」 — because those
+       counters belong to one subject and nothing else in the repository is measured in them.
+       「か国」 and 「フィード」 are not like that: sweeping every one of them turned FIFTY-NINE
+       true sentences into failures in a single run — the radiation layer's countries, the
+       internet-health layer's countries, the news layer's feeds, every one correct and none of
+       them about severe-weather alerts. A generic counter needs the subject reached as well,
+       which is what `scripts/doc-claims.mjs` does for a noun that HAS one; these numbers are
+       spoken of as 「自前フィード」 and 「MeteoAlarm の N か国」 in some places and as bare
+       numbers in others, so what is bound here is the phrase that names the subject.
+       The residual — `PRODUCT.md` and `docs/MAP-LAYERS.md` each restate these counts in prose
+       that names no subject beside the number — is written down in docs/TESTING.md. */
+    let alertClaims = 0;
+    const claim = (file, text, got, want, what) => {
+      if (got == null || Number.isNaN(got)) return;
+      alertClaims++;
+      if (got !== want) fail('alerts', `${file} says «${text.trim()}» — the code has ${want} ${what}`);
+    };
+    const WORDN = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
+    const numOf = (raw) => (/^\d+$/.test(raw) ? Number(raw) : WORDN[String(raw).toLowerCase()]);
+    eachDoc((file, body) => {
+      /* 「自前フィードは **13本**」「自前 **13 フィード**」— 「自前」 is what makes it ours */
+      for (const m of body.matchAll(/自前[ \t]*(?:フィードは)?[ \t]*\**[ \t]*(\d+)[ \t]*\**[ \t]*(?:本|フィード)/g)) {
+        claim(file, m[0], Number(m[1]), feedCount, 'feeds');
+      }
+      /* MeteoAlarm's share, wherever it is stated rather than only in the one sentence */
+      for (const m of body.matchAll(/MeteoAlarm[^。\n]{0,30}?\**(\d+)\**[ \t]*(?:か国|ヶ国|カ国)/g)) {
+        claim(file, m[0], Number(m[1]), ma.length, 'countries behind MeteoAlarm');
+      }
+      /* ⚠ AND THE ENGLISH NEEDLE CAPTURED A NUMBER IT NEVER COMPARED: the old
+         `(\d+) countries over (\w+) feeds` took both halves and read only `[1]`, so
+         「47 countries over **thirteen** feeds」 would have stayed green at ANY feed count.
+         Seeing a claim and judging it are two different things — this round's whole subject,
+         in one unused capture group. */
+      for (const m of body.matchAll(/(\d+)\s+countries over\s+\**([A-Za-z]+|\d+)\**\s+feeds/g)) {
+        claim(file, m[0], Number(m[1]), countries, 'countries');
+        claim(file, m[0], numOf(m[2]), feedCount, 'feeds');
+      }
+    });
     /* ⚠ THE REGISTER IS NOT IN `FEEDS`, BECAUSE ITS COUNTRIES ARE ADDED AT RUN TIME from the WMO's own
        CAP-status table — so the number is a MEASUREMENT and does not belong here. What this rule can
        check, and must, is that the code and the spec agree about whether it exists at all: a source
@@ -577,7 +664,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
         ? 'the code wires the WMO CAP register but docs/MAP-LAYERS.md does not describe it'
         : 'docs/MAP-LAYERS.md describes the WMO CAP register but the code does not wire it');
     }
-    ok('alerts', `${feedCount} feeds · ${national.length} national services + MeteoAlarm's ${ma.length} · ${countries} countries`
+    ok('alerts', `${alertClaims} stated number(s) across the documents — ${feedCount} feeds · ${national.length} national services + MeteoAlarm's ${ma.length} · ${countries} countries`
       + (codeSwic ? ' + the WMO CAP register' : ''));
   }
 }
@@ -590,9 +677,11 @@ const FILES = BODY.get('docs/FILES.md') || '';
     ['全アプリJSがインライン', 'a document still says every application script is inline'],
     ['single inline no-build file', 'a document still says the app is a single inline no-build file'],
   ];
-  eachDoc((f, s) => { for (const [needle, why] of SHAPE) if (s.includes(needle)) fail('app-shape', `${f}: ${why}`); });
+  let shapeSwept = 0;
+  eachDoc((f, s) => { shapeSwept++; for (const [needle, why] of SHAPE) if (s.includes(needle)) fail('app-shape', `${f}: ${why}`); });
+  if (!shapeSwept) fail('app-shape', 'no document was swept for the no-build claims — the universe is empty');
   if (!/Vite/.test(ARCH)) fail('app-shape', 'Architecture.md never mentions Vite, which is how the site is built');
-  else ok('app-shape', 'the documents describe a built app');
+  else if (shapeSwept) ok('app-shape', `the documents describe a built app · ${shapeSwept} documents × ${SHAPE.length} no-build claims swept`);
 }
 
 /* ═══ 11. where the publishable key lives ═════════════════════════════════════════════════ */
@@ -601,27 +690,36 @@ const FILES = BODY.get('docs/FILES.md') || '';
   const inVendor = /SUPABASE_ANON_KEY/.test(rd('src/vendor.js'));
   if (inIndex) fail('anon-key', 'index.html now defines SUPABASE_ANON_KEY again — the documents say src/vendor.js');
   if (!inVendor) fail('anon-key', 'src/vendor.js no longer defines SUPABASE_ANON_KEY — this rule needs rewriting');
+  let keyDocs = 0, keyLines = 0;
   eachDoc((f, s) => {
+    keyDocs++;
     for (const line of s.split('\n')) {
       if (!/SUPABASE_ANON_KEY|publishable/.test(line)) continue;
+      keyLines++;
       if (/`index\.html`/.test(line) && !/admin\.html/.test(line.replace(/`index\.html`/, ''))) {
         fail('anon-key', `${f} says the publishable key is in index.html: ${line.trim().slice(0, 90)}`);
       }
     }
   });
-  if (!inIndex && inVendor) ok('anon-key', 'the publishable key lives in src/vendor.js and admin.html');
+  /* ⚠ a document that never names the key is the normal case; a sweep that read no document is not. */
+  if (!keyDocs) fail('anon-key', 'no document was swept for a claim about where the publishable key lives — the universe is empty');
+  else if (!inIndex && inVendor) ok('anon-key', `the publishable key lives in src/vendor.js and admin.html · ${keyLines} line(s) naming the key across ${keyDocs} documents`);
 }
 
 /* ═══ 12. Architecture.md is the CURRENT spec — no round references in it ═════════════════ */
 {
   const hits = [];
-  ARCH.split('\n').forEach((l, i) => {
+  const archLines = ARCH.split('\n');
+  archLines.forEach((l, i) => {
     /* a round citation, not a file name: `tests/r271-checks.test.mjs` is lower-case and is a path */
     const m = l.match(/(?:#R\d{1,3}|(?:^|[^A-Za-z0-9_/])R\d{1,3}(?![\d)A-Za-z]))/);
     if (m) hits.push(`line ${i + 1}: ${l.trim().slice(0, 80)}`);
   });
   if (hits.length) fail('arch-rounds', `Architecture.md carries ${hits.length} round reference(s) — the history belongs in DEV-NOTES.md\n      ` + hits.slice(0, 5).join('\n      '));
-  else ok('arch-rounds', 'Architecture.md carries no round references');
+  /* ⚠ zero hits IS the healthy state here, so the number that proves the sweep ran is the
+     number of lines it read, not the number of findings. */
+  else if (!ARCH.trim()) fail('arch-rounds', 'Architecture.md is empty — this rule read nothing');
+  else ok('arch-rounds', `${archLines.length} lines of Architecture.md read, none carrying a round reference`);
 }
 
 /* ═══ 13. Cesium is a SECOND ENGINE, not an abandoned one ═════════════════════════════════
@@ -656,22 +754,32 @@ const FILES = BODY.get('docs/FILES.md') || '';
   const noTab = !/id="btn-monitors"/.test(rd('index.html'));
   const withdrawn = /FEATURE_WITHDRAWN/.test(rd('js/atlas-console.js'));
   if (noTab && withdrawn) {
-    for (const f of ['Architecture.md', 'docs/AREA-MONITORS.md', 'PRODUCT.md']) {
+    const NAMED = ['Architecture.md', 'docs/AREA-MONITORS.md', 'PRODUCT.md'];
+    let namedRead = 0, monitorDocs = 0, tabLines = 0;
+    for (const f of NAMED) {
       const body = BODY.get(f) || '';
+      if (body) namedRead++;
       if (/Monitor/i.test(body) && !/撤去|WITHDRAWN|withdrawn/.test(body)) {
         fail('monitors', f + ' describes Area Monitors without saying the feature has no entry point');
       }
     }
     eachDoc((f, s) => {
+      monitorDocs++;
       for (const line of s.split('\n')) {
-        if (/Monitors\s*タブ/.test(line) && !/撤去|無い|ない|WITHDRAWN/.test(line)) {
+        if (!/Monitors\s*タブ/.test(line)) continue;
+        tabLines++;
+        if (!/撤去|無い|ない|WITHDRAWN/.test(line)) {
           fail('monitors', f + ' still describes a Monitors tab as present: ' + line.trim().slice(0, 90));
         }
       }
     });
-    if (!problems.some((x) => x.startsWith('monitors'))) ok('monitors', 'the feature is withdrawn in the code and the documents say so');
+    if (!namedRead) fail('monitors', 'none of the ' + NAMED.length + ' documents that describe Area Monitors could be read — the universe is empty');
+    if (!problems.some((x) => x.startsWith('monitors'))) {
+      ok('monitors', 'the feature is withdrawn in the code and the documents say so · ' + namedRead + '/' + NAMED.length
+        + ' named documents read · ' + monitorDocs + ' documents swept, ' + tabLines + ' Monitors-tab line(s) checked');
+    }
   } else {
-    ok('monitors', 'the Monitors entry point is back — this rule needs rewriting');
+    ok('monitors', 'the Monitors entry point is back — this rule needs rewriting (0 of ' + DOCS.length + ' documents swept)');
   }
 }
 
@@ -686,6 +794,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
   if (!m) fail('news-path', 'USE_SERVER_NEWS is gone from js/app-body.js — this rule needs rewriting');
   else {
     const serverPath = m[1] === 'true';
+    let policyClaims = 0, newsDocs = 0;
     const legal = has('js/legal-text.js') ? rd('js/legal-text.js') : '';
     const CLAIMS_SERVER = [
       'news is fetched and geolocated server-side',
@@ -693,6 +802,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
       'ニュースはサーバー側で取得・地点解析のうえ保存',
       'ブラウザは解析済み結果を読み込みます',
     ];
+    policyClaims += CLAIMS_SERVER.length;
     const hit = CLAIMS_SERVER.filter((c) => legal.includes(c));
     if (!serverPath && hit.length) {
       fail('news-path', 'the privacy policy says news is analysed and stored server-side ("' + hit[0].slice(0, 40) + '…") while USE_SERVER_NEWS is false');
@@ -707,6 +817,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
          生きている。⇒ 免除語に出来事側の目印を足す。足さないと、正しい文章がこの門に
          引っかかり、直し方は「事実を薄める」しか無くなる。 */
       eachDoc((f, s) => {
+        newsDocs++;
         for (const line of s.split('\n')) {
           if (!/地点解析/.test(line)) continue;
           if (/サーバー側でAI事前解析|サーバー側で事前にAI解析/.test(line) &&
@@ -735,6 +846,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
         'This event database is not shown anywhere in the app yet.',
         'なおこの出来事データベースは、現在アプリの画面には表示していません。',
       ];
+      policyClaims += CLAIMS_EVENTS.length + CLAIMS_HIDDEN.length;
       const shown = CLAIMS_EVENTS.filter((c) => legal2.includes(c));
       const hidden = CLAIMS_HIDDEN.filter((c) => legal2.includes(c));
       if (eventPath && !shown.length) {
@@ -767,6 +879,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
       'Placing those stored articles uses the same non-AI deterministic engine',
       '地点の判定は同じ非AIの決定論エンジンで行います',
     ];
+    policyClaims += CLAIMS_AI_GEO.length + CLAIMS_NON_AI_GEO.length;
     const saysAi = CLAIMS_AI_GEO.filter((c) => legal3.includes(c));
     const saysNonAi = CLAIMS_NON_AI_GEO.filter((c) => legal3.includes(c));
     if (aiLocates && saysAi.length < CLAIMS_AI_GEO.length) {
@@ -779,7 +892,11 @@ const FILES = BODY.get('docs/FILES.md') || '';
     if (!aiLocates && saysAi.length) {
       fail('news-path', 'the privacy policy says the AI places stored news, but news-ingest has no `locate` stage in ORDER');
     }
-    if (!problems.some((x) => x.startsWith('news-path'))) ok('news-path', 'USE_SERVER_NEWS=' + m[1] + ' · NEWS_EVENT_MODE=' + (em ? em[1] : '?') + ' and every document — the privacy policy included — describes those paths');
+    /* ⚠ the document sweep above only runs on the false branch, so 0 documents is a legitimate
+       state here — the number that must never be zero is the policy sentences that were matched. */
+    if (!policyClaims) fail('news-path', 'not one privacy-policy sentence was checked against the switches — the universe is empty');
+    if (!problems.some((x) => x.startsWith('news-path'))) ok('news-path', 'USE_SERVER_NEWS=' + m[1] + ' · NEWS_EVENT_MODE=' + (em ? em[1] : '?') + ' and every document — the privacy policy included — describes those paths · '
+      + policyClaims + ' policy sentence(s) checked in js/legal-text.js · ' + newsDocs + ' documents swept');
   }
 }
 
@@ -859,8 +976,10 @@ const FILES = BODY.get('docs/FILES.md') || '';
     const text = rd('js/legal-text.js');
     if (!/プライバシーポリシー/.test(text) || !/Privacy Policy/.test(text)) fail('legal', 'js/legal-text.js no longer holds both language versions');
     if (/<p><b>/.test(rd('js/legal.js'))) fail('legal', 'js/legal.js carries policy prose again — it must read js/legal-text.js');
+    let pagesRead = 0, tagsChecked = 0, assetsChecked = 0;
     for (const page of ['privacy.html', 'terms.html']) {
       if (!has(page)) { fail('legal', page + ' is gone — the policy needs a URL of its own'); continue; }
+      pagesRead++;
       /* ⚠ MENTIONING IT IS NOT LOADING IT. Both pages explain the arrangement in a comment that
          names these exact paths, so a bare substring test stays green after the <script> tag is
          deleted. What separates the two is the ATTRIBUTE — quotes included — which appears in the
@@ -868,6 +987,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
          doing this with a regex produced three CodeQL findings in a row, each correct. */
       const pageSrc = rd(page);
       for (const dep of ['js/legal-text.js', 'js/legal-page.js']) {
+        tagsChecked++;
         if (!pageSrc.includes('src="./' + dep + '"')) {
           fail('legal', page + ' does not LOAD ' + dep + ' as src="./' + dep + '" (a mention in a comment is not a script tag)');
         }
@@ -876,6 +996,7 @@ const FILES = BODY.get('docs/FILES.md') || '';
     }
     const vite = rd('vite.config.js');
     for (const asset of ['privacy.html', 'terms.html', 'js/legal-text.js', 'js/legal-page.js']) {
+      assetsChecked++;
       if (!vite.includes("'" + asset + "'")) fail('legal', 'vite.config.js STATIC_ASSETS does not copy ' + asset + ' — it would be absent from dist/');
     }
     /* ⚠ (#R547) THE PHOTOGRAPH LEAVES THE DEVICE ON ONE PATH, AND THE POLICY MUST SAY SO ON EXACTLY
@@ -899,7 +1020,10 @@ const FILES = BODY.get('docs/FILES.md') || '';
     if (sends && !/privacyNote\(/.test(rd('js/photo-geo.js'))) {
       fail('legal', 'js/photo-geo.js states where the photograph went without asking IntMapPhotoVision.privacyNote() — the claim must be derived from the trace, not written next to it');
     }
-    if (!problems.some((x) => x.startsWith('legal'))) ok('legal', 'one copy of the policy, read by the modal and by both public pages, all shipped' + (sends ? ' · the photo-location send is disclosed in both languages and the panel derives its own claim' : ''));
+    const disclosureChecked = [saysJa, saysEn].length;
+    if (!pagesRead) fail('legal', 'neither public policy page could be read — the universe is empty');
+    if (!problems.some((x) => x.startsWith('legal'))) ok('legal', 'one copy of the policy, read by the modal and by both public pages, all shipped' + (sends ? ' · the photo-location send is disclosed in both languages and the panel derives its own claim' : '')
+      + ' · ' + pagesRead + ' public page(s) × ' + tagsChecked + ' script tag(s) · ' + assetsChecked + ' static asset(s) · ' + disclosureChecked + ' disclosure sentence(s) checked');
   }
 }
 
@@ -1528,11 +1652,30 @@ if (RULE && RULE !== 'i18n-open-gap') {
     /* the shapes, and what each one is a claim ABOUT */
     const CLAIMS = [
       { src: 'find_capability[^。\\n]{0,60}?全\\s*\\**\\s*(\\d+)\\s*を検索', want: total, what: 'the registry' },
-      { src: '\\*\\*(\\d+)\\s*能力\\*\\*',                                        want: total, what: 'the registry' },
-      { src: '(\\d+)\\s*能力ぶん',                                          want: total, what: 'the registry' },
-      { src: '(\\d+)\\s*本の schema',                                        want: total, what: 'the registry' },
+      /* ⚠ (#R699) THESE THREE USED TO BE ANCHORED SHAPES — 「**N 能力**」「N 能力ぶん」
+         「N 本の schema」 — each pinned to the decoration around it, and MEASURED, THREE CLAIMS
+         WERE WRONG UNDER THEM RIGHT NOW while `check:docs` stayed green: `PRODUCT.md` told the
+         reader 「130 の能力すべてに届く」 and 「130 能力」, and `docs/FILES.md` said 「125 能力」,
+         against a registry of 138. A 「の」 between the number and the noun, and a missing pair
+         of asterisks, were the whole difference. The counter noun is what the number counts, so
+         BIND TO IT: every 「N 能力」 in the documents is a claim about the registry. MEASURED
+         over the same 44 documents: 6 candidates, all 6 real, no false one — the move
+         `hist-cities` and `histnames` already made, and the robust half of this file. */
+      { src: '(\\d[\\d,]*)\\s*(?:の)?\\s*能力',                          want: total, what: 'the registry' },
       { src: '到達可能\\s*\\**\\s*(\\d+)',                                   want: live,  what: 'the reachable half' },
-      { src: '撤去済み\\s*1\\s*を除く\\s*\\**\\s*(\\d+)',                     want: live,  what: 'the reachable half' },
+      /* ⚠ (#R699) THIS NEEDLE CARRIED ONE OF THE TWO NUMBERS AS A LITERAL, AND WENT SILENT THE
+         DAY THE PROSE CHANGED. It was 「撤去済み *1* を除く (\\d+)」 — the withdrawn count baked
+         into the pattern rather than compared to the registry. #R590 raised the registry and
+         reworded the sentence to 「撤去済み 137 を除く 136」 in the same commit, the pattern
+         stopped matching, and FOUR CLAIMS went unchecked from that moment: `Architecture.md`
+         twice and `DECISIONS.md` twice, every one of them stating that 137 capabilities are
+         withdrawn when exactly one is, while `docs/FILES.md` said 「到達可能 137」 two files
+         away. The rule printed 「10 stated size(s)」 and none of the four was among them.
+         ⚠ A NUMBER WRITTEN INTO A PATTERN IS A NUMBER NOBODY IS CHECKING — it is the
+         `alerts` capture group that was taken and never read, one step earlier: here the
+         value was never even captured. Both halves are read and both are compared now. */
+      { src: '撤去済み\\s*\\**\\s*(\\d+)\\s*\\**\\s*を除く\\s*\\**\\s*(\\d+)',
+        want: gone, want2: live, what: 'the withdrawn count', what2: 'the reachable half' },
     ];
 
     let seen = 0;
@@ -1543,6 +1686,14 @@ if (RULE && RULE !== 'i18n-open-gap') {
           if (Number(m[1]) !== c.want) {
             fail('capability-count', `${file} says «${m[0].trim()}» — ${c.what} holds ${c.want}`
               + ` (registry ${total}, withdrawn ${gone}, reachable ${live})`);
+          }
+          /* a needle that takes a second number compares it too (see the note above) */
+          if (c.want2 !== undefined) {
+            seen++;
+            if (Number(m[2]) !== c.want2) {
+              fail('capability-count', `${file} says «${m[0].trim()}» — ${c.what2} holds ${c.want2}`
+                + ` (registry ${total}, withdrawn ${gone}, reachable ${live})`);
+            }
           }
         }
       }
@@ -1652,6 +1803,18 @@ if (RULE && RULE !== 'i18n-open-gap') {
         checked++;
         if (Number(m[1]) !== SIZE[tier]) fail('deep-tier-size', `${file} says «${m[0].trim()}» of the ${tier} tier — it holds ${SIZE[tier]}`);
       }
+      /* ⚠ (#R699) …AND THE HALF THAT IS NOT IN ENGLISH. The shape above counts 「spec files」,
+         so a source stating the same fact in Japanese was outside the rule entirely — MEASURED,
+         `docs/FILES.md` said 「実測 core 6 本 / deep 59 本」 against a real core 7 / deep 105, and
+         `check:docs` stayed green. The rule's own comment says three of four places had drifted;
+         this was the fifth, invisible because of the language it was written in rather than
+         because of anything about the claim. No window is needed here: the tier word stands
+         immediately before the quantity, which is the strongest binding Japanese offers. */
+      for (const m of body.matchAll(/(deep|core)[ \t]*\**[ \t]*(\d[\d,]*)[ \t]*本/gi)) {
+        const tier = m[1].toLowerCase();
+        checked++;
+        if (Number(m[2].replace(/,/g, '')) !== SIZE[tier]) fail('deep-tier-size', `${file} says «${m[0].trim()}» — the ${tier} tier holds ${SIZE[tier]}`);
+      }
       /* the other half of the same sentence, which the shape above steps over */
       for (const m of body.matchAll(/against (?:the )?core(?: tier)?'s\s*\**(\d+)/g)) {
         checked++;
@@ -1659,7 +1822,8 @@ if (RULE && RULE !== 'i18n-open-gap') {
       }
     }
     /* several sources carry it; a rewording that dropped one would otherwise pass in silence */
-    const carriers = SOURCES.filter(([, body]) => /(?:deep|core)[\s\S]{0,140}?\d+\s*(?:measured\s+)?spec\s+files?/i.test(body)).length;
+    const carriers = SOURCES.filter(([, body]) => /(?:deep|core)[\s\S]{0,140}?\d+\s*(?:measured\s+)?spec\s+files?/i.test(body)
+      || /(?:deep|core)[ \t]*\**[ \t]*\d[\d,]*[ \t]*本/i.test(body)).length;
     if (carriers < 3) fail('deep-tier-size', `only ${carriers} source(s) still state a tier size — package.json, docs/TESTING.md and scripts/worktree.mjs each tell a session how big the nightly is`);
     if (!problems.some((p) => p.startsWith('deep-tier-size'))) {
       ok('deep-tier-size', `${checked} stated tier size(s) across ${carriers} source(s) — deep ${SIZE.deep} / core ${SIZE.core} / whole ${SIZE.all} (${skipped} spec-file mention(s) were not tier claims)`);

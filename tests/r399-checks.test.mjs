@@ -34,6 +34,11 @@ import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
 import { runGate } from './helpers/gate-precondition.mjs';
 import { readLF } from '../scripts/eol.mjs';
+/* (#R699) the test asks the real module which sentences state a count, instead of carrying a
+   second copy of the needle — see ② and ④ below. */
+import { claims, CHECKED } from '../scripts/doc-claims.mjs';
+const WORDS = { ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
 import { sharedRoster, inventories } from '../scripts/shared-roster.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -149,10 +154,25 @@ test('R399 ② the 正本 going SILENT is a failure, not a pass', async () => {
   await withTreeLock(() => {
     const originalBytes = rd('Architecture.md');
     const original = readLF(join(ROOT, 'Architecture.md'));
-    const silent = original
-      .replace(anchorRe('### 6.2 Edge Functions — **17本**'), () => '### 6.2 Edge Functions')
-      .replace(anchorRe('**Edge Functions を17本デプロイする**'), () => '**Edge Functions をすべてデプロイする**');
-    assert.notEqual(silent, original, 'Architecture.md no longer states the count in either place');
+    /* ⚠ (#R699) THIS MUTATION USED TO NAME TWO SENTENCES BY HAND, AND THERE WERE THREE.
+       Architecture.md §6.2 also opens 「⚠ **17本すべてを…宣言する」, which the old needle could
+       not see (it attaches to no noun and leans on the heading above it) and which
+       scripts/doc-claims.mjs does see. So the hand-written pair no longer silenced the 正本: one
+       claim survived, the rule correctly still found a count, and this test failed — for the
+       implementation having got BETTER. A mutation that lists the sentences it knows about
+       measures the list, the way #R694's anchor measured last year's spelling.
+       Ask the module which sentences state the count, and blank every one of them. */
+    const SUBJECT = { noun: 'Edge Functions?', units: ['本', '函数'], words: { seventeen: 17 } };
+    const stated = claims(original, SUBJECT).items.filter((c) => CHECKED.includes(c.kind))
+      .sort((a, b) => b.index - a.index);
+    assert.ok(stated.length >= 3, `Architecture.md states the count in ${stated.length} place(s) — this mutation expects the 正本 to carry it more than twice`);
+    let silent = original;
+    for (const c of stated) {
+      /* replace the digits of that quantity with a word, in place, leaving everything else */
+      const head = silent.slice(0, c.index), tail = silent.slice(c.index);
+      silent = head + tail.replace(/\d[\d,]*/, 'すべて');
+    }
+    assert.notEqual(silent, original, 'Architecture.md no longer states the count anywhere');
     try {
       writeFileSync(join(ROOT, 'Architecture.md'), silent);
       const r = docFacts();
@@ -182,29 +202,35 @@ test('R399 ③ a bare "Edge Function 1 本" is not read as an inventory claim', 
 });
 
 test('R399 ④ the sweep reaches every current-state document, not a hand-written few', () => {
-  /* 穴の根はここだった: 走査対象が2件の手書きだったこと。`scripts/doc-facts.mjs` が
-     `eachDoc`（＝全現行文書）で数を見ていることを、ソースの形として固定する。 */
+  /* 穴の根はここだった: 走査対象が2件の手書きだったこと。
+     ⚠ (#R699) THIS USED TO PIN THE IMPLEMENTATION'S SPELLING — it required the literal
+     `matchAll(` inside rule 2a and carried a VERBATIM COPY of the old separator needle to decide
+     which documents counted as holders. Both broke the day the judgement moved into
+     `scripts/doc-claims.mjs`, and neither was ever the thing worth protecting: the first measured
+     how the rule is written, and the second was a second copy of the rule
+     (.agents/rules/no-ad-hoc-hardcoding.md §2.3 — a rule written twice is two rules).
+     What matters is the FACT: the rule reads every current-state document, and more than a
+     couple of them state the count in a shape the gate can actually read. Both are asked of the
+     real module now, so a correct rewrite cannot fail this and a narrowed sweep cannot pass it. */
   const src = rd('scripts/doc-facts.mjs');
   const rule = src.slice(src.indexOf('2a.'), src.indexOf('2b.'));
   assert.ok(rule.length > 200, 'rule 2a is no longer where this test expects it in scripts/doc-facts.mjs');
   assert.match(rule, /eachDoc\(/, 'the count rule stopped sweeping every document');
-  assert.match(rule, /matchAll\(/, 'the count rule went back to a first-hit-only match');
   assert.doesNotMatch(rule, /\[\s*'CLAUDE\.md'\s*,\s*'Architecture\.md'\s*\]/,
     'the count rule is reading a hand-written document list again — that is the defect this round removed');
 
-  /* そして実際に、数を名乗る文書が2件より多く held されていること */
+  const SUBJECT = { noun: 'Edge Functions?', units: ['本', '函数'], words: WORDS };
   const docs = [
     ...readdirSync(ROOT).filter((f) => f.endsWith('.md') && !/^DEV-NOTES/.test(f) && f !== 'CLAUDE.local.md'),
     ...readdirSync(join(ROOT, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f),
   ];
-  const holders = docs.filter((f) => /Edge Functions?[ \t]*\**[ \t]*(?:は|を|—|–|-|:|：|（|\()[ \t]*\**[ \t]*(?:全|約)?[ \t]*\d+[ \t]*(?:本|函数)/.test(rd(f))
-    /* ⚠ (#R510) THE ENGLISH FORM MAY NOT NAME ONE PARTICULAR NUMBER. This alternation was
-       `thirteen|13`, so the day a fourteenth function landed — and the documents were correctly
-       updated to say "fourteen" — the two English documents stopped being COUNTED as holders and
-       this test failed for having done its job. What it is really asking is "does this document
-       state the count in a shape the gate can read", which is a question about the SHAPE. Whether
-       the number is right is doc-facts' rule 2a, and it is checked there. */
-    || /(?<![\d.§#])\**\b(?:\d+|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\b\**[ \t]+Edge Functions?\b/i.test(rd(f)));
+  const holders = docs.filter((f) => claims(rd(f), SUBJECT).items.some((c) => CHECKED.includes(c.kind)));
   assert.ok(holders.length >= 5,
     `only ${holders.length} documents state the Edge Function count in a shape the gate can read: ${holders.join(', ')}`);
+
+  /* …and the rule must pick up MORE THAN THE FIRST HIT in a document that states it twice —
+     the first-hit-only `.match()` was half of what #R399 removed. */
+  const twice = docs.find((f) => claims(rd(f), SUBJECT).items.filter((c) => CHECKED.includes(c.kind)).length > 1);
+  assert.ok(twice, 'no current-state document states the count more than once — the first-hit-only guard cannot be proven');
 });
+

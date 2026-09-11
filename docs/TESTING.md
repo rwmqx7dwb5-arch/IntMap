@@ -1460,12 +1460,129 @@ rule of this shape:
   written as the **breakage**: read the real directory, drop one name from whatever the document
   actually says. A correct addition cannot invalidate it.
 
-What it deliberately does not read: a bare noun-then-number with no particle between them. In
-Japanese that construction means *one of them does this*, not *there is one*, and `の` / `が` are
-excluded for the mirror-image reason — they read as partitive. A future document that phrases the
-total that way goes unchecked here; the per-name roster is what still holds it. `tests/r399-checks`
-proves each half goes red, including that the `6.2` in a section heading is read as an address and
-not as a quantity.
+- **(#R699) A set of separators is an inclusion list, and everything outside it is invisible.**
+  The count half bound the number to the noun with a hand-written set — 「は を — – - : ： （ (」 —
+  and that set, not the documents, decided what the rule could see. MEASURED: `docs/README.md` was
+  shaped 「Edge Function の名簿（**N 本**の名前…）」 with N **one short** of the seventeen that
+  exist, and the gate was green, because 「の」 had been deliberately kept **out** of the set
+  (「… の 1 本」 is partitive). Restoring that N today still leaves the old needle green —
+  `tests/r699-doc-claim-needles-checks` ① carries the sentence verbatim and runs both needles over
+  it, which is what makes this a fix rather than a restatement. (⚠ The sentence is **not** written
+  out here: this document is inside the sweep, and a document that spells out the defect it
+  describes reports itself as wrong — the self-hit `scripts/doc-facts.mjs`'s own header warns about.) Sentences outside the set were not judged wrong and not
+  judged right: nobody looked at them, and the report said 「7 stated counts, all 17」 about the ones
+  that happened to fit. Same shape as the window above, one level down — a property of the **needle**
+  leaking out into the rule's coverage.
+  The judgement moved to [`scripts/doc-claims.mjs`](../scripts/doc-claims.mjs), which asks the
+  question the other way round: find every quantity carrying one of the subject's counters, then
+  **walk the noun-modifier chain left** to see what it is counting. 「の名簿（17 本の名前」 reaches
+  the subject through one noun; 「公開 relay 4 本」 stops at `relay` and is not ours. MEASURED over
+  the same 44 documents: **7 claims → 9, with no false one**. The two sentences the old set existed
+  to dodge still do not count — but they come back **classified and tallied** (`partitive`,
+  `instance`) rather than unseen, which is the whole difference: a rule that reports only what it
+  agreed with cannot tell 「nothing disagreed」 from 「nothing was looked at」.
+
+What it still does not read, written down rather than papered over:
+
+- **A bare English numeral that attaches to nothing.** `docs/SECURITY-ARCHITECTURE.md` §5 opens
+  "There are seventeen Edge Functions, and this table used to list two." A statement of how many
+  there are and a sentence of the document's own history sit in **one sentence**, and nothing
+  structural separates them. It was tried at section scope and at paragraph scope and measured:
+  widening far enough to catch the first turns the second into a failure. The counted Japanese
+  quantities, where this repository's facts actually live, are complete.
+- **A connector the walk does not know.** The link alphabet is still a hand-written set — but
+  running off the end of it is now **visible**: a quantity that no other noun claimed, on a line
+  that names the subject, comes back as `unlinked` and is checked like any other claim instead of
+  joining the ~460 quantities in the documents that have nothing to do with the subject.
+
+`tests/r399-checks` proves each half goes red, including that the `6.2` in a section heading is read
+as an address and not as a quantity.
+
+### ⚠ The same shape in the sibling rules — measured, and four claims were wrong
+
+#R699 swept the other twelve rules that pull a number out of prose, over the same 44 documents.
+Eight were complete. Five were not, and **four of the claims they could not see were wrong at that
+moment**, with `check:docs` green:
+
+| rule | saw | real candidates | true claims it could not see | what the needle was pinned to |
+|---|---|---|---|---|
+| `capability-count` | 10 | 13 | **3, all three stale** | the decoration around the counter, not the counter |
+| `deep-tier-size` | 8 | 9 | **1, stale** | the English 「spec files」; the same fact in Japanese was outside the rule |
+| `histb-count` | 8 | 30 | 22 (all correct today) | 「件の記録」/「records」 — **seven of the nine shipped languages cannot be reached** |
+| `alerts` | 3 | 10 | 7 | one named sentence per number, in one named file |
+| `csp` | 2 | 3 | 1 | a bare English numeral (the residual above) |
+
+The `capability-count` misses were the reader-facing ones: `PRODUCT.md` told anyone reading it that
+the search tool reaches a registry one dozen short of the 138 that exist, and `docs/FILES.md` was
+further out still. A 「の」 between the number and the counter, and a missing pair of asterisks, were
+the whole difference between a checked claim and an invisible one.
+
+⚠ **But the general fix is NOT 「bind to the counter」, and `alerts` is where that was measured.**
+「能力」「都市」「リング」「名前」 belong to one subject each — nothing else in this repository is
+counted in them — so binding the number to the counter is exact, and that is what
+`capability-count` now does. 「か国」 and 「フィード」 are not like that: sweeping every one of
+them turned **fifty-nine true sentences into failures in a single run** — the radiation layer’s
+countries, the internet-health layer’s countries, the news layer’s feeds, every one of them correct
+and none of them about severe-weather alerts. A generic counter needs the **subject** reached as
+well. So `alerts` binds the phrase that names the subject (「自前…フィード」,「MeteoAlarm の N か国」),
+and what is left — prose that restates these counts with no subject beside the number — stays a
+written residual rather than a sweep that cries wolf.
+
+⚠ **And one needle captured a number it never compared.** `alerts` read
+`(\d+) countries over (\w+) feeds` out of `README.md` and used only the first group, so the
+spelled-out feed count beside it would have passed at **any** number of feeds. Seeing a claim and
+judging it are two different things, and the distance between them here was one unused capture
+group. `tests/r699-doc-claim-needles-checks` ⑪ now walks every needle in that rule and requires
+each group it takes to be read.
+
+**Still open** (measured, not fixed): `histb-count` reaches only the English and Japanese
+spellings, so the same two numbers stated on the seven other source pages — 「**1 411** записей …
+**881** различная дата изменений」 and its siblings — are outside it, 22 claims against the 8 it
+holds. All are correct today. ⚠ Its needle is also `(\d{2,5})\s*records`, which would read a
+digit-grouped 「1,411 records」 as **411** (the #R689 shape); that is latent only because every
+digit-grouped line happens to fall outside its line scope. Widening the rule and stripping the
+separators have to happen in the same change.
+
+### ⚠ Three more ways a rule can be silent, all of them measured
+
+**A fact written into a pattern is a fact nobody is checking.** `capability-count`'s sixth
+needle spelled the withdrawn count as a **literal** — 「撤去済み *1* を除く (N)」 — instead of
+comparing it. #R590 raised the registry and reworded that sentence in the same commit, the
+pattern stopped matching, and **four claims went unchecked from that moment**: `Architecture.md`
+twice and `DECISIONS.md` twice, each stating that 137 capabilities are withdrawn when exactly
+one is, while `docs/FILES.md` said 「到達可能 137」 two files away. The rule printed 「10 stated
+size(s)」 and none of the four was among them. This is the `alerts` capture group one step
+earlier: there a number was taken and never read; here it was never taken. Both halves of that
+sentence are read and compared now, and `tests/r699-doc-claim-needles-checks` ⑫ mutates the
+sentence back to what shipped **and** forbids a count from returning to the pattern.
+
+**A needle that matches nothing reports green.** `languages` required 「対応 UI 言語は」 with
+half-width spaces around 「UI」; `Architecture.md` §2 writes it without them. **Zero matches
+across all 44 documents**, stepped over by an `if (archN && …)`, so the rule that exists to hold
+the language count to `js/locales/` had been checking nothing at all. Spacing around a Latin word
+inside Japanese is a typographic choice a writer makes sentence by sentence, so it cannot be part
+of the pattern. The silent skip was the other half: 「the 正本 does not state it」 and 「the 正本
+states it correctly」 came out as the same green line, and §2 owns this number, so its absence is
+now a failure — the way `edge-count` already demands the count of Architecture.md §6.2.
+
+**And #R694 left half of its own lesson standing.** It removed the 260-character window from
+`edge-shared`, but the sentence it criticised — a gate 「naming all eleven」 while proving nothing
+about any document — could still be printed by a sweep that audited **nothing**, because that
+`ok()` was unconditional. It counts the inventories it audited now, prints the count, and fails
+at zero; three documents enumerate that directory and a session reads them to learn what it may
+import.
+
+### ⚠ Rules that do not say how many claims they saw
+
+A rule whose green line carries no number cannot distinguish 「nothing disagreed」 from 「the sweep
+reached nothing」 — the #R694 failure, which printed a roster of eleven while passing a document
+that listed nine. `node scripts/doc-facts.mjs` (without `--check`) prints every rule's green line,
+so the list is **read off the gate**, never kept by hand here.
+`tests/r699-doc-claim-needles-checks` ⑧ holds the half that a list cannot: every rule that can
+`fail()` must also `ok()`, because `tests/r274-checks` ① derives the roster of rules from the `ok()`
+side alone, and `scan` and `sql-path` — which only ever failed — sat outside the one test whose
+whole point is 「a rule that does not run cannot fail」. Deriving a universe from one of its two
+sides is the same defect as the separator set above: the answer is bounded by where you looked.
 
 ## When the deep tier runs, against the gate that decides it (`scripts/doc-facts.mjs`)
 

@@ -168,6 +168,63 @@ for (const f of roles) {
   plan.set(`.codex/agents/${r.name}.toml`, renderCodexRole(r));
 }
 
+/* ── what a session is TOLD at startup: one list, two products ─────────────────────────
+   (#R699) The two hook files were hand-written copies of each other. #R696 measured that
+   nothing rendered them and only a test compared them — so a startup hook could be added to
+   one product and not the other, and the product that was not told would simply know less.
+   That is the same defect class as a rendered role someone edited by hand, so it gets the
+   same answer: ONE source, two renderings, and a gate that re-renders and compares.
+   ⚠ Claude Code's settings.json is not ours alone — permissions live there too — so only the
+   SessionStart key is rendered, over whatever else that file currently holds. */
+const SESSION_SRC = '.agents/session-start.json';
+const session = JSON.parse(rd(SESSION_SRC));
+{
+  const cmds = session.commands;
+  if (!Array.isArray(cmds) || cmds.length === 0) fail('session-start', `${SESSION_SRC} declares no commands — a session would start knowing nothing`);
+  for (const c of cmds || []) {
+    for (const k of ['command', 'statusMessage', 'timeout', 'codexContextLimit', 'products']) {
+      if (c[k] === undefined) fail('session-start', `${SESSION_SRC}: a command has no ${k} (${c.command ?? '?'})`);
+    }
+  }
+}
+
+/* ⚠ 「両方が知るべき事実」と「両方が hook を要る」は別である。ある製品がその事実を自分で
+   読み込むなら、その製品向けの hook は足さない——同じものを二度渡すだけになる。除外の理由は
+   正本の側に why として書かれる（宛先が 1 つでも、事実の持ち主は 1 つのまま）。 */
+const forProduct = (p) => session.commands.filter((c) => c.products.includes(p));
+
+/* Claude Code takes the bare command and a timeout; it has no status line and no context cap. */
+const renderClaudeSettings = () => {
+  const cur = existsSync(join(ROOT, '.claude/settings.json')) ? JSON.parse(rd('.claude/settings.json')) : {};
+  cur.hooks = { ...(cur.hooks ?? {}) };
+  cur.hooks.SessionStart = [{
+    hooks: forProduct('claude').map((c) => ({ type: 'command', command: c.command, timeout: c.timeout })),
+  }];
+  return JSON.stringify(cur, null, 2) + '\n';
+};
+
+/* Codex matches on the lifecycle event, shows a status line, and caps what a hook may add.
+   JSON holds no comments, so the warning rides in the `description` the file already had. */
+const GENERATED_JSON = '⚠ GENERATED from ' + SESSION_SRC + ' by `node scripts/agent-sync.mjs --write` — do not edit. ';
+const renderCodexHooks = () => JSON.stringify({
+  description: GENERATED_JSON + session.description,
+  hooks: {
+    SessionStart: [{
+      matcher: 'startup|resume|clear',
+      hooks: forProduct('codex').map((c) => ({
+        type: 'command',
+        command: c.command,
+        statusMessage: c.statusMessage,
+        timeout: c.timeout,
+        additionalContextLimit: c.codexContextLimit,
+      })),
+    }],
+  },
+}, null, 2) + '\n';
+
+plan.set('.claude/settings.json', renderClaudeSettings());
+plan.set('.codex/hooks.json', renderCodexHooks());
+
 /* Codex reads `.agents/skills/` at the repository root by itself; Claude Code only reads
    `.claude/skills/`. So the skill tree is copied one way, verbatim, files and all. */
 const walk = (rel, out = []) => {
