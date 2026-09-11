@@ -128,6 +128,7 @@ const evalExpr = (e, p) => {
     case '!=': return V(a[0]) !== V(a[1]);
     case '<=': return V(a[0]) <= V(a[1]);
     case '>=': return V(a[0]) >= V(a[1]);
+    case '>': return V(a[0]) > V(a[1]);
     default: throw new Error('the filter grew an operator this check cannot evaluate: ' + op);
   }
 };
@@ -192,7 +193,7 @@ const inForceAt = (D, y) => {
 };
 test('⑥ 第1層の束は西暦1年から現在まで、どの世紀にも単位を持つ', () => {
   const D = bundle('data/hist-admin1.js', '__HISTADM1');
-  assert.equal(D.since, 1, `the bundle was built with --since ${D.since}; the clock reaches 1`);
+  assert.equal(D.since, HS.FLOOR, `the bundle floor ${D.since} must follow the clock floor ${HS.FLOOR}`);
   assert.ok(/OpenHistoricalMap/.test(D.src) && /CC0/.test(D.src), `src does not name the source and licence: ${D.src}`);
   assert.ok(D.feats.length > 4000, `only ${D.feats.length} units — the all-eras rebuild did not land`);
   /* ⚠ 数は「増えた」ではなく「どの世紀にもある」で測る。増分は上流次第だが、
@@ -223,7 +224,7 @@ test('⑦ 各束は、自分のファイル名が示す global だけを名乗�
     assert.ok(ctx.window[want], `${file} does not define window.${want}`);
     assert.equal(ctx.window[other], undefined,
       `${file} defines window.${other} as well — loading it would replace the other tier's record`);
-    assert.equal(ctx.window[want].since, 1, `${file} was not built for every era`);
+    assert.equal(ctx.window[want].since, HS.FLOOR, `${file} was not built for the clock range`);
   }
 });
 

@@ -7,8 +7,7 @@
  *      request asked for (「数百以上」), carries all nine languages spelled out, and gives every
  *      row a guard radius inside the range the build is allowed to derive;
  *   ② the three places the request NAMED resolve to the names it named, on the years it means;
- *   ③ no spelling names two cities — a repeated branch label makes MapLibre reject the style
- *      outright and takes the WHOLE label stack down with it (#R211 measured exactly that);
+ *   ③ shared spellings have spatially disjoint guards; runtime groups each spelling once;
  *   ④ the expression js/hist-cities.js builds gates every branch on POSITION and falls through to
  *      the ordinary label, is the identity when the clock is live, gates on the CLOCK rather than
  *      on the border layer, and subscribes to the clock — `applyLabelLang` is not otherwise called
@@ -98,16 +97,21 @@ test('② the three places the request named answer with the names it named', ()
   assert.equal(nameAt(p, dnum(2000, 6, 15)), null, 'and it is again');
 });
 
-test('③ no spelling names two cities — the property the rewrite depends on', () => {
+test('③ shared spellings always refer to spatially separated cities', () => {
   const seen = new Map();
   for (const c of DATA.cities) {
+    assert.equal(new Set(c.k).size, c.k.length, `${c.id}: repeated key within row`);
     for (const k of c.k) {
-      assert.ok(!seen.has(k) || seen.get(k) === c.id,
-        `key «${k}» is claimed by both ${seen.get(k)} and ${c.id} — a MapLibre match rejects repeated branch labels, and the style would fail to load`);
-      seen.set(k, c.id);
+      const prior = seen.get(k) || [];
+      for (const p of prior) {
+        const rad = Math.PI / 180;
+        const a = Math.sin((c.lat-p.lat)*rad/2)**2 + Math.cos(c.lat*rad)*Math.cos(p.lat*rad)*Math.sin((c.lon-p.lon)*rad/2)**2;
+        const distance = 6371000 * 2 * Math.asin(Math.sqrt(a));
+        assert.ok(distance > c.g + p.g, `${k}: ${p.id} and ${c.id} have overlapping guards`);
+      }
+      seen.set(k, [...prior, c]);
     }
   }
-  assert.ok(seen.size >= DATA.cities.length, 'every city contributes at least one key');
 });
 
 test('④ every branch of the built expression is gated on position, and falls through to the ordinary label', async () => {
@@ -131,11 +135,13 @@ test('④ every branch of the built expression is gated on position, and falls t
     for (let i = 2; i < m.length - 1; i += 2) {
       const v = m[i + 1];
       assert.equal(v[0], 'case', `the branch for «${m[i]}» hands back a bare label — every branch must ask where the feature is`);
-      assert.equal(v[1][0], '<=');
-      assert.equal(v[1][1][0], 'distance', "the guard is MapLibre's own distance expression");
-      assert.equal(v[1][1][1].type, 'Point');
-      assert.ok(v[1][2] >= 2000 && v[1][2] <= 20000, "the radius is the record's, in metres");
-      assert.equal(v[3][0], 'var', 'a feature outside the guard falls through, it does not get the era name');
+      for (let j = 1; j < v.length - 1; j += 2) {
+        assert.equal(v[j][0], '<=');
+        assert.equal(v[j][1][0], 'distance', "the guard is MapLibre's own distance expression");
+        assert.equal(v[j][1][1].type, 'Point');
+        assert.ok(v[j][2] >= 2000 && v[j][2] <= 20000, "the radius is the record's, in metres");
+      }
+      assert.equal(v[v.length - 1][0], 'var', 'a feature outside the guard falls through, it does not get the era name');
       branches++;
     }
     assert.equal(m[m.length - 1][0], 'var', 'and an unmatched spelling falls through too');
@@ -275,7 +281,7 @@ test('⑦ the shipped module answers, and MapLibre accepts and evaluates what it
   assert.equal(evalAt(ctx, { 'name:en': 'Volgograd' }, VLG, 'ko'), '스탈린그라드');
   /* a language the row does not spell out falls to the Latin form, which is what the live map
      already does for a city OSM carries no tag for — not to some other language's word */
-  assert.equal(evalAt(ctx, { 'name:en': 'Ilebo' }, where('ilebo'), 'ko'), 'Port-Francqui');
+  assert.equal(evalAt(ctx, { 'name:en': 'Ilebo' }, where('ilebo'), 'ko'), 'Port-Francqui [?]');
 
   /* ⚠ AND EVERYTHING ELSE ON EARTH IS UNTOUCHED — the fall-through is the base expression */
   assert.equal(evalAt(ctx, { 'name:en': 'Paris', name: 'Paris' }, [2.35, 48.86]), 'Paris');
@@ -296,14 +302,14 @@ test('⑦ the shipped module answers, and MapLibre accepts and evaluates what it
 /* ══ ⚠⚠⚠ ⑩ THE THREE PAIRS THAT WERE ACTUALLY WRONG ════════════════════════════════════════════
    These are not hypotheticals. Each line below is a city that the map relabelled with a different
    city's history for five rounds, with `npm test`, `check:histcities` and CI green throughout —
-   because identity was a spelling. The right-hand member of each pair must come out UNCHANGED. */
+   because identity was a spelling. Each member must retain its own history or modern fallback. */
 test('⑩ a namesake elsewhere on Earth keeps its own name', async () => {
   const y1950 = boot('1950-06-15');
   await y1950.window.IntMapHistCities.ensure();
   /* 高知市, Japan. The reported bug: it read コーチン. GeoNames files it as «Kōchi» with a macron
      and OSM tags it `name:en=Kochi`, so neither the record's gazetteer nor its language filter
      could see the collision — only the 6 900 km could. */
-  assert.equal(evalAt(y1950, { 'name:en': 'Kochi', name: 'Kochi' }, where('kochi')), 'Cochin');
+  assert.equal(evalAt(y1950, { 'name:en': 'Kochi', name: 'Kochi' }, where('kochi')), 'Cochin [?]');
   assert.equal(evalAt(y1950, { 'name:en': 'Kochi', name: '高知市' }, [133.5311, 33.5597]), 'Kochi');
   assert.equal(evalAt(y1950, { name: '高知市' }, [133.5311, 33.5597], 'jp'), '高知市');
 
@@ -339,14 +345,14 @@ test('⑩ a namesake elsewhere on Earth keeps its own name', async () => {
      What is left after that is the honest residue — Hippo Regius beside Bône — where the two spans
      are DIFFERENT names and the era’s own name is the right answer. */
   assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, where('kirov-vyatka')), 'Vyatka');
-  assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, [34.3, 54.08]), 'Kirov',
-    'Kirov in Kaluga oblast was never Vyatka');
+  assert.equal(evalAt(y1930, { 'name:en': 'Kirov', name: 'Киров' }, [34.3, 54.08]), 'Песочня',
+    'Kirov in Kaluga oblast retains its own attested history, never Vyatka');
 
   /* Linden. Guyana's is 44 690 people and New Jersey's 42 021 — the population sort that decides
      which one survives into the news locator's gazetteer is a coin toss between them. */
   const y1960 = boot('1960-06-15');
   await y1960.window.IntMapHistCities.ensure();
-  assert.equal(evalAt(y1960, { 'name:en': 'Linden' }, where('linden-gy')), 'Mackenzie (Guyana)');
+  assert.equal(evalAt(y1960, { 'name:en': 'Linden' }, where('linden-gy')), 'Mackenzie (Guyana) [?]');
   assert.equal(evalAt(y1960, { 'name:en': 'Linden' }, [-74.2446, 40.6220]), 'Linden',
     'Linden, New Jersey was never Mackenzie');
 });

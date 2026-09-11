@@ -79,6 +79,55 @@ window.IntMapModules.newsTimeline=function(HOST){
     const scale=document.getElementById('ntl-scale'), closeX=document.getElementById('ntl-x'), title=document.getElementById('ntl-title');
     const ticks=document.getElementById('ntl-ticks');   /* (#R337) the Time tab's ruler — see buildTicks */
     if(!tl||!slider) return;
+    /* Explain the historical-name marker beside the clock that selects those names. */
+    const namesToggle=document.getElementById('cb-names'), noteHost=document.getElementById('ntl-body');
+    let nameDateNote=null;
+    if(noteHost){ nameDateNote=document.createElement('div'); nameDateNote.id='ntl-name-date-note';
+      nameDateNote.className='ntl-sub'; nameDateNote.hidden=true;
+      nameDateNote.style.cssText='white-space:normal;margin-top:8px;line-height:1.4';
+      noteHost.appendChild(nameDateNote); }
+    function refreshNameDateNote(e){
+      if(!nameDateNote) return;
+      nameDateNote.hidden=!!e.isLive||!namesToggle||!namesToggle.checked;
+      nameDateNote.textContent=L5('[?] marks a historical name whose start date is unknown.','[?] は、その地名が使われ始めた時期が不明であることを示します。','[?] kennzeichnet einen historischen Namen, dessen erste Verwendung zeitlich unbekannt ist.','[?] отмечает историческое название, время начала использования которого неизвестно.','[?] indica un nombre histórico cuya fecha de inicio de uso se desconoce.');
+    }
+    if(namesToggle) namesToggle.addEventListener('change',()=>{
+      try{ refreshNameDateNote(window.IntMapTime.state()); }catch(_){} });
+    /* The mobile attribution pill is positioned from the live sheet geometry. Reserve its
+       measured rectangle instead of assuming its height or repeating the sheet offset here. */
+    const mapCredit=document.getElementById('map-credit');
+    let creditFrame=0;
+    function measureCreditSpace(){
+      creditFrame=0;
+      const parent=tl.offsetParent;
+      if(!parent||!mapCredit) return;
+      const area=parent.getBoundingClientRect(), credit=mapCredit.getBoundingClientRect(), panel=tl.getBoundingClientRect();
+      const gap=parseFloat(getComputedStyle(tl).paddingBottom)||0;
+      const intersects=credit.width>0&&credit.height>0&&credit.left<panel.right&&credit.right>panel.left
+        &&credit.top<area.bottom&&credit.bottom>area.top;
+      const ceiling=intersects?Math.min(area.bottom,credit.top-gap):area.bottom;
+      const floor=Math.max(0,area.bottom-ceiling);
+      const room=Math.max(0,ceiling-Math.max(0,area.top)-gap);
+      for(const [key,value] of [['--ntl-credit-floor',floor],['--ntl-available-height',room]]){
+        const px=Math.ceil(value)+'px';
+        if(tl.style.getPropertyValue(key)!==px) tl.style.setProperty(key,px);
+      }
+    }
+    function queueCreditSpace(){ if(!creditFrame) creditFrame=requestAnimationFrame(measureCreditSpace); }
+    let creditResize=null, creditMutation=null;
+    if(mapCredit){
+      if(window.ResizeObserver){ creditResize=new ResizeObserver(queueCreditSpace);
+        for(const el of [mapCredit,tl,document.getElementById('map-container')]) if(el) creditResize.observe(el); }
+      if(window.MutationObserver){ creditMutation=new MutationObserver(queueCreditSpace);
+        for(const el of [document.documentElement,document.body,mapCredit,document.getElementById('map-container')])
+          if(el) creditMutation.observe(el,{attributes:true,attributeFilter:['style','class']}); }
+      window.addEventListener('resize',queueCreditSpace);
+      window.addEventListener('pagehide',(event)=>{ if(event.persisted) return;
+        if(creditResize) creditResize.disconnect();
+        if(creditMutation) creditMutation.disconnect(); window.removeEventListener('resize',queueCreditSpace);
+        if(creditFrame) cancelAnimationFrame(creditFrame); creditFrame=0; });
+      queueCreditSpace();
+    }
     let pendingTimer=null, _self=false, mode='year';   /* (#R101) Year (the kernel's floor → now — YMIN() above) | Date (recent days) | (#R137) Time (time-of-day) | (#R288) Forecast (the model's own hours) */
     /* ══ ⚠⚠⚠ (#R288) THE APP HAS ONE CLOCK, AND IT NOW REACHES FORWARD ══════════════════════════
        「ECMWF系レイヤーを開くと勝手にECMWFの時間ポップアップが出るのを辞めろ。わざわざ分けるな。」
@@ -675,6 +724,8 @@ window.IntMapModules.newsTimeline=function(HOST){
     if(btnNow) btnNow.onclick=()=>window.IntMapTime.setNow({source:'ui'});
     /* READ side: kernel → this widget's UI */
     function refreshUI(e){ _self=true; try{
+      refreshNameDateNote(e);
+      queueCreditSpace();
       /* (#R293) the badge is a claim about the CHOSEN INSTANT, so it is written where the instant
          arrives — not once, from the localiser, in the word that happened to be true in #R105 */
       if(badge&&!e.isLive) badge.textContent=sideWord(e.when);

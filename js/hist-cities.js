@@ -24,9 +24,9 @@
  *
  *  ⚠ TWO MATCHES, NESTED, because the tile may carry the spelling in either field: `name:en` is
  *  tried first and `name` (the local form) second. Every key of a city is in BOTH, and
- *  scripts/build-hist-cities.mjs proves no two cities share a key — a `match` with a repeated label
- *  fails MapLibre's style validation outright («Branch labels must be unique»), which would make
- *  addLayer throw and take the whole label stack with it (#R211 measured exactly that).
+ *  candidates sharing a spelling are grouped into ONE branch with a distance case per place.
+ *  The build only admits shared spellings whose evidence-derived guards cannot overlap, so distant
+ *  namesakes retain their histories without duplicate match labels or ambiguous identities.
  *
  *  ══ ⚠⚠⚠ AND A SPELLING IS NOT AN IDENTITY (#R521) ══════════════════════════════════════════════
  *  Until #R521 the match above WAS the whole rule, and a reader travelling to 1950 watched 高知市
@@ -81,9 +81,16 @@ window.IntMapHistCities = (function () {
   function nameAt(city, d) {
     for (var i = 0; i < city.e.length; i++) {
       var e = city.e[i];
-      if ((!e.f || d >= e.f) && (!e.t || d <= e.t)) return e.n;
+      if ((!e.f || d >= e.f) && (!e.t || d <= e.t)) return e;
     }
     return null;   /* outside every span → the modern label the tile already carries */
+  }
+
+  /* An open start is missing evidence, not a claim extending to the clock's earliest year.
+     Keep the attested name intact in the record and mark its uncertainty in every display path. */
+  function displayName(era, lang) {
+    var label = era && say(era.n, lang);
+    return label ? label + (era.f ? '' : ' [?]') : '';
   }
 
   /* ── the file, fetched the first time the clock leaves «now» and never again ───────────────── */
@@ -121,7 +128,7 @@ window.IntMapHistCities = (function () {
       if (c.k.indexOf(spelling) < 0) continue;
       if (metres(lon, lat, c.lon, c.lat) > (c.g || 0)) continue;
       var n = nameAt(c, d);
-      return n ? say(n, lang) : null;
+      if (n) return displayName(n, lang);
     }
     return null;
   }
@@ -162,19 +169,41 @@ window.IntMapHistCities = (function () {
 
     var byEn = ['match', ['coalesce', ['get', 'name:en'], '']];
     var byLocal = ['match', ['coalesce', ['get', 'name'], '']];
-    var hits = 0;
+    var hits = 0, candidates = new Map();
     for (var i = 0; i < data.cities.length; i++) {
       var c = data.cities[i];
       var n = nameAt(c, d); if (!n) continue;
-      var label = say(n, lg); if (!label) continue;
+      var label = displayName(n, lg); if (!label) continue;
       /* ⚠ (#R521) THE BRANCH IS A QUESTION ABOUT THIS FEATURE'S POSITION, not a constant. Without
          it «Kochi» renames 高知市, and every other city on Earth that shares a spelling with a row.
          The failing side of the `case` is the OTHER match (or the base label), never a guess. */
       var near = ['<=', ['distance', { type: 'Point', coordinates: [c.lon, c.lat] }], c.g || 0];
-      byEn.push(c.k, ['case', near, label, ['var', VAR_LOCAL]]);
-      byLocal.push(c.k, ['case', near, label, ['var', VAR_BASE]]);
+      for (var j = 0; j < c.k.length; j++) {
+        var spelling = c.k[j];
+        if (!candidates.has(spelling)) candidates.set(spelling, []);
+        candidates.get(spelling).push({ id: i, near: near, label: label });
+      }
       hits++;
     }
+    /* Group identical candidate lists too: ordinary cities still contribute one branch for
+       all their spellings. Homonyms add distance cases, never duplicate match branch labels. */
+    var groups = new Map();
+    candidates.forEach(function (list, spelling) {
+      var signature = list.map(function (v) { return v.id; }).join(',');
+      if (!groups.has(signature)) groups.set(signature, { keys: [], list: list });
+      groups.get(signature).keys.push(spelling);
+    });
+    groups.forEach(function (group) {
+      var enCase = ['case'], localCase = ['case'];
+      group.list.forEach(function (v) {
+        enCase.push(v.near, v.label);
+        localCase.push(v.near, v.label);
+      });
+      enCase.push(['var', VAR_LOCAL]);
+      localCase.push(['var', VAR_BASE]);
+      byEn.push(group.keys, enCase);
+      byLocal.push(group.keys, localCase);
+    });
     if (!hits) { cache = { key: key, expr: base }; return base; }
     byLocal.push(['var', VAR_BASE]);   /* nothing matched either field → the ordinary label */
     byEn.push(['var', VAR_LOCAL]);

@@ -666,10 +666,11 @@ window.IntMapModules.timeBorders=function(HOST){
            1850-1885 features carry and every reader of it stays one reader. */
         const i18=hnFor('eras',nm,null,null)||hnEraGloss(nm);   /* (#R700) …and when the whole string has no row, the base's, with the possessor put back */
         feats.push({type:'Feature',
-          properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{}),
+          properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{},at.bp!=null?{BORDERPRECISION:at.bp}:{}),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
-      for(const ids of (sn.blank||[])){ const ps=poly(ids); if(!ps.length) continue;
-        feats.push({type:'Feature',properties:{NAME:''},
+      for(const [i,ids] of (sn.blank||[]).entries()){ const ps=poly(ids); if(!ps.length) continue;
+        const bp=sn.blankPrecision&&sn.blankPrecision[i];
+        feats.push({type:'Feature',properties:Object.assign({NAME:''},bp!=null?{BORDERPRECISION:bp}:{}),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
       fc={type:'FeatureCollection',features:feats}; _erFC.set(k,fc); return fc; }
     async function fetchFC(year){ if(cache.has(year)) return cache.get(year);
@@ -836,7 +837,9 @@ window.IntMapModules.timeBorders=function(HOST){
          runs, not what a border looks like. The literals are the fallback for a page where the module
          has not been evaluated, and they are the same numbers. */
       const _BS=(window.IntMapBorderStyle||{});
-      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-ln-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_BS.color||'#d9dbe0','line-opacity':0.95,'line-width':_BS.width||['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]}}, before);
+      /* Source precision changes the line pattern, never its geometry or legal recognition.
+         Unknown precision keeps the existing solid stroke; it is not labelled as precise. */
+      if(!GE().layers.has('imtb-line')) GE().layers.add({id:'imtb-line',type:'line',source:'imtb-ln-src',layout:{'line-join':'round','line-cap':'round'},paint:{'line-color':_BS.color||'#d9dbe0','line-opacity':0.95,'line-dasharray':['match',['to-number',['coalesce',['get','BORDERPRECISION'],['get','borderprecision']],-1],1,['literal',[2,2]],2,['literal',[6,2]],['literal',[1,0]]],'line-width':_BS.width||['interpolate',['linear'],['zoom'],1,0.95,4,1.55,8,2.2,12,2.9]}}, before);
       /* == (#R309) A PAST COUNTRY'S NAME IS A COUNTRY NAME ======================================
          「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 #R101 gave the RENAMED half its
          own smaller "era style" (that request was about the UNCHANGED half keeping the normal one), so
@@ -896,9 +899,9 @@ window.IntMapModules.timeBorders=function(HOST){
           const _lyr=(e.features&&e.features[0]&&e.features[0].layer&&e.features[0].layer.id)||'';
           /* ⚠ (#R531) `_clk` IS BOUND TO THE NAME LAYERS ONLY (`onLayer('click','imtb-lbl'…)` below), so
              neither branch id here is reachable today. If one is ever bound again, bind `imtb-fill`:
-             the line's features carry NO properties now — its geometry comes from `imtb-ln-src`, which
-             is one MultiLineString per polity and nothing else — so `_openEra` would read an empty name
-             off it and do nothing. The territory is what a click is about, and that is the fill. */
+             the line's geometry comes from `imtb-ln-src`, not the territory. Era lines retain source
+             attributes, while the compact day-exact line records need not carry a name.
+             The territory is what a click is about, and that is the fill. */
           if(_lyr==='imtb-fill'||_lyr==='imtb-line'){
             try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
               if(specific.length&&e.point&&GE().coords.queryRenderedFeatures(e.point,{layers:specific}).length) return; }catch(_){}
@@ -2021,13 +2024,27 @@ window.IntMapModules.timeBorders=function(HOST){
        ⚠ Public because it is a real question about the record — the same kind `featureAt` and
        `geomFor` already answer — not an export made so that a test can reach it (#R175 ③). */
     function typeNote(f){ try{
-      const p=(f&&f.properties)||{}, t=String(p.TYPE||p.type||'').trim(); if(!t) return '';
+      const p=(f&&f.properties)||{}, t=String(p.TYPE||p.type||'').trim();
+      const bp=Number(p.BORDERPRECISION!=null?p.BORDERPRECISION:p.borderprecision);
+      const precision=bp===1?_LTB.arr(LA('Source boundary precision: approximate','出典の境界精度分類: 概略',
+        'Grenzgenauigkeit laut Quelle: ungefähr','Точность границ по источнику: приблизительная',
+        'Precisión de los límites según la fuente: aproximada','來源的邊界精度分類：概略','来源的边界精度分类：概略',
+        'Précision des frontières selon la source : approximative','출처의 경계 정밀도 분류: 대략적')):
+        bp===2?_LTB.arr(LA('Source boundary precision: moderately precise','出典の境界精度分類: 中程度の精度',
+          'Grenzgenauigkeit laut Quelle: mäßig genau','Точность границ по источнику: умеренная',
+          'Precisión de los límites según la fuente: moderada','來源的邊界精度分類：中等精度','来源的边界精度分类：中等精度',
+          'Précision des frontières selon la source : moyenne','출처의 경계 정밀도 분류: 중간 수준')):
+        bp===3?_LTB.arr(LA('Source boundary precision: determined by international law','出典の境界精度分類: 国際法で定められた境界',
+          'Grenzgenauigkeit laut Quelle: völkerrechtlich festgelegt','Точность границ по источнику: определены международным правом',
+          'Precisión de los límites según la fuente: determinados por el derecho internacional','來源的邊界精度分類：由國際法界定','来源的边界精度分类：由国际法界定',
+          'Précision des frontières selon la source : définies par le droit international','출처의 경계 정밀도 분류: 국제법으로 정해진 경계')):'';
+      if(!t) return precision;
       return _LTB.arr(LA(
         'Upstream’s own word for this: ' + t, '上流自身の言葉での分類: ' + t,
         'Bezeichnung der Quelle hierfür: ' + t, 'Слово источника об этом: ' + t,
         'Palabra de la fuente para esto: ' + t, '上游對此的用語：' + t, '上游对此的用语：' + t,
         'Le mot de la source pour ceci : ' + t, '이에 대한 상류의 표현: ' + t
-      ));
+      ))+(precision?' · '+precision:'');
     }catch(_){ return ''; } }
     /* ⚠ THE ROW IS WRITTEN FROM HERE, NOT FROM THE APP SHELL. `window._applyBorders` (js/app-body.js)
        is the visibility commander for this layer, and putting the sentence there would put the

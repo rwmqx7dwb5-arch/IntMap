@@ -65,9 +65,13 @@
       };
       var sat = !!(document.getElementById('btn-view-sat') || {}).classList &&
         document.getElementById('btn-view-sat').classList.contains('active');
+      var historical = !!window.IntMapTimeBorders?.active?.();
       el.innerHTML = sat
         ? '\u00a9 ' + a('https://www.esri.com/', 'Esri')
-        : '\u00a9 ' + a('https://carto.com/attributions/', 'CARTO') +
+        : historical
+          ? '\u00a9 ' + a('https://openfreemap.org/', 'OpenFreeMap') + ' \u00a9 ' + a('https://openmaptiles.org/', 'OpenMapTiles') +
+            ' \u00a9 ' + a('https://www.openstreetmap.org/copyright', 'OpenStreetMap')
+          : '\u00a9 ' + a('https://carto.com/attributions/', 'CARTO') +
           ' \u00a9 ' + a('https://www.openstreetmap.org/copyright', 'OpenStreetMap');
     } catch (_) { /* the map draws with or without the element */ }
   };

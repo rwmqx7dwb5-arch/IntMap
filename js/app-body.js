@@ -515,17 +515,12 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* modern country labels off while travelling — the era names come from imtb-lbl. */
     if(GE().layers.has('ofm-country')){ if(traveling){ if(_imbOfmWas===null){ try{ _imbOfmWas=GE().layers.getLayout('ofm-country','visibility')||'visible'; }catch(_){ _imbOfmWas='visible'; } } GE().layers.setLayout('ofm-country','visibility','none'); }
       else if(_imbOfmWas!==null){ GE().layers.setLayout('ofm-country','visibility',_imbOfmWas); _imbOfmWas=null; } }
-    /* (#R94l) the CARTO *_all raster base BAKES modern borders + labels into the tiles — hiding vector layers
-       can't remove them. Force the label-free variant DIRECTLY while travelling (don't rely on applyTheme's
-       timing, which was why the era borders never appeared), and RAISE the era layers above the raster. */
-    try{ const sat=(typeof currentMapType!=='undefined'&&currentMapType==='sat');
-      const mc=(window.imMapColor||'auto'); const mapLight=(mc==='light')?true:(mc==='dark')?false:(document.documentElement.getAttribute('data-theme')==='light');
-      if(traveling&&!sat){
-        if(GE().layers.has('layer-dark'))     GE().layers.setLayout('layer-dark','visibility','none');
-        if(GE().layers.has('layer-light'))    GE().layers.setLayout('layer-light','visibility','none');
-        if(GE().layers.has('layer-dark-nl'))  GE().layers.setLayout('layer-dark-nl','visibility',mapLight?'none':'visible');
-        if(GE().layers.has('layer-light-nl')) GE().layers.setLayout('layer-light-nl','visibility',mapLight?'visible':'none');
-      }
+    /* CARTO nolabels still contains modern boundaries; use physical vector geography. */
+    try{ ensurePlaceLabels();
+      const mc=window.imMapColor||'auto';
+      window.IntMapHistoricalBasemap.apply(GE(),{active:traveling,sat:currentMapType==='sat',
+        light:mc==='light'||(mc!=='dark'&&document.documentElement.getAttribute('data-theme')==='light'),
+        labels:IM_HOST.namesOn&&!mapLabelsViaVector()});
     }catch(_){}
   }catch(_){} };
   /* (#R199) ↳ js/theme-sky.js — the UI theme, the basemap pair and the real sky/atmosphere.

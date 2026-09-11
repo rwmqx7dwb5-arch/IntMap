@@ -16,7 +16,7 @@
  *      where both exist the inception contradicts the record 3.1% of the time, because on a
  *      merged municipality it dates the legal entity and not the place (saitama 2001 against a
  *      span that ends 2000; kitakyushu 1963 against 1962). Clipping to it would write a year
- *      nobody recorded. ⇒ left standing, and ⑤ below is the ratchet that keeps it from growing.
+ *      nobody recorded. ⇒ retained without invented dates; ⑤ now requires visible uncertainty in the runtime.
  *   ③ THE READABILITY DEFECT IS DOWNSTREAM OF ②. See ⑥.
  *
  *  ⚠ AND ON THE WAY, THE THING #R679 WROTE DOWN AND DID NOT DO: Pleiades is CC BY 3.0, its
@@ -25,6 +25,9 @@
  *  structure that let a licence be a sentence instead of a value.
  * ==========================================================================*/
 import { test } from 'node:test';
+import vm from 'node:vm';
+import { createExpression } from '@maplibre/maplibre-gl-style-spec';
+import { asClassicScript } from './app-source.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -114,25 +117,47 @@ test('r681 ④ every upstream that is owed credit is named on the Sources page, 
   }
 });
 
-/* ── ⑤ THE UNBOUNDED CLAIMS ARE A RATCHET, BECAUSE THEY COULD NOT BE BOUNDED ─────────────────
-   A span with an open start answers every year below its end, and the clock's floor is now
-   astronomical year −122 999 — so «Volgograd was called Царицын» is currently an answer for
-   10 000 BC. #R679 left it standing and this round measured upstream before agreeing (see the
-   header, ②). ⚠ WHAT A GATE CAN DO IS STOP IT GROWING. These are the measured counts on
-   2026-09-11; a change that raises either of them is adding an assertion nobody can date, and
-   should be looked at rather than ratcheted. Lowering them is always allowed. */
-test('r681 ⑤ no more of the record asserts a name it cannot date than did when this was measured', () => {
-  const open = RECORD.cities.filter((c) => c.e.some((e) => !e.f));
-  const only = open.filter((c) => !c.e.some((e) => e.f));
-  assert.ok(open.length <= 2288, `${open.length} cities carry a span with no stated start (was 2288)`);
-  assert.ok(only.length <= 1694, `${only.length} cities have no dated evidence at all (was 1869 before OpenHistoricalMap, 1694 after)`);
-  /* …and every one of them says so in the shipped file, rather than being silent about it */
-  for (const c of open.slice(0, 200)) {
-    for (const e of c.e) {
-      if (e.f) continue;
-      assert.equal(e.p[0], '-', `${c.id}: an open start ships with precision «${e.p[0]}» instead of «-»`);
+/* ── ⑤ UNKNOWN STARTS REMAIN EVIDENCE, WITH VISIBLE UNCERTAINTY ────────────────────────
+   The old absolute count rejected distant namesakes becoming reachable even though their
+   evidence was unchanged. The contract is now observable: every open-start winning name
+   carries its uncertainty in both MapLibre and the lookup API, never in the source name. */
+test('r705 ⑤ unknown starts are disclosed by the actual map expression and lookup API', async () => {
+  const ctx = vm.createContext({ URL, console, document: { baseURI: 'https://example.invalid/' },
+    fetch: async () => ({ ok: true, json: async () => RECORD }) });
+  ctx.window = ctx;
+  vm.runInContext(asClassicScript(read('js/hist-scale.js')), ctx);
+  let date;
+  ctx.IntMapTime = { isLive: () => false, when: () => date, on: () => {} };
+  vm.runInContext(asClassicScript(read('js/hist-cities.js')), ctx);
+  const api = ctx.IntMapHistCities;
+  await api.ensure();
+  let checked = 0;
+  const before = JSON.stringify(RECORD);
+  for (const year of [ctx.IntMapHistScale.FLOOR, 1500, 1900]) {
+    date = new Date(0); date.setUTCFullYear(year, 5, 15);
+    const stamp = year * 10000 + 615;
+    const expression = api.textField(['get', 'name'], 'en', 'ui');
+    const parsed = createExpression(expression, { type: 'string', 'property-type': 'data-driven',
+      expression: { interpolated: false, parameters: ['zoom', 'feature'] } });
+    if (parsed.result !== 'success') assert.fail(parsed.value.map(e => e.message).join('\n'));
+    for (const c of RECORD.cities) {
+      for (const e of c.e) if (!e.f) assert.equal(e.p[0], '-', `${c.id}: unknown precision retained`);
+      const era = c.e.find(e => (!e.f || stamp >= e.f) && (!e.t || stamp <= e.t));
+      if (!era) continue;
+      const expected = era.n.en + (era.f ? '' : ' [?]');
+      assert.equal(api.at(c.k[0], c.lon, c.lat, 'en'), expected, `${c.id}: lookup at ${year}`);
+      const z = 14, n = 2 ** z, r = c.lat * Math.PI / 180;
+      const sx = (c.lon + 180) / 360 * n;
+      const sy = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n;
+      const x = Math.floor(sx), y = Math.floor(sy);
+      const feature = { type: 1, properties: { name: c.k[0] },
+        geometry: [[{ x: Math.round((sx - x) * 8192), y: Math.round((sy - y) * 8192) }]] };
+      assert.equal(parsed.value.evaluate({ zoom: z }, feature, {}, { z, x, y }), expected, `${c.id}: map at ${year}`);
+      if (!era.f) checked++;
     }
   }
+  assert.ok(checked > 2000, 'exercise the actual unknown-start corpus');
+  assert.equal(JSON.stringify(RECORD), before, 'uncertainty is display metadata, never a fabricated source name');
 });
 
 /* ── ⑥ THE READABILITY DEFECT IS DOWNSTREAM OF ⑤, AND THIS IS THE MEASUREMENT THAT SAYS SO ────

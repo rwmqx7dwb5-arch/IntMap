@@ -30,6 +30,8 @@ export const ADMIN1_WIDTH = ['interpolate', ['linear'], ['zoom'], 3, 0.8, 7, 1.6
 try {
   window.IntMapBorderStyle = {
     color: BORDER_COLOR, admin1: ADMIN1_COLOR,
+    /* The pale historical physical base needs a dark stroke; satellite retains the light one. */
+    colorFor: (light, satellite = false) => light && !satellite ? '#59636e' : BORDER_COLOR,
     width: BORDER_WIDTH, casing: BORDER_CASING, admin1Width: ADMIN1_WIDTH,
   };
 } catch (_) { /* no window (a node test importing the constants) — the exports are the contract */ }

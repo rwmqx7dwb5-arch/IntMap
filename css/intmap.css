@@ -2439,7 +2439,7 @@
          the bottom-right above the sheet. tileLegends() stacks them downward from here. */
       .koppen-legend:not([data-dragged]), .data-legend:not([data-dragged]){ bottom:auto !important; top:64px !important; left:6px !important; right:auto !important; }
       /* Timebar sits a little lower — just above the sheet (#32) — on the right; Summarize is centerd so they never collide. */
-      .news-timeline{ top:auto !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
+      .news-timeline{ top:auto !important; bottom:max(calc(var(--sheet-cover, var(--peek-h)) + 12px),var(--ntl-credit-floor,0px)) !important; right:12px !important; left:auto !important; max-width:calc(100vw - 24px); font-size:11px; }
       /* (#R107) mobile: the COLLAPSED "See the past world" pill is SMALLER and tucked closer to the right (display
          edge) + the bottom-sheet boundary. */
       .news-timeline.collapsed{ right:6px !important; bottom:calc(var(--sheet-cover, var(--peek-h)) + 6px) !important; }
@@ -3139,7 +3139,8 @@
       .tool-panel{ min-width:150px !important; max-width:62vw !important; padding:8px 10px !important; font-size:11.5px !important; }
       .tool-panel .tp-select, .tool-panel .radius-list{ font-size:11px; }
       .tool-panel .tp-hint{ display:none !important; }   /* compact: drop the help line on phones */
-      .news-timeline{ bottom:calc(var(--sheet-cover, var(--peek-h)) + 12px) !important; }
+      .news-timeline{ bottom:max(calc(var(--sheet-cover, var(--peek-h)) + 12px),var(--ntl-credit-floor,0px)) !important; }
+      .news-timeline:not(.collapsed){ max-height:var(--ntl-available-height,100dvh); overflow-y:auto; }
       /* (#R109) centre the mark in the round button — flex-centre + zero padding (the desktop base
          padding pushed it off-centre).
          (#R231) the mark is now the app's own <svg> inside the button (index.html) instead of a

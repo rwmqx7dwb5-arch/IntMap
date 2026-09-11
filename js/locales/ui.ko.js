@@ -6414,4 +6414,9 @@ window.IntMapLang.define('ko', { ui: {
   "International spread is weighted by land borders, by how many travellers each country actually receives, and by the airline route network as it stood in 2014 — the newest one that is openly published. Route counts are not seats or passenger numbers.": "국제 전파는 육상 국경, 각국이 실제로 받아들이는 여행자 수, 그리고 공개된 것 중 가장 최신인 2014년 시점의 항공 노선망으로 가중합니다. 노선 수는 좌석 수도 승객 수도 아닙니다.",   /* playground.js (#R678) */
   "International spread is weighted by land borders, airport capacity and the airline route network as it stood in 2014. The observed traveller volumes did not load.": "국제 전파는 육상 국경, 공항 수용력, 그리고 2014년 시점의 항공 노선망으로 가중합니다. 관측된 여행자 규모는 불러오지 못했습니다.",   /* playground.js (#R678) */
   "International spread is weighted by land borders and by how many travellers each country actually receives. The route network did not load, so distance decides which country an outbreak reaches next.": "국제 전파는 육상 국경과 각국이 실제로 받아들이는 여행자 수로 가중합니다. 항공 노선망을 불러오지 못해, 다음에 어느 나라로 번지는지는 거리가 결정합니다.",   /* playground.js (#R678) */
+  "Source boundary precision: approximate": "출처의 경계 정밀도 분류: 대략적",
+  "Source boundary precision: moderately precise": "출처의 경계 정밀도 분류: 중간 수준",
+  "Source boundary precision: determined by international law": "출처의 경계 정밀도 분류: 국제법으로 정해진 경계",
+  "Source dates: ": "출처의 날짜: ",
+  "[?] marks a historical name whose start date is unknown.": "[?]는 사용되기 시작한 시기가 알려지지 않은 역사적 지명을 나타냅니다.",
 } });

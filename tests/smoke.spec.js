@@ -2102,6 +2102,8 @@ test('R479 ⑨ the basemap credit is visible and names the base that is drawn', 
       w: Math.round(r.width), h: Math.round(r.height),
       onScreen: r.width > 0 && r.height > 0 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && r.top >= 0,
       sat: !!document.getElementById("btn-view-sat")?.classList.contains("active"),
+      physical: window.IntMapGeoEngine.layers.has('imhb-ground') && window.IntMapGeoEngine.layers.getLayout('imhb-ground', 'visibility') !== 'none',
+      carto: ['layer-light', 'layer-light-nl', 'layer-dark', 'layer-dark-nl'].some(id => window.IntMapGeoEngine.layers.has(id) && window.IntMapGeoEngine.layers.getLayout(id, 'visibility') !== 'none'),
       /* (#R485) hit-test the CREDIT TEXT — left, middle and right of every link in it. The strip
          spans the map column and the layer panel is legitimately drawn over its far end; what may
          never be covered is the credit itself. */
@@ -2135,7 +2137,8 @@ test('R479 ⑨ the basemap credit is visible and names the base that is drawn', 
   expect(c.covered, 'nothing is drawn over the credit text').toEqual([]);
   expect(c.text.length, 'it says something').toBeGreaterThan(3);
   /* it credits what is on screen, and links out rather than just naming */
-  const want = c.sat ? /Esri/ : /CARTO/;
+  expect(c.sat || c.physical || c.carto, 'a credited basemap is actually visible').toBe(true);
+  const want = c.sat ? /Esri/ : c.physical ? /OpenFreeMap/ : /CARTO/;
   expect(c.text, 'the credit names the base actually drawn (sat=' + c.sat + ')').toMatch(want);
   expect(c.links.length, 'and the credit links out').toBeGreaterThan(0);
 });

@@ -310,7 +310,7 @@ function build({ report, tol = TOL, minArea = MIN_AREA, write = true } = {}) {
     /* ⚠ ONE SNAPSHOT AT A TIME, SIMPLIFIED AND RELEASED. #R604 held every raw feature in a Map and
        walked into V8's 4 GB ceiling; the raw JSON of a file is dropped before the next is read. */
     const j = JSON.parse(readFileSync(join(CACHE, f), 'utf8'));
-    const feats = [], blank = [];
+    const feats = [], blank = [], blankPrecision = [];
     for (const ft of j.features || []) {
       stat.rawFeats++;
       const props = propsOf(ft);
@@ -351,7 +351,6 @@ function build({ report, tol = TOL, minArea = MIN_AREA, write = true } = {}) {
          would delete the map; naming them would invent a name. So they ship in a separate lane,
          `blank`, as geometry with no identity — which is exactly what the upstream says they are.
          Every entry of `feats` therefore has a name, and nothing upstream drew is thrown away. */
-      if (!nm) { stat.blank++; blank.push(polys); continue; }
       const at = {};
       for (const [short, tag] of ATTRS) {
         let v = props[tag];
@@ -364,9 +363,11 @@ function build({ report, tol = TOL, minArea = MIN_AREA, write = true } = {}) {
         if (v === nm && SAME_AS_NAME_DROPPED.includes(short)) continue;
         at[short] = v;
       }
+      /* Geometry stays in its established lane; precision belongs to unnamed shapes too. */
+      if (!nm) { stat.blank++; blank.push(polys); blankPrecision.push(at.bp ?? null); continue; }
       feats.push([{ en: nm }, at, polys]);
     }
-    snaps.push({ key, y: astroYear(key), feats, blank });
+    snaps.push({ key, y: astroYear(key), feats, blank, blankPrecision });
   }
   snaps.sort((a, b) => a.y - b.y);
 
@@ -455,6 +456,8 @@ function check() {
     }
     /* the identity-less lane is checked the same way, minus the name it does not claim to have */
     if (!Array.isArray(s.blank)) { bad.push(where + ' has no `blank` lane (it may be empty, but it must exist)'); return; }
+    if (!Array.isArray(s.blankPrecision) || s.blankPrecision.length !== s.blank.length)
+      bad.push(where + ' has misaligned unnamed boundary precision');
     for (const polys of s.blank) {
       blanks++;
       if (!Array.isArray(polys) || !polys.length) { bad.push(where + ' has an empty entry in `blank`'); continue; }

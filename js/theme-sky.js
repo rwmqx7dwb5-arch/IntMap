@@ -75,8 +75,8 @@ export function makeThemeSky(HOST, CTX) {
         const _l=(window.imMapColor==='light')||(window.imMapColor!=='dark'&&((HOST.userTheme==='light')||(HOST.userTheme==='auto'&&window.matchMedia('(prefers-color-scheme: light)').matches)));
         const _sat=HOST.mapType==='sat';
         if(GE().layers.has('layer-sat'))      GE().layers.setLayout('layer-sat','visibility',_sat?'visible':'none');
-        if(GE().layers.has('layer-light-nl')) GE().layers.setLayout('layer-light-nl','visibility',(!_sat&&_l)?'visible':'none');
-        if(GE().layers.has('layer-dark-nl'))  GE().layers.setLayout('layer-dark-nl','visibility',(!_sat&&!_l)?'visible':'none');
+        if(GE().layers.has('layer-light-nl')) GE().layers.setLayout('layer-light-nl','visibility',(!_sat&&_l&&!window.IntMapTimeBorders?.active?.())?'visible':'none');
+        if(GE().layers.has('layer-dark-nl'))  GE().layers.setLayout('layer-dark-nl','visibility',(!_sat&&!_l&&!window.IntMapTimeBorders?.active?.())?'visible':'none');
       }catch(_){} GE().events.once('idle',()=>{ try{ applyTheme(); }catch(_){} }); }
       return;
     }
@@ -89,17 +89,15 @@ export function makeThemeSky(HOST, CTX) {
        satellite mode and provide Japanese / native-script labels on the map (#41/#42/#43). The
        reliable CartoDB English labels stay as the default for EN map view. */
     const vecMap = HOST.namesOn && mapLabelsViaVector();        /* vector labels on the (non-sat) map */
-    /* (#R94j) while the clock is on a past year the labelled Carto base (dark_all/light_all) must NOT be used:
-       it has the MODERN borders & country names BAKED INTO the raster, which would survive under the era
-       borders and make the map look un-synced. Force the label-free base; the era borders/names come from
-       imtb-line / imtb-lbl. */
+    /* Both CARTO variants contain current boundaries. Chronos replaces them
+       with the shared physical-geography vector base in _applyBorders below. */
     const _travelingBase = !!(window.IntMapTimeBorders&&window.IntMapTimeBorders.active&&window.IntMapTimeBorders.active());
     const showCartoLabels = HOST.namesOn && !vecMap && !_travelingBase;   /* labeled carto basemap */
     if(GE().layers.has('layer-sat-labels')) GE().layers.setLayout('layer-sat-labels','visibility','none');  /* Esri labels retired */
     GE().layers.setLayout('layer-light','visibility',(light&&showCartoLabels)?'visible':'none');
-    GE().layers.setLayout('layer-light-nl','visibility',(light&&!showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-light-nl','visibility',(light&&!showCartoLabels&&!_travelingBase)?'visible':'none');
     GE().layers.setLayout('layer-dark','visibility',(dark&&showCartoLabels)?'visible':'none');
-    GE().layers.setLayout('layer-dark-nl','visibility',(dark&&!showCartoLabels)?'visible':'none');
+    GE().layers.setLayout('layer-dark-nl','visibility',(dark&&!showCartoLabels&&!_travelingBase)?'visible':'none');
     try{ ensurePlaceLabels(); applyLabelLang(); }catch(_){}
     /* Country-borders overlay (always-on outline layer using the same countries source as Countries(info)) */
     try{ window._applyBorders(); }catch(_){ ['borders-only-line','borders-only-casing'].forEach(id=>{ if(GE().layers.has(id)) GE().layers.setLayout(id,'visibility', HOST.bordersOn?'visible':'none'); }); }   /* (#R210) casing too, or it survives a border switched off */

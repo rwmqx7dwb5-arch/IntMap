@@ -162,10 +162,11 @@ test('⑥ every layer the province row paints is in the layer audit’s list', (
 
 /* ── ⑦ the click is answered with the era polygon ─────────────────────────────────────────────── */
 test('⑦ _eraGeom answers for the era labels and for nothing else', () => {
-  const src = liftFunction(MU, '_eraGeom');
+  const src = liftFunction(MU, '_eraSourceDates') + '\n' + liftFunction(MU, '_eraGeom');
   const asked = [];
-  const sandbox = { window: { IntMapTimeAdmin1: { geomAt: (p) => { asked.push(p); return { type: 'Polygon', coordinates: [] }; } } } };
+  const sandbox = { HOST: { lang: 'en' }, window: { IntMapTimeAdmin1: { geomAt: (p) => { asked.push(p); return { type: 'Polygon', coordinates: [] }; } } } };
   vm.createContext(sandbox);
+  vm.runInContext(rd('js/lang-registry.js'), sandbox);
   vm.runInContext(src + '\nvar EG=_eraGeom;', sandbox);
   const f = (id, props) => ({ layer: { id }, properties: props });
   assert.equal(sandbox.EG(f('ofm-admin1', { name: 'x' })), null, 'the present-day label must keep asking IntMapOutline by name');

@@ -616,8 +616,11 @@ window.IntMapCesiumLayers=(function(){
       const paint=def.paint||{}, layout=def.layout||{};
       const pass=St().compileFilter(def.filter);
       const ents=ds.entities;
-      ents.suspendEvents();
+      /* Cesium cancels remove/add of the same ID inside one suspended batch.
+         These are replacement Entity instances: the visualizer must detach the
+         old ones before seeing the new ones, or Now geometry survives Chronos. */
       ents.removeAll();
+      ents.suspendEvents();
       /* minzoom/maxzoom are the layer's own visibility window and MapLibre applies
          them before anything else — a layer outside it draws nothing at all. */
       const inZoom=(def.minzoom==null||zoom>=def.minzoom)&&(def.maxzoom==null||zoom<def.maxzoom);
@@ -643,7 +646,7 @@ window.IntMapCesiumLayers=(function(){
             case 'fill': {
               const fc=RC(paint['fill-color'],ctx,'#000000');
               const op=RN(paint['fill-opacity'],ctx,1);
-              for(const poly of rings(g)){
+              for(const poly of rings(f.fillGeometry||g)){
                 if(!poly.length) continue;
                 add({ id:def.id+'/'+n+'/'+ents.values.length, properties:f.properties,
                   polygon:{ hierarchy:hierarchyOf(Cesium,poly),
@@ -659,7 +662,7 @@ window.IntMapCesiumLayers=(function(){
               const op=RN(paint['fill-extrusion-opacity'],ctx,1);
               const base=RN(paint['fill-extrusion-base'],ctx,0);
               const top=RN(paint['fill-extrusion-height'],ctx,0);
-              for(const poly of rings(g)){
+              for(const poly of rings(f.fillGeometry||g)){
                 if(!poly.length) continue;
                 add({ id:def.id+'/x'+ents.values.length, properties:f.properties,
                   polygon:{ hierarchy:hierarchyOf(Cesium,poly), height:base, extrudedHeight:top,
@@ -673,9 +676,23 @@ window.IntMapCesiumLayers=(function(){
               const w=Math.max(0.1,RN(paint['line-width'],ctx,1));
               const dash=R(paint['line-dasharray'],ctx,null);
               const c4=col({...lc,a:(lc.a==null?1:lc.a)*op});
-              const material=(Array.isArray(dash)&&dash.length>=2)
-                ? new Cesium.PolylineDashMaterialProperty({ color:c4, dashLength:Math.max(4,(dash[0]+dash[1])*w*2) })
-                : c4;
+              let material=c4;
+              if(Array.isArray(dash)&&dash.length>=2&&dash.every(n=>Number.isFinite(n)&&n>=0)){
+                const segments=dash.length%2?dash.concat(dash):dash;
+                const total=segments.reduce((a,n)=>a+n,0);
+                const gap=segments.reduce((a,n,i)=>a+(i%2?n:0),0);
+                if(total>0&&gap>0){
+                  /* Cesium samples a 16-bit repeating mask. Preserve every dash/gap ratio,
+                     rather than mapping all patterns to its default equal dash and gap. */
+                  let pattern=0;
+                  for(let bit=0;bit<16;bit++){
+                    let position=(bit+0.5)*total/16, index=0;
+                    while(index<segments.length-1&&position>=segments[index]) position-=segments[index++];
+                    if(index%2===0) pattern|=1<<bit;
+                  }
+                  material=new Cesium.PolylineDashMaterialProperty({color:c4,dashLength:total*w,dashPattern:pattern});
+                }
+              }
               for(const ln of lines(g)){
                 const pos=deg(ln); if(pos.length<4) continue;
                 add({ id:def.id+'/l'+ents.values.length, properties:f.properties,
