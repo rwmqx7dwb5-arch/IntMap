@@ -87,8 +87,8 @@ const OUTSIDE_ROOTS = [
    The VALUES the user chose are here and nowhere else; the checks below read this table, so a
    changed answer is a one-line change and never a second copy. */
 const SETTINGS = [
-  { key: 'model_reasoning_effort', value: 'high',
-    why: 'AGENTS.md §3 asks for the cause, not the symptom; «low» walks the steps without the judgement. Costs the user money — set because the user asked for it (#R704), never raised on this script\'s own initiative.' },
+  { key: 'model_reasoning_effort', value: 'high', appOwned: true,
+    why: 'AGENTS.md §3 asks for the cause, not the symptom; «low» walks the steps without the judgement. Costs the user money — set because the user asked for it (#R704), never raised on this script\'s own initiative. ⚠ MEASURED #R704: written to «high», the RUNNING Codex app wrote «low» back into config.toml within minutes — this key mirrors the app\'s own model picker, so a file write is not durable while the app is open. Set it in the picker; this script only reports the drift.' },
   { key: 'sandbox_mode', value: 'workspace-write',
     why: 'AGENTS.md §5.1 requires commit / push / PR / merge / deployment without extra approval; read-only cannot do any of them.' },
   { key: 'approval_policy', value: 'on-failure',
@@ -159,7 +159,11 @@ if (!existsSync(CONFIG)) {
   for (const s of SETTINGS) {
     const r = setBareKey(text, s.key, s.value);
     if (!r.changed) add(s.key, 'ok', `${s.value}`);
-    else if (APPLY) { text = r.text; add(s.key, 'fixed', `${r.was ?? '（未設定）'} → ${s.value}   ${s.why}`); }
+    else if (s.appOwned) {
+      /* Writing it would "work" and then be undone by the app — a fix that does not hold is worse
+         than no fix, because the report would say ✎ while the value went back. Say who owns it. */
+      add(s.key, 'manual', `いまは ${r.was ?? '未設定'}。要る値は ${s.value}。⚠ **この鍵はアプリが所有している**——Codex の起動中にファイルへ書いても書き戻される（実測 #R704）。Codex のモデル選択 UI で選ぶこと。${s.why}`);
+    } else if (APPLY) { text = r.text; add(s.key, 'fixed', `${r.was ?? '（未設定）'} → ${s.value}   ${s.why}`); }
     else add(s.key, 'manual', `いまは ${r.was ?? '未設定'}。要る値は ${s.value} — ${s.why}`);
   }
 

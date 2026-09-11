@@ -95,11 +95,29 @@ test('④ --apply は冪等で、利用者の行を 1 行も落とさない', ()
     runSetup(['--apply'], home);
     assert.equal(readFileSync(cfg, 'utf8'), once, '2 回目の --apply が中身を変えた（冪等でない）');
 
-    for (const line of SAMPLE.split('\n').filter((l) => l.trim() && !l.startsWith('model_reasoning_effort'))) {
+    for (const line of SAMPLE.split('\n').filter((l) => l.trim())) {
       assert.ok(once.includes(line), `利用者の行が消えた: ${line}`);
     }
-    assert.ok(once.includes('model_reasoning_effort = "high"'), '値が更新されていない');
-    assert.ok(!once.includes('model_reasoning_effort = "low"'), '古い値が残っている（追記してしまった）');
+    assert.ok(once.includes('sandbox_mode = "workspace-write"'), '書くべき値が書かれていない');
+    assert.ok(!once.includes('sandbox_mode = "workspace-write"\nsandbox_mode'), '同じ鍵を 2 度書いた');
+  });
+});
+
+/* ⑥ アプリが所有している鍵には触らない。
+      ⚠ 実測 #R704: `model_reasoning_effort` を `high` に書いた数分後、**起動中の Codex が
+      `low` を書き戻した**——この鍵はアプリのモデル選択 UI の写しなので、ファイルへの書き込みは
+      持続しない。**持続しない修正は、修正が無いことより悪い**（報告は「直した」と言い、値は
+      戻っている）。だから書かずに、誰が所有しているかを言う。 */
+test('⑥ アプリが所有する鍵はファイルに書かず、所有者を報告する', () => {
+  withHome((home, cfg) => {
+    runSetup(['--apply'], home);
+    const after = readFileSync(cfg, 'utf8');
+    assert.ok(after.includes('model_reasoning_effort = "low"'),
+      'アプリが所有する鍵を書き換えてしまった（起動中の Codex に書き戻されるので、報告が嘘になる）');
+
+    const row = JSON.parse(runSetup(['--json'], home)).rows.find((r) => r.name === 'model_reasoning_effort');
+    assert.equal(row.state, 'manual', '所有者がアプリである鍵を「揃った」と報告してはならない');
+    assert.match(row.detail, /UI/, '誰がその値を持っているのかを言っていない');
   });
 });
 
