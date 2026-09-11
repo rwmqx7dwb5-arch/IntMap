@@ -1252,7 +1252,7 @@ reader here for this list; adding a rule means adding a row.
 | `capability-count` | a document states a size for the Atlas capability registry that is not what `js/atlas-capabilities.js` holds |
 | `prompt-count` | `Architecture.md`'s system-prompt total or per-file breakdown disagrees with `EXPECTED_CALLS` in `tests/r285-checks.test.mjs` |
 | `deep-tier-size` | a stated size of a test tier — in a document, in `package.json` or in `scripts/worktree.mjs` — is not what `scripts/tiers.mjs` derives |
-| `histb-count` | a line naming the day-exact border record below CShapes states a count of records or of transition dates that `data/hist-borders.js` does not hold |
+| `histb-count` | the size of the day-exact border record below CShapes, as any tracked file states it, disagrees with `data/hist-borders.js` — or one of the nine source pages states that row without a number its English original states (see below) |
 | `shrink-policy` | one of the three standing documents states the removal policy without the confirmation step, without forbidding it unilaterally, or without sending the reader to the 正本 for the Atlas carve-out |
 | `section-refs` | a document names another document and a `§` number that document has no section for |
 | `gate-callers` | `package.json` declares a `check:*` script that neither `ci.yml` nor `npm test` ever runs |
@@ -1315,6 +1315,86 @@ row as the sentence it forbids makes the gate report this file. Measured while a
 rows did exactly that on the first attempt, and two more escaped only on a technicality (one needle
 is case-sensitive, another wanted a shorter phrase). This has now happened thirteen times in this
 repository; `scripts/doc-facts.mjs`'s own header assembles its needles from parts for the same reason.
+
+### ⚠ (#R701) `histb-count` measures the nine languages without knowing a word of any of them
+
+This rule holds the size of `data/hist-borders.js` — how many records, and how many transition
+dates, the 1689–1885 window carries — against every place that states it. Until #R701 it did that
+with a table of unit nouns, and **that table was made of English and Japanese**, so seven of the
+nine shipped languages were outside the gate entirely. Measured across the 44 documents and the
+rule's own carriers: **it read 8 claims where 30 were standing, and 14 of the 22 it could not see
+were the same two numbers in the other seven languages** — ru 「1 411 записей … 881 различная дата
+изменений」, fr 「1 411 enregistrements … 881 dates de transition distinctes」. Every instrument was
+green, because the fallback for an unmatched sentence is silence.
+
+⚠ **Adding seven languages' nouns to the table would have been the defect, not the fix**
+([`no-ad-hoc-hardcoding.md`](../.agents/rules/no-ad-hoc-hardcoding.md)): a hand-written list of
+nine translations falls out of date the first time a translator rephrases, and a tenth language
+ships outside it on day one. So the nine pages are **not** measured by their nouns. They are one
+authored sentence and its eight translations, keyed by the English original, which makes a
+language-independent property available: **every number the 正本 states, each translation states
+too.** That holds every figure in the row — the two counts, the file size, the relation totals, the
+percentage, the polity range, both window ends — rather than the two a noun table can name.
+
+- **Inclusion, not equality, and the direction was measured rather than chosen.** A translation may
+  spell as a numeral what English spelled as a word (ja 「9 言語」 for «nine languages», 「3 回の
+  分割」 for «three partitions»), so translations legitimately state *more* numbers — 65, 59 and 57
+  against the 正本's 56. What none may do is drop one. On the nine as they ship: **56 × 8 = 448
+  assertions, 0 missing.**
+- **The roster is discovered from disk and then held to the shipped language count.** Writing it out
+  here would be a third spelling of the same nine and would be wrong about two of them: the app's
+  Japanese page is `pages.ja.js` while its language code is `jp`, and its traditional Chinese is
+  `pages.zh-hant.js` while its code is `zh` (#R588).
+
+The other half of the rule — the single-language carriers — was widened in two ways at the same
+time, and one of them could not have been done without the other:
+
+- **A number's scope is the smallest unit that names the record: its line *or* its sentence.** A
+  line is a rendering artifact, not a unit of meaning, and a sentence that names the record on one
+  line states its count on the next. That cost four claims, and two of them had been **stale since
+  #R690 widened the window** — `js/time-borders.js` stated #R518's size in the present tense eleven
+  lines above the paragraph holding the current one. ⚠ **A paragraph is not the unit, and that was
+  measured before being rejected**: paragraph scope pulled in per-instant counts and other records'
+  sizes — 11 false claims. #R694's shape, one rule over.
+- **Grouped numbers are read whole.** The old needle took the 2–5 digits before the noun, so it read
+  a thousands-separated count as its tail — the defect #R689 fixed in `hist-cities`. It was green
+  only because every grouped statement happened to sit outside line scope, which means **widening
+  the scope without this would have manufactured false failures the moment it arrived.**
+- **The carriers are discovered, not listed.** This used to name two source files by hand (#R399's
+  defect: the ledger rots wherever the list forgot to look). Everything git tracks is now swept,
+  minus the generated bundles under `data/`, `dist/` and the change log — which legitimately quotes
+  numbers that were true once.
+
+**The residuals, stated rather than implied.** Counted by hand over every tracked file that writes
+either number: **26 statements stand in the single-language carriers, of which this rule reads 10**
+(plus the 448 held across the translations). The 16 it does not read fail for three separate
+reasons, and none of them is «the table is missing a word»:
+
+1. **Eight say `features`, and that word is deliberately not a unit here** (`Architecture.md`'s QID
+   row, the English and Japanese source pages' QID sentence, `js/time-borders.js`,
+   `scripts/build-histnames.mjs`, `scripts/histeras/harvest.mjs`, and twice in
+   `scripts/histnames/records.mjs`). Every bundled record in this repo is a list of features, so
+   the word does not say *which* record is being counted: with it in the set, a sentence naming this
+   record while counting the aourednik overlay contributed one false claim and the per-year probes
+   contributed two more. **22 claims at 3 false is worse than 12 at 0** — a gate that cries wolf is
+   loosened by the next session that meets it.
+2. **Seven wear a real unit but name the record only in a PREVIOUS sentence** (twice in
+   `js/time-borders.js`, three times in `scripts/asset-report.mjs`, once in
+   `scripts/build-hist-borders.mjs`). Reaching them means resolving the subject across a sentence
+   boundary, and the cheap approximation of that — the paragraph — was measured and rejected above.
+3. **One is a bare number in a table column** (`scripts/histnames/records.mjs`), with no unit at all.
+
+What would close (1) and (2) is the same mechanism: a reader for the **grammatical role** of a
+quantity — what noun phrase it modifies, and what that phrase refers to — rather than for the noun
+sitting beside it. That is a separate piece of machinery, not another entry in a table, and it is
+the only honest way to widen further.
+
+`tests/r701-histb-count-lang-independent-checks.test.mjs` is what proves the widened rule actually
+goes red — twelve mutations, including one per non-English language, both directions of the grouped
+number, and the green-tree baseline that proves the widening added no false claim. ⚠ **That file
+had to assemble its unit nouns from parts**: the sweep now reads it too, so a mutation table that
+wrote a wrong count beside its noun as one literal made the gate report the test file. Fourteenth
+time in this repository.
 
 ## The Edge Function inventory, across every document (`scripts/doc-facts.mjs`)
 

@@ -1668,19 +1668,59 @@ if (RULE && RULE !== 'i18n-open-gap') {
 }
 
 /* ========================================================================================
- *  (#R518, widened #R690) THE DAY-EXACT BORDER RECORD BELOW CShapes — the numbers the prose quotes
+ *  (#R518, widened #R690, made language-independent #R701) THE DAY-EXACT BORDER RECORD BELOW CShapes
  * ----------------------------------------------------------------------------------------
- *  are the file's own. data/hist-borders.js is the 正本 for how many polities and how many transition dates the
- *  window holds — 1689-1885 since #R690, and the window is read off the file rather than spelled here
- *  — and both numbers are quoted in prose in several places (Architecture,
- *  PRODUCT, and the Sources page in nine languages). #R500's finding was that a prose copy of a
- *  machine's number always parts from it eventually, so the file is measured here and every LINE
- *  that names the record is held to it.
+ *  data/hist-borders.js is the 正本 for how many records and how many transition dates the window
+ *  holds — 1689-1885 since #R690, and the window is read off the file rather than spelled here.
+ *  Both numbers are quoted in prose in several places (Architecture, PRODUCT, docs/TESTING, the
+ *  code that reads the bundle, and the Sources page in nine languages). #R500's finding was that a
+ *  prose copy of a machine's number always parts from it eventually, so the file is measured here
+ *  and every place that names the record is held to it.
  *
- *  ⚠ A NUMBER COUNTS AS A CLAIM ONLY IN A LINE THAT NAMES THIS RECORD, and only when it wears one
- *  of the units below. A sentence that phrases the count some other way goes unchecked — that
- *  residual is written down in docs/TESTING.md rather than papered over with a looser regex, which
- *  would start reading CShapes' own 710 records as a claim about this file.
+ *  ⚠⚠⚠ THE NEEDLE USED TO BE MADE OF ENGLISH AND JAPANESE NOUNS, SO SEVEN OF THE NINE SHIPPED
+ *  LANGUAGES WERE OUTSIDE IT. Measured #R699 across the 44 documents and this rule's own source
+ *  list: it read **8** claims where **30** were standing. Fourteen of the twenty-two it could not
+ *  see were the same two numbers in the other seven languages — ru 「1 411 записей … 881 различная
+ *  дата изменений」, fr 「1 411 enregistrements … 881 dates de transition distinctes」 — and no
+ *  amount of care with a hand-written table of units would have reached them, because a
+ *  hand-written table of nine languages' nouns IS the case-by-case hardcoding
+ *  `.agents/rules/no-ad-hoc-hardcoding.md` forbids: it is a list that goes stale the moment a
+ *  translator rephrases, and the tenth language ships outside it.
+ *
+ *  ⚠ SO THE NINE LANGUAGES ARE NOT MEASURED BY THEIR NOUNS AT ALL (half 2 below). The nine source
+ *  pages are ONE sentence and its eight translations, which makes a language-independent property
+ *  available: **every number the 正本 states, each translation states too.** That holds every
+ *  figure in the paragraph — 1411, 881, 13.3 MB, 3,985, 2,101, 53%, 164-216, 1689, 1850 — rather
+ *  than the two a noun table can name, and it needs no word of German, Russian or Korean.
+ *  ⚠ Inclusion, not equality, and the direction is measured rather than chosen: a translation may
+ *  spell as a numeral what English spelled as a word (ja 「9 言語」 for «nine languages», 「3 回の
+ *  分割」 for «three partitions»), so translations legitimately state MORE numbers — 65, 59, 57
+ *  against the 正本's 56. What one may never do is drop one. Measured on all nine: 56 numbers ×
+ *  8 translations = 448 assertions, 0 missing.
+ *
+ *  ⚠ AND A NUMBER'S SCOPE IS THE SMALLEST UNIT THAT NAMES THE RECORD — ITS LINE **OR** ITS
+ *  SENTENCE. The old rule asked only the line, and a line is a rendering artifact, not a unit of
+ *  meaning: a sentence that names the record on one line states its count on the next. Measured,
+ *  that cost four claims — docs/TESTING.md's pair, and a pair in js/time-borders.js that had been
+ *  STALE since #R690 widened the window — #R518's two figures, in the present tense, eleven lines
+ *  above the paragraph stating the current ones. ⚠ They are not quoted here: this file is inside
+ *  the sweep it performs, so a wrong count written beside its unit noun would be a claim.
+ *  ⚠ A paragraph is NOT the unit, and this was measured before being rejected: paragraph scope
+ *  pulled in per-instant counts (1860-06-15 210 features) and other records' sizes (aourednik's
+ *  236, hist-admin1's 5,315) — 11 false claims. #R694's lesson in the neighbouring shape.
+ *
+ *  ⚠ `features` IS NOT ONE OF THE UNITS, AND THAT IS DELIBERATE. Every bundled record in this repo
+ *  is a list of features, so the word does not say WHICH record is being counted: with it in the
+ *  set, a sentence naming this record while counting aourednik's overlay contributed «141
+ *  features» and the per-year probes contributed «210 features». 22 claims at 3 false is worse than
+ *  12 at 0 — a gate that cries wolf is loosened by the next session. The residual that leaves is
+ *  written down in docs/TESTING.md rather than papered over.
+ *
+ *  ⚠ THE CARRIERS ARE DISCOVERED, NOT LISTED. This used to name js/time-borders.js and
+ *  scripts/build-hist-borders.mjs by hand, which is #R399's defect exactly — the ledger is free to
+ *  rot wherever the list forgot to look. Everything git tracks is swept (minus the generated
+ *  bundles under data/ and dist/, and minus the change log, which legitimately quotes numbers that
+ *  were true once — see EXCLUDED).
  * ======================================================================================== */
 {
   let HB = null;
@@ -1694,45 +1734,152 @@ if (RULE && RULE !== 'i18n-open-gap') {
     for (const f of HB.feats) { bounds.add(k(f[2], f[3], f[4])); bounds.add(k(f[5], f[6], f[7])); }
     const DATES = [...bounds].filter((x) => x >= k(HB.window[0], 1, 1) && x <= k(HB.window[1], 12, 31)).length;
 
+    /* ⚠ ONE READER FOR GROUPED NUMBERS, BECAUSE THE OLD NEEDLE READ A THOUSANDS-SEPARATED COUNT AS
+       ITS TAIL — 1,411 of them came back as 411. `(\d{2,5})\s*<unit>` starts wherever it can, and
+       where it cannot start at the thousand it starts after the separator — the same defect #R689
+       fixed in `hist-cities`. ⚠ The numbers in this comment are deliberately NOT written next to
+       their unit noun: this file is inside the sweep below. It was green only
+       because every grouped line happened to sit outside the old line scope, so WIDENING THE SCOPE
+       WITHOUT THIS WOULD HAVE MANUFACTURED FALSE FAILURES the moment it reached them. Group
+       separators differ by language (1,411 · 1.411 · 1 411 · 1 411 with U+00A0/U+202F), so the
+       reader takes all of them, and the lookbehind refuses to begin in the middle of a number. */
+    const GSEP = '[.,\\u00a0\\u202f\\u2009 ]';
+    const NUM = '(?<![\\d.,\\u00a0\\u202f\\u2009])(\\d{1,3}(?:' + GSEP + '\\d{3})+|\\d{2,5})';
+    const ungroup = (s) => Number(String(s).replace(new RegExp(GSEP, 'g'), ''));
+    /* whitespace, newlines and the `*` that continues a block comment — but never a full stop, so
+       a number ending one sentence cannot borrow the noun that opens the next */
+    const SP = '[ \\t\\r\\n*]*';
     const CLAIM = [
-      [RECORDS, 'records', [/(\d{2,5})\s*(?:件の記録|records\b)/g, /記録\s*\**(\d{2,5})\**\s*件/g]],
-      [DATES, 'transition dates', [/(\d{2,5})\s*(?:件の変化日|(?:distinct\s+)?transition dates?\b)/g, /変化日\s*\**(\d{2,5})\**\s*件/g]],
+      [RECORDS, 'records', [new RegExp(NUM + SP + '(?:records?|件の記録)', 'g'),
+        new RegExp('記録' + SP + '\\*{0,2}' + NUM + '\\*{0,2}' + SP + '件', 'g')]],
+      [DATES, 'transition dates', [new RegExp(NUM + SP + '(?:(?:distinct\\s+)?transition dates?|件の変化日)', 'g'),
+        new RegExp('変化日' + SP + '\\*{0,2}' + NUM + '\\*{0,2}' + SP + '件', 'g')]],
     ];
-    const SOURCES = [...DOCS.map((d) => [d, BODY.get(d)]),
-      ...['en', 'ja', 'de', 'ru', 'es', 'fr', 'ko', 'zh-hant', 'zh-hans'].map((c) => ['js/locales/pages.' + c + '.js', rd('js/locales/pages.' + c + '.js')]),
-      /* ⚠ AND THE CODE'S OWN COMMENTS. The header of `js/time-borders.js` quotes these numbers to
-         explain why the band exists, and it is not a document, so the sweep above never reads it —
-         measured: two of its figures were already stale on the round that introduced them. */
-      ['js/time-borders.js', rd('js/time-borders.js')],
-      ['scripts/build-hist-borders.mjs', rd('scripts/build-hist-borders.mjs')]];
+    const NAMES = /hist-borders(?:\.js)?|OpenHistoricalMap/;
+    /* the nine source pages, found on disk rather than spelled out: the app's Japanese page is
+       `pages.ja.js` while its language code is `jp`, and its traditional Chinese is `pages.zh-hant.js`
+       while its code is `zh` (js/locales/_langs.js is the 正本 for the codes, #R588), so a roster
+       written out here would be a third spelling of the same nine and would be wrong about two. */
+    const PAGES_ON_DISK = readdirSync(join(ROOT, 'js/locales'))
+      .filter((f) => /^pages\.[\w-]+\.js$/.test(f)).sort().map((f) => 'js/locales/' + f);
 
-    let checked = 0, carriers = 0;
-    for (const [file, body] of SOURCES) {
-      let saw = false;
-      for (const line of String(body || '').split(/\r?\n/)) {
-        if (!/hist-borders(?:\.js)?|OpenHistoricalMap/.test(line)) continue;
-        saw = true;
-        for (const [want, what, res] of CLAIM) {
-          for (const re of res) {
-            re.lastIndex = 0;
-            for (const m of line.matchAll(re)) {
-              checked++;
-              if (Number(m[1]) !== want) fail('histb-count', file + ' says «' + m[0].trim() + '» — the record holds ' + want + ' ' + what);
-            }
+    /* ── half 1: every carrier git tracks, held to the record by the units above ────────────── */
+    const carriersUniverse = (() => {
+      const ls = (...a) => {
+        try {
+          return execFileSync('git', ['ls-files', '-z', ...a], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+            .split('\0').filter(Boolean);
+        } catch { return []; }
+      };
+      const all = [...new Set([...ls(), ...ls('--others', '--exclude-standard')])];
+      /* ⚠ an empty answer must not pass everything (#R628): if git is silent, fall back to the
+         documents this script already read plus the nine source pages found on disk. */
+      /* EXCLUDED is the judgement about which files legitimately quote numbers that were true once,
+         and it lives in one place — but ⚠ ONE OF ITS ROWS IS NOT THAT JUDGEMENT: `.agents/` is kept
+         out of PROSE_DOCS only because AGENT_DOCS sweeps it a few lines later. Here there is no
+         second sweep, so an instruction document naming this record would fall through the gap. */
+      const skip = (f) => EXCLUDED.some(([re]) => re.test(f)) && !f.startsWith('.agents/');
+      const src = all.filter((f) => /\.(md|js|mjs)$/.test(f)
+        && !/^(data|dist)\//.test(f) && !skip(f) && has(f));
+      return src.length ? src : [...DOCS, ...PAGES_ON_DISK];
+    })();
+    /* ⚠ THE SENTENCE, NOT THE PARAGRAPH. Split at a full stop (Latin or CJK), at a blank or
+       comment-only line, at a block-comment boundary, and at the start of a list item or heading —
+       the places where one statement stops and the next begins. */
+    const SENTENCE = /(?<=[。．！？])|(?<=\.)(?=[ \t\r\n])|(?<=[!?])(?=[ \t\r\n])|\r?\n[ \t]*(?:[*/]+[ \t]*)?\r?\n|\*\/|\/\*|\r?\n\s*[-|#]/;
+    let checked = 0; const carriers = new Set();
+    for (const file of carriersUniverse) {
+      let body; try { body = rd(file); } catch (_) { continue; }
+      if (!NAMES.test(body)) continue;
+      const units = [...body.split(/\r?\n/), ...body.split(SENTENCE)].filter((u) => NAMES.test(u));
+      const said = new Set();
+      for (const unit of units) for (const [want, what, res] of CLAIM) for (const re of res) {
+        re.lastIndex = 0;
+        for (const m of unit.matchAll(re)) {
+          /* the same claim is reachable as a line AND as a sentence; report it once */
+          const key = what + '|' + m[0].replace(/\s+/g, ' ');
+          if (said.has(key)) continue;
+          said.add(key); checked++; carriers.add(file);
+          if (ungroup(m.slice(1).find((x) => x != null)) !== want)
+            fail('histb-count', file + ' says «' + m[0].replace(/\s+/g, ' ').trim() + '» — the record holds ' + want + ' ' + what);
+        }
+      }
+    }
+
+    /* ── half 2: the nine source pages, without a word of any of the nine languages ──────────
+       The Sources row is one authored sentence and its eight translations, keyed by the English
+       original, so the 正本 and each translation are found by the SAME key rather than by a
+       hand-written roster of paths. Every number the 正本 states must survive translation. */
+    const NUMS = new RegExp('\\d{1,3}(?:' + GSEP + '\\d{3})+|\\d+(?:[.,]\\d+)?', 'g');
+    const numbersIn = (s) => [...String(s).matchAll(NUMS)].map((m) => m[0].replace(new RegExp(GSEP, 'g'), ''));
+    /* ⚠ THE REGISTRY IS SUPPLIED HERE RATHER THAN LEFT TO THE FILE. Eight of the nine pages open
+       with a one-line bootstrap that creates `window.IntMapPageI18N` if nothing else has;
+       js/locales/pages.zh-hans.js does not, so a reader that evaluates only that file gets a
+       TypeError. This rule must not depend on which of the nine happens to carry the net. */
+    const pageDoc = (f) => {
+      const w = { IntMapPageI18N: { _d: {}, define(c, d) { this._d[c] = d; }, doc(c) { return this._d[c]; } } };
+      new Function('window', rd(f))(w);
+      const d = w.IntMapPageI18N._d;
+      return d[Object.keys(d)[0]];
+    };
+    /* ⚠ the path is joined with NUL, WRITTEN AS AN ESCAPE. A key here is an English sentence
+       fragment («OpenHistoricalMap (CC0 1.0)»), so any printable separator could occur inside one;
+       NUL cannot. Embedding the byte itself instead of the escape is what `check:static`'s
+       `regex-control-char` rule exists to catch, and it caught this line on the first run. */
+    const flat = (o, path = [], out = new Map()) => {
+      for (const [key, v] of Object.entries(o || {})) {
+        if (typeof v === 'string') out.set([...path, key].join('\u0000'), v);
+        else if (v && typeof v === 'object') flat(v, [...path, key], out);
+      }
+      return out;
+    };
+    let langChecked = 0;
+    try {
+      const LANGS = PAGES_ON_DISK.map((f) => f.replace(/^js\/locales\/pages\.|\.js$/g, ''));
+      /* ⚠ the roster is DISCOVERED from disk, and then required to be the size the app ships.
+         A page file deleted or renamed would otherwise shrink this half in silence. */
+      const shipped = (rd('js/locales/_langs.js').match(/IntMapLangCodes\s*=\s*(\[[^\]]*\])/) || [, '[]'])[1];
+      const want = JSON.parse(shipped).length;
+      if (LANGS.length !== want)
+        fail('histb-count', `js/locales/ holds ${LANGS.length} pages.<code>.js file(s) while js/locales/_langs.js ships ${want} language(s) — the nine-language half of this rule reads whichever files are there`);
+      const docs = new Map(LANGS.map((c) => [c, flat(pageDoc('js/locales/pages.' + c + '.js'))]));
+      const base = docs.get('en');
+      if (!base) fail('histb-count', 'js/locales/pages.en.js is missing — it is the 正本 the eight translations are compared with');
+      else {
+        const keys = [...base].filter(([, v]) => /data\/hist-borders\.js/.test(v)).map(([key]) => key);
+        if (!keys.length)
+          fail('histb-count', 'no entry in js/locales/pages.en.js names data/hist-borders.js any more — the Sources row for the day-exact border record is where nine languages state its size');
+        for (const key of keys) {
+          const wanted = numbersIn(base.get(key));
+          const need = new Map();
+          for (const n of wanted) need.set(n, (need.get(n) || 0) + 1);
+          for (const c of LANGS) {
+            if (c === 'en') continue;
+            const v = docs.get(c).get(key);
+            if (v == null) { fail('histb-count', `js/locales/pages.${c}.js has no «${key.replace(/\u0000/g, '.')}» — the row where nine languages state the size of the day-exact border record`); continue; }
+            const got = new Map();
+            for (const n of numbersIn(v)) got.set(n, (got.get(n) || 0) + 1);
+            const missing = [...need].filter(([n, q]) => (got.get(n) || 0) < q).map(([n]) => n);
+            langChecked += wanted.length;
+            if (missing.length)
+              fail('histb-count', `js/locales/pages.${c}.js states «${key.replace(/\u0000/g, '.')}» without ${missing.length} number(s) the 正本 states — ${missing.slice(0, 6).join(', ')}${missing.length > 6 ? ', …' : ''}`);
           }
         }
       }
-      if (saw) carriers++;
+    } catch (e) {
+      fail('histb-count', 'the nine source pages could not be read as one sentence and its translations — ' + (e && e.message));
     }
+
     /* the 正本 chapter must actually carry both numbers — a paragraph reworded out of the shapes
        above would otherwise take the fact with it and nothing here would notice */
-    const archLines = ARCH.split(/\r?\n/).filter((l) => /hist-borders(?:\.js)?|OpenHistoricalMap/.test(l)).join('\n');
-    for (const [want, what, res] of CLAIM) {
-      if (!res.some((re) => { re.lastIndex = 0; return re.test(archLines); }))
+    const archUnits = [...ARCH.split(/\r?\n/), ...ARCH.split(SENTENCE)].filter((u) => NAMES.test(u)).join('\n');
+    for (const [, what, res] of CLAIM) {
+      if (!res.some((re) => { re.lastIndex = 0; return re.test(archUnits); }))
         fail('histb-count', 'Architecture.md no longer states how many ' + what + ' the day-exact border record holds — it is the 正本 for that number');
     }
     if (!problems.some((x) => x.startsWith('histb-count')))
-      ok('histb-count', checked + ' stated number(s) across ' + carriers + ' source(s) — ' + RECORDS + ' records, ' + DATES + ' transition dates in ' + HB.window[0] + '-' + HB.window[1]);
+      ok('histb-count', checked + ' stated number(s) across ' + carriers.size + ' carrier(s) + ' + langChecked
+        + ' number(s) held across the eight translations — ' + RECORDS + ' records, ' + DATES + ' transition dates in ' + HB.window[0] + '-' + HB.window[1]);
   }
 }
 
