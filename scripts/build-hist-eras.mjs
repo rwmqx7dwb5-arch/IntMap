@@ -86,7 +86,7 @@ export function astroYear(key) {
 
 /* ⚠ NOTHING IS SIMPLIFIED AWAY THAT THE STORED PRECISION COULD STILL SHOW. The budget was the
    first question — the bundles IntMap already ships at this order of magnitude are
-   data/hist-admin1.js (10.3 MB) and data/hist-admin2.js (15.5 MB), so 10-20 MB was the target for
+   data/hist-admin1.js (10.0 MB) and data/hist-admin2.js (15.5 MB), so 10-20 MB was the target for
    53 world snapshots whose raw upstream is 71.5 MB. Measured sweep of the BUILT bytes (DEC=3
    throughout; `--sweep --wide` re-measures it):
        tol 0     minArea 0        12.3 MB  712,070 pts  9,102 rings   (nothing simplified at all)

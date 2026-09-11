@@ -128,14 +128,33 @@ test('R337 ④: the Chronos Time slider carries graduations, and 12:00 sits on t
   expect(m.ticksTop, 'the ruler sits directly below the slider').toBeGreaterThanOrEqual(m.sliderBottom - 4);
   expect(m.ticksTop, '…and above the player, when the player is up').toBeLessThan(m.playerTop + 1);
 
-  /* the other two tabs are untouched: they keep the label row they have always had */
-  const year = await page.evaluate(() => {
-    document.getElementById('ntl-mode-year').click();
-    return { ticks: document.getElementById('ntl-ticks').querySelectorAll('.ntl-tk').length,
-             scale: getComputedStyle(document.getElementById('ntl-scale')).display };
+  /* ══ ⚠⚠⚠ (#R700) 「ほかのタブには目盛りが無い」はもう仕様ではない ════════════════════════════
+     ここは `year.ticks === 0` と `year.scale !== 'none'` を要求していた。#R604/#R679 が
+     **Year タブにも同じ定規を与えた**（js/news-timeline.js `buildTicks()`: 年の軸が区分線形に
+     なったので `.ntl-scale` の `space-between` は位置について嘘をつく）ので、この 2 行は
+     **本番の設計を誤りとして報告する検査**になっていた。deep tier は push でも PR でも走らないので、
+     それが誰にも見えないまま生き延びた。
+     ⚠ 数を新しい数へ書き換えない。#R337 がここで守っていたのは「**ラベルの行が 2 つ出ない**」という
+     1 つの設計であって、Year タブの目盛りの本数ではない。だから守り方を事実のほうへ付け替える——
+     **どのタブでも、ラベルを載せているのは定規か旧ラベル行のどちらか一方だけ**。
+     タブの一覧も書き出さない: パネルが持っている `[id^="ntl-mode-"]` を数え上げる。 */
+  const tabs = await page.evaluate(() => {
+    const out = [];
+    for (const b of [...document.querySelectorAll('[id^="ntl-mode-"]')]) {
+      b.click();
+      const t = document.getElementById('ntl-ticks'), sc = document.getElementById('ntl-scale');
+      const ruler = getComputedStyle(t).display !== 'none' && t.querySelectorAll('.ntl-tk b').length > 0;
+      const row = getComputedStyle(sc).display !== 'none' && sc.children.length > 0;
+      out.push({ id: b.id, ruler, row, marks: t.querySelectorAll('.ntl-tk').length });
+    }
+    return out;
   });
-  expect(year.ticks, 'the Year tab has no ruler').toBe(0);
-  expect(year.scale, '…and its own label row is back').not.toBe('none');
+  expect(tabs.length, 'the timeline has its mode buttons').toBeGreaterThan(1);
+  for (const m of tabs) {
+    expect(m.ruler || m.row, m.id + ': something carries the labels').toBe(true);
+    expect(m.ruler && m.row, m.id + ': …and only one of them — two rows of labels is the bug').toBe(false);
+    if (m.ruler) expect(m.marks, m.id + ': a ruler that labels has graduations under the labels').toBeGreaterThan(1);
+  }
   await page.evaluate(() => { const tl = document.getElementById('news-timeline');
     if (tl && !tl.classList.contains('collapsed')) document.getElementById('ntl-x').click(); });
 });

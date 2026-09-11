@@ -52,7 +52,13 @@ test('#R257 ② AGENTS.md still carries each standing rule', () => {
     ['ハリボテ実装の禁止',    'プレースホルダーの実装は禁止'],
     ['Atlas/catalog/SYS',     'SYS 定義'],
     ['出典・規約の同時更新',  '出典表記'],
-    ['全言語に反映',          '全言語すべてに反映'],
+    /* ⚠ (#R700) THE RULE WAS AMENDED, AND THIS NEEDLE WAS ANCHORED TO THE OLD WORDING.
+       §3-5 said 「…現在対応している全言語すべてに反映する」 until CONSTITUTION.md §7 narrowed
+       AUTHORING to en+jp on 2026-09-11. The rule did not GO — it changed — and a needle that spells
+       out one phrasing is #R488 in the place that exists to prove the rules are still there: it
+       cannot tell an amendment from a deletion. What survives every phrasing of this rule is that
+       §3 still tells the reader WHERE the language policy is decided, so that is what is asked for. */
+    ['言語方針の在り処',      'lang-policy.mjs'],
     ['絵文字の禁止',          '許可なく絵文字を追加してはならない'],
     ['iOS 風デザイン',        'iOS 風の洗練されたデザイン'],
     ['1回のパスで完了',       '1 回のパスで完了'],

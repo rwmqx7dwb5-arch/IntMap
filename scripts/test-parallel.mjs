@@ -102,6 +102,15 @@ const HALVES = [
          in ci.yml) because a `check:*` script with no caller is what #R381 found had let
          data/wars.json say anything for fifteen rounds. */
       ['node', ['scripts/build-hist-borders.mjs', '--check']],
+      /* ⚠⚠⚠ (#R700) …AND THE RECORD ALL THREE OF THOSE ARE MEASURED AGAINST HAD NO GATE AT ALL.
+         data/cshapes.js answers the whole of 1886-2019, the two world-war layers are cut from its
+         outlines, and the line ABOVE derives its own floor from it — yet it was the one border
+         bundle with no build script and no `--check`, so nothing could say where 5.6 MB came from.
+         What opened this round was the second half: the upstream is CC BY-NC-SA 4.0, which makes
+         credit a CONDITION of redistribution, and the js/reference-data.js row that named it
+         carried no licence at all (#R689's shape — a licence written as prose nobody reads). The
+         gate measures that the credit is PAID, alongside the bundle's own invariants. */
+      ['node', ['scripts/build-cshapes.mjs', '--check']],
       /* (#R538) the FOURTH gate here that reads shipped bytes. The language layer had none, and
          the failure it needed one for was silent by construction: names the old hand table did
          not recognise were dropped rather than reported, so the country took the next language
@@ -128,7 +137,7 @@ const HALVES = [
          halves print which one ran. */
       ['node', ['scripts/build-hist-kuni.mjs', '--check']],
       /* ⚠ (#R680) …and the SEVENTH, for the two bundles that are BIGGER THAN ALL THE OTHERS PUT
-         TOGETHER and had no gate whatsoever. 25.8 MB of first- and second-level subdivisions, and
+         TOGETHER and had no gate whatsoever. 25.4 MB of first- and second-level subdivisions, and
          until this round nothing in `npm test` or in ci.yml read one byte of them. It is offline and
          measured 0.8 s, so there is no cost that could later justify unhooking it — the same reason
          #R588 gave for the elections gate above. What it proves and what it deliberately cannot see

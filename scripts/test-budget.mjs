@@ -396,7 +396,7 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
        to ~14,000 calls, and it paid all of them on any run where the first label sat bottom-right.
        It now asks the layer for its rendered features once and projects them, confirming with ONE
        point query per candidate that the click really lands on that label.
-     · the deep-tier block waited for data/hist-admin2.js to RESOLVE (14.9 MB since this round).
+     · the deep-tier block waited for data/hist-admin2.js to RESOLVE (15.5 MB since this round).
        #R564's promise is that the camera triggers the fetch, not that it finishes inside a test, so
        it now waits for the REQUEST and for the deep tile line to paint. A test whose duration is set
        by the size of a record is a test that gets slower every time the record grows.

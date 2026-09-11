@@ -65,6 +65,15 @@ const baseStyleSegment = page => page.evaluate(() => {
   } catch (_) { return null; }
 });
 
+/* ══ ⚠⚠⚠ (#R700) 「@2x のタイルか」を綴りで訊くのをやめる ═══════════════════════════════════════
+   下の 2 か所は同じ 1 つのことを別々の正規表現で訊いていて、片方が `/@2x\.png$/` ——
+   **URL の末尾**に固定した錨だった。#R479 以降 CARTO は API キーを要求するので
+   （js/carto-basemap.js）、タイルの URL は `…@2x.png?key=<key>` になり、**製品は正しく @2x を
+   頼んでいるのに**この 1 行だけが偽を返した。⚠ 綴りではなく URL として解析し、
+   **パスが @2x.png で終わるか**を訊く——クエリが増えても減っても答えは変わらない。 */
+const is2x = (u) => { try { return /@2x\.png$/.test(new URL(u, 'https://x/').pathname); }
+                      catch (_) { return /@2x\.png(?:[?#]|$)/.test(String(u)); } };
+
 /* ── the base map at double density ───────────────────────────────────────────────────────── */
 test.describe('on a 2× display', () => {
   test.use({ deviceScaleFactor: 2 });
@@ -84,7 +93,7 @@ test.describe('on a 2× display', () => {
     expect(seg, 'the live base map names its style').toBeTruthy();
     const mine = carto.filter(u => u.includes('/' + seg + '/'));
     expect(mine.length, 'the base map is loading tiles at all').toBeGreaterThan(3);
-    const at2x = mine.filter(u => /@2x\.png/.test(u));
+    const at2x = mine.filter(is2x);
     expect(at2x.length, 'and every one of them is the double-density tile').toBe(mine.length);
     /* …and the service really serves 512 px for it. Asserted against LIVE Carto rather than trusted:
        a URL that 404s or silently returns 256 would leave the map looking exactly as it did, which is
@@ -107,6 +116,7 @@ test.describe('on a 2× display', () => {
   test('the HiDPI decision has one owner, and both raster paths obey it (#R179)', async ({ page }) => {
     test.setTimeout(120000);
     await boot(page);
+    await page.evaluate((src) => { window.__im2x = new Function('return ' + src)(); }, is2x.toString());
     const r = await page.evaluate(() => ({
       decision: window.__imHiDPITiles,
       dpr: window.devicePixelRatio,
@@ -116,7 +126,7 @@ test.describe('on a 2× display', () => {
         try {
           const s = window.__imap.getStyle().sources;
           const t = (s.bln || s.bl || {}).tiles || [];
-          return t.length > 0 && t.every(u => /@2x\.png$/.test(u));
+          return t.length > 0 && t.every(window.__im2x);
         } catch (_) { return null; }
       })(),
     }));

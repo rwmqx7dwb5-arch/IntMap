@@ -96,7 +96,16 @@ test('r246 ③ every source description is a reading-page string, in all nine la
      the prose regressing would blow up and which adding sources cannot. (Measured now: ~110 chars a
      row against the ~330 the prose version carried.) */
   {
-    const reg = read('js/reference-data.js');
+    /* ⚠ (#R700) COMMENTS ARE NOT ROWS, AND THIS WAS COUNTING THEM.
+       The rule it exists to keep is 「a ROW is a name and a URL, not a paragraph」 — prose that a
+       READER sees. #R700 added `lic:` / `cite:` to the CShapes row (CC BY-NC-SA 4.0 makes credit a
+       condition of redistribution) and, with them, a 1,423-character comment explaining why the
+       licence had to be a VALUE rather than part of `n`. That comment pushed the mean from 212 to
+       225 and turned this red — while the reader-visible half was 114 chars a row, i.e. the ~110
+       the paragraph above measured. A check that cannot tell an explanation from the thing it
+       explains punishes the explaining, which is [[intmap-r621-lessons]]'s rule: strip the comments
+       before you measure. `code()` is the same stripper the rest of this file already uses. */
+    const reg = code(read('js/reference-data.js'));
     const arr = /const DATA_SOURCES=\[[\s\S]*?\n  \];/.exec(reg);
     assert.ok(arr, 'DATA_SOURCES is not a single array literal any more');
     const rows = (arr[0].match(/\{n:'/g) || []).length;

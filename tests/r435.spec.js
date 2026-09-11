@@ -34,6 +34,18 @@
  * ==========================================================================*/
 import { test, expect } from './helpers/app.js';
 
+/* ══ ⚠⚠⚠ (#R700) THE FIXTURE'S CLOCK IS RELATIVE, BECAUSE THE FEED HAS A FRESHNESS CUT ═══════════
+   これらの記事は **2026-08-24 の絶対時刻**で書かれていた。js/app-body.js の `computeFilteredNews`
+   は `NEWS_MAX_AGE_MS`（72 時間）より古い項目を一覧から落とすので、fixture は**書かれた日から
+   3 日で**「読み込みは成功しているのに一覧が空」になり、実際に #R402/#R405/#R416/#R435/#R455 の
+   5 本が同じ日に同じ形で落ちた（実測: `loadedEventCount:1 / visibleEventCount:0`）。
+   ⚠ 日付を新しい日付へ書き換えるのは同じ時限装置を巻き直すだけなので、**時刻は `Date.now()`
+   からの相対**にする。⚠ 検査は 72 という数を写さない——写せばその数が動いた日に fixture の
+   ほうが正しいまま赤くなる。要るのは「**十分に新しい**」ことだけで、ここは全部 12 時間以内。
+   相対値は元の固定時刻の**並び**（どの記事が新しいか）をそのまま保っている。 */
+const AGO = (mins) => new Date(Date.now() - mins * 60e3).toISOString();
+
+
 const SOURCES = [
   { id: 'guardian', name: 'The Guardian', slug: 'guardian', source_type: 'newspaper', country: 'GB', hq_lng: -0.12, hq_lat: 51.53, source_family: 'guardian', homepage_url: 'https://theguardian.com' },
 ];
@@ -45,15 +57,15 @@ const EVENTS = [{
   manual_lock: false, status: 'active', merged_into: null,
   summary: null, summary_evidence: null, summary_version: null,
   rep_lng: -21.94, rep_lat: 64.15, rep_place_name_en: 'Reykjavik',
-  first_published_at: '2026-08-24T01:00:00Z', last_article_at: '2026-08-24T02:00:00Z',
-  materially_updated_at: '2026-08-24T02:00:00Z', article_count: 1, independent_source_count: 1,
+  first_published_at: AGO(660), last_article_at: AGO(600),
+  materially_updated_at: AGO(600), article_count: 1, independent_source_count: 1,
   news_event_articles: [{
     relation: 'same_event', assignment_score: 0.6, assigned_by: 'deterministic',
     news_articles: {
       id: 11, title: 'Volcanic fissure reopens north of the capital, officials say',
       description: 'The ministry confirmed the figure on Monday afternoon.',
       canonical_url: 'https://example.org/a11', source_id: 'guardian',
-      published_at: '2026-08-24T01:00:00Z', subject_name_en: 'Reykjavik', subject_type: 'city',
+      published_at: AGO(660), subject_name_en: 'Reykjavik', subject_type: 'city',
     },
   }],
 }];

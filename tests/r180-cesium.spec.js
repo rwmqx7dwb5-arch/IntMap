@@ -117,7 +117,10 @@ test('R180 ③: the startup view puts the eye where MapLibre puts it, and the ro
   await asCesium(page);
   const boot = await page.evaluate(() => {
     const E = window.IntMapGeoEngine;
-    return { z: E.camera.getZoom(), c: E.camera.getCenter(), eye: E.camera.eye() };
+    const cv = document.querySelector('#map canvas');
+    return { z: E.camera.getZoom(), c: E.camera.getCenter(), eye: E.camera.eye(),
+             /* ⚠ (#R700) THE CANVAS HEIGHT IS HALF OF THE ANSWER — see below */
+             canvasH: cv ? cv.clientHeight : null };
   });
   expect(boot.z, 'the app boots at zoom 1.7').toBeCloseTo(1.7, 3);
   /* ⚠ (#R203) THE LONGITUDE IS NOT A LITERAL ANY MORE, AND PINNING IT AS ONE IS WHAT BROKE THIS.
@@ -132,12 +135,26 @@ test('R180 ③: the startup view puts the eye where MapLibre puts it, and the ro
   expect(boot.c.lng, 'Cesium boots at the centre the app chose').toBeCloseTo(want[0], 4);
   expect(boot.c.lat).toBeCloseTo(want[1], 4);
   expect(want[1], 'and the opening latitude is still 20').toBeCloseTo(20, 4);
-  /* #R178 measured MapLibre's eye at globe z1.7 as 24,422 km. Cesium is asked for the same
-     view through the same contract; if the mapping were wrong this would be out by megametres,
-     which is exactly the failure mode #R176/#R177 spent two rounds on. 1 % is a generous band
-     for a number that has six significant figures of agreement. */
-  expect(boot.eye.alt).toBeGreaterThan(24_422_000 * 0.99);
-  expect(boot.eye.alt).toBeLessThan(24_422_000 * 1.01);
+  /* ══ ⚠⚠⚠ (#R700) 24,422 km IS NOT A CONSTANT — IT IS A HEIGHT TIMES A CANVAS ═══════════════
+     #R178 measured MapLibre's eye at globe z1.7 as 24,422 km, and this line pinned that number.
+     But the eye distance is (metres per screen pixel) × (canvas height): js/cesium-engine.js's
+     `rangeFor` multiplies by `_c2cPx()`, which is `0.5/tan(fovy/2) × canvasHeight`. #R178's
+     figure was measured when `#map` filled the 720 px test viewport; #R485 put `#map-credit`
+     into the flow and `#map` became 697 px, so the SAME correct camera answered 23,641,606 m
+     and this assertion reported a bug that did not exist — measured to the last digit, and
+     identically in CI and here.
+     ⚠ So the anchor is stated PER CANVAS PIXEL and multiplied by the canvas this run really has.
+     · observation: #R178, MapLibre's eye at z1.7 / lat 20 with a 720 px map canvas → 24,422 km
+     · expires: if the boot zoom or latitude changes — both are asserted just above, so a change
+       to either fails there first rather than silently re-scaling this one
+     · canonical: the proportionality itself is js/cesium-engine.js (`rangeFor` × `_c2cPx`)
+     1 % is still a generous band for a number with six significant figures of agreement. */
+  const ML_ALT_PER_CANVAS_PX = 24_422_000 / 720;
+  expect(boot.canvasH, 'the run has a real canvas to scale by').toBeGreaterThan(100);
+  const wantAlt = ML_ALT_PER_CANVAS_PX * boot.canvasH;
+  expect(boot.eye.alt, 'Cesium puts the eye where MapLibre would, for THIS canvas')
+    .toBeGreaterThan(wantAlt * 0.99);
+  expect(boot.eye.alt).toBeLessThan(wantAlt * 1.01);
 
   /* …and a single jumpTo round-trips exactly, across the bands and past the horizon-adjacent
      pitches. The look-at point sits ON the terrain, so the engine re-asserts the camera when

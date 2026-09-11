@@ -14,6 +14,42 @@
  *  The CSS stays in css/intmap.css; this file adds no <style>.
  * ==========================================================================*/
 window.IntMapModules=window.IntMapModules||{};
+/* ══ (#R700) `Base (Gloss)` — ONE DECOMPOSITION, READ BY THE PAGE AND BY THE BUILD ═════════════
+   ⚠⚠⚠ THE BRACKET IS NOT DROPPED HERE, AND THAT IS THE WHOLE POINT. Two records write a trailing
+   "(…)" and they mean OPPOSITE things. data/cshapes.js writes a gloss the reader never sees —
+   `_csName` below strips "(Malagasy)" before it labels anything — so scripts/histnames/records.mjs
+   asks the name table about the STRIPPED spelling, because that is what is drawn. The era
+   snapshots write a polity AND its possessor in the same punctuation, and `_eraLocName` has since
+   #R110 localized the two halves separately and put them back together, so what the reader sees is
+   「セイロン（オランダ）」 and never 「セイロン」. A census that simply dropped the bracket for the
+   era record would therefore look up a spelling no reader is ever shown — the cshapes error
+   pointing the other way.
+   ⇒ SO THE RULE IS PUBLISHED AS WHAT IT IS: a split, and the join that puts the halves back. Both
+   sides read it from here — `_eraLocName` and `hnEraGloss` below, and scripts/histeras/census.mjs
+   through the node harness that evaluates this file — so the build cannot end up restating a rule
+   the page owns (#R536's cost; the shape of js/outbreaks.js `IntMapWhoDonName`, #R660).
+   ⚠ THE JOIN OWNS THE PUNCTUATION, PER LANGUAGE — Japanese brackets are full-width, and that is a
+   property of the label, not of the caller. */
+window.IntMapEraName={
+  /** «Ceylon (Dutch)» → {base:'Ceylon', gloss:'Dutch'}; anything else → null. */
+  split:function(nm){ var m=/^(.+?)\s*\(([^)]+)\)\s*$/.exec(String(nm==null?'':nm).trim()); return m?{base:m[1].trim(),gloss:m[2].trim()}:null; },
+  /** The label the reader sees, from the two localized halves. */
+  join:function(base,gloss,lang){ return String(base)+((lang==='jp')?'（'+gloss+'）':' ('+gloss+')'); },
+  /* ⚠ THE POSSESSOR IS PUT BACK IN EVERY LANGUAGE, TRANSLATED WHERE IT CAN BE AND CARRIED AS THE
+     SOURCE WROTE IT WHERE IT CANNOT (CONSTITUTION §7). Dropping it would hand the reader a label
+     naming a different thing from the one the map drew — «セイロン» is not the shape on screen.
+     `baseNames` is a language→name object (the row data/histnames.json holds for the BASE);
+     `glossFor(gloss, lang)` is the possessor lookup the caller owns (`_COLONIZER`), and a falsy
+     answer means the upstream's own word rides through untouched. */
+  compose:function(nm,baseNames,glossFor,codes){
+    var p=this.split(nm); if(!p||!baseNames) return null;
+    var out={en:String(nm)}, any=false, i, lg, lb, lc;
+    for(i=0;i<codes.length;i++){ lg=codes[i]; if(lg==='en') continue;
+      lb=baseNames[lg]; if(!lb) continue;
+      lc=(glossFor&&glossFor(p.gloss,lg))||p.gloss;
+      out[lg]=this.join(lb,lc,lg); any=true; }
+    return any?out:null; }
+};
 window.IntMapModules.timeBorders=function(HOST){
   /* ⚠ (#R245) THE HISTORICAL NAMES THIS FILE HOLDS ARE TUPLES, AND THEY GO THROUGH THE REGISTRY.
      `LA` is `IntMapLang.pickArgs()` — it returns the array it is given, so the data is unchanged and
@@ -571,6 +607,35 @@ window.IntMapModules.timeBorders=function(HOST){
       out.en=en;
       if(pr) out._d=1;
       return out; }
+    /* ⚠ (#R700) …AND THE SAME TABLE ANSWERS `Base (Gloss)`. The era cartographer writes a polity
+       and its possessor in one string — «Ceylon (Dutch)», «Senegal (FR)», «Rome (Diocletianus)» —
+       and the table is keyed by the WHOLE string, so a row that already says what «Ceylon» is in
+       Japanese was unreachable from the one feature that needed it. Measured on the shipped
+       bundle: 314 of the 3,028 era spellings (372 drawn features) are of this shape.
+       ⚠ THE DECOMPOSITION IS NOT RESTATED HERE. `window.IntMapEraName` is the rule `_eraLocName`
+       has used since #R110; this lane differs from that one only in WHERE the base's name comes
+       from — the hand tables there, data/histnames.json here — and the possessor is put back the
+       same way in both.
+       ⚠ TWO LANES ANSWER FOR THE BASE, and neither is the whole name's. `eraBase` holds bases the
+       record never draws on their own (asked because a glossed feature needs them);
+       `eras` holds the ones it does. The whole string is always asked FIRST by the caller, so a
+       row written for «Ceylon (Dutch)» itself can never be overtaken by one for «Ceylon».
+       ⚠ A DESCRIPTION IS NOT A BASE. `prose` translates a SENTENCE the cartographer wrote about
+       ground no polity is named for (#R682); appending a possessor to it would author a claim no
+       source makes, so the prose flag refuses the lane outright. */
+    /* ⚠⚠⚠ THE WHOLE STRING WINNING IS A PROPERTY OF THE NAME, NOT OF THE CALL SITE (#R429). It was
+       written in `erFC`'s `||` first, and the era-base lane's own harvest produced the counter-
+       example within the hour: «Sikkim (Indian princely state)» is a PROSE key — the bracket is
+       Wikidata-style disambiguation that the upstream cartographer copied, not a possessor — and
+       the base «Sikkim» now has a row, so asked directly this composed 「シッキム王国（Indian
+       princely state）」 beside the prose lane's own answer for the same string. Two answers for
+       one name is #R536 exactly, and the `||` hid it because only one caller ever asked. */
+    function hnEraGloss(nm){ const R=window.IntMapEraName; if(!R||!_hn) return null;
+      if(hnFor('eras',nm,null,null)) return null;
+      const p=R.split(nm); if(!p) return null;
+      const b=hnFor('eraBase',p.base,null,null)||hnFor('eras',p.base,null,null);
+      if(!b||b._d) return null;
+      return R.compose(nm,b,(g,lg)=>{ const c=_COLONIZER[_normNm(g)]; return c?window.IntMapLang.pick(()=>lg).arr(c):null; },window.IntMapLang.codes()); }
 
     function erLoad(){ if(_erD&&_hn!==null) return Promise.resolve(_erD); if(_erP) return _erP;   /* (#R695) the names lane is shared now — `_hn`, not the era-only `_erN` */
       _erP=new Promise(res=>{ if(window.__HISTERAS){ _erD=window.__HISTERAS; res(_erD); return; }
@@ -596,7 +661,7 @@ window.IntMapModules.timeBorders=function(HOST){
         /* (#R686) the nine-language row for this name, when data/histeras-names.json has one. `en`
            is the upstream's and is put back here, so `_i18n` is the same self-describing tuple the
            1850-1885 features carry and every reader of it stays one reader. */
-        const i18=hnFor('eras',nm,null,null);
+        const i18=hnFor('eras',nm,null,null)||hnEraGloss(nm);   /* (#R700) …and when the whole string has no row, the base's, with the possessor put back */
         feats.push({type:'Feature',
           properties:Object.assign({NAME:nm},i18?{_i18n:i18}:{},(i18&&i18._d)?{_desc:1}:{},at.s?{SUBJECTO:at.s}:{},at.p?{PARTOF:at.p}:{},at.t?{TYPE:at.t}:{}),
           geometry:(ps.length===1)?{type:'Polygon',coordinates:ps[0]}:{type:'MultiPolygon',coordinates:ps}}); }
@@ -1192,9 +1257,11 @@ window.IntMapModules.timeBorders=function(HOST){
         try{ if(typeof countryStats!=='undefined'&&countryStats){ const key=_normNm(low); for(const c in countryStats){ const s=countryStats[c]; if(s&&s.nameEn&&_normNm(s.nameEn)===key){ const d=(s.name&&_LTB.arr(s.name))||((lg==='jp'&&s.nameJp)?s.nameJp:s.nameEn); if(d&&d!==low) return d; } } } }catch(_){}   /* modern base (Algeria, Syria…) → its localized present-day name (JP via nameJp, matching tagSame; DE/RU/ES keep the English base as elsewhere on the era map) */
         return null; };
       const direct=_loc1(low0); if(direct) return direct;
-      /* "(Coloniser)" / occupation suffix → localize the BASE + append the localized possessor (e.g. アルジェリア（フランス）) */
-      const m=/^(.+?)\s*\(([^)]+)\)\s*$/.exec(low0);
-      if(m){ const col=_COLONIZER[_normNm(m[2])]; if(col){ const lb=_loc1(m[1].trim())||m[1].trim(); const lc=_LTB.arr(col)||m[2]; return lb+(lg==='jp'?'（'+lc+'）':' ('+lc+')'); } }
+      /* "(Coloniser)" / occupation suffix → localize the BASE + append the localized possessor (e.g. アルジェリア（フランス）).
+         (#R700) the decomposition and the bracket are `window.IntMapEraName`'s now — the same rule
+         the name table's lane below reads, so the two cannot part company over where a name stops. */
+      const m=window.IntMapEraName.split(low0);
+      if(m){ const col=_COLONIZER[_normNm(m.gloss)]; if(col){ const lb=_loc1(m.base)||m.base; const lc=_LTB.arr(col)||m.gloss; return window.IntMapEraName.join(lb,lc,lg); } }
       return null; }catch(_){ return null; } }
     /* ══ (#R410) THE ERA NAME IS A PROPERTY OF THE YEAR, NOT OF WHATEVER `countryStats` HAPPENS TO HOLD ══
        「地図の国名ラベルが、同じ画面の Countries 一覧と食い違う。」 TWO listeners answer the same clock and they
@@ -1404,7 +1471,7 @@ window.IntMapModules.timeBorders=function(HOST){
       /* (#R122) load the CShapes bundle EAGERLY (was idle-gated up to 6 s) so the FIRST time-travel doesn't block on
          parsing it — the reported "年代を変えてから国境が出るまで遅い". A short delay keeps it off the critical boot path.
          ══ (#R192) …EXCEPT 900 ms IS NOT OFF THE BOOT PATH ═══════════════════════════════════════════
-         「起動時の読み込みをもっと早く。」 Measured on a cold load: data/cshapes.js is 5.5 MB and it
+         「起動時の読み込みをもっと早く。」 Measured on a cold load: data/cshapes.js is 5.6 MB and it
          started at 1,243 ms — while the first satellite tiles, the Köppen raster and the country
          borders were still arriving, and it is a <script>, so the main thread also PARSES 5.5 MB of
          literal at whatever moment that lands. It was the largest single item on the boot path and
@@ -1975,7 +2042,7 @@ window.IntMapModules.timeBorders=function(HOST){
        already answer?» had no answer — the shape #R575 and #R673 each paid for. It is published
        here so tests/r686-histeras-names-checks.test.mjs can hold the bundled table and this one
        apart: a name answered by both would be one judgement in two places (#R536). */
-    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, loadHistNames:hnLoad,
+    return { _go:go, _clear:clear, current:()=>shownY, active:()=>active, coverage, note, typeNote, refresh:()=>{ try{ window._applyBorders(); }catch(_){} }, currentFC:()=>cache.get(shownY)||null, geomFor, geomForCode, resolveHist, featureAt, _nearest:nearest, eraLocName:_eraLocName, histNames:histNames, histNameFor:hnFor, histNameForGloss:hnEraGloss, loadHistNames:hnLoad,
              changeAfter, changeBefore, changeAt, changeDates, range:()=>({min:_stepMin(),max:CS_MAX}) };   /* (#R518) the range the stepper can walk — both day-exact records, and (#R695) the era sheets below them */
   })();
 };
