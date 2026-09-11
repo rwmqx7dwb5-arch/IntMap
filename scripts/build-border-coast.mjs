@@ -123,7 +123,7 @@ function deepestInland(W, a, b, cut, cap) {
 /* 1 = draw every edge, 0 = draw none, else the runs [a,b] of edge indices to draw (b exclusive):
    the drawn LineString is V.slice(a, b + 1). */
 /* ⚠ (#R695) A RING THAT ENCLOSES NOTHING IS NOT AN OUTLINE, AND ITS EDGES BOUND NOTHING.
-   Measured on data/hist-eras.js: 904 of its 8,814 pooled rings (10.3%) have a signed area of
+   Measured on data/hist-eras.js: 904 of its 8,826 pooled rings (10.2%) have a signed area of
    EXACTLY zero at the coordinates the file ships, and 891 of the 904 are paths that double back on
    themselves — the same vertex appears twice, the ring goes out and comes home along its own
    track. They are upstream's digitizing artifacts, not shapes: 421 of the 2,730 ring instances are

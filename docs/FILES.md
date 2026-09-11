@@ -769,7 +769,7 @@ maddison.json                     マディソン・プロジェクトの歴史 
 data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
 data/hist-borders.js              歴史的国境の 1689–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）。
                                   ⚠ **窓の下限は導出**——束の `window[0]` が正本
-data/hist-eras.js                 全時代の国境スナップショット 53 枚（紀元前 123000 年〜西暦 2010 年・
+data/hist-eras.js                 全時代の国境スナップショット 54 枚（紀元前 123000 年〜西暦 2010 年・
                                   aourednik/historical-basemaps・**GPL-3.0**・`window.__HISTERAS`・
                                   `scripts/build-hist-eras.mjs`／`npm run check:histeras`）。
                                   1689 年より前は、これが唯一の国境の答え。
@@ -782,7 +782,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは6つ・全 49,653 リング分／
+                                  **発見された**束すべて・いまは6つ・全 49,665 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -880,9 +880,14 @@ scripts/
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
   histcities/upstream.mjs         `histcities/derived-{wikidata,pleiades,ohm}.mjs` として
                                   記録ファイルの形で commit する（`--check` は無ネットワークで再現する）
-  build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 53 枚 → `data/hist-eras.js`。
+  build-hist-eras.mjs             aourednik/historical-basemaps の `world_*.geojson` 54 枚 → `data/hist-eras.js`。
                                   一覧は上流のディレクトリから発見し、年の規約（`bc323` → 天文年 −322）は
-                                  1 関数だけが持つ。`--check` はそれを評価して照合する
+                                  1 関数だけが持つ。`--check` はそれを評価して照合する。
+                                  ⚠ **`--check-upstream` はディレクトリを取り直し、出荷していない枚があれば
+                                  落第する**（ネットワークが要るので夜間の CI だけ。上流が取り下げた枚は
+                                  印字のみ・詳細は `docs/TESTING.md`）。⚠ **CLI は自分がプログラムとして
+                                  起動されたときだけ走る**——import しただけで束を作り直すと、並列に走る
+                                  他の検査の入力が書き換わる
   build-histnames.mjs             3 つの国境記録が描く政体名 → `data/histnames.json`。
                                   `--fetch` が候補・事実・クラス・QID ラベルを集め、既定が組み立て、
                                   `--check` が無ネットワークで再現して照合する。

@@ -38,9 +38,14 @@ window.IntMapLabelScale=(function(){
        country  10 → 15   ·  city  11 → 15   ·  other (village/suburb)  10 → 13
      admin1 (states / provinces / prefectures) is new in #R198 and sits between country and city:
      a prefecture is a smaller thing than the country it is in and a bigger thing than a town.
-     `era` is the time machine's country name (js/time-borders.js): a country name for a past year is
-     a place name, and it keeps the half-step-smaller relation to the present-day label it replaces
-     that #R103 gave it (it was 9.5→13 against the modern 10→15). */
+     ⚠ (#R707) `era` HAS NO CALLER. It was the time machine's country name, and it stopped being one
+     in #R309: 「昔の国名ラベルの見た目や挙動も今の国名ラベルと完全に同じに。」 — js/time-borders.js
+     measured its two era layers against `ofm-country` (8.5→12 against 12→17, among six other
+     differences) and moved BOTH of them to `place('country')`, which is the whole point of that
+     request. Nothing has asked for this curve since. It is left in place rather than deleted because
+     removing a shipped key is a reduction (AGENTS.md §3-1); the check in
+     tests/r707-chronos-unnamed-checks.test.mjs is what stops a SECOND unreachable key appearing
+     quietly beside it. */
   const PLACE={
     /* ⚠ (#R210) country is the ONE class that went back UP, and it is a later instruction rather
        than a drift: 「国名ラベルと地名ラベルで大きさの差が少ないから、国名ラベルを大きくして差を出して

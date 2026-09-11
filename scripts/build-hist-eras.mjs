@@ -54,6 +54,7 @@
  *      node scripts/build-hist-eras.mjs --fetch    # discover + download the upstream set (network)
  *      node scripts/build-hist-eras.mjs            # build data/hist-eras.js from the cache
  *      node scripts/build-hist-eras.mjs --check    # verify the COMMITTED file's invariants (offline)
+ *      node scripts/build-hist-eras.mjs --check-upstream   # is the shipped set still the WHOLE upstream set? (network; nightly)
  *      node scripts/build-hist-eras.mjs --sweep    # re-measure the tolerance table below
  * ==========================================================================*/
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node:fs';
@@ -480,8 +481,83 @@ function fail(bad) {
   process.exitCode = 1;
 }
 
-const arg = process.argv.slice(2);
-if (arg.includes('--check')) check();
-else if (arg.includes('--fetch')) await fetchAll();
-else if (arg.includes('--sweep')) sweep();
-else build({ report: true });
+
+/* ══ ⚠⚠⚠ (#R707) THE LIST IS DISCOVERED — BUT ONLY BY `--fetch`, AND NOBODY RUNS `--fetch` ═══════
+   The header above is right that no count is a condition here, and that is still right: `--check`
+   tests PROPERTIES so that upstream GROWING never turns this gate red for being out of date.
+   ⚠ AND THAT IS EXACTLY WHY UPSTREAM GROWING WAS INVISIBLE. #R679 discovered 53 files and shipped
+   53. MEASURED 2026-09-12, the directory listed FIFTY-FOUR: `world_1878.geojson`, added upstream
+   after #R679 read the listing. Every gate was green throughout, because every gate was offline and
+   the only code that had ever asked upstream what exists was the one mode a build runs by hand.
+   A discovered list does not stay discovered; it is a snapshot of a directory taken once.
+
+   So the question «is the shipped set still the whole set?» gets an instrument of its own. It
+   cannot live in `--check`: that runs on every PR, on a runner, and it must stay offline and
+   deterministic (its neighbours say the same for larger reasons — check:histborders would need
+   2.1 GB). It runs in the NIGHTLY instead, where the network is allowed and where a red means
+   «upstream published something», not «you broke something».
+   ⚠ IT ASKS ONE QUESTION AND REPORTS THE OTHER. Upstream having a file this bundle lacks is a
+   FAILURE — the deep past is the only band with no second source, so a missing sheet is missing
+   map. A file this bundle has and upstream no longer does is PRINTED, not failed: upstream
+   withdrawing a snapshot is not a reason to stop drawing a year, and deleting it here would need
+   CONSTITUTION.md §0-3 anyway. */
+export async function upstreamGap(inject) {
+  const shipped = inject && inject.shipped ? new Set(inject.shipped) : (() => {
+    const p = join(ROOT, 'data', 'hist-eras.js');
+    if (!existsSync(p)) throw new Error('data/hist-eras.js is not shipped');
+    const w = {};
+    new Function('window', readFileSync(p, 'utf8'))(w);
+    return new Set((w.__HISTERAS.snaps || []).map(s2 => s2.key));
+  })();
+  const names = inject && inject.listing ? inject.listing : (await get(API, true)).map(e => e.name);
+  const up = names.filter(n => FILE_RE.test(n));
+  const upKeys = up.map(keyOf);
+  const byYear = (a, b) => astroYear(a) - astroYear(b);
+  return {
+    upstream: up.length,
+    shipped: shipped.size,
+    shapeChanged: names.length > 0 && up.length === 0,
+    missing: upKeys.filter(k => !shipped.has(k)).sort(byYear),
+    extra: [...shipped].filter(k => !upKeys.includes(k)).sort(byYear),
+  };
+}
+
+/** the CLI half: `upstreamGap` answers, this one reports and decides the exit code. */
+async function checkUpstream() {
+  let g;
+  try { g = await upstreamGap(); } catch (e) { console.error('hist-eras: ' + e.message); process.exitCode = 1; return; }
+  if (g.shapeChanged) {
+    console.error('hist-eras: the upstream listing answered but matched no world_*.geojson at all — a CHANGE OF SHAPE, not an empty directory');
+    process.exitCode = 1; return;
+  }
+  if (g.extra.length) console.log('note — ' + g.extra.length + ' snapshot(s) this bundle has and upstream no longer lists: '
+    + g.extra.join(', ') + '. Kept: withdrawing a sheet upstream is not a reason to stop drawing that year.');
+  if (g.missing.length) {
+    console.error('hist-eras: upstream lists ' + g.upstream + ' snapshot(s) and data/hist-eras.js ships ' + g.shipped
+      + ' — ' + g.missing.length + ' not carried: ' + g.missing.map(k => 'world_' + k + '.geojson (' + astroYear(k) + ')').join(', '));
+    console.error('  Re-run: node scripts/build-hist-eras.mjs --fetch && node scripts/build-hist-eras.mjs');
+    console.error('  …then scripts/build-border-coast.mjs and scripts/build-histnames.mjs, whose marks and name table are indexed against these rings.');
+    process.exitCode = 1; return;
+  }
+  console.log('hist-eras upstream ok — the directory lists ' + g.upstream + ' snapshot(s) and every one of them is carried');
+}
+
+/* ⚠⚠⚠ (#R707) ONLY WHEN RUN AS A PROGRAM — AND THIS FILE WAS THE ONE THAT WASN'T.
+   Its two neighbours already guard their CLI for exactly this reason and say so in the same words
+   (scripts/build-cshapes.mjs: «a value has to be readable without also starting a 26 MB rebuild»;
+   scripts/build-border-coast.mjs, #R695). This one had no guard and a DEFAULT branch, so the
+   moment tests/r707-chronos-upstream-checks imported `upstreamGap`, `node --test` rebuilt
+   data/hist-eras.js — 10.6 MB — as a side effect of an import. MEASURED #R707: the bundle was
+   rewritten during the first run of that test file.
+   ⚠ THE DANGER IS NOT THE WASTED MINUTE. `npm test` runs files in parallel (scripts/test-parallel.mjs)
+   and other checks read this bundle while it is being written; a shared worktree makes that a race
+   over 10.6 MB of somebody else's input. A build script is a program that also exports values, and
+   the program half must ask whether it was the thing node was told to run. */
+if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.url))) {
+  const arg = process.argv.slice(2);
+  if (arg.includes('--check-upstream')) await checkUpstream();
+  else if (arg.includes('--check')) check();
+  else if (arg.includes('--fetch')) await fetchAll();
+  else if (arg.includes('--sweep')) sweep();
+  else build({ report: true });
+}

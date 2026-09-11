@@ -98,6 +98,17 @@ jobs:
         run: npm run check:cshapes
       - name: Era snapshots (all eras, incl. BCE)
         run: npm run check:histeras
+      # ⚠⚠⚠ (#R707) …AND WHETHER THAT BUNDLE IS STILL THE WHOLE UPSTREAM SET. The gate above tests
+      # PROPERTIES on purpose, so that upstream GROWING never turns a PR red — and that is exactly
+      # why upstream growing was invisible: #R679 discovered 53 snapshots and shipped 53, and when
+      # `world_1878.geojson` appeared upstream the bundle stayed at 53 of 54 with every gate green.
+      # A discovered list is a snapshot of a directory taken once. This asks the directory again.
+      # ⚠ NIGHTLY ONLY, AND THAT IS THE POINT: it needs the network, and a red here means «upstream
+      # published something», not «this PR broke something». Putting it on PRs would make somebody
+      # else's commit fail somebody else's branch.
+      - name: Era snapshots — is the shipped set still the whole upstream set? (network)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: node scripts/build-hist-eras.mjs --check-upstream
       # (#R695) …AND THE NAMES THOSE THREE RECORDS ARE READ BY. One table, three lanes of evidence
       # (a QID the record itself states · #R686's measure against the map's geometry and clock ·
       # the upstream's own English prose, translated and marked). Its subject is the NAME, not any
@@ -108,7 +119,7 @@ jobs:
       # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
       # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
       # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
-      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 49,653 rings, offline;
+      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 49,665 rings, offline;
       # MEASURED 49 s on this machine (2026-09-11), which is why the sampled form existed and why it is not enough.
       - name: Historical border coastlines (every ring re-derived, not a sample)
         run: npm run check:bordercoast

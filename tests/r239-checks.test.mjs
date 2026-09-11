@@ -23,15 +23,44 @@ const run = (f, ...a) => execFileSync(process.execPath, [join(ROOT, 'scripts', f
 /* ══ ① THE GATE — every language, every surface, one exit code ═══════════════════════════════════
    「今後言語を追加するのが完璧に100%にできるような仕組みを作っておいて。今回のように、いつまでたっても
      言語対応の漏れが見つかることは許されない。」 */
-test('① every registered language is 100 % on every translatable surface', () => {
+test('① every language is held to what scripts/lang-policy.mjs says of it', async () => {
   const a = JSON.parse(run('i18n-audit.mjs', '--json'));
   assert.ok(a.rows.length >= 9, 'the audit sees every registered language');
+  /* ⚠⚠⚠ (#R707) THIS ASSERTED A POLICY THAT NO LONGER EXISTS, AND IT ASSERTED IT FROM A SECOND
+     COPY. The 2026-09-11 amendment (CONSTITUTION.md §7) narrowed what IntMap AUTHORS to en + jp
+     and holds the other seven to a FLOOR instead of 100 % — narrowing what is written next is not
+     licence to delete what is written already, so the seven may not DROP, but a new English-only
+     string is allowed because it lowers no count. scripts/i18n-audit.mjs enforces exactly that and
+     stayed green; this file kept the pre-amendment rule and went red for two strings written the
+     way the amendment asks.
+     ⚠ THE FIX IS NOT TO LOWER THE BAR — IT IS TO STOP KEEPING A SECOND COPY OF IT. The judgement
+     lives in scripts/lang-policy.mjs; a judgement that already exists somewhere is DISTRIBUTED,
+     not copied (.agents/rules/no-ad-hoc-hardcoding.md §2-3, [[intmap-recurring-lessons]] G). So the
+     authored set is still held to 100 % on every surface — that half is unchanged — and the
+     carried set is held to the same floor the gate reads. Restore the nine (`return all;` in
+     scripts/lang-policy.mjs) and this returns to «every language, 100 %» with no edit here. */
+  const { authoredLangs, carriedLangs } = await import('../scripts/lang-policy.mjs');
+  const AUTHORED = new Set(authoredLangs(ROOT));
+  const CARRIED = new Set(carriedLangs(ROOT));
+  const FLOOR = JSON.parse(readFileSync(join(ROOT, 'tests', 'i18n-coverage-floor.json'), 'utf8')).langs;
+  assert.ok(AUTHORED.size > 0, 'scripts/lang-policy.mjs authors no language at all');
+  let checkedAuthored = 0, checkedCarried = 0;
   for (const r of a.rows) {
-    assert.equal(r.keyed[0], r.keyed[1], `${r.code}: keyed table incomplete`);
-    if (r.inline) assert.equal(r.inline[0], r.inline[1], `${r.code}: inline table incomplete`);
-    if (r.positional) assert.equal(r.positional[0], r.positional[1], `${r.code}: positional arguments still English`);
-    assert.equal(r.pages[0], r.pages[1], `${r.code}: reading pages incomplete`);
+    const surfaces = ['keyed', 'inline', 'positional', 'pages'].filter((k) => r[k]);
+    if (AUTHORED.has(r.code)) {
+      for (const k of surfaces) { assert.equal(r[k][0], r[k][1], `${r.code}: ${k} table incomplete — IntMap authors this language`); checkedAuthored++; }
+    } else if (CARRIED.has(r.code)) {
+      const f = FLOOR[r.code] || {};
+      for (const k of surfaces) {
+        if (f[k] == null) continue;
+        assert.ok(r[k][0] >= f[k], `${r.code}: ${k} fell to ${r[k][0]}, below the floor of ${f[k]} — narrowing what is authored next is not licence to delete what is written already`);
+        checkedCarried++;
+      }
+    } else { assert.fail(`${r.code} is neither authored nor carried by scripts/lang-policy.mjs`); }
   }
+  /* ⚠ a check that measured nothing must not be green (#R699). */
+  assert.ok(checkedAuthored > 0, 'r239 ①: no authored surface was measured');
+  assert.ok(checkedCarried > 0, 'r239 ①: no carried surface was measured — the floor is asserting nothing');
   assert.equal(a.twoBranch, 0, 'no two-branch language ternary carries prose');
   assert.equal(a.orphanKeys.length, 0, 'every data-i18n key in the markup is declared somewhere');
 });
@@ -189,9 +218,26 @@ test('④ the armed state is told on the map, and drives the same handlers as th
   assert.match(s, /function close\(\)\{[\s\S]{0,600}_hud\(\)/, 'and taken down when the panel closes');
 });
 
-test('④ every string the HUD prints is translated in all nine languages', () => {
+test('④ every string the HUD prints is held to what the language policy says of it', async () => {
   const a = JSON.parse(run('i18n-audit.mjs', '--json'));
-  for (const r of a.rows) if (r.inline) assert.equal(r.inline[0], r.inline[1], `${r.code}`);
+  /* ⚠ (#R707) the bar is read from scripts/lang-policy.mjs, not kept as a second copy of it —
+     see the note on ① . Authored languages 100 %, carried languages at or above their floor. */
+  const { authoredLangs, carriedLangs } = await import('../scripts/lang-policy.mjs');
+  const AUTHORED = new Set(authoredLangs(ROOT));
+  const CARRIED = new Set(carriedLangs(ROOT));
+  const FLOOR = JSON.parse(readFileSync(join(ROOT, 'tests', 'i18n-coverage-floor.json'), 'utf8')).langs;
+  let seenA = 0, seenC = 0;
+  for (const r of a.rows) {
+    if (!r.inline) continue;
+    if (AUTHORED.has(r.code)) { assert.equal(r.inline[0], r.inline[1], `${r.code}: inline table incomplete — IntMap authors this language`); seenA++; }
+    else { const f = (FLOOR[r.code] || {}).inline; if (f == null) continue; assert.ok(r.inline[0] >= f, `${r.code}: inline fell to ${r.inline[0]}, below the floor of ${f}`); seenC++; }
+  }
+  /* ⚠ `seenA` is STRUCTURALLY zero here and that is not a gap: measured 2026-09-12, the inline
+     table is the surface of exactly the four languages that are NOT carried positionally
+     (fr, ko, zh, zh-hans); en and jp have no inline row to be complete on. So this surface is
+     entirely about carried languages, and what it must never do is pass without looking (#R699). */
+  assert.equal(seenA, 0, 'an authored language grew an inline table — this test is measuring the wrong surface');
+  assert.ok(seenC > 0, 'the inline surface measured nothing at all');
   /* the HUD's strings are L(…) sites, so the inline table above covers fr/ko/zh — and the five
      positional languages are covered by the positional audit in ①. */
   assert.match(code('js/seismic.js'), /L\('Draw the rupture area','震源域を描く'/, 'the HUD uses L(…)');

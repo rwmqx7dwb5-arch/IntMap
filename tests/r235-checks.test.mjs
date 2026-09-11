@@ -273,8 +273,16 @@ test('R235 i18n: the positional five have no site left in English', async () => 
   const { execFileSync } = await import('node:child_process');
   const out = execFileSync(process.execPath, [path.join(ROOT, 'scripts/i18n-positional-audit.mjs')],
     { encoding: 'utf8', cwd: ROOT });
-  assert.match(out, /fewer than five arguments \(de\/ru\/es never supplied\): 0/,
-    'no call site supplies only en/jp');
+  /* ⚠ (#R707) THIS MATCHED THE SENTENCE, AND THE SENTENCE WAS NOT THE SUBJECT. The audit used to
+     require five positional arguments unconditionally; #R707 derives the arity from
+     scripts/lang-policy.mjs (two while the 2026-09-11 amendment stands) and its printed line
+     changed with it. A check anchored to the wording goes red for a rewording and stays green for
+     a real regression — #R488. What this case is about is the COUNT, so the count is what it
+     reads: whatever arity the policy asks for, no site may fall short of it. */
+  const shortLine = out.split(String.fromCharCode(10)).find((l) => l.startsWith('sites with fewer than'));
+  assert.ok(shortLine, 'the audit no longer reports the short-site count at all');
+  assert.equal(shortLine.slice(shortLine.lastIndexOf(':') + 1).trim(), '0',
+    'a call site supplies fewer arguments than scripts/lang-policy.mjs authors — ' + shortLine);
   for (const code2 of ['de', 'ru', 'es']) {
     assert.match(out, new RegExp('^' + code2 + ': 0 site', 'm'), code2 + ' has no site identical to English');
   }

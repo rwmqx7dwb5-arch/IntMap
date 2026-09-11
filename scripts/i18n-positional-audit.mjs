@@ -20,8 +20,11 @@
  *    · no letters at all (「—」, 「%」, 「±」, 「1/√f」) — nothing to translate;
  *    · the string is a proper noun / unit / symbol the language shares (Tsunami, Mw, km, PGV, MMI,
  *      Rayleigh, IASP91) — a list, so that adding one is a decision somebody made on purpose;
- *    · the site has fewer than 5 arguments, i.e. the author only supplied en/jp — those are counted
- *      SEPARATELY as `short`, because they are a different defect with a different fix.
+ *    · the site supplies fewer positional arguments than the POLICY asks for (MIN_ARGS below,
+ *      derived from scripts/lang-policy.mjs — 2 while the 2026-09-11 amendment stands, 5 when the
+ *      nine are restored) — those are counted SEPARATELY as `short`, a different defect with a
+ *      different fix. A site that stops short of the FULL tuple but meets the policy is simply not
+ *      compared against the slots it does not have.
  *
  *      node scripts/i18n-positional-audit.mjs            # counts + the first 40 of each
  *      node scripts/i18n-positional-audit.mjs --all      # every site, for fixing
@@ -32,6 +35,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'acorn';
 import * as walk from 'acorn-walk';
 import { parseAll, context, shapeOf } from './i18n-helpers.mjs';
+import { authoredLangs } from './lang-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const JS = join(ROOT, 'js');
@@ -299,8 +303,26 @@ const PROMPTS = [
 ];
 const isPrompt = (s) => PROMPTS.some((p) => s.startsWith(p));
 
-const LANGS = [{ i: 2, code: 'de' }, { i: 3, code: 'ru' }, { i: 4, code: 'es' }];
-const same = { de: [], ru: [], es: [] };
+/* ⚠⚠⚠ (#R707) THE POSITIONAL ORDER, ONCE — AND THE ARITY THE AMENDMENT ACTUALLY ASKS FOR.
+   `pick()` in js/lang-registry.js resolves these five from argument position; the other four come
+   from the inline table keyed by the English string. That order was written here as three rows
+   starting at index 2, which meant the two slots the 2026-09-11 amendment KEPT (en, jp) were the
+   only ones this file never named — and the arity below was the literal 5.
+   ⚠ THAT LITERAL MADE THE AMENDMENT UNEXECUTABLE FOR THIS SHAPE. authoredLangs() narrowed what
+   IntMap writes to en + jp, and scripts/i18n-audit.mjs holds the other seven to a FLOOR rather
+   than a ceiling precisely so a new English-only row is allowed — but `short` was an ABSOLUTE
+   condition on five arguments, so a site written in exactly the two languages the policy asks for
+   was reported as a defect. Measured #R707: the repository had 0 short sites, so nothing said so
+   until the first post-amendment positional string was written.
+   ⇒ the arity is DERIVED: the last positional slot the policy still authors, plus one. Restoring
+   the nine (`return all;` in scripts/lang-policy.mjs) puts it back to 5 with no edit here.
+   ⚠ `same` below is NOT narrowed, and that is the floor, not an oversight: a site that DOES supply
+   a German argument must still supply German, or the existing row rots one deletion at a time. */
+const SLOTS = ['en', 'jp', 'de', 'ru', 'es'];
+const AUTHORED = new Set(authoredLangs(ROOT));
+const MIN_ARGS = 1 + SLOTS.reduce((m, code, i) => (AUTHORED.has(code) ? i : m), 0);
+const LANGS = SLOTS.map((code, i) => ({ i, code })).filter((r) => r.i >= 2);
+const same = Object.fromEntries(LANGS.map((r) => [r.code, []]));
 const short = [];
 let sites = 0;
 
@@ -327,13 +349,22 @@ for (const f of parseAll().keys()) {
       const args = n.arguments.slice(off);        /* drop `lang` for the t() shape */
       if (!args.length || args[0].type !== 'Literal' || typeof args[0].value !== 'string') return;
       if (!args.every((a) => a.type === 'Literal' && typeof a.value === 'string')) return;
-      sites++;
       const en = args[0].value;
       const where = `${relative(ROOT, join(JS, f)).replace(/\\/g, '/')}:${n.loc.start.line}`;
       /* ⚠ (#R243) a string with NO LETTERS is an affix, not a sentence — `' '`, `''`, `')'`, `'年'`'s
          empty English counterpart. Five arguments cannot help it (its English key is empty, so the
          inline table has nowhere to hang a row either) and it says nothing a reader could read. */
-      if (args.length < 5) { if (hasLetter(en) && !isPrompt(en)) short.push({ where, en, n: args.length }); return; }
+      if (args.length < MIN_ARGS) { if (hasLetter(en) && !isPrompt(en)) short.push({ where, en, n: args.length }); return; }
+      /* ⚠⚠⚠ (#R707) THE DENOMINATOR IS THE FULL TUPLE, NOT EVERY PARSED CALL. `sites` feeds
+         scripts/i18n-audit.mjs:258 as [sites - same, sites] — the per-language coverage FLOOR. A
+         site that legitimately stops at the authored slots has no German argument at all, so
+         counting it here would book it as a TRANSLATED German row: measured #R707, the first two
+         such sites raised de/es/ru from 7,341 to 7,343 and the gate asked to raise the floor to
+         match, which would have written two rows of German that do not exist into the one number
+         that guards German against deletion. It is not an untranslated row either — it is outside
+         this measurement, which is what returning before the counter says. */
+      if (args.length < SLOTS.length) return;
+      sites++;
       if (!hasLetter(en) || NEUTRAL.has(en.trim())) return;
       for (const { i, code } of LANGS) {
         if (args[i].value !== en) continue;
@@ -358,7 +389,8 @@ const show = (rows) => rows.slice(0, ALL ? rows.length : 40)
   .forEach((r) => console.log('    ' + r.where + '  ' + JSON.stringify(r.en).slice(0, 90)));
 
 console.log(`positional L(…) call sites parsed: ${sites}`);
-console.log(`\nsites with fewer than five arguments (de/ru/es never supplied): ${short.length}`);
+console.log(`
+sites with fewer than ${MIN_ARGS} positional argument(s) — the policy authors [${[...AUTHORED].join(', ')}]: ${short.length}`);
 show(short);
 for (const { code } of LANGS) {
   const pct = sites ? (100 * (1 - same[code].length / sites)).toFixed(1) : '—';

@@ -403,7 +403,7 @@ for (const r of rows) {
     + (shortOf(r) ? '   ⚠' : ''));
 }
 console.log(`\ntwo-branch \`jp ? … : …\` ternaries carrying prose: ${two.total}`
-  + `\ncall sites with fewer than five positional arguments: ${pos.shortSites ?? pos.short}`
+  + `\ncall sites with below the policy's positional arity: ${pos.shortSites ?? pos.short}`
   + `\ndata-i18n keys in HTML that NO language declares: ${orphanKeys.length}`
   + (orphanKeys.length ? '\n    ' + orphanKeys.join('\n    ') : '')
   /* (#R240) the sixth surface — see the note by `attrs` above */
@@ -521,7 +521,7 @@ if (process.argv.includes('--gate')) {
     }
   }
   if (two.total) problems.push(`${two.total} two-branch ternary/ies carrying prose`);
-  if ((pos.short ?? 0) > 0) problems.push(`${pos.short} L(…) site(s) with fewer than five arguments`);
+  if ((pos.short ?? 0) > 0) problems.push(`${pos.short} L(…) site(s) supplying fewer arguments than scripts/lang-policy.mjs authors`);
   if (orphanKeys.length) problems.push(`${orphanKeys.length} data-i18n key(s) with no English entry`);
   if (attrs.total) problems.push(`${attrs.total} user-visible attribute(s) with no translation key — run scripts/i18n-attr-audit.mjs`);
   if (arrays.hits.length) problems.push(`${arrays.hits.length} translation tuple(s) held as data — run scripts/i18n-positional-array-audit.mjs`);
