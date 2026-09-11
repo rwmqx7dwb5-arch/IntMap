@@ -124,7 +124,10 @@ test('R701 histb-count reaches all nine shipped languages, and reads grouped num
       await t.test(`② ${file.replace('js/locales/pages.', '').replace('.js', '')} is held by the same property`, () => {
         const r = withBroken([{ file, from, to, why }], only);
         assert.equal(r.code, 1, `${file} stating a different number was accepted`);
-        assert.match(r.out, new RegExp(file.split('/').pop().replace(/\./g, '\\.')), 'the report does not name the page');
+        /* ⚠ escape with `anchorRe`, not with a hand-rolled dot-only replace: that escapes `.` and
+           leaves `\` alone, which CodeQL's js/incomplete-sanitization flagged on the first CI run.
+           One escaper for the file, used by `withBroken` too — not a second copy of the judgement. */
+        assert.match(r.out, anchorRe(file.split('/').pop()), 'the report does not name the page');
       });
     }
 
