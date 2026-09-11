@@ -192,8 +192,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        MEASURED absent for GRACE_MS, and the camera is past `imta2-line`'s `minzoom` (DEEP_Z). That
        state is a reader who is offline or behind a filter that blocks vtiles.openhistoricalmap.org,
        and it is given up again the moment one tile paints.
-       ⚠ THE PRICE OF LEVELLING THEM, MEASURED RATHER THAN GUESSED. The first tier is 10,433,200 B for
-       583,700 vertices at 0.02° / 3 decimals; the deeper one is 16,224,964 B for 741,362 at 0.012° / 4.
+       ⚠ THE PRICE OF LEVELLING THEM, MEASURED RATHER THAN GUESSED. The first tier is 10,433,199 B for
+       583,700 vertices at 0.02° / 3 decimals; the deeper one is 16,224,963 B for 741,362 at 0.012° / 4.
        Re-cutting the first at the deeper tolerance therefore lands it in the second file's class,
        several megabytes past the 11 MB ceiling tests/r530-checks.test.mjs holds THIS file to — and it
        cannot be done from anything committed here in any case: the build consumes OHM's whole

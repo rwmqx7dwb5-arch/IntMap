@@ -28,6 +28,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+/** 改行設定に依存しないバイト数——git が持ち、読者が受け取る形（LF）で数える。 */
+const lfBytes = (p) => Buffer.byteLength(
+  fs.readFileSync(path.join(ROOT, p), 'latin1').split('\r\n').join('\n'), 'latin1');
 const TA = read('js/time-admin1.js');
 
 /* ── 層の一覧は、**モジュール自身の `makeTier(…)` 呼び出しから数え上げる**。
@@ -230,7 +233,11 @@ test('⑤ js/time-admin1.js 自身の段落が述べる数が、束の実測と�
   for (const t of T) {
     const d = bundle(t);
     assert.ok(TA.includes(String(d.tolerance) + '°'), `${t.file} の tolerance ${d.tolerance}° を、モジュールはどこにも述べていない`);
-    assert.ok(has(TA, fs.statSync(path.join(ROOT, t.file)).size), `${t.file} の実バイト数を、モジュールの段落が述べていない`);
+    /* ⚠⚠⚠ (#R700) `statSync().size` はチェックアウトの改行設定を測っていて、束の大きさを測っていない。
+       実測: このマシン（`core.autocrlf=true`）では 10,433,200 B、CI（LF）では **10,433,199 B**——
+       末尾の 1 バイト。**ローカルで緑・CI で赤**になり、両方が同じ 1 つの事実を述べているのに
+       食い違った。⇒ 改行を正規化してから測る。読者が受け取るのも、git が持つのも、この数である。 */
+    assert.ok(has(TA, lfBytes(t.file)), `${t.file} の実バイト数を、モジュールの段落が述べていない`);
     let verts = 0; for (const r of d.rings) verts += r.length;
     assert.ok(has(TA, verts), `${t.file} の頂点数 ${verts} を、モジュールの段落が述べていない`);
   }
@@ -259,7 +266,7 @@ test('⑥ 出典ページは9言語とも、いま同梱されている記録の
 test('⑦ docs/FILES.md と CI の説明が述べる数が、同梱のバイトと一致する', () => {
   const FILES = read('docs/FILES.md'), CI = read('.github/workflows/ci.yml');
   for (const t of tiers()) {
-    const d = bundle(t), bytes = fs.statSync(path.join(ROOT, t.file)).size;
+    const d = bundle(t), bytes = lfBytes(t.file);   /* 改行設定に依存しない——上の ⑤ を参照 */
     assert.ok(has(FILES, d.feats.length), `docs/FILES.md: ${t.file} の件数が ${d.feats.length} ではない`);
     assert.ok(has(FILES, d.rings.length), `docs/FILES.md: ${t.file} の rings が ${d.rings.length} ではない`);
     assert.ok(FILES.includes((bytes / 1048576).toFixed(2) + ' MB'), `docs/FILES.md: ${t.file} の大きさが ${(bytes / 1048576).toFixed(2)} MB ではない`);
