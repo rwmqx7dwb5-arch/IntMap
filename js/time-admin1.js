@@ -190,8 +190,18 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        none of which has a resolution the eye can compare. The two bundle lines are on one screen only
        when four things hold at once: the layer is on, the clock is in the past, the tiles have been
        MEASURED absent for GRACE_MS, and the camera is past `imta2-line`'s `minzoom` (DEEP_Z). That
-       state is a reader who is offline or behind a filter that blocks vtiles.openhistoricalmap.org,
-       and it is given up again the moment one tile paints.
+       state is given up again the moment one tile paints.
+       ⚠⚠⚠ AND THE FIRST DRAFT OF THIS PARAGRAPH NAMED THE WRONG READER. It said that state «is a
+       reader who is offline or behind a filter that blocks vtiles.openhistoricalmap.org», and the
+       PRODUCTION VERIFICATION of #R700 measured otherwise: at world zoom (z1.7), with the tile host
+       reachable and answering 200, `imta-line` is `visible` and the geojson fallback is carrying 356
+       features — the vector layer paints nothing that far out, so GRACE_MS elapses and `absent`
+       latches for an ordinary ONLINE reader. So the tile state is not what keeps the inversion off
+       the screen. `DEEP_Z` is: at that zoom `imta2-line` is not in the style at all (measured on
+       production — `getLayer` false, and it is in none of the 70 layers), so there is no second line
+       for the first to be coarser THAN. The four conditions above are still the four; what was wrong
+       was the picture of who meets them, and a reason nobody measures is a reason that quietly stops
+       being true.
        ⚠ THE PRICE OF LEVELLING THEM, MEASURED RATHER THAN GUESSED. The first tier is 10,433,199 B for
        583,700 vertices at 0.02° / 3 decimals; the deeper one is 16,224,963 B for 741,362 at 0.012° / 4.
        Re-cutting the first at the deeper tolerance therefore lands it in the second file's class,
