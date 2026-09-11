@@ -14,9 +14,8 @@
  *  «German Empire / French Third Republic / Kingdom of Italy / Spain /
  *  United Kingdom of Great Britain and Ireland»。**16 秒後もそのまま**だった。
  *  ラベルは一度しか書かれず、同じ年へ戻っても `shownY` の早期 return で書き直されない。
- *  ⚠ この spec が使う遅延は **3 秒 / 待ちは 9 秒**——国境が描かれるのは 1〜2 秒なので、
- *  「表より先に描く」も「届いたあと十分待つ」も成り立つ。8 秒版と同じことを測って、
- *  試験予算（`scripts/test-budget.mjs`）を 20 秒ぶん安く測る。
+ *  遅延は固定秒数ではなく、1916年の国境が先に描かれた時点で解除する。
+ *  属性本文の到着、一覧の時代名、描画とsourceの一致をそれぞれ待つ。
  *
  *  ⚠ 遅延は route で作る（本物の CDN の機嫌に依存しない）。**遅らせるだけで、
  *  差し替えない**——中身は本番と同じでなければ、この検査が測っているものが変わる。
@@ -24,7 +23,7 @@
  *  ⚠ deep tier。自分の page を起動して十数秒待つので、門の半分（`tests/r410.spec.js`）
  *  とは分けてある。門のほうは 1939→1916 を共有 page で数秒で測る。
  * ==========================================================================*/
-import { test, expect, bootPage } from './helpers/app.js';
+import { test, expect } from './helpers/app.js';
 
 /* ⚠ A VIEWPORT PER CLAIM, because both era layers collide like any other symbol layer (`text-padding`
    6, no allow-overlap) and `queryRenderedFeatures` answers with what was PLACED — which is the right
@@ -78,21 +77,44 @@ const READ = () => {
 
 test('R410 ② 国別属性が国境より遅れて届いても、地図の国名は一覧に追いつく', async ({ browser }) => {
   const page = await browser.newPage();
-  let delayed = 0;
+  let delayed = 0, release;
+  const gate = new Promise(resolve => { release = resolve; });
+  const stages = [], started = Date.now();
+  const mark = stage => stages.push({ stage, ms: Date.now() - started });
+  const attributeResponse = page.waitForResponse(response => /ne_\d+m_admin_0_countries\.geojson/.test(response.url()) && response.ok());
+  attributeResponse.catch(() => {});
   await page.route(/ne_\d+m_admin_0_countries\.geojson/, async (route) => {
     delayed++;
-    await new Promise((r) => setTimeout(r, 3000));
+    await gate;
     await route.continue();
   });
   try {
-    await bootPage(page, {});
-    await openCountries(page);
+    /* Full style readiness includes unrelated network sources. This test deliberately
+       holds one source back, so wait for the clock and renderer, then their actual result. */
+    await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => !!(window.__imap && window.IntMapTime), null, { timeout: 20000 });
+    mark('clock and renderer ready');
     await page.evaluate((c) => window.__imap.jumpTo({ center: c.center, zoom: c.zoom, pitch: 0, bearing: 0 }), CAMERAS[0][0]);
     await page.evaluate(() => window.IntMapTime.set(new Date('1916-07-01T12:00:00Z'), { source: 'test' }));
-    /* long enough that the delayed file has landed AND the labels have had every chance to be written
-       again — the defect is not «slow», it is «written once from an empty table and never re-read» */
-    await page.waitForTimeout(9000);
-    expect(delayed, 'the attribute file really went through the delayed route').toBeGreaterThan(0);
+    await page.waitForFunction(() => {
+      try {
+        const s = window.__imap.getSource('imtb-src');
+        const d = s && s.serialize().data;
+        return !!(d && d.features && d.features.some(f => f.properties && f.properties.NAME === 'Germany'));
+      } catch (_) { return false; }
+    }, null, { timeout: 20000, polling: 200 });
+    mark('era borders before attributes');
+    expect(delayed, 'the attribute file really went through the held route').toBeGreaterThan(0);
+    release();
+    const response = await attributeResponse;
+    expect(await response.finished(), 'the original attribute body arrived without a transport error').toBeNull();
+    mark('attribute body received');
+    await openCountries(page);
+    await page.waitForFunction(names => {
+      const rows = [...document.querySelectorAll('.stat-row .stat-name')].map(n => n.textContent.trim());
+      return names.every(name => rows.includes(name));
+    }, CAMERAS.flatMap(([, names]) => Object.values(names)), { timeout: 20000, polling: 200 });
+    mark('1916 list identities ready');
 
     for (const [camera, want] of CAMERAS) {
       await page.evaluate((c) => window.__imap.jumpTo({ center: c.center, zoom: c.zoom, pitch: 0, bearing: 0 }), camera);
@@ -126,6 +148,8 @@ test('R410 ② 国別属性が国境より遅れて届いても、地図の国�
       }
     }
   } finally {
+    release();
+    console.log('R410 readiness', JSON.stringify(stages));
     await page.close().catch(() => { });
   }
 });

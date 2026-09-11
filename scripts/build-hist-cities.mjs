@@ -65,11 +65,9 @@
  *      an assertion this build re-checks every run. ⚠ A DERIVED ROW MAY NOT WAIVE ANYTHING: a
  *      waiver is a sentence a person wrote about the world, and nobody wrote eight thousand of
  *      them. The harvest drops the key instead.
- *   ④ A KEY MAY NOT REPEAT, anywhere, including inside its own row — every key is a branch label
- *      in one MapLibre `match`, and a repeated label is a REJECTED STYLE, not a wrong answer.
- *      ⚠ THIS IS THE ONE RULE #R679 DID NOT SOFTEN. Where a derived key collides with a written
- *      one the derived key goes; where two derived rows collide both lose it, because a spelling
- *      that names two cities identifies neither.
+ *   ④ KEYS ARE UNIQUE WITHIN A ROW. Distant cities may share a spelling: the runtime groups
+ *      their guarded candidates under one match branch. If their evidence-derived guards overlap,
+ *      the earlier row retains the key; a spelling cannot resolve competing nearby identities.
  *   ⑤ ERAS are ordered, disjoint, and inside the clock's reach — which is now
  *      js/hist-scale.js's own FLOOR, evaluated rather than copied (see below).
  *   ⑥ THE WRITTEN RECORD IS WHOLE. Every one of the handwritten rows reaches the shipped file.
@@ -92,7 +90,8 @@
  *     the name it has held since 1961. Neither is right and the earlier one is less wrong. The
  *     alternative — clipping open starts to a year nobody wrote down — is the fabricated date
  *     IM-20260824-001 forbids. So the file DECLARES it instead: an open endpoint ships with
- *     precision '-', which is «this record does not say», and it is no longer silent.
+ *     precision '-', which is «this record does not say». The runtime marks an open-start
+ *     winning name with [?], explained beside Chronos, rather than claiming a known start.
  *  ② THE ROWS THAT MAY NEVER BE DRAWN ARE SHIPPED ANYWAY. `ofm-city` filters on
  *     `class in [city, town]`, so a row whose settlement OSM tags `place=village` can never be
  *     relabelled — #R409's «a row that cannot reach the screen is indistinguishable from one that
@@ -379,19 +378,26 @@ for (const r of kept) {
   r.eras = eras;
   if (!eras.length) { merged.dropped++; continue; }
 
-  /* ④ a key may not repeat anywhere, INCLUDING inside its own row.
-     ⚠⚠⚠ every key of every active city goes into ONE MapLibre `match`, and a repeated branch
-     label is not a wrong answer but a REJECTED STYLE — «Branch labels must be unique», addLayer
-     throws, and the entire label stack stops existing (#R211 measured that failure mode). */
+  /* ④ One spelling can identify distant cities. Keep separate point identities when their
+     evidence-derived guards do not overlap; retain earlier-source precedence otherwise.
+     Earlier rows have already been audited. Derived rows carry the same rival distance that
+     the audit below uses, so no larger radius or fabricated identity enters this join. */
+  const candidateGuardKm = r.derived ? guardFrom(r.ev && r.ev.r ? r.ev.r[2] : Infinity) : GUARD_MAX_KM;
   const hits = [];
   const keys = [];
   for (const k of r.keys) {
     if (!k) { problems.push(`${at}: empty key`); continue; }
-    const prior = seenKey.get(k);
-    if (prior) {
-      /* a written row's key is never surrendered; a derived one's is, because the alternative is
-         a style MapLibre refuses to load at all */
-      if (!r.derived) problems.push(`${at}: key «${k}» is already used by «${prior}» — every key becomes a branch label in ONE match, and MapLibre rejects a style with a repeated label outright`);
+    if (keys.includes(k)) { problems.push(`${at}: duplicate key «${k}» within one row`); continue; }
+    const prior = seenKey.get(k) || [];
+    const ambiguous = prior.find((p) => {
+      const proof = audit.find((a) => a.r === p);
+      /* Match the shipped radii, which are rounded down to 100 metres. */
+      const left = Math.floor(candidateGuardKm * 10) / 10;
+      const right = Math.floor((proof ? proof.guardKm : GUARD_MAX_KM) * 10) / 10;
+      return km(p.lon, p.lat, r.lon, r.lat) <= left + right;
+    });
+    if (ambiguous) {
+      if (!r.derived) problems.push(`${at}: key «${k}» cannot spatially separate this row from «${ambiguous.id}»`);
       continue;
     }
     keys.push(k);
@@ -401,7 +407,7 @@ for (const r of kept) {
     merged.dropped++;
     continue;
   }
-  for (const k of keys) seenKey.set(k, r.id);
+  for (const k of keys) seenKey.set(k, [...(seenKey.get(k) || []), r]);
   r.keys = keys;
 
   /* ⚠ the two proof paths meet here: a written row's namesakes come out of the committed index,

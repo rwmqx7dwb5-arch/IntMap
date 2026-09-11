@@ -26,13 +26,14 @@
 window.IntMapVectorTiles=(function(){
   'use strict';
 
-  let _VectorTile=null, _Pbf=null, _libP=null;
+  let _VectorTile=null, _Pbf=null, _clip=null, _libP=null;
   /* Loaded on first use, once. A MapLibre session never reaches this. */
   function lib(){
     if(_libP) return _libP;
-    _libP=Promise.all([import('@mapbox/vector-tile'), import('pbf')]).then(([vt,pbf])=>{
+    _libP=Promise.all([import('@mapbox/vector-tile'), import('pbf'), import('polygon-clipping')]).then(([vt,pbf,clip])=>{
       _VectorTile=vt.VectorTile||(vt.default&&vt.default.VectorTile);
       _Pbf=pbf.default||pbf;
+      _clip=clip.default||clip;
       return !!(_VectorTile&&_Pbf);
     }).catch(()=>false);
     return _libP;
@@ -44,6 +45,40 @@ window.IntMapVectorTiles=(function(){
   function tileY(lat,z){
     const l=Math.max(-85.05112878,Math.min(85.05112878,lat));
     return Math.floor((1-Math.log(Math.tan(l*D2R)+1/Math.cos(l*D2R))/Math.PI)/2*Math.pow(2,z));
+  }
+
+  /* MVT polygons include a drawing buffer beyond their tile. MapLibre clips it
+     in tile space; handing it straight to Cesium lets z1 ocean rings exceed a
+     hemisphere (observed -182.8125…2.8125°) and cover the wrong side of Earth.
+     Clip in Mercator space, keeping holes, and split the coarsest tiles into
+     quarter-hemisphere cells before Cesium's local-plane triangulation. */
+  function polygonGeometry(geometry,x,y,z,clip=_clip){
+    if(!geometry||!['Polygon','MultiPolygon'].includes(geometry.type)) return geometry;
+    const merc=lat=>Math.log(Math.tan(Math.PI/4+lat*D2R/2));
+    const lat=m=>(2*Math.atan(Math.exp(m))-Math.PI/2)/D2R;
+    const input=(geometry.type==='Polygon'?[geometry.coordinates]:geometry.coordinates)
+      .map(poly=>poly.map(ring=>ring.map(p=>[p[0]*D2R,merc(p[1])])));
+    const n=2**z, parts=2**Math.max(0,2-z), out=[];
+    const west=-Math.PI+x*2*Math.PI/n, north=Math.PI-y*2*Math.PI/n, span=2*Math.PI/n;
+    for(let dx=0;dx<parts;dx++) for(let dy=0;dy<parts;dy++){
+      const w=west+span*dx/parts,e=west+span*(dx+1)/parts;
+      const t=north-span*dy/parts,b=north-span*(dy+1)/parts;
+      const pieces=clip.intersection(input,[[[w,b],[e,b],[e,t],[w,t],[w,b]]]);
+      for(const poly of pieces) out.push(poly.map(ring=>{
+        const dense=[];
+        for(let i=0;i<ring.length-1;i++){
+          const a=ring[i],b=ring[i+1];
+          /* Cesium's default polygon granularity is one degree. Sample the
+             actual Mercator edge at that spacing, rather than letting a long
+             tile edge become a great-circle shortcut across land. */
+          const steps=Math.max(1,Math.ceil(Math.max(Math.abs(b[0]-a[0]),Math.abs(b[1]-a[1]))/D2R));
+          for(let j=0;j<steps;j++){ const t=j/steps; dense.push([(a[0]+(b[0]-a[0])*t)/D2R,lat(a[1]+(b[1]-a[1])*t)]); }
+        }
+        if(dense.length) dense.push([...dense[0]]);
+        return dense;
+      }));
+    }
+    return {type:'MultiPolygon',coordinates:out};
   }
 
   /* ── ONE SOURCE ────────────────────────────────────────────────────────────
@@ -127,6 +162,9 @@ window.IntMapVectorTiles=(function(){
             if(!g||!g.geometry) continue;
             /* `sourceLayer` is how a style layer selects within a tileset, and it is
                the ONE thing toGeoJSON does not carry over. */
+            /* Fill clipping introduces closure edges; line layers must keep
+               stroking the original geometry, never those artificial edges. */
+            if(['Polygon','MultiPolygon'].includes(g.geometry.type)) g.fillGeometry=polygonGeometry(g.geometry,x,y,z);
             g.sourceLayer=name;
             g.tileKey=k;
             feats.push(g);
@@ -229,5 +267,5 @@ window.IntMapVectorTiles=(function(){
     return { id, spec, want, sig, update, current, stats, destroy, isReady:()=>state.ready };
   }
 
-  return { makeSource, lib, _tileX:tileX, _tileY:tileY };
+  return { makeSource, lib, _tileX:tileX, _tileY:tileY, polygonGeometry };
 })();

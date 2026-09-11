@@ -127,7 +127,7 @@ window.IntMapBorderCoast = (function () {
       if (!polys) continue;
       const lines = [];
       for (const p of polys) for (const r of p) if (r && r.length > 1) for (const l of ringLines(r, markOf(r))) lines.push(l);
-      if (lines.length) feats.push({ type: 'Feature', geometry: { type: 'MultiLineString', coordinates: lines }, properties: {} });
+      if (lines.length) feats.push({ type: 'Feature', geometry: { type: 'MultiLineString', coordinates: lines }, properties: Object.assign({}, f.properties) });
     }
     return { type: 'FeatureCollection', features: feats };
   }

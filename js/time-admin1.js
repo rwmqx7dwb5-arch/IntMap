@@ -22,8 +22,8 @@
  *     drawn from those at the tile's own geometry, and travelling is a `setFilter`.
  *  ② THE ERAS WERE THE BUILD'S TOO. `--since 1850` dropped every unit that ENDED before
  *     the clock's floor, so the record held almost nothing for any earlier century — and
- *     the floor itself was 1850. Both moved: js/chronos.js reaches year 1 (#R604), the
- *     bundles are rebuilt with `--since 1` (levels 3-4: 3,049 → 4,820 units as shipped today, and
+ *     the floor itself was 1850. The build now follows js/hist-scale.js's clock floor,
+ *     preserving existing display bounds for unknown starts (levels 3-4: 4,839 units, and
  *     the number of them in force in a given June: year 1 → 73, 1000 → 118, 1500 → 401, 1800 → 420,
  *     where the old bundle held none before 1850 — counted 2026-09-11 off data/hist-admin1.js
  *     itself), and the tiles were never limited to begin with.
@@ -87,7 +87,7 @@
  *  data/hist-admin1.js (levels 3-4) and data/hist-admin2.js (levels 5-6) — both
  *  OpenHistoricalMap, CC0, both built by scripts/build-hist-admin1.mjs, ring-pooled in
  *  the SAME literal shape as data/cshapes.js so every module that reads a historical
- *  record reads it with one set of habits. Dates are inclusive on both ends and
+ *  record reads it with one set of habits. OHM end dates are exclusive (as on the country side) and
  *  DAY-EXACT where OHM knows the day, so the epoch index below is CShapes' verbatim
  *  (#R421): two dates inside one epoch share a cache key, and a quiet decade
  *  re-renders nothing while a busy year steps every time something moved.
@@ -202,8 +202,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        for the first to be coarser THAN. The four conditions above are still the four; what was wrong
        was the picture of who meets them, and a reason nobody measures is a reason that quietly stops
        being true.
-       ⚠ THE PRICE OF LEVELLING THEM, MEASURED RATHER THAN GUESSED. The first tier is 10,433,199 B for
-       583,700 vertices at 0.02° / 3 decimals; the deeper one is 16,224,963 B for 741,362 at 0.012° / 4.
+       ⚠ THE PRICE OF LEVELLING THEM, MEASURED RATHER THAN GUESSED. The first tier is 11,116,065 B for
+       585,098 vertices at 0.02° / 3 decimals; the deeper one is 19,372,956 B for 741,362 at 0.012° / 4.
        Re-cutting the first at the deeper tolerance therefore lands it in the second file's class,
        several megabytes past the 11 MB ceiling tests/r530-checks.test.mjs holds THIS file to — and it
        cannot be done from anything committed here in any case: the build consumes OHM's whole
@@ -317,18 +317,18 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         return _P;
       }
 
-      /* ── the epoch index (#R421, verbatim from the country side) ───────────
+      /* ── the epoch index (OHM uses the end itself, unlike CShapes) ───────────
          Every instant on which the subdivisions change, as sortable YYYYMMDD ints: a
-         record's START, and the day AFTER its END (a unit that vanishes with no successor
+         record's START and its exclusive END (a unit that vanishes with no successor
          still ends an epoch). Built once, lazily, off the same bundle the polygons come
          from — there is no second source to drift from. */
       let _bnd = null;
       function bounds(d) {
         if (_bnd) return _bnd;
-        const set = new Set(), lo = _ymd(d.since || 1850, 1, 1), hi = _ymd(9998, 12, 31);
+        const set = new Set(), lo = _ymd(d.since ?? window.IntMapHistScale.FLOOR, 1, 1), hi = _ymd(9998, 12, 31);
         for (const f of d.feats) {
           set.add(_ymd(f[2], f[3], f[4]));
-          const a = _dayAfter(f[5], f[6], f[7]); set.add(_ymd(a[0], a[1], a[2]));
+          set.add(_ymd(f[5], f[6], f[7]));
         }
         _bnd = [...set].filter(k => k >= lo && k <= hi).sort((a, b) => a - b);
         return _bnd;
@@ -354,9 +354,12 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         const t = _ymd(y, m, dd), feats = [];
         for (let i = 0; i < d.feats.length; i++) {
           const f = d.feats[i];
-          if (_ymd(f[2], f[3], f[4]) > t || _ymd(f[5], f[6], f[7]) < t) continue;
+          if (_ymd(f[2], f[3], f[4]) > t || _ymd(f[5], f[6], f[7]) <= t) continue;
           const NAME = nameOf(f);
-          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11] } });
+          /* Keep the source's precision beside the rendered feature. The normalized bounds
+             select geometry; they must never masquerade as day-exact source dates. */
+          const dates = d.dates && d.dates[f[10]];
+          feats.push({ type: 'Feature', geometry: geomOf(d, i), properties: { NAME: NAME, name: NAME, ...(dates ? { dates: dates, dateSemantics: d.dateSemantics } : {}), _lvl: f[1], _ix: i, _tier: cfg.key, _gap: (f[10] == null) ? 1 : 0, _gapIx: (f[11] == null) ? -1 : f[11] } });
         }
         return { type: 'FeatureCollection', features: feats };
       }
@@ -630,7 +633,6 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
     }
 
     const _ymd = (y, m, d) => y * 10000 + m * 100 + d;
-    function _dayAfter(y, m, d) { const t = new Date(Date.UTC(y, m - 1, d)); t.setUTCDate(t.getUTCDate() + 1); return [t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()]; }
 
     /* the reader's language → the unit's own name in it. OHM carries `name:<code>` for
        the nine; the bare `name` is the local/official one and is the honest fallback —

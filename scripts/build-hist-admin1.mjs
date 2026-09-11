@@ -39,8 +39,8 @@
  *      feat = [ name, lvl, sy,sm,sd, ey,em,ed, [[ringIdx…]…], names ]
  *      names = { en, ja, de, ru, es, fr, ko, 'zh-Hant', 'zh-Hans' }  (present keys only — the keys
  *              are js/lang-registry.js's `html` tags, read off that registry rather than typed)
- *  Dates are inclusive on both ends, exactly like CShapes, so js/time-admin1.js
- *  reuses the epoch index verbatim.
+ *  Dates use an exclusive end: an exact end_date is the first inactive day.
+ *  Year/month ends advance to the next period; original dates remain in metadata.
  *
  *  Source & licence: OpenHistoricalMap, CC0 1.0 (openhistoricalmap.org/copyright).
  *  Declared in sources.html / js/reference-data.js like every other bundled set.
@@ -67,7 +67,7 @@
  *  Usage:  node scripts/build-hist-admin1.mjs --check           # verify the COMMITTED bundles, offline (#R680)
  *          node scripts/build-hist-admin1.mjs --names           # refresh every tier's NAMES, geometry untouched
  *          node scripts/build-hist-admin1.mjs [--out data/hist-admin1.js]
- *                                            [--tol 0.02] [--dec 3] [--since 1850] [--batch 20]
+ *                                            [--tol 0.02] [--dec 3] [--since <clock floor>] [--batch 20]
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
@@ -84,8 +84,19 @@ const EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
 const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const OUT   = path.resolve(ROOT, argOf('--out', 'data/hist-admin1.js'));
-const TOL   = parseFloat(argOf('--tol', '0.02'));        /* ~2.2 km — see the size note in the header */
-const SINCE = parseInt(argOf('--since', '1850'), 10);    /* the clock's own floor (js/chronos.js) */
+const PREVIOUS = {};
+if (!args.includes('--check') && !args.includes('--names') && fs.existsSync(OUT))
+  new Function('window', fs.readFileSync(OUT, 'utf8'))(PREVIOUS);
+const previousData = Object.values(PREVIOUS).find(d => Array.isArray(d?.feats));
+const TOL   = parseFloat(argOf('--tol', previousData?.tolerance ?? '0.02'));        /* ~2.2 km — see the size note in the header */
+function clockFloor() {
+  const sandbox = { window: {} };
+  vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'js/hist-scale.js'), 'utf8'), sandbox);
+  const floor = sandbox.window.IntMapHistScale.FLOOR;
+  if (!Number.isInteger(floor)) throw new Error('hist-scale FLOOR is missing');
+  return floor;
+}
+const SINCE = args.includes('--check') || args.includes('--names') ? null : parseInt(argOf('--since', clockFloor()), 10);
 const BATCH = parseInt(argOf('--batch', '20'), 10);
 /* (#R564) THE LEVELS ARE AN ARGUMENT, AND THERE IS ONE FILE PER TIER. The first-level tier (3,4) is
    what the province row draws at every zoom; the deeper tier is fetched only when the reader zooms
@@ -109,7 +120,16 @@ const GLOBAL = argOf('--global', (function () {
   return m ? '__HISTADM' + m[1] : '__HISTADM1';
 })());
 const CACHE = path.resolve(ROOT, argOf('--cache', cacheOf(LEVELS)));
-const QUANT = Math.pow(10, parseInt(argOf('--dec', '3'), 10));   /* --dec 3 = ~110 m at the equator */
+function coordinateDecimals(data) {
+  if (Number.isInteger(data?.decimals)) return data.decimals;
+  if (!data?.rings) return 3;
+  let digits = 0;
+  for (const ring of data.rings) for (const point of ring) for (const v of point)
+    digits = Math.max(digits, (String(v).split('.')[1] || '').length);
+  return digits;
+}
+const DECIMALS = parseInt(argOf('--dec', coordinateDecimals(previousData)), 10);
+const QUANT = Math.pow(10, DECIMALS);   /* --dec 3 = ~110 m at the equator */
 const MIN_AREA = 1e-5;                                   /* deg^2 — drop slivers, keep small city-states */
 
 /* ══ (#R695) THE LANGUAGE COLUMNS ARE THE APP'S OWN LIST, EVALUATED — NOT TYPED HERE ═════════════
@@ -150,22 +170,56 @@ const cc = () => { if (!_cc) throw new Error('scripts/build-hist-admin1.mjs: con
    `-0500` (BCE), and the uncertainty marks `~ ? %` plus open ranges `..`. Anything
    that is not a plain year-first date (`C18`, `18xx`, `unknown`) is UNKNOWN — the
    caller then treats the edge as open rather than inventing a day. */
+function dateInfo(raw) {
+  const text = raw == null ? '' : String(raw).trim();
+  const clean = text.replace(/[~?%]/g, '').replace(/\.\.$/, '').trim();
+  const m = /^(-?\d{1,6})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/.exec(clean);
+  return { raw: text || null, precision: m ? (m[3] ? 'day' : m[2] ? 'month' : 'year') : 'unknown',
+    qualified: /[~?%]/.test(text) };
+}
+function calendarDate(y, m, d) {
+  const dt = new Date(0);
+  dt.setUTCFullYear(y, m - 1, d);
+  return dt;
+}
 function edtf(raw, edge) {
-  if (raw == null) return null;
-  let s = String(raw).trim().replace(/[~?%]/g, '').replace(/\.\.$/, '').trim();
-  if (!s || /^(unknown|present|now)$/i.test(s)) return null;
-  const neg = s.startsWith('-');
-  if (neg) s = s.slice(1);
-  const m = /^(\d{1,6})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/.exec(s);
-  if (!m) return null;
-  let y = parseInt(m[1], 10); if (neg) y = -y;
-  const hasM = m[2] != null, hasD = m[3] != null;
-  const mo = hasM ? parseInt(m[2], 10) : (edge === 'end' ? 12 : 1);
-  if (!(mo >= 1 && mo <= 12)) return null;
-  let d;
-  if (hasD) { d = parseInt(m[3], 10); if (!(d >= 1 && d <= 31)) return null; }
-  else d = (edge === 'end') ? new Date(Date.UTC(y, mo, 0)).getUTCDate() : 1;
-  return [y, mo, d];
+  const info = dateInfo(raw);
+  if (info.precision === 'unknown') return null;
+  const m = /^(-?\d{1,6})(?:-(\d{1,2})(?:-(\d{1,2}))?)?$/.exec(String(raw).trim().replace(/[~?%]/g, '').replace(/\.\.$/, '').trim());
+  const y = Number(m[1]), mo = Number(m[2] || 1), day = Number(m[3] || 1);
+  const dt = calendarDate(y, mo, day);
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== day) return null;
+  if (edge === 'end' && info.precision !== 'day') {
+    dt.setUTCFullYear(y + (info.precision === 'year' ? 1 : 0), info.precision === 'year' ? 0 : mo, 1);
+  }
+  return [dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate()];
+}
+
+/* Equal, explicit days follow the country builder's single-day source convention.
+   This preserves OHM's same-day records; it is not independent historical verification. */
+function dateSpan(startRaw, endRaw) {
+  const s = edtf(startRaw, 'start'), e = edtf(endRaw, 'end');
+  const start = dateInfo(startRaw), end = dateInfo(endRaw);
+  const key = d => d[0] * 10000 + d[1] * 100 + d[2];
+  let normalization;
+  if (s && e && /^-?\d{4,6}-\d{2}-\d{2}$/.test(start.raw || '') && start.raw === end.raw && key(s) === key(e)) {
+    const dt = calendarDate(e[0], e[1], e[2] + 1);
+    e.splice(0, 3, dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
+    normalization = 'single-day';
+  }
+  return { s, e, valid: !(start.precision !== 'unknown' && !s) && !(end.precision !== 'unknown' && !e) && !(s && e && key(s) >= key(e)),
+    metadata: { start, end, ...(normalization ? { normalization } : {}) } };
+}
+
+/* An unknown date supplies no evidence to extend a unit into a newly reachable era.
+   Preserve its previously published display bound, explicitly distinguished from a source date. */
+function boundedStart(span, previous) {
+  if (span.s) return span.s;
+  if (!previous) return null;
+  const bound = previous.slice(2, 5);
+  span.metadata.start.boundary = 'preserved-display-bound';
+  span.metadata.start.bound = bound.slice();
+  return bound;
 }
 
 /* ── Douglas–Peucker, iterative (a recursive one blows the stack on a 40k-point ring) ── */
@@ -372,7 +426,13 @@ function check() {
       const s = f[2] * 10000 + f[3] * 100 + f[4], e = f[5] * 10000 + f[6] * 100 + f[7];
       if (!(f[3] >= 1 && f[3] <= 12 && f[6] >= 1 && f[6] <= 12 && f[4] >= 1 && f[4] <= 31 && f[7] >= 1 && f[7] <= 31))
         say(i, f, 'has a month or day outside the calendar');
-      else if (!(s <= e)) say(i, f, 'ends before it starts');   /* both ends inclusive, like data/cshapes.js */
+      else if (!(d.dateSemantics === 'exclusive-end' ? s < e : s <= e)) say(i, f, 'has an empty or backwards interval');
+      for (const offset of [2, 5]) {
+        const dt = calendarDate(f[offset], f[offset + 1], f[offset + 2]);
+        if (dt.getUTCFullYear() !== f[offset] || dt.getUTCMonth() + 1 !== f[offset + 1] || dt.getUTCDate() !== f[offset + 2])
+          say(i, f, 'has an invalid calendar date');
+      }
+      if (d.dateSemantics === 'exclusive-end' && !d.dates?.[f[10]]) say(i, f, 'has no source date metadata');
       if (f[5] < d.since) say(i, f, 'ended before ' + d.since + ', the floor this bundle was built to');
       if (!Array.isArray(f[8]) || !f[8].length) say(i, f, 'has no polygons');
       else for (const poly of f[8]) for (const ri of poly) {
@@ -582,8 +642,7 @@ async function refreshNames() {
   for (const u of units) {
     const d = u.data;
     const body = 'window.' + u.tier.global + '=' + JSON.stringify({
-      v: d.v, src: d.src, built: new Date().toISOString().slice(0, 10), since: d.since,
-      tolerance: d.tolerance, levels: d.levels, rings: d.rings, feats: d.feats
+      ...d, built: new Date().toISOString().slice(0, 10)
     }) + ';\n';
     fs.writeFileSync(path.join(ROOT, u.tier.file), body);
     console.error('· wrote ' + u.tier.file + ' ' + (body.length / 1048576).toFixed(2) + ' MB (rings untouched: '
@@ -613,14 +672,15 @@ async function main() {
      cannot be excluded from one. So the era line has been striking 安房国 all along while the
      bundle held no label for it, no answer to a click on it and no count of it: the drop did not
      remove the unit from the map, it removed the map's ability to say what the unit was.
-     An absent edge is already handled below — `w.s || [SINCE - 200, …]`, `w.e || [9999, …]` — so
-     an undated record is simply one with BOTH edges open, which is what upstream is saying. */
-  const want = [];
+     An absent start preserves the existing record's published display bound. It does not
+     move with the clock floor; new records lacking a start are logged for source resolution. */
+  const want = [], deferred = [];
+  const previousRows = new Map((PREVIOUS[GLOBAL]?.feats || []).map(f => [f[10], f]));
   let backwards = 0;
   for (const el of all) {
     const t = el.tags;
     if (!LEVELS.includes(parseInt(t.admin_level, 10))) continue;   /* (#R564) the cache is per level set, but the filter is stated where it is read */
-    const s = edtf(t.start_date, 'start'), e = edtf(t.end_date, 'end');
+    const span = dateSpan(t.start_date, t.end_date), { s, e } = span;
     if (e && e[0] < SINCE) continue;
     /* ⚠ (#R564) A SPAN THAT ENDS BEFORE IT STARTS IS NOT A SPAN, and upstream has some: measured
        2026-09-09, two at levels 3-4 (名東県 1881-12-26 → 1873-02-20; Mexican Cession 1850-12-12 →
@@ -629,9 +689,13 @@ async function main() {
        shipped, and every one of its two dates entered the EPOCH INDEX, which is what decides when the
        map re-renders. Dropping them here is not a special case for those seven: it is the rule that a
        record must describe an interval, applied where the interval is read. */
-    if (s && e && (s[0] * 10000 + s[1] * 100 + s[2]) > (e[0] * 10000 + e[1] * 100 + e[2])) { backwards++; continue; }
-    want.push({ el, s, e });
+    if (!span.valid) { backwards++; continue; }
+    const start = boundedStart(span, previousRows.get(el.id));
+    if (!start) { deferred.push({ id: el.id, name: t.name || '', start_date: t.start_date || null }); continue; }
+    if (e && start[0] * 10000 + start[1] * 100 + start[2] >= e[0] * 10000 + e[1] * 100 + e[2]) { backwards++; continue; }
+    want.push({ el, s: start, e, metadata: span.metadata });
   }
+  console.error('  deferred new records with unknown start:', deferred.length, JSON.stringify(deferred));
   console.error('  datable & reachable from', SINCE, '→', want.length, '| dropped for a backwards span:', backwards);
 
   /* ring pool: identical rings are shared, which is where most of the saving is -
@@ -652,7 +716,8 @@ async function main() {
      the OUTPUT (the ring pool and the feature rows), which is the size of the file being written.
      The disk cache is untouched and still resumable, which is what made those eighteen minutes
      recoverable rather than lost. */
-  const feats = [];
+  const feats = [], dates = {};
+  const previousNames = new Map((PREVIOUS[GLOBAL]?.feats || []).map(f => [f[10], f[9]]));
   let dropped = 0, fetched = 0;
   const owed = new Map(want.map(w => [w.el.id, w]));
   const ids = want.map(w => w.el.id);
@@ -728,9 +793,10 @@ async function main() {
     }
     if (!idx.length) { dropped++; return; }
     const t = w.el.tags;
-    const s = w.s || [SINCE - 200, 1, 1];    /* open start = already there when the clock begins */
+    const s = w.s;                         /* sourced date or explicitly preserved display bound */
     const e = w.e || [9999, 12, 31];         /* open end  = still in force */
-    const names = upstreamNames(t);
+    const names = Object.assign(upstreamNames(t), previousNames.get(w.el.id) || {});
+    dates[w.el.id] = w.metadata;
     /* ══ (#R669) COLUMN 10 IS THE OHM RELATION ID, AND IT IS WHAT MAKES THE CLICK SHARP ═════════
        The shipped ring is simplified at `--tol` because a planet-wide bundle has to be; the unit a
        reader just tapped is ONE record, and one record can be fetched whole. js/time-admin1.js asks
@@ -747,7 +813,7 @@ async function main() {
   const src = 'OpenHistoricalMap contributors (CC0) · openhistoricalmap.org';
   const body = 'window.' + GLOBAL + '=' + JSON.stringify({
     v: 1, src, built: new Date().toISOString().slice(0, 10), since: SINCE, tolerance: TOL,
-    levels: LEVELS, rings: pool, feats
+    levels: LEVELS, decimals: DECIMALS, dateSemantics: 'exclusive-end', dates, rings: pool, feats
   }) + ';\n';
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, body);

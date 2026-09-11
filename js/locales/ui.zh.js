@@ -6641,5 +6641,10 @@ window.IntMapLang.define('zh', {
   "International spread is weighted by land borders, by how many travellers each country actually receives, and by the airline route network as it stood in 2014 — the newest one that is openly published. Route counts are not seats or passenger numbers.": "國際傳播依陸上國界、各國實際接待的旅客人數，以及 2014 年當時的航空航線網加權——那是公開發布中最新的一份。航線數不是座位數，也不是旅客人數。",   /* playground.js (#R678) */
   "International spread is weighted by land borders, airport capacity and the airline route network as it stood in 2014. The observed traveller volumes did not load.": "國際傳播依陸上國界、機場容量與 2014 年當時的航空航線網加權。實測旅客量未能載入。",   /* playground.js (#R678) */
   "International spread is weighted by land borders and by how many travellers each country actually receives. The route network did not load, so distance decides which country an outbreak reaches next.": "國際傳播依陸上國界與各國實際接待的旅客人數加權。航空航線網未能載入，因此下一個被波及的國家由距離決定。",   /* playground.js (#R678) */
+  "Source boundary precision: approximate": "來源的邊界精度分類：概略",
+  "Source boundary precision: moderately precise": "來源的邊界精度分類：中等精度",
+  "Source boundary precision: determined by international law": "來源的邊界精度分類：由國際法界定",
+  "Source dates: ": "來源日期：",
+  "[?] marks a historical name whose start date is unknown.": "[?] 表示該歷史地名開始使用的時間不詳。",
   }
 });

@@ -82,7 +82,7 @@ Some live and satellite services require a separate provider key, which is store
 
 ## Chronos
 
-Chronos is IntMap’s master clock. It lets you explore changes from 1850 to the present, and it moves
+Chronos is IntMap’s master clock. It reaches the earliest bundled historical snapshot, with coverage varying by source, and it moves
 the whole map together rather than one layer at a time.
 
 Depending on the selected year and available data, it can update:

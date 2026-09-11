@@ -2234,18 +2234,24 @@ window.IntMapModules.labelPopup=function(HOST){
        against upstream's 2,800. So both go: `geo` is drawn on the tap, `refine` is the same unit
        fetched whole from upstream BY ITS RELATION ID and replaces it in place when it lands
        (js/map-tools.js). Returns null for every other layer, so nothing else changes shape. */
+    function _eraSourceDates(props){
+      let dates=props&&props.dates;
+      try{ if(typeof dates==='string') dates=JSON.parse(dates); }catch(_){ dates=null; }
+      const raw=edge=>dates&&dates[edge]&&typeof dates[edge].raw==='string'&&dates[edge].raw.trim()?dates[edge].raw:'?';
+      return window.IntMapLang.t(HOST.lang,'Source dates: ','出典の日付: ','Datumsangaben der Quelle: ','Даты в источнике: ','Fechas de la fuente: ')+raw('start')+' – '+raw('end');
+    }
     function _eraGeom(f){ try{ const id=(f&&f.layer&&f.layer.id)||'';
       if(id!=='imta-lbl'&&id!=='imta2-lbl') return null;
       const TA=window.IntMapTimeAdmin1; if(!TA||!TA.geomAt) return null;
       const props=f.properties||{};
       const geo=TA.geomAt(props); if(!geo) return null;
-      return { geo, refine:(TA.geomFullAt?TA.geomFullAt(props):null) };
+      return { geo, refine:(TA.geomFullAt?TA.geomFullAt(props):null), sub:_eraSourceDates(props) };
     }catch(_){ return null; } }
     function onLabel(isCountry){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const p=e.features[0].properties||{}; const name=p.name||p['name:en']||p['name_en']||p.name_en||''; if(!name) return;
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       const f=e.features[0];
       const eg=_eraGeom(f);
-      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name),geojson:eg.geo,refine:eg.refine}:{title:_bothNames(p,name)})); }; }
+      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name),geojson:eg.geo,refine:eg.refine,sub:eg.sub}:{title:_bothNames(p,name)})); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
@@ -2316,7 +2322,7 @@ window.IntMapModules.labelPopup=function(HOST){
             /* (#R252) the padded tap is the same click, so it gets the same two-name heading */
             const ttl=(lid==='geo-sea')?nm:_bothNames(p,nm);
             const peg=_eraGeom(near[0]);   /* (#R564) the padded tap is the same click, so it gets the same era polygon */
-            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:(peg?{title:ttl,geojson:peg.geo,refine:peg.refine}:{title:ttl}));
+            if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:(peg?{title:ttl,geojson:peg.geo,refine:peg.refine,sub:peg.sub}:{title:ttl}));
               if(lid==='ofm-river') highlightRiver(p,e.lngLat);   /* (#R210) the padded tap is the same click */
               return; } }
         }

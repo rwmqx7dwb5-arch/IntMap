@@ -312,6 +312,7 @@ window.IntMapCesiumEngine=(function(){
       this._camera=scene.camera;
       this._globe=scene.globe;
       this._globe.baseColor=Cesium.Color.fromCssColorString('#0b1220');
+      this._defaultBaseColor=this._globe.baseColor;
       /* ══ (#R186) THE BLACK POLES ═══════════════════════════════════════════════════════════════
          「Cesiumでは南極・北極付近が衛星画像のない真っ黒だから、どうにかして。」
          Not a tile that failed: Web Mercator is defined to ±85.0511° and this engine draws the
@@ -376,6 +377,7 @@ window.IntMapCesiumEngine=(function(){
       this._polarBase=[];       /* the two polar bands — always on, treatment follows the basemap */
       try{
         const rect=Cesium.Rectangle.fromDegrees(-180,-90,180,90);
+        this._installImageryFloor();
         /* Hidden until told otherwise: js/world-base.js is the single authority on whether the
            satellite view is on, and app-body calls it once the map loads — which is always AFTER
            this constructor, because changing engine is a reload (js/engine-select.js).
@@ -383,17 +385,12 @@ window.IntMapCesiumEngine=(function(){
            is created synchronously but the bundled floor arrives from a promise, and setWorldBase()
            can easily land in between. */
         this._wantWorldBase=false;
-        /* ⚠ EVERY INSERT IS AT INDEX 0, AND THAT IS NOT A STYLE CHOICE. The imagery collection is
-           EMPTY when this constructor runs — the app's own layers arrive later — so `add(layer, 1)`
-           is out of range and throws, which is precisely how the tiled provider silently failed to
-           be added the first time (measured: `_worldBase.length === 1`, and the cap on screen was
-           still the stretched single tile). Index 0 is always valid, and because the bundled floor
-           resolves from a promise it lands AFTER the tiled layer and therefore below it — which is
-           the order wanted anyway: the offline picture underneath, the real imagery over it. */
+        /* Keep the transparent global base underneath these partial-coverage
+           layers, including the asynchronously loaded satellite floor. */
         const add=(prov,polar)=>{ try{ const L=new Cesium.ImageryLayer(prov,{});
           /* (#R188) a polar band is shown whatever the basemap is; only its treatment changes */
           L.show=polar?true:!!this._wantWorldBase;
-          this._scene.imageryLayers.add(L,0); (polar?this._polarBase:this._worldBase).push(L);
+          this._scene.imageryLayers.add(L,this._imageryFloor?1:0); (polar?this._polarBase:this._worldBase).push(L);
           this._scene.requestRender(); return L; }catch(e){ console.warn('[cesium] whole-globe imagery layer rejected',e); return null; } };
         /* ⚠ GIBS'S EPSG:4326 GRID IS NOT A QUADTREE, AND ASSUMING IT WAS DREW A BLACK CAP.
            Cesium's default GeographicTilingScheme doubles from 2 × 1, so it asked for 2/3/3 and got
@@ -1207,6 +1204,7 @@ window.IntMapCesiumEngine=(function(){
       this._teardownLayer(rec);
       this._layers=this._layers.filter(l=>l!==rec);
       this._layerById.delete(id);
+      if(rec.kind==='background') this._applyBackground();
       this.fire('styledata',{});
     }
     moveLayer(id,before){
@@ -1215,6 +1213,7 @@ window.IntMapCesiumEngine=(function(){
       const at=before?this._layers.findIndex(l=>l.def.id===before):-1;
       if(at>=0) this._layers.splice(at,0,rec); else this._layers.push(rec);
       this._reorderImagery();
+      if(rec.kind==='background') this._applyBackground();
     }
     _teardownLayer(rec){
       try{ if(rec.ds){ this._dsColl.remove(rec.ds,true); rec.ds=null; } }catch(_){}
@@ -1244,10 +1243,18 @@ window.IntMapCesiumEngine=(function(){
           rec.ds=ds; ds.show=visible;
           this._dsColl.add(ds);
         } else if(rec.kind==='background'){
-          const c=S().resolveColor(def.paint&&def.paint['background-color'],{zoom:this.getZoom()},'#0b1220');
-          if(c) this._globe.baseColor=new Cesium.Color(c.r,c.g,c.b,c.a==null?1:c.a);
+          this._applyBackground();
         }
       }catch(e){ this.fire('error',{error:e}); }
+      this._scene.requestRender();
+    }
+    /* Background is one ordered style stack, not the last layer whose paint was
+       touched. Hiding Chronos must restore the visible background (or globe default). */
+    _applyBackground(){
+      const rec=[...this._layers].reverse().find(l=>l.kind==='background'&&l.def.layout?.visibility!=='none');
+      const paint=rec?.def.paint;
+      const c=paint&&S().resolveColor(paint['background-color'],{zoom:this.getZoom()},'#000000');
+      this._globe.baseColor=c?new Cesium.Color(c.r,c.g,c.b,(c.a==null?1:c.a)*S().resolveNum(paint['background-opacity'],{zoom:this.getZoom()},1)):this._defaultBaseColor;
       this._scene.requestRender();
     }
     _providerFor(rec){
@@ -1327,6 +1334,18 @@ window.IntMapCesiumEngine=(function(){
       L.hue=n('raster-hue-rotate',0)*D2R;
       L.gamma=1;
     }
+    /* Cesium stretches the first visible imagery layer to the whole globe,
+       even if its provider only covers a polar cap (ImageryLayer.isBaseLayer).
+       A transparent global tile owns that role so partial imagery stays inside
+       its coverage and the style's globe.baseColor remains the background. */
+    _installImageryFloor(){
+      if(this._imageryFloor) return;
+      const canvas=document.createElement('canvas'); canvas.width=canvas.height=1;
+      const provider=new Cesium.SingleTileImageryProvider({url:canvas.toDataURL('image/png'),tileWidth:1,tileHeight:1});
+      const layer=new Cesium.ImageryLayer(provider,{});
+      this._scene.imageryLayers.add(layer,0);
+      this._imageryFloor=layer;
+    }
     /* imagery draws in collection order, so the style's own layer order is
        replayed onto the collection whenever it changes */
     _reorderImagery(){
@@ -1387,18 +1406,24 @@ window.IntMapCesiumEngine=(function(){
       }catch(_){} });
       try{ this._scene.requestRender(); }catch(_){}
     }
+    _sameStyleValue(a,b){
+      return a===b||(a!==null&&b!==null&&typeof a==='object'&&typeof b==='object'&&JSON.stringify(a)===JSON.stringify(b));
+    }
     setVisible(id,on){
       const rec=this._layerById.get(id); if(!rec) return;
+      if((rec.def.layout?.visibility!=='none')===!!on&&(!rec.ds||rec.ds.show===!!on)&&(!rec.imagery||rec.imagery.show===!!on)) return;
       rec.def.layout=Object.assign({},rec.def.layout,{visibility:on?'visible':'none'});
       if(rec.imagery) rec.imagery.show=!!on;
       if(rec.ds){ rec.ds.show=!!on; if(on) this._dirty.add(id); }
-      if(!rec.imagery&&!rec.ds&&on) this._buildLayer(rec);
+      if(rec.kind==='background') this._applyBackground();
+      else if(!rec.imagery&&!rec.ds&&on) this._buildLayer(rec);
       this._schedule();
     }
     isVisible(id){ const rec=this._layerById.get(id); if(!rec) return false;
       return ((rec.def.layout&&rec.def.layout.visibility)||'visible')!=='none'; }
     setPaint(id,prop,val){
       const rec=this._layerById.get(id); if(!rec) return;
+      if(this._sameStyleValue(rec.def.paint?.[prop],val)) return;
       rec.def.paint=Object.assign({},rec.def.paint,{[prop]:val});
       rec.zoomy=undefined;                      /* (#R185) the document changed — re-answer "does it read the zoom" */
       if(rec.imagery) this._applyImageryPaint(rec);
@@ -1410,6 +1435,7 @@ window.IntMapCesiumEngine=(function(){
     setLayout(id,prop,val){
       if(prop==='visibility') return this.setVisible(id,val!=='none');
       const rec=this._layerById.get(id); if(!rec) return;
+      if(this._sameStyleValue(rec.def.layout?.[prop],val)) return;
       rec.def.layout=Object.assign({},rec.def.layout,{[prop]:val});
       rec.zoomy=undefined;                      /* (#R185) as setPaint */
       if(rec.ds) this._dirty.add(id);
@@ -1417,6 +1443,7 @@ window.IntMapCesiumEngine=(function(){
     }
     getLayout(id,prop){ const rec=this._layerById.get(id); return rec&&rec.def.layout?rec.def.layout[prop]:undefined; }
     setFilter(id,f){ const rec=this._layerById.get(id); if(!rec) return;
+      if(this._sameStyleValue(rec.def.filter,f)) return;
       rec.def.filter=f; rec.zoomy=undefined; this._dirty.add(id); this._schedule(); }
     getFilter(id){ const rec=this._layerById.get(id); return rec?rec.def.filter:null; }
     setOpacity(id,v){

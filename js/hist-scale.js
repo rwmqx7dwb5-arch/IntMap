@@ -290,14 +290,31 @@ window.IntMapHistScale = (function () {
      border. It is the same clause `ref-admin1` / `ref-admin2` carry at Now
      (js/app-body.js, js/time-admin1.js), so both eras stop at the shore for one
      stated reason instead of two. */
+  /* A day-exact record with identical endpoints is a one-day event (the bundle
+     preserves it too). Decimal equality alone cannot distinguish a day from a
+     year or an unknown bound: require both original date strings on this day.
+     OHM tiles retain these strings (measured z5/7/12, 1,586 dated admin runs). */
+  function dayDates(t) {
+    const y = Math.floor(t), days = isLeap(y) ? 366 : 365;
+    const d = utcAt(y, 0, Math.floor((t - y) * days) + 1);
+    const suffix = '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+    return [...new Set([ymd(d), String(y) + suffix,
+      (y < 0 ? '-' : '') + String(Math.abs(y)).padStart(4, '0') + suffix])];
+  }
+  function oneDayFilter(t) {
+    return ['all', ['has', 'start_date'], ['has', 'end_date'],
+      ['==', ['get', 'start_date'], ['get', 'end_date']],
+      ['any', ...dayDates(t).map(d => ['==', ['get', 'start_date'], d])]];
+  }
   function ohmFilter(lo, hi, t) {
     return ['all',
       ['==', ['get', 'type'], 'administrative'],
       ['>=', ['to-number', ['get', 'admin_level'], -1], lo],
       ['<=', ['to-number', ['get', 'admin_level'], -1], hi],
       ['!=', ['to-string', ['get', 'maritime']], 'yes'],
-      ['any', ['!', ['has', 'start_decdate']], ['!', dated('start_decdate')], ['<=', ['to-number', ['get', 'start_decdate'], 0], t]],
-      ['any', ['!', ['has', 'end_decdate']], ['!', dated('end_decdate')], ['>=', ['to-number', ['get', 'end_decdate'], 0], t]]
+      ['any', oneDayFilter(t), ['all',
+        ['any', ['!', ['has', 'start_decdate']], ['!', dated('start_decdate')], ['<=', ['to-number', ['get', 'start_decdate'], 0], t]],
+        ['any', ['!', ['has', 'end_decdate']], ['!', dated('end_decdate')], ['>', ['to-number', ['get', 'end_decdate'], 0], t]]]]
     ];
   }
   /* ⚠ A NUMBER THAT CANNOT BE A YEAR IS NOT A DATE — it is the ABSENCE of one.
@@ -324,9 +341,10 @@ window.IntMapHistScale = (function () {
     const lv = Number(p.admin_level);
     if (!(lv >= lo && lv <= hi)) return false;
     if (String(p.maritime == null ? '' : p.maritime) === 'yes') return false;
+    if (p.start_date === p.end_date && dayDates(t).includes(p.start_date)) return true;
     const yr = v => { const n = Math.abs(Number(v)); return Number.isFinite(n) && n >= YEAR_LO && n <= YEAR_HI; };
     if (p.start_decdate != null && yr(p.start_decdate) && Number(p.start_decdate) > t) return false;
-    if (p.end_decdate != null && yr(p.end_decdate) && Number(p.end_decdate) < t) return false;
+    if (p.end_decdate != null && yr(p.end_decdate) && Number(p.end_decdate) <= t) return false;
     return true;
   }
 

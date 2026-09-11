@@ -80,7 +80,7 @@ jobs:
         run: npm run check:companies
       - name: Conflict data (the generated set matches its definitions)
         run: npm run check:wars
-      - name: Historical city names (the record matches, and no key names two cities)
+      - name: Historical city names (the record matches, and namesakes have disjoint location guards)
         run: npm run check:histcities
       # (#R518, widened #R690) The day-exact border record below CShapes — 1689-1885 since #R690 —
       # cannot be re-derived here: the build needs about 2.1 GB of OpenHistoricalMap Overpass
@@ -108,7 +108,7 @@ jobs:
       # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
       # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
       # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
-      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 49,634 rings, offline;
+      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 49,653 rings, offline;
       # MEASURED 49 s on this machine (2026-09-11), which is why the sampled form existed and why it is not enough.
       - name: Historical border coastlines (every ring re-derived, not a sample)
         run: npm run check:bordercoast

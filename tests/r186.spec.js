@@ -384,20 +384,33 @@ test('R186 Cesium: a real star sky, a real Sun, and imagery at the poles', async
   /* The polar base layer is added when SingleTileImageryProvider.fromUrl RESOLVES, so waiting a fixed
      2.5 s for it was a test of how fast the machine decodes a 284 KB JPEG — it failed 3/3 in CI on
      exactly that. Wait for the layer. */
-  /* (#R187) `_worldBase` is a LIST now — the bundled offline floor plus the tiled polar-capable GIBS
-     imagery over it, because one 2,048 × 1,024 picture stretched to the pole draws a radial smear
-     rather than a cap. It is created empty and filled as each provider resolves, so the wait is for
-     an entry rather than for the field. */
+  /* The bundled world imagery resolves asynchronously; the polar bands live
+     separately in _polarBase. Both must remain below the app's style imagery. */
   await page.waitForFunction(() => { try { const w = window.IntMapGeoEngine.raw()._worldBase; return !!(w && w.length); } catch (_) { return false; } }, null, BOOT);
-  const r = await page.evaluate(() => {
+  const r = await page.evaluate(async () => {
     const v = window.IntMapGeoEngine.raw();
+    const collection=v._scene.imageryLayers;
+    const stack=Array.from({length:collection.length},(_,i)=>collection.get(i));
+    const floor=v._imageryFloor;
+    const base=[...v._worldBase,...v._polarBase];
+    const overlays=v._layers.filter(l=>l.imagery).map(l=>l.imagery);
+    /* Partial imagery must never become Cesium's stretching base layer. The
+       transparent global floor owns that role, below both physical imagery
+       and every style overlay; this also preserves the globe background color. */
+    const image=await floor.imageryProvider.requestImage(0,0,0);
+    const canvas=document.createElement('canvas'); canvas.width=canvas.height=1;
+    const context=canvas.getContext('2d'); context.drawImage(image,0,0,1,1);
     return { skyBox: !!v._scene.skyBox, show: !!(v._scene.skyBox && v._scene.skyBox.show),
              sun: !!v._scene.sun, moon: !!v._scene.moon,
              worldBase: !!(v._worldBase && v._worldBase.length),
-             atBottom: (() => { try { return v._worldBase.indexOf(v._scene.imageryLayers.get(0)) >= 0; } catch (_) { return false; } })(),
+             polarBase: !!v._polarBase.length,
+             floorAtBottom: stack[0]===floor && floor.show && floor.isBaseLayer(),
+             floorGlobal: window.__imCesium.Cesium.Rectangle.equals(floor.imageryProvider.rectangle,window.__imCesium.Cesium.Rectangle.MAX_VALUE),
+             floorAlpha: context.getImageData(0,0,1,1).data[3],
+             imageryBelowOverlays: overlays.length>0 && base.every(l=>stack.indexOf(l)>0 && !l.isBaseLayer() && overlays.every(o=>stack.indexOf(o)>stack.indexOf(l))),
              /* the MapLibre star canvas must stay out of the way — two skies is one too many */
              spaceSky: window.IntMapSky.state().active };
   });
   /* skyBox:false was switching off the Tycho-2 star map that ships with the engine */
-  expect(r).toMatchObject({ skyBox: true, show: true, sun: true, moon: true, worldBase: true, atBottom: true, spaceSky: false });
+  expect(r).toMatchObject({ skyBox: true, show: true, sun: true, moon: true, worldBase: true, polarBase: true, floorAtBottom: true, floorGlobal: true, floorAlpha: 0, imageryBelowOverlays: true, spaceSky: false });
 });

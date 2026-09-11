@@ -150,9 +150,10 @@ place-labels.js                   地名・海洋名ラベルと、そのロー�
                                   正本は `scripts/build-osm-ja-rejects.mjs`
 label-scale.js                    ラベルの大きさ window.IntMapLabelScale
 compass.js                        方位の呼び名（9言語・16方位）window.IntMapCompass
-chronos.js                        Chronos＝統一時間カーネル window.IntMapTime。⚠ 下限は**西暦1年**で、
+chronos.js                        Chronos＝統一時間カーネル window.IntMapTime。下限は IntMapHistScale.FLOOR を読み、
                                   100 年未満の瞬間は `atUTC()`（`setUTCFullYear`）で作る
                                   ——`Date.UTC(1,…)` は 1901 年になるから（#R604）
+historical-basemap.js             Chronos旅行中の自然地理ベクタ背景。現代政治境界を含むCARTO画像を置換し、Nowで復帰
 hist-scale.js                     深い時間の**算術**だけを持つ純関数 window.IntMapHistScale。DOM も地図も時計も
                                   言語も触らないので検査が**評価**できる（#R570 の教訓）。①`decYear()`＝
                                   OpenHistoricalMap が書く10進年（実測 103,093 件に当てて決めた「その日の中点」）
@@ -259,7 +260,7 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
-hist-cities.js                    時計の年の**都市名** IntMapHistCities（6222都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
+hist-cities.js                    時計の年の**都市名** IntMapHistCities（6367都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
@@ -682,7 +683,7 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は
                                   scripts/build-histcities-homonyms.mjs
-hist-cities.json                  時計の年の都市名の記録（6222 都市・8784 の歴史名・125 か国・2.7 MB）。
+hist-cities.json                  時計の年の都市名の記録（6367 都市・8968 の歴史名・125 か国・2.7 MB）。
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
                                   **出典**と**日付精度**（日／月／年／世紀／不明）を持つ。時計が「今」を
@@ -781,20 +782,20 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは6つ・全 49,634 リング分／
+                                  **発見された**束すべて・いまは6つ・全 49,653 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
                                   内部を持たないので描かない
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
-                                  4,820件／rings 7,186・9.95 MB＝brotli 0.99 MB）。上と**同じリングプール形式の
+                                  4,839件／rings 7,205・10.60 MB＝brotli 1.02 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
                                   ⚠ **各行の列 10 は OHM の relation id**——クリックしたとき、その 1 件だけを
                                   上流から原寸で取り直すために要る（名前ではなく id で訊く）
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
                                   門は `npm run check:histadmin`（残余は docs/TESTING.md）
 data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM2`・
-                                  22,708件／rings 21,676・15.47 MB・列 10 は同じく relation id）。同じ生成器の
+                                  22,708件／rings 21,676・18.48 MB・列 10 は同じく relation id）。同じ生成器の
                                   `--levels 5,6`。**z6 未満では取得もしない**——描かない縮尺で 10 MB 以上を
                                   払わせないため（docs/MAP-LAYERS.md §7.7）。門は第1級と同じ
                                   `npm run check:histadmin`——1 つの build が両方を焼くので、門も 1 つ
@@ -873,7 +874,7 @@ scripts/
   build-wars.mjs                  `scripts/wars/` の記録 → `data/wars.json`。⚠ **証明できないものは書かない**——
                                   地名・gwcode・戦線が切る国・都市がどちらの側に落ちるかを全部検査する
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の
-                                  **和集合** → `data/hist-cities.json`（6222 都市／8784 の歴史名／125 か国）。
+                                  **和集合** → `data/hist-cities.json`（6367 都市／8968 の歴史名／125 か国）。
                                   ⚠ **手書きの 611 行は 1 件も落とさない**（`--check` が測る）——実測で、
                                   上流に同じ都市・同じ名前・同じ期間があるのは 4 割
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
