@@ -169,14 +169,21 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 
    恒久的にするなら `~/.codex/config.toml` に `model_reasoning_effort = "high"`。
 
-### 手作業が残るもの（自動化できなかったもの）
+### 手作業が残るもの（**#R703 で実測し直した**）
 
-| 事項 | なぜ |
-|---|---|
-| hook の trust（`/hooks`） | ハッシュ単位の**対話的な承認**で、設定ファイルからは与えられない |
-| 原本を信頼する初回の 1 回 | `worktree.mjs new` は自分が作った作業場しか登録しない |
-| モデル / reasoning effort | 費用の判断は利用者のもの |
-| Claude Code 側の `@` import の確認 | 新しいセッションで `/context` を開き、**Memory files** に `CLAUDE.md` と `AGENTS.md` が並ぶことを見る |
+| 事項 | いまも手作業か | 実測 |
+|---|---|---|
+| hook の trust（`/hooks`） | **残る（ただし理由が違う）** | ⚠ ここは長く「設定ファイルからは与えられない」と書いてあったが、**それは誤りだった**。trust の実体は `~/.codex/config.toml` の `[hooks.state."<key>"] trusted_hash` で、アプリ自身がそこへ書く（`config/batchWrite` の `keyPath:"hooks.state"`・`filePath:null`＝グローバル）。判定は `trustedHash === currentHash` の**完全一致**。残る理由は「書けない」ではなく、**`key` と `currentHash` をアプリが計算する**ので、リポジトリのファイルからは導けないこと。**`.codex/hooks.json` を変えるたびに hash が変わる**ので、そのたびに 1 回要る |
+| 原本を信頼する初回の 1 回 | **もう手作業ではない** | `~/.codex/config.toml` に `[projects.'…\IntMap'] trust_level = "trusted"` として実在し、`scripts/worktree.mjs` が作業場に同じ形を書いている。**機械が書ける形**なので、この行はかつての状態を写したままだった |
+| モデル / reasoning effort | 残る（**意図的に**） | 費用の判断は利用者のもの。技術的には `model` / `model_reasoning_effort` で完全に与えられる |
+| Codex アプリの "Choose project" | **残る（設定ファイルでは与えられない）** | `~/.codex/config.toml` にも CLI にも「起動時にこのプロジェクトを開く」キーは**見つからなかった**。アプリ所有の state（`~/.codex/.codex-global-state.json` の `selected-project`）でだけ与えられる——**設定面ではないので、リポジトリのスクリプトからは書かない** |
+| Claude Code 側の `@` import の確認 | 残る | 新しいセッションで `/context` を開き、**Memory files** に `CLAUDE.md` と `AGENTS.md` が並ぶことを見る |
+
+⚠ **trust を丸ごと外す経路は 2 つ実在するが、どちらもこのアプリは使わない**——CLI フラグ
+`--dangerously-bypass-hook-trust` と app-server の `bypass_hook_trust` override。デスクトップアプリの
+バンドルにはどちらの綴りも無い。**全自動にできる唯一の経路は管理層**
+（Windows なら `%ProgramData%\OpenAI\Codex\requirements.toml` の managed hook）で、管理者権限が要り、
+**hook の正本がリポジトリの外へ出る**——`.agents/` を 1 つの正本にした #R699 と逆向きなので採らない。
 
 ### 蓄積メモリは 1 か所で、両方が読み書きする（#R696）
 
@@ -197,6 +204,16 @@ node scripts/agent-memory.mjs             # hook が渡すもの（先頭に場�
   Claude Code の鍵（絶対パスの非英数字を `-` に置換）を組み立てる。だから
   `AGENTS.md` §2 が避けたがっている「追跡ファイルにマシン固有の絶対パスを増やす」形にならない。
 - **切るときは黙って切らない**（#R694）。`--budget` は落とした文字数と、続きの読み方を印字する。
+- ⚠ **索引には天井がある。切るのは `--budget` ではなく、索引を自分で読み込む製品の側の上限**
+  （#R703 実測: 25,710 文字の `MEMORY.md` に「Only part of it was loaded.」）。**数の正本は
+  `scripts/agent-memory.mjs` の `INDEX_CEILING` 1 か所**で、ここには書き写さない。両製品の
+  `SessionStart` が毎回これを実測して述べる:
+
+  ```bash
+  node scripts/agent-memory.mjs --check    # 索引 N / 天井 M 文字（超えていなくても述べる）
+  ```
+
+  超えていたら**詰めるのは索引の古い側だけ**——実体の `.md` は 1 本も消さない。
 - **書く側も同じ場所**（`.codex/config.toml` の C-7）。そこは workspace の外なので、Codex の
   サンドボックスが書き込みを拒むことがある——そのときは承認を求めて書く。
 

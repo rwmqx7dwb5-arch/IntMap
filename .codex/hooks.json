@@ -18,6 +18,13 @@
             "statusMessage": "IntMap · reading the accumulated memory",
             "timeout": 20,
             "additionalContextLimit": 40000
+          },
+          {
+            "type": "command",
+            "command": "node scripts/agent-memory.mjs --check",
+            "statusMessage": "IntMap · measuring the memory index against the ceiling that cuts it",
+            "timeout": 20,
+            "additionalContextLimit": 500
           }
         ]
       }
