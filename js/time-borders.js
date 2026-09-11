@@ -365,8 +365,11 @@ window.IntMapModules.timeBorders=function(HOST){
        world_1880 (1815 is unreachable: the switch is at the midpoint 1847.5, below the floor), so
        1850 was drawn with the borders of 1880 and the whole era was ONE FRAME.
        data/hist-borders.js is OpenHistoricalMap's admin_level=2 boundaries for exactly that window,
-       into the same ring-pooled shape data/cshapes.js has. scripts/build-hist-borders.mjs writes
-       494 records, 216 transition dates inside the window, 164-216 polities on any 15 June of it.
+       into the same ring-pooled shape data/cshapes.js has, written by scripts/build-hist-borders.mjs.
+       ⚠ ITS SIZE IS STATED ONCE, IN THE #R690 PARAGRAPH BELOW. This sentence carried a second copy
+       of it until #R701 — #R518's figures, in the present tense, eleven lines above the paragraph
+       holding the current ones, stale from the round that widened the window. Nothing saw it because
+       `histb-count` asked only whether a LINE named the record, and the name was on the line above.
        ⚠ ITS END DATE IS EXCLUSIVE AND CShapes' IS NOT. Measured on the source: 151 of the 180
        consecutive same-entity successions in this window have `end_date === the successor's
        start_date`, so reading it the CShapes way would draw both polygons on the changeover day.
