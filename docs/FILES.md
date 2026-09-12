@@ -103,6 +103,8 @@ camera-math.js                    ↳ カメラ幾何。メルカトル投影・
                                   レンダラに直接訊くので geo-engine.js に残り、`guard` として渡る
 geo-command-log.js                ↳ レンダラ命令の集計と比較。attempted / sent / same / absent と、
                                   「同じ値をもう一度送るか」の判定。既定では数えない（?cmdlog=1）
+click-ownership.js                ↳ クリック登録と排他的所有権の台帳。adapter/handlerを弱参照し、
+                                  背景fallbackと地物のownerを区別する。レンダラや地名IDには依存しない
 runtime.js                        1つのフレームループ・1つのタイマー・1つのライフサイクル
 lazy-modules.js                   押されてから取りに行くモジュール window.IntMapLazy。⚠ 指定子はすべてリテラル
 engine-select.js                  このセッションがどのエンジンで走るかを DOMContentLoaded 前に決める
@@ -261,6 +263,9 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
 hist-cities.js                    時計の年の**都市名** IntMapHistCities（6367都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
+hist-places.js                    Pleiades の独立した歴史地名 IntMapHistPlaces。遅延取得した出典レコードを
+                                  `imhp-lbl` に描き、IntMapPlaceReaders へ出典IDによるカードを登録。
+                                  現代都市の改名は行わず、概略の名称期間と代表点の限界を保持する
 us-elections.js                   すべての米大統領選挙 IntMapUSElections（州をクリックするとその州の票と選挙人）
 net-health.js                     インターネットの健康状態の**2行**（障害／到達性）IntMapNetHealth（**eager**——行と IntMapOS 命令だけ・`ROWS` が行の正本）
 net-health-live.js                その測定そのもの（**on-demand**・`__imNetHealth`・`PROVIDERS` が観測網の正本／信号の一覧は応答から発見／docs/INTERNET-HEALTH.md）
@@ -683,6 +688,9 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は
                                   scripts/build-histcities-homonyms.mjs
+hist-places.json                  Pleiades の独立地名（6032 地点・10165 件の年代付き名称記録）。CC BY 3.0。
+                                  出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
+                                  名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
 hist-cities.json                  時計の年の都市名の記録（6367 都市・8968 の歴史名・125 か国・2.7 MB）。
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
@@ -873,6 +881,12 @@ scripts/
   lib/cldf.mjs / lib/cldr.mjs     CLDF の取得とキャッシュ／ISO 3166 alpha-3↔2 と CLDR の領域データ
   build-wars.mjs                  `scripts/wars/` の記録 → `data/wars.json`。⚠ **証明できないものは書かない**——
                                   地名・gwcode・戦線が切る国・都市がどちらの側に落ちるかを全部検査する
+  build-hist-places.mjs           Pleiades の固定した出典記録 → data/hist-places.json。ライセンス・集落型・
+                                  座標・日付を検査し、既存の都市名変更と出典IDで重複を除く。
+                                  --harvest は既存の歴史都市名収穫器が読む Pleiades 縮約キャッシュから導出、
+                                  --check は固定した記録との完全一致をネットワーク無しで測る
+  histplaces/pleiades-record.json 独立歴史地名の固定した出典証拠。名称・権利表記・集落型・代表点と、
+                                  取得日・入力件数・入力ハッシュを保持する。手書きの地名一覧ではない
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の
                                   **和集合** → `data/hist-cities.json`（6367 都市／8968 の歴史名／125 か国）。
                                   ⚠ **手書きの 611 行は 1 件も落とさない**（`--check` が測る）——実測で、

@@ -73,9 +73,10 @@ export function makeLabelOcclusion(HOST, CTX) {
        "in place" the instant the first non-tool layer from the top was ANY one label layer — so once the
        label stack was SPLIT (one label on top, the others under a freshly-added raster) it stopped
        re-raising. Now require EVERY label layer to sit above EVERY data layer. */
-    function inPlace(){ try{ const ls=GE().scene.getStyle().layers.map(l=>l.id);
+    const stack=()=>STACK.flatMap(id=>id==='ofm-city' ? [...(window.IntMapPlaceReaders?.ids()||[]),id] : [id]);
+    function inPlace(){ try{ const ls=GE().scene.getStyle().layers.map(l=>l.id), labels=stack();
       let lowestStack=Infinity, highestData=-1;
-      ls.forEach((id,i)=>{ if(STACK.includes(id)){ if(i<lowestStack) lowestStack=i; } else if(!isOwn(id)){ if(i>highestData) highestData=i; } });
+      ls.forEach((id,i)=>{ if(labels.includes(id)){ if(i<lowestStack) lowestStack=i; } else if(!isOwn(id)){ if(i>highestData) highestData=i; } });
       if(lowestStack===Infinity) return true;     /* no labels present yet */
       return lowestStack>highestData;             /* all labels above all data → nothing to do */
     }catch(_){ return true; } }
@@ -85,7 +86,7 @@ export function makeLabelOcclusion(HOST, CTX) {
        user's own overlays (tools/drawings/mask) back above the labels in their existing order. Result:
        data BELOW labels BELOW your own drawings — labels are visible over EVERY data layer, every time. */
     function raise(){ try{ if(inPlace()) return;
-      STACK.forEach(id=>{ if(GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* labels → top */
+      stack().forEach(id=>{ if(GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* labels → top */
       const ls=GE().scene.getStyle().layers.map(l=>l.id);
       ls.forEach(id=>{ if(isOwn(id) && GE().layers.has(id)) try{ GE().layers.move(id); }catch(_){} });   /* own overlays back above labels */
     }catch(_){} }

@@ -27,6 +27,7 @@
 /* (#R322) the renderer command census — see the note above makeMapLibreAdapter */
 import { makeCameraMath } from './camera-math.js';
 import { makeCommandCensus } from './geo-command-log.js';
+import { makeClickOwnership } from './click-ownership.js';
 /* ===== (#R152) IntMapGeoEngine — Phase 1 renderer-abstraction (業務委託: 地図エンジン交換可能化・第1段階).
    A THIN facade over a swappable renderer adapter, so a future Google-Earth-class "Earth Mode" can be dropped in
    later without touching every call site. Phase 1 ships the MapLibre adapter ONLY and moves just the SAFE common
@@ -47,10 +48,10 @@ window.IntMapGeoEngine=(function(){
    app-body.js's closure variable, which this file no longer shares — app-body publishes the
    handle the moment the map is constructed, so the fallback had nothing left to catch. */
 function _m(){ return window.__imap||null; }
-  /* (#R207) every layer id that has ever been given a `click` handler through the contract — see
+  /* (#R207) every layer id with a registered `click` handler through the contract — see
      `events.onLayer` below. Module scope, not per-view: the answer is about the APP's wiring, and a
      style reload or an engine swap does not change which layers the app makes clickable. */
-  const _clickLayers=new Set();
+  const _clickOwnership=makeClickOwnership();
   /* ══ (#R210) …AND THE REGISTRY WAS ONLY HALF THE ANSWER ════════════════════════════════════════
      「地図上の他のものをクリックした際は、その下にある地名ラベルを同時にクリックした判定になること
       がある」was reported AGAIN after #R207. Re-read, #R207's `clickLayers()` only knows about
@@ -1955,11 +1956,12 @@ function _m(){ return window.__imap||null; }
          So the registration IS the record. Every `onLayer('click', id, …)` in the app passes through
          here, whichever adapter is installed, and `clickLayers()` answers with the ids that are
          currently both registered and present. See `_ownedByOther` in js/map-ui.js. */
-      onLayer:(e,l,c)=>{ if(e==='click'&&typeof l==='string') _clickLayers.add(l); return A().onLayer(e,l,c); },
-      offLayer:(e,l,c)=>A().offLayer(e,l,c),
+      onLayer:(e,l,c,options)=>{ const adapter=A(); if(e==='click') _clickOwnership.on(adapter,l,c,options); return adapter.onLayer(e,l,c); },
+      offLayer:(e,l,c)=>{ const adapter=A(), result=adapter.offLayer(e,l,c);
+        if(e==='click') _clickOwnership.off(adapter,l,c); return result; },
       onceLayer:(e,l,c)=>A().onceLayer?A().onceLayer(e,l,c):null,
-      clickLayers:()=>Array.from(_clickLayers),
-      /* (#R210) "I consumed this click" / "did anyone?" — see the note beside _clickLayers. */
+      clickLayers:(options)=>_clickOwnership.layers(options),
+      /* (#R210) "I consumed this click" / "did anyone?" — see the ownership note above. */
       claimClick:(e)=>_claimClick(e), clickClaimed:(e)=>_clickClaimed(e) },
     raw(){ return A().raw(); }
    };

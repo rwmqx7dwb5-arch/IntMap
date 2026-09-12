@@ -183,7 +183,7 @@ window.IntMapModules.mapReadout=function(HOST){
            クリック地点の気候区分までクリックされ…ないように"). */
         let onLabel=false;
         try{ const pt=point||(GE().coords.project([lng,lat]));
-          if(pt&&GE().hasRenderer()){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>GE().layers.get(id));
+          if(pt&&GE().hasRenderer()){ const ls=['ofm-country','ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].concat(window.IntMapPlaceReaders?.ids()||[]).filter(id=>GE().layers.get(id));
             /* (#R668) the same tap tolerance as js/map-ui.js's, and the same correction: how much
                slop a tap needs is a question about the POINTER, not about the viewport width. See
                the note there. A landscape iPhone was taking the 6 px mouse box. */
