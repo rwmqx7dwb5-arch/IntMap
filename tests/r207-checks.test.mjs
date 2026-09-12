@@ -84,9 +84,10 @@ test('R207 ⑤ DrawTool fires onFinish after the stroke is done, and clears it o
 /* ── ⑥ the engine records which layers are clickable ───────────────────────────────────────────── */
 test('R207 ⑥ click-wired layers are recorded by the contract and used to rank the label click', () => {
   const e = read('js/geo-engine.js');
-  assert.ok(/onLayer:\(e,l,c\)=>\{ if\(e==='click'&&typeof l==='string'\) _clickLayers\.add\(l\);/.test(e),
-    'every click registration is recorded');
-  assert.ok(/clickLayers:\(\)=>Array\.from\(_clickLayers\)/.test(e), 'and exposed');
+  // Registration/ownership semantics are executed with the real engine and both readers in
+  // r709-historical-click-coverage-checks. Pinning a three-argument implementation here hid
+  // the distinction between a click listener and a listener that owns the click.
+  assert.ok(/clickLayers:\(options\)=>_clickOwnership\.layers\(options\)/.test(e), 'the shared inventory remains exposed');
   const u = read('js/map-ui.js');
   assert.ok(/function _ownedByOther\(pt\)/.test(u), 'the label side asks the question');
   assert.ok(/\.filter\(id=>ALL_LBL\.indexOf\(id\)<0\)/.test(u),

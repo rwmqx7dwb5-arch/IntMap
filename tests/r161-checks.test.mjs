@@ -15,6 +15,9 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appSource } from './app-source.mjs';
+import { parse } from 'acorn';
+import { simple } from 'acorn-walk';
+import { makeClickOwnership } from '../js/click-ownership.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* (#R162) index.html is no longer the whole app. Read every file the browser
@@ -250,8 +253,17 @@ test('#16 the engine contract grew and the news overlay runs through it', () => 
      ids are click-wired, so a place label can yield to whatever else is clickable at the point), and
      the byte-for-byte pin went red while the contract it names was untouched.
      What matters is that the facade FORWARDS to the adapter, not that it does so in one expression. */
-  const onLayer = /onLayer:\(e,l,c\)=>\{?([\s\S]{0,220}?)A\(\)\.onLayer\(e,l,c\)/.exec(html);
-  assert.ok(onLayer, 'facade binding missing: onLayer → A().onLayer');
+  const engine = readFileSync(join(ROOT, 'js/geo-engine.js'), 'utf8');
+  let binding;
+  simple(parse(engine, { ecmaVersion: 'latest', sourceType: 'module' }), { Property(n) {
+    if (n.key.name === 'onLayer' && n.value.type === 'ArrowFunctionExpression') binding = engine.slice(n.value.start, n.value.end);
+  } });
+  assert.ok(binding, 'the facade exposes onLayer');
+  const sent = [], adapter = { onLayer: (...args) => { sent.push(args); return 'adapter-result'; } };
+  const onLayer = new Function('A', '_clickOwnership', 'return (' + binding + ');')(() => adapter, makeClickOwnership());
+  const handler = () => {};
+  assert.equal(onLayer('click', 'a-news-marker', handler), 'adapter-result');
+  assert.deepEqual(sent, [['click', 'a-news-marker', handler]], 'the real facade forwards event, layer and callback to its current adapter');
   /* news overlay: creation, data, declutter, theming and pointer events via GE */
   assert.ok(html.includes("GE.layers.addSource('news-points'"), 'news source not created through the engine');
   assert.ok(html.includes("GE.layers.add({id:'news-dots'"), 'news-dots layer not created through the engine');

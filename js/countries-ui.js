@@ -579,7 +579,7 @@ window.IntMapModules.countriesUi=function(HOST){
         try{
           /* defer to a specific place label under the click (city / water / peak / river) so a city still opens as a
              PLACE, exactly like the era name-label handler (_clk) does — only bare country land opens the country. */
-          const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!_LY().has(id); }catch(_){ return false; } });
+          const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].concat(window.IntMapPlaceReaders?.ids()||[]).filter(id=>{ try{ return !!_LY().has(id); }catch(_){ return false; } });
           if(specific.length&&e.point&&_GE().coords.queryRenderedFeatures(e.point,{layers:specific}).length) return;
           const ll=e.lngLat; let nm=null, geom=null; const fc=TB.currentFC&&TB.currentFC();
           if(fc&&fc.features&&typeof turf!=='undefined'){ const tp=turf.point([ll.lng,ll.lat]); let bA=Infinity;

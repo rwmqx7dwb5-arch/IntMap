@@ -4213,7 +4213,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      before the year; the repo jumps 1960→1994, so 1960 covers the late-Cold-War world incl. the USSR). The
      modern boundary line + country labels are hidden while a past year is shown and restored at "Now". ===== */
   /* (#R163) moved to js/time-borders.js — see Architecture.md §3.1. */
-  window.IntMapTimeBorders=window.IntMapModules.timeBorders(IM_HOST); window.IntMapTimeAdmin1=window.IntMapModules.timeAdmin1(IM_HOST); try{ window._applyAdmin1(); }catch(_){}
+  window.IntMapTimeBorders=window.IntMapModules.timeBorders(IM_HOST); window.IntMapTimeAdmin1=window.IntMapModules.timeAdmin1(IM_HOST); window.IntMapHistPlaces=window.IntMapModules.histPlaces(IM_HOST); try{ window._applyAdmin1(); }catch(_){}
 
   /* ===== Init ===== */
   /* (#R21) Mobile-start smoothness: the gazetteer index + the 420-zone timezone list build in an

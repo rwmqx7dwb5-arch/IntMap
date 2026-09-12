@@ -19,6 +19,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parse } from 'acorn';
+import { simple } from 'acorn-walk';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -115,7 +117,22 @@ test('r201 ②a ofm-admin1 is wired for click, cursor, exact hit and padded tap'
   /* both queries — the exact glyph hit and the padded tap — use the SAME derived list, so neither
      can drift from the other again */
   assert.equal((fn.match(/ALL_LBL\.filter\(id=>GE\(\)\.layers\.get\(id\)\)/g) || []).length, 1);
-  assert.equal((fn.match(/ALL_LBL\.forEach/g) || []).length, 1, 'the cursor list is the same list');
+  let cursorBinding;
+  simple(parse(MAPUI, { ecmaVersion: 'latest', sourceType: 'module' }), { CallExpression(n) {
+    if (n.callee.type !== 'MemberExpression' || n.callee.property.name !== 'forEach') return;
+    const text = MAPUI.slice(n.start, n.end);
+    if (text.startsWith('ALL_LBL') && text.includes("onLayer('mouseenter'")) cursorBinding = text;
+  } });
+  assert.ok(cursorBinding, 'cursor wiring derives from the full place list');
+  const handlers = [], canvas = { style: {} };
+  const GE = () => ({ events: { onLayer: (type, id, cb) => handlers.push({ type, id, cb }) }, render: { canvas: () => canvas } });
+  new Function('GE', 'ALL_LBL', 'placeReaders', cursorBinding)(GE, place, new Map());
+  for (const type of ['mouseenter', 'mouseleave']) {
+    const matching = handlers.filter(h => h.id === 'ofm-admin1' && h.type === type);
+    assert.equal(matching.length, 1, 'the real cursor loop wires the province once for ' + type);
+    matching[0].cb();
+    assert.equal(canvas.style.cursor, type === 'mouseenter' ? 'pointer' : '');
+  }
   /* the padded-tap fallback must NOT treat it as a water/terrain label (those lose the area tools) */
   const geo = fn.match(/const geoLbl=\/\^\(([^)]*)\)/);
   assert.ok(geo && !geo[1].includes('admin1'), 'a region HAS an area, so Isolate/Move stay');

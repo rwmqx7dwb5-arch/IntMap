@@ -284,6 +284,8 @@ export function makeAtlasState(HOST) {
             }
           }
         } catch (_) { }
+        var HP = GLOBAL('IntMapHistPlaces');
+        if (HP && typeof HP.state === 'function') out.historicalPlaces = HP.state();
         return out;
       });
 

@@ -134,7 +134,8 @@ test('R477 ④ the coast pair is listed below the border pair', () => {
    as soon as ANY ONE of its layers was on top. */
 test('R477 ⑤ raise() still moves every stack id, and inPlace() still requires all of them above all data', () => {
   const src = read('js/label-occlusion.js');
-  assert.match(src, /STACK\.forEach\(id=>\{\s*if\(GE\(\)\.layers\.has\(id\)\)\s*try\{\s*GE\(\)\.layers\.move\(id\)/,
+  // The stack now includes registered source labels; R709 executes the real raise path.
+  assert.match(src, /stack\(\)\.forEach\(id=>\{\s*if\(GE\(\)\.layers\.has\(id\)\)\s*try\{\s*GE\(\)\.layers\.move\(id\)/,
     'raise() moves each stack layer to the top, in list order');
   assert.match(src, /return lowestStack>highestData;/,
     'inPlace() compares the LOWEST stack layer against the HIGHEST data layer (#R25) — anything '

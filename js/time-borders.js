@@ -1014,7 +1014,7 @@ window.IntMapModules.timeBorders=function(HOST){
              attributes, while the compact day-exact line records need not carry a name.
              The territory is what a click is about, and that is the fill. */
           if(_lyr==='imtb-fill'||_lyr==='imtb-line'){
-            try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
+            try{ const specific=['ofm-city','ofm-other','geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].concat(window.IntMapPlaceReaders?.ids()||[]).filter(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
               if(specific.length&&e.point&&GE().coords.queryRenderedFeatures(e.point,{layers:specific}).length) return; }catch(_){}
           }
           const f=e.features&&e.features[0]; if(!f) return; _openEra(f,e.lngLat,e); }catch(_){} };
@@ -1086,7 +1086,7 @@ window.IntMapModules.timeBorders=function(HOST){
         const _ERA_LAYERS=['imtb-fill','imtb-line','imtb-lbl','imtb-lbl2'];
         const _ownedElsewhere=(pt)=>{ try{
           if(!pt||!GE().hasRenderer()) return false;
-          const all=(GE().events.clickLayers?GE().events.clickLayers():[])
+          const all=(GE().events.clickLayers?GE().events.clickLayers({ownersOnly:true}):[])
             .filter(id=>_ERA_LAYERS.indexOf(id)<0)
             .filter(id=>{ try{ return !!GE().layers.get(id)&&GE().layers.getLayout(id,'visibility')!=='none'; }catch(_){ return false; } });
           if(!all.length) return false;
@@ -1107,7 +1107,7 @@ window.IntMapModules.timeBorders=function(HOST){
             if(GE().events.clickClaimed&&GE().events.clickClaimed(e)) return;
             if(_openBlank(f,ll)){ try{ GE().events.claimClick(e); }catch(_){} }
           }catch(_){} });
-        }catch(_){} });
+        }catch(_){} },{ownership:'fallback'});
         /* == (#R309) THE PADDED TAP - THE OTHER HALF OF "the same as today's labels" ==============
            js/map-ui.js has given every modern place label a padded hit-box since #R23 (6 px on a
            mouse, 15 px on a finger) because "a finger tap almost never lands on the exact label

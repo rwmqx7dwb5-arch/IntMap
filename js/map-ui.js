@@ -1873,6 +1873,14 @@ window.IntMapModules.labelPopup=function(HOST){
   (function(){
     if(!GE().hasRenderer()) return;
     let popup=null, wired=false;
+    const placeReaders=new Map();
+    function closeReaders(){ for(const reader of placeReaders.values()){ try{ if(reader.close) reader.close(); }catch(_){} } }
+    function readPlace(f,e){
+      const reader=placeReaders.get(f&&f.layer&&f.layer.id); if(!reader) return false;
+      clearHL();
+      if(reader.open(f,e)) GE().events.claimClick(e);
+      return true;
+    }
     function firstSym(){ try{ for(const l of (GE().scene.getStyle().layers||[])) if(l.type==='symbol') return l.id; }catch(_){} }
     function ensureHL(){ if(GE().layers.hasSource('place-hl-src')) return true; if(!_imCanDraw()) return false;
       try{ GE().layers.addSource('place-hl-src',{type:'geojson',data:{type:'FeatureCollection',features:[]}}); const before=firstSym();
@@ -2031,7 +2039,7 @@ window.IntMapModules.labelPopup=function(HOST){
         }).catch(()=>{});
       }catch(_){}
     }
-    function clearHL(){ try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} clearRiverHL(); if(popup){ try{popup.remove();}catch(_){} popup=null; }
+    function clearHL(){ closeReaders(); try{ GE().layers.setSourceData('place-hl-src',{type:'FeatureCollection',features:[]}); }catch(_){} clearRiverHL(); if(popup){ try{popup.remove();}catch(_){} popup=null; }
       /* (#R59) the place popup now OWNS the boundary outline (#R8c popup + IntMapOutline unified) — closing/clearing
          the popup (×, click-away, or a new label) also clears the blue boundary, so it can never linger. */
       try{ window.IntMapOutline && window.IntMapOutline.clear && window.IntMapOutline.clear(); }catch(_){} }
@@ -2039,7 +2047,7 @@ window.IntMapModules.labelPopup=function(HOST){
        writes, what the Wikipedia probe and the AI brief are asked about, and what IntMapOutline looks
        the boundary up by — so the two must not be confused: 「大阪府 (Osaka Prefecture)」 is a caption,
        not a query. See `_bothNames` below for what builds it. */
-    function showPopup(lngLat,name,isCountry,opts){ opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=String(opts.title||name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    function showPopup(lngLat,name,isCountry,opts){ closeReaders(); opts=opts||{}; if(popup){ try{popup.remove();}catch(_){} } const jp=HOST.lang==='jp', safe=String(opts.title||name).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
       /* (#R22) Cleaner layout: name on its own line, then an even button row (equal widths on desktop,
          stacked vertically on mobile via .plc-acts — "ボタンの配置が不格好／モバイルでは縦に三つ"). */
       /* (#R210) 「地名ラベルクリック時のポップアップをすこし小さくして」— one step down across the
@@ -2162,7 +2170,7 @@ window.IntMapModules.labelPopup=function(HOST){
     function _ownedByOther(pt){
       try{
         if(!pt||!GE().hasRenderer()) return false;
-        const all=(GE().events.clickLayers?GE().events.clickLayers():[])
+        const all=(GE().events.clickLayers?GE().events.clickLayers({ownersOnly:true}):[])
           .filter(id=>ALL_LBL.indexOf(id)<0)
           .filter(id=>{ try{ return !!GE().layers.get(id)&&GE().layers.getLayout(id,'visibility')!=='none'; }catch(_){ return false; } });
         if(!all.length) return false;
@@ -2199,9 +2207,12 @@ window.IntMapModules.labelPopup=function(HOST){
        languages here is exactly the shape this project keeps paying for.
        ⚠ AND IT NEVER PRINTS A NAME TWICE. 「現地表記で」, a Japanese reader in Japan, or any place whose
        localised name IS its local name resolves to one string and the parentheses do not appear. */
-    function _labelShown(p){
+    function _labelShown(p,f){
       try{
         const mode=window.imLabelLang||'ui';
+        const hc=window.IntMapHistCities;
+        const historical=hc&&hc.forFeature&&hc.forFeature(f,HOST.lang,mode);
+        if(historical) return historical;
         if(mode==='local') return String(p.name||'');
         const keys=(mode==='en')?['name:en','name:latin','name_int']
           :((window.IntMapOsmNameKeys&&window.IntMapOsmNameKeys(HOST.lang))||['name:en','name:latin','name_int']);
@@ -2214,8 +2225,8 @@ window.IntMapModules.labelPopup=function(HOST){
       }catch(_){}
       return String(p.name||'');
     }
-    function _bothNames(p,name){
-      try{ const local=String((p&&p.name)||''), shown=_labelShown(p||{});
+    function _bothNames(p,name,f){
+      try{ const local=String((p&&p.name)||''), shown=_labelShown(p||{},f);
         if(local&&shown&&shown!==local) return local+' ('+shown+')';
         return local||shown||name;
       }catch(_){ return name; }
@@ -2251,7 +2262,7 @@ window.IntMapModules.labelPopup=function(HOST){
       /* (#R9/#12) The red area/dot highlight was unwanted — only the copyable popup remains. */
       const f=e.features[0];
       const eg=_eraGeom(f);
-      _deferLabel(e,()=>showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name),geojson:eg.geo,refine:eg.refine,sub:eg.sub}:{title:_bothNames(p,name)})); }; }
+      _deferLabel(e,()=>{ if(readPlace(f,e)) return; showPopup(labelAnchor(f,e),name,isCountry,eg?{title:_bothNames(p,name,f),geojson:eg.geo,refine:eg.refine,sub:eg.sub}:{title:_bothNames(p,name,f)}); }); }; }
     /* (#R62) water / terrain labels are now clickable too (popup with Copy/Wikipedia/AI brief; NO highlight). */
     function onGeoLabel(){ return (e)=>{ if(!e.features||!e.features.length) return; if(_ownedByOther(e.point)) return; const f=e.features[0]; const p=f.properties||{};
       const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
@@ -2283,10 +2294,22 @@ window.IntMapModules.labelPopup=function(HOST){
        that answers a tap at one zoom must not stop answering it at the next. */
     const PLACE_LBL=['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-other'];
     const ALL_LBL=PLACE_LBL.concat(['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak']);
+    // Source-owned places use the same exact/padded arbitration as every existing place label.
+    // Their source supplies the answer, not another competing map click listener.
+    window.IntMapPlaceReaders={ids:()=>Array.from(placeReaders.keys()),register(id,reader){
+      if(typeof id!=='string'||!reader||typeof reader.open!=='function'||ALL_LBL.includes(id)) throw new Error('Invalid or duplicate place reader');
+      placeReaders.set(id,reader); ALL_LBL.push(id);
+      const click=onLabel(false), enter=()=>{ GE().render.canvas().style.cursor='pointer'; }, leave=()=>{ GE().render.canvas().style.cursor=''; };
+      GE().events.onLayer('click',id,click); GE().events.onLayer('mouseenter',id,enter); GE().events.onLayer('mouseleave',id,leave);
+      return ()=>{ if(placeReaders.get(id)!==reader) return; if(reader.close) reader.close(); placeReaders.delete(id);
+        ALL_LBL.splice(ALL_LBL.indexOf(id),1);
+        GE().events.offLayer('click',id,click); GE().events.offLayer('mouseenter',id,enter); GE().events.offLayer('mouseleave',id,leave);
+      };
+    }};
     function wire(){ if(wired) return; if(!GE().layers.has('ofm-country')) return; wired=true;
       GE().events.onLayer('click','ofm-country',onLabel(true)); GE().events.onLayer('click','ofm-admin1',onLabel(false)); GE().events.onLayer('click','imta-lbl',onLabel(false)); GE().events.onLayer('click','imta2-lbl',onLabel(false));   /* (#R530/#R564) the era ones, same behaviour */ GE().events.onLayer('click','ofm-city',onLabel(false)); GE().events.onLayer('click','ofm-other',onLabel(false));
       ['geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak'].forEach(id=>{ try{ GE().events.onLayer('click',id,onGeoLabel()); }catch(_){} });
-      ALL_LBL.forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
+      ALL_LBL.filter(id=>!placeReaders.has(id)).forEach(id=>{ GE().events.onLayer('mouseenter',id,()=>{ GE().render.canvas().style.cursor='pointer'; }); GE().events.onLayer('mouseleave',id,()=>{ GE().render.canvas().style.cursor=''; }); });
       /* clicking the map away from any label clears the highlight */
       /* (#R210) …and the padded fallback runs in the SAME microtask defer as the per-layer path.
          Checking `clickClaimed` synchronously here would be a coin-flip on listener registration
@@ -2316,11 +2339,11 @@ window.IntMapModules.labelPopup=function(HOST){
              than it should be and the reader pays for it in missed taps rather than in frames. */
           const pad=((typeof window._imTouchPrimary==='function'?window._imTouchPrimary():(typeof isMobile==='function'&&isMobile()))?15:6);
           const near=GE().coords.queryRenderedFeatures([[e.point.x-pad,e.point.y-pad],[e.point.x+pad,e.point.y+pad]],{layers:ls});
-          if(near.length){ const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=/^(geo-sea|ofm-water|ofm-river|ofm-peak)$/.test(lid);
+          if(near.length){ if(readPlace(near[0],e)) return; const lid=(near[0].layer&&near[0].layer.id)||''; const p=near[0].properties||{}; const geoLbl=/^(geo-sea|ofm-water|ofm-river|ofm-peak)$/.test(lid);
             const gl=(({jp:'jp',de:'de',ru:'ru',es:'es'})[HOST.lang])||'en';
             const nm=(lid==='geo-sea')?(p[gl]||p.en||''):(p.name||p['name:en']||p.name_en||p['name_en']||'');
             /* (#R252) the padded tap is the same click, so it gets the same two-name heading */
-            const ttl=(lid==='geo-sea')?nm:_bothNames(p,nm);
+            const ttl=(lid==='geo-sea')?nm:_bothNames(p,nm,near[0]);
             const peg=_eraGeom(near[0]);   /* (#R564) the padded tap is the same click, so it gets the same era polygon */
             if(nm){ showPopup(labelAnchor(near[0],e),nm,lid==='ofm-country',geoLbl?{noOutline:true,noAreaTools:true,title:ttl}:(peg?{title:ttl,geojson:peg.geo,refine:peg.refine,sub:peg.sub}:{title:ttl}));
               if(lid==='ofm-river') highlightRiver(p,e.lngLat);   /* (#R210) the padded tap is the same click */

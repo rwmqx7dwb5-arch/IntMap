@@ -120,7 +120,7 @@ window.IntMapHistCities = (function () {
      apart. A caller that knows a spelling but not where it is does not know which city it means,
      and this returns null rather than guessing. */
   function at(spelling, lon, lat, lang) {
-    if (!data || !spelling || typeof lon !== 'number' || typeof lat !== 'number') return null;
+    if (!data || !spelling || !Number.isFinite(lon) || !Number.isFinite(lat)) return null;
     var d = traveling() ? dnum(window.IntMapTime.when()) : null;
     if (d == null) return null;
     for (var i = 0; i < data.cities.length; i++) {
@@ -131,6 +131,19 @@ window.IntMapHistCities = (function () {
       if (n) return displayName(n, lang);
     }
     return null;
+  }
+
+  function labelLanguage(lang, mode) { return (mode === 'en' || mode === 'local') ? 'en' : (lang || 'en'); }
+  // A popup reads the same feature, spelling precedence and position guard as the text field.
+  // A pointer position is not a settlement's identity, especially for a padded touch target.
+  function forFeature(feature, lang, mode) {
+    if (!feature || !feature.layer || feature.layer.id !== 'ofm-city') return null;
+    var g = feature.geometry, p = feature.properties || {};
+    if (!g || g.type !== 'Point' || !Array.isArray(g.coordinates)) return null;
+    var lon = g.coordinates[0], lat = g.coordinates[1];
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+    var lg = labelLanguage(lang, mode);
+    return at(p['name:en'], lon, lat, lg) || at(p.name, lon, lat, lg);
   }
 
   /* great-circle metres. ⚠ NOT bit-identical to MapLibre's `distance`, which uses cheap-ruler's
@@ -156,7 +169,7 @@ window.IntMapHistCities = (function () {
        no endonym column, and inventing one for 685 historical names would be a claim nothing here
        can support. A reader who asked for the local spelling of a name that no longer exists is
        asking for something the record does not hold. */
-    var lg = (mode === 'en' || mode === 'local') ? 'en' : (lang || 'en');
+    var lg = labelLanguage(lang, mode);
     var d = dnum(window.IntMapTime.when());
     /* ⚠ THE BASE EXPRESSION IS PART OF THE KEY, not just the date and the language. `base` is what
        everything falls through to — the label every city outside the record gets — and it is rebuilt by
@@ -228,6 +241,6 @@ window.IntMapHistCities = (function () {
   }
   wire();
 
-  return { textField: textField, at: at, ensure: ensure, ready: function () { return !!data; },
+  return { textField: textField, at: at, forFeature: forFeature, ensure: ensure, ready: function () { return !!data; },
     count: function () { return data ? data.cities.length : 0; } };
 })();

@@ -119,6 +119,7 @@ test('province label click carries source-date supplement; exact hit delegates t
   let shown;
   const c = vm.createContext({ HOST: {lang:'en'}, window: { IntMapTimeAdmin1: { geomAt: () => ({type:'Polygon'}), geomFullAt: () => null } },
     _ownedByOther: () => false, _deferLabel: (e, cb) => cb(), labelAnchor: () => [0,0], _bothNames: (p,n) => n,
+    readPlace: () => false, // This fixture is the ordinary province reader; source-owned place arbitration is exercised by R709.
     showPopup: (...args) => { shown=args[3]; } });
   vm.runInContext(read('js/lang-registry.js'), c);
   vm.runInContext(['_eraSourceDates','_eraGeom','onLabel'].map(n=>fn(n,ui)).join('\n'), c);
@@ -133,4 +134,3 @@ test('province label click carries source-date supplement; exact hit delegates t
   vm.runInContext('const peg=_eraGeom(near[0]);'+invocation,c);
   assert.equal(shown.sub,'Source dates: 1800 – ?');
 });
-
