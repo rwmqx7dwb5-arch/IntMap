@@ -281,7 +281,8 @@ test('R664 ⑤ the memory-pressure guard asks the device, and reaches the stores
      remembering to add a listener. Each of these enrols itself where it is defined. */
   for (const [file, name] of [['js/cesium-layers.js', 'cesium'], ['js/terrain-water.js', 'terrainEdit'],
     ['src/photo-geo-worker-client.js', 'photoSearch.page']]) {
-    assert.match(codeOnly(R(file)), new RegExp(`register\\('${name.replace('.', '\\.')}'`),
+    /* A store may be owned by more than one view; each instance needs its own suffix. */
+    assert.match(codeOnly(R(file)), new RegExp(`register\\('${name.replace('.', '\\.')}(?::[^']*)?'`),
       `${file} does not enrol with the budget, so memory pressure cannot reach it`);
   }
 

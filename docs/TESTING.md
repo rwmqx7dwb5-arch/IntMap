@@ -18,6 +18,14 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 ## What runs
 
+Memory lifecycle regressions execute the actual function bodies with controlled resource owners:
+`tests/r708-legend-clock-lifecycle-checks.test.mjs` keeps the entire clock range reachable with constant DOM
+and one subscription across legend rebuilds;
+`tests/r708-playground-lifecycle-checks.test.mjs` exercises every answer-map closing path;
+`tests/r708-dem-lifecycle-checks.test.mjs` checks independent terrain caches, late requests and view teardown;
+`tests/r708-koppen-lifecycle-checks.test.mjs` checks obsolete image/bitmap completion, immediate canvas release,
+and unchanged resolution and image fallback. These count released resources; they do not claim device RSS savings.
+
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
 gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is

@@ -39,6 +39,7 @@
 window.IntMapCesiumLayers=(function(){
   'use strict';
   const S=()=>window.IntMapStyle;
+  let demCacheSeq=0;
 
   /* ── DEM TILES, DECODED ONCE AND SHARED ────────────────────────────────────
      Terrain, hillshade and colour-relief all want the same terrarium PNGs, and
@@ -54,6 +55,8 @@ window.IntMapCesiumLayers=(function(){
        answer can arrive after this closure is built. */
     const MAX=()=>{ try{ return window.IntMapMemBudget.demTiles('cesium'); }catch(_){ return 96; } };
     const inflight=new Map();
+    const requests=new Set();
+    let generation=0, destroyed=false, unregister=null;
     let templates=['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'];
     let maxzoom=15;
     function configure(spec){
@@ -74,30 +77,38 @@ window.IntMapCesiumLayers=(function(){
        So decode the tile as delivered, and let the CALLER point-sample the float heights it
        needs. Interpolating metres is fine; interpolating the encoding is not. */
     function get(z,x,y,size){
+      if(destroyed) return Promise.resolve(null);
       const k=z+'/'+x+'/'+y;
       const hit=cache.get(k); if(hit){ cache.delete(k); cache.set(k,hit); return Promise.resolve(hit); }
       if(inflight.has(k)) return inflight.get(k);
+      const epoch=generation, controller=new AbortController();
+      requests.add(controller);
       const p=(async()=>{
+        let bmp=null;
         try{
-          const r=await fetch(url(z,x,y),{mode:'cors',credentials:'omit'});
-          if(!r.ok) return null;
-          const bmp=await createImageBitmap(await r.blob());
+          const r=await fetch(url(z,x,y),{mode:'cors',credentials:'omit',signal:controller.signal});
+          if(!r.ok||destroyed||epoch!==generation) return null;
+          bmp=await createImageBitmap(await r.blob());
+          if(destroyed||epoch!==generation) return null;
           const n=bmp.width||256;
           const c=(typeof OffscreenCanvas!=='undefined')?new OffscreenCanvas(n,n):Object.assign(document.createElement('canvas'),{width:n,height:n});
           const ctx=c.getContext('2d',{willReadFrequently:true});
           ctx.imageSmoothingEnabled=false;          /* belt and braces — 1:1 here, but never resample the encoding */
           ctx.drawImage(bmp,0,0,n,n);
           try{ bmp.close&&bmp.close(); }catch(_){}
+          bmp=null;
           const px=ctx.getImageData(0,0,n,n).data;
           const out=new Float32Array(n*n);
           /* terrarium: height = (R*256 + G + B/256) − 32768 */
           for(let i=0,j=0;i<out.length;i++,j+=4) out[i]=(px[j]*256+px[j+1]+px[j+2]/256)-32768;
           out.size=n;
+          if(destroyed||epoch!==generation) return null;
           cache.set(k,out);
           { const cap=MAX(); while(cache.size>cap){ const f=cache.keys().next().value; if(f===k) break; cache.delete(f); } }
           return out;
         }catch(_){ return null; }
-        finally{ inflight.delete(k); }
+        finally{ try{ if(bmp&&bmp.close) bmp.close(); }catch(_){}
+          requests.delete(controller); if(epoch===generation) inflight.delete(k); }
       })();
       inflight.set(k,p);
       return p;
@@ -105,10 +116,16 @@ window.IntMapCesiumLayers=(function(){
     /* (#R668) enrol with the budget so memory pressure reaches this store. Everything here is
        rebuildable from the network, so giving it back costs a refetch and never correctness — and
        enrolling is what makes the guard reach it WITHOUT anybody maintaining a list of names. */
-    try{ window.IntMapMemBudget.register('cesium',{ bytes:()=>cache.size*window.IntMapMemBudget.DEM_TILE_BYTES,
+    try{ unregister=window.IntMapMemBudget.register('cesium:'+ (++demCacheSeq),{ bytes:()=>cache.size*window.IntMapMemBudget.DEM_TILE_BYTES,
       release:()=>{ cache.clear(); } }); }catch(_){}
+    /* A view owns its requests and registration. Late responses from a retired generation
+       must neither refill its cache nor delete a newer request for the same tile. */
+    function clear(){ generation++; cache.clear(); inflight.clear();
+      for(const controller of requests){ try{ controller.abort(); }catch(_){} } requests.clear(); }
+    function destroy(){ if(destroyed) return; destroyed=true; clear();
+      if(unregister){ unregister(); unregister=null; } }
     return { get, configure, maxzoom:()=>maxzoom, size:()=>cache.size,
-             clear:()=>{ cache.clear(); inflight.clear(); } };
+             clear, destroy };
   }
 
   /* ── TERRAIN, KEYLESS ──────────────────────────────────────────────────────
