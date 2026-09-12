@@ -485,7 +485,7 @@ window.IntMapCesiumEngine=(function(){
           this._scene.requestRender();
         }catch(_){} };
         syncClock();
-        try{ if(window.IntMapTime&&window.IntMapTime.on) window.IntMapTime.on(syncClock); }catch(_){}
+        try{ if(window.IntMapTime&&window.IntMapTime.on) this._timeOff=window.IntMapTime.on(syncClock); }catch(_){}
         /* ⚠ (#R408) the `!document.hidden` test moved INTO the wheel, which applies the same one: it guarded this timer
            and nothing else (syncClock's other two callers — the line above and IntMapTime — are unconditional). */
         this._skyTick=everyTick('cesium-engine:sky-clock:'+this._vid,30000,syncClock);
@@ -965,9 +965,9 @@ window.IntMapCesiumEngine=(function(){
           this._noteCommanded(zoom);               /* (#R185) …and the camera is still ours, at the same zoom */
           this._scene.requestRender();
         }
-        setTimeout(check,WAIT[tries++]);
+        this._settleTimer=setTimeout(check,WAIT[tries++]);
       };
-      setTimeout(check,WAIT[tries++]);
+      clearTimeout(this._settleTimer); this._settleTimer=setTimeout(check,WAIT[tries++]);
     }
 
     /* ── the style ─────────────────────────────────────────────────────────── */
@@ -1781,7 +1781,7 @@ window.IntMapCesiumEngine=(function(){
       const angles=()=>this._fireAngles();
       /* the camera's own stream — MapLibre's move/zoom family, from the one event
          Cesium raises when anything about the view changes */
-      let moving=false, tmr=0;
+      let moving=false;
       this._camera.changed.raiseEventOnCameraChange=true;
       this._camera.percentageChanged=0.02;
       const onChanged=()=>{
@@ -1800,8 +1800,8 @@ window.IntMapCesiumEngine=(function(){
         this.fire('move',{}); this.fire('zoom',{});
         angles();
         this._afterMove();
-        clearTimeout(tmr);
-        tmr=setTimeout(()=>{ moving=false; this.fire('moveend',{}); this.fire('dragend',{});
+        clearTimeout(this._moveEndTimer);
+        this._moveEndTimer=setTimeout(()=>{ moving=false; this.fire('moveend',{}); this.fire('dragend',{});
                              this.fire('zoomend',{}); this.fire('idle',{}); },180);
       };
       this._camera.changed.addEventListener(onChanged);
@@ -2559,6 +2559,16 @@ window.IntMapCesiumEngine=(function(){
     setZoomRate(r,wheel){ return this._input?this._input.setZoomRate(r,wheel):false; }
     setCursor(c){ try{ const cv=this._widget.canvas; if(cv) cv.style.cursor=c||''; }catch(_){} }
     destroy(){
+      if(this._destroyed) return; this._destroyed=true;
+      /* The shared clock and timer wheel outlive the scene. Their closures otherwise keep
+         this entire view, including decoded terrain and vector sources, reachable forever. */
+      try{ if(this._skyTick) stopTick(this._skyTick); this._skyTick=null; }catch(_){}
+      try{ this._airHalt(); }catch(_){}
+      try{ if(this._timeOff) this._timeOff(); this._timeOff=null; }catch(_){}
+      this._settleTok=(this._settleTok||0)+1;
+      clearTimeout(this._settleTimer); clearTimeout(this._moveEndTimer);
+      try{ if(this._dem) this._dem.destroy(); }catch(_){}
+      try{ for(const rec of this._sources.values()) if(rec.vt) rec.vt.destroy(); this._sources.clear(); }catch(_){}
       try{ if(this._ro) this._ro.disconnect(); }catch(_){}
       try{ if(this._input) this._input.destroy(); this._input=null; }catch(_){}
       try{ if(this._ssHandler) this._ssHandler.destroy(); }catch(_){}
@@ -2968,7 +2978,7 @@ window.IntMapCesiumEngine=(function(){
     const offset=(typeof o.offset==='number')?o.offset:0;
     function place(){
       state.raf=0;
-      const v=state.view; if(!v||!state.ll) return;
+      const v=state.view; if(!state.open||!v||!state.ll) return;
       const p=v.projectAltitude?v.projectAltitude(state.ll,0):v.project(state.ll);
       if(!p||p.x<-1e5){ el.style.display='none'; }
       else{
@@ -2977,7 +2987,16 @@ window.IntMapCesiumEngine=(function(){
         el.style.transform=`translate(${Math.round(p.x)}px,${Math.round(p.y-offset)}px) ${anchor}`;
       }
     }
-    const sched=()=>{ if(!state.raf) state.raf=requestAnimationFrame(place); };
+    const sched=()=>{ if(state.open&&!state.raf) state.raf=requestAnimationFrame(place); };
+    const close=()=>{ if(state.open) api.remove(); };
+    const closeOnClick=o.closeOnClick!==false&&kind==='popup';
+    function detach(){
+      const v=state.view;
+      if(v){ v.off('move',sched); v.off('moveend',sched); v.off('resize',sched);
+        if(closeOnClick) v.off('click',close); }
+      if(state.raf) cancelAnimationFrame(state.raf);
+      state.raf=0; state.view=null; state.open=false;
+    }
     const api={
       setLngLat(ll){ state.ll=normLngLat(ll); sched(); return api; },
       getLngLat(){ return state.ll; },
@@ -2993,21 +3012,22 @@ window.IntMapCesiumEngine=(function(){
       addTo(view){
         const v=view&&view._widget?view:V();
         if(!v) return api;
+        if(state.view!==v){
+          detach();
+          v.on('move',sched); v.on('moveend',sched); v.on('resize',sched);
+          if(closeOnClick) v.on('click',close);
+        }
         state.view=v; state.open=true;
         const host=v.getContainer(); if(host&&el.parentNode!==host) host.appendChild(el);
-        if(!api.__wired){ api.__wired=true;
-          v.on('move',sched); v.on('moveend',sched); v.on('resize',sched);
-          if(closer) closer.addEventListener('click',()=>{ api.remove(); });
-          if(o.closeOnClick!==false&&kind==='popup') v.on('click',()=>{ if(state.open) api.remove(); });
-        }
         sched();
         return api;
       },
-      remove(){ state.open=false; try{ el.remove(); }catch(_){} if(o.onClose) try{ o.onClose(); }catch(_){}
+      remove(){ detach(); try{ el.remove(); }catch(_){} if(o.onClose) try{ o.onClose(); }catch(_){}
                 return api; },
       togglePopup(){ return api; },
       setPopup(){ return api; }
     };
+    if(closer) closer.addEventListener('click',close);
     /* Marker's own little API, the parts the app uses */
     api._map=null;
     Object.defineProperty(api,'_map',{ get:()=>state.open?state.view:null, configurable:true });

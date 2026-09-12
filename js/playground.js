@@ -184,22 +184,27 @@ window.IntMapModules.playground=function(HOST){
       });
     };
     function openGuess(target,restore,roundInfo){
-      const {ov,card}=shell(560); card.appendChild(xbtn(()=>ov.remove()));
+      let gmap=null, guess=null, gmarker=null, answered=false, closed=false;
+      /* Every exit owns the same teardown, including the close button. Removing the DOM alone
+         leaves the secondary map's GL context and renderer listeners alive. */
+      function close(){ if(closed) return; closed=true;
+        const view=gmap; gmap=null; gmarker=null;
+        try{ if(view) view.destroy(); }catch(_){} ov.remove(); }
+      const {ov,card}=shell(560); card.appendChild(xbtn(close));
       const t=document.createElement('h3'); t.textContent=window.IntMapLang.t(HOST.lang,"Click the map to drop your guess","現在地はどこ？地図をタップ","Zum Tippen auf die Karte klicken","Кликните по карте, чтобы поставить догадку","Haga clic en el mapa para colocar su respuesta"); t.style.cssText='margin:0 0 4px;font-size:16px;'; card.appendChild(t);
       const hint=document.createElement('div'); hint.style.cssText='margin:0 0 10px;font-size:11.5px;color:var(--text-muted);'; hint.textContent=window.IntMapLang.t(HOST.lang,"The less you zoom out, the higher your score (min zoom is penalised).","ズームアウトせずに当てるほど高得点（最小ズームで減点）。","Je weniger Sie herauszoomen, desto höher die Punktzahl (minimaler Zoom wird bestraft).","Чем меньше вы отдаляете карту, тем выше счёт (минимальный зум штрафуется).","Cuanto menos aleje el mapa, mayor será su puntuación (el zoom mínimo penaliza)."); card.appendChild(hint);
       const mapDiv=document.createElement('div'); mapDiv.id='pg-guess-map'; mapDiv.style.cssText='width:100%;height:300px;border-radius:12px;overflow:hidden;background:var(--input-bg);'; card.appendChild(mapDiv);
       const result=document.createElement('div'); result.style.cssText='margin-top:12px;font-size:13.5px;line-height:1.6;'; card.appendChild(result);
       const answerB=document.createElement('button'); answerB.textContent=window.IntMapLang.t(HOST.lang,"Answer","回答","Antwort","Ответ","Respuesta"); answerB.disabled=true; answerB.style.cssText='width:100%;margin-top:12px;padding:12px;border:none;border-radius:11px;background:var(--primary-color);color:#fff;font-size:14px;font-weight:700;cursor:pointer;opacity:0.5;'; card.appendChild(answerB);
-      let gmap=null, guess=null, gmarker=null, answered=false;
       try{
         gmap=GE().ui.createSubView({container:'pg-guess-map',style:{version:8,sources:{c:{type:'raster',tiles:window.cartoTiles('rastertiles/voyager',{hosts:['a','b']}),tileSize:256,attribution:window.CARTO_ATTRIBUTION}},layers:[{id:'c',type:'raster',source:'c'}]},center:[10,25],zoom:0.35,attributionControl:{compact:true},renderWorldCopies:false});
         /* (#R31) GLOBE projection for the guess map ("メルカトルではなくglobe地図に") — more game-y & honest about distance. */
         /* (#R179) through the scoped engine: setProjection takes a MODE, not a renderer spec */
-        try{ gmap.events.on('style.load',()=>{ try{ gmap.camera.setProjection('globe'); }catch(_){} }); gmap.camera.setProjection('globe'); }catch(_){}
-        gmap.events.on('click',(e)=>{ if(answered) return; guess=[e.lngLat.lng,e.lngLat.lat]; if(gmarker) gmarker.remove(); const el=document.createElement('div'); el.style.cssText='width:16px;height:16px;border-radius:50%;background:#ff3b30;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmarker=gmap.ui.addMarker({element:el},guess); answerB.disabled=false; answerB.style.opacity='1'; });
+        try{ gmap.events.on('style.load',()=>{ if(closed) return; try{ gmap.camera.setProjection('globe'); }catch(_){} }); gmap.camera.setProjection('globe'); }catch(_){}
+        gmap.events.on('click',(e)=>{ if(closed||answered) return; guess=[e.lngLat.lng,e.lngLat.lat]; if(gmarker) gmarker.remove(); const el=document.createElement('div'); el.style.cssText='width:16px;height:16px;border-radius:50%;background:#ff3b30;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);'; gmarker=gmap.ui.addMarker({element:el},guess); answerB.disabled=false; answerB.style.opacity='1'; });
       }catch(err){ result.textContent='Guess map failed.'; }
       answerB.onclick=()=>{
-        if(answered||!guess) return; answered=true; answerB.style.display='none';
+        if(closed||answered||!guess) return; answered=true; answerB.style.display='none';
         const dist=haversine(guess,[target.lng,target.lat]); const base=Math.round(1000*Math.exp(-dist/1500));
         /* (#R30) zoom-out penalty — the more the player zoomed out during the round, the bigger the deduction. */
         const sz=(roundInfo&&roundInfo.startZoom)||15.4; const mz=(roundInfo&&roundInfo.getMinZoom)?roundInfo.getMinZoom():sz;
@@ -211,9 +216,9 @@ window.IntMapModules.playground=function(HOST){
           +'<div style="margin-top:6px;font-size:12px;color:var(--text-muted);">'+(window.IntMapLang.t(HOST.lang,"Base ","基本点 ","Grundpunkte ","Базовые ","Base "))+base
           +(penalty>0?(' · '+(window.IntMapLang.t(HOST.lang,"Zoom-out −","ズームアウト減点 −","Herauszoomen −","Отдаление −","Alejamiento −"))+penalty+' ('+(window.IntMapLang.t(HOST.lang,"min zoom ","最小ズーム ","min. Zoom ","мин. зум ","zoom mínimo "))+mz.toFixed(1)+')'):' · <span style="color:#34c759;">'+(window.IntMapLang.t(HOST.lang,"no zoom-out!","ズームアウトなし！","kein Herauszoomen!","без отдаления!","¡sin alejar!"))+'</span>')+'</div>';
         const again=document.createElement('button'); again.textContent=window.IntMapLang.t(HOST.lang,"Play again","もう一度","Noch einmal","Сыграть ещё","Jugar otra vez"); again.style.cssText='width:100%;margin-top:12px;padding:11px;border:none;border-radius:11px;background:var(--input-bg);color:var(--text-main);font-size:13.5px;font-weight:700;cursor:pointer;'; card.appendChild(again);
-        again.onclick=()=>{ try{ gmap&&gmap.destroy(); }catch(_){} ov.remove(); try{ restore&&restore(); }catch(_){} window._pgWorldExplorer&&window._pgWorldExplorer(); };
+        again.onclick=()=>{ if(closed) return; close(); try{ restore&&restore(); }catch(_){} window._pgWorldExplorer&&window._pgWorldExplorer(); };
       };
-      ov.addEventListener('click',e=>{ if(e.target===ov){ try{ gmap&&gmap.destroy(); }catch(_){} } });
+      ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
     }
 
     /* ===================== PANDEMIC SIMULATOR ===================== */

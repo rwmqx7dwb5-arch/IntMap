@@ -566,33 +566,46 @@ window.IntMapModules.dataLayers=function(HOST){
        ⚠ ONE BUILDER, exported, because js/world-packs.js needs the identical row on trade, energy
        and crops — #R239's lesson is a thing implemented twice and fixed once. */
     let _syncYearHints=null;     /* (#R270) set by buildCoreLegends; called by _imReapplyChoros */
+    let _legendClockSubscribed=false;
+    let _legendHintsSubscribed=false;
+    function _syncCurrentYearHints(){ if(_syncYearHints) _syncYearHints(); }
+    function _queueLegendClockHints(){ setTimeout(_syncCurrentYearHints,420); setTimeout(_syncCurrentYearHints,2500); }
+    function _syncLegendClockRows(){
+      document.querySelectorAll('.dl-clockrow').forEach(r=>{ if(r._imSyncClockYear) r._imSyncClockYear(); });
+    }
     function legendClockYear(el,opts){ if(!el) return null; opts=opts||{};
       /* ⚠ the newest selectable year is LAST year: `IntMapTime.setYear(y)` treats the current year
          as live (it is), so offering it would put two options on the list meaning 「現在」. */
-      const min=opts.min||1960, thisYear=new Date().getFullYear();
+      const min=opts.min??1960, thisYear=new Date().getFullYear();
       const max=Math.min(opts.max||(thisYear-1),thisYear-1);
       let row=el.querySelector('.dl-clockrow');
       if(!row){ row=document.createElement('div'); row.className='dl-clockrow';
         row.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;font-size:10.5px;color:var(--text-muted);';
-        row.innerHTML='<span class="dl-clocklbl"></span><select class="dl-clockyear" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"></select>';
+        /* A year is a number, not one DOM node per year. The master clock reaches deep
+           prehistory; enumerating it made two hidden legends allocate 250,000 options. */
+        row.innerHTML='<span class="dl-clocklbl"></span><input type="number" step="1" class="dl-clockyear" style="width:84px;min-width:0;padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;"><button type="button" class="dl-clocknow" style="padding:2px 5px;border-radius:6px;border:1px solid var(--glass-border,rgba(128,128,128,0.25));background:var(--input-bg);color:var(--text-main);font-size:10.5px;cursor:pointer;"></button>';
         el.appendChild(row);
         row.querySelector('.dl-clockyear').addEventListener('change',(e)=>{
           const v=e.target.value;
+          if(!e.target.checkValidity()){ e.target.reportValidity(); row._imSyncClockYear(); return; }
           try{ if(v==='') window.IntMapTime.setNow({source:'layer-legend'});
                else window.IntMapTime.setYear(+v,{source:'layer-legend'}); }catch(_){} });
+        row.querySelector('.dl-clocknow').addEventListener('click',()=>{
+          try{ window.IntMapTime.setNow({source:'layer-legend'}); }catch(_){} });
       }
       const nowTxt=window.IntMapLang.t(HOST.lang,'Now','現在','Jetzt','Сейчас','Ahora');
       row.querySelector('.dl-clocklbl').textContent=window.IntMapLang.t(HOST.lang,'Year','年','Jahr','Год','Año');
       const sel=row.querySelector('.dl-clockyear');
-      const sig=min+'-'+max;
-      if(sel.getAttribute('data-built')!==sig||sel.getAttribute('data-lang')!==String(HOST.lang)){
-        const ys=[]; for(let y=max;y>=min;y--) ys.push(y);
-        sel.innerHTML='<option value="">'+escapeHtml(nowTxt)+'</option>'+ys.map(y=>'<option value="'+y+'">'+y+'</option>').join('');
-        sel.setAttribute('data-built',sig); sel.setAttribute('data-lang',String(HOST.lang)); }
+      sel.min=String(min); sel.max=String(max); sel.placeholder=nowTxt;
+      sel.setAttribute('aria-label',row.querySelector('.dl-clocklbl').textContent);
+      row.querySelector('.dl-clocknow').textContent=nowTxt;
       const sync=()=>{ let y=null; try{ y=window.IntMapTime.isLive()?null:window.IntMapTime.year(); }catch(_){}
         sel.value=(y!=null&&y>=min&&y<=max)?String(y):''; };
       sync();
-      if(!row._imClockSub){ row._imClockSub=1; try{ window.IntMapTime.on(()=>sync()); }catch(_){} }
+      row._imSyncClockYear=sync;
+      /* One subscription discovers current rows. A closure per row retained every removed
+         legend across language changes, including its entire old option tree. */
+      if(!_legendClockSubscribed){ try{ window.IntMapTime.on(_syncLegendClockRows); _legendClockSubscribed=true; }catch(_){} }
       return row; }
     try{ window._legendClockYear=legendClockYear; }catch(_){}
     /* (#R110) the core data-legends bake `currentLang` at construction, so a LANGUAGE CHANGE left already-shown
@@ -667,7 +680,7 @@ window.IntMapModules.dataLayers=function(HOST){
          is called by js/time-countries.js's `repaint()`, which runs AFTER the overlay; the clock
          subscription stays as the answer for the case where no choropleth is on. */
       _syncYearHints=syncHints;
-      try{ window.IntMapTime.on(()=>{ setTimeout(syncHints,420); setTimeout(syncHints,2500); }); }catch(_){}
+      if(!_legendHintsSubscribed){ try{ window.IntMapTime.on(_queueLegendClockHints); _legendHintsSubscribed=true; }catch(_){} }
     }catch(_){}
     lgdSnow=makeLegend('snow',140,(window.IntMapLang.t(HOST.lang,'Snow & ice','積雪・海氷','Schnee & Eis','Снег и лёд','Nieve y hielo')),'linear-gradient(to right,#2a78b8,#7fb3d9,#cfe6f5,#ffffff)',[window.IntMapLang.t(HOST.lang,'Low','少','Wenig','Мало','Bajo'),window.IntMapLang.t(HOST.lang,'High','多','Viel','Много','Alto')], 'MODIS NDSI');
     lgdAod=makeLegend('aod',140,(window.IntMapLang.t(HOST.lang,'Aerosol / haze','エアロゾル / 煙霧','Aerosol / Dunst','Аэрозоль / дымка','Aerosol / bruma')),'linear-gradient(to right,#ffffcc,#fed976,#fd8d3c,#e31a1c,#800026)',[window.IntMapLang.t(HOST.lang,'Clean air','清浄','Klar','Чисто','Limpio'),window.IntMapLang.t(HOST.lang,'Hazy','濃い','Trüb','Мутно','Brumoso')], 'MODIS AOD');
@@ -3004,6 +3017,17 @@ window.IntMapModules.dataLayers=function(HOST){
        (b) build a "highlight only selected" canvas image and feed it back
            into the same source for in-place filtering. */
     window._koppenCanvas=null; window._koppenImg=null; window._koppenReady=false;
+    let _koppenWorkGen=0;
+    function _resetKoppenWork(){
+      ++_koppenWorkGen;
+      clearTimeout(window._koppenRefreshT);
+      /* Return backing stores now; a late decode belongs to the retired generation. */
+      const c=window._koppenCanvas, im=window._koppenImg;
+      if(c){ c.width=0; c.height=0; }
+      if(im){ try{ im.src=''; }catch(_){} }
+      window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
+      window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null;
+    }
     /* PERF (#R13): the DISPLAYED Köppen raster is the full-res 8192² PNG (composited on the GPU). But
        cursor-sampling and class highlighting are CPU pixel ops, so they run on a small capped
        work-canvas (≤2048, nearest-neighbor so the exact KCOL palette is preserved). ~19 km/px is
@@ -3061,18 +3085,25 @@ window.IntMapModules.dataLayers=function(HOST){
        ⚠ FALLS BACK TO THE <img> PATH on anything that cannot do it (no createImageBitmap, no resize
        support, a fetch the CORS setup refuses), so the behaviour is unchanged where it cannot help. */
     function _koppenBitmapWork(){
-      const cap=KWORK_CAP;
+      const cap=KWORK_CAP, gen=_koppenWorkGen;
       if(typeof createImageBitmap!=='function'||typeof fetch!=='function') return Promise.reject();
       return fetch(koppenWorkURL(window._koppenPeriod),{cache:'force-cache'})
         .then(r=>{ if(!r.ok) throw new Error('koppen '+r.status); return r.blob(); })
-        .then(b=>createImageBitmap(b,{resizeWidth:cap,resizeHeight:cap,resizeQuality:'pixelated'}))
+        .then(b=>gen===_koppenWorkGen?createImageBitmap(b,{resizeWidth:cap,resizeHeight:cap,resizeQuality:'pixelated'}):null)
         .then(bm=>{
-          const c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height;
-          const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false;
-          cx.drawImage(bm,0,0);
-          try{ bm.close(); }catch(_){}
-          window._koppenCanvas=c; window._koppenReady=true; window._koppenImg=null;
-        });
+          if(!bm) return;
+          let c=null;
+          try{
+            if(gen!==_koppenWorkGen) return;
+            c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height;
+            const cx=c.getContext('2d',{willReadFrequently:true}); cx.imageSmoothingEnabled=false;
+            cx.drawImage(bm,0,0);
+            window._koppenCanvas=c; window._koppenReady=true; window._koppenImg=null;
+          }finally{
+            try{ bm.close(); }catch(_){}
+            if(c&&window._koppenCanvas!==c){ c.width=0; c.height=0; }
+          }
+        }).catch(e=>{ if(gen===_koppenWorkGen) throw e; });
     }
     function loadKoppenCanvas(){
       if(window._koppenImg||window._koppenReady) return Promise.resolve();
@@ -3083,6 +3114,7 @@ window.IntMapModules.dataLayers=function(HOST){
     }
     function _loadKoppenCanvasImg(){
       if(window._koppenImg) return Promise.resolve();
+      const gen=_koppenWorkGen;
       return new Promise(resolve=>{
         /* (#R13b) NO crossOrigin on the LOCAL PNG: under file:// an `anonymous` request to a same-folder
            file can fail (no CORS headers on file://), which used to drop us to the wrong remote Wikipedia
@@ -3090,11 +3122,18 @@ window.IntMapModules.dataLayers=function(HOST){
            still throw on a tainted file:// canvas, but that's caught and only disables highlighting, never
            the base map. The remote fallback keeps crossOrigin (Wikimedia sends CORS). */
         const im=new Image();
-        im.onload=()=>{ _mkKoppenWork(im); resolve(); };
+        const loaded=image=>{
+          image.onload=null; image.onerror=null;
+          try{ if(gen===_koppenWorkGen) _mkKoppenWork(image); }
+          finally{ if(window._koppenImg!==image){ try{ image.src=''; }catch(_){} } resolve(); }
+        };
+        im.onload=()=>loaded(im);
         im.onerror=()=>{
+          im.onload=null; im.onerror=null;
+          if(gen!==_koppenWorkGen){ im.src=''; resolve(); return; }
           const im2=new Image(); im2.crossOrigin='anonymous';
-          im2.onload=()=>{ _mkKoppenWork(im2); resolve(); };
-          im2.onerror=()=>resolve(); im2.src=KURL_FALLBACK;
+          im2.onload=()=>loaded(im2);
+          im2.onerror=()=>{ im2.onload=null; im2.onerror=null; resolve(); }; im2.src=KURL_FALLBACK;
         };
         /* (#R17) sample/highlight from the lighter work image (4k on mobile); the DISPLAY source still uses
            the full 8192² KURL, so on-screen quality is unchanged while we avoid a 2nd 268 MB decode. */
@@ -3180,6 +3219,7 @@ window.IntMapModules.dataLayers=function(HOST){
       }
       octx.putImageData(img,0,0);
       try{ return out.toDataURL('image/png'); }catch(e){ return null; }
+      finally{ out.width=0; out.height=0; }
     }
     /* (#R13c) FULL-RES highlight. The user asked us to STOP dropping resolution when a class is
        highlighted: the small 2048² work-canvas is kept ONLY for fast cursor sampling, while the
@@ -3337,7 +3377,7 @@ window.IntMapModules.dataLayers=function(HOST){
       window._koppenRefreshT=setTimeout(()=>{
         const setImg=(url)=>{ try{ if(GE().layers.hasSource('src-climate')) GE().layers.updateImage('src-climate',{url:url,coordinates:KCOORDS}); }catch(e){} };
         if(!window.kSelected || window.kSelected.size===0){ setImg(KURL); return; }
-        if(!window._koppenReady){ if(!window._koppenLoadStarted){ window._koppenLoadStarted=true; loadKoppenCanvas().then(()=>{ try{ window._refreshKoppenImage(); }catch(_){} }); } return; }
+        if(!window._koppenReady){ if(!window._koppenLoadStarted){ window._koppenLoadStarted=true; const gen=_koppenWorkGen; loadKoppenCanvas().then(()=>{ if(gen!==_koppenWorkGen) return; try{ window._refreshKoppenImage(); }catch(_){} }); } return; }
         let u=null; try{ u=buildKoppenHighlightURL(window.kSelected); }catch(_){}
         setImg(u||KURL);
       },45);
@@ -3389,8 +3429,7 @@ window.IntMapModules.dataLayers=function(HOST){
       window._koppenPeriod=period; KURL=koppenDisplayURL(period);
       /* (#R23) era changed → invalidate the cached sampling canvas + per-pixel code index so cursor
          sampling and the class highlight reflect the chosen period (they lazily reload the new era). */
-      window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
-      window._koppenCodeIdx=null; window._koppenSrcData=null;
+      _resetKoppenWork();
       try{ if(GE().layers.hasSource('src-climate')) GE().layers.updateImage('src-climate',{url:KURL,coordinates:KCOORDS}); }catch(e){}
       /* (#R193) a NEW era is a new pair of files: show the small one at once (which is what KURL is
          now) and let the full-resolution one arrive behind it. Switching eras is the one moment a
@@ -6410,8 +6449,7 @@ window.IntMapModules.dataLayers=function(HOST){
              that happened to be sideways when the reader switched Köppen off KEPT all ~150 MB, which
              is precisely the pressure #R19 was releasing here. `_phoneDev()`. */
           if(_phoneDev()){
-            try{ window._koppenImg=null; window._koppenCanvas=null; window._koppenReady=false; window._koppenLoadStarted=false;
-                 window._koppenCodeIdx=null; window._koppenSrcData=null; window._koppenFull=null; }catch(_){}
+            try{ _resetKoppenWork(); }catch(_){}
           }
         }
         if(id==='hdi') lgdHDI.style.display='none';
