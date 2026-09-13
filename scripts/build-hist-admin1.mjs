@@ -77,6 +77,7 @@ import { registry, harvestTags, shipTags } from './histadmin/langs.mjs';
 import { itemVerdicts, fillNames, chineseTags, missingByTag } from './histadmin/names.mjs';
 import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { plainLabel } from './histeras/match.mjs';
+import { geometryOf, repoolGeometry, generatedPrecision } from './histborders/precision.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const EP = 'https://overpass-api.openhistoricalmap.org/api/interpreter';
@@ -88,7 +89,7 @@ const PREVIOUS = {};
 if (!args.includes('--check') && !args.includes('--names') && fs.existsSync(OUT))
   new Function('window', fs.readFileSync(OUT, 'utf8'))(PREVIOUS);
 const previousData = Object.values(PREVIOUS).find(d => Array.isArray(d?.feats));
-const TOL   = parseFloat(argOf('--tol', previousData?.tolerance ?? '0.02'));        /* ~2.2 km — see the size note in the header */
+const TOL   = parseFloat(argOf('--tol', previousData?.tolerance ?? '0.004'));
 function clockFloor() {
   const sandbox = { window: {} };
   vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'js/hist-scale.js'), 'utf8'), sandbox);
@@ -122,7 +123,7 @@ const GLOBAL = argOf('--global', (function () {
 const CACHE = path.resolve(ROOT, argOf('--cache', cacheOf(LEVELS)));
 function coordinateDecimals(data) {
   if (Number.isInteger(data?.decimals)) return data.decimals;
-  if (!data?.rings) return 3;
+  if (!data?.rings) return 4;
   let digits = 0;
   for (const ring of data.rings) for (const point of ring) for (const v of point)
     digits = Math.max(digits, (String(v).split('.')[1] || '').length);
@@ -248,10 +249,10 @@ function simplifyRing(pts, tol) {
   for (let i = 0; i < pts.length; i++) if (keep[i]) out.push(pts[i]);
   return out;
 }
-const quant = r => {
+const quant = (r, grid = QUANT) => {
   const o = []; let px = NaN, py = NaN;
   for (const p of r) {
-    const x = Math.round(p[0] * QUANT) / QUANT, y = Math.round(p[1] * QUANT) / QUANT;
+    const x = Math.round(p[0] * grid) / grid, y = Math.round(p[1] * grid) / grid;
     if (x !== px || y !== py) { o.push([x, y]); px = x; py = y; }
   }
   if (o.length && (o[0][0] !== o[o.length - 1][0] || o[0][1] !== o[o.length - 1][1])) o.push([o[0][0], o[0][1]]);
@@ -813,7 +814,8 @@ async function main() {
   const src = 'OpenHistoricalMap contributors (CC0) · openhistoricalmap.org';
   const body = 'window.' + GLOBAL + '=' + JSON.stringify({
     v: 1, src, built: new Date().toISOString().slice(0, 10), since: SINCE, tolerance: TOL,
-    levels: LEVELS, decimals: DECIMALS, dateSemantics: 'exclusive-end', dates, rings: pool, feats
+    levels: LEVELS, decimals: DECIMALS, dateSemantics: 'exclusive-end', dates, rings: pool, feats,
+    precision: generatedPrecision(TOL, DECIMALS, feats.length)
   }) + ';\n';
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, body);
@@ -826,6 +828,35 @@ async function main() {
   console.error('· in force:', years.map(y => y + '=' + alive(y)).join(' '));
 }
 
+/* Geometry-only refresh deliberately bypasses discovery and name/date enrichment.
+   Every row, including rows whose source is unavailable, retains its identity. */
+function precisionOnly() {
+  if (!previousData) throw new Error('precision-only needs the existing bundle');
+  /* 0.004°/4 digits is the measured common fallback scale, replacing the
+     0.02° parent / 0.012° child inversion. --tol/--dec remain explicit so the
+     budget can be remeasured; ordinary builds inherit the shipped values. */
+  const result = repoolGeometry(previousData, f => {
+    const file = path.join(CACHE, 'rel', f[10] + '.json');
+    if (!fs.existsSync(file)) return null;
+    const el = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!el || el.type !== 'relation' || el.id !== f[10]) return null;
+    const raw = polysOf(ringsOf(el));
+    const cut = (tol, grid) => raw.map(poly => poly.map(ring => quant(simplifyRing(ring, tol), grid))
+      .filter(r => r.length >= 4 && ringArea(r) >= MIN_AREA)).filter(p => p.length);
+    const baseline = cut(previousData.tolerance, Math.pow(10, coordinateDecimals(previousData)));
+    if (JSON.stringify(baseline) !== JSON.stringify(geometryOf(previousData, f))) return null;
+    return cut(TOL, QUANT);
+  });
+  result.data.tolerance = TOL;
+  result.data.decimals = DECIMALS;
+  result.data.precision = { targetTolerance: TOL, decimals: DECIMALS, refined: result.refined, retained: result.retained,
+    semantics: 'build target; retained corrected or unreproducible shapes keep their existing precision' };
+  const body = 'window.' + GLOBAL + '=' + JSON.stringify(result.data) + ';\n';
+  fs.writeFileSync(OUT, body);
+  console.log(JSON.stringify({ bytes: Buffer.byteLength(body), points: result.data.rings.reduce((n,r)=>n+r.length,0), refined: result.refined, retained: result.retained }));
+}
+
 if (args.includes('--check')) check();
+else if (args.includes('--precision-only')) precisionOnly();
 else if (args.includes('--names')) refreshNames().catch(e => { console.error('FAILED', e); process.exit(1); });
 else main().catch(e => { console.error('FAILED', e); process.exit(1); });

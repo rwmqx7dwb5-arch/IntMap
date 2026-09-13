@@ -105,6 +105,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { stitch, simplifyRing, ringArea, pointInRing } from './histborders/geom.mjs';
+import { geometryOf, identityOf, repoolGeometry, previousPrecision, generatedPrecision } from './histborders/precision.mjs';
 import { fetchIndex, fetchGeom, loadGeom, migrateBatches } from './histborders/fetch.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -137,9 +138,13 @@ const LANGS = [
    HERE, and the reason is the handover: a reader can step across 1885→1886 one day at a time, and
    at 0.020° the coastline of 1885 would visibly coarsen at that step while the borders of 1886
    stayed fine. The tolerance is the neighbour's because the two records are read as one. */
-const TOL = 0.012;
+/* 0.004°/4 digits replaces the old 0.012°/3 digit budget: ~1.3 km ->
+   ~440 m of build deviation, 0.787M -> 1.828M vertices (~34 MB). Re-measure
+   parsing/transfer when upstream grows; both ordinary and precision-only builds
+   use this scale. The legacy value below is only a correction fingerprint. */
+const TOL = 0.004;
 const MIN_AREA = 0.0006;    /* drop a ring smaller than this (deg²) — under a pixel at the zooms this draws */
-const DEC = 3;              /* coordinate decimals, matching data/cshapes.js */
+const DEC = 4;
 
 const ymd = (y, m, d) => y * 10000 + m * 100 + d;
 
@@ -250,7 +255,7 @@ function closeGap(chain) {
 }
 
 /* ── one relation → polygons ────────────────────────────────────────────────*/
-function ringsOf(rel, resolve) {
+function ringsOf(rel, resolve, tol = TOL) {
   const outer = [], inner = [];
   for (const w of waysOf(rel, resolve)) (w.role === 'inner' ? inner : outer).push(w.pts);
   const O = stitch(outer), I = stitch(inner);
@@ -258,8 +263,8 @@ function ringsOf(rel, resolve) {
   for (const chain of O.open) { const c = closeGap(chain); if (c) { O.rings.push(c); bridged++; } else dropped++; }
   for (const chain of I.open) { const c = closeGap(chain); if (c) I.rings.push(c); }
   const shells = [], holes = [];
-  for (const r of O.rings) { const s = simplifyRing(r, TOL); if (s && Math.abs(ringArea(s)) >= MIN_AREA) shells.push(s); }
-  for (const r of I.rings) { const s = simplifyRing(r, TOL); if (s && Math.abs(ringArea(s)) >= MIN_AREA) holes.push(s); }
+  for (const r of O.rings) { const s = simplifyRing(r, tol); if (s && Math.abs(ringArea(s)) >= MIN_AREA) shells.push(s); }
+  for (const r of I.rings) { const s = simplifyRing(r, tol); if (s && Math.abs(ringArea(s)) >= MIN_AREA) holes.push(s); }
   /* GeoJSON right-hand rule: shells CCW, holes CW; biggest shell first so a hole finds its owner */
   const polys = shells
     .sort((a, b) => Math.abs(ringArea(b)) - Math.abs(ringArea(a)))
@@ -271,7 +276,7 @@ function ringsOf(rel, resolve) {
   return { polys, bridged, dropped };
 }
 
-const round = r => r.map(p => [+p[0].toFixed(DEC), +p[1].toFixed(DEC)])
+const round = (r, dec = DEC) => r.map(p => [+p[0].toFixed(dec), +p[1].toFixed(dec)])
   .filter((p, i, a) => i === 0 || p[0] !== a[i - 1][0] || p[1] !== a[i - 1][1]);
 
 /* the land a set of polygons speaks about, deg² — shells positive, holes negative */
@@ -339,6 +344,9 @@ function deriveFloor(table, bar) {
 
 /* ── build ──────────────────────────────────────────────────────────────────*/
 async function build({ report, measure } = {}) {
+  const previous = {};
+  if (process.argv.includes('--precision-only')) new Function('window', readFileSync(OUT, 'utf8'))(previous);
+  const prior = previousPrecision(previous.__HISTB, 0.012, 3);
   migrateBatches(CACHE);
   const idx = JSON.parse(readFileSync(join(CACHE, 'index.json'), 'utf8'));
 
@@ -378,9 +386,10 @@ async function build({ report, measure } = {}) {
     const rel = loadGeom(CACHE, r.id);
     if (!rel) { recs.splice(i, 1); skipped.noGeom++; continue; }
     const g = ringsOf(rel, resolve);
+    if (previous.__HISTB) r.baselinePolys = ringsOf(rel, resolve, prior.tolerance).polys.map(p => p.map(ring => round(ring, prior.decimals)));
     side.clear();
     bridged += g.bridged; broken += g.dropped;
-    r.polys = g.polys.map(p => p.map(round)).filter(p => p.length);
+    r.polys = g.polys.map(p => p.map(ring => round(ring))).filter(p => p.length);
     if (!r.polys.length) { recs.splice(i, 1); skipped.empty++; continue; }
     r.area = polyArea(r.polys);
   }
@@ -395,7 +404,7 @@ async function build({ report, measure } = {}) {
     for (const row of table) if (row.n) console.log(String(row.y).padStart(6), String(row.n).padStart(6), row.covered.toFixed(0).padStart(10));
     return null;
   }
-  const floor = deriveFloor(table, world.bar);
+  const floor = previous.__HISTB ? previous.__HISTB.window[0] : deriveFloor(table, world.bar);
   const T_LO = ymd(floor, 1, 1);
   for (let i = recs.length - 1; i >= 0; i--) if (!(recs[i].e > T_LO)) { recs.splice(i, 1); skipped.belowFloor++; }
 
@@ -422,10 +431,35 @@ async function build({ report, measure } = {}) {
     feats.push([nm, r.wd, ...r.sArr, ...r.eArr, polys]);
   }
 
-  const body = JSON.stringify({ v: 1,
+  const generated = { v: 1,
     src: 'OpenHistoricalMap (openhistoricalmap.org) · CC0 1.0',   /* ⚠ (#R530) CC0, not ODbL — OHM's /copyright page and its Overpass API both say so (measured 2026-09-07). */
-    window: [floor, Y_MAX], rings, feats });
+    window: [floor, Y_MAX], rings, feats, precision: generatedPrecision(TOL, DEC, feats.length) };
+  let output = generated;
+  if (previous.__HISTB) {
+    const byIdentity = new Map(feats.map(f => [identityOf(f), f]));
+    const baseline = new Map(recs.map((r,i) => [identityOf(feats[i]), r.baselinePolys]));
+    const result = repoolGeometry(previous.__HISTB, f => {
+      const next = byIdentity.get(identityOf(f));
+      if (!next) return null;
+      const old = JSON.stringify(geometryOf(previous.__HISTB, f));
+      const fine = geometryOf(generated, next);
+      return old === JSON.stringify(baseline.get(identityOf(f))) || old === JSON.stringify(fine) ? fine : null;
+    });
+    output = result.data;
+    output.precision = { targetTolerance: TOL, decimals: DEC, refined: result.refined, retained: result.retained,
+      semantics: 'build target; retained corrected or unreproducible shapes keep their existing precision' };
+    console.log('precision-only', JSON.stringify({ refined: result.refined, retained: result.retained,
+      records: output.feats.length, points: output.rings.reduce((n,r)=>n+r.length,0) }));
+  }
+  const body = JSON.stringify(output);
   writeFileSync(OUT, 'window.__HISTB=' + body + ';\n');
+
+  if (previous.__HISTB) {
+    console.log(JSON.stringify({ bytes: Buffer.byteLength('window.__HISTB=' + body + ';\n'),
+      records: output.feats.length, rings: output.rings.length,
+      points: output.rings.reduce((n,r)=>n+r.length,0), window: output.window }));
+    return { feats: output.feats, rings: output.rings, floor };
+  }
 
   if (report) {
     console.log(`window ${floor}-${Y_MAX}   records ${feats.length}   rings ${rings.length}   points ${rings.reduce((a, r) => a + r.length, 0)}   bytes ${body.length + 18}`);

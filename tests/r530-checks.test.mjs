@@ -293,7 +293,10 @@ test('⑫ the 6.5 MB bundle is not on the boot path, and not fetched on a phone 
      which are what «not on the boot path» actually means, are unchanged and still measured here.
      ⚠ The headroom is deliberate and small: at 11 MB a further era-widening would have to come back
      here and say why, rather than drifting. */
-  assert.ok(bytes < 11 * 1024 * 1024, `the bundle must stay in the country bundle's class — ${bytes} B`);
+  /* R710: 0.004° / four digits costs 41.45 MB for the same 4,839 units.
+     Source deviation on Izu fell from 1,896 m to 416 m; do not force the
+     geometry back to the old 2.2 km simplification to satisfy a byte ceiling. */
+  assert.ok(bytes < 42 * 1024 * 1024, `the measured precision bundle exceeded its budget — ${bytes} B`);
 });
 
 test('⑬ nine languages, in the order IntMapLang actually uses', () => {

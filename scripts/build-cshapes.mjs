@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* Current precision: 0.002° / four digits. --precision-only preserves every
+   existing identity and unreproducible correction. The reproduction measurements
+   in the historical notes below refer to the former 0.008° / three-digit file. */
 /* ============================================================================
  *  IntMap · data/cshapes.js — the day-exact borders of 1886–2019   (#R700)
  * ----------------------------------------------------------------------------
@@ -74,6 +77,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { LIC } from './histcities/lang.mjs';
+import { geometryOf, identityOf, repoolGeometry, previousPrecision, generatedPrecision } from './histborders/precision.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'cshapes.js');
@@ -102,7 +106,8 @@ export const CITATION = 'Schvitz, Guy, Seraina Rüegger, Luc Girardin, Lars-Erik
   + '1886-2017: The CShapes 2.0 Dataset." Journal of Conflict Resolution 66(1): 144–61.';
 
 /* ── the simplification, measured above ─────────────────────────────────────*/
-const TOL = 0.008;          /* Douglas-Peucker, degrees — reproduces the committed rings exactly */
+const LEGACY_TOL = 0.008;   /* Old reconstruction, only for detecting corrections. */
+const TOL = 0.002;          /* Measured precision default; see precisionOnly(). */
 const MIN_AREA = 0.0001;    /* drop a simplified ring smaller than this (deg²) — 1,992 rings without it, 1,991 with */
 const DEC = 3;              /* coordinate decimals */
 
@@ -230,7 +235,12 @@ async function fetchUpstream() {
 /* ── build (in memory) ──────────────────────────────────────────────────────
    The pool is filled in the upstream's own feature order, which is the order the committed file is
    in — measured: all 710 identity tuples (name, gwcode, start, end) match position for position. */
-function build(tol = TOL, minArea = MIN_AREA) {
+export function cutCShapesRing(ring, tol = TOL, decimals = 4) {
+  return decimals === 3 ? round(dp(ring, tol)) : dp(ring, tol).map(p => p.map(v => +v.toFixed(decimals)))
+    .filter((p,i,a) => !i || p[0] !== a[i-1][0] || p[1] !== a[i-1][1]);
+}
+
+function build(tol = TOL, minArea = MIN_AREA, decimals = 4) {
   if (!existsSync(GEOJSON)) throw new Error('no cached upstream at ' + GEOJSON + ' — run `node scripts/build-cshapes.mjs --fetch` first');
   const up = JSON.parse(readFileSync(GEOJSON, 'utf8'));
   const rings = [], pool = new Map();
@@ -242,7 +252,7 @@ function build(tol = TOL, minArea = MIN_AREA) {
     const polys = (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).map(poly => {
       const out = [];
       for (const ring of poly) {
-        const s = round(dp(ring, tol));
+        const s = cutCShapesRing(ring, tol, decimals);
         if (s.length < 4) continue;                       /* a closed ring needs three distinct corners */
         if (Math.abs(ringArea(s)) < minArea) continue;
         out.push(put(s));
@@ -251,7 +261,8 @@ function build(tol = TOL, minArea = MIN_AREA) {
     }).filter(poly => poly.length);
     feats.push([p.cntry_name, p.gwcode, p.gwsyear, p.gwsmonth, p.gwsday, p.gweyear, p.gwemonth, p.gweday, polys]);
   }
-  return { v: 2, src: 'CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes)', rings, feats };
+  return { v: 2, src: 'CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes)', rings, feats,
+    precision: generatedPrecision(tol, decimals, feats.length) };
 }
 
 /* ── default mode: rebuild and hold it against the shipped bytes ────────────*/
@@ -288,10 +299,41 @@ function measure() {
   console.log('shipped: ' + have.rings.length + ' rings, ' + have.rings.reduce((n, r) => n + r.length, 0) + ' points');
   console.log('  tol     rings    points   byte-identical rings');
   for (const tol of [0.002, 0.004, 0.006, 0.008, 0.01, 0.012, 0.015]) {
-    const made = build(tol);
+    const made = build(tol, MIN_AREA, 3);
     let hit = 0; for (const r of made.rings) if (target.has(JSON.stringify(r))) hit++;
     console.log(`  ${String(tol).padEnd(7)} ${String(made.rings.length).padStart(5)} ${String(made.rings.reduce((n, r) => n + r.length, 0)).padStart(9)}   ${hit}`);
   }
+}
+
+/* The old survey remains the identity/metadata owner. Only shapes which the old
+   build reproduces exactly may be replaced: corrected records are never reverted. */
+export function refineCShapes(have, baseline, finer) {
+  const old = new Map(baseline.feats.map(f => [identityOf(f), f]));
+  const fine = new Map(finer.feats.map(f => [identityOf(f), f]));
+  return repoolGeometry(have, f => {
+    const b = old.get(identityOf(f)), n = fine.get(identityOf(f));
+    if (!b || !n) return null;
+    const current = JSON.stringify(geometryOf(have, f));
+    if (current !== JSON.stringify(geometryOf(baseline, b)) && current !== JSON.stringify(geometryOf(finer, n))) return null;
+    return geometryOf(finer, n);
+  });
+}
+
+function precisionOnly() {
+  /* Raw sweep: 0.008° 334,134 -> 0.002° 506,334 vertices; four decimal
+     storage yields ~9.3 MB. This buys 4x less maximum build deviation without
+     changing the lazy-load contract. Re-measure if upstream or the 10 MB class
+     changes; default compare audits the new reconstruction, while the legacy
+     build is used only to protect already corrected geometry. */
+  const have = evaluate(OUT, '__CSHAPES');
+  const finer = build();
+  const prior = previousPrecision(have, LEGACY_TOL, 3);
+  const result = refineCShapes(have, build(prior.tolerance, MIN_AREA, prior.decimals), finer);
+  result.data.precision = { targetTolerance: TOL, decimals: 4, refined: result.refined, retained: result.retained,
+    semantics: 'build target; retained corrected or unreproducible shapes keep their existing precision' };
+  const body = 'window.__CSHAPES=' + JSON.stringify(result.data) + ';\n';
+  writeFileSync(OUT, body);
+  console.log(JSON.stringify({ bytes: Buffer.byteLength(body), points: result.data.rings.reduce((n,r)=>n+r.length,0), refined: result.refined, retained: result.retained }));
 }
 
 /* ── check (offline) ────────────────────────────────────────────────────────
@@ -447,4 +489,5 @@ if (!arg) { /* imported for its values */ }
 else if (arg.includes('--check')) check();
 else if (arg.includes('--fetch')) console.error('fetched ' + await fetchUpstream() + ' bytes into ' + CACHE);
 else if (arg.includes('--measure')) measure();
+else if (arg.includes('--precision-only')) precisionOnly();
 else compare();

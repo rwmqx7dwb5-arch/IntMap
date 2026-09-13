@@ -157,7 +157,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        「歴史的地方区分の境界線のcoverageがくそ。全時代、全地域で完璧に網羅しろ。線の解像度も低すぎる。」
        Both halves of that were measured, and both were true of the BUNDLE rather than of upstream:
 
-       · RESOLUTION. scripts/build-hist-admin1.mjs simplifies at 0.02° (~2.2 km) and quantises to 3
+       · RESOLUTION. The original scripts/build-hist-admin1.mjs simplified at 0.02° (~2.2 km) and quantises to 3
          decimals (~110 m) to keep the file parseable. Measured 2026-09-10 against OHM's Overpass,
          伊豆国 (relation 2687374) is 2,800 vertices / 787 km of perimeter / 281 m mean spacing
          upstream; the shipped bundle draws it with 29. That is not a boundary at any zoom past a
@@ -168,56 +168,22 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          on OHM's Overpass the same day: 4,841 dated relations at admin_level 3-4 and 22,808 at 5-6,
          of which 1,142 and 1,600 end before 1800.
 
-       ══ (#R700) THE TWO TIERS ARE CUT AT DIFFERENT TOLERANCES, AND THE COARSER ONE IS THE PARENT ═══
-       Each bundle states its own: `tolerance` is 0.02° (~2.2 km, 3 decimals) in data/hist-admin1.js
-       and 0.012° (~1.3 km, 4 decimals) in data/hist-admin2.js — so the FIRST-level record is cut more
-       coarsely than the second-level one that sits inside it, and a prefecture's outline is a rougher
-       claim than the outline of a district within it. That is not an oversight of the build:
-       scripts/asset-report.mjs states the reason where it exempts the deeper file — a tier that is
-       never drawn below z6 is read at a scale where 2 km of tolerance is a visible corner, and a tier
-       read from z1 is not.
-       ⚠ IT IS REAL IN THE BYTES, AND THE WRONG MEASURE HIDES IT. Measured 2026-09-11 over every ring
-       either file stores: the median drawn segment is 8.44 km in the first tier against 5.02 km in the
-       deeper one (576,514 and 719,686 segments). Asked instead for vertices per 100 km of path, the
-       same two files answer 11.50 and 11.82 — a 3% difference, because Douglas-Peucker keeps no vertex
-       on a straight run, so density reports the TERRAIN and not the tolerance. A scale chosen badly
-       does not report a smaller defect; it reports a different subject.
-       ⚠⚠⚠ AND THE INVERSION IS NOT ON THE READER'S SCREEN — WHICH IS THE WHOLE REASON IT IS NOT BOUGHT
-       OUT. Evaluated, not read: tests/r700-admin-tier-checks.test.mjs drives THIS factory against a
-       stub map and reads the visibilities back. While the tiles are `unknown` or `live`, `imta-line`
-       and `imta2-line` are BOTH `none` — the line the reader sees is OHM's tiles at their own
-       resolution, and these rings are the label anchor, the answer to a click and the coverage count,
-       none of which has a resolution the eye can compare. The two bundle lines are on one screen only
-       when four things hold at once: the layer is on, the clock is in the past, the tiles have been
-       MEASURED absent for GRACE_MS, and the camera is past `imta2-line`'s `minzoom` (DEEP_Z). That
-       state is given up again the moment one tile paints.
-       ⚠⚠⚠ AND THE FIRST DRAFT OF THIS PARAGRAPH NAMED THE WRONG READER. It said that state «is a
-       reader who is offline or behind a filter that blocks vtiles.openhistoricalmap.org», and the
-       PRODUCTION VERIFICATION of #R700 measured otherwise: at world zoom (z1.7), with the tile host
-       reachable and answering 200, `imta-line` is `visible` and the geojson fallback is carrying 356
-       features — the vector layer paints nothing that far out, so GRACE_MS elapses and `absent`
-       latches for an ordinary ONLINE reader. So the tile state is not what keeps the inversion off
-       the screen. `DEEP_Z` is: at that zoom `imta2-line` is not in the style at all (measured on
-       production — `getLayer` false, and it is in none of the 70 layers), so there is no second line
-       for the first to be coarser THAN. The four conditions above are still the four; what was wrong
-       was the picture of who meets them, and a reason nobody measures is a reason that quietly stops
-       being true.
-       ⚠ THE PRICE OF LEVELLING THEM, MEASURED RATHER THAN GUESSED. The first tier is 11,116,065 B for
-       585,098 vertices at 0.02° / 3 decimals; the deeper one is 19,372,956 B for 741,362 at 0.012° / 4.
-       Re-cutting the first at the deeper tolerance therefore lands it in the second file's class,
-       several megabytes past the 11 MB ceiling tests/r530-checks.test.mjs holds THIS file to — and it
-       cannot be done from anything committed here in any case: the build consumes OHM's whole
-       admin_level 3-6 extract (package.json records 3.4 GB of Overpass on one resumed run). So the
-       tolerances stay where they are, with the reason written down, instead of a rebuild that would
-       cost several megabytes to remove something nobody is looking at.
-       ⚠ EXPIRES WHEN: (a) the tiles stop arriving as a RULE rather than as an accident — a `vtState()`
-       that latches `absent` in ordinary use makes the bundle line the DRAWN line, and then the coarser
-       parent is exactly what the reader sees, so this judgement must be re-measured; (b) the deeper
-       tier loses its `minzoom`, or either tier begins drawing its bundle line at Now; (c) either
-       bundle is rebuilt at another tolerance. (c) cannot drift in silence: the check reads each
-       bundle's DECLARED `tolerance` and the geometry it actually stores, and fails if they part.
+       The fallback geometry now uses 0.004° / 4 decimals in both tiers. Measured
+       2026-09-14: data/hist-admin1.js is 41,446,090 B and 2,180,543 vertices;
+       data/hist-admin2.js is 40,638,922 B and 1,872,415 vertices (LF bytes).
+       This is the build target, not a guarantee about the source's survey accuracy.
+       Geometry-only refinement preserves labels, validity intervals and corrected shapes.
+       On the cached Izu record, the maximum source-to-outline deviation fell from
+       1,895.5 m to 416.2 m (58 to 127 vertices). These measurements expire when the
+       source or build settings change; tests/r700-admin-tier-checks.test.mjs verifies
+       the shipped bytes and targets, and r710-boundary-precision checks preservation.
 
-       ⚠ THE FIX IS NOT A BIGGER BUNDLE. OHM publishes the same records as VECTOR TILES —
+       The tile layer remains the primary line: unknown/live states hide both bundle
+       strokes. Only measured absence after GRACE_MS permits the fallback, and the
+       deeper tier still starts at DEEP_Z. Online world views may also need fallback:
+       the upstream tiles do not always paint a line at the current scale and date.
+       Returning tile coverage replaces fallback; no second boundary is overlaid.
+       The primary display remains scale-dependent. OHM publishes the same records as VECTOR TILES —
        vtiles.openhistoricalmap.org, TileJSON `maps/ohm.json`, minzoom 0 / maxzoom 20, CC0 — and every
        admin line in them carries `start_decdate` / `end_decdate` as numbers. So the era boundary is
        drawn at the tile's own native geometry at whatever zoom the reader is at, for every level and
