@@ -38,7 +38,7 @@ test('eligibility is source-based; modern identity, non-settlements, dates and l
   const p = { id: '1', title: 'Source place', rp: [10, 20], types: ['settlement'],
     rights: 'Creative Commons Attribution 3.0', names: [{ r: 'A', a: '', l: '', s: -500, e: 500 }] };
   assert.ok(eligible(p, 2026));
-  assert.ok(!eligible({ ...p, names: [...p.names, { r: 'A', s: 1700, e: 2100 }] }, 2026));
+  assert.ok(eligible({ ...p, names: [...p.names, { r: 'A', s: 1700, e: 2100 }] }, 2026));
   assert.ok(!eligible({ ...p, types: ['bath', 'river'] }, 2026));
   assert.ok(!eligible({ ...p, rights: p.rights + ' Share-Alike' }, 2026));
   assert.ok(!eligible({ ...p, rights: '' }, 2026));

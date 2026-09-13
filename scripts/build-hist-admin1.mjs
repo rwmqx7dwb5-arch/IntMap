@@ -66,12 +66,15 @@
  *
  *  Usage:  node scripts/build-hist-admin1.mjs --check           # verify the COMMITTED bundles, offline (#R680)
  *          node scripts/build-hist-admin1.mjs --names           # refresh every tier's NAMES, geometry untouched
+ *          node scripts/build-hist-admin1.mjs --topology-only --baseline-parser <former-ohm-rings.js>
+ *                                            [--reassemble-source] [--levels 5,6 --out data/hist-admin2.js] [--cache <cached extract>]
  *          node scripts/build-hist-admin1.mjs [--out data/hist-admin1.js]
  *                                            [--tol 0.02] [--dec 3] [--since <clock floor>] [--batch 20]
  * ==========================================================================*/
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { registry, harvestTags, shipTags } from './histadmin/langs.mjs';
 import { itemVerdicts, fillNames, chineseTags, missingByTag } from './histadmin/names.mjs';
@@ -302,8 +305,13 @@ const polysOf  = rings => OHMR.polysOf(rings, MIN_AREA);
 
 export const sourcePolys = el => polysOf(ringsOf(el));
 export function detailPolys(el, tolerance, decimals, raw = sourcePolys(el)) {
-  return raw.map(poly => poly.map(ring => quant(simplifyRing(ring, tolerance), Math.pow(10, decimals)))
-    .filter(r => r.length >= 4 && ringArea(r) >= MIN_AREA)).filter(p => p.length);
+  const valid = r => r.length >= 4 && ringArea(r) >= MIN_AREA;
+  return raw.map(poly => {
+    const cut = poly.map(ring => quant(simplifyRing(ring, tolerance), Math.pow(10, decimals)));
+    // A surviving interior is never an exterior. Reject the whole polygon if
+    // simplification removes its shell, instead of promoting the first hole.
+    return cut.length && valid(cut[0]) ? [cut[0], ...cut.slice(1).filter(valid)] : [];
+  }).filter(p => p.length);
 }
 
 
@@ -374,6 +382,35 @@ function bcSets() {
   return (w.__IMBCOAST || {}).sets || null;
 }
 
+/* This offline gate checks the refresh ledger's internal accounting. It cannot
+   replay the source-cache provenance comparison without the original extract;
+   the digest identifies that baseline artifact, not a historical verification. */
+export function topologyErrors(data) {
+  const ledger = data.topology;
+  if (ledger === undefined) return [];
+  if (!ledger || typeof ledger !== 'object' || Array.isArray(ledger)) return ['topology must be an object'];
+  const t = { reassembled: 0, alreadyCurrent: 0, ...ledger };
+  const errors = [];
+  if (!/^[a-f0-9]{64}$/.test(t.baselineParserSha256 || '')) errors.push('topology baselineParserSha256 must be a SHA-256 digest');
+  const counts = ['matched', 'changed', 'retained', 'unavailable', 'unreproducible', 'empty', 'changedVertices', 'unchangedVertices', 'reassembled', 'alreadyCurrent'];
+  for (const key of counts) if (!Number.isSafeInteger(t[key]) || t[key] < 0)
+    errors.push('topology ' + key + ' must be a nonnegative integer');
+  if (counts.every(key => Number.isSafeInteger(t[key]) && t[key] >= 0)) {
+    if (t.matched + t.unavailable + t.unreproducible !== data.feats.length)
+      errors.push('topology source accounting does not equal feature count');
+    if (t.retained !== t.unavailable + t.unreproducible + t.empty + t.changedVertices)
+      errors.push('topology retained count does not equal retention reasons');
+    if (t.matched !== t.unchangedVertices + t.empty + t.changedVertices + t.reassembled)
+      errors.push('topology matched count does not equal candidate outcomes');
+    if (t.changed > t.unchangedVertices + t.reassembled || t.reassembled > t.changed)
+      errors.push('topology changed count disagrees with accepted candidate outcomes');
+    if (t.alreadyCurrent > t.unchangedVertices || t.changed + t.alreadyCurrent > t.unchangedVertices + t.reassembled)
+      errors.push('topology alreadyCurrent count disagrees with unchanged candidate outcomes');
+  }
+  if (typeof t.semantics !== 'string' || !t.semantics.trim()) errors.push('topology semantics is missing');
+  return errors;
+}
+
 function check() {
   const bad = [];
   const list = tiers();
@@ -415,6 +452,7 @@ function check() {
       bad.push(t.file + ': declares levels ' + JSON.stringify(d.levels) + ', but its name says ' + JSON.stringify(t.levels));
     if (!Array.isArray(d.rings) || !d.rings.length) { bad.push(t.file + ': no rings'); continue; }
     if (!Array.isArray(d.feats) || !d.feats.length) { bad.push(t.file + ': no feats'); continue; }
+    bad.push(...topologyErrors(d).map(message => t.file + ': ' + message));
 
     const say = (i, f, m) => bad.push(t.file + ' feat ' + i + ' (' + ((f && f[0]) || (f && f[9] && Object.values(f[9])[0]) || 'rel ' + (f && f[10])) + '): ' + m);
     d.rings.forEach((r, i) => {
@@ -788,13 +826,12 @@ async function main() {
   process.stderr.write('\n');
 
   function absorb(w, el) {
-    const polys = polysOf(ringsOf(el));
+    const polys = detailPolys(el, TOL, DECIMALS);
     const idx = [];
     for (const poly of polys) {
       const ringIx = [];
       for (const ring of poly) {
-        const q = quant(simplifyRing(ring, TOL));
-        if (q.length >= 4 && ringArea(q) >= MIN_AREA) ringIx.push(put(q));
+        ringIx.push(put(ring));
       }
       if (ringIx.length) idx.push(ringIx);
     }
@@ -847,8 +884,7 @@ function precisionOnly() {
     const el = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (!el || el.type !== 'relation' || el.id !== f[10]) return null;
     const raw = polysOf(ringsOf(el));
-    const cut = (tol, grid) => raw.map(poly => poly.map(ring => quant(simplifyRing(ring, tol), grid))
-      .filter(r => r.length >= 4 && ringArea(r) >= MIN_AREA)).filter(p => p.length);
+    const cut = (tol, grid) => detailPolys(el, tol, Math.log10(grid), raw);
     const baseline = cut(previousData.tolerance, Math.pow(10, coordinateDecimals(previousData)));
     if (JSON.stringify(baseline) !== JSON.stringify(geometryOf(previousData, f))) return null;
     return cut(TOL, QUANT);
@@ -862,8 +898,86 @@ function precisionOnly() {
   console.log(JSON.stringify({ bytes: Buffer.byteLength(body), points: result.data.rings.reduce((n,r)=>n+r.length,0), refined: result.refined, retained: result.retained }));
 }
 
+/* Reclassify rings only after reproducing the published geometry with its
+   explicitly supplied former parser. The baseline is an input artifact, not a
+   second permanent implementation. Source edits and hand-corrected shapes that
+   no longer reproduce are retained and counted, never overwritten. */
+export function refreshTopology(data, readRelation, baselineParser, { reassembleSource = false } = {}) {
+  if (!baselineParser?.ringsOf || !baselineParser?.polysOf) throw new Error('topology-only needs a baseline parser');
+  const tolerance = data.tolerance, decimals = coordinateDecimals(data);
+  if (!Number.isFinite(tolerance)) throw new Error('topology-only needs the published tolerance');
+  // The default keeps coastline indices stable. Explicit source reassembly may
+  // alter rings, so it rebuilds the pool and requires rebuilding border-coast.
+  const rings = reassembleSource ? [] : data.rings;
+  const pool = new Map(rings.map((ring, i) => [JSON.stringify(ring), i]));
+  const stats = { matched: 0, changed: 0, retained: 0, unavailable: 0, unreproducible: 0, empty: 0, changedVertices: 0, unchangedVertices: 0, reassembled: 0, alreadyCurrent: 0 };
+  const put = ring => {
+    const key = JSON.stringify(ring);
+    if (!pool.has(key)) {
+      if (!reassembleSource) throw new Error('topology-only cannot add a ring');
+      pool.set(key, rings.length); rings.push(ring);
+    }
+    return pool.get(key);
+  };
+  const ringBag = polys => JSON.stringify(polys.flat().map(r => JSON.stringify(r)).sort());
+  const feats = data.feats.map(f => {
+    const before = geometryOf(data, f);
+    let next = before;
+    const el = readRelation(f[10]);
+    if (!el || el.type !== 'relation' || el.id !== f[10]) { stats.retained++; stats.unavailable++; }
+    else {
+      const candidate = detailPolys(el, tolerance, decimals);
+      // Reproduce the former build's ring filtering too, including its possible
+      // shell-loss bug. Only this provenance comparison uses the old behavior.
+      const baseline = () => baselineParser.polysOf(baselineParser.ringsOf(el), MIN_AREA)
+        .map(p => p.map(r => quant(simplifyRing(r, tolerance), Math.pow(10, decimals)))
+          .filter(r => r.length >= 4 && ringArea(r) >= MIN_AREA)).filter(p => p.length);
+      if (JSON.stringify(candidate) === JSON.stringify(before)) {
+        stats.matched++; stats.alreadyCurrent++; stats.unchangedVertices++;
+      }
+      else if (JSON.stringify(baseline()) !== JSON.stringify(before)) { stats.retained++; stats.unreproducible++; }
+      else {
+        stats.matched++;
+        if (!candidate.length) { stats.retained++; stats.empty++; }
+        else if (ringBag(candidate) !== ringBag(before) && !reassembleSource) { stats.retained++; stats.changedVertices++; }
+        else {
+          next = candidate;
+          if (JSON.stringify(next) !== JSON.stringify(before)) stats.changed++;
+          if (ringBag(next) === ringBag(before)) stats.unchangedVertices++;
+          else stats.reassembled++;
+        }
+      }
+    }
+    const row = f.slice(); row[8] = next === before && !reassembleSource ? f[8] : Array.from(next, p => Array.from(p, put)); return row;
+  });
+  return { data: { ...data, rings, feats }, stats };
+}
+
+function topologyOnly() {
+  if (!previousData) throw new Error('topology-only needs the existing bundle');
+  if (args.includes('--tol') || args.includes('--dec')) throw new Error('topology-only preserves published tolerance and decimals');
+  const baselineFile = argOf('--baseline-parser');
+  if (!baselineFile) throw new Error('topology-only requires --baseline-parser pointing to the former js/ohm-rings.js');
+  const source = fs.readFileSync(path.resolve(ROOT, baselineFile), 'utf8');
+  const sandbox = { window: {} };
+  vm.runInNewContext(source, sandbox, { filename: baselineFile });
+  const result = refreshTopology(previousData, id => {
+    const file = path.join(CACHE, 'rel', id + '.json');
+    if (!fs.existsSync(file)) return null;
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  }, sandbox.window.IntMapOhmRings, { reassembleSource: args.includes('--reassemble-source') });
+  if (!result.stats.matched) throw new Error('topology-only: no published geometry reproduced; check baseline parser and relation cache');
+  result.data.topology = { baselineParserSha256: createHash('sha256').update(source).digest('hex'), ...result.stats,
+    semantics: args.includes('--reassemble-source')
+      ? 'source-reproduced geometry is reassembled with the current parser; already-current source geometry is accepted; unreproducible shapes are retained; ring pool rebuilt'
+      : 'only source-reproduced geometry with an identical ring multiset is reclassified; already-current source geometry is accepted; other shapes retain published geometry' };
+  fs.writeFileSync(OUT, 'window.' + GLOBAL + '=' + JSON.stringify(result.data) + ';\n');
+  console.log(JSON.stringify(result.data.topology));
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 if (args.includes('--check')) check();
+else if (args.includes('--topology-only')) topologyOnly();
 else if (args.includes('--precision-only')) precisionOnly();
 else if (args.includes('--names')) refreshNames().catch(e => { console.error('FAILED', e); process.exit(1); });
 else main().catch(e => { console.error('FAILED', e); process.exit(1); });

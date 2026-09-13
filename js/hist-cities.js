@@ -67,7 +67,7 @@
  *  `place=city|town`, so the evidence covers what the layer draws.
  * ==========================================================================*/
 window.IntMapHistCities = (function () {
-  var data = null, loading = null, wired = false, failed = false;
+  var data = null, loading = null, wired = false;
   var cache = { key: null, expr: null };
   /* the nine language codes are js/lang-registry.js's own — the file carries all of them spelled
      out, so there is no fallback rule here that could drift from the one the build applied. */
@@ -93,20 +93,20 @@ window.IntMapHistCities = (function () {
     return label ? label + (era.f ? '' : ' [?]') : '';
   }
 
-  /* ── the file, fetched the first time the clock leaves «now» and never again ───────────────── */
+  /* Cache a successful load; a failed request leaves the next clock/explicit request able to retry. */
   function ensure() {
-    if (data || loading || failed) return loading;
+    if (data) return Promise.resolve(data);
+    if (loading) return loading;
     var base = document.baseURI || './';
     var url;
     try { url = new URL('data/hist-cities.json', base).href; } catch (_) { url = 'data/hist-cities.json'; }
-    loading = fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    /* Publish the in-flight promise before fetch or redraw can re-enter this reader. */
+    loading = Promise.resolve().then(function () { return fetch(url); }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       data = (j && Array.isArray(j.cities) && j.cities.length) ? j : null;
-      if (!data) failed = true;
-      loading = null;
       /* the labels were drawn while this was in flight — redraw them now that the table exists */
       if (data) { try { if (window.applyLabelLang) window.applyLabelLang(); } catch (_) {} }
       return data;
-    }).catch(function () { failed = true; loading = null; return null; });
+    }).catch(function () { return null; }).finally(function () { loading = null; });
     return loading;
   }
 

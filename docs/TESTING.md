@@ -956,9 +956,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 52,721 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 52,725 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 52,721 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 52,725 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -997,10 +997,10 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 上流に訊くか／**粗い形を先に渡し、鋭い形が届いたら渡し直す**か／その差し替えが**同じ source の
 置き換えであって第2のレイヤーではない**か。
 
-### `npm run check:histadmin` — 82.09 MB の行政区分に、初めて門を付ける (#R680)
+### `npm run check:histadmin` — 82.14 MB の行政区分に、初めて門を付ける (#R680)
 
-`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（41.45 MB・第1級 4,839 単位）と
-`data/hist-admin2.js`（40.64 MB・第2級 22,708 単位）の不変条件を測る。**この 2 本は #R680 まで
+`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（41.47 MB・第1級 4,839 単位）と
+`data/hist-admin2.js`（40.68 MB・第2級 22,708 単位）の不変条件を測る。**この 2 本は #R680 まで
 `--check` を持たず、`package.json` にも `ci.yml` にも該当ステップが無かった。** 歴史的な束は 5 本あり、
 残り 3 本（`hist-borders` / `hist-eras` / `hist-kuni`）と `border-coast` にはそれぞれ門がある——
 この 2 本はそれらの門が書かれた**あとに**生まれ、そのまま与えられなかっただけである。地図は線・ラベル・
@@ -2322,6 +2322,8 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 島と穴の保持、表示範囲による取得、読込失敗時の元の線の維持を検査する。
 同梱詳細データは `scripts/build-border-detail.mjs --check` で、形状指紋・内容ハッシュ・
 座標範囲・断片の境界箱・出典relation ID・件数と容量・余分なファイルをオフライン検査する。
+容量は配信するLF改行に正規化して測り、Windowsのcheckout変換をデータ増加と混同しない。
+`tests/r711-boundary-quality-data-checks.test.mjs` はLFとCRLFの両方、および不正な容量記録を検査する。
 キャッシュ原典がある環境では同生成器の `--check-source` で各島・穴との対応も照合する。
 合計リング数の一致だけでは、失われた穴を別の増えた穴が相殺できるため十分ではない。
 `tests/r711-boundary-country-refresh-checks.test.mjs` は実際の国境モジュールを実行し、
@@ -2338,6 +2340,16 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 この Node テストは `npm test` の通常の探索で実行されるため、新しい `check:*` ゲートは設けない。
 手動の再生成確認は `node scripts/build-hist-places.mjs --check`。出典の期間や代表点を正しく運ぶ検査であり、
 古代の創建・廃絶年や実際の遺跡位置の正しさを保証する検査ではない。
+
+`tests/r712-historical-coverage-fidelity-checks.test.mjs` は、現代名がある歴史地点も取り込み、
+適格な全出典IDが都市名変更・独立地点のどちらか一方へ届くことを検査する。
+`tests/r712-historical-detail-refresh-checks.test.mjs` は、行政詳細線の部分再生成で国境の
+索引・容量・参照中の断片を保持し、精度や出典条件が異なる索引の混在を拒否することを検査する。
+`tests/r712-historical-city-recovery-checks.test.mjs` は、HTTP・ネットワーク・JSON・空記録の
+取得失敗後の復旧、並行取得の共有、成功キャッシュ、再描画からの再入を実行して検査する。
+`tests/r712-historical-ring-topology-checks.test.mjs` は、凹形の本土と島・真正な穴・穴の中の島・
+出典の内外役割を検証する。`tests/r712-historical-topology-build-checks.test.mjs` は、原典再現と
+座標多重集合を条件とする再分類、補正済み形状の保持、外環消失時に穴を陸地化しないことを測る。
 
 `tests/r709-historical-click-coverage-checks.test.mjs` は、GeoEngine の排他的所有者と説明用 fallback の
 区別、歴史地名を背景面が塞がないこと、共有した出典リーダーのクリック経路を実行して検査する。

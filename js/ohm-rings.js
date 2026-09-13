@@ -26,6 +26,8 @@
  *  is the property to keep.
  * ==========================================================================*/
 window.IntMapOhmRings = (function () {
+  // Keep source roles without changing the public arrays or their serialization.
+  const ringRoles = new WeakMap();
 
   /* ── ① member ways → closed rings ────────────────────────────────────────
      Overpass returns a relation's members in no particular order and in no
@@ -39,7 +41,7 @@ window.IntMapOhmRings = (function () {
       if (m.type !== 'way' || !Array.isArray(m.geometry)) continue;
       if (m.role && m.role !== 'outer' && m.role !== 'inner') continue;
       const g = m.geometry.filter(p => p && Number.isFinite(p.lon) && Number.isFinite(p.lat)).map(p => [p.lon, p.lat]);
-      if (g.length >= 2) segs.push(g);
+      if (g.length >= 2) { ringRoles.set(g, m.role || ''); segs.push(g); }
     }
     const key = p => p[0].toFixed(7) + ',' + p[1].toFixed(7);
     const rings = [], used = new Array(segs.length).fill(false);
@@ -47,18 +49,21 @@ window.IntMapOhmRings = (function () {
       if (used[i]) continue;
       used[i] = true;
       let cur = segs[i].slice();
+      let role = ringRoles.get(segs[i]);
       let grew = true;
       while (grew) {
         grew = false;
         if (cur.length > 3 && key(cur[0]) === key(cur[cur.length - 1])) break;
         for (let j = 0; j < segs.length; j++) {
           if (used[j]) continue;
+          const nextRole = ringRoles.get(segs[j]);
+          if (role && nextRole && role !== nextRole) continue;
           const s = segs[j], a = key(cur[cur.length - 1]), b = key(cur[0]);
           if (key(s[0]) === a)                 { cur = cur.concat(s.slice(1)); used[j] = true; grew = true; }
           else if (key(s[s.length - 1]) === a) { cur = cur.concat(s.slice(0, -1).reverse()); used[j] = true; grew = true; }
           else if (key(s[s.length - 1]) === b) { cur = s.slice(0, -1).concat(cur); used[j] = true; grew = true; }
           else if (key(s[0]) === b)            { cur = s.slice(1).reverse().concat(cur); used[j] = true; grew = true; }
-          if (grew) break;
+          if (grew) { role = role || nextRole; break; }
         }
       }
       /* ⚠ A RING THAT DID NOT MEET ITSELF IS STILL THE BEST ACCOUNT OF THAT BOUNDARY.
@@ -67,29 +72,85 @@ window.IntMapOhmRings = (function () {
          Königreich Kroatien, 吉林, 黑龍江 among them — because upstream's ways have a
          gap. Closing it with a straight chord is what the bundle has always done and
          what a fill needs; refusing to would delete the unit. */
-      if (cur.length >= 4) { if (key(cur[0]) !== key(cur[cur.length - 1])) cur.push([cur[0][0], cur[0][1]]); rings.push(cur); }
+      if (cur.length >= 4) { if (key(cur[0]) !== key(cur[cur.length - 1])) cur.push([cur[0][0], cur[0][1]]); ringRoles.set(cur, role); rings.push(cur); }
     }
     return rings;
   }
 
-  /* ── ② rings → polygons, biggest first, a contained ring becoming its hole ── */
+  /* ── ② rings → polygons, preserving source roles and true containment ── */
   const ringArea = r => { let a = 0; for (let i = 0, n = r.length - 1; i < n; i++) a += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1]; return Math.abs(a / 2); };
   const bboxOf = r => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of r) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; } return [x0, y0, x1, y1]; };
   const inside = (a, b) => a[0] >= b[0] && a[1] >= b[1] && a[2] <= b[2] && a[3] <= b[3];
+  function pointLocation(p, ring) {
+    let hit = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const a = ring[j], b = ring[i];
+      if (p[1] < a[1] && p[1] < b[1] || p[1] > a[1] && p[1] > b[1]) continue;
+      const cross = (p[0] - a[0]) * (b[1] - a[1]) - (p[1] - a[1]) * (b[0] - a[0]);
+      if (cross === 0 && p[0] >= Math.min(a[0], b[0]) && p[0] <= Math.max(a[0], b[0])
+          && p[1] >= Math.min(a[1], b[1]) && p[1] <= Math.max(a[1], b[1])) return 0;
+      if ((a[1] > p[1]) !== (b[1] > p[1])
+          && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) hit = !hit;
+    }
+    return hit ? 1 : -1;
+  }
+  function containsRing(child, parent) {
+    if (!inside(child.bb, parent.bb)) return false;
+    // A bounding box also contains islands outside a concave mainland (Maine).
+    // Upstream may also contain crossing rings. One inside vertex does not
+    // establish containment: every vertex and edge must remain inside/on it.
+    let interior = false;
+    for (const p of child.r) {
+      const at = pointLocation(p, parent.r);
+      if (at < 0) return false;
+      if (at > 0) interior = true;
+    }
+    // Reuse edge envelopes across a parent's holes; most pairs cannot meet.
+    if (!parent.edges) parent.edges = parent.r.slice(1).map((b, i) => {
+      const a = parent.r[i];
+      return { a, b, x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]),
+        y0: Math.min(a[1], b[1]), y1: Math.max(a[1], b[1]) };
+    });
+    for (let i = 1; i < child.r.length; i++) {
+      const a = child.r[i - 1], b = child.r[i];
+      const x0 = Math.min(a[0], b[0]), x1 = Math.max(a[0], b[0]), y0 = Math.min(a[1], b[1]), y1 = Math.max(a[1], b[1]);
+      const at = pointLocation([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], parent.r);
+      if (at < 0) return false;
+      if (at > 0) interior = true;
+      for (const edge of parent.edges) {
+        if (x1 < edge.x0 || edge.x1 < x0 || y1 < edge.y0 || edge.y1 < y0) continue;
+        const c = edge.a, d = edge.b;
+        const ac = (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+        const ad = (b[0]-a[0])*(d[1]-a[1])-(b[1]-a[1])*(d[0]-a[0]);
+        const ca = (d[0]-c[0])*(a[1]-c[1])-(d[1]-c[1])*(a[0]-c[0]);
+        const cb = (d[0]-c[0])*(b[1]-c[1])-(d[1]-c[1])*(b[0]-c[0]);
+        if (((ac < 0 && ad > 0) || (ac > 0 && ad < 0))
+            && ((ca < 0 && cb > 0) || (ca > 0 && cb < 0))) return false;
+      }
+    }
+    return interior;
+  }
   /* ⚠ `minArea` DEFAULTS TO ZERO, AND THE BUILD IS THE ONE THAT PASSES A FLOOR.
      A sliver is worth dropping from a 25 MB planet-wide bundle and is never worth
      dropping from the one unit a reader just tapped: there, the sliver may be the
      whole unit. The floor is a property of the file being written, not of the shape. */
   function polysOf(rings, minArea) {
     const floor = Number.isFinite(minArea) ? minArea : 0;
-    const rs = rings.map(r => ({ r, a: ringArea(r), bb: bboxOf(r) })).filter(o => o.a >= floor).sort((p, q) => q.a - p.a);
-    const polys = [], taken = new Array(rs.length).fill(false);
+    const rs = rings.map(r => ({ r, a: ringArea(r), bb: bboxOf(r), role: ringRoles.get(r) || '' }))
+      .filter(o => o.a >= floor).sort((p, q) => q.a - p.a);
+    const polys = [];
     for (let i = 0; i < rs.length; i++) {
-      if (taken[i]) continue;
-      taken[i] = true;
-      const poly = [rs[i].r];
-      for (let j = i + 1; j < rs.length; j++) if (!taken[j] && inside(rs[j].bb, rs[i].bb)) { taken[j] = true; poly.push(rs[j].r); }
-      polys.push(poly);
+      const cur = rs[i];
+      let parent = null;
+      if (cur.role !== 'outer') for (let j = i - 1; j >= 0; j--) {
+        if (containsRing(cur, rs[j])) { parent = rs[j]; break; }
+      }
+      // Unclassified rings alternate shell/hole at each containment depth.
+      // An explicit outer is always land, including an island inside a hole.
+      const hole = parent && (cur.role === 'inner' || !parent.hole);
+      cur.hole = !!hole;
+      if (hole) { cur.poly = parent.poly; cur.poly.push(cur.r); }
+      else { cur.poly = [cur.r]; polys.push(cur.poly); }
     }
     return polys;
   }
