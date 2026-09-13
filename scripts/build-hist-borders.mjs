@@ -255,7 +255,7 @@ function closeGap(chain) {
 }
 
 /* ── one relation → polygons ────────────────────────────────────────────────*/
-function ringsOf(rel, resolve, tol = TOL) {
+export function ringsOf(rel, resolve, tol = TOL) {
   const outer = [], inner = [];
   for (const w of waysOf(rel, resolve)) (w.role === 'inner' ? inner : outer).push(w.pts);
   const O = stitch(outer), I = stitch(inner);
@@ -276,7 +276,7 @@ function ringsOf(rel, resolve, tol = TOL) {
   return { polys, bridged, dropped };
 }
 
-const round = (r, dec = DEC) => r.map(p => [+p[0].toFixed(dec), +p[1].toFixed(dec)])
+export const round = (r, dec = DEC) => r.map(p => [+p[0].toFixed(dec), +p[1].toFixed(dec)])
   .filter((p, i, a) => i === 0 || p[0] !== a[i - 1][0] || p[1] !== a[i - 1][1]);
 
 /* the land a set of polygons speaks about, deg² — shells positive, holes negative */
@@ -547,6 +547,7 @@ function fail(bad) {
 }
 
 const arg = process.argv.slice(2);
+if (process.argv[1] && join(process.argv[1]) === join(fileURLToPath(import.meta.url))) {
 if (arg.includes('--check')) check();
 else if (arg.includes('--fetch')) {
   migrateBatches(CACHE);
@@ -559,3 +560,4 @@ else if (arg.includes('--fetch')) {
   console.error('fetching geometry for ' + ov.length + ' relations into ' + CACHE);
   console.error('newly fetched: ' + await fetchGeom(CACHE, ov.map(x => x.id)));
 } else await build({ report: true, measure: arg.includes('--measure') });
+}

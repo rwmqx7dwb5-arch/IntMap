@@ -300,6 +300,12 @@ const ringsOf  = el => OHMR.ringsOf(el);
 const ringArea = r => OHMR.ringArea(r);
 const polysOf  = rings => OHMR.polysOf(rings, MIN_AREA);
 
+export const sourcePolys = el => polysOf(ringsOf(el));
+export function detailPolys(el, tolerance, decimals, raw = sourcePolys(el)) {
+  return raw.map(poly => poly.map(ring => quant(simplifyRing(ring, tolerance), Math.pow(10, decimals)))
+    .filter(r => r.length >= 4 && ringArea(r) >= MIN_AREA)).filter(p => p.length);
+}
+
 
 /* ══ ── CHECK (offline) ─────────────────────────────────────────────────────────────────────────
    (#R680) THE TWO LARGEST BUNDLES IN data/ HAD NO GATE AT ALL. data/hist-admin1.js (10.4 MB) and
@@ -856,7 +862,9 @@ function precisionOnly() {
   console.log(JSON.stringify({ bytes: Buffer.byteLength(body), points: result.data.rings.reduce((n,r)=>n+r.length,0), refined: result.refined, retained: result.retained }));
 }
 
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 if (args.includes('--check')) check();
 else if (args.includes('--precision-only')) precisionOnly();
 else if (args.includes('--names')) refreshNames().catch(e => { console.error('FAILED', e); process.exit(1); });
 else main().catch(e => { console.error('FAILED', e); process.exit(1); });
+}

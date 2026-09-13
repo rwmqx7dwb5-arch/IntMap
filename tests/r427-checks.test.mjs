@@ -367,9 +367,9 @@ test('⑧ a live clock changes nothing at all, and the three named cities answer
   await edo.window.IntMapHistCities.ensure();
   assert.equal(evalAt(edo, { 'name:en': 'Tokyo', name: '東京' }, where('tokyo')), 'Edo');
   assert.equal(evalAt(edo, { name: '東京' }, where('tokyo'), 'jp'), '江戸');
-  /* (#R679) see the note on Kirov above — the dated span [1453-06-07, 1923-10-23] outranks the
-     handwritten one whose start was never stated. The same rule is what puts Βυζάντιον on 300 BC
-     and He Polis on the year 1000, which this file also measures below. */
+  /* Pleiades explicitly bridges Constantinople / Istanbul. That source-supported
+     identity keeps the dated Wikidata history reachable without donating unrelated
+     GeoNames anchor names to neighborhoods. */
   assert.equal(evalAt(edo, { 'name:en': 'Istanbul' }, where('istanbul')), 'Цариград');
   /* ⚠ AND THE HALF THAT RULE BOUGHT — the years no open-start span may answer any more. */
   const bc300 = boot('-000299-06-15');

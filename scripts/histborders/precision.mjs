@@ -5,7 +5,7 @@ export const identityOf = feature => JSON.stringify(feature.slice(0, 8));
 export function previousPrecision(data, tolerance, decimals) {
   const p = data?.precision;
   return {
-    tolerance: Number.isFinite(p?.targetTolerance) && p.targetTolerance > 0 ? p.targetTolerance : tolerance,
+    tolerance: Number.isFinite(p?.targetTolerance) && p.targetTolerance >= 0 ? p.targetTolerance : tolerance,
     decimals: Number.isInteger(p?.decimals) && p.decimals >= 0 ? p.decimals : decimals,
   };
 }

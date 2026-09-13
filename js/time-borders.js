@@ -312,38 +312,35 @@ window.IntMapModules.timeBorders=function(HOST){
     const _ringLines=(ring,mark)=>_BC().ringLines(ring,mark);
     const _lineGeom=(d,idx,marks)=>_BC().lineGeom(d,idx,marks);
     const _wholeLines=fc=>_BC().wholeLines(fc);
-    /* the memo is per record, so a late copy of the marks has to throw it away — otherwise one lost
-       request pins the map to the whole-ring drawing until a reload. */
-    /* ⚠⚠⚠ (#R695) THE ERA COLLECTIONS WERE NOT IN THIS SUBSCRIPTION, AND UNTIL THIS ROUND THAT WAS
-       HARMLESS BECAUSE THEY HAD NO MARKS TO WAIT FOR. data/hist-eras.js is now marked like the
-       other five bundles, so a sheet drawn BEFORE the 480 kB of marks arrive keeps the whole-ring
-       lines it was given — one memo in `_lnOf`, and the coastline stays drawn as a border for that
-       year until the reader travels somewhere else and back. The marks and the 10.6 MB bundle race
-       on a cold load and the marks usually win (`warm()` asks for them at idle, and the era tier
-       has a bundle to parse first), which is exactly the kind of «usually» that stops being true on
-       a slow line. ⇒ the era caches are dropped here too. `_erFC` is keyed by year and holds the
-       features; `_lnOf` is keyed by the collection object, so dropping `_erFC` is what makes the
-       next `_linesFor` see a NEW object and ask again. */
-    /* ⚠⚠ AND CLEARING A CACHE IS NOT A REPAINT. js/time-admin1.js's subscription calls
-       `refreshLines()`; this one only dropped memos, so the year ALREADY on the screen kept the
-       whole-ring lines it was built with until the reader travelled somewhere else and back. That
-       was true of CShapes too — `_csLn.clear()` cannot reach an `_lnOf` entry that was written
-       when the collection was built. `refresh()` is this module's own published way to repaint,
-       and it is only worth doing while the era layers are actually on the map. */
-    try{ _BC().onArrive(()=>{ _csLn.clear(); _hbLn.clear(); _erFC.clear(); cache.clear();
-      if(active){ try{ window._applyBorders(); }catch(_){} } }); }catch(_){}
+    /* (#R711) Marks/detail arrival changes only the currently drawn line. Dropping the
+       year cache did not repaint anything (_applyBorders only controls visibility), and
+       also made currentFC() lose the territory already on screen. Keep those identities
+       and polygons, invalidate only line memos, and read shownFC at notification time so
+       a response from an earlier date cannot put that date back on the map. */
+    try{ _BC().onArrive(()=>{ _csLn.clear(); _hbLn.clear(); _lnOf=new WeakMap();
+      if(active&&shownFC){ try{ if(GE().layers.hasSource('imtb-ln-src')) GE().layers.setSourceData('imtb-ln-src',_linesFor(shownFC)); }catch(_){} }
+    }); }catch(_){}
     const _lineFeat=g=>({type:'Feature',geometry:g,properties:{}});
     /* ⚠ THE OUTLINE HANGS OFF THE COLLECTION, NOT ON IT. A `fc._lines` property would ride inside
        every `setSourceData('imtb-src', fc)` — structured-cloned to the worker with the polygons it
        duplicates, and walked by js/geo-command-log.js's deep-equal (#R520). A WeakMap keyed by the
        same collection the year cache holds carries it without touching what is sent. */
-    const _lnOf=new WeakMap();
+    let _lnOf=new WeakMap();
+    const _lineRecordOf=new WeakMap();   /* original polygon object -> bundle record; corrected geometry has no entry */
     function _linesFor(fc){ let v=_lnOf.get(fc); if(v) return v;
-      v=_wholeLines(fc); _lnOf.set(fc,v); return v; }   /* unmarked (the aourednik fallback): stroke every ring */
+      const feats=[],other=[];
+      for(const f of (fc.features||[])){
+        const rec=f.geometry&&_lineRecordOf.get(f.geometry);
+        if(rec){ const g=_lineGeom(rec[0],rec[1],_bcMarks(rec[2])); if(g) feats.push(_lineFeat(g)); }
+        else other.push(f);
+      }
+      if(other.length) feats.push(..._wholeLines({type:'FeatureCollection',features:other}).features);
+      v={type:'FeatureCollection',features:feats}; _lnOf.set(fc,v); return v;
+    }
     function _csGeomOf(d,idx){ let g=_csGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
-      _csGeom.set(idx,g); return g; }
+      _csGeom.set(idx,g); _lineRecordOf.set(g,[d,idx,'cs']); return g; }
     function _csLineOf(d,idx){ if(_csLn.has(idx)) return _csLn.get(idx);
       const g=_lineGeom(d,idx,_bcMarks('cs')); _csLn.set(idx,g); return g; }
     function csFC(d,year,mon,day){ const feats=[],lines=[];
@@ -415,7 +412,7 @@ window.IntMapModules.timeBorders=function(HOST){
     function _hbGeomOf(d,idx){ let g=_hbGeom.get(idx); if(g) return g;
       const polys=d.feats[idx][8].map(poly=>poly.map(ri=>d.rings[ri]));
       g=(polys.length===1)?{type:'Polygon',coordinates:polys[0]}:{type:'MultiPolygon',coordinates:polys};
-      _hbGeom.set(idx,g); return g; }
+      _hbGeom.set(idx,g); _lineRecordOf.set(g,[d,idx,'hb']); return g; }
     /* ⚠ THE NAMES TRAVEL WITH THE POLYGON, in nine languages, because they have to. The era labels are
        otherwise localized by MATCHING an English name against the tables further down this file — which
        works for «Germany» and cannot work for «Kurhessen», «Zuid-Afrikaansche Republiek» or «Rupert's
@@ -988,13 +985,16 @@ window.IntMapModules.timeBorders=function(HOST){
          from OSM's `place` layer, where a cartographer put them in clear space. These anchors are
          computed from a border, which knows nothing about what else is drawn. */
       const _ERAVAR={'text-variable-anchor':['center','top','bottom','left','right'],'text-radial-offset':0.65,'text-justify':'auto'};
+      /* (#R711) Keep names eligible when zooming into their territory. The former z7 cutoff
+         removed every country name even with its anchor in view and no competing symbol.
+         Collision placement and the existing interior anchors still decide what fits. */
       /* (#R101) RENAMED countries (name differs from the present, e.g. Siam, Soviet Union, German Empire).
          Filtered to _same!=1 (see tagSame). */
-      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-lbl-src',maxzoom:7,filter:['!=',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
+      if(!GE().layers.has('imtb-lbl')) GE().layers.add({id:'imtb-lbl',type:'symbol',source:'imtb-lbl-src',filter:['!=',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_locName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
       /* (#R101) UNCHANGED countries (same name as today, e.g. Japan, France) keep their normal country label style
          (matching ofm-country) rather than the era style — per request "国名が変わってない国は既存の国名ラベルのまま".
          Filtered to _same==1. Rendered from the era data so no country ever loses its label. */
-      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-lbl-src',maxzoom:7,filter:['==',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
+      if(!GE().layers.has('imtb-lbl2')) GE().layers.add({id:'imtb-lbl2',type:'symbol',source:'imtb-lbl-src',filter:['==',['coalesce',['get','_same'],0],1],layout:Object.assign({'symbol-placement':'point','text-field':['coalesce',['get','_modName'],['get','NAME'],['get','name'],''],'text-font':_ERAFONT,'text-letter-spacing':0.08,'text-size':window.IntMapLabelScale.place('country'),'text-max-width':8,'text-padding':6},_ERAVAR),paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}});
       /* (#R94k) clicking a historical label/border opens the SAME country card as a modern country: resolve the
          era polygon's NAME to its countryStats entry (a former state, or a modern country renamed for the era). */
       if(!_clickWired){ _clickWired=true;

@@ -117,7 +117,7 @@ import {
   ANCHOR_TOL_KM, SAME_PLACE_KM,
 } from './histcities-record.mjs';
 import { LANGS } from './histcities/lang.mjs';
-import { sameName, daysInMonth as daysInMonthLocal } from './histcities/upstream.mjs';
+import { sameName, fold, identityHosts, daysInMonth as daysInMonthLocal } from './histcities/upstream.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'data', 'hist-cities.json');
@@ -159,6 +159,14 @@ function fail(msg) { console.error('✖ ' + msg); process.exit(1); }
 
 /* ── the record, and the evidence ───────────────────────────────────────────────────────────── */
 const { files: REGIONS, rows: allRows, licences: LICENCES } = await loadRecord();
+// Validate every source row before merging can hide an unsupported identity key.
+for (const r of allRows) if (r.derived) {
+  const attested = new Set((r.ev.n || []).map(fold));
+  for (const k of r.keys) if (!attested.has(fold(k))) {
+    problems.push(`${r.id}: key «${k}» is not a source-attested modern name; a nearby GeoNames anchor does not establish identity — re-run scripts/histcities/harvest.mjs`);
+  }
+}
+
 
 /* ── ⚠⚠⚠ (#R689) ⑦ EVERY UPSTREAM THAT IS OWED CREDIT IS PAID BY A ROW OF THE SOURCES PAGE ────
    #R679 harvested Pleiades, whose CC BY 3.0 makes attribution a CONDITION OF REDISTRIBUTION, and
@@ -237,7 +245,9 @@ const statesStart = (e) => !!e.from;
    their modern successor). So the identity of a place here is where it is plus what it is called.
    ⚠ AND THE MERGE IS ADDITIVE. The host row keeps its own keys and its own spans; the derived
    row contributes only spans that overlap nothing the host already states. A derived row cannot
-   move a coordinate, widen a guard, or contradict a written date. */
+   move a coordinate, widen a guard, or contradict a written date. Source-attested alias
+   bridges are resolved across the whole record first, so a later source naming both
+   Constantinople and Istanbul keeps the earlier dated history attached to the city. */
 const fkey = (s) => String(s || '').normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu, '').toLowerCase();
 function samePlace(a, b) {
   if (km(a.lon, a.lat, b.lon, b.lat) > ANCHOR_TOL_KM) return false;
@@ -289,11 +299,12 @@ const eraOrder = (x, y) => (statesStart(y) ? 1 : 0) - (statesStart(x) ? 1 : 0) |
 
 const merged = { rows: 0, eras: 0, dropped: 0, intoHand: 0 };
 const kept = [];
+const precedence = new Map(rows.map((r, i) => [r, i]));
+const hosts = identityHosts(rows, fkey, samePlace, (a, b) => precedence.get(a) - precedence.get(b));
 for (const r of rows) {
   if (!r.derived) { kept.push(r); continue; }
-  /* only rows near enough to be worth comparing — the record is thousands of rows now */
-  const host = kept.find((h) => samePlace(h, r));
-  if (!host) { kept.push(r); continue; }
+  const host = hosts.get(r);
+  if (host === r) { kept.push(r); continue; }
   merged.rows++;
   if (!host.derived) merged.intoHand++;
   for (const e of r.eras) {

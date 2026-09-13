@@ -96,7 +96,7 @@ test('all shipped refined datasets state the build target separately from retain
     const win={};new Function('window',readFileSync(fileURLToPath(new URL('../data/'+file+'.js',import.meta.url)),'utf8'))(win);
     const data=Object.values(win)[0],p=data.precision;
     assert.ok(p,file+' missing precision provenance');
-    assert.ok(p.targetTolerance<=0.004);assert.equal(p.decimals,4);
+    assert.ok(p.targetTolerance<=0.004);assert.equal(p.decimals,file==='cshapes'?5:4);
     assert.equal(p.refined+p.retained,data.feats.length);
     assert.ok(p.refined>data.feats.length*0.9,file+' most source shapes were not refined');
     assert.match(p.semantics,/retained/);

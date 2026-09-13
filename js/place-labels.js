@@ -154,7 +154,7 @@ window.IntMapModules.placeLabels=function(HOST){
       const MT=()=>window.IntMapMapTypography;
       const FONT=MT().placeFont();
       const before = GE().layers.has('grid-lines') ? 'grid-lines' : undefined;
-      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',maxzoom:7,filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}}, before);   /* (#R210) 発色を濃く: pure white on a heavier halo */
+      if(!GE().layers.has('ofm-country')) GE().layers.add({id:'ofm-country',type:'symbol',source:'ofm','source-layer':'place',filter:['==',['get','class'],'country'],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('country'),'text-letter-spacing':0.08,'text-max-width':8,'text-padding':6},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.7}}, before);   /* (#R210) 発色を濃く: pure white on a heavier halo */
       if(!GE().layers.has('ofm-city')) GE().layers.add({id:'ofm-city',type:'symbol',source:'ofm','source-layer':'place',minzoom:3,filter:['all',['in',['get','class'],['literal',['city','town']]]],layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('city'),'text-max-width':7,'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.4,'text-justify':'auto','icon-optional':true},paint:{'text-color':'#ffffff','text-halo-color':'rgba(0,0,0,0.9)','text-halo-width':1.6}});   /* (#R210) 発色を濃く */
       /* ══ (#R198) THE NAMES OF THE THINGS BETWEEN A COUNTRY AND A CITY ═══════════════════════════
          「地方行政区分も地名ラベルをつけるように。（例：日本の都道府県、アメリカ・ドイツ・オーストラリア
@@ -201,7 +201,7 @@ window.IntMapModules.placeLabels=function(HOST){
          China (10), Brazil (16), India, Germany, Australia; z5 → rank 4, Russia (7); z6 → rank 5, the
          Japanese prefectures (11 at z6.2); z7 → everything left. */
       const A1_RANK=['<=',['coalesce',['get','rank'],6],['step',['zoom'],0, 4,3, 5,4, 6,5, 7,6]];
-      if(!GE().layers.has('ofm-admin1')) GE().layers.add({id:'ofm-admin1',type:'symbol',source:'ofm','source-layer':'place',minzoom:4,maxzoom:9,
+      if(!GE().layers.has('ofm-admin1')) GE().layers.add({id:'ofm-admin1',type:'symbol',source:'ofm','source-layer':'place',minzoom:4,
         filter:['all',['has','name'],['in',['get','class'],['literal',['state','province']]],A1_RANK],
         layout:{visibility:'none','text-field':['get','name'],'text-font':FONT,'text-size':LS.place('admin1'),
           'text-letter-spacing':0.06,'text-max-width':8,'text-padding':4,'text-optional':true,

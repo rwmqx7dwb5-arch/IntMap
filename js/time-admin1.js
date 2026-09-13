@@ -148,7 +148,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
        the median unit of the deeper tier spans 0.66° of longitude (measured 2026-09-11 over every
        unit in data/hist-admin2.js), which on 512-px tiles — 45.5 px per degree at z5 — is 30 px at z5
        and 60 px at z6: the point at which a unit is a shape rather than a smudge, and the point at which
-       the first tier's own labels (minzoom 4, maxzoom 9) are still on screen so the two tiers read
+       the first tier's own labels (minzoom 4) are still on screen so the two tiers read
        as one hierarchy rather than as a replacement. Below it the tier is not drawn AND NOT
        FETCHED: 15.5 MB is not a speculative cost a reader looking at a continent should pay. */
     const DEEP_Z = 6;
@@ -256,8 +256,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
 
        ⚠ ONE RULE, BOTH TIERS. `sortKeyOf` is written once, at module scope, and `fcAt` stamps
        SORT_PROP on every feature of both bundles — the tiers are separated by their own
-       minzoom/maxzoom windows (4-9 and DEEP_Z+1-12), so the key is never asked to compare a
-       province with a county.
+       minimum zooms (4 and DEEP_Z+1) and separate layers, so the key is never asked to
+       compare a province with a county. Names remain eligible above those zooms.
        ⚠ EXPIRES WHEN: the bundle starts carrying an upstream rank (scripts/build-hist-admin1.mjs
        writes the columns; OHM tags `wikidata`, from which a population or a prominence could be
        joined). A rank the record STATES is a claim by the record and outranks anything derived
@@ -462,7 +462,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
         if (!_D || !m) { try { return BC().wholeLines(fc); } catch (_) { return { type: 'FeatureCollection', features: [] }; } }
         const feats = [];
         for (const f of (fc.features || [])) {
-          const g = BC().lineGeom(_D, f.properties._ix, m);
+          const g = BC().lineGeom(_D, f.properties._ix, m, vtState === 'absent');
           if (g) feats.push({ type: 'Feature', geometry: g, properties: {} });
         }
         return { type: 'FeatureCollection', features: feats };
@@ -525,7 +525,7 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           if (n > 0) vtState = 'live';
           else if (vtState !== 'live' && vtSince && (Date.now() - vtSince) > GRACE_MS
                    && shownFC && shownFC.features && shownFC.features.length) vtState = 'absent';
-          if (vtState !== was) _applyNow();
+          if (vtState !== was) { if (vtState === 'absent') refreshLines(); _applyNow(); }
         } catch (_) {}
         return vtState;
       }
@@ -586,11 +586,15 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
           const FONT = (function () { try { return window.IntMapMapTypography.readerFont(); } catch (_) { return ['Noto Sans SC']; } })();
           const SIZE = (function () { try { return window.IntMapLabelScale.place('admin1'); } catch (_) { return ['interpolate', ['linear'], ['zoom'], 4, 9.5, 7, 11.5]; } })();
           if (!GE().layers.has(cfg.lbl)) GE().layers.add({
-            id: cfg.lbl, type: 'symbol', source: cfg.src, minzoom: cfg.deep ? DEEP_Z + 1 : 4, maxzoom: cfg.deep ? 12 : 9,
+            id: cfg.lbl, type: 'symbol', source: cfg.src, minzoom: cfg.deep ? DEEP_Z + 1 : 4,
             layout: {
               visibility: 'none', 'symbol-placement': 'point', 'text-field': ['coalesce', ['get', 'NAME'], ['get', 'name'], ''],
               'text-font': FONT, 'text-size': SIZE, 'text-letter-spacing': 0.06, 'text-max-width': 8,
               'text-padding': 4, 'text-optional': true,
+              /* (#R711) Computed polygon anchors need placement alternatives just as era
+                 country anchors do. Keep collision detection; move the one name aside. */
+              'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right'],
+              'text-radial-offset': 0.65, 'text-justify': 'auto',
               /* (#R707) …and with `text-optional` the loser of a collision disappears without a
                  word, so the order the placer tries them in is a decision about what the reader
                  sees. `sortKeyOf` above is that decision; 0 is «one square kilometre», i.e. the

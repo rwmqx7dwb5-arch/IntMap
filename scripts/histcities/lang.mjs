@@ -141,7 +141,8 @@ export function ED(from, to, n, a) {
   return { from: f, to: t, name, derived: true };
 }
 
-/** one derived city. `ev` is the guard evidence the harvest measured; the build re-derives from it. */
+/** One derived city. `ev.n` records upstream modern names; `ev.a` / `ev.r`
+ * record the anchor and rival. The build validates keys against names before merging. */
 export function D(id, lon, lat, cc, keys, eras, ev) {
   const r = C(id, lon, lat, cc, keys, eras);
   if (!ev || !Array.isArray(ev.a) || typeof ev.on !== 'string') {

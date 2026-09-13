@@ -79,12 +79,16 @@ const OUT = join(ROOT, 'data', 'border-coast.js');
    OHM 0.012°) or if data/coastline.json.gz is rebuilt coarser than its present 2 km — the band has
    to stay above the record's own coastal registration error and above the authority's. Re-run
    `--report` and the sweep; do not carry this number across a rebuild. */
-const INLAND_KM = 6;
+export const INLAND_KM = 6;
 /* R710 remeasurement after the 0.002° / four-digit CShapes refinement:
    silent polities in 1900/1950/1990 at 5 km = 21/22/21, at 6 km = 25/26/25,
    at 7 km = 25/27/26. The four additions at 6 km are Cuba, Japan, New Zealand
    and Fiji (coast-only outlines), preserving the original reason for the band.
    The finer rings do not justify lowering the coastal-registration allowance. */
+/* R711: after the zero-tolerance CShapes cut / five digits, the coast-only
+   polity sets at 6 km remain exactly identical to R710 (25/26/25 at the same
+   three dates, compared by names, not counts alone). No inland-border polity
+   goes silent as a consequence of the refinement. */
 /* Walk edges at 1 km intervals within the 6 km classification band, rather than
    judging a long segment only at its endpoints. This samples classification, not new geometry. */
 const SAMPLE_KM = 1;
