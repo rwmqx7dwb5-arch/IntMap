@@ -79,20 +79,27 @@ test('① every ring of both bundles has an entry, and every run is ordered and 
 });
 
 /* ── ② the reported edge ───────────────────────────────────────────────────────────────────────── */
-test('② the 40 km chord across the Gulf of Lion is in the record and is NOT drawn', () => {
+test('② the Sète–Le Grau-du-Roi coastline copy is NOT drawn as a country border', () => {
   const f = CS.feats.find((x) => x[0] === 'France' && x[2] <= 1900 && x[5] >= 1900);
   assert.ok(f, 'CShapes no longer carries a France record covering 1900');
-  let present = false, isDrawn = null;
+  /* R710 remeasurement: the former single 40 km chord is now three edges,
+     from [3.5467,43.3197] through [3.8436,43.4756], [3.9132,43.5212] to
+     [3.9647,43.5408]. Select the reported geographic stretch, not the old
+     simplifier's exact endpoint digits or its number of vertices. */
+  const inStretch = p => p[0] >= 3.5 && p[0] <= 4 && p[1] >= 43.25 && p[1] <= 43.6;
+  let measuredKm = 0, drawnKm = 0;
   for (const poly of f[8]) for (const ri of poly) {
     const V = closed(CS.rings[ri]), mark = BC.sets.cs.draw[ri];
     for (let i = 0; i < V.length - 1; i++) {
-      if (V[i][0] === 3.547 && V[i][1] === 43.32 && V[i + 1][0] === 3.965 && V[i + 1][1] === 43.541) {
-        present = true; isDrawn = drawn(mark, i);
+      if (inStretch(V[i]) && inStretch(V[i + 1])) {
+        const km = edgeKm(V[i], V[i + 1]);
+        measuredKm += km;
+        if (drawn(mark, i)) drawnKm += km;
       }
     }
   }
-  assert.ok(present, 'the reported edge is no longer in data/cshapes.js — re-measure before changing this check');
-  assert.equal(isDrawn, false, 'the reported chord from Sète to Le Grau-du-Roi is being stroked again');
+  assert.ok(measuredKm > 30, 'the reported coastal stretch is missing or truncated — re-measure this fixture');
+  assert.equal(drawnKm, 0, 'the coastline copy from Sète to Le Grau-du-Roi is being stroked again');
 });
 
 /* ── ③ what is drawn is not in the sea ─────────────────────────────────────────────────────────── */

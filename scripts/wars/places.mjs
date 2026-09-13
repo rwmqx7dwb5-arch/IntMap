@@ -85,7 +85,9 @@ export const PLACES = {
   'Grodno': [23.830, 53.677, 'BY'], 'Brest': [23.734, 52.098, 'BY'],
   'Kyiv': [30.524, 50.450, 'UA'], 'Zhytomyr': [28.658, 50.255, 'UA'], 'Uman': [30.221, 48.748, 'UA'], 'Kharkiv': [36.231, 49.988, 'UA'], 'Dnipro': [35.045, 48.465, 'UA'],
   'Zaporizhzhia': [35.139, 47.838, 'UA'], 'Melitopol': [35.365, 46.844, 'UA'], 'Kryvyi Rih': [33.391, 47.909, 'UA'],
-  'Mykolaiv': [31.995, 46.975, 'UA'], 'Odesa': [30.733, 46.483, 'UA'], 'Kherson': [32.618, 46.635, 'UA'],
+  /* Kherson: GeoNames 706448, as carried by gazetteer-world. The former rounded
+     anchor falls outside the raw CShapes coast; coarse polygons hid that error. */
+  'Mykolaiv': [31.995, 46.975, 'UA'], 'Odesa': [30.733, 46.483, 'UA'], 'Kherson': [32.6146, 46.6369, 'UA'],
   'Sevastopol': [33.523, 44.616, 'UA'], 'Kerch': [36.470, 45.356, 'UA'], 'Perekop': [33.700, 46.160, 'UA'],
   'Kovel': [24.710, 51.217, 'UA'], 'Lutsk': [25.336, 50.747, 'UA'], 'Rivne': [26.251, 50.619, 'UA'],
   'Lviv': [24.032, 49.842, 'UA'], 'Ternopil': [25.595, 49.554, 'UA'], 'Chernivtsi': [25.935, 48.292, 'UA'],

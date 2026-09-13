@@ -1742,9 +1742,12 @@ window.IntMapModules.timeBorders=function(HOST){
     function resolveHist(nm,lngLat){ const lg=(typeof HOST.lang!=='undefined')?HOST.lang:'en';
       const out={ name:nm, wiki:String(nm||'').replace(/\s*\([^)]*\)\s*$/,'')||nm, code:null, geometry:null };   /* (#R117) fallback Wikipedia title without the "(France)/(UK)…" possessor suffix — "French Sudan (France)" → "French Sudan" */
       let gwCode=null;   /* (#R128) the era feature's CShapes Gleditsch-Ward code (properties._gw), for deterministic resolution below */
-      /* (#R518) …and, for a polygon from the OpenHistoricalMap record, ITS OWN identity — the English name the
-         Wikipedia title is built from, and the current language's name. See the restore below. */
-      let hbEn=null, hbLoc=null;
+      /* Each record has its own identity — the source name used for Wikipedia and its localized
+         display name. Translations enrich that identity; they do not make it authoritative. */
+      /* The source name exists independently of the translation index. A missing translation
+         must not turn a historical polity into whichever modern country contains the tap.
+         Keep the statistical carrier below, but restore source identity for every record. */
+      let hbEn=String(nm||''), hbLoc=_eraLocName(nm)||nm;
       try{ const ftr=featureAt(nm,lngLat); if(ftr){ if(ftr.geometry) out.geometry=ftr.geometry; if(ftr.properties&&ftr.properties._gw!=null) gwCode=ftr.properties._gw;
         const i18=ftr.properties&&ftr.properties._i18n; if(i18&&i18.en){ hbEn=i18.en; hbLoc=i18[lg]||i18.en; } } }catch(_){}
       let code=null, empire=false;
@@ -1824,7 +1827,7 @@ window.IntMapModules.timeBorders=function(HOST){
            displayed name stays the map's era name; former states with their own registry entry never reach here). */
         try{ const y=(window.IntMapTime&&!window.IntMapTime.isLive())?window.IntMapTime.year():null;
           if(code&&y!=null&&isFinite(y)){ const spans=_ERA_WIKI[code]; if(spans){ for(const sp of spans){ if(y>=sp[0]&&y<=sp[1]){ out.wiki=sp[2]; break; } } } } }catch(_){}
-        /* ⚠ (#R518) …AND THE 1850-1885 RECORD'S OWN IDENTITY OUTRANKS ITS CARRIER'S. Everything above
+        /* The historical record's own identity outranks its statistical carrier's. Everything above
            resolves a polygon to a MODERN country so the statistics have somewhere to come from, and then
            overwrites name and Wikipedia with that country's. For 1886-2019 that is usually right — the
            polygon really is «Germany». For this window it is usually wrong: measured before the fix, a
@@ -1833,7 +1836,8 @@ window.IntMapModules.timeBorders=function(HOST){
            numbers (`code` is untouched); the NAME and the ARTICLE go back to the polity that was clicked.
            ⚠ Only when the two really are different states — a record whose English name IS the carrier's
            keeps the carrier's LOCALIZED name, which is the better label. ⚠ And the carrier's flag is
-           dropped with it: the Two Sicilies did not fly the Italian tricolour. */
+           dropped with it: the Two Sicilies did not fly the Italian tricolour. This applies to
+           untranslated snapshots and CShapes names as well as translated OHM records. */
         try{ if(hbEn&&hbLoc){ const s=code&&countryStats[code];
           const same=s&&String(s.nameEn||'').toLowerCase().trim()===hbEn.toLowerCase().trim();
           if(!same){ out.name=hbLoc; out.wiki=hbEn.replace(/\s*\([^)]*\)\s*$/,'').trim().replace(/\s+/g,'_'); out.flag=null; out._own=1; } } }catch(_){}

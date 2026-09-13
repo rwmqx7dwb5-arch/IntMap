@@ -790,20 +790,20 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは6つ・全 49,665 リング分／
+                                  **発見された**束すべて・いまは6つ・全 52,712 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
                                   内部を持たないので描かない
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
-                                  4,839件／rings 7,205・10.60 MB＝brotli 1.02 MB）。上と**同じリングプール形式の
+                                  4,839件／rings 8,267・41.45 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
                                   ⚠ **各行の列 10 は OHM の relation id**——クリックしたとき、その 1 件だけを
                                   上流から原寸で取り直すために要る（名前ではなく id で訊く）
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
                                   門は `npm run check:histadmin`（残余は docs/TESTING.md）
 data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM2`・
-                                  22,708件／rings 21,676・18.48 MB・列 10 は同じく relation id）。同じ生成器の
+                                  22,708件／rings 23,431・40.64 MB・列 10 は同じく relation id）。同じ生成器の
                                   `--levels 5,6`。**z6 未満では取得もしない**——描かない縮尺で 10 MB 以上を
                                   払わせないため（docs/MAP-LAYERS.md §7.7）。門は第1級と同じ
                                   `npm run check:histadmin`——1 つの build が両方を焼くので、門も 1 つ

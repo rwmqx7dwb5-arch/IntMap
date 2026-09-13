@@ -80,8 +80,13 @@ const OUT = join(ROOT, 'data', 'border-coast.js');
    to stay above the record's own coastal registration error and above the authority's. Re-run
    `--report` and the sweep; do not carry this number across a rebuild. */
 const INLAND_KM = 6;
-/* how finely an edge is walked before its deepest point is believed. 1 km is a quarter of the
-   coarser bundle's own 1.3 km simplification step, so no edge is judged on its endpoints alone. */
+/* R710 remeasurement after the 0.002° / four-digit CShapes refinement:
+   silent polities in 1900/1950/1990 at 5 km = 21/22/21, at 6 km = 25/26/25,
+   at 7 km = 25/27/26. The four additions at 6 km are Cuba, Japan, New Zealand
+   and Fiji (coast-only outlines), preserving the original reason for the band.
+   The finer rings do not justify lowering the coastal-registration allowance. */
+/* Walk edges at 1 km intervals within the 6 km classification band, rather than
+   judging a long segment only at its endpoints. This samples classification, not new geometry. */
 const SAMPLE_KM = 1;
 const KM_PER_DEG = 110.574;
 
@@ -142,7 +147,7 @@ function deepestInland(W, a, b, cut, cap) {
    gave; the marks decide what is stroked, which is this file's job and not the bundle's.
    ⚠ EXPIRES IF a bundle ever encodes a genuine one-dimensional feature (a boundary line with no
    territory) as a zero-area ring — then this test would silence it. Nothing in data/ does today. */
-function markRing(W, ring, cut) {
+export function markRing(W, ring, cut) {
   const V = closedRing(ring);
   const E = V.length - 1;
   if (E < 1) return 0;
@@ -159,7 +164,7 @@ function markRing(W, ring, cut) {
   return runs;
 }
 
-function water() {
+export function water() {
   return buildWater(JSON.parse(gunzipSync(readFileSync(join(ROOT, 'data', 'coastline.json.gz')))));
 }
 

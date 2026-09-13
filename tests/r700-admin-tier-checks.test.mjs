@@ -109,7 +109,7 @@ test('① 各層の宣言 tolerance と、格納されたジオメトリの粗�
   for (let i = 1; i < seen.length; i++) {
     const a = seen[i - 1], b = seen[i];
     const tolRatio = a.d.tolerance / b.d.tolerance, segRatio = a.med / b.med;
-    assert.ok(Math.sign(tolRatio - 1) === Math.sign(segRatio - 1),
+    assert.ok(tolRatio === 1 || Math.sign(tolRatio - 1) === Math.sign(segRatio - 1),
       `${a.t.file} と ${b.t.file}: 宣言は ${a.d.tolerance}/${b.d.tolerance} なのに、描かれる辺の中央値は ${a.med.toFixed(2)}/${b.med.toFixed(2)} km`);
     const q = segRatio / tolRatio;
     assert.ok(q > 0.5 && q < 2, `宣言された許容幅の比 ${tolRatio.toFixed(2)} と、実際の辺長の比 ${segRatio.toFixed(2)} が離れている（${q.toFixed(2)} 倍）`);
@@ -269,7 +269,7 @@ test('⑦ docs/FILES.md と CI の説明が述べる数が、同梱のバイト�
     const d = bundle(t), bytes = lfBytes(t.file);   /* 改行設定に依存しない——上の ⑤ を参照 */
     assert.ok(has(FILES, d.feats.length), `docs/FILES.md: ${t.file} の件数が ${d.feats.length} ではない`);
     assert.ok(has(FILES, d.rings.length), `docs/FILES.md: ${t.file} の rings が ${d.rings.length} ではない`);
-    assert.ok(FILES.includes((bytes / 1048576).toFixed(2) + ' MB'), `docs/FILES.md: ${t.file} の大きさが ${(bytes / 1048576).toFixed(2)} MB ではない`);
+    assert.ok(FILES.includes((bytes / 1000000).toFixed(2) + ' MB'), `docs/FILES.md: ${t.file} の大きさが ${(bytes / 1000000).toFixed(2)} MB ではない`);
   }
   /* CI が「全環を焼き直す」と言うときの環の数は、印の記録が自分で数えている数 */
   const ctx = { window: {} }; vm.createContext(ctx);

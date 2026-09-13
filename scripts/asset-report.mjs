@@ -80,6 +80,7 @@ const ALLOW = {
   /* a production file larger than this needs a reason of its own */
   sizeCeiling: 6 * 1024 * 1024,
   bigFile: [
+    { match: /^data\/cshapes\.js$/, why: 'day-exact historical country borders: source-matched records retain finer geometry while corrected records remain intact; loaded separately from the startup bundle, with measured size and vertex counts in DEV-NOTES.md R710' },
     { match: /^data\/ecoregions_2017\.geojson$/, why: 'the WWF terrestrial ecoregions layer — one file is the dataset (#R311 removed its duplicate)' },
     /* (#R530) the admin-1 twin of data/cshapes.js (5.3 MB), and it is over the ceiling for the same
        reason that one is near it: one file IS the dataset — 4,820 dated subdivisions with the days
@@ -159,7 +160,7 @@ const ALLOW = {
        record boundary, and moving our simplification on one side alone changes its size or its sign).
        ⚠ ITS POSITION IS NOT CHOSEN EITHER: 1689 is derived from coverage by
        scripts/build-hist-borders.mjs, so the step moves down the moment OHM fills in below it. */
-    { match: /^data\/hist-borders\.js$/, why: 'the day-exact country borders below CShapes, 1689–1885 (OpenHistoricalMap, CC0) — one file is the dataset, injected as a <script> only when the clock asks, and simplified at data/cshapes.js\'s own tolerance so the 1885→1886 handover does not change resolution (#R690)' },
+    { match: /^data\/hist-borders\.js$/, why: 'the day-exact country borders below CShapes, 1689–1885 (OpenHistoricalMap, CC0) — one file is the dataset, injected as a <script> only when the clock asks, retaining source-matched finer geometry and existing territorial corrections, with measured cost in DEV-NOTES.md R710' },
   ],
 };
 

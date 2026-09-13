@@ -32,7 +32,7 @@ test('a rebuild retains the stored coordinate precision', () => {
   vm.runInContext(source.slice(from, to), ctx);
   assert.equal(ctx.coordinateDecimals({ rings: [[[1.1234, 2.01]]] }), 4);
   assert.equal(ctx.coordinateDecimals({ decimals: 5, rings: [[[1, 2]]] }), 5);
-  assert.equal(ctx.coordinateDecimals(undefined), 3);
+  assert.equal(ctx.coordinateDecimals(undefined), 4); // new bundles use the same precision as refreshed ones
 });
 test('equal explicit days retain one day and carry the normalization reason', () => {
   const span = ctx.dateSpan('1861-01-09', '1861-01-09');

@@ -18,6 +18,18 @@ being the repo tree itself. Everything in this document lives in `package.json`,
 
 ## What runs
 
+`tests/r710-historical-identity-checks.test.mjs` executes the historical resolver with and without
+translations, with two different present-day countries beneath one historical territory, with QID
+translations and CShapes identifiers, and with the former-state registry. It also derives every
+distinct name from the shipped era snapshots and verifies that a missing translation cannot replace
+that identity with the present-day statistical carrier. This census is a regression test population,
+not a count of production failures.
+
+`tests/r710-boundary-precision-checks.test.mjs` checks geometry-only refinement, preservation of
+feature identity and corrected shapes, and the precision metadata. The source simplification target
+is separate from historical survey accuracy. Refinement must preserve polygon components and holes;
+adding interpolated vertices is not evidence of greater accuracy.
+
 Memory lifecycle regressions execute the actual function bodies with controlled resource owners:
 `tests/r708-legend-clock-lifecycle-checks.test.mjs` keeps the entire clock range reachable with constant DOM
 and one subscription across legend rebuilds;
@@ -826,14 +838,14 @@ The wiring between the two products, and the four steps that stayed manual, are 
 
 ## CShapes 2.0 の国境（1886–2019）— `npm run check:cshapes` (`scripts/build-cshapes.mjs --check`, #R700)
 
-`data/cshapes.js` は **5.6 MB・710 レコード・252 政体**で、時間旅行の 1886–2019 を
+`data/cshapes.js` は **9.29 MB・710 レコード・252 政体**で、時間旅行の 1886–2019 を
 すべて答え、2 つの世界大戦レイヤーはこの輪郭を切って作られ、`check:histborders` は**この記録に
 「世界とはどれだけの陸地か」を訊いて**自分の下限を導いている。にもかかわらず、**6 本ある歴史的な
 束のうちこれだけがビルドも門も持っていなかった**——出荷したバイトがどこから来たのかを言えず、
 そして本題として、**出荷に何の義務が伴うのかを誰も述べていなかった**。上流は **CC BY-NC-SA 4.0** で、
 帰属表示は**再配布の条件**である（#R689 が Pleiades で測った形と同じ：義務が散文で書かれていた）。
 
-⚠ **再生成はしない**（上流 26.3 MB の取得が要る。実測でこの回の接続 5 本のうち 3 本が
+⚠ **この検査では再生成しない**（上流 26.3 MB の取得が要る。実測でこの回の接続 5 本のうち 3 本が
 接続タイムアウトした——それを要求する門は、天気で赤くなる門である）。測るのは**コミットされた
 バイト**で、内容は:
 
@@ -844,9 +856,8 @@ The wiring between the two products, and the four steps that stayed manual, are 
   `CS_MIN`/`CS_MAX` から読み出した**窓の中にあること（数を 2 回書かない）
 - **1 つの gwcode に 1 つの名前**で、同じ gwcode の span が重ならないこと（重なれば、切替日に
   1 つの国が 2 つ描かれる）
-- **参照されないリングの天井**——実測 6 本・1,569 点（0.46%）は #R142/#R146 が置き換えた旧ドイツの
-  リングで、消すとプール全体が振り直しになって 33 kB のために 5.6 MB を書き換えることになる。
-  だから**許すが、数えて下向きにしか動かない天井で止める**
+- **参照されないリングの天井**——以前の領土補正で生じた未参照の旧形状が増えないことを検査する。
+  精度更新でリングプールを再構成した後も、未参照リングが増えることを許可するものではない。
 - **CC BY-NC-SA が条件にする帰属が実際に払われていること**——`js/reference-data.js` の
   `DATA_SOURCES` 行が、`LIC()` 値と同じ綴りで**ライセンス名と発行者の書誌を値として**持つか
   （`check:histcities` が #R689 以降やっているのと同じ照合）
@@ -945,9 +956,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 49,665 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 52,712 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 49,665 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 52,712 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -986,10 +997,10 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 上流に訊くか／**粗い形を先に渡し、鋭い形が届いたら渡し直す**か／その差し替えが**同じ source の
 置き換えであって第2のレイヤーではない**か。
 
-### `npm run check:histadmin` — 30.5 MB の行政区分に、初めて門を付ける (#R680)
+### `npm run check:histadmin` — 82.09 MB の行政区分に、初めて門を付ける (#R680)
 
-`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（11.1 MB・第1級 4,839 単位）と
-`data/hist-admin2.js`（19.4 MB・第2級 22,708 単位）の不変条件を測る。**この 2 本は #R680 まで
+`scripts/build-hist-admin1.mjs --check` は `data/hist-admin1.js`（41.45 MB・第1級 4,839 単位）と
+`data/hist-admin2.js`（40.64 MB・第2級 22,708 単位）の不変条件を測る。**この 2 本は #R680 まで
 `--check` を持たず、`package.json` にも `ci.yml` にも該当ステップが無かった。** 歴史的な束は 5 本あり、
 残り 3 本（`hist-borders` / `hist-eras` / `hist-kuni`）と `border-coast` にはそれぞれ門がある——
 この 2 本はそれらの門が書かれた**あとに**生まれ、そのまま与えられなかっただけである。地図は線・ラベル・
@@ -1001,7 +1012,7 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 
 - **各ファイルが、自分のファイル名が示す global だけを名乗ること。** ⚠ これは実際に起きた事故で、
   #R604 が `--global` を渡し忘れて `data/hist-admin2.js` が `window.__HISTADM1=` を名乗り、
-  **読み込んだ瞬間に第1級の記録を第2級で置き換えた**（19 MB の、自分についての主張が全部正しく
+  **読み込んだ瞬間に第1級の記録を第2級で置き換えた**（同梱データの、自分についての主張が全部正しく
   名前だけ間違ったファイル）。`tests/r604-checks ⑦` が出荷物の側から見ているが、**名前を選ぶのは
   build なので、build の門もこれを見る。**
 - `v` / `src`（上流名と **CC0**）／`built`（ISO 日付）／`since`／`tolerance` が名乗りどおりであること
