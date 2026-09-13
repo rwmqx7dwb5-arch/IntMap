@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Current precision: 0.002° / four digits. --precision-only preserves every
+/* Current precision: unsimplified source geometry / five digits. --precision-only preserves every
    existing identity and unreproducible correction. The reproduction measurements
    in the historical notes below refer to the former 0.008° / three-digit file. */
 /* ============================================================================
@@ -107,7 +107,7 @@ export const CITATION = 'Schvitz, Guy, Seraina Rüegger, Luc Girardin, Lars-Erik
 
 /* ── the simplification, measured above ─────────────────────────────────────*/
 const LEGACY_TOL = 0.008;   /* Old reconstruction, only for detecting corrections. */
-const TOL = 0.002;          /* Measured precision default; see precisionOnly(). */
+const TOL = 0;          /* Measured precision default; see precisionOnly(). */
 const MIN_AREA = 0.0001;    /* drop a simplified ring smaller than this (deg²) — 1,992 rings without it, 1,991 with */
 const DEC = 3;              /* coordinate decimals */
 
@@ -235,12 +235,12 @@ async function fetchUpstream() {
 /* ── build (in memory) ──────────────────────────────────────────────────────
    The pool is filled in the upstream's own feature order, which is the order the committed file is
    in — measured: all 710 identity tuples (name, gwcode, start, end) match position for position. */
-export function cutCShapesRing(ring, tol = TOL, decimals = 4) {
+export function cutCShapesRing(ring, tol = TOL, decimals = 5) {
   return decimals === 3 ? round(dp(ring, tol)) : dp(ring, tol).map(p => p.map(v => +v.toFixed(decimals)))
     .filter((p,i,a) => !i || p[0] !== a[i-1][0] || p[1] !== a[i-1][1]);
 }
 
-function build(tol = TOL, minArea = MIN_AREA, decimals = 4) {
+function build(tol = TOL, minArea = MIN_AREA, decimals = 5) {
   if (!existsSync(GEOJSON)) throw new Error('no cached upstream at ' + GEOJSON + ' — run `node scripts/build-cshapes.mjs --fetch` first');
   const up = JSON.parse(readFileSync(GEOJSON, 'utf8'));
   const rings = [], pool = new Map();
@@ -320,16 +320,16 @@ export function refineCShapes(have, baseline, finer) {
 }
 
 function precisionOnly() {
-  /* Raw sweep: 0.008° 334,134 -> 0.002° 506,334 vertices; four decimal
-     storage yields ~9.3 MB. This buys 4x less maximum build deviation without
-     changing the lazy-load contract. Re-measure if upstream or the 10 MB class
-     changes; default compare audits the new reconstruction, while the legacy
-     build is used only to protect already corrected geometry. */
+  /* R711: 0.002 degrees removed bends up to 211.4 m from the cached Swiss outline.
+     Keeping every source bend and five decimal digits reduces that deviation to 0.63 m.
+     The corrected bundle is 12,955,788 bytes / 638,922 vertices, with 696 source
+     records refined and 14 corrected records retained. This is source fidelity,
+     not a claim that the historical survey itself has metre accuracy. */
   const have = evaluate(OUT, '__CSHAPES');
   const finer = build();
   const prior = previousPrecision(have, LEGACY_TOL, 3);
   const result = refineCShapes(have, build(prior.tolerance, MIN_AREA, prior.decimals), finer);
-  result.data.precision = { targetTolerance: TOL, decimals: 4, refined: result.refined, retained: result.retained,
+  result.data.precision = { targetTolerance: TOL, decimals: 5, refined: result.refined, retained: result.retained,
     semantics: 'build target; retained corrected or unreproducible shapes keep their existing precision' };
   const body = 'window.__CSHAPES=' + JSON.stringify(result.data) + ';\n';
   writeFileSync(OUT, body);

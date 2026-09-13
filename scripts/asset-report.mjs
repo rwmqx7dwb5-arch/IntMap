@@ -80,7 +80,7 @@ const ALLOW = {
   /* a production file larger than this needs a reason of its own */
   sizeCeiling: 6 * 1024 * 1024,
   bigFile: [
-    { match: /^data\/cshapes\.js$/, why: 'day-exact historical country borders: source-matched records retain finer geometry while corrected records remain intact; loaded separately from the startup bundle, with measured size and vertex counts in DEV-NOTES.md R710' },
+    { match: /^data\/cshapes\.js$/, why: 'day-exact historical country borders: source-matched records retain source geometry at zero simplification tolerance while corrected records remain intact; loaded separately from the startup bundle, with measured size and vertex counts in DEV-NOTES.md R711' },
     { match: /^data\/ecoregions_2017\.geojson$/, why: 'the WWF terrestrial ecoregions layer — one file is the dataset (#R311 removed its duplicate)' },
     /* (#R530) the admin-1 twin of data/cshapes.js (5.3 MB), and it is over the ceiling for the same
        reason that one is near it: one file IS the dataset — 4,820 dated subdivisions with the days
@@ -211,7 +211,12 @@ function sourceCorpus() {
       if (!rel.endsWith('.json')) continue;
       const p = join(dataDir, rel);
       if (statSync(p).size > 262144) continue;
-      corpus.push({ path: 'data/' + rel, role: 'runtime', text: readFileSync(p, 'utf8') });
+      /* File references in JSON are quoted strings. Keep every such token, including
+         keys, but do not repeatedly search millions of numeric coordinates when a
+         detailed geometry dataset is split into small files. This preserves the
+         same reference evidence without treating small payloads as large manifests. */
+      const text = (readFileSync(p, 'utf8').match(/"(?:[^"\\]|\\.)*"/g) || []).join(' ');
+      corpus.push({ path: 'data/' + rel, role: 'runtime', text });
     }
   }
   return corpus;
@@ -224,9 +229,20 @@ const ROLE_RANK = { runtime: 4, build: 3, test: 2, doc: 1 };
    Sources page lists what the app downloads. Attributing data/tle/catalogue.tle to
    js/locales/pages.de.js is true and useless, so a real consumer outranks a mention. */
 const isProse = (p) => /\/locales\//.test(p) || /reference-data\.js$/.test(p);
+/* Thousands of content-addressed fragments share the same directory and name
+   prefixes. Cache these invariant membership tests; exact-name evidence still
+   gets the same ranking. A hashed basename cannot occur without its prefix. */
+const prefixMemo = new WeakMap();
+function mentionsPrefix(source, prefix) {
+  let memo = prefixMemo.get(source);
+  if (!memo) { memo = new Map(); prefixMemo.set(source, memo); }
+  if (!memo.has(prefix)) memo.set(prefix, source.text.includes(prefix));
+  return memo.get(prefix);
+}
 
 function classify(distRel, corpus) {
   const name = basename(distRel);
+  const hashPrefix = /^(.*-)[a-f0-9]{8,64}\.[^.]+$/i.exec(name)?.[1];
   const stem = name.replace(/\.[^.]+$/, '');
   const dir = dirname(distRel);
   /* the two shapes a computed name takes here: a directory prefix, and a stem prefix before a
@@ -238,9 +254,9 @@ function classify(distRel, corpus) {
   for (const s of corpus) {
     if (s.path.startsWith('dist/')) continue;
     let how = null;
-    if (s.text.includes(distRel) || s.text.includes(name)) how = 'exact';
-    else if (dirPrefix && s.text.includes(dirPrefix)) how = 'prefix';
-    else if (stemPrefix && stemPrefix.length >= 5 && s.text.includes(stemPrefix)) how = 'prefix';
+    if ((!hashPrefix || mentionsPrefix(s, hashPrefix)) && (s.text.includes(distRel) || s.text.includes(name))) how = 'exact';
+    else if (dirPrefix && mentionsPrefix(s, dirPrefix)) how = 'prefix';
+    else if (stemPrefix && stemPrefix.length >= 5 && mentionsPrefix(s, stemPrefix)) how = 'prefix';
     if (!how) continue;
     const score = RANK[how] * 10 + (ROLE_RANK[s.role] || 0) - (isProse(s.path) ? 3 : 0);
     const bestScore = RANK[best.how] * 10 + (ROLE_RANK[best.role] || 0) - (best.where && isProse(best.where) ? 3 : 0);

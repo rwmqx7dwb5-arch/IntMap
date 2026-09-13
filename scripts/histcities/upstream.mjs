@@ -353,3 +353,51 @@ export function dnum(y, month, day, end) {
   const dd = day || (end ? daysInMonth(y, mm) : 1);
   return y * 10000 + mm * 100 + dd;
 }
+
+/** GeoNames locates a source subject; its alternate-name list does not make the
+ * containing city an alias of that subject. Only source-attested modern names
+ * and their accent/case-equivalent oracle spellings may become relabel keys. */
+export function identityKeys(modernNames, anchor) {
+  const names = [...new Set(modernNames.filter(n => typeof n === 'string' && n.trim()))];
+  const attested = new Set(names.map(fold));
+  return [...new Set([anchor.name, anchor.ascii].filter(n => n && attested.has(fold(n))).concat(names))];
+}
+
+/** An exact upstream spelling outranks a fuzzy match to a neighboring place. */
+export function identityMatchRank(names, place) {
+  let rank = Infinity;
+  for (const n of names) {
+    if (!n) continue;
+    const exact = v => fold(v) === fold(n);
+    if (exact(place.name) || exact(place.ascii)) rank = Math.min(rank, 0);
+    else if (place.alts.some(exact)) rank = Math.min(rank, 1);
+    else if (sameName(place.name, n) || sameName(place.ascii, n)) rank = Math.min(rank, 2);
+    else if (place.alts.some(v => sameName(v, n))) rank = Math.min(rank, 3);
+  }
+  return rank;
+}
+
+/** Resolve source-attested alias bridges before source-precedence merging. A later
+ * record may bridge two names (Constantinople / Istanbul); scanning only already
+ * retained rows makes that evidence depend on file order. The caller owns name
+ * normalization, spatial identity and source precedence. */
+export function identityHosts(rows, keyOf, samePlace, precedence) {
+  const parent = new Map(rows.map(r => [r, r]));
+  const root = r => {
+    let p = r;
+    while (parent.get(p) !== p) p = parent.get(p);
+    while (parent.get(r) !== r) { const next = parent.get(r); parent.set(r, p); r = next; }
+    return p;
+  };
+  const byKey = new Map();
+  for (const r of rows) for (const k of new Set(r.keys.map(keyOf))) {
+    const previous = byKey.get(k) || [];
+    for (const other of previous) if (samePlace(r, other)) {
+      const a = root(r), b = root(other);
+      if (a !== b) parent.set(precedence(a, b) <= 0 ? b : a, precedence(a, b) <= 0 ? a : b);
+    }
+    previous.push(r);
+    byKey.set(k, previous);
+  }
+  return new Map(rows.map(r => [r, root(r)]));
+}

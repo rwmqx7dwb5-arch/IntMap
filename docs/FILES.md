@@ -240,6 +240,7 @@ border-coast.js                   歴史的な輪郭のどの辺が「国境／�
                                   写し」かの**読み手** window.IntMapBorderCoast。印そのものは data/border-coast.js
                                   （規則と定数は scripts/build-border-coast.mjs）。#R564 で time-borders.js から
                                   切り出した——同じ読み方を time-admin1.js にも配るため（写さない）
+                                  拡大時のOHM詳細境界も読み込み、形状の一致を確認して同じ境界経路へ渡す。
                                   ⚠ 印は環の索引でも**環そのものの同一性**でも引ける——時代帯は
                                   collection を丸ごと渡してくるので、束の名前を知らずに印へ辿り着く
 radiation-layer.js                実測放射線 window.IntMapRadiationObs（遅延）——各国の観測網が公開する周辺γ線量率を
@@ -262,7 +263,7 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
-hist-cities.js                    時計の年の**都市名** IntMapHistCities（6367都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
+hist-cities.js                    時計の年の**都市名** IntMapHistCities（6442都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
 hist-places.js                    Pleiades の独立した歴史地名 IntMapHistPlaces。遅延取得した出典レコードを
                                   `imhp-lbl` に描き、IntMapPlaceReaders へ出典IDによるカードを登録。
                                   現代都市の改名は行わず、概略の名称期間と代表点の限界を保持する
@@ -691,7 +692,7 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
 hist-places.json                  Pleiades の独立地名（6032 地点・10165 件の年代付き名称記録）。CC BY 3.0。
                                   出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
                                   名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
-hist-cities.json                  時計の年の都市名の記録（6367 都市・8968 の歴史名・125 か国・2.7 MB）。
+hist-cities.json                  時計の年の都市名の記録（6442 都市・9205 の歴史名・125 か国）。
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
                                   **出典**と**日付精度**（日／月／年／世紀／不明）を持つ。時計が「今」を
@@ -790,11 +791,13 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは6つ・全 52,712 リング分／
+                                  **発見された**束すべて・いまは6つ・全 52,721 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
                                   内部を持たないので描かない
+data/border-detail/               OHM原典と同梱形状を照合した拡大表示用の境界線。索引と空間別の断片を
+                                  js/border-coast.jsが表示範囲に応じて読み、元の境界線と置き換える。
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
                                   4,839件／rings 8,267・41.45 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、日付は日単位・両端を含む。生成は scripts/build-hist-admin1.mjs。
@@ -888,7 +891,7 @@ scripts/
   histplaces/pleiades-record.json 独立歴史地名の固定した出典証拠。名称・権利表記・集落型・代表点と、
                                   取得日・入力件数・入力ハッシュを保持する。手書きの地名一覧ではない
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の
-                                  **和集合** → `data/hist-cities.json`（6367 都市／8968 の歴史名／125 か国）。
+                                  **和集合** → `data/hist-cities.json`（6442 都市／9205 の歴史名／125 か国）。
                                   ⚠ **手書きの 611 行は 1 件も落とさない**（`--check` が測る）——実測で、
                                   上流に同じ都市・同じ名前・同じ期間があるのは 4 割
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は
@@ -960,6 +963,8 @@ scripts/
   build-border-coast.mjs          同梱の海岸線（`data/coastline.json.gz`）に照らして、歴史国境の各辺が国境か海岸線の
                                   写しかを印す → `data/border-coast.js`。⚠ **`--check` は全リングを再導出して突き合わせる**
                                   （上流不要）。`--report` が唯一の定数 `INLAND_KM` を読み取る分布を出す
+  build-border-detail.mjs         同じOHM原典を既存形状と照合し、拡大表示用の詳細な境界線を
+                                  data/border-detail/へ分割生成する。既存の補正形状・年代・身元は保持する。
   bordercoast/                    その部品（`water.mjs` 海岸線の記録から陸／海の判定と最寄りの水際までの距離）
   histborders/                    その部品（`fetch.mjs` Overpass の取得とキャッシュ／`geom.mjs` リングの縫合と簡略化。
                                   ⚠ 縫合は**前後両方向へ伸ばす**——片方向だと穴の開いた輪郭が種を置いた場所で刻まれ、

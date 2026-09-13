@@ -40,7 +40,7 @@ import { createGunzip } from 'node:zlib';
 import { join } from 'node:path';
 import {
   ROOT, cacheFile, cachedFetch, sparqlTSV, tsvRows, term, loadGeoNames, grid,
-  sameName, fold, latin, LANG_MAP, stampAt, daysInMonth, UA,
+  sameName, fold, identityKeys, identityMatchRank, latin, LANG_MAP, stampAt, daysInMonth, UA,
 } from './upstream.mjs';
 import { km, guardFrom, GUARD_FLOOR_KM, ANCHOR_TOL_KM, SAME_PLACE_KM } from '../histcities-record.mjs';
 import { LIC } from './lang.mjs';
@@ -110,31 +110,19 @@ async function oracle() {
   console.log(`  GeoNames cities500: ${GEO.length.toLocaleString('en-US')} settlements`);
 }
 
-/** the settlement within ANCHOR_TOL_KM that best answers to one of `names`
- *  ⚠⚠⚠ ANSWERING UNDER ITS OWN NAME BEATS ANSWERING THROUGH THE ALTERNATE LIST, AND NEARER BEATS
- *  BIGGER. This used to take the most populous settlement that matched anything at all, and that
- *  is how the village of Sukhanivka (1.3 km, 1 325 people, matching on its own name) lost to the
- *  city of Sloviansk (5.7 km, 105 141 people, matching through an alternate) — which would have
- *  relabelled a city of a hundred thousand with a village's former name for a century of the
- *  clock. Population answers «which of these places matters most»; the question here is «which of
- *  these places IS this», and the answers to that are the name it goes by and how far away it is.
- *  ⚠ THE HANDWRITTEN PATH IN scripts/build-hist-cities.mjs STILL RANKS BY POPULATION, on purpose:
- *  there the coordinate was typed by a person and GeoNames files a city and its administrative
- *  seat as separate rows, so the biggest row under the row's own spelling is the city meant. Here
- *  the coordinate IS the upstream's own point for the thing being described. */
+/** Locate the source subject, preferring exact own names, exact alternate names,
+ * then approximate own/alternate matches and distance. A fuzzy neighboring name
+ * must not outrank an exact source spelling (Torino versus Pino Torinese).
+ * This anchor supplies position evidence; identityKeys separately determines
+ * which labels the source itself authorizes us to rename. */
 function anchorFor(lon, lat, names) {
   let best = null;
   for (const p of GRID.near(lon, lat, ANCHOR_TOL_KM)) {
     const d = km(lon, lat, p.lon, p.lat);
     if (d > ANCHOR_TOL_KM) continue;
-    let own = false, alt = false;
-    for (const n of names) {
-      if (!n) continue;
-      if (sameName(p.name, n) || sameName(p.ascii, n)) { own = true; break; }
-      if (!alt && p.alts.some((a) => sameName(a, n))) alt = true;
-    }
-    if (!own && !alt) continue;
-    const score = [own ? 0 : 1, d, -p.pop];
+    const rank = identityMatchRank(names, p);
+    if (!Number.isFinite(rank)) continue;
+    const score = [rank, d, -p.pop];
     if (!best || score[0] < best.score[0] || (score[0] === best.score[0] && (score[1] < best.score[1]
       || (score[1] === best.score[1] && score[2] < best.score[2])))) best = { p, d, score };
   }
@@ -335,7 +323,7 @@ async function harvestWikidata() {
     rows.push({
       src: 'wd', id: 'wd-' + q.toLowerCase(), qid: q,
       lon: +it.lon.toFixed(4), lat: +it.lat.toFixed(4), cc: a.p.cc,
-      keyCand: dedupe([a.p.name, a.p.ascii, L.en].concat(native).filter(Boolean)),
+      keyCand: identityKeys(cand, a.p), modernNames: cand,
       anchor: { name: a.p.name, cc: a.p.cc, km: +a.d.toFixed(2), pop: a.p.pop, fcode: a.p.fcode, lon: a.p.lon, lat: a.p.lat },
       eras: keep,
     });
@@ -655,7 +643,7 @@ async function harvestPleiades() {
     if (CCBYSA.test(pl.rights)) { stats.sa++; continue; }
     if (!CCBY.test(pl.rights)) { stats.noRights++; continue; }
     if (!(pl.types || []).some((t) => SETTLEMENT.test(t))) { stats.notSettlement++; continue; }
-    const modern = [], ancient = [];
+    const modern = [], sourceNames = [], ancient = [];
     for (const n of pl.names) {
       const label = firstForm(n.r || n.a);
       if (!label) continue;
@@ -663,12 +651,15 @@ async function harvestPleiades() {
       /* «covers the present» is the identity test, and it is written against the DATA's own
          convention rather than against the literal pair 1700/2100: any name whose span has not
          ended is the name now, whatever numbers the record used to say so. */
-      if (n.e >= NOW_Y) modern.push(label);
+      if (n.e >= NOW_Y) {
+        modern.push(label);
+        sourceNames.push(...String(n.r || "").split(",").map(v => v.trim()).filter(Boolean), ...[n.a].filter(Boolean));
+      }
       else ancient.push({ label, lang: n.l, s: n.s, e: n.e });
     }
     if (!modern.length) { stats.noModern++; continue; }
     if (!ancient.length) { stats.noEra++; continue; }
-    const a = anchorFor(pl.rp[0], pl.rp[1], modern);
+    const a = anchorFor(pl.rp[0], pl.rp[1], sourceNames);
     if (!a) { stats.noAnchor++; continue; }
     const eras = [];
     for (const seg of partitionSpans(ancient)) {
@@ -679,7 +670,8 @@ async function harvestPleiades() {
         if (im && !n[im]) { n[im] = x.label; attested.add(im); }
       }
       if (!n.en) n.en = seg.g.map((x) => x.label).sort()[0];
-      if (modern.some((m) => fold(m) === fold(n.en)) || sameName(a.p.name, n.en)) continue;
+      // A nearby oracle label cannot invalidate an attested historical name.
+      if (modern.some((m) => fold(m) === fold(n.en))) continue;
       /* ⚠ THE PRECISION IS 'c', AND THAT IS NOT MODESTY. Pleiades' start and end come from its
          time-period vocabulary — «hellenistic-republican» begins at −330 and «roman» at −30, and
          those two numbers alone account for 18 360 of its 40 463 dated name records — so they are
@@ -697,10 +689,8 @@ async function harvestPleiades() {
     rows.push({
       src: 'pl', id: 'pl-' + pl.id, qid: '',
       lon: pl.rp[0], lat: pl.rp[1], cc: a.p.cc,
-      /* ⚠ A KEY IS A SPELLING THE TILE MAY CARRY FOR THIS SETTLEMENT — not every modern name in
-         the place record. «Baths of Constantine» is a modern name of a Pleiades place and it is
-         not a name of the city the label layer draws. */
-      keyCand: dedupe([a.p.name, a.p.ascii].concat(modern.filter((m) => sameName(m, a.p.name) || sameName(m, a.p.ascii)))),
+      // Keep the settlement's own modern names; the nearby anchor cannot donate a city name.
+      keyCand: identityKeys(sourceNames, a.p), modernNames: sourceNames,
       anchor: { name: a.p.name, cc: a.p.cc, km: +a.d.toFixed(2), pop: a.p.pop, fcode: a.p.fcode, lon: a.p.lon, lat: a.p.lat },
       eras,
     });
@@ -888,6 +878,7 @@ async function harvestOHM() {
     const modern = g.filter((n) => !n.to || n.to.y >= NOW_Y);
     if (!modern.length) { stats.noModern++; continue; }
     const modernNames = dedupe(modern.flatMap((n) => [n.name, n.t['name:en']]).filter(Boolean));
+    const sourceNames = dedupe(modern.flatMap((n) => [n.name, ...Object.entries(n.t).filter(([k]) => k.startsWith('name:') && LANG_MAP[k.slice(5)]).map(([, v]) => v)]).filter(Boolean));
     const a = anchorFor(modern[0].lon, modern[0].lat, modernNames);
     if (!a) { stats.noAnchor++; continue; }
     const cand = [];
@@ -931,7 +922,7 @@ async function harvestOHM() {
     rows.push({
       src: 'ohm', id: 'ohm-' + Math.min(...g.map((n) => n.id)), qid: '',
       lon: modern[0].lon, lat: modern[0].lat, cc: a.p.cc,
-      keyCand: dedupe([a.p.name, a.p.ascii].concat(modernNames.filter((m) => sameName(m, a.p.name) || sameName(m, a.p.ascii)))),
+      keyCand: identityKeys(sourceNames, a.p), modernNames: sourceNames,
       anchor: { name: a.p.name, cc: a.p.cc, km: +a.d.toFixed(2), pop: a.p.pop, fcode: a.p.fcode, lon: a.p.lon, lat: a.p.lat },
       eras,
     });
@@ -1016,7 +1007,7 @@ function writeRecord(file, rows, header, lic) {
       for (const lg of LANGS) if (e.n[lg]) n[lg] = e.n[lg];
       return `    ED(${stamp(e.from)}, ${stamp(e.to)}, ${js(n)}, ${bit(e.attested)})`;
     }).join(',\n');
-    const ev = { a: [r.anchor.name, r.anchor.cc, r.anchor.km, r.anchor.pop], r: r.rival ? [r.rival.name, r.rival.cc, r.rival.km] : 0, on: TODAY };
+    const ev = { n: [...new Set(r.modernNames)], a: [r.anchor.name, r.anchor.cc, r.anchor.km, r.anchor.pop], r: r.rival ? [r.rival.name, r.rival.cc, r.rival.km] : 0, on: TODAY };
     lines.push(`  D(${js(r.id)}, ${r.lon}, ${r.lat}, ${js(r.cc)}, ${js(r.keys)}, [\n${eras},\n  ], ${js(ev)}),`);
   }
   lines.push('];');
@@ -1036,8 +1027,8 @@ const HEAD = (what, src, lic) => `/* ===========================================
  *  Licence: ${lic}
  *
  *  Every row carries the evidence its guard radius is derived from (\`ev\`) — the settlement the
- *  coordinate resolved to, and the nearest other settlement on Earth answering to one of its
- *  spellings. scripts/build-hist-cities.mjs runs the same arithmetic over it that it runs over
+ *  coordinate resolved to, the source-attested modern names, and the nearest other settlement
+ *  on Earth answering to one of its spellings. scripts/build-hist-cities.mjs runs the same arithmetic over it that it runs over
  *  data/histcities-homonyms.json.gz for a handwritten row. See scripts/histcities/harvest.mjs.
  * ==========================================================================*/`;
 

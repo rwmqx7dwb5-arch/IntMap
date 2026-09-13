@@ -112,9 +112,9 @@ test('r309 ② the era country labels carry the same values as ofm-country', () 
 test('r309 ② the era labels open at the same zooms as ofm-country', () => {
   const zoomOf = (def, k) => { const m = new RegExp('\\b' + k + ':\\s*([0-9.]+)').exec(def); return m ? Number(m[1]) : null; };
   const maxz = zoomOf(MODERN, 'maxzoom');
-  assert.ok(maxz, 'ofm-country has a maxzoom');
+  assert.equal(maxz, null, 'country names remain eligible when zooming in');
   for (const e of ERA) {
-    assert.equal(zoomOf(e.def, 'maxzoom'), maxz, e.id + ' stops where ofm-country stops');
+    assert.equal(zoomOf(e.def, 'maxzoom'), maxz, e.id + ' shares the modern country zoom range');
     /* ofm-country has no floor, so neither may they — a floor is what made the past disappear at
        world zoom while the present kept its names */
     assert.equal(zoomOf(MODERN, 'minzoom'), null, 'ofm-country has no minzoom');

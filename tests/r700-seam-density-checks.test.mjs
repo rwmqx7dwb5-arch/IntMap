@@ -9,8 +9,9 @@
  *
  *  ⚠ WHAT IS GUARDED HERE IS NOT «the step is 2.83×». That number belongs to the upstreams and
  *  moves when either of them is rebuilt. What must stay true is the reasoning the documents rest
- *  on: geometry within an unchanged record stays stable, and the two independent measures
- *  describe material handover differences. A gap is NOT required: refining a record may
+ *  on: geometry within an unchanged record stays stable, and handovers preserve the selected
+ *  source geometry. Density and median edge length describe different aspects of that geometry;
+ *  they need not move proportionally. A gap is NOT required: refining a record may
  *  reduce it. The coarse-only sweep below measures a tradeoff, not an impossibility proof
  *  about high-resolution generation (which is guarded by r710-boundary-precision).
  *
@@ -81,7 +82,8 @@ const median = (a) => [...a].sort((x, y) => x - y)[a.length >> 1];
 /* vertices per 100 km of line, and the median edge length, inside one window.
    ⚠ BOTH, AND THAT IS THE POINT. A density on its own is dominated by how much the coast bends
    inside the window, so a real difference in resolution can hide in it; an edge length on its own
-   says nothing about how much line there is. A resolution step moves both, by the same factor. */
+   says nothing about how much line there is. Density is the inverse MEAN edge length, not the
+   inverse median: restoring bends in long edges can change density while barely moving the median. */
 function measure(paths, bx) {
   const seen = new Set(), seg = [];
   for (const r of paths) {
@@ -177,19 +179,34 @@ test('① the resolution step sits ON the record boundary, and only there', asyn
   }
 });
 
-test('② the step is a resolution change, not a curvature artefact — density and edge length agree', async () => {
-  for (const [a, b] of SEAMS) {
+const regionalRings = (paths, bx) => new Set(paths.filter(r => r.some(p => inside(p, bx))).map(r => JSON.stringify(r)));
+function assertSourceFidelity(paths, source, year, bx, label) {
+  const date = year * 10000 + 701; // yearAt() calls the real module's year-only July 1 dispatch.
+  const active = source.feats.filter(f => f[2]*10000+f[3]*100+f[4] <= date
+    && (source === CSHAPES ? f[5]*10000+f[6]*100+f[7] >= date : f[5]*10000+f[6]*100+f[7] > date));
+  const expected = regionalRings(active.flatMap(f => f[8].flatMap(p => p.map(i => source.rings[i]))), bx);
+  const actual = regionalRings(paths, bx);
+  assert.ok(expected.size > 0, label + ': source fixture is empty');
+  assert.ok(actual.size === expected.size && [...actual].every(r => expected.has(r)),
+    label + ': dispatched source geometry changed (rings ' + actual.size + ', expected ' + expected.size + ')');
+}
+
+test('② each handover draws the date-valid source geometry without additional simplification', async () => {
+  /* R711: Japan's density log step is 0.246 while its median-edge step is only 0.043.
+     A 1.5x ratio between those unrelated statistics would reject restored source bends.
+     Compare actual dispatched coordinates to the active source rings instead, including
+     both inclusive CShapes and exclusive OHM end dates. Neither a gap nor a ratio is required. */
+  for (const [index, [a, b]] of SEAMS.entries()) {
     const lo = await yearAt(a), hi = await yearAt(b);
     assert.notEqual(lo.record, hi.record, a + '/' + b + ' are answered by one record — the handover moved');
-    for (const name of Object.keys(REGION)) {
-      const dens = Math.log(hi.by[name].per100km / lo.by[name].per100km);
-      const edge = Math.log(hi.by[name].medKm / lo.by[name].medKm);
-      if (Math.abs(dens) < 0.14) continue; /* no material resolution step remains */
-      assert.ok(dens * edge < 0, name + ' ' + a + '→' + b + ': density and median edge length moved the SAME way ('
-        + dens.toFixed(3) + ' / ' + edge.toFixed(3) + ') — one of the two is measuring something else');
-      const r = Math.abs(dens) / Math.abs(edge);
-      assert.ok(r > 1 / 1.5 && r < 1.5, name + ' ' + a + '→' + b + ': the two measures disagree in size (|ln| '
-        + Math.abs(dens).toFixed(3) + ' vs ' + Math.abs(edge).toFixed(3) + ')');
+    const source = [HISTB, CSHAPES][index];
+    for (const [name, bx] of Object.entries(REGION)) {
+      assertSourceFidelity(hi.paths, source, b, bx, name + ' ' + b);
+      if (index === 1) assertSourceFidelity(lo.paths, HISTB, a, bx, name + ' ' + a);
+      /* Prove sensitivity to the actual regression: dispatching a coarsened copy
+         must fail even if a density/median ratio happens to look agreeable. */
+      assert.throws(() => assertSourceFidelity(resimplify(hi.paths, 0.015), source, b, bx, name + ' lossy copy'),
+        /dispatched source geometry changed/);
     }
   }
 });

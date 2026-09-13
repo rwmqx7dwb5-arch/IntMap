@@ -838,7 +838,7 @@ The wiring between the two products, and the four steps that stayed manual, are 
 
 ## CShapes 2.0 の国境（1886–2019）— `npm run check:cshapes` (`scripts/build-cshapes.mjs --check`, #R700)
 
-`data/cshapes.js` は **9.29 MB・710 レコード・252 政体**で、時間旅行の 1886–2019 を
+`data/cshapes.js` は **12.96 MB・710 レコード・252 政体**で、時間旅行の 1886–2019 を
 すべて答え、2 つの世界大戦レイヤーはこの輪郭を切って作られ、`check:histborders` は**この記録に
 「世界とはどれだけの陸地か」を訊いて**自分の下限を導いている。にもかかわらず、**6 本ある歴史的な
 束のうちこれだけがビルドも門も持っていなかった**——出荷したバイトがどこから来たのかを言えず、
@@ -956,9 +956,9 @@ internal consistency is not geographic accuracy.
 
 ⚠ **こちらは再導出する。** `scripts/build-border-coast.mjs --check` は上流を必要としない——
 入力は `data/` から**発見された**束（いまは6つ——`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）と
-`data/coastline.json.gz` だけなので、**全 52,712 リングを判定し直して `data/border-coast.js` と
+`data/coastline.json.gz` だけなので、**全 52,721 リングを判定し直して `data/border-coast.js` と
 バイト単位で突き合わせる**。⚠ **束の母集合そのものも門である**——印されている集合が `data/` の束の集合と一致しなければ落ちるので、束を1つ足して印を忘れることができない（`data/hist-eras.js` は、手で並べた一覧だったころ気づかれずに抜けていた）。⚠ **`npm test` の中の写しは `--sample 8`**
-（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 52,712 リング）ので、網羅版は CI の
+（#R564。この回で印す対象が 4,830 本から 25,506 本へ一桁増え（束が育った現在は上の 52,721 リング）ので、網羅版は CI の
 `npm run check:bordercoast` に置き、suite の中は 8 本に 1 本を再導出する。形の検査は
 **全件**を歩いたままなので、抜けるのは「再導出」の母数だけ）。
 上の門が「記録が自分自身と整合するか」を問うのに対し、ここは
@@ -2309,6 +2309,25 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 検査を触ったら、`npm run test:deep` を自分で走らせる。
 
 ### Chronos の収録と精度
+
+`tests/r711-historical-city-identity-checks.test.mjs` は実際の歴史都市名モジュールと出荷データを
+使い、近隣の町名が都市全体の名称を置き換えないことを照会・ポップアップ解決・描画式で検証する。
+正しい町域の旧名は保持する。生成時の対応キーも出典の名称証拠と照合する。
+
+`tests/r711-label-visibility-checks.test.mjs` は出荷するラベル定義を実行し、国名・地方区分名が
+拡大側のズーム上限だけで消えないことと、通常の衝突判定が保持されることを検証する。
+これは常に全名称が画面に収まるという検査ではない。実画面の再現結果は開発記録に記載する。
+
+`tests/r711-boundary-quality-checks.test.mjs` は、出典と異なる補正形状を詳細線で上書きしないこと、
+島と穴の保持、表示範囲による取得、読込失敗時の元の線の維持を検査する。
+同梱詳細データは `scripts/build-border-detail.mjs --check` で、形状指紋・内容ハッシュ・
+座標範囲・断片の境界箱・出典relation ID・件数と容量・余分なファイルをオフライン検査する。
+キャッシュ原典がある環境では同生成器の `--check-source` で各島・穴との対応も照合する。
+合計リング数の一致だけでは、失われた穴を別の増えた穴が相殺できるため十分ではない。
+`tests/r711-boundary-country-refresh-checks.test.mjs` は実際の国境モジュールを実行し、
+詳細線到着時に線が再設定され、現在の領域や日付が変わらないことを測る。
+`tests/r700-seam-density-checks.test.mjs` は、切替日前後の描画座標がその日に有効な
+原典レコードと一致することを検査する。密度と辺長中央値の変化率が一致することは要求しない。
 
 `tests/r709-historical-places-source-checks.test.mjs` は、Pleiades の固定した出典記録を生成器の
 `compile()` で実際に変換し、配信する `data/hist-places.json` と完全一致することを測る。
