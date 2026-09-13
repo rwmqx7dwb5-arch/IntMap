@@ -129,6 +129,11 @@ const DOCS = [...PROSE_DOCS, ...AGENT_DOCS];
 const BODY = new Map(DOCS.map((f) => [f, rd(f)]));
 const eachDoc = (fn) => { for (const [f, s] of BODY) fn(f, s); };
 
+/* (#R713) the nine source pages, DISCOVERED from disk and not listed — two rules need them now
+   (`histb-count` and `histnames`), and a roster written out twice would be two answers. */
+const PAGES_ON_DISK = readdirSync(join(ROOT, 'js/locales'))
+  .filter((f) => /^pages\.[\w-]+\.js$/.test(f)).sort().map((f) => 'js/locales/' + f);
+
 /* the sweep has to actually reach the tree — an empty scan passes everything */
 if (DOCS.length < 10) fail('scan', `only ${DOCS.length} documents were read — the sweep is not reaching the tree`);
 for (const must of ['Architecture.md', 'README.md', 'AGENTS.md', 'CLAUDE.md', 'CONSTITUTION.md', 'SECURITY.md']) {
@@ -1487,7 +1492,27 @@ if (RULE && RULE !== 'i18n-open-gap') {
        AGENTS.md §9 forbids, and the cost is #R536's: `tagSame` reads one first and the other stops
        being reachable without anything going red. */
     if (has('data/histeras-names.json')) fail('histnames', 'data/histeras-names.json is back beside data/histnames.json — one name, two answers');
-    if (!problems.some((x) => x.startsWith('histnames'))) ok('histnames', `${rows} names by measure + ${qid} by identifier + ${prose} descriptions, ${strings} localized strings, stated correctly`);
+    /* ⚠⚠⚠ (#R713) THE NINE SOURCE PAGES STATE THIS TOTAL TOO, AND NOTHING WAS MEASURING IT.
+       The needles above read the .md documents and look for 「N 名前」/「N の訳語」; the Sources
+       row says it as «N localized strings in all» / 「訳語は合わせて N 件」 and in seven other
+       languages' phrasings, so it sat outside every needle and drifted — found stating 5,088
+       against a record holding 5,093, and the gap only grew. ⚠ THE FIX IS NOT NINE PHRASINGS.
+       A translated claim is ONE sentence and its n translations, so the number the 正本 states
+       is a number every translation states: ask each file whether it CONTAINS the figure, which
+       is language-agnostic and needs no table of wordings (the shape #R700's `histb-count`
+       already uses for the border record). This counts the WHOLE table — every lane — because
+       that is what the sentence is about; `strings` above is the two records the .md files
+       discuss. */
+    const allLanes = [...Object.values(j.byName).flatMap((r) => Object.values(r)),
+      ...Object.values(j.byQid), ...Object.values(j.prose)].reduce((n, r) => n + Object.keys(r.n).length, 0);
+    const figure = allLanes.toLocaleString('en-US');
+    let pagesWith = 0;
+    for (const f of PAGES_ON_DISK) {
+      if (!has(f)) continue;
+      if (rd(f).includes(figure)) { pagesWith++; continue; }
+      fail('histnames', `${f} does not state the ${figure} localized strings data/histnames.json holds — the Sources row where all nine languages say how much of the historical map reaches a reader in their own language`);
+    }
+    if (!problems.some((x) => x.startsWith('histnames'))) ok('histnames', `${rows} names by measure + ${qid} by identifier + ${prose} descriptions, ${strings} localized strings, stated correctly; ${allLanes} across every lane, stated in ${pagesWith} source page(s)`);
   }
 }
 
@@ -1924,8 +1949,6 @@ if (RULE && RULE !== 'i18n-open-gap') {
        `pages.ja.js` while its language code is `jp`, and its traditional Chinese is `pages.zh-hant.js`
        while its code is `zh` (js/locales/_langs.js is the 正本 for the codes, #R588), so a roster
        written out here would be a third spelling of the same nine and would be wrong about two. */
-    const PAGES_ON_DISK = readdirSync(join(ROOT, 'js/locales'))
-      .filter((f) => /^pages\.[\w-]+\.js$/.test(f)).sort().map((f) => 'js/locales/' + f);
 
     /* ── half 1: every carrier git tracks, held to the record by the units above ────────────── */
     const carriersUniverse = (() => {

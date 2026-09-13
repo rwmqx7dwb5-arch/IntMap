@@ -559,7 +559,8 @@ window.IntMapModules.timeBorders=function(HOST){
     /* ══ (#R686) THE DEEP PAST IN NINE LANGUAGES ═══════════════════════════════════════════════
        data/hist-eras.js carries ONE name per feature, the upstream cartographer's English, so
        every polity before 1850 was English in all nine languages — 「Empire of Alexander」 at
-       323 BC, 「Kalmar Union」 at 1500. data/histeras-names.json is the second lane: the
+       323 BC, 「Kalmar Union」 at 1500. data/histnames.json is the second lane (#R695 folded
+       #R686's data/histeras-names.json into it; that file no longer exists): the
        upstream's own string → the same polity's name in the other eight languages, each one
        decided against Wikidata by agreement with THIS bundle's geometry and clock
        (scripts/histeras/match.mjs) and shipped only where a source actually wrote it.
@@ -662,7 +663,7 @@ window.IntMapModules.timeBorders=function(HOST){
       const feats=[];
       for(const ft of sn.feats){ const nm=(ft[0]&&ft[0].en)||'', at=ft[1]||{}, ps=poly(ft[2]);
         if(!ps.length) continue;
-        /* (#R686) the nine-language row for this name, when data/histeras-names.json has one. `en`
+        /* (#R686) the nine-language row for this name, when data/histnames.json has one. `en`
            is the upstream's and is put back here, so `_i18n` is the same self-describing tuple the
            1850-1885 features carry and every reader of it stays one reader. */
         const i18=hnFor('eras',nm,null,null)||hnEraGloss(nm);   /* (#R700) …and when the whole string has no row, the base's, with the possessor put back */

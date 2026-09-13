@@ -263,7 +263,7 @@ time-admin1.js                    時間軸の上の歴史的**地方区分**（
                                   （docs/MAP-LAYERS.md §7.7・記録は data/hist-admin1.js）
 time-countries.js                 時計の年から見た Countries タブ
 history.js                        歴史的国家／同一性／マディソン系列
-hist-cities.js                    時計の年の**都市名** IntMapHistCities（6442都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
+hist-cities.js                    時計の年の**都市名** IntMapHistCities（6474都市・`ofm-city` の text-field を match で包み、各分岐を `distance` のガード半径で括る・記録は data/hist-cities.json）
 hist-places.js                    Pleiades の独立した歴史地名 IntMapHistPlaces。遅延取得した出典レコードを
                                   `imhp-lbl` に描き、IntMapPlaceReaders へ出典IDによるカードを登録。
                                   現代都市の改名は行わず、概略の名称期間と代表点の限界を保持する
@@ -692,7 +692,7 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
 hist-places.json                  Pleiades の独立地名（6032 地点・10165 件の年代付き名称記録）。CC BY 3.0。
                                   出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
                                   名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
-hist-cities.json                  時計の年の都市名の記録（6442 都市・9205 の歴史名・125 か国）。
+hist-cities.json                  時計の年の都市名の記録（6474 都市・9246 の歴史名・125 か国）。
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
                                   **出典**と**日付精度**（日／月／年／世紀／不明）を持つ。時計が「今」を
@@ -892,7 +892,7 @@ scripts/
   histplaces/pleiades-record.json 独立歴史地名の固定した出典証拠。名称・権利表記・集落型・代表点と、
                                   取得日・入力件数・入力ハッシュを保持する。手書きの地名一覧ではない
   build-hist-cities.mjs           手書きの記録（`scripts/histcities/*.mjs`）と、上流から導出した記録の
-                                  **和集合** → `data/hist-cities.json`（6442 都市／9205 の歴史名／125 か国）。
+                                  **和集合** → `data/hist-cities.json`（6474 都市／9246 の歴史名／125 か国）。
                                   ⚠ **手書きの 611 行は 1 件も落とさない**（`--check` が測る）——実測で、
                                   上流に同じ都市・同じ名前・同じ期間があるのは 4 割
   histcities/harvest.mjs          上流の収穫（Wikidata の SPARQL・Pleiades の JSON-LD・OHM の Overpass）。生成物は

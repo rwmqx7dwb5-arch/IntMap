@@ -45,7 +45,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { census, eraBaseCensus, eraBundle } from './histeras/census.mjs';
-import { candidatesFor, factsFor, rejectedClasses, acceptedClasses, labelsByQid, CACHE } from './histeras/harvest.mjs';
+import { candidatesFor, articlesFor, factsFor, rejectedClasses, acceptedClasses, labelsByQid, CACHE } from './histeras/harvest.mjs';
 import { decide, labelsFor, plainLabel } from './histeras/match.mjs';
 import { timeBorders } from './histeras/time-borders.mjs';
 import { shipLangs, attestedLangs, appLangs } from './histnames/langs.mjs';
@@ -86,7 +86,13 @@ async function converters(langs) {
 const readJSON = (f) => JSON.parse(readFileSync(f, 'utf8'));
 
 function candsOf(store, name) {
-  return (store.byName[name] || []).map(([q, ex]) => {
+  /* (#R713) the second attestation store, merged HERE and nowhere earlier — see `fetchAll`. An
+     article is an attested alias resolving to at most one item, so it enters as an exact
+     candidate and is then scored by scripts/histeras/match.mjs like any other. */
+  const art = (store.articles || {})[name];
+  const pairs = (store.byName[name] || []).slice();
+  if (art && !pairs.some(([q]) => q === art)) pairs.push([art, 1]);
+  return pairs.map(([q, ex]) => {
     const f = store.facts[q] || { labels: {}, coord: null, starts: [], ends: [], p31: [], geo: false };
     return { qid: q, exact: !!ex, ...f };
   });
@@ -107,7 +113,25 @@ async function fetchAll() {
                                         ['era-base', eraBase, EB_CAND, 'eb']]) {
     process.stderr.write(what + ': ' + rows.length + ' names\n');
     const byName = await candidatesFor(rows.map((r) => r.name), log, ns);
-    const qids = new Set(); for (const m of byName.values()) for (const q of m.keys()) qids.add(q);
+    /* ⚠ (#R713) THE NAMES WIKIDATA ANSWERED NOTHING FOR ARE ASKED AGAIN, IN THE OTHER STORE.
+       They are not a smaller problem than the ones the scorer refuses — they are the larger one:
+       1,208 of the era corpus's 3,029 names, against 461 that had candidates and lost. English
+       Wikipedia's redirects are aliases editors wrote, and `redirects=1` resolves a title to at
+       most one article, so there is no ranked list here for #R515 to happen in. Everything the
+       lane finds still goes through `decide` below like any other candidate. */
+    const silent = [...byName].filter(([, m]) => m.size === 0).map(([n]) => n);
+    process.stderr.write('\n  ' + silent.length + ' names Wikidata does not carry \u2014 asking en.wikipedia\n');
+    const articles = await articlesFor(silent, log, ns);
+    process.stderr.write('\n  ' + articles.size + ' of them resolve to an article with a Wikidata item\n');
+    /* ⚠⚠⚠ AND THEY ARE NOT WRITTEN INTO `byName`. #R700 gave the base lane its own file for
+       exactly this reason and tests/r700-era-gloss-checks ⑥ measures it: `byName` is the set of
+       answers WIKIDATA gave, and `isProse` asks it 「does Wikidata carry an item for this string?」
+       to tell a name from a sentence. Folding a second store into it answers that question for
+       strings it was never asked about — measured, 16 descriptions flipped to 「has an item」 and
+       lost the line written for them. The lane is kept BESIDE the store and merged only where
+       candidates are assembled (`candsOf`), so the era store still decides what prose is. */
+    const qids = new Set([...articles.values()]);
+    for (const m of byName.values()) for (const q of m.keys()) qids.add(q);
     process.stderr.write('\n  ' + qids.size + ' distinct candidate items\n');
     const facts = await factsFor(qids, log);
     const classes = new Set(); for (const f of Object.values(facts)) for (const c of f.p31) classes.add(c);
@@ -117,7 +141,7 @@ async function fetchAll() {
       + subject.size + ' a kind it does, of ' + classes.size + '\n');
     writeFileSync(file, JSON.stringify({
       byName: Object.fromEntries([...byName].map(([n, m]) => [n, [...m].map(([q, ex]) => [q, ex ? 1 : 0])])),
-      facts, internal: [...internal], subject: [...subject],
+      facts, internal: [...internal], subject: [...subject], articles: Object.fromEntries(articles),
     }));
   }
 
@@ -171,6 +195,11 @@ function byMeasure(rows, years, store, langs, cc, why) {
   const owned = ownedNames(rows, langs);
   const out = {};
   let dropped = 0;
+  /* (#R713) which STORE attested the string this row was decided from. Kept because the ledger
+     is otherwise a console line that scrolls away, and «how many names does each store answer
+     for» is the question the next round asks before widening anything. */
+  const articles = store.articles || {};
+  const lanes = { label: 0, article: 0 };
   for (const row of rows) {
     if (owned.has(row.name)) { why['hand-table'] = (why['hand-table'] || 0) + 1; continue; }
     const cands = candsOf(store, row.name).map((c) => ({ ...c, subject: c.geo || (c.p31 || []).some((p) => subject.has(p)) }));
@@ -184,9 +213,10 @@ function byMeasure(rows, years, store, langs, cc, why) {
        nothing. The DECISION is not lost — it is reproducible from the cache at any time, which is
        what `--check` re-runs — only its silence is left out of the file. */
     if (!Object.keys(n).length) { why.nothing = (why.nothing || 0) + 1; continue; }
+    lanes[articles[row.name] === d.qid ? 'article' : 'label'] += 1;
     out[row.name] = { q: d.qid, a, n };
   }
-  return { out, dropped };
+  return { out, dropped, lanes };
 }
 
 /* ══ ⚠⚠⚠ THE GATE WITHOUT THE HARVEST ══════════════════════════════════════════════════════════
@@ -302,7 +332,7 @@ async function build({ check = false } = {}) {
   const whyEb = {};
   const eraBase = existsSync(EB_CAND)
     ? byMeasure(eraBaseCensus(eraRows), eraB.snaps.map((s) => s.y), readJSON(EB_CAND), langs, cc, whyEb)
-    : { out: {}, dropped: 0 };
+    : { out: {}, dropped: 0, lanes: { label: 0, article: 0 } };
 
   /* ── the identifier lane ────────────────────────────────────────────────
      Keyed by QID, not by name: two hist-borders features can share a polity and disagree about
@@ -324,6 +354,15 @@ async function build({ check = false } = {}) {
      Membership is derived; the words are authored. A string the classifier calls prose with no
      line in the table FAILS THE BUILD — that is what keeps an authored table from going stale. */
   const common = commonWords(eraRows.map((r) => r.name));
+  /* ⚠⚠⚠ (#R713) THE SECOND STORE IS NOT ASKED THIS QUESTION, AND #R700 IS WHY. `isProse`'s
+     `hasItem` argument means «does WIKIDATA carry an item for this string» — a test of whether the
+     cartographer wrote a name or a sentence. #R700 kept the base lane's candidates out of this
+     very map so that a description would not flip to «has an item» and lose its 「サバンナの狩猟
+     採集民」 row. en.wikipedia's redirect store answers a DIFFERENT question, so feeding it in
+     here would be that same mistake by another door: measured, it moved 16 strings out of the
+     prose lane, each of them trading a line written for that description for whatever label the
+     article happens to carry. The article QID is therefore filtered out of the answer — the lane
+     ADDS rows to the measure and changes nothing about what counts as prose. */
   const proseRows = eraRows.filter((r) => isProse(r.name, (eraStore.byName[r.name] || []).length > 0, common));
   const prose = {}; const missing = [];
   for (const r of proseRows) {
@@ -345,6 +384,15 @@ async function build({ check = false } = {}) {
        mask already written would start naming other languages. The bit order is the app
        registry's, always. */
     v: V, src: SRC, built: new Date().toISOString().slice(0, 10), langs, authored, mask: appLangs(ROOT),
+    /* (#R713) how many rows each ATTESTATION STORE answered for, in the shipped document rather
+       than in a console line. `article` is English Wikipedia's redirect store (scripts/histeras/
+       harvest.mjs `articlesFor`); `label` is Wikidata's own label and alias equality; `qid` is the
+       identifier lane, where the record states the item itself and no string is involved. */
+    lanes: {
+      label: eras.lanes.label + cshapes.lanes.label + eraBase.lanes.label,
+      article: eras.lanes.article + cshapes.lanes.article + eraBase.lanes.article,
+      qid: Object.keys(byQid).length,
+    },
     byQid,
     byName: Object.keys(eraBase.out).length
       ? { cshapes: cshapes.out, eras: eras.out, eraBase: eraBase.out }
@@ -358,7 +406,7 @@ async function build({ check = false } = {}) {
     const have = readJSON(OUT);
     const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const diffs = [];
-    for (const k of ['v', 'langs', 'authored', 'mask', 'byQid', 'byName', 'prose']) if (!same(have[k], doc[k])) diffs.push(k);
+    for (const k of ['v', 'langs', 'authored', 'mask', 'lanes', 'byQid', 'byName', 'prose']) if (!same(have[k], doc[k])) diffs.push(k);
     if (diffs.length) throw new Error('data/histnames.json differs from a rebuild in: ' + diffs.join(', '));
     console.log('data/histnames.json — reproduces from the cache; '
       + Object.keys(byQid).length + ' by identifier, '
@@ -380,6 +428,8 @@ async function build({ check = false } = {}) {
   console.log('  measure · eras    ' + Object.keys(eras.out).length + ' of ' + eraRows.length
     + ' — refused: ' + Object.entries(whyEra).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + v).join(' · '));
   console.log('  prose            ' + Object.keys(prose).length + ' descriptions');
+  console.log('  attested by      Wikidata label/alias ' + doc.lanes.label
+    + ' · en.wikipedia redirect ' + doc.lanes.article + ' · the identifier the record states itself ' + doc.lanes.qid);
   return doc;
 }
 
