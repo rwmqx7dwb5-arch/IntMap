@@ -8,6 +8,7 @@ import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
+import { readLF } from './eol.mjs';
 import { detailPolys, sourcePolys } from './build-hist-admin1.mjs';
 import { ringsOf, round } from './build-hist-borders.mjs';
 import { loadGeom } from './histborders/fetch.mjs';
@@ -21,6 +22,36 @@ const BC = read(join(ROOT, 'js/border-coast.js'));
 const TOL = 0.0005, DEC = 5;
 const fp = polys => BC.geometryKey(polys);
 const SETS = [ ['hist-borders', '__HISTB', 'intmap-histb-cache'], ['hist-admin1', '__HISTADM1', 'ohm-adm34-cache'], ['hist-admin2', '__HISTADM2', 'ohm-adm56-cache'] ];
+const metadata = () => ({ v: 1, source: 'OpenHistoricalMap (CC0), cached relation geometry matching the shipped coarse outline',
+  targetTolerance: TOL, decimals: DEC, inlandKm: INLAND_KM });
+
+/* A partial build keeps the other sets exactly as published. Shared precision
+   and coast semantics must agree before any chunk is written: otherwise one
+   manifest would make conflicting claims about the sets it combines. */
+export function planDetailBuild(previous, names = null) {
+  if (names === null) return { selected: SETS, index: { ...metadata(), sets: {}, stats: {} } };
+  if (!Array.isArray(names) || !names.length || names.some(name => !SETS.some(s => s[0] === name)))
+    throw new Error('--sets requires known comma-separated set names: ' + SETS.map(s => s[0]).join(','));
+  if (new Set(names).size !== names.length) throw new Error('--sets contains duplicate set names');
+  if (!previous || typeof previous !== 'object') throw new Error('partial detail build requires an existing index');
+  for (const [key, value] of Object.entries(metadata()))
+    if (previous[key] !== value) throw new Error('partial detail build has incompatible ' + key + '; rebuild every set');
+  for (const group of ['sets', 'stats']) {
+    if (!previous[group] || typeof previous[group] !== 'object' || Array.isArray(previous[group]))
+      throw new Error('partial detail build has no ' + group);
+    if (Object.keys(previous[group]).some(global => !SETS.some(s => s[1] === global)))
+      throw new Error('partial detail build has an unknown ' + group + ' member');
+    for (const [, global] of SETS)
+      if (!previous[group][global] || typeof previous[group][global] !== 'object' || Array.isArray(previous[group][global]))
+        throw new Error('partial detail build has no ' + group + ' for ' + global);
+  }
+  return { selected: SETS.filter(s => names.includes(s[0])),
+    index: { ...previous, sets: { ...previous.sets }, stats: { ...previous.stats } } };
+}
+
+export function detailAssets(index) {
+  return new Set(Object.values(index.sets).flatMap(set => Object.values(set).flatMap(entry => entry[1].map(part => part[0]))));
+}
 
 export function eligible(before, coarse, fine) {
   if (JSON.stringify(before) !== JSON.stringify(coarse)) return false;
@@ -51,15 +82,15 @@ export function eligible(before, coarse, fine) {
   return true;
 }
 
-async function build() {
+async function build(names = null) {
+  const previous = names === null ? null : existsSync(join(OUT, 'index.json')) ? JSON.parse(readFileSync(join(OUT, 'index.json'), 'utf8')) : null;
+  const { index, selected } = planDetailBuild(previous, names);
   mkdirSync(OUT, { recursive: true });
   const W = water();
-  const index = { v: 1, source: 'OpenHistoricalMap (CC0), cached relation geometry matching the shipped coarse outline',
-    targetTolerance: TOL, decimals: DEC, inlandKm: INLAND_KM, sets: {}, stats: {} };
-  for (const [file, global, cacheDir] of SETS) {
+  for (const [file, global, cacheDir] of selected) {
     const d = read(join(ROOT, 'data', file + '.js')), cache = join(tmpdir(), cacheDir);
     const wanted = new Map();
-    d.feats.forEach((f, i) => { const p = geometryOf(d, f), key = fp(p); if (!wanted.has(key)) wanted.set(key, { p, rows: [] }); wanted.get(key).rows.push(i); });
+    const rowKeys = d.feats.map((f, i) => { const p = geometryOf(d, f), key = fp(p); if (!wanted.has(key)) wanted.set(key, { p, rows: [] }); wanted.get(key).rows.push(i); return key; });
     const entries = index.sets[global] = {}, stats = index.stats[global] = { records: d.feats.length, refined: 0, retained: 0, vertices: 0, bytes: 0, chunks: 0 };
     const buffers = new Map();
     function flush(cell) {
@@ -119,6 +150,7 @@ async function build() {
       }
     } else {
       for (let i = 0; i < d.feats.length; i++) {
+        if (!wanted.has(rowKeys[i])) continue; // exact geometry already supplied for all rows sharing it
         const id = d.feats[i][10], path = join(cache, 'rel', id + '.json');
         if (!existsSync(path)) continue;
         const rel = JSON.parse(readFileSync(path, 'utf8')); if (!rel || rel.id !== id) continue;
@@ -131,7 +163,7 @@ async function build() {
     console.log(global, JSON.stringify(stats));
   }
   writeFileSync(join(OUT, 'index.json'), JSON.stringify(index) + '\n');
-  const used = new Set(Object.values(index.sets).flatMap(set => Object.values(set).flatMap(entry => entry[1].map(part => part[0]))));
+  const used = detailAssets(index);
   for (const name of readdirSync(OUT)) if (/^hist-(?:borders|admin[12])-[a-f0-9]{16}\.json$/.test(name) && !used.has(name)) unlinkSync(join(OUT,name));
   console.log('detail index written', JSON.stringify(index.stats));
 }
@@ -159,7 +191,8 @@ export function check(root = ROOT) {
       for (const [path,bbox] of entry[1]) {
         ok(new RegExp('^'+file+'-[a-f0-9]{16}\\.json$').test(path),'invalid chunk path '+path);
         if (!chunks.has(path)) {
-          const body=readFileSync(join(out,path),'utf8'), d=JSON.parse(body);
+          // The manifest measures generated LF bytes; checkout CRLF is not payload growth.
+          const body=readLF(join(out,path)), d=JSON.parse(body);
           ok(Buffer.byteLength(body)<=512*1024,'chunk exceeds 512 KiB: '+path);
           ok(path.includes(createHash('sha256').update(body.trimEnd()).digest('hex').slice(0,16)),'chunk content hash differs: '+path);
           let points=0;
@@ -265,5 +298,8 @@ async function checkSource(repair = false) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  if(process.argv.includes('--repair-source'))await checkSource(true);else if(process.argv.includes('--check-source'))await checkSource();else if(process.argv.includes('--check'))check();else await build();
+  if(process.argv.includes('--repair-source'))await checkSource(true);else if(process.argv.includes('--check-source'))await checkSource();else if(process.argv.includes('--check'))check();else {
+    const at = process.argv.indexOf('--sets');
+    await build(at < 0 ? null : String(process.argv[at + 1] || '').split(',').map(s => s.trim()));
+  }
 }

@@ -172,7 +172,10 @@ test('⑥ the module is imported eagerly, and the record is NOT', () => {
   assert.ok(!/hist-cities\.json/.test(code('src/main.js')), 'the 600-city record must not be in the boot bundle');
   const src = rd('js/hist-cities.js');
   assert.match(src, /fetch\(url\)/, 'the record is fetched');
-  assert.match(src, /if \(data \|\| loading \|\| failed\) return loading;/, 'and fetched at most once');
+  /* Failure must permit a later retry. R712 runs concurrent fetch, successful
+     cache and redraw re-entry scenarios against this module. */
+  assert.match(src, /if \(data\) return Promise\.resolve\(data\);/, 'a successful record is cached');
+  assert.match(src, /if \(loading\) return loading;/, 'concurrent readers share the pending request');
 });
 
 /* ══ ⚠⚠⚠ ⑦ THE SHIPPED MODULE, RUN, AND ITS OUTPUT EVALUATED BY MAPLIBRE'S OWN PARSER ══════════

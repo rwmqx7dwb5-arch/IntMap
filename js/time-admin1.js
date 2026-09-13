@@ -169,8 +169,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          of which 1,142 and 1,600 end before 1800.
 
        The fallback geometry now uses 0.004° / 4 decimals in both tiers. Measured
-       2026-09-14: data/hist-admin1.js is 41,446,090 B and 2,180,543 vertices;
-       data/hist-admin2.js is 40,638,922 B and 1,872,415 vertices (LF bytes).
+       2026-09-14: data/hist-admin1.js is 41,465,364 B and 2,180,562 vertices;
+       data/hist-admin2.js is 40,675,126 B and 1,872,410 vertices (LF bytes).
        This is the build target, not a guarantee about the source's survey accuracy.
        Geometry-only refinement preserves labels, validity intervals and corrected shapes.
        On the cached Izu record, the maximum source-to-outline deviation fell from

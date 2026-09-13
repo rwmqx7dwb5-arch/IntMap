@@ -34,8 +34,7 @@ export function eligible(place, year) {
     && /creative commons attribution 3\.0/i.test(place.rights || '')
     && !/share.?alike/i.test(place.rights || '')
     && (place.types || []).some(t => /(^|-)settlement(-|$)/.test(t))
-    && (place.names || []).some(n => datedName(n) && n.e < year)
-    && !(place.names || []).some(n => datedName(n) && n.e >= year);
+    && (place.names || []).some(n => datedName(n) && n.e < year);
 }
 function datedName(n) {
   return !!String(n.r || n.a || '').trim() && Number.isInteger(n.s) && Number.isInteger(n.e)
@@ -76,7 +75,7 @@ export function main(args = process.argv.slice(2)) {
     const all = JSON.parse(bytes), places = selectRecords(all, Number(asOf.slice(0, 4)));
     const record = { v: 1, source: SOURCE, asOf, harvest: { inputRecords: all.length,
       inputSha256: createHash('sha256').update(bytes).digest('hex'),
-      selection: 'CC BY 3.0 settlement with a representative point and dated names, none covering the snapshot year' }, places };
+      selection: 'CC BY 3.0 settlement with a representative point and a dated name ending before the snapshot year; exclude only identities actually shipped by hist-cities at compile time' }, places };
     mkdirSync(path.dirname(RECORD), { recursive: true });
     writeFileSync(RECORD, JSON.stringify(record) + '\n');
   }

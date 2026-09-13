@@ -206,6 +206,14 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
        日はその全部を払う。同じ答えは1回で出る: レイヤーが描いている地物を全部もらい、その地物の
        座標を投影すれば、それがラベルの居る場所である。主張は1文字も変えていない。 */
     let hit = null;
+    /* map-ui's built-in place/geography labels yield to non-label owners.
+       Reader registrations extend that label family dynamically. This mirrors
+       ALL_LBL, not every symbol layer: news symbols remain click owners. */
+    const labelLayers = new Set(['ofm-country','ofm-admin1','imta-lbl','imta2-lbl','ofm-city','ofm-other',
+      'geo-sea','ofm-water','ofm-water2','ofm-river','ofm-peak', ...(window.IntMapPlaceReaders?.ids() || [])]);
+    const ownerLayers = window.IntMapGeoEngine.events.clickLayers({ ownersOnly: true })
+      .filter(id => !labelLayers.has(id))
+      .filter(id => m.getLayer(id) && m.getLayoutProperty(id, 'visibility') !== 'none');
     for (const f of m.queryRenderedFeatures({ layers: ["imta-lbl"] })) {
       const g = f.geometry; if (!g) continue;
       let pt = null;
@@ -231,23 +239,25 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
          ⚠ AND A FAILURE HERE COSTS MORE THAN THIS ASSERTION. The file is one test, so everything
          after line 246 — including #R679’s floor assertions — simply does not run on those
          nights. A flaky candidate-picker silently deletes the checks below it.
-         The condition below is the same fact, from the renderer: if any SYMBOL or CIRCLE feature
-         is painted above ours at that pixel and it is not one of the era layers, the app will not
-         act on this click — so neither does the test. It uses no private state, so it cannot drift
-         from `clickLayers`; it is stricter than `_ownedByOther`, which is the safe direction for a
-         picker that has other candidates to try. */
-      const stack = m.queryRenderedFeatures([p.x, p.y]);
-      const ERA_LYR = ["imta-lbl", "imta-lbl2", "imta-line", "imta-vt-line", "imta-fill"];
-      let owned = false;
-      for (const q of stack) {
-        if (q.layer && ERA_LYR.indexOf(q.layer.id) >= 0) break;   /* reached ours: nothing above it */
-        const t = q.layer && q.layer.type;
-        if (t === "symbol" || t === "circle") { owned = true; break; }
-      }
-      if (owned) continue;
+         The earlier picker checked only symbols/circles ABOVE an era layer.
+         _ownedByOther instead asks every registered non-label owner at this pixel,
+         irrespective of layer type or drawing order. Fallback listeners are not
+         exclusive owners. Map-level claimClick can still consume the eventual
+         click; a missing outline remains a failure rather than being retried away. */
+      if (ownerLayers.length && m.queryRenderedFeatures([p.x, p.y], { layers: ownerLayers }).length) continue;
       hit = { x: p.x, y: p.y, props: f.properties }; break;
     }
     if (!hit) return { hit: false };
+    const TA = window.IntMapTimeAdmin1;
+    const era = TA.geomAt(hit.props), relationId = TA.idAt(hit.props);
+    let refined = null;
+    /* Observe the same ID-keyed flight the click uses. No await: a slow/failed
+       upstream cannot delay or replace the requirement for an immediate outline.
+       If it resolves before the existing poll, that same record's refinement is
+       also correct; it must not fail for differing from the simplified bundle. */
+    if (relationId != null && TA.geomFullAt) TA.geomFullAt(hit.props).then(g => {
+      if (TA.idAt(hit.props) === relationId) refined = g;
+    }).catch(() => {});
     for (const t of ["mousedown", "mouseup", "click"]) c.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: r.left + hit.x, clientY: r.top + hit.y, button: 0, buttons: t === "mousedown" ? 1 : 0 }));
     /* ⚠ (#R604) 固定の 1.5 秒 sleep をやめ、**答えが出るまで待つ**（#R410 の作法。この spec の冒頭が
        自分でそう書いている）。IntMapOutline が輪郭を置くまでの時間は記録の大きさで動くので、
@@ -262,8 +272,8 @@ test('地方区分の境界が Chronos に従う — 現在・1900年・スイ�
       }
       return null;
     })();
-    const era = window.IntMapTimeAdmin1.geomAt(hit.props);
-    return { hit: true, same: !!(cur && cur.geo && era && JSON.stringify(cur.geo) === JSON.stringify(era)),
+    const sameShape = expected => !!(cur && cur.geo && expected && JSON.stringify(cur.geo) === JSON.stringify(expected));
+    return { hit: true, same: sameShape(era) || sameShape(refined),
              drew: !!(cur && cur.geo), name: String(hit.props.NAME || "") };
   });
   expect(outline.hit, "no era subdivision label on screen to click").toBe(true);
