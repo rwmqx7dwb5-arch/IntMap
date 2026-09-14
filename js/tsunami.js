@@ -328,7 +328,7 @@ window.IntMapModules.tsunami=function(HOST){
         /* ── the sea floor: one bundled image, not ninety tiles ─────────────────────────────────
            #R192 measured 34 of 160 DEM tiles missing the timeout on an ocean-wide box, and 19 % of
            the cells then ran on a constant depth. A global domain cannot ask the network at all:
-           data/bathymetry.png is 0.25° over the whole world, 1.26 MB, cached after the first run,
+           data/bathymetry.png is 0.25° over the whole world, 1.29 MB, cached after the first run,
            and every cell in it has a measured depth. */
         const B=window.IntMapBathymetry;
         if(!B){ lastErr='nobathy'; busy=false; render(); return; }

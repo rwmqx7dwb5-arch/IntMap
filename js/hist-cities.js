@@ -71,6 +71,13 @@ window.IntMapHistCities = (function () {
   var cache = { key: null, expr: null };
   /* the nine language codes are js/lang-registry.js's own — the file carries all of them spelled
      out, so there is no fallback rule here that could drift from the one the build applied. */
+  /* ⚠⚠⚠ (#R717) THE FALLBACK TO `en` IS NOW LOAD-BEARING, AND THAT IS THE POINT. The record used to
+     ship a column for every language, filled where nobody had written the name by copying the
+     English spelling — so this line almost never fell back, and the file asserted 67,622 names no
+     source had written. The columns a clear attestation bit stood behind are gone; what a reader
+     sees is unchanged, because a copy of `en` answered with `en` anyway. ⚠ So a missing column is
+     ORDINARY here, not a defect — and `en` itself is the record's own spelling, which for 537 spans
+     is in the script the source wrote it in (data/hist-cities.json's own `note` states the count). */
   var say = function (n, lang) { return (n && (n[lang] || n.en)) || ''; };
   /* the two `let` bindings the guarded branches fall through to (#R521). Named, not inlined, so
      the expression is read the same way by this file and by the tests that walk it. */

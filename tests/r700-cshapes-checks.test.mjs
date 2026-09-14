@@ -61,7 +61,11 @@ function world(mutate) {
     }
   })(SCRIPT, 'scripts/build-cshapes.mjs');
 
-  const cs = { v: 2, src: 'CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes)',
+  /* ⚠ (#R717) THE LICENCE IS PART OF A HEALTHY ROOT NOW. data/cshapes.js states its own terms
+     (CC BY-NC-SA 4.0 makes attribution a CONDITION of redistribution) and the gate asks for it, so a
+     fixture without it fails on THAT rather than on the mutation under test — which is worse than a
+     red test, because ⑮ mutations then all report the same unrelated reason and check nothing. */
+  const cs = { v: 2, src: 'CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes) · CC BY-NC-SA 4.0',
     rings: [sq(0, 0, 4), sq(10, 10, 4)],
     feats: [['Testland', 2, 1886, 1, 1, 2019, 12, 31, [[0]]],
             ['Otherland', 3, 1886, 1, 1, 2019, 12, 31, [[1]]]] };

@@ -99,6 +99,11 @@ export const LICENCE = LIC({
   source: 'CShapes 2.0 (Schvitz et al., ETH Zürich)',
   read: '2026-09-11',
 });
+/* ⚠ (#R717) THE BUNDLE'S OWN `src` LINE, ASSEMBLED FROM THE LICENCE VALUE ABOVE rather than
+   spelled a second time — the rights have to travel with the data (#R689), and a second spelling
+   is how the data and the record of its terms part company. */
+export const SRC = 'CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes) · ' + LICENCE.licence;
+
 /* the citation the publisher asks for, in the publisher's own words and spelling — NOT translated,
    because a bibliographic reference and a licence name are the source's, not the reader's */
 export const CITATION = 'Schvitz, Guy, Seraina Rüegger, Luc Girardin, Lars-Erik Cederman, '
@@ -265,7 +270,7 @@ function build(tol = TOL, minArea = MIN_AREA, decimals = 5) {
     }).filter(poly => poly.length);
     feats.push([p.cntry_name, p.gwcode, p.gwsyear, p.gwsmonth, p.gwsday, p.gweyear, p.gwemonth, p.gweday, polys]);
   }
-  return { v: 2, src: 'CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes)', rings, feats,
+  return { v: 2, src: SRC, rings, feats,
     precision: generatedPrecision(tol, decimals, feats.length) };
 }
 
@@ -356,14 +361,18 @@ function check() {
   ok(d && Array.isArray(d.rings) && d.rings.length > 0, 'rings missing');
   ok(d && Array.isArray(d.feats) && d.feats.length > 0, 'feats missing');
   /* ⚠ THE UPSTREAM HAS TO NAME ITSELF IN THE FILE, the way data/hist-borders.js's `src` names
-     OpenHistoricalMap and CC0. ⚠ AND THE LICENCE IS NOT ASKED OF `src` HERE, BECAUSE THE COMMITTED
-     `src` DOES NOT CARRY ONE — «CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes)». The
-     gate is not weakened to fit it: the obligation is asked of js/reference-data.js below, which is
-     where a reader can actually see it. Adding «· CC BY-NC-SA 4.0» to `src` is a one-line change to
-     a shipped data file and needs the approval AGENTS.md §3-1 requires; on the day it lands, the
-     next two lines take /CC BY-NC-SA/ as well. */
+     OpenHistoricalMap and CC0 — AND SO DOES THE LICENCE. (#R717) Until this round every historical
+     bundle but this one named its terms in its own `src`, and the one that did not was the ONLY one
+     whose licence makes attribution a CONDITION of redistribution: a reader who has these 13.0 MB
+     and not the repository could not see whose work it is or on what terms. #R716 read the omission
+     as needing AGENTS.md §3-1 approval; §3-1 governs REMOVING or narrowing a feature, and naming a
+     licence adds one, so this round wrote it. ⚠ THE STRING IS NOT SPELLED TWICE: the check reads the
+     builder's own LICENCE value, so a change of terms upstream cannot leave the bundle asserting the
+     old ones. The general rule — every shipped data bundle's `src` names its licence — is
+     scripts/doc-facts.mjs's `bundle-licence`, whose universe is discovered from data/. */
   ok(d && /CShapes/i.test(d.src), 'src must name CShapes');
   ok(d && /ethz/i.test(d.src), 'src must name the publisher (ethz)');
+  ok(d && d.src.includes(LICENCE.licence), 'src must name the licence «' + LICENCE.licence + '»');
   if (bad.length) { fail(bad); return; }
 
   /* rings: closed, on the globe, big enough to be a ring at all */

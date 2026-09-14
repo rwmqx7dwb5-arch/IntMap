@@ -13,7 +13,7 @@
  *  ══ WHY IT HAD TO BE WIDENED, MEASURED (2026-09-11, the cached Overpass index) ══════════════════
  *  The source was never a 19th-century dataset. Of the 3,985 admin_level=2 relations it publishes,
  *  2,101 END before 1850 — 53% of the record was below the window #R518 cut. Everything under 1850
- *  was answered by data/hist-eras.js instead: 53 snapshots, and below AD 1000 they are 100 years
+ *  was answered by data/hist-eras.js instead: 54 snapshots, and below AD 1000 they are 100 years
  *  apart, so a reader at 1750 was shown 1715 and a reader at 1600 was shown one frame for a century.
  *
  *  ══ ⚠⚠⚠ AND THE FLOOR IS NOT A YEAR SOMEBODY PICKED. IT IS DERIVED, HERE, FROM THE RECORD NEXT DOOR

@@ -64,7 +64,21 @@ test('① the record is shipped, is several hundred cities, and is complete in n
     assert.ok(Number.isFinite(c.g) && c.g >= 2000 && c.g <= 20000, `${c.id}: guard radius ${c.g} m is outside the range the build may derive`);
     for (const e of c.e) {
       eras++;
-      for (const lg of LANGS) assert.ok(e.n[lg], `${c.id}: era «${e.n.en}» has no ${lg} form`);
+      /* ⚠⚠⚠ (#R717) THIS USED TO REQUIRE A COLUMN FOR ALL NINE, AND THAT IS WHAT THE DEFECT LOOKED
+         LIKE FROM IN HERE. The columns were there — the build filled the ones nobody had written
+         by copying the English spelling — so this assertion passed on 67,622 statements that no
+         source makes, and the bitmask `a` beside each of them said so the whole time. What every
+         reader is actually owed is an ANSWER, not a column: js/hist-cities.js resolves
+         `n[lang] || n.en`, so the invariant is that `en` is always there, and that a column which
+         does exist is either attested or says something different from `en`. A column repeating
+         `en` under a clear bit is the false claim, and it now fails. */
+      assert.ok(e.n.en, `${c.id}: era has no English form, so eight of nine readers get nothing`);
+      assert.ok(Number.isInteger(e.a) && e.a >= 0 && e.a < (1 << LANGS.length), `${c.id}: era «${e.n.en}» has no attestation bitmask`);
+      LANGS.forEach((lg, i) => {
+        if (lg === 'en' || e.n[lg] === undefined) return;
+        assert.ok(e.n[lg] !== e.n.en || ((e.a >> i) & 1),
+          `${c.id}: era «${e.n.en}» ships a ${lg} column that repeats the English spelling while its own bit says no source wrote it`);
+      });
       /* an era that merely restates today's label would be a row that changes nothing */
       assert.ok(!c.k.includes(e.n.en), `${c.id}: era name «${e.n.en}» is also a modern key`);
     }

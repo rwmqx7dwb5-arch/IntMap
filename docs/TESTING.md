@@ -871,10 +871,18 @@ The wiring between the two products, and the four steps that stayed manual, are 
 幾何**で上流には無い。上流だけで焼き直せば 2 ラウンド分の修正が黙って戻るので、出荷ジオメトリの
 変更としてその判断を伴う回のものである（`AGENTS.md` §3-1）。
 
-⚠ **残余**: `data/cshapes.js` の `src` は上流と年を名乗るが**ライセンスを名乗らない**。門は
-それに合わせて緩めてはおらず、義務は読者が実際に見る `js/reference-data.js` に対して測っている。
-`src` に `· CC BY-NC-SA 4.0` を足すのは出荷データファイルの変更なので承認が要り、入った日に
-`--check` は `src` にも同じ文字列を要求する（コメントにそう書いてある）。
+⚠ **この残余は #R717 で解消した。** `data/cshapes.js` の `src` は**自分のライセンスを名乗る**
+（`CShapes 2.0 (Schvitz et al. 2022, icr.ethz.ch/data/cshapes) · CC BY-NC-SA 4.0`）。#R716 はこれを
+`AGENTS.md` §3-1 の承認事項と読んだが、§3-1 が要求を出すのは**機能を削る・狭める**ときであって、
+ライセンスを名乗ることは足す側である。⚠ **綴りは 2 か所に無い**——`--check` はビルド自身の `LICENCE`
+値を読むので、上流の条件が変わったときに束だけが古い条件を主張することはない。
+**規則は事実のほうに付けてある**（`tests/r717-hist-fidelity-checks.test.mjs` ③）: `data/` を走査し、
+**`src` を top-level に持つ束はすべて、その中でライセンスを名乗ること**を要求する。歴史の 6 束のうち
+名乗っていなかったのはここだけで、しかも**表示が再配布の条件になっている唯一の束**だった
+（他は CC0 / GPL-3.0 で、義務が無くても名乗っていた）。
+⚠ 走査の深さは実測して直した——「先頭 4 KB の最初の `src`」だと `data/subcables.json` の
+ケーブル 1 本の出自コード（`recon`）や `data/religion.json` の国別の散文を拾い、**条件なしで出荷
+していると 3 件を誤報**した。`src` が束の宣言であるのは**top-level のとき**だけである。
 
 ## The day-exact border record below CShapes — `npm run check:histborders` (`scripts/build-hist-borders.mjs --check`, #R518, widened #R690)
 
@@ -1376,7 +1384,7 @@ reader here for this list; adding a rule means adding a row.
 | `section-refs` | a document names another document and a `§` number that document has no section for |
 | `gate-callers` | `package.json` declares a `check:*` script that neither `ci.yml` nor `npm test` ever runs |
 | `bordercoast-rings` | a document states how many rings the border/coast record marks, and `data/border-coast.js` marks a different number (three documents said 25,506 while the bundles held 33,600 — the number came from #R564 own completion line and none of the three copies moved) |
-| `chronos-sheets` | a document states how many year snapshots `data/hist-eras.js` holds — or how many of them are BC — and the record holds a different number |
+| `chronos-sheets` | a document — **or a tracked file under `js/` or `scripts/`** (#R717) — states how many year snapshots `data/hist-eras.js` holds, in Japanese (`枚`) or English (digits **or** a cardinal word), and the record holds a different number |
 | `chronos-units` | a stated unit or ring count for one of the historical admin tiers, or the count of era polygons upstream gave no name to, is not what the bundle holds |
 | `chronos-bytes` | a stated MB weight of a bundle in `data/`, or of the two admin tiers together, is not what the files weigh in either convention (see below) |
 | `histadmin-inforce` | a cell of the in-force table in `docs/MAP-LAYERS.md` is not what that tier holds in force on that year — re-derived with the builder’s own probe |
@@ -1388,6 +1396,40 @@ because the static job does not run `check:docs`. The last two rows arrived in #
 `tests/r628-checks.test.mjs` (six tests) is theirs, for the same reason and by the same method —
 mutation under the tree lock, with `--rule` so a mutation costs one rule's runtime rather than the
 whole file's.
+
+### ⚠⚠⚠ (#R717) `chronos-sheets` の母集合だけが `js/` と `scripts/` へ広がっている
+
+`scripts/doc-facts.mjs` が掃くのは長らく**追跡された `*.md` と `package.json`** だけだった。
+同じ出荷バイトについて同じ種類の主張をしている**ソースのコメント**と、**読者が開く出典ページ**
+（`js/locales/pages.*.js`）は、どの規則の外にもあった。実測（#R717 当日・`data/hist-eras.js` の枚数）:
+`js/hist-scale.js`・`js/time-borders.js`・`scripts/build-hist-borders.mjs`・`scripts/histeras/census.mjs`・
+`scripts/asset-report.mjs`、そして**9 言語すべての出典ページ**が、1 枚少ない数を述べていた。
+#R716 はこの形を 1 件見つけ、**その 1 ファイル・その 1 つの数**に向けた針で答えている
+（[[intmap-discovered-list-is-a-photograph]]）。⇒ 母集合を git から取り直した。
+
+- **英語の主張も読む。** 針は `枚` しか知らず、ソースのコメントと出典ページの英語は全部その外だった。
+  数詞は**語で書かれていても数である**（正本は「Fifty-four frames」と書く）ので、英語の基数詞を読む。
+  ⚠ **これは言語の数詞であって事例の一覧ではない**——単位・十位・teen が合成されるので、まだ誰も
+  書いていない数も読める。⚠ 読むのは**憲法 §7 が IntMap の執筆言語と定める 2 つ**（`枚` と英語）だけで、
+  第 3 の言語が数を語で書いた場合は下の残余に落ちる。
+- **偽陽性は実測して塞いだ**（緩めたのではない）: ① 枚は**年で名指される**ので、束自身が持つ
+  スナップショット年（1920・1930・1900・1960 …）は数ではなく名前として扱う、
+  ② `#R518` のようなラウンド札は数ではない（数字の前の語境界が分ける）、
+  ③ 「in N snapshots」は**どこに描かれるか**であって記録の大きさではない、
+  ④ 3 つの束を名指して合計を述べる文（`120 sheets`）はこの束についての主張ではない、
+  ⑤ 時代の限定は**直前の数**に掛かる（「54 world snapshots, 17 of them BC」を 2 件の落第にしない）。
+- ⚠ **広い母集合を受け取ったのは `chronos-sheets` だけで、これは限界であって好みではない。**
+  `chronos-units` は母集合全体を**錨なしで**掃き、`chronos-bytes` は**同じ文で直前に名指された
+  `data/` のパス**へ数を結びつける。44 の文書に対しては健全だが、571 のソースに対してはそうではない
+  ——実測で新しく出た 29 件の落第のうち **26 件が規則の読み違い**だった
+  （`js/reference-data.js` の「N first-level units … from Natural Earth」は**現代の**束の話——
+  ⚠ その N はここには写していない。この文書はこの規則の掃引の中にあるので、単位の名詞の隣に
+  書いた数はそれ自体が主張として読まれる、
+  `scripts/build-hist-eras.mjs` の「71.5 MB」は**上流のダウンロード**の大きさ、そして
+  **小数点にコンマを使う言語（9 言語中 7 つ）では「34,03 MB」が「03 MB」と読まれていた**）。
+  残る 3 件のうち**本物だった 2 件はこの回で直した**（出典ページの gazetteer の重さ 3.9 → 5.3 MB を
+  9 言語、`js/tsunami.js` の bathymetry 1.26 → 1.29 MB）。**狼と叫ぶ針は次のセッションが緩める**ので、
+  2 つの規則がこの母集合を受け取るのは、上の 3 つを学んでからである。
 
 ⚠ **(#R707) 上の 4 行が見ていないもの（残余を隠さず書く）。** Chronos の束の数は、その束を名指す
 **文**または**ブロック**（1 つの箇条書き・1 つの表の行・1 つの段落）の中にあるときだけ主張として読まれる。
@@ -2396,6 +2438,18 @@ spec は、壊れても手元の `npm test` にも PR の CI にも出てこな�
 `tests/r712-historical-ring-topology-checks.test.mjs` は、凹形の本土と島・真正な穴・穴の中の島・
 出典の内外役割を検証する。`tests/r712-historical-topology-build-checks.test.mjs` は、原典再現と
 座標多重集合を条件とする再分類、補正済み形状の保持、外環消失時に穴を陸地化しないことを測る。
+
+`tests/r717-hist-fidelity-checks.test.mjs` は、**歴史地図が読者に何を主張しているか**を 4 本で測る。
+① **散文の規則が `js/` と `scripts/` に届いていること**——`js/` に間違った枚数を**書いて**
+`--rule=chronos-sheets` を走らせ、**落第すること**と、**落第の理由がその主張であること**を要求する
+（母集合が縮んだ日にこの 1 本だけが赤くなる）。数詞は**数字と英語の語の両方**で植える——正本は
+「Fifty-four frames」と語で書くので、数字だけの針ではその文が見えない。
+② `data/hist-cities.json` の span が、**自分の実証ビットが否定している言語で名前を主張していない**こと。
+そして `js/hist-cities.js` が**欄の無い言語を `en` へ退かせ続けている**こと——この 1 行が無くなると
+9 人中 8 人の読者に空のラベルが出るのに、`check:histcities` は**記録とビルドが一致したまま**なので緑になる。
+③ `data/` を走査し、**`src` を top-level に持つ束はすべてその中でライセンスを名乗る**こと。
+④ **1885/1886 の継ぎ目**（主権国家の記録と OHM の記録の交代で政体が 3 割落ちること）について
+`Architecture.md` が述べる数を、**両方の束から導き直して**照合する。⚠ **数は検査の中に書いていない**。
 
 `tests/r714-hist-river-names-checks.test.mjs` は、**一致が争点ではない**ことを測る。`score()` を
 評価して、空間・時間・綴りのすべてが完全に一致する候補でも、種類が地図の描くものでなければ

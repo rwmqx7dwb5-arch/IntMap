@@ -2206,6 +2206,57 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
     } catch { return null; }
   };
 
+  /* ⚠⚠⚠ (#R717) A NUMBER SPELLED AS A WORD IS STILL THE NUMBER, AND THE 正本 SPELLS IT THAT WAY.
+     The Sources page a reader opens says 「Fifty-three frames, seventeen of them BC」 — and the eight
+     translations say the same thing, because they are translations. That sentence was wrong from
+     the moment #R707 restored the 54th sheet, and it could not be seen by ANY rule here: the
+     numeral needles start at a digit, and the numeral-PARITY rule (the one that holds nine
+     languages to one sentence without knowing a word of them) compares the numbers each states, so
+     a figure written as a word in the 正本 is not a number either side has to state.
+     ⇒ English cardinals are read as what they are. ⚠ THIS IS A LANGUAGE'S NUMERALS, NOT A LIST OF
+     CASES: units, teens and tens compose, so «fifty-four» is read the day it is written, and the
+     hundredth number nobody has written yet is read too. ⚠ AND THE TWO LANGUAGES READ HERE ARE THE
+     TWO IntMap AUTHORS IN (CONSTITUTION §7): 「枚」 for Japanese, these for English. A translation
+     that spells the number as a word in a third language is outside this and is written down as a
+     residual in docs/TESTING.md rather than answered with a lexicon per language. */
+  const CARDINAL = (() => {
+    const unit = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+    const teen = ['ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const ten = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    const m = new Map();
+    unit.forEach((w, i) => m.set(w, i));
+    teen.forEach((w, i) => m.set(w, 10 + i));
+    ten.forEach((w, t) => { if (!w) return; m.set(w, t * 10); unit.slice(1).forEach((u, i) => m.set(w + '-' + u, t * 10 + i + 1)); });
+    return m;
+  })();
+  const digitize = (s) => s.replace(/\b[a-z]+(?:-[a-z]+)?\b/gi, (w) => {
+    const n = CARDINAL.get(w.toLowerCase());
+    return n === undefined ? w : String(n);
+  });
+
+  /* the three shapes a sheet count is written in. `枚` is Japanese-only and unambiguous; the two
+     English ones are qualified by the sentence rule and the year rule inside 35a.
+     ⚠ A ROUND TAG IS NOT A COUNT. The repository writes 「#R518」 everywhere, and 「#R518 gave these
+     snapshots」 reads as 「518 … snapshots」 to a needle that starts at a digit. The word boundary
+     before the digits is what excludes it — R and 5 are both word characters, so there is none
+     inside a round tag — and it costs nothing a real count needs, because a real count is preceded
+     by a space or the start of a line. */
+  const RE_JP = /(\u7d00\u5143\u524d\u306e?\s*)?(\d[\d,]*)\s*\u679a(\s*(?:\u306f|\u304c|\u3092)?\s*\u7d00\u5143\u524d)?/g;
+  /* ⚠ the noun phrase may carry the era qualifier itself — 「the 17 pre-common-era snapshots」 —
+     so the adjectives between the number and the noun are captured and asked, not skipped, and the
+     marker is the phrase the repository actually writes rather than the two letters alone. */
+  const RE_EN_COUNT = /\b(\d[\d,]*)\s+((?:[a-z][a-z-]*\s+){0,2})(?:sheets|snapshots|frames)\b([^.]{0,30})/gi;
+  const RE_EN_OFTHEM = /\b(?:sheets|snapshots|frames)\b[^.\n]{0,30}?\b(\d[\d,]*)\s+of\s+them\b([^.]{0,30})/gi;
+  const RE_BC = /\bBC\b|\bB\.C\.|pre-common-era|before the common era|before Christ/i;
+  /* ⚠ AN ERA QUALIFIER BELONGS TO THE NEAREST NUMBER BEFORE IT. 「54 world snapshots, 17 of them
+     BC」 puts a BC six words after the 54, and reading it as the 54's would turn the one sentence
+     that states BOTH halves correctly into two failures. The window therefore stops at the next
+     number: whatever that BC qualifies, it is not the number on the far side of another one. */
+  const upTo = (s) => String(s || '').split(/\d/)[0];
+  /* ⚠ 「in N snapshots」 says WHERE a name is drawn, not how large the record is: the census counts
+     「drawn in 36 snapshots」 for one name. A preposition before the number is what separates the two,
+     and it is the same distinction 35c draws when it asks whether a sentence is about one bundle. */
+  const RE_PREP = /\b(?:in|of|across|over|from|among|within)\s+$/i;
   const eras = dataFiles.includes('hist-eras.js') ? loadBundle('hist-eras.js') : null;
   /* the admin tiers, ordered by the administrative level they hold — which is what 「第1級」 /
      「第2級」 / 「first-level」 mean. Ordering by the DECLARED levels rather than by the digit in the
@@ -2244,7 +2295,38 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
 
   /* package.json's `//check:*` notes are prose about the same facts, and #R680's numbers were
      stalest there — so it is read alongside the documents rather than exempted for being JSON. */
+  /* ⚠⚠⚠ (#R717) …AND SO ARE THE COMMENTS IN THE SOURCE, AND THE SOURCES PAGE THE READER OPENS.
+     This rule's universe was 「tracked *.md plus package.json」, which is the same narrowing that let
+     scripts/asset-report.mjs tell the reader for nine rounds that data/hist-eras.js holds one sheet
+     fewer than it does. #R716 caught that one and answered it with a needle for THAT FILE and THAT
+     NUMBER — a photograph of the defect rather than of its universe — so the identical sentence in
+     js/time-borders.js, in scripts/build-hist-borders.mjs, in scripts/histeras/census.mjs and, worst,
+     in js/locales/pages.*.js (the Sources page a READER opens) went on being wrong beside it.
+     A comment in js/ or scripts/ states the same kind of fact about the same shipped bytes, is read
+     by the same people and rots the same way; the only thing that was different is that nothing
+     looked. ⚠ THE LIST IS GIT'S, NOT ONE WRITTEN HERE — a source file added this round is swept the
+     day it is written, tracked or not (#R628's correction, the same one PROSE_DOCS lives by). */
+  const listSrc = (...args) => {
+    try {
+      return execFileSync('git', ['ls-files', '-z', ...args, 'js/*.js', 'js/**/*.js', 'scripts/*.mjs', 'scripts/**/*.mjs'],
+        { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\0').filter(Boolean);
+    } catch { return []; }
+  };
+  const SOURCES = [...new Set([...listSrc(), ...listSrc('--others', '--exclude-standard')])].filter(has).sort();
   const CARRIERS = [...BODY.entries(), ['package.json', rd('package.json')]];
+  /* ⚠⚠⚠ AND THE WIDER UNIVERSE IS GIVEN TO 35a ONLY, WHICH IS A LIMIT AND NOT A PREFERENCE.
+     35b and 35c bind a number to a subject BY PROXIMITY — 35b sweeps a whole carrier with no anchor
+     at all, 35c takes the last data/ path named earlier in the sentence — and that is sound over 44
+     documents written about these bundles and nothing else. Run over 571 source files it is not:
+     measured on the day this widened, 26 of 29 new failures were the rule misreading a sentence
+     rather than a sentence being wrong — js/reference-data.js's 「4,515 first-level units … from
+     Natural Earth」 is about the MODERN bundle, scripts/build-hist-eras.mjs's 「71.5 MB」 is the size
+     of an UPSTREAM download, and every locale that writes a decimal comma had 「34,03 MB」 read as
+     「03 MB」, which is seven of the nine shipped languages. Two of the 29 WERE real and are fixed in
+     this round; the rest are what 35b and 35c would have to learn before they can be given this
+     universe, and until they have, a widened needle that cries wolf is a needle the next session
+     loosens (#R707's note in 35b's own comment). The residual is in docs/TESTING.md. */
+  const CARRIERS_SRC = [...CARRIERS, ...SOURCES.map((f) => [f, rd(f)])];
   const num = (s) => Number(String(s).replace(/,/g, ''));
 
   /* ── 35a. how many snapshots the era record holds ─────────────────────────────────────── */
@@ -2263,25 +2345,61 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
        ⚠ EXPIRES if a document ever names a subset at least as large as the smaller half — then that
        sentence has to name its own subject, the way the others here do. */
     const FLOOR = Math.min(BC, AD);
-    let sheetClaims = 0, subsets = 0;
-    for (const [f, s] of CARRIERS) for (const b of blocksOf(s)) {
+    /* ⚠ (#R717) …AND A NUMBER THE RECORD ITSELF USES AS A NAME IS NOT A COUNT OF IT. The sheets
+       are named by their year — «the 1920 & 1930 snapshots», «the 1900-1960 snapshots» — so the
+       English needles below would otherwise read four sheet NAMES as four wrong sheet counts.
+       Which numbers those are is not a list written here: it is the set of years the bundle’s own
+       snapshots carry, so a sheet added upstream stops being misread on the day it starts being
+       shipped. */
+    const SHEET_YEARS = new Set(snaps.map((sn) => Math.abs(sn.y)));
+    const OTHER_BUNDLES = dataFiles
+      .filter((f) => /^(cshapes|hist-(borders|admin[0-9]+|kuni|cities|places))[.]/.test(f))
+      .map((f) => 'data/' + f);
+    let sheetClaims = 0, subsets = 0, named = 0;
+    for (const [f, s] of CARRIERS_SRC) for (const b of blocksOf(s)) {
       if (!anchors.some((r) => r.test(b))) continue;
-      for (const m of b.matchAll(/(紀元前の?\s*)?(\d[\d,]*)\s*枚(\s*(?:は|が|を)?\s*紀元前)?/g)) {
-        const n = num(m[2]);
-        const bc = Boolean(m[1] || m[3]);
+      /* ⚠ (#R717) THE SAME CLAIM IN THE OTHER LANGUAGE. The needle asked for 「枚」 alone, so every
+         English statement of this count — which is what the source comments and the English half
+         of the Sources page write — was outside the rule even after its universe widened. The
+         record is described with two nouns, «sheets» and «snapshots», and 「N of them」 after one of
+         those is the same claim.
+         ⚠ THE ENGLISH NEEDLES READ A SENTENCE, NOT A BLOCK. A block that names three bundles and
+         totals the sheets it sampled over all of them — js/time-borders.js’s 「data/cshapes.js …
+         data/hist-borders.js … and every sheet of data/hist-eras.js: 120 sheets」 — is not stating
+         the size of THIS record, and 「is this sentence about this bundle alone」 is the same
+         question 35c already asks of a byte figure. The Japanese needle keeps the block it has had
+         since #R707: 「枚」 is only ever written about this record. */
+      const jp = [...b.matchAll(RE_JP)].map((m) => [m[2], Boolean(m[1] || m[3])]);
+      const en = [];
+      for (const sent of sentencesOf(b)) {
+        if (OTHER_BUNDLES.some((path) => sent.includes(path))) { named++; continue; }
+        /* ⚠ A COMMENT WRAPS, AND A WRAPPED PHRASE IS THE SAME PHRASE. 「17 of them before the ⏎
+           common era」 is one qualifier broken by the margin, so the whitespace is folded before any
+           of these needles reads it — the same correction #R716 made to the prose rules, which had
+           been reading a raw byte stream and so missing every claim a document happened to wrap. */
+        const t = digitize(sent).replace(/\s+/g, ' ');
+        for (const m of t.matchAll(RE_EN_COUNT)) {
+          if (RE_PREP.test(t.slice(Math.max(0, m.index - 12), m.index))) { named++; continue; }
+          en.push([m[1], RE_BC.test(m[2]) || RE_BC.test(upTo(m[3]))]);
+        }
+        for (const m of t.matchAll(RE_EN_OFTHEM)) en.push([m[1], RE_BC.test(upTo(m[2]))]);
+      }
+      for (const [raw, bc] of [...jp, ...en]) {
+        const n = num(raw);
+        if (!bc && SHEET_YEARS.has(n)) { named++; continue; }
         /* ⚠ THE FLOOR IS FOR QUANTITIES THAT DID NOT NAME THEIR SUBJECT. A number the sentence
-           itself calls 紀元前 has named it, so it is read however small it is — measured when this
-           rule was written: with the floor applied first, restating the BC half as one fewer than
-           the record holds went through unseen, because the floor IS the BC half. */
+           itself calls 紀元前 / BC has named it, so it is read however small it is — measured when
+           this rule was written: with the floor applied first, restating the BC half as one fewer
+           than the record holds went through unseen, because the floor IS the BC half. */
         if (!bc && n < FLOOR) { subsets++; continue; }
         sheetClaims++;
-        if (bc && n !== BC) fail('chronos-sheets', `${f} says ${m[2]} 枚 are BC; data/hist-eras.js holds ${BC} of ${SHEETS}`);
-        else if (!bc && n !== SHEETS && n !== AD) fail('chronos-sheets', `${f} says ${m[2]} 枚; data/hist-eras.js holds ${SHEETS} (${BC} BC + ${AD} AD)`);
+        if (bc && n !== BC) fail('chronos-sheets', `${f} says ${raw} sheets are BC; data/hist-eras.js holds ${BC} of ${SHEETS}`);
+        else if (!bc && n !== SHEETS && n !== AD) fail('chronos-sheets', `${f} says ${raw} sheets; data/hist-eras.js holds ${SHEETS} (${BC} BC + ${AD} AD)`);
       }
     }
     if (!sheetClaims) fail('chronos-sheets', 'no document states how many snapshots data/hist-eras.js holds — the number nine documents were carrying is now checked by nothing');
     if (!problems.some((p) => p.startsWith('chronos-sheets')))
-      ok('chronos-sheets', `${SHEETS} snapshots (${BC} BC + ${AD} AD), stated correctly in ${sheetClaims} place(s); ${subsets} subset figure(s) below the floor of ${FLOOR} left alone`);
+      ok('chronos-sheets', `${SHEETS} snapshots (${BC} BC + ${AD} AD), stated correctly in ${sheetClaims} place(s) across ${CARRIERS_SRC.length} carriers; ${subsets} subset figure(s) below the floor of ${FLOOR} and ${named} figure(s) naming a sheet or another bundle left alone`);
   }
 
   /* ── 35b. how many units the admin tiers and the era record hold ───────────────────────── */

@@ -94,7 +94,7 @@ const ALLOW = {
     /* (#R679) THE ERA SNAPSHOTS, AND THE REASON IS THE ROUND ITSELF. Below 1850 this file is the
        ONLY country answer there is, and until this round that answer came over the wire from
        raw.githubusercontent and, failing that, two public CORS proxies — a century that exists
-       only while three third parties are up. It is 53 snapshots, seventeen of them before the
+       only while three third parties are up. It is 54 snapshots, seventeen of them before the
        common era, ring-pooled like the two bundles above it.
        ⚠ THE SIZE WAS PRICED, NOT ACCEPTED. Measured across the whole corpus: unsimplified is
        12.3 MB (712,070 points), and every coarser tolerance saves ~5.7 MB by throwing away 339k

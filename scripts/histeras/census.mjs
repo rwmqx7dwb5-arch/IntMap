@@ -1,16 +1,16 @@
 /* ============================================================================
  *  IntMap · the era-name census — what data/hist-eras.js actually asks to be named  (#R686)
  * ----------------------------------------------------------------------------
- *  data/hist-eras.js ships 53 world snapshots (17 of them BC) with 10,212 NAMED features, and
+ *  data/hist-eras.js ships 54 world snapshots (17 of them BC) with 10,388 NAMED features, and
  *  every one of those names is a single `{en:…}` — the upstream cartographer's English string.
  *  Nothing before 1850 was ever localized, so a Japanese reader standing in 323 BC read
  *  "Empire of Alexander".
  *
  *  ⚠ THE TRANSLATION UNIT IS THE NAME, NOT THE FEATURE. Measured on the shipped bundle:
- *  10,212 named features carry only 3,028 DISTINCT strings — "Australian aboriginal
+ *  10,388 named features carry only 3,029 DISTINCT strings — "Australian aboriginal
  *  hunter-gatherers" is drawn in 36 snapshots, "France" in 24. So the census is keyed by the
  *  string, and everything downstream (the queries, the scoring, the shipped table) is per-string.
- *  That is also why the shipped table is small: 3,028 rows, not 10,212.
+ *  That is also why the shipped table is small: 3,029 rows, not 10,388.
  *
  *  A census row carries the three things a match can be TESTED against — the string, WHERE the
  *  map draws it, and WHEN. Two of those are the reason this file exists: #R515 accepted a

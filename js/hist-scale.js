@@ -36,8 +36,8 @@ window.IntMapHistScale = (function () {
      already fetching went back to AD 100 while the list in js/time-borders.js
      stopped at 1815, because nobody had asked the directory.
      ⚠ ASKED AGAIN, 2026-09-10: `GET api.github.com/repos/aourednik/historical-
-     basemaps/contents/geojson`, everything matching `world_*.geojson`. FIFTY-THREE
-     snapshots, not thirty-six — seventeen of them BEFORE the common era, from
+     basemaps/contents/geojson`, everything matching `world_*.geojson`. FIFTY-FOUR
+     snapshots, not thirty-seven — seventeen of them BEFORE the common era, from
      bc1 down to bc123000. Every one of them was fetched and parsed here the same
      day. The clock's floor of 1 was the ONLY reason none of them could be shown.
      ⚠ SO THE FLOOR IS THAT DATASET'S OWN FLOOR, IN ASTRONOMICAL YEARS: 123,000 BC
