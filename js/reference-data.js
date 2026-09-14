@@ -473,7 +473,8 @@ window.IntMapRefData=(function(){
        from OHM — the day-exact borders of 1689-1885 (data/hist-borders.js, widened from 1850 by
        #R690) and the first-level
        subdivisions of whatever year the clock shows (data/hist-admin1.js, baked from OHM's dated
-       admin_level 3–4 relations) — so two rows meant the same name carrying two licences.
+       admin_level 3–4 relations, with data/hist-admin2.js at 5–6 and, since #R719,
+       data/hist-admin3.js at 7) — so two rows meant the same name carrying two licences.
        ⚠ THE LICENCE IS CC0 1.0, NOT ODbL. Measured 2026-09-07: openhistoricalmap.org/copyright
        says the project is «dedicated to the public domain», and every Overpass response says «The
        data is made available under CC0». Naming it is provenance, not the terms — the row is here
@@ -502,6 +503,17 @@ window.IntMapRefData=(function(){
        theirs, and a derived work still says whose. */
     {n:'令制国 raster — Asukana/Ryoseikoku (CC0 1.0)',u:'https://github.com/Asukana/Ryoseikoku_20230626_TSV'},
     {n:'Wikidata (CC0 1.0)',u:'https://www.wikidata.org/'},
+    /* ⚠⚠ (#R719) AND THE SECOND PLACE OHM IS SILENT IS MOST OF THE WORLD. Measured 2026-09-15 on a
+       0.25° land grid: the shipped subdivisions cover 46.8% of the world's land in 1900, with 68
+       countries at zero and 38 answered only in part. OHM has no more to give — the bundles ship
+       99.5% of what its Overpass holds at admin_level 3–6, and 42 countries have no administrative
+       relation at ANY level from 3 to 8. So data/hist-admin-fill.js carries the units that STILL
+       STAND, back only as far as three records agree they may go: Natural Earth's outlines (public
+       domain, read from the copy already in the tree), the inception Wikidata STATES for that
+       unit's ISO 3166-2 code, and the era borders IntMap already draws. A country enters whole or
+       not at all, and a unit is withheld on any span where its ground straddled two polities of
+       that era, or where the OHM record already answers. Both publishers have a row above; the
+       derivation is IntMap's and the map draws these lines in the derived style, not OHM's. */
     /* ⚠⚠⚠ (#R700) THE LICENCE AND THE CITATION ARE VALUES ON THE ROW, NOT A SENTENCE SOMEBODY
        REMEMBERED TO WRITE. CShapes is CC BY-NC-SA 4.0 — attribution is a CONDITION of redistributing
        it, and IntMap redistributes it as 5.6 MB of committed bytes (data/cshapes.js) rather than as

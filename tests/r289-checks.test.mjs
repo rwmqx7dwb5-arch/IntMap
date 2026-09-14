@@ -113,12 +113,16 @@ test('R289 ③ the coastline uses the border line’s own source, colour and wid
      #R289's own choice, not a property of the coastline, and 「Coastlines & shoresはデフォルトでオンに
      して」 reversed it — so the statement is reversed here rather than deleted, because what the check
      is for is that the two halves of the default agree, whichever way they point (tests/r476-checks ①). */
+  /* ⚠ (#R719) AND IT HAS BEEN REVERSED AGAIN, FOR THE SAME REASON IT WAS REVERSED ONCE.
+     「Coastlines & shoresはdefault base map & labelsから除外」. The row, its handler, its legend,
+     its place in 基本表示 and the wind's one-shot offer are all untouched — only the DEFAULT moved,
+     and the invariant being guarded is still that the two halves of that default agree. */
   const html = read('index.html');
-  assert.match(html, /<input type="checkbox" id="cb-coast" checked>/, 'the row ships checked');
+  assert.match(html, /<input type="checkbox" id="cb-coast">/, 'the row ships unchecked');
   const dl = read('js/data-layers.js');
-  assert.match(dl, /'cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1'/,
+  assert.match(dl, /IntMapBasicLayerRows=\[[^\]]*'cb-borders','cb-coast','cb-admin1'/,
     'it sits with the base displays in the panel order');
-  assert.match(dl, /IntMapDefaultOn=\[[^\]]*'cb-coast'/, 'and it IS in the default-on list');
+  assert.ok(!/IntMapDefaultOn=\[[^\]]*'cb-coast'/.test(dl), 'and it is NOT in the default-on list');
   /* ⚠ 「風レイヤーオン時はデフォルトでオン」 IS A DEFAULT, NOT A COUPLING. The latch is what makes it
      one: a reader who switches the coast off while the wind is up must not be overruled (#R85). */
   assert.match(dl, /window\._imCoastAuto&&window\._imCoastAuto\(\);/, 'switching the wind on offers the coastline');

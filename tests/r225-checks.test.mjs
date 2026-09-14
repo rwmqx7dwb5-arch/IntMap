@@ -124,7 +124,9 @@ test('R225 ⑤ every default-ON id is in ONE list, and the restore turns all of 
      #R309 spent a round removing from the product is not one to keep in the gate. */
   const html = read('index.html');
   const declared = /window\.IntMapDefaultOn=\[([^\]]*)\]/.exec(dl)[1].split(',').map((x) => x.trim().replace(/'/g, ''));
-  assert.ok(declared.length >= 8, 'the base half is parsed, not assumed');
+  /* ⚠ (#R719) a «the regex matched» guard, not a count of how many toggles ought to be on — the
+     same floor in tests/r476-checks ① failed the first lawful request to switch one OFF. */
+  assert.ok(declared.length > 0, 'the base half is parsed, not assumed');
   for (const id of declared) {
     const m = new RegExp('id="' + id + '"[^>]*checked|checked[^>]*id="' + id + '"');
     assert.ok(m.test(html), `${id} must actually be shipped checked, or it does not belong in the list`);
@@ -159,7 +161,7 @@ test('R225 ⑥ no shipped source still resolves a deleted geopolitics key', () =
    value drifts (#R220): they import it. */
 test('R225 ⑦ the seeded session lives in exactly one place, and it states the base toggles', () => {
   const seed = read('tests/helpers/session-seed.js');
-  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":190,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-coast","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
+  assert.match(seed, /export const SESSION_VALUE = '\{"v":2,"defv":190,"layers":\["cb-names","cb-geolabels","cb-poi","cb-borders","cb-admin1","cb-roads","cb-rail2"\],"lsrOpen":false\}';/);
   const files = readdirSync(new URL('tests/', root)).filter((f) => f.endsWith('.spec.js'));
   for (const f of files) {
     const src = read('tests/' + f);

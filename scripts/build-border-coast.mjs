@@ -208,7 +208,7 @@ export function water() {
    selects. A discovered bundle it does not mention is not skipped; it is published under its own
    global's name (`__HISTERAS` → `histeras`) and the reader finds it by the `global` field the
    entry carries, not by knowing the key. */
-const PUBLISHED_KEY = { __CSHAPES: 'cs', __HISTB: 'hb', __HISTADM1: 'ha', __HISTADM2: 'ha2', __HISTKUNI: 'hk' };
+const PUBLISHED_KEY = { __CSHAPES: 'cs', __HISTB: 'hb', __HISTADM1: 'ha', __HISTADM2: 'ha2', __HISTADM3: 'ha3', __HISTKUNI: 'hk' };
 const keyFor = (g) => PUBLISHED_KEY[g] || g.replace(/^__/, '').toLowerCase();
 
 /* what makes a file one of these bundles, asked of the file and not of a list: it assigns ONE

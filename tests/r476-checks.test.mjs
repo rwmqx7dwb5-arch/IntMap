@@ -64,7 +64,12 @@ test('R476 ① every cb-* that ships checked is in IntMapDefaultOn, and vice ver
   const shipped = shippedCheckboxes(read('index.html'));
 
   assert.ok(shipped.size >= 10, `index.html should ship the base-display rows, found ${shipped.size}`);
-  assert.ok(declared.length >= 8, `IntMapDefaultOn should name the base half, found ${declared.length}`);
+  /* ⚠ (#R719) THIS FLOOR IS A «THE REGEX MATCHED SOMETHING» GUARD, NOT A POLICY. It was written as
+     `>= 8` when eight ids happened to be default-on, so the reader's first request to switch one
+     OFF (「Coastlines & shoresはdefault base map & labelsから除外」) failed a test that was never
+     about how many there are — the two loops below are. Stated as what it means, it cannot fail
+     for a lawful change again, and it still catches an empty or malformed array literal. */
+  assert.ok(declared.length > 0, `IntMapDefaultOn should name the base half, found ${declared.length}`);
 
   /* list → markup: an id in the default-on list that the markup does not tick paints nothing */
   for (const id of declared) {
@@ -82,13 +87,18 @@ test('R476 ① every cb-* that ships checked is in IntMapDefaultOn, and vice ver
   }
 });
 
-/* ── ② THE COASTLINE IS ON, AND IS STILL A VIEW OF THE MAP RATHER THAN A LAYER ON IT ──────────── */
-test('R476 ② cb-coast ships on, on both sides, and stays inside 基本表示', () => {
+/* ── ② THE COASTLINE IS OFF BY DEFAULT, ON BOTH SIDES, AND IS STILL A VIEW RATHER THAN A LAYER ──
+   ⚠ (#R719) THE VERDICT HERE IS REVERSED FROM #R476'S AND THE INVARIANT IS NOT. The reader asked
+   for 「Coastlines & shoresはdefault base map & labelsから除外」, so the row is no longer ticked —
+   but the thing this test was written to hold is the EQUALITY of the two sides, which is silent in
+   both directions (§ the header above). Turning it off is still one edit in two files, and the row
+   itself is untouched: it stays in 基本表示, keeps its handler, its legend and its session entry. */
+test('R476 ② cb-coast ships off, on both sides, and stays inside 基本表示', () => {
   const dl = read('js/data-layers.js');
   const html = read('index.html');
 
-  assert.match(html, /<input type="checkbox" id="cb-coast" checked>/, 'the row ships checked');
-  assert.ok(declaredDefaultOn(dl).includes('cb-coast'), 'and the id is in window.IntMapDefaultOn');
+  assert.match(html, /<input type="checkbox" id="cb-coast">/, 'the row ships unchecked');
+  assert.ok(!declaredDefaultOn(dl).includes('cb-coast'), 'and the id is NOT in window.IntMapDefaultOn');
 
   /* ⚠ it must NOT start being counted as an overlay. js/data-layers.js's chip counter and
      js/widget-core.js's 「N layers on」 card both skip window.IntMapBasicLayers (#R309/#R233), and
@@ -113,12 +123,16 @@ test('R476 ③ an absent default-on id still means the reader switched it off', 
 /* ── ④ THE DOCUMENTS DO NOT STILL SAY «OFF» ───────────────────────────────────────────────────── */
 test('R476 ④ docs/MAP-LAYERS.md and PRODUCT.md state the new default', () => {
   const ml = read('docs/MAP-LAYERS.md');
-  assert.ok(!/既定は OFF/.test(ml.slice(ml.indexOf('cb-coast'), ml.indexOf('cb-coast') + 1400)),
-    'docs/MAP-LAYERS.md (the layer spec, per docs/README.md) must not still call the coastline 既定 OFF');
-  assert.match(ml, /海岸線[\s\S]{0,1400}?既定は ON/, 'it states the new default where it states the layer');
+  /* ⚠ (#R719) the default moved back to OFF, so this states THAT — and it is still the same
+     question: do the two documents that describe the row agree with the two files that set it? */
+  assert.ok(!/既定は ON/.test(ml.slice(ml.indexOf('cb-coast'), ml.indexOf('cb-coast') + 1400)),
+    'docs/MAP-LAYERS.md (the layer spec, per docs/README.md) must not still call the coastline 既定 ON');
+  assert.match(ml, /海岸線[\s\S]{0,1400}?既定は OFF/, 'it states the current default where it states the layer');
   const pr = read('PRODUCT.md');
   const at = pr.indexOf('**海岸線・湖岸線**');
   assert.ok(at > 0, 'PRODUCT.md lists the coastline');
+  assert.ok(!/既定でオン/.test(pr.slice(at, at + 400)),
+    'PRODUCT.md must not still call the coastline on by default');
   assert.ok(!/1回だけ既定でオンになる/.test(pr.slice(at, at + 400)),
     'PRODUCT.md must not still describe the wind layer as what turns the coastline on');
 });

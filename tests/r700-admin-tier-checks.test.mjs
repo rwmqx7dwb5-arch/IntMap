@@ -42,9 +42,13 @@ function tiers() {
   while ((m = re.exec(TA))) {
     const body = m[1], get = (k) => { const g = new RegExp(k + ":\\s*'([^']+)'").exec(body); return g ? g[1] : null; };
     const num = (k) => { const g = new RegExp(k + ':\\s*(-?\\d+)').exec(body); return g ? +g[1] : null; };
+    /* (#R719) …and its OWN minimum zoom: the module stopped sharing one `DEEP_Z` when a third
+       tier arrived, so a test that reads one number reads a number no tier is bound by. */
+    const mz = (new RegExp('minZ:' + String.raw`\s*([A-Za-z0-9_]+)`).exec(body) || [])[1];
+    const minZ = mz == null ? null : (/^\d+$/.test(mz) ? +mz : +((new RegExp('const ' + mz + String.raw` = (\d+);`).exec(TA) || [])[1]));
     out.push({ key: get('key'), file: get('file'), global: get('global'), src: get('src'),
                line: get('line'), vtLine: get('vtLine'), lbl: get('lbl'),
-               lo: num('lo'), hi: num('hi'), deep: /deep:\s*true/.test(body) });
+               lo: num('lo'), hi: num('hi'), minZ, deep: /deep:\s*true/.test(body) });
   }
   return out;
 }
@@ -92,7 +96,14 @@ test('① 各層の宣言 tolerance と、格納されたジオメトリの粗�
     assert.equal(typeof d.tolerance, 'number', `${t.file} は自分の tolerance を宣言していない`);
     assert.ok(d.tolerance > 0, `${t.file} の tolerance が正でない`);
     assert.equal(typeof d.since, 'number', `${t.file} は自分の since を宣言していない`);
-    assert.equal(JSON.stringify(d.levels), JSON.stringify([t.lo, t.hi]), `${t.file} の levels と、モジュールが読む lo/hi が違う`);
+    /* ⚠ (#R719) 集合として照合する。束は自分が持つ admin_level を**列挙**し（`[7]`）、モジュールは
+       範囲で読む（`lo:7, hi:7`）——`[3,4]`・`[5,6]` では偶然一致していたので、**1レベルだけの層が
+       出て初めて継ぎ目が見えた**。守るべきは綴りではなく「同じ集合を指しているか」である。 */
+    const want = []; for (let v = t.lo; v <= t.hi; v++) want.push(v);
+    /* ⚠ 束は vm の別 realm で作られた配列なので、`deepStrictEqual` は prototype の違いで落ちる。
+       こちらの realm の配列に写してから比べる。 */
+    assert.deepEqual(Array.from(d.levels).sort((a, b) => a - b), want,
+      `${t.file} の levels ${JSON.stringify(d.levels)} と、モジュールが読む lo/hi ${t.lo}–${t.hi} が違う集合を指している`);
     /* 量子化の格子が許容幅を支配していないこと（3桁なら 0.001°、4桁なら 0.0001°）。
        格子のほうが粗ければ、宣言された tolerance はもう効いていない。 */
     let dec = 0;
@@ -181,7 +192,10 @@ function harness(opts = {}) {
 const settle = async (n = 16) => { for (let i = 0; i < n; i++) await Promise.resolve(); };
 
 test('② 束の線は「タイルが来ない」と実証されるまで描かれない（評価）', async () => {
-  const T = tiers(), H = harness();
+  /* ⚠ (#R719) カメラは**いちばん深い層が立つ縮尺**に置く。固定の 7 のままだと、z8 から立つ
+     第3階層はレイヤーが1枚も作られず、`vis()` が `null` を返して「見えていない」と読めてしまう
+     ——測っていないことが、完璧に振る舞っていることと同じ形になる。 */
+  const T = tiers(), H = harness({ zoom: Math.max.apply(null, T.map((t) => t.minZ || 0)) });
   H.travel(1900);
   await settle();
   for (const t of T) {
@@ -203,20 +217,26 @@ test('② 束の線は「タイルが来ない」と実証されるまで描か�
 test('③ 深い層は縮尺で閉じている——2本の束の線が同時に出る条件の一つ', async () => {
   const T = tiers(), deep = T.filter((t) => t.deep);
   assert.ok(deep.length, '深い層が1つも見つからない');
-  const H = harness();
+  const H = harness({ zoom: Math.max.apply(null, T.map((t) => t.minZ || 0)) });
   H.travel(1900);
   await settle();
-  const z = H.mod.deepZoom();
-  assert.equal(typeof z, 'number');
+  /* ⚠ (#R719) 下限は**その層自身のもの**である。ここは `deepZoom()` という1つの数に対して
+     全部の深い層を照合していたが、第3階層は自分の中央値から導かれた別の縮尺（z8）を持つ
+     ——1つの数に揃えることは、第3階層を描けない縮尺に置くか、第2階層を読めない縮尺に
+     引きずり下ろすかのどちらかになる。 */
+  assert.equal(typeof H.mod.deepZoom(), 'number', 'deepZoom() が数を返さない');
   for (const t of deep) {
-    assert.equal(H.minzoom(t.line), z, `${t.line}: minzoom が deepZoom() と違う`);
-    assert.equal(H.minzoom(t.vtLine), z, `${t.vtLine}: minzoom が deepZoom() と違う`);
+    assert.ok(Number.isFinite(t.minZ) && t.minZ > 0, `${t.line}: 深い層が自分の minZ を宣言していない`);
+    assert.equal(H.minzoom(t.line), t.minZ, `${t.line}: minzoom が自分の minZ と違う`);
+    assert.equal(H.minzoom(t.vtLine), t.minZ, `${t.vtLine}: minzoom が自分の minZ と違う`);
   }
+  const zs = deep.map((t) => t.minZ);
+  assert.equal(new Set(zs).size, zs.length, '2つの深い層が同じ縮尺を名乗っている——どちらかは自分の中央値から導かれていない');
   for (const t of T.filter((x) => !x.deep)) assert.equal(H.minzoom(t.line), undefined, `${t.line}: 第1級の線に縮尺の下限が付いた`);
 });
 
 test('④ レイヤーを切った読者には、時代の区分線は1本も出ない', async () => {
-  const H = harness({ layerOff: true });
+  const H = harness({ layerOff: true, zoom: Math.max.apply(null, tiers().map((t) => t.minZ || 0)) });
   H.travel(1900);
   await settle();
   H.advance(60000); H.bus.emit('idle');

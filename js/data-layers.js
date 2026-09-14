@@ -47,7 +47,7 @@ window.IntMapDefaultLayers=['dl-climate','dl-subcables'];
    the restore's off-sweep below reads absence as «the reader switched it off» (#R186/#R225) and switches
    it back off. Healing those would be a `defv` generation bump (#R189/#R190); not done — the round was
    asked for the default, not for a migration. */
-window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-coast','cb-admin1','cb-roads','cb-rail2']
+window.IntMapDefaultOn=['cb-names','cb-geolabels','cb-poi','cb-borders','cb-admin1','cb-roads','cb-rail2']
   .concat(window.IntMapDefaultLayers);
 /* ══ ⚠⚠⚠ (#R309) WHAT "Base map & labels" CONTAINS, AS ONE LIST ═══════════════════════════════════
    「Base map & labelsのオン数をレイヤーのオン数にみなすな。」 The reason it was counted is that the
@@ -6815,7 +6815,7 @@ window.IntMapModules.dataLayers=function(HOST){
            at a continental view they are legitimately invisible while `ref-admin1` is painted — which
            is why `painted()` asking "is ANY of them on" is the right question here and a per-id
            assertion would not be. */
-        'cb-admin1':['ref-admin1','ref-admin2','imta-line','imta2-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
+        'cb-admin1':['ref-admin1','ref-admin2','imta-line','imta2-line','imta3-line'],'cb-roads':['ref-roads'],'cb-rail2':['ref-rail']
       };
       const sus={}, healed={}, log=[];
       /* (#R85) NEVER FIGHT THE USER. The checked-but-blank heal pulses a layer off→on to force a re-add; the
