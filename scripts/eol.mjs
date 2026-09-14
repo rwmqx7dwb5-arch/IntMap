@@ -107,3 +107,31 @@ export function dominantEol(src) {
 
 /* the same lines, punctuated one way. ⚠ This CHANGES BYTES — only call it on text you are writing. */
 export const normaliseEol = (src, eol) => splitLines(src).map((l) => l.text).join(eol);
+
+/* ── (#R718) …AND THE ONE QUESTION WHERE THE CARRIAGE RETURN IS THE SUBJECT ────────────────────
+ *  Everything above exists because a check is about CONTENT and line endings belong to the
+ *  checkout. There is exactly one question in this repository where that is backwards: «how many
+ *  bytes does the reader's filesystem hand a tool that stops at a byte count?» Codex reads
+ *  AGENTS.md up to `project_doc_max_bytes` (32,768 by default) and drops the rest in silence, and
+ *  it counts the bytes it was given — a carriage return is one of them.
+ *
+ *  ⚠ THE MEASURED FAILURE. `.gitattributes` pins only the extensions executed or parsed on Linux
+ *  to LF; `*.md` is not among them, so `core.autocrlf` decides. MEASURED 2026-09-14 on ea7664a1:
+ *  AGENTS.md was 32,718 bytes with LF endings over 465 line breaks, and 33,183 bytes as checked
+ *  out on the development machine. The ceiling is 32,768. CI (Linux, LF) passed with 50 bytes of
+ *  margin while the file Codex actually opened on that machine was 415 bytes OVER and had lost
+ *  the tail of §12. NEITHER VERDICT WAS WRONG about its own runner, which is exactly why a green
+ *  CI could hide a truncated rulebook.
+ *
+ *  `lf()` would not have fixed that. It would have made the gate answer «would this fit if the
+ *  file were stored differently?» — portable, and about nothing anyone reads. So this function
+ *  neither normalises nor trusts the runner: it returns the size of the LARGEST conforming
+ *  checkout, every line break stored as CRLF. That number is derived from the content, so it is
+ *  the same on Linux and on Windows, and it is never smaller than what a reader is handed.
+ *
+ *  THE RULE, STATED IN THE NEGATIVE: normalise when the carriage return is noise in front of your
+ *  subject; count it when your subject is how many bytes the reader gets. */
+export function crlfBytes(src) {
+  const text = lf(typeof src === 'string' ? src : String(src));
+  return Buffer.byteLength(text, 'utf8') + (text.split('\n').length - 1);
+}
