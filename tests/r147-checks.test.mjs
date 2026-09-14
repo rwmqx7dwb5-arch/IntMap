@@ -19,13 +19,24 @@ test('R147 #13 free AI quota is 10/day on the client and server', () => {
   assert.ok(!/1日30回/.test(html), 'no stale JP "1日30回"');
 });
 
-test('R150 #9 Atlas model = GPT-5.6 Terra (re-verified reachable); Luna is the fallback; Gemini Flash-Lite unused', () => {
-  // (#R150) R148 ran Luna because this project 403'd Terra. Re-verified 2026-07-21 via the refresh-news proxy
-  // (same key + AI_MODEL, no model fallback): AI_MODEL=gpt-5.6-terra geocoded 61/63 EN + 104/116 JP → Terra is
-  // now reachable, so it is the default per the user's standing request. Luna stays the resilient FALLBACK_MODEL.
-  assert.match(aiproxy, /provider === "openai" \? OPENAI_DEFAULT_MODEL/, 'openai default = OPENAI_DEFAULT_MODEL');
-  assert.match(aiproxy, /const OPENAI_DEFAULT_MODEL = "gpt-5\.6-terra"/, 'default model = Terra');
-  assert.match(aiproxy, /const FALLBACK_MODEL = "gpt-5\.6-luna"/, 'fallback model = Luna (resilience)');
+test('R150 #9 the OpenAI path has a default model and a DIFFERENT fallback; Gemini Flash-Lite unused', () => {
+  // (#R150) R148 ran Luna because this project 403'd Terra; #R150 re-verified Terra and made it the default.
+  // ⚠ (#R722) THE ID IS NO LONGER WRITTEN HERE. Which model is current is a setting (AI_MODEL) and it has
+  // changed twice; a literal here made a model change fail a check about R147. What must stay true is the
+  // SHAPE: a default, and a fallback that is a different model — a fallback equal to the default is not a
+  // fallback, it is a second attempt at the thing that just 403'd. The id itself: tests/r722 ⑦.
+  /* (#R722) the per-provider ternary became a table; the fact is the same one — the OpenAI row of
+     that table IS this constant, so a model id is written in one place rather than two. */
+  assert.match(aiproxy, /openai: OPENAI_DEFAULT_MODEL,/, 'PROVIDER_DEFAULT_MODEL.openai = OPENAI_DEFAULT_MODEL');
+  const dflt = (aiproxy.match(/const OPENAI_DEFAULT_MODEL = "([^"]+)"/) || [])[1];
+  const chain = ((aiproxy.match(/const FALLBACK_CHAIN = \[([^\]]*)\]/) || [])[1] || '')
+    .split(',').map((x) => x.trim().replace(/^"|"$/g, '')).filter(Boolean);
+  assert.ok(dflt, 'ai-proxy has no OPENAI_DEFAULT_MODEL');
+  assert.ok(chain.length >= 1, 'ai-proxy has no FALLBACK_CHAIN');
+  /* (#R722) a step that repeats the model that just failed is not a step. The chain must be a
+     sequence of DISTINCT models, none of them the default — otherwise a 403 retries itself. */
+  assert.equal(new Set([dflt, ...chain]).size, chain.length + 1,
+    'the fallback chain repeats a model (or the default): ' + JSON.stringify([dflt, ...chain]));
   assert.match(aiproxy, /Flash-Lite is never used/, 'documents that Gemini Flash-Lite is never used');
   const aiproxyNoNote = aiproxy.replace(/Gemini 3\.1 Flash-Lite is never used\./g, '');
   assert.ok(!/flash-lite/i.test(aiproxyNoNote), 'flash-lite appears only in the "never used" note');

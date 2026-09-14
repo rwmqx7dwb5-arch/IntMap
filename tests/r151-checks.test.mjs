@@ -97,8 +97,10 @@ test('R151 #8 Street View ON auto-shows coverage (restored on close)', () => {
 });
 
 test('R151 #9 Atlas model = GPT-5.6 Terra (Luna only as model-not-found fallback)', () => {
-  assert.match(aiproxy, /const OPENAI_DEFAULT_MODEL = "gpt-5\.6-terra";/, 'ai-proxy default = Terra');
-  assert.match(aiproxy, /const FALLBACK_MODEL = "gpt-5\.6-luna";/, 'Luna is the fallback');
+  /* (#R722) the ids moved out of this check — see tests/r147 ⑨ and tests/r722 ⑦ for why. What R151
+     is about is that the fallback is reached ONLY by model_not_found, and that survives any model. */
+  assert.match(aiproxy, /const OPENAI_DEFAULT_MODEL = "[^"]+";/, 'ai-proxy has a default model');
+  assert.match(aiproxy, /const FALLBACK_CHAIN = \["/, 'ai-proxy has a fallback chain');
   assert.match(aiproxy, /model_not_found\|does not have access to model/, 'fallback only on model-not-found');
 });
 

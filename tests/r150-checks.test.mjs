@@ -123,7 +123,13 @@ test('R150 #2 Atlas Street-View OFF reply offers the on/off toggle', () => {
   assert.match(html, /Street View off','ストリートビューをオフ'[\s\S]{0,120}\)\)\+_featTogHtml\('streetview'\)\)/, 'the OFF reply carries the toggle to flip it back on');
 });
 
-test('R150 #9 Atlas model comment in index.html reflects Terra (not the reverted-Luna note)', () => {
-  assert.match(html, /gpt-5\.6-terra; #R150 Terra re-verified reachable/, 'legal/provider comment names Terra');
+test('R150 #9 the app shell does not name a model the server stopped using', () => {
+  /* (#R722) This used to require the literal «gpt-5.6-terra» in the shell's provider comment, which
+     made the shell a SECOND place the current model is written down — and #R150's own measurement is
+     what shows how that ends: AI_MODEL named Terra from #R150 until #R722 while Terra answered 403
+     and every answer came from the fallback. A name in the shell cannot be kept true by anything, so
+     the rule is that the shell may not name an OpenAI model id at all. ai-proxy names it once. */
+  const ids = (html.match(/gpt-5\.[0-9]+-[a-z]+|gpt-[0-9]+-[a-z]+/g) || []).filter((m) => !/^gpt-[0-9]+-turbo$/.test(m));
+  assert.deepEqual([...new Set(ids)], [], 'the app shell names an OpenAI model id — it will outlive the setting');
   assert.ok(!/#R148 reverted from Terra/.test(html), 'the stale R148 revert note is gone');
 });
