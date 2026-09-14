@@ -118,7 +118,7 @@ window.IntMapModules.timeBorders=function(HOST){
        made it reachable.
        ⚠ THE ANSWER WAS ALREADY IN THE SOURCE. Re-read 2026-09-10 (`GET
        api.github.com/repos/aourednik/historical-basemaps/contents/geojson`, filtering `world_*.geojson`):
-       the repo publishes THIRTY-SIX snapshots, from year 100 to 2010. Every one of the twenty-four
+       the repo publishes THIRTY-SEVEN snapshots, from year 100 to 2010. Every one of the twenty-four
        below 1815 was fetched and parsed here the same day — all present, all the same shape, 204 to
        1,946 features each. The old note beside this list («world_1815 and world_1880 exist, nothing
        between them does») was true and is still true: it was answering about the 1850-1885 window,
@@ -534,7 +534,7 @@ window.IntMapModules.timeBorders=function(HOST){
       return _mergeTibet(fc); }catch(_){ return fc; } }
     /* ══ ⚠⚠⚠ (#R679) THE ERA SNAPSHOTS ARE BUNDLED NOW, AND THAT IS WHAT MADE THE DEEP PAST ══════
        REACHABLE AT ALL. Two facts, measured 2026-09-10, and the second is the whole round:
-       ⚠ ① The list below said thirty-six. The repository publishes FIFTY-THREE — the other
+       ⚠ ① The list below said thirty-six. The repository publishes FIFTY-FOUR — the other
          seventeen are BEFORE THE COMMON ERA (world_bc1 … world_bc123000). #R604 read that same
          directory and reported thirty-six because it filtered to files whose year is a decimal
          number, and the pre-common-era ones are not; every one of the seventeen was fetched and
@@ -2079,7 +2079,7 @@ window.IntMapModules.timeBorders=function(HOST){
        WORLD WAS TO DRAG. #R518's note above is exactly right about why the stepper exists — 「the
        only way the dense stretches are reachable at all」 — and the stretch it did not reach is the
        one where dragging is worst: below 1689 the slider is LOGARITHMIC over 124,688 years
-       (js/hist-scale.js), so the 53 sheets between 123000 BC and 1650 sit inside a few pixels each.
+       (js/hist-scale.js), so the 54 sheets between 123000 BC and 2010 sit inside a few pixels each.
        A reader in 500 AD had no way to ask for the next moment the map actually changes.
        ⚠ THE ERA YEARS ARE NOT CHANGE DATES AND ARE NOT PRETENDED TO BE. A snapshot states the year
        it depicts, not the day a border moved, so each contributes ONE key — 1 January of its own

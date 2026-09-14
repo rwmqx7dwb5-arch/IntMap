@@ -696,7 +696,15 @@ hist-cities.json                  時計の年の都市名の記録（6474 都�
                                   手書き＋Wikidata（CC0）＋OpenHistoricalMap（CC0）＋Pleiades
                                   （CC BY 3.0）の和集合で、行ごとに
                                   **出典**と**日付精度**（日／月／年／世紀／不明）を持つ。時計が「今」を
-                                  離れた最初の 1 回だけ取得する
+                                  離れた最初の 1 回だけ取得する。
+                                  ⚠ **言語の欄は「誰かが書いたもの」だけを持つ**（#R717）。span ごとの
+                                  `a` は 9 言語に対する**実証のビット列**で、ビットが立っていない言語には
+                                  欄そのものが無く、`js/hist-cities.js` が `en` へ退く。以前は 9 欄すべてを
+                                  英語綴りの写しで埋めており、ビットが「誰も書いていない」と言っている隣で
+                                  ファイルが 67,622 件の訳語を主張していた（3.05 MB → 1.62 MB・gzip 681→414 kB）。
+                                  ⚠ その `en` は**記録自身の綴り**で、**537 span はラテン文字ではない**
+                                  （1800 年の北京は 順天府）——件数はファイル自身の `note` が述べ、
+                                  `check:histcities` がラチェットで抑える
 gazetteer-phone.json.gz           携帯が取りに行くのはこちら。上のファイルの先頭 12,000 行を切り出したもの
 ecoregions_2017.geojson           エコリージョン（自前ホスト）。**配布されるのはこれだけ**
   └ 同内容の JS グローバル版      `ecoregions_2017.js`（#R13b の `file://` 対策・`window.__ECOREGIONS_2017`）。
@@ -775,7 +783,9 @@ health.json                       国別の**エピデミック対応力**——
                                   国別に公表している機関が無いので、作れば観測ではなく発明になる
 hdi-series.json                   HDI（UNDP）193か国 × 1990–2022
 maddison.json                     マディソン・プロジェクトの歴史 GDP・人口（1850–2018・`scripts/build-maddison.mjs`）
-data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019）
+data/cshapes.js                   歴史的国境（CShapes 2.0・1886-01-01〜2019・**CC BY-NC-SA 4.0**）。
+                                  ⚠ 束の `src` が**自分のライセンスを名乗る**（#R717）——歴史の 6 束のうち
+                                  ここだけが名乗っておらず、**表示が再配布の条件になっている唯一の束**だった
 data/hist-borders.js              歴史的国境の 1689–1885（OpenHistoricalMap・CC0 1.0／`scripts/build-hist-borders.mjs`）。
                                   ⚠ **窓の下限は導出**——束の `window[0]` が正本
 data/hist-eras.js                 全時代の国境スナップショット 54 枚（紀元前 123000 年〜西暦 2010 年・

@@ -71,6 +71,17 @@
  *   ⑤ ERAS are ordered, disjoint, and inside the clock's reach — which is now
  *      js/hist-scale.js's own FLOOR, evaluated rather than copied (see below).
  *   ⑥ THE WRITTEN RECORD IS WHOLE. Every one of the handwritten rows reaches the shipped file.
+ *   ⑦ (#R717) NO COLUMN CLAIMS AN AUTHOR IT HAS NOT GOT. A language column that repeats the English
+ *      spelling while its own attestation bit is clear is the file saying somebody wrote that name
+ *      in that language when the bit beside it says nobody did. 67,622 of them shipped until this
+ *      round; the build no longer writes them and `--check` refuses the first one back.
+ *   ⑧ (#R717) AND THE RESIDUAL THAT LEAVES IS RATCHETED. What a clear bit falls back to is `en`,
+ *      which is the RECORD'S OWN SPELLING — for 537 spans not even Latin (Beijing 1403-1913 reads
+ *      順天府 to every reader). That is the honest answer, because of those 537 only ELEVEN have
+ *      another covering span attested in English or Japanese and NINE of the eleven alternatives
+ *      state no start date, so preferring them would put an undated name back into years it cannot
+ *      speak for — the thing #R679 and #R689 each turned down. So the count is stated in the file's
+ *      own `note`, compared with the bytes, and held to UNREADABLE_MAX so it cannot creep upward.
  *
  *  ⚠ AND THE COMMITTED FILE IS RE-DERIVED, byte for byte, by `--check` (npm run check:histcities,
  *  inside `npm test`) — so data/hist-cities.json cannot drift away from the record.
@@ -653,6 +664,18 @@ const bitOf = (name) => {
   for (let i = 0; i < LANGS.length; i++) if (name._has && name._has[LANGS[i]]) n |= 1 << i;
   return n;
 };
+/* ⚠ (#R717) the residual the note states, measured on the record that is about to be written: a span
+   nobody wrote in any of `langs`, whose own spelling is in a script a reader of those nine cannot
+   read. LATIN here is the Latin blocks plus their diacritics and ordinary punctuation — Quṣtanṭīnīya
+   is readable, Цариград is not. The gate below holds this to a ratchet so it cannot grow unnoticed. */
+const LATIN_ONLY = /^[\u0000-\u02AF\u1E00-\u1EFF\u2000-\u206F\s]*$/u;
+const eraTotal = final.reduce((n, r) => n + r.eras.length, 0);
+/* ⚠ OBSERVATION 2026-09-14, on the record this build re-derives: 537 spans of 9,246. EXPIRES when a
+   source starts writing these names in one of `langs` (the number falls, and a ratchet that stops
+   touching the metal is not a ratchet — #R716 — so re-measure it down) or when `langs` changes. */
+const UNREADABLE_MAX = 537;
+const unreadable = final.reduce((n, r) => n + r.eras.filter((e) => bitOf(e.name) === 0 && !LATIN_ONLY.test(e.name.en || '')).length, 0);
+
 const out = {
   v: 3,
   src: `scripts/histcities/ — ${REGIONS.length - LICENCES.length} handwritten region files plus `
@@ -665,7 +688,20 @@ const out = {
     + 'only if its own spelling is one of `k` AND it lies within `g` of (lon, lat). `f`/`t` are signed YYYYMMDD '
     + '(negative years are astronomical, so -330 is 331 BC). `p` is the precision of those two endpoints — d day, '
     + 'm month, y year, c a period boundary from a vocabulary rather than a date, - open. `a` is a bitmask over '
-    + '`langs`: a clear bit means no source writes that name in that language and the English/Latin column stands. '
+    /* ⚠⚠⚠ (#R717) THIS SENTENCE USED TO END 「…and the English/Latin column stands」, AND FOR 537 OF
+       THESE SPANS THE COLUMN THAT STANDS IS NOT LATIN. Beijing 1403-1913 reads 順天府 to every reader,
+       Ulaanbaatar 1639-1910 reads Өргөө, Istanbul 1453-1923 reads Цариград: the source wrote the name
+       in its own script and no source wrote it in any of `langs`, so what stands is the record's own
+       spelling. That is the honest answer and the alternative was measured before this was written —
+       of those 537 spans, ONLY 11 have another covering span attested in English or Japanese, and 9
+       of the 11 alternatives state no start date, so preferring them would put an undated name back
+       in years it cannot speak for (#R679/#R689 turned exactly that down). The claim is corrected
+       rather than the behaviour. ⚠ THE NUMBERS ARE COUNTED FROM THE BYTES BEING WRITTEN, so they
+       cannot drift from them. */
+    + '`langs`: a set bit means a source writes this name in that language. A language with a clear bit '
+    + 'has no column of its own and falls back to `en`, which is the record’s own spelling — and for '
+    + `${unreadable} of the ${eraTotal} spans that spelling is not in Latin script, because no source `
+    + 'wrote the name in any of `langs`. '
     + '`s` is the source: h the handwritten record, '
     + [...SRC_CODE].map(([f, c]) => `${c} ${/^derived-([a-z0-9]+)/.exec(f)[1]}`).join(', ') + '.',
   langs: LANGS,
@@ -678,9 +714,27 @@ const out = {
     g: guardOf(r),
     k: r.keys.slice(),
     e: r.eras.map((e) => {
-      const n = {};
-      for (const lg of LANGS) n[lg] = e.name[lg];
-      return { f: dnum(e.from, false), t: dnum(e.to, true), p: prec(e.from) + prec(e.to), a: bitOf(e.name), n };
+      /* ⚠⚠⚠ (#R717) A COLUMN THAT REPEATS THE ENGLISH ONE, UNDER A CLEAR ATTESTATION BIT, IS THE
+         FILE SAYING SOMETHING NOBODY SAID. Until this round every span shipped all nine columns,
+         filled by the fallback where no source had written the name — so 「"jp":"順天府"」 stood in the
+         record as though somebody had written 順天府 as the Japanese name of Beijing, and the bit
+         beside it said the opposite. MEASURED on the shipped bytes: 75,936 of 83,214 columns (91.2%)
+         carried a clear bit, and 67,622 of those were byte-identical to the English one.
+         ⚠ NOTHING A READER SEES CHANGES AND NO STRING IS LOST. js/hist-cities.js resolves
+         `n[lang] || n.en`, so a column that equalled `en` was already answering with `en`; the 362
+         columns that a clear bit shares with a DIFFERENT spelling (#R689's cross-span aliases) are
+         kept exactly as they were, because dropping those WOULD change an answer. What goes is the
+         duplication alone: 3.05 MB → 1.62 MB, 681 kB → 414 kB gzipped, and 67,622 assertions that
+         had no author. ⚠ EXPIRES IF the runtime stops falling back to `en` — then every language a
+         reader may ask for has to be present again, and this is the line to undo. */
+      const n = { en: e.name.en };
+      const bits = bitOf(e.name);
+      LANGS.forEach((lg, i) => {
+        if (lg === 'en') return;
+        const v = e.name[lg];
+        if (v && (v !== e.name.en || ((bits >> i) & 1))) n[lg] = v;
+      });
+      return { f: dnum(e.from, false), t: dnum(e.to, true), p: prec(e.from) + prec(e.to), a: bits, n };
     }),
   })),
 };
@@ -768,8 +822,40 @@ if (MODE === 'check') {
      which is worse than no check, because the failure teaches you to distrust the gate. */
   const eol = (s) => s.replace(/\r\n/g, '\n');
   if (eol(cur) !== eol(text)) fail('data/hist-cities.json does not match scripts/histcities/ — re-run `node scripts/build-hist-cities.mjs` and commit the result');
+
+  /* ══ ⚠⚠⚠ (#R717) TWO THINGS A BYTE-FOR-BYTE COMPARISON CANNOT SEE ══════════════════════════════
+     The comparison above proves the file IS the record. It cannot say anything about what the record
+     CLAIMS, and both of these were false claims that every gate here agreed with for nine rounds:
+     ① a column repeating `en` under a clear attestation bit says a source wrote that name in that
+        language when the bitmask beside it says none did (67,622 of them shipped),
+     ② the residual that leaves — a span no source wrote in any of `langs`, whose own spelling a
+        reader of those nine cannot read — is the honest answer, but it must not GROW unnoticed: a
+        harvest that starts importing native-script names would push it up one row at a time and
+        nothing would say so. So it is a RATCHET on the measurement, not a budget to spend.
+     ⚠ It is re-measured from the bytes being written, which is why it cannot drift from them; and it
+     is compared with the number the file's own note tells the reader, so the prose and the record
+     fail together or not at all. */
+  const shipped = JSON.parse(eol(cur));
+  let dup = 0;
+  for (const c of shipped.cities) for (const e of c.e) shipped.langs.forEach((lg, i) => {
+    if (lg !== 'en' && e.n[lg] !== undefined && e.n[lg] === e.n.en && !((e.a >> i) & 1)) dup++;
+  });
+  if (dup) fail(`${dup} language column(s) repeat the English spelling under a clear attestation bit — `
+    + 'the file is asserting a name in a language its own bitmask says nobody wrote it in');
+  const shippedUnreadable = shipped.cities.reduce((n, c) =>
+    n + c.e.filter((e) => e.a === 0 && !LATIN_ONLY.test(e.n.en || '')).length, 0);
+  if (shippedUnreadable !== unreadable)
+    fail(`the shipped file holds ${shippedUnreadable} unreadable span(s) and the record derives ${unreadable}`);
+  if (!shipped.note.includes(`${unreadable} of the ${eraCount} spans`))
+    fail(`the file's own note no longer states the ${unreadable} span(s) a reader of the nine languages cannot read`);
+  if (unreadable > UNREADABLE_MAX)
+    fail(`${unreadable} span(s) are written in a script none of \`langs\` can read, over the ${UNREADABLE_MAX} measured `
+      + '(#R717) — a name a reader cannot read is the residual this record already carries, not a budget to spend; '
+      + 'if the growth is genuinely what the sources say, re-measure UNREADABLE_MAX rather than raise it');
+
   console.log(`✓ hist-cities: data/hist-cities.json matches the record (${final.length} cities, ${eraCount} names, `
-    + `${handShipped} of them handwritten and all present, every spelling bound to a point, clock floor ${CLOCK_FLOOR})`);
+    + `${handShipped} of them handwritten and all present, every spelling bound to a point, clock floor ${CLOCK_FLOOR}; `
+    + `no column repeats \`en\` under a clear bit, ${unreadable} span(s) readable in none of the nine languages)`);
 } else if (MODE === 'report') {
   report();
 } else if (MODE === 'audit') {
