@@ -104,7 +104,7 @@ const ALLOW = {
        ⚠ IT IS NOT ON THE BOOT PATH AND NOT IN ANY CHUNK: js/time-borders.js injects it as a
        <script> the first time the clock asks for a year only it can answer. Measured after:
        eager requests 6/6 and eager modules 295/295, both unchanged. */
-    { match: /^data\/hist-eras\.js$/, why: 'the era snapshots, 53 of them incl. 17 before the common era (aourednik/historical-basemaps, GPL-3.0) — below 1850 this file is the only country answer, and it replaced a runtime dependency on two public CORS proxies. Injected as a <script> only when the clock asks; eager cost unchanged.' },
+    { match: /^data\/hist-eras\.js$/, why: 'the era snapshots, 54 of them incl. 17 before the common era (aourednik/historical-basemaps, GPL-3.0) — below 1850 this file is the only country answer, and it replaced a runtime dependency on two public CORS proxies. Injected as a <script> only when the clock asks; eager cost unchanged.' },
     /* (#R564) …and the DEEPER tier of the same record. It is bigger than the first level and it is
        also the one nobody pays for unless they ask: js/time-admin1.js does not fetch it until the
        camera passes z6, where a county is a shape rather than a smudge, and it is not in the idle

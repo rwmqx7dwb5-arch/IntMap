@@ -173,9 +173,18 @@ test('#R700 ⑩ unreferenced rings over the ratchet fail', () => {
   assert.equal(r.failed, true, r.out);
   assert.match(r.out, /rings nothing references/);
 });
-test('#R700 ⑪ an unreferenced ring under the ratchet is allowed — today\'s bytes carry six', () => {
+/* ⚠ (#R716) THIS TEST USED TO SAY 「today's bytes carry six」 AND LET ONE MORE RING THROUGH. That
+   sentence was a number written inside a check rather than read off the file, and it outlived the
+   thing it described: #R711/#R712 re-pooled the bundle and carried those six rings away, leaving
+   ORPHAN_POINTS offering 1,569 points of slack to a file with none. The check stayed green either
+   way, because it only ever asserted that the headroom it had been told about still existed.
+   ⇒ RESTATED AGAINST THE DEFECT: the allowance is whatever the committed bundle actually holds
+   (tests/r716-hist-coverage-checks ② asserts that equality), so ONE more unreferenced ring is
+   always over it — no matter what that measured value happens to be this round. */
+test('#R700 ⑪ the orphan allowance carries no slack — one more unreferenced ring is over it', () => {
   const r = fires(({ cs }) => { cs.rings.push(sq(40, 40, 1)); });
-  assert.equal(r.failed, false, r.out);
+  assert.equal(r.failed, true, r.out);
+  assert.match(r.out, /rings nothing references/);
 });
 
 /* ── ⑫⑬⑭ the #R689 shape: the obligation, and a page that pays it ──────────────────────────── */

@@ -159,11 +159,15 @@ async function fetchAll() {
    lacks the language the hand table has would make the hand table unreachable and the reader
    would LOSE a name they already had (#R536). The tables are evaluated, never read (#R505). */
 function ownedNames(rows, langs) {
-  const owned = new Set();
+  const owned = new Map();
   for (const lg of langs) {
     if (lg === 'en') continue;
     const { api } = timeBorders({ lang: lg });
-    for (const row of rows) if (api.eraLocName(row.name)) owned.add(row.name);
+    for (const row of rows) {
+      if (!api.eraLocName(row.name)) continue;
+      if (!owned.has(row.name)) owned.set(row.name, new Set());
+      owned.get(row.name).add(lg);
+    }
   }
   return owned;
 }
@@ -189,6 +193,8 @@ function labelRow(ent, english, langs, cc) {
   return { n, a, dropped };
 }
 
+const EMPTY = new Set();
+
 function byMeasure(rows, years, store, langs, cc, why) {
   const internal = new Set(store.internal);
   const subject = new Set(store.subject || []);
@@ -201,18 +207,20 @@ function byMeasure(rows, years, store, langs, cc, why) {
   const articles = store.articles || {};
   const lanes = { label: 0, article: 0 };
   for (const row of rows) {
-    if (owned.has(row.name)) { why['hand-table'] = (why['hand-table'] || 0) + 1; continue; }
+    const mine = owned.get(row.name) || EMPTY;
+    if (mine.size >= langs.filter((l) => l !== 'en').length) { why['hand-table'] = (why['hand-table'] || 0) + 1; continue; }
     const cands = candsOf(store, row.name).map((c) => ({ ...c, subject: c.geo || (c.p31 || []).some((p) => subject.has(p)) }));
     const d = decide(row, cands, internal, years);
     if (!d.qid) { why[d.why] = (why[d.why] || 0) + 1; continue; }
     const { n, a, dropped: dd } = labelRow(store.facts[d.qid], row.name, langs, cc);
+    for (const lg of mine) delete n[lg];
     dropped += dd;
     /* ⚠ A ROW WITH NOTHING TO SAY IN A SHIPPED LANGUAGE IS NOT SHIPPED. Under the amended policy
        most decided names have no Japanese label on Wikidata; keeping their rows would put the
        attestation mask of eight unshipped languages in the reader's download and localize
        nothing. The DECISION is not lost — it is reproducible from the cache at any time, which is
        what `--check` re-runs — only its silence is left out of the file. */
-    if (!Object.keys(n).length) { why.nothing = (why.nothing || 0) + 1; continue; }
+    if (!Object.keys(n).length) { why[mine.size ? 'hand-table' : 'nothing'] = (why[mine.size ? 'hand-table' : 'nothing'] || 0) + 1; continue; }
     lanes[articles[row.name] === d.qid ? 'article' : 'label'] += 1;
     out[row.name] = { q: d.qid, a, n };
   }

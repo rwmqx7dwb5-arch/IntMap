@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { sharedRoster, auditRoster, inventories } from './shared-roster.mjs';
 import { claims, CHECKED } from './doc-claims.mjs';
+import { authoredLangs, carriedLangs } from './lang-policy.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = process.argv.includes('--check');
@@ -1539,6 +1540,76 @@ if (RULE && RULE !== 'i18n-open-gap') {
     });
     if (!/都市/.test(BODY.get('Architecture.md') || '')) fail('hist-cities', 'Architecture.md no longer states how large the historical-city record is');
     if (!problems.some((x) => x.startsWith('hist-cities'))) ok('hist-cities', `${cities} cities / ${names} historical names, stated correctly`);
+  }
+}
+
+/* ═══ 29b. how many INDEPENDENT historical places ship ═══════════════════════════
+ *  ⚠⚠⚠ (#R716) THE RULE ABOVE HAS EXISTED SINCE #R427 AND ITS NEIGHBOUR HAD NONE. data/hist-places.json
+ *  is the other half of the same layer — the Pleiades places that have no modern name to rename — and
+ *  THE TWO DOCUMENTS THAT STATE ITS SIZE DISAGREED: Architecture.md and PRODUCT.md said 6,698 / 12,646,
+ *  docs/FILES.md still said 6,032 / 10,165. Nothing was wrong with the record; one prose copy had been
+ *  left behind by a rebuild, which is the entire failure mode rule 29 was written for. It did not catch
+ *  this one because ITS SUBJECT IS A FILENAME rather than the question 「how large is the
+ *  historical-place record」 — a hand-written inclusion list of claims, where anything outside the list
+ *  is neither right nor wrong but UNSEEN (memory: intmap-claim-needle-is-an-inclusion-list).
+ *  ⚠ THE NEEDLE NAMES ITS OWN SUBJECT. A bare 「N 地点」 is not this record's claim — four other
+ *  documents count radiation stations and shelters that way — so the claim matched is the COMPOUND one
+ *  the record is actually stated with. That makes the rule's universe narrow and KNOWN, which is the
+ *  honest version of an inclusion list; what it must never be is silent, so it also asserts that it
+ *  MATCHED SOMETHING. A needle that hits nothing reports green, and that is worse than no needle
+ *  because it looks like assurance (#R699: one such rule scanned 44 documents and checked nothing). */
+{
+  if (!has('data/hist-places.json')) fail('hist-places', 'data/hist-places.json is gone — the independent historical places');
+  else {
+    const j = JSON.parse(rd('data/hist-places.json'));
+    const places = j.places.length, names = j.places.reduce((n, p) => n + p.names.length, 0);
+    const N = (v) => Number(String(v).replace(/[,，]/g, ''));
+    const CLAIM = /([0-9][0-9,，]*)\s*地点[・、,\s]\s*([0-9][0-9,，]*)\s*件の年代付き名称記録/g;
+    let seen = 0;
+    /* ⚠ THE LINE BREAK IS NOT PART OF THE CLAIM. Architecture.md wraps this very sentence between
+       「件の」 and 「年代付き名称記録」, so a needle reading raw bytes saw the number in PRODUCT.md and
+       NOT the one beside it — which would make the typesetting decide which claims are measured
+       (memory: intmap-window-is-a-length-not-a-relevance). Whitespace is collapsed first. */
+    eachDoc((f, s0) => {
+      const s = s0.replace(/[\s　]+/g, ' ');
+      for (const m of s.matchAll(CLAIM)) {
+        seen++;
+        if (N(m[1]) !== places || N(m[2]) !== names)
+          fail('hist-places', `${f} says ${m[1]} 地点 / ${m[2]} 件の年代付き名称記録; data/hist-places.json holds ${places} / ${names}`);
+      }
+    });
+    if (!seen) fail('hist-places', 'no current-state document states how large data/hist-places.json is — this needle matched nothing, which reports green while measuring nothing');
+    if (!problems.some((x) => x.startsWith('hist-places'))) ok('hist-places', `${places} places / ${names} dated name records, stated correctly in ${seen} document(s)`);
+  }
+}
+
+/* ═══ 29c. the FREEZE is carried by the file the agents actually read ════════════════
+ *  ⚠⚠⚠ (#R716) CONSTITUTION.md §7 SAID THE NINE LANGUAGES ARE FROZEN AND AGENTS.md DID NOT.
+ *  §3-5 pointed at §7 and carried the 2026-09-11 amendment alone, so an agent that read AGENTS.md
+ *  — which is the file Codex reads DIRECTLY and Claude Code reaches through CLAUDE.md's @import —
+ *  learned that IntMap authors in en+jp and NOT that working on the other seven is forbidden. This
+ *  round spent itself on exactly that: it raised fr/ko/zh name coverage by 1,739 drawn labels and
+ *  moved jp and ru by none, which is to say it delivered nothing to the only readers §7 says to
+ *  treat as existing. A rule kept in one document and acted on from another is not a rule.
+ *  ⚠ THE TRIGGER IS THE MACHINE CANON, NOT A SPELLING. scripts/lang-policy.mjs decides whether the
+ *  policy is narrowed; `carriedLangs()` is non-empty exactly while some language is frozen. So this
+ *  rule reads BOTH WAYS: while languages are frozen the instruction file must say so, and on the
+ *  day `authoredLangs` returns all of them the freeze notice must go — otherwise the one edit the
+ *  policy promises (「いつでもワン指示で戻せる」) would leave a document telling the next agent
+ *  not to touch languages that are no longer frozen. §7's own last bullet asks for this: narrow a
+ *  policy and the gate that measures it must narrow from the same place. */
+{
+  const frozen = carriedLangs(ROOT), body = BODY.get('AGENTS.md');
+  if (body == null) fail('lang-freeze', 'AGENTS.md was not scanned — it is the standing instruction both agents read');
+  else {
+    const says = /凍結/.test(body) && /作業の対象にしない/.test(body);
+    if (frozen.length && !says)
+      fail('lang-freeze', `scripts/lang-policy.mjs freezes ${frozen.length} language(s) (${frozen.join(', ')}) and AGENTS.md never says so — an agent reading only the standing instructions cannot learn that languages are not a work target`);
+    else if (!frozen.length && says)
+      fail('lang-freeze', 'scripts/lang-policy.mjs authors in every language again, but AGENTS.md still tells the next agent that languages are frozen');
+    else ok('lang-freeze', frozen.length
+      ? `${authoredLangs(ROOT).join('+')} authored, ${frozen.length} frozen, and AGENTS.md carries the freeze`
+      : 'every language is authored again, and AGENTS.md no longer claims a freeze');
   }
 }
 

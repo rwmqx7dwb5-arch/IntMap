@@ -111,15 +111,19 @@ const TOL = 0;          /* Measured precision default; see precisionOnly(). */
 const MIN_AREA = 0.0001;    /* drop a simplified ring smaller than this (deg²) — 1,992 rings without it, 1,991 with */
 const DEC = 3;              /* coordinate decimals */
 
-/* ⚠ MEASURED 2026-09-11: six rings in the pool (1,569 points, 0.46% of 337,697) are referenced by
-   nothing. They are the four CShapes German rings #R146 replaced and the two West Berlin rings
-   #R142 wrote before it. They are ALLOWED, because dropping them renumbers the whole pool and
-   rewrites 5.6 MB to save 33 kB — and they are RATCHETED, because dead weight that nothing counts
-   is dead weight that grows.
-   · observation — the committed data/cshapes.js, this date, counted by `check()` itself
+/* ⚠⚠ (#R716) THE ALLOWANCE HAD OUTLIVED THE THING IT ALLOWED. #R700 measured six unreferenced
+   rings (1,569 points, 0.46% of 337,697) — the four CShapes German rings #R146 replaced and the
+   two West Berlin rings #R142 wrote before it — and wrote «re-measure, do not raise» against the
+   day the pool was rebuilt. The pool WAS re-pooled by #R711/#R712's precision work, which carried
+   those six away, and the ratchet was not re-measured: it went on offering 1,569 points of slack
+   to a file that had none. A reverse ratchet is only a ratchet while it touches the metal, so this
+   one is measured, not remembered — `check()` counts the orphans and the allowance is what the
+   committed bundle actually holds, which is zero.
+   · observation — the committed data/cshapes.js, 2026-09-14, counted by `check()` itself:
+     0 unreferenced rings, 0 points
    · expires — the moment the bundle is rebuilt or re-pooled; re-measure, do not raise
    · canon — this constant; nothing else holds a copy */
-const ORPHAN_POINTS = 1569;
+const ORPHAN_POINTS = 0;
 
 const ymd = (y, m, d) => y * 10000 + m * 100 + d;
 
@@ -415,7 +419,7 @@ function check() {
   let orphanRings = 0, orphanPts = 0;
   for (let i = 0; i < d.rings.length; i++) if (!used.has(i)) { orphanRings++; orphanPts += d.rings[i].length; }
   ok(orphanPts <= ORPHAN_POINTS, orphanPts + ' points sit in rings nothing references, over the ' + ORPHAN_POINTS
-     + ' this file is known to carry from #R142/#R146 — a rebuild should not be adding dead weight');
+     + ' this file is measured to carry — a rebuild should not be adding dead weight');
 
   /* ⚠⚠ AND THE PART THAT IS NOT STRUCTURAL: THE RECORD NEXT DOOR IS STANDING ON THIS FILE ────────
      scripts/build-hist-borders.mjs derives its floor by asking THIS bundle how much land a world

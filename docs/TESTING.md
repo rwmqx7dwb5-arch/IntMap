@@ -1064,6 +1064,52 @@ way が 1 本のリングに閉じるか／内側のリングが**穴**になり
 扱っている——`NAMELESS_MAX = 3`・**下向きにしか動かない**（`scripts/test-budget.mjs` と同じ作法）。
 3 件の id を門に書けば `.agents/rules/no-ad-hoc-hardcoding.md` が禁じる事例ごとの記述になり、
 何も測らなければ次の再ビルドが 400 件出荷しても緑になる（#R669 の形）。
+### `npm run check:borderdetail` — リポジトリ最大の出荷面に、名前のある門を付ける (#R716)
+
+`scripts/build-border-detail.mjs --check` は `data/border-detail/`（**5,622 ファイル・409 MB**。
+拡大したときに `hist-borders`・`hist-admin1`・`hist-admin2` の代わりに実際に描かれる
+精密な輪郭）を測る。
+
+⚠ **この束は「無防備だった」のではない。** #R711 以降
+`tests/r711-boundary-quality-data-checks.test.mjs` が `check()` を**関数として import して走らせていた**ので、
+`npm test` は 409 MB を読んでいた。欠けていたのは**宣言された `check:*`** であり、それは体裁の問題ではない——
+**呼ばれていない門を探す 3 規則（`gate-callers`・`gate-lists`・`ci-gates`）はどれも
+package.json が宣言した `check:*` を母集合にする**ので、**自分の `--check` を自分だけで持っている
+生成器は、それを探すために書かれた規則から見えない**（記憶の `intmap-gate-universe-is-declared-gates` と同じ形）。
+結果として §実行戦略 の門の表にも `intmap-verifier` の表にも載らず、CI が落ちても
+**その名前を叫ぶステップが無かった**。
+
+⚠ **全体の通しは「足した」のではなく「移した」。** 409 MB を読むのに**実測 41 秒**かかるので、
+r711 の検査には**拒否の事例**（index だけ・古い資産・CRLF チェックアウト）を残し、全件の通しは
+この門が持つ。**同じ 41 秒を 2 回払わない。**
+
+測ること: 精密度と海岸の出所がビルダと一致すること／**精密化した各記録が、元の粗い輪郭と
+指紋一致する**こと（← **修正済みの輪郭の上に古い断片が描かれる**のが、この門が捕まえる故障）／
+chunk 名が**中身の SHA-256** であること／1 chunk が 512 KiB を超えないこと／断片の座標が
+index の約束する bbox に収まること／各 source relation が**その形を持つ記録**に属すること／
+統計がファイル自身から再導出できること／**孤立した資産が 1 つも無い**こと。
+
+⚠ **残る危険を、含みではなく明示で**: **再導出はしない**。上流は 3.4 GB の Overpass 応答で、
+CI が持てる量ではない（`check:histborders`・`check:histadmin` と同じ形の残余）。したがって
+**「同梱バイトは整合しているが、上流の形から離れた」はこの門を通る**。そちらを測るのは
+`--check-source`（キャッシュを持つ機械だけ）で、門の条件にはしていない。
+
+### `npm run check:histplaces` — 選択規則を測ることと、出荷したバイトを測ることは別 (#R716)
+
+`scripts/build-hist-places.mjs --check` は `data/hist-places.json`（**6,698 地点・12,646 件の
+年代付き名称記録**。Pleiades・CC BY 3.0。**現代名を持たない**歴史地名）を、同梱の
+`scripts/histplaces/pleiades-record.json` から**再コンパイルして byte 単位で照合**する。
+
+⚠ **隣の `data/hist-cities.json` には #R427 から門があり、こちらには 1 つも無かった。**
+`tests/r709-*` と `tests/r712-*` がビルダの `compile()` / `selectRecords()` を import して
+**fixture の上で選択規則を**試していたが、それは**出荷しているバイトについては何も言わない**。
+そのすきまで実際に起きていたのが、`docs/FILES.md` が 6,032 地点のファイルを説明し続けていたことである
+（同じ事実を述べる Architecture.md ・ PRODUCT.md は 6,698 だった——**2 つの文書が違う答えを持っていた**）。
+今は `scripts/doc-facts.mjs` の `hist-places` 規則がその主張を実体から照合する。
+
+オフライン・**実測 0.14 秒**。⚠ 残余: 上流の Pleiades ダンプ自体は再取得しないので、
+**「同梱記録と束は一致するが、上流はそのあと更新された」はこの門を通る**（`asOf` がその日付を名乗る）。
+
 ### `npm run check:kuni` — 上流が黙っている区分を、出荷したバイトの側から測る (#R669)
 
 `scripts/build-hist-kuni.mjs --check` は `data/hist-kuni.js`（IntMap が CC0 の出典から自分で導いた

@@ -143,6 +143,25 @@ const HALVES = [
          #R588 gave for the elections gate above. What it proves and what it deliberately cannot see
          are in docs/TESTING.md. */
       ['node', ['scripts/build-hist-admin1.mjs', '--check']],
+      /* ⚠⚠ (#R716) …and the EIGHTH, for the LARGEST SHIPPED SURFACE IN THE REPOSITORY — but for a
+         DIFFERENT reason than the seven above it. data/border-detail/ (5,622 files, 409 MB, the refined
+         outlines drawn when the reader zooms in on all three OHM records) was NOT unguarded: since
+         #R711 tests/r711-boundary-quality-data-checks.test.mjs has imported check() and run it, so
+         `npm test` already read the bytes. What it lacked was a DECLARED gate, and that is not a
+         formality — the three rules that hunt for gates nothing calls (`gate-callers`, `gate-lists`,
+         `ci-gates`) all take package.json's check:* scripts as their universe, so a generator that
+         keeps its own check to itself is invisible to the very rules written to find it; it is named
+         in neither instruction table, and no CI step says its name when it fails.
+         ⚠ THE WHOLE-BUNDLE RUN MOVED HERE RATHER THAN BEING ADDED: the r711 test keeps the rejection
+         cases it was written for, so the 41 s is paid once, not twice. */
+      ['node', ['scripts/build-border-detail.mjs', '--check']],
+      /* (#R716) …and the NINTH, for the half of the settlement layer that had no gate at all.
+         data/hist-cities.json has been re-derived byte for byte since #R427; data/hist-places.json
+         — the places with no modern name to rename — had two tests exercising the builder's SELECTION
+         RULE on fixtures and nothing at all comparing the SHIPPED BYTES to the licensed record they
+         are supposed to come from. A selection rule proved on a fixture says nothing about the file
+         that ships. Offline, 0.14 s. */
+      ['node', ['scripts/build-hist-places.mjs', '--check']],
       ['node', ['scripts/test-budget.mjs']],
       [NPM, ['run', 'test:checks']],
     ],

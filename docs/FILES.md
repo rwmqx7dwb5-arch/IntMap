@@ -689,7 +689,7 @@ histcities-homonyms.json.gz       歴史都市名の記録が使う綴りに一�
                                   重複排除なし）。ブラウザには配信されない——`check:histcities` が
                                   「その綴りはこの1都市を指すか」を訊く相手。生成は
                                   scripts/build-histcities-homonyms.mjs
-hist-places.json                  Pleiades の独立地名（6032 地点・10165 件の年代付き名称記録）。CC BY 3.0。
+hist-places.json                  Pleiades の独立地名（6698 地点・12646 件の年代付き名称記録）。CC BY 3.0。
                                   出典の代表点・原綴り・転写・言語コード・期間を保持し、Chronos 旅行時に遅延取得。
                                   名称の期間は創建・廃絶の年代を意味しない。生成は scripts/build-hist-places.mjs
 hist-cities.json                  時計の年の都市名の記録（6474 都市・9246 の歴史名・125 か国）。
