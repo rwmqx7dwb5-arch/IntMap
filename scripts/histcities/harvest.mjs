@@ -43,6 +43,10 @@ import {
   sameName, fold, identityKeys, identityMatchRank, latin, LANG_MAP, stampAt, daysInMonth, UA,
 } from './upstream.mjs';
 import { km, guardFrom, GUARD_FLOOR_KM, ANCHOR_TOL_KM, SAME_PLACE_KM } from '../histcities-record.mjs';
+/* (#R713) ONE RULE ABOUT WHAT A MAP LABEL CAN CARRY, IN ONE PLACE. #R686 wrote it for Wikidata
+   labels; it is the same judgement about the same thing, so it is imported rather than restated
+   (#R536 — one name, two answers is how a rule stops being reachable). */
+import { plainLabel } from '../histeras/match.mjs';
 import { LIC } from './lang.mjs';
 
 export const HELPER = true;
@@ -792,14 +796,42 @@ function ohmDoubts(t, end) {
   return '';
 }
 
+/* ── why the whitelist is those four values (#R713) ──────────────────────────────────────────
+   ⚠ THE FOUR ARE A MEASURED REFUSAL, NOT AN OVERSIGHT. Asked of OHM on 2026-09-13: `suburb`,
+   `borough`, `quarter`, `neighbourhood`, `locality`, `municipality` and `isolated_dwelling`
+   together hold 37,611 named nodes carrying a start or end date — five and a half times the
+   whole shipped record. Taking them would not make the record bigger, it would make it WRONG,
+   and #R711 measured the exact damage: a reader at 1850 in Kagoshima was shown 「平之馬場町」,
+   a former DISTRICT of the castle town, as the name of the city. What this record answers is
+   «what was this settlement called then», so the unit has to be the settlement. A district, a
+   quarter or a single dwelling inside it is a different thing wearing a nearby coordinate.
+   ⚠ `municipality` is refused for the opposite reason and the same rule: it is the ADMINISTRATIVE
+   body, which data/hist-admin1.js and data/hist-admin2.js already draw and name. */
 /** every `place=city|town|village|hamlet` node OHM holds, tile by tile, cached */
+/* ⚠ (#R713) ONE SPELLING OF THE FILTER, AND ONE PLACE THAT SAYS WHICH ELEMENT KINDS ARE ASKED.
+   The node sweep and the area sweep are two queries because OHM's node count needs tiling and its
+   area count does not — but they must ask about the SAME kind of place, and the receiver must be
+   able to read a coordinate from every kind either one can return. `OHM_PLACE_KINDS` is what
+   tests/r713-hist-coverage-checks.test.mjs measures `coordOf` against, so the defect this round
+   fixed — a receiver reading `el.center`, which only a way or a relation has, while the only
+   query asked for nodes — cannot come back by one of the two halves being edited alone. */
+export const OHM_PLACE = '^(city|town|village|hamlet)$';
+export const OHM_PLACE_KINDS = ['node', 'way', 'relation'];
+
+/** The coordinate the sweep reads off an Overpass element, or null. Pure. */
+export function coordOf(el) {
+  const lon = el && el.lon != null ? el.lon : (el && el.center && el.center.lon);
+  const lat = el && el.lat != null ? el.lat : (el && el.center && el.center.lat);
+  return (lon == null || lat == null) ? null : [lon, lat];
+}
+
 async function ohmNodes() {
   const seen = new Map();
   let tiles = 0;
   for (let lon = -180; lon < 180; lon += OHM_TILE_LON) {
     for (let lat = -90; lat < 90; lat += OHM_TILE_LAT) {
       const bbox = `${lat},${lon},${lat + OHM_TILE_LAT},${lon + OHM_TILE_LON}`;
-      const q = `[out:json][timeout:900];node["place"~"^(city|town|village|hamlet)$"](${bbox});out tags center;`;
+      const q = `[out:json][timeout:900];node["place"~"${OHM_PLACE}"](${bbox});out tags center;`;
       const buf = await cachedFetch(OHM_OVERPASS, `ohm-place-${lon}-${lat}.json`, {
         method: 'POST',
         headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -812,6 +844,40 @@ async function ohmNodes() {
   }
   console.log(`  OHM: ${tiles} tiles, ${seen.size.toLocaleString('en-US')} distinct place nodes`);
   return [...seen.values()];
+}
+
+/* ── the settlements OHM maps as AREAS (#R713) ───────────────────────────────────────────────
+   ⚠⚠⚠ THE RECEIVER BELOW HAS ALWAYS READ `el.center`, AND NOTHING WAS EVER ASKED THAT COULD
+   HAVE ONE. `out ... center` gives a centre for a way or a relation; a node already IS its
+   coordinate and carries `lat`/`lon`. So `harvestOHM`'s first line — «const lon = el.lon != null
+   ? el.lon : (el.center && el.center.lon)» — was written for element types the query one function
+   up never asks for, and the second half of that expression could not run. The query said `node`.
+
+   MEASURED against OHM 2026-09-13 (a global `out count`): 677 ways and 812 relations carry
+   `place=city|town|village|hamlet`, and 1,425 of those 1,489 carry BOTH a name and a start or end
+   date — the two things the filter below requires. Against the 6,442 settlements the bundle
+   ships, that is a fifth of the record that was never asked for, and it is the half of OHM's
+   settlements somebody took the trouble to draw an outline for.
+
+   ⚠ THIS ONE IS NOT TILED, AND THAT IS NOT AN INCONSISTENCY. The tiling one function up exists
+   because `place` NODES are six figures and a single global query for them times out. Areas are
+   1,489 elements in total, which one query answers in seconds; tiling them would spend 96
+   requests to fetch the same 1,489 things and would make a second cache keyed by a grid that has
+   nothing to do with their number.
+   ⚠ NO ELEMENT CAN ARRIVE TWICE. OHM ids are unique per TYPE, not across types, so a way 12 and
+   a node 12 are different things — the merge below keys by `type/id`, and the node sweep's own
+   `seen` map (keyed by bare id) is left alone because it only ever holds nodes. */
+async function ohmAreas() {
+  const q = `[out:json][timeout:900];(way["place"~"${OHM_PLACE}"];`
+    + `relation["place"~"${OHM_PLACE}"];);out tags center;`;
+  const buf = await cachedFetch(OHM_OVERPASS, 'ohm-place-areas.json', {
+    method: 'POST',
+    headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'data=' + encodeURIComponent(q),
+  });
+  const els = JSON.parse(buf.toString('utf8')).elements || [];
+  console.log(`  OHM: ${els.length.toLocaleString('en-US')} place ways/relations (areas)`);
+  return els;
 }
 
 /** single-link clusters at OHM_CLUSTER_M, over a degree grid coarse enough to hold the radius */
@@ -842,7 +908,14 @@ function ohmCluster(nodes) {
 }
 
 async function harvestOHM() {
-  const raw = await ohmNodes();
+  /* (#R713) both element kinds, deduplicated by `type/id` — see `ohmAreas` for why ids alone
+     would collide across types. */
+  const byKey = new Map();
+  for (const el of [...await ohmNodes(), ...await ohmAreas()]) {
+    const k = (el.type || 'node') + '/' + el.id;
+    if (!byKey.has(k)) byKey.set(k, el);
+  }
+  const raw = [...byKey.values()];
   const stats = {
     noName: 0, noDate: 0, badDate: 0, doubted: 0, notCC0: 0,
     groups: 0, noModern: 0, noAnchor: 0, noEra: 0, eras: 0, zero: 0, sameName: 0, noStart: 0,
@@ -851,9 +924,9 @@ async function harvestOHM() {
   const usable = [];
   for (const el of raw) {
     const t = el.tags || {};
-    const lon = el.lon != null ? el.lon : (el.center && el.center.lon);
-    const lat = el.lat != null ? el.lat : (el.center && el.center.lat);
-    if (lon == null || lat == null) continue;
+    const at = coordOf(el);
+    if (!at) continue;
+    const [lon, lat] = at;
     if (!t.name) { stats.noName++; continue; }
     if (t.license && !OHM_CC0.test(t.license)) { stats.notCC0++; continue; }
     if (!t.start_date && !t.end_date) { stats.noDate++; continue; }
@@ -953,11 +1026,27 @@ function resolveKeys(rows) {
       a.push(p);
     }
   }
-  const stats = { dropped: 0, rows: 0 };
+  const stats = { dropped: 0, rows: 0, qualified: 0 };
   const out = [];
   for (const r of rows) {
+    /* ⚠⚠⚠ (#R713) A SPELLING THE MAPPER DISAMBIGUATED IS NOT THE ONE TO JOIN ON — WHERE THERE IS
+       ANOTHER. OpenHistoricalMap names a settlement's OUTLINE more formally than its point, so
+       the areas this round began asking for brought in «St. John, Kansas (1879-)», where the
+       bracket is the mapper telling a human which St. John and for which years. The row's bare
+       «St. John» is a candidate on the same row and earns its own guard, so preferring the plain
+       spelling costs nothing and keeps `tests/r427-checks ⑪` — which refuses a key the homonym
+       index cannot resolve — measuring something real.
+       ⚠⚠⚠ AND IT MUST NEVER EMPTY A ROW. Measured: applying it unconditionally dropped
+       «Khowa (Elliot)» — a row that SHIPS TODAY whose only candidate carries a bracket — and a
+       rule brought in to clean up a new lane does not get to delete an existing settlement
+       (AGENTS.md §3). So it is a PREFERENCE: plain spellings when the row has any, otherwise the
+       row keeps what it had. 10 bracketed candidates, 9 rows keep a plain one, 1 row keeps its
+       bracket, 0 rows lost. */
+    const plain = r.keyCand.filter(plainLabel);
+    const cand = plain.length ? plain : r.keyCand;
+    stats.qualified += r.keyCand.length - cand.length;
     const keys = [], rivals = [];
-    for (const k of r.keyCand) {
+    for (const k of cand) {
       const found = hits.get(k) || [];
       let nearest = null;
       for (const p of found) {
@@ -983,6 +1072,7 @@ function resolveKeys(rows) {
     out.push(Object.assign({}, r, { keys, rival: rivals[0] || null }));
   }
   console.log(`  keys: ${stats.dropped.toLocaleString('en-US')} dropped for a namesake too close to tell apart, `
+    + `${stats.qualified.toLocaleString('en-US')} carrying the mapper's own disambiguation, `
     + `${stats.rows.toLocaleString('en-US')} rows lost every key`);
   return out;
 }

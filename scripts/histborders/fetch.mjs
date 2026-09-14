@@ -29,6 +29,14 @@ async function post(q, tries = 5) {
 const relDir = c => join(c, 'rel');
 const relPath = (c, id) => join(relDir(c), id + '.json');
 
+/* ⚠ (#R713) WHY THIS ASKS ONLY FOR `boundary=administrative`, MEASURED RATHER THAN ASSUMED.
+   scripts/build-hist-admin1.mjs asks a SECOND branch at its own levels — relations tagged
+   `type=boundary` that carry no `boundary` tag at all — and finds real subdivisions there
+   (11 of 549 on its last sweep). The same branch at admin_level 2 was never asked, and the
+   obvious reading is that country borders are going missing the same way. Asked of OHM on
+   2026-09-13: `relation[type=boundary][!boundary][admin_level=2]` returns ZERO, against 3,999
+   for the branch below. Nothing is lost here; the asymmetry with the subdivisions is a fact
+   about how level 2 is tagged, and it is written down so the next reader does not re-derive it. */
 export async function fetchIndex(cacheDir) {
   const p = join(cacheDir, 'index.json');
   if (existsSync(p)) return JSON.parse(readFileSync(p, 'utf8'));

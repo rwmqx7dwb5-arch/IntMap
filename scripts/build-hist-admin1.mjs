@@ -108,6 +108,12 @@ const BATCH = parseInt(argOf('--batch', '20'), 10);
    same rules - a second script would be a second place to change the day OHM changes a tag. The cache
    is keyed by the level set for the reason the tag sweep is cached at all: re-simplifying must cost
    nothing but CPU. */
+/* ⚠ (#R713) WHAT THE SHIPPED PAIR OF TIERS COSTS AND WHAT IT LEAVES, MEASURED. The two bundles
+   are built at levels 3-4 and 5-6 and nothing above this line said why they stop at 6. Asked of
+   OHM on 2026-09-13: admin_level 7 holds 2,097 administrative relations and level 8 holds 23,922
+   — so 7 is a ninth more units on top of the second tier's 22,708, and 8 would roughly DOUBLE the
+   82 MB the two tiers already ship. The cap is a delivery budget, not a statement that level 7 is
+   not history; `--levels` is an argument precisely so that a later round can pay it. */
 const LEVELS = String(argOf('--levels', '3,4')).split(',').map(v => parseInt(v, 10)).filter(Number.isFinite);
 const lvlRe = levels => '^(' + levels.join('|') + ')$';
 const cacheOf = levels => path.join(process.env.TEMP || '/tmp', 'ohm-adm' + levels.join('') + '-cache');

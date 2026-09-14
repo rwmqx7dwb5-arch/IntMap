@@ -17,6 +17,10 @@
  *  were populated: measured on the shipped bundle, 21 of 10,212 named features have one, and
  *  they hold 13 distinct names — 0.4% of the corpus. There is no identifier to join on, so the
  *  string is the only way in, and the map's own geometry and clock are what keep it honest.
+ *  ⚠ (#R713) THE STRING IS THE ONLY WAY IN; WIKIDATA IS NOT THE ONLY PLACE TO PUT IT. See
+ *  `articlesFor` at the foot of this file — for 1,208 of the 3,029 era names Wikidata carries no
+ *  English label or alias at all, and English Wikipedia's redirect store answers for some of them
+ *  WITHOUT weakening the equality, because a title resolves to at most one article.
  *
  *  ══ PUNCTUATION VARIANTS ═══════════════════════════════════════════════════════════════════
  *  The upstream writes "Denmark-Norway" with a hyphen; Wikidata (following English Wikipedia)
@@ -36,6 +40,8 @@ export const CACHE = process.env.INTMAP_HISTERAS_NAMES_CACHE || join(tmpdir(), '
 const UA = 'IntMap/1.0 (https://github.com/rwmqx7dwb5-arch/IntMap; intmapofficial@gmail.com)';
 const WDQS = 'https://query.wikidata.org/sparql';
 const API = 'https://www.wikidata.org/w/api.php';
+/* (#R713) the second attestation store — see `articlesFor` at the foot of this file */
+const WP = 'https://en.wikipedia.org/w/api.php';
 
 /* The nine app languages, as Wikidata terms them. The app's own codes are NOT these — the
    translation between the two lives in exactly one place, scripts/histeras/match.mjs. */
@@ -264,6 +270,74 @@ export async function labelsByQid(qids, log = () => {}) {
       out[q] = Object.fromEntries(Object.entries(e.labels || {}).map(([k, v]) => [k, v.value]));
     }
     log('qid labels ' + Math.min(i + 50, list.length) + '/' + list.length);
+  }
+  return out;
+}
+
+/* ── the second attestation store (#R713) ────────────────────────────────────
+   ⚠ THE LABEL LOOKUP ABOVE ANSWERED NOTHING AT ALL FOR 1,208 OF THE 3,029 ERA NAMES — forty per
+   cent of the corpus, and the single largest reason a reader gets an English name on a map of
+   the year 300. Measured 2026-09-14 on the shipped bundle: of the 3,029, exactly 520 carried a
+   row. The refusals split 1,669 `string-only` · 296 `no-clear-winner` · 249 `not-a-place` ·
+   38 `elsewhere` · 10 `other-era`, and inside that largest bucket 1,208 rows had NO CANDIDATE TO
+   SCORE: Wikidata carries no English label or alias equal to the cartographer's spelling.
+
+   ⚠ THE FIX IS NOT A LOOSER STRING TEST. Fuzzy matching is #R515 exactly, and the file above
+   says why. What the 1,208 need is not a weaker equality but A SECOND PLACE TO ASK IT — and
+   English Wikipedia keeps one: its REDIRECTS are aliases written by editors, the same kind of
+   statement as `skos:altLabel`, held in a different store. Measured on a 200-name pilot of the
+   1,208: 46 resolve (23%), EVERY ONE of them through a redirect or a title normalisation, and
+   26 of the 46 then pass the scorer unchanged — the other 20 are refused by it, 13 of them
+   `elsewhere`, which is the measure doing its job on an article about somewhere else.
+
+   ⚠ AND IT IS STILL NOT A RANKER. `action=query&redirects=1` resolves a title to AT MOST ONE
+   article, and an article has AT MOST ONE Wikidata item. There is no list of hits to pick a
+   first from, which is the property #R515 lacked. The candidate goes to scripts/histeras/
+   match.mjs like any other and has to agree with where the map draws the shape and when.
+   ⚠ A DISAMBIGUATION PAGE IS NOT AN ARTICLE. It is dropped here rather than downstream, because
+   `Q17442446` catches it only if the item states a class at all.
+   ⚠ NAMES CARRYING THE API'S OWN SEPARATORS CANNOT BE ASKED and are skipped rather than
+   mangled: `|` divides the batch and `#` starts a fragment, so a name holding either would
+   silently become a question about a different page. Measured: 4 of the 3,029. */
+export async function articlesFor(names, log = () => {}, ns = '') {
+  const askable = [...new Set(names)].filter((n) => n && !n.includes('|') && !n.includes('#') && Buffer.byteLength(n) <= 255);
+  const out = new Map();
+  const B = 50;                               /* the API's own limit for an anonymous caller */
+  for (let i = 0; i < askable.length; i += B) {
+    const batch = askable.slice(i, i + B);
+    const ask = () => retry(async () => {
+      const r = await fetch(WP + '?action=query&format=json&redirects=1&prop=pageprops'
+        + '&ppprop=wikibase_item%7Cdisambiguation&titles=' + encodeURIComponent(batch.join('|')),
+        { headers: { 'user-agent': UA, accept: 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return (await r.json()).query || {};
+    }, 'en.wikipedia');
+    const q = await cachedBatch(ns + 'wp', batch, () => true, ask);
+    for (const [name, qid] of resolveArticles(batch, q)) out.set(name, qid);
+    log('articles ' + Math.min(i + B, askable.length) + '/' + askable.length);
+  }
+  return out;
+}
+
+/**
+ * Pure half of `articlesFor`: follow the API's normalisation and redirect chains and read off
+ * the Wikidata item of the article each asked-for title actually lands on.
+ * ⚠ THE CHAINS ARE CHAINS. A title may be normalised and then redirected, and a redirect may
+ * point at another redirect; walking one step answers about a page nobody asked for. The walk
+ * is bounded so a cycle in the store cannot hang the build.
+ */
+export function resolveArticles(titles, query) {
+  const norm = new Map(((query && query.normalized) || []).map((x) => [x.from, x.to]));
+  const red = new Map(((query && query.redirects) || []).map((x) => [x.from, x.to]));
+  const pages = new Map(Object.values((query && query.pages) || {}).map((p) => [p.title, p]));
+  const out = new Map();
+  for (const t of titles) {
+    let cur = norm.get(t) || t;
+    for (let hop = 0; hop < 8 && red.has(cur); hop++) cur = red.get(cur);
+    const p = pages.get(cur);
+    const pp = (p && p.pageprops) || {};
+    if (!pp.wikibase_item || pp.disambiguation !== undefined) continue;
+    out.set(t, pp.wikibase_item);
   }
   return out;
 }
