@@ -41,6 +41,72 @@ window.IntMapModules.aiCore=function(HOST){
        before the first call, and it does that from a hash rather than from the address. */
     const lim=(HOST.aiUsage&&HOST.aiUsage.limit)||0; return lim>=1e6; }catch(_){ return false; } }
   function aiDailyLimit(){ return (HOST.aiUsage && HOST.aiUsage.limit) || HOST.AI_FREE_DAILY; }
+  /* ══ (#R722) THE DEVELOPER'S MODEL PICK ════════════════════════════════════════════════════════
+     「わたし（開発者アカウント）は設定画面からモデルを自由に変えられるように」。What is stored here is a
+     REQUEST, not a permission: the server re-decides from the signed-in account id (DEV_USER_IDS)
+     and drops the field for everyone else, so writing this key in a console buys nothing. It lives
+     in window.imAiModel so that js/app-body.js's saveSettings() carries it into the account record
+     and it follows the reader to their other devices. */
+  function aiModelPick(){ try{ const m=window.imAiModel; if(m&&typeof m==='object'&&m.model) return { provider:String(m.provider||''), model:String(m.model) }; }catch(_){} return null; }
+  function aiSetModelPick(provider,model){ try{ window.imAiModel = model ? { provider:String(provider||''), model:String(model) } : null; window.imSaveSettings&&window.imSaveSettings(); }catch(_){} }
+  /* The JWT + anon key, in one place. The catalogue call and the answer call are the same door. */
+  async function aiAuthHeaders(){
+    const cfg=window.INTMAP_AI_PROXY||{};
+    const headers={'Content-Type':'application/json'};
+    if(cfg.headerName && cfg.headerValue) headers[cfg.headerName]=cfg.headerValue;
+    let token='';
+    try{ const r=await window.sb.auth.getSession(); token=(r&&r.data&&r.data.session&&r.data.session.access_token)||''; }catch(_){}
+    if(window.SUPABASE_ANON_KEY){ headers['apikey']=window.SUPABASE_ANON_KEY; if(!token) headers['Authorization']='Bearer '+window.SUPABASE_ANON_KEY; }
+    if(token) headers['Authorization']='Bearer '+token;
+    return headers;
+  }
+  /* The catalogue, asked of the server, which asks the providers (ai-proxy listModels). Never a list
+     written in this file: a list here would be a photograph of the day it was typed. */
+  async function aiFetchModels(){
+    const cfg=window.INTMAP_AI_PROXY||{}; if(!cfg.url) throw new Error('no proxy');
+    const r=await fetch(cfg.url,{method:'POST',headers:await aiAuthHeaders(),body:JSON.stringify({op:'models'})});
+    if(!r.ok) throw new Error('models '+r.status);
+    return await r.json();
+  }
+  /* ══ (#R722) THE PICKER PAINTS WHAT THE PROVIDERS SAY THEY HAVE ════════════════════════════════
+     ⚠ The catalogue is fetched, not assumed, and it is fetched ONCE per page: the answer is the same
+     for every repaint of this panel (the panel repaints on every language change and after every
+     call, aiSetUsage → aiRenderSettings), and asking three provider APIs on each of those would
+     spend a request per keystroke of the language switch.
+     ⚠ «available: false» is printed as the reason it is false ("no key" / "list 403"), never as an
+     empty <select> — an empty list that says nothing is indistinguishable from a provider that
+     genuinely has no models, which is the shape #R565 measured. */
+  let _modelCat=null, _modelCatErr='';
+  async function aiPaintModelPicker(){
+    const box=document.getElementById('ai-model-pick'); if(!box) return;
+    const note=document.getElementById('ai-model-note');
+    const L=(en,jp)=>window.IntMapLang.t(HOST.lang,en,jp);
+    if(!_modelCat && !_modelCatErr){
+      try{ _modelCat=await aiFetchModels(); }catch(e){ _modelCatErr=String((e&&e.message)||e); }
+      if(!document.getElementById('ai-model-pick')) return;   /* the panel closed while we asked */
+    }
+    if(_modelCatErr){ if(note) note.textContent=L('Could not read the model catalogue: ','モデル一覧を取得できませんでした： ')+_modelCatErr; return; }
+    const cat=_modelCat||{}, provs=Array.isArray(cat.providers)?cat.providers:[];
+    const pick=aiModelPick();
+    const def=cat.serverDefault||{};
+    const curProv=(pick&&pick.provider)||def.provider||(provs[0]&&provs[0].provider)||'';
+    const pv=document.getElementById('ai-model-provider'), mi=document.getElementById('ai-model-id');
+    if(!pv||!mi) return;
+    pv.innerHTML=provs.map(p=>`<option value="${aiEsc(p.provider)}"${p.provider===curProv?' selected':''}${p.available?'':' disabled'}>`+
+      aiEsc(p.provider+(p.available?'':' — '+(p.note||'unavailable')))+`</option>`).join('');
+    const row=provs.find(p=>p.provider===pv.value)||{models:[]};
+    const ids=row.models||[];
+    /* The server's own model is offered as an explicit choice rather than as an empty state, so
+       "go back to what everyone else gets" is one click and is spelled out. */
+    mi.innerHTML=`<option value="">`+aiEsc(L('Server default','サーバー既定')+(def.model?' — '+def.model:''))+`</option>`+
+      ids.map(id=>`<option value="${aiEsc(id)}"${(pick&&pick.model===id)?' selected':''}>`+aiEsc(id)+`</option>`).join('');
+    const say=()=>{ if(!note) return; const p2=aiModelPick();
+      note.textContent=p2?L('Chosen: ','選択中： ')+p2.model:L('Using the server default.','サーバー既定を使用中。'); };
+    say();
+    pv.onchange=()=>{ aiSetModelPick(pv.value,''); aiPaintModelPicker(); };
+    mi.onchange=()=>{ aiSetModelPick(pv.value,mi.value); say(); };
+  }
+
   function aiUsesLeft(){ if(aiDev()) return Infinity; if(HOST.aiUsage.date!==aiToday()) return aiDailyLimit(); return Math.max(0, aiDailyLimit() - (HOST.aiUsage.used||0)); }
   function aiSetUsage(used, limit){
     HOST.aiUsage.date=aiToday();
@@ -187,13 +253,8 @@ window.IntMapModules.aiCore=function(HOST){
   async function aiCallServerFull(prompt, system, imgs, opts){
     const callId=(opts&&opts.callId)?String(opts.callId):aiNewCallId();
     const cfg=window.INTMAP_AI_PROXY||{};
-    const headers={'Content-Type':'application/json'};
-    if(cfg.headerName && cfg.headerValue) headers[cfg.headerName]=cfg.headerValue;
     /* Attach the Supabase session JWT + anon apikey so the function can identify the user + enforce quota. */
-    let token='';
-    try{ const r=await window.sb.auth.getSession(); token=(r&&r.data&&r.data.session&&r.data.session.access_token)||''; }catch(_){}
-    if(window.SUPABASE_ANON_KEY){ headers['apikey']=window.SUPABASE_ANON_KEY; if(!token) headers['Authorization']='Bearer '+window.SUPABASE_ANON_KEY; }
-    if(token) headers['Authorization']='Bearer '+token;
+    const headers=await aiAuthHeaders();
     const body={ prompt, system:system||'', images:(imgs||[]), lang:(typeof HOST.lang!=='undefined'?HOST.lang:'en') };
     /* (#R113) task-aware contract: tell the proxy WHICH feature this is (output budget / JSON+structured-output
        mode / web policy are chosen per-task server-side) instead of one MAX_TOKENS + one boolean for everything. */
@@ -226,6 +287,12 @@ window.IntMapModules.aiCore=function(HOST){
          body is read. The server verifies this header against `task` once it HAS read the body. */
       if(opts.lane) headers['x-intmap-lane']=String(opts.lane).slice(0,16);
     }
+    /* (#R722) …and the developer's model pick, if this account has made one. It is sent for every
+       task, because "全部" is what was asked for: whatever this account asks the proxy — an answer, a
+       gloss, an image read, a place resolution — runs on the model it chose. The unattended cron
+       jobs carry no account and so keep the AI_MODEL secret. The server ignores the field unless the
+       signed-in id is a developer's. */
+    { const mp=aiModelPick(); if(mp){ body.model=mp.model; if(mp.provider) body.provider=mp.provider; } }
     const fetchOpts={method:'POST',headers,body:JSON.stringify(body)};
     if(opts&&opts.signal) fetchOpts.signal=opts.signal;   /* (#R132) real Abort */
     const r=await fetch(cfg.url,fetchOpts);
@@ -381,14 +448,29 @@ window.IntMapModules.aiCore=function(HOST){
        developer (intmap_dev flag, or logged in but currentUser not yet populated) saw the login prompt instead
        of the unlimited state ("開発者なので無制限に / 設定欄のグラフに反映されていない"). */
     if(aiDev()){
+      const L=(en,jp)=>window.IntMapLang.t(HOST.lang,en,jp);
+      const pick=aiModelPick();
       wrap.innerHTML=
         /* (#R101) the "✨ Built-in AI is ready…" line duplicated the section hint above — removed (de-dup + no ✨). */
         `<div class="ai-row" style="font-size:13px;color:var(--text-main);font-weight:600;">`+
           aiEsc(window.IntMapLang.t(HOST.lang,'Developer account — unlimited AI usage.','開発者アカウント — AI利用は無制限です。','Entwicklerkonto — unbegrenzte KI-Nutzung.','Аккаунт разработчика — использование ИИ без ограничений.','Cuenta de desarrollador — uso de IA ilimitado.'))+
           `<div style="height:7px;border-radius:5px;background:var(--input-bg);overflow:hidden;margin-top:8px;"><div style="height:100%;width:100%;background:linear-gradient(90deg,#34c759,#0a84ff);"></div></div>`+
+        `</div>`+
+        /* (#R722) the model picker — developer only, and the server says so too. */
+        `<div class="ai-row" id="ai-model-pick" style="margin-top:12px;font-size:12.5px;line-height:1.6;">`+
+          `<div style="font-weight:600;color:var(--text-main);">`+aiEsc(L('Model for this account','このアカウントのモデル'))+`</div>`+
+          `<div style="color:var(--text-muted);font-size:11.5px;margin:3px 0 7px;">`+
+            aiEsc(L('Applies to every AI call you make. Scheduled background jobs keep the server model.',
+                    'あなたが行う全ての AI 呼び出しに効きます。自動実行のバックグラウンド処理はサーバー既定のままです。'))+`</div>`+
+          `<select id="ai-model-provider" style="width:100%;margin-bottom:6px;"></select>`+
+          `<select id="ai-model-id" style="width:100%;"></select>`+
+          `<div id="ai-model-note" style="color:var(--text-muted);font-size:11px;margin-top:6px;">`+
+            aiEsc(pick?L('Chosen: ','選択中： ')+pick.model:L('Loading the catalogue…','一覧を読み込み中…'))+`</div>`+
         `</div>`;
+      aiPaintModelPicker();
       return;
     }
+
     if(typeof HOST.user==='undefined' || !HOST.user){
       wrap.innerHTML=
         /* (#R33) The in-Settings "Log in / Sign up" button was removed as redundant (use the account button

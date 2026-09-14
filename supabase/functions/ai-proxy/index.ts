@@ -20,7 +20,7 @@
 //  Deploy:   supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac
 //            (verify_jwt can stay ON; we also verify the user explicitly.)
 //  Secrets:  supabase secrets set AI_PROVIDER=openai                  (openai | anthropic | gemini)
-//            supabase secrets set AI_MODEL=gpt-5.6-terra             (#R150 Terra re-verified reachable on this project; model fixed here — users never pick it. Luna is the FALLBACK_MODEL.)
+//            supabase secrets set AI_MODEL=gpt-5.6-sol               (#R722. Fixed here for EVERY reader — except the developer account, which may choose one for its own calls: #R722 below.)
 //            supabase secrets set OPENAI_API_KEY=sk-...               (CURRENT provider — Terra via /v1/responses)
 //            # other providers stay wired but dormant:
 //            supabase secrets set GEMINI_API_KEY=AIza...              (if AI_PROVIDER=gemini)
@@ -127,14 +127,39 @@ const TURN_TTL_S = 900;
 const MAX_TURN_KEY = 120;   /* (#R101) free 10→30/day; (#R147) 30→10/day */
 const DEFAULT_LIMIT = PLAN_LIMITS.free;
 
-// (#R150) OpenAI model = GPT-5.6 TERRA. In R148 this project had NO access to gpt-5.6-terra (403
-// model_not_found), so we ran Luna. Re-verified on 2026-07-21 via the refresh-news proxy (same key +
-// AI_MODEL secret, NO model fallback): AI_MODEL=gpt-5.6-terra geocoded 61/63 EN + 104/116 JP articles →
-// Terra is now reachable on the project. Per the user's standing request, Terra is now the model
-// (AI_MODEL secret = gpt-5.6-terra). Luna stays the FALLBACK_MODEL: if Terra ever loses access again, a
-// 403/404 model_not_found retries once with Luna so a model outage can never blanket-kill Atlas.
-const OPENAI_DEFAULT_MODEL = "gpt-5.6-terra";
-const FALLBACK_MODEL = "gpt-5.6-luna";
+/* (#R722) OpenAI model = GPT-5.6 SOL, with Terra as the fallback, on the user's instruction.
+   ⚠ WHAT "THE MODEL IS X" MEANT BEFORE THIS ROUND, MEASURED. #R150 set AI_MODEL=gpt-5.6-terra and
+   this constant with it — and on 2026-09-15, asking OpenAI with this project's own key, BOTH
+   gpt-5.6-terra and gpt-5.6-sol answered 403 «Project proj_… does not have access to model» while
+   Luna answered 200. So from #R150 until today every Atlas answer came from the FALLBACK, and the
+   setting named a model that had not run in months. The fallback did its job so well that nothing
+   ever said so — which is why meta.modelChosenBy and the panel's «Chosen: …» line exist now.
+   The access was granted the same day; re-measured through this proxy, sol / terra / luna /
+   gpt-6-astra all answer 200, and sol is the model. Terra is the FALLBACK_MODEL: a 403/404
+   model_not_found retries once with it, so losing a model can never blanket-kill Atlas again. */
+const OPENAI_DEFAULT_MODEL = "gpt-5.6-sol";
+/* (#R722) …and what answers when it cannot, IN ORDER: sol → terra → luna. One fallback was enough
+   while the only way to lose a model was to lose access to it; this project has now measured two
+   models 403 at the same time (sol and terra, 2026-09-15), and a single fallback in that state is a
+   second attempt at nothing. The chain is walked ONE step per failure by position — a model that is
+   already in it resumes from where it sits, so the walk terminates at the end of the array and
+   needs no separate recursion guard. ⚠ ORDER IS THE POLICY: newest first, oldest-and-known-good
+   last. Luna is last because it is the model this project has never lost access to. */
+const FALLBACK_CHAIN = ["gpt-5.6-terra", "gpt-5.6-luna"];
+const FALLBACK_MODEL = FALLBACK_CHAIN[0];   /* the first step — named for the documents that state it */
+/* (#R722) ...and the DEFAULTS for the other two providers, which used to be written inline at the one
+   place that read them. They are read twice now - by the call and by the model list - and a default
+   that two readers each spell for themselves is the #R515 shape. */
+const PROVIDER_DEFAULT_MODEL: Record<string, string> = {
+  openai: OPENAI_DEFAULT_MODEL,
+  gemini: "gemini-3.5-flash",
+  anthropic: "claude-3-5-haiku-latest",
+};
+const PROVIDERS = Object.keys(PROVIDER_DEFAULT_MODEL);
+/* A provider id and a model id, as the upstreams spell them. NOT an allow-list of model names: the
+   names are discovered from each provider's own catalogue (listModels below), because a hand-kept
+   list here would silently drop whatever the provider shipped this morning. */
+const MODEL_ID_OK = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,79}$/;
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
 /* ══ ⚠⚠⚠ (#R285) THE PLANNER'S CATALOGUE WAS BEING CUT IN HALF, IN PRODUCTION, SILENTLY ═══════════
@@ -668,7 +693,14 @@ function classifyGemini(status: number, bodyText: string, finishReason: string, 
 // ---------------------------------------------------------------------------
 //  Provider calls (key lives only here, in the function's env).
 // ---------------------------------------------------------------------------
-async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string }> {
+/* == (#R722) "WHICH MODEL ANSWERED" IS THE PROVIDER'S ANSWER, NOT OUR REQUEST ==================
+   meta.model was the id we SENT. That is the right thing to report only while nothing can change it
+   between the request and the reply — and two things can: a developer's pick, and the fallback
+   chain, which has been quietly answering for every reader since #R150 (AI_MODEL named a model that
+   was 403ing, and nothing on screen ever said so). A field that says "sol" because we asked for sol
+   cannot detect the case it exists to detect. All three providers echo the model that ran; that is
+   what `served` carries, and meta reports both. */
+async function callAnthropic(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number): Promise<{ text: string; finishReason: string; served?: string }> {
   const content: unknown[] = [];
   for (const ip of imgs) content.push({ type: "image", source: { type: "base64", media_type: ip.mime, data: ip.b64 } });
   /* (#R540) documents → attached text → the user's prompt. The question is asked ABOUT material the
@@ -694,10 +726,10 @@ async function callAnthropic(model: string, key: string, prompt: string, system:
   const text = (j.content && j.content.map((b: { text?: string }) => b.text || "").join("")) || "";
   const finishReason = String(j?.stop_reason || "");
   if (!text) throw new ProviderError("provider_empty", "Empty response from Anthropic.", 502, true, { finishReason });
-  return { text, finishReason };
+  return { text, finishReason, served: String(j?.model || "") };
 }
 
-async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", _isFallback = false, schemaFormat: Record<string, unknown> | null = null): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean }> {
+async function callOpenAI(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], web: boolean, maxTokens: number, wantJson: boolean, forceWeb: boolean, effort: string, imageDetail = "auto", noFallback = false, schemaFormat: Record<string, unknown> | null = null): Promise<{ text: string; finishReason: string; webAttached: boolean; webUsed: boolean; webCount: number; citations: WebCitation[]; schemaAttached: boolean; served?: string }> {
   // GPT-5.6 models (gpt-5.6-luna) work best through the Responses API. `max_output_tokens`
   // includes invisible reasoning tokens, so leave a reasoning allowance above IntMap's
   // visible-output budget — bigger when effort is "medium" (#R116) — under a hard ceiling.
@@ -782,15 +814,20 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
   }
   if (!r.ok) {
     const t = (await r.text().catch(() => "")).slice(0, 400);
-    // (#R148) The configured model is unknown / not enabled on this OpenAI project (403/404
-    // model_not_found · "does not have access to model"). This is exactly what broke Atlas when
-    // AI_MODEL was set to a model the project can't reach — so instead of failing the whole call,
-    // retry ONCE with the known-good FALLBACK_MODEL. Bounded by _isFallback (no recursion loop) and
-    // skipped when we are already on the fallback model.
-    if (!_isFallback && (r.status === 403 || r.status === 404) && model !== FALLBACK_MODEL &&
+    /* (#R148) The configured model is unknown / not enabled on this OpenAI project (403/404
+       model_not_found · "does not have access to model"). This is exactly what broke Atlas when
+       AI_MODEL was set to a model the project can't reach — so instead of failing the whole call,
+       take the NEXT step of FALLBACK_CHAIN (#R722: sol → terra → luna).
+       ⚠ THE POSITION IN THE CHAIN IS THE BOUND. Whichever model just failed, the next attempt is the
+       one after it (a model that is not in the chain starts at its head), so each failure moves
+       strictly right and the walk ends at the end of the array — there is no counter to get wrong.
+       ⚠ noFallback is the OTHER reason to stop: a model the developer chose by name is not
+       substituted, because a substitution answers a different question than the one being tested. */
+    const nextModel = noFallback ? "" : (FALLBACK_CHAIN[FALLBACK_CHAIN.indexOf(model) + 1] || "");
+    if (nextModel && (r.status === 403 || r.status === 404) &&
         /model_not_found|does not have access to model|does not exist|unknown model|no access/i.test(t)) {
-      try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: FALLBACK_MODEL, status: r.status })); } catch (_) { /* ignore */ }
-      return await callOpenAI(FALLBACK_MODEL, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, true, schemaFormat);
+      try { console.error("ai-proxy model fallback", JSON.stringify({ from: model, to: nextModel, status: r.status })); } catch (_) { /* ignore */ }
+      return await callOpenAI(nextModel, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, forceWeb, effort, imageDetail, false, schemaFormat);
     }
     const pe = classifyGemini(r.status, t, "", "");
     /* ⚠ THE UPSTREAM BODY IS NOT OURS TO REPEAT. `pe.meta.bodySnippet = t.slice(0,160)` was written
@@ -848,7 +885,7 @@ async function callOpenAI(model: string, key: string, prompt: string, system: st
     if (refused) throw new ProviderError("provider_blocked", "Blocked by the provider's safety filter.", 502, false, { finishReason });
     throw new ProviderError("provider_empty", "Empty response from OpenAI.", 502, true, { finishReason });
   }
-  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations, schemaAttached: usedJson === "schema" };
+  return { text, finishReason, webAttached: usedTools, webUsed: webCount > 0, webCount, citations, schemaAttached: usedJson === "schema", served: String(j?.model || "") };
 }
 
 interface GeminiOpts {
@@ -860,7 +897,7 @@ interface GeminiOpts {
   noTools?: boolean;         // hardened retry: never attach a tool
 }
 
-async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
+async function callGemini(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string }> {
   /* (#R540) documents → attached text → the user's prompt; the images keep their place after it. */
   const parts: unknown[] = [];
   for (const dp of docs) parts.push({ inline_data: { mime_type: dp.mime, data: dp.b64 } });
@@ -919,13 +956,13 @@ async function callGemini(model: string, key: string, prompt: string, system: st
     throw new ProviderError("provider_empty", "gemini: empty response (finishReason=" + finishReason + (blockReason ? ", blockReason=" + blockReason : "") + ")", 502, finishReason === "MAX_TOKENS", { finishReason, blockReason });
   }
 
-  return { text, finishReason, webAttached: attachSearch };
+  return { text, finishReason, webAttached: attachSearch, served: String(j?.modelVersion || "") };
 }
 
 // (#R113c) Transient Google errors — 503 "the model is overloaded" / other 5xx / rate-limit — are common for a busy
 // model and usually clear on a retry (Gemini's own guidance is to retry with backoff). Retry those up to twice with a
 // short backoff. Timeouts and MALFORMED are handled elsewhere (retrying a timeout would just burn another 45s).
-async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean }> {
+async function callGeminiRetry(model: string, key: string, prompt: string, system: string, imgs: ImgPart[], files: FilePart[], docs: DocPart[], opts: GeminiOpts): Promise<{ text: string; finishReason: string; webAttached: boolean; served?: string }> {
   const MAX = 3;   // 1 attempt + up to 2 retries
   for (let attempt = 1; ; attempt++) {
     try {
@@ -942,6 +979,60 @@ async function callGeminiRetry(model: string, key: string, prompt: string, syste
       throw e;
     }
   }
+}
+
+/* == (#R722) THE MODEL CATALOGUE - ASKED, NOT WRITTEN DOWN ====================================
+   The developer account may choose which model answers its own calls, so something has to say what
+   there is to choose from. That something is each provider's own catalogue endpoint, once per call,
+   never a list in this file: a list here would be a photograph of the day it was typed (#R707), and
+   the thing it would fail to show is exactly the new model the developer opened the panel to pick.
+
+   /!\ WHAT THE CATALOGUE DOES AND DOES NOT ANSWER, measured on this project 2026-09-15:
+     · Gemini's ListModels states supportedGenerationMethods, so "can this model answer a prompt" is
+       a FACT the upstream publishes, and this code reads it instead of guessing from the name.
+     · OpenAI's /v1/models publishes no capability field at all, and - measured - it lists models the
+       PROJECT cannot call: gpt-5.6-sol and gpt-5.6-terra were both listed while both answered 403
+       "does not have access to model". So the list is shown as the list it is, and a pick the
+       project cannot reach comes back as the provider's own 403 (see noFallbackForPick at the call
+       site) - an error the developer can read, rather than a silent substitution.
+   A provider whose key is unset is reported unavailable rather than guessed at. */
+async function listModels(): Promise<{ provider: string; models: string[]; available: boolean; note?: string }[]> {
+  const out: { provider: string; models: string[]; available: boolean; note?: string }[] = [];
+  const keep = (id: string) => MODEL_ID_OK.test(id);
+  const oa = Deno.env.get("OPENAI_API_KEY");
+  if (!oa) out.push({ provider: "openai", models: [], available: false, note: "no key" });
+  else {
+    try {
+      const r = await fetch("https://api.openai.com/v1/models", { headers: { authorization: `Bearer ${oa}` } });
+      const j = await r.json();
+      const ids = (Array.isArray(j?.data) ? j.data : []).map((m: { id?: string }) => String(m?.id || "")).filter(keep);
+      out.push({ provider: "openai", models: ids.sort(), available: r.ok, note: r.ok ? undefined : "list " + r.status });
+    } catch (_) { out.push({ provider: "openai", models: [], available: false, note: "unreachable" }); }
+  }
+  const gk = Deno.env.get("GEMINI_API_KEY");
+  if (!gk) out.push({ provider: "gemini", models: [], available: false, note: "no key" });
+  else {
+    try {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(gk)}&pageSize=200`);
+      const j = await r.json();
+      const ids = (Array.isArray(j?.models) ? j.models : [])
+        .filter((m: { supportedGenerationMethods?: string[] }) => (m?.supportedGenerationMethods || []).includes("generateContent"))
+        .map((m: { name?: string }) => String(m?.name || "").replace(/^models\//, ""))
+        .filter(keep);
+      out.push({ provider: "gemini", models: ids.sort(), available: r.ok, note: r.ok ? undefined : "list " + r.status });
+    } catch (_) { out.push({ provider: "gemini", models: [], available: false, note: "unreachable" }); }
+  }
+  const ak = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ak) out.push({ provider: "anthropic", models: [], available: false, note: "no key" });
+  else {
+    try {
+      const r = await fetch("https://api.anthropic.com/v1/models?limit=100", { headers: { "x-api-key": ak, "anthropic-version": "2023-06-01" } });
+      const j = await r.json();
+      const ids = (Array.isArray(j?.data) ? j.data : []).map((m: { id?: string }) => String(m?.id || "")).filter(keep);
+      out.push({ provider: "anthropic", models: ids.sort(), available: r.ok, note: r.ok ? undefined : "list " + r.status });
+    } catch (_) { out.push({ provider: "anthropic", models: [], available: false, note: "unreachable" }); }
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -1053,6 +1144,8 @@ Deno.serve(async (req) => {
     docs?: { name?: string; mime?: string; b64?: string }[];
     web?: boolean; webMode?: string; task?: string; requestedCount?: number; schema?: unknown; imageDetail?: string;
     effortHint?: string; turnId?: string;
+    /* (#R722) developer-only, ignored for everyone else - see the block after the parse. */
+    op?: string; provider?: string; model?: string;
   } = {};
   /* ⚠ REFUSED BEFORE IT IS READ, when the caller declares a size. A body without content-length is
      still bounded, because the read below is capped and a longer one is discarded rather than parsed. */
@@ -1071,6 +1164,38 @@ Deno.serve(async (req) => {
       payload = JSON.parse(new TextDecoder("utf-8").decode(raw));
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) payload = {};
     } catch (_) { payload = {}; }
+  }
+
+  /* == (#R722) THE DEVELOPER CHOOSES THE MODEL. NOBODY ELSE DOES, AND NOT ON THE CLIENT'S WORD ===
+     The right being granted belongs to an ACCOUNT, so it is decided from the account - isDev, the
+     immutable auth.users.id carried in the DEV_USER_IDS secret - and not from anything the browser
+     says about itself. js/ai-core.js has an aiDev() that any reader can set in localStorage; it
+     decides what the panel DRAWS and must never decide what the server RUNS (the same sentence is
+     already written at js/auth-ui.js:445).
+     A non-developer's model / provider is dropped in silence: it buys nothing, so there is nothing
+     to report, and answering "you are not the developer" tells a prober what to look for. */
+  const devPick = (() => {
+    if (!isDev) return null;
+    const pv = String(payload.provider || "").toLowerCase().trim();
+    const md = String(payload.model || "").trim();
+    const provider = PROVIDERS.includes(pv) ? pv : "";
+    const model = MODEL_ID_OK.test(md) ? md : "";
+    if (!provider && !model) return null;
+    return { provider, model };
+  })();
+
+  /* The catalogue the panel offers. A POST like every other call (one code path for auth), developer
+     only, and it costs no quota because the developer consumes none. */
+  if (String(payload.op || "") === "models") {
+    if (!isDev) return json({ error: "not_found" }, 404);
+    const envProv = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+    return json({
+      providers: await listModels(),
+      /* What answers when the developer has chosen nothing - i.e. what every other reader gets, and
+         what the unattended cron jobs get, since those carry no account and so no choice. */
+      serverDefault: { provider: envProv, model: Deno.env.get("AI_MODEL") || PROVIDER_DEFAULT_MODEL[envProv] || "" },
+      fallback: FALLBACK_CHAIN,
+    });
   }
 
   const task = String(payload.task || "free_text").toLowerCase();
@@ -1169,7 +1294,7 @@ Deno.serve(async (req) => {
 
   const maxTokens = maxOutputFor(task, requestedCount);
   // 4) Provider call with the server-held key. (Provider read BEFORE wantJson — see below.)
-  const provider = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+  const provider = (devPick?.provider || Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
   // (#R115) On OpenAI, atlas_plan ALSO runs in JSON mode: the R113c exclusion was a GEMINI-latency
   // workaround (forced responseMimeType slowed the big planner prompt into 45s timeouts). OpenAI's
   // json_object format has no such issue and guarantees parseable plans — a large share of the
@@ -1181,11 +1306,24 @@ Deno.serve(async (req) => {
     : task === "gloss" ? GLOSS_SCHEMA   // (#R491) server-owned, mirrored by js/atlas-gloss.js
     : (wantJson && payload.schema && typeof payload.schema === "object" && schemaOk(payload.schema) ? payload.schema : undefined);
   const searchEnabled = (Deno.env.get("GEMINI_SEARCH_ENABLED") || "").toLowerCase() === "true";
-  const model = Deno.env.get("AI_MODEL") ||
-    (provider === "openai" ? OPENAI_DEFAULT_MODEL : provider === "gemini" ? "gemini-3.5-flash" : "claude-3-5-haiku-latest");   /* (#R151) OpenAI default = GPT-5.6 Terra (AI_MODEL secret = gpt-5.6-terra; re-verified reachable R150/R151). Luna stays the FALLBACK_MODEL only on 403/404 model_not_found so a model outage can never blanket-kill Atlas. */
+  /* (#R722) OpenAI default = GPT-5.6 Sol (AI_MODEL secret = gpt-5.6-sol). Terra stays the
+     FALLBACK_MODEL only on 403/404 model_not_found so a model outage can never blanket-kill Atlas.
+     /!\ (#R722) AI_MODEL IS AN ID FOR **ITS OWN** PROVIDER. It holds an OpenAI id, so a developer who
+     switches the provider to gemini or anthropic must not inherit it - that would send
+     "gpt-5.6-terra" to Google. A pick that names only the provider therefore falls to THAT
+     provider's default, and only a pick that names a model overrides one. */
+  const envProvider = (Deno.env.get("AI_PROVIDER") || "anthropic").toLowerCase();
+  const envModel = provider === envProvider ? (Deno.env.get("AI_MODEL") || "") : "";
+  const model = devPick?.model || envModel || PROVIDER_DEFAULT_MODEL[provider] || OPENAI_DEFAULT_MODEL;
+  /* /!\ A CHOSEN MODEL DOES NOT FALL BACK. The fallback exists so that a model the PROJECT lost
+     access to cannot blanket-kill Atlas for every reader - an unattended substitution is the right
+     answer when nobody asked for this model in particular. When the developer asked for this model
+     in particular, substituting another one silently answers a different question than the one being
+     tested, and the panel would then report a model that never ran. The 403 is the answer. */
+  const noFallbackForPick = !!devPick?.model;
 
   try {
-    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean };
+    let out: { text: string; finishReason: string; webAttached?: boolean; webUsed?: boolean; webCount?: number; citations?: WebCitation[]; schemaAttached?: boolean; served?: string };
     if (provider === "openai") {
       const key = Deno.env.get("OPENAI_API_KEY");
       if (!key) throw new ProviderError("provider_unavailable", "OPENAI_API_KEY not set", 502, false, {});
@@ -1196,7 +1334,7 @@ Deno.serve(async (req) => {
          null = this schema cannot be expressed strictly → the call behaves exactly as it did before. */
       const oaFormat = (wantJson && responseSchema) ? openAiSchemaFormat(responseSchema, task) : null;
       try {
-        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, false, oaFormat);
+        out = await callOpenAI(model, key, prompt, system, imgs, files, docs, web, maxTokens, wantJson, webMode === "required", effort, imageDetail, noFallbackForPick, oaFormat);
       } catch (e) {
         // (#R115) Responses can come back EMPTY/incomplete when invisible reasoning tokens eat the whole
         // max_output_tokens budget. That is retryable and budget-dependent → retry ONCE with a bigger
@@ -1259,7 +1397,12 @@ Deno.serve(async (req) => {
          actually held to the caller's shape on THIS call, or answered under the bare json_object
          because the strict dialect was rejected. The client reads it to decide whether a missing
          field is the model's doing or the ladder's. */
-      meta: { provider, model, task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason },
+      /* (#R722) modelChosenBy: "developer" when this account picked the model, "server" when the
+         AI_MODEL secret did. The panel prints it, so a pick that silently did not take effect is
+         visible instead of being believed. */
+      /* (#R722) `model` is what was ASKED for; `modelServed` is what the provider says ANSWERED.
+         They differ exactly when the fallback chain walked, which is the thing nobody could see. */
+      meta: { provider, model, modelServed: out.served || "", modelChosenBy: devPick?.model ? "developer" : "server", task, webAttached: !!out.webAttached, webUsed: !!out.webUsed, webSearches: out.webCount || 0, schemaAttached: !!out.schemaAttached, finishReason: out.finishReason },
       // (#R131) Hosted web-search citation URLs (OpenAI url_citation annotations). The client shows
       // these as the primary, web-verified sources — separate from the client-gathered headlines.
       citations: Array.isArray(out.citations) ? out.citations : [],

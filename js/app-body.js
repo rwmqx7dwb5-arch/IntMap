@@ -3340,6 +3340,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     if(s.theme) userTheme=(s.theme==='tactical'?'cyber':s.theme); if(s.tz) userTZ=s.tz; if(s.units) unitMode=s.units;   /* (#R22) migrate retired Tactical → Cyber */
     if(window.IntMapLang.codes().includes(s.lang)){ currentLang=s.lang; window.IntMapLang.codes().forEach(L=>{ const b=document.getElementById('lang-'+L); if(b) b.classList.toggle('active',currentLang===L); }); }   /* (#R37) restore ALL four UI languages (was en/jp only → DE/RU never persisted across reloads) */
     if(s.sidebarStyle) window.imSidebarStyle=s.sidebarStyle;
+    if(s.aiModel&&typeof s.aiModel==='object') window.imAiModel=s.aiModel;   /* (#R722) developer model pick. Restored AND saved here: saveSettings() rebuilds the record from these globals, so a key written straight to localStorage is dropped by the next save. It rides in intmap_settings, so user_prefs carries it across devices. It grants nothing — ai-proxy re-decides from the account id. */
     if(s.labelLang) window.imLabelLang=s.labelLang;
     if(s.mapColor) window.imMapColor=s.mapColor;   if(s.dockPanels==='on'||s.dockPanels==='off') window.imDockPanels=s.dockPanels;   /* (#R238) */
     /* ⚠ (#R296) A SAVED 'classic' NO LONGER WINS, because there is no classic panel to win with. #R155
@@ -3362,7 +3363,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
       theme:userTheme, tz:userTZ, units:unitMode, lang:currentLang, accent:(window.imAccent||'default'),   /* (#R114) accent colour */
       sidebarStyle:window.imSidebarStyle, labelLang:window.imLabelLang, mapColor:window.imMapColor, dockPanels:window.imDockPanels, /* (#R296) layerPanel / layerPanelSet are no longer saved — the setting is gone */ ticker:window.imTicker, showRank:window.imShowRank,
       newsCountries:window.imNewsCountries, newsSources:window.imNewsSources, layerFavs:window.imLayerFavs,
-      navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia)
+      navZoom:window.imNavZoomSens||1, navPan:window.imNavPanSens||1, navInertia:(window.imNavInertia==null?1:window.imNavInertia), aiModel:(window.imAiModel||null)   /* (#R722) developer model pick — see loadSettings */
     })); }catch(_){}
     try{ window._syncPrefsUp&&window._syncPrefsUp(); }catch(_){}   /* (#R20) mirror to the account when logged in */
   }
