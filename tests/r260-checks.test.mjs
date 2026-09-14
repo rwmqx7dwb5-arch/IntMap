@@ -57,8 +57,22 @@ test('#R260 ② AGENTS.md still carries each clause of the finish procedure', ()
      differently» is how a backup ends up verified by a weaker test than the one written down.
      scripts/backup-usb.ps1 is the implementation and AGENTS.md keeps WHEN to run it and the
      invariants. What #R260 established — that every clause is WRITTEN DOWN — is unchanged, so
-     this reads both, and asserts that AGENTS.md actually points at the script. */
-  const md = read('AGENTS.md') + '\n' + read('scripts/backup-usb.ps1');
+     this reads both, and asserts that AGENTS.md actually points at the script.
+
+     ⚠⚠ (#R718) AND THE CORPUS FOLLOWS THE CLAUSE, BECAUSE THE CLAUSE MOVES. AGENTS.md has a
+     32,768-byte ceiling that Codex enforces by dropping the tail in silence, so §12 of that file
+     tells every round to answer a full document by MOVING a section out rather than by raising
+     the number. #R718 moved §11.3 「スクリプトが守っていること」 to docs/AGENT-SETUP.md §10 for
+     exactly that reason, and thirteen of the needles below went with it. What #R260 established
+     is that each clause is WRITTEN DOWN SOMEWHERE A SESSION IS SENT — not that AGENTS.md is where
+     it is written. The corpus is therefore the set of documents that carry the procedure, and it
+     grows when a clause moves. ⚠ THE ONE THING THAT MUST NOT HAPPEN is deleting a clause to make
+     this list pass: a rule dropped from all three files is precisely the silent loss this test
+     was built to catch, and it looks identical to a move until you check where it landed. So
+     §11.3 of AGENTS.md still has to POINT at the document that took it (asserted below), or a
+     clause could be «moved» somewhere no session ever opens. */
+  const CARRIERS = ['AGENTS.md', 'docs/AGENT-SETUP.md', 'scripts/backup-usb.ps1'];
+  const md = CARRIERS.map(read).join('\n');
   assert.ok(read('AGENTS.md').includes('scripts/backup-usb.ps1'),
     'AGENTS.md no longer names the script — a procedure nobody is told to run is not a procedure');
   const rules = [
@@ -99,8 +113,13 @@ test('#R260 ② AGENTS.md still carries each clause of the finish procedure', ()
   ];
   for (const [name, needle] of rules) {
     assert.ok(md.includes(needle),
-      `AGENTS.md lost the finish-procedure rule 「${name}」 (looked for ${JSON.stringify(needle)})`);
+      `the finish procedure lost the rule 「${name}」 — none of ${CARRIERS.join(', ')} carries it`
+      + ` (looked for ${JSON.stringify(needle)})`);
   }
+  /* the move is only a move while the reader of AGENTS.md is still sent to where it went */
+  assert.match(read('AGENTS.md'), /### 11\.3 [^\n]*\n(?:[^\n]*\n){0,6}?[^\n]*docs\/AGENT-SETUP\.md/,
+    'AGENTS.md §11.3 no longer points at the document that holds the invariants — the clauses moved'
+    + ' somewhere no session is told to open, which is indistinguishable from losing them');
 });
 
 /* ── ③ the three report shapes are all spelled out ──────────────────────────────────────────── */
@@ -121,7 +140,11 @@ test('#R260 ③ the finish report has a line for each outcome', () => {
 
 /* ── ④ the direction of the sync, asserted on its own ───────────────────────────────────────── */
 test('#R260 ④ the mirror is one-way, PC → USB', () => {
-  const md = read('AGENTS.md');
+  /* (#R718) same corpus as ②, and for the same reason: the sentence that states the direction
+     moved to docs/AGENT-SETUP.md §10 with the rest of §11.3. The negative half below is asserted
+     over the same text, so a document that starts describing a sync running back from the USB is
+     caught wherever it is. */
+  const md = ['AGENTS.md', 'docs/AGENT-SETUP.md'].map(read).join('\n');
   const ps = read('scripts/backup-usb.ps1');
   /* ⚠ THE ASSERTION IS THE PROPERTY, NOT THE WORDING. This read «PC 上の IntMap → USB» literally
      until #R282, when the source had to be named more precisely: 「PC 上の IntMap」 was ambiguous

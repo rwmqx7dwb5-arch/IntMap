@@ -36,6 +36,7 @@
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { crlfBytes } from './eol.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const WRITE = process.argv.includes('--write');
@@ -52,15 +53,46 @@ const ok = (tag, msg) => notes.push(`${tag}: ${msg}`);
    Codex reads AGENTS.md up to `project_doc_max_bytes` and stops. We ship a `.codex/config.toml`
    that raises it, but that layer only loads in a TRUSTED project — and trust is recorded per
    PATH, so every fresh worktree starts without it (AGENTS.md §6 gives every round a new one).
-   The number that always applies is therefore the DEFAULT, and that is what is asserted. */
+   The number that always applies is therefore the DEFAULT, and that is what is asserted.
+
+   ⚠ (#R718) AND THE UNIT IS BYTES ON DISK, WHICH IS NOT THE SAME NUMBER ON EVERY CHECKOUT.
+   `.gitattributes` pins only the extensions executed or parsed on Linux (*.sh *.sql *.mjs *.yml
+   *.yaml *.toml) to LF. `*.md` is not among them, so `core.autocrlf` decides — `true` on the
+   development machine, which hands AGENTS.md back with a carriage return before every line
+   break, and absent on the Linux runner, which does not. MEASURED 2026-09-14 on ea7664a1:
+   32,718 bytes with LF endings over 465 line breaks, and 33,183 bytes as checked out here.
+   The ceiling is 32,768. So CI passed with 50 bytes to spare while the file Codex actually
+   opened on this machine was 415 bytes OVER and had lost the tail of §12 — and neither verdict
+   was wrong about its own runner. A green CI was hiding a truncated rulebook.
+
+   ⚠ WHY THIS IS THE ONE CHECK THAT DOES NOT NORMALISE (#R283). scripts/eol.mjs exists because a
+   check is about CONTENT and line endings belong to the checkout; a source-level assertion that
+   reads the bytes the checkout happened to produce says something different on the two platforms
+   for a reason that has nothing to do with its subject. This gate is the exception because the
+   checkout's bytes ARE its subject: Codex counts the bytes the filesystem hands it, and a
+   carriage return is one of them. Normalising them away would not make the verdict portable —
+   it would make it answer a question nobody asked ("would this fit if the file were stored
+   differently?") while the reader on this machine still loses §12.
+
+   So it neither normalises NOR trusts the runner: it measures the WORST CASE a conforming
+   checkout can produce — every line break stored as CRLF — which is content-derived, identical
+   on Linux and on Windows, and never smaller than what any reader will see. The measurement is
+   `crlfBytes` in scripts/eol.mjs, stated there NEXT TO the rule it is the exception to, so a
+   reader who arrives at that module for #R283's reason meets both directions at once. */
 const DOC_CEILING = 32768;
 {
-  const bytes = Buffer.byteLength(readFileSync(join(ROOT, 'AGENTS.md')));
+  const raw = readFileSync(join(ROOT, 'AGENTS.md'));
+  const disk = raw.length;
+  const text = lf(raw.toString('utf8'));
+  const lfBytes = Buffer.byteLength(text);
+  const bytes = crlfBytes(text);               /* the CRLF checkout — the largest one that exists */
+  const breaks = bytes - lfBytes;
   const margin = DOC_CEILING - bytes;
+  const how = `worst case ${bytes} B = ${lfBytes} B of text + ${breaks} line breaks stored as CRLF; this checkout holds ${disk} B`;
   if (bytes >= DOC_CEILING) {
-    fail('doc-size', `AGENTS.md is ${bytes} bytes; Codex reads the first ${DOC_CEILING} and drops the rest without a warning. Move a section to docs/AGENT-SETUP.md, .agents/rules/ or the round skill — do not raise this number.`);
+    fail('doc-size', `AGENTS.md is ${bytes} bytes on a CRLF checkout (${how}); Codex reads the first ${DOC_CEILING} and drops the rest without a warning. Move a section to docs/AGENT-SETUP.md, .agents/rules/ or the round skill — do not raise this number, and do not measure whichever ending this runner happens to have.`);
   } else {
-    ok('doc-size', `AGENTS.md ${bytes}/${DOC_CEILING} bytes (margin ${margin})`);
+    ok('doc-size', `AGENTS.md ${bytes}/${DOC_CEILING} bytes (margin ${margin}) · ${how}`);
     if (margin < 400) notes.push(`doc-size: ⚠ only ${margin} bytes left before Codex starts dropping the tail`);
   }
 }

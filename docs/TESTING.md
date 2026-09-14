@@ -716,7 +716,7 @@ into memory and compares. It reports four things:
 
 | name | what it asserts |
 |---|---|
-| `doc-size` | `AGENTS.md` is under **32,768 bytes** and prints the margin |
+| `doc-size` | `AGENTS.md` is under **32,768 bytes** on the largest checkout that can exist, and prints the margin |
 | `claude-import` | `CLAUDE.md` carries a **bare** `@AGENTS.md` line, plus one per `.agents/rules/*.md` |
 | `render` | every rendered file equals what `.agents/` renders to |
 | `stray` | no rendered file survives its source being deleted |
@@ -726,6 +726,21 @@ into memory and compares. It reports four things:
 `AGENTS.md` answered a question about its first row and reported its last row absent. Nothing is
 printed to any log. `.codex/config.toml` raises the limit, but that layer loads only in a
 **trusted** project and trust is per path — so the number always in force is the default.
+
+⚠ **And it measures the WORST CASE rather than this runner's bytes (#R718).** `.gitattributes`
+pins only the extensions executed or parsed on Linux to LF; `*.md` is left to `core.autocrlf`, so
+the same commit is two different file sizes. MEASURED 2026-09-14 on `ea7664a1`: `AGENTS.md` was
+32,718 bytes with LF endings over 465 line breaks and **33,183 bytes as checked out on the
+development machine** — CI passed with 50 bytes to spare while the file Codex opened there was 415
+bytes over and had lost the tail of §12. Both verdicts were right about their own runner, which is
+why a green CI could hide a truncated rulebook. So the gate asserts `LF bytes + line breaks`, the
+size of a fully-CRLF checkout: content-derived, identical on both platforms, and never smaller
+than what any reader sees. **This is the one check that deliberately does not use
+[`scripts/eol.mjs`](../scripts/eol.mjs)** — #R283 normalises because a check is about content and
+line endings belong to the checkout, and here the checkout's bytes *are* the subject. Normalising
+them away would answer a question nobody asked while the reader still loses §12. The rule stated
+in the negative: **normalise when the carriage return is noise in front of your subject; count it
+when your subject is how many bytes the reader is handed.**
 
 ⚠ **`claude-import` looks for a needle outside code spans**, because Claude Code skips imports
 inside backticks and fences. A backticked `` `@AGENTS.md` `` is exactly the spelling that does not
@@ -2197,6 +2212,15 @@ content, not the bytes: use `readLF` / `sameText` from **`scripts/eol.mjs`**, ne
 and were red on every local run and green in CI, which is worse than no check at all — a
 failure list that is always red is a failure list nobody reads. `tests/r283-checks.test.mjs`
 holds the rule, and it fails on **both** platforms if a raw byte read comes back.
+
+⚠ **There is exactly one question where the carriage return is the subject, not noise in front of
+it (#R718): «how many bytes is the reader handed?»** Codex stops reading `AGENTS.md` at
+`project_doc_max_bytes` and counts the bytes the filesystem gave it, carriage returns included, so
+`check:agents`' `doc-size` must not normalise — see the `doc-size` notes above for the measurement
+and what it cost. It does not read the checkout's bytes either: `crlfBytes` in `scripts/eol.mjs`
+returns the size of a fully-CRLF checkout, which is derived from the content and therefore the
+same number on both platforms. **Normalise when the carriage return is noise in front of your
+subject; count it when your subject is how many bytes the reader gets.**
 
 ⚠ **A tool that counts LINES asks a different question, and `lf()` is the wrong answer to it.**
 `readLF`/`sameText` are for «do these two texts say the same thing»; a codemod that indexes its
