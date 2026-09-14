@@ -195,8 +195,23 @@ export async function factsFor(qids, log = () => {}) {
      most common class among the 751 rows it accepted — 146 of them — and Burmese, Hän, Siuslaw
      and Northern Pomo were about to be labelled 「ビルマ語」「汗語」「サイウスロー語」「北波莫語」
      on a map of territories. A language is not a place, however many speakers it has a country
-     statement for. */
-export const REJECT_ROOTS = ['Q17442446', 'Q34770'];
+     statement for.
+   · Q355304 — watercourse (#R714). ⚠ THIS ONE WAS FOUND IN PRODUCTION, NOT BY A TEST. Standing at
+     1500 with the interface in Japanese, the polity drawn as «Aragón» was labelled 「アラゴン川」 —
+     the ARAGON RIVER. It is the residue scripts/histeras/match.mjs already names (「Nazca」 coming
+     through as 「ナスカ市」, the city): the river carries the exact English string, Wikidata states a
+     coordinate for it, that coordinate falls INSIDE the shape the map draws for the name, and a
+     river states no inception date for the clock to disagree with. Spelling plus geography is all
+     the evidence there is and both are genuinely true OF THE RIVER. A river is not a polity,
+     however exactly it agrees.
+     ⚠⚠⚠ AND THE ROOT IS `watercourse`, NOT `landform`, BECAUSE THE WIDER ONE WAS MEASURED AND IS
+     CATASTROPHIC. Under Q271669 landform / Q15324 body of water sit ISLAND COUNTRIES: measured on
+     the 858 shipped rows, that closure catches 53 of them — the United Kingdom, Ireland, Iceland,
+     New Zealand, the Philippines, Cuba, Singapore. It would delete a twentieth-century country's
+     name in eight languages in order to fix two rivers. Under Q355304 the same measurement catches
+     exactly TWO rows, and they are the two that are wrong: «Aragón» → Q20357 アラゴン川 and
+     «Narva» → Q209031 ナルヴァ川. */
+export const REJECT_ROOTS = ['Q17442446', 'Q34770', 'Q355304'];
 
 /* ── what the map CAN be drawing (#R695) ─────────────────────────────────────
    ⚠ #R686 ASKED «DOES WIKIDATA SAY WHERE THIS IS?» AND USED THE ANSWER AS A PROXY FOR «IS THIS
