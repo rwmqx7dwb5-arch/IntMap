@@ -133,6 +133,21 @@ jobs:
         run: npm run check:histadmin
       - name: Historical provinces IntMap derived itself (data/hist-kuni.js)
         run: npm run check:kuni
+      # (#R716) …AND THE BIGGEST SURFACE OF ALL, bigger than every bundle above put together:
+      # data/border-detail/, 5,622 files and 409 MB of refined outlines for hist-borders, hist-admin1
+      # and hist-admin2. ⚠ Unlike the two steps above it, this one was NOT ungated — a node test has
+      # run its check() since #R711. What was missing is that no DECLARED gate reached it, so the
+      # rules that hunt for uncalled gates could not see it (their universe is package.json's
+      # check:* scripts), no instruction table named it, and no CI step said its name on failure.
+      # Offline, 41 s, paid once: the whole-bundle run moved out of the r711 test rather than being
+      # added alongside it. Residual (it re-derives nothing): docs/TESTING.md.
+      - name: Refined historical outlines (409 MB, every chunk hashed and bounded)
+        run: npm run check:borderdetail
+      # (#R716) …and the other half of the settlement layer. data/hist-cities.json has been re-derived
+      # byte for byte since #R427; data/hist-places.json had two tests on the builder's selection rule
+      # and nothing comparing the shipped bytes to the licensed Pleiades record. Offline, 0.14 s.
+      - name: Independent historical places (shipped bytes re-derived from the licensed record)
+        run: npm run check:histplaces
       # (#R538) The language layer never had a gate. What it needed one for is what went wrong:
       # the old build resolved Factbook prose through a hand table of regular expressions and
       # dropped what it did not recognise, so a country was coloured by the next language down

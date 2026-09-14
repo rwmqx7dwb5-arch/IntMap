@@ -6,10 +6,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { check } from '../scripts/build-border-detail.mjs';
 
-test('persisted detail fingerprints, fragments, source ids, size bounds and manifest counts validate offline', () => {
-  const stats=check();
-  assert.ok(Object.values(stats).every(s=>s.refined>0&&s.bytes>0));
-});
+/* ⚠ (#R716) THE WHOLE-BUNDLE PASS MOVED TO `npm run check:borderdetail`, which is the same check()
+   under a DECLARED name. It is not lost and it is not run twice: reading 409 MB costs 41 s, and until
+   this round that cost was paid here under a name no gate table, no CI step and none of the three
+   rules that hunt for uncalled gates could see. What stays here is what this file was written for —
+   the REJECTION cases, which are what prove the gate can fail at all. */
 
 test('the offline gate rejects missing/stale assets rather than accepting an index alone', () => {
   const root=mkdtempSync(join(tmpdir(),'intmap-r711-detail-'));

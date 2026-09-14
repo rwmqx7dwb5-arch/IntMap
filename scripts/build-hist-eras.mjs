@@ -105,9 +105,30 @@ export function astroYear(key) {
    three distinct points is a real island at the precision this file stores.
    ⚠ EXPIRES IF: the upstream set grows enough to push the built file past ~20 MB (re-run
    `--sweep --wide` and pick the finest row that still fits), or DEC changes — TOL follows it. */
-const DEC = 3;                        /* coordinate decimals, matching data/cshapes.js and data/hist-borders.js */
+const DEC = 3;                        /* coordinate decimals. ⚠ (#R716) THIS USED TO SAY 「matching
+                                         data/cshapes.js and data/hist-borders.js」 AND IT MATCHED NEITHER:
+                                         measured on the shipped bytes, cshapes stores 5 decimals and
+                                         hist-borders 4. This bundle is the coarsest of the six on purpose
+                                         — it answers 123,000 BC to 1688 from 54 whole-world sheets — but
+                                         the sentence claiming company it does not keep is how a reader
+                                         concludes the seam at 1688/1689 is a bug rather than the record. */
 const TOL = Math.pow(10, -DEC);       /* one grid cell — see above; not an independent number */
 const MIN_AREA = 0;                   /* keep every ring that is still a ring after rounding */
+
+/* ⚠⚠⚠ (#R716) THE TWO LANES WERE COUNTED AND PRINTED, AND NEITHER WAS BOUNDED. A feature whose
+   name cannot be read leaves `feats` and lands in `blank` — geometry with no identity — and every
+   invariant this gate holds is true on BOTH sides of that move: the rings still close, the spans
+   are still ordered, the precision lane still matches. So the one failure the name pipeline can
+   actually have — the matcher, the U+FFFD repair or an upstream re-tagging getting WORSE, and names
+   quietly becoming blanks — was the single thing nothing could see. `check()` already computed both
+   numbers to print them; these bound them, in the direction that can only lose names.
+   · observation — the committed data/hist-eras.js, 2026-09-14, counted by `check()` itself:
+     10,388 named features and 6,955 unnamed upstream polygons across 54 snapshots (40.1% unnamed)
+   · expires — when a snapshot is added or the upstream is re-harvested; BOTH must then be
+     re-measured together, and NAMED_MIN may only rise while BLANK_MAX may only fall
+   · canon — these two constants; docs/TESTING.md links here rather than restating them */
+const NAMED_MIN = 10388;
+const BLANK_MAX = 6955;
 /* ⚠ (#R695) AND «STILL A RING» IS NOT «STILL A SHAPE» — MEASURED, AND THE LINE ABOVE IS WHY IT HAD
    TO BE. 904 of the 8,814 rings this file ships (10.3%) enclose EXACTLY ZERO signed area at the
    coordinates it stores, and 891 of them are paths that double back on themselves (the same vertex
@@ -466,6 +487,10 @@ function check() {
         if (!(Number.isInteger(ri) && ri >= 0 && ri < d.rings.length)) bad.push(where + ' blank points at ring ' + ri);
     }
   });
+  ok(feats >= NAMED_MIN, feats + ' named features, under the ' + NAMED_MIN + ' this bundle is measured '
+     + 'to carry — names have been lost to the unnamed lane (see NAMED_MIN)');
+  ok(blanks <= BLANK_MAX, blanks + ' unnamed upstream polygons, over the ' + BLANK_MAX + ' this bundle '
+     + 'is measured to carry — identity is being lost, not gained (see BLANK_MAX)');
   ok(bc > 0, 'no BC snapshot — the deep past is the point of this bundle');
   ok(ad > 0, 'no AD snapshot');
   ok(astroYear('bc1') === 0 && astroYear('bc323') === -322 && astroYear('100') === 100,
