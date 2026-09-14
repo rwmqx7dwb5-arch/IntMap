@@ -391,6 +391,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1
 最後の1行が `RESULT <status> <detail>` で、`ok` / `skipped` / `failed` のいずれかを返す。
 `skipped` は**エラーではない**（USB 未接続、または候補が複数あって一意に特定できない）。
 
+⚠ **ミラー元は原本であって、この worktree ではない。** §5 の最終工程で原本を最新化し、
+`node scripts/master-sync.mjs --check` が exit 0 を返してから走らせること
+（原本が merge 後の状態でなければ、スクリプト自身が同期せず `skipped` で終わる）。
+
 ### 11.3 スクリプトが守っていること
 
 **正本は [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §10。** ミラー元・同期方向・何が入って何が

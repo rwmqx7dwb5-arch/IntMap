@@ -309,9 +309,9 @@ node --test tests/r503-checks.test.mjs
 
 - ⚠ **ミラー元は原本（`C:\Users\gyuuk\OneDrive\IntMap`）であって、temp の worktree ではない。**
   スクリプトは原本の場所を**ハードコードせず** `git rev-parse --git-common-dir` から導出するので、
-  どの worktree から実行しても原本を見る。`AGENTS.md` §5 の最終工程で原本を最新化し、
-  `node scripts/master-sync.mjs --check` が exit 0 を返してから同期すること
-  （原本が merge 後の状態でなければ、スクリプトは同期せず `skipped` で終わる）。
+  どの worktree から実行しても原本を見る。**原本が merge 後の状態でなければ、スクリプトは同期せず
+  `skipped` で終わる**——だから先に原本を最新化する（**その順序を指示するのは `AGENTS.md` §11.2**。
+  ここに書き写さない）。
 - **同期方向は `原本 → USB` の一方向のみ。** USB 上のファイルを作業元にしない。逆同期しない。
 - **USB のルートが IntMap の完全ミラー**になる。中身は **Git HEAD の追跡対象ファイル**
   （＝サイトを再現するのに必要なものすべて。`node_modules` / `.git` / `dist` / キャッシュは入らない）。
