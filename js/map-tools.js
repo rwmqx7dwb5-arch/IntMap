@@ -178,9 +178,32 @@ window.IntMapModules.drawTool=function(HOST){
   window.DrawTool=(function(){
     if(!GE().hasRenderer()) return { start(){}, toggle(){}, active(){return false;}, exit(){}, onResolution(){} };
     let state='off';                 // off | armed | drawing | done
-    let raw=[], simplified=[], loopRings=[], lockedArea=0, lengthKm=0, smoothing=0, closeAux=null;
-    let lastPx=null, panel=null, layersReady=false, hadTouchMove=false, sampleN=0;
-    const MIN_PX=5;                  // min cursor travel between samples (screen px)
+    let raw=[], coarse=[], simplified=[], keptN=0, loopRings=[], lockedArea=0, lengthKm=0, smoothing=0, closeAux=null;
+    let lastPx=null, lastAreaPx=null, panel=null, layersReady=false, hadTouchMove=false, sampleN=0;
+    /* ══ (#R719) THE SLIDER SAID 平滑化 AND WHAT IT DID WAS DECIMATION ════════════════════════════
+       「Drawで引ける線の最大の滑らかさが、全然滑らかじゃないからもっと滑らかに高解像度で描けるように。」
+       Both halves of that were true of this tool, and they are two different defects:
+
+        · RESOLUTION. A sample was taken only after the pointer had travelled MIN_PX = 5 screen
+          pixels, so the FINEST line the tool could draw was a 5-px staircase. Nothing downstream
+          could recover what was never captured.
+        · SMOOTHNESS. The slider's only effect was a Douglas–Peucker pass, and RDP DELETES points
+          and joins what survives with STRAIGHT SEGMENTS. So «maximum smoothing» produced the most
+          ANGULAR line the tool can draw — the top of the range was the opposite of its label.
+
+       ⚠ THE FIX IS NOT A SMALLER TOLERANCE. Lowering the slider's effect would only have given a
+       denser staircase; what the label promises is a CURVE. The stroke is now sampled at 1.5 px and
+       what is drawn is a centripetal Catmull–Rom spline THROUGH the points RDP keeps, so the slider
+       chooses how much detail to drop and the line stays smooth at every setting.
+
+       ⚠ AND THE AREA IS STILL MEASURED ON THE 5-PX TRACE. `enclosedArea` is O(n²) per collapsed
+       loop with a 3,000-loop guard, and it runs DURING the stroke — tripling the sample rate would
+       have made it nine times dearer per call at three times the rate. `coarse` is the same 5-px
+       trace the tool has always measured, maintained beside the fine one, so the area readout and
+       its cost are exactly what they were. */
+    const MIN_PX=1.5;                // min cursor travel between LINE samples (screen px)
+    const AREA_PX=5;                 // …and between the AREA trace's samples (#R8c's original rate)
+    const CURVE_MAX=8000;            // a ceiling on spline output, so a long stroke cannot unbound the layer
 
     /* ---- geometry ---- */
     function perpDist(p,a,b){ const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy; if(L<1e-18) return Math.hypot(p[0]-a[0],p[1]-a[1]); let tt=((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L; tt=Math.max(0,Math.min(1,tt)); return Math.hypot(p[0]-(a[0]+tt*dx),p[1]-(a[1]+tt*dy)); }
@@ -189,6 +212,52 @@ window.IntMapModules.drawTool=function(HOST){
       const out=[]; for(let i=0;i<pts.length;i++) if(keep[i]) out.push(pts[i]); return out; }
     function bboxDiag(pts){ let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9; for(const p of pts){ if(p[0]<mnx)mnx=p[0]; if(p[0]>mxx)mxx=p[0]; if(p[1]<mny)mny=p[1]; if(p[1]>mxy)mxy=p[1]; } return Math.hypot(mxx-mnx,mxy-mny)||0; }
     function epsFor(pts){ const f=smoothing/100; return f*f*0.28*Math.max(0.0004,bboxDiag(pts)); }   // RDP tolerance scaled to the drawing's own size → behaves the same at any zoom
+    /* (#R719) Centripetal Catmull–Rom through `pts`. Centripetal (alpha = 0.5) rather than uniform
+       or chordal because it is the parameterisation that provably produces no cusp and no self-
+       intersection inside a segment — a hand-drawn stroke doubling back on itself is exactly the
+       input the uniform spline overshoots on, and an overshoot here is a line the reader did not
+       draw. The curve PASSES THROUGH every input point, so the slider still decides where the line
+       goes and this only decides how it gets there. Subdivision is per segment and proportional to
+       the segment's own length, so a segment RDP left short is not subdivided at all. */
+    function smoothPath(pts){
+      const n=pts.length; if(n<3) return pts.slice();
+      const diag=Math.max(1e-9,bboxDiag(pts));
+      let total=0; for(let i=1;i<n;i++) total+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+      /* the step a curve is smooth at, measured in the drawing's own size rather than in degrees —
+         1/900 of the bounding diagonal is under a pixel for a stroke that fills the viewport. */
+      /* the step is widened, never the cap broken: a stroke long enough to exceed CURVE_MAX points
+         is drawn at the finest step that fits it, rather than being truncated. */
+      let step=diag/900;
+      if(total/step>CURVE_MAX) step=total/CURVE_MAX;
+      const out=[pts[0]];
+      const tj=(ti,a,b)=>ti+Math.pow(Math.hypot(b[0]-a[0],b[1]-a[1]),0.5);
+      for(let i=0;i<n-1;i++){
+        /* ⚠ THE END CONTROL POINTS ARE REFLECTED, NOT DUPLICATED. Repeating the endpoint makes
+           the knot interval t3−t2 zero, and the centripetal weights at t = t2 then read
+           (t3−t)/0 · p2 + (t−t2)/0 · p3 = 0 — MEASURED: the last vertex of every stroke came out
+           at [0,0], a line from the drawing to Null Island. Reflecting p1 through p2 gives a real
+           interval and the same tangent the segment already had. */
+        const p0=pts[i-1]||[2*pts[i][0]-pts[i+1][0], 2*pts[i][1]-pts[i+1][1]];
+        const p1=pts[i], p2=pts[i+1];
+        const p3=pts[i+2]||[2*pts[i+1][0]-pts[i][0], 2*pts[i+1][1]-pts[i][1]];
+        const seg=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]);
+        const k=Math.max(1,Math.min(24,Math.round(seg/step)));
+        if(k<=1 || seg<=0){ out.push(p2); continue; }
+        const t0=0,t1=tj(t0,p0,p1),t2=tj(t1,p1,p2),t3=tj(t2,p2,p3);
+        for(let s=1;s<=k;s++){
+          const t=t1+(t2-t1)*(s/k);
+          const d01=(t1-t0)||1e-9,d12=(t2-t1)||1e-9,d23=(t3-t2)||1e-9;
+          const A1=[((t1-t)/d01)*p0[0]+((t-t0)/d01)*p1[0], ((t1-t)/d01)*p0[1]+((t-t0)/d01)*p1[1]];
+          const A2=[((t2-t)/d12)*p1[0]+((t-t1)/d12)*p2[0], ((t2-t)/d12)*p1[1]+((t-t1)/d12)*p2[1]];
+          const A3=[((t3-t)/d23)*p2[0]+((t-t2)/d23)*p3[0], ((t3-t)/d23)*p2[1]+((t-t2)/d23)*p3[1]];
+          const b1=(t2-t0)||1e-9,b2=(t3-t1)||1e-9;
+          const B1=[((t2-t)/b1)*A1[0]+((t-t0)/b1)*A2[0], ((t2-t)/b1)*A1[1]+((t-t0)/b1)*A2[1]];
+          const B2=[((t3-t)/b2)*A2[0]+((t-t1)/b2)*A3[0], ((t3-t)/b2)*A2[1]+((t-t1)/b2)*A3[1]];
+          out.push([((t2-t)/d12)*B1[0]+((t-t1)/d12)*B2[0], ((t2-t)/d12)*B1[1]+((t-t1)/d12)*B2[1]]);
+        }
+      }
+      return out;
+    }
     function segX(a,b,c,d){ const den=(a[0]-b[0])*(c[1]-d[1])-(a[1]-b[1])*(c[0]-d[0]); if(Math.abs(den)<1e-14) return null;
       const tt=((a[0]-c[0])*(c[1]-d[1])-(a[1]-c[1])*(c[0]-d[0]))/den, uu=((a[0]-c[0])*(a[1]-b[1])-(a[1]-c[1])*(a[0]-b[0]))/den;
       if(tt<0||tt>1||uu<0||uu>1) return null; return [a[0]+tt*(b[0]-a[0]), a[1]+tt*(b[1]-a[1])]; }
@@ -239,8 +308,8 @@ window.IntMapModules.drawTool=function(HOST){
     }
 
     /* ---- recompute ---- */
-    function recomputeLine(){ simplified=rdp(raw, epsFor(raw)); lengthKm=0; for(let i=1;i<simplified.length;i++){ try{ lengthKm+=turf.distance(turf.point(simplified[i-1]),turf.point(simplified[i]),{units:'kilometers'}); }catch(_){} } }
-    function recomputeArea(){ const r=enclosedArea(raw); lockedArea=r.area; loopRings=r.rings; }   // RAW-based → invariant under smoothing
+    function recomputeLine(){ const kept=rdp(raw, epsFor(raw)); keptN=kept.length; simplified=smoothPath(kept); lengthKm=0; for(let i=1;i<simplified.length;i++){ try{ lengthKm+=turf.distance(turf.point(simplified[i-1]),turf.point(simplified[i]),{units:'kilometers'}); }catch(_){} } }
+    function recomputeArea(){ const r=enclosedArea(coarse.length>=2?coarse:raw); lockedArea=r.area; loopRings=r.rings; }   // the 5-px trace → invariant under smoothing (#R719)
 
     /* ---- panel ---- */
     function jp(){ return HOST.lang==='jp'; }
@@ -289,25 +358,30 @@ window.IntMapModules.drawTool=function(HOST){
       try{ makeDraggable(p,p.querySelector('.tp-header')); }catch(_){}
       const res=p.querySelector('#draw-res'); if(res) res.oninput=()=>{ smoothing=+res.value; recomputeLine(); /* AREA stays locked to raw */ setData(); updateNumbers(); };
       const fin=p.querySelector('#draw-finish'); if(fin) fin.onclick=keepOnMap;
-      const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; state='armed'; setData(); renderPanel(); };
+      const redo=p.querySelector('#draw-redo'); if(redo) redo.onclick=()=>{ raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; closeAux=null; state='armed'; setData(); renderPanel(); };
       const popBtn=p.querySelector('#draw-pop-btn'); if(popBtn) popBtn.onclick=()=>_estimateDrawPop(p,popBtn);
       const profBtn=p.querySelector('#draw-profile'); if(profBtn) profBtn.onclick=()=>{ const c=(simplified&&simplified.length>=2)?simplified:((raw&&raw.length>=2)?raw:null); if(c&&window._profileFromCoords) window._profileFromCoords(c); };   /* (#R154) elevation profile of the drawn line */
     }
-    function updateNumbers(){ if(!panel) return; const rows=panel.querySelectorAll('.tp-row b'); if(rows[0]) rows[0].innerHTML=distHTML(lengthKm); if(rows[1]) rows[1].innerHTML=lockedArea>0?areaHTML(lockedArea):'—'; if(rows[2]) rows[2].textContent=simplified.length+'/'+raw.length; }
+    function updateNumbers(){ if(!panel) return; const rows=panel.querySelectorAll('.tp-row b'); if(rows[0]) rows[0].innerHTML=distHTML(lengthKm); if(rows[1]) rows[1].innerHTML=lockedArea>0?areaHTML(lockedArea):'—'; if(rows[2]) rows[2].textContent=keptN+'/'+raw.length;   /* (#R719) the points the slider kept, not the curve's own vertices */ }
 
     /* ---- sampling / lifecycle ---- */
     function sample(px,ll){ if(state!=='drawing') return;
       if(lastPx && Math.hypot(px.x-lastPx.x,px.y-lastPx.y)<MIN_PX) return;
-      lastPx={x:px.x,y:px.y}; raw.push([ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]);
-      recomputeLine(); if((++sampleN%3)===0) recomputeArea(); setData(); updateNumbers();
+      lastPx={x:px.x,y:px.y};
+      const pt=[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))];
+      raw.push(pt);
+      /* (#R719) the AREA trace keeps #R8c's 5-px rate, so enclosedArea's O(n²) cost per screen
+         pixel of stroke is unchanged by the finer line sampling above. */
+      if(!lastAreaPx || Math.hypot(px.x-lastAreaPx.x,px.y-lastAreaPx.y)>=AREA_PX){ lastAreaPx={x:px.x,y:px.y}; coarse.push(pt); }
+      recomputeLine(); if((++sampleN%9)===0) recomputeArea(); setData(); updateNumbers();
     }
-    function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; sampleN=0; closeAux=null; state='drawing'; try{ GE().input.set('dragPan',false); }catch(_){} setData(); renderPanel(); }
+    function startStroke(ll){ raw=[[ll.lng, Math.max(-89.9,Math.min(89.9,ll.lat))]]; coarse=raw.slice(); simplified=raw.slice(); loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; sampleN=0; closeAux=null; state='drawing'; try{ GE().input.set('dragPan',false); }catch(_){} setData(); renderPanel(); }
     function finish(){ if(state!=='drawing') return; recomputeLine(); recomputeArea();
       /* (#R8c) No self-crossing ⇒ no enclosed loop. Close END→START with a great-circle line and report
          the area of THAT polygon. The closing line is AREA-only: it is never added to the length and is
          untouched by the smoothing slider (both use the open RAW path). */
       closeAux=null;
-      if(lockedArea===0 && raw.length>=3){ try{ const ring=raw.concat([raw[0]]); const a=ringArea(ring); if(a>0){ lockedArea=a; loopRings=[ring]; closeAux=geodesicLine(raw[raw.length-1],raw[0],64); } }catch(_){} }
+      if(lockedArea===0 && coarse.length>=3){ try{ const ring=coarse.concat([coarse[0]]); const a=ringArea(ring); if(a>0){ lockedArea=a; loopRings=[ring]; closeAux=geodesicLine(coarse[coarse.length-1],coarse[0],64); } }catch(_){} }
       setData(); state='done'; try{ GE().input.set('dragPan',true); }catch(_){} renderPanel();
       /* ══ (#R207) THE STROKE ENDING IS AN EVENT, AND IT HAD NO SUBSCRIBERS ═══════════════════════
          「描いた範囲を取り込むボタンを押さなくてもいいようにしろ。」 A feature that DRIVES this tool
@@ -378,7 +452,7 @@ window.IntMapModules.drawTool=function(HOST){
        (no travel) must NOT leave a dead 1-point 'drawing' state — re-arm so the next press-drag works. */
     function onTouchEnd(e){ _touchTs=Date.now(); if(state!=='drawing') return;
       if(hadTouchMove && raw.length>=2){ e.preventDefault(); finish(); }
-      else { raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; sampleN=0; state='armed'; try{ GE().input.set('dragPan',true); }catch(_){} setData(); renderPanel(); } }
+      else { raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; closeAux=null; sampleN=0; state='armed'; try{ GE().input.set('dragPan',true); }catch(_){} setData(); renderPanel(); } }
 
     function setBtn(on){ const b=document.getElementById('btn-tool-draw'); if(b) b.classList.toggle('tool-on',on); document.querySelectorAll('[data-proxy="btn-tool-draw"]').forEach(x=>x.classList.toggle('active',on)); try{ window._syncToolBtns&&window._syncToolBtns(); }catch(_){} }
 
@@ -391,10 +465,10 @@ window.IntMapModules.drawTool=function(HOST){
         silent=!!(opt&&opt.silent)||!!(pt&&pt.silent);
         _onFinish=(opt&&typeof opt.onFinish==='function')?opt.onFinish:null;   /* (#R207) */
         ensureLayers(); wire(); GE().render.canvas().style.cursor='crosshair'; setBtn(true);
-        if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
+        if(pt&&pt.length===2){ startStroke({lng:pt[0],lat:pt[1]}); } else { state='armed'; raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; renderPanel(); }
       },
       toggle(){ if(this.active()) this.exit(); else this.start(); },
-      exit(){ state='off'; silent=false; _onFinish=null; raw=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
+      exit(){ state='off'; silent=false; _onFinish=null; raw=[]; coarse=[]; simplified=[]; loopRings=[]; lockedArea=0; lengthKm=0; lastPx=null; lastAreaPx=null; closeAux=null; setData(); unwire(); try{ GE().input.set('dragPan',true); }catch(_){} try{ GE().render.canvas().style.cursor=''; }catch(_){} setBtn(false); if(panel) panel.style.display='none'; },
       onResolution(v){ smoothing=Math.max(0,Math.min(100,+v||0)); recomputeLine(); setData(); updateNumbers(); },
       /* (#R141) Expose the drawn area as a GeoJSON Polygon/MultiPolygon for the area-monitor feature.
          Finishes the stroke first if it is still being drawn, so "monitor this drawn area" works mid-gesture. */
@@ -402,7 +476,8 @@ window.IntMapModules.drawTool=function(HOST){
       /* Debug/verification hook (same spirit as window.__sat / window.__ai): lets us prove the
          area-invariant-under-smoothing contract and the geodesic length without map interaction. */
       _debug:{ enclosedArea, rdp,
-        simulate(rawPts, sm){ raw=rawPts.slice(); smoothing=sm||0; recomputeLine(); recomputeArea(); return { area:lockedArea, length:lengthKm, rawN:raw.length, simplN:simplified.length }; } }
+        simulate(rawPts, sm){ raw=rawPts.slice(); coarse=rawPts.slice(); smoothing=sm||0; recomputeLine(); recomputeArea(); return { area:lockedArea, length:lengthKm, rawN:raw.length, simplN:keptN, curveN:simplified.length,
+                   kept:rdp(raw, epsFor(raw)), line:simplified.slice() }; } }   /* (#R719) simplN stays «points the slider kept»; `line` is what is actually stroked, so a check can measure its SMOOTHNESS rather than count its vertices */   /* (#R719) simplN stays «points the slider kept»; the curve's own vertex count is the new field */
     };
     { const b=document.getElementById('btn-tool-draw'); if(b) b.onclick=()=>api.toggle(); }
     return api;

@@ -1,13 +1,12 @@
 # IntMap — 実行戦略 (How the work is executed, every session)
 
 `AGENTS.md` §5 が **何を・どの順で**。ここは **それをどう速く・安全に**。
-利用者は「実装して」「直して」としか言わない。
 **分解・並列化・委譲・隔離・検証の段は、毎回 Claude 自身が決める。利用者に管理させない。**
 
 ## 1. 依頼を受けたら、まず分解する
 
 1. 依頼を**独立な仕事**に分ける（互いの出力を要さないもの）。
-2. 独立な仕事が 2 つ以上あるなら、**同じメッセージで**まとめて起動する。1 つずつ待たない。
+2. 2 つ以上あるなら**同じメッセージで**まとめて起動する。1 つずつ待たない。
 3. 依存のある仕事だけを直列に残す。
 4. 待ちが出たら**別の独立作業**を進める。**ポーリングしない**（`AGENTS.md` §4）。
 
@@ -75,6 +74,7 @@
 | 歴史的な政体名（3 記録に 1 つの表） | `npm run check:histnames` |
 | 歴史的な行政区分 | `npm run check:histadmin` |
 | 導出した令制国 | `npm run check:kuni` |
+| 現代の区分を遡らせた穴埋め | `npm run check:histfill` |
 | 国境のどの辺を描くか | `npm run check:bordercoast` |
 | 拡大時の精密な輪郭（409 MB） | `npm run check:borderdetail` |
 | 歴史地点（Pleiades） | `npm run check:histplaces` |

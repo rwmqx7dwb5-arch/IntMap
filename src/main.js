@@ -99,7 +99,7 @@ import '../js/lang-switch.js';
 import '../js/gazetteer.js';
 import '../js/reference-data.js';
 import '../js/layer-previews.js';
-import '../js/history.js'; import '../js/hist-cities.js'; import '../js/hist-places.js';   /* (#R427) the country's era name, then the CITY's — see js/hist-cities.js. ⚠ ONE LINE: the shell is under tests/r168 #8's ceiling with nothing to spare (#R408 landed at 8,019/8,020), and the rule is that a feature moves out rather than the ceiling moving up. Eager and tiny — only the clock subscriber and the expression builder; the 608-city record is fetched the first time the reader leaves «now». */
+import '../js/history.js'; import '../js/hist-cities.js'; import '../js/hist-places.js';   /* (#R427) the country's era name, then the CITY's — see js/hist-cities.js. ⚠ ONE LINE: the shell is under tests/r168 #8's ceiling with nothing to spare (#R408 landed at 8,019/8,020), and the rule is that a feature moves out rather than the ceiling moving up. Eager and tiny — only the clock subscriber and the expression builder; the 6,474-city record is fetched the first time the reader leaves «now». */
 import '../js/monitors.js';
 import '../js/companies.js';
 /* (#R311) js/stats-compare.js is on-demand now (js/lazy-modules.js); js/compare.js below is the MAP-compare window, a different feature, and stays. */
@@ -116,7 +116,7 @@ import '../js/routing.js';
    capabilities that change how the route is ASKED for stayed in js/routing.js, where the request is
    built. Order does not matter — the panel reaches for window.IntMapRoutingOps lazily. */
 import '../js/routing-ops.js';
-import '../js/border-coast.js'; import '../js/time-borders.js'; import '../js/time-admin1.js';   /* (#R564) js/border-coast.js first: it is the ONE reader of data/border-coast.js (which edges of a historical outline are boundary rather than the record own copy of the coastline), and BOTH time modules call it — copying it into the second caller is what AGENTS.md 3.9 forbids. It rides this line because the shell has no spare one. (#R530) …and the subdivisions of that same year — a factory on window.IntMapModules instantiated once from js/app-body.js, exactly like its twin, and the owner of window._applyAdmin1. The 10.0 MB bundle it reads (data/hist-admin1.js) is NOT here: fetched at idle, and not at all on a phone or Data Saver, for the reasons #R192/#R201 measured for data/cshapes.js. ONE line because the app shell has a line budget (tests/r168 #8). */
+import '../js/border-coast.js'; import '../js/time-borders.js'; import '../js/time-admin1.js';   /* (#R564) js/border-coast.js first: it is the ONE reader of data/border-coast.js (which edges of a historical outline are boundary rather than the record own copy of the coastline), and BOTH time modules call it — copying it into the second caller is what AGENTS.md 3.9 forbids. It rides this line because the shell has no spare one. (#R530) …and the subdivisions of that same year — a factory on window.IntMapModules instantiated once from js/app-body.js, exactly like its twin, and the owner of window._applyAdmin1. The 41.5 MB bundle it reads (data/hist-admin1.js) is NOT here: fetched at idle, and not at all on a phone or Data Saver, for the reasons #R192/#R201 measured for data/cshapes.js. ONE line because the app shell has a line budget (tests/r168 #8). */
 /* (#R192) the main-thread side of the satellite tile worker (src/sat-worker.js) — it publishes
    window.IntMapSatWorker and starts nothing until js/app-body.js asks for a tile. */
 import './sat-worker-client.js';

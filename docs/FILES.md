@@ -801,7 +801,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは6つ・全 52,725 リング分／
+                                  **発見された**束すべて・いまは8つ・全 55,348 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -821,6 +821,12 @@ data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoric
                                   `--levels 5,6`。**z6 未満では取得もしない**——描かない縮尺で 10 MB 以上を
                                   払わせないため（docs/MAP-LAYERS.md §7.7）。門は第1級と同じ
                                   `npm run check:histadmin`——1 つの build が両方を焼くので、門も 1 つ
+data/hist-admin3.js               歴史的な第3階層（OpenHistoricalMap の admin_level **7**・CC0 1.0・
+                                  `window.__HISTADM3`・2,067件／rings 2,184・1.16 MB）。同じ生成器の
+                                  `--levels 7`。**z8 未満では取得もしない**——第2階層の z6 と同じ規則で、
+                                  「中央値の単位が 50 px 以上になる最初のズーム」から描く（#R564 の尺度）。
+                                  ⚠ **level 8 は入れていない**（上流 23,922 関係＝2階層 82 MB がほぼ倍になる）。
+                                  門は `npm run check:histadmin`（階層は data/ から発見される）
 data/hist-kuni.js                 **IntMap 自身が導出した**日本の令制国 15 国（`window.__HISTKUNI`・1.67 MB・
                                   閉じた輪郭 6,425 本・82,199 頂点）。上と同じリングプール形式で、束（__HISTADM1）に
                                   **追記**される——第2の索引もラベル層もクリック経路も作らない。
@@ -828,6 +834,17 @@ data/hist-kuni.js                 **IntMap 自身が導出した**日本の令�
                                   線は `imta-gap-line` が描く。範囲は Asukana/Ryoseikoku_20230626_TSV（CC0 1.0）の
                                   z10 ラスタ、名前は Wikidata（CC0）。生成は scripts/build-hist-kuni.mjs
                                   （docs/MAP-LAYERS.md §7.7 に、なぜ同梱できる既製データセットが無いか）
+data/hist-admin-fill.js           **IntMap 自身が遡らせた**現代の第1級区分（`window.__HISTADMFILL`）。
+                                  形は同梱の Natural Earth 10m（public domain・data/admin1-world.json.gz を
+                                  読む。2 本目の写しを作らない）、**有効期間は Wikidata が述べる発足日**
+                                  （P571・ISO 3166-2 コード P300 で結ぶ＝綴りではなく識別子）。
+                                  ⚠ 5 つの条件を全部満たす区間だけを出す: ①上流が日付を**述べている**
+                                  ②**その国自身の発足日より前には描かない**（区分は国より前には無い）
+                                  ③その国の区分が**1つ残らず描ける日付**にだけその国を描く（出力側で交差）
+                                  ④その年にその土地が**1つの政体の中にあった**（時代の国境記録に照合）
+                                  ⑤OHM の記録が既に答えている区間は**黙る**。
+                                  hist-kuni と同じく束（__HISTADM1）に**追記**され、列 10 は null なので
+                                  線は `imta-gap-line` が描く。門は `npm run check:histfill`
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
@@ -954,6 +971,10 @@ scripts/
                                   要るので、代わりに**同梱ファイルの不変条件**を測る（窓の中に収まっているか・リング番号が
                                   解決するか・日付の順序・英語名の有無・**窓のどの年にも描く世界があるか**）。
                                   `--fetch` が取得、無印がビルド、`--report` が被覆表。
+  build-hist-admin-fill.mjs       同梱の Natural Earth 10m（data/admin1-world.json.gz）と Wikidata の発足日から
+                                  `data/hist-admin-fill.js`。**上流が日付を述べ、その国が丸ごと日付を持ち、
+                                  その年にその土地が1つの政体の中にあり、OHM が黙っている**区間だけを出す。
+                                  `--check` は出荷バイトだけを見る（「1国は丸ごと答えるか1件も答えないか」を再導出）
   build-hist-admin1.mjs           OpenHistoricalMap の `admin_level` 3–6 の境界関係 → `data/hist-admin1.js`
                                   （`--levels 3,4`）と `data/hist-admin2.js`（`--levels 5,6`）。**1 本の build が
                                   両方の層を焼く**ので、門も 1 本（`npm run check:histadmin`）。⚠ 出力の global は

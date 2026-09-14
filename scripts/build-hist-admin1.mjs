@@ -349,11 +349,40 @@ export function detailPolys(el, tolerance, decimals, raw = sourcePolys(el)) {
        them against the bundled coastline. What is kept here is the O(1) half it cannot state
        cheaply: that the marks were built against THIS many rings — i.e. that the bundle has not
        been rebuilt without them. */
+/* ⚠⚠ (#R719) AND THE LEVELS ARE THE BUNDLE'S OWN, NOT ARITHMETIC ON ITS NAME. `2N+1, 2N+2` was
+   true of the two tiers that existed and it is not a law: data/hist-admin3.js is OpenHistoricalMap's
+   admin_level 7 ALONE, because level 8 is 23,922 relations and would roughly double the 82 MB the
+   first two tiers ship (#R713's delivery budget, paid for the cheaper half). Under the old rule a
+   tier that ships one level was a FAILURE — the gate would have refused a lawful bundle, the same
+   shape as the `>= 8` floor #R719 found in tests/r476-checks ①.
+   What the arithmetic was actually protecting is #R604's accident — a bundle written under another
+   bundle's name — and that is a property of the SET, checked in `levelPartition` below: the tiers'
+   level sets are disjoint, each tier's levels are above the previous tier's, and together they run
+   without a hole. A one-level tier satisfies that; a tier holding level 4 under the name 2 does not. */
 const TIERRE = /^hist-admin(\d+)\.js$/;
 function tiers() {
   return fs.readdirSync(path.join(ROOT, 'data')).filter(f => TIERRE.test(f)).sort()
     .map(f => { const n = parseInt(TIERRE.exec(f)[1], 10);
-      return { file: 'data/' + f, n, global: '__HISTADM' + n, levels: [2 * n + 1, 2 * n + 2] }; });
+      return { file: 'data/' + f, n, global: '__HISTADM' + n }; });
+}
+/** the tiers' declared levels, read in tier order, as one ordered partition — or the reason it is not */
+function levelPartition(rows) {
+  const bad = [];
+  let prevTop = 2;                       /* levels 1-2 are the COUNTRY border — js/time-borders.js's */
+  const seen = new Set();
+  for (const r of rows) {
+    const lv = r.levels;
+    if (!Array.isArray(lv) || !lv.length || !lv.every(v => Number.isInteger(v) && v >= 3 && v <= 12)) {
+      bad.push(r.file + ': levels is ' + JSON.stringify(lv) + ', expected admin levels between 3 and 12'); continue;
+    }
+    for (const v of lv) { if (seen.has(v)) bad.push(r.file + ': admin_level ' + v + ' is already held by an earlier tier'); seen.add(v); }
+    if (Math.min(...lv) <= prevTop) bad.push(r.file + ': its levels ' + JSON.stringify(lv) + ' are not deeper than the tier before it (which reaches ' + prevTop + ')');
+    prevTop = Math.max(prevTop, ...lv);
+  }
+  const all = [...seen].sort((a, b) => a - b);
+  for (let i = 1; i < all.length; i++) if (all[i] !== all[i - 1] + 1)
+    bad.push('the tiers skip admin_level ' + (all[i - 1] + 1) + ' — a level between two shipped ones is a hole the reader falls into');
+  return bad;
 }
 /* ⚠ (#R680) A CEILING, NOT A WAIVER LIST. Three shipped records carry no name in any language —
    OHM relations 2698257 (level 3, 1918–1921) and 2735085 / 2735454 (level 6, 1895–1923). A reader
@@ -372,14 +401,32 @@ const NAMELESS_MAX = 3;
    shipping: 20,357 second-tier units with a perfectly good Polish or Thai `name` and not one word
    a Japanese reader could read. Measured before this round: 0.5 % of the second tier carried a
    Japanese name, 6.5 % an English one, and no invariant anywhere measured that at all.
-     観測   35.2 % — the worst SHIPPED language (Japanese) over both committed tiers,
-            2026-09-11, after the Wikidata fill: 9,684 of 27,528 units.
-     失効   this is a SHARE, not a headcount, so it survives upstream growing; it moves DOWN when
+     観測   PER TIER, worst shipped language (Japanese), measured 2026-09-15 over the committed
+            bundles after the Wikidata fill:
+              data/hist-admin1.js  1,817 of  4,839  37.549 %
+              data/hist-admin2.js  7,872 of 22,708  34.667 %
+              data/hist-admin3.js  1,764 of  2,067  85.342 %
+     失効   these are SHARES, not headcounts, so they survive upstream growing; each moves DOWN when
             the fill improves, exactly like NAMELESS_MAX and scripts/test-budget.mjs, and never up.
-            Widening the shipped set (scripts/histnames/langs.mjs) re-measures it, because a
+            Widening the shipped set (scripts/histnames/langs.mjs) re-measures them, because a
             language IntMap has just started shipping starts from wherever upstream left it.
-     正本   this line. Nothing else states a name-coverage budget. */
-const UNREADABLE_MAX_PCT = 35.2;
+     正本   this table. Nothing else states a name-coverage budget.
+
+   ⚠⚠⚠ (#R719) AND IT IS PER TIER BECAUSE ONE NUMBER OVER A MIXTURE CANNOT HOLD ANYTHING. #R695
+   measured 35.2 % across the two tiers that existed and asserted it against their union. Adding
+   data/hist-admin3.js — 85.3 % unreadable, because OpenHistoricalMap's level-7 units are named in
+   their own language and little else — moved the MIXTURE to 38.7 % and failed the gate, which is
+   the correct alarm; but the repair the old shape invites is to raise the single number, and that
+   would have loosened the guarantee on the two tiers that were fine. Worse in the other direction:
+   a tier added at 90 % unreadable would have been ABSORBED by a large well-named tier and shipped
+   silently. A record with no line here is a FAILURE, not a pass — a new bundle has to state what it
+   was measured at before it can ship. ⚠ This is not language work (CONSTITUTION §7 追補): no
+   translation is added or asked for, the gate is made able to hold what it says it holds. */
+const UNREADABLE_MAX_PCT = {
+  'data/hist-admin1.js': 37.55,
+  'data/hist-admin2.js': 34.67,
+  'data/hist-admin3.js': 85.35,
+};
 
 function bcSets() {
   const f = path.join(ROOT, 'data', 'border-coast.js');
@@ -425,6 +472,8 @@ function check() {
   if (!sets) bad.push('data/border-coast.js does not declare the ring-mark sets these bundles are joined to');
   const owner = new Map();          /* OHM relation id → the tier that already claimed it */
   const allFeats = [];              /* (#R695) the name budget is one share over the whole record */
+  const declared = [];              /* (#R719) each tier's own levels, for the partition property */
+  const perTier = [];               /* (#R719) …and each tier's own rows, for its own name ceiling */
   let nameless = 0, feats = 0, rings = 0, pts = 0;
   const nowY = new Date().getUTCFullYear();
 
@@ -453,9 +502,9 @@ function check() {
       bad.push(t.file + ': built is ' + d.built + ', expected an ISO date');
     if (!Number.isInteger(d.since)) bad.push(t.file + ': since is ' + d.since + ', expected an integer year');
     if (!(Number.isFinite(d.tolerance) && d.tolerance > 0)) bad.push(t.file + ': tolerance is ' + d.tolerance);
-    /* the tier a file NAMES and the tier it HOLDS are one fact — see the convention above */
-    if (String(d.levels) !== String(t.levels))
-      bad.push(t.file + ': declares levels ' + JSON.stringify(d.levels) + ', but its name says ' + JSON.stringify(t.levels));
+    /* what this tier holds is what it declares; whether the SET of tiers is lawful is levelPartition */
+    if (!Array.isArray(d.levels) || !d.levels.length) bad.push(t.file + ': declares no levels');
+    else declared.push({ file: t.file, n: t.n, levels: d.levels.slice() });
     if (!Array.isArray(d.rings) || !d.rings.length) { bad.push(t.file + ': no rings'); continue; }
     if (!Array.isArray(d.feats) || !d.feats.length) { bad.push(t.file + ': no feats'); continue; }
     bad.push(...topologyErrors(d).map(message => t.file + ': ' + message));
@@ -510,10 +559,17 @@ function check() {
        window year by year; here the reach is the whole calendar, so the unit is the century. How
        MANY units a century holds is upstream's business and moves every time OHM grows — that
        every century the bundle claims to cover has SOMETHING to draw is this file's own business. */
-    for (let y = Math.max(1, d.since); y <= nowY; y += 100) {
+    /* ⚠ (#R719) FROM THE TIER'S OWN FIRST DATE, NOT FROM `since`. `since` is the clock FLOOR the
+       build swept from (−122999) — it says what was not thrown away, not what upstream holds. Read
+       as a claim it made every sparse tier a failure: data/hist-admin3.js starts in 500 CE, so the
+       first four centuries of the common era «claimed to reach» something that has never existed
+       anywhere. What is genuinely this file's business is that a tier has no HOLE — that once a
+       tier begins, every century to now has something in it — and that is what this asks now. */
+    const firstY = d.feats.reduce((a, f) => Math.min(a, f[2]), Infinity);
+    for (let y = Math.max(1, firstY); y <= nowY; y += 100) {
       const t15 = y * 10000 + 615;
       if (!d.feats.some(f => (f[2] * 10000 + f[3] * 100 + f[4]) <= t15 && (f[5] * 10000 + f[6] * 100 + f[7]) >= t15))
-        bad.push(t.file + ': nothing is in force on ' + y + '-06-15 — a century this bundle claims to reach draws nothing');
+        bad.push(t.file + ': nothing is in force on ' + y + '-06-15 — a century between this tier’s own first record and now draws nothing');
     }
 
     /* the O(1) half of the border/coastline join — see the note above; check:bordercoast owns the rest */
@@ -525,22 +581,33 @@ function check() {
           + ' — the marks are indexed by ring, so they now describe other polygons. Re-run scripts/build-border-coast.mjs.');
     }
     feats += d.feats.length; rings += d.rings.length; pts += d.rings.reduce((a, r) => a + r.length, 0);
+    perTier.push({ file: t.file, feats: d.feats });
     for (const f of d.feats) allFeats.push(f);
   }
+
+  /* (#R719) the tiers' levels are lawful as a SET — disjoint, deepening, and without a hole */
+  bad.push(...levelPartition(declared));
 
   /* ══ (#R695) CAN THE READER READ IT? ════════════════════════════════════════════════════════
      Two questions, and neither is a list of languages: which ones ship is scripts/histnames/langs.mjs
      and which tag each of them is stored under is js/lang-registry.js (scripts/histadmin/langs.mjs
      crosses the two). Restore the nine and both of these follow with no edit here. */
   if (allFeats.length) {
+    for (const row of perTier) {
+      const ceiling = UNREADABLE_MAX_PCT[row.file];
+      if (ceiling == null) { bad.push(row.file + ' has no entry in UNREADABLE_MAX_PCT — a shipped record must state the name coverage it was measured at'); continue; }
+      const m = missingByTag(row.feats, SHIP);
+      let w = null;
+      for (const tag of SHIP) if (!w || m[tag].pct > m[w].pct) w = tag;
+      if (m[w].pct > ceiling)
+        bad.push(row.file + ': ' + m[w].missing + ' of ' + row.feats.length + ' units (' + m[w].pct.toFixed(1)
+          + ' %) carry no `' + w + '` name, over its ceiling of ' + ceiling
+          + ' % — a reader of that language is shown a unit they cannot read. Re-run'
+          + ' `node scripts/build-hist-admin1.mjs --names`, or lower the ceiling if upstream really did shrink.');
+    }
     const missing = missingByTag(allFeats, SHIP);
     let worst = null;
     for (const tag of SHIP) if (!worst || missing[tag].pct > missing[worst].pct) worst = tag;
-    if (missing[worst].pct > UNREADABLE_MAX_PCT)
-      bad.push(missing[worst].missing + ' of ' + allFeats.length + ' units (' + missing[worst].pct.toFixed(1)
-        + ' %) carry no `' + worst + '` name, over the ceiling of ' + UNREADABLE_MAX_PCT
-        + ' % — a reader of that language is shown a unit they cannot read. Re-run'
-        + ' `node scripts/build-hist-admin1.mjs --names`, or lower the ceiling if upstream really did shrink.');
     /* ⚠ A PROPERTY, NOT A NUMBER: the languages this build FILLS must be the best covered ones. If a
        language nobody fills is ahead of one that ships, the fill did not run over these bytes — which
        is precisely what a stale bundle looks like, and what no count of its own would ever say. */
@@ -655,7 +722,9 @@ async function tierUnit(t, write) {
   new Function('window', fs.readFileSync(p, 'utf8'))(w);
   const d = w[t.global];
   if (!d || !Array.isArray(d.feats)) throw new Error(t.file + ' holds no ' + t.global + ' feature rows');
-  return { tier: t, data: d, feats: d.feats, tagsById: byId(await tagSweep(t.levels, cacheOf(t.levels))), write };
+  /* (#R719) the levels are the BUNDLE's — the file name no longer implies them */
+  const lv = Array.isArray(d.levels) && d.levels.length ? d.levels : [2 * t.n + 1, 2 * t.n + 2];
+  return { tier: t, data: d, feats: d.feats, tagsById: byId(await tagSweep(lv, cacheOf(lv))), write };
 }
 
 /** every committed tier EXCEPT the one this run is writing — the rest of the item universe. */

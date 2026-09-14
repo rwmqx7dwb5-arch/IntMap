@@ -1769,8 +1769,9 @@ zip と gzip は開いて中身を見る。
   「その政体が持つ海岸線の写し」は基図のほうが正確に知っている。同梱の海岸線
   （`data/coastline.json.gz`＝Natural Earth 1:10m・2 km 許容）に対して、**ある辺のどこか1点でも
   `INLAND_KM` より内陸なら境界、そうでなければ海岸線の写し**と判定し、
-  6つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-eras` / `hist-kuni`）の
-  全リング **52,725 本**に
+  8つの束（`cshapes` / `hist-borders` / `hist-admin1` / `hist-admin2` / `hist-admin3` /
+  `hist-eras` / `hist-kuni` / `hist-admin-fill`）の
+  全リング **55,348 本**に
   ついて「描く run」を印す。⚠ **どの束を印すかは書き並べていない**——`data/` を走査し、
   「1つのグローバルに `rings`（[経度,緯度] の配列の配列）を持つ束」であるものを**発見する**
   （`discoverBundles()`）。手で並べた一覧は短くなっても誰も気づかないので、

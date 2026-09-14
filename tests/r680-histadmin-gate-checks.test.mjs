@@ -19,7 +19,7 @@ import { registry, shipTags } from '../scripts/histadmin/langs.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -122,8 +122,13 @@ test('#R680 ① `npm run check:histadmin` passes on the committed bundles', () =
     'the gate must be declared in package.json — an undeclared gate is invisible to gate-callers');
   const out = execFileSync(process.execPath, [SCRIPT, '--check'], { cwd: ROOT, encoding: 'utf8' });
   assert.match(out, /^✓ hist-admin/, out);
-  /* the summary must be about BOTH tiers — a gate that silently checked one would also print ✓ */
-  assert.match(out, /2 tiers/, out);
+  /* the summary must be about EVERY tier — a gate that silently checked one would also print ✓.
+     ⚠ (#R719) the number is COUNTED from data/, not typed: this read `2 tiers` and a third one
+     (data/hist-admin3.js, admin_level 7) made a correct gate look like a broken test. */
+  const shipped = readdirSync(join(ROOT, 'data')).filter((f) => /^hist-admin\d+\.js$/.test(f)).length;
+  /* ⚠ (#R719) `'\\b'` — inside a SINGLE-QUOTED string `\b` is U+0008 (backspace), not the regex
+     word boundary, so the first version of this line could never match its own gate's output. */
+  assert.match(out, new RegExp('\\b' + shipped + ' tiers\\b'), out);
 });
 
 /* ── ② the harness itself is honest: an unbroken synthetic world passes ────────────────────

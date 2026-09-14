@@ -120,22 +120,48 @@ test('④ imta-line / imta2-line stroke the border runs, and the polygons stay f
 test('⑤ _deep() asks the camera before it asks for 10 MB', () => {
   /* EVALUATED. A structural read of this function would pass on one that fetched unconditionally and
      merely mentioned the constant. */
+  /* ⚠⚠ (#R719) THE SANDBOX IS BUILT FROM THE MODULE'S OWN TIER LIST, NOT FROM TWO NAMES. It held
+     `DEEP_Z` and `T2`, and when the module grew a third tier and started asking each one its own
+     zoom (`for (const t of TIERS) …`), `TIERS` was undefined in here — `_deep()`'s own `catch (_) {}`
+     swallowed the ReferenceError and `calls` came back EMPTY, which this test read as «nothing was
+     fetched», i.e. as a pass on the strictest behaviour there is. A test that measures nothing looks
+     exactly like a test that measures perfection (#R673). The tiers and their minimum zooms are read
+     off the module now, so a fourth tier is measured the day it is added. */
   const src = liftFunction(TA, '_deep') + '\n' + liftFunction(TA, '_zoom');
+  const minZ = [...TA.matchAll(/minZ: ([A-Za-z0-9_]+)/g)].map((m) => m[1]).map((v) => {
+    if (/^\d+$/.test(v)) return Number(v);
+    const c = new RegExp('const ' + v + ' = (\\d+);').exec(TA);
+    return c ? Number(c[1]) : NaN;
+  });
+  assert.ok(minZ.length >= 3 && minZ.every((v) => Number.isFinite(v)),
+    'the tier list no longer declares a minimum zoom per tier: ' + JSON.stringify(minZ));
+  const deep = minZ.filter((z) => z > 0);
+  assert.ok(deep.length >= 2, 'there should be at least two deep tiers to hold apart');
+
   const calls = [];
   const mk = (z, act, when) => {
-    const sandbox = {
-      DEEP_Z: 6, active: act, lastWhen: when,
-      T2: { go: (w) => calls.push(['go', z, w]), clear: () => calls.push(['clear', z]) },
-      GE: () => ({ camera: { getZoom: () => z } }),
-    };
+    const TIERS = minZ.map((m, i) => ({ cfg: { minZ: m },
+      go: (w) => calls.push(['go', i, z, w]), clear: () => calls.push(['clear', i, z]) }));
+    const sandbox = { TIERS, active: act, lastWhen: when, GE: () => ({ camera: { getZoom: () => z } }) };
     vm.createContext(sandbox);
     vm.runInContext(src + '\n_deep();', sandbox);
   };
   const D = new Date(1900, 5, 15);
-  mk(3, true, D); mk(5, true, D); mk(6, true, D); mk(9, true, D); mk(8, false, null);
-  const went = calls.filter((c) => c[0] === 'go').map((c) => c[1]);
-  assert.deepEqual(went, [6, 9], 'the deeper tier was fetched at ' + JSON.stringify(went) + ' — it must be z6 and up, and only while travelling');
-  assert.ok(calls.some((c) => c[0] === 'clear' && c[1] === 8), 'leaving the past does not clear the deeper tier');
+  const probes = [];
+  for (const z of deep) probes.push(z - 1, z);
+  probes.push(Math.max.apply(null, deep) + 1);
+  for (const z of probes) mk(z, true, D);
+  mk(Math.max.apply(null, deep), false, null);
+
+  /* every deep tier is fetched at its own zoom and at none below it, and the first tier — which
+     declares no minimum — is never fetched by the camera at all. */
+  for (let i = 0; i < minZ.length; i++) {
+    const at = calls.filter((c) => c[0] === 'go' && c[1] === i).map((c) => c[2]).sort((a, b) => a - b);
+    if (!minZ[i]) { assert.deepEqual(at, [], 'tier ' + i + ' declares no minimum zoom and must not be fetched by the camera'); continue; }
+    const want = probes.filter((z) => z >= minZ[i] - 0.5).sort((a, b) => a - b);
+    assert.deepEqual(at, want, 'tier ' + i + ' (minZ ' + minZ[i] + ') was fetched at ' + JSON.stringify(at) + ', expected ' + JSON.stringify(want));
+  }
+  assert.ok(calls.some((c) => c[0] === 'clear'), 'leaving the past does not clear the deeper tiers');
 });
 
 test('⑤ the deeper bundle is not on the boot path and is not warmed', () => {
