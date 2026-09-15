@@ -155,7 +155,19 @@ const MAX_SAMPLE = 240;
 const ONLY = argOf('--only', null);
 const DIAG = args.includes('--diagnose');
 
-const ISO2 = /^[A-Z]{2}-[A-Z0-9]{1,3}$/;
+/* ══ ⚠⚠ (#R721) NATURAL EARTH'S OWN PLACEHOLDER IS STILL AN IDENTIFIER ═══════════════════════
+   #R719 made every row carry ISO 3166-2 so the whole-country rule is re-derived by identifier and
+   never by name. Measured 2026-09-15, 161 of Natural Earth's units have no ISO code and carry the
+   dataset's own `XX-Ynn~` placeholder instead — Şuşa `AZ-X01~`, Gbarpolu `LR-X1~`, the Region of
+   Republican Subordination `TJ-X01~`. They were extracted as `null`, shipped as `null`, and the
+   gate then read Azerbaijan as 77 of 78 and refused three countries it had just built.
+   ⇒ the tilde form is accepted AS AN IDENTIFIER (it is stable inside the outline set, and the `~`
+   says on its face that it is not an ISO code — the Wikidata join keys on the ISO form and simply
+   never matches these, which is correct: nobody dated them).
+   ⚠ A unit with NO code at all is a different case and stays refused: 10 units carry neither, and
+   a country holding one cannot have «answered whole» re-derived for it. */
+const ISO2 = /^[A-Z]{2}-[A-Z0-9]{1,3}~?$/;
+const ISO2_STRICT = /^[A-Z]{2}-[A-Z0-9]{1,3}$/;
 
 /* ── plumbing ───────────────────────────────────────────────────────────────────────────── */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -341,32 +353,23 @@ function stampOf(iso, floorTo) {
   return ymd(y, mo, d);
 }
 
-/* ══ ⚠⚠⚠ (#R719) A SUBDIVISION CANNOT PREDATE THE COUNTRY IT IS A SUBDIVISION OF ══════════════
-   MEASURED, and it is the finding that decided the shape of this file. Test 3 asks «was this
-   ground inside ONE polity on that date», which a Ukrainian oblast satisfies in the year 1000 —
-   the land was wholly inside Kievan Rus'. Without this floor the record would have drawn today's
-   Донецька область as a subdivision of Kievan Rus', and today's Երևան as one of Urartu (its ISO
-   3166-2 code AM-ER belongs to the CITY item, whose stated inception is 782 BC). Both are units
-   whose ground the era record places perfectly and whose claim is nonsense.
-   So the floor is the COUNTRY's own stated inception (P571 on the item that carries the ISO 3166-1
-   alpha-3 code), and a country that states none is not admitted at all — there is nothing to bound
-   it with, and an unbounded floor is how the two rows above got drawn. */
-async function countryFloors() {
-  const rows = await sparql(`SELECT ?iso ?inc WHERE {
-  ?c wdt:P298 ?iso ; wdt:P571 ?inc .
-}`, 'p298-inception');
-  const out = new Map();
-  for (const r of rows) {
-    const s = stampOf(r.inc && r.inc.value, 'start');
-    if (s == null) continue;
-    const prev = out.get(r.iso.value);
-    /* several items may carry one alpha-3 over time; the EARLIEST stated inception is the loosest
-       bound that is still stated, and the test below tightens it with the era record anyway. */
-    if (prev == null || s < prev) out.set(r.iso.value, s);
-  }
-  return out;
-}
-
+/* ══ ⚠⚠⚠ (#R719/#R721) THE FLOOR IS THE SET, NOT THE CONSTITUTION ════════════════════════════
+   #R719 measured the defect correctly: test 3 asks «was this ground inside ONE polity on that
+   date», which a Ukrainian oblast satisfies in the year 1000 — the land was wholly inside Kievan
+   Rus' — and today's Երևան satisfies it in 782 BC, because ISO 3166-2 `AM-ER` sits on the CITY
+   item whose stated inception is the city's founding. Both would have been drawn.
+   ⚠ BUT THE FLOOR IT CHOSE WAS THE COUNTRY'S OWN P571, AND THAT IS A DIFFERENT FACT. Measured
+   2026-09-15: the item carrying `JPN` states 1947-05-03 (the post-war constitution), `CHN`
+   1949-10-01, `IND` 1947-08-15, `TUR` 1923-10-29. Under that floor a record built to fill the
+   19th and early 20th century could not draw Japan, China, India or Turkey AT ALL before the
+   middle of the 20th — which is the reader's own report, one layer further down: they opened
+   1918 Japan and got ONE prefecture.
+   ⇒ the floor is THE SET'S: the LATEST inception stated by a unit of the same country. It is
+   about the units rather than about a constitution, it can never be earlier than any unit's own
+   stated date, and it is exactly what the whole-country intersection below produces anyway —
+   which is also why it still refuses the two rows #R719 measured: Armenia is drawn from the
+   latest of its eleven provinces, not from Yerevan's 782 BC, and Ukraine from the latest of its
+   twenty-five oblasts. A country whose units state nothing is admitted by neither rule. */
 async function wikidataSpans() {
   const rows = await sparql(`SELECT ?code ?item ?inc ?dis WHERE {
   ?item wdt:P300 ?code .
@@ -389,6 +392,17 @@ async function wikidataSpans() {
 }
 
 /* ── interval arithmetic on [start, end) stamps ─────────────────────────────────────────── */
+/** the intervals either set covers, merged — the reader sees a unit where EITHER record draws it */
+function union(a, b) {
+  const all = a.concat(b).filter((iv) => iv[1] > iv[0]).sort((x, y) => x[0] - y[0]);
+  const out = [];
+  for (const iv of all) {
+    const last = out[out.length - 1];
+    if (last && iv[0] <= last[1]) { if (iv[1] > last[1]) last[1] = iv[1]; } else out.push(iv.slice());
+  }
+  return out;
+}
+
 /** the intervals both sets cover — [start, end) throughout */
 function intersect(a, b) {
   const out = [];
@@ -429,31 +443,64 @@ async function main() {
   console.error('· natural earth: ' + ne.f.length + ' units in ' + ne.countries + ' countries (tol ' + ne.tolerance + ')');
 
   const spans = await wikidataSpans();
-  const floors = await countryFloors();
-  console.error('· wikidata: ' + spans.size + ' ISO 3166-2 codes state an inception; '
-    + floors.size + ' countries state one of their own');
+  console.error('· wikidata: ' + spans.size + ' ISO 3166-2 codes state an inception');
 
   /* test 1 + test 2 — dated, and dated for the WHOLE country. */
   const byCountry = new Map();
   for (const f of ne.f) {
     const code = f.n.split('|').find((p) => ISO2.test(p)) || null;
-    const wd = code ? spans.get(code) : null;
+    const wd = code && ISO2_STRICT.test(code) ? spans.get(code) : null;
     const c = byCountry.get(f.i) || { all: [], dated: 0 };
     c.all.push({ f, code, wd });
     if (wd) c.dated++;
     byCountry.set(f.i, c);
   }
-  const admitted = [], refusedPartial = [], refusedNoFloor = [];
+  /* ══ ⚠⚠⚠ (#R721) A SET FLOOR, SO THAT «MOSTLY DATED» IS NOT THE SAME AS «NOT DATED» ══════════
+     #R719 admitted a country only when EVERY unit states an inception, and refused the rest. What
+     the reader got from that is in their own screenshot of 1918 Japan: ONE prefecture — Shiga,
+     the only Japanese unit OpenHistoricalMap holds — on a map of the Empire of Japan. Wikidata
+     states an inception for 27 of Japan's 47 prefectures, so Japan was refused whole.
+     ⚠ AND REFUSING IS NOT NEUTRAL. «一部だけ» is what the reader reported four rounds running, and
+     a record that ships nothing leaves exactly that, because the OTHER record is partial.
+     ⇒ a unit its own upstream never dated takes the LATEST inception stated by a unit of the same
+     country. That is the weakest claim the set supports — «by this date every member that states a
+     date had been established» — and it can never draw a unit before its own stated date, because
+     it is the maximum of them. For Japan it is 1888-12-03, the day Kagawa separated from Ehime and
+     the 47-prefecture set took the extent it still has.
+     ⚠ THE GUARD IS THAT THE SET MUST ACTUALLY BE DATED: at least three units and at least half of
+     them. Turkey states 7 of 81 and stays refused; France 95 of 101 and Japan 27 of 47 pass.
+     ⚠ The floor is a DERIVED bound and the row says so — js/time-admin1.js draws these in the
+     derived line's own style and `note()` names the record. */
+  const SET_FLOOR_MIN = 3;
+  const setFloor = new Map();
   for (const [iso3, c] of byCountry) {
+    if (c.dated < SET_FLOOR_MIN || c.dated * 2 < c.all.length) continue;
+    let latest = null;
+    for (const u of c.all) if (u.wd && (latest == null || u.wd.s > latest)) latest = u.wd.s;
+    if (latest != null) setFloor.set(iso3, latest);
+  }
+  let floored = 0;
+  for (const [iso3, c] of byCountry) {
+    const f = setFloor.get(iso3);
+    if (f == null) continue;
+    for (const u of c.all) if (!u.wd) { u.wd = { s: f, e: null, derived: 'the latest inception stated by a unit of the same country' }; c.dated++; floored++; }
+  }
+  console.error('· set floor: ' + setFloor.size + ' country(ies) date their own undated units from their latest stated inception (' + floored + ' unit(s))');
+
+  const admitted = [], refusedPartial = [], refusedNoFloor = [], refusedNoId = [];
+  for (const [iso3, c] of byCountry) {
+    if (c.all.some((u) => !u.code)) { refusedNoId.push(iso3); continue; }
     if (c.dated === c.all.length && c.all.length >= 1) {
-      if (floors.has(iso3)) admitted.push(iso3); else refusedNoFloor.push(iso3);
+      if (setFloor.has(iso3)) admitted.push(iso3); else refusedNoFloor.push(iso3);
     } else if (c.dated) refusedPartial.push(iso3 + ' ' + c.dated + '/' + c.all.length);
   }
-  if (refusedNoFloor.length) console.error('· ' + refusedNoFloor.length + ' dated country(ies) state no inception of their own and are refused: ' + refusedNoFloor.join(' '));
+  if (refusedNoId.length) console.error('· ' + refusedNoId.length + ' country(ies) hold a unit with no identifier at all and are refused: ' + refusedNoId.join(' '));
+  if (refusedNoFloor.length) console.error('· ' + refusedNoFloor.length + ' dated country(ies) have no set floor and are refused: ' + refusedNoFloor.join(' '));
   console.error('· whole-country test: ' + admitted.length + ' countries admitted, '
     + refusedPartial.length + ' refused for being partly dated, '
     + (byCountry.size - admitted.length - refusedPartial.length) + ' with no dated unit at all');
 
+  const deferred = new Set();   /* (#R721) units left to data/hist-admin*.js — stated in the bundle */
   const era = eraIndex();
   const rec = recordUnits();
   console.error('· record units consulted for overlap: ' + rec.length);
@@ -486,7 +533,7 @@ async function main() {
       for (const poly of polys) { const b = bbox(poly[0]); mnx = Math.min(mnx, b[0]); mny = Math.min(mny, b[1]); mxx = Math.max(mxx, b[2]); mxy = Math.max(mxy, b[3]); }
       const box = [mnx, mny, mxx, mxy];
 
-      const start = Math.max(u.wd.s, floors.get(iso3), ymd(era.floor, 1, 1));
+      const start = Math.max(u.wd.s, setFloor.get(iso3), ymd(era.floor, 1, 1));   /* (#R721) the set's floor, not the constitution's */
       const end = u.wd.e == null ? ymd(9999, 1, 1) : u.wd.e;
       if (end <= start) { stats.droppedEmpty++; continue; }
 
@@ -550,6 +597,16 @@ async function main() {
       alive = alive.reduce((acc, iv) => { const last = acc[acc.length - 1]; if (last && last[1] === iv[0]) last[1] = iv[1]; else acc.push(iv.slice()); return acc; }, []);
       if (!alive.length) continue;
 
+      /* ⚠⚠⚠ (#R721) WHAT THE RECORD ANSWERS IS COVERAGE, NOT A GAP. Test 4 below hands ground back
+         to data/hist-admin{1,2,3}.js so nothing is drawn twice — but #R719 then intersected the
+         WHOLE-COUNTRY rule over what survived it, so a single unit the record answers emptied the
+         country. That is precisely Japan: OpenHistoricalMap holds 滋賀県 and nothing else, the fill
+         fell silent for Shiga, the intersection went empty, and 1918 Japan shipped ONE prefecture.
+         ⇒ the completeness test reads what the READER SEES — the fill's own intervals UNION the
+         record's — while the emitted rows stay only the fill's half. */
+      const alive3 = alive.map((iv) => iv.slice());
+      const answeredIv = [];
+
       /* test 4 — the record's own units take the ground back for their own spans. */
       for (const r of rec) {
         if (!meets(r.bb, box)) continue;
@@ -562,14 +619,17 @@ async function main() {
           if (hit + (pts.length - seen) < need) { enough = false; break; }
         }
         if (!enough || hit < need) continue;
+        answeredIv.push([r.s, r.e]);
         const before = alive.length;
         alive = subtract(alive, [r.s, r.e]);
         if (alive.length !== before || !alive.length) stats.droppedOverlap++;
-        if (!alive.length) break;
       }
-      if (!alive.length) continue;
+      /* ⚠ A UNIT WHOSE WHOLE SPAN THE RECORD ANSWERS STAYS IN `live`. Dropping it here is what
+         made `live.length === all.length` false and took the country with it. */
+      const shown = union(alive3, answeredIv);
+      if (!shown.length) continue;
 
-      live.push({ u, polys, alive });
+      live.push({ u, polys, alive, shown });
     }
 
     /* ══ ⚠⚠⚠ THE WHOLE-COUNTRY RULE IS ABOUT THE OUTPUT, NOT THE INPUT ════════════════════════
@@ -581,12 +641,16 @@ async function main() {
        country: a country is drawn on the dates where ALL of its units may be drawn, and on no
        others. A country whose intersection is empty ships nothing at all. */
     let whole = live.length === byCountry.get(iso3).all.length ? [[ymd(-122999, 1, 1), ymd(9999, 1, 1)]] : [];
-    for (const L of live) whole = intersect(whole, L.alive);
+    for (const L of live) whole = intersect(whole, L.shown);   /* (#R721) what the reader sees, both records together */
     if (!whole.length) { stats.droppedWhole += live.length; continue; }
 
     for (const L of live) {
       const spans = intersect(whole, L.alive);
-      if (!spans.length) continue;
+      /* ⚠ (#R721) A UNIT THIS RECORD DRAWS NOTHING FOR IS NOT A HOLE — it is a unit the OHM record
+         answers, and the reader sees it there. `--check` re-derives the whole-country rule from the
+         shipped bytes, so the bytes have to SAY which units those are; otherwise the gate reads
+         Japan as 46 of 47 and refuses the very thing this round fixed. */
+      if (!spans.length) { deferred.add(L.u.code); continue; }
       const ringIx = L.polys.map((poly) => poly.map(poolRing));
       const en = L.u.f.n.split('|')[0];
       stats.units++;
@@ -615,6 +679,10 @@ async function main() {
     built: new Date().toISOString().slice(0, 10),
     tolerance: ne.tolerance,
     levels: [4],
+    /* (#R721) the units this record deliberately leaves to data/hist-admin{1,2,3}.js, so the gate
+       can re-derive «a country is answered whole» over what the READER sees rather than over one
+       record's half of it. */
+    deferred: [...deferred].sort(),
     rings,
     feats,
   };
@@ -687,21 +755,50 @@ function check() {
      the first version of this check counted a namesake in an answered country as an answer for a
      country nobody answers for. */
   const drawn = new Set(d.feats.map((f) => f[10]));
+  const defer = new Set(d.deferred || []);
   const byC = new Map();
   for (const f of ne.f) {
     const code = f.n.split('|').find((p) => ISO2.test(p)) || null;
-    const c = byC.get(f.i) || { all: 0, drawn: 0 };
-    c.all++; if (code && drawn.has(code)) c.drawn++;
+    const c = byC.get(f.i) || { all: 0, drawn: 0, deferred: 0 };
+    c.all++; if (code && drawn.has(code)) c.drawn++; else if (code && defer.has(code)) c.deferred++;
     byC.set(f.i, c);
   }
-  const partial = [...byC].filter(([, c]) => c.drawn && c.drawn < c.all).map(([k, c]) => k + ' ' + c.drawn + '/' + c.all);
+  const partial = [...byC].filter(([, c]) => (c.drawn || c.deferred) && c.drawn + c.deferred < c.all)
+    .map(([k, c]) => k + ' ' + (c.drawn + c.deferred) + '/' + c.all);
   ok(!partial.length, 'a country is answered completely or not at all; partly answered: ' + partial.join(', '));
+  /* ⚠ AND «DEFERRED» IS CHECKED, NOT TRUSTED. A build could satisfy the line above by listing every
+     missing code, so each deferred unit must really be covered by the record it was deferred to:
+     its outline's own interior points are tested against data/hist-admin{1,2,3}.js. */
+  /* ⚠ THE GEOMETRY HALF RUNS WHERE THE RECORD IS, AND SAYS WHICH HALF RAN. The bundles it reads are
+     82 MB, so a synthetic world (tests/r719-histmap-coverage-checks) holds the outline set and this
+     record and nothing else — the same split build-hist-kuni.mjs states for its raster. */
+  const recFiles = fs.readdirSync(path.join(ROOT, 'data')).filter((n) => /^hist-admin[0-9]\.js$/.test(n));
+  if (defer.size && !recFiles.length) console.log('· ' + defer.size + ' deferred unit(s) not verified against the record — data/hist-admin*.js is not on disk');
+  if (defer.size && recFiles.length) {
+    const recPolys = [];
+    for (const nm of recFiles) {
+      const wv = {}; vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'data', nm), 'utf8'), { window: wv });
+      const dd = wv['__HISTADM' + nm.match(/[0-9]/)[0]];
+      for (const r of dd.feats) recPolys.push(r[8].map((poly) => poly.map((ri) => dd.rings[ri])));
+    }
+    const orphan = [];
+    for (const code of defer) {
+      const unit = ne.f.find((f) => String(f.n || '').split('|').includes(code));
+      if (!unit) { orphan.push(code + ' (no outline)'); continue; }
+      const g = unit.g;
+      const polys = (g.type === 'Polygon' ? [g.coordinates] : g.coordinates)
+        .map((poly) => poly.filter((r) => r && r.length >= 4)).filter((pp) => pp.length);
+      const pts = polys.length ? samplePoints(polys) : [];
+      if (!pts.some((pt) => recPolys.some((polys) => inPolys(polys, pt[0], pt[1])))) orphan.push(code);
+    }
+    ok(!orphan.length, orphan.length + ' unit(s) are deferred to the record but no record row covers them: ' + orphan.slice(0, 8).join(', '));
+  }
   /* …and the row's own country column must agree with the outline set it was taken from */
   const isoOf = new Map();
   for (const f of ne.f) { const code = f.n.split('|').find((p) => ISO2.test(p)); if (code) isoOf.set(code, f.i); }
   for (const f of d.feats) if (isoOf.get(f[10]) && isoOf.get(f[10]) !== f[11]) { fail.push('feat for ' + f[10] + ' says country ' + f[11] + ', the outline set says ' + isoOf.get(f[10])); break; }
 
-  const answered = [...byC].filter(([, c]) => c.drawn === c.all && c.all).length;
+  const answered = [...byC].filter(([, c]) => c.drawn + c.deferred === c.all && c.all).length;
   if (fail.length) { for (const m of fail) console.error('✖ ' + m); process.exit(1); }
   const span = d.feats.reduce((a, f) => [Math.min(a[0], f[2]), Math.max(a[1], f[5])], [Infinity, -Infinity]);
   console.log('✓ hist-admin-fill — ' + d.feats.length + ' rows over ' + drawn.size + ' units in ' + answered

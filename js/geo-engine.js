@@ -999,7 +999,10 @@ function _m(){ return window.__imap||null; }
       }catch(_){ return null; } },
     terrainElevation(ll,o){ const m=_m(); return (m&&m.queryTerrainElevation)?m.queryTerrainElevation(ll,o):null; },
     queryRenderedFeatures(g,o){ const m=_m(); return (m&&m.queryRenderedFeatures)?m.queryRenderedFeatures(g,o):[]; },
-    hasSource(id){ const m=_m(); return !!(m&&m.getSource(id)); }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)){ _sd.forget(id); m.addSource(id,d); } },
+    /* ⚠ (#R721) A PREDICATE ANSWERS, IT DOES NOT THROW: `m.getSource` reads `this.style`, which is
+       null until the first style loads, so this threw instead of saying «no» (tests/monitors.spec.js:86,
+       inside `_radiusFromPoint`). Several callers already wrapped it — one rule, written six times. */
+    hasSource(id){ try{ const m=_m(); return !!(m&&m.getSource(id)); }catch(_){ return false; } }, addSource(id,d){ const m=_m(); if(m&&!m.getSource(id)){ _sd.forget(id); m.addSource(id,d); } },
     /* (#R322) the one operation MapLibre does NOT deduplicate: setData posts the whole collection
        to the worker for a full reparse, with no comparison anywhere. The decision is skipData in
        js/geo-command-log.js; `opts.revision` is how a caller says it reuses one object. */
@@ -1120,8 +1123,8 @@ function _m(){ return window.__imap||null; }
       try{ this._dynImg&&this._dynImg.delete(id); }catch(_){}
       return true;
     },
-    hasLayer(id){ const m=_m(); return !!(m&&m.getLayer(id)); }, addLayer(d,b){ const m=_m(); if(m&&!m.getLayer(d.id)) m.addLayer(d,b); }, removeLayer(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} },
-    setVisible(id,v){ const m=_m(); if(m&&m.getLayer(id)) m.setLayoutProperty(id,'visibility',v?'visible':'none'); }, isVisible(id){ const m=_m(); if(!(m&&m.getLayer(id))) return false; try{ return m.getLayoutProperty(id,'visibility')!=='none'; }catch(_){ return true; } },
+    hasLayer(id){ try{ const m=_m(); return !!(m&&m.getLayer(id)); }catch(_){ return false; } }, addLayer(d,b){ const m=_m(); try{ if(m&&!m.getLayer(d.id)) m.addLayer(d,b); }catch(_){} }, removeLayer(id){ const m=_m(); try{ if(m&&m.getLayer(id)) m.removeLayer(id); }catch(_){} },
+    setVisible(id,v){ const m=_m(); try{ if(m&&m.getLayer(id)) m.setLayoutProperty(id,'visibility',v?'visible':'none'); }catch(_){} }, isVisible(id){ try{ const m=_m(); if(!(m&&m.getLayer(id))) return false; return m.getLayoutProperty(id,'visibility')!=='none'; }catch(_){ return false; } },
     /* (#R322) the existence check already has the StyleLayer in hand, so "does the renderer
        already hold this?" costs one property read off an object we fetched anyway — no clone,
        no second lookup. MapLibre would refuse the repeat one frame later regardless (see the

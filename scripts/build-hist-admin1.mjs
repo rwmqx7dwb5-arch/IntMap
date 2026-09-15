@@ -77,6 +77,7 @@ import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { registry, harvestTags, shipTags } from './histadmin/langs.mjs';
+import { classesOf, membersOf, resolve as resolveClassSpans } from './histadmin/class-dates.mjs';
 import { itemVerdicts, fillNames, chineseTags, missingByTag } from './histadmin/names.mjs';
 import { labelsFor, labelsByTag } from './histadmin/wikidata.mjs';
 import { plainLabel } from './histeras/match.mjs';
@@ -89,7 +90,7 @@ const args = process.argv.slice(2);
 const argOf = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const OUT   = path.resolve(ROOT, argOf('--out', 'data/hist-admin1.js'));
 const PREVIOUS = {};
-if (!args.includes('--check') && !args.includes('--names') && fs.existsSync(OUT))
+if (!args.includes('--check') && !args.includes('--names') && !args.includes('--dates') && fs.existsSync(OUT))
   new Function('window', fs.readFileSync(OUT, 'utf8'))(PREVIOUS);
 const previousData = Object.values(PREVIOUS).find(d => Array.isArray(d?.feats));
 const TOL   = parseFloat(argOf('--tol', previousData?.tolerance ?? '0.004'));
@@ -100,7 +101,7 @@ function clockFloor() {
   if (!Number.isInteger(floor)) throw new Error('hist-scale FLOOR is missing');
   return floor;
 }
-const SINCE = args.includes('--check') || args.includes('--names') ? null : parseInt(argOf('--since', clockFloor()), 10);
+const SINCE = args.includes('--check') || args.includes('--names') || args.includes('--dates') ? null : parseInt(argOf('--since', clockFloor()), 10);
 const BATCH = parseInt(argOf('--batch', '20'), 10);
 /* (#R564) THE LEVELS ARE AN ARGUMENT, AND THERE IS ONE FILE PER TIER. The first-level tier (3,4) is
    what the province row draws at every zoom; the deeper tier is fetched only when the reader zooms
@@ -223,13 +224,18 @@ function dateSpan(startRaw, endRaw) {
 
 /* An unknown date supplies no evidence to extend a unit into a newly reachable era.
    Preserve its previously published display bound, explicitly distinguished from a source date. */
-function boundedStart(span, previous) {
-  if (span.s) return span.s;
-  if (!previous) return null;
-  const bound = previous.slice(2, 5);
-  span.metadata.start.boundary = 'preserved-display-bound';
-  span.metadata.start.bound = bound.slice();
-  return bound;
+/* ══ ⚠⚠⚠ (#R721) A START NOBODY STATED IS NOT A START ══════════════════════════════════════════
+   This used to return the start the PREVIOUS build published (`preserved-display-bound`), and
+   that number came from a `--since` of -199 the clock has not used since #R679. Measured on the
+   shipped bundles 2026-09-15, 68 rows carried it and the reader saw 48 ritsuryō provinces and
+   the circuits of the 五畿七道 drawn in 200 BC — and 壱岐国 · 安房国 · 東海道 · 山陰道 · 西海道
+   still drawn in 1900 and today, seventy years after 廃藩置県 (1871-08-29).
+   ⚠ THE FOSSIL WAS INVISIBLE BECAUSE IT WAS WELL FORMED. check:histadmin, npm test and CI were
+   green over every one of those rows: a span that parses is not a span anyone stated.
+   ⇒ the bound now comes from the unit's own SYSTEM (histadmin/class-dates.mjs), and a unit no
+   system can date is not carried into the timeline at all. */
+function boundedStart(span) {
+  return span.s || null;
 }
 
 /* ── Douglas–Peucker, iterative (a recursive one blows the stack on a 40k-point ring) ── */
@@ -422,10 +428,19 @@ const NAMELESS_MAX = 3;
    silently. A record with no line here is a FAILURE, not a pass — a new bundle has to state what it
    was measured at before it can ship. ⚠ This is not language work (CONSTITUTION §7 追補): no
    translation is added or asked for, the gate is made able to hold what it says it holds. */
-const UNREADABLE_MAX_PCT = {
-  'data/hist-admin1.js': 37.55,
-  'data/hist-admin2.js': 34.67,
-  'data/hist-admin3.js': 85.35,
+/* ⚠⚠⚠ (#R721) …AND IT RECORDS THE HEADCOUNT BESIDE THE SHARE, BECAUSE A SHARE HAS A DENOMINATOR.
+   This round removed 19 rows that were drawn from a date nobody stated. Two of them (畿内 and
+   近江国) had a Japanese name, so the SHARE of unreadable units rose — 37.549 % → 37.601 % — while
+   the number of readers who cannot read a unit did not move by one: 1,817 before and 1,817 after.
+   The ceiling as a share alone cannot tell those two apart, and the repair it invites («raise the
+   number») loosens the guarantee for the case it exists to catch. So both are stated: the COUNT
+   may never rise (that is a translation actually lost) and the SHARE may never rise (that is
+   unreadable rows actually added). Removing rows moves the share and not the count, and the entry
+   is re-recorded with the round that removed them. [[intmap-ceiling-guards-are-not-policies]] */
+const UNREADABLE_MAX = {
+  'data/hist-admin1.js': { pct: 37.61, count: 1817 },
+  'data/hist-admin2.js': { pct: 34.70, count: 7872 },
+  'data/hist-admin3.js': { pct: 85.35, count: 1764 },
 };
 
 function bcSets() {
@@ -449,7 +464,13 @@ export function topologyErrors(data) {
   for (const key of counts) if (!Number.isSafeInteger(t[key]) || t[key] < 0)
     errors.push('topology ' + key + ' must be a nonnegative integer');
   if (counts.every(key => Number.isSafeInteger(t[key]) && t[key] >= 0)) {
-    if (t.matched + t.unavailable + t.unreproducible !== data.feats.length)
+    /* (#R721) `removedAfterRun` is how many rows left the bundle AFTER the reproduction run that
+       produced these counts — `--dates` removes a row whose span no upstream states. The ledger is
+       not rewritten for them (nothing knows which bucket each was in), so the row count it saw is
+       the shipped count plus the removals, and it has to be a nonnegative integer like the rest. */
+    const removed = t.removedAfterRun === undefined ? 0 : t.removedAfterRun;
+    if (!Number.isSafeInteger(removed) || removed < 0) errors.push('topology removedAfterRun must be a nonnegative integer');
+    else if (t.matched + t.unavailable + t.unreproducible !== data.feats.length + removed)
       errors.push('topology source accounting does not equal feature count');
     if (t.retained !== t.unavailable + t.unreproducible + t.empty + t.changedVertices)
       errors.push('topology retained count does not equal retention reasons');
@@ -594,16 +615,18 @@ function check() {
      crosses the two). Restore the nine and both of these follow with no edit here. */
   if (allFeats.length) {
     for (const row of perTier) {
-      const ceiling = UNREADABLE_MAX_PCT[row.file];
-      if (ceiling == null) { bad.push(row.file + ' has no entry in UNREADABLE_MAX_PCT — a shipped record must state the name coverage it was measured at'); continue; }
+      const ceiling = UNREADABLE_MAX[row.file];
+      if (ceiling == null) { bad.push(row.file + ' has no entry in UNREADABLE_MAX — a shipped record must state the name coverage it was measured at'); continue; }
       const m = missingByTag(row.feats, SHIP);
       let w = null;
       for (const tag of SHIP) if (!w || m[tag].pct > m[w].pct) w = tag;
-      if (m[w].pct > ceiling)
-        bad.push(row.file + ': ' + m[w].missing + ' of ' + row.feats.length + ' units (' + m[w].pct.toFixed(1)
-          + ' %) carry no `' + w + '` name, over its ceiling of ' + ceiling
-          + ' % — a reader of that language is shown a unit they cannot read. Re-run'
-          + ' `node scripts/build-hist-admin1.mjs --names`, or lower the ceiling if upstream really did shrink.');
+      const over = [];
+      if (m[w].missing > ceiling.count) over.push(m[w].missing + ' units cannot be read, over the recorded ' + ceiling.count + ' — a name was LOST');
+      if (m[w].pct > ceiling.pct) over.push(m[w].pct.toFixed(3) + ' % of the record cannot be read, over the recorded ' + ceiling.pct + ' %');
+      if (over.length)
+        bad.push(row.file + ': ' + over.join('; ') + ' (worst shipped language `' + w + '`, ' + row.feats.length
+          + ' units). Re-run `node scripts/build-hist-admin1.mjs --names`, or re-record the entry with the round'
+          + ' that removed rows — never raise it to make a lost name pass.');
     }
     const missing = missingByTag(allFeats, SHIP);
     let worst = null;
@@ -770,6 +793,116 @@ async function refreshNames() {
   }
 }
 
+/* ══ ⚠⚠⚠ (#R721) `--dates` — RE-DATE EVERY COMMITTED TIER, AND TOUCH NOTHING ELSE ═══════════════
+   The same shape as `--names` above and for the same reason: re-deriving 29,614 simplified
+   polygons to change two date columns is expensive, and it is the one way this round could have
+   moved a line it was not asked to move (the ring indices are what data/border-coast.js is
+   joined by). This reads the shipped rows, asks histadmin/class-dates.mjs for a span for the
+   rows upstream never dated, and writes the rows back.
+
+   ⚠ A ROW THAT STILL HAS NO SPAN IS NOT SHIPPED. Eighteen of the sixty-eight carry no
+   `wikidata` tag at all — Dahme-Spreewald, Ziemia Płocka, Столінскі раён, `граница`, the two
+   Shanghai concessions, five Hessian Ämter, two Gandersheims — so nothing on earth says when
+   they began, and a map that draws them draws its own invention. They leave with their rings.
+   ⚠ AND THE RING POOL IS REBUILT WHEN THAT HAPPENS, because check:histadmin refuses a bundle
+   holding a ring no row points at, and #R719's own gate is right to. */
+async function refreshDates() {
+  const units = [];
+  for (const t of tiers()) units.push(await tierUnit(t, true));
+
+  const all = [], undatedQids = new Set();
+  for (const u of units) for (const f of u.feats) {
+    const d = (u.data.dates || {})[f[10]] || {};
+    const qid = String((u.tagsById.get(f[10]) || {}).wikidata || '').trim();
+    const row = { id: f[10], name: f[0], qid: /^Q\d+$/.test(qid) ? qid : null,
+      start: (d.start && d.start.raw) || null, end: (d.end && d.end.raw) || null, f, u, d };
+    all.push(row);
+    if (!row.start && row.qid) undatedQids.add(row.qid);
+  }
+  console.error('· rows ' + all.length + ' | no start stated upstream: ' + all.filter(r => !r.start).length
+    + ' (' + undatedQids.size + ' of them name a Wikidata item)');
+
+  /* the classes those rows belong to, and then EVERY member of each class — so the group is what
+     the class holds, not what this bundle happens to ship */
+  const cls = await classesOf([...undatedQids]);
+  const classes = [...new Set([...cls.values()].flat())];
+  const classOfQid = new Map();
+  for (const c of classes) {
+    const mem = await membersOf(c);
+    for (const r of all) if (r.qid && mem.has(r.qid)) { if (!classOfQid.has(r.qid)) classOfQid.set(r.qid, []); classOfQid.get(r.qid).push(c); }
+  }
+  console.error('· ' + classes.length + ' class(es), ' + classOfQid.size + ' shipped row(s) inside them');
+
+  const fixed = resolveClassSpans(all, classOfQid);
+  const dropped = [];
+  for (const r of all) {
+    if (r.start) continue;
+    const got = fixed.get(r.id);
+    if (!got) { dropped.push(r); continue; }
+    const s = ymd(got.start), e = ymd(got.end, true);
+    r.f[2] = s[0]; r.f[3] = s[1]; r.f[4] = s[2];
+    r.f[5] = e[0]; r.f[6] = e[1]; r.f[7] = e[2];
+    r.d.start = { raw: null, precision: 'unknown', qualified: false, derived: got.from, bound: got.start };
+    r.d.end = { ...(r.d.end || {}), raw: (r.d.end && r.d.end.raw) || null,
+      ...((r.d.end && r.d.end.raw) ? {} : { derived: got.from, bound: got.end }) };
+  }
+  console.error('· dated from the unit\'s own system: ' + fixed.size + ' | no system could date: ' + dropped.length
+    + (dropped.length ? ' → ' + dropped.map(r => r.name || '(no name)').join(', ') : ''));
+
+  const drop = new Set(dropped.map(r => r.id));
+  for (const u of units) {
+    const d = u.data;
+    if ([...drop].some(id => u.feats.some(f => f[10] === id))) {
+      const keep = u.feats.filter(f => !drop.has(f[10]));
+      const remap = new Map(), pool = [];
+      for (const f of keep) f[8] = f[8].map(poly => poly.map(ix => {
+        if (!remap.has(ix)) { remap.set(ix, pool.length); pool.push(d.rings[ix]); }
+        return remap.get(ix);
+      }));
+      for (const id of drop) delete d.dates[id];
+      /* ⚠ (#R721) THE LEDGER DESCRIBES A RUN, AND THE RUN REALLY HAPPENED. `matched + unavailable
+         + unreproducible` is checked against the feature count, so removing rows breaks it — and
+         the gate caught that the first time this pass ran. The fix is NOT to decrement `matched`:
+         nothing here knows which of the ten buckets a removed row was counted in, and guessing
+         would put a made-up number inside the one ledger whose whole purpose is that its numbers
+         were measured. The row count the run saw is stated instead, and topologyErrors() reads it. */
+      const gone = d.feats.length - keep.length;
+      if (d.topology) d.topology.removedAfterRun = (d.topology.removedAfterRun || 0) + gone;
+      /* ⚠ `precision.refined + retained` is asserted against the row count (tests/r710), and unlike
+         the topology ledger this one IS re-derivable: a row that leaves was simplified at the build
+         target like every other, so it leaves `refined` (or `retained` if that is where it sat).
+         The gate caught this too — 4,839 against 4,837 rows. */
+      if (d.precision) {
+        let owed = gone;
+        for (const k of ['refined', 'retained']) {
+          if (!owed) break;
+          const take = Math.min(d.precision[k] || 0, owed);
+          d.precision[k] -= take; owed -= take;
+        }
+        if (owed) throw new Error(u.tier.file + ': precision accounting cannot absorb ' + gone + ' removed row(s)');
+      }
+      d.feats = keep; d.rings = pool;
+    }
+    const body = 'window.' + u.tier.global + '=' + JSON.stringify({ ...d, built: new Date().toISOString().slice(0, 10) }) + ';\n';
+    fs.writeFileSync(path.join(ROOT, u.tier.file), body);
+    console.error('· wrote ' + u.tier.file + ' ' + (body.length / 1048576).toFixed(2) + ' MB | rows ' + d.feats.length + ' | rings ' + d.rings.length);
+  }
+}
+/* upstream writes «0701», «1871-08-29», «1943»; the bundle stores three integers and — for the
+   end — the EXCLUSIVE instant, which is the convention edtf() applies to a stated date: a day is
+   already exclusive there, a bare year means the first day of the next one. A derived bound has to
+   land on the same convention or it sits one day off its stated siblings, which is exactly what the
+   first run of this pass did (45 provinces ending 1871-08-30 beside 6 ending 1871-08-29). */
+function ymd(raw, exclusiveEnd = false) {
+  const m = /^(-?\d{1,6})(?:-(\d{2}))?(?:-(\d{2}))?$/.exec(String(raw).trim());
+  if (!m) throw new Error('class-dates returned an unparsable date: ' + raw);
+  const y = parseInt(m[1], 10), mo = m[2] ? parseInt(m[2], 10) : null, da = m[3] ? parseInt(m[3], 10) : null;
+  if (!exclusiveEnd) return [y, mo || 1, da || 1];
+  if (da) return [y, mo, da];
+  if (mo) return mo === 12 ? [y + 1, 1, 1] : [y, mo + 1, 1];
+  return [y + 1, 1, 1];
+}
+
 async function main() {
   await converters();   /* (#R695) upstreamNames() below classifies name:zh synchronously */
   fs.mkdirSync(CACHE, { recursive: true });
@@ -795,7 +928,6 @@ async function main() {
      An absent start preserves the existing record's published display bound. It does not
      move with the clock floor; new records lacking a start are logged for source resolution. */
   const want = [], deferred = [];
-  const previousRows = new Map((PREVIOUS[GLOBAL]?.feats || []).map(f => [f[10], f]));
   let backwards = 0;
   for (const el of all) {
     const t = el.tags;
@@ -810,7 +942,7 @@ async function main() {
        map re-renders. Dropping them here is not a special case for those seven: it is the rule that a
        record must describe an interval, applied where the interval is read. */
     if (!span.valid) { backwards++; continue; }
-    const start = boundedStart(span, previousRows.get(el.id));
+    const start = boundedStart(span);
     if (!start) { deferred.push({ id: el.id, name: t.name || '', start_date: t.start_date || null }); continue; }
     if (e && start[0] * 10000 + start[1] * 100 + start[2] >= e[0] * 10000 + e[1] * 100 + e[2]) { backwards++; continue; }
     want.push({ el, s: start, e, metadata: span.metadata });
@@ -1054,6 +1186,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
 if (args.includes('--check')) check();
 else if (args.includes('--topology-only')) topologyOnly();
 else if (args.includes('--precision-only')) precisionOnly();
+else if (args.includes('--dates')) refreshDates().catch(e => { console.error('FAILED', e); process.exit(1); });
 else if (args.includes('--names')) refreshNames().catch(e => { console.error('FAILED', e); process.exit(1); });
 else main().catch(e => { console.error('FAILED', e); process.exit(1); });
 }

@@ -142,9 +142,25 @@ test('⑩ a record with no dates is still a record — 安房国 and 壱岐国 a
     assert.ok(names.has(n),
       n + ' carries no start_date and no end_date upstream, which is not the same thing as being a present-day unit');
   }
-  /* and the reason they were droppable is gone: an open span is one the record did not state */
-  const awa = d.feats.find((f) => f[0] === '安房国');
-  assert.ok(awa[2] <= 1 && awa[5] >= 9999, '安房国 must be open at BOTH ends, which is what upstream says');
+  /* ══ ⚠⚠⚠ (#R721) THIS ASSERTION WAS THE DEFECT, WRITTEN DOWN AS A REQUIREMENT ═══════════════
+     #R669 was right that an undated relation is not a present-day unit, and right to stop dropping
+     these two rows — both halves above still hold. What it then required is that the row stay OPEN
+     AT BOTH ENDS, and «open» has to be drawn from SOME instant: the builder used the previous
+     build's published bound, which was the clock floor of the day, -199. So 安房国 and 壱岐国 were
+     drawn from 200 BC and were still on the map in 1900 and in the present, seventy years after
+     廃藩置県 (1871-08-29) abolished the system they belong to.
+     The span now comes from that system — scripts/histadmin/class-dates.mjs reads the class the
+     unit's own Wikidata item is in and the end date its siblings agree on — so the requirement is
+     turned around: the row is dated, and it is dated from something upstream SAID.
+     [[intmap-restate-the-defect-not-the-fix]] */
+  for (const n of ['安房国', '壱岐国']) {
+    const row = d.feats.find((f) => f[0] === n);
+    assert.ok(row[2] >= 1, n + ' is still drawn from the clock floor, which nobody stated');
+    assert.ok(row[5] < 9999, n + ' is still drawn in the present day; the system ended in 1871');
+    const dates = d.dates[row[10]];
+    assert.equal(dates.start.raw, null, 'upstream still states no start for ' + n);
+    assert.ok(dates.start.derived, n + ' has a bound with no account of where it came from');
+  }
 });
 
 /* ── ⑤ the click, wired end to end ───────────────────────────────────────── */

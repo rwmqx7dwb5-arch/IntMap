@@ -78,8 +78,8 @@ function adminWorld(mutate) {
   writeFileSync(join(dir, 'data', 'border-coast.js'), 'window.__IMBCOAST=' + JSON.stringify(bc) + ';\n');
   if (ceilings) {
     const p = join(dir, 'scripts', 'build-hist-admin1.mjs');
-    writeFileSync(p, readFileSync(p, 'utf8').replace(/const UNREADABLE_MAX_PCT = \{[\s\S]*?\};/,
-      'const UNREADABLE_MAX_PCT = ' + JSON.stringify(ceilings) + ';'));
+    writeFileSync(p, readFileSync(p, 'utf8').replace(/const UNREADABLE_MAX = \{[\s\S]*?\};/,
+      'const UNREADABLE_MAX = ' + JSON.stringify(ceilings) + ';'));
   }
   return dir;
 }
@@ -162,17 +162,18 @@ test('#R719 ④ a shipped tier with no stated ceiling fails, and one over its ow
   const unstated = firesAdmin((b, bc) => {
     b[3] = tier(3, [7], 1);
     bc.sets.ha3 = { file: 'data/hist-admin3.js', rings: 1 };
-    return { 'data/hist-admin1.js': 100, 'data/hist-admin2.js': 100 };   /* tier 3 is not named */
+    /* (#R721) the entry states a share AND a headcount — see UNREADABLE_MAX */
+    return { 'data/hist-admin1.js': { pct: 100, count: 1e9 }, 'data/hist-admin2.js': { pct: 100, count: 1e9 } };   /* tier 3 is not named */
   });
   assert.equal(unstated.failed, true, unstated.out);
-  assert.match(unstated.out, /no entry in UNREADABLE_MAX_PCT/, unstated.out);
+  assert.match(unstated.out, /no entry in UNREADABLE_MAX/, unstated.out);
 
   const over = firesAdmin((b) => {
     for (const f of b[1].feats) f[9] = { en: 'Unit' };   /* no Japanese at all in tier 1 */
-    return { 'data/hist-admin1.js': 0, 'data/hist-admin2.js': 100 };
+    return { 'data/hist-admin1.js': { pct: 0, count: 0 }, 'data/hist-admin2.js': { pct: 100, count: 1e9 } };
   });
   assert.equal(over.failed, true, over.out);
-  assert.match(over.out, /data\/hist-admin1\.js: .*carry no `\w+` name/, over.out);
+  assert.match(over.out, /data\/hist-admin1\.js: .*cannot be read/, over.out);
 });
 
 /* ── ⑤ THE FILL RECORD ANSWERS A COUNTRY WHOLE OR NOT AT ALL ──────────────────────────────────

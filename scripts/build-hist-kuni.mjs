@@ -8,7 +8,8 @@
  *  「日本は北半分の令制国が全滅。」 Measured, and true, and NOT a defect in
  *  IntMap's pipeline: OpenHistoricalMap simply does not hold those units.
  *  Asked for every relation whose name ends in 国 at admin_level 3-4, OHM returns
- *  exactly 53 of the classical 68 provinces. Fifteen are absent as relations —
+ *  52 of the classical 68 provinces (53 until #R721 removed 近江国 for having no stated
+ *  start). Sixteen are absent as relations —
  *  陸奥 出羽 信濃 越後 上野 下野 美濃 飛騨 若狭 越前 加賀 能登 越中 佐渡 隠岐 —
  *  which is the whole of 東山道 and 北陸道, i.e. everything north and east of the
  *  Kinai except the Tōkaidō coast. OSM proper is no help: it holds 53 as well, and
@@ -292,12 +293,43 @@ async function prefPoints() {
 }
 
 /* ── ④ what OpenHistoricalMap already holds — the join that keeps this additive ── */
-function ohmNames() {
+function ohmTier1() {
   const s = fs.readFileSync(path.join(ROOT, 'data', 'hist-admin1.js'), 'utf8');
-  const d = JSON.parse(s.slice(s.indexOf('=') + 1, s.lastIndexOf(';')));
+  return JSON.parse(s.slice(s.indexOf('=') + 1, s.lastIndexOf(';')));
+}
+function ohmNames(d = ohmTier1()) {
   const set = new Set();
   for (const f of d.feats) { if (f[0]) set.add(f[0]); const n = f[9] || {}; if (n.ja) set.add(n.ja); }
   return set;
+}
+
+/* ══ ⚠⚠⚠ (#R721) THE SPAN OF THESE FIFTEEN IS THE SPAN OF THEIR FIFTY-THREE NEIGHBOURS ══════════
+   It used to be written here as two literals: `-199, 1, 1` for the start and `1871, 8, 29` for the
+   end, with a comment explaining that the end is 廃藩置県 and the start is «open». Measured
+   2026-09-15, the «open» start was on the map: 隠岐国 · 若狭国 · 越前国 and the other twelve were
+   drawn in 200 BC, in AD 1 and in AD 800 — and the identical fossil in data/hist-admin1.js put
+   forty-eight more provinces there beside them, which is how the defect was found at all.
+   ⚠ AND THE END WAS A LITERAL EVEN THOUGH IT WAS CORRECT, which is the other half of the problem:
+   a number that happens to be right is still a number nobody can re-derive when upstream moves.
+   ⇒ both bounds are now READ from the provinces of the same system that
+   data/hist-admin1.js ships — the most common span among the units this file exists to complete.
+   If upstream re-dates the system, these follow it; if upstream stops agreeing with itself,
+   this throws instead of publishing a span of its own invention. */
+function systemSpan(d, members) {
+  const votes = new Map();
+  for (const f of d.feats) {
+    const ja = (f[9] || {}).ja || f[0];
+    if (!members.has(String(ja))) continue;
+    const k = [f[2], f[3], f[4], f[5], f[6], f[7]].join(',');
+    votes.set(k, (votes.get(k) || 0) + 1);
+  }
+  let best = null, total = 0;
+  for (const [k, n] of votes) { total += n; if (!best || n > best.n) best = { k, n }; }
+  if (!best || best.n < 5 || best.n * 3 < total * 2) {
+    throw new Error('the 令制国 already shipped in data/hist-admin1.js do not agree on one span ('
+      + [...votes].map(([k, n]) => k + '×' + n).join(' ') + ') — this file may not invent one');
+  }
+  return { span: best.k.split(',').map(Number), n: best.n, of: total };
 }
 
 /* ── point in ring, on the traced grid rings (grid coordinates) ──────────── */
@@ -344,7 +376,31 @@ function checkShipped() {
     + d.rings.reduce((a, r) => a + r.length, 0) + ' vertices, none of them also in data/hist-admin1.js');
 }
 
+/* ══ (#R721) `--dates` — RE-READ THE SYSTEM'S SPAN, AND TOUCH NOTHING ELSE ══════════════════════
+   The raster is 663 tiles and 130 MB and is not in the repository, so a full rebuild is not the
+   way to correct two date columns (the same reason build-hist-admin1.mjs grew `--dates`). This
+   reads the shipped rows, asks systemSpan() what the provinces in data/hist-admin1.js
+   now say, and writes the rows back with the geometry byte-identical. */
+async function refreshDates() {
+  const cur = fs.readFileSync(OUT, 'utf8');
+  const d = JSON.parse(cur.slice(cur.indexOf('=') + 1, cur.lastIndexOf(';')));
+  /* ⚠ THE SYSTEM IS NAMED BY WIKIDATA, NOT BY A SUFFIX. The first run of this pass asked for rows
+     whose name ends in 国 and found 300 different spans, because 中国 · 大韓帝国 · 燕国 and every
+     other polity written that way answered too. The membership test is the same query the build
+     itself uses to decide which 令制国 exist. */
+  const members = new Set((await kuniPoints()).map((p) => p.names && p.names.ja).filter(Boolean));
+  const tier1 = ohmTier1();
+  const sys = systemSpan(tier1, members);
+  const was = d.feats.length ? d.feats[0].slice(2, 8).join('-') : '(empty)';
+  for (const f of d.feats) for (let i = 0; i < 6; i++) f[2 + i] = sys.span[i];
+  d.built = new Date().toISOString().slice(0, 10);
+  d.spanSource = 'the span ' + sys.n + ' of the ' + sys.of + ' 令制国 already in data/hist-admin1.js state';
+  fs.writeFileSync(OUT, 'window.__HISTKUNI=' + JSON.stringify(d) + ';' + String.fromCharCode(10));
+  console.error('· ' + d.feats.length + ' unit(s): ' + was + ' → ' + sys.span.join('-') + ' (' + d.spanSource + ')');
+}
+
 (async function main() {
+  if (args.includes('--dates')) { await refreshDates(); return; }
   if (CHECK) {
     checkShipped();
     if (!fs.existsSync(CACHE) || !fs.readdirSync(CACHE).some((f) => /^zxy_10_/.test(f))) {
@@ -372,7 +428,12 @@ function checkShipped() {
   const prefs = await prefPoints();
   console.error('· wikidata prefectures that name the province they succeeded:', prefs.length);
   const byQ = new Map(all.map((p) => [p.q, p]));
-  const already = ohmNames();
+  const tier1 = ohmTier1();
+  const already = ohmNames(tier1);
+  const sys = systemSpan(tier1, new Set(all.map((p) => p.names && p.names.ja).filter(Boolean)));
+  const SPAN = sys.span;
+  console.error('· span read from the system itself: ' + SPAN.slice(0, 3).join('-') + ' → ' + SPAN.slice(3).join('-')
+    + ' (' + sys.n + ' of ' + sys.of + ' 令制国 already in data/hist-admin1.js state it)');
   const claimed = new Set();
 
   const pool = [], poolIx = new Map();
@@ -453,13 +514,8 @@ function checkShipped() {
     const idx = polys.map((poly) => poly.map((ring) => put(ring))).filter((a) => a.length);
     if (!idx.length) { unnamed.push(grp.codes.join('+')); continue; }
 
-    /* ⚠ THE SPAN IS THE RASTER'S OWN CLAIM AND NOTHING MORE. The tiles are published
-       under the year 1868 and the 令制国 were abolished by the 廃藩置県 of 1871-08-29,
-       which is the end date OpenHistoricalMap carries on all 53 provinces it does hold
-       — so these fifteen end when their fifty-three neighbours end, and start open,
-       exactly as those neighbours do. Inventing a founding date per province is what
-       this repository's rules call a placeholder. */
-    feats.push([hit.names.ja, 4, -199, 1, 1, 1871, 8, 29, idx, hit.names, null]);
+    /* the span of the system, read from its other members — see systemSpan() */
+    feats.push([hit.names.ja, 4, SPAN[0], SPAN[1], SPAN[2], SPAN[3], SPAN[4], SPAN[5], idx, hit.names, null]);
     named.push(hit.names.ja);
     if (grp.codes.length > 1) merged.push(hit.names.ja + ' = raster codes ' + grp.codes.join('+'));
   }

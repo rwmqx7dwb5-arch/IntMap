@@ -119,7 +119,7 @@ jobs:
       # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
       # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
       # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
-      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 55,348 rings, offline;
+      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 56,141 rings, offline;
       # MEASURED 49 s on this machine (2026-09-11), which is why the sampled form existed and why it is not enough.
       - name: Historical border coastlines (every ring re-derived, not a sample)
         run: npm run check:bordercoast
@@ -133,6 +133,13 @@ jobs:
         run: npm run check:histadmin
       - name: Historical provinces IntMap derived itself (data/hist-kuni.js)
         run: npm run check:kuni
+      # (#R721) …and the gate that asks whether anybody SAID what the map draws. The three above
+      # measure form and were green while 48 ritsuryō provinces were drawn in 200 BC. This one
+      # fails on a span no upstream states, refuses a growth in units drawn twice over one instant,
+      # and records the share of each polity's land that carries a subdivision — the reader's
+      # 「一部だけ」 as a number. Rule: .agents/rules/historical-verification.md.
+      - name: The historical map is measured as a claim, not as a shape
+        run: npm run check:histfidelity
       # (#R719) …and the second derived record: the units that still stand today, carried back only
       # as far as Wikidata's stated inception, the era record's own borders and the OHM record's
       # silence all agree they may go. A country enters whole or not at all.

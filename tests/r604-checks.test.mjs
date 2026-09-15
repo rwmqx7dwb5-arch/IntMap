@@ -85,24 +85,41 @@ test('② decYear は OHM の decdate と一致する', () => {
    ここで測るのはその規則で、⚠ 両者が離れないことは ④ が測る。 */
 test('③ 日付・階層・海の規則（境界のあるレコードだけが通る）', () => {
   const t = HS.decYear(1870, 6, 15);
-  const izu = { type: 'administrative', admin_level: 4, end_decdate: 1871.6589 };
-  assert.equal(HS.inForce(izu, 3, 4, t), true, '伊豆国 is in force in 1870');
+  /* ══ ⚠⚠⚠ (#R721) THREE OF THESE ASSERTIONS USED TO REQUIRE THE DEFECT ═══════════════════════
+     They said that a record stating only an END is in force at every earlier date, and that «a
+     record with no dates at all must not be deleted from every map». That is how the tile layer
+     came to draw 伊豆国 — and the rest of the ritsuryō provinces and the circuits of the
+     五畿七道 — in every year the clock reaches. MEASURED in the live map 2026-09-15: at 1900
+     Japan rendered 436 boundary lines and 317 of them STATED NO START, unlabelled, because the
+     bundle correctly refused to label a unit it could not date. That mesh over a map of the
+     Empire of Japan is what the reader reported.
+     ⇒ the rule is turned around: a record is placed in time where SOMEBODY PLACED IT. An absent
+     END still means «still in force» — that IS a statement — but an absent START is not. */
+  const izuUndated = { type: 'administrative', admin_level: 4, end_decdate: 1871.6589 };
+  assert.equal(HS.inForce(izuUndated, 3, 4, t), false,
+    'a record that states only an end was drawn in every year before it');
+  const izu = { type: 'administrative', admin_level: 4, start_date: '0701-01-01', start_decdate: 701, end_decdate: 1871.6589 };
+  assert.equal(HS.inForce(izu, 3, 4, t), true, '伊豆国 is in force in 1870 once a start is stated');
   assert.equal(HS.inForce(izu, 3, 4, HS.decYear(1880, 6, 15)), false, 'and gone in 1880');
+  assert.equal(HS.inForce(izu, 3, 4, HS.decYear(600, 6, 15)), false, 'and absent before it started');
   assert.equal(HS.inForce(izu, 5, 6, t), false, 'a level-4 unit is not the deeper tier');
-  /* ⚠ 端が無いことは「いま始まる」でも「決して始まらない」でもない —— 制約しない */
-  assert.equal(HS.inForce({ type: 'administrative', admin_level: 3 }, 3, 4, HS.decYear(1, 6, 15)), true,
-    'a record with no dates at all must not be deleted from every map');
-  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, start_decdate: 1500 }, 3, 4, HS.decYear(1400, 6, 15)), false,
+  assert.equal(HS.inForce({ type: 'administrative', admin_level: 3 }, 3, 4, HS.decYear(1, 6, 15)), false,
+    'a record with no dates at all was being drawn in every year of the map');
+  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, start_date: '1500', start_decdate: 1500 }, 3, 4, HS.decYear(1400, 6, 15)), false,
     'a unit must not be drawn before it started');
   /* ⚠ 海上の run は上流が自分で印を付けている —— #R564 が Natural Earth に対して導出した判断 */
-  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, maritime: 'yes' }, 3, 4, t), false,
+  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, maritime: 'yes', start_date: '1500', start_decdate: 1500 }, 3, 4, t), false,
     'a maritime run is a coast, not a border');
   /* ⚠ 年になり得ない数は「日付」ではなく「日付が無い」。実測で 106,173 件中 3,080 件が
-     こうなっており、素直に `>= t` に掛けると**全ての時代から消える**。 */
-  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, end_decdate: 6e-154 }, 3, 4, t), true,
+     こうなっており、素直に `>= t` に掛けると**全ての時代から消える**。
+     ⚠ (#R721) AND THOSE 3,080 SIT BESIDE A PERFECTLY GOOD `*_date` STRING — that string is the
+     statement, so the record is kept; what is dropped is the record that states nothing. */
+  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, start_date: '1600', start_decdate: 1600, end_decdate: 6e-154 }, 3, 4, t), true,
     'a bound that cannot be a year must constrain nothing, not delete the record');
-  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, start_decdate: 3.8e180 }, 3, 4, t), true,
-    'and the same at the other end of implausible');
+  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, start_date: '1600-01-01', start_decdate: 3.8e180 }, 3, 4, t), true,
+    'and the same at the other end of implausible, when the date string states the bound');
+  assert.equal(HS.inForce({ type: 'administrative', admin_level: 4, start_decdate: 3.8e180 }, 3, 4, t), false,
+    'an unusable number with no date string beside it states nothing');
   assert.equal(HS.inForce({ type: 'boundary', admin_level: 4 }, 3, 4, t), false, 'only administrative boundaries');
 });
 
