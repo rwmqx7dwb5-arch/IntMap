@@ -2641,11 +2641,24 @@ window.IntMapModules.geojsonUpload=function(HOST){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
       try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(window.IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return null; }
       const before = GE().layers.has('tool-poly')?'tool-poly':undefined;
-      try{
-        GE().layers.add({id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':col,'fill-opacity':0.22}},before);
-        GE().layers.add({id:sid+'-line',type:'line',source:sid,filter:['in','$type','Polygon','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':col,'line-width':2.2}},before);
-        GE().layers.add({id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':col,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},before);
-      }catch(_){}
+      /* ⚠ (#R739) THE CATCH USED TO SWALLOW ALL THREE, AND SILENCE IS NOT AN OUTCOME. A renderer that
+         accepts the source and refuses every layer leaves a row in the list, a source in the engine
+         and NOTHING on the map — and js/gis-core.js's draw() went on answering ok:true about it
+         (measured in production on the Globe renderer: draw ok:true, find() false, style()
+         'no-such-layer'). Counting what was actually added is what lets the caller be told. */
+      let drawn=0;
+      for(const spec of [
+        {id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':col,'fill-opacity':0.22}},
+        {id:sid+'-line',type:'line',source:sid,filter:['in','$type','Polygon','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':col,'line-width':2.2}},
+        {id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':col,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},
+      ]){ try{ GE().layers.add(spec,before); drawn++; }catch(_){} }
+      /* ⚠ NOT ONE of the three means the shapes are not on the map, whatever the source says. Leaving
+         the source behind would make the next import's id collide with a ghost, so it goes too. */
+      if(!drawn){
+        try{ if(GE().layers.hasSource(sid)) GE().layers.removeSource(sid); }catch(_){}
+        toast(window.IntMapLang.t(HOST.lang,"This map view cannot draw imported shapes — switch to the flat map","この地図表示では取り込んだ図形を描けません。平面地図に切り替えてください"));
+        return null;
+      }
       /* ⚠ the SAME FeatureCollection object the renderer holds, not a copy — colouring has to read the
          attributes, and a second copy of a 200,000-feature import would double what the tab costs. */
       items.push({n,sid,name,col,fc,datasetId:(opts&&opts.datasetId)||null,spec:null,legend:null}); renderList(); fit(fc);

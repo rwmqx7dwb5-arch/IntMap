@@ -92,8 +92,14 @@ window.IntMapModules.gisCore = function (HOST) {
          on the day two datasets share a name, which is the 「識別子で結び、綴りで結ばない」 rule this
          project keeps re-learning. The fourth argument is optional, so every other caller of add() is
          unaffected. */
-      GU.add({ type: 'FeatureCollection', features: ds.features() }, ds.title, null, { datasetId: ds.id });
-      return { ok: true };
+      /* ⚠ (#R739) THE ANSWER IS WHAT add() REPORTS, NOT THE ABSENCE OF A THROW. This returned ok:true
+         unconditionally, and production measured what that is worth: on the Globe renderer the draw
+         said ok:true while nothing reached the map, so the reader was told their result was drawn and
+         then told 'no-such-layer' when they asked to colour it. js/map-ui.js hands back the item it
+         made, or null when it could not make one — «描けた» is now a fact somebody measured. */
+      const put = GU.add({ type: 'FeatureCollection', features: ds.features() }, ds.title, null, { datasetId: ds.id });
+      if (!put) return { ok: false, why: 'draw-not-rendered', detail: { id: ds.id } };
+      return { ok: true, sid: put.sid };
     } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
   }
 

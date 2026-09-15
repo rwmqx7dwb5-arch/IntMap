@@ -6965,5 +6965,7 @@ window.IntMapLang.define('zh', {
   "Unit": "單位",
   "Unknown colouring mode": "不明的著色方式",
   "Value on every row": "填入每一列的值",
+  "This map view cannot draw imported shapes — switch to the flat map": "此地圖檢視無法繪製匯入的圖形——請切換到平面地圖",   /* map-ui.js (#R739) */
+  "This map view could not draw those shapes — switch to the flat map and try again": "此地圖檢視無法繪製那些圖形——請切換到平面地圖後再試一次",   /* gis-panel.js (#R739) */
   }
 });

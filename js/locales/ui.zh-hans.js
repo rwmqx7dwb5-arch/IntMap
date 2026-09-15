@@ -6969,5 +6969,7 @@ window.IntMapLang.define('zh-hans', {
   "Unit": "单位",
   "Unknown colouring mode": "不明的着色方式",
   "Value on every row": "填入每一列的值",
+  "This map view cannot draw imported shapes — switch to the flat map": "此地图检视无法绘制导入的图形——请切换到平面地图",   /* map-ui.js (#R739) */
+  "This map view could not draw those shapes — switch to the flat map and try again": "此地图检视无法绘制那些图形——请切换到平面地图后再试一次",   /* gis-panel.js (#R739) */
   }
 });
