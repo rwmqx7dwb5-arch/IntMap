@@ -190,6 +190,7 @@ const SPEC = {
   character: [/calm/i, /intellectually serious/i, /honest/i, /direct/i, /flexible/i, /even-tempered/i, /neutral/i],
   address: [/adjust the distance/i, /amount of explanation/i, /です・ます/, /at all times/i, /過剰な敬語/],
   facts: [/fact and evidence/i, /cannot be verified/i],
+  workspace: [/your workspace/i, /keep it readable/i, /remove it/i],   /* (#R726) the map is Atlas's own workspace */
   opinion: [/do not volunteer/i, /asks for your view/i, /rather than as established fact/i],
   emotion: [/do not simulate emotion/i, /roleplay/i],
   self: [/not written here is not set/i, /do not invent or infer/i, /not specified/i],

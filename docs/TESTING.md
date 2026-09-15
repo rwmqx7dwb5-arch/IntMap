@@ -1170,6 +1170,17 @@ CI が持てる量ではない（`check:histborders`・`check:histadmin` と同�
 ——「その年に存在した単位」であることは上流が述べているが、「その年もこの形だった」とは誰も
 述べていない。だから線は導出線として描かれ、レイヤー行の説明がそう言う（`docs/MAP-LAYERS.md` §7.7）。
 
+### `tests/r726-atlas-eval-checks.test.mjs` (#R726)
+
+16 本。本番の Atlas に 14 問を投げて読者として読んだ結果から出た欠陥を、**モジュールを node で評価して**測る:
+回答契約の `heading` が ATX 記号を剥がすこと／本文からの地名抽出が改行をまたがないこと／本文由来の 1 語候補は
+ambiguous でも並ばないこと／厳格ジオコーダが `namedetails=1` で問い `featureNames` を **geo-resolve から受け取って**
+（写しを持たずに）照合すること／`research.historicalMap` の観測器が `factions` で、同じ件数の描き直しが
+`completed` になること／`camera` 観測器が到着を待つこと／`layers.baseDisplay` が登録・schema・カタログ・
+dispatch の 4 か所に揃い `find_capability` で届くこと／`mechanical()` が成功結果に `text` を載せること／
+`find` の空振りが探索を終わらせる文であること／衛星・天気・経路の結果が事実を運ぶこと／過去年のハイライトが
+era の面を使うこと／状態記述が勢力図・era 政体・天気／衛星カードを述べること／人格に `workspace` 節があり
+internal 呼び出しには載らないこと／`map.clear` が `clear` 観測器で、消すものが無ければ `already_clear` になること。
 ### `tests/r725-atlas-trace-detail-checks.test.mjs` (#R725)
 
 5 本。作業一覧の**引数の欄**が、能力自身の宣言から来ることを測る。⚠ **本番が見つけた欠陥**
@@ -1821,7 +1832,7 @@ needle spelled the withdrawn count as a **literal** — 「撤去済み *1* を�
 comparing it. #R590 raised the registry and reworded that sentence in the same commit, the
 pattern stopped matching, and **four claims went unchecked from that moment**: `Architecture.md`
 twice and `DECISIONS.md` twice, each stating that 137 capabilities are withdrawn when exactly
-one is, while `docs/FILES.md` said 「到達可能 137」 two files away. The rule printed 「10 stated
+one is, while `docs/FILES.md` said 「到達可能 138」 two files away. The rule printed 「10 stated
 size(s)」 and none of the four was among them. This is the `alerts` capture group one step
 earlier: there a number was taken and never read; here it was never taken. Both halves of that
 sentence are read and compared now, and `tests/r699-doc-claim-needles-checks` ⑫ mutates the

@@ -171,6 +171,15 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
          actually carry, so it observes the chart itself — the one output on this list that lives in
          the answer rather than on the map. */
       chart: ['chart', 'explanation'],
+      /* the "factions" observer reads the faction source the historical power map paints into
+         (js/atlas-sims.js nlq-fac-src) — an observation of the map, made AFTER the call rather than
+         as a diff, because a redrawn map with the same countries moved no count and was being
+         reported as not_rendered while its fills were on the globe. */
+      factions: ['map', 'explanation'],
+      /* the "clear" observer reads the map and the open panels, and a clear that found nothing
+         to remove is complete (already_clear) rather than not_rendered — removal asked for a state,
+         and the state is there. */
+      clear: ['map', 'panel'],
       /* (#R551) the "mapCompose" observer reads the compose source's live feature count and holds it
          against the number of places the call ASKED for — an observation of the map that a count
          DELTA cannot make: five of sixteen moves the tally, and sixteen redrawn at corrected

@@ -230,7 +230,7 @@ export function makeAtlasCapabilities(HOST) {
       ['map.shakemap',               'shakemap',       'shakeMap,groundShaking,intensityMap,shaking',                  'map',     'paint',   'map.shakemap',           'map,explanation',     'session', 'none',   '',         'shakeMap'],
       ['data.value',                 'value',          'stat,lookup',                                                 'data',    'none',    '',                       'explanation',         'read',    'none',   'country',  ''],
       ['layers.allOff',              'layersOff',      'allLayersOff',                                                'layers',  'layer',   'map.layer',              'map',                 'session', 'explicit','',        ''],
-      ['map.clear',                  'clear',          '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'none',   '',         ''],
+      ['map.clear',                  'clear',          '',                                                            'map',     'clear',   'map.all',                'map',                 'session', 'none',   '',         ''],
       ['view.fullscreen',            'fullscreen',     '',                                                            'view',    'none',    'view.fullscreen',        'view',                'session', 'none',   '',         ''],
       ['view.locate',                'locate',         'myLocation,whereAmI',                                         'view',    'camera',  'camera',                 'camera,map',          'session', 'none',   '',         ''],
       /* ⚠ (#R493) THE ONLY CAPABILITY WHOSE RESULT IS A PICTURE. Every other row hands Atlas facts
@@ -244,7 +244,7 @@ export function makeAtlasCapabilities(HOST) {
       ['research.situationMap',      'researchMap',    'research_map,situationMap',                                   'research','paint',   'map.poi',                'map,explanation',     'session', 'none',   '',         ''],
       ['sim.ballistic',              'missile',        'ballistic,ballisticMissile,strike,icbm',                      'sim',     'sim',     'map.ballistic',          'map',                 'session', 'none',   'place',    ''],
       ['map.elevationHighlight',     'elevationBelow', 'belowSeaLevel,elevationHighlight,elevationScan',              'map',     'paint',   'map.elevation',          'map',                 'session', 'none',   'place',    ''],
-      ['research.historicalMap',     'historicalMap',  'historical,powerMap,allianceMap',                             'research','paint',   'map.factions',           'map,explanation',     'session', 'none',   '',         ''],
+      ['research.historicalMap',     'historicalMap',  'historical,powerMap,allianceMap',                             'research','factions','map.factions',           'map,explanation',     'session', 'none',   '',         ''],
       ['sim.flyAnimate',             'fly',            'flight,trajectory',                                           'sim',     'sim',     'camera,map.fly',         'camera,map',          'session', 'none',   'place',    ''],
       ['map.drawLine',               'drawLine',       'line',                                                        'map',     'paint',   'map.line',               'object,map',          'session', 'none',   'points',   ''],
       ['map.drawPolygon',            'drawPolygon',    'polygon',                                                     'map',     'paint',   'map.polygon',            'object,map',          'session', 'none',   'points',   ''],
@@ -260,6 +260,11 @@ export function makeAtlasCapabilities(HOST) {
       /* (#R439) the 4 hPa contours over the sea-level-pressure field — a switch inside that layer's
          legend, so it is its own verb rather than a layer name (js/weather.js `sub`). */
       ['layers.isobars',             'isobars',        'pressureContours,isolines',                                   'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
+      /* The base-display preset the layer panel offers as a radio — Default / Clean / Custom
+         (js/data-layers.js IntMapBaseDisplay). It was a control the reader had and Atlas did not:
+         「基本表示をデフォルトに戻して」 sent Atlas through nine find_capability calls and out of
+         steps with nothing done (measured on production, 2026-09-15). */
+      ['layers.baseDisplay',         'baseDisplay',    'baseMode,basemapMode,basicDisplay,basePreset,defaultDisplay,cleanDisplay,displayPreset', 'layers',  'layer',   'map.layer',              'map',                 'persist', 'none',   '',         ''],
       ['layers.nightSide',           'nightSide',      '',                                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
       ['layers.planeAltitude',       'planeAltitude',  'aircraftAltitude',                                            'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
       ['layers.aircraftTrack',       'aircraftTrack',  'planeTrack',                                                  'layers',  'layer',   'map.layer',              'map',                 'session', 'none',   '',         ''],
@@ -489,10 +494,12 @@ export function makeAtlasCapabilities(HOST) {
         pins: sourceFeatureCount('user-pins'), poi: sourceFeatureCount('nlq-poi-src'),
         compose: sourceFeatureCount('atl-compose-src'),   /* (#R511) js/atlas-map-compose.js — the ONE source every compose layer reads */
         shakemap: sourceFeatureCount('shk-cont-src'),    /* (#R546) js/shakemap.js — the contour source every metric produces */
+        factions: sourceFeatureCount('nlq-fac-src'),     /* js/atlas-sims.js paintFactions — the faction fills of the historical power map */
         visible: visibleLayerIds().length, objects: objectIds().length };
     }
 
     function changed(a, b) { return JSON.stringify(a) !== JSON.stringify(b); }
+    var CAMERA_SETTLE_MS = 2500;   /* see the camera observer below */
     /* legacy(raw) — what a not-yet-migrated dispatch case said about itself. A verifier may use it,
        but it may never be the ONLY evidence for `completed` on a capability that writes something. */
     function legacyOk(raw) { return !!(raw && raw.ok !== false); }
@@ -528,7 +535,28 @@ export function makeAtlasCapabilities(HOST) {
         }
       },
       camera: {
-        observe: function () { return cameraNow(); },
+        /* ⚠ THE AFTER SAMPLE IS TAKEN WHEN THE CAMERA HAS ARRIVED, NOT WHEN THE CALL RETURNED.
+           flyTo / easeTo / fitBounds in js/atlas-console.js return at once and animate for ~1.1 s
+           (`duration:1100`), and the executor observes the instant the call returns — so a move
+           that was plainly under way was compared against itself and reported `no_change`.
+           Measured on production (2026-09-15): 「富士山の標高は？地図で見せて」 flew to Fuji and was
+           told it had not moved, and Atlas went researching instead of reading the map. The wait
+           ends when the renderer says it is no longer easing (GE().isAnimating) and two samples
+           100 ms apart agree; CAMERA_SETTLE_MS bounds it at 2.5 s — the longest animation any
+           dispatch case writes is 1.1 s, and a bound that holds twice that is still far below
+           a tool timeout. Raise it when a longer camera animation is written. A camera that is
+           idle when sampled (the BEFORE sample, a read) returns immediately. */
+        observe: async function () {
+          var t0 = Date.now(), prev = cameraNow();
+          while ((Date.now() - t0) < CAMERA_SETTLE_MS) {
+            var moving = false; try { moving = !!(GE().isAnimating && GE().isAnimating()); } catch (_) { moving = false; }
+            await new Promise(function (r) { setTimeout(r, 100); });
+            var cur = cameraNow();
+            if (!moving && !changed(prev, cur)) return cur;
+            prev = cur;
+          }
+          return cameraNow();
+        },
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           if (!hasRenderer()) return { status: 'failed', code: 'unavailable', html: (raw && raw.html) || '' };
@@ -562,6 +590,41 @@ export function makeAtlasCapabilities(HOST) {
           if (!before || !after) return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
           if (changed(before, after)) return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
           return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ ⚠⚠⚠ A POWER MAP THAT IS ON THE MAP IS RENDERED, WHETHER OR NOT THE COUNT MOVED ══════════
+         `research.historicalMap` was declared `paint`, and `paintNow()` did not read the faction
+         source at all — so the verdict was whatever ELSE happened to move. Measured on production
+         (2026-09-15, 「1900年の世界地図を見せて」): the first draw passed because the clock had just
+         changed, the next four were all called `not_rendered` while their legends sat in the reply
+         and their fills on the globe; Atlas, told four times that nothing was drawn, drew the same
+         map SIX times and spent every step of the turn on it, and the reader never got the answer.
+         The #R551 shape again: a count diff answers «did something move», not «is the thing that was
+         asked for on the map». So this verifier reads the faction source AFTER the call: features
+         there = the map is up; none = `not_rendered`. A redraw of an identical map is rendered. */
+      /* ══ A CLEAR THAT FOUND NOTHING TO CLEAR IS COMPLETE ══════════════════════════════════════
+         `map.clear` was `paint`, so removing something that is not a paint — the weather card, a
+         route the routing module owns — moved no count and was reported `not_rendered`; and a clear
+         of a map that was already clean was reported the same way, as if it had failed. The state
+         the reader asked for is the state; that is the queryRows reading (#R495), pointed at
+         removal. What is observed is the map AND the open panels; what the case says it cleared
+         rides along as `observed.cleared` so Atlas can name it. */
+      clear: {
+        observe: function () { return { paint: paintNow(), panels: openPanelIds() }; },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: (raw && raw.html) || '' };
+          var cleared = (raw && raw.exec && Array.isArray(raw.exec.cleared)) ? raw.exec.cleared : [];
+          var moved = !!(before && after && changed(before, after));
+          return { status: 'completed', code: moved ? 'ok' : 'already_clear', observed: { cleared: cleared, paint: after && after.paint, panels: after && after.panels }, html: (raw && raw.html) || '' };
+        }
+      },
+      factions: {
+        observe: function () { return paintNow(); },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: (raw && raw.html) || '' };
+          var n = (after && +after.factions) || 0;
+          if (n > 0) return { status: 'completed', code: 'ok', observed: { factions: n }, html: (raw && raw.html) || '' };
+          return { status: 'partial', produced: [], code: 'not_rendered', observed: { factions: 0 }, html: (raw && raw.html) || '' };
         }
       },
       /* ══ ⚠⚠⚠ (#R551) A COUNT THAT WENT UP IS NOT A MAP THAT IS FINISHED ═══════════════════════

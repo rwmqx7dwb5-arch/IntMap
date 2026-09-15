@@ -5347,6 +5347,8 @@ window.IntMapLang.define('zh', {
   'It was calculated but nothing was drawn on the map.': '已完成計算，但地圖上沒有畫出任何東西。',   /* atlas-results.js (#R318) atlas.code.not_rendered */
   'It is on the map but currently hidden.': '它在地圖上，但目前處於隱藏狀態。',   /* atlas-results.js (#R318) atlas.code.not_visible */
   'Nothing on the map changed.': '地圖上沒有任何變化。',   /* atlas-results.js (#R318) atlas.code.no_change */
+
+  'There was nothing of that kind to remove — the map is already in the state asked for.': '沒有可移除的該類項目 — 地圖已處於要求的狀態。',   /* atlas-results.js (#R318) atlas.code.already_clear */
   'That is not available right now.': '目前無法使用。',   /* atlas-results.js (#R318) atlas.code.unavailable */
   'I do not have that operation.': '我沒有這項操作。',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
   'The values given for that operation were not usable.': '傳給該操作的數值無法使用。',   /* atlas-results.js (#R318) atlas.code.bad_args */
@@ -6667,5 +6669,30 @@ window.IntMapLang.define('zh', {
   "Working": "處理中",
   "1 step": "1 個步驟",
   "{n} steps": "{n} 個步驟",
+  "a low pass, unlikely to be visible": "過境仰角低，肉眼不易看見",   /* #R726 */
+  "Base display": "基本顯示",   /* #R726 */
+  "elevation seen from": "仰角",   /* #R726 */
+  "feels like": "體感",   /* #R726 */
+  "gusts": "陣風",   /* #R726 */
+  "humidity": "濕度",   /* #R726 */
+  "in progress now": "正在過境",   /* #R726 */
+  "in the next 24 h": "（未來 24 小時內）",   /* #R726 */
+  "max elevation": "最大仰角",   /* #R726 */
+  "next pass": "下次過境",   /* #R726 */
+  "no pass": "無過境",   /* #R726 */
+  "now above": "目前位於",   /* #R726 */
+  "pass": "過境",   /* #R726 */
+  "precipitation": "降水",   /* #R726 */
+  "rain chance": "降雨機率",   /* #R726 */
+  "satellite card": "衛星卡片",   /* #R726 */
+  "The base display presets are unavailable.": "基本顯示的預設組合無法使用。",   /* #R726 */
+  "the chosen point": "指定地點",   /* #R726 */
+  "the map center": "地圖中心",   /* #R726 */
+  "The preset did not apply": "預設組合未能套用",   /* #R726 */
+  "Unknown base display preset": "未知的基本顯示預設組合",   /* #R726 */
+  "Upstream draws this shape without giving it a name": "上游繪製了這個形狀，但未給它名稱",   /* #R726 */
+  "Upstream states nothing further about this shape — not what it is, and not how precisely its boundary is drawn.": "上游對這個形狀沒有更多說明——既未說明它是什麼，也未說明其邊界繪製得有多精確。",   /* #R726 */
+  "valid at": "有效時刻",   /* #R726 */
+  "weather card": "天氣卡片",   /* #R726 */
   }
 });

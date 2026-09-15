@@ -199,9 +199,9 @@ test('⑧ every rule that can fail also reports itself on a green run', () => {
    `deep-tier-size` counted 「spec files」 in English and missed the same fact stated in
    Japanese, also wrong. `check:docs` was green through all four. Each is mutated back here. */
 const DEFECTS = [
-  ['capability-count', 'PRODUCT.md', '138 の能力', '130 の能力', 'の between the number and the counter'],
-  ['capability-count', 'PRODUCT.md', '138 能力', '130 能力', 'no asterisks around it'],
-  ['capability-count', 'docs/FILES.md', '138 能力 ×', '125 能力 ×', 'a counter followed by ×'],
+  ['capability-count', 'PRODUCT.md', '139 の能力', '130 の能力', 'の between the number and the counter'],
+  ['capability-count', 'PRODUCT.md', '139 能力', '130 能力', 'no asterisks around it'],
+  ['capability-count', 'docs/FILES.md', '139 能力 ×', '125 能力 ×', 'a counter followed by ×'],
   ['deep-tier-size', 'docs/FILES.md', 'core 7 本 / deep 105 本', 'core 6 本 / deep 59 本', 'the same fact in Japanese'],
   ['alerts', 'PRODUCT.md', '自前 13 フィード', '自前 12 フィード', 'a feed count outside the one owning sentence'],
   ['alerts', 'README.md', 'countries over thirteen feeds', 'countries over twelve feeds', 'the capture group that was never compared'],
@@ -298,7 +298,7 @@ test('⑫ capability-count goes red on the sentence that was shipped for nine ro
     const rel = 'DECISIONS.md';
     const original = readFileSync(join(ROOT, rel));
     const text = original.toString('utf8');
-    const good = '（138 のうち撤去済み 1 を除く 137）';
+    const good = '（139 のうち撤去済み 1 を除く 138）';
     assert.ok(text.includes(good), `${rel} no longer carries «${good}»`);
     try {
       writeFileSync(join(ROOT, rel), text.split(good).join('（130 のうち撤去済み 137 を除く 136）'));
@@ -309,7 +309,7 @@ test('⑫ capability-count goes red on the sentence that was shipped for nine ro
       } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
       assert.equal(code, 1, 'the withdrawn/reachable claim went unchecked again:\n' + out);
       assert.match(out, /withdrawn count holds 1/, out);
-      assert.match(out, /reachable half holds 137/, out);
+      assert.match(out, /reachable half holds 138/, out);
     } finally {
       writeFileSync(join(ROOT, rel), original);
     }

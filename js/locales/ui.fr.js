@@ -5129,6 +5129,8 @@ window.IntMapLang.define('fr', { ui: {
   'It was calculated but nothing was drawn on the map.': 'Le calcul a été fait, mais rien n’a été dessiné sur la carte.',   /* atlas-results.js (#R318) atlas.code.not_rendered */
   'It is on the map but currently hidden.': 'C’est sur la carte, mais actuellement masqué.',   /* atlas-results.js (#R318) atlas.code.not_visible */
   'Nothing on the map changed.': 'Rien n’a changé sur la carte.',   /* atlas-results.js (#R318) atlas.code.no_change */
+
+  'There was nothing of that kind to remove — the map is already in the state asked for.': 'Il n’y avait rien de ce genre à retirer — la carte est déjà dans l’état demandé.',   /* atlas-results.js (#R318) atlas.code.already_clear */
   'That is not available right now.': 'Ce n’est pas disponible pour le moment.',   /* atlas-results.js (#R318) atlas.code.unavailable */
   'I do not have that operation.': 'Je n’ai pas cette opération.',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
   'The values given for that operation were not usable.': 'Les valeurs fournies pour cette opération étaient inutilisables.',   /* atlas-results.js (#R318) atlas.code.bad_args */
@@ -6449,4 +6451,29 @@ window.IntMapLang.define('fr', { ui: {
   "Working": "Travail en cours",
   "1 step": "1 étape",
   "{n} steps": "{n} étapes",
+  "a low pass, unlikely to be visible": "passage bas, peu visible",   /* #R726 */
+  "Base display": "Affichage de base",   /* #R726 */
+  "elevation seen from": "élévation depuis",   /* #R726 */
+  "feels like": "ressenti",   /* #R726 */
+  "gusts": "rafales",   /* #R726 */
+  "humidity": "humidité",   /* #R726 */
+  "in progress now": "en cours",   /* #R726 */
+  "in the next 24 h": "dans les 24 prochaines heures",   /* #R726 */
+  "max elevation": "élévation max.",   /* #R726 */
+  "next pass": "prochain passage",   /* #R726 */
+  "no pass": "aucun passage",   /* #R726 */
+  "now above": "actuellement au-dessus de",   /* #R726 */
+  "pass": "passage",   /* #R726 */
+  "precipitation": "précipitations",   /* #R726 */
+  "rain chance": "risque de pluie",   /* #R726 */
+  "satellite card": "fiche satellite",   /* #R726 */
+  "The base display presets are unavailable.": "Les préréglages d’affichage de base ne sont pas disponibles.",   /* #R726 */
+  "the chosen point": "le point choisi",   /* #R726 */
+  "the map center": "le centre de la carte",   /* #R726 */
+  "The preset did not apply": "Le préréglage n’a pas été appliqué",   /* #R726 */
+  "Unknown base display preset": "Préréglage d’affichage de base inconnu",   /* #R726 */
+  "Upstream draws this shape without giving it a name": "La source dessine cette forme sans lui donner de nom",   /* #R726 */
+  "Upstream states nothing further about this shape — not what it is, and not how precisely its boundary is drawn.": "La source n’en dit pas davantage sur cette forme — ni ce qu’elle est, ni avec quelle précision sa limite est tracée.",   /* #R726 */
+  "valid at": "valable à",   /* #R726 */
+  "weather card": "fiche météo",   /* #R726 */
 } });

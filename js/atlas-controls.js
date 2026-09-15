@@ -363,5 +363,16 @@ export function makeAtlasControls(HOST, CTX) {
     return out;
   }
 
-  return { clickId, controlCatalog, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel };
+    /* ── the Default / Clean / Custom preset of the base map rows (js/data-layers.js IntMapBaseDisplay owns the state; this only asks it).
+       It was a control the reader had and Atlas did not: 「基本表示をデフォルトに戻して」 sent Atlas through nine find_capability calls
+       and out of steps with nothing done (measured on production, 2026-09-15). ── */
+    function doBaseDisplay(a){
+      const B=window.IntMapBaseDisplay; if(!B) return R(false, warn('⚠ '+L('The base display presets are unavailable.','基本表示の切り替えが利用できません。','Basisanzeige-Voreinstellungen nicht verfügbar.','Пресеты базового отображения недоступны.','Los ajustes de visualización base no están disponibles.')));
+      const lblOf=m=>({default:L('Default','デフォルト','Standard','По умолчанию','Predeterminado'),clean:L('Clean','クリーン','Klar','Чисто','Limpio'),custom:L('Custom','カスタム','Benutzerdefiniert','Свой','Personalizado')})[m]||m; const rowsOn=()=>{ try{ return (window.IntMapBasicLayers||[]).filter(id=>{ const cb=document.getElementById(id); return cb&&cb.checked; }).map(id=>{ const lb=document.querySelector('label[for="'+id+'"]'); return (lb&&lb.textContent.trim())||id; }); }catch(_){ return []; } };
+      const want=String(a.mode||'').toLowerCase().trim(); if(!want){ return R(true, note(L('Base display','基本表示','Basisanzeige','Базовое отображение','Visualización base')+': '+lblOf(B.get())+' — '+rowsOn().join(', '))); }
+      if(['default','clean','custom'].indexOf(want)<0) return R(false, warn('⚠ '+L('Unknown base display preset','不明な基本表示','Unbekannte Voreinstellung','Неизвестный пресет','Ajuste desconocido')+': '+esc(want)));
+      try{ B.set(want); }catch(_){ return R(false, warn('⚠')); } const now=B.get(); const ok=(now===want);
+      return R(ok, ok?note('✓ '+L('Base display','基本表示','Basisanzeige','Базовое отображение','Visualización base')+': '+lblOf(now)+(want==='custom'?'':(' — '+rowsOn().join(', ')))):warn('⚠ '+L('The preset did not apply','基本表示を切り替えられませんでした','Voreinstellung nicht übernommen','Пресет не применился','El ajuste no se aplicó')));
+    }
+  return { clickId, controlCatalog, doBaseDisplay, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel };
 }

@@ -17,6 +17,17 @@ import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and with th
  *  live host through `HOST`), rebound below under the ORIGINAL names so the body stays byte-identical.
  *  tests/r199-checks.test.mjs re-derives that byte-identity from the two files on every commit.
  * ==========================================================================*/
+/* ⚠ THE ONE RULE FOR «WHICH STRINGS ARE THIS NOMINATIM FEATURE'S NAMES»: its own `name`, the first
+   segment of display_name (the localised label) and every name:* / alt_name / official_name / int_name
+   in `namedetails`. `ref`, `brand` and `operator` are not names. A property of the factory (this module
+   exports exactly one declaration — tests/r199 ①) because js/atlas-verify.js's strict geocoder needs the same answer — a copy there is how two geocoders
+   start disagreeing about the same feature (#R515). */
+makeAtlasGeoResolve.featureNames = function featureNames(o){ const NAME_KEY_RE=/^(name|name:[a-z_-]+|alt_name|alt_name:[a-z_-]+|official_name|official_name:[a-z_-]+|int_name|short_name|old_name|loc_name|nat_name|reg_name)$/i;
+  const out=[]; const add=v=>{ if(typeof v==='string'&&v.trim()) out.push(v); };
+  if(!o||typeof o!=='object') return out;
+  add(o.name); add(String(o.display_name||'').split(',')[0]);
+  const nd=o.namedetails; if(nd&&typeof nd==='object'){ for(const k of Object.keys(nd)) if(NAME_KEY_RE.test(k)) add(nd[k]); }
+  return out; }
 export function makeAtlasGeoResolve(HOST, CTX) {
   const GE=CTX.GE, L=CTX.L, esc=CTX.esc, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, codeAtPoint=CTX.codeAtPoint, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup, resolveCountrySync=CTX.resolveCountrySync;
     /* (#R452) `geocode()` and `_nomExtent()` both went to Nominatim with no signal and no deadline,
@@ -113,11 +124,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
        agree with a JAPANESE result ("Mount Fuji" → 富士山 via name:en) without forcing an
        accept-language that would change the label every other caller already displays. `ref`, `brand`
        and `operator` are not names — 「宇-12」 on that post box is a collection code. */
-    const NAME_KEY_RE=/^(name|name:[a-z_-]+|alt_name|alt_name:[a-z_-]+|official_name|official_name:[a-z_-]+|int_name|short_name|old_name|loc_name|nat_name|reg_name)$/i;
-    function _candNames(o){ const out=[]; const add=v=>{ if(typeof v==='string'&&v.trim()) out.push(v); };
-      add(o.name); add(String(o.display_name||'').split(',')[0]);
-      const nd=o.namedetails; if(nd&&typeof nd==='object'){ for(const k of Object.keys(nd)) if(NAME_KEY_RE.test(k)) add(nd[k]); }
-      return out; }
+    const _candNames=makeAtlasGeoResolve.featureNames;   /* the module-level rule above — one copy; js/atlas-verify.js reads the same property */
     const NAME_AGREE_MIN=0.45;
     function _nameAgreement(core,o){ const q=_nkey(core); if(!q||!o) return 0; let best=0;
       for(const n of _candNames(o)){ const k=_nkey(n); if(!k) continue;

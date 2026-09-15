@@ -350,6 +350,8 @@ atlas-highlight.js                Atlas — コードブロックのシンタッ
                                   未知言語のフォールバック。出力は必ず esc 済み。配色は
                                   `HIGHLIGHT_CSS`（light / dark の 2 組）
 atlas-sims.js                     Atlas — 飛行・弾道・爆風・標高・勢力のアニメーション表示
+atlas-result-facts.js             Atlas — 道具の結果に、その道具のパネルが示す事実（衛星の直下点と次回通過・天気の数値・旅程）を文として載せる
+atlas-era-highlight.js            Atlas — 過去年を表示中の国ハイライトを、その年の政体の面（所有者 gloss 込み）で描く
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
 atlas-attach.js                   Atlas — 添付ファイルの正体をバイト列に訊く判定器 `ATL_FILE` と全画面ビューア
@@ -362,7 +364,7 @@ atlas-gloss.js                    Atlas — 回答文の語句を選択→右ク
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  138 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  139 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
@@ -442,7 +444,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全138を検索・到達可能 137）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全139を検索・到達可能 138）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -458,7 +460,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 138能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 139能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、

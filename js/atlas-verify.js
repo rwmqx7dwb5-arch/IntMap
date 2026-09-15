@@ -16,9 +16,11 @@
  * ==========================================================================*/
 import { jsonWithin } from './fetch-deadline.js';   /* (#R452) Nominatim, with a clock — see the file header there */
 import { NominatimGate } from './nominatim-gate.js';   /* (#R489) …and behind the app's ONE one-a-second floor — js/nominatim-gate.js */
+import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';   /* for its `featureNames` — the ONE rule for a Nominatim feature's names */
 
 export function makeAtlasVerify(HOST, CTX) {
   const L=CTX.L, esc=CTX.esc;   /* ⚠ tests/r199 ② requires the CTX rebinds to be the factory's FIRST statement */
+  const featureNames=makeAtlasGeoResolve.featureNames;   /* the ONE rule for a Nominatim feature's names — js/atlas-geo-resolve.js */
   /* (#R452) ONE geocode, and the whole pinning pass that awaits up to 24 of them in a file. Nominatim
      answers a client it has had enough of by not answering; without these two numbers the mapping
      self-check — which runs immediately before the answer is drawn — was the last unbounded await in
@@ -120,7 +122,12 @@ export function makeAtlasVerify(HOST, CTX) {
         'Независимый пересчёт НЕ совпал ('+v.failed.map(f=>f.label).join('; ')+') — возможна ошибка в распознавании или вычислении.',
         'Un recálculo independiente NO coincidió ('+v.failed.map(f=>f.label).join('; ')+') — la transcripción o un paso puede ser erróneo.'))+'</span></div>'; }
     function _atlExtractPlaces(text){ let t=String(text||'').replace(/`[^`]*`/g,' ').replace(/https?:\/\/\S+/g,' ').replace(/\[([^\]]*)\]\([^)]*\)/g,'$1');
-      const re=/[A-ZÀ-Þ][\p{L}'’\-]*(?:\s+(?:of|de|del|della|di|du|des|da|do|dos|van|von|la|le|los|las|el|al|the|and|upon|on)\s+[A-ZÀ-Þ][\p{L}'’\-]*|\s+[A-ZÀ-Þ][\p{L}'’\-]*){0,3}/gu;   /* no '.' in the class → a phrase never bridges a sentence boundary ("Italy. The Colosseum") */
+      /* no '.' in the class → a phrase never bridges a sentence boundary ("Italy. The Colosseum");
+         and only SPACES join the words (not \s) → a phrase never bridges a LINE either. The answer's
+         plain text joins a heading and its first paragraph with a newline, and `\s+` walked straight
+         across it: «## Nominal GDP» + «The latest…» became the candidate «Nominal GDP The», which was
+         then sent to a geocoder and printed under «not placed» (measured on production, 2026-09-15). */
+      const re=/[A-ZÀ-Þ][\p{L}'’\-]*(?:[ \t]+(?:of|de|del|della|di|du|des|da|do|dos|van|von|la|le|los|las|el|al|the|and|upon|on)[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*|[ \t]+[A-ZÀ-Þ][\p{L}'’\-]*){0,3}/gu;
       const seen=new Set(), out=[]; let m;
       while((m=re.exec(t))){ let s=m[0].replace(/[.,;:''’]+$/,'').trim(); if(s.length<3) continue;
         let toks=s.split(/\s+/); while(toks.length>1 && _ATL_LEAD.has(toks[0].toLowerCase())) toks=toks.slice(1); s=toks.join(' ');   /* drop a sentence-initial verb/adverb prefix */
@@ -152,7 +159,13 @@ export function makeAtlasVerify(HOST, CTX) {
       const by={}; _ATL_UNPLACED_REASONS.forEach(r=>{ by[r]=[]; });
       (Array.isArray(spots)?spots:[]).forEach(s=>{ if(!s||!s.name) return;
       if(s.verdict==='mapped') mapped.push(s.name);
-      else if(s.verdict==='ambiguous') ambiguous.push(s.name);
+      /* ⚠ The «lone capitalised token is weak evidence» rule is a fact about the TEXT source, not about
+         one verdict — so it applies to `ambiguous` exactly as it applies to `unplaced`. Before this it
+         applied to `unplaced` only, and the reader was shown «Ambiguous (several places share this
+         name): JST, Available, Providing» — sentence-initial words of an ISS answer that Nominatim
+         happens to know as a shop somewhere (measured on production, 2026-09-15). A structured
+         place, which the model named on purpose, is still surfaced whatever its length. */
+      else if(s.verdict==='ambiguous'){ if(s.src==='structured' || /\s/.test(s.name)) ambiguous.push(s.name); }
       else if(s.verdict==='unplaced'){ if(s.src==='structured' || /\s/.test(s.name)){ unplaced.push(s.name);
         by[_ATL_UNPLACED_REASONS.indexOf(s.reason)>=0?s.reason:'not_found'].push(s.name); } } });   /* text-source: only multi-word failures are surfaced (a lone capitalized word is likely not a place — don't cry wolf) */
       return { mapped, unplaced, ambiguous, unplacedBy: by }; }
@@ -185,10 +198,19 @@ export function makeAtlasVerify(HOST, CTX) {
        Only place-type, name-matching results count; ≥2 distinct locations with no country hint = ambiguous (not placed). */
     async function _atlGeocodeStrict(name, country){ name=String(name||'').trim(); if(name.length<2) return {ok:false,reason:'empty'};
       const q=[name,String(country||'').trim()].filter(Boolean).join(', '); let arr=null;
-      try{ await NominatimGate.nominatimSlot(); arr=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=5&q='+encodeURIComponent(q),GEOCODE_TIMEOUT_MS,{headers:{Accept:'application/json'}}); }
+      /* ⚠ `namedetails=1`, and the name is checked against EVERY name the feature carries — not against
+         the first segment of `display_name`, which Nominatim writes in the language of the browser's
+         Accept-Language. In a Japanese browser an English answer's «Tokyo» came back as «東京都» and
+         «United States» as «アメリカ合衆国», neither of which the English query could match, so the two
+         best-known places on Earth were printed under «couldn't locate precisely» (measured on
+         production, 2026-09-15). The label the reader sees is unchanged: it is still the first
+         segment of display_name, in the reader's language. The list of a feature's names is
+         js/atlas-geo-resolve.js's exported `featureNames` (name, localised label, every namedetails
+         name:*) — one rule, imported, not a second copy. */
+      try{ await NominatimGate.nominatimSlot(); arr=await jsonWithin('https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&namedetails=1&limit=5&q='+encodeURIComponent(q),GEOCODE_TIMEOUT_MS,{headers:{Accept:'application/json'}}); }
       catch(e){ return {ok:false,reason:'network'}; }   /* (#R452) …and the deadline lands here too: in both cases nothing arrived */
       if(!Array.isArray(arr)||!arr.length) return {ok:false,reason:'not_found'};
-      const matches=arr.filter(j=>{ const okType=/^(place|boundary|natural|waterway|landuse|tourism|historic|leisure|amenity)$/.test(String(j.class||''))||!!j.addresstype; return okType && _atlNameOk(name,(j.display_name||'').split(',')[0]); });
+      const matches=arr.filter(j=>{ const okType=/^(place|boundary|natural|waterway|landuse|tourism|historic|leisure|amenity)$/.test(String(j.class||''))||!!j.addresstype; return okType && featureNames(j).some(n=>_atlNameOk(name,n)); });
       if(!matches.length) return {ok:false,reason:'no_name_match'};
       const cells=new Set(); matches.forEach(j=>cells.add(Math.round(+j.lat*10)+','+Math.round(+j.lon*10)));
       if(!country && cells.size>=2) return {ok:false,reason:'ambiguous',ambiguous:true};
