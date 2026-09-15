@@ -79,53 +79,45 @@ export function makeHighlightTargets(deps) {
     _idIdxCache = countryIdIndex(g); _idIdxFor = g; return _idIdxCache;
   }
 
-  /* (#R157) ============ GPT-DECIDED HIGHLIGHT TARGETS (the meaning/execution split) ============
-     The natural-language MEANING of a highlight target — a country set ("ゲルマン諸国"/"Slavic countries"/"the
-     English-speaking world"/"major oil producers"/"OPEC") — is interpreted by the MODEL, which returns the
-     EXPLICIT member countries with ISO 3166-1 alpha-3 codes. The code's ONLY job here is to VALIDATE those codes
-     against the real country-border data (window.countryGeo) and later draw real borders. There is NO concept
-     dictionary, alias table or regionGroup lookup on this path — that hard-coded meaning-guessing running BEFORE
-     the model was the reported root cause ("ゲルマン諸国" failed as one unfound place). The ISO/M49/border data
-     survive only as DETERMINISTIC VALIDATION for the model's output, never as a meaning dictionary.
-     `_hlValidCodeSet` = the set of ISO3 codes that map to a real border feature; `_hlReadGptGroups` reads the
-     model's structured output into validated code groups. Returns null when the model gave NO structured codes
-     (→ the request falls through to the concrete place-name resolver for genuine single features: admin regions,
-     rivers, basins, natural regions). Pure (needs only window.countryGeo + countryStats) → CI-testable. */
-  function _hlValidCodeSet() { const s = new Set(); try { const g = geo(); (g && g.features || []).forEach(f => { const p = f.properties || {}; if (p.__code != null) s.add(String(p.__code).toUpperCase()); if (f.id != null) s.add(String(f.id).toUpperCase()); }); } catch (_) {} return s; }
-  function _hlReadGptGroups(a) { try { if (!a || typeof a !== 'object') return null;
-    const _IX = _hlIdIndex();
+  function _hlValidCodeSet(){ const s=new Set(); try{ const g=geo(); (g&&g.features||[]).forEach(f=>{ const p=f.properties||{}; if(p.__code!=null) s.add(String(p.__code).toUpperCase()); if(f.id!=null) s.add(String(f.id).toUpperCase()); }); }catch(_){} return s; }
+  function _hlReadGptGroups(a){ try{ if(!a||typeof a!=='object') return null;
+    const _IX=_hlIdIndex();
     /* (#R742) an identifier token in ANY notation the store declares → the alpha-3 the store keys on.
        `notationOf` says which notation was read, so the reply states what it understood instead of
-       swapping one spelling for another in silence. */
-    const norm3 = v => { v = String(v == null ? '' : v).trim().toUpperCase(); if (/^[A-Z]{3}$/.test(v)) return v; return _IX.map.get(v) || ''; };
-    const notationOf = v => { v = String(v == null ? '' : v).trim().toUpperCase(); return /^[A-Z]{3}$/.test(v) ? '' : (_IX.map.has(v) ? v : ''); };
-    const readT = t => { if (t == null) return null;
-      if (typeof t === 'string') { const c = norm3(t); return { iso3: c, name: c ? '' : t.trim(), via: notationOf(t) }; }
-      if (typeof t === 'object') { const raw = t.iso3 || t.iso || t.code || t.c || t.id || t.a3; const c = norm3(raw); const n = String(t.name || t.n || t.country || t.label || '').trim(); return (c || n) ? { iso3: c, name: n, via: notationOf(raw) } : null; }
+       swapping one spelling for another in silence. `asked` is a different question again: did the
+       caller OFFER an identifier? {name:'Germany',iso3:'XX'} named the slot and got the value wrong,
+       and #R158's contract is that such a target comes back unresolved with a reported candidate —
+       never as 「this request had no identifiers」. Only a request made purely of NAMES offered none. */
+    const norm3=v=>{ v=String(v==null?'':v).trim().toUpperCase(); if(/^[A-Z]{3}$/.test(v)) return v; return _IX.map.get(v)||''; };
+    const notationOf=v=>{ v=String(v==null?'':v).trim().toUpperCase(); return /^[A-Z]{3}$/.test(v)?'':(_IX.map.has(v)?v:''); };
+    const codeShaped=v=>/^[A-Z]{3}$/.test(String(v==null?'':v).trim().toUpperCase());
+    const readT=t=>{ if(t==null) return null;
+      if(typeof t==='string'){ const c=norm3(t); return {iso3:c,name:c?'':t.trim(),via:notationOf(t),asked:!!c||codeShaped(t)}; }
+      if(typeof t==='object'){ const raw=t.iso3||t.iso||t.code||t.c||t.id||t.a3; const c=norm3(raw); const n=String(t.name||t.n||t.country||t.label||'').trim(); return (c||n)?{iso3:c,name:n,via:notationOf(raw),asked:!!String(raw==null?'':raw).trim()}:null; }
       return null; };
-    const rawGroups = [];
-    if (Array.isArray(a.groups) && a.groups.length) {   /* several distinctly-coloured concept sets in one command */
-      a.groups.forEach(g => { if (!g || typeof g !== 'object') return; const src = Array.isArray(g.targets) ? g.targets : (Array.isArray(g.iso3) ? g.iso3 : (Array.isArray(g.codes) ? g.codes : (Array.isArray(g.countries) ? g.countries : []))); const ts = src.map(readT).filter(Boolean); if (ts.length) rawGroups.push({ label: String(g.label || g.interpretation || g.name || '').trim(), targets: ts }); });
+    const rawGroups=[];
+    if(Array.isArray(a.groups)&&a.groups.length){   /* several distinctly-coloured concept sets in one command */
+      a.groups.forEach(g=>{ if(!g||typeof g!=='object') return; const src=Array.isArray(g.targets)?g.targets:(Array.isArray(g.iso3)?g.iso3:(Array.isArray(g.codes)?g.codes:(Array.isArray(g.countries)?g.countries:[]))); const ts=src.map(readT).filter(Boolean); if(ts.length) rawGroups.push({label:String(g.label||g.interpretation||g.name||'').trim(),targets:ts}); });
     } else {
-      let src = Array.isArray(a.targets) ? a.targets : (Array.isArray(a.iso3) ? a.iso3 : (Array.isArray(a.codes) ? a.codes : null));
+      let src=Array.isArray(a.targets)?a.targets:(Array.isArray(a.iso3)?a.iso3:(Array.isArray(a.codes)?a.codes:null));
       /* a bare ISO3 array smuggled into "countries" (every entry a valid 3-letter code) also counts as GPT targets;
          a NAME array or a concept STRING does NOT — those fall through to the legacy concrete-place resolver. */
-      if (!src && Array.isArray(a.countries) && a.countries.length && a.countries.every(x => norm3(x))) src = a.countries;
-      if (src) { const ts = src.map(readT).filter(Boolean); if (ts.length) rawGroups.push({ label: String(a.interpretation || '').trim(), targets: ts }); }
+      if(!src&&Array.isArray(a.countries)&&a.countries.length&&a.countries.every(x=>norm3(x))) src=a.countries;
+      if(src){ const ts=src.map(readT).filter(Boolean); if(ts.length) rawGroups.push({label:String(a.interpretation||'').trim(),targets:ts}); }
     }
-    if (!rawGroups.length) return null;
-    const valid = _hlValidCodeSet();
+    if(!rawGroups.length) return null;
+    const valid=_hlValidCodeSet();
     /* (#R158 · Terra is the decision-maker, IntMap the faithful executor) OBSERVE, don't CORRECT. A valid ISO3 Terra chose
        is executed AS-IS. A blank/invalid ISO3 is NEITHER silently rescued from the name NOR silently dropped — it is
        returned to Terra as UNRESOLVED, tagged with a machine reason and (if the name deterministically maps to one) a
        candidate identifier that is REPORTED, never applied. Terra then decides: re-issue with the right code, re-search,
        ask, or adopt the partial. This replaces the old resolveCountrySync auto-correction the work order removed. */
-    const out = rawGroups.map(g => { const codes = [], unresolved = [], seen = new Set(), read = [];
-      g.targets.forEach(t => { const gi = t.iso3 || '';
-        if (gi && valid.has(gi)) { if (!seen.has(gi)) { seen.add(gi); codes.push(gi); if (t.via) read.push({ as: t.via, code: gi }); } return; }   /* Terra's identifier is valid → execute faithfully */
-        let available = []; if (t.name) { try { const c = resolveCountrySync(t.name); if (c && c.code && valid.has(String(c.code).toUpperCase())) available = [String(c.code).toUpperCase()]; } catch (_) {} }
-        unresolved.push({ name: t.name || '', iso3: gi, reason: (gi ? 'iso3_not_in_border_data' : (t.name ? 'no_iso3_provided' : 'empty_target')), availableIdentifiers: available }); });
-      return { label: g.label, codes, unresolved, read }; });
+    const out=rawGroups.map(g=>{ const codes=[],unresolved=[],seen=new Set(),read=[];
+      g.targets.forEach(t=>{ const gi=t.iso3||'';
+        if(gi&&valid.has(gi)){ if(!seen.has(gi)){ seen.add(gi); codes.push(gi); if(t.via) read.push({as:t.via,code:gi}); } return; }   /* Terra's identifier is valid → execute faithfully */
+        let available=[]; if(t.name){ try{ const c=resolveCountrySync(t.name); if(c&&c.code&&valid.has(String(c.code).toUpperCase())) available=[String(c.code).toUpperCase()]; }catch(_){} }
+        unresolved.push({name:t.name||'', iso3:gi, reason:(gi?'iso3_not_in_border_data':(t.name?'no_iso3_provided':'empty_target')), availableIdentifiers:available}); });
+      return {label:g.label,codes,unresolved,read}; });
     /* ⚠⚠⚠ (#R742) THE COMMENT ABOVE ALREADY PROMISED THIS AND THE CODE DID THE OPPOSITE. It states that a NAME
        array "does NOT [count as GPT targets] — those fall through to the legacy concrete-place resolver". But
        `readT` turns a non-code string into {iso3:'',name:'Germany'}, which makes `rawGroups` non-empty, so the
@@ -136,12 +128,11 @@ export function makeHighlightTargets(deps) {
        "⚠ Place not found: Korean Peninsula" shipped anyway. The same session reported "Greenland → GRL" and
        "Africa → ZAF" as unmatched while BOTH codes sat in the store's 252, and offered South Africa as the
        candidate for a continent.
-       So: when NOTHING in the request was an identifier, this path read nothing and says so by returning null,
-       exactly as it documents. A MIXED request (some codes, some names) still belongs here — #R158's contract
-       is that a valid identifier is executed as-is and the rest is REPORTED, never guessed. */
-    const noneWasAnIdentifier = rawGroups.every(g => g.targets.every(t => !t.iso3));
-    if (noneWasAnIdentifier) return null;
-    return out; } catch (_) { return null; } }
+       ⚠ The question is what the caller OFFERED, not what resolving produced: a wrong identifier still belongs
+       here, structured, so Terra can re-issue it (#R158). Only a request with no identifier in it at all read
+       nothing, and says so by returning null. */
+    if(rawGroups.every(g=>g.targets.every(t=>!t.iso3&&!t.asked))) return null;
+    return out; }catch(_){ return null; } }
 
   return {
     idIndex: _hlIdIndex,

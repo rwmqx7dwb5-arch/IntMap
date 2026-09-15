@@ -127,3 +127,20 @@ test('R742 ⑨ an unreadable store yields an empty index, never a half-built one
     assert.equal(R2.read({ codes: ['DE'] }), null, 'and no token resolves through it');
   }
 });
+
+test('R742 ⑩ offering an identifier and getting it wrong is NOT the same as offering none', () => {
+  /* ⚠ The first cut of the fall-through asked `!t.iso3` — what RESOLVING produced — so
+     {name:'Germany', iso3:'XX'} looked like a request with no identifiers and fell through, taking
+     #R158's repair contract with it. tests/r157.spec.js caught it. The caller named the identifier
+     slot; it just got the value wrong, and that is precisely the case Terra is supposed to be handed
+     back so it can re-issue with the right code. */
+  const g = R.read({ targets: [{ name: 'Germany', iso3: 'XX' }, { name: 'France', iso3: '' }] });
+  assert.ok(Array.isArray(g), 'a wrong identifier does not fall through to the place resolver');
+  assert.deepEqual(g[0].codes, [], 'and nothing is auto-applied from the name');
+  assert.equal(g[0].unresolved.length, 2, 'both are returned to Terra');
+
+  assert.equal(R.read({ targets: [{ name: 'Germany' }, { name: 'France' }] }), null,
+    'the same objects WITHOUT an identifier slot offered none, so they belong to the place resolver');
+  assert.ok(Array.isArray(R.read({ codes: ['XXX'] })), 'a bare code-shaped string is an offer too');
+  assert.equal(R.read({ targets: ['Korean Peninsula'] }), null, 'and a plain name still is not');
+});

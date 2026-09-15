@@ -56,7 +56,13 @@ test('GPT targets (concept expanded to ISO3) → real national borders, interpre
   expect(/ゲルマン語圏|Interpreted|解釈/.test(r.html)).toBe(true);
   // a legend swatch for the group
   expect((r.html.match(/border-radius:2px;vertical-align/g) || []).length).toBe(1);
-  expect(r.meta).toBeNull();   // full success → no partial flag
+  /* ⚠ (#R742) THE SUBJECT IS THE PARTIAL FLAG, NOT THE ABSENCE OF `meta`. This read
+     `expect(r.meta).toBeNull()` because for one round `meta` carried nothing but `{partial:true}`,
+     so "no partial flag" and "no meta at all" were the same sentence. #R742 gave the dispatch a
+     second thing to say there — `meta.painted`, the names of the shapes it drew, which the paint
+     verdict holds against the map so a redraw of the same set stops being called `not_rendered`.
+     The fact this test is for is unchanged and still measured: a full success declares no partial. */
+  expect(r.meta && r.meta.partial).toBeFalsy();
 });
 
 // A totally UNREGISTERED concept works with NO code changes — the model supplies the ISO3 list, the code just draws.
