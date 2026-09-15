@@ -493,9 +493,15 @@ function tilerRig({ mobile = true, n = 4 } = {}) {
   log.length = 0;   /* the `display` writes above are the rig's, not the tiler's */
 
   const src = CODE('js/data-layers.js');
-  const i = src.indexOf('function tileLegends(){');
+  /* ⚠ (#R742) THE SIGNATURE IS NOT THE SUBJECT. This read `indexOf("function tileLegends(){")`,
+     so the day tileLegends took a parameter the rig reported 「no longer a named function」 about a
+     function that was right there — #R488's shape, in the reading rather than in the rule. Worse, the
+     next line then rebuilt the header by hand, which would have dropped the parameter and turned the
+     new self-recall into unbounded recursion inside this rig. Find the declaration and carry the
+     signature the file actually ships. */
+  const i = src.search(/function tileLegends\(/);
   assert.ok(i > 0, 'tileLegends() is no longer a named function in js/data-layers.js');
-  const fn = 'function tileLegends()' + balanced(src, src.indexOf('{', i), '{', '}');
+  const fn = src.slice(i, src.indexOf('{', i)) + balanced(src, src.indexOf('{', i), '{', '}');
 
   const g = { Math, console, Object, Array, parseFloat, isFinite, String, Number };
   g.window = g;

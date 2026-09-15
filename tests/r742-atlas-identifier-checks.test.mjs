@@ -28,7 +28,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeHighlightTargets, ISO_ALIAS_COLS } from '../js/atlas-country-ids.js';
+import { makeHighlightTargets } from '../js/atlas-country-ids.js';
 
 /* The reader moved WHOLE out of js/atlas-console.js in #R742 — the kernel's line budget is
    shrink-only (tests/r318-checks ⑨b) — so these run the shipped function itself rather than a text
@@ -52,7 +52,7 @@ const STORE = { type: 'FeatureCollection', features: [
 /* the shipped reader, with only the two collaborators it names */
 function reader(store) {
   const t = makeHighlightTargets({ geo: () => store, resolveCountrySync: () => null });
-  return { idIndex: t.idIndex, valid: t.validCodeSet, read: t.readGroups };
+  return { idIndex: t.idIndex, valid: t.validCodeSet, read: t.readGroups, cols: t.isoAliasColumns };
 }
 
 const R = reader(STORE);
@@ -70,8 +70,9 @@ test('R742 ② the columns are NAMED, so a FIPS collision cannot answer for ISO'
   assert.deepEqual(codesOf(R.read({ codes: ['GM'] })), ['GMB'],
     '"GM" is Gambia, because only the ISO namespaces are read — Germany\'s FIPS_10 is also "GM"');
   assert.ok(!R.idIndex().map.has('GA'), 'a FIPS-only token is not an identifier this map keys on');
-  assert.ok(ISO_ALIAS_COLS.length > 0, 'the list is not empty');
-  assert.ok(ISO_ALIAS_COLS.every((c) => /^ISO_/.test(c)),
+  const cols = R.cols();
+  assert.ok(cols.length > 0, 'the list is not empty');
+  assert.ok(cols.every((c) => /^ISO_/.test(c)),
     'every column read is an ISO namespace; the moment a WB_/FIPS_/UN_ column is added there the ' +
     'collision this test names becomes reachable again');
 });
