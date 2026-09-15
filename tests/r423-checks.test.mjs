@@ -60,6 +60,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { readdirSync } from 'node:fs';
 import { readLF } from '../scripts/eol.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -265,23 +266,34 @@ test('R423 ③ a record that calls itself a sovereign country is listed, whateve
 
 /* ── ③ THE READERS THE FLAG REACHES ───────────────────────────────────────────────────────────── */
 
-test('R423 ④ the flag has six readers, and the fix reaches all of them', async () => {
+test('R423 ④ every reader of the sovereignty flag is found by sweeping js/, and the fix reaches all of them', async () => {
   /* `sov` is not the Countries list's private field. These are the sites that ask `sov!==false`,
      found by sweeping js/ this round; a fix that repaired only `renderStats` would leave Norway out
      of every Atlas ranking and out of the comparison picker, which is what the report's "no row"
      was one symptom of. The sweep is asserted here so a future reader cannot be added silently
      without this file noticing the count changed. */
-  const FILES = ['js/countries-ui.js', 'js/stats-compare.js', 'js/atlas-console.js', 'js/atlas-examples.js', 'js/time-borders.js'];
+  /* ⚠⚠⚠ (#R733) THE SWEEP IS RUN HERE, NOT FROZEN AS FIVE FILENAMES. The paragraph above says the
+     readers were 「found by sweeping js/」 and then the check named the five files that sweep hit —
+     so what it actually measured was 「these five files still contain what they contained」. #R733
+     moved the country resolver out of js/atlas-console.js into js/atlas-geo-resolve.js and this went
+     red, with SIX readers still present and ONE file not on the list. That is the shape
+     .agents/rules/no-ad-hoc-hardcoding.md §1 names and [[intmap-restate-the-defect-not-the-fix]]
+     restates: the defect was 「a reader can be ADDED silently」, and a frozen file list also refuses
+     a reader that MOVED. The invariant is about the flag, so it is measured over js/. */
+  const JS = readdirSync(resolve(HERE, '..', 'js')).filter((f) => f.endsWith('.js')).sort();
   const readers = [];
-  for (const f of FILES) {
-    const src = read(f);
-    const n = (src.match(/\.sov\s*(===|!==)\s*false/g) || []).length;
-    if (n) readers.push(`${f}:${n}`);
+  let total = 0;
+  for (const f of JS) {
+    const n = (read('js/' + f).match(/\.sov\s*(===|!==)\s*false/g) || []).length;
+    if (n) { readers.push(`js/${f}:${n}`); total += n; }
   }
-  assert.deepEqual(readers.sort(), [
-    'js/atlas-console.js:2', 'js/atlas-examples.js:1', 'js/countries-ui.js:1',
-    'js/stats-compare.js:1', 'js/time-borders.js:1',
-  ], 'the six readers of the sovereignty flag, across five files');
+  /* ⚠⚠⚠ AND THE SWEEP IMMEDIATELY FOUND THE THING THE FROZEN LIST EXISTED TO PREVENT. Seven, not
+     six: `js/atlas-query.js` has read this flag since #R495 and was never on the five-file list, so
+     「a future reader cannot be added silently」 is exactly what happened — silently, and the check
+     stayed green through it. The count rose because the census got wider, NOT because a reader was
+     added this round; the flag is still written in one place and still reaches all seven. */
+  assert.equal(total, 7, 'readers of the sovereignty flag across js/ — found: ' + readers.join(', '));
+  assert.ok(readers.indexOf('js/atlas-query.js:1') >= 0, 'including the one the frozen list could not see');
 
   /* and they all read ONE field, written in ONE place — so fixing the predicate fixes all six */
   const writes = (read('js/countries-ui.js').match(/^\s*sov:/gm) || []).length;
