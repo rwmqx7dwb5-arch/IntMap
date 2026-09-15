@@ -359,6 +359,20 @@ export function makeAtlasAgent() {
       const failedCalls = Object.create(null);
       const results = [];
       let text = '';
+      /* ⚠⚠⚠ (#R742) A SENTENCE WRITTEN ON A STEP THAT THEN ISSUED CALLS IS NOT THE ANSWER EITHER.
+         #R663 held back the text of a step that DECLARED itself mid-turn; the same sentence written
+         without the declaration walked straight through. MEASURED on production 2026-09-15:
+         「リスボンからケープタウンまでの距離」 came back as 「Measuring the straight-line distance … and
+         drawing it on the map」 — with `measure:ok, drawLine:ok` in the same turn. The distance WAS
+         computed; the turn then ran out of steps, and because that promise was sitting in `text`,
+         the "write the answer" call below never ran and the number never reached the reader.
+         A reply that issues tool calls is, mechanically, not the end of the turn — the loop is about
+         to continue — so its prose is provisional, and this is where it waits. No word of it is read:
+         what separates it from an answer is whether the same reply issued calls.
+         ⚠ NOTHING IS LOST (CONSTITUTION.md §5): it is taken back below whenever no answer was
+         written after it — which is exactly the turn that ends by asking the reader a question, where
+         the sentence accompanying `ask_user` is all there is. */
+      let midText = '';
       let malformedRun = 0;
       let stopped = '';
       let repeatRun = 0;   /* consecutive steps made only of reused calls — see maxRepeatSteps */
@@ -427,7 +441,10 @@ export function makeAtlasAgent() {
            survived to the bubble. Text from a step that declared itself mid-turn is kept out — and
            if such a step turns out to end the turn anyway (the gate below runs out of bounces), the
            accepting branch takes it back, so nothing can render an empty answer. */
-        if (reply && typeof reply.text === 'string' && reply.text.trim() && turnState !== 'continuing') text = reply.text;
+        if (reply && typeof reply.text === 'string' && reply.text.trim() && turnState !== 'continuing') {
+          /* (#R742) …and where it goes is decided by the reply's own record of what it did */
+          if (calls.length) midText = reply.text; else text = reply.text;
+        }
         if (reply && ANSWER_MODES.indexOf(reply.answerMode) >= 0) answerMode = reply.answerMode;
 
         /* ── ZERO TOOL CALLS IS A COMPLETE TURN. This is the branch the old planner had no shape
@@ -449,8 +466,25 @@ export function makeAtlasAgent() {
              「互いに矛盾する門が増え、どれが効いたのか誰にも言えなくなる」). Nothing here reads a word
              of the prose: 「まず確認します」 and 「フランスの首都はパリです」 are the same bytes to this
              loop, and what separates them is which of the two Atlas said the reply was. */
+          /* ══ ⚠⚠⚠ (#R742) …OR ENDED THE TURN WITHOUT ANSWERING AT ALL ══════════════════════════
+             The two clauses above both compare a DECLARATION against the turn's record, so a reply
+             that declares nothing was measured against nothing. MEASURED on production 2026-09-15,
+             three times — 「Show me the Roman Empire at its greatest extent…」, 「Which countries have
+             never been members of the United Nations?」, 「…the Amazon rainforest…」 — each ended on
+             step 0, in 5–12 s, with `tool_calls:[]`, no `answer_mode`, no `turn`, and `final_text`
+             empty, which `required:['final_text']` accepts because a string schema with no
+             `minLength` accepts "". `stopped` said 'answered' and the reader got the shell's
+             fallback word 「Done.」 as the whole reply to their question.
+             The contradiction needs no declaration to be visible: the turn is over and the reader
+             has nothing. It is held by the SAME gate — same bounded budget, same typed note — and
+             the recovery is the only one that is not an invention: Atlas writes the answer, or makes
+             the calls that produce it. ⚠ NOTHING IS PUT IN THE READER'S MOUTH HERE: this loop never
+             composes a sentence: if the bounces run out with the answer still empty, the turn says
+             so (`stopped` below), and what the reader sees stays the shell's decision. */
+          const answerHere = (reply && typeof reply.text === 'string' && reply.text.trim()) ? reply.text : text;
           const code = (need && !made) ? (GATE_CODE[answerMode] || 'output_not_produced')
-            : ((turnState === 'continuing') ? 'no_calls_issued' : '');
+            : ((turnState === 'continuing') ? 'no_calls_issued'
+              : (!String(answerHere || '').trim() ? 'no_answer_written' : ''));
           if (code && gateBounces < lim.maxOutputGate && (step + 1) < lim.maxSteps && !outOfTime()) {
             gateBounces++; trace.outputGate++;
             /* (#R543) the note names the outputs the declaration asked for and the call that makes
@@ -461,7 +495,14 @@ export function makeAtlasAgent() {
               mixed: 'produce one of them now — compose_map for the map, chart for the numbers' }[answerMode];
             /* (#R663) …and the same shape again for the other declaration: do it now, or say this
                reply was the answer after all. Neither branch tells Atlas what to conclude. */
-            const msg = (code === 'no_calls_issued')
+            /* (#R742) …and for the third: the turn is ending and final_text is empty. The note says
+               what the machine recorded and what the two ways out are — it does not say what to write. */
+            const msg = (code === 'no_answer_written')
+              ? 'This reply ends the turn — tool_calls is empty — and final_text is empty too, so the reader '
+                + 'asked a question and would be shown nothing at all. Answer them now in final_text, in their '
+                + 'language; or, if the answer needs work first, make those calls in this reply (find_capability '
+                + 'finds anything the core tools do not cover, and run_capability runs it) and answer after.'
+              : (code === 'no_calls_issued')
               ? 'You marked this reply "continuing" — final_text is not the answer yet and the work goes on in '
                 + 'tool_calls — but tool_calls was empty, so nothing ran, and the reader would be left with a sentence '
                 + 'about something that has not happened. Make those calls now, in this reply (find_capability finds '
@@ -626,20 +667,37 @@ export function makeAtlasAgent() {
          — the question, in the reader's bubble, with its options. Spending a model call to add a
          sentence under it would answer nothing and would cost the reader a call from a turn whose
          whole point is that it is waiting. */
-      if (!String(text || '').trim() && results.length && stopped !== 'aborted' && stopped !== 'transport'
+      /* ⚠⚠⚠ (#R742) …AND A TURN THAT RAN NOTHING AND SAID NOTHING RENDERS AS THE SAME SILENCE.
+         `results.length` made this last hand-back unreachable for exactly the turns measured above,
+         where the reader got 「Done.」: no tool ran, so there were no results to write about, so the
+         one thing that asks for an answer was skipped. What the condition is about is the reader
+         having nothing — that is `text`, and it is already in the line. The prompt names what the
+         transcript actually contains, so nothing invites a claim about work that did not happen. */
+      if (!String(text || '').trim() && stopped !== 'aborted' && stopped !== 'transport'
           && stopped !== 'awaiting_user') {
         try {
           const last = await model({
             system: opts.system || '',
-            messages: transcript.concat([{ role: 'user', content:
-              '[WRITE THE ANSWER] The tool results above are what actually happened. Reply to the reader now, '
-              + 'in their language, with no further tool calls.' }]),
+            messages: transcript.concat([{ role: 'user', content: results.length
+              ? '[WRITE THE ANSWER] The tool results above are what actually happened. Reply to the reader now, '
+                + 'in their language, with no further tool calls.'
+              : '[WRITE THE ANSWER] This turn has ended with nothing written for the reader, and no tool was run. '
+                + 'Answer their question now, from what you know, in their language, with no further tool calls — '
+                + 'and if it cannot be answered, say that and say why.' }]),
             tools: [], step: lim.maxSteps, signal: opts.signal, final: true,
           });
           if (last && typeof last.text === 'string') text = last.text;
           trace.steps.push({ step: lim.maxSteps, final: true, forced: true });
         } catch (_) { /* keep whatever we have; the caller degrades */ }
       }
+      /* (#R742) the provisional sentence, taken back when no answer was ever written over it — the
+         turn that ended by asking the reader a question is the one this is for. */
+      if (!String(text || '').trim() && String(midText || '').trim()) text = midText;
+      /* ⚠ (#R742) AND IF IT IS STILL EMPTY, THE TURN SAYS SO RATHER THAN REPORTING SUCCESS. 'answered'
+         is Atlas having finished; a turn with no answer in it did not. Only that one value is
+         replaced: every other stop already names what happened to it, and js/atlas-console.js reads
+         those names to decide which note goes under the reply. */
+      if (!String(text || '').trim() && stopped === 'answered') stopped = 'no_answer';
 
       /* (#R511)(#R543) `answerMode` is what Atlas DECLARED, reported as declared. `produced` is what
          the machine recorded — the whole set now, not one boolean per output, so a third modality
