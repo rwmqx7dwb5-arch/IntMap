@@ -408,6 +408,10 @@ export function makeAtlasState(HOST) {
         out[n] = readOne(n, errors);
       });
       if (errors.length) out._errors = errors;
+      /* (#R742) WHERE EACH LAYER THAT IS ON CAME FROM. The annotation is applied HERE and not inside
+         the `activeLayers` provider so that it holds for WHOEVER publishes that section — the default
+         DOM provider, or a replacement a later round registers. The rule belongs to the fact. */
+      if (Array.isArray(out.activeLayers)) out.activeLayers = annotateLayerOrigins(out.activeLayers);
       return out;
     };
 
@@ -570,13 +574,26 @@ export function makeAtlasState(HOST) {
       /* `null` is "nobody published the layer state", which is not the same claim as "no layers are on" —
          so the reassuring sentence is only printed when a provider actually looked. */
       if (Array.isArray(snap.activeLayers)) {
-        var on = [], readable = [];
+        var on = [], readable = [], marked = false;
         snap.activeLayers.forEach(function (l) {
           if (!l) return;
           if (typeof l.readable === 'string') { readable.push(l.readable); return; }
-          on.push(str(l.label) + (l.painted === false ? ' [NOT painted on the map — data still loading or failed]' : ''));
+          /* ⚠ (#R742) THE ORIGIN MARK IS THE JUDGEMENT MATERIAL, NOT A JUDGEMENT. js/atlas-persona.js
+             asks Atlas to take down 「a layer you turned on for an earlier question」 and to keep what
+             the reader asked to keep — a distinction this line could not support while every layer
+             arrived as a bare name. Nothing here switches anything off: the mark says who is on record
+             as having switched it on, and the decision stays with Atlas, every turn. */
+          var og = l.origin || null, mark = '';
+          if (og && og.by === 'atlas') {
+            marked = true;
+            mark = ' [YOU turned this on · turn ' + str(og.turnId) + (og.turnsAgo ? (' · ' + og.turnsAgo + ' turn(s) ago') : '') + ']';
+          } else if (og) { marked = true; mark = ' [origin not recorded]'; }
+          on.push(str(l.label) + (l.painted === false ? ' [NOT painted on the map — data still loading or failed]' : '') + mark);
         });
         lines.push(on.length ? ('Layers ON (' + on.length + '): ' + on.join(', ') + '.') : 'No data layers are on.');
+        if (on.length && marked) lines.push('Layer marks: "[YOU turned this on …]" means THIS session recorded you switching that layer on for an earlier question; ' +
+          '"[origin not recorded]" means no such record exists (it was already on, or the reader switched it on themselves). ' +
+          'Judge each turn whether a layer you turned on still serves the question, and switch it off (layers.toggle, on:false) when the map reads better without it — what the reader asked to keep, keep.');
         if (readable.length) lines.push('Readable layer data (query real values with the "layerData" action): ' + readable.join(' | ') + '.');
       }
 
@@ -744,8 +761,101 @@ export function makeAtlasState(HOST) {
     var turns = [];
     var MAX_TURNS = 24;
 
+    /* ══ (#R742) WHERE A LAYER THAT IS ON CAME FROM ════════════════════════════════════════════
+       Measured on production 2026-09-15: sixteen questions left earthquakes, railways, wind,
+       volcanoes and night lights all switched on at once, with 40.3% of the map under legends.
+       Nothing in the machinery was broken. js/atlas-persona.js ALREADY instructs Atlas to take down
+       「a layer you turned on for an earlier question」 when it no longer serves the current one, and
+       to keep what the reader asked to keep; `renderPrompt` ALREADY named every layer that was on,
+       with no ceiling (#R413). What no one gave the model was the one fact that instruction turns on:
+       WHICH OF THOSE LAYERS ATLAS ITSELF PUT THERE. Asked to tell its own leftovers from the reader's
+       settings, it was handed {id, label, painted} and nothing else — so it drew no distinction, and
+       took nothing down. The decision stays with Atlas (「毎回 Atlas が判断する」): this supplies the
+       evidence, and no rule anywhere switches a layer off on its own.
+
+       The evidence is already on this side of the wall. `recordOperation` is called from the
+       executor's `settle`, and ONLY for an operation carrying a turnId — which is the Atlas path
+       (js/atlas-console.js executes with {source:'atlas', turnId}). So a layer id that was absent at
+       the previous observation and present when an Atlas operation lands appeared while that
+       operation ran, and the ledger says so with the turn and the capability that was running.
+
+       ⚠ THIS RECORDS AN OBSERVATION, NOT AN AUTHOR. A layer with no record is reported as «no
+       record» and never as «the reader turned it on»: it may have been on before Atlas first looked,
+       or been ticked by hand, and nothing here can tell those apart. Asserting either would be data
+       claiming an author it does not have.
+       ⚠ THE KEY IS THE CHECKBOX ID, NOT THE NAME ATLAS ASKED FOR. `args.name` is what the model
+       typed ('quakes', '地震', 'night lights'), turned into a checkbox by `resolveLayer`'s scorer in
+       js/atlas-console.js. Matching that name here would be a SECOND copy of that scorer, free to
+       disagree with the first one on its own schedule — the two-copies-of-one-rule shape #R515 named.
+       ⚠ NO LIST OF "LAYER CAPABILITIES". Any Atlas operation that leaves a new layer on is an Atlas
+       layer — layers.toggle, layers.baseDisplay, a simulation that raises its own overlay — and a
+       hand-written list of the ones that count would silently miss the next one that is added. */
+    var layerOrigin = Object.create(null);   /* checkbox id → {turnId, capabilityId, at} */
+    var layersSeen = null;                   /* the previous observation; `null` is "never looked" */
+    function layerIdsNow() {
+      var fn = providers['activeLayers']; if (!fn) return null;
+      var v = null; try { v = fn(); } catch (_) { return null; }
+      if (!Array.isArray(v)) return null;
+      var ids = Object.create(null);
+      v.forEach(function (l) {
+        /* the readable-registry rows (`readable`) are a SECOND statement about the same layers, not
+           boxes of their own, and their id is null whenever the two lists fall out of step */
+        if (l && typeof l.readable !== 'string' && l.id) ids[String(l.id)] = 1;
+      });
+      return ids;
+    }
+    function observeLayers(by) {
+      var now = layerIdsNow(); if (!now) return;
+      var prev = layersSeen;
+      if (prev && by) Object.keys(now).forEach(function (id) { if (!prev[id]) layerOrigin[id] = by; });
+      forgetAbsent(now);
+      layersSeen = now;
+    }
+    /* a layer switched off loses its record AND its place in the baseline: the next time it is on, it
+       is on for a new reason, and that reason gets to be recorded.
+       ⚠ THIS IS THE ONLY PART OF THE LEDGER `snapshot()` MAY RUN. Forgetting what is gone is safe from
+       anywhere; ADDING to the baseline is not. The executor takes `afterState = snapshot()` BEFORE
+       `settle` files the operation (js/atlas-executor.js), so a snapshot that quietly baselined new
+       layers would make every layer Atlas switches on already-known by the time the operation lands —
+       the ledger would record nothing and report every layer as unrecorded, which is the state this
+       round is fixing. Additions are observed at the two turn boundaries below, and nowhere else. */
+    function forgetAbsent(present) {
+      Object.keys(layerOrigin).forEach(function (id) { if (!present[id]) delete layerOrigin[id]; });
+      if (layersSeen) Object.keys(layersSeen).forEach(function (id) { if (!present[id]) delete layersSeen[id]; });
+    }
+    /* how many turns back `fromId` is, counted in the ledger's own kept turns — not by subtracting
+       ids, which are not promised to be consecutive and are not promised to be numbers */
+    function turnsBetween(fromId, toId) {
+      var a = -1, b = -1;
+      for (var i = 0; i < turns.length; i++) {
+        if (turns[i].turnId === fromId) a = i;
+        if (turns[i].turnId === toId) b = i;
+      }
+      return (a >= 0 && b >= 0) ? (b - a) : null;
+    }
+    function annotateLayerOrigins(rows) {
+      var present = Object.create(null);
+      rows.forEach(function (l) { if (l && typeof l.readable !== 'string' && l.id) present[String(l.id)] = 1; });
+      forgetAbsent(present);
+      var last = API.lastTurn();
+      return rows.map(function (l) {
+        if (!l || typeof l.readable === 'string' || !l.id) return l;
+        var rec = layerOrigin[String(l.id)];
+        if (!rec) return Object.assign({}, l, { origin: { by: 'unrecorded' } });
+        var o = { by: 'atlas', turnId: rec.turnId, capabilityId: rec.capabilityId };
+        var ago = turnsBetween(rec.turnId, last && last.turnId);
+        if (ago != null) o.turnsAgo = ago;
+        return Object.assign({}, l, { origin: o });
+      });
+    }
+    /* the ledger's own read-out — the debug view and the audit ask it by id */
+    API.layerOrigin = function (id) { return layerOrigin[String(id)] || null; };
+
     /* beginTurn(turnId, question) — opens a machine record for this exchange. */
     API.beginTurn = function (turnId, question) {
+      /* the baseline, taken BEFORE the turn runs and attributed to no one: whatever is on now is on
+         for a reason this ledger did not see (#R742) */
+      try { observeLayers(null); } catch (_) { }
       var rec = {
         turnId: turnId, question: String(question || ''), at: (function () { try { return Date.now(); } catch (_) { return 0; } })(),
         plan: null, operations: [], objectIds: [], unresolved: [],   /* (#R406) `goalSpec` left with the planner */
@@ -778,6 +888,10 @@ export function makeAtlasState(HOST) {
       if (op.objectIds && op.objectIds.length) t.objectIds = op.objectIds.concat(t.objectIds).slice(0, 12);
       if (op.unresolved && op.unresolved.length) t.unresolved = op.unresolved.concat(t.unresolved).slice(0, 12);
       if (op.inputRequest && op.inputRequest.resumeToken) t.resumeToken = op.inputRequest.resumeToken;
+      /* (#R742) an operation only reaches this function with a turnId, and a turnId only comes from
+         the Atlas path — so a layer that is on NOW and was not on at the last observation went on
+         while THIS operation ran */
+      try { observeLayers({ turnId: turnId, capabilityId: String(op.capabilityId || ''), at: (function () { try { return Date.now(); } catch (_) { return 0; } })() }); } catch (_) { }
       return true;
     };
     API.endTurn = function (turnId, o) {

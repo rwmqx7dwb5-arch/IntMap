@@ -2137,7 +2137,33 @@ window.IntMapModules.weatherPanel=function(HOST){
       try{ window._wireLegendDrag&&window._wireLegendDrag(panel); }catch(_){}
       return panel; }
     function close(){ if(panel) panel.style.display='none'; }
-    function place(){ try{ if(panel&&panel.dataset.dragged) return; const mc=document.getElementById('map-container'); if(!mc) return; if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches) return; panel.style.left=(mc.clientWidth-panel.offsetWidth-22)+'px'; panel.style.top='70px'; }catch(_){} }
+    /* ══ ⚠⚠⚠ (#R742) THE PANEL'S TOP IS THE CONTROL BAR'S BOTTOM EDGE, NOT A NUMBER ═════════════
+       MEASURED in production 2026-09-15 (window 1512×945, map 1112×923, sidebar 400): after sixteen
+       Atlas questions the floating panels covered 40.3 % of the map, and the worst single pair was
+       this one — `.map-controls-top` 389×113 at (1113,10) with this panel 333×349 at (1157,70), i.e.
+       333×53 = 17,649 px² of the control bar UNDERNEATH the weather panel. The panel won because its
+       z-index is 1750 and the bar's is 1000; neither side had one line of code about the other, and
+       the 70 here was written when the bar was one row tall. THE BAR GROWS WITH ITS CONTENT (base
+       map / projection / layers …), so any number written here is wrong at some row count.
+       観測: 上記の本番実測（bar の実高 113 px）。
+       失効条件: `.map-controls-top` が地図の右上を占めなくなったら（css/intmap.css の
+       `position/top/right` が変われば）この導出そのものが無意味になる。
+       正本: この関数。天気パネルの top を決める場所は他に無い。
+       ⚠ THE CLEARANCE IS NOT A NEW CONSTANT EITHER: the panel keeps the same distance from the bar
+       that the bar keeps from the container's top edge, so it follows the stylesheet's inset. */
+    function wxTopBelowControls(mc){
+      /* the position this panel shipped with before #R742 — and the answer whenever there is no bar
+         to clear (no element, or an invisible one), so nothing moves on a page without the bar. */
+      const LEGACY_TOP=70;
+      try{
+        const bar=document.querySelector('.map-controls-top'); if(!bar) return LEGACY_TOP;
+        const bb=bar.getBoundingClientRect(); if(!bb||!(bb.height>0)) return LEGACY_TOP;
+        const mb=mc.getBoundingClientRect(); if(!mb) return LEGACY_TOP;
+        const inset=Math.max(0,bb.top-mb.top);
+        return Math.max(LEGACY_TOP,Math.round(bb.bottom-mb.top+inset));
+      }catch(_){ return LEGACY_TOP; }
+    }
+    function place(){ try{ if(panel&&panel.dataset.dragged) return; const mc=document.getElementById('map-container'); if(!mc) return; if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches) return; panel.style.left=(mc.clientWidth-panel.offsetWidth-22)+'px'; panel.style.top=wxTopBelowControls(mc)+'px'; }catch(_){} }
     /* (#R183) ONE guarded weather client for the whole app — window.IntMapWx (js/wx-source.js).
        `_metNo` stays as a thin alias because the name appears in the #R72 notes and in tests. */
     const _metNo=(lat,lng)=>window.IntMapWx.metNo(lat,lng);

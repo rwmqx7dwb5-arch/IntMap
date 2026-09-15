@@ -67,7 +67,11 @@ export function makeLayerDropdown(HOST, CTX) {
     }
     /* always close the legend element itself + re-tile, so the × is never a dead button */
     if(lg){ try{ lg.style.display='none'; }catch(_){} }
-    try{ window.tileLegends&&window.tileLegends(); }catch(_){}
+    /* ⚠ (#R742) `_tileLegends` — with the underscore. js/data-layers.js publishes the tiler under
+       that one name, so the bare spelling here was a guard that could never be true: closing a legend
+       with its × left every other legend in the slot the closed one had vacated until something else
+       happened to re-tile. One spelling, taken from the one place that assigns it. */
+    try{ window._tileLegends&&window._tileLegends(); }catch(_){}
     try{ window._sweepOrphanLayers&&window._sweepOrphanLayers(); }catch(_){}
   });
   /* ---- Collapsible layer groups (accordion): tap a section header to fold its layers ---- */

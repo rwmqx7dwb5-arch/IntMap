@@ -669,6 +669,53 @@ export function makeAtlasCapabilities(HOST) {
       return true;
     }
 
+    /* ══ ⚠⚠⚠ (#R742) THE SAME QUESTION, ASKED OF A PAINT: 「IS WHAT WAS ASKED FOR ON THE MAP」 ═════
+       The camera table above ended 「did anything move」 for the camera. The paint verdict below still
+       asked it, and every value `paintNow()` reads is a CARDINAL — counts of features, of visible
+       layers, of objects, and (since #R736) the painter's own counts of highlighted countries,
+       polygons, lines and shaded codes. A cardinal cannot tell a redraw from a failure, and it cannot
+       tell a REPAIR from either: six countries repainted as six other countries is 6 → 6.
+       MEASURED on production 2026-09-15, signed in:
+           「Which countries border Kazakhstan?」 — the map painted the six neighbours on the first
+           call, and the verdicts were `highlight:FAIL/failed` → `FAIL/not_rendered` → `FAIL/not_rendered`
+           over ten steps; 「シベリア鉄道の経路」 — `railAxis:FAIL/not_rendered` five times in 1m44s;
+           「地中海の最深点へ飛んでマークして」 — 22 steps, 2m14s, the same pin dropped six times.
+       So the paint verdict gets the third rung the camera has: the PAINTER declares what it painted
+       (`raw.meta.painted`, keyed by the same names js/atlas-era-highlight.js reports under `ids`) and
+       this holds the declaration against the map as it is NOW. ⚠ READ, NOT TRUSTED — a dispatch that
+       declares six countries it did not paint still answers `not_rendered`. ⚠ AND NOTHING IS GUESSED:
+       no declaration, or a declaration naming a surface this reading does not hold, returns `null`
+       and the verdict is exactly the one it was before. */
+    function PAINT_GOAL(raw) {
+      var d = raw && raw.meta && raw.meta.painted;
+      if (!d || typeof d !== 'object') return null;
+      var out = [];
+      Object.keys(d).forEach(function (kind) {
+        var v = d[kind]; if (v == null) return;
+        var want = [];
+        (Array.isArray(v) ? v : [v]).forEach(function (x) { var s = String(x == null ? '' : x); if (s && want.indexOf(s) < 0) want.push(s); });
+        if (want.length) out.push({ kind: kind, want: want });
+      });
+      return out.length ? out : null;
+    }
+    /* how much of the declaration is on the map — {want, have} — or `null` when it cannot be measured.
+       ⚠ COUNTS, WHERE THE CAMERA HAS A BOOLEAN, because a paint CAN be half-done: fourteen oblasts of
+       which eleven resolved is a real state of the world and the camera has no equivalent of it. */
+    function paintReach(after, raw) {
+      var goal = PAINT_GOAL(raw); if (!goal) return null;
+      var ids = after && after.atlas && after.atlas.ids;
+      if (!ids) return null;                                     /* the painter declared no state to read */
+      var want = 0, have = 0;
+      for (var i = 0; i < goal.length; i++) {
+        var seen = ids[goal[i].kind];
+        if (!Array.isArray(seen)) return null;                   /* a surface this reading does not hold */
+        for (var j = 0; j < goal[i].want.length; j++) { want++; if (seen.indexOf(goal[i].want[j]) >= 0) have++; }
+      }
+      return want ? { want: want, have: have } : null;
+    }
+    /* the camera's discipline exactly: true / false / null, and `null` is never 「probably yes」. */
+    function paintGoalMet(after, raw) { var r = paintReach(after, raw); return r ? (r.have === r.want) : null; }
+
     var OBSERVERS = {
       none: {
         observe: function () { return null; },
@@ -756,13 +803,38 @@ export function makeAtlasCapabilities(HOST) {
       paint: {
         observe: function () { return paintNow(); },
         verify: function (ctx, args, before, after, raw) {
-          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
-          if (raw && raw.meta && raw.meta.partial) return { status: 'partial', produced: [], code: 'not_rendered', html: raw.html || '', unresolved: (raw.exec && raw.exec.unresolved) || [] };
+          var html = (raw && raw.html) || '';
+          var unresolved = (raw && raw.exec && Array.isArray(raw.exec.unresolved)) ? raw.exec.unresolved : [];
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          /* the dispatch says some of what it was asked for never resolved. ⚠ (#R742) THAT IS A
+             STATEMENT ABOUT THE TARGETS, NOT ABOUT THE MAP: this used to return `not_rendered` without
+             looking at the map at all, so thirteen oblasts drawn and one unresolved was reported as
+             「nothing was drawn」 and Atlas redrew all fourteen. The map is read first, below; the
+             names ride along as `unresolved` either way, because the repair loop reads them. */
+          var short = !!(raw && raw.meta && raw.meta.partial);
           /* a clear-shaped op is complete when the canvases came DOWN; a draw-shaped one when they
              went UP. Anything that moved is evidence; nothing moving is `not_rendered`. */
-          if (!before || !after) return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
-          if (changed(before, after)) return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
-          return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+          if (!before || !after) {
+            return short ? { status: 'partial', produced: [], code: 'not_rendered', html: html, unresolved: unresolved }
+              : { status: 'completed', code: legacyCode(raw) || 'ok', html: html };
+          }
+          var moved = changed(before, after);
+          var reach = paintReach(after, raw);                    /* what the painter declared, held against the map */
+          if (short) {
+            /* something of it IS on the map: a draw that reached most of its targets is a draw */
+            if (moved || (reach && reach.have > 0)) {
+              return { status: 'completed', code: 'partially_resolved', observed: { paint: after, reach: reach || null }, unresolved: unresolved, html: html };
+            }
+            return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, unresolved: unresolved, html: html };
+          }
+          if (moved) return { status: 'completed', code: 'ok', observed: { paint: after }, html: html };
+          /* ⚠ (#R742) …and a redraw of what is ALREADY painted is complete too — the reader asked for
+             a state. `already_there` is the camera's word for the same fact and says it to the reader
+             in every language already (js/atlas-results.js `atlas.code.already_there`). */
+          if (paintGoalMet(after, raw) === true) {
+            return { status: 'completed', code: 'already_there', observed: { paint: after, already: true }, html: html };
+          }
+          return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: html };
         }
       },
       /* ══ ⚠⚠⚠ A POWER MAP THAT IS ON THE MAP IS RENDERED, WHETHER OR NOT THE COUNT MOVED ══════════
