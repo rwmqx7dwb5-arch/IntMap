@@ -87,6 +87,14 @@ export function makeAtlasAgent() {
       maxToolCalls: 32,     /* (#R413) 16 → 32: the step count doubled above, so the same headroom per step */
       maxPerStep: 8,        /* tool calls accepted from a single model reply */
       maxMalformed: 3,      /* consecutive steps that produced nothing but rejected calls */
+      /* consecutive steps in which EVERY call was the identical, already-answered call of this turn.
+         Measured on production (2026-09-15, gpt-5.6-sol, 「ISSは今どこ？」): the model was handed the
+         full result and the note 「this turn has ALREADY made this exact call — use this result」 and
+         replied with the same call seven more times, never a final text; the step budget ran out and the
+         reader got the results with no sentence. Two identical steps in a row is the earliest moment the
+         loop can KNOW nothing new is coming — the turn then goes straight to the answer. ⚠ This takes
+         nothing from Atlas (CONSTITUTION.md §5): a call that asks anything different is not counted. */
+      maxRepeatSteps: 2,
       maxOutputGate: 2,     /* (#R511→#R543) how many times a final that DECLARED an output it has not produced is handed back before it is accepted as it stands. Was `maxMapGate` while the map was the only output an answer could be */
       toolTimeoutMs: 240000,  /* (#R452) ONE tool call — above the ~200 s a working `analyze` can cost. Past it Atlas is TOLD it did not finish, and chooses again */
       turnBudgetMs: 600000,   /* (#R452) …and the whole turn — three times the longest turn ever measured, so it only ever fires on one that was not going to end */
@@ -340,6 +348,7 @@ export function makeAtlasAgent() {
       let text = '';
       let malformedRun = 0;
       let stopped = '';
+      let repeatRun = 0;   /* consecutive steps made only of reused calls — see maxRepeatSteps */
       let answerMode = '';       /* (#R511) the latest mode Atlas declared; '' until it says */
       let gateBounces = 0;       /* (#R511→#R543) how many finals came back having declared an output they had not produced */
       trace.outputGate = 0;
@@ -565,6 +574,12 @@ export function makeAtlasAgent() {
 
         if (ended) {
           stopped = 'awaiting_user';
+          break;
+        }
+        /* ⚠ (#R729) THE SAME CALL, MADE AGAIN AFTER ITS OWN ANSWER WAS HANDED BACK, IS NOT PROGRESS. */
+        repeatRun = (stepResults.length && stepResults.every((r) => r && r.reusedFromEarlierCallThisTurn)) ? (repeatRun + 1) : 0;
+        if (repeatRun >= lim.maxRepeatSteps) {
+          stopped = 'repeated_calls';
           break;
         }
         if (malformedRun >= lim.maxMalformed) {

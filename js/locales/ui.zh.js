@@ -6790,5 +6790,6 @@ window.IntMapLang.define('zh', {
   "weather card": "天氣卡片",   /* #R726 */
   "later pass": "之後的過境",   /* #R728 */
   "passes within 48 h": "48 小時內的過境",   /* #R728 */
+  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas 已執行工具，但這次沒有寫出回答——工具傳回的內容顯示在上方；請再問一次或縮小問題範圍。",   /* #R729 */
   }
 });
