@@ -20,8 +20,20 @@
  *  it keeps holes as holes, returns several polygons when the answer IS several polygons, and takes
  *  a MultiPolygon on both sides. Writing a second boolean engine here would be the 「同じ判断を2か所
  *  に持たせる」 that .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids, and it would be the worse
- *  of the two. ⚠ IT IS LOADED LAZILY, exactly as its two existing callers load it: a reader who
- *  never runs an overlay never downloads a sweep-line.
+ *  of the two. It is reached by dynamic import, exactly as its two existing callers reach it.
+ *
+ *  ⚠⚠⚠ AND THAT IMPORT IS NOT WHAT DECIDES WHEN THE BYTES ARRIVE. #R732 wrote here that «a reader
+ *  who never runs an overlay never downloads a sweep-line», and #R734 MEASURED IT IN PRODUCTION AND
+ *  IT WAS FALSE: polygon-clipping is inside `geo-<hash>.js` (52,137 B), which `main-<hash>.js`
+ *  STATICALLY imports, so it is fetched at t≈16 ms among the first requests of every session.
+ *  ⚠ THIS PREDATES #R732 — the same chunk of the R731 build carries it too (built and measured), so
+ *  the round that wrote the sentence did not cause the fact, it only asserted the opposite of it.
+ *  ⚠ AND vite.config.js SAYS IT SHOULD NOT BE THERE: its manualChunks returns undefined for
+ *  polygon-clipping precisely so Rollup will leave it in a dynamic chunk (see the #R209 note there),
+ *  and Rollup put it in the eager one anyway. The config states an INTENTION that nothing measures.
+ *  What IS true and measured: the import here costs no NEW bytes, because those bytes are already in
+ *  the session before this module is built. Anyone changing the chunking should re-measure this
+ *  paragraph rather than trust it.
  *
  *  ══ THE BUFFER IS A MINKOWSKI SUM, NOT AN OFFSET CURVE ════════════════════════════════════════
  *  A buffer of radius r is, by definition, the set of points within r of the shape — i.e. the

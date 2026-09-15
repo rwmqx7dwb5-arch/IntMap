@@ -346,7 +346,14 @@ export default defineConfig({
              js/engine-select.js, which runs when the Settings choice is 'cesium'. */
           if (id.includes('node_modules/cesium') || id.includes('node_modules/@mapbox/vector-tile') ||
               id.includes('node_modules/pbf')) return 'cesium';
-          /* ⚠ (#R209) turf-jsts and polygon-clipping are NOT in the eager geo chunk. `@turf/convex`
+          /* ⚠⚠ (#R734) THE SENTENCE BELOW IS AN INTENTION, AND FOR polygon-clipping IT IS NOT WHAT
+             HAPPENS. Measured on the R731 and R732 production builds: returning undefined here does
+             NOT keep polygon-clipping out of the eager chunk — Rollup places it in `geo-<hash>.js`,
+             which main statically imports, so every session fetches the 52 kB sweep-line at boot.
+             turf-jsts IS excluded as described. Nothing measures either claim, which is why one of
+             them could stop being true without a single test going red; the fix (naming a chunk of
+             its own, or a gate that asserts which chunk holds it) is not this round's.
+             ⚠ (#R209) turf-jsts and polygon-clipping are NOT in the eager geo chunk. `@turf/convex`
              + `@turf/buffer` reach turf-jsts, which measured 332 kB — 81% of everything the geo
              chunk contained after the umbrella `import * as turf` was replaced by named imports —
              and the app calls them from ONE place (the reachable-area hull in js/sims.js, which
