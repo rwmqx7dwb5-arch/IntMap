@@ -143,6 +143,16 @@ const HALVES = [
          #R588 gave for the elections gate above. What it proves and what it deliberately cannot see
          are in docs/TESTING.md. */
       ['node', ['scripts/build-hist-admin1.mjs', '--check']],
+      /* ⚠⚠⚠ (#R730) …and the one that asks a DIFFERENT QUESTION of the same bytes. Every gate above
+         measures FORM — rings close, spans are ordered, a century is not empty — and all of them
+         were green while the map drew 48 ritsuryō provinces in 200 BC, 壱岐国 and 安房国 in 1900,
+         and the Shanghai concessions from before there was a Shanghai. What no gate asked was
+         whether anybody had SAID any of it. scripts/hist-fidelity.mjs asks that (unsourced spans
+         must be 0), plus the two measures that keep the answer honest: land two units of one level
+         claim at one instant, and the share of each polity's land that carries a subdivision at all
+         — which is the reader's own complaint, 「一部だけ」, turned into a number that a round can
+         fail. Offline, ~3 s. .agents/rules/historical-verification.md is the rule it enforces. */
+      ['node', ['scripts/hist-fidelity.mjs', '--check']],
       /* ⚠⚠ (#R716) …and the EIGHTH, for the LARGEST SHIPPED SURFACE IN THE REPOSITORY — but for a
          DIFFERENT reason than the seven above it. data/border-detail/ (5,622 files, 409 MB, the refined
          outlines drawn when the reader zooms in on all three OHM records) was NOT unguarded: since

@@ -312,8 +312,29 @@ window.IntMapHistScale = (function () {
       ['>=', ['to-number', ['get', 'admin_level'], -1], lo],
       ['<=', ['to-number', ['get', 'admin_level'], -1], hi],
       ['!=', ['to-string', ['get', 'maritime']], 'yes'],
+      /* ══ ⚠⚠⚠ (#R730) A RECORD THAT STATES NO START IS NOT A RECORD OF EVERY YEAR ═══════════
+         The start clause used to begin `['!', ['has','start_decdate']]`, so a tile feature with
+         no stated start was drawn at EVERY date the clock can reach. #R669 wrote that down as
+         deliberate — «a record that states no span cannot be excluded from one» — and it is the
+         same reasoning the bundle used for its own undated rows, which is how 48 ritsuryō
+         provinces came to be drawn in 200 BC. The bundle was corrected this round; this is the
+         SECOND READER OF THE SAME RULE, and until now only the bundle had been fixed.
+         ⚠ MEASURED IN THE LIVE MAP, 2026-09-15, counting rendered `imta*-vt-line` features:
+         at 1900 Japan drew 436 boundary lines of which 317 STATED NO START — three quarters of
+         everything the reader could see there — and none of them carried a name, because the
+         bundle (correctly) held no label for a unit it could not date. India 99 of 514, China
+         231, Germany 102. The user's own screenshot of 1918 Japan is those lines: an unlabelled
+         mesh of ritsuryō circuit boundaries across a map of the Empire of Japan.
+         ⇒ a feature is placed in time only where SOMEBODY PLACED IT. An absent END still means
+         «still in force», which IS a statement; an absent START is not.
+         ⚠ AND A BOUND THAT CANNOT BE COMPARED IS STILL A BOUND. The 3,080 unusable `*_decdate`
+         values documented below sit beside a perfectly good `start_date` STRING; those records
+         state a start that this expression cannot order against `t`, so they are kept — what is
+         dropped is the record that states nothing at all. */
       ['any', oneDayFilter(t), ['all',
-        ['any', ['!', ['has', 'start_decdate']], ['!', dated('start_decdate')], ['<=', ['to-number', ['get', 'start_decdate'], 0], t]],
+        ['any', ['all', dated('start_decdate'), ['<=', ['to-number', ['get', 'start_decdate'], 0], t]],
+                ['all', ['!', dated('start_decdate')], ['has', 'start_date'],
+                        ['!=', ['to-string', ['get', 'start_date']], '']]],   /* an empty string is not a statement */
         ['any', ['!', ['has', 'end_decdate']], ['!', dated('end_decdate')], ['>', ['to-number', ['get', 'end_decdate'], 0], t]]]]
     ];
   }
@@ -343,7 +364,11 @@ window.IntMapHistScale = (function () {
     if (String(p.maritime == null ? '' : p.maritime) === 'yes') return false;
     if (p.start_date === p.end_date && dayDates(t).includes(p.start_date)) return true;
     const yr = v => { const n = Math.abs(Number(v)); return Number.isFinite(n) && n >= YEAR_LO && n <= YEAR_HI; };
-    if (p.start_decdate != null && yr(p.start_decdate) && Number(p.start_decdate) > t) return false;
+    /* (#R730) the same start rule the expression above carries: a record states a start, or it is
+       not placed in time at all. A `*_decdate` this cannot order still counts as a stated start
+       when the `*_date` string beside it exists. */
+    if (p.start_decdate != null && yr(p.start_decdate)) { if (Number(p.start_decdate) > t) return false; }
+    else if (p.start_date == null || p.start_date === '') return false;
     if (p.end_decdate != null && yr(p.end_decdate) && Number(p.end_decdate) <= t) return false;
     return true;
   }

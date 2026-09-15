@@ -822,7 +822,7 @@ data/histnames.json               **歴史的な政体名の、記録をまた�
                                   ⚠ **上流が書いた名前は上書きしない**。⚠ **出荷する言語の方針は
                                   `scripts/histnames/langs.mjs` の 1 か所**（いまは en / jp）
 data/border-coast.js              歴史的な輪郭の各辺が「境界」か「その記録が持つ海岸線の写し」かの印（`data/` から
-                                  **発見された**束すべて・いまは8つ・全 55,348 リング分／
+                                  **発見された**束すべて・いまは8つ・全 56,141 リング分／
                                   `scripts/build-border-coast.mjs`）。`imtb-line` / `imta-line` /
                                   `imta2-line` はこの印の run だけを描く。読み手は js/border-coast.js
                                   （束の索引でも**環そのものの同一性**でも引ける）。⚠ 面積 0 のリングは
@@ -830,7 +830,7 @@ data/border-coast.js              歴史的な輪郭の各辺が「境界」か�
 data/border-detail/               OHM原典と同梱形状を照合した拡大表示用の境界線。索引と空間別の断片を
                                   js/border-coast.jsが表示範囲に応じて読み、元の境界線と置き換える。
 data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM1`・
-                                  4,839件／rings 8,271・41.47 MB）。上と**同じリングプール形式の
+                                  4,837件／rings 8,269・41.46 MB）。上と**同じリングプール形式の
                                   JS リテラル**で、既知の日付は日単位・開始日を含み終了日を含まない。
                                   生成は scripts/build-hist-admin1.mjs。
                                   ⚠ **各行の列 10 は OHM の relation id**——クリックしたとき、その 1 件だけを
@@ -838,7 +838,7 @@ data/hist-admin1.js               歴史的な第1級行政区分（OpenHistoric
                                   ⚠ 被覆は部分的で、地図はそれを埋めずに言う（docs/MAP-LAYERS.md §7.7）
                                   門は `npm run check:histadmin`（残余は docs/TESTING.md）
 data/hist-admin2.js               歴史的な第2級行政区分（OpenHistoricalMap・CC0 1.0・`window.__HISTADM2`・
-                                  22,708件／rings 23,431・40.68 MB・列 10 は同じく relation id）。同じ生成器の
+                                  22,691件／rings 23,416・40.66 MB・列 10 は同じく relation id）。同じ生成器の
                                   `--levels 5,6`。**z6 未満では取得もしない**——描かない縮尺で 10 MB 以上を
                                   払わせないため（docs/MAP-LAYERS.md §7.7）。門は第1級と同じ
                                   `npm run check:histadmin`——1 つの build が両方を焼くので、門も 1 つ
@@ -848,8 +848,8 @@ data/hist-admin3.js               歴史的な第3階層（OpenHistoricalMap の
                                   「中央値の単位が 50 px 以上になる最初のズーム」から描く（#R564 の尺度）。
                                   ⚠ **level 8 は入れていない**（上流 23,922 関係＝2階層 82 MB がほぼ倍になる）。
                                   門は `npm run check:histadmin`（階層は data/ から発見される）
-data/hist-kuni.js                 **IntMap 自身が導出した**日本の令制国 15 国（`window.__HISTKUNI`・1.67 MB・
-                                  閉じた輪郭 6,425 本・82,199 頂点）。上と同じリングプール形式で、束（__HISTADM1）に
+data/hist-kuni.js                 **IntMap 自身が導出した**日本の令制国 16 国（`window.__HISTKUNI`・1.82 MB・
+                                  閉じた輪郭 6,561 本・85,305 頂点）。上と同じリングプール形式で、束（__HISTADM1）に
                                   **追記**される——第2の索引もラベル層もクリック経路も作らない。
                                   ⚠ **relation id を持たない**（列 10 が null）＝タイルが運びようがないので、
                                   線は `imta-gap-line` が描く。範囲は Asukana/Ryoseikoku_20230626_TSV（CC0 1.0）の
@@ -866,6 +866,12 @@ data/hist-admin-fill.js           **IntMap 自身が遡らせた**現代の第1�
                                   ⑤OHM の記録が既に答えている区間は**黙る**。
                                   hist-kuni と同じく束（__HISTADM1）に**追記**され、列 10 は null なので
                                   線は `imta-gap-line` が描く。門は `npm run check:histfill`
+data/hist-fidelity.json           歴史地図の**観測値**（目標値ではない）。`scripts/hist-fidelity.mjs` が
+                                  出荷済みの束を測り直し、悪くなっていたら落第する門 `npm run check:histfidelity`
+                                  の正本。3 つ——①上流が述べていない span の件数（**0 でなければ落第**）
+                                  ②同じ単位が 1 瞬に二度描かれる組（identical / nested / seam）
+                                  ③**0.25° の陸地格子**で測った年ごとの被覆と、0%／一部だけ／丸ごとの政体数
+                                  （紀元前 500 年から 2019 年までの 18 年）。`--update` で記録し直す
 us-elections.json / us-states.json  米大統領選挙（60回・州別2,342行の得票と選挙人つき）
 elections/                        各国の**国政選挙**（index.json＝polity・選挙・政党／`<版>.geo.json`＝選挙区の境界を**版ごとに**1つ／`<選挙>.res.json`＝結果）。scripts/elections/ の各パックが書き、scripts/build-elections.mjs が統合し、`--check` が形式と結合を毎回検証する。契約は scripts/lib/elections-schema.mjs
 wars.json                         6つの戦争の記録（支配・戦線・作戦・種別・兵力と死傷／`scripts/build-wars.mjs` が書き、検証する）
@@ -1003,7 +1009,7 @@ scripts/
                                   名乗って第1級を置き換えた（#R604）。⚠ **`--check` は再生成しない**——OHM の
                                   3–6 抽出そのもの（28,211 relation・実測 3.4 GB）が要るので、代わりに
                                   **同梱バイトの不変条件**を測る（層は data/ から発見する。残余は docs/TESTING.md）
-  build-hist-kuni.mjs             上流が持っていない日本の令制国 15 国 → `data/hist-kuni.js`。範囲は
+  build-hist-kuni.mjs             上流が持っていない日本の令制国 16 国 → `data/hist-kuni.js`。範囲は
                                   Asukana/Ryoseikoku_20230626_TSV（**CC0 1.0**）の 663 枚の z10 タイルを
                                   ベクタ化（1 セル＝経度 0.001373°≒112 m・セル境界を厳密に辿り→共線を潰し→
                                   半セルの Douglas–Peucker）、リングの入れ子は js/ohm-rings.js の `polysOf`、
