@@ -6466,4 +6466,6 @@ window.IntMapLang.define('ko', { ui: {
   "Upstream states nothing further about this shape — not what it is, and not how precisely its boundary is drawn.": "출처는 이 형태에 대해 더 이상 아무것도 밝히지 않습니다 — 그것이 무엇인지도, 경계가 얼마나 정확히 그려졌는지도.",   /* #R726 */
   "valid at": "기준 시각",   /* #R726 */
   "weather card": "날씨 카드",   /* #R726 */
+  "later pass": "이후 통과",   /* #R728 */
+  "passes within 48 h": "48시간 이내 통과",   /* #R728 */
 } });

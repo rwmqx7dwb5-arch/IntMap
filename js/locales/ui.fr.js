@@ -6476,4 +6476,6 @@ window.IntMapLang.define('fr', { ui: {
   "Upstream states nothing further about this shape — not what it is, and not how precisely its boundary is drawn.": "La source n’en dit pas davantage sur cette forme — ni ce qu’elle est, ni avec quelle précision sa limite est tracée.",   /* #R726 */
   "valid at": "valable à",   /* #R726 */
   "weather card": "fiche météo",   /* #R726 */
+  "later pass": "passage ultérieur",   /* #R728 */
+  "passes within 48 h": "passages dans les 48 h",   /* #R728 */
 } });

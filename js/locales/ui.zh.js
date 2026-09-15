@@ -6694,5 +6694,7 @@ window.IntMapLang.define('zh', {
   "Upstream states nothing further about this shape — not what it is, and not how precisely its boundary is drawn.": "上游對這個形狀沒有更多說明——既未說明它是什麼，也未說明其邊界繪製得有多精確。",   /* #R726 */
   "valid at": "有效時刻",   /* #R726 */
   "weather card": "天氣卡片",   /* #R726 */
+  "later pass": "之後的過境",   /* #R728 */
+  "passes within 48 h": "48 小時內的過境",   /* #R728 */
   }
 });
