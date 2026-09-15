@@ -310,7 +310,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       const before=['ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       try{ GE().layers.add({id:'nlq-fill',type:'fill',source:'nlq-src',paint:{'fill-color':_hlColor,'fill-opacity':['case',['boolean',['feature-state','nlq'],false],0.55,0]}},before);
         GE().layers.add({id:'nlq-line',type:'line',source:'nlq-src',paint:{'line-color':_hlLineColor,'line-width':['case',['boolean',['feature-state','nlq'],false],2,0],'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
-    function clearHl(){ _hl.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); _eraHl=[]; try{ if(GE().layers.hasSource('nlq-era-src')) GE().layers.setSourceData('nlq-era-src',{type:'FeatureCollection',features:[]}); }catch(_){} } let _eraHl=[]; const _ERA=makeEraHighlight({GE, resolveCountrySync:(n)=>resolveCountrySync(n)}); const _eraGeomsFor=(code)=>_ERA.eraGeomsFor(code); const ensureEraHlLayers=()=>_ERA.ensureEraHlLayers({fill:_hlColor,line:_hlLineColor});
+    function clearHl(){ _hl.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); _eraHl=[]; try{ if(GE().layers.hasSource('nlq-era-src')) GE().layers.setSourceData('nlq-era-src',{type:'FeatureCollection',features:[]}); }catch(_){} } let _eraHl=[]; const _ERA=makeEraHighlight({GE, resolveCountrySync:(n)=>resolveCountrySync(n)}); const _eraGeomsFor=(code)=>_ERA.eraGeomsFor(code); const ensureEraHlLayers=()=>_ERA.ensureEraHlLayers({fill:_hlColor,line:_hlLineColor}); const _eraActive=()=>{ try{ const TB=window.IntMapTimeBorders; return !!(TB&&TB.active&&TB.active()); }catch(_){ return false; } };   /* (#R736) is the era record the one on screen? asked of the record itself, never inferred from the clock */ const _eraBox=(c)=>_ERA.eraBoxFor(c);
     /* (#R108) HONEST highlight ("ハイライトしましたと言ってハイライトしていない例がある"): setFeatureState is a silent
        no-op when the source has no feature with that promoted id (country data not loaded yet, or a code that isn't in
        the geojson). Only report success when AT LEAST ONE requested country actually matches a real feature — otherwise
@@ -322,9 +322,12 @@ window.IntMapModules.atlasConsole=function(HOST){
          loaded yet (valid.size===0) we cannot know any code matches a RENDERED feature — setting feature-state now paints
          nothing visible yet would return any=true and let the reply claim a highlight that isn't on screen. Return false so
          the dispatch's bounded retry (R61) waits for the data, then reports honestly if it never paints. */
-      if(!valid.size) return false;
-      let any=false; const eraFeats=[]; codes.forEach(c=>{ const cs=String(c); if(!valid.has(cs)) return;   /* no matching feature → skip; don't claim an impossible paint */
+      /* ⚠⚠⚠ (#R736) …AND IT ASKED ONE RECORD WHILE THE MAP DREW THE OTHER: `valid` is the MODERN geojson, so the loop below used to `return` on a code it lacks BEFORE
+         consulting `_eraGeomsFor` — a polity only the era record holds was unpaintable exactly while it WAS the map. Era first, then modern; `_eraGeomsFor` is null at the live date. DEV-NOTES #R736 §2. */
+      if(!valid.size&&!_eraActive()) return false;
+      let any=false; const eraFeats=[]; codes.forEach(c=>{ const cs=String(c);
         const era=_eraGeomsFor(cs); if(era){ era.forEach(e=>eraFeats.push({type:'Feature',geometry:e.geo,properties:{code:cs,name:e.name}})); _hl.add(cs); any=true; return; }   /* the map's year applies to areas: that year's polity, not the modern polygon */
+        if(!valid.has(cs)) return;   /* neither record holds a shape for this code → skip; don't claim an impossible paint */
         try{ GE().layers.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} }); if(eraFeats.length&&ensureEraHlLayers()){ try{ GE().layers.setSourceData('nlq-era-src',{type:'FeatureCollection',features:eraFeats}); _eraHl=eraFeats.map(f=>f.properties.name); }catch(_){} }
       return any; }
     GE().events.on('styledata',()=>{ if(_hl.size||(_choroState&&Object.keys(_choroState).length)){ setTimeout(()=>{ try{ ensureHlLayers(); const keep=new Set(_hl); _hl=new Set(); keep.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:true}); _hl.add(c); }catch(_){} });
@@ -370,6 +373,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:_hlLines.map((l,i)=>({type:'Feature',id:i,geometry:l.geo,properties:{color:l.color||null,w:l.w||null,op:l.op||null,name:l.name||''}}))}); return true; }catch(_){ return false; } }
     function clearLineHl(){ _hlLines=[]; try{ GE().layers.setSourceData('nlq-line-src',{type:'FeatureCollection',features:[]}); }catch(_){} }
     GE().events.on('styledata',()=>{ if(_hlLines.length){ setTimeout(()=>{ try{ paintLines(); }catch(_){} },150); } });
+    window._imAtlasPaint=_ERA.paintState({countries:()=>_hl, era:()=>_eraHl, polys:()=>_hlPolys, lines:()=>_hlLines, choro:()=>_choroState, metric:()=>_choroMetric});   /* (#R736) what Atlas has painted, declared beside the state that paints it — reasoning in js/atlas-era-highlight.js, reader is js/atlas-capabilities.js `paintNow()` */
     /* river / basin intent — multilingual, judged BEFORE any admin-unit logic ("全部が全部行政区分使えば いいわけじゃない。見極めて"). */
     function basinIntent(nm){ const s2=String(nm||'').trim(); let m;
       m=s2.match(/^(.+?)の?流域$/); if(m) return {base:m[1]};   /* keep 川/江/河 in the base name */
@@ -1045,7 +1049,8 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(_countryOk && qn&&cn&&(cn.indexOf(qn)>=0||qn.indexOf(cn)>=0)) return {code:c2.code,name:c2.name,verified:_gvStrong(gv)}; }
       return null; }
     function unionBox(codes,polys){ let a=180,b=90,c=-180,d=-90,any=false;
-      try{ const g=geo(); if(g&&g.features&&codes&&codes.length){ const set=new Set(codes.map(String)); g.features.forEach(f=>{ if(!set.has(String(f.id))) return; const bb=fbbox(f.geometry); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }); } }catch(_){}
+      try{ const g=geo(); if(g&&g.features&&codes&&codes.length){ const set=new Set(codes.map(String)); g.features.forEach(f=>{ if(!set.has(String(f.id))) return; const bb=_eraBox(f.id)||fbbox(f.geometry); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }); } }catch(_){}
+      try{ const g2=geo(); if(codes&&codes.length) codes.forEach(cd=>{ if(g2&&g2.features&&g2.features.some(f=>String(f.id)===String(cd))) return; const bb=_eraBox(cd); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }); }catch(_){}   /* (#R736) e.g. OTT: only the era record has it */
       (polys||[]).forEach(p=>{ try{ const bb=fbbox(p.geo); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }catch(_){} });
       return (any&&isFinite(a)&&(c-a)<350)?[[a,b],[c,d]]:null; }
     /* ---- analysis ---- */
@@ -1973,7 +1978,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(op==='remove'||op==='delete') ok=O.remove(id);
           else if(op==='focus'||op==='zoom') ok=O.focus(id);
           else if(op==='rename') ok=O.rename(id,a.name||a.to||'');
-          return R(ok, ok?note('✓ '+op+' · '+esc(id)):warn('⚠ '+esc(id))); }
+          return R(ok, ok?note('✓ '+op+' · '+esc(id)):warn('⚠ '+L('No object on the map has that id — it may already be gone','そのidのオブジェクトは地図上にありません（すでに消えている可能性があります）','Kein Objekt mit dieser id auf der Karte','На карте нет объекта с таким id','Ningún objeto del mapa tiene ese id')+': '+esc(id))); }   /* ⚠ (#R736) the failure arm printed the BARE INTERNAL ID and nothing else — measured in production, the reader was shown 「⚠ r_1789464310159_keui」 */
         case 'isochrone': case 'reach': case 'reachability': case 'reachable': case 'catchment': {   /* ⚠ (#R278) lng/lat used to be DROPPED here: every sibling case (rfCoverage, earthquake, tsunami, nightSky, sunHours…) reads explicit coordinates first, this one only ever called geocode(a.place||…), and geocode('') falls back to the last place or the map centre. So {type:'isochrone',lng:136.934,lat:35.133} answered «✓ 60分の到達圏» and drew it at 10°E 20°N — measured, not supposed. A wrong place reported as success is the same lie as a circle reported as a reach. */
           /* ⚠ (#R299) …AND WITH NO PLACE NAMED IT ASKED `geocode('')`, whose documented answer is the last place or THE MAP CENTRE
              (js/atlas-geo-resolve.js): 「到達圏」 alone drew an area around whatever was on screen and reported it. A name, a coordinate or the reader's own pinned point — otherwise the question comes back. */

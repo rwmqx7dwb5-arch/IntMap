@@ -421,7 +421,23 @@ const BUDGET_S = 38;                    /* core: 0.6 min — measured 38 s over 
    the gate, which is where a round's own spec belongs, and it is paid for at its own price rather
    than at the p75 an unmeasured file is charged. Not paid out of a stale-high entry (#R405: none
    has been measured this round that it may take from). */
-const TOTAL_BUDGET_S = 4859;            /* — 4850 (main) + 9 (#R580: tests/r580.spec.js) */
+/* ⚠ (#R736) THE TOTAL MOVED BY THE MEASUREMENT — 4,859 -> 4,880 (+21 s). Saying it here as well as in
+   the ledger because this file's own message is «never raise it»; #R650 (+9), #R410 (+59) and #R451
+   (+2) are the precedents for saying so plainly.
+   tests/r736-atlas-multiprobe.spec.js holds the two defects the round measured on the live site, and
+   both are browser-only: one is an ORDER inside `highlight()` (the era record has to be asked before a
+   code the modern record lacks is rejected) and the other is a VALUE that has to move when a
+   `setFeatureState` paint happens — neither is visible to a check that reads source, and neither can
+   be evaluated in Node, because the function is inside the console's live closure over a rendered map.
+   ⚠ AND IT WAS PAID OUT OF THE SPEC FIRST (#R550's rule). The first draft travelled to 1914, asserted,
+   then travelled BACK to the live date to assert the modern half: two full app-wide clock moves.
+   Running the modern half FIRST, while the map is still where it booted, removed one of them —
+   measured 72.0 s -> 26.0 s / 50.7 s over two later runs on this machine, both tests passing, server up.
+   ⚠ CALIBRATED, NOT COPIED (#R402's method): tests/r143.spec.js measured 22.1 s in the same conditions
+   on this machine against a recorded entry of 9, so the SLOWER of the two runs is ≈ 20.6 table-seconds. ENTERED AS 21, at
+   that upper bound (#R402's method is the upper bound, not the mean). Not paid out of a stale-high entry: the only entry measured this round is
+   r143's, and it came out exactly at its entry (#R405: a round may only take from what it measured). */
+const TOTAL_BUDGET_S = 4880;            /* — 4859 (main) + 21 (#R736: tests/r736-atlas-multiprobe.spec.js) */
 /* ⚠ (#R402) NEITHER CEILING MOVED, AND THE SPEC THIS ROUND ADDED WAS PAID FOR OUT OF A STALE-HIGH
    ENTRY. Writing the arithmetic down because the entry it came out of is not the one it went into.
    tests/r402.spec.js is the BROWSER half of #R372's news-on-demand rule — the half its own addendum

@@ -337,6 +337,13 @@ turn schema の鍵（`tool_calls`・`turn`・`final_text`…）を名指すな�
 天気カード（`#weather-panel`）と衛星カード（`#sat-popup`）が開いていることを Atlas に述べ、人格の
 `workspace` 節が「地図は自分の作業場で、前の質問のために置いたものが今の質問に仕えないなら片づける」と定める。
 
+**⚠ そして塗り面は、塗る側が自分で名乗る。** `paintNow()` が数えるのは geojson **ソースの地物数**だが、
+国のハイライトは `nlq-src` への `setFeatureState` で塗る——**どのソースにも 1 件も足さない**（歴史年では
+`nlq-era-src`）。ソース id を並べた一覧だけを読む観測器には、成功した国ハイライトが `not_rendered` に見える。
+⇒ `js/atlas-era-highlight.js` が申告の形を持ち、`js/atlas-console.js` が `window._imAtlasPaint.now()`
+（feature-state・歴史・多角形・線の件数と、色分けの件数・指標名）を
+塗る状態のすぐ隣で公開する。`paintNow()` はその申告を運ぶ。**新しい塗り面はそれを作る場所で宣言される**ので、
+観測器の側に「足し忘れられる一覧」が育たない。
 **⚠ 観測器はファサードの実名だけを呼ぶ。** `visibleLayerIds()` は `GE().scene.getStyle()` の
 レイヤー配列を読み、`cameraNow()` は `getCenter()` が返す `{lng,lat}` を**オブジェクトとして**読み、
 不定なら `null` を返す（NaN を返すと `JSON.stringify` が `null` に潰し、**動いたカメラが動いていない
@@ -1237,8 +1244,8 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ⚠ **表現できない schema は変換せず、既存の梯子が `json_object` へ落とす**ので、方言を嫌うモデルでも
   失う応答は無い。⚠ **クライアント側の決定論的検証は残る**——梯子が schema を落とした回があるので。
 - **プロバイダは `AI_PROVIDER`**（`anthropic` | `openai` | `gemini`。既定 anthropic）。
-  OpenAI 経路のモデルは `AI_MODEL` シークレット（現行 `gpt-5.6-sol`）で、到達できない場合は
-  **`gpt-5.6-terra` → `gpt-5.6-luna` の順に 1 段ずつ**フォールバックする（403/404 の
+  OpenAI 経路のモデルは `AI_MODEL` シークレット（現行 `gpt-5.6-terra`）で、到達できない場合は
+  **`gpt-5.6-sol` → `gpt-5.6-luna` の順に 1 段ずつ**フォールバックする（403/404 の
   model_not_found のときだけ）。⚠ **開発者が名指ししたモデルは代替しない。**
   応答の `meta.modelServed` が**プロバイダ自身の名乗り**＝実際に答えたモデルを言う
   （`meta.model` は頼んだモデル。この 2 つが違うときが、段が降りたときである）。
@@ -1247,6 +1254,10 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   `user_prefs` 経由で端末をまたぐ。選択肢は**各プロバイダの目録**（OpenAI `/v1/models`・
   Gemini ListModels の `generateContent` 対応分・Anthropic `/v1/models`）を `op:"models"` で
   取り寄せたもので、**モデル名をリポジトリに書き留めない**。
+  ⚠ **例外は「取り下げ」1 つだけ**——所有者が提供しないと決めたモデル（現行 `gpt-6-astra`）は目録から
+  除かれ、既に選んでいた口座の選択も次に設定を開いた時点でサーバー既定へ戻る（`js/ai-core.js`）。
+  **能力の制限ではない**——proxy は渡された id をそのまま呼ぶので、答えられていたものが答えなくなる
+  ことはない。変わるのは**提示されるもの**だけ。
   ⚠ **選んだモデルはフォールバックしない**——黙って別のモデルが答えると、試したはずのモデルと
   画面が言うモデルが食い違う。403 をそのまま返す。
   ⚠ **無人の cron（ニュース取込み・WHO・監視）は口座を持たないので `AI_MODEL` のまま。**

@@ -371,7 +371,25 @@ export function makeAtlasGeoResolve(HOST, CTX) {
               ("トスカーナ州" / "Toscana"), so the exact-name bonus below fired for an obscure English HOMONYM instead
               (Tuscany the Calgary suburb) — a reported "見当違いの場所" wrong-place highlight. */
         const _lang=(typeof HOST.lang!=='undefined'&&HOST.lang)?String(HOST.lang):'en';
-        await NominatimGate.nominatimSlot(); const j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language='+encodeURIComponent(_lang+',en')+'&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(!Array.isArray(j)||!j.length) return null;
+        await NominatimGate.nominatimSlot(); let j=await jsonWithin('https://nominatim.openstreetmap.org/search?format=jsonv2&namedetails=1&accept-language='+encodeURIComponent(_lang+',en')+'&limit=8&polygon_geojson=1&polygon_threshold=0.0008&q='+encodeURIComponent(place),NOMINATIM_TIMEOUT_MS,{headers:{Accept:'application/json'}}); if(!Array.isArray(j)||!j.length) return null;
+        /* ⚠⚠⚠ (#R736) THE FLOOR THIS FILE ALREADY OWNS, ON THE RESOLVER THAT DID NOT HAVE IT. #R515 put
+           `_nameAgreement` on the POINT path because free-text Nominatim drops the terms it cannot match and
+           returns a stranger, 200 OK. This EXTENT path ranks by importance and takes the top candidate, with
+           only a hamlet guard under it — so the same failure lived on, one function away, and it is the
+           function the camera uses. Measured in production 2026-09-15: `flyTo('Korean Peninsula')` answered
+           「Moved to: Korean Peninsula」, ok:true, and put the reader at 174.64E 36.85S, zoom 16.5 — a pond in
+           Auckland labelled 「Tiny Great Rainwater Pond」. A false success is worse than a miss: the reply names
+           the destination the reader asked for while the map shows somewhere else entirely.
+           ⚠ IT IS THE SAME MEASURE, NOT A SECOND ONE — `_nameAgreement` / `NAME_AGREE_MIN` above, reading the
+           feature's OWN names (`namedetails` is now requested here too, so an English query still agrees with
+           a localized result: 「Mount Fuji」→富士山 through `name:en`). A rule that exists in a file and protects
+           one of its two resolvers is the shape #R429 and #R488 already paid for.
+           ⚠ AND IT STANDS DOWN WHEN SOMETHING ELSE VOUCHES. With a web-verified `anchor` the location has
+           independent evidence, so the spelling is no longer the only thing that can speak — the same
+           condition the honest-miss guard below already uses. */
+        if(!anchor){ const _core=_queryCore(place); const _agree=j.filter(x=>_nameAgreement(_core,x)>=NAME_AGREE_MIN);
+          if(!_agree.length) return null;   /* nothing here is called what was asked for → an honest miss, never a stranger */
+          j=_agree; }
         const _q=String(place).trim().toLowerCase();
         const _imp=x=>(+x.importance||0); const _maxImp=Math.max.apply(null,j.map(_imp).concat([0]));
         /* (#R116/#R136) EXACT-NAME bonus: a result whose own name equals the query beats a FUZZY near-miss of slightly
@@ -388,6 +406,22 @@ export function makeAtlasGeoResolve(HOST, CTX) {
         /* (#R136) honest-miss guard (only when NO web-verified anchor vouches for the location): a bare minor SETTLEMENT
            with low importance is almost never what a region/country/place highlight meant — return null so the caller
            reports an honest miss instead of painting a speck in the wrong country. */
+        /* ⚠⚠⚠ (#R736) …AND THE SAME GUARD, FOR THE OTHER HALF OF WHAT THE GAZETTEER DOES WITH A NAME IT
+           DOES NOT HOLD. The list above names SETTLEMENT types, so it never looked at a POI. Captured live
+           on 2026-09-15 (tests/fixtures/r736-nominatim.json), 'Korean Peninsula' — a feature OSM simply does
+           not have — returns eight Korean restaurants, marts, a language school and a Baptist church, EVERY
+           ONE at importance 0.000; the app flew the reader to the church in Newport News, Virginia and told
+           them 「Moved to: Korean Peninsula」. The bigram floor above does not catch it: 'Peninsula Korean
+           Baptist Church' shares almost every bigram of the query (agreement 0.63).
+           ⇒ AT THE GAZETTEER'S OWN NOISE FLOOR, ONLY AN EXACT NAME SPEAKS. `_nameAgreement` returns 1 only
+           when one name CONTAINS the other, so 'Chesapeake Bay'→0.604 and 'Mount Fuji'→0.608 are untouched
+           (they are far above the floor anyway) and a genuinely low-importance POI whose own name IS the
+           query — 'Tokyo Station' → 東京駅 through `name:en` — still resolves, which is why the exemption is
+           containment and not the threshold alone.
+           ⚠ OBSERVATION: in that capture the three real features scored 0.604 / 0.608 / 0.107 and all eight
+           strangers scored 0.000 (Nominatim gives an unranked POI ~1e-5). EXPIRES if Nominatim changes what
+           `importance` means or starts ranking POIs above it; the capture is the record to re-measure against. */
+        if(!anchor && _imp(best) < 0.05 && _nameAgreement(_queryCore(place), best) < 1) return null;
         if(!anchor){ const _typ=String(best.type||'').toLowerCase(); if(/^(hamlet|neighbourhood|neighborhood|suburb|quarter|locality|isolated_dwelling|farm|allotments|city_block|residential|croft)$/.test(_typ) && _imp(best)<0.35) return null; }
         let box=robustExtent(best.geojson);
         if(!box && Array.isArray(best.boundingbox)&&best.boundingbox.length===4){ const s=+best.boundingbox[0],n=+best.boundingbox[1],w=+best.boundingbox[2],e=+best.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }

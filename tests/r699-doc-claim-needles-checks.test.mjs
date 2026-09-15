@@ -38,6 +38,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { tierSpecs } from '../scripts/tiers.mjs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
@@ -202,7 +203,16 @@ const DEFECTS = [
   ['capability-count', 'PRODUCT.md', '139 の能力', '130 の能力', 'の between the number and the counter'],
   ['capability-count', 'PRODUCT.md', '139 能力', '130 能力', 'no asterisks around it'],
   ['capability-count', 'docs/FILES.md', '139 能力 ×', '125 能力 ×', 'a counter followed by ×'],
-  ['deep-tier-size', 'docs/FILES.md', 'core 7 本 / deep 105 本', 'core 6 本 / deep 59 本', 'the same fact in Japanese'],
+  /* ⚠ (#R736) THIS SEED IS DERIVED, BECAUSE THE FACT IT MUTATES MOVES. It was written as the literal
+     「core 7 本 / deep 105 本」, and the round that added one spec file made the guard below fire — the
+     mutation «has lost its subject», which reads as a broken test rather than as a moved number, and
+     the defect this row exists to catch stops being watched until somebody retypes it. The numbers
+     come from scripts/tiers.mjs, which is where deep-tier-size itself gets them; only the WRONGNESS
+     is written down (memory: 「数を持つ変異テストの種は数が動くと全部落ちる」). */
+  ['deep-tier-size', 'docs/FILES.md',
+    `core ${tierSpecs('core').length} 本 / deep ${tierSpecs('deep').length} 本`,
+    `core ${tierSpecs('core').length - 1} 本 / deep ${tierSpecs('deep').length - 46} 本`,
+    'the same fact in Japanese'],
   ['alerts', 'PRODUCT.md', '自前 13 フィード', '自前 12 フィード', 'a feed count outside the one owning sentence'],
   ['alerts', 'README.md', 'countries over thirteen feeds', 'countries over twelve feeds', 'the capture group that was never compared'],
 ];

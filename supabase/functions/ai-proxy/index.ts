@@ -135,9 +135,14 @@ const DEFAULT_LIMIT = PLAN_LIMITS.free;
    setting named a model that had not run in months. The fallback did its job so well that nothing
    ever said so — which is why meta.modelChosenBy and the panel's «Chosen: …» line exist now.
    The access was granted the same day; re-measured through this proxy, sol / terra / luna /
-   gpt-6-astra all answer 200, and sol is the model. Terra is the FALLBACK_MODEL: a 403/404
-   model_not_found retries once with it, so losing a model can never blanket-kill Atlas again. */
-const OPENAI_DEFAULT_MODEL = "gpt-5.6-sol";
+   gpt-6-astra all answer 200, and sol was the model until #R736 moved it to Terra. A 403/404
+   model_not_found walks FALLBACK_CHAIN, so losing a model can never blanket-kill Atlas again. */
+/* (#R736) …AND IT IS TERRA NOW, ON THE USER'S INSTRUCTION — for every reader, and for the developer
+   account too (the developer's "Server default" IS this value; js/ai-core.js paints it by name).
+   ⚠ THE SECRET STILL WINS OVER THIS CONSTANT (`AI_MODEL`, read below), so the two were set together:
+   #R722 measured what happens when they disagree — the setting named a model that had not run in
+   months. Both say gpt-5.6-terra as of 2026-09-15. */
+const OPENAI_DEFAULT_MODEL = "gpt-5.6-terra";
 /* (#R722) …and what answers when it cannot, IN ORDER: sol → terra → luna. One fallback was enough
    while the only way to lose a model was to lose access to it; this project has now measured two
    models 403 at the same time (sol and terra, 2026-09-15), and a single fallback in that state is a
@@ -145,7 +150,7 @@ const OPENAI_DEFAULT_MODEL = "gpt-5.6-sol";
    already in it resumes from where it sits, so the walk terminates at the end of the array and
    needs no separate recursion guard. ⚠ ORDER IS THE POLICY: newest first, oldest-and-known-good
    last. Luna is last because it is the model this project has never lost access to. */
-const FALLBACK_CHAIN = ["gpt-5.6-terra", "gpt-5.6-luna"];
+const FALLBACK_CHAIN = ["gpt-5.6-sol", "gpt-5.6-luna"];   /* (#R736) terra → sol → luna: the policy above is unchanged (newest first, oldest-and-known-good last), only the head of the ladder moved */
 const FALLBACK_MODEL = FALLBACK_CHAIN[0];   /* the first step — named for the documents that state it */
 /* (#R722) ...and the DEFAULTS for the other two providers, which used to be written inline at the one
    place that read them. They are read twice now - by the call and by the model list - and a default
@@ -160,6 +165,16 @@ const PROVIDERS = Object.keys(PROVIDER_DEFAULT_MODEL);
    names are discovered from each provider's own catalogue (listModels below), because a hand-kept
    list here would silently drop whatever the provider shipped this morning. */
 const MODEL_ID_OK = /^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,79}$/;
+/* (#R736) THE ONE THING THE PICKER IS ALLOWED TO SAY THAT THE PROVIDER DID NOT — A WITHDRAWAL.
+   `listModels` discovers the catalogue and may name no model (the paragraph above it says why, and
+   tests/r722 ② holds it to that), so the owner's decision not to OFFER a model lives here instead,
+   next to the other model constants, as one named set. The owner asked for gpt-6-astra not to be
+   offered (2026-09-15).
+   ⚠ IT IS NOT A CAPABILITY BOUNDARY. The proxy still calls whatever model id it is given, so nothing
+   that answered yesterday stops answering — what changes is what is OFFERED (CONSTITUTION.md §0.3).
+   js/ai-core.js drops a STORED pick the catalogue no longer offers, so an account that had already
+   chosen one returns to the server default rather than keeping a choice its panel cannot show. */
+const WITHDRAWN_MODELS = new Set(["gpt-6-astra"]);
 
 const MAX_PROMPT = 24_000;     // hard caps so a single call can't be abused
 /* ══ ⚠⚠⚠ (#R285) THE PLANNER'S CATALOGUE WAS BEING CUT IN HALF, IN PRODUCTION, SILENTLY ═══════════
@@ -998,7 +1013,7 @@ async function callGeminiRetry(model: string, key: string, prompt: string, syste
    A provider whose key is unset is reported unavailable rather than guessed at. */
 async function listModels(): Promise<{ provider: string; models: string[]; available: boolean; note?: string }[]> {
   const out: { provider: string; models: string[]; available: boolean; note?: string }[] = [];
-  const keep = (id: string) => MODEL_ID_OK.test(id);
+  const keep = (id: string) => MODEL_ID_OK.test(id) && !WITHDRAWN_MODELS.has(id);
   const oa = Deno.env.get("OPENAI_API_KEY");
   if (!oa) out.push({ provider: "openai", models: [], available: false, note: "no key" });
   else {
