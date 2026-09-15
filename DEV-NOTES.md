@@ -112,6 +112,7 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 ## 索引 — このファイルのラウンド（新しい順）
 
 - **#R744** — 「Atlasの回答中の進行表示は、もとからあった "Thinking" みたいな表示が上で、それを展開したら、最近付けた詳細なステップが見れるという、最新の AI と同じ感じの UI に。デザインは変えなくていい。ただ、"Working" と、従来の今何やってるか表示は被ってるから、"Working" のほうの、詳細ステップの合計時間表示は、いらない。」⑴ ⚠⚠⚠ **#R723 は進行表示を 1 つ足したのではなく、2 つ目を足していた。** 本番のスクリーンショット（利用者が送ってきたもの）に、1 つのターンについて **2 つの生きた指標**が同時に写っている——泡の**上**に「Working 40.5s」、泡の**下**にシマーの「Researching」。上は**どのターンでも同じ語**（「作業中」）を出し、下は**実際に走っている操作の語**を出すので、読者は同じ 1 つの状態について 2 か所を突き合わせることになる。#R313 が消したのは「1 種類だけにする」ためだったのに、#R723 が一覧に自分の見出しを与えたときに**語のほうを動かさなかった**。⑵ ⚠ **合計時間も同じ重複だと最初は読んだが、それは誤りで、利用者が「合計時間は削除しなくていい」と述べた。** 重複していたのは**語だけ**である——ターンが何秒走っているかは**他のどの要素も述べていない**し、**行はその数ではない**（行が測るのは操作で、ターンの大半は待ち。#R723 の実測で 57.2 秒のうち行が説明したのは 13.6 秒）。⇒ 語は見出しへ、**合計時間は残す**（250 ms の tick も残る）。⑶ ⚠ **`.atl-stage` は 2 つの仕事を持っている**（#R313）——シマーの語と、「この泡はまだ作業中」の**印**。取り消し走査 (`js/atlas-console.js`) と `markCancelled` (`js/atlas-turn-continuity.js`) は**泡の子孫**としてこの綴りを探すので、**動かしたのは語だけ**で、印は中身の空の span として泡に残した（`:empty` で場所を取らない）。語を一緒に動かしていれば、**取り消しがアプリ全体で無言で死ぬ**（[[intmap-recurring-lessons]] の形）。⑷ 見出しの語は**同じ span を使い回す**——作り直すと CSS アニメーションが 0% から再開し、歩が進むたびに帯が戻る（文字だけを比べる検査には見えない種類の欠陥なので、検査は**要素の同一性**を訊く）。⑸ 検査 6 本は書いた直後に変異で鳴ることを確かめた（見出しを「Working」に戻す／印に語を戻す＝どちらも ① が鳴り、前者は ⑤ も鳴る）。⚠ #R723 ② は**このラウンドで空虚になるところだった**——`stageHtml('think')` に語を訊いていたので、印が文字を持たなくなった瞬間に「どの能力も『考え中』と名乗らない」が**空文字列との比較**で真になる。語そのものを返す `phaseWord()` に訊き直した。
+- **#R742** — **本番に 44 問投げて、回答文・`actionOutcomes`・ステップ数・所要時間・画面を全件見た回。** 遅さ・繰り返し・偽警告・空回答は 5 つの根に還元できた。① **店が自分の鍵を拒んでいた**——`codes:['DE','FR']` も `targets:['Germany']` も読めず、読者には「IntMap が持つ境界データに一致しない」という**データについての虚偽**が出た（`countryGeo` は 258 features で満杯・`codesGeo([DEU,FRA,ESP,ITA])` は全 hit）。EU の質問は highlight が **12 回連続失敗・27 steps・2m14s**、アフリカ内陸国は標準 ISO3 **14 件全部**を「一致しない」と述べて 1 ステップ後に全部塗った。`resolveHl('Germany')`→DEU・`resolveHl('ドイツ')`→DEU・`resolveHl('Korean Peninsula')`→実在のポリゴンで、**答えられる解決器は関数ひとつ隣にあった**——#R157 のコメントは「名前は具体地名の解決器へ落ちる」と約束しており、`readT` が名前を target に変えるので落ちていなかった（**コメントが正しく、実装がその逆**）。⇒ 読みを店自身の ISO 列から導く。⚠ **列は名指し、値は名指ししない**——Natural Earth は Germany の `FIPS_10` を "GM" と書き、ISO alpha-2 の "GM" は Gambia なので、全列を索引する読みは誰も訊いていない国について誤る。2 つの feature が主張する token は誰も同定しない。読取は丸ごとモジュールへ移した（核の行数予算は shrink-only：4,903→4,876）。② **成功した描画が `not_rendered`**——汎用 paint の判定が「個数の JSON 差分」なので同じ件数の描き直しは差分ゼロ、`meta.partial` なら地図を見ずに失敗。⇒ #R740 が flyTo に入れた `already_there` と同じ作りを paint にも（描いた側が `meta.painted` で述べ、判定はpainter 自身の読みに照らす。宣言が無ければ推測しない）。③ **同じ仕事を 7 回**——ピン 7 回（22 steps / 2m14s /重複オブジェクト 6 個・**全 outcome が ok**）・衛星 5 回・鉄道 5 回。本番の `callKey` で確定: `map_view {place}` に空欄を足すと**同じキー**、`run_capability {id,args:{…}}` の args に空欄を足すと**別のキー**。「空欄は要求を運ばない」規則が**呼び出し側のループ**に書かれていて、そのループはトップレベルしか歩かない——実引数をトップに持つのは CORE の 10 本だけで、残り約 120 能力は 1 段下＝**重複排除が構造的に無効**（`map.pin` は自由文の欄を 8 つ持つので空の title 1 つで新しい呼び出し）。反復停止も救えない（その step の呼び出しが**全部**再利用のときだけ数えるので一度も立たない）。⇒ 規則を**値**に付けた。④ **「Done.」の一語**が 3 問（1 step・outcomes 空）——道具 0 本＋空の `final_text` が `answered` になり、答えを要求する唯一の機構は `results.length` を条件にしていたので結果が無いターンには走らなかった。ついでに **未来形の空約束**が 3 問。⚠ Lisbon→Cape Town は `measure:ok, drawLine:ok` で**距離を実際に計算しており**、届かなかったのは呼び出しを出した step の narration が `text` に入り、budget で切れたときに答えを書く機構が走らなかったから ⇒ 呼び出しを出した返信の文は暫定として保留する（語を 1 つも読まずに判定できる）。⑤ **凡例が地図の 40.3% を遮蔽**（7 枚・重なり 17,649 px²）。⚠ 重なっていたのは凡例同士ではなく`weather-panel`×`map-controls-top` で、**この 2 枚だけがどの配置系にも乗っていない**（weather は `top:70px` 固定・controls は行数で伸びる）。`tileLegends` の列折り返しは正しく効いていた。また `window.tileLegends` は公開名 `window._tileLegends` と綴りが違い、**8 か所すべてが無音の no-op** だった。⑥ **片付けの判断材料が無い**——persona は「前の質問のために自分が on にしたレイヤーが今の質問に役立たないなら消せ、読者が残せと言ったものは残せ」と指示しているのに、モデルに届く `activeLayers` は `{id,label,painted}` の3 欄で**出所を述べていない**＝判断を求められて判断の入力を渡されていない ⇒ 執行側が既に持つ `turnId`/`source` を射影する。⚠ **自動で off にするコードは 1 行も書いていない**（片付けるかどうかは Atlas が毎回判断する、が利用者の決定）。⚠ 残: 「地図を片付けて」が**地図そのものを消した**（国境・海岸線・地名まで off で無地の矩形。`layers.allOff` はこの 4 つを残す判断を持つのに個別 `set_layer` が迂回し、「どれが地図の家具か」の宣言がカタログに無い）／「ISS はどこ？」に**全稼働衛星 3,000 個**を点灯して地球が埋まった（persona が明示的に禁じている行為）。
 - **#R741** — **#R740 の production verification で、#R740 の修正が効いていなかった。** デプロイ済みの本番で 「世界を平均寿命で色分けして」を出すと、`mapMetric "life" [failed]` が **7 回**・8 手・40 秒・`step_budget`・`produced: -`。**列挙は効いていた**（どの拒否も「有効: pop, density, …, lifeExp, internet」を運び、画面にも出ていた）。効かなかったのは 2 つ。① `life` は「life expectancy」の**一意な一部**なのにどの指標にも解決しなかった——同じ #R740 が `js/atlas-query.js` の列には「完全一致 → **唯一の**部分一致」を与えていて、**2 つの解決器が「名前とは何か」で食い違ったまま**残っていた。② **同じ引数で拒否された呼びを 7 回出せた**。#R731 は「**答え**を既に持つ呼びの再発行」を止めるが、「**拒否**を既に持つ呼びの再発行」は「失敗こそ再試行が正しい場合だ」として明示的に許していた——違う呼びについては正しく、同じ引数の同じ呼びについては誤り（アプリは間に何も変わっていない）。⇒ ① 指標の解決器に列と同じ「唯一の部分一致」を与え、② 2 度目の拒否に `repeatedFailedCallThisTurn` を立てて注記し、その手を `maxRepeatSteps` に数える。⚠ **取り上げていない**——呼び出しは実際に走り（一時的な失敗は再試行される）、拒否もしない。変わるのは「自分の拒否を読み返している」と告げられることと、その手だけで 2 回続いたらターンが答えへ向かうこと。
 - **#R740** — 本番（ログイン済み）で Atlas に複合的な指示を 5 本出し、**回答文・実際の描画・UI** を見た回。**5 本のうち 3 本が作業上限（`step_budget`）で死に、死因はどれも「IntMap が自分の持ち物を無いと答えたこと」だった。** ①「世界を平均寿命で色分けして」に Atlas は**正しい鍵 `lifeExp` を渡していた**のに IntMap は「⚠ 不明な指標: lifeExp」——`drawChoro` は `METRICS` しか読まず、平均寿命は `XMET` にある。同じ瞬間、Countries タブは `Life expectancy` という見出しの列を印字していた。拒否が**候補を1つも言わない**ので模型は綴りを 7 回替えて予算を使い切る。プロンプトの有効鍵一覧は**手書きで** `lifeExp`/`internet` を落としており、すぐ上の段落は逆を書いていた ⇒ 解決器を 1 つにし、**指標が自分で名乗るラベル**（5 言語）で引き、拒否は**数え上げた**一覧を必ず添え、カタログの一覧も数え上げから作る。②「M5以上・直近30日の地震」は **200 行・M0.55 まで**を `161 Earthquakes` の見出しで返していた——`magnitude` は `mag`、`time` は**行が持つのに列が無い**、そして**解決できない条件は注記して素通り**していた ⇒ 列はその列自身が宣言したラベルで引き、`time` を `date` 列として宣言し、**解決できない条件は問い合わせ全体を拒否**して実在の列 id を全部挙げる（`where` だけでなく `near` と `spatial` も——同じ嘘が 3 か所にあった）。③ 本番の DOM で `[data-imname]` 441 件のうち **13 件が自分の title と食い違う `aria-label`** を持ち、全部 `close: …` だった——**Atlas の送信ボタンが「close: atlas panel」と名乗っていた**（Atlas は `aria-label` を handle に UI を引くので、「パネルを閉じて」が送信を押しうる）。原因は「× であることを確かめる」条件が、**× を1文字も持たないもの（中身が SVG のボタン）だけを通していた**こと。④ 結果表が `width:100%` のまま `overflow-x:auto` に入っていたので**縮んで `NAME` が縦1文字ずつ**になっていた（表の高さ 8,153 px）。⑤ 続けて訊いた 5 本では、**成功した仕事が「何も起きなかった」と報告され**、Atlas が同じ仕事を予算が尽きるまで繰り返した——到達圏は 1 回で描けているのに `not_rendered` が 5 回、カメラは既にヨーロッパを映しているのに `no_change` が 4 回（`js/atlas-capabilities.js` の 2 つの判定が「何かが動いたか」を訊いていて「訊かれたものが地図の上にあるか」を訊いていない。このファイルで 3 件目と 4 件目）。⑥ 読者に**問い返した**ターンに「回答文を書けませんでした」が付いていた。⑦ 凡例カード 4 枚のうち **1 枚が完全に画面の外**（y=-291）、1 枚が半分外だった。⚠ 残: **1914 年のオスマン帝国は同梱の歴史境界記録が本物の輪郭を持っている**のに（実測 `geomForCode('OTT')`）Atlas は AI トレースを 1m25s かけて描いた——カタログが highlight の対象を「ISO 3166-1 alpha-3」と定義しているから。
 - **#R739** — **#R738 の production verification。本番で `IntMapGis.draw(id)` が `{ok:true}` を返しながら、`GeoJSONUpload.find(id)` は null・`style()` は `no-such-layer` だった**（Globe 表示で実測）。読者は「描けました」と言われた直後に「そのレイヤーはありません」と言われる。⚠ #R736 が記録した形の裏返しで、根は同じ——**描画の結果を、描画した当人以外が推測している**。⑴ `js/map-ui.js` の `addFC()` は 3 枚のレイヤーを 1 つの `try` で囲み `catch(_){}` で飲んでいた: ソースは受け付けるがレイヤーを全部拒む描画器では、取り込み一覧に行が残り engine にソースが残り**地図には何も無い**。⇒ **実際に足せた枚数を数え**、0 枚なら孤児になったソースを外し、読者に文を出し、`null` を返す。⑵ `js/gis-core.js` の `draw()` は `GU.add(...)` が throw しないことだけを見て `ok:true` を返していた ⇒ **`add()` が報告したものを答える**（`draw-not-rendered`）。⚠ どちらも「例外が出なかった」を「できた」の代わりに使っていた。⚠ 見つけたのは検査ではなく**本番検証**である——`draw()` を呼ぶ検査は `ok` が true であることを測っていて、**その true が何についての主張なのかを誰も測っていなかった**。
@@ -600,6 +601,237 @@ fallback に今も在る**——読者が持っている語を 1 つも失って
 印が文字を持たなくなった瞬間に「どの能力も『考え中』と名乗らない」が**空文字列との比較で真**になる
 （[[intmap-window-is-a-length-not-a-relevance]] と同じで、**測っているつもりの対象が変わっていた**）。
 語そのものを返す `phaseWord()` を足し、そちらに訊き直した。
+## R742 — 44 問を本番に投げて画面を見た回。遅さ・繰り返し・偽警告・空回答は 5 つの根だった
+
+〈利用者の依頼は「Atlas に複雑で多種多様な指示や質問を最低 20 おこない、**実際に回答文や地図の表示を
+見る**ことで、内容が正しいか・やるべき措置が正しかったか・UI やグラフィックの観点から適切かを
+多角的に評価して、改善・解決するために実装を行え」。途中で「20 聞いたら次の 20 も」と追加。〉
+
+本番 `https://rwmqx7dwb5-arch.github.io/IntMap/`（`intmapofficial@gmail.com` でログイン済み）に
+**44 問**。英語・日本語・ロシア語、地図操作／歴史／データ分析／グラフ／計測／追従質問／片付け。
+各ターンについて **回答文・`IntMapAtlasDebug.lastPlan().actionOutcomes`・`steps`・所要時間・
+読者に見える警告・スクリーンショット**を記録した。
+
+### 0. ⚠⚠⚠ 「Atlas の判断がおかしい」は、ほとんどが「渡したものの問題」だった
+
+[[intmap-atlas-failed-because-intmap-said-so]] と [[intmap-prompt-that-hid-the-tools-in-hand]] が
+述べていた形の、5 回目である。1 問目「Which countries border Kazakhstan?」の地図は**最初から
+正しかった**——カザフスタンが青、ロシア・中国・キルギス・ウズベキスタン・トルクメニスタンが塗られ、
+回答文も正しい。それでも 10 steps / 26.2 秒かかり、読者には
+
+> ⚠ None of those identifiers could be matched to a boundary in the data IntMap holds
+
+が出ていた。`actionOutcomes` は `flyTo:FAIL/no_change, highlight:FAIL/failed,
+highlight:FAIL/not_rendered, highlight:FAIL/not_rendered, compose:ok` ——
+**成功した操作が全部「失敗した」と報告されていた。**
+
+### 1. ⚠⚠⚠ 店が自分の鍵を拒んでいた（12 回連続で失敗し、14 件の標準 ISO3 を「無い」と述べた）
+
+最悪の 1 問は「Which EU countries use the euro?」で、**highlight が 12 回連続で `failed`、
+27 steps、2m14s**。「Which African countries are landlocked?」は
+
+> ⚠ None of those identifiers could be matched to a boundary in the data IntMap holds
+> DZA, BWA, BFA, BDI, CAF, TCD, SWZ, ETH, LSO, MWI, MLI, NER, RWA, SSD
+
+と述べ、**1 ステップ後の再試行でその 14 件を全部塗った**。
+
+店は空ではなかった。同じ瞬間に測って `window.countryGeo` は **258 features**、
+`validCodeSet()` は **252**、`codesGeo([DEU, FRA, ESP, ITA])` は **4 件とも hit**。
+`hlReadGroups` を本番で直接叩いて切り分けた:
+
+```
+{codes:[DEU, FRA]}          → 2 codes
+{codes:[DE, FR]}            → 0 codes, 2 unresolved
+{targets:[Germany, France]} → 0 codes, 2 unresolved
+```
+
+**読み取りが ISO 3166-1 alpha-3 しか受け取らなかっただけ**である。ところが同じ feature は
+`ISO_A2`（"DE"）・`ISO_A3`（"DEU"）・`ISO_N3`（"276"）・`WIKIDATAID`（"Q183"）と、
+**20 以上の言語の国名**（`NAME_JA`＝ドイツ、`NAME_ZH`＝德国…）を並べて持っている。
+1 問目の「UZ → UZB」も同じものだった。
+
+⚠ **これは #R158 が取り除いた「意味の推測」ではない。** `DE` を `DEU` と読むのは、
+**同じ feature が宣言しているもう一方の表記**を読むことである。推測とは名前をコードに変えることで、
+それは今も起きない（下記）。
+
+⚠ **列は名指しし、値は名指ししない。** 全列を索引する読みは実測で誤る——Natural Earth は
+Germany の `FIPS_10` を **"GM"** と書き、ISO alpha-2 の **"GM" は Gambia** である。
+索引するのは ISO の名前空間だけにし、**2 つの feature が主張する token は誰も同定しない**
+（曖昧として落とす）。
+
+### 1b. ⚠⚠⚠ コメントが正しく、実装がその逆を書いていた
+
+`{targets:[Germany, France]}` が死んだ理由は別だった。#R157 のコメントは
+
+> a NAME array or a concept STRING does NOT [count as GPT targets] — those fall through to the
+> legacy concrete-place resolver.
+
+と**約束している**。ところが `readT` はコード以外の文字列を `{iso3:"", name:"Germany"}` に変えるので
+`rawGroups` が空にならず、**落ちなかった**。落ちていれば答えは在った——本番実測で
+
+```
+resolveHl("Germany")          → { kind:"country", code:"DEU" }
+resolveHl("ドイツ")            → { kind:"country", code:"DEU" }
+resolveHl("Korean Peninsula") → { kind:"poly", method:"admin_union", bbox:[124.21,33.20,131.86,43.01] }
+```
+
+**答えられる解決器は関数ひとつ隣にあり**、それでも 12 問目には
+「⚠ Place not found: Korean Peninsula」が出荷されていた。
+⇒ **識別子が 1 つも無い要求だけ**が落ちるようにした（誤った ISO-3 は #R158 の構造化契約のまま返る）。
+
+読取は `js/atlas-country-ids.js` へ**丸ごと移した**。核の行数予算は shrink-only（`tests/r318-checks` ⑨b）
+なので、太る読みは外に置く。**4,903 → 4,876 行**。
+
+### 2. ⚠⚠⚠ 成功した描画が `not_rendered` と報告されていた（#R740 が flyTo に対して解いた形）
+
+汎用 `paint` の判定は `changed(before, after)` ＝ **個数の JSON 差分**だけだった。
+`paintNow()` が読む値は全部「個数」なので、**同じ件数を描き直すと差分ゼロ＝`not_rendered`**。
+加えて `meta.partial` が立つと**地図を一切見ずに** `not_rendered`。
+
+#R740 は `view.flyTo` に対してこれを既に解いている（`cameraGoalMet` が「動いたか」ではなく
+「**求められた状態に今なっているか**」を訊き、動いていなくても目標が満たされていれば `already_there`）。
+同じ作りを `paint` にも入れた: 描いた側が `meta.painted` で**何を描いたか述べ**、判定はそれを
+painter 自身の読み（`paintState().ids`）に照らす。⚠ **宣言が無ければ推測せず**、従来の判定のまま。
+
+⚠ 副産物: `paintState` が基数しか返していなかったので、**6 か国を別の 6 か国に描き替えても
+「変化なし」に見えていた**。同一性を持たせた（名前を持たないものは入れない——索引を identity に
+すると再描画が変化に見える）。
+
+### 3. ⚠⚠⚠ 同じ仕事を 7 回した — 呼び出しの同一性が、深さ 1 段で効かなくなっていた
+
+「What is the deepest point in the Mediterranean Sea? Fly there and mark it.」の進捗ログ:
+
+```
+Drawing on the map 36.5585, 21.1286   0.0s      ← ×7、同じ座標
+22 steps · 2m14s · Objects 6          ← 重複オブジェクト
+actionOutcomes: flyTo:ok, pin:ok, flyTo:ok, pin:ok, … （全部 ok）
+```
+
+ISS は `satellites:ok` ×5、シベリア鉄道は `railAxis` ×5。**観測器の嘘ではない。**
+
+本番の `IntMapAtlasTurnResults.callKey` を直接叩いて確定した:
+
+```
+callKey("map_view",       {place:"Kazakhstan"})  vs +{zoom:""}   → 同じキー
+callKey("run_capability", {id:"map.pin", args:{place:"36.5585, 21.1286"}}) vs +{title:""} → 別のキー
+```
+
+「空の欄は要求を運ばない」規則が `callKey` / `opKey` の**ループ**に書かれていて、そのループは
+**トップレベルしか歩かない**。実引数をトップレベルに持つのは CORE の 10 本だけで、残り約 120 の
+能力は `run_capability` の `{id, args:{…}}` ＝ **1 段下**。`map.pin` は自由文の欄を 8 つ持つので、
+**空の `title` 1 つで新しい呼び出し**になる。`js/atlas-agent.js` の反復停止も救えない——
+その step の呼び出しが**全部**再利用のときだけ数えるので、キーが毎回違えば**一度も立たない**。
+
+⇒ 規則を呼び出し側のループではなく**値**に付けた（`stable()` が全ての深さで同じ空判定を使う）。
+
+### 4. ⚠⚠⚠ 「Done.」の一語が 3 問。そして果たされない約束が 3 問
+
+| 問い | 返答 |
+|---|---|
+| ローマ帝国の最大版図と、覆った現代国家 | **「Done.」**（1 step / 12.2s / outcomes 空） |
+| 国連に加盟したことの無い国を強調して | **「Done.」**（1 step / 8.3s） |
+| アマゾンの森林減少を見せて | **「Done.」**（1 step / 5.5s） |
+
+道具を 1 本も呼ばず `final_text` が空のまま `answered` になる。答えを要求する唯一の機構は
+`results.length` を条件にしていたので、**結果が無いターンには走らなかった**。
+⇒ 門に第 3 の矛盾を足した（宣言を要さない機械的事実:「このターンは終わるのに読者に渡る答えが空」）。
+
+未来形の空約束も 3 問。⚠ **Lisbon→Cape Town は `measure:ok, drawLine:ok` で距離を実際に計算していた。**
+届かなかったのは、**呼び出しを出した step の narration が `text` に入り**、budget で切れたときに
+答えを書く機構が走らなかったから。⇒ **呼び出しを出した返信の文は暫定として保留する**——
+語を 1 つも読まずに判定でき、#R663 の「宣言された `continuing` の文は保留」の一般化になる。
+⚠ 言い回しの一覧も未来形の文字列判定も足していない（`tests/r663-checks` のヘッダが明示的に禁じている）。
+
+### 5. ⚠⚠ 凡例が地図の 40.3% を覆っていた。重なっていたのは凡例同士ではなかった
+
+利用者に「いやただひたすら地図にレイヤーとその凡例が増えて埋め尽くされていく状態見て
+なんも思わんのか」と指摘されて測った。1512×945 の窓・地図 1112×923:
+
+```
+浮いているパネル 7 枚 · 地図面積の 40.3% を遮蔽 · パネル同士の重なり 17,649 px²
+```
+
+⚠ **最初の見立ては誤りで、実測が訂正した。** 凡例同士は 1 px も重なっていない
+（`tileLegends()` の列折り返しは正しく効いている）。17,649 px² の正体は
+**`weather-panel` × `map-controls-top` の 333×53** で、**この 2 枚だけがどの配置系にも乗っておらず、
+互いの存在を知らない**（weather は `top:70px` 固定・controls は行数で高さが伸びる）。
+⇒ weather の top をバーの実測下端から導く。凡例には**容器が決める天井**を入れ、溢れた分を
+古い順に**畳む**（消さない・レイヤーも切らない）。
+
+⚠ 同じ回に見つかった無音の故障: `window.tileLegends` は公開名 `window._tileLegends` と綴りが違い、
+`js/layer-dropdown.js` と `js/workspace.js` の **8 か所すべてが no-op** だった
+（`window.X && window.X()` は綴りが違えば永久に偽で、何も言わない）。
+検査の母集合は報告された 1 ファイルではなく **`js/` 全体**にした。
+
+### 6. ⚠⚠⚠ 片付けろと指示しておいて、判断の入力を渡していなかった
+
+persona には既に
+
+> …when a highlight, a power map, pins, a panel or **a layer you turned on for an earlier question**
+> no longer serves the current one, remove it as you answer… **what the reader asked to keep, keep**.
+
+と書いてある。状態記述も**毎ステップ、on になっている全レイヤーを名前で**渡している（上限なし）。
+欠けていたのは**判断材料**だった——モデルに届く `activeLayers` の各行は `{id, label, painted}` の
+3 欄で、**出所を述べていない**。「あなたが前の質問のために on にしたもの」と「読者が残せと言ったもの」を
+区別せよと求めながら、区別できる欄が 1 つも無い。[[intmap-atlas-is-told-not-decided-for]] の形。
+
+⇒ 執行側が既に持っている `turnId` / `source`（`js/atlas-executor.js` の全 operation が持ち、
+`recordOperation` が台帳に積んでいる）を `Layers ON` の各行に射影した。
+⚠ **自動で off にするコードは 1 行も書いていない。** 利用者の決定は「毎回、Atlas が判断する。
+片づけたほうが見やすいならオフにするし、そうじゃないならオン」。
+⚠ 記録の無いものは「記録が無い」と述べ、**「利用者が付けた」とは主張しない**
+（[[intmap-data-must-not-claim-an-author-it-lacks]]）。
+
+効いていることの実測（同じセッションの 29 問目）:
+
+> The world is now coloured by average annual precipitation (CHELSA V2.1, 1981–2010 baseline).
+> **I also cleared the Somalia highlight and left railways off so the rainfall pattern is readable.**
+
+### 7. 正しく動いていたもの（削らないために記録する）
+
+西暦 117 年の地図は Roman Empire・Dacia・Parthian Empire・Kushan Empire・Southern Xiongnu・Han・
+Nabataean Kingdom を正しく描いた。キリバスの 3 時間帯（UTC+12/+13/+14）、アテネと東京の緯度差
+（38.0°N 対 35.7°N・約 255 km）、アフリカの内陸国 16 か国、シベリア鉄道の 15 駅（モスクワ→
+ウラジオストク）、アフリカの人口上位 5 都市の表、Semeru の 2026-09-14 の 3 回の噴火（04:20 /
+05:53 / 06:28 WIB・噴煙約 1,000 m）——どれも正しい。ロシア語の問いにはロシア語で、日本語の
+問いには日本語で答えた。海底ケーブルの回答は「Limitations」の節で**上流が持っていないもの**を
+自分から述べ、`⚠ Sources here concentrate on one site (google.com)` を添えた。
+
+### 8. 残したもの（この回では直していない）
+
+- ⚠⚠⚠ **「地図を片付けて」が地図そのものを消した。** 国境・海岸線・地名・水域ラベルまで off に
+  なり、画面は**無地の矩形**になった。`layers.allOff` は `all!==true` のとき
+  `cb-borders|cb-coast|cb-names|cb-countries` を残す判断を**持っている**のに、個別の `set_layer` が
+  それを迂回する。直すには「どれが地図の家具で、どれがデータの重ね書きか」の**宣言**が要る——
+  カタログ（`GROUPS` 18 群）にはその区別が無く、DOM からも導出できない（174 の checkbox が
+  どのグループ容器にも入っていない）。手書きの一覧を足すのは
+  `.agents/rules/no-ad-hoc-hardcoding.md` が禁じる形なので、設計判断として残す。
+- ⚠⚠⚠ **1 個を訊かれて 3,000 個を描いた。** 「Where is the International Space Station right now?
+  Put a marker on it.」に対し、Atlas は**全稼働衛星（約 3,000・3 MB）のレイヤー**を点灯し、
+  地球が水色の点で完全に埋まった。persona は
+  「a question about one object is not a reason to draw thousands」と**明示的に禁じている**。
+  1 個の衛星を名指しで置く能力への到達が無いか、あっても `find_capability` 越しでしか届かない。
+- `find_capability` の空回り。地震レイヤーの質問は **11 ステップ中 7 つが `find_capability`**
+  だった（[[intmap-prompt-that-hid-the-tools-in-hand]] の形の再発）。
+- 火山の能力に**国で絞る入口が無い**ので、Atlas が
+  「every active volcano in Indonesia, including volcano name, location, elevation, and last known
+  eruption year」という**文章まるごとを火山名として**検索し、店が「そんな火山は無い」と答えた警告が
+  読者に出た。
+- `stopped:"no_answer"` は新しい値で、`js/atlas-console.js` の cut-note 表には入れていない
+  （読者に見える文字列を増やすのは §3-1 の承認が要る）。
+
+### 9. この回の計器
+
+```
+tests/r742-atlas-identifier-checks.test.mjs     店の鍵・名前の落とし込み・FIPS 衝突・曖昧 token
+tests/r742-paint-verdict-checks.test.mjs        同じ集合の描き直し／別集合／一部解決／宣言が無い場合
+tests/r742-call-identity-checks.test.mjs        空欄は全ての深さで要求を運ばない／運ぶ欄は分ける
+tests/r742-empty-answer-checks.test.mjs         空の最終回答／呼び出しを出した step の文／正当な沈黙
+tests/r742-layer-origin-checks.test.mjs         出所の射影・断定しないこと・上限が無いこと
+tests/r742-legend-occlusion-checks.test.mjs     weather×controls・容器が決める天井・母集合の一致
+```
+
+いずれも**直す前のコードで落ちること**を変異で確認してある。
 
 ## R741 — #R740 の修正は、#R740 が直した当の欠陥を残していた
 
