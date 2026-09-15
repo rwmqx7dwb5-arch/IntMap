@@ -5132,6 +5132,7 @@ window.IntMapLang.define('fr', { ui: {
   'Nothing on the map changed.': 'Rien n’a changé sur la carte.',   /* atlas-results.js (#R318) atlas.code.no_change */
 
   'There was nothing of that kind to remove — the map is already in the state asked for.': 'Il n’y avait rien de ce genre à retirer — la carte est déjà dans l’état demandé.',   /* atlas-results.js (#R318) atlas.code.already_clear */
+  'The map was already showing what you asked for.': 'La carte affichait déjà ce que vous aviez demandé.',   /* atlas-results.js (#R740) atlas.code.already_there */
   'That is not available right now.': 'Ce n’est pas disponible pour le moment.',   /* atlas-results.js (#R318) atlas.code.unavailable */
   'I do not have that operation.': 'Je n’ai pas cette opération.',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
   'The values given for that operation were not usable.': 'Les valeurs fournies pour cette opération étaient inutilisables.',   /* atlas-results.js (#R318) atlas.code.bad_args */
@@ -5990,7 +5991,7 @@ window.IntMapLang.define('fr', { ui: {
   "match": "correspondance(s)",
   "Moment magnitude": "Magnitude de moment",
   "No row satisfies every condition. Every condition was actually evaluated — see the method below.": "Aucune ligne ne satisfait toutes les conditions. Chaque condition a bien été évaluée — voir la méthode ci-dessous.",
-  "no such column, so that condition was ignored": "colonne inexistante, condition ignorée",
+  "no such column, so this query was NOT answered": "colonne inexistante, la requête n'a donc PAS reçu de réponse",
   "Only part of the place list is loaded in this session — the most populous places first.": "Seule une partie de la liste des lieux est chargée dans cette session — les plus peuplés d'abord.",
   "Pins drawn": "Repères placés",
   "Precipitation now": "Précipitations actuelles",
@@ -5998,12 +5999,12 @@ window.IntMapLang.define('fr', { ui: {
   "Rows shown": "Lignes affichées",
   "rows tested against every candidate, at a radius of": "lignes testées pour chaque candidat, dans un rayon de",
   "showing": "affichage",
+  "The columns this table has are": "Les colonnes de cette table sont",
   "the join could not run, so it was NOT applied": "la jointure n'a pas pu s'exécuter, elle n'a donc PAS été appliquée",
   "The query engine could not be loaded.": "Le moteur de requêtes n'a pas pu être chargé.",
   "These conditions could NOT be evaluated in this session and are NOT reflected in the rows below": "Ces conditions n'ont PAS pu être évaluées dans cette session et ne sont PAS prises en compte ci-dessous",
   "This query names something IntMap does not have. The tables it does have are": "Cette requête désigne quelque chose qu'IntMap ne possède pas. Les tables disponibles sont",
   "unavailable in this session, so its condition was NOT applied": "indisponible dans cette session, sa condition n'a donc PAS été appliquée",
-  "Unknown join table": "Table de jointure inconnue",
   "Wind speed": "Vitesse du vent",
   "rows are not single points, so a distance join cannot be measured against them": "les lignes ne sont pas des points uniques ; une jointure par distance n'est pas mesurable",
   "Earthquake magnitude": "Magnitude du séisme",

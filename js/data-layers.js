@@ -3949,23 +3949,88 @@ window.IntMapModules.dataLayers=function(HOST){
          `data-grow-down` rule, same `gdKey`. The heights are the same heights, taken a moment
          earlier — and nothing between the read and the write can change them, because the only
          writes in between are the ones this function makes. */
-      const H=visible.map(el=>{ try{ return el.getBoundingClientRect().height; }catch(_){ return 0; } });
+      const H=[],W=[],NAT=[];
+      /* ⚠ (#R740) THE WIDTHS AND THE CONTENT HEIGHTS ARE READ IN THE SAME PASS, for the reason the
+         note above gives: the wrap below has to know how wide the column it just filled is, and
+         whether a box is taller than the room a column has — and asking either of those AFTER the
+         first write is exactly the per-legend forced layout this read pass exists to remove.
+         `scrollHeight` is the CONTENT height, so it still answers «does this box need a scroller?»
+         when our own `max-height` from a previous call is what is holding the box down. */
+      visible.forEach(el=>{ let r=null,sh=0; try{ r=el.getBoundingClientRect(); sh=el.scrollHeight||0; }catch(_){}
+        H.push(r?r.height:0); W.push(r?r.width:0); NAT.push(Math.max(r?r.height:0,sh)); });
       /* ⚠ the guard compares against the INLINE declaration, not a remembered copy: reading
          `el.style.top` is a CSSOM read and costs no layout, and a remembered copy would go stale the
          moment anything else touched the box (a drag restoring `cssText`, the dock, a theme rebuild). */
       const put=(el,prop,v)=>{ try{ if(el.style[prop]===v) return; }catch(_){} el.style[prop]=v; };
+      /* ══ ⚠⚠⚠ (#R740) A LEGEND IS PLACED INSIDE ITS CONTAINER, OR IT IS NOT PLACED ═══════════════
+         MEASURED in production (1440×900, Atlas asked for 「ヨーロッパの気温をGFSモデルで表示して、
+         等圧線も重ねて。風のパーティクルも」): four legends 106 / 337 / 303 / 252 px tall stacked to
+         1,028 px inside a 900 px map, and the cursor just kept counting — `data-legend-eq` was
+         written at y=-291 with its BOTTOM edge at -185, i.e. the earthquake legend was not clipped,
+         it was entirely off the top of the screen, and the pressure legend's title, date and opacity
+         slider went with it. The reader could not touch either one. All three branches below shared
+         the defect: each adds heights to a cursor that no container height ever bounds. (The
+         `data-grow-down` arm already carried `Math.max(8, …)` — the overflow was known; only the arm
+         that expresses the slot as a `top` was looking at it.)
+         ⚠ CLAMPING IS NOT THE ANSWER. Pinning the overflow to the edge stacks boxes ON TOP of one
+         another, which is the defect #R276 fixed (a legend the tiler could not see sat on the one
+         below it — visible, and unreadable). So the stack WRAPS: when the next legend would leave
+         the container, the cursor returns to its origin and the column steps sideways by the
+         MEASURED width of the column just filled — never by a guessed one, because legends are not
+         all one width (a generic legend is 178 px, the ECMWF boxes are wider).
+         ⚠ The rule is attached to the FACT — a legend sits inside its container — not to a branch or
+         to an id, so one placer serves the desktop dock, the workspace dock and the phone dock, and
+         serves every legend that exists as well as every one that does not exist yet. */
+      /* (#R499) the container's box comes from js/runtime.js §5's observer — it changes when the
+         WINDOW changes, and this function is called thirty-one times per session for other reasons. */
+      const mcBox=(()=>{ try{ const mc=document.getElementById('map-container'); if(!mc) return null;
+        const R=window.IntMapRuntime; return (R&&R.box)?R.box(mc):mc.getBoundingClientRect(); }catch(_){ return null; } })();
+      const mcH=(mcBox&&mcBox.height)||window.innerHeight||0;
+      const mcW=(mcBox&&mcBox.width)||window.innerWidth||0;
+      /* One column-wrapping placer for all three docks. `start` is the cursor's origin measured from
+         the anchored edge (bottom for the two desktop docks, top on phones), `gap` the spacing the
+         dock has always used, `base` its left margin. Nothing in here reads the DOM. */
+      const flow=(start,gap,base)=>{
+        const out=[]; let off=start, colX=0, colW=0;
+        const room=Math.max(48,mcH-start-8);
+        for(let i=0;i<visible.length;i++){
+          const el=visible[i], w=W[i]||0;
+          /* A legend taller than a whole column cannot be made to fit by moving it. It is given the
+             column's height and its own scroller, so its title, its close button and its controls
+             are on screen and the rest of it is reachable — the alternative is a box whose top edge
+             is off the map with no way to get at what is up there.
+             ⚠ The release test asks the CONTENT height, not the rendered one: once our `max-height`
+             is on, the rendered height IS `room`, so a rendered-height test would drop the clamp and
+             the next call would put it straight back. */
+          let cap=0;
+          if(H[i]>room) cap=room; else if(el.dataset.legCap&&NAT[i]>room) cap=room;
+          const h=cap||H[i];
+          if(out.length&&off+h>mcH-8){ colX+=colW+12; colW=0; off=start; }
+          /* Out of room sideways too (many tall legends in a narrow map): the column stops AT the
+             container's edge rather than walking out of it — the last resort, and still reachable. */
+          out.push({off,left:Math.min(base+colX,Math.max(base,mcW-w-8)),cap,h});
+          colW=Math.max(colW,w); off+=h+gap;
+        }
+        return out;
+      };
+      /* Applied only to legends the flow actually capped, and removed only from legends WE capped —
+         a legend whose height comes from the stylesheet (the phone's `max-height:min(30dvh,…)`) is
+         never touched here. */
+      const capTo=(el,cap)=>{
+        if(cap){ put(el,'maxHeight',cap+'px'); put(el,'overflowY','auto'); el.dataset.legCap='1'; }
+        else if(el.dataset.legCap){ put(el,'maxHeight',''); put(el,'overflowY',''); delete el.dataset.legCap; }
+      };
       if(ws){
         /* (#R85) workspace mode: dock legends to the BOTTOM-LEFT of the Map window ("ワークスペースモードでレイヤーを
            オンにしたら、凡例は地図の左下あたりに") — stack upward, clearing the coordinate readout in the corner. */
-        let bottom=30;
-        visible.forEach((el,i)=>{ put(el,'bottom',bottom+'px'); put(el,'top','auto'); put(el,'left','12px'); put(el,'right','auto'); bottom += H[i]+10; });
+        const P=flow(30,10,12);
+        visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'bottom',P[i].off+'px'); put(el,'top','auto'); put(el,'left',P[i].left+'px'); put(el,'right','auto'); });
       } else if(mobile){
         /* (#R15d) Stack legends DOWNWARD from just below the search bar (top:64), left-aligned. The CSS
            default above is for the first paint; this keeps multiple open legends from overlapping. */
-        let top=64;
-        visible.forEach((el,i)=>{ put(el,'top',top+'px'); put(el,'bottom','auto'); put(el,'left','6px'); put(el,'right','auto'); top += H[i]+8; });
+        const P=flow(64,8,6);
+        visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'top',P[i].off+'px'); put(el,'bottom','auto'); put(el,'left',P[i].left+'px'); put(el,'right','auto'); });
       } else {
-        let bottom=140;
         /* ══ ⚠ (#R244) A LEGEND MAY ASK TO GROW DOWNWARD ═════════════════════════════════════════════
            「アメリカ大統領選挙レイヤーは、操作時に凡例が上に伸びるのではなく下に伸びるように。」
            Desktop legends are anchored by `bottom`, so a legend that gets TALLER grows out of its top
@@ -3973,15 +4038,10 @@ window.IntMapModules.dataLayers=function(HOST){
            with three candidates is two rows taller than one with two), which walks the year selector
            the reader is pointing at up the screen under their cursor.
            A legend that declares `data-grow-down` is placed by its TOP instead. The stack maths is
-           unchanged — the same `bottom` cursor decides where it sits — so it lands in exactly the
-           same place and only its GROWTH direction differs. */
-        /* (#R499) the container's box comes from js/runtime.js §5's observer — it changes when the
-           WINDOW changes, and this function is called thirty-one times per session for other reasons. */
-        const mcH=(()=>{ try{ const mc=document.getElementById('map-container'); if(!mc) return window.innerHeight;
-          const R=window.IntMapRuntime; const r=(R&&R.box)?R.box(mc):mc.getBoundingClientRect();
-          return r.height||window.innerHeight; }catch(_){ return window.innerHeight; } })();
-        visible.forEach((el,idx)=>{ put(el,'left',leftBase+'px'); put(el,'right','auto');
-          const h=H[idx];
+           unchanged — the same cursor decides where it sits — so it lands in exactly the same place
+           and only its GROWTH direction differs. */
+        const P=flow(140,10,leftBase);
+        visible.forEach((el,idx)=>{ const p=P[idx]; capTo(el,p.cap); put(el,'left',p.left+'px'); put(el,'right','auto');
           if(el.dataset.growDown==='1'){
             /* ⚠ WRITING `top` IS NOT ENOUGH — `top = mcH − bottom − h` is the bottom-anchored place
                expressed as a top, so it still moves when `h` changes. Measured on the election
@@ -3989,14 +4049,19 @@ window.IntMapModules.dataLayers=function(HOST){
                upward growth the report is about. The top is therefore REMEMBERED: the stack decides
                it once (so the legend still lands in its slot, and still moves when another legend
                opens or closes — `gdKey` is its position in the stack), and a re-render that only
-               changes the CONTENT keeps it. */
-            const key=visible.length+':'+idx;
+               changes the CONTENT keeps it.
+               ⚠ (#R740) the key carries the SLOT the flow chose, not the index alone, because a slot
+               is now two numbers: a legend that wraps into the next column HAS moved, and a
+               remembered top would leave it behind in the old column. Neither number depends on this
+               legend's own content height unless the wrap does, so the re-render this rule was
+               written for still keeps its top. */
+            const key=visible.length+':'+idx+':'+p.off+':'+p.left;
             let top=+el.dataset.gdTop;
-            if(el.dataset.gdKey!==key||!isFinite(top)){ top=Math.max(8,mcH-bottom-h); el.dataset.gdKey=key; el.dataset.gdTop=String(top); }
+            if(el.dataset.gdKey!==key||!isFinite(top)){ top=Math.max(8,mcH-p.off-p.h); el.dataset.gdKey=key; el.dataset.gdTop=String(top); }
             put(el,'top',top+'px'); put(el,'bottom','auto');
           }
-          else { put(el,'bottom',bottom+'px'); put(el,'top','auto'); }
-          bottom += h+10; });
+          else { put(el,'bottom',p.off+'px'); put(el,'top','auto'); }
+        });
       }
     }
     /* Mark a legend as user-dragged so tileLegends() leaves it alone. */

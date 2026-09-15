@@ -108,7 +108,11 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'.atl-math-raw{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;color:var(--text-main);white-space:pre-wrap;}'
       +'.katex{font-size:1.06em;}'   /* nudge KaTeX up to match the reply body size */
       +'.atl-tablewrap{margin:.7em 0;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--glass-border,rgba(128,128,128,.2));border-radius:10px;}'
-      +'.atl-md-table{border-collapse:collapse;width:100%;font-size:12.5px;line-height:1.5;}'
+      /* (#R740) `width:auto;min-width:100%` — a table wider than the panel must SCROLL, not be
+         squeezed. `.atl-tablewrap` above is already `overflow-x:auto`, and `width:100%` here meant
+         the columns had to share whatever the panel had (365 px, measured), so a six-column table
+         crushed every cell down to its narrowest possible box. */
+      +'.atl-md-table{border-collapse:collapse;width:auto;min-width:100%;font-size:12.5px;line-height:1.5;}'
       +'.atl-md-table th,.atl-md-table td{border:1px solid var(--glass-border,rgba(128,128,128,.18));padding:5px 10px;text-align:left;vertical-align:top;white-space:nowrap;}'
       +'.atl-md-table thead th{background:rgba(120,120,128,.14);font-weight:600;}'   /* (#R159) header row: semibold, not bold */
       /* ══ (#R543) THE CHART. It lives HERE and not in css/intmap.css for a measured reason: the

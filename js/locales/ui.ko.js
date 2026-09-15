@@ -5122,6 +5122,7 @@ window.IntMapLang.define('ko', { ui: {
   'Nothing on the map changed.': '지도에서 바뀐 것이 없습니다.',   /* atlas-results.js (#R318) atlas.code.no_change */
 
   'There was nothing of that kind to remove — the map is already in the state asked for.': '제거할 그런 대상이 없었습니다 — 지도는 이미 요청하신 상태입니다.',   /* atlas-results.js (#R318) atlas.code.already_clear */
+  'The map was already showing what you asked for.': '지도는 이미 요청하신 내용을 보여 주고 있었습니다.',   /* atlas-results.js (#R740) atlas.code.already_there */
   'That is not available right now.': '지금은 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.unavailable */
   'I do not have that operation.': '저에게는 그런 작업이 없습니다.',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
   'The values given for that operation were not usable.': '그 작업에 주어진 값을 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.bad_args */
@@ -5980,7 +5981,7 @@ window.IntMapLang.define('ko', { ui: {
   "match": "건 해당",
   "Moment magnitude": "모멘트 규모",
   "No row satisfies every condition. Every condition was actually evaluated — see the method below.": "모든 조건을 만족하는 행이 없습니다. 각 조건은 실제로 평가했습니다 — 아래 판정 방법 참조.",
-  "no such column, so that condition was ignored": "그런 열이 없어 이 조건은 무시했습니다",
+  "no such column, so this query was NOT answered": "이런 열은 없으므로 이 질의에는 답하지 않았습니다",
   "Only part of the place list is loaded in this session — the most populous places first.": "이 세션에는 지명 목록의 일부만 불러왔습니다 — 인구가 많은 순입니다.",
   "Pins drawn": "지도에 표시한 핀",
   "Precipitation now": "현재 강수량",
@@ -5988,12 +5989,12 @@ window.IntMapLang.define('ko', { ui: {
   "Rows shown": "표시 행 수",
   "rows tested against every candidate, at a radius of": "건을 각 후보에 대해 판정한 반경",
   "showing": "표시",
+  "The columns this table has are": "이 표에 있는 열은 다음과 같습니다",
   "the join could not run, so it was NOT applied": "결합을 실행하지 못해 이 조건은 적용하지 않았습니다",
   "The query engine could not be loaded.": "쿼리 엔진을 불러오지 못했습니다.",
   "These conditions could NOT be evaluated in this session and are NOT reflected in the rows below": "이 세션에서는 다음 조건을 평가하지 못했으며 아래 행에 반영되지 않았습니다",
   "This query names something IntMap does not have. The tables it does have are": "이 질의는 IntMap에 없는 것을 가리킵니다. 사용할 수 있는 표는 다음과 같습니다",
   "unavailable in this session, so its condition was NOT applied": "이 세션에서는 가져올 수 없어 이 조건은 적용하지 않았습니다",
-  "Unknown join table": "알 수 없는 결합 대상 표",
   "Wind speed": "풍속",
   "rows are not single points, so a distance join cannot be measured against them": "행이 단일 지점이 아니므로 거리 기반 결합을 측정할 수 없습니다",
   "Earthquake magnitude": "지진 규모",

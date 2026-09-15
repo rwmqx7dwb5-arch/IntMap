@@ -61,8 +61,52 @@ test('R731 ② a step that asks something different resets the count — nothing
   assert.equal(out.text, 'done');
 });
 
+/* ⚠ (#R740) THIS USED TO PIN THE SPELLING OF THE EXPRESSION, AND THE NEXT CORRECT CHANGE FAILED IT.
+   The assertion was a regex over `ai.__atlSay=out.text||((out.results&&out.results.length)?L('Atlas
+   ran its tools…`, so #R740 — which inserted `String(out.stopped||'')!=='awaiting_user'&&` to stop the
+   sentence appearing above a question Atlas had just asked the reader — was reported as a regression
+   while doing exactly what this check exists to protect. #R488's shape: a rule fastened to a spelling
+   measures the spelling. So the EXPRESSION IS EVALUATED instead, with the four turns that matter. */
 test('R731 ③ the forced final that says nothing leaves the console one honest sentence, in the reader\'s language', () => {
   const con = codeOnly(readLF(join(ROOT, 'js/atlas-console.js')));
-  assert.match(con, /ai\.__atlSay=out\.text\|\|\(\(out\.results&&out\.results\.length\)\?L\('Atlas ran its tools but did not write an answer this time/);
+  /* the shipped right-hand side of `ai.__atlSay=`, taken to the end of its statement by matching
+     brackets — not by a closing spelling (tests/helpers/lift-function.mjs exists for the same reason) */
+  const L = (en) => en;   /* the reader's language is `pick()`'s job; here it is the English slot */
+  const HEAD = 'ai.__atlSay=';
+  const fns = [];
+  for (let at = con.indexOf(HEAD); at >= 0; at = con.indexOf(HEAD, at + 1)) {
+    let i = at + HEAD.length;
+    if (con[i] === '=') continue;   /* `__atlSay==` is a comparison, not the assignment */
+    let depth = 0, q = null, end = -1;
+    for (; i < con.length; i++) {
+      const c = con[i];
+      if (q) { if (c === '\\') i++; else if (c === q) q = null; continue; }
+      if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+      if ('([{'.indexOf(c) >= 0) depth++;
+      else if (')]}'.indexOf(c) >= 0) depth--;
+      else if (c === ';' && !depth) { end = i; break; }
+    }
+    if (end < 0) continue;
+    try { fns.push(new Function('out', 'L', 'return (' + con.slice(at + HEAD.length, end) + ');')); } catch (_) { /* not an expression on its own */ }
+  }
+  assert.ok(fns.length, 'the console assigns the turn\'s sentence somewhere');
+  /* exactly one of those assignments is THE answer — the one that hands back what the model wrote */
+  const cands = fns.filter((f) => { try { return f({ text: 'x', results: [{}], stopped: 'answered' }, L) === 'x'; } catch (_) { return false; } });
+  assert.equal(cands.length, 1, 'exactly one assignment decides the turn\'s sentence');
+  const say = cands[0];
+
+  /* ① the model wrote an answer → that answer, untouched */
+  assert.equal(say({ text: 'ここが震源です。', results: [{}], stopped: 'answered' }, L), 'ここが震源です。');
+  /* ② tools ran, the forced final said nothing → ONE sentence of IntMap's own, saying what happened */
+  const forced = say({ text: '', results: [{}, {}], stopped: 'repeated_calls' }, L);
+  assert.match(String(forced), /did not write an answer/, 'a turn that ran tools and wrote nothing says so');
+  /* ③ nothing ran and nothing was written → nothing is invented */
+  assert.equal(say({ text: '', results: [], stopped: 'answered' }, L), '');
+  /* ④ (#R740) the turn STOPPED TO ASK THE READER. The question is the turn's text, so the sentence
+     above must not appear — measured in production: 「半径を指定してください」 with three options and
+     their volumes, under a notice saying Atlas had failed to write an answer. */
+  assert.equal(say({ text: '', results: [{}], stopped: 'awaiting_user' }, L), '',
+    'a turn that asked the reader a question is not a turn that failed to write one');
+
   assert.match(codeOnly(readLF(join(ROOT, 'js/atlas-agent.js'))), /maxRepeatSteps: 2,/);
 });
