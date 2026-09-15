@@ -6561,5 +6561,5 @@ window.IntMapLang.define('ko', { ui: {
   "weather card": "날씨 카드",   /* #R726 */
   "later pass": "이후 통과",   /* #R728 */
   "passes within 48 h": "48시간 이내 통과",   /* #R728 */
-  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas가 도구를 실행했지만 이번에는 답변을 작성하지 못했습니다. 도구가 반환한 내용은 위에 표시되어 있습니다. 다시 질문하거나 질문 범위를 좁혀 주세요.",   /* #R729 */
+  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas가 도구를 실행했지만 이번에는 답변을 작성하지 못했습니다. 도구가 반환한 내용은 위에 표시되어 있습니다. 다시 질문하거나 질문 범위를 좁혀 주세요.",   /* #R731 */
 } });

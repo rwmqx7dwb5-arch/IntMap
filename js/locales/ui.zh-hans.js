@@ -6794,6 +6794,6 @@ window.IntMapLang.define('zh-hans', {
   "weather card": "天气卡片",   /* #R726 */
   "later pass": "之后的过境",   /* #R728 */
   "passes within 48 h": "48 小时内的过境",   /* #R728 */
-  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas 已执行工具，但这次没有写出回答——工具传回的内容显示在上方；请再问一次或缩小问题范围。",   /* #R729 */
+  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas 已执行工具，但这次没有写出回答——工具传回的内容显示在上方；请再问一次或缩小问题范围。",   /* #R731 */
   }
 });

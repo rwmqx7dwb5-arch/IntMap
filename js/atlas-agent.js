@@ -576,7 +576,7 @@ export function makeAtlasAgent() {
           stopped = 'awaiting_user';
           break;
         }
-        /* ⚠ (#R729) THE SAME CALL, MADE AGAIN AFTER ITS OWN ANSWER WAS HANDED BACK, IS NOT PROGRESS. */
+        /* ⚠ (#R731) THE SAME CALL, MADE AGAIN AFTER ITS OWN ANSWER WAS HANDED BACK, IS NOT PROGRESS. */
         repeatRun = (stepResults.length && stepResults.every((r) => r && r.reusedFromEarlierCallThisTurn)) ? (repeatRun + 1) : 0;
         if (repeatRun >= lim.maxRepeatSteps) {
           stopped = 'repeated_calls';

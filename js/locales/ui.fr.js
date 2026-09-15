@@ -6571,5 +6571,5 @@ window.IntMapLang.define('fr', { ui: {
   "weather card": "fiche météo",   /* #R726 */
   "later pass": "passage ultérieur",   /* #R728 */
   "passes within 48 h": "passages dans les 48 h",   /* #R728 */
-  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas a exécuté ses outils mais n’a pas rédigé de réponse cette fois — ce qu’ils ont renvoyé est affiché ci-dessus ; reposez la question ou précisez-la.",   /* #R729 */
+  "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas a exécuté ses outils mais n’a pas rédigé de réponse cette fois — ce qu’ils ont renvoyé est affiché ci-dessus ; reposez la question ou précisez-la.",   /* #R731 */
 } });
