@@ -144,8 +144,13 @@ test('R723 ② every capability the registry holds has a word of its own, and th
 
     /* ⚠ AND THE FALLBACK IS NOT THE PHASE WORD. 「Thinking」 for an operation is precisely the old
        defect; if a word is ever missing the reader must get something true, not something wrong. */
-    const thinking = PROG.stageHtml('think');
-    const silent = all.filter((c) => thinking.includes(PROG.wordFor(c.id)));
+    /* ⚠ (#R744) THE WORD, NOT THE MARKUP. This asked stageHtml('think') for the word until the live
+       label moved to the trace head and the marker stopped carrying text — at which point every
+       comparison below would have been made against an empty string and passed for the wrong
+       reason. The question is about the WORD, so it is the word that is asked for. */
+    const thinking = PROG.phaseWord('think');
+    assert.ok(thinking.trim().length, 'the thinking word is a word');
+    const silent = all.filter((c) => thinking === PROG.wordFor(c.id));
     assert.deepEqual(silent.map((c) => c.id), [],
       silent.length + ' capabilities would announce themselves as thinking');
     /* ⚠ AND THE SAME ASSERTION ASKED WHERE IT IS NOT VACUOUS. Every category the registry uses has a
@@ -153,7 +158,7 @@ test('R723 ② every capability the registry holds has a word of its own, and th
        thinking word left the check above GREEN. An id outside this build's registry is the only input
        that exercises it, and the answer there must still not be the word that was the defect. */
     const unknown = PROG.wordFor('somecategory.notInThisBuild');
-    assert.ok(!thinking.includes(unknown), 'an unrecognised capability is not announced as thinking either');
+    assert.notEqual(unknown, thinking, 'an unrecognised capability is not announced as thinking either');
     assert.ok(unknown.trim().length, 'and it is not announced as nothing');
   });
 });
