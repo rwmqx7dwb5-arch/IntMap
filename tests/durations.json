@@ -111,5 +111,6 @@
  "tests/r620.spec.js": 6,
  "solo": ["-cesium.*.spec.js$"],
  "tests/r588.spec.js": 11,
- "tests/r668.spec.js": 3
+ "tests/r668.spec.js": 3,
+ "tests/r736-atlas-multiprobe.spec.js": 21
 }

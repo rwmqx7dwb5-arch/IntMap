@@ -87,6 +87,16 @@ window.IntMapModules.aiCore=function(HOST){
     }
     if(_modelCatErr){ if(note) note.textContent=L('Could not read the model catalogue: ','モデル一覧を取得できませんでした： ')+_modelCatErr; return; }
     const cat=_modelCat||{}, provs=Array.isArray(cat.providers)?cat.providers:[];
+    /* ⚠ (#R736) A STORED PICK THE CATALOGUE NO LONGER OFFERS IS NOT A PICK. The owner may withdraw a
+       model from what is offered (ai-proxy `WITHDRAWN`), and a provider may simply stop publishing one.
+       Either way the account that had chosen it would otherwise keep sending it for ever — the <select>
+       cannot show a value it has no <option> for, so the panel would read 「Server default」 while the
+       calls kept naming the withdrawn model. Held ONLY when the provider's row is AVAILABLE: an
+       unreachable provider publishes an empty list, and dropping the pick on that would lose the
+       reader's choice to a network error. */
+    { const pk=aiModelPick();
+      const row0=pk?provs.find(p=>p.provider===pk.provider):null;
+      if(pk&&pk.model&&row0&&row0.available&&Array.isArray(row0.models)&&row0.models.length&&row0.models.indexOf(pk.model)<0) aiSetModelPick(pk.provider,''); }
     const pick=aiModelPick();
     const def=cat.serverDefault||{};
     const curProv=(pick&&pick.provider)||def.provider||(provs[0]&&provs[0].provider)||'';

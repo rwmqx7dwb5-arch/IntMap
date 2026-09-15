@@ -495,7 +495,17 @@ export function makeAtlasCapabilities(HOST) {
         compose: sourceFeatureCount('atl-compose-src'),   /* (#R511) js/atlas-map-compose.js — the ONE source every compose layer reads */
         shakemap: sourceFeatureCount('shk-cont-src'),    /* (#R546) js/shakemap.js — the contour source every metric produces */
         factions: sourceFeatureCount('nlq-fac-src'),     /* js/atlas-sims.js paintFactions — the faction fills of the historical power map */
-        visible: visibleLayerIds().length, objects: objectIds().length };
+        visible: visibleLayerIds().length, objects: objectIds().length,
+        /* ⚠⚠⚠ (#R736) THE SURFACES ABOVE ARE SOURCES; A COUNTRY HIGHLIGHT IS NOT ONE. It paints with
+           `setFeatureState` on `nlq-src` (and, while Chronos is in the past, into `nlq-era-src`), so every
+           count above is identical before and after a highlight that worked perfectly — and `verify()` below
+           calls an unmoved reading `not_rendered`. Measured in production 2026-09-15: three highlights
+           painted, three verdicts of `not_rendered`, and the turn died at its working limit re-trying them.
+           So the painter declares its own painted state (js/atlas-console.js `window._imAtlasPaint`) and this
+           reading carries it. A surface added there is observed here on the next turn; a surface added to a
+           list kept HERE is one somebody must remember to list, which is the failure #R735 already paid for
+           with `nlq-fac-src` (.agents/rules/no-ad-hoc-hardcoding.md §2.4). */
+        atlas: (function(){ try{ var P=window._imAtlasPaint; return (P&&P.now&&P.now())||null; }catch(_){ return null; } })() };
     }
 
     function changed(a, b) { return JSON.stringify(a) !== JSON.stringify(b); }

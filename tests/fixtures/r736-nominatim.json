@@ -1,0 +1,360 @@
+{
+ "captured": "2026-09-15",
+ "note": "live Nominatim jsonv2 responses (polygon_geojson=0 — these tests judge identity, not shape)",
+ "queries": {
+  "Korean Peninsula": [
+   {
+    "place_id": 346503046,
+    "lat": "37.0937124",
+    "lon": "-76.4495227",
+    "name": "Peninsula Korean Baptist Church",
+    "display_name": "Peninsula Korean Baptist Church, 972, Harpersville Road, Beech Lake Estates, Newport News, Virginia, 23601, United States",
+    "type": "church",
+    "importance": 0.00005866712443727806,
+    "namedetails": {
+     "name": "Peninsula Korean Baptist Church"
+    },
+    "boundingbox": [
+     "37.0934012",
+     "37.0940360",
+     "-76.4498819",
+     "-76.4493455"
+    ]
+   },
+   {
+    "place_id": 260410967,
+    "lat": "6.9261994",
+    "lon": "122.0835032",
+    "name": "Holy Smokes: Korean Grill & Resto",
+    "display_name": "Holy Smokes: Korean Grill & Resto, 168, Cabato Road, Tetuan, Santa Maria, Zamboanga City, Zamboanga Peninsula, 7000, Philippines",
+    "type": "restaurant",
+    "importance": 0.00005855878538181151,
+    "namedetails": {
+     "name": "Holy Smokes: Korean Grill & Resto"
+    },
+    "boundingbox": [
+     "6.9261494",
+     "6.9262494",
+     "122.0834532",
+     "122.0835532"
+    ]
+   },
+   {
+    "place_id": 261615180,
+    "lat": "7.8208716",
+    "lon": "123.4385996",
+    "name": "Aneoangsayo Korean Mart",
+    "display_name": "Aneoangsayo Korean Mart, F. S. Pajares Avenue, Sunshine, Santiago, Pagadian, Zamboanga del Sur, Zamboanga Peninsula, 7016, Philippines",
+    "type": "convenience",
+    "importance": 0.00005118410009913813,
+    "namedetails": {
+     "name": "Aneoangsayo",
+     "name:en": "Aneoangsayo Korean Mart"
+    },
+    "boundingbox": [
+     "7.8208216",
+     "7.8209216",
+     "123.4385496",
+     "123.4386496"
+    ]
+   },
+   {
+    "place_id": 422106078,
+    "lat": "7.8231187",
+    "lon": "123.4382156",
+    "name": "Keun Korean Language Training Center",
+    "display_name": "Keun Korean Language Training Center, F. S. Pajares Avenue, Sunshine, Santiago, Pagadian, Zamboanga del Sur, Zamboanga Peninsula, 7016, Philippines",
+    "type": "language_school",
+    "importance": 0.00005118410009913813,
+    "namedetails": {
+     "name": "Keun Korean Language Training Center"
+    },
+    "boundingbox": [
+     "7.8230687",
+     "7.8231687",
+     "123.4381656",
+     "123.4382656"
+    ]
+   },
+   {
+    "place_id": 261292633,
+    "lat": "8.6529244",
+    "lon": "123.4184031",
+    "name": "Crushh Landing Korean Corn Dog",
+    "display_name": "Crushh Landing Korean Corn Dog, Sunset Boulevard, Santa Cruz, Dawo, Dapitan, Zamboanga del Norte, Zamboanga Peninsula, 7101, Philippines",
+    "type": "restaurant",
+    "importance": 0.0000490997177080494,
+    "namedetails": {
+     "name": "Crushh Landing Korean Corn Dog"
+    },
+    "boundingbox": [
+     "8.6528744",
+     "8.6529744",
+     "123.4183531",
+     "123.4184531"
+    ]
+   },
+   {
+    "place_id": 418511865,
+    "lat": "8.5796888",
+    "lon": "123.3548069",
+    "name": "Atheena's Japanese Korean Mart",
+    "display_name": "Atheena's Japanese Korean Mart, Dipolog-Polanco Road, Bolicon, Turno, Minaog, Dipolog, Zamboanga del Norte, Zamboanga Peninsula, 7100, Philippines",
+    "type": "supermarket",
+    "importance": 0.0000490997177080494,
+    "namedetails": {
+     "name": "Atheena's Japanese Korean Mart",
+     "addr:housename": "Westfield Town Square"
+    },
+    "boundingbox": [
+     "8.5796388",
+     "8.5797388",
+     "123.3547569",
+     "123.3548569"
+    ]
+   },
+   {
+    "place_id": 26066879,
+    "lat": "-36.8524053",
+    "lon": "174.6358903",
+    "name": "Chicken Story Korean Fried Chicken",
+    "display_name": "Chicken Story Korean Fried Chicken, Tony Street, Te Atatū South, Henderson-Massey, Auckland, 0610, New Zealand",
+    "type": "fast_food",
+    "importance": 0.00007485084306091428,
+    "namedetails": {
+     "name": "Chicken Story Korean Fried Chicken"
+    },
+    "boundingbox": [
+     "-36.8524553",
+     "-36.8523553",
+     "174.6358403",
+     "174.6359403"
+    ]
+   },
+   {
+    "place_id": 418508723,
+    "lat": "6.9075278",
+    "lon": "122.0751616",
+    "name": "Ajummart",
+    "display_name": "Ajummart, Campaner Street, Zone IV, Santa Catalina, Zamboanga City, Zamboanga Peninsula, 7000, Philippines",
+    "type": "supermarket",
+    "importance": 0.00005855878538181151,
+    "namedetails": {
+     "name": "Ajummart",
+     "official_name": "Ajjumar Korean-Asian Convenience Store",
+     "addr:housename": "Centro Capital Building"
+    },
+    "boundingbox": [
+     "6.9074778",
+     "6.9075778",
+     "122.0751116",
+     "122.0752116"
+    ]
+   }
+  ],
+  "Chesapeake Bay": [
+   {
+    "place_id": 347792669,
+    "lat": "38.2280573",
+    "lon": "-76.2629345",
+    "name": "Chesapeake Bay",
+    "display_name": "Chesapeake Bay, Maryland, 23459, United States",
+    "type": "bay",
+    "importance": 0.6040812405396379,
+    "namedetails": {
+     "name": "Chesapeake Bay"
+    },
+    "boundingbox": [
+     "36.9078104",
+     "39.5485735",
+     "-76.5367201",
+     "-75.8109520"
+    ]
+   },
+   {
+    "place_id": 348642388,
+    "lat": "38.5167886",
+    "lon": "-76.3830046",
+    "name": "Chesapeake Bay",
+    "display_name": "Chesapeake Bay, Dorchester County, Maryland, United States",
+    "type": "bay",
+    "importance": 0.6040812405396379,
+    "namedetails": {
+     "name": "Chesapeake Bay",
+     "name:cs": "Chesapeakská zátoka",
+     "name:en": "Chesapeake Bay",
+     "name:pl": "Zatoka Chesapeake",
+     "name:ru": "Чесапикский залив",
+     "name:sk": "Chesapeacka zátoka",
+     "alt_name:cs": "Chesapeakeská zátoka"
+    },
+    "boundingbox": [
+     "38.5167386",
+     "38.5168386",
+     "-76.3830546",
+     "-76.3829546"
+    ]
+   },
+   {
+    "place_id": 348499120,
+    "lat": "38.9653908",
+    "lon": "-76.4563501",
+    "name": "Chesapeake Bay",
+    "display_name": "Chesapeake Bay, Anne Arundel County, Maryland, 21402, United States",
+    "type": "bay",
+    "importance": 0.10670846341649498,
+    "namedetails": {
+     "name": "Chesapeake Bay"
+    },
+    "boundingbox": [
+     "38.9653408",
+     "38.9654408",
+     "-76.4564001",
+     "-76.4563001"
+    ]
+   }
+  ],
+  "Mount Fuji": [
+   {
+    "place_id": 264634837,
+    "lat": "35.3628384",
+    "lon": "138.7307677",
+    "name": "Mount Fuji",
+    "display_name": "Mount Fuji, Oyama, Sunto County, Shizuoka Prefecture, Japan",
+    "type": "volcano",
+    "importance": 0.6083878032330545,
+    "namedetails": {
+     "name": "富士山",
+     "name:af": "Foedji",
+     "name:am": "ፉጂ ተራራ",
+     "name:ar": "جبل فوجي",
+     "name:as": "মাউণ্ট ফুজি",
+     "name:az": "Fuci",
+     "name:ba": "Фудзияма",
+     "name:be": "Фудзіяма",
+     "name:bg": "Фуджи",
+     "name:bn": "ফুজি পর্বত",
+     "name:br": "Menez Fuji",
+     "name:bs": "Fudži",
+     "name:ca": "Mont Fuji",
+     "name:cs": "Fudžisan",
+     "name:cy": "Mynydd Fuji",
+     "name:da": "Fuji",
+     "name:de": "Fuji",
+     "name:dv": "ފުޖީ ފަރުބަދަ",
+     "name:el": "Φούτζι",
+     "name:en": "Mount Fuji",
+     "name:eo": "Fuĵi-Monto",
+     "name:es": "Monte Fuji",
+     "name:et": "Fuji",
+     "name:eu": "Fuji mendia",
+     "name:fa": "کوه فوجی",
+     "name:fi": "Fuji",
+     "name:fr": "Mont Fuji",
+     "name:gl": "Monte Fuji",
+     "name:he": "הר פוג'י",
+     "name:hi": "फ्यूजीयामा",
+     "name:hr": "Fuji",
+     "name:hu": "Fudzsi",
+     "name:hy": "Ֆուձիյամա",
+     "name:id": "Gunung Fuji",
+     "name:it": "Monte Fuji",
+     "name:ja": "富士山",
+     "name:jv": "Gunung Fuji",
+     "name:ka": "ფუძიამა",
+     "name:kk": "Фудзияма",
+     "name:km": "ភ្នំហ្វឹជី",
+     "name:ko": "후지산",
+     "name:la": "Mons Fusius",
+     "name:lt": "Fudzijama",
+     "name:lv": "Fudzi",
+     "name:mk": "Фуџи",
+     "name:ml": "ഫുജി പർവ്വതം",
+     "name:mn": "Фүжи уул",
+     "name:mr": "फूजी पर्वत",
+     "name:ms": "Gunung Fuji",
+     "name:nl": "Fuji",
+     "name:nn": "Fuji-fjellet",
+     "name:no": "Fuji-san",
+     "name:oc": "Mont Fuji",
+     "name:or": "ଫୁଜି ପର୍ବତ",
+     "name:pa": "ਮਾਊਂਟ ਫੂਜੀ",
+     "name:pl": "Fudżi",
+     "name:pt": "Monte Fuji",
+     "name:ro": "Fuji",
+     "name:ru": "вулкан Фудзияма",
+     "name:sk": "Fudžisan",
+     "name:sl": "Fuji",
+     "name:sq": "Fuxhi",
+     "name:sr": "Fudži",
+     "name:su": "Gunung Fuji",
+     "name:sv": "Fuji",
+     "name:ta": "ஃவூஜி மலை",
+     "name:te": "ఫ్యూజీ పర్వతం",
+     "name:th": "ภูเขาฟุจิ",
+     "name:tl": "Bundok Fuji",
+     "name:tr": "Fuji Dağı",
+     "name:tt": "Фудзияма",
+     "name:uk": "вулкан Фудзі",
+     "name:ur": "کوہ فیوجی",
+     "name:vi": "Phú Sĩ",
+     "name:zh": "富士山",
+     "alt_name:cs": "Fudži-san",
+     "alt_name:ja": "富岳",
+     "alt_name:ko": "부사산",
+     "alt_name:ru": "вулкан Фудзи",
+     "name:ja-Hira": "ふじさん",
+     "name:ja-Latn": "Fujisan",
+     "short_name:cs": "Fudži",
+     "alt_name:ja-Hira": "ふがく",
+     "alt_name:ja-Latn": "Fujiyama"
+    },
+    "boundingbox": [
+     "35.3627884",
+     "35.3628884",
+     "138.7307177",
+     "138.7308177"
+    ]
+   },
+   {
+    "place_id": 270749275,
+    "lat": "32.9793473",
+    "lon": "129.1679410",
+    "name": "Mount Fuji",
+    "display_name": "Mount Fuji, Shinkamigotō, Minami-Matsuura County, Nagasaki Prefecture, Japan",
+    "type": "peak",
+    "importance": 0.16004883421072708,
+    "namedetails": {
+     "name": "藤嶽",
+     "name:en": "Mount Fuji",
+     "name:ja": "藤嶽",
+     "name:ja-Hira": "ふじがだけ"
+    },
+    "boundingbox": [
+     "32.9792973",
+     "32.9793973",
+     "129.1678910",
+     "129.1679910"
+    ]
+   },
+   {
+    "place_id": 374858688,
+    "lat": "44.9456207",
+    "lon": "-91.7707739",
+    "name": "Mount Fuji",
+    "display_name": "Mount Fuji, Town of Colfax, Dunn County, Wisconsin, United States",
+    "type": "peak",
+    "importance": 0.1600365278095674,
+    "namedetails": {
+     "name": "Mount Fuji"
+    },
+    "boundingbox": [
+     "44.9455707",
+     "44.9456707",
+     "-91.7708239",
+     "-91.7707239"
+    ]
+   }
+  ]
+ }
+}
