@@ -180,7 +180,7 @@ export function makeAtlasToolSurface(deps) {
       var ranked = (r && r.ranked) || [];
       if (!ranked.length) {
         return { ok: true, query: query, matches: [],
-          note: 'Nothing matched. The registry is complete and every capability is indexed in your system prompt, so rephrasing and searching again will not find it: IntMap has no such control. Tell the reader that plainly, answer directly from what you know and can see, or search the web.' };
+          note: 'Nothing matched this wording. The registry is complete and every capability id is in your system prompt: if one of those ids fits the request, call run_capability with it directly (find_capability with the bare id returns its schema). If none fits, IntMap has no such control — say so plainly, answer from what you know and can see, or search the web. Rephrasing this search will not find more.' };
       }
       var out = [], ids = [];
       for (var i = 0; i < ranked.length; i++) {
