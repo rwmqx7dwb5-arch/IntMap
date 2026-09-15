@@ -6971,6 +6971,9 @@ window.IntMapLang.define('zh-hans', {
   "Unknown colouring mode": "不明的着色方式",
   "Value on every row": "填入每一列的值",
   "This map view cannot draw imported shapes — switch to the flat map": "此地图检视无法绘制导入的图形——请切换到平面地图",   /* map-ui.js (#R739) */
-  "This map view could not draw those shapes — switch to the flat map and try again": "此地图检视无法绘制那些图形——请切换到平面地图后再试一次",   /* gis-panel.js (#R739) */
+  "This map view could not draw those shapes — switch to the flat map and try again": "此地图检视无法绘制那些图形——请切换到平面地图后再试一次",
+  "The GIS engine could not be loaded.": "无法加载 GIS 引擎。",
+  "The geometry could not be computed, so this result would have been smaller than the answer": "无法计算几何运算，因此这个结果会比真正的答案更少",
+  "That spatial relation is declared but not wired to a test": "该空间关系已宣告，但尚未接上判定",   /* gis-panel.js (#R739) */
   }
 });

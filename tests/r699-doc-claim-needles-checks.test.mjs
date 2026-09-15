@@ -39,6 +39,16 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tierSpecs } from '../scripts/tiers.mjs';
+import { makeAtlasCapabilities } from '../js/atlas-capabilities.js';
+
+/* ⚠ (#R743) THE SAME DERIVATION scripts/doc-facts.mjs MAKES, FOR THE SAME REASON THE deep-tier SEED
+   BELOW IS DERIVED. These three seeds held the literal 139 and 138, so the round that registered two
+   capabilities made four mutations 「lose their subject」 — which reads as a broken test rather than
+   as a moved number, and the defects these rows exist to catch stop being watched until somebody
+   retypes them. Only the WRONGNESS is written down. */
+const CAPS = makeAtlasCapabilities({});
+const CAP_TOTAL = CAPS.list().length;
+const CAP_LIVE = CAP_TOTAL - (CAPS.withdrawn() || []).length;
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
@@ -200,9 +210,9 @@ test('⑧ every rule that can fail also reports itself on a green run', () => {
    `deep-tier-size` counted 「spec files」 in English and missed the same fact stated in
    Japanese, also wrong. `check:docs` was green through all four. Each is mutated back here. */
 const DEFECTS = [
-  ['capability-count', 'PRODUCT.md', '139 の能力', '130 の能力', 'の between the number and the counter'],
-  ['capability-count', 'PRODUCT.md', '139 能力', '130 能力', 'no asterisks around it'],
-  ['capability-count', 'docs/FILES.md', '139 能力 ×', '125 能力 ×', 'a counter followed by ×'],
+  ['capability-count', 'PRODUCT.md', `${CAP_TOTAL} の能力`, '130 の能力', 'の between the number and the counter'],
+  ['capability-count', 'PRODUCT.md', `${CAP_TOTAL} 能力`, '130 能力', 'no asterisks around it'],
+  ['capability-count', 'docs/FILES.md', `${CAP_TOTAL} 能力 ×`, '125 能力 ×', 'a counter followed by ×'],
   /* ⚠ (#R736) THIS SEED IS DERIVED, BECAUSE THE FACT IT MUTATES MOVES. It was written as the literal
      「core 7 本 / deep 105 本」, and the round that added one spec file made the guard below fire — the
      mutation «has lost its subject», which reads as a broken test rather than as a moved number, and
@@ -213,6 +223,11 @@ const DEFECTS = [
     `core ${tierSpecs('core').length} 本 / deep ${tierSpecs('deep').length} 本`,
     `core ${tierSpecs('core').length - 1} 本 / deep ${tierSpecs('deep').length - 46} 本`,
     'the same fact in Japanese'],
+  /* ⚠ (#R743) THE THIRD NUMBER IN THE SENTENCE ⑫ MUTATES. 「N のうち撤去済み 1 を除く M」 had its
+     withdrawn count and its reachable half compared and its REGISTRY TOTAL read by nothing — so
+     raising the registry left DECISIONS.md ×2 saying 「139 のうち撤去済み 1 を除く 140」, which does
+     not hold against itself (139 − 1 = 138), with check:docs green over it. Derived, like the rest. */
+  ['capability-count', 'DECISIONS.md', `${CAP_TOTAL} のうち撤去済み`, '130 のうち撤去済み', 'the registry total in that same sentence'],
   ['alerts', 'PRODUCT.md', '自前 13 フィード', '自前 12 フィード', 'a feed count outside the one owning sentence'],
   ['alerts', 'README.md', 'countries over thirteen feeds', 'countries over twelve feeds', 'the capture group that was never compared'],
 ];
@@ -308,7 +323,7 @@ test('⑫ capability-count goes red on the sentence that was shipped for nine ro
     const rel = 'DECISIONS.md';
     const original = readFileSync(join(ROOT, rel));
     const text = original.toString('utf8');
-    const good = '（139 のうち撤去済み 1 を除く 138）';
+    const good = `（${CAP_TOTAL} のうち撤去済み 1 を除く ${CAP_LIVE}）`;
     assert.ok(text.includes(good), `${rel} no longer carries «${good}»`);
     try {
       writeFileSync(join(ROOT, rel), text.split(good).join('（130 のうち撤去済み 137 を除く 136）'));
@@ -319,7 +334,10 @@ test('⑫ capability-count goes red on the sentence that was shipped for nine ro
       } catch (e) { code = e.status ?? 1; out = (e.stdout || '') + (e.stderr || ''); }
       assert.equal(code, 1, 'the withdrawn/reachable claim went unchecked again:\n' + out);
       assert.match(out, /withdrawn count holds 1/, out);
-      assert.match(out, /reachable half holds 138/, out);
+      /* ⚠ (#R743) DERIVED FOR THE SAME REASON THE SEED ABOVE IS. This line held the literal 138 —
+         the very number the rule exists to stop anybody writing down — so the round that registered
+         two capabilities turned a working guard into a red test about nothing. */
+      assert.match(out, new RegExp('reachable half holds ' + CAP_LIVE), out);
     } finally {
       writeFileSync(join(ROOT, rel), original);
     }

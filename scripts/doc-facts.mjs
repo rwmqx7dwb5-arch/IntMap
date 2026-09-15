@@ -1772,6 +1772,14 @@ if (RULE && RULE !== 'i18n-open-gap') {
          value was never even captured. Both halves are read and both are compared now. */
       { src: '撤去済み\\s*\\**\\s*(\\d+)\\s*\\**\\s*を除く\\s*\\**\\s*(\\d+)',
         want: gone, want2: live, what: 'the withdrawn count', what2: 'the reachable half' },
+      /* ⚠ (#R743) THE THIRD NUMBER IN THAT SAME SENTENCE WAS NOT CAPTURED BY ANYTHING. The prose
+         reads 「（N のうち撤去済み 1 を除く M）」 — the needle above takes the withdrawn count and
+         the reachable half, and 「N のうち」 is a claim about the REGISTRY that no shape bound to.
+         MEASURED this round: raising the registry from 139 to 141 left `DECISIONS.md` ×2 saying
+         「139 のうち撤去済み 1 を除く 140」 — arithmetic that does not even hold against itself
+         (139 − 1 = 138) — and `check:docs` stayed green over it. Same defect as the one the needle
+         above documents, one number to the left: a fact in a sentence that nothing reads. */
+      { src: '(\\d[\\d,]*)\\s*\\**\\s*のうち撤去済み', want: total, what: 'the registry' },
     ];
 
     let seen = 0;

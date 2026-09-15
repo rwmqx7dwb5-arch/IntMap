@@ -110,6 +110,14 @@ export function makeAtlasSchemas() {
          because nothing here uses `additionalProperties:false` — so the defect was invisible to every
          test and to the model at the same time. */
       'data.query': { type: 'object', properties: { from: str(), where: list(obj()), near: list(obj()), spatial: list(obj()), in: obj(), show: list(str()), order: obj(), limit: int(1, 200) }, required: ['from'] },
+      /* (#R743) ⚠ `op` AND `params` ARE DELIBERATELY UNENUMERATED HERE. The vocabulary is
+         js/gis-ops.js's DECL, which this file cannot read at planning time — and a copy of it here
+         would be a second list to keep in step, which is the defect this round removed from the
+         union op and from the panel before it. The refusals carry the vocabulary instead:
+         `op-unknown` answers with every op id, and a refused step answers with that op's whole
+         declaration, so one wrong call becomes one corrected call rather than a search. */
+      'data.gis': { type: 'object', properties: { op: str(), inputs: list(str()), params: obj(), title: str(), sample: obj() }, required: ['op', 'inputs'] },
+      'map.drawDataset': { type: 'object', properties: { dataset: str() }, required: ['dataset'] },
       'data.rank': { type: 'object', properties: { metric: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metric'] },
       'data.ratio': { type: 'object', properties: { metricA: str(), metricB: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metricA', 'metricB'] },
       'data.relate': { type: 'object', properties: { metricY: str(), metricX: str(), find: one('low', 'high'), n: int(1, 40) }, required: ['metricY', 'metricX'] },

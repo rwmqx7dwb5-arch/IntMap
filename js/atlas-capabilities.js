@@ -123,6 +123,23 @@ export function makeAtlasCapabilities(HOST) {
          過去30日でM5以上の地震があった都市」 is a question about four at once. `read` and `none`: it
          measures and pins, it changes no setting the reader has to undo. */
       ['data.query',                 'query',          'crossQuery,dataQuery',                                        'data',    'queryRows','map.object',           'map,explanation',     'session','none',   '',         'atlasQuery'],
+      /* ⚠⚠ (#R743) THE OTHER HALF OF THE LINE ABOVE. `data.query` READS the datasets a reader has
+         imported; nothing could ask for one to be MADE. So every spatial analysis Atlas could
+         perform was one somebody had already built as a feature of the app, and a request like
+         「施設から5km圏を作り、統合し、その範囲の人口を集計して地図に出して」 had no door at all.
+         ⚠ ONE ROW, NOT ONE PER OP. js/gis-ops.js declares its ops — inputs, accepted geometry,
+         payload kind, parameters, types — and js/gis-atlas.js hands the planner THAT declaration
+         rather than a copy of it. A row per op here would be the hand-written list this project
+         keeps re-learning not to write: the op added to DECL tomorrow would answer run() and be
+         invisible to the planner. `writes` is 'map.object' only because a step may be asked to draw
+         its result; the analysis itself changes no setting the reader has to undo. */
+      ['data.gis',                   'gis',            'gisRun,spatialOp,runGisOp',                                   'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'gisCore'],
+      /* ⚠ (#R743) AND DRAWING IS ITS OWN PROMISE. A step that draws only when asked cannot
+         honestly declare 'map.object': the observer would measure a map that did not move and
+         call a correct answer not_rendered — the shape #R736/#R737 measured, where 21 tool calls
+         went into re-drawing a map that had been right from the first. One capability computes
+         and promises nothing about the map; this one draws and promises exactly that. */
+      ['map.drawDataset',            'gisDraw',        'drawDataset,showDataset',                                     'map',     'paint',   'map.object',             'map',                 'session','none',   '',         'gisCore'],
       /* ⚠⚠ (#R543) THE CHART — the second thing an answer is allowed to BE. #R511 made the map an
          output of the answer rather than a side effect of it; the numbers stayed prose. Every row
          above that ranks, compares, relates or queries produces values, and the only way any of them
