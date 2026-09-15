@@ -65,6 +65,11 @@ export function makeAtlasProgress(HOST, deps) {
   const L = deps.L || ((en) => en);
   const esc = deps.esc || ((s) => String(s == null ? '' : s));
   const capsOf = (typeof deps.capabilities === 'function') ? deps.capabilities : (() => null);
+  const schemasOf = (typeof deps.schemas === 'function') ? deps.schemas : (() => null);
+  function schemaOf(capId) {
+    const S = schemasOf();
+    return (S && typeof S.schemaFor === 'function') ? S.schemaFor(String(capId || '')) : null;
+  }
 
   /* ── THE PHASES THAT ARE NOT A CAPABILITY ──────────────────────────────────────────────────
      A turn is not only operations. Waiting for the planner, reading an attached image and
@@ -188,7 +193,7 @@ export function makeAtlasProgress(HOST, deps) {
         } catch (_) { }
       });
     } catch (_) { return null; }
-    tr = { el: el, rows: [], byOp: Object.create(null), t0: now(), pendingArg: '', done: false, stopTick: null };
+    tr = { el: el, rows: [], byOp: Object.create(null), t0: now(), pendingAct: null, done: false, stopTick: null };
     traces.set(bubble, tr);
     paintHead(tr);
     try {
@@ -266,15 +271,54 @@ export function makeAtlasProgress(HOST, deps) {
      Atlas-sourced operation is ever in flight — which is why 「the next row」 is a fact, not a guess. */
   function step(bubble, action) {
     const tr = traces.get(bubble); if (!tr) return;
-    tr.pendingArg = detailOf(action);
+    tr.pendingAct = action || null;   /* the ARGUMENTS, kept whole — which of them to show is not this call site’s question */
   }
-  /* The argument worth showing: a name, a place, a metric — the same fields
-     js/atlas-turn-continuity.js's actionLabel reads, because it is the same question. */
-  function detailOf(a) {
+
+  /* ── WHICH ARGUMENT THE READER SEES ─────────────────────────────────────────────────────────
+     ⚠⚠⚠ THIS WAS A HAND-WRITTEN LIST OF KEY NAMES and production measured what that costs. It read
+     `a.name || a.place || a.country || a.metric || a.query || a.topic || …` — eleven spellings,
+     copied from js/atlas-turn-continuity.js. On the live site the detail column was EMPTY for every
+     row of a real turn, because the capability that ran (`map.compose`) carries its subject under
+     `title` — a twelfth spelling. Adding `title` would fix that one turn and leave the next
+     capability blank, which is exactly the shape .agents/rules/no-ad-hoc-hardcoding.md §1 forbids.
+
+     THE CAPABILITY ALREADY DECLARES THE ANSWER. js/atlas-schemas.js holds one argument schema per
+     capability, in the capability’s own order, and it distinguishes the two kinds of argument this
+     question is about:
+
+       · a SUBJECT is free text — `place: string`, `title: string`, `name: string`;
+       · a SETTING is drawn from a declared vocabulary — `camera: {enum: […]}`, `on: boolean`.
+
+     A setting is the machine talking to itself; the subject is what the reader recognises. So the
+     rule is 「the first argument the schema declares as a string with NO enum, required ones first」,
+     and it is stated in terms of the schema rather than of any key name. Measured on the four
+     capabilities the reported turn ran: map.compose → `title` (not `camera`, which has 2 enum
+     values), data.weather → `place`, layers.toggle → `name`, view.flyTo → `place`.
+
+     ⚠ A capability with no schema, or none whose arguments are free text, gets NO detail — not a
+     guessed one. An empty column says 「this step had no subject worth naming」, which is true; a
+     guess would say something false about what Atlas did. */
+  function detailFor(capId, a) {
     if (!a) return '';
-    const x = a.name || a.place || a.country || a.metric || a.query || a.topic
-      || a.mode || a.layer || a.term || a.from || a.target || '';
-    return x ? String(x).slice(0, 48) : '';
+    let props = null;
+    try { const sc = schemaOf(capId); if (sc && sc.properties) props = sc.properties; } catch (_) { props = null; }
+    if (!props) return '';
+    /* ⚠ THE CAPABILITY'S OWN ORDER, AND NOTHING ELSE DECIDES. A 「required arguments first」 tie-break
+       stood here and was measured WRONG on the one capability where the two rules differ:
+       `chart.compose` declares free text as [title, source] and requires [kind, source], so
+       required-first showed the reader a data SOURCE where the chart has a TITLE. One rule, and it
+       is the order the capability itself wrote its arguments in. */
+    const key = Object.keys(props).find((k) => {
+      const p = props[k] || {};
+      return p.type === 'string' && !(p.enum && p.enum.length) && typeof a[k] === 'string' && a[k].trim();
+    });
+    /* ⚠ NOR IS THE ACTION'S OWN `type` STRIPPED HERE ANY MORE. Twenty-one schemas declare a property
+       literally named `type` and every one of them is an enum, so the rule above already refuses it —
+       a second guard for the same case is the duplicate this round is removing, not extra safety.
+       `tests/r725-atlas-trace-detail-checks.test.mjs` ⑤ measures that invariant against the whole
+       registry, so the day a schema declares `type` as free text the gate says so instead of the
+       trace quietly showing the reader the name of an action. */
+    return key ? String(a[key]).slice(0, 48) : '';
   }
 
   /* phase(bubble, kind) — a non-capability phase: the planner wait, the image read, the re-check.
@@ -323,8 +367,8 @@ export function makeAtlasProgress(HOST, deps) {
           if (ev.phase === 'cancelled' || ev.phase === 'superseded') return;   /* never opened here; do not invent a row for something that did not start */
           if (tr.live && tr.live.state === 'run') { closeRow(tr.live, 'ok'); tr.live = null; }
           const word = wordFor(ev.capabilityId);
-          rec = addRow(tr, { word: word, detail: tr.pendingArg, state: 'run' });
-          tr.pendingArg = '';
+          rec = addRow(tr, { word: word, detail: detailFor(ev.capabilityId, tr.pendingAct), state: 'run' });
+          tr.pendingAct = null;
           if (rec) { rec.word = word; tr.byOp[ev.operationId] = rec; setLive(bubble, word); }
         }
         if (st && st !== 'run') { closeRow(rec, st); if (tr.live === rec) tr.live = null; }
@@ -377,7 +421,7 @@ export function makeAtlasProgress(HOST, deps) {
     } catch (_) { }
   }
 
-  return { open, step, phase, plan, watch, done, live, stageHtml, setStage, setLive, wordFor,
+  return { open, step, phase, plan, watch, done, live, stageHtml, setStage, setLive, wordFor, detailFor,
     categoryWords: () => Object.keys(CATEGORY_WORD), phaseWords: () => Object.keys(PHASE_WORD) };
 }
 
