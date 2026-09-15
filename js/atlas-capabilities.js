@@ -1322,12 +1322,13 @@ export function makeAtlasCapabilities(HOST) {
     /* the terms of a request: Latin/digit words of 3+ characters, and 2-character windows of each
        CJK run (Japanese and Chinese carry no spaces, so 「次回可視通過予測」 yields 通過 and 予測). */
     function termsOf(nq) {
-      var out = [];
-      (nq.match(/[a-z0-9]{3,}/g) || []).forEach(function (w) { out.push(w); });
-      (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).forEach(function (run) {
-        for (var i = 0; i + 2 <= run.length; i++) out.push(run.slice(i, i + 2));
+      var latin = (nq.match(/[a-z0-9]{3,}/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
+      var runs = (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).map(function (run) {
+        var w = [];
+        for (var i = 0; i + 2 <= run.length; i++) w.push(run.slice(i, i + 2));
+        return w.length ? w : [run];
       });
-      return out.filter(function (t, i, a) { return a.indexOf(t) === i; });
+      return { latin: latin, runs: runs };
     }
     var _docNorm = null;   /* id → normalised catalogue block, filled once (a block is up to ~24 kB) */
     var _docDf = {};       /* term → how many capabilities' blocks carry it */
@@ -1354,17 +1355,34 @@ export function makeAtlasCapabilities(HOST) {
       if (!runtime.docs) return 0;
       var all = docNorms(), d = all[cap.id];
       if (!d) return 0;
-      var pts = 0;
-      termsOf(nq).forEach(function (t) {
-        if (!hasTerm(d, t)) return;
+      var pts = 0, terms = termsOf(nq);
+      /* ⚠ A TERM CARRIED BY MORE THAN FOUR BLOCKS IS NOT A MATCH AT ALL. Half a point apiece still
+         summed to «score > 0» for nearly every capability, and find_capability — which returns EVERY
+         scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
+         request; the next model call took 94 s (measured on production, 2026-09-15). */
+      var seen = {};                       /* the same window twice is still one piece of evidence */
+      var award = function (t) {
+        if (seen[t]) return 0;
+        seen[t] = 1;
         var df = _docDf[t];
         if (df == null) { df = 0; for (var id in all) if (hasTerm(all[id], t)) df++; _docDf[t] = df; }
-        /* ⚠ A TERM CARRIED BY MORE THAN FOUR BLOCKS IS NOT A MATCH AT ALL. Half a point apiece still
-           summed to «score > 0» for nearly every capability, and find_capability — which returns EVERY
-           scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
-           request; the next model call took 94 s (measured on production, 2026-09-15). */
-        if (df > DOC_TERM_MAX_DF) return;
-        pts += DOC_TERM_POINTS * Math.min(1, 2 / Math.max(1, df));
+        return df > DOC_TERM_MAX_DF ? 0 : DOC_TERM_POINTS * Math.min(1, 2 / Math.max(1, df));
+      };
+      terms.latin.forEach(function (t) { if (hasTerm(d, t)) pts += award(t); });
+      /* ⚠⚠⚠ (#R745) ONE WINDOW OUT OF A LONGER RUN IS NOT EVIDENCE ABOUT THE RUN. Japanese and
+         Chinese carry no spaces, so a request is cut into 2-character windows — and the windows of a
+         word straddle its boundaries. 「ありがとう」 yields あり・りが・がと・とう, and あり sits in ONE
+         catalogue block, inside the example sentence 「…地震があり、半径100km以内に…」. df=1 is the
+         rarest a term can be, so the fragment scored a full 6 points and `find_capability('ありがとう')`
+         answered with `data.query` — a thank-you routed to a spatial query. Measured in the nightly
+         deep tier from 2026-09-15, the night after the search path was rewritten.
+         So a run must be recognised by MORE THAN ONE of its own windows (a run short enough to make
+         only one window is that one term, and still counts). 「ひまわり」 keeps matching — a block that
+         holds the word holds all three of its windows — while a fragment shared by accident does not. */
+      terms.runs.forEach(function (windows) {
+        var hits = windows.filter(function (t) { return hasTerm(d, t); });
+        if (hits.length < Math.min(2, windows.length)) return;
+        hits.forEach(function (t) { pts += award(t); });
       });
       return Math.min(DOC_TERM_CAP, pts);
     }

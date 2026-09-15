@@ -115,8 +115,24 @@ test('R201 ① the terminator is a per-pixel gradient, and full night is the nig
       capLat: window.IntMapNightSide.state().capLat };
   });
   expect(cap.minAbs, 'no cap wedge reaches below the image').toBeGreaterThanOrEqual(cap.capLat - 0.001);
-  /* exactly one pole is in darkness at any date outside the equinoxes — never both, never neither */
-  expect(cap.north === 0 || cap.south === 0, `one pole is lit: ${JSON.stringify(cap)}`).toBe(true);
+  /* ⚠ (#R745) WHICH CLAIM IS TRUE HERE IS DECIDED BY THE SUN, NOT BY THE CALENDAR. The wedges are
+     sampled at the join latitude (~85.06°), so one pole is wholly lit and the other wholly dark only
+     while |declination| > 90 − joinLat ≈ 4.94°. Inside that band — which is roughly 8 Sep–6 Oct and
+     8 Mar–4 Apr, about 56 days a year, not «the equinox» — BOTH caps genuinely hold day and night at
+     the same time, and drawing dark wedges at both poles is correct. The first version of this line
+     asserted the solstice sky on every date and started failing on 2026-09-15 with the product
+     behaving exactly right (`{"north":1,"south":15}`). The declination comes from the layer's own
+     solar(), so this cannot drift away from what is drawn. */
+  const sun = await page.evaluate(() => window.IntMapNightSide._solar());
+  const edge = 90 - sun.joinLat;
+  const margin = 0.5;                    /* ±0.5° of declination ≈ ±1.3 days — claim nothing there */
+  if (Math.abs(sun.decDeg) > edge + margin) {
+    expect(cap.north === 0 || cap.south === 0,
+      `one pole must be wholly lit at declination ${sun.decDeg.toFixed(2)}°: ${JSON.stringify(cap)}`).toBe(true);
+  } else if (Math.abs(sun.decDeg) < edge - margin) {
+    expect(cap.north > 0 && cap.south > 0,
+      `both caps hold night at declination ${sun.decDeg.toFixed(2)}°: ${JSON.stringify(cap)}`).toBe(true);
+  }
   expect(cap.n, 'and the dark one is covered').toBeGreaterThan(0);
 
   /* PIXELS: the same frame with the effect on and off, on the antisolar meridian. #R200 measured
