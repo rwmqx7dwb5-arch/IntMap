@@ -344,6 +344,19 @@ export function makeAtlasAgent() {
          the case where trying again is right. */
       const TR = makeAtlasTurnResults({});
       const doneCalls = Object.create(null);
+      /* ⚠⚠⚠ (#R741) …AND THE IDENTICAL CALL THAT FAILED IS NOT PROGRESS EITHER. The paragraph above
+         says 「a failure is exactly the case where trying again is right」, and for a DIFFERENT call
+         it is. For the same call with the same arguments it is not: nothing in the app changed
+         between the two, so the second run can only refuse for the same reason.
+         MEASURED on production 2026-09-15, on the deployed #R740 fix: 「世界を平均寿命で色分けして」
+         sent `mapMetric "life"` SEVEN times, was refused seven times WITH the list of valid keys in
+         every refusal, and the turn died on its step budget having drawn nothing. #R663 and #R731
+         each ended one shape of this; the failing repeat is the shape neither covered.
+         ⚠ NOTHING IS TAKEN (CONSTITUTION.md §5): the call still RUNS — a network failure gets its
+         retry — and nothing is refused. What changes is that the repeat is NAMED, so Atlas can see
+         it is looking at its own refusal, and that a step made only of such repeats counts toward
+         `maxRepeatSteps` exactly as a step made only of reused answers does. */
+      const failedCalls = Object.create(null);
       const results = [];
       let text = '';
       let malformedRun = 0;
@@ -560,6 +573,16 @@ export function makeAtlasAgent() {
              change the arguments, which is precisely how one request became two maps in the reply.
              A call that still owes something must be allowed to be made again. */
           if (ckey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') doneCalls[ckey] = rec;
+          /* (#R741) the refusal that has already been given, named as such — see `failedCalls` above */
+          if (ckey && rec.ok === false) {
+            if (failedCalls[ckey]) {
+              rec.repeatedFailedCallThisTurn = true;
+              rec.note = 'This turn has ALREADY made this exact call and it was refused for the reason above. '
+                + 'Nothing in the app has changed since, so the identical call can only be refused again — '
+                + 'read that reason and use one of the values it names, or ask something different.';
+            }
+            failedCalls[ckey] = true;
+          }
           stepResults.push(rec);
           results.push(rec);
           /* the TOOL may declare it, or the RESULT may — the second is how a generic invoker
@@ -576,8 +599,9 @@ export function makeAtlasAgent() {
           stopped = 'awaiting_user';
           break;
         }
-        /* ⚠ (#R731) THE SAME CALL, MADE AGAIN AFTER ITS OWN ANSWER WAS HANDED BACK, IS NOT PROGRESS. */
-        repeatRun = (stepResults.length && stepResults.every((r) => r && r.reusedFromEarlierCallThisTurn)) ? (repeatRun + 1) : 0;
+        /* ⚠ (#R731) THE SAME CALL, MADE AGAIN AFTER ITS OWN ANSWER WAS HANDED BACK, IS NOT PROGRESS.
+           ⚠ (#R741) …and neither is the same call made again after its own REFUSAL. */
+        repeatRun = (stepResults.length && stepResults.every((r) => r && (r.reusedFromEarlierCallThisTurn || r.repeatedFailedCallThisTurn))) ? (repeatRun + 1) : 0;
         if (repeatRun >= lim.maxRepeatSteps) {
           stopped = 'repeated_calls';
           break;

@@ -69,8 +69,19 @@ export function makeAtlasMetrics(HOST, CTX) {
       const k2=VMET[raw.toLowerCase()]||XVMET[raw.toLowerCase()]||XVMET[raw]||raw;
       if(METRICS[k2]) return {key:k2,m:METRICS[k2]};
       if(XMET[k2]) return {key:k2,m:XMET[k2]};
-      const byName=_metByName()[_mnorm(raw)];
-      if(byName) return {key:byName,m:metAll()[byName]};
+      const idx=_metByName(), q=_mnorm(raw);
+      if(idx[q]) return {key:idx[q],m:metAll()[idx[q]]};
+      /* ⚠⚠⚠ (#R741) …AND A UNIQUE PART OF A NAME IS THAT NAME. #R740's production verification, on
+         the deployed fix: 「世界を平均寿命で色分けして」 sent `mapMetric "life"` — SEVEN times, each
+         refused, the turn dead on its step budget again. The refusal did enumerate (that half of
+         #R740 works, and the list was on screen), but `life` is not any metric's whole name, and the
+         name index only answered exact strings. js/atlas-query.js `byDeclaredName` had already been
+         given the right rule in the same round — exact, then a partial match ONLY IF IT IS UNIQUE —
+         and the two resolvers were left disagreeing about what counts as a name. They agree now.
+         ⚠ UNIQUE, because a guess is worse than the refusal it replaces: 「pop」 is inside both
+         `pop` and `popdensity`, so it stays exact-only and 「density」 still answers by itself. */
+      const hits=[]; for(const n in idx){ if(n.indexOf(q)>=0&&hits.indexOf(idx[n])<0) hits.push(idx[n]); }
+      if(hits.length===1) return {key:hits[0],m:metAll()[hits[0]]};
       return null; }
     /* a refusal that cannot be retried is a loop. Every one of these names the whole valid set. */
     function unknownMetric(k){ return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')
