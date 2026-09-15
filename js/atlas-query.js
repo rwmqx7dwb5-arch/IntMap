@@ -276,6 +276,73 @@ window.IntMapModules.atlasQuery = function (HOST) {
       source: 'OpenStreetMap (ODbL) + Wikidata (CC0)' },
   };
 
+  /* ══ (#R729) THE TABLES THE READER BROUGHT ═══════════════════════════════════════════════════
+     The five above are what IntMap ships. A file the reader dropped on the map was drawn and then
+     could not be ASKED anything: `from` named one of five names, and no code path could make it a
+     sixth. So 「地図に載せたデータ」 and 「分析できるデータ」 were two mechanisms and the second one
+     had no entrance.
+
+     ⚠ THE DIRECTION IS A PULL, NOT A PUSH, AND THAT IS THE WHOLE DESIGN. This module is fetched on
+     demand (js/lazy-modules.js `atlasQuery`), so anything that "registered itself with the query
+     engine" earlier in the session would have registered with a module that did not exist yet, and
+     the second registration path — the replay — would be a second place that decides what a table
+     is. Instead the registry (window.IntMapData, js/gis-datasets.js) is READ at the moment a query
+     runs. One rule, evaluated late, correct whenever the file arrived.
+
+     ⚠ AND THE COLUMNS ARE THE DATASET'S OWN MEASURED FIELDS. js/gis-datasets.js already walked the
+     values and said which column is a number, a date or text; re-deciding that here would be the
+     same judgement in two places, and the drift would show as a column that can be compared in the
+     panel and not in a query. A user column is cost 0 / origin `raw` — it IS the source record. */
+  function userTables() {
+    const R = (typeof window !== 'undefined') && window.IntMapData;
+    return R ? R.list() : [];
+  }
+  /* The rows of a dataset, in the shape every other table returns. ⚠ A row needs lng/lat for pins
+     and for NEAR; a polygon has no single point, so the centre of its bounding box is used AND SAID
+     SO in a note — a representative point printed without that sentence would be read as a location
+     the source stated. */
+  function userRows(ds) {
+    const feats = ds.features();
+    const rows = []; let derived = 0;
+    for (let i = 0; i < feats.length; i++) {
+      const f = feats[i] || {}, g = f.geometry || {};
+      let lng = null, lat = null;
+      if (g.type === 'Point' && Array.isArray(g.coordinates)) { lng = +g.coordinates[0]; lat = +g.coordinates[1]; }
+      else {
+        let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+        (function walk(c) { if (!Array.isArray(c)) return; if (typeof c[0] === 'number') { if (c[0] < w) w = c[0]; if (c[0] > e) e = c[0]; if (c[1] < s) s = c[1]; if (c[1] > n) n = c[1]; return; } for (const x of c) walk(x); })(g.coordinates);
+        if (isFinite(w) && isFinite(s)) { lng = (w + e) / 2; lat = (s + n) / 2; derived++; }
+      }
+      const p = f.properties || {};
+      rows.push(Object.assign({ id: ds.id + ':' + i, name: String(p.name != null ? p.name : (p.NAME != null ? p.NAME : ds.title + ' ' + (i + 1))), lng, lat, _p: p }, {}));
+    }
+    const prov = ds.provenance || {};
+    const src = prov.kind === 'op'
+      ? ('IntMap · ' + prov.op + '(' + (prov.inputs || []).join(', ') + ')')
+      : (prov.licence ? (String(prov.file || ds.title) + ' — ' + prov.licence) : String(prov.file || ds.title));
+    return { rows, source: src,
+      note: derived ? L('Rows without a single point (lines and areas) are located at the centre of their bounding box.',
+        '1点を持たない行（線・面）の座標は、その外接矩形の中心です。',
+        'Zeilen ohne Einzelpunkt (Linien, Flächen) liegen im Mittelpunkt ihres Begrenzungsrahmens.',
+        'Строки без одной точки (линии, области) расположены в центре ограничивающего прямоугольника.',
+        'Las filas sin un punto único (líneas, áreas) se ubican en el centro de su rectángulo delimitador.') : null };
+  }
+  /* Fold the registry into TABLES. ⚠ Into the SAME object every existing reader indexes — a second
+     lookup rule (`TABLES[x] || USER[x]`) would have to be added at each of the seven places that
+     read it, and the one that was missed would be a table that answers a query and then cannot name
+     itself in the method block. */
+  function syncUserTables() {
+    const live = Object.create(null);
+    for (const ds of userTables()) {
+      const id = String(ds.id).toLowerCase();
+      live[id] = true;
+      TABLES[id] = { id, label: LA(ds.title, ds.title, ds.title, ds.title, ds.title),
+        rows: () => Promise.resolve(userRows(ds)), geo: true, user: true, fields: ds.fields,
+        source: (ds.provenance && ds.provenance.kind === 'op') ? 'IntMap · ' + ds.provenance.op : String((ds.provenance && ds.provenance.file) || ds.title) };
+    }
+    for (const k in TABLES) if (TABLES[k].user && !live[k]) delete TABLES[k];
+  }
+
   /* ══ THE COLUMNS ═════════════════════════════════════════════════════════════════════════════
      `cost` is what orders the plan: 0 = already in the row, 1 = one shared fetch then free,
      2 = a network call per batch of rows. `ensure(rows)` fills `row.v[id]` for every row it can and
@@ -447,6 +514,24 @@ window.IntMapModules.atlasQuery = function (HOST) {
      that exists. Resolved on demand so a new metric needs no edit here. */
   function columnFor(table, id) {
     const key = String(id || '').trim();
+    /* (#R729) a dataset the reader brought: its columns are the fields js/gis-datasets.js MEASURED.
+       ⚠ Before the fixed table, because `name`/`lat`/`lng` are declared there for the five built-in
+       tables and would otherwise answer with an `intrinsic` reader that does not know this row. */
+    const UT = TABLES[table];
+    if (UT && UT.user) {
+      if (key === 'lat' || key === 'lng' || key === 'name') {
+        return col(key, [table], LA(key, key, key, key, key), key === 'name' ? '' : '°', 0,
+          intrinsic(key, (r) => r[key]), UT.source, key === 'name' ? 'text' : 'number', 'raw');
+      }
+      const fld = (UT.fields || []).find((f) => f.name === key);
+      if (!fld) return null;
+      /* ⚠ The dataset said `number`; the row still holds the string the file held, so the read
+         converts. Doing it here rather than at import keeps the reader's own bytes intact. */
+      const asNum = (typeof window !== 'undefined' && window.IntMapData) ? window.IntMapData.asNumber : (v) => (isFinite(+v) ? +v : null);
+      return col(key, [table], LA(key, key, key, key, key), '', 0,
+        intrinsic(key, (r) => (fld.type === 'number' ? asNum((r._p || {})[key]) : ((r._p || {})[key] == null ? null : String((r._p || {})[key])))),
+        UT.source, fld.type === 'number' ? 'number' : 'text', 'raw');
+    }
     const fixed = COLUMNS.find((c) => c.id === key && c.tables.indexOf(table) >= 0);
     if (fixed) return fixed;
     if (/^wb:/i.test(key)) {
@@ -500,6 +585,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
 
   async function run(spec) {
     const notes = [], sources = [], caps = [], unapplied = [];
+    syncUserTables();   /* (#R729) read at the moment of the query — see the header above TABLES */
     const from = String((spec && (spec.from || spec.table)) || 'cities').trim().toLowerCase();
     const T = TABLES[from];
     if (!T) return { ok: false, error: 'unknown-table', table: from, tables: Object.keys(TABLES) };
@@ -640,6 +726,10 @@ window.IntMapModules.atlasQuery = function (HOST) {
     const shown = [];
     for (const id of showIds) { const c = columnFor(from, id); if (c && !shown.find((x) => x.id === c.id)) shown.push(c); }
     for (const c of plan) if (!shown.find((x) => x.id === c._col.id)) shown.push(c._col);
+    /* (#R729) a dataset the reader brought has no headline column this module can name in advance,
+       so it shows the first four fields the file actually has — an empty table would say the rows
+       matched and then show nothing about them. */
+    if (!shown.length && T.user) { for (const f of (T.fields || []).slice(0, 4)) { const c = columnFor(from, f.name); if (c) shown.push(c); } }
     if (!shown.length) { const p = columnFor(from, from === 'earthquakes' ? 'mag' : 'pop'); if (p) shown.push(p); }
     /* a shown column that no condition paid for still has to be measured */
     for (const c of shown) {
@@ -754,8 +844,11 @@ window.IntMapModules.atlasQuery = function (HOST) {
   /* what the planner is allowed to name — read by js/atlas-catalog-text.js's query block and by the
      capability audit, so the prompt and the code cannot drift apart */
   function catalogue() {
+    syncUserTables();   /* (#R729) the planner is offered the reader's own datasets by name */
     const cols = {};
-    for (const t in TABLES) cols[t] = COLUMNS.filter((c) => c.tables.indexOf(t) >= 0).map((c) => c.id);
+    for (const t in TABLES) cols[t] = TABLES[t].user
+      ? TABLES[t].fields.map((f) => f.name).concat(['name', 'lat', 'lng'])
+      : COLUMNS.filter((c) => c.tables.indexOf(t) >= 0).map((c) => c.id);
     return { tables: Object.keys(TABLES), columns: cols, ops: Object.keys(OPS).concat(['in', 'between']),
       caps: { scan: SCAN_CAP, net: NET_CAP, join: JOIN_CAP, out: OUT_CAP } };
   }
@@ -913,7 +1006,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
 
   const API = { run, answer, catalogue, colName, tableName, distKm, human,
     bind: (deps) => { D = deps || {}; _iso2to3 = null; return API; },
-    tables: () => Object.keys(TABLES), columnFor };
+    tables: () => { syncUserTables(); return Object.keys(TABLES); }, columnFor, syncUserTables };
   window.IntMapQuery = API;
   return API;
 };

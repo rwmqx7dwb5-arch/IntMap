@@ -160,6 +160,7 @@ window.IntMapLang.define('jp', { ui: {
       lyrSeaLevel:"海面変動",
       favLayers:"お気に入りレイヤー",
       importGeoFile:"地図データを読み込む",
+      gisWorkbench:"データと分析",
       screenshotBtn:"地図のスクリーンショット（操作ボタンを隠し凡例は残す）",
       lblSidebarStyle:"サイドバーの外観",
       sidebarOpaque:"不透過（デフォルト）",

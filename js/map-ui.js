@@ -2453,15 +2453,45 @@ window.IntMapModules.geojsonUpload=function(HOST){
         let r=null;
         try{ r=await readGeoFile(f); }catch(_){ r={ok:false,why:'unreadable'}; }
         if(!r||!r.ok){ toast(reasonText(r&&r.why,r&&r.detail)); continue; }
-        addFC(r.fc, labelFor(f,r), r);
+        const label=labelFor(f,r);
+        addFC(r.fc, label, r);
+        await registerDataset(r, label, f);
       }
+    }
+    /* ══ (#R729) THE FILE BECOMES A DATASET, NOT JUST A DRAWING ════════════════════════════════
+       addFC() puts the features in the renderer and a row in `items`; that is what the map needs
+       and it is all that used to survive. It could not be filtered, joined, aggregated or asked
+       anything, because the attributes were inside a MapLibre source and the only record of the
+       import was a label and a colour. Registering it with window.IntMapData (js/gis-datasets.js)
+       is what makes 「地図に載せたデータ」 and 「分析できるデータ」 the same thing.
+       ⚠ HERE AND NOT INSIDE addFC(): window.IntMapGis.draw() calls addFC to put an ANALYSIS RESULT
+       on the map, and a registration inside addFC would register that result as a second, freshly
+       imported dataset every time the reader drew it. This path is «a file was read», which happens
+       exactly once per file. */
+    async function registerDataset(r,label,f){
+      try{
+        const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false;
+        if(!ok||!window.IntMapData) return;   /* the map still has the layer; the panel is simply not there */
+        window.IntMapData.add({ title:label, features:r.fc.features, sourceCrs:r.sourceCrs||null,
+          provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now() } });
+      }catch(_){ /* a registry failure must not lose the layer that is already drawn */ }
     }
     fileInput.addEventListener('change',()=>{ handleFiles(fileInput.files); fileInput.value=''; });
     function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-upload-geojson')) return;
       const wrap=document.createElement('div'); wrap.id='ugj-mount'; wrap.style.marginTop='6px';
-      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" class="ai-test-btn" style="width:100%;">📂 <span data-i18n="importGeoFile">Import map data</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
+      /* ⚠ (#R729) `data-lyr-tool` IS WHY THE SECOND BUTTON SURVIVES. js/data-layers.js rebuilds the
+         Layers panel by rescuing a few named buttons into #layer-tools and then DELETING #ugj-mount,
+         so a button that is only in this wrapper is removed a second after it is created — measured
+         on this branch: #btn-gis-panel existed for ~1 s and was gone. Adding one more id to that
+         rescue list would fix this button and drop the next one, so the rescue reads the ATTRIBUTE
+         instead, and the mark belongs to the button rather than to the list. */
+      wrap.innerHTML=`<hr style="border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;"><button id="btn-upload-geojson" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;">📂 <span data-i18n="importGeoFile">Import map data</span></button><button id="btn-gis-panel" data-lyr-tool="upload" class="ai-test-btn" style="width:100%;margin-top:5px;"><span data-i18n="gisWorkbench">Data &amp; analysis</span></button><div id="ugj-list" style="margin-top:5px;"></div>`;
       dd.appendChild(wrap); listEl=wrap.querySelector('#ugj-list');
       wrap.querySelector('#btn-upload-geojson').onclick=()=>fileInput.click();
+      /* (#R729) the operating surface for everything that was imported or computed. The module is
+         fetched when the button is pressed, never before — a session that only looks at layers
+         downloads no polygon clipper (js/gis-core.js). */
+      wrap.querySelector('#btn-gis-panel').onclick=async()=>{ try{ const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; if(ok&&window.IntMapGis) window.IntMapGis.toggle(); else toast(window.IntMapLang.t(HOST.lang,"Could not open the data panel","データパネルを開けませんでした","Das Datenpanel konnte nicht geöffnet werden","Не удалось открыть панель данных","No se pudo abrir el panel de datos")); }catch(_){} };
       try{ window.reorganizeLayerPanel&&window.reorganizeLayerPanel(); }catch(_){} }
     mountButton(); setTimeout(mountButton,1500);
     const mc=document.getElementById('map-container');
