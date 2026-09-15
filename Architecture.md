@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（295本・13.5 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（298本・14.2 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -446,8 +446,8 @@ strict json_schema はプロパティ順に生成されるので、この並び�
 ### 2.1c データ横断クエリ (The cross-dataset query) — `js/atlas-query.js`
 
 **条件を複数まとめて満たす行を、データセットをまたいで求める操作。** `{"type":"query"}` ＝ 能力
-`data.query`。`FROM` 表 → `WHERE` 列条件 → `NEAR` 空間結合 → `ORDER` / `LIMIT` を、実データの上で
-実行して**行を返す**。文章を書くのではない。
+`data.query`。`FROM` 表 → `WHERE` 列条件 → `NEAR` 空間結合 → `SPATIAL` 空間述語 → `ORDER` / `LIMIT` を、
+実データの上で実行して**行を返す**。文章を書くのではない。
 
 | 部品 | 何の正本か |
 |---|---|
@@ -455,6 +455,7 @@ strict json_schema はプロパティ順に生成されるので、この並び�
 | 列 (columns) | 行が持つもの（`pop`・`country`・`mag`・`depthKm`）／同梱データから測るもの（`precipMm`＝CHELSA、`coastKm`・`seaKm`＝`js/coastline.js`）／ネットワークで訊くもの（`elevM`・`tempC`・`windKmh`・`humidity`・`rainMm`＝Open-Meteo）／**国の統計**（`gdppc`・`hdi`・`dem`・`tfr`・`lifeExp`… を都市の ISO-2 から引く）／**任意の World Bank 指標**（`wb:SP.POP.GROW` のように書く） |
 | 演算子 | `>=` `>` `<=` `<` `==` `!=` `between` `in` `contains` |
 | 空間結合 | `near:[{of:表, withinKm:数, require?:bool, …その表の絞り込み}]`。結合先には**候補の外接矩形＋半径**しか要求しない |
+| 空間述語 | `spatial:[{rel:'within'｜'contains'｜'intersects'｜'nearer_than', of:表 または GeoJSON, km?:数, where?:…, require?:bool, as?:名}]`。**行が持つ形そのもの**で判定する（外接矩形の中心からではない）。結果は `NEAR` と同じ結合の列に出る。予算 `SPATIAL_WORK_CAP`（単位は**頂点対**）を超えたら、超えたことを結果に載せる |
 
 **⚠ 計画は費用の安い順である。** 列には費用（0＝行が持っている／1＝1 回の取得で以後ただ／2＝行ごとの
 ネットワーク）があり、条件はその順に評価される。「標高1500m以上・人口50万人以上・年降水量300mm未満」
@@ -1491,7 +1492,11 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 
 ### 7.3 レイヤー・データ契約 `window.IntMapLayers`
 
-- API ＝ `register` / `state` / **`sampleAt(lng,lat)`** / `featuresIn(bounds)` / `legend` / `time` / `source`。
+- API ＝ `register` / `state` / **`sampleAt(lng,lat)`** / `featuresIn(bounds)` /
+  **`featuresInSource(srcId, bounds)`** / `legend` / `time` / `source`。
+  ⚠ **箱の中の地物を拾う判定は幾何の種類に依らない。** 以前は `geometry.type==='Point'` で絞って
+  いたので、**線と面は必ず 0 件**だった。`featuresInSource` はレイヤー行を持たないレンダラの source
+  にも同じ窓を開ける（`js/gis-layers.js` が地図のレイヤーをデータセットにするときに使う）。
 - **新しいレイヤーを足したら、同じ変更の中でここへ登録すること**（これが Atlas から使えるかどうかを決める）。
 - 消費側は Atlas の `stateContext` に入る実データ行・`layerData` アクション・`analyze` の証拠集め。
 - **凡例の名前は「表」で渡す。** `window._registerLayerOpacity(id, names, …)` の `names` は
@@ -1737,11 +1742,44 @@ zip と gzip は開いて中身を見る。
 
 | ファイル | 公開名 | 何の正本か |
 |---|---|---|
-| `js/gis-datasets.js` | `window.IntMapData` | データセットの形（`id`・`geometryType`・`crs`／`sourceCrs`・`fields[]`・`features()`・`provenance`）と**列の型づけ** |
-| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `aggregate`）の宣言と実行 |
+| `js/gis-datasets.js` | `window.IntMapData` | データセットの形（`id`・`geometryType`・`crs`／`sourceCrs`・`fields[]`・`features()`・`provenance`・`stale`）と**列の型づけ** |
+| `js/gis-geometry.js` | `window.IntMapGisGeometry` | **幾何カーネル**——boolean 演算（`union` / `intersection` / `difference` / `dissolve`）・任意形状の `bufferKm`・述語（`intersects` / `contains` / `within` / `disjoint`）・**形そのものからの最短測地距離** `distanceKm`・`pointInGeometry` |
+| `js/gis-crs.js` | `window.IntMapGisCrs` | **座標変換**——`define` / `known` / `resolve` / `transformGeometry` / `transformFeatures` / `why` / `looksProjected` |
+| `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()` |
+| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `aggregate`）の宣言と実行 |
 | `js/gis-project.js` | `window.IntMapGisProject` | IndexedDB への保存・復元・**引数を変えた再計算** |
 | `js/gis-panel.js` | `window.IntMapGisPanel` | 操作卓（一覧・属性表・由来の連鎖・実行・保存） |
-| `js/gis-core.js` | `window.IntMapGis` | 上の 4 本を起動する 1 つの扉と、`draw()` |
+| `js/gis-core.js` | `window.IntMapGis` | 上の 7 本を起動する 1 つの扉と、`draw()` |
+
+**⚠ 重い部品は動的 import で遅れて来る。** 幾何カーネルは `polygon-clipping`（Martinez–Rueda の
+sweep-line。**既存の依存**で `js/world-packs.js` と `js/cesium-vector-tiles.js` も同じように読む）、
+座標変換は `proj4` を、**どちらも最初に要求されたときに**取りに行く。重ね合わせを一度も走らせない
+読者は sweep-line を落とさない。取りに行けなかったときは `geometry-unavailable` / `crs-unknown` で
+**名指して断る**——近似で代わりを描かない。
+
+**⚠ buffer は Minkowski 和であって offset curve ではない。** 半径 r の buffer は「その形から r 以内に
+ある点の集合」なので、**頂点ごとに測地円盤**（`IntMapGeodesy.diskFillPolys`——点の buffer が前から
+使っているのと同じもの）・**辺ごとに測地の四辺形**を置き、全部を union する。union が自己交差を
+落とし、円盤が継ぎ目を丸くする。`steps` 枚の弦で内接するので境界は真の buffer の内側に最悪
+r·(1−cos(π/steps))（既定 64 なら 5 km に対して約 3 m）——この数は丸めずに `_bufferSteps` に出る。
+**負の半径は内向き**で、内側を持つのは面だけなので点と線は `inward-buffer-needs-area` で断る。
+
+**⚠ clip の窓は凸である必要が無い。** 穴のある区・凹んだ県・真の答えが離れた複数片になる窓は、
+どれも普通に通る（離れた結果は離れたまま返り、窓に沿った幅ゼロの連結線はもう作らない）。線の
+切り抜きは交点で切って中点で内外を判定する。
+
+**⚠ 経度の継ぎ目は「ほどいて揃えて戻す」。** 演算の前に環をほどいて同じ 360° 窓へ持ち込み、
+結果は `IntMapGeodesy._splitPolyToWindows` で [-180,180] に戻す。いま拒むのは**世界を巻く環だけ**
+（極冠・全球環）——どちら側を意味したのか決められる情報が無いものだけが残った拒否である。
+
+**⚠ `relate` は空間述語で絞る処理。** `intersects` / `within` / `contains` / `disjoint` /
+`nearer-than`（`maxKm` が要る）。距離は**形そのもの**から測り、測った値は結果の `_distanceKm` に
+書く。`aggregate` の 2 つ目の入力も点に限らない——「面に含まれる点」ではなく「その面に重なるもの」
+を数える・合計する。
+
+**⚠ 処理の一覧は 2 つ目を持たない。** 表示順は `DECL` の鍵の順序そのもの（`Object.keys(DECL)`）で、
+`run()` の振り分けも if の連鎖ではなく表。宣言にあって走らせ手が無い処理は `op-not-wired` になる。
+起動前に外接矩形で組を絞るが、それは空間索引ではなく定数を下げるだけである。
 
 **⚠ 処理の出力は、取り込みと同じ経路で登録される。** `provenance` が `{kind:'op', op, inputs, params}`
 ＝**再実行できるレシピ**なので、`IntMapGisProject.setParams(id, {radiusKm:10})` は対象の段と**その下流**を
@@ -1755,13 +1793,43 @@ zip と gzip は開いて中身を見る。
 
 **⚠ `crs` は常に `EPSG:4326`、`sourceCrs` は「ファイルが名乗ったもの」。** GeoJSON（RFC 7946 §4）・KML・
 GPX は仕様が WGS 84 を固定しているので `EPSG:4326`、区切りテキストは **`null`＝「名乗っていない」**。
-⚠ IntMap は**再投影を持たない**ので、既定値を入れて「4326 だった」と主張しない。
+既定値を入れて「4326 だった」と主張しない。パネルは `sourceCrs` を**「述べていない」「そのまま」
+「変換した」の 3 状態**として出す。
+
+**⚠ 4326 でない座標は、推測せず本当に変換する。** `js/geo-import.js` は GeoJSON の `crs` メンバ
+（`urn:ogc:def:crs:EPSG::NNNN` / `EPSG:NNNN` / 旧 `{"type":"EPSG",…}`。`OGC:1.3:CRS84` は 4326 扱い）を
+読み、4326 でなければ `IntMapGisCrs` に**実際に変換させる**。変換できなければ `crs-unsupported` で
+**取り込みごと断る**。CSV や WKT 列のように誰も名乗っていないものは `looksProjected()` が
+「度ではありえない座標か」を**測り**、度でなければ `crs-not-stated-and-not-degrees` で断る。
+⚠ **この決着は `sanitizeFeatures` の前**——緯度を ±89.9999 にクランプする関数に投影座標を渡すと、
+100 万メートルが 89.9999 度になって「読めた」ように見える。
+
+**⚠ EPSG の一覧は持たない。** 定義の出どころは 3 つの規則だけ——① `proj4` 自身が知っているもの
+（`proj4.defs(code)` に訊く）／② UTM の**算術**（EPSG は 326NN を WGS 84 / UTM zone NN 北、327NN を
+同 南に割り当てる。これは EPSG が公表している式であって一覧ではない）／③ 読者が `define(code, text)`
+で渡した WKT・proj 文字列（`.prj` ファイルが自分について述べた文）。それ以外は `crs-unknown` で拒む。
+出力は常に `[lng, lat]` で、変換後に |lat| > 90 になったら `crs-axis-suspect` で拒む。
+
+**⚠ 失敗した段は、消えるのではなく `stale` になる。** `IntMapGisProject.setParams` は
+commit-or-restore——失敗したら元のレコードを戻したうえで `stale` を立て、**下流にも伝播**する
+（`IntMapData.invalidate(id, why)`）。パネルはバッジで出し、`IntMapGisOps.run()` は `stale` な入力を
+`input-stale` で拒む。以前は失敗すると編集中のデータセットが**消え**、下流は古いまま何も言わずに
+残っていた。自動採番 `ds-N` は**自分が共有している名前空間を見る**ので、保存から `ds-1` を復元しても
+次の取り込みと衝突しない。
+
+**⚠ 地図に出ているものは、それ自体がデータセットの入口である**（`js/gis-layers.js`）。`sources()` は
+一覧を持たず**数え上げる**——`IntMapLayers` の行のうち `state()` が答え `featuresIn()` が配列を返す
+もの、およびレンダラの style から読んだ geojson source（どのレイヤー行も代弁しない、上げただけの
+ファイルも届く）。`read()` は**形状も属性も落とさない**。`toDataset()` の `provenance` は
+`{kind:'layer', layer, bounds, at}`。
 
 **⚠ 横断クエリは、この層を「問い合わせの瞬間に」読む**（`js/atlas-query.js` の `syncUserTables()`）。
 `data.query` の `from` に**データセットの id をそのまま書ける**。列は `js/gis-datasets.js` が測った
 `fields[]` そのもので、cost 0・origin `raw`。⚠ 押し込み（登録）ではなく**引き**なのは、クエリ engine が
 遅延読み込みだから——先に登録しに行く経路は「まだ存在しないモジュールへの登録」と「その再生」という
-2 つ目の正本を作る。⚠ 1 点を持たない行（線・面）の座標は外接矩形の中心で、**そのことを結果の注記に出す**。
+2 つ目の正本を作る。⚠ **行は元の geometry を参照で持つ**——線や面は外接矩形の中心 1 点には潰れない。
+表に出る 1 つの座標は外接矩形の中心だが、**空間判定はすべて形そのものの上で測る**（結果の注記が
+そう述べる）。
 
 ### 7.4 Chronos（統一時間）と「年」
 

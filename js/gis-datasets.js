@@ -149,8 +149,21 @@ export function makeGisDatasets() {
        has would make every count downstream a lie. */
     function add(spec) {
       const features = Array.isArray(spec && spec.features) ? spec.features : [];
-      const id = (spec && spec.id) || ('ds-' + (++seq));
+      const given = (spec && spec.id) || null;
+      const id = given || ('ds-' + (++seq));
       if (DS.has(id)) throw new Error('dataset id already registered: ' + id);
+      /* ⚠ THE GENERATOR OBSERVES THE NAMESPACE IT SHARES. Callers supply ids of their own — the
+         project loader restores `ds-1` by name, because a saved recipe names its inputs — and the
+         counter used to be moved only by the ids IT made. So a reload that restored ds-1..ds-3 left
+         seq at 0, and the next import generated `ds-1` again: add() threw, js/geo-import.js swallows
+         a failed registration, and the file was on the map while being absent from the registry the
+         panel and the query bridge read. Raising the counter past every id that could have come out
+         of it is the whole of the fix; a retry loop here would only rename the symptom, and the
+         symptom is not the collision but a counter that was not looking at its own namespace.
+         ⚠ It never goes DOWN — not on remove(): an id that has been issued may still be named by a
+         saved project, and reissuing it would attach that recipe to different data. */
+      const auto = /^ds-(\d+)$/.exec(id);
+      if (auto) { const n = Number(auto[1]); if (isFinite(n) && n > seq) seq = n; }
       const rec = {
         id,
         title: String((spec && spec.title) || id),
@@ -162,6 +175,10 @@ export function makeGisDatasets() {
         count: features.length,
         provenance: (spec && spec.provenance) || { kind: 'unknown' },
         createdAt: (spec && spec.createdAt) || Date.now(),
+        /* Null means «these features are the ones this record's recipe produces». A record is only
+           ever born fresh: a rebuild removes the old record and adds a new one, so freshness is not
+           a flag anybody has to remember to clear. See invalidate(). */
+        stale: null,
         features: () => features,
       };
       DS.set(id, rec);
@@ -186,6 +203,41 @@ export function makeGisDatasets() {
         if (inputs.indexOf(id) >= 0) out.push(rec);
       }
       return out;
+    }
+
+    /* ── invalidation ───────────────────────────────────────────────────────────────────────
+       ⚠ A RECOMPUTATION THAT STOPS HALFWAY LEAVES REAL DATA THAT IS NO LONGER THE ANSWER TO ITS OWN
+       RECIPE. js/gis-project.js rebuilds a chain upstream first and stops at the first failure; the
+       steps below the failure were never removed, so they sat in the registry holding the output of
+       the OLD parameters, with nothing about them saying so. The panel listed them, draw() drew
+       them, the query bridge answered from them, and the next op consumed them — all of it correct
+       work on a number the reader had just changed.
+       `stale` is that missing state, and it travels the way the error does: down. What it is NOT is
+       a deletion — the features are still the last answer that was actually computed, which is worth
+       more to a reader than an empty panel, as long as the map, the table and the ops all say so.
+       ⚠ IT IS THE OPS THAT MAKE IT BINDING (js/gis-ops.js refuses a stale input by name). A state
+       nothing inspects is a decoration. */
+    function invalidate(id, why) {
+      const touched = [];
+      const queue = [id];
+      const seen = new Set();
+      while (queue.length) {
+        const cur = queue.shift();
+        if (seen.has(cur)) continue;
+        seen.add(cur);
+        const rec = DS.get(cur);
+        if (!rec) continue;
+        /* The reason is the FIRST one that reached this record: the step that actually failed is
+           what the reader has to fix, and overwriting it with 'upstream-failed' on a second pass
+           would replace the diagnosis with its own consequence. */
+        if (!rec.stale) {
+          rec.stale = { why: String(why || 'invalidated'), since: Date.now() };
+          touched.push(cur);
+          emit('stale', rec);
+        }
+        for (const d of dependents(cur)) queue.push(d.id);
+      }
+      return touched;
     }
 
     /* The whole chain that produced a dataset, oldest first — what the reader sees as 「この結果は
@@ -213,7 +265,8 @@ export function makeGisDatasets() {
     }
 
     const API = {
-      add, remove, dependents, lineage, describe,
+      add, remove, dependents, lineage, describe, invalidate,
+      stale: (id) => { const r = DS.get(id); return (r && r.stale) || null; },
       get: (id) => DS.get(id) || null,
       list: () => Array.from(DS.values()),
       ids: () => Array.from(DS.keys()),

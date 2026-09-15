@@ -528,6 +528,31 @@ export const GEO_IMPORT = (function () {
     return out;
   }
 
+  /* ⚠ (#R732) THE `crs` MEMBER — GONE FROM THE SPECIFICATION, PRESENT IN THE FILES.
+     RFC 7946 §4 removed it and fixes GeoJSON to WGS 84, but the writers that predate the RFC are
+     still shipping: ArcGIS, GDAL's `ogr2ogr -f GeoJSON` before 2.0 and every PostGIS dump made with
+     ST_AsGeoJSON's pre-RFC option emit {"crs":{"type":"name","properties":{"name":"urn:ogc:def:crs:
+     EPSG::3857"}}} at the top of the collection. A reader's file says what it says; ignoring that
+     sentence is how a projected file gets drawn as degrees.
+
+     Two spellings are read because both are written: the URN and the bare `EPSG:NNNN`. The older
+     {"type":"EPSG","properties":{"code":3857}} form is read too — same statement, earlier grammar.
+
+     ⚠ CRS84 IS RETURNED AS 4326 rather than as a code of its own: OGC's CRS84 is WGS 84 with the
+     axes in the order GeoJSON already writes them (longitude first), so it names the same datum and
+     the same order this app works in, and there is nothing to transform. */
+  function crsStated(g) {
+    const crs = g && g.crs;
+    if (!crs || typeof crs !== 'object') return null;
+    const p = crs.properties || {};
+    let name = p.name != null ? String(p.name) : (p.code != null ? String(p.code) : '');
+    name = name.trim();
+    if (!name) return null;
+    if (/CRS:{0,2}84$/i.test(name)) return 'EPSG:4326';
+    const m = /(?:^|:)EPSG:{0,2}(\d{3,6})$/i.exec(name) || /^(\d{3,6})$/.exec(name);
+    return m ? ('EPSG:' + m[1]) : name;
+  }
+
   function decodeGeoJSON(ctx) {
     const g = ctx.json;
     let feats = null;
@@ -538,7 +563,7 @@ export const GEO_IMPORT = (function () {
     if (!feats) return { ok: false, why: 'json-not-geojson' };
     const flat = flatten(feats);
     if (!flat.length) return { ok: false, why: 'no-features' };
-    return { ok: true, fc: fc(flat), format: 'geojson', stats: { kept: flat.length } };
+    return { ok: true, fc: fc(flat), format: 'geojson', stats: { kept: flat.length }, statedCrs: crsStated(g) };
   }
 
   /* ══ 6 · THE REGISTRY ═════════════════════════════════════════════════════════════════════════
@@ -605,6 +630,65 @@ export const GEO_IMPORT = (function () {
     return { ok: false, why: 'archive', detail: { entries: names.length } };
   }
 
+  /* ══ 7b · THE COORDINATE SYSTEM ═══════════════════════════════════════════════════════════════
+     #R729 recorded one and said so in its own comment: 「⚠ Not a re-projection — IntMap does not
+     have one, and inventing a default would be the silent-wrong-answer this file exists to avoid.」
+     There is one now (js/gis-crs.js), so this stage does three things and refuses at all three:
+
+       ① the format's own answer, and the file's own statement where it has one
+       ② a stated system that is NOT 4326 is TRANSFORMED — or the file is refused. A file that says
+          EPSG:3857 and cannot be converted is not a file in degrees; laying it down as one is
+          precisely the silent wrong answer, so `crs-unsupported` goes back instead.
+       ③ a format that states NOTHING (a delimited table) is MEASURED. |x| > 180 or |y| > 90 is
+          outside the range of the unit, so it is proof — not a suspicion — that these numbers are
+          not degrees, and with nothing in the file to say what they are instead, the only honest
+          answer is `crs-not-stated-and-not-degrees` with the count and a sample.
+
+     ⚠ `r.sourceCrs` keeps the system the file was IN, not the one it is in now: after ② the
+     coordinates are 4326 and the provenance still says EPSG:3857, because js/gis-datasets.js
+     carries it and a reader checking an import against its source needs the original name. */
+  async function settleCrs(r) {
+    const stated = formatCrs(r);
+    r.sourceCrs = stated;
+
+    const CRS = (() => { try { return (typeof window !== 'undefined' && window.IntMapGisCrs) || null; } catch (_) { return null; } })();
+
+    if (stated && stated !== 'EPSG:4326') {
+      let out = null;
+      if (CRS) { try { if (await CRS.ready()) out = CRS.transformFeatures(r.fc.features, stated); } catch (_) { out = null; } }
+      if (!out || !out.ok) return { ok: false, why: 'crs-unsupported', detail: { crs: stated, reason: (out && out.why) || 'crs-unavailable' } };
+      r.fc = fc(out.features);
+      r.stats = Object.assign({}, r.stats, { reprojectedFrom: stated, reprojected: out.moved });
+      return { ok: true };
+    }
+
+    if (!stated) {
+      /* ⚠ THE MEASUREMENT LIVES IN js/gis-crs.js, not here — 「degrees are what the unit is」 is one
+         rule and this is one of its readers. Without that module there is NO measurement, and a
+         refusal without a measurement would be the guess this whole file exists to avoid, so the
+         import proceeds exactly as it did before #R732. */
+      if (CRS && typeof CRS.looksProjected === 'function') {
+        const m = CRS.looksProjected(r.fc.features);
+        if (m.projected) return { ok: false, why: 'crs-not-stated-and-not-degrees', detail: { outOfRange: m.outOfRange, total: m.total, sample: m.sample } };
+      }
+    }
+    return { ok: true };
+  }
+
+  /* What the FORMAT answers. Three of these fix it in their own specification and one does not:
+     RFC 7946 §4 fixes GeoJSON to WGS 84, OGC KML fixes KML to WGS 84, and the GPX 1.1 schema fixes
+     GPX to WGS 84 — so for those the answer is stated, not guessed. ⚠ For GeoJSON the FILE may
+     still say otherwise (§ crsStated): a pre-RFC writer's `crs` member is that file's own statement
+     about itself and outranks the default its format would otherwise assume. A delimited table
+     ('csv' / 'csv-geometry') states nothing at all: two columns of numbers are two columns of
+     numbers, and `null` means «the file did not say», which is a different claim from «it was
+     4326» — js/gis-datasets.js carries that null through and the panel prints it. */
+  function formatCrs(r) {
+    if (r.format === 'geojson') return r.statedCrs || 'EPSG:4326';
+    if (r.format === 'kml' || r.format === 'gpx') return 'EPSG:4326';
+    return null;
+  }
+
   /**
    * readGeoFile(file) → {ok:true, fc, format, stats, entry?} | {ok:false, why, detail?}
    *
@@ -629,6 +713,15 @@ export const GEO_IMPORT = (function () {
     else r = await decodeBytes(bytes, name);
 
     if (!r || !r.ok) return r || { ok: false, why: 'unreadable' };
+
+    /* ⚠ (#R732) THE COORDINATE SYSTEM IS SETTLED HERE, BEFORE THE REPAIR BELOW — and the order is
+       not cosmetic. js/geodesy.js sanitizeFeatures CLAMPS latitude to ±89.9999, so a northing of
+       4,257,201 metres does not fail there: it becomes 89.9999 and the whole file lands on the
+       North Pole, silently and in the right shape. Re-projecting first is what makes that
+       impossible; measuring first is what lets the rest be refused by name. */
+    const crs = await settleCrs(r);
+    if (!crs.ok) return crs;
+
     /* EVERY path lands here: the app's own coordinate repair, which the upload path had never been
        wired to — it clamps a stray latitude instead of dropping the whole feature (js/geodesy.js). */
     const before = r.fc.features.length;
@@ -641,16 +734,6 @@ export const GEO_IMPORT = (function () {
     if (feats.length > GEO_IMPORT_LIMITS.features) return { ok: false, why: 'too-many-features', detail: { features: feats.length, limit: GEO_IMPORT_LIMITS.features } };
     r.fc = fc(feats);
     r.stats = Object.assign({}, r.stats, { features: feats.length, dropped: before - feats.length });
-    /* ⚠ (#R729) WHAT COORDINATE SYSTEM DID THE FILE SAY IT WAS IN? Three of these formats ANSWER
-       that in their own specification and one does not: RFC 7946 §4 fixes GeoJSON to WGS 84,
-       OGC KML fixes KML to WGS 84, and the GPX 1.1 schema fixes GPX to WGS 84 — so for those the
-       answer is stated by the format, not guessed. A delimited table states nothing: two columns of
-       numbers are two columns of numbers, and `null` here means «the file did not say», which is a
-       different claim from «it was 4326». js/gis-datasets.js carries this through as `sourceCrs`
-       and the panel prints it, so a reader whose CSV is in a projected grid can SEE that IntMap was
-       never told. ⚠ Not a re-projection — IntMap does not have one, and inventing a default would
-       be the silent-wrong-answer this file exists to avoid. */
-    r.sourceCrs = (r.format === 'geojson' || r.format === 'kml' || r.format === 'gpx') ? 'EPSG:4326' : null;
     return r;
   }
 

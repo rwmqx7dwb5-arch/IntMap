@@ -18,6 +18,9 @@
  *      FROM   one table of real rows          (cities, countries, earthquakes, volcanoes, facilities)
  *      WHERE  numeric / text conditions        on COLUMNS, each of which names its own source
  *      NEAR   within N km of another table     (the spatial join, with its own conditions)
+ *      SPATIAL within / contains / intersects / nearer_than, against another table or a GeoJSON
+ *             geometry — measured on the rows' OWN SHAPES through js/gis-geometry.js (#R732), so
+ *             「その道路そのものからの距離」 is a question this can answer and not a box centre
  *      ORDER / LIMIT
  *
  *  It is a REGISTRY, not five hard-wired searches: a table is a row source plus a label, a column is
@@ -65,6 +68,21 @@ window.IntMapModules.atlasQuery = function (HOST) {
   const BATCH = 100;            /* points per Open-Meteo request (its documented maximum) */
   const JOIN_CAP = 20000;       /* rows a join table may return */
   const OUT_CAP = 200;          /* rows a single answer may carry */
+  /* (#R732) what a SPATIAL condition may spend, counted in VERTEX PAIRS rather than in rows —
+     because that is the unit the cost is actually in: js/gis-geometry.js's distanceKm compares every
+     position of one shape against every segment of the other, so 「1,000行」 is 1,000 cheap tests for
+     a table of points and minutes of frozen main thread for a table of coastlines.
+     MEASURED 2026-09-15 (node 24, the shipped module, polygon-clipping 0.15.7), worst case = two
+     shapes that do NOT meet, so nothing short-circuits: 20×200 vertices over 1,000 rows → 681 ms;
+     200×200 over 200 rows → 1,116 ms; 100×100 over 1,000 rows → 1,490 ms. That is 5.9 / 7.2 / 6.7
+     million vertex pairs per second, so 2e7 is about three seconds of main thread at the worst rate
+     of the three. ⚠ A PAIR IS CHARGED ITS WORST CASE, not what it turned out to cost: two shapes
+     that overlap are answered 0 by an early intersection test and are charged as if they had been
+     measured in full, because the charge has to be known before the call rather than after it.
+     ⚠ The budget is REPORTED wherever it bites (rule ①) rather than quietly shortening the search.
+     ⚠ Expires if distanceKm stops being a product of the two vertex counts — an index over the
+     segments would change the unit, not just the number. */
+  const SPATIAL_WORK_CAP = 2e7;
 
   const R_KM = 6371.0088;
   function distKm(aLng, aLat, bLng, bLat) {
@@ -297,35 +315,84 @@ window.IntMapModules.atlasQuery = function (HOST) {
     const R = (typeof window !== 'undefined') && window.IntMapData;
     return R ? R.list() : [];
   }
+  /* ⚠ (#R732) ONE WALK, TWO FACTS. The extent and the number of positions are read in the same pass
+     because both are wanted about the same shape and at the same moment: the extent is what lets a
+     spatial predicate REJECT a pair without measuring it, and the count is what the work budget is
+     spent in (§ SPATIAL_WORK_CAP). A GeometryCollection is walked through its members. */
+  function geomMeasure(g) {
+    if (!g || typeof g !== 'object') return null;
+    let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity, k = 0;
+    (function walk(c) {
+      if (!Array.isArray(c)) return;
+      if (typeof c[0] === 'number') {
+        if (!isFinite(c[0]) || !isFinite(c[1])) return;
+        k++; if (c[0] < w) w = c[0]; if (c[0] > e) e = c[0]; if (c[1] < s) s = c[1]; if (c[1] > n) n = c[1]; return;
+      }
+      for (const x of c) walk(x);
+    })(g.type === 'GeometryCollection' ? (g.geometries || []).map((x) => (x && (x.coordinates || (x.geometries ? [] : null))) || []) : g.coordinates);
+    return (isFinite(w) && isFinite(s)) ? { bbox: [w, s, e, n], vertices: k } : null;
+  }
+
+  /* A GeoJSON GEOMETRY out of whatever the caller passed: a geometry, a Feature, or a whole
+     FeatureCollection (which becomes the GeometryCollection it is — js/gis-geometry.js takes one).
+     Anything else is refused by name rather than being read as an empty shape. */
+  function asGeometry(x) {
+    if (!x || typeof x !== 'object') return null;
+    if (x.type === 'Feature') return asGeometry(x.geometry);
+    if (x.type === 'FeatureCollection') {
+      const gs = [].concat(x.features || []).map((f) => asGeometry(f && f.geometry)).filter(Boolean);
+      return gs.length ? (gs.length === 1 ? gs[0] : { type: 'GeometryCollection', geometries: gs }) : null;
+    }
+    return (typeof x.type === 'string' && (x.coordinates || x.geometries)) ? x : null;
+  }
+
   /* The rows of a dataset, in the shape every other table returns. ⚠ A row needs lng/lat for pins
      and for NEAR; a polygon has no single point, so the centre of its bounding box is used AND SAID
      SO in a note — a representative point printed without that sentence would be read as a location
-     the source stated. */
+     the source stated.
+
+     ⚠⚠⚠ (#R732) AND THE SHAPE ITSELF IS CARRIED. Until this round a line or an area entered the
+     query engine as that bounding-box centre and NOTHING ELSE: the geometry was walked, four
+     numbers were computed, two of them were averaged and all of it was thrown away. So an area, a
+     length, an overlap, a containment, 「その道路そのものからの距離」 and 「区域の境界からの距離」
+     were not hard to compute here — they were IMPOSSIBLE, because the shape was gone before the
+     first condition was evaluated, and the centre of a prefecture's box can sit in the sea.
+     `_g` is a REFERENCE into the array js/gis-datasets.js already holds (features() exists so the
+     rows are not copied; copying them here would spend that saving twice over), `_bbox` is the
+     extent that was computed anyway, and `_derivedPoint` is the row SAYING OF ITSELF that its
+     coordinate was derived — the note below is one sentence about the whole result, and a reader
+     looking at one row could not tell from it whether THAT row's point was stated or computed. */
   function userRows(ds) {
     const feats = ds.features();
     const rows = []; let derived = 0;
     for (let i = 0; i < feats.length; i++) {
-      const f = feats[i] || {}, g = f.geometry || {};
-      let lng = null, lat = null;
-      if (g.type === 'Point' && Array.isArray(g.coordinates)) { lng = +g.coordinates[0]; lat = +g.coordinates[1]; }
-      else {
-        let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
-        (function walk(c) { if (!Array.isArray(c)) return; if (typeof c[0] === 'number') { if (c[0] < w) w = c[0]; if (c[0] > e) e = c[0]; if (c[1] < s) s = c[1]; if (c[1] > n) n = c[1]; return; } for (const x of c) walk(x); })(g.coordinates);
-        if (isFinite(w) && isFinite(s)) { lng = (w + e) / 2; lat = (s + n) / 2; derived++; }
+      const f = feats[i] || {}, g = f.geometry || null;
+      let lng = null, lat = null, bbox = null, vertices = 0, derivedPoint = false;
+      if (g && g.type === 'Point' && Array.isArray(g.coordinates)) {
+        lng = +g.coordinates[0]; lat = +g.coordinates[1];
+        if (isFinite(lng) && isFinite(lat)) { bbox = [lng, lat, lng, lat]; vertices = 1; } else { lng = lat = null; }
+      } else if (g) {
+        const m = geomMeasure(g);
+        if (m) { bbox = m.bbox; vertices = m.vertices; lng = (m.bbox[0] + m.bbox[2]) / 2; lat = (m.bbox[1] + m.bbox[3]) / 2; derivedPoint = true; derived++; }
       }
       const p = f.properties || {};
-      rows.push(Object.assign({ id: ds.id + ':' + i, name: String(p.name != null ? p.name : (p.NAME != null ? p.NAME : ds.title + ' ' + (i + 1))), lng, lat, _p: p }, {}));
+      rows.push({ id: ds.id + ':' + i, name: String(p.name != null ? p.name : (p.NAME != null ? p.NAME : ds.title + ' ' + (i + 1))),
+        lng, lat, _p: p, _g: g, _bbox: bbox, _gv: vertices, _derivedPoint: derivedPoint });
     }
     const prov = ds.provenance || {};
     const src = prov.kind === 'op'
       ? ('IntMap · ' + prov.op + '(' + (prov.inputs || []).join(', ') + ')')
       : (prov.licence ? (String(prov.file || ds.title) + ' — ' + prov.licence) : String(prov.file || ds.title));
+    /* ⚠ (#R732) THE SENTENCE CHANGED BECAUSE THE FACT CHANGED. It used to say where such a row IS,
+       full stop, which was the whole truth while the shape was discarded. Now the point is only what
+       is PRINTED and PINNED, and every spatial test below is measured on the shape — so the note has
+       to say both, or a reader would still believe a distance was measured from a box centre. */
     return { rows, source: src,
-      note: derived ? L('Rows without a single point (lines and areas) are located at the centre of their bounding box.',
-        '1点を持たない行（線・面）の座標は、その外接矩形の中心です。',
-        'Zeilen ohne Einzelpunkt (Linien, Flächen) liegen im Mittelpunkt ihres Begrenzungsrahmens.',
-        'Строки без одной точки (линии, области) расположены в центре ограничивающего прямоугольника.',
-        'Las filas sin un punto único (líneas, áreas) se ubican en el centro de su rectángulo delimitador.') : null };
+      note: derived ? L('Lines and areas keep their own shape here — every spatial test is measured on it. The single coordinate shown for such a row is the centre of its bounding box, and nothing is measured from that point.',
+        '線・面は形状そのものを保持しており、空間的な判定はすべてその形状で測ります。表に出ている1点はその外接矩形の中心で、その点から何かを測ることはありません。',
+        'Linien und Flächen behalten hier ihre eigene Geometrie — jede räumliche Prüfung wird an ihr gemessen. Die angezeigte Einzelkoordinate ist der Mittelpunkt ihres Begrenzungsrahmens, und von diesem Punkt aus wird nichts gemessen.',
+        'Линии и области сохраняют здесь собственную геометрию — все пространственные проверки измеряются по ней. Показанная одиночная координата — это центр ограничивающего прямоугольника, и от этой точки ничего не измеряется.',
+        'Las líneas y áreas conservan aquí su propia geometría — toda prueba espacial se mide sobre ella. La coordenada única mostrada es el centro de su rectángulo delimitador, y desde ese punto no se mide nada.') : null };
   }
   /* Fold the registry into TABLES. ⚠ Into the SAME object every existing reader indexes — a second
      lookup rule (`TABLES[x] || USER[x]`) would have to be added at each of the seven places that
@@ -573,14 +640,231 @@ window.IntMapModules.atlasQuery = function (HOST) {
     return OPS[op](colKind === 'text' ? String(v) : +v, want);
   }
 
+  /* ══ (#R732) THE SPATIAL PREDICATES ══════════════════════════════════════════════════════════
+     A `where` condition puts a NUMBER beside a row; a `near` join measures POINT to POINT. Neither
+     can ask 「この区域の中にあるか」 or 「この道路そのものから2km以内か」, and no amount of column
+     arithmetic gets there — those are questions about shapes, and the answer to them is a geometry
+     kernel. js/gis-geometry.js is that kernel and this is its one caller here: the arithmetic is NOT
+     written twice, because a second implementation of «inside» is a second verdict to keep in step.
+
+     ⚠ THE KERNEL IS READ AT CALL TIME, NEVER CAPTURED. It is loaded lazily (a reader who never asks
+     a spatial question never downloads a sweep-line), so a reference taken when this module was
+     built would be the `undefined` of that moment for the rest of the session. */
+  function geoKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisGeometry) || null; } catch (_) { return null; } }
+
+  /* Every row can be asked a spatial question, and there is exactly ONE predicate for all of them:
+     a row that carries a shape is tested as that shape, and a row that carries only a coordinate is
+     tested as the Point it is. A second code path for point tables would be a second set of answers
+     to keep in step with the first. */
+  function rowGeometry(r) {
+    if (r && r._g) return r._g;
+    if (!r || r.lng == null || r.lat == null || !isFinite(+r.lng) || !isFinite(+r.lat)) return null;
+    return { type: 'Point', coordinates: [+r.lng, +r.lat] };
+  }
+  function rowExtent(r, g) {
+    if (r && r._bbox) return { bbox: r._bbox, vertices: r._gv || 1 };
+    return geomMeasure(g) || null;
+  }
+
+  /* A LOWER BOUND, in km, on the distance between anything inside box `a` and anything inside box
+     `b` — used ONLY to skip a pair that cannot possibly satisfy the condition, so it must never
+     overstate. A degree of latitude is never shorter than 110.574 km and a degree of longitude at
+     |φ| never shorter than 111.320·cos φ km, and taking the LARGEST |φ| of the four corners makes
+     that factor the smallest it can be anywhere between the two boxes. The two gaps are combined
+     with max() rather than hypot() for the same reason: max is the weaker, and therefore safe,
+     bound. ⚠ A box that straddles the antimeridian is the width of the world and this returns 0 for
+     it — a useless bound, never a wrong one.
+     ⚠⚠ THE LONGITUDE GAP IS THE SMALLEST OF THE THREE WINDOWS, not the difference of two numbers.
+     MEASURED while writing this: a row at 179.8‥179.9 and a target at −179.9‥−179.8 are 0.2° apart
+     across the seam, and subtracting their edges says 359.6°, which «wraps» to 0.4° — twice the
+     true gap, i.e. an OVERstated lower bound, i.e. a pair 22 km apart rejected from a 30 km
+     question. Shifting the second box by a whole turn and taking the least gap is the answer, and
+     the three candidates are all there are. */
+  const KM_PER_DEG_LAT = 110.574, KM_PER_DEG_LON = 111.320;
+  function bboxGapKm(a, b) {
+    if (!a || !b) return 0;
+    const dLat = Math.max(0, a[1] - b[3], b[1] - a[3]);
+    let dLon = Infinity;
+    for (const k of [-360, 0, 360]) dLon = Math.min(dLon, Math.max(0, a[0] - (b[2] + k), (b[0] + k) - a[2]));
+    if (!(dLon >= 0) || dLon > 180) dLon = 180;
+    const phi = Math.min(89.9, Math.max(Math.abs(a[1]), Math.abs(a[3]), Math.abs(b[1]), Math.abs(b[3])));
+    return Math.max(dLat * KM_PER_DEG_LAT, dLon * KM_PER_DEG_LON * Math.cos(phi * Math.PI / 180));
+  }
+
+  /* ⚠⚠ ONE DECLARATION, THREE READERS — the evaluator below, the refusal that names a relation it
+     does not know, and `catalogue()`, which is how the planner learns these exist at all. #R582
+     measured what happens otherwise: a capability SYS() does not name is a capability no plan ever
+     reaches, so a hand-written list in the catalogue would be a fourth place to forget. `whole` says
+     the target is ONE SET and must be unioned before the test — 「この県の中」 asked of a table of
+     municipalities is a question about their union, and a row straddling two of them is inside the
+     set while being inside neither member. `km` says the relation is a MEASUREMENT and carries its
+     own radius. `doc` is the planner's sentence; `label` is the reader's. */
+  const SPATIAL = {
+    within: { km: false, whole: true, doc: 'the row\'s own shape lies inside the target (the target table is taken as one set)',
+      label: LA('inside', 'の内側', 'innerhalb von', 'внутри', 'dentro de') },
+    contains: { km: false, whole: false, doc: 'the row\'s own shape contains the target',
+      label: LA('containing', 'を包含', 'enthält', 'содержит', 'contiene') },
+    intersects: { km: false, whole: false, doc: 'the row\'s own shape touches or overlaps the target',
+      label: LA('overlapping', 'と交差', 'überschneidet', 'пересекает', 'interseca') },
+    nearer_than: { km: true, whole: false, doc: 'the SHORTEST distance from the row\'s own shape to the target is at most "km" — from the road itself, from the boundary itself, never from a bounding-box centre',
+      label: LA('within km of', 'から一定距離内', 'im Umkreis von', 'в пределах км от', 'a menos de km de') },
+  };
+  /* The spellings a planner is likely to write, mapped onto the four above. A relation this does not
+     recognise is REFUSED BY NAME — it is never quietly treated as one of the others. */
+  function normRel(x) {
+    const s = String(x == null ? '' : x).trim().toLowerCase().replace(/[\s-]+/g, '_');
+    if (SPATIAL[s]) return s;
+    return ({ inside: 'within', in: 'within', contained_by: 'within', contained_in: 'within',
+      containing: 'contains', encloses: 'contains',
+      overlaps: 'intersects', overlapping: 'intersects', crosses: 'intersects', touches: 'intersects',
+      near: 'nearer_than', nearerthan: 'nearer_than', within_km: 'nearer_than', closer_than: 'nearer_than',
+      distance_within: 'nearer_than' })[s] || '';
+  }
+
+  /* The one sentence that says a condition was NOT applied — held here because the column stage and
+     the spatial stage both have to say it, and two copies of one sentence in five languages drift. */
+  function notApplied() {
+    return L('unavailable in this session, so its condition was NOT applied',
+      'このセッションでは取得できず、この条件は適用していません',
+      'in dieser Sitzung nicht verfügbar; die Bedingung wurde NICHT angewendet',
+      'недоступно в этой сессии, условие НЕ применено',
+      'no disponible en esta sesión; la condición NO se aplicó');
+  }
+
   /* ══ THE RUN ═════════════════════════════════════════════════════════════════════════════════ */
+  /* ⚠ (#R732) THE EXTENT OF A ROW IS NOT THE EXTENT OF ITS PIN. A row that carries a shape reports
+     its own box here, so the scope a live join or a spatial target is fetched with covers the whole
+     of the reader's areas rather than the cloud of their centres — the box of one prefecture is
+     several hundred km wider than the point this used to see. */
   function bboxOf(rows, padKm) {
     let w = 180, s = 90, e = -180, n = -90;
-    for (const r of rows) { if (r.lng == null) continue; if (r.lng < w) w = r.lng; if (r.lng > e) e = r.lng; if (r.lat < s) s = r.lat; if (r.lat > n) n = r.lat; }
+    for (const r of rows) {
+      if (r._bbox) { if (r._bbox[0] < w) w = r._bbox[0]; if (r._bbox[2] > e) e = r._bbox[2]; if (r._bbox[1] < s) s = r._bbox[1]; if (r._bbox[3] > n) n = r._bbox[3]; continue; }
+      if (r.lng == null) continue; if (r.lng < w) w = r.lng; if (r.lng > e) e = r.lng; if (r.lat < s) s = r.lat; if (r.lat > n) n = r.lat;
+    }
     if (w > e) return null;
     const dLat = padKm / 110.574;
     const dLng = padKm / (111.32 * Math.max(0.15, Math.cos((s + n) / 2 * Math.PI / 180)));
     return [Math.max(-180, w - dLng), Math.max(-90, s - dLat), Math.min(180, e + dLng), Math.min(90, n + dLat)];
+  }
+
+  /* (#R732) The rows that satisfy every spatial condition, and the labels it wrote into `r.joins`.
+     ⚠ THE RESULT IS REPORTED THROUGH THE JOIN COLUMN, not through a second renderer: a spatial
+     condition IS a join — one that is not limited to points — and the reader gets the number of
+     target shapes it matched and the distance to the nearest of them in the column the NEAR join
+     already prints. The distance of a shape that overlaps its target is 0, which is a fact and not
+     a placeholder.
+
+     ⚠⚠⚠ AND «COULD NOT BE ASKED» IS NEVER ANSWERED AS «NO». Every way this can fail to run — the
+     kernel not loaded, the kernel refusing to load, a relation nobody declared, a target that is
+     not a geometry, a target table that is empty or unavailable, a radius nobody gave — leaves the
+     rows UNTOUCHED, names itself in `unapplied` with its own code, and is printed above the table
+     by the caller's existing warning. A spatial condition that silently matched nothing would be
+     indistinguishable from a spatial condition that was honestly answered 0. */
+  async function spatialStage(list, rows, bag) {
+    const labels = [];
+    if (!list.length) return { rows, labels };
+    const refuse = (what, code) => { bag.unapplied.push(what); bag.notes.push(what + ' — ' + notApplied() + ' (' + code + ')'); };
+    const G = geoKernel();
+    if (!G || typeof G.ready !== 'function') { for (const sp of list) refuse(String(sp.rel || sp.op || '?'), 'geometry-module-not-loaded'); return { rows, labels }; }
+    let up = false;
+    try { up = await G.ready(); } catch (_) { up = false; }
+    if (!up || !G.available()) { for (const sp of list) refuse(String(sp.rel || sp.op || '?'), 'geometry-unavailable'); return { rows, labels }; }
+
+    for (const sp of list) {
+      if (!rows.length) break;
+      const rel = normRel(sp.rel || sp.op || sp.relation || sp.predicate);
+      const def = SPATIAL[rel];
+      const label = String(sp.as || ((rel || 'spatial') + (typeof sp.of === 'string' && sp.of ? (':' + sp.of) : '')));
+      if (!def) { refuse(label, 'unknown-spatial-relation:' + String(sp.rel || sp.op || sp.relation || sp.predicate || '')); continue; }
+      const km = def.km ? +(sp.km != null ? sp.km : (sp.withinKm != null ? sp.withinKm : sp.distanceKm)) : null;
+      if (def.km && !(isFinite(km) && km > 0)) { refuse(label, 'nearer-than-needs-km'); continue; }
+
+      /* ── the other side: a geometry the caller passed, or every shape of another table ── */
+      let targets = null;
+      const lit = sp.geometry || sp.shape || ((sp.of && typeof sp.of === 'object') ? sp.of : null);
+      if (lit) {
+        const g = asGeometry(lit);
+        if (!g) { refuse(label, 'target-not-a-geometry'); continue; }
+        targets = [g];
+      } else {
+        const tid = String(sp.of || sp.table || '').trim().toLowerCase();
+        if (!tid) { refuse(label, 'spatial-needs-a-target'); continue; }
+        const jt = TABLES[tid];
+        if (!jt) { refuse(label, 'unknown-table:' + tid); continue; }
+        /* the target is fetched inside the candidates' own extent, padded by the radius — the same
+           reason the NEAR join does it: a global Overpass union is not needed to answer 「この区域
+           の2km以内の港」 */
+        const scope = Object.assign({}, sp, { bbox: bboxOf(rows, def.km ? km : 0) });
+        let jr;
+        try { jr = await jt.rows(scope); } catch (e) { jr = { rows: [], unavailable: (e && e.message) || 'target-failed' }; }
+        if (!jr || jr.unavailable || !jr.rows) { refuse(label, 'target-unavailable:' + ((jr && jr.unavailable) || '0')); continue; }
+        /* the target table's own conditions, evaluated on its rows before any geometry is measured */
+        const tconds = [].concat(sp.where || []).filter(Boolean).map((c) => {
+          const cd = Object.assign({}, c); cd._col = columnFor(jt.id, cd.col || cd.column || cd.field); cd._op = normOp(cd.op); return cd;
+        }).filter((c) => c._col);
+        let trows = jr.rows.map((r) => Object.assign({ v: Object.create(null) }, r));
+        for (const c of tconds) { await c._col.ensure(trows); trows = trows.filter((r) => passes(c, r.v[c._col.id], c._col.kind)); }
+        if (trows.length > JOIN_CAP) { bag.caps.push({ what: jt.label, cap: JOIN_CAP, of: trows.length }); trows = trows.slice(0, JOIN_CAP); }
+        targets = trows.map(rowGeometry).filter(Boolean);
+        bag.sources.push({ what: jt.label, src: jr.source || jt.source });
+      }
+      if (!targets.length) { refuse(label, 'target-empty'); continue; }
+
+      /* 「その集合の中」 is a question about the set, so the set is made one shape first. A failure
+         here is a refusal and NOT a fall back to testing each member: a row that sits across two
+         adjacent municipalities is inside their union and inside neither of them, and answering the
+         easier question would be a different, wrong answer wearing the same name. */
+      let against = targets;
+      if (def.whole && targets.length > 1) {
+        const u = G.union(targets);
+        if (!u) { refuse(label, 'target-union-failed'); continue; }
+        against = [u];
+      }
+      const boxes = against.map((g) => geomMeasure(g));
+
+      const want = sp.require === false ? false : true;
+      const out = [];
+      let spent = 0, evaluated = 0, noShape = 0, capped = false;
+      for (const r of rows) {
+        const g = rowGeometry(r);
+        /* a row with neither a shape nor a coordinate cannot be asked this question; it is counted
+           and said, never folded into the rows that were asked and answered no */
+        if (!g) { noShape++; continue; }
+        if (spent > SPATIAL_WORK_CAP) { capped = true; break; }
+        const ext = rowExtent(r, g);
+        let n = 0, best = Infinity;
+        for (let i = 0; i < against.length; i++) {
+          const gap = (ext && boxes[i]) ? bboxGapKm(ext.bbox, boxes[i].bbox) : 0;
+          if (gap > (def.km ? km : 0)) continue;   /* certainly farther than the question allows */
+          spent += Math.max(1, (ext ? ext.vertices : 1)) * Math.max(1, (boxes[i] ? boxes[i].vertices : 1));
+          if (def.km) { const d = G.distanceKm(g, against[i]); if (d != null && d <= km) { n++; if (d < best) best = d; } }
+          else if (rel === 'within' ? G.within(g, against[i]) : rel === 'contains' ? G.contains(g, against[i]) : G.intersects(g, against[i])) { n++; best = 0; }
+        }
+        evaluated++;
+        r.joins[label] = { count: n, nearest: null, km: isFinite(best) ? Math.round(best * 10) / 10 : null };
+        if (want ? n > 0 : n === 0) out.push(r);
+      }
+      if (capped) bag.caps.push({ what: LA('Rows tested spatially', '空間判定を行った行', 'Räumlich geprüfte Zeilen', 'Проверено строк пространственно', 'Filas comprobadas espacialmente'), cap: evaluated, of: rows.length });
+      if (noShape) {
+        bag.notes.push(label + ' · ' + noShape.toLocaleString() + ' · '
+          + L('rows carry neither a shape nor a coordinate, so this condition could not be asked about them and they are not below',
+            '件の行は形状も座標も持たないため、この条件を問えず、下の表には含めていません',
+            'Zeilen haben weder Geometrie noch Koordinate — die Bedingung war für sie nicht prüfbar und sie stehen nicht unten',
+            'строк не имеют ни геометрии, ни координат — условие для них не проверялось, и в таблице их нет',
+            'filas no tienen ni geometría ni coordenada — la condición no pudo evaluarse en ellas y no aparecen abajo'));
+      }
+      bag.notes.push(label + ' · ' + against.length.toLocaleString() + ' · '
+        + L('target shapes, measured against the candidates\' own geometry (not their pins)',
+          '件の対象形状を、各候補の形状そのもの（ピンの位置ではなく）で判定',
+          'Zielgeometrien, gemessen an der Geometrie der Kandidaten selbst (nicht an ihren Pins)',
+          'целевых геометрий, измерено по самой геометрии кандидатов (а не по их меткам)',
+          'geometrías objetivo, medidas sobre la geometría de los candidatos (no sobre sus pines)')
+        + (def.km ? (' · ' + km + ' km') : ''));
+      rows = out;
+      labels.push(label);
+    }
+    return { rows, labels };
   }
 
   async function run(spec) {
@@ -640,11 +924,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
       const info = await c._col.ensure(target) || {};
       if (info.unavailable) {
         unapplied.push(colName(c._col));
-        notes.push(colName(c._col) + ' — ' + L('unavailable in this session, so its condition was NOT applied',
-          'このセッションでは取得できず、この条件は適用していません',
-          'in dieser Sitzung nicht verfügbar; die Bedingung wurde NICHT angewendet',
-          'недоступно в этой сессии, условие НЕ применено',
-          'no disponible en esta sesión; la condición NO se aplicó') + ' (' + info.unavailable + ')');
+        notes.push(colName(c._col) + ' — ' + notApplied() + ' (' + info.unavailable + ')');
         continue;
       }
       if (info.source) sources.push({ what: c._col.label, src: info.source, origin: c._col.origin });
@@ -659,6 +939,16 @@ window.IntMapModules.atlasQuery = function (HOST) {
         'нет такого столбца — условие проигнорировано',
         'no existe esa columna — condición ignorada'));
     }
+
+    /* ③b (#R732) THE SPATIAL CONDITIONS — 「この区域の中」「この道路そのものから2km以内」.
+       AFTER the column plan and BEFORE the joins, for the same reason the plan is cost-ordered: a
+       geometry test is the most expensive thing in this file, and every cheap condition that ran
+       first is one fewer shape it has to measure. */
+    /* ONE key, and it is the key catalogue() publishes — an undeclared alias is a surface the
+       planner can only reach by accident and the audit cannot see at all. */
+    const spatials = [].concat((spec && spec.spatial) || []).filter(Boolean);
+    const sres = await spatialStage(spatials, rows, { notes, sources, caps, unapplied });
+    rows = sres.rows;
 
     /* ④ THE SPATIAL JOIN — 「地震から都市まで一定距離以内」 */
     const joins = [].concat((spec && (spec.near || spec.join)) || []).filter(Boolean);
@@ -792,7 +1082,8 @@ window.IntMapModules.atlasQuery = function (HOST) {
 
     return { ok: true, table: from, tableLabel: T.label, offered, scanned, matched, rows, columns: shown, unapplied,
       universe: base.universe || null, resultKey,
-      joins: joins.map((j) => String(j.as || j.of || '')), notes, sources, caps, spec };
+      /* (#R732) a spatial condition reports in the same column a NEAR join does — see spatialStage */
+      joins: joins.map((j) => String(j.as || j.of || '')).concat(sres.labels), notes, sources, caps, spec };
   }
 
   function colName(c) { try { return L.arr(c.label); } catch (_) { return c.id; } }
@@ -838,6 +1129,16 @@ window.IntMapModules.atlasQuery = function (HOST) {
         + ': ' + r.featureCode + (k && k.desc ? (' — ' + k.desc) : ''));
     }
     if (r.geonameId) bits.push('GeoNames ID: ' + r.geonameId);
+    /* (#R732) …and, for a line or an area the reader brought, THIS ROW saying that the coordinate
+       beside it was computed here. The result-wide note says that such rows exist; only the row can
+       say that it is one of them, and the pin the reader is looking at is on the row. */
+    if (r._derivedPoint) {
+      bits.push(L('The coordinate is the centre of this row\'s bounding box, computed here; the row\'s own shape is what every spatial test used',
+        'この座標はこの行の外接矩形の中心で、ここで計算した値です。空間的な判定にはこの行の形状そのものを使っています',
+        'Die Koordinate ist der hier berechnete Mittelpunkt des Begrenzungsrahmens dieser Zeile; geprüft wurde die Geometrie der Zeile selbst',
+        'Координата — вычисленный здесь центр ограничивающего прямоугольника этой строки; проверялась сама геометрия строки',
+        'La coordenada es el centro del rectángulo delimitador de esta fila, calculado aquí; lo que se comprobó es la geometría de la fila'));
+    }
     return bits.join(' · ');
   }
 
@@ -849,8 +1150,17 @@ window.IntMapModules.atlasQuery = function (HOST) {
     for (const t in TABLES) cols[t] = TABLES[t].user
       ? TABLES[t].fields.map((f) => f.name).concat(['name', 'lat', 'lng'])
       : COLUMNS.filter((c) => c.tables.indexOf(t) >= 0).map((c) => c.id);
+    /* ⚠⚠⚠ (#R732) THE SPATIAL RELATIONS ARE DERIVED FROM THE REGISTRY THAT EXECUTES THEM, and they
+       are a SEPARATE key from `ops`: `ops` compare a column's value, these compare shapes, and a
+       planner told that `within` is an operator would write it into a `where` clause where nothing
+       would ever run it. Each entry carries the argument shape it actually accepts, so the only way
+       to add a relation the planner cannot see is to execute one that is not in SPATIAL. */
+    const spatial = Object.keys(SPATIAL).map((rel) => Object.assign(
+      { rel, target: 'of:<table> | geometry:<GeoJSON geometry, Feature or FeatureCollection>', doc: SPATIAL[rel].doc },
+      SPATIAL[rel].km ? { km: 'required, kilometres' } : {}));
     return { tables: Object.keys(TABLES), columns: cols, ops: Object.keys(OPS).concat(['in', 'between']),
-      caps: { scan: SCAN_CAP, net: NET_CAP, join: JOIN_CAP, out: OUT_CAP } };
+      spatial, spatialKey: 'spatial',
+      caps: { scan: SCAN_CAP, net: NET_CAP, join: JOIN_CAP, out: OUT_CAP, spatialWork: SPATIAL_WORK_CAP } };
   }
 
   /* ══ THE ANSWER ══════════════════════════════════════════════════════════════════════════════

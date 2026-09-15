@@ -161,9 +161,54 @@ window.IntMapModules.layerRegistry=function(HOST){
       try{ const j=await window.IntMapWx.guardedJSON(url,300000); if(!j) return null; const v=pick(j);
         const out=(v==null||v==='')?null:(typeof v==='number'?(Math.round(v*100)/100+unit):String(v));
         if(out!=null) _numCache.set(key,out); return out; }catch(_){ return null; } }
+    /* ══ ⚠ (#R732) 「この範囲に入っているか」を「点であるか」で代用していた ═══════════════════════
+       `_srcFeatsIn` asked `f.geometry.type==='Point'` before looking at a single coordinate, so a
+       LineString or a Polygon in one of these sources could not be counted, listed or handed to
+       anything: the filter answered 0 for it, always, and 0 is a number a reader believes. The
+       question this window is asked is 「いま見えている範囲にあるもの」 — a question every geometry
+       type can answer — and it is now the question that is measured.
+       ⚠ ONE RULE, NOT A TABLE PER TYPE. The coordinates of every GeoJSON geometry are nested arrays
+       of positions, so walking them to the deepest level that holds positions covers Point,
+       MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon and GeometryCollection with no
+       branch per name (.agents/rules/no-ad-hoc-hardcoding.md). The ONE fact that does depend on the
+       type is whether consecutive positions are JOINED — 「LineString の隣り合う2点は辺だが
+       MultiPoint の隣り合う2点は辺ではない」 — and the two are indistinguishable by shape alone
+       (both are a list of positions), so that single fact is read from the type string.
+       ⚠ AND THE TEST IS EXACT RATHER THAN A BOUNDING-BOX OVERLAP. A vertex inside the box, an edge
+       crossing the box (Liang–Barsky against the same four half-planes), or — for an areal shape —
+       the box lying wholly inside the polygon, which has neither of the first two. A bbox overlap
+       would report a diagonal river as 「in view」 when the view sits beside it, and these counts are
+       printed to a reader (js/atlas-console.js `layers`, js/atlas-view-subject.js `contentInView`).
+       ⚠ NOTHING CHANGES FOR A POINT SOURCE: a single position is inside the box or it is not, which
+       is the predicate that was already there. Every source registered below holds points today, so
+       the existing readouts are the same numbers; what changed is that a non-point source is no
+       longer silently empty. */
+    const _jointed=t=>/Line|Polygon/.test(String(t||''));
+    /* the deepest arrays that hold positions — a bare position becomes a one-vertex part */
+    function _posParts(v,out){ if(!Array.isArray(v)||!v.length) return out;
+      if(typeof v[0]==='number'){ out.push([v]); return out; }
+      if(Array.isArray(v[0])&&typeof v[0][0]==='number'){ out.push(v); return out; }
+      for(let i=0;i<v.length;i++) _posParts(v[i],out); return out; }
+    /* Liang–Barsky: does the segment meet the axis-aligned box at all (endpoints inside included)? */
+    function _segBox(x0,y0,x1,y1,w,e,s,n){ let t0=0,t1=1; const dx=x1-x0, dy=y1-y0;
+      const cl=(p,q)=>{ if(p===0) return q>=0; const r=q/p;
+        if(p<0){ if(r>t1) return false; if(r>t0) t0=r; } else { if(r<t0) return false; if(r<t1) t1=r; } return true; };
+      return cl(-dx,x0-w)&&cl(dx,e-x0)&&cl(-dy,y0-s)&&cl(dy,n-y0); }
+    function _geomInBox(g,w,e,s,n){ if(!g) return false;
+      if(Array.isArray(g.geometries)) return g.geometries.some(x=>_geomInBox(x,w,e,s,n));
+      const parts=_posParts(g.coordinates,[]); if(!parts.length) return false;
+      const joined=_jointed(g.type);
+      const inside=p=>!!p&&p.length>=2&&p[0]>=w&&p[0]<=e&&p[1]>=s&&p[1]<=n;
+      for(let k=0;k<parts.length;k++){ const part=parts[k];
+        for(let i=0;i<part.length;i++){ if(inside(part[i])) return true;
+          if(joined&&i>0){ const a=part[i-1],b=part[i];
+            if(a&&b&&_segBox(a[0],a[1],b[0],b[1],w,e,s,n)) return true; } } }
+      /* a polygon can CONTAIN the whole box: no vertex of it is inside and no edge of it crosses */
+      if(/Polygon/.test(String(g.type||''))){ try{ return !!window._imPipGeo(w,s,g); }catch(_){ return false; } }
+      return false; }
     function _srcFeatsIn(srcId,bounds){ try{ const d=GE().layers.sourceData(srcId); if(!d||!Array.isArray(d.features)) return null;
       const b=bounds||GE().camera.getBounds(); const w=b.getWest?b.getWest():b[0][0], e=b.getEast?b.getEast():b[1][0], so=b.getSouth?b.getSouth():b[0][1], n=b.getNorth?b.getNorth():b[1][1];
-      return d.features.filter(f=>{ try{ const c=f.geometry&&f.geometry.type==='Point'&&f.geometry.coordinates; return c&&c[0]>=w&&c[0]<=e&&c[1]>=so&&c[1]<=n; }catch(_){ return false; } }); }catch(_){ return null; } }
+      return d.features.filter(f=>{ try{ return _geomInBox(f&&f.geometry,w,e,so,n); }catch(_){ return false; } }); }catch(_){ return null; } }
     function register(id,impl){ REG[id]=impl||{}; }
     function list(){ return Object.keys(REG); }
     function activeIds(){ return Object.keys(REG).filter(id=>{ try{ const r=REG[id]; return r.on?!!r.on():isOn(id); }catch(_){ return false; } }); }
@@ -375,7 +420,16 @@ window.IntMapModules.layerRegistry=function(HOST){
     register('thermal',{ label:()=>L5('Thermal anomalies (fires)','熱異常（火災）','Thermale Anomalien (Brände)','Тепловые аномалии (пожары)','Anomalías térmicas (incendios)'),
       on:()=>['lyr-thermal','lyr-thermal-1','lyr-thermal-2','lyr-thermal-3'].some(_lyrVis), sampleAt:(x,y)=>_fireCount(x,y),
       time:()=>L5('last','直近','letzte','последние','últimas')+' '+(window._thermalWindow||'24')+' h', source:()=>'NASA FIRMS / GIBS (MODIS+VIIRS)' });
-    return { register, list, active:activeIds, state, sampleAt, featuresIn, context };
+    /* ⚠ (#R732) THE SHARED WINDOW, BY NAME. `_srcFeatsIn` is the app's one 「この範囲にある地物」
+       predicate, and every registered row above reaches it — but a GeoJSON source that no row
+       speaks for (a file the reader dropped, a module that draws without registering) had no way
+       to. js/gis-layers.js needs exactly this question answered for those sources, and writing a
+       second box test there would be the 「同じ判断を2か所に持たせる」 that
+       .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids — the copy would be the one that keeps the
+       point-only mistake this round removed. Same argument order and same null meaning (「the
+       current view」) as featuresIn above. */
+    function featuresInSource(srcId,bounds){ return _srcFeatsIn(srcId,bounds); }
+    return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, context };
   })();
 };
 
@@ -2442,6 +2496,31 @@ window.IntMapModules.geojsonUpload=function(HOST){
         const cols=((detail&&detail.considered)||[]).map(c=>c.column).slice(0,8).join(', ');
         const head=window.IntMapLang.t(HOST.lang,"No latitude/longitude columns found","緯度・経度の列が見つかりません","Keine Breiten-/Längengrad-Spalten gefunden","Столбцы широты и долготы не найдены","No se encontraron columnas de latitud/longitud");
         return cols?head+' ('+cols+')':head; }
+      /* ══ (#R732) THE TWO THE COORDINATE SYSTEM CAN REFUSE FOR ═══════════════════════════════
+         Both are new refusals of files that USED TO BE ACCEPTED and drawn in the wrong place, so
+         each has to say what is wrong with the file rather than only that something is.
+         ⚠ `crs-unsupported` carries an inner `reason` from js/gis-crs.js. It is folded into the
+         one sentence rather than given nine of its own: the reader's next action is the same in
+         every case — state the system, or convert the file — and the code itself is put in the
+         parenthesis for a reader who is going to search for it. */
+      if(why==='crs-unsupported'){
+        const code=(detail&&detail.crs)?String(detail.crs):'';
+        const reason=(detail&&detail.reason)?String(detail.reason):'';
+        const head=window.IntMapLang.t(HOST.lang,"This file uses a coordinate system this map cannot convert from","このファイルの座標系は、この地図が変換できないものです","Diese Datei nutzt ein Koordinatensystem, aus dem diese Karte nicht umrechnen kann","В файле используется система координат, из которой карта не может пересчитать","Este archivo usa un sistema de coordenadas que este mapa no puede convertir");
+        const tail=[code,reason].filter(Boolean).join(' · ');
+        return tail?head+' ('+tail+')':head; }
+      if(why==='crs-not-stated-and-not-degrees'){
+        /* ⚠ THE MEASUREMENT IS IN THE SENTENCE. 「度ではない」 is a claim about their file, and a
+           reader who is told how many values were out of range and shown one of them can check it
+           against what they exported in a way that 「対応していない形式です」 never allowed. */
+        const n=(detail&&detail.outOfRange)!=null?String(detail.outOfRange):'';
+        const tot=(detail&&detail.total)!=null?String(detail.total):'';
+        const smp=(detail&&Array.isArray(detail.sample))?detail.sample.slice(0,2).join(', '):'';
+        const head=window.IntMapLang.t(HOST.lang,"The file does not say which coordinate system it uses, and its numbers are not degrees","このファイルは座標系を述べておらず、数値も経緯度ではありません","Die Datei nennt kein Koordinatensystem, und ihre Zahlen sind keine Gradangaben","Файл не указывает систему координат, и его числа — не градусы","El archivo no indica su sistema de coordenadas y sus números no son grados");
+        const bits=[];
+        if(n&&tot) bits.push(n+'/'+tot);
+        if(smp) bits.push(smp);
+        return bits.length?head+' ('+bits.join(' · ')+')':head; }
       if(why==='shapefile') return window.IntMapLang.t(HOST.lang,"Shapefile is not supported yet","Shapefile はまだ対応していません","Shapefile wird noch nicht unterstützt","Shapefile пока не поддерживается","Shapefile aún no es compatible");
       if(why==='too-big') return window.IntMapLang.t(HOST.lang,"File is too large to read","ファイルが大きすぎて読み込めません","Die Datei ist zu groß zum Lesen","Файл слишком велик для чтения","El archivo es demasiado grande");
       if(why==='too-many-features') return window.IntMapLang.t(HOST.lang,"Too many features to draw","地物が多すぎて描画できません","Zu viele Objekte zum Zeichnen","Слишком много объектов для отрисовки","Demasiados elementos para dibujar");

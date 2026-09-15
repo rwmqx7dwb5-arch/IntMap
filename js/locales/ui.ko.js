@@ -6446,7 +6446,6 @@ window.IntMapLang.define('ko', { ui: {
   /* ══ (#R729) the data-and-analysis panel — js/gis-panel.js, plus the strings its work
      surfaces elsewhere (map-ui.js, atlas-query.js, time-borders.js). GIS wording, not a
      word-for-word rendering of the English. */
-  "A buffer is drawn around points, and this dataset holds none": "버퍼는 점 주위에 생성되는데, 이 데이터셋에는 점이 없습니다",
   "A dataset with that id is already registered": "해당 ID의 데이터셋이 이미 등록되어 있습니다",
   "A filter with no condition is refused, because it would say nothing about the data": "조건이 없는 필터는 데이터에 대해 아무것도 말해 주지 않으므로 거부됩니다",
   "A project saves the steps, and no step has been run yet": "프로젝트가 저장하는 것은 처리 단계인데, 아직 실행된 단계가 없습니다",
@@ -6495,7 +6494,6 @@ window.IntMapLang.define('ko', { ui: {
   "Remove this condition": "이 조건 삭제",
   "required": "필수",
   "rows": "행",
-  "Rows without a single point (lines and areas) are located at the centre of their bounding box.": "단일 점이 없는 행(선·면)은 해당 경계 상자의 중심에 놓입니다.",
   "Run a step": "단계 실행",
   "Separate the values with commas": "값은 쉼표로 구분하세요",
   "Settings of this step": "이 단계의 매개변수",
@@ -6507,8 +6505,6 @@ window.IntMapLang.define('ko', { ui: {
   "That project is not in the store any more": "그 프로젝트는 저장소에 더 이상 없습니다",
   "That would make a step depend on its own result": "그러면 단계가 자기 자신의 결과에 의존하게 됩니다",
   "The analysis module is not loaded, so the steps cannot be run again": "분석 모듈이 로드되지 않아 단계를 다시 실행할 수 없습니다",
-  "The clipping shape crosses the 180° meridian; split it in two": "잘라내기 도형이 180° 자오선을 가로지릅니다. 둘로 나누세요",
-  "The clipping shape must be convex, and this one is not": "잘라내기 도형은 볼록해야 하는데 이 도형은 그렇지 않습니다",
   "The dataset registry is not loaded, so nothing can be read or written": "데이터셋 레지스트리가 로드되지 않아 읽기도 쓰기도 할 수 없습니다",
   "The distance and area library this step needs has not loaded": "이 단계에 필요한 거리·면적 계산 라이브러리가 로드되지 않았습니다",
   "The input already has a column of that name, and the result would overwrite it": "입력에 같은 이름의 열이 이미 있어 결과가 그것을 덮어쓰게 됩니다",

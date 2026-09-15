@@ -1,18 +1,26 @@
 /* ============================================================================
  *  IntMap · THE GIS CORE, IN ONE DOOR — window.IntMapGis   (#R729)
  * ----------------------------------------------------------------------------
- *  Four files arrive together or not at all:
+ *  Seven files arrive together or not at all:
  *
  *      js/gis-datasets.js   window.IntMapData         what a dataset is
+ *      js/gis-geometry.js   window.IntMapGisGeometry  what a shape is, and what two shapes are to each other
+ *      js/gis-crs.js        window.IntMapGisCrs       what the coordinates mean, and how to bring them here
+ *      js/gis-layers.js     window.IntMapGisLayers    how the map's own layers become datasets
  *      js/gis-ops.js        window.IntMapGisOps       what can be done to one, and to its output
  *      js/gis-project.js    window.IntMapGisProject   what survives closing the tab
  *      js/gis-panel.js      window.IntMapGisPanel     the operating surface
  *
- *  ⚠ WHY ONE LAZY ENTRY AND NOT FOUR. js/lazy-modules.js is part of the app SHELL, and the shell
+ *  ⚠ WHY ONE LAZY ENTRY AND NOT SEVEN. js/lazy-modules.js is part of the app SHELL, and the shell
  *  has a line budget (tests/r168-checks ⑧) with single-digit headroom most rounds — four entries is
  *  twelve lines in three tables. It is also not a real choice: the registry with no ops is a list
  *  nothing can act on, and the ops with no registry have nowhere to put their output. There is no
- *  session that wants one of the four.
+ *  session that wants one of the seven.
+ *
+ *  ⚠ AND THE THREE ADDED IN #R732 ARE SHELLS THAT FETCH THEIR OWN WEIGHT LATER. js/gis-geometry.js
+ *  and js/gis-crs.js each hold a dynamic import — a sweep-line and a projection engine — pulled at
+ *  the first op and the first non-degree file respectively, and never otherwise. So the chunk this
+ *  entry loads grew by the wiring, not by the libraries.
  *
  *  ⚠ AND THE READER PAYS FOR NONE OF IT UNTIL A FILE LANDS. js/map-ui.js asks for `gisCore` when a
  *  file has actually been read, and the Data button asks for it when it is pressed. A session that
@@ -24,13 +32,23 @@
  * ==========================================================================*/
 
 import { makeGisDatasets } from './gis-datasets.js';
+import { makeGisGeometry } from './gis-geometry.js';
+import { makeGisCrs } from './gis-crs.js';
+import { makeGisLayers } from './gis-layers.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
 import { makeGisPanel } from './gis-panel.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.gisCore = function (HOST) {
+  /* ⚠ ORDER IS NOT DECORATION HERE. The registry comes up first because the other six read it,
+     and the geometry kernel before the ops because every op but filter asks it a question. Nothing
+     awaits: each publishes a synchronous face and fetches what it borrows on demand, so this is a
+     mounting order rather than a boot sequence. */
   const data = makeGisDatasets();
+  const geometry = makeGisGeometry();
+  const crs = makeGisCrs();
+  const layers = makeGisLayers();
   const ops = makeGisOps();
   const project = makeGisProject();
   const panel = makeGisPanel(HOST);
@@ -50,7 +68,7 @@ window.IntMapModules.gisCore = function (HOST) {
     } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
   }
 
-  const API = { data, ops, project, panel, draw,
+  const API = { data, geometry, crs, layers, ops, project, panel, draw,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { window.IntMapGis = API; } catch (_) { }
   return API;
