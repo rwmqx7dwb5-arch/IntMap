@@ -177,13 +177,36 @@ export function makeAtlasGeoResolve(HOST, CTX) {
         if(k.indexOf(q)>=0||q.indexOf(k)>=0) return 1; const d=_dice(q,k); if(d>best) best=d; }
       if(/\d/.test(q)){ const c=_coverage(q,_nkey(o.display_name)); if(c>=0.9) best=Math.max(best,0.9); }
       return best; }
+    /* ══ ⚠⚠⚠ (#R737) AGREEMENT IS NOT ENOUGH AT THE GAZETTEER'S OWN NOISE FLOOR ═══════════════════
+       #R736 put this clause on the EXTENT resolver and shipped. Production verification, same day:
+       `flyTo('Korean Peninsula')` still answered 「Moved to: Korean Peninsula」 and still put the reader
+       in Newport News, Virginia — because the POINT resolver (`_pickNominatim`, below) has the name
+       floor and nothing under it, and free-text search hands BOTH endpoints the same eight strangers.
+       That is #R736's own lesson happening to #R736's own fix: a rule written at one function protects
+       that function. So the rule is stated ONCE, here, beside the measure it extends, and both
+       resolvers ask it.
+       ⚠ THE MEASUREMENT (tests/fixtures/r736-nominatim.json, live 2026-09-15). OSM holds no feature
+       called «Korean Peninsula», so the answer is eight Korean restaurants, marts, a language school
+       and a Baptist church — every one at importance 0.00005, and 'Peninsula Korean Baptist Church'
+       shares almost every bigram of the query (agreement 0.63, well over NAME_AGREE_MIN). The two real
+       features in the same capture score 0.604 and 0.608.
+       ⚠ AND THE EXEMPTION IS CONTAINMENT, NOT THE THRESHOLD. `_nameAgreement` returns exactly 1 when
+       one name contains the other, so a genuinely low-importance POI whose own name IS the query —
+       «Tokyo Station» → 東京駅 through `name:en` — still resolves. Only a stranger that merely
+       RESEMBLES the query is refused.
+       ⚠ EXPIRES if Nominatim changes what `importance` means, or begins ranking POIs above this; the
+       fixture is the record to re-measure against. */
+    const IMPORTANCE_FLOOR=0.05;
+    /** the agreement a candidate may be RANKED on — 0 when nothing here is what was asked for. */
+    function _rankableFor(core,o){ const ag=_nameAgreement(core,o); if(ag<NAME_AGREE_MIN) return 0;
+      if((+((o&&o.importance))||0)<IMPORTANCE_FLOOR && ag<1) return 0; return ag; }
     /* the query as the caller means it: 「宇部港, 日本」 asks for 宇部港 — the country only narrows it
        (#R489), and letting 日本 count as agreement is how 日本郵便 scored in the first place. */
     function _queryCore(place){ const t=String(place||'').trim(); const i=t.indexOf(','); return (i>0?t.slice(0,i):t).trim(); }
     function _pickNominatim(place,j){ if(!Array.isArray(j)||!j.length) return null; const core=_queryCore(place);
       let best=null,bs=-Infinity;
       for(const o of j){ if(!o||!isFinite(+o.lat)||!isFinite(+o.lon)) continue;
-        const ag=_nameAgreement(core,o); if(ag<NAME_AGREE_MIN) continue;   /* the honest miss lives here */
+        const ag=_rankableFor(core,o); if(!ag) continue;   /* the honest miss lives here (#R737: agreement AND the gazetteer's own floor) */
         const sc=(+o.importance||0)+_classBonus(o)+0.5*ag; if(sc>bs){ bs=sc; best=o; } }
       return best; }
     async function geocode(place){ place=String(place||'').trim();
@@ -387,7 +410,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
            ⚠ AND IT STANDS DOWN WHEN SOMETHING ELSE VOUCHES. With a web-verified `anchor` the location has
            independent evidence, so the spelling is no longer the only thing that can speak — the same
            condition the honest-miss guard below already uses. */
-        if(!anchor){ const _core=_queryCore(place); const _agree=j.filter(x=>_nameAgreement(_core,x)>=NAME_AGREE_MIN);
+        if(!anchor){ const _core=_queryCore(place); const _agree=j.filter(x=>_rankableFor(_core,x)>0);
           if(!_agree.length) return null;   /* nothing here is called what was asked for → an honest miss, never a stranger */
           j=_agree; }
         const _q=String(place).trim().toLowerCase();
@@ -406,22 +429,7 @@ export function makeAtlasGeoResolve(HOST, CTX) {
         /* (#R136) honest-miss guard (only when NO web-verified anchor vouches for the location): a bare minor SETTLEMENT
            with low importance is almost never what a region/country/place highlight meant — return null so the caller
            reports an honest miss instead of painting a speck in the wrong country. */
-        /* ⚠⚠⚠ (#R736) …AND THE SAME GUARD, FOR THE OTHER HALF OF WHAT THE GAZETTEER DOES WITH A NAME IT
-           DOES NOT HOLD. The list above names SETTLEMENT types, so it never looked at a POI. Captured live
-           on 2026-09-15 (tests/fixtures/r736-nominatim.json), 'Korean Peninsula' — a feature OSM simply does
-           not have — returns eight Korean restaurants, marts, a language school and a Baptist church, EVERY
-           ONE at importance 0.000; the app flew the reader to the church in Newport News, Virginia and told
-           them 「Moved to: Korean Peninsula」. The bigram floor above does not catch it: 'Peninsula Korean
-           Baptist Church' shares almost every bigram of the query (agreement 0.63).
-           ⇒ AT THE GAZETTEER'S OWN NOISE FLOOR, ONLY AN EXACT NAME SPEAKS. `_nameAgreement` returns 1 only
-           when one name CONTAINS the other, so 'Chesapeake Bay'→0.604 and 'Mount Fuji'→0.608 are untouched
-           (they are far above the floor anyway) and a genuinely low-importance POI whose own name IS the
-           query — 'Tokyo Station' → 東京駅 through `name:en` — still resolves, which is why the exemption is
-           containment and not the threshold alone.
-           ⚠ OBSERVATION: in that capture the three real features scored 0.604 / 0.608 / 0.107 and all eight
-           strangers scored 0.000 (Nominatim gives an unranked POI ~1e-5). EXPIRES if Nominatim changes what
-           `importance` means or starts ranking POIs above it; the capture is the record to re-measure against. */
-        if(!anchor && _imp(best) < 0.05 && _nameAgreement(_queryCore(place), best) < 1) return null;
+        /* (#R737) the noise-floor clause that stood here is now part of `_rankableFor`, which the filter above applies — one rule, both resolvers. */
         if(!anchor){ const _typ=String(best.type||'').toLowerCase(); if(/^(hamlet|neighbourhood|neighborhood|suburb|quarter|locality|isolated_dwelling|farm|allotments|city_block|residential|croft)$/.test(_typ) && _imp(best)<0.35) return null; }
         let box=robustExtent(best.geojson);
         if(!box && Array.isArray(best.boundingbox)&&best.boundingbox.length===4){ const s=+best.boundingbox[0],n=+best.boundingbox[1],w=+best.boundingbox[2],e=+best.boundingbox[3]; if([s,n,w,e].every(v=>isFinite(v))&&e>w&&n>s&&(e-w)<=200) box=[[w,s],[e,n]]; }
