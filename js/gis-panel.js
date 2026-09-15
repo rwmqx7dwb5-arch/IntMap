@@ -67,6 +67,10 @@ export function makeGisPanel(HOST) {
     const CORE = () => { try { return window.IntMapGis || null; } catch (_) { return null; } };
     const UP = () => { try { return window.GeoJSONUpload || null; } catch (_) { return null; } };
     const GEODESY = () => { try { return window.IntMapGeodesy || null; } catch (_) { return null; } };
+    /* js/gis-geometry.js. ⚠ PRESENT IS NOT READY: it fetches its sweep-line on first use, so the
+       panel can only say 「まだ使えない」 before an op has ever run, and run() is what actually
+       waits. Used to warn early, never to decide. */
+    const GEOM = () => { try { return window.IntMapGisGeometry || null; } catch (_) { return null; } };
 
     function nf(v) {
       const n = Number(v);
@@ -127,7 +131,6 @@ export function makeGisPanel(HOST) {
       if (code === 'input-missing') return window.IntMapLang.t(HOST.lang, 'The input dataset is gone', '入力のデータセットがありません', 'Der Eingabedatensatz fehlt', 'Входной набор данных отсутствует', 'Falta el conjunto de datos de entrada') + par(d.id);
       if (code === 'geometry-type') return window.IntMapLang.t(HOST.lang, 'This step needs a different geometry', 'この処理には別の図形の種類が必要です', 'Dieser Schritt braucht eine andere Geometrie', 'Этому шагу нужна другая геометрия', 'Este paso necesita otra geometría')
         + ' (' + window.IntMapLang.t(HOST.lang, 'needs', '必要', 'braucht', 'нужно', 'necesita') + ': ' + String(d.expected == null ? '' : d.expected) + ' / ' + window.IntMapLang.t(HOST.lang, 'has', '実際', 'hat', 'фактически', 'tiene') + ': ' + String(d.geometryType == null ? '' : d.geometryType) + ')';
-      if (code === 'buffer-needs-points') return window.IntMapLang.t(HOST.lang, 'A buffer is drawn around points, and this dataset holds none', 'バッファは点のまわりに描くもので、このデータセットには点がありません', 'Ein Puffer wird um Punkte gelegt; dieser Datensatz enthält keine', 'Буфер строится вокруг точек, а в этом наборе их нет', 'El área de influencia se traza alrededor de puntos y este conjunto no tiene ninguno') + par(d.geometryType);
       if (code === 'missing-param') return window.IntMapLang.t(HOST.lang, 'A setting this step needs has not been filled in', 'この処理に必要な引数が入力されていません', 'Eine benötigte Einstellung wurde nicht ausgefüllt', 'Не заполнена настройка, нужная этому шагу', 'Falta rellenar un ajuste que necesita este paso') + par(d.param);
       if (code === 'bad-param') {
         let s = window.IntMapLang.t(HOST.lang, 'A setting is not a value this step can use', '引数が、この処理で使える値になっていません', 'Eine Einstellung ist kein für diesen Schritt brauchbarer Wert', 'Настройка содержит значение, непригодное для шага', 'Un ajuste no tiene un valor utilizable por este paso') + par(d.param);
@@ -138,9 +141,23 @@ export function makeGisPanel(HOST) {
       if (code === 'unknown-condition-op') return window.IntMapLang.t(HOST.lang, 'That comparison is not one this filter knows', 'その比較演算子は、この絞り込みが知らないものです', 'Dieser Vergleich ist diesem Filter unbekannt', 'Такое сравнение фильтру неизвестно', 'Esa comparación no la conoce este filtro') + par(d.op);
       if (code === 'unknown-field') return window.IntMapLang.t(HOST.lang, 'That column is not in the input dataset', 'その列が入力データセットにありません', 'Diese Spalte gibt es im Eingabedatensatz nicht', 'Такого столбца нет во входном наборе данных', 'Esa columna no está en el conjunto de datos de entrada') + par(d.field);
       if (code === 'no-clip-polygons') return window.IntMapLang.t(HOST.lang, 'The second input holds no polygon to clip with', '2つ目の入力に、切り抜きに使える多角形がありません', 'Die zweite Eingabe enthält kein Polygon zum Zuschneiden', 'Во втором входе нет полигона для обрезки', 'La segunda entrada no tiene ningún polígono para recortar');
-      if (code === 'clip-window-not-convex') return window.IntMapLang.t(HOST.lang, 'The clipping shape must be convex, and this one is not', '切り抜きの形は凸形でなければなりませんが、これは凸形ではありません', 'Die Zuschneideform muss konvex sein; diese ist es nicht', 'Форма обрезки должна быть выпуклой, а эта — нет', 'La forma de recorte debe ser convexa y esta no lo es') + par(d.feature == null ? '' : (window.IntMapLang.t(HOST.lang, 'feature', '地物', 'Objekt', 'объект', 'elemento') + ' ' + nf(d.feature)));
-      if (code === 'clip-window-crosses-antimeridian') return window.IntMapLang.t(HOST.lang, 'The clipping shape crosses the 180° meridian; split it in two', '切り抜きの形が経度180度線をまたいでいます。2つに分けてください', 'Die Zuschneideform überquert den 180°-Meridian; teilen Sie sie in zwei', 'Форма обрезки пересекает 180-й меридиан — разделите её надвое', 'La forma de recorte cruza el meridiano 180°; divídela en dos');
       if (code === 'output-column-in-use') return window.IntMapLang.t(HOST.lang, 'The input already has a column of that name, and the result would overwrite it', '入力に同じ名前の列が既にあり、結果がそれを上書きしてしまいます', 'Die Eingabe hat bereits eine Spalte dieses Namens; das Ergebnis würde sie überschreiben', 'Во входе уже есть столбец с таким именем — результат перезаписал бы его', 'La entrada ya tiene una columna con ese nombre y el resultado la sobrescribiría') + par(d.name);
+      /* ⚠ THE THREE SENTENCES ABOVE THIS ONE WERE DELETED IN #R732, not renamed: `buffer-needs-points`,
+         `clip-window-not-convex` and `clip-window-crosses-antimeridian` are not returned by anything
+         any more. A sentence for a code that can never arrive can never be found wrong, which is the
+         reason the note higher up gives for keeping exactly one spelling of each live one. */
+      if (code === 'geometry-missing') return window.IntMapLang.t(HOST.lang, "The shape engine this step needs is not loaded", "この処理に必要な図形計算の部品が読み込まれていません", "Die für diesen Schritt nötige Geometrie-Engine ist nicht geladen", "Движок геометрии, нужный этому шагу, не загружен", "No está cargado el motor de formas que necesita este paso");
+      if (code === 'geometry-unavailable') return window.IntMapLang.t(HOST.lang, "The shape engine could not be fetched, so this step was not run at all — this is not an empty result", "図形計算の部品を取得できなかったため、この処理は実行されていません。結果が0件だったのではありません", "Die Geometrie-Engine konnte nicht geladen werden; dieser Schritt lief gar nicht — das ist kein leeres Ergebnis", "Движок геометрии не удалось загрузить, поэтому шаг вообще не выполнялся — это не пустой результат", "No se pudo obtener el motor de formas, así que este paso no se ejecutó — no es un resultado vacío");
+      if (code === 'input-stale') return window.IntMapLang.t(HOST.lang, "This input is out of date: a recomputation above it failed, so it still holds the earlier answer", "この入力は古いままです。上流の再計算が失敗したため、前の設定での結果が残っています", "Diese Eingabe ist veraltet: eine Neuberechnung darüber schlug fehl, sie hält noch das frühere Ergebnis", "Этот вход устарел: пересчёт выше по цепочке не удался, и в нём осталcя прежний результат", "Esta entrada está desactualizada: falló un recálculo anterior y conserva el resultado previo") + par(d.id);
+      if (code === 'inward-buffer-needs-area') return window.IntMapLang.t(HOST.lang, "A negative radius shrinks a shape inwards, and points and lines have no inside to shrink", "半径が負の値だと図形を内側へ縮めますが、点や線には縮める内側がありません", "Ein negativer Radius verkleinert eine Fläche nach innen; Punkte und Linien haben kein Inneres", "Отрицательный радиус сжимает фигуру внутрь, а у точек и линий нет внутренней части", "Un radio negativo encoge la forma hacia dentro, y los puntos y líneas no tienen interior") + par(d.geometryType);
+      if (code === 'no-overlay-polygons') return window.IntMapLang.t(HOST.lang, "The second input holds no polygon to overlay with", "2つ目の入力に、重ね合わせに使える多角形がありません", "Die zweite Eingabe enthält kein Polygon zum Überlagern", "Во втором входе нет полигона для наложения", "La segunda entrada no tiene ningún polígono con el que superponer");
+      if (code === 'no-features') return window.IntMapLang.t(HOST.lang, "That input holds nothing this step can work on", "その入力に、この処理が扱える地物がありません", "Diese Eingabe enthält nichts, womit dieser Schritt arbeiten kann", "В этом входе нет объектов, с которыми может работать шаг", "Esa entrada no contiene nada con lo que este paso pueda trabajar");
+      if (code === 'op-not-wired') return window.IntMapLang.t(HOST.lang, "That step is declared but has no implementation in this build", "その処理は宣言されていますが、このビルドに実装がありません", "Dieser Schritt ist deklariert, hat in diesem Build aber keine Implementierung", "Этот шаг объявлен, но в этой сборке нет реализации", "Ese paso está declarado pero no tiene implementación en esta compilación") + par(d.op);
+
+      /* ── js/gis-layers.js ────────────────────────────────────────────────────────────────── */
+      if (code === 'map-unavailable') return window.IntMapLang.t(HOST.lang, "The map is not ready, so its layers cannot be handed over as data", "地図がまだ使えないため、レイヤーをデータとして受け取れません", "Die Karte ist nicht bereit, daher können ihre Ebenen nicht als Daten übergeben werden", "Карта не готова, поэтому её слои нельзя передать как данные", "El mapa no está listo, así que sus capas no se pueden entregar como datos");
+      if (code === 'layer-unknown') return window.IntMapLang.t(HOST.lang, "There is no layer or map source by that name", "その名前のレイヤーも地図ソースもありません", "Es gibt keine Ebene und keine Kartenquelle dieses Namens", "Слоя или источника карты с таким именем нет", "No hay ninguna capa ni fuente de mapa con ese nombre") + par(d.id || d.layer);
+
       if (code === 'id-in-use') return window.IntMapLang.t(HOST.lang, 'A dataset with that id is already registered', 'その ID のデータセットは既に登録されています', 'Ein Datensatz mit dieser ID ist bereits registriert', 'Набор данных с таким идентификатором уже зарегистрирован', 'Ya hay un conjunto de datos registrado con ese identificador') + par(d.id);
 
       /* ── js/gis-project.js ───────────────────────────────────────────────────────────────── */
@@ -189,6 +206,19 @@ export function makeGisPanel(HOST) {
       if (p.kind === 'import') return window.IntMapLang.t(HOST.lang, 'Imported', '取り込み', 'Importiert', 'Импорт', 'Importado') + (p.file ? ': ' + String(p.file) : '');
       return window.IntMapLang.t(HOST.lang, 'Origin not stated', '由来が記録されていません', 'Herkunft nicht angegeben', 'Происхождение не указано', 'Origen no indicado');
     }
+    /* ⚠ THREE STATES, NOT TWO. `sourceCrs === crs` is 「届いた座標系がそのまま」, a different
+       `sourceCrs` is 「変換して持ち込んだ」 and NULL is 「ファイルが何も述べなかった」 — the last one
+       is not a claim that it was 4326, and printing nothing there would turn it into one. */
+    function crsText(ds) {
+      const src = ds && ds.sourceCrs;
+      const here = (ds && ds.crs) || 'EPSG:4326';
+      if (!src) {
+        return window.IntMapLang.t(HOST.lang, 'CRS not stated by the file', 'ファイルが座標系を述べていません', 'Datei nennt kein Koordinatensystem', 'Файл не указывает систему координат', 'El archivo no indica el sistema de coordenadas');
+      }
+      if (String(src) === String(here)) return String(here);
+      return String(src) + ' → ' + String(here);
+    }
+
     function geomText(ds) {
       const g = ds && ds.geometryType;
       return g ? String(g) : window.IntMapLang.t(HOST.lang, 'no geometry', '図形なし', 'keine Geometrie', 'без геометрии', 'sin geometría');
@@ -469,6 +499,7 @@ export function makeGisPanel(HOST) {
       const block = paramBlock(decl, (n) => held[n], columnsFromInputs(prov.inputs));
       box.appendChild(block.node);
       if (decl.needsGeodesy && !GEODESY()) box.appendChild(el('div', CSS_WARN, reasonText('geodesy-missing')));
+      if (decl.needsGeometry && !GEOM()) box.appendChild(el('div', CSS_WARN, reasonText('geometry-missing')));
       const bar = row('');
       const go = el('button', CSS_BTNP, window.IntMapLang.t(HOST.lang, 'Recompute', '再計算', 'Neu berechnen', 'Пересчитать', 'Recalcular'));
       go.className = 'gis-recalc';
@@ -525,10 +556,19 @@ export function makeGisPanel(HOST) {
       nm.className = 'gis-ds-name';
       nameCol.appendChild(nm);
       const meta = el('span', CSS_NOTE + 'white-space:normal;',
-        geomText(ds) + ' · ' + nf(ds.count) + ' ' + window.IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas') + ' · ' + originText(ds));
+        geomText(ds) + ' · ' + nf(ds.count) + ' ' + window.IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas') + ' · ' + crsText(ds) + ' · ' + originText(ds));
       meta.className = 'gis-ds-meta';
       nameCol.appendChild(meta);
       head.appendChild(nameCol);
+      /* ⚠ BEFORE THE 「地図に表示中」 BADGE, because it is the more urgent of the two: a dataset that
+         is drawn AND stale is being looked at, which is the worst moment for it to say only that it
+         is drawn. */
+      if (ds.stale) {
+        const st = el('span', 'flex:0 0 auto;font-size:10px;color:#ff9f0a;', window.IntMapLang.t(HOST.lang, 'Out of date', '古いまま', 'Veraltet', 'Устарело', 'Desactualizado'));
+        st.className = 'gis-ds-stale';
+        st.title = reasonText('input-stale', { id: ds.id });
+        head.appendChild(st);
+      }
       if (drawn.has(ds.id)) head.appendChild(el('span', 'flex:0 0 auto;font-size:10px;color:var(--primary-color,#0a84ff);', window.IntMapLang.t(HOST.lang, 'Drawn on the map', '地図に表示中', 'Auf der Karte gezeichnet', 'Показан на карте', 'Dibujado en el mapa')));
       head.onclick = () => { if (openRows.has(ds.id)) openRows.delete(ds.id); else openRows.add(ds.id); render(); };
       card.appendChild(head);
@@ -669,6 +709,7 @@ export function makeGisPanel(HOST) {
       const outTxt = outputText(decl);
       if (outTxt) sec.appendChild(el('div', CSS_NOTE, outTxt));
       if (decl.needsGeodesy && !GEODESY()) sec.appendChild(el('div', CSS_WARN, reasonText('geodesy-missing')));
+      if (decl.needsGeometry && !GEOM()) sec.appendChild(el('div', CSS_WARN, reasonText('geometry-missing')));
 
       const D = DATA();
       const all = (D && D.list()) || [];

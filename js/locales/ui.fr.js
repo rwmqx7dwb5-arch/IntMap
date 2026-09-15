@@ -6456,7 +6456,6 @@ window.IntMapLang.define('fr', { ui: {
   /* ══ (#R729) the data-and-analysis panel — js/gis-panel.js, plus the strings its work
      surfaces elsewhere (map-ui.js, atlas-query.js, time-borders.js). GIS wording, not a
      word-for-word rendering of the English. */
-  "A buffer is drawn around points, and this dataset holds none": "La zone tampon se trace autour de points, et ce jeu de données n’en contient aucun",
   "A dataset with that id is already registered": "Un jeu de données portant cet identifiant est déjà enregistré",
   "A filter with no condition is refused, because it would say nothing about the data": "Un filtre sans condition est refusé, car il ne dirait rien des données",
   "A project saves the steps, and no step has been run yet": "Un projet enregistre les étapes, et aucune étape n’a encore été exécutée",
@@ -6505,7 +6504,6 @@ window.IntMapLang.define('fr', { ui: {
   "Remove this condition": "Supprimer cette condition",
   "required": "obligatoire",
   "rows": "lignes",
-  "Rows without a single point (lines and areas) are located at the centre of their bounding box.": "Les enregistrements sans point unique (lignes et surfaces) sont placés au centre de leur rectangle englobant.",
   "Run a step": "Exécuter une étape",
   "Separate the values with commas": "Séparez les valeurs par des virgules",
   "Settings of this step": "Paramètres de cette étape",
@@ -6517,8 +6515,6 @@ window.IntMapLang.define('fr', { ui: {
   "That project is not in the store any more": "Ce projet n’est plus dans le stockage",
   "That would make a step depend on its own result": "Cela ferait dépendre une étape de son propre résultat",
   "The analysis module is not loaded, so the steps cannot be run again": "Le module d’analyse n’est pas chargé, les étapes ne peuvent donc pas être réexécutées",
-  "The clipping shape crosses the 180° meridian; split it in two": "La forme de découpage franchit le méridien 180° ; divisez-la en deux",
-  "The clipping shape must be convex, and this one is not": "La forme de découpage doit être convexe, ce qui n’est pas le cas ici",
   "The dataset registry is not loaded, so nothing can be read or written": "Le registre des jeux de données n’est pas chargé : rien ne peut être lu ni écrit",
   "The distance and area library this step needs has not loaded": "La bibliothèque de distances et de surfaces requise par cette étape n’est pas chargée",
   "The input already has a column of that name, and the result would overwrite it": "L’entrée possède déjà une colonne de ce nom, et le résultat l’écraserait",

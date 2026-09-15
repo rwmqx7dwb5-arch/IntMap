@@ -3,37 +3,37 @@
   "langs": {
     "de": {
       "keyed": 422,
-      "positional": 7484,
+      "positional": 7501,
       "pages": 463
     },
     "es": {
       "keyed": 422,
-      "positional": 7484,
+      "positional": 7501,
       "pages": 463
     },
     "fr": {
       "keyed": 422,
-      "inline": 6136,
+      "inline": 6131,
       "pages": 463
     },
     "ko": {
       "keyed": 422,
-      "inline": 6136,
+      "inline": 6131,
       "pages": 463
     },
     "ru": {
       "keyed": 422,
-      "positional": 7484,
+      "positional": 7501,
       "pages": 463
     },
     "zh": {
       "keyed": 422,
-      "inline": 6136,
+      "inline": 6153,
       "pages": 463
     },
     "zh-hans": {
       "keyed": 422,
-      "inline": 6136,
+      "inline": 6153,
       "pages": 463
     }
   }

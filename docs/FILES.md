@@ -136,19 +136,38 @@ geo-import.js                     落とされたファイルを FeatureCollecti
                                   で**拒否**し、「列名・半球記号・±90 を超える値」で**選ぶ**——根拠が無ければ
                                   推測せず拒む。拒否は**コード**で返し、9 言語の文面は `js/map-ui.js` が持つ。
                                   遅延読み込み（起動時のバンドルには入らない）
-gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— 下の 4 本をまとめて起動する
+gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— 下の 7 本をまとめて起動する
                                   `window.IntMapGis`。データセットを地図に描く `draw()` もここ
                                   （`window.GeoJSONUpload.add` を通す＝地図に載せる道を 2 本作らない）。
                                   遅延読み込み `gisCore`。正本 `docs/GIS-CORE.md`
 gis-datasets.js                   **データセットのレジストリ** `window.IntMapData` — 取り込み・内蔵・
                                   **処理の出力**を同じ 1 つの形で持つ。列の型は**値を測って**決める
                                   （列名で決めない）。`provenance` は札ではなく**再実行できるレシピ**
-gis-ops.js                        **処理** `window.IntMapGisOps` — filter / buffer / clip / aggregate。
+gis-geometry.js                   **幾何カーネル** `window.IntMapGisGeometry`（#R732）— boolean 演算
+                                  （union / intersection / difference / dissolve）・**任意形状の buffer**
+                                  （測地円盤との Minkowski 和）・述語（intersects / contains / within /
+                                  disjoint）・**形そのものからの最短測地距離**。sweep-line
+                                  `polygon-clipping`（**既存の依存**）は**動的 import で遅延**。
+                                  経度は継ぎ目でほどいて揃え、結果を [-180,180] に戻す——拒むのは
+                                  **世界を巻く環だけ**
+gis-crs.js                        **座標変換** `window.IntMapGisCrs`（#R732）— `proj4` を**動的 import で
+                                  遅延**。⚠ **EPSG の一覧を持たない**——定義は ① proj4 自身が知るもの
+                                  ② UTM の算術（326NN／327NN）③ 読者が `define()` で渡した WKT・proj
+                                  文字列、の 3 つの規則だけ。それ以外は `crs-unknown` で拒む。
+                                  `looksProjected()` は「度ではありえない座標」を**測る**
+gis-layers.js                     **地図のレイヤーを GIS のデータセットにする橋**
+                                  `window.IntMapGisLayers`（#R732）— `sources()` は一覧を持たず
+                                  **数え上げる**（`IntMapLayers` の行＋レンダラの geojson source）。
+                                  `read()` は**形状も属性も落とさない**。`provenance` は
+                                  `{kind:'layer', layer, bounds, at}`
+gis-ops.js                        **処理** `window.IntMapGisOps` — filter / buffer / clip / intersect /
+                                  difference / union / dissolve / relate / aggregate の 9 つ。
                                   **出力もデータセットとして登録される**ので次の処理の入力になる。
                                   拒否は文ではなくコードで返す（文面は `js/gis-panel.js`）
 gis-project.js                    **プロジェクトの保存** `window.IntMapGisProject` — IndexedDB。取り込みは
                                   本体ごと、処理は**段（レシピ）だけ**。`setParams()` が引数を変えて
-                                  下流まで再計算する。⚠ 基図・カメラ・有効レイヤーは持たない
+                                  下流まで再計算する——**commit-or-restore** で、失敗した段は元へ戻して
+                                  `stale` を立て下流へ伝える。⚠ 基図・カメラ・有効レイヤーは持たない
                                   （`js/session-tabs.js` の持ち物）
 gis-panel.js                      その操作卓（一覧・属性表・由来の連鎖・処理の実行・保存と読み込み）
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・

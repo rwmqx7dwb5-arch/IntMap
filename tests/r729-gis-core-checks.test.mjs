@@ -37,11 +37,16 @@ function installWindow() {
 async function boot() {
   const w = installWindow();
   const { makeGisDatasets } = await import('../js/gis-datasets.js');
+  const { makeGisGeometry } = await import('../js/gis-geometry.js');
   const { makeGisOps } = await import('../js/gis-ops.js');
   const data = makeGisDatasets();
+  const geometry = makeGisGeometry();
   const ops = makeGisOps();
-  w.IntMapData = data; w.IntMapGisOps = ops;
-  return { w, data, ops };
+  w.IntMapData = data; w.IntMapGisGeometry = geometry; w.IntMapGisOps = ops;
+  /* ⚠ AWAITED HERE BECAUSE run() AWAITS IT (#R732). The kernel fetches its sweep-line on demand,
+     and a test that skipped this would be measuring `geometry-unavailable` rather than the op. */
+  await geometry.ready();
+  return { w, data, ops, geometry };
 }
 
 const pt = (lng, lat, props) => ({ type: 'Feature', properties: props || {}, geometry: { type: 'Point', coordinates: [lng, lat] } });
@@ -154,25 +159,44 @@ test('R729 ② the whole chain runs on one registry, and every step is a re-runn
 test('R729 ③ the ops refuse by name instead of drawing something plausible', async () => {
   const { data, ops } = await boot();
 
+  /* ⚠ THREE ASSERTIONS THAT USED TO LIVE HERE ARE GONE, AND THIS IS THE RECORD OF WHY (#R732).
+     They held `buffer-needs-points`, `clip-window-not-convex` and
+     `clip-window-crosses-antimeridian` — honest refusals in #R729, which had no polygon engine.
+     js/gis-geometry.js is that engine, so all three are now WORK RATHER THAN A REFUSAL, and they
+     are asserted as work in tests/r731-gis-geometry-crs-checks ② ③ ④. Deleting them here without
+     replacing them there would have been the shape this project keeps recording: a claim that
+     stopped being measured because the thing it measured stopped happening.
+     What stays here is the one kind of refusal #R732 did NOT remove — the op refusing an input it
+     genuinely cannot work on. */
   const lines = data.add({ title: 'l', features: [{ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } }] });
-  const r1 = await ops.run({ op: 'buffer', inputs: [lines.id], params: { radiusKm: 5 } });
+  const r1 = await ops.run({ op: 'buffer', inputs: [lines.id], params: { radiusKm: -5 } });
   assert.equal(r1.ok, false);
-  assert.equal(r1.why, 'buffer-needs-points', 'a bumpy bead of per-vertex disks is not a 5 km 圏');
+  assert.equal(r1.why, 'inward-buffer-needs-area', 'a line has no inside to shrink, and shrinking it by 0 would be a lie');
 
-  /* A window whose ring is concave is refused for WHAT IT IS, not waved through for where it came
-     from — Sutherland–Hodgman is only correct for a convex window. */
-  const L = [[0, 0], [2, 0], [2, 1], [1, 1], [1, 2], [0, 2], [0, 0]];
-  const concave = data.add({ title: 'L', features: [poly(L)] });
+  /* The second input of a clip has to hold an area, and the refusal is the DECLARED one: the
+     contract is checked against the dataset's measured geometryType before any runner is entered. */
   const subject = data.add({ title: 's', features: [poly(box(0, 0, 3, 3))] });
-  const r2 = await ops.run({ op: 'clip', inputs: [subject.id, concave.id] });
+  const notAWindow = data.add({ title: 'p2', features: [pt(1, 1)] });
+  const r2 = await ops.run({ op: 'clip', inputs: [subject.id, notAWindow.id] });
   assert.equal(r2.ok, false);
-  assert.equal(r2.why, 'clip-window-not-convex');
+  assert.equal(r2.why, 'geometry-type');
+  assert.equal(r2.detail.input, 1);
 
-  /* Across the seam there is no repair that does not guess which side the reader meant. */
-  const seam = data.add({ title: 'seam', features: [poly([[170, 0], [-170, 0], [-170, 10], [170, 10], [170, 0]])] });
-  const r3 = await ops.run({ op: 'clip', inputs: [subject.id, seam.id] });
+  /* ⚠ AND `no-clip-polygons` IS STILL REACHABLE, which is why it still has a sentence: a feature
+     may SAY MultiPolygon and carry no ring at all, so it types as Polygon and yields no window.
+     A code with no path to a reader is the dead spelling js/gis-panel.js warns about, so the one
+     path is asserted rather than assumed. */
+  const emptyArea = data.add({ title: 'hollow', features: [{ type: 'Feature', properties: {}, geometry: { type: 'MultiPolygon', coordinates: [] } }] });
+  assert.equal(emptyArea.geometryType, 'Polygon');
+  const r2b = await ops.run({ op: 'clip', inputs: [subject.id, emptyArea.id] });
+  assert.equal(r2b.ok, false);
+  assert.equal(r2b.why, 'no-clip-polygons');
+
+  /* An aggregate that would overwrite a column the reader imported is refused rather than done. */
+  const wards = data.add({ title: 'w', features: [poly(box(0, 0, 2, 2), { count: 'mine' })] });
+  const r3 = await ops.run({ op: 'aggregate', inputs: [wards.id, notAWindow.id], params: { stat: 'count' } });
   assert.equal(r3.ok, false);
-  assert.equal(r3.why, 'clip-window-crosses-antimeridian');
+  assert.equal(r3.why, 'output-column-in-use');
 
   /* A condition on a column that does not exist is refused, NOT quietly treated as true — that is
      the 「一部の条件が評価されなかったのに全部満たしたように読める」 failure. */
@@ -195,7 +219,12 @@ test('R729 ④ every refusal code that can reach a reader has a sentence', () =>
      copy of the truth, and the first op to learn a new refusal would leave it stale and green —
      the shape tests/r576-checks ⑩ exists to prevent for js/geo-import.js. */
   const returned = new Set();
-  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js']) {
+  /* ⚠ THE MODULE LIST GREW WITH THE CORE (#R732). js/gis-layers.js can refuse to the same panel,
+     and a code it invents would otherwise reach a reader with no sentence — which is the entire
+     defect this check exists for. js/gis-crs.js is deliberately NOT here: its codes surface through
+     js/geo-import.js, and tests/r576-checks ⑩ is the check that measures those against
+     js/map-ui.js. Adding it here would be a second guard over one fact, aimed at the wrong file. */
+  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js']) {
     const src = read(rel);
     for (const m of src.matchAll(/\bwhy:\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
     for (const m of src.matchAll(/\bfail\(\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);

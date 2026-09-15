@@ -6678,7 +6678,6 @@ window.IntMapLang.define('zh-hans', {
   /* ══ (#R729) the data-and-analysis panel — js/gis-panel.js, plus the strings its work
      surfaces elsewhere (map-ui.js, atlas-query.js, time-borders.js). GIS wording, not a
      word-for-word rendering of the English. */
-  "A buffer is drawn around points, and this dataset holds none": "缓冲区是绕着点产生的，而这个数据集没有任何点",
   "A dataset with that id is already registered": "已经有相同 ID 的数据集注册在案",
   "A filter with no condition is refused, because it would say nothing about the data": "没有条件的筛选不会对数据说明任何事，因此不予执行",
   "A project saves the steps, and no step has been run yet": "项目保存的是处理步骤，而目前还没有执行过任何步骤",
@@ -6728,7 +6727,6 @@ window.IntMapLang.define('zh-hans', {
   "Remove this condition": "删除这个条件",
   "required": "必填",
   "rows": "笔",
-  "Rows without a single point (lines and areas) are located at the centre of their bounding box.": "没有单一点位的数据（线与面）以其边界框的中心为坐标。",
   "Run a step": "执行步骤",
   "Separate the values with commas": "多个值请以逗号分隔",
   "Settings of this step": "这个步骤的参数",
@@ -6740,8 +6738,6 @@ window.IntMapLang.define('zh-hans', {
   "That project is not in the store any more": "那个项目已不在保存空间中",
   "That would make a step depend on its own result": "这样会让步骤依赖自己的结果",
   "The analysis module is not loaded, so the steps cannot be run again": "分析模块尚未加载，因此无法重新执行这些步骤",
-  "The clipping shape crosses the 180° meridian; split it in two": "裁剪范围跨越 180° 经线，请分成两块",
-  "The clipping shape must be convex, and this one is not": "裁剪范围必须是凸形，而这个不是",
   "The dataset registry is not loaded, so nothing can be read or written": "数据集注册表尚未加载，因此无法读取或写入",
   "The distance and area library this step needs has not loaded": "这个步骤需要的距离与面积计算程序库尚未加载",
   "The input already has a column of that name, and the result would overwrite it": "输入中已有同名字段，结果会将它覆盖",
@@ -6795,5 +6791,31 @@ window.IntMapLang.define('zh-hans', {
   "later pass": "之后的过境",   /* #R728 */
   "passes within 48 h": "48 小时内的过境",   /* #R728 */
   "Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.": "Atlas 已执行工具，但这次没有写出回答——工具传回的内容显示在上方；请再问一次或缩小问题范围。",   /* #R731 */
+
+  /* ══ (#R732) spatial operations, coordinate systems and dataset state — js/gis-panel.js,
+     js/atlas-query.js, js/map-ui.js. The four short words are COLUMN LABELS in Atlas's result
+     table, so they stay as short as the English. */
+  "A negative radius shrinks a shape inwards, and points and lines have no inside to shrink": "半径为负值会把图形向内缩，而点与线没有可以内缩的内部",
+  "containing": "包含",
+  "CRS not stated by the file": "文件未载明坐标系",
+  "inside": "在内部",
+  "Lines and areas keep their own shape here — every spatial test is measured on it. The single coordinate shown for such a row is the centre of its bounding box, and nothing is measured from that point.": "线与面在这里保留自身的形状，所有空间判定都以该形状来量测。这类数据列所显示的单一坐标是其外接矩形的中心，不会从该点量测任何东西。",
+  "Out of date": "已过期",
+  "overlapping": "重叠",
+  "rows carry neither a shape nor a coordinate, so this condition could not be asked about them and they are not below": "笔数据既无形状也无坐标，因此无法对它们检验这个条件，下方也未列出",
+  "Rows tested spatially": "已做空间判定的笔数",
+  'target shapes, measured against the candidates\' own geometry (not their pins)': "个目标形状，以各候选项本身的形状（而非其图钉位置）进行判定",
+  "That input holds nothing this step can work on": "那个输入中没有这个步骤能处理的要素",
+  "That step is declared but has no implementation in this build": "那个步骤虽已宣告，但这个版本中没有它的实现",
+  'The coordinate is the centre of this row\'s bounding box, computed here; the row\'s own shape is what every spatial test used': "这个坐标是此数据列外接矩形的中心，由这里计算得出；所有空间判定使用的是该列本身的形状",
+  "The file does not say which coordinate system it uses, and its numbers are not degrees": "这个文件没有说明它使用哪个坐标系，其数值也不是经纬度",
+  "The map is not ready, so its layers cannot be handed over as data": "地图尚未准备好，因此无法将它的图层当作数据交出",
+  "The second input holds no polygon to overlay with": "第二个输入没有可用来叠合的多边形",
+  "The shape engine could not be fetched, so this step was not run at all — this is not an empty result": "无法取得图形运算模块，因此这个步骤根本没有执行——这不是空的结果",
+  "The shape engine this step needs is not loaded": "这个步骤需要的图形运算模块尚未加载",
+  "There is no layer or map source by that name": "没有这个名称的图层或地图来源",
+  "This file uses a coordinate system this map cannot convert from": "这个文件使用的坐标系，是这张地图无法换算的",
+  "This input is out of date: a recomputation above it failed, so it still holds the earlier answer": "这个输入已过期：上游的重新计算失败，因此它仍保留先前的结果",
+  "within km of": "距…公里内",
   }
 });

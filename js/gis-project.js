@@ -45,6 +45,16 @@
  *  pointing at the same names and simply see new contents. Recomputation stops at the first failure
  *  and says so: a chain half-rebuilt in silence is a chain whose later halves are quietly stale.
  *
+ *  ⚠ AND A FAILURE NOW LEAVES THE CHAIN WHERE IT WAS, MARKED (#R732). Two things were wrong before:
+ *  the step that failed had already been REMOVED to free its id, so a radius the op refuses deleted
+ *  the dataset the reader was editing; and the steps below it were never touched at all, so they
+ *  sat holding the answer to the OLD parameters with nothing saying so — the panel listed them, the
+ *  map drew them and the next op consumed them. So each step holds its old record until the new one
+ *  commits, and everything from the failure downwards is marked `stale` in js/gis-datasets.js —
+ *  which js/gis-ops.js then REFUSES as an input (`input-stale`), because a state nothing inspects
+ *  is a decoration. The features are kept rather than deleted: the last answer that was actually
+ *  computed is worth more to a reader than an empty panel, as long as everything says what it is.
+ *
  *  ══ EVERY `why` THIS FILE CAN RETURN ══════════════════════════════════════════════════════════
  *    storage-unavailable  IndexedDB is absent, disabled, or would not open.
  *    registry-missing     window.IntMapData is not present, so there is nothing to read or restore into.
@@ -390,19 +400,52 @@ export function makeGisProject() {
         };
       });
 
+      /* ⚠ THE OLD RECORD IS HELD, NOT THROWN AWAY (#R732). A rebuild has to free the id before it
+         can re-register under it, and until now a re-run that failed left NOTHING there: the reader
+         who typed a radius the op refuses lost the dataset they were editing, and setParams could
+         not even be called again to put the value back ('no-such-dataset'). Holding the record
+         costs a pointer — features() hands back the same array — and makes each step commit or
+         restore rather than commit or vanish. */
+      function snapshot(id) {
+        const rec = reg.get(id);
+        if (!rec) return null;
+        return { id: rec.id, title: rec.title, sourceCrs: rec.sourceCrs || null, provenance: rec.provenance, createdAt: rec.createdAt, features: rec.features(), stale: rec.stale || null };
+      }
+      function restore(snap, why) {
+        if (!snap || reg.has(snap.id)) return;
+        try {
+          reg.add({ id: snap.id, title: snap.title, features: snap.features, sourceCrs: snap.sourceCrs, provenance: snap.provenance, createdAt: snap.createdAt });
+          reg.invalidate(snap.id, why);
+        } catch (_) { }
+      }
+
       const rebuilt = [], failed = [];
       let stopped = false;
       return plan.reduce((chain, step) => chain.then(() => {
-        if (stopped) { failed.push({ id: step.id, why: 'upstream-failed', detail: null }); return; }
+        /* ⚠ THE STEPS BELOW A FAILURE ARE NOT MERELY «not re-run». They still hold the output of the
+           OLD parameters, and until #R732 nothing in the registry said so: the panel listed them,
+           draw() drew them and the next op consumed them, all as if they answered the recipe the
+           reader had just changed. Naming them in `failed` told only the caller of setParams; the
+           state has to be on the DATASET, because everything else reads the dataset. */
+        if (stopped) {
+          failed.push({ id: step.id, why: 'upstream-failed', detail: null });
+          try { reg.invalidate(step.id, 'upstream-failed'); } catch (_) { }
+          return;
+        }
+        const held = snapshot(step.id);
         try { reg.remove(step.id); } catch (_) { }
         return Promise.resolve(O.run({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title }))
           .then((res) => {
             if (res && res.ok) { rebuilt.push(step.id); return; }
             stopped = true;
-            failed.push({ id: step.id, why: (res && res.why) || 'op-failed', detail: (res && res.detail) || null });
+            const why = (res && res.why) || 'op-failed';
+            failed.push({ id: step.id, why: why, detail: (res && res.detail) || null });
+            /* Put back what was there and say why it is no longer an answer to its own recipe. */
+            restore(held, why);
           }, (e) => {
             stopped = true;
             failed.push({ id: step.id, why: 'op-failed', detail: errText(e) });
+            restore(held, 'op-failed');
           });
       }), Promise.resolve()).then(() => ({ ok: failed.length === 0, rebuilt, failed }));
     }
