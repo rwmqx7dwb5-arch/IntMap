@@ -47,12 +47,23 @@
  *      the same way the per-message tool bar has been a sibling since #R298), so `_atlCompose`'s
  *      `ai.innerHTML = head + body` cannot wipe it. That is also why it survives the answer and
  *      stays openable afterwards, which is the ChatGPT / Claude behaviour being asked for.
- *    · ⚠ `.atl-stage` KEEPS ITS SECOND JOB. Since #R313 that class is not only the live label, it
- *      is THE MARKER for 「this bubble is still working」 — `js/atlas-console.js`'s cancel scan and
- *      `js/atlas-turn-continuity.js`'s `markCancelled` both look for `.atl-b.a .atl-stage`. So the
- *      live word stays a DESCENDANT OF THE BUBBLE exactly where it was, and the trace above it
- *      holds the history. One graphic per state: the bubble says now, the trace says what happened.
- *      Putting a second shimmer in the trace would restore the duplicate #R313 removed.
+ *    · ⚠⚠⚠ ONE LIVE WORD, AND IT IS THE TRACE'S OWN HEAD (#R744). #R723 left the live word inside
+ *      the bubble and gave the trace a head of its own — 「Working」 plus the turn's total elapsed
+ *      time — so a working turn showed the reader TWO live indicators for one state, in two places.
+ *      Measured on the live site: 「Working 40.5s」 above the bubble and a shimmering 「Researching」
+ *      below it, at the same instant, about the same step. The word now lives in the head, which is
+ *      what the reader expands to see the steps behind it.
+ *      ⚠ THE TURN'S TOTAL STAYS. It was 「Working」 that duplicated the live word, not the clock:
+ *      no other element says how long the whole turn has been running, and the per-row times are
+ *      not that number (they cover the operations, never the waits between them — #R723 measured
+ *      13.6 s of rows inside a 57.2 s turn before the planner waits had rows of their own).
+ *    · ⚠ `.atl-stage` KEEPS ITS SECOND JOB, WHICH IS THE ONE IT CANNOT DELEGATE. Since #R313 that
+ *      class is not only the live label, it is THE MARKER for 「this bubble is still working」 —
+ *      `js/atlas-console.js`'s cancel scan and `js/atlas-turn-continuity.js`'s `markCancelled` both
+ *      look for `.atl-b.a .atl-stage`, and `markCancelled` replaces exactly that span with the
+ *      Stopped note. So the span STAYS A DESCENDANT OF THE BUBBLE and keeps carrying the marker;
+ *      what left it is the TEXT. An empty marker is still findable, still replaceable, and draws
+ *      nothing — so there is one graphic per state, which is what #R313 asked for.
  *
  *  ⚠ NO BACK-TICKS ANYWHERE IN THIS FILE — CONSTITUTION §2. The CSS is built from quoted strings
  *  and `+`, for the same reason js/atlas-styles.js is.
@@ -119,23 +130,35 @@ export function makeAtlasProgress(HOST, deps) {
     return w ? w() : L('Working', '作業中', 'Arbeite', 'Работаю', 'Trabajando');
   }
 
-  /* ── THE LIVE LABEL ────────────────────────────────────────────────────────────────────────
-     Same element, same class, same two jobs as #R313 left it: the shimmering word AND the marker
-     that means this bubble has not answered yet. */
+  /* ── THE MARKER, AND THE LIVE LABEL THAT IS NO LONGER IN IT ────────────────────────────────
+     `.atl-stage` had both of #R313's jobs until #R744: the shimmering word AND the marker meaning
+     「this bubble has not answered yet」. The word moved to the trace head (see paintHead) because
+     two live words in two places is what the reader was actually shown; THE MARKER DID NOT MOVE,
+     because it is what `js/atlas-console.js`'s cancel scan finds and what `markCancelled` replaces
+     with the Stopped note, and both of those name a descendant of the bubble.
+     ⚠ It carries the phase it was opened for as data rather than as text: a marker that says
+     nothing is still the answer to 「is this reply finished?」, and `:empty` takes it off the page. */
   function stageHtml(kind) {
-    const w = PHASE_WORD[kind] || PHASE_WORD.think;
-    return '<span class="atl-stage" role="status" aria-live="polite">' + esc(w()) + '</span>';
+    return '<span class="atl-stage" role="status" aria-live="polite" data-phase="'
+      + esc(String(kind || 'think')) + '"></span>';
   }
   function setStage(el, kind) {
-    try { if (el && el.querySelector && el.querySelector('.atl-stage')) el.innerHTML = stageHtml(kind); } catch (_) { }
-  }
-  /* setLive(el, text) — the live word when what is happening is an OPERATION rather than a phase.
-     It goes through the same element for the same reason. */
-  function setLive(el, text) {
     try {
       if (!el || !el.querySelector) return;
-      const s = el.querySelector('.atl-stage');
-      if (s) s.textContent = String(text || '');
+      /* ⚠ (#R313) STILL A NO-OP ONCE REAL CONTENT HAS REPLACED THE PLACEHOLDER. The marker IS
+         「this reply is not finished」, so a phase arriving late must not relabel an answer that
+         has already landed — the guard is the same class it always was. */
+      if (!el.querySelector('.atl-stage')) return;
+      setLive(el, (PHASE_WORD[kind] || PHASE_WORD.think)());
+    } catch (_) { }
+  }
+  /* setLive(el, text) — the live word, whether it names a phase or an OPERATION. One writer and one
+     element, so the two can never disagree. */
+  function setLive(el, text) {
+    try {
+      const tr = traces.get(el); if (!tr || tr.done) return;
+      tr.liveWord = String(text || '');
+      paintHead(tr);
     } catch (_) { }
   }
 
@@ -193,7 +216,7 @@ export function makeAtlasProgress(HOST, deps) {
         } catch (_) { }
       });
     } catch (_) { return null; }
-    tr = { el: el, rows: [], byOp: Object.create(null), t0: now(), pendingAct: null, done: false, stopTick: null };
+    tr = { el: el, rows: [], byOp: Object.create(null), t0: now(), pendingAct: null, done: false, liveWord: '' };
     traces.set(bubble, tr);
     paintHead(tr);
     try {
@@ -207,15 +230,42 @@ export function makeAtlasProgress(HOST, deps) {
   }
   function stopClock(tr) { try { if (tr.stopTick) { tr.stopTick(); tr.stopTick = null; } } catch (_) { } }
 
+  /* paintHead(tr) — WHAT THE HEAD SAYS IS WHAT IS HAPPENING (#R744), not a second noun for it.
+     While the turn runs the head carries the live word in `.atl-stage`'s shimmer — the indicator
+     #R313 measured on chatgpt.com — and expanding that head is how the reader sees the steps behind
+     it. When the answer lands the word is replaced by the count, which is the only thing a finished
+     trace can still tell you. The turn's elapsed total stands at the other end of the same line,
+     running while the turn runs and frozen at the end: it is the one number no row carries, because
+     rows time OPERATIONS and a turn is mostly the waits between them.
+     ⚠ THE SPAN IS REUSED, NOT REWRITTEN. Assigning innerHTML here would build a NEW element every
+     time a step changed the word, and a new element restarts the CSS animation at 0% — the sweep
+     would jump backwards at every step instead of running. That matters four times a second here,
+     because the clock above repaints this head on every tick whether the word changed or not. */
   function paintHead(tr) {
     try {
       if (!tr || !tr.el) return;
       const sum = tr.el.querySelector('.atl-trace-sum');
       const ms = tr.el.querySelector('.atl-trace-ms');
+      if (ms) ms.textContent = fmtMs((tr.doneAt || now()) - tr.t0);
+      if (!sum) return;
       const n = tr.rows.length;
-      if (sum) {
-        sum.textContent = tr.done
-          ? (n === 1
+      if (!tr.done) {
+        let s = sum.querySelector('.atl-stage');
+        if (!s) {
+          sum.textContent = '';
+          s = document.createElement('span');
+          s.className = 'atl-stage';
+          s.setAttribute('role', 'status'); s.setAttribute('aria-live', 'polite');
+          sum.appendChild(s);
+        }
+        const w = String(tr.liveWord || PHASE_WORD.think());
+        if (s.textContent !== w) s.textContent = w;
+        return;
+      }
+      {
+        const s = sum.querySelector('.atl-stage');
+        if (s && s.parentNode) s.parentNode.removeChild(s);
+        sum.textContent = (n === 1
             ? L('1 step', '1 ステップ', '1 Schritt', '1 шаг', '1 paso')
             /* ⚠ ITS OWN KEY, NOT THE BARE 'steps'. That English string is already in the inline
                tables, put there for js/tsunami.js and js/viewshed.js where it counts SIMULATION
@@ -224,10 +274,8 @@ export function makeAtlasProgress(HOST, deps) {
                vs 段). One English spelling standing for two meanings is #R277's shape, so the count
                travels INSIDE the string and each language that needs a different word can have one. */
             : L('{n} steps', '{n} ステップ', '{n} Schritte', '{n} шагов', '{n} pasos')
-              .split('{n}').join(String(n)))
-          : L('Working', '作業中', 'Arbeite', 'Работаю', 'Trabajando');
+              .split('{n}').join(String(n)));
       }
-      if (ms) ms.textContent = fmtMs((tr.doneAt || now()) - tr.t0);
     } catch (_) { }
   }
 
@@ -334,7 +382,11 @@ export function makeAtlasProgress(HOST, deps) {
     if (tr.live && tr.live.state === 'run') closeRow(tr.live, 'ok');
     tr.live = addRow(tr, { word: w, state: 'run' });
     if (tr.live) tr.live.kind = kind;
-    setStage(bubble, TRACE_PHASES.indexOf(kind) >= 0 ? kind : 'think');
+    /* ⚠ NOT THROUGH setStage. That one guards on the bubble's marker, which `_atlCompose` erases
+       between tools; the head is the trace's own, and a phase must reach it whether or not the
+       marker happens to be re-armed at this instant. TRACE_PHASES is what keeps a kind this file
+       does not name from being announced as itself. */
+    setLive(bubble, (PHASE_WORD[TRACE_PHASES.indexOf(kind) >= 0 ? kind : 'think'])());
   }
 
   /* plan(bubble, info) — js/atlas-agent.js has just finished a planner round-trip and chosen
@@ -389,11 +441,9 @@ export function makeAtlasProgress(HOST, deps) {
     try {
       const tr = traces.get(bubble); if (!tr || tr.done) return;
       if (bubble.querySelector && bubble.querySelector('.atl-stage')) return;
-      const w = (tr.live && tr.live.word) || PHASE_WORD.think();
       const s = document.createElement('span');
       s.className = 'atl-stage'; s.setAttribute('role', 'status'); s.setAttribute('aria-live', 'polite');
-      s.textContent = String(w);
-      bubble.appendChild(s);
+      bubble.appendChild(s);   /* ⚠ (#R744) NO TEXT: the word is in the trace head. This is the marker only. */
     } catch (_) { }
   }
 
@@ -404,14 +454,16 @@ export function makeAtlasProgress(HOST, deps) {
     tr.rows.forEach((r) => { if (r.state === 'run') closeRow(r, 'ok'); });
     tr.live = null;
     tr.done = true; tr.doneAt = now();
+    tr.liveWord = '';
     if (current === bubble) current = null;
     stopClock(tr);
     paintHead(tr);
-    /* ⚠ THE LIVE WORD GOES AWAY HERE AND NOWHERE ELSE. `live()` re-arms `.atl-stage` after every
-       compose, including the compose that renders the finished answer, so without this the reader
-       would be left with a shimmering 「考え中」 under a reply that had already arrived — and the
-       cancel scan would still count that bubble as working. Removing it is what makes the class
-       mean what #R313 says it means. A Stopped note that has already replaced it is not touched. */
+    /* ⚠ THE MARKER GOES AWAY HERE AND NOWHERE ELSE. `live()` re-arms `.atl-stage` after every
+       compose, including the compose that renders the finished answer, so without this the cancel
+       scan would still count a bubble that had already answered as working. Removing it is what
+       makes the class mean what #R313 says it means. A Stopped note that replaced it is not
+       touched. (#R744: the shimmering 「考え中」 that used to be left under a landed reply is gone
+       from here too — paintHead puts the step count where the word was, on this same call.) */
     try { const s = bubble.querySelector && bubble.querySelector('.atl-stage'); if (s && s.parentNode) s.parentNode.removeChild(s); } catch (_) { }
     try {
       tr.el.classList.remove('open');
@@ -422,6 +474,12 @@ export function makeAtlasProgress(HOST, deps) {
   }
 
   return { open, step, phase, plan, watch, done, live, stageHtml, setStage, setLive, wordFor, detailFor,
+    /* ⚠ (#R744) phaseWord() EXISTS BECAUSE A CHECK NEEDS THE WORD, NOT THE MARKUP. #R723 ② asked
+       「does any capability announce itself as thinking?」 by testing stageHtml('think') for the
+       capability's word; the marker no longer carries text, so that question would now be answered
+       「no」 by an empty string — true, vacuous, and blind to the defect it was written for. The
+       word itself is what the check is about, so the word is what is offered. */
+    phaseWord: (k) => (PHASE_WORD[k] || PHASE_WORD.think)(),
     categoryWords: () => Object.keys(CATEGORY_WORD), phaseWords: () => Object.keys(PHASE_WORD) };
 }
 
@@ -435,6 +493,13 @@ export const ATLAS_PROGRESS_CSS =
   + '#atlas-panel .atl-trace-chev{display:inline-flex;transition:transform .16s ease;}'
   + '#atlas-panel .atl-trace.open .atl-trace-chev{transform:rotate(90deg);}'
   + '#atlas-panel .atl-trace-ms{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:500;opacity:.8;}'
+  /* ⚠ (#R744) THE HEAD'S WORD IS THE SHIMMER, AT THE HEAD'S OWN SIZE. js/atlas-styles.js gives
+     .atl-stage 12.5px and a padding of its own for the place it used to stand in; here it is one
+     word inside an 11.5px button, so it inherits the button's type and adds no box.
+     ⚠ AND IT YIELDS THE LINE, NOT THE CLOCK: the elapsed total is a fixed handful of digits and the
+     word is arbitrarily long, so it is the word that ellipsises when the panel is narrow. */
+  + '#atlas-panel .atl-trace-sum{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+  + '#atlas-panel .atl-trace-head .atl-stage{font-size:inherit;font-weight:inherit;padding:0;}'
   + '#atlas-panel .atl-trace-rows{display:none;padding:1px 4px 4px 9px;}'
   + '#atlas-panel .atl-trace.open .atl-trace-rows{display:block;}'
   + '#atlas-panel .atl-trace-row{display:flex;align-items:baseline;gap:6px;padding:2px 0;font-size:11.5px;line-height:1.45;color:var(--text-muted);}'

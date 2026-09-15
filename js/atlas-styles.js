@@ -243,6 +243,12 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
         +'-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;'
         +'animation:atlShimmer 2s linear infinite;}'
       +'@keyframes atlShimmer{0%{background-position:-100% 0;}100%{background-position:250% 0;}}'
+      /* ⚠ (#R744) AN EMPTY .atl-stage IS THE MARKER, NOT A WORD. The live word moved to the work
+         trace's head (js/atlas-progress.js), but the span itself stays inside the bubble because it
+         is what the cancel scan finds and what markCancelled replaces with the Stopped note. With no
+         text it must also take up no room — otherwise every pending reply would carry a 6px blank
+         line under it, which is the box this rule's own padding would draw. */
+      +'#atlas-panel .atl-stage:empty{display:none;padding:0;}'
       +'@media (prefers-reduced-motion:reduce){#atlas-panel .atl-stage{animation:none;background:none;-webkit-text-fill-color:currentColor;}}'
       +'#atlas-panel .atl-ex{display:flex;flex-wrap:wrap;gap:6px;padding:6px 11px 2px;}'
       +'#atlas-panel .atl-rad-cfg{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;margin:7px 0 4px;padding:7px 9px;background:rgba(120,120,128,0.1);border:1px solid rgba(128,128,128,0.16);border-radius:10px;}'
