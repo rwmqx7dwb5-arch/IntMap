@@ -60,18 +60,27 @@ test('qualified or imprecisely formatted dates are not certified as a single day
     assert.equal(span.valid, false);
   }
 });
-test('unknown starts preserve published display bounds independently of the clock floor', () => {
+/* ══ ⚠⚠⚠ (#R730) THIS TEST USED TO REQUIRE THE DEFECT ══════════════════════════════════════════
+   It asserted that `boundedStart` returns the PREVIOUS build's published bound for a row upstream
+   never dated, and that the row is marked `preserved-display-bound`. Measured 2026-09-15, that
+   bound was -199-01-01 — the clock floor from before #R679 widened it — and 68 shipped rows were
+   drawn from it: 48 ritsuryō provinces and the circuits of the 五畿七道 in 200 BC, 壱岐国 and
+   安房国 still on the map in 1900 and today, the Shanghai concessions from before there was a
+   Shanghai. The assertion below is the same one, turned around: a start nobody stated produces
+   NOTHING here, and scripts/histadmin/class-dates.mjs derives a bound from the unit's own system
+   or the row is not shipped. [[intmap-restate-the-defect-not-the-fix]] */
+test('an unknown start produces no bound at all — nothing here invents one', () => {
   const previous = ['unit', 4, -199, 1, 1, 1900, 1, 1, [[0]], { en: 'unit', ja: '地方' }, 1];
   const snapshot = JSON.stringify(previous);
   const span = ctx.dateSpan(null, '1900');
-  assert.deepEqual(JSON.parse(JSON.stringify(ctx.boundedStart(span, previous))), [-199, 1, 1]);
+  assert.equal(ctx.boundedStart(span, previous), null, "the previous build's display bound came back");
   assert.equal(span.metadata.start.raw, null);
   assert.equal(span.metadata.start.precision, 'unknown');
-  assert.equal(span.metadata.start.boundary, 'preserved-display-bound');
+  assert.equal(span.metadata.start.boundary, undefined, 'the row was marked with a bound nobody stated');
   assert.equal(JSON.stringify(previous), snapshot, 'names, geometry and the original row remain intact');
-  assert.equal(ctx.boundedStart(ctx.dateSpan(null, '1900'), null), null, 'new unknown starts need source resolution');
+  assert.equal(ctx.boundedStart(ctx.dateSpan(null, '1900'), null), null, 'unknown starts need source resolution');
 });
-test('sourced BCE starts remain available despite an earlier published display bound', () => {
+test('a sourced BCE start is used as stated, and carries no boundary mark', () => {
   const span = ctx.dateSpan('-0500', '-0400');
   assert.deepEqual(JSON.parse(JSON.stringify(ctx.boundedStart(span, ['unit', 4, -199, 1, 1]))), [-500, 1, 1]);
   assert.equal(span.metadata.start.boundary, undefined);

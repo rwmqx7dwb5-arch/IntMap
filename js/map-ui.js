@@ -2249,7 +2249,23 @@ window.IntMapModules.labelPopup=function(HOST){
       let dates=props&&props.dates;
       try{ if(typeof dates==='string') dates=JSON.parse(dates); }catch(_){ dates=null; }
       const raw=edge=>dates&&dates[edge]&&typeof dates[edge].raw==='string'&&dates[edge].raw.trim()?dates[edge].raw:'?';
-      return window.IntMapLang.t(HOST.lang,'Source dates: ','出典の日付: ','Datumsangaben der Quelle: ','Даты в источнике: ','Fechas de la fuente: ')+raw('start')+' – '+raw('end');
+      const line=window.IntMapLang.t(HOST.lang,'Source dates: ','出典の日付: ','Datumsangaben der Quelle: ','Даты в источнике: ','Fechas de la fuente: ')+raw('start')+' – '+raw('end');
+      /* ══ ⚠ (#R730) A «?» HERE MEANS THE MAP IS DRAWING SOMETHING NOBODY DATED ════════════════
+         The bundle's `?` was already honest about the source; the map beside it was not, because
+         the row still had to be drawn FROM some instant, and that instant used to be a fossil
+         clock floor (48 ritsuryō provinces in 200 BC). scripts/histadmin/class-dates.mjs now
+         derives the bound from the unit's own system and records how, so the popup says which of
+         the two the reader is looking at rather than leaving a bare «?» under a drawn boundary. */
+      const how=[];
+      for(const edge of ['start','end']){ const d=dates&&dates[edge];
+        if(d&&!d.raw&&d.derived&&d.bound) how.push(edge+' '+d.bound); }
+      if(!how.length) return line;
+      return line+' · '+window.IntMapLang.t(HOST.lang,
+        'undated upstream; drawn from '+how.join(', ')+', taken from other units of the same system',
+        '上流は日付を述べていない。同じ制度の他の単位が述べる '+how.join('、')+' から描いている',
+        'stromaufwärts undatiert; gezeichnet ab '+how.join(', ')+', von anderen Einheiten desselben Systems',
+        'в источнике без даты; нарисовано с '+how.join(', ')+' по другим единицам той же системы',
+        'sin fecha en la fuente; dibujado desde '+how.join(', ')+', tomado de otras unidades del mismo sistema');
     }
     function _eraGeom(f){ try{ const id=(f&&f.layer&&f.layer.id)||'';
       if(id!=='imta-lbl'&&id!=='imta2-lbl') return null;

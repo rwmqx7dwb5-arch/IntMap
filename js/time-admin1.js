@@ -23,10 +23,12 @@
  *  ② THE ERAS WERE THE BUILD'S TOO. `--since 1850` dropped every unit that ENDED before
  *     the clock's floor, so the record held almost nothing for any earlier century — and
  *     the floor itself was 1850. The build now follows js/hist-scale.js's clock floor,
- *     preserving existing display bounds for unknown starts (levels 3-4: 4,839 units, and
- *     the number of them in force in a given June: year 1 → 73, 1000 → 118, 1500 → 401, 1800 → 420,
- *     where the old bundle held none before 1850 — counted 2026-09-11 off data/hist-admin1.js
- *     itself), and the tiles were never limited to begin with.
+ *     dating unknown starts from the unit's own system rather than from the clock
+ *     (levels 3-4: 4,837 units, and the number of them in force in a given June: year 1 → 22,
+ *     1000 → 116, 1500 → 399, 1800 → 418, where the old bundle held none before 1850 — counted
+ *     2026-09-15 off data/hist-admin1.js itself), and the tiles were never limited to begin with.
+ *     ⚠ THE YEAR-1 FIGURE FELL FROM 73 BECAUSE 73 WAS NOT TRUE: the ritsuryō provinces reaching
+ *     back to 200 BC were drawn from a bound nobody stated (scripts/histadmin/class-dates.mjs).
  *  ⚠ AND THE THINNESS THAT IS REALLY UPSTREAM'S IS STILL REPORTED, NOT FILLED IN. On a
  *  160-tile z5 sweep of the tiles, dated admin_level≥3 segments in force number 936 in
  *  year 1, 3,712 in 1500 and 8,341 in 1900, touching 14, 23 and 66 of those tiles — the
@@ -182,8 +184,8 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
          of which 1,142 and 1,600 end before 1800.
 
        The fallback geometry now uses 0.004° / 4 decimals in both tiers. Measured
-       2026-09-14: data/hist-admin1.js is 41,465,364 B and 2,180,562 vertices;
-       data/hist-admin2.js is 40,675,126 B and 1,872,410 vertices (LF bytes); and (#R719)
+       2026-09-15: data/hist-admin1.js is 41,457,870 B and 2,180,014 vertices;
+       data/hist-admin2.js is 40,660,406 B and 1,871,841 vertices (LF bytes); and (#R719)
        data/hist-admin3.js is 1,164,385 B and 39,725 vertices.
        This is the build target, not a guarantee about the source's survey accuracy.
        Geometry-only refinement preserves labels, validity intervals and corrected shapes.
@@ -261,8 +263,9 @@ window.IntMapModules.timeAdmin1 = function (HOST) {
 
        ⚠ MEASURED, NOT ASSUMED — THE ROW ORDER CARRIES NO INFORMATION. Spearman rank correlation
        between a row's index in the bundle and the area that row draws, computed 2026-09-12 over
-       every row of both shipped files: +0.076 (data/hist-admin1.js, 4,839 units) and −0.061
-       (data/hist-admin2.js, 22,708). The order the labels were being prioritised in was noise.
+       every row of both shipped files: +0.076 (data/hist-admin1.js) and −0.061 (data/hist-admin2.js),
+       over the 4,837 and 22,691 rows those files hold today. The order the labels were being
+       prioritised in was noise.
 
        ⚠ `admin_level` WAS MEASURED AS THE KEY AND REJECTED, and that is the point of writing this
        down. It looks like the record's own hierarchy, but OSM's levels are a PER-COUNTRY tagging
