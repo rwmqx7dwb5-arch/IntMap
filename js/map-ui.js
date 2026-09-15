@@ -2567,7 +2567,11 @@ window.IntMapModules.geojsonUpload=function(HOST){
       try{
         const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false;
         if(!ok||!window.IntMapData) return;   /* the map still has the layer; the panel is simply not there */
-        window.IntMapData.add({ title:label, features:r.fc.features, sourceCrs:r.sourceCrs||null,
+        /* (#R735) `time` is the DECLARATION the decoder made from the file itself — a GPX track's
+           per-fix axis, a gx:Track's <when>s, or null when the bytes said nothing about time. It is
+           passed on rather than re-derived here: js/gis-datasets.js verifies it against the features
+           and refuses it by name if it does not hold, and this path has no knowledge to add. */
+        window.IntMapData.add({ title:label, features:r.fc.features, sourceCrs:r.sourceCrs||null, time:r.time||null,
           provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now() } });
       }catch(_){ /* a registry failure must not lose the layer that is already drawn */ }
     }

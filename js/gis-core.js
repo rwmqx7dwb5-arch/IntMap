@@ -1,11 +1,13 @@
 /* ============================================================================
  *  IntMap · THE GIS CORE, IN ONE DOOR — window.IntMapGis   (#R729)
  * ----------------------------------------------------------------------------
- *  Seven files arrive together or not at all:
+ *  Nine files arrive together or not at all:
  *
  *      js/gis-datasets.js   window.IntMapData         what a dataset is
  *      js/gis-geometry.js   window.IntMapGisGeometry  what a shape is, and what two shapes are to each other
  *      js/gis-crs.js        window.IntMapGisCrs       what the coordinates mean, and how to bring them here
+ *      js/gis-raster.js     window.IntMapGisRaster    what a numeric grid is, and what a zone of one is worth
+ *      js/gis-index.js      window.IntMapGisIndex     which pairs are worth testing at all
  *      js/gis-layers.js     window.IntMapGisLayers    how the map's own layers become datasets
  *      js/gis-ops.js        window.IntMapGisOps       what can be done to one, and to its output
  *      js/gis-project.js    window.IntMapGisProject   what survives closing the tab
@@ -15,7 +17,7 @@
  *  has a line budget (tests/r168-checks ⑧) with single-digit headroom most rounds — four entries is
  *  twelve lines in three tables. It is also not a real choice: the registry with no ops is a list
  *  nothing can act on, and the ops with no registry have nowhere to put their output. There is no
- *  session that wants one of the seven.
+ *  session that wants one of the nine.
  *
  *  ⚠ AND THE THREE ADDED IN #R732 ARE SHELLS THAT FETCH THEIR OWN WEIGHT LATER. js/gis-geometry.js
  *  and js/gis-crs.js each hold a dynamic import — a sweep-line and a projection engine — pulled at
@@ -26,7 +28,7 @@
  *  file has actually been read, and the Data button asks for it when it is pressed. A session that
  *  never opens a dataset never downloads a polygon clipper.
  *
- *  ⚠ THIS FILE MOUNTS; IT DOES NOT DECIDE. Every rule lives in the four files above. What is here
+ *  ⚠ THIS FILE MOUNTS; IT DOES NOT DECIDE. Every rule lives in the files above. What is here
  *  is the order they come up in (registry first — the other three read it) and the one public name
  *  that other modules reach for.
  * ==========================================================================*/
@@ -34,6 +36,8 @@
 import { makeGisDatasets } from './gis-datasets.js';
 import { makeGisGeometry } from './gis-geometry.js';
 import { makeGisCrs } from './gis-crs.js';
+import { makeGisRaster } from './gis-raster.js';
+import { makeGisIndex } from './gis-index.js';
 import { makeGisLayers } from './gis-layers.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
@@ -41,13 +45,21 @@ import { makeGisPanel } from './gis-panel.js';
 
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.gisCore = function (HOST) {
-  /* ⚠ ORDER IS NOT DECORATION HERE. The registry comes up first because the other six read it,
+  /* ⚠ ORDER IS NOT DECORATION HERE. The registry comes up first because the other eight read it,
      and the geometry kernel before the ops because every op but filter asks it a question. Nothing
      awaits: each publishes a synchronous face and fetches what it borrows on demand, so this is a
      mounting order rather than a boot sequence. */
   const data = makeGisDatasets();
   const geometry = makeGisGeometry();
   const crs = makeGisCrs();
+  /* (#R735) The grid arithmetic and the spatial index. Both are pure — no DOM, no network, no lazy
+     import of their own — so they cost what their own bytes cost and nothing at boot: this whole
+     entry is already behind js/lazy-modules.js and is not fetched until a file lands or the Data
+     button is pressed. ⚠ THEY ARE MOUNTED HERE BECAUSE NOTHING ELSE MAY HOLD THEM: js/gis-ops.js
+     reads window.IntMapGisRaster / window.IntMapGisIndex at CALL time (the same rule as the registry
+     and the geodesy), so a module that imported them privately would be a second copy of a kernel. */
+  const raster = makeGisRaster();
+  const index = makeGisIndex();
   const layers = makeGisLayers();
   const ops = makeGisOps();
   const project = makeGisProject();
@@ -60,6 +72,11 @@ window.IntMapModules.gisCore = function (HOST) {
   function draw(id) {
     const ds = data.get(id);
     if (!ds) return { ok: false, why: 'input-missing' };
+    /* ⚠ (#R735) A GRID IS NOT A FeatureCollection, and window.GeoJSONUpload draws one of those. Left
+       to fall through, this would have called a features() that raster records do not have — an
+       exception inside a click, for a dataset the panel had just listed. Saying so by name is what
+       lets the panel offer the reader something else instead of a dead button. */
+    if (ds.kind === 'raster') return { ok: false, why: 'draw-needs-features', detail: { id: ds.id, kind: ds.kind } };
     const GU = window.GeoJSONUpload;
     if (!GU || typeof GU.add !== 'function') return { ok: false, why: 'map-unavailable' };
     try {
@@ -68,7 +85,7 @@ window.IntMapModules.gisCore = function (HOST) {
     } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
   }
 
-  const API = { data, geometry, crs, layers, ops, project, panel, draw,
+  const API = { data, geometry, crs, raster, index, layers, ops, project, panel, draw,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { window.IntMapGis = API; } catch (_) { }
   return API;

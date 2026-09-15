@@ -101,7 +101,15 @@ export function makeAtlasSchemas() {
          over that table's COLUMNS, `near` a spatial join with its own conditions. Deliberately not
          an `enum`: js/atlas-query.js's registry is what decides which tables and columns exist, and
          a closed list here would refuse a dataset the day it is registered (rule (2) of this file). */
-      'data.query': { type: 'object', properties: { from: str(), where: list(obj()), near: list(obj()), in: obj(), show: list(str()), order: obj(), limit: int(1, 200) }, required: ['from'] },
+      /* ⚠ (#R735) `spatial` WAS MISSING FROM THIS LINE AND IMPLEMENTED EVERYWHERE ELSE. #R732 built
+         the clause that asks by SHAPE — 「この道路から 500 m 以内」「この区域の中」 — wired it into
+         js/atlas-query.js's evaluator, and wrote it into the catalogue prose the model reads. The one
+         place it was not written is the argument schema, which is the list of properties the model is
+         actually shown. A capability the model is not told it can pass is a capability it does not
+         use: #R733 measured the same shape costing eight steps of a turn. It ran when it arrived
+         because nothing here uses `additionalProperties:false` — so the defect was invisible to every
+         test and to the model at the same time. */
+      'data.query': { type: 'object', properties: { from: str(), where: list(obj()), near: list(obj()), spatial: list(obj()), in: obj(), show: list(str()), order: obj(), limit: int(1, 200) }, required: ['from'] },
       'data.rank': { type: 'object', properties: { metric: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metric'] },
       'data.ratio': { type: 'object', properties: { metricA: str(), metricB: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metricA', 'metricB'] },
       'data.relate': { type: 'object', properties: { metricY: str(), metricX: str(), find: one('low', 'high'), n: int(1, 40) }, required: ['metricY', 'metricX'] },

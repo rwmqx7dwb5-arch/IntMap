@@ -136,13 +136,17 @@ geo-import.js                     落とされたファイルを FeatureCollecti
                                   で**拒否**し、「列名・半球記号・±90 を超える値」で**選ぶ**——根拠が無ければ
                                   推測せず拒む。拒否は**コード**で返し、9 言語の文面は `js/map-ui.js` が持つ。
                                   遅延読み込み（起動時のバンドルには入らない）
-gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— 下の 7 本をまとめて起動する
+gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— 下の 9 本をまとめて起動する
                                   `window.IntMapGis`。データセットを地図に描く `draw()` もここ
                                   （`window.GeoJSONUpload.add` を通す＝地図に載せる道を 2 本作らない）。
                                   遅延読み込み `gisCore`。正本 `docs/GIS-CORE.md`
 gis-datasets.js                   **データセットのレジストリ** `window.IntMapData` — 取り込み・内蔵・
                                   **処理の出力**を同じ 1 つの形で持つ。列の型は**値を測って**決める
-                                  （列名で決めない）。`provenance` は札ではなく**再実行できるレシピ**
+                                  （列名で決めない。⚠ #R735 以降**先頭ゼロのセルは符号**＝`text`）。
+                                  `provenance` は札ではなく**再実行できるレシピ**。#R735 で payload が
+                                  2 種類になった（`kind:'vector'` の `features()` と `kind:'raster'` の
+                                  `read()`）ほか、`time` が契約に入った——**宣言は実データで検証**し、
+                                  成り立たないものは `timeRefused` で名前を付けて拒む
 gis-geometry.js                   **幾何カーネル** `window.IntMapGisGeometry`（#R732）— boolean 演算
                                   （union / intersection / difference / dissolve）・**任意形状の buffer**
                                   （測地円盤との Minkowski 和）・述語（intersects / contains / within /
@@ -155,14 +159,37 @@ gis-crs.js                        **座標変換** `window.IntMapGisCrs`（#R732
                                   ② UTM の算術（326NN／327NN）③ 読者が `define()` で渡した WKT・proj
                                   文字列、の 3 つの規則だけ。それ以外は `crs-unknown` で拒む。
                                   `looksProjected()` は「度ではありえない座標」を**測る**
+gis-raster.js                     **数値ラスターのカーネル** `window.IntMapGisRaster`（#R735）—
+                                  地点値（nearest / bilinear。⚠ **欠損を混ぜない**＝隅が欠けたら
+                                  nearest に落ちて `partial` を添える）・**区域内集計**（平均は
+                                  **面積重み付き**・値ごとの面積・被覆を `valueAreaKm2` で述べる）・
+                                  条件による抽出・**同じ格子同士の差分**（格子が違えば
+                                  `grid-mismatch` で拒み、黙って再標本化しない）。
+                                  `fromSampler()` が既存の数値レイヤーを同じ契約に焼き込む。
+                                  依存ゼロ（地球半径は `IntMapGeodesy`、内外判定は `IntMapGisGeometry`）
+gis-index.js                      **空間索引** `window.IntMapGisIndex`（#R735）— 一様格子。
+                                  **セルの大きさをデータから導く**（定数で決め打ちしない）。
+                                  ⚠ 不変条件は**偽陰性ゼロ**——子午線をまたぐ箱・世界を覆う箱・
+                                  箱を持たないものは `always` に入れ、その件数は `stats().oversize`
+                                  で外から見える。実測 40,000×1,000 で 756 ms → 82 ms
 gis-layers.js                     **地図のレイヤーを GIS のデータセットにする橋**
                                   `window.IntMapGisLayers`（#R732）— `sources()` は一覧を持たず
                                   **数え上げる**（`IntMapLayers` の行＋レンダラの geojson source）。
                                   `read()` は**形状も属性も落とさない**。`provenance` は
-                                  `{kind:'layer', layer, bounds, at}`
+                                  `{kind:'layer', layer, bounds, at, statedTime}`。
+                                  #R735 で `toRaster()` を足した——`sampleAt` に答える**数値レイヤー**を
+                                  格子に焼く（1 画素 1 await なので `signal` で中止でき進捗を報告する）。
+                                  レイヤーが述べる時刻は**文として provenance に**、**時刻として読める
+                                  ときだけ** `time` に入る。⚠ 呼び出し元は `js/gis-panel.js`
+                                  （#R732 の時点では 0 件だった）
 gis-ops.js                        **処理** `window.IntMapGisOps` — filter / buffer / clip / intersect /
-                                  difference / union / dissolve / relate / aggregate の 9 つ。
+                                  difference / union / dissolve / relate / aggregate の 9 つ＋#R735 の
+                                  5 つ（sample / zonal / rasterMask / rasterDiff / timeWindow）。
                                   **出力もデータセットとして登録される**ので次の処理の入力になる。
+                                  `kinds` が入力ごとの**中身**（vector / raster）を宣言し、既定は
+                                  `vector`＝**既存の 9 つは格子を名前で拒む**。重い処理は
+                                  `run(step,{signal,onProgress})` で**中止でき**、対の数え上げは
+                                  `js/gis-index.js` に任せる。
                                   拒否は文ではなくコードで返す（文面は `js/gis-panel.js`）
 gis-project.js                    **プロジェクトの保存** `window.IntMapGisProject` — IndexedDB。取り込みは
                                   本体ごと、処理は**段（レシピ）だけ**。`setParams()` が引数を変えて

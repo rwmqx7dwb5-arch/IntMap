@@ -224,7 +224,12 @@ test('R729 ④ every refusal code that can reach a reader has a sentence', () =>
      defect this check exists for. js/gis-crs.js is deliberately NOT here: its codes surface through
      js/geo-import.js, and tests/r576-checks ⑩ is the check that measures those against
      js/map-ui.js. Adding it here would be a second guard over one fact, aimed at the wrong file. */
-  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js']) {
+  /* ⚠ js/gis-raster.js JOINED THE LIST IN #R735, and for the reason the note above gives: js/gis-ops.js
+     hands the grid kernel's refusal back VERBATIM — the reason a grid could not be read is the only
+     sentence that tells the reader what to change — so those codes reach this panel exactly as the
+     ops' own do. A kernel whose codes were not scanned would be 25 refusals that arrive with no
+     sentence, which is the whole defect this check exists for. */
+  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js', 'js/gis-raster.js']) {
     const src = read(rel);
     for (const m of src.matchAll(/\bwhy:\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
     for (const m of src.matchAll(/\bfail\(\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);

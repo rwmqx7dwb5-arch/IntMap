@@ -159,6 +159,37 @@ export function makeGisPanel(HOST) {
       if (code === 'layer-unknown') return window.IntMapLang.t(HOST.lang, "There is no layer or map source by that name", "その名前のレイヤーも地図ソースもありません", "Es gibt keine Ebene und keine Kartenquelle dieses Namens", "Слоя или источника карты с таким именем нет", "No hay ninguna capa ni fuente de mapa con ese nombre") + par(d.id || d.layer);
 
       if (code === 'id-in-use') return window.IntMapLang.t(HOST.lang, 'A dataset with that id is already registered', 'その ID のデータセットは既に登録されています', 'Ein Datensatz mit dieser ID ist bereits registriert', 'Набор данных с таким идентификатором уже зарегистрирован', 'Ya hay un conjunto de datos registrado con ese identificador') + par(d.id);
+      if (code === 'layer-not-sampling') return window.IntMapLang.t(HOST.lang, 'That layer is switched off, so it has no values to give — turn it on first', 'そのレイヤーは表示されていないため、渡せる値がありません。先に表示してください', 'Diese Ebene ist ausgeschaltet und hat daher keine Werte — schalten Sie sie zuerst ein', 'Слой выключен, поэтому значений нет — сначала включите его', 'Esa capa está apagada, así que no tiene valores — actívala primero') + par(d.id);
+      if (code === 'layer-values-not-numeric') return window.IntMapLang.t(HOST.lang, 'That layer answers with text rather than numbers, so it cannot become a grid', 'そのレイヤーは数値ではなく文字列を返すため、格子にできません', 'Diese Ebene antwortet mit Text statt mit Zahlen und kann daher kein Raster werden', 'Слой отвечает текстом, а не числами, поэтому сетку из него не сделать', 'Esa capa responde con texto y no con números, así que no puede volverse una rejilla') + par(d.sample);
+      if (code === 'cancelled') return window.IntMapLang.t(HOST.lang, 'Stopped before it finished, so nothing was registered', '完了前に中止したため、何も登録されていません', 'Vor dem Ende abgebrochen, daher wurde nichts registriert', 'Остановлено до завершения, поэтому ничего не зарегистрировано', 'Se detuvo antes de terminar, así que no se registró nada') + par(d.done != null ? (d.done + '/' + d.total) : null);
+
+      /* ── js/gis-raster.js (#R735) ─────────────────────────────────────────────────────────────
+         ⚠ THESE COME BACK VERBATIM. js/gis-ops.js hands the kernel's refusal on rather than rewriting
+         it, for the same reason js/gis-project.js keeps an op's code: the reason a grid could not be
+         read is the only sentence that tells the reader what to change. So they reach this panel, and
+         tests/r729-gis-core-checks ④ scans that file for exactly that. */
+      if (code === 'raster-unavailable') return window.IntMapLang.t(HOST.lang, 'The grid module is not loaded, so this step was not run at all', '格子計算の部品が読み込まれていないため、この処理は実行されていません', 'Das Raster-Modul ist nicht geladen, daher lief dieser Schritt gar nicht', 'Модуль сетки не загружен, поэтому шаг вообще не выполнялся', 'El módulo de rejilla no está cargado, así que este paso no se ejecutó');
+      if (code === 'input-kind') return window.IntMapLang.t(HOST.lang, 'This step needs the other kind of data in that slot — features where it was given a grid, or the other way round', 'この処理はその入力に別の種類のデータを必要とします（地物のところに格子、またはその逆）', 'Dieser Schritt braucht in diesem Feld die andere Datenart — Objekte statt Raster oder umgekehrt', 'Этому шагу нужен другой вид данных в этом входе — объекты вместо сетки или наоборот', 'Este paso necesita el otro tipo de datos en esa entrada — objetos donde recibió una rejilla, o al revés') + par(d.expected ? (d.expected + ' ≠ ' + d.kind) : null);
+      if (code === 'unknown-band') return window.IntMapLang.t(HOST.lang, 'That grid has no band of that name', 'その名前のバンドは、その格子にありません', 'Dieses Raster hat kein Band dieses Namens', 'В этой сетке нет полосы с таким именем', 'Esa rejilla no tiene ninguna banda con ese nombre') + par(d.band);
+      if (code === 'draw-needs-features') return window.IntMapLang.t(HOST.lang, 'A grid is not drawn as shapes on the map; use it as the input of a step instead', '格子は地図上の図形としては描けません。処理の入力として使ってください', 'Ein Raster wird nicht als Formen auf der Karte gezeichnet; nutzen Sie es als Eingabe eines Schritts', 'Сетка не рисуется на карте как фигуры; используйте её как вход шага', 'Una rejilla no se dibuja como formas en el mapa; úsala como entrada de un paso') + par(d.id);
+      if (code === 'raster-invalid') return window.IntMapLang.t(HOST.lang, 'That grid does not describe a grid: one of its size or spacing fields is missing or not a positive number', 'その格子は格子の形になっていません（大きさか間隔のどれかが欠けている、または正の数ではない）', 'Dieses Raster beschreibt kein Raster: Größe oder Abstand fehlt oder ist nicht positiv', 'Эта сетка не описывает сетку: размер или шаг отсутствует либо не положителен', 'Esa rejilla no describe una rejilla: falta un tamaño o espaciado, o no es positivo') + par(d.field);
+      if (code === 'raster-too-large') return window.IntMapLang.t(HOST.lang, 'This browser could not allocate a grid that size', 'このブラウザでは、その大きさの格子を確保できませんでした', 'Dieser Browser konnte kein Raster dieser Größe belegen', 'Браузер не смог выделить память под сетку такого размера', 'Este navegador no pudo asignar una rejilla de ese tamaño') + par(d.cells);
+      if (code === 'band-out-of-range') return window.IntMapLang.t(HOST.lang, 'That grid has fewer bands than the one asked for', 'その格子には、指定された番号のバンドがありません', 'Dieses Raster hat weniger Bänder als angefragt', 'В сетке меньше полос, чем запрошено', 'Esa rejilla tiene menos bandas de la solicitada') + par(d.bandIndex);
+      if (code === 'read-not-array' || code === 'read-length-mismatch') return window.IntMapLang.t(HOST.lang, 'The grid handed back samples that do not match the size it declares', '格子が、宣言している大きさと合わない標本を返しました', 'Das Raster gab Werte zurück, die nicht zu seiner angegebenen Größe passen', 'Сетка вернула значения, не соответствующие объявленному размеру', 'La rejilla devolvió muestras que no coinciden con el tamaño que declara') + par(d.length != null ? (d.length + ' ≠ ' + d.expected) : null);
+      if (code === 'outside') return window.IntMapLang.t(HOST.lang, 'That point is not on this grid', 'その地点は、この格子の範囲外です', 'Dieser Punkt liegt nicht auf diesem Raster', 'Эта точка вне сетки', 'Ese punto no está en esta rejilla');
+      if (code === 'position-invalid') return window.IntMapLang.t(HOST.lang, 'That position is not a pair of finite coordinates', 'その位置が、有限な経度緯度の組になっていません', 'Diese Position ist kein Paar endlicher Koordinaten', 'Эта позиция не является парой конечных координат', 'Esa posición no es un par de coordenadas finitas');
+      if (code === 'row-out-of-range') return window.IntMapLang.t(HOST.lang, 'That row is outside the grid', 'その行は格子の外です', 'Diese Zeile liegt außerhalb des Rasters', 'Эта строка вне сетки', 'Esa fila está fuera de la rejilla') + par(d.row);
+      if (code === 'sample-method-unknown') return window.IntMapLang.t(HOST.lang, 'That is not a sampling method this build knows', 'その標本の取り方は、このビルドが知らないものです', 'Diese Abtastmethode kennt dieser Build nicht', 'Такой способ выборки этой сборке неизвестен', 'Ese método de muestreo no lo conoce esta compilación') + par(d.method);
+      if (code === 'zone-invalid' || code === 'zone-not-areal') return window.IntMapLang.t(HOST.lang, 'A zone has to be an area: a point or a line has no inside for the grid to be counted in', '区域は面である必要があります。点や線には、格子を数える内側がありません', 'Eine Zone muss eine Fläche sein: Punkt oder Linie haben kein Inneres', 'Зона должна быть площадью: у точки или линии нет внутренней части', 'Una zona debe ser un área: un punto o una línea no tienen interior') + par(d.type);
+      if (code === 'zone-wraps-world') return window.IntMapLang.t(HOST.lang, 'That zone wraps the whole world, which leaves no inside and no outside — split it into two halves', 'その区域は地球を一周しており、内と外の区別がなくなります。東西 2 つに分けてください', 'Diese Zone umläuft die ganze Erde — es gibt kein Innen und Außen; teilen Sie sie in zwei Hälften', 'Эта зона огибает весь мир, поэтому нет ни внутри, ни снаружи — разделите её на две половины', 'Esa zona rodea todo el mundo, así que no hay dentro ni fuera — divídela en dos mitades');
+      if (code === 'zone-degenerate-in-plane') return window.IntMapLang.t(HOST.lang, 'That zone encloses no area at all', 'その区域は、面積をまったく囲んでいません', 'Diese Zone umschließt keine Fläche', 'Эта зона не охватывает никакой площади', 'Esa zona no encierra ninguna área');
+      if (code === 'values-not-integer') return window.IntMapLang.t(HOST.lang, 'Areas per class need a grid of codes, and this one holds measurements — rounding them would invent classes nobody defined', '区分ごとの面積には符号の格子が必要ですが、これは測定値です。丸めれば、誰も定義していない区分を作ってしまいます', 'Flächen je Klasse brauchen ein Raster aus Codes; dieses enthält Messwerte — Runden würde Klassen erfinden', 'Площади по классам требуют сетки кодов, а здесь измерения — округление придумало бы классы', 'Las áreas por clase necesitan una rejilla de códigos, y esta tiene medidas — redondear inventaría clases') + par(d.value);
+      if (code === 'grid-mismatch') return window.IntMapLang.t(HOST.lang, 'Those two grids are not the same grid, and a difference is not computed by quietly resampling one of them', 'その2つは同じ格子ではありません。差分のために黙って再標本化はしません', 'Die beiden Raster sind nicht dasselbe Raster; eine Differenz wird nicht durch stilles Neuabtasten gebildet', 'Эти две сетки не совпадают, а разность не считается молчаливым пересчётом одной из них', 'Esas dos rejillas no son la misma, y una diferencia no se calcula remuestreando en silencio') + par(d ? Object.keys(d).join(', ') : null);
+      if (code === 'condition-invalid' || code === 'condition-value-invalid') return window.IntMapLang.t(HOST.lang, 'That test cannot be read as a comparison against a number', 'その条件は、数値との比較として読めません', 'Dieser Test ist nicht als Vergleich mit einer Zahl lesbar', 'Это условие нельзя прочесть как сравнение с числом', 'Esa prueba no se puede leer como una comparación con un número');
+      if (code === 'condition-op-unknown') return window.IntMapLang.t(HOST.lang, 'That comparison is not one the grid filter knows', 'その比較演算子は、格子の絞り込みが知らないものです', 'Diesen Vergleich kennt der Rasterfilter nicht', 'Такое сравнение фильтру сетки неизвестно', 'Esa comparación no la conoce el filtro de rejilla') + par(d.op);
+      if (code === 'sampler-spec-invalid' || code === 'sampler-not-a-function' || code === 'sampler-bounds-invalid' || code === 'sampler-size-invalid') return window.IntMapLang.t(HOST.lang, 'The description of the grid to bake is incomplete: it needs a window, a size and something that answers for a point', '焼き込む格子の指定が足りません（範囲・大きさ・地点に答えるものが必要）', 'Die Beschreibung des zu erzeugenden Rasters ist unvollständig: Fenster, Größe und ein Punktwert-Geber fehlen', 'Описание создаваемой сетки неполно: нужны окно, размер и источник значения в точке', 'La descripción de la rejilla está incompleta: hacen falta ventana, tamaño y algo que responda por un punto');
+      if (code === 'mask-failed' || code === 'diff-failed' || code === 'zonal-failed') return window.IntMapLang.t(HOST.lang, 'The grid step stopped without naming a reason', '格子の処理が、理由を述べずに止まりました', 'Der Rasterschritt brach ohne Angabe eines Grundes ab', 'Шаг над сеткой прервался без указания причины', 'El paso sobre la rejilla se detuvo sin dar una razón');
+      if (code === 'time-not-declared') return window.IntMapLang.t(HOST.lang, 'This dataset does not state which of its columns is time, so it cannot be narrowed to a period', 'このデータセットはどの列が時刻かを述べていないため、期間で絞り込めません', 'Dieser Datensatz sagt nicht, welche Spalte die Zeit ist, daher ist keine Einschränkung auf einen Zeitraum möglich', 'Набор не указывает, какой столбец — время, поэтому по периоду не отфильтровать', 'Este conjunto no dice qué columna es el tiempo, así que no se puede limitar a un periodo') + par(d.refused);
 
       /* ── js/gis-project.js ───────────────────────────────────────────────────────────────── */
       if (code === 'storage-unavailable') return window.IntMapLang.t(HOST.lang, 'This browser is not letting the page store anything, so projects cannot be saved', 'このブラウザが保存を許可していないため、プロジェクトを保存できません', 'Dieser Browser lässt kein Speichern zu, daher können Projekte nicht gesichert werden', 'Браузер не разрешает сохранение, поэтому проекты сохранить нельзя', 'Este navegador no permite almacenar datos, así que no se pueden guardar proyectos');
@@ -220,6 +251,19 @@ export function makeGisPanel(HOST) {
     }
 
     function geomText(ds) {
+      /* ⚠ (#R735) A GRID IS NOT 「図形なし」. Both records answer `geometryType: null` — one because its
+         features disagree about nothing, the other because a raster has no geometry to have a type —
+         and saying the same words about both would tell the reader the grid is an empty table. Its
+         shape is its extent and its spacing, so that is what is said. */
+      if (ds && ds.kind === 'raster') {
+        const g = ds.grid || {};
+        const bands = Array.isArray(ds.bands) ? ds.bands.length : 0;
+        const size = nf(ds.width) + '×' + nf(ds.height);
+        const step = (typeof g.pixelLng === 'number') ? (g.pixelLng.toPrecision(3) + '°×' + Number(g.pixelLat).toPrecision(3) + '°') : '';
+        const head = window.IntMapLang.t(HOST.lang, 'Grid', '格子', 'Raster', 'Сетка', 'Rejilla');
+        const bandWord = window.IntMapLang.t(HOST.lang, 'bands', 'バンド', 'Bänder', 'полос', 'bandas');
+        return head + ' ' + size + (step ? (' @ ' + step) : '') + ' · ' + nf(bands) + ' ' + bandWord;
+      }
       const g = ds && ds.geometryType;
       return g ? String(g) : window.IntMapLang.t(HOST.lang, 'no geometry', '図形なし', 'keine Geometrie', 'без геометрии', 'sin geometría');
     }
@@ -555,8 +599,13 @@ export function makeGisPanel(HOST) {
       const nm = el('span', 'font-size:12.5px;font-weight:600;color:var(--text-main,#f2f2f7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;', titleOf(ds));
       nm.className = 'gis-ds-name';
       nameCol.appendChild(nm);
+      /* 「行」 counts records, and a grid's `count` is PIXELS — the same number under the wrong noun
+         would read as a table of 65,536 rows. */
+      const unit = (ds.kind === 'raster')
+        ? window.IntMapLang.t(HOST.lang, 'pixels', '画素', 'Pixel', 'пикселей', 'píxeles')
+        : window.IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas');
       const meta = el('span', CSS_NOTE + 'white-space:normal;',
-        geomText(ds) + ' · ' + nf(ds.count) + ' ' + window.IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas') + ' · ' + crsText(ds) + ' · ' + originText(ds));
+        geomText(ds) + ' · ' + nf(ds.count) + ' ' + unit + ' · ' + crsText(ds) + ' · ' + originText(ds));
       meta.className = 'gis-ds-meta';
       nameCol.appendChild(meta);
       head.appendChild(nameCol);
@@ -661,6 +710,130 @@ export function makeGisPanel(HOST) {
       return sec;
     }
 
+    /* ══ §2b · THE MAP'S OWN LAYERS AS INPUT ══════════════════════════════════════════════════
+       ⚠ (#R735) js/gis-layers.js HAD NO CALLER. #R732 built the bridge that turns what is already on
+       the map into a dataset — sources(), read(), toDataset() — tested it, documented it in three
+       files, and then the only references to it anywhere in the program were those tests and that
+       prose. A reader could not reach it: this panel knew its refusal codes and not its entrance.
+       That is the shape the memory note 「完成した配線が通電しているかは、配線を描く門からは見えない」
+       records, and an export nothing calls is not a feature.
+
+       Two doors, because the map holds two kinds of thing. A vector layer becomes features
+       (toDataset); a NUMERIC layer — precipitation, elevation, land cover — becomes a grid
+       (toRaster, #R735). The window is the reader's choice and it is stated on the record either way. */
+    const LAYERS = () => { try { return window.IntMapGisLayers || null; } catch (_) { return null; } };
+    const MAPBOUNDS = () => {
+      try { const E = window.IntMapGeoEngine; const b = E && E.camera && E.camera.getBounds ? E.camera.getBounds() : null; return b || null; } catch (_) { return null; }
+    };
+
+    /* One bake at a time, and the reader can stop it: toRaster awaits one sample per pixel, so a
+       256 × 256 window is 65,536 turns of the event loop. `null` when nothing is running. */
+    let bake = null;
+
+    function sectionLayers() {
+      const sec = el('div', CSS_SECT); sec.className = 'gis-sect gis-sect-layers';
+      sec.appendChild(el('div', CSS_SECTH, window.IntMapLang.t(HOST.lang, 'Take from the map', '地図から取り込む', 'Von der Karte übernehmen', 'Взять с карты', 'Tomar del mapa')));
+      const L = LAYERS();
+      if (!L || typeof L.sources !== 'function') { sec.appendChild(el('div', CSS_NOTE, reasonText('map-unavailable'))); return sec; }
+      let list = [];
+      try { list = L.sources() || []; } catch (_) { list = []; }
+      if (!list.length) {
+        sec.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang,
+          'No layer on the map is handing features over right now. Switch one on, or move to where its data is.',
+          'いま地物を渡せるレイヤーが地図にありません。レイヤーを表示するか、データがある場所へ移動してください。',
+          'Derzeit gibt keine Kartenebene Objekte heraus. Schalten Sie eine ein oder bewegen Sie sich dorthin, wo ihre Daten liegen.',
+          'Сейчас ни один слой карты не отдаёт объекты. Включите слой или переместитесь туда, где есть его данные.',
+          'Ninguna capa del mapa está entregando objetos ahora. Activa una o ve a donde estén sus datos.')));
+      }
+
+      /* Shared by both doors: 「表示範囲だけ」. ⚠ Unticked means the WHOLE layer, and that is the
+         default because a window is a narrowing a reader should choose, not one they inherit from
+         wherever the camera happened to be. */
+      const opt = row('');
+      const cb = el('input', 'min-width:16px;min-height:16px;');
+      cb.type = 'checkbox'; cb.id = 'gis-layer-view-only';
+      const lab = el('label', 'font-size:11px;color:var(--text-muted,#98989f);cursor:pointer;',
+        window.IntMapLang.t(HOST.lang, 'Only what is in view', '表示範囲だけ', 'Nur der sichtbare Bereich', 'Только то, что видно', 'Solo lo visible'));
+      lab.htmlFor = cb.id;
+      opt.appendChild(cb); opt.appendChild(lab);
+      if (list.length) sec.appendChild(opt);
+      const boundsNow = () => (cb.checked ? MAPBOUNDS() : null);
+
+      const msg = el('div', CSS_NOTE, '');
+      const say = (t, warn) => { msg.style.cssText = (warn ? CSS_WARN : CSS_NOTE); msg.textContent = String(t || ''); };
+
+      /* ⚠ A RUNNING BAKE OUTLIVES THIS DOM. render() runs on every registry event — somebody else's
+         import lands, and the whole panel is rebuilt while 256 rows are still being sampled. The
+         controller and the progress live in `bake` (module scope) rather than in a closure over a
+         node that is about to be detached, so the line and the STOP BUTTON come back on the next
+         repaint. Without this the reader would lose the only way to stop the thing they started. */
+      if (bake) {
+        const live = row('');
+        live.appendChild(el('span', CSS_NOTE, (bake.label || bake.id) + ' · ' + (bake.progress || '…')));
+        const stopLive = el('button', CSS_BTND, window.IntMapLang.t(HOST.lang, 'Stop sampling', '取り込みを中止', 'Abtastung abbrechen', 'Остановить выборку', 'Detener el muestreo'));
+        stopLive.onclick = () => { try { if (bake && bake.ac) bake.ac.abort(); } catch (_) { } };
+        live.appendChild(stopLive);
+        sec.appendChild(live);
+      }
+
+      list.forEach((s) => {
+        const card = el('div', CSS_CARD + 'padding:8px 9px;display:flex;flex-direction:column;gap:5px;');
+        card.appendChild(el('div', 'font-size:12px;font-weight:600;overflow-wrap:anywhere;', s.label || s.id));
+        const bits = [];
+        if (s.geometryType) bits.push(s.geometryType);
+        if (typeof s.count === 'number') bits.push(nf(s.count) + ' ' + window.IntMapLang.t(HOST.lang, 'features', '件', 'Objekte', 'объектов', 'objetos'));
+        bits.push(s.from === 'layer' ? window.IntMapLang.t(HOST.lang, 'layer', 'レイヤー', 'Ebene', 'слой', 'capa') : window.IntMapLang.t(HOST.lang, 'map source', '地図ソース', 'Kartenquelle', 'источник карты', 'fuente del mapa'));
+        card.appendChild(el('div', CSS_NOTE, bits.join(' · ')));
+
+        const acts = row('');
+        const take = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Use as dataset', 'データセットにする', 'Als Datensatz nutzen', 'Сделать набором данных', 'Usar como conjunto'));
+        take.onclick = () => {
+          const r = L.toDataset(s.id, { bounds: boundsNow() });
+          if (r && r.ok) say(window.IntMapLang.t(HOST.lang, 'Registered', '登録しました', 'Registriert', 'Зарегистрировано', 'Registrado') + ' · ' + r.dataset.id);
+          else say(reasonText(r && r.why, r && r.detail), true);
+        };
+        acts.appendChild(take);
+
+        /* ⚠ THE SECOND BUTTON APPEARS ONLY WHERE THE LAYER ANSWERS 「その地点の値は」. Offering it on
+           a layer with no sampleAt would be a control whose only outcome is a refusal. */
+        if (typeof L.canSample === 'function' && L.canSample(s.id)) {
+          const size = el('select', CSS_IN + 'width:auto;min-width:92px;');
+          /* Powers of two from 64 to 512: the cost is one await per pixel, so this is 4k to 262k
+             awaits — a choice the reader makes with the progress line and the stop button in view,
+             rather than a ceiling written here for a cost that depends on which layer is asked. */
+          [64, 128, 256, 512].forEach((n) => { const o = el('option', '', n + '×' + n); o.value = String(n); if (n === 128) o.selected = true; size.appendChild(o); });
+          const grid = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Sample into a grid', '格子にする', 'In ein Raster abtasten', 'Собрать в сетку', 'Muestrear en una rejilla'));
+          grid.onclick = async () => {
+            if (bake) return;
+            const n = Number(size.value) || 128;
+            const ac = (typeof AbortController === 'function') ? new AbortController() : null;
+            bake = { id: s.id, label: s.label || s.id, ac, progress: '' };
+            grid.disabled = true;
+            const stop = el('button', CSS_BTND, window.IntMapLang.t(HOST.lang, 'Stop sampling', '取り込みを中止', 'Abtastung abbrechen', 'Остановить выборку', 'Detener el muestreo'));
+            stop.onclick = () => { try { if (ac) ac.abort(); } catch (_) { } };
+            acts.appendChild(stop);
+            const r = await L.toRaster(s.id, {
+              bounds: MAPBOUNDS(), width: n, height: n, signal: ac ? ac.signal : null,
+              onProgress: (p) => {
+                const line = window.IntMapLang.t(HOST.lang, 'Reading the layer', 'レイヤーを読んでいます', 'Ebene wird gelesen', 'Чтение слоя', 'Leyendo la capa') + ' · ' + p.rows + '/' + p.of;
+                if (bake) bake.progress = line;
+                say(line);
+              },
+            });
+            bake = null; grid.disabled = false;
+            try { acts.removeChild(stop); } catch (_) { }
+            if (r && r.ok) { say(window.IntMapLang.t(HOST.lang, 'Registered', '登録しました', 'Registriert', 'Зарегистрировано', 'Registrado') + ' · ' + r.dataset.id); render(); }
+            else say(reasonText(r && r.why, r && r.detail), true);
+          };
+          acts.appendChild(size); acts.appendChild(grid);
+        }
+        card.appendChild(acts);
+        sec.appendChild(card);
+      });
+      sec.appendChild(msg);
+      return sec;
+    }
+
     /* ══ §3 · RUN A STEP ══════════════════════════════════════════════════════════════════════ */
     const opLabel = (d) => String((d && (d.title || d.label || d.name || d.id)) || '');
 
@@ -678,6 +851,14 @@ export function makeGisPanel(HOST) {
        the same sentence the op would have given after the run. */
     function mismatchText(decl, i, ds) {
       if (!ds) return '';
+      /* ⚠ (#R735) THE PAYLOAD IS CHECKED FIRST, because it is the mismatch that makes the geometry
+         question meaningless: offering a grid to `dissolve` is not a geometry problem, and answering
+         with the geometry sentence would send the reader looking for the wrong thing. Same code the
+         op will return after the run, so the sentence before and after agree. */
+      const kinds = Array.isArray(decl && decl.kinds) ? decl.kinds : null;
+      const wantKind = kinds ? String(kinds.length === 1 ? kinds[0] : (kinds[i] == null ? 'vector' : kinds[i])) : 'vector';
+      const gotKind = String(ds.kind || 'vector');
+      if (gotKind !== wantKind) return reasonText('input-kind', { input: i, expected: wantKind, kind: gotKind });
       const want = acceptsAt(decl, i);
       if (want === 'any') return '';
       const got = ds.geometryType;
@@ -907,6 +1088,7 @@ export function makeGisPanel(HOST) {
       const top = bodyEl.scrollTop;
       bodyEl.textContent = '';
       bodyEl.appendChild(sectionDatasets());
+      bodyEl.appendChild(sectionLayers());
       bodyEl.appendChild(sectionOps());
       bodyEl.appendChild(sectionProject());
       try { bodyEl.scrollTop = top; } catch (_) { }

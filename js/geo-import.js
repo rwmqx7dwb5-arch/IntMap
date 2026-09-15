@@ -379,6 +379,13 @@ export const GEO_IMPORT = (function () {
     if (doc.getElementsByTagName('parsererror').length) return null;
     return doc;
   }
+  /* (#R735) The two property names a per-position time axis travels under. ⚠ ONE SPELLING, NAMED
+     ONCE: GPX tracks, KML gx:Track and the `time:{kind:'track'}` declaration handed to
+     js/gis-datasets.js all read these, and a second spelling of either would be a track whose times
+     nothing can find. `coordTimes` is also what the rest of the world's GPX→GeoJSON converters emit,
+     so a file that leaves IntMap and comes back keeps its axis. */
+  const TRACK_TIMES = 'coordTimes', TRACK_ELE = 'coordEle';
+
   function localName(el) { return String((el && (el.localName || el.nodeName)) || '').toLowerCase(); }
   function rootName(doc) { try { return localName(doc.documentElement); } catch (_) { return ''; } }
   function kids(el, name) {
@@ -416,14 +423,36 @@ export const GEO_IMPORT = (function () {
       return;
     }
     if (name === 'track') {          /* gx:Track — one <gx:coord>"lon lat alt"</gx:coord> per fix */
-      const c = [];
+      /* ⚠ (#R735) A gx:Track IS THE KML SPELLING OF A GPS TRACE, and this read the coordinates while
+         walking straight past the <when> that stands next to each one — the element that makes it a
+         track rather than a line (OGC KML 2.3 §10.1.2: the n-th <when> belongs to the n-th
+         <gx:coord>). The altitude in the third token went the same way. Both are now carried the way
+         GPX carries them, under the same two property names, so ONE declaration shape covers both
+         formats. The side channel is lifted into the Placemark's properties by the caller — a
+         geometry cannot hold attributes, and the times belong to the feature.
+         ⚠ The pairing is by DOCUMENT ORDER and only the fixes whose coordinates parse are kept, in
+         the same branch, so the arrays cannot drift out of step with the positions. A <when> with no
+         coordinate of its own is a hole in the axis, which is what `null` says. */
+      const c = [], times = [], eles = [];
+      let anyTime = false, anyEle = false, whens = [], wi = 0;
+      for (let k = el.firstElementChild; k; k = k.nextElementSibling) if (localName(k) === 'when') whens.push(String(k.textContent || '').trim());
       for (let k = el.firstElementChild; k; k = k.nextElementSibling) {
         if (localName(k) !== 'coord') continue;
         const p = String(k.textContent || '').trim().split(/\s+/).map(Number);
-        if (p.length >= 2 && isFinite(p[0]) && isFinite(p[1])) c.push([p[0], p[1]]);
+        const w = (wi < whens.length) ? whens[wi] : '';
+        wi++;
+        if (!(p.length >= 2 && isFinite(p[0]) && isFinite(p[1]))) continue;
+        c.push([p[0], p[1]]);
+        times.push(w || null); if (w) anyTime = true;
+        const e = (p.length >= 3 && isFinite(p[2])) ? p[2] : null;
+        eles.push(e); if (e != null) anyEle = true;
       }
-      if (c.length >= 2) out.push({ type: 'LineString', coordinates: c });
-      else if (c.length === 1) out.push({ type: 'Point', coordinates: c[0] });
+      const side = {};
+      if (anyTime) side[TRACK_TIMES] = times;
+      if (anyEle) side[TRACK_ELE] = eles;
+      const carry = (g) => { if (anyTime || anyEle) g.__track = side; return g; };
+      if (c.length >= 2) out.push(carry({ type: 'LineString', coordinates: c }));
+      else if (c.length === 1) out.push(carry({ type: 'Point', coordinates: c[0] }));
       return;
     }
     if (name === 'multigeometry' || name === 'multitrack') { for (let c = el.firstElementChild; c; c = c.nextElementSibling) kmlGeometries(c, out); }
@@ -462,7 +491,7 @@ export const GEO_IMPORT = (function () {
   function decodeKML(ctx) {
     const all = ctx.xml.getElementsByTagName('*');
     const feats = [];
-    let links = 0;
+    let links = 0, trackTimes = false;
     for (let i = 0; i < all.length; i++) {
       const el = all[i], n = localName(el);
       if (n === 'networklink') { links++; continue; }
@@ -470,14 +499,26 @@ export const GEO_IMPORT = (function () {
       const gs = [];
       for (let c = el.firstElementChild; c; c = c.nextElementSibling) kmlGeometries(c, gs);
       const props = kmlProps(el);
-      for (const g of gs) feats.push({ type: 'Feature', geometry: g, properties: props });
+      for (const g of gs) {
+        /* (#R735) A gx:Track's per-fix times and heights ride on the geometry from kmlGeometries
+           because that is where they are parsed, and they belong on the FEATURE. The properties are
+           copied rather than shared for a Placemark that holds several tracks — one object would give
+           the second track's axis to the first. */
+        let p = props;
+        if (g.__track) { p = Object.assign({}, props, g.__track); delete g.__track; trackTimes = true; }
+        feats.push({ type: 'Feature', geometry: g, properties: p });
+      }
     }
     if (!feats.length) return { ok: false, why: links ? 'kml-network-link-only' : 'no-features' };
-    return { ok: true, fc: fc(feats), format: 'kml', stats: { placemarks: feats.length, networkLinks: links } };
+    /* KML has no file-wide time element of its own to fall back on, so the only declaration this
+       format can make honestly is the one a gx:Track carries. */
+    const time = trackTimes ? { kind: 'track', timesField: TRACK_TIMES, elevationField: TRACK_ELE } : null;
+    return { ok: true, fc: fc(feats), format: 'kml', stats: { placemarks: feats.length, networkLinks: links, trackTimes: trackTimes }, time: time };
   }
 
   function decodeGPX(ctx) {
     const doc = ctx.xml, feats = [];
+    let trackTimes = false;
     const at = (el) => {
       const la = Number(el.getAttribute('lat')), lo = Number(el.getAttribute('lon'));
       return (isFinite(la) && isFinite(lo)) ? [lo, la] : null;
@@ -492,19 +533,48 @@ export const GEO_IMPORT = (function () {
       const el = all[i], n = localName(el);
       if (n === 'wpt') { const c = at(el); if (c) feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: c }, properties: meta(el) }); continue; }
       if (n !== 'trkseg' && n !== 'rte') continue;
-      const pts = [];
+      /* ⚠ (#R735) THE TIME AND HEIGHT OF EVERY FIX USED TO BE THROWN AWAY HERE. A GPX track is not a
+         line that happens to have a name and a date — it is a sequence of MOMENTS, which is why a
+         reader records one. This loop kept `[lon, lat]` and let `meta(owner)` carry the track's own
+         single <time>, so a 4,000-point ride arrived as a shape with one timestamp: no speed, no
+         elapsed time, no climb, and no way to ask for 「17 時台に通った区間」.
+         ⚠ THE ARRAYS ARE FILLED IN THE SAME BRANCH AS THE POSITION, and that is what keeps them a
+         time axis. A parallel array is only meaningful while its length equals the number of
+         positions; pushing a timestamp for a fix whose coordinates were refused would shift every
+         later one onto the wrong place. js/gis-datasets.js MEASURES that equality and refuses the
+         declaration when it does not hold (`time-track-misaligned`), so a future path that breaks the
+         pairing is told rather than believed.
+         ⚠ HEIGHT IS BESIDE THE COORDINATES AND NOT INSIDE THEM. GeoJSON would take it as a third
+         ordinate, but js/geodesy.js sanitizeFeatures — which every import lands in — rebuilds each
+         position as `[lng, lat]` and drops the rest, so an elevation put there would be silently
+         gone by the time the dataset is registered. */
+      const pts = [], times = [], eles = [];
+      let anyTime = false, anyEle = false;
       for (let k = el.firstElementChild; k; k = k.nextElementSibling) {
         const kn = localName(k);
         if (kn !== 'trkpt' && kn !== 'rtept') continue;
-        const c = at(k); if (c) pts.push(c);
+        const c = at(k); if (!c) continue;
+        pts.push(c);
+        const t = textOf(k, 'time'); times.push(t || null); if (t) anyTime = true;
+        const es = textOf(k, 'ele'); const e = es === '' ? NaN : Number(es);
+        if (isFinite(e)) { eles.push(e); anyEle = true; } else eles.push(null);
       }
       /* a segment's name lives on the <trk> above it, a route's on itself */
       const owner = (n === 'trkseg' && el.parentElement) ? el.parentElement : el;
-      if (pts.length >= 2) feats.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: pts }, properties: meta(owner) });
-      else if (pts.length === 1) feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: pts[0] }, properties: meta(owner) });
+      const p = meta(owner);
+      if (anyTime) { p[TRACK_TIMES] = times; trackTimes = true; }
+      if (anyEle) { p[TRACK_ELE] = eles; }
+      if (pts.length >= 2) feats.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: pts }, properties: p });
+      else if (pts.length === 1) feats.push({ type: 'Feature', geometry: { type: 'Point', coordinates: pts[0] }, properties: p });
     }
     if (!feats.length) return { ok: false, why: 'no-features' };
-    return { ok: true, fc: fc(feats), format: 'gpx', stats: { kept: feats.length } };
+    /* What the file actually says about time, handed to the registry as a DECLARATION rather than
+       left for something downstream to guess from column names. Track times win over the waypoints'
+       single <time> because they are the finer statement about the same file. */
+    const time = trackTimes
+      ? { kind: 'track', timesField: TRACK_TIMES, elevationField: TRACK_ELE }
+      : (feats.some((f) => f.properties && f.properties.time) ? { kind: 'instant', field: 'time' } : null);
+    return { ok: true, fc: fc(feats), format: 'gpx', stats: { kept: feats.length, trackTimes: trackTimes }, time: time };
   }
 
   /* ══ 5 · GeoJSON ══════════════════════════════════════════════════════════════════════════════ */
