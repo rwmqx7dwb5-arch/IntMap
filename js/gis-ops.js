@@ -233,15 +233,56 @@ export function makeGisOps() {
       return isFinite(w) && isFinite(s) ? [w, s, e, n] : null;
     }
 
-    /* Grown by `padDeg` so a distance query can reject on boxes too: two shapes more than d apart
-       have boxes more than d apart. ⚠ The pad is in DEGREES and a degree of longitude is shorter
-       than a degree of latitude away from the equator, so the pad uses the LATITUDE degree for
-       both — which over-estimates the longitude reach and therefore never rejects a pair that
-       should have been kept. Erring outward is the only direction a prefilter may err. */
-    function boxesMeet(a, b, padDeg) {
+    /* ⚠ THE PAD IS ASKED FOR IN KILOMETRES, AND THAT IS THE WHOLE OF THE FIX (#R743). Until this
+       round the callers turned the distance into DEGREES themselves and this function applied the
+       one number to both axes, defended by a comment that argued the direction of its own error:
+       「a degree of longitude is shorter than a degree of latitude away from the equator, so the pad
+       uses the LATITUDE degree for both — which over-estimates the longitude reach」.
+
+       ⚠ THAT SENTENCE IS BACKWARDS, AND THE PREFILTER ERRED INWARD BECAUSE OF IT. A degree of
+       longitude being shorter in km is exactly why covering d km takes MORE of them, not fewer: at
+       60°N a degree of longitude is 55.66 km, so 80 km is 1.437° of longitude and only 0.719° of
+       latitude. The pad handed to both axes was the latitude one — so two shapes 1° of longitude
+       apart at 60°N (55.66 km, well inside a 80 km query) had their boxes declared too far apart
+       and never reached GG.distanceKm at all. 「Erring outward is the only direction a prefilter may
+       err」 was the right rule, written by the code that broke it.
+
+       ⚠ AND NEITHER PATH COULD SEE IT. tests/r735-gis-raster-time-checks measures the indexed
+       source against the unindexed walk — and both of them called this one function with the same
+       number. An agreement between two readers of one wrong rule is not a measurement of the rule.
+
+       So the km never becomes a degree outside this file's own box arithmetic. padBoxKm grows the
+       QUERY box: latitude first, then longitude by the latitude the padded box actually reaches,
+       because cos is smallest there and the widest longitude degree is the conservative one. */
+    function padBoxKm(b, km) {
+      if (!b) return b;
+      if (!(km > 0)) return b;
+      const R = earthKm();
+      /* No geodesy kernel, no conversion — so every box is a candidate. The ops that pad are all
+         declared needsGeodesy, which means a missing kernel is refused upstream by name; erring
+         outward here keeps this function from being the place that invents a quiet miss. */
+      if (!R) return [-180, -90, 180, 90];
+      const dLat = km / (Math.PI * R / 180);
+      const s = Math.max(-90, b[1] - dLat), n = Math.min(90, b[3] + dLat);
+      const latMax = Math.max(Math.abs(s), Math.abs(n));
+      const cos = Math.cos(latMax * D2R);
+      /* At the pole a degree of longitude is 0 km wide, so no finite number of them covers d km:
+         the answer is every longitude. That is the geometry, not a guard against it. */
+      const dLon = (cos > 1e-9) ? (dLat / cos) : 181;
+      /* ⚠ A PAD THAT REACHES PAST ±180 BECOMES EVERY LONGITUDE rather than a box that stops at the
+         seam. boxesMeet compares plain min/max, so a padded box running from 179.5 to 180.6 would
+         miss a candidate at -179.8 — which is 30 km away, not 360° away. Widening is the outward
+         error; stopping at the seam is an inward one. */
+      if (!(dLon < 180) || b[0] - dLon < -180 || b[2] + dLon > 180) return [-180, s, 180, n];
+      return [b[0] - dLon, s, b[2] + dLon, n];
+    }
+
+    /* Do two boxes meet? The pad is already IN the box by the time this is asked (padBoxKm), so
+       there is one rule, and both readers — this walk and js/gis-index.js — are handed the same
+       padded box rather than the same number to convert twice. */
+    function boxesMeet(a, b) {
       if (!a || !b) return true;
-      const q = padDeg > 0 ? padDeg : 0;
-      return !(a[2] + q < b[0] || b[2] + q < a[0] || a[3] + q < b[1] || b[3] + q < a[1]);
+      return !(a[2] < b[0] || b[2] < a[0] || a[3] < b[1] || b[3] < a[1]);
     }
 
     function polyGeometry(polys) {
@@ -552,6 +593,53 @@ export function makeGisOps() {
       };
     }
 
+    /* ── what the geometry kernel could not compute (#R743) ─────────────────────────────────────
+       ⚠ EVERY RUNNER BELOW USED TO READ A FAILED COMPUTATION AS AN ABSENT ROW. js/gis-geometry.js
+       answered `null` for 「交わらなかった」 and for 「クリッパが例外を投げた」 alike, and the eight
+       runners that call it all said `continue`. So a run that lost rows to a throwing sweep-line
+       came back as an ordinary `{ ok: true }` with a smaller answer, and NOTHING in the result said
+       so: the file already counts what it drops for six other reasons (`_statSkipped`, `dropped`,
+       `undated`, `cut`, `nodata`, `partial`), and the geometry was the one cause with no column.
+
+       The ledger is that column. `ok(r)` is the only way a runner reads an attempt: it answers
+       whether there is a result to use and REMEMBERS the ones there were not. Two rules then hold
+       for every op at once, which is why they live here and not in eight places:
+
+         · a run that lost part of its answer reports the loss in `stats` — js/gis-panel.js prints
+           whatever an op measured without knowing what any of it means, so this reaches the reader
+           the day it is added, in every language, with no per-op sentence to write;
+         · a run that computed NOTHING is a refusal by name, not an empty success. 「0 件でした」 and
+           「0 件しか計算できませんでした」 are the two answers a reader cannot tell apart, and only
+           one of them is about their data. */
+    function makeGeoLedger() {
+      let failed = 0, why = null, detail = null;
+      return {
+        ok(r) {
+          if (r && r.ok) return true;
+          failed++;
+          if (why == null) { why = (r && r.why) || 'geometry-failed'; detail = (r && r.detail) || null; }
+          return false;
+        },
+        failed: () => failed,
+        why: () => why,
+        detail: () => detail,
+      };
+    }
+
+    function withGeoStats(res, led, extra) {
+      const more = extra || null;
+      if (!led.failed()) {
+        if (!more) return res;
+        res.stats = Object.assign({}, res.stats || {}, more);
+        return res;
+      }
+      if (!res.features || !res.features.length) {
+        return fail('geometry-failed', { failed: led.failed(), why: led.why(), detail: led.detail() });
+      }
+      res.stats = Object.assign({}, res.stats || {}, more || {}, { geometryFailed: led.failed(), geometryWhy: led.why() });
+      return res;
+    }
+
     /* ── the spatial index, where it changes the exponent (#R735) ───────────────────────────────
        `boxesMeet` in this file turns the constant down; it still tests every pair. js/gis-index.js is
        the grid that stops the pairs from being enumerated at all. It is asked for, not required: a
@@ -572,9 +660,14 @@ export function makeGisOps() {
                indexed and the unindexed paths hand the predicate the same set, rather than the same
                answer by two different routes. It is the cheap test; the point of the index is that it
                is now asked about tens of items instead of all of them. */
-            each: (box, padDeg, fn) => {
-              try { IX.queryEach(ix, box, (m) => (boxesMeet(box, m.bbox, padDeg || 0) ? fn(m) : true), { padDeg: padDeg }); }
-              catch (_) { for (const m of members) { if (!boxesMeet(box, m.bbox, padDeg || 0)) continue; if (fn(m) === false) break; } }
+            each: (box, padKm, fn) => {
+              /* ⚠ THE BOX IS PADDED ONCE AND BOTH READERS GET THAT BOX (#R743). The index used to be
+                 handed { padDeg } and left to grow the box itself, which made the km-to-degree rule
+                 exist in two files; js/gis-index.js is wrap-aware and this walk is not, so the two
+                 also disagreed about the seam. One padded box, one rule, one seam decision. */
+              const q = padBoxKm(box, padKm);
+              try { IX.queryEach(ix, q, (m) => (boxesMeet(q, m.bbox) ? fn(m) : true)); }
+              catch (_) { for (const m of members) { if (!boxesMeet(q, m.bbox)) continue; if (fn(m) === false) break; } }
             },
             stats: () => { try { return IX.stats(ix); } catch (_) { return null; } },
           };
@@ -582,7 +675,10 @@ export function makeGisOps() {
       }
       return {
         indexed: false,
-        each: (box, padDeg, fn) => { for (const m of members) { if (!boxesMeet(box, m.bbox, padDeg || 0)) continue; if (fn(m) === false) break; } },
+        each: (box, padKm, fn) => {
+          const q = padBoxKm(box, padKm);
+          for (const m of members) { if (!boxesMeet(q, m.bbox)) continue; if (fn(m) === false) break; }
+        },
         stats: () => null,
       };
     }
@@ -746,6 +842,7 @@ export function makeGisOps() {
       if (radius < 0 && ds.geometryType !== 'Polygon') return fail('inward-buffer-needs-area', { geometryType: ds.geometryType });
 
       const out = [];
+      const led = makeGeoLedger();
       for (const f of ds.features()) {
         const g = f && f.geometry;
         if (!g) continue;
@@ -754,7 +851,9 @@ export function makeGisOps() {
            double-counted the overlap in the area. It can union them now, so the MultiPoint's buffer
            is the one shape it should always have been — and `_bufferPart` is gone with the reason
            it existed. */
-        const bg = GG.bufferKm(g, radius, steps);
+        const r = GG.attempt.bufferKm(g, radius, steps);
+        if (!led.ok(r)) continue;
+        const bg = r.geometry;
         if (!bg) continue;
         out.push({
           type: 'Feature',
@@ -762,7 +861,7 @@ export function makeGisOps() {
           geometry: bg,
         });
       }
-      return { ok: true, features: out };
+      return withGeoStats({ ok: true, features: out }, led);
     }
 
     /* Every areal feature of a dataset as a window: what clip cuts with, and what the overlays and
@@ -796,6 +895,7 @@ export function makeGisOps() {
          pair rather than refusing the whole run, because one unusable window among three thousand
          prefectures is not a reason to give the reader nothing. */
       const out = [];
+      const led = makeGeoLedger();
       const subjects = subject.features();
       for (const f of subjects) {
         if (!(await ctx.tick(1, subjects.length))) return fail('cancelled', { done: ctx.done(), total: subjects.length });
@@ -804,8 +904,17 @@ export function makeGisOps() {
         const base = props(f);
         const gb = bboxOf(g);
         cand.each(gb, 0, (w) => {
+          /* ⚠ ASKED ONCE, FOR ALL THREE BRANCHES (#R743). A window whose ring wraps the world has no
+             simple ring in this plane, and the kernel says so — but hasArea() reports that as
+             「面ではない」, so the line branch below would have clipped against ZERO rings (keeping
+             nothing) and the point branch against a pointInGeometry that answers false for every
+             position. Both would have been an answer about the reader's data. */
+          const ar = GG.attempt.areal(w.geometry);
+          if (!led.ok(ar)) return true;
           if (polygonsOf(g).length) {
-            const cut = GG.intersection(g, w.geometry);
+            const r = GG.attempt.intersection(g, w.geometry);
+            if (!led.ok(r)) return true;
+            const cut = r.geometry;
             if (!cut) return true;
             out.push({ type: 'Feature', properties: withProps(base, { _clipId: w.id, _areaKm2: areaKm2(cut) }), geometry: cut });
             return true;
@@ -830,7 +939,7 @@ export function makeGisOps() {
           return true;
         });
       }
-      return { ok: true, features: out };
+      return withGeoStats({ ok: true, features: out }, led);
     }
 
     /* ── clipping a LINE by an arbitrary polygon ───────────────────────────────────────────────
@@ -887,6 +996,7 @@ export function makeGisOps() {
       if (!bWins.length) return fail('no-overlay-polygons', { input: 1 });
       const cand = candidateSource(bWins);
       const out = [];
+      const led = makeGeoLedger();
       const subjects = aDs.features();
       for (const f of subjects) {
         if (!(await ctx.tick(1, subjects.length))) return fail('cancelled', { done: ctx.done(), total: subjects.length });
@@ -903,8 +1013,13 @@ export function makeGisOps() {
           cand.each(gb, 0, (w) => { near.push(w.geometry); return true; });
           let cut = g;
           if (near.length) {
-            const merged = GG.union(near);
-            cut = merged ? GG.difference(g, merged) : null;
+            const m = GG.attempt.union(near);
+            if (!led.ok(m)) continue;
+            if (m.geometry) {
+              const d = GG.attempt.difference(g, m.geometry);
+              if (!led.ok(d)) continue;
+              cut = d.geometry;
+            }
           }
           if (!cut) continue;
           out.push({ type: 'Feature', properties: withProps(base, { _areaKm2: areaKm2(cut) }), geometry: cut });
@@ -912,7 +1027,9 @@ export function makeGisOps() {
         }
 
         cand.each(gb, 0, (w) => {
-          const res = (kind === 'intersect') ? GG.intersection(g, w.geometry) : GG.union([g, w.geometry]);
+          const r = GG.attempt.intersection(g, w.geometry);
+          if (!led.ok(r)) return true;
+          const res = r.geometry;
           if (!res) return true;
           /* ⚠ BOTH SIDES' COLUMNS SURVIVE, with A winning a collision, and the row says it came from
              a pair (`_overlayId`). Keeping only A would throw away the table the reader brought to
@@ -925,7 +1042,93 @@ export function makeGisOps() {
           return true;
         });
       }
-      return { ok: true, features: out };
+      return withGeoStats({ ok: true, features: out }, led);
+    }
+
+    /* ── union: every part of both inputs, exactly once (#R743) ─────────────────────────────────
+       ⚠ UNION USED TO BE A BRANCH OF THE OVERLAY LOOP, AND THAT LOOP IS A LOOP OVER PAIRS. It asked
+       the candidate source for the windows of B whose box meets this feature of A, and emitted one
+       row per pair holding GG.union([a, b]). Two things follow, and both were shipped:
+
+         · 離れている入力では答えが空になる。Two squares that do not touch produce no pair, so the
+           loop emitted nothing at all and the op returned `{ ok: true }` over an empty dataset —
+           a union in which neither operand appears. A feature of A that met no window of B was
+           dropped for meeting nothing, and a window of B that met no feature of A was never read.
+         · 重なっている入力では面積が壊れる。Each pair emitted the WHOLE of a plus the WHOLE of b,
+           so n pairs carried the same land n times over and `_areaKm2` summed to several Earths.
+
+       A union overlay has three kinds of part, and every point of either input belongs to exactly
+       one of them: a ∩ b (carrying both tables), a − B (carrying A's), and b − A (carrying B's).
+       Disjoint inputs are then not a special case at all — they are the run where the first kind is
+       empty — which is what 「事例ではなく、その事例を生んだ構造を直す」 means here. `_overlaySide`
+       says which kind a row is, because a table whose rows come from two different files and do not
+       say so is not readable, and the reader cannot recover it from the columns (a row of b − A has
+       A's columns absent, which is also what a null cell looks like). */
+    async function runUnion(aDs, bDs, ctx) {
+      const GG = geometry();
+      const aWins = windowsOf(aDs);
+      if (!aWins.length) return fail('no-overlay-polygons', { input: 0 });
+      const bWins = windowsOf(bDs);
+      if (!bWins.length) return fail('no-overlay-polygons', { input: 1 });
+
+      const bCand = candidateSource(bWins);
+      const aCand = candidateSource(aWins);
+      const total = aWins.length + bWins.length;
+      const out = [];
+      const led = makeGeoLedger();
+
+      /* ⚠ THE REMAINDER IS TAKEN AGAINST THE UNION OF THE NEIGHBOURS, not one at a time, for the
+         reason the difference branch above gives: B's own windows may overlap each other, and
+         subtracting them in turn cuts an already-cut shape. */
+      const rest = (g, near) => {
+        if (!near.length) return { ok: true, geometry: g };
+        const m = GG.attempt.union(near);
+        if (!m.ok) return m;
+        if (!m.geometry) return { ok: true, geometry: g };
+        return GG.attempt.difference(g, m.geometry);
+      };
+
+      for (const a of aWins) {
+        if (!(await ctx.tick(1, total))) return fail('cancelled', { done: ctx.done(), total: total });
+        const near = [];
+        bCand.each(a.bbox, 0, (w) => { near.push(w); return true; });
+        for (const w of near) {
+          const r = GG.attempt.intersection(a.geometry, w.geometry);
+          if (!led.ok(r)) continue;
+          if (!r.geometry) continue;
+          out.push({
+            type: 'Feature',
+            properties: withProps(withProps(w.props, a.props), { _overlayId: w.id, _overlaySide: 'both', _areaKm2: areaKm2(r.geometry) }),
+            geometry: r.geometry,
+          });
+        }
+        const only = rest(a.geometry, near.map((w) => w.geometry));
+        if (!led.ok(only)) continue;
+        if (only.geometry) {
+          out.push({
+            type: 'Feature',
+            properties: withProps(a.props, { _overlaySide: 'a', _areaKm2: areaKm2(only.geometry) }),
+            geometry: only.geometry,
+          });
+        }
+      }
+
+      for (const b of bWins) {
+        if (!(await ctx.tick(1, total))) return fail('cancelled', { done: ctx.done(), total: total });
+        const near = [];
+        aCand.each(b.bbox, 0, (w) => { near.push(w.geometry); return true; });
+        const only = rest(b.geometry, near);
+        if (!led.ok(only)) continue;
+        if (only.geometry) {
+          out.push({
+            type: 'Feature',
+            properties: withProps(b.props, { _overlaySide: 'b', _areaKm2: areaKm2(only.geometry) }),
+            geometry: only.geometry,
+          });
+        }
+      }
+
+      return withGeoStats({ ok: true, features: out }, led);
     }
 
     function runDissolve(ds, params, R) {
@@ -946,8 +1149,11 @@ export function makeGisOps() {
       }
       if (!groups.size) return fail('no-features', { input: 0 });
       const out = [];
+      const led = makeGeoLedger();
       for (const grp of groups.values()) {
-        const merged = GG.union(grp.geoms);
+        const r = GG.attempt.union(grp.geoms);
+        if (!led.ok(r)) continue;
+        const merged = r.geometry;
         if (!merged) continue;
         /* ⚠ ONLY THE GROUPING COLUMN SURVIVES, plus how many members went in. The other columns of
            the members disagree with one another by construction — that is what a group is — and
@@ -957,22 +1163,30 @@ export function makeGisOps() {
         if (by) extra[by] = grp.first[by];
         out.push({ type: 'Feature', properties: extra, geometry: merged });
       }
-      return { ok: true, features: out };
+      return withGeoStats({ ok: true, features: out }, led);
     }
 
     /* ── relate: the spatial WHERE ────────────────────────────────────────────────────────────── */
 
     /* 0 or the measured distance when the relation holds, null when it does not — so the caller
        gets the verdict and the number from one call. */
+    /* ⚠ THE VERDICT AND THE FAILURE ARE NO LONGER THE SAME null (#R743). Every arm of this used to
+       answer null both for 「その関係にない」 and for 「答えられなかった」, and the caller read both
+       as 「この行は残さない」 — so a throwing clipper silently made a spatial WHERE stricter. The
+       distance arm was the plainest: 「測れなかった」 became 「500 m より遠い」. */
     function relateOne(GG, g, w, predicate, maxKm) {
-      if (predicate === 'intersects') return GG.intersects(g, w) ? 0 : null;
-      if (predicate === 'within') return GG.within(g, w) ? 0 : null;
-      if (predicate === 'contains') return GG.contains(g, w) ? 0 : null;
+      if (predicate === 'intersects') { const r = GG.attempt.intersects(g, w); return r.ok ? { ok: true, d: r.value ? 0 : null } : r; }
+      if (predicate === 'within') { const r = GG.attempt.within(g, w); return r.ok ? { ok: true, d: r.value ? 0 : null } : r; }
+      if (predicate === 'contains') { const r = GG.attempt.contains(g, w); return r.ok ? { ok: true, d: r.value ? 0 : null } : r; }
       if (predicate === 'nearer-than') {
-        const d = GG.distanceKm(g, w);
-        return (d != null && d <= maxKm) ? d : null;
+        const r = GG.attempt.distanceKm(g, w);
+        /* ⚠ 「比べる部分が無かった」 IS NOT A FAILURE TO MEASURE THE PAIR — an empty geometry is
+           simply not within maxKm of anything, and refusing the whole run over one would make a
+           single empty row poison a dataset. */
+        if (!r.ok) return (r.why === 'no-comparable-parts') ? { ok: true, d: null } : r;
+        return { ok: true, d: (r.value != null && r.value <= maxKm) ? r.value : null };
       }
-      return null;
+      return { ok: false, why: 'unknown-predicate', detail: { predicate: predicate } };
     }
 
     async function runRelate(aDs, bDs, params, R, ctx) {
@@ -993,17 +1207,17 @@ export function makeGisOps() {
       }
       if (!others.length) return fail('no-features', { input: 1 });
 
-      /* The pad turns km into degrees of LATITUDE and uses that for both axes (see boxesMeet): a
-         degree of longitude is shorter everywhere but the equator, so the box reaches further east
-         and west than it needs to and the filter can only ever keep too much. */
-      const Rkm = earthKm();
-      const pad = (predicate === 'nearer-than' && Rkm) ? (maxKm / (Math.PI * Rkm / 180)) : 0;
+      /* ⚠ THE DISTANCE IS HANDED ON AS A DISTANCE (#R743). It used to be converted to degrees here
+         and the degrees given to a box test that applied them to both axes; padBoxKm carries the
+         measurement that made that an inward error at every latitude but the equator. */
+      const pad = (predicate === 'nearer-than') ? maxKm : 0;
 
       /* ⚠ THE INDEX IS BUILT ON THE OTHER SIDE, ONCE — one grid for the whole run, queried per
          feature of input 0, which is the direction the cost runs in. */
       const cand = candidateSource(others);
       const subjects = aDs.features();
       const out = [];
+      const led = makeGeoLedger();
       for (const f of subjects) {
         if (!(await ctx.tick(1, subjects.length))) return fail('cancelled', { done: ctx.done(), total: subjects.length });
         const g = f && f.geometry;
@@ -1018,14 +1232,24 @@ export function makeGisOps() {
              proof that those two do not touch — so the box is used the other way round, as an
              acceptance. */
           hit = true;
+          let failed = false;
           cand.each(gb, 0, (o) => {
-            if (!GG.intersects(g, o.geometry)) return true;
+            const r = GG.attempt.intersects(g, o.geometry);
+            /* ⚠ disjoint IS THE PREDICATE A FAILURE LOOKS MOST LIKE. `!intersects` answered false on
+               a throwing clipper, which this loop read as 「触れていない」 — so the one arm that
+               asserts a NEGATIVE about every other feature was the one that asserted it from an
+               error. A pair it could not measure means this row's verdict is unknown, not true. */
+            if (!led.ok(r)) { failed = true; hit = false; return false; }
+            if (!r.value) return true;
             hit = false;
             return false;
           });
+          if (failed) continue;
         } else {
           cand.each(gb, pad, (o) => {
-            const d = relateOne(GG, g, o.geometry, predicate, maxKm);
+            const r = relateOne(GG, g, o.geometry, predicate, maxKm);
+            if (!led.ok(r)) return true;
+            const d = r.d;
             if (d == null) return true;
             hit = true;
             if (best == null || d < best) best = d;
@@ -1042,7 +1266,7 @@ export function makeGisOps() {
           out.push({ type: 'Feature', properties: withProps(props(f), { _distanceKm: best }), geometry: g });
         } else out.push(f);
       }
-      return { ok: true, features: out };
+      return withGeoStats({ ok: true, features: out }, led);
     }
 
     async function runAggregate(polyDs, memberDs, params, R, ctx) {
@@ -1078,6 +1302,7 @@ export function makeGisOps() {
          and leaves O(n·m). js/gis-index.js is asked once for the members and queried per polygon. */
       const cand = candidateSource(members);
       const zones = polyDs.features();
+      const led = makeGeoLedger();
       const out = [];
       for (const f of zones) {
         if (!(await ctx.tick(1, zones.length))) return fail('cancelled', { done: ctx.done(), total: zones.length });
@@ -1091,7 +1316,13 @@ export function makeGisOps() {
              brings to a 区域別集計. A line that crosses the boundary counts for this polygon AND for
              its neighbour, which is what 「重なる」 means and is why `_areaKm2` is on the row: a
              reader dividing by area can see that the parts do not partition. */
-          if (!GG.intersects(m.geometry, g)) return true;
+          /* ⚠ A MEMBER THE GEOMETRY COULD NOT ANSWER ABOUT IS NOT A MEMBER OUTSIDE THE ZONE (#R743).
+             This file already refuses to let a value it cannot read vanish (`_statSkipped`, below);
+             a pair it cannot MEASURE was the one loss with no counter, and it lands straight in the
+             number the reader reads as 「この区域の件数」. */
+          const ir = GG.attempt.intersects(m.geometry, g);
+          if (!led.ok(ir)) return true;
+          if (!ir.value) return true;
           n++;
           if (stat === 'count') return true;
           const v = R.asNumber(m.raw);
@@ -1116,7 +1347,7 @@ export function makeGisOps() {
         if (stat !== 'count') extra._statSkipped = skipped;
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
       }
-      return { ok: true, features: out };
+      return withGeoStats({ ok: true, features: out }, led);
     }
 
     /* ── the grid runners (#R735) ───────────────────────────────────────────────────────────────
@@ -1458,7 +1689,7 @@ export function makeGisOps() {
         clip: () => runClip(ds[0], ds[1], ctx),
         intersect: () => runOverlay('intersect', ds[0], ds[1], ctx),
         difference: () => runOverlay('difference', ds[0], ds[1], ctx),
-        union: () => runOverlay('union', ds[0], ds[1], ctx),
+        union: () => runUnion(ds[0], ds[1], ctx),
         dissolve: () => runDissolve(ds[0], params, R),
         relate: () => runRelate(ds[0], ds[1], params, R, ctx),
         aggregate: () => runAggregate(ds[0], ds[1], params, R, ctx),
