@@ -1127,7 +1127,6 @@ window.IntMapLang.define('ko', { ui: {
   "an hour on": "1시간 후",
   "Analysis & simulation": "분석 및 시뮬레이션",
   "Analyze": "분석",
-  "Analyzing": "분석 중",
   "annular": "금환",
   "Antenna gain (each end)": "안테나 이득 (양쪽 각각)",
   "Antenna height (m)": "안테나 높이 (m)",
@@ -6419,4 +6418,25 @@ window.IntMapLang.define('ko', { ui: {
   "Source boundary precision: determined by international law": "출처의 경계 정밀도 분류: 국제법으로 정해진 경계",
   "Source dates: ": "출처의 날짜: ",
   "[?] marks a historical name whose start date is unknown.": "[?]는 사용되기 시작한 시기가 알려지지 않은 역사적 지명을 나타냅니다.",
+  /* ── js/atlas-progress.js (#R723) — 작업 내역. Atlas가 답변하는 동안 지금 하고 있는 일을 한 줄씩
+     보여주는 라벨이므로, 분류 이름이 아니라 진행 중인 동작을 가리키는 짧은 어구다. 위쪽의
+     "생각 중" / "이미지를 읽는 중" / "확인 중"과 같은 "…중" 어투에 맞춘다. */
+  "Writing the answer": "답변 작성 중",
+  "Drawing on the map": "지도에 그리는 중",
+  "Switching layers": "레이어 전환 중",
+  "Moving the view": "시점 이동 중",
+  "Opening a panel": "패널 여는 중",
+  "Looking up data": "데이터 조회 중",
+  "Researching": "조사 중",
+  "Changing a setting": "설정 변경 중",
+  "Running a simulation": "시뮬레이션 실행 중",
+  "Working out a route": "경로 계산 중",
+  "Setting the clock": "시각 설정 중",
+  "Checking the app": "앱 확인 중",
+  "Adjusting the interface": "화면 조정 중",
+  "Asking you": "사용자에게 질문 중",
+  "Matching the photo": "사진 대조 중",
+  "Working": "작업 중",
+  "1 step": "1단계",
+  "{n} steps": "{n}단계",
 } });

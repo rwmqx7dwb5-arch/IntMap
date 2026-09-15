@@ -105,7 +105,16 @@ test('R156 #5 dedicated vision pipeline (image bypasses the map-oriented planner
      MAX_PROMPT; they are channels now (`_atts`, merged into the same opts object the
      re-examination round reuses). A check written against the concatenation was pinning the
      defect rather than the property. */
-  assert.match(html, /if\(imgs\.length\)\{ const aiv=bubble\('a',stageDots\('read'\)\); try\{ await _atlVisionTurn\(aiv,q,imgs,gen,_atts\);/, 'run() routes an attached image to the vision pipeline (R540: the files/docs channels ride along)');
+  /* ⚠ (#R723) AND THIS CHECK HAD THE VERY SHAPE ITS OWN COMMENT WARNS ABOUT. It pinned the line
+     BYTE FOR BYTE — `const aiv=bubble('a',stageDots('read'))` — so wrapping that bubble to open a
+     work trace failed a routing test while the routing was untouched. What #R540 states is a
+     property with three parts, and each is asked for on its own below. */
+  const visionBranch = /if\(imgs\.length\)\{[\s\S]{0,600}?\breturn;\s*\}/.exec(html);
+  assert.ok(visionBranch, 'run() has a branch for an attached image that returns');
+  assert.match(visionBranch[0], /await _atlVisionTurn\(\s*\w+\s*,\s*q\s*,\s*imgs\s*,\s*gen\s*,\s*_atts\s*\)/,
+    'it hands the image to the vision pipeline, with the files/docs channels riding along (R540)');
+  assert.ok(html.indexOf(visionBranch[0]) < html.indexOf('AGENT.runTurn('),
+    'and it does so BEFORE the planner, which is what 「routes to the vision turn, not the generic planner」 means');
   // ONE image re-examination round when a deterministic check fails
   assert.match(html, /\[SELF-CHECK FAILED\] Your emitted check\(s\) did NOT hold/, 'failed check triggers an image re-examination round');
   // neutral default prompt (no forced mapping)

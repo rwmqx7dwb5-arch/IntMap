@@ -376,7 +376,11 @@ test('R313 ⑦ opening one menu closes the other, and one function knows the set
    ⑧ the progress indicator is ChatGPT's shimmer
    ═══════════════════════════════════════════════════════════════════════ */
 test('R313 ⑧ one indicator, shimmering the label itself, and every selector that means "still working" names it', () => {
-  const at = code('js/atlas-console.js');
+  /* ⚠ (#R723) THE INDICATOR MOVED TO js/atlas-progress.js AND THIS SET MOVED WITH IT. Reading only
+     js/atlas-console.js would have let the assertions below pass BY DELETION — the shimmer, the marker
+     and the guard would each be 「not found, therefore not violated」. What each one states is a fact
+     about the indicator, not about a file, so the universe is the two files that now hold it. */
+  const at = code('js/atlas-console.js') + '\n' + code('js/atlas-progress.js');
   /* ⚠ the panel's stylesheet is js/atlas-styles.js since this round — the kernel's line ceiling is
      never raised, so a subject left instead. The RULES are asked of that file; the MARKUP and the
      selectors that scan for a working bubble are asked of the kernel. */

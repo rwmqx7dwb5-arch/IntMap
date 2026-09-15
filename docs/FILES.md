@@ -341,6 +341,9 @@ atlas-markdown.js                 Atlas — 返答の**ブロック構造の解�
                                   `<blockquote>`／`<hr>`）。入れ子リスト・番号付きリスト・項目内の
                                   複数段落・複数行引用・エスケープされた markdown を扱う。
                                   ⚠ 余白は**吐かない**——CSS（`js/atlas-styles.js`）が決める
+atlas-progress.js                 Atlas — 回答中の作業一覧。実行器のライフサイクルと planner の step を購読し、
+                                  返答の泡の兄弟として 1 操作 1 行を積む（済んだ行は消えない）。行の言葉は
+                                  能力の category から導く。`.atl-stage` の生成・再武装・撤去もここが正本。
 atlas-highlight.js                Atlas — コードブロックのシンタックスハイライト（#R494）。外部依存なしの
                                   8 文法（js/ts・python・json・html/xml・css・sql・bash・yaml）＋
                                   未知言語のフォールバック。出力は必ず esc 済み。配色は

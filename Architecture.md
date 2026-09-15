@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（287本・13.5 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（288本・13.5 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1084,12 +1084,21 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
   ☠ **候補の文はすべて第1引数がリテラルの `L()`**——`scripts/i18n-report.mjs` はそれ以外を捨てるので、
   文を動的に組み立てると**9言語の穴が計器に見えなくなる**。変わるのは「どの候補が適格か」だけ。
   ☠ `{place}` は CLDR の国名（冠詞なし・主格）なので、ru / de / fr は**名前を先頭に置く同格**の形。
-- **進行中の表示（Thinking / Searching / Analyzing / Mapping / Reading the image / Verifying）は
+- **回答中に何をしているかは、消えない一覧で見せる**（`js/atlas-progress.js`）。返答の泡の**兄弟**として
+  `.atl-trace` を置き、実行器 (`js/atlas-executor.js` の `on()`) が出す 10 段のライフサイクルを購読して
+  **1 操作 1 行**を足していく——済んだ行は残り、いま走っている行だけが輪を回す。行の言葉は**能力の
+  category から導く**（綴りの一覧を持たない）。plan の段は `js/atlas-agent.js` の `onStep` から来る。
+  回答が着いたら見出し 1 行（歩数と所要）に畳み、**読者はそれを開き直せる**。
+  ⚠ **泡の中を `innerHTML` で書き換えても消えない**のは、兄弟に置いてあるからである。
+- **いま何をしているかの 1 語（Thinking / Reading the image / Verifying / Writing the answer）は
   ラベル自身を採くシマー**。`.atl-stage` が `background-clip:text` と透明な text-fill で
   グラデーションを文字の形に切り抜き、帯を 2 秒で掃く。帯の色は**背景寄り**なのでテーマごとに
   別の値（`--atl-shimmer-band`）。`prefers-reduced-motion` では止め、**text-fill を currentColor に戻す**
   （透明のまま止めると文字が消える）。`.atl-stage` は**印でもあり**、「まだ作業中の泡」を探す
   取り消し走査もこの綴りを見る——**進行表示はアプリ全体で 1 種類だけ**。
+  ⚠ **道具を 1 本呼ぶごとに `_atlCompose` が泡の `innerHTML` を書き換える**ので、この印は毎回消える。
+  `js/atlas-progress.js` の `live()` が書き換えの直後に**印を戻し**、`done()` が**ターンの終わりに外す**
+  ——語と印は同じ 1 要素なので、戻さないと指標が消え、外さないと届いた回答の下で回り続ける。
 - **鍵はサーバー（Edge Function）だけが持つ。** ブラウザは AI プロバイダに直接アクセスしない。
   モデル選択の UI も無い（利用者はモデルを選ばない）。
 - **`ai-proxy`＝アカウント制AI。** `verify_jwt` に加えて関数内でもユーザーを検証し（未ログインは 401）、

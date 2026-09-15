@@ -508,7 +508,7 @@ window.IntMapLang.define('zh-hans', {
     'an hour on': "往后一小时",   /* world-packs.js */
     'Analysis & simulation': "分析与模拟",   /* tool-panel.js */
     'Analyze': "分析",   /* viewshed.js */
-    'Analyzing': "分析中",   /* atlas-console.js */
+    /* atlas-console.js */
     'annular': "环食",   /* space.js */
     'Antenna gain (each end)': "天线增益（两端）",   /* drone-nav.js */
     'Antenna height (m)': "天线高度（米）",   /* sims.js viewshed.js */
@@ -6650,5 +6650,26 @@ window.IntMapLang.define('zh-hans', {
   "Source boundary precision: determined by international law": "来源的边界精度分类：由国际法界定",
   "Source dates: ": "来源日期：",
   "[?] marks a historical name whose start date is unknown.": "[?] 表示该历史地名开始使用的时间不详。",
+  /* ── js/atlas-progress.js (#R723) — 作业纪录。Atlas 回答期间逐行显示「现在正在做什么」，
+     所以这些是进行中的动作短语，不是分类名称。语气比照上方既有的「思考中」／「正在读取图片」／
+     「验证中」。⚠ 简体版由 scripts/zh-hans.mjs 由本档产生，请勿手改 ui.zh-hans.js。 */
+  "Writing the answer": "正在撰写回答",
+  "Drawing on the map": "正在地图上绘制",
+  "Switching layers": "正在切换图层",
+  "Moving the view": "正在移动视角",
+  "Opening a panel": "正在开启面板",
+  "Looking up data": "正在查询数据",
+  "Researching": "研究中",
+  "Changing a setting": "正在变更设置",
+  "Running a simulation": "正在执行模拟",
+  "Working out a route": "正在计算路线",
+  "Setting the clock": "正在设置时间",
+  "Checking the app": "正在检查应用",
+  "Adjusting the interface": "正在调整界面",
+  "Asking you": "正在向您提问",
+  "Matching the photo": "正在比对照片",
+  "Working": "处理中",
+  "1 step": "1 个步骤",
+  "{n} steps": "{n} 个步骤",
   }
 });
