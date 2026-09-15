@@ -34,6 +34,21 @@
  *  is drawn WITH the sentence that says why, because a dead control with no explanation is the
  *  defect this project keeps re-finding: the feature is not broken, it was never there.
  *
+ *  ══ ⚠ (#R738) EVERY FACE THE LAYER GREW HAS A DOOR HERE ══════════════════════════════════════
+ *  #R738 gave js/gis-datasets.js an editing face, js/gis-ops.js two attribute ops whose parameters
+ *  are new KINDS of parameter, js/map-ui.js a classifier, and #R735 gave both runners a signal and a
+ *  progress callback. An export nothing calls is not a feature — the finding #R735 recorded about
+ *  js/gis-layers.js, which had been built, tested and documented while no reader could reach it — so
+ *  each of those is opened from this file, and each is opened the way the rest of the panel is:
+ *  · the three new parameter types are drawn by §1 from the DECLARATION. There is no form here that
+ *    knows the word «join», and the next parameter type falls to the same fallback as before.
+ *  · the editing controls ask js/gis-datasets.js's own gate (`editable`) what may be edited, and
+ *    print ITS refusal — this file does not decide that an op's output is read-only, it is told.
+ *  · the column types offered are the registry's own vocabulary, asked for rather than listed.
+ *  · the expression's function list is `IntMapGisExpr.functions()`, which exists for this.
+ *  · the colouring calls `window.GeoJSONUpload.style()` and draws the legend IT returns. The classes
+ *    are not counted a second time here (#R650: two calculations of one fact always drift).
+ *
  *  ══ WHY THE REFUSALS ARE SENTENCES HERE ═══════════════════════════════════════════════════════
  *  The three modules return a CODE, exactly as js/geo-import.js does, and `reasonText()` below is
  *  the same answer js/map-ui.js's importer gives: an op has no business knowing which UI it is in,
@@ -71,6 +86,10 @@ export function makeGisPanel(HOST) {
        panel can only say 「まだ使えない」 before an op has ever run, and run() is what actually
        waits. Used to warn early, never to decide. */
     const GEOM = () => { try { return window.IntMapGisGeometry || null; } catch (_) { return null; } };
+    /* js/gis-expr.js (#R738). Only the `expression` control asks for it, and only to LIST what can be
+       written — the parse itself happens inside the op, so a missing module here costs the reader the
+       function list and not the ability to type. */
+    const EXPR = () => { try { return window.IntMapGisExpr || null; } catch (_) { return null; } };
 
     function nf(v) {
       const n = Number(v);
@@ -154,6 +173,92 @@ export function makeGisPanel(HOST) {
       if (code === 'no-features') return window.IntMapLang.t(HOST.lang, "That input holds nothing this step can work on", "その入力に、この処理が扱える地物がありません", "Diese Eingabe enthält nichts, womit dieser Schritt arbeiten kann", "В этом входе нет объектов, с которыми может работать шаг", "Esa entrada no contiene nada con lo que este paso pueda trabajar");
       if (code === 'op-not-wired') return window.IntMapLang.t(HOST.lang, "That step is declared but has no implementation in this build", "その処理は宣言されていますが、このビルドに実装がありません", "Dieser Schritt ist deklariert, hat in diesem Build aber keine Implementierung", "Этот шаг объявлен, но в этой сборке нет реализации", "Ese paso está declarado pero no tiene implementación en esta compilación") + par(d.op);
 
+      /* ── js/gis-datasets.js — a time declaration that did not hold (#R735, worded in #R738) ───
+         ⚠ THESE NINE HAD NO SENTENCE FOR TWO ROUNDS, AND NOTHING NOTICED — because the gate that
+         measures 「コードを足したら文も足す」 did not have js/gis-datasets.js in its population, and a
+         gate's population is what decides what it cannot see. `timeRefused` is the field #R735 built
+         so a declaration the data does not bear out is REFUSED rather than copied into the record;
+         the panel shows it now, and a reader who names the wrong column is told which rule broke
+         instead of silently getting a dataset that timeWindow will refuse later. */
+      if (code === 'time-declaration-not-an-object') return window.IntMapLang.t(HOST.lang, 'The time declaration is not in a form this layer can read', '時刻の宣言が、この層が読める形になっていません', 'Die Zeitangabe hat keine Form, die diese Schicht lesen kann', 'Объявление времени задано в форме, которую слой прочитать не может', 'La declaración de tiempo no tiene una forma legible para esta capa');
+      if (code === 'time-kind-unknown') return window.IntMapLang.t(HOST.lang, 'That is not a shape of time axis this layer knows', 'その時間軸の種類は、この層が知らないものです', 'Das ist keine Zeitachsen-Form, die diese Schicht kennt', 'Такой вид временной оси слою неизвестен', 'Esa no es una forma de eje temporal que esta capa conozca') + par(d.kind);
+      if (code === 'time-kind-not-for-raster') return window.IntMapLang.t(HOST.lang, 'A grid has no rows to carry a time column, so only a time for the whole dataset can apply', '格子には時刻の列を持つ行が無いため、データセット全体の時刻しか指定できません', 'Ein Raster hat keine Zeilen für eine Zeitspalte — nur eine Zeit für den ganzen Datensatz ist möglich', 'У сетки нет строк для столбца времени, поэтому применимо только время всего набора', 'Una rejilla no tiene filas que lleven una columna de tiempo, así que solo cabe un tiempo para todo el conjunto') + par(d.kind);
+      if (code === 'time-field-not-named') return window.IntMapLang.t(HOST.lang, 'The time declaration does not say which column holds the time', '時刻の宣言が、どの列を時刻とするかを述べていません', 'Die Zeitangabe nennt nicht die Spalte mit der Zeit', 'Объявление времени не указывает столбец со временем', 'La declaración de tiempo no dice qué columna contiene el tiempo');
+      if (code === 'time-field-missing') return window.IntMapLang.t(HOST.lang, 'The column the time declaration names is not in the data', '時刻の宣言が指している列が、データにありません', 'Die in der Zeitangabe genannte Spalte fehlt in den Daten', 'Столбца, названного в объявлении времени, в данных нет', 'La columna que nombra la declaración de tiempo no está en los datos') + par(d.field);
+      if (code === 'time-unreadable') return window.IntMapLang.t(HOST.lang, 'The values in that column do not read as times, so the declaration was refused rather than believed', 'その列の値が時刻として読めないため、宣言は信用せずに拒否しました', 'Die Werte dieser Spalte lesen sich nicht als Zeiten; die Angabe wurde abgelehnt statt geglaubt', 'Значения столбца не читаются как время, поэтому объявление отклонено, а не принято на веру', 'Los valores de esa columna no se leen como tiempos, así que la declaración se rechazó en vez de creerse')
+        + par([d.field, d.example].filter((x) => x != null && x !== '').join(' · '));
+      if (code === 'time-constant-empty') return window.IntMapLang.t(HOST.lang, 'A time for the whole dataset was declared without a readable start or end', 'データセット全体の時刻が宣言されましたが、読める開始も終了もありません', 'Eine Zeit für den ganzen Datensatz wurde ohne lesbaren Anfang oder Ende angegeben', 'Время для всего набора объявлено без читаемого начала или конца', 'Se declaró un tiempo para todo el conjunto sin inicio ni fin legibles');
+      if (code === 'time-track-not-an-array') return window.IntMapLang.t(HOST.lang, 'A per-position time axis has to be a list of times running alongside the positions', '位置ごとの時間軸は、位置と並ぶ時刻の一覧である必要があります', 'Eine Zeitachse je Position muss eine Liste von Zeiten parallel zu den Positionen sein', 'Ось времени по позициям должна быть списком времён параллельно позициям', 'Un eje temporal por posición debe ser una lista de tiempos paralela a las posiciones') + par(d.field);
+      /* ⚠ THE COUNTS ARE IN THE SENTENCE. One dropped position shifts every timestamp after it by
+         one — the defect #R735 names — and 「4,001 対 4,000」 is what lets a reader see that rather
+         than a vague 「軌跡の時刻が合いません」. */
+      if (code === 'time-track-misaligned') return window.IntMapLang.t(HOST.lang, 'The list of times is not the same length as the positions, so every time after the gap would describe the wrong point', '時刻の一覧が位置の数と一致しないため、ずれた先の時刻がすべて別の点のものになります', 'Die Zeitliste ist nicht so lang wie die Positionen — ab der Lücke beschriebe jede Zeit den falschen Punkt', 'Список времён не совпадает по длине с позициями, поэтому после разрыва каждое время описывало бы не ту точку', 'La lista de tiempos no tiene la misma longitud que las posiciones, así que tras el hueco cada tiempo describiría otro punto')
+        + par([d.field, (d.times != null && d.positions != null) ? (nf(d.times) + ' ≠ ' + nf(d.positions)) : null].filter(Boolean).join(' · '));
+
+      /* ── js/gis-datasets.js — the editing layer (#R738) ───────────────────────────────────────
+         ⚠ THE REFUSALS ARE THE FEATURE. Editing attributes is a small thing to implement and an easy
+         thing to get wrong: the two that matter here say NO to work the reader is entitled to expect
+         would be silently destructive. An op's output is the answer to its recipe, so editing it
+         would make `setParams` quietly discard what was typed; a column another dataset was built
+         from cannot be removed without making that recipe unrunnable. Both name the reason, and
+         both name what the reader can do instead. */
+      if (code === 'edit-needs-features') return window.IntMapLang.t(HOST.lang, 'A grid holds pixels, not attributes, so there is nothing here to edit', '格子が持つのは画素であって属性ではないため、編集できるものがありません', 'Ein Raster hält Pixel, keine Attribute — hier gibt es nichts zu bearbeiten', 'Сетка содержит пиксели, а не атрибуты, поэтому редактировать нечего', 'Una rejilla contiene píxeles, no atributos, así que aquí no hay nada que editar');
+      if (code === 'edit-would-contradict-recipe') return window.IntMapLang.t(HOST.lang, 'This dataset is the result of a step, and its values are what that step produces — edit the imported data, or make a copy to edit', 'このデータセットは処理の結果で、値はその処理が出すものです。取り込んだ側を編集するか、編集用の複製を作ってください', 'Dieser Datensatz ist das Ergebnis eines Schritts; seine Werte sind dessen Ausgabe — bearbeiten Sie die importierten Daten oder eine Kopie', 'Этот набор — результат шага, и его значения производит этот шаг — редактируйте импортированные данные или копию', 'Este conjunto es el resultado de un paso y sus valores son lo que ese paso produce — edite los datos importados o una copia') + par(d.op);
+      if (code === 'field-not-named') return window.IntMapLang.t(HOST.lang, 'No column was named', '列が指定されていません', 'Es wurde keine Spalte genannt', 'Столбец не указан', 'No se indicó ninguna columna');
+      if (code === 'nothing-declared') return window.IntMapLang.t(HOST.lang, 'Nothing was declared about that column — give it a type, a unit, or both', 'その列について何も宣言されていません。型か単位か、その両方を指定してください', 'Über diese Spalte wurde nichts erklärt — geben Sie Typ, Einheit oder beides an', 'О столбце ничего не заявлено — укажите тип, единицу или и то и другое', 'No se declaró nada sobre esa columna — indique tipo, unidad o ambos');
+      if (code === 'field-type-unknown') return window.IntMapLang.t(HOST.lang, 'That is not a column type this layer knows', 'その型は、この層が扱う列の型ではありません', 'Das ist kein Spaltentyp, den diese Schicht kennt', 'Такого типа столбца этот слой не знает', 'Ese no es un tipo de columna que esta capa conozca') + par(d.type);
+      /* ⚠ THE COUNT AND AN EXAMPLE, because the declaration was refused by the DATA. A reader told
+         only 「数値にできません」 has to go looking for the cell; told 「3 件・例: 01100」 they can see
+         at once whether it is a code column or three typos. */
+      if (code === 'field-type-refused') return window.IntMapLang.t(HOST.lang, 'The values in that column do not all read as that type, so the declaration was refused rather than written down as a fact', 'その列の値がすべてその型として読めないため、宣言は事実として記録せずに拒否しました', 'Nicht alle Werte dieser Spalte lesen sich als dieser Typ; die Angabe wurde abgelehnt statt als Tatsache festgehalten', 'Не все значения столбца читаются как этот тип, поэтому объявление отклонено, а не записано как факт', 'No todos los valores de esa columna se leen como ese tipo, así que la declaración se rechazó en vez de anotarse como un hecho')
+        + par([d.type, d.bad != null ? (nf(d.bad) + '/' + nf(d.checked)) : null, d.example].filter((x) => x != null && x !== '').join(' · '));
+      if (code === 'unit-not-a-string') return window.IntMapLang.t(HOST.lang, 'A unit has to be written as text', '単位は文字列で指定してください', 'Eine Einheit muss als Text angegeben werden', 'Единицу нужно задавать текстом', 'La unidad debe escribirse como texto');
+      if (code === 'no-edits') return window.IntMapLang.t(HOST.lang, 'No changes were given', '変更が渡されていません', 'Es wurden keine Änderungen übergeben', 'Изменения не переданы', 'No se indicó ningún cambio');
+      if (code === 'index-not-a-number') return window.IntMapLang.t(HOST.lang, 'A row has to be named by its position', '行は位置の番号で指定してください', 'Eine Zeile muss über ihre Position angegeben werden', 'Строка задаётся её позицией', 'Una fila se indica por su posición') + par(d.index);
+      if (code === 'index-out-of-range') return window.IntMapLang.t(HOST.lang, 'There is no row at that position', 'その位置に行がありません', 'An dieser Position gibt es keine Zeile', 'В этой позиции строки нет', 'No hay ninguna fila en esa posición') + par(d.index != null ? (nf(d.index) + ' / ' + nf(d.count)) : null);
+      if (code === 'value-undefined') return window.IntMapLang.t(HOST.lang, 'No value was given — to empty a cell, give it an empty text', '値が渡されていません。空にするには空文字列を渡してください', 'Es wurde kein Wert übergeben — zum Leeren einen leeren Text angeben', 'Значение не передано — чтобы очистить ячейку, передайте пустой текст', 'No se dio ningún valor — para vaciar una celda, use un texto vacío') + par(d.field);
+      if (code === 'field-exists') return window.IntMapLang.t(HOST.lang, 'A column of that name is already there', 'その名前の列は既にあります', 'Eine Spalte dieses Namens gibt es bereits', 'Столбец с таким именем уже есть', 'Ya hay una columna con ese nombre') + par(d.field);
+      if (code === 'field-in-time-axis') return window.IntMapLang.t(HOST.lang, "That column is the dataset's time axis — removing or renaming it would leave the declaration naming a column that is not there", 'その列はこのデータセットの時間軸です。消すか名前を変えると、宣言が存在しない列を指すことになります', 'Diese Spalte ist die Zeitachse des Datensatzes — Entfernen oder Umbenennen ließe die Angabe auf eine fehlende Spalte zeigen', 'Этот столбец — временная ось набора: удаление или переименование оставит объявление указывающим на несуществующий столбец', 'Esa columna es el eje temporal del conjunto — quitarla o renombrarla dejaría la declaración apuntando a una columna inexistente') + par(d.field);
+      if (code === 'field-has-dependents') return window.IntMapLang.t(HOST.lang, 'Another dataset was built from this one, and it may be reading that column — delete the results first, or keep the column', 'このデータセットから作られた結果があり、その列を読んでいるかもしれません。先に結果を消すか、列を残してください', 'Aus diesem Datensatz wurde ein anderer gebaut, der diese Spalte lesen könnte — löschen Sie zuerst die Ergebnisse oder behalten Sie die Spalte', 'Из этого набора построен другой, который может читать этот столбец — сначала удалите результаты или оставьте столбец', 'De este conjunto se construyó otro que puede estar leyendo esa columna — borre primero los resultados o conserve la columna') + par(Array.isArray(d.dependents) ? d.dependents.join(', ') : d.field);
+      /* ⚠ NOT A REFUSAL — IT IS WHY A RECORD IS MARKED. js/gis-datasets.js invalidates the dependents
+         of an edited dataset with this reason, and the 「古いまま」 badge used to say `input-stale`
+         («a recomputation above it failed») about it, which is a diagnosis of something that did not
+         happen. What the reader has to do here is different too: re-run the step. */
+      if (code === 'input-edited') return window.IntMapLang.t(HOST.lang, 'A dataset this was built from has been edited since, so this still holds the answer to the earlier values — recompute it', 'これを作った元のデータセットがその後編集されたため、これは編集前の値に対する結果のままです。再計算してください');
+      if (code === 'nothing-to-undo') return window.IntMapLang.t(HOST.lang, 'There is nothing left to undo', '元に戻せる操作がありません', 'Es gibt nichts mehr rückgängig zu machen', 'Отменять больше нечего', 'No queda nada que deshacer');
+      if (code === 'nothing-to-redo') return window.IntMapLang.t(HOST.lang, 'There is nothing to redo', 'やり直せる操作がありません', 'Es gibt nichts zu wiederholen', 'Повторять нечего', 'No hay nada que rehacer');
+      if (code === 'edit-not-reversible') return window.IntMapLang.t(HOST.lang, 'That change cannot be undone from what was recorded, so it was left alone rather than half-applied', 'その変更は記録から元に戻せないため、中途半端に適用せずそのままにしました', 'Diese Änderung lässt sich aus dem Aufgezeichneten nicht rückgängig machen; sie blieb unangetastet statt halb angewendet', 'Это изменение нельзя отменить по записанному, поэтому оно оставлено как есть, а не применено наполовину', 'Ese cambio no se puede deshacer con lo registrado, así que se dejó intacto en vez de aplicarse a medias');
+      /* ⚠ THREE THINGS SHARE ONE EMPTY `geometryType` — an empty dataset, a grid, and a table of rows
+         that state no place — so the sentence has to say WHICH, and js/gis-datasets.js measures it
+         (`withGeometry`) rather than inferring it. */
+      if (code === 'input-has-no-geometry') return window.IntMapLang.t(HOST.lang, 'That input is a table: it has rows but no shapes, so a step that measures places cannot use it', 'その入力は表です。行はありますが図形が無いため、場所を測る処理では使えません', 'Diese Eingabe ist eine Tabelle: Zeilen ohne Formen — ein Schritt, der Orte misst, kann sie nicht verwenden', 'Этот вход — таблица: строки есть, а фигур нет, поэтому шаг, измеряющий места, её использовать не может', 'Esa entrada es una tabla: tiene filas pero no formas, así que un paso que mide lugares no puede usarla') + par(d.rows != null ? (nf(d.rows) + ' ' + window.IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas')) : null);
+
+      /* ── the attribute steps (#R738) ──────────────────────────────────────────────────────────
+         ⚠ EACH OF THESE NAMES WHAT TO CHANGE. A join that refuses without saying WHICH column
+         collided, or WHICH key appeared twice, leaves the reader holding two files and no next move
+         — and these two refusals exist precisely because the alternative (overwrite, or pick one) is
+         a silently wrong table rather than an error. */
+      if (code === 'join-column-collision') return window.IntMapLang.t(HOST.lang, 'The table brings a column the target already has — give the joined columns a prefix, or choose fewer of them', '結合先に同じ名前の列が既にあります。結合する列に接頭辞を付けるか、列を選び直してください', 'Die Tabelle bringt eine Spalte mit, die das Ziel schon hat — vergeben Sie ein Präfix oder wählen Sie weniger Spalten', 'Таблица приносит столбец, который уже есть в цели — задайте префикс или выберите меньше столбцов', 'La tabla aporta una columna que el destino ya tiene — ponga un prefijo o elija menos columnas') + par(Array.isArray(d.columns) ? d.columns.join(', ') : null);
+      if (code === 'join-right-not-unique') return window.IntMapLang.t(HOST.lang, 'The same code appears more than once in the table, so each match would be ambiguous — say which row to take, or make the codes unique', '同じコードが表の中に複数回あるため、どの行に結合するかが決まりません。どの行を使うか指定するか、コードを一意にしてください', 'Derselbe Code kommt in der Tabelle mehrfach vor, daher wäre jede Zuordnung mehrdeutig — sagen Sie, welche Zeile gilt, oder machen Sie die Codes eindeutig', 'Один и тот же код встречается в таблице несколько раз, поэтому соответствие неоднозначно — укажите, какую строку брать, или сделайте коды уникальными', 'El mismo código aparece más de una vez en la tabla, así que cada coincidencia sería ambigua — indique qué fila tomar o haga únicos los códigos') + par(Array.isArray(d.keys) ? d.keys.join(', ') : d.field);
+      if (code === 'compute-column-exists') return window.IntMapLang.t(HOST.lang, 'That column already exists — choose another name, or say explicitly that it should be replaced', 'その列は既にあります。別の名前にするか、置き換えることを明示してください', 'Diese Spalte existiert bereits — wählen Sie einen anderen Namen oder erlauben Sie das Ersetzen ausdrücklich', 'Такой столбец уже есть — выберите другое имя или явно разрешите замену', 'Esa columna ya existe — elija otro nombre o indique explícitamente que se reemplace') + par(d.field);
+      /* ── js/gis-expr.js (#R738) ───────────────────────────────────────────────────────────────
+         ⚠ HANDED BACK VERBATIM, like the grid kernel's above: 「式のどこが読めなかったか」 is the only
+         sentence that tells the reader what to retype, and `at` is the character position the parser
+         stopped at. A single 「式が正しくありません」 for all nine would be the paraphrase this table
+         exists to avoid. */
+      if (code === 'expr-unavailable') return window.IntMapLang.t(HOST.lang, 'The expression module is not loaded, so this step was not run at all', '式を読む部品が読み込まれていないため、この処理は実行されていません', 'Das Ausdrucks-Modul ist nicht geladen, daher lief dieser Schritt gar nicht', 'Модуль выражений не загружен, поэтому шаг вообще не выполнялся', 'El módulo de expresiones no está cargado, así que este paso no se ejecutó');
+      if (code === 'expr-empty') return window.IntMapLang.t(HOST.lang, 'The expression is empty', '式が空です', 'Der Ausdruck ist leer', 'Выражение пустое', 'La expresión está vacía');
+      if (code === 'expr-syntax') return window.IntMapLang.t(HOST.lang, 'The expression could not be read here', 'この位置で式を読み取れませんでした', 'Der Ausdruck konnte an dieser Stelle nicht gelesen werden', 'Выражение не удалось прочитать в этом месте', 'No se pudo leer la expresión en este punto')
+        + par([d.at != null ? (window.IntMapLang.t(HOST.lang, 'position', '位置', 'Position', 'позиция', 'posición') + ' ' + nf(d.at)) : null, d.token, d.expected ? ('→ ' + d.expected) : null].filter(Boolean).join(' · '));
+      if (code === 'expr-unterminated') return window.IntMapLang.t(HOST.lang, 'Something in the expression is left open — a quote or a bracket is never closed', '式の中に閉じていないものがあります（引用符か括弧）', 'Im Ausdruck bleibt etwas offen — ein Anführungszeichen oder eine Klammer', 'В выражении что-то не закрыто — кавычка или скобка', 'Algo queda abierto en la expresión — una comilla o un paréntesis') + par(d.token);
+      if (code === 'expr-unknown-function') return window.IntMapLang.t(HOST.lang, 'There is no function by that name', 'その名前の関数はありません', 'Es gibt keine Funktion dieses Namens', 'Функции с таким именем нет', 'No existe ninguna función con ese nombre') + par(d.token);
+      if (code === 'expr-arity') return window.IntMapLang.t(HOST.lang, 'That function was given the wrong number of arguments', 'その関数に渡した引数の数が違います', 'Diese Funktion hat die falsche Anzahl Argumente bekommen', 'Функции передано неверное число аргументов', 'Esa función recibió un número de argumentos incorrecto')
+        + par([d.token, d.expected != null ? (window.IntMapLang.t(HOST.lang, 'expected', '必要', 'erwartet', 'нужно', 'se esperan') + ': ' + d.expected) : null, d.got != null ? (window.IntMapLang.t(HOST.lang, 'given', '指定', 'angegeben', 'указано', 'indicadas') + ': ' + nf(d.got)) : null].filter(Boolean).join(' · '));
+      if (code === 'expr-no-number-rule') return window.IntMapLang.t(HOST.lang, 'The registry that decides what counts as a number is not loaded, and this expression will not guess', '何を数とみなすかを決める台帳が読み込まれていないため、式は推測せずに止まりました', 'Das Register, das entscheidet, was als Zahl gilt, ist nicht geladen — der Ausdruck rät nicht', 'Реестр, решающий, что считается числом, не загружен, и выражение не гадает', 'El registro que decide qué cuenta como número no está cargado, y la expresión no adivina');
+      if (code === 'expr-type') return window.IntMapLang.t(HOST.lang, 'Arithmetic was asked of a value that is text — use concat() to join text', '文字列の値に算術を求めています。文字列をつなぐには concat() を使ってください', 'Arithmetik wurde auf einen Textwert angewendet — zum Verbinden von Text concat() verwenden', 'Арифметика применена к тексту — для соединения текста используйте concat()', 'Se pidió aritmética sobre un valor de texto — use concat() para unir texto') + par([d.op, d.value].filter((x) => x != null && x !== '').join(' '));
+      if (code === 'expr-bad-ast') return window.IntMapLang.t(HOST.lang, 'That expression tree is not one this evaluator can read', 'その式の構造は、この評価器が読めるものではありません', 'Dieser Ausdrucksbaum ist für diesen Auswerter nicht lesbar', 'Такое дерево выражения этот вычислитель прочитать не может', 'Ese árbol de expresión no es legible para este evaluador');
+      if (code === 'expr-internal') return window.IntMapLang.t(HOST.lang, 'The expression failed on a row for a reason it could not name', '式がある行で失敗しましたが、理由を名指しできませんでした', 'Der Ausdruck schlug in einer Zeile fehl, ohne den Grund benennen zu können', 'Выражение не сработало на строке по неназванной причине', 'La expresión falló en una fila por un motivo que no pudo nombrar') + par(d.message);
+
       /* ── js/gis-layers.js ────────────────────────────────────────────────────────────────── */
       if (code === 'map-unavailable') return window.IntMapLang.t(HOST.lang, "The map is not ready, so its layers cannot be handed over as data", "地図がまだ使えないため、レイヤーをデータとして受け取れません", "Die Karte ist nicht bereit, daher können ihre Ebenen nicht als Daten übergeben werden", "Карта не готова, поэтому её слои нельзя передать как данные", "El mapa no está listo, así que sus capas no se pueden entregar como datos");
       if (code === 'layer-unknown') return window.IntMapLang.t(HOST.lang, "There is no layer or map source by that name", "その名前のレイヤーも地図ソースもありません", "Es gibt keine Ebene und keine Kartenquelle dieses Namens", "Слоя или источника карты с таким именем нет", "No hay ninguna capa ni fuente de mapa con ese nombre") + par(d.id || d.layer);
@@ -226,6 +331,20 @@ export function makeGisPanel(HOST) {
     let opInputs = [];                   /* dataset id per input slot */
     const opParams = new Map();          /* opId + '|' + param name → the value typed for it */
     let opMsg = '', opBusy = false;
+    /* ⚠ (#R738) A RUN OUTLIVES THE DOM IT WAS STARTED FROM, exactly as the bake in §2b does, and for
+       the same measured reason: render() runs on every registry event, so somebody else's import
+       detaches the button and the progress line while the step is still going. The controller lives
+       here so the next repaint hands the reader back the only way to stop what they started. `node`
+       is re-pointed at each repaint, so progress can be written without repainting the whole panel —
+       a run that yields every 16 ms must not cost a full rebuild every 16 ms. */
+    let opRun = null;                    /* {ac, progress, node} while §3's step is running */
+    const dsRun = new Map();             /* dataset id → {ac, progress, node} while its chain re-runs */
+    /* The one cell being typed into, held outside the DOM for the same reason. */
+    let cellEdit = null;                 /* {id, index, field, value} */
+    const editMsg = new Map();           /* dataset id → the last sentence from an edit */
+    const colForm = new Map();           /* dataset id → what is typed in its column controls */
+    const styleForm = new Map();         /* dataset id → the colouring the reader is composing */
+    const styleMsg = new Map();          /* dataset id → the last sentence from style() */
     let projName = '', projMsg = '';
     let projRows = null, projLoading = false;   /* list() is asynchronous — see sectionProject() */
 
@@ -267,6 +386,93 @@ export function makeGisPanel(HOST) {
       const g = ds && ds.geometryType;
       return g ? String(g) : window.IntMapLang.t(HOST.lang, 'no geometry', '図形なし', 'keine Geometrie', 'без геометрии', 'sin geometría');
     }
+    /* A moment, in the reader's locale. ⚠ The registry's unit is milliseconds and 「-5364662400000」
+       is not a date to anybody; the clock is printed only when the moment is not midnight UTC,
+       because a dataset stamped 「1889」 with a time of day on it reads as a precision it does not
+       have. UTC, because that is the frame the registry stored. */
+    function whenText(ms) {
+      const n = Number(ms);
+      if (!isFinite(n)) return String(ms == null ? '' : ms);
+      const opts = (n % 86400000 === 0) ? { dateStyle: 'medium', timeZone: 'UTC' } : { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' };
+      try { return new Date(n).toLocaleString(window.IntMapLang.locale(HOST.lang), opts); } catch (_) { return String(n); }
+    }
+
+    /* ⚠ (#R738) WHAT THIS RECORD SAYS ABOUT TIME, AND THE SHAPES ARE NOT LISTED HERE. §1.5 declares
+       four kinds today and js/gis-datasets.js may declare a fifth; the declaration the record carries
+       is walked instead, so a kind this file has never heard of still reaches the reader with the
+       columns it names. Without this line a reader could not see WHICH column timeWindow is about to
+       narrow on, and `timeRefused` (the field #R735 built so an unbearable declaration is refused
+       rather than copied) had no reader at all. */
+    function timeText(ds) {
+      const t = ds && ds.time;
+      if (!t || typeof t !== 'object') return '';
+      const bits = [];
+      for (const k of Object.keys(t)) {
+        const v = t[k];
+        if (k === 'kind' || v == null || v === '') continue;
+        bits.push(k + ': ' + ((k === 'start' || k === 'end') ? whenText(v) : (typeof v === 'number' ? nf(v) : String(v))));
+      }
+      return window.IntMapLang.t(HOST.lang, 'Time axis', '時間軸') + ': ' + String(t.kind || '') + (bits.length ? ' · ' + bits.join(' · ') : '');
+    }
+
+    /* The two progress shapes, which are two different questions. js/gis-ops.js answers 「この処理の
+       どこまで」 ({done,total}); js/gis-project.js answers that AND 「鎖の何本目か」 ({step,steps,op,…}),
+       because only the outer one knows there is a chain. Both fall back to the label the button was
+       already carrying, so nothing new is said before there is anything new to say. */
+    function progressText(p) {
+      const head = window.IntMapLang.t(HOST.lang, 'Running…', '実行中…', 'Läuft…', 'Выполняется…', 'Ejecutando…');
+      if (!p || p.done == null) return head;
+      return head + ' · ' + nf(p.done) + (p.total != null ? ' / ' + nf(p.total) : '');
+    }
+    function chainProgressText(p) {
+      const head = window.IntMapLang.t(HOST.lang, 'Recomputing…', '再計算中…', 'Wird neu berechnet…', 'Пересчёт…', 'Recalculando…');
+      if (!p) return head;
+      const bits = [];
+      if (p.step != null) bits.push(nf(p.step) + ' / ' + nf(p.steps) + (p.op ? ' · ' + String(p.op) : ''));
+      if (p.done != null) bits.push(nf(p.done) + (p.total != null ? ' / ' + nf(p.total) : ''));
+      return bits.length ? head + ' · ' + bits.join(' · ') : head;
+    }
+
+    /* ⚠ (#R738) WHAT THE STEP ANSWERED, NOT ONLY THAT IT ANSWERED. runJoin returns how many rows found
+       a partner, how many did not and a sample of the keys that missed — and a join of two files that
+       spell the municipality code differently is structurally perfect, empty of information, and
+       indistinguishable on screen from a good one unless those counts are printed. The pairs are
+       printed as the RUNNER wrote them, like the `detail` of a refusal: a sentence per statistic would
+       be the hand-written per-op list docs/GIS-CORE.md §2.1 forbids, and it would go stale the first
+       time an op learns to report something new. */
+    function statsText(st) {
+      if (!st || typeof st !== 'object') return '';
+      const bits = [];
+      for (const k of Object.keys(st)) {
+        const v = st[k];
+        if (v == null || v === '') continue;
+        if (Array.isArray(v)) { if (v.length) bits.push(k + ': ' + v.slice(0, 5).join(', ')); continue; }
+        if (typeof v === 'object') continue;   /* nested reports (firstError) are refusals, and those have sentences */
+        bits.push(k + ': ' + (typeof v === 'number' ? nf(v) : String(v)));
+      }
+      return bits.join(' · ');
+    }
+
+    /* ⚠ (#R738) THE COLUMN TYPES A READER MAY DECLARE ARE ASKED FOR, NOT LISTED. js/gis-datasets.js
+       refuses an unknown type WITH its own vocabulary in the detail (`field-type-unknown`), so the
+       options on screen are exactly the set the module enforces — a copy here would be a second
+       spelling of one fact, and the day a type is added this control would be the only place in the
+       program that had not heard of it. The probe writes nothing: declareField validates the type
+       before it touches the record, and this string cannot be a type in any vocabulary. Cached for
+       the session, because the answer belongs to the module and not to the dataset it was asked on. */
+    const TYPE_PROBE = '(ask)';
+    let declTypes = null;
+    function declarableTypes(id, field) {
+      if (declTypes) return declTypes;
+      const D = DATA();
+      if (!D || typeof D.declareField !== 'function' || !id || !field) return [];
+      let r = null;
+      try { r = D.declareField(id, field, { type: TYPE_PROBE }); } catch (_) { r = null; }
+      const list = (r && r.detail && Array.isArray(r.detail.types)) ? r.detail.types.map(String) : [];
+      if (list.length) declTypes = list;
+      return list;
+    }
+
     /* Everything that was made FROM this dataset, however many steps away — what a delete takes
        with it, and what has to be NAMED before one happens. */
     function downstream(id) {
@@ -393,6 +599,110 @@ export function makeGisPanel(HOST) {
         return { node: wrap, read: () => (sel.disabled || sel.value === '' ? null : sel.value) };
       }
 
+      /* ⚠ (#R738) `fields` — SEVERAL COLUMNS OF ONE INPUT, and 「何も選ばない」 is a real answer.
+         js/gis-ops.js's runJoin reads an empty list as 「相手の列を全部（鍵は除く）」, so a control that
+         showed nothing there would be read as 「0 列を持ってくる」 — the opposite of what would happen.
+         The sentence under the box says which of the two the reader is looking at. */
+      if (type === 'fields') {
+        const columns = cols();
+        const chosen = new Set(Array.isArray(initial) ? initial.map(String) : []);
+        const box = el('div', CSS_CARD + 'padding:5px 7px;display:flex;flex-direction:column;gap:2px;max-height:132px;overflow:auto;');
+        box.className = 'gis-param-fields';
+        const note = el('div', CSS_NOTE, '');
+        const sayCount = () => {
+          note.textContent = chosen.size
+            ? window.IntMapLang.t(HOST.lang, 'Chosen', '選択中', 'Ausgewählt', 'Выбрано', 'Seleccionadas') + ': ' + nf(chosen.size) + ' / ' + nf(columns.length)
+            : window.IntMapLang.t(HOST.lang, 'Nothing ticked means every column of that input', '何も選ばなければ、その入力の全部の列を持ってきます');
+        };
+        if (!columns.length) {
+          box.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang, 'Choose an input dataset first', '先に入力データセットを選んでください', 'Wählen Sie zuerst einen Eingabedatensatz', 'Сначала выберите входной набор данных', 'Elige primero un conjunto de datos de entrada')));
+        }
+        columns.forEach((col) => {
+          /* the checkbox lives INSIDE the label, so no id has to be invented and a repaint cannot
+             leave a label pointing at an input that is gone */
+          const lb = el('label', 'display:flex;align-items:center;gap:6px;font-size:11.5px;cursor:pointer;min-height:22px;');
+          const cb = el('input', 'min-width:15px;min-height:15px;flex:0 0 auto;');
+          cb.type = 'checkbox'; cb.className = 'gis-param-field-cb'; cb.value = col.name;
+          cb.checked = chosen.has(col.name);
+          cb.onchange = () => { if (cb.checked) chosen.add(col.name); else chosen.delete(col.name); sayCount(); };
+          lb.appendChild(cb);
+          lb.appendChild(el('span', 'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;', col.name + ' · ' + col.type));
+          box.appendChild(lb);
+        });
+        sayCount();
+        wrap.appendChild(box); wrap.appendChild(note);
+        return { node: wrap, read: () => (chosen.size ? Array.from(chosen) : null) };
+      }
+
+      /* ⚠ (#R738) `expression` — AND THE LIST BESIDE IT IS THE KERNEL'S OWN. js/gis-expr.js exists
+         with `functions()` for exactly this ({name, arity, returns, doc}); a list of names typed here
+         would be the second list that file's header forbids, and the first function added there would
+         be one the reader could never learn about. Columns are inserted as `[name]`, which is the
+         parser's own reference form, so a column whose name has a space or a comma still works. */
+      if (type === 'expression') {
+        const ta = el('textarea', CSS_IN + 'min-height:64px;padding:6px 8px;line-height:1.5;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;');
+        ta.className = 'gis-param-expr';
+        if (initial != null) ta.value = String(initial);
+        else if (spec && spec.default != null) ta.value = String(spec.default);
+        const put = (frag, caretBack) => {
+          const s = ta.selectionStart == null ? ta.value.length : ta.selectionStart;
+          const e = ta.selectionEnd == null ? s : ta.selectionEnd;
+          ta.value = ta.value.slice(0, s) + frag + ta.value.slice(e);
+          const at = s + frag.length - (caretBack || 0);
+          try { ta.focus(); ta.setSelectionRange(at, at); } catch (_) { }
+        };
+        wrap.appendChild(ta);
+
+        const columns = cols();
+        if (columns.length) {
+          const cbar = row('gap:4px;');
+          cbar.className = 'gis-expr-cols';
+          cbar.appendChild(el('span', CSS_NOTE, window.IntMapLang.t(HOST.lang, 'Columns', '列', 'Spalten', 'столбцы', 'columnas') + ':'));
+          columns.forEach((col) => {
+            const b = el('button', CSS_BTN + 'min-height:26px;padding:0 7px;font-size:11px;', col.name);
+            b.title = col.name + ' · ' + col.type;
+            b.onclick = () => put('[' + col.name + ']', 0);
+            cbar.appendChild(b);
+          });
+          wrap.appendChild(cbar);
+        }
+
+        const X = EXPR();
+        if (!X || typeof X.functions !== 'function') {
+          wrap.appendChild(el('div', CSS_NOTE, reasonText('expr-unavailable')));
+        } else {
+          let fns = [];
+          try { fns = X.functions() || []; } catch (_) { fns = []; }
+          const fbox = el('div', CSS_CARD + 'padding:5px 7px;display:flex;flex-wrap:wrap;gap:4px;max-height:120px;overflow:auto;');
+          fbox.className = 'gis-expr-funcs';
+          fns.forEach((f) => {
+            const b = el('button', CSS_BTN + 'min-height:26px;padding:0 7px;font-size:11px;', f.name);
+            /* `doc` is a SIGNATURE, not prose (js/gis-expr.js says so): it is shown as written, and
+               the type it answers with is the kernel's word too. */
+            b.title = String(f.doc || f.name) + (f.returns ? ' → ' + String(f.returns) : '');
+            b.onclick = () => put(f.name + '()', 1);
+            fbox.appendChild(b);
+          });
+          wrap.appendChild(fbox);
+        }
+        return { node: wrap, read: () => (ta.value.trim() === '' ? null : ta.value) };
+      }
+
+      /* ⚠ (#R738) `boolean` — FALSE IS AN ANSWER AND IS SENT. paramBlock drops only null/undefined,
+         so an unticked box reaches the op as `false`: compute's `replace` has to be able to SAY no,
+         because its refusal (`compute-column-exists`) is what stops a column being overwritten. */
+      if (type === 'boolean') {
+        /* the name is already printed by the label above this control, so the box carries no second
+           copy of it — a wide <label> is here only to give the tick a finger-sized target */
+        const lb = el('label', 'display:flex;align-items:center;min-height:30px;cursor:pointer;');
+        const cb = el('input', 'min-width:18px;min-height:18px;flex:0 0 auto;');
+        cb.type = 'checkbox'; cb.className = 'gis-param-bool';
+        cb.checked = (initial != null) ? (initial === true || String(initial) === 'true') : ((spec && spec.default) === true);
+        lb.appendChild(cb);
+        wrap.appendChild(lb);
+        return { node: wrap, read: () => !!cb.checked };
+      }
+
       /* number, text, and anything this file has never heard of — a control it cannot draw is
          still a control the reader can fill, which is strictly better than dropping the row. */
       const inp = el('input', CSS_IN);
@@ -463,13 +773,27 @@ export function makeGisPanel(HOST) {
         wrap.appendChild(el('div', CSS_NOTE + 'padding:8px 10px;', window.IntMapLang.t(HOST.lang, 'This dataset carries no attribute columns', 'このデータセットには属性の列がありません', 'Dieser Datensatz hat keine Attributspalten', 'В этом наборе нет столбцов атрибутов', 'Este conjunto no tiene columnas de atributos')));
         out.appendChild(wrap); return out;
       }
+      /* ⚠ (#R738) THE CELLS ARE EDITABLE WHERE THE REGISTRY SAYS THEY ARE, AND THIS FILE DOES NOT
+         SECOND-GUESS IT. `editable()` is the same gate the five mutating doors ask, so an op's output,
+         a grid and a stale record are refused here with the sentence they would be refused with
+         later — and 「処理の結果は編集できない」 reaches the reader as advice (edit the import, or
+         copy it) instead of as a cell that swallows a keystroke. */
+      const D0 = DATA();
+      const gate = (D0 && typeof D0.editable === 'function') ? D0.editable(ds.id) : { ok: false, why: 'registry-missing' };
       const table = el('table', 'border-collapse:collapse;font-size:11px;white-space:nowrap;');
       const thead = el('thead', ''), htr = el('tr', '');
       cols.forEach((c) => {
         const th = el('th', 'text-align:left;padding:5px 8px;border-bottom:1px solid var(--glass-border,rgba(128,128,128,0.22));position:sticky;top:0;background:var(--card-bg,#1c1c1e);');
         th.appendChild(el('div', 'font-weight:600;color:var(--text-main,#f2f2f7);', c.name));
-        const meta = String(c.type) + (c.empty ? ' · ' + nf(c.empty) + ' ' + window.IntMapLang.t(HOST.lang, 'empty', '空', 'leer', 'пусто', 'vacías') : '');
-        th.appendChild(el('div', 'font-weight:400;color:var(--text-muted,#98989f);', meta));
+        /* ⚠ THE MEASUREMENT AND THE DECLARATION ARE TWO FACTS AND BOTH ARE SHOWN. js/gis-datasets.js
+           never overwrites the measured `type` with a declared one, precisely so 「測ると text・読者が
+           number と宣言」 can be read as the two statements it is; collapsing them here would throw
+           away the distinction the registry went to the trouble of keeping. */
+        const meta = [window.IntMapLang.t(HOST.lang, 'measured', '測定', 'gemessen', 'измерено', 'medido') + ': ' + String(c.type)];
+        if (c.typeStated) meta.push(window.IntMapLang.t(HOST.lang, 'declared', '宣言', 'erklärt', 'заявлено', 'declarado') + ': ' + String(c.typeStated) + (c.typeStatedBy ? ' (' + String(c.typeStatedBy) + ')' : ''));
+        if (c.unit) meta.push(String(c.unit) + (c.unitStated ? ' (' + String(c.unitStated) + ')' : ''));
+        if (c.empty) meta.push(nf(c.empty) + ' ' + window.IntMapLang.t(HOST.lang, 'empty', '空', 'leer', 'пусто', 'vacías'));
+        th.appendChild(el('div', 'font-weight:400;color:var(--text-muted,#98989f);', meta.join(' · ')));
         htr.appendChild(th);
       });
       thead.appendChild(htr); table.appendChild(thead);
@@ -477,13 +801,56 @@ export function makeGisPanel(HOST) {
       let feats = [];
       try { feats = ds.features() || []; } catch (_) { feats = []; }
       const LIMIT = 200;
-      feats.slice(0, LIMIT).forEach((f) => {
+      const commitCell = () => {
+        const e = cellEdit;
+        if (!e) return;
+        cellEdit = null;
+        /* ⚠ AN UNCHANGED CELL IS NOT AN EDIT, AND IT DOES NOT REPAINT. Leaving a cell by clicking the
+           next one blurs this input; repainting on that would detach the cell the reader is in the
+           middle of clicking, so moving across the table would take two clicks per cell. Nothing is
+           left on screen either way — the next repaint is the one that removes this input. */
+        if (e.value === e.was) return;
+        const D = DATA();
+        if (!D || typeof D.editValues !== 'function') { editMsg.set(ds.id, reasonText('registry-missing')); render(); return; }
+        /* ⚠ THE TEXT IS HANDED OVER AS TYPED. What a value IS — a number, a zero-padded code, a date
+           — is decided by the registry over the whole column (docs/GIS-CORE.md §1.1), and a
+           conversion invented here would be a second typing rule: 「01100」 turned into 1100 on its
+           way in is the very defect that rule exists to prevent. */
+        const r = D.editValues(ds.id, [{ index: e.index, field: e.field, value: e.value }]);
+        if (r && r.ok === false) editMsg.set(ds.id, reasonText(r.why, r.detail)); else editMsg.delete(ds.id);
+        render();
+      };
+      feats.slice(0, LIMIT).forEach((f, i) => {
         const tr = el('tr', '');
         cols.forEach((c) => {
           const v = ((f && f.properties) || {})[c.name];
           const s = v == null ? '' : (typeof v === 'number' ? nf(v) : String(v));
-          const td = el('td', 'padding:4px 8px;border-bottom:1px solid rgba(128,128,128,0.12);color:var(--text-main,#f2f2f7);max-width:180px;overflow:hidden;text-overflow:ellipsis;', s.length > 60 ? s.slice(0, 60) + '…' : s);
+          const base = 'padding:4px 8px;border-bottom:1px solid rgba(128,128,128,0.12);color:var(--text-main,#f2f2f7);max-width:180px;overflow:hidden;text-overflow:ellipsis;';
+          if (cellEdit && cellEdit.id === ds.id && cellEdit.index === i && cellEdit.field === c.name) {
+            const td = el('td', base + 'padding:2px 4px;');
+            const inp = el('input', CSS_IN + 'min-height:26px;font-size:11px;min-width:96px;');
+            inp.className = 'gis-cell-input'; inp.type = 'text'; inp.value = cellEdit.value;
+            inp.oninput = () => { if (cellEdit) cellEdit.value = inp.value; };
+            inp.onkeydown = (ev) => {
+              if (ev.key === 'Enter') { ev.preventDefault(); commitCell(); }
+              else if (ev.key === 'Escape') { ev.preventDefault(); cellEdit = null; render(); }
+            };
+            inp.onblur = () => commitCell();
+            td.appendChild(inp);
+            /* the panel is rebuilt wholesale, so the caret is put back after the node is in the
+               document rather than at construction time */
+            try { setTimeout(() => { try { inp.focus(); inp.select(); } catch (_) { } }, 0); } catch (_) { }
+            tr.appendChild(td);
+            return;
+          }
+          const td = el('td', base + (gate.ok ? 'cursor:text;' : ''), s.length > 60 ? s.slice(0, 60) + '…' : s);
           if (s.length > 60) td.title = s;
+          if (gate.ok) {
+            /* ⚠ THE RAW CELL, NOT WHAT IS ON SCREEN. `s` has been localised (1,234) and possibly cut
+               at 60 characters; opening the editor with that would let a reader save the display of
+               their own data over the data. */
+            td.onclick = () => { const raw = v == null ? '' : String(v); cellEdit = { id: ds.id, index: i, field: c.name, value: raw, was: raw }; render(); };
+          }
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -491,6 +858,17 @@ export function makeGisPanel(HOST) {
       table.appendChild(tbody);
       wrap.appendChild(table);
       out.appendChild(wrap);
+      /* ⚠ A REFUSED TYPE DECLARATION IS SHOWN WITH ITS EVIDENCE. `typeRefused` holds the count that
+         did not read as that type and one of them, which is what lets a reader see at once whether
+         they have a code column or three typos — the sentence is reasonText's, so this is only a
+         matter of putting it where it can be read. */
+      cols.forEach((c) => {
+        if (!c.typeRefused) return;
+        const tr = c.typeRefused;
+        const w = el('div', CSS_WARN, c.name + ' — ' + reasonText('field-type-refused', { field: c.name, type: tr.type, bad: tr.bad, checked: tr.checked, example: tr.example }));
+        w.className = 'gis-type-refused';
+        out.appendChild(w);
+      });
       /* ⚠ BOTH NUMBERS, ALWAYS. 「200」 on its own is read as 「all of it」, and every count a reader
          takes off this screen afterwards would be wrong by however much was cut. */
       const shown = Math.min(LIMIT, feats.length);
@@ -544,9 +922,26 @@ export function makeGisPanel(HOST) {
       box.appendChild(block.node);
       if (decl.needsGeodesy && !GEODESY()) box.appendChild(el('div', CSS_WARN, reasonText('geodesy-missing')));
       if (decl.needsGeometry && !GEOM()) box.appendChild(el('div', CSS_WARN, reasonText('geometry-missing')));
+      /* ⚠ (#R738) THE RUNNING CHAIN IS DRAWN FROM MODULE STATE, NOT FROM THIS CLOSURE. A rebuild
+         removes and re-adds every downstream record, and the registry emits on each — so the panel
+         repaints several times DURING the run, and a stop button held in this closure would be
+         detached at the first of them. `dsRun` is the same answer §2b's bake found. */
+      const live = dsRun.get(ds.id);
+      if (live) {
+        const lrow = row('');
+        const sp = el('div', CSS_NOTE + 'flex:1 1 auto;min-width:0;', live.progress || chainProgressText(null));
+        sp.className = 'gis-recalc-progress';
+        live.node = sp;
+        const stop = el('button', CSS_BTND, window.IntMapLang.t(HOST.lang, 'Stop this run', '実行を中止する'));
+        stop.className = 'gis-recalc-stop';
+        stop.onclick = () => { try { if (live.ac) live.ac.abort(); } catch (_) { } };
+        lrow.appendChild(sp); lrow.appendChild(stop);
+        box.appendChild(lrow);
+      }
       const bar = row('');
       const go = el('button', CSS_BTNP, window.IntMapLang.t(HOST.lang, 'Recompute', '再計算', 'Neu berechnen', 'Пересчитать', 'Recalcular'));
       go.className = 'gis-recalc';
+      go.disabled = !!live;
       go.onclick = () => {
         const P = PROJ();
         const params = block.readAll();
@@ -554,15 +949,30 @@ export function makeGisPanel(HOST) {
         const miss = block.missing();
         if (miss.length) { dsMsg.set(ds.id, reasonText('missing-param', { param: miss[0] })); render(); return; }
         if (!P || typeof P.setParams !== 'function') { dsMsg.set(ds.id, reasonText('ops-unavailable')); render(); return; }
-        dsMsg.set(ds.id, window.IntMapLang.t(HOST.lang, 'Recomputing…', '再計算中…', 'Wird neu berechnet…', 'Пересчёт…', 'Recalculando…'));
+        /* ⚠ (#R738) THE SIGNAL IS ACTUALLY PASSED. js/gis-project.js takes `{signal,onProgress}` and
+           hands it down to every step of the chain, and the only caller in the program that had ever
+           handed one over was a test — an argument nothing passes is the same nothing as an export
+           nothing calls. Cancelling between steps disturbs no record, and `cancelled` already has its
+           sentence, so recomputeText prints it without anything new being said here. */
+        const ac = (typeof AbortController === 'function') ? new AbortController() : null;
+        const run = { ac: ac, progress: chainProgressText(null), node: null };
+        dsRun.set(ds.id, run);
+        dsMsg.delete(ds.id);
         render();
-        Promise.resolve().then(() => P.setParams(ds.id, params)).then((res) => {
-          dsMsg.set(ds.id, recomputeText(res));
-          /* the rebuild removes and re-adds every downstream dataset, so anything that was on the
-             map is a layer of the OLD result — the row says so rather than pretending otherwise */
-          ((res && res.rebuilt) || []).forEach((id) => drawn.delete(id));
-          render();
-        }).catch((e) => { dsMsg.set(ds.id, reasonText('op-failed', { message: e && e.message })); render(); });
+        const finish = (fn) => { dsRun.delete(ds.id); fn(); render(); };
+        Promise.resolve().then(() => P.setParams(ds.id, params, {
+          signal: ac ? ac.signal : null,
+          /* written straight onto the live line: the chain yields about every 16 ms, and a full
+             repaint of the panel at that rate is the frame budget the yielding was bought with */
+          onProgress: (p) => { run.progress = chainProgressText(p); if (run.node) { try { run.node.textContent = run.progress; } catch (_) { } } },
+        })).then((res) => {
+          finish(() => {
+            dsMsg.set(ds.id, recomputeText(res));
+            /* the rebuild removes and re-adds every downstream dataset, so anything that was on the
+               map is a layer of the OLD result — the row says so rather than pretending otherwise */
+            ((res && res.rebuilt) || []).forEach((id) => drawn.delete(id));
+          });
+        }).catch((e) => { finish(() => { dsMsg.set(ds.id, reasonText('op-failed', { message: e && e.message })); }); });
       };
       bar.appendChild(go);
       box.appendChild(bar);
@@ -585,6 +995,264 @@ export function makeGisPanel(HOST) {
       if (why.length) s += ' — ' + why.slice(0, 3).join(' / ');
       else if (r.ok === false && r.why) s += ' — ' + reasonText(r.why, r.detail);
       return s;
+    }
+
+    /* ══ §2c · EDITING THE ATTRIBUTES (#R738) ═════════════════════════════════════════════════
+       ⚠ THE REFUSALS ARE THE POINT OF THE SECTION, not an edge of it. js/gis-datasets.js will not let
+       an op's output be edited (its values are what its recipe produces), will not remove a column
+       another dataset was built from, and will not let the time axis be renamed out from under the
+       declaration that names it — and each of those says what the reader can do instead. So the
+       section asks the module and prints the module's answer; nothing here decides what is editable.
+       ⚠ Undo and redo are the MODULE's stacks, and their depth is on screen: a button that is greyed
+       with no number is a control the reader cannot reason about. */
+    function editBlock(ds) {
+      const D = DATA();
+      if (!D || typeof D.editable !== 'function') return null;
+      const box = el('div', 'display:flex;flex-direction:column;gap:6px;min-width:0;');
+      box.className = 'gis-edit';
+      box.appendChild(el('div', CSS_SECTH, window.IntMapLang.t(HOST.lang, 'Edit the attributes', '属性を編集する')));
+      const gate = D.editable(ds.id);
+      if (!gate.ok) { box.appendChild(el('div', CSS_NOTE, reasonText(gate.why, gate.detail))); return box; }
+
+      const say = (r) => {
+        if (r && r.ok === false) editMsg.set(ds.id, reasonText(r.why, r.detail));
+        else editMsg.delete(ds.id);
+        render();
+      };
+
+      const hist = (typeof D.history === 'function') ? D.history(ds.id) : { undo: 0, redo: 0 };
+      const hbar = row('');
+      const mkStep = (label, count, cls, why, go) => {
+        const b = el('button', CSS_BTN, label + ' (' + nf(count) + ')');
+        b.className = cls;
+        if (!count) {
+          /* ⚠ DISABLED AND SAYING WHY. An empty history is not a failure, and the reason is already
+             a sentence — so the control is unpressable and carries it, rather than being pressable
+             and answering with a refusal the reader could have been spared. */
+          b.disabled = true; b.style.opacity = '0.45'; b.style.cursor = 'default';
+          b.title = reasonText(why);
+        } else b.onclick = () => say(go());
+        return b;
+      };
+      hbar.appendChild(mkStep(window.IntMapLang.t(HOST.lang, 'Undo', '元に戻す', 'Rückgängig', 'Отменить', 'Deshacer'), hist.undo, 'gis-undo', 'nothing-to-undo', () => D.undo(ds.id)));
+      hbar.appendChild(mkStep(window.IntMapLang.t(HOST.lang, 'Redo', 'やり直す', 'Wiederholen', 'Повторить', 'Rehacer'), hist.redo, 'gis-redo', 'nothing-to-redo', () => D.redo(ds.id)));
+      box.appendChild(hbar);
+      box.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang, 'Click a cell in the table above to change its value', '上の表のセルを押すと値を編集できます')));
+
+      const cols = Array.isArray(ds.fields) ? ds.fields : [];
+      const held = colForm.get(ds.id) || { field: '', type: '', unit: '', rename: '', newName: '', newValue: '' };
+      colForm.set(ds.id, held);
+      if (!cols.some((c) => c.name === held.field)) held.field = cols.length ? cols[0].name : '';
+
+      if (cols.length) {
+        const pick = el('select', CSS_IN);
+        pick.className = 'gis-col-pick';
+        cols.forEach((c) => { const o = el('option', '', c.name + ' · ' + c.type); o.value = c.name; if (c.name === held.field) o.selected = true; pick.appendChild(o); });
+        pick.onchange = () => { held.field = pick.value; render(); };
+        box.appendChild(pick);
+
+        /* Declare — a type, a unit, or both. ⚠ The empty option is 「宣言しない」 and not a type:
+           sending it would be a claim, and a claim about a column is the thing this face exists to
+           make deliberate. */
+        const dbar = row('');
+        const tsel = el('select', CSS_IN + 'flex:1 1 92px;width:auto;min-width:84px;');
+        tsel.className = 'gis-col-type';
+        const blank = el('option', '', '—'); blank.value = ''; tsel.appendChild(blank);
+        const types = declarableTypes(ds.id, held.field);
+        types.forEach((t) => { const o = el('option', '', t); o.value = t; if (t === held.type) o.selected = true; tsel.appendChild(o); });
+        if (!types.length) tsel.disabled = true;
+        tsel.onchange = () => { held.type = tsel.value; };
+        const usel = el('input', CSS_IN + 'flex:1 1 84px;width:auto;min-width:72px;');
+        usel.className = 'gis-col-unit'; usel.type = 'text'; usel.value = held.unit;
+        usel.placeholder = window.IntMapLang.t(HOST.lang, 'Unit', '単位', 'Einheit', 'Единица', 'Unidad');
+        usel.oninput = () => { held.unit = usel.value; };
+        const dgo = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Declare', '宣言する'));
+        dgo.className = 'gis-col-declare';
+        dgo.onclick = () => {
+          const spec = {};
+          if (held.type) spec.type = held.type;
+          if (String(held.unit).trim() !== '') spec.unit = held.unit;
+          /* An empty spec is not silently ignored: the module answers `nothing-declared`, which is
+             the sentence that tells the reader what the control wanted. */
+          say(D.declareField(ds.id, held.field, spec));
+        };
+        dbar.appendChild(tsel); dbar.appendChild(usel); dbar.appendChild(dgo);
+        box.appendChild(dbar);
+
+        const rbar = row('');
+        const rin = el('input', CSS_IN + 'flex:1 1 104px;width:auto;min-width:88px;');
+        rin.className = 'gis-col-rename'; rin.type = 'text'; rin.value = held.rename;
+        rin.placeholder = window.IntMapLang.t(HOST.lang, 'New name for this column', 'この列の新しい名前');
+        rin.oninput = () => { held.rename = rin.value; };
+        const rgo = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Rename', '名称変更'));
+        rgo.className = 'gis-col-rename-go';
+        rgo.onclick = () => { const r = D.renameField(ds.id, held.field, String(held.rename || '')); if (r && r.ok) held.rename = ''; say(r); };
+        const rm = el('button', CSS_BTND, window.IntMapLang.t(HOST.lang, 'Delete this column', 'この列を削除'));
+        rm.className = 'gis-col-remove';
+        rm.onclick = () => say(D.removeField(ds.id, held.field));
+        rbar.appendChild(rin); rbar.appendChild(rgo); rbar.appendChild(rm);
+        box.appendChild(rbar);
+      }
+
+      const abar = row('');
+      const nin = el('input', CSS_IN + 'flex:1 1 96px;width:auto;min-width:82px;');
+      nin.className = 'gis-col-new'; nin.type = 'text'; nin.value = held.newName;
+      nin.placeholder = window.IntMapLang.t(HOST.lang, 'Name of a new column', '新しい列の名前');
+      nin.oninput = () => { held.newName = nin.value; };
+      const vin = el('input', CSS_IN + 'flex:1 1 84px;width:auto;min-width:72px;');
+      vin.className = 'gis-col-new-value'; vin.type = 'text'; vin.value = held.newValue;
+      vin.placeholder = window.IntMapLang.t(HOST.lang, 'Value on every row', '全行に入れる値');
+      vin.oninput = () => { held.newValue = vin.value; };
+      const ago = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Add a column', '列を追加'));
+      ago.className = 'gis-col-add';
+      /* ⚠ EMPTY MEANS EMPTY, NOT THE TEXT 「」. addField(…, null) leaves every cell absent, which is
+         what an empty column looks like everywhere else in this layer; writing '' would make a column
+         that the registry types as text because the reader typed nothing. */
+      ago.onclick = () => { const r = D.addField(ds.id, String(held.newName || ''), String(held.newValue) === '' ? null : held.newValue); if (r && r.ok) { held.newName = ''; held.newValue = ''; } say(r); };
+      abar.appendChild(nin); abar.appendChild(vin); abar.appendChild(ago);
+      box.appendChild(abar);
+
+      const m = editMsg.get(ds.id);
+      if (m) { const mm = el('div', CSS_WARN, m); mm.className = 'gis-edit-msg'; box.appendChild(mm); }
+      return box;
+    }
+
+    /* ══ §2d · COLOURING THE MAP BY A COLUMN (#R738) ═══════════════════════════════════════════
+       ⚠ THE CLASSIFIER IS js/map-ui.js's, AND SO IS THE LEGEND. `style()` returns the snapshot the
+       map was painted from; recomputing the classes here to draw them would be the #R650 shape — two
+       calculations of one fact, which drift the first time either is touched — so this reads
+       `styleOf()` and prints what is there. The refusals are `styleReason()`'s for the same reason
+       the ops' are reasonText's: one sentence per fact, in one place. */
+    function styleBlock(ds) {
+      const u = UP();
+      if (!u || typeof u.style !== 'function' || typeof u.find !== 'function') return null;
+      /* A grid is not drawn as features, so there is nothing for a per-feature colouring to paint. */
+      if (ds.kind === 'raster') return null;
+      const cols = Array.isArray(ds.fields) ? ds.fields : [];
+      const box = el('div', 'display:flex;flex-direction:column;gap:6px;min-width:0;');
+      box.className = 'gis-style';
+      box.appendChild(el('div', CSS_SECTH, window.IntMapLang.t(HOST.lang, 'Colour the map by a column', '属性で地図を色分けする')));
+      if (!cols.length) {
+        box.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang, 'This dataset carries no attribute columns', 'このデータセットには属性の列がありません', 'Dieser Datensatz hat keine Attributspalten', 'В этом наборе нет столбцов атрибутов', 'Este conjunto no tiene columnas de atributos')));
+        return box;
+      }
+      const held = styleForm.get(ds.id) || { field: '', mode: 'categorical', method: 'quantile', classes: '' };
+      styleForm.set(ds.id, held);
+      if (!cols.some((c) => c.name === held.field)) held.field = cols[0].name;
+
+      const bar1 = row('');
+      const fsel = el('select', CSS_IN + 'flex:1 1 104px;width:auto;min-width:88px;');
+      fsel.className = 'gis-style-field';
+      cols.forEach((c) => { const o = el('option', '', c.name + ' · ' + c.type); o.value = c.name; if (c.name === held.field) o.selected = true; fsel.appendChild(o); });
+      fsel.onchange = () => { held.field = fsel.value; };
+      /* The two modes the classifier declares in its own contract (js/map-ui.js style(ref, spec)).
+         Their words are the reader's, their values are the API's. */
+      const msel = el('select', CSS_IN + 'flex:1 1 104px;width:auto;min-width:88px;');
+      msel.className = 'gis-style-mode';
+      [['categorical', window.IntMapLang.t(HOST.lang, 'One colour per value', '値ごとに1色')],
+       ['graduated', window.IntMapLang.t(HOST.lang, 'A ladder of numbers', '数値の段階')]].forEach((p) => {
+        const o = el('option', '', p[1]); o.value = p[0]; if (p[0] === held.mode) o.selected = true; msel.appendChild(o);
+      });
+      msel.onchange = () => { held.mode = msel.value; render(); };
+      bar1.appendChild(fsel); bar1.appendChild(msel);
+      box.appendChild(bar1);
+
+      if (held.mode === 'graduated') {
+        const bar2 = row('');
+        const sel = el('select', CSS_IN + 'flex:1 1 96px;width:auto;min-width:84px;');
+        sel.className = 'gis-style-method';
+        [['quantile', window.IntMapLang.t(HOST.lang, 'quantiles', '分位')],
+         ['equal', window.IntMapLang.t(HOST.lang, 'equal intervals', '等間隔')]].forEach((p) => {
+          const o = el('option', '', p[1]); o.value = p[0]; if (p[0] === held.method) o.selected = true; sel.appendChild(o);
+        });
+        sel.onchange = () => { held.method = sel.value; };
+        const cin = el('input', CSS_IN + 'flex:0 1 74px;width:auto;min-width:64px;');
+        cin.className = 'gis-style-classes'; cin.type = 'number'; cin.value = held.classes;
+        cin.placeholder = window.IntMapLang.t(HOST.lang, 'Classes', '区分数');
+        cin.oninput = () => { held.classes = cin.value; };
+        bar2.appendChild(sel); bar2.appendChild(cin);
+        box.appendChild(bar2);
+        /* ⚠ NO DEFAULT IS INVENTED HERE. The classifier has its own, and its ceiling is the number of
+           distinguishable colours the app ships — a number this file cannot see. Left empty, the
+           parameter is not sent at all, so the reader gets the classifier's answer rather than one
+           this panel made up. */
+        box.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang, 'Leave the number of classes empty to use the map’s own', '区分数を空欄にすると、地図側の既定に従います')));
+      }
+
+      const acts = row('');
+      const go = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Colour it', '色分けする'));
+      go.className = 'gis-style-go';
+      go.onclick = () => {
+        /* ⚠ A DATASET THAT IS NOT ON THE MAP IS DRAWN FIRST, NOT REFUSED. Asking to colour something
+           IS asking to see it, and 「先に地図に描いてください」 would be an instruction the panel could
+           have carried out — the dead control this file's header is about. draw() is the same one door
+           the row's own button uses, and it binds the dataset id, which is how style() finds it. */
+        let it = u.find(ds.id);
+        if (!it) {
+          const C = CORE();
+          if (!C || typeof C.draw !== 'function') { styleMsg.set(ds.id, reasonText('map-unavailable')); render(); return; }
+          let dr = null;
+          try { dr = C.draw(ds.id); } catch (e) { dr = { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
+          if (dr && dr.ok === false) { styleMsg.set(ds.id, reasonText(dr.why, dr.detail)); render(); return; }
+          drawn.add(ds.id);
+          it = u.find(ds.id);
+        }
+        const spec = { field: held.field, mode: held.mode };
+        if (held.mode === 'graduated') {
+          spec.method = held.method;
+          const n = Number(held.classes);
+          if (String(held.classes).trim() !== '' && isFinite(n)) spec.classes = n;
+        }
+        Promise.resolve().then(() => u.style(ds.id, spec)).then((res) => {
+          if (res && res.ok) styleMsg.delete(ds.id);
+          else styleMsg.set(ds.id, (typeof u.styleReason === 'function') ? u.styleReason(res && res.why) : reasonText(res && res.why, res && res.detail));
+          render();
+        }).catch((e) => { styleMsg.set(ds.id, reasonText('op-failed', { message: e && e.message })); render(); });
+      };
+      acts.appendChild(go);
+
+      const now = (typeof u.styleOf === 'function') ? u.styleOf(ds.id) : null;
+      if (now && now.legend) {
+        const off = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Back to one colour', '単色に戻す'));
+        off.className = 'gis-style-off';
+        off.onclick = () => {
+          Promise.resolve().then(() => u.style(ds.id, null)).then(() => { styleMsg.delete(ds.id); render(); })
+            .catch((e) => { styleMsg.set(ds.id, reasonText('op-failed', { message: e && e.message })); render(); });
+        };
+        acts.appendChild(off);
+      }
+      box.appendChild(acts);
+      if (now && now.legend) box.appendChild(legendBox(now.legend));
+      const m = styleMsg.get(ds.id);
+      if (m) { const mm = el('div', CSS_WARN, m); mm.className = 'gis-style-msg'; box.appendChild(mm); }
+      return box;
+    }
+
+    /* The legend of the colouring that is ON THE MAP — the snapshot `style()` painted from, printed,
+       never re-derived. ⚠ Both greys are named rather than shown as a class: 「その他」 is a fold of
+       real values and 「値なし」 is the absence of one, and a reader who reads either as a step of the
+       ramp has been told something untrue about their data. */
+    function legendBox(lg) {
+      const b = el('div', 'display:flex;flex-direction:column;gap:2px;min-width:0;');
+      b.className = 'gis-legend';
+      const how = (lg.mode === 'graduated')
+        ? (lg.method === 'equal' ? window.IntMapLang.t(HOST.lang, 'equal intervals', '等間隔') : window.IntMapLang.t(HOST.lang, 'quantiles', '分位'))
+        : window.IntMapLang.t(HOST.lang, 'categories', '分類');
+      b.appendChild(el('div', CSS_NOTE, String(lg.field) + ' · ' + how));
+      const line = (colour, label, count) => {
+        const r = row('gap:6px;'); r.className = 'gis-legend-row';
+        const sw = el('span', 'width:10px;height:10px;border-radius:3px;flex:0 0 auto;');
+        sw.style.background = String(colour || '');
+        r.appendChild(sw);
+        r.appendChild(el('span', CSS_NOTE + 'flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;', label));
+        r.appendChild(el('span', CSS_NOTE + 'flex:0 0 auto;', nf(count)));
+        b.appendChild(r);
+      };
+      (lg.classes || []).forEach((c) => line(c.color, c.label != null ? String(c.label) : (nf(c.from) + ' – ' + nf(c.to)), c.count));
+      if (lg.other) line(lg.other.color, window.IntMapLang.t(HOST.lang, 'Other', 'その他') + ' (' + nf(lg.other.distinct) + ')', lg.other.count);
+      if (lg.missing && lg.missing.count) line(lg.missing.color, window.IntMapLang.t(HOST.lang, 'No value', '値なし'), lg.missing.count);
+      if (lg.collapsed > 0) b.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang, 'Tied values merged classes', '同値が多く区分が統合されました') + ' (−' + nf(lg.collapsed) + ')'));
+      return b;
     }
 
     function dsCard(ds) {
@@ -615,7 +1283,11 @@ export function makeGisPanel(HOST) {
       if (ds.stale) {
         const st = el('span', 'flex:0 0 auto;font-size:10px;color:#ff9f0a;', window.IntMapLang.t(HOST.lang, 'Out of date', '古いまま', 'Veraltet', 'Устарело', 'Desactualizado'));
         st.className = 'gis-ds-stale';
-        st.title = reasonText('input-stale', { id: ds.id });
+        /* ⚠ (#R738) THE BADGE CARRIES THE RECORD'S OWN REASON. It used to say `input-stale` whatever
+           had happened — 「上流の再計算が失敗した」 — and an edit marks its dependents stale for a
+           completely different reason (`input-edited`). One wrong sentence on a true badge sends the
+           reader looking for a failure that never happened. */
+        st.title = reasonText(String(ds.stale.why || 'input-stale'), { id: ds.id });
         head.appendChild(st);
       }
       if (drawn.has(ds.id)) head.appendChild(el('span', 'flex:0 0 auto;font-size:10px;color:var(--primary-color,#0a84ff);', window.IntMapLang.t(HOST.lang, 'Drawn on the map', '地図に表示中', 'Auf der Karte gezeichnet', 'Показан на карте', 'Dibujado en el mapa')));
@@ -625,7 +1297,23 @@ export function makeGisPanel(HOST) {
 
       const det = el('div', 'display:flex;flex-direction:column;gap:9px;padding:2px 10px 10px;min-width:0;');
       det.className = 'gis-ds-detail';
+      /* ⚠ (#R738) WHAT THE RECORD SAYS ABOUT TIME, AND WHAT IT REFUSED TO SAY. `timeRefused` was
+         built in #R735 so a declaration the data does not bear out is refused instead of copied into
+         the record — and until now it reached neither this panel nor the map, so a reader who named
+         the wrong column got a dataset that looked ordinary and a `time-not-declared` from timeWindow
+         much later, with nothing connecting the two. */
+      const tTxt = timeText(ds);
+      if (tTxt) { const tl = el('div', CSS_NOTE, tTxt); tl.className = 'gis-ds-time'; det.appendChild(tl); }
+      if (ds.timeRefused) {
+        const tw = el('div', CSS_WARN, reasonText(ds.timeRefused.why, ds.timeRefused.detail));
+        tw.className = 'gis-time-refused';
+        det.appendChild(tw);
+      }
       det.appendChild(fieldsTable(ds));
+      const ed = editBlock(ds);
+      if (ed) det.appendChild(ed);
+      const st = styleBlock(ds);
+      if (st) det.appendChild(st);
       det.appendChild(lineageBlock(ds));
       const sp = stepParamsBlock(ds);
       if (sp) det.appendChild(sp);
@@ -677,6 +1365,10 @@ export function makeGisPanel(HOST) {
           const all = downstream(ds.id).reverse().concat([ds]);
           all.forEach((rec) => {
             drawn.delete(rec.id); openRows.delete(rec.id); dsMsg.delete(rec.id); dsParams.delete(rec.id);
+            /* (#R738) the editing and colouring state is per dataset too, and a later dataset can be
+               given the same id by a restored project — state left behind would reappear under it */
+            editMsg.delete(rec.id); colForm.delete(rec.id); styleForm.delete(rec.id); styleMsg.delete(rec.id); dsRun.delete(rec.id);
+            if (cellEdit && cellEdit.id === rec.id) cellEdit = null;
             try { D && D.remove(rec.id); } catch (_) { }
           });
           confirmDel.delete(ds.id); render();
@@ -920,6 +1612,22 @@ export function makeGisPanel(HOST) {
       const block = paramBlock(decl, (n) => (opParams.has(key(n)) ? opParams.get(key(n)) : undefined), columnsFromInputs(opInputs));
       sec.appendChild(block.node);
 
+      /* ⚠ (#R738) THE RUNNING STEP AND ITS STOP BUTTON, FROM MODULE STATE. #R735 made five of the
+         runners yield every frame so that a signal could be read at all; nothing in the program set
+         one. `opRun` holds the controller because render() runs on every registry event — the panel
+         is rebuilt while the step is still going, and the reader must not lose the only way to stop
+         a 40,000-polygon aggregate they started by mistake. */
+      if (opRun) {
+        const lrow = row('');
+        const sp = el('div', CSS_NOTE + 'flex:1 1 auto;min-width:0;', opRun.progress || progressText(null));
+        sp.className = 'gis-op-progress';
+        opRun.node = sp;
+        const stop = el('button', CSS_BTND, window.IntMapLang.t(HOST.lang, 'Stop this run', '実行を中止する'));
+        stop.className = 'gis-op-stop';
+        stop.onclick = () => { try { if (opRun && opRun.ac) opRun.ac.abort(); } catch (_) { } };
+        lrow.appendChild(sp); lrow.appendChild(stop);
+        sec.appendChild(lrow);
+      }
       const bar = row('');
       const go = el('button', CSS_BTNP, opBusy
         ? window.IntMapLang.t(HOST.lang, 'Running…', '実行中…', 'Läuft…', 'Выполняется…', 'Ejecutando…')
@@ -944,16 +1652,26 @@ export function makeGisPanel(HOST) {
         }
         const miss = block.missing();
         if (miss.length) { opMsg = reasonText('missing-param', { param: miss[0] }); render(); return; }
-        opBusy = true; opMsg = ''; render();
-        Promise.resolve().then(() => O.run({ op: String(opId), inputs: inputs, params: params })).then((res) => {
-          opBusy = false;
+        opBusy = true; opMsg = '';
+        const ac = (typeof AbortController === 'function') ? new AbortController() : null;
+        opRun = { ac: ac, progress: progressText(null), node: null };
+        render();
+        Promise.resolve().then(() => O.run({ op: String(opId), inputs: inputs, params: params }, {
+          signal: ac ? ac.signal : null,
+          onProgress: (p) => { if (!opRun) return; opRun.progress = progressText(p); if (opRun.node) { try { opRun.node.textContent = opRun.progress; } catch (_) { } } },
+        })).then((res) => {
+          opBusy = false; opRun = null;
           if (res && res.ok && res.dataset) {
             openRows.add(res.dataset.id);
             opMsg = window.IntMapLang.t(HOST.lang, 'Made', '作成しました', 'Erstellt', 'Создано', 'Creado') + ': ' + titleOf(res.dataset)
               + ' · ' + nf(res.dataset.count) + ' ' + window.IntMapLang.t(HOST.lang, 'rows', '行', 'Zeilen', 'строк', 'filas');
+            /* ⚠ AND WHAT THE STEP MEASURED WHILE IT RAN. A join that matched nothing produces a
+               perfectly ordinary 「作成しました · 1,741 行」 unless its counts are printed. */
+            const st = statsText(res.stats);
+            if (st) opMsg += ' — ' + st;
           } else opMsg = reasonText(res && res.why, res && res.detail);
           render();
-        }).catch((e) => { opBusy = false; opMsg = reasonText('op-failed', { message: e && e.message }); render(); });
+        }).catch((e) => { opBusy = false; opRun = null; opMsg = reasonText('op-failed', { message: e && e.message }); render(); });
       };
       bar.appendChild(go);
       sec.appendChild(bar);

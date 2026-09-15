@@ -92,11 +92,22 @@ test('R576 ③: a table with no coordinates is REFUSED, naming the columns it co
      something that POSITIVELY says "coordinate" (an axis word, a hemisphere letter, or a value no
      latitude can hold) and refuses when there is none. Without that rule this sales report lands
      in the Gulf of Guinea, one pin per row, and looks perfectly convincing. */
+  /* ⚠ (#R738) THE REFUSAL BECAME AN IMPORT, AND THE HAZARD IT GUARDED IS STILL MEASURED HERE. This
+     test used to assert `ok === false`, and it was right to: the alternative at the time was one pin
+     per row in the Gulf of Guinea. The alternative now is a TABLE — features with no geometry, which
+     js/map-ui.js does not hand to the renderer — because a spreadsheet of numbers by municipality
+     code is the other operand of a join, not an unreadable file. So what is checked is the thing that
+     actually mattered: NOT ONE ROW GETS A COORDINATE, and the columns that were examined and
+     rejected are still named. Deleting the assertion instead of restating it is how a round that
+     replaces a refusal becomes a round that stopped looking. */
   const csv = 'product,units,price\nwidget,12,4.50\ngadget,7,19.99\nsprocket,3,2.25\ncog,44,0.99\n';
   const r = await readGeoFile(file('sales.csv', csv));
-  assert.equal(r.ok, false);
-  assert.equal(r.why, 'coordinates-not-identifiable');
-  const named = r.detail.considered.map((c) => c.column);
+  assert.equal(r.ok, true);
+  assert.equal(r.format, 'table');
+  assert.equal(r.geometry, 'none');
+  assert.deepEqual(r.fc.features.map((f) => f.geometry), [null, null, null, null], 'no row was given a place');
+  assert.equal(r.stats.why, 'coordinates-not-identifiable', 'why it is a table and not points is carried, not dropped');
+  const named = r.stats.considered.map((c) => c.column);
   assert.ok(named.includes('units') && named.includes('price'), 'the reader is told what was examined');
 
   /* Two nameless numeric columns, both inside ±90: in range, and genuinely unidentifiable. */
@@ -105,12 +116,18 @@ test('R576 ③: a table with no coordinates is REFUSED, naming the columns it co
   assert.equal(t.ok, false);
   assert.equal(t.why, 'coordinates-not-identifiable');
 
-  /* And when no pair survives the vetoes at all, that is a different answer with its own
-     sentence — population cannot be either axis, and there is nothing else to consider. */
+  /* And when no pair survives the vetoes at all — population cannot be either axis — the file is
+     the clearest case of all of what #R738 added: a named column of places and a named column of
+     numbers is a statistics table, and the reason it is not points is carried on it. ⚠ The
+     headerless case above stays a REFUSAL: a table exists to be joined and computed on, and
+     `#1 = #3 * 100` is not something a reader can write about columns with no names. */
   const pop = 'city,population\nTokyo,13960000\nOsaka,2691000\nSapporo,1973000\nNaha,319000\n';
   const q = await readGeoFile(file('pop.csv', pop));
-  assert.equal(q.ok, false);
-  assert.equal(q.why, 'no-coordinate-columns');
+  assert.equal(q.ok, true);
+  assert.equal(q.format, 'table');
+  assert.equal(q.stats.why, 'no-coordinate-columns');
+  assert.deepEqual(q.stats.columns, ['city', 'population']);
+  assert.ok(q.fc.features.every((f) => f.geometry == null));
 });
 
 /* ══ ④ THE DELIMITER AND THE DECIMAL POINT ARE ONE DECISION ═══════════════════════════════════ */
@@ -169,10 +186,14 @@ test('R576 ⑥: a WKT column carries lines and areas that a lat/lon pair cannot'
   assert.equal(r.fc.features[0].properties.id, '1');
   assert.equal(r.stats.geometryColumn, 'the_geom');
 
-  /* An SRID that is not WGS 84 is refused rather than drawn 500 km from where it belongs. */
+  /* An SRID that is not WGS 84 is never drawn 500 km from where it belongs. ⚠ (#R738) The EWKB
+     prefix is not one of the grammars geometryCell() reads, so these cells are not geometry and the
+     file has no coordinate columns either — which now makes it a table rather than a refusal. The
+     claim under test is unchanged and is asserted directly: NOTHING here reaches the map as a
+     place. */
   const utm = 'id,geom\n1,"SRID=3857;POINT(15556000 4257000)"\n2,"SRID=3857;POINT(15000000 4000000)"\n3,"SRID=3857;POINT(14000000 3900000)"\n4,"SRID=3857;POINT(13000000 3800000)"\n';
   const u = await readGeoFile(file('utm.csv', utm));
-  assert.equal(u.ok, false);
+  assert.ok(!u.ok || u.fc.features.every((f) => f.geometry == null), 'no projected metre became a degree');
 });
 
 /* ══ ⑦ DEGREES, MINUTES AND SECONDS ═══════════════════════════════════════════════════════════ */
@@ -240,9 +261,14 @@ test('R576 ⑨: a ZIP is opened and its contents decided by content; a Shapefile
     ['ports.dbf', Buffer.from([3, 0, 0, 0])],
     ['ports.prj', Buffer.from('GEOGCS["WGS 84"]', 'utf8')],
   ]);
+  /* ⚠ (#R738) 「まだ対応していません」 IS NOT THE ANSWER ANY MORE — js/gis-shapefile.js reads the set.
+     These eight bytes are not a shapefile, so what is measured is that the archive is recognised as
+     ONE and refused by the reader that read it: a `shapefile-*` code says what broke and where,
+     where the old answer said only that the format existed. A real set is built and read in
+     tests/r737-gis-shapefile-checks.test.mjs, which owns that encoder. */
   const s = await readGeoFile(file('ports.zip', shp));
   assert.equal(s.ok, false);
-  assert.equal(s.why, 'shapefile');
+  assert.ok(/^shapefile-/.test(s.why), 'the shapefile reader answered, and named what was wrong: ' + s.why);
 
   /* A ZIP holding a CSV is read out of the archive, and says which entry it came from. */
   const csvZip = zip([['readme.txt', Buffer.from('notes\n', 'utf8')],
@@ -280,6 +306,19 @@ test('R576 ⑩: js/map-ui.js has a sentence for every refusal js/geo-import.js c
   };
   collect(acorn.parse(src('js/geo-import.js'), { ecmaVersion: 'latest', sourceType: 'module' }), new Set());
   assert.ok(emitted.size >= 12, 'the parse found the codes: ' + emitted.size);
+
+  /* ⚠ (#R738) THE DECODERS THIS FILE HANDS BACK VERBATIM ARE PART OF THE POPULATION. A shapefile set
+     and a GeoPackage are read by js/gis-shapefile.js and js/gis-geopackage.js, and js/geo-import.js
+     RETURNS THEIR REPORT — so their refusals reach exactly the same toast, and NONE of them appears
+     as a `why` literal in the file parsed above. Left as it was, this gate would have been green over
+     twenty-two wordless refusals: a gate's population is what decides what it cannot see
+     (memory: 「母集合を広げたら針を測り直す」). Each module DECLARES its codes and its own constructor
+     refuses an undeclared one, so the declaration cannot drift away from the throws. */
+  for (const rel of ['js/gis-shapefile.js', 'js/gis-geopackage.js']) {
+    const decl = /const REFUSALS = Object\.freeze\(\[([\s\S]*?)\]\)/.exec(src(rel));
+    assert.ok(decl, rel + ' declares the codes it can answer with');
+    for (const m of decl[1].matchAll(/'([a-z0-9-]+)'/g)) emitted.add(m[1]);
+  }
 
   /* the codes js/map-ui.js's reasonText() compares against — the whole function's string literals */
   const ui = src('js/map-ui.js');

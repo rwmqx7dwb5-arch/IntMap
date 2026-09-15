@@ -38,6 +38,7 @@ import { makeGisGeometry } from './gis-geometry.js';
 import { makeGisCrs } from './gis-crs.js';
 import { makeGisRaster } from './gis-raster.js';
 import { makeGisIndex } from './gis-index.js';
+import { makeGisExpr } from './gis-expr.js';
 import { makeGisLayers } from './gis-layers.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
@@ -60,6 +61,11 @@ window.IntMapModules.gisCore = function (HOST) {
      and the geodesy), so a module that imported them privately would be a second copy of a kernel. */
   const raster = makeGisRaster();
   const index = makeGisIndex();
+  /* (#R738) The expression kernel behind the compute op. Pure — a tokeniser and a recursive-descent
+     parser, no eval and no Function — and mounted here for the reason the note above gives: js/gis-ops.js
+     reads window.IntMapGisExpr at CALL time, so a module importing it privately would be a second
+     parser with a second opinion about what a column name is. */
+  const expr = makeGisExpr();
   const layers = makeGisLayers();
   const ops = makeGisOps();
   const project = makeGisProject();
@@ -80,12 +86,18 @@ window.IntMapModules.gisCore = function (HOST) {
     const GU = window.GeoJSONUpload;
     if (!GU || typeof GU.add !== 'function') return { ok: false, why: 'map-unavailable' };
     try {
-      GU.add({ type: 'FeatureCollection', features: ds.features() }, ds.title);
+      /* ⚠ (#R738) THE DRAWN LAYER IS TOLD WHICH DATASET IT IS. Attribute colouring asks the registry
+         what a column's values mean (js/map-ui.js style()), and without this the layer a reader just
+         drew from an analysis result had no id to ask about — matching it back by TITLE would break
+         on the day two datasets share a name, which is the 「識別子で結び、綴りで結ばない」 rule this
+         project keeps re-learning. The fourth argument is optional, so every other caller of add() is
+         unaffected. */
+      GU.add({ type: 'FeatureCollection', features: ds.features() }, ds.title, null, { datasetId: ds.id });
       return { ok: true };
     } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
   }
 
-  const API = { data, geometry, crs, raster, index, layers, ops, project, panel, draw,
+  const API = { data, geometry, crs, raster, index, expr, layers, ops, project, panel, draw,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { window.IntMapGis = API; } catch (_) { }
   return API;

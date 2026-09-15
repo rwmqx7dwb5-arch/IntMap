@@ -128,15 +128,39 @@ sources-list.js                   sources.html の出典レジストリ（生成
 
 ```
 map-ui.js                         地図の周りの UI（レイヤーレジストリ／レイヤーサイドバー／ティッカー／
-                                  レイヤープリセット／ラベルのポップアップ／ファイル取り込みの UI／共有ハッシュ）
+                                  レイヤープリセット／ラベルのポップアップ／ファイル取り込みの UI／共有ハッシュ）。
+                                  取り込みレイヤーの**属性による着色**もここ（#R738。`GeoJSONUpload.style` /
+                                  `styleOf` / `classify` / `find` / `link`——分類器は純粋で「数か」の判定は
+                                  `IntMapData` から渡してもらい、凡例と地図の塗りは同じ 1 つの `legend` から
+                                  作る）。⚠ データセットとして**登録できなかったことも読者に述べる**
 geo-import.js                     落とされたファイルを FeatureCollection にする（GeoJSON / KML / KMZ / GPX /
                                   CSV・TSV / WKT）。⚠ **拡張子の一覧を持たない**——容器（zip・gzip・文字
                                   コード）は `js/atlas-attach.js` の `ATL_FILE` に訊き（写さず共有）、文法は
                                   decoder レジストリが中身を見て名乗る。CSV の緯度経度列は「値が帯に入るか」
                                   で**拒否**し、「列名・半球記号・±90 を超える値」で**選ぶ**——根拠が無ければ
                                   推測せず拒む。拒否は**コード**で返し、9 言語の文面は `js/map-ui.js` が持つ。
+                                  #R738 で **Shapefile**（`js/gis-shapefile.js`）と **GeoPackage**
+                                  （`js/gis-geopackage.js`）を動的 import で読むようになり、**座標列を特定
+                                  できない見出しつきの表**は拒まずに `format:'table'`（`geometry:null` の行）
+                                  として返す——地域コードで結合する側の入力になる。
                                   遅延読み込み（起動時のバンドルには入らない）
-gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— 下の 9 本をまとめて起動する
+gis-shapefile.js                  **Shapefile の読み手** `window.IntMapGisShapefile`（#R738）—
+                                  `.shp` / `.dbf` / `.prj` / `.cpg` を**組で**読む（`read(entries)` /
+                                  `group` / `refusals`）。⚠ **復号器であって、登録もしなければ再投影も
+                                  しない**——`.prj` の WKT をそのまま返し、変換規則は `js/gis-crs.js` に
+                                  1 つだけある（`.prj` が `define()` の最初の呼び出し元になった）。
+                                  `sourceCrs` は WKT 自身の AUTHORITY だけで、**4326 を推測で名乗らない**。
+                                  標高は座標の中ではなく並行配列 `_z` で運ぶ。拒否は文でなくコード。
+                                  `js/geo-import.js` が動的 import する
+gis-geopackage.js                 **GeoPackage の読み手** `window.IntMapGisGeopackage`（#R738）—
+                                  `sniff` / `tables` / `read` / `refusals`。⚠ **依存を 1 つも足していない**
+                                  ——SQLite の公開されたファイル形式（b-tree・varint・serial type・
+                                  オーバーフローページ）を**読み取り専用で**歩き、その上に GPKG の目録
+                                  （`gpkg_contents` / `gpkg_spatial_ref_sys`）と WKB を読む。SQL engine でも
+                                  投影器でも型づけ器でもなく、読めないもの（WAL・UTF-16・目録なし・
+                                  タイル表・表が複数）は**名前を付けて拒む**。
+                                  `js/geo-import.js` が動的 import する
+gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— 下の 10 本をまとめて起動する
                                   `window.IntMapGis`。データセットを地図に描く `draw()` もここ
                                   （`window.GeoJSONUpload.add` を通す＝地図に載せる道を 2 本作らない）。
                                   遅延読み込み `gisCore`。正本 `docs/GIS-CORE.md`
@@ -146,7 +170,13 @@ gis-datasets.js                   **データセットのレジストリ** `wind
                                   `provenance` は札ではなく**再実行できるレシピ**。#R735 で payload が
                                   2 種類になった（`kind:'vector'` の `features()` と `kind:'raster'` の
                                   `read()`）ほか、`time` が契約に入った——**宣言は実データで検証**し、
-                                  成り立たないものは `timeRefused` で名前を付けて拒む
+                                  成り立たないものは `timeRefused` で名前を付けて拒む。
+                                  #R738 で**値の編集と取り消し**（`editValues` / `addField` /
+                                  `removeField` / `renameField` / `undo` / `redo` / `history`——
+                                  取り消しは snapshot ではなく**逆操作**で、処理の出力・格子・`stale` な
+                                  記録は編集できない）・読者による**列の型と単位の宣言** `declareField`
+                                  （⚠ 型は実データで検証する）・**幾何を持つ地物の件数** `withGeometry`
+                                  （宣言ではなく測定。`count` との差が、描くもののない行の数）
 gis-geometry.js                   **幾何カーネル** `window.IntMapGisGeometry`（#R732）— boolean 演算
                                   （union / intersection / difference / dissolve）・**任意形状の buffer**
                                   （測地円盤との Minkowski 和）・述語（intersects / contains / within /
@@ -172,6 +202,14 @@ gis-index.js                      **空間索引** `window.IntMapGisIndex`（#R7
                                   ⚠ 不変条件は**偽陰性ゼロ**——子午線をまたぐ箱・世界を覆う箱・
                                   箱を持たないものは `always` に入れ、その件数は `stats().oversize`
                                   で外から見える。実測 40,000×1,000 で 756 ms → 82 ms
+gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#R738）— 計算列のための
+                                  小さな言語。`parse` / `evaluate` / `compile` / `functions` / `refusals`。
+                                  ⚠ **読者が打った文字列がコードにならない**——`eval` も `new Function` も
+                                  使わず、手書きのトークナイザと再帰下降パーサだけ。**空欄は 0 ではなく
+                                  伝播**し（0 として数えたい読者は `coalesce` と自分で書く）、**先頭ゼロの
+                                  セルは数にならない**——その判定は持たずに `IntMapData.asNumber` に訊く
+                                  （2 つ目の型づけを作らない。渡されなければ `expr-no-number-rule` で拒む）。
+                                  関数の一覧は `FUNCS` 1 つで、`functions()` は写しではなく同じ表
 gis-layers.js                     **地図のレイヤーを GIS のデータセットにする橋**
                                   `window.IntMapGisLayers`（#R732）— `sources()` は一覧を持たず
                                   **数え上げる**（`IntMapLayers` の行＋レンダラの geojson source）。
@@ -184,7 +222,8 @@ gis-layers.js                     **地図のレイヤーを GIS のデータセ
                                   （#R732 の時点では 0 件だった）
 gis-ops.js                        **処理** `window.IntMapGisOps` — filter / buffer / clip / intersect /
                                   difference / union / dissolve / relate / aggregate の 9 つ＋#R735 の
-                                  5 つ（sample / zonal / rasterMask / rasterDiff / timeWindow）。
+                                  5 つ（sample / zonal / rasterMask / rasterDiff / timeWindow）＋#R738 の
+                                  2 つ（join＝地域コードでの結合・compute＝式による計算列）。
                                   **出力もデータセットとして登録される**ので次の処理の入力になる。
                                   `kinds` が入力ごとの**中身**（vector / raster）を宣言し、既定は
                                   `vector`＝**既存の 9 つは格子を名前で拒む**。重い処理は
@@ -192,7 +231,10 @@ gis-ops.js                        **処理** `window.IntMapGisOps` — filter / 
                                   `js/gis-index.js` に任せる。
                                   拒否は文ではなくコードで返す（文面は `js/gis-panel.js`）
 gis-project.js                    **プロジェクトの保存** `window.IntMapGisProject` — IndexedDB。取り込みは
-                                  本体ごと、処理は**段（レシピ）だけ**。`setParams()` が引数を変えて
+                                  本体ごと、処理は**段（レシピ）だけ**。`setParams(id, params, opts)` と
+                                  `load(id, opts)` は `{signal, onProgress}` を取り、走者へそのまま渡す
+                                  （#R738。中止しても終わった段は残り、残りは `stale` として名指される）。
+                                  `setParams()` が引数を変えて
                                   下流まで再計算する——**commit-or-restore** で、失敗した段は元へ戻して
                                   `stale` を立て下流へ伝える。⚠ 基図・カメラ・有効レイヤーは持たない
                                   （`js/session-tabs.js` の持ち物）
