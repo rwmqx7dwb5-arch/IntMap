@@ -1189,7 +1189,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const _setLast=h=>{ if(h&&h.lng!=null&&h.lat!=null){ _lastPlace={lng:+h.lng,lat:+h.lat,name:h.name||''}; } return h; };
     /* (#R199) ↳ js/atlas-geo-resolve.js — place / region resolution and camera framing.
        Moved whole; the 16 names below are what the rest of this file still calls. */
-    const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox, whereMiss } = makeAtlasGeoResolve(HOST, { GE, L, esc, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
+    const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, codeAtPoint, resolveCountry, resolveCountrySync, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox, whereMiss } = makeAtlasGeoResolve(HOST, { GE, L, esc, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, cName, countryStats: () => (typeof countryStats==='undefined'?null:countryStats), lastPlace: () => _lastPlace });
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
     const { clickId, controlCatalog, doBaseDisplay, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
@@ -1284,27 +1284,8 @@ window.IntMapModules.atlasConsole=function(HOST){
       const h=Math.sin(dLa/2)**2+Math.cos(a.lat*d2r)*Math.cos(b.lat*d2r)*Math.sin(dLo/2)**2;
       return 2*R2*Math.asin(Math.min(1,Math.sqrt(h))); }
     let _customScoreName=null;
-    /* ---- (#R43) name → country code (for time-series / isolate / select). EN/JP names from countryStats, else
-       geocode + point-in-polygon over the country geometry so DE/RU/ES names resolve too. ---- */
-    function _pipRing(x,y,ring){ let inside=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++){ const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; } return inside; }
-    function _pipPoly(x,y,poly){ if(!poly||!poly.length||!_pipRing(x,y,poly[0])) return false; for(let i=1;i<poly.length;i++){ if(_pipRing(x,y,poly[i])) return false; } return true; }
-    function _pipFeat(x,y,gm){ if(!gm) return false; if(gm.type==='Polygon') return _pipPoly(x,y,gm.coordinates); if(gm.type==='MultiPolygon') return gm.coordinates.some(p=>_pipPoly(x,y,p)); return false; }
-    function codeAtPoint(lng,lat){ try{ const g=geo(); if(!g||!g.features) return null; for(const f of g.features){ if(_pipFeat(lng,lat,f.geometry)) return String(f.id); } }catch(_){} return null; }
-    function resolveCountrySync(name){ try{
-      /* (#R62) common short names that don't literally appear in nameEn/nameJp */
-      const CJA={'韓国':'south korea','北朝鮮':'north korea','米国':'united states','英国':'united kingdom','豪州':'australia','南ア':'south africa','UAE':'united arab emirates','uae':'united arab emirates','USA':'united states','usa':'united states','UK':'united kingdom','uk':'united kingdom'};
-      const alias=CJA[String(name||'').trim()]; if(alias) name=alias;
-      const q=_lnorm(name); if(!q||typeof countryStats==='undefined'||!countryStats) return null; let best=null,bs=0;
-      for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const en=_lnorm(s.nameEn||''), jp=_lnorm(s.nameJp||''); let sc=0;
-        if(en===q||jp===q) sc=100; else if((en&&en.indexOf(q)===0)||(jp&&jp.indexOf(q)===0)) sc=82; else if(q.length>3&&((en&&en.indexOf(q)>=0)||(jp&&jp.indexOf(q)>=0))) sc=64; else if(en&&q.length>4&&q.indexOf(en)===0) sc=58;
-        /* (#R136) a NON-sovereign micro-feature (glacier / shoal / no-man's-land: Southern Patagonian Ice Field,
-           Scarborough Shoal, Bir Tawil) must not be grabbed by a LOOSE substring match — "Patagonia" was resolving to
-           the ice field ("patagonia" ⊂ "…Patagonian Ice Field", sc 64) instead of the region ("見当違いの場所"). Require
-           an exact or start-of-name match for these, so a loose query falls through to the region/Nominatim resolver. */
-        if(sc>0&&sc<82&&s.sov===false) sc=0;
-        if(sc>bs){ bs=sc; best={code, name:cName(s), ll:(s.latlng?{lng:s.latlng[1],lat:s.latlng[0]}:null)}; } }
-      return bs>=58?best:null; }catch(_){ return null; } }
-    async function resolveCountry(name){ const c=resolveCountrySync(name); if(c) return c; try{ const ll=await geocode(name); if(ll){ const code=codeAtPoint(ll.lng,ll.lat); if(code&&countryStats[code]){ const s=countryStats[code]; return {code, name:cName(s), ll}; } return {code:null, name:ll.name||name, ll}; } }catch(_){} return null; }
+    /* (#R199/#R733) ↳ js/atlas-geo-resolve.js — name/identifier → country, point-in-polygon and all.
+       Moved whole when the identifier rule landed there: half a rule in each file is two sources of truth. */
     /* short human label for a step, used in the honest failure summary */ function actLabel(a){ return TCONT.actionLabel(a); }   /* (#R419) — and why `question` had to be in it: js/atlas-turn-continuity.js */
     /* (#R80) vision §17 — IntMap SELF-DIAGNOSIS. Atlas monitors whether IntMap's OWN data pipeline is healthy:
        is the news feed still updating, are the live data APIs Atlas relies on reachable, and are the layers the
@@ -4003,10 +3984,13 @@ window.IntMapModules.atlasConsole=function(HOST){
         +'it OBSERVED, and you then decide whether to call more tools or to answer. Arguments are checked against each '
         +'tool\'s schema before anything runs; a rejected call comes back to you to fix and is never shown to the reader. '
         +'Write final_text in '+_langLine()+'.\n'
-        +_capIndex()+'[TOOLS] The nine below, plus find_capability and run_capability, are the whole call surface; every id in the index above is reached through those two.\n'+_toolBlock(tools)+'\n';
+        +_capIndex(tools)+'[TOOLS] These, plus find_capability and run_capability, are the whole call surface. Every one below you call DIRECTLY by name; every id in the index above is reached through those two.\n'+_toolBlock(tools)+'\n';
     }
     /* The tools as compact JSON \u2014 name, one line of purpose, and the schema its arguments must match.
-       js/atlas-toolsurface.js builds them; `find_capability` reaches the other hundred-odd. */   function _capIndex(){ try{ return String(CAPS.index()||''); }catch(_){ return ''; } }   /* (#R582) the registry's OWN index of every capability id, derived from js/atlas-capabilities.js. Without it SYS() named the door (find_capability) and not one thing behind it, so every decision Atlas took BEFORE deciding to search was taken about an IntMap with nine tools in it. ⚠ ON THIS LINE because the kernel has no headroom — same reason as the GLOSS import above. */
+       js/atlas-toolsurface.js builds them; `find_capability` reaches the other hundred-odd. */   function _capIndex(tools){ try{ return String(CAPS.index(_directCaps(tools))||''); }catch(_){ return ''; } }   /* (#R733) the argument is the set of capabilities THIS prompt already hands over as typed tools, so the index can stop telling Atlas to go looking for the nine it is holding — js/atlas-capabilities.js has the production measurement.   (#R582) the registry's OWN index of every capability id, derived from js/atlas-capabilities.js. Without it SYS() named the door (find_capability) and not one thing behind it, so every decision Atlas took BEFORE deciding to search was taken about an IntMap with nine tools in it. ⚠ ON THIS LINE because the kernel has no headroom — same reason as the GLOSS import above. */
+    /* (#R733) which capabilities this prompt ALREADY hands over by name, read off the surface itself — the
+       index must stop telling Atlas to search for them (js/atlas-capabilities.js has the measurement). */
+    function _directCaps(tools){ var out=[]; try{ Object.keys(tools||{}).forEach(function(k){ var id=tools[k]&&tools[k].capabilityId; if(id) out.push(id); }); }catch(_){} return out; }
     function _toolBlock(tools){ try{
       return Object.keys(tools||{}).map(function(k){ var t=tools[k];
         return JSON.stringify({ name:t.name, description:t.description, parameters:t.parameters }); }).join('\n');
@@ -4271,6 +4255,8 @@ window.IntMapModules.atlasConsole=function(HOST){
     let _runGen=0, _abortCtl=null;
     /* (#R142) Neutral "Stopped" — covers BOTH a newer message superseding this turn AND the user pressing the Stop button;
        _stopRun paints THIS same note so an in-flight abort that repaints it stays visually identical (no flicker). */
+    /* (#R733) the answer above is where the turn RAN OUT, not where it finished. See _atlCompose. */
+    function _cutNote(){ return '<div style="margin-top:6px;color:var(--text-muted);font-size:11.5px;">'+esc(L('This turn reached its working limit, so the answer above may be incomplete — anything asked for that is not described above was not done. Ask again for the missing part on its own.','このターンは作業の上限に達したため、上の回答は途中までの可能性があります——上に書かれていないことは実行されていません。足りない部分だけをもう一度指示してください。','Dieser Zug hat sein Arbeitslimit erreicht; die Antwort oben kann unvollständig sein — was oben nicht beschrieben ist, wurde nicht getan. Frag den fehlenden Teil einzeln nach.','Этот ход достиг рабочего предела, поэтому ответ выше может быть неполным — всё, что не описано выше, не было сделано. Спросите недостающее отдельно.','Este turno alcanzó su límite de trabajo, así que la respuesta puede estar incompleta — lo que no se describe arriba no se hizo. Pide la parte que falta por separado.'))+'</div>'; }
     function _cancelledNote(){ return '<span style="color:var(--text-muted);font-size:11.5px;">⏹ '+esc(L('Stopped','停止しました','Angehalten','Остановлено','Detenido'))+'</span>'; } function _markCancelled(b){ TCONT.markCancelled(b,_cancelledNote()); try{ PROG.done(b); }catch(_){} }   /* ⚠ (#R723) THE ORDER IS THE POINT: markCancelled REPLACES the live word with the Stopped note, and PROG.done takes that word away. Done first and the note would be appended below instead of standing where the work stopped. */   /* ⚠ (#R419) STOPPING A TURN IS NOT ERASING WHAT IT ALREADY DREW — every cancel path below used to paint this over the WHOLE bubble, which is how the reported transcript lost the three questions the reader had just answered. js/atlas-turn-continuity.js has the measurement. */
     const _GO_SEND_SVG='<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5.5 11.5 12 5l6.5 6.5"/></svg>';
     const _GO_STOP_SVG='<svg viewBox="0 0 24 24" width="20" height="20"><rect x="4.25" y="4.25" width="15.5" height="15.5" rx="3.4" fill="currentColor"/></svg>';   /* (#R150) "四角はほんの少し小さく": rect 17.5→15.5 in a 24 viewBox (rendered ≈14.6px→12.9px) — a gentle trim, still clearly a Stop square */
@@ -4507,6 +4493,11 @@ window.IntMapModules.atlasConsole=function(HOST){
          ⚠ NOT HIDDEN: each action's own body still renders its honest per-action outcome below. */
       let head=say?('<div style="margin-bottom:6px;">'+mdMini(say)+'</div>'):''; try{ const _cr=COMPOSE.recordsFor(keep); if(_cr.length&&head) head=COMPOSE.linkProse(head,_cr); if(head) head=ARENDER.demoteProseLinks(head,_curPlanCites,_cr); }catch(_){}   /* (#R511) the names in the answer get the numbers the markers carry — from the records THIS reply drew, read off its own results. ⚠⚠⚠ (#R589) AND AN ANCHOR IN THAT PROSE CLAIMS INTMAP FETCHED THE PAGE: the structured path builds every link from the registry, this one renders what Atlas wrote, which is how 「(mapion.co.jp)」 shipped as a live link to a page nothing in the turn had requested. The rule, and the set of hosts this turn actually retrieved, are js/atlas-answer-render.js. */
       if(ai.__atlCancelled) head=_cancelledNote()+head;
+      /* ⚠⚠⚠ (#R733) A TURN THAT RAN OUT IS NOT A TURN THAT FINISHED, and only IntMap knows which it was:
+         js/atlas-agent.js stops for two reasons that are not Atlas deciding it is done, and neither reaches
+         the model. Measured, three production turns ended `stopped:'step_budget'` reading as finished answers
+         — one promised a highlight, never called it, and closed without a word. Architecture.md has the rest. */
+      if(ai.__atlCut) head=head+_cutNote();
       ai.innerHTML=(head+body)||esc(L('Done.','完了しました。','Fertig.','Готово.','Hecho.')); try{ PROG.live(ai); }catch(_){}   /* ⚠ (#R723) THIS LINE IS WHY THE INDICATOR DIED AFTER THE FIRST TOOL: it assigns innerHTML, and `.atl-stage` is both the word and the marker the cancel scan needs. See PROG.live. */
       try{ _refreshMapChips(); }catch(_){}   /* (#R122) sync every map-toggle chip's on/off to real ownership+visibility */ try{ COMPOSE.bind(ai); }catch(_){}   /* (#R511) hover a name → its marker rings; hover the marker → the name lights */
     }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} } }
@@ -4745,6 +4736,10 @@ window.IntMapModules.atlasConsole=function(HOST){
           onStep:(s)=>{ try{ PROG.plan(ai,s); }catch(_){} try{ if(_atlasDbg){ _atlasDbg.steps.push(s); _atlasDbg.toolCalls=_atlasDbg.toolCalls.concat(s.calls||[]); } }catch(_){} } });   /* ⚠ (#R723) THE SECOND CALL IS THE ONE THAT WAS HERE ALONE — the only consumer of the turn's own trace was a developer diagnostics object. The reader's turn is now told to the reader. */
         if(gen!==_runGen){ _markCancelled(ai); return; }
         try{ if(_atlasDbg){ _atlasDbg.rejected=(out.trace&&out.trace.rejected)||0; _atlasDbg.stopped=out.stopped; _atlasDbg.answerMode=out.answerMode||''; _atlasDbg.mapDrawn=!!out.mapDrawn; _atlasDbg.produced=(out.produced||[]).join(',')||'-'; _atlasDbg.outputGate=(out.trace&&out.trace.outputGate)||0; } }catch(_){}   /* (#R511) what Atlas declared vs what the machine drew, and how often the final was handed back */
+        /* (#R733) the two stops that are a LIMIT rather than Atlas deciding it was done — _atlCompose
+           renders the note. Read off `out.stopped`, which js/atlas-agent.js sets from the guard that
+           actually fired, so nothing here has to guess what was left undone. */
+        try{ ai.__atlCut=({step_budget:1,call_budget:1,time_budget:1,repeated_calls:1,malformed_limit:1})[String(out.stopped||'')]===1; }catch(_){}   /* 'answered' (js/atlas-agent.js:470) is the only stop that means Atlas finished; 'aborted'/'transport'/'awaiting_user' already have their own notes */
         /* ⚠ ASSIGNED, NOT DEFAULTED. runActions seeds `__atlSay` with '' on its first pass so the
            bubble can render while tools are still running; THIS is the answer, and it arrives after. */
         ai.__atlSay=out.text||((out.results&&out.results.length)?L('Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.','Atlas は道具を動かしましたが、今回は回答文を書けませんでした——道具が返したものは上に示しています。もう一度訊くか、問いを絞ってください。','Atlas hat seine Werkzeuge ausgeführt, aber diesmal keine Antwort geschrieben — was sie zurückgaben, steht oben; frag noch einmal oder enger.','Atlas запустил инструменты, но не написал ответ — их результаты выше; спросите снова или уже.','Atlas ejecutó sus herramientas pero esta vez no escribió una respuesta: lo que devolvieron está arriba; pregunta de nuevo o acota la pregunta.'):'');   /* (#R731) a turn that ran tools and wrote nothing says so — the forced final can come back machine-shaped (refused as prose in js/atlas-agent.js readReply) and the reader was left with result rows and no sentence; the sentence is IntMap's and says what happened, not what the answer would have been */

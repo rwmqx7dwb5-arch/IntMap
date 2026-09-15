@@ -1204,18 +1204,45 @@ export function makeAtlasCapabilities(HOST) {
        be wrong»), which is .agents/rules/no-ad-hoc-hardcoding.md §2.4. tests/r582-checks.test.mjs
        derives the expected set from the registry rather than naming it, so no capability can be
        added to IntMap without appearing here. */
-    API.index = function () {
-      var byCat = {};
+    /* ⚠⚠⚠ (#R733) THE SENTENCE WAS FALSE ABOUT NINE OF ITS OWN ENTRIES, AND THE FALSEHOOD COST THE
+       WHOLE TURN. Measured in production on 「地図を現代に戻したうえで、日本の人口上位5都市にピンを
+       立てて、その人口を棒グラフで比べて」: all eight planner steps called `find_capability` — fifteen
+       calls in total, three `research.analyze`, and NOT ONE map, chart or clock operation. The turn
+       died at `stopped:'step_budget'` after 6m37s with `mapDrawn:false` and none of the three things
+       the reader asked for.
+       This index listed `chart.compose`, `map.compose`, `view.flyTo`, `map.highlight`,
+       `layers.toggle`, `research.analyze`, `view.locate`, `view.inspect` and `dialog.ask` — every one
+       of which SYS() hands the model IN THE SAME PROMPT as a typed tool it may call right now — under
+       a sentence saying 「they are not tools you may call directly」. A model that believes the prompt
+       has to go looking for the thing already in its hand, and looking is what it did until the
+       budget ran out.
+       ⚠ THE DIRECT SET IS PASSED IN, NOT LISTED HERE. js/atlas-toolsurface.js already knows which
+       capabilities it exposed — every tool it builds carries its `capabilityId` — so the caller hands
+       that set over and the index states the truth about it. A copy of the CORE names kept here would
+       be the second source of truth .agents/rules/no-ad-hoc-hardcoding.md §2.3 forbids, and the one
+       that goes stale the first time CORE changes. */
+    API.index = function (directIds) {
+      var direct = {};
+      [].concat(directIds || []).forEach(function (id) {
+        if (!id) return;
+        var c = null; try { c = API.resolve(id); } catch (_) { c = null; }
+        direct[(c && c.id) || String(id)] = true;
+      });
+      var byCat = {}, nDirect = 0;
       API.all().forEach(function (c) {
         if (!c || c.withdrawn) return;
+        if (direct[c.id]) { nDirect++; return; }   /* already in the model's hand — see above */
         var k = c.category || 'other';
         (byCat[k] || (byCat[k] = [])).push(c.id);
       });
       var cats = Object.keys(byCat).sort();
       if (!cats.length) return '';
-      return '[WHAT INTMAP CAN DO] Every capability id IntMap has, by category. They are not tools you '
-        + 'may call directly: find_capability turns one into its arguments and its documentation, and '
-        + 'run_capability then runs it. Nothing outside this list exists; everything in it does.\n'
+      return '[WHAT INTMAP CAN DO] Every capability id IntMap has BEYOND the tools you were given, by '
+        + 'category. These are not tools you may call directly: find_capability turns one into its '
+        + 'arguments and its documentation, and run_capability then runs it. '
+        + (nDirect ? 'The tools listed under [TOOLS] are ALREADY YOURS: call one by name, and never '
+          + 'spend a step searching for it. ' : '')
+        + 'Nothing outside this list and those tools exists; everything in them does.\n'
         + cats.map(function (k) { return k + ': ' + byCat[k].join(', ') + '.'; }).join('\n') + '\n';
     };
 

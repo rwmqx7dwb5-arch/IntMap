@@ -71,6 +71,18 @@ export function makeAtlasToolSurface(deps) {
          a recovery that names a tool the model cannot see is not a recovery. */
       { name: 'chart', cap: 'chart.compose', desc: 'Draw the numbers as a figure INSIDE your reply, in ONE call: "kind" is "bar" (a ranked comparison — keep your own order and label every row), "line"/"scatter" (points of x against y), or "timeline" (dated events on a time axis, for a stretch of history the map can only show one instant of). Pass `series:[{label,points:[{x,y,label}]}]`, or `events:[{t:ISO_DATE,label}]` for a timeline. "source" is REQUIRED — name where the numbers came from (the capability whose result you are drawing, the dataset, or your own knowledge said plainly) and the call is refused without it. It draws into the answer and touches nothing on the map, so it combines freely with compose_map. ⚠ Never invent a value to fill a curve: a line needs 3 real points, a bar 2 labelled values, a timeline 2 dated events, and below that the call is refused rather than drawn thin. Values that are not numbers are dropped and the caption says how many.' },
       { name: 'set_layer', cap: 'layers.toggle', desc: 'Turn a named map layer on or off.' },
+      /* ══ ⚠⚠⚠ (#R733) THE THIRD AXIS OF THE MAP, AND IT WAS THE ONE YOU HAD TO GO LOOKING FOR.
+         `map_view` moves WHERE the map is and `set_layer` moves WHAT is drawn on it; WHEN it is was
+         left behind find_capability — in a product whose clock is a named part of the UI and moves
+         borders, statistics, climate, satellites and the news together. Measured, that discovery did
+         not work: `find_capability` scores 0 matches for 「地図を現代に戻す」, 「現代に戻す」,
+         「時計を現在に戻す」 and "back to the present" (js/atlas-capabilities.js `search`), because
+         time.travel's aliases are `timeTravel,setTime,timeSet` and none of those is a phrase a reader
+         uses. In production the compound request that opened with 「現代に戻したうえで」 never moved
+         the clock at all: the turn spent its whole step budget searching. Promoting it is not a new
+         capability — the executor, the schema and the catalogue prose have all been here since the
+         clock was; what changes is that Atlas no longer has to find what it is already standing on. */
+      { name: 'set_time', cap: 'time.travel', desc: 'Set WHEN the map is — Chronos, the master clock. `year` (astronomical numbering: 0 is 1 BC) for history, `date` "YYYY-MM-DD" for a day (historical borders are day-exact, so use the date a treaty or partition took effect), `daysAgo` for recent news, or `now:true` to return to live. It moves the whole map together: borders, the Countries statistics for that year, choropleths, historical place names, the climate era, the terminator, satellites and the news feed. Call it whenever the request names a year, a date or an era — and whenever the reader asks to come back to the present — BEFORE drawing anything that should be read at that instant.' },
       { name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations. Use for anything current, contested or beyond your own knowledge. This renders its own sourced answer to the reader.' },
       /* ⚠ (#R413) THE EXISTING CAPABILITY, PROMOTED — NOT A NEW ONE. `view.locate` has read the
          device's real position since #R155. What was missing is that Atlas could not FIND it:

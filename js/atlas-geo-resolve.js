@@ -28,8 +28,54 @@ makeAtlasGeoResolve.featureNames = function featureNames(o){ const NAME_KEY_RE=/
   add(o.name); add(String(o.display_name||'').split(',')[0]);
   const nd=o.namedetails; if(nd&&typeof nd==='object'){ for(const k of Object.keys(nd)) if(NAME_KEY_RE.test(k)) add(nd[k]); }
   return out; }
+/* ⚠⚠⚠ (#R733) THE ONE THING THE COUNTRY STORE IS KEYED BY WAS THE ONE THING ITS RESOLVER WOULD NOT
+   ACCEPT — so the string fell through to the GEOCODER, and the geocoder is a machine that never says
+   「I don't know」. Measured in production: Atlas asked for the G7 and handed IntMap exactly the right
+   identifiers, `["CAN","FRA","DEU","ITA","JPN","GBR","USA"]`; `data.compareStats` opened a panel
+   holding CANADA, FRANCE, **BELGIUM**, ITALY, **BENIN**, USA. `resolveCountrySync` scored the query
+   against `nameEn`/`nameJp` alone, so 「DEU」 matched no country; `geocode('DEU')` returned a point and
+   `codeAtPoint` said Belgium. Germany became Belgium, Japan became Benin, the United Kingdom collided
+   with a code already in the list and vanished, and the reply printed 「(7)」 and then 「(6)」 without
+   naming one thing it had lost.
+   `countryStats` is KEYED by ISO 3166-1 alpha-3 and every record carries the other two forms of the
+   same standard — `a2` (alpha-2) and `ccn3` (numeric), both written by js/countries-ui.js. Those three
+   ARE the country's identity in this store. This asks the record for them. It is not an alias table:
+   nothing here is spelled, and a country added tomorrow answers to all three the day it arrives.
+   ⚠ HERE AND NOT IN js/atlas-console.js BECAUSE THE RULE IS ABOUT IDENTITY, NOT ABOUT ONE CALLER.
+   Six dispatches share the resolver that lacked it, and a copy of the rule beside each of them is the
+   shape .agents/rules/no-ad-hoc-hardcoding.md §2.3 names. A property of the factory rather than a
+   second `export`, for the reason `featureNames` above gives (tests/r199 ①).
+   ⚠ NOT #R157/#R158's AUTO-RESCUE, WHICH IS ITS MIRROR IMAGE. That forbids CORRECTING a wrong ISO3
+   from a name — Atlas decides identity and code must not overrule it. This ACCEPTS a right one. */
+makeAtlasGeoResolve.countryByIdentifier = function countryByIdentifier(store, q) {
+  try {
+    const s = String(q == null ? '' : q).trim(); if (!s || !store) return null;
+    const up = s.toUpperCase();
+    if (store[up]) return up;                                        /* alpha-3 — the store's own key */
+    const num = /^[0-9]{1,3}$/.test(s) ? String(parseInt(s, 10)) : null;
+    if (num == null && !/^[A-Z]{2}$/.test(up)) return null;
+    for (const code in store) {
+      const r = store[code]; if (!r) continue;
+      if (num != null) { if (r.ccn3 && String(parseInt(r.ccn3, 10)) === num) return code; }
+      else if (r.a2 && String(r.a2).toUpperCase() === up) return code;
+    }
+    return null;
+  } catch (_) { return null; }
+};
+
+/* ⚠ (#R733) AN IDENTIFIER THE STORE DOES NOT KNOW IS A WRONG IDENTIFIER, NEVER A PLACE TO LOOK UP.
+   This is what stops the fall-through above: `geocode` answers a different question — it returns a
+   PLACE — and for a real place name («バイエルン» → Germany) that chain is sound and is kept. For a
+   string shaped like a code it produced a confident wrong nation. Callers that get `null` here report
+   the name as unresolved, which is how a lost country becomes visible instead of becoming a different
+   one. The alpha-3 / alpha-2 / numeric shapes are the three ISO 3166-1 writes, same as above. */
+makeAtlasGeoResolve.looksLikeCountryIdentifier = function looksLikeCountryIdentifier(q) {
+  const s = String(q == null ? '' : q).trim();
+  return /^[A-Za-z]{2,3}$/.test(s) || /^[0-9]{1,3}$/.test(s);
+};
+
 export function makeAtlasGeoResolve(HOST, CTX) {
-  const GE=CTX.GE, L=CTX.L, esc=CTX.esc, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, codeAtPoint=CTX.codeAtPoint, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup, resolveCountrySync=CTX.resolveCountrySync;
+  const GE=CTX.GE, L=CTX.L, cName=CTX.cName, countryStats=CTX.countryStats, esc=CTX.esc, _bboxSoftPoly=CTX._bboxSoftPoly, _cgPoly=CTX._cgPoly, _clipGeoRect=CTX._clipGeoRect, _codesGeo=CTX._codesGeo, _expandRegionCompound=CTX._expandRegionCompound, _geoArea=CTX._geoArea, _hlLegendHtml=CTX._hlLegendHtml, _hlPaletteColor=CTX._hlPaletteColor, _lnorm=CTX._lnorm, _ptInGeo=CTX._ptInGeo, _setLast=CTX._setLast, _validGeo=CTX._validGeo, askAIJSONEnvelope=CTX.askAIJSONEnvelope, composeRegion=CTX.composeRegion, fbbox=CTX.fbbox, geo=CTX.geo, localFuzzyPlaces=CTX.localFuzzyPlaces, regionGroup=CTX.regionGroup;
     /* (#R452) `geocode()` and `_nomExtent()` both went to Nominatim with no signal and no deadline,
        and `placeExtent()` calls the second up to THREE times in a file — so a host that had stopped
        answering stopped the turn. 8 s is well above Nominatim's own answer time for every query this
@@ -639,5 +685,39 @@ export function makeAtlasGeoResolve(HOST, CTX) {
      js/atlas-console.js destructures, because a name in one and not the other is a silent
      `undefined`. So `SELFLOC_WORDS`, `SELFLOC_RE` and `_coordPlace` are NOT exported for the test's
      benefit: tests/r413-checks reaches them the way the app does, through `geocode()`. */
-  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox , whereMiss };
+
+  /* ---- (#R43) name → country code (for time-series / isolate / select). EN/JP names from countryStats, else
+   geocode + point-in-polygon over the country geometry so DE/RU/ES names resolve too.
+   ⚠ (#R733) MOVED HERE FROM js/atlas-console.js, with the identifier rule above it. The two halves —
+   「which spellings identify a country」 and 「what to do when none of them match」 — are one rule, and the
+   geocoder the second half must NOT fall through to lives in this file. ---- */
+  function _pipRing(x,y,ring){ let inside=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++){ const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1]; if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi)) inside=!inside; } return inside; }
+  function _pipPoly(x,y,poly){ if(!poly||!poly.length||!_pipRing(x,y,poly[0])) return false; for(let i=1;i<poly.length;i++){ if(_pipRing(x,y,poly[i])) return false; } return true; }
+  function _pipFeat(x,y,gm){ if(!gm) return false; if(gm.type==='Polygon') return _pipPoly(x,y,gm.coordinates); if(gm.type==='MultiPolygon') return gm.coordinates.some(p=>_pipPoly(x,y,p)); return false; }
+  function codeAtPoint(lng,lat){ try{ const g=geo(); if(!g||!g.features) return null; for(const f of g.features){ if(_pipFeat(lng,lat,f.geometry)) return String(f.id); } }catch(_){} return null; }
+  function _idCountry(q){ return makeAtlasGeoResolve.countryByIdentifier(countryStats(), q); }
+  function resolveCountrySync(name){ try{
+    const _idc=_idCountry(name); if(_idc){ const si=countryStats()[_idc]; return {code:_idc, name:cName(si), ll:(si&&si.latlng?{lng:si.latlng[1],lat:si.latlng[0]}:null)}; }
+    /* (#R62) common short names that don't literally appear in nameEn/nameJp */
+    const CJA={'韓国':'south korea','北朝鮮':'north korea','米国':'united states','英国':'united kingdom','豪州':'australia','南ア':'south africa','UAE':'united arab emirates','uae':'united arab emirates','USA':'united states','usa':'united states','UK':'united kingdom','uk':'united kingdom'};
+    const alias=CJA[String(name||'').trim()]; if(alias) name=alias;
+    const q=_lnorm(name); if(!q||!countryStats()) return null; let best=null,bs=0;
+    for(const code in countryStats()){ const s=countryStats()[code]; if(!s) continue; const en=_lnorm(s.nameEn||''), jp=_lnorm(s.nameJp||''); let sc=0;
+      if(en===q||jp===q) sc=100; else if((en&&en.indexOf(q)===0)||(jp&&jp.indexOf(q)===0)) sc=82; else if(q.length>3&&((en&&en.indexOf(q)>=0)||(jp&&jp.indexOf(q)>=0))) sc=64; else if(en&&q.length>4&&q.indexOf(en)===0) sc=58;
+      /* (#R136) a NON-sovereign micro-feature (glacier / shoal / no-man's-land: Southern Patagonian Ice Field,
+         Scarborough Shoal, Bir Tawil) must not be grabbed by a LOOSE substring match — "Patagonia" was resolving to
+         the ice field ("patagonia" ⊂ "…Patagonian Ice Field", sc 64) instead of the region ("見当違いの場所"). Require
+         an exact or start-of-name match for these, so a loose query falls through to the region/Nominatim resolver. */
+      if(sc>0&&sc<82&&s.sov===false) sc=0;
+      if(sc>bs){ bs=sc; best={code, name:cName(s), ll:(s.latlng?{lng:s.latlng[1],lat:s.latlng[0]}:null)}; } }
+    return bs>=58?best:null; }catch(_){ return null; } }
+  async function resolveCountry(name){ const c=resolveCountrySync(name); if(c) return c;
+    /* ⚠ (#R733) A CODE THE STORE DOES NOT KNOW STOPS HERE rather than being handed to the geocoder,
+       which answered 「DEU」 with a point in Belgium and had it reported as a country. The place-name
+       path below is unchanged (「バイエルン」 → Germany). The measurement, and why this is #R157/#R158's
+       rule rather than a new one, are on countryByIdentifier at the top of this file. */
+    if(makeAtlasGeoResolve.looksLikeCountryIdentifier(name)) return null;
+    try{ const ll=await geocode(name); if(ll){ const code=codeAtPoint(ll.lng,ll.lat); if(code&&countryStats()[code]){ const s=countryStats()[code]; return {code, name:cName(s), ll}; } return {code:null, name:ll.name||name, ll}; } }catch(_){} return null; }
+
+  return { DEIXIS_RE, REGION_ALIASES, WORLD_RE, codeAtPoint, resolveCountry, resolveCountrySync, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox , whereMiss };
 }
