@@ -1036,6 +1036,50 @@ export function makeAtlasCapabilities(HOST) {
         .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
         .toLowerCase().replace(/[\s·・･_\-]+/g, ' ').trim();
     }
+    /* the terms of a request: Latin/digit words of 3+ characters, and 2-character windows of each
+       CJK run (Japanese and Chinese carry no spaces, so 「次回可視通過予測」 yields 通過 and 予測). */
+    function termsOf(nq) {
+      var out = [];
+      (nq.match(/[a-z0-9]{3,}/g) || []).forEach(function (w) { out.push(w); });
+      (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).forEach(function (run) {
+        for (var i = 0; i + 2 <= run.length; i++) out.push(run.slice(i, i + 2));
+      });
+      return out.filter(function (t, i, a) { return a.indexOf(t) === i; });
+    }
+    var _docNorm = null;   /* id → normalised catalogue block, filled once (a block is up to ~24 kB) */
+    var _docDf = {};       /* term → how many capabilities' blocks carry it */
+    var DOC_TERM_POINTS = 6, DOC_TERM_CAP = 30;   /* one alias match is 40, an exact alias 100 — the documentation may lift a capability into view, never over the one that is named */
+    /* a Latin term is a WORD («iss» is not inside «missile» or «emission»); a CJK window is a substring */
+    var _termRe = {};
+    function hasTerm(d, t) {
+      if (!/^[a-z0-9]+$/.test(t)) return d.indexOf(t) >= 0;
+      var re = _termRe[t] || (_termRe[t] = new RegExp('(^|[^a-z0-9])' + t + '(?=$|[^a-z0-9])'));
+      return re.test(d);
+    }
+    function docNorms() {
+      if (_docNorm) return _docNorm;
+      _docNorm = {};
+      API.all().forEach(function (c) { var d = ''; try { d = norm(runtime.docs.text([c.id])); } catch (_) { d = ''; } _docNorm[c.id] = d; });
+      return _docNorm;
+    }
+    /* ⚠ A TERM IS WORTH WHAT IT DISTINGUISHES. 「位置」 and 「現在」 sit in thirty blocks and say nothing
+       about which one is meant; «iss» sits in one. So each term's points are divided by the number of
+       blocks that carry it beyond the first two — the same idea as inverse document frequency, kept
+       to one line. Without it the LONGEST block won every search (measured: map.clear and
+       sim.lineOfSight outranked layers.satellites on the ISS request). */
+    function docTermScore(cap, nq) {
+      if (!runtime.docs) return 0;
+      var all = docNorms(), d = all[cap.id];
+      if (!d) return 0;
+      var pts = 0;
+      termsOf(nq).forEach(function (t) {
+        if (!hasTerm(d, t)) return;
+        var df = _docDf[t];
+        if (df == null) { df = 0; for (var id in all) if (hasTerm(all[id], t)) df++; _docDf[t] = df; }
+        pts += DOC_TERM_POINTS * Math.min(1, 2 / Math.max(1, df));
+      });
+      return Math.min(DOC_TERM_CAP, pts);
+    }
     /* ══ SEARCH HINTS ═══════════════════════════════════════════════════════
        MATCH TERMS, not text the app writes. These are the words a REQUEST may
        use, all nine languages at once, one packed row per category. Nothing here is ever shown to
@@ -1081,6 +1125,14 @@ export function makeAtlasCapabilities(HOST) {
       });
       if (nq.indexOf(norm(cap.id.split('.').pop())) >= 0) s += 25;
       (VERB_HINTS[cap.category] || []).forEach(function (h) { if (h && nq.indexOf(norm(h)) >= 0) s += 8; });
+      /* ⚠ THE DOCUMENTATION IS PART OF THE SEARCH. Aliases and hints are the words a request may use in
+         nine languages, but the catalogue block is where a capability's SUBJECT lives — «ISS», 「衛星」,
+         「通過」 — and a request that names the subject in its own words matched nothing here.
+         Measured on production (2026-09-15): find_capability('ISS（NORAD 25544）のリアルタイム位置と…')
+         → matches: [], and Atlas, told IntMap had no such control, went researching a position the
+         satellite layer was propagating. Each distinct term of the request that the block carries
+         adds a little; the cap keeps a long block from outranking an exact alias. */
+      s += docTermScore(cap, nq);
       if (ctx) {
         if (ctx.recent && ctx.recent.indexOf(cap.id) >= 0) s += 12;
         if (ctx.requiredOutputs && ctx.requiredOutputs.length) {
