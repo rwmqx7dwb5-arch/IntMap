@@ -35,6 +35,10 @@ const MODULES = [
   ['js/atlas-sources.js', 'makeAtlasSources', 'js/atlas-console.js'],
   ['js/atlas-sims.js', 'makeAtlasSims', 'js/atlas-console.js'],
   ['js/atlas-verify.js', 'makeAtlasVerify', 'js/atlas-console.js'],
+  /* (#R740) the metric SET and the one resolver over it — moved out when the R740 additions took the
+     kernel past the ceiling below. A module nobody lists here is a module whose CTX and returns are
+     not measured against what the kernel destructures, which is the whole point of this file. */
+  ['js/atlas-metrics.js', 'makeAtlasMetrics', 'js/atlas-console.js'],
   ['js/theme-sky.js', 'makeThemeSky', 'js/app-body.js'],
 ];
 

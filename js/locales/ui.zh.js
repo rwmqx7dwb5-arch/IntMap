@@ -5350,6 +5350,7 @@ window.IntMapLang.define('zh', {
   'Nothing on the map changed.': '地圖上沒有任何變化。',   /* atlas-results.js (#R318) atlas.code.no_change */
 
   'There was nothing of that kind to remove — the map is already in the state asked for.': '沒有可移除的該類項目 — 地圖已處於要求的狀態。',   /* atlas-results.js (#R318) atlas.code.already_clear */
+  'The map was already showing what you asked for.': '地圖已經顯示您所要求的內容。',   /* atlas-results.js (#R740) atlas.code.already_there */
   'That is not available right now.': '目前無法使用。',   /* atlas-results.js (#R318) atlas.code.unavailable */
   'I do not have that operation.': '我沒有這項操作。',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
   'The values given for that operation were not usable.': '傳給該操作的數值無法使用。',   /* atlas-results.js (#R318) atlas.code.bad_args */
@@ -6206,7 +6207,7 @@ window.IntMapLang.define('zh', {
   "match": "筆符合",
   "Moment magnitude": "矩震級",
   "No row satisfies every condition. Every condition was actually evaluated — see the method below.": "沒有任何一列同時滿足所有條件。每個條件都確實評估過——請見下方判定方式。",
-  "no such column, so that condition was ignored": "沒有這個欄位，因此忽略該條件",
+  "no such column, so this query was NOT answered": "沒有這個欄位，因此並未回答此查詢",
   "Only part of the place list is loaded in this session — the most populous places first.": "本工作階段僅載入地名表的一部分——依人口由多至少。",
   "Pins drawn": "地圖上的圖釘",
   "Precipitation now": "目前降水量",
@@ -6214,12 +6215,12 @@ window.IntMapLang.define('zh', {
   "Rows shown": "顯示列數",
   "rows tested against every candidate, at a radius of": "筆資料針對每個候選判定，半徑為",
   "showing": "顯示",
+  "The columns this table has are": "此表格的欄位如下",
   "the join could not run, so it was NOT applied": "無法執行結合，因此未套用此條件",
   "The query engine could not be loaded.": "無法載入查詢引擎。",
   "These conditions could NOT be evaluated in this session and are NOT reflected in the rows below": "本工作階段無法評估下列條件，下方各列未反映這些條件",
   "This query names something IntMap does not have. The tables it does have are": "此查詢指到 IntMap 沒有的東西。可用的表為",
   "unavailable in this session, so its condition was NOT applied": "本工作階段無法取得，因此未套用此條件",
-  "Unknown join table": "未知的結合對象表",
   "Wind speed": "風速",
   "rows are not single points, so a distance join cannot be measured against them": "各列不是單一地點，因此無法以距離進行結合",
   "Earthquake magnitude": "地震規模",

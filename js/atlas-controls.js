@@ -137,9 +137,23 @@ export function makeAtlasControls(HOST, CTX) {
           nm2=(t3||String(box.id||'').replace(/^data-legend-/,'')).slice(0,32); }
         _name(b,(window.IntMapLang.t(HOST.lang,'close legend: ','凡例を閉じる: ','Legende schließen: ','закрыть легенду: ','cerrar leyenda: '))+(nm2||'legend')); });
       document.querySelectorAll('input.sl-legend-range:not([aria-label]), input.sl-num:not([aria-label])').forEach(i2=>{ _name(i2,window.IntMapLang.t(HOST.lang,'sea level rise (m)','海面上昇 (m)','Meeresspiegelanstieg (m)','подъём уровня моря (м)','subida del nivel del mar (m)')); });
-      /* generic: an unnamed ×/× button is a CLOSE button for its nearest identified container */
+      /* generic, in this order, because an element's OWN name outranks anything this sweep can guess:
+         (1) a title with real content IS the name — copy it; (2) only a button whose WHOLE text is a
+         close glyph is a close button; (3) an icon-only button without a title gets NOTHING.
+         ⚠ (#R740) MEASURED in production: 441 elements carried data-imname and 13 of them announced
+         "close: …" while their own title said otherwise — .atl-go (which SENDS the question),
+         .atl-map-toggle ("Show / hide on the map"), .atl-jump ("Jump to latest"), .alc-x ("Hide") and
+         the nine .accent-sw swatches ("Default"/"Indigo"/…). The old guard read
+         `if(t2&&!/^[××✖xX]$/.test(t2)) return`, so a button whose content is an SVG (t2==='') was never
+         CHECKED for the glyph, only assumed to be one: the test meant to confirm "it is a ×" passed
+         exactly those elements that have no × at all. A wrong name is worse than no name — the audit
+         reports the unnamed ones honestly, whereas Atlas resolves controls BY aria-label, so the handle
+         "close: atlas panel" on the Send button let "close the Atlas panel" submit a question instead. */
       document.querySelectorAll('button:not([aria-label]), [role="button"]:not([aria-label])').forEach(b=>{ try{
-        const t2=(b.textContent||'').replace(/\s+/g,''); if(t2&&!/^[××✖xX]$/.test(t2)) return; if(b.id&&b.id.length>3) return;
+        const ttl=String(b.getAttribute('title')||'').replace(/\s+/g,' ').trim();
+        if(ttl.length>=2){ _name(b,ttl.slice(0,64)); return; }   /* stamped like every other _name, so `intmap-lang` takes it back and re-reads the retranslated title */
+        const t2=(b.textContent||'').replace(/\s+/g,''); if(!/^[××✖xX]$/.test(t2)) return;   /* no glyph (incl. empty = icon only) ⇒ not shown to be a close button ⇒ leave it unnamed */
+        if(b.id&&b.id.length>3) return;
         const host=b.closest&&b.closest('[id]'); if(!host||!host.id) return;
         _name(b,(window.IntMapLang.t(HOST.lang,'close: ','閉じる: ','schließen: ','закрыть: ','cerrar: '))+host.id.replace(/[-_]/g,' ').slice(0,32)); }catch(_){} });
       document.querySelectorAll('input[type=file]:not([aria-label])').forEach(i2=>{ _name(i2,window.IntMapLang.t(HOST.lang,'file: ','ファイル: ','Datei: ','файл: ','archivo: ')+String(i2.accept||'upload').replace(/[.,]/g,' ').replace(/\s+/g,' ').trim().slice(0,32)); });

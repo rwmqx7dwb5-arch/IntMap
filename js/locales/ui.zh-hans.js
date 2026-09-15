@@ -5354,6 +5354,7 @@ window.IntMapLang.define('zh-hans', {
   'Nothing on the map changed.': '地图上没有任何变化。',   /* atlas-results.js (#R318) atlas.code.no_change */
 
   'There was nothing of that kind to remove — the map is already in the state asked for.': '没有可移除的该类项目 — 地图已处于要求的状态。',   /* atlas-results.js (#R318) atlas.code.already_clear */
+  'The map was already showing what you asked for.': '地图已经显示您所要求的内容。',   /* atlas-results.js (#R740) atlas.code.already_there */
   'That is not available right now.': '目前无法使用。',   /* atlas-results.js (#R318) atlas.code.unavailable */
   'I do not have that operation.': '我没有这项操作。',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
   'The values given for that operation were not usable.': '传给该操作的数值无法使用。',   /* atlas-results.js (#R318) atlas.code.bad_args */
@@ -6210,7 +6211,7 @@ window.IntMapLang.define('zh-hans', {
   "match": "笔符合",
   "Moment magnitude": "矩震级",
   "No row satisfies every condition. Every condition was actually evaluated — see the method below.": "没有任何一列同时满足所有条件。每个条件都确实评估过——请见下方判定方式。",
-  "no such column, so that condition was ignored": "没有这个字段，因此忽略该条件",
+  "no such column, so this query was NOT answered": "没有这个字段，因此并未回答此查询",
   "Only part of the place list is loaded in this session — the most populous places first.": "本会话仅加载地名表的一部分——依人口由多至少。",
   "Pins drawn": "地图上的图钉",
   "Precipitation now": "目前降水量",
@@ -6218,12 +6219,12 @@ window.IntMapLang.define('zh-hans', {
   "Rows shown": "显示列数",
   "rows tested against every candidate, at a radius of": "笔数据针对每个候选判定，半径为",
   "showing": "显示",
+  "The columns this table has are": "此表格的字段如下",
   "the join could not run, so it was NOT applied": "无法执行结合，因此未应用此条件",
   "The query engine could not be loaded.": "无法加载查询引擎。",
   "These conditions could NOT be evaluated in this session and are NOT reflected in the rows below": "本会话无法评估下列条件，下方各列未反映这些条件",
   "This query names something IntMap does not have. The tables it does have are": "此查询指到 IntMap 没有的东西。可用的表为",
   "unavailable in this session, so its condition was NOT applied": "本会话无法取得，因此未应用此条件",
-  "Unknown join table": "未知的结合对象表",
   "Wind speed": "风速",
   "rows are not single points, so a distance join cannot be measured against them": "各列不是单一地点，因此无法以距离进行结合",
   "Earthquake magnitude": "地震规模",

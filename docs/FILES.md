@@ -431,6 +431,8 @@ atlas-examples.js                 Atlas — 例文チップの候補プール（
 atlas-view-subject.js             Atlas — 「いま何を見ているか」の測定（視界に入る国・陸と海の割合・
                                   名前のある水域・タイルが名指す地名と山・戦略拠点・km 単位の縮尺）
 atlas-styles.js                   Atlas パネルのスタイルシート 1 本（atlasPanelCSS）
+atlas-metrics.js                  Atlas — 国の指標の集合 1 つ（METRICS＋XMET）と、その名前を解く解決器 1 つ。
+                                  各レコードが自ら名乗るラベル（5 言語＋現在の言語）で引き当て、拒否は有効な全鍵を列挙する
 atlas-geo-resolve.js              Atlas — 場所・地域の解決とカメラの寄せ方。
                                   ⚠ **「場所が渡されていない」と「渡された場所が解決できなかった」は
                                   1つの事実の2つの値**で、`whereMiss()` がその区別の唯一の持ち主（#R667）。

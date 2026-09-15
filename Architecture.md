@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（303本・14.6 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（304本・14.6 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -294,13 +294,25 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | Nominatim の前の 1 つのキュー | `js/nominatim-gate.js` | 公開エンドポイントの「1 秒 1 リクエスト」を**アプリ全体で 1 つの counter** として守る。`reserve({drop:true})` ＝打鍵経路（窓が埋まっていれば**捨てる**——打ち終える前の問い合わせは既に古い）、`nominatimSlot()` ＝一括経路（**並ぶ**）。⚠ **取得はしない**——枠を配るだけで、締切（`js/fetch-deadline.js`）も header も解析も呼び出し側のまま。⚠ `window.IntMapNominatimGate` と ES import の**両方**から届くが、ES モジュールは 1 インスタンスなので counter は 1 つ |
 | 地点の 1 つの形 | `js/atlas-geo-object.js` | `GeoObject`＝ID・名前・緯度経度・種別・日時・出典・確度と **provenance**。`placed` / `pointLike` / `describesUserPoint` / `mergeKnown` |
 | 分野横断の異常度 | `js/atlas-anomaly-score.js` | 種別ごとの固有スケール（Mw／カテゴリ／VAL／CAP 4段）＋ 影響人口・範囲・平常からの乖離・新しさ・確度・国際的重要性の**7成分**。順位の根拠を `why` に残す。**各種別の上位だけを競わせる**（偏りは標本の偏りであって選好ではない） |
+| 国の指標の集合 | `js/atlas-metrics.js` | **集合は 1 つ（`METRICS` ＋ `XMET`）で、名前を解くのも 1 つ。** 解決は各指標レコードが自ら名乗るラベル（位置引数の 5 言語 ＋ 現在の言語）で行うので、指標を足せばその名前で届く。地図の色分け・rank・ratio・relate は全部この解決器に訊き、拒否（`_unknownMetric`）は**有効な鍵を全部数え上げて**返す |
 
 **⚠ 観測器は「動いたか」ではなく「求めた状態が地図にあるか」を答える。** `paintNow()` は
 `nlq-fac-src`（歴史勢力図の陣営塗り）も数える。`research.historicalMap` は専用の `factions` 観測器で、
 呼び出し後にその source に feature があれば `completed`——**同じ地図を描き直しても `not_rendered` にはならない**
 （件数の差分で判定すると、描かれている地図が「描かれていない」と報告され、Atlas は同じ地図を描き続ける）。
+`routing.isochrone` も同じ形で、専用の `isochrone` 観測器が到達圏の source（`im-iso-src`）を**呼び出し後に**読む
+——**同じ到達圏を描き直しても「描かれている」**。⚠ `paintNow()` の一覧に足すだけでは直らない
+（1 回目は何かが動くので通り、2 回目以降は動かないので落ちる。欠陥は一覧の漏れではなく**同一の再実行を
+失敗と呼ぶ判定**のほう）。
 `map.clear` は `clear` 観測器で、**地図と開いているパネルの両方**を見る。消すものが無かった clear は失敗ではなく
-`completed / already_clear`（求めた状態がそこにある）。`camera` 観測器は **AFTER の標本をカメラが到着してから**取る
+`completed / already_clear`（求めた状態がそこにある）。**カメラも同じ**——行き先を名指した操作が、
+その視界に**既になっている**なら `completed / already_there` で、`no_change`（失敗）ではない。
+⚠ **地名の行き先は、動かした側が宣言する。** `flyTo` は**カメラへ実際に渡した行き先**を `meta.dest`
+（点、または `flyToBox` が収めたときだけ箱）として返し、観測器はそれを**読むが信じない**——申告を
+実際の視界と突き合わせ、飛んでいない行き先を申告しても通らない。宣言の無い成功・解決できなかった経路は
+**申告しない**＝「測れない」の正直な申告で、今までどおり `no_change`。⚠ **推測で通さない。**
+（方向語 `dir`/`toward` と `delta` は今も測れない。方向の表は dispatch が正本なので、ここへ写さない。）
+`camera` 観測器は **AFTER の標本をカメラが到着してから**取る
 （`GE().isAnimating()` が偽になり 100 ms 隔てた 2 標本が一致するまで・上限 `CAMERA_SETTLE_MS`＝2.5 s。
 `flyTo` は 1.1 s のアニメーションを返り値で待たないので、呼び出し直後の標本は動く前の位置である）。
 
@@ -465,7 +477,7 @@ strict json_schema はプロパティ順に生成されるので、この並び�
 | 部品 | 何の正本か |
 |---|---|
 | 表 (tables) | `cities`（GeoNames cities1000・同梱。**都市であるものだけ**——§下記）／`countries`（Countries タブの記録）／`earthquakes`（USGS FDSN・生）／`volcanoes`（Smithsonian GVP・同梱）／`facilities`（OpenStreetMap＋Wikidata・生。`kind` 必須） |
-| 列 (columns) | 行が持つもの（`pop`・`country`・`mag`・`depthKm`）／同梱データから測るもの（`precipMm`＝CHELSA、`coastKm`・`seaKm`＝`js/coastline.js`）／ネットワークで訊くもの（`elevM`・`tempC`・`windKmh`・`humidity`・`rainMm`＝Open-Meteo）／**国の統計**（`gdppc`・`hdi`・`dem`・`tfr`・`lifeExp`… を都市の ISO-2 から引く）／**任意の World Bank 指標**（`wb:SP.POP.GROW` のように書く） |
+| 列 (columns) | 行が持つもの（`pop`・`country`・`mag`・`depthKm`・`time`＝地震の発生時刻）／同梱データから測るもの（`precipMm`＝CHELSA、`coastKm`・`seaKm`＝`js/coastline.js`）／ネットワークで訊くもの（`elevM`・`tempC`・`windKmh`・`humidity`・`rainMm`＝Open-Meteo）／**国の統計**（`gdppc`・`hdi`・`dem`・`tfr`・`lifeExp`… を都市の ISO-2 から引く）／**任意の World Bank 指標**（`wb:SP.POP.GROW` のように書く） |
 | 演算子 | `>=` `>` `<=` `<` `==` `!=` `between` `in` `contains` |
 | 空間結合 | `near:[{of:表, withinKm:数, require?:bool, …その表の絞り込み}]`。結合先には**候補の外接矩形＋半径**しか要求しない |
 | 空間述語 | `spatial:[{rel:'within'｜'contains'｜'intersects'｜'nearer_than', of:表 または GeoJSON, km?:数, where?:…, require?:bool, as?:名}]`。**行が持つ形そのもの**で判定する（外接矩形の中心からではない）。結果は `NEAR` と同じ結合の列に出る。予算 `SPATIAL_WORK_CAP`（単位は**頂点対**）を超えたら、超えたことを結果に載せる |
@@ -482,6 +494,14 @@ strict json_schema はプロパティ順に生成されるので、この並び�
 2. **出典の無い列を出さない。** どの列も自分のデータセット名を持ち、取れなかった値は「—」と書く。
    **評価できなかった条件は表の上に警告として出す**——下に小さく書くのでは、69 行が 3 条件すべてを
    満たしたように読める。
+   ⚠ **「評価できなかった」と「そもそも訊いていない」は別で、後者は答えを返さない。** 存在しない列を
+   名指した条件は、警告を添えて素通りするのではなく**問い合わせ全体を拒否する**
+   （`{ok:false, error:'unknown-column'}`）。拒否は**その表が実際に持つ列 id を全部挙げる**ので、
+   Atlas は綴りを替えて何度も試さずに 1 回で出し直せる。`where` だけでなく、`near` の結合先の条件と
+   `spatial` の対象の条件も同じ（同じ判断が 3 か所にあるのではなく、1 つの `planFor()` が答える）。
+   ⚠ **列は id の完全一致だけでなく、その列が自分で名乗っているラベル**（`col()` に渡す 5 言語の
+   `LA(...)`）でも引ける。完全一致 → **唯一の部分一致**の順で、2 つ以上に当たる語は引かない
+   （別名表を手で持たないための規則。`.agents/rules/no-ad-hoc-hardcoding.md`）。
 3. **数値をモデルに訊かない。** この操作の中に AI 呼び出しは 1 つも無い。
 4. **1 つの操作は、返答の中で 1 ブロックである。** 結果は `meta.resultKey` として**何を解決したか**
    （表・条件・国スコープ・結合・並び・上限）を名乗る。`show` は入らない——表示列は「どう描いたか」
@@ -1528,6 +1548,12 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 - **凡例の名前は「表」で渡す。** `window._registerLayerOpacity(id, names, …)` の `names` は
   **言語ごとの配列**であって解決済み文字列ではない（文字列を渡すと `names[1]` が2文字目になる）。
   受け側でも文字列を正規化する。
+- **凡例は容器の中にしか置かれない。** `tileLegends()` は開いている凡例を下から積み、**次の1枚が容器の
+  上端に届くなら列を折り返す**（右へ、その列の**実測**幅の最大＋12px）。1枚で容器より高い凡例は
+  `max-height`＋内部スクロールにして、題と閉じるボタンが必ず画面内に残るようにする。
+  ⚠ 高さも幅も**位置を1つも書く前に全部読む**（1枚ごとに測る形へ戻さない——実測で、指の1回のパンで
+  起きた `getBoundingClientRect` 5,852 回のうち 5,724 回がこの関数から出ていた）。
+  ⚠ 読者が動かした凡例（`data-dragged`）は積み直しの対象にしない。
 - **段彩の凡例は連続、分類の凡例は帯。** 世界銀行系の塗り分けはグラデーション帯で、停止は**値の位置**に
   置く（`interpolate` は値について線形）。タイルのサムネイルも同じランプを層から読む（`IntMapWB.rampOf`）。
 - **1分類＝1色。** `js/layer-packs.js` の `paletteOf(n)` は手で選んだ30色を使い切ったあと

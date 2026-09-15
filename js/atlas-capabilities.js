@@ -155,7 +155,9 @@ export function makeAtlasCapabilities(HOST) {
       ['data.satelliteCompare',      'satelliteCompare','satCompare,satChange',                                       'data',    'panelPaint','panel.satcompare',     'panel,map',           'session', 'none',   'place',    ''],
       ['data.layerValues',           'layerData',      'layerValue,layerQuery',                                       'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
       ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'explicit','',        ''],
-      ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'paint',   'map.isochrone',          'map',                 'session', 'none',   'place',    ''],
+      /* ⚠ (#R740) `isochrone`, NOT `paint` — a reachable area that is on the map is rendered whether
+         or not the count moved. The measurement and the general rule are at the observer below. */
+      ['routing.isochrone',          'isochrone',      'reach,reachability,reachable,catchment',                      'routing', 'isochrone','map.isochrone',         'map',                 'session', 'none',   'place',    ''],
       ['routing.setEndpoints',       'route',          '',                                                            'routing', 'route',   'map.route',              'panel',               'session', 'none',   'place',    ''],
       ['routing.optimizeStops',      'optimizeRoute',  'tsp,multiStop,optimize,optimizeStops',                        'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'points',   ''],
       ['routing.route',              'directions',     'roadRoute,navigate,drivingRoute,walkingRoute,transitRoute',   'routing', 'route',   'map.route',              'route,map,panel',     'session', 'none',   'place',    'routeUi'],
@@ -515,6 +517,158 @@ export function makeAtlasCapabilities(HOST) {
     function legacyOk(raw) { return !!(raw && raw.ok !== false); }
     function legacyCode(raw) { return (raw && raw.meta && raw.meta.code) || ''; }
 
+    /* ══ ⚠⚠⚠ (#R740) WHAT THE READER ASKED FOR IS A VIEW, NOT A MOVEMENT ══════════════════════════
+       The camera verdict used to read: 「one that asked for movement is complete only when the camera
+       really is somewhere else」. That invariant is wrong, and it is the SAME wrongness the isochrone
+       verifier above was built to end — 「did anything move」 instead of 「is what was asked for on the
+       map」. `clear` already knows it (`moved ? 'ok' : 'already_clear'`, both `completed`).
+       MEASURED on production 2026-09-15, signed in, 「ヨーロッパの気温をGFSモデルで表示して、等圧線も
+       重ねて。ついでに風のパーティクルも気温の上に出して。」 — 7 steps, 92 s, ending in
+       `stopped: repeated_calls`:
+           flyTo "ヨーロッパ" [no_change] ×2 → flyTo "Europe" [no_change] ×2 → flyTo "ヨーロッパ" [ok]
+       Europe was on the screen from the first step. The three layers all answered `ok` and really were
+       drawn; the whole turn was spent flying to where the camera already was — the loop even switched
+       language, as if the WORD had been the problem.
+       ⚠ THE JUDGEMENT IS ONLY EVER AN UPGRADE. Below, a measured goal can turn `no_change` into
+       `already_there`; it can never turn a completion into a failure. So a request this file cannot
+       measure keeps exactly the verdict it had before, and nothing is claimed that was not observed. */
+    /* the rectangle the reader is actually looking at. BOTH adapters expose the same four readers on
+       the object `camera.getBounds()` returns (js/geo-engine.js:1145 → MapLibre's LngLatBounds,
+       js/cesium-engine.js:2352 builds the same four) — `contains()` is NOT on both, so it is not used. */
+    function viewportNow() {
+      try {
+        var b = GE().camera.getBounds(); if (!b) return null;
+        var w = +b.getWest(), e = +b.getEast(), s = +b.getSouth(), n = +b.getNorth();
+        if (!isFinite(w) || !isFinite(e) || !isFinite(s) || !isFinite(n)) return null;
+        return { w: w, e: e, s: s, n: n };
+      } catch (_) { return null; }
+    }
+    /* true / false / null — and `null` means 「could not be observed」, never 「probably yes」. */
+    function pointInView(lng, lat) {
+      if (!isFinite(lng) || !isFinite(lat)) return null;
+      var v = viewportNow(); if (!v) return null;
+      if (lat < Math.min(v.s, v.n) || lat > Math.max(v.s, v.n)) return false;
+      var span = v.e - v.w;
+      if (span >= 360 || span <= -360) return true;                 /* the whole planet is on screen */
+      span = ((span % 360) + 360) % 360;
+      var off = (((lng - v.w) % 360) + 360) % 360;                  /* east of the west edge, wrapping once */
+      return off <= span;
+    }
+    /* the box shape every caller of `flyToBox` works in: [[west,south],[east,north]] — the same one
+       js/atlas-geo-resolve.js `_bboxOK` validates. A box that is not that shape is not a box. */
+    function boxOf(b) {
+      try {
+        var w = +b[0][0], s = +b[0][1], e = +b[1][0], n = +b[1][1];
+        if (!isFinite(w) || !isFinite(s) || !isFinite(e) || !isFinite(n)) return null;
+        if (e <= w || n <= s) return null;
+        return { w: w, s: s, e: e, n: n };
+      } catch (_) { return null; }
+    }
+    /* ⚠ THE FLOOR IS A FLOOR, NOT A GUESS ABOUT GEOGRAPHY.
+       OBSERVED: js/atlas-geo-resolve.js `flyToBox` (:693) fits the box through `camera.forBounds`
+       with padding ≈ 9% of the smaller viewport side, and falls back to `fitBounds(padding:46)`. A
+       camera that has just landed there therefore contains the WHOLE box — the measured fraction is
+       1.0 on both axes, and padding and `maxZoom` can only make the viewport larger, never smaller.
+       The floor is set below that to absorb the ONE thing that is approximate: `getBounds()` reports
+       a rectangle for a view that is a trapezoid once the camera is pitched, and the globe adapter
+       computes it from a view rectangle (js/cesium-engine.js:2342).
+       EXPIRES IF: `flyToBox` stops fitting the whole box (e.g. it gains a zoom floor of its own).
+       CANONICAL: this line — nothing else needs this number. */
+    var BOX_ON_SCREEN_MIN = 0.5;
+    function boxOnScreen(box) {
+      var b = boxOf(box); if (!b) return null;
+      var v = viewportNow(); if (!v) return null;
+      var vs = Math.min(v.s, v.n), vn = Math.max(v.s, v.n);
+      var latSeen = (Math.min(vn, b.n) - Math.max(vs, b.s)) / (b.n - b.s);
+      if (!(latSeen > 0)) return false;
+      var span = v.e - v.w;
+      if (span >= 360 || span <= -360) return latSeen >= BOX_ON_SCREEN_MIN;   /* every longitude is on screen */
+      var vw = ((span % 360) + 360) % 360;
+      var bw = b.e - b.w;
+      /* the box's west edge measured east from the view's west edge — and the same edge one turn
+         back, which is where a box that starts WEST of the view sits. The wider overlap is the one. */
+      var off = (((b.w - v.w) % 360) + 360) % 360;
+      var seen = function (o) { return Math.max(0, Math.min(o + bw, vw) - Math.max(o, 0)); };
+      var lngSeen = Math.max(seen(off), seen(off - 360)) / bw;
+      return Math.min(latSeen, lngSeen) >= BOX_ON_SCREEN_MIN;
+    }
+    function axisMet(cam, cl) {
+      var got = +cam[cl.axis];
+      if (!isFinite(got) || !isFinite(cl.want)) return null;
+      var d = Math.abs(got - cl.want);
+      if (cl.wrap) { d = d % cl.wrap; d = Math.min(d, cl.wrap - d); }   /* 359° and 1° are 2° apart */
+      return d <= cl.tol;
+    }
+    /* ⚠ WHAT EACH CAMERA CAPABILITY'S NUMBERS MEAN — and it has to be per capability, because NINE of
+       them share one observer and `deg` drives the BEARING in `case 'bearing'` and the PITCH in
+       `case 'pitch'` (js/atlas-console.js). A shared verifier cannot tell those apart without being
+       told which capability it is verifying, so build() passes the id.
+       ⚠ WHAT IS MEASURABLE IS WHAT THE ARGUMENTS STATE AS A NUMBER, WHAT THEY STATE AS A COORDINATE,
+       AND WHAT THE DISPATCH DECLARES IT RESOLVED. Not measurable, and therefore left alone:
+         · a direction WORD (`dir:'north'`, `toward:'ne'`) is resolved by a table that lives in the
+           dispatch case; a second copy of that table here would be the same judgement in two places
+           (.agents/rules/no-ad-hoc-hardcoding.md §2.3), and
+         · a `delta` asks for movement by its very nature.
+       ⚠ A NAMED PLACE USED TO BE THE THIRD ITEM ON THAT LIST, and it was the production failure
+       itself: js/atlas-console.js resolved 「ヨーロッパ」, handed the extent to the module-private
+       `_setLast(ext)`, and returned `R(true, note('Moved to: …'))` with no `meta`, so the gazetteer's
+       answer never reached this file and the only way to pass would have been to guess. The repair is
+       #R736's rule applied to the camera — THE MOVER DECLARES WHAT IT RESOLVED — so the flyTo case
+       now returns its destination in `meta.dest` (the third argument of `R()`, exactly as
+       `case 'query'` already does with `resultKey`), and this table reads it. ⚠ READS, NOT TRUSTS:
+       the declared destination is held against the viewport below, so a dispatch that declares a
+       destination it did not fly to still answers `no_change`. */
+    var CAMERA_GOAL = {
+      'view.flyTo': function (a, raw) {
+        /* THE MOVER'S OWN DECLARATION FIRST. js/atlas-console.js's `case 'flyTo'` now returns the
+           destination it actually handed to the camera in `meta.dest` — every branch that moves, and
+           nothing at all from a branch that resolved nothing. That is what makes a NAMED place
+           measurable here: the gazetteer answer never reached this file before, and guessing that an
+           unmoved camera must already have been looking at 「ヨーロッパ」 is the one thing a verdict
+           may not do. ⚠ The declaration is read, not trusted: what it says is held against the
+           viewport, so a dispatch that declared a destination it did not fly to still fails. */
+        var d = raw && raw.meta && raw.meta.dest;
+        if (d) {
+          var g0 = [];
+          /* a fitted box is the request; its centre alone would pass a camera zoomed into one street */
+          if (d.box && boxOf(d.box)) g0.push({ kind: 'box', box: d.box });
+          else if (d.lng != null && d.lat != null) g0.push({ kind: 'point', lng: +d.lng, lat: +d.lat });
+          else return null;                                    /* declared something unmeasurable */
+          if (d.zoom != null) g0.push({ axis: 'zoom', want: +d.zoom, tol: 0.05 });
+          return g0;
+        }
+        if (!(a.lng != null && a.lat != null)) return null;
+        var g = [{ kind: 'point', lng: +a.lng, lat: +a.lat }];
+        if (a.zoom != null) g.push({ axis: 'zoom', want: +a.zoom, tol: 0.05 });
+        return g;
+      },
+      'view.zoom': function (a) { return (a.to != null) ? [{ axis: 'zoom', want: +a.to, tol: 0.05 }] : null; },
+      'view.bearing': function (a) {
+        if (a.deg == null) return null;
+        var g = [{ axis: 'bearing', want: +a.deg, tol: 0.5, wrap: 360 }];
+        if (a.pitch != null) g.push({ axis: 'pitch', want: +a.pitch, tol: 0.5 });   /* the case eases both at once */
+        return g;
+      },
+      'view.pitch': function (a) {
+        if (a.deg != null) return [{ axis: 'pitch', want: +a.deg, tol: 0.5 }];
+        if (a.on === false) return [{ axis: 'pitch', want: 0, tol: 0.5 }];          /* 「傾きを戻して」 */
+        return null;
+      }
+    };
+    function cameraGoalMet(capId, args, cam, raw) {
+      var mk = CAMERA_GOAL[capId];
+      if (!mk || !args || !cam) return null;
+      var goal = null; try { goal = mk(args, raw); } catch (_) { goal = null; }
+      if (!goal || !goal.length) return null;
+      for (var i = 0; i < goal.length; i++) {
+        var g = goal[i];
+        var met = (g.kind === 'box') ? boxOnScreen(g.box)
+          : (g.kind === 'point') ? pointInView(g.lng, g.lat) : axisMet(cam, g);
+        if (met !== true) return met;   /* false = measured and not met · null = could not observe */
+      }
+      return true;
+    }
+
     var OBSERVERS = {
       none: {
         observe: function () { return null; },
@@ -567,16 +721,25 @@ export function makeAtlasCapabilities(HOST) {
           }
           return cameraNow();
         },
-        verify: function (ctx, args, before, after, raw) {
+        verify: function (ctx, args, before, after, raw, capId) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           if (!hasRenderer()) return { status: 'failed', code: 'unavailable', html: (raw && raw.html) || '' };
           if (!before || !after) return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
-          /* a camera op that asked for no movement (a re-assert) is complete when nothing moved;
-             one that asked for movement is complete only when the camera really is somewhere else. */
+          /* the camera IS somewhere else: whatever was asked for, something happened */
+          if (changed(before, after)) return { status: 'completed', code: 'ok', observed: { camera: after }, html: (raw && raw.html) || '' };
+          /* nothing moved. A camera op that asked for no movement (a re-assert) is complete. */
           var wantsMove = !!(args && (args.place || args.lng != null || args.to != null || args.delta != null ||
             args.deg != null || args.dir != null || args.direction != null || args.zoom != null || args.toward));
-          if (wantsMove && !changed(before, after)) return { status: 'partial', produced: [], code: 'no_change', html: (raw && raw.html) || '' };
-          return { status: 'completed', code: 'ok', observed: { camera: after }, html: (raw && raw.html) || '' };
+          if (!wantsMove) return { status: 'completed', code: 'ok', observed: { camera: after }, html: (raw && raw.html) || '' };
+          /* ⚠ (#R740) …and one that named a view the camera is ALREADY in is complete too. The reader
+             asked for a state, not for a movement; re-flying to where you already are is the request
+             being satisfied, and calling it a failure is what spent a whole turn on `repeated_calls`.
+             Its own code, not `no_change`, because it is not a failure — `clear`'s `already_clear`. */
+          if (cameraGoalMet(capId, args, after, raw) === true) {
+            return { status: 'completed', code: 'already_there', observed: { camera: after, already: true }, html: (raw && raw.html) || '' };
+          }
+          /* asked for a view this file cannot measure, and nothing moved: unchanged from before */
+          return { status: 'partial', produced: [], code: 'no_change', observed: { camera: after }, html: (raw && raw.html) || '' };
         }
       },
       layer: {
@@ -635,6 +798,39 @@ export function makeAtlasCapabilities(HOST) {
           var n = (after && +after.factions) || 0;
           if (n > 0) return { status: 'completed', code: 'ok', observed: { factions: n }, html: (raw && raw.html) || '' };
           return { status: 'partial', produced: [], code: 'not_rendered', observed: { factions: 0 }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ ⚠⚠⚠ (#R740) A REACHABLE AREA THAT IS ON THE MAP IS RENDERED — THE THIRD TIME ═══════════
+         `routing.isochrone` was declared `paint`, and `paintNow()` does not read the isochrone source
+         at all (js/map-tools.js:1042 `const SRC='im-iso-src'`, drawn as im-iso-fill / im-iso-line /
+         im-iso-ctr). So the verdict was whatever ELSE happened to move.
+         MEASURED on production 2026-09-15, signed in, 「渋谷駅から徒歩30分で行ける範囲を地図に出して。
+         面積も教えて。」 — six isochrone calls in 1m09s: the first `ok` (because `visible`/`objects`
+         moved, not because anything looked at the reach), the next five `not_rendered` while the
+         polygon sat on the screen the whole time. Atlas, told five times that nothing was drawn,
+         redrew the same area five times, burned the step budget, and then called `reset`, which took
+         the highlight DOWN; the reply ended in a promise in the future tense and the area the reader
+         asked for was never answered. ⚠ And the five redraws stacked: five `fill-opacity:0.18`
+         polygons over one another is better than 60% opaque, so the repair loop also made the basemap
+         underneath unreadable.
+         ⚠⚠ THIS IS THE THIRD TIME IN THIS FILE — the #R551 shape (a count diff answers «did something
+         move», not «is the thing that was asked for on the map») already cost `research.historicalMap`
+         and `factions` their own verifiers, above. The reason it keeps coming back is that the surfaces
+         a verdict can see are enumerated HERE, by hand, in `paintNow()`: a module that paints a new
+         source is invisible until somebody remembers to list it, and nothing makes them remember.
+         THE GENERAL FIX IS THE ONE #R736 STARTED: the painter DECLARES its own painted surface
+         (js/atlas-console.js `window._imAtlasPaint`) and the verdict asks that declaration — a list
+         that is discovered rather than typed (.agents/rules/no-ad-hoc-hardcoding.md §2.4). Until
+         js/map-tools.js declares itself there, this verifier names the one source the reach writes,
+         and reads it AFTER the call: features there = the area is up, redraw or not; none =
+         `not_rendered`. The refusal is not removed — an empty source is still a failure to render. */
+      isochrone: {
+        observe: function () { return { iso: sourceFeatureCount('im-iso-src') }; },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: (raw && raw.html) || '' };
+          var n = (after && +after.iso) || 0;
+          if (n > 0) return { status: 'completed', code: 'ok', observed: { isochrone: { features: n } }, html: (raw && raw.html) || '' };
+          return { status: 'partial', produced: [], code: 'not_rendered', observed: { isochrone: { features: 0 } }, html: (raw && raw.html) || '' };
         }
       },
       /* ══ ⚠⚠⚠ (#R551) A COUNT THAT WENT UP IS NOT A MAP THAT IS FINISHED ═══════════════════════
@@ -946,7 +1142,12 @@ export function makeAtlasCapabilities(HOST) {
             constraints: { accepts: target.accepts } } };
         },
         observe: obs.observe,
-        verify: obs.verify,
+        /* ⚠ (#R740) A SHARED VERIFIER IS TOLD WHICH CAPABILITY IT IS VERIFYING. Nine capabilities are
+           on the `camera` observer alone, and `deg` means bearing on one of them and pitch on another
+           — a verifier that had to infer which axis a number referred to would be guessing, which is
+           the one thing a verdict may never do. The extra argument is ignored by every observer that
+           does not need it, and `verify(ctx,args,before,after,raw)` still behaves as it always did. */
+        verify: function (ctx, args, before, after, raw) { return obs.verify(ctx, args, before, after, raw, id); },
         examples: [], negativeExamples: [], limitations: []
       };
       cap.execute = legacyExecute(cap);

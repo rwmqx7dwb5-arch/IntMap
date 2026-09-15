@@ -176,6 +176,12 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
          as a diff, because a redrawn map with the same countries moved no count and was being
          reported as not_rendered while its fills were on the globe. */
       factions: ['map', 'explanation'],
+      /* (#R740) the "isochrone" observer reads the reach source js/map-tools.js paints into
+         (im-iso-src) — an observation of the map made AFTER the call rather than as a diff, for the
+         same reason as `factions` above: a redrawn identical reach moved no count and was reported
+         not_rendered while the polygon was on the screen. Measured in production: six draws of the
+         same 30-minute reach, five of them called not_rendered, the turn dead at its step budget. */
+      isochrone: ['map'],
       /* the "clear" observer reads the map and the open panels, and a clear that found nothing
          to remove is complete (already_clear) rather than not_rendered — removal asked for a state,
          and the state is there. */

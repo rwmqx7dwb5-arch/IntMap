@@ -34,6 +34,7 @@ import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the execu
 import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
 import { resolveObserver, satelliteFacts, weatherFacts, routeFacts } from './atlas-result-facts.js';   /* (#R726) the facts a tool's panel shows, on the tool's result */
 import { makeEraHighlight } from './atlas-era-highlight.js';   /* (#R726) the map's year applied to a country highlight */
+import { makeAtlasMetrics } from './atlas-metrics.js';
 import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
 import { makeViewCapture } from './atlas-view-capture.js';   /* (#R493) view.inspect — the SAME picture the screenshot button takes, plus the per-turn frame ledger. The subject lives THERE because this file is shrink-only (tests/r419 ⑨d) */
 import { makeAtlasSchemas } from './atlas-schemas.js';   /* (#R406) the per-capability argument schemas the registry never had */
@@ -90,19 +91,6 @@ window.IntMapModules.atlasConsole=function(HOST){
     const L=window.IntMapLang.pick(()=>_mirrorLang()), LA=window.IntMapLang.pickArgs();   /* (#R241) LA = the ARRAY form; see `pickArgs` in js/lang-registry.js. ONE statement: this file is under a shrink-only ceiling (tests/r199 ⑤), and the rule is that a feature moves out, never that the ceiling moves up. */
     const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     const lx=arr=>L.arr(arr);   /* (#R241) through `pick()` itself, so a language past the arguments given gets its inline-table entry instead of English at index 0 */
-    /* metric catalog → countryStats keys */
-    const METRICS={
-      pop:{label:LA('Population','人口','Bevölkerung','Население','Población'),get:s=>s.pop},
-      density:{label:LA('Pop. density','人口密度','Bevölkerungsdichte','Плотность нас.','Densidad'),get:s=>s.density},
-      area:{label:LA('Area','面積','Fläche','Площадь','Superficie'),get:s=>s.area},
-      gdp:{label:LA('GDP (nominal)','GDP（名目）','BIP (nominal)','ВВП (номин.)','PIB (nominal)'),get:s=>s.gdp,log:true},
-      gdppc:{label:LA('GDP per capita','1人当たりGDP','BIP pro Kopf','ВВП на душу','PIB per cápita'),get:s=>s.gdppc,log:true},
-      hdi:{label:LA('HDI','HDI','HDI','ИЧР','IDH'),get:s=>s.hdi},
-      dem:{label:LA('Democracy Index','民主主義指数','Demokratieindex','Индекс демократии','Índice democrático'),get:s=>s.dem},
-      milSpend:{label:LA('Military spending','国防費','Militärausgaben','Военные расходы','Gasto militar'),get:s=>s.milSpend,log:true},
-      milSpendGDP:{label:LA('Military (% GDP)','国防費(対GDP)','Militär (% BIP)','Военные (% ВВП)','Militar (% PIB)'),get:s=>(s.milSpend!=null&&s.gdp)?(s.milSpend/s.gdp*100):null},
-      tfr:{label:LA('Fertility rate','合計特殊出生率','Geburtenrate','Рождаемость','Fecundidad'),get:s=>s.tfr}
-    };
     const nm=s=>{ try{ return cName(s); }catch(_){ return s&&(s.nameEn||s.nameJp)||'?'; } };
     function fmtVal(metric,v){ if(v==null||isNaN(v)) return '—';
       try{ if(metric==='gdppc') return fmtPc(v);
@@ -1054,10 +1042,10 @@ window.IntMapModules.atlasConsole=function(HOST){
       (polys||[]).forEach(p=>{ try{ const bb=fbbox(p.geo); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }catch(_){} });
       return (any&&isFinite(a)&&(c-a)<350)?[[a,b],[c,d]]:null; }
     /* ---- analysis ---- */
-    function rows(metric){ const m=METRICS[metric]||XMET[metric]; if(!m) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const v=m.get(s); if(v==null||isNaN(v)) continue; out.push({code,name:nm(s),val:v}); } out.sort((x,y)=>y.val-x.val); return out; }   /* (#R105) also rank the XMET metrics (life expectancy / internet), not only the base METRICS set */
+    function rows(metric){ const _s=metSpec(metric); const m=_s&&_s.m; if(!m) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const v=m.get(s); if(v==null||isNaN(v)) continue; out.push({code,name:nm(s),val:v}); } out.sort((x,y)=>y.val-x.val); return out; }   /* (#R105) also rank the XMET metrics (life expectancy / internet), not only the base METRICS set */
     function rank(metric,order,n){ const l=rows(metric); if(!l) return null; return order==='bottom'?l.slice(-n).reverse():l.slice(0,n); }
-    function ratio(a,b,order,n){ const ma=METRICS[a],mb=METRICS[b]; if(!ma||!mb) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const va=ma.get(s),vb=mb.get(s); if(va==null||vb==null||isNaN(va)||isNaN(vb)||vb===0) continue; out.push({code,name:nm(s),val:va/vb}); } out.sort((x,y)=>y.val-x.val); return order==='bottom'?out.slice(-n).reverse():out.slice(0,n); }
-    function relate(my,mx,find,n){ const Y=METRICS[my],X=METRICS[mx]; if(!Y||!X) return null; const pts=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; let y=Y.get(s),x=X.get(s); if(y==null||x==null||isNaN(y)||isNaN(x)) continue; if(X.log){ if(x<=0) continue; x=Math.log(x); } pts.push({code,name:nm(s),y,xv:x,raw:Y.get(s)}); }
+    function ratio(a,b,order,n){ const sa=metSpec(a),sb=metSpec(b); if(!sa||!sb) return null; const ma=sa.m,mb=sb.m;   /* (#R740) same resolver as rank/mapMetric */ const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const va=ma.get(s),vb=mb.get(s); if(va==null||vb==null||isNaN(va)||isNaN(vb)||vb===0) continue; out.push({code,name:nm(s),val:va/vb}); } out.sort((x,y)=>y.val-x.val); return order==='bottom'?out.slice(-n).reverse():out.slice(0,n); }
+    function relate(my,mx,find,n){ const spY=metSpec(my),spX=metSpec(mx); if(!spY||!spX) return null; const Y=spY.m,X=spX.m;   /* (#R740) same resolver as rank/mapMetric */ const pts=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; let y=Y.get(s),x=X.get(s); if(y==null||x==null||isNaN(y)||isNaN(x)) continue; if(X.log){ if(x<=0) continue; x=Math.log(x); } pts.push({code,name:nm(s),y,xv:x,raw:Y.get(s)}); }
       if(pts.length<4) return null; const N=pts.length; let sx=0,sy=0,sxx=0,sxy=0; pts.forEach(p=>{ sx+=p.xv;sy+=p.y;sxx+=p.xv*p.xv;sxy+=p.xv*p.y; }); const den=(N*sxx-sx*sx)||1; const b=(N*sxy-sx*sy)/den, a=(sy-b*sx)/N; pts.forEach(p=>{ p.resid=p.y-(a+b*p.xv); p.val=p.raw; }); pts.sort((p,q)=>p.resid-q.resid); return find==='high'?pts.slice(-n).reverse():pts.slice(0,n); }
     const clampN=n=>Math.max(1,Math.min(40,parseInt(n,10)||15));
     const note=s=>'<div style="font-size:11.5px;color:var(--text-muted);margin:3px 0;">'+s+'</div>';
@@ -1217,7 +1205,8 @@ window.IntMapModules.atlasConsole=function(HOST){
         'fill-color':_choroFillExpr(_choroRamp),
         'fill-opacity':['case',['!=',['feature-state','choroV'],null],0.62,0]}},before); return true; }catch(_){ return false; } }
     function clearChoro(){ try{ for(const c in _choroState){ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{choroV:null}); }catch(_){} } }catch(_){} _choroState={}; _choroMetric=null; try{ _customScoreName=null; }catch(_){} }
-    function drawChoro(metricKey,order,color){ const m=METRICS[metricKey]; if(!m) return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')+': '+esc(metricKey||'')));
+    function drawChoro(metricKey0,order,color){ const _sp=metSpec(metricKey0); if(!_sp) return unknownMetric(metricKey0);
+      const metricKey=_sp.key, m=_sp.m;   /* (#R740) resolved through the ONE resolver, so XMET (lifeExp/internet) shades too */
       if(!geo()) return R(false, warn('⚠ '+L('Map data not ready yet','地図データが未準備です','Kartendaten noch nicht bereit','Данные карты не готовы','Datos del mapa no listos')));
       /* (#R61) optional shading hue — honoured for REAL (setPaintProperty on the live layer) or honestly flagged. */
       let cWarn=''; if(color!=null&&String(color).trim()!==''){ const pc=parseColor(color); if(pc) _choroRamp=rampFrom(pc); else cWarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(color)); }
@@ -1237,18 +1226,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('Max','最高','Höchster','Макс.','Máx.')+': '+esc(nm(countryStats[top.code]))+' ('+esc(fmtVal(metricKey,top.raw))+') · '+L('Min','最低','Niedrigster','Мин.','Mín.')+': '+esc(nm(countryStats[bot.code]))+' ('+esc(fmtVal(metricKey,bot.raw))+')</div>';
       return R(true, note(html)+cWarn); }
     /* ==== (#R75) vision §10/§13 groundwork — metric series shared by explore & scoreMap ==== */
-    /* (#R75) hoisted from localPlan so _metSpec can translate metric names too */
-    const VMET={'population':'pop','人口':'pop','population density':'density','density':'density','人口密度':'density','area':'area','面積':'area','gdp':'gdp','gdp per capita':'gdppc','gdppc':'gdppc','一人当たりgdp':'gdppc','1人当たりgdp':'gdppc','hdi':'hdi','human development index':'hdi','fertility':'tfr','fertility rate':'tfr','出生率':'tfr','合計特殊出生率':'tfr','democracy index':'dem','民主主義指数':'dem','military spending':'milSpend','defense spending':'milSpend','国防費':'milSpend','軍事費':'milSpend','capital':'capital','capital city':'capital','首都':'capital','currency':'currency','通貨':'currency','languages':'languages','language':'languages','言語':'languages','公用語':'languages','flag':'flag','国旗':'flag'};
-    const XMET={
-      lifeExp:{label:LA('Life expectancy','平均寿命','Lebenserwartung','Ожид. продолжительность жизни','Esperanza de vida'),get:s=>s.lifeExp},
-      internet:{label:LA('Internet users %','ネット利用率','Internetnutzer %','Интернет-пользователи %','Usuarios de internet %'),get:s=>s.internet}
-    };
-    const XVMET={'平均寿命':'lifeExp','寿命':'lifeExp','life expectancy':'lifeExp','lifeexp':'lifeExp','ネット利用率':'internet','インターネット利用率':'internet','internet':'internet','internet users':'internet'};
-    function _metSpec(key){ const raw=String(key||'').trim(); if(!raw) return null;
-      const k2=VMET[raw.toLowerCase()]||XVMET[raw.toLowerCase()]||XVMET[raw]||raw;
-      if(METRICS[k2]) return {key:k2,m:METRICS[k2]};
-      if(XMET[k2]) return {key:k2,m:XMET[k2]};
-      return null; }
+    const { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric } = makeAtlasMetrics(HOST, { LA, lx, L, esc, warn, R });   /* (#R740) ONE metric set and ONE resolver — js/atlas-metrics.js, where the production measurement behind it is written. ⚠ INSTANTIATED HERE, below `warn`/`R`, because those are `const`s of this closure: a hand-off written where METRICS used to stand (line 94) would read them inside their temporal dead zone. */
     /* one component (bundled metric or a World-Bank indicator code) → {label, vals:{ISO3:num}, log} */
     async function _seriesFor(comp){ try{
       if(comp&&comp.wb){ if(!(window.IntMapWB&&window.IntMapWB.fetch)) return null;
@@ -1256,7 +1234,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(!m) return null; const vals={}; for(const cd in m){ const v=m[cd]&&m[cd].v; if(v!=null&&isFinite(v)) vals[cd]=+v; }
         if(Object.keys(vals).length<20) return null;
         return {label:String(comp.label||comp.wb).slice(0,60),vals,log:false,src:'World Bank '+String(comp.wb)}; }
-      const sp=_metSpec(comp&&(comp.metric||comp.key||comp.name)); if(!sp) return null;
+      const sp=metSpec(comp&&(comp.metric||comp.key||comp.name)); if(!sp) return null;
       await _fillMetric(sp.key);
       const vals={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!s) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; vals[cd]=+v; }
       if(Object.keys(vals).length<20) return null;
@@ -1792,19 +1770,20 @@ window.IntMapModules.atlasConsole=function(HOST){
         case 'projection': { const flat=(a.mode==='flat'); const ok=kexec(flat?'view.proj.flat':'view.proj.globe', flat?'btn-view-flat':'btn-view-globe'); return R(ok, ok?note('✓ '+esc(flat?L('Flat map','平面地図','Flache Karte','Плоская карта','Mapa plano'):L('Globe','地球儀','Globus','Глобус','Globo')))+_featTogHtml('globe'):warn('⚠')); }   /* (#R151) offer the 3D-globe on/off switch */
         case 'base': { const sat=(a.mode==='satellite'||a.mode==='sat'); const ok=kexec(sat?'view.base.sat':'view.base.map', sat?'btn-view-sat':'btn-view-map'); return R(ok, ok?note('✓ '+esc(sat?L('Satellite','衛星','Satellit','Спутник','Satélite'):L('Map','地図','Karte','Карта','Mapa')))+_featTogHtml('satellite'):warn('⚠')); }   /* (#R147) offer the Satellite on/off button */
         case 'compare': { try{ if(a.on===false){ const x=document.querySelector('#compare-window .cmp-close'); if(x){ x.click(); return R(true, note('✓ '+L('Compare off','比較オフ','Vergleich aus','Сравнение выкл','Comparar: off'))+_featTogHtml('compare')); } } else if(window.IntMapCompare&&window.IntMapCompare.open){ window.IntMapCompare.open(); return R(true, note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); } }catch(_){} return R(clickId('btn-compare'), note('✓ '+L('Compare','比較','Vergleich','Сравнение','Comparar'))+_featTogHtml('compare')); }   /* (#R151) offer the Compare on/off switch */
-        case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim();
+        /* ⚠⚠⚠ (#R740) THE MOVER DECLARES WHERE IT ACTUALLY SENT THE CAMERA (`meta.dest`, read by js/atlas-capabilities.js). Without it a re-flight to where the reader already was answered `no_change`, i.e. FAILED, and 「ヨーロッパの気温を…」 spent 7 steps and 92 s flying to Europe four times (it even switched language) before `repeated_calls` ended the turn. Every branch that moves declares; a branch that resolved nothing declares nothing, which is the honest 「cannot be measured」 and leaves the old verdict. #R736's rule, on the camera. */
+        case 'flyTo': { const exZ=(a.zoom!=null)?+a.zoom:null; const placeStr=String(a.place||'').trim(); let _dst=null; const _D=()=>_dst?{meta:{dest:_dst}}:null;
           /* "the whole world / earth / globe" → zoom OUT to the planet, NEVER geocode (was → "World Bank building"). */
-          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ GE().camera.flyTo({center:[GE().camera.getCenter().lng,20],zoom:(exZ!=null?exZ:1.4),duration:1100}); }catch(_){ try{ GE().camera.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero'))); }
-          if(a.lng!=null&&a.lat!=null){ GE().camera.flyTo({center:[+a.lng,+a.lat],zoom:exZ!=null?exZ:Math.max(GE().camera.getZoom(),6),duration:1100}); return R(true, note((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2))); }
+          if(WORLD_RE.test(placeStr) || /^(world|globe|earth)$/i.test(String(a.scale||''))){ try{ const _c=GE().camera.getCenter(); _dst={lng:+_c.lng,lat:20,zoom:(exZ!=null?exZ:1.4)}; GE().camera.flyTo({center:[_dst.lng,20],zoom:_dst.zoom,duration:1100}); }catch(_){ _dst=null; try{ GE().camera.zoomTo(1.4); }catch(__){} } return R(true, note('🌍 '+L('Whole world','全世界','Ganze Welt','Весь мир','El mundo entero')), _D()); }
+          if(a.lng!=null&&a.lat!=null){ _dst={lng:+a.lng,lat:+a.lat,zoom:exZ!=null?exZ:Math.max(GE().camera.getZoom(),6)}; GE().camera.flyTo({center:[_dst.lng,_dst.lat],zoom:_dst.zoom,duration:1100}); return R(true, note((+a.lat).toFixed(2)+', '+(+a.lng).toFixed(2)), _D()); }
           /* (#R51) DERIVE the view from the place's REAL footprint (dynamic — no per-type zoom constants). */
           if(placeStr && exZ==null && !DEIXIS_RE.test(placeStr)){ const ext=await placeExtent(placeStr);
-            if(ext){ try{ _setLast(ext); }catch(_){} if(!(ext.box&&flyToBox(ext.box))){ GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); } return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ext.lng,ext.lat)); } }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
+            if(ext){ try{ _setLast(ext); }catch(_){} const _fb=!!(ext.box&&flyToBox(ext.box)); if(!_fb){ GE().camera.flyTo({center:[ext.lng,ext.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); } _dst={lng:ext.lng,lat:ext.lat,box:_fb?ext.box:null,name:ext.name||placeStr}; return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ext.lng,ext.lat), _D()); } }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
           /* deixis / explicit zoom / footprint-miss → gazetteer + Japanese names; use its bbox if present. */
           const ll=await geocode(placeStr);
-          if(ll){ if(exZ!=null){ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); }
-            else if(ll.bbox&&_bboxOK(ll.bbox)){ if(!flyToBox(ll.bbox)) GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); }
-            else { GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); }
-            return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ll.lng,ll.lat)); }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
+          if(ll){ if(exZ!=null){ GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:exZ,duration:1100}); _dst={lng:ll.lng,lat:ll.lat,zoom:exZ,name:ll.name||placeStr}; }
+            else if(ll.bbox&&_bboxOK(ll.bbox)){ const _fb=flyToBox(ll.bbox); if(!_fb) GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); _dst={lng:ll.lng,lat:ll.lat,box:_fb?ll.bbox:null,name:ll.name||placeStr}; }
+            else { GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); _dst={lng:ll.lng,lat:ll.lat,name:ll.name||placeStr}; }
+            return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ll.lng,ll.lat), _D()); }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
           return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
         case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)});
           let facts=''; try{ const WX=window.IntMapWx, WP=window.IntMapWeather; const j=WX&&WX.point?await WX.point(ll.lat,ll.lng,{days:5,uv:false,gusts:true,ttl:300000}):null; facts=weatherFacts(j, WP&&WP.describe, L); }catch(_){}   /* the card's own numbers on the result (js/atlas-result-facts.js) — it used to say only 「🌤 大阪市」 */
@@ -1856,14 +1835,24 @@ window.IntMapModules.atlasConsole=function(HOST){
           const qq=String(a.question||a.query||'').trim();
           if(qq) return await dispatch({type:'analyze',question:qq,place:'there'});
           return R(true, note(esc(ll.name||(ll.lat.toFixed(3)+', '+ll.lng.toFixed(3)))+' — '+L('ask me anything about this spot','この地点について何でも聞いてください','fragen Sie mich alles zu diesem Ort','спросите что угодно об этом месте','pregúntame lo que sea sobre este lugar'))); }
-        case 'query': case 'crossQuery': case 'dataQuery': { await window.IntMapLazy.need('atlasQuery'); const _Q=window.IntMapQuery; if(!_Q) return R(false, warn('⚠ '+L('The query engine could not be loaded.','クエリエンジンを読み込めませんでした。','Die Abfrage-Engine konnte nicht geladen werden.','Не удалось загрузить движок запросов.','No se pudo cargar el motor de consultas.'))); await ensureData(); _Q.bind({countryStats:()=>countryStats, ensureData, fillMetric:_fillMetric, metricSpec:_metSpec, fmtVal, countryName:nm, fetchJSON:_fetchJSON, overpassPOIs, wikidataPOIs, resolveArea:async n2=>{ const c2=resolveCountrySync(n2); let e2=null; try{ e2=await _nomExtent((c2&&c2.name)||n2); }catch(_){} return {osmRel:(e2&&e2.osmType==='relation')?e2.osmId:null, iso3:(c2&&c2.code)||null, box:(e2&&e2.box&&_bboxOK(e2.box))?e2.box:null}; }}); const _qr=await _Q.answer(a,{}); /* ⚠⚠ (#R620) THE RESULT DECLARES WHAT IT RESOLVED. Without a `resultKey`, js/atlas-turn-results.js identifies this operation by its ARGUMENTS, and `show` is an argument — so asking the same question twice while asking for one more column printed the same rows in two tables. The engine builds the key from the table, conditions, scope, joins, ordering and limit, which is exactly «what it did» and not «how it rendered». */ const _qx={}; if(_qr.objectIds&&_qr.objectIds.length) _qx.objectIds=_qr.objectIds; if(_qr.resultKey) _qx.meta={resultKey:_qr.resultKey}; return R(_qr.ok, _qr.html, Object.keys(_qx).length?_qx:null); }   /* ⚠⚠ (#R495) THE CROSS-DATASET QUERY — the action every multi-condition question needed and none of the 126 above could serve. The engine, the tables, the columns and the honesty rules are js/atlas-query.js; this line is the door and the argument binding, because the file it sits in may not grow (tests/r318 ⓑ). */
-        case 'rank': { await ensureData(); try{ await _fillMetric(a.metric); }catch(_){}   /* (#R105) load lazy WB metrics (lifeExp/internet/tfr) before ranking so it never falsely reports "metric unavailable" */
-          const n=clampN(a.n); const list=rank(a.metric,a.order==='bottom'?'bottom':'top',n); const _mm=METRICS[a.metric]||XMET[a.metric]; const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+(_mm?lx(_mm.label):esc(a.metric||'')); return R(!!(list&&list.length), listHtml(t,list,a.metric)); }
-        case 'ratio': { await ensureData(); const n=clampN(a.n); const list=ratio(a.metricA,a.metricB,a.order==='bottom'?'bottom':'top',n); const t=(METRICS[a.metricA]?lx(METRICS[a.metricA].label):a.metricA)+' / '+(METRICS[a.metricB]?lx(METRICS[a.metricB].label):a.metricB); return list?R(true, listHtml(t,list.map(r=>({code:r.code,name:r.name,val:r.val})),'_ratio')):R(false, warn('⚠ '+esc(a.metricA||''))); }
-        case 'relate': { await ensureData(); const n=clampN(a.n); const list=relate(a.metricY,a.metricX,a.find==='high'?'high':'low',n);
-          const t=(a.find==='high'?L('High ','高い ','Hoch ','Высокий ','Alto '):L('Low ','低い ','Niedrig ','Низкий ','Bajo '))+(METRICS[a.metricY]?lx(METRICS[a.metricY].label):a.metricY)+' '+L('relative to','に対する','relativ zu','относительно','en relación con')+' '+(METRICS[a.metricX]?lx(METRICS[a.metricX].label):a.metricX);
-          return R(!!(list&&list.length), listHtml(t,list,a.metricY)); }
-        case 'mapMetric': case 'choropleth': { await ensureData(); return drawChoro(a.metric,a.order,a.color); }
+        case 'query': case 'crossQuery': case 'dataQuery': { await window.IntMapLazy.need('atlasQuery'); const _Q=window.IntMapQuery; if(!_Q) return R(false, warn('⚠ '+L('The query engine could not be loaded.','クエリエンジンを読み込めませんでした。','Die Abfrage-Engine konnte nicht geladen werden.','Не удалось загрузить движок запросов.','No se pudo cargar el motor de consultas.'))); await ensureData(); _Q.bind({countryStats:()=>countryStats, ensureData, fillMetric:_fillMetric, metricSpec:metSpec, fmtVal, countryName:nm, fetchJSON:_fetchJSON, overpassPOIs, wikidataPOIs, resolveArea:async n2=>{ const c2=resolveCountrySync(n2); let e2=null; try{ e2=await _nomExtent((c2&&c2.name)||n2); }catch(_){} return {osmRel:(e2&&e2.osmType==='relation')?e2.osmId:null, iso3:(c2&&c2.code)||null, box:(e2&&e2.box&&_bboxOK(e2.box))?e2.box:null}; }}); const _qr=await _Q.answer(a,{}); /* ⚠⚠ (#R620) THE RESULT DECLARES WHAT IT RESOLVED. Without a `resultKey`, js/atlas-turn-results.js identifies this operation by its ARGUMENTS, and `show` is an argument — so asking the same question twice while asking for one more column printed the same rows in two tables. The engine builds the key from the table, conditions, scope, joins, ordering and limit, which is exactly «what it did» and not «how it rendered». */ const _qx={}; if(_qr.objectIds&&_qr.objectIds.length) _qx.objectIds=_qr.objectIds; if(_qr.resultKey) _qx.meta={resultKey:_qr.resultKey}; return R(_qr.ok, _qr.html, Object.keys(_qx).length?_qx:null); }   /* ⚠⚠ (#R495) THE CROSS-DATASET QUERY — the action every multi-condition question needed and none of the 126 above could serve. The engine, the tables, the columns and the honesty rules are js/atlas-query.js; this line is the door and the argument binding, because the file it sits in may not grow (tests/r318 ⓑ). */
+        /* ⚠ (#R740) THE KEY IS RESOLVED BEFORE ANYTHING USES IT. `_fillMetric(a.metric)` was handed
+           whatever the planner typed, so 「life expectancy」 fetched nothing and the rank then said
+           the metric was unavailable — a real metric reported as missing data. */
+        case 'rank': { await ensureData(); const _sp=metSpec(a.metric); if(!_sp) return unknownMetric(a.metric);
+          try{ await _fillMetric(_sp.key); }catch(_){}   /* (#R105) load lazy WB metrics (lifeExp/internet/tfr) before ranking so it never falsely reports "metric unavailable" */
+          const n=clampN(a.n); const list=rank(_sp.key,a.order==='bottom'?'bottom':'top',n); const t=(a.order==='bottom'?L('Lowest ','下位 ','Niedrigste ','Минимум ','Menor '):L('Top ','上位 ','Top ','Топ ','Top '))+n+' · '+lx(_sp.m.label); return R(!!(list&&list.length), listHtml(t,list,_sp.key)); }
+        case 'ratio': { await ensureData(); const _a=metSpec(a.metricA),_b=metSpec(a.metricB); if(!_a) return unknownMetric(a.metricA); if(!_b) return unknownMetric(a.metricB);
+          try{ await _fillMetric(_a.key); await _fillMetric(_b.key); }catch(_){}
+          const n=clampN(a.n); const list=ratio(_a.key,_b.key,a.order==='bottom'?'bottom':'top',n); const t=lx(_a.m.label)+' / '+lx(_b.m.label); return R(!!(list&&list.length), listHtml(t,(list||[]).map(r=>({code:r.code,name:r.name,val:r.val})),'_ratio')); }
+        case 'relate': { await ensureData(); const _y=metSpec(a.metricY),_x=metSpec(a.metricX); if(!_y) return unknownMetric(a.metricY); if(!_x) return unknownMetric(a.metricX);
+          try{ await _fillMetric(_y.key); await _fillMetric(_x.key); }catch(_){}
+          const n=clampN(a.n); const list=relate(_y.key,_x.key,a.find==='high'?'high':'low',n);
+          const t=(a.find==='high'?L('High ','高い ','Hoch ','Высокий ','Alto '):L('Low ','低い ','Niedrig ','Низкий ','Bajo '))+lx(_y.m.label)+' '+L('relative to','に対する','relativ zu','относительно','en relación con')+' '+lx(_x.m.label);
+          return R(!!(list&&list.length), listHtml(t,list,_y.key)); }
+        case 'mapMetric': case 'choropleth': { await ensureData(); const _sp=metSpec(a.metric); if(!_sp) return unknownMetric(a.metric);
+          try{ await _fillMetric(_sp.key); }catch(_){}   /* (#R740) lifeExp/internet/tfr arrive from the World Bank on demand — shade AFTER they are in countryStats, or a real metric reports "not enough data" */
+          return drawChoro(_sp.key,a.order,a.color); }
         case 'theme': { const m=({dark:'dark',light:'light',auto:'auto',system:'auto'})[String(a.mode||'').toLowerCase()]||'auto'; const ok=setSel('setting-theme',m); try{ if(typeof HOST.userTheme!=='undefined'){ HOST.userTheme=m; if(typeof applyTheme==='function') applyTheme(); } }catch(_){} return R(ok||(typeof HOST.userTheme!=='undefined'&&HOST.userTheme===m), note('✓ '+L('Theme','テーマ','Thema','Тема','Tema')+': '+m)); }
         case 'accent': case 'accentColor': case 'accentColour': {   /* (#R114) recolour the UI accent (--primary-color) */
           const raw=String(a.color||a.value||a.mode||a.name||'').trim().toLowerCase();
@@ -2738,7 +2727,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const _rmRaw=a.metric||a.rankBy||a.rankMetric||a.by;
           const _hlExplicit=(Array.isArray(a.countries)?a.countries.length:String(a.countries||a.country||a.name||a.place||a.region||a.query||'').trim().length);   /* (#R157) a.query = a concrete single feature from the model (admin region / river / basin) */
           if(_rmRaw&&!_hlExplicit){
-            const _sp=_metSpec(_rmRaw);
+            const _sp=metSpec(_rmRaw);
             if(!_sp||!_sp.m) return R(false, warn('⚠ '+L('Unknown ranking metric','ランキングの指標を認識できません','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')+': '+esc(String(_rmRaw)))+cwarn);
             try{ await _fillMetric(_sp.key); }catch(_){}   /* lazy WB fields (tfr/lifeExp/internet) → filled before ranking */
             const _n=Math.max(1,Math.min(40,parseInt(a.n||a.top||a.count||10,10)||10));
@@ -2911,8 +2900,9 @@ window.IntMapModules.atlasConsole=function(HOST){
           try{ highlight([c.code]); fitTo([c.code]); }catch(_){}
           const TXTF={capital:LA('Capital','首都','Hauptstadt','Столица','Capital'),currency:LA('Currency','通貨','Währung','Валюта','Moneda'),languages:LA('Languages','言語','Sprachen','Языки','Idiomas'),flag:LA('Flag','国旗','Flagge','Флаг','Bandera')};
           if(TXTF[mk]){ const v=s[mk]; return R(v!=null&&v!=='', '<div style="font-size:12.5px;line-height:1.6;"><b>'+esc(c.name)+'</b> — '+esc(lx(TXTF[mk]))+': <b>'+esc(v||'—')+'</b></div>'); }
-          if(METRICS[mk]){ const v=METRICS[mk].get(s); if(v==null||isNaN(v)) return R(false, warn('⚠ '+esc(c.name)+': '+L('no data for this metric','この指標のデータがありません','keine Daten für diese Kennzahl','нет данных по показателю','sin datos para esta métrica')));
-            return R(true,'<div style="font-size:12.5px;line-height:1.6;"><b>'+esc(c.name)+'</b> — '+esc(lx(METRICS[mk].label))+': <b>'+esc(fmtVal(mk,v))+'</b></div>'); }
+          const _vs=metSpec(mk);   /* (#R740) XMET too — 「日本の平均寿命は？」 fell through to the stat card, which does not carry it */
+          if(_vs){ try{ await _fillMetric(_vs.key); }catch(_){} const v=_vs.m.get(s); if(v==null||isNaN(v)) return R(false, warn('⚠ '+esc(c.name)+': '+L('no data for this metric','この指標のデータがありません','keine Daten für diese Kennzahl','нет данных по показателю','sin datos para esta métrica')));
+            return R(true,'<div style="font-size:12.5px;line-height:1.6;"><b>'+esc(c.name)+'</b> — '+esc(lx(_vs.m.label))+': <b>'+esc(fmtVal(_vs.key,v))+'</b></div>'); }
           /* no / unknown metric → full compact stat card from everything we hold */
           let rowsH=''; for(const k in METRICS){ const v=METRICS[k].get(s); if(v==null||isNaN(v)) continue; rowsH+='<div style="display:flex;justify-content:space-between;gap:10px;"><span style="color:var(--text-muted);">'+esc(lx(METRICS[k].label))+'</span><b>'+esc(fmtVal(k,v))+'</b></div>'; }
           for(const k of ['capital','currency','languages']){ if(s[k]) rowsH+='<div style="display:flex;justify-content:space-between;gap:10px;"><span style="color:var(--text-muted);">'+esc(lx(TXTF[k]))+'</span><b>'+esc(s[k])+'</b></div>'; }
@@ -3669,8 +3659,8 @@ window.IntMapModules.atlasConsole=function(HOST){
         case 'explore': case 'findRelated': case 'relatedMetrics': { /* (#R75) vision §10 — which indicators MOVE WITH a
           target metric, computed on the real country data (Pearson + Spearman), reported without causal claims. */
           await ensureData();
-          const sp=_metSpec(a.metric||a.target||a.key||a.name);
-          if(!sp) return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')+': '+esc(String(a.metric||a.target||''))+' — '+L('valid','有効','gültig','допустимо','válidos')+': pop, density, area, gdp, gdppc, hdi, dem, milSpend, milSpendGDP, tfr, lifeExp, internet'));
+          const sp=metSpec(a.metric||a.target||a.key||a.name);
+          if(!sp) return unknownMetric(a.metric||a.target);   /* (#R740) the list was typed here by hand and had already drifted from `METRICS`+`XMET` — it is counted now */
           await _fillMetric(sp.key); await _fillMetric('lifeExp'); await _fillMetric('internet'); await _fillMetric('tfr');   /* lazy fields → WB bulk (sequential — WB throttles bursts) */
           const tv={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!s) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; tv[cd]=sp.m.log?Math.log(v):v; }
           if(Object.keys(tv).length<25) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
@@ -3950,7 +3940,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     function _atlasOverlayState(){ const o={highlightCountries:0,highlight:null,choropleth:null,customScore:null,pins:null,polygons:null,lines:null,measure:null,radius:null,userPins:null,tool:''};
       try{ if(_hl&&_hl.size&&_ovlVisible('highlight')) o.highlightCountries=_hl.size; }catch(_){}
       try{ if(_wctx.highlight&&_wctx.highlight.name&&_ovlVisible('highlight')) o.highlight={name:_wctx.highlight.name,basis:_wctx.highlight.basis||''}; }catch(_){}
-      try{ if(_choroMetric&&METRICS[_choroMetric]) o.choropleth={label:lx(METRICS[_choroMetric].label)};
+      try{ const _cs=_choroMetric&&metSpec(_choroMetric); if(_cs) o.choropleth={label:lx(_cs.m.label)};   /* (#R740) a lifeExp shading was on screen and this state said nothing was */
            else if(_choroMetric==='__custom'&&_customScoreName) o.customScore={name:_customScoreName}; }catch(_){}
       try{ if(_pois&&_pois.length) o.pins={n:_pois.length,kind:(_pois[0]&&_pois[0].sum)?'research':'poi'}; }catch(_){}
       try{ if(_hlPolys&&_hlPolys.length&&_ovlVisible('highlight')) o.polygons={n:_hlPolys.length,names:_hlPolys.map(p=>p.name).filter(Boolean).slice(0,4)}; }catch(_){}
@@ -3973,7 +3963,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       return o; }
     /* (#R318) the planner's catalogue — the 38 blocks that used to be inline below, now tagged with
        the capabilities they document so §10's relevance selection is possible at all. */
-    const _DOCS=makeAtlasCatalogText(HOST,{ moduleCatalog, langLine:_langLine });
+    const _DOCS=makeAtlasCatalogText(HOST,{ moduleCatalog, langLine:_langLine, metricList:()=>metKeys().map(k=>k+' ('+lx(metAll()[k].label)+')').join(', ') });   /* (#R740) the planner's metric list is counted from the records, not typed */
     /* ══ (#R406) THE WHOLE SYSTEM PROMPT ═══════════════════════════════════════════════════════
        It used to be the persona, three policy clauses, six fixed paragraphs of accumulated rules,
        _DOCS.text() at 64,250 characters, 170 layer names and a ranked control list. Measured, the
@@ -4747,7 +4737,13 @@ window.IntMapModules.atlasConsole=function(HOST){
         try{ ai.__atlCut=({step_budget:1,call_budget:1,time_budget:1,repeated_calls:1,malformed_limit:1})[String(out.stopped||'')]===1; }catch(_){}   /* 'answered' (js/atlas-agent.js:470) is the only stop that means Atlas finished; 'aborted'/'transport'/'awaiting_user' already have their own notes */
         /* ⚠ ASSIGNED, NOT DEFAULTED. runActions seeds `__atlSay` with '' on its first pass so the
            bubble can render while tools are still running; THIS is the answer, and it arrives after. */
-        ai.__atlSay=out.text||((out.results&&out.results.length)?L('Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.','Atlas は道具を動かしましたが、今回は回答文を書けませんでした——道具が返したものは上に示しています。もう一度訊くか、問いを絞ってください。','Atlas hat seine Werkzeuge ausgeführt, aber diesmal keine Antwort geschrieben — was sie zurückgaben, steht oben; frag noch einmal oder enger.','Atlas запустил инструменты, но не написал ответ — их результаты выше; спросите снова или уже.','Atlas ejecutó sus herramientas pero esta vez no escribió una respuesta: lo que devolvieron está arriba; pregunta de nuevo o acota la pregunta.'):'');   /* (#R731) a turn that ran tools and wrote nothing says so — the forced final can come back machine-shaped (refused as prose in js/atlas-agent.js readReply) and the reader was left with result rows and no sentence; the sentence is IntMap's and says what happened, not what the answer would have been */
+        /* ⚠ (#R740) A TURN THAT ASKED THE READER A QUESTION IS NOT A TURN THAT FAILED TO WRITE ONE.
+           Measured in production: 「富士山の上空3000mから8000mを赤い円柱で描いて」 correctly stopped to ask for
+           the radius, offered three answers with their volumes computed — and above that clean choice stood
+           «Atlas ran its tools but did not write an answer this time … ask again or narrow the question.»
+            is one of the stops line 4736 already calls 'has its own note'; this line simply
+           did not read it. The question IS the turn's text. */
+        ai.__atlSay=out.text||((String(out.stopped||'')!=='awaiting_user'&&out.results&&out.results.length)?L('Atlas ran its tools but did not write an answer this time — what they returned is shown above; ask again or narrow the question.','Atlas は道具を動かしましたが、今回は回答文を書けませんでした——道具が返したものは上に示しています。もう一度訊くか、問いを絞ってください。','Atlas hat seine Werkzeuge ausgeführt, aber diesmal keine Antwort geschrieben — was sie zurückgaben, steht oben; frag noch einmal oder enger.','Atlas запустил инструменты, но не написал ответ — их результаты выше; спросите снова или уже.','Atlas ejecutó sus herramientas pero esta vez no escribió una respuesta: lo que devolvieron está arriba; pregunta de nuevo o acota la pregunta.'):'');   /* (#R731) a turn that ran tools and wrote nothing says so — the forced final can come back machine-shaped (refused as prose in js/atlas-agent.js readReply) and the reader was left with result rows and no sentence; the sentence is IntMap's and says what happened, not what the answer would have been */
         _atlCompose(ai);
         recordTurn(q,out.text||'',_ranActions,[]);
         try{ PROG.done(ai); }catch(_){} msgTools(ai,q);
@@ -4904,3 +4900,4 @@ window.IntMapModules.atlasConsole=function(HOST){
     return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, askHere, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
 };
+

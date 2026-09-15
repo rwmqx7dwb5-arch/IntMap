@@ -104,6 +104,19 @@ window.IntMapModules.atlasQuery = function (HOST) {
     return n * (u === 'k' ? 1e3 : u === 'm' ? 1e6 : u === 'b' ? 1e9 : u === '万' ? 1e4 : u === '億' ? 1e8 : 1);
   }
 
+  /* `human` for an INSTANT — 「2026-08-16」「2026-08-16T04:11:27.520Z」 and the millisecond epoch
+     USGS publishes all mean one moment, and comparing them as text only works while they happen to
+     be written the same way. ⚠ A bare date has no clock, and Date.parse reads a bare ISO date as
+     UTC midnight — which is what 「8月16日以降」 means, so nothing is corrected here.
+     Returns null for anything that is not a moment; the caller treats that as «this comparison was
+     never made» rather than as a comparison that passed. */
+  function instant(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return isFinite(v) ? v : null;   /* the row's own field: ms since epoch */
+    const t = Date.parse(String(v).trim());
+    return isFinite(t) ? t : null;
+  }
+
   /* ══ THE TABLES ══════════════════════════════════════════════════════════════════════════════
      A table answers `rows(scope)` with real records. Each record is normalised to
      {id, name, lng, lat, sub} plus whatever the source carries in `raw`, so a join never has to
@@ -564,6 +577,13 @@ window.IntMapModules.atlasQuery = function (HOST) {
     col('lng', ['cities', 'countries', 'earthquakes', 'volcanoes', 'facilities'], LA('Longitude', '経度', 'Länge', 'Долгота', 'Longitud'), '°', 0, intrinsic('lng', (r) => r.lng), '', 'number', 'raw'),
     col('mag', ['earthquakes'], LA('Earthquake magnitude', 'マグニチュード', 'Erdbebenmagnitude', 'Магнитуда землетрясения', 'Magnitud del terremoto'), '', 0, intrinsic('mag', (r) => r.mag), 'USGS', 'number', 'raw'),
     col('depthKm', ['earthquakes'], LA('Depth', '深さ', 'Tiefe', 'Глубина', 'Profundidad'), 'km', 0, intrinsic('depthKm', (r) => r.depthKm), 'USGS', 'number', 'raw'),
+    /* ⚠ (#R740) WHEN it happened. `quakeRows` has carried this on every row since the table was
+       written and no column declared it, so 「直近30日」 as a WHERE condition named a column that
+       did not exist — and the answer came back holding quakes the reader had excluded. `date` is
+       its own kind because the value is compared as a moment (see `passes`), not as text that
+       happens to sort right, and printed as a moment the reader can read. */
+    col('time', ['earthquakes'], LA('Time', '発生時刻', 'Zeit', 'Время', 'Hora'), '', 0, intrinsic('time', (r) => r.time || null), 'USGS', 'date', 'raw',
+      (v) => { const t = instant(v); return t == null ? String(v) : new Date(t).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; }),
     col('precipMm', ['cities', 'volcanoes', 'facilities'], LA('Annual precipitation', '年降水量', 'Jahresniederschlag', 'Годовые осадки', 'Precipitación anual'), 'mm', 1, (rows) => ensurePrecip(rows), 'CHELSA V2.1', 'number', 'sampled'),
     col('coastKm', ['cities', 'volcanoes', 'facilities'], LA('Distance to the ocean', '海（外洋）からの距離', 'Entfernung zum Ozean', 'Расстояние до океана', 'Distancia al océano'), 'km', 1, (rows) => ensureCoast(rows, 'coastKm'), 'Natural Earth 1:10m coastline', 'number', 'computed'),
     col('seaKm', ['cities', 'volcanoes', 'facilities'], LA('Distance to any sea', '海（内海含む）からの距離', 'Entfernung zu einem Meer', 'Расстояние до моря', 'Distancia a cualquier mar'), 'km', 1, (rows) => ensureCoast(rows, 'seaKm'), 'Natural Earth 1:10m coastline', 'number', 'computed'),
@@ -605,17 +625,110 @@ window.IntMapModules.atlasQuery = function (HOST) {
       const code = key.slice(3).trim().toUpperCase();
       return col(key, [table], LA(code, code, code, code, code), '', 2, (rows) => ensureWB(rows, code), 'World Bank ' + code, 'number', 'network');
     }
-    const m = /^(?:country\.)?(.+)$/.exec(key);
-    const spec = (m && D.metricSpec) ? D.metricSpec(m[1]) : null;
-    if (spec && (table === 'cities' || table === 'countries')) {
+    const countryMetric = () => {
+      const m = /^(?:country\.)?(.+)$/.exec(key);
+      const spec = (m && D.metricSpec) ? D.metricSpec(m[1]) : null;
+      if (!spec || (table !== 'cities' && table !== 'countries')) return null;
       const cid = 'country.' + spec.key;
       /* `derived`: the row does not carry this number — it is looked up in the countries record
          through the row's own country code (see `ensureCountryMetric`). */
       return { id: cid, tables: [table], label: spec.m.label, unit: '', cost: 1, kind: 'number', origin: 'derived',
         ensure: (rows) => ensureCountryMetric(rows, spec.key), source: 'the Countries statistics record',
         fmt: (v) => (D.fmtVal ? D.fmtVal(spec.key, v) : v) };
+    };
+    /* ⚠⚠⚠ (#R740) THE TABLE'S OWN COLUMN BEATS A NUMBER LOOKED UP THROUGH THE ROW'S COUNTRY.
+       Measured in production: 「人口100万人以上の都市で、活火山から100km以内」 came back with
+       「Nagoya · 126,264,931」 under a column headed Population, because `population` misses the
+       exact-id lookup above (the city column's id is `pop`), and the COUNTRY metric family answered
+       for it — so the condition was 「その都市が属する国の人口が100万以上」, which every country
+       passes, and the population filter did nothing at all while looking like it had.
+       This is the rule the comment at the top of this function already states for a table the reader
+       brought — a column that does not know this row must not answer about it — applied to the five
+       built-in tables as well.
+       ⚠ AN EXPLICIT `country.` KEY STILL GOES TO THE COUNTRY, first and always. Losing that would
+       remove the only way to ask 「その都市の国の人口」, which is a capability and not a bug. The
+       prefix is the caller SAYING which of the two they mean, so it is honoured before anything
+       else; a bare key means the row's own table gets asked first. */
+    if (/^country\./i.test(key)) { const cm = countryMetric(); if (cm) return cm; }
+    const named = byDeclaredName(table, key);
+    if (named) return named;
+    return countryMetric();
+  }
+
+  /* ══ ⚠⚠⚠ (#R740) A COLUMN IS FOUND BY THE NAMES IT NAMES ITSELF ══════════════════════════════
+     Measured in production: 「マグニチュード5以上・直近30日の地震」 planned a condition on
+     `magnitude`, the column is called `mag`, the exact-id lookup above missed it, and the run went
+     on to publish 200 rows down to M0.55 under the heading 「161 Earthquakes」. The answer is NOT a
+     table of spellings — a hand-written alias list is wrong the day the next column is added, and
+     it is the shape .agents/rules/no-ad-hoc-hardcoding.md exists to stop.
+     Every column already carries the words it is CALLED, in five languages: `col(…)`'s third
+     argument is an `LA(…)` array, written by whoever declared the column. Those are its names, and
+     this asks them. Normalised (case, spaces, punctuation) so 「Depth (km)」 and `depthKm` are the
+     same string, and so a Japanese reader's 「マグニチュード」 reaches the same column an English
+     planner's `magnitude` does.
+     ⚠ EXACT FIRST, AND A SUBSTRING ONLY WHEN IT IS UNIQUE. 「elevation」 against two columns that
+     both say it is a question this cannot answer — and a guess there is a condition applied to the
+     wrong number, which is worse than the missing column this is fixing. */
+  const nameKey = (s) => String(s == null ? '' : s).toLowerCase()
+    .replace(/[\s_\-()\[\]{}.,;:!?\/\\|·・、。．，％%°'"’“”]+/g, '');
+  /* the names one column answers to: its own id, and every positional label it declares */
+  function colNames(c) {
+    const out = [];
+    const push = (s) => { const k = nameKey(s); if (k && out.indexOf(k) < 0) out.push(k); };
+    push(c.id);
+    const lab = Array.isArray(c.label) ? c.label : [c.label];
+    for (const s of lab) if (typeof s === 'string') push(s);
+    return out;
+  }
+  function byDeclaredName(table, id) {
+    const k = nameKey(id);
+    if (!k) return null;
+    const mine = COLUMNS.filter((c) => c.tables.indexOf(table) >= 0);
+    const exact = mine.find((c) => colNames(c).indexOf(k) >= 0);
+    if (exact) return exact;
+    const part = mine.filter((c) => colNames(c).some((n) => n.indexOf(k) >= 0));
+    return part.length === 1 ? part[0] : null;
+  }
+
+  /* ⚠⚠⚠ (#R740) ONE ANSWER TO «CAN THIS TABLE BE ASKED THIS?», FOR ALL THREE PLACES THAT ASK.
+     A `where` clause is not the only place a condition names a column: a NEAR join carries its
+     own conditions about the JOINED table (「10万人以上の都市から50km以内」), and so does a spatial
+     clause (「この区域の2km以内で、人口が10万以上の港」). All three used to resolve their columns
+     with the same three lines, and two of them ended in `.filter((c) => c._col)` — a condition the
+     engine could not resolve was DELETED and the query ran on. To the reader that is the identical
+     lie the `where` clause was telling: a table of ports comes back and the population condition is
+     simply not in it.
+     So the resolution lives here once, and it KEEPS what it could not resolve instead of dropping
+     it. `reject` is the refusal, already shaped for the caller to return — naming the table the
+     condition was about, which is NOT always the table the query is FROM. */
+  function planFor(table, list) {
+    const conds = [].concat(list || []).filter(Boolean).map((c) => {
+      const cd = Object.assign({}, c);
+      cd._col = columnFor(table, cd.col || cd.column || cd.metric || cd.field);
+      cd._op = normOp(cd.op || cd.operator);
+      return cd;
+    });
+    const unknown = conds.filter((c) => !c._col).map((c) => String(c.col || c.column || c.metric || c.field || '?'));
+    return { conds: conds.filter((c) => c._col), unknown,
+      reject: unknown.length ? { ok: false, error: 'unknown-column', table, unknown, columns: tableColumnIds(table) } : null };
+  }
+
+  /* Every column id this table can actually be asked for, COUNTED rather than listed: the built-in
+     tables declare theirs in COLUMNS (`wb:<CODE>` and `country.<metric>` are open families and have
+     no enumeration — they are named in the catalogue), a table the reader brought declares its own
+     in the fields js/gis-datasets.js measured. Used by the refusal below, which has to tell the
+     planner what to ask for instead — a hand-written list there would go stale silently. */
+  function tableColumnIds(table) {
+    const T = TABLES[table];
+    const out = [];
+    const push = (s) => { if (s && out.indexOf(s) < 0) out.push(s); };
+    if (T && T.user) {
+      push('name'); push('lat'); push('lng');
+      for (const f of (T.fields || [])) push(f.name);
+      return out;
     }
-    return null;
+    for (const c of COLUMNS) if (c.tables.indexOf(table) >= 0) push(c.id);
+    return out;
   }
 
   /* ══ PREDICATES ══════════════════════════════════════════════════════════════════════════════ */
@@ -633,6 +746,22 @@ window.IntMapModules.atlasQuery = function (HOST) {
   function passes(cond, v, colKind) {
     if (v == null) return false;
     const op = cond._op;
+    /* ⚠ (#R740) A MOMENT IS COMPARED AS A MOMENT. An ISO timestamp does sort as text, so `>=` on
+       the raw strings looks right — until the other side is 「2026-08-16」, which is what a reader
+       and a planner actually write, and which is SHORTER than the row's own
+       「2026-08-16T04:11:27.520Z」 and therefore compares as earlier for the whole of that day.
+       Both sides go through `instant`, and a side that is not a moment fails the row rather than
+       passing it: an unparseable bound is a comparison that was never made. */
+    if (colKind === 'date') {
+      const t = instant(v); if (t == null) return false;
+      if (op === 'between') {
+        const lo = instant(cond.min != null ? cond.min : cond.from), hi = instant(cond.max != null ? cond.max : cond.to);
+        return lo != null && hi != null && t >= lo && t <= hi;
+      }
+      if (op === 'in') return [].concat(cond.values || cond.value || []).map(instant).some((x) => x != null && x === t);
+      const at = instant(cond.value);
+      return at != null && !!OPS[op] && OPS[op](t, at);
+    }
     if (op === 'between') { const lo = human(cond.min != null ? cond.min : cond.from), hi = human(cond.max != null ? cond.max : cond.to); return v >= lo && v <= hi; }
     if (op === 'in') { const set = (cond.values || cond.value || []).map((x) => String(x).toLowerCase()); return set.indexOf(String(v).toLowerCase()) >= 0; }
     const want = colKind === 'text' ? cond.value : human(cond.value);
@@ -760,7 +889,12 @@ window.IntMapModules.atlasQuery = function (HOST) {
      not a geometry, a target table that is empty or unavailable, a radius nobody gave — leaves the
      rows UNTOUCHED, names itself in `unapplied` with its own code, and is printed above the table
      by the caller's existing warning. A spatial condition that silently matched nothing would be
-     indistinguishable from a spatial condition that was honestly answered 0. */
+     indistinguishable from a spatial condition that was honestly answered 0.
+     ⚠ (#R740) TWO THINGS ARE NOT «COULD NOT BE ASKED» BUT «WAS NEVER ASKED»: a condition on the
+     TARGET table naming a column that does not exist, and a target table that no name resolves to
+     (including the name nobody gave). Those are questions this engine never put to anything, and
+     they end the whole run — returned as `reject` for the caller to hand back, because an honest 0
+     for a question nobody asked is the failure this paragraph is about. */
   async function spatialStage(list, rows, bag) {
     const labels = [];
     if (!list.length) return { rows, labels };
@@ -788,10 +922,19 @@ window.IntMapModules.atlasQuery = function (HOST) {
         if (!g) { refuse(label, 'target-not-a-geometry'); continue; }
         targets = [g];
       } else {
+        /* (#R740) the same refusal as the NEAR join: a target nobody named, or a name no table
+           answers to, is a spatial condition that was never asked — not one that was asked and
+           could not be answered. Returned rather than noted, for the caller to hand back. */
         const tid = String(sp.of || sp.table || '').trim().toLowerCase();
-        if (!tid) { refuse(label, 'spatial-needs-a-target'); continue; }
         const jt = TABLES[tid];
-        if (!jt) { refuse(label, 'unknown-table:' + tid); continue; }
+        if (!jt) return { rows, labels, reject: { ok: false, error: 'unknown-table', table: tid, tables: Object.keys(TABLES) } };
+        /* ⚠ (#R740) THE TARGET'S OWN CONDITIONS ARE RESOLVED BEFORE THE TARGET IS FETCHED. 「この区域
+           の2km以内で、人口が10万以上の港」 is one question, and a run that cannot ask about the
+           population is not a partial answer to it — it is a complete answer to 「この区域の2km以内の
+           港」, which is what used to come back with the population condition quietly filtered out of
+           existence. Refusing HERE also means an Overpass call that nobody could use is never made. */
+        const TP = planFor(jt.id, sp.where);
+        if (TP.reject) return { rows, labels, reject: TP.reject };
         /* the target is fetched inside the candidates' own extent, padded by the radius — the same
            reason the NEAR join does it: a global Overpass union is not needed to answer 「この区域
            の2km以内の港」 */
@@ -800,9 +943,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
         try { jr = await jt.rows(scope); } catch (e) { jr = { rows: [], unavailable: (e && e.message) || 'target-failed' }; }
         if (!jr || jr.unavailable || !jr.rows) { refuse(label, 'target-unavailable:' + ((jr && jr.unavailable) || '0')); continue; }
         /* the target table's own conditions, evaluated on its rows before any geometry is measured */
-        const tconds = [].concat(sp.where || []).filter(Boolean).map((c) => {
-          const cd = Object.assign({}, c); cd._col = columnFor(jt.id, cd.col || cd.column || cd.field); cd._op = normOp(cd.op); return cd;
-        }).filter((c) => c._col);
+        const tconds = TP.conds;
         let trows = jr.rows.map((r) => Object.assign({ v: Object.create(null) }, r));
         for (const c of tconds) { await c._col.ensure(trows); trows = trows.filter((r) => passes(c, r.v[c._col.id], c._col.kind)); }
         if (trows.length > JOIN_CAP) { bag.caps.push({ what: jt.label, cap: JOIN_CAP, of: trows.length }); trows = trows.slice(0, JOIN_CAP); }
@@ -905,14 +1046,19 @@ window.IntMapModules.atlasQuery = function (HOST) {
 
     /* ③ THE PLAN — conditions cheapest first, so an expensive column is only ever asked about the
        rows that survived everything cheaper (the reason this scales past a demo) */
-    const conds = [].concat((spec && (spec.where || spec.conditions)) || []).filter(Boolean).map((c) => {
-      const cd = Object.assign({}, c);
-      cd._col = columnFor(from, cd.col || cd.column || cd.metric || cd.field);
-      cd._op = normOp(cd.op || cd.operator);
-      return cd;
-    });
-    const unknown = conds.filter((c) => !c._col).map((c) => String(c.col || c.column || c.metric || c.field || '?'));
-    const plan = conds.filter((c) => c._col).sort((a, b) => a._col.cost - b._col.cost);
+    const P = planFor(from, spec && (spec.where || spec.conditions));
+    /* ⚠⚠⚠ (#R740) A CONDITION THAT COULD NOT BE RESOLVED ENDS THE RUN. It used to be noted and
+       stepped over: the rows were filtered by whatever DID resolve, the answer was published, and
+       the fact that two of the three conditions had been dropped was a line of orange text above a
+       table that otherwise looked like an answer. Measured in production — 「M5以上・直近30日」 came
+       back as 200 rows down to M0.55, correctly labelled and completely wrong. A dropped condition
+       is not a partial answer to the question asked, it is a complete answer to a DIFFERENT
+       question, and rule ① of this file (no silent cap) is the same rule: the reader must not be
+       handed something that looks complete and is not.
+       ⚠ BEFORE THE PLAN RUNS, not after. Refusing later would still have paid for every network
+       column in the plan, for an answer that is thrown away. */
+    if (P.reject) return P.reject;
+    const plan = P.conds.slice().sort((a, b) => a._col.cost - b._col.cost);
 
     for (const c of plan) {
       if (!rows.length) break;
@@ -931,14 +1077,6 @@ window.IntMapModules.atlasQuery = function (HOST) {
       const kept = target.filter((r) => passes(c, r.v[c._col.id], c._col.kind));
       rows = kept;
     }
-    for (const u of unknown) {
-      unapplied.push(u);
-      notes.push(tableName(T) + ' · ' + u + ' — ' + L('no such column, so that condition was ignored',
-        'という列は無いため、この条件は無視しました',
-        'keine solche Spalte — Bedingung ignoriert',
-        'нет такого столбца — условие проигнорировано',
-        'no existe esa columna — condición ignorada'));
-    }
 
     /* ③b (#R732) THE SPATIAL CONDITIONS — 「この区域の中」「この道路そのものから2km以内」.
        AFTER the column plan and BEFORE the joins, for the same reason the plan is cost-ordered: a
@@ -948,6 +1086,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
        planner can only reach by accident and the audit cannot see at all. */
     const spatials = [].concat((spec && spec.spatial) || []).filter(Boolean);
     const sres = await spatialStage(spatials, rows, { notes, sources, caps, unapplied });
+    if (sres.reject) return sres.reject;   /* (#R740) a condition on the target that named no column */
     rows = sres.rows;
 
     /* ④ THE SPATIAL JOIN — 「地震から都市まで一定距離以内」 */
@@ -967,9 +1106,25 @@ window.IntMapModules.atlasQuery = function (HOST) {
           'las filas no son puntos únicos — no se puede medir una unión por distancia'));
         break;
       }
-      const jt = TABLES[String(jn.of || jn.table || '').trim().toLowerCase()];
-      if (!jt) { unapplied.push(String(jn.of || jn.table || '?')); notes.push(L('Unknown join table', '結合先が不明です',
-        'Unbekannte Verknüpfungstabelle', 'Неизвестная таблица соединения', 'Tabla de unión desconocida') + ': ' + String(jn.of || jn.table || '')); continue; }
+      /* ⚠⚠⚠ (#R740) A JOIN WHOSE TARGET TABLE DOES NOT RESOLVE ENDS THE RUN — it used to print a
+         note naming the table it could not find, with an EMPTY name (measured), and carry on, so
+         「活火山から100km以内」 vanished from a table that still had its heading, its counts and its
+         sources. Nothing about that answer tells the reader that the only spatial part of their
+         question was never asked. Same refusal shape, and the same sentence in `answer`, as a FROM
+         clause that names a table IntMap does not have — it is the same mistake in another clause.
+         ⚠ «Could not be asked» stays a note: a target table that is present but unavailable, a
+         non-point base table, a missing radius are all questions that WERE put and failed, and they
+         go on being reported through `unapplied` below. */
+      const jtid = String(jn.of || jn.table || '').trim().toLowerCase();
+      const jt = TABLES[jtid];
+      if (!jt) return { ok: false, error: 'unknown-table', table: jtid, tables: Object.keys(TABLES) };
+      /* ⚠ (#R740) THE JOINED TABLE'S OWN CONDITIONS, RESOLVED BEFORE ITS ROWS ARE FETCHED — same
+         rule as the `where` clause and the spatial clause above. 「10万人以上の都市から50km以内」
+         used to drop the population condition when it could not be resolved and join against EVERY
+         city, which answers a question the reader did not ask while looking exactly like the one
+         they did. Before `jt.rows(scope)`, so a refused query pays for no network call. */
+      const JP = planFor(jt.id, jn.where);
+      if (JP.reject) return JP.reject;
       const km = Math.max(0.1, +(jn.withinKm != null ? jn.withinKm : (jn.km != null ? jn.km : 100)));
       const scope = Object.assign({}, jn, { bbox: T.geo ? bboxOf(rows, km) : null });
       let jr;
@@ -985,10 +1140,8 @@ window.IntMapModules.atlasQuery = function (HOST) {
       }
       sources.push({ what: jt.label, src: jr.source || jt.source });
       if (jr.capped) caps.push({ what: jt.label, cap: jr.capped });
-      /* the join table's own conditions, evaluated on its rows before the distance test */
-      const jconds = [].concat(jn.where || []).filter(Boolean).map((c) => {
-        const cd = Object.assign({}, c); cd._col = columnFor(jt.id, cd.col || cd.column || cd.field); cd._op = normOp(cd.op); return cd;
-      }).filter((c) => c._col);
+      /* the join table's own conditions (resolved above), evaluated on its rows before the distance test */
+      const jconds = JP.conds;
       let jrows = jr.rows.map((r) => Object.assign({ v: Object.create(null) }, r));
       for (const c of jconds) { await c._col.ensure(jrows); jrows = jrows.filter((r) => passes(c, r.v[c._col.id], c._col.kind)); }
       const label = String(jn.as || jt.id);
@@ -1064,7 +1217,9 @@ window.IntMapModules.atlasQuery = function (HOST) {
        happen to have the same answer today, and would stop matching the moment a live table moved. */
     const keyOf = (v) => { try { return JSON.stringify(v == null ? null : v); } catch (_) { return String(v); } };
     /* the conditions, NORMALISED, so `gte` and `>=` are one query rather than two */
-    const condKey = conds.map((c) => (c._col ? c._col.id : String(c.col || c.column || c.metric || c.field || '?'))
+    /* ⚠ (#R740) every one of them RESOLVED — a run that reached here has no unresolved condition
+       left to key on, because such a run is refused above rather than answered. */
+    const condKey = P.conds.map((c) => c._col.id
       + c._op + keyOf(c.value != null ? c.value : (c.min != null || c.max != null ? [c.min, c.max] : (c.from != null || c.to != null ? [c.from, c.to] : c.v)))).sort();
     /* ⚠ EVERYTHING ELSE IS IN THE KEY BY EXCLUSION, NOT BY A LIST OF FIELDS I REMEMBERED. The
        first draft named `in`, `near`, `order` and `limit` explicitly and was WRONG for the live
@@ -1147,9 +1302,10 @@ window.IntMapModules.atlasQuery = function (HOST) {
   function catalogue() {
     syncUserTables();   /* (#R729) the planner is offered the reader's own datasets by name */
     const cols = {};
-    for (const t in TABLES) cols[t] = TABLES[t].user
-      ? TABLES[t].fields.map((f) => f.name).concat(['name', 'lat', 'lng'])
-      : COLUMNS.filter((c) => c.tables.indexOf(t) >= 0).map((c) => c.id);
+    /* (#R740) ONE enumeration, shared with the refusal in `run` — what the planner is OFFERED and
+       what it is told after naming something else have to be the same list, or the second one is
+       advice that does not work. */
+    for (const t in TABLES) cols[t] = tableColumnIds(t);
     /* ⚠⚠⚠ (#R732) THE SPATIAL RELATIONS ARE DERIVED FROM THE REGISTRY THAT EXECUTES THEM, and they
        are a SEPARATE key from `ops`: `ops` compare a column's value, these compare shapes, and a
        planner told that `within` is an operator would write it into a `where` clause where nothing
@@ -1189,8 +1345,8 @@ window.IntMapModules.atlasQuery = function (HOST) {
        noise. Asked of the COLUMNS the answer is showing, not of the table it came from, because
        that is the thing that decides whether the country is already on screen. */
     const hasCountryCol = cols.some((c) => c.id === 'country');
-    const head = '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;">#</th>'
-      + '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;">' + esc(L('Name', '名称', 'Name', 'Название', 'Nombre')) + '</th>'
+    const head = '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;white-space:nowrap;">#</th>'
+      + '<th style="text-align:left;padding:4px 8px 4px 0;font-weight:600;white-space:nowrap;">' + esc(L('Name', '名称', 'Name', 'Название', 'Nombre')) + '</th>'
       + cols.map((c) => '<th title="' + esc(colProvenance(c)) + '" style="text-align:right;padding:4px 0 4px 8px;font-weight:600;white-space:nowrap;">' + esc(colName(c)) + '</th>').join('')
       + res.joins.map((j) => '<th style="text-align:right;padding:4px 0 4px 8px;font-weight:600;white-space:nowrap;">' + esc(j) + '</th>').join('');
     const body = res.rows.map((r, i) => '<tr style="border-top:1px solid rgba(128,128,128,0.14);">'
@@ -1200,13 +1356,20 @@ window.IntMapModules.atlasQuery = function (HOST) {
          PPLA2 — a prefecture seat — which is a different thing from a built-up area. Saying which
          record answered is not the same as redefining city population, and it is what lets a
          reader go and look. */
-      + '<td title="' + esc(rowProvenance(r)) + '" style="padding:4px 8px 4px 0;">' + esc(r.name || '') + ((r.iso2 && !hasCountryCol) ? ' <span style="color:var(--text-muted);font-size:10.5px;">' + esc(r.iso2) + '</span>' : '') + '</td>'
+      + '<td title="' + esc(rowProvenance(r)) + '" style="padding:4px 8px 4px 0;white-space:nowrap;">' + esc(r.name || '') + ((r.iso2 && !hasCountryCol) ? ' <span style="color:var(--text-muted);font-size:10.5px;">' + esc(r.iso2) + '</span>' : '') + '</td>'
       + cols.map((c) => '<td style="padding:4px 0 4px 8px;text-align:right;white-space:nowrap;">' + fmt(c, r.v[c.id]) + '</td>').join('')
       + res.joins.map((j) => { const jj = r.joins[j];
         return '<td style="padding:4px 0 4px 8px;text-align:right;white-space:nowrap;">'
           + (jj && jj.count ? (jj.count + ' · ' + jj.km + ' km') : '—') + '</td>'; }).join('')
       + '</tr>').join('');
-    return '<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:12px;width:100%;">'
+    /* ⚠ (#R740) `width:100%` IS A CEILING, NOT A FLOOR. Six columns inside a 365 px Atlas panel had
+       nowhere to go: the table could not be wider than the panel, so the only cell without
+       `white-space:nowrap` — the name, and the header above it — broke on every character, and
+       「NAME」 came down the page as N / A / M / E. Measured: 8,153 px of table.
+       `width:auto;min-width:100%` lets it take the width its content needs and still fill the panel
+       when it does not need it; the wrapper is already `overflow-x:auto`, so what was vertical
+       shredding becomes a horizontal scroll. */
+    return '<div style="overflow-x:auto;"><table style="border-collapse:collapse;font-size:12px;width:auto;min-width:100%;">'
       + '<thead><tr style="color:var(--text-muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.03em;">' + head + '</tr></thead>'
       + '<tbody>' + body + '</tbody></table></div>';
   }
@@ -1264,6 +1427,25 @@ window.IntMapModules.atlasQuery = function (HOST) {
     const U = ui || {};
     const res = await run(a);
     if (!res.ok) {
+      /* ⚠ (#R740) THE REFUSAL HAS TO BE ACTIONABLE. Whoever wrote the query — the planner, usually
+         — can only get it right on the second attempt if this says WHICH name failed and WHAT this
+         table calls its columns. «使える表は…» answered a different question (the table was fine;
+         the column was not) and left the only way forward as guessing again. Every column id is
+         printed, counted off the registry rather than listed here. */
+      if (res.error === 'unknown-column') {
+        const tn = TABLES[res.table] ? tableName(TABLES[res.table]) : res.table;
+        return { ok: false, html: '<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">⚠ '
+          + esc(tn + ' · ' + (res.unknown || []).join(', ') + ' — '
+            + L('no such column, so this query was NOT answered',
+              'という列は無いため、この問い合わせには回答していません',
+              'keine solche Spalte — die Abfrage wurde NICHT beantwortet',
+              'нет такого столбца — запрос НЕ выполнен',
+              'no existe esa columna — la consulta NO se ha respondido'))
+          + '</div><div style="font-size:11px;color:var(--text-muted);margin:2px 0;">'
+          + esc(L('The columns this table has are', 'この表で使える列は次のとおりです',
+            'Die Spalten dieser Tabelle sind', 'Столбцы этой таблицы', 'Las columnas de esta tabla son')
+            + ': ' + (res.columns || []).join(', ')) + '</div>' };
+      }
       return { ok: false, html: '<div style="font-size:11.5px;color:#ff9f0a;margin:3px 0;font-weight:600;">⚠ '
         + esc(L('This query names something IntMap does not have. The tables it does have are',
           'この問い合わせは IntMap に無いものを指しています。使える表は次のとおりです',
