@@ -162,7 +162,12 @@ export function makeAtlasState(HOST) {
       var PANELS = [['#settings-modal', 'Settings'], ['#compare-window', 'Map-compare window'],
         ['#stats-compare-fixed', 'Statistics-comparison view'], ['#tool-panel', 'Map tool panel'],
         ['#widget-board', 'Widget board'], ['#widget-panel', 'Widget panel'],
-        ['#corr-overlay', 'Correlation tool'], ['.research-panel', 'Research panel'], ['.pg-overlay', 'Playground']];
+        ['#corr-overlay', 'Correlation tool'], ['.research-panel', 'Research panel'], ['.pg-overlay', 'Playground'],
+        /* the two floating cards Atlas itself opens most often — the weather card (data.weather) and the
+           satellite detail card (layers.satellites with a name). Measured on production (2026-09-15):
+           the weather card stayed open across four later questions and this section reported
+           `open: []` the whole time, so Atlas had no way to know it was still there. */
+        ['#weather-panel', 'Weather card'], ['#sat-popup', 'Satellite detail card']];
       var TABS = ['btn-news', 'btn-info', 'btn-stats', 'btn-community'];
       function shown(el) {
         var w = WIN(); if (!el || !w) return false;
@@ -608,6 +613,10 @@ export function makeAtlasState(HOST) {
         lines.push(at.polygons.n + ' Atlas polygon highlight(s)' + (pn ? (': ' + pn) : '') + '.');
       }
       if (at.lines && at.lines.n) lines.push(at.lines.n + ' Atlas line(s) drawn (river courses / routes / custom lines).');
+      if (at.factions && at.factions.n) lines.push('A historical power/alliance map you drew earlier is still on the globe (' + at.factions.n +
+        ' country fills on modern borders). It stays until removed — clear it (clear what:"historical") when it no longer serves the question.');
+      if (at.eraPolities && at.eraPolities.n) lines.push('The country highlight is drawn as the displayed year\'s polities (' +
+        (at.eraPolities.names || []).join(', ') + ') from the historical border record, not the modern outlines.');
       if (at.measure && at.measure.n) lines.push('Measure tool active with ' + at.measure.n + ' points.');
       if (at.radius && at.radius.n) lines.push(at.radius.n + ' radius circle(s) on the map.');
       if (at.userPins && at.userPins.n) lines.push(at.userPins.n + ' user pin(s) on the map.');

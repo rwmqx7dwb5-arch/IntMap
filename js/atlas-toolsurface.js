@@ -180,7 +180,7 @@ export function makeAtlasToolSurface(deps) {
       var ranked = (r && r.ranked) || [];
       if (!ranked.length) {
         return { ok: true, query: query, matches: [],
-          note: 'Nothing matched. IntMap may not have this; answer the reader directly, or search the web.' };
+          note: 'Nothing matched. The registry is complete and every capability is indexed in your system prompt, so rephrasing and searching again will not find it: IntMap has no such control. Tell the reader that plainly, answer directly from what you know and can see, or search the web.' };
       }
       var out = [], ids = [];
       for (var i = 0; i < ranked.length; i++) {
@@ -364,8 +364,27 @@ export function makeAtlasToolSurface(deps) {
         /* the deterministic candidates IntMap found but did NOT apply — Atlas decides */
         try { out.observed = JSON.parse(JSON.stringify(res.exec)); } catch (_) { /* not serialisable */ }
       }
+      /* ══ ⚠⚠⚠ WHAT THE READER CAN SEE, ATLAS CAN READ ═══════════════════════════════════════════
+         A successful call used to hand Atlas `ok · completed · route,map,panel` and nothing else:
+         the ten countries and their values, the five itineraries with their times, the weather
+         panel's numbers — all rendered into the reader's bubble, none of it in the result. Asked
+         for the values, Atlas could not find them in what it was given and CALLED THE SAME TOOL
+         AGAIN: measured on production (2026-09-15) data.rank with identical arguments 8 times in one
+         turn and routing.route 7 times, each turn ending on the step budget with no answer written,
+         while the numbers sat on screen from the first call. #R663 gave failures their sentence;
+         this gives successes theirs — the text of the very HTML the reader is shown, so nothing is
+         synthesised and no case needs a `message:` of its own (.agents/rules/no-ad-hoc-hardcoding.md
+         §2). ⚠ RESULT_TEXT_MAX: a rank card is ~200 characters and a five-itinerary transit card
+         ~1,500 (measured on the same day); 2,000 keeps every ordinary card whole. A research
+         answer is longer, but it is `rendered` and Atlas is told so — its content is not repeated,
+         only its opening. Raise the number when a card that Atlas must read whole exceeds it. */
+      if (ok && res && res.html) {
+        var shown = textOf(res.html);
+        if (shown) out.text = shown.length > RESULT_TEXT_MAX ? (shown.slice(0, RESULT_TEXT_MAX) + ' …') : shown;
+      }
       return out;
     }
+    var RESULT_TEXT_MAX = 2000;
 
     var API = { CORE, baseTools, find, actionFor, makeExecute, schemaOf };
     try { window.IntMapAtlasTools = API; } catch (_) { /* non-browser (the node checks) */ }

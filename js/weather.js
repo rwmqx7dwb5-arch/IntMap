@@ -2201,6 +2201,8 @@ window.IntMapModules.weatherPanel=function(HOST){
         p.querySelector('.wp-x').onclick=close; { const rf=p.querySelector('.wp-rf'); if(rf) rf.onclick=()=>open(_lastLL||lngLat,{fresh:true}); } place();
       }catch(e){ p.innerHTML=head+`<div style="margin-top:12px;color:#ff453a;">${L('Weather temporarily unavailable (both weather services could not be reached — possibly rate-limited). Try again in a few minutes.','天気を一時的に取得できません（両方の気象サービスに接続できませんでした。レート制限の可能性があります）。数分後に再試行してください。','Wetter vorübergehend nicht verfügbar (beide Wetterdienste unerreichbar). Bitte später erneut versuchen.','Погода временно недоступна (оба сервиса не отвечают). Повторите позже.','El tiempo no está disponible temporalmente (ninguno de los servicios respondió). Inténtalo de nuevo en unos minutos.')}</div>`; const x=p.querySelector('.wp-x'); if(x) x.onclick=close; }
     }
-    return { open, close };
+    /* `describe(code)` — the WMO weather code as the reader's-language phrase the panel itself shows,
+       so the Atlas weather capability can hand the model the same words instead of a bare number. */
+    return { open, close, describe:(code)=>{ try{ return String(wx(code).desc||''); }catch(_){ return ''; } } };
   })();
 };

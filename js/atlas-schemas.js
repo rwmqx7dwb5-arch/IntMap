@@ -276,10 +276,11 @@ export function makeAtlasSchemas() {
       'layers.windParticles': { type: 'object', properties: { on: bool(), mode: str(), over: str(), layer: str(), on_layer: str() } },
       /* (#R439) 等圧線 — the contours over the sea-level-pressure field */
       'layers.isobars': { type: 'object', properties: { on: bool(), mode: str() } },
+      'layers.baseDisplay': { type: 'object', properties: { mode: { type: 'string', enum: ['default', 'clean', 'custom'] } } },   /* no mode = REPORT the current preset and the rows it holds */
       'layers.nightSide': { type: 'object', properties: { on: bool(), mode: str() } },
       'layers.planeAltitude': { type: 'object', properties: { on: bool(), mode: str() } },
       'layers.aircraftTrack': { type: 'object', properties: { aircraft: str(), callsign: str(), flight: str(), reg: str(), icao24: str(), on: bool(), mode: str() } },   /* no aircraft = the one already selected */
-      'layers.satellites': { type: 'object', properties: { on: bool(), mode: str(), group: str(), catalogue: str(), kind: str(), name: str(), satellite: str(), object: str(), norad: loose() } },
+      'layers.satellites': { type: 'object', properties: { on: bool(), mode: str(), group: str(), catalogue: str(), kind: str(), name: str(), satellite: str(), object: str(), norad: loose(), place: str() } },
       'panel.ticker': { type: 'object', properties: { on: bool(), mode: str() } },
       'data.compareStats': { type: 'object', properties: { countries: loose(), country: str(), metrics: list(str()), source: one('wb', 'imf'), view: one('bar', 'bars', 'timeseries', 'ts', 'time-series', 'table', 'pivot'), mode: one('bar', 'bars', 'timeseries', 'ts', 'time-series', 'table', 'pivot') }, anyOf: [{ required: ['countries'] }, { required: ['country'] }] },
       /* a composed score is its components; fewer than two is refused by the case */

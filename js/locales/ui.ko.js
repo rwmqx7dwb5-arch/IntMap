@@ -5119,6 +5119,8 @@ window.IntMapLang.define('ko', { ui: {
   'It was calculated but nothing was drawn on the map.': '계산은 되었지만 지도에는 아무것도 그려지지 않았습니다.',   /* atlas-results.js (#R318) atlas.code.not_rendered */
   'It is on the map but currently hidden.': '지도에는 있지만 지금은 숨겨져 있습니다.',   /* atlas-results.js (#R318) atlas.code.not_visible */
   'Nothing on the map changed.': '지도에서 바뀐 것이 없습니다.',   /* atlas-results.js (#R318) atlas.code.no_change */
+
+  'There was nothing of that kind to remove — the map is already in the state asked for.': '제거할 그런 대상이 없었습니다 — 지도는 이미 요청하신 상태입니다.',   /* atlas-results.js (#R318) atlas.code.already_clear */
   'That is not available right now.': '지금은 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.unavailable */
   'I do not have that operation.': '저에게는 그런 작업이 없습니다.',   /* atlas-results.js (#R318) atlas.code.unknown_capability */
   'The values given for that operation were not usable.': '그 작업에 주어진 값을 사용할 수 없습니다.',   /* atlas-results.js (#R318) atlas.code.bad_args */
@@ -6439,4 +6441,29 @@ window.IntMapLang.define('ko', { ui: {
   "Working": "작업 중",
   "1 step": "1단계",
   "{n} steps": "{n}단계",
+  "a low pass, unlikely to be visible": "낮은 고도의 통과로 육안으로 보기 어려움",   /* #R726 */
+  "Base display": "기본 표시",   /* #R726 */
+  "elevation seen from": "고도각",   /* #R726 */
+  "feels like": "체감",   /* #R726 */
+  "gusts": "돌풍",   /* #R726 */
+  "humidity": "습도",   /* #R726 */
+  "in progress now": "현재 통과 중",   /* #R726 */
+  "in the next 24 h": "(향후 24시간 내)",   /* #R726 */
+  "max elevation": "최대 고도각",   /* #R726 */
+  "next pass": "다음 통과",   /* #R726 */
+  "no pass": "통과 없음",   /* #R726 */
+  "now above": "현재 위치",   /* #R726 */
+  "pass": "통과",   /* #R726 */
+  "precipitation": "강수",   /* #R726 */
+  "rain chance": "강수 확률",   /* #R726 */
+  "satellite card": "위성 카드",   /* #R726 */
+  "The base display presets are unavailable.": "기본 표시 프리셋을 사용할 수 없습니다.",   /* #R726 */
+  "the chosen point": "지정한 지점",   /* #R726 */
+  "the map center": "지도 중심",   /* #R726 */
+  "The preset did not apply": "프리셋이 적용되지 않았습니다",   /* #R726 */
+  "Unknown base display preset": "알 수 없는 기본 표시 프리셋",   /* #R726 */
+  "Upstream draws this shape without giving it a name": "출처는 이 형태에 이름을 붙이지 않은 채 그리고 있습니다",   /* #R726 */
+  "Upstream states nothing further about this shape — not what it is, and not how precisely its boundary is drawn.": "출처는 이 형태에 대해 더 이상 아무것도 밝히지 않습니다 — 그것이 무엇인지도, 경계가 얼마나 정확히 그려졌는지도.",   /* #R726 */
+  "valid at": "기준 시각",   /* #R726 */
+  "weather card": "날씨 카드",   /* #R726 */
 } });

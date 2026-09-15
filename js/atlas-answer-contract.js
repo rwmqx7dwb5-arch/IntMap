@@ -228,6 +228,16 @@ export function makeAtlasAnswerContract() {
     return any ? out : null;
   }
 
+  /* A section's `heading` is the TEXT of a heading, not its markup. The prompt tells the model to
+     start every section with a «## » line, and a model that obeys it in the heading field as well
+     hands over «## Nominal GDP» — which the renderer then prefixes AGAIN, so the reader saw a
+     literal «## Nominal GDP» inside an <h2> (measured on production, 2026-09-15). The same text
+     also feeds `answerPlainText` → place extraction, so the mark-up is removed HERE, at the field's
+     meaning, and not in one renderer. ATX marks only: a heading is never a list item or a quote. */
+  function headingText(x) {
+    return str(x, 160).replace(/^(?:\s*#{1,6}(?:[ \t]+|$))+/, '').replace(/[ \t]+#+[ \t]*$/, '').trim();
+  }
+
   /**
    * normalizeAnswer(raw, opts) — whatever the model returned, in the shape the rest of the round
    * reads. It COERCES and it never invents: a field the model omitted stays empty so the audit can
@@ -250,7 +260,7 @@ export function makeAtlasAnswerContract() {
         directAnswer: { text: str(da.text, 1200), claimIds: arr(da.claimIds).map((x) => str(x, 40)) },
         sections: arr(src.sections).map((s, i) => ({
           id: str((s && s.id) || ('s' + (i + 1)), 40),
-          heading: str(s && s.heading, 160),
+          heading: headingText(s && s.heading),
           blocks: arr(s && s.blocks).map((b) => ({
             type: inSet(b && b.type, ['paragraph', 'bullet_list'], 'paragraph'),
             text: str(b && b.text, 4000),

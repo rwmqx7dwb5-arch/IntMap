@@ -32,6 +32,8 @@ import { makeAtlasVerify } from './atlas-verify.js';
 import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) normally js/app-body.js has already built the registry at boot; this is the fallback for a boot that did not get that far, so Atlas is never the thing that has no capabilities */
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
 import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
+import { resolveObserver, satelliteFacts, weatherFacts, routeFacts } from './atlas-result-facts.js';   /* (#R726) the facts a tool's panel shows, on the tool's result */
+import { makeEraHighlight } from './atlas-era-highlight.js';   /* (#R726) the map's year applied to a country highlight */
 import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
 import { makeViewCapture } from './atlas-view-capture.js';   /* (#R493) view.inspect — the SAME picture the screenshot button takes, plus the per-turn frame ledger. The subject lives THERE because this file is shrink-only (tests/r419 ⑨d) */
 import { makeAtlasSchemas } from './atlas-schemas.js';   /* (#R406) the per-capability argument schemas the registry never had */
@@ -308,7 +310,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       const before=['ofm-country','ofm-city','ofm-other','tool-poly'].find(id=>{ try{ return !!GE().layers.has(id); }catch(_){ return false; } });
       try{ GE().layers.add({id:'nlq-fill',type:'fill',source:'nlq-src',paint:{'fill-color':_hlColor,'fill-opacity':['case',['boolean',['feature-state','nlq'],false],0.55,0]}},before);
         GE().layers.add({id:'nlq-line',type:'line',source:'nlq-src',paint:{'line-color':_hlLineColor,'line-width':['case',['boolean',['feature-state','nlq'],false],2,0],'line-opacity':0.95}},before); return true; }catch(_){ return false; } }
-    function clearHl(){ _hl.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); }
+    function clearHl(){ _hl.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:false}); }catch(_){} }); _hl=new Set(); _eraHl=[]; try{ if(GE().layers.hasSource('nlq-era-src')) GE().layers.setSourceData('nlq-era-src',{type:'FeatureCollection',features:[]}); }catch(_){} } let _eraHl=[]; const _ERA=makeEraHighlight({GE, resolveCountrySync:(n)=>resolveCountrySync(n)}); const _eraGeomsFor=(code)=>_ERA.eraGeomsFor(code); const ensureEraHlLayers=()=>_ERA.ensureEraHlLayers({fill:_hlColor,line:_hlLineColor});
     /* (#R108) HONEST highlight ("ハイライトしましたと言ってハイライトしていない例がある"): setFeatureState is a silent
        no-op when the source has no feature with that promoted id (country data not loaded yet, or a code that isn't in
        the geojson). Only report success when AT LEAST ONE requested country actually matches a real feature — otherwise
@@ -321,8 +323,9 @@ window.IntMapModules.atlasConsole=function(HOST){
          nothing visible yet would return any=true and let the reply claim a highlight that isn't on screen. Return false so
          the dispatch's bounded retry (R61) waits for the data, then reports honestly if it never paints. */
       if(!valid.size) return false;
-      let any=false; codes.forEach(c=>{ const cs=String(c); if(!valid.has(cs)) return;   /* no matching feature → skip; don't claim an impossible paint */
-        try{ GE().layers.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} });
+      let any=false; const eraFeats=[]; codes.forEach(c=>{ const cs=String(c); if(!valid.has(cs)) return;   /* no matching feature → skip; don't claim an impossible paint */
+        const era=_eraGeomsFor(cs); if(era){ era.forEach(e=>eraFeats.push({type:'Feature',geometry:e.geo,properties:{code:cs,name:e.name}})); _hl.add(cs); any=true; return; }   /* the map's year applies to areas: that year's polity, not the modern polygon */
+        try{ GE().layers.setFeatureState({source:'nlq-src',id:cs},{nlq:true}); _hl.add(cs); any=true; }catch(_){} }); if(eraFeats.length&&ensureEraHlLayers()){ try{ GE().layers.setSourceData('nlq-era-src',{type:'FeatureCollection',features:eraFeats}); _eraHl=eraFeats.map(f=>f.properties.name); }catch(_){} }
       return any; }
     GE().events.on('styledata',()=>{ if(_hl.size||(_choroState&&Object.keys(_choroState).length)){ setTimeout(()=>{ try{ ensureHlLayers(); const keep=new Set(_hl); _hl=new Set(); keep.forEach(c=>{ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{nlq:true}); _hl.add(c); }catch(_){} });
       if(_choroState&&Object.keys(_choroState).length){ try{ ensureChoroLayer(); for(const c in _choroState){ try{ GE().layers.setFeatureState({source:'nlq-src',id:c},{choroV:_choroState[c]}); }catch(_){} } }catch(_){} } }catch(_){} },120); } });
@@ -1189,7 +1192,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     const { DEIXIS_RE, REGION_ALIASES, WORLD_RE, _bboxOK, _classBonus, _geoAgrees, _gvStrong, _nomExtent, _rrResolve, _selfLocSeed, flyToBox, geoVerify, geoVerifyMany, geocode, parseDirectional, placeExtent, regionBox, sliceBox, whereMiss } = makeAtlasGeoResolve(HOST, { GE, L, esc, _bboxSoftPoly, _cgPoly, _clipGeoRect, _codesGeo, _expandRegionCompound, _geoArea, _hlLegendHtml, _hlPaletteColor, _lnorm, _ptInGeo, _setLast, _validGeo, askAIJSONEnvelope, codeAtPoint, composeRegion, fbbox, geo, localFuzzyPlaces, regionGroup, resolveCountrySync, lastPlace: () => _lastPlace });
     /* (#R199) ↳ js/atlas-controls.js — the full-control action surface — real UI controls and module methods.
        Moved whole; the 8 names below are what the rest of this file still calls. */
-    const { clickId, controlCatalog, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
+    const { clickId, controlCatalog, doBaseDisplay, doControl, doHeritage, doModule, doRadiationObs, doVolcano, findControl, kexec, moduleCatalog, radiationChain, setSel } = makeAtlasControls(HOST, { L, R, _ctlTogHtml, esc, note, warn });
     const { TURN_SCHEMA } = AGENT;   /* (#R406) the reply shape of one step — js/atlas-agent.js */
     /* (#R406) ONE tool surface for the module, not one per turn. What IS per-turn is where a call
        lands: `_turnRunAction` is the running turn's executor, so the surface can be built (and
@@ -1817,7 +1820,9 @@ window.IntMapModules.atlasConsole=function(HOST){
             else { GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),9),duration:1100}); }
             return R(true, note(L('Moved to','移動先','Verschoben nach','Перемещено в','Movido a')+': '+esc(placeStr))+_ambigNote(placeStr,ll.lng,ll.lat)); }   /* (#R108) name the destination in plain text — no bare ✓, no emoji */
           return R(false, warn('⚠ '+L('Place not found','地名が見つかりません','Ort nicht gefunden','Место не найдено','Lugar no encontrado')+': '+esc(placeStr))); }
-        case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)}); return R(ok, ok?note('🌤 '+esc(ll.name||a.place)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
+        case 'weather': { const ll=await geocode(a.place); if(ll){ let ok=false; try{ if(window.IntMapWeather&&window.IntMapWeather.open){ window.IntMapWeather.open({lng:ll.lng,lat:ll.lat}); ok=true; } }catch(_){} GE().camera.flyTo({center:[ll.lng,ll.lat],zoom:Math.max(GE().camera.getZoom(),5)});
+          let facts=''; try{ const WX=window.IntMapWx, WP=window.IntMapWeather; const j=WX&&WX.point?await WX.point(ll.lat,ll.lng,{days:5,uv:false,gusts:true,ttl:300000}):null; facts=weatherFacts(j, WP&&WP.describe, L); }catch(_){}   /* the card's own numbers on the result (js/atlas-result-facts.js) — it used to say only 「🌤 大阪市」 */
+          return R(ok, ok?note('🌤 '+esc(ll.name||a.place)+esc(facts)):warn('⚠')); } return R(false, warn('⚠ '+esc(a.place||''))); }
         case 'brief': { /* (#R62) AI Brief is INTEGRATED into Atlas — same structured brief, rendered inline in this chat. */
           const ll=(a.lng!=null&&a.lat!=null)?{lng:+a.lng,lat:+a.lat,name:String(a.place||'')}:await geocode(a.place);
           const nm3=(ll&&ll.name)||String(a.place||'').trim(); if(!nm3) return R(false, warn('⚠ '+esc(a.place||'')));
@@ -2054,7 +2059,7 @@ window.IntMapModules.atlasConsole=function(HOST){
               if(dKm([c.lng,c.lat],[+g.lng,+g.lat])>500&&window.IntMapRouting.geoNear){ const n=await window.IntMapRouting.geoNear(q);
                 if(n&&dKm([c.lng,c.lat],[+n.lng,+n.lat])<dKm([c.lng,c.lat],[+g.lng,+g.lat])/3) g=n; } } }catch(_){}
             return g; };
-          const A=await _geoEP(a.from); const B=await _geoEP(a.to||a.place||a.destination);
+          const A=await _geoEP(a.from); const B=await _geoEP(a.to||a.place||a.destination);   /* the journey rides on the result (js/atlas-result-facts.js routeFacts) — with only the cards, Atlas re-ran the route seven times for the duration */
           const rawMode=String(a.mode||a.profile||(a.type==='walkingRoute'?'walking':a.type==='transitRoute'?'transit':'')).toLowerCase();
           const isTr=/transit|train|rail|public|metro|subway|tram|bus|ferry|電車|鉄道|地下鉄|バス|公共|列車/.test(rawMode);
           const mode=isTr?'transit':(({car:'driving',drive:'driving',driving:'driving',foot:'walking',walk:'walking',walking:'walking',bike:'cycling',cycle:'cycling',cycling:'cycling'})[rawMode]||'driving');
@@ -2116,7 +2121,7 @@ window.IntMapModules.atlasConsole=function(HOST){
                 ? L('Public-transit routing (Transitous / MOTIS) — includes REAL-TIME updates for this trip (live departures / delays where the operator publishes them).','公共交通の経路検索（Transitous／MOTIS）— この旅程はリアルタイム運行情報（事業者が公開する実時刻・遅延）を含みます。','ÖPNV (Transitous/MOTIS) — mit ECHTZEIT-Daten für diese Verbindung (Live-Abfahrten/Verspätungen).','Транзит (Transitous/MOTIS) — с данными в РЕАЛЬНОМ ВРЕМЕНИ по этому маршруту (задержки/отправления).','Transporte (Transitous/MOTIS) — con datos en TIEMPO REAL para este viaje (salidas/retrasos).')
                 : L('Public-transit routing (Transitous / MOTIS) — timetable-based (no real-time data for this trip).','公共交通の経路検索（Transitous／MOTIS）— 時刻表ベース（この旅程のリアルタイム情報はありません）。','ÖPNV (Transitous/MOTIS) — fahrplanbasiert (keine Echtzeitdaten für diese Verbindung).','Транзит (Transitous/MOTIS) — по расписанию (без данных реального времени).','Transporte (Transitous/MOTIS) — según horario (sin datos en tiempo real para este viaje).'));   /* (#R103) dropped the "walk dotted / colour-coded" wording per request; (#R132) §2.4/§9.6 honest live-vs-timetable */
             if(r.shapeGap) h+=note(L('Some ride-segment shapes could not be retrieved — those legs are listed above but not drawn on the map (no straight-line substitutes).','一部の乗車区間の形状を取得できませんでした — 該当区間は行程に表示しますが、地図には描画しません（直線での代用はしません）。','Einige Fahrt-Abschnittsformen fehlen — diese Abschnitte stehen in der Liste, werden aber nicht gezeichnet (kein Geraden-Ersatz).','Форма части участков недоступна — они в списке, но не рисуются на карте (без замены прямыми).','No se pudo obtener la forma de algunos tramos — se listan pero no se dibujan (sin sustitutos en línea recta).'));
-            return R(true, h, {meta:{resultKey:_jKey}}); }
+            return R(true, h, {meta:{resultKey:_jKey}, exec:{route:routeFacts(r)}}); }
           if(!r||!r.ok){ const stt=(r&&r.status)||'';
             /* (#R126) 経路10-10 §2.5/§16.8: typed statuses get their OWN honest message instead of one "not found" */
             if(stt==='cancelled') return R(true, _hdr+note(L('Superseded by a newer route request.','新しい経路リクエストに置き換えられました。','Durch eine neuere Routenanfrage ersetzt.','Заменено более новым запросом маршрута.','Sustituido por una solicitud de ruta más reciente.')));
@@ -2150,7 +2155,7 @@ window.IntMapModules.atlasConsole=function(HOST){
             ? L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).')
             : L('Times are typical (no live traffic).','所要時間は交通状況を含まない標準値です。','Zeiten sind typisch (kein Live-Verkehr).','Время типовое (без пробок).','Los tiempos son típicos (sin tráfico).'));
           if(r.avoidDropped) h+=warn('⚠ '+L('Could not apply the avoid options (routing service busy) — showing the normal route.','回避条件を適用できませんでした（経路サービス混雑）— 通常経路を表示。','Meiden-Optionen nicht anwendbar (Dienst ausgelastet) — normale Route.','Не удалось применить исключения — обычный маршрут.','No se pudieron aplicar las exclusiones — ruta normal.'));
-          return R(true, h, {meta:{resultKey:_jKey}}); }
+          return R(true, h, {meta:{resultKey:_jKey}, exec:{route:routeFacts(r)}}); }
         case 'streetview': case 'streetView': case 'pano': {
           /* (#R84) coverage mode: with no place, or when explicitly asked, tint roads blue + make the map clickable */
           if(a.on===false||/^(off|hide|stop)$/i.test(String(a.mode||''))){ try{ window.IntMapStreetView&&window.IntMapStreetView.coverage&&window.IntMapStreetView.coverage(false); }catch(_){} try{ window.IntMapStreetView&&window.IntMapStreetView.close&&window.IntMapStreetView.close(); }catch(_){} return R(true, note('✓ '+L('Street View off','ストリートビューをオフ','Street View aus','Просмотр улиц выкл','Street View apagado'))+_featTogHtml('streetview')); }   /* (#R150) offer the toggle to flip it back on */
@@ -2948,8 +2953,9 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(wants(/quake|seismic|earthquake|地震|震源|波|землетряс|сейсм|sismo|sísmic|beben/)){ try{ if(window.IntMapSeismic){ window.IntMapSeismic.close(); did.push(L('seismic waves','地震波','seismische Wellen','сейсмические волны','ondas sísmicas')); } }catch(_){} }
           if(wants(/sun|shad|shade|insolation|日照|日射|影|солн|тен|sol|sombra|sonne|schatten/)){ try{ if(window.IntMapInsolation) window.IntMapInsolation.clear(); if(window.IntMapSun) window.IntMapSun.close(); did.push(L('sun & shadow','日照・影','Sonne & Schatten','солнце и тень','sol y sombra')); }catch(_){} }
           if(wants(/sight|viewshed|coverage|見通し|視通|圏|видимост|visión|sicht/)){ try{ if(window.IntMapLOS) window.IntMapLOS.clear(); did.push(L('line of sight','見通し線','Sichtlinie','линия видимости','línea de visión')); }catch(_){} }
+          if(wants(/weather|forecast|天気|予報|wetter|погод|tiempo|clima|panel|card|パネル|カード/)){ try{ const WP=window.IntMapWeather; const el=document.getElementById('weather-panel'); if(WP&&WP.close&&el&&el.style.display!=='none'){ WP.close(); did.push(L('weather card','天気パネル','Wetterkarte','карточка погоды','tarjeta del tiempo')); } }catch(_){} } if(wants(/satellite|衛星|satellit|спутник|satélite|panel|card|パネル|カード/)){ try{ const SP=window.IntMapSatPanel; const el=document.getElementById('sat-popup'); if(SP&&SP.close&&el&&el.style.display!=='none'){ SP.close(); did.push(L('satellite card','衛星パネル','Satellitenkarte','карточка спутника','tarjeta del satélite')); } }catch(_){} }   /* the two floating cards Atlas opens close through the same verb (measured 2026-09-15: nothing could reach the weather card) */
           if(!did.length) return R(false, warn('⚠ '+L('Nothing to clear for','消去対象がありません','Nichts zu löschen für','Нечего очищать','Nada que borrar')+': '+esc(w)));
-          return R(true, note('✓ '+L('Cleared','消去','Gelöscht','Очищено','Borrado')+': '+did.join(', '))); }
+          return R(true, note('✓ '+L('Cleared','消去','Gelöscht','Очищено','Borrado')+': '+did.join(', ')), {exec:{cleared:did.slice()}}); }
         case 'fullscreen': { const want=!(a.on===false||/^(off|exit)$/i.test(String(a.mode||'')));
           try{ if(want){ if(!document.fullscreenElement&&document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen(); }
             else if(document.fullscreenElement&&document.exitFullscreen) await document.exitFullscreen();
@@ -3552,6 +3558,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           try{ if(window.Wind&&window.Wind.setParticles){ window.Wind.setParticles(want); ok=true; } }catch(_){}
           return R(ok, ok?note('✓ '+L('Wind particles','風のパーティクル','Wind-Partikel','Частицы ветра','Partículas de viento')+': '+(want?'on':'off'))+_featTogHtml('windParticles'):warn('⚠')); }
         case 'isobars': { const want=!(a.on===false||/^(off|hide|none)$/i.test(String(a.mode||''))); let ok=false,lit=false; if(want){ try{ const cb=document.getElementById('dl-ec-slp'); if(cb&&!cb.checked){ cb.checked=true; cb.dispatchEvent(new Event('change',{bubbles:true})); lit=true; } }catch(_){} } try{ if(window._imWxIsobars){ window._imWxIsobars(want); ok=true; } }catch(_){} return R(ok, ok?note('✓ '+_FEAT_TOG.isobars.lbl()+': '+(want?'on':'off')+(lit?(' · '+L('sea-level pressure switched on','海面気圧をオンにしました','Luftdruck eingeschaltet','слой давления включён','presión al nivel del mar activada')):''))+_featTogHtml('isobars'):warn('⚠')); }   /* ⚠ (#R439) THE ISOBARS ARE A SWITCH, SO ATLAS GETS A SWITCH — a control inside the sea-level-pressure legend rather than a row, so a layer name resolves to nothing. It switches that layer on too, because contours of a field that is not on the map are nothing at all, and the reply says both halves. docs/MAP-LAYERS.md §7.10 */
+        case 'baseDisplay': return doBaseDisplay(a);   /* the Default / Clean / Custom preset — js/atlas-controls.js, through js/data-layers.js IntMapBaseDisplay */
         case 'planeAltitude': case 'aircraftAltitude': { const want=!(a.on===false||/^(off|flat|2d)$/i.test(String(a.mode||''))); let ok=false;
           try{ if(window.IntMapPlanes3D){ window.IntMapPlanes3D.set(want); ok=true; } }catch(_){}
           const st=(()=>{ try{ const s=window.IntMapPlanes3D.state(); return s.lifted?(' — '+s.lifted+' '+L('airborne, up to','機が飛行中・最高','in der Luft, bis','в воздухе, до','en vuelo, hasta')+' '+s.maxAlt.toLocaleString()+' m'):''; }catch(_){ return ''; } })();
@@ -3604,15 +3611,7 @@ window.IntMapModules.atlasConsole=function(HOST){
               +' — '+L('the loaded catalog is','読み込み中のカタログは','geladener Katalog:','загруженный каталог:','el catálogo cargado es')+' '+esc(A.group())));
             try{ A.select(found.id); }catch(_){}
             try{ window.IntMapSatPanel&&window.IntMapSatPanel.open(found.id); }catch(_){}
-            try{ GE().camera.easeTo({center:[found.lng,found.lat],duration:900}); }catch(_){}
-            /* ⚠ (#R298) the observer is the point the reader chose when there is one — this asked the
-               camera about a satellite the reader had just named a place for. */
-            const la=A.lookFrom(A.observer((typeof _herePoint!=='undefined'&&_herePoint)||undefined),found);
-            const det=' — '+L('altitude','高度','Höhe','высота','altitud')+' '+Math.round(found.altKm).toLocaleString()+' km'
-              +(found.velKmS?(' · '+found.velKmS.toFixed(2)+' km/s'):'')
-              +(found.periodMin?(' · '+L('period','周期','Umlaufzeit','период','periodo')+' '+found.periodMin.toFixed(1)+' min'):'')
-              +(la?(' · '+L('elevation from the map center','地図中心からの仰角','Elevation ab Kartenmitte','угол места от центра карты','elevación desde el centro')+' '+la.elDeg.toFixed(1)+'°'):'')
-              +(found.sunlit==null?'':(' · '+(found.sunlit?L('sunlit','太陽光下','beleuchtet','освещён','iluminado'):L('in eclipse','影の中','im Schatten','в тени','en eclipse'))));
+            try{ GE().camera.easeTo({center:[found.lng,found.lat],duration:900}); }catch(_){} const {obsPt,obsLabel}=await resolveObserver(a,{geocode,herePoint:(typeof _herePoint!=='undefined')?_herePoint:null,L}); const det=satelliteFacts(A,found,obsPt,obsLabel,L);   /* the place the reader named, else their pin, else the map centre; the sub-satellite point and NEXT PASS ride on the result (js/atlas-result-facts.js) */
             return R(true,note('✓ '+esc(found.name||('#'+found.id))+esc(det)));
           }
           const st=A.state();
@@ -3970,6 +3969,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       try{ if(_pois&&_pois.length) o.pins={n:_pois.length,kind:(_pois[0]&&_pois[0].sum)?'research':'poi'}; }catch(_){}
       try{ if(_hlPolys&&_hlPolys.length&&_ovlVisible('highlight')) o.polygons={n:_hlPolys.length,names:_hlPolys.map(p=>p.name).filter(Boolean).slice(0,4)}; }catch(_){}
       try{ if(_hlLines&&_hlLines.length) o.lines={n:_hlLines.length}; }catch(_){}
+      try{ const fd=GE().layers.sourceData('nlq-fac-src'); if(fd&&fd.features&&fd.features.length) o.factions={n:fd.features.length}; }catch(_){} try{ if(_eraHl&&_eraHl.length) o.eraPolities={n:_eraHl.length,names:_eraHl.slice(0,4)}; }catch(_){}
       try{ if(typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length) o.measure={n:HOST.measurePoints.length}; }catch(_){}
       try{ if(typeof HOST.radiusItems!=='undefined'&&HOST.radiusItems&&HOST.radiusItems.length) o.radius={n:HOST.radiusItems.length}; }catch(_){}
       try{ if(typeof HOST.userPins!=='undefined'&&HOST.userPins&&HOST.userPins.length) o.userPins={n:HOST.userPins.length}; }catch(_){}
