@@ -25,15 +25,32 @@ export async function resolveObserver(a, deps) {
 export function satelliteFacts(A, found, obsPt, obsLabel, L) {
   const at = '（' + obsLabel + '）';
   const la = A.lookFrom(A.observer(obsPt || undefined), found);
-  let pass = null; try { pass = A.nextPass(found.id, new Date(), 24, obsPt || undefined); } catch (_) { pass = null; }
+  /* the next passes, not only the next one: a reader who asks 「次に東京の上空を通るのは」 usually wants the
+     first pass worth watching, and a 5° graze is not it. Up to PASSES_LISTED within PASSES_HORIZON_H, each
+     with its rise time, maximum elevation and duration; the module computes them one after the other
+     (js/satellites-live.js nextPass, searched from the end of the previous pass). */
+  const PASSES_LISTED = 3, PASSES_HORIZON_H = 48;
+  const passes = []; let pass = null;
+  try {
+    let from = new Date(); const end = Date.now() + PASSES_HORIZON_H * 3600000;
+    for (let i = 0; i < PASSES_LISTED && from.getTime() < end; i++) {
+      const p = A.nextPass(found.id, from, Math.max(1, Math.ceil((end - from.getTime()) / 3600000)), obsPt || undefined);
+      if (!p || p.none) { if (!passes.length) pass = p; break; }
+      passes.push(p); if (!pass) pass = p;
+      from = new Date((p.setMs || p.maxMs || from.getTime()) + 60000);
+    }
+  } catch (_) { pass = null; }
   const fmtT = (ms) => { try { return new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) { return new Date(ms).toISOString(); } };
   let passTxt = '';
   if (pass && pass.none) passTxt = L('no pass', '通過なし', 'kein Überflug', 'нет пролёта', 'sin pase') + at + ' ' + L('in the next 24 h', '（今後24時間）', 'in den nächsten 24 h', 'в ближайшие 24 ч', 'en las próximas 24 h');
   else if (pass && pass.inProgress) passTxt = L('pass', '通過', 'Überflug', 'пролёт', 'pase') + at + ' ' + L('in progress now', '現在通過中', 'läuft gerade', 'идёт сейчас', 'en curso ahora');
   else if (pass && isFinite(pass.riseMs)) passTxt = L('next pass', '次の通過', 'nächster Überflug', 'следующий пролёт', 'próximo pase') + at + ' ' + fmtT(pass.riseMs);
-  if (pass && !pass.none && isFinite(pass.maxEl)) passTxt += ', ' + L('max elevation', '最大仰角', 'max. Elevation', 'макс. угол места', 'elevación máx.') + ' ' + pass.maxEl.toFixed(0) + '° (' + fmtT(pass.maxMs) + ')'
-    + (pass.durationS ? (', ' + Math.round(pass.durationS / 60) + ' min') : '')
-    + (pass.maxEl < 10 ? (' — ' + L('a low pass, unlikely to be visible', '低い通過のため肉眼では見えにくい', 'tiefer Überflug, kaum sichtbar', 'низкий пролёт, вряд ли виден', 'pase bajo, poco visible')) : '');
+  const passDetail = (p) => (isFinite(p.maxEl) ? (', ' + L('max elevation', '最大仰角', 'max. Elevation', 'макс. угол места', 'elevación máx.') + ' ' + p.maxEl.toFixed(0) + '° (' + fmtT(p.maxMs) + ')') : '')
+    + (p.durationS ? (', ' + Math.round(p.durationS / 60) + ' min') : '')
+    + (isFinite(p.maxEl) && p.maxEl < 10 ? (' — ' + L('a low pass, unlikely to be visible', '低い通過のため肉眼では見えにくい', 'tiefer Überflug, kaum sichtbar', 'низкий пролёт, вряд ли виден', 'pase bajo, poco visible')) : '');
+  if (pass && !pass.none) passTxt += passDetail(pass);
+  passes.slice(1).forEach((p, i) => { passTxt += ' · ' + L('later pass', 'その後の通過', 'späterer Überflug', 'следующий пролёт', 'pase posterior') + ' ' + (p.inProgress ? '' : fmtT(p.riseMs)) + passDetail(p); });
+  if (passes.length) passTxt += ' (' + L('passes within 48 h', '48時間以内の通過', 'Überflüge in 48 h', 'пролёты за 48 ч', 'pases en 48 h') + ': ' + passes.length + (passes.length >= PASSES_LISTED ? '+' : '') + ')';
   /* the observer's name sits in parentheses after each label, so every language reads the same way */
   return ' — ' + L('now above', '直下点', 'jetzt über', 'сейчас над', 'ahora sobre') + ' ' + found.lat.toFixed(2) + '°, ' + found.lng.toFixed(2) + '°'
     + ' · ' + L('altitude', '高度', 'Höhe', 'высота', 'altitud') + ' ' + Math.round(found.altKm).toLocaleString() + ' km'

@@ -1170,6 +1170,13 @@ CI が持てる量ではない（`check:histborders`・`check:histadmin` と同�
 ——「その年に存在した単位」であることは上流が述べているが、「その年もこの形だった」とは誰も
 述べていない。だから線は導出線として描かれ、レイヤー行の説明がそう言う（`docs/MAP-LAYERS.md` §7.7）。
 
+### `tests/r728-atlas-final-shape-checks.test.mjs` (#R728)
+
+3 本。ISS の 3 通りの問いで `search()` が返す行が 12 以下で先頭が `layers.satellites` であること／
+`readReply` が turn schema の鍵を持つ JSON 形の文を空にし、散文と parse 済みの返答は従来どおりであること／
+偽の衛星モジュール（5°・62°・20° の 3 通過）で `satelliteFacts` が 3 本を列挙し掠めに印を付け、カタログが
+「通過モードは無い」と言うこと。
+
 ### `tests/r727-atlas-find-checks.test.mjs` (#R727)
 
 5 本。レジストリにカタログ文を束ねて `search()` を**実際に走らせ**、ISS の 5 通りの問い（日本語・英語）で

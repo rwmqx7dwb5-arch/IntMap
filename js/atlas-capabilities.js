@@ -1048,7 +1048,7 @@ export function makeAtlasCapabilities(HOST) {
     }
     var _docNorm = null;   /* id → normalised catalogue block, filled once (a block is up to ~24 kB) */
     var _docDf = {};       /* term → how many capabilities' blocks carry it */
-    var DOC_TERM_POINTS = 6, DOC_TERM_CAP = 30;   /* one alias match is 40, an exact alias 100 — the documentation may lift a capability into view, never over the one that is named */
+    var DOC_TERM_POINTS = 6, DOC_TERM_CAP = 30, DOC_TERM_MAX_DF = 4;   /* one alias match is 40, an exact alias 100 — the documentation may lift a capability into view, never over the one that is named */
     /* a Latin term is a WORD («iss» is not inside «missile» or «emission»); a CJK window is a substring */
     var _termRe = {};
     function hasTerm(d, t) {
@@ -1076,6 +1076,11 @@ export function makeAtlasCapabilities(HOST) {
         if (!hasTerm(d, t)) return;
         var df = _docDf[t];
         if (df == null) { df = 0; for (var id in all) if (hasTerm(all[id], t)) df++; _docDf[t] = df; }
+        /* ⚠ A TERM CARRIED BY MORE THAN FOUR BLOCKS IS NOT A MATCH AT ALL. Half a point apiece still
+           summed to «score > 0» for nearly every capability, and find_capability — which returns EVERY
+           scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
+           request; the next model call took 94 s (measured on production, 2026-09-15). */
+        if (df > DOC_TERM_MAX_DF) return;
         pts += DOC_TERM_POINTS * Math.min(1, 2 / Math.max(1, df));
       });
       return Math.min(DOC_TERM_CAP, pts);

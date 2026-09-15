@@ -636,7 +636,18 @@ export function makeAtlasAgent() {
       /* (#R663) …and what this reply IS, read the same way: a word outside the vocabulary, or none
          at all, is no declaration — and no declaration is exactly the behaviour that shipped. */
       const ts = d ? String(d.turn || d.turnState || '').toLowerCase() : '';
-      return { text: String((d && d.final_text) || (d ? '' : (text || ''))), toolCalls: calls,
+      /* ⚠ A REPLY THAT IS MACHINE-SHAPED IS NOT PROSE. When the JSON could not be parsed — the model ran
+         past its length, or wrote two objects back to back — `d` is null and the raw text used to be
+         handed to the reader as the answer: measured on production (2026-09-15), the final bubble of an
+         ISS question read «{"turn":"continuing","tool_calls":[{"name":"run_capability"…». Text that
+         opens a JSON object and names the turn schema's own keys is refused as prose, so the caller's
+         degrade path runs instead (the mechanical results stay on screen; nothing is invented). */
+      const prose = d ? '' : String(text || '');
+      /* no regular expression here — this loop matches no pattern against a reply (tests/r663 ③); the
+         shape is read with indexOf on the schema's own quoted keys */
+      const opens = prose.trimStart().charAt(0) === '{';
+      const machine = opens && ['"tool_calls"', '"turn"', '"final_text"', '"answer_mode"', '"arguments_json"'].some(function (k) { return prose.indexOf(k) >= 0; });
+      return { text: String((d && d.final_text) || (machine ? '' : prose)), toolCalls: calls,
         answerMode: ANSWER_MODES.indexOf(am) >= 0 ? am : '',
         turnState: TURN_STATES.indexOf(ts) >= 0 ? ts : '' };
     }
