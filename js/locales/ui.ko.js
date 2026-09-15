@@ -2882,7 +2882,7 @@ window.IntMapLang.define('ko', { ui: {
   "columns": "열",   /* map-ui.js (#R576) */
   "skipped": "제외됨",   /* map-ui.js (#R576) */
   "No latitude/longitude columns found": "위도·경도 열을 찾을 수 없습니다",   /* map-ui.js (#R576) */
-  "Shapefile is not supported yet": "Shapefile은 아직 지원하지 않습니다",   /* map-ui.js (#R576) */
+  "This is a Shapefile, but the module that reads it could not be loaded": "Shapefile이지만 이를 읽는 모듈을 불러오지 못했습니다",   /* map-ui.js (#R576 → key restated #R738) */
   "File is too large to read": "파일이 너무 커서 읽을 수 없습니다",   /* map-ui.js (#R576) */
   "Too many features to draw": "지물이 너무 많아 그릴 수 없습니다",   /* map-ui.js (#R576) */
   "No usable coordinates in this file": "이 파일에는 사용할 수 있는 좌표가 없습니다",   /* map-ui.js (#R576) */

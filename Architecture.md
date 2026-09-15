@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（300本・14.2 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（303本・14.6 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1723,8 +1723,11 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 にする。取り込んだレイヤーは**セッション限り**で、永続化しない。
 
 **読める形式** — GeoJSON（FeatureCollection / Feature / 裸の geometry / `features` だけを持つ物）、
-KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セルに入った WKT と GeoJSON geometry。
-zip と gzip は開いて中身を見る。
+KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セルに入った WKT と GeoJSON geometry、
+**Shapefile**（zip の中の `.shp`＋`.dbf`＋`.prj`＋`.cpg` を組で。`js/gis-shapefile.js`）、
+**GeoPackage**（`js/gis-geopackage.js`）。zip と gzip は開いて中身を見る。
+⚠ **GeoPackage は拡張子ではなく先頭 16 バイトで見分ける**——容器でも文字でもないので、
+容器の判定の後・文法の decoder より前に訊く。
 
 ⚠ **形式は 2 つの別々の問いで、別々のものに訊く。**
 
@@ -1755,8 +1758,14 @@ zip と gzip は開いて中身を見る。
 **拒否は文でなくコードで返る。** `js/geo-import.js` は `{ok:false, why:'shapefile'}` のように答え、
 9 言語の文面は `js/map-ui.js` の `reasonText()` が持つ。⚠ `tests/r576-checks.test.mjs` ⑩ が両方を
 **構文解析して**「返しうるコード」と「文を持つコード」の集合が一致することを測るので、コードだけ
-足して文を書き忘れると赤くなる。⚠ **Shapefile と PMTiles はまだ読めない**——zip の中に `.shp` が
-あればそう**名指して**断る（「有効な GeoJSON ではありません」とは言わない）。
+足して文を書き忘れると赤くなる。⚠ **PMTiles はまだ読めない**——「有効な GeoJSON ではありません」
+とは言わず、何のファイルであるかを**名指して**断る。
+
+⚠ **座標が見つからないことは「読めない」ではない。** 見出しを持つ区切りテキストで座標列を
+特定できなかったものは、拒否ではなく `format:'table'`——**`geometry:null` の行**として返り、
+考慮した列と断った理由は `stats` に載る。**地域コードで境界に `join` する右側の表**がこれである。
+見出しの無いファイルにこの道は無い（列に名前が無ければ `join` も `compute` も書けないし、
+それが表である証拠も残らない）。
 
 **取り込んだ結果は必ず `window.IntMapGeodesy.sanitizeFeatures` を通る**（`js/geodesy.js`）。そこが
 `MultiPoint` と `GeometryCollection` を落とすので、decoder 側で**単一 geometry に展開してから**渡す。
@@ -1773,11 +1782,20 @@ zip と gzip は開いて中身を見る。
 | `js/gis-crs.js` | `window.IntMapGisCrs` | **座標変換**——`define` / `known` / `resolve` / `transformGeometry` / `transformFeatures` / `why` / `looksProjected` |
 | `js/gis-raster.js` | `window.IntMapGisRaster` | **数値ラスターのカーネル**——`sample`（nearest / bilinear）・`zonal`（面積重み付き・値ごとの面積）・`mask`・`diff`・`pixelAreaKm2`・`describeBands`・`fromSampler` |
 | `js/gis-index.js` | `window.IntMapGisIndex` | **空間索引**（一様格子）——`build` / `query` / `queryEach` / `stats`。セルの大きさをデータから導き、**偽陰性を出さない** |
+| `js/gis-expr.js` | `window.IntMapGisExpr` | **式の解釈器**（計算列の言語）——`parse` / `evaluate` / `compile` / `functions` / `refusals` |
 | `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()` / `toRaster()`（数値レイヤーを格子に焼く） |
-| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `aggregate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `timeWindow`）の宣言と実行 |
+| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `timeWindow` / `join` / `compute` / `aggregate`）の宣言と実行 |
 | `js/gis-project.js` | `window.IntMapGisProject` | IndexedDB への保存・復元・**引数を変えた再計算** |
 | `js/gis-panel.js` | `window.IntMapGisPanel` | 操作卓（一覧・属性表・由来の連鎖・実行・保存） |
-| `js/gis-core.js` | `window.IntMapGis` | 上の 9 本を起動する 1 つの扉と、`draw()` |
+| `js/gis-core.js` | `window.IntMapGis` | 上の 10 本を起動する 1 つの扉と、`draw()` |
+| `js/gis-shapefile.js` | `window.IntMapGisShapefile` | **Shapefile の読み手**（`.shp` / `.dbf` / `.prj` / `.cpg`）——`read` / `group` / `refusals` |
+| `js/gis-geopackage.js` | `window.IntMapGisGeopackage` | **GeoPackage の読み手**（依存を足さずに SQLite を読み取り専用で読む）——`sniff` / `tables` / `read` / `refusals` |
+
+⚠ **最後の 2 本は `js/gis-core.js` が起動しない。** ファイルの読み手なので、**そのファイルが実際に
+落とされたときだけ** `js/geo-import.js` が動的 import する（起動時のバンドルにも、パネルを開いた
+だけの読者にも来ない）。どちらも**復号器であって、データセットを登録もしなければ再投影もしない**
+——拒否は文ではなくコードで返り（文面は `js/map-ui.js` の `reasonText()`）、座標系は
+「ファイルが名乗ったもの」を返すだけで、変換は下の 1 つの規則が行う。
 
 **⚠ 重い部品は動的 import で遅れて来る。** 幾何カーネルは `polygon-clipping`（Martinez–Rueda の
 sweep-line。**既存の依存**で `js/world-packs.js` と `js/cesium-vector-tiles.js` も同じように読む）、
@@ -1815,6 +1833,25 @@ r·(1−cos(π/steps))（既定 64 なら 5 km に対して約 3 m）——こ�
 刻みの単位は件数ではなく**経過時間**（1 フレーム）である。Worker は無い——足りていないのは
 並列性であって応答性ではない。
 
+**⚠ `join` の照合は識別子であって算術ではない。** 地域コードで 2 つのデータセットを結ぶとき、
+鍵はセルの文字（前後の空白を落としたもの）で比べる——`asNumber` を通すと `"01100"` と `"1100"` が
+同じ市町村になり、**誤りがどこにも出ないまま埋まった表**ができる。⚠ **一致しなかったことは
+結果である**——照合できた件数・できなかった件数・鍵を持たない行の数と、両側の鍵の実例を返す
+（「空欄の列」で気づかせない）。列名の衝突は解決せず `join-column-collision` で拒み、読者が
+`prefix` で答える。**右側が鍵について一意でない**ときの既定は `refuse`——先頭を採るのも行を
+増やすのも実在する答えだが、黙って選ぶと**行数が読者の見ていないデータで決まる**。
+幾何を持たない表は左右どちらにも置ける（出力は入力 0 の幾何をそのまま持つ）。
+
+**⚠ `compute` は式で列を作るが、読者が打った文字列はコードにならない。** 解釈は
+`js/gis-expr.js`——手書きのトークナイザと再帰下降パーサだけで、`eval` も `new Function` も無い
+（CSP 以前に、**打った文字列がこのページで走る道**を持たないための構造）。式が名指す列は
+`filter` の条件と同じように実在が確かめられ、無ければ `null` の列を返さずに拒む。
+意味の規則は 4 つ——**空欄は 0 ではなく伝播する**（0 として数えたい読者は `coalesce` と書き、
+その主張はレシピに残る）／**先頭ゼロのセルは数にならない**（判定は持たず `IntMapData.asNumber` に
+訊く）／**ゼロ除算と非有限は `null`**（`Infinity` の入った列は以後の平均も最小最大も使えない）／
+**`+` は数を足すだけ**で文字列を黙って繋がない（繋ぎたい読者は `concat`）。関数の一覧は
+`FUNCS` 1 つで、`functions()` はその写しではなく同じ表を返す。
+
 **⚠ 処理の出力は、取り込みと同じ経路で登録される。** `provenance` が `{kind:'op', op, inputs, params}`
 ＝**再実行できるレシピ**なので、`IntMapGisProject.setParams(id, {radiusKm:10})` は対象の段と**その下流**を
 トポロジ順に走らせ直す。結果の features は保存しない——レシピがあるなら再生できるし、保存すると入力を
@@ -1845,6 +1882,41 @@ provenance のレシピ・lineage・`stale`——は全部同じなので、**�
 違う日になる）。同じ判定を `js/gis-ops.js` も使う——2 つ持つと、パネルでは比較できて問い合わせでは
 できない列が生まれる。
 
+**⚠ 幾何を持たない行は、3 つ目の payload ではない。** 統計表は `kind:'vector'` の記録で、
+その地物が `geometry:null` を持つだけ——だから `filter`・`timeWindow`・横断クエリ・保存・
+provenance・lineage・`stale` が**1 行も足さずに**効く。`geometryType` は「0 件」と「4 万行あるが
+どれも幾何を持たない」に同じ `null` を返すので、**`withGeometry` を `count` の隣で測る**
+（宣言ではなく測定）。`count - withGeometry` が描くもののない行の数で、両方が 0 でない記録は
+どちらかに寄せずに**混在をそのまま述べる**（座標セルが空の CSV は実際にそれである）。
+格子では `0` ではなく `null`。
+
+**⚠ 値は読者が直せる。取り消しは差分であって snapshot ではない。**
+`editValues` / `addField` / `removeField` / `renameField` / `undo` / `redo` / `history`。
+履歴が持つのは `{index, field, 元の値}`（列なら実際に在ったセルの疎な一覧）で、編集ごとに
+4 万地物を写さない——`history().bytes` が**実際に持っている量**を述べるので、この主張は
+確かめられる。⚠ **編集できないものが、この層の要点である**——**処理の出力**は provenance が
+レシピで `setParams` が走り直すので編集が黙って消える、**格子**は画素であって属性ではない、
+**`stale` な記録**は編集すると古さが見えなくなる。取り消しは**セッション限り**（保存は
+取り込みを本体ごと書くので編集済みの値は既に保存に入っており、取り消し履歴まで保存すると
+新しい写しを落とした瞬間に**地物と一致しない履歴**を IndexedDB が持つことになる）。
+⚠ **読者は列の型と単位を `declareField` で宣言できるが、型は実データで検証する**——
+成り立たない宣言は受け取らない（単位は誰も検証できないので、宣言であることが分かる形で運ぶ）。
+
+**⚠ 取り込んだレイヤーは属性で塗れる**（`js/map-ui.js` の `window.GeoJSONUpload`）。
+`style(ref, spec)` / `styleOf` / `classify` / `find` / `link`。**分類器 `classify` は純粋**で、
+DOM もレンダラも言語も読まず、「これは空か・これは数か・この列は数値か」の 3 つを
+`IntMapData` から**渡してもらう**——ここで 2 つ目の「これは数か」を書くと、パネルでは比較できて
+地図では塗れない列が生まれる。`categorical` は多い順、`graduated` は分位または等間隔で、
+色は**レイヤー自身の色を白へ寄せた単一色相の梯子**。⚠ **凡例と地図の塗りは同じ 1 つの
+`legend` から作る**（別々に計算すると必ず離れる）。欠損は専用の色で、**潰れた区分の数**
+（`collapsed`）と**畳んだ「その他」**は黙らずに凡例へ出る。レンダラが塗りを受け取らなければ
+`style()` は**元へ戻す**——受け取られなかった着色を凡例が主張しない。
+⚠ **描かれたレイヤーとデータセットは識別子で結ぶ**（`link`／`draw()` の `datasetId`）。
+題名で突き合わせると、同名の 2 ファイルの片方に誤って塗る。
+⚠ **登録に失敗したことは読者に言う**——モジュールが来なかった・レジストリが受け取らなかったの
+2 つを名指して述べる（レイヤーは失わない。以前はどちらも無言で、「地図には出たのに分析に
+使えない」が外から分からなかった）。
+
 **⚠ `crs` は常に `EPSG:4326`、`sourceCrs` は「ファイルが名乗ったもの」。** GeoJSON（RFC 7946 §4）・KML・
 GPX は仕様が WGS 84 を固定しているので `EPSG:4326`、区切りテキストは **`null`＝「名乗っていない」**。
 既定値を入れて「4326 だった」と主張しない。パネルは `sourceCrs` を**「述べていない」「そのまま」
@@ -1862,7 +1934,20 @@ GPX は仕様が WGS 84 を固定しているので `EPSG:4326`、区切りテ�
 （`proj4.defs(code)` に訊く）／② UTM の**算術**（EPSG は 326NN を WGS 84 / UTM zone NN 北、327NN を
 同 南に割り当てる。これは EPSG が公表している式であって一覧ではない）／③ 読者が `define(code, text)`
 で渡した WKT・proj 文字列（`.prj` ファイルが自分について述べた文）。それ以外は `crs-unknown` で拒む。
+⚠ **規則 ③ の呼び出し元は Shapefile である**——`js/geo-import.js` は `.prj` の本文を、変換の前に、
+`proj4` が知っている番号かどうかに関わらず `define()` へ渡す。内蔵の表が断る国家座標系も、
+**ファイル自身が自分について述べた定義**から正しく読める（GeoJSON の `crs` メンバに与えている
+のと同じ扱い）。AUTHORITY を持たない `.prj` に EPSG 番号は発明せず、`PRJ:<base>` と名乗る。
 出力は常に `[lng, lat]` で、変換後に |lat| > 90 になったら `crs-axis-suspect` で拒む。
+
+**⚠ 中止と進捗は、保存と再計算にも通っている。** `IntMapGisProject.setParams(id, params, opts)` と
+`load(id, opts)` が `{signal, onProgress}` を取り、`IntMapGisOps.run()` へ渡す——中断できる
+走者を持っているだけでは足りず、**渡す呼び出し元が要る**（渡されなければ、引数を変えた読者の
+画面は止まったままで、パネルが描く中止ボタンは効かない）。進捗は「何段目か」と「その段のどこか」の 2 つで、後者は数え直さず
+`js/gis-ops.js` の報告をそのまま通す。⚠ **中止は取り消しではない**——既に終わった段はその
+まま残り（その features は新しい引数に対する答えである）、止まるのは残りで、残りは失敗と
+同じように `stale` になる。⚠ 保存の読み込みを中止したときも、**残りの段は 1 つずつ名指して**
+返す（「中止しました」だけでは、どのレイヤーが無いのか読者に言えない）。
 
 **⚠ 失敗した段は、消えるのではなく `stale` になる。** `IntMapGisProject.setParams` は
 commit-or-restore——失敗したら元のレコードを戻したうえで `stale` を立て、**下流にも伝播**する

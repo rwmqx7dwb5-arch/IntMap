@@ -338,14 +338,14 @@ export function makeGisProject() {
        whose third op needs a capability this build does not have should still give the reader back
        the two imports and everything else — but every failure is named, and `ok` is false whenever
        there is one. A resolved `ok:true` here means the whole project is back. */
-    function restoreStep(reg, step) {
+    function restoreStep(reg, step, opts) {
       if (step.kind === 'op') {
         const O = ops();
         if (!O || typeof O.run !== 'function') return Promise.resolve({ ok: false, why: 'ops-unavailable' });
         try { reg.remove(step.id); } catch (_) { }
         return Promise.resolve(O.run({
           id: step.id, op: step.op, inputs: step.inputs || [], params: step.params || {}, title: step.title,
-        })).then((res) => {
+        }, opts || null)).then((res) => {
           if (res && res.ok) return { ok: true };
           return { ok: false, why: (res && res.why) || 'op-failed', detail: res && res.detail };
         }, (e) => ({ ok: false, why: 'op-failed', detail: errText(e) }));
@@ -384,7 +384,12 @@ export function makeGisProject() {
       }
     }
 
-    function load(id) {
+    /* `opts` is `{signal, onProgress}`, for the same reason setParams takes one (#R738): a saved
+       project's ops are re-RUN on load, so opening a project with a heavy chain in it holds the thread
+       exactly as changing a parameter does. ⚠ A cancelled load stops replaying and says so; what was
+       already restored stays, because those records are complete — a half-restored project that threw
+       its own restored steps away would answer the reader's stop with a bigger loss than the wait. */
+    function load(id, opts) {
       const reg = registry();
       if (!reg) return Promise.resolve({ ok: false, why: 'registry-missing', restored: 0, failed: [] });
       if (!available()) return Promise.resolve({ ok: false, why: 'storage-unavailable', restored: 0, failed: [] });
@@ -395,10 +400,21 @@ export function makeGisProject() {
         if (!rec || !Array.isArray(rec.steps)) return { ok: false, why: 'not-found', restored: 0, failed: [] };
         const failed = [];
         let restored = 0;
-        return rec.steps.reduce((chain, step) => chain.then(() => restoreStep(reg, step).then((res) => {
-          if (res.ok) restored++;
-          else failed.push({ id: step.id, why: res.why, detail: res.detail || null });
-        })), Promise.resolve()).then(() => ({ ok: failed.length === 0, id: rec.id, restored, failed }));
+        const sig = (opts && opts.signal) || null;
+        const onp = (opts && typeof opts.onProgress === 'function') ? opts.onProgress : null;
+        const steps = rec.steps.length;
+        let cancelled = false;
+        return rec.steps.reduce((chain, step, i) => chain.then(() => {
+          /* ⚠ EVERY REMAINING STEP IS NAMED, not just the one the stop landed on. A caller told only
+             「中止しました」 cannot tell the reader which of their saved layers are missing, and the
+             steps after a cancel are missing for exactly the same reason as the first. */
+          if (sig && sig.aborted) { cancelled = true; failed.push({ id: step.id, why: 'cancelled', detail: { step: i + 1, steps: steps } }); return; }
+          if (onp) { try { onp({ step: i + 1, steps: steps, id: step.id, op: step.op || null, done: null, total: null }); } catch (_) { } }
+          return restoreStep(reg, step, { signal: sig, onProgress: (inner) => { if (onp) { try { onp({ step: i + 1, steps: steps, id: step.id, op: step.op || null, done: inner.done, total: inner.total }); } catch (_) { } } } }).then((res) => {
+            if (res.ok) restored++;
+            else failed.push({ id: step.id, why: res.why, detail: res.detail || null });
+          });
+        }), Promise.resolve()).then(() => ({ ok: failed.length === 0, id: rec.id, restored, failed, cancelled: cancelled }));
       });
     }
 
@@ -436,7 +452,19 @@ export function makeGisProject() {
       return order;
     }
 
-    function setParams(datasetId, params) {
+    /* ⚠ `opts` IS `{signal, onProgress}` AND IT IS NOT DECORATION (#R738). #R735 built the interruptible
+       runner in js/gis-ops.js — `run(step, {signal, onProgress})`, yielding by elapsed milliseconds —
+       and then NOTHING passed it: the only caller in the whole program that handed over a signal was a
+       check. So a reader who changed a radius on a chain over 40,000 polygons got the same frozen tab
+       #R735 says it removed, and the stop button the panel could have drawn would have been a control
+       with no effect. The same defect this project keeps recording (「完成した配線が通電しているか」)
+       — a capability that exists, is tested, is documented, and is reached by no one.
+
+       ⚠ CANCELLING IS NOT UNDOING. Steps that already committed stay committed: their features ARE the
+       answer to the new parameters. What the cancel stops is the rest of the chain, and those records
+       are marked `stale` exactly as a failure marks them — because 「計算し直していない」 is the same
+       fact about them whether the reader stopped it or the op refused. */
+    function setParams(datasetId, params, opts) {
       const reg = registry();
       if (!reg) return Promise.resolve({ ok: false, why: 'registry-missing', rebuilt: [], failed: [] });
       const target = reg.get(datasetId);
@@ -502,7 +530,18 @@ export function makeGisProject() {
 
       const rebuilt = [], failed = [];
       let stopped = false;
-      return plan.reduce((chain, step) => chain.then(() => {
+      /* The chain's own progress, around each op's. A reader watching 「3 / 7 · 12,400 / 40,000」 is
+         told two different things — which step, and where inside it — and only the first of those is
+         knowable here. ⚠ The inner report is passed through rather than re-counted: js/gis-ops.js
+         yields on elapsed time, so the count it reports is the only one that exists. */
+      const sig = (opts && opts.signal) || null;
+      const onp = (opts && typeof opts.onProgress === 'function') ? opts.onProgress : null;
+      const steps = plan.length;
+      const report = (i, step, inner) => {
+        if (!onp) return;
+        try { onp({ step: i + 1, steps: steps, id: step.id, op: step.op, done: inner ? inner.done : null, total: inner ? inner.total : null }); } catch (_) { }
+      };
+      return plan.reduce((chain, step, i) => chain.then(() => {
         /* ⚠ THE STEPS BELOW A FAILURE ARE NOT MERELY «not re-run». They still hold the output of the
            OLD parameters, and until #R732 nothing in the registry said so: the panel listed them,
            draw() drew them and the next op consumed them, all as if they answered the recipe the
@@ -513,9 +552,20 @@ export function makeGisProject() {
           try { reg.invalidate(step.id, 'upstream-failed'); } catch (_) { }
           return;
         }
+        /* ⚠ ASKED BEFORE THE RECORD IS REMOVED. A cancel noticed after the removal would have to put
+           the snapshot back to say the same thing; asked here, the record is never disturbed at all,
+           and the reader who pressed stop between steps loses nothing that was already there. */
+        if (sig && sig.aborted) {
+          stopped = true;
+          failed.push({ id: step.id, why: 'cancelled', detail: { step: i + 1, steps: steps } });
+          try { reg.invalidate(step.id, 'cancelled'); } catch (_) { }
+          return;
+        }
+        report(i, step, null);
         const held = snapshot(step.id);
         try { reg.remove(step.id); } catch (_) { }
-        return Promise.resolve(O.run({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title }))
+        return Promise.resolve(O.run({ id: step.id, op: step.op, inputs: step.inputs, params: step.params, title: step.title },
+          { signal: sig, onProgress: (inner) => report(i, step, inner) }))
           .then((res) => {
             if (res && res.ok) { rebuilt.push(step.id); return; }
             stopped = true;

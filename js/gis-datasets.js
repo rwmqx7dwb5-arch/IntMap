@@ -54,6 +54,36 @@
  *  ⚠ FEATURES ARE BEHIND A FUNCTION. A dataset may hold tens of thousands of features; the list
  *  panel, the chain view and the query bridge all want the METADATA and not the geometry.
  *  features() is the only door that materialises it, so «what datasets exist» costs nothing.
+ *
+ *  ══ #R738 — A TABLE WITH NO GEOMETRY, AND VALUES THE READER CAN CHANGE ════════════════════════
+ *  ⚠ THERE IS NO THIRD PAYLOAD, AND THAT IS A DECISION. 「座標を持たない統計表」 is a vector record
+ *  whose features carry `geometry:null`: the rows are rows, so filter, timeWindow, the query bridge,
+ *  the project save, provenance, lineage and `stale` all work on it with NOT ONE LINE ADDED. A
+ *  `kind:'table'` would have meant repeating, for a third payload, the per-slot `kinds` sorting that
+ *  #R735 had to do across nine ops when the grid arrived — and it would have made 「幾何を持つ行と
+ *  持たない行が混ざった 1 つのファイル」 unrepresentable, which is what a CSV with blank coordinate
+ *  cells actually is. What such a record DOES need is a field that says so, because `geometryType`
+ *  cannot: it answers `null` for 「地物が 0 件」 and `null` for 「4 万行あるがどれも幾何を持たない」,
+ *  and an op that needs shapes has to tell those apart. So `withGeometry` is MEASURED next to
+ *  `count` — not taken from what the caller declared, the same rule the fields and the time
+ *  declaration follow. `count - withGeometry` is the number of rows with nothing to draw, and a
+ *  record where both are non-zero states the mixture rather than picking a side.
+ *  ⚠ IT IS NULL ON A RASTER, not 0 — see addRaster.
+ *
+ *  ⚠ VALUES CAN BE EDITED, AND WHAT THE EDIT LAYER REFUSES IS THE POINT OF IT (see editable()):
+ *  an op's output is not editable, because its provenance is a RECIPE and js/gis-project.js re-runs
+ *  it — an edit there would be silently erased by the next setParams, and until then the record
+ *  would no longer be what its own recipe produces. A grid is not editable (pixels are not
+ *  attributes). A `stale` record is not editable, for the reason js/gis-ops.js refuses it as an
+ *  input: the staleness would stop being visible.
+ *  ⚠ UNDO IS THE INVERSE OPERATION, NOT A SNAPSHOT. The history holds {index, field, previous value}
+ *  and, for a column, the sparse list of the cells that were actually there. A snapshot per edit
+ *  would be 40,000 features copied twenty times to undo twenty cells; history().bytes measures what
+ *  is actually held, so the claim is checkable rather than asserted here.
+ *  ⚠ UNDO LIVES IN THE SESSION ONLY. js/gis-project.js saves an import as its BODY (features
+ *  verbatim, via rec.features()), so an edited value is already in the save — but a saved undo stack
+ *  would be a second history of a file whose features it no longer matches the moment the reader
+ *  drops a newer copy, and IndexedDB would be holding the reader's keystrokes rather than their data.
  * ==========================================================================*/
 
 export function makeGisDatasets() {
@@ -177,6 +207,19 @@ export function makeGisDatasets() {
         else if (kind !== base) return 'Mixed';
       }
       return kind;
+    }
+
+    /* How many features actually carry a shape (#R738). ⚠ A ROW WITH NO GEOMETRY DOES NOT VOTE ON
+       `geometryType` — 'Mixed' is the claim «two KINDS of shape are present», and answering it for a
+       statistical table with one point in it would refuse that table from every op that needs
+       polygons for a reason that is not true. So the absence is counted instead, beside `count`:
+       `withGeometry === 0 && count > 0` is 「幾何を持たない行の束」, `0 < withGeometry < count` is a
+       file where some rows have coordinates and some do not, and `count === 0` is an empty record.
+       None of those three can be told apart from `geometryType` alone, which is null for all of them. */
+    function countWithGeometry(features) {
+      let n = 0;
+      for (const f of features) if (f && f.geometry && f.geometry.type) n++;
+      return n;
     }
 
     /* ── time ───────────────────────────────────────────────────────────────────────────────────
@@ -412,6 +455,9 @@ export function makeGisDatasets() {
         geometryType: geometryKind(features),
         fields: describeFields(features),
         count: features.length,
+        /* Measured, never taken from the caller (#R738). See countWithGeometry: this is the only
+           field that separates 「行はあるが幾何が無い」 from 「地物が 0 件」. */
+        withGeometry: countWithGeometry(features),
         /* The verified declaration, or null — and the refusal next to it when a caller stated one
            that the data does not bear out. See declareTime(). */
         time: declared.time,
@@ -490,6 +536,12 @@ export function makeGisDatasets() {
           name: String((b && b.name) || ('band' + (i + 1))),
           type: 'number', band: i,
           unit: (b && b.unit != null) ? String(b.unit) : null,
+          /* ⚠ WHO SAID THE UNIT (#R738). A band's unit arrived WITH the grid — the GeoTIFF, the
+             sampler, the layer that was baked — whereas a vector column's unit can only have been
+             typed by the reader (declareField). Nothing can verify either one, so the one thing this
+             record can honestly carry is the author; leaving both in one `unit` field with no author
+             would let a panel present a reader's guess as the source's statement. */
+          unitStated: (b && b.unit != null) ? 'source' : null,
         })),
         /* `geometryType` is stated as the empty answer rather than left undefined: the panel and
            js/gis-project.js read it on every record, and «a grid has no geometry type» is a different
@@ -501,6 +553,12 @@ export function makeGisDatasets() {
            a declared range nobody measured would be the shape #R735 removed elsewhere). */
         geometryType: null,
         count: src.width * src.height,
+        /* ⚠ NULL, NOT 0 (#R738). `count` here is PIXELS, so «0 of them carry geometry» would read
+           exactly like 「行はあるが幾何を持たない統計表」 — the record this field exists to name. A
+           grid has no features at all, so the question does not apply to it, and null is how this
+           file already spells that. A reader of this field asks about `kind` first:
+           `kind === 'vector' && withGeometry === 0 && count > 0` is the tabular case. */
+        withGeometry: null,
         time: declared.time,
         timeRefused: declared.refused,
         provenance: src.provenance || { kind: 'unknown' },
@@ -518,6 +576,9 @@ export function makeGisDatasets() {
       const rec = DS.get(id);
       if (!rec) return false;
       DS.delete(id);
+      /* The edit history and the reader's declarations belong to THIS record. They are dropped with
+         it — an id is never reissued (claimId), so nothing can inherit them. */
+      EDITS.delete(id);
       emit('remove', rec);
       return true;
     }
@@ -568,6 +629,456 @@ export function makeGisDatasets() {
       return touched;
     }
 
+    /* ── 属性の編集と、その取り消し（#R738）────────────────────────────────────────────────────
+       Everything a reader does to the VALUES goes through this block: declaring what a column is,
+       changing a cell, adding / removing / renaming a column, and stepping back out of any of it.
+
+       ⚠ WHAT IT REFUSES IS THE FEATURE. The registry's whole claim is that a record is what its
+       provenance says it is; three kinds of record cannot be edited without making that false, and
+       each is refused BY NAME rather than half-working:
+
+         edit-would-contradict-recipe  provenance.kind === 'op'. The record is the output of a recipe
+                                       js/gis-project.js re-runs; setParams would erase the edit
+                                       without telling anyone, and until it did, 「この地物はこの
+                                       レコードのレシピが出すもの」 would be a lie. `detail` names the
+                                       record and its op so the caller can offer 「編集できる複製を
+                                       作る」 — which is an op's job or the panel's, not this file's.
+         edit-needs-features           kind !== 'vector'. A grid's samples are not attributes, and
+                                       this file does not touch samples at all (that is raster()'s door).
+         input-stale                   SPELT THE WAY js/gis-ops.js SPELLS IT, and refused for the same
+                                       reason: the features are the answer to parameters that have
+                                       already changed, and editing them is the one place where that
+                                       stops being visible. Two spellings of one fact would reach the
+                                       reader as two facts, one of them with no sentence (#R729).
+
+       ⚠ AND EDITING INVALIDATES WHAT WAS MADE FROM IT. A buffer computed from these rows is no
+       longer the answer to its own recipe once a row changes, so every dependent is marked `stale`
+       with `input-edited` and the reader re-runs it (js/gis-project.js setParams) — the same
+       machinery a changed parameter uses. Doing nothing here would leave outputs that look current
+       and were computed from values that no longer exist, which is exactly §4.1's defect.
+
+       ⚠ THE DECLARATIONS AND THE HISTORY DO NOT SURVIVE A RELOAD, and that asymmetry is deliberate:
+       js/gis-project.js saves an import as its BODY (`features: rec.features()`), so the EDITED
+       VALUES are saved — they are the data — while a declaration is re-askable in one call and an
+       undo stack is keystrokes. */
+
+    /* id → { undo:[entry], redo:[entry], declared: Map(name → {type, unit}) }. Held beside the
+       records rather than on them so that describe() — which is what the panel lists and the save
+       file writes — stays the metadata it was. */
+    const EDITS = new Map();
+    const EDIT_TYPES = ['number', 'date', 'text'];
+    /* undo of an add is a remove and vice versa; a rename and a value edit invert to themselves. */
+    const OPPOSITE = { values: 'values', 'add-field': 'remove-field', 'remove-field': 'add-field', 'rename-field': 'rename-field' };
+
+    function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+    function editState(id) {
+      let s = EDITS.get(id);
+      if (!s) { s = { undo: [], redo: [], declared: new Map() }; EDITS.set(id, s); }
+      return s;
+    }
+    /* ⚠ THE CODES THIS LAYER CAN ANSWER WITH, DECLARED (#R738). Every refusal here reaches a reader
+       through js/gis-panel.js, and tests/r729-gis-core-checks ④ measures that each one has a sentence
+       — by SCANNING the sources for the spellings it knows (`why:'…'`, `fail('…')`). These go through
+       no(), so the scan found FOUR of the twenty-five and the gate was green over the rest. A scan
+       sees the spellings it was taught; a declaration states the fact. no() refusing an undeclared
+       code is what stops the two from drifting apart. */
+    const REFUSALS = ['no-such-dataset', 'edit-needs-features', 'edit-would-contradict-recipe', 'input-stale',
+      'field-not-named', 'unknown-field', 'nothing-declared', 'field-type-unknown', 'field-type-refused',
+      'unit-not-a-string', 'no-edits', 'index-not-a-number', 'index-out-of-range', 'value-undefined',
+      'field-exists', 'field-in-time-axis', 'field-has-dependents', 'nothing-to-undo', 'nothing-to-redo',
+      'edit-not-reversible', 'time-field-not-named', 'time-field-missing', 'time-kind-unknown',
+      'time-unreadable', 'time-constant-empty'];
+    function no(why, detail) {
+      if (REFUSALS.indexOf(why) < 0) throw new Error('gis-datasets: undeclared refusal code ' + why);
+      return detail ? { ok: false, why, detail } : { ok: false, why };
+    }
+    function copy(v) { try { return JSON.parse(JSON.stringify(v)); } catch (_) { return v; } }
+
+    /* The one gate. Every mutating entry point below asks it first, so a new one cannot be written
+       that forgets one of the three refusals. */
+    function openFor(id) {
+      const rec = DS.get(id);
+      if (!rec) return no('no-such-dataset', { id: id == null ? null : String(id) });
+      if (String(rec.kind || 'vector') !== 'vector') return no('edit-needs-features', { kind: String(rec.kind || '') });
+      const prov = rec.provenance || {};
+      if (prov.kind === 'op') {
+        return no('edit-would-contradict-recipe', {
+          id: rec.id, op: prov.op == null ? null : String(prov.op),
+          inputs: Array.isArray(prov.inputs) ? prov.inputs.slice() : [],
+        });
+      }
+      if (rec.stale) return no('input-stale', { id: rec.id, why: String(rec.stale.why || '') });
+      return { ok: true, rec };
+    }
+
+    function columnValues(features, name) {
+      return features.map((f) => ((f && f.properties) || {})[name]);
+    }
+
+    /* Does the data bear out a declared type? ⚠ `text` always does — every value can be spelt as a
+       string, so refusing it would be refusing a claim that cannot be wrong. `number` and `date` are
+       asked of the SAME readers the measurement uses (asNumber / asDate), which is why a zero-padded
+       column cannot be declared a number: that rule lives in asNumber and is not restated here. */
+    function verifyType(type, values) {
+      if (type === 'text') return { ok: true, bad: 0, checked: 0, example: null };
+      const read = (type === 'number') ? asNumber : asDate;
+      let bad = 0, checked = 0, example = null;
+      for (const v of values) {
+        if (isEmpty(v)) continue;
+        checked++;
+        if (read(v) == null) { bad++; if (example == null) example = (typeof v === 'string') ? v : String(v); }
+      }
+      return { ok: bad === 0, bad, checked, example };
+    }
+
+    /* Put the reader's declarations back onto the freshly measured fields, and DROP a type
+       declaration the data no longer bears out. ⚠ Leaving it would be the defect this file was
+       written against: a column that says `number` because somebody once said so, over cells that
+       are not numbers. The measured `type` is never overwritten — a reader must be able to see
+       「測ると text、読者が number と宣言」 as two facts. */
+    function applyDeclarations(rec) {
+      const s = EDITS.get(rec.id);
+      if (!s || !s.declared.size) return;
+      const features = rec.features();
+      for (const col of rec.fields) {
+        const d = s.declared.get(col.name);
+        if (!d) continue;
+        if (d.unit != null) { col.unit = d.unit; col.unitStated = 'reader'; }
+        /* ⚠ A REFUSAL STICKS UNTIL THE READER DECLARES AGAIN. It is held in the declaration state,
+           not only written onto the field — `fields` is rebuilt from scratch on every re-measure, so
+           a mark that lived only there would vanish on the NEXT edit and the column would quietly
+           go back to looking as though nothing had ever been declared about it. */
+        if (d.refused) col.typeRefused = copy(d.refused);
+        if (!d.type) continue;
+        const v = verifyType(d.type, columnValues(features, col.name));
+        if (v.ok) { col.typeStated = d.type; col.typeStatedBy = 'reader'; }
+        else {
+          const r = { type: d.type, bad: v.bad, checked: v.checked, example: v.example };
+          col.typeRefused = r;
+          s.declared.set(col.name, { type: null, unit: d.unit, refused: r });
+        }
+      }
+    }
+
+    /* ⚠ THE TIME DECLARATION IS RE-VERIFIED AFTER AN EDIT, because it was verified against cells the
+       reader has just changed: a column of years edited into 「明治22年」 is no longer a time axis,
+       and a track whose parallel array was touched may no longer line up with its positions. The
+       verified shape carries the same field names declareTime reads, so it is asked again with
+       itself. ⚠ `constant` is skipped — it names no column, so no edit can affect it, and its
+       start/end are already milliseconds, which momentOf would refuse as a year. */
+    function reverifyTime(rec) {
+      const t = rec.time;
+      if (!t || t.kind === 'constant') return;
+      const again = declareTime(t, rec.features());
+      rec.time = again.time;
+      rec.timeRefused = again.refused;
+    }
+
+    /* Everything the record states about its own contents, measured again. */
+    function remeasure(rec) {
+      const features = rec.features();
+      rec.count = features.length;
+      rec.withGeometry = countWithGeometry(features);
+      rec.geometryType = geometryKind(features);
+      rec.fields = describeFields(features);
+      applyDeclarations(rec);
+      reverifyTime(rec);
+    }
+
+    /* ⚠ THE READER'S HAND IS VISIBLE WITHOUT THE RECIPE CHANGING KIND. An import's provenance stays
+       `{kind:'import', …}` — the bytes are still where this data came from, and calling it something
+       else would make lineage() and the save file describe an origin that does not exist. What is
+       added is the fact that somebody has since changed values in it, which a reader looking at a
+       number on a map needs and which nothing else in the record would say. */
+    function noteEdit(rec) {
+      let prov = rec.provenance;
+      if (!prov || typeof prov !== 'object') { prov = { kind: 'unknown' }; rec.provenance = prov; }
+      let e = prov.edits;
+      if (!e || typeof e !== 'object') { e = { count: 0, lastAt: null }; prov.edits = e; }
+      e.count = (typeof e.count === 'number' && isFinite(e.count) ? e.count : 0) + 1;
+      e.lastAt = Date.now();
+    }
+
+    function cellsOf(payload) {
+      if (!payload) return 0;
+      if (payload.kind === 'values') return payload.items.length;
+      if (payload.kind === 'column-restore') return payload.items.length;
+      return 0;
+    }
+
+    function moveDeclaration(id, from, to) {
+      const s = EDITS.get(id);
+      if (!s) return;
+      const d = s.declared.get(from);
+      if (!d) return;
+      s.declared.delete(from);
+      if (to) s.declared.set(to, d);
+    }
+
+    function renameOn(features, from, to) {
+      for (const f of features) {
+        const p = f && f.properties;
+        if (!p || !hasOwn(p, from)) continue;
+        p[to] = p[from];
+        delete p[from];
+      }
+    }
+
+    /* ⚠ THE HISTORY IS OPERATIONS, NOT STATES. Applying a payload mutates the features and RETURNS
+       the payload that undoes what it just did — so undo and redo are the same code path, the stack
+       holds one entry per edit whatever the dataset's size, and nothing here ever copies a feature.
+       A cell that did not exist before is restored to not existing (`had`), because creating it with
+       `null` would add a column value nobody typed. */
+    function applyPayload(rec, p) {
+      const features = rec.features();
+      if (p.kind === 'values') {
+        const back = [];
+        for (const it of p.items) {
+          const f = features[it.index];
+          if (!f) continue;
+          if (!f.properties) f.properties = {};
+          const had = hasOwn(f.properties, it.field);
+          back.push({ index: it.index, field: it.field, had, value: had ? f.properties[it.field] : null });
+          if (it.had) f.properties[it.field] = it.value; else delete f.properties[it.field];
+        }
+        return { kind: 'values', items: back };
+      }
+      if (p.kind === 'column-remove') {
+        const items = [];
+        for (let i = 0; i < features.length; i++) {
+          const pr = features[i] && features[i].properties;
+          if (!pr || !hasOwn(pr, p.name)) continue;
+          items.push({ index: i, value: pr[p.name] });
+          delete pr[p.name];
+        }
+        moveDeclaration(rec.id, p.name, null);
+        return { kind: 'column-restore', name: p.name, items };
+      }
+      if (p.kind === 'column-restore') {
+        for (const it of p.items) {
+          const f = features[it.index];
+          if (!f) continue;
+          if (!f.properties) f.properties = {};
+          f.properties[p.name] = it.value;
+        }
+        return { kind: 'column-remove', name: p.name };
+      }
+      if (p.kind === 'column-rename') {
+        renameOn(features, p.from, p.to);
+        moveDeclaration(rec.id, p.from, p.to);
+        return { kind: 'column-rename', from: p.to, to: p.from };
+      }
+      return null;
+    }
+
+    /* One exit for every mutation: record the inverse, re-measure, say so, and mark the things that
+       were made from this record as no longer being the answer to their own recipes. */
+    function commitEdit(rec, kind, count, undoPayload) {
+      const s = editState(rec.id);
+      s.undo.push({ at: Date.now(), kind, count, cells: cellsOf(undoPayload), undo: undoPayload });
+      /* A new edit ends the redo branch — redoing after it would apply an inverse computed against
+         values that no longer exist. */
+      s.redo.length = 0;
+      remeasure(rec);
+      noteEdit(rec);
+      emit('edit', rec);
+      for (const d of dependents(rec.id)) invalidate(d.id, 'input-edited');
+    }
+
+    function fieldNames(rec) { return rec.fields.map((f) => f.name); }
+    function hasField(rec, name) { return rec.fields.some((f) => f.name === name); }
+
+    /* Which of the time declaration's columns this name is, or null. ⚠ Removing or renaming one of
+       them would leave `time` naming a column that is not there — a declaration about nothing, which
+       is the shape §1.5 exists to prevent. Refused rather than quietly rewritten: which column the
+       axis should be instead is the reader's statement to make. */
+    function timeAxisUse(rec, name) {
+      const t = rec.time;
+      if (!t) return null;
+      for (const k of ['field', 'startField', 'endField', 'timesField', 'elevationField']) {
+        if (t[k] && t[k] === name) return k;
+      }
+      return null;
+    }
+
+    function declareField(id, name, spec) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      const rec = g.rec;
+      if (typeof name !== 'string' || name === '') return no('field-not-named');
+      if (!hasField(rec, name)) return no('unknown-field', { field: name, fields: fieldNames(rec) });
+      const want = (spec && typeof spec === 'object') ? spec : {};
+      const hasType = want.type != null, hasUnit = want.unit != null;
+      if (!hasType && !hasUnit) return no('nothing-declared', { field: name });
+
+      let type = null;
+      if (hasType) {
+        type = String(want.type);
+        if (EDIT_TYPES.indexOf(type) < 0) return no('field-type-unknown', { field: name, type, types: EDIT_TYPES.slice() });
+        /* ⚠ VERIFIED AGAINST THE DATA, WITH THE EVIDENCE IN THE REFUSAL. A declaration stored on the
+           caller's word is a claim with no author behind it, and the reader cannot fix what they are
+           not shown — so the count of cells that are not of that type, and one of them, come back. */
+        const v = verifyType(type, columnValues(rec.features(), name));
+        if (!v.ok) return no('field-type-refused', { field: name, type, bad: v.bad, checked: v.checked, example: v.example });
+      }
+
+      let unit = null;
+      if (hasUnit) {
+        if (typeof want.unit !== 'string' && typeof want.unit !== 'number') return no('unit-not-a-string', { field: name });
+        unit = String(want.unit).trim();
+        if (unit === '') return no('unit-not-a-string', { field: name });
+      }
+
+      const s = editState(id);
+      const prev = s.declared.get(name) || { type: null, unit: null, refused: null };
+      s.declared.set(name, {
+        type: hasType ? type : prev.type,
+        unit: hasUnit ? unit : prev.unit,
+        /* A type that has just been verified answers the earlier refusal; a unit-only declaration
+           says nothing about it and leaves it standing. */
+        refused: hasType ? null : (prev.refused || null),
+      });
+      /* ⚠ NOT AN ENTRY IN THE UNDO STACK, and not a reason to invalidate what was made from this
+         record. A declaration changes nothing in the data: js/gis-ops.js compares through asNumber
+         whatever a column is called, so no downstream answer moves. Its own inverse is one more call
+         to this function, and putting it on the stack would make 「取り消し」 sometimes step back
+         over a value and sometimes over a label. */
+      const before = rec.fields.find((f) => f.name === name);
+      if (before && hasType) { delete before.typeRefused; }
+      applyDeclarations(rec);
+      emit('edit', rec);
+      return { ok: true, field: copy(rec.fields.find((f) => f.name === name)) };
+    }
+
+    function editValues(id, edits) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      const rec = g.rec, features = rec.features();
+      if (!Array.isArray(edits) || !edits.length) return no('no-edits');
+
+      /* ⚠ EVERY EDIT IS CHECKED BEFORE ANY IS APPLIED. A batch that stops halfway leaves the record
+         in a state the reader did not ask for and the undo stack does not describe. */
+      const plan = [];
+      for (const e of edits) {
+        const idx = (e && typeof e.index === 'number' && Number.isInteger(e.index)) ? e.index : null;
+        if (idx == null) return no('index-not-a-number', { index: (e && e.index) == null ? null : String(e.index) });
+        if (idx < 0 || idx >= features.length) return no('index-out-of-range', { index: idx, count: features.length });
+        const field = e.field;
+        if (typeof field !== 'string' || field === '') return no('field-not-named');
+        /* ⚠ AN UNKNOWN COLUMN IS NOT CREATED HERE. addField is how a column comes into existence,
+           on every row at once; writing one cell of a name nobody declared would make a column that
+           exists for one feature and is empty for the rest, without the reader asking for it. */
+        if (!hasField(rec, field)) return no('unknown-field', { field, fields: fieldNames(rec) });
+        if (typeof e.value === 'undefined') return no('value-undefined', { index: idx, field });
+        plan.push({ index: idx, field, value: e.value });
+      }
+
+      const back = [];
+      for (const p of plan) {
+        const f = features[p.index];
+        if (!f.properties) f.properties = {};
+        const had = hasOwn(f.properties, p.field);
+        back.push({ index: p.index, field: p.field, had, value: had ? f.properties[p.field] : null });
+        f.properties[p.field] = p.value;
+      }
+      commitEdit(rec, 'values', plan.length, { kind: 'values', items: back });
+      return { ok: true, changed: plan.length, fields: copy(rec.fields) };
+    }
+
+    function addField(id, name, value) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      const rec = g.rec;
+      if (typeof name !== 'string' || name === '') return no('field-not-named');
+      if (hasField(rec, name)) return no('field-exists', { field: name });
+      if (typeof value === 'undefined') value = null;
+      const features = rec.features();
+      for (const f of features) {
+        if (!f) continue;
+        if (!f.properties) f.properties = {};
+        f.properties[name] = value;
+      }
+      commitEdit(rec, 'add-field', features.length, { kind: 'column-remove', name });
+      return { ok: true, field: copy(rec.fields.find((f) => f.name === name)) };
+    }
+
+    function removeField(id, name) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      const rec = g.rec;
+      if (typeof name !== 'string' || name === '') return no('field-not-named');
+      if (!hasField(rec, name)) return no('unknown-field', { field: name, fields: fieldNames(rec) });
+      const axis = timeAxisUse(rec, name);
+      if (axis) return no('field-in-time-axis', { field: name, role: axis, kind: rec.time.kind });
+      /* ⚠ SOMETHING DOWNSTREAM MAY BE READING THIS COLUMN, AND THIS FILE CANNOT TELL. A recipe's
+         params hold column names (aggregate's `field`, dissolve's `by`, filter's `where`), but the
+         answer 「この列は使われていない」 would have to be true for every op that exists TODAY and
+         for the next one — a list this file would have to keep, which is the case-by-case shape
+         .agents/rules/no-ad-hoc-hardcoding.md forbids. Marking the dependents `stale` would be worse
+         than refusing: a re-run of a step whose column is gone does not produce a stale answer, it
+         produces a refusal the reader meets later, with the column already unrecoverable if they
+         have closed the session. So a column with dependents is not removed, and the reader is told
+         what is in the way — deleting those steps is a decision they can still make. */
+      const deps = dependents(id);
+      if (deps.length) return no('field-has-dependents', { field: name, dependents: deps.map((d) => d.id) });
+      const undoPayload = applyPayload(rec, { kind: 'column-remove', name });
+      commitEdit(rec, 'remove-field', undoPayload.items.length, undoPayload);
+      return { ok: true, removed: undoPayload.items.length };
+    }
+
+    function renameField(id, from, to) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      const rec = g.rec;
+      if (typeof from !== 'string' || from === '' || typeof to !== 'string' || to === '') return no('field-not-named');
+      if (!hasField(rec, from)) return no('unknown-field', { field: from, fields: fieldNames(rec) });
+      if (from === to) return no('nothing-declared', { field: from });
+      if (hasField(rec, to)) return no('field-exists', { field: to });
+      /* Same two guards as removeField, and for the same reason: from the outside, a rename IS a
+         removal of that name. */
+      const axis = timeAxisUse(rec, from);
+      if (axis) return no('field-in-time-axis', { field: from, role: axis, kind: rec.time.kind });
+      const deps = dependents(id);
+      if (deps.length) return no('field-has-dependents', { field: from, dependents: deps.map((d) => d.id) });
+      const undoPayload = applyPayload(rec, { kind: 'column-rename', from, to });
+      commitEdit(rec, 'rename-field', 1, undoPayload);
+      return { ok: true, from, to };
+    }
+
+    function step(id, fromKey, toKey) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      const s = editState(id);
+      if (!s[fromKey].length) return no(fromKey === 'undo' ? 'nothing-to-undo' : 'nothing-to-redo');
+      const e = s[fromKey].pop();
+      const back = applyPayload(g.rec, e.undo);
+      if (!back) return no('edit-not-reversible', { kind: e.kind });
+      s[toKey].push({ at: Date.now(), kind: OPPOSITE[e.kind] || e.kind, count: e.count, cells: cellsOf(back), undo: back });
+      remeasure(g.rec);
+      noteEdit(g.rec);
+      emit('edit', g.rec);
+      for (const d of dependents(g.rec.id)) invalidate(d.id, 'input-edited');
+      return { ok: true, applied: e.kind, undo: s.undo.length, redo: s.redo.length };
+    }
+
+    /* What is on the stacks, and HOW MUCH IS ACTUALLY HELD. ⚠ `bytes` is measured, not asserted:
+       the claim 「取り消しはスナップショットを積まない」 is only checkable if the size of the log can
+       be compared against the size of one copy of the features, which is what
+       tests/r737-gis-edits-checks does. It is serialised on demand — the log is small by
+       construction, and a number carried on the record would be a second thing to keep correct. */
+    function history(id) {
+      const s = EDITS.get(id);
+      if (!s) return { undo: 0, redo: 0, bytes: 0, entries: [] };
+      let bytes = null;
+      try { bytes = JSON.stringify({ u: s.undo.map((e) => e.undo), r: s.redo.map((e) => e.undo) }).length; } catch (_) { bytes = null; }
+      return {
+        undo: s.undo.length,
+        redo: s.redo.length,
+        bytes,
+        entries: s.undo.map((e) => ({ at: e.at, kind: e.kind, count: e.count, cells: e.cells })),
+      };
+    }
+
     /* The whole chain that produced a dataset, oldest first — what the reader sees as 「この結果は
        どこから来たか」 and what a saved project replays in order. */
     function lineage(id) {
@@ -612,7 +1123,15 @@ export function makeGisDatasets() {
       /* exposed because js/gis-ops.js must type the columns of its OWN output the same way an import
          is typed — two typing rules would drift, and the drift would show up as a column that can be
          compared in one panel and not in the other */
-      typeColumn, describeFields, geometryKind, asNumber, asDate, isEmpty,
+      typeColumn, describeFields, geometryKind, countWithGeometry, asNumber, asDate, isEmpty,
+      /* (#R738) 属性の編集。⚠ `editable` is the gate the five mutating doors already ask; it is
+         exposed so a panel can DISABLE the control instead of offering an edit that will be refused,
+         and so that the reason (an op's output, a grid, a stale record) is the same sentence in both
+         places. */
+      editable: (id) => { const g = openFor(id); return g.ok ? { ok: true } : g; },
+      declareField, editValues, addField, removeField, renameField, history,
+      undo: (id) => step(id, 'undo', 'redo'),
+      redo: (id) => step(id, 'redo', 'undo'),
       /* The one reader of a `time` declaration (#R735): js/gis-ops.js asks it rather than carrying a
          second interpretation of the four shapes, and the checks measure the same answer the ops use. */
       timeSpan, momentOf, positionCount,

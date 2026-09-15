@@ -2454,18 +2454,201 @@ window.IntMapModules.geojsonUpload=function(HOST){
     /* (#R576) the four shapes this function used to normalise now live in js/geo-import.js's
        GeoJSON decoder, alongside the other formats, so every path gets the same coordinate repair. */
     function fit(fc){ try{ if(typeof turf!=='undefined'){ const bb=turf.bbox(fc); if(bb.every(isFinite) && bb[0]>=-180 && bb[2]<=180) GE().camera.fitBounds([[bb[0],bb[1]],[bb[2],bb[3]]],{padding:60,duration:900,maxZoom:12}); } }catch(_){} }
+    /* ══ (#R738) 属性値による着色 — THE THREE LAYERS ARE NAMED FROM ONE TABLE ═══════════════════
+       An import becomes three layers, and their suffixes used to be spelled out twice (created in
+       addFC, removed in removeItem). Colouring adds a third reader, and a colouring that reached the
+       fill but not the line is exactly the half-done state this round exists to forbid — so the
+       suffix AND the paint property that carries a colour are declared once and all three walk it. */
+    const PARTS=[{sfx:'-fill',paint:'fill-color'},{sfx:'-line',paint:'line-color'},{sfx:'-pt',paint:'circle-color'}];
+    /* ⚠ THESE TWO GREYS ARE NOT CLASSES. 「その他」 is a fold of real values, 「値なし」 is the absence
+       of one, and neither may be read as a step of the ramp — so both come from the iOS system greys
+       (systemGray / systemGray4), of which PALETTE contains none. Missing is the LIGHTER of the two on
+       purpose: a missing cell painted in the darkest — or the first — class colour tells the reader
+       the feature HAS a value, which is the one thing that is certainly untrue about it. */
+    const OTHER_COL='#8e8e93', MISSING_COL='#c7c7cc';
+    /* ⚠ HOW MANY CLASSES — THE NUMBER IS PALETTE.length, AND IT IS NOT A TASTE.
+       OBSERVATION: the app ships exactly one set of distinguishable layer colours, the 8 above.
+       Two classes drawn in the same colour are not two classes, so 8 is where a classification stops
+       being one. A graduated ramp is generated rather than taken from PALETTE, but it is bounded by
+       the same number for the same reason — the legend has to name one colour per class, and the app
+       has no measured claim about how many lightness steps a reader can order beyond the set it
+       already ships. EXPIRES when the app gains a runtime perceptual measure (tests/helpers/
+       colour-difference.js is a test-only helper today); then the bound is measured, not borrowed.
+       ⚠ THE REMAINDER IS NOT DROPPED. Categories past the cap are folded into 「その他」 and the fold
+       states how many values and how many features it swallowed (legendRows below). */
+    const MAX_CLASSES=PALETTE.length;
+    /* A single-hue ordered ramp: the layer's OWN colour mixed toward white. Hue is held constant so
+       the steps can only be read in one order (a cycling palette on ordered data invites the reader
+       to see groups where there is a scale), and the darkest step is the colour the layer already
+       had, so a reader who switches a layer to graduated still recognises which layer it is. */
+    function tint(hex,t){ const m=/^#([0-9a-f]{6})$/i.exec(String(hex||'')); if(!m) return String(hex||OTHER_COL);
+      const v=parseInt(m[1],16), f=(c)=>Math.max(0,Math.min(255,Math.round(255+(c-255)*t)));
+      return '#'+[f((v>>16)&255),f((v>>8)&255),f(v&255)].map(c=>c.toString(16).padStart(2,'0')).join(''); }
+    function ramp(col,k){ const out=[]; for(let i=0;i<k;i++) out.push(tint(col, k<2?1:0.22+(1-0.22)*(i/(k-1)))); return out; }
+    /* ══ THE CLASSIFIER ════════════════════════════════════════════════════════════════════════
+       ⚠ PURE, AND ITS RULES ARE HANDED TO IT. It reads no DOM, no renderer and no language, and the
+       three judgements it needs about VALUES — is this cell empty, is this cell a number, is this
+       column numeric — are passed in rather than re-implemented here. That is the same rule
+       docs/GIS-CORE.md §1.1 states for js/gis-ops.js: a second spelling of 「これは数か」 here would
+       produce a column the panel can compare and the map cannot (「01100」 is the measured case).
+       It is exposed on window.GeoJSONUpload so the panel and the tests call the SHIPPED function
+       rather than a copy — a classifier only reachable through a DOM closure is one nothing can
+       measure, which is how #R575's arithmetic went untested inside a closure.
+       Returns {ok:true,legend} or {ok:false,why,detail}: refusals are CODES, sentences live in
+       styleReason() below (docs/GIS-CORE.md §2.2 — the same split js/geo-import.js uses). */
+    function classify(values,spec,rules){
+      const R=rules||(function(){ try{ return window.IntMapData; }catch(_){ return null; } })();
+      if(!R||typeof R.isEmpty!=='function'||typeof R.typeColumn!=='function'||typeof R.asNumber!=='function') return {ok:false,why:'data-unavailable'};
+      const field=(spec&&spec.field)?String(spec.field):'';
+      if(!field) return {ok:false,why:'no-field'};
+      const vals=Array.isArray(values)?values:[];
+      const mode=(spec&&spec.mode)||'categorical';
+      /* 欠損の集合は先に取り、その綴りも覚える。表現式は文字列で照合するので、空白だけのセルが
+         凡例では欠損・地図では 1 つの分類、という離れ方をここで閉じる。'' は常に入れる——
+         属性そのものが無い地物に対して MapLibre の ['to-string',['get',f]] が返すのがそれ。 */
+      const missKeys=new Set(['']); let missing=0; const present=[];
+      for(const v of vals){ if(R.isEmpty(v)){ missing++; if(typeof v==='string') missKeys.add(v); } else present.push(v); }
+      if(!present.length) return {ok:false,why:'field-empty',detail:{field,total:vals.length,missing}};
+      const base=(spec&&spec.color)||PALETTE[0];
+      const legend={field,mode,method:null,classes:[],other:null,
+        missing:{color:MISSING_COL,count:missing,keys:Array.from(missKeys)},collapsed:0,total:vals.length};
+      if(mode==='categorical'){
+        const counts=new Map();
+        for(const v of present){ const k=String(v); counts.set(k,(counts.get(k)||0)+1); }
+        let keys;
+        if(Array.isArray(spec.values)&&spec.values.length) keys=spec.values.map(String).filter(k=>counts.has(k));
+        else keys=Array.from(counts.keys()).sort((a,b)=>(counts.get(b)-counts.get(a))||(a<b?-1:a>b?1:0));
+        const cap=keys.length>MAX_CLASSES?MAX_CLASSES-1:MAX_CLASSES;   /* one slot kept for 「その他」 */
+        const shown=keys.slice(0,cap), folded=keys.slice(cap);
+        /* spec.values は読者が選んだ並びだが、その値が 1 つもこのデータに無いことはある——
+           そのとき「全部その他」の地図を描くのではなく、着色できないと述べる。 */
+        if(!shown.length) return {ok:false,why:'field-empty',detail:{field,total:vals.length,missing}};
+        legend.classes=shown.map((k,i)=>({keys:[k],label:k,color:PALETTE[i%PALETTE.length],count:counts.get(k)}));
+        if(folded.length) legend.other={color:OTHER_COL,distinct:folded.length,count:folded.reduce((s,k)=>s+counts.get(k),0)};
+        return {ok:true,legend};
+      }
+      if(mode==='graduated'){
+        /* ⚠ 数値かどうかは列の型づけ 1 か所に訊く。ここで parseFloat を書くと「12 km」が 12 になり、
+           先頭ゼロのコード列が尺度を持ったふりを始める（docs/GIS-CORE.md §1.1）。 */
+        const col=R.typeColumn(field,vals);
+        if(!col||col.type!=='number') return {ok:false,why:'field-not-numeric',detail:{field,type:col&&col.type||null,padded:(col&&col.padded)||0}};
+        const nums=[]; for(const v of present){ const n=R.asNumber(v); if(n!=null) nums.push(n); }
+        if(!nums.length) return {ok:false,why:'field-empty',detail:{field,total:vals.length,missing}};
+        nums.sort((a,b)=>a-b);
+        const method=(spec.method==='equal')?'equal':'quantile';
+        const want=Math.max(2,Math.min(MAX_CLASSES,Math.round(Number(spec.classes)||5)));
+        const lo=nums[0], hi=nums[nums.length-1];
+        const raw=[];
+        if(method==='equal'){ for(let i=1;i<want;i++) raw.push(lo+(hi-lo)*(i/want)); }
+        else { for(let i=1;i<want;i++){ const p=(i/want)*(nums.length-1), f=Math.floor(p), fr=p-f;
+          raw.push(nums[f]+((nums[Math.min(f+1,nums.length-1)]-nums[f])*fr)); } }
+        /* ⚠ 潰れた区分は黙って消さない。分位は同値が多いと同じ切れ目を何度も返す——そこで区分を
+           減らすのは正しいが、減ったことを述べないと「5 段で塗った」という嘘が凡例に残る。 */
+        const cuts=[]; for(const c of raw){ if(c>lo&&(!cuts.length||c>cuts[cuts.length-1])) cuts.push(c); }
+        legend.method=method; legend.collapsed=want-(cuts.length+1);
+        const cols=ramp(base,cuts.length+1);
+        legend.classes=cols.map((c,i)=>({color:c,count:0,from:i===0?lo:cuts[i-1],to:i===cuts.length?hi:cuts[i]}));
+        legend.cuts=cuts.slice();
+        for(const n of nums){ let i=0; while(i<cuts.length&&n>=cuts[i]) i++; legend.classes[i].count++; }
+        return {ok:true,legend};
+      }
+      return {ok:false,why:'mode-unknown',detail:{mode}};
+    }
+    /* ══ 地図の式は凡例と同じ 1 つの snapshot から作る（#R650 の教訓）═══════════════════════════
+       描くものと説明するものを別々に計算すると、必ず離れる。だから paintExpr が読むのは classify が
+       返した legend だけで、値にも spec にも触らない。
+       ⚠ `to-number` の扱い: 数値の梯子に入るのは、列の型づけが number と答えた列の、欠損でないセル
+       だけである（欠損は先に ['in'] で分岐して抜ける）。だから to-number が判定を下す機会は無く、
+       「MapLibre は 01100 を数と読み、IntMapData は読まない」という食い違いはここに到達しない。
+       第 2 引数の 0 は到達不能な既定値で、式に既定が要るから置いてある。 */
+    function paintExpr(lg){
+      if(!lg||!lg.classes.length) return null;
+      const key=['to-string',['get',lg.field]], miss=['in',key,['literal',lg.missing.keys]];
+      if(lg.mode==='graduated'){
+        const step=['step',['to-number',['get',lg.field],0],lg.classes[0].color];
+        (lg.cuts||[]).forEach((c,i)=>{ step.push(c,lg.classes[i+1].color); });
+        return ['case',miss,lg.missing.color,step];
+      }
+      const m=['match',key,lg.missing.keys,lg.missing.color];
+      lg.classes.forEach(c=>{ m.push(c.keys.length===1?c.keys[0]:c.keys,c.color); });
+      m.push(lg.other?lg.other.color:lg.missing.color);
+      return m;
+    }
+    /* Repaint all three layers from one value — the item's own colour when nothing is classified,
+       the expression otherwise. ⚠ Returns how many layers actually took it: a legend that claims a
+       colouring the renderer refused is the reverse of this round's point, so style() rolls back
+       when this returns 0, and every individual failure is named to the console. */
+    function applyStyle(it){
+      const v=it.legend?paintExpr(it.legend):it.col; let n=0;
+      PARTS.forEach(p=>{ const id=it.sid+p.sfx;
+        try{ if(GE().layers.has(id)){ GE().layers.setPaint(id,p.paint,v); n++; } }
+        catch(e){ try{ console.warn('[upload] could not paint '+id,e); }catch(_){} } });
+      return n;
+    }
+    function find(ref){ if(ref==null) return null; const s=String(ref);
+      return items.find(it=>it.datasetId&&String(it.datasetId)===s)||items.find(it=>String(it.n)===s)||null; }
+    /* The dataset id the file became, bound to the drawn layer AFTER the fact — addFC runs first
+       (the reader sees the shapes immediately) and the registry answers later, so the binding needs a
+       door of its own. ⚠ By id, never by title: two files with the same name are two datasets. */
+    function link(n,datasetId){ const it=items.find(x=>x.n===n); if(it) it.datasetId=datasetId||null; return !!it; }
+    /* One typing rule for the whole app, fetched on demand: a reader who asks to colour by a column
+       has, by that act, asked for the data layer — so gisCore is loaded rather than refused, and the
+       refusal is kept for the session where it genuinely does not arrive. */
+    async function dataRules(){
+      try{ if(window.IntMapData) return window.IntMapData;
+        const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false;
+        if(ok&&window.IntMapData) return window.IntMapData;
+        try{ console.warn('[upload] gisCore did not arrive; attribute colouring is unavailable'); }catch(_){}
+        return null;
+      }catch(e){ try{ console.warn('[upload] gisCore failed to load',e); }catch(_){} return null; }
+    }
+    /* window.GeoJSONUpload.style(ref, spec) — ref is the import number or the dataset id.
+         null                                       → back to the single colour
+         {field, mode:'categorical', values?}       → one colour per value
+         {field, mode:'graduated', method, classes} → a numeric ladder ('quantile' | 'equal')  */
+    async function style(ref,spec){
+      const it=find(ref); if(!it) return {ok:false,why:'no-such-layer',detail:{ref:String(ref)}};
+      if(spec==null){ it.spec=null; it.legend=null; applyStyle(it); renderList(); return {ok:true,legend:null}; }
+      const R=await dataRules(); if(!R) return {ok:false,why:'data-unavailable'};
+      const feats=(it.fc&&Array.isArray(it.fc.features))?it.fc.features:null;
+      if(!feats) return {ok:false,why:'no-features',detail:{ref:String(ref)}};
+      const c=classify(feats.map(f=>((f&&f.properties)||{})[spec.field]),Object.assign({},spec,{color:it.col}),R);
+      if(!c.ok) return c;
+      it.spec=Object.assign({},spec); it.legend=c.legend;
+      if(!applyStyle(it)){ it.spec=null; it.legend=null; applyStyle(it); renderList(); return {ok:false,why:'paint-failed'}; }
+      renderList(); return {ok:true,legend:c.legend};
+    }
+    function styleOf(ref){ const it=find(ref); return it?{spec:it.spec||null,legend:it.legend||null}:null; }
+    /* The sentences for every code style() and classify() can return. Here, not inside them, for the
+       reason js/geo-import.js gives: a classifier has no business knowing what UI it is in. */
+    function styleReason(why){
+      if(why==='no-such-layer') return window.IntMapLang.t(HOST.lang,"That imported layer is no longer on the map","その取り込みレイヤーは地図にありません");
+      if(why==='data-unavailable') return window.IntMapLang.t(HOST.lang,"The analysis module did not load, so this column cannot be read","分析モジュールを読み込めなかったため、この列を読めません");
+      if(why==='field-not-numeric') return window.IntMapLang.t(HOST.lang,"Graduated colours need a column whose every value is a number","段階着色には、すべての値が数値である列が必要です");
+      if(why==='field-empty') return window.IntMapLang.t(HOST.lang,"This column has no values to colour by","この列には着色に使える値がありません");
+      if(why==='no-field') return window.IntMapLang.t(HOST.lang,"No column was chosen","列が選ばれていません");
+      if(why==='no-features') return window.IntMapLang.t(HOST.lang,"This layer holds no features to colour","このレイヤーには着色できる地物がありません");
+      if(why==='paint-failed') return window.IntMapLang.t(HOST.lang,"The map could not apply this colouring","この着色を地図に適用できませんでした");
+      if(why==='mode-unknown') return window.IntMapLang.t(HOST.lang,"Unknown colouring mode","不明な着色方式です");
+      return window.IntMapLang.t(HOST.lang,"This column could not be coloured","この列で着色できませんでした");
+    }
     /* (#R576) `r` is js/geo-import.js's report. Optional: window.GeoJSONUpload.add(fc,name) is
-       called by other code with a FeatureCollection it built itself, and that still works. */
-    function addFC(fc,name,r){
+       called by other code with a FeatureCollection it built itself, and that still works.
+       (#R738) `opts.datasetId` is optional too, and the return value is new — {n,sid} is how the
+       caller binds the registration that happens after this. Both are additive: js/gis-core.js's
+       draw() calls add(fc,title) with two arguments and behaves exactly as before. */
+    function addFC(fc,name,r,opts){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
-      try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(window.IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return; }
+      try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(window.IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return null; }
       const before = GE().layers.has('tool-poly')?'tool-poly':undefined;
       try{
         GE().layers.add({id:sid+'-fill',type:'fill',source:sid,filter:['==','$type','Polygon'],paint:{'fill-color':col,'fill-opacity':0.22}},before);
         GE().layers.add({id:sid+'-line',type:'line',source:sid,filter:['in','$type','Polygon','LineString'],layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':col,'line-width':2.2}},before);
         GE().layers.add({id:sid+'-pt',type:'circle',source:sid,filter:['==','$type','Point'],paint:{'circle-radius':5,'circle-color':col,'circle-stroke-color':'#fff','circle-stroke-width':1.4}},before);
       }catch(_){}
-      items.push({n,sid,name,col}); renderList(); fit(fc);
+      /* ⚠ the SAME FeatureCollection object the renderer holds, not a copy — colouring has to read the
+         attributes, and a second copy of a 200,000-feature import would double what the tab costs. */
+      items.push({n,sid,name,col,fc,datasetId:(opts&&opts.datasetId)||null,spec:null,legend:null}); renderList(); fit(fc);
       try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}   /* (#R120) uploads join Atlas's "さっき作ったやつ" deixis */
       /* ⚠ (#R576) THE TOAST NAMES WHAT WAS INFERRED, BECAUSE IT WAS INFERRED. When the reader
          drops a CSV, two of its columns were CHOSEN as the coordinates; if the guess is wrong the
@@ -2476,13 +2659,38 @@ window.IntMapModules.geojsonUpload=function(HOST){
       if(r&&r.stats&&r.stats.lat) msg+=' · '+window.IntMapLang.t(HOST.lang,"columns","列","Spalten","столбцы","columnas")+': '+r.stats.lat+' / '+r.stats.lon;
       if(r&&r.stats&&r.stats.dropped>0) msg+=' · '+r.stats.dropped+' '+window.IntMapLang.t(HOST.lang,"skipped","を除外","übersprungen","пропущено","omitidos");
       toast(msg);
+      return {n,sid};
     }
     function removeItem(n){ const i=items.findIndex(x=>x.n===n); if(i<0) return; const it=items[i];
-      [it.sid+'-fill',it.sid+'-line',it.sid+'-pt'].forEach(l=>{ try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
+      PARTS.forEach(p=>{ const l=it.sid+p.sfx; try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
       try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
+    const esc=(s)=>String(s==null?'':s).replace(/[<>&]/g,'');
+    const nfmt=(v)=>{ try{ return Number(v).toLocaleString(window.IntMapLang.locale(HOST.lang),{maximumFractionDigits:3}); }catch(_){ return String(v); } };
+    /* ══ (#R738) 凡例 — 地図が塗ったのと同じ snapshot を読む ════════════════════════════════════
+       ⚠ item.legend is the object paintExpr() was built from. Recomputing the classes here would be
+       the #R650 shape: two calculations of one fact, drifting the first time either is edited. */
+    function legendRows(lg){
+      if(!lg||!lg.classes.length) return '';
+      const note=(s)=>`<div style="font-size:10px;padding:1px 0 1px 18px;color:var(--text-muted);">${esc(s)}</div>`;
+      const row=(color,label,count)=>`<div style="display:flex;align-items:center;gap:6px;font-size:10px;padding:1px 0 1px 18px;color:var(--text-muted);"><span style="width:9px;height:9px;border-radius:2px;background:${esc(color)};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(label)}</span><span style="flex:0 0 auto;">${esc(nfmt(count))}</span></div>`;
+      const out=[];
+      /* ⚠ WHICH METHOD CUT THE CLASSES IS PART OF THE ANSWER. The same column, the same map and the
+         same colours say different things under quantile and equal intervals, so the reader is told
+         which one they are looking at rather than left to assume. */
+      const how=lg.mode==='graduated'
+        ? (lg.method==='equal'?window.IntMapLang.t(HOST.lang,"equal intervals","等間隔"):window.IntMapLang.t(HOST.lang,"quantiles","分位"))
+        : window.IntMapLang.t(HOST.lang,"categories","分類");
+      out.push(note(lg.field+' · '+how));
+      lg.classes.forEach(c=>out.push(row(c.color, c.label!=null?c.label:(nfmt(c.from)+' – '+nfmt(c.to)), c.count)));
+      if(lg.other) out.push(row(lg.other.color, window.IntMapLang.t(HOST.lang,"Other","その他")+' ('+lg.other.distinct+')', lg.other.count));
+      if(lg.missing&&lg.missing.count) out.push(row(lg.missing.color, window.IntMapLang.t(HOST.lang,"No value","値なし"), lg.missing.count));
+      /* 同値が多くて分位が潰れたとき、区分が減ったことを述べる（黙って減らすと凡例が嘘をつく）。 */
+      if(lg.collapsed>0) out.push(note(window.IntMapLang.t(HOST.lang,"Tied values merged classes","同値が多く区分が統合されました")+' (−'+lg.collapsed+')'));
+      return out.join('');
+    }
     function renderList(){ if(!listEl) return;
-      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${String(it.name).replace(/[<>&]/g,'')}</span><button data-rm="${it.n}" title="${window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`).join('');
+      listEl.innerHTML=items.map(it=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:2px 0;"><span style="width:11px;height:11px;border-radius:3px;background:${it.legend&&it.legend.classes.length?'linear-gradient(90deg,'+it.legend.classes.map(c=>c.color).join(',')+')':it.col};flex:0 0 auto;"></span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(it.name)}</span><button data-rm="${it.n}" title="${window.IntMapLang.t(HOST.lang,"Remove","削除","Entfernen","Удалить","Quitar")}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;line-height:1;">×</button></div>`+legendRows(it.legend)).join('');
       listEl.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>removeItem(+b.getAttribute('data-rm'))); }
     /* ══ (#R576) WHY THE FILE COULD NOT BE READ, IN THE READER'S LANGUAGE ═══════════════════
        js/geo-import.js returns a CODE. The sentences are here because a decoder has no business
@@ -2521,7 +2729,39 @@ window.IntMapModules.geojsonUpload=function(HOST){
         if(n&&tot) bits.push(n+'/'+tot);
         if(smp) bits.push(smp);
         return bits.length?head+' ('+bits.join(' · ')+')':head; }
-      if(why==='shapefile') return window.IntMapLang.t(HOST.lang,"Shapefile is not supported yet","Shapefile はまだ対応していません","Shapefile wird noch nicht unterstützt","Shapefile пока не поддерживается","Shapefile aún no es compatible");
+      /* ══ (#R738) THE SHAPEFILE AND THE GeoPackage ════════════════════════════════════════════
+         「まだ対応していません」 was true for the life of this sentence and is not true any more:
+         js/gis-shapefile.js and js/gis-geopackage.js read both, and js/geo-import.js hands their
+         report back UNCHANGED. So their codes arrive here exactly as the CSV decoder's do, and each
+         one has to say what is wrong with the FILE — 「読み込めませんでした」 for twenty-one different
+         causes is the answer this whole table was written to replace.
+         ⚠ `shapefile` survives as the one case where the reader could not be fetched at all: the
+         archive IS a shapefile and this session cannot read it, which is a different fact from any
+         of the six below. */
+      if(why==='shapefile') return window.IntMapLang.t(HOST.lang,"This is a Shapefile, but the module that reads it could not be loaded","これは Shapefile ですが、読み取る部品を読み込めませんでした");
+      if(why==='shapefile-missing-shp') return window.IntMapLang.t(HOST.lang,"The archive has no .shp file in it","この書庫に .shp ファイルがありません");
+      if(why==='shapefile-multiple') return window.IntMapLang.t(HOST.lang,"The archive holds more than one Shapefile — unzip it and add the one you want","この書庫には Shapefile が複数入っています。展開して、必要なものを 1 つ追加してください")+(detail&&Array.isArray(detail.sets)?' ('+detail.sets.slice(0,6).join(', ')+')':'');
+      if(why==='shapefile-type') return window.IntMapLang.t(HOST.lang,"That kind of Shapefile geometry is not one this reader handles","その種類の Shapefile 図形は、この読み取りが扱えないものです")+(detail&&detail.shapeType!=null?' ('+detail.shapeType+')':'');
+      if(why==='shapefile-dbf-field-type') return window.IntMapLang.t(HOST.lang,"A column in the .dbf is of a type this reader will not guess at","'.dbf の列に、この読み取りが推測で扱わない型があります")+(detail&&detail.type?' ('+detail.type+')':'');
+      /* ⚠ THE TWO COUNTS ARE THE SENTENCE. Shapes and attribute rows that disagree mean every row
+         after the gap describes a different place, and a reader shown 「1,742 / 1,741」 can see which
+         of their two files was re-exported. */
+      if(why==='shapefile-count-mismatch') return window.IntMapLang.t(HOST.lang,"The shapes and the attribute rows are different in number, so the attributes would be attached to the wrong shapes","図形の数と属性の行数が違うため、属性が別の図形に付いてしまいます")+(detail&&detail.shapes!=null?' ('+detail.shapes+' / '+detail.records+')':'');
+      if(why==='shapefile-corrupt') return window.IntMapLang.t(HOST.lang,"The Shapefile ends earlier than its own header says it should","Shapefile が、自身のヘッダが述べる長さより前で終わっています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
+      if(why==='gpkg-not-sqlite') return window.IntMapLang.t(HOST.lang,"This is not a SQLite file, so it is not a GeoPackage","これは SQLite ファイルではないため、GeoPackage ではありません");
+      if(why==='gpkg-not-a-geopackage') return window.IntMapLang.t(HOST.lang,"This is a SQLite database, but it holds no GeoPackage contents table","これは SQLite のデータベースですが、GeoPackage の目録表がありません");
+      if(why==='gpkg-truncated'||why==='gpkg-corrupt') return window.IntMapLang.t(HOST.lang,"The GeoPackage ends or breaks part-way through, so the rest cannot be read","GeoPackage が途中で途切れているため、続きを読めません")+(detail&&detail.at!=null?' ('+detail.at+')':'');
+      if(why==='gpkg-page-size') return window.IntMapLang.t(HOST.lang,"The page size in this file's header is not one SQLite defines","このファイルのヘッダのページサイズが、SQLite の定める値ではありません");
+      if(why==='gpkg-wal') return window.IntMapLang.t(HOST.lang,"This GeoPackage was left with a write-ahead log, and the log is not in the file — reopen and close it in the program that wrote it","この GeoPackage には write-ahead log が残っており、その中身がファイルに含まれていません。書き出した側で開き直して閉じてください");
+      if(why==='gpkg-text-encoding') return window.IntMapLang.t(HOST.lang,"This GeoPackage stores its text in an encoding this reader will not guess at","この GeoPackage の文字符号化は、この読み取りが推測で扱わないものです");
+      if(why==='gpkg-schema') return window.IntMapLang.t(HOST.lang,"A table definition in this GeoPackage could not be read, and it was not guessed at","この GeoPackage の表定義を読み取れず、推測もしていません")+(detail&&detail.table?' ('+detail.table+')':'');
+      if(why==='gpkg-no-tables') return window.IntMapLang.t(HOST.lang,"This GeoPackage holds nothing this map can read","この GeoPackage に、この地図が読めるものがありません");
+      if(why==='gpkg-multiple-tables') return window.IntMapLang.t(HOST.lang,"This GeoPackage holds several tables — say which one to read","この GeoPackage には表が複数あります。どれを読むか指定してください")+(detail&&Array.isArray(detail.tables)?' ('+detail.tables.slice(0,6).join(', ')+')':'');
+      if(why==='gpkg-no-such-table') return window.IntMapLang.t(HOST.lang,"There is no readable table of that name in this GeoPackage","その名前の読める表は、この GeoPackage にありません")+(detail&&detail.table?' ('+detail.table+')':'');
+      if(why==='gpkg-tiles-unsupported') return window.IntMapLang.t(HOST.lang,"That table holds map tiles rather than features or values","その表は、地物でも数値でもなく地図タイルを持っています");
+      if(why==='gpkg-geometry-column') return window.IntMapLang.t(HOST.lang,"The column this GeoPackage names as its geometry is not in the table","この GeoPackage が幾何として名指している列が、その表にありません");
+      if(why==='gpkg-geometry-blob') return window.IntMapLang.t(HOST.lang,"A geometry in this GeoPackage is not in the format the standard defines","この GeoPackage の幾何が、規格の定める形になっていません");
+      if(why==='gpkg-geometry-type') return window.IntMapLang.t(HOST.lang,"This GeoPackage uses a geometry type this reader does not draw","この GeoPackage は、この読み取りが描かない種類の幾何を使っています")+(detail&&detail.geometryType?' ('+detail.geometryType+')':'');
       if(why==='too-big') return window.IntMapLang.t(HOST.lang,"File is too large to read","ファイルが大きすぎて読み込めません","Die Datei ist zu groß zum Lesen","Файл слишком велик для чтения","El archivo es demasiado grande");
       if(why==='too-many-features') return window.IntMapLang.t(HOST.lang,"Too many features to draw","地物が多すぎて描画できません","Zu viele Objekte zum Zeichnen","Слишком много объектов для отрисовки","Demasiados elementos para dibujar");
       if(why==='no-valid-coordinates') return window.IntMapLang.t(HOST.lang,"No usable coordinates in this file","このファイルに使える座標がありません","Keine brauchbaren Koordinaten in dieser Datei","В этом файле нет пригодных координат","No hay coordenadas utilizables en este archivo");
@@ -2549,8 +2789,8 @@ window.IntMapModules.geojsonUpload=function(HOST){
         try{ r=await readGeoFile(f); }catch(_){ r={ok:false,why:'unreadable'}; }
         if(!r||!r.ok){ toast(reasonText(r&&r.why,r&&r.detail)); continue; }
         const label=labelFor(f,r);
-        addFC(r.fc, label, r);
-        await registerDataset(r, label, f);
+        const put=addFC(r.fc, label, r);
+        await registerDataset(r, label, f, put&&put.n);
       }
     }
     /* ══ (#R729) THE FILE BECOMES A DATASET, NOT JUST A DRAWING ════════════════════════════════
@@ -2563,17 +2803,47 @@ window.IntMapModules.geojsonUpload=function(HOST){
        on the map, and a registration inside addFC would register that result as a second, freshly
        imported dataset every time the reader drew it. This path is «a file was read», which happens
        exactly once per file. */
-    async function registerDataset(r,label,f){
+    /* ⚠⚠ (#R738) A FAILED REGISTRATION IS NOW SAID OUT LOUD. This function used to end in
+       `catch(_){}` and in a bare `return`, and both were silent: the file was drawn, the reader saw
+       it, and 「地図には出たのに解析用データセットには登録されていない」 was a state with no outward
+       sign at all — the next thing that happened was the Data panel not listing a file the reader had
+       just imported. Losing the LAYER is still forbidden (that part of the design was right), so the
+       two failures are named instead: the module never arrived, or the registry refused the file.
+       ⚠ The exception's own message is not shown to the reader — it is a JS string written for a
+       developer, in one language, about an internal object; it goes to console.warn, and the reader
+       gets the sentence that tells them what they can no longer do. */
+    async function registerDataset(r,label,f,n){
+      let mod=false;
+      try{ mod=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; }
+      catch(e){ try{ console.warn('[upload] gisCore failed to load',e); }catch(_){} mod=false; }
+      if(!mod||!window.IntMapData){
+        try{ console.warn('[upload] not registered as a dataset: gisCore='+mod+', IntMapData='+!!window.IntMapData); }catch(_){}
+        toast(window.IntMapLang.t(HOST.lang,"Added to the map, but the analysis module did not load — this file cannot be analysed","地図には追加しましたが、分析モジュールを読み込めなかったため、このファイルは分析に使えません"));
+        return null;
+      }
       try{
-        const ok=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false;
-        if(!ok||!window.IntMapData) return;   /* the map still has the layer; the panel is simply not there */
         /* (#R735) `time` is the DECLARATION the decoder made from the file itself — a GPX track's
            per-fix axis, a gx:Track's <when>s, or null when the bytes said nothing about time. It is
            passed on rather than re-derived here: js/gis-datasets.js verifies it against the features
            and refuses it by name if it does not hold, and this path has no knowledge to add. */
-        window.IntMapData.add({ title:label, features:r.fc.features, sourceCrs:r.sourceCrs||null, time:r.time||null,
+        const rec=window.IntMapData.add({ title:label, features:r.fc.features, sourceCrs:r.sourceCrs||null, time:r.time||null,
           provenance:{ kind:'import', file:(f&&f.name)||label, format:r.format||null, readAt:Date.now() } });
-      }catch(_){ /* a registry failure must not lose the layer that is already drawn */ }
+        if(!rec||!rec.id){
+          try{ console.warn('[upload] the dataset registry returned no record for',label); }catch(_){}
+          toast(window.IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
+          return null;
+        }
+        /* ⚠ (#R738) THE DRAWN LAYER AND THE DATASET ARE TIED BY IDENTIFIER, NOT BY TITLE. Two files
+           called 「data.csv」 are two datasets, and a colouring applied to the wrong one is a wrong
+           map with no error in it. addFC ran first, so this is the re-binding pass. */
+        if(n!=null) link(n,rec.id);
+        return rec.id;
+      }catch(e){
+        /* a registry failure must not lose the layer that is already drawn — but it must be said */
+        try{ console.warn('[upload] the dataset registry refused this file',e); }catch(_){}
+        toast(window.IntMapLang.t(HOST.lang,"Added to the map, but the data panel did not accept this file — it cannot be analysed","地図には追加しましたが、データパネルが受け付けなかったため、このファイルは分析に使えません"));
+        return null;
+      }
     }
     fileInput.addEventListener('change',()=>{ handleFiles(fileInput.files); fileInput.value=''; });
     function mountButton(){ const dd=document.getElementById('layer-dropdown'); if(!dd||document.getElementById('btn-upload-geojson')) return;
@@ -2596,7 +2866,12 @@ window.IntMapModules.geojsonUpload=function(HOST){
     const mc=document.getElementById('map-container');
     if(mc){ mc.addEventListener('dragover',e=>{ if(e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files')) e.preventDefault(); });
       mc.addEventListener('drop',e=>{ if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){ e.preventDefault(); handleFiles(e.dataTransfer.files); } }); }
-    window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, remove:removeItem, _items:items };   /* (#R88) expose remove so the universal Object List can delete an uploaded layer */
+    /* (#R88) expose remove so the universal Object List can delete an uploaded layer.
+       (#R738) find/style/styleOf/styleReason/classify are the attribute-colouring face: `find` because
+       a caller that holds a DATASET id has no other way to reach the drawn layer, and `classify`
+       because the classifier is the part worth measuring on its own (tests/r737-…). */
+    window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, remove:removeItem,
+      find, link, style, styleOf, styleReason, classify, _items:items };
   })();
 };
 

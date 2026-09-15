@@ -350,7 +350,33 @@ export const GEO_IMPORT = (function () {
 
     /* ② a latitude column and a longitude column */
     const pick = inferPair(headers, body, comma);
-    if (!pick.ok) return { ok: false, why: pick.why, detail: { considered: pick.considered, delimiter: d.delim, rows: body.length } };
+    /* ③ ⚠ NO COORDINATES IS NOT NOTHING (#R738). 「座標を持たない統計表を地域コードで地図に結合する」
+       is the half of the join this program did not have: the left side (a boundary file) imported
+       fine and the right side — the table of numbers by municipality code — was REFUSED at the door,
+       because this decoder's only question was where the points are. A table with named columns and
+       no coordinates is not an unreadable file; it is the other operand.
+
+       ⚠ IT IS NOT DRAWN, AND THE READER IS TOLD THAT. `geometry: null` is the honest shape for a row
+       that states no place, and js/map-ui.js does not hand these to the renderer — an import that
+       silently produced an empty map layer would be the 「描いたつもり」 this file exists to prevent.
+       The columns that WERE considered for coordinates ride along in `stats`, because a reader whose
+       lat/lon columns were simply misnamed needs to see that they were looked at and rejected.
+
+       ⚠ A HEADER IS REQUIRED FOR THIS PATH AND NOT FOR THE OTHERS. Coordinates are recognised by
+       their VALUES (§3 above), so a header-less file still becomes points. A table exists to be
+       joined and computed on, and both of those name columns: `#1 = #3 * 100` is not a thing a
+       reader can write about a file whose columns have no names. Without a header there is also no
+       evidence left that this is a table at all rather than some other delimited text. */
+    if (!pick.ok) {
+      if (hasHeader) {
+        const rowsOut = body.map((r) => ({ type: 'Feature', geometry: null, properties: propsFrom(headers, r, []) }));
+        return {
+          ok: true, fc: fc(rowsOut), format: 'table', geometry: 'none',
+          stats: { rows: body.length, delimiter: d.delim, columns: headers.slice(), considered: pick.considered, why: pick.why },
+        };
+      }
+      return { ok: false, why: pick.why, detail: { considered: pick.considered, delimiter: d.delim, rows: body.length } };
+    }
     const feats = [];
     for (const r of body) {
       const la = coordCell(r[pick.lat], comma), lo = coordCell(r[pick.lon], comma);
@@ -686,8 +712,34 @@ export const GEO_IMPORT = (function () {
     const z = ATL_FILE.zipOpen(bytes);
     if (!z) return { ok: false, why: 'unreadable' };
     const names = z.names || [];
-    /* Say the useful thing about the archive we cannot read YET, instead of "not valid GeoJSON". */
-    if (names.some((n) => /\.shp$/i.test(n))) return { ok: false, why: 'shapefile', detail: { entries: names.length } };
+    /* ⚠ (#R738) THIS USED TO BE A REFUSAL, AND THE REFUSAL WAS HONEST WHILE IT LASTED: there was no
+       reader, and 「対応していないファイル形式です」 would have been a worse answer than naming the
+       format. There is a reader now (js/gis-shapefile.js), so the branch is a decoder rather than an
+       apology — the same move #R732 made with the three geometry refusals it replaced.
+       ⚠ THE WHOLE SET IS READ, not the .shp. A shapefile is four or five files that only mean
+       something together (.dbf holds every attribute, .prj holds the coordinate system), and reading
+       the .shp alone would produce shapes with no data and no place. */
+    if (names.some((n) => /\.shp$/i.test(n))) {
+      let SHP = null;
+      try { SHP = (await import('./gis-shapefile.js')).makeGisShapefile(); } catch (_) { SHP = null; }
+      if (!SHP) return { ok: false, why: 'shapefile', detail: { entries: names.length } };
+      const wanted = names.filter((n) => !/\/$/.test(n) && !/^__MACOSX\//.test(n) && /\.(shp|dbf|shx|prj|cpg)$/i.test(n));
+      const entries = [];
+      for (const n of wanted) {
+        let b = null;
+        try { b = await z.read(n); } catch (_) { b = null; }
+        if (b && b.length) entries.push({ name: n, bytes: b });
+      }
+      const sr = await SHP.read(entries);
+      if (!sr || !sr.ok) return sr || { ok: false, why: 'shapefile-corrupt' };
+      /* ⚠ A DEFINITION IS NOT A CODE. When the .prj carries no AUTHORITY there is no authority code
+         to state, and inventing an EPSG number for it would be the silent wrong answer this file
+         exists to avoid. `PRJ:<base>` names what it actually is — the definition this archive
+         brought with it — and js/gis-crs.js define()s the text under that name below. */
+      if (sr.prj && !sr.sourceCrs) sr.sourceCrs = 'PRJ:' + ((sr.stats && sr.stats.base) || 'file');
+      sr.entry = (sr.stats && sr.stats.base) ? (sr.stats.base + '.shp') : undefined;
+      return sr;
+    }
     const likely = (n) => /\.(kml|geojson|json|gpx|csv|tsv|txt)$/i.test(n) ? 0 : 1;
     const ordered = names.slice().filter((n) => !/\/$/.test(n) && !/^__MACOSX\//.test(n)).sort((a, b) => likely(a) - likely(b));
     for (const n of ordered) {
@@ -723,6 +775,17 @@ export const GEO_IMPORT = (function () {
 
     const CRS = (() => { try { return (typeof window !== 'undefined' && window.IntMapGisCrs) || null; } catch (_) { return null; } })();
 
+    /* ⚠ (#R738) THE FILE'S OWN DEFINITION, WHERE IT BROUGHT ONE. js/gis-crs.js has had define() —
+       「読者が持参した WKT または proj 文字列」 — since #R732 and NOT ONE CALLER: rule ③ of the three
+       it accepts definitions under was unreachable, because nothing in the program could hand it a
+       .prj. A shapefile's .prj is that text, and it is registered BEFORE the transform below and
+       regardless of whether the code is one proj4 already knows — a national grid that states
+       EPSG:6675 is refused by the built-in table and read correctly from its own WKT, and preferring
+       the file's own statement about itself is the same rule GeoJSON's `crs` member already gets. */
+    if (stated && stated !== 'EPSG:4326' && r.prj && CRS && typeof CRS.define === 'function') {
+      try { if (await CRS.ready()) CRS.define(stated, r.prj); } catch (_) { /* the transform below reports what it could not do */ }
+    }
+
     if (stated && stated !== 'EPSG:4326') {
       let out = null;
       if (CRS) { try { if (await CRS.ready()) out = CRS.transformFeatures(r.fc.features, stated); } catch (_) { out = null; } }
@@ -756,6 +819,10 @@ export const GEO_IMPORT = (function () {
   function formatCrs(r) {
     if (r.format === 'geojson') return r.statedCrs || 'EPSG:4326';
     if (r.format === 'kml' || r.format === 'gpx') return 'EPSG:4326';
+    /* (#R738) A shapefile and a GeoPackage each state their own, and the decoder already read it —
+       the .prj's AUTHORITY, or gpkg_spatial_ref_sys. ⚠ `null` from either of them means the file
+       did not say, which is the same claim a delimited table makes and gets measured for below. */
+    if (r.format === 'shapefile' || r.format === 'geopackage') return r.sourceCrs || null;
     return null;
   }
 
@@ -780,7 +847,17 @@ export const GEO_IMPORT = (function () {
       const inner = await ATL_FILE.gunzip(bytes);
       r = inner ? await decodeBytes(inner, name) : { ok: false, why: 'unreadable' };
     } else if (sig === 'pdf' || sig === 'ole') r = { ok: false, why: 'not-geodata', detail: { container: sig } };
-    else r = await decodeBytes(bytes, name);
+    else {
+      /* ⚠ (#R738) A GeoPackage IS A SQLite FILE, and it is recognised by those sixteen bytes rather
+         than by ".gpkg" — the same rule the picker follows for everything else here (a .txt that is a
+         CSV, a .xml that is a GPX). Asked after the containers and before the text decoders, because
+         a SQLite file is neither: handed to decodeBytes it comes back 'not-text', which is true and
+         useless. ⚠ The decoder is fetched only when such a file actually lands. */
+      let GP = null;
+      try { GP = (await import('./gis-geopackage.js')).makeGisGeopackage(); } catch (_) { GP = null; }
+      if (GP && GP.sniff(bytes)) r = GP.read(bytes);
+      else r = await decodeBytes(bytes, name);
+    }
 
     if (!r || !r.ok) return r || { ok: false, why: 'unreadable' };
 
@@ -796,10 +873,25 @@ export const GEO_IMPORT = (function () {
        wired to — it clamps a stray latitude instead of dropping the whole feature (js/geodesy.js). */
     const before = r.fc.features.length;
     let feats = r.fc.features;
+    /* ⚠ (#R738) THE REPAIR IS ABOUT COORDINATES, AND A ROW THAT STATES NO PLACE HAS NONE. A table
+       imported for a join (「③ NO COORDINATES IS NOT NOTHING」 above) is features with `geometry:null`;
+       handed to sanitizeFeatures they are dropped as unrepairable, every one of them, and this
+       function would then have refused the whole file as 'no-valid-coordinates' — an import path
+       that builds an operand and then throws it away at the last stage. The split is by the FACT
+       (does this row carry a geometry) rather than by the format's name, so it holds for the
+       geometry-less rows a GeoPackage attributes table brings too.
+       ⚠ The geometry-less rows are concatenated after the repaired ones. A FeatureCollection states
+       no order (RFC 7946 §3.3) and nothing downstream reads position — the parallel arrays a track
+       carries are INSIDE one feature, so nothing here can shift them. */
+    const placed = [], unplaced = [];
+    for (const f of feats) ((f && f.geometry) ? placed : unplaced).push(f);
     try {
       const G = (typeof window !== 'undefined') && window.IntMapGeodesy;
-      if (G && G.sanitizeFeatures) feats = G.sanitizeFeatures(feats);
+      if (G && G.sanitizeFeatures && placed.length) feats = G.sanitizeFeatures(placed).concat(unplaced);
+      else if (unplaced.length) feats = placed.concat(unplaced);
     } catch (_) { /* the repair is an improvement, not a gate — a missing one must not lose the file */ }
+    /* 「座標が 1 つも直せなかった」 and 「この表には座標が無い」 are different claims, and only the
+       first is a reason to refuse: a file whose rows never stated a place has not lost anything. */
     if (!feats.length) return { ok: false, why: 'no-valid-coordinates', detail: { read: before } };
     if (feats.length > GEO_IMPORT_LIMITS.features) return { ok: false, why: 'too-many-features', detail: { features: feats.length, limit: GEO_IMPORT_LIMITS.features } };
     r.fc = fc(feats);

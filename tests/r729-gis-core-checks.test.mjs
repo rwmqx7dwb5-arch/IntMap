@@ -229,11 +229,23 @@ test('R729 ④ every refusal code that can reach a reader has a sentence', () =>
      sentence that tells the reader what to change — so those codes reach this panel exactly as the
      ops' own do. A kernel whose codes were not scanned would be 25 refusals that arrive with no
      sentence, which is the whole defect this check exists for. */
-  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js', 'js/gis-raster.js']) {
+  /* ⚠ js/gis-expr.js JOINED IN #R738, for the same reason js/gis-raster.js did: `compute` hands the
+     expression kernel's refusal back VERBATIM, because 「式のどこが読めなかったか」 is the only
+     sentence that tells the reader what to retype. A kernel whose codes were not scanned is a
+     refusal that reaches a reader with no sentence — and the population of a gate is the thing that
+     decides what it cannot see. */
+  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js', 'js/gis-raster.js', 'js/gis-expr.js', 'js/gis-datasets.js']) {
     const src = read(rel);
     for (const m of src.matchAll(/\bwhy:\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
     for (const m of src.matchAll(/\bfail\(\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
     for (const m of src.matchAll(/\bmismatchWhy:\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
+    /* ⚠ A MODULE THAT DECLARES ITS CODES IS BELIEVED OVER THE SCAN (#R738). js/gis-expr.js raises its
+       refusals through a constructor, so none of the three spellings above appear in it and this scan
+       — which is the whole of the gate — found ZERO of its nine codes. A scan measures the spellings
+       it was taught; a declaration measures the fact. The kernel's own mk() refuses an undeclared
+       code, so the two cannot drift apart. */
+    const decl = /const REFUSALS = \[([^\]]*)\]/.exec(src);
+    if (decl) for (const m of decl[1].matchAll(/'([a-z0-9-]+)'/g)) returned.add(m[1]);
   }
   assert.ok(returned.size >= 20, 'the codes were not found at all — the scan is measuring nothing (' + returned.size + ')');
 

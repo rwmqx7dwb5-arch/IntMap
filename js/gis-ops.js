@@ -76,6 +76,9 @@ export function makeGisOps() {
     /* (#R735) The grid arithmetic and the spatial index, asked the same way and for the same reason. */
     function rasterKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisRaster) || null; } catch (_) { return null; } }
     function indexKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisIndex) || null; } catch (_) { return null; } }
+    /* (#R738) The expression kernel, read at call time like every other one — a module that imported
+       it privately would be a second copy of a parser, and js/gis-core.js is the only mounting point. */
+    function exprKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisExpr) || null; } catch (_) { return null; } }
     function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
 
     const D2R = Math.PI / 180;
@@ -437,6 +440,49 @@ export function makeGisOps() {
           { name: 'mode', type: 'enum', required: false, default: 'overlaps', values: ['overlaps', 'within'] },
         ],
       },
+      /* ── the attribute ops (#R738) ────────────────────────────────────────────────────────────
+         Neither of these touches a coordinate, and that is the point: 「行政界＋市区町村コード付き
+         CSV →統計値を結合→計算列を作成」 was three things this layer could not do, and the reason
+         was not geometry. A boundary file and a table of numbers are the two halves of one analysis,
+         and until #R738 the table could not even be imported (js/geo-import.js reads one now). */
+      join: {
+        /* Bring the right dataset's columns onto the left's rows, matched on a code.
+           ⚠ THE MATCH IS IDENTITY, NOT ARITHMETIC. `"01100"` and `"1100"` are different municipalities
+           and the same number, which is exactly the defect #R735 removed from the type rule: comparing
+           these keys through asNumber would join Sapporo's statistics onto the ward next door, and
+           produce a full-looking table with no error anywhere in it. So the comparison is the trimmed
+           text of the cell, and the counts of what did and did not match are ANSWERED rather than
+           left to be noticed — a reader whose two files write the code differently sees 0 matched and
+           a sample of both sides' keys, instead of a column of blanks.
+           ⚠ `accepts` IS 'any' ON BOTH SIDES, INCLUDING THE GEOMETRY-LESS TABLE. A table joined onto a
+           table is an ordinary thing to want, and the output keeps input 0's geometry whatever it is. */
+        id: 'join', inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
+        params: [
+          { name: 'leftField', type: 'field', required: true, input: 0 },
+          { name: 'rightField', type: 'field', required: true, input: 1 },
+          { name: 'fields', type: 'fields', required: false, input: 1 },
+          { name: 'prefix', type: 'text', required: false },
+          { name: 'unmatched', type: 'enum', required: false, default: 'keep', values: ['keep', 'drop'] },
+          /* ⚠ One key, many right-hand rows, is a QUESTION and not a detail. Picking the first is a
+             real answer for a lookup table that happens to repeat itself, and multiplying the left
+             rows is a real answer for a one-to-many join — but choosing either silently makes the row
+             count depend on data the reader did not look at. The default refuses and names the key. */
+          { name: 'duplicates', type: 'enum', required: false, default: 'refuse', values: ['refuse', 'first'] },
+        ],
+      },
+      compute: {
+        /* A new column from an expression over the existing ones. ⚠ The expression is PARSED, never
+           evaluated as JavaScript (js/gis-expr.js), and the columns it names are checked against the
+           dataset the same way filter checks a condition's field — an expression over a column that is
+           not there must be refused, not answered with a column of nulls. */
+        id: 'compute', inputs: 1, accepts: ['any'], output: 'same-as-input',
+        needsExpr: true,
+        params: [
+          { name: 'outName', type: 'text', required: true },
+          { name: 'expr', type: 'expression', required: true, input: 0 },
+          { name: 'replace', type: 'boolean', required: false, default: false },
+        ],
+      },
       aggregate: {
         /* ⚠ `accepts[1]` WAS 'Point' (#R729) and the arithmetic was 「面に含まれる点」. With a real
            predicate available it is 「その面に重なるもの」, which is the same answer for points and
@@ -544,6 +590,124 @@ export function makeGisOps() {
     function hasField(ds, name) {
       for (const f of (ds.fields || [])) if (f && f.name === name) return true;
       return false;
+    }
+
+    /* ── the attribute runners (#R738) ────────────────────────────────────────────────────────── */
+
+    /* ⚠ THE KEY IS TEXT, AND THAT IS THE WHOLE DESIGN. Everything else in this file compares through
+       asNumber because everything else is comparing quantities; a join compares IDENTIFIERS, and the
+       two rules give different answers for exactly the cells that matter — `"01100"` (札幌市中央区)
+       and `"1100"` are one number and two places. #R735 stopped the type rule from calling a
+       zero-padded cell a number; this is the reader of that decision. Trimming is the only
+       normalisation: whitespace around a cell is a property of the file, not of the code. */
+    function joinKey(v) {
+      if (v == null) return null;
+      const s = String(v).trim();
+      return s === '' ? null : s;
+    }
+
+    function runJoin(left, right, params) {
+      const lf = params.leftField, rf = params.rightField;
+      if (lf == null || String(lf) === '') return fail('missing-param', { param: 'leftField' });
+      if (rf == null || String(rf) === '') return fail('missing-param', { param: 'rightField' });
+      if (!hasField(left, lf)) return fail('unknown-field', { input: 0, field: String(lf) });
+      if (!hasField(right, rf)) return fail('unknown-field', { input: 1, field: String(rf) });
+
+      const wanted = Array.isArray(params.fields) && params.fields.length
+        ? params.fields.map((x) => String(x))
+        : (right.fields || []).map((f) => f.name).filter((n) => n !== rf);
+      for (const n of wanted) if (!hasField(right, n)) return fail('unknown-field', { input: 1, field: n });
+
+      const prefix = (params.prefix == null) ? '' : String(params.prefix);
+      /* ⚠ A COLLISION IS REFUSED, NOT RESOLVED. Overwriting the left's own column would destroy data
+         the reader still has on screen, and renaming it here would invent a name nothing else knows.
+         `prefix` is how the reader answers this, and it is in the declaration so the panel can offer
+         it without knowing why. */
+      const collide = wanted.filter((n) => hasField(left, prefix + n));
+      if (collide.length) return fail('join-column-collision', { columns: collide.slice(0, 8), prefix: prefix || null });
+
+      const dup = params.duplicates === 'first' ? 'first' : 'refuse';
+      const table = new Map();
+      const dupes = [];
+      for (const f of right.features()) {
+        const p = props(f);
+        const k = joinKey(p[rf]);
+        if (k == null) continue;
+        if (table.has(k)) { if (dup === 'refuse') { if (dupes.indexOf(k) < 0 && dupes.length < 8) dupes.push(k); continue; } continue; }
+        table.set(k, p);
+      }
+      if (dup === 'refuse' && dupes.length) return fail('join-right-not-unique', { field: String(rf), keys: dupes });
+
+      const drop = params.unmatched === 'drop';
+      const out = [];
+      let matched = 0, unmatched = 0, noKey = 0;
+      const missSample = [];
+      for (const f of left.features()) {
+        const p = props(f);
+        const k = joinKey(p[lf]);
+        const hit = (k == null) ? null : table.get(k);
+        if (k == null) noKey++;
+        if (hit) {
+          matched++;
+          const merged = Object.assign({}, p);
+          for (const n of wanted) { const v = hit[n]; if (v !== undefined) merged[prefix + n] = v; }
+          out.push({ type: 'Feature', geometry: f.geometry || null, properties: merged });
+        } else {
+          unmatched++;
+          if (k != null && missSample.length < 5) missSample.push(k);
+          if (!drop) out.push(f);
+        }
+      }
+      /* ⚠ THE COUNTS ARE THE ANSWER, NOT A FOOTNOTE. Two files that write the same municipality code
+         differently produce a join that is structurally perfect and empty of information, and the
+         only way the reader can see that is to be told how many rows found a partner — with a sample
+         of the keys that did not, so the difference (a leading zero, a prefecture prefix) is visible
+         rather than inferred. `rightKeys` says how big the lookup actually was. */
+      return {
+        ok: true, features: out,
+        stats: { matched: matched, unmatched: unmatched, noKey: noKey, rightKeys: table.size, columns: wanted.length, unmatchedSample: missSample },
+      };
+    }
+
+    function runCompute(ds, params, R) {
+      const X = exprKernel();
+      if (!X || typeof X.compile !== 'function') return fail('expr-unavailable');
+      const name = (params.outName == null) ? '' : String(params.outName).trim();
+      if (!name) return fail('missing-param', { param: 'outName' });
+      const src = (params.expr == null) ? '' : String(params.expr);
+      if (!src.trim()) return fail('missing-param', { param: 'expr' });
+      /* ⚠ AN EXISTING COLUMN IS NOT OVERWRITTEN BY DEFAULT. `compute` is how a reader builds 人口密度
+         out of 人口 and 面積; typing 人口 into the name field would otherwise replace the input of the
+         very expression being written, in a record whose recipe then reproduces the replacement. */
+      if (hasField(ds, name) && params.replace !== true) return fail('compute-column-exists', { field: name });
+
+      const parsed = X.parse(src);
+      if (!parsed || !parsed.ok) return fail(parsed && parsed.why ? parsed.why : 'expr-syntax', (parsed && parsed.detail) || null);
+      /* ⚠ THE SAME RULE runFilter USES. A column that is not there must be refused rather than
+         answered — an expression over a misspelt name would otherwise produce a full column of nulls
+         and a chart of nothing, with no error anywhere. */
+      for (const f of (parsed.fields || [])) if (!hasField(ds, f)) return fail('unknown-field', { field: String(f) });
+
+      const c = X.compile(src, R);
+      if (!c || !c.ok) return fail(c && c.why ? c.why : 'expr-syntax', (c && c.detail) || null);
+
+      const out = [];
+      let errors = 0, empty = 0, firstError = null;
+      for (const f of ds.features()) {
+        const p = props(f);
+        let res = null;
+        try { res = c.fn(p); } catch (e) { res = { value: null, error: { why: 'expr-internal', detail: (e && e.message) || null } }; }
+        if (res && res.error) { errors++; if (!firstError) firstError = res.error; }
+        const v = res ? res.value : null;
+        if (v == null) empty++;
+        const merged = Object.assign({}, p);
+        /* A null result is written as an ABSENT cell rather than as the string "null": the registry
+           types a column from the cells that are there, and an empty cell is what 「この行では計算
+           できなかった」 looks like everywhere else in this layer. */
+        if (v == null) delete merged[name]; else merged[name] = v;
+        out.push({ type: 'Feature', geometry: f.geometry || null, properties: merged });
+      }
+      return { ok: true, features: out, stats: { computed: out.length - empty, empty: empty, errors: errors, firstError: firstError, returns: parsed.returns } };
     }
 
     function runFilter(ds, params, R) {
@@ -1205,6 +1369,9 @@ export function makeGisOps() {
       /* (#R735) The grid arithmetic is a module like the others, and 「読み込まれていない」 is its own
          answer rather than an empty result. */
       if (decl.needsRaster && !rasterKernel()) return fail('raster-unavailable');
+      /* (#R738) Same shape as the line above: 「式を読む機械が来ていない」 is its own answer, not an
+         expression that silently evaluates to nothing. */
+      if (decl.needsExpr && !exprKernel()) return fail('expr-unavailable');
       if (decl.needsGeometry) {
         const GG = geometry();
         if (!GG) return fail('geometry-missing');
@@ -1256,6 +1423,26 @@ export function makeGisOps() {
         }
       }
 
+      /* ⚠ 'any' MEANS ANY SHAPE, NOT 「形が無くてもよい」 (#R738). A statistics table imports as
+         features with `geometry:null` now, and `geometryType` is null for that, for an empty dataset
+         AND for a grid — three different things one field cannot separate, which is why
+         js/gis-datasets.js MEASURES `withGeometry`. Without this, a table handed to buffer or clip
+         would walk every row, find no coordinates and register an empty polygon layer: a run that
+         succeeded, an answer of zero, and nothing anywhere saying the input had no places in it.
+         ⚠ The test is the op's own declaration, not a list of op names: an op that needs the geometry
+         kernel is an op that is going to ask these rows where they are. filter, timeWindow, join and
+         compute declare neither, and go on working on a table — which is the entire point of being
+         able to import one. */
+      if (decl.needsGeometry || decl.needsGeodesy) {
+        for (let i = 0; i < ds.length; i++) {
+          if (decl.accepts[i] !== 'any') continue;
+          if (String(ds[i].kind || 'vector') !== 'vector') continue;
+          if (ds[i].count > 0 && ds[i].withGeometry === 0) {
+            return fail('input-has-no-geometry', { input: i, id: ds[i].id, rows: ds[i].count });
+          }
+        }
+      }
+
       const params = (step.params && typeof step.params === 'object') ? step.params : {};
       /* ⚠ A TABLE, NOT AN if-CHAIN ENDING IN else. The chain's last arm was unconditional, so an op
          declared in DECL and not wired here would have run AGGREGATE and registered its output
@@ -1280,6 +1467,8 @@ export function makeGisOps() {
         rasterMask: () => runRasterMask(ds[0], params, R),
         rasterDiff: () => runRasterDiff(ds[0], ds[1], params, R),
         timeWindow: () => runTimeWindow(ds[0], params, R),
+        join: () => runJoin(ds[0], ds[1], params),
+        compute: () => runCompute(ds[0], params, R),
       };
       const runner = RUN[decl.id];
       if (!runner) return fail('op-not-wired', { op: decl.id });

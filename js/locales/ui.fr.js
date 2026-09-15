@@ -2892,7 +2892,7 @@ window.IntMapLang.define('fr', { ui: {
   "columns": "colonnes",   /* map-ui.js (#R576) */
   "skipped": "ignorés",   /* map-ui.js (#R576) */
   "No latitude/longitude columns found": "Aucune colonne de latitude/longitude trouvée",   /* map-ui.js (#R576) */
-  "Shapefile is not supported yet": "Le format Shapefile n’est pas encore pris en charge",   /* map-ui.js (#R576) */
+  "This is a Shapefile, but the module that reads it could not be loaded": "Il s’agit d’un Shapefile, mais le module qui le lit n’a pas pu être chargé",   /* map-ui.js (#R576 → key restated #R738) */
   "File is too large to read": "Le fichier est trop volumineux pour être lu",   /* map-ui.js (#R576) */
   "Too many features to draw": "Trop d’entités à dessiner",   /* map-ui.js (#R576) */
   "No usable coordinates in this file": "Aucune coordonnée utilisable dans ce fichier",   /* map-ui.js (#R576) */
