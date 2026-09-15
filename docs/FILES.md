@@ -181,7 +181,9 @@ gis-geometry.js                   **幾何カーネル** `window.IntMapGisGeomet
                                   （union / intersection / difference / dissolve）・**任意形状の buffer**
                                   （測地円盤との Minkowski 和）・述語（intersects / contains / within /
                                   disjoint）・**形そのものからの最短測地距離**。sweep-line
-                                  `polygon-clipping`（**既存の依存**）は**動的 import で遅延**。
+                                  `polygon-clipping`（**既存の依存**）は**動的 import**——⚠ ただし実測では
+                                  `geo-<hash>.js` が `main` から静的に参照され `modulepreload` されるので、
+                                  **バイトは起動時に届いている**（#R734 本番・#R745 再測。Architecture.md）。
                                   経度は継ぎ目でほどいて揃え、結果を [-180,180] に戻す——拒むのは
                                   **世界を巻く環だけ**
 gis-crs.js                        **座標変換** `window.IntMapGisCrs`（#R732）— `proj4` を**動的 import で
@@ -1137,6 +1139,15 @@ scripts/
                                   ⚠ **早送りだけ＝冪等**なので並行セッションが同時に走らせてよく、
                                   排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
+  release-state.mjs               **本番がどの組み合わせで走っているか**を 3 面（静的サイト・Edge Functions・
+                                  DB migration）まとめて測る（`npm run release:state` / `release:check`）。
+                                  ⚠ **判定は時刻ではなく配備されたソースの中身**（`supabase functions download`
+                                  で取り寄せてバイトで突き合わせる）。merge 前に worktree から deploy すると
+                                  時刻は必ず「ソースが新しい」と言うので、時刻は文脈としてしか使わない。
+                                  ⚠ **名前を 1 つも手で書かない**——関数の名簿は `supabase/functions/` の実体、
+                                  project ref は `src/vendor.js`、Pages の URL は `origin` の remote から導く。
+                                  ⚠ `npm test` には入れない（本番と資格情報が要る）。CI が証明できることは
+                                  `tests/r745-arch-review-followup-checks.test.mjs`。
   worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`AGENTS.md` §6 が
                                   手作業で求めていた 6 工程——空きラウンド番号・branch・OneDrive 外の
                                   worktree・`node_modules` の junction・preview 設定——を 1 コマンドにする。

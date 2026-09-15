@@ -1851,8 +1851,13 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
 
 **⚠ 重い部品は動的 import で遅れて来る。** 幾何カーネルは `polygon-clipping`（Martinez–Rueda の
 sweep-line。**既存の依存**で `js/world-packs.js` と `js/cesium-vector-tiles.js` も同じように読む）、
-座標変換は `proj4` を、**どちらも最初に要求されたときに**取りに行く。重ね合わせを一度も走らせない
-読者は sweep-line を落とさない。取りに行けなかったときは `geometry-unavailable` / `crs-unknown` で
+座標変換は `proj4` を、**どちらも最初に要求されたときに**取りに行く。
+⚠ **ただし「動的 import」は、いつバイトが届くかを決めない。** 本番と `dist/` の両方で実測:
+`polygon-clipping` は `geo-<hash>.js`（52,137 B）に入り、そのチャンクは
+`main-<hash>.js` が**静的に** import したうえ `index.html` に `modulepreload` まで置かれる
+——**重ね合わせを一度も走らせない読者にも起動時に届いている**。`vite.config.js` の `manualChunks`
+は逆の意図を述べているが、それを測るものは無い。チャンクの分け方を変える人は、この段落を信じずに
+測り直すこと。取りに行けなかったときは `geometry-unavailable` / `crs-unknown` で
 **名指して断る**——近似で代わりを描かない。
 
 **⚠ buffer は Minkowski 和であって offset curve ではない。** 半径 r の buffer は「その形から r 以内に
@@ -4344,6 +4349,14 @@ push ごとに `.github/workflows/deploy.yml` が「ビルド(Vite) → 静的�
 
 ⚠ `deploy.yml` は `concurrency: pages-production` で直列に走る（前の run が固まると次は pending のまま）。
 **手順の正本は [`docs/RELEASE.md`](docs/RELEASE.md)。**
+
+⚠ **配備単位は 3 つあり、互いに独立している**——静的サイト（Pages）・Edge Functions（Supabase）・
+DB（migration）。`main` が緑であることは、その 3 つが同じ組み合わせで走っていることを意味しない。
+`node scripts/release-state.mjs`（`npm run release:state` / `release:check`）が 3 面をまとめて測る。
+**判定は時刻ではなく、配備されたソースを取り寄せた中身**（`supabase functions download`）で出す
+——merge の前に worktree から deploy すると、正しく配備されていても時刻は必ず「ソースのほうが
+新しい」と言うので、時刻は同一性を答えられない。⚠ **CI のゲートではない**（本番・資格情報・
+ネットワークが要る）。
 
 ### 15.5 文書間の固定事実の照合 — `npm run check:docs`
 

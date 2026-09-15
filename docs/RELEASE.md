@@ -137,6 +137,30 @@ server’s copy names a different entry. So:
   about readers holding a warm cache — the regression tests for that are `tests/r465-checks.test.mjs`.
 - **When verifying a deploy by hand, a hard reload hides it.** Load the site normally first if what
   you want to know is what a returning reader gets.
+## 本番はいま、どの組み合わせで走っているか（**3 面まとめて**）
+
+> ⚠ **`main` が緑であることは、本番がその `main` で走っていることを意味しない。** IntMap は
+> 3 つの独立した配備単位でできている——静的サイト（Pages）、Edge Functions（Supabase）、
+> DB（migration）。`npm test` はチェックアウトを測るのであって、配備された先を測らない。
+
+```bash
+node scripts/release-state.mjs          # 3 面を測る（npm run release:state）
+node scripts/release-state.mjs --check  # 食い違いなら exit 1 / 測れなければ exit 2
+node scripts/release-state.mjs --diff <function>   # その関数の実際の差分
+```
+
+判定は**配備されたソースを取り寄せて中身で**行う（`supabase functions download`）。
+⚠ **時刻は同一性を答えない**——merge の前に worktree から deploy すれば、正しく配備されていても
+「コミットのほうが新しい」に見える。実測 2026-09-16 では、コミット時刻は 17 本すべてを
+「古い」と呼び、中身で測ると**違っていたのは 7 本**（`ais-feed` は 1 バイトも違わなかった）。
+
+> **MEASURED 2026-09-16、この道具が最初に測った本番**: Edge 17 本中 7 本がリポジトリと別の
+> ソースで走っていた。うち `monitor-run` / `news-ingest` / `refresh-news` は Atlas persona の
+> `workspace` 段落を持たない版＝**挙動が違う**（`ai-proxy` だけが新しい版だった）。7 本を
+> deploy して 17/17 一致にした。静的サイトは一致。**DB は local 7 本が remote に無く、
+> remote 2 本が local に無い**（`docs/DATABASE.md` のベースライン再構築の経緯を読むこと。
+> 自動では適用しない——migration の適用は手で判断する）。
+
 ## Which build is live?
 
 - `window.INTMAP_BUILD` — the human-readable build stamp (e.g. `2026-07-18-R133`), visible

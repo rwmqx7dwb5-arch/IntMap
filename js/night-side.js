@@ -547,5 +547,12 @@ window.IntMapNightSide=(function(){
                  capLat:CAP_LAT, ramp:RAMP_STOPS.map((s)=>s.slice()), unlit:UNLIT.slice() }),
     /* pure, so the arithmetic can be checked without a renderer */
     _nightAt:(lng,lat,date)=>nightAt(solar(date||new Date(clockMs())),lng,lat),
+    /* (#R745) …and the Sun's declination, which is what decides WHICH REGIME the polar caps are in:
+       with |dec| above 90−joinLat one cap is in polar day and the other in polar night, and below it
+       BOTH caps hold day and night at once. A test that asserts «exactly one pole is dark» without
+       asking this is asserting the summer sky in September — tests/r201.spec.js did, and went red on
+       its own for the ~56 days a year the Sun spends inside that band. The number comes from the same
+       solar() the layer draws with, so the two cannot disagree. */
+    _solar:(date)=>({ decDeg:solar(date||new Date(clockMs())).dec/D, joinLat:joinLat(1) }),
     _capFC:(date)=>capFC(date||new Date(clockMs())) };
 })();
