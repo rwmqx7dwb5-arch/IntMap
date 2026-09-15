@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（290本・13.5 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（295本・13.5 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1724,6 +1724,39 @@ zip と gzip は開いて中身を見る。
 
 **取り込んだ結果は必ず `window.IntMapGeodesy.sanitizeFeatures` を通る**（`js/geodesy.js`）。そこが
 `MultiPoint` と `GeometryCollection` を落とすので、decoder 側で**単一 geometry に展開してから**渡す。
+
+### 7.3e データセットと処理の基盤 (The GIS core) — `js/gis-*.js`
+
+**取り込んだデータ・内蔵データ・分析結果を、同じ 1 つの形で持ち、処理の出力が次の処理の入力になる層。**
+正本は [`docs/GIS-CORE.md`](docs/GIS-CORE.md)——ここには**構造の骨格だけ**を書く。
+
+| ファイル | 公開名 | 何の正本か |
+|---|---|---|
+| `js/gis-datasets.js` | `window.IntMapData` | データセットの形（`id`・`geometryType`・`crs`／`sourceCrs`・`fields[]`・`features()`・`provenance`）と**列の型づけ** |
+| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `aggregate`）の宣言と実行 |
+| `js/gis-project.js` | `window.IntMapGisProject` | IndexedDB への保存・復元・**引数を変えた再計算** |
+| `js/gis-panel.js` | `window.IntMapGisPanel` | 操作卓（一覧・属性表・由来の連鎖・実行・保存） |
+| `js/gis-core.js` | `window.IntMapGis` | 上の 4 本を起動する 1 つの扉と、`draw()` |
+
+**⚠ 処理の出力は、取り込みと同じ経路で登録される。** `provenance` が `{kind:'op', op, inputs, params}`
+＝**再実行できるレシピ**なので、`IntMapGisProject.setParams(id, {radiusKm:10})` は対象の段と**その下流**を
+トポロジ順に走らせ直す。結果の features は保存しない——レシピがあるなら再生できるし、保存すると入力を
+変えたときに結果だけが古いまま残る。
+
+**⚠ 列の型は列名ではなく値で決める。** ある列は、空でない値が**全部**数値として解けるときだけ `number`。
+空セルの数は判定の隣に持つ。日付は**年から始まる ISO-8601 系だけ**受ける（`03/04/2020` は読む人によって
+違う日になる）。同じ判定を `js/gis-ops.js` も使う——2 つ持つと、パネルでは比較できて問い合わせでは
+できない列が生まれる。
+
+**⚠ `crs` は常に `EPSG:4326`、`sourceCrs` は「ファイルが名乗ったもの」。** GeoJSON（RFC 7946 §4）・KML・
+GPX は仕様が WGS 84 を固定しているので `EPSG:4326`、区切りテキストは **`null`＝「名乗っていない」**。
+⚠ IntMap は**再投影を持たない**ので、既定値を入れて「4326 だった」と主張しない。
+
+**⚠ 横断クエリは、この層を「問い合わせの瞬間に」読む**（`js/atlas-query.js` の `syncUserTables()`）。
+`data.query` の `from` に**データセットの id をそのまま書ける**。列は `js/gis-datasets.js` が測った
+`fields[]` そのもので、cost 0・origin `raw`。⚠ 押し込み（登録）ではなく**引き**なのは、クエリ engine が
+遅延読み込みだから——先に登録しに行く経路は「まだ存在しないモジュールへの登録」と「その再生」という
+2 つ目の正本を作る。⚠ 1 点を持たない行（線・面）の座標は外接矩形の中心で、**そのことを結果の注記に出す**。
 
 ### 7.4 Chronos（統一時間）と「年」
 

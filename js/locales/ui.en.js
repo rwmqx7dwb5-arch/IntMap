@@ -160,6 +160,7 @@ window.IntMapLang.define('en', { ui: {
       lyrSeaLevel:"Sea-level change",
       favLayers:"Favorite layers",
       importGeoFile:"Import map data",
+      gisWorkbench:"Data & analysis",
       screenshotBtn:"Map screenshot (hides controls, keeps legends)",
       lblSidebarStyle:"Sidebar appearance",
       sidebarOpaque:"Solid (default)",

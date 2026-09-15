@@ -136,6 +136,21 @@ geo-import.js                     落とされたファイルを FeatureCollecti
                                   で**拒否**し、「列名・半球記号・±90 を超える値」で**選ぶ**——根拠が無ければ
                                   推測せず拒む。拒否は**コード**で返し、9 言語の文面は `js/map-ui.js` が持つ。
                                   遅延読み込み（起動時のバンドルには入らない）
+gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— 下の 4 本をまとめて起動する
+                                  `window.IntMapGis`。データセットを地図に描く `draw()` もここ
+                                  （`window.GeoJSONUpload.add` を通す＝地図に載せる道を 2 本作らない）。
+                                  遅延読み込み `gisCore`。正本 `docs/GIS-CORE.md`
+gis-datasets.js                   **データセットのレジストリ** `window.IntMapData` — 取り込み・内蔵・
+                                  **処理の出力**を同じ 1 つの形で持つ。列の型は**値を測って**決める
+                                  （列名で決めない）。`provenance` は札ではなく**再実行できるレシピ**
+gis-ops.js                        **処理** `window.IntMapGisOps` — filter / buffer / clip / aggregate。
+                                  **出力もデータセットとして登録される**ので次の処理の入力になる。
+                                  拒否は文ではなくコードで返す（文面は `js/gis-panel.js`）
+gis-project.js                    **プロジェクトの保存** `window.IntMapGisProject` — IndexedDB。取り込みは
+                                  本体ごと、処理は**段（レシピ）だけ**。`setParams()` が引数を変えて
+                                  下流まで再計算する。⚠ 基図・カメラ・有効レイヤーは持たない
+                                  （`js/session-tabs.js` の持ち物）
+gis-panel.js                      その操作卓（一覧・属性表・由来の連鎖・処理の実行・保存と読み込み）
 map-tools.js                      対話ツール（投影ビュー・描画・Isolate・海路・見通し線・オブジェクト一覧・
                                   アウトライン・図形移動・到達圏（車・徒歩・自転車・公共交通）・3-D 弧）
 map-readout.js                    座標・標高・レイヤー値・コンパスの読み出しと経緯線

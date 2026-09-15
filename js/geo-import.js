@@ -641,6 +641,16 @@ export const GEO_IMPORT = (function () {
     if (feats.length > GEO_IMPORT_LIMITS.features) return { ok: false, why: 'too-many-features', detail: { features: feats.length, limit: GEO_IMPORT_LIMITS.features } };
     r.fc = fc(feats);
     r.stats = Object.assign({}, r.stats, { features: feats.length, dropped: before - feats.length });
+    /* ⚠ (#R729) WHAT COORDINATE SYSTEM DID THE FILE SAY IT WAS IN? Three of these formats ANSWER
+       that in their own specification and one does not: RFC 7946 §4 fixes GeoJSON to WGS 84,
+       OGC KML fixes KML to WGS 84, and the GPX 1.1 schema fixes GPX to WGS 84 — so for those the
+       answer is stated by the format, not guessed. A delimited table states nothing: two columns of
+       numbers are two columns of numbers, and `null` here means «the file did not say», which is a
+       different claim from «it was 4326». js/gis-datasets.js carries this through as `sourceCrs`
+       and the panel prints it, so a reader whose CSV is in a projected grid can SEE that IntMap was
+       never told. ⚠ Not a re-projection — IntMap does not have one, and inventing a default would
+       be the silent-wrong-answer this file exists to avoid. */
+    r.sourceCrs = (r.format === 'geojson' || r.format === 'kml' || r.format === 'gpx') ? 'EPSG:4326' : null;
     return r;
   }
 

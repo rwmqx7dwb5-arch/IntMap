@@ -176,6 +176,10 @@ const MEMBER = {
   atlasChart: ['IntMapAtlasChart', 'render'],
   atlasAnswerView: ['IntMapAnswerView', 'apply'],
   routeUi: ['IntMapRouteUI', 'open'],
+  /* (#R729) the GIS core. Its member is `open` — the door #btn-gis-panel calls. ⚠ The module
+     mounts FOUR files (js/gis-core.js), and a partial arrival is exactly what this table
+     catches: a registry with no panel publishes window.IntMapGis and answers nothing. */
+  gisCore: ['IntMapGis', 'open'],
   photoGeo: ['IntMapPhotoGeo', 'open'],
   shakeMap: ['IntMapShakeMap', 'open'],
   netHealthLive: ['__imNetHealth', 'report'],   /* (#R546) */

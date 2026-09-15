@@ -2200,7 +2200,13 @@ window.IntMapModules.dataLayers=function(HOST){
            the button fetches it on press exactly like every other on-demand feature (#R209), and the
            OPEN itself goes through the OS action so the palette and this button are one path. */
         /* Tools section (compare + upload) pinned to the very bottom */
-        const upBtn=document.getElementById('btn-upload-geojson');
+        /* ⚠ (#R729) EVERY button the upload module put in the panel, IN ORDER — not one id. This
+           line used to name `btn-upload-geojson`, and four lines below the whole #ugj-mount wrapper
+           is removed, so a second button from that module was created and deleted within the second
+           (measured: #btn-gis-panel, the data-and-analysis panel). The mark is on the buttons
+           (js/map-ui.js), so the module can add a third without editing this file. */
+        const upBtns=Array.from(document.querySelectorAll('[data-lyr-tool="upload"]'));
+        const upBtn=upBtns[0]||null;
         const cmpBtn=document.getElementById('btn-compare'); const ugj=document.getElementById('ugj-list');
         const corrBtn=document.getElementById('btn-correlate');   /* (#R39) capture BEFORE tools.innerHTML='' detaches it */
         let tools=document.getElementById('layer-tools'); if(!tools){ tools=document.createElement('div'); tools.id='layer-tools'; }
@@ -2214,7 +2220,7 @@ window.IntMapModules.dataLayers=function(HOST){
            left over from an earlier collapse so the Tools section always shows (#R13c). */
         if(cmpBtn){ cmpBtn.style.display=''; cmpBtn.style.width='100%'; cmpBtn.style.margin='4px 0 0'; tools.appendChild(cmpBtn); }
         if(corrBtn){ corrBtn.style.display=''; corrBtn.style.width='100%'; corrBtn.style.margin='6px 0 0'; tools.appendChild(corrBtn); }   /* (#R39) two-layer scatter/correlation */
-        if(upBtn){ upBtn.style.display=''; upBtn.style.width='100%'; upBtn.style.margin='6px 0 0'; tools.appendChild(upBtn); }
+        upBtns.forEach((b,i)=>{ b.style.display=''; b.style.width='100%'; b.style.margin=i?'5px 0 0':'6px 0 0'; tools.appendChild(b); });
         if(ugj){ ugj.style.display=''; tools.appendChild(ugj); }
         if(_seis) tools.appendChild(_seis);   /* (#R242) the seismic simulator, beside the other tools */
         if(_pan) tools.appendChild(_pan);     /* (#R666) …and the pandemic simulator, one press */
