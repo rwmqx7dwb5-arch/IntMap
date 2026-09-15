@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（298本・14.2 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（300本・14.2 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1757,14 +1757,16 @@ zip と gzip は開いて中身を見る。
 
 | ファイル | 公開名 | 何の正本か |
 |---|---|---|
-| `js/gis-datasets.js` | `window.IntMapData` | データセットの形（`id`・`geometryType`・`crs`／`sourceCrs`・`fields[]`・`features()`・`provenance`・`stale`）と**列の型づけ** |
+| `js/gis-datasets.js` | `window.IntMapData` | データセットの形（`id`・`kind`・`geometryType`・`crs`／`sourceCrs`・`fields[]`・`count`・`time`・`features()`／`read()`・`provenance`・`stale`）と**列の型づけ**・**時刻の宣言の検証** |
 | `js/gis-geometry.js` | `window.IntMapGisGeometry` | **幾何カーネル**——boolean 演算（`union` / `intersection` / `difference` / `dissolve`）・任意形状の `bufferKm`・述語（`intersects` / `contains` / `within` / `disjoint`）・**形そのものからの最短測地距離** `distanceKm`・`pointInGeometry` |
 | `js/gis-crs.js` | `window.IntMapGisCrs` | **座標変換**——`define` / `known` / `resolve` / `transformGeometry` / `transformFeatures` / `why` / `looksProjected` |
-| `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()` |
-| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `aggregate`）の宣言と実行 |
+| `js/gis-raster.js` | `window.IntMapGisRaster` | **数値ラスターのカーネル**——`sample`（nearest / bilinear）・`zonal`（面積重み付き・値ごとの面積）・`mask`・`diff`・`pixelAreaKm2`・`describeBands`・`fromSampler` |
+| `js/gis-index.js` | `window.IntMapGisIndex` | **空間索引**（一様格子）——`build` / `query` / `queryEach` / `stats`。セルの大きさをデータから導き、**偽陰性を出さない** |
+| `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()` / `toRaster()`（数値レイヤーを格子に焼く） |
+| `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `aggregate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `timeWindow`）の宣言と実行 |
 | `js/gis-project.js` | `window.IntMapGisProject` | IndexedDB への保存・復元・**引数を変えた再計算** |
 | `js/gis-panel.js` | `window.IntMapGisPanel` | 操作卓（一覧・属性表・由来の連鎖・実行・保存） |
-| `js/gis-core.js` | `window.IntMapGis` | 上の 7 本を起動する 1 つの扉と、`draw()` |
+| `js/gis-core.js` | `window.IntMapGis` | 上の 9 本を起動する 1 つの扉と、`draw()` |
 
 **⚠ 重い部品は動的 import で遅れて来る。** 幾何カーネルは `polygon-clipping`（Martinez–Rueda の
 sweep-line。**既存の依存**で `js/world-packs.js` と `js/cesium-vector-tiles.js` も同じように読む）、
@@ -1794,15 +1796,41 @@ r·(1−cos(π/steps))（既定 64 なら 5 km に対して約 3 m）——こ�
 
 **⚠ 処理の一覧は 2 つ目を持たない。** 表示順は `DECL` の鍵の順序そのもの（`Object.keys(DECL)`）で、
 `run()` の振り分けも if の連鎖ではなく表。宣言にあって走らせ手が無い処理は `op-not-wired` になる。
-起動前に外接矩形で組を絞るが、それは空間索引ではなく定数を下げるだけである。
+**対の数え上げは `js/gis-index.js` に任せる**——一様格子で、セルの大きさをデータから導き、
+子午線をまたぐ箱・世界を覆う箱・箱を持たないものは全問い合わせの候補に入れる（その件数は
+`stats().oversize` で外から見える）。索引が無くても答えは同じで、遅いだけ。
+**入力ごとの中身は `kinds` が宣言し、既定は `vector`**＝ラスターより前に書かれた処理は格子を
+`input-kind` で名前を付けて拒む。**重い処理は `run(step, {signal, onProgress})` で中止でき**、
+刻みの単位は件数ではなく**経過時間**（1 フレーム）である。Worker は無い——足りていないのは
+並列性であって応答性ではない。
 
 **⚠ 処理の出力は、取り込みと同じ経路で登録される。** `provenance` が `{kind:'op', op, inputs, params}`
 ＝**再実行できるレシピ**なので、`IntMapGisProject.setParams(id, {radiusKm:10})` は対象の段と**その下流**を
 トポロジ順に走らせ直す。結果の features は保存しない——レシピがあるなら再生できるし、保存すると入力を
 変えたときに結果だけが古いまま残る。
 
+**⚠ データセットの payload は 2 種類ある。** `kind:'vector'` は `features()`、`kind:'raster'` は
+`read(bandIndex)`（`grid:{west,north,pixelLng,pixelLat}`・行は北から南・`NaN` は欠損・バンドが
+`fields[]` に並ぶ＝「どの列で」がそのまま「どのバンドで」になる）。それ以外の機械——id の採番・
+provenance のレシピ・lineage・`stale`——は全部同じなので、**格子は処理の入力にも出力にもなる**。
+格子の算術は `js/gis-raster.js` だけが持つ（平均は**面積重み付き**・`areaKm2` と `valueAreaKm2` の差が
+答えの被覆・欠損を bilinear で混ぜない・格子が違う 2 枚の差分は `grid-mismatch` で拒み**黙って
+再標本化しない**）。
+
+**⚠ 時刻は契約の一部で、宣言は検証される。** `time` は `null`／`instant`／`interval`／`track`
+（位置 1 つごとに 1 時刻）／`constant` のいずれかで、**実データに対して確かめてから**持つ。
+成り立たなければ `timeRefused` に理由が入る——欄が埋まっていることと誰かが述べたことは別である。
+`track` の並行配列は**長さが位置の数と等しいことを地物ごとに測る**（`sanitizeFeatures` は位置を落とし、
+第 3 座標成分を畳む。だから標高は座標の中ではなく隣に運ぶ）。裸の年は**その年 1 年**で、
+`Date.UTC` は使わない（100 未満の年が 1900+y になる）。`timeWindow` は列名ではなく**この宣言**を読み、
+軌跡に対しては選ぶのではなく**切る**（並行配列も一緒に切る）。
+
 **⚠ 列の型は列名ではなく値で決める。** ある列は、空でない値が**全部**数値として解けるときだけ `number`。
-空セルの数は判定の隣に持つ。日付は**年から始まる ISO-8601 系だけ**受ける（`03/04/2020` は読む人によって
+空セルの数は判定の隣に持つ。⚠ **先頭ゼロのセルは符号であって数ではない**——十進の記法に無意味な
+先頭ゼロは無いので `"01100"` は識別子であり、数として扱うと比較が `asNumber` を通って
+**`"01100" == "1100"` が真**になる（統計が隣の自治体に付く）。規則は**記法**であって列名の一覧ではなく、
+`0`・`0.5`・`0e3` は数のまま。外した件数は `fields[].padded` に載る。
+日付は**年から始まる ISO-8601 系だけ**受ける（`03/04/2020` は読む人によって
 違う日になる）。同じ判定を `js/gis-ops.js` も使う——2 つ持つと、パネルでは比較できて問い合わせでは
 できない列が生まれる。
 
@@ -1836,7 +1864,10 @@ commit-or-restore——失敗したら元のレコードを戻したうえで `s
 一覧を持たず**数え上げる**——`IntMapLayers` の行のうち `state()` が答え `featuresIn()` が配列を返す
 もの、およびレンダラの style から読んだ geojson source（どのレイヤー行も代弁しない、上げただけの
 ファイルも届く）。`read()` は**形状も属性も落とさない**。`toDataset()` の `provenance` は
-`{kind:'layer', layer, bounds, at}`。
+`{kind:'layer', layer, bounds, at, statedTime}`。**入口は `js/gis-panel.js` の「地図から取り込む」節**
+——`sources()` を並べ、`toDataset()`（地物）と `toRaster()`（数値レイヤーを格子に焼く。1 画素 1 await
+なので中止でき進捗を述べる）を呼ぶ。⚠ レイヤーが述べる時刻は**読者向けの文**なので、文は
+`provenance.statedTime` にそのまま運び、`time` の宣言は**時刻として読めるときだけ**行う。
 
 **⚠ 横断クエリは、この層を「問い合わせの瞬間に」読む**（`js/atlas-query.js` の `syncUserTables()`）。
 `data.query` の `from` に**データセットの id をそのまま書ける**。列は `js/gis-datasets.js` が測った

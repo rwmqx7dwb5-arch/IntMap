@@ -179,12 +179,37 @@ export function makeGisProject() {
           params: prov.params ? JSON.parse(JSON.stringify(prov.params)) : {},
         });
       }
+      /* ⚠ A RASTER BODY HOLDS SAMPLES, AND rec.features() DOES NOT EXIST ON IT (#R735). Without this
+         arm the first project containing an imported grid would have thrown inside save() and come
+         back as `read-failed` — a file the reader had opened, reported as an unreadable registry.
+         A raster made BY an op does not come here: its provenance is a recipe, which the arm above
+         saves and load() replays, so the megabytes are stored only for the grid nothing can rebuild.
+         The samples go in as the typed arrays they are; IndexedDB stores them by structured clone,
+         which keeps them binary instead of turning every pixel into digits. */
+      if (rec.kind === 'raster') {
+        const bands = Array.isArray(rec.bands) ? rec.bands : [];
+        return Object.assign(base, {
+          kind: 'raster-body',
+          provenance: JSON.parse(JSON.stringify(prov)),
+          time: rec.time ? JSON.parse(JSON.stringify(rec.time)) : null,
+          width: rec.width, height: rec.height,
+          grid: Object.assign({}, rec.grid),
+          bands: JSON.parse(JSON.stringify(bands)),
+          samples: bands.map((_, i) => rec.read(i)),
+        });
+      }
       /* Anything that is not an op is a body — an import, and also the `unknown` provenance a
          built-in record carries. Neither can be re-run, so the features go in and the provenance is
          carried verbatim rather than being re-labelled as an import it was not. */
       return Object.assign(base, {
         kind: 'body',
         provenance: JSON.parse(JSON.stringify(prov)),
+        /* ⚠ (#R735) THE TIME DECLARATION IS PART OF THE BODY. It was measured once, when the file
+           was read — a GPX track's per-fix axis is a property of those bytes — and a reload that
+           dropped it would bring the features back with `time:null`, which says 「この記録は時刻を
+           述べていない」 about a file that does. It is re-verified on the way in, so a saved
+           declaration cannot outlive the features it describes. */
+        time: rec.time ? JSON.parse(JSON.stringify(rec.time)) : null,
         features: rec.features(),
       });
     }
@@ -198,6 +223,28 @@ export function makeGisProject() {
       if (typeof s !== 'string') return null;
       try { if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(s).length; } catch (_) { }
       return s.length;
+    }
+
+    /* ⚠ SAMPLES ARE MEASURED, NOT SERIALISED (#R735). JSON.stringify of a Float64Array is not a
+       number list — it is `{"0":…,"1":…}`, one key per pixel — so asking byteSize about a 4,000 × 4,000
+       grid would build a string of several hundred megabytes to report a size, on the main thread,
+       for a number the reader glances at. The binary length IS the size IndexedDB stores, so it is
+       taken from the buffer and the rest of the record is measured as text. */
+    function recordBytes(rec) {
+      let binary = 0;
+      const steps = (rec && rec.steps) || [];
+      const light = steps.map((st) => {
+        if (st.kind !== 'raster-body') return st;
+        for (const arr of (st.samples || [])) {
+          if (arr && typeof arr.byteLength === 'number') binary += arr.byteLength;
+          else if (Array.isArray(arr)) binary += arr.length * 8;
+        }
+        const copy = Object.assign({}, st);
+        delete copy.samples;
+        return copy;
+      });
+      const text = byteSize(Object.assign({}, rec, { steps: light }));
+      return (text == null) ? null : text + binary;
     }
 
     function newId() {
@@ -220,7 +267,7 @@ export function makeGisProject() {
         datasets: steps.length,
         steps,
       };
-      const bytes = byteSize(rec);
+      const bytes = recordBytes(rec);
       return withStore('readwrite', (st) => { st.put(rec); }).then((r) => {
         if (!r.ok) return r;
         return { ok: true, id: rec.id, datasets: rec.datasets, bytes };
@@ -305,12 +352,31 @@ export function makeGisProject() {
       }
       try { reg.remove(step.id); } catch (_) { }
       try {
+        if (step.kind === 'raster-body') {
+          const samples = Array.isArray(step.samples) ? step.samples : [];
+          reg.add({
+            kind: 'raster',
+            id: step.id,
+            title: step.title,
+            sourceCrs: step.sourceCrs || null,
+            provenance: step.provenance || { kind: 'unknown' },
+            time: step.time || null,
+            width: step.width, height: step.height, grid: step.grid,
+            bands: Array.isArray(step.bands) ? step.bands : [],
+            /* The stored arrays are handed back as they are. ⚠ A band whose samples did not survive
+               the round trip is answered with an EMPTY array rather than a zero-filled grid: zeroes
+               are a reading, and js/gis-raster.js would report them as elevations of exactly 0 m. */
+            read: (i) => (samples[i] || []),
+          });
+          return Promise.resolve({ ok: true });
+        }
         reg.add({
           id: step.id,
           title: step.title,
           features: Array.isArray(step.features) ? step.features : [],
           sourceCrs: step.sourceCrs || null,
           provenance: step.provenance || { kind: 'unknown' },
+          time: step.time || null,
         });
         return Promise.resolve({ ok: true });
       } catch (e) {
@@ -406,15 +472,30 @@ export function makeGisProject() {
          not even be called again to put the value back ('no-such-dataset'). Holding the record
          costs a pointer — features() hands back the same array — and makes each step commit or
          restore rather than commit or vanish. */
+      /* ⚠ (#R735) WHAT IS HELD DEPENDS ON WHAT THE RECORD HOLDS. A raster's payload is behind read()
+         and it has no features(), so the one-shape snapshot would have THROWN on the first op that
+         outputs a grid — turning 「半径を変えて計算し直す」 on a chain with a raster in it into an
+         exception, at the exact moment the old record had already been removed. The commit-or-restore
+         guarantee #R732 built is only as wide as the shapes this function can hold. */
       function snapshot(id) {
         const rec = reg.get(id);
         if (!rec) return null;
-        return { id: rec.id, title: rec.title, sourceCrs: rec.sourceCrs || null, provenance: rec.provenance, createdAt: rec.createdAt, features: rec.features(), stale: rec.stale || null };
+        const base = { id: rec.id, title: rec.title, sourceCrs: rec.sourceCrs || null, provenance: rec.provenance, createdAt: rec.createdAt, time: rec.time || null, stale: rec.stale || null };
+        if (rec.kind === 'raster') {
+          const bands = Array.isArray(rec.bands) ? rec.bands : [];
+          const held = bands.map((_, i) => rec.read(i));
+          return Object.assign(base, { kind: 'raster', width: rec.width, height: rec.height, grid: rec.grid, bands: bands, read: (i) => (held[i] || []) });
+        }
+        return Object.assign(base, { features: rec.features() });
       }
       function restore(snap, why) {
         if (!snap || reg.has(snap.id)) return;
         try {
-          reg.add({ id: snap.id, title: snap.title, features: snap.features, sourceCrs: snap.sourceCrs, provenance: snap.provenance, createdAt: snap.createdAt });
+          if (snap.kind === 'raster') {
+            reg.add({ kind: 'raster', id: snap.id, title: snap.title, sourceCrs: snap.sourceCrs, provenance: snap.provenance, createdAt: snap.createdAt, time: snap.time, width: snap.width, height: snap.height, grid: snap.grid, bands: snap.bands, read: snap.read });
+          } else {
+            reg.add({ id: snap.id, title: snap.title, features: snap.features, sourceCrs: snap.sourceCrs, provenance: snap.provenance, createdAt: snap.createdAt, time: snap.time });
+          }
           reg.invalidate(snap.id, why);
         } catch (_) { }
       }

@@ -114,6 +114,22 @@ export function makeGisLayers() {
       try { const s = R && R.state ? R.state(id) : null; return (s && s.label) || null; } catch (_) { return null; }
     }
 
+    /* What the layer says about WHEN it is (#R735). A sentence for a reader in most rows — see
+       toDataset for why that distinction is carried rather than flattened. */
+    function layerTime(id) {
+      const R = REG();
+      try { const s = R && R.state ? R.state(id) : null; const t = s && s.time; return (t == null || t === '') ? null : String(t); } catch (_) { return null; }
+    }
+
+    /* Whether a layer answers 「その地点の値は」 at all — the contract js/map-ui.js documents as
+       `sampleAt(lng,lat) → the REAL value at a point`. It is the entrance toRaster() uses, and the
+       reason a numeric layer can become a dataset without anybody writing a reader for it. */
+    function canSample(id) {
+      const R = REG();
+      if (!R || typeof R.sampleAt !== 'function') return false;
+      try { const s = R.state ? R.state(id) : null; return !!(s && s.on); } catch (_) { return false; }
+    }
+
     /* The renderer's GeoJSON sources, off the parsed style. ⚠ The style is the renderer's own
        inventory, so a source added by a module this file has never heard of is in it. */
     function geojsonSourceIds() {
@@ -235,11 +251,25 @@ export function makeGisLayers() {
       const wanted = (o.id == null || o.id === '') ? null : String(o.id);
       if (wanted && D.has && D.has(wanted)) return { ok: false, why: 'id-in-use', detail: { id: wanted } };
       const title = o.title ? String(o.title) : (layerLabel(String(id)) || sourceLabel(String(id)) || String(id));
+      /* ⚠ (#R735) THE LAYER'S OWN TIME USED TO STOP AT THE DOOR. Every readable row can say when it
+         is — window.IntMapLayers.state(id).time — and this function recorded only `at: Date.now()`,
+         the moment the copy was taken. So a dataset made from 「2020 年の選挙」 arrived saying it was
+         made today and nothing else, and the analysis built on it could not be filtered by, grouped
+         by, or even labelled with the time of the thing it describes.
+         ⚠ WHAT THAT FIELD HOLDS IS A SENTENCE, NOT A TIMESTAMP. The layers write it for a reader:
+         「直近 24 h」, 「2020-06-15 12:00 UTC」, 「1889」. So it is carried two ways, and the split is
+         the point: the string goes into the provenance verbatim, because the layer said it and
+         throwing away a statement loses information; and a `time` declaration is made ONLY when the
+         string actually reads as a moment. Declaring 「直近 24 h」 as an instant would be this
+         project's recorded 「誰も述べていないことを地図が述べる」 defect, in a new place. */
+      const stated = layerTime(String(id));
+      const moment = (stated && D.momentOf) ? D.momentOf(stated) : null;
       const spec = {
         title,
         features: r.features,
         sourceCrs: 'EPSG:4326',
-        provenance: { kind: 'layer', layer: String(id), bounds: r.bounds, at: Date.now() },
+        time: moment ? { kind: 'constant', start: stated, end: stated } : (o.time || null),
+        provenance: { kind: 'layer', layer: String(id), bounds: r.bounds, at: Date.now(), statedTime: stated || null },
       };
       if (wanted) spec.id = wanted;
       try {
@@ -250,7 +280,96 @@ export function makeGisLayers() {
       }
     }
 
-    const API = { sources, read, toDataset };
+    /* ── toRaster() ───────────────────────────────────────────────────────────────────────────
+       ⚠ (#R735) THE NUMERIC LAYERS WERE THE ONES NOTHING COULD ANALYSE. read() hands over features,
+       and half of what is on this map is not features: precipitation, temperature, elevation, land
+       cover and the rest are FIELDS, read one point at a time through the contract js/map-ui.js
+       states as `sampleAt(lng,lat) → the REAL value at a point`. There was no way to point an op at
+       one, so 「この区域の平均標高」 and 「区分ごとの面積」 each had to be built as a separate feature
+       of the app — the thing js/gis-raster.js exists to stop.
+
+       This bakes one such layer over one window into a grid dataset. ⚠ IT IS A SAMPLE OF A LAYER AND
+       IT SAYS SO: the grid, the window and the layer id go into the provenance, so the record cannot
+       be mistaken for the upstream's own raster, and a reader who wants it finer runs it again.
+       ⚠ ONE await PER PIXEL, ON THE MAIN THREAD — that is what the contract offers, so there is no
+       pretending otherwise: instead the work is interruptible (`signal`) and it reports where it is
+       (`onProgress`), and it yields between rows so the map keeps drawing while it runs. A ceiling
+       written here would be a number with no measurement behind it, on a cost that depends entirely
+       on which layer is being asked. */
+    async function toRaster(id, opts) {
+      const o = opts || {};
+      const key = String(id == null ? '' : id);
+      const R = REG(), D = DATA();
+      if (!R || typeof R.sampleAt !== 'function') return { ok: false, why: 'map-unavailable', detail: { needs: 'sampleAt' } };
+      if (!D || typeof D.add !== 'function') return { ok: false, why: 'registry-missing' };
+      if (layerIds().indexOf(key) < 0) return { ok: false, why: 'layer-unknown', detail: { id: key } };
+      /* ⚠ A LAYER THAT IS SWITCHED OFF HAS NO VALUES TO GIVE, and this is the one refusal a reader
+         can act on immediately. The layers load their grids when they are turned on (js/map-ui.js),
+         so sampling one that is off answers null for every pixel — a grid of holes that looks like a
+         measurement of nothing. 「見つからなかった」と「訊けなかった」を同じ答えにしない. */
+      if (!canSample(key)) return { ok: false, why: 'layer-not-sampling', detail: { id: key } };
+
+      const box = (o.bounds == null) ? WHOLE_WORLD : asBox(o.bounds);
+      if (!finiteBox(box)) return { ok: false, why: 'bad-param', detail: { param: 'bounds', value: o.bounds } };
+      const int = (v) => (typeof v === 'number' && isFinite(v) && Number.isInteger(v) && v > 0);
+      if (!int(o.width) || !int(o.height)) return { ok: false, why: 'bad-param', detail: { param: int(o.width) ? 'height' : 'width', value: int(o.width) ? o.height : o.width } };
+
+      const w = o.width, h = o.height;
+      const pixelLng = (box.e - box.w) / w, pixelLat = (box.n - box.s) / h;
+      if (!(pixelLng > 0) || !(pixelLat > 0)) return { ok: false, why: 'bad-param', detail: { param: 'bounds', value: [box.w, box.s, box.e, box.n] } };
+
+      const asNum = (D.asNumber) ? D.asNumber : ((v) => (typeof v === 'number' && isFinite(v) ? v : null));
+      const cells = new Float64Array(w * h);
+      let read = 0, textSeen = null;
+      for (let row = 0; row < h; row++) {
+        if (o.signal && o.signal.aborted) return { ok: false, why: 'cancelled', detail: { rows: row, of: h } };
+        const lat = box.n - (row + 0.5) * pixelLat;
+        for (let col = 0; col < w; col++) {
+          const lng = box.w + (col + 0.5) * pixelLng;
+          let v = null;
+          try {
+            const got = await R.sampleAt(lng, lat, [key]);
+            const hit = Array.isArray(got) ? got.find((x) => x && String(x.id) === key) : null;
+            if (hit) { v = asNum(hit.value); if (v == null && textSeen == null) textSeen = String(hit.value); }
+          } catch (_) { v = null; }
+          /* ⚠ NaN, NOT ZERO. A missing sample written as 0 is an elevation of exactly sea level and a
+             rainfall of exactly none; js/gis-raster.js treats NaN as absent in every statistic. */
+          cells[row * w + col] = (v == null) ? NaN : v;
+          if (v != null) read++;
+        }
+        if (typeof o.onProgress === 'function') { try { o.onProgress({ rows: row + 1, of: h, read: read }); } catch (_) { } }
+        /* one turn of the event loop per row: the camera, the renderer and the cancel button all
+           live on this thread */
+        await new Promise((res) => setTimeout(res, 0));
+      }
+      /* ⚠ A GRID WITH NO NUMBERS IN IT IS NOT A GRID, and the sentence the layer answered with is
+         what the reader needs to see: a layer whose sampleAt returns 「12 °C」 has values, it just
+         does not have them as numbers, and that is a different thing to fix. */
+      if (!read) return { ok: false, why: 'layer-values-not-numeric', detail: { id: key, sample: textSeen } };
+
+      const stated = layerTime(key);
+      const moment = (stated && D.momentOf) ? D.momentOf(stated) : null;
+      const spec = {
+        kind: 'raster',
+        title: o.title ? String(o.title) : (layerLabel(key) || key),
+        sourceCrs: 'EPSG:4326',
+        width: w, height: h,
+        grid: { west: box.w, north: box.n, pixelLng: pixelLng, pixelLat: pixelLat },
+        bands: [{ name: layerLabel(key) || key, unit: (o.unit == null ? null : String(o.unit)), nodata: null }],
+        read: () => cells,
+        time: moment ? { kind: 'constant', start: stated, end: stated } : null,
+        provenance: { kind: 'layer-raster', layer: key, bounds: { w: box.w, s: box.s, e: box.e, n: box.n }, width: w, height: h, sampled: read, at: Date.now(), statedTime: stated || null },
+      };
+      if (o.id != null && o.id !== '') {
+        const wanted = String(o.id);
+        if (D.has && D.has(wanted)) return { ok: false, why: 'id-in-use', detail: { id: wanted } };
+        spec.id = wanted;
+      }
+      try { return { ok: true, dataset: D.add(spec) }; }
+      catch (e) { return { ok: false, why: 'add-failed', detail: { message: e && e.message } }; }
+    }
+
+    const API = { sources, read, toDataset, toRaster, canSample };
     try { window.IntMapGisLayers = API; } catch (_) { }
     return API;
   })();

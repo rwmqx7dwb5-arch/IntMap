@@ -73,6 +73,9 @@ export function makeGisOps() {
        distance. Read at CALL time for the same reason the two above are: this module may be built
        before it publishes, and a captured `undefined` would be permanent. */
     function geometry() { try { return (typeof window !== 'undefined' && window.IntMapGisGeometry) || null; } catch (_) { return null; } }
+    /* (#R735) The grid arithmetic and the spatial index, asked the same way and for the same reason. */
+    function rasterKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisRaster) || null; } catch (_) { return null; } }
+    function indexKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisIndex) || null; } catch (_) { return null; } }
     function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
 
     const D2R = Math.PI / 180;
@@ -370,6 +373,70 @@ export function makeGisOps() {
           { name: 'maxKm', type: 'number', required: false, unit: 'km', requiredWhen: { predicate: ['nearer-than'] } },
         ],
       },
+      /* ── the grid ops (#R735) ─────────────────────────────────────────────────────────────────
+         ⚠ `kinds` IS WHY THESE CAN EXIST WITHOUT A SPECIAL CASE IN EVERY OTHER OP. `accepts` asks
+         about geometry, and a grid has none — so before this key the nine ops above would have taken
+         a raster as an input with `geometryType:null` and either refused it as 'Mixed' or, for the
+         `any` slots, walked a features() that is not there. Declaring the PAYLOAD each slot needs, and
+         defaulting it to 'vector', is what makes 「そのデータはこの処理の入力ではない」 a refusal by
+         name (`input-kind`) for every op at once, the old ones included. */
+      sample: {
+        /* 地点値の取得: each point gets a column holding the grid's value under it. */
+        id: 'sample', inputs: 2, accepts: ['Point', 'any'], kinds: ['vector', 'raster'], output: 'same-as-input',
+        needsRaster: true,
+        params: [
+          { name: 'band', type: 'field', required: false, input: 1 },
+          { name: 'method', type: 'enum', required: false, default: 'nearest', values: ['nearest', 'bilinear'] },
+          { name: 'outName', type: 'text', required: false },
+        ],
+      },
+      zonal: {
+        /* 区域内集計 over a grid — 「この区域の人口」「区域内の標高分布」「土地被覆ごとの面積」 as one
+           op rather than three features of the app. `classes` is the last of those: the area of each
+           distinct value, which only means anything for a grid of codes, so it refuses a grid of
+           measurements by name instead of rounding them into classes. */
+        id: 'zonal', inputs: 2, accepts: ['Polygon', 'any'], kinds: ['vector', 'raster'], output: 'Polygon',
+        needsGeodesy: true, needsGeometry: true, needsRaster: true,
+        params: [
+          { name: 'band', type: 'field', required: false, input: 1 },
+          { name: 'stat', type: 'enum', required: true, default: 'mean', values: ['mean', 'sum', 'min', 'max', 'count', 'classes'] },
+          { name: 'outName', type: 'text', required: false },
+        ],
+      },
+      rasterMask: {
+        /* 条件による抽出: the same grid with everything that fails the test turned into a void.
+           ⚠ The operator list is CONDITION_OPS minus the one that has no meaning for numbers, derived
+           rather than retyped — a tenth comparison added to the filter arrives here too. */
+        id: 'rasterMask', inputs: 1, accepts: ['any'], kinds: ['raster'], output: 'raster',
+        needsRaster: true,
+        params: [
+          { name: 'band', type: 'field', required: false, input: 0 },
+          { name: 'op', type: 'enum', required: true, default: '>=', values: CONDITION_OPS.filter((o) => o !== 'contains') },
+          { name: 'value', type: 'text', required: true },
+        ],
+      },
+      rasterDiff: {
+        /* 時期同士の差分: a − b, on the grid they share. Two grids that are not the same grid are
+           refused rather than resampled — see js/gis-raster.js diff(). */
+        id: 'rasterDiff', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        needsRaster: true,
+        params: [{ name: 'band', type: 'field', required: false, input: 0 }],
+      },
+      timeWindow: {
+        /* ⚠ THE TIME AXIS IS THE DATASET'S, NOT A COLUMN NAME TYPED HERE (#R735). js/gis-datasets.js
+           holds a VERIFIED declaration — an instant, a span, or one timestamp per position — so this
+           op works the same on a table of events, a table of reigns and a GPS trace, and a dataset
+           that never declared one is refused by name instead of being filtered on a guess.
+           ⚠ For a trace the window CUTS rather than selects: 「17 時台に通った区間」 is a piece of the
+           line, not the whole ride, and returning the whole feature because one of its 4,000 fixes is
+           inside would answer a question nobody asked. */
+        id: 'timeWindow', inputs: 1, accepts: ['any'], output: 'same-as-input',
+        params: [
+          { name: 'from', type: 'text', required: false },
+          { name: 'to', type: 'text', required: false },
+          { name: 'mode', type: 'enum', required: false, default: 'overlaps', values: ['overlaps', 'within'] },
+        ],
+      },
       aggregate: {
         /* ⚠ `accepts[1]` WAS 'Point' (#R729) and the arithmetic was 「面に含まれる点」. With a real
            predicate available it is 「その面に重なるもの」, which is the same answer for points and
@@ -396,6 +463,83 @@ export function makeGisOps() {
     /* ── the runners ──────────────────────────────────────────────────────────────────────────── */
 
     function fail(why, detail) { return detail ? { ok: false, why: why, detail: detail } : { ok: false, why: why }; }
+
+    /* ── how a long step stays interruptible (#R735) ───────────────────────────────────────────
+       ⚠ A SYNCHRONOUS LOOP CANNOT BE CANCELLED, AND THAT IS NOT A LIMITATION OF THE UI. run() was
+       already `async`, but every runner inside it was one uninterrupted loop: a 40,000-polygon
+       aggregate held the single thread for its whole duration, so the map froze, no progress could be
+       drawn, and an AbortSignal could not even be SET — the code that would set it does not run until
+       the loop lets go. Offering a cancel button over that would be a control with no effect.
+
+       So the two runners whose cost grows with the data yield, and the yield is where the signal is
+       read. ⚠ THE UNIT IS TIME, NOT A COUNT. A chunk of 「1,000 polygons」 is 3 ms of one dataset and
+       40 s of another — the number that matters is how long the thread has been held, and one frame
+       at 60 Hz is what the renderer needs to stay alive. So elapsed milliseconds decide, and there is
+       no per-dataset count to tune.
+       ⚠ IT IS NOT A WORKER. The kernels this file calls (js/gis-geometry.js's sweep-line, the
+       registry, the geodesy) all live on this thread; moving the loop alone would leave every call it
+       makes behind. What a Worker would add is parallelism; what this adds is a thread that answers
+       the reader — and 「止められる」 was the part that was missing. docs/GIS-CORE.md §6 says which of
+       the two is still open. */
+    const FRAME_MS = 16;
+    function nowMs() { try { if (typeof performance !== 'undefined' && performance && performance.now) return performance.now(); } catch (_) { } return Date.now(); }
+
+    function makeCtx(opts) {
+      const o = opts || {};
+      const sig = o.signal || null;
+      const onp = (typeof o.onProgress === 'function') ? o.onProgress : null;
+      let last = nowMs(), done = 0;
+      return {
+        aborted: () => !!(sig && sig.aborted),
+        done: () => done,
+        /* true = keep going, false = the reader asked to stop. */
+        async tick(units, total) {
+          done += (typeof units === 'number' && isFinite(units)) ? units : 1;
+          if (sig && sig.aborted) return false;
+          const t = nowMs();
+          if (t - last < FRAME_MS) return true;
+          last = t;
+          if (onp) { try { onp({ done: done, total: (typeof total === 'number' ? total : null) }); } catch (_) { } }
+          await new Promise((res) => setTimeout(res, 0));
+          return !(sig && sig.aborted);
+        },
+      };
+    }
+
+    /* ── the spatial index, where it changes the exponent (#R735) ───────────────────────────────
+       `boxesMeet` in this file turns the constant down; it still tests every pair. js/gis-index.js is
+       the grid that stops the pairs from being enumerated at all. It is asked for, not required: a
+       build without it is slower and answers the same thing, so a missing kernel must not become a
+       refusal. ⚠ The FALLBACK IS THE OLD WALK, and both paths hand the same candidate set to the same
+       predicate — an index that dropped a true pair would make a count quietly smaller, which is why
+       tests/r735-gis-raster-time-checks measures the two against each other. */
+    function candidateSource(members) {
+      const IX = indexKernel();
+      if (IX && typeof IX.build === 'function' && typeof IX.queryEach === 'function') {
+        let ix = null;
+        try { ix = IX.build(members); } catch (_) { ix = null; }
+        if (ix) {
+          return {
+            indexed: true,
+            /* ⚠ THE BOX TEST STILL RUNS. The grid answers with a SUPERSET — an item in a cell the
+               query touches need not meet the query box — so keeping boxesMeet here is what makes the
+               indexed and the unindexed paths hand the predicate the same set, rather than the same
+               answer by two different routes. It is the cheap test; the point of the index is that it
+               is now asked about tens of items instead of all of them. */
+            each: (box, padDeg, fn) => {
+              try { IX.queryEach(ix, box, (m) => (boxesMeet(box, m.bbox, padDeg || 0) ? fn(m) : true), { padDeg: padDeg }); }
+              catch (_) { for (const m of members) { if (!boxesMeet(box, m.bbox, padDeg || 0)) continue; if (fn(m) === false) break; } }
+            },
+            stats: () => { try { return IX.stats(ix); } catch (_) { return null; } },
+          };
+        }
+      }
+      return {
+        indexed: false,
+        each: (box, padDeg, fn) => { for (const m of members) { if (!boxesMeet(box, m.bbox, padDeg || 0)) continue; if (fn(m) === false) break; } },
+        stats: () => null,
+      };
+    }
 
     function hasField(ds, name) {
       for (const f of (ds.fields || [])) if (f && f.name === name) return true;
@@ -473,10 +617,13 @@ export function makeGisOps() {
       return out;
     }
 
-    function runClip(subject, clipper) {
+    async function runClip(subject, clipper, ctx) {
       const GG = geometry();
       const windows = windowsOf(clipper);
       if (!windows.length) return fail('no-clip-polygons');
+      /* (#R735) Same grid as aggregate and relate: the windows are indexed once and asked per
+         subject feature. Clipping a country's roads by its 1,900 wards is the same shape of loop. */
+      const cand = candidateSource(windows);
 
       /* ⚠ #R729 MEASURED EVERY WINDOW FIRST AND REFUSED THE CONCAVE ONES. Nothing about the
          window's shape is measured here any more, because nothing about it is a reason to refuse:
@@ -485,19 +632,19 @@ export function makeGisOps() {
          pair rather than refusing the whole run, because one unusable window among three thousand
          prefectures is not a reason to give the reader nothing. */
       const out = [];
-      for (const f of subject.features()) {
+      const subjects = subject.features();
+      for (const f of subjects) {
+        if (!(await ctx.tick(1, subjects.length))) return fail('cancelled', { done: ctx.done(), total: subjects.length });
         const g = f && f.geometry;
         if (!g) continue;
         const base = props(f);
         const gb = bboxOf(g);
-        for (const w of windows) {
-          if (!boxesMeet(gb, w.bbox, 0)) continue;
-
+        cand.each(gb, 0, (w) => {
           if (polygonsOf(g).length) {
             const cut = GG.intersection(g, w.geometry);
-            if (!cut) continue;
+            if (!cut) return true;
             out.push({ type: 'Feature', properties: withProps(base, { _clipId: w.id, _areaKm2: areaKm2(cut) }), geometry: cut });
-            continue;
+            return true;
           }
           const lines = linesOf(g);
           if (lines.length) {
@@ -505,18 +652,19 @@ export function makeGisOps() {
             for (const line of lines) for (const run of clipLineByPolygon(line.filter(isPos), w.geometry, GG)) kept.push(run);
             const gg = lineGeometry(kept);
             if (gg) out.push({ type: 'Feature', properties: withProps(base, { _clipId: w.id }), geometry: gg });
-            continue;
+            return true;
           }
           const pts = pointsOf(g);
           if (pts.length) {
             const kept = pts.filter((pt) => GG.pointInGeometry(pt, w.geometry));
-            if (!kept.length) continue;
+            if (!kept.length) return true;
             const gg = (kept.length === 1 && g.type === 'Point')
               ? { type: 'Point', coordinates: kept[0] }
               : { type: 'MultiPoint', coordinates: kept };
             out.push({ type: 'Feature', properties: withProps(base, { _clipId: w.id }), geometry: gg });
           }
-        }
+          return true;
+        });
       }
       return { ok: true, features: out };
     }
@@ -569,12 +717,15 @@ export function makeGisOps() {
 
     /* ── the overlays: one runner, because they differ only in which verb is asked ─────────────── */
 
-    function runOverlay(kind, aDs, bDs) {
+    async function runOverlay(kind, aDs, bDs, ctx) {
       const GG = geometry();
       const bWins = windowsOf(bDs);
       if (!bWins.length) return fail('no-overlay-polygons', { input: 1 });
+      const cand = candidateSource(bWins);
       const out = [];
-      for (const f of aDs.features()) {
+      const subjects = aDs.features();
+      for (const f of subjects) {
+        if (!(await ctx.tick(1, subjects.length))) return fail('cancelled', { done: ctx.done(), total: subjects.length });
         const g = f && f.geometry;
         if (!g || !polygonsOf(g).length) continue;
         const base = props(f);
@@ -584,7 +735,8 @@ export function makeGisOps() {
           /* Taken against ALL of B at once. Subtracting one window at a time gives the same answer
              only if the windows do not overlap each other, and nothing in the registry says they do
              not — a second subtraction from an already-cut shape is not the same shape. */
-          const near = bWins.filter((w) => boxesMeet(gb, w.bbox, 0)).map((w) => w.geometry);
+          const near = [];
+          cand.each(gb, 0, (w) => { near.push(w.geometry); return true; });
           let cut = g;
           if (near.length) {
             const merged = GG.union(near);
@@ -595,10 +747,9 @@ export function makeGisOps() {
           continue;
         }
 
-        for (const w of bWins) {
-          if (!boxesMeet(gb, w.bbox, 0)) continue;
+        cand.each(gb, 0, (w) => {
           const res = (kind === 'intersect') ? GG.intersection(g, w.geometry) : GG.union([g, w.geometry]);
-          if (!res) continue;
+          if (!res) return true;
           /* ⚠ BOTH SIDES' COLUMNS SURVIVE, with A winning a collision, and the row says it came from
              a pair (`_overlayId`). Keeping only A would throw away the table the reader brought to
              the overlay; letting B win would rewrite the one they started from. */
@@ -607,7 +758,8 @@ export function makeGisOps() {
             properties: withProps(withProps(w.props, base), { _overlayId: w.id, _areaKm2: areaKm2(res) }),
             geometry: res,
           });
-        }
+          return true;
+        });
       }
       return { ok: true, features: out };
     }
@@ -659,7 +811,7 @@ export function makeGisOps() {
       return null;
     }
 
-    function runRelate(aDs, bDs, params, R) {
+    async function runRelate(aDs, bDs, params, R, ctx) {
       const GG = geometry();
       const predicate = (params.predicate == null) ? 'intersects' : String(params.predicate);
       if (RELATE_PREDICATES.indexOf(predicate) < 0) return fail('bad-param', { param: 'predicate', value: predicate, values: RELATE_PREDICATES });
@@ -683,8 +835,13 @@ export function makeGisOps() {
       const Rkm = earthKm();
       const pad = (predicate === 'nearer-than' && Rkm) ? (maxKm / (Math.PI * Rkm / 180)) : 0;
 
+      /* ⚠ THE INDEX IS BUILT ON THE OTHER SIDE, ONCE — one grid for the whole run, queried per
+         feature of input 0, which is the direction the cost runs in. */
+      const cand = candidateSource(others);
+      const subjects = aDs.features();
       const out = [];
-      for (const f of aDs.features()) {
+      for (const f of subjects) {
+        if (!(await ctx.tick(1, subjects.length))) return fail('cancelled', { done: ctx.done(), total: subjects.length });
         const g = f && f.geometry;
         if (!g) continue;
         const gb = bboxOf(g);
@@ -697,20 +854,20 @@ export function makeGisOps() {
              proof that those two do not touch — so the box is used the other way round, as an
              acceptance. */
           hit = true;
-          for (const o of others) {
-            if (!boxesMeet(gb, o.bbox, 0)) continue;
-            if (GG.intersects(g, o.geometry)) { hit = false; break; }
-          }
+          cand.each(gb, 0, (o) => {
+            if (!GG.intersects(g, o.geometry)) return true;
+            hit = false;
+            return false;
+          });
         } else {
-          for (const o of others) {
-            if (!boxesMeet(gb, o.bbox, pad)) continue;
+          cand.each(gb, pad, (o) => {
             const d = relateOne(GG, g, o.geometry, predicate, maxKm);
-            if (d == null) continue;
+            if (d == null) return true;
             hit = true;
             if (best == null || d < best) best = d;
             /* Only the nearest matters for a distance; for a yes/no the first yes is the answer. */
-            if (predicate !== 'nearer-than') break;
-          }
+            return (predicate === 'nearer-than');
+          });
         }
 
         if (!hit) continue;
@@ -724,7 +881,7 @@ export function makeGisOps() {
       return { ok: true, features: out };
     }
 
-    function runAggregate(polyDs, memberDs, params, R) {
+    async function runAggregate(polyDs, memberDs, params, R, ctx) {
       const GG = geometry();
       const stat = (params.stat == null) ? 'count' : String(params.stat);
       const allowed = DECL.aggregate.params[0].values;
@@ -752,31 +909,37 @@ export function makeGisOps() {
         members.push({ geometry: g, bbox: bboxOf(g), raw: (field ? props(f)[field] : null) });
       }
 
+      /* ⚠ THE PAIRS ARE NO LONGER ENUMERATED (#R735). This was 「面をループ × member をループ」, and
+         the file's own note on boxesMeet said what that meant: the box test turns the constant down
+         and leaves O(n·m). js/gis-index.js is asked once for the members and queried per polygon. */
+      const cand = candidateSource(members);
+      const zones = polyDs.features();
       const out = [];
-      for (const f of polyDs.features()) {
+      for (const f of zones) {
+        if (!(await ctx.tick(1, zones.length))) return fail('cancelled', { done: ctx.done(), total: zones.length });
         const g = f && f.geometry;
         if (!g || !polygonsOf(g).length) continue;
         const gb = bboxOf(g);
         let n = 0, skipped = 0, sum = 0, min = null, max = null;
-        for (const m of members) {
-          if (!boxesMeet(gb, m.bbox, 0)) continue;
+        cand.each(gb, 0, (m) => {
           /* ⚠ 「この面に重なるもの」, asked of the one predicate. #R729 asked point-in-polygon, which
              is the same answer for a point and no answer at all for the roads and parcels a reader
              brings to a 区域別集計. A line that crosses the boundary counts for this polygon AND for
              its neighbour, which is what 「重なる」 means and is why `_areaKm2` is on the row: a
              reader dividing by area can see that the parts do not partition. */
-          if (!GG.intersects(m.geometry, g)) continue;
+          if (!GG.intersects(m.geometry, g)) return true;
           n++;
-          if (stat === 'count') continue;
+          if (stat === 'count') return true;
           const v = R.asNumber(m.raw);
           /* ⚠ A member inside the polygon whose value cannot be a number is COUNTED AS SKIPPED, not
              dropped in silence. A mean over 12 of 400 is not the mean the reader asked for, and
              `_statSkipped` is the only thing that can tell them so. */
-          if (v == null) { skipped++; continue; }
+          if (v == null) { skipped++; return true; }
           sum += v;
           if (min == null || v < min) min = v;
           if (max == null || v > max) max = v;
-        }
+          return true;
+        });
         const used = n - skipped;
         let value;
         if (stat === 'count') value = n;
@@ -792,17 +955,256 @@ export function makeGisOps() {
       return { ok: true, features: out };
     }
 
+    /* ── the grid runners (#R735) ───────────────────────────────────────────────────────────────
+       ⚠ NONE OF THE ARITHMETIC IS HERE. js/gis-raster.js owns 「格子とは何か」 — where a pixel is,
+       what it is worth in km², what a void does to a mean — exactly as js/gis-geometry.js owns shapes.
+       What these functions do is the part that is this file's: resolve the parameters a reader chose,
+       decide which column the answer is written into, and refuse rather than write over data. */
+
+    /* Which band the reader picked, by the NAME the registry publishes as the grid's column (see
+       js/gis-datasets.js addRaster). A name that is not a band is refused with the list, because
+       「そのバンドは無い」 with no list leaves the reader guessing. */
+    function bandIndexOf(ds, name) {
+      const bands = Array.isArray(ds.bands) ? ds.bands : [];
+      if (name == null || String(name).trim() === '') return { ok: true, index: 0 };
+      const want = String(name);
+      for (let i = 0; i < bands.length; i++) if (String(bands[i].name) === want) return { ok: true, index: i };
+      return { ok: false, res: fail('unknown-band', { band: want, bands: bands.map((b) => String(b.name)) }) };
+    }
+
+    async function runSample(ptDs, rasDs, params, R, ctx) {
+      const RK = rasterKernel();
+      const b = bandIndexOf(rasDs, params.band);
+      if (!b.ok) return b.res;
+      const method = (params.method == null || String(params.method) === '') ? 'nearest' : String(params.method);
+      const allowed = DECL.sample.params[1].values;
+      if (allowed.indexOf(method) < 0) return fail('bad-param', { param: 'method', value: method, values: allowed });
+      const band = (rasDs.bands[b.index] || {});
+      const outName = (params.outName != null && String(params.outName).trim() !== '') ? String(params.outName).trim() : String(band.name || 'value');
+      if (hasField(ptDs, outName)) return fail('output-column-in-use', { name: outName });
+
+      const pts = ptDs.features();
+      const out = [];
+      let read = 0, outside = 0, voids = 0, partial = 0, skipped = 0;
+      for (const f of pts) {
+        if (!(await ctx.tick(1, pts.length))) return fail('cancelled', { done: ctx.done(), total: pts.length });
+        const g = f && f.geometry;
+        const c = g && g.coordinates;
+        /* ⚠ A MultiPoint IS ONE ROW WITH SEVERAL POSITIONS, and `accepts:['Point']` folds Multi* into
+           its singular — so one arrives here legitimately and there is no single value to write for it.
+           It is marked and counted rather than passed through bare: a row that is missing the column
+           everything else has would read as 「格子に穴があった」, which is a different claim. */
+        if (!isPos(c)) {
+          out.push({ type: 'Feature', properties: withProps(props(f), { _sampleSkipped: true }), geometry: g });
+          skipped++;
+          continue;
+        }
+        const r = RK.sample(rasDs, b.index, c[0], c[1], { method: method });
+        const extra = {};
+        /* ⚠ THREE DIFFERENT ANSWERS, THREE DIFFERENT COLUMNS' WORTH OF TRUTH — and they are not the
+           same claim. `null` with `_sampleOutside` means the point is not on this grid at all;
+           `null` with nothing means the grid covers it and holds no value there; a number means a
+           reading. Collapsing all three to `null` is how a 「データが無い」 becomes indistinguishable
+           from 「範囲外を訊いた」, and the second one is a mistake the reader can fix. */
+        if (!r || !r.ok) { extra[outName] = null; extra._sampleOutside = true; outside++; }
+        else if (r.value == null) { extra[outName] = null; voids++; }
+        else { extra[outName] = r.value; read++; if (r.partial) { extra._samplePartial = true; partial++; } }
+        out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
+      }
+      return { ok: true, features: out, stats: { read: read, outside: outside, nodata: voids, partial: partial, skipped: skipped } };
+    }
+
+    async function runZonal(polyDs, rasDs, params, R, ctx) {
+      const RK = rasterKernel();
+      const b = bandIndexOf(rasDs, params.band);
+      if (!b.ok) return b.res;
+      const stat = (params.stat == null) ? 'mean' : String(params.stat);
+      const allowed = DECL.zonal.params[1].values;
+      if (allowed.indexOf(stat) < 0) return fail('bad-param', { param: 'stat', value: stat, values: allowed });
+      const band = (rasDs.bands[b.index] || {});
+      const base = (params.outName != null && String(params.outName).trim() !== '')
+        ? String(params.outName).trim()
+        : (stat + '_' + String(band.name || 'band'));
+      /* Same rule for every stat, `classes` included: writing over a column the polygons already
+         carry destroys data the reader imported, and the map of class areas is no less destructive
+         for being an object. */
+      if (hasField(polyDs, base)) return fail('output-column-in-use', { name: base });
+
+      const zones = polyDs.features();
+      const out = [];
+      for (const f of zones) {
+        if (!(await ctx.tick(1, zones.length))) return fail('cancelled', { done: ctx.done(), total: zones.length });
+        const g = f && f.geometry;
+        if (!g || !polygonsOf(g).length) continue;
+        const z = RK.zonal(rasDs, b.index, g, (stat === 'classes') ? { classes: true } : null);
+        /* ⚠ A ZONE THE KERNEL REFUSED IS NOT A ZONE WITH NO DATA. A ring that wraps the world, a
+           degenerate polygon, a grid it could not read: each of those is a reason, and writing `null`
+           into the column for it would put 「測れなかった」 and 「そこには何も無い」 in the same cell.
+           The refusal stops the whole step, because a table where some rows silently mean something
+           else is worse than a step the reader has to fix. */
+        if (!z || !z.ok) return z || fail('zonal-failed');
+        const extra = { _areaKm2: areaKm2(g), _gridAreaKm2: z.areaKm2, _valueAreaKm2: z.valueAreaKm2, _pixels: z.count, _pixelsNodata: z.nodataCount };
+        if (stat === 'classes') {
+          /* One column per distinct value is not a table shape a reader can join to; the map from
+             value to km² is carried whole, under a name that says what it is. */
+          extra[base] = z.classAreasKm2 || null;
+        } else if (stat === 'count') extra[base] = z.count;
+        else if (stat === 'sum') extra[base] = z.sum;
+        else if (stat === 'mean') extra[base] = z.mean;
+        else if (stat === 'min') extra[base] = z.min;
+        else extra[base] = z.max;
+        if (stat === 'sum') extra._sumTimesAreaKm2 = z.sumTimesAreaKm2;
+        out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
+      }
+      return { ok: true, features: out };
+    }
+
+    function runRasterMask(rasDs, params, R) {
+      const RK = rasterKernel();
+      const b = bandIndexOf(rasDs, params.band);
+      if (!b.ok) return b.res;
+      const op = String(params.op == null ? '' : params.op);
+      const allowed = DECL.rasterMask.params[1].values;
+      if (allowed.indexOf(op) < 0) return fail('bad-param', { param: 'op', value: op, values: allowed });
+      if (params.value == null || params.value === '') return fail('missing-param', { param: 'value' });
+      /* `between` and `in` carry a list, exactly as the filter's conditions do. A reader typing
+         「10,20」 into one text box is the shape the panel produces for those two, so it is read here
+         rather than being refused for not already being an array. */
+      let value = params.value;
+      if (op === 'between' || op === 'in') {
+        if (!Array.isArray(value)) value = String(value).split(',').map((s) => s.trim()).filter((s) => s !== '');
+        value = value.map((v) => R.asNumber(v));
+        if (value.some((v) => v == null)) return fail('bad-param', { param: 'value', value: params.value });
+        if (op === 'between' && value.length !== 2) return fail('bad-param', { param: 'value', value: params.value });
+      } else {
+        const n = R.asNumber(value);
+        if (n == null) return fail('bad-param', { param: 'value', value: params.value });
+        value = n;
+      }
+      const r = RK.mask(rasDs, b.index, { op: op, value: value });
+      if (!r || !r.ok) return r || fail('mask-failed');
+      return { ok: true, raster: r.raster, stats: { kept: r.kept, dropped: r.dropped, nodata: r.nodataCount } };
+    }
+
+    function runRasterDiff(aDs, bDs, params, R) {
+      const RK = rasterKernel();
+      const b = bandIndexOf(aDs, params.band);
+      if (!b.ok) return b.res;
+      const r = RK.diff(aDs, bDs, b.index);
+      if (!r || !r.ok) return r || fail('diff-failed');
+      return { ok: true, raster: r.raster, stats: { count: r.count, nodata: r.nodataCount } };
+    }
+
+    /* ── the time window (#R735) ────────────────────────────────────────────────────────────────
+       Both ends are optional: 「1889 年以降」 is a window with no upper end, and refusing it would make
+       the op answer a narrower question than the reader's. What is NOT optional is a declared axis. */
+    function runTimeWindow(ds, params, R) {
+      if (!ds.time) return fail('time-not-declared', ds.timeRefused ? { refused: String(ds.timeRefused.why || '') } : undefined);
+      const fromM = (params.from == null || String(params.from).trim() === '') ? null : R.momentOf(params.from);
+      const toM = (params.to == null || String(params.to).trim() === '') ? null : R.momentOf(params.to);
+      if (params.from != null && String(params.from).trim() !== '' && !fromM) return fail('bad-param', { param: 'from', value: String(params.from) });
+      if (params.to != null && String(params.to).trim() !== '' && !toM) return fail('bad-param', { param: 'to', value: String(params.to) });
+      if (!fromM && !toM) return fail('missing-param', { param: 'from' });
+      const mode = (params.mode == null || String(params.mode) === '') ? 'overlaps' : String(params.mode);
+      const allowed = DECL.timeWindow.params[2].values;
+      if (allowed.indexOf(mode) < 0) return fail('bad-param', { param: 'mode', value: mode, values: allowed });
+      /* ⚠ THE WINDOW IS THE WHOLE OF WHAT THE READER TYPED. 「1889」 is that year, start to end — the
+         registry's momentOf says so — so a from of 1889 and a to of 1890 is two whole years. */
+      const lo = fromM ? fromM.start : null;
+      const hi = toM ? toM.end : null;
+      if (lo != null && hi != null && hi < lo) return fail('bad-param', { param: 'to', value: String(params.to) });
+
+      const inWindow = (s, e) => {
+        /* An open end of a feature's own span means 「まだ続いている」/「始まりを誰も述べていない」,
+           and it is treated as reaching the window rather than as failing it: the alternative silently
+           drops every still-current row from every window. */
+        const a = (s == null) ? -Infinity : s, b = (e == null) ? Infinity : e;
+        if (mode === 'within') return (lo == null || a >= lo) && (hi == null || b <= hi);
+        return (hi == null || a <= hi) && (lo == null || b >= lo);
+      };
+
+      const out = [];
+      let dropped = 0, undated = 0, cut = 0;
+      const track = (ds.time.kind === 'track') ? ds.time : null;
+      for (const f of ds.features()) {
+        if (track) {
+          const r = cutTrack(f, track, R, inWindow);
+          if (r == null) { dropped++; continue; }
+          if (r.cut) cut++;
+          out.push(r.feature);
+          continue;
+        }
+        const span = R.timeSpan(ds, f);
+        /* ⚠ A ROW WHOSE OWN TIME CANNOT BE READ IS DROPPED AND COUNTED, not kept 「just in case」.
+           Keeping it would make the answer to 「1889 年のもの」 include rows nobody has dated, and
+           `_undated` on the record is how the reader learns how many there were. */
+        if (!span) { undated++; continue; }
+        if (!inWindow(span.start, span.end)) { dropped++; continue; }
+        out.push(f);
+      }
+      return { ok: true, features: out, stats: { dropped: dropped, undated: undated, cut: cut } };
+    }
+
+    /* One trajectory, cut to the window. ⚠ THE PARALLEL ARRAYS ARE CUT WITH IT — a line whose
+       positions were filtered while its `coordTimes` were not is a trace whose every timestamp is on
+       the wrong fix, which is the exact failure js/gis-datasets.js measures for. Returns null when
+       nothing of this feature is inside. */
+    function cutTrack(f, track, R, inWindow) {
+      const g = f && f.geometry;
+      const coords = g && g.coordinates;
+      const p = props(f);
+      const times = p[track.timesField];
+      if (!Array.isArray(coords) || !Array.isArray(times)) return null;
+      /* A Point track is one fix: it is in or it is out. */
+      if (g.type === 'Point') {
+        if (!isPos(coords)) return null;
+        const m = R.momentOf(times[0]);
+        if (!m || !inWindow(m.start, m.end)) return null;
+        return { feature: f, cut: false };
+      }
+      if (g.type !== 'LineString') return null;
+      const eles = track.elevationField ? p[track.elevationField] : null;
+      const keepC = [], keepT = [], keepE = [];
+      for (let i = 0; i < coords.length; i++) {
+        const m = R.momentOf(times[i]);
+        if (!m || !inWindow(m.start, m.end)) continue;
+        keepC.push(coords[i]); keepT.push(times[i]);
+        if (Array.isArray(eles)) keepE.push(eles[i] == null ? null : eles[i]);
+      }
+      if (!keepC.length) return null;
+      const extra = {};
+      extra[track.timesField] = keepT;
+      if (Array.isArray(eles)) extra[track.elevationField] = keepE;
+      const geom = (keepC.length >= 2)
+        ? { type: 'LineString', coordinates: keepC }
+        /* One surviving fix is a POINT. A LineString of one position is not a line any renderer or
+           kernel in this app accepts, and js/geodesy.js sanitizeFeatures would drop it entirely. */
+        : { type: 'Point', coordinates: keepC[0] };
+      return { feature: { type: 'Feature', properties: withProps(p, extra), geometry: geom }, cut: keepC.length !== coords.length };
+    }
+
+    /* Which time declaration an output inherits — see the note at the registration. */
+    function outTime(inDs, decl) {
+      const t = inDs && inDs.time;
+      if (!t) return null;
+      if (t.kind === 'track' && String(decl.output || '') !== 'same-as-input') return null;
+      return t;
+    }
+
     /* ── run ──────────────────────────────────────────────────────────────────────────────────── */
 
     /* async, and now for a reason rather than in anticipation of one: every op but filter needs
        js/gis-geometry.js, which loads its sweep-line on demand. The await happens ONCE per process —
        ready() memoises — and a reader who only ever filters never waits for it at all. */
-    async function run(step) {
+    async function run(step, opts) {
       const R = registry();
       if (!R) return fail('registry-missing');
       const decl = DECL[step && step.op];
       if (!decl) return fail('op-unknown', { op: (step && step.op) == null ? null : String(step.op) });
       if (decl.needsGeodesy && (!geodesy() || earthKm() == null)) return fail('geodesy-missing');
+      /* (#R735) The grid arithmetic is a module like the others, and 「読み込まれていない」 is its own
+         answer rather than an empty result. */
+      if (decl.needsRaster && !rasterKernel()) return fail('raster-unavailable');
       if (decl.needsGeometry) {
         const GG = geometry();
         if (!GG) return fail('geometry-missing');
@@ -820,6 +1222,17 @@ export function makeGisOps() {
       const ds = [];
       for (const id of inputs) { const rec = R.get(id); if (!rec) return fail('input-missing', { id: id == null ? null : String(id) }); ds.push(rec); }
 
+      /* ⚠ THE PAYLOAD IS CHECKED BEFORE THE GEOMETRY, AND ITS DEFAULT IS 'vector' (#R735). Every op
+         written before rasters existed assumes features(), which a grid does not have; declaring the
+         kind each slot needs — and defaulting the undeclared ones — is what makes those nine refuse a
+         grid by name instead of walking a function that is not there. */
+      for (let i = 0; i < ds.length; i++) {
+        const kinds = Array.isArray(decl.kinds) ? decl.kinds : null;
+        const want = kinds ? String(kinds.length === 1 ? kinds[0] : (kinds[i] == null ? 'vector' : kinds[i])) : 'vector';
+        const got = String(ds[i].kind || 'vector');
+        if (got !== want) return fail('input-kind', { input: i, expected: want, kind: got });
+      }
+
       /* ⚠ A STALE INPUT IS REFUSED BY NAME (#R732). js/gis-datasets.js marks a dataset stale when a
          recomputation above it failed: the features are still there, but they are the answer to
          parameters the reader has already changed. Consuming them would put that staleness into a
@@ -835,6 +1248,9 @@ export function makeGisOps() {
       for (let i = 0; i < ds.length; i++) {
         const acc = decl.accepts[i];
         if (acc === 'any') continue;
+        /* A grid has no geometry type to agree with, and the slot that takes one already said so
+           through `kinds`; asking `accepts` about it would refuse every raster as 'Mixed'. */
+        if (String(ds[i].kind || 'vector') === 'raster') continue;
         if (ds[i].geometryType !== acc) {
           return fail(decl.mismatchWhy || 'geometry-type', { input: i, expected: acc, geometryType: ds[i].geometryType });
         }
@@ -845,20 +1261,31 @@ export function makeGisOps() {
          declared in DECL and not wired here would have run AGGREGATE and registered its output
          under the new op's name. Keyed by the same ids DECL is keyed by, the wiring is checkable —
          and tests/r731-gis-geometry-crs-checks ① measures that every declared op has a runner. */
+      /* (#R735) `ctx` is how the two runners whose cost grows with the data stay interruptible and
+         report where they are; see makeCtx. The others finish in one turn and are handed it anyway, so
+         a runner that grows tomorrow has it already. */
+      const ctx = makeCtx(opts);
       const RUN = {
         filter: () => runFilter(ds[0], params, R),
         buffer: () => runBuffer(ds[0], params, R),
-        clip: () => runClip(ds[0], ds[1]),
-        intersect: () => runOverlay('intersect', ds[0], ds[1]),
-        difference: () => runOverlay('difference', ds[0], ds[1]),
-        union: () => runOverlay('union', ds[0], ds[1]),
+        clip: () => runClip(ds[0], ds[1], ctx),
+        intersect: () => runOverlay('intersect', ds[0], ds[1], ctx),
+        difference: () => runOverlay('difference', ds[0], ds[1], ctx),
+        union: () => runOverlay('union', ds[0], ds[1], ctx),
         dissolve: () => runDissolve(ds[0], params, R),
-        relate: () => runRelate(ds[0], ds[1], params, R),
-        aggregate: () => runAggregate(ds[0], ds[1], params, R),
+        relate: () => runRelate(ds[0], ds[1], params, R, ctx),
+        aggregate: () => runAggregate(ds[0], ds[1], params, R, ctx),
+        sample: () => runSample(ds[0], ds[1], params, R, ctx),
+        zonal: () => runZonal(ds[0], ds[1], params, R, ctx),
+        rasterMask: () => runRasterMask(ds[0], params, R),
+        rasterDiff: () => runRasterDiff(ds[0], ds[1], params, R),
+        timeWindow: () => runTimeWindow(ds[0], params, R),
       };
       const runner = RUN[decl.id];
       if (!runner) return fail('op-not-wired', { op: decl.id });
-      const res = runner();
+      /* ⚠ AWAITED. Four of the runners are async now, and `res.ok` on an unawaited Promise is
+         `undefined` — which this function would have reported as a refusal with no reason. */
+      const res = await runner();
       if (!res || !res.ok) return res || fail('op-unknown', { op: decl.id });
 
       /* The title is an identifier, not a sentence: op(input, input). Nothing here composes prose,
@@ -869,21 +1296,45 @@ export function makeGisOps() {
       const recorded = clone(params);
       if (recorded == null) return fail('bad-param', { param: 'params' });
 
+      /* THE RECIPE. js/gis-project.js replays exactly this, which is why the params written here are
+         the params that ran, cloned — a caller mutating its own object afterwards must not be able to
+         rewrite history. */
+      const prov = { kind: 'op', op: decl.id, inputs: inputs, params: recorded };
       let rec;
       try {
-        rec = R.add({
-          id: step.id,
-          title: title,
-          features: res.features,
-          /* THE RECIPE. js/gis-project.js replays exactly this, which is why the params written here
-             are the params that ran, cloned — a caller mutating its own object afterwards must not
-             be able to rewrite history. */
-          provenance: { kind: 'op', op: decl.id, inputs: inputs, params: recorded },
-        });
+        if (res.raster) {
+          /* ⚠ A GRID RESULT IS REGISTERED AS A GRID, AND ITS RECIPE IS THE SAME SHAPE (#R735). That is
+             the whole reason the raster kind went into the registry rather than into a side table: the
+             output of rasterMask is the input of zonal, and a changed threshold is one setParams. The
+             record's own time is the input's — masking a grid does not move it in time. */
+          rec = R.add({
+            kind: 'raster', id: step.id, title: title,
+            width: res.raster.width, height: res.raster.height, grid: res.raster.grid,
+            bands: res.raster.bands, read: res.raster.read,
+            time: ds[0].time || null,
+            sourceCrs: ds[0].sourceCrs || null,
+            provenance: prov,
+          });
+        } else {
+          rec = R.add({
+            id: step.id, title: title, features: res.features,
+            /* An op's output carries the time axis of its input: 「1889 年の行」 is still stamped 1889
+               after a clip, and dropping the declaration would make the next timeWindow in the chain
+               refuse a dataset that plainly has times in it.
+               ⚠ EXCEPT A PER-POSITION AXIS ACROSS AN OP THAT REMAKES THE GEOMETRY. A buffer of a trace
+               is a polygon; its 4,000 timestamps describe fixes that polygon no longer has, so the
+               declaration is not carried — it would be a claim about positions that do not exist. The
+               attribute-based shapes (instant, interval, constant) survive, because the properties do.
+               ⚠ AND IT IS RE-VERIFIED ON THE WAY IN (js/gis-datasets.js declareTime): an op that
+               dropped the parallel array is told rather than believed. */
+            time: outTime(ds[0], decl),
+            provenance: prov,
+          });
+        }
       } catch (e) {
         return fail('id-in-use', { id: step.id == null ? null : String(step.id) });
       }
-      return { ok: true, dataset: rec };
+      return res.stats ? { ok: true, dataset: rec, stats: res.stats } : { ok: true, dataset: rec };
     }
 
     const API = {

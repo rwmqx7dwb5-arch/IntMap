@@ -77,9 +77,15 @@ test('R732 ① every declared op has a runner, and ops() is the declaration itse
      wired. The dispatch table in run() is keyed by op id, so the keys ARE the wiring. */
   const src = read('js/gis-ops.js');
   const declBlock = src.slice(src.indexOf('const DECL = {'), src.indexOf('const ORDER ='));
-  const inDecl = Array.from(declBlock.matchAll(/^      ([a-z]+): \{$/gm)).map((m) => m[1]);
+  /* ⚠ `[a-z]+` UNTIL #R735, and that is a spelling this check had no business fixing. The rule it
+     measures is 「DECL のキーは全部 run() に配線されている」; the character class was a guard on the
+     regex, and the first op named in camelCase — rasterMask, rasterDiff, timeWindow — was reported as
+     a missing declaration by a check that simply could not see it. (The memory note is
+     「ceiling guards are not policies」: a number or a pattern that exists to make the scan land must
+     not be read as the policy the scan is measuring.) */
+  const inDecl = Array.from(declBlock.matchAll(/^      ([A-Za-z][A-Za-z0-9]*): \{$/gm)).map((m) => m[1]);
   const runBlock = src.slice(src.indexOf('const RUN = {'), src.indexOf('const runner = RUN['));
-  const wired = Array.from(runBlock.matchAll(/^        ([a-z]+): \(\) =>/gm)).map((m) => m[1]);
+  const wired = Array.from(runBlock.matchAll(/^        ([A-Za-z][A-Za-z0-9]*): \(\) =>/gm)).map((m) => m[1]);
 
   assert.deepEqual(inDecl.slice().sort(), declared.slice().sort(), 'ops() does not hand out exactly what DECL declares');
   assert.deepEqual(wired.slice().sort(), declared.slice().sort(), 'a declared op has no runner, or a runner has no declaration');
@@ -87,10 +93,34 @@ test('R732 ① every declared op has a runner, and ops() is the declaration itse
   /* The list the panel would have had to keep is gone: ORDER is derived. */
   assert.match(src, /const ORDER = Object\.keys\(DECL\);/, 'ORDER is a hand-written list again');
 
-  /* Every op that reaches the kernel says so, so a panel can grey it and run() can await it. */
+  /* Every op that reaches the kernel says so, so a panel can grey it and run() can await it.
+     ⚠ THIS WAS `if (d.id === 'filter') continue; assert(needsGeometry)` UNTIL #R735 — a hand-written
+     exception list of one, which read as 「filter 以外は全部カーネルを使う」 and was true only while
+     that happened to hold. #R735 added four ops that do not touch shapes at all (a grid mask, a grid
+     difference, a point sample, a time window), and each of them would have been failed for declaring
+     the truth. The rule being measured is the IMPLICATION — a runner that calls the kernel must
+     declare it — so the runner's own body is what is asked, in both directions. */
+  const runnerOf = new Map(Array.from(runBlock.matchAll(/^        ([A-Za-z][A-Za-z0-9]*): \(\) => ([A-Za-z][A-Za-z0-9]*)\(/gm)).map((m) => [m[1], m[2]]));
+  const bodyOf = (fn) => {
+    const at = src.search(new RegExp('\\n    (?:async )?function ' + fn + '\\('));
+    if (at < 0) return null;
+    const rest = src.slice(at + 1);
+    const end = rest.search(/\n    (?:async )?function [A-Za-z]/);
+    return end < 0 ? rest : rest.slice(0, end);
+  };
   for (const d of ops.ops()) {
-    if (d.id === 'filter') continue;
-    assert.equal(d.needsGeometry, true, d.id + ' uses the geometry kernel without declaring it');
+    const fn = runnerOf.get(d.id);
+    assert.ok(fn, d.id + ' has no runner in the dispatch table');
+    const body = bodyOf(fn);
+    assert.ok(body, 'the runner ' + fn + ' was not found in the source');
+    /* ⚠ ONE DIRECTION, AND THE DIRECTION IS THE DEFECT. A runner that asks the kernel without
+       declaring it runs before the lazy import has landed and answers 「0 件」 for 「訊けなかった」 —
+       that is the failure worth a gate. The converse is NOT measurable from this body and must not be
+       asserted: `zonal` declares it and never names GG here, because the kernel call is inside
+       js/gis-raster.js (pointInGeometry decides which pixels are in the zone). Declaring it is what
+       makes run() await the import for that path, so the declaration is right and a check that called
+       it wrong would be pushing the code towards a real bug. */
+    if (/\bGG\b|\bgeometry\(\)/.test(body)) assert.equal(d.needsGeometry, true, d.id + ' uses the geometry kernel without declaring it');
   }
 });
 
