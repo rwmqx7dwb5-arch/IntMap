@@ -163,7 +163,9 @@ test('R406-agent ⑧: the step ceiling is technical and bounded — a model that
     limits: { maxSteps: 3 },
   });
   assert.ok(r.trace.steps.length <= 4, 'the loop ran past its ceiling');
-  assert.ok(['step_budget', 'call_budget'].indexOf(r.stopped) >= 0, 'stopped=' + r.stopped);
+  /* (#R729) a model that repeats the SAME answered call now stops on `repeated_calls`, earlier than the
+     ceiling — still bounded, still technical; the ceiling stays for a model that keeps changing its call */
+  assert.ok(['step_budget', 'call_budget', 'repeated_calls'].indexOf(r.stopped) >= 0, 'stopped=' + r.stopped);
 });
 
 test('R406-agent ⑨: repeated malformed calls stop the loop instead of burning every step', async () => {

@@ -88,7 +88,7 @@ export function makeAtlasAgent() {
       maxPerStep: 8,        /* tool calls accepted from a single model reply */
       maxMalformed: 3,      /* consecutive steps that produced nothing but rejected calls */
       /* consecutive steps in which EVERY call was the identical, already-answered call of this turn.
-         Measured on production (2026-09-15, gpt-5.6-sol, 「ISSは今どこ？」): the model was handed the
+         Measured on production (2026-09-15, the configured model, 「ISSは今どこ？」): the model was handed the
          full result and the note 「this turn has ALREADY made this exact call — use this result」 and
          replied with the same call seven more times, never a final text; the step budget ran out and the
          reader got the results with no sentence. Two identical steps in a row is the earliest moment the
