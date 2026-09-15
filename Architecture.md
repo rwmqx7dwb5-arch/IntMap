@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（304本・14.6 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（305本・14.6 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -349,6 +349,22 @@ turn schema の鍵（`tool_calls`・`turn`・`final_text`…）を名指すな�
 `layers.baseDisplay` として到達できる。状態記述は、自分の勢力図が残っていること・era 政体で描いたこと・
 天気カード（`#weather-panel`）と衛星カード（`#sat-popup`）が開いていることを Atlas に述べ、人格の
 `workspace` 節が「地図は自分の作業場で、前の質問のために置いたものが今の質問に仕えないなら片づける」と定める。
+
+**⚠ 対象の識別子は、境界データが宣言している表記のどれでもよい。** `js/atlas-country-ids.js` が
+`window.countryGeo` の **ISO の列だけ**（`ISO_A2` / `ISO_A2_EH` / `ISO_N3` / `ISO_N3_EH`）から
+token → alpha-3 の索引を作るので、`DE` も `276` も `DEU` と同じ国を指す——同じ feature が両方を
+宣言しているのだから、読むことであって推測ではない。⚠ **列は名指しし、値は名指ししない**：
+Natural Earth は Germany の `FIPS_10` を "GM" と書き、ISO alpha-2 の "GM" は Gambia なので、
+全列を索引する読みは別の国について誤る。**2 つの feature が主張する token は誰も同定しない**。
+名前しか渡されなかった要求（`{targets:["Germany"]}`）は、この経路が**何も読まずに null を返して**
+具体地名の解決器へ落ちる。誤った alpha-3 は落ちず、構造化された未解決として返る（模型が識別子を直せる形で）。
+
+**⚠ 塗ったものは、塗った側が名指しで述べる。** `map.highlight` は `meta.painted` で自分が描いた
+面の名前を返し、`js/atlas-capabilities.js` の `PAINT_GOAL` / `paintGoalMet` がそれを
+`paintState().ids`（painter 自身の読み）に照らす。**同じものを描き直しただけのときは
+`already_there`**（`view.flyTo` と同じ規律）で、宣言が無ければ何も推測せず従来の判定に戻る。
+一部の対象だけが解決したときは「何も描かれていない」ではなく、描けた分を `completed` として
+報告し `unresolved` を運ぶ。
 
 **⚠ そして塗り面は、塗る側が自分で名乗る。** `paintNow()` が数えるのは geojson **ソースの地物数**だが、
 国のハイライトは `nlq-src` への `setFeatureState` で塗る——**どのソースにも 1 件も足さない**（歴史年では

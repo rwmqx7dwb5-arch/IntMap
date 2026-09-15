@@ -743,7 +743,7 @@ window.IntMapModules.workspace=function(HOST){
       _lastBottom=wsBounds().bottom;
       fitMap(); setTimeout(fitMap,350); save({on:1});
       try{ syncModeBtn(); }catch(_){}
-      try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) re-dock open legends to the map's bottom-left */
+      try{ window._tileLegends&&window._tileLegends(); setTimeout(()=>{ try{ window._tileLegends&&window._tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) re-dock open legends to the map's bottom-left */
       }catch(_e){ try{ console.warn('ws enable',_e); }catch(_){} } finally{ try{ _wsLoadingOff(); }catch(_){} } };   /* warn (not error) — matches the original swallow behaviour while still hiding the overlay on any failure */
       /* (#R142) two rAFs so the overlay actually PAINTS before the synchronous build freezes the frame, then hide it. */
       try{ requestAnimationFrame(()=>requestAnimationFrame(_core)); }catch(_){ _core(); }
@@ -779,7 +779,7 @@ window.IntMapModules.workspace=function(HOST){
          がオンのときの地図表示になる"). */
       try{ const _m=(typeof HOST.mode!=='undefined')?HOST.mode:null; if(_m!=='news'&&_m!=='saved'){ const E=window.IntMapGeoEngine; if(E&&E.layers.hasSource('news-points')) E.layers.setSourceData('news-points',{type:'FeatureCollection',features:[]}); } }catch(_){}
       save({on:0}); fitMap(); setTimeout(fitMap,350); try{ syncModeBtn(); }catch(_){}
-      try{ window.tileLegends&&window.tileLegends(); setTimeout(()=>{ try{ window.tileLegends&&window.tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) restore legends to their normal position */
+      try{ window._tileLegends&&window._tileLegends(); setTimeout(()=>{ try{ window._tileLegends&&window._tileLegends(); }catch(_){} },400); }catch(_){}   /* (#R85) restore legends to their normal position */
     }
     function toggle(){ if(on) disable(); else enable(); }
     /* (#R79g) mode switch is a BUTTON now (not a dropdown) — "設定の移動ボタンを置く形式にして". It toggles the

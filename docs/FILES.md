@@ -468,6 +468,10 @@ atlas-gloss.js                    Atlas — 回答文の語句を選択→右ク
                                   質問回数を消費しない。同じ語×同じ回答はキャッシュして再要求しない
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
+atlas-country-ids.js              境界データが宣言している国の識別子を読む唯一の場所（#R742）。ISO の alpha-3／alpha-2／numeric-3 を
+                                  同じ識別子の別表記として読み、FIPS 等の別体系は列で除く（Germany の FIPS は "GM"、ISO alpha-2 の
+                                  "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
+                                  具体地名の解決器へ落とす。検査は tests/r742-atlas-identifier-checks.test.mjs。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
                                   139 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）

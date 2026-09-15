@@ -73,11 +73,45 @@ export function makeEraHighlight(deps) {
      ⚠ COUNTS AND NAMES, NEVER THE DRAWING — the observer needs a value that MOVES when something is
      drawn. `metric` is in because re-shading the same countries by a different measure is a change the
      counts cannot show. `get` is the live state, read at call time, never captured. */
+  /* ══ ⚠⚠⚠ (#R742) A CARDINAL IS NOT AN IDENTITY — THE SAME SIX COUNTRIES AND SIX OTHER COUNTRIES
+     READ EXACTLY ALIKE. The reading above is six numbers and one string, and js/atlas-capabilities.js
+     decides whether a paint DID anything by diffing it. Two things follow, and both were measured on
+     production 2026-09-15:
+       · 「Which countries border Kazakhstan?」 painted six countries correctly and was told
+         `not_rendered` three times, because a redraw of the same six moves no number; and
+       · repainting six countries as six DIFFERENT countries — a real repair — moves no number either,
+         so the correction reads as「nothing happened」 exactly like the failure.
+     So the painted state carries WHO is painted as well as HOW MANY. The counts stay: they are the
+     contract tests/r736-atlas-multiprobe.spec.js reads (0 → n), and a surface whose members have no
+     name at all is still counted here even though it can put nothing in `ids`.
+     ⚠ THE KEYS ARE THE SUPPLIER'S OWN. `ids.countries` is named after the `countries` closure
+     js/atlas-console.js hands in, so a surface added to that supplier is named the same in this
+     reading, in the painter's declaration (`meta.painted`) and in the verdict that holds one against
+     the other (js/atlas-capabilities.js `PAINT_GOAL`) — nobody has to remember a second spelling. */
+  const PAINTED_IDS = {
+    countries: (v) => Array.from(v || []),                       /* `_hl` — a Set of ISO3 codes */
+    era: (v) => (v || []).slice(),                               /* `_eraHl` — the era polities drawn, by name */
+    polys: (v) => (v || []).map((p) => p && p.name),             /* `_hlPolys` — regions, sets, basins */
+    lines: (v) => (v || []).map((l) => l && l.name),             /* `_hlLines` — rivers and tributaries */
+    choro: (v) => Object.keys(v || {})                           /* `_choroState` — the shaded countries */
+  };
+  /* sorted, de-duplicated, and WITHOUT the nameless: an unnamed tributary has no identity to state,
+     and inventing one (its index, its position in the array) would make a redraw look like a change. */
+  function identities(list) {
+    const seen = Object.create(null), out = [];
+    (list || []).forEach((x) => { const s = String(x == null ? '' : x); if (s && !seen[s]) { seen[s] = 1; out.push(s); } });
+    return out.sort();
+  }
   function paintState(get) {
     return { now: function () {
       try {
+        const ids = {};
+        /* a surface the supplier does not hold is LEFT OUT, never reported as an empty one: the
+           verdict reads a missing key as「could not be observed」and refuses to claim anything. */
+        Object.keys(PAINTED_IDS).forEach((k) => { if (typeof get[k] === 'function') ids[k] = identities(PAINTED_IDS[k](get[k]())); });
         return { hlCountries: get.countries().size, hlEra: get.era().length, hlPolys: get.polys().length,
-          hlLines: get.lines().length, choro: Object.keys(get.choro() || {}).length, choroMetric: get.metric() || '' };
+          hlLines: get.lines().length, choro: Object.keys(get.choro() || {}).length, choroMetric: get.metric() || '',
+          ids: ids };
       } catch (_) { return null; }   /* unreadable is not zero: `null` says the state could not be observed */
     } };
   }
