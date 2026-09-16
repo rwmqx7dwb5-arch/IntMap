@@ -930,7 +930,7 @@ window.IntMapModules.satellitesLive=function(HOST){
   }
   /* ⚠⚠⚠ (#R747) THE SMALLEST CATALOGUE THAT HOLDS WHAT WAS NAMED. A reader who asks about ONE object
      is not asking for the sky; js/atlas-console.js's `satellites` case used `name` only to focus and
-     left the FULL active catalogue propagating, so 「put a single marker on the ISS」 drew ~2,500 dots
+     left the FULL active catalogue propagating, so 「put a single marker on the ISS」 drew 16,010 dots
      (measured on production 2026-09-15) while the reply said it had drawn one.
      ⚠ NO TABLE OF NAMES. CelesTrak decides what each catalogue contains and changes it without telling
      us, so the catalogues are ASKED: smallest declared size first, stopping at the first that holds it.

@@ -3577,7 +3577,7 @@ window.IntMapModules.atlasConsole=function(HOST){
                "not found" about a list that is still in flight */
             for(let k=0;k<24&&!found;k++){ found=A.find(q); if(found) break; await new Promise(r=>setTimeout(r,250)); }
             /* ⚠⚠⚠ (#R747) ONE OBJECT NAMED IS NOT A REQUEST FOR THE WHOLE SKY. `name` chose a focus and
-               only `group` chose what is propagated, so 「put a SINGLE marker on the ISS」 drew ~2,500
+               only `group` chose what is propagated, so 「put a SINGLE marker on the ISS」 drew 16,010
                dots while the reply said it had drawn one (measured on production 2026-09-15). Which
                catalogue holds a named object is a fact about the catalogues: js/satellites-live.js
                `narrow`. ⚠ Not a hidden filter — #R266 removed that; the catalogue is named in the reply. */
