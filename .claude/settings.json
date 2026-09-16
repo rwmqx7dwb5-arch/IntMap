@@ -1,8 +1,5 @@
 {
   "permissions": {
-    "deny": [
-      "Edit(GPT-HANDOFF/HANDOFF.md)"
-    ],
     "allow": [
       "Bash(node scripts/worktree.mjs:*)",
       "Bash(node scripts/master-sync.mjs:*)",

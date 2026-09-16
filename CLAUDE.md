@@ -11,8 +11,6 @@
 
 @.agents/rules/historical-verification.md
 
-@.agents/rules/gpt-handoff.md
-
 ---
 
 > **上の 5 行は import であって要約ではない。** Claude Code は `@` の指すファイルを起動時に
@@ -75,7 +73,6 @@ Bash から直接起動しない。** ラウンド別の設定は `.claude/launc
 ## A-5. 権限と設定
 
 - `.claude/settings.json` — 追跡対象。読み取り専用コマンドと IntMap のゲートを allow 済み。
-  `GPT-HANDOFF/HANDOFF.md` の編集は deny（`.agents/rules/gpt-handoff.md`）。
 - `.claude/settings.local.json` — このマシンだけ。追跡対象外。
 - **MCP サーバはこの製品が供給するもの**（ブラウザ・セッション管理など）で、リポジトリは
   1 つも宣言していない（`.mcp.json` は無い）。Codex 側の対応は

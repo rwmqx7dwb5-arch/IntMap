@@ -25,16 +25,15 @@
  *      whether AGENTS.md §5.1 («no extra approval for migration, deployment, commit, push, PR,
  *      merge») could be honoured at all.
  *   4. The one store of #R696 lives OUTSIDE any workspace (`~/.claude/projects/<key>/memory`),
- *      and so do the handoff cursors (`~/.intmap-handoff`) and every round's worktree
+ *      and so does every round's worktree
  *      (`%LOCALAPPDATA%\Temp\intmap-worktrees`). Under `workspace-write` those are not writable
  *      unless they are named — which is why `.codex/config.toml` C-7 had to say «ask for
  *      approval when the sandbox refuses». Naming them removes the refusal instead.
  *
  *  ⚠ NOTHING HERE IS A LIST OF PATHS TYPED BY HAND (.agents/rules/no-ad-hoc-hardcoding.md). Every
  *  directory is asked of the thing that owns it: the master copy from `git rev-parse
- *  --git-common-dir`, the memory store from `agent-memory.mjs --path`, the handoff state from the
- *  same expression `handoff.mjs` uses, the worktree root from the same `os.tmpdir()` join
- *  `worktree.mjs` uses. Move the checkout and all four follow it.
+ *  --git-common-dir`, the memory store from `agent-memory.mjs --path`, the worktree root from the
+ *  same `os.tmpdir()` join `worktree.mjs` uses. Move the checkout and all three follow it.
  *
  *  ⚠ IT EDITS, IT DOES NOT REWRITE. `~/.codex/config.toml` is the user's: plugins, MCP servers,
  *  marketplaces, and ~90 trusted project paths. Every change is a surgical line edit, a backup is
@@ -79,7 +78,6 @@ const MEMORY = run(process.execPath, [path.join(ROOT, 'scripts/agent-memory.mjs'
    escalate on, instead of being pinned to a stale constant. */
 const OUTSIDE_ROOTS = [
   MEMORY ? path.dirname(MEMORY) : null,                                  /* memory + the USB ledger */
-  process.env.INTMAP_HANDOFF_STATE_DIR || path.join(homedir(), '.intmap-handoff'),
   path.join(tmpdir(), 'intmap-worktrees'),                               /* every round's worktree */
 ].filter(Boolean);
 
@@ -170,7 +168,7 @@ if (!existsSync(CONFIG)) {
   /* 3. network, and the roots a round writes to that no workspace contains */
   for (const [key, literal, label] of [
     ['network_access', 'true', 'サンドボックスからの通信（gh・supabase・npm・本番検証）'],
-    ['writable_roots', tomlPathArray(OUTSIDE_ROOTS), `workspace の外で書く先 ${OUTSIDE_ROOTS.length} 件（メモリ・handoff・worktree)`],
+    ['writable_roots', tomlPathArray(OUTSIDE_ROOTS), `workspace の外で書く先 ${OUTSIDE_ROOTS.length} 件（メモリ・worktree)`],
   ]) {
     const r = setTableKey(text, 'sandbox_workspace_write', key, literal);
     if (!r.changed) add(`sandbox.${key}`, 'ok', label);

@@ -23,8 +23,6 @@ node scripts/worktree.mjs status
 
 同時に（同じメッセージで）:
 
-- `node scripts/handoff.mjs init`（未作成なら） → `node scripts/handoff-inbox.mjs pull`
-  → `node scripts/handoff.mjs prepare` — GPT からの受け渡し（`.agents/rules/gpt-handoff.md`）
 - 今回の主題の**正本**を [`docs/README.md`](../../../docs/README.md) で特定して、その文書を読む
 - 調査が要るなら `intmap-scout` に投げる（自分で grep して回らない）
 

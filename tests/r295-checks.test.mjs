@@ -167,13 +167,17 @@ test('#R295 ④ every `npm run …` named in the configuration is a real script'
 });
 
 /* ── ⑤ settings.json WAS MERGED, NOT OVERWRITTEN ───────────────────────────────────────────────
-   The deny rule predates this round and belongs to the GPT handoff protocol: Claude must never
-   edit GPT-HANDOFF/HANDOFF.md. A round that rewrites this file to add hooks is exactly how a rule
-   like that disappears without anybody noticing. */
-test('#R295 ⑤ .claude/settings.json keeps the pre-existing deny rule and wires the hook', () => {
+   The defect: a round that rewrites this file to add hooks is exactly how permissions that
+   predate it disappear without anybody noticing. Until #R762 the witness was the GPT-handoff deny
+   rule; that protocol was withdrawn with the rest of the handoff bridge, so the witness is now the
+   allow list itself — the IntMap gates that every round runs unprompted. Both halves of the file
+   must survive a round that only meant to touch one of them. */
+test('#R295 ⑤ .claude/settings.json keeps its pre-existing permissions and wires the hook', () => {
   const s = JSON.parse(read('.claude/settings.json'));
-  assert.ok(s.permissions?.deny?.includes('Edit(GPT-HANDOFF/HANDOFF.md)'),
-    'the GPT-handoff deny rule was dropped — .agents/rules/gpt-handoff.md depends on it');
+  const allow = s.permissions?.allow || [];
+  assert.ok(allow.length >= 4, `permissions.allow holds ${allow.length} entries — a rewrite emptied it`);
+  assert.ok(allow.some((a) => a.includes('scripts/worktree.mjs')),
+    'the worktree.mjs allow rule was dropped — every round would start by asking for it');
 
   const entries = s.hooks?.SessionStart || [];
   const cmds = entries.flatMap((e) => (e.hooks || []).map((h) => h.command || ''));

@@ -110,8 +110,7 @@ const LOOPBACK = /(?:127\.0\.0\.1|localhost|\[::1\]|0\.0\.0\.0):(\d+)/;
 /* the calls that actually dial somewhere; a fixture string that merely CONTAINS a URL is data */
 const DIALS = new Set(['fetch', 'goto', 'get', 'post', 'request', 'connect', 'navigate', 'newPage']);
 
-/* The one script in this repository that listens (`grep -l createServer scripts/` — the other hit,
-   scripts/handoff.mjs, is the local review UI and is never spawned from a test). A `PORT` in a
+/* The one script in this repository that listens (`grep -l createServer scripts/`). A `PORT` in a
    child's environment only matters when the child is one of these; see rule ② below. */
 const SERVER_SCRIPT = /serve\.mjs/;
 

@@ -43,7 +43,7 @@ Claude Code と同じ使用感（推論の深さ・承認・サンドボック�
 - **セッション名は自動生成に任せる。** `/rename` を使わない。
 - `AGENTS.md` §1 の事前確認のうち、**`.agents/rules/` は自分で開く**
   （Claude Code は自動で読み込むが、Codex は読まない）。実体は
-  `execution-strategy.md`・`no-ad-hoc-hardcoding.md`・`gpt-handoff.md`。
+  `execution-strategy.md`・`no-ad-hoc-hardcoding.md`・`historical-verification.md`。
   ⚠ **数ではなくディレクトリで確かめる**——足されたものが黙って落ちないように、
   `.agents/rules/` にあるファイルは全部読む。
 - 状態は `node scripts/worktree.mjs status` が 1 回で出す。手で数え直さない。
