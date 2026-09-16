@@ -312,14 +312,22 @@ test('R749 ⑤ a version that could not be measured is not reported as agreement
   const { makeGisProject } = await import('../js/gis-project.js');
   const p2 = makeGisProject();
   second.w.IntMapGisProject = p2;
-  assert.equal(p2.engine().ops, null, 'a kernel with no version() was given one');
+  /* ⚠ (#R752) `== null`, NOT `=== null`, AND THE LOOSENING IS THE POINT. The defect this line
+     records is 「版を述べなかったものに版が与えられた」; it is not 「the key is spelled null rather
+     than absent」. #R752 made js/gis-project.js DISCOVER its kernels — a part exists because a module
+     declared a version — so a module that declares none contributes no key at all, which is the same
+     statement in a different spelling. Pinning the spelling was the shape
+     [[intmap-restate-the-defect-not-the-fix]] records: an invariant written as the shape of one fix
+     stops the next correct change instead of the next defect. What must still hold is below — the
+     unmeasurable part is reported, and never as agreement. */
+  assert.ok(p2.engine().ops == null, 'a kernel with no version() was given one: ' + JSON.stringify(p2.engine()));
 
   const back = await p2.load(saved.id);
   assert.equal(back.ok, true, JSON.stringify(back));
   assert.deepEqual(back.engineChanged, [], 'an unmeasurable version was reported as a difference');
   assert.equal(back.engineUnknown.length, 1, 'an unmeasurable version was passed over in silence, which reads as agreement: ' + JSON.stringify(back));
   assert.equal(back.engineUnknown[0].id, buf.dataset.id);
-  assert.equal(back.engineUnknown[0].now.ops, null);
+  assert.ok(back.engineUnknown[0].now.ops == null);
   assert.ok(back.engineUnknown[0].saved.ops, 'the saved side was known — only the running side was not');
 });
 

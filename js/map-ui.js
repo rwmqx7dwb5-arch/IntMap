@@ -3009,6 +3009,25 @@ window.IntMapModules.geojsonUpload=function(HOST){
       if(why==='raster-too-large') return window.IntMapLang.t(HOST.lang,"This browser could not allocate a grid that size","このブラウザでは、その大きさの格子を確保できませんでした")+(detail&&detail.cells!=null?' ('+detail.cells+')':'');
       if(why==='band-out-of-range') return window.IntMapLang.t(HOST.lang,"That grid has fewer bands than the one asked for","その格子には、指定された番号のバンドがありません")+(detail&&detail.bandIndex!=null?' ('+detail.bandIndex+')':'');
       if(why==='read-failed') return window.IntMapLang.t(HOST.lang,"The grid handed back nothing when its values were asked for","格子に値を求めたところ、何も返ってきませんでした");
+      /* ══ (#R752) THE EIGHT THE GRID READER RAISES WHILE FETCHING, not while decoding ════════
+         js/gis-geotiff.js reads a GeoTIFF over the network in pieces, and every way that can go
+         wrong is a DIFFERENT thing for the reader to do: retry, host it elsewhere, ask for the
+         whole file, or name the resolution they meant. 「読み込めませんでした」 for all eight is
+         the answer this table exists to replace, so each one says what happened to THEIR file and
+         what is left to try. ⚠ The set is published by refusals(); the sentences are here. */
+      if(why==='fetch-failed') return window.IntMapLang.t(HOST.lang,"The file could not be fetched from that address at all","そのアドレスからファイルを取得できませんでした")+(detail?' ('+[detail.url,detail.reason].filter(Boolean).join(' · ')+')':'');
+      if(why==='http-status') return window.IntMapLang.t(HOST.lang,"The server answered with an error rather than the file","サーバがファイルではなくエラーを返しました")+(detail&&detail.status!=null?' (HTTP '+detail.status+')':'');
+      /* ⚠ THIS ONE IS NOT A FAILURE OF THE FILE. The server sent the WHOLE body where a piece was
+         asked for, and reading it as a piece would decode the wrong bytes — so it is refused, and
+         the reader is told the one thing that makes it work: ask for the whole file. */
+      if(why==='range-unsupported') return window.IntMapLang.t(HOST.lang,"That server does not serve parts of a file — read the whole file instead of a window of it","そのサーバはファイルの一部だけの取得に対応していません。範囲ではなくファイル全体を読み込んでください")+(detail&&detail.url?' ('+detail.url+')':'');
+      if(why==='source-unreadable') return window.IntMapLang.t(HOST.lang,"The supply of bytes did not answer as it promised — fewer bytes came back than were asked for","バイトの供給元が約束どおりに答えませんでした（要求した長さより短い応答です）")+(detail?' ('+[detail.reason,(detail.want!=null&&detail.got!=null)?(detail.got+'/'+detail.want):null].filter(Boolean).join(' · ')+')':'');
+      if(why==='pixels-not-resident') return window.IntMapLang.t(HOST.lang,"Those pixels have not been fetched yet — read the region, or the whole file, before asking for its values","その画素はまだ取得していません。値を求める前に、範囲またはファイル全体を読み込んでください")+(detail&&detail.level!=null?' ('+detail.level+')':'');
+      if(why==='level-out-of-range') return window.IntMapLang.t(HOST.lang,"This file has no image at that resolution step","このファイルには、その解像度の段がありません")+(detail&&detail.levels!=null?' ('+detail.level+' / '+detail.levels+')':'');
+      if(why==='region-out-of-range') return window.IntMapLang.t(HOST.lang,"The area asked for is outside this image","指定された範囲が、この画像の外にあります")+(detail&&detail.reason?' ('+detail.reason+')':'');
+      /* ⚠ 「どれでもいい」 は答えではない。 Picking a resolution nobody named would hand back a
+         picture of a different grid than the one the reader believes they asked for. */
+      if(why==='resolution-not-stated') return window.IntMapLang.t(HOST.lang,"Say which resolution to read at — this reader will not choose one on your behalf","どの解像度で読むかを指定してください。この読み取りが代わりに選ぶことはしません");
       if(why==='cancelled') return window.IntMapLang.t(HOST.lang,"Stopped before it finished","完了する前に中止しました");
       if(why==='too-big') return window.IntMapLang.t(HOST.lang,"File is too large to read","ファイルが大きすぎて読み込めません","Die Datei ist zu groß zum Lesen","Файл слишком велик для чтения","El archivo es demasiado grande");
       if(why==='too-many-features') return window.IntMapLang.t(HOST.lang,"Too many features to draw","地物が多すぎて描画できません","Zu viele Objekte zum Zeichnen","Слишком много объектов для отрисовки","Demasiados elementos para dibujar");

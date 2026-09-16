@@ -89,11 +89,52 @@ export function makeGisAtlas(core) {
 
     /* ── what exists, all of it derived ─────────────────────────────────────────────────────── */
 
+    /* ⚠ (#R752) THE ROW USED TO BE SIX FIELDS, AND `fields` WAS THE NAMES ALONE. A planner that is
+       handed a column list without TYPES cannot tell which column `zonal` may sum and which one is
+       an identifier; without UNITS it reports 「人口 12」 for a grid whose band is people per km²;
+       without the TIME DECLARATION it cannot know `timeWindow` will refuse; without BANDS it asks
+       for band 0 of a three-band grid because that is the only number it was shown; without the
+       GRID it cannot tell 1 km pixels from 30 m ones, so it cannot judge whether an answer means
+       anything. The record holds every one of those (docs/GIS-CORE.md §1, §1.4, §1.5) — the row was
+       simply not passing them on.
+       ⚠ AND THE FIX IS A PROJECTION, NOT A SECOND LIST. `fields` now carries the column records as
+       js/gis-datasets.js measured them, so a key added to a column record tomorrow reaches the
+       planner the same day. Copying the interesting keys into a hand-written list here is the shape
+       [[intmap-two-readers-one-field-list]] measured: two readers of one contract, and the half only
+       one of them knows about evaporates. The only thing this function decides is WHICH PARTS OF THE
+       RECORD ARE METADATA — never what a part means. */
     function datasetRow(ds) {
       const row = { id: ds.id, title: ds.title, kind: ds.kind || 'vector', count: ds.count };
       if (ds.geometryType) row.geometryType = ds.geometryType;
-      const fields = (ds.fields || []).map((f) => f && f.name).filter(Boolean);
+      /* 幾何を持つ行の数。`geometryType:null` は「表」「空」「格子」の 3 つを 1 つの答えにするので、
+         この欄が無ければ planner は座標を持たない統計表に buffer をかけて空の面を作る。 */
+      if (ds.withGeometry != null) row.withGeometry = ds.withGeometry;
+      const fields = (ds.fields || []).filter((f) => f && f.name);
       if (fields.length) row.fields = fields;
+      /* ⚠ 4326 は値として述べられている（各自の暗黙の前提にしない）。`sourceCrs` が違えば
+         「その座標系で届き、取り込みのときに変換した」という別の事実である。 */
+      if (ds.crs) row.crs = ds.crs;
+      if (ds.sourceCrs && ds.sourceCrs !== ds.crs) row.sourceCrs = ds.sourceCrs;
+      /* null は「宣言が無い」であって「時刻が無い」ではない — だから null のときは欄を出さず、
+         拒まれた宣言は理由ごと渡す（黙って 「時刻の無いデータ」 に畳まない）。 */
+      if (ds.time) row.time = ds.time;
+      if (ds.timeRefused) row.timeRefused = ds.timeRefused;
+      if (ds.kind === 'raster') {
+        row.bands = ds.bands || [];
+        row.width = ds.width; row.height = ds.height;
+        if (ds.grid) {
+          row.grid = ds.grid;
+          /* 解像度を度で渡しても planner には大きさが分からない。⚠ 緯度方向だけを km に直す:
+             経度方向の km は緯度に依存するので、1 つの数では述べられない（格子の南北端で 2 倍
+             違うことがある）。観測: WGS84 の子午線 1 度 ≈ 111.32 km（赤道半径からの近似値で、
+             極でも 0.6% しか動かない）。失効条件: 楕円体を変えたとき。正本は js/geodesy.js。 */
+          row.pixelKmLat = ds.grid.pixelLat * 111.32;
+        }
+      }
+      /* 「この地物はこのレコードのレシピが出すもの」でない状態は、planner が次の op を積む前に
+         知らなければならない（js/gis-ops.js が `input-stale` で断る相手そのもの）。 */
+      if (ds.stale) row.stale = ds.stale;
+      if (ds.provenance && ds.provenance.kind) row.origin = ds.provenance.kind;
       return row;
     }
 
@@ -254,10 +295,21 @@ export function makeGisAtlas(core) {
       const r = await resolveRef(a.dataset, 0, {}, cache, a);
       if (!r.ok) return r;
       const ds = data.get(r.id);
-      const d = core.draw(r.id);
+      /* ⚠ (#R752) THIS CALL USED TO BE `core.draw(r.id)` — NO SECOND ARGUMENT AT ALL. js/gis-core.js
+         drawRaster() reads `band` and `spec` and the comment directly above it says 「AND THE BAND IS
+         THE CALLER'S TO NAME. A grid with three bands has three pictures in it, and choosing one
+         silently would be this project's 「誰も述べていない主張」 in colour」 — and the Atlas door
+         was choosing one silently, every time, because it passed nothing. A reader who asked for the
+         second band got the first one and was told it had been drawn.
+         ⚠ THE FIELDS ARE THE SCHEMA'S. js/atlas-schemas.js declares what `map.drawDataset` accepts;
+         a field this reader takes that the schema does not declare is unreachable, and a field the
+         schema declares that this reader drops is silently ignored — [[intmap-two-readers-one-field-list]]
+         measured both halves of that in production. tests/r752-gis-core-checks measures the pair. */
+      const d = core.draw(r.id, { band: a.band, spec: a.spec || null });
       if (!d.ok) return fail(d.why, Object.assign({ id: r.id }, d.detail || {}));
       return {
         ok: true, drawn: true, dataset: datasetRow(ds), sid: d.sid || null,
+        band: (d.band == null) ? null : d.band,
         html: '<div class="atlas-gis-result">' + esc(L('Drawn on the map', '地図に描きました')) + ': '
           + esc(ds.title) + ' · ' + ds.count + ' ' + esc(L('rows', '行')) + '</div>',
       };

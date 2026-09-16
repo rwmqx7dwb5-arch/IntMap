@@ -27,6 +27,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /* Browser + vendor globals that legitimately exist at runtime. */
 const GLOBALS = new Set(`globalThis window document navigator location history localStorage sessionStorage console
 fetch Promise Math JSON Date Array Object String Number Boolean RegExp Map Set WeakMap WeakSet Symbol Error TypeError
+Function
 RangeError SyntaxError Intl parseInt parseFloat isNaN isFinite encodeURIComponent decodeURIComponent encodeURI decodeURI
 setTimeout clearTimeout setInterval clearInterval requestAnimationFrame cancelAnimationFrame requestIdleCallback
 cancelIdleCallback queueMicrotask structuredClone Infinity NaN undefined performance crypto CustomEvent Event MouseEvent

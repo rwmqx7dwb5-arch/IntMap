@@ -19,11 +19,26 @@
  *  calculation will read as cliffs. Choosing one here would be exactly the thing §1.4 refuses for
  *  `diff`: 「誰も名づけていない補間の合成」, only with a shorter call site. So a caller that did not
  *  say is answered `resample-method-not-stated` and nothing is produced.
- *  ⚠ AND A CLASSIFICATION IS NOT INTERPOLATED AT ALL. `bands[i].categorical === true` with
- *  `method:'bilinear'` is `bilinear-on-categorical`. ⚠ But being an integer is NOT evidence of being
- *  a classification — a population count is an integer — so nothing here GUESSES: a band that does
- *  not declare itself categorical is warped the way the caller asked, and the refusal exists for the
- *  bands whose producer said what they are.
+ *  ⚠ AND A CLASSIFICATION IS NOT INTERPOLATED AT ALL. A band that declares `categorical:true` is
+ *  refused for every method that does not declare `categoricalSafe` — `bilinear-on-categorical`,
+ *  whose spelling is historical and whose detail names the method actually asked for. ⚠ But being an
+ *  integer is NOT evidence of being a classification — a population count is an integer — so nothing
+ *  here GUESSES: a band that does not declare itself categorical is warped the way the caller asked,
+ *  and the refusal exists for the bands whose producer said what they are.
+ *
+ *  ══ ⚠⚠⚠ POINT METHODS AND AREAL METHODS RUN DIFFERENTLY, AND THE DIFFERENCE IS READ, NOT WRITTEN ══
+ *  js/gis-raster.js declares each method's `kind`. A POINT method (`nearest`, `bilinear`, `cubic`)
+ *  needs one position per output pixel — its centre, taken back through the projection. An AREAL one
+ *  (`average`, `mode`, `sum`) needs the FOOTPRINT that output pixel covers, so this file takes the
+ *  pixel's four CORNERS back as well and hands the box that holds them over as `opts.cell`; the box
+ *  errs outward, which is the only direction a footprint may err. Downsampling is where that matters:
+ *  a 30 m land cover onto a 1 km grid with `nearest` answers from one point in a million m², `mode`
+ *  answers with the class that covers the ground, and `sum` keeps a population total intact.
+ *  ⚠ An areal weight is GROUND AREA, so the kernel must know what latitude each source row stands
+ *  for — which the pixel-space proxy below does not carry. It is measured through the projection
+ *  (once per source row, at the grid's middle column) and declared as `grid.latAxis`; see `runWarp`.
+ *  ⚠ `report.incomplete` is NOT `report.partial`: partial is an interpolation that was abandoned at a
+ *  void, incomplete is an aggregate that was carried out over a footprint only partly observed.
  *
  *  ══ ⚠⚠⚠ THE VOID RULE IS NOT COPIED HERE — IT IS ASKED OF js/gis-raster.js ════════════════════
  *  「bilinear で 4 隅のどれかが NaN なら nearest に落ちて partial を数える」 is that file's rule, with
@@ -118,7 +133,10 @@ export function makeGisWarp() {
        actually be taken with, so that is the list, and this table only says what each one MEANS. A
        method that appears there with no entry here is reported as `stated:false` rather than
        dropped — a hand-kept list that silently loses the next entry is the photograph
-       .agents/rules/no-ad-hoc-hardcoding.md §2-4 forbids, and a UI can show 「説明が無い」. */
+       .agents/rules/no-ad-hoc-hardcoding.md §2-4 forbids, and a UI can show 「説明が無い」.
+       ⚠ AND `kind` IS NOT WRITTEN HERE EITHER. Whether a method asks about a POINT or about the
+       AREA an output pixel covers is a fact about the arithmetic, which lives in the kernel; this
+       file carries it through so a UI reads one declaration. */
     const METHOD_FACTS = {
       nearest: {
         neighbours: 1, interpolates: false,
@@ -133,16 +151,57 @@ export function makeGisWarp() {
            abandons the blend and falls back to nearest, saying so. */
         voidPolicy: 'nearest-fallback',
       },
+      cubic: {
+        neighbours: 16, interpolates: true,
+        preservesValues: false, categoricalSafe: false,
+        voidPolicy: 'nearest-fallback',
+        /* ⚠ Keys' kernel has NEGATIVE outer weights, so a cubic value can lie outside the range of
+           the 16 values it came from — the overshoot at a step. Declared rather than clamped away,
+           because a reader asking 「なぜ標高が −3 m になった」 needs the method to have said so. */
+        overshoots: true,
+      },
+      average: {
+        interpolates: true, preservesValues: false, categoricalSafe: false,
+        /* The areal void rule: a missing input pixel is left OUT of the aggregate (never read as 0),
+           and `coverage` says how much of the footprint had an answer. */
+        voidPolicy: 'skip-voids', needsFootprint: true,
+      },
+      mode: {
+        interpolates: false,
+        /* The output is one of the input values — the class covering the most ground — which is why
+           this is the method a classification is DOWNsampled with. */
+        preservesValues: true, categoricalSafe: true,
+        voidPolicy: 'skip-voids', needsFootprint: true,
+      },
+      sum: {
+        interpolates: false, preservesValues: false, categoricalSafe: false,
+        voidPolicy: 'skip-voids', needsFootprint: true,
+        /* What makes it different from `average` in one word: the quantity, not the level. Each
+           source pixel is apportioned by the fraction of itself the output pixel covers, so a set of
+           output pixels tiling the source adds up to the source's total (人口・件数). */
+        conserves: 'total',
+      },
     };
 
     function methods() {
       const R = RAS();
       /* ⚠ null, not [] — 「訊けなかった」 and 「0 件だった」 must not be one answer. */
-      if (!R || typeof R.sampleMethods !== 'function') return null;
-      return R.sampleMethods().map((id) => {
-        const f = METHOD_FACTS[id];
-        return f ? Object.assign({ id: id, stated: true }, f) : { id: id, stated: false };
+      if (!R || typeof R.sampleMethodFacts !== 'function') return null;
+      /* The kernel's statement goes on LAST and is unoverwritable: what a method IS (`id`, `kind`,
+         how many neighbours it reads) is the kernel's to say, and what it MEANS is this file's. */
+      return R.sampleMethodFacts().map((k) => {
+        const f = METHOD_FACTS[k.id];
+        return Object.assign({ stated: !!f }, f || {}, k);
       });
+    }
+
+    /* Point or areal, asked of the kernel once per warp rather than kept here — the branch below is
+       「この方式は何を訊くものか」 read off a declaration, not a list of names written by hand. */
+    function kindOf(method) {
+      const R = RAS();
+      if (!R || typeof R.sampleMethodFacts !== 'function') return null;
+      const f = R.sampleMethodFacts().filter((m) => m.id === method)[0];
+      return f ? f.kind : null;
     }
 
     /* ── the affine: where a pixel is ─────────────────────────────────────────────────────────── */
@@ -235,14 +294,36 @@ export function makeGisWarp() {
       if (!R || typeof R.sample !== 'function' || typeof R.sampleMethods !== 'function') return refuse('raster-unavailable');
       if (R.sampleMethods().indexOf(method) < 0) return refuse('resample-method-unknown', { method: method, methods: R.sampleMethods() });
 
-      if (method === 'bilinear') {
+      /* ⚠ THE REFUSAL FOLLOWS FROM THE DECLARATION, NOT FROM THE METHOD'S NAME. `categoricalSafe` is
+         the fact — 「出力値は入力値のどれかである」 — and every method that is not that one destroys a
+         classification in the same way: bilinear blends classes 3 and 5 into a 4 nobody observed,
+         cubic does it with a wider kernel and an overshoot on top, an average of class codes is
+         arithmetic on names, and a sum of them is a total of names. `nearest` and `mode` survive it,
+         and `mode` is the one that exists FOR it.
+         ⚠ A method this file cannot describe is treated as unsafe: 「説明が無い」 is not evidence that
+         classes survive it, and the cost of being wrong that way is a made-up class map.
+         ⚠ THE CODE IS `bilinear-on-categorical` FOR ALL OF THEM, and that spelling is historical —
+         bilinear was the first method to meet the fact. It is ONE fact and therefore one code (the
+         call sites in js/map-ui.js and js/gis-panel.js translate it as one sentence), and the detail
+         names the method actually asked for. */
+      const mf = METHOD_FACTS[method];
+      if (!mf || mf.categoricalSafe !== true) {
         for (let i = 0; i < g.bands.length; i++) {
           const b = g.bands[i] || {};
           /* ⚠ DECLARED, not deduced. Integer values are not evidence — a household count is an
              integer and its average IS meaningful. Only a producer's own statement refuses. */
-          if (b.categorical === true) return refuse('bilinear-on-categorical', { bandIndex: i, name: b.name == null ? null : b.name });
+          if (b.categorical === true) return refuse('bilinear-on-categorical', { bandIndex: i, name: b.name == null ? null : b.name, method: method });
         }
       }
+
+      /* ⚠ 'point' or 'areal' decides whether every output pixel needs a FOOTPRINT computed for it
+         (runWarp), and a method the kernel offers without saying which it is cannot be run: the two
+         calls are shaped differently and guessing one would silently sample a point where the caller
+         asked about an area. It is refused as UNKNOWN rather than under a code of its own, because
+         that is what it is from here — a name this build cannot take a value with — and the reader's
+         sentence for it is already written. */
+      const kind = kindOf(method);
+      if (kind !== 'point' && kind !== 'areal') return refuse('resample-method-unknown', { method: method, methods: R.sampleMethods(), reason: 'kind-not-stated' });
 
       const cache = [];
       for (let i = 0; i < g.bands.length; i++) {
@@ -259,7 +340,7 @@ export function makeGisWarp() {
       };
       return {
         ok: true,
-        raster: g, proxy: proxy, method: method, R: R,
+        raster: g, proxy: proxy, method: method, kind: kind, R: R,
         affine: aff.affine, inverse: makeInverse(aff.affine, aff.det),
         bandCount: g.bands.length,
       };
@@ -382,16 +463,85 @@ export function makeGisWarp() {
       }
       const ctx = useCtx(S.opts);
       const perBand = [];
-      for (let i = 0; i < S.bandCount; i++) perBand.push({ filled: 0, missing: 0, partial: 0 });
+      for (let i = 0; i < S.bandCount; i++) perBand.push({ filled: 0, missing: 0, partial: 0, incomplete: 0 });
       let clipped = 0, failed = 0;
       const sw = S.raster.width, sh = S.raster.height;
       const opt = { method: S.method };
+      const areal = (S.kind === 'areal');
+
+      if (areal) {
+        /* ⚠⚠⚠ AN AREAL AGGREGATE WEIGHS BY GROUND AREA, AND THE PIXEL-SPACE PROXY HAS NO LATITUDE.
+           js/gis-raster.js weights a footprint by Δλ·(sin φ_n − sin φ_s) — a 1° row is half the ground
+           at 60°N that it is at the equator — but what this file hands it is a grid whose 「lat」 is a
+           negated ROW INDEX (header), and a projected source has no latitude in its own coordinates
+           at all. So the rows' latitudes are MEASURED through the projection and DECLARED on the
+           proxy (`grid.latAxis`), which is the one declaration the kernel needs and cannot derive.
+           ⚠ Measured at the grid's MIDDLE column: a row of a projected grid is not an iso-latitude
+           line, and its middle is where its ground height is representative rather than extreme. For
+           a north-up 4326 source every column gives the same answer and this is exact.
+           Cost: sh+1 transforms for a warp that already does W·H of them. */
+        const midPx = S.raster.width / 2;
+        const edges = new Float64Array(sh + 1);
+        for (let r = 0; r <= sh; r++) {
+          const xy = fwd(S.affine, midPx, r);
+          const ll = P.back(xy[0], xy[1]);
+          /* ⚠ NOT DEGRADED TO 「行の高さは全部同じ」. That would be a weighting nobody chose, applied
+             to the one case where the latitudes could not be had — and it would be invisible. */
+          if (!ll) return refuse(P.why() || 'crs-transform-failed', { at: { px: midPx, py: r } });
+          edges[r] = ll[1];
+        }
+        S.proxy.grid.latAxis = { edges: edges };
+      }
+
+      /* THE FOOTPRINT OF AN OUTPUT PIXEL, in source pixel coordinates: its four corners taken back
+         through the same two doors its centre goes through, and the box that holds them. ⚠ THE BOX
+         ERRS OUTWARD (a projected quadrilateral is not a rectangle in the source's pixel space), and
+         outward is the only direction a footprint may err — js/gis-raster.js says the same of its
+         column prefilter: an aggregate over slightly more ground is blunt, one over slightly less
+         drops observations that were asked for.
+         ⚠ A row of corners is computed ONCE and becomes the next row's top edge, so the whole warp
+         costs (W+1)·(H+1) extra transforms rather than 4·W·H. */
+      const cornerRow = (r) => {
+        const lat = out.north - out.pixelLat * r;
+        const arr = new Float64Array((W + 1) * 2);
+        for (let c = 0; c <= W; c++) {
+          const lng = out.west + out.pixelLng * c;
+          const xy = P.wgs84 ? [lng, lat] : P.forward(lng, lat);
+          if (!xy) { arr[c * 2] = NaN; arr[c * 2 + 1] = NaN; continue; }
+          const pp = S.inverse(xy[0], xy[1]);
+          arr[c * 2] = pp[0]; arr[c * 2 + 1] = pp[1];
+        }
+        return arr;
+      };
+      let topCorners = areal ? cornerRow(0) : null;
+      let botCorners = null;
 
       for (let row = 0; row < H; row++) {
         const lat = out.north - out.pixelLat * (row + 0.5);
         const base = row * W;
+        if (areal) botCorners = cornerRow(row + 1);
         for (let col = 0; col < W; col++) {
           const lng = out.west + out.pixelLng * (col + 0.5);
+          if (areal) {
+            const ax = topCorners[col * 2], ay = topCorners[col * 2 + 1];
+            const bx = topCorners[col * 2 + 2], by = topCorners[col * 2 + 3];
+            const cx2 = botCorners[col * 2], cy2 = botCorners[col * 2 + 1];
+            const dx = botCorners[col * 2 + 2], dy = botCorners[col * 2 + 3];
+            if (!(isNum(ax) && isNum(bx) && isNum(cx2) && isNum(dx) && isNum(ay) && isNum(by) && isNum(cy2) && isNum(dy))) {
+              /* A corner that would not transform leaves the footprint unknown, and an aggregate over
+                 an unknown footprint is not a smaller aggregate — it is no answer. Counted with the
+                 other transform failures, which is what it is. */
+              failed++;
+              for (let i = 0; i < S.bandCount; i++) bands[i][base + col] = NaN;
+              continue;
+            }
+            /* Proxy coordinates: 「lng」 is the fractional column, 「lat」 is the NEGATED fractional
+               row (header), so the box's north/south are the negated minimum/maximum row. */
+            opt.cell = [
+              Math.min(ax, bx, cx2, dx), -Math.max(ay, by, cy2, dy),
+              Math.max(ax, bx, cx2, dx), -Math.min(ay, by, cy2, dy),
+            ];
+          }
           const xy = P.wgs84 ? [lng, lat] : P.forward(lng, lat);
           if (!xy) {
             /* ⚠ 「変換できなかった」 is not 「そこには何も無い」. Both write NaN because there is
@@ -418,10 +568,18 @@ export function makeGisWarp() {
               return s;
             }
             if (s.partial) perBand[i].partial++;
+            /* ⚠ `partial` AND `incomplete` ARE NOT THE SAME NUMBER, so they are not one field. A
+               point sample is `partial` when the method the caller asked for was ABANDONED (a void
+               among the corners, answered with nearest instead); an areal sample is `incomplete`
+               when the method was carried out and part of the footprint had no data to carry it
+               over. Writing both into one counter would tell a reader that 「補間が汚れた」 where
+               what happened is 「観測が足りない」. */
+            if (s.value != null && s.coverage != null && s.coverage < 1) perBand[i].incomplete++;
             if (s.value == null) { bands[i][base + col] = NaN; perBand[i].missing++; }
             else { bands[i][base + col] = s.value; perBand[i].filled++; }
           }
         }
+        if (areal) topCorners = botCorners;
         if (ctx && !(await ctx.tick(W, N))) return refuse('cancelled', { done: row * W, total: N });
       }
 
@@ -437,8 +595,8 @@ export function makeGisWarp() {
       }));
       for (const b of outBands) if (b.categorical === undefined) delete b.categorical;
 
-      let filled = 0, missingCount = 0, partial = 0;
-      for (const b of perBand) { filled += b.filled; missingCount += b.missing; partial += b.partial; }
+      let filled = 0, missingCount = 0, partial = 0, incomplete = 0;
+      for (const b of perBand) { filled += b.filled; missingCount += b.missing; partial += b.partial; incomplete += b.incomplete; }
 
       return {
         ok: true,
@@ -454,10 +612,10 @@ export function makeGisWarp() {
           read: (i) => { const k = (i == null) ? 0 : i; return (k >= 0 && k < bands.length) ? bands[k] : null; },
         },
         report: {
-          from: fromCode, to: WGS84, method: S.method,
+          from: fromCode, to: WGS84, method: S.method, kind: S.kind,
           width: W, height: H, pixelLng: out.pixelLng, pixelLat: out.pixelLat,
           west: out.west, north: out.north,
-          filled: filled, missing: missingCount, partial: partial,
+          filled: filled, missing: missingCount, partial: partial, incomplete: incomplete,
           clipped: clipped, failed: failed,
           cells: N, bands: perBand,
         },
@@ -627,7 +785,16 @@ export function makeGisWarp() {
       };
     }
 
+    /* (#R752) ⚠ THE VERSION OF THIS KERNEL. What this file decides IS an answer: the resampling
+       method, the inverse mapping, how the output extent is walked, which grid `align` calls the
+       reference. A saved recipe that resampled with bilinear replays through whatever bilinear means
+       the day it is reopened, and until this round nothing recorded which one that was — #R749 built
+       both this file and the version machinery and did not connect them. The keeper is
+       scripts/gis-kernel-versions.mjs; js/gis-project.js records it beside the ops version. */
+    const KERNEL_VERSION = 'warp-1';
     const API = {
+      /* which implementation answered — see KERNEL_VERSION above */
+      version: () => KERNEL_VERSION,
       methods, to4326, resample, align,
       /* the vocabularies, published for the same reason js/gis-raster.js publishes its condition
          ops: a UI reads the declaration rather than keeping a hand-written copy of it */

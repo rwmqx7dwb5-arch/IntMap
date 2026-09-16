@@ -117,7 +117,14 @@ export function makeAtlasSchemas() {
          `op-unknown` answers with every op id, and a refused step answers with that op's whole
          declaration, so one wrong call becomes one corrected call rather than a search. */
       'data.gis': { type: 'object', properties: { op: str(), inputs: list(str()), params: obj(), title: str(), sample: obj() }, required: ['op', 'inputs'] },
-      'map.drawDataset': { type: 'object', properties: { dataset: str() }, required: ['dataset'] },
+      /* (#R752) ⚠ `band` AND `spec` ARE HERE BECAUSE js/gis-core.js DRAWS WITH THEM. A grid with
+         three bands is three pictures, and until this round the Atlas door could name none of them:
+         the schema declared `dataset` alone, so no planner could express 「2 番目のバンドで」 and
+         js/gis-atlas.js passed no options at all. A capability the model is not told it can pass is
+         a capability it does not use ([[intmap-prompt-that-hid-the-tools-in-hand]]). ⚠ The band is
+         checked against the grid by js/gis-core.js (`band-out-of-range`), not by a ceiling invented
+         here — this file knows how many bands no dataset has. */
+      'map.drawDataset': { type: 'object', properties: { dataset: str(), band: int(0, null), spec: obj() }, required: ['dataset'] },
       'data.rank': { type: 'object', properties: { metric: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metric'] },
       'data.ratio': { type: 'object', properties: { metricA: str(), metricB: str(), order: one('top', 'bottom'), n: int(1, 40) }, required: ['metricA', 'metricB'] },
       'data.relate': { type: 'object', properties: { metricY: str(), metricX: str(), find: one('low', 'high'), n: int(1, 40) }, required: ['metricY', 'metricX'] },

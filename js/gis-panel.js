@@ -177,6 +177,41 @@ export function makeGisPanel(HOST) {
       if (code === 'no-overlay-polygons') return window.IntMapLang.t(HOST.lang, "The second input holds no polygon to overlay with", "2つ目の入力に、重ね合わせに使える多角形がありません", "Die zweite Eingabe enthält kein Polygon zum Überlagern", "Во втором входе нет полигона для наложения", "La segunda entrada no tiene ningún polígono con el que superponer");
       if (code === 'no-features') return window.IntMapLang.t(HOST.lang, "That input holds nothing this step can work on", "その入力に、この処理が扱える地物がありません", "Diese Eingabe enthält nichts, womit dieser Schritt arbeiten kann", "В этом входе нет объектов, с которыми может работать шаг", "Esa entrada no contiene nada con lo que este paso pueda trabajar");
       if (code === 'op-not-wired') return window.IntMapLang.t(HOST.lang, "That step is declared but has no implementation in this build", "その処理は宣言されていますが、このビルドに実装がありません", "Dieser Schritt ist deklariert, hat in diesem Build aber keine Implementierung", "Этот шаг объявлен, но в этой сборке нет реализации", "Ese paso está declarado pero no tiene implementación en esta compilación") + par(d.op);
+      /* ⚠ (#R752) NOT RUN, RATHER THAN RUN WITHOUT REPROJECTING. js/gis-ops.js refuses a step whose
+         declaration says it needs the warp when that kernel is absent: running it anyway would put
+         the answer somewhere on Earth nobody computed, which is worse than no answer. */
+      if (code === 'warp-unavailable') return window.IntMapLang.t(HOST.lang, 'The reprojection module is not loaded, so this step was not run at all — nothing was placed by guesswork', '座標変換の部品が読み込まれていないため、この処理は実行していません。推測で配置することもしていません');
+      /* ⚠ (#R752) THE TWO THE GRID STEPS STOP ON WITHOUT A REASON OF THEIR OWN. A kernel that
+         refuses says why and that reason is carried verbatim; these two are the case where it
+         stopped and named nothing, and saying so is the honest answer — the reader is told the
+         step did not run, not that their grids have no answer. */
+      if (code === 'align-failed') return window.IntMapLang.t(HOST.lang, 'The two grids could not be put on one common lattice, and the step stopped without naming a reason', '2つの格子を共通の格子に合わせられず、処理は理由を述べずに止まりました');
+      if (code === 'resample-failed') return window.IntMapLang.t(HOST.lang, 'The resampling stopped without naming a reason', '再標本化が、理由を述べずに止まりました');
+      if (code === 'calc-failed') return window.IntMapLang.t(HOST.lang, 'The grid calculation stopped without naming a reason', '格子の計算が、理由を述べずに止まりました');
+      if (code === 'mosaic-failed') return window.IntMapLang.t(HOST.lang, 'Joining the two sheets stopped without naming a reason', '2枚の格子の結合が、理由を述べずに止まりました');
+      if (code === 'rasterize-failed') return window.IntMapLang.t(HOST.lang, 'Burning the features onto the lattice stopped without naming a reason', '地物を格子に焼き込む処理が、理由を述べずに止まりました');
+      if (code === 'polygonize-failed') return window.IntMapLang.t(HOST.lang, 'Tracing the regions stopped without naming a reason', '領域の抽出が、理由を述べずに止まりました');
+      /* ⚠ (#R752) THE EXPRESSION RAN AND ANSWERED NOTHING, ANYWHERE. A grid of voids registered
+         under the reader's own expression would look like a result; it is the 「もっともらしいものを
+         描かない」 rule that makes this a refusal instead. The first error the kernel saw is carried,
+         because that is the sentence that tells them which name or operator was wrong. */
+      if (code === 'expr-failed-every-pixel') return window.IntMapLang.t(HOST.lang, 'The expression failed on every pixel, so no grid was made', '式がすべての画素で失敗したため、格子は作っていません') + par([d.pixels, d.error && d.error.why].filter((x) => x != null && x !== '').join(' · '));
+      /* ⚠ (#R752) TWO GRIDS WITH NOTHING BETWEEN THEM. Touching is not overlapping — a common
+         lattice of zero width is the same disjointness with a rounding error in front of it. */
+      if (code === 'grids-disjoint') return window.IntMapLang.t(HOST.lang, 'The two grids do not overlap, so there is no common area to answer about', '2つの格子が重なっていないため、共通の範囲がありません');
+      /* ⚠ (#R752) FROM THE GRID KERNEL — see js/gis-raster.js. A mosaic's overlap rule and a
+         polygonize on a lattice whose rows are not latitudes are both 「読者が述べていない」 rather
+         than 「データが悪い」, and the sentence has to say which. */
+      if (code === 'merge-overlap-not-stated') return window.IntMapLang.t(HOST.lang, 'Say what the pixels both sheets cover should become — the rule is not chosen for you, because the answer depends on it', '両方の格子が覆っている画素をどうするかを指定してください。答えがそれで変わるので、こちらでは選びません') + par((d.overlaps || []).join(' / '));
+      if (code === 'merge-overlap-unknown') return window.IntMapLang.t(HOST.lang, 'That is not one of the rules for overlapping pixels', 'それは重なった画素の扱い方として用意されていません') + par([d.overlap, (d.overlaps || []).join(' / ')].filter(Boolean).join(' · '));
+      if (code === 'grid-not-degrees') return window.IntMapLang.t(HOST.lang, 'That grid has declared that its rows are not latitudes, so its regions cannot be placed on the Earth — convert it to degrees first', 'その格子は行が緯度ではないと述べているため、領域を地球上に置けません。先に度の格子へ変換してください');
+      if (code === 'combine-fn-not-a-function') return window.IntMapLang.t(HOST.lang, 'The grid calculation was asked to run something that is not a calculation', '格子の計算に、計算ではないものが渡されました');
+      /* ⚠ (#R752) MEASURING ON A NAMED PLANE. Both are about the coordinate system the reader
+         asked to measure on, and neither is about their data: one is a part that did not load,
+         the other a plane the kernel would not build — and it says why, so that reason is shown
+         rather than flattened into 「引数が不正です」. */
+      if (code === 'crs-unavailable') return window.IntMapLang.t(HOST.lang, 'The coordinate-conversion module did not load, so this step was not run at all — nothing was measured on a guessed plane', '座標変換の部品を読み込めなかったため、この処理は実行していません。推測した平面の上で測ることもしていません') + par(d.crs);
+      if (code === 'crs-plane-unusable') return window.IntMapLang.t(HOST.lang, 'That coordinate system could not be turned into a plane to measure on — name one this build can build, or leave it off to measure on the ellipsoid', 'その座標系から、測るための平面を作れませんでした。このビルドが作れる座標系を指定するか、指定を外して回転楕円体上で測ってください') + par([d.crs, d.why].filter((x) => x != null && x !== '').join(' · '));
 
       /* ── js/gis-datasets.js — a time declaration that did not hold (#R735, worded in #R738) ───
          ⚠ THESE NINE HAD NO SENTENCE FOR TWO ROUNDS, AND NOTHING NOTICED — because the gate that
@@ -324,6 +359,19 @@ export function makeGisPanel(HOST) {
       if (code === 'not-an-op') return window.IntMapLang.t(HOST.lang, 'This dataset came from a file, not from a step, so it has no settings to change', 'このデータセットは処理の結果ではなく取り込んだものなので、変えられる引数がありません', 'Dieser Datensatz stammt aus einer Datei, nicht aus einem Schritt, und hat keine Einstellungen', 'Этот набор получен из файла, а не из шага, поэтому у него нет настроек', 'Este conjunto viene de un archivo, no de un paso, así que no tiene ajustes que cambiar');
       if (code === 'no-such-dataset') return window.IntMapLang.t(HOST.lang, 'That dataset is not registered any more', 'そのデータセットはもう登録されていません', 'Dieser Datensatz ist nicht mehr registriert', 'Этот набор данных больше не зарегистрирован', 'Ese conjunto de datos ya no está registrado') + par(d.id);
       if (code === 'cycle') return window.IntMapLang.t(HOST.lang, 'That would make a step depend on its own result', 'それでは処理が自分自身の結果を入力にしてしまいます', 'Damit würde ein Schritt von seinem eigenen Ergebnis abhängen', 'Тогда шаг зависел бы от собственного результата', 'Eso haría que un paso dependiera de su propio resultado');
+
+      /* ── js/gis-sources.js — the supplier contract (#R752) ─────────────────────────────────
+         ⚠ THESE ARE ABOUT THE SUPPLIER, NOT ABOUT THE DATA. A reader who asked for a filtered or
+         a continued fetch and got 「取得できませんでした」 would go looking at their conditions;
+         what actually happened is that this particular supplier cannot do that, and the sentence
+         has to say so — and say what is left to try, because in every one of these cases there is
+         something (drop the condition, fetch the lot, use the slow door, look at the supplier). */
+      if (code === 'where-not-supported') return window.IntMapLang.t(HOST.lang, 'That supplier cannot narrow a fetch by attribute — fetch without the condition, and filter the result afterwards', 'この供給元は属性の条件で絞り込めません。条件なしで取得してから、結果を絞り込んでください') + par(d.id);
+      if (code === 'cursor-not-supported') return window.IntMapLang.t(HOST.lang, 'That supplier cannot resume, so there is no page to continue from — fetch it in one go', 'この供給元は途中から再開できないため、続きを取得できません。一度にまとめて取得してください') + par(d.id);
+      if (code === 'supplier-is-async') return window.IntMapLang.t(HOST.lang, 'That supplier does not answer immediately — ask for it as a fetch that takes time, not as an answer on the spot', 'この供給元は即座には答えません。その場で答えを得るのではなく、時間のかかる取得として実行してください') + par(d.id);
+      if (code === 'supplier-failed') return window.IntMapLang.t(HOST.lang, 'The supplier itself stopped part way through, so nothing was fetched — this is not an empty answer about your area', '供給元の取得そのものが途中で止まったため、何も取得していません。これは、その範囲に何も無いという答えではありません') + par([d.id, d.message].filter((x) => x != null && x !== '').join(' · '));
+      if (code === 'supplier-answer-invalid') return window.IntMapLang.t(HOST.lang, 'The supplier answered in a shape the contract does not have, so its answer was refused rather than half-read', '供給元が契約どおりの形で答えなかったため、その答えは中途半端に読まずに拒否しました') + par([d.id, d.expected, d.got].filter((x) => x != null && x !== '').join(' · '));
+
 
       /* ── js/gis-core.js ──────────────────────────────────────────────────────────────────── */
       if (code === 'map-unavailable') return window.IntMapLang.t(HOST.lang, 'The map is not ready to take a layer yet', '地図がまだレイヤーを受け取れる状態ではありません', 'Die Karte kann noch keine Ebene aufnehmen', 'Карта пока не готова принять слой', 'El mapa aún no puede recibir una capa');

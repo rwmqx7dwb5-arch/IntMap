@@ -41,6 +41,7 @@ import { makeGisWarp } from './gis-warp.js';
 import { makeGisAtlas } from './gis-atlas.js';
 import { makeGisIndex } from './gis-index.js';
 import { makeGisExpr } from './gis-expr.js';
+import { makeGisWorker } from './gis-worker.js';
 import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
@@ -76,6 +77,14 @@ window.IntMapModules.gisCore = function (HOST) {
      reads window.IntMapGisExpr at CALL time, so a module importing it privately would be a second
      parser with a second opinion about what a column name is. */
   const expr = makeGisExpr();
+  /* (#R752) Parallelism, which is the half of 「重い処理」 the yield in js/gis-ops.js does NOT provide
+     (docs/GIS-CORE.md §6 said so: 「ここで足りないのは並列性であって応答性ではない」). It takes PURE
+     ARITHMETIC over numeric arrays — pixel loops, where there is no registry and no geodesy to leave
+     behind on this thread. Mounted here for the same reason as every kernel above: a caller reads
+     window.IntMapGisWorker at CALL time, and a module importing it privately would hold a second
+     pool. ⚠ It costs what its own bytes cost: this whole file is behind the `gisCore` chunk, so
+     nothing of it is fetched at boot. */
+  const worker = makeGisWorker();
   /* (#R749) Where data is acquired FROM, as opposed to what is done with it. js/gis-layers.js
      reads window.IntMapGisSources at call time and will make one if nobody has — so this mount is
      not what makes it work; it is what makes the order VISIBLE, which is what this file is for. */
@@ -151,7 +160,7 @@ window.IntMapModules.gisCore = function (HOST) {
      file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
   const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, draw: (id, o) => draw(id, o) });
 
-  const API = { data, geometry, crs, raster, warp, index, expr, sources, layers, ops, project, panel, draw, atlas,
+  const API = { data, geometry, crs, raster, warp, index, expr, worker, sources, layers, ops, project, panel, draw, atlas,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { window.IntMapGis = API; } catch (_) { }
   return API;

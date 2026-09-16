@@ -270,7 +270,12 @@ export function makeGisLayers() {
        for `layer-not-sampling` and has had since #R735, and they are the same sentence to a reader
        (「そのレイヤーは表示されていないため、渡せる値がありません」). Translating here rather than
        inventing a tenth string keeps the refusal readable; every other code passes through as it is,
-       because they are already this app's. */
+       because they are already this app's.
+       ⚠ (#R752) AND THE SUPPLY CONTRACT'S CODES PASS THROUGH UNTRANSLATED ON PURPOSE. They are only
+       reachable by a caller that named `where` or `cursor`, or by an id that registered an
+       implementation — no shipped control does either yet, so no reader meets them. Wiring one means
+       giving them nine languages in js/gis-panel.js first; inventing an English sentence here would
+       be the tenth string this function exists to avoid. */
     function speak(r) {
       if (!r || r.ok !== false) return r;
       if (r.why === 'layer-not-visible') return { ok: false, why: 'layer-not-sampling', detail: r.detail };
@@ -287,7 +292,16 @@ export function makeGisLayers() {
       /* ⚠ THE READ ITSELF IS STILL read()'s — js/gis-sources.js calls it. What this call adds is the
          `coverage` that travels with the answer, which is the one thing that could not be said
          before: 「どこまでを見て出した答えか」. */
-      const got = speak(SRC().features(id, { bbox: (o.bounds == null ? null : o.bounds), limit: o.limit, fields: o.fields, time: o.time }));
+      /* ⚠ (#R752) `where` AND `cursor` TRAVEL FROM HERE. js/gis-sources.js can now ask a supplier for
+         「この属性に合うものだけ」 and 「続きを」, and a door that dropped them would make the contract
+         unreachable from the one entrance the panel and Atlas hold — an entrance being the reason the
+         layer below has a supplier contract at all. A supplier that cannot execute them refuses BY
+         NAME down there (`where-not-supported` / `cursor-not-supported`), so nothing arrives here
+         looking like a filtered answer that is not one. */
+      const got = speak(SRC().features(id, {
+        bbox: (o.bounds == null ? null : o.bounds), limit: o.limit, fields: o.fields, time: o.time,
+        where: (o.where == null ? null : o.where), cursor: (o.cursor === undefined ? null : o.cursor),
+      }));
       if (!got.ok) return got;
       const r = { ok: true, features: got.features, bounds: (o.bounds == null ? null : got.coverage.requested.bbox), coverage: got.coverage };
       const D = DATA();
@@ -321,7 +335,12 @@ export function makeGisLayers() {
       };
       if (wanted) spec.id = wanted;
       try {
-        return { ok: true, dataset: D.add(spec) };
+        const made = { ok: true, dataset: D.add(spec) };
+        /* ⚠ (#R752) THE CURSOR IS HANDED ON ONLY WHEN THE SUPPLIER HANDED ONE OVER. Its absence is
+           not 「これで終わり」 — that is what `coverage.continues` says, three-valued, in the record
+           above — so no field is written here to be mistaken for the end of the list. */
+        if (got.next != null) made.next = got.next;
+        return made;
       } catch (e) {
         /* add() throws on exactly one thing: an id already in the namespace. */
         return { ok: false, why: 'id-in-use', detail: { id: wanted, message: e && e.message } };
@@ -360,6 +379,9 @@ export function makeGisLayers() {
       const got = speak(await SRC().region(key, (o.bounds == null ? null : o.bounds), {
         width: o.width, height: o.height,
         band: { name: layerLabel(key) || key, unit: (o.unit == null ? null : String(o.unit)) },
+        /* (#R752) a field whose supplier can answer for a whole window at once answers this call in
+           one go rather than width×height times; `where` reaches the ones that can narrow it. */
+        where: (o.where == null ? null : o.where),
         signal: o.signal || null, onProgress: o.onProgress || null,
       }));
       if (!got.ok) return got;

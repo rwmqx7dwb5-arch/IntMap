@@ -411,8 +411,15 @@ export function makeGisIndex() {
       };
     }
 
+    /* (#R752) ⚠ A PREFILTER CHANGES ANSWERS, AND THIS ONE HAS. #R743 measured it erring INWARD —
+       true pairs off the equator discarded before any distance was measured — under a comment saying
+       it erred outward. So 「索引を速くしただけ」 is not a safe thing to assume about an edit here:
+       what a `relate` or an `aggregate` returned depends on what this kept. The keeper is
+       scripts/gis-kernel-versions.mjs; js/gis-project.js records this beside the ops version. */
+    const KERNEL_VERSION = 'index-1';
+
     const API = {
-      build, query, queryEach, stats,
+      build, query, queryEach, stats, version: () => KERNEL_VERSION,
       /* exposed because the seam rule is the one thing in here a check has to be able to ask
          directly: 「その矩形はどの経度帯を覆うと読んだのか」 */
       lonRanges, latRange,
