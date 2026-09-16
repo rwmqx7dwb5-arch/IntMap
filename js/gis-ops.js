@@ -1757,7 +1757,27 @@ export function makeGisOps() {
       return res.stats ? { ok: true, dataset: rec, stats: res.stats } : { ok: true, dataset: rec };
     }
 
+    /* ══ WHICH IMPLEMENTATION COMPUTED THIS (#R749) ═══════════════════════════════════════════════
+       js/gis-project.js saves a derived dataset as its RECIPE — op, inputs, params — and recomputes
+       it on load, because a recipe replays and a stored answer goes stale the moment its input
+       changes (docs/GIS-CORE.md §4). That is right, and it has a consequence nobody was stating:
+       ⚠ THE SAME RECIPE IS NOT THE SAME ANSWER ACROSS IMPLEMENTATIONS. #R743 changed what `union`
+       and the distance prefilter RETURN — disjoint parts had been dropped, and true pairs off the
+       equator had been discarded before the distance was measured. A project saved the week before
+       reopens today with different numbers in it, and nothing in the record said so.
+       So a record made here carries the version of the thing that made it, and js/gis-project.js
+       reports 「同じ」「違う」「測れなかった」 as three states rather than assuming the first.
+
+       ⚠ THIS NUMBER IS A CLAIM, AND A CLAIM NEEDS A KEEPER. A hand-maintained version drifts the
+       first time someone edits the kernel and forgets it — so tests/r749-gis-raster-pipeline-checks
+       holds the sha256 of this file beside the version it declared, and fails when the bytes moved
+       and the version did not. Raise it whenever an edit here can change an ANSWER (a different
+       result, a different refusal); a comment or a rename moves the hash, and the recorded hash is
+       updated with the version left alone. scripts/gis-kernel-versions.mjs is the ledger. */
+    const KERNEL_VERSION = 'ops-1';
     const API = {
+      /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
+      version: () => KERNEL_VERSION,
       ops: () => ORDER.map((id) => clone(DECL[id])),
       op: (id) => (DECL[id] ? clone(DECL[id]) : null),
       run: run,

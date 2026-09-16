@@ -199,6 +199,34 @@ gis-raster.js                     **数値ラスターのカーネル** `window.
                                   `grid-mismatch` で拒み、黙って再標本化しない）。
                                   `fromSampler()` が既存の数値レイヤーを同じ契約に焼き込む。
                                   依存ゼロ（地球半径は `IntMapGeodesy`、内外判定は `IntMapGisGeometry`）
+gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapGisGeotiff`（#R749）—
+                                  依存を足さずに TIFF 6.0 を読む（`geotiff` npm を使わない。
+                                  前例は `js/gis-geopackage.js`）。II/MM 両バイト順・strip と tile・
+                                  無圧縮／LZW／Deflate（`DecompressionStream`）／PackBits・
+                                  predictor 1 と 2・uint/int/float × 8〜64 bit。地理参照は
+                                  ModelTiepoint+PixelScale と ModelTransformation の両方、CRS は
+                                  GeoKey から。⚠ **扱えないものは名前を付けて断る**（BigTIFF・
+                                  JPEG-in-TIFF・その他の圧縮は登録名つき・地理参照の無い TIFF …）。
+                                  ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
+                                  `read(i)` は扉で、開いただけでは画素を展開しない
+gis-warp.js                       **格子の座標変換と再標本化** `window.IntMapGisWarp`（#R749）—
+                                  GDAL の warp が担う役（座標系・解像度・範囲・再標本化・NoData を
+                                  1 つの層で扱う）。`to4326` / `resample` / `align` / `methods`。
+                                  ⚠ **`method` に既定が無い**——誰も名づけていない補間は、誰も
+                                  出していない答え。⚠ **欠損の規則を写さない**（値はすべて
+                                  `IntMapGisRaster.sample` が出す）。⚠ **分類の格子を bilinear で
+                                  補間しない**（宣言されていれば `bilinear-on-categorical` で拒み、
+                                  宣言が無ければ推測しない）。逆写像で走り、出力範囲は**周を歩いて**
+                                  求める（投影された辺は度では曲線）
+gis-sources.js                    **供給元** `window.IntMapGisSources`（#R749）— 描画器から
+                                  取り出すのではなく、**描画と分析が同じ供給元を読む**ための層。
+                                  `list` / `features` / `region` / `acquire` / `declare`。
+                                  ⚠ **すべての取得が `coverage` を持つ**
+                                  （`completeness: all | partial | sample` ＋ 理由・求めた範囲・
+                                  答えた範囲・件数・時点・解像度）。⚠ **`all` は推測から届かない**
+                                  ——測れないものは `partial` と理由を述べる（「知らない」を
+                                  「全部だ」の代わりにしない）。宣言できるのは供給元自身だけで、
+                                  今日それを述べているのは**取り込んだファイル**（`js/map-ui.js`）
 gis-index.js                      **空間索引** `window.IntMapGisIndex`（#R735）— 一様格子。
                                   **セルの大きさをデータから導く**（定数で決め打ちしない）。
                                   ⚠ 不変条件は**偽陰性ゼロ**——子午線をまたぐ箱・世界を覆う箱・

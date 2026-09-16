@@ -269,6 +269,13 @@ export function makeGisPanel(HOST) {
       if (code === 'layer-unknown') return window.IntMapLang.t(HOST.lang, "There is no layer or map source by that name", "その名前のレイヤーも地図ソースもありません", "Es gibt keine Ebene und keine Kartenquelle dieses Namens", "Слоя или источника карты с таким именем нет", "No hay ninguna capa ni fuente de mapa con ese nombre") + par(d.id || d.layer);
 
       if (code === 'id-in-use') return window.IntMapLang.t(HOST.lang, 'A dataset with that id is already registered', 'その ID のデータセットは既に登録されています', 'Ein Datensatz mit dieser ID ist bereits registriert', 'Набор данных с таким идентификатором уже зарегистрирован', 'Ya hay un conjunto de datos registrado con ese identificador') + par(d.id);
+      /* ⚠ (#R749) TWO CODES, ONE FACT FOR THE READER. js/gis-sources.js answers 'layer-not-visible'
+         when a switched-off supplier returned nothing, and js/gis-layers.js translates it back to the
+         older spelling at the door a reader actually reaches — but the code can arrive here directly
+         from the acquisition layer too, and a refusal with no sentence is the defect
+         tests/r729-gis-core-checks ④ exists for. The reader's action is the same in both: turn the
+         layer on. */
+      if (code === 'layer-not-visible') return window.IntMapLang.t(HOST.lang, 'That layer is switched off, so it answered with nothing — turn it on and try again', 'そのレイヤーは表示がオフなので、何も返しませんでした。オンにしてからもう一度お試しください') + par(d.layer || d.id);
       if (code === 'layer-not-sampling') return window.IntMapLang.t(HOST.lang, 'That layer is switched off, so it has no values to give — turn it on first', 'そのレイヤーは表示されていないため、渡せる値がありません。先に表示してください', 'Diese Ebene ist ausgeschaltet und hat daher keine Werte — schalten Sie sie zuerst ein', 'Слой выключен, поэтому значений нет — сначала включите его', 'Esa capa está apagada, así que no tiene valores — actívala primero') + par(d.id);
       if (code === 'layer-values-not-numeric') return window.IntMapLang.t(HOST.lang, 'That layer answers with text rather than numbers, so it cannot become a grid', 'そのレイヤーは数値ではなく文字列を返すため、格子にできません', 'Diese Ebene antwortet mit Text statt mit Zahlen und kann daher kein Raster werden', 'Слой отвечает текстом, а не числами, поэтому сетку из него не сделать', 'Esa capa responde con texto y no con números, así que no puede volverse una rejilla') + par(d.sample);
       if (code === 'cancelled') return window.IntMapLang.t(HOST.lang, 'Stopped before it finished, so nothing was registered', '完了前に中止したため、何も登録されていません', 'Vor dem Ende abgebrochen, daher wurde nichts registriert', 'Остановлено до завершения, поэтому ничего не зарегистрировано', 'Se detuvo antes de terminar, así que no se registró nada') + par(d.done != null ? (d.done + '/' + d.total) : null);
@@ -285,7 +292,6 @@ export function makeGisPanel(HOST) {
          source and refuse every layer: production measured draw() answering ok:true with nothing on the
          map, and the reader then being told 'no-such-layer' when they asked to colour it. */
       if (code === 'draw-not-rendered') return window.IntMapLang.t(HOST.lang, 'This map view could not draw those shapes — switch to the flat map and try again', 'この地図表示ではその図形を描けませんでした。平面地図に切り替えてもう一度お試しください') + par(d.id);
-      if (code === 'draw-needs-features') return window.IntMapLang.t(HOST.lang, 'A grid is not drawn as shapes on the map; use it as the input of a step instead', '格子は地図上の図形としては描けません。処理の入力として使ってください', 'Ein Raster wird nicht als Formen auf der Karte gezeichnet; nutzen Sie es als Eingabe eines Schritts', 'Сетка не рисуется на карте как фигуры; используйте её как вход шага', 'Una rejilla no se dibuja como formas en el mapa; úsala como entrada de un paso') + par(d.id);
       if (code === 'raster-invalid') return window.IntMapLang.t(HOST.lang, 'That grid does not describe a grid: one of its size or spacing fields is missing or not a positive number', 'その格子は格子の形になっていません（大きさか間隔のどれかが欠けている、または正の数ではない）', 'Dieses Raster beschreibt kein Raster: Größe oder Abstand fehlt oder ist nicht positiv', 'Эта сетка не описывает сетку: размер или шаг отсутствует либо не положителен', 'Esa rejilla no describe una rejilla: falta un tamaño o espaciado, o no es positivo') + par(d.field);
       if (code === 'raster-too-large') return window.IntMapLang.t(HOST.lang, 'This browser could not allocate a grid that size', 'このブラウザでは、その大きさの格子を確保できませんでした', 'Dieser Browser konnte kein Raster dieser Größe belegen', 'Браузер не смог выделить память под сетку такого размера', 'Este navegador no pudo asignar una rejilla de ese tamaño') + par(d.cells);
       if (code === 'band-out-of-range') return window.IntMapLang.t(HOST.lang, 'That grid has fewer bands than the one asked for', 'その格子には、指定された番号のバンドがありません', 'Dieses Raster hat weniger Bänder als angefragt', 'В сетке меньше полос, чем запрошено', 'Esa rejilla tiene menos bandas de la solicitada') + par(d.bandIndex);
@@ -333,6 +339,10 @@ export function makeGisPanel(HOST) {
     let panel = null, bodyEl = null, unsub = null;
     const openRows = new Set();          /* dataset ids whose detail is unfolded */
     const drawn = new Set();             /* dataset ids handed to the map this session */
+    /* (#R749) raster dataset id → which band the reader chose to paint. ⚠ NOT A DEFAULT HIDDEN IN
+       draw(): a three-band grid is three pictures, and picking one without being asked would put a
+       claim on the map that nobody made. Absent here means band 0, which is what the control shows. */
+    const drawBand = new Map();
     const confirmDel = new Set();        /* dataset ids showing 「本当に消しますか」 */
     const dsMsg = new Map();             /* dataset id → the last recompute sentence */
     const dsParams = new Map();          /* dataset id → the edited copy of its step's settings */
@@ -376,6 +386,51 @@ export function makeGisPanel(HOST) {
       }
       if (String(src) === String(here)) return String(here);
       return String(src) + ' → ' + String(here);
+    }
+
+    /* ══ (#R749) WHAT A REOPENED PROJECT IS NOT TELLING YOU UNLESS SOMEBODY SAYS IT ══════════════
+       js/gis-project.js stores a derived dataset as its RECIPE and replays it on load, so what comes
+       back is computed by TODAY's kernel. #R743 changed what union and the distance prefilter return
+       — a project saved before it reopens with different numbers in it — and until this round the
+       record did not even carry which implementation had made it.
+
+       ⚠ THREE STATES, NOT TWO. The engine that saved it and the one replaying it are the same, are
+       different, or COULD NOT BE COMPARED (a record from before version 2, a module that publishes no
+       version). Folding the third into the first is the shape memory keeps recording: 「読めなかった」
+       used as the evidence for 「同じ」. So each gets its own sentence.
+
+       ⚠ AND A DECLARATION THAT NO LONGER HOLDS IS NEWS. The reader's own 「この列は人数で、単位は人」
+       is verified against the data again on the way back in; where the data moved under it, the
+       declaration is refused rather than copied, and a refusal nobody is shown is a refusal that did
+       not happen as far as the reader is concerned. */
+    function reopenNotes(res) {
+      if (!res) return '';
+      const changed = Array.isArray(res.engineChanged) ? res.engineChanged : [];
+      const unknown = Array.isArray(res.engineUnknown) ? res.engineUnknown : [];
+      const refused = Array.isArray(res.declarationsRefused) ? res.declarationsRefused : [];
+      const out = [];
+      if (changed.length) {
+        out.push(window.IntMapLang.t(HOST.lang,
+          'Recomputed by a different version of the engine than the one that saved it, so these results can differ',
+          '保存したときとは別の版のエンジンで再計算しました。結果が変わっていることがあります')
+          + ' (' + nf(changed.length) + ')');
+      }
+      if (unknown.length) {
+        out.push(window.IntMapLang.t(HOST.lang,
+          'This project does not say which engine computed it, so whether these results changed cannot be told',
+          'このプロジェクトは、どの版のエンジンで計算されたかを述べていません。結果が変わったかどうかは分かりません')
+          + ' (' + nf(unknown.length) + ')');
+      }
+      if (refused.length) {
+        /* Naming the columns matters more than counting them: the reader's next action is to look at
+           one of them. */
+        const names = refused.map((r) => (r && r.field) ? String(r.field) : '').filter(Boolean).slice(0, 4);
+        out.push(window.IntMapLang.t(HOST.lang,
+          'Some column types or units you had declared no longer hold for this data and were not restored',
+          '宣言されていた列の型や単位のうち、いまのデータでは成り立たないものは復元していません')
+          + (names.length ? ' (' + names.join(', ') + ')' : ''));
+      }
+      return out.length ? (' — ' + out.join(' / ')) : '';
     }
 
     function geomText(ds) {
@@ -1339,9 +1394,26 @@ export function makeGisPanel(HOST) {
           ? window.IntMapLang.t(HOST.lang, 'Draw again', 'もう一度描く', 'Erneut zeichnen', 'Показать снова', 'Dibujar otra vez')
           : window.IntMapLang.t(HOST.lang, 'Draw on the map', '地図に描く', 'Auf der Karte zeichnen', 'Показать на карте', 'Dibujar en el mapa'));
         on.className = 'gis-draw';
+        /* ⚠ (#R749) A GRID WITH MORE THAN ONE BAND NEEDS THE READER TO SAY WHICH. One band is not a
+           choice and gets no control; two or more without one would mean the map is showing whichever
+           came first in the file — 「誰も述べていない主張」 in the most literal sense. */
+        if (ds.kind === 'raster' && Array.isArray(ds.bands) && ds.bands.length > 1) {
+          const bs = el('select', CSS_IN + 'flex:0 1 auto;width:auto;min-width:90px;');
+          bs.className = 'gis-draw-band';
+          ds.bands.forEach((bd, i) => {
+            const o = document.createElement('option');
+            o.value = String(i);
+            o.textContent = (bd && bd.name != null && String(bd.name)) || (window.IntMapLang.t(HOST.lang, 'Band', 'バンド') + ' ' + (i + 1));
+            bs.appendChild(o);
+          });
+          bs.value = String(drawBand.get(ds.id) || 0);
+          bs.onchange = () => { drawBand.set(ds.id, Math.max(0, Math.round(Number(bs.value) || 0))); };
+          bar.appendChild(bs);
+        }
         on.onclick = () => {
           let res = null;
-          try { res = C.draw(ds.id); } catch (e) { res = { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
+          const b = drawBand.get(ds.id);
+          try { res = C.draw(ds.id, (b == null ? null : { band: b })); } catch (e) { res = { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
           if (res && res.ok === false) dsMsg.set(ds.id, reasonText(res.why, res.detail));
           else { drawn.add(ds.id); dsMsg.delete(ds.id); }
           render();
@@ -1759,6 +1831,7 @@ export function makeGisPanel(HOST) {
                 projMsg = window.IntMapLang.t(HOST.lang, 'Project opened', 'プロジェクトを読み込みました', 'Projekt geöffnet', 'Проект открыт', 'Proyecto abierto') + ': ' + label
                   + (restored == null ? '' : ' · ' + nf(restored) + ' ' + window.IntMapLang.t(HOST.lang, 'datasets', 'データセット', 'Datensätze', 'наборов данных', 'conjuntos de datos'));
                 if (failed.length) projMsg += ' — ' + failed.slice(0, 3).map((f) => reasonText(f && f.why, f && f.detail)).join(' / ');
+                projMsg += reopenNotes(res);
               }
               render();
             }).catch((e) => { projMsg = reasonText('read-failed', { message: e && e.message }); render(); });

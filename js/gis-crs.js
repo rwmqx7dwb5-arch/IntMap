@@ -43,6 +43,18 @@
  *  this check is the only thing between that and a map. It is a measurement of the ANSWER, so it
  *  holds whichever of the two caused the swap, and it expires for neither.
  *
+ *  ══ BOTH DIRECTIONS, ONE ARITHMETIC (#R749) ══════════════════════════════════════════════════
+ *  Until #R749 everything here pointed ONE WAY — into EPSG:4326 — because the only caller was an
+ *  import, and an import has an obvious destination. A raster warp does not: it walks the OUTPUT
+ *  grid and asks 「この経緯度の下にあるのは元の何画素目か」, which is 4326 → the projected grid, the
+ *  direction that did not exist. So `toWgs84` / `fromWgs84` are here, they are the pair a warp
+ *  needs, and `transformGeometry` now moves its positions through the SAME internal step
+ *  (`movePoint`) rather than through a second copy of the P4 call and the axis check — one rule,
+ *  two readers, which is the shape .agents/rules/no-ad-hoc-hardcoding.md §2-3 asks for.
+ *  ⚠ THE AXIS CHECK BELONGS TO THE END THAT IS IN DEGREES, not to a function. Going OUT of 4326 it
+ *  guards the INPUT (a 「latitude」 of 4,300,000 is a northing somebody passed in the wrong order);
+ *  coming IN it guards the ANSWER, exactly as it always did.
+ *
  *  ══ LAZY, LIKE THE CLIPPER ════════════════════════════════════════════════════════════════════
  *  proj4 arrives through a dynamic import the first time something is actually re-projected, the
  *  same contract js/gis-geometry.js has with polygon-clipping: a reader who never drops a file in a
@@ -144,7 +156,7 @@ export function makeGisCrs() {
     function known(code) {
       const c = normalise(code);
       if (!c) return false;
-      if (c === WGS84 || c === 'CRS84' || c === 'WGS84') return true;
+      if (isWgs84(c)) return true;
       if (!available()) return false;
       return register(c);
     }
@@ -216,17 +228,88 @@ export function makeGisCrs() {
     let lastWhy = null;
     function why() { return lastWhy; }
 
+    /* A code, NAMED: normalised, recognised, and registered with proj4 if it had to be. This is the
+       whole of 「can this be transformed」 and it is asked once per CALL rather than once per
+       position, which is why it is separate from movePoint below. The order of the refusals is the
+       order they were in when transformGeometry was the only caller — a code that is not a code, a
+       code that IS 4326 (no work to do), no library, no definition. */
+    /* 「is this code WGS 84 in degrees」, asked by name. The three spellings were already written out
+       inline in four places in this file; js/gis-warp.js would have been the fifth, and a fifth copy
+       of a list is the drift .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. ⚠ It needs no
+       library — it is a question about the CODE — so it answers before and after ready() alike. */
+    function isWgs84(code) {
+      const c = normalise(code);
+      return c === WGS84 || c === 'CRS84' || c === 'WGS84';
+    }
+
+    function prepare(code) {
+      const c = normalise(code);
+      if (!c) return { ok: false, why: 'crs-code-missing' };
+      if (isWgs84(c)) return { ok: true, code: WGS84, wgs84: true };
+      if (!available()) return { ok: false, why: 'crs-unavailable' };
+      if (!register(c)) return { ok: false, why: 'crs-unknown' };
+      return { ok: true, code: c, wgs84: false };
+    }
+
+    /* ⚠ THE ONE PLACE A PAIR OF NUMBERS IS ACTUALLY MOVED. Both codes are already prepared, so this
+       is arithmetic and a measurement of the answer — nothing here decides what a code MEANS. The
+       axis check runs when the DESTINATION is degrees, because that is the end at which |lat| > 90
+       is proof of a swap; the opposite direction checks its input at the entrance instead. */
+    function movePoint(from, to, x, y) {
+      let q;
+      try { q = P4(from, to, [x, y]); } catch (_) { q = null; }
+      if (!Array.isArray(q) || !isFinite(q[0]) || !isFinite(q[1])) return { ok: false, why: 'crs-transform-failed' };
+      if (to === WGS84 && Math.abs(q[1]) > LAT_MAX) return { ok: false, why: 'crs-axis-suspect' };
+      return { ok: true, xy: [q[0], q[1]] };
+    }
+
+    function finite(v) { return typeof v === 'number' && isFinite(v); }
+
+    /* ── the two point doors (#R749) ──────────────────────────────────────────────────────────
+       [x, y] in `fromCode` → [lng, lat], and back. They answer `null` with why() naming the refusal,
+       like transformGeometry, because a caller handed a pair cannot tell a failed transform from a
+       position at the origin. ⚠ A pair already in 4326 is returned AS IT IS rather than round-tripped
+       through proj4: re-projecting a thing onto itself is a no-op that costs float64 noise, and a
+       warp walking millions of pixels would accumulate it. */
+    function toWgs84(x, y, fromCode) {
+      lastWhy = null;
+      if (!finite(x) || !finite(y)) { lastWhy = 'crs-position-invalid'; return null; }
+      const p = prepare(fromCode);
+      if (!p.ok) { lastWhy = p.why; return null; }
+      if (p.wgs84) {
+        if (Math.abs(y) > LAT_MAX) { lastWhy = 'crs-axis-suspect'; return null; }
+        return [x, y];
+      }
+      const m = movePoint(p.code, WGS84, x, y);
+      if (!m.ok) { lastWhy = m.why; return null; }
+      return m.xy;
+    }
+
+    function fromWgs84(lon, lat, toCode) {
+      lastWhy = null;
+      if (!finite(lon) || !finite(lat)) { lastWhy = 'crs-position-invalid'; return null; }
+      /* ⚠ GUARDING THE INPUT, for the reason the header gives: going OUT of degrees there is no
+         answer to measure — a northing handed over as a 「latitude」 projects to a perfectly finite
+         pair that is simply somewhere else, and this is the last place it is still recognisable. */
+      if (Math.abs(lat) > LAT_MAX) { lastWhy = 'crs-axis-suspect'; return null; }
+      const p = prepare(toCode);
+      if (!p.ok) { lastWhy = p.why; return null; }
+      if (p.wgs84) return [lon, lat];
+      const m = movePoint(WGS84, p.code, lon, lat);
+      if (!m.ok) { lastWhy = m.why; return null; }
+      return m.xy;
+    }
+
     /* geometry → the same geometry in EPSG:4326, or null with why() naming the refusal.
        A geometry already in 4326 is returned as it is: re-projecting a thing onto itself is a
        no-op that costs float64 noise. */
     function transformGeometry(geometry, fromCode) {
       lastWhy = null;
       if (!geometry || typeof geometry !== 'object') { lastWhy = 'crs-geometry-missing'; return null; }
-      const c = normalise(fromCode);
-      if (!c) { lastWhy = 'crs-code-missing'; return null; }
-      if (c === WGS84 || c === 'CRS84' || c === 'WGS84') return geometry;
-      if (!available()) { lastWhy = 'crs-unavailable'; return null; }
-      if (!register(c)) { lastWhy = 'crs-unknown'; return null; }
+      const prep = prepare(fromCode);
+      if (!prep.ok) { lastWhy = prep.why; return null; }
+      if (prep.wgs84) return geometry;
+      const c = prep.code;
 
       if (geometry.type === 'GeometryCollection') {
         const subs = [];
@@ -241,14 +324,13 @@ export function makeGisCrs() {
 
       let failed = null;
       const out = mapPositions(geometry.coordinates, (p) => {
-        let q;
-        try { q = P4(c, WGS84, [p[0], p[1]]); } catch (_) { q = null; }
-        if (!Array.isArray(q) || !isFinite(q[0]) || !isFinite(q[1])) { failed = failed || 'crs-transform-failed'; return null; }
-        /* ⚠ THE AXIS CHECK, on the ANSWER rather than on the definition. A pair that arrived the
-           other way round transforms without complaint — it is simply somewhere else afterwards. A
-           latitude outside ±90 cannot be a latitude, so the measurement is what catches it. */
-        if (Math.abs(q[1]) > LAT_MAX) { failed = failed || 'crs-axis-suspect'; return null; }
-        const r = [q[0], q[1]];
+        /* ⚠ THE AXIS CHECK LIVES IN movePoint, on the ANSWER rather than on the definition. A pair
+           that arrived the other way round transforms without complaint — it is simply somewhere
+           else afterwards. A latitude outside ±90 cannot be a latitude, so the measurement is what
+           catches it, and it is the same measurement the two point doors above make. */
+        const m = movePoint(c, WGS84, p[0], p[1]);
+        if (!m.ok) { failed = failed || m.why; return null; }
+        const r = [m.xy[0], m.xy[1]];
         for (let i = 2; i < p.length; i++) r.push(p[i]);
         return r;
       });
@@ -262,11 +344,15 @@ export function makeGisCrs() {
     function transformFeatures(features, fromCode) {
       const list = Array.isArray(features) ? features : null;
       if (!list) return { ok: false, why: 'crs-features-missing' };
-      const c = normalise(fromCode);
-      if (!c) return { ok: false, why: 'crs-code-missing' };
-      if (c === WGS84 || c === 'CRS84' || c === 'WGS84') return { ok: true, features: list, moved: 0 };
-      if (!available()) return { ok: false, why: 'crs-unavailable', detail: { crs: c } };
-      if (!register(c)) return { ok: false, why: 'crs-unknown', detail: { crs: c } };
+      const prep = prepare(fromCode);
+      /* ⚠ THE DETAIL STILL CARRIES THE NORMALISED CODE for the two refusals that used to build it
+         by hand, so a caller printing 「EPSG:6675 は読めない」 is handed the same string as before. */
+      if (!prep.ok) {
+        if (prep.why === 'crs-code-missing') return { ok: false, why: prep.why };
+        return { ok: false, why: prep.why, detail: { crs: normalise(fromCode) } };
+      }
+      if (prep.wgs84) return { ok: true, features: list, moved: 0 };
+      const c = prep.code;
 
       const out = [];
       let moved = 0;
@@ -314,8 +400,11 @@ export function makeGisCrs() {
 
     const API = {
       ready, available,
-      define, known, resolve,
+      define, known, resolve, isWgs84,
       transformGeometry, transformFeatures, why,
+      /* the two point doors js/gis-warp.js walks an output grid with (#R749) — a warp asks about
+         POSITIONS, one per output pixel, and never about a geometry */
+      toWgs84, fromWgs84,
       looksProjected,
       /* exposed because js/geo-import.js asks the same question about a code it read out of a file,
          and two spellings of 「is this 4326」 would drift — one rule, two readers */

@@ -16,8 +16,11 @@
  *
  *  ══ WHAT IS HERE AND WHAT IS DELIBERATELY NOT ═════════════════════════════════════════════════
  *  Here: the geodesic area of a pixel, sampling, zonal statistics over a polygon, masking by a
- *  condition, the difference of two grids, a measured description of each band, and ONE door that
- *  turns an existing in-app sampler into a grid this file can read (`fromSampler`).
+ *  condition, the difference of two grids, a measured description of each band, and TWO doors that
+ *  turn an existing in-app sampler into a grid this file can read — `fromSampler` for a synchronous
+ *  field, and `fromSamplerAsync` (#R749) for one that answers with a promise, which is every field
+ *  this app actually has (`IntMapLayers.sampleAt`). The async one yields and reads its signal BY
+ *  ELAPSED TIME, not per row: see its own note.
  *  Not here: dataset registration (js/gis-datasets.js), the op declarations that make a result the
  *  input of the next op (js/gis-ops.js), and file decoding (js/geo-import.js). This module has NO
  *  imports at all — not proj4, not polygon-clipping — because it is arithmetic over numbers and the
@@ -110,6 +113,16 @@ export function makeGisRaster() {
        than 1e-6 pixel, at which point they are the same grid and the answer is still right. */
     const GRID_EPS_FRAC = 1e-6;
 
+    /* How long a run may hold the single thread before it lets go. Observation: the renderer draws at
+       60 Hz, so one frame is 16.7 ms and anything longer is a frame the map did not draw and a moment
+       the stop button could not be read (docs/GIS-CORE.md §2.6 measured that as a frozen map on a
+       40,000-polygon aggregate). Expires if the app ever runs its heavy reads off this thread, at
+       which point the yield has nothing to yield to. ⚠ The canon for this fact is this line; the copy
+       in js/gis-ops.js predates it and is the one to remove when that file is next opened — this file
+       publishes `frameMs()` so no third one has to be written. */
+    const FRAME_MS = 16;
+    function nowMs() { try { if (typeof performance !== 'undefined' && performance && performance.now) return performance.now(); } catch (_) { } return Date.now(); }
+
     /* ── validity: measured, not assumed ──────────────────────────────────────────────────────── */
 
     function isNum(v) { return typeof v === 'number' && isFinite(v); }
@@ -164,7 +177,10 @@ export function makeGisRaster() {
        SENTINEL the producer wrote, not about the set of unusable readings. The sentinel itself is
        compared EXACTLY (`-9999`, `-32768`): it is a number a producer wrote into a header, not a
        measurement to be matched with a tolerance, and a tolerance would swallow real values next
-       to it. */
+       to it.
+       ⚠ PUBLISHED (#R749): js/map-ui.js asks this once per pixel while burning a grid onto a canvas,
+       and a second spelling of 「このセルは欠損か」 there is how the map and the panel would come to
+       disagree about the same cell. */
     function missing(v, nodata) {
       if (typeof v !== 'number' || !isFinite(v)) return true;
       return (nodata != null && v === nodata);
@@ -660,7 +676,11 @@ export function makeGisRaster() {
        sampler that returns a promise would fill the grid with objects. `sampler-not-a-function`.
        ⚠ A sampler that answers null, undefined or a non-finite number is answering 「そこには値が
        ない」, and that is written as NaN and counted. It is not turned into 0. */
-    function fromSampler(spec) {
+    /* The grid a sampler will be burnt into, built ONCE for both doors below. ⚠ IT IS SHARED RATHER
+       THAN WRITTEN TWICE: `fromSampler` and `fromSamplerAsync` differ only in how they call the
+       sampler, and two copies of 「その窓・その解像度・そのバンド宣言はどう格子になるか」 is the
+       drift .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. */
+    function samplerGrid(spec) {
       if (!spec || typeof spec !== 'object') return refuse('sampler-spec-invalid');
       const b = spec.bounds;
       if (!Array.isArray(b) || b.length !== 4 || !b.every(isNum)) return refuse('sampler-bounds-invalid', { bounds: b });
@@ -691,6 +711,13 @@ export function makeGisRaster() {
         grid: grid,
         read: (i) => ((i == null ? 0 : i) === 0 ? data : null),
       };
+      return { ok: true, raster: raster, data: data, width: width, height: height };
+    }
+
+    function fromSampler(spec) {
+      const built = samplerGrid(spec);
+      if (!built.ok) return built;
+      const raster = built.raster, data = built.data, width = built.width, height = built.height;
       let filled = 0, empty = 0, failed = 0;
       for (let row = 0; row < height; row++) {
         const lat = rowCentreLat(raster, row);
@@ -708,9 +735,80 @@ export function makeGisRaster() {
       return { ok: true, raster: raster, filled: filled, empty: empty, failed: failed };
     }
 
+    /* ── fromSamplerAsync: the same door, for a field that answers with a promise ──────────────── */
+
+    /* ⚠ (#R749) THE ASYNC FIELDS HAD NO DOOR AT ALL. `fromSampler` refuses a sampler that returns a
+       promise (`sampler-not-a-function` is not even the right sentence for it), so every field this
+       app reads through `IntMapLayers.sampleAt` — precipitation, elevation, land cover, the whole
+       readout registry — could only be burnt into a grid by a loop written OUTSIDE this file. One such
+       loop existed (js/gis-layers.js `toRaster`), it was the only one, and it yielded to the event
+       loop ONCE PER ROW. That is the shape docs/GIS-CORE.md §2.6 names: 「刻みの単位は件数ではなく
+       時間」. A row of 512 pixels against a cached field is well under a frame and the yield is pure
+       overhead; a row of 512 pixels against a field that fetches is tens of seconds during which the
+       signal cannot be read, because the code that would set it does not run until the row lets go.
+
+       So the unit here is ELAPSED MILLISECONDS, measured between pixels, and the signal is read at the
+       same place. ⚠ THERE IS NO CHUNK SIZE TO TUNE and no per-layer constant.
+       ⚠ AND THIS IS NOT A BULK DOOR. `IntMapLayers` has exactly one entrance — one position, one
+       answer — so a `sampleRegion(positions)` parameter here would be an export with no caller
+       (docs/GIS-CORE.md §5.1 records what this project pays for those). What makes the read
+       REGION-shaped is that the caller states a window and a resolution and gets a grid back; what is
+       async is one pixel at a time, honestly. */
+    async function fromSamplerAsync(spec) {
+      const built = samplerGrid(spec);
+      if (!built.ok) return built;
+      const raster = built.raster, data = built.data, width = built.width, height = built.height;
+      const o = spec || {};
+      const sig = o.signal || null;
+      const onp = (typeof o.onProgress === 'function') ? o.onProgress : null;
+      const total = width * height;
+      let filled = 0, empty = 0, failed = 0, done = 0, last = nowMs();
+      /* The first non-numeric answer, kept so a caller can say WHAT the layer replied with. A field
+         that answers 「12 °C」 has values — it just does not have them as numbers — and that is a
+         different thing to fix than a field that answers nothing. */
+      let textSeen = null;
+      for (let row = 0; row < height; row++) {
+        const lat = rowCentreLat(raster, row);
+        const base = row * width;
+        for (let col = 0; col < width; col++) {
+          if (sig && sig.aborted) return refuse('cancelled', { done: done, total: total, rows: row, of: height });
+          let val;
+          try { val = await o.sample(colCentreLng(raster, col), lat); } catch (err) { val = null; failed++; }
+          if (isNum(val)) { data[base + col] = val; filled++; }
+          else {
+            data[base + col] = NaN; empty++;
+            if (textSeen == null && val != null && val !== '') textSeen = String(val);
+          }
+          done++;
+          const t = nowMs();
+          if (t - last >= FRAME_MS) {
+            last = t;
+            /* `rows`/`of` are the keys js/gis-panel.js's progress line already reads; `done`/`total`
+               are the pixel-exact pair, because a yield now falls in the middle of a row. */
+            if (onp) { try { onp({ rows: Math.floor(done / width), of: height, done: done, total: total, read: filled }); } catch (_) { } }
+            /* one turn of the event loop: the camera, the renderer and the stop button are all on
+               this thread (docs/GIS-CORE.md §2.6 — a Worker would add parallelism, not this) */
+            await new Promise((res) => setTimeout(res, 0));
+          }
+        }
+      }
+      if (sig && sig.aborted) return refuse('cancelled', { done: done, total: total, rows: height, of: height });
+      if (onp) { try { onp({ rows: height, of: height, done: done, total: total, read: filled }); } catch (_) { } }
+      return { ok: true, raster: raster, filled: filled, empty: empty, failed: failed, textSeen: textSeen };
+    }
+
     const API = {
       validate,
-      bboxOf, pixelAreaKm2, sample, zonal, mask, diff, describeBands, fromSampler,
+      bboxOf, pixelAreaKm2, sample, zonal, mask, diff, describeBands, fromSampler, fromSamplerAsync,
+      /* ⚠ (#R749) PUBLISHED BECAUSE TWO OTHER FILES ASK THE SAME TWO QUESTIONS PER PIXEL. js/map-ui.js
+         burns a grid onto a canvas and has to ask 「このセルは欠損か」 for every one of them, and
+         js/gis-sources.js hands a band's values to a caller; both would otherwise spell the rule a
+         second time, and the second spelling is always the one that forgets that ±Infinity is not a
+         measurement. The meaning is unchanged — these are the private functions, exposed. */
+      missing, values,
+      /* the one frame budget this layer has (see FRAME_MS), so a caller staying interruptible does
+         not write the number a second time */
+      frameMs: () => FRAME_MS,
       /* exposed because js/gis-datasets.js describes a grid to the panel with the same numbers, and
          a second walk of the same arithmetic there is how the two would disagree */
       pixelAt, rowCentreLat, colCentreLng,

@@ -74,13 +74,40 @@
  *  ⚠ `failed[].why` may ALSO carry a code that came straight out of window.IntMapGisOps — the reason
  *  an op refused belongs to the op, and rewriting it here as a generic 'op-failed' would throw away
  *  the only sentence that tells the reader what to change.
+ *
+ *  ══ #R749 — 「続きから」 と 「同じ結果」 は別の要求で、片方ずつ欠けていた ══════════════════════
+ *  ⚠ A BODY NOW CARRIES THE READER'S DECLARATIONS (`declarations`). 「この列は人数か、人口密度か」
+ *  「単位は m か km か」 is not an edit and not a keystroke — it is what the data MEANS, stated by the
+ *  reader, and nothing in the program can re-derive it. It lived in js/gis-datasets.js beside the undo
+ *  stack, so it had the undo stack's lifetime and a reload silently dropped it while keeping the
+ *  edited values. It is put back through `restoreDeclarations`, which RE-VERIFIES each one against the
+ *  features that actually came back: a saved declaration copied in blind would restate `number` over
+ *  cells that are no longer numbers. What no longer holds arrives in `declarationsRefused`, named.
+ *
+ *  ⚠ A STEP IS A RECIPE, AND A RECIPE IS AN ANSWER ONLY TOGETHER WITH WHAT RUNS IT (`engine`). #R743
+ *  corrected `union` and the pre-filter of the distance search — THE ANSWERS THEMSELVES — so a project
+ *  saved before it and re-run after it produces different numbers under the same parameters. Nothing
+ *  in the record, and nothing on the screen, said so. Each op step now records the version its kernels
+ *  stated, and load() reports the comparison in THREE states, never two:
+ *      engineChanged[]   both versions are known and they differ — the same recipe, a different answer
+ *      engineUnknown[]   one of them is null: an old record, or a build whose kernels do not state one
+ *      (neither)         both known and equal
+ *  ⚠ 「測れなかった」 IS NOT 「同じ」. A record written before this field existed has no version in it,
+ *  and putting today's version there on the way in would be the program inventing a statement nobody
+ *  made — the shape .agents/rules/historical-verification.md §2-3 names.
+ *  ⚠ AND IT DOES NOT STOP THE LOAD. Refusing to open a project because the kernel moved would cost the
+ *  reader their work to tell them something they can only act on once they have it back.
  * ==========================================================================*/
 
 export function makeGisProject() {
   return (function () {
 
     const DB_NAME = 'intmap-gis', STORE = 'projects', DB_VERSION = 1;
-    const RECORD_VERSION = 1;
+    /* ⚠ THE RECORD VERSION IS RAISED, AND THE OLD ONE IS STILL READ (#R749: 1 → 2, for `engine` on a
+       step and `declarations` on a body). A project the reader saved last week is their work; the two
+       new fields are ABSENT from it, and absent is answered as null — not as today's value. See
+       compareEngine and restoreDecls. */
+    const RECORD_VERSION = 2;
 
     /* `dead` is set only when the environment HAS NO IndexedDB at all (Node, a browser with it
        switched off). A transaction that failed once does not set it: the disk being full this
@@ -151,6 +178,50 @@ export function makeGisProject() {
        constructed, and a captured `undefined` would make every op look permanently unavailable. */
     function registry() { try { return (typeof window !== 'undefined' && window && window.IntMapData) || null; } catch (_) { return null; } }
     function ops() { try { return (typeof window !== 'undefined' && window && window.IntMapGisOps) || null; } catch (_) { return null; } }
+    function geometry() { try { return (typeof window !== 'undefined' && window && window.IntMapGisGeometry) || null; } catch (_) { return null; } }
+
+    /* ── which implementation computed this (#R749) ─────────────────────────────────────────────
+       ⚠ THE VERSION IS NOT WRITTEN IN THIS FILE, IT IS ASKED OF THE KERNEL. js/gis-ops.js and
+       js/gis-geometry.js each state their own; a number copied here would be a second place to keep
+       correct, and the first release that forgot it would make this file report 「同じ」 about a
+       kernel that had changed.
+       ⚠ A MODULE THAT DOES NOT ANSWER GIVES null, AND null IS NOT A VERSION. A build where the ops
+       are not loaded yet, or an older kernel with no version(), is 「測れなかった」 — the guard is here
+       so that state is REACHED rather than crashed into, and compareEngine is what stops it being
+       reported as agreement. */
+    function askVersion(mod) {
+      try {
+        if (!mod || typeof mod.version !== 'function') return null;
+        const v = mod.version();
+        return (v == null || v === '') ? null : String(v);
+      } catch (_) { return null; }
+    }
+    function engineNow() { return { ops: askVersion(ops()), geometry: askVersion(geometry()) }; }
+
+    /* The two kernels whose output a step's numbers depend on. Named once: a part added to engineNow
+       and forgotten here would be saved and never compared. */
+    const ENGINE_PARTS = ['ops', 'geometry'];
+
+    function engineCopy(e) {
+      if (!e || typeof e !== 'object') return null;
+      const out = {};
+      for (const k of ENGINE_PARTS) out[k] = (e[k] == null || e[k] === '') ? null : String(e[k]);
+      return out;
+    }
+
+    /* 'changed' | 'unknown' | 'same' — three answers, because there are three situations. A part that
+       cannot be compared makes the verdict 'unknown' and NEVER 'same'; a part that differs makes it
+       'changed', which outranks 'unknown' because a known difference is the stronger statement. */
+    function compareEngine(saved, now) {
+      let unknown = false, changed = false;
+      for (const k of ENGINE_PARTS) {
+        const a = saved ? saved[k] : null;
+        const b = now ? now[k] : null;
+        if (a == null || b == null) { unknown = true; continue; }
+        if (a !== b) changed = true;
+      }
+      return changed ? 'changed' : (unknown ? 'unknown' : 'same');
+    }
 
     /* ── save ──────────────────────────────────────────────────────────────────────────────────
        The order is the whole reason lineage() exists: a saved list in registration order would put
@@ -168,7 +239,7 @@ export function makeGisProject() {
       return out;
     }
 
-    function stepFor(rec) {
+    function stepFor(rec, reg) {
       const prov = rec.provenance || { kind: 'unknown' };
       const base = { id: rec.id, title: rec.title || rec.id, sourceCrs: rec.sourceCrs || null };
       if (prov.kind === 'op') {
@@ -177,6 +248,10 @@ export function makeGisProject() {
           op: prov.op || null,
           inputs: Array.isArray(prov.inputs) ? prov.inputs.slice() : [],
           params: prov.params ? JSON.parse(JSON.stringify(prov.params)) : {},
+          /* ⚠ (#R749) THE RECIPE ALONE DOES NOT DETERMINE THE ANSWER. Saved beside the parameters
+             because it is the other half of what produced these numbers; null in either part is
+             carried as null, so a build that cannot say is not recorded as having agreed. */
+          engine: engineNow(),
         });
       }
       /* ⚠ A RASTER BODY HOLDS SAMPLES, AND rec.features() DOES NOT EXIST ON IT (#R735). Without this
@@ -210,6 +285,13 @@ export function makeGisProject() {
            述べていない」 about a file that does. It is re-verified on the way in, so a saved
            declaration cannot outlive the features it describes. */
         time: rec.time ? JSON.parse(JSON.stringify(rec.time)) : null,
+        /* ⚠ (#R749) WHAT THE READER DECLARED THE COLUMNS MEAN. It is not an edit — the edited VALUES
+           are already here, in `features` — and it is not derivable from them: no measurement can say
+           whether a column of numbers is people or people per km². It was held beside the undo stack
+           and therefore had the undo stack's lifetime, which is why a reload used to keep the values
+           and lose their meaning. `null` when the registry cannot be asked, which is a different
+           record from `{}` 「誰も何も述べていない」. */
+        declarations: (reg && typeof reg.declarations === 'function') ? reg.declarations(rec.id) : null,
         features: rec.features(),
       });
     }
@@ -256,7 +338,7 @@ export function makeGisProject() {
       if (!reg) return Promise.resolve({ ok: false, why: 'registry-missing' });
       if (!available()) return Promise.resolve({ ok: false, why: 'storage-unavailable' });
       let steps;
-      try { steps = orderedDatasets(reg).map(stepFor); }
+      try { steps = orderedDatasets(reg).map((rec) => stepFor(rec, reg)); }
       catch (e) { return Promise.resolve({ ok: false, why: 'read-failed', detail: errText(e) }); }
       if (!steps.length) return Promise.resolve({ ok: false, why: 'nothing-to-save' });
       const rec = {
@@ -338,6 +420,21 @@ export function makeGisProject() {
        whose third op needs a capability this build does not have should still give the reader back
        the two imports and everything else — but every failure is named, and `ok` is false whenever
        there is one. A resolved `ok:true` here means the whole project is back. */
+    /* The saved declarations, re-declared. ⚠ EVERY REFUSAL IS CARRIED OUT OF HERE, because that is the
+       only way the reader learns that a column they had named is gone or no longer holds the kind of
+       value they said it held. Swallowing them would restore a project that quietly means something
+       else than it did. A registry with no such door (an older build) is answered with an empty list
+       rather than with a pretence that there was nothing to restore. */
+    function restoreDecls(reg, step) {
+      const d = step && step.declarations;
+      if (!d || typeof d !== 'object' || typeof reg.restoreDeclarations !== 'function') return [];
+      let r;
+      try { r = reg.restoreDeclarations(step.id, d); }
+      catch (e) { return [{ field: null, why: 'add-failed', detail: errText(e) }]; }
+      if (!r || !r.ok) return [{ field: null, why: (r && r.why) || 'add-failed', detail: (r && r.detail) || null }];
+      return Array.isArray(r.refused) ? r.refused : [];
+    }
+
     function restoreStep(reg, step, opts) {
       if (step.kind === 'op') {
         const O = ops();
@@ -378,7 +475,9 @@ export function makeGisProject() {
           provenance: step.provenance || { kind: 'unknown' },
           time: step.time || null,
         });
-        return Promise.resolve({ ok: true });
+        /* ⚠ AFTER the record exists, and through the registry's own door: a declaration is verified
+           against the features that just came back, not copied over them. */
+        return Promise.resolve({ ok: true, declarationsRefused: restoreDecls(reg, step) });
       } catch (e) {
         return Promise.resolve({ ok: false, why: 'add-failed', detail: errText(e) });
       }
@@ -389,17 +488,38 @@ export function makeGisProject() {
        exactly as changing a parameter does. ⚠ A cancelled load stops replaying and says so; what was
        already restored stays, because those records are complete — a half-restored project that threw
        its own restored steps away would answer the reader's stop with a bigger loss than the wait. */
+    /* One shape for every exit of load(), so a caller never has to ask whether a field is there before
+       reading it. ⚠ The lists are EMPTY, which is 「何も無かった」 — the same claim they make when the
+       load ran and found nothing to report, and a different claim from a missing key. */
+    function loadShell() { return { restored: 0, failed: [], engineChanged: [], engineUnknown: [], declarationsRefused: [], savedVersion: null }; }
+
     function load(id, opts) {
       const reg = registry();
-      if (!reg) return Promise.resolve({ ok: false, why: 'registry-missing', restored: 0, failed: [] });
-      if (!available()) return Promise.resolve({ ok: false, why: 'storage-unavailable', restored: 0, failed: [] });
+      if (!reg) return Promise.resolve(Object.assign(loadShell(), { ok: false, why: 'registry-missing' }));
+      if (!available()) return Promise.resolve(Object.assign(loadShell(), { ok: false, why: 'storage-unavailable' }));
       const read = (id == null || id === '') ? readLatest() : readOne(id);
       return read.then((r) => {
-        if (!r.ok) return Object.assign({ restored: 0, failed: [] }, r);
+        if (!r.ok) return Object.assign(loadShell(), r);
         const rec = r.value;
-        if (!rec || !Array.isArray(rec.steps)) return { ok: false, why: 'not-found', restored: 0, failed: [] };
+        if (!rec || !Array.isArray(rec.steps)) return Object.assign(loadShell(), { ok: false, why: 'not-found' });
         const failed = [];
+        const declarationsRefused = [];
         let restored = 0;
+
+        /* ⚠ ASKED OF EVERY SAVED STEP, BEFORE ANY OF THEM RUNS. The question is about the RECIPE — 「この
+           段を計算する実装は、保存した日と同じか」 — and it has an answer whether or not the re-run
+           succeeds. Deriving it from the rebuilt records instead would lose it for exactly the steps
+           that failed, which are the ones a reader is most likely to be asking about. */
+        const now = engineNow();
+        const engineChanged = [], engineUnknown = [];
+        for (const st of rec.steps) {
+          if (!st || st.kind !== 'op') continue;
+          const saved = engineCopy(st.engine);
+          const verdict = compareEngine(saved, now);
+          if (verdict === 'same') continue;
+          const entry = { id: st.id, op: st.op || null, saved: saved, now: engineCopy(now) };
+          (verdict === 'changed' ? engineChanged : engineUnknown).push(entry);
+        }
         const sig = (opts && opts.signal) || null;
         const onp = (opts && typeof opts.onProgress === 'function') ? opts.onProgress : null;
         const steps = rec.steps.length;
@@ -413,8 +533,16 @@ export function makeGisProject() {
           return restoreStep(reg, step, { signal: sig, onProgress: (inner) => { if (onp) { try { onp({ step: i + 1, steps: steps, id: step.id, op: step.op || null, done: inner.done, total: inner.total }); } catch (_) { } } } }).then((res) => {
             if (res.ok) restored++;
             else failed.push({ id: step.id, why: res.why, detail: res.detail || null });
+            for (const d of (res.declarationsRefused || [])) declarationsRefused.push(Object.assign({ id: step.id }, d));
           });
-        }), Promise.resolve()).then(() => ({ ok: failed.length === 0, id: rec.id, restored, failed, cancelled: cancelled }));
+        }), Promise.resolve()).then(() => ({
+          ok: failed.length === 0, id: rec.id, restored, failed, cancelled: cancelled,
+          /* ⚠ THE PROJECT IS BACK AND IT MAY NO LONGER MEAN THE SAME THING. These three are not
+             failures — every step above them restored — and they are not decoration either: they are
+             the difference between 「開けた」 and 「開けたものが保存した日と同じ」. */
+          engineChanged, engineUnknown, declarationsRefused,
+          savedVersion: (typeof rec.version === 'number' && isFinite(rec.version)) ? rec.version : null,
+        }));
       });
     }
 
@@ -593,6 +721,10 @@ export function makeGisProject() {
       save, load, list, remove, setParams, available,
       /* named so a test or a panel can talk about the store without re-deriving the strings */
       dbName: DB_NAME, storeName: STORE, recordVersion: RECORD_VERSION,
+      /* (#R749) What the kernels say they are RIGHT NOW — the other half of what a saved step's
+         numbers depend on. Exposed so a panel can show the comparison load() reports without asking
+         the kernels a second way; the version itself belongs to js/gis-ops.js and js/gis-geometry.js. */
+      engine: engineNow,
     };
     try { window.IntMapGisProject = API; } catch (_) { }
     return API;

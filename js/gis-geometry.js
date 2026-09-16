@@ -643,7 +643,14 @@ export function makeGisGeometry() {
        question about the reader's data and not about geometry. */
     function dissolve(geoms) { return union(geoms); }
 
+    /* ⚠ (#R749) THE VERSION OF THIS KERNEL. Same reason and same keeper as js/gis-ops.js
+       KERNEL_VERSION — the boolean engine is where #R743's union defect actually lived, so a saved
+       recipe that replays through a different geometry kernel can land on different numbers.
+       scripts/gis-kernel-versions.mjs holds the sha256 that keeps this honest. */
+    const KERNEL_VERSION = 'geom-1';
     const API = {
+      /* (#R749) see KERNEL_VERSION above — js/gis-project.js records which engine answered. */
+      version: () => KERNEL_VERSION,
       ready, available,
       union, intersection, difference, dissolve, bufferKm,
       intersects, contains, within, disjoint, distanceKm,
