@@ -267,6 +267,17 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
      * The closure variable stays the single source of truth; `HOST.x=v` writes it through the
      * setter. Get+set pairs on ONE line each; the RW list is pinned by tests/r165-checks.test.mjs. */
     get measurePoints(){ return measurePoints; },   set measurePoints(v){ measurePoints=v; },
+    /* ⚠⚠⚠ (#R747) THE MEASUREMENT ITSELF, SO THE ANSWER CAN CONTAIN IT. js/atlas-console.js's
+       `case 'measure'` set the two points, opened the tool panel and returned 「📏 A → B」 — the
+       number appeared on the panel and NOWHERE in the reply, so a reader who asked for a distance
+       got a drawn line and no distance. MEASURED on production 2026-09-15, signed in:
+       「Измерь расстояние от Лиссабона до Кейптауна」 → `measure:ok, drawLine:ok`, and the answer
+       states no figure at all. #R742 saw the same turn and read the cause as the budget cutting the
+       narration; the narration had nothing to carry. This returns the same string the tool panel
+       prints (`distTXT`, so the reader's unit setting is honoured) plus the initial bearing, which
+       is what a great-circle measurement between two named places actually says. */
+    measureReading(pts){ try{ const p2=(pts&&pts.length?pts:measurePoints)||[]; if(p2.length<2) return null;
+      return { km:totalDistance(p2), text:distTXT(totalDistance(p2)), bearing:bearingDeg(p2[0],p2[p2.length-1]), bearingText:compassDir(bearingDeg(p2[0],p2[p2.length-1])) }; }catch(_){ return null; } },
     get radiusColor(){ return radiusColor; },       set radiusColor(v){ radiusColor=v; },
     get radiusKm(){ return radiusKm; },             set radiusKm(v){ radiusKm=v; },
     get unitMode(){ return unitMode; },             set unitMode(v){ unitMode=v; },
@@ -1422,7 +1433,16 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.clearAllRadius=function(){ radiusItems=[]; window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
   /* Radius from an already-chosen point (right-click menu + map-click popup, #54): drop the circle at
      a fixed center, then let the user tune radius / color in the tool panel. */
-  window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); const id='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); radiusItems.push({id,center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); window._activeRadiusId=id; refreshTool(); updateToolPanel(); };
+  /* ⚠⚠⚠ (#R747) …and the same for a circle. 「Draw a 500 km circle around Tokyo」 produced SEVEN
+     concentric identical circles on production (every `radius` call `ok`, the panel listing
+     「500 km · 35.68°/139.76°」 seven times) because the retry that followed a failed prefecture
+     query re-issued the draw with a different colour, and a colour is not a second circle. Same
+     centre AND same radius = the same circle; its style is updated in place. A circle at the same
+     centre with a DIFFERENT radius is a real second circle and is still added. */
+  window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius');
+    const same=radiusItems.find(r=>r&&r.center&&(+r.center[0]).toFixed(5)===(+lng).toFixed(5)&&(+r.center[1]).toFixed(5)===(+lat).toFixed(5)&&Math.abs((+r.radiusKm||0)-(+radiusKm||0))<1e-6);
+    if(same){ same.color=radiusColor; same.opacity=radiusOpacity; window._activeRadiusId=same.id; refreshTool(); updateToolPanel(); return; }
+    const id='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); radiusItems.push({id,center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); window._activeRadiusId=id; refreshTool(); updateToolPanel(); };
   /* Measure: step back one point (#38). If a closed area drops below 3 points it re-opens as a line. */
   window._measureUndo=function(){ if(!measurePoints.length) return; measurePoints.pop(); if(toolMode==='area' && measurePoints.length<3){ toolMode='measure'; _syncToolBtns(); } liveCursor=null; refreshTool(); updateToolPanel(); };
   /* (#R9/#51) "News in this area": filter the analyzed news to the drawn radius/polygon and show it in
@@ -2976,6 +2996,21 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){ return null; }
   }
   function addPin(lng,lat,meta){   /* ⚠⚠ (#R489) A PIN MAY CARRY WHAT IT IS — `meta` is the OPTIONAL {title,description,when,source,url}. A pin was four fields and its popup opened with 「Pin #3」, which is the whole of why Atlas could not answer 「着弾地点を説明付きでピンして」: the `pin` action had no field for the explanation, so a turn that wanted described markers went research → bare pin → research again → pin again, four passes whose conclusions disagreed. Every existing caller (the context menu, the search card, the popup's own buttons) passes nothing and is unchanged. */
+    /* ⚠⚠⚠ (#R747) A MARKER IS IDENTIFIED BY WHERE IT IS, NOT BY WHAT IT IS CALLED. Measured on
+       production 2026-09-15, signed in: 「Put a pin on Machu Picchu」 dropped SIX pins at one place —
+       「UNESCO World Heritage archaeological site」,「Inca citadel in the Andes」,「Machu Picchu
+       archaeological site」,「UNESCO Inca citadel」,「UNESCO archaeological site」 — every call `ok`,
+       and the elevation the reader actually asked for never arrived because the turn ran out.
+       #R742 made an empty field stop creating a new call identity; a DIFFERENT caption still did,
+       and a caption is decoration, not a request for a second marker. So a pin placed where one
+       already stands UPDATES it: the newest description wins, the marker count does not grow.
+       ⚠ The tolerance is not a guess about geography — `toFixed(5)` is ~1 m at the equator, below
+       the precision any geocoder this app calls reports, so two calls agreeing to five decimals are
+       the same answer to the same question. EXPIRES IF pins gain a use that needs stacking at one
+       point (none today: `removePin`/`clearAllPins` address them one at a time by id). */
+    const key=(+lng).toFixed(5)+','+(+lat).toFixed(5);
+    const at=userPins.find(p=>p&&((+p.lng).toFixed(5)+','+(+p.lat).toFixed(5))===key);
+    if(at){ if(meta&&typeof meta==='object') at.meta=meta; refreshPins(); if(activePinId===at.id) renderPinPopup(); return at.id; }
     const id='p'+(++pinSeq); const pin={id,lng,lat,elev:null,meta:(meta&&typeof meta==='object')?meta:null};
     userPins.push(pin); refreshPins();
     fetchElevDepth(lat,lng).then(e=>{ pin.elev=e; if(activePinId===id) renderPinPopup(); });

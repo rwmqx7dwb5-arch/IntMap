@@ -80,6 +80,42 @@ export function makeHighlightTargets(deps) {
   }
 
   function _hlValidCodeSet(){ const s=new Set(); try{ const g=geo(); (g&&g.features||[]).forEach(f=>{ const p=f.properties||{}; if(p.__code!=null) s.add(String(p.__code).toUpperCase()); if(f.id!=null) s.add(String(f.id).toUpperCase()); }); }catch(_){} return s; }
+  /* ══ ⚠⚠⚠ (#R747) WHICH FIELDS OF A HIGHLIGHT CARRY *WHICH THINGS* — ASKED ONCE ═══════════════
+     `_hlReadGptGroups` below reads `targets` / `iso3` / `codes` / `countries` / `groups[].targets`.
+     js/atlas-console.js's `case 'highlight'` had its OWN list — `countries, country, name, place,
+     region, query` — and `targets` was not in it. So a highlight whose members are plain NAMES under
+     `targets` (which is the shape js/atlas-catalog-text.js documents as the primary one) read as
+     identifiers by neither reader: this file correctly returns null so the request FALLS THROUGH to
+     the concrete-place resolver, and the thing it falls through to could not see the field.
+     MEASURED on production 2026-09-15, signed in, one turn apart with the SAME sixteen strings:
+         map.highlight {targets:[ "Botswana", "Burkina Faso", … ]}   → failed/failed
+         map.highlight {countries:[ "Botswana", "Burkina Faso", … ]} → completed/ok
+     and the reader was shown 「⚠ Nothing is highlighted yet — name the countries or regions」 for a
+     command that named sixteen countries. resolveHl('Botswana')→BWA for every one of them.
+     ⚠ THE DEFECT IS NOT 「targets was missing from a list」 — it is that there were TWO lists. This
+     is the one, and both readers take it, so the next field cannot land between them again. */
+  const REQUEST_FIELDS = {
+    arrays: ['targets', 'iso3', 'codes', 'countries'],
+    text: ['countries', 'country', 'name', 'place', 'region', 'query']
+  };
+  /* the plain names a highlight carries, for the resolver that works in names. Codes are this file's
+     other job; a token that IS an identifier is not a name and is left out. */
+  function _hlReadNames(a){ try{ if(!a||typeof a!=='object') return [];
+    const out=[]; const push=v=>{ const s2=String(v==null?'':v).trim(); if(s2&&out.indexOf(s2)<0) out.push(s2); };
+    const fromT=t=>{ if(t==null) return; if(typeof t==='string'){ push(t); return; }
+      if(typeof t==='object') push(t.name||t.n||t.country||t.label||t.iso3||t.iso||t.code||t.c||t.id||t.a3); };
+    if(Array.isArray(a.groups)&&a.groups.length){
+      a.groups.forEach(g=>{ if(!g||typeof g!=='object') return;
+        REQUEST_FIELDS.arrays.forEach(k=>{ if(Array.isArray(g[k])) g[k].forEach(fromT); }); });
+      if(out.length) return out;
+    }
+    for(const k of REQUEST_FIELDS.arrays){ if(Array.isArray(a[k])){ a[k].forEach(fromT); } }
+    if(out.length) return out;
+    /* one string may name several, in any of the languages IntMap answers in */
+    const str=REQUEST_FIELDS.text.map(k=>String(a[k]==null?'':a[k])).filter(s2=>s2.trim())[0]||'';
+    return str.split(/,|、|;| and | und | y | и |と/i).map(x=>x.trim()).filter(Boolean);
+  }catch(_){ return []; } }
+
   function _hlReadGptGroups(a){ try{ if(!a||typeof a!=='object') return null;
     const _IX=_hlIdIndex();
     /* (#R742) an identifier token in ANY notation the store declares → the alpha-3 the store keys on.
@@ -138,6 +174,8 @@ export function makeHighlightTargets(deps) {
     idIndex: _hlIdIndex,
     validCodeSet: _hlValidCodeSet,
     readGroups: _hlReadGptGroups,
+    readNames: _hlReadNames,
+    requestFields: () => ({ arrays: REQUEST_FIELDS.arrays.slice(), text: REQUEST_FIELDS.text.slice() }),
     isoAliasColumns: () => ISO_ALIAS_COLS.slice()
   };
 }
