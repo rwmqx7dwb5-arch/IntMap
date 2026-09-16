@@ -686,6 +686,53 @@ export function makeAtlasCapabilities(HOST) {
       return true;
     }
 
+    /* ══ ⚠⚠⚠ (#R742) THE SAME QUESTION, ASKED OF A PAINT: 「IS WHAT WAS ASKED FOR ON THE MAP」 ═════
+       The camera table above ended 「did anything move」 for the camera. The paint verdict below still
+       asked it, and every value `paintNow()` reads is a CARDINAL — counts of features, of visible
+       layers, of objects, and (since #R736) the painter's own counts of highlighted countries,
+       polygons, lines and shaded codes. A cardinal cannot tell a redraw from a failure, and it cannot
+       tell a REPAIR from either: six countries repainted as six other countries is 6 → 6.
+       MEASURED on production 2026-09-15, signed in:
+           「Which countries border Kazakhstan?」 — the map painted the six neighbours on the first
+           call, and the verdicts were `highlight:FAIL/failed` → `FAIL/not_rendered` → `FAIL/not_rendered`
+           over ten steps; 「シベリア鉄道の経路」 — `railAxis:FAIL/not_rendered` five times in 1m44s;
+           「地中海の最深点へ飛んでマークして」 — 22 steps, 2m14s, the same pin dropped six times.
+       So the paint verdict gets the third rung the camera has: the PAINTER declares what it painted
+       (`raw.meta.painted`, keyed by the same names js/atlas-era-highlight.js reports under `ids`) and
+       this holds the declaration against the map as it is NOW. ⚠ READ, NOT TRUSTED — a dispatch that
+       declares six countries it did not paint still answers `not_rendered`. ⚠ AND NOTHING IS GUESSED:
+       no declaration, or a declaration naming a surface this reading does not hold, returns `null`
+       and the verdict is exactly the one it was before. */
+    function PAINT_GOAL(raw) {
+      var d = raw && raw.meta && raw.meta.painted;
+      if (!d || typeof d !== 'object') return null;
+      var out = [];
+      Object.keys(d).forEach(function (kind) {
+        var v = d[kind]; if (v == null) return;
+        var want = [];
+        (Array.isArray(v) ? v : [v]).forEach(function (x) { var s = String(x == null ? '' : x); if (s && want.indexOf(s) < 0) want.push(s); });
+        if (want.length) out.push({ kind: kind, want: want });
+      });
+      return out.length ? out : null;
+    }
+    /* how much of the declaration is on the map — {want, have} — or `null` when it cannot be measured.
+       ⚠ COUNTS, WHERE THE CAMERA HAS A BOOLEAN, because a paint CAN be half-done: fourteen oblasts of
+       which eleven resolved is a real state of the world and the camera has no equivalent of it. */
+    function paintReach(after, raw) {
+      var goal = PAINT_GOAL(raw); if (!goal) return null;
+      var ids = after && after.atlas && after.atlas.ids;
+      if (!ids) return null;                                     /* the painter declared no state to read */
+      var want = 0, have = 0;
+      for (var i = 0; i < goal.length; i++) {
+        var seen = ids[goal[i].kind];
+        if (!Array.isArray(seen)) return null;                   /* a surface this reading does not hold */
+        for (var j = 0; j < goal[i].want.length; j++) { want++; if (seen.indexOf(goal[i].want[j]) >= 0) have++; }
+      }
+      return want ? { want: want, have: have } : null;
+    }
+    /* the camera's discipline exactly: true / false / null, and `null` is never 「probably yes」. */
+    function paintGoalMet(after, raw) { var r = paintReach(after, raw); return r ? (r.have === r.want) : null; }
+
     var OBSERVERS = {
       none: {
         observe: function () { return null; },
@@ -773,13 +820,38 @@ export function makeAtlasCapabilities(HOST) {
       paint: {
         observe: function () { return paintNow(); },
         verify: function (ctx, args, before, after, raw) {
-          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
-          if (raw && raw.meta && raw.meta.partial) return { status: 'partial', produced: [], code: 'not_rendered', html: raw.html || '', unresolved: (raw.exec && raw.exec.unresolved) || [] };
+          var html = (raw && raw.html) || '';
+          var unresolved = (raw && raw.exec && Array.isArray(raw.exec.unresolved)) ? raw.exec.unresolved : [];
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: html };
+          /* the dispatch says some of what it was asked for never resolved. ⚠ (#R742) THAT IS A
+             STATEMENT ABOUT THE TARGETS, NOT ABOUT THE MAP: this used to return `not_rendered` without
+             looking at the map at all, so thirteen oblasts drawn and one unresolved was reported as
+             「nothing was drawn」 and Atlas redrew all fourteen. The map is read first, below; the
+             names ride along as `unresolved` either way, because the repair loop reads them. */
+          var short = !!(raw && raw.meta && raw.meta.partial);
           /* a clear-shaped op is complete when the canvases came DOWN; a draw-shaped one when they
              went UP. Anything that moved is evidence; nothing moving is `not_rendered`. */
-          if (!before || !after) return { status: 'completed', code: legacyCode(raw) || 'ok', html: (raw && raw.html) || '' };
-          if (changed(before, after)) return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
-          return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
+          if (!before || !after) {
+            return short ? { status: 'partial', produced: [], code: 'not_rendered', html: html, unresolved: unresolved }
+              : { status: 'completed', code: legacyCode(raw) || 'ok', html: html };
+          }
+          var moved = changed(before, after);
+          var reach = paintReach(after, raw);                    /* what the painter declared, held against the map */
+          if (short) {
+            /* something of it IS on the map: a draw that reached most of its targets is a draw */
+            if (moved || (reach && reach.have > 0)) {
+              return { status: 'completed', code: 'partially_resolved', observed: { paint: after, reach: reach || null }, unresolved: unresolved, html: html };
+            }
+            return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, unresolved: unresolved, html: html };
+          }
+          if (moved) return { status: 'completed', code: 'ok', observed: { paint: after }, html: html };
+          /* ⚠ (#R742) …and a redraw of what is ALREADY painted is complete too — the reader asked for
+             a state. `already_there` is the camera's word for the same fact and says it to the reader
+             in every language already (js/atlas-results.js `atlas.code.already_there`). */
+          if (paintGoalMet(after, raw) === true) {
+            return { status: 'completed', code: 'already_there', observed: { paint: after, already: true }, html: html };
+          }
+          return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: html };
         }
       },
       /* ══ ⚠⚠⚠ A POWER MAP THAT IS ON THE MAP IS RENDERED, WHETHER OR NOT THE COUNT MOVED ══════════
@@ -1267,12 +1339,13 @@ export function makeAtlasCapabilities(HOST) {
     /* the terms of a request: Latin/digit words of 3+ characters, and 2-character windows of each
        CJK run (Japanese and Chinese carry no spaces, so 「次回可視通過予測」 yields 通過 and 予測). */
     function termsOf(nq) {
-      var out = [];
-      (nq.match(/[a-z0-9]{3,}/g) || []).forEach(function (w) { out.push(w); });
-      (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).forEach(function (run) {
-        for (var i = 0; i + 2 <= run.length; i++) out.push(run.slice(i, i + 2));
+      var latin = (nq.match(/[a-z0-9]{3,}/g) || []).filter(function (t, i, a) { return a.indexOf(t) === i; });
+      var runs = (nq.match(/[぀-ヿ㐀-鿿]+/g) || []).map(function (run) {
+        var w = [];
+        for (var i = 0; i + 2 <= run.length; i++) w.push(run.slice(i, i + 2));
+        return w.length ? w : [run];
       });
-      return out.filter(function (t, i, a) { return a.indexOf(t) === i; });
+      return { latin: latin, runs: runs };
     }
     var _docNorm = null;   /* id → normalised catalogue block, filled once (a block is up to ~24 kB) */
     var _docDf = {};       /* term → how many capabilities' blocks carry it */
@@ -1299,17 +1372,34 @@ export function makeAtlasCapabilities(HOST) {
       if (!runtime.docs) return 0;
       var all = docNorms(), d = all[cap.id];
       if (!d) return 0;
-      var pts = 0;
-      termsOf(nq).forEach(function (t) {
-        if (!hasTerm(d, t)) return;
+      var pts = 0, terms = termsOf(nq);
+      /* ⚠ A TERM CARRIED BY MORE THAN FOUR BLOCKS IS NOT A MATCH AT ALL. Half a point apiece still
+         summed to «score > 0» for nearly every capability, and find_capability — which returns EVERY
+         scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
+         request; the next model call took 94 s (measured on production, 2026-09-15). */
+      var seen = {};                       /* the same window twice is still one piece of evidence */
+      var award = function (t) {
+        if (seen[t]) return 0;
+        seen[t] = 1;
         var df = _docDf[t];
         if (df == null) { df = 0; for (var id in all) if (hasTerm(all[id], t)) df++; _docDf[t] = df; }
-        /* ⚠ A TERM CARRIED BY MORE THAN FOUR BLOCKS IS NOT A MATCH AT ALL. Half a point apiece still
-           summed to «score > 0» for nearly every capability, and find_capability — which returns EVERY
-           scoring row, by design (#R413) — handed Atlas 60 ids and 42 kB of documentation for the ISS
-           request; the next model call took 94 s (measured on production, 2026-09-15). */
-        if (df > DOC_TERM_MAX_DF) return;
-        pts += DOC_TERM_POINTS * Math.min(1, 2 / Math.max(1, df));
+        return df > DOC_TERM_MAX_DF ? 0 : DOC_TERM_POINTS * Math.min(1, 2 / Math.max(1, df));
+      };
+      terms.latin.forEach(function (t) { if (hasTerm(d, t)) pts += award(t); });
+      /* ⚠⚠⚠ (#R745) ONE WINDOW OUT OF A LONGER RUN IS NOT EVIDENCE ABOUT THE RUN. Japanese and
+         Chinese carry no spaces, so a request is cut into 2-character windows — and the windows of a
+         word straddle its boundaries. 「ありがとう」 yields あり・りが・がと・とう, and あり sits in ONE
+         catalogue block, inside the example sentence 「…地震があり、半径100km以内に…」. df=1 is the
+         rarest a term can be, so the fragment scored a full 6 points and `find_capability('ありがとう')`
+         answered with `data.query` — a thank-you routed to a spatial query. Measured in the nightly
+         deep tier from 2026-09-15, the night after the search path was rewritten.
+         So a run must be recognised by MORE THAN ONE of its own windows (a run short enough to make
+         only one window is that one term, and still counts). 「ひまわり」 keeps matching — a block that
+         holds the word holds all three of its windows — while a fragment shared by accident does not. */
+      terms.runs.forEach(function (windows) {
+        var hits = windows.filter(function (t) { return hasTerm(d, t); });
+        if (hits.length < Math.min(2, windows.length)) return;
+        hits.forEach(function (t) { pts += award(t); });
       });
       return Math.min(DOC_TERM_CAP, pts);
     }

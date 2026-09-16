@@ -33,7 +33,8 @@ import { makeAtlasCapabilities } from './atlas-capabilities.js';   /* (#R318) no
 import { installAtlasKernel } from './atlas-executor.js';   /* (#R318) the executor, the result shape and the state ledger — fetched WITH Atlas rather than at boot; installAtlasKernel is idempotent so a UI button may have mounted it first */
 import { makeAtlasAgent } from './atlas-agent.js';   /* (#R406) the turn loop \u2014 Atlas chooses, IntMap executes, Atlas answers last */
 import { resolveObserver, satelliteFacts, weatherFacts, routeFacts } from './atlas-result-facts.js';   /* (#R726) the facts a tool's panel shows, on the tool's result */
-import { makeEraHighlight } from './atlas-era-highlight.js';   /* (#R726) the map's year applied to a country highlight */
+import { makeEraHighlight } from './atlas-era-highlight.js';
+import { makeHighlightTargets } from './atlas-country-ids.js';   /* (#R742) every ISO notation the border store declares */   /* (#R726) the map's year applied to a country highlight */
 import { makeAtlasMetrics } from './atlas-metrics.js';
 import { makeAtlasToolSurface } from './atlas-toolsurface.js';   /* (#R406) a few typed tools + discovery, instead of 64 kB of catalogue */
 import { makeViewCapture } from './atlas-view-capture.js';   /* (#R493) view.inspect — the SAME picture the screenshot button takes, plus the per-turn frame ledger. The subject lives THERE because this file is shrink-only (tests/r419 ⑨d) */
@@ -478,48 +479,11 @@ window.IntMapModules.atlasConsole=function(HOST){
       g.features.forEach(f=>{ const p=f.properties||{}; const id=String(p.__code!=null?p.__code:(f.id!=null?f.id:'')); if(!want.has(id)) return; const gm=f.geometry; if(!gm) return;
         if(gm.type==='Polygon') polys.push(gm.coordinates); else if(gm.type==='MultiPolygon') gm.coordinates.forEach(pp=>polys.push(pp)); if(hit.indexOf(id)<0) hit.push(id); });
       return {geo:polys.length?{type:'MultiPolygon',coordinates:polys}:null, hit, miss:list.filter(c=>hit.indexOf(c)<0)}; }catch(_){ return {geo:null,hit:[],miss:(codes||[]).map(String)}; } }
-    /* (#R157) ============ GPT-DECIDED HIGHLIGHT TARGETS (the meaning/execution split) ============
-       The natural-language MEANING of a highlight target — a country set ("ゲルマン諸国"/"Slavic countries"/"the
-       English-speaking world"/"major oil producers"/"OPEC") — is interpreted by the MODEL, which returns the
-       EXPLICIT member countries with ISO 3166-1 alpha-3 codes. The code's ONLY job here is to VALIDATE those codes
-       against the real country-border data (window.countryGeo) and later draw real borders. There is NO concept
-       dictionary, alias table or regionGroup lookup on this path — that hard-coded meaning-guessing running BEFORE
-       the model was the reported root cause ("ゲルマン諸国" failed as one unfound place). The ISO/M49/border data
-       survive only as DETERMINISTIC VALIDATION for the model's output, never as a meaning dictionary.
-       `_hlValidCodeSet` = the set of ISO3 codes that map to a real border feature; `_hlReadGptGroups` reads the
-       model's structured output into validated code groups. Returns null when the model gave NO structured codes
-       (→ the request falls through to the concrete place-name resolver for genuine single features: admin regions,
-       rivers, basins, natural regions). Pure (needs only window.countryGeo + countryStats) → CI-testable. */
-    function _hlValidCodeSet(){ const s=new Set(); try{ const g=geo(); (g&&g.features||[]).forEach(f=>{ const p=f.properties||{}; if(p.__code!=null) s.add(String(p.__code).toUpperCase()); if(f.id!=null) s.add(String(f.id).toUpperCase()); }); }catch(_){} return s; }
-    function _hlReadGptGroups(a){ try{ if(!a||typeof a!=='object') return null;
-      const norm3=v=>{ v=String(v==null?'':v).trim().toUpperCase(); return /^[A-Z]{3}$/.test(v)?v:''; };
-      const readT=t=>{ if(t==null) return null;
-        if(typeof t==='string'){ const c=norm3(t); return {iso3:c,name:c?'':t.trim()}; }
-        if(typeof t==='object'){ const c=norm3(t.iso3||t.iso||t.code||t.c||t.id||t.a3); const n=String(t.name||t.n||t.country||t.label||'').trim(); return (c||n)?{iso3:c,name:n}:null; }
-        return null; };
-      const rawGroups=[];
-      if(Array.isArray(a.groups)&&a.groups.length){   /* several distinctly-coloured concept sets in one command */
-        a.groups.forEach(g=>{ if(!g||typeof g!=='object') return; const src=Array.isArray(g.targets)?g.targets:(Array.isArray(g.iso3)?g.iso3:(Array.isArray(g.codes)?g.codes:(Array.isArray(g.countries)?g.countries:[]))); const ts=src.map(readT).filter(Boolean); if(ts.length) rawGroups.push({label:String(g.label||g.interpretation||g.name||'').trim(),targets:ts}); });
-      } else {
-        let src=Array.isArray(a.targets)?a.targets:(Array.isArray(a.iso3)?a.iso3:(Array.isArray(a.codes)?a.codes:null));
-        /* a bare ISO3 array smuggled into "countries" (every entry a valid 3-letter code) also counts as GPT targets;
-           a NAME array or a concept STRING does NOT — those fall through to the legacy concrete-place resolver. */
-        if(!src&&Array.isArray(a.countries)&&a.countries.length&&a.countries.every(x=>norm3(x))) src=a.countries;
-        if(src){ const ts=src.map(readT).filter(Boolean); if(ts.length) rawGroups.push({label:String(a.interpretation||'').trim(),targets:ts}); }
-      }
-      if(!rawGroups.length) return null;
-      const valid=_hlValidCodeSet();
-      /* (#R158 · Terra is the decision-maker, IntMap the faithful executor) OBSERVE, don't CORRECT. A valid ISO3 Terra chose
-         is executed AS-IS. A blank/invalid ISO3 is NEITHER silently rescued from the name NOR silently dropped — it is
-         returned to Terra as UNRESOLVED, tagged with a machine reason and (if the name deterministically maps to one) a
-         candidate identifier that is REPORTED, never applied. Terra then decides: re-issue with the right code, re-search,
-         ask, or adopt the partial. This replaces the old resolveCountrySync auto-correction the work order removed. */
-      return rawGroups.map(g=>{ const codes=[],unresolved=[],seen=new Set();
-        g.targets.forEach(t=>{ const gi=t.iso3||'';
-          if(gi&&valid.has(gi)){ if(!seen.has(gi)){ seen.add(gi); codes.push(gi); } return; }   /* Terra's identifier is valid → execute faithfully */
-          let available=[]; if(t.name){ try{ const c=resolveCountrySync(t.name); if(c&&c.code&&valid.has(String(c.code).toUpperCase())) available=[String(c.code).toUpperCase()]; }catch(_){} }
-          unresolved.push({name:t.name||'', iso3:gi, reason:(gi?'iso3_not_in_border_data':(t.name?'no_iso3_provided':'empty_target')), availableIdentifiers:available}); });
-        return {label:g.label,codes,unresolved}; }); }catch(_){ return null; } }
+    /* (#R157/#R742) the highlight target reader moved WHOLE to js/atlas-country-ids.js — the
+       meaning/execution split, the identifier notations and the fall-through are all documented
+       there. The names below are the ones this file has always called. */
+    const _HT=makeHighlightTargets({geo, resolveCountrySync:(n)=>resolveCountrySync(n)});
+    const _hlIdIndex=()=>_HT.idIndex(), _hlValidCodeSet=()=>_HT.validCodeSet(), _hlReadGptGroups=(a)=>_HT.readGroups(a);
     /* categorical palette — distinct, reasonably colour-blind-aware, muted enough to sit on the basemap */
     const _HL_PALETTE=['#e6550d','#3182bd','#31a354','#756bb1','#d6616b','#17a2b8','#bd9e39','#8c6d31','#e377c2','#637939','#843c39','#5254a3'];
     function _hlPaletteColor(i){ const n=_HL_PALETTE.length; return _HL_PALETTE[((i%n)+n)%n]; }
@@ -2698,7 +2662,16 @@ window.IntMapModules.atlasConsole=function(HOST){
               if(ver&&!ver.ok) hh+=warn('⚠ '+L('Could not verify the drawn shapes on the map','描画結果を地図上で確認できませんでした','Gezeichnete Formen nicht verifizierbar','Не удалось проверить фигуры на карте','No se pudieron verificar las formas'));
               try{ _wctx.highlight={ name:G.map(g=>g.displayName||g.name).join(', ').slice(0,160), n:totalC, basis:null }; }catch(_){}
               const _partial=!!(gUnresolved.length||(ver&&!ver.ok));
-              return R(true, hh+cwarn, {meta:(_partial?{partial:true}:undefined), exec:_mkExec(true,(ver&&ver.n)||totalC,!!(ver&&ver.ok))});
+              /* ⚠⚠⚠ (#R742) SAY WHAT WAS PAINTED, so the verdict can hold the map against it instead of
+                 against a count. js/atlas-capabilities.js `PAINT_GOAL` reads this and asks whether those
+                 names are in the painter's own reading (js/atlas-era-highlight.js `paintState().ids`),
+                 using the SAME key `polys` both sides already use. Without it a highlight that redraws the
+                 same number of shapes is 「not_rendered」 however perfectly it drew them — measured on
+                 production 2026-09-15: three correct highlights, three verdicts of not_rendered, ten steps
+                 and 26.2 seconds for 「Which countries border Kazakhstan?」. Declaring is not claiming: the
+                 verdict verifies this against the map and refuses it when the shapes are not there. */
+              const _painted={polys:_hlPolys.map(p=>p&&p.name).filter(Boolean)};
+              return R(true, hh+cwarn, {meta:Object.assign({painted:_painted}, _partial?{partial:true}:null), exec:_mkExec(true,(ver&&ver.n)||totalC,!!(ver&&ver.ok))});
             } }
           /* (#R150 · geo-target unification) SINGLE ambiguity decision shared by BOTH the multi-region and the
              single-colour paths below. ROOT CAUSE the user reported: candidate-confirmation ("did you mean the

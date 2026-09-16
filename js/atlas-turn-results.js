@@ -81,12 +81,33 @@ export function makeAtlasTurnResults(deps) {
 
     /* A stable rendering of one argument value. Object keys are sorted, so two calls that spelled
        the same options in a different order are still the same call. Strings go through `norm`,
-       because 「大阪駅」 and 「 大阪駅 」 are the same destination. */
+       because 「大阪駅」 and 「 大阪駅 」 are the same destination.
+
+       ⚠⚠⚠ (#R742) AN EMPTY FIELD CARRIES NO REQUEST AT ANY DEPTH, AND FOR ONE ROUND IT ONLY DID AT
+       THE TOP. `callKey` and `opKey` drop empty arguments before they build a key, so `map_view`
+       with `{place:'Kazakhstan'}` and with `{place:'Kazakhstan', zoom:''}` are the same call — but
+       the dropping happened in THEIR loops, not here, so one level down it did not happen at all.
+       Only the ten CORE tools carry their real arguments at the top level; the other ~120
+       capabilities are reached through `run_capability`, whose arguments are `{id, args:{…}}` —
+       so for all of them the rule was inert. Measured on production 2026-09-15 with the shipped
+       `IntMapAtlasTurnResults.callKey`:
+
+           map_view        {place:'Kazakhstan'}                    vs +{zoom:''}   → SAME key
+           run_capability  {id:'map.pin', args:{place:'36.5585, 21.1286'}} vs +{title:''} → DIFFERENT
+
+       `map.pin` alone declares eight free-text fields (js/atlas-schemas.js), so one blank title was
+       a new call. The turn that asked for the deepest point of the Mediterranean drew the SAME pin
+       at the SAME coordinates seven times — 22 steps, 2m14s, six duplicate objects — and every
+       outcome said `ok`. The repeat guard in js/atlas-agent.js could not save it either: it counts
+       a step only when EVERY call in it was a reuse, and none of them ever was.
+
+       So the rule belongs to the VALUE, not to the caller's loop: a key is built from the fields
+       that carry a request, however deep they sit (.agents/rules/no-ad-hoc-hardcoding.md §3). */
     function stable(v) {
       if (v === undefined || v === null) return 'null';
       if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
       if (typeof v === 'object') {
-        const ks = Object.keys(v).filter((k) => v[k] !== undefined).sort();
+        const ks = Object.keys(v).filter((k) => k.slice(0, 2) !== '__' && !isEmpty(v[k])).sort();
         return '{' + ks.map((k) => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
       }
       if (typeof v === 'number') return isFinite(v) ? String(v) : 'null';

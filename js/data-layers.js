@@ -3877,7 +3877,7 @@ window.IntMapModules.dataLayers=function(HOST){
       Array.from(el.children).forEach(ch=>{ if(ch.tagName==='H4'||ch.classList.contains('dl-drag')||ch.classList.contains('kl-drag')||ch.classList.contains('legend-min')||ch.classList.contains('layer-popup-x')) return; ch.style.display = collapsed?'none':''; });
       const b=el.querySelector('.legend-min'); if(b){ b.textContent=collapsed?'▢':'–'; b.title=collapsed?(window.IntMapLang.t(HOST.lang,'Expand','展開','Ausklappen','Развернуть','Expandir')):(window.IntMapLang.t(HOST.lang,'Minimize','最小化','Minimieren','Свернуть','Minimizar')); }
     }
-    function ensureLegendMinimize(el){
+    function ensureLegendMinimize(el,fold){
       if(!el) return;
       let b=el.querySelector('.legend-min');
       if(!b){ b=document.createElement('button'); b.className='legend-min'; b.onclick=(e)=>{ e.stopPropagation(); toggleLegendMin(el); }; el.appendChild(b); }
@@ -3894,6 +3894,10 @@ window.IntMapModules.dataLayers=function(HOST){
          was written for. */
       const inDock=(window.imDockPanels==='on')||!!(el.classList&&el.classList.contains('im-docked'));
       if(window.matchMedia&&window.matchMedia('(max-width:768px)').matches && !inDock && !el.dataset.minInit){ el.dataset.minInit='1'; if(!collapsed) toggleLegendMin(el); }
+      /* (#R742) the tiler asks for a fold when the container has run out of room for expanded
+         legends. It is the reader's OWN toggle — nothing is closed, nothing is hidden, and the
+         legend is one click from being read again. */
+      else if(fold===true && !collapsed) toggleLegendMin(el);
     }
     window._ensureLegendMinimize=ensureLegendMinimize;
     /* (#R240) the dock calls this on the way in, so a legend that was auto-collapsed while it floated
@@ -3904,13 +3908,23 @@ window.IntMapModules.dataLayers=function(HOST){
     };
     /* Collapse every open, expanded legend (used when a phone user taps the map outside a legend, #29). */
     window._minimizeOpenLegends=function(){
-      [document.getElementById('koppen-legend'),lgdHDI,lgdDem,lgdPop,lgdEEZ,lgdThermal,lgdRadar,lgdSST,lgdPopGrid,lgdRelief,lgdSeaLevel,lgdGdppc,lgdTfr,lgdMil,lgdMilGDP,lgdSnow,lgdAod,lgdNightsat]
-        /* (#R240) a DOCKED legend is not over the map, so tapping the map has no reason to collapse
-           it — and doing so is the other half of 「最小化された状態でスタートしないように」: the
-           reader taps the map once and every panel in the sidebar shuts. */
-        .forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); }catch(_){} } });
+      /* ⚠⚠⚠ (#R742) THE POPULATION IS NOT A SECOND LIST OF WHAT A LEGEND IS. It was eighteen
+         hand-written variables — the same discovery tileLegends does, minus the wind box, minus every
+         `data-legend-ec-*` box and minus every `.data-legend.generic-legend`. MEASURED in production
+         2026-09-15: of the five legends on the map, FOUR (eq / volc2 / rail2 and the ECMWF boxes)
+         were invisible to this function, so 「tap the map to put the legends away」 put them away
+         never. tileLegends() RETURNS what it discovered, so there is exactly one place in this file
+         that knows what a legend is; and calling it again at the end is not waste — the collapse
+         just changed every height it had measured. */
+      let all=[]; try{ all=tileLegends()||[]; }catch(_){}
+      let changed=false;
+      /* (#R240) a DOCKED legend is not over the map, so tapping the map has no reason to collapse
+         it — and doing so is the other half of 「最小化された状態でスタートしないように」: the
+         reader taps the map once and every panel in the sidebar shuts. */
+      all.forEach(el=>{ if(el && (el.style.display==='block'||el.style.display==='flex') && !el.classList.contains('im-docked') && !el.classList.contains('legend-collapsed')){ try{ toggleLegendMin(el); changed=true; }catch(_){} } });
+      if(changed) try{ tileLegends(); }catch(_){}
     };
-    function tileLegends(){
+    function tileLegends(_refold){
       /* ⚠ (#R276) THE ECMWF BOXES HAVE TO BE IN THIS LIST. They dock at the same left/bottom as every
          other legend, and a legend the tiler cannot see is a legend that sits ON TOP of the one below
          it — MEASURED with the wind field and two ECMWF layers on: the wind legend covered the ECMWF
@@ -3987,6 +4001,59 @@ window.IntMapModules.dataLayers=function(HOST){
         const R=window.IntMapRuntime; return (R&&R.box)?R.box(mc):mc.getBoundingClientRect(); }catch(_){ return null; } })();
       const mcH=(mcBox&&mcBox.height)||window.innerHeight||0;
       const mcW=(mcBox&&mcBox.width)||window.innerWidth||0;
+      /* The three docks differ by three numbers and nothing else. They are stated once here because
+         the ceiling below has to know where the cursor starts before the branches run — the numbers
+         themselves are the ones the three branches have always used. */
+      const dock = ws ? {start:30,gap:10,base:12} : mobile ? {start:64,gap:8,base:6} : {start:140,gap:10,base:leftBase};
+      /* ══ ⚠⚠⚠ (#R742) HOW MANY LEGENDS MAY STAY EXPANDED IS DECIDED BY THE CONTAINER ═══════════
+         MEASURED in production 2026-09-15 (window 1512×945, map 1112×923) after sixteen Atlas
+         questions: seven floating panels, five of them legends, covering 40.3 % of the map. The
+         placer below never overlaps them — it wraps into a new column instead — so every further
+         legend the session opens takes another column of map away, permanently, because nothing
+         ever gave up its expanded size. #R276 and #R740 both taught that stacking or clamping is
+         not the answer; the answer is that a stack has a budget.
+         ⚠ THE BUDGET IS NOT A COUNT OF LEGENDS. It is the room ONE column has — `mcH − start − 8`,
+         the same room `flow` uses — so it follows the window, the dock and the legends' own
+         heights, and it needs no maintenance when any of those change. What does not fit is FOLDED
+         to its title bar, newest kept, oldest folded: the layer stays on, the element stays visible
+         (`display` is untouched), and one click on the reader's own – button opens it again.
+         ⚠ FOLDING IS ONE-WAY PER OPENING. A reader who re-opens a folded legend is not overruled on
+         the next of this function's thirty-one calls per session (`legPinOpen`). */
+      const isFolded=el=>{ try{ return !!(el.classList&&el.classList.contains('legend-collapsed')); }catch(_){ return false; } };
+      /* "oldest" is a fact about the reader's session, not about the order the discovery list
+         happens to have, so a legend records the instant it became visible and forgets it when it
+         is closed — a legend re-opened later is the newest one again. */
+      const seenNow=Date.now();
+      visible.forEach(el=>{ if(!el.dataset.legSeen) el.dataset.legSeen=String(seenNow); });
+      all.forEach(el=>{ if(el&&el.style&&el.style.display!=='block'&&el.style.display!=='flex'&&el.dataset&&el.dataset.legSeen){ delete el.dataset.legSeen; delete el.dataset.legFold; delete el.dataset.legPinOpen; } });
+      visible.forEach(el=>{ if(el.dataset.legFold==='1'&&!isFolded(el)){ delete el.dataset.legFold; el.dataset.legPinOpen='1'; } });
+      const room1=Math.max(48,mcH-dock.start-8);
+      const newestFirst=visible.map((_,i)=>i).sort((a,b)=>((+visible[b].dataset.legSeen||0)-(+visible[a].dataset.legSeen||0))||(b-a));
+      const keepOpen=new Set(); let budget=0, kept=0, folded=false;
+      for(const i of newestFirst){
+        const el=visible[i], h=H[i]||0;
+        /* (#R240) a DOCKED legend is not over the map: it neither spends the map's room nor has to
+           give any back, which is the same exemption `_minimizeOpenLegends` makes. */
+        if(el.classList&&el.classList.contains('im-docked')){ keepOpen.add(i); continue; }
+        /* an already-folded legend costs its title bar, which is what H[i] now measures */
+        if(isFolded(el)){ budget+=h+dock.gap; kept++; continue; }
+        /* the newest legend is always readable, whatever its height: a box taller than a whole
+           column is the case `flow` gives a scroller to, and folding it would answer a question
+           nobody asked — the reader just opened it. */
+        const fits = !kept || budget+h+dock.gap<=room1;
+        if(fits||el.dataset.legPinOpen==='1'){ keepOpen.add(i); budget+=h+dock.gap; kept++; continue; }
+        break;   /* out of room: this one and every older one fold */
+      }
+      for(let i=0;i<visible.length;i++){
+        const el=visible[i];
+        if(keepOpen.has(i)||isFolded(el)) continue;
+        try{ ensureLegendMinimize(el,true); }catch(_){}
+        el.dataset.legFold='1'; folded=true;
+      }
+      /* Heights measured before the fold are no longer this stack's heights. The re-entry reads them
+         once more and places from the new ones; `_refold` makes it exactly one re-entry, and it only
+         happens on the call that actually folded something. */
+      if(folded&&!_refold) return tileLegends(true);
       /* One column-wrapping placer for all three docks. `start` is the cursor's origin measured from
          the anchored edge (bottom for the two desktop docks, top on phones), `gap` the spacing the
          dock has always used, `base` its left margin. Nothing in here reads the DOM. */
@@ -4023,12 +4090,12 @@ window.IntMapModules.dataLayers=function(HOST){
       if(ws){
         /* (#R85) workspace mode: dock legends to the BOTTOM-LEFT of the Map window ("ワークスペースモードでレイヤーを
            オンにしたら、凡例は地図の左下あたりに") — stack upward, clearing the coordinate readout in the corner. */
-        const P=flow(30,10,12);
+        const P=flow(dock.start,dock.gap,dock.base);
         visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'bottom',P[i].off+'px'); put(el,'top','auto'); put(el,'left',P[i].left+'px'); put(el,'right','auto'); });
       } else if(mobile){
         /* (#R15d) Stack legends DOWNWARD from just below the search bar (top:64), left-aligned. The CSS
            default above is for the first paint; this keeps multiple open legends from overlapping. */
-        const P=flow(64,8,6);
+        const P=flow(dock.start,dock.gap,dock.base);
         visible.forEach((el,i)=>{ capTo(el,P[i].cap); put(el,'top',P[i].off+'px'); put(el,'bottom','auto'); put(el,'left',P[i].left+'px'); put(el,'right','auto'); });
       } else {
         /* ══ ⚠ (#R244) A LEGEND MAY ASK TO GROW DOWNWARD ═════════════════════════════════════════════
@@ -4040,7 +4107,7 @@ window.IntMapModules.dataLayers=function(HOST){
            A legend that declares `data-grow-down` is placed by its TOP instead. The stack maths is
            unchanged — the same cursor decides where it sits — so it lands in exactly the same place
            and only its GROWTH direction differs. */
-        const P=flow(140,10,leftBase);
+        const P=flow(dock.start,dock.gap,dock.base);
         visible.forEach((el,idx)=>{ const p=P[idx]; capTo(el,p.cap); put(el,'left',p.left+'px'); put(el,'right','auto');
           if(el.dataset.growDown==='1'){
             /* ⚠ WRITING `top` IS NOT ENOUGH — `top = mcH − bottom − h` is the bottom-anchored place
@@ -4063,6 +4130,9 @@ window.IntMapModules.dataLayers=function(HOST){
           else { put(el,'bottom',p.off+'px'); put(el,'top','auto'); }
         });
       }
+      /* (#R742) what this function discovered, so that no other function in this file has to keep a
+         second opinion about what a legend is (see `_minimizeOpenLegends`). */
+      return all;
     }
     /* Mark a legend as user-dragged so tileLegends() leaves it alone. */
     document.addEventListener('mousedown', e=>{

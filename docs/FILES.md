@@ -181,7 +181,9 @@ gis-geometry.js                   **幾何カーネル** `window.IntMapGisGeomet
                                   （union / intersection / difference / dissolve）・**任意形状の buffer**
                                   （測地円盤との Minkowski 和）・述語（intersects / contains / within /
                                   disjoint）・**形そのものからの最短測地距離**。sweep-line
-                                  `polygon-clipping`（**既存の依存**）は**動的 import で遅延**。
+                                  `polygon-clipping`（**既存の依存**）は**動的 import**——⚠ ただし実測では
+                                  `geo-<hash>.js` が `main` から静的に参照され `modulepreload` されるので、
+                                  **バイトは起動時に届いている**（#R734 本番・#R745 再測。Architecture.md）。
                                   経度は継ぎ目でほどいて揃え、結果を [-180,180] に戻す——拒むのは
                                   **世界を巻く環だけ**
 gis-crs.js                        **座標変換** `window.IntMapGisCrs`（#R732）— `proj4` を**動的 import で
@@ -476,6 +478,10 @@ atlas-gloss.js                    Atlas — 回答文の語句を選択→右ク
                                   質問回数を消費しない。同じ語×同じ回答はキャッシュして再要求しない
 atlas-loader.js                   Atlas に手を伸ばすと Atlas を取りに行く window.IntMapAtlas
 ai-core.js                        Atlas の AI 通信・利用枠・設定
+atlas-country-ids.js              境界データが宣言している国の識別子を読む唯一の場所（#R742）。ISO の alpha-3／alpha-2／numeric-3 を
+                                  同じ識別子の別表記として読み、FIPS 等の別体系は列で除く（Germany の FIPS は "GM"、ISO alpha-2 の
+                                  "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
+                                  具体地名の解決器へ落とす。検査は tests/r742-atlas-identifier-checks.test.mjs。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
                                   141 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
@@ -1141,6 +1147,15 @@ scripts/
                                   ⚠ **早送りだけ＝冪等**なので並行セッションが同時に走らせてよく、
                                   排他ロックを必要としない。
                                   ⚠ `npm test` には入れない——CI のチェックアウトは detached な PR ref。
+  release-state.mjs               **本番がどの組み合わせで走っているか**を 3 面（静的サイト・Edge Functions・
+                                  DB migration）まとめて測る（`npm run release:state` / `release:check`）。
+                                  ⚠ **判定は時刻ではなく配備されたソースの中身**（`supabase functions download`
+                                  で取り寄せてバイトで突き合わせる）。merge 前に worktree から deploy すると
+                                  時刻は必ず「ソースが新しい」と言うので、時刻は文脈としてしか使わない。
+                                  ⚠ **名前を 1 つも手で書かない**——関数の名簿は `supabase/functions/` の実体、
+                                  project ref は `src/vendor.js`、Pages の URL は `origin` の remote から導く。
+                                  ⚠ `npm test` には入れない（本番と資格情報が要る）。CI が証明できることは
+                                  `tests/r745-arch-review-followup-checks.test.mjs`。
   worktree.mjs                    **セッションの作業場**（`status` / `new <slug>` / `done`）。`AGENTS.md` §6 が
                                   手作業で求めていた 6 工程——空きラウンド番号・branch・OneDrive 外の
                                   worktree・`node_modules` の junction・preview 設定——を 1 コマンドにする。

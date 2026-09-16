@@ -178,11 +178,23 @@ export function makeAtlasProgress(HOST, deps) {
   let current = null;             /* the bubble the executor's events belong to */
   let subscribed = false;
 
+  /* fmtMs(ms) — one duration, as the reader reads it.
+     ⚠⚠⚠ THE MINUTE AND THE SECOND ARE ONE NUMBER, ROUNDED ONCE. Production measured this head
+     printing 「1m58s → 1m59s → 1m60s → 2m00s」 (#R746): the old form took the minute with
+     `floor(n/60000)` and the second with `round((n % 60000)/1000)` — two roundings of one quantity,
+     which disagree for the half-second before every whole minute (119,500–119,999 ms gives minute 1
+     and second 60). It was not a rare race: it happened for 0.5 s of every minute a turn ran, on a
+     head repainted four times a second. The same split put 「60.0s」 on the screen just below the
+     boundary. So the duration is rounded ONCE, to whole seconds, and the minutes and seconds are
+     then read off that one number — a carry cannot be lost between two of them when there is one.
+     ⚠ The tenth-of-a-second form keeps its own boundary at 59,950 ms, which is where it would
+     otherwise render 「60.0s」: below it a tenth is what a row's duration deserves, and at it the
+     answer is already a minute. */
   function fmtMs(ms) {
     const n = Math.max(0, +ms || 0);
-    if (n < 950) return (Math.round(n / 100) / 10).toFixed(1) + 's';
-    if (n < 60000) return (Math.round(n / 100) / 10).toFixed(1) + 's';
-    return Math.floor(n / 60000) + 'm' + String(Math.round((n % 60000) / 1000)).padStart(2, '0') + 's';
+    if (n < 59950) return (Math.round(n / 100) / 10).toFixed(1) + 's';
+    const s = Math.round(n / 1000);
+    return Math.floor(s / 60) + 'm' + String(s % 60).padStart(2, '0') + 's';
   }
   function now() { try { return Date.now(); } catch (_) { return 0; } }
 

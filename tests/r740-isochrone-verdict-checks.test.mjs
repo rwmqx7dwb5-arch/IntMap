@@ -179,9 +179,15 @@ test('R740 ⑥: a dispatch that failed is still `failed`, not a rendered map', (
   });
 });
 
-test('R740 ⑦: the generic `paint` verdict is unchanged — an unmoved map is still `not_rendered`', () => {
-  /* Stated so that the exception is visible as an exception: `paint` still answers "did anything
-     move", which is right for the capabilities whose surfaces `paintNow()` actually counts. */
+test('R740 ⑦: the generic `paint` verdict still refuses a map that declares nothing and did not move', () => {
+  /* ⚠ THIS TEST USED TO SAY 「the generic `paint` verdict is unchanged」, AND THAT SENTENCE WAS THE
+     DEFECT #R742 HAD TO UNDO. This round gave the reach its own verifier and left the generic paint
+     verdict asking「did anything move」— then wrote the leaving-it-alone down as deliberate. It was
+     the SAME defect: measured on production 2026-09-15,「Which countries border Kazakhstan?」 painted
+     six neighbours and was told `not_rendered` three times, and 「シベリア鉄道の経路」 five times.
+     What was worth keeping is the REFUSAL, and it is kept here: with nothing moving and nothing
+     declared, there is no evidence of a drawing and none is invented. What #R742 added is the third
+     rung — a painter that declares WHAT it painted, held against the map (tests/r742-…). */
   assert.equal(generic.observerKind, 'paint');
   withMap({ 'nlq-poly-src': [], 'nlq-line-src': [], 'user-pins': [], 'nlq-poi-src': [],
     'atl-compose-src': [], 'shk-cont-src': [], 'nlq-fac-src': [] }, () => {
@@ -189,6 +195,11 @@ test('R740 ⑦: the generic `paint` verdict is unchanged — an unmoved map is s
     const v = generic.verify({}, {}, before, generic.observe(), { ok: true, html: '' });
     assert.equal(v.status, 'partial');
     assert.equal(v.code, 'not_rendered');
+    /* …and a result that DOES declare what it painted, over a map whose painter declared no state at
+       all (`window._imAtlasPaint` is absent here), is「could not be observed」— never a pass. */
+    const claimed = generic.verify({}, {}, before, generic.observe(),
+      { ok: true, html: '', meta: { painted: { choro: ['JPN', 'USA'] } } });
+    assert.equal(claimed.code, 'not_rendered', 'a declaration with nothing to hold it against proves nothing');
   });
 });
 
