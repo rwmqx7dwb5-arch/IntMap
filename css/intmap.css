@@ -166,7 +166,13 @@
     /* (#R31) account avatar = a real circular chip (photo or emoji), name beside it — not a bare emoji
        floating centered in the pill. */
     #btn-account{ display:inline-flex; align-items:center; gap:6px; }
-    #btn-account .acct-av{ width:22px; height:22px; border-radius:50%; flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; font-size:14px; line-height:1; background:rgba(128,128,128,0.18); overflow:hidden; }
+    /* ⚠ (#R753) ON A WIDE SCREEN THE BUTTON CARRIES NO ICON — 「アカウントのボタンは、アイコンを表示
+       しないように。」 The span is still WRITTEN (js/app-body.js), because on a phone it is the whole
+       button: there the row has no width for a name and #R30 measured the header wrapping when it
+       tried. So the icon is a phone-only presentation, which makes it a media query rather than a
+       second branch in the markup — one DOM, two widths. The rule that brings it back is in the
+       max-width:768px block below, beside the other two that shape the round button. */
+    #btn-account .acct-av{ display:none; border-radius:50%; flex:0 0 auto; align-items:center; justify-content:center; line-height:1; background:rgba(128,128,128,0.18); overflow:hidden; }
     #btn-account .acct-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px; }
     .control-panel{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }  /* (#R9/#21) tabs→search gap swapped with search→All/Saved */
     /* (#R36) Equal-width nav tabs ("News/Information/Stats/Community のボタン幅は同一に"): flex:1 1 0 + min-width:0
@@ -2010,6 +2016,7 @@
       #btn-account{ padding:7px 14px; min-height:34px; border-radius:17px; justify-content:center; white-space:nowrap; }
       #btn-account:has(.acct-av){ padding:0; width:34px; height:34px; min-height:34px; border-radius:50%; background:transparent; overflow:hidden; }
       #btn-account:has(.acct-av) .acct-name{ display:none; }
+      #btn-account .acct-av{ display:inline-flex; }   /* (#R753) the icon is phone-only; on the desktop row the button is text */
       #btn-account:has(.acct-av) .acct-av{ width:34px; height:34px; font-size:18px; background:rgba(128,128,128,0.20); border-radius:50%; }
 
       .search-bar{ flex:0 0 auto; margin:0 0 10px; padding:5px 5px 5px 14px; border-radius:12px; }
@@ -2998,7 +3005,6 @@
     .co-cmp-bval{ font-size:11px; color:var(--text-main); white-space:nowrap; }
 
     /* --- Account avatar (#28) --- */
-    .acct-avatar-wrap{ display:flex; align-items:center; gap:12px; margin:6px 0 16px; }
     .acct-avatar{ width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#fff; flex-shrink:0; background-size:cover; background-position:center; }
     .acct-avatar-pick{ display:flex; flex-wrap:wrap; gap:6px; margin:4px 0 14px; }
     .acct-emoji{ width:34px; height:34px; border-radius:9px; border:1px solid rgba(128,128,128,0.2); background:var(--input-bg); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
@@ -3019,7 +3025,7 @@
     .acct-id-txt{ min-width:0; flex:1; }
     .acct-h{ margin:0; font-size:20px; font-weight:700; letter-spacing:-0.3px; }
     .acct-email{ margin:2px 0 0; font-size:13px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .acct-pro{ font-size:12px; margin-top:2px; }
+    .acct-pro{ font-size:12px; margin-top:2px; color:var(--text-muted); font-weight:600; }   /* (#R753) it says how this session signs in (and · admin); it was an inline-styled span before */
     .acct-grp-t{ font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin:0 0 6px 4px; }
     .acct-card{ background:var(--input-bg); border-radius:14px; padding:12px 14px; margin:0 0 16px; }
     .acct-card .acct-avatar-pick{ margin:0 0 10px; }
@@ -3034,12 +3040,41 @@
     .acct-btn{ display:inline-block; background:var(--card-bg); border:1px solid rgba(128,128,128,0.22); color:var(--text-main);
       font-size:12.5px; font-weight:600; padding:8px 14px; border-radius:10px; cursor:pointer; }
     .acct-btn-quiet:hover{ background:rgba(128,128,128,0.10); }
+    /* ⚠ (#R753) `display:inline-block` above BEATS the user-agent rule for [hidden] (both are
+       author-vs-UA, and the author wins), so «Remove image» shipped visible with nothing to remove
+       the moment it was written. A class that sets display owes its own answer for hidden. */
+    .acct-btn[hidden]{ display:none; }
     .acct-note{ font-size:12px; color:var(--text-muted); padding:0 14px; }
     .acct-note:empty{ display:none; }
     .acct-msg{ margin:0 0 14px; font-size:12.5px; color:var(--text-muted); min-height:1em; padding:0 4px; }
     .acct-msg:empty{ margin:0; min-height:0; }
     .acct-close{ display:block; width:100%; background:transparent; border:none; color:var(--text-muted);
       font-size:14px; padding:10px; margin-top:2px; cursor:pointer; }
+    /* (#R753) the destructive pair, separated. `acct-danger` was in the markup from #R231 with no rule
+       behind it, so the separation that comment describes was never actually drawn. */
+    .acct-danger{ margin-top:4px; }
+    /* (#R753) both daily AI counters. Two lanes because the server keeps two rows — ai_usage and
+       ai_gloss_usage — and one running out does not touch the other. */
+    .acct-ai-row + .acct-ai-row{ margin-top:12px; }
+    .acct-ai-line{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:13px; color:var(--text-main); }
+    .acct-ai-line b{ font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .acct-ai-line b.acct-ai-out{ color:#ff453a; }
+    .acct-ai-bar{ height:6px; border-radius:4px; background:rgba(128,128,128,0.18); overflow:hidden; margin-top:6px; }
+    .acct-ai-bar i{ display:block; height:100%; background:var(--primary-color); transition:width .25s; }
+    .acct-ai-note, .acct-icon-note{ padding:0; margin-top:10px; line-height:1.5; }
+    .acct-icon-note{ margin-top:12px; }
+    /* (#R753) the in-sheet asker that replaced five window.confirm/prompt dialogs. */
+    .acct-ask-box{ background:var(--card-bg); color:var(--text-main); border-radius:18px; box-shadow:var(--shadow);
+      padding:20px; width:100%; max-width:340px; box-sizing:border-box; max-height:86vh; overflow-y:auto; }
+    .acct-ask-h{ margin:0 0 8px; font-size:17px; font-weight:700; letter-spacing:-0.2px; }
+    .acct-ask-b{ margin:0 0 14px; font-size:13px; line-height:1.55; color:var(--text-muted); }
+    .acct-ask-in{ width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; border:1px solid rgba(128,128,128,0.22);
+      background:var(--input-bg); color:var(--text-main); font-size:15px; margin:0 0 14px; }
+    .acct-ask-go{ display:block; width:100%; background:var(--primary-color); color:#fff; border:none; padding:11px;
+      border-radius:11px; font-size:14px; font-weight:600; cursor:pointer; }
+    .acct-ask-go.acct-ask-danger{ background:#ff3b30; }
+    .acct-ask-no{ display:block; width:100%; background:transparent; border:none; color:var(--text-muted);
+      font-size:13.5px; padding:10px; margin-top:4px; cursor:pointer; }
     @media(max-width:768px){
       /* ⚠ It stays a CENTRED CARD on a phone rather than becoming a bottom sheet: #acct-modal sets
          `align-items:center` inline (js/auth-ui.js), and an inline declaration beats anything here —
@@ -3048,8 +3083,6 @@
       .acct-sheet{ max-width:100%; padding-bottom:max(18px,env(safe-area-inset-bottom)); }
       .acct-row{ font-size:15px; padding:14px; }
     }
-    .acct-color{ width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
-    .acct-color.sel{ border-color:var(--text-main); }
 
     /* --- Animated wind canvas overlay (#7) --- */
     /* (#R276) The wind-SPEED colour field is a MapLibre raster of the model's own 9 km tiles; only the

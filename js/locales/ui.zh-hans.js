@@ -2569,7 +2569,6 @@ window.IntMapLang.define('zh-hans', {
     'Location unknown': "位置不明",
     'Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.': "登录或注册账号即可使用 AI 功能，并在各设备间同步你的设置、小工具、收藏与头像。",
     'Log out': "登出",
-    'Log out of your account?': "要登出账号吗？",
     'Logged out': "已登出",
     'Maritime zones': "海域划界",
     'May be incomplete or not fully working.': "可能不完整或尚未完全可用。",
@@ -2637,7 +2636,6 @@ window.IntMapLang.define('zh-hans', {
     'Wind 10 m': "10 米风",
     'Wind data unavailable': "无法取得风场数据",
     'You have unsaved changes. Discard them?': "你有尚未保存的变更，要舍弃吗？",
-    'Your profile': "你的个人数据",
     'mmi': "mmi",
     /* == (#R231) THE STRINGS THIS TABLE COULD NOT SEE ====================================
        268 hand-written `lang==='jp'?...` chains became IntMapLang.t(...) calls this round

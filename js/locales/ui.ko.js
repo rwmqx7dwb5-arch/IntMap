@@ -1722,7 +1722,6 @@ window.IntMapLang.define('ko', { ui: {
   "Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.": "로그인하거나 계정을 만들면 AI 기능을 쓰고 설정·위젯·즐겨찾기·프로필 사진을 여러 기기에서 동기화할 수 있습니다.",
   "Log in to create and view area monitors.": "지역 감시를 만들고 보려면 로그인하세요.",
   "Log in to run monitors.": "감시를 실행하려면 로그인하세요.",
-  "Log out of your account?": "로그아웃할까요?",
   "Logged out": "로그아웃했습니다",
   "long-run estimates for this year — World Bank / IMF annual series begin in 1960": "해당 연도의 장기 추계값입니다 — 세계은행·IMF의 연간 시계열은 1960년부터 시작합니다",
   "LOS breaks": "가시선 단절",

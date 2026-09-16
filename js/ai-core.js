@@ -159,6 +159,31 @@ window.IntMapModules.aiCore=function(HOST){
     'Бесплатные разборы терминов на сегодня исчерпаны. На ваши вопросы к Atlas это не влияет.',
     'Has agotado las consultas de términos gratuitas de hoy. Tus preguntas a Atlas no se ven afectadas.'); }
     catch(_){ return 'You have used today’s free term lookups. Your Atlas questions are unaffected.'; } }
+  /* ══ (#R753) WHERE BOTH DAILY COUNTERS STAND — ONE DESCRIPTION, TWO READERS ═══════════════════
+     The Settings panel used to be the only surface that showed the remaining uses, so the numbers
+     were read straight out of the two mirrors by the one function that painted them. The account
+     menu now shows them too, and a second reader that reached into `HOST.aiUsage` itself would be a
+     second copy of «what counts as a use, and what is the limit» — the shape .agents/rules/
+     no-ad-hoc-hardcoding.md §2-3 forbids. So the question is answered HERE, once, and both surfaces
+     read the answer. ⚠ `left` is Infinity for the developer account (aiUsesLeft / aiGlossLeft
+     already say so); `dev` is what a caller should branch on, never a comparison against 1e6. */
+  function aiUsageSummary(){
+    const dev=aiDev();
+    const aLim=aiDailyLimit(), gLim=aiGlossLimit();
+    const aLeft=aiUsesLeft(), gLeft=aiGlossLeft();
+    return {
+      dev,
+      ai:    { left:aLeft, limit:aLim, used:dev?0:Math.max(0,aLim-aLeft) },
+      gloss: { left:gLeft, limit:gLim, used:dev?0:Math.max(0,gLim-gLeft) },
+    };
+  }
+  /* Re-read BOTH server rows. #R447's rule applies to the second lane exactly as to the first: a
+     surface that states a number states one the server sent. Never rejects — a panel must open. */
+  async function aiRefreshUsage(){
+    try{ await aiFetchUsage(); }catch(_){}
+    try{ await aiFetchGlossUsage(); }catch(_){}
+    return aiUsageSummary();
+  }
   /* ══ (#R318) WHICH LANGUAGE THE MODEL MUST ANSWER IN — moved here from js/app-body.js ═══════
      It belongs with the transport: every prompt this file sends carries it, and the app shell it
      used to live in has no line to spare (tests/r168 #8). ⚠ IT USED TO TELL THREE OF THE NINE
@@ -519,5 +544,5 @@ window.IntMapModules.aiCore=function(HOST){
   function aiWaitMapIdle(timeout){ return new Promise(res=>{ const E=window.IntMapGeoEngine; if(!E){ res(); return; } let done=false;
     const fin=()=>{ if(done)return; done=true; try{ E.events.off('idle',fin); }catch(_){} res(); };
     try{ E.events.on('idle',fin); }catch(_){ } setTimeout(fin,timeout||4500); }); }
-  return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiQuotaBlocked, aiReady, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIGloss, askAIJSON, askAIJSONEnvelope };
+  return { _aiLangLine, _aiLangName, aiDev, aiEsc, aiFetchUsage, aiGate, aiLimitMsg, aiLoginMsg, aiParseJSON, aiQuotaBlocked, aiReady, aiRefreshUsage, aiRenderSettings, aiReport, aiSaveSettings, aiSetBtnBusy, aiSyncFeatureButtons, aiToast, aiToday, aiUsageSummary, aiUsesLeft, aiVisionReady, aiWaitMapIdle, askAI, askAIGloss, askAIJSON, askAIJSONEnvelope };
 };
