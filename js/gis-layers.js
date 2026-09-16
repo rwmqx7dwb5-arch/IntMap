@@ -384,11 +384,54 @@ export function makeGisLayers() {
          one pass and no copy, and so 「featuresIn が無い」 and 「今は空だ」 stay different */
       let probe = null;
       try { probe = R.featuresIn(key, [[0, 0], [0, 0]]); } catch (_) { probe = null; }
-      if (!Array.isArray(probe)) return null;
+      if (Array.isArray(probe)) {
+        return {
+          sync: true, where: true, cursor: true, limit: true, fields: false,
+          fetch: (req) => builtInFetch(key, req || {}),
+        };
+      }
+      /* ══ ⚠⚠⚠ (#R763) 「一度も点けていない」 が 「持っていない」 の代わりになっていた ═══════════════
+         The probe above fails for a row whose renderer source does not exist yet, and docs/GIS-CORE.md
+         §5.6 wrote that down as the last camera dependency left in this layer: 「表示せずに読み込む扉は
+         今のところ無く、これが『画面に依存しない取得』に残っている最後の依存である」.
+         ⚠ THE DEPENDENCY WAS ON DRAWING, NOT ON DATA. `heritage`, `volcanoes` and `pharma` each hold a
+         bundled document that a module fetches and then writes into a renderer source; the fetch does
+         not need the map, and js/layer-packs.js has said so since #R311 by having a second door into
+         its own loader 「with no row and no toggle involved」. What was missing was that door being
+         ASKABLE from here — so a registration now states one, and a row that has it can be read while
+         the camera is somewhere else and while the layer is switched off.
+         ⚠ IT IS DISCOVERED, NOT LISTED. Any registration that states a loader becomes readable by
+         existing; nothing here names an id (.agents/rules/no-ad-hoc-hardcoding.md §2-4).
+         ⚠ AND THE SUPPLIER IT MAKES IS ASYNCHRONOUS AND SAYS SO. Loading is a fetch; claiming
+         `sync:true` would have the synchronous door call it and throw the promise away. */
+      let loader = null;
+      try { loader = (typeof R.loaderOf === 'function') ? R.loaderOf(key) : null; } catch (_) { loader = null; }
+      if (typeof loader !== 'function') return null;
       return {
-        sync: true, where: true, cursor: true, limit: true, fields: false,
-        fetch: (req) => builtInFetch(key, req || {}),
+        sync: false, where: true, cursor: true, limit: true, fields: false,
+        fetch: (req) => loadedFetch(key, loader, req || {}),
       };
+    }
+
+    /* ⚠ THE SAME NARROWING AS builtInFetch, ON FEATURES THAT CAME FROM THE LOADER INSTEAD OF THE
+       RENDERER. The bbox filter is the one thing read() did that this road does not get for free, so
+       it is asked of the geometry the same way — and `where`/`cursor`/`limit` are js/gis-sources.js's
+       to apply, exactly as they are for the drawn road. ⚠ A LOADER THAT ANSWERS WITH NOTHING HAS
+       ANSWERED: it is an empty holding, not an unavailable one, and the two must not merge. */
+    async function loadedFetch(key, loader, q) {
+      let fc = null;
+      try { fc = await loader(); } catch (e) { return { ok: false, why: 'layer-load-failed', detail: { id: key, message: e && e.message } }; }
+      const all = Array.isArray(fc) ? fc : ((fc && Array.isArray(fc.features)) ? fc.features : null);
+      if (!all) return { ok: false, why: 'layer-load-failed', detail: { id: key, got: (fc === null ? 'null' : typeof fc) } };
+      /* ⚠ THE REGISTRY'S OWN PREDICATE, NOT A SECOND ONE. `narrow` is the same test featuresIn applies
+         to the drawn features, so a request answered from the document and the same request answered
+         from the renderer return the same rows. A bbox test written here would be a second opinion
+         about 「この範囲に入っているか」, and the two would agree until they did not. */
+      const R = REG();
+      if (q.bbox != null && !(R && typeof R.narrow === 'function')) return { ok: false, why: 'map-unavailable', detail: { needs: 'IntMapLayers.narrow' } };
+      const feats = (q.bbox == null) ? all.slice() : R.narrow(all, asPair(q.bbox));
+      if (!Array.isArray(feats)) return { ok: false, why: 'layer-load-failed', detail: { id: key, at: 'narrow' } };
+      return { ok: true, features: feats, loaded: true };
     }
 
     function builtInFetch(key, q) {
@@ -466,10 +509,42 @@ export function makeGisLayers() {
          layer below has a supplier contract at all. A supplier that cannot execute them refuses BY
          NAME down there (`where-not-supported` / `cursor-not-supported`), so nothing arrives here
          looking like a filtered answer that is not one. */
-      const got = speak(SRC().features(id, {
+      const got = speak(SRC().features(id, acquireReq(o)));
+      return registerFeatures(id, o, got);
+    }
+
+    /* ⚠ ONE REQUEST SHAPE FOR BOTH DOORS. The synchronous door and the asynchronous one below differ
+       in whether they wait; everything they SAY is the same, and two spellings of it would drift. */
+    function acquireReq(o) {
+      return {
         bbox: (o.bounds == null ? null : o.bounds), limit: o.limit, fields: o.fields, time: o.time,
         where: (o.where == null ? null : o.where), cursor: (o.cursor === undefined ? null : o.cursor),
-      }));
+      };
+    }
+
+    /* ══ ⚠⚠⚠ (#R763) 非同期の扉には、呼び手が 1 つも無かった ══════════════════════════════════════
+       js/gis-sources.js has had acquire() — the door that waits — since #R752, and MEASURED: nothing
+       in js/ called it, ever. The only supplier the app builds declares `sync:true`, so the
+       asynchronous half of the contract was complete wiring with nothing energised
+       ([[intmap-wiring-complete-is-not-wiring-live]]). That mattered the moment a supplier had to
+       FETCH rather than read what was already drawn — which is exactly what 「表示していないレイヤー
+       から取得する」 requires — because features() refuses such a supplier by name
+       (`supplier-is-async`) rather than calling it and abandoning the promise.
+       ⚠ toDataset IS NOT MADE ASYNC. It is a shipped synchronous contract called from a click handler
+       without an await (js/gis-panel.js), and changing it for symmetry would break the caller that
+       works. This is the second door, and js/gis-atlas.js — which already awaits toRaster — takes it.
+       ⚠ AND IT IS NOT A COPY: both doors hand the same request to js/gis-sources.js and the same
+       answer to the same registration. */
+    async function acquireDataset(id, opts) {
+      const o = opts || {};
+      const got = speak(await SRC().acquire(id, acquireReq(o)));
+      /* acquire() dispatches on what the source IS, so a caller that asked for features and reached a
+         field gets told which door it wanted rather than a grid where it expected rows. */
+      if (got && got.ok && got.kind === 'grid') return { ok: false, why: 'layer-is-a-field', detail: { id: String(id), use: 'toRaster' } };
+      return registerFeatures(id, o, got);
+    }
+
+    function registerFeatures(id, o, got) {
       if (!got.ok) return got;
       const r = { ok: true, features: got.features, bounds: (o.bounds == null ? null : got.coverage.requested.bbox), coverage: got.coverage };
       const D = DATA();
@@ -544,9 +619,17 @@ export function makeGisLayers() {
          (js/gis-raster.js fromSamplerAsync does the walk, yielding by elapsed time), and what comes
          back carries the coverage. ⚠ IT ALSO DOES NOT ASSUME 「off ⇒ no values」 any more: it probes,
          and refuses only when the field really does not answer. */
+      /* ⚠ (#R763) THE CALLER'S BAND DECLARATION, WITH THE LAYER'S LABEL ONLY WHERE IT SAID NOTHING.
+         `unit` stays its own field because it was already one (a caller that learnt it is not
+         wrong) and it wins over the band object's, because it is the more specific statement. */
+      const bandIn = (o.band && typeof o.band === 'object') ? o.band : {};
       const got = speak(await SRC().region(key, (o.bounds == null ? null : o.bounds), {
         width: o.width, height: o.height,
-        band: { name: layerLabel(key) || key, unit: (o.unit == null ? null : String(o.unit)) },
+        time: (o.time == null ? null : o.time),
+        band: Object.assign({}, bandIn, {
+          name: (bandIn.name != null) ? bandIn.name : (layerLabel(key) || key),
+          unit: (o.unit != null) ? String(o.unit) : (bandIn.unit == null ? null : bandIn.unit),
+        }),
         /* (#R752) a field whose supplier can answer for a whole window at once answers this call in
            one go rather than width×height times; `where` reaches the ones that can narrow it. */
         where: (o.where == null ? null : o.where),
@@ -597,15 +680,27 @@ export function makeGisLayers() {
        which this project has already shipped once, in production, over `map.highlight`.
        ⚠ WHAT IS NOT IN IT: `signal` and `onProgress` are the caller's own plumbing, not a request;
        `id` and `title` name the record rather than choosing the data. A planner states neither. */
+    /* ⚠⚠⚠ (#R763) `time` AND `band` WERE IMPLEMENTED BELOW AND UNSAYABLE FROM HERE. js/gis-sources.js
+       region() has taken both since #R752 — it puts `time` into the coverage it answers with
+       (`requestedTime`/`timeEstablished`) and hands `band` to a supplier that can answer for a whole
+       window — and acquire() passes both through. But this list is what js/gis-atlas.js validates a
+       planner's request against, and a field that is not in it is refused BY NAME. So
+       「2020 年と 2025 年のこの範囲を取って同じ格子に合わせる」 could not be stated at all: the planner
+       had to move the map's clock and read whatever was on screen, which is the camera dependency
+       this whole layer exists to remove. ⚠ AND toRaster DID NOT FORWARD THEM EITHER — the capability
+       was reachable from nowhere, which is [[intmap-prompt-that-hid-the-tools-in-hand]] with the
+       vocabulary instead of the tools. */
     const ACQUIRE = {
       vector: ['bounds', 'where', 'fields', 'limit', 'cursor', 'time'],
-      raster: ['bounds', 'width', 'height', 'where', 'unit'],
+      raster: ['bounds', 'width', 'height', 'where', 'unit', 'time', 'band'],
     };
     function acquireFields(kind) { const k = String(kind == null ? 'vector' : kind); return (ACQUIRE[k] || []).slice(); }
 
     /* (#R756) js/gis-sources.js asks this when it is looking for a supplier and has none: see the
        section above for why the answer is built from the registration rather than kept in a list. */
-    const API = { sources, read, toDataset, toRaster, canSample, supplierFor, acquireFields };
+    /* (#R763) acquireDataset is the door that waits — see its note above for why toDataset is not
+       simply made async, and why the planner takes this one. */
+    const API = { sources, read, toDataset, acquireDataset, toRaster, canSample, supplierFor, acquireFields };
     try { window.IntMapGisLayers = API; } catch (_) { }
     return API;
   })();

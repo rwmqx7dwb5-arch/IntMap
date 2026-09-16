@@ -1097,8 +1097,16 @@ export function makeGisOps() {
          only way the reader can see that is to be told how many rows found a partner — with a sample
          of the keys that did not, so the difference (a leading zero, a prefecture prefix) is visible
          rather than inferred. `rightKeys` says how big the lookup actually was. */
+      /* ⚠⚠⚠ (#R763) A RENAMED COLUMN IS THE SAME QUANTITY, AND THE STATEMENT ABOUT IT HAS TO FOLLOW.
+         fieldStatements below keys the inputs' units BY COLUMN NAME, and this op is the one place in
+         the app that changes a column's name: `mass` with 「kg」 on it arrives as `joined_mass` with
+         nothing on it. The reader cannot put it back either — a derived record refuses to be declared
+         on at all (`edit-would-contradict-recipe`) — so the unit was gone for good after one join.
+         ⚠ THE COLLISION CHECK ALREADY KNEW: it tests `prefix + n` eleven lines up. Prefixing was
+         understood at one end of this function and not at the other. */
+      const renamed = prefix ? wanted.reduce((m, n) => { m[prefix + n] = { from: right.id, name: n }; return m; }, {}) : null;
       return {
-        ok: true, features: out,
+        ok: true, features: out, renamed: renamed,
         stats: { matched: matched, unmatched: unmatched, noKey: noKey, rightKeys: table.size, columns: wanted.length, unmatchedSample: missSample },
       };
     }
@@ -1873,7 +1881,10 @@ export function makeGisOps() {
         onProgress: (ctx && ctx.onProgress) || null,
       });
       if (!r || !r.ok) return r || fail('resample-failed');
-      return { ok: true, raster: r.grid, stats: r.report };
+      /* ⚠ (#R763) b LENT ITS LATTICE AND NOTHING ELSE. Said here because this is where it was decided
+         — `target` above is built out of b's grid, and every value in the answer came from a. Without
+         this the record claims to be about a span of time that no pixel in it is from. */
+      return { ok: true, raster: r.grid, stats: r.report, shapeOnly: [1] };
     }
 
     /* ── rasterCalc: one expression kernel, asked about a pixel instead of a row (#R752) ───────── */
@@ -2557,14 +2568,34 @@ export function makeGisOps() {
        and a planner reading it is told the question is open instead of being told an answer. */
     const COVERAGE_ORDER = { all: 0, sample: 1, partial: 2 };
 
-    function inheritCoverage(ds) {
+    /* ══ ⚠⚠⚠ (#R763) 継承は入力についてしか語らず、演算自身の欠落を落としていた ═══════════════════
+       #R759 made an output carry what its INPUTS said. What it still could not say is what THIS RUN
+       lost. withGeoStats counts every attempt that failed (`geometryFailed`) and returns it in
+       `stats`, and `stats` is read by js/gis-panel.js and js/gis-atlas.js FOR THAT TURN and written
+       nowhere — so:
+         入力は全部 all  →  buffer で 1,000 行のうち 120 行が計算できない  →  残りが登録される
+                         →  その記録の coverage は `all` のまま
+       and every count computed from it afterwards is stated to the reader with no caveat. The lineage
+       does not help: the loss happened HERE, not upstream, so walking back finds nothing
+       ([[intmap-records-with-no-reader]] — the number existed and had no reader).
+       ⚠ IT IS A SEPARATE FACT FROM THE ACQUISITION, AND STAYS SEPARATE. 「求めた範囲のうちどこまで
+       取れたか」 and 「取れたもののうちどこまで計算できたか」 are two different questions with two
+       different fixes, so `computed` sits beside `inputs` rather than overwriting it. What they share
+       is the summary word: an answer that lost rows is not complete, whatever its inputs were. */
+    function inheritCoverage(ds, stats, opId) {
+      const lost = (stats && typeof stats.geometryFailed === 'number' && stats.geometryFailed > 0)
+        ? { failed: stats.geometryFailed, why: stats.geometryWhy || null }
+        : null;
       const stated = [], silent = [];
       for (const d of ds) {
         const c = d && d.provenance && d.provenance.coverage;
         if (c && c.completeness) stated.push({ id: d.id, coverage: c });
         else if (d) silent.push(d.id);
       }
-      if (!stated.length) return null;
+      /* ⚠ A RUN THAT LOST ROWS HAS SOMETHING TO SAY EVEN WHEN EVERY INPUT WAS SILENT. Returning
+         null here on that ground was the second half of the same defect: an imported file states no
+         coverage, so a buffer over it that dropped 120 rows produced a record saying nothing at all. */
+      if (!stated.length && !lost) return null;
       let worst = stated[0];
       for (const s of stated) {
         const a = COVERAGE_ORDER[String(s.coverage.completeness)];
@@ -2583,10 +2614,20 @@ export function makeGisOps() {
       };
       if (silent.length) out.undeclaredInputs = silent.slice();
       /* `all` only survives when every input spoke; see the header. */
-      if (!silent.length || COVERAGE_ORDER[String(worst.coverage.completeness)] > 0) {
+      if (stated.length && (!silent.length || COVERAGE_ORDER[String(worst.coverage.completeness)] > 0)) {
         out.completeness = worst.coverage.completeness;
         out.reason = worst.coverage.reason || null;
         out.from = worst.id;
+      }
+      /* ⚠ THE RUN'S OWN LOSS IS THE LAST WORD, AND IT ONLY EVER MAKES THE ANSWER LESS COMPLETE.
+         Written after the inputs' verdict because it cannot be outvoted by it: an answer computed
+         out of complete inputs, which could not compute part of itself, is not complete. `from`
+         names this op rather than an input id, so a reader is told WHERE the rows went. */
+      if (lost) {
+        out.computed = { failed: lost.failed, why: lost.why };
+        out.completeness = 'partial';
+        out.reason = 'op-rows-not-computed';
+        out.from = opId || null;
       }
       return out;
     }
@@ -2606,8 +2647,24 @@ export function makeGisOps() {
        ⚠ AND AN UNKNOWN EPOCH IS NOT A SPAN. If either grid never said when it is, the range of the
        result is not something anybody stated, so no declaration is made and the inputs' own times are
        recorded in the recipe instead — 「述べられていない」 stays 「述べられていない」. */
-    function rasterOutTime(ds, R) {
-      const grids = ds.filter((d) => d && String(d.kind || 'vector') === 'raster');
+    /* ══ ⚠⚠⚠ (#R763) 規則は正しく書かれていて、実装は代理を訊いていた ═══════════════════════════
+       The comment above states the rule exactly: 「the ones whose SAMPLES entered the output」. The
+       code below asked a DIFFERENT question — 「それは格子か」 — and the two agree for rasterMask
+       (whose second input is a polygon, so it is not a grid) which is the case the comment reasons
+       about. They do not agree for `resample`. runResample reads VALUES from a and takes nothing from
+       b but its lattice (west/north/pixel/width/height); b contributes not one sample. Yet its DECL is
+       `kinds:['raster','raster']`, so b was a grid, so b voted:
+         · 2020 年の a を 2025 年の b の格子に合わせる  →  the record said 2020–2025
+         · b が時点を述べていない                      →  a's own date was erased to null
+       Both are the defect #R759 fixed for rasterDiff, reappearing one op over, under a comment that
+       had already ruled it out ([[intmap-one-predicate-three-dimensions]]).
+       ⇒ THE RUNNER SAYS WHICH INPUT IT ONLY BORROWED A SHAPE FROM. It is the only thing that knows —
+       it is the code that chose to read `bDs.grid` and nothing else — and saying it is a statement
+       about THIS RUN, not a table of ops maintained beside them. An op that says nothing is unchanged:
+       every grid it was given contributed, which is true of every other runner in RUN. */
+    function rasterOutTime(ds, R, shapeOnly) {
+      const skip = Array.isArray(shapeOnly) ? shapeOnly : [];
+      const grids = ds.filter((d, i) => d && String(d.kind || 'vector') === 'raster' && skip.indexOf(i) < 0);
       if (!grids.length) return { time: null, stated: [] };
       const stated = grids.map((d) => ({ id: d.id, time: d.time || null }));
       if (grids.length === 1) return { time: grids[0].time || null, stated: stated };
@@ -2645,13 +2702,34 @@ export function makeGisOps() {
        ⚠ ONLY THE UNIT, AND ONLY BY NAME. A column that kept its name kept its quantity — the mean and
        the sum of metres are metres — and a column an op INVENTED has a name nothing stated anything
        about, so it inherits nothing. The measured `type` is always the output's own. */
-    function fieldStatements(ds) {
+    function fieldStatements(ds, renamed) {
       const out = {};
       for (const d of ds) {
         for (const f of (d && d.fields) || []) {
           if (!f || !f.name || f.unit == null) continue;
           if (Object.prototype.hasOwnProperty.call(out, f.name)) continue;
           out[f.name] = { unit: String(f.unit), unitStated: f.unitStated || null, unitFrom: d.id };
+        }
+      }
+      /* ⚠ (#R763) THE OUTPUT'S NAME FOR A COLUMN THE RUN RENAMED. `renamed` comes from the runner
+         that did the renaming (js/gis-ops.js runJoin), because it is the only thing that knows which
+         output column is which input column — the names alone cannot say, and a prefix parsed back
+         off a string here would be this file guessing at another op's parameter.
+         ⚠ THE OLD NAME IS NOT KEPT ALONGSIDE: the output has no such column, and a statement about a
+         column that is not there is the 「列を発明する」 shape the test above this measures. */
+      if (renamed && typeof renamed === 'object') {
+        for (const to of Object.keys(renamed)) {
+          const r = renamed[to];
+          if (!r || !r.name) continue;
+          const src = out[r.name];
+          if (!src) continue;
+          /* ⚠ THE OLD NAME IS NOT REMOVED. A join whose LEFT input also has a column called `mass`
+             keeps that column, under that name, with its own unit — the collision check only refuses
+             a clash on the PREFIXED name. Dropping the entry here would strip the unit off a column
+             that is still in the answer. js/gis-datasets.js applies statements by looking up the
+             output's own column names, so an entry for a column the output does not have is never
+             read, and inventing one is what ⑥ of tests/r759 measures. */
+          if (!Object.prototype.hasOwnProperty.call(out, to)) out[to] = { unit: src.unit, unitStated: src.unitStated, unitFrom: src.unitFrom, unitRenamedFrom: r.name };
         }
       }
       return Object.keys(out).length ? out : null;
@@ -2806,13 +2884,13 @@ export function makeGisOps() {
       const prov = { kind: 'op', op: decl.id, inputs: inputs, params: recorded };
       /* (#R759) 取得の陳述は、演算をまたいでも落ちない。See inheritCoverage — null when no input ever
          said anything, which is the state every record made from an imported file is in. */
-      const cov = inheritCoverage(ds);
+      const cov = inheritCoverage(ds, res.stats, decl.id);
       if (cov) prov.coverage = cov;
-      const grid = rasterOutTime(ds, R);
+      const grid = rasterOutTime(ds, R, res.shapeOnly);
       /* The inputs' own epochs, recorded whenever more than one grid contributed samples — including
          (especially) when they could not be combined into a span. */
       if (grid.stated.length > 1) prov.inputTimes = grid.stated;
-      const statements = fieldStatements(ds);
+      const statements = fieldStatements(ds, res.renamed);
       let rec;
       try {
         if (res.raster) {
@@ -2879,7 +2957,7 @@ export function makeGisOps() {
        project saved last week reopens with different pixels in it, which is precisely the fact this
        version exists to announce. (The ctx handover and the surface declarations do not change an
        answer; the rasterize rule does, and one changed answer is enough.) */
-    const KERNEL_VERSION = 'ops-3';
+    const KERNEL_VERSION = 'ops-4';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,

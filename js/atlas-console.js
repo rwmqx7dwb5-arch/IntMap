@@ -1921,7 +1921,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(px==null&&a.lng!=null&&isFinite(+a.lng)){ px=+a.lng; py=+a.lat; }
           if(px==null&&_herePoint&&isFinite(_herePoint.lng)){ px=_herePoint.lng; py=_herePoint.lat; pname=_herePoint.name||''; }
           if(px==null){ const c3=GE().camera.getCenter(); px=c3.lng; py=c3.lat; pname=L('map center','地図中心','Kartenmitte','центр карты','centro del mapa'); }
-          const vals=await LY.sampleAt(px,py,ids);
+          const vals=(await LY.sampleAt(px,py,ids)).filter(v=>v&&v.value!=null);   /* (#R763) a row that was asked and could not answer carries `failed` and no value — 「訊けなかった」 is not a reading */
           const featLines=[];
           (ids||LY.active()).forEach(id=>{ try{ const fs=LY.featuresIn(id,null); if(fs&&fs.length){ const nm2=(LY.state(id)||{}).label||id;
             const names=fs.slice(0,8).map(f=>{ const p2=f.properties||{}; const nm3=String(p2.name||((p2.mag!=null&&p2.place)?p2.place:'')||p2.title||p2.NAME||p2.callsign||p2.ident||p2.place||'').slice(0,40); return (p2.mag!=null&&nm3)?('M'+(+p2.mag).toFixed(1)+' '+nm3).slice(0,46):nm3; }).filter(Boolean);   /* (#R120) aircraft have a callsign, not a name; (#R121) quakes = M{mag} + place (their `title` already repeats the magnitude) */
@@ -3348,7 +3348,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(isOffice&&codes.length) jobs.push(_leaderData(codes).then(v=>{ if(v) got.leaders=v; }).catch(()=>{}));   /* (#R74) live incumbents */
           if(wantD('quakes')!==false) jobs.push(_quakeData(ctx).then(v=>{ if(v) got.quakes=v; else missing.push(L('earthquakes','地震','Erdbeben','землетрясения','sismos')); }));
           /* (#R119) the DISPLAYED layers' live values at the anchor point become first-class evidence */
-          if(pt&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(pt.lng,pt.lat).then(v=>{ if(v&&v.length) got.layers=v.map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
+          if(pt&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(pt.lng,pt.lat).then(v=>{ if(v&&v.length) got.layers=v.filter(x=>x&&x.value!=null).map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
           /* (#R119) scope:"drawn-area" — the old standalone area-summary is absorbed here: news inside the user's
              drawn polygon / circle(s) + layer values at its centroid feed the SAME analyze pipeline. */
           try{ const scope=String(a.scope||'').toLowerCase();
@@ -3359,7 +3359,7 @@ window.IntMapModules.atlasConsole=function(HOST){
               if(inside){ const rows=[];
                 try{ (typeof HOST.globalData!=='undefined'?(HOST.globalData||[]):[]).forEach(it=>{ const lc=it&&it.analysis&&it.analysis.loc; if(lc&&isFinite(lc[0])&&inside(+lc[0],+lc[1])&&rows.length<24) rows.push('- '+String(it.title||'').slice(0,120)+(it.pubDate?(' ('+String(it.pubDate).slice(0,16)+')'):'')); }); }catch(_){}
                 got.areaNews=(rows.length?rows.join('\n'):L('(no loaded news points inside the drawn area)','（描画範囲内に読み込み済みニュース地点なし）','(keine geladenen News im Gebiet)','(нет новостей в области)','(sin noticias en el área)'));
-                if(ctr&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(ctr.lng,ctr.lat).then(v=>{ if(v&&v.length) got.layersArea=v.map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
+                if(ctr&&window.IntMapLayers){ jobs.push(window.IntMapLayers.sampleAt(ctr.lng,ctr.lat).then(v=>{ if(v&&v.length) got.layersArea=v.filter(x=>x&&x.value!=null).map(x=>x.label+': '+x.value).join('\n'); }).catch(()=>{})); }
                 try{ if(window.IntMapPopArea&&typeof HOST.measurePoints!=='undefined'&&HOST.measurePoints&&HOST.measurePoints.length>=3){ jobs.push(window.IntMapPopArea.estimate({type:'Polygon',coordinates:[[...HOST.measurePoints,HOST.measurePoints[0]]]}).then(v=>{ if(v) got.areaPop=v.pop.toLocaleString()+' (WorldPop 2020, 100m grid)'; }).catch(()=>{})); } }catch(_){}
               } } }catch(_){}
           if(wantD('stats')!==false){ got.stats=_statsData(codes); if(!got.stats&&(wantD('stats')===true||codes.length)) missing.push(L('country stats','国別統計','Länderstatistik','статистика стран','estadísticas')); }

@@ -123,12 +123,27 @@ export function makeGisSources() {
        a refusal no reader can be given a sentence for — the same argument REASONS above is written
        for. Codes that arrive from BELOW (js/gis-layers.js's read(), js/gis-raster.js's `cancelled`)
        pass through untouched and are not this file's to declare. */
+    /* ⚠ (#R763) WHERE THE 「このレイヤーは答えるか」 PROBE LOOKS. Fractions of the requested window,
+       not coordinates: a window is anywhere on Earth and a fixed point would be a place. The centre
+       is first because it was the only one before this round and is the cheapest hit for a field
+       that answers everywhere; the rest exist because the centre of a window over Japan is ocean,
+       and one arbitrary pixel deciding for the whole request is the shape this project keeps
+       recording — 「1 点で全体を断じる」. Five is not a measurement of anything; it is the smallest
+       set that puts a point in each quadrant as well as the middle, and it costs five calls once. */
+    const PROBE_POINTS = [[0.5, 0.5], [0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]];
+
     const REFUSALS = [
       'bad-param',                 /* a parameter this file cannot use, named */
       'map-unavailable',           /* the kernel it has to ask is not mounted */
       'layer-unknown',             /* nothing registered, drew or supplied this id */
       'layer-not-visible',         /* 「訊けなかった」 — see the header */
       'layer-values-not-numeric',  /* the field answered, but not with numbers */
+      /* ⚠ (#R763) 「取得に失敗した」 — the row was asked and threw, which is neither 「値が無い」 nor
+         「文字列だった」. Those three used to arrive as one code, so a reader was told their data was
+         text when the upstream had actually fallen over. */
+      'layer-sample-failed',       /* the layer was asked and could not answer */
+      'layer-values-all-missing',  /* it answered everywhere, with no value anywhere (a real NoData window) */
+      'band-not-selectable',       /* a band was named to a supplier that has one value per position */
       'where-not-supported',       /* attribute conditions with nobody able to execute them */
       'cursor-not-supported',      /* a page was asked for from a supplier that cannot resume */
       'supplier-is-async',         /* the synchronous door was used on a supplier that awaits */
@@ -191,6 +206,13 @@ export function makeGisSources() {
       'supplier-page-incomplete',     /* it handed over a cursor: it said itself that more remains */
       'continuation-unstated',        /* it said nothing about continuation, so 「これで全部」 is nobody's */
       'declaration-unconfirmed-by-view', /* measured: a `complete` claim this camera cannot distinguish */
+      /* ── (#R763) the one that is not about acquisition at all ──────────────────────────────────
+         Every reason above answers 「求めたもののうち、どこまでが返ったか」. This one answers
+         「返ったもののうち、どこまでが計算できたか」 — js/gis-ops.js counts the rows a run could not
+         compute (`geometryFailed`) and the output record now says so. It lives in THIS list because
+         the vocabulary of 「なぜ all ではないのか」 is one vocabulary; a second list in js/gis-ops.js
+         would be the shape both files spend their headers refusing. */
+      'op-rows-not-computed',         /* the run itself lost rows: computed out of its inputs, not all of them */
     ];
 
     /* ── declarations: the only route to `all` ────────────────────────────────────────────────── */
@@ -424,7 +446,16 @@ export function makeGisSources() {
         if (seen.has(id)) continue;
         const st = stateOf(id);
         if (!st) continue;                       /* state() did not answer: not a readable row */
-        out.push(entry(id, st.label == null ? id : String(st.label), 'grid', null));
+        /* ⚠⚠⚠ (#R763) WHICH KIND A ROW IS WAS DECIDED BY WHETHER IT HAD BEEN DRAWN. The loop above
+           takes its ids from the RENDERER's sources, so a row holding a document nobody has switched
+           on never appeared there and fell through to here as a `grid` — and acquire(), dispatching
+           on that, sent a request for its FEATURES to region(), which refused it for having no width.
+           The row was readable; the classification was a statement about the camera.
+           ⇒ ASK WHAT IT CAN DO. A row with a supplier that hands features over is a features row,
+           drawn or not; sup() builds one out of the registration (js/gis-layers.js supplierFor), so
+           this is the row answering about itself rather than a list kept here. */
+        const rec = sup(id);
+        out.push(entry(id, st.label == null ? id : String(st.label), (rec && rec.fetch) ? 'features' : 'grid', null));
       }
       return out;
     }
@@ -856,24 +887,62 @@ export function makeGisSources() {
          and then asking it a quarter of a million times would be a cost this file chose for it. */
       if (bulk) return fromSupplierRegion(key, bulk, win, box, o, wh.where);
 
+      /* ⚠ (#R763) A BAND THIS ROAD CANNOT SELECT IS REFUSED BY NAME, NOT QUIETLY SERVED AS BAND 0.
+         The registry's contract is one value at one position (js/map-ui.js sampleAt) — there is no
+         second band to choose — so a caller naming one is asking a question this supplier cannot
+         answer, and answering a DIFFERENT question with a complete-looking grid is the shape this
+         layer refuses everywhere else. A supplier that CAN answer per band takes the bulk road above. */
+      const bandAsk = (o.band && typeof o.band === 'object') ? o.band : {};
+      if (bandAsk.index != null && Number(bandAsk.index) !== 0) {
+        return refuse('band-not-selectable', { id: key, band: bandAsk.index, has: 1 });
+      }
+
       const D = DATA();
       const asNum = (D && D.asNumber) ? D.asNumber : ((v) => (isNum(v) ? v : null));
       /* One position, through the registry's own door, with the answer for THIS row picked out of
          what it returns for all of them. */
-      let textSeen = null;
+      let textSeen = null, unitSeen = null;
+      /* ⚠⚠⚠ (#R763) THE NUMBER IS ASKED FOR, AND THE SENTENCE IS ONLY THE FALLBACK. Every numeric
+         layer on this map answered `value` as text with its unit written into it (「12.3°C」), and
+         js/gis-datasets.js asNumber refuses that — correctly, because 「12 km」 is not twelve of
+         anything this file knows. So the read below asked the one question that could not succeed.
+         The registry now carries `number` and `unit` beside the sentence for any row that MEASURED
+         (js/map-ui.js sampleAt), and this reads that first. ⚠ asNumber STAYS as the second road: a
+         row that only composes text may still be composing a bare number, and dropping that would
+         refuse data that is there. ⚠ AND NOTHING IS PARSED OUT OF THE SENTENCE — a unit stripped off
+         a string is a unit nobody stated. */
       async function sampleOne(lng, lat) {
         let got;
-        try { got = await R.sampleAt(lng, lat, [key]); } catch (_) { return null; }
+        /* ⚠ A THROWN REGISTRY IS NOT A HOLE IN THE FIELD. This returned null, which js/gis-raster.js
+           counts as `empty` — so its `failed` counter, which exists precisely to keep 「取得に失敗した」
+           apart from 「そこには値が無い」, was structurally always 0. Re-thrown, it is counted. */
+        try { got = await R.sampleAt(lng, lat, [key]); } catch (e) { throw e; }
         const hit = Array.isArray(got) ? got.find((x) => x && String(x.id) === key) : null;
         if (!hit) return null;
+        /* The row said it was asked and could not answer — a failure, not an absence. */
+        if (hit.failed === true) throw new Error('layer-sample-failed');
+        if (typeof hit.number === 'number' && isNum(hit.number)) {
+          if (unitSeen == null && hit.unit != null && hit.unit !== '') unitSeen = String(hit.unit);
+          return hit.number;
+        }
         const v = asNum(hit.value);
         if (v == null && textSeen == null && hit.value != null && hit.value !== '') textSeen = String(hit.value);
         return v;
       }
 
       if (isOff(key)) {
-        const probe = await sampleOne((win.w + win.e) / 2, (win.s + win.n) / 2);
-        if (!isNum(probe)) return refuse('layer-not-visible', { id: key });
+        /* ⚠ (#R763) ONE PIXEL DECIDING FOR THE WHOLE WINDOW IS A SAMPLE, NOT A TEST OF THE SUPPLIER.
+           The centre of a window over Japan is ocean, and a field with no ocean values answered
+           「このレイヤーは見えていない」 for a request it could have served everywhere else. So the
+           probe walks a few positions and the row is refused only when NONE of them answers — 「訊け
+           なかった」 stays a statement about the supplier rather than about one arbitrary coordinate. */
+        let answered = false, threw = 0;
+        for (const f of PROBE_POINTS) {
+          let p = null;
+          try { p = await sampleOne(win.w + (win.e - win.w) * f[0], win.s + (win.n - win.s) * f[1]); } catch (_) { threw++; continue; }
+          if (isNum(p)) { answered = true; break; }
+        }
+        if (!answered) return refuse(threw === PROBE_POINTS.length ? 'layer-sample-failed' : 'layer-not-visible', { id: key, probes: PROBE_POINTS.length });
       }
 
       const st = stateOf(key);
@@ -894,7 +963,27 @@ export function makeGisSources() {
       /* ⚠ A GRID WITH NO NUMBERS IN IT IS NOT A GRID, and what the layer DID answer with is the
          sentence the reader needs: a field answering 「12 °C」 has values, it just does not have them
          as numbers, and that is a different thing to fix. */
-      if (!baked.filled) return refuse('layer-values-not-numeric', { id: key, sample: (baked.textSeen != null) ? baked.textSeen : textSeen });
+      /* ⚠⚠ (#R763) THE UNIT IS THE LAYER'S OWN STATEMENT, CARRIED — NOT MEASURED AND NOT INVENTED.
+         The caller's declaration wins where it made one (it describes the record it asked for);
+         otherwise the band takes the unit the registration stated alongside its numbers. Without it
+         the grid arrives unitless and js/gis-ops.js fieldStatements has nothing to carry, which is
+         how 「人口 12」 gets reported for a band of people per km². */
+      if (bandSpec.unit == null && unitSeen != null && baked.raster && baked.raster.bands && baked.raster.bands[0]) {
+        baked.raster.bands[0].unit = unitSeen;
+      }
+      /* ⚠⚠⚠ (#R763) THREE ANSWERS THAT USED TO BE ONE CODE. 「文字列だった」, 「全部欠損だった」 and
+         「全部失敗した」 are different things to fix, and the reader was told the first about all
+         three — js/gis-panel.js prints a sentence saying the layer answers with text rather than
+         numbers, which is simply false for a window of open ocean. The counts come from
+         js/gis-raster.js, which has kept them apart all along and had nobody asking.
+         ⚠ A WINDOW OF REAL NoData IS STILL REFUSED (an empty grid is not a grid to compute on) but
+         it is refused as what it is, so a caller widens the window instead of hunting a defect. */
+      if (!baked.filled) {
+        const seen = (baked.textSeen != null) ? baked.textSeen : textSeen;
+        if (seen != null) return refuse('layer-values-not-numeric', { id: key, sample: seen });
+        if (baked.failed > 0) return refuse('layer-sample-failed', { id: key, failed: baked.failed, empty: baked.empty });
+        return refuse('layer-values-all-missing', { id: key, empty: baked.empty });
+      }
 
       const stated = statedTime(key);
       const moment = momentOf(stated);

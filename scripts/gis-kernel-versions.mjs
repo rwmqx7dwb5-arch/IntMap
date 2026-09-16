@@ -73,7 +73,16 @@ export const KERNELS = {
      about it. ⚠ The arithmetic of every op is untouched — the numbers in the cells are the same
      numbers — but what the record SAYS about them is not, and a reader comparing two loads of one
      project is entitled to know which of the two told them. */
-  'js/gis-ops.js': { version: 'ops-3', sha256: '09eee3ee72a6b68754600178c1edb091b3052f025245f09d64fc2167c98bee1f' },
+  /* (#R763) ops-3 -> ops-4: A REPLAYED STEP AGAIN REGISTERS A DIFFERENT RECORD, in three places, and
+     one of them is a corrected number rather than a new statement. `resample` no longer lets the grid
+     it borrowed a LATTICE from vote on the answer's epoch — 2020 年の格子を 2025 年の格子へ合わせた
+     記録は 2020 年であって 2020–2025 ではなく、格子を貸した側が時点を述べていなければ、こちらの日付
+     はもう消えない。A join that PREFIXES its columns carries the unit onto the new name. And a run that
+     could not compute part of itself records that in its own coverage, so a record made out of
+     complete inputs no longer calls itself complete after losing rows. ⚠ The arithmetic in the cells
+     is untouched; what changed is which of two dates a replayed project shows, which is exactly the
+     thing a reader comparing two loads is entitled to be told. */
+  'js/gis-ops.js': { version: 'ops-4', sha256: '3541cd9e9518e5d3caba25e3a2fc1ce8ba4bef58df991cd6588e59d4c7b1d4b1' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
   'js/gis-geometry.js': { version: 'geom-1', sha256: '675be6ca448ed2a47d3f1baf7a755362b4e69e3a10b5427b6bc8c94cfcfba157' },
@@ -92,7 +101,13 @@ export const KERNELS = {
      written fixture over NaN, infinities, declared sentinels and bands that declare none. A saved
      recipe replays to the same grid whether or not this browser has workers, which is exactly the
      condition for leaving the version where it is. */
-  'js/gis-raster.js': { version: 'raster-1', sha256: '5d1e070a28f1476332582c4e42bdb654a7e4bff0cb950dd80c2ad184492a79a8' },
+  /* ⚠ (#R763) raster-1 IS DELIBERATELY NOT RAISED, and this is the distinction the version exists to
+     draw. fromSamplerAsync stopped counting a pixel that THREW as `empty` as well as `failed`, so the
+     two counters are disjoint and a caller can tell 「答えたが値が無かった」 from 「訊けなかった」
+     (js/gis-sources.js region() splits its refusal on exactly that). Not one cell's value moves: the
+     grid a saved recipe replays to is byte-for-byte the grid it replayed to yesterday. A changed
+     DIAGNOSTIC is not a changed answer. */
+  'js/gis-raster.js': { version: 'raster-1', sha256: 'dccd141423c379cdbcb91ff1d64eb08c9e92ce0e2c0cd9d4da3a6e6cad77a52e' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
   'js/gis-warp.js': { version: 'warp-1', sha256: '4c7eef1f06a84a9b691cce2559d7de37ba8fe5577ee2f58864b2e19ca50e78f2' },

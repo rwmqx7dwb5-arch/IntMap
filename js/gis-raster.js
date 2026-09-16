@@ -1825,11 +1825,16 @@ export function makeGisRaster() {
         const base = row * width;
         for (let col = 0; col < width; col++) {
           if (sig && sig.aborted) return Object.assign(cancelled(done, total), { detail: { done: done, total: total, rows: row, of: height } });
-          let val;
-          try { val = await o.sample(colCentreLng(raster, col), lat); } catch (err) { val = null; failed++; }
+          let val, threw = false;
+          try { val = await o.sample(colCentreLng(raster, col), lat); } catch (err) { val = null; failed++; threw = true; }
           if (isNum(val)) { data[base + col] = val; filled++; }
           else {
-            data[base + col] = NaN; empty++;
+            data[base + col] = NaN;
+            /* ⚠ (#R763) `failed` AND `empty` ARE DISJOINT. A pixel that threw used to be counted in
+               both, so 「答えたが値が無かった画素」 could not be read off the pair at all — and a
+               caller deciding whether a window is real NoData or a broken upstream needs exactly
+               that difference (js/gis-sources.js region() splits its refusal on it). */
+            if (!threw) empty++;
             if (textSeen == null && val != null && val !== '') textSeen = String(val);
           }
           done++;

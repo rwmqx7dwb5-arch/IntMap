@@ -1614,7 +1614,23 @@ Atlas 側にはもう 1 つ入口がある——**`news.category`**（`js/atlas-
 ### 7.3 レイヤー・データ契約 `window.IntMapLayers`
 
 - API ＝ `register` / `state` / **`sampleAt(lng,lat)`** / `featuresIn(bounds)` /
-  **`featuresInSource(srcId, bounds)`** / `legend` / `time` / `source`。
+  **`featuresInSource(srcId, bounds)`** / **`loaderOf(id)`** / **`narrow(features, bounds)`** /
+  `legend` / `time` / `source`。
+- ⚠⚠⚠ **登録は「読者に見せる文」と「その文を作った数量」の両方を渡す。** 数値の場から答える行は
+  `sampleAt` ではなく **`measure(lng,lat)`** を実装し、`{value, unit}`（数量）または
+  `{code, label}`（分類）を返す。`sampleAt()` はそこから表示用の文を作り、行に `number` / `unit` /
+  `code` を添える。**単位を文字列へ畳んだ値は解析の入口を通れない**——`js/gis-datasets.js` の
+  `asNumber` はセル全体が数でなければ数と認めないので、`「12.3°C」` は格子にならない。
+  ⚠ **数量は上流が公表した単位で持つ。** 読者が選んだ表示単位（°F・km/h）で持つと、同じ風について
+  同じ問いが違う答えを返す。変換は表示だけが行う。
+  ⚠ **文しか作れない行は `measure` を持たない**（火災画素数・コロプレスの複数値）。どの行が数量を
+  述べるかは登録が決めるのであって、一覧はどこにも無い。
+- ⚠⚠ **`load()` を述べた行は、描かれていなくても読める。** `featuresIn` はレンダラが保持している
+  ものを返すので、**一度も点けていない行は何も渡せなかった**——それが「画面に依存しない取得」に
+  残っていた最後の依存だった。`load` は同梱文書を**描かずに**渡す扉で、`loaderOf` がそれを
+  `js/gis-layers.js` に渡し、そこが**非同期の供給元**を組み立てる。
+  ⚠ **範囲の判定は `narrow` 1 つ。** loader 経路が自前の判定を持つと、同じ依頼が「いま画面に出て
+  いるかどうか」で違う行を返す。
   ⚠ **箱の中の地物を拾う判定は幾何の種類に依らない。** 以前は `geometry.type==='Point'` で絞って
   いたので、**線と面は必ず 0 件**だった。`featuresInSource` はレイヤー行を持たないレンダラの source
   にも同じ窓を開ける（`js/gis-layers.js` が地図のレイヤーをデータセットにするときに使う）。
@@ -1887,7 +1903,7 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
 | `js/gis-sources.js` | `window.IntMapGisSources` | **供給元**——`list` / `features` / `region` / `acquire` / `declare` / `supply` / `supplierOf`。取得はすべて `coverage`（`all` / `partial` / `sample` と理由・求めた範囲・答えた範囲・時点・解像度）を伴い、**`all` は供給元の宣言からしか届かない**。⚠ **供給元は自分で答えられる**（`supply(id,{fetch,region,…})` が範囲・時刻・属性条件・列・ページ送りを直接受ける）。実装が無ければ従来どおりレンダラへ委譲。⚠ **申告は無検証で信じない**——述べた件数・範囲を実際に返したものと突き合わせる |
 | `js/gis-index.js` | `window.IntMapGisIndex` | **空間索引**（一様格子）——`build` / `query` / `queryEach` / `stats`。セルの大きさをデータから導き、**偽陰性を出さない** |
 | `js/gis-expr.js` | `window.IntMapGisExpr` | **式の解釈器**（計算列の言語）——`parse` / `evaluate` / `compile` / `functions` / `refusals` |
-| `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()` / `toRaster()`（数値レイヤーを格子に焼く） / `supplierFor()`。⚠ **供給元になれるかはその行自身の宣言が決める**——全件を持ち視野に縛られないと述べた行だけが `where` と `cursor` を答えられる。一覧はどこにも無い。⚠ **取得条件の語彙 `acquireFields()` の正本もここ**（パネルと Atlas が同じ 1 か所に訊く） |
+| `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()`（同期） / **`acquireDataset()`（非同期）** / `toRaster()`（数値レイヤーを格子に焼く） / `supplierFor()`。⚠ **待つほうの扉が要るのは、描かれていないレイヤーが取得を伴うから**——`toDataset()` は同期の契約のまま（パネルがクリックハンドラから await 無しで呼ぶ）で、planner は `acquireDataset()` を使う。⚠ **`load()` を述べた行には非同期の供給元が組み立てられる**（表示していなくても読める）。⚠ **供給元になれるかはその行自身の宣言が決める**——全件を持ち視野に縛られないと述べた行だけが `where` と `cursor` を答えられる。一覧はどこにも無い。⚠ **取得条件の語彙 `acquireFields()` の正本もここ**（パネルと Atlas が同じ 1 か所に訊く）。ラスタの語彙は `bounds` / `width` / `height` / `where` / `unit` / **`time`** / **`band`** |
 | `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `resample` / `rasterCalc` / `mosaic` / `rasterize` / `polygonize` / `measure` / `validate` / `repair` / `timeWindow` / `join` / `compute` / `aggregate`）の宣言と実行。⚠ **引数の語彙は、それを所有するカーネルに訊く**（`valuesOf`）——再標本化の方式・重なりの規則・格子合わせの規則・**面の名指し方**をここに写さない。⚠ **どの op も、自分が計算した面を `surface` で述べる**（`sphere` / `degree-plane` / `degree-grid` / `stated-plane` の閉じた語彙。`surfaces()` が渡す）——球面の面積と展開した度平面の面積は別の数で、宣言が無ければ読み手はその食い違いを見られない。⚠ **長い画素ループの中止は `ctx` で下のカーネルまで渡す**（渡さなければ `js/gis-warp.js` と `js/gis-raster.js` の刻みは到達しないコードになる）。⚠ **出力は入力の意味を引き継ぐ**——`coverage` は述べた入力のうち最も弱いものが残り（沈黙は `all` ではないので、述べていない入力があれば完全性を書かない）、格子の時点は**標本が出力に入った入力**が全部投票し、名前の残った列の単位は著者ごと運ばれる |
 | `js/gis-atlas.js` | `window.IntMapGis.atlas` | **Atlas がこの層に処理を依頼する扉**。目録は `ops()` そのもの（写しを持たない）。入力は登録済み id・題名・`layer:<id>`、出力は**次の処理の入力になる id**。能力は `data.gis`（計算）と `map.drawDataset`（描画）の 2 つで、op ごとには 1 つも無い。⚠ **取得条件（`acquire`）が要求そのもので、カメラではない**——語彙は `js/gis-layers.js` の `acquireFields()` に訊き、知らない欄は名前を挙げて断る。`op` を述べない依頼は**取得だけ**で、答えは取れたものの行・`coverage`・続きの `next` |
 | `js/gis-project.js` | `window.IntMapGisProject` | IndexedDB への保存・復元・**引数を変えた再計算** |
