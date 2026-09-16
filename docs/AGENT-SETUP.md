@@ -15,7 +15,6 @@
 | 恒久指示（§0〜§12） | **`AGENTS.md`** | `CLAUDE.md` の `@AGENTS.md` import | **そのまま自動**（設定も信頼も要らない） |
 | 実行戦略 | **`.agents/rules/execution-strategy.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
 | 場当たりのハードコーディングの禁止 | **`.agents/rules/no-ad-hoc-hardcoding.md`** | `CLAUDE.md` の `@` import | `AGENTS.md` §1 が「自分で開け」と要求 |
-| GPT 受け渡し規約 | **`.agents/rules/gpt-handoff.md`** | 同上 | 同上 |
 | ラウンドの手順 | **`.agents/skills/intmap-round/`** | `.claude/skills/`（生成）→ `/intmap-round` | **そのまま自動**（`$intmap-round`） |
 | 専用 subagent 5 役 | **`.agents/roles/*.md`** | `.claude/agents/*.md`（生成） | `.codex/agents/*.toml`（生成・**要 trust**） |
 | 製品固有の作法 | `CLAUDE.md` §A / `.codex/config.toml` の `developer_instructions` | 自動 | **要 trust** |
@@ -200,7 +199,7 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 | 原本を信頼する初回の 1 回 | **もう手作業ではない** | `~/.codex/config.toml` に `[projects.'…\IntMap'] trust_level = "trusted"` として実在し、`scripts/worktree.mjs` が作業場に同じ形を書いている。**機械が書ける形**なので、この行はかつての状態を写したままだった |
 | モデル / reasoning effort | **残る（アプリが所有している鍵だった）** | 費用の判断は利用者のものなので、勝手には上げない。#R704 で利用者が `high` を選んだ。⚠⚠ **`~/.codex/config.toml` に書いても持続しない**——`high` を書いた数分後に、**起動中の Codex が `low` を書き戻した**（実測 #R704）。この鍵はアプリのモデル選択 UI の写しなので、**UI で選ぶ**のが唯一の与え方で、`codex-setup.mjs` は**書かずに食い違いを報告する**（持続しない修正は、報告が嘘になるぶん修正が無いことより悪い）。⚠ **仕事ごとに自動で変える手段も無い**——`[projects."…"]` が持てるのは `trust_level` 1 つだけ（exe の `struct ProjectConfig with 1 element`）で、絞れる単位は profile のみ |
 | 承認とサンドボックス | **もう手作業ではない** | `AGENTS.md` §5.1 は commit・push・PR・merge・deployment に追加承認を求めないことを要求するが、#R704 実測で `approval_policy` も `sandbox_mode` も**未設定**＝アプリ既定に委ねられていた。`codex-setup.mjs --apply` が `workspace-write` ＋ `network_access = true` ＋ `approval_policy = "on-failure"` を書く |
-| workspace の外へ書くこと | **もう手作業ではない** | メモリの正本・`~/.intmap-handoff`・`%LOCALAPPDATA%\Temp\intmap-worktrees` は**どの workspace にも入っていない**ので、`workspace-write` では書けない。`codex-setup.mjs` が 3 つとも**導出して** `writable_roots` に入れる（手で並べない）。⚠ USB ミラーだけは入れない——ドライブ文字はバックアップ時にラベルで見つけるものなので、今日の文字は明日の誤りになる。そこは `approval_policy` が 1 回訊く側に残す |
+| workspace の外へ書くこと | **もう手作業ではない** | メモリの正本と `%LOCALAPPDATA%\Temp\intmap-worktrees` は**どの workspace にも入っていない**ので、`workspace-write` では書けない。`codex-setup.mjs` が 2 つとも**導出して** `writable_roots` に入れる（手で並べない）。⚠ USB ミラーだけは入れない——ドライブ文字はバックアップ時にラベルで見つけるものなので、今日の文字は明日の誤りになる。そこは `approval_policy` が 1 回訊く側に残す |
 | Codex アプリの "Choose project" | **残る（設定ファイルでは与えられない）** | `~/.codex/config.toml` にも CLI にも「起動時にこのプロジェクトを開く」キーは**見つからなかった**。アプリ所有の state（`~/.codex/.codex-global-state.json` の `selected-project`）でだけ与えられる——**設定面ではないので、リポジトリのスクリプトからは書かない** |
 | Claude Code 側の `@` import の確認 | 残る | 新しいセッションで `/context` を開き、**Memory files** に `CLAUDE.md` と `AGENTS.md` が並ぶことを見る |
 
@@ -224,7 +223,7 @@ npm run setup:codex:apply    # 揃える（変更前を config.toml.r704.bak に
 ```
 
 ⚠ **値の一覧をここに書き写さない。** 機械の正本は `scripts/codex-setup.mjs` の `SETTINGS` 1 か所で、
-そこには値と**なぜその値なのか**が並んでいる。⚠ **パスも書き写さない**——原本・メモリ・handoff・
+そこには値と**なぜその値なのか**が並んでいる。⚠ **パスも書き写さない**——原本・メモリ・
 worktree の場所は、それぞれを所有しているものに訊いて導出する。
 
 ### 蓄積メモリは 1 か所で、両方が読み書きする（#R696）
