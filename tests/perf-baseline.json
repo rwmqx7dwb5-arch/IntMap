@@ -9,8 +9,8 @@
     "cssGzip": 57540
   },
   "async": {
-    "raw": 10897698,
-    "gzip": 3573902,
+    "raw": 10956212,
+    "gzip": 3594220,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24512,
@@ -18,11 +18,11 @@
       "analysis-research": 17766,
       "analysis-timeseries": 8142,
       "analysis-world-events": 68202,
-      "atlas-admin1": 6526,
+      "atlas-admin1": 12554,
       "atlas-answer-view": 2599,
       "atlas-attach": 14280,
       "atlas-chart": 10777,
-      "atlas-console": 1069553,
+      "atlas-console": 1075811,
       "atlas-executor": 46930,
       "atlas-query": 50105,
       "atlas-view-capture": 8558,

@@ -332,7 +332,22 @@ export function makeAtlasToolSurface(deps) {
            `auditFindings` is what IntMap's answer audit NOTICED about an answer that is rendered in
            full — codes, not a verdict. Atlas reads them and decides. */
         status: meta.status || (ok ? 'completed' : 'failed'),
+        /* ⚠⚠⚠ (#R760) WHY IT WAS PARTIAL, NOT ONLY THAT IT WAS. `error` below carries `meta.code`
+           for a FAILURE and nothing carried it for anything else — so a `partial` reached Atlas as
+           the bare word «partial», with no way to tell `not_rendered` (nothing is on the map) from
+           `partially_resolved` (most of it is) or `already_there`. Measured on production
+           2026-09-16: `map.drawLine` five times and `map.choropleth` four, each told only that the
+           last one was «partial», until the turn hit its working limit. The verdict already knows
+           the word; this is the line that was not saying it. */
+        code: meta.code || undefined,
+        /* (#R760) the capability's own statement that this refusal is about the KIND of request */
+        permanentFailure: meta.permanent ? true : undefined,
+        /* ⚠ (#R760) `auditNote` TRAVELS WITH `auditFindings` — they are one fact in two fields, and
+           the note used to ride `unverified` two lines below. That field is #R142's flag for a map
+           that never changed, and three readers treat it as failure, so an answer the audit merely
+           had a remark about ranked BELOW one it had nothing to say about. Two facts, one spelling. */
         auditFindings: (ok && meta.auditFindings && meta.auditFindings.length) ? meta.auditFindings : undefined,
+        auditNote: (ok && meta.auditNote) ? meta.auditNote : undefined,
         produced: meta.produced && meta.produced.length ? meta.produced : undefined,
         rendered: !!(res && res.html),
         unverified: meta.unverified || undefined,

@@ -357,6 +357,19 @@ export function makeAtlasAgent() {
          it is looking at its own refusal, and that a step made only of such repeats counts toward
          `maxRepeatSteps` exactly as a step made only of reused answers does. */
       const failedCalls = Object.create(null);
+      /* ⚠⚠⚠ (#R760) THE THIRD STATUS. #R731 named the repeat of an answered call and #R741 the repeat
+         of a refused one; a call that comes back `partial` with the SAME code was named by neither, and
+         the comment at `doneCalls` above says why it must not be frozen — a partial still owes something.
+         But «still owes something» and «said the same thing again» are different facts, and only the
+         first is a reason to keep going. Measured on production 2026-09-16 (build R758):
+           「Colour every country by population density」  map.choropleth ok → not_rendered ×3, working limit
+           「Measure … Reykjavik to Cape Town and draw the line」  map.drawLine ×5, 430 s, working limit,
+             and the distance the reader asked for never reached the prose.
+         Both turns had ALREADY done the whole job on their first call. Nothing is frozen and nothing is
+         refused here either: the call still runs, and a partial that comes back with a DIFFERENT code
+         (more targets resolved, a different surface reached) resets the run, because that is progress. */
+      const partialCalls = Object.create(null);
+      const permanentFails = Object.create(null);   /* (#R760) refusals the capability declared to be about the KIND of request */
       const results = [];
       let text = '';
       /* ⚠⚠⚠ (#R742) A SENTENCE WRITTEN ON A STEP THAT THEN ISSUED CALLS IS NOT THE ANSWER EITHER.
@@ -614,6 +627,33 @@ export function makeAtlasAgent() {
              change the arguments, which is precisely how one request became two maps in the reply.
              A call that still owes something must be allowed to be made again. */
           if (ckey && rec.ok !== false && rec.status !== 'partial' && rec.status !== 'running' && rec.status !== 'needs_input') doneCalls[ckey] = rec;
+          /* (#R760) the same call, answering the same way, is not progress — whatever status it wears */
+          if (ckey && rec.status === 'partial') {
+            const verdict = String(rec.code || rec.error || '') + '|' + String(rec.status || '');
+            if (partialCalls[ckey] === verdict) {
+              rec.repeatedPartialCallThisTurn = true;
+              rec.note = 'This turn has ALREADY made this exact call and it came back with the same verdict ('
+                + String(rec.code || 'partial') + '). Repeating it unchanged can only produce that verdict again. '
+                + 'Read what the result says is missing and change the call, or tell the reader what you have.';
+            }
+            partialCalls[ckey] = verdict;
+          }
+          /* ⚠⚠⚠ (#R760) A REFUSAL ABOUT THE KIND OF REQUEST IS NOT ABOUT ITS SPELLING. #R741's
+             ledger keys on the exact arguments, so five differently-worded names for a metric IntMap
+             does not hold read as five different requests (measured: 「CO2 emissions per capita」,
+             5 m 30 s, no map and no answer). When the capability DECLARES the refusal permanent, the
+             class — this tool, this reason — is what has already been refused. Nothing is taken: the
+             call still runs, and a capability that declares nothing is unaffected. */
+          if (rec.permanentFailure && rec.ok === false) {
+            const cls = String(call.name || '') + '|' + String(rec.error || '');
+            if (permanentFails[cls]) {
+              rec.repeatedFailedCallThisTurn = true;
+              rec.note = 'This turn has ALREADY been refused this KIND of request, for the reason above — it is not '
+                + 'about how the request was worded, so rewording it cannot help. Use one of the values that reason '
+                + 'names, ask for something else, or tell the reader plainly that IntMap does not hold this.';
+            }
+            permanentFails[cls] = true;
+          }
           /* (#R741) the refusal that has already been given, named as such — see `failedCalls` above */
           if (ckey && rec.ok === false) {
             if (failedCalls[ckey]) {
@@ -642,7 +682,7 @@ export function makeAtlasAgent() {
         }
         /* ⚠ (#R731) THE SAME CALL, MADE AGAIN AFTER ITS OWN ANSWER WAS HANDED BACK, IS NOT PROGRESS.
            ⚠ (#R741) …and neither is the same call made again after its own REFUSAL. */
-        repeatRun = (stepResults.length && stepResults.every((r) => r && (r.reusedFromEarlierCallThisTurn || r.repeatedFailedCallThisTurn))) ? (repeatRun + 1) : 0;
+        repeatRun = (stepResults.length && stepResults.every((r) => r && (r.reusedFromEarlierCallThisTurn || r.repeatedFailedCallThisTurn || r.repeatedPartialCallThisTurn))) ? (repeatRun + 1) : 0;
         if (repeatRun >= lim.maxRepeatSteps) {
           stopped = 'repeated_calls';
           break;

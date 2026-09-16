@@ -323,7 +323,7 @@ test('R419 ⑩: what the answer audit noticed reaches Atlas, on an answer that i
     runAction: async () => ({ ok: true, html: '<div class="atl-lead">…</div>',
       meta: { status: 'completed', produced: ['explanation'],
         auditFindings: ['evidence.primary_unsupported', 'contradiction.superlative_beaten'],
-        unverified: 'The answer is rendered in full, as written. the answer audit noticed these things …' } }),
+        auditNote: 'The answer is rendered in full, as written. the answer audit noticed these things …' } }),
   });
   const tools = surface.baseTools();
   const out = await surface.makeExecute(tools, AGENT)({ name: 'research', arguments: { question: '1940年のリトアニアでは何が起きていた？' } });
@@ -331,7 +331,10 @@ test('R419 ⑩: what the answer audit noticed reaches Atlas, on an answer that i
   assert.equal(out.status, 'completed', 'the answer was not cut down, so it is not reported as anything else');
   assert.deepEqual(out.auditFindings, ['evidence.primary_unsupported', 'contradiction.superlative_beaten'],
     'the codes did not survive to the one deciding what to say');
-  assert.match(String(out.unverified), /rendered in full/, 'the reason did not survive to the one deciding what to say');
+  assert.match(String(out.auditNote), /rendered in full/, 'the reason did not survive to the one deciding what to say');
+  /* (#R760) and it must NOT ride `unverified`, which is #R142's flag for a map that never changed:
+     three readers treat that flag as failure, so an audited answer was ranked below an unaudited one. */
+  assert.equal(out.unverified, undefined, 'a remark about an answer is not a report that nothing happened');
 });
 
 test('R419 ⑩b: an analysis the audit had nothing to say about carries no hedge at all', async () => {
@@ -343,6 +346,7 @@ test('R419 ⑩b: an analysis the audit had nothing to say about carries no hedge
   const out = await surface.makeExecute(tools, AGENT)({ name: 'research', arguments: { question: 'x' } });
   assert.equal(out.status, 'completed');
   assert.equal(out.auditFindings, undefined);
+  assert.equal(out.auditNote, undefined);
   assert.equal(out.unverified, undefined);
 });
 
