@@ -372,7 +372,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get _sfL(){ return _sfL; }, get _splitLineToWindows(){ return _splitLineToWindows; },
     get _splitPolyToWindows(){ return _splitPolyToWindows; }, get _syncToolBtns(){ return _syncToolBtns; },
     get activeDashCategories(){ return activeDashCategories; }, get aiEsc(){ return aiEsc; },
-    get aiFetchUsage(){ return aiFetchUsage; }, get aiReady(){ return aiReady; },
+    get aiFetchUsage(){ return aiFetchUsage; }, get aiReady(){ return aiReady; }, get aiRefreshUsage(){ return aiRefreshUsage; }, get aiUsageSummary(){ return aiUsageSummary; },
     get aiSetBtnBusy(){ return aiSetBtnBusy; }, get aiSyncFeatureButtons(){ return aiSyncFeatureButtons; },
     get applyCountryVisibility(){ return applyCountryVisibility; }, get applyPinMode(){ return applyPinMode; },
     get bearingDeg(){ return bearingDeg; }, get clearMarkers(){ return clearMarkers; },
@@ -1035,14 +1035,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function aiLoginMsg(){ return IM_AI.aiLoginMsg.apply(this,arguments); }
   function aiParseJSON(){ return IM_AI.aiParseJSON.apply(this,arguments); }
   function aiQuotaBlocked(){ return IM_AI.aiQuotaBlocked.apply(this,arguments); }
-  function aiReady(){ return IM_AI.aiReady.apply(this,arguments); }
+  function aiReady(){ return IM_AI.aiReady.apply(this,arguments); } function aiRefreshUsage(){ return IM_AI.aiRefreshUsage.apply(this,arguments); }
   function aiRenderSettings(){ return IM_AI.aiRenderSettings.apply(this,arguments); }
   function aiReport(){ return IM_AI.aiReport.apply(this,arguments); }
   function aiSaveSettings(){ return IM_AI.aiSaveSettings.apply(this,arguments); }
   function aiSetBtnBusy(){ return IM_AI.aiSetBtnBusy.apply(this,arguments); }
   function aiSyncFeatureButtons(){ return IM_AI.aiSyncFeatureButtons.apply(this,arguments); }
   function aiToast(){ return IM_AI.aiToast.apply(this,arguments); }
-  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); }
+  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); } function aiUsageSummary(){ return IM_AI.aiUsageSummary.apply(this,arguments); }   /* (#R753) these two share a line with their neighbour on purpose: the app SHELL is line-budgeted (tests/r168 #8) and a bridge is not code */
   function aiUsesLeft(){ return IM_AI.aiUsesLeft.apply(this,arguments); }
   function aiVisionReady(){ return IM_AI.aiVisionReady.apply(this,arguments); }
   function aiWaitMapIdle(){ return IM_AI.aiWaitMapIdle.apply(this,arguments); }

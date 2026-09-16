@@ -59,6 +59,20 @@ window.IntMapModules.authUi=function(HOST){
     return {ok:true,msg:''};
   }
 
+  /* ══ (#R753) WHICH DOOR THIS SESSION CAME THROUGH ════════════════════════════════════════════
+     Supabase states it on the user record (app_metadata.provider, with `providers` listing every
+     identity linked to the account); it is READ, never inferred from the address — a gmail.com
+     address says nothing about whether the reader typed a password or pressed Google. The account
+     menu needs it because two of its security rows only apply to one of the two doors.
+     ⚠ AND IT IS ONE FUNCTION BECAUSE THE USER OBJECT IS BUILT TWICE. onAuthStateChange builds a
+     provisional one synchronously (it must not call Supabase — #14's deadlock) and
+     refreshCurrentUser builds the enriched one after the profile row arrives. Measured this round:
+     the provisional object had no `provider` field at all, and when the enrichment is slow — or
+     never finishes, which is the state a blocked network leaves — that is the object every panel
+     reads. A field that only one of two constructions sets is a field that is sometimes missing. */
+  function _sessionProvider(session){ try{ const am=(session&&session.user&&session.user.app_metadata)||{};
+    return String(am.provider||(Array.isArray(am.providers)&&am.providers[0])||''); }catch(_){ return ''; } }
+
   /* (#R155) Passkey capability: the SDK method exists AND the browser supports WebAuthn. */
   function _passkeysAvailable(){ try{ return !!(HOST.DB&&HOST.DB.auth&&typeof HOST.DB.auth.signInWithPasskey==='function'&&window.PublicKeyCredential); }catch(_){ return false; } }
 
@@ -76,7 +90,10 @@ window.IntMapModules.authUi=function(HOST){
     box.innerHTML=list.map(pk=>{ const nm=HOST.escapeHtml(pk.friendly_name||pk.friendlyName||pk.name||'Passkey'), id=HOST.escapeHtml(String(pk.id||''));
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--input-bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;"><span style="font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+nm+'</span><button data-pkdel="'+id+'" style="background:transparent;border:none;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;flex:0 0 auto;">'+HOST.escapeHtml(_authL('Remove','削除','Entfernen','Удалить','Quitar'))+'</button></div>'; }).join('');
     box.querySelectorAll('[data-pkdel]').forEach(b=>b.onclick=async()=>{ const id=b.getAttribute('data-pkdel');
-      if(!window.confirm(_authL('Remove this passkey?','このパスキーを削除しますか？','Diesen Passkey entfernen?','Удалить этот паскей?','¿Quitar este passkey?'))) return;
+      /* (#R753) the fifth and last browser dialog this panel used to raise — in the sheet now, like the other four */
+      if(await _acctAsk({ title:_authL('Remove this passkey?','このパスキーを削除しますか？','Diesen Passkey entfernen?','Удалить этот паскей?','¿Quitar este passkey?'),
+        body:_authL('You will not be able to sign in with it on that device any more.','その端末ではこのパスキーでログインできなくなります。','Auf diesem Gerät kannst du dich damit nicht mehr anmelden.','На этом устройстве вход по нему станет невозможен.','Ya no podrás iniciar sesión con él en ese dispositivo.'),
+        danger:true, confirmLabel:_authL('Remove','削除','Entfernen','Удалить','Quitar') })===null) return;
       try{ await HOST.DB.auth.passkey.delete({id}); }catch(_){ try{ await HOST.DB.auth.passkey.delete({passkeyId:id}); }catch(__){} }
       _renderPasskeys();
     });
@@ -254,6 +271,82 @@ window.IntMapModules.authUi=function(HOST){
     }catch(_){}
     m.style.display='flex'; }
 
+  /* ══ (#R753) ASKING INSIDE THE SHEET, NOT THROUGH THE BROWSER ═════════════════════════════════
+     Every destructive or text-taking action in this panel used to call window.confirm() /
+     window.prompt(): five of them. Those are the one piece of UI IntMap cannot style, cannot
+     translate beyond the string it passes, and cannot show a hint or a danger colour in — and on
+     iOS they arrive as "127.0.0.1 says…", naming the origin instead of the app. This is the
+     replacement: one small dialog, the same type scale as the sheet, resolved as a promise.
+     Returns the typed text on confirm ('' when there is no field) and null on cancel, so a caller
+     reads it exactly the way it read prompt()/confirm().
+     ⚠ It is the ONLY asker in this file, on purpose — a second one would be the shape
+     .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids (the same judgement, written twice). */
+  function _acctAsk(o){
+    o=o||{};
+    return new Promise(resolve=>{
+      let d=document.getElementById('acct-ask');
+      if(!d){ d=document.createElement('div'); d.id='acct-ask';
+        d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:5400;padding:20px;';
+        d.innerHTML='<div class="acct-ask-box" role="dialog" aria-modal="true" aria-labelledby="acct-ask-h">'
+          +'<h3 class="acct-ask-h" id="acct-ask-h"></h3>'
+          +'<p class="acct-ask-b" id="acct-ask-b"></p>'
+          +'<input id="acct-ask-in" class="acct-ask-in" hidden>'
+          +'<button class="acct-ask-go" id="acct-ask-go"></button>'
+          +'<button class="acct-ask-no" id="acct-ask-no"></button></div>';
+        document.body.appendChild(d);
+      }
+      const box=d.querySelector('.acct-ask-box'), h=document.getElementById('acct-ask-h'), b=document.getElementById('acct-ask-b'),
+            inp=document.getElementById('acct-ask-in'), go=document.getElementById('acct-ask-go'), no=document.getElementById('acct-ask-no');
+      h.textContent=o.title||''; b.textContent=o.body||''; b.hidden=!o.body;
+      inp.hidden=!o.input; inp.value=''; inp.type=(o.input&&o.input.type)||'text';
+      inp.placeholder=(o.input&&o.input.placeholder)||''; inp.autocomplete=(o.input&&o.input.autocomplete)||'off';
+      go.textContent=o.confirmLabel||_authL('Confirm','確認','Bestätigen','Подтвердить','Confirmar');
+      no.textContent=_authL('Cancel','キャンセル','Abbrechen','Отмена','Cancelar');
+      go.classList.toggle('acct-ask-danger',!!o.danger);
+      /* one live listener set per call — replaced wholesale, never accumulated */
+      const done=(v)=>{ d.style.display='none'; document.removeEventListener('keydown',key,true); resolve(v); };
+      const key=(e)=>{ if(e.key==='Escape'){ e.stopPropagation(); done(null); } else if(e.key==='Enter'&&(o.input?document.activeElement===inp:true)){ done(inp.hidden?'':inp.value); } };
+      go.onclick=()=>done(inp.hidden?'':inp.value);
+      no.onclick=()=>done(null);
+      d.onclick=(e)=>{ if(e.target===d) done(null); };
+      document.addEventListener('keydown',key,true);
+      d.style.display='flex';
+      try{ (o.input?inp:go).focus(); }catch(_){}
+      try{ box.scrollTop=0; }catch(_){}
+    });
+  }
+
+  /* ══ (#R753) THE TWO DAILY AI COUNTERS, WHERE THE READER LOOKS FOR THEM ═══════════════════════
+     「アカウントメニューにもAIの残使用回数を書くように」。They existed only in Settings → AI features,
+     three groups down a different dialog, and the account menu — the panel named after the thing the
+     quota belongs to — said nothing about them.
+     ⚠ THE NUMBERS ARE NOT COMPUTED HERE. js/ai-core.js answers «where do both counters stand» once
+     (aiUsageSummary), and this paints that answer, so this panel and the settings panel cannot
+     disagree about what a use is or what the limit is. And the server row is RE-READ on every open
+     (#R447's rule): a stale mirror would state a wrong number to the reader who opened this panel
+     precisely to find out. Two lanes, because there are two counters on the server —
+     ai_usage (Atlas answers) and ai_gloss_usage (term lookups) — and one of them running out does
+     not touch the other. */
+  function _acctAiRow(label,left,lim){
+    const inf=!isFinite(left);
+    const pct=(!inf&&lim>0)?Math.max(0,Math.min(100,Math.round(((lim-left)/lim)*100))):0;
+    const val=inf?_authL('Unlimited','無制限','Unbegrenzt','Без ограничений','Ilimitado')
+                 :_authL(left+' / '+lim+' left','残り '+left+' / '+lim+' 回',left+' / '+lim+' übrig','осталось '+left+' / '+lim,left+' / '+lim+' restantes');
+    return '<div class="acct-ai-row"><div class="acct-ai-line"><span>'+HOST.escapeHtml(label)+'</span>'
+      +'<b class="'+(!inf&&left<=0?'acct-ai-out':'')+'">'+HOST.escapeHtml(val)+'</b></div>'
+      +'<div class="acct-ai-bar"><i style="width:'+(inf?100:pct)+'%;'+(!inf&&left<=0?'background:#ff453a;':'')+'"></i></div></div>';
+  }
+  function _acctAiPaint(sum){
+    const box=document.getElementById('acct-ai'); if(!box) return;
+    if(!sum){ box.innerHTML='<div class="acct-note">'+HOST.escapeHtml(_authL('Reading today’s usage…','本日の利用状況を確認中…','Heutige Nutzung wird gelesen…','Читаем сегодняшнее использование…','Leyendo el uso de hoy…'))+'</div>'; return; }
+    const atlas=_authL('Atlas answers','Atlas の回答','Atlas-Antworten','Ответы Atlas','Respuestas de Atlas');
+    const gloss=_authL('Term lookups','用語解説','Begriffserklärungen','Разборы терминов','Consultas de términos');
+    box.innerHTML=_acctAiRow(atlas,sum.ai.left,sum.ai.limit)+_acctAiRow(gloss,sum.gloss.left,sum.gloss.limit)
+      +'<div class="acct-note acct-ai-note">'+HOST.escapeHtml(sum.dev
+          ? _authL('Developer account — no daily limit.','開発者アカウント — 1日の上限はありません。','Entwicklerkonto — kein Tageslimit.','Аккаунт разработчика — без дневного лимита.','Cuenta de desarrollador — sin límite diario.')
+          : _authL('Free uses. Both counters reset every day (UTC) and are counted separately.','無料利用枠です。どちらの回数も毎日（UTC）リセットされ、別々に数えられます。','Kostenlose Nutzung. Beide Zähler werden täglich (UTC) zurückgesetzt und getrennt gezählt.','Бесплатное использование. Оба счётчика обнуляются ежедневно (UTC) и считаются отдельно.','Usos gratuitos. Ambos contadores se reinician cada día (UTC) y se cuentan por separado.'))+'</div>';
+  }
+
   function openAccountMenu(){
     if(!HOST.user) return openAuthModal();
     let m=document.getElementById('acct-modal');
@@ -271,32 +364,51 @@ window.IntMapModules.authUi=function(HOST){
          column with a single "Save profile" button at the bottom: identity, security and the two
          destructive actions.
          WHAT IT IS NOW. iOS-Settings shape: an identity header (avatar + email), then GROUPED cards
-         with a small caps label each — Icon · Security · Account — and the destructive pair last and
-         visually separated. The look lives in css/intmap.css as `.acct-*` (standing rule 13: styling
-         belongs in the stylesheet, not in 21 attribute strings), which is what makes the type scale
-         and the spacing shared rather than re-typed.
+         with a small caps label each — AI · Icon · Security · Account — and the destructive pair last
+         and visually separated. The look lives in css/intmap.css as `.acct-*` (standing rule 13:
+         styling belongs in the stylesheet, not in 21 attribute strings), which is what makes the type
+         scale and the spacing shared rather than re-typed.
          ⚠ AND THE SAVE BUTTON IS GONE WITH THE TWO FIELDS IT SAVED. With Display name and Bio
          withdrawn, the only editable thing left is the icon — and the icon has always applied
          immediately, both to `imSetAvatar` and to the `profiles` row. A "Save" that saved nothing is
          worse than no Save at all.
          ⚠ NOTHING IS DELETED FROM THE DATABASE. `profiles.display_name` and `profiles.bio` still
          exist and are still read (`HOST.user.name` is what the account button shows); this round
-         removes the SETTINGS, which is what was asked. */
-      m.innerHTML=`<div class="acct-sheet">
+         removes the SETTINGS, which is what was asked.
+         ─────────────────────────────────────────────────────────────────────────────────────────
+         (#R753) THE REVIEW THAT FOUND FOUR THINGS THE SHEET WAS NOT SAYING — 「アカウントメニューで、
+         機能や実態、UI含めて全面見直しして。」
+         ① THE AI QUOTA IS ACCOUNT STATE AND IT WAS NOT HERE (see _acctAiPaint above).
+         ② HOW THE READER SIGNS IN WAS NOT HERE. Password and passkey rows sit in this sheet, but a
+            Google account HAS no IntMap password — «Change password» would mail a reset for a
+            credential that is not the one being used. The header now names the sign-in method, and
+            the row says so for OAuth accounts instead of pretending.
+         ③ PICKING AN EMOJI CLEARED THE LOCAL IMAGE BUT LEFT `profiles.avatar_url` STANDING, so the
+            community board kept showing an uploaded photo the reader believed they had replaced —
+            the app disagreeing with itself about the same fact. It is cleared now, and the card says
+            plainly that this picture is also the community one.
+         ④ NOTHING IN THE SHEET COULD BE CLOSED WITH ESC OR ANNOUNCED TO A SCREEN READER: no
+            role/aria-modal, no key handler, focus left behind the overlay. */
+      m.innerHTML=`<div class="acct-sheet" role="dialog" aria-modal="true" aria-labelledby="acct-h" tabindex="-1">
         <div class="acct-id">
           <div class="acct-avatar" id="acct-avatar-preview"></div>
           <div class="acct-id-txt">
-            <h2 class="acct-h">${_authL('Your profile','プロフィール','Dein Profil','Ваш профиль','Tu perfil')}</h2>
+            <h2 class="acct-h" id="acct-h">${_authL('Your account','アカウント','Dein Konto','Ваш аккаунт','Tu cuenta')}</h2>
             <p class="acct-email" id="acct-email"></p>
             <div id="acct-pro" class="acct-pro"></div>
           </div>
         </div>
 
+        <div class="acct-grp-t">${_authL('AI usage today','本日のAI利用','KI-Nutzung heute','Использование ИИ сегодня','Uso de IA hoy')}</div>
+        <div class="acct-card" id="acct-ai"></div>
+
         <div class="acct-grp-t">${_authL('Icon','アイコン','Icon','Значок','Icono')}</div>
         <div class="acct-card">
           <div class="acct-avatar-pick" id="acct-avatar-pick"></div>
           <label class="acct-btn acct-btn-quiet" for="acct-avatar-file">${_authL('Upload image','画像をアップロード','Bild hochladen','Загрузить изображение','Subir imagen')}</label>
+          <button class="acct-btn acct-btn-quiet" id="acct-avatar-clear" hidden>${_authL('Remove image','画像を削除','Bild entfernen','Удалить изображение','Quitar imagen')}</button>
           <input type="file" id="acct-avatar-file" accept="image/*" hidden>
+          <div class="acct-note acct-icon-note">${_authL('This is also your picture on the community board.','コミュニティでのあなたの画像もこれになります。','Das ist auch dein Bild im Community-Board.','Это же изображение показывается на доске сообщества.','Esta es también tu imagen en el tablón de la comunidad.')}</div>
         </div>
 
         <div class="acct-grp-t">${_authL('Security','セキュリティ','Sicherheit','Безопасность','Seguridad')}</div>
@@ -308,7 +420,7 @@ window.IntMapModules.authUi=function(HOST){
           <button class="acct-row" id="acct-logout-all">${_authL('Log out on all devices','すべての端末からログアウト','Auf allen Geräten abmelden','Выйти на всех устройствах','Cerrar sesión en todos')}</button>
         </div>
 
-        <p id="acct-msg" class="acct-msg"></p>
+        <p id="acct-msg" class="acct-msg" role="status" aria-live="polite"></p>
 
         <div class="acct-card acct-rows acct-danger">
           <button class="acct-row" id="acct-logout">${_authL('Log out','ログアウト','Abmelden','Выйти','Cerrar sesión')}</button>
@@ -322,7 +434,12 @@ window.IntMapModules.authUi=function(HOST){
       const AV_EMOJI=['👤','🌍','🛰️','⚓','✈️','🛡️','📡','⛰️','🗺️','🔭','📰','🏛️','🦅','🐻','🐉','🌐'];
       const pick=document.getElementById('acct-avatar-pick');
       pick.innerHTML=AV_EMOJI.map(e=>`<button class="acct-emoji" data-e="${e}">${e}</button>`).join('');
-      pick.querySelectorAll('.acct-emoji').forEach(b=>b.onclick=()=>{ window.imSetAvatarImg(''); window.imSetAvatar(b.dataset.e); pick.querySelectorAll('.acct-emoji').forEach(x=>x.classList.toggle('sel',x===b)); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=''; pv.textContent=b.dataset.e; });
+      pick.querySelectorAll('.acct-emoji').forEach(b=>b.onclick=async()=>{ window.imSetAvatarImg(''); window.imSetAvatar(b.dataset.e); pick.querySelectorAll('.acct-emoji').forEach(x=>x.classList.toggle('sel',x===b)); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=''; pv.textContent=b.dataset.e; pv.style.background='hsl('+(window.imAvatarHue())+',58%,46%)';
+        /* (#R753) ③ — the uploaded photo is withdrawn from the PROFILE too, not just from this device.
+           Without this the community board kept showing the picture the reader had just replaced. */
+        try{ await HOST.DB.from('profiles').update({avatar_url:null}).eq('id',HOST.user.id); }catch(_){}
+        _acctSyncIcon();
+      });
       /* Upload a custom avatar image (#28) — compressed, stored locally + pushed to the profile if the column exists. */
       const af=document.getElementById('acct-avatar-file');
       if(af) af.onchange=async()=>{ const f=af.files&&af.files[0]; af.value=''; if(!f) return; try{
@@ -331,14 +448,23 @@ window.IntMapModules.authUi=function(HOST){
         window.imSetAvatarImg(data); const pv=document.getElementById('acct-avatar-preview'); pv.style.backgroundImage=`url('${data}')`; pv.textContent='';
         document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(x=>x.classList.remove('sel'));
         try{ await HOST.DB.from('profiles').update({avatar_url:data}).eq('id',HOST.user.id); }catch(_){}
+        _acctSyncIcon();
       }catch(_){ HOST.imToast(window.IntMapLang.t(HOST.lang,'Could not load image','画像を読み込めませんでした','Bild konnte nicht geladen werden','Не удалось загрузить изображение','No se pudo cargar la imagen')); } };
-      m.onclick=(e)=>{ if(e.target===m) m.style.display='none'; };
-      document.getElementById('acct-close').onclick=()=>{ m.style.display='none'; };
-      document.getElementById('acct-logout').onclick=()=>{
-        /* (#R33) Confirm before logging out. */
-        if(!window.confirm(window.IntMapLang.t(HOST.lang,'Log out of your account?','ログアウトしますか？','Vom Konto abmelden?','Выйти из аккаунта?','¿Cerrar la sesión?'))) return;
+      /* (#R753) the picture could be replaced but never withdrawn: picking an emoji was the only exit,
+         and until ③ above it left the profile row standing. An explicit exit, doing both. */
+      const ac=document.getElementById('acct-avatar-clear');
+      if(ac) ac.onclick=async()=>{ window.imSetAvatarImg('');
+        try{ await HOST.DB.from('profiles').update({avatar_url:null}).eq('id',HOST.user.id); }catch(_){}
+        _acctPaintIcon(); _acctSyncIcon(); };
+      m.onclick=(e)=>{ if(e.target===m) _acctClose(); };
+      document.getElementById('acct-close').onclick=()=>_acctClose();
+      document.getElementById('acct-logout').onclick=async()=>{
+        /* (#R33) Confirm before logging out. (#R753) in-sheet, not window.confirm. */
+        if(await _acctAsk({ title:_authL('Log out?','ログアウトしますか？','Abmelden?','Выйти?','¿Cerrar sesión?'),
+          body:_authL('You can log back in at any time.','いつでも再度ログインできます。','Du kannst dich jederzeit wieder anmelden.','Вы сможете войти снова в любое время.','Puedes volver a iniciar sesión cuando quieras.'),
+          confirmLabel:_authL('Log out','ログアウト','Abmelden','Выйти','Cerrar sesión') })===null) return;
         /* Instant: clear local state + UI right away, revoke the session in the background. */
-        m.style.display='none';
+        _acctClose();
         HOST.user=null; HOST.bookmarks=[];
         try{ HOST.updateAccountButton(); }catch(_){}
         try{ if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
@@ -358,17 +484,28 @@ window.IntMapModules.authUi=function(HOST){
         catch(e){ msg.textContent=_authL('Could not add a passkey (or it was canceled).','パスキーを追加できませんでした（またはキャンセルされました）。','Passkey konnte nicht hinzugefügt werden (oder abgebrochen).','Не удалось добавить паскей (или отменено).','No se pudo añadir el passkey (o se canceló).'); }
       };
       document.getElementById('acct-change-email').onclick=async()=>{ const msg=document.getElementById('acct-msg');
-        const ne=window.prompt(_authL('New email address:','新しいメールアドレス：','Neue E-Mail-Adresse:','Новый e-mail:','Nuevo correo:')); if(ne==null) return;
+        const ne=await _acctAsk({ title:_authL('Change email','メールアドレスを変更','E-Mail ändern','Изменить e-mail','Cambiar correo'),
+          body:_authL('We’ll send a confirmation link to the new address.','新しいアドレスに確認リンクを送ります。','Wir senden einen Bestätigungslink an die neue Adresse.','Мы отправим ссылку для подтверждения на новый адрес.','Enviaremos un enlace de confirmación a la nueva dirección.'),
+          input:{ type:'email', placeholder:_authL('New email address','新しいメールアドレス','Neue E-Mail-Adresse','Новый e-mail','Nuevo correo'), autocomplete:'email' },
+          confirmLabel:_authL('Send','送信','Senden','Отправить','Enviar') });
+        if(ne==null) return;
         if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ne.trim())){ msg.textContent=_authL('That doesn\'t look like an email.','メールアドレスの形式ではありません。','Das sieht nicht wie eine E-Mail aus.','Это не похоже на e-mail.','Eso no parece un correo.'); return; }
         msg.textContent=_authL('Sending confirmation…','確認メールを送信中…','Bestätigung wird gesendet…','Отправка подтверждения…','Enviando confirmación…');
         try{ const {error}=await HOST.DB.auth.updateUser({email:ne.trim()}); if(error) throw error;
           msg.textContent=_authL('Confirm the change from the link sent to your new email (and, if asked, your current one).','新しいメールに届いたリンクから変更を確認してください（求められた場合は現在のメールも）。','Bestätige die Änderung über den Link an deine neue E-Mail (und ggf. deine aktuelle).','Подтвердите изменение по ссылке на новый e-mail (и, если попросят, на текущий).','Confirma el cambio desde el enlace enviado a tu nuevo correo (y al actual si se solicita).');
         }catch(e){ msg.textContent=_authL('Could not change the email.','メールアドレスを変更できませんでした。','E-Mail konnte nicht geändert werden.','Не удалось изменить e-mail.','No se pudo cambiar el correo.'); }
       };
-      document.getElementById('acct-change-pw').onclick=()=>_openSetPassword(false);
+      /* (#R753) ② — a Google account has no IntMap password, so «Change password» must not open a
+         field for one. It says which door the reader actually came through instead. */
+      document.getElementById('acct-change-pw').onclick=()=>{
+        if(_acctOAuth()){ document.getElementById('acct-msg').textContent=_acctOAuthPwMsg(); return; }
+        _openSetPassword(false);
+      };
       document.getElementById('acct-logout-all').onclick=async()=>{
-        if(!window.confirm(_authL('Log out on ALL devices? You\'ll need to sign in again everywhere.','すべての端末からログアウトしますか？各端末で再度ログインが必要になります。','Auf ALLEN Geräten abmelden? Du musst dich überall neu anmelden.','Выйти на ВСЕХ устройствах? Потребуется войти заново везде.','¿Cerrar sesión en TODOS los dispositivos? Tendrás que volver a iniciar sesión.'))) return;
-        m.style.display='none'; HOST.user=null; HOST.bookmarks=[];
+        if(await _acctAsk({ title:_authL('Log out on all devices?','すべての端末からログアウトしますか？','Auf allen Geräten abmelden?','Выйти на всех устройствах?','¿Cerrar sesión en todos los dispositivos?'),
+          body:_authL('Every signed-in device, including this one, will need to sign in again.','この端末を含め、ログイン中のすべての端末で再度ログインが必要になります。','Jedes angemeldete Gerät, auch dieses, muss sich neu anmelden.','Все устройства, включая это, потребуют повторного входа.','Todos los dispositivos, incluido este, tendrán que iniciar sesión otra vez.'),
+          danger:true, confirmLabel:_authL('Log out everywhere','すべてログアウト','Überall abmelden','Выйти везде','Cerrar en todos') })===null) return;
+        _acctClose(); HOST.user=null; HOST.bookmarks=[];
         try{ HOST.updateAccountButton(); }catch(_){}
         try{ if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
         try{ window.refreshProUI&&window.refreshProUI(); }catch(_){}
@@ -376,7 +513,10 @@ window.IntMapModules.authUi=function(HOST){
         try{ HOST.imToast(_authL('Logged out on all devices','すべての端末からログアウトしました','Auf allen Geräten abgemeldet','Выход выполнен на всех устройствах','Sesión cerrada en todos los dispositivos')); }catch(_){}
       };
       document.getElementById('acct-delete').onclick=async()=>{ const msg=document.getElementById('acct-msg');
-        const typed=window.prompt(_authL('This PERMANENTLY deletes your account and all your data — it cannot be undone. Type your email to confirm:','これはアカウントと全データを完全に削除します（取り消せません）。確認のためメールアドレスを入力：','Dies löscht dein Konto und alle Daten DAUERHAFT — nicht umkehrbar. Gib zur Bestätigung deine E-Mail ein:','Это НАВСЕГДА удалит аккаунт и все данные — отменить нельзя. Введите e-mail для подтверждения:','Esto elimina PERMANENTEMENTE tu cuenta y todos tus datos, sin vuelta atrás. Escribe tu correo para confirmar:'));
+        const typed=await _acctAsk({ title:_authL('Delete account','アカウントを削除','Konto löschen','Удалить аккаунт','Eliminar cuenta'),
+          body:_authL('This permanently deletes your account and all your data — it cannot be undone. Type your email address to confirm.','アカウントと全データを完全に削除します（取り消せません）。確認のためメールアドレスを入力してください。','Dies löscht dein Konto und alle Daten dauerhaft — nicht umkehrbar. Gib zur Bestätigung deine E-Mail-Adresse ein.','Это навсегда удалит аккаунт и все данные — отменить нельзя. Введите свой e-mail для подтверждения.','Esto elimina permanentemente tu cuenta y todos tus datos, sin vuelta atrás. Escribe tu correo para confirmar.'),
+          input:{ type:'email', placeholder:String(HOST.user.email||''), autocomplete:'off' },
+          danger:true, confirmLabel:_authL('Delete permanently','完全に削除','Endgültig löschen','Удалить навсегда','Eliminar definitivamente') });
         if(typed==null) return;
         if((typed||'').trim().toLowerCase()!==String(HOST.user.email||'').toLowerCase()){ msg.textContent=_authL('That didn\'t match your email — cancelled.','メールアドレスが一致しません。キャンセルしました。','Stimmt nicht mit deiner E-Mail überein — abgebrochen.','Не совпадает с вашим e-mail — отменено.','No coincide con tu correo — cancelado.'); return; }
         msg.textContent=_authL('Deleting your account…','アカウントを削除中…','Konto wird gelöscht…','Удаление аккаунта…','Eliminando tu cuenta…');
@@ -389,7 +529,7 @@ window.IntMapModules.authUi=function(HOST){
           HOST.user=null; HOST.bookmarks=[];
           try{ Object.keys(localStorage).forEach(k=>{ if(/^(intmap_|sb-)/.test(k)) localStorage.removeItem(k); }); }catch(_){}
           try{ HOST.updateAccountButton(); if(typeof HOST.renderUI==='function') HOST.renderUI(); }catch(_){}
-          m.style.display='none';
+          _acctClose();
           try{ HOST.imToast(_authL('Your account has been deleted.','アカウントを削除しました。','Dein Konto wurde gelöscht.','Ваш аккаунт удалён.','Tu cuenta ha sido eliminada.')); }catch(_){}
         }catch(e){ msg.textContent=_authL('Could not delete the account. Please try again or contact support.','アカウントを削除できませんでした。もう一度試すかサポートへご連絡ください。','Konto konnte nicht gelöscht werden. Bitte erneut versuchen oder Support kontaktieren.','Не удалось удалить аккаунт. Повторите попытку или обратитесь в поддержку.','No se pudo eliminar la cuenta. Inténtalo de nuevo o contacta soporte.'); }
       };
@@ -397,19 +537,72 @@ window.IntMapModules.authUi=function(HOST){
     document.getElementById('acct-email').textContent=HOST.user.email;
     try{ _renderPasskeys(); }catch(_){}
     document.getElementById('acct-msg').textContent='';
-    /* avatar preview + current selection */
-    { const av=window.imGetAvatar(), img=window.imGetAvatarImg(); const prev=document.getElementById('acct-avatar-preview');
-      if(prev){ if(img){ prev.style.backgroundImage=`url('${img}')`; prev.textContent=''; } else { prev.style.backgroundImage=''; prev.textContent=av; prev.style.background='hsl('+(window.imAvatarHue())+',58%,46%)'; } }
-      document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(b=>b.classList.toggle('sel',!img&&b.dataset.e===av)); }
+    _acctPaintIcon();
+    /* (#R753) the counters: paint what the mirror holds immediately so the panel is never empty, then
+       re-read both server rows and repaint. */
+    _acctAiPaint(typeof HOST.aiUsageSummary==='function'?HOST.aiUsageSummary():null);
+    try{ if(typeof HOST.aiRefreshUsage==='function') HOST.aiRefreshUsage().then(s=>{ if(m.style.display!=='none') _acctAiPaint(s); }).catch(()=>{}); }catch(_){}
     /* (#R10) Pro status / upgrade row removed — the app is fully free, no plan indicator. Admin still
-       shown for moderators. */
+       shown for moderators. (#R753) the sign-in method joins it: the security rows below only make
+       sense once the reader knows which credential they are actually using. */
     const proRow=document.getElementById('acct-pro');
     if(proRow){
-      if(HOST.user && HOST.user.isAdmin){ proRow.style.display=''; proRow.innerHTML=`<span style="color:var(--text-muted);font-weight:600;font-size:12px;">· admin</span>`; }
-      else { proRow.style.display='none'; proRow.innerHTML=''; }
+      const bits=[];
+      const how=_acctSignInName(); if(how) bits.push(how);
+      if(HOST.user && HOST.user.isAdmin) bits.push(_authL('admin','管理者','Admin','админ','admin'));
+      if(bits.length){ proRow.style.display=''; proRow.textContent=bits.join(' · '); }
+      else { proRow.style.display='none'; proRow.textContent=''; }
     }
     m.style.display='flex';
+    document.addEventListener('keydown',_acctKey,true);
+    try{ _acctPrevFocus=document.activeElement; m.querySelector('.acct-sheet').focus(); }catch(_){}
   }
+
+  /* (#R753) ④ — closing is one function now, because there are five ways to ask for it (Close, the
+     backdrop, Esc, logging out, deleting the account) and each one must also release the key
+     listener and hand focus back to the button that opened the sheet. */
+  let _acctPrevFocus=null;
+  function _acctKey(e){ if(e.key!=='Escape') return; const a=document.getElementById('acct-ask'); if(a&&a.style.display==='flex') return;   /* the inner asker owns Esc while it is up */
+    e.stopPropagation(); _acctClose(); }
+  function _acctClose(){
+    const m=document.getElementById('acct-modal'); if(m) m.style.display='none';
+    document.removeEventListener('keydown',_acctKey,true);
+    /* back to whatever had focus — and when nothing did (the sheet was opened from a script, or the
+       click never focused the button), to the control that opens it, which is where a keyboard
+       reader expects to be standing afterwards. */
+    try{ const back=(_acctPrevFocus&&_acctPrevFocus!==document.body&&_acctPrevFocus.focus)?_acctPrevFocus:document.getElementById('btn-account');
+      if(back&&back.focus) back.focus(); }catch(_){}
+    _acctPrevFocus=null;
+  }
+  /* Which credential this session actually uses. Supabase reports it on the user record; the value
+     is the provider's own id ('google', 'email', …), so the display name is derived, not a table of
+     every provider that might ever be enabled. */
+  function _acctOAuth(){ try{ const p=(HOST.user&&HOST.user.provider)||''; return !!p && p!=='email'; }catch(_){ return false; } }
+  function _acctSignInName(){
+    const p=String((HOST.user&&HOST.user.provider)||'');
+    if(!p) return '';
+    if(p==='email') return _authL('Email sign-in','メールでログイン','Anmeldung per E-Mail','Вход по e-mail','Acceso por correo');
+    const nice=p.charAt(0).toUpperCase()+p.slice(1);
+    return _authL('Signed in with '+nice,nice+' でログイン','Angemeldet mit '+nice,'Вход через '+nice,'Sesión con '+nice);
+  }
+  function _acctOAuthPwMsg(){
+    const p=String((HOST.user&&HOST.user.provider)||''); const nice=p?(p.charAt(0).toUpperCase()+p.slice(1)):'';
+    return _authL('You sign in with '+nice+', so IntMap has no password for this account — change it with '+nice+' instead.',
+                  nice+' でログインしているため、IntMap 側にこのアカウントのパスワードはありません。変更は '+nice+' 側で行ってください。',
+                  'Du meldest dich mit '+nice+' an — IntMap hat für dieses Konto kein Passwort. Ändere es bei '+nice+'.',
+                  'Вы входите через '+nice+', поэтому у IntMap нет пароля для этого аккаунта — измените его в '+nice+'.',
+                  'Inicias sesión con '+nice+', así que IntMap no tiene contraseña para esta cuenta: cámbiala en '+nice+'.');
+  }
+  /* The identity header, the emoji selection and the Remove-image button all describe the same one
+     fact (is there an uploaded picture, and which emoji is chosen) — so they are painted together. */
+  function _acctPaintIcon(){
+    const av=window.imGetAvatar(), img=window.imGetAvatarImg(), prev=document.getElementById('acct-avatar-preview');
+    if(prev){ if(img){ prev.style.backgroundImage=`url('${img}')`; prev.textContent=''; }
+      else { prev.style.backgroundImage=''; prev.textContent=av; prev.style.background='hsl('+(window.imAvatarHue())+',58%,46%)'; } }
+    document.querySelectorAll('#acct-avatar-pick .acct-emoji').forEach(b=>b.classList.toggle('sel',!img&&b.dataset.e===av));
+    _acctSyncIcon();
+  }
+  function _acctSyncIcon(){ const c=document.getElementById('acct-avatar-clear'); if(c) c.hidden=!window.imGetAvatarImg(); }
 
   async function refreshCurrentUser(sessionArg){
     if(!HOST.DB){ HOST.user=null; return; }
@@ -433,7 +626,7 @@ window.IntMapModules.authUi=function(HOST){
     /* (#R33) PRIVACY: never derive the public name from the email (its local part would expose part of the
        address in community posts). Fall back to a neutral handle from the user id instead. */
     if(!name) name='User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5);
-    HOST.user={ id:session.user.id, email:session.user.email, name, isAdmin, isPro:isPro||isAdmin }; HOST.updateAccountButton();
+    HOST.user={ id:session.user.id, email:session.user.email, name, isAdmin, isPro:isPro||isAdmin, provider:_sessionProvider(session) }; HOST.updateAccountButton();
     /* (#R35) Persist the developer flag the moment the OWNER account logs in, so "unlimited AI" is recognised
        SYNCHRONOUSLY everywhere afterward — even before currentUser repopulates on the next load. This is why
        the Settings usage graph "wasn't reflecting unlimited": aiRenderSettings could run before the async
@@ -517,7 +710,7 @@ window.IntMapModules.authUi=function(HOST){
         if(session&&session.user){
           if(!HOST.user||HOST.user.id!==session.user.id){
             const m=session.user.user_metadata||{};
-            HOST.user={ id:session.user.id, email:session.user.email||'', name:(m.display_name||m.full_name||m.name||('User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5))), isAdmin:false, isPro:false };
+            HOST.user={ id:session.user.id, email:session.user.email||'', name:(m.display_name||m.full_name||m.name||('User-'+String(session.user.id||'').replace(/[^a-z0-9]/gi,'').slice(0,5))), isAdmin:false, isPro:false, provider:_sessionProvider(session) };   /* (#R753) the session already says which door — no call, no wait */
           }
           try{ HOST.updateAccountButton(); }catch(_){}
           try{ const am=document.getElementById('auth-modal'); if(am && am.style.display!=='none') am.style.display='none'; }catch(_){}
