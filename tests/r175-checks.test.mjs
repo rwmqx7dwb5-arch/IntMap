@@ -370,4 +370,43 @@ test('R175 ③: the build stamp was bumped', () => {
      — and the current round pins the exact value in its own checks file. */
   assert.doesNotMatch(index, /window\.INTMAP_BUILD='2026-07-28-R175'/, 'the anti-stale-version stamp must move every round');
   assert.match(index, /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R\d+'/, 'and must still be a dated round stamp');
+
+  /* ⚠⚠⚠ (#R756) 「各ラウンドが自分の検査ファイルに値を pin する」 IS NOT A RULE THE STAMP HAS — it is
+     a rule each round has to REMEMBER, and #R756 forgot it: the round shipped, merged and deployed
+     with the stamp still naming R755, and every gate was green. The two assertions above cannot
+     catch that; they only know what R175's own value was.
+
+     ⚠ THE FIX IS NOT A THIRD PIN. A pin is the same forgettable thing one round later. The round the
+     build is FOR is discoverable — DEV-NOTES.md carries it, newest first, because AGENTS.md §9
+     requires an entry every round — so the rule is attached to the FACT (「この配信はどのラウンドの
+     ものか」) rather than to whoever remembers to write it down
+     ([[intmap-hist-names-rule-belongs-to-the-name]]).
+
+     ⚠⚠⚠ AND IT ASKS THE QUESTION THE WAY THE OTHER READERS ASK IT. Four checks already derive 「最新
+     のラウンド」 from this file with `/^## R(\d+)/` (tests/r207-checks · r219-checks · r264-checks ·
+     r301-checks). #R756's own first draft used a looser pattern here, which made a SECOND rule for
+     one fact — and the round's DEV-NOTES entry, written as `### R756` with `##` subsections under
+     it, was visible to the loose reader and invisible to the strict four. The new check passed and
+     the four failed, on an entry that was simply malformed ([[intmap-two-readers-one-field-list]]).
+     So: one spelling, the one that already existed — plus the measurement that an entry written at
+     the WRONG LEVEL cannot hide, because an entry no round-finder can see is the same defect as a
+     stamp nobody moved. */
+  const notes = readFileSync(join(ROOT, 'DEV-NOTES.md'), 'utf8');
+  const rounds = [...notes.matchAll(/^## R(\d+)\b/gm)].map((m) => Number(m[1]));
+  assert.ok(rounds.length > 0, 'DEV-NOTES.md states no round at all — the stamp has nothing to agree with');
+  const newest = Math.max(...rounds);
+
+  /* ⚠ An entry at any other heading level is not an entry these readers have. Older anomalies below
+     the newest are harmless (nothing derives a maximum from them); one ABOVE it hides the round. */
+  const anyLevel = [...notes.matchAll(/^#{1,5} R(\d+)\b/gm)].map((m) => Number(m[1]));
+  const seenAnyhow = Math.max(...anyLevel);
+  assert.equal(seenAnyhow, newest,
+    'DEV-NOTES.md states R' + seenAnyhow + ' at a heading level the round-finders do not read ' +
+    '(they take `## R<N>`), so every check that asks this file for the newest round still answers R' +
+    newest + ' — write the entry as `## R<N>` with `### N.` sections under it');
+
+  const stamped = /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/.exec(index);
+  assert.equal(Number(stamped[1]), newest,
+    'the build stamp names R' + stamped[1] + ' and the newest round in DEV-NOTES.md is R' + newest +
+    ' — a round that ships without moving the stamp is indistinguishable in production from the one before it');
 });
