@@ -965,6 +965,21 @@ push したのが原因**で、落ちたのは:
 ⚠ **欠陥の大きさは変わらない——むしろ 6 倍だった。** 直った証拠も本番で取れている:
 `A.narrow('ISS')` は **521 ms** で `stations` カタログに切り替わり、地図が描くのは **18 機**。
 
+**§6（`data.query` を CORE へ）の証拠も本番で取れた。** #R747 で 5m10s かけて web 調査に逃げた
+問い——目録自身の worked example から条件を 1 つ減らしたもの——をそのまま投げ直した:
+
+```
+「Which cities are above 3000 m elevation and have more than 500,000 people?」
+  直す前   research ×2 · 5m10s · 答えは web の散文（La Paz–El Alto）
+  直した後 query_data ×5（直接呼び出し）· data.query 6 件すべて completed/ok · 55.2s
+           答えは IntMap 自身の cities 表から: La Paz · 2,004,652 人 · 3,767 m
+           （GeoNames 148,630 件 ＋ Open-Meteo の標高、出典つきの行として）
+```
+
+⚠ **ただしまだ `step_budget` に当たる**（8 steps・`query_data` 5 回）。道具には届くように
+なったが、**同じ問いを絞り直す繰り返しは残っている**——§11 に記録した「言い換えた
+`research` の繰り返しが最大の時間要因」と同じ形が、速い道具の上でも起きる。次の題材。
+
 ⚠ そしてこの訂正を書いた `node -e "…"` が、またシェルにバッククォートを食われた
 （この回で 4 度目）。**置換は `.mjs` に書いて `node` に渡す**——例外を作らない。
 
