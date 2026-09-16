@@ -414,3 +414,16 @@ test('R757 ⑰: the catalogue says that showing needs the second call, and that 
   assert.match(block, /never repeat the same arguments/,
     'a refused call must be CHANGED — repeating it is what killed both production turns');
 });
+
+/* ── ⑱ a rule whose effect nobody can see is a rule nobody can check ───────────────────────────
+   MEASURED in production (build R757): the verifier could not tell whether the stated-country rule
+   had fired, because the resolver returned `via` and the meta projection dropped it. That is the
+   «made a field, never read it» shape for the FOURTH time in this run of rounds — and here it cost
+   the round its evidence, not its behaviour. */
+test('R758 ⑸: how the origin was decided travels out with the answer', () => {
+  const src = read('js/pandemic-atlas.js');
+  const meta = src.slice(src.indexOf('function runMeta'), src.indexOf('function runHtml'));
+  assert.match(meta, /via: r\.origin\.via/, 'the caller is told WHICH rule resolved the place');
+  assert.match(meta, /disputed: r\.origin\.disputed/,
+    'and told when the stated country and the drawn one disagreed — a disagreement nobody sees is a disagreement nobody can act on');
+});

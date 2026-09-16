@@ -277,7 +277,7 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
 
   function runMeta(r) {
     return { day: r.day, asked: r.asked, preset: r.presetKey, scenario: r.scenario, seed: r.seed,
-      origin: { index: r.origin.i, code: r.W.world[r.origin.i].code, name: r.W.names[r.origin.i], how: r.origin.how, matched: r.origin.matched || null },
+      origin: { index: r.origin.i, code: r.W.world[r.origin.i].code, name: r.W.names[r.origin.i], how: r.origin.how, matched: r.origin.matched || null, via: r.origin.via || null, disputed: r.origin.disputed || null },
       totals: { cumInf: r.totals.cumInf, D: r.totals.D, I: r.totals.I, affected: r.totals.affected, reached: r.totals.reached, worldPop: r.totals.worldPop },
       ended: r.ended ? (r.ended.kind || String(r.ended)) : null,
       dataState: r.W.dataState,
