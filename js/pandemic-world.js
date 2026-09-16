@@ -166,17 +166,22 @@ export function buildPandemicWorld(deps){
      declaration, and exporting a helper nothing else imports fails its second assertion as a
      dead export — so a private helper with one caller lives inside that caller. */
   function makeWorld(w){
-    const byCode=Object.create(null), byName=Object.create(null);
+    const byCode=Object.create(null), byName=Object.create(null), byIso2=Object.create(null);
     const norm=(s)=>String(s==null?'':s).trim().toLowerCase();
     for(let i=0;i<w.N;i++){
       const r=w.world[i];
       if(r.code) byCode[String(r.code).toUpperCase()]=i;
+    if(r.iso2 && byIso2[r.iso2]==null) byIso2[r.iso2]=i;
       if(r.name){ const k=norm(r.name); if(byName[k]==null) byName[k]=i; }
       if(r.admin){ const k=norm(r.admin); if(byName[k]==null) byName[k]=i; }
     }
     w.names=w.world.map(c=>c.name);
     w.indexOfCode=(code)=>{ const k=String(code==null?'':code).trim().toUpperCase(); return (k&&byCode[k]!=null)?byCode[k]:-1; };
-    w.indexOfName=(name)=>{ const k=norm(name); return (k&&byName[k]!=null)?byName[k]:-1; };
+    /* ⚠⚠⚠ (#R757) THE GAZETTEER STATES A COUNTRY; THIS IS THE DOOR THAT ACCEPTS IT. Deriving «which
+     country is this city in» from point-in-polygon asks GEOMETRY a question the upstream already
+     ANSWERED, and the geometry is Natural Earth at 10 m — a simplified coastline. */
+  w.indexOfIso2=(a)=>{ const k=String(a==null?'':a).trim().toUpperCase(); return (k&&byIso2[k]!=null)?byIso2[k]:-1; };
+  w.indexOfName=(name)=>{ const k=norm(name); return (k&&byName[k]!=null)?byName[k]:-1; };
     /* Point-in-polygon against the same geometry the panel hit-tests with, so a coordinate resolves
        to the row a tap on that spot would have chosen — one hit test, two callers. A place that is
        not a country (a city, a port) reaches the world through THIS door and no other: the caller
@@ -248,7 +253,7 @@ export function buildPandemicWorld(deps){
            another row in the same file. Deriving «who governs here» from a map's own topology is
            the alternative to a list of dependency names, which would go stale the first time the
            upstream file changed. */
-        world[i]={name:cName(f)||'?', code:(_r&&_r.code)||null, admin:pr.ADMIN||cName(f)||'?', sov:pr.SOVEREIGNT||null, pop, dev, lat:cent[i][1], lng:cent[i][0], borders:null, air:0, capital:null, actor:i};
+        world[i]={name:cName(f)||'?', code:(_r&&_r.code)||null, iso2:(function(){ const a=pr.ISO_A2_EH||pr.ISO_A2; return (a&&String(a).length===2&&a!=='-9')?String(a).toUpperCase():null; })(), admin:pr.ADMIN||cName(f)||'?', sov:pr.SOVEREIGNT||null, pop, dev, lat:cent[i][1], lng:cent[i][0], borders:null, air:0, capital:null, actor:i};
         /* ⚠ (#R675) THE POLICY BADGE GOES ON THE LABEL POINT, NOT THE BOUNDING-BOX CENTRE. Natural
            Earth's LABEL_X/Y is the point inside the country's main landmass that its own cartography
            puts the name at; the bbox centre of France is in the Atlantic and the bbox centre of
@@ -372,7 +377,7 @@ export function resolveOrigin(w, q) {
       let hit = (en === k || ja === k);
       if (!hit) { const terms = String(r[1] || '').toLowerCase().split(/[|,]/); for (let z = 0; z < terms.length; z++) { if (terms[z].trim() === k) { hit = true; break; } } }
       if (!hit) continue;
-      out.push({ lng: +r[2], lat: +r[3], name: r[4] || r[5] || query, pop: +r[6] || 0 });
+      out.push({ lng: +r[2], lat: +r[3], name: r[4] || r[5] || query, pop: +r[6] || 0, iso2: r[7] ? String(r[7]).toUpperCase() : null });
     }
     out.sort((a, b) => b.pop - a.pop);
     return out;
@@ -425,18 +430,41 @@ export function resolveOrigin(w, q) {
   const head = parts[0] || place;
   const qualifier = parts.length > 1 ? parts.slice(1).join(', ') : '';
 
+  /* ══ ⚠⚠⚠ (#R757) WHICH COUNTRY IS THIS CITY IN — ASK THE RECORD THAT SAYS SO ═══════════════════
+     MEASURED IN PRODUCTION, build R755: `place:'Lagos, Nigeria'` was refused five times and the
+     turn died at `repeated_calls` with day 60 unanswered — for the SECOND round running.
+     #R755 blamed the comma and fixed the comma. The comma was not the defect.
+     ⚠ THE DEFECT WAS ASKING GEOMETRY A QUESTION THE UPSTREAM HAD ALREADY ANSWERED. The gazetteer
+     row for Lagos states `iso2: 'NG'`. This resolver ignored that and ran point-in-polygon against
+     Natural Earth 10 m, whose Nigerian coastline runs about 4.1 km NORTH of the city centre —
+     measured: the point enters Nigeria only at lat ≥ 6.4910, and Lagos sits at 6.4541. So a real
+     city in a real country resolved to «no country at all», and the refusal could not even name
+     Nigeria because nothing had found it.
+     ⚠ IT IS NOT A LAGOS PROBLEM. Every coastal city is one simplification away from it; eighteen
+     others happened to fall inside. A special case for Lagos would have been the hardcoding this
+     project forbids (.agents/rules/no-ad-hoc-hardcoding.md §1) — the structure is «the record that
+     states the country is the one to ask», and geometry is the FALLBACK for rows that state none.
+     ⚠ AND WHEN BOTH SPEAK, DISAGREEMENT IS REPORTED RATHER THAN HIDDEN (`disputed`). */
+  const countryOf = (c) => {
+    const stated = c.iso2 ? w.indexOfIso2(c.iso2) : -1;
+    const drawn = w.indexAt(c.lng, c.lat);
+    if (stated >= 0) return { i: stated, via: 'gazetteer', disputed: (drawn >= 0 && drawn !== stated) ? w.names[drawn] : null };
+    if (drawn >= 0) return { i: drawn, via: 'geometry', disputed: null };
+    return { i: -1, via: 'none', disputed: null };
+  };
+
   /* A qualifier that is itself a country this world holds settles it on its own. */
   if (qualifier) {
     const qi = (w.indexOfCode(qualifier) >= 0) ? w.indexOfCode(qualifier) : w.indexOfName(qualifier);
     const cands = gazetteerCandidates(head);
     for (const c of cands) {
-      const ci = w.indexAt(c.lng, c.lat);
-      if (ci < 0) continue;
-      if (qi >= 0 ? ci === qi : false) return { i: ci, how: 'place', matched: c.name, qualifier: qualifier, at: [c.lng, c.lat], pop: c.pop };
+      const r = countryOf(c);
+      if (r.i < 0) continue;
+      if (qi >= 0 && r.i === qi) return { i: r.i, how: 'place', via: r.via, disputed: r.disputed, matched: c.name, qualifier: qualifier, at: [c.lng, c.lat], pop: c.pop };
     }
     if (qi >= 0 && cands.length) {
       /* the name exists, but not inside the country the caller named — say both, and refuse */
-      const firstIn = cands.map(c => w.indexAt(c.lng, c.lat)).find(x => x >= 0);
+      const firstIn = cands.map(c => countryOf(c).i).find(x => x >= 0);
       return { i: -1, why: 'place-not-in-that-country', place: head, qualifier: qualifier,
         foundIn: firstIn >= 0 ? w.names[firstIn] : null };
     }
@@ -445,9 +473,9 @@ export function resolveOrigin(w, q) {
 
   const hit = gazetteerPoint(head);
   if (!hit) return { i: -1, why: 'place-not-found', place: place };
-  const i = w.indexAt(hit.lng, hit.lat);
-  if (i < 0) return { i: -1, why: 'place-outside-every-country', place: place, at: [hit.lng, hit.lat] };
-  return { i: i, how: 'place', matched: hit.name, at: [hit.lng, hit.lat], pop: hit.pop };
+  const r = countryOf(hit);
+  if (r.i < 0) return { i: -1, why: 'place-outside-every-country', place: place, at: [hit.lng, hit.lat] };
+  return { i: r.i, how: 'place', via: r.via, disputed: r.disputed, matched: hit.name, at: [hit.lng, hit.lat], pop: hit.pop };
 }
 
 /* The most populous gazetteer row whose English or Japanese name, or one of its search terms, IS

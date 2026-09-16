@@ -182,7 +182,22 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
        does not name its top is a legend that invites the reader to invent one. */
     let top = 0;
     for (const f of features) { const v = +f.properties.rate; if (isFinite(v) && v > top) top = v; }
-    const STOPS = top > 0 ? [0, top / 3, (top * 2) / 3, top] : [0, 1e-9, 2e-9, 3e-9];
+    /* ⚠⚠⚠ (#R757) AND THE RAMP IS LOGARITHMIC, BECAUSE THE DATA IS. MEASURED in production (build
+       R755, day 60 from Nigeria): the rates ran from 8.9e-9 to 1.3e-3 — FIVE ORDERS OF MAGNITUDE —
+       and #R755's linear ramp over that range put 33 of 34 countries between radius 3.00 and 3.27
+       px. Deriving the top from the data was necessary and not sufficient: a linear scale on a
+       log-distributed quantity shows the maximum and nothing else, which is what the screenshot
+       showed. An epidemic's prevalence is log-distributed by construction — it starts in one
+       country and arrives elsewhere by rare events — so the scale that reads it is log too.
+       `rateLog` is what the paint expression interpolates; `rate` stays on the feature because it
+       is the quantity, and a reader inspecting a dot should see the number, not its logarithm. */
+    const FLOOR = 1e-9;   /* one case in a billion people: below this a country is «not really hit» */
+    const lg = (v) => Math.log10(Math.max(FLOOR, v || 0));
+    for (const f of features) f.properties.rateLog = lg(f.properties.rate);
+    const loTop = lg(top), loBottom = lg(FLOOR);
+    const STOPS = top > 0 && loTop > loBottom
+      ? [loBottom, loBottom + (loTop - loBottom) / 3, loBottom + (2 * (loTop - loBottom)) / 3, loTop]
+      : [loBottom, loBottom + 1, loBottom + 2, loBottom + 3];
     const paint = () => {
       if (!GE().layers.hasSource(SRC)) GE().layers.addSource(SRC, { type: 'geojson', data: { type: 'FeatureCollection', features: features } });
       else GE().layers.setSourceData(SRC, { type: 'FeatureCollection', features: features });
@@ -191,8 +206,8 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
          right data under the wrong scale, which is worse than not drawing. */
       if (GE().layers.has(LYR) && (_metric !== metric || _top !== top)) { try { GE().layers.remove(LYR); } catch (_) {} }
       if (!GE().layers.has(LYR)) GE().layers.add({ id: LYR, type: 'circle', source: SRC,
-        paint: { 'circle-radius': ['interpolate', ['linear'], ['get', 'rate'], STOPS[0], 3, STOPS[1], 7, STOPS[2], 12, STOPS[3], 20],
-          'circle-color': ['interpolate', ['linear'], ['get', 'rate'], STOPS[0], '#ffd60a', STOPS[1], '#ff9f0a', STOPS[2], '#ff453a', STOPS[3], '#bf5af2'],
+        paint: { 'circle-radius': ['interpolate', ['linear'], ['get', 'rateLog'], STOPS[0], 3, STOPS[1], 7, STOPS[2], 12, STOPS[3], 20],
+          'circle-color': ['interpolate', ['linear'], ['get', 'rateLog'], STOPS[0], '#ffd60a', STOPS[1], '#ff9f0a', STOPS[2], '#ff453a', STOPS[3], '#bf5af2'],
           'circle-opacity': 0.82, 'circle-stroke-width': 1, 'circle-stroke-color': 'rgba(0,0,0,0.35)' } });
       _metric = metric; _top = top;
     };

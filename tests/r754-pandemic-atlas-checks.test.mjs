@@ -361,3 +361,56 @@ test('R755 ⑭: the colour scale is the day\'s own, and the reply says what its 
   assert.match(draw, /worst-hit country at this day/,
     'and the reader is told what the darkest mark means — a legend that does not name its top invites one to be invented');
 });
+
+/* ══ #R757 — what production said about #R755 ═════════════════════════════════════════════════
+   #R755 blamed the comma and fixed the comma. Production measured `place:'Lagos, Nigeria'` refused
+   FIVE times and the turn dead at `repeated_calls`, day 60 unanswered, for the second round. */
+
+/* ── ⑮ the country a record STATES is not a country to re-derive ───────────────────────────────
+   MEASURED: the gazetteer row for Lagos says `iso2:'NG'`. The resolver ignored it and asked
+   point-in-polygon against Natural Earth 10 m, whose Nigerian coastline runs ~4.1 km north of the
+   city (the point enters Nigeria only at lat ≥ 6.4910; Lagos is 6.4541). A real city in a real
+   country resolved to «no country at all». ⚠ NOT A LAGOS BUG — every coastal city is one
+   simplification away from it, so the fix is the rule, not the case. */
+test('R757 ⑮: a place resolves by the country its record states, with geometry as the fallback', () => {
+  const src = read('js/pandemic-world.js');
+  assert.match(src, /indexOfIso2/, 'the world can be asked by the ISO-2 the gazetteer speaks');
+  assert.match(src, /iso2: r\[7\]/, 'and candidates carry the country their row states');
+  const co = src.slice(src.indexOf('const countryOf'), src.indexOf('const countryOf') + 700);
+  assert.ok(co.indexOf("via: 'gazetteer'") < co.indexOf("via: 'geometry'"),
+    'the STATED country is tried before the drawn one — geometry is the fallback, not the authority');
+  assert.match(co, /disputed/, 'and when both speak and disagree, the disagreement is reported rather than hidden');
+  /* ⚠ ONE RULE, BOTH BRANCHES. A qualified place and a bare one must not resolve by different
+     means — that is the two-readers defect this round has already paid for three times. */
+  assert.strictEqual((src.match(/countryOf\(/g) || []).length >= 3, true,
+    'the qualified branch, the bare branch and the refusal all use the one rule');
+  assert.ok(!/const i = w\.indexAt\(hit\.lng, hit\.lat\)/.test(src),
+    'no branch still resolves a gazetteer hit by geometry alone');
+});
+
+/* ── ⑯ a linear ramp on a log-distributed quantity shows the maximum and nothing else ───────────
+   MEASURED at day 60: rates from 8.9e-9 to 1.3e-3 — five orders of magnitude — and #R755's
+   data-derived LINEAR ramp put 33 of 34 countries between radius 3.00 and 3.27 px. Deriving the
+   top from the data was necessary and not sufficient. */
+test('R757 ⑯: the ramp is logarithmic, because prevalence is', () => {
+  const src = read('js/pandemic-atlas.js');
+  assert.match(src, /Math\.log10/, 'the scale is taken in logarithms');
+  assert.match(src, /rateLog/, 'and the paint expression interpolates the logarithm');
+  assert.ok(!/\['get', 'rate'\], STOPS/.test(src), 'nothing still interpolates the raw rate');
+  assert.match(src, /f\.properties\.rate\b/,
+    'the raw rate stays on the feature — a reader inspecting a dot sees the quantity, not its logarithm');
+});
+
+/* ── ⑰ «show me» was never drawn ───────────────────────────────────────────────────────────────
+   MEASURED: a run that SUCCEEDED still left `mapDrawn:false` — Atlas never made the second call,
+   and the same turn printed two different day-60 answers from two runs of one question. The
+   catalogue is the only place that can tell a planner either thing. */
+test('R757 ⑰: the catalogue says that showing needs the second call, and that one question is one run', () => {
+  const cat = read('js/atlas-catalog-text.js');
+  const i = cat.indexOf("ids: ['sim.pandemicRun', 'map.pandemicDay']");
+  const block = cat.slice(i, cat.indexOf("' },", i));
+  assert.match(block, /MUST make the second call/, 'a request to SEE it is not answered by the run alone');
+  assert.match(block, /ONE RUN PER TURN/, 'and one question is not answered by two contradictory runs');
+  assert.match(block, /never repeat the same arguments/,
+    'a refused call must be CHANGED — repeating it is what killed both production turns');
+});
