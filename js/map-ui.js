@@ -434,6 +434,17 @@ window.IntMapModules.layerRegistry=function(HOST){
       summary:()=>{ const f=_srcFeatsIn('dc-src',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
     register('pharma',{ label:()=>L5('Pharma manufacturing hubs','製薬・医薬品製造拠点','Pharma-Produktionszentren','Центры фармпроизводства','Centros farmacéuticos'),
       on:()=>_lyrVis('ph-pt'), featuresIn:b=>_srcFeatsIn('ph-src',b),
+      /* ⚠ (#R759) THE THIRD ROW THAT MAY SAY THIS, AND THE AUDIT THAT FOUND IT IS THE POINT. #R756
+         built the declaration and two rows used it; this round asked the question of ALL THIRTY
+         registrations — what narrows each one — and the answer is that twenty-six of them CANNOT say
+         it, because a bbox, a limit, a page, a time window, a zoom or the camera itself is in their
+         read path (DEV-NOTES.md #R759 has the table, with the line of code for each). This one has
+         none: js/layer-packs.js turns its whole bundled array into the collection and writes all of
+         it, and no reader control narrows the source.
+         ⚠ 「全部」 IS ABOUT THE HOLDING, NOT ABOUT THE WORLD — the same reading volcanoes and heritage
+         take one screen up. The bundled list is a selection somebody made; what this row states is
+         that a caller asking for its rows over any window gets every one that is in it. */
+      holds:()=>({extent:_HOLDS_WORLD,complete:true,viewBound:false,live:false}),
       summary:()=>{ const f=_srcFeatsIn('ph-src',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
     /* (#R121) thermal anomalies (active fires) — REAL pixel count from the same NASA FIRMS/GIBS WMS imagery the
        layer paints: fetch a small GetMap around the point (per day-offset of the user's 24/48/72h window) and

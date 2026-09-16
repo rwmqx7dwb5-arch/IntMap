@@ -65,7 +65,15 @@ export const KERNELS = {
      Multi geometry (a diagonal across a 16x16 lattice lit all 256 cells) and now burns the cells
      the feature actually touches. A project saved before today replays to a DIFFERENT GRID, which
      is the one thing this version exists to announce. */
-  'js/gis-ops.js': { version: 'ops-2', sha256: '0c9699533e5cd032dc0ea0d493dbd8ef28d78f9708281d19425e60f98ce5b3a9' },
+  /* (#R759) ops-2 -> ops-3: A REPLAYED STEP NOW REGISTERS A DIFFERENT RECORD, and every part of the
+     difference is a statement the old one was not making. Its `coverage` is inherited from the
+     inputs (a derived record used to carry none, so a partial acquisition became invisible one step
+     downstream); a grid made from two grids whose epochs differ is stamped with the SPAN rather than
+     with the first input's date; and a column that kept its name keeps the unit somebody stated
+     about it. ⚠ The arithmetic of every op is untouched — the numbers in the cells are the same
+     numbers — but what the record SAYS about them is not, and a reader comparing two loads of one
+     project is entitled to know which of the two told them. */
+  'js/gis-ops.js': { version: 'ops-3', sha256: '09eee3ee72a6b68754600178c1edb091b3052f025245f09d64fc2167c98bee1f' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
   'js/gis-geometry.js': { version: 'geom-1', sha256: '675be6ca448ed2a47d3f1baf7a755362b4e69e3a10b5427b6bc8c94cfcfba157' },
@@ -77,7 +85,14 @@ export const KERNELS = {
      loops of mask/diff/combine/merge/zonal were folded into one paced walk so a long run can be
      cancelled; not one operation changed, and tests/r754-gis-raster-cancel-checks measures a run
      with a never-cancelling ctx against the same run with no ctx at all, pixel for pixel. */
-  'js/gis-raster.js': { version: 'raster-1', sha256: 'fbc830d56deea70c6b43f0a4369be1f26e35bfdbf17c5c27ae005da515b6c41c' },
+  /* (#R759) HASH ONLY AGAIN, AND THE CHOICE IS THE INTERESTING PART. `diff` now runs its pixel loop
+     on the GIS worker when its caller hands over a door — a different THREAD, not a different answer:
+     there is one implementation of the per-pixel rule (the job function), both arms call it, and
+     tests/r759-gis-worker-checks measures the two outputs byte for byte against an independently
+     written fixture over NaN, infinities, declared sentinels and bands that declare none. A saved
+     recipe replays to the same grid whether or not this browser has workers, which is exactly the
+     condition for leaving the version where it is. */
+  'js/gis-raster.js': { version: 'raster-1', sha256: '5d1e070a28f1476332582c4e42bdb654a7e4bff0cb950dd80c2ad184492a79a8' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
   'js/gis-warp.js': { version: 'warp-1', sha256: '4c7eef1f06a84a9b691cce2559d7de37ba8fe5577ee2f58864b2e19ca50e78f2' },

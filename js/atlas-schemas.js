@@ -116,7 +116,18 @@ export function makeAtlasSchemas() {
          union op and from the panel before it. The refusals carry the vocabulary instead:
          `op-unknown` answers with every op id, and a refused step answers with that op's whole
          declaration, so one wrong call becomes one corrected call rather than a search. */
-      'data.gis': { type: 'object', properties: { op: str(), inputs: list(str()), params: obj(), title: str(), sample: obj() }, required: ['op', 'inputs'] },
+      /* ⚠⚠ (#R759) `acquire` IS THE REQUEST, AND `op` IS NO LONGER REQUIRED. js/gis-sources.js states
+         an acquisition contract — window, time, attribute conditions, projection, page — and
+         js/gis-atlas.js passed NOTHING from it, so every plan started from whatever the renderer
+         happened to hold for wherever the camera happened to be. Declaring the field is what makes it
+         reachable at all (the measured half of [[intmap-prompt-that-hid-the-tools-in-hand]]).
+         ⚠ ITS KEYS ARE UNENUMERATED FOR THE REASON `params` IS, one line down: js/gis-layers.js
+         acquireFields() is the vocabulary, this file cannot read it at planning time, and a copy here
+         would be the second list that drifts. A key it does not accept is refused BY NAME with the
+         whole set. ⚠ AND DROPPING `op` FROM `required` IS THE ACQUISITION STEP ITSELF — inputs with
+         no op means 「取ってくるところまで」, which had no expression before and is the first move of
+         any analysis that wants to know whether its window was answered. */
+      'data.gis': { type: 'object', properties: { op: str(), inputs: list(str()), params: obj(), title: str(), acquire: obj(), kind: one('vector', 'raster'), sample: obj() }, required: ['inputs'] },
       /* (#R752) ⚠ `band` AND `spec` ARE HERE BECAUSE js/gis-core.js DRAWS WITH THEM. A grid with
          three bands is three pictures, and until this round the Atlas door could name none of them:
          the schema declared `dataset` alone, so no planner could express 「2 番目のバンドで」 and

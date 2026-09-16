@@ -474,6 +474,23 @@ r 以内の点の集合」＝「その形と半径 r の円盤の Minkowski 和�
 `IntMapData.lineage(id)` が上流から順に、`dependents(id)` が「これを入力にしているもの」を返す。
 **「半径を 5km から 10km に変えて再計算する」の実体はこれ**である（§4）。
 
+### 3.1 意味は演算をまたぐ — 継承されるもの（#R759）
+
+⚠ **たどれることは、述べていることではない。** `kind:'op'` の記録は入力の id を持っていたので
+**上流までたどれば** coverage も単位も時点も読めた。だが読む者が居なかった——`js/gis-atlas.js` の
+`datasetRow()` は**目の前の記録の** `provenance.coverage` を読むので、演算を 1 つ通った瞬間に
+「一部しか取れていない」は planner から消えていた。**そこで、演算の出力が自分で述べる。**
+
+| 欄 | 規則 | なぜその規則か |
+|---|---|---|
+| `coverage` | 述べた入力のうち**最も弱いもの**が残る（`partial` > `sample` > `all`）。`from` がどの入力の判定か、`inputs` が全入力の申告、`undeclaredInputs` が**何も述べなかった入力** | 答えは、それを作った入力より完全になれない。⚠ **沈黙は `all` ではない**ので、述べていない入力が 1 つでもあれば `completeness` を書かない（問いは開いたまま） |
+| `time`（格子） | **標本が出力に入った入力**＝格子だけが投票する。1 つならそのまま・全部同じならそのまま・違えば**両方を含む区間**・1 つでも述べていなければ `null` ＋ `inputTimes` | 2020 年と 2025 年の差は 2020 年ではない。⚠ `rasterMask` の 2 番目（面）は画素を選ぶだけなので投票しない——**一覧ではなく事実**（それが格子か）で決まる |
+| 列の `unit` | **名前が残った列**だけが、著者ごと引き継ぐ（`unitStated:'inherited'`・`unitStatedAt` が最初の主張者・`unitFrom` が出どころ） | 単位は値から測れない。⚠ 演算の出力は読者が宣言できない（`edit-would-contradict-recipe`）ので、運ばれなければ二度と付かない。⚠ 型は出力自身の測定のまま |
+
+⚠ `provenance.coverage` は**取得の観測ではなく導出された陳述**なので `derived:true` を持つ。
+Atlas へは `datasetRow()` が**投影**する（欄を書き写さない）——1 つの契約に読み手が 2 つあって、
+片方しか知らない欄が蒸発する形は本番で 1 度出荷している（[[intmap-two-readers-one-field-list]]）。
+
 ---
 
 ## 4. プロジェクト保存 — `js/gis-project.js` (`window.IntMapGisProject`)
@@ -673,8 +690,23 @@ geo-engine が持つ geojson source。手で並べた一覧は、次に足され
 
 | 能力 | 何をするか |
 |---|---|
-| `data.gis` | `{"type":"gis","op":OP,"inputs":[REF,…],"params":{…}}` を走らせ、**登録されたデータセットの id** を返す |
+| `data.gis` | `{"type":"gis","op":OP,"inputs":[REF,…],"params":{…},"acquire":{…}}` を走らせ、**登録されたデータセットの id** を返す。⚠ **`op` を述べなければ「取得だけ」**（#R759） |
 | `map.drawDataset` | `{"type":"gisDraw","dataset":REF}` — 出来たものを地図に描く |
+
+⚠ **取得条件は #R759 まで 1 つも渡っていなかった。** この扉は `layers.toDataset(id, {})` ——
+**空の object** を渡していたので、`js/gis-sources.js` が持つ 8 欄の契約のうち planner が使えるものは
+**0 個**だった（画面のパネルは 3 分の 1 を使っていた）。いまは `acquire` が要求そのもので、
+**カメラではない**:
+
+- ベクタ: `bounds` / `where` / `fields` / `limit` / `cursor` / `time`
+- 格子: `bounds` / `width` / `height` / `where` / `unit`（`sample` は #R743 の綴りで、同じ 3 欄。
+  **両方に別々の窓を書いたら断る**——どちらを意味したかはこの file には分からない）
+
+⚠ **語彙の正本は `js/gis-layers.js` の `acquireFields()` 1 か所**で、Atlas 側は**訊く**。
+知らない欄は**名前を挙げて断り、拒否が語彙を運ぶ**。⚠ **`op` の無い依頼は取得**であり、答えは
+取れたものの行・その `coverage`・続きがあるときの `next`（次は `acquire.cursor` に載せる）。
+これは能力の追加ではなく**同じ `data.gis` の別の形**である——形ごとに能力の行を足すのは、この層が
+作らないと決めている手書きの一覧そのもの。
 
 ⚠ **目録は `ops()` そのもので、写しではない。** op を `DECL` に 1 本足せば、その日のうちに画面にも
 Atlas にも出る。Atlas 側に op の一覧を書くことは、#R732 が画面で測った欠陥（`ORDER` が 4・`DECL` が 9）
@@ -764,6 +796,21 @@ Atlas は鎖を始められない**——何も取り込んでいないセッシ
 | `volcanoes` | `complete:true` / `viewBound:false`（`live` は述べない） | `data/volcanoes_gvp.json` 全件。⚠ 観測所の状態は同じ地物へ更新されるので「更新されない」とは言えない |
 | `aircraft` | `complete:false` / `viewBound:true` / `live:true` | airplanes.live に**カメラ矩形**で問い合わせる |
 | `ships` | `complete:false` / `viewBound:true` / `live:true` | AIS の購読も中継も**カメラの bbox** を運ぶ |
+| `pharma` | `complete:true` / `viewBound:false` / `live:false`（#R759） | 同梱の配列を丸ごと `ph-src` に書く。bbox・上限・ズーム・視野が読み込み経路に 1 つも無い |
+
+⚠ **#R759 は 30 の登録行を全部読んで、この 5 行以外は述べられないことを実測した。** 内訳は
+**地物を持たない 17 行**（ラスタ／タイル／点の標本だけ。`featuresIn` が無いので `holds` を足しても
+供給元にはなれない）と、**読み込み経路に絞り込みが実在する 8 行**——カメラ矩形（`webcams`・
+`datacenters`）、件数上限（`webcams` は 1500・`earthquakes` は 2000）、下限マグニチュードと時間窓
+（`earthquakes` の `4.5_month`）、provider ごとのページ取得と実行時の打ち切り（`radiation`）、
+時間窓と病原体の絞り込み（`outbreaks`）、読者が選んだ群だけを保持する（`satellites`）、
+非表示なら空を書く（`news`）。⚠ **「宣言が足りない」のではなく、上流の実態がそうなっている。**
+一律に `complete:true` を足すことは、この層が測るためにある主張を偽ることになる。
+
+⚠ **供給元の採用は時点に依存する。** `supplierFor()` の 2 つ目の条件は「実際に地物を渡すか」で、
+`_srcFeatsIn` は**レイヤーがまだソースを作っていないと `null`** を返す。⇒ **一度も点けていない
+レイヤーは、宣言していても供給元にならない**（取得は `layer-not-sampling` で断られる）。
+表示せずに読み込む扉は今のところ無く、これが「画面に依存しない取得」に残っている最後の依存である。
 
 ⚠ **ページの継ぎ目は「重複も欠落も無いこと」で測る。** `next` は**終わりのときも `null` として
 在る**（欄が在ること自体が「継続について述べた」）——欄が無いのは `continuation-unstated` であって
@@ -771,7 +818,20 @@ Atlas は鎖を始められない**——何も取り込んでいないセッシ
 
 ## 6. どこまでやるか・何をやらないか（現時点）
 
-- **Worker は在るが、幾何の runner はまだ載っていない。** `js/gis-worker.js`（`IntMapGisWorker`）が
+- **⚠ #R759 まで、Worker には呼び出し元が 1 つも無かった。** `run` / `register` / `probe` を呼ぶコードは
+  `js/` にも `tests/` にも**0 件**で、登録ジョブは 1 本、その 1 本も誰も走らせていなかった。
+  ⇒ **いま `rasterDiff` の画素ループは別スレッドで走る**（`js/gis-ops.js` が口を渡し、
+  `js/gis-raster.js` の `diff()` が使えるときだけ使う）。⚠ **算術の実装は 1 本**——ジョブ関数が
+  画素ごとの規則を持ち、**主スレッドの腕も同じ関数を呼ぶ**（2 つの綴りは 2 つの答えになる）。
+  結果は `transferable` で戻り、複製を作らない。⚠ **中止は走行中の算術に届く**（実測: 400 万画素の
+  うち報告できたのは 1.6% で、閉じの進捗は来ない＝殺されている）。⚠ **使えなかったことは結果に
+  書かれる**（`worker: {used:false, reason}` ／ op の `stats.worker`）——成功した実行の診断なので
+  `why` ではない（`why` は拒否のコード）。
+- **まだ運べないもの: `combine` と `rasterCalc`。** `fn` はクロージャ（`js/gis-expr.js` の compile 済みで
+  AST と数値規則を閉じ込めている）で、Worker は `fn.toString()` を評価するので
+  `job-not-self-contained` になる。⚠ **運べるようにする道は在る**（AST は JSON なので、評価器そのものを
+  ジョブの本文にして `{ast, rule}` を渡す）——`mask` / `merge` / `zonal` と一緒に次の回の主題。
+- **幾何の runner はまだ載っていない。** `js/gis-worker.js`（`IntMapGisWorker`）が
   **純粋な算術**——数値配列の上の画素ループ——をメインスレッドの外へ運ぶ。⚠ §2.6 の yield の
   **代わりではなく隣**である: あちらが足すのは応答性、こちらが足すのは**並列性**。⚠ 幾何の runner は
   今も 1 本の thread で走る。そこが呼ぶもの（sweep line・レジストリ・測地）が全部この thread に在り、

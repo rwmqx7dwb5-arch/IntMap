@@ -108,6 +108,18 @@
  *  `sample` awaitable would make every warp await once per output pixel per band for no cancellation
  *  the warp's own ctx does not already provide.
  *
+ *  ══ ⚠⚠⚠ AND ONE OF THOSE WALKS NOW RUNS ON THE OTHER THREAD (#R759) ══════════════════════════
+ *  js/gis-worker.js was written in #R752 and, measured before this round, had NO CALLER: `run()`,
+ *  `register()` and `probe()` appear nowhere in js/ or tests/, and its one registered job was run by
+ *  nobody. 「Worker が実装されている」 was true; 「普段の分析が Worker で走る」 was not.
+ *  ⇒ `diff` takes a worker as an option (`opts.worker`, INJECTED — see `workerDoor`) and runs its
+ *  pixels there when it is given one. The arithmetic is not copied across the two paths: the job
+ *  function is registered into the worker AND called on this thread, and the per-pixel rule is
+ *  reached through a door in it so `paced` keeps owning the main-thread loop. A worker that is
+ *  absent, blocked, dead or answering the wrong shape finishes HERE, with the reason written into
+ *  the result (`worker.used === false`) — but a CANCELLED run is not re-run, because 「読者が止めた」
+ *  is not 「別スレッドが壊れた」.
+ *
  *  ⚠ REFUSALS ARE CODES, NOT SENTENCES — `{ ok:false, why, detail }`, and the nine languages live at
  *  the call site (docs/GIS-CORE.md §2.2). ⚠ AND THEY ARE REAL REFUSALS: two grids that do not share a
  *  grid are not resampled to be subtractable (`grid-mismatch`), and non-integer values are not
@@ -921,6 +933,135 @@ export function makeGisRaster() {
       return Object.keys(off).length ? off : null;
     }
 
+    /* ══ ⚠⚠⚠ THE DIFFERENCE IS WRITTEN ONCE AND RUN BY TWO RUNNERS (#R759) ═════════════════════
+       MEASURED BEFORE THIS WAS WRITTEN: js/gis-worker.js existed, and `run()` / `register()` /
+       `probe()` had ZERO callers in js/ and in tests/ — one registered job (`grid.binary`) that
+       nothing ran. 「Worker がある」 and 「普段の分析が Worker で走る」 are not the same sentence, and
+       only the first of them was true. This is the second one, for the walk that had the best claim
+       to it: a pixel-for-pixel subtraction, which is arithmetic over numbers and nothing else.
+
+       ⚠ A JOB IS REBUILT FROM ITS OWN SOURCE TEXT IN THE WORKER'S GLOBAL SCOPE, SO IT CLOSES OVER
+       NOTHING (js/gis-worker.js states the contract three ways). That is why this function names no
+       helper of this module — not `missing`, not `isNum`, not `refuse` — and why the two runners do
+       not each get a copy of the arithmetic: THE SAME FUNCTION OBJECT is registered into the worker
+       and called here. A second spelling of 「片方が欠損なら差も欠損」 in a main-thread arm is the
+       copy .agents/rules/no-ad-hoc-hardcoding.md §1 forbids, and it is the copy that would keep
+       agreeing with this one right up until somebody edited one of them.
+
+       ⚠ AND THE PER-PIXEL RULE IS REACHABLE ON ITS OWN (`{ rule:true }`), BECAUSE THE TWO RUNNERS DO
+       NOT AGREE ABOUT WHO OWNS THE LOOP. In the worker the loop belongs to the job — there is no
+       frame to yield to and no signal to read, the whole thread is the unit of cancellation. On this
+       thread the loop belongs to `paced`, which is what makes the walk let go between two pixels and
+       report `done`/`total` in PIXELS (#R756, and tests/r756 ② measures both numbers). So the job
+       hands its rule out to a runner that owns its own pacing, and `diffHere` below walks with THIS
+       function rather than with a second one. The door answers a function, which is not structured-
+       cloneable — a worker asked for it would report `result-not-transferable`, by name — and no
+       caller sends it there: it is the main thread's door into the job, and `diff` is its only user.
+
+       ⚠ THE MISSING RULE IS `missing()`'s, NOT A SECOND ONE. The text below cannot call it (see the
+       contract above), so tests/r759 ① runs both over the same values — NaN, ±Infinity, the declared
+       sentinel, a grid with no sentinel — and fails if they classify one pixel differently. An
+       assertion in a comment is what would rot; a measurement is what does not. */
+    function gridDiffJob(p, ctx) {
+      /* ⚠ NaN OUT MEANS 「入力が欠損だった」 AND NOTHING ELSE: the difference of two finite numbers
+         is never NaN. It can overflow to ±Infinity (1e308 − −1e308), which `diff` has always counted
+         as a value, so the caller's count is exact rather than nearly right. */
+      function pixel(x, y, ndA, ndB) {
+        if (typeof x !== 'number' || !isFinite(x) || (ndA != null && x === ndA)) return NaN;
+        if (typeof y !== 'number' || !isFinite(y) || (ndB != null && y === ndB)) return NaN;
+        return x - y;
+      }
+      if (p && p.rule === true) return { ok: true, value: pixel };
+      const a = p ? p.a : null, b = p ? p.b : null;
+      /* ⚠ THE KERNEL'S OWN WORDS FOR THE SAME TWO FACTS, not a private vocabulary for this job:
+         「帯が配列として読めなかった」 is `read-not-array` (with WHICH side, because 「片方が壊れて
+         いる」 without saying which one sends the reader to the grid that was fine) and 「その二つは
+         同じ格子ではない」 is `grid-mismatch`. A job that invented two more names would be two more
+         codes arriving at a panel that has a sentence for neither. */
+      if (!a || typeof a.length !== 'number') return { ok: false, why: 'read-not-array', detail: { which: 'a' } };
+      if (!b || typeof b.length !== 'number') return { ok: false, why: 'read-not-array', detail: { which: 'b' } };
+      const n = a.length;
+      if (b.length !== n) return { ok: false, why: 'grid-mismatch', detail: { a: n, b: b.length } };
+      const ndA = (typeof p.nodataA === 'number' && isFinite(p.nodataA)) ? p.nodataA : null;
+      const ndB = (typeof p.nodataB === 'number' && isFinite(p.nodataB)) ? p.nodataB : null;
+      let out;
+      /* The same refusal, by the same name, from whichever thread ran out of memory. */
+      try { out = new Float64Array(n); } catch (e) { return { ok: false, why: 'raster-too-large', detail: { cells: n } }; }
+      let count = 0, nodataCount = 0;
+      /* Progress at most 64 times whatever the grid's size — the number js/gis-worker.js's own job
+         derives, for the reason it states there: inside a worker the interval is about message
+         traffic, not about responsiveness, and 64 is what a progress bar can show. */
+      const step = Math.max(1, Math.floor(n / 64));
+      const say = (ctx && typeof ctx.progress === 'function') ? ctx.progress : null;
+      for (let i = 0; i < n; i++) {
+        const v = pixel(a[i], b[i], ndA, ndB);
+        out[i] = v;
+        if (Number.isNaN(v)) nodataCount++; else count++;
+        if (say && (i % step) === 0) say(i, n);
+      }
+      if (say) say(n, n);
+      /* ⚠ THE RESULT IS TRANSFERRED, NOT COPIED. The worker allocated this buffer and nobody else
+         holds a view of it, so there is no owner to surprise — js/gis-worker.js's transfer contract,
+         in the one direction that has no option. */
+      return { ok: true, value: { values: out, length: n, count: count, nodataCount: nodataCount }, transfer: [out.buffer] };
+    }
+
+    const DIFF_JOB = 'raster.diff';
+    /* The per-pixel rule, taken out of the job ONCE (see the door above) rather than per call. */
+    const DIFF_RULE = gridDiffJob({ rule: true }).value;
+
+    /* ⚠ THE WORKER IS INJECTED, LIKE THE ctx AND UNLIKE `window.IntMapGeodesy`. This kernel reads
+       `window.*` for the things it ASKS QUESTIONS OF (a radius, a point-in-polygon verdict); a second
+       thread is not a question, it is a RUNNER the caller chooses for a particular call, and a kernel
+       that reached for `window.IntMapGisWorker` itself would decide for every caller at once and
+       would stop being the DOM-free module #R575 requires (tests/r735 boots it with no window at
+       all). So the door is `opts.worker`, and a caller that hands none gets exactly the walk it got
+       before this round — same arithmetic, same thread, byte for byte. */
+    /* ⚠ THREE ANSWERS, NOT TWO: no door was offered (null — nothing to report, and the result keeps
+       the shape every caller before this round reads), a door that cannot be used (a NOTE, carried
+       into the answer so 「なぜこの計算はこのスレッドで走ったのか」 is readable rather than guessed),
+       or the door itself. 「使えなかった」 and 「渡されなかった」 reaching the reader as one silence is
+       [[intmap-one-store-was-asked]], in a runner. */
+    function workerDoor(opts) {
+      const w = opts && opts.worker;
+      if (!w) return null;
+      if (typeof w.run !== 'function') return { note: { used: false, reason: 'worker-door-invalid' } };
+      /* `available()` is the SYNCHRONOUS capability question (js/gis-worker.js separates it from
+         `probe()` for exactly this: a caller has to choose a path without awaiting one). A door that
+         says no is not a failure — it is an environment without workers, and the answer is the main
+         thread with that fact written down. */
+      try {
+        if (typeof w.available === 'function' && !w.available()) return { note: { used: false, reason: 'worker-unavailable' } };
+      } catch (e) {
+        return { note: { used: false, reason: 'worker-door-invalid', detail: { message: String((e && e.message) || e) } } };
+      }
+      return { worker: w };
+    }
+
+    /* Registered ONCE PER DOOR, and asked rather than remembered: js/gis-worker.js counts a
+       registry change as a revision and retires idle workers built from an older one, so registering
+       on every call would spawn a fresh thread for every difference. The registry itself is the
+       record of what is registered — a WeakSet here would be a second one. */
+    function ensureDiffJob(w) {
+      try {
+        const names = (typeof w.jobNames === 'function') ? w.jobNames() : null;
+        if (names && names.indexOf(DIFF_JOB) >= 0) return { ok: true };
+        if (typeof w.register !== 'function') return { ok: false, reason: 'job-not-registrable' };
+        const r = w.register(DIFF_JOB, gridDiffJob, {
+          decl: {
+            id: DIFF_JOB,
+            inputs: [{ name: 'a', type: 'band' }, { name: 'b', type: 'band' }],
+            params: [{ name: 'nodataA', type: 'number|null' }, { name: 'nodataB', type: 'number|null' }],
+            output: { values: 'band', length: 'count', count: 'count', nodataCount: 'count' },
+          },
+        });
+        if (!r || !r.ok) return { ok: false, reason: (r && r.why) || 'job-not-registered', detail: (r && r.detail) || null };
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, reason: 'job-not-registered', detail: { message: String((e && e.message) || e) } };
+      }
+    }
+
     /* a − b, pixel by pixel, on the grid both of them are on. ⚠ TWO GRIDS THAT ARE NOT THE SAME GRID
        ARE NOT RESAMPLED HERE. Resampling is a CHOICE (which of nearest/bilinear/area-average, onto
        whose grid, with what happening at the voids), and making it silently inside a subtraction
@@ -937,29 +1078,140 @@ export function makeGisRaster() {
       if (off) return refuse('grid-mismatch', off);
       const A = values(a, bandIndex); if (!A.ok) return A;
       const B = values(b, bandIndex); if (!B.ok) return B;
+      const ctx = useCtx(opts);
+      const door = workerDoor(opts);
+      /* ⚠ THE ANSWER IS THE SAME EITHER WAY AND THE SHAPE OF THE CALL IS NOT: a usable door means a
+         promise, because another thread cannot answer within this turn. A caller that hands over no
+         door is untouched — including every synchronous one this file already has. */
+      if (door && door.worker) return diffOffThread(a, A, B, door.worker, ctx);
+      return diffHere(a, A, B, ctx, door ? door.note : null);
+    }
+
+    /* The result of a finished difference, built in ONE place, because two arms that assemble their
+       own would be two answers to 「単位は残るのか」 wearing one name. */
+    function diffResult(a, A, B, out, count, nodataCount, note) {
+      /* The unit survives only if both sides state the same one: 「mm − °C」 has no unit, and writing
+         one of the two would let a chart label a nonsense number confidently. */
+      const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
+      const name = String(A.band.name == null ? '' : A.band.name) + ' − ' + String(B.band.name == null ? '' : B.band.name);
+      const res = {
+        ok: true,
+        /* nodata null: the difference declares no sentinel, it writes NaN (see mask). */
+        raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
+        count: count, nodataCount: nodataCount,
+      };
+      /* ⚠ 「Worker で走った」 と 「Worker が使えなかった」 ARE BOTH REPORTED, and only to a caller who
+         offered one. A door that was offered and not used is the diagnosis
+         [[intmap-atlas-failed-because-intmap-said-so]] asks for — the run SUCCEEDED, and the reader
+         who wonders why it took the thread can read why instead of guessing.
+         ⚠ AND ITS FIELD IS `reason`, NOT `why`. In this layer `why` is the code of a REFUSAL
+         (docs/GIS-CORE.md §2.2, and this object is `ok:true`), and js/gis-panel.js has a sentence
+         for every one of those. A diagnosis about which runner answered is not one of them — the
+         reader got their grid — so it does not borrow the word that would make a reader, or a check
+         over the refusal vocabulary, read a successful run as a failed one. The value it carries is
+         js/gis-worker.js's own code, unchanged, because 「なぜ別スレッドが使えなかったか」 is that
+         module's statement and paraphrasing it here would be a second vocabulary. */
+      if (note) res.worker = note;
+      return res;
+    }
+
+    /* THIS thread, `paced` — the walk #R756 made interruptible, unchanged except that the arithmetic
+       it runs is now the job's own rule rather than a copy of it. */
+    function diffHere(a, A, B, ctx, note) {
       const n = a.width * a.height;
       let out;
       try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
       let count = 0, missingCount = 0;
       return paced(n, (i) => {
-        const x = A.values[i], y = B.values[i];
         /* ⚠ Either side missing means the DIFFERENCE is missing. A void read as 0 would report the
            other grid's value as the change — the same 「void blended into a measurement」 failure as
            the bilinear above, in subtraction form. */
-        if (missing(x, A.nodata) || missing(y, B.nodata)) { out[i] = NaN; missingCount++; return; }
-        out[i] = x - y; count++;
-      }, useCtx(opts), () => {
-        /* The unit survives only if both sides state the same one: 「mm − °C」 has no unit, and writing
-           one of the two would let a chart label a nonsense number confidently. */
-        const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
-        const name = String(A.band.name == null ? '' : A.band.name) + ' − ' + String(B.band.name == null ? '' : B.band.name);
-        return {
-          ok: true,
-          /* nodata null: the difference declares no sentinel, it writes NaN (see mask). */
-          raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
-          count: count, nodataCount: missingCount,
-        };
-      });
+        const v = DIFF_RULE(A.values[i], B.values[i], A.nodata, B.nodata);
+        out[i] = v;
+        if (Number.isNaN(v)) missingCount++; else count++;
+      }, ctx, () => diffResult(a, A, B, out, count, missingCount, note));
+    }
+
+    /* ⚠⚠⚠ THE OTHER THREAD, AND THE ONE THING IT ADDS THAT PACING NEVER COULD (#R735): a stop that
+       reaches arithmetic ALREADY RUNNING, because js/gis-worker.js answers an abort with
+       `terminate()` rather than by asking the loop's permission.
+       ⚠ THE ctx MEANS THE SAME THING HERE. `tick(units,total)` is still what decides whether the run
+       continues and still accumulates the same units in PIXELS, so a caller's `ctx.done()` and a
+       cancellation's `done`/`total` read identically on both paths; the only difference is that a
+       tick which yields yields to a thread that is not doing the arithmetic.
+       ⚠ AND A RUN THAT COULD NOT BE STOPPED IS NOT STARTED. If a ctx was handed over and there is no
+       way to build a stop handle for it, this returns to the main thread rather than starting a job
+       whose reader's stop button would be decoration — which is the defect, not a variant of it.
+       ⚠ THE PAYLOAD IS CLONED (`own:'caller'`), DELIBERATELY. `own:'worker'` detaches every buffer it
+       can reach, and these two are the INPUT GRIDS' own planes (`read()` hands back the array it
+       holds) — transferring them would empty the caller's rasters as a side effect of asking a
+       question about them. The result travels the other way with no copy at all. */
+    async function diffOffThread(a, A, B, w, ctx) {
+      const n = a.width * a.height;
+      const fallback = (reason, detail) => diffHere(a, A, B, ctx, detail ? { used: false, reason: reason, detail: detail } : { used: false, reason: reason });
+
+      const reg = ensureDiffJob(w);
+      if (!reg.ok) return fallback(reg.reason, reg.detail);
+
+      let stop = null;
+      if (ctx) {
+        try { if (typeof ctx.aborted === 'function' && ctx.aborted()) return cancelled(0, n); } catch (_) { }
+        if (typeof AbortController !== 'function') return fallback('stop-handle-unavailable');
+        stop = new AbortController();
+        /* Carried, not re-read: the ctx's own signal must reach the thread, or the reader's cancel
+           stops working the moment the work moves one call deeper (js/gis-ops.js `makeCtx` says the
+           same sentence about the same shape). */
+        if (ctx.signal) { try { ctx.signal.addEventListener('abort', () => stop.abort(), { once: true }); } catch (_) { } }
+      }
+
+      /* Progress messages ARE the ticks. The protocol's `onProgress` is synchronous and `tick` is
+         not, so the asks are chained — one at a time, in order — and the first 「止めて」 aborts the
+         thread. `reported` is where the walk had got to when that happened, which is the `done` the
+         cancellation carries. */
+      let reported = 0, stopped = false;
+      let chain = Promise.resolve(true);
+      const onProgress = (p) => {
+        if (!ctx || stopped) return;
+        const at = (p && typeof p.done === 'number' && isFinite(p.done)) ? p.done : reported;
+        const units = at - reported;
+        if (units <= 0) return;
+        reported = at;
+        chain = chain.then((go) => (go ? ctx.tick(units, n) : false)).then((go) => {
+          if (!go && !stopped) { stopped = true; try { stop.abort(); } catch (_) { } }
+          return go;
+        }, () => true);
+      };
+
+      const res = await w.run(DIFF_JOB, {
+        a: A.values, b: B.values, nodataA: A.nodata, nodataB: B.nodata,
+      }, { own: 'caller', signal: stop ? stop.signal : null, onProgress: ctx ? onProgress : null });
+
+      if (ctx) { try { await chain; } catch (_) { } }
+      if (stopped) return cancelled(reported, n);
+
+      if (!res || !res.ok) {
+        const why = res ? res.why : 'worker-answered-nothing';
+        /* ⚠ A CANCELLATION IS NOT A BROKEN WORKER. Re-running it here would spend the whole grid's
+           work on this thread on behalf of a reader who had just asked for none of it — the exact
+           freeze the stop button exists to end. Everything else falls back, because 「別のスレッドが
+           駄目だった」 is not 「答えが無い」 and a silent empty answer is what this layer refuses. */
+        if (why === 'aborted' || why === 'cancelled') return cancelled(reported, n);
+        return fallback(why, res && res.detail ? res.detail : null);
+      }
+      const value = res.value;
+      const out = value ? value.values : null;
+      /* The worker is a runner, not an authority: an answer of the wrong shape is re-computed here
+         rather than handed on. */
+      if (!out || typeof out.length !== 'number' || out.length !== n) return fallback('worker-answer-malformed');
+
+      if (ctx) {
+        /* ⚠ THE PACER IS ASKED ON THE LAST PASS TOO, exactly as `paced` asks it, so `ctx.done()` ends
+           equal to `total` and a progress line reaches 100% instead of stopping one pass short. */
+        const go = await ctx.tick(n - reported, n);
+        reported = n;
+        if (!go) return cancelled(n, n);
+      }
+      return diffResult(a, A, B, out, value.count, value.nodataCount, { used: true, job: DIFF_JOB });
     }
 
     /* ── combine: the same subtraction, with the arithmetic named by the caller ───────────────── */
@@ -983,7 +1235,24 @@ export function makeGisRaster() {
        and null when they make none. Deriving one here would let a chart label a nonsense number.
        ⚠ AND A THROWING `fn` DOES NOT TAKE THE GRID WITH IT, and does not vanish either: the pixel is
        a void (there is no answer for it), `failed` counts them and `failedError` carries the first
-       message — the same shape `fromSampler` uses for a sampler that throws, for the same reason. */
+       message — the same shape `fromSampler` uses for a sampler that throws, for the same reason.
+
+       ⚠⚠⚠ AND THIS IS WHY `combine` DOES NOT GET THE SECOND THREAD `diff` GOT (#R759). It is not a
+       size judgement — this walk is the expensive one — it is that `fn` CANNOT CROSS. Read from the
+       implementation, not assumed: js/gis-ops.js `runRasterCalc` builds `fn` as `(x, y) => { row.a =
+       x; row.b = y; const r = c.fn(row); … }`, which closes over `row`, over `firstError`, and over
+       `c` — and `c.fn` is js/gis-expr.js `compile`'s own arrow, closing over the parsed AST `p.ast`
+       and the number rule `R`, neither of which is in the text of either function. js/gis-worker.js
+       registers `fn.toString()` and evaluates it in the worker's global scope, so every one of those
+       names arrives there as a ReferenceError — reported by name as `job-not-self-contained`, which
+       is a refusal rather than a wrong answer, and still not a difference map.
+       ⇒ WHAT WOULD MAKE IT CARRIABLE, so this is a route and not a wall: the closure's contents are
+       DATA. `p.ast` is JSON (js/gis-expr.js `parse` builds plain nodes) and the number rule is a
+       declaration. A job whose TEXT is the evaluator — the walk plus `evalNode` and the `FUNCS` table
+       written self-containedly, or generated from js/gis-expr.js's source in one place so there is
+       still one expression language — taking `{ ast, rule }` as `deps` would run the same expression
+       on the other thread. That is a job for whoever moves the evaluator, and it is the only shape
+       that does not end with two dialects of the same expression language. */
     function combine(a, b, bandA, bandB, fn, meta) {
       const va = validate(a); if (!va.ok) return refuse('raster-invalid', { which: 'a', field: (va.detail && va.detail.field) || null });
       const vb = validate(b); if (!vb.ok) return refuse('raster-invalid', { which: 'b', field: (vb.detail && vb.detail.field) || null });

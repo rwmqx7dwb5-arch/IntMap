@@ -582,9 +582,30 @@ export function makeGisLayers() {
       catch (e) { return { ok: false, why: 'add-failed', detail: { message: e && e.message } }; }
     }
 
+    /* ══ ⚠⚠⚠ (#R759) 取得の語彙は 1 つで、それを名乗れるのはこの扉である ════════════════════════
+       js/gis-sources.js states the acquisition contract — bbox, time, where, fields, limit, cursor,
+       signal, onProgress — and js/gis-panel.js and js/gis-atlas.js are the two callers that reach it,
+       through toDataset/toRaster. ⚠ MEASURED: the Atlas door passed `layers.toDataset(id, {})` — an
+       EMPTY object, every time. So a planner could not ask for 「この範囲の」「この条件に合う」「続きを」
+       at all: the contract existed, the panel used a third of it, and the half of the app that plans
+       could use none of it. A capability the planner is not told it can pass is a capability it does
+       not use ([[intmap-prompt-that-hid-the-tools-in-hand]]).
+       ⚠ AND THE FIX IS ONE LIST, NOT A SECOND ONE IN THE PLANNER'S FILE. js/gis-atlas.js validates
+       what it was handed against THIS, and a refusal carries it — so a field added to toDataset
+       tomorrow is reachable from Atlas the same day, and a field a planner invents is refused by name
+       instead of being dropped silently. That silent drop is [[intmap-two-readers-one-field-list]],
+       which this project has already shipped once, in production, over `map.highlight`.
+       ⚠ WHAT IS NOT IN IT: `signal` and `onProgress` are the caller's own plumbing, not a request;
+       `id` and `title` name the record rather than choosing the data. A planner states neither. */
+    const ACQUIRE = {
+      vector: ['bounds', 'where', 'fields', 'limit', 'cursor', 'time'],
+      raster: ['bounds', 'width', 'height', 'where', 'unit'],
+    };
+    function acquireFields(kind) { const k = String(kind == null ? 'vector' : kind); return (ACQUIRE[k] || []).slice(); }
+
     /* (#R756) js/gis-sources.js asks this when it is looking for a supplier and has none: see the
        section above for why the answer is built from the registration rather than kept in a list. */
-    const API = { sources, read, toDataset, toRaster, canSample, supplierFor };
+    const API = { sources, read, toDataset, toRaster, canSample, supplierFor, acquireFields };
     try { window.IntMapGisLayers = API; } catch (_) { }
     return API;
   })();
