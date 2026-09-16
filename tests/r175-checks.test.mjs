@@ -382,12 +382,29 @@ test('R175 ③: the build stamp was bumped', () => {
      ものか」) rather than to whoever remembers to write it down
      ([[intmap-hist-names-rule-belongs-to-the-name]]).
 
-     ⚠ 見出しの階層は固定しない: entries have shipped as both `### R756` and `## R755`, and a check
-     that demanded one of them would fail for a reason that has nothing to do with the stamp. */
+     ⚠⚠⚠ AND IT ASKS THE QUESTION THE WAY THE OTHER READERS ASK IT. Four checks already derive 「最新
+     のラウンド」 from this file with `/^## R(\d+)/` (tests/r207-checks · r219-checks · r264-checks ·
+     r301-checks). #R756's own first draft used a looser pattern here, which made a SECOND rule for
+     one fact — and the round's DEV-NOTES entry, written as `### R756` with `##` subsections under
+     it, was visible to the loose reader and invisible to the strict four. The new check passed and
+     the four failed, on an entry that was simply malformed ([[intmap-two-readers-one-field-list]]).
+     So: one spelling, the one that already existed — plus the measurement that an entry written at
+     the WRONG LEVEL cannot hide, because an entry no round-finder can see is the same defect as a
+     stamp nobody moved. */
   const notes = readFileSync(join(ROOT, 'DEV-NOTES.md'), 'utf8');
-  const rounds = [...notes.matchAll(/^#{1,4}\s*R(\d+)\b/gm)].map((m) => Number(m[1]));
+  const rounds = [...notes.matchAll(/^## R(\d+)\b/gm)].map((m) => Number(m[1]));
   assert.ok(rounds.length > 0, 'DEV-NOTES.md states no round at all — the stamp has nothing to agree with');
   const newest = Math.max(...rounds);
+
+  /* ⚠ An entry at any other heading level is not an entry these readers have. Older anomalies below
+     the newest are harmless (nothing derives a maximum from them); one ABOVE it hides the round. */
+  const anyLevel = [...notes.matchAll(/^#{1,5} R(\d+)\b/gm)].map((m) => Number(m[1]));
+  const seenAnyhow = Math.max(...anyLevel);
+  assert.equal(seenAnyhow, newest,
+    'DEV-NOTES.md states R' + seenAnyhow + ' at a heading level the round-finders do not read ' +
+    '(they take `## R<N>`), so every check that asks this file for the newest round still answers R' +
+    newest + ' — write the entry as `## R<N>` with `### N.` sections under it');
+
   const stamped = /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/.exec(index);
   assert.equal(Number(stamped[1]), newest,
     'the build stamp names R' + stamped[1] + ' and the newest round in DEV-NOTES.md is R' + newest +
