@@ -29,9 +29,12 @@
  *  .agents/rules/historical-verification.md §3 is about, in a new place.
  *  ⇒ SO `all` IS ONLY REACHED WHEN THE SUPPLIER ITSELF SAYS SO, through `declare()`, and the
  *  declaration is CHECKED against the window that was asked for. With no declaration the answer is
- *  `partial` and the reason says which kind of silence it was. ⚠ TODAY NO MODULE DECLARES, so today
- *  every acquisition reads `partial`. That is not a defect of this file — it is the true state of the
- *  app, stated for the first time, and it is what a module has to fix by saying what it holds.
+ *  `partial` and the reason says which kind of silence it was.
+ *  ⚠ (#R756) AND THE 「NOBODY DECLARES」 THAT USED TO BE WRITTEN HERE IS OVER. The layer registry
+ *  publishes each row's own statement (js/map-ui.js `holds` → `IntMapLayers.declarationOf`), so a
+ *  built-in layer that holds a whole shipped file says so and reaches `all`; the rows that fetch the
+ *  camera's rectangle say THAT, and read `supplier-view-bound` instead of a silence. A row that says
+ *  nothing still reads `partial` / `extent-undeclared`, which remains the true state of most of them.
  *
  *  ⚠ AND ONE THING IS MEASURED RATHER THAN DECLARED. When the caller asked for everything and no
  *  declaration exists, this file compares what the supplier hands over for the WORLD against what it
@@ -63,10 +66,11 @@
  *      fetch({bbox, time, where, fields, limit, cursor, signal, onProgress})
  *        → {ok, features[], coverage?, next?}
  *
- *  ⚠ THE DELEGATION IS NOT REPLACED. Nothing is registered today, and the renderer path is the one
- *  road every layer in this app actually travels; removing it would be removing the feature. A
- *  supplier is consulted when one exists, and when none does the answer comes from where it always
- *  came from, with the coverage it always had.
+ *  ⚠ THE DELEGATION IS NOT REPLACED. The renderer path is the one road most layers in this app
+ *  travel; removing it would be removing the feature. A supplier is consulted when one exists, and
+ *  when none does the answer comes from where it always came from, with the coverage it always had.
+ *  ⚠ (#R756) AND ONE EXISTS NOW: js/gis-layers.js builds an implementation out of a layer's own
+ *  declaration (supplierFor), so the two gates below stopped being a wall in front of every id.
  *
  *  ⚠ `next` ABSENT IS NOT 「もう無い」. `coverage.continues` is three-valued — true when the supplier
  *  handed over a cursor, false when it said `next:null` (an explicit 「これで終わり」), and NULL when it
@@ -91,9 +95,12 @@
  *  which the list does not name marks itself `undeclared:true` rather than passing unseen. The supply
  *  contract's refusals (`where-not-supported`, `cursor-not-supported`, `supplier-is-async`,
  *  `supplier-failed`, `supplier-answer-invalid`) are reachable ONLY through a request that named
- *  `where` or `cursor`, or through a registered implementation — no shipped control does either yet,
- *  so no reader meets them until one is wired, and wiring one means giving them nine languages
- *  alongside the codes js/gis-panel.js already speaks.
+ *  `where` or `cursor`, or through a registered implementation.
+ *  ⚠ (#R756) IMPLEMENTATIONS EXIST NOW, AND NO SHIPPED CONTROL NAMES `where` OR `cursor` STILL. So
+ *  what a reader can meet through the panel is unchanged (`bad-param`, `layer-not-visible` — both
+ *  already spoken in nine languages), and `where-not-supported` / `cursor-not-supported` remain
+ *  reachable only from a caller that asked for one. ⚠ WIRING A CONTROL FOR EITHER MEANS GIVING THEM
+ *  NINE LANGUAGES IN js/gis-panel.js FIRST — the sentence is what a reader is owed, not the code.
  *
  *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
  *  module imports in Node with no DOM and refuses by name instead of throwing.
@@ -197,18 +204,19 @@ export function makeGisSources() {
        「その中を漏れなく持っているか」 are two statements. */
     const declared = new Map();
 
-    function declare(id, decl) {
-      const key = String(id == null ? '' : id);
-      if (!key) return refuse('bad-param', { param: 'id', value: id });
-      if (decl === null) { declared.delete(key); return { ok: true, id: key, declaration: null }; }
-      if (!decl || typeof decl !== 'object') return refuse('bad-param', { param: 'declaration', value: decl });
+    /* ONE READING OF A DECLARATION, wherever the declaration came from. Returns the record, or null
+       when the statement cannot be read — the two callers below want different things said about
+       that (declare() names the offending parameter, the registry route stays silent), and a second
+       normaliser is how the two routes end up disagreeing about what `complete` means. */
+    function readDeclaration(decl) {
+      if (!decl || typeof decl !== 'object') return null;
       let extent = null;
       if (decl.extent != null) {
         extent = asBox(decl.extent);
-        if (!finiteBox(extent)) return refuse('bad-param', { param: 'declaration.extent', value: decl.extent });
+        if (!finiteBox(extent)) return null;
         extent = copyBox(extent);
       }
-      const d = {
+      return {
         extent: extent,
         complete: decl.complete === true,
         viewBound: decl.viewBound === true,
@@ -216,11 +224,39 @@ export function makeGisSources() {
         asOf: (decl.asOf == null || decl.asOf === '') ? null : String(decl.asOf),
         resolution: (decl.resolution === undefined) ? null : decl.resolution,
       };
+    }
+
+    function declare(id, decl) {
+      const key = String(id == null ? '' : id);
+      if (!key) return refuse('bad-param', { param: 'id', value: id });
+      if (decl === null) { declared.delete(key); return { ok: true, id: key, declaration: null }; }
+      if (!decl || typeof decl !== 'object') return refuse('bad-param', { param: 'declaration', value: decl });
+      const d = readDeclaration(decl);
+      if (!d) return refuse('bad-param', { param: 'declaration.extent', value: decl.extent });
       declared.set(key, d);
       return { ok: true, id: key, declaration: d };
     }
 
-    function declarationOf(id) { const d = declared.get(String(id)); return d || null; }
+    /* ⚠⚠⚠ (#R756) THE SECOND CLAIMANT, AND UNTIL THIS ROUND IT HAD NO ROAD HERE. declare()'s only
+       caller in the shipped app is the upload path, so a built-in layer could not reach `all` no
+       matter what it held: the registry assembled six fields for a READER (js/map-ui.js state()) and
+       a claim about what a source CONTAINS is not one of them. The layer registry now publishes the
+       row's own statement (`IntMapLayers.declarationOf`), and it arrives here through the same
+       normaliser an explicit declare() goes through.
+       ⚠ NOTHING IS LISTED HERE. Which ids have a declaration is decided by the registrations
+       themselves; this asks the registry and believes whatever it says, exactly as it believes an
+       upload. ⚠ AN EXPLICIT declare() WINS, because it is about THIS id as the caller found it —
+       js/map-ui.js's upload declares a renderer source it has just filled, and a registry row with
+       the same id would be a different statement about a holding that has been replaced. */
+    function declarationOf(id) {
+      const key = String(id);
+      const own = declared.get(key);
+      if (own) return own;
+      const R = REG();
+      let stated = null;
+      try { stated = (R && typeof R.declarationOf === 'function') ? R.declarationOf(key) : null; } catch (_) { stated = null; }
+      return readDeclaration(stated);
+    }
 
     /* ── supply(): the supplier answers the question itself ───────────────────────────────────── */
 
@@ -266,8 +302,30 @@ export function makeGisSources() {
     function described(rec) {
       return { fetch: !!rec.fetch, region: !!rec.region, sync: rec.sync, can: Object.assign({}, rec.can) };
     }
-    /* the record itself, for this file; supplierOf() below hands callers a copy of what it CAN do */
-    function sup(id) { return supplied.get(String(id)) || null; }
+    /* ⚠⚠⚠ (#R756) supply() HAD NO CALLER, AND TWO GATES IN prepare() TURNED THAT INTO A WALL. With
+       `supplied` empty, every request naming `where` came back `where-not-supported` and every
+       request naming `cursor` came back `cursor-not-supported` — not sometimes, not for the rows
+       that cannot filter, but for every id in the app, because nothing could be asked. The contract
+       existed and the door was nailed shut.
+       ⇒ THE REGISTRY IS ASKED FOR ONE. js/gis-layers.js builds an implementation out of a layer's
+       OWN registration (what it declares about its holdings, and whether it hands features over at
+       all) and answers `supplierFor(id)` with it — so an id becomes suppliable by being registered
+       that way, not by being added to a list here. ⚠ A row that cannot answer for itself gets no
+       supplier and travels the delegated road exactly as before. */
+    function adopt(key) {
+      const L = LAYERS();
+      if (!L || typeof L.supplierFor !== 'function') return;
+      let impl = null;
+      try { impl = L.supplierFor(key); } catch (_) { impl = null; }
+      if (impl) supply(key, impl);
+    }
+    /* the record itself, for this file; supplierOf() below hands callers a copy of what it CAN do.
+       ⚠ THE ONE ACCESSOR, so adoption happens wherever a supplier is looked for and nowhere else. */
+    function sup(id) {
+      const key = String(id);
+      if (!supplied.has(key)) adopt(key);
+      return supplied.get(key) || null;
+    }
     function supplierOf(id) { const r = sup(id); return r ? described(r) : null; }
 
     /* ── where: one vocabulary, and it is js/gis-ops.js's ─────────────────────────────────────── */
@@ -404,7 +462,7 @@ export function makeGisSources() {
       /* ⚠ (#R752) false BECAUSE AN IMPLEMENTATION EXISTS, not because of what it is called. A
          registered fetch answers out of its supplier's own store; the renderer is not in the path, so
          switching the layer off removes the drawing and not the data. */
-      if (supplied.has(id)) return false;
+      if (sup(id)) return false;
       const on = !!(st && st.on);
       if (kind === 'grid') return d && d.extent ? null : true;
       if (on) return null;

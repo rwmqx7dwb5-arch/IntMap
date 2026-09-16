@@ -219,6 +219,25 @@ window.IntMapModules.layerRegistry=function(HOST){
         try{ const v=await Promise.resolve(r.sampleAt(lng,lat)); if(v!=null&&v!=='') out.push({ id, label:state(id).label, value:v }); }catch(_){} }
       return out; }
     function featuresIn(id,bounds){ const r=REG[id]; if(!r||!r.featuresIn) return null; try{ return r.featuresIn(bounds); }catch(_){ return null; } }
+    /* ══ ⚠⚠⚠ (#R756) 登録は状態を運べたが、主張は運べなかった ═══════════════════════════════════
+       `state()` builds six fields — {id,on,label,time,source,legend} — and every other thing a
+       registration below says about ITS OWN DATA died at this door. js/gis-sources.js can only reach
+       `completeness:'all'` when the supplier says so, and the ONLY caller of its declare() is the
+       upload path further down this file: so every built-in layer was structurally incapable of
+       reaching it, and 「この範囲の平均」 over the world's volcanoes came back 「一部かもしれない」
+       forever, whatever was actually in the source.
+       ⚠ THIS IS NOT A TABLE OF WHICH LAYERS HOLD EVERYTHING. Nothing is listed here: each
+       registration states `holds` about itself (or does not), and this door hands over whatever it
+       said. A layer added tomorrow declares by existing (.agents/rules/no-ad-hoc-hardcoding.md §2-4).
+       ⚠ AND IT IS A SEPARATE DOOR FROM state() ON PURPOSE. state() is what the READER is shown —
+        「いま点いているか・いつのものか」 — and a claim about what a source contains is not that.
+       ⚠ READ AT CALL TIME. `holds` may be a function, because what a live row holds is not fixed at
+       registration; an object is accepted for a row whose answer never changes. */
+    function declarationOf(id){ const r=REG[id]; if(!r||r.holds==null) return null;
+      try{ const d=(typeof r.holds==='function')?r.holds():r.holds; return (d&&typeof d==='object')?d:null; }catch(_){ return null; } }
+    /* 「everything」, in the vocabulary js/gis-sources.js reads extents in. Stated once because two
+       rows below say it, and a second literal is a second thing to get wrong. */
+    const _HOLDS_WORLD={w:-180,s:-90,e:180,n:90};
     function context(){ try{ return activeIds().map(id=>{ const s=state(id); if(!s) return null; const bits=[];
         if(s.time) bits.push('time='+s.time); if(s.source) bits.push('src='+s.source);
         try{ const r=REG[id]; if(r.summary){ const sm=r.summary(); if(sm) bits.push(sm); } }catch(_){}
@@ -278,10 +297,26 @@ window.IntMapModules.layerRegistry=function(HOST){
       on:()=>{ const f=_srcFeatsIn('news-points',null); return !!(f&&f.length); },
       featuresIn:b=>_srcFeatsIn('news-points',b), summary:()=>{ const f=_srcFeatsIn('news-points',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; } });
     register('volcanoes',{ label:()=>L5('Volcanoes','火山','Vulkane','Вулканы','Volcanes'), on:()=>{ try{ return !!(GE().layers.has('volc2-pt')&&GE().layers.getLayout('volc2-pt','visibility')!=='none'); }catch(_){ return false; } },
-      featuresIn:b=>_srcFeatsIn('volc2-src',b), source:()=>'Smithsonian GVP' });
+      featuresIn:b=>_srcFeatsIn('volc2-src',b),
+      /* ⚠ (#R756) THE SOURCE HOLDS THE WHOLE FILE, AND THAT IS WHY IT MAY SAY SO. js/beta-overlays.js
+         loads data/volcanoes_gvp.json once and writes the ENTIRE collection into volc2-src; the
+         reader's era and type filters are paint expressions on the layers, so nothing ever narrows
+         what the source contains. ⚠ `live` IS LEFT UNSTATED rather than written false: the volcano
+         STATUSES are refreshed from observatory bulletins onto these same features, so 「更新されない
+         保持だ」 would be a claim this row cannot make — the membership is fixed, the properties are
+         not, and js/gis-sources.js reads a missing `live` as 「述べていない」. */
+      holds:()=>({extent:_HOLDS_WORLD,complete:true,viewBound:false}), source:()=>'Smithsonian GVP' });
     register('heritage',{ label:()=>L5('World Heritage','世界遺産','Welterbe','Всемирное наследие','Patrimonio Mundial'),
       on:()=>{ try{ return !!(GE().layers.has('whs-pt')&&GE().layers.getLayout('whs-pt','visibility')!=='none'); }catch(_){ return false; } },
-      featuresIn:b=>_srcFeatsIn('whs-src',b), source:()=>'UNESCO World Heritage Centre' });
+      featuresIn:b=>_srcFeatsIn('whs-src',b),
+      /* ⚠ (#R756) EVERY POINT OF THE SHIPPED DOCUMENT IS IN THE SOURCE. whsBuild() walks the whole
+         `points` array of the bundled file and writes all of it; the category switches the reader
+         flicks are paint filters, and the language rebuild makes a new collection with the same
+         membership. `live:false` is therefore a statement and not a default — a holding nothing
+         refreshes cannot be a holding refreshed for the camera, which is the one thing
+         js/gis-sources.js needs to tell `all` apart from 「たまたま画面内が全部だった」. */
+      holds:()=>({extent:_HOLDS_WORLD,complete:true,viewBound:false,live:false}),
+      source:()=>'UNESCO World Heritage Centre' });
     /* (#R585) MEASURED radiation, so that 「いま画面に見えている観測局は？」 has an answer. The
        summary states the RANGE rather than a count: with ~8,500 stations on the map the number in
        view says nothing, while «71–140 nSv/h» is the reading a person actually wanted. `source`
@@ -298,9 +333,17 @@ window.IntMapModules.layerRegistry=function(HOST){
     const _lyrVis=id=>{ try{ return !!(GE().layers.has(id)&&GE().layers.getLayout(id,'visibility')==='visible'); }catch(_){ return false; } };
     register('aircraft',{ label:()=>L5('Live aircraft','航空機（リアルタイム）','Live-Flugverkehr','Самолёты (онлайн)','Aviones en vivo'),
       on:()=>_lyrVis('lyr-planes'), featuresIn:b=>_srcFeatsIn('src-planes',b),
+      /* ⚠ (#R756) THE OPPOSITE STATEMENT, AND IT IS EXACTLY AS IMPORTANT. js/aviation-live.js asks
+         airplanes.live for the CAMERA'S rectangle, so this source holds the aircraft that were in
+         view when it last refreshed — never the world's traffic. Saying so is what makes an analysis
+         over it read 「表示範囲に限られる」 instead of 「宣言が無い」: two different silences. */
+      holds:()=>({complete:false,viewBound:true,live:true}),
       summary:()=>{ const f=_srcFeatsIn('src-planes',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; }, source:()=>'airplanes.live ADS-B' });
     register('ships',{ label:()=>L5('Live ships','船舶（リアルタイム）','Live-Schiffe','Суда (онлайн)','Barcos en vivo'),
       on:()=>_lyrVis('lyr-ships'), featuresIn:b=>_srcFeatsIn('src-ships',b),
+      /* ⚠ (#R756) THE AIS SUBSCRIPTION CARRIES THE CAMERA'S BOX (js/data-layers.js aisBBox), and the
+         relay is asked with the same `bbox`, so what is held is 「いま見ている海域の船」. */
+      holds:()=>({complete:false,viewBound:true,live:true}),
       summary:()=>{ const f=_srcFeatsIn('src-ships',null); return f?(f.length+' '+L5('in view','表示範囲内','im Blick','в поле зрения','a la vista')):null; },
       /* (#R510) with the reader's own key the browser streams aisstream.io directly; without one the
          shared relay serves aisstream.io AND Digitraffic (CC BY 4.0 — naming it is an obligation) */
@@ -429,7 +472,7 @@ window.IntMapModules.layerRegistry=function(HOST){
        point-only mistake this round removed. Same argument order and same null meaning (「the
        current view」) as featuresIn above. */
     function featuresInSource(srcId,bounds){ return _srcFeatsIn(srcId,bounds); }
-    return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, context };
+    return { register, list, active:activeIds, state, sampleAt, featuresIn, featuresInSource, declarationOf, context };
   })();
 };
 
@@ -2979,7 +3022,11 @@ window.IntMapModules.geojsonUpload=function(HOST){
          is named, and tests/r749-gis-raster-pipeline-checks ⑪ reads the two modules' own refusal
          sets and fails on any that is not. */
       if(why==='not-tiff') return window.IntMapLang.t(HOST.lang,"This file is not a TIFF","このファイルは TIFF ではありません");
-      if(why==='bigtiff-unsupported') return window.IntMapLang.t(HOST.lang,"This is a BigTIFF — this reader handles the classic TIFF layout only","これは BigTIFF です。この読み取りは従来の TIFF 配置だけを扱います");
+      /* ⚠ (#R756) 「これは BigTIFF です」 WAS THE WHOLE SENTENCE, AND IT STOPPED BEING TRUE. BigTIFF is
+         read now; what is refused is a BigTIFF whose header states an offset width this reader does
+         not implement — a variant, not the container. A message that names the container would send
+         the reader to convert a file that would have opened. */
+      if(why==='bigtiff-unsupported') return window.IntMapLang.t(HOST.lang,"This BigTIFF states an offset width this reader does not handle","この BigTIFF は、この読み取りが扱えない offset 幅を述べています")+(detail&&detail.offsetBytes!=null?' ('+detail.offsetBytes+' bytes)':'');
       if(why==='tiff-truncated'||why==='chunk-short') return window.IntMapLang.t(HOST.lang,"This TIFF ends part way through its pixels — the file is incomplete","この TIFF は画素の途中で終わっています。ファイルが欠けています")+(detail&&detail.need!=null?' ('+detail.need+')':'');
       if(why==='tiff-corrupt'||why==='lzw-corrupt'||why==='packbits-corrupt') return window.IntMapLang.t(HOST.lang,"The pixel data in this TIFF does not decode — the file is damaged","この TIFF の画素データが復号できません。ファイルが壊れています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
       if(why==='compression-unsupported') return window.IntMapLang.t(HOST.lang,"This TIFF is compressed in a way this reader does not decode","この TIFF の圧縮方式は、この読み取りが復号しないものです")+(detail?' ('+[detail.name,detail.compression].filter(v=>v!=null).join(' ')+')':'');

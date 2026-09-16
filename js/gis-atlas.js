@@ -135,6 +135,22 @@ export function makeGisAtlas(core) {
          知らなければならない（js/gis-ops.js が `input-stale` で断る相手そのもの）。 */
       if (ds.stale) row.stale = ds.stale;
       if (ds.provenance && ds.provenance.kind) row.origin = ds.provenance.kind;
+      /* ⚠ (#R756) 「これは世界についての答えか」 が planner に一度も届いていなかった。
+         js/gis-layers.js records the acquisition's own verdict in `provenance.coverage` — whether
+         what arrived is all of it, a part, or a sample, and WHY — and this row published only
+         `origin`. A planner that cannot see the difference builds 「世界で最も◯◯な国」 out of
+         whatever the camera happened to be looking at, and says it in a sentence with no caveat.
+         ⚠ It is passed as the acquisition measured it, not summarised: `completeness` without
+         `reason` turns 「訊けなかった」 and 「一部しか無い」 into one word. */
+      const cov = ds.provenance && ds.provenance.coverage;
+      if (cov && cov.completeness) {
+        row.coverage = { completeness: cov.completeness };
+        if (cov.reason) row.coverage.reason = cov.reason;
+        if (cov.count != null) row.coverage.count = cov.count;
+        if (cov.asOf != null) row.coverage.asOf = cov.asOf;
+        if (cov.filteredBy) row.coverage.filteredBy = cov.filteredBy;
+        if (cov.continues != null) row.coverage.continues = cov.continues;
+      }
       return row;
     }
 

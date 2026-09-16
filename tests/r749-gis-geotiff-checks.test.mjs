@@ -9,7 +9,7 @@
  *    ④ predictor 2 is actually undone — the file's stored bytes are NOT the values
  *    ⑤ a GDAL_NODATA pixel comes back as NaN. ⚠ NOT 0 (docs/GIS-CORE.md §1.4)
  *    ⑥ a TIFF that states no georeference is refused as `no-georeference`
- *    ⑦ a BigTIFF is refused BY NAME — it neither succeeds nor goes quiet
+ *    ⑦ a BigTIFF is READ (#R756); only a variant offset width is refused, and by name
  *    ⑧ `refusals()` and the codes the source actually answers with are ONE set
  *    ⑨ the pixels are not expanded until read() is called
  *    ⑩ the affine and the CRS are what the file's own tags say, rotation included
@@ -427,17 +427,24 @@ test('⑥ a TIFF that states no georeference is refused by name', async () => {
   await refuse(buildTiff({ width: 4, height: 4, pixels: [px], dropTags: [33550] }), 'no-georeference');
 });
 
-test('⑦ a BigTIFF is refused by name — it neither succeeds nor goes quiet', async () => {
+test('⑦ a BigTIFF is read; only a variant offset width is refused, and by name', async () => {
+  /* ⚠ (#R756) THIS CASE USED TO ASSERT THAT ANY BigTIFF WAS REFUSED, and that defect is fixed — the
+     container's own 8-byte offsets are read now (tests/r754-gis-geotiff-formats-checks measures the
+     pixels against a classic TIFF holding the same ones). What survives here is the refusal that is
+     still real: a header stating an offset width this reader does not implement.
+     ⚠ 拒否を実装に変えた回に検査を消すだけにすると「見るのをやめた回」になる
+     ([[intmap-refusal-that-becomes-implementation]]) — so the case is narrowed, not deleted. */
   for (const le of [true, false]) {
     const b = new Uint8Array(16);
     const dv = new DataView(b.buffer);
     b[0] = le ? 0x49 : 0x4D; b[1] = b[0];
     dv.setUint16(2, 43, le);
-    dv.setUint16(4, 8, le);
+    dv.setUint16(4, 16, le);                 /* 16-byte offsets: a width nothing here implements */
     dv.setUint16(6, 0, le);
     assert.equal(GT.sniff(b), true, 'a BigTIFF is recognised as the container it is');
     const r = await refuse(b, 'bigtiff-unsupported');
     assert.equal(r.detail.byteOrder, le ? 'II' : 'MM');
+    assert.equal(r.detail.offsetBytes, 16, 'the refusal does not say which width it could not take');
   }
 });
 
@@ -464,7 +471,9 @@ test('⑭ every unsupported combination is refused by its own name, with a detai
   await refuse(buildTiff({ ...base, bits: 64, fmt: 3, predictor: 1, tagOverrides: { 317: [2] } }), 'predictor-unsupported');
   await refuse(buildTiff({ ...base, tagOverrides: { 339: [4] } }), 'sample-format-unsupported');
   await refuse(buildTiff({ ...base, tagOverrides: { 258: [12] } }), 'bits-unsupported');
-  await refuse(buildTiff({ ...base, tagOverrides: { 284: [2] } }), 'planar-separate-unsupported');
+  /* (#R756) 284=2 (バンド別格納) is read now; what is still refused is a value TIFF 6.0 does not
+     define. The code stays because the condition stays. */
+  await refuse(buildTiff({ ...base, tagOverrides: { 284: [3] } }), 'planar-separate-unsupported');
   await refuse(buildTiff({ ...base, dropTags: [256] }), 'tiff-corrupt');
   await refuse(buildTiff({ ...base, dropTags: [273] }), 'tiff-corrupt');
   await refuse(buildTiff({ ...base, tagOverrides: { 273: [999999] } }), 'tiff-truncated');

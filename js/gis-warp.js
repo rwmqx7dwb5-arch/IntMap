@@ -71,9 +71,14 @@
  *  ══ CANCELLATION AND PACING ARE HANDED IN, NOT REINVENTED ═════════════════════════════════════
  *  docs/GIS-CORE.md §2.6: 「刻みの単位は件数ではなく時間」, and js/gis-ops.js `makeCtx` is where that
  *  judgement lives — 16 ms, yield, report, re-read the signal. This file takes that ctx through
- *  `opts.ctx` and ticks once per output ROW rather than writing a second copy of the rule. ⚠ A caller
- *  that hands over no ctx gets a run that cannot be stopped; that is stated rather than papered over,
- *  and it is why the panel and js/gis-ops.js always pass theirs.
+ *  `opts.ctx`. ⚠ A caller that hands over no ctx gets a run that cannot be stopped; that is stated
+ *  rather than papered over, and it is why the panel and js/gis-ops.js always pass theirs.
+ *  ⚠⚠⚠ (#R756) AND THE OUTPUT PIXELS ARE WALKED BY js/gis-raster.js `paced`, NOT BY A LOOP WRITTEN
+ *  HERE. Until #R756 this file kept its own loop and ticked ONCE PER OUTPUT ROW — which is a COUNT,
+ *  and one row is 40 pixels on one grid and 40,000 on another, so the budget stated in milliseconds
+ *  was being spent in a unit that means a different duration every time. Writing the loop twice had
+ *  also let the two files disagree about the shape of a cancellation. One loop, one ctx reader, one
+ *  `cancelled(done,total)` — all three from the kernel this file already depends on.
  *
  *  ⚠ REFUSALS ARE CODES, NOT SENTENCES (docs/GIS-CORE.md §2.2) — `{ ok:false, why, detail }`, and the
  *  nine languages live at the call site. ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③), and
@@ -291,7 +296,12 @@ export function makeGisWarp() {
          that is safest' — a warp whose interpolation nobody named is a warp nobody can read back. */
       if (!method) return refuse('resample-method-not-stated', { methods: (methods() || []).map((m) => m.id) });
       const R = RAS();
-      if (!R || typeof R.sample !== 'function' || typeof R.sampleMethods !== 'function') return refuse('raster-unavailable');
+      /* ⚠ (#R756) `paced` / `useCtx` / `cancelled` ARE PART OF WHAT THIS FILE NEEDS FROM THE KERNEL,
+         so a build whose raster kernel does not carry them is refused BY NAME here instead of
+         throwing halfway through a warp — or, worse, running a warp that silently cannot be stopped
+         because the ctx reader came back undefined. */
+      if (!R || typeof R.sample !== 'function' || typeof R.sampleMethods !== 'function'
+        || typeof R.paced !== 'function' || typeof R.useCtx !== 'function' || typeof R.cancelled !== 'function') return refuse('raster-unavailable');
       if (R.sampleMethods().indexOf(method) < 0) return refuse('resample-method-unknown', { method: method, methods: R.sampleMethods() });
 
       /* ⚠ THE REFUSAL FOLLOWS FROM THE DECLARATION, NOT FROM THE METHOD'S NAME. `categoricalSafe` is
@@ -446,13 +456,11 @@ export function makeGisWarp() {
     /* ── the run ──────────────────────────────────────────────────────────────────────────────── */
 
     /* docs/GIS-CORE.md §2.6's ctx, taken rather than rebuilt (header). A caller that handed none gets
-       `null` here and a run that holds the thread — stated, not simulated with a fake that claims to
-       be interruptible. */
-    function useCtx(opts) {
-      const c = opts && opts.ctx;
-      return (c && typeof c.tick === 'function') ? c : null;
-    }
-
+       `null` and a run that holds the thread — stated, not simulated with a fake that claims to be
+       interruptible.
+       ⚠ (#R756) WHAT COUNTS AS A ctx IS ASKED OF js/gis-raster.js, not answered again here. The two
+       spellings had already begun to differ in what they did with the answer (a row-counted tick
+       against an elapsed-time one), and the reader could not see that from either file. */
     async function runWarp(S, P, out, fromCode) {
       const W = out.width, H = out.height, N = W * H;
       const bands = [];
@@ -461,7 +469,7 @@ export function makeGisWarp() {
            cells in hand. The same rule js/gis-raster.js `fromSampler` states. */
         try { bands.push(new Float64Array(N)); } catch (e) { return refuse('raster-too-large', { cells: N, bands: S.bandCount }); }
       }
-      const ctx = useCtx(S.opts);
+      const ctx = S.R.useCtx(S.opts);
       const perBand = [];
       for (let i = 0; i < S.bandCount; i++) perBand.push({ filled: 0, missing: 0, partial: 0, incomplete: 0 });
       let clipped = 0, failed = 0;
@@ -516,11 +524,30 @@ export function makeGisWarp() {
       let topCorners = areal ? cornerRow(0) : null;
       let botCorners = null;
 
-      for (let row = 0; row < H; row++) {
-        const lat = out.north - out.pixelLat * (row + 0.5);
-        const base = row * W;
-        if (areal) botCorners = cornerRow(row + 1);
-        for (let col = 0; col < W; col++) {
+      /* ⚠⚠⚠ (#R756) THE OUTPUT IS WALKED AS ONE SEQUENCE OF PIXELS BY js/gis-raster.js `paced`, NOT
+         AS ROWS BY A LOOP WRITTEN HERE. This file used to tick once per output ROW, and a row is a
+         COUNT: 40 pixels of an identity warp and 40,000 pixels of a reprojected areal one are one
+         tick each, so the budget docs/GIS-CORE.md §2.6 states in MILLISECONDS was being spent in
+         units that mean a different duration on every grid. Handing the walk to the kernel also means
+         the cancellation is the kernel's `cancelled(done,total)` — one shape for every pixel walk in
+         this layer — instead of a second spelling that only carried `detail`.
+         The per-row work (the row's latitude, its base offset, the corner row an areal warp reuses as
+         the next row's top edge) is done on the step that FIRST reaches a new row, so it still
+         happens exactly H times. */
+      let curRow = -1, lat = 0, base = 0;
+      const step = (k) => {
+        const row = (k / W) | 0;
+        if (row !== curRow) {
+          /* the previous row's bottom edge IS this row's top edge — the saving the corner row exists
+             for, kept exactly as the nested loop had it */
+          if (curRow >= 0 && areal) topCorners = botCorners;
+          curRow = row;
+          lat = out.north - out.pixelLat * (row + 0.5);
+          base = row * W;
+          if (areal) botCorners = cornerRow(row + 1);
+        }
+        const col = k % W;
+        {
           const lng = out.west + out.pixelLng * (col + 0.5);
           if (areal) {
             const ax = topCorners[col * 2], ay = topCorners[col * 2 + 1];
@@ -533,7 +560,7 @@ export function makeGisWarp() {
                  other transform failures, which is what it is. */
               failed++;
               for (let i = 0; i < S.bandCount; i++) bands[i][base + col] = NaN;
-              continue;
+              return;
             }
             /* Proxy coordinates: 「lng」 is the fractional column, 「lat」 is the NEGATED fractional
                row (header), so the box's north/south are the negated minimum/maximum row. */
@@ -548,13 +575,13 @@ export function makeGisWarp() {
                nothing else to write, and they are counted apart so the reader can tell. */
             failed++;
             for (let i = 0; i < S.bandCount; i++) bands[i][base + col] = NaN;
-            continue;
+            return;
           }
           const pp = S.inverse(xy[0], xy[1]);
           if (!(pp[0] >= 0 && pp[0] < sw && pp[1] >= 0 && pp[1] < sh)) {
             clipped++;
             for (let i = 0; i < S.bandCount; i++) bands[i][base + col] = NaN;
-            continue;
+            return;
           }
           for (let i = 0; i < S.bandCount; i++) {
             /* The pixel-space proxy: column as 「lng」, negated row as 「lat」 (header). */
@@ -579,9 +606,11 @@ export function makeGisWarp() {
             else { bands[i][base + col] = s.value; perBand[i].filled++; }
           }
         }
-        if (areal) topCorners = botCorners;
-        if (ctx && !(await ctx.tick(W, N))) return refuse('cancelled', { done: row * W, total: N });
-      }
+      };
+
+      return S.R.paced(N, step, ctx, () => finishWarp());
+
+      function finishWarp() {
 
       const outBands = S.raster.bands.map((b) => ({
         name: (b && b.name != null) ? b.name : null,
@@ -620,6 +649,7 @@ export function makeGisWarp() {
           cells: N, bands: perBand,
         },
       };
+      }
     }
 
     /* ── to4326 ───────────────────────────────────────────────────────────────────────────────── */
