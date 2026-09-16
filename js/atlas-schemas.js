@@ -227,6 +227,16 @@ export function makeAtlasSchemas() {
       'system.diagnose': noArgs('diagnose'),
       'map.clearAll': noArgs('clearAll'),
       'map.outline': { type: 'object', properties: { place: str(), country: str(), name: str(), color: str(), on: bool() }, anyOf: [{ required: ['place'] }, { required: ['country'] }, { required: ['name'] }, { required: ['on'] }] },
+      /* (#R754) ⚠ `params` IS DELIBERATELY UNENUMERATED, for the reason `data.gis` states above: the
+         vocabulary is js/pandemic-model.js's PANDEMIC_PARAMS, which this file cannot read at planning
+         time, and a copy of it here would be a second list to keep in step. The REFUSALS carry the
+         vocabulary instead — an unknown key answers with every key, and an out-of-range number
+         answers with that parameter's own bounds — so one wrong call becomes one corrected call.
+         ⚠ `days` IS REQUIRED because «simulate a pandemic» with no horizon has no answer to report;
+         the origin is the capability's `place` target and is checked by targetPolicy, which accepts
+         place / country / origin / lng+lat. */
+      'sim.pandemicRun': { type: 'object', properties: { place: str(), country: str(), origin: str(), lng: num(-180, 180), lat: num(-90, 90), preset: str(), scenario: str(), days: num(1), seed: num(), params: obj() }, required: ['days'] },
+      'map.pandemicDay': { type: 'object', properties: { metric: str() } },
       'panel.playground': { type: 'object', properties: { mode: str(), name: str() } },
       'panel.news': { type: 'object', properties: { mode: str(), name: str() } },
       'panel.account': noArgs('account'),

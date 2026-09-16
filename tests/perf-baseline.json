@@ -1,16 +1,16 @@
 {
   "eager": {
-    "raw": 4824403,
-    "gzip": 1617237,
-    "brotli": 1230053,
+    "raw": 4825353,
+    "gzip": 1617397,
+    "brotli": 1229501,
     "requests": 6,
     "modules": 298,
     "cssRaw": 341942,
     "cssGzip": 57540
   },
   "async": {
-    "raw": 10875620,
-    "gzip": 3564762,
+    "raw": 10897698,
+    "gzip": 3573902,
     "chunks": {
       "aircraft-detail": 17245,
       "analysis-correlate": 24512,
@@ -22,7 +22,7 @@
       "atlas-answer-view": 2599,
       "atlas-attach": 14280,
       "atlas-chart": 10777,
-      "atlas-console": 1066390,
+      "atlas-console": 1069553,
       "atlas-executor": 46930,
       "atlas-query": 50105,
       "atlas-view-capture": 8558,
@@ -52,9 +52,11 @@
       "net-health-live": 17044,
       "news-events": 34614,
       "night-sky": 26147,
+      "pandemic-atlas": 13210,
+      "pandemic-world": 32134,
       "photo-geo": 82538,
       "plane-glyph": 887,
-      "playground": 127972,
+      "playground": 101543,
       "radiation-layer": 13182,
       "railways": 27977,
       "routing-traffic": 12309,
@@ -86,8 +88,8 @@
     }
   },
   "dist": {
-    "total": 772205482,
+    "total": 772228629,
     "data": 715578291,
-    "assets": 18421362
+    "assets": 18444509
   }
 }

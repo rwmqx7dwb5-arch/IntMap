@@ -178,6 +178,186 @@ export const PANDEMIC_PRESETS = {
   }
 };
 
+/* ══ ⚠⚠⚠ (#R754) THE PARAMETERS, DECLARED — SO THAT NOBODY HAS TO WRITE THEM DOWN AGAIN ════════
+   Every field `P` reads off `cfg.params` above is a number with a legal range, a unit, and a place
+   its default comes from, and until this round those three facts lived in js/playground.js — as
+   twelve `mk(label, value, min, max, step, …)` calls with the numbers written into the call. That
+   was the only statement of them anywhere, so anything else that wanted to drive this engine (an
+   Atlas capability; a test; a second screen) had to write a second copy and the two would part.
+   That is the hand-written list this project keeps re-learning not to write
+   (.agents/rules/no-ad-hoc-hardcoding.md §1) — and js/gis-ops.js's `DECL` is the shape that ended
+   it there: one declaration, and every reader DERIVES from it rather than copying it.
+
+   ⚠ THE RANGE IS THE ENGINE'S, NOT A SCREEN'S. A slider's min and max are not a styling choice:
+   they are the interval over which this arithmetic is meaningful, which is a fact about the model.
+   `scale` is the only concession to the screen — the factor from the number a reader types or drags
+   to the number the engine holds — because a fatality of 0.007 is shown as 0.7% and a percent
+   slider that stepped by 0.001 would be unusable.
+
+   ⚠ `from` IS A PATH INTO THE PRESET, NOT A NUMBER. Writing 3.2 here would make this table a second
+   statement of covid's R₀ and one of the two would go stale; writing 'transmission.r0' makes it a
+   POINTER at the one that already exists, so a revised preset moves the default with it.
+   `from: null` means the default is the literal in `default`, and `P` above is where that same
+   literal lives — the two are asserted equal by tests/r754-pandemic-atlas-checks.
+
+   ⚠ EVERY KEY HERE IS READ BY `P`, AND EVERY `inp.<key>` `P` READS IS HERE. That is a measurable
+   statement about this file rather than a promise about it, and the test measures it. */
+export const PANDEMIC_PARAMS = {
+  /* ⚠ STEP 0.05, NOT 0.1 — Ebola's pooled R₀ really is 1.95, and a grid that cannot hold a preset's
+     own value forces the value, the control and the label apart (see `snapToStep`). */
+  r0:                       { kind: 'number', min: 0.6, max: 18,  step: 0.05, scale: 1,    unit: '',       from: 'transmission.r0' },
+  /* The metric this number is measured in (IFR or CFR) is `preset.severity.metric` and it TRAVELS
+     WITH IT — a CFR printed under the label «IFR» is a different claim (#R575). */
+  baseFatality:             { kind: 'number', min: 0,   max: 60,  step: 0.1,  scale: 0.01, unit: '%',      from: 'severity.value' },
+  /* LATENT, not incubation: infection→infectious, which is the one an SEIR model needs. */
+  latentDays:               { kind: 'number', min: 0,   max: 21,  step: 1,    scale: 1,    unit: 'd',      from: 'transmission.latentDays' },
+  infectiousDays:           { kind: 'number', min: 1,   max: 21,  step: 1,    scale: 1,    unit: 'd',      from: 'transmission.infectiousDays' },
+  naturalImmunityMonths:    { kind: 'number', min: 0,   max: 120, step: 1,    scale: 1,    unit: 'mo',     from: 'immunity.naturalMonths' },
+  /* ⚠ THE DURATION AND THE «FOREVER» ARE TWO FIELDS, and the reason is defect U2 above. */
+  naturalImmunityLifelong:  { kind: 'boolean',                                             unit: '',       from: 'immunity.lifelong' },
+  seasonality:              { kind: 'number', min: 0,   max: 60,  step: 1,    scale: 0.01, unit: '%',      from: 'transmission.seasonality' },
+  /* Day of the year the outbreak starts on. The screen offers a month because a month is what a
+     reader means; the engine's unit is the day, and 1–366 is the whole of it. */
+  startDayOfYear:           { kind: 'number', min: 1,   max: 366, step: 1,    scale: 1,    unit: 'd',      from: null, default: 1 },
+  /* ⚠ IT IS A CLUSTER, NOT A PATIENT ZERO. */
+  initialCases:             { kind: 'number', min: 1,   max: 5000, step: 1,   scale: 1,    unit: 'cases',  from: null, default: 100 },
+  /* Share of every country already immune on day 0. Zero in the naive scenario BY DEFINITION; the
+     preset's stated real-world figure otherwise — which is why `from` is conditional on `scenario`
+     and `defaultPandemicParams` below, not this table, is what applies it. */
+  initialImmunity:          { kind: 'number', min: 0,   max: 95,  step: 1,    scale: 0.01, unit: '%',      from: 'baselineImmunity', realWorldOnly: true },
+  mobility:                 { kind: 'number', min: 0,   max: 300, step: 5,    scale: 0.01, unit: '%',      from: null, default: 1 },
+  scenario:                 { kind: 'enum', values: ['naive', 'real-world'],                unit: '',       from: null, default: 'naive' },
+  interventions:            { kind: 'enum', values: ['none', 'adaptive', 'strong'],         unit: '',       from: null, default: 'adaptive' },
+  vaccineAtStart:           { kind: 'boolean',                                              unit: '',       from: 'vaccine.availableAtStart', realWorldOnly: true },
+  /* ⚠ (#R754) THE FOUR BELOW WERE READ BY `P` AND DECLARED BY NOBODY. They are engine inputs in
+     exactly the sense the eleven above are — `P` reads `inp.vaccineEfficacy`, `inp.vaccineMonths`,
+     `inp.vaccineImmunityLifelong` and `inp.vaccinateUnreached` — but js/playground.js never offered
+     them, so `freshParams` never set them and nothing ever noticed they were missing from the list.
+     That is the failure mode of a hand-written list (.agents/rules/no-ad-hoc-hardcoding.md §2.4): it
+     cannot notice what was not added to it. The closure of this table over `P` is now MEASURED
+     rather than asserted — tests/r754-pandemic-atlas-checks parses the `inp.<key>` reads out of this
+     file and requires the two sets to be equal in both directions. */
+  vaccineEfficacy:          { kind: 'number', min: 0,   max: 100, step: 1,    scale: 0.01, unit: '%',      from: 'vaccine.efficacyInfection' },
+  vaccineMonths:            { kind: 'number', min: 0,   max: 120, step: 1,    scale: 1,    unit: 'mo',     from: 'vaccine.waningMonths' },
+  /* ⚠ ITS OWN FIELD, for defect U2's reason one screen up — measles is the preset that states it. */
+  vaccineImmunityLifelong:  { kind: 'boolean',                                              unit: '',       from: 'vaccine.lifelong' },
+  /* (#R673) Does a campaign reach a country the outbreak has not reached? A POLICY WITH A DEFAULT,
+     not a consequence of the loop's shape — which is what it was until #R673 split it out. */
+  vaccinateUnreached:       { kind: 'boolean',                                              unit: '',       from: null, default: true },
+};
+
+/* The legal interval of one parameter IN THE ENGINE'S OWN UNITS — what a caller that is not a
+   slider (an Atlas capability, a test) needs in order to state a value or be told it is out of
+   range. Derived; nothing below writes a bound of its own. */
+export function paramBounds(key) {
+  const d = PANDEMIC_PARAMS[key];
+  if (!d || d.kind !== 'number') return null;
+  const s = d.scale || 1;
+  /* 0.1 * 0.01 is 0.001000000000000000020816681711721685, and a bound printed like that is a bound
+     nobody can read. Twelve significant digits is past any step this table declares.
+     ⚠ NESTED, NOT TOP-LEVEL: tests/r175-checks ③ fails an unexported top-level declaration, and
+     exporting a helper with one caller would fail its second assertion as a dead export. */
+  const round1 = (v) => +(+v).toPrecision(12);
+  return { min: round1(d.min * s), max: round1(d.max * s), step: round1(d.step * s) };
+}
+
+/* ══ ⚠⚠⚠ (#R754) A DEFAULT IS A CLAIM, AND A CLAIM NEEDS AN AUTHOR ═════════════════════════════
+   When something other than the panel drives this engine — an Atlas capability answering
+   「ラゴス発のパンデミックを day 60 まで」 — the caller names two or three parameters and the other
+   fifteen are supplied by this file. Reporting the run without saying so would put IntMap's
+   assumptions in the reader's mouth: R₀ 3.2 is not «the» R₀, it is COVID-19's, from this file's
+   own preset, and the reader is entitled to know that before believing the number of dead.
+   That is [[intmap-data-must-not-claim-an-author-it-lacks]] applied to a parameter instead of a
+   name, and #R675's finding that a silent default is an unattributed assertion.
+
+   ⚠ EVERY LINE OF IT IS DERIVED. The origin string is built from `PANDEMIC_PARAMS[key].from` — the
+   pointer, not a second copy of it — so a preset whose R₀ moves moves the citation with it, and a
+   parameter added to the table is described here without anyone writing prose about it. Nothing
+   below enumerates a parameter by name; the .agents/rules/no-ad-hoc-hardcoding.md §2.4 test is
+   exactly «does the list notice what was added to it», and this one does because there is no list.
+
+   ⚠⚠ THIS IS THE PRIMARY, AND `defaultPandemicParams` IS A PROJECTION OF IT. It was the other way
+   round, with a shared `presetField` helper between them — but a helper with two callers can be
+   neither nested nor exported (tests/r175-checks ③ fails an unexported top-level declaration, and
+   fails an export no js/ module imports as dead code). Inverting costs nothing and buys the thing
+   this project keeps asking for: the value and the ATTRIBUTION of the value are computed in one
+   place, so they cannot disagree. A default whose origin string is wrong is the exact defect §6
+   of this round is about. */
+export function describePandemicParams(presetKey, scenario, given) {
+  /* A dotted path into a preset. Two segments is all any entry uses and all this accepts — a
+     deeper one would be a preset shape nobody has written. Nested for the reason above. */
+  const field = (preset, path) => {
+    const parts = String(path || '').split('.');
+    let v = preset;
+    for (const p of parts) { if (v == null) return undefined; v = v[p]; }
+    return v;
+  };
+  const pr = PANDEMIC_PRESETS[presetKey] || PANDEMIC_PRESETS.covid;
+  const realWorld = scenario === 'real-world';
+  const src = given || {};
+  return Object.keys(PANDEMIC_PARAMS).map((key) => {
+    const d = PANDEMIC_PARAMS[key];
+    const held = Object.prototype.hasOwnProperty.call(src, key) && src[key] != null;
+    const row = (value, origin) => ({ key: key, value: value, unit: d.unit || '', kind: d.kind,
+      origin: origin, bounds: paramBounds(key), values: d.values || null });
+    /* The scenario is not defaulted FROM anything — it is what the caller asked for, and it names
+       the world the other fields are then read in. */
+    if (key === 'scenario') return row(realWorld ? 'real-world' : 'naive', held ? 'caller' : 'default');
+    const cited = d.from ? field(pr, d.from) : undefined;
+    let v;
+    if (d.from == null) v = d.default;
+    else if (d.realWorldOnly && !realWorld) v = (d.kind === 'boolean') ? false : 0;
+    else v = cited;
+    if (d.kind === 'boolean') v = !!v;
+    else if (d.kind === 'number' && !(typeof v === 'number' && isFinite(v))) v = d.min * (d.scale || 1);
+    /* ⚠ FOUR ORIGINS, AND THE FOURTH IS THE ONE THIS PROJECT KEEPS RE-LEARNING. A pointer at a
+       field the preset DOES NOT HAVE is not a citation: `immunity.lifelong` exists on measles and
+       on nothing else, so reporting covid's `false` as «preset:covid.immunity.lifelong» would
+       attribute to that preset a statement it never made —
+       [[intmap-data-must-not-claim-an-author-it-lacks]], the round that found 67,622 translations
+       claimed by nobody. Silence is reported AS silence: the value is what the engine reads an
+       absent field as, and the reader can see that nobody said it. Measured by
+       tests/r754-pandemic-atlas-checks ③ in both directions.
+       ⚠ The third origin is #R673's: a real-world-only field in a naive run is not a default at
+       all, it is the scenario's definition («nobody is immune to a novel pathogen»), and saying
+       «default» about it would attribute to this file a choice the scenario made. */
+    const origin = held ? 'caller'
+      : (d.realWorldOnly && !realWorld) ? ('scenario:' + (realWorld ? 'real-world' : 'naive'))
+      : d.from ? ((cited === undefined ? 'preset-silent:' : 'preset:') + presetKey + '.' + d.from)
+      : 'default';
+    return row(held ? src[key] : v, origin);
+  });
+}
+
+/* The settings a run starts from, for one preset in one scenario — the values of the description
+   above, without the attribution. ⚠ IT LIVES HERE, NOT IN THE PANEL. js/playground.js held it as
+   `freshParams`, which meant the only way to find out what a default was, was to open a screen. */
+export function defaultPandemicParams(presetKey, scenario) {
+  const out = {};
+  for (const row of describePandemicParams(presetKey, scenario, null)) out[row.key] = row.value;
+  return out;
+}
+
+/* Is this a value this engine can be asked for? The bounds are `paramBounds` — the engine's own
+   interval — so a refusal here quotes the range rather than inventing one, and a caller that is
+   out of range is TOLD the range instead of being silently clamped.
+   ⚠ CLAMPING WOULD DESTROY THE EVIDENCE (#R743): the run would succeed at a number nobody asked
+   for and the reply would describe it as though they had. */
+export function checkPandemicParams(given) {
+  const bad = [];
+  for (const key of Object.keys(given || {})) {
+    const d = PANDEMIC_PARAMS[key];
+    if (!d) { bad.push({ key: key, why: 'unknown', accepts: Object.keys(PANDEMIC_PARAMS) }); continue; }
+    const v = given[key];
+    if (d.kind === 'enum') { if (d.values.indexOf(v) < 0) bad.push({ key: key, why: 'not-a-value', accepts: d.values }); continue; }
+    if (d.kind === 'boolean') { if (typeof v !== 'boolean') bad.push({ key: key, why: 'not-a-boolean', accepts: [true, false] }); continue; }
+    if (typeof v !== 'number' || !isFinite(v)) { bad.push({ key: key, why: 'not-a-number', accepts: paramBounds(key) }); continue; }
+    const b = paramBounds(key);
+    if (v < b.min || v > b.max) bad.push({ key: key, why: 'out-of-range', accepts: b });
+  }
+  return bad;
+}
+
 /* ── THE ENGINE ─────────────────────────────────────────────────────────────────────────────────
    createPandemicModel({countries, preset, params, seed}) → a stepper.
 

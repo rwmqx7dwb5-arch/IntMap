@@ -522,7 +522,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/r742-atlas-identifier-checks.test.mjs。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  141 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  143 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
@@ -602,7 +602,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全141を検索・到達可能 140）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全143を検索・到達可能 142）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -618,7 +618,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 141能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 143能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、
@@ -808,6 +808,14 @@ playground.js                     Playground (beta) IntMapModules.playground
 pandemic-model.js                 パンデミック・シミュレーターの**数理**——種を取る確率的 SEIR メタ個体群エンジン
                                   （DOM も window も Math.random も持たないので node が直に回せる。
                                   疾患プリセットもここのデータ。描画と UI は playground.js）
+pandemic-world.js                 パンデミックの**世界**——どの行が人の住む場所か・人口・接続（#R754）
+                                  （Natural Earth ＋ 4 表を 1 つの世界にまとめる。パネルと Atlas の
+                                  能力が**同じ物**を受け取るので、両者は同じ流行を見る。2 段階で、
+                                  行は即座・`ready` は表が settle してから＝走らせてよい時刻）
+pandemic-atlas.js                 パンデミックを Atlas から駆動する口 IntMapPandemicAtlas（#R754）
+                                  （run＝計算して状態を返す／draw＝その日を地図へ。計算と描画が
+                                  別の能力なのは観測器の都合＝#R743。`painted()` は自分の canvas を
+                                  読み、js/atlas-capabilities.js の観測器がそれを訊く）
 flight-sim.js                     フライトシミュレーター IntMapFlightSim（238 KB）
 street-view.js                    ストリートビューのパネルと実カバレッジ IntMapStreetView
 community.js                      コミュニティのフィード
