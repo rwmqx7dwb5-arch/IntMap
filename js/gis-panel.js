@@ -90,6 +90,34 @@ export function makeGisPanel(HOST) {
        written — the parse itself happens inside the op, so a missing module here costs the reader the
        function list and not the ability to type. */
     const EXPR = () => { try { return window.IntMapGisExpr || null; } catch (_) { return null; } };
+    /* js/gis-export.js (#R756). Asked at use time like every other handle here: where it is absent
+       the section is drawn WITH the sentence that says so, because a missing exit that says nothing
+       is exactly the state this round found the GIS layer in.
+       ⚠ AND IT IS FETCHED WHEN THE READER LOOKS AT THE WAY OUT, not when the panel mounts. The three
+       file READERS (js/gis-shapefile.js · js/gis-geotiff.js · js/gis-geopackage.js) are already their
+       own chunks for exactly this reason — a session that never exports should not carry the writer.
+       ⚠ 天井を上げて自分の変更を通さない: js/lazy-modules.js:154 が「自分の変更に合わせて天井を
+       上げるのは、その検査が捕まえるための動き」と書いており、`gis-core` の 322.2 kB がそれである。
+       ⚠ 「まだ来ていない」と「来られなかった」は別の文で、読者には別のことが起きている。 */
+    let exportPending = false, exportFailed = false;
+    const EXPORT = () => {
+      try { if (window.IntMapGisExport) return window.IntMapGisExport; } catch (_) { return null; }
+      if (!exportPending && !exportFailed) {
+        exportPending = true;
+        /* ⚠ THE SPELLING IS `(await import(…)).NAME`, not `.then(m => m.NAME())`.
+           tests/r175-checks ③ reads a dynamic import as an import OF A NAME only in that shape, and
+           js/screenshot.js and js/geo-import.js already use it — a second spelling here would make
+           the export read as dead code while it is being called. ⚠ その検査は散文の中の import も
+           本物として読むので、ここに例を「書いて」はならない（書いた結果、存在しないモジュールを
+           動的に読み込んでいると報告された）。 */
+        (async () => {
+          try { (await import('./gis-export.js')).makeGisExport(); } catch (_) { exportFailed = true; }
+          exportPending = false;
+          try { render(); } catch (_) { }
+        })();
+      }
+      return null;
+    };
 
     function nf(v) {
       const n = Number(v);
@@ -373,6 +401,29 @@ export function makeGisPanel(HOST) {
       if (code === 'supplier-answer-invalid') return window.IntMapLang.t(HOST.lang, 'The supplier answered in a shape the contract does not have, so its answer was refused rather than half-read', '供給元が契約どおりの形で答えなかったため、その答えは中途半端に読まずに拒否しました') + par([d.id, d.expected, d.got].filter((x) => x != null && x !== '').join(' · '));
 
 
+      /* ── js/gis-export.js — the way out (#R756) ────────────────────────────────────────────
+         ⚠ EVERY ONE OF THESE IS A SENTENCE THE READER CAN ACT ON, because every one of them has a
+         next move: choose a format, choose a band, choose a sample type, or state a missing value.
+         A 「書き出せませんでした」 over sixteen causes would leave a reader with a dataset they can
+         see and cannot take anywhere — which is the defect this whole path exists to remove.
+         ⚠ en + jp only (CONSTITUTION.md §7, 2026-09-11): IntMap's own prose is authored in two. */
+      if (code === 'export-registry-missing') return window.IntMapLang.t(HOST.lang, 'The dataset registry is not loaded, so there is nothing to write out', 'データセット台帳が読み込まれていないため、書き出す対象がありません');
+      if (code === 'export-dataset-missing') return window.IntMapLang.t(HOST.lang, 'That dataset is not registered any more, so nothing was written', 'そのデータセットはもう登録されていないため、何も書き出していません') + par(d.id);
+      if (code === 'export-format-not-named') return window.IntMapLang.t(HOST.lang, 'Choose a file format — they keep different things, so one is not chosen for you', '書き出す形式を選んでください。形式ごとに保てるものが違うので、こちらでは選びません') + par((d.formats || []).join(' / '));
+      if (code === 'export-format-unknown') return window.IntMapLang.t(HOST.lang, 'That is not a format this build can write', 'それは、このビルドが書き出せる形式ではありません') + par([d.format, (d.formats || []).join(' / ')].filter(Boolean).join(' · '));
+      if (code === 'export-format-not-for-kind') return window.IntMapLang.t(HOST.lang, 'That format cannot hold this kind of data — a grid is not a list of shapes, and a list of shapes is not a grid', 'その形式では、この種類のデータを保持できません。格子は図形の一覧ではなく、図形の一覧は格子ではありません') + par([d.format, d.kind].filter(Boolean).join(' · '));
+      if (code === 'export-empty') return window.IntMapLang.t(HOST.lang, 'There is nothing to write — a file with nothing in it would look tomorrow like an analysis that produced nothing', '書き出すものがありません。中身の無いファイルは、後日「処理の結果が0件だった」と読めてしまいます');
+      if (code === 'export-band-out-of-range') return window.IntMapLang.t(HOST.lang, 'This grid does not have that band', 'この格子には、そのバンドがありません') + par([d.band, d.bands].filter((x) => x != null).join(' / '));
+      if (code === 'export-band-unreadable') return window.IntMapLang.t(HOST.lang, 'The grid did not hand back a full band, so nothing was written — a short band written as an image would shift every row after the gap', 'バンドの値を最後まで取得できなかったため、何も書き出していません。足りないまま書くと、欠けた先の行がすべてずれます') + par([d.band, d.got != null ? (nf(d.got) + ' / ' + nf(d.expected)) : d.message].filter((x) => x != null && x !== '').join(' · '));
+      if (code === 'export-datatype-unknown') return window.IntMapLang.t(HOST.lang, 'That is not a sample type this build writes', 'それは、このビルドが書き出せる数値の型ではありません') + par([d.dataType, (d.dataTypes || []).join(' / ')].filter(Boolean).join(' · '));
+      if (code === 'export-value-out-of-range') return window.IntMapLang.t(HOST.lang, 'A value does not fit the whole-number type chosen, and truncating it would write a different grid — choose a wider type, or a floating-point one', '選ばれた整数型に収まらない値があります。切り捨てれば別の格子になるので、より広い型か小数の型を選んでください') + par([d.value, d.dataType, d.pixel != null ? ('#' + nf(d.pixel)) : null].filter((x) => x != null).join(' · '));
+      if (code === 'export-missing-not-representable') return window.IntMapLang.t(HOST.lang, 'This grid has missing pixels and the whole-number type has no way to say so — 0 is a sea-level elevation and a rainless day, so it is not written. Choose a floating-point type, or state a no-data value on the band', 'この格子には欠損した画素があり、整数型にはそれを表す値がありません。0 は「標高0m」「降水量0」であって欠損ではないので書きません。小数の型を選ぶか、バンドに欠損値を指定してください') + par([d.dataType, d.pixel != null ? ('#' + nf(d.pixel)) : null].filter((x) => x != null).join(' · '));
+      if (code === 'export-nodata-conflict') return window.IntMapLang.t(HOST.lang, 'The bands state different no-data values, and one file can only carry one — write them as separate files', 'バンドごとに欠損値が違い、1つのファイルには1つしか書けません。バンドを分けて書き出してください') + par((d.values || []).join(' / '));
+      if (code === 'export-nodata-not-representable') return window.IntMapLang.t(HOST.lang, 'The no-data value this band states does not fit the sample type chosen', 'このバンドが述べている欠損値は、選ばれた数値の型に収まりません') + par([d.nodata, d.dataType].filter((x) => x != null).join(' · '));
+      if (code === 'export-crs-unsupported') return window.IntMapLang.t(HOST.lang, 'This writer states EPSG:4326 in the file, and this grid is in something else — converting it silently would place it by assertion', 'この書き出しはファイルに EPSG:4326 と記します。この格子は別の座標系なので、黙って変換すると根拠のない場所に置くことになります') + par(d.crs);
+      if (code === 'export-geometry-mixed-dimensions') return window.IntMapLang.t(HOST.lang, 'One shape mixes 2-D and 3-D positions, and a WKT column states one or the other — export it as GeoJSON, which carries both', '1つの図形の中で2次元と3次元の座標が混ざっています。WKT の列はどちらか一方しか述べられないため、両方を運べる GeoJSON で書き出してください') + par(d.geometryType);
+      if (code === 'export-serialise-failed') return window.IntMapLang.t(HOST.lang, 'A value in this dataset could not be written into a file', 'このデータセットの値のうち、ファイルに書けないものがありました') + par([d.column, d.message].filter((x) => x != null && x !== '').join(' · '));
+
       /* ── js/gis-core.js ──────────────────────────────────────────────────────────────────── */
       if (code === 'map-unavailable') return window.IntMapLang.t(HOST.lang, 'The map is not ready to take a layer yet', '地図がまだレイヤーを受け取れる状態ではありません', 'Die Karte kann noch keine Ebene aufnehmen', 'Карта пока не готова принять слой', 'El mapa aún no puede recibir una capa');
 
@@ -412,6 +463,10 @@ export function makeGisPanel(HOST) {
     const colForm = new Map();           /* dataset id → what is typed in its column controls */
     const styleForm = new Map();         /* dataset id → the colouring the reader is composing */
     const styleMsg = new Map();          /* dataset id → the last sentence from style() */
+    /* (#R756) 書き出し。The chosen format and the last sentence about a file that was written — held
+       outside the DOM for the reason the block above gives: the registry repaints this panel. */
+    const exportForm = new Map();        /* dataset id → the format id chosen for it */
+    const exportMsg = new Map();         /* dataset id → what the last write actually did */
     let projName = '', projMsg = '';
     let projRows = null, projLoading = false;   /* list() is asynchronous — see sectionProject() */
 
@@ -1367,6 +1422,139 @@ export function makeGisPanel(HOST) {
       return b;
     }
 
+    /* ══ §2e · THE WAY OUT (#R756) ════════════════════════════════════════════════════════════
+       ⚠ THE GIS LAYER COULD TAKE DATA IN AND NOT LET IT OUT. A reader could drop a file, clip it,
+       join a table onto it and resample a grid, and then had nowhere to put the answer — and
+       js/gis-project.js's own header told such a reader to 「書き出せばよい」 about an export that did
+       not exist. This block is that exit, and it is built from js/gis-export.js's DECLARATIONS for
+       the reason §1 gives: a hand-made list of formats here would be a second copy of what that
+       module can write, and the two would drift the moment one of them learned a format.
+       ⚠ WHAT THE FILE DID AND DID NOT KEEP IS PRINTED AFTER IT IS WRITTEN. A CSV cannot hand a
+       polygon back as a polygon and cannot carry a licence; saying 「書き出しました」 and nothing
+       else is how a reader finds that out a week later, from the wrong file. */
+
+    /* The one place the bytes become a file. ⚠ The anchor is attached to the document before it is
+       clicked — a detached one does nothing in Firefox — and the object URL is revoked on the next
+       turn of the loop rather than immediately, because revoking it synchronously cancels the
+       download that was just started. */
+    function saveBytes(bytes, filename, mediaType) {
+      const d = doc();
+      if (!d || typeof Blob === 'undefined' || !window.URL || typeof URL.createObjectURL !== 'function') return false;
+      let url = null;
+      try {
+        url = URL.createObjectURL(new Blob([bytes], { type: mediaType || 'application/octet-stream' }));
+        const a = d.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        (d.body || d.documentElement).appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => { try { URL.revokeObjectURL(url); } catch (_) { } }, 0);
+        return true;
+      } catch (_) {
+        if (url) { try { URL.revokeObjectURL(url); } catch (_) { } }
+        return false;
+      }
+    }
+
+    /* What was written, in the reader's language, out of the answer's own `stated` — never out of
+       what the panel assumed the format does. ⚠ The losses come FIRST: a sentence that opens with
+       「書き出しました」 and mentions the missing shapes at the end is read as a success. */
+    function exportedText(res) {
+      const st = (res && res.stated) || {};
+      const parts = [window.IntMapLang.t(HOST.lang, 'Written to a file', '書き出しました') + ': ' + String(res.filename || '')];
+      if (st.geometry === 'wkt' && st.geometryRoundTrip === false) {
+        parts.push(window.IntMapLang.t(HOST.lang,
+          'The shapes are in the file as WKT text, but this app reads a CSV back as attributes only — use GeoJSON to bring the shapes back',
+          '図形は WKT のテキストとしてファイルに入っていますが、この地図が CSV を読み直すときは属性だけになります。図形ごと戻したい場合は GeoJSON を使ってください'));
+      }
+      if (st.rowsWithoutGeometry) {
+        parts.push(window.IntMapLang.t(HOST.lang, 'Rows with no shape', '図形を持たない行') + ': ' + nf(st.rowsWithoutGeometry));
+      }
+      if (st.nonFiniteCells) {
+        parts.push(window.IntMapLang.t(HOST.lang, 'Cells whose value has no notation in a CSV, left empty', 'CSV に書ける表記が無く空欄にした値') + ': ' + nf(st.nonFiniteCells));
+      }
+      if (st.nodata != null) {
+        parts.push(window.IntMapLang.t(HOST.lang, 'Missing pixels are written as', '欠損した画素は次の値で書いています') + ': ' + nf(st.nodata));
+      }
+      /* ⚠ BOTH DIRECTIONS, because a sentence that only ever appears when there IS a licence teaches
+         nothing about the file that has none ([[intmap-licence-must-be-a-value]]). */
+      if (st.license != null) parts.push(window.IntMapLang.t(HOST.lang, 'Licence carried into the file', 'ライセンスをファイルに入れました') + ': ' + String(st.license));
+      else if (st.provenanceCarried) parts.push(window.IntMapLang.t(HOST.lang, 'This dataset states no licence, so the file claims none', 'このデータセットはライセンスを述べていないため、ファイルにも何も書いていません'));
+      else parts.push(window.IntMapLang.t(HOST.lang, 'This format carries no origin — the GeoJSON export does', 'この形式は出典を運びません。出典ごと渡すには GeoJSON を使ってください'));
+      return parts.join(' · ');
+    }
+
+    function exportBlock(ds) {
+      const sec = el('div', CSS_SECT);
+      if (!sec) return null;
+      sec.className = 'gis-export';
+      sec.appendChild(el('div', CSS_SECTH, window.IntMapLang.t(HOST.lang, 'Export', '書き出し')));
+      const X = EXPORT();
+      if (!X || typeof X.write !== 'function') {
+        /* ⚠ 「まだ来ていない」を「来られなかった」と言わない。 The first is a moment and redraws
+           itself; the second is a state the reader can act on. One sentence for both would tell a
+           reader with a slow connection that the feature is broken. */
+        sec.appendChild(el('div', CSS_NOTE, exportFailed
+          ? window.IntMapLang.t(HOST.lang,
+            'The export module could not be loaded, so nothing can be written out',
+            '書き出しの部品を読み込めなかったため、ファイルに出すことができません')
+          : window.IntMapLang.t(HOST.lang,
+            'Getting the export module ready',
+            '書き出しの部品を用意しています')));
+        return sec;
+      }
+      const list = X.formats(ds.kind === 'raster' ? 'raster' : 'vector') || [];
+      if (!list.length) {
+        sec.appendChild(el('div', CSS_NOTE, reasonText('export-format-not-for-kind', { kind: ds.kind })));
+        return sec;
+      }
+      const bar = row('');
+      const sel = el('select', CSS_IN + 'flex:0 1 auto;width:auto;min-width:104px;');
+      sel.className = 'gis-export-format';
+      list.forEach((f) => {
+        const o = document.createElement('option');
+        o.value = f.id;
+        /* ⚠ THE LABEL IS THE DECLARATION'S OWN ID, not a table of pretty names here — that table is
+           the second copy §1 forbids. What a reader needs beyond the name is on the tooltip: the
+           media type and the module that reads the file back. */
+        o.textContent = f.id.toUpperCase();
+        o.title = String(f.mediaType || '') + (f.readBackBy ? ' · ' + String(f.readBackBy) : '');
+        sel.appendChild(o);
+      });
+      const chosen = exportForm.get(ds.id);
+      sel.value = (chosen && list.some((f) => f.id === chosen)) ? chosen : list[0].id;
+      exportForm.set(ds.id, sel.value);
+      sel.onchange = () => { exportForm.set(ds.id, sel.value); exportMsg.delete(ds.id); render(); };
+      bar.appendChild(sel);
+
+      const btn = el('button', CSS_BTN, window.IntMapLang.t(HOST.lang, 'Save to a file', 'ファイルに書き出す'));
+      btn.className = 'gis-export-run';
+      btn.onclick = () => {
+        const opts = { format: exportForm.get(ds.id) || list[0].id };
+        /* the band the reader already chose for drawing is the band they mean here too; a second
+           picker for the same choice would be two answers to one question */
+        const b = drawBand.get(ds.id);
+        if (ds.kind === 'raster' && b != null) opts.band = b;
+        let res = null;
+        try { res = X.write(ds.id, opts); }
+        catch (e) { res = { ok: false, why: 'export-serialise-failed', detail: { message: e && e.message } }; }
+        if (!res || res.ok === false) exportMsg.set(ds.id, reasonText(res && res.why, res && res.detail));
+        else if (!saveBytes(res.bytes, res.filename, res.mediaType)) {
+          exportMsg.set(ds.id, window.IntMapLang.t(HOST.lang,
+            'The file was written but this browser would not save it',
+            'ファイルは作れましたが、このブラウザが保存を受け付けませんでした'));
+        } else exportMsg.set(ds.id, exportedText(res));
+        render();
+      };
+      bar.appendChild(btn);
+      sec.appendChild(bar);
+      const msg = exportMsg.get(ds.id);
+      if (msg) { const m = el('div', CSS_NOTE, msg); m.className = 'gis-export-msg'; sec.appendChild(m); }
+      return sec;
+    }
+
     function dsCard(ds) {
       const card = el('div', CSS_CARD);
       card.className = 'gis-ds';
@@ -1426,6 +1614,8 @@ export function makeGisPanel(HOST) {
       if (ed) det.appendChild(ed);
       const st = styleBlock(ds);
       if (st) det.appendChild(st);
+      const xp = exportBlock(ds);
+      if (xp) det.appendChild(xp);
       det.appendChild(lineageBlock(ds));
       const sp = stepParamsBlock(ds);
       if (sp) det.appendChild(sp);
@@ -1497,6 +1687,7 @@ export function makeGisPanel(HOST) {
             /* (#R738) the editing and colouring state is per dataset too, and a later dataset can be
                given the same id by a restored project — state left behind would reappear under it */
             editMsg.delete(rec.id); colForm.delete(rec.id); styleForm.delete(rec.id); styleMsg.delete(rec.id); dsRun.delete(rec.id);
+            exportForm.delete(rec.id); exportMsg.delete(rec.id);
             if (cellEdit && cellEdit.id === rec.id) cellEdit = null;
             try { D && D.remove(rec.id); } catch (_) { }
           });

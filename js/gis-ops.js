@@ -408,6 +408,33 @@ export function makeGisOps() {
        the panel the list rather than the panel carrying one. */
     const RELATE_PREDICATES = ['intersects', 'within', 'contains', 'disjoint', 'nearer-than'];
 
+    /* ── どの面の上で計算したのか (#R756) ──────────────────────────────────────────────────────
+       An outside review of R752 said the ops do not state, per op, which surface they compute on.
+       They did not, and the answer was not derivable from anywhere: `measure` alone reported a
+       plane, and every other op's surface lived only in the kernel it happened to call.
+       ⚠ これは実装についての註ではなく、答えについての主張である。 A 「面積」 computed by the
+       spherical excess and a 「面積」 computed on an unwrapped lng/lat plane are different numbers,
+       and a reader combining two ops has no way to see that they disagree unless each says so.
+
+       The four surfaces this layer actually computes on. ⚠ 語彙は閉じている——a typo would otherwise
+       become a fifth surface nobody implements, and every op would still 「declare」 one.
+
+         'sphere'        great-circle / spherical-excess arithmetic on the WGS84 mean radius
+                         (js/gis-ops.js areaKm2 · lengthKm, js/gis-geometry.js haversineKm)
+         'degree-plane'  lng/lat unwrapped across the seam and treated as a plane
+                         (js/gis-geometry.js unwrapRing → the polygon clipper)
+         'degree-grid'   a lattice whose cells are degrees (js/gis-raster.js; non-degree grids are
+                         refused there as `grid-not-degrees`)
+         'stated-plane'  a projection the CALLER named, never one this layer picked
+
+       ⚠ 「許容誤差」 IS NOT DECLARED HERE, and that is deliberate. A per-op error bound would have to
+       say what was measured and when it expires (.agents/rules/no-ad-hoc-hardcoding.md §4), and no
+       such measurement exists for these ops today. What IS stated is where each op refuses rather
+       than approximating: a ring that spans a whole turn is `geometry-wraps-world`, and a measured
+       plane crossed at its seam is `crs-plane-seam-crossed`. An invented tolerance would read as a
+       measurement and be neither. */
+    const SURFACES = ['sphere', 'degree-plane', 'degree-grid', 'stated-plane'];
+
     /* ── the declarations a panel reads ───────────────────────────────────────────────────────── */
 
     /* `accepts` is per input; `params[].input` says WHICH input a field name is chosen from, so the
@@ -419,7 +446,8 @@ export function makeGisOps() {
        can grey the op out before the reader fills a form that is going to be refused. */
     const DECL = {
       filter: {
-        id: 'filter', inputs: 1, accepts: ['any'], output: 'same-as-input',
+        id: 'filter',
+        surface: [], inputs: 1, accepts: ['any'], output: 'same-as-input',
         params: [{ name: 'where', type: 'conditions', required: true, input: 0, ops: CONDITION_OPS }],
       },
       buffer: {
@@ -427,7 +455,8 @@ export function makeGisOps() {
            but it is not honest any more: js/gis-geometry.js builds the Minkowski sum of ANY
            geometry with a geodesic disk, which is what a buffer is. `buffer-needs-points` is
            therefore gone, and so is the mismatchWhy that named it. */
-        id: 'buffer', inputs: 1, accepts: ['any'], output: 'Polygon',
+        id: 'buffer',
+        surface: ['sphere', 'degree-plane'], inputs: 1, accepts: ['any'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true,
         params: [
           /* Negative means INWARD, and only an areal shape has an inside to eat into; a negative
@@ -440,26 +469,31 @@ export function makeGisOps() {
         /* ⚠ THE CLIPPER NO LONGER HAS TO BE CONVEX (#R732). A ward with a hole, a concave
            prefecture and a window whose true answer is several disjoint pieces are all ordinary
            now. `clip-window-not-convex` is raised by nothing. */
-        id: 'clip', inputs: 2, accepts: ['any', 'Polygon'], output: 'same-as-input',
+        id: 'clip',
+        surface: ['degree-plane'], inputs: 2, accepts: ['any', 'Polygon'], output: 'same-as-input',
         needsGeodesy: true, needsGeometry: true, params: [],
       },
       intersect: {
-        id: 'intersect', inputs: 2, accepts: ['Polygon', 'Polygon'], output: 'Polygon',
+        id: 'intersect',
+        surface: ['degree-plane'], inputs: 2, accepts: ['Polygon', 'Polygon'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true, params: [],
       },
       difference: {
-        id: 'difference', inputs: 2, accepts: ['Polygon', 'Polygon'], output: 'Polygon',
+        id: 'difference',
+        surface: ['degree-plane'], inputs: 2, accepts: ['Polygon', 'Polygon'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true, params: [],
       },
       union: {
-        id: 'union', inputs: 2, accepts: ['Polygon', 'Polygon'], output: 'Polygon',
+        id: 'union',
+        surface: ['degree-plane'], inputs: 2, accepts: ['Polygon', 'Polygon'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true, params: [],
       },
       dissolve: {
         /* One shape per group, boundaries between members removed. `by` absent means ONE group —
            the whole dataset — which is the 「全部まとめる」 a reader means by dissolve with no
            column named. */
-        id: 'dissolve', inputs: 1, accepts: ['Polygon'], output: 'Polygon',
+        id: 'dissolve',
+        surface: ['degree-plane'], inputs: 1, accepts: ['Polygon'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true,
         params: [{ name: 'by', type: 'field', required: false, input: 0 }],
       },
@@ -467,7 +501,8 @@ export function makeGisOps() {
         /* The spatial WHERE: keep the features of input 0 that stand in `predicate` to ANY feature
            of input 1. ⚠ `nearer-than` measures from the SHAPES, not from their centres — which is
            the whole of 「道路そのものからの距離」 and the thing a bounding-box centre cannot answer. */
-        id: 'relate', inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
+        id: 'relate',
+        surface: ['sphere', 'degree-plane'], inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
         needsGeodesy: true, needsGeometry: true,
         params: [
           { name: 'predicate', type: 'enum', required: true, default: 'intersects', values: RELATE_PREDICATES },
@@ -483,7 +518,8 @@ export function makeGisOps() {
          name (`input-kind`) for every op at once, the old ones included. */
       sample: {
         /* 地点値の取得: each point gets a column holding the grid's value under it. */
-        id: 'sample', inputs: 2, accepts: ['Point', 'any'], kinds: ['vector', 'raster'], output: 'same-as-input',
+        id: 'sample',
+        surface: ['degree-grid'], inputs: 2, accepts: ['Point', 'any'], kinds: ['vector', 'raster'], output: 'same-as-input',
         needsRaster: true,
         params: [
           { name: 'band', type: 'field', required: false, input: 1 },
@@ -504,7 +540,8 @@ export function makeGisOps() {
            op rather than three features of the app. `classes` is the last of those: the area of each
            distinct value, which only means anything for a grid of codes, so it refuses a grid of
            measurements by name instead of rounding them into classes. */
-        id: 'zonal', inputs: 2, accepts: ['Polygon', 'any'], kinds: ['vector', 'raster'], output: 'Polygon',
+        id: 'zonal',
+        surface: ['degree-grid'], inputs: 2, accepts: ['Polygon', 'any'], kinds: ['vector', 'raster'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true, needsRaster: true,
         params: [
           { name: 'band', type: 'field', required: false, input: 1 },
@@ -516,7 +553,8 @@ export function makeGisOps() {
         /* 条件による抽出: the same grid with everything that fails the test turned into a void.
            ⚠ The operator list is CONDITION_OPS minus the one that has no meaning for numbers, derived
            rather than retyped — a tenth comparison added to the filter arrives here too. */
-        id: 'rasterMask', inputs: 1, accepts: ['any'], kinds: ['raster'], output: 'raster',
+        id: 'rasterMask',
+        surface: ['degree-grid'], inputs: 1, accepts: ['any'], kinds: ['raster'], output: 'raster',
         needsRaster: true,
         params: [
           { name: 'band', type: 'field', required: false, input: 0 },
@@ -527,7 +565,8 @@ export function makeGisOps() {
       rasterDiff: {
         /* 時期同士の差分: a − b, on the grid they share. Two grids that are not the same grid are
            refused rather than resampled — see js/gis-raster.js diff(). */
-        id: 'rasterDiff', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        id: 'rasterDiff',
+        surface: ['degree-grid'], inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
         needsRaster: true,
         params: [{ name: 'band', type: 'field', required: false, input: 0 }],
       },
@@ -541,7 +580,8 @@ export function makeGisOps() {
            is input 1's grid exactly — the plain reading of 「b の格子に合わせる」, and a statement the
            reader has already made by choosing b. Given, the target is the COMMON lattice align()
            computes, and the rule says whose resolution won. Either way the choice has an author. */
-        id: 'resample', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        id: 'resample',
+        surface: ['degree-grid'], inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
         needsRaster: true, needsWarp: true,
         params: [
           { name: 'method', type: 'enum', required: true, valuesOf: 'sample-methods-all' },
@@ -558,7 +598,8 @@ export function makeGisOps() {
            ⚠ BOTH INPUTS MUST BE THE SAME GRID, for the reason rasterDiff refuses otherwise — and
            now the refusal has `resample` to point at. Naming the same dataset twice is legal and is
            how single-grid arithmetic is written. */
-        id: 'rasterCalc', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        id: 'rasterCalc',
+        surface: ['degree-grid'], inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
         needsRaster: true, needsExpr: true,
         params: [
           { name: 'expr', type: 'text', required: true },
@@ -574,7 +615,8 @@ export function makeGisOps() {
            agree in their overlap and any rule gives the same picture; two grids from different dates
            or different sensors do not, and a silently-chosen 「後の方が勝つ」 is a composite nobody
            described. Chain it for a third: mosaic(mosaic(a,b), c). */
-        id: 'mosaic', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        id: 'mosaic',
+        surface: ['degree-grid'], inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
         needsRaster: true, needsWarp: true,
         params: [
           /* ⚠ ASKED, NOT COPIED — js/gis-raster.js publishes `mergeOverlaps()` for exactly this
@@ -590,10 +632,12 @@ export function makeGisOps() {
            cut it is a question only the reader can answer — 「日本を 100×100 で」 and 「日本を
            10000×10000 で」 are different analyses, and picking one silently decides what the answer
            means. So width and height are required and the extent defaults to the input's own.
-           ⚠ WHAT IS BURNED IS STATED TOO. `field` omitted = presence (1 where a feature covers the
-           pixel centre, void elsewhere); named = that column's value, with `stat` deciding what two
-           features over one pixel mean. */
-        id: 'rasterize', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'raster',
+           ⚠ WHAT IS BURNED IS STATED TOO. `field` omitted = presence (1 where a feature touches the
+           cell, void elsewhere); named = that column's value, with `stat` deciding what two features
+           over one pixel mean. ⚠ 「触れている」は次元ごとに違う——面は画素の中心が形の中にあるとき、
+           点はその画素の中にあるとき、線はその画素を通るとき（#R756。burnGeometry を見よ）。 */
+        id: 'rasterize',
+        surface: ['degree-grid', 'degree-plane'], inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'raster',
         needsRaster: true, needsGeometry: true,
         params: [
           { name: 'width', type: 'number', required: true },
@@ -609,7 +653,8 @@ export function makeGisOps() {
            12.3 and 12.4 is not a boundary anybody drew, and rounding to make one invents a
            classification nobody defined. A grid of codes (land cover, administrative raster, the
            output of rasterMask) has real edges, and those are what this traces. */
-        id: 'polygonize', inputs: 1, accepts: ['any'], kinds: ['raster'], output: 'Polygon',
+        id: 'polygonize',
+        surface: ['degree-grid'], inputs: 1, accepts: ['any'], kinds: ['raster'], output: 'Polygon',
         needsRaster: true,
         params: [
           { name: 'band', type: 'field', required: false, input: 0 },
@@ -629,11 +674,12 @@ export function makeGisOps() {
            measured on Web Mercator at 60°N is four times the truth, and a column of such numbers
            with nothing beside them is the shape this project keeps catching — a value whose author
            and whose caveat are both missing. */
-        id: 'measure', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        id: 'measure',
+        surface: ['sphere', 'stated-plane'], inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
         needsGeodesy: true,
         params: [
           { name: 'what', type: 'enum', required: true, values: ['area', 'length'] },
-          { name: 'crs', type: 'text', required: false },
+          { name: 'crs', type: 'text', required: false, valuesOf: 'plane-spellings', open: true },
           { name: 'unit', type: 'enum', required: false, values: ['km', 'm'] },
           { name: 'outName', type: 'text', required: false },
         ],
@@ -644,7 +690,8 @@ export function makeGisOps() {
            reader may want to look at, join to, or filter by; 「直した」 is a change to their data.
            The overlay ops have been consuming self-intersecting rings since this layer existed and
            saying nothing, because nothing could ask. */
-        id: 'validate', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        id: 'validate',
+        surface: ['degree-plane'], inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
         needsGeometry: true,
         params: [{ name: 'prefix', type: 'text', required: false }],
       },
@@ -654,7 +701,8 @@ export function makeGisOps() {
            STILL wrong after it — a repair that reports only success is a claim about data the reader
            can no longer inspect. ⚠ AND IT IS NOT buffer(0): that moves vertices by the offset
            arithmetic's error and calls the result the same shape. */
-        id: 'repair', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        id: 'repair',
+        surface: ['degree-plane'], inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
         needsGeometry: true,
         params: [
           { name: 'winding', type: 'enum', required: false, default: 'rfc7946', values: ['rfc7946', 'keep'] },
@@ -669,7 +717,8 @@ export function makeGisOps() {
            ⚠ For a trace the window CUTS rather than selects: 「17 時台に通った区間」 is a piece of the
            line, not the whole ride, and returning the whole feature because one of its 4,000 fixes is
            inside would answer a question nobody asked. */
-        id: 'timeWindow', inputs: 1, accepts: ['any'], output: 'same-as-input',
+        id: 'timeWindow',
+        surface: [], inputs: 1, accepts: ['any'], output: 'same-as-input',
         params: [
           { name: 'from', type: 'text', required: false },
           { name: 'to', type: 'text', required: false },
@@ -692,7 +741,8 @@ export function makeGisOps() {
            a sample of both sides' keys, instead of a column of blanks.
            ⚠ `accepts` IS 'any' ON BOTH SIDES, INCLUDING THE GEOMETRY-LESS TABLE. A table joined onto a
            table is an ordinary thing to want, and the output keeps input 0's geometry whatever it is. */
-        id: 'join', inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
+        id: 'join',
+        surface: [], inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
         params: [
           { name: 'leftField', type: 'field', required: true, input: 0 },
           { name: 'rightField', type: 'field', required: true, input: 1 },
@@ -711,7 +761,8 @@ export function makeGisOps() {
            evaluated as JavaScript (js/gis-expr.js), and the columns it names are checked against the
            dataset the same way filter checks a condition's field — an expression over a column that is
            not there must be refused, not answered with a column of nulls. */
-        id: 'compute', inputs: 1, accepts: ['any'], output: 'same-as-input',
+        id: 'compute',
+        surface: [], inputs: 1, accepts: ['any'], output: 'same-as-input',
         needsExpr: true,
         params: [
           { name: 'outName', type: 'text', required: true },
@@ -723,7 +774,8 @@ export function makeGisOps() {
         /* ⚠ `accepts[1]` WAS 'Point' (#R729) and the arithmetic was 「面に含まれる点」. With a real
            predicate available it is 「その面に重なるもの」, which is the same answer for points and
            the right one for the roads and parcels a reader actually has. */
-        id: 'aggregate', inputs: 2, accepts: ['Polygon', 'any'], output: 'Polygon',
+        id: 'aggregate',
+        surface: ['degree-plane'], inputs: 2, accepts: ['Polygon', 'any'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true,
         params: [
           { name: 'stat', type: 'enum', required: true, default: 'count', values: ['count', 'sum', 'mean', 'min', 'max'] },
@@ -782,6 +834,18 @@ export function makeGisOps() {
         const WK = warpKernel();
         if (!WK || typeof WK.alignRules !== 'function') return null;
         try { return WK.alignRules(); } catch (_) { return null; }
+      },
+      /* (#R756) HOW A PLANE MAY BE NAMED. `crs` has always been free text, and the one plane whose
+         parameters cannot be folded into an EPSG code -- the azimuthal equidistant, whose centre IS
+         the argument -- was therefore unreachable from `measure`: four planes were implemented and
+         three could be asked for. js/gis-crs.js now derives the spellings from its own PLANES table
+         and hands them over, so neither this file nor a panel keeps a second list.
+         WARNING `open: true` -- the set is the GRAMMAR, not the values. 'utm:<zone>,<south>' stands
+         for every zone, so a caller must not present this as a closed dropdown. */
+      'plane-spellings': () => {
+        const CK = crsKernel();
+        if (!CK || typeof CK.planeSpellings !== 'function') return null;
+        try { return CK.planeSpellings(); } catch (_) { return null; }
       },
     };
 
@@ -1701,7 +1765,7 @@ export function makeGisOps() {
         if (!(await ctx.tick(1, zones.length))) return fail('cancelled', { done: ctx.done(), total: zones.length });
         const g = f && f.geometry;
         if (!g || !polygonsOf(g).length) continue;
-        const z = RK.zonal(rasDs, b.index, g, (stat === 'classes') ? { classes: true } : null);
+        const z = await RK.zonal(rasDs, b.index, g, { classes: stat === 'classes', ctx: ctx });
         /* ⚠ A ZONE THE KERNEL REFUSED IS NOT A ZONE WITH NO DATA. A ring that wraps the world, a
            degenerate polygon, a grid it could not read: each of those is a reason, and writing `null`
            into the column for it would put 「測れなかった」 and 「そこには何も無い」 in the same cell.
@@ -1724,7 +1788,7 @@ export function makeGisOps() {
       return { ok: true, features: out };
     }
 
-    function runRasterMask(rasDs, params, R) {
+    async function runRasterMask(rasDs, params, R, ctx) {
       const RK = rasterKernel();
       const b = bandIndexOf(rasDs, params.band);
       if (!b.ok) return b.res;
@@ -1746,7 +1810,13 @@ export function makeGisOps() {
         if (n == null) return fail('bad-param', { param: 'value', value: params.value });
         value = n;
       }
-      const r = RK.mask(rasDs, b.index, { op: op, value: value });
+      /* WARNING (#R756) ctx IS THE CANCEL PATH, AND IT WAS NOT BEING HANDED OVER. js/gis-warp.js has
+         had a per-row 'may I continue' since #R749 and js/gis-raster.js has one per slice since
+         #R756, and NOTHING IN THIS FILE PASSED `ctx`, so both were unreachable code that read as a
+         working cancel. A grid large enough to be worth cancelling was exactly the one that could
+         not be. The kernels stay synchronous when `ctx` is absent, so a caller with no cancel path
+         is not made to await -- the shape that would have been two implementations of one walk. */
+      const r = await RK.mask(rasDs, b.index, { op: op, value: value }, { ctx: ctx });
       if (!r || !r.ok) return r || fail('mask-failed');
       return { ok: true, raster: r.raster, stats: { kept: r.kept, dropped: r.dropped, nodata: r.nodataCount } };
     }
@@ -1781,8 +1851,15 @@ export function makeGisOps() {
         target = { west: g.west, north: g.north, pixelLng: g.pixelLng, pixelLat: g.pixelLat, width: bDs.width, height: bDs.height };
       }
 
+      /* WARNING (#R756) ctx IS THE CANCEL PATH, AND IT WAS NOT BEING HANDED OVER. js/gis-warp.js has
+         had a per-row 'may I continue' since #R749 and js/gis-raster.js has one per slice since
+         #R756, and NOTHING IN THIS FILE PASSED `ctx`, so both were unreachable code that read as a
+         working cancel. A grid large enough to be worth cancelling was exactly the one that could
+         not be. The kernels stay synchronous when `ctx` is absent, so a caller with no cancel path
+         is not made to await -- the shape that would have been two implementations of one walk. */
       const r = await WK.resample(aDs, target, {
         method: method,
+        ctx: ctx,
         signal: (ctx && ctx.signal) || null,
         onProgress: (ctx && ctx.onProgress) || null,
       });
@@ -1838,7 +1915,7 @@ export function makeGisOps() {
       const unit = (params.unit != null && String(params.unit).trim() !== '') ? String(params.unit).trim() : null;
 
       if (!(await ctx.tick(1, 1))) return fail('cancelled', { done: ctx.done(), total: 1 });
-      const r = RK.combine(aDs, bDs, ba.index, bb.index, fn, { name: name, unit: unit, nodata: band.nodata });
+      const r = await RK.combine(aDs, bDs, ba.index, bb.index, fn, { name: name, unit: unit, nodata: band.nodata, ctx: ctx });
       if (!r || !r.ok) return r || fail('calc-failed');
       /* ⚠ AN EXPRESSION THAT BROKE ON EVERY PIXEL IS NOT AN EMPTY GRID, and the kernel counts those
          separately from voids for exactly this moment. Registering a grid of NaN under the reader's
@@ -1885,13 +1962,13 @@ export function makeGisOps() {
       if (!(width > 0) || !(height > 0)) return fail('grids-disjoint', { a: A, b: B });
       const target = { west: tWest, north: tNorth, pixelLng: g.pixelLng, pixelLat: g.pixelLat, width: width, height: height };
 
-      const opts = { method: method, signal: (ctx && ctx.signal) || null, onProgress: (ctx && ctx.onProgress) || null };
+      const opts = { method: method, ctx: ctx, signal: (ctx && ctx.signal) || null, onProgress: (ctx && ctx.onProgress) || null };
       const ra = await WK.resample(aDs, target, opts);
       if (!ra || !ra.ok) return ra || fail('resample-failed');
       const rb = await WK.resample(bDs, target, opts);
       if (!rb || !rb.ok) return rb || fail('resample-failed');
 
-      const m = RK.merge(ra.grid, rb.grid, ba.index, { overlap: overlap });
+      const m = await RK.merge(ra.grid, rb.grid, ba.index, { overlap: overlap, ctx: ctx });
       if (!m || !m.ok) return m || fail('mosaic-failed');
       return {
         ok: true, raster: m.raster,
@@ -1972,26 +2049,9 @@ export function makeGisOps() {
              the answer says how many — the same rule `zonal` applies to a cell it cannot read. */
           if (v == null && stat !== 'count') { skipped++; continue; }
         }
-        const bb = bboxOf(g);
-        if (!bb) { skipped++; continue; }
-        /* Only the rows and columns the feature's box can reach — the whole point of having a box. */
-        const c0 = Math.max(0, Math.floor((bb[0] - grid.west) / pixelLng));
-        const c1 = Math.min(width - 1, Math.floor((bb[2] - grid.west) / pixelLng));
-        const r0 = Math.max(0, Math.floor((grid.north - bb[3]) / pixelLat));
-        const r1 = Math.min(height - 1, Math.floor((grid.north - bb[1]) / pixelLat));
         let hit = false;
-        for (let rr = r0; rr <= r1; rr++) {
-          const lat = grid.north - pixelLat * (rr + 0.5);
-          for (let cc = c0; cc <= c1; cc++) {
-            const lng = grid.west + pixelLng * (cc + 0.5);
-            /* ⚠ THE PIXEL'S CENTRE DECIDES, which is the rule js/gis-raster.js's zonal already uses
-               for the other direction. Two rules for 「その画素はその形の中か」 would make a
-               rasterize→zonal round trip disagree with itself. */
-            if (!coveredBy(g, [lng, lat])) continue;
-            put(rr * width + cc, v);
-            hit = true;
-          }
-        }
+        const emit = (cc, rr) => { put(rr * width + cc, v); hit = true; };
+        if (!burnGeometry(g, grid, emit)) { skipped++; continue; }
         if (hit) burned++;
       }
       if (stat === 'mean') for (let i = 0; i < n; i++) if (cnt[i] > 0 && acc[i] === acc[i]) acc[i] /= cnt[i];
@@ -2005,15 +2065,126 @@ export function makeGisOps() {
       return { ok: true, raster: b.raster, stats: { burned: burned, skipped: skipped, cells: n, stat: stat } };
     }
 
-    /* Whether a position is inside a feature of any dimension. ⚠ A POINT AND A LINE HAVE NO INTERIOR,
-       so a pixel centre is 「in」 a point feature when the point is in that pixel — which is what the
-       bounding-box walk above has already established. Areas ask the one point-in-polygon rule this
-       layer has (js/gis-geometry.js owns it; see pointInPolygon). */
-    function coveredBy(g, lngLat) {
+    /* ── which cells a geometry burns (#R756) ─────────────────────────────────────────────────────
+       ⚠ 「その画素はその形に触れているか」は次元ごとに別の問いである。面は内部を持つので画素の
+       中心が決める（zonal が逆向きに使っているのと同じ規則で、そうでないと rasterize→zonal の
+       往復が自分自身と食い違う）。点と線は内部を持たないので、中心がその上に乗ることは測度 0 で
+       まず起きない——問いは「その画素の中にその点があるか」「その画素をその線が通るか」になる。
+       ⚠ 1 つの述語に 3 つの次元を答えさせると、答えられない 2 つには `true` を返すしかなく、
+       外接矩形がそのまま塗られる。#R756 実測: 16×16 の格子で、対角線 1 本が 256 セル・離れた
+       2 点の MultiPoint が 256 セル（GDAL の既定はそれぞれ 16 セル・2 セル）。道路や河川を
+       格子にすると、その川がどこにも無い場所まで川になっていた。
+       返り値は「場所を持つ形だったか」——burn した数ではない（格子の外の形は 0 セルで正しい）。 */
+    function burnGeometry(g, grid, emit) {
       if (!g || typeof g !== 'object') return false;
-      if (g.type === 'Polygon' || g.type === 'MultiPolygon') return pointInPolygon(lngLat, g);
-      if (g.type === 'GeometryCollection') return (g.geometries || []).some((s) => coveredBy(s, lngLat));
+      const t = g.type;
+      if (t === 'GeometryCollection') {
+        let any = false;
+        for (const s of (g.geometries || [])) if (burnGeometry(s, grid, emit)) any = true;
+        return any;
+      }
+      if (t === 'Polygon' || t === 'MultiPolygon') return burnArea(g, grid, emit);
+      if (t === 'Point') return burnPoint(g.coordinates, grid, emit);
+      if (t === 'MultiPoint') {
+        let any = false;
+        for (const p of (g.coordinates || [])) if (burnPoint(p, grid, emit)) any = true;
+        return any;
+      }
+      if (t === 'LineString') return burnLine(g.coordinates, grid, emit);
+      if (t === 'MultiLineString') {
+        let any = false;
+        for (const l of (g.coordinates || [])) if (burnLine(l, grid, emit)) any = true;
+        return any;
+      }
+      return false;
+    }
+
+    /* Areas: the pixel centre decides, walked over the rows and columns the feature's box can reach. */
+    function burnArea(g, grid, emit) {
+      const bb = bboxOf(g);
+      if (!bb) return false;
+      const c0 = Math.max(0, Math.floor((bb[0] - grid.west) / grid.pixelLng));
+      const c1 = Math.min(grid.width - 1, Math.floor((bb[2] - grid.west) / grid.pixelLng));
+      const r0 = Math.max(0, Math.floor((grid.north - bb[3]) / grid.pixelLat));
+      const r1 = Math.min(grid.height - 1, Math.floor((grid.north - bb[1]) / grid.pixelLat));
+      for (let rr = r0; rr <= r1; rr++) {
+        const lat = grid.north - grid.pixelLat * (rr + 0.5);
+        for (let cc = c0; cc <= c1; cc++) {
+          const lng = grid.west + grid.pixelLng * (cc + 0.5);
+          if (pointInPolygon([lng, lat], g)) emit(cc, rr);
+        }
+      }
       return true;
+    }
+
+    /* Continuous cell coordinates: cell (c, r) covers [c, c+1) × [r, r+1). ⚠ THE EXTENT DEFAULTS TO
+       THE DATA'S OWN, so the easternmost and northernmost coordinates land exactly on the outer edge
+       and floor() puts them one cell past the end. They belong to the last cell, not to nothing. */
+    function cellX(lng, grid) {
+      if (!isFinite(lng)) return null;
+      const x = (lng - grid.west) / grid.pixelLng;
+      if (x < 0 || x > grid.width) return null;
+      return x;
+    }
+    function cellY(lat, grid) {
+      if (!isFinite(lat)) return null;
+      const y = (grid.north - lat) / grid.pixelLat;
+      if (y < 0 || y > grid.height) return null;
+      return y;
+    }
+    function clampCol(x, grid) { return Math.min(grid.width - 1, Math.max(0, Math.floor(x))); }
+    function clampRow(y, grid) { return Math.min(grid.height - 1, Math.max(0, Math.floor(y))); }
+
+    function burnPoint(p, grid, emit) {
+      if (!Array.isArray(p) || p.length < 2) return false;
+      const x = cellX(Number(p[0]), grid), y = cellY(Number(p[1]), grid);
+      if (x == null || y == null) return true;              /* has a place; it is outside this lattice */
+      emit(clampCol(x, grid), clampRow(y, grid));
+      return true;
+    }
+
+    /* Lines: every cell the segment passes through, by the standard grid traversal (Amanatides–Woo).
+       ⚠ SAMPLING ALONG THE SEGMENT IS NOT THE SAME THING — a step small enough never to skip a cell
+       depends on the cell size, so it is a tolerance, and this is not a question that has one. */
+    function burnLine(coords, grid, emit) {
+      if (!Array.isArray(coords) || coords.length === 0) return false;
+      let placed = false;
+      for (let i = 0; i + 1 < coords.length; i++) {
+        const a = coords[i], b = coords[i + 1];
+        if (!Array.isArray(a) || !Array.isArray(b) || a.length < 2 || b.length < 2) continue;
+        const x0 = cellX(Number(a[0]), grid), y0 = cellY(Number(a[1]), grid);
+        const x1 = cellX(Number(b[0]), grid), y1 = cellY(Number(b[1]), grid);
+        placed = true;
+        /* ⚠ A SEGMENT WITH AN END OUTSIDE THE LATTICE STILL CROSSES IT. Clipping is the honest fix;
+           until this layer has a clipper the traversal simply starts and ends at the clamped cells,
+           which is exact whenever both ends are inside and conservative when one is not. */
+        if (x0 == null || y0 == null || x1 == null || y1 == null) continue;
+        walkCells(x0, y0, x1, y1, grid, emit);
+      }
+      if (coords.length === 1) return burnPoint(coords[0], grid, emit);
+      return placed;
+    }
+
+    function walkCells(x0, y0, x1, y1, grid, emit) {
+      let c = clampCol(x0, grid), r = clampRow(y0, grid);
+      const cEnd = clampCol(x1, grid), rEnd = clampRow(y1, grid);
+      emit(c, r);
+      const dx = x1 - x0, dy = y1 - y0;
+      const stepC = dx > 0 ? 1 : (dx < 0 ? -1 : 0);
+      const stepR = dy > 0 ? 1 : (dy < 0 ? -1 : 0);
+      const dtC = stepC === 0 ? Infinity : 1 / Math.abs(dx);
+      const dtR = stepR === 0 ? Infinity : 1 / Math.abs(dy);
+      let tC = stepC === 0 ? Infinity : ((stepC > 0 ? (c + 1 - x0) : (x0 - c)) / Math.abs(dx));
+      let tR = stepR === 0 ? Infinity : ((stepR > 0 ? (r + 1 - y0) : (y0 - r)) / Math.abs(dy));
+      /* The traversal visits |Δc| + |Δr| cells after the first; the bound is a fact about the walk,
+         not a tolerance — it exists so a non-finite coordinate cannot spin here forever. */
+      const limit = Math.abs(cEnd - c) + Math.abs(rEnd - r) + 2;
+      let n = 0;
+      while ((c !== cEnd || r !== rEnd) && n++ < limit) {
+        if (tC < tR) { c += stepC; tC += dtC; } else { r += stepR; tR += dtR; }
+        if (c < 0 || r < 0 || c >= grid.width || r >= grid.height) break;
+        emit(c, r);
+      }
     }
 
     function unitOfField(ds, name) {
@@ -2150,7 +2321,14 @@ export function makeGisOps() {
         /* ⚠ 「その面は作れなかった」 CARRIES ITS OWN REASON. The kernel says why (an unknown code, a
            plane whose parameters were not given, a radius it will not invent); folding all of them
            into one `bad-param` would send the reader to look at the wrong thing. */
-        if (!P) return fail('crs-plane-unusable', { crs: spec, why: (CK.why && CK.why()) || null });
+        if (!P) {
+          /* WARNING (#R756) A REFUSAL THAT DOES NOT SAY WHAT WOULD HAVE WORKED sends the reader to
+             guess at a grammar. The spellings come from the kernel that owns the planes. */
+          const spellings = paramValues(DECL.measure, 'crs');
+          const detail = { crs: spec, why: (CK.why && CK.why()) || null };
+          if (spellings) detail.spellings = spellings;
+          return fail('crs-plane-unusable', detail);
+        }
       }
 
       const base = (params.outName != null && String(params.outName).trim() !== '')
@@ -2194,17 +2372,41 @@ export function makeGisOps() {
         }
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
       }
+      /* ⚠ (#R756) 面の「有効範囲」を、宣言したまま誰にも訊いていなかった。 js/gis-crs.js has had
+         `assess()` since #R752 — how many of the reader's own positions fall outside the plane's
+         stated area of use, by how far, and which one first — and `measure` never called it. A UTM
+         zone measured two zones away answered with a number and no sign that it had left the plane.
+         ⚠ IT IS REPORTED, NOT ENFORCED. `outside: 0` is not a claim of suitability (a whole-world
+         plane can never report anything else), so a refusal here would be a judgement this layer is
+         not entitled to make — the reader asked for this plane. What it gets is the measurement. */
+      let fit = null;
+      if (P && CK && typeof CK.assess === 'function') {
+        const a = CK.assess(P, fs);
+        if (a) {
+          fit = {
+            outside: a.outside, of: a.total, unprojectable: a.unprojectable,
+            beyond: a.beyond, beyondUnit: a.beyondUnit, sample: a.sample,
+            extent: a.extent, areaScale: a.areaScale, scale: a.scale,
+          };
+        }
+      }
       return {
         ok: true, features: out,
-        stats: { measured: measured, refused: refusedRows, total: fs.length, plane: spec || 'geodesic', unit: unit },
+        stats: {
+          measured: measured, refused: refusedRows, total: fs.length,
+          plane: spec || 'geodesic', unit: unit,
+          /* which surface the numbers above were computed on — the same vocabulary ops() declares */
+          surface: P ? 'stated-plane' : 'sphere',
+          fit: fit,
+        },
       };
     }
 
-    function runRasterDiff(aDs, bDs, params, R) {
+    async function runRasterDiff(aDs, bDs, params, R, ctx) {
       const RK = rasterKernel();
       const b = bandIndexOf(aDs, params.band);
       if (!b.ok) return b.res;
-      const r = RK.diff(aDs, bDs, b.index);
+      const r = await RK.diff(aDs, bDs, b.index, { ctx: ctx });
       if (!r || !r.ok) return r || fail('diff-failed');
       return { ok: true, raster: r.raster, stats: { count: r.count, nodata: r.nodataCount } };
     }
@@ -2416,8 +2618,8 @@ export function makeGisOps() {
         aggregate: () => runAggregate(ds[0], ds[1], params, R, ctx),
         sample: () => runSample(ds[0], ds[1], params, R, ctx),
         zonal: () => runZonal(ds[0], ds[1], params, R, ctx),
-        rasterMask: () => runRasterMask(ds[0], params, R),
-        rasterDiff: () => runRasterDiff(ds[0], ds[1], params, R),
+        rasterMask: () => runRasterMask(ds[0], params, R, ctx),
+        rasterDiff: () => runRasterDiff(ds[0], ds[1], params, R, ctx),
         /* (#R752) the grid family the review of #R749 named as missing, and the two geometry-quality
            ops. Each is one line here for the reason the table exists at all: DECL and RUN are keyed
            by the same ids, so tests/r732 ① catches a declared op with no runner. */
@@ -2506,7 +2708,13 @@ export function makeGisOps() {
        and the version did not. Raise it whenever an edit here can change an ANSWER (a different
        result, a different refusal); a comment or a rename moves the hash, and the recorded hash is
        updated with the version left alone. scripts/gis-kernel-versions.mjs is the ledger. */
-    const KERNEL_VERSION = 'ops-1';
+    /* ⚠ (#R756) ops-1 → ops-2 BECAUSE A SAVED RECIPE NOW REPLAYS TO A DIFFERENT GRID. `rasterize`
+       burned the whole bounding box of every point, line and Multi geometry — a diagonal across a
+       16 × 16 lattice lit all 256 cells — and now burns the cells the feature actually touches. A
+       project saved last week reopens with different pixels in it, which is precisely the fact this
+       version exists to announce. (The ctx handover and the surface declarations do not change an
+       answer; the rasterize rule does, and one changed answer is enough.) */
+    const KERNEL_VERSION = 'ops-2';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
@@ -2532,6 +2740,9 @@ export function makeGisOps() {
       pointInPolygon: pointInPolygon,
       /* The spatial relations relate offers, so a caller can present them without repeating them. */
       predicates: () => RELATE_PREDICATES.slice(),
+      /* (#R756) The closed vocabulary every op's `surface` is drawn from — handed out so a reader,
+         a panel and the checks all ask the same question of the same list. */
+      surfaces: () => SURFACES.slice(),
     };
     try { window.IntMapGisOps = API; } catch (_) { }
     return API;

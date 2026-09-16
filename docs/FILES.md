@@ -209,6 +209,20 @@ gis-geotiff.js                    **GeoTIFF / COG の読み手** `window.IntMapG
                                   JPEG-in-TIFF・その他の圧縮は登録名つき・地理参照の無い TIFF …）。
                                   ⚠ **欠損は NaN**（`GDAL_NODATA` を含む。0 で埋めない）。
                                   `read(i)` は扉で、開いただけでは画素を展開しない
+gis-export.js                     **データを外へ出す口** `window.IntMapGisExport`（#R756）—
+                                  ベクタ → GeoJSON / CSV、ラスター → GeoTIFF（無圧縮・float32 と
+                                  整数・多バンド）。⚠ **「書き出せた」は「読み直せた」ではない**
+                                  ——3 形式とも、この製品自身の読み手（`js/geo-import.js` /
+                                  `js/gis-geotiff.js`）で往復して一致することが完成条件
+                                  （許容幅は 0。float32 は `Math.fround` そのもの）。
+                                  ⚠ **ジオリファレンスを必ず書く**（画素が合っていても場所が
+                                  違えば別のデータ）。⚠ **出典・ライセンス・取得時刻は値として**
+                                  ファイルに入る（GeoJSON は `license`/`attribution`/`source` と
+                                  `intmap.provenance`、GeoTIFF は 270/305/306/33432 と
+                                  GDAL_METADATA）。**述べられていないものは書かない**。
+                                  ⚠ **CSV は幾何をどう扱ったかを `stated` で述べる**（点は
+                                  経度/緯度の列、面は WKT の列＋**読み直すと属性だけ**）。
+                                  空のデータセットと収まらない整数は名前を付けて断る
 gis-warp.js                       **格子の座標変換と再標本化** `window.IntMapGisWarp`（#R749）—
                                   GDAL の warp が担う役（座標系・解像度・範囲・再標本化・NoData を
                                   1 つの層で扱う）。`to4326` / `resample` / `align` / `methods`。

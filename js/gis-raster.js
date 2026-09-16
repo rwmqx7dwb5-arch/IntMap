@@ -92,6 +92,22 @@
  *  `geometry-unavailable` when the kernel did not arrive, because 「訊けなかった」 and 「0 件だった」
  *  must not reach the reader as one answer.
  *
+ *  ══ ⚠⚠⚠ A PIXEL LOOP THAT CANNOT BE STOPPED IS A FROZEN MAP (#R756) ═══════════════════════════
+ *  `mask`, `diff`, `combine`, `merge` and `zonal` each walked every pixel in one uninterruptible
+ *  `for`, so a caller that started a 16-million-pixel calculation could not get the thread back until
+ *  it finished — and the code that would have set `signal.aborted` does not run on a held thread, so
+ *  the stop button was not slow, it was UNREACHABLE ([[intmap-sync-loop-cannot-be-cancelled]]).
+ *  ⇒ SO THEY TAKE A ctx, in the options argument each of them already ends with, and the walk is
+ *  `paced` — ONE loop, shared by all five, whose only difference with a ctx is WHEN IT LETS GO. A
+ *  call that hands over no ctx returns its answer synchronously, exactly as before and computed by
+ *  the same arithmetic; a call that hands one over returns a promise of the same answer, or of
+ *  `cancelled(done,total)`. ⚠ The unit of the yield is ELAPSED TIME (`frameMs()`), never a count of
+ *  rows or pixels: docs/GIS-CORE.md §2.6, and one row is a different duration on every grid.
+ *  ⚠ `sample` DELIBERATELY TAKES NO ctx. It answers about ONE position; the walk that calls it
+ *  millions of times is the caller's (js/gis-warp.js), and that is where the ctx belongs — making
+ *  `sample` awaitable would make every warp await once per output pixel per band for no cancellation
+ *  the warp's own ctx does not already provide.
+ *
  *  ⚠ REFUSALS ARE CODES, NOT SENTENCES — `{ ok:false, why, detail }`, and the nine languages live at
  *  the call site (docs/GIS-CORE.md §2.2). ⚠ AND THEY ARE REAL REFUSALS: two grids that do not share a
  *  grid are not resampled to be subtractable (`grid-mismatch`), and non-integer values are not
@@ -134,6 +150,92 @@ export function makeGisRaster() {
        publishes `frameMs()` so no third one has to be written. */
     const FRAME_MS = 16;
     function nowMs() { try { if (typeof performance !== 'undefined' && performance && performance.now) return performance.now(); } catch (_) { } return Date.now(); }
+
+    /* How often a pixel walk ASKS THE PACER whether to let go — NOT how much work a slice contains.
+       ⚠ THAT DISTINCTION IS THE WHOLE POINT: how long a slice runs is decided by elapsed time and by
+       nothing else, and the clock that decides it is the ctx's (js/gis-ops.js `makeCtx`, FRAME_MS
+       above), read in ONE place. This number only stops the walk from paying for the question.
+       Observation: asking is an `await` of an async function even when the answer is 「continue」 —
+       one microtask, tens of nanoseconds — and a pixel step here is a handful of arithmetic
+       operations, so asking at every pixel would roughly double the cost of `mask`; at one ask per
+       256 it is under half a percent, and 256 pixels of arithmetic are far under one frame, so the
+       pacer's own budget is still honoured to within the cost of 256 steps. Expires if a step ever
+       becomes expensive enough for 256 of them to exceed a frame — a step that itself awaits
+       (`fromSamplerAsync`) already does, which is why that loop asks at every pixel instead.
+       ⚠ Canon: this line. `polygonize` below had the same number written as a bare `& 255` and now
+       reads it here, so the two cannot drift. */
+    const CLOCK_EVERY = 256;
+    const CLOCK_MASK = CLOCK_EVERY - 1;
+
+    /* ── pacing: ONE loop over pixels, for every whole-grid walk in this file ──────────────────── */
+
+    /* docs/GIS-CORE.md §2.6's ctx, taken rather than rebuilt: `{ tick(units,total)→Promise<boolean>,
+       done()→number }` as js/gis-ops.js `makeCtx` builds it. A caller that handed none gets `null`,
+       and the walk below then runs straight through — stated, not simulated with a fake that claims
+       to be interruptible. ⚠ Read from the LAST argument of every op, so 「どこに ctx を書くか」 is
+       one answer for the whole file. */
+    function useCtx(opts) {
+      const c = opts && opts.ctx;
+      return (c && typeof c.tick === 'function') ? c : null;
+    }
+
+    /* ⚠⚠⚠ THE ONE SHAPE OF A CANCELLATION IN THIS LAYER, BUILT IN ONE PLACE. js/gis-panel.js reads
+       `detail.done` / `detail.total` (it has since #R749) and js/gis-ops.js hands the pair back at the
+       top level; a walk that wrote only one of the two would be invisible to one of its two readers —
+       the [[intmap-two-readers-one-field-list]] shape, in a refusal. So both are written here, once,
+       from the same two numbers, and js/gis-warp.js calls THIS rather than keeping a third spelling. */
+    function cancelled(done, total) {
+      return { ok: false, why: 'cancelled', done: done, total: total, detail: { done: done, total: total } };
+    }
+
+    /* Run `step(i)` for i = 0 … total−1, then `finish()`.
+       ⚠ THERE IS ONE LOOP OVER THE PIXELS (`slice`), AND `ctx` CHANGES WHEN IT LETS GO OF THE THREAD,
+       NOT WHAT IT DOES. The alternative — a synchronous walk beside an interruptible one — is two
+       implementations of one contract, and the way they fail is that one of them quietly stops
+       matching the other ([[intmap-contract-is-not-implementation]]); here the arithmetic is written
+       once and executed by both paths, so a ctx cannot change a single output pixel.
+       ⚠ WITHOUT A CTX THE ANSWER IS RETURNED, NOT A PROMISE OF IT. Every synchronous caller this file
+       already has (js/gis-warp.js samples inside its own loop, js/gis-datasets.js describes a grid)
+       keeps working unchanged, and only a caller that HANDS ONE OVER opts into awaiting.
+       ⚠ `step` RETURNING ANYTHING STOPS THE WALK AND THAT VALUE IS THE ANSWER — which is how a refusal
+       discovered mid-walk (`geodesy-missing`, `values-not-integer`) still reaches the caller by name
+       instead of being swallowed into a half-built grid.
+       ⚠⚠⚠ HOW LONG A SLICE RUNS IS NOT DECIDED HERE. It is decided by `ctx.tick`, which yields when a
+       frame has elapsed and returns at once when one has not — docs/GIS-CORE.md §2.6's 「刻みの単位は
+       件数ではなく時間」, in the one place that owns it. This walk only chooses HOW OFTEN TO ASK
+       (CLOCK_EVERY, and see its note for why asking is not free), exactly as `polygonize` below has
+       always done. A second clock here would be a second gate on one budget, and the two would drift
+       apart in a way neither file could show its reader. */
+    function paced(total, step, ctx, finish) {
+      let i = 0, stop;
+      /* THE loop. `chunk` is Infinity for a run nobody can interrupt, so the pause can never be taken
+         and the first pass is the only pass — the arithmetic below it is the same either way. */
+      const run = (chunk) => {
+        const end = (chunk >= total - i) ? total : (i + chunk);
+        while (i < end) {
+          stop = step(i);
+          i++;
+          if (stop !== undefined) return;
+        }
+      };
+      if (!ctx) { run(total); return stop !== undefined ? stop : finish(); }
+      return (async () => {
+        let reported = 0;
+        for (;;) {
+          run(CLOCK_EVERY);
+          /* ⚠ A REFUSAL DISCOVERED IN THE WALK BEATS A CANCELLATION ARRIVING IN THE SAME BREATH:
+             「この帯は読めない」 is why the run ended, and reporting 「中止しました」 instead would
+             send the reader to look at their own stop button. */
+          if (stop !== undefined) return stop;
+          const units = i - reported;
+          reported = i;
+          /* ⚠ THE PACER IS ASKED EVEN ON THE LAST PASS, so `ctx.done()` ends equal to `total` and a
+             caller's progress line reaches 100% instead of stopping one pass short. */
+          if (!(await ctx.tick(units, total))) return cancelled(i, total);
+          if (i >= total) return finish();
+        }
+      })();
+    }
 
     /* ── validity: measured, not assumed ──────────────────────────────────────────────────────── */
 
@@ -648,38 +750,57 @@ export function makeGisRaster() {
       let min = null, max = null;
       const classAreas = wantClasses ? Object.create(null) : null;
 
-      for (let row = row0; row <= row1; row++) {
-        const lat = rowCentreLat(raster, row);
-        const cellKm2 = rowAreaKm2(raster, row);
-        if (cellKm2 == null) return refuse('geodesy-missing');
-        const base = row * raster.width;
-        for (const range of colRanges) for (let col = range[0]; col <= range[1]; col++) {
-          /* ⚠ THE PIXEL BELONGS TO THE ZONE WHEN ITS CENTRE IS INSIDE IT — the judgement stated in
-             the header. No boundary pixel is split by area fraction, and none is counted twice. */
-          if (!GG.pointInGeometry([colCentreLng(raster, col), lat], geometry)) continue;
-          areaKm2 += cellKm2;
-          const val = V.values[base + col];
-          if (missing(val, V.nodata)) { nodataCount++; continue; }
-          count++;
-          sum += val;
-          wsum += val * cellKm2;
-          valueAreaKm2 += cellKm2;
-          if (min == null || val < min) min = val;
-          if (max == null || val > max) max = val;
-          if (classAreas) {
-            /* ⚠ NOT ROUNDED. A grid of 0.37 and 1.84 is not a classification with classes 0 and 2 —
-               it is a continuous field, and answering 「区分ごとの面積」 about it would be an invented
-               classification the reader would then compare against published figures. Refused by
-               name, with the pixel that proved it. */
-            const notAClass = classValue(val, row, col);
-            if (notAClass) return notAClass;
-            const k = String(val);
-            classAreas[k] = (classAreas[k] || 0) + cellKm2;
-          }
-        }
-      }
+      /* ⚠ THE WINDOW IS WALKED AS ONE SEQUENCE, so the walk can be let go of BETWEEN TWO PIXELS
+         rather than only between two rows. A row of a 43,200-column global grid is not a unit of
+         time — it is 43,200 centre-in-polygon tests against one zone and one against another — so
+         pacing by rows would be the 「刻みは件数」 mistake with the count spelled differently. The
+         column list is the same columns in the same order the nested loop visited them (the ranges
+         come back sorted and merged), so no pixel moves and none is visited twice. */
+      const cols = [];
+      for (const range of colRanges) for (let col = range[0]; col <= range[1]; col++) cols.push(col);
+      const rowsN = Math.max(0, row1 - row0 + 1);
+      const perRow = cols.length;
+      /* Carried across steps so the row's latitude and ground area are computed once per row, exactly
+         as the nested loop computed them — the walk is flat, the arithmetic is not repeated. */
+      let curRow = -1, lat = 0, cellKm2 = 0, base = 0;
 
-      const out = {
+      const step = (k) => {
+        const row = row0 + ((k / perRow) | 0);
+        if (row !== curRow) {
+          curRow = row;
+          lat = rowCentreLat(raster, row);
+          const km2 = rowAreaKm2(raster, row);
+          if (km2 == null) return refuse('geodesy-missing');
+          cellKm2 = km2;
+          base = row * raster.width;
+        }
+        const col = cols[k % perRow];
+        /* ⚠ THE PIXEL BELONGS TO THE ZONE WHEN ITS CENTRE IS INSIDE IT — the judgement stated in
+           the header. No boundary pixel is split by area fraction, and none is counted twice. */
+        if (!GG.pointInGeometry([colCentreLng(raster, col), lat], geometry)) return;
+        areaKm2 += cellKm2;
+        const val = V.values[base + col];
+        if (missing(val, V.nodata)) { nodataCount++; return; }
+        count++;
+        sum += val;
+        wsum += val * cellKm2;
+        valueAreaKm2 += cellKm2;
+        if (min == null || val < min) min = val;
+        if (max == null || val > max) max = val;
+        if (classAreas) {
+          /* ⚠ NOT ROUNDED. A grid of 0.37 and 1.84 is not a classification with classes 0 and 2 —
+             it is a continuous field, and answering 「区分ごとの面積」 about it would be an invented
+             classification the reader would then compare against published figures. Refused by
+             name, with the pixel that proved it. */
+          const notAClass = classValue(val, row, col);
+          if (notAClass) return notAClass;
+          const key = String(val);
+          classAreas[key] = (classAreas[key] || 0) + cellKm2;
+        }
+      };
+
+      const finish = () => {
+        const out = {
         ok: true,
         count: count,
         nodataCount: nodataCount,
@@ -706,9 +827,12 @@ export function makeGisRaster() {
            announces itself. */
         rows: [row0, row1],
         colRanges: colRanges,
+        };
+        if (classAreas) out.classAreasKm2 = classAreas;
+        return out;
       };
-      if (classAreas) out.classAreasKm2 = classAreas;
-      return out;
+
+      return paced(rowsN * perRow, step, useCtx(opts), finish);
     }
 
     /* ── mask ─────────────────────────────────────────────────────────────────────────────────── */
@@ -760,7 +884,7 @@ export function makeGisRaster() {
        NaN for what it removed, because NaN is missing by contract (header) and any number chosen as a
        sentinel could be a real value of this band. Inventing one is how a mask turns −9999 °C into a
        temperature two layers downstream. */
-    function mask(raster, bandIndex, condition) {
+    function mask(raster, bandIndex, condition, opts) {
       const v = validate(raster);
       if (!v.ok) return v;
       const t = conditionTest(condition);
@@ -771,16 +895,15 @@ export function makeGisRaster() {
       let out;
       try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
       let kept = 0, dropped = 0, missingCount = 0;
-      for (let i = 0; i < n; i++) {
+      return paced(n, (i) => {
         const val = V.values[i];
-        if (missing(val, V.nodata)) { out[i] = NaN; missingCount++; continue; }
+        if (missing(val, V.nodata)) { out[i] = NaN; missingCount++; return; }
         if (t.test(val)) { out[i] = val; kept++; } else { out[i] = NaN; dropped++; }
-      }
-      return {
+      }, useCtx(opts), () => ({
         ok: true,
         raster: derived(raster, [{ name: V.band.name, unit: V.band.unit == null ? null : V.band.unit, nodata: V.nodata }], out),
         kept: kept, dropped: dropped, nodataCount: missingCount,
-      };
+      }));
     }
 
     /* ── diff ─────────────────────────────────────────────────────────────────────────────────── */
@@ -805,7 +928,7 @@ export function makeGisRaster() {
        named. `grid-mismatch` says which fields differ and by how much, and a caller that wants the
        comparison can put both grids on one grid with `fromSampler` — where the choice is theirs and
        is written down. */
-    function diff(a, b, bandIndex) {
+    function diff(a, b, bandIndex, opts) {
       /* WHICH of the two is invalid, because 「片方が壊れている」 without saying which one sends the
          reader to look at the grid that was fine. */
       const va = validate(a); if (!va.ok) return refuse('raster-invalid', { which: 'a', field: (va.detail && va.detail.field) || null });
@@ -818,24 +941,25 @@ export function makeGisRaster() {
       let out;
       try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
       let count = 0, missingCount = 0;
-      for (let i = 0; i < n; i++) {
+      return paced(n, (i) => {
         const x = A.values[i], y = B.values[i];
         /* ⚠ Either side missing means the DIFFERENCE is missing. A void read as 0 would report the
            other grid's value as the change — the same 「void blended into a measurement」 failure as
            the bilinear above, in subtraction form. */
-        if (missing(x, A.nodata) || missing(y, B.nodata)) { out[i] = NaN; missingCount++; continue; }
+        if (missing(x, A.nodata) || missing(y, B.nodata)) { out[i] = NaN; missingCount++; return; }
         out[i] = x - y; count++;
-      }
-      /* The unit survives only if both sides state the same one: 「mm − °C」 has no unit, and writing
-         one of the two would let a chart label a nonsense number confidently. */
-      const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
-      const name = String(A.band.name == null ? '' : A.band.name) + ' − ' + String(B.band.name == null ? '' : B.band.name);
-      return {
-        ok: true,
-        /* nodata null: the difference declares no sentinel, it writes NaN (see mask). */
-        raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
-        count: count, nodataCount: missingCount,
-      };
+      }, useCtx(opts), () => {
+        /* The unit survives only if both sides state the same one: 「mm − °C」 has no unit, and writing
+           one of the two would let a chart label a nonsense number confidently. */
+        const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
+        const name = String(A.band.name == null ? '' : A.band.name) + ' − ' + String(B.band.name == null ? '' : B.band.name);
+        return {
+          ok: true,
+          /* nodata null: the difference declares no sentinel, it writes NaN (see mask). */
+          raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
+          count: count, nodataCount: missingCount,
+        };
+      });
     }
 
     /* ── combine: the same subtraction, with the arithmetic named by the caller ───────────────── */
@@ -873,15 +997,14 @@ export function makeGisRaster() {
       try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
       const m = (meta && typeof meta === 'object') ? meta : {};
       let count = 0, missingCount = 0, failed = 0, failedError = null;
-      for (let i = 0; i < n; i++) {
+      return paced(n, (i) => {
         const x = A.values[i], y = B.values[i];
         let r;
         try { r = fn(missing(x, A.nodata) ? null : x, missing(y, B.nodata) ? null : y); }
         catch (err) { failed++; if (failedError == null) failedError = String((err && err.message) || err); r = null; }
-        if (typeof r !== 'number' || !isFinite(r)) { out[i] = NaN; missingCount++; continue; }
+        if (typeof r !== 'number' || !isFinite(r)) { out[i] = NaN; missingCount++; return; }
         out[i] = r; count++;
-      }
-      return {
+      }, useCtx(m), () => ({
         ok: true,
         raster: derived(a, [{
           name: m.name == null ? null : m.name,
@@ -895,7 +1018,7 @@ export function makeGisRaster() {
         /* `nodataCount` includes the pixels `fn` threw on — they have no answer, which is what a void
            is — and `failed` is how a reader tells 「そこに値が無かった」 from 「式が壊れていた」. */
         count: count, nodataCount: missingCount, failed: failed, failedError: failedError,
-      };
+      }));
     }
 
     /* ── merge: two sheets, one sheet ─────────────────────────────────────────────────────────── */
@@ -928,7 +1051,7 @@ export function makeGisRaster() {
       let out;
       try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
       let count = 0, missingCount = 0, both = 0, onlyA = 0, onlyB = 0;
-      for (let i = 0; i < n; i++) {
+      return paced(n, (i) => {
         const x = A.values[i], y = B.values[i];
         const hasA = !missing(x, A.nodata), hasB = !missing(y, B.nodata);
         if (hasA && hasB) {
@@ -941,26 +1064,27 @@ export function makeGisRaster() {
                      of this pixel and they weigh the same. A count-weighted mean over more than two
                      sheets is a different function and is not pretended to here. */
                   : (x + y) / 2;
-          continue;
+          return;
         }
-        if (hasA) { out[i] = x; onlyA++; count++; continue; }
-        if (hasB) { out[i] = y; onlyB++; count++; continue; }
+        if (hasA) { out[i] = x; onlyA++; count++; return; }
+        if (hasB) { out[i] = y; onlyB++; count++; return; }
         /* ⚠ BOTH MISSING IS MISSING. Neither sheet has an observation here, and a 0 would be this
            function inventing the one number the reader would then plot. */
         out[i] = NaN; missingCount++;
-      }
-      /* Same two rules as `diff`, for the same reasons: a unit survives only if both sides state the
-         same one, and the name says what was merged rather than claiming to be one of them. */
-      const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
-      const na = A.band.name == null ? null : String(A.band.name);
-      const nb = B.band.name == null ? null : String(B.band.name);
-      const name = (na != null && nb != null) ? (na === nb ? na : (na + ' ∪ ' + nb)) : (na != null ? na : nb);
-      return {
-        ok: true,
-        raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
-        count: count, nodataCount: missingCount,
-        overlapCount: both, onlyA: onlyA, onlyB: onlyB, overlap: stated,
-      };
+      }, useCtx(opts), () => {
+        /* Same two rules as `diff`, for the same reasons: a unit survives only if both sides state the
+           same one, and the name says what was merged rather than claiming to be one of them. */
+        const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
+        const na = A.band.name == null ? null : String(A.band.name);
+        const nb = B.band.name == null ? null : String(B.band.name);
+        const name = (na != null && nb != null) ? (na === nb ? na : (na + ' ∪ ' + nb)) : (na != null ? na : nb);
+        return {
+          ok: true,
+          raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
+          count: count, nodataCount: missingCount,
+          overlapCount: both, onlyA: onlyA, onlyB: onlyB, overlap: stated,
+        };
+      });
     }
 
     /* One constructor for every grid this file produces, so `mask`, `diff`, `combine`, `merge` and
@@ -1056,7 +1180,7 @@ export function makeGisRaster() {
        over a 4,000×4,000 grid holds the one thread for seconds, during which the map does not draw
        and `signal.aborted` cannot even be SET by the code that would set it — the shape
        docs/GIS-CORE.md §2.6 measured and [[intmap-sync-loop-cannot-be-cancelled]] names. The unit of
-       the yield is ELAPSED TIME (`frameMs()`), exactly as `fromSamplerAsync`'s is; the `& 255` below
+       the yield is ELAPSED TIME (`frameMs()`), exactly as `fromSamplerAsync`'s is; the `& CLOCK_MASK` below
        is about how often the CLOCK is read, not about how much work a slice contains. */
     async function polygonize(g, bandIndex, opts) {
       const v = validate(g);
@@ -1089,7 +1213,10 @@ export function makeGisRaster() {
         await new Promise((res) => setTimeout(res, 0));
         return !(sig && sig.aborted);
       }
-      const stopped = (phase, done, total) => refuse('cancelled', { phase: phase, done: done, total: total });
+      /* (#R756) THE SAME SHAPE AS EVERY OTHER STOPPED WALK IN THIS FILE — `cancelled` builds it — with
+         the phase ADDED rather than substituted, because 「どの段で止まったか」 is real information a
+         three-pass walk has and a one-pass walk does not. */
+      const stopped = (phase, done, total) => Object.assign(cancelled(done, total), { detail: { phase: phase, done: done, total: total } });
 
       /* ══ ① label: the 4-connected regions of equal value ═════════════════════════════════════
          Equality is EXACT. These are integers by the refusal above, so 「等しい」 has no tolerance to
@@ -1099,7 +1226,7 @@ export function makeGisRaster() {
          a property this file is allowed to have. */
       let nodataCount = 0;
       for (let i = 0; i < n; i++) {
-        if ((i & 255) === 0 && !(await breathe('label', i, n))) return stopped('label', i, n);
+        if ((i & CLOCK_MASK) === 0 && !(await breathe('label', i, n))) return stopped('label', i, n);
         if (labels[i] !== -1) continue;
         const val = V.values[i];
         if (missing(val, V.nodata)) { labels[i] = -2; nodataCount++; continue; }
@@ -1113,7 +1240,7 @@ export function makeGisRaster() {
         stack[sp++] = i; labels[i] = L;
         while (sp > 0) {
           const p = stack[--sp]; cnt++;
-          if ((cnt & 255) === 0 && !(await breathe('label', i, n))) return stopped('label', i, n);
+          if ((cnt & CLOCK_MASK) === 0 && !(await breathe('label', i, n))) return stopped('label', i, n);
           const r = (p / width) | 0, c = p - r * width;
           if (c > 0 && labels[p - 1] === -1 && V.values[p - 1] === val) { labels[p - 1] = L; stack[sp++] = p - 1; }
           if (c < width - 1 && labels[p + 1] === -1 && V.values[p + 1] === val) { labels[p + 1] = L; stack[sp++] = p + 1; }
@@ -1139,7 +1266,7 @@ export function makeGisRaster() {
         if (list) list.push(e); else m.set(s, [e]);
       }
       for (let i = 0; i < n; i++) {
-        if ((i & 255) === 0 && !(await breathe('edges', i, n))) return stopped('edges', i, n);
+        if ((i & CLOCK_MASK) === 0 && !(await breathe('edges', i, n))) return stopped('edges', i, n);
         const L = labels[i];
         if (L < 0) continue;
         const r = (i / width) | 0, c = i - r * width;
@@ -1428,7 +1555,7 @@ export function makeGisRaster() {
         const lat = rowCentreLat(raster, row);
         const base = row * width;
         for (let col = 0; col < width; col++) {
-          if (sig && sig.aborted) return refuse('cancelled', { done: done, total: total, rows: row, of: height });
+          if (sig && sig.aborted) return Object.assign(cancelled(done, total), { detail: { done: done, total: total, rows: row, of: height } });
           let val;
           try { val = await o.sample(colCentreLng(raster, col), lat); } catch (err) { val = null; failed++; }
           if (isNum(val)) { data[base + col] = val; filled++; }
@@ -1449,7 +1576,7 @@ export function makeGisRaster() {
           }
         }
       }
-      if (sig && sig.aborted) return refuse('cancelled', { done: done, total: total, rows: height, of: height });
+      if (sig && sig.aborted) return Object.assign(cancelled(done, total), { detail: { done: done, total: total, rows: height, of: height } });
       if (onp) { try { onp({ rows: height, of: height, done: done, total: total, read: filled }); } catch (_) { } }
       return { ok: true, raster: raster, filled: filled, empty: empty, failed: failed, textSeen: textSeen };
     }
@@ -1476,8 +1603,10 @@ export function makeGisRaster() {
       validate,
       bboxOf, pixelAreaKm2, sample, zonal, mask, diff, describeBands, fromSampler, fromSamplerAsync,
       /* (#R752) the arithmetic js/gis-ops.js's rasterCalc / mosaic / rasterize / polygonize run on.
-         ⚠ `polygonize` is ASYNC (it walks the grid three times and must stay interruptible); the
-         other three answer synchronously, like everything above them. */
+         ⚠ `polygonize` is ALWAYS ASYNC (it walks the grid three times and keeps its own phases).
+         ⚠ (#R756) `combine` / `merge` — and `mask` / `diff` / `zonal` above — answer SYNCHRONOUSLY
+         when no ctx is handed over and with a PROMISE when one is, which is `paced`'s contract and
+         not a per-function choice: see its note. `build` has no walk. */
       build, combine, merge, polygonize,
       /* ⚠ (#R749) PUBLISHED BECAUSE TWO OTHER FILES ASK THE SAME TWO QUESTIONS PER PIXEL. js/map-ui.js
          burns a grid onto a canvas and has to ask 「このセルは欠損か」 for every one of them, and
@@ -1488,6 +1617,12 @@ export function makeGisRaster() {
       /* the one frame budget this layer has (see FRAME_MS), so a caller staying interruptible does
          not write the number a second time */
       frameMs: () => FRAME_MS,
+      /* (#R756) ⚠ THE WALK ITSELF, PUBLISHED BECAUSE js/gis-warp.js WALKS PIXELS TOO. That file had
+         the ctx reader spelled a second time and paced ONCE PER OUTPUT ROW — a count, not a duration
+         — and its cancellation carried `detail.done` only, so the top-level pair js/gis-ops.js
+         reports was missing from exactly the runs that took long enough to be stopped. Three
+         divergences from one loop being written twice; now there is one loop. */
+      useCtx, cancelled, paced,
       /* exposed because js/gis-datasets.js describes a grid to the panel with the same numbers, and
          a second walk of the same arithmetic there is how the two would disagree */
       pixelAt, rowCentreLat, colCentreLng,

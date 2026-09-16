@@ -61,7 +61,11 @@ export const KERNELS = {
      that owns it — but no recipe that ran before produces a different number now: the arithmetic of
      filter, buffer, clip, overlay, relate, aggregate, sample and zonal is untouched, and a saved step
      naming `nearest` still resamples with nearest. New capability is not a changed answer. */
-  'js/gis-ops.js': { version: 'ops-1', sha256: '5dd43699eaf056506f6ea1846a5ecc56c520202b9413fcbe9183791d5320ade0' },
+  /* (#R756) ops-1 -> ops-2: `rasterize` burned the whole bounding box of every point, line and
+     Multi geometry (a diagonal across a 16x16 lattice lit all 256 cells) and now burns the cells
+     the feature actually touches. A project saved before today replays to a DIFFERENT GRID, which
+     is the one thing this version exists to announce. */
+  'js/gis-ops.js': { version: 'ops-2', sha256: '0c9699533e5cd032dc0ea0d493dbd8ef28d78f9708281d19425e60f98ce5b3a9' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
   'js/gis-geometry.js': { version: 'geom-1', sha256: '675be6ca448ed2a47d3f1baf7a755362b4e69e3a10b5427b6bc8c94cfcfba157' },
@@ -69,11 +73,22 @@ export const KERNELS = {
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
      now answers `unknown` for them rather than `same`. */
-  'js/gis-raster.js': { version: 'raster-1', sha256: '76fd3e86873baddd66131890f5e954796eb064683f94a6ff585d4039815f08e1' },
-  'js/gis-warp.js': { version: 'warp-1', sha256: 'c46089d043130f83179a8ac58bf40b60de1b6065c3c01bfd42b70e832fabfa0a' },
+  /* (#R756) HASH ONLY, VERSION LEFT ALONE -- 'a faster walk over the same arithmetic'. The pixel
+     loops of mask/diff/combine/merge/zonal were folded into one paced walk so a long run can be
+     cancelled; not one operation changed, and tests/r754-gis-raster-cancel-checks measures a run
+     with a never-cancelling ctx against the same run with no ctx at all, pixel for pixel. */
+  'js/gis-raster.js': { version: 'raster-1', sha256: 'fbc830d56deea70c6b43f0a4369be1f26e35bfdbf17c5c27ae005da515b6c41c' },
+  /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
+     paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
+  'js/gis-warp.js': { version: 'warp-1', sha256: '4c7eef1f06a84a9b691cce2559d7de37ba8fe5577ee2f58864b2e19ca50e78f2' },
   'js/gis-expr.js': { version: 'expr-1', sha256: 'd9cf9ebb9d47924abe53d5ce4a318c29ca8d2db8622a12b98b2f6228a70630ee' },
   'js/gis-index.js': { version: 'index-1', sha256: '580cf1a49be665d6d8ac2ca825d08bc8b32d85e3e30df44ec103cd01810c34cd' },
-  'js/gis-crs.js': { version: 'crs-1', sha256: '2e27dec8758ad20d584975afd2f1ff732d34f49a7a23af069d91b1b1812c0b79' },
+  /* (#R756) crs-1 -> crs-2: a refusal became an answer. The azimuthal equidistant plane was
+     implemented and unreachable (it holds no EPSG code, and `measure` takes its plane as text), so
+     `planeSpec()` now reads the spellings out of the PLANES table itself -- 'aeqd:<lon0>,<lat0>'
+     and 'mollweide:<lon0>' name planes that were refused yesterday. A saved recipe naming one of
+     those replays to a number where it used to replay to a refusal. */
+  'js/gis-crs.js': { version: 'crs-2', sha256: '14475b714e3076d06ac52524f38caf5dff635b62b128c501d9f21cecafec72e4' },
 };
 
 /* ⚠ THE OTHER HALF, AND IT IS THE HALF THAT MAKES THE FIRST ONE A RULE. A GIS module that is not a
@@ -83,6 +98,7 @@ export const KERNELS = {
 export const NOT_A_KERNEL = {
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
   'js/gis-panel.js': 'draws the screen out of the declarations; no arithmetic of its own',
+  'js/gis-export.js': 'a writer of bytes — it reads no recipe and produces no answer a saved project replays; a re-export is a new file, not a replay',
   'js/gis-project.js': 'stores and replays recipes — it is the READER of these versions',
   'js/gis-atlas.js': 'the Atlas-facing surface; resolves refs and forwards to the ops',
   'js/gis-datasets.js': 'the registry and the column-typing contract, not an answer to a step',

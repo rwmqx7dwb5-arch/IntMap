@@ -263,6 +263,174 @@ export function makeGisLayers() {
       return { ok: true, features: kept, from: 'source', bounds: box };
     }
 
+    /* ── supplierFor(): the layer answering the whole question itself ─────────────────────────── */
+
+    /* ══ ⚠⚠⚠ (#R756) THE SUPPLY CONTRACT HAD NO SUPPLIER, SO TWO QUESTIONS HAD NO ANSWER ═══════════
+       js/gis-sources.js supply() was reachable from nowhere in the shipped app, and its prepare()
+       refuses `where` and `cursor` unless a registered implementation claims them. So 「M6 以上だけ」
+       came back `where-not-supported` and 「続きを」 came back `cursor-not-supported` FOR EVERY ID —
+       an answer about the app, not about the layer, and the same one whatever the layer held.
+       ⇒ THIS BUILDS ONE OUT OF THE REGISTRATION ITSELF. There is no list of suppliable ids here and
+       there must not be: a row qualifies when its OWN declaration says it holds everything within a
+       stated extent and is not view-bound (js/map-ui.js `holds`), and when it actually hands
+       features over. A layer registered tomorrow that says the same thing is supplied by saying it.
+       ⚠ A VIEW-BOUND ROW IS NOT SUPPLIED, and that is the whole discrimination: the aircraft source
+       holds what the camera asked airplanes.live for, so 「この条件に合うものを全部」 cannot be
+       answered from it — and answering it anyway, out of what happens to be in the renderer, is
+       precisely the defect js/gis-sources.js exists to stop.
+       ⚠ WHAT IT CLAIMS, IT DOES. `fields` is NOT claimed (js/gis-sources.js projects, and one
+       projection is enough); `limit` and `cursor` are, because a store holding the whole list is the
+       only thing that can page it honestly; `where` is, and the executor below is what makes that
+       true rather than a word. */
+
+    /* ⚠ THE COMPARISONS, AND THE LIST IS THE IMPLEMENTATION. Keyed by the names js/gis-ops.js
+       publishes on its `filter` op (asked for through js/gis-sources.js conditionOps — this file
+       keeps no vocabulary), so a name that kernel adds and this table does not have is REFUSED BY
+       NAME instead of quietly evaluating false: an unexecuted condition that returns rows is an
+       answer to a question nobody asked.
+       ⚠⚠ AND THE SEMANTICS ARE MEASURED AGAINST THAT KERNEL, not asserted here. The app has one
+       filter over a registered dataset and it is async (js/gis-ops.js run()), while this door is
+       synchronous by shipped contract (js/gis-sources.js features() is called from a click handler
+       without an await) — so the rows cannot be routed through it. What keeps the two from drifting
+       is tests/r754-gis-supply-checks ④, which runs every operator, and the empty cell, through both
+       and requires the same rows out of each. The typing is not re-invented: `asNumber` and
+       `isEmpty` are the dataset registry's own, which is what makes 「12 km」 text in both. */
+    function cmpPair(R, raw, want) {
+      const a = R.asNumber(raw), b = R.asNumber(want);
+      if (a != null && b != null) return { a: a, b: b };
+      return { a: String(raw), b: String(want) };
+    }
+    /* the four orderings, which share one rule: an empty cell satisfies none of them — see
+       js/gis-ops.js evalCondition for why treating '' as 0 pulls every blank row into 「500未満」 */
+    function ordered(R, v, w, cmp) { if (R.isEmpty(v)) return false; const c = cmpPair(R, v, w); return cmp(c.a, c.b); }
+    const WHERE_IMPL = {
+      '>=': (R, v, w) => ordered(R, v, w, (a, b) => a >= b),
+      '>': (R, v, w) => ordered(R, v, w, (a, b) => a > b),
+      '<=': (R, v, w) => ordered(R, v, w, (a, b) => a <= b),
+      '<': (R, v, w) => ordered(R, v, w, (a, b) => a < b),
+      '==': (R, v, w) => { if (R.isEmpty(v)) return R.isEmpty(w); const c = cmpPair(R, v, w); return c.a === c.b; },
+      '!=': (R, v, w) => { if (R.isEmpty(v)) return !R.isEmpty(w); const c = cmpPair(R, v, w); return c.a !== c.b; },
+      'contains': (R, v, w) => (R.isEmpty(v) ? false : String(v).toLowerCase().indexOf(String(w == null ? '' : w).toLowerCase()) >= 0),
+      'in': (R, v, w) => {
+        if (R.isEmpty(v)) return false;
+        const list = Array.isArray(w) ? w : [w];
+        for (const x of list) { const c = cmpPair(R, v, x); if (c.a === c.b) return true; }
+        return false;
+      },
+      'between': (R, v, w) => {
+        if (R.isEmpty(v)) return false;
+        const pair = Array.isArray(w) ? w : [];
+        if (pair.length !== 2) return false;
+        const lo = cmpPair(R, v, pair[0]), hi = cmpPair(R, v, pair[1]);
+        return lo.a >= lo.b && hi.a <= hi.b;                     /* both ends included */
+      },
+    };
+
+    /* {ok:true, features} or a refusal in js/gis-sources.js's own vocabulary (it passes a supplier's
+       refusal through untouched, so inventing a code here would be inventing a sentence nobody can
+       translate). */
+    function selectWhere(features, where) {
+      const D = DATA();
+      /* 「訊けなかった」 — the typing rule lives in the dataset registry, and guessing at it here
+         would be a second answer to 「この文字列は数か」. */
+      if (!D || typeof D.asNumber !== 'function' || typeof D.isEmpty !== 'function') {
+        return { ok: false, why: 'map-unavailable', detail: { needs: 'IntMapData' } };
+      }
+      for (const c of where) {
+        const op = String(c.op);
+        if (!Object.prototype.hasOwnProperty.call(WHERE_IMPL, op)) {
+          return { ok: false, why: 'where-not-supported', detail: { op: op, executes: Object.keys(WHERE_IMPL) } };
+        }
+        /* ⚠ A CONDITION ON A COLUMN NOTHING CARRIES IS REFUSED, not answered — the same rule
+           js/gis-ops.js runFilter states, for the same reason: 0 rows from a misspelt field name is
+           a count the reader cannot question. */
+        if (!features.some((f) => f && f.properties && Object.prototype.hasOwnProperty.call(f.properties, c.field))) {
+          return { ok: false, why: 'bad-param', detail: { param: 'where', field: String(c.field), reason: 'unknown-field' } };
+        }
+      }
+      const kept = features.filter((f) => {
+        const p = (f && f.properties) || {};
+        for (const c of where) if (!WHERE_IMPL[String(c.op)](D, p[c.field], c.value)) return false;
+        return true;
+      });
+      return { ok: true, features: kept };
+    }
+
+    /* ⚠ THE CURSOR NAMES ITS OWN LAYER. js/gis-sources.js hands back whatever the supplier returned
+       as `next` and hands it on unread, so a cursor from another row — or one a caller invented —
+       would otherwise be read as an offset into a list it was never taken from. It is refused by
+       name (`bad-param`) rather than clamped: a page that silently starts somewhere else is the
+       「知らない」を「全部だ」の代わりにする shape, one level down. */
+    function cursorOffset(key, cursor) {
+      if (cursor == null) return 0;
+      const s = String(cursor), tag = key + '@';
+      if (s.indexOf(tag) !== 0) return null;
+      const n = Number(s.slice(tag.length));
+      return (Number.isInteger(n) && n >= 0) ? n : null;
+    }
+
+    function supplierFor(id) {
+      const key = String(id == null ? '' : id);
+      if (!key) return null;
+      const R = REG();
+      if (!R || typeof R.declarationOf !== 'function' || typeof R.featuresIn !== 'function') return null;
+      let d = null;
+      try { d = R.declarationOf(key); } catch (_) { d = null; }
+      /* ⚠ THE THREE THINGS THE ROW HAS TO HAVE SAID. Without an extent 「全部」 has no window it is
+         全部 of; without `complete` the row said where it is, not that it holds all of what is
+         there; `viewBound` is the row saying the opposite. */
+      if (!d || d.complete !== true || d.viewBound === true || !d.extent) return null;
+      /* and it has to actually hand features over — asked with a degenerate box so the answer costs
+         one pass and no copy, and so 「featuresIn が無い」 and 「今は空だ」 stay different */
+      let probe = null;
+      try { probe = R.featuresIn(key, [[0, 0], [0, 0]]); } catch (_) { probe = null; }
+      if (!Array.isArray(probe)) return null;
+      return {
+        sync: true, where: true, cursor: true, limit: true, fields: false,
+        fetch: (req) => builtInFetch(key, req || {}),
+      };
+    }
+
+    function builtInFetch(key, q) {
+      const r = read(key, (q.bbox == null) ? {} : { bounds: q.bbox });
+      if (!r.ok) {
+        /* the one distinction delegated() draws and this path would otherwise lose: a layer that is
+           switched off has not answered 「そこには何も無い」, it has not been asked */
+        if (r.why === 'no-features') {
+          const st = (() => { try { const S = REG(); return S && S.state ? S.state(key) : null; } catch (_) { return null; } })();
+          if (st && st.on === false) return { ok: false, why: 'layer-not-visible', detail: { id: key, from: 'layer' } };
+        }
+        return r;
+      }
+      let fs = r.features;
+      if (Array.isArray(q.where) && q.where.length) {
+        const sel = selectWhere(fs, q.where);
+        if (!sel.ok) return sel;
+        fs = sel.features;
+      }
+      const total = fs.length;
+      const start = cursorOffset(key, q.cursor);
+      if (start == null || start > total) return { ok: false, why: 'bad-param', detail: { param: 'cursor', value: q.cursor } };
+      const limit = (typeof q.limit === 'number' && isFinite(q.limit) && q.limit > 0) ? Math.floor(q.limit) : null;
+      const end = (limit == null) ? total : Math.min(total, start + limit);
+      const page = fs.slice(start, end);
+      return {
+        ok: true,
+        features: page,
+        coverage: {
+          /* 「窓に在った件数」 next to what was handed over — the pair that makes 「一部だけ」 visible
+             at all (memory: coverage counted is not coverage seen). */
+          available: total,
+          /* THIS answer holding the whole window, which is a different statement from the row's
+             standing declaration and is only true when no page boundary cut it. */
+          complete: (start === 0 && end === total),
+        },
+        /* ⚠ PRESENT EVEN WHEN null, because js/gis-sources.js reads the PROPERTY BEING THERE as the
+           supplier having spoken about continuation at all. Omitting it would say 「述べていない」. */
+        next: (end < total) ? (key + '@' + end) : null,
+      };
+    }
+
     /* ── toDataset() ─────────────────────────────────────────────────────────────────────────── */
 
     /* ⚠ (#R749) ONE VOCABULARY AT THE DOOR A READER REACHES. js/gis-sources.js says
@@ -414,7 +582,9 @@ export function makeGisLayers() {
       catch (e) { return { ok: false, why: 'add-failed', detail: { message: e && e.message } }; }
     }
 
-    const API = { sources, read, toDataset, toRaster, canSample };
+    /* (#R756) js/gis-sources.js asks this when it is looking for a supplier and has none: see the
+       section above for why the answer is built from the registration rather than kept in a list. */
+    const API = { sources, read, toDataset, toRaster, canSample, supplierFor };
     try { window.IntMapGisLayers = API; } catch (_) { }
     return API;
   })();

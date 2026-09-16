@@ -7012,7 +7012,6 @@ window.IntMapLang.define('zh-hans', {
   "This grid does not state its coordinate system, so it cannot be converted to lon/lat": "这个网格没有说明它的坐标系，因此无法转换为经纬度",
   "This grid has no values in it — every cell is missing": "这个网格里没有任何值——每一格都是无数据值（NoData）",
   "This grid is not a plain north-up grid, and this reader will not straighten it silently": "这个网格不是单纯正北向上的网格，而这个读取器不会悄悄把它摆正",
-  "This is a BigTIFF — this reader handles the classic TIFF layout only": "这是 BigTIFF——这个读取器只处理传统的 TIFF 版面配置",
   "This map view cannot draw grids": "此地图检视无法绘制网格",
   "This project does not say which engine computed it, so whether these results changed cannot be told": "这个项目没有说明它是由哪个引擎计算的，因此无法判断这些结果是否有所改变",
   "This TIFF describes a grid with no size: a pixel of zero or negative extent": "这个 TIFF 所述的网格没有大小：像素的范围为零或负值",

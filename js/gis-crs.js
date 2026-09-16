@@ -731,17 +731,61 @@ export function makeGisCrs() {
        for DECL/RUN, and the reason there is no second list for a panel to keep. `needs` is what a
        spec must carry beyond the kind; `sphere` says whether the plane is drawn on the app's radius
        (and therefore whether it can exist at all without js/geodesy.js). */
+    /* ⚠ (#R756) AND `codes` IS PART OF THE SAME TABLE. Until this round the authority spellings
+       lived as three literals inside planeSpec() below, and the plane that HAS no authority code —
+       aeqd, because its centre is an argument and nobody assigns a code per centre — was therefore
+       unreachable from any text at all. `js/gis-ops.js`'s `measure` takes its `crs` as text, so the
+       catalogue said four planes and a reader could choose three. `fromCode` is the RULE that
+       recognises a code (arithmetic where there is arithmetic) and `codes` is how that rule is
+       spelled for a reader; `spellings()` derives the published list from both, so a fifth plane is
+       one row here and nothing anywhere else. */
     const PLANES = {
-      utm: { needs: ['zone', 'south'], sphere: false, build: (p) => buildUtm(p) },
-      webmercator: { needs: [], sphere: false, build: () => buildWebMercator() },
-      mollweide: { needs: [], sphere: true, build: (p, R) => buildMollweide(p, R) },
-      aeqd: { needs: ['lon0', 'lat0'], sphere: true, build: (p, R) => buildAeqd(p, R) },
+      utm: {
+        needs: ['zone', 'south'], sphere: false, build: (p) => buildUtm(p),
+        codes: ['EPSG:326NN', 'EPSG:327NN'],
+        fromCode(c) {
+          const m = /^EPSG:32(6|7)(\d\d)$/.exec(c);
+          if (!m) return null;
+          const zone = Number(m[2]);
+          return (zone >= 1 && zone <= 60) ? { zone: zone, south: m[1] === '7' } : null;
+        },
+      },
+      webmercator: {
+        needs: [], sphere: false, build: () => buildWebMercator(),
+        codes: ['EPSG:3857'], fromCode: (c) => (c === 'EPSG:3857' ? {} : null),
+      },
+      mollweide: {
+        needs: [], sphere: true, build: (p, R) => buildMollweide(p, R),
+        /* the code is Greenwich's; a plane centred elsewhere is named by the grammar below, which
+           is the same thing buildMollweide() says by carrying `code: null` for it */
+        codes: ['ESRI:54009'], fromCode: (c) => (c === 'ESRI:54009' ? { lon0: 0 } : null),
+        optional: ['lon0'],
+      },
+      aeqd: {
+        needs: ['lon0', 'lat0'], sphere: true, build: (p, R) => buildAeqd(p, R),
+        codes: [], fromCode: () => null,
+      },
+    };
+
+    /* The parameters a text spelling may carry, in the order it carries them: what the plane needs,
+       and then what it may state instead of taking the default its builder documents. */
+    const planeOrder = (kind) => PLANES[kind].needs.concat(PLANES[kind].optional || []);
+    /* …and the one way that order is written down, so the catalogue and the published list of
+       spellings are the same sentence rather than two that agree today. */
+    const planeSpelling = (kind) => {
+      const order = planeOrder(kind);
+      return order.length ? (kind + ':' + order.map((n) => '<' + n + '>').join(',')) : kind;
     };
 
     function projections() {
       return Object.keys(PLANES).map((kind) => ({
         kind: kind,
         needs: PLANES[kind].needs.slice(),
+        /* ⚠ (#R756) HOW TO NAME IT IN TEXT, from the same table the builder comes out of. A
+           catalogue that lists a plane whose name nothing accepts is the defect this round found:
+           four planes were published and three could be asked for. */
+        spelling: planeSpelling(kind),
+        codes: (PLANES[kind].codes || []).slice(),
         /* built once so the catalogue states the THEORY from the same object a caller would get,
            rather than from a second description of it. A plane whose radius is unavailable still
            declares what it would preserve. */
@@ -750,6 +794,38 @@ export function makeGisCrs() {
           return probe ? probe.preserves : null;
         })(),
       }));
+    }
+
+    /* ⚠ (#R756) EVERY SPELLING planeSpec() ACCEPTS, DERIVED FROM THE TABLE ABOVE AND FROM NOTHING
+       ELSE. js/gis-ops.js puts this in `measure`'s bad-param `values`, which is the sentence a
+       reader sees when the plane they named was not recognised — and a hand-kept list there would
+       be a photograph of the table taken once ([[intmap-discovered-list-is-a-photograph]]). The
+       parametric form is `kind:v1,v2` with the values in the order above; `<name>` marks a value
+       the reader supplies and `NN` a two-digit number the code's own arithmetic reads. */
+    function planeSpellings() {
+      const out = [];
+      for (const kind of Object.keys(PLANES)) {
+        out.push(planeSpelling(kind));
+        for (const c of (PLANES[kind].codes || [])) out.push(c);
+      }
+      return out;
+    }
+
+    /* ⚠ A TOKEN IS READ BY WHAT IT IS, NOT BY WHICH PARAMETER IT LANDS ON. `south`/`north` and
+       `true`/`false` are the two ways a hemisphere gets written down and a number is a number; the
+       alternative — a coercion table per plane — would be a case-by-case list that the fifth plane
+       silently falls out of, and it would also put knowledge of a builder's parameters in two
+       places. What a builder cannot use, the builder refuses (buildUtm returns null for a zone that
+       is not a zone, buildAeqd for a centre that is not finite), which is where that judgement
+       already lives. */
+    function planeToken(t) {
+      const s = String(t).trim();
+      if (s === '') return null;
+      if (/^-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/.test(s)) return Number(s);
+      const l = s.toLowerCase();
+      if (l === 'south' || l === 'true') return true;
+      if (l === 'north' || l === 'false') return false;
+      return s;
     }
 
     /* A code or a {kind, …} object → the parameters a plane is built from. ⚠ Codes are recognised by
@@ -771,15 +847,30 @@ export function makeGisCrs() {
          and measuring an area on it is the cos φ error docs/GIS-CORE.md §2.4 names — 「緯度 60° で
          半分」. Answering it as a plane would make that error selectable. */
       if (isWgs84(c)) return { ok: false, why: WHY.planeIsDegrees };
-      const utm = /^EPSG:32(6|7)(\d\d)$/.exec(c);
-      if (utm) {
-        const zone = Number(utm[2]);
-        if (!(zone >= 1 && zone <= 60)) return { ok: false, why: WHY.planeUnknown };
-        return { ok: true, kind: 'utm', params: { zone: zone, south: utm[1] === '7' } };
+      for (const kind of Object.keys(PLANES)) {
+        const params = PLANES[kind].fromCode(c);
+        if (params) return { ok: true, kind: kind, params: params };
       }
-      if (c === 'EPSG:3857') return { ok: true, kind: 'webmercator', params: {} };
-      if (c === 'ESRI:54009') return { ok: true, kind: 'mollweide', params: { lon0: 0 } };
-      return { ok: false, why: WHY.planeUnknown };
+      /* ⚠ AND THE PLANES THAT HAVE NO CODE (#R756). An azimuthal equidistant plane is centred where
+         the reader asks, and no authority assigns a code per centre — so the only way to name one in
+         text is to say the kind and the parameters, and the grammar that does it is general because
+         the thing that made aeqd unreachable was that naming was CODES ONLY, not that aeqd was
+         missing a special case. `AEQD:139.7,35.7` is lon0 then lat0, the order `needs` declares. */
+      const m = /^([A-Z][A-Z0-9_]*)(?::(.*))?$/.exec(c);
+      const kind = m ? m[1].toLowerCase() : '';
+      if (!m || !PLANES[kind]) return { ok: false, why: WHY.planeUnknown };
+      const order = planeOrder(kind);
+      const tokens = (m[2] === undefined || m[2].trim() === '') ? [] : m[2].split(',');
+      if (tokens.length < PLANES[kind].needs.length || tokens.length > order.length) {
+        return { ok: false, why: WHY.planeParamsMissing, detail: { kind: kind, needs: PLANES[kind].needs.slice(), order: order, got: tokens.length } };
+      }
+      const params = {};
+      for (let i = 0; i < tokens.length; i++) {
+        const v = planeToken(tokens[i]);
+        if (v === null) return { ok: false, why: WHY.planeParamsMissing, detail: { kind: kind, needs: PLANES[kind].needs.slice(), order: order, at: i } };
+        params[order[i]] = v;
+      }
+      return { ok: true, kind: kind, params: params };
     }
 
     /* spec → a plane, or null with why() naming the refusal — the contract the point doors above
@@ -1173,8 +1264,14 @@ export function makeGisCrs() {
        asks it for areas and lengths on a plane the reader named, so a change to a projection's
        series changes numbers in a saved project. ⚠ The 4.01e7 m Web-Mercator seam defect found while
        writing that arithmetic is exactly the kind of edit this version exists to announce. The
-       keeper is scripts/gis-kernel-versions.mjs. */
-    const KERNEL_VERSION = 'crs-1';
+       keeper is scripts/gis-kernel-versions.mjs.
+       ⚠ (#R756) RAISED TO crs-2, and the gate's own question is why: does this edit change an
+       ANSWER? It does. A step saved with `crs: 'aeqd:139.7,35.7'` answered `crs-plane-unknown` and
+       measured nothing under crs-1; under crs-2 the same recipe measures on an azimuthal equidistant
+       plane and produces a number. `mollweide:150` likewise. Nothing that ALREADY produced a number
+       produces a different one — the four builders and their series are untouched — but 「拒否が
+       答えになった」 is exactly the change a saved project must be able to see. */
+    const KERNEL_VERSION = 'crs-2';
     const API = {
       /* which implementation answered — see KERNEL_VERSION above */
       version: () => KERNEL_VERSION,
@@ -1190,6 +1287,11 @@ export function makeGisCrs() {
          `distortionAt()` measure how wrong it is over the reader's own data, `suggest()` ranks and
          does not choose, and the two measurements carry their unit. */
       projections, projection, isProjection,
+      /* (#R756) every text spelling `projection()` accepts, derived from the one plane table — the
+         list js/gis-ops.js's `measure` puts in its bad-param `values` so that a reader who named a
+         plane it does not have is told what it does have (and so that the aeqd plane, which has no
+         authority code because its centre is an argument, is nameable at all) */
+      planeSpellings,
       distortionAt, assess, suggest,
       areaOn, lengthOn,
       /* every code this module can refuse with, out of the one declaration that raises them */

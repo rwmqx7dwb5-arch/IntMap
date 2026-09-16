@@ -85,9 +85,11 @@
  *
  *  ══ WHAT IT REFUSES, AND WHY EACH REFUSAL IS A MEASUREMENT ════════════════════════════════════
  *    not-tiff                 the first bytes are not a TIFF header
- *    bigtiff-unsupported      magic 43. A BigTIFF's offsets are 64-bit and its IFD entries are 20
- *                             bytes wide — a different container, refused by name rather than read
- *                             as a truncated TIFF (the shape #R576 exists to stop)
+ *    bigtiff-unsupported      ⚠ (#R756) A BigTIFF IS NOW READ. Magic 43 states its own offset width
+ *                             in bytes 4–5, and the one BigTIFF in the world states 8; this refusal
+ *                             is what is left of the container — a header that states any other
+ *                             width, or a non-zero reserved field, is a variant of the format this
+ *                             reader cannot address and says so rather than reading the wrong bytes
  *    tiff-truncated           an IFD, a tag's value area or a chunk lies past the last byte
  *    tiff-corrupt             the tags contradict each other (no dimensions, no chunk table, one
  *                             count per sample that is not one count per sample)
@@ -95,12 +97,28 @@
  *                             「読み込めませんでした」 over twenty causes is the failure js/map-ui.js's
  *                             reasonText already records
  *    jpeg-in-tiff-unsupported compression 6/7. Named apart because it is the one a reader is most
- *                             likely to meet and the only one whose fix is 「re-export it」
- *    predictor-unsupported    floating-point predictor 3, or horizontal differencing on 64-bit
- *                             samples, or a predictor value TIFF 6.0 does not define
+ *                             likely to meet and the only one whose fix is 「re-export it」.
+ *                             ⚠ STILL REFUSED IN #R756, AND HERE IS WHY IT WAS NOT DONE WITH THE
+ *                             OTHER THREE (.agents/rules/no-ad-hoc-hardcoding.md §6): a TIFF's JPEG
+ *                             tiles are not JPEG FILES — TIFF 6.0's technote 2 splits the tables
+ *                             (JPEGTables, tag 347) away from the entropy-coded scan, so decoding
+ *                             one means either writing a baseline JPEG decoder here or synthesising
+ *                             a whole JFIF stream per tile to hand to the platform's, and the
+ *                             platform's decoder answers in 8-bit sRGB — which is a picture, not
+ *                             the 12-bit and floating-point SAMPLES this door exists to carry.
+ *                             消せる条件: a runtime decoder that returns the original sample values
+ *                             for a given component, or a decoder written here against T.81
+ *    predictor-unsupported    horizontal differencing on 64-bit samples, TN3's floating-point
+ *                             predictor 3 over samples that are NOT floating point, or a predictor
+ *                             value neither TIFF 6.0 nor TN3 defines. ⚠ (#R756) predictor 3 over
+ *                             float32/float64 IS undone now, and so is predictor 2 up to 32 bits
  *    sample-format-unsupported  SampleFormat 4 (undefined), or samples that do not agree
  *    bits-unsupported         bit depths below 8, not a multiple of 8, or unequal across samples
- *    planar-separate-unsupported  PlanarConfiguration 2
+ *    planar-separate-unsupported  ⚠ (#R756) PlanarConfiguration 2 IS NOW READ — a band per plane of
+ *                             strips or tiles, which is what GDAL writes with INTERLEAVE=BAND. What
+ *                             is left under this name is a PlanarConfiguration that is neither 1
+ *                             nor 2: TIFF 6.0 defines no third value, and reading one as chunky
+ *                             would label one band's pixels as another's
  *    no-georeference          neither (ModelTiepoint + ModelPixelScale) nor ModelTransformation.
  *                             ⚠ A TIFF without those is a picture, not a grid, and placing it
  *                             somewhere plausible is how a map states what nobody said
@@ -213,9 +231,9 @@ export function makeGisGeotiff() {
       return null;
     }
 
-    /* The four headers TIFF 6.0 and BigTIFF define. BigTIFF is sniffed TRUE on purpose: this reader
-       recognises the container and then refuses it by name, which is a different answer from
-       「これは TIFF ではない」 and the only one that tells the reader what to do about it. */
+    /* The four headers TIFF 6.0 and BigTIFF define. ⚠ (#R756) BOTH ARE READ, so sniffing true for
+       magic 43 is no longer a promise the open breaks: the two containers differ in four widths and
+       in nothing else, and those widths are parameters of the one walk below (§2a). */
     function sniff(bytes) {
       const u = u8of(bytes);
       if (!u || u.length < 4) return false;
@@ -240,6 +258,43 @@ export function makeGisGeotiff() {
     };
 
     const dvOf = (u) => new DataView(u.buffer, u.byteOffset, u.byteLength);
+
+    /* ══ 2a · THE TWO CONTAINERS, AS FOUR WIDTHS (#R756) ═══════════════════════════════════════
+       A BigTIFF (Adobe's 2002 proposal, and what GDAL writes the moment a file would pass 4 GB) is
+       not a different format: it is TIFF 6.0 with 64-bit offsets. Four numbers change — how wide an
+       offset is, how wide an IFD's entry COUNT is, how wide a field's value count is, and therefore
+       how wide one entry is — and every other sentence in this file (the tags, the geokeys, the
+       chunk table, the four decompressors, the predictors) is unchanged.
+       ⚠ SO THE WIDTHS ARE PARAMETERS OF THE ONE WALK, NOT A SECOND WALK. Until #R756 they were
+       written into readIfd() and readValues() as the literals 2, 4 and 12, and the container was
+       refused because the literals could not say anything else — 「幅が固定されていたこと」 is the
+       structure that produced the refusal, and it is what is fixed here rather than the case
+       (.agents/rules/no-ad-hoc-hardcoding.md §2). A third container with a fifth width would be a
+       row in this table and nothing else. */
+    const CONTAINERS = {};
+    for (const spec of [
+      { magic: 42, dirCountBytes: 2, valueCountBytes: 4, offsetBytes: 4, headerBytes: 8 },
+      { magic: 43, dirCountBytes: 8, valueCountBytes: 8, offsetBytes: 8, headerBytes: 16 },
+    ]) {
+      /* tag(2) · type(2) · value count · value-or-offset. The last field is also how many bytes of
+         a value may stay INSIDE the entry, which is why inlineBytes is not a fifth number. */
+      spec.entryBytes = 2 + 2 + spec.valueCountBytes + spec.offsetBytes;
+      spec.inlineBytes = spec.offsetBytes;
+      CONTAINERS[spec.magic] = Object.freeze(spec);
+    }
+
+    /* An unsigned integer of 2, 4 or 8 bytes, in the file's own order. ⚠ EIGHT BYTES ARE MEASURED
+       BEFORE THEY ARE BELIEVED: a Uint8Array is indexed by a Number, so an offset past 2^53 cannot
+       be reached by anything here, and handing back a rounded one would read the wrong bytes in
+       silence. null is 「この値はこのランタイムでは届かない」 and the caller turns it into
+       tiff-truncated with the offset in hand — the same distinction docs/GIS-CORE.md §1.4 draws
+       between 「取れなかった」 and 「0 だった」. */
+    function uintAt(dv, at, le, bytes) {
+      if (bytes === 2) return dv.getUint16(at, le);
+      if (bytes === 4) return dv.getUint32(at, le);
+      const v = dv.getBigUint64(at, le);
+      return v <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(v) : null;
+    }
 
     /* ══ 2b · WHERE THE BYTES COME FROM (#R752) ════════════════════════════════════════════════
        A byte supply is `{ size, read(offset, length) → Promise<Uint8Array> }` and nothing more. The
@@ -429,13 +484,14 @@ export function makeGisGeotiff() {
        Returns null when the value area is outside the file — the caller turns that into
        `tiff-truncated` WITH THE TAG, rather than dropping the field and refusing later for a
        missing dimension, which would report the wrong defect. */
-    async function readValues(rd, le, type, count, inline) {
+    async function readValues(rd, le, F, type, count, inline) {
       const size = TYPE_SIZE[type];
       if (!size || !(count >= 0)) return null;
       const total = size * count;
       let bytes = inline;
-      if (total > 4) {
-        const at = dvOf(inline).getUint32(0, le);
+      if (total > F.inlineBytes) {
+        const at = uintAt(dvOf(inline), 0, le, F.offsetBytes);
+        if (at === null) return null;
         bytes = await rd.need(at, total);
         if (!bytes) return null;
       }
@@ -454,6 +510,20 @@ export function makeGisGeotiff() {
           case 10: { const n = dv.getInt32(o, le), d = dv.getInt32(o + 4, le); out.push(d ? n / d : NaN); break; }
           case 11: out.push(dv.getFloat32(o, le)); break;
           case 12: out.push(dv.getFloat64(o, le)); break;
+          /* BigTIFF's own three (LONG8, SLONG8, IFD8) — a BigTIFF's tile offsets and byte counts
+             are normally type 16, so refusing to READ them would have left the container legible
+             and its pixels unreachable. ⚠ Past 2^53 the value is not a number this runtime can
+             index with, and null here becomes tiff-truncated rather than a rounded offset. */
+          case 16: case 18: {
+            const v = dv.getBigUint64(o, le);
+            if (v > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+            out.push(Number(v)); break;
+          }
+          case 17: {
+            const v = dv.getBigInt64(o, le);
+            if (v > BigInt(Number.MAX_SAFE_INTEGER) || v < BigInt(-Number.MAX_SAFE_INTEGER)) return null;
+            out.push(Number(v)); break;
+          }
           default: return null;
         }
       }
@@ -466,25 +536,29 @@ export function makeGisGeotiff() {
       return field;
     }
 
-    async function readIfd(rd, le, at) {
+    async function readIfd(rd, le, F, at) {
       if (!(at > 0)) return { truncated: true, at: at };
-      const head = await rd.need(at, 2);
+      const head = await rd.need(at, F.dirCountBytes);
       if (!head) return { truncated: true, at: at };
-      const n = dvOf(head).getUint16(0, le);
-      const body = await rd.need(at + 2, n * 12 + 4);
+      const n = uintAt(dvOf(head), 0, le, F.dirCountBytes);
+      if (n === null) return { truncated: true, at: at };
+      const body = await rd.need(at + F.dirCountBytes, n * F.entryBytes + F.offsetBytes);
       if (!body) return { truncated: true, at: at };
       const bdv = dvOf(body);
       const tags = new Map();
       for (let i = 0; i < n; i++) {
-        const e = i * 12;
-        const tag = bdv.getUint16(e, le), type = bdv.getUint16(e + 2, le), count = bdv.getUint32(e + 4, le);
-        const v = await readValues(rd, le, type, count, body.subarray(e + 8, e + 12));
+        const e = i * F.entryBytes;
+        const tag = bdv.getUint16(e, le), type = bdv.getUint16(e + 2, le);
+        const count = uintAt(bdv, e + 4, le, F.valueCountBytes);
+        const v = count === null ? null
+          : await readValues(rd, le, F, type, count, body.subarray(e + 4 + F.valueCountBytes, e + F.entryBytes));
         /* An unknown TYPE is not this file's business (TIFF says to skip fields you do not know),
            but a KNOWN type whose value area is off the end is the file being short. */
         if (!v) { if (TYPE_SIZE[type]) return { truncated: true, at: at + e, tag: tag }; continue; }
         tags.set(tag, v);
       }
-      return { tags: tags, next: bdv.getUint32(n * 12, le) };
+      const next = uintAt(bdv, n * F.entryBytes, le, F.offsetBytes);
+      return { tags: tags, next: next === null ? 0 : next };
     }
 
     const one = (f, dflt) => (f && f.values.length ? f.values[0] : dflt);
@@ -677,8 +751,9 @@ export function makeGisGeotiff() {
     /* Predictor 2 (TIFF 6.0 §14): each sample is stored as its difference from the sample one
        PIXEL to its left, per row, per sample — so the stride is samplesPerPixel and the wrap is the
        sample's own width. The row width is the CHUNK's, which for a tile is the padded tile width
-       and not the image width. */
-    function unpredict(raw, dv, le, bits, spp, rows, chunkWidth) {
+       and not the image width. ⚠ `spp` here is the chunk's samples per pixel, which over separate
+       planes is 1 — the sample to the left is in the same plane and nowhere else. */
+    function unpredictHorizontal(raw, dv, le, bits, spp, rows, chunkWidth) {
       const bytes = bits >> 3;
       const rowSamples = chunkWidth * spp;
       const rowBytes = rowSamples * bytes;
@@ -691,6 +766,45 @@ export function makeGisGeotiff() {
           else dv.setUint32(o, (dv.getUint32(o, le) + dv.getUint32(q, le)) >>> 0, le);
         }
       }
+    }
+
+    /* ⚠ PREDICTOR 3 IS A DIFFERENT ALGORITHM, NOT PREDICTOR 2 WIDENED (TIFF Technote 3, and the
+       reason #R749 refused it rather than reusing the loop above). A float's exponent byte changes
+       slowly across a row while its mantissa bytes do not, so TN3 SPLITS EACH ROW INTO BYTE PLANES
+       — every sample's most significant byte first, then every second byte, and so on — and then
+       takes the difference between bytes that are `spp` apart WITHIN that shuffled row. Undoing it
+       is therefore two passes and in this order:
+         ① accumulate the byte differences along the whole row, stride spp bytes, wrapping at 256
+         ② de-interleave the planes back into whole samples
+       ⚠ THE PLANES ARE ORDERED MOST SIGNIFICANT FIRST, and the samples are reassembled IN THE
+       FILE'S OWN BYTE ORDER, because what the sampler above reads is the file's bytes with the
+       file's endianness — plane 0 is therefore the LAST byte of a little-endian sample and the
+       first of a big-endian one. Both directions are measured in
+       tests/r754-gis-geotiff-formats-checks.test.mjs against a writer that shuffles by the same
+       definition from the other side. */
+    function unpredictFloat(raw, le, bits, spp, rows, chunkWidth) {
+      const bytes = bits >> 3;
+      const rowSamples = chunkWidth * spp;
+      const rowBytes = rowSamples * bytes;
+      const tmp = new Uint8Array(rowBytes);
+      for (let r = 0; r < rows; r++) {
+        const base = r * rowBytes;
+        for (let i = spp; i < rowBytes; i++) raw[base + i] = (raw[base + i] + raw[base + i - spp]) & 0xff;
+        tmp.set(raw.subarray(base, base + rowBytes));
+        for (let s = 0; s < rowSamples; s++) {
+          for (let k = 0; k < bytes; k++) {
+            const plane = le ? (bytes - 1 - k) : k;
+            raw[base + s * bytes + k] = tmp[plane * rowSamples + s];
+          }
+        }
+      }
+    }
+
+    /* ⚠ ONE DOOR FOR BOTH, so that every caller which has a chunk asks the same question — the two
+       above are the algorithms and this is the file's statement about which one it wrote. */
+    function unpredict(predictor, raw, dv, le, bits, spp, rows, chunkWidth) {
+      if (predictor === 2) unpredictHorizontal(raw, dv, le, bits, spp, rows, chunkWidth);
+      else if (predictor === 3) unpredictFloat(raw, le, bits, spp, rows, chunkWidth);
     }
 
     /* ══ 6 · WHAT THE FILE SAYS ITS BANDS ARE ══════════════════════════════════════════════════ */
@@ -756,24 +870,42 @@ export function makeGisGeotiff() {
       if (fmt !== 1 && fmt !== 2 && fmt !== 3) return bad('sample-format-unsupported', { sampleFormat: fmt });
       if (fmt === 3 && !(bits === 32 || bits === 64)) return bad('sample-format-unsupported', { sampleFormat: 3, bits: bits });
 
+      /* ⚠ (#R756) PlanarConfiguration 2 IS READ — it stores each sample in its own plane of strips
+         or tiles (GDAL's INTERLEAVE=BAND, and what every multi-band Landsat-style export this door
+         was built for tends to carry), so the only thing it changes is HOW THE CHUNK INDEX IS
+         BUILT: a chunk belongs to one band, and there are spp times as many of them. A third value
+         is not a layout TIFF 6.0 defines, and reading one as chunky would return one band's pixels
+         labelled as another's — a wrong answer that no later check can see. */
       const planar = one(tags.get(T.PLANAR), 1);
-      /* ⚠ REFUSED BY NAME rather than read as chunky. PlanarConfiguration 2 stores each sample in
-         its own plane of strips, so reading it with the chunky stride would return one band's
-         pixels labelled as another's — a wrong answer that no later check can see. */
-      if (planar !== 1) return bad('planar-separate-unsupported', { planarConfiguration: planar });
+      if (planar !== 1 && planar !== 2) return bad('planar-separate-unsupported', { planarConfiguration: planar });
+      /* How many samples one chunk carries, and how many chunks one image's worth of pixels takes.
+         Everything below reads these two instead of asking which planar configuration it is. */
+      const chunkSpp = planar === 2 ? 1 : spp;
+      const planes = planar === 2 ? spp : 1;
 
       const compression = one(tags.get(T.COMPRESSION), 1);
+      /* ⚠ THE ONE THAT IS STILL REFUSED, AND WHY IT IS NOT AN OVERSIGHT (#R756, and
+         .agents/rules/no-ad-hoc-hardcoding.md §6 asks for exactly this sentence): a TIFF's JPEG
+         chunk is not a JPEG file — technote 2 keeps the quantisation and Huffman tables in tag 347
+         and leaves the entropy-coded scan in the chunk — and the platform's decoder answers in
+         8-bit sRGB, which is a picture rather than the samples this door carries. 消せる条件: a
+         decoder that returns component values, written here or offered by the runtime. */
       if (compression === 6 || compression === 7) return bad('jpeg-in-tiff-unsupported', { compression: compression, name: COMPRESSION_NAMES[compression] });
       if (DEFLATE.indexOf(compression) < 0 && SYNC_COMPRESSIONS.indexOf(compression) < 0) {
         return bad('compression-unsupported', { compression: compression, name: COMPRESSION_NAMES[compression] || null });
       }
 
       const predictor = one(tags.get(T.PREDICTOR), 1);
-      if (predictor !== 1 && predictor !== 2) return bad('predictor-unsupported', { predictor: predictor });
+      if (predictor !== 1 && predictor !== 2 && predictor !== 3) return bad('predictor-unsupported', { predictor: predictor });
       /* Horizontal differencing on 64-bit samples would have to wrap in a 64-bit integer domain
-         this reader does not carry; predictor 3 is the floating-point one and is a different
-         algorithm altogether (byte-plane shuffling). Both are named rather than approximated. */
+         this reader does not carry, so it is still named rather than approximated. */
       if (predictor === 2 && bits === 64) return bad('predictor-unsupported', { predictor: 2, bits: 64 });
+      /* ⚠ PREDICTOR 3 IS NOT A GENERALISATION OF PREDICTOR 2 (TIFF Technote 3). It is defined for
+         FLOATING-POINT samples and for nothing else, and over integers the byte-plane shuffle it
+         prescribes has no meaning — a file that states it over ints is stating something TN3 does
+         not define, and guessing which of the two algorithms was meant would answer with numbers
+         nobody wrote. Undone in unpredict() below; refused here only where TN3 does not reach. */
+      if (predictor === 3 && fmt !== 3) return bad('predictor-unsupported', { predictor: 3, sampleFormat: fmt, bits: bits });
 
       /* ── the chunk table ────────────────────────────────────────────────────────────────── */
       const tileW = one(tags.get(T.TILE_WIDTH), 0);
@@ -791,9 +923,15 @@ export function makeGisGeotiff() {
 
       const across = tiled ? Math.ceil(width / tileW) : 1;
       const down = tiled ? Math.ceil(height / tileH) : Math.ceil(height / rps);
-      const expectedChunks = across * down;
+      /* ⚠ ONE PLANE'S WORTH, AND THEN AS MANY PLANES AS THE FILE SAYS. TIFF 6.0 orders a separate
+         file's chunks plane by plane — StripsPerImage strips of band 0, then band 1 — so the index
+         a caller's window computes is an index WITHIN a plane, and the band is the other half of
+         it. The chunky case is that arithmetic with one plane, which is why there is no second
+         table and no branch below. */
+      const perPlane = across * down;
+      const expectedChunks = perPlane * planes;
       if (offsets.values.length !== expectedChunks) {
-        return bad('tiff-corrupt', { chunks: offsets.values.length, expected: expectedChunks, layout: tiled ? 'tile' : 'strip' });
+        return bad('tiff-corrupt', { chunks: offsets.values.length, expected: expectedChunks, layout: tiled ? 'tile' : 'strip', planes: planes });
       }
       for (let i = 0; i < expectedChunks; i++) {
         const o = offsets.values[i], n = counts.values[i];
@@ -872,23 +1010,32 @@ export function makeGisGeotiff() {
          many bytes it must decompress to. Tiles are PADDED to the full tile in both axes, strips
          are not — that difference is the whole of what 'strip' and 'tile' mean here. */
       function chunkAt(i) {
+        /* ⚠ THE INDEX CARRIES THE BAND when the planes are separate. `band` is null for a chunky
+           chunk, which holds every band at once; it is a number for a separate one, and blitInto()
+           below skips a chunk whose band is not the one being read rather than sampling it with a
+           stride that would silently belong to another plane. */
+        const band = planar === 2 ? Math.floor(i / perPlane) : null;
+        const k = planar === 2 ? (i % perPlane) : i;
         if (tiled) {
-          const cx = i % across, cy = Math.floor(i / across);
+          const cx = k % across, cy = Math.floor(k / across);
           return {
-            x0: cx * tileW, y0: cy * tileH, rows: tileH, chunkWidth: tileW,
+            band: band, x0: cx * tileW, y0: cy * tileH, rows: tileH, chunkWidth: tileW,
             cols: Math.min(tileW, width - cx * tileW),
             validRows: Math.min(tileH, height - cy * tileH),
-            expected: tileW * tileH * spp * bytesPer,
+            expected: tileW * tileH * chunkSpp * bytesPer,
           };
         }
-        const y0 = i * rps;
+        const y0 = k * rps;
         const rows = Math.min(rps, height - y0);
-        return { x0: 0, y0: y0, rows: rows, chunkWidth: width, cols: width, validRows: rows, expected: rows * width * spp * bytesPer };
+        return { band: band, x0: 0, y0: y0, rows: rows, chunkWidth: width, cols: width, validRows: rows, expected: rows * width * chunkSpp * bytesPer };
       }
 
       /* ⚠ WHICH CHUNKS COVER THIS WINDOW — the sentence that makes the tiling worth having. A COG
-         read that walked every tile would be a plain TIFF read with extra steps. */
-      function chunksFor(R) {
+         read that walked every tile would be a plain TIFF read with extra steps. ⚠ AND WHICH BAND:
+         over separate planes the window's chunks are the covering ones OF THAT PLANE, so asking for
+         one band of a six-band separate file fetches a sixth of the bytes rather than all of them
+         and then throwing five away. */
+      function chunksFor(R, b) {
         const list = [];
         if (tiled) {
           const cx0 = Math.floor(R.x / tileW), cx1 = Math.floor((R.x + R.w - 1) / tileW);
@@ -898,7 +1045,9 @@ export function makeGisGeotiff() {
           const s0 = Math.floor(R.y / rps), s1 = Math.floor((R.y + R.h - 1) / rps);
           for (let s = s0; s <= s1; s++) list.push(s);
         }
-        return list;
+        if (planar !== 2) return list;
+        const base = b * perPlane;
+        return list.map((k) => base + k);
       }
 
       /* The chunk store, for a ranged supply: what has been fetched and not yet released. Bounded
@@ -983,6 +1132,9 @@ export function makeGisGeotiff() {
       function blitInto(out, i, b, R, hasNd, nd) {
         const plan = chunkAt(i);
         if (plan.validRows <= 0 || plan.cols <= 0) return;
+        /* ⚠ A CHUNK OF ANOTHER PLANE IS NOT THIS BAND'S DATA. Skipped rather than sampled: the
+           stride would fit and the numbers would be somebody else's. */
+        if (plan.band !== null && plan.band !== b) return;
         const y0 = Math.max(plan.y0, R.y), y1 = Math.min(plan.y0 + plan.validRows, R.y + R.h);
         const x0 = Math.max(plan.x0, R.x), x1 = Math.min(plan.x0 + plan.cols, R.x + R.w);
         if (!(y1 > y0) || !(x1 > x0)) return;
@@ -991,13 +1143,16 @@ export function makeGisGeotiff() {
         /* ⚠ THE WHOLE CHUNK IS UN-PREDICTED, even for a window that wants three of its columns:
            horizontal differencing accumulates from column 0, so a partial pass would answer with
            numbers that are differences wearing the clothes of values. */
-        if (predictor === 2) unpredict(raw, rdv, le, bits, spp, plan.rows, plan.chunkWidth);
+        unpredict(predictor, raw, rdv, le, bits, chunkSpp, plan.rows, plan.chunkWidth);
         const sample = samplerFor(rdv, le, bits, fmt);
+        /* which sample of a stored pixel this band is — the band itself when the chunk holds them
+           all, and the only one there is when the planes are separate */
+        const within = plan.band === null ? b : 0;
         for (let yy = y0; yy < y1; yy++) {
-          const rowBase = (yy - plan.y0) * plan.chunkWidth * spp;
+          const rowBase = (yy - plan.y0) * plan.chunkWidth * chunkSpp;
           const dstBase = (yy - R.y) * R.w - R.x;
           for (let xx = x0; xx < x1; xx++) {
-            const v = sample(((rowBase + (xx - plan.x0) * spp) + b) * bytesPer);
+            const v = sample(((rowBase + (xx - plan.x0) * chunkSpp) + within) * bytesPer);
             /* ⚠ MISSING IS NaN (docs/GIS-CORE.md §1.4). Not zero, which is a sea-level elevation
                and a month with no rain. */
             out[dstBase + xx] = (hasNd && v === nd) ? NaN : v;
@@ -1014,7 +1169,11 @@ export function makeGisGeotiff() {
         const nd = nodata;
         const hasNd = nd !== null && !Number.isNaN(nd);
         const R = { x: 0, y: 0, w: width, h: height };
-        for (let i = 0; i < expectedChunks; i++) blitInto(out, i, b, R, hasNd, nd);
+        /* ⚠ THIS BAND'S CHUNKS, not every chunk in the file. Over separate planes the other planes
+           hold other bands, and walking them would decompress five sixths of a six-band file to
+           throw the result away. */
+        const from = planar === 2 ? b * perPlane : 0;
+        for (let i = from; i < from + perPlane; i++) blitInto(out, i, b, R, hasNd, nd);
         return out;
       }
 
@@ -1050,7 +1209,7 @@ export function makeGisGeotiff() {
         const nd = nodata;
         const hasNd = nd !== null && !Number.isNaN(nd);
         const c = ctxOf(q);
-        const list = chunksFor(R);
+        const list = chunksFor(R, b);
         try {
           const done = await sweep(list, c, (k) => blitInto(out, k, b, R, hasNd, nd));
           if (!done) return bad('cancelled', { done: c.done(), total: list.length });
@@ -1112,29 +1271,44 @@ export function makeGisGeotiff() {
 
     async function openTiff(rd, src, opts) {
       const ctx = ctxOf(opts);
-      const head = await rd.need(0, 8);
-      if (!head || !sniff(head)) return bad('not-tiff', { head: head ? Array.from(head.subarray(0, 4)) : [], bytes: rd.size });
-      const le = head[0] === 0x49;
+      const first8 = await rd.need(0, 8);
+      if (!first8 || !sniff(first8)) return bad('not-tiff', { head: first8 ? Array.from(first8.subarray(0, 4)) : [], bytes: rd.size });
+      const le = first8[0] === 0x49;
+
+      const magic = dvOf(first8).getUint16(2, le);
+      const F = CONTAINERS[magic];
+      if (!F) return bad('not-tiff', { magic: magic });
+      const head = await rd.need(0, F.headerBytes);
+      if (!head) return bad('tiff-truncated', { header: F.headerBytes, have: rd.size });
       const hdv = dvOf(head);
 
-      const magic = hdv.getUint16(2, le);
-      if (magic === 43) return bad('bigtiff-unsupported', { magic: 43, byteOrder: le ? 'II' : 'MM' });
-      if (magic !== 42) return bad('not-tiff', { magic: magic });
+      let at0;
+      if (F.offsetBytes > 4) {
+        /* BigTIFF states its own offset width in bytes 4–5 and then a reserved zero. Every BigTIFF
+           anybody writes says 8; a header that says anything else is a variant of the container
+           whose offsets this reader cannot address, and reading it as though it had said 8 would
+           take the IFD from the wrong place and then report whatever it found there. */
+        const width = hdv.getUint16(4, le), reserved = hdv.getUint16(6, le);
+        if (width !== F.offsetBytes || reserved !== 0) {
+          return bad('bigtiff-unsupported', { magic: magic, byteOrder: le ? 'II' : 'MM', offsetBytes: width, reserved: reserved });
+        }
+        at0 = uintAt(hdv, 8, le, F.offsetBytes);
+      } else at0 = uintAt(hdv, 4, le, F.offsetBytes);
+      if (at0 === null) return bad('tiff-truncated', { ifd: 'first', beyond: 'safe-integer' });
 
       /* ⚠ THE FIRST IFD IS THE FULL-RESOLUTION IMAGE. A COG's later IFDs are its overviews (and
          sometimes a mask), and reading one of them because it came last would answer a question
          about resolution that the caller never asked. The chain is walked and KEPT — #R752 reads
          those overviews on request, and the walk remembers where it has been, because a file whose
          `next` points backwards is a loop and not a longer file. */
-      const at0 = hdv.getUint32(4, le);
-      const first = await readIfd(rd, le, at0);
+      const first = await readIfd(rd, le, F, at0);
       if (first.truncated) return bad('tiff-truncated', { ifd: first.at, tag: first.tag || null });
       const chain = [{ at: at0, tags: first.tags, subfile: one(first.tags.get(T.NEW_SUBFILE), 0) }];
       const seen = new Set([at0]);
       let at = first.next;
       while (at && !seen.has(at)) {
         seen.add(at);
-        const nx = await readIfd(rd, le, at);
+        const nx = await readIfd(rd, le, F, at);
         if (nx.truncated) break;                             /* a short tail does not invalidate IFD 0 */
         chain.push({ at: at, tags: nx.tags, subfile: one(nx.tags.get(T.NEW_SUBFILE), 0) });
         at = nx.next;

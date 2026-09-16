@@ -7008,7 +7008,6 @@ window.IntMapLang.define('zh', {
   "This grid does not state its coordinate system, so it cannot be converted to lon/lat": "這個網格沒有說明它的座標系，因此無法轉換為經緯度",
   "This grid has no values in it — every cell is missing": "這個網格裡沒有任何值——每一格都是無資料值（NoData）",
   "This grid is not a plain north-up grid, and this reader will not straighten it silently": "這個網格不是單純正北向上的網格，而這個讀取器不會悄悄把它擺正",
-  "This is a BigTIFF — this reader handles the classic TIFF layout only": "這是 BigTIFF——這個讀取器只處理傳統的 TIFF 版面配置",
   "This map view cannot draw grids": "此地圖檢視無法繪製網格",
   "This project does not say which engine computed it, so whether these results changed cannot be told": "這個專案沒有說明它是由哪個引擎計算的，因此無法判斷這些結果是否有所改變",
   "This TIFF describes a grid with no size: a pixel of zero or negative extent": "這個 TIFF 所述的網格沒有大小：像素的範圍為零或負值",
