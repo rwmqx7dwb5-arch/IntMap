@@ -370,4 +370,26 @@ test('R175 ③: the build stamp was bumped', () => {
      — and the current round pins the exact value in its own checks file. */
   assert.doesNotMatch(index, /window\.INTMAP_BUILD='2026-07-28-R175'/, 'the anti-stale-version stamp must move every round');
   assert.match(index, /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R\d+'/, 'and must still be a dated round stamp');
+
+  /* ⚠⚠⚠ (#R756) 「各ラウンドが自分の検査ファイルに値を pin する」 IS NOT A RULE THE STAMP HAS — it is
+     a rule each round has to REMEMBER, and #R756 forgot it: the round shipped, merged and deployed
+     with the stamp still naming R755, and every gate was green. The two assertions above cannot
+     catch that; they only know what R175's own value was.
+
+     ⚠ THE FIX IS NOT A THIRD PIN. A pin is the same forgettable thing one round later. The round the
+     build is FOR is discoverable — DEV-NOTES.md carries it, newest first, because AGENTS.md §9
+     requires an entry every round — so the rule is attached to the FACT (「この配信はどのラウンドの
+     ものか」) rather than to whoever remembers to write it down
+     ([[intmap-hist-names-rule-belongs-to-the-name]]).
+
+     ⚠ 見出しの階層は固定しない: entries have shipped as both `### R756` and `## R755`, and a check
+     that demanded one of them would fail for a reason that has nothing to do with the stamp. */
+  const notes = readFileSync(join(ROOT, 'DEV-NOTES.md'), 'utf8');
+  const rounds = [...notes.matchAll(/^#{1,4}\s*R(\d+)\b/gm)].map((m) => Number(m[1]));
+  assert.ok(rounds.length > 0, 'DEV-NOTES.md states no round at all — the stamp has nothing to agree with');
+  const newest = Math.max(...rounds);
+  const stamped = /window\.INTMAP_BUILD='\d{4}-\d{2}-\d{2}-R(\d+)'/.exec(index);
+  assert.equal(Number(stamped[1]), newest,
+    'the build stamp names R' + stamped[1] + ' and the newest round in DEV-NOTES.md is R' + newest +
+    ' — a round that ships without moving the stamp is indistinguishable in production from the one before it');
 });
