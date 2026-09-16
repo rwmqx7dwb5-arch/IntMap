@@ -703,6 +703,22 @@ export function makeAtlasCapabilities(HOST) {
        declares six countries it did not paint still answers `not_rendered`. ⚠ AND NOTHING IS GUESSED:
        no declaration, or a declaration naming a surface this reading does not hold, returns `null`
        and the verdict is exactly the one it was before. */
+    /* ⚠⚠⚠ (#R747) …AND THE SAME QUESTION ASKED OF A REMOVAL. #R742 gave the painter a way to say
+       WHAT IT PUT ON THE MAP, and every reading below is「is it there」. A painter that TOOK things
+       off has nothing to point at, so it fell to the last line of `paint.verify` — `not_rendered`,
+       i.e. failed — and Atlas, told its clear had failed, cleared again. MEASURED on production
+       2026-09-15, signed in:「Colour the world by population density」 spent SIX of its sixteen
+       operations on `reset`, every one `FAIL/not_rendered`, and 「Clear everything from the map」
+       ended `stopped:'repeated_calls'` in 36 s with `map.clearHighlights` twice refused — while the
+       map was, in fact, clear. `map.clear` had already been given `clear`'s verdict for exactly this
+       reason (the block below its verifier says so), but the rule was attached to that ONE ROW: the
+       capability that clears HIGHLIGHTS, and `highlight {on:false}` which clears them through the
+       drawing capability itself, were never covered.
+       So the declaration gets its other half: an EMPTY list for a surface means「nothing of this kind
+       should be on the map now」, and it is verified the same way — READ, NOT TRUSTED. A clear that
+       declares the highlights gone while six countries are still painted is still `not_rendered`.
+       ⚠ Absent ≠ undeclared: `{}` and a missing `meta.painted` still return null, because a painter
+       that said nothing has not made a claim. Only a NAMED surface with an empty list is a claim. */
     function PAINT_GOAL(raw) {
       var d = raw && raw.meta && raw.meta.painted;
       if (!d || typeof d !== 'object') return null;
@@ -712,6 +728,7 @@ export function makeAtlasCapabilities(HOST) {
         var want = [];
         (Array.isArray(v) ? v : [v]).forEach(function (x) { var s = String(x == null ? '' : x); if (s && want.indexOf(s) < 0) want.push(s); });
         if (want.length) out.push({ kind: kind, want: want });
+        else if (Array.isArray(v)) out.push({ kind: kind, want: [], empty: true });   /* (#R747) 「this surface is to be empty」 */
       });
       return out.length ? out : null;
     }
@@ -726,6 +743,7 @@ export function makeAtlasCapabilities(HOST) {
       for (var i = 0; i < goal.length; i++) {
         var seen = ids[goal[i].kind];
         if (!Array.isArray(seen)) return null;                   /* a surface this reading does not hold */
+        if (goal[i].empty) { want++; if (seen.length === 0) have++; continue; }   /* (#R747) an emptied surface is one thing asked for, and the map answers it */
         for (var j = 0; j < goal[i].want.length; j++) { want++; if (seen.indexOf(goal[i].want[j]) >= 0) have++; }
       }
       return want ? { want: want, have: have } : null;
