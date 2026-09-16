@@ -191,6 +191,11 @@ export function auditWith({ caps, docs, atlas, controls, capSrc, execSrc, stateS
          DELTA cannot make: five of sixteen moves the tally, and sixteen redrawn at corrected
          coordinates does not. It also carries the still-missing names out as `unresolved`. */
       mapCompose: ['map', 'object'],
+      /* (#R754) the "pandemic" observer asks js/pandemic-atlas.js what is on its own canvas —
+         an observation of the map, made AFTER the call rather than as a diff, for the same reason as
+         `factions` and `isochrone` above: the same day redrawn moves no count and was the shape that
+         reported working draws as not_rendered. */
+      pandemic: ['map'],
       sim: ['map', 'camera'], control: ['panel'], none: ['explanation', 'panel', 'view', 'camera', 'map'] };
 
   /* ⑦ what a capability says it PRODUCES is something its verifier can observe */

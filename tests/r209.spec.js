@@ -159,6 +159,9 @@ test('R209 ②: asking for the seismic simulator brings the tsunami model with i
 const MEMBER = {
   flightSim: ['IntMapFlightSim', 'setup'],
   playground: ['_openPlayground'],            /* a bare function, not an object */
+  /* (#R754) the engine-facing door of the same feature: `run` is what every caller uses, and a
+     half-arrived module that registered `bind` but not `run` must not read as arrived. */
+  pandemicSim: ['IntMapPandemicAtlas', 'run'],
   seismic: ['IntMapSeismic', 'open'],
   tsunami: ['IntMapTsunami', 'open'],
   terrainWater: ['IntMapTerrainWater', 'open'],

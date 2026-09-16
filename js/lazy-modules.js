@@ -72,12 +72,12 @@ export function makeLazyModules(HOST) {
     const ALSO = { seismic: ['tsunami'], satellitesLive: ['satelliteDetail'], companyPanel: ['companyData', 'companyFacilities'], companyFacilities: ['companyData'] };   /* (#R354) the atlas is three files that are useless apart — docs/COMPANIES.md §3 */
 
     /* Modules with NO factory — they publish at import. ⚠ (#R347) was `name !== 'nightSky'`, and a rule written as one name recorded the second such module as a failure. */
-    const SELF_PUBLISHING = { nightSky: true, navigation: true, routingTraffic: true };
+    const SELF_PUBLISHING = { nightSky: true, navigation: true, routingTraffic: true, pandemicSim: true };
 
     /* The global each module must have published by the time its promise resolves. Checked, not
        assumed — see the header. `playground` publishes a bare function, so it is named too. */
     const PUBLISHES = {
-      flightSim: 'IntMapFlightSim', playground: '_openPlayground', seismic: 'IntMapSeismic',
+      flightSim: 'IntMapFlightSim', playground: '_openPlayground', pandemicSim: 'IntMapPandemicAtlas', seismic: 'IntMapSeismic',
       tsunami: 'IntMapTsunami', terrainWater: 'IntMapTerrainWater', los: 'IntMapLOS',
       streetView: 'IntMapStreetView', nightSky: 'IntMapNightSky',
       /* ══ (#R224) THE BIGGEST FILE IN THE BOOT BUNDLE ═══════════════════════════════════════════
@@ -143,7 +143,7 @@ export function makeLazyModules(HOST) {
     function fetchModule(name) {
       switch (name) {
         case 'flightSim': return import('./flight-sim.js');
-        case 'playground': return import('./playground.js');
+        case 'playground': return import('./playground.js');   case 'pandemicSim': return import('./pandemic-atlas.js');   /* (#R754) the engine-facing door, folded onto this line rather than given its own: the shell has a LINE budget (tests/r168-checks ⑧) and raising a ceiling to fit one's own change is the move that check exists to catch. */
         case 'seismic': return import('./seismic.js');
         case 'tsunami': return import('./tsunami.js');
         case 'terrainWater': return import('./terrain-water.js');

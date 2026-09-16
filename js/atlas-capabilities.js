@@ -230,6 +230,19 @@ export function makeAtlasCapabilities(HOST) {
       ['system.diagnose',            'diagnose',       'health,selfCheck,systemStatus,status',                        'system',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['map.clearAll',               'clearAll',       '',                                                            'map',     'paint',   'map.all',                'map',                 'session', 'explicit','',        ''],
       ['map.outline',                'outline',        'extent,showExtent',                                           'map',     'paint',   'map.highlight',          'object,map',          'session', 'none',   'place',    ''],
+      /* ══ ⚠⚠⚠ (#R754) THE SIMULATOR ITSELF, NOT THE SCREEN IT IS DRAWN ON ═══════════════════════
+         The row above opens the Playground PANEL, and until this round that was the only thing Atlas
+         could do about a pandemic: asked to simulate one from Lagos it answered, correctly given what
+         it had been told, that IntMap has no transmission simulator (#R747 §6). It has had one since
+         #R575. What it had no door to was placing a seed, advancing days and reading a day back.
+         ⚠ TWO ROWS, NOT ONE, FOR #R743'S REASON. Computing promises the map nothing; drawing promises
+         exactly that. One row declaring both would make the observer measure an unmoved map on every
+         run nobody asked to draw and call a correct answer not_rendered — #R736/#R737's 21 wasted
+         calls, and #R742's 52 failures in 207. The vocabulary (presets, parameters, ranges) is
+         js/pandemic-model.js's PANDEMIC_PARAMS, handed to the planner by js/pandemic-atlas.js
+         declaration() rather than copied into a list here. */
+      ['sim.pandemicRun',            'pandemicRun',    'simulatePandemic,runPandemic,pandemicSimulate,outbreakSim',   'sim',     'none',    '',                       'explanation',         'read',    'none',   'place',    'pandemicSim'],
+      ['map.pandemicDay',            'pandemicDraw',   'drawPandemic,showPandemicDay,pandemicMap',                    'map',     'pandemic','map.object',             'map',                 'session', 'none',   '',         'pandemicSim'],
       ['panel.playground',           'playground',     'game',                                                        'panel',   'panel',   'panel.playground',       'panel',               'session', 'none',   '',         'playground'],
       ['panel.news',                 'news',           '',                                                            'panel',   'panel',   'panel.news',             'panel',               'session', 'none',   '',         ''],
       ['panel.account',              'account',        'login',                                                       'panel',   'panel',   'panel.account',          'panel',               'session', 'none',   '',         ''],
@@ -1096,6 +1109,29 @@ export function makeAtlasCapabilities(HOST) {
         verify: function (ctx, args, before, after, raw) {
           if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
           return { status: 'completed', code: 'ok', observed: { time: after }, html: (raw && raw.html) || '' };
+        }
+      },
+      /* ══ ⚠⚠⚠ (#R754) THIS ONE ASKS THE PAINTER, AND IT ASKS AFTER ═════════════════════════════
+         TWO defects are being avoided at once.
+         ① `paintNow()` above is a HAND-WRITTEN list of source ids whose own comment forbids adding
+            to it — the failure #R735 paid for with `nlq-fac-src` and #R736 with setFeatureState. The
+            pandemic canvas is not in that list and must not be added to it, so the PAINTER declares
+            its own state (js/pandemic-atlas.js `painted()`, which reads the live source off the map)
+            and this observer calls it. A surface declared beside the code that paints it cannot be
+            the surface somebody forgot to list.
+         ② IT IS MEASURED AFTER, NOT AS A DIFF — the same correction `factions` and `isochrone` 
+            already carry. Drawing day 60 twice moves no count, and a count diff would call the
+            second one not_rendered while the dots sat on the globe. What is being asserted is «the
+            layer holds the run», which is a fact about the map NOW, not about how it changed.
+         ⚠ null IS NOT ZERO. An unreadable canvas returns null and is reported as unobserved rather
+            than as empty, because `not_rendered` is a claim and this cannot support it. */
+      pandemic: {
+        observe: function () { try { var P = window.IntMapPandemicAtlas; return (P && P.painted && P.painted()) || null; } catch (_) { return null; } },
+        verify: function (ctx, args, before, after, raw) {
+          if (raw && raw.ok === false) return { status: 'failed', code: legacyCode(raw) || 'failed', html: raw.html || '' };
+          if (!after) return { status: 'completed', code: 'ok', observed: { pandemic: null }, html: (raw && raw.html) || '' };
+          if (!after.features) return { status: 'partial', produced: [], code: 'not_rendered', observed: { pandemic: after }, html: (raw && raw.html) || '' };
+          return { status: 'completed', code: 'ok', observed: { pandemic: after }, html: (raw && raw.html) || '' };
         }
       },
       sim: {

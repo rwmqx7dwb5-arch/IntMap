@@ -23,7 +23,10 @@
 /* (#R575) The Pandemic Simulator's arithmetic — a pure, seeded, node-testable SEIR metapopulation
    engine. Static, not lazy: this whole file is already behind js/lazy-modules.js's playground
    door, so the model is downloaded exactly when the playground is and never before. */
-import { PANDEMIC_PRESETS, createPandemicModel, scatterCases, caseDotPlan, dotSignature, snapToStep, eventKind, chartPoints, summariseEnsemble, policyActors } from './pandemic-model.js';
+import { PANDEMIC_PRESETS, defaultPandemicParams, createPandemicModel, scatterCases, caseDotPlan, dotSignature, snapToStep, eventKind, chartPoints, summariseEnsemble } from './pandemic-model.js';   /* (#R754) policyActors moved with the world that calls it */
+/* (#R754) …and WHICH COUNTRIES, with what populations, connected how. Shared with the Atlas
+   capability so that both drive the same world — see the header of js/pandemic-world.js. */
+import { buildPandemicWorld, ensureCountryGeo, resolveStatsRow, pig, bboxOf, cName, loadPlaces, placesFor } from './pandemic-world.js';
 
 window.IntMapModules=window.IntMapModules||{};
 
@@ -38,7 +41,7 @@ window.IntMapModules.playground=function(HOST){
        every instrument; written as a call it is measured like any other call site. */
     const L=window.IntMapLang.pick(()=>HOST.lang), LA=window.IntMapLang.pickArgs();
     const haversine=(a,b)=>{ const R=6371,dLat=(b[1]-a[1])*Math.PI/180,dLng=(b[0]-a[0])*Math.PI/180,la1=a[1]*Math.PI/180,la2=b[1]*Math.PI/180; const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2; return 2*R*Math.asin(Math.min(1,Math.sqrt(h))); };
-    function ensureCountries(cb){ try{ if(window.countryGeo&&window.countryGeo.features){ cb(); return; } if(typeof loadCountryData==='function'){ loadCountryData().then(()=>cb()); } else cb(); }catch(_){ cb(); } }
+    const ensureCountries=(cb)=>ensureCountryGeo(loadCountryData,cb);   /* (#R754) the shared one, bound to this host's loader */
     // ---- shared modal shell ----
     function shell(maxw){ const ov=document.createElement('div'); ov.className='pg-overlay';
       ov.style.cssText='position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);padding:18px;';
@@ -88,11 +91,8 @@ window.IntMapModules.playground=function(HOST){
     }
     window._pgNews=pgNews;
 
-    // shared point-in-polygon (local copy)
-    function pir(x,y,r){let i,j,c=false;for(i=0,j=r.length-1;i<r.length;j=i++){const xi=r[i][0],yi=r[i][1],xj=r[j][0],yj=r[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/((yj-yi)||1e-12)+xi))c=!c;}return c;}
-    function pig(x,y,g){if(!g)return false;const ps=g.type==='Polygon'?[g.coordinates]:(g.type==='MultiPolygon'?g.coordinates:[]);for(const poly of ps){if(poly&&poly.length&&pir(x,y,poly[0])){let h=false;for(let k=1;k<poly.length;k++){if(pir(x,y,poly[k])){h=true;break;}}if(!h)return true;}}return false;}
-    function bboxOf(f){let mnx=180,mny=90,mxx=-180,mxy=-90;const eat=r=>r.forEach(p=>{if(p[0]<mnx)mnx=p[0];if(p[0]>mxx)mxx=p[0];if(p[1]<mny)mny=p[1];if(p[1]>mxy)mxy=p[1];});const g=f.geometry;if(!g)return[0,0,0,0];if(g.type==='Polygon')g.coordinates.forEach(eat);else if(g.type==='MultiPolygon')g.coordinates.forEach(poly=>poly.forEach(eat));return[mnx,mny,mxx,mxy];}
-    function cName(f){ const p=f&&f.properties||{}; return p.NAME_EN||p.ADMIN||p.NAME||p.name||''; }
+    /* (#R754) pir/pig/bboxOf/cName moved to js/pandemic-world.js — imported above. Two games read
+       them and the world builder is their third reader; one statement beats three copies. */
 
     /* ===================== WORLD EXPLORER ===================== */
     function _pgWeStyle(){ if(document.getElementById('pg-we-style')) return; const s=document.createElement('style'); s.id='pg-we-style';
@@ -242,239 +242,38 @@ window.IntMapModules.playground=function(HOST){
       ebola:LA('Ebola','エボラ出血熱','Ebola','Эбола','Ébola'),
       measles:LA('Measles','麻疹','Masern','Корь','Sarampión')
     };
-    /* ══ (#R666) THE TWO TABLES THE INTERNATIONAL SPREAD IS WEIGHTED BY ═════════════════════════
-       Land borders come from data/country-facts.json (already loaded on demand by
-       window.IntMapCountryFacts for the country card) and airport capacity from data/airports.json
-       (built by scripts/build-airports.mjs). Both are fetched WHEN THE SIMULATOR OPENS and filled
-       into the country rows IN PLACE, so nothing waits: a reader who taps the map before they land
-       gets a model weighted by population and distance alone, and `model.mobility.from` says so on
-       screen rather than the screen claiming air connectivity it did not get.
-       ⚠ THE AIRPORT LOADER IS HERE BECAUSE THIS IS ITS ONLY READER. If a second one appears it
-       belongs beside IntMapCountryFacts in js/countries-ui.js, which is the same shape. */
-    let _airP=null, _airT=null;
-    /* ══ (#R678) TWO MORE TABLES, THE SAME SHAPE ════════════════════════════════════════════
-       data/mobility.json is WHERE people fly (OpenFlights 2014 route counts per country pair) and
-       HOW MANY of them travel (World Bank arrivals, departures and boardings, pre-2020).
-       data/health.json is WHAT a country can do about an epidemic (WHO UHC service coverage index,
-       WHO IHR SPAR health emergency management, WHO/UNICEF DTP3 and MCV1 coverage).
-       ⚠ THEY LOAD LIKE data/airports.json AND FAIL LIKE IT: a table that does not arrive leaves
-       the model exactly where it was before this round, and the panel says so per table. */
-    /* ══ ⚠⚠⚠ (#R678) WHERE THE PEOPLE ARE — THE ONE POPULATION SURFACE IntMap ACTUALLY HAS ══════
-       The case dots were spread evenly over whatever anchors a country happened to produce, so
-       Canada, Russia and Australia got cases scattered across tundra, taiga and desert. The fix
-       needs a population surface, and MEASURED 2026-09-10 this project has no population RASTER at
-       all: NASA GIBS GPW is a rendered PNG tile whose pixels nothing reads back, and WorldPop is a
-       remote per-polygon API that answers in tens of seconds. What it does have is
-       data/gazetteer-world.json.gz — 148,630 GeoNames places, 139,056 of them with a population,
-       already shipped, already lazily loadable, and keyed by country.
-
-       ⚠ POINTS, NOT A SURFACE, and the screen says so. A city gazetteer knows where towns are, not
-       where the countryside is; js/shakemap.js already names the same limitation of the same table
-       for the same reason. It is nonetheless the difference between «cases are in the places
-       Canadians live» and «cases are anywhere inside Canada».
-
-       ⚠ `PPLX` ROWS ARE DROPPED. GeoNames codes a SECTION of a city as PPLX and gives it its own
-       population — fourteen of them are above a million (js/gazetteer.js says so). Keeping them
-       would count those people twice, once in the section and once in the city that contains it.
-
-       ⚠ THERE IS NO ANCHOR CAP, and there does not need to be one. `scatterCases` allocates by
-       weight, so at most `n` anchors can receive a dot for `n` dots; taking the `n` largest by
-       population is exactly sufficient and loses nothing. A fixed cap WOULD have lost something —
-       MEASURED, a cap of 160 anchors drops 29.8% of the world's gazetteer population, and 66.6% of
-       France's. Sorting once per country and walking as far as the dots need is both cheaper and
-       lossless. */
-    let _plP=null, _plByIso=null;
-    function loadPlaces(){
-      if(_plP) return _plP;
-      const G=window.IntMapGazetteer;
-      if(!G||!G.warm){ _plP=Promise.resolve(false); return _plP; }
-      _plP=Promise.resolve(G.warm()).then(()=>{
-        const rows=(G.world&&G.world())||[];
-        if(!rows.length) return false;
-        /* row shape is js/gazetteer.js `_rowsFrom`: [type, terms, lng, lat, en, ja, pop, iso2, gid, fcode, …] */
-        const by=Object.create(null);
-        for(let q=0;q<rows.length;q++){
-          const r=rows[q], pop=+r[6];
-          if(!(pop>0)) continue;
-          const iso=r[7]; if(!iso) continue;
-          if(String(r[9]||'').indexOf('PPLX')===0) continue;
-          (by[iso]||(by[iso]=[])).push([+r[2],+r[3],pop]);
-        }
-        const ks=Object.keys(by);
-        if(!ks.length) return false;
-        for(let q=0;q<ks.length;q++) by[ks[q]].sort((a,b)=>b[2]-a[2]);
-        _plByIso=by; return true;
-      }).catch(e=>{ try{ console.error('[IntMap] place populations unavailable: '+((e&&e.message)||e)); }catch(_){} return false; });
-      return _plP;
-    }
-    let _mobP=null, _mobJ=null;
-    function loadMobility(){
-      if(_mobP) return _mobP;
-      _mobP=fetch('data/mobility.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-        .then(j=>{ if(!j||!j.vol||!j.pairs) throw new Error('no vol/pairs in data/mobility.json'); _mobJ=j; return j.vol; })
-        .catch(e=>{ _mobP=null; _mobJ=null; try{ console.error('[IntMap] travel volumes unavailable: '+((e&&e.message)||e)); }catch(_){} return null; });
-      return _mobP;
-    }
-    let _hlthP=null;
-    function loadHealth(){
-      if(_hlthP) return _hlthP;
-      _hlthP=fetch('data/health.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-        .then(j=>{ const c=j&&j.countries; if(!c||!Object.keys(c).length) throw new Error('no countries in data/health.json'); return c; })
-        .catch(e=>{ _hlthP=null; try{ console.error('[IntMap] health capacity unavailable: '+((e&&e.message)||e)); }catch(_){} return null; });
-      return _hlthP;
-    }
-    function loadAirports(){
-      if(_airP) return _airP;
-      _airP=fetch('data/airports.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-        .then(j=>{ const c=j&&j.countries; if(!c||!Object.keys(c).length) throw new Error('no countries in data/airports.json'); _airT=c; return c; })
-        .catch(e=>{ _airP=null; try{ console.error('[IntMap] airport capacity unavailable: '+((e&&e.message)||e)); }catch(_){} return null; });
-      return _airP;
-    }
+    /* (#R754) loadPlaces / loadMobility / loadHealth / loadAirports and their reasoning moved to
+       js/pandemic-world.js, which is now their only caller: they fill the world, and the world is
+       what this panel and the Atlas capability share. `placesFor` is the placement bank for dots. */
     window._pgPandemic=function(){
       if(!GE().hasRenderer()){ try{ imToast('Map not ready'); }catch(_){} return; }
       _pgWeStyle();
-      ensureCountries(()=>{
-        const allFeats=(window.countryGeo&&window.countryGeo.features)||[]; if(!allFeats.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country data unavailable","国境データを読み込めません","Länderdaten nicht verfügbar","Данные по странам недоступны","Datos de países no disponibles")); }catch(_){} return; }
+      /* ══ ⚠⚠⚠ (#R754) THE WORLD IS BUILT SOMEWHERE ELSE NOW, AND THAT IS THE POINT ═══════════════
+         Everything that used to stand here — which Natural Earth rows are places where people live,
+         what each one's population and connectivity is, which government answers for it — was
+         correct and was UNREACHABLE. js/pandemic-model.js could be driven from node; the WORLD could
+         be driven from nothing, so Atlas could open this simulator and could not run one (#R747 §6).
+         js/pandemic-world.js holds it, and this panel and the Atlas capability now receive THE SAME
+         object — the only arrangement in which the numbers Atlas reports and the epidemic drawn here
+         are the same epidemic ([[intmap-contract-is-not-implementation]]).
+         ⚠ THE TWO PHASES ARE PRESERVED EXACTLY, because they were not an implementation detail: the
+         rows arrive first and this screen draws from them, and `WORLD.ready` is what ungates picking,
+         since the mobility matrix freezes at `createPandemicModel` and a run started before the
+         tables settled cannot be reproduced from its seed (#R673). */
+      buildPandemicWorld({loadCountryData, countryStats}).then((WORLD)=>{
+        if(!WORLD){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country data unavailable","国境データを読み込めません","Länderdaten nicht verfügbar","Данные по странам недоступны","Datos de países no disponibles")); }catch(_){} return; }
         /* (#R30) hide the mobile bottom-sheet / FABs so the HUD + map aren't covered ("ボタンがボトムシートに隠れる"). */
         try{ document.body.classList.add('pg-sim'); }catch(_){}
-        const cs=(typeof countryStats!=='undefined'&&countryStats)||{};
-        /* ⚠ (#R666) THE CODE COMES BACK TOO. It was resolved here and thrown away, so the engine
-           received five fields per country and no way to look one up in any other table — which is
-           why the destination of an importation could only ever be «some index». */
-        const resolve=(p)=>{ const c=[p.ISO_A3_EH,p.ISO_A3,p.ADM0_A3,p.SOV_A3].map(String).find(x=>cs[x]); return c?{code:c,s:cs[c]}:null; };
-        /* ══ ⚠⚠⚠ (#R675) WHICH OF THESE ROWS IS A PLACE WHERE PEOPLE LIVE ═══════════════════════════
-           `window.countryGeo` is Natural Earth admin-0, and admin-0 is not «the countries»: at 10 m
-           it is 258 rows, and nine of them — Bir Tawil, Clipperton, Scarborough Reef, the Southern
-           Patagonian Ice Field, two banks and a reef — have a population of ZERO. They were being
-           simulated anyway, because the row that built the world read
-           `(s && s.pop > 0) ? s.pop : 3e6` and handed three million invented people to every row the
-           statistics table was silent about. Those people then caught the disease, died of it, and
-           closed their borders.
-           A population is the denominator of every quantity below it. Where there is no measured
-           one, the honest answer is not a nicer default, it is «this is not a compartment set»: the
-           row is dropped from the world and the panel says how many were, so the reader is told
-           rather than shown a number that quietly excludes them. Natural Earth's own POP_EST is the
-           fallback for a row the World Bank table has no entry for — it is a measurement, and the
-           rows it puts at zero are the rows nobody lives on. */
-        const popOf=(f)=>{ const _r=resolve(f.properties||{}); const s=_r&&_r.s; if(s&&s.pop>0) return s.pop; const pe=+((f.properties||{}).POP_EST); return pe>0?pe:0; };
-        const feats=[], dropped=[];
-        for(let q=0;q<allFeats.length;q++){ if(popOf(allFeats[q])>0) feats.push(allFeats[q]); else dropped.push(cName(allFeats[q])||'?'); }
-        if(!feats.length){ try{ imToast(window.IntMapLang.t(HOST.lang,"Country data unavailable","国境データを読み込めません","Länderdaten nicht verfügbar","Данные по странам недоступны","Datos de países no disponibles")); }catch(_){} return; }
-        const N=feats.length, cent=[], bbs=[], pools=[], world=[], home=[];
-        feats.forEach((f,i)=>{ const bb=bboxOf(f); bbs[i]=bb; cent[i]=[(bb[0]+bb[2])/2,(bb[1]+bb[3])/2]; const _r=resolve(f.properties||{}); const s=_r&&_r.s;
-          const pop=popOf(f);
-          /* ⚠ ONE PROXY, FOUR MEANINGS — and the engine keeps them apart from here on. GDP per head
-             (or HDI) stands in for medical capacity, travel connectivity, policy capacity and vaccine
-             delivery because IntMap has no separate data for the other three yet; js/pandemic-model.js
-             stores them as four fields so that the day one of them gets its own source, one formula
-             changes instead of every formula. */
-          const dev=(s&&s.gdppc)?Math.min(1,Math.max(0.12,s.gdppc/55000)):(s&&s.hdi?s.hdi:0.5);
-          const pr=f.properties||{};
-          /* ⚠ (#R675) `admin` AND `sov` ARE NATURAL EARTH'S OWN SELF-DESCRIPTION, kept because the
-             policy actor is derived from them below: ADMIN is what this row calls itself and
-             SOVEREIGNT is the row that administers it, and NE guarantees the second is the ADMIN of
-             another row in the same file. Deriving «who governs here» from a map's own topology is
-             the alternative to a list of dependency names, which would go stale the first time the
-             upstream file changed. */
-          world[i]={name:cName(f)||'?', code:(_r&&_r.code)||null, admin:pr.ADMIN||cName(f)||'?', sov:pr.SOVEREIGNT||null, pop, dev, lat:cent[i][1], lng:cent[i][0], borders:null, air:0, capital:null, actor:i}; pools[i]=null;
-          /* ⚠ (#R675) THE POLICY BADGE GOES ON THE LABEL POINT, NOT THE BOUNDING-BOX CENTRE. Natural
-             Earth's LABEL_X/Y is the point inside the country's main landmass that its own cartography
-             puts the name at; the bbox centre of France is in the Atlantic and the bbox centre of
-             Norway is in the Norwegian Sea, because both own remote territory (#R426). Falls back to
-             the centre only when the label point is not inside this feature's geometry. */
-          const lx=+pr.LABEL_X, ly=+pr.LABEL_Y;
-          home[i]=(isFinite(lx)&&isFinite(ly)&&pig(lx,ly,f.geometry))?[lx,ly]:cent[i]; });
-        /* ══ ⚠⚠⚠ (#R673) THE WORLD IS A SNAPSHOT, AND IT IS CONFIRMED BEFORE THE RUN EXISTS ═══════
-           These two tables used to be filled IN PLACE while the panel was already accepting taps,
-           and `createPandemicModel` freezes the mobility matrix at construction. So which world you
-           got was decided by how fast your network was: tap within the second and the outbreak
-           spread by population and distance alone, tap after and it spread by airports and land
-           borders, and NOTHING LATER FIXED IT — the tables landed in `world` but the matrix was
-           already built. The seed field promises that the same seed is the same run; it could not
-           be, because the same seed was not the same world.
-
-           ⚠ THE FIX IS NOT «FILL IT FASTER», IT IS «DECIDE WHAT THE WORLD IS FIRST». Picking is
-           closed until both fetches have SETTLED — resolved or failed — and what they settled to is
-           recorded per table, so a failure is a stated fact about this run («the airport table did
-           not load») and not an unlabelled second world that happens to look like the first.
-           ⚠ SETTLED, NOT SUCCEEDED. A dead table must not lock the reader out of the simulator; it
-           must be named. `dataState` is what the panel prints and what the run carries. */
-        const dataState={ borders:'pending', airports:'pending', policy:'pending', volumes:'pending', health:'pending', routes:'pending', places:'pending' };
-        function settle(p,key,fill){
-          return Promise.resolve(p).then(t=>{ if(!t) { dataState[key]='failed'; return; }
-            let hit=0; for(let i=0;i<N;i++){ const c=world[i].code; const row=c&&t[c]; if(row&&fill(world[i],row)) hit++; }
-            dataState[key]=hit?(hit===N?'ok':'partial'):'failed'; })
-            .catch(()=>{ dataState[key]='failed'; });
-        }
-        let worldReady=false, factsT=null, routesT=null;
-        const factsP=Promise.resolve((window.IntMapCountryFacts&&window.IntMapCountryFacts.load)?window.IntMapCountryFacts.load():null)
-          .then(t=>{ factsT=t||null; return t; }).catch(()=>{ factsT=null; return null; });
-        Promise.all([
-          settle(factsP,'borders',(w,row)=>{ if(row.capital) w.capital=row.capital; if(row.borders&&row.borders.length){ w.borders=row.borders; return true; } return false; }),
-          settle(loadAirports(),'airports',(w,row)=>{ if(row.cap>0){ w.air=row.cap; return true; } return false; }),
-          /* ⚠ (#R673) THESE JOIN THE SNAPSHOT, they do not fill in afterwards. The mobility matrix
-             and every country's capacities freeze at `createPandemicModel`, so a table that lands
-             after the reader has tapped would be a second, unlabelled world — which is exactly the
-             defect that made the seed field a false promise. */
-          settle(loadMobility(),'volumes',(w,row)=>{ if(row.arr>0){ w.arr=row.arr; return true; } return false; }),
-          settle(loadHealth(),'health',(w,row)=>{
-            let any=false;
-            if(row.uhc>0){ w.uhc=row.uhc; any=true; }
-            if(row.spar>0){ w.spar=row.spar; any=true; }
-            if(row.dtp3>0){ w.dtp3=row.dtp3; any=true; }
-            /* ⚠ MCV1 IS CARRIED, NOT APPLIED. It is an initial condition for ONE preset, so it is
-               attached under its own name and `presetWorld()` decides whether this run is the one
-               where a measured measles coverage is the right starting immunity. */
-            if(row.mcv1>0){ w.mcv1=row.mcv1; any=true; }
-            return any; })
-        ]).then(()=>{
-          /* ⚠ THE ROUTE TABLE IS NOT A PER-COUNTRY TABLE, so `settle()` — which walks the world
-             row by row — cannot report it. It is keyed by ORDERED PAIR, and how much of it reached
-             the matrix is a question only the engine can answer, because a destination code naming
-             a country that is not on this map is dropped there. `model.mobility.stats` answers it,
-             and this only records whether the file arrived at all. */
-          routesT=(_mobJ&&_mobJ.pairs)||null;
-          dataState.routes=routesT?(dataState.volumes==='failed'?'partial':'ok'):'failed';
-          assignActors(); worldReady=true; if(picking&&hud.isConnected&&!model) renderConfig(); });
-        /* ⚠⚠ THE GAZETTEER IS DELIBERATELY *NOT* IN THE SNAPSHOT ABOVE. It decides where the dots
-           are DRAWN, not what the epidemic does — the compartments never see it — and it is a 5 MB
-           download that would hold the reader at «loading» for no epidemiological reason. It is
-           started here and lands when it lands; when it does, the placement pools are dropped so
-           that the countries already drawn are re-scattered against it rather than keeping an
-           unweighted placement for the rest of the run. */
-        loadPlaces().then(ok=>{ dataState.places=ok?'ok':'failed'; if(ok){ for(let i=0;i<N;i++) pools[i]=null; } });
-
-        /* ══ ⚠⚠⚠ (#R675) WHO ANSWERS FOR EACH ROW — DERIVED, NOT LISTED ═════════════════════════════
-           The screenshot that opened this round had 「Antarcticaが国境を封鎖。」 in it, and it was not a
-           labelling slip: the engine really was giving a continent with no government a border
-           policy, a lockdown, and a traffic multiplier that the importation loop then obeyed.
-
-           Two facts decide it, and each does one job:
-             · Natural Earth's SOVEREIGNT — if another SIMULATED row calls itself this row's
-               sovereign, this row is under that government. Greenland is under Denmark, Puerto Rico
-               under the United States, Macao under China. That is the map's own topology.
-             · data/country-facts.json's `capital` — a seat of government. A row nobody administers
-               and which the table gives no capital for has no government to ask, so it makes no
-               policy and announces none. Antarctica is exactly that row; so are Bir Tawil, the
-               Spratlys and the sovereign base areas.
-           ⚠ THE CAPITAL TEST IS SECOND, NOT FIRST. Taiwan, Kosovo and Western Sahara all have a
-           capital in the table and no simulated row administering them, so they are their own
-           actors — which is what the border-policy question is actually about and what a list of
-           «UN member states» would have got wrong.
-           ⚠ IF THE TABLE DID NOT LOAD, NOBODY IS DEMOTED. `dataState.policy` records that, the panel
-           says it, and the run behaves as every run before this one did: each mapped unit its own
-           actor. A dead table must name itself rather than silently switch the world off (#R673). */
-        /* ⚠ THE RULE ITSELF IS `policyActors` IN js/pandemic-model.js — pure, exported and measured
-           by tests/r675-pandemic-checks against the real data/country-facts.json. A rule that only
-           existed inside this DOM closure is a rule no test can reach (#R505), and this one decides
-           whether a place is allowed to have a government. */
-        function assignActors(){
-          const a=policyActors(world,!!factsT);
-          let none=0, follow=0;
-          for(let i=0;i<N;i++){ world[i].actor=a[i]; if(a[i]<0) none++; else if(a[i]!==i) follow++; }
-          dataState.policy=factsT?'ok':'failed';
-          dataState.policyFollow=follow; dataState.policyNone=none;
-        }
+        const feats=WORLD.feats, world=WORLD.world, home=WORLD.home, bbs=WORLD.bbs, N=WORLD.N;
+        const dataState=WORLD.dataState, dropped=WORLD.dropped;
+        const pools=new Array(N).fill(null);
+        let worldReady=false, routesT=null;
+        WORLD.ready.then(()=>{ routesT=WORLD.routes; worldReady=true; if(picking&&hud.isConnected&&!model) renderConfig(); });
+        /* ⚠⚠ THE GAZETTEER IS DELIBERATELY NOT IN THAT SNAPSHOT. It decides where the dots are DRAWN,
+           not what the epidemic does — the compartments never see it — so it lands when it lands; when
+           it does the placement pools are dropped so the countries already drawn are re-scattered
+           against it rather than keeping an unweighted placement for the rest of the run. */
+        loadPlaces().then(ok=>{ if(ok){ for(let i=0;i<N;i++) pools[i]=null; } });
         const nm=world.map(c=>c.name);
         /* ⚠ (#R666) DECLARED HERE, NOT BESIDE buildDots' OTHER CONSTANTS — the layer spec below
            reads it during THIS call, and a `const` further down the same function body is in its
@@ -558,7 +357,7 @@ window.IntMapModules.playground=function(HOST){
              feature is skipped and the walk continues, which is what keeps enclaves and disputed
              edges from placing a dot in the neighbour. */
           const iso2=(()=>{ const p=f.properties||{}; const a=p.ISO_A2_EH||p.ISO_A2; return (a&&String(a).length===2&&a!=='-9')?String(a).toUpperCase():null; })();
-          const bank=(_plByIso&&iso2)?_plByIso[iso2]:null;
+          const bank=placesFor(iso2);
           if(bank&&bank.length){
             const wa=[];
             for(let q=0;q<bank.length&&wa.length<n;q++){ const c=bank[q]; if(inside(c[0],c[1])) wa.push(c); }
@@ -570,7 +369,7 @@ window.IntMapModules.playground=function(HOST){
              inside its main landmass) has been silently absent from the anchor list ever since. It
              did not fail loudly because the gazetteer sweep below usually finds cities, so the dots
              landed somewhere plausible and nobody could see the anchor that was missing. */
-          try{ const _r=resolve(f.properties||{}); const _s=_r&&_r.s; if(_s&&_s.latlng){ const cl=[_s.latlng[1],_s.latlng[0]]; if(inside(cl[0],cl[1])) anchors.push(cl); } }catch(_){}
+          try{ const _r=resolveStatsRow(countryStats,f.properties||{}); const _s=_r&&_r.s; if(_s&&_s.latlng){ const cl=[_s.latlng[1],_s.latlng[0]]; if(inside(cl[0],cl[1])) anchors.push(cl); } }catch(_){}
           try{ const gz=(typeof HOST.geoDB!=='undefined'&&HOST.geoDB)||window.geoDB||[]; for(let q=0;q<gz.length && anchors.length<64;q++){ const c=gz[q]&&gz[q].loc; if(!c) continue; if(c[0]<bb[0]||c[0]>bb[2]||c[1]<bb[1]||c[1]>bb[3]) continue; if(inside(c[0],c[1])) anchors.push([c[0],c[1]]); } }catch(_){}
           if(anchors.length) return scatterCases(n,anchors,span,Math.random,inside);
           const out=[]; let tries=0; while(out.length<n && tries<n*16){ tries++; const lng=bb[0]+Math.random()*(bb[2]-bb[0]), lat=bb[1]+Math.random()*(bb[3]-bb[1]); if(inside(lng,lat)) out.push([lng,lat]); }
@@ -581,18 +380,14 @@ window.IntMapModules.playground=function(HOST){
 
         /* ── the run's settings. The engine is built when patient zero is placed, from exactly these. */
         let presetKey='covid', scenario='naive', advanced=false, srcOpen=false;
-        let cfg=freshParams('covid','naive');
+        let cfg=defaultPandemicParams('covid','naive');
         let runSeed=(Date.now()^Math.floor(Math.random()*1e9))>>>0;
-        function freshParams(key,mode){ const pr=PANDEMIC_PRESETS[key]; return {
-          scenario:mode, r0:pr.transmission.r0, latentDays:pr.transmission.latentDays,
-          infectiousDays:pr.transmission.infectiousDays, baseFatality:pr.severity.value,
-          /* ⚠ (#R673) THE DURATION AND THE «FOREVER» ARE TWO FIELDS. `lifelong ? 600 : months` put
-             a sentinel in a numeric field and js/pandemic-model.js decoded it — see U2 there. */
-          naturalImmunityMonths:pr.immunity.naturalMonths, naturalImmunityLifelong:!!pr.immunity.lifelong,
-          seasonality:pr.transmission.seasonality, startDayOfYear:1, initialCases:100,
-          initialImmunity:mode==='real-world'?(pr.baselineImmunity||0):0,
-          mobility:1, interventions:'adaptive', vaccineAtStart:mode==='real-world'&&!!pr.vaccine.availableAtStart
-        }; }
+        /* ⚠⚠⚠ (#R754) THE DEFAULTS ARE NOT THE PANEL'S TO STATE. This was a second copy of
+           js/pandemic-model.js's table — fourteen fields, each naming a preset path — and it was the
+           ONLY statement of them anywhere, so a caller that was not this screen (the Atlas capability;
+           a test) had to write a third. `defaultPandemicParams` is that statement now and this screen
+           reads it like everyone else. Measured equal on all 5 presets × 2 scenarios before the copy
+           was removed, and tests/r754-pandemic-atlas-checks keeps measuring it. */
 
         let model=null, day=0, timer=null, running=false, speed=2, picking=true, lastDots=0, lastEvt='', perDotNow=0;
         function preset(){ return PANDEMIC_PRESETS[presetKey]; }
@@ -1085,11 +880,11 @@ window.IntMapModules.playground=function(HOST){
           items.forEach(it=>{ const on=isOn(it.k); const b=document.createElement('button'); b.textContent=it.t; b.style.cssText='border:1px solid rgba(128,128,128,0.3);background:'+(on?'var(--primary-color)':'var(--input-bg)')+';color:'+(on?'#fff':'var(--text-main)')+';border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;cursor:pointer;'; b.onclick=()=>pick(it.k); row.appendChild(b); }); hud.appendChild(row); return row; }
         function renderConfig(){ hud.innerHTML='';
           const h=document.createElement('div'); h.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:8px;'; const tt=document.createElement('b'); tt.textContent=window.IntMapLang.t(HOST.lang,"Outbreak setup","パンデミック設定","Ausbruch einrichten","Настройка вспышки","Configuración del brote"); tt.style.fontSize='14px'; h.appendChild(tt); h.appendChild(pill('beta','#ff9500')); const sp=document.createElement('span'); sp.style.flex='1'; h.appendChild(sp); const ex=document.createElement('button'); ex.textContent='×'; ex.style.cssText='border:none;border-radius:50%;width:28px;height:28px;background:var(--input-bg);color:var(--text-main);cursor:pointer;'; ex.onclick=exit; h.appendChild(ex); hud.appendChild(h);
-          pills(Object.keys(PANDEMIC_PRESETS).map(k=>({k,t:L.arr(PG_LABELS[k])})),k=>k===presetKey,k=>{ presetKey=k; cfg=freshParams(k,scenario); renderConfig(); });
+          pills(Object.keys(PANDEMIC_PRESETS).map(k=>({k,t:L.arr(PG_LABELS[k])})),k=>k===presetKey,k=>{ presetKey=k; cfg=defaultPandemicParams(k,scenario); renderConfig(); });
           /* ⚠ THE SCENARIO IS PART OF THE DISEASE'S IDENTITY. «Measles with nobody immune» is not
              measles — 84% of the world's children have had MCV1 — it is a measles-LIKE novel
              pathogen, and the old simulator only ever ran that one and called it by the real name. */
-          pills([{k:'naive',t:window.IntMapLang.t(HOST.lang,"Novel pathogen","未知の病原体","Neuartiger Erreger","Новый патоген","Patógeno nuevo")},{k:'real-world',t:window.IntMapLang.t(HOST.lang,"Today's world","現在の世界","Heutige Welt","Сегодняшний мир","El mundo de hoy")}],k=>k===scenario,k=>{ scenario=k; cfg=freshParams(presetKey,k); renderConfig(); });
+          pills([{k:'naive',t:window.IntMapLang.t(HOST.lang,"Novel pathogen","未知の病原体","Neuartiger Erreger","Новый патоген","Patógeno nuevo")},{k:'real-world',t:window.IntMapLang.t(HOST.lang,"Today's world","現在の世界","Heutige Welt","Сегодняшний мир","El mundo de hoy")}],k=>k===scenario,k=>{ scenario=k; cfg=defaultPandemicParams(presetKey,k); renderConfig(); });
           const note=document.createElement('div'); note.style.cssText='font-size:10.5px;color:var(--text-muted);margin:-4px 0 8px;line-height:1.4;';
           note.textContent=scenario==='naive'
             ? window.IntMapLang.t(HOST.lang,"Nobody is immune, and no vaccine or treatment exists yet.","誰も免疫を持たず、ワクチンも治療法もまだ存在しない世界。","Niemand ist immun, und es gibt weder Impfstoff noch Behandlung.","Ни у кого нет иммунитета, вакцины и лечения ещё не существует.","Nadie es inmune y todavía no existe vacuna ni tratamiento.")
