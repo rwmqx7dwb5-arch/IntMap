@@ -356,24 +356,32 @@ export function resolveOrigin(w, q) {
   /* ⚠ NESTED IN ITS ONLY CALLER. tests/r175-checks ③ fails an unexported top-level
      declaration, and exporting a helper nothing else imports fails its second assertion as a
      dead export — so a private helper with one caller lives inside that caller. */
-  function gazetteerPoint(query) {
+  /* Every gazetteer row whose name IS the query, most populous first. ⚠ ONE MATCHER, so the single
+     answer and the candidate list cannot disagree about what «matches» means — the shape
+     [[intmap-two-readers-one-field-list]] is about. */
+  function gazetteerCandidates(query) {
     const G = window.IntMapGazetteer;
     const rows = (G && G.world && G.world()) || null;
-    if (!rows || !rows.length) return null;
+    if (!rows || !rows.length) return [];
     const k = String(query).trim().toLowerCase();
-    if (!k) return null;
-    let best = null;
+    if (!k) return [];
+    const out = [];
     for (let q = 0; q < rows.length; q++) {
       const r = rows[q];
       const en = String(r[4] || '').toLowerCase(), ja = String(r[5] || '').toLowerCase();
       let hit = (en === k || ja === k);
       if (!hit) { const terms = String(r[1] || '').toLowerCase().split(/[|,]/); for (let z = 0; z < terms.length; z++) { if (terms[z].trim() === k) { hit = true; break; } } }
       if (!hit) continue;
-      const pop = +r[6] || 0;
-      if (!best || pop > best.pop) best = { lng: +r[2], lat: +r[3], name: r[4] || r[5] || query, pop: pop };
+      out.push({ lng: +r[2], lat: +r[3], name: r[4] || r[5] || query, pop: +r[6] || 0 });
     }
-    return best;
+    out.sort((a, b) => b.pop - a.pop);
+    return out;
   }
+
+  /* The most populous match, or null. ⚠ IT IS THE HEAD OF THE CANDIDATE LIST, not a second walk
+     of the same rows: two definitions of «matches» is the duplication this round is fixing one
+     level up, and tests/r754-pandemic-atlas-checks ⑪ measures that there is exactly one. */
+  function gazetteerPoint(query) { const c = gazetteerCandidates(query); return c.length ? c[0] : null; }
   const Q = q || {};
   const lng = +Q.lng, lat = +Q.lat;
   if (isFinite(lng) && isFinite(lat)) {
@@ -399,7 +407,43 @@ export function resolveOrigin(w, q) {
   }
   const place = String(Q.place != null && String(Q.place).trim() !== '' ? Q.place : named).trim();
   if (!place) return { i: -1, why: 'no-origin-given' };
-  const hit = gazetteerPoint(place);
+
+  /* ══ ⚠⚠⚠ (#R755) «CITY, COUNTRY» IS THE SPELLING A PLANNER ACTUALLY WRITES ════════════════════
+     MEASURED IN PRODUCTION 2026-09-16, build R754: asked 「Simulate a pandemic starting in Lagos
+     and show me day 60.」 Atlas found the capability, called it three times with
+     `place: "Lagos, Nigeria"`, was refused three times with «no place called … is in the
+     gazetteer», and died at `repeated_calls` having answered nothing. `"Lagos"` resolved; the
+     qualified form did not. #R754 removed the reason Atlas could not FIND the simulator and left a
+     second door shut one step further in.
+     ⚠ THE QUALIFIER IS EVIDENCE, NOT NOISE. The cheap fix is to split on the comma and throw the
+     tail away — and that is how «Lagos, Portugal» would silently become Nigeria. So the tail is
+     used as a TEST: of the gazetteer rows that carry this name, take the one whose containing
+     country the qualifier actually names, and if none does, refuse and say which country the name
+     was found in. That is [[intmap-store-refused-its-own-key]]'s rule — a candidate is accepted
+     because it was CHECKED, never because it was first. */
+  const parts = place.split(',').map(s => s.trim()).filter(Boolean);
+  const head = parts[0] || place;
+  const qualifier = parts.length > 1 ? parts.slice(1).join(', ') : '';
+
+  /* A qualifier that is itself a country this world holds settles it on its own. */
+  if (qualifier) {
+    const qi = (w.indexOfCode(qualifier) >= 0) ? w.indexOfCode(qualifier) : w.indexOfName(qualifier);
+    const cands = gazetteerCandidates(head);
+    for (const c of cands) {
+      const ci = w.indexAt(c.lng, c.lat);
+      if (ci < 0) continue;
+      if (qi >= 0 ? ci === qi : false) return { i: ci, how: 'place', matched: c.name, qualifier: qualifier, at: [c.lng, c.lat], pop: c.pop };
+    }
+    if (qi >= 0 && cands.length) {
+      /* the name exists, but not inside the country the caller named — say both, and refuse */
+      const firstIn = cands.map(c => w.indexAt(c.lng, c.lat)).find(x => x >= 0);
+      return { i: -1, why: 'place-not-in-that-country', place: head, qualifier: qualifier,
+        foundIn: firstIn >= 0 ? w.names[firstIn] : null };
+    }
+    /* the qualifier is not a country this world knows: fall through and judge the head alone */
+  }
+
+  const hit = gazetteerPoint(head);
   if (!hit) return { i: -1, why: 'place-not-found', place: place };
   const i = w.indexAt(hit.lng, hit.lat);
   if (i < 0) return { i: -1, why: 'place-outside-every-country', place: place, at: [hit.lng, hit.lat] };
