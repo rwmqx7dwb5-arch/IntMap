@@ -29,7 +29,8 @@
  *     the objects panel reading "0 on the map".
  *
  *  (3) ONE OBJECT NAMED, THOUSANDS DRAWN. "Put a SINGLE marker on the ISS" -> the reply said it
- *     had placed the single marker; the globe carried the full ~2,500-object active catalogue.
+ *     had placed the single marker; the globe carried the full active catalogue — 16,010 objects, measured
+ *     on production 2026-09-16 (`GROUPS[].kb` is the declared download size in KILOBYTES, not a count).
  *
  *  (6) THE ACTION THE CATALOGUE SAYS TO PREFER WAS THE ONE NOT IN HAND. js/atlas-catalog-text.js:
  *     "USE THIS INSTEAD OF analyze ... FOR ANY SUCH QUESTION" about `query`, which was reachable
@@ -288,5 +289,5 @@ test('R747 (3): the satellite catalogue is chosen by asking the catalogues, and 
   assert.ok(/narrow,/.test(sat), 'and it is exported');
   const c = read('js/atlas-console.js');
   const s = c.slice(c.indexOf("case 'satellites':"), c.indexOf("case 'satellites':") + 4400);
-  assert.ok(/A\.narrow\(q\)/.test(s), 'the reply claimed a single marker while ~2,500 objects were drawn');
+  assert.ok(/A\.narrow\(q\)/.test(s), 'the reply claimed a single marker while 16,010 objects were drawn');
 });
