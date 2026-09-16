@@ -135,6 +135,35 @@ tests/r231-checks.test.mjs › coverage is MEMBERSHIP, and Chinese is actually c
 （`tests/i18n-coverage-floor.json`）の床を割っていないこと。**実測で確かめた**——zh の行を 1 つ
 消すと `zh lost ground: 6338 rows against a floor of 6339` で落ちる。**四捨五入で隠れる余地は無くなった。**
 
+## 5c. 起動費用の天井を上げた——**遅延側だけが増え、起動側は増えていない**
+
+CI の `Static checks` が `check:perf` で落ちた（**build が要るので段 1 では回していない**）。実測:
+
+```
+async chunk "gis-core"     245.6 → 322.2 kB
+async chunk "gis-geotiff"   12.9 →  22.3 kB
+async.raw               10529.4 → 10620.7 kB
+```
+
+⚠ **落ちたのは `ASYNC` と `DEPLOY` で、`EAGER`（起動時に必ず届くバイト）は落ちていない。**
+`requests` 6・`modules` 298 は**1 も動いていない**——`js/gis-worker.js` を `gisCore` の塊の中に
+mount した（`js/lazy-modules.js` を触らなかった）ので、**Data ボタンを押さない読者には 1 バイトも
+来ない**という設計どおりである。
+
+`scripts/perf-budget.mjs` のヘッダが述べている規約:
+
+> **ASYNC — a CEILING ONLY.** It may shrink freely and no one has to touch this file;
+> it may not grow past the ceiling **without someone deciding to raise it.**
+
+⇒ **決めて上げた。** この回は遅延読み込みの GIS カーネルを実際に足しており、その費用がこの数である。
+⚠ 上げたのは**ツール自身の `--update`** で、手で JSON を書き換えていない（同じ計算の 2 つ目の綴りを
+作らない）。**そのうえで差分を読んだ**——18 個の数が動き、**塊は 1 つも増減していない**。
+
+⚠ **正直に書いておくこと**: `--update` は `EAGER` の天井も measurement へ動かす（raw +12.9 kB・
+CSS +1.4 kB）。この増分は**許容幅の内側**で門は落ちておらず、**その大半は `origin/main` を取り込んだ
+ぶん**（R747・R753）である。この回が起動側に足したのは `js/map-ui.js` の拒否文 8 本だけ。
+⚠ **ここは両方向の ratchet なので、天井が measurement を追うのが設計**だが、「1 ラウンドずつ静かに
+戻っていく」形になりうる場所でもある——**次に起動費用を測る回は、この段落を読んでから決めること。**
 ## 6. 残っていること
 
 - **地物の分割読み込みは無い**（`features()` は保持している配列を返す）。格子には在る。
