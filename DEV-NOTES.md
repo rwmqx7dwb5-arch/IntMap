@@ -871,6 +871,21 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 `map.choropleth` は国単位専用**」と planner に明言する（[[intmap-catalogue-silence-is-a-denial]]
 の裏返し——**できないことも述べなければ、模型は探し続ける**）。利用者の判断で今回は入口まで。
 
+### 6b. 起動予算は動いていない——伸びたのは遅延読み込みの側だけ
+
+`check:perf` の ratchet が 4 項目動いた。**どれも async（遅延）で、eager（起動時に必ず取る側）は
+許容幅の内側に収まっている**——つまり読者が地図を開くのに払うバイトは増えていない。
+
+```
+async.raw                10,897,698 → 10,956,212 B  (+58.5 kB)
+async.gzip                3,573,902 →  3,594,220 B  (+20.3 kB)
+chunk atlas-admin1            6,526 →     12,554 B  (+6.0 kB)   ← coveredBy / intersectsGeo / coverageAnswer
+chunk atlas-console       1,069,553 →  1,075,811 B  (+6.3 kB)   ← 宣言と判定と台帳を閉じる配線
+```
+
+⚠ **`--update` を使わない**——全項目を書き戻すので、他ラウンドが残したコストまで無言で追認する
+（#R479 の教訓）。動いた 4 行だけを実測値で直した。
+
 ### 7. 直していないもの（証拠つき）
 
 - **`research.analyze` が 1 回 90〜130 秒かかり、1 ターンで 2〜5 回走る。**
