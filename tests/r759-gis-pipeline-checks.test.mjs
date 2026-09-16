@@ -22,6 +22,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+/* (#R763) the acquisition vocabulary, from the module that owns it — see realLayers() below */
+import { makeGisLayers } from '../js/gis-layers.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
@@ -33,15 +35,28 @@ function installWindow() {
   return w;
 }
 
+/* The one real js/gis-layers.js in this file, built once and asked for the acquisition vocabulary.
+   ⚠ It is NOT the stub: everything else here still has to be a stub, because the real door reads
+   features off a renderer this process does not have. What it owns is the LIST, and the list is the
+   thing two readers must not each keep a copy of ([[intmap-two-readers-one-field-list]]). */
+let _realLayers = null;
+function realLayers() {
+  if (!_realLayers) _realLayers = makeGisLayers();
+  return _realLayers;
+}
+
 /* The map is a stub, and it RECORDS WHAT IT WAS ASKED — that is the whole of ②. It answers through
    the real registry so the rows it hands back are real records with real provenance. */
 function stubLayers(rows) {
   const asked = [];
   return {
     asked,
-    acquireFields: (kind) => (String(kind) === 'raster'
-      ? ['bounds', 'width', 'height', 'where', 'unit']
-      : ['bounds', 'where', 'fields', 'limit', 'cursor', 'time']),
+    /* ⚠⚠⚠ (#R763) THIS USED TO BE THE SECOND LIST THAT ① EXISTS TO FORBID. The stub wrote the
+       vocabulary out by hand, so ① — which measures that js/gis-atlas.js has no copy of its own —
+       passed while the test file itself held one, and a field added to js/gis-layerss ACQUIRE would
+       have been invisible to every assertion here. It is asked for now, from the module that decides
+       it, which is the same rule the file under test is being held to. */
+    acquireFields: (kind) => realLayers().acquireFields(kind),
     sources: () => rows.map((r) => ({ id: r.id, label: r.label, geometryType: r.geometryType || 'Point', count: (r.features || []).length })),
     canSample: (id) => !!(rows.find((r) => r.id === id) || {}).samplable,
     toDataset: (id, o) => {

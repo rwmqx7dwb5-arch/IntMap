@@ -341,6 +341,19 @@ export function makeGisPanel(HOST) {
       if (code === 'layer-not-visible') return window.IntMapLang.t(HOST.lang, 'That layer is switched off, so it answered with nothing — turn it on and try again', 'そのレイヤーは表示がオフなので、何も返しませんでした。オンにしてからもう一度お試しください') + par(d.layer || d.id);
       if (code === 'layer-not-sampling') return window.IntMapLang.t(HOST.lang, 'That layer is switched off, so it has no values to give — turn it on first', 'そのレイヤーは表示されていないため、渡せる値がありません。先に表示してください', 'Diese Ebene ist ausgeschaltet und hat daher keine Werte — schalten Sie sie zuerst ein', 'Слой выключен, поэтому значений нет — сначала включите его', 'Esa capa está apagada, así que no tiene valores — actívala primero') + par(d.id);
       if (code === 'layer-values-not-numeric') return window.IntMapLang.t(HOST.lang, 'That layer answers with text rather than numbers, so it cannot become a grid', 'そのレイヤーは数値ではなく文字列を返すため、格子にできません', 'Diese Ebene antwortet mit Text statt mit Zahlen und kann daher kein Raster werden', 'Слой отвечает текстом, а не числами, поэтому сетку из него не сделать', 'Esa capa responde con texto y no con números, así que no puede volverse una rejilla') + par(d.sample);
+      /* ⚠ (#R763) THE SENTENCE ABOVE USED TO BE SAID ABOUT THESE TWO AS WELL, AND IT WAS FALSE FOR
+         BOTH. A window of open ocean over a land-only field has values everywhere it has land and
+         none here; an upstream that fell over has not told us anything about its numbers at all.
+         Each states what happened and what the reader can do about it, which is different in each. */
+      if (code === 'layer-values-all-missing') return window.IntMapLang.t(HOST.lang, 'That layer answered everywhere in this window and had no value anywhere in it — try a wider or different area', 'そのレイヤーはこの範囲のどこでも応答しましたが、値はどこにもありませんでした。範囲を広げるか、別の場所でお試しください') + par(d.empty);
+      /* ⚠ (#R763) 「読み込めなかった」 is not 「表示されていない」. A row that can be read undrawn is
+         read by fetching its document; when that fetch fails the reader's action is to retry, not to
+         switch a layer on, and telling them to switch it on would send them somewhere that fixes
+         nothing. */
+      if (code === 'layer-load-failed') return window.IntMapLang.t(HOST.lang, 'That layer could not load its data — it does not need to be switched on, so try again in a moment', 'そのレイヤーのデータを読み込めませんでした。表示をオンにする必要はないので、少し待ってからもう一度お試しください') + par(d.id);
+      if (code === 'layer-is-a-field') return window.IntMapLang.t(HOST.lang, 'That layer is a field of values, not a set of shapes — ask for it as a grid over a window', 'そのレイヤーは図形の集まりではなく値の場です。範囲を指定して格子として取得してください') + par(d.id);
+      if (code === 'band-not-selectable') return window.IntMapLang.t(HOST.lang, 'That layer gives one value at a point, so there is no band to choose', 'そのレイヤーは 1 地点につき 1 つの値を返すため、選べるバンドがありません') + par(d.band);
+      if (code === 'layer-sample-failed') return window.IntMapLang.t(HOST.lang, 'That layer was asked and could not answer — this is a failure to fetch, not an absence of data', 'そのレイヤーに問い合わせましたが応答が得られませんでした。データが無いのではなく、取得に失敗しています') + par(d.failed);
       if (code === 'cancelled') return window.IntMapLang.t(HOST.lang, 'Stopped before it finished, so nothing was registered', '完了前に中止したため、何も登録されていません', 'Vor dem Ende abgebrochen, daher wurde nichts registriert', 'Остановлено до завершения, поэтому ничего не зарегистрировано', 'Se detuvo antes de terminar, así que no se registró nada') + par(d.done != null ? (d.done + '/' + d.total) : null);
 
       /* ── js/gis-raster.js (#R735) ─────────────────────────────────────────────────────────────

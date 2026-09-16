@@ -308,7 +308,16 @@ export function makeGisAtlas(core) {
         if (cache && cache.acquired) cache.acquired.push(row);
         return { ok: true, id: r.dataset.id };
       };
-      if (!wantsRaster) return note(layers.toDataset(id, a.opts));
+      /* ⚠ (#R763) THE PLANNER TAKES THE DOOR THAT WAITS. js/gis-layers.js acquireDataset goes through
+         js/gis-sources.js acquire(), which is the only road a supplier that FETCHES can travel — and
+         fetching is what a layer nobody has switched on has to do. This call site already awaited
+         toRaster two lines down, so waiting costs nothing here. ⚠ The panel keeps toDataset: it calls
+         from a click handler without an await, and that contract is not this round's to change. */
+      if (!wantsRaster) {
+        return note(typeof layers.acquireDataset === 'function'
+          ? await layers.acquireDataset(id, a.opts)
+          : layers.toDataset(id, a.opts));
+      }
       /* A field has to be baked over a window at a resolution, and neither of those is something
          this file may invent: a grid chosen here would be a measurement nobody asked for, printed
          with the authority of one. The planner states them, and is told so by name when it has not. */

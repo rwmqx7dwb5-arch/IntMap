@@ -1150,6 +1150,33 @@ window.IntMapModules.betaOverlays=function(HOST){
     },80); } });
     /* (#R21) under memory pressure, keep only the displayed year's borders */
     window.addEventListener('intmap-mem-pressure',()=>{ try{ const keep=hbCache.get(hbYear); hbCache.clear(); if(keep&&state.hist) hbCache.set(hbYear,keep); }catch(_){} });
-    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,whsToggle,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
+    /* ══ ⚠⚠⚠ (#R763) 描かずに渡す扉 ═════════════════════════════════════════════════════════════
+       Both of these rows hold a bundled document: volcLoad() and whsLoad() FETCH it and then write it
+       into a renderer source, and until this round the fetch was only reachable through the drawing.
+       So 「表示していない世界遺産を分析する」 was impossible — not because the data needed the map,
+       but because the only door to it went through the map (docs/GIS-CORE.md §5.6 named this as the
+       last camera dependency in the acquisition layer).
+       ⚠ THIS IS THE SAME SPLIT js/layer-packs.js ALREADY MADE for the data centres in #R311 — 「the
+       SECOND door into the module … with no row and no toggle involved」 — generalised rather than
+       invented. It draws nothing, touches no renderer source, and shares the module's own cache, so a
+       reader who later switches the layer on does not fetch the document twice.
+       ⚠ A FAILED FETCH THROWS RATHER THAN ANSWERING EMPTY. js/gis-layers.js turns that into
+       `layer-load-failed`, which is a different thing for the reader than an empty holding. */
+    async function featuresOf(kind){
+      if(kind==='volcanoes'){
+        if(volcFC) return volcFC.features;
+        const r=await fetch('data/volcanoes_gvp.json'); const j=await r.json();
+        if(!j||!Array.isArray(j.features)) throw new Error('volcanoes: no features in the document');
+        volcFC=j; return volcFC.features;
+      }
+      if(kind==='heritage'){
+        if(whsDoc){ if(!whsFC) whsBuild(); return whsFC.features; }
+        const r=await fetch('data/whc-sites.json'); const j=await r.json();
+        if(!j||!Array.isArray(j.sites)||!Array.isArray(j.points)) throw new Error('heritage: no sites in the document');
+        whsDoc=j; whsBuild(); return whsFC.features;
+      }
+      throw new Error('no loader for '+kind);
+    }
+    window.IntMapBeta={ukrToggle,bldgToggle,hbToggle,volcToggle,whsToggle,featuresOf,hbCurrent:()=>({year:hbYear,fc:hbCache.get(hbYear)||null})};
   })();
 };
