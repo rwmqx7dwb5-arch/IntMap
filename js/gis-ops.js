@@ -79,6 +79,17 @@ export function makeGisOps() {
     /* (#R738) The expression kernel, read at call time like every other one — a module that imported
        it privately would be a second copy of a parser, and js/gis-core.js is the only mounting point. */
     function exprKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisExpr) || null; } catch (_) { return null; } }
+    /* (#R752) The warp — coordinate system, resolution, extent, resampling and NoData in one layer.
+       ⚠ IT IS HERE BECAUSE `grid-mismatch` NEEDED SOMEWHERE TO GO. js/gis-raster.js refuses two grids
+       that are not the same grid, correctly (a resample inside a difference would make every pixel a
+       composite of an interpolation nobody named) — but until this round the op layer had no way to
+       say 「ではまず合わせる」, so a reader who hit that refusal had to leave the chain, find a button
+       in the import panel, and come back. The kernel existed; the door did not. Read at call time for
+       the same reason as every kernel above. */
+    function warpKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisWarp) || null; } catch (_) { return null; } }
+    /* (#R752) The projections. Only `measure` reaches for this, and only when the reader NAMED a
+       plane — the geodesic answer needs no projection at all. */
+    function crsKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisCrs) || null; } catch (_) { return null; } }
     function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
 
     const D2R = Math.PI / 180;
@@ -166,6 +177,52 @@ export function makeGisOps() {
         return a;
       }
       return 0;
+    }
+
+    /* (#R752) 長さ。⚠ THE RADIUS IS IntMapGeodesy'S, exactly as areaKm2's is — 6371 written here
+       would be a second copy of a number the app decides in one place, and null is the honest answer
+       when that module has not published. Great-circle between consecutive positions: this layer
+       measures on the sphere (docs/GIS-CORE.md §2.4), and `measure` is where a reader who wants a
+       plane instead names one. Areas contribute their PERIMETER — the outer ring plus every hole,
+       because a hole has an edge and a reader asking for 「長さ」 of a polygon is asking for the line
+       they can see. */
+    function lengthKm(geometry) {
+      const Rk = earthKm();
+      if (Rk == null) return null;
+      const seg = (a, b) => {
+        const dLat = (b[1] - a[1]) * D2R, dLon = (b[0] - a[0]) * D2R;
+        const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * D2R) * Math.cos(b[1] * D2R) * Math.sin(dLon / 2) ** 2;
+        return 2 * Rk * Math.asin(Math.min(1, Math.sqrt(s)));
+      };
+      const line = (ps) => {
+        if (!Array.isArray(ps) || ps.length < 2) return 0;
+        let t = 0;
+        for (let i = 1; i < ps.length; i++) { if (!isPos(ps[i - 1]) || !isPos(ps[i])) return null; t += seg(ps[i - 1], ps[i]); }
+        return t;
+      };
+      const walk = (g) => {
+        if (!g || typeof g !== 'object') return 0;
+        const c = g.coordinates;
+        if (g.type === 'LineString') return line(c);
+        if (g.type === 'MultiLineString' || g.type === 'Polygon') {
+          let t = 0;
+          for (const part of (c || [])) { const x = line(part); if (x == null) return null; t += x; }
+          return t;
+        }
+        if (g.type === 'MultiPolygon') {
+          let t = 0;
+          for (const poly of (c || [])) for (const ring of (poly || [])) { const x = line(ring); if (x == null) return null; t += x; }
+          return t;
+        }
+        if (g.type === 'GeometryCollection') {
+          let t = 0;
+          for (const sub of (g.geometries || [])) { const x = walk(sub); if (x == null) return null; t += x; }
+          return t;
+        }
+        /* A point has no length. 0 is the measurement, not an absence. */
+        return 0;
+      };
+      return walk(geometry);
     }
 
     /* ── point in polygon ──────────────────────────────────────────────────────────────────────
@@ -430,7 +487,15 @@ export function makeGisOps() {
         needsRaster: true,
         params: [
           { name: 'band', type: 'field', required: false, input: 1 },
-          { name: 'method', type: 'enum', required: false, default: 'nearest', values: ['nearest', 'bilinear'] },
+          /* ⚠ (#R752) THIS READ `values: ['nearest','bilinear']` — a hand-written copy of a list the
+             raster kernel owns, and the copy was silently wrong the moment that kernel grew cubic,
+             average, mode and sum. `valuesOf` names WHERE THE SET LIVES instead of what is in it, so
+             a method added to js/gis-raster.js is offered here the day it lands.
+             ⚠ AND IT IS THE POINT METHODS, NOT ALL OF THEM. `sample` asks what the field is worth AT
+             a position; the areal methods (average / sum / mode) summarise what an output pixel
+             COVERS and need a footprint that a point does not have. That is a fact the kernel
+             declares (`kind`), not a rule spelled out twice. */
+          { name: 'method', type: 'enum', required: false, default: 'nearest', valuesOf: 'sample-methods-point' },
           { name: 'outName', type: 'text', required: false },
         ],
       },
@@ -465,6 +530,136 @@ export function makeGisOps() {
         id: 'rasterDiff', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
         needsRaster: true,
         params: [{ name: 'band', type: 'field', required: false, input: 0 }],
+      },
+      resample: {
+        /* (#R752) 格子合わせ: put input 0 onto input 1's lattice. ⚠ THIS IS THE OP `grid-mismatch`
+           HAS BEEN POINTING AT SINCE #R749 WITHOUT BEING ABLE TO NAME IT. js/gis-warp.js could do
+           this the day it was written; it was reachable from an import-panel button and from nowhere
+           a chain could go, so `rasterDiff` and `rasterCalc` were dead ends for anyone whose two
+           grids came from different sources — which is most people with two grids.
+           ⚠ `rule` IS OPTIONAL AND ITS ABSENCE IS NOT A DEFAULT INTERPOLATION. Omitted, the target
+           is input 1's grid exactly — the plain reading of 「b の格子に合わせる」, and a statement the
+           reader has already made by choosing b. Given, the target is the COMMON lattice align()
+           computes, and the rule says whose resolution won. Either way the choice has an author. */
+        id: 'resample', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        needsRaster: true, needsWarp: true,
+        params: [
+          { name: 'method', type: 'enum', required: true, valuesOf: 'sample-methods-all' },
+          { name: 'rule', type: 'enum', required: false, valuesOf: 'align-rules' },
+        ],
+      },
+      rasterCalc: {
+        /* (#R752) 複数の格子を式で計算する: `(a - b) / b`, `a * 0.1`, `max(a, b)`. ⚠ THE PARSER IS
+           NOT A NEW ONE. js/gis-expr.js already tokenises and evaluates an expression over a ROW,
+           with rules this project argued out once — missing propagates rather than becoming 0, a
+           division by zero is not a measurement, `'a' + 1` is a type error and not a concatenation.
+           A pixel is a row whose columns are `a` and `b`, so the same kernel answers, and there is
+           one place where 「式とは何か」 is decided rather than two.
+           ⚠ BOTH INPUTS MUST BE THE SAME GRID, for the reason rasterDiff refuses otherwise — and
+           now the refusal has `resample` to point at. Naming the same dataset twice is legal and is
+           how single-grid arithmetic is written. */
+        id: 'rasterCalc', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        needsRaster: true, needsExpr: true,
+        params: [
+          { name: 'expr', type: 'text', required: true },
+          { name: 'bandA', type: 'field', required: false, input: 0 },
+          { name: 'bandB', type: 'field', required: false, input: 1 },
+          { name: 'outName', type: 'text', required: false },
+          { name: 'unit', type: 'text', required: false },
+        ],
+      },
+      mosaic: {
+        /* (#R752) 2 枚を 1 枚に: the union of the two extents on a common lattice, with a STATED rule
+           for the pixels both cover. ⚠ THE OVERLAP RULE IS REQUIRED. Two tiles of the same survey
+           agree in their overlap and any rule gives the same picture; two grids from different dates
+           or different sensors do not, and a silently-chosen 「後の方が勝つ」 is a composite nobody
+           described. Chain it for a third: mosaic(mosaic(a,b), c). */
+        id: 'mosaic', inputs: 2, accepts: ['any', 'any'], kinds: ['raster', 'raster'], output: 'raster',
+        needsRaster: true, needsWarp: true,
+        params: [
+          /* ⚠ ASKED, NOT COPIED — js/gis-raster.js publishes `mergeOverlaps()` for exactly this
+             reason, and a list retyped here would fall behind it the first time a rule is added. */
+          { name: 'overlap', type: 'enum', required: true, valuesOf: 'merge-overlaps' },
+          { name: 'method', type: 'enum', required: true, valuesOf: 'sample-methods-all' },
+          { name: 'band', type: 'field', required: false, input: 0 },
+        ],
+      },
+      rasterize: {
+        /* (#R752) 地物を格子にする: burn features onto a lattice the reader states. ⚠ THE LATTICE IS
+           NOT DERIVED FROM THE FEATURES ALONE. The extent can be (it is theirs), but how finely to
+           cut it is a question only the reader can answer — 「日本を 100×100 で」 and 「日本を
+           10000×10000 で」 are different analyses, and picking one silently decides what the answer
+           means. So width and height are required and the extent defaults to the input's own.
+           ⚠ WHAT IS BURNED IS STATED TOO. `field` omitted = presence (1 where a feature covers the
+           pixel centre, void elsewhere); named = that column's value, with `stat` deciding what two
+           features over one pixel mean. */
+        id: 'rasterize', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'raster',
+        needsRaster: true, needsGeometry: true,
+        params: [
+          { name: 'width', type: 'number', required: true },
+          { name: 'height', type: 'number', required: true },
+          { name: 'field', type: 'field', required: false, input: 0 },
+          { name: 'stat', type: 'enum', required: false, default: 'first', values: ['first', 'min', 'max', 'sum', 'mean', 'count'] },
+          { name: 'bbox', type: 'text', required: false },
+        ],
+      },
+      polygonize: {
+        /* (#R752) 格子を領域にする: one area per run of equal values. ⚠ IT REFUSES A GRID OF
+           MEASUREMENTS, by the same argument `zonal`'s `classes` refuses one — the boundary between
+           12.3 and 12.4 is not a boundary anybody drew, and rounding to make one invents a
+           classification nobody defined. A grid of codes (land cover, administrative raster, the
+           output of rasterMask) has real edges, and those are what this traces. */
+        id: 'polygonize', inputs: 1, accepts: ['any'], kinds: ['raster'], output: 'Polygon',
+        needsRaster: true,
+        params: [
+          { name: 'band', type: 'field', required: false, input: 0 },
+          { name: 'outName', type: 'text', required: false },
+        ],
+      },
+      measure: {
+        /* (#R752) 面積と長さを、読者が述べた面の上で測る。⚠ THE ANSWER TO 「解析用の座標系を選べ
+           ない」 IS NOT A SECOND STORAGE CRS. js/gis-datasets.js keeps every dataset in EPSG:4326 and
+           everything downstream — the renderer, point-in-polygon, the clip window — assumes lng/lat
+           degrees; a record that stored metres would break all of it silently. But the FRAME A
+           NUMBER IS MEASURED IN is a different question from the frame it is stored in, and that one
+           the reader has never been able to answer: `_areaKm2` has always been geodesic, full stop.
+           ⚠ SO THE PLANE IS A PARAMETER OF THE MEASUREMENT. `crs` omitted = the geodesic answer this
+           layer has always given (unchanged, and still the right default for 「面積は？」); named =
+           that projection's plane, with the distortion it carries reported IN THE SAME ROW. An area
+           measured on Web Mercator at 60°N is four times the truth, and a column of such numbers
+           with nothing beside them is the shape this project keeps catching — a value whose author
+           and whose caveat are both missing. */
+        id: 'measure', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        needsGeodesy: true,
+        params: [
+          { name: 'what', type: 'enum', required: true, values: ['area', 'length'] },
+          { name: 'crs', type: 'text', required: false },
+          { name: 'unit', type: 'enum', required: false, values: ['km', 'm'] },
+          { name: 'outName', type: 'text', required: false },
+        ],
+      },
+      validate: {
+        /* (#R752) 幾何の妥当性: every row keeps its geometry and gains what is wrong with it. ⚠ IT
+           DOES NOT REPAIR, AND THAT SEPARATION IS THE POINT. 「何が壊れているか」 is a measurement a
+           reader may want to look at, join to, or filter by; 「直した」 is a change to their data.
+           The overlay ops have been consuming self-intersecting rings since this layer existed and
+           saying nothing, because nothing could ask. */
+        id: 'validate', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        needsGeometry: true,
+        params: [{ name: 'prefix', type: 'text', required: false }],
+      },
+      repair: {
+        /* (#R752) 幾何の修復: close rings, drop duplicate points and zero-area rings, re-node
+           self-intersections, orient rings. ⚠ EVERY ROW SAYS WHAT WAS ACTUALLY CHANGED, and what is
+           STILL wrong after it — a repair that reports only success is a claim about data the reader
+           can no longer inspect. ⚠ AND IT IS NOT buffer(0): that moves vertices by the offset
+           arithmetic's error and calls the result the same shape. */
+        id: 'repair', inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        needsGeometry: true,
+        params: [
+          { name: 'winding', type: 'enum', required: false, default: 'rfc7946', values: ['rfc7946', 'keep'] },
+          { name: 'prefix', type: 'text', required: false },
+        ],
       },
       timeWindow: {
         /* ⚠ THE TIME AXIS IS THE DATASET'S, NOT A COLUMN NAME TYPED HERE (#R735). js/gis-datasets.js
@@ -547,6 +742,62 @@ export function makeGisOps() {
 
     function clone(x) { try { return JSON.parse(JSON.stringify(x)); } catch (_) { return null; } }
 
+    /* ── enum vocabularies that belong to somebody else (#R752) ────────────────────────────────
+       ⚠ A PARAMETER'S SET OF LEGAL VALUES IS SOMETIMES NOT THIS FILE'S TO KNOW. `sample`'s `method`
+       read `['nearest','bilinear']` — a copy of a list js/gis-raster.js owns — and the copy went
+       wrong the moment that kernel grew four more methods: the op refused a name its own kernel
+       implements, and the panel and the planner both drew the short list.
+       ⚠ THE FIX IS A SOURCE, NOT A LONGER COPY. `valuesOf` names where the set lives; this table
+       says how to ask. It is a registry of QUESTIONS (two entries, one per kernel surface), not of
+       answers — adding a method to the kernel changes nothing here.
+       ⚠ AND IT IS ASKED AT CALL TIME. DECL is built when this factory runs, and js/gis-raster.js may
+       mount after it (js/gis-core.js says so: every kernel is read from `window` when it is needed,
+       never captured). A set resolved into DECL at construction would be the empty list for the
+       whole session. */
+    const VALUE_SOURCES = {
+      /* what the field is worth AT a position — the methods a point can be asked with. The areal
+         methods summarise what an output pixel COVERS and need a footprint a point does not have,
+         and which is which is the kernel's declaration rather than a rule written twice. */
+      'sample-methods-point': () => {
+        const RK = rasterKernel();
+        if (!RK || typeof RK.sampleMethodFacts !== 'function') return null;
+        try { return RK.sampleMethodFacts().filter((m) => m && m.kind === 'point').map((m) => m.id); } catch (_) { return null; }
+      },
+      /* every method, point and areal alike — what a resample may be asked with. */
+      'sample-methods-all': () => {
+        const RK = rasterKernel();
+        if (!RK || typeof RK.sampleMethods !== 'function') return null;
+        try { return RK.sampleMethods(); } catch (_) { return null; }
+      },
+      /* what two overlapping sheets mean where they overlap — js/gis-raster.js decides, and refuses
+         an unstated rule with this same list. */
+      'merge-overlaps': () => {
+        const RK = rasterKernel();
+        if (!RK || typeof RK.mergeOverlaps !== 'function') return null;
+        try { return RK.mergeOverlaps(); } catch (_) { return null; }
+      },
+      /* how two grids are given one lattice — js/gis-warp.js decides, and it already publishes the
+         set for exactly this reason ('a UI reads the declaration rather than keeping a copy'). */
+      'align-rules': () => {
+        const WK = warpKernel();
+        if (!WK || typeof WK.alignRules !== 'function') return null;
+        try { return WK.alignRules(); } catch (_) { return null; }
+      },
+    };
+
+    /* The legal values of one parameter, resolved. ⚠ null is 「訊けなかった」 (the kernel is not
+       mounted) and is NOT an empty set — a caller that treats it as one refuses every value the
+       reader could possibly have named. run() reaches the runners only after `needsRaster` has been
+       checked, so the runners see a list; ops() may not, and says so by leaving `values` absent. */
+    function paramValues(decl, name) {
+      const p = (decl.params || []).find((x) => x && x.name === name);
+      if (!p) return null;
+      if (Array.isArray(p.values)) return p.values;
+      if (!p.valuesOf) return null;
+      const src = Object.prototype.hasOwnProperty.call(VALUE_SOURCES, p.valuesOf) ? VALUE_SOURCES[p.valuesOf] : null;
+      return src ? src() : null;
+    }
+
     /* ── the runners ──────────────────────────────────────────────────────────────────────────── */
 
     function fail(why, detail) { return detail ? { ok: false, why: why, detail: detail } : { ok: false, why: why }; }
@@ -558,16 +809,23 @@ export function makeGisOps() {
        drawn, and an AbortSignal could not even be SET — the code that would set it does not run until
        the loop lets go. Offering a cancel button over that would be a control with no effect.
 
-       So the two runners whose cost grows with the data yield, and the yield is where the signal is
-       read. ⚠ THE UNIT IS TIME, NOT A COUNT. A chunk of 「1,000 polygons」 is 3 ms of one dataset and
+       So the runners whose cost grows with the data yield, and the yield is where the signal is
+       read. ⚠ (#R752) THIS SENTENCE SAID 「その二つ」 AND THERE ARE EIGHT — clip, overlay, union
+       (twice), relate, aggregate, sample, zonal. It was true when it was written and stopped being
+       true as runners were added, which is what a count written in prose beside the code it counts
+       always does. The number is not restated here: `grep -c 'await ctx.tick'` is the answer, and it
+       is right on the day a ninth runner is added.
+       ⚠ THE UNIT IS TIME, NOT A COUNT. A chunk of 「1,000 polygons」 is 3 ms of one dataset and
        40 s of another — the number that matters is how long the thread has been held, and one frame
        at 60 Hz is what the renderer needs to stay alive. So elapsed milliseconds decide, and there is
        no per-dataset count to tune.
-       ⚠ IT IS NOT A WORKER. The kernels this file calls (js/gis-geometry.js's sweep-line, the
-       registry, the geodesy) all live on this thread; moving the loop alone would leave every call it
-       makes behind. What a Worker would add is parallelism; what this adds is a thread that answers
-       the reader — and 「止められる」 was the part that was missing. docs/GIS-CORE.md §6 says which of
-       the two is still open. */
+       ⚠ IT IS NOT A WORKER, AND #R752 DID NOT MAKE IT ONE. The kernels this file calls
+       (js/gis-geometry.js's sweep-line, the registry, the geodesy) all live on this thread; moving
+       the loop alone would leave every call it makes behind. What a Worker adds is parallelism; what
+       this adds is a thread that answers the reader. js/gis-worker.js now exists and takes PURE
+       ARITHMETIC over numeric arrays off this thread — the pixel loops, where there is no registry
+       and no geodesy to leave behind. The vector runners below still yield rather than parallelise,
+       and that is the honest division rather than a half-finished port. */
     const FRAME_MS = 16;
     function nowMs() { try { if (typeof performance !== 'undefined' && performance && performance.now) return performance.now(); } catch (_) { } return Date.now(); }
 
@@ -579,6 +837,13 @@ export function makeGisOps() {
       return {
         aborted: () => !!(sig && sig.aborted),
         done: () => done,
+        /* (#R752) ⚠ CARRIED, NOT RE-READ FROM `opts`. A runner that delegates to a kernel with its
+           own loop (js/gis-warp.js walks the output pixels; js/gis-raster.js walks the rows) must
+           hand that kernel the SAME signal and the same progress sink, or the reader's cancel button
+           stops working the moment the work moves one call deeper — which is the defect
+           [[intmap-sync-loop-cannot-be-cancelled]] records, one level down. */
+        signal: sig,
+        onProgress: onp,
         /* true = keep going, false = the reader asked to stop. */
         async tick(units, total) {
           done += (typeof units === 'number' && isFinite(units)) ? units : 1;
@@ -1372,7 +1637,12 @@ export function makeGisOps() {
       const b = bandIndexOf(rasDs, params.band);
       if (!b.ok) return b.res;
       const method = (params.method == null || String(params.method) === '') ? 'nearest' : String(params.method);
-      const allowed = DECL.sample.params[1].values;
+      /* ⚠ (#R752) ASKED OF THE KERNEL, not of a copy kept here. run() has already refused this step
+         if the raster kernel is absent (`needsRaster`), so a null answer at this point means the
+         kernel is mounted and cannot say — which is a refusal in its own right rather than a reason
+         to accept whatever was typed. */
+      const allowed = paramValues(DECL.sample, 'method');
+      if (!allowed) return fail('raster-unavailable', { param: 'method' });
       if (allowed.indexOf(method) < 0) return fail('bad-param', { param: 'method', value: method, values: allowed });
       const band = (rasDs.bands[b.index] || {});
       const outName = (params.outName != null && String(params.outName).trim() !== '') ? String(params.outName).trim() : String(band.name || 'value');
@@ -1479,6 +1749,455 @@ export function makeGisOps() {
       const r = RK.mask(rasDs, b.index, { op: op, value: value });
       if (!r || !r.ok) return r || fail('mask-failed');
       return { ok: true, raster: r.raster, stats: { kept: r.kept, dropped: r.dropped, nodata: r.nodataCount } };
+    }
+
+    /* ── resample: where `grid-mismatch` has been pointing since #R749 (#R752) ─────────────────── */
+
+    async function runResample(aDs, bDs, params, ctx) {
+      const WK = warpKernel();
+      const method = String(params.method == null ? '' : params.method);
+      /* ⚠ NO DEFAULT, and the refusal comes from the kernel that owns the set. js/gis-warp.js refuses
+         an unstated method itself (`resample-method-not-stated`) for the reason it states: a silently
+         chosen interpolation is a composite nobody named. This check exists so the reader is told
+         「述べていない」 by the op they called, with the vocabulary in hand. */
+      if (!method) {
+        const vals = paramValues(DECL.resample, 'method');
+        return fail('missing-param', vals ? { param: 'method', values: vals } : { param: 'method' });
+      }
+
+      let target;
+      const rule = (params.rule == null || String(params.rule) === '') ? null : String(params.rule);
+      if (rule) {
+        /* The COMMON lattice. Which grid's resolution won is in `from`, so the answer has an author. */
+        const al = WK.align(aDs, bDs, { rule: rule });
+        if (!al || !al.ok) return al || fail('align-failed');
+        target = al.target;
+      } else {
+        /* ⚠ THE PLAIN READING OF TWO INPUTS: put a onto b. `align(b, b, …)` is not used here even
+           though it would give the same lattice — b's grid IS the answer, and asking align for it
+           would make an intersection (align clips to where the two overlap) stand in for a statement
+           the reader already made by choosing b. */
+        const g = bDs.grid || {};
+        target = { west: g.west, north: g.north, pixelLng: g.pixelLng, pixelLat: g.pixelLat, width: bDs.width, height: bDs.height };
+      }
+
+      const r = await WK.resample(aDs, target, {
+        method: method,
+        signal: (ctx && ctx.signal) || null,
+        onProgress: (ctx && ctx.onProgress) || null,
+      });
+      if (!r || !r.ok) return r || fail('resample-failed');
+      return { ok: true, raster: r.grid, stats: r.report };
+    }
+
+    /* ── rasterCalc: one expression kernel, asked about a pixel instead of a row (#R752) ───────── */
+
+    async function runRasterCalc(aDs, bDs, params, R, ctx) {
+      const RK = rasterKernel(), EK = exprKernel();
+      const src = (params.expr == null) ? '' : String(params.expr);
+      if (!src.trim()) return fail('missing-param', { param: 'expr' });
+      const ba = bandIndexOf(aDs, params.bandA); if (!ba.ok) return ba.res;
+      const bb = bandIndexOf(bDs, params.bandB); if (!bb.ok) return bb.res;
+
+      /* ⚠ THE SAME KERNEL AS `compute`, AND THE SAME NUMBER RULE. js/gis-expr.js refuses to work
+         without one (`expr-no-number-rule`) because 「この文字列は数か」 is js/gis-datasets.js's
+         decision, not the parser's — and a grid's values are already numbers, so the rule is never
+         exercised here. Passing it anyway is what keeps ONE expression language in the app instead
+         of a second dialect that happens to agree today. */
+      const c = EK.compile(src, R);
+      if (!c || !c.ok) return fail(c ? c.why : 'expr-failed', c ? c.detail : undefined);
+
+      /* ⚠ THE NAMES ARE `a` AND `b`, AND THE REFUSAL SAYS SO. An expression naming anything else is
+         reaching for a column that a grid does not have — a pixel has two values, not a row of
+         them — and telling the reader which two names exist is one corrected call instead of a
+         search (the rule this layer applies to every other vocabulary). */
+      const BOUND = ['a', 'b'];
+      const unknown = (c.fields || []).filter((f) => BOUND.indexOf(String(f)) < 0);
+      if (unknown.length) return fail('unknown-field', { fields: unknown, values: BOUND.slice() });
+
+      const row = { a: null, b: null };
+      let firstError = null;
+      const fn = (x, y) => {
+        row.a = x; row.b = y;
+        const r = c.fn(row);
+        if (r && r.error) { if (!firstError) firstError = r.error; return null; }
+        const v = r ? r.value : null;
+        /* ⚠ A BOOLEAN IS NOT A MEASUREMENT, but `a > b` is a question a reader will ask of two grids
+           and a mask of 1/0 is the honest answer to it. null stays null: js/gis-expr.js propagates
+           absence rather than calling it zero, and this band writes a void for it. */
+        if (v === true) return 1;
+        if (v === false) return 0;
+        return (typeof v === 'number') ? v : null;
+      };
+
+      const band = (aDs.bands[ba.index] || {});
+      const name = (params.outName != null && String(params.outName).trim() !== '') ? String(params.outName).trim() : src.trim();
+      /* ⚠ NO UNIT IS INVENTED. `(a − b) / b` is a ratio and `a × 0.1` is whatever a was; nothing here
+         can tell which, so the reader states it or the band carries none — the same rule `diff` uses
+         when two units disagree. */
+      const unit = (params.unit != null && String(params.unit).trim() !== '') ? String(params.unit).trim() : null;
+
+      if (!(await ctx.tick(1, 1))) return fail('cancelled', { done: ctx.done(), total: 1 });
+      const r = RK.combine(aDs, bDs, ba.index, bb.index, fn, { name: name, unit: unit, nodata: band.nodata });
+      if (!r || !r.ok) return r || fail('calc-failed');
+      /* ⚠ AN EXPRESSION THAT BROKE ON EVERY PIXEL IS NOT AN EMPTY GRID, and the kernel counts those
+         separately from voids for exactly this moment. Registering a grid of NaN under the reader's
+         own expression would be the 「もっともらしいものを描かない」 rule broken in full. */
+      if (r.failed > 0 && r.count === 0) return fail('expr-failed-every-pixel', { pixels: r.failed, error: firstError || r.failedError || null });
+      return {
+        ok: true, raster: r.raster,
+        stats: { count: r.count, nodata: r.nodataCount, failed: r.failed, error: r.failedError || null },
+      };
+    }
+
+    /* ── mosaic: two sheets, one sheet, and the overlap rule has an author (#R752) ─────────────── */
+
+    async function runMosaic(aDs, bDs, params, ctx) {
+      const RK = rasterKernel(), WK = warpKernel();
+      const overlap = (params.overlap == null) ? '' : String(params.overlap);
+      const ov = paramValues(DECL.mosaic, 'overlap');
+      if (!ov) return fail('raster-unavailable', { param: 'overlap' });
+      if (ov.indexOf(overlap) < 0) return fail(overlap ? 'bad-param' : 'missing-param', { param: 'overlap', value: overlap || undefined, values: ov });
+      const method = (params.method == null) ? '' : String(params.method);
+      const ms = paramValues(DECL.mosaic, 'method');
+      if (!ms) return fail('raster-unavailable', { param: 'method' });
+      if (ms.indexOf(method) < 0) return fail(method ? 'bad-param' : 'missing-param', { param: 'method', value: method || undefined, values: ms });
+      const ba = bandIndexOf(aDs, params.band); if (!ba.ok) return ba.res;
+
+      /* ⚠ THE UNION OF THE TWO EXTENTS, WHICH IS WHAT A MOSAIC IS. js/gis-warp.js's `align` answers
+         the INTERSECTION — right for a difference, wrong here: aligning two adjacent tiles would
+         produce the sliver they share and throw away the map. So the target lattice is built from
+         a's pixel size (the reader chose the order) over the bounding box of both, and both inputs
+         are resampled onto it with the method they named. */
+      const g = aDs.grid;
+      const boxOf = (d) => [d.grid.west, d.grid.north - d.grid.pixelLat * d.height, d.grid.west + d.grid.pixelLng * d.width, d.grid.north];
+      const A = boxOf(aDs), B = boxOf(bDs);
+      const west = Math.min(A[0], B[0]), south = Math.min(A[1], B[1]);
+      const east = Math.max(A[2], B[2]), north = Math.max(A[3], B[3]);
+      /* Snapped to a's own pixel edges, so mosaic(a, a) is a and nothing is resampled for a fraction
+         of a pixel — the same argument `align` makes about its origin. */
+      const wSteps = Math.ceil((g.west - west) / g.pixelLng - 1e-9);
+      const nSteps = Math.ceil((north - g.north) / g.pixelLat - 1e-9);
+      const tWest = g.west - wSteps * g.pixelLng;
+      const tNorth = g.north + nSteps * g.pixelLat;
+      const width = Math.round(Math.ceil((east - tWest) / g.pixelLng - 1e-9));
+      const height = Math.round(Math.ceil((tNorth - south) / g.pixelLat - 1e-9));
+      if (!(width > 0) || !(height > 0)) return fail('grids-disjoint', { a: A, b: B });
+      const target = { west: tWest, north: tNorth, pixelLng: g.pixelLng, pixelLat: g.pixelLat, width: width, height: height };
+
+      const opts = { method: method, signal: (ctx && ctx.signal) || null, onProgress: (ctx && ctx.onProgress) || null };
+      const ra = await WK.resample(aDs, target, opts);
+      if (!ra || !ra.ok) return ra || fail('resample-failed');
+      const rb = await WK.resample(bDs, target, opts);
+      if (!rb || !rb.ok) return rb || fail('resample-failed');
+
+      const m = RK.merge(ra.grid, rb.grid, ba.index, { overlap: overlap });
+      if (!m || !m.ok) return m || fail('mosaic-failed');
+      return {
+        ok: true, raster: m.raster,
+        stats: { count: m.count, nodata: m.nodataCount, overlapPixels: m.overlapCount, onlyA: m.onlyA, onlyB: m.onlyB, overlap: m.overlap },
+      };
+    }
+
+    /* ── rasterize: features onto a lattice the reader stated (#R752) ──────────────────────────── */
+
+    async function runRasterize(ds, params, R, ctx) {
+      const RK = rasterKernel();
+      const width = Math.round(Number(params.width));
+      const height = Math.round(Number(params.height));
+      if (!Number.isInteger(width) || width <= 0) return fail('bad-param', { param: 'width', value: params.width });
+      if (!Number.isInteger(height) || height <= 0) return fail('bad-param', { param: 'height', value: params.height });
+      const stat = (params.stat == null || String(params.stat) === '') ? 'first' : String(params.stat);
+      const stats = DECL.rasterize.params[3].values;
+      if (stats.indexOf(stat) < 0) return fail('bad-param', { param: 'stat', value: stat, values: stats });
+
+      const field = (params.field == null || String(params.field).trim() === '') ? null : String(params.field).trim();
+      if (field != null && !hasField(ds, field)) return fail('unknown-field', { field: field, fields: (ds.fields || []).map((f) => String(f.name)) });
+
+      const fs = ds.features();
+      /* ⚠ THE EXTENT IS THE DATA'S — that one IS derivable, and deriving it is not a guess. How
+         FINELY to cut it is not, which is why width and height are required above. */
+      let box;
+      if (params.bbox != null && String(params.bbox).trim() !== '') {
+        const parts = String(params.bbox).split(',').map((s) => Number(s.trim()));
+        if (parts.length !== 4 || parts.some((v) => !isFinite(v))) return fail('bad-param', { param: 'bbox', value: params.bbox });
+        box = { w: Math.min(parts[0], parts[2]), s: Math.min(parts[1], parts[3]), e: Math.max(parts[0], parts[2]), n: Math.max(parts[1], parts[3]) };
+      } else {
+        let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity, seen = 0;
+        for (const f of fs) {
+          const bb = bboxOf((f && f.geometry) || null);
+          if (!bb) continue;
+          seen++;
+          if (bb[0] < w) w = bb[0]; if (bb[1] < s) s = bb[1];
+          if (bb[2] > e) e = bb[2]; if (bb[3] > n) n = bb[3];
+        }
+        /* ⚠ 「場所を持つ行が1つも無い」 IS NOT AN EMPTY GRID SOMEWHERE. A statistics table rasterised
+           into a grid at 0,0 would be a picture of nothing, placed. */
+        if (!seen) return fail('input-has-no-geometry', { id: ds.id });
+        box = { w: w, s: s, e: e, n: n };
+      }
+      /* A single point, or a single row of points, has zero extent in one axis; a lattice of zero
+         width is not a lattice, so it is widened by one pixel rather than refused — the reader asked
+         for width × height cells and gets them. */
+      const spanX = (box.e - box.w) || 1e-9, spanY = (box.n - box.s) || 1e-9;
+      const pixelLng = spanX / width, pixelLat = spanY / height;
+      const grid = { west: box.w, north: box.n, pixelLng: pixelLng, pixelLat: pixelLat, width: width, height: height };
+
+      const n = width * height;
+      let acc, cnt;
+      try { acc = new Float64Array(n); cnt = new Float64Array(n); } catch (e) { return fail('raster-too-large', { cells: n }); }
+      acc.fill(NaN);
+
+      const put = (i, v) => {
+        cnt[i] += 1;
+        if (stat === 'count') { acc[i] = cnt[i]; return; }
+        if (v == null) return;
+        const cur = acc[i];
+        if (cur !== cur) { acc[i] = (stat === 'mean') ? v : v; return; }   /* NaN test: first value wins the slot */
+        if (stat === 'first') return;
+        if (stat === 'min') { if (v < cur) acc[i] = v; return; }
+        if (stat === 'max') { if (v > cur) acc[i] = v; return; }
+        acc[i] = cur + v;                                                  /* sum and mean accumulate */
+      };
+
+      let burned = 0, skipped = 0;
+      for (const f of fs) {
+        if (!(await ctx.tick(1, fs.length))) return fail('cancelled', { done: ctx.done(), total: fs.length });
+        const g = (f && f.geometry) || null;
+        if (!g) { skipped++; continue; }
+        let v = 1;
+        if (field != null) {
+          v = R.asNumber(props(f)[field]);
+          /* ⚠ A ROW WHOSE VALUE IS NOT A NUMBER IS NOT BURNED AS ZERO. It is counted as skipped, and
+             the answer says how many — the same rule `zonal` applies to a cell it cannot read. */
+          if (v == null && stat !== 'count') { skipped++; continue; }
+        }
+        const bb = bboxOf(g);
+        if (!bb) { skipped++; continue; }
+        /* Only the rows and columns the feature's box can reach — the whole point of having a box. */
+        const c0 = Math.max(0, Math.floor((bb[0] - grid.west) / pixelLng));
+        const c1 = Math.min(width - 1, Math.floor((bb[2] - grid.west) / pixelLng));
+        const r0 = Math.max(0, Math.floor((grid.north - bb[3]) / pixelLat));
+        const r1 = Math.min(height - 1, Math.floor((grid.north - bb[1]) / pixelLat));
+        let hit = false;
+        for (let rr = r0; rr <= r1; rr++) {
+          const lat = grid.north - pixelLat * (rr + 0.5);
+          for (let cc = c0; cc <= c1; cc++) {
+            const lng = grid.west + pixelLng * (cc + 0.5);
+            /* ⚠ THE PIXEL'S CENTRE DECIDES, which is the rule js/gis-raster.js's zonal already uses
+               for the other direction. Two rules for 「その画素はその形の中か」 would make a
+               rasterize→zonal round trip disagree with itself. */
+            if (!coveredBy(g, [lng, lat])) continue;
+            put(rr * width + cc, v);
+            hit = true;
+          }
+        }
+        if (hit) burned++;
+      }
+      if (stat === 'mean') for (let i = 0; i < n; i++) if (cnt[i] > 0 && acc[i] === acc[i]) acc[i] /= cnt[i];
+
+      const b = RK.build(grid, [{
+        name: field != null ? field : (stat === 'count' ? 'count' : 'presence'),
+        unit: field != null ? unitOfField(ds, field) : null,
+        nodata: null,
+      }], acc);
+      if (!b || !b.ok) return b || fail('rasterize-failed');
+      return { ok: true, raster: b.raster, stats: { burned: burned, skipped: skipped, cells: n, stat: stat } };
+    }
+
+    /* Whether a position is inside a feature of any dimension. ⚠ A POINT AND A LINE HAVE NO INTERIOR,
+       so a pixel centre is 「in」 a point feature when the point is in that pixel — which is what the
+       bounding-box walk above has already established. Areas ask the one point-in-polygon rule this
+       layer has (js/gis-geometry.js owns it; see pointInPolygon). */
+    function coveredBy(g, lngLat) {
+      if (!g || typeof g !== 'object') return false;
+      if (g.type === 'Polygon' || g.type === 'MultiPolygon') return pointInPolygon(lngLat, g);
+      if (g.type === 'GeometryCollection') return (g.geometries || []).some((s) => coveredBy(s, lngLat));
+      return true;
+    }
+
+    function unitOfField(ds, name) {
+      const f = (ds.fields || []).find((x) => x && String(x.name) === String(name));
+      return (f && f.unit != null) ? f.unit : null;
+    }
+
+    /* ── polygonize: the edges a classification really has (#R752) ─────────────────────────────── */
+
+    async function runPolygonize(ds, params, ctx) {
+      const RK = rasterKernel();
+      const b = bandIndexOf(ds, params.band);
+      if (!b.ok) return b.res;
+      const r = await RK.polygonize(ds, b.index, {
+        signal: (ctx && ctx.signal) || null,
+        onProgress: (ctx && ctx.onProgress) || null,
+      });
+      if (!r || !r.ok) return r || fail('polygonize-failed');
+      const band = (ds.bands[b.index] || {});
+      const name = (params.outName != null && String(params.outName).trim() !== '') ? String(params.outName).trim() : String(band.name || 'value');
+      const out = r.polygons.map((p) => {
+        const pr = {};
+        pr[name] = p.value;
+        /* The pixel count of the region, so a reader can check this against the `zonal` of the same
+           shape — two walks of one grid that must agree, and now can be compared. */
+        pr._pixels = p.pixels;
+        pr._holes = p.holes;
+        return { type: 'Feature', properties: pr, geometry: { type: 'Polygon', coordinates: p.rings } };
+      });
+      return { ok: true, features: out, stats: { count: r.count, regions: r.regions, nodata: r.nodataCount } };
+    }
+
+    /* ── validity: a fact about a geometry, measured rather than assumed (#R752) ───────────────── */
+
+    /* One prefix for the columns both ops write, so a reader who ran validate and then repair does
+       not get two spellings of the same idea. ⚠ A NAMED PREFIX IS THE READER'S ANSWER TO A CLASH —
+       the alternative, renaming silently, invents a column nobody knows about (the rule `join`
+       already applies to its own collisions). */
+    function validityPrefix(params) {
+      const p = (params && params.prefix != null) ? String(params.prefix).trim() : '';
+      return p === '' ? '_geom' : p;
+    }
+
+    async function runValidate(ds, params, ctx) {
+      const GG = geometry();
+      const px = validityPrefix(params);
+      const fs = ds.features();
+      const out = [];
+      let invalid = 0, unmeasured = 0;
+      for (const f of fs) {
+        if (!(await ctx.tick(1, fs.length))) return fail('cancelled', { done: ctx.done(), total: fs.length });
+        const g = (f && f.geometry) || null;
+        const v = GG.validate(g);
+        let extra;
+        if (!v || !v.ok) {
+          /* ⚠ 「幾何が無い」 IS NOT 「妥当である」. A statistics table travels through this op with
+             every row saying so, rather than being marked clean. */
+          unmeasured++;
+          extra = {};
+          extra[px + 'Valid'] = null;
+          extra[px + 'Problems'] = null;
+          extra[px + 'Unmeasured'] = String((v && v.why) || 'validate-failed');
+        } else {
+          const val = v.value;
+          if (!val.valid) invalid++;
+          extra = {};
+          extra[px + 'Valid'] = !!val.valid;
+          /* The codes, not a sentence — a column a reader can filter on, in one language or none.
+             The positions stay in the kernel's answer; a column holding every vertex index of a
+             60,000-point ring is not a column. */
+          extra[px + 'Problems'] = (val.problems || []).map((p) => String(p.code)).join(' ') || null;
+          if (val.truncated) extra[px + 'Truncated'] = true;
+          if ((val.notes || []).length) extra[px + 'Notes'] = val.notes.map((n) => String(n.code)).join(' ');
+        }
+        out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
+      }
+      return { ok: true, features: out, stats: { invalid: invalid, unmeasured: unmeasured, total: fs.length } };
+    }
+
+    async function runRepair(ds, params, ctx) {
+      const GG = geometry();
+      const px = validityPrefix(params);
+      const winding = (params.winding == null || String(params.winding) === '') ? 'rfc7946' : String(params.winding);
+      const allowed = DECL.repair.params[0].values;
+      if (allowed.indexOf(winding) < 0) return fail('bad-param', { param: 'winding', value: winding, values: allowed });
+
+      const fs = ds.features();
+      const out = [];
+      let changed = 0, refused = 0, emptied = 0;
+      for (const f of fs) {
+        if (!(await ctx.tick(1, fs.length))) return fail('cancelled', { done: ctx.done(), total: fs.length });
+        const g = (f && f.geometry) || null;
+        const r = GG.repair(g, { winding: winding === 'keep' ? 'keep' : undefined });
+        let extra = {}, geom = g;
+        if (!r || !r.ok) {
+          /* ⚠ A ROW THIS OP COULD NOT REPAIR KEEPS ITS GEOMETRY AND SAYS SO. Dropping it would make
+             the answer smaller for a reason nothing recorded — the failure #R743 measured when a
+             throwing sweep-line came back as an ordinary smaller result. */
+          refused++;
+          extra[px + 'Repaired'] = false;
+          extra[px + 'Refused'] = String((r && r.why) || 'repair-failed');
+        } else {
+          const changes = r.changes || [];
+          if (changes.length) changed++;
+          if (r.geometry == null && g != null) emptied++;
+          geom = r.geometry;
+          extra[px + 'Repaired'] = changes.length > 0;
+          extra[px + 'Changes'] = changes.map((c) => String(c.code)).join(' ') || null;
+          /* ⚠ WHAT IS STILL WRONG AFTERWARDS. A repair that reports only success is a claim about
+             data the reader can no longer inspect — the original is gone. */
+          extra[px + 'Remaining'] = (r.remaining || []).map((p) => String(p.code)).join(' ') || null;
+        }
+        out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: geom });
+      }
+      return { ok: true, features: out, stats: { changed: changed, refused: refused, emptied: emptied, total: fs.length } };
+    }
+
+    /* ── measure: the plane is the reader's, and its distortion travels with the number (#R752) ── */
+
+    async function runMeasure(ds, params, R, ctx) {
+      const what = String(params.what == null ? '' : params.what);
+      const wants = DECL.measure.params[0].values;
+      if (wants.indexOf(what) < 0) return fail('bad-param', { param: 'what', value: what, values: wants });
+      const unit = (params.unit == null || String(params.unit) === '') ? 'km' : String(params.unit);
+      const units = DECL.measure.params[2].values;
+      if (units.indexOf(unit) < 0) return fail('bad-param', { param: 'unit', value: unit, values: units });
+
+      const spec = (params.crs == null || String(params.crs).trim() === '') ? null : String(params.crs).trim();
+      let P = null, CK = null;
+      if (spec) {
+        CK = crsKernel();
+        if (!CK || typeof CK.projection !== 'function') return fail('crs-unavailable', { crs: spec });
+        P = CK.projection(spec);
+        /* ⚠ 「その面は作れなかった」 CARRIES ITS OWN REASON. The kernel says why (an unknown code, a
+           plane whose parameters were not given, a radius it will not invent); folding all of them
+           into one `bad-param` would send the reader to look at the wrong thing. */
+        if (!P) return fail('crs-plane-unusable', { crs: spec, why: (CK.why && CK.why()) || null });
+      }
+
+      const base = (params.outName != null && String(params.outName).trim() !== '')
+        ? String(params.outName).trim()
+        : (what === 'area' ? ('_area' + (unit === 'm' ? 'M2' : 'Km2')) : ('_length' + (unit === 'm' ? 'M' : 'Km')));
+      if (hasField(ds, base)) return fail('output-column-in-use', { name: base });
+
+      const fs = ds.features();
+      const out = [];
+      let measured = 0, refusedRows = 0;
+      for (const f of fs) {
+        if (!(await ctx.tick(1, fs.length))) return fail('cancelled', { done: ctx.done(), total: fs.length });
+        const g = (f && f.geometry) || null;
+        const extra = {};
+        if (!g) {
+          /* A row with no place has no area. null, not 0 — 0 is a measurement. */
+          extra[base] = null;
+        } else if (!P) {
+          /* The geodesic answer this layer has always given, unchanged. ⚠ `areaKm2` is the ONE
+             implementation of 「面積」 in this file; a second walk here would be a second opinion. */
+          const km = (what === 'area') ? areaKm2(g) : lengthKm(g);
+          extra[base] = (km == null) ? null : (unit === 'm' ? (what === 'area' ? km * 1e6 : km * 1e3) : km);
+          if (extra[base] != null) measured++;
+        } else {
+          const m = (what === 'area') ? CK.areaOn(P, g, { unit: unit === 'm' ? 'm2' : 'km2' })
+            : CK.lengthOn(P, g, { unit: unit });
+          if (!m || !m.ok) {
+            refusedRows++;
+            extra[base] = null;
+            extra[base + 'Refused'] = String((m && m.why) || 'measure-failed');
+          } else {
+            measured++;
+            extra[base] = m.value;
+            /* ⚠ THE DISTORTION TRAVELS WITH THE NUMBER, IN THE SAME ROW. An area measured on Web
+               Mercator at 60°N is four times the truth; a column of those with nothing beside them
+               is a value whose caveat is missing, which is the shape this project keeps catching.
+               The scale is the kernel's measurement over this very geometry, not a constant. */
+            const sc = (what === 'area') ? m.areaScale : m.scale;
+            if (sc) { extra[base + 'ScaleMin'] = sc.min; extra[base + 'ScaleMax'] = sc.max; }
+          }
+        }
+        out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
+      }
+      return {
+        ok: true, features: out,
+        stats: { measured: measured, refused: refusedRows, total: fs.length, plane: spec || 'geodesic', unit: unit },
+      };
     }
 
     function runRasterDiff(aDs, bDs, params, R) {
@@ -1603,6 +2322,8 @@ export function makeGisOps() {
       /* (#R738) Same shape as the line above: 「式を読む機械が来ていない」 is its own answer, not an
          expression that silently evaluates to nothing. */
       if (decl.needsExpr && !exprKernel()) return fail('expr-unavailable');
+      /* (#R752) Same shape again — the warp is a module, and 「載っていない」 is an answer. */
+      if (decl.needsWarp && !warpKernel()) return fail('warp-unavailable');
       if (decl.needsGeometry) {
         const GG = geometry();
         if (!GG) return fail('geometry-missing');
@@ -1697,6 +2418,17 @@ export function makeGisOps() {
         zonal: () => runZonal(ds[0], ds[1], params, R, ctx),
         rasterMask: () => runRasterMask(ds[0], params, R),
         rasterDiff: () => runRasterDiff(ds[0], ds[1], params, R),
+        /* (#R752) the grid family the review of #R749 named as missing, and the two geometry-quality
+           ops. Each is one line here for the reason the table exists at all: DECL and RUN are keyed
+           by the same ids, so tests/r732 ① catches a declared op with no runner. */
+        resample: () => runResample(ds[0], ds[1], params, ctx),
+        rasterCalc: () => runRasterCalc(ds[0], ds[1], params, R, ctx),
+        mosaic: () => runMosaic(ds[0], ds[1], params, ctx),
+        rasterize: () => runRasterize(ds[0], params, R, ctx),
+        polygonize: () => runPolygonize(ds[0], params, ctx),
+        measure: () => runMeasure(ds[0], params, R, ctx),
+        validate: () => runValidate(ds[0], params, ctx),
+        repair: () => runRepair(ds[0], params, ctx),
         timeWindow: () => runTimeWindow(ds[0], params, R),
         join: () => runJoin(ds[0], ds[1], params),
         compute: () => runCompute(ds[0], params, R),
@@ -1778,7 +2510,20 @@ export function makeGisOps() {
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
-      ops: () => ORDER.map((id) => clone(DECL[id])),
+      /* ⚠ (#R752) THE CLONE IS RESOLVED ON THE WAY OUT. A `valuesOf` parameter carries no `values`
+         in DECL — the set belongs to a kernel that may not have mounted when this factory ran — so
+         it is filled here, at the moment a panel or a planner asks what exists. A kernel that is not
+         mounted leaves `values` ABSENT rather than empty: 「訊けなかった」 and 「選べる値は無い」 are
+         different statements, and a UI that draws an empty dropdown for the first one is lying. */
+      ops: () => ORDER.map((id) => {
+        const d = clone(DECL[id]);
+        for (const p of (d.params || [])) {
+          if (!p.valuesOf || Array.isArray(p.values)) continue;
+          const v = paramValues(DECL[id], p.name);
+          if (v) p.values = v.slice();
+        }
+        return d;
+      }),
       op: (id) => (DECL[id] ? clone(DECL[id]) : null),
       run: run,
       /* exposed because the panel labels a clipped shape with its area and the checks measure the

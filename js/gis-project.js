@@ -178,7 +178,9 @@ export function makeGisProject() {
        constructed, and a captured `undefined` would make every op look permanently unavailable. */
     function registry() { try { return (typeof window !== 'undefined' && window && window.IntMapData) || null; } catch (_) { return null; } }
     function ops() { try { return (typeof window !== 'undefined' && window && window.IntMapGisOps) || null; } catch (_) { return null; } }
-    function geometry() { try { return (typeof window !== 'undefined' && window && window.IntMapGisGeometry) || null; } catch (_) { return null; } }
+    /* (#R752) The geometry accessor that stood here is gone — not because the kernel stopped
+       mattering, but because engineNow() no longer names kernels one at a time. Nothing else in this
+       file called it. */
 
     /* ── which implementation computed this (#R749) ─────────────────────────────────────────────
        ⚠ THE VERSION IS NOT WRITTEN IN THIS FILE, IT IS ASKED OF THE KERNEL. js/gis-ops.js and
@@ -196,16 +198,68 @@ export function makeGisProject() {
         return (v == null || v === '') ? null : String(v);
       } catch (_) { return null; }
     }
-    function engineNow() { return { ops: askVersion(ops()), geometry: askVersion(geometry()) }; }
+    /* ⚠ (#R752) THIS USED TO BE `{ ops: …, geometry: … }` — TWO KERNELS, WRITTEN BY HAND. The note
+       above it was already right that a number copied here is a second place to keep correct; what
+       nobody noticed is that THE LIST OF WHICH KERNELS TO ASK was itself such a copy, and it was
+       wrong on the day it was written. #R749 introduced js/gis-raster.js and js/gis-warp.js in the
+       same round that introduced this record, and neither has ever been asked: a project whose step
+       resampled a grid with bilinear replays today through whatever bilinear means today, and
+       `engineChanged` says nothing. The same holds for js/gis-expr.js (what `compute` computes) and
+       js/gis-index.js — #R743 measured the spatial prefilter DISCARDING TRUE PAIRS, which is an
+       answer changing, not an optimisation.
+       ⚠ SO THE SET IS DISCOVERED, NOT LISTED. A kernel is 「version() を述べる IntMapGis* の module」
+       — a fact about the module rather than a name in this file — so a kernel mounted tomorrow is
+       recorded the day it declares a version, and one that forgets to declare is caught by the gate
+       in scripts/gis-kernel-versions.mjs rather than by somebody remembering this line.
+       ⚠ THE PREFIX IS THE WHOLE TEST, DELIBERATELY. Asking `window` for everything that happens to
+       have a version() would record the renderer's. */
+    const KERNEL_GLOBAL = /^IntMapGis([A-Z].*)$/;
 
-    /* The two kernels whose output a step's numbers depend on. Named once: a part added to engineNow
-       and forgotten here would be saved and never compared. */
-    const ENGINE_PARTS = ['ops', 'geometry'];
+    /* IntMapGisOps → 'ops'. ⚠ The spelling MUST NOT MOVE: it is the key inside records readers saved
+       before this round, and a renamed part reads as 「保存には在ったが今は測れない」 for every old
+       project at once. */
+    function partName(global) {
+      const m = KERNEL_GLOBAL.exec(global);
+      return m ? (m[1].charAt(0).toLowerCase() + m[1].slice(1)) : null;
+    }
+
+    function kernelGlobals() {
+      try {
+        if (typeof window === 'undefined' || !window) return [];
+        return Object.keys(window).filter((k) => KERNEL_GLOBAL.test(k)).sort();
+      } catch (_) { return []; }
+    }
+
+    function engineNow() {
+      const out = {};
+      for (const g of kernelGlobals()) {
+        let mod = null;
+        try { mod = window[g]; } catch (_) { mod = null; }
+        /* A module without version() is not a kernel that failed to answer — it is not a kernel.
+           js/gis-panel.js draws; js/gis-project.js stores; neither changes a number. */
+        if (!mod || typeof mod.version !== 'function') continue;
+        out[partName(g)] = askVersion(mod);
+      }
+      return out;
+    }
+
+    /* ⚠ THE PARTS TO COMPARE ARE THE UNION OF 「保存に在った」 AND 「いま在る」, never a list. A part
+       present in the saved record and absent today must be reported — as 'unknown', which is what
+       compareEngine does with null — because 「そのカーネルはもう載っていない」 is a real difference
+       between the run that made these numbers and the run replaying them. A hand-written list could
+       only ever name the parts somebody thought of. */
+    function engineParts(saved, now) {
+      const keys = new Set();
+      for (const o of [saved, now]) {
+        if (o && typeof o === 'object') for (const k of Object.keys(o)) keys.add(k);
+      }
+      return [...keys].sort();
+    }
 
     function engineCopy(e) {
       if (!e || typeof e !== 'object') return null;
       const out = {};
-      for (const k of ENGINE_PARTS) out[k] = (e[k] == null || e[k] === '') ? null : String(e[k]);
+      for (const k of Object.keys(e).sort()) out[k] = (e[k] == null || e[k] === '') ? null : String(e[k]);
       return out;
     }
 
@@ -214,7 +268,7 @@ export function makeGisProject() {
        'changed', which outranks 'unknown' because a known difference is the stronger statement. */
     function compareEngine(saved, now) {
       let unknown = false, changed = false;
-      for (const k of ENGINE_PARTS) {
+      for (const k of engineParts(saved, now)) {
         const a = saved ? saved[k] : null;
         const b = now ? now[k] : null;
         if (a == null || b == null) { unknown = true; continue; }

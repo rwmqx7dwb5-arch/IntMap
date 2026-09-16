@@ -433,14 +433,21 @@ export function makeGisGeometry() {
       return haversineKm(p, near);
     }
 
-    function segmentsCross(p1, p2, p3, p4) {
-      const d = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-      const d1 = d(p3, p4, p1), d2 = d(p3, p4, p2), d3 = d(p1, p2, p3), d4 = d(p1, p2, p4);
-      if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true;
-      const on = (a, b, c) => Math.abs(d(a, b, c)) <= SAME_EPS
+    function orient(a, b, c) { return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); }
+
+    /* Does c lie ON segment ab. ⚠ LIFTED OUT OF segmentsCross UNCHANGED (#R752) rather than written
+       a second time for the validity walk below: 「この点はこの辺の上か」 is one question, and the
+       two readers that ask it must not be able to answer it differently. */
+    function onSegment(a, b, c) {
+      return Math.abs(orient(a, b, c)) <= SAME_EPS
         && c[0] >= Math.min(a[0], b[0]) - SAME_EPS && c[0] <= Math.max(a[0], b[0]) + SAME_EPS
         && c[1] >= Math.min(a[1], b[1]) - SAME_EPS && c[1] <= Math.max(a[1], b[1]) + SAME_EPS;
-      return on(p3, p4, p1) || on(p3, p4, p2) || on(p1, p2, p3) || on(p1, p2, p4);
+    }
+
+    function segmentsCross(p1, p2, p3, p4) {
+      const d1 = orient(p3, p4, p1), d2 = orient(p3, p4, p2), d3 = orient(p1, p2, p3), d4 = orient(p1, p2, p4);
+      if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true;
+      return onSegment(p3, p4, p1) || onSegment(p3, p4, p2) || onSegment(p1, p2, p3) || onSegment(p1, p2, p4);
     }
 
     /* Every line string a geometry contributes to a distance or a crossing test: its own lines, and
@@ -643,6 +650,510 @@ export function makeGisGeometry() {
        question about the reader's data and not about geometry. */
     function dissolve(geoms) { return union(geoms); }
 
+    /* ── validity, and repair ─────────────────────────────────────────────────────────────────── */
+
+    /* ══ THESE TWO BELONG TO THE GEOMETRY, NOT TO ANY ONE OP (#R752) ══════════════════════════════
+     *  Until here a ring that crossed itself, a hole lying outside its shell, a ring that was never
+     *  closed, a repeated vertex, a collapsed sliver or a vertex at latitude 95 went STRAIGHT INTO
+     *  intersect / union / difference / dissolve. The sweep line was handed a shape that is not a
+     *  shape, and whatever came back was reported to the reader as THEIR answer — nothing in the
+     *  kernel had measured the input, so nothing could say which of the two, the data or the engine,
+     *  a wrong number came from.
+     *
+     *  ⚠ THE RULE IS ATTACHED TO THE FACT, NOT TO A CALLER (.agents/rules/no-ad-hoc-hardcoding.md
+     *  §2-2). validate() answers about any geometry this kernel can read, whatever is about to be
+     *  done with it; nothing here knows which op asked, and there is no per-op check anywhere.
+     *
+     *  ⚠ WHERE, NOT JUST WHAT. Every problem carries `path` — the index path FROM THE GEOMETRY THE
+     *  CALLER PASSED IN, so `path.reduce((o,k)=>o[k], geom)` is the very array that is wrong — and
+     *  `vertex`, which indexes the RAW ring, not the cleaned copy this file works on. A reader told
+     *  「頂点 7 が重複」 has to be able to find vertex 7 in the array they wrote.
+     *
+     *  ⚠ WINDING IS REPORTED AND NOT FAILED, AND THAT IS A MEASUREMENT OF THIS REPOSITORY RATHER
+     *  THAN A READING OF THE RFC. RFC 7946 §3.1.6 asks for an exterior ring counter-clockwise and
+     *  its holes clockwise — but NOTHING in this app requires it: pointInRing above is a parity
+     *  test, js/gis-ops.js ringAreaKm2 takes |Σ|, and the sweep line reads rings[0] as the shell
+     *  whichever way it runs. js/gis-shapefile.js normalises to RFC 7946 on the way in (ESRI states
+     *  the opposite convention), and js/gis-geopackage.js deliberately does not — 「a ring's winding
+     *  is a statement this reader has no basis to correct」. So a ring that runs the other way is a
+     *  NOTE: a true statement about the data, not a defect. Inventing a validity rule the app does
+     *  not have would be a rule with no reader. repair() will turn it, and says that it did.
+     *
+     *  ⚠ AND `ring-wraps-world` IS A NOTE FOR THE REASON THE HEADER GIVES: that refusal is about the
+     *  plane, not about the data being wrong.
+     *
+     *  ⚠ NO LOOSE TWIN. The plain names above (union, intersects…) exist because callers predate
+     *  #R743; these two doors are new, so they only exist in the readable shape. Adding a
+     *  `validate()` that returns null for both 「問題は無かった」 and 「測れなかった」 would be
+     *  rebuilding, in a new door, exactly the defect #R743 removed from all the old ones. */
+
+    /* The shoelace of an OPEN ring in raw degrees; positive is counter-clockwise, which is RFC
+       7946's exterior sense. ⚠ NOT a second copy of js/gis-ops.js ringAreaKm2 — that one is
+       spherical excess in km² and takes an absolute value, so it cannot answer 「どちら向きか」 at
+       all. This number is never reported as an area: it is read for its SIGN and for the collapse
+       test below, both of which are planar questions about the ring as drawn. */
+    function signedAreaDeg2(pts) {
+      let a = 0;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += pts[j][0] * pts[i][1] - pts[i][0] * pts[j][1];
+      return a / 2;
+    }
+
+    /* A ring encloses nothing when EVERY vertex lies on one line — the perpendicular distance from
+       the ring's longest chord is under the resolution at which two positions are already the same
+       position. ⚠ NOT 「signed area is 0」, which was the first thing written here and was WRONG:
+       measured, the bow-tie [0,0]→[2,2]→[2,0]→[0,2] has a shoelace of EXACTLY ZERO because its two
+       lobes cancel, and it was being reported as a collapsed ring — hiding the self-intersection
+       that is the actual defect. A cancelling area is a statement about winding, not about width.
+       ⚠ And the tolerance is a WIDTH (degrees), which is what SAME_EPS is; an area threshold in
+       degree² would mean one thing for a long thin ring and another for a small round one. */
+    function ringCollapsed(pts) {
+      let fi = -1, fd = -1;
+      for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[0][0], pts[i][1] - pts[0][1]); if (d > fd) { fd = d; fi = i; } }
+      if (!(fd > 0)) return true;                       /* every vertex is the same position */
+      const a = pts[0], b = pts[fi];
+      for (const p of pts) if (Math.abs(orient(a, b, p)) > SAME_EPS * fd) return false;
+      return true;
+    }
+
+    /* One ring as this kernel reads it, KEEPING THE RAW INDEX of every vertex it kept. `closed` is
+       measured on the array as written (does the last position repeat the first) and not on the
+       cleaned copy, because that is the statement GeoJSON makes and the one a reader can check. */
+    function scanRing(raw) {
+      const out = { pts: [], src: [], bad: [], dupes: [], closed: false, length: 0 };
+      if (!Array.isArray(raw)) { out.bad.push({ code: 'ring-not-an-array', vertex: null, detail: { got: (raw === null) ? 'null' : typeof raw } }); return out; }
+      out.length = raw.length;
+      for (let i = 0; i < raw.length; i++) {
+        const p = raw[i];
+        if (!isPos(p)) { out.bad.push({ code: 'position-not-finite', vertex: i, detail: { got: Array.isArray(p) ? p.slice(0, 2) : ((p === null) ? 'null' : typeof p) } }); continue; }
+        if (!(p[1] >= -90 && p[1] <= 90)) out.bad.push({ code: 'latitude-out-of-range', vertex: i, detail: { lat: p[1] } });
+        if (!(p[0] >= -180 && p[0] <= 180)) out.bad.push({ code: 'longitude-out-of-range', vertex: i, detail: { lng: p[0] } });
+        if (out.pts.length && same(out.pts[out.pts.length - 1], p)) { out.dupes.push(i); continue; }
+        out.pts.push([p[0], p[1]]); out.src.push(i);
+      }
+      const first = raw[0], last = raw[raw.length - 1];
+      out.closed = raw.length >= 2 && isPos(first) && isPos(last) && same(first, last);
+      /* The repeated closing position is the closure, not a duplicate vertex — dropped here for the
+         same reason ringPositions drops it, and NOT reported as `duplicate-point`. */
+      while (out.pts.length > 1 && same(out.pts[0], out.pts[out.pts.length - 1])) { out.pts.pop(); out.src.pop(); }
+      return out;
+    }
+
+    /* Every edge of every ring of ONE polygon part, as bbox-carrying segments the sweep below can
+       prune on. `r` is which ring, `i` which edge of it; the ring is closed by (i+1)%n exactly as
+       everything else in this file closes one. */
+    function ringSegments(rings) {
+      const segs = [];
+      for (const ring of rings) {
+        const pts = ring.pts, n = pts.length;
+        for (let i = 0; i < n; i++) {
+          const a = pts[i], b = pts[(i + 1) % n];
+          segs.push({
+            r: ring.r, ring: ring, i: i, n: n, a: a, b: b,
+            x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]),
+            y0: Math.min(a[1], b[1]), y1: Math.max(a[1], b[1]),
+          });
+        }
+      }
+      return segs;
+    }
+
+    /* Two edges of the same ring that share a vertex ALWAYS meet at it, which is what a ring is. The
+       defect is when they meet anywhere else: the far end of one lying on the other is a spike or a
+       zero-angle backtrack, and it is the degeneracy the sweep line turns into an empty result. */
+    function adjacentEdges(s, t) { return s.r === t.r && (Math.abs(s.i - t.i) === 1 || Math.abs(s.i - t.i) === s.n - 1); }
+
+    function adjacentDegenerate(s, t) {
+      const shared = (same(s.a, t.a) || same(s.a, t.b)) ? s.a : s.b;
+      const p = same(s.a, shared) ? s.b : s.a;
+      const q = same(t.a, shared) ? t.b : t.a;
+      return onSegment(s.a, s.b, q) || onSegment(t.a, t.b, p);
+    }
+
+    /* A SWEEP, not the square of the edges. Segments are visited in order of their left end and kept
+       in an active list only while their right end is still ahead of it, so a ring of n vertices
+       costs O(n log n + k) on map data instead of O(n²) — 3,000 municipal boundaries of 2,000
+       vertices each is 6 million edges, and the square of that is not a thing that finishes.
+       ⚠ THE WORST CASE IS STILL QUADRATIC (every edge spanning the whole width, e.g. a star) — the
+       prune is a prune and not a guarantee, which is why `limit` exists and is reported. */
+    function sweepMeetings(segs, onMeet) {
+      const order = segs.slice().sort((p, q) => p.x0 - q.x0);
+      const active = [];
+      for (const s of order) {
+        let k = 0;
+        for (let i = 0; i < active.length; i++) if (active[i].x1 >= s.x0 - SAME_EPS) active[k++] = active[i];
+        active.length = k;
+        for (const t of active) {
+          if (t.y1 < s.y0 - SAME_EPS || s.y1 < t.y0 - SAME_EPS) continue;
+          const meets = adjacentEdges(s, t) ? adjacentDegenerate(s, t) : segmentsCross(s.a, s.b, t.a, t.b);
+          if (!meets) continue;
+          if (onMeet(s, t) === false) return;
+        }
+        active.push(s);
+      }
+    }
+
+    /* ONE TOPOLOGY WALK WITH TWO READERS (this file's own note on toMulti, applied again): validate()
+       reports every meeting with the ring and the vertex it happened at, repair() only needs to know
+       whether there was one. Two readers of one rule, never two rules — if the walk and the repair
+       could disagree about what a hole outside its shell is, repair would be able to "fix" something
+       validate goes on reporting, or leave something it reports unfixed.
+       `rings` is [{r, pts}] with pts OPEN, UNWRAPPED and already aligned into one 360° window. */
+    function partTopology(rings, report) {
+      let crossed = false;
+      sweepMeetings(ringSegments(rings), (s, t) => {
+        if (s.r === t.r) return report('ring-self-intersects', { ring: s.r, edges: [Math.min(s.i, t.i), Math.max(s.i, t.i)], vertex: s.ring.src[s.i] });
+        crossed = true;
+        return report('rings-intersect', { rings: [Math.min(s.r, t.r), Math.max(s.r, t.r)], vertex: s.ring.src[s.i] });
+      });
+      /* Containment only means anything once the boundaries are known not to cross: 「穴が外環の外に
+         ある」 and 「穴が外環を跨いでいる」 are different defects, and reporting the second as the
+         first would send a reader to the wrong ring. */
+      if (crossed || rings.length < 2 || rings[0].r !== 0) return;
+      const shell = rings[0];
+      const probes = [];
+      for (let i = 1; i < rings.length; i++) {
+        const h = rings[i];
+        /* A vertex of the hole that is not itself ON another ring's boundary — on the boundary the
+           parity test answers arbitrarily. ⚠ Cost: the first vertex almost always serves; a hole
+           every one of whose vertices lies on the shell is a hole traced along the shell, and only
+           that shape makes this walk the product of the two rings. */
+        let probe = null;
+        for (const v of h.pts) { if (!onBoundary(v, shell.pts)) { probe = v; break; } }
+        probes.push(probe);
+        if (!probe) { if (report('hole-on-shell-boundary', { ring: h.r }) === false) return; continue; }
+        if (!pointInRing(probe[0], probe[1], shell.pts)) { if (report('hole-outside-shell', { ring: h.r, at: probe.slice() }) === false) return; }
+      }
+      for (let i = 1; i < rings.length; i++) {
+        const p = probes[i - 1];
+        if (!p) continue;
+        for (let j = 1; j < rings.length; j++) {
+          if (i === j) continue;
+          if (pointInRing(p[0], p[1], rings[j].pts)) { if (report('hole-inside-hole', { ring: rings[i].r, insideOf: rings[j].r, at: p.slice() }) === false) return; }
+        }
+      }
+    }
+
+    function onBoundary(p, pts) {
+      for (let i = 0, n = pts.length; i < n; i++) if (onSegment(pts[i], pts[(i + 1) % n], p)) return true;
+      return false;
+    }
+
+    /* Rings of one part put in one 360° window, so a shell written at +179 and a hole written at
+       −179 are compared where they actually are. alignTo is the same one the boolean ops use. */
+    function alignPart(rings) {
+      if (rings.length < 2) return rings;
+      const base = [rings[0].pts];
+      for (let i = 1; i < rings.length; i++) rings[i].pts = alignTo([rings[i].pts], base)[0];
+      return rings;
+    }
+
+    /* ── validate ─────────────────────────────────────────────────────────────────────────────── */
+
+    /* validate(geom, opts) →
+         { ok:true, value: { valid, problems:[{code,path,vertex,detail}], notes:[…], truncated } }
+         { ok:false, why:'missing-geometry' }               ← there was nothing to answer about
+       opts.limit caps the number of findings (default 200; 0 = every one). A ring that crosses
+       itself 40,000 times is one defect to the reader and 40,000 entries to an array, so the cap is
+       reported as `truncated` rather than being a silently shorter list. */
+    function validate(g, opts) {
+      if (!g || typeof g !== 'object') return NO('missing-geometry');
+      const limit = (opts && opts.limit != null) ? Math.max(0, opts.limit | 0) : 200;
+      const problems = [], notes = [];
+      let truncated = false;
+      function add(list, code, path, vertex, detail) {
+        if (limit && (problems.length + notes.length) >= limit) { truncated = true; return false; }
+        list.push({ code: code, path: path.slice(), vertex: (vertex == null) ? null : vertex, detail: detail || null });
+        return true;
+      }
+      const bad = (code, path, vertex, detail) => add(problems, code, path, vertex, detail);
+      const note = (code, path, vertex, detail) => add(notes, code, path, vertex, detail);
+
+      function checkPos(p, path, vertex) {
+        if (!isPos(p)) return bad('position-not-finite', path, vertex, { got: Array.isArray(p) ? p.slice(0, 2) : ((p === null) ? 'null' : typeof p) });
+        if (!(p[1] >= -90 && p[1] <= 90)) bad('latitude-out-of-range', path, vertex, { lat: p[1] });
+        if (!(p[0] >= -180 && p[0] <= 180)) bad('longitude-out-of-range', path, vertex, { lng: p[0] });
+        return true;
+      }
+
+      function checkLine(raw, path) {
+        const s = scanRing(raw);
+        for (const b of s.bad) bad(b.code, path, b.vertex, b.detail);
+        for (const v of s.dupes) bad('duplicate-point', path, v, null);
+        /* A LINE MAY CROSS ITSELF and this does not report it: a road that loops under itself is a
+           legal LineString and the commonest shape in any street file. Only rings are simple. */
+        if (s.pts.length < 2) bad('line-too-few-points', path, null, { distinct: s.pts.length, need: 2 });
+      }
+
+      function checkPolygon(ringsRaw, path) {
+        if (!Array.isArray(ringsRaw) || !ringsRaw.length) { bad('polygon-no-rings', path, null, null); return; }
+        const usable = [];
+        for (let r = 0; r < ringsRaw.length; r++) {
+          const rp = path.concat([r]);
+          const s = scanRing(ringsRaw[r]);
+          for (const b of s.bad) bad(b.code, rp, b.vertex, b.detail);
+          for (const v of s.dupes) bad('duplicate-point', rp, v, null);
+          if (!s.closed) bad('ring-not-closed', rp, null, { positions: s.length });
+          if (s.pts.length < 3) { bad('ring-too-few-points', rp, null, { distinct: s.pts.length, need: 3 }); continue; }
+          if (ringCollapsed(s.pts)) { bad('ring-zero-area', rp, null, null); continue; }
+          const un = unwrapRing(s.pts);
+          const range = lonRange([un]);
+          if (range && (range[1] - range[0]) >= 360) { note('ring-wraps-world', rp, null, { lngSpanDeg: range[1] - range[0] }); continue; }
+          const ccw = signedAreaDeg2(un) > 0;
+          const wantCcw = (r === 0);
+          if (ccw !== wantCcw) note('ring-winding-differs-from-rfc7946', rp, null, { role: r ? 'hole' : 'exterior', winding: ccw ? 'ccw' : 'cw', rfc7946: wantCcw ? 'ccw' : 'cw' });
+          usable.push({ r: r, pts: un, src: s.src });
+        }
+        if (usable.length < 1) return;
+        partTopology(alignPart(usable), (code, info) => {
+          const rp = (info.ring != null) ? path.concat([info.ring]) : path;
+          return bad(code, rp, (info.vertex == null) ? null : info.vertex, info);
+        });
+      }
+
+      function visit(node, path) {
+        if (!node || typeof node !== 'object') { bad('unsupported-type', path, null, { type: null }); return; }
+        const t = node.type;
+        if (t === 'GeometryCollection') {
+          if (!Array.isArray(node.geometries)) { bad('unsupported-type', path, null, { type: t }); return; }
+          for (let i = 0; i < node.geometries.length; i++) visit(node.geometries[i], path.concat(['geometries', i]));
+          return;
+        }
+        const c = path.concat(['coordinates']);
+        if (t === 'Point') { checkPos(node.coordinates, c, null); return; }
+        if (t === 'MultiPoint') { const a = node.coordinates; if (!Array.isArray(a)) { bad('unsupported-type', path, null, { type: t }); return; } for (let i = 0; i < a.length; i++) checkPos(a[i], c, i); return; }
+        if (t === 'LineString') { checkLine(node.coordinates, c); return; }
+        if (t === 'MultiLineString') { const a = node.coordinates || []; for (let i = 0; i < a.length; i++) checkLine(a[i], c.concat([i])); return; }
+        if (t === 'Polygon') { checkPolygon(node.coordinates, c); return; }
+        if (t === 'MultiPolygon') { const a = node.coordinates; if (!Array.isArray(a)) { bad('unsupported-type', path, null, { type: t }); return; } for (let i = 0; i < a.length; i++) checkPolygon(a[i], c.concat([i])); return; }
+        /* Not 「不正な形」 — a type this kernel does not read. Said as its own code so a caller can
+           tell 「この幾何は壊れている」 from 「この幾何のことは知らない」. */
+        bad('unsupported-type', path, null, { type: (typeof t === 'string') ? t : null });
+      }
+
+      visit(g, []);
+      return { ok: true, value: { valid: problems.length === 0, problems: problems, notes: notes, truncated: truncated } };
+    }
+
+    /* ── repair ───────────────────────────────────────────────────────────────────────────────── */
+
+    /* ⚠ A REPAIR IS A CLAIM, SO IT IS ENUMERATED (#R752). repair() never returns a quietly different
+       shape: every ring it closed, every vertex it dropped, every ring it turned and every part it
+       re-noded is one entry in `changes`, with the same `path` validate() would have used. And what
+       it did NOT fix is in `remaining` — the problems validate() still finds in the OUTPUT — because
+       a repair that leaves something behind and does not say so is worse than one that refuses.
+       ⚠ IT IS NOT buffer(0). A zero-width buffer resolves self-intersection through offset
+       arithmetic, which moves every vertex by whatever the offset rounds to; here the only thing
+       that computes is the sweep line, which splits edges AT THEIR REAL CROSSINGS and keeps the
+       vertices that were already there. Nothing in this function moves a position: it drops
+       positions, reverses the order of positions, and shifts longitudes by WHOLE TURNS (which is the
+       same point on the sphere, exactly, in float64 as well — 360 is a power of two times 45).
+       ⚠ WHAT IT WILL NOT DO IS NAMED AND REFUSED, never guessed:
+         · `latitude-out-of-range` — a clamp to ±90 is a claim about where that vertex is, and this
+           file does not have one. It poisons everything downstream (the parity test, the area, the
+           sweep), so the whole call refuses rather than returning a partly-repaired shape.
+         · `geometry-wraps-world` / `clipper-unavailable` / `clipper-failed` — the topology cannot be
+           computed, so the topology is not touched. Same three names the ops already use.
+         · `unsupported-type` — repair cannot rebuild what it cannot read.
+         · A polygon whose FIRST ring is degenerate is dropped whole rather than promoting a hole:
+           which ring is the outside is a statement the file made, not one this function may make. */
+    function Refusal(why, detail) { this.why = why; this.detail = detail || null; }
+
+    function repair(g, opts) {
+      if (!g || typeof g !== 'object') return NO('missing-geometry');
+      const o = opts || {};
+      const fixWinding = (o.winding !== 'keep');
+      const node = (o.node !== false);
+      const changes = [];
+      const change = (code, path, detail) => { changes.push({ code: code, path: path.slice(), detail: detail || null }); };
+
+      function refusePos(p, path, vertex) {
+        if (isPos(p) && !(p[1] >= -90 && p[1] <= 90)) throw new Refusal('latitude-out-of-range', { path: path.slice(), vertex: vertex, lat: p[1] });
+      }
+
+      function cleanLine(raw, path) {
+        const s = scanRing(raw);
+        for (const b of s.bad) {
+          if (b.code === 'latitude-out-of-range') throw new Refusal('latitude-out-of-range', { path: path.slice(), vertex: b.vertex, lat: b.detail && b.detail.lat });
+          if (b.code === 'position-not-finite') change('dropped-invalid-position', path, { vertex: b.vertex });
+        }
+        for (const v of s.dupes) change('dropped-duplicate-point', path, { vertex: v });
+        /* scanRing drops a repeated FIRST==LAST as a closure; on a line that repetition is a real
+           vertex the line came back to, so it is put back. */
+        const pts = s.pts.slice();
+        if (s.closed && pts.length >= 2) pts.push([pts[0][0], pts[0][1]]);
+        if (pts.length < 2) { change('dropped-degenerate-line', path, { distinct: pts.length }); return null; }
+        return pts;
+      }
+
+      /* One polygon part → a list of parts (noding can turn one self-crossing ring into several, and
+         a part that crosses the antimeridian into the pieces splitBack cuts). */
+      function cleanPolygon(ringsRaw, path) {
+        if (!Array.isArray(ringsRaw) || !ringsRaw.length) { change('dropped-empty-part', path, null); return []; }
+        const rings = [];
+        for (let r = 0; r < ringsRaw.length; r++) {
+          const rp = path.concat([r]);
+          const s = scanRing(ringsRaw[r]);
+          for (const b of s.bad) {
+            if (b.code === 'latitude-out-of-range') throw new Refusal('latitude-out-of-range', { path: rp, vertex: b.vertex, lat: b.detail && b.detail.lat });
+            if (b.code === 'position-not-finite') change('dropped-invalid-position', rp, { vertex: b.vertex });
+            if (b.code === 'ring-not-an-array') change('dropped-degenerate-ring', rp, b.detail);
+          }
+          for (const v of s.dupes) change('dropped-duplicate-point', rp, { vertex: v });
+          const drop = (code, detail) => {
+            change(code, rp, detail || null);
+            if (r === 0) { change('dropped-degenerate-polygon', path, { reason: code }); return true; }
+            return false;
+          };
+          if (s.pts.length < 3) { if (drop('dropped-degenerate-ring', { distinct: s.pts.length })) return []; continue; }
+          if (ringCollapsed(s.pts)) { if (drop('dropped-zero-area-ring', null)) return []; continue; }
+          if (!s.closed) change('closed-ring', rp, null);
+          const un = unwrapRing(s.pts);
+          const range = lonRange([un]);
+          if (range && (range[1] - range[0]) >= 360) throw new Refusal('geometry-wraps-world', { path: rp, lngSpanDeg: range[1] - range[0] });
+          rings.push({ r: r, pts: un, wrapped: s.pts, src: s.src });
+        }
+        if (!rings.length) return [];
+        alignPart(rings);
+
+        /* Ask the ONE topology walk what is wrong, then decide once. */
+        let selfCross = false, ringCross = false, holeBad = false;
+        if (node) {
+          partTopology(rings, (code) => {
+            if (code === 'ring-self-intersects') selfCross = true;
+            else if (code === 'rings-intersect') ringCross = true;
+            else holeBad = true;
+            return !(selfCross && ringCross && holeBad);   /* stop once nothing more can be learned */
+          });
+        }
+
+        /* ⚠ A PART THAT NEEDED NOTHING GOES OUT AS IT CAME IN. The unwrapped copy above exists so
+           the topology and the winding can be measured in one plane; it is not an improvement to the
+           coordinates. Measured: a perfectly good square written 179 → −179 unwraps to 179 → 181,
+           and emitting THAT sends it through splitBack, which cut a valid Polygon into a
+           two-part MultiPolygon and called it a repair. Nothing was wrong with it. */
+        const noded = (selfCross || ringCross || holeBad);
+        const rawRange = lonRange(rings.map((x) => x.wrapped));
+        const rawInWindow = !!rawRange && rawRange[0] >= -180 - SAME_EPS && rawRange[1] <= 180 + SAME_EPS;
+        let multi = [rings.map((x) => ((!noded && rawInWindow) ? x.wrapped : x.pts))];
+        if (noded) {
+          if (!available()) throw new Refusal('clipper-unavailable', { path: path.slice() });
+          try {
+            const res = PC.union(multi);
+            multi = (Array.isArray(res) && res.length) ? res.map((poly) => poly.map((r) => ringPositions(r)).filter((p) => p.length >= 3)).filter((p) => p.length) : [];
+          } catch (e) { throw new Refusal('clipper-failed', { path: path.slice(), op: 'node', message: (e && e.message) || String(e) }); }
+          /* ⚠ The union of a shape WITH NOTHING is a re-noding of that shape: the sweep line splits
+             every edge at every real crossing and reassembles the boundary, so a figure-eight comes
+             back as the two lobes it draws and a hole outside its shell comes back as a second part.
+             The vertices that survive are the ones that were written; the ones that are added sit
+             exactly on two edges that were written. */
+          if (selfCross) change('resolved-self-intersection', path, null);
+          if (ringCross) change('resolved-ring-intersection', path, null);
+          /* A hole outside its shell, or inside another hole, subtracts nothing from anything: the
+             sweep line drops it. That is not the same event as two boundaries crossing. */
+          if (holeBad) change('resolved-hole-placement', path, null);
+          if (!multi.length) change('dropped-degenerate-polygon', path, { reason: 'noded-to-nothing' });
+        }
+
+        /* Back inside [-180,180]. A whole-turn shift is exact and keeps the part in one piece; only
+           a part that really straddles the seam is handed to the splitter, and that one changes the
+           number of parts, so it says so. */
+        const out = [];
+        for (const poly of multi) {
+          const range2 = lonRange(poly);
+          if (range2 && (range2[0] < -180 - SAME_EPS || range2[1] > 180 + SAME_EPS)) {
+            const turns = -Math.round(((range2[0] + range2[1]) / 2) / 360);
+            const lo = range2[0] + turns * 360, hi = range2[1] + turns * 360;
+            if (turns && lo >= -180 - SAME_EPS && hi <= 180 + SAME_EPS) {
+              change('shifted-longitude-into-range', path, { turns: turns });
+              out.push(poly.map((r) => r.map((p) => [p[0] + turns * 360, p[1]])));
+              continue;
+            }
+            const cut = splitBack([poly]);
+            if (cut.length !== 1) change('split-at-antimeridian', path, { parts: cut.length });
+            for (const piece of cut) out.push(piece.map((r) => ringPositions(r)).filter((p) => p.length >= 3));
+            continue;
+          }
+          out.push(poly);
+        }
+
+        /* Winding last, so it is measured on the rings that are actually going out. */
+        const parts = [];
+        for (const poly of out) {
+          const kept = [];
+          for (let r = 0; r < poly.length; r++) {
+            let pts = poly[r];
+            if (pts.length < 3) continue;
+            if (fixWinding) {
+              /* unwrapRing is idempotent on an already-unwrapped ring and is what makes the sign
+                 mean anything on a ring written across the seam. */
+              const ccw = signedAreaDeg2(unwrapRing(pts)) > 0;
+              const wantCcw = (r === 0);
+              if (ccw !== wantCcw) { pts = pts.slice().reverse(); change('reversed-ring-winding', path.concat([r]), { role: r ? 'hole' : 'exterior', from: ccw ? 'ccw' : 'cw', to: wantCcw ? 'ccw' : 'cw' }); }
+            }
+            kept.push(closeRing(pts));
+          }
+          if (kept.length) parts.push(kept);
+        }
+        return parts;
+      }
+
+      function visit(nodeG, path) {
+        if (!nodeG || typeof nodeG !== 'object') throw new Refusal('unsupported-type', { path: path.slice(), type: null });
+        const t = nodeG.type;
+        const c = path.concat(['coordinates']);
+        if (t === 'GeometryCollection') {
+          if (!Array.isArray(nodeG.geometries)) throw new Refusal('unsupported-type', { path: path.slice(), type: t });
+          const subs = [];
+          for (let i = 0; i < nodeG.geometries.length; i++) { const s = visit(nodeG.geometries[i], path.concat(['geometries', i])); if (s) subs.push(s); }
+          if (!subs.length) { change('dropped-empty-part', path, null); return null; }
+          return { type: 'GeometryCollection', geometries: subs };
+        }
+        if (t === 'Point') {
+          const p = nodeG.coordinates;
+          refusePos(p, c, null);
+          if (!isPos(p)) { change('dropped-invalid-position', c, { vertex: null }); return null; }
+          return { type: 'Point', coordinates: [p[0], p[1]] };
+        }
+        if (t === 'MultiPoint') {
+          const a = Array.isArray(nodeG.coordinates) ? nodeG.coordinates : null;
+          if (!a) throw new Refusal('unsupported-type', { path: path.slice(), type: t });
+          const kept = [];
+          for (let i = 0; i < a.length; i++) { refusePos(a[i], c, i); if (isPos(a[i])) kept.push([a[i][0], a[i][1]]); else change('dropped-invalid-position', c, { vertex: i }); }
+          if (!kept.length) { change('dropped-empty-part', path, null); return null; }
+          return { type: 'MultiPoint', coordinates: kept };
+        }
+        if (t === 'LineString') { const l = cleanLine(nodeG.coordinates, c); return l ? { type: 'LineString', coordinates: l } : null; }
+        if (t === 'MultiLineString') {
+          const a = Array.isArray(nodeG.coordinates) ? nodeG.coordinates : [];
+          const kept = [];
+          for (let i = 0; i < a.length; i++) { const l = cleanLine(a[i], c.concat([i])); if (l) kept.push(l); }
+          if (!kept.length) { change('dropped-empty-part', path, null); return null; }
+          return { type: 'MultiLineString', coordinates: kept };
+        }
+        if (t === 'Polygon' || t === 'MultiPolygon') {
+          const src = (t === 'Polygon') ? [nodeG.coordinates] : (Array.isArray(nodeG.coordinates) ? nodeG.coordinates : null);
+          if (!src) throw new Refusal('unsupported-type', { path: path.slice(), type: t });
+          const parts = [];
+          for (let i = 0; i < src.length; i++) for (const p of cleanPolygon(src[i], (t === 'Polygon') ? c : c.concat([i]))) parts.push(p);
+          if (!parts.length) return null;
+          /* A Polygon that had to become several is a MultiPolygon, and that is a change to the
+             geometry's own type — stated, not slipped in. */
+          if (t === 'Polygon' && parts.length > 1) change('type-changed', path, { from: 'Polygon', to: 'MultiPolygon', parts: parts.length });
+          if (t === 'MultiPolygon' && parts.length === 1) change('type-changed', path, { from: 'MultiPolygon', to: 'Polygon', parts: 1 });
+          return (parts.length === 1) ? { type: 'Polygon', coordinates: parts[0] } : { type: 'MultiPolygon', coordinates: parts };
+        }
+        throw new Refusal('unsupported-type', { path: path.slice(), type: (typeof t === 'string') ? t : null });
+      }
+
+      let out;
+      try { out = visit(g, []); }
+      catch (e) { if (e instanceof Refusal) return NO(e.why, e.detail); throw e; }
+      /* Everything was degenerate: an EMPTY ANSWER (ok:true, geometry:null) and not a failure — the
+         same distinction §2.5.1 made for the ops, kept here on purpose. */
+      const after = out ? validate(out, { limit: (opts && opts.limit != null) ? opts.limit : 200 }) : null;
+      return { ok: true, geometry: out, value: null, changes: changes, remaining: after && after.ok ? after.value.problems : [] };
+    }
+
     /* ⚠ (#R749) THE VERSION OF THIS KERNEL. Same reason and same keeper as js/gis-ops.js
        KERNEL_VERSION — the boolean engine is where #R743's union defect actually lived, so a saved
        recipe that replays through a different geometry kernel can land on different numbers.
@@ -655,6 +1166,11 @@ export function makeGisGeometry() {
       union, intersection, difference, dissolve, bufferKm,
       intersects, contains, within, disjoint, distanceKm,
       pointInGeometry,
+      /* ⚠ VALIDITY IS A FACT ABOUT A GEOMETRY, SO IT LIVES BESIDE THE OPERATIONS AND NOT INSIDE ONE
+         (#R752). Both doors already return the readable shape, so neither has a loose twin above and
+         neither is repeated inside `attempt` — one name, one place. See the block above for what is
+         reported, what is refused by name, and why a ring's winding is a note and not a defect. */
+      validate, repair,
       /* ⚠ THE SAME OPERATIONS, ASKED SO THAT A REFUSAL CAN BE READ (#R743). Not a second engine and
          not a second rule: the plain names above are one line each over these. A caller that must
          not report success over a computation that did not happen — which is every runner in

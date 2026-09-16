@@ -64,6 +64,18 @@
  *  value·km² (unit = the band's unit × km²) — which is the integral over the zone, and is what an
  *  「人口 per km² の層を面積で積む」 question actually wants.
  *
+ *  ══ ⚠⚠⚠ A POINT METHOD AND AN AREAL METHOD ANSWER TWO DIFFERENT QUESTIONS ═════════════════════
+ *  `sampleMethods()` holds six: `nearest`, `bilinear`, `cubic` ask what the field is worth AT one
+ *  position; `average`, `mode`, `sum` ask about the input pixels an output pixel COVERS, and so they
+ *  require the caller to state that footprint (`opts.cell`) — `sample-cell-not-stated` otherwise.
+ *  The difference is DECLARED (`kind:'point'|'areal'` in `sampleMethodFacts()`), not left to each
+ *  caller's memory of which name is which, and the two kinds do not share an implementation: an
+ *  area-weighted MEAN and a total that survives resampling are two different arithmetics, and a file
+ *  that computed one from the other would be wrong at every pixel of whichever it did not write.
+ *  ⚠ The areal weights are ground area, with the same closed form as `rowAreaKm2` — and because a
+ *  row's latitude is not always the row's coordinate (js/gis-warp.js reads every source through a
+ *  pixel-space proxy), a grid may declare what its rows stand for: see `latGround`.
+ *
  *  ══ A PIXEL BELONGS TO A ZONE WHEN ITS CENTRE IS INSIDE IT ════════════════════════════════════
  *  That is a JUDGEMENT, stated here rather than omitted. The alternative — splitting each boundary
  *  pixel by the fraction of its area inside the polygon — is a different and more expensive answer,
@@ -146,6 +158,17 @@ export function makeGisRaster() {
          size is a grid that states its rows in the other order and means something else entirely. */
       if (g.pixelLng <= 0) return refuse('raster-invalid', { field: 'grid.pixelLng', value: g.pixelLng });
       if (g.pixelLat <= 0) return refuse('raster-invalid', { field: 'grid.pixelLat', value: g.pixelLat });
+      /* ⚠ `grid.latAxis` is OPTIONAL (absent = the contract's degrees) and is checked in O(1). This
+         function runs once per `sample` call, and a warp calls `sample` once per output pixel per
+         band — so walking the height+1 edges here would be a walk of the whole axis per pixel. The
+         entries themselves are read where they are used, and a non-numeric one is refused there with
+         the row that carried it. */
+      if (g.latAxis !== undefined && g.latAxis !== null) {
+        const ax = g.latAxis;
+        const axOk = (ax === 'equal')
+          || (!!ax && typeof ax === 'object' && !!ax.edges && typeof ax.edges.length === 'number' && ax.edges.length === raster.height + 1);
+        if (!axOk) return refuse('raster-invalid', { field: 'grid.latAxis', value: (typeof ax === 'string' ? ax : null) });
+      }
       if (typeof raster.read !== 'function') return refuse('raster-invalid', { field: 'read' });
       return { ok: true };
     }
@@ -184,6 +207,18 @@ export function makeGisRaster() {
     function missing(v, nodata) {
       if (typeof v !== 'number' || !isFinite(v)) return true;
       return (nodata != null && v === nodata);
+    }
+
+    /* ⚠⚠⚠ 「この格子は分類か」 IS ONE JUDGEMENT AND IT LIVES HERE (#R752). `zonal`'s `classes` has
+       refused a measured grid since #R735 — a grid of 0.37 and 1.84 is not a classification with
+       classes 0 and 2 — and `polygonize` asks EXACTLY the same question for exactly the same reason:
+       the connected regions of a continuous field are an artefact of float equality, and 「等しい値の
+       領域」 over measurements would draw one polygon per pixel and call it a map. A second spelling
+       of the test is the drift .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids, so both callers
+       call this and both refuse with the pixel that proved it. */
+    function classValue(v, row, col) {
+      if (!isInt(v)) return refuse('values-not-integer', { row: row, col: col, value: v });
+      return null;
     }
 
     /* ── the grid as geometry ─────────────────────────────────────────────────────────────────── */
@@ -245,22 +280,88 @@ export function makeGisRaster() {
 
     /* ── sampling ─────────────────────────────────────────────────────────────────────────────── */
 
-    const SAMPLE_METHODS = ['nearest', 'bilinear'];
+    /* ⚠⚠⚠ A METHOD IS EITHER A QUESTION ABOUT A POINT OR A QUESTION ABOUT AN AREA, AND THE TWO ARE
+       NOT VARIANTS OF ONE THING. `nearest`/`bilinear`/`cubic` ask what the field is worth AT one
+       position — the centre of the output pixel — and the size of that pixel does not enter the
+       arithmetic at all. `average`/`mode`/`sum` ask about the SET of input pixels that output pixel
+       COVERS, so the caller has to say how big it is (`opts.cell`), and the same position with a
+       10 km footprint and with a 10 m one has two different right answers.
+       That difference is what makes downsampling honest: a 30 m land cover taken onto a 1 km grid
+       with `nearest` reports whatever happened to lie under one point and discards 99.9% of the
+       observations, `mode` reports the class that actually covers the ground, and `sum` keeps the
+       total a count quantity (人口・件数) has to keep.
+       ⚠ IT IS DECLARED AS DATA (`kind`) rather than left to each reader's memory of which names are
+       which. A UI has to ask for a footprint for some of these and not for others, and an op has to
+       know whether a point has an answer at all — 「average のときだけ違う経路」 written by hand at
+       each call site is the drift .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids. The ids
+       themselves are the keys of this table, so `sampleMethods()` cannot fall behind it. */
+    const SAMPLE_METHOD_FACTS = {
+      nearest: { kind: 'point', neighbours: 1 },
+      bilinear: { kind: 'point', neighbours: 4 },
+      /* Keys' cubic convolution over a 4×4 neighbourhood — see `tapWeights` for which kernel and why
+         its outer weights are negative. */
+      cubic: { kind: 'point', neighbours: 16 },
+      average: { kind: 'areal', aggregate: 'area-weighted-mean' },
+      mode: { kind: 'areal', aggregate: 'largest-area-value' },
+      sum: { kind: 'areal', aggregate: 'area-apportioned-total' },
+    };
+    const SAMPLE_METHODS = Object.keys(SAMPLE_METHOD_FACTS);
 
     function sample(raster, bandIndex, lng, lat, opts) {
       const v = validate(raster);
       if (!v.ok) return v;
       if (!isNum(lng) || !isNum(lat)) return refuse('position-invalid', { lng: lng, lat: lat });
       const method = (opts && opts.method) ? String(opts.method) : 'nearest';
-      if (SAMPLE_METHODS.indexOf(method) < 0) return refuse('sample-method-unknown', { method: method, methods: SAMPLE_METHODS.slice() });
+      const facts = SAMPLE_METHOD_FACTS[method];
+      if (!facts) return refuse('sample-method-unknown', { method: method, methods: SAMPLE_METHODS.slice() });
+      let cell = null;
+      if (facts.kind === 'areal') {
+        /* ⚠ NO FOOTPRINT IS INVENTED. An areal method with a made-up cell size would answer a
+           question nobody asked — 「この地点の周り 1 画素ぶんの平均」 is not 「この出力画素の平均」 —
+           and the reader would have no way to see which of the two they were given. The refusal
+           carries the kind, so a caller that reached here with a point-shaped call knows what is
+           missing rather than only that something was. */
+        const c = opts && opts.cell;
+        if (c == null) return refuse('sample-cell-not-stated', { method: method, kind: facts.kind });
+        if (!Array.isArray(c) || c.length !== 4 || !c.every(isNum) || !(c[2] > c[0]) || !(c[3] > c[1])) {
+          return refuse('sample-cell-invalid', { method: method, cell: Array.isArray(c) ? c.slice() : c });
+        }
+        cell = c;
+      }
       const V = values(raster, bandIndex);
       if (!V.ok) return V;
-      return sampleWith(raster, V, lng, lat, method);
+      return sampleWith(raster, V, lng, lat, method, cell);
+    }
+
+    /* The separable interpolation kernels AS WEIGHTS over consecutive columns (and rows), so bilinear
+       and cubic are one walk and not two implementations of the void rule. */
+    const TAP_OFFSETS = { bilinear: [0, 1], cubic: [-1, 0, 1, 2] };
+
+    function tapWeights(method, t) {
+      if (method === 'bilinear') return [1 - t, t];
+      /* Keys (1981) cubic convolution with a = −0.5 — the value that makes the kernel agree with the
+         Taylor series of the sampled function to third order, and the one GDAL, OpenCV and
+         ImageMagick all use, so 「cubic」 here means what it means everywhere else rather than being
+         this app's private curve.
+         ⚠ ITS OUTER WEIGHTS ARE NEGATIVE, so a cubic sample can land OUTSIDE the range of the 16
+         values it was taken from (the overshoot at a step). That is the method and not a defect —
+         it is why `preservesValues` is false for it in js/gis-warp.js's table, and a reader who must
+         stay inside the observed range asks for bilinear. Clamping here would hide the overshoot
+         while keeping the ringing that produced it. */
+      const a = -0.5;
+      const w = [];
+      for (const d of TAP_OFFSETS.cubic) {
+        const x = Math.abs(t - d);
+        w.push(x <= 1
+          ? ((a + 2) * x * x * x - (a + 3) * x * x + 1)
+          : (x < 2 ? (a * x * x * x - 5 * a * x * x + 8 * a * x - 4 * a) : 0));
+      }
+      return w;
     }
 
     /* Split from sample() so a caller taking thousands of samples (the zonal walk, `fromSampler`'s
        own consumers) pays for validate() and read() once. */
-    function sampleWith(raster, V, lng, lat, method) {
+    function sampleWith(raster, V, lng, lat, method, cell) {
       const at = pixelAt(raster, lng, lat);
       if (!at) return refuse('outside', { lng: lng, lat: lat, bbox: bboxOf(raster) });
       const nearestValue = V.values[at.row * raster.width + at.col];
@@ -268,8 +369,10 @@ export function makeGisRaster() {
         ? { ok: true, value: null, nodata: true, row: at.row, col: at.col, method: 'nearest' }
         : { ok: true, value: nearestValue, row: at.row, col: at.col, method: 'nearest' };
       if (method === 'nearest') return nearest();
+      const facts = SAMPLE_METHOD_FACTS[method];
+      if (facts && facts.kind === 'areal') return arealWith(raster, V, at, cell, method);
 
-      /* Bilinear between the four PIXEL CENTRES surrounding the position. The fractional index is
+      /* Interpolation between the PIXEL CENTRES surrounding the position. The fractional index is
          offset by 0.5 because the value belongs to the centre of its cell, not to its corner — the
          same −0.5 js/map-readout.js's DEM sampler applies for the same reason. */
       const g = raster.grid;
@@ -283,26 +386,145 @@ export function makeGisRaster() {
          only alternatives are to refuse a position that is inside the grid or to extrapolate. */
       const cx = (x) => Math.max(0, Math.min(raster.width - 1, x));
       const cy = (y) => Math.max(0, Math.min(raster.height - 1, y));
-      const corners = [
-        [cy(y0), cx(x0), (1 - tx) * (1 - ty)],
-        [cy(y0), cx(x0 + 1), tx * (1 - ty)],
-        [cy(y0 + 1), cx(x0), (1 - tx) * ty],
-        [cy(y0 + 1), cx(x0 + 1), tx * ty],
-      ];
+      const offs = TAP_OFFSETS[method];
+      const wx = tapWeights(method, tx), wy = tapWeights(method, ty);
       let acc = 0;
-      for (const c of corners) {
-        const val = V.values[c[0] * raster.width + c[1]];
-        /* ⚠⚠⚠ ONE VOID AMONG THREE MEASUREMENTS IS THE Lake-Biwa −7,800 m BUG (see the header). The
-           blend is abandoned, not patched with a substitute, and the fallback declares itself. */
-        if (missing(val, V.nodata)) {
-          const near = nearest();
-          near.partial = true;
-          near.requested = 'bilinear';
-          return near;
+      for (let j = 0; j < offs.length; j++) {
+        const row = cy(y0 + offs[j]);
+        const base = row * raster.width;
+        for (let i = 0; i < offs.length; i++) {
+          const val = V.values[base + cx(x0 + offs[i])];
+          /* ⚠⚠⚠ ONE VOID AMONG THE MEASUREMENTS IS THE Lake-Biwa −7,800 m BUG (see the header). The
+             blend is abandoned, not patched with a substitute, and the fallback declares itself.
+             ⚠ The same rule, ONE implementation, for every point kernel: cubic reads a wider
+             neighbourhood and therefore meets voids MORE often, which is a reason to keep the rule
+             in one place rather than a reason to soften it for the wider one. */
+          if (missing(val, V.nodata)) {
+            const near = nearest();
+            near.partial = true;
+            near.requested = method;
+            return near;
+          }
+          acc += val * wx[i] * wy[j];
         }
-        acc += val * c[2];
       }
-      return { ok: true, value: acc, row: at.row, col: at.col, method: 'bilinear' };
+      return { ok: true, value: acc, row: at.row, col: at.col, method: method };
+    }
+
+    /* ── areal aggregation: what an output pixel COVERS ───────────────────────────────────────── */
+
+    /* ⚠⚠⚠ THE WEIGHT IS GROUND AREA, NOT PIXEL COUNT. It is the same fact the header states for
+       `mean` and `zonal` measures with `rowAreaKm2` — a 1°×1° cell is 12,363 km² at the equator and
+       6,183 km² at 60°N — applied to a footprint instead of a polygon, with the same closed form
+       (area ∝ Δλ·(sin φ_n − sin φ_s)). R² and the degree→radian factor are NOT applied because every
+       answer below is a RATIO of weights and they cancel exactly; `zonal` needs the km² itself and
+       keeps them.
+       ⚠ AND A ROW'S LATITUDE IS NOT ALWAYS THE ROW'S COORDINATE. js/gis-warp.js reads every source
+       through a PIXEL-SPACE proxy whose 「lat」 is a negated row index, and a projected grid has no
+       latitude in its own coordinates at all — so a grid may DECLARE what its rows stand for, and
+       the three forms are the three real cases:
+         · `grid.latAxis` absent   — this grid's own coordinates ARE degrees (the contract at the top
+                                     of this file), which is every grid that existed before this
+         · `grid.latAxis:'equal'`  — the rows have no latitude, and equal coordinate height is equal
+                                     ground
+         · `{ edges:[…height+1] }` — the degree latitude of each row EDGE, measured by whoever built
+                                     the grid (js/gis-warp.js transforms them through the projection)
+       Guessing instead — 「行の座標は度だろう」 — is how the proxy's row −200 would be clamped to the
+       pole and weighted zero, which is a wrong answer that looks like an empty one. */
+    function clampLat(v) { return v < -90 ? -90 : (v > 90 ? 90 : v); }
+
+    /* A quantity PROPORTIONAL to the ground height of [topCoord, botCoord] within row `row`. Returns
+       null when the grid's own declaration cannot answer for this row — 「訊けなかった」 is not
+       「面積が 0 だった」, and the caller turns it into a refusal rather than a weight. */
+    function latGround(raster, row, topCoord, botCoord) {
+      const g = raster.grid;
+      const ax = g.latAxis;
+      if (ax === 'equal') return topCoord - botCoord;
+      let phiN, phiS;
+      if (ax && typeof ax === 'object') {
+        const eN = ax.edges[row], eS = ax.edges[row + 1];
+        if (!isNum(eN) || !isNum(eS)) return null;
+        /* Where inside the row the overlap sits, in the row's own coordinates, carried onto the
+           declared latitudes linearly — the row is one pixel tall and no projection curves
+           measurably across one pixel. */
+        const rTop = rowNorth(raster, row);
+        const f0 = (rTop - topCoord) / g.pixelLat, f1 = (rTop - botCoord) / g.pixelLat;
+        phiN = eN + (eS - eN) * f0;
+        phiS = eN + (eS - eN) * f1;
+      } else { phiN = topCoord; phiS = botCoord; }
+      const d = Math.sin(clampLat(phiN) * D2R) - Math.sin(clampLat(phiS) * D2R);
+      return d > 0 ? d : 0;
+    }
+
+    function arealWith(raster, V, at, cell, method) {
+      const g = raster.grid;
+      const fW = cell[0], fS = cell[1], fE = cell[2], fN = cell[3];
+      /* Every pixel the footprint touches, clipped to the grid. ⚠ The part of a footprint that hangs
+         off the grid is not counted as a void: it is not this grid's to answer, and `coverage` below
+         is measured over the part that IS on it — the caller already learns about the other part
+         from `outside` on the centre. */
+      let c0 = Math.max(0, Math.floor((fW - g.west) / g.pixelLng));
+      let c1 = Math.min(raster.width - 1, Math.ceil((fE - g.west) / g.pixelLng) - 1);
+      let r0 = Math.max(0, Math.floor((g.north - fN) / g.pixelLat));
+      let r1 = Math.min(raster.height - 1, Math.ceil((g.north - fS) / g.pixelLat) - 1);
+      const out = { ok: true, row: at.row, col: at.col, method: method, pixels: 0, missingPixels: 0, coverage: 0 };
+      if (c1 < c0 || r1 < r0) { out.value = null; out.nodata = true; return out; }
+
+      let wsum = 0, vsum = 0, voidW = 0, used = 0, voids = 0, apportioned = 0;
+      const classW = (method === 'mode') ? new Map() : null;
+      for (let row = r0; row <= r1; row++) {
+        const rTop = rowNorth(raster, row), rBot = rowNorth(raster, row + 1);
+        const top = Math.min(rTop, fN), bot = Math.max(rBot, fS);
+        /* ⚠ An overlap under a millionth of a pixel is the decimal noise GRID_EPS_FRAC is derived
+           from (see its comment), not a pixel the footprint reaches. Counting it would make an
+           identity resample read a neighbouring column at weight 1e-16 and answer 「ほぼ同じ値」
+           where the answer is the value. */
+        if (!(top - bot > g.pixelLat * GRID_EPS_FRAC)) continue;
+        const gh = latGround(raster, row, top, bot);
+        if (gh == null) return refuse('raster-invalid', { field: 'grid.latAxis', row: row });
+        if (!(gh > 0)) continue;
+        /* For `sum` only: the whole row-pixel's weight, which is what each overlap is a FRACTION of. */
+        const whole = (method === 'sum') ? (g.pixelLng * latGround(raster, row, rTop, rBot)) : 0;
+        const base = row * raster.width;
+        for (let col = c0; col <= c1; col++) {
+          const cW = g.west + g.pixelLng * col;
+          const ov = Math.min(cW + g.pixelLng, fE) - Math.max(cW, fW);
+          if (!(ov > g.pixelLng * GRID_EPS_FRAC)) continue;
+          const wgt = ov * gh;
+          const val = V.values[base + col];
+          /* ⚠ A VOID IS EXCLUDED FROM THE AGGREGATE, NOT READ AS 0 — the header's rule in aggregate
+             form. It is counted instead, and `coverage` says how much of the footprint had an
+             answer, so 「半分しか観測が無い平均」 does not reach the reader as a plain number. */
+          if (missing(val, V.nodata)) { voidW += wgt; voids++; continue; }
+          used++; wsum += wgt; vsum += val * wgt;
+          if (method === 'sum' && whole > 0) {
+            /* ⚠⚠⚠ THE TOTAL IS APPORTIONED, NOT ADDED UP. A source pixel half inside the footprint
+               contributes half of its value, so the sums of a set of output pixels that tile the
+               source add up to the source's own total — which is the whole reason `sum` exists for a
+               count quantity, and exactly what `average` must not do. Sharing one implementation
+               between the two would mean one of them is wrong at every pixel. */
+            apportioned += val * (wgt / whole);
+          }
+          if (classW) classW.set(val, (classW.get(val) || 0) + wgt);
+        }
+      }
+      out.pixels = used;
+      out.missingPixels = voids;
+      out.coverage = (wsum + voidW) > 0 ? (wsum / (wsum + voidW)) : 0;
+      if (!used) { out.value = null; out.nodata = true; return out; }
+      if (method === 'average') out.value = vsum / wsum;
+      else if (method === 'sum') out.value = apportioned;
+      else {
+        /* `mode`: the value covering the most ground. ⚠ TIES GO TO THE SMALLER VALUE, stated because
+           ties are REAL — two classes over exactly equal area is what a 2:1 downsample of a regular
+           grid produces constantly — and an answer that fell out of Map iteration order would make
+           the same warp draw two different pictures on two engines. */
+        let best = null, bestW = -Infinity;
+        classW.forEach((w, k) => { if (w > bestW || (w === bestW && best != null && k < best)) { best = k; bestW = w; } });
+        out.value = best;
+        out.classes = classW.size;
+      }
+      return out;
     }
 
     /* ── zonal statistics ─────────────────────────────────────────────────────────────────────── */
@@ -449,7 +671,8 @@ export function makeGisRaster() {
                it is a continuous field, and answering 「区分ごとの面積」 about it would be an invented
                classification the reader would then compare against published figures. Refused by
                name, with the pixel that proved it. */
-            if (!isInt(val)) return refuse('values-not-integer', { row: row, col: col, value: val });
+            const notAClass = classValue(val, row, col);
+            if (notAClass) return notAClass;
             const k = String(val);
             classAreas[k] = (classAreas[k] || 0) + cellKm2;
           }
@@ -615,17 +838,451 @@ export function makeGisRaster() {
       };
     }
 
-    /* One constructor for every grid this file produces, so `mask` and `diff` cannot drift in what
-       they hand back and both satisfy validate() by construction. `read` answers only for the bands
-       it has — an index outside them is band-out-of-range at the entrances, and null here rather
-       than a wrong band's numbers. */
-    function derived(like, bands, data) {
-      const g = like.grid;
+    /* ── combine: the same subtraction, with the arithmetic named by the caller ───────────────── */
+
+    /* ⚠ `diff` IS ONE QUESTION AND THIS IS THE FAMILY IT BELONGS TO (#R752). js/gis-ops.js's
+       `rasterCalc` needs a − b, a / b, a > b ? 1 : 0, (a + b) / 2 … and writing each as its own walk
+       here would be one file per operator, each with its own answer to 「片方が欠損だったら」.
+       ⚠ SO THE CALLER SUPPLIES THE ARITHMETIC AND THIS SUPPLIES EVERYTHING ELSE, and 「everything
+       else」 is the part that keeps being got wrong:
+         · THE SAME GRID TEST, the same implementation (`gridDelta`). Two grids that are not one grid
+           are not resampled to be combinable — the reason is written out at `diff` and it does not
+           get weaker because the operator changed.
+         · A VOID REACHES `fn` AS null, ALWAYS. NaN, ±Infinity and the band's declared sentinel are
+           all one thing to the caller, so 「欠損とは何か」 is not written a second time at every call
+           site — which is where it would be written differently.
+         · `fn` RETURNING null OR A NON-FINITE NUMBER IS A VOID IN THE OUTPUT. 0/0 and 「この画素は
+           答えられない」 are the same statement, and writing 0 for either is the 「void blended into a
+           measurement」 failure this file's header measures.
+       ⚠ THE UNIT IS NOT INVENTED. `diff` can keep a unit because it knows it is subtracting; an
+       arbitrary fn does not have one — mm ÷ °C is not mm — so `meta.unit` is the CALLER's statement
+       and null when they make none. Deriving one here would let a chart label a nonsense number.
+       ⚠ AND A THROWING `fn` DOES NOT TAKE THE GRID WITH IT, and does not vanish either: the pixel is
+       a void (there is no answer for it), `failed` counts them and `failedError` carries the first
+       message — the same shape `fromSampler` uses for a sampler that throws, for the same reason. */
+    function combine(a, b, bandA, bandB, fn, meta) {
+      const va = validate(a); if (!va.ok) return refuse('raster-invalid', { which: 'a', field: (va.detail && va.detail.field) || null });
+      const vb = validate(b); if (!vb.ok) return refuse('raster-invalid', { which: 'b', field: (vb.detail && vb.detail.field) || null });
+      if (typeof fn !== 'function') return refuse('combine-fn-not-a-function');
+      const off = gridDelta(a, b);
+      if (off) return refuse('grid-mismatch', off);
+      const A = values(a, bandA); if (!A.ok) return A;
+      const B = values(b, bandB); if (!B.ok) return B;
+      const n = a.width * a.height;
+      let out;
+      try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
+      const m = (meta && typeof meta === 'object') ? meta : {};
+      let count = 0, missingCount = 0, failed = 0, failedError = null;
+      for (let i = 0; i < n; i++) {
+        const x = A.values[i], y = B.values[i];
+        let r;
+        try { r = fn(missing(x, A.nodata) ? null : x, missing(y, B.nodata) ? null : y); }
+        catch (err) { failed++; if (failedError == null) failedError = String((err && err.message) || err); r = null; }
+        if (typeof r !== 'number' || !isFinite(r)) { out[i] = NaN; missingCount++; continue; }
+        out[i] = r; count++;
+      }
       return {
-        width: like.width, height: like.height,
+        ok: true,
+        raster: derived(a, [{
+          name: m.name == null ? null : m.name,
+          unit: m.unit == null ? null : m.unit,
+          /* ⚠ DECLARED, NOT WRITTEN. The output still writes NaN for what it could not answer (see
+             `mask`); a sentinel here is the caller telling the NEXT reader which number this band
+             uses for a void, and if their fn can produce that number as a real value they have said
+             so about their own data. */
+          nodata: isNum(m.nodata) ? m.nodata : null,
+        }], out),
+        /* `nodataCount` includes the pixels `fn` threw on — they have no answer, which is what a void
+           is — and `failed` is how a reader tells 「そこに値が無かった」 from 「式が壊れていた」. */
+        count: count, nodataCount: missingCount, failed: failed, failedError: failedError,
+      };
+    }
+
+    /* ── merge: two sheets, one sheet ─────────────────────────────────────────────────────────── */
+
+    /* ⚠ THE OVERLAP RULE IS REQUIRED, AND THAT IS THE WHOLE POINT OF THIS FUNCTION (#R752). A mosaic
+       of two tiles is trivial where they do not overlap and is a JUDGEMENT everywhere they do, and a
+       default — 「後から来たほうで上書き」 is the usual one — would make the answer depend on the
+       argument order the caller happened to use, for a question they were never asked. `first` and
+       `second` are honest choices (a newer survey wins); `min`/`max`/`mean` are different ones; none
+       of them is the obvious one, so an unstated rule is refused by name with the list.
+       ⚠ AND THE TWO GRIDS MUST ALREADY BE ONE GRID. This does not resample — the reason is `diff`'s,
+       verbatim: a mosaic that silently interpolates hands back a sheet whose every seam pixel is a
+       blend of two interpolations nobody named. js/gis-warp.js is where the caller puts them on one
+       lattice, and there the choice is theirs and is written down.
+       ⚠ THE OVERLAP IS MEASURED AND RETURNED (`overlapCount`), because 「重なっていたのは何画素か」
+       is the one number that tells a reader whether the rule they chose mattered at all. */
+    const MERGE_OVERLAPS = ['first', 'second', 'min', 'max', 'mean'];
+
+    function merge(a, b, bandIndex, opts) {
+      const va = validate(a); if (!va.ok) return refuse('raster-invalid', { which: 'a', field: (va.detail && va.detail.field) || null });
+      const vb = validate(b); if (!vb.ok) return refuse('raster-invalid', { which: 'b', field: (vb.detail && vb.detail.field) || null });
+      const stated = (opts && opts.overlap != null) ? String(opts.overlap) : '';
+      if (!stated) return refuse('merge-overlap-not-stated', { overlaps: MERGE_OVERLAPS.slice() });
+      if (MERGE_OVERLAPS.indexOf(stated) < 0) return refuse('merge-overlap-unknown', { overlap: stated, overlaps: MERGE_OVERLAPS.slice() });
+      const off = gridDelta(a, b);
+      if (off) return refuse('grid-mismatch', off);
+      const A = values(a, bandIndex); if (!A.ok) return A;
+      const B = values(b, bandIndex); if (!B.ok) return B;
+      const n = a.width * a.height;
+      let out;
+      try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
+      let count = 0, missingCount = 0, both = 0, onlyA = 0, onlyB = 0;
+      for (let i = 0; i < n; i++) {
+        const x = A.values[i], y = B.values[i];
+        const hasA = !missing(x, A.nodata), hasB = !missing(y, B.nodata);
+        if (hasA && hasB) {
+          both++; count++;
+          out[i] = (stated === 'first') ? x
+            : (stated === 'second') ? y
+              : (stated === 'min') ? Math.min(x, y)
+                : (stated === 'max') ? Math.max(x, y)
+                  /* `mean` of the two SHEETS, not of the coverage: both sides carry one observation
+                     of this pixel and they weigh the same. A count-weighted mean over more than two
+                     sheets is a different function and is not pretended to here. */
+                  : (x + y) / 2;
+          continue;
+        }
+        if (hasA) { out[i] = x; onlyA++; count++; continue; }
+        if (hasB) { out[i] = y; onlyB++; count++; continue; }
+        /* ⚠ BOTH MISSING IS MISSING. Neither sheet has an observation here, and a 0 would be this
+           function inventing the one number the reader would then plot. */
+        out[i] = NaN; missingCount++;
+      }
+      /* Same two rules as `diff`, for the same reasons: a unit survives only if both sides state the
+         same one, and the name says what was merged rather than claiming to be one of them. */
+      const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
+      const na = A.band.name == null ? null : String(A.band.name);
+      const nb = B.band.name == null ? null : String(B.band.name);
+      const name = (na != null && nb != null) ? (na === nb ? na : (na + ' ∪ ' + nb)) : (na != null ? na : nb);
+      return {
+        ok: true,
+        raster: derived(a, [{ name: name, unit: unit, nodata: null }], out),
+        count: count, nodataCount: missingCount,
+        overlapCount: both, onlyA: onlyA, onlyB: onlyB, overlap: stated,
+      };
+    }
+
+    /* One constructor for every grid this file produces, so `mask`, `diff`, `combine`, `merge` and
+       `rasterize`'s caller cannot drift in what they hand back and all of them satisfy validate() by
+       construction. ⚠ It is PRIVATE and has two public doors (`derived`, `build`) that differ only in
+       where the lattice comes from — see `build`. */
+    function assemble(width, height, gridFields, bands, planes) {
+      const grid = { west: gridFields.west, north: gridFields.north, pixelLng: gridFields.pixelLng, pixelLat: gridFields.pixelLat };
+      /* ⚠ CARRIED, and only when the source declared one: a mask or a difference sits on the same
+         rows as its input, so the latitudes those rows stand for are the same statement. Dropping it
+         would make an areal aggregate over a masked grid weight by row index where the input weighted
+         by ground — the same numbers, silently differently weighted. */
+      if (gridFields.latAxis !== undefined && gridFields.latAxis !== null) grid.latAxis = gridFields.latAxis;
+      return {
+        width: width, height: height,
         bands: bands,
-        grid: { west: g.west, north: g.north, pixelLng: g.pixelLng, pixelLat: g.pixelLat },
-        read: (i) => ((i == null ? 0 : i) === 0 ? data : null),
+        grid: grid,
+        /* `read` answers only for the bands it has — an index outside them is band-out-of-range at
+           the entrances, and null here rather than a wrong band's numbers. */
+        read: (i) => { const k = (i == null) ? 0 : i; return (isInt(k) && k >= 0 && k < planes.length) ? planes[k] : null; },
+      };
+    }
+
+    function derived(like, bands, data) {
+      return assemble(like.width, like.height, like.grid, bands, [data]);
+    }
+
+    /* ⚠⚠⚠ THE SECOND DOOR, AND IT IS THE SAME CONSTRUCTOR (#R752). `derived` can only make a grid on
+       the lattice it was handed, which is right for `mask`/`diff`/`combine` — they answer pixel by
+       pixel about grids that already agree — and wrong for anything whose OUTPUT lattice is the
+       caller's choice (`rasterize` burns vectors onto a window and a resolution that no input grid
+       has). Writing a second object literal there is how the two would come to disagree about what a
+       raster IS: one of them would forget `latAxis`, or write `read` so that band 1 answers band 0's
+       numbers, and nothing would fail until an aggregate came out silently differently weighted. So
+       both doors assemble through `assemble` and differ only in where the lattice comes from.
+       ⚠ AND THIS ONE IS CHECKED, because its grid is an argument rather than a grid that was already
+       validated at an entrance: the result goes through `validate()` — the same one every entrance
+       uses — and a lattice that cannot hold a grid comes back as `raster-invalid` naming the field,
+       not as an object that fails three ops later.
+         grid  — { west, north, pixelLng, pixelLat, width, height } (+ optional latAxis)
+         bands — [{ name, unit, nodata }, …]; anything absent is null, which is 「宣言が無い」
+         data  — one array for a one-band grid, or one array PER BAND (arrays, not numbers, so a
+                 one-cell one-band grid written as [5] is still that grid's single plane) */
+    function build(grid, bands, data) {
+      if (!grid || typeof grid !== 'object') return refuse('raster-invalid', { field: 'grid' });
+      if (!Array.isArray(bands) || !bands.length) return refuse('raster-invalid', { field: 'bands' });
+      const decl = bands.map((b) => {
+        const s = (b && typeof b === 'object') ? b : {};
+        return {
+          name: s.name == null ? null : s.name,
+          unit: s.unit == null ? null : s.unit,
+          /* Same rule as `fromSampler`'s band: a sentinel survives only if one was declared as a
+             number, and `null` stays 「宣言が無い」 rather than becoming 「欠損が無い」. */
+          nodata: isNum(s.nodata) ? s.nodata : null,
+        };
+      });
+      const arrayLike = (x) => !!x && typeof x !== 'string' && typeof x !== 'number' && typeof x.length === 'number';
+      const planes = (Array.isArray(data) && data.length === decl.length && data.every(arrayLike)) ? data.slice() : [data];
+      const raster = assemble(grid.width, grid.height, grid, decl, planes);
+      const v = validate(raster);
+      if (!v.ok) return v;
+      return { ok: true, raster: raster };
+    }
+
+    /* ── polygonize: 等しい値の連結領域を面にする ─────────────────────────────────────────── */
+
+    /* ⚠⚠⚠ THIS IS `zonal` RUN BACKWARDS, AND IT INHERITS `zonal`'s REFUSAL (#R752). A classification
+       grid — land cover, Köppen, an administrative raster — is a set of REGIONS that were stored as
+       pixels, and until this existed the only way to ask 「その区分の面を出せ」 was to already have
+       the polygons. ⚠ A MEASURED grid is refused by the same `classValue` `zonal` asks, not by a
+       second copy of the test: the connected regions of a continuous field are an artefact of float
+       equality, and drawing one polygon per pixel and calling it 「地域」 is the ハリボテ
+       CONSTITUTION.md forbids.
+       ══ WHAT IT DECIDES, STATED ═══════════════════════════════════════════════════════════════
+       · 4-NEIGHBOUR CONNECTIVITY. Two pixels of the same value touching only at a corner are two
+         regions. With 8-connectivity they would be one region whose boundary crosses itself at that
+         corner — not a simple polygon, and not something a GeoJSON reader can fill. The choice is
+         stated rather than left to whichever the implementation happened to do.
+       · A HOLE IS A HOLE. An enclosed region of another value is not covered by the polygon around
+         it; it is a ring inside it. A polygonize that returned only outer rings would report the
+         island's area as part of the lake's, which is the one thing these polygons get used for.
+       · THE RINGS FOLLOW RFC 7946 §3.1.6 — exterior COUNTER-CLOCKWISE, holes CLOCKWISE, each closed
+         (last coordinate === first). `rings[0]` is the exterior. That is the orientation a GeoJSON
+         Polygon wants, so the caller assembles `{type:'Polygon', coordinates: p.rings}` and nothing
+         in between has to guess which way round these are — the failure js/gis-shapefile.js records
+         (#R738: 「環の向きが外と穴を分ける唯一の区別」).
+       · THE COORDINATES ARE PIXEL EDGES, NOT CENTRES. A region of one pixel is that pixel's square,
+         so the polygons of a whole grid TILE it and their areas add up to the grid's. Tracing the
+         centres instead would shrink every region by half a pixel on each side.
+       · A MISSING PIXEL IS IN NO POLYGON. It has no value, so it is not a region of one — it becomes
+         a hole or a gap, and `nodataCount` says how many there were.
+       ⚠ AND IT IS ASYNC, because it walks the grid twice and then the boundary. A synchronous walk
+       over a 4,000×4,000 grid holds the one thread for seconds, during which the map does not draw
+       and `signal.aborted` cannot even be SET by the code that would set it — the shape
+       docs/GIS-CORE.md §2.6 measured and [[intmap-sync-loop-cannot-be-cancelled]] names. The unit of
+       the yield is ELAPSED TIME (`frameMs()`), exactly as `fromSamplerAsync`'s is; the `& 255` below
+       is about how often the CLOCK is read, not about how much work a slice contains. */
+    async function polygonize(g, bandIndex, opts) {
+      const v = validate(g);
+      if (!v.ok) return v;
+      /* ⚠ A GRID THAT HAS DECLARED ITS ROWS ARE NOT DEGREES CANNOT BE HANDED BACK AS lng/lat. The
+         pixel-space proxies js/gis-warp.js reads through carry `grid.latAxis` precisely to say so
+         (their 「lat」 is a negated row index), and emitting `north − row·pixelLat` from one would be
+         a polygon claiming a position on the Earth that nobody measured. The caller warps first. */
+      if (g.grid.latAxis !== undefined && g.grid.latAxis !== null) {
+        return refuse('grid-not-degrees', { latAxis: (typeof g.grid.latAxis === 'string') ? g.grid.latAxis : 'edges' });
+      }
+      const V = values(g, bandIndex);
+      if (!V.ok) return V;
+      const o = opts || {};
+      const sig = o.signal || null;
+      const onp = (typeof o.onProgress === 'function') ? o.onProgress : null;
+      const width = g.width, height = g.height, n = width * height;
+      let labels, stack;
+      try { labels = new Int32Array(n); stack = new Int32Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
+      labels.fill(-1);
+
+      const comps = [];
+      let last = nowMs();
+      async function breathe(phase, done, total) {
+        const t = nowMs();
+        if (t - last < FRAME_MS) return !(sig && sig.aborted);
+        last = t;
+        if (onp) { try { onp({ phase: phase, done: done, total: total, polygons: comps.length }); } catch (_) { } }
+        /* one turn of the event loop — the camera, the renderer and the stop button are all here */
+        await new Promise((res) => setTimeout(res, 0));
+        return !(sig && sig.aborted);
+      }
+      const stopped = (phase, done, total) => refuse('cancelled', { phase: phase, done: done, total: total });
+
+      /* ══ ① label: the 4-connected regions of equal value ═════════════════════════════════════
+         Equality is EXACT. These are integers by the refusal above, so 「等しい」 has no tolerance to
+         choose and a tolerance would merge two adjacent classes. −2 marks a pixel that is missing,
+         which is neither a region nor unvisited. The flood fill carries its own stack: a grid one
+         region deep would put 16 million frames on the call stack, and 「大きい入力で落ちる」 is not
+         a property this file is allowed to have. */
+      let nodataCount = 0;
+      for (let i = 0; i < n; i++) {
+        if ((i & 255) === 0 && !(await breathe('label', i, n))) return stopped('label', i, n);
+        if (labels[i] !== -1) continue;
+        const val = V.values[i];
+        if (missing(val, V.nodata)) { labels[i] = -2; nodataCount++; continue; }
+        /* Seeds only: every other pixel of a region was reached because its value is EXACTLY this
+           one, so checking the seed checks every distinct value in the grid exactly once. */
+        const notAClass = classValue(val, (i / width) | 0, i % width);
+        if (notAClass) return notAClass;
+        const L = comps.length;
+        comps.push({ value: val, pixels: 0 });
+        let sp = 0, cnt = 0;
+        stack[sp++] = i; labels[i] = L;
+        while (sp > 0) {
+          const p = stack[--sp]; cnt++;
+          if ((cnt & 255) === 0 && !(await breathe('label', i, n))) return stopped('label', i, n);
+          const r = (p / width) | 0, c = p - r * width;
+          if (c > 0 && labels[p - 1] === -1 && V.values[p - 1] === val) { labels[p - 1] = L; stack[sp++] = p - 1; }
+          if (c < width - 1 && labels[p + 1] === -1 && V.values[p + 1] === val) { labels[p + 1] = L; stack[sp++] = p + 1; }
+          if (r > 0 && labels[p - width] === -1 && V.values[p - width] === val) { labels[p - width] = L; stack[sp++] = p - width; }
+          if (r < height - 1 && labels[p + width] === -1 && V.values[p + width] === val) { labels[p + width] = L; stack[sp++] = p + width; }
+        }
+        comps[L].pixels = cnt;
+      }
+
+      /* ══ ② the boundary edges, ORIENTED ═══════════════════════════════════════════════════════
+         A node is a pixel CORNER: (col, row) with col ∈ [0,width], row ∈ [0,height], numbered
+         col + row·(width+1). Work in (X, Y) = (col, −row) so Y increases northward exactly as lat
+         does — then 「interior on the left」 is the ordinary counter-clockwise convention and the sign
+         of the shoelace below is the sign RFC 7946 asks about, with no flip to remember.
+         Each side of a pixel whose neighbour is NOT in the same region emits ONE directed edge with
+         the region on its left: south edge →+X, east →+Y, north →−X, west →−Y. */
+      const NW = width + 1;
+      const edges = new Map();
+      function addEdge(L, s, e) {
+        let m = edges.get(L);
+        if (!m) { m = new Map(); edges.set(L, m); }
+        const list = m.get(s);
+        if (list) list.push(e); else m.set(s, [e]);
+      }
+      for (let i = 0; i < n; i++) {
+        if ((i & 255) === 0 && !(await breathe('edges', i, n))) return stopped('edges', i, n);
+        const L = labels[i];
+        if (L < 0) continue;
+        const r = (i / width) | 0, c = i - r * width;
+        if (r === 0 || labels[i - width] !== L) addEdge(L, (c + 1) + r * NW, c + r * NW);
+        if (r === height - 1 || labels[i + width] !== L) addEdge(L, c + (r + 1) * NW, (c + 1) + (r + 1) * NW);
+        if (c === 0 || labels[i - 1] !== L) addEdge(L, c + r * NW, c + (r + 1) * NW);
+        if (c === width - 1 || labels[i + 1] !== L) addEdge(L, (c + 1) + (r + 1) * NW, (c + 1) + r * NW);
+      }
+
+      const nodeX = (id) => id % NW;
+      const nodeY = (id) => -((id / NW) | 0);
+      const dirOf = (a, b) => [Math.sign(nodeX(b) - nodeX(a)), Math.sign(nodeY(b) - nodeY(a))];
+      /* ⚠ AT A PINCH THE TRAVERSAL TURNS RIGHT. A node where the region occupies two diagonally
+         opposite pixels has TWO outgoing edges, and the choice between them is not free: taking the
+         sharpest right turn keeps the ring hugging the interior it is walking around, so the two
+         lobes come back as one non-self-intersecting outer ring and a hole, instead of two rings that
+         cross at that corner. Left-turn preference is the same algorithm for 8-connectivity, and this
+         file chose 4 (see the header). */
+      function turnScore(dx, dy, ex, ey) {
+        if (ex === dy && ey === -dx) return 0;      /* right  */
+        if (ex === dx && ey === dy) return 1;       /* ahead  */
+        if (ex === -dy && ey === dx) return 2;      /* left   */
+        return 3;                                    /* back   */
+      }
+      /* One closed ring, consuming the edges it walks. Collinear nodes are dropped as they are met —
+         a 100×100 square is 4 corners and not 400 — which is exact: a vertex in the middle of a
+         straight side changes no geometry, and keeping them would quadruple every file downstream. */
+      function traceRing(m, s0) {
+        const nodes = [];
+        let cur = s0, dx = 0, dy = 0, have = false;
+        for (; ;) {
+          const list = m.get(cur);
+          if (!list || !list.length) break;
+          let k = 0;
+          if (list.length > 1 && have) {
+            let best = 9;
+            for (let j = 0; j < list.length; j++) {
+              const d = dirOf(cur, list[j]);
+              const s = turnScore(dx, dy, d[0], d[1]);
+              if (s < best) { best = s; k = j; }
+            }
+          }
+          const nxt = list[k];
+          if (list.length === 1) m.delete(cur); else list.splice(k, 1);
+          const nd = dirOf(cur, nxt);
+          if (!have || !(nd[0] === dx && nd[1] === dy)) nodes.push(cur);
+          dx = nd[0]; dy = nd[1]; have = true;
+          cur = nxt;
+          if (cur === s0) break;
+        }
+        /* The node the walk STARTED at is only a vertex if the ring turns there — and it was chosen
+           by map order, not because it is a corner. Dropping it when the closing direction matches
+           the opening one keeps 「頂点は角である」 true all the way round. */
+        if (nodes.length >= 3 && have) {
+          const d0 = dirOf(nodes[0], nodes[1]);
+          if (d0[0] === dx && d0[1] === dy) nodes.shift();
+        }
+        return nodes;
+      }
+      /* Twice the signed area in node coordinates: > 0 is counter-clockwise, i.e. an exterior ring. */
+      function ringArea2(nodes) {
+        let s = 0;
+        for (let i = 0; i < nodes.length; i++) {
+          const a = nodes[i], b = nodes[(i + 1) % nodes.length];
+          s += nodeX(a) * nodeY(b) - nodeX(b) * nodeY(a);
+        }
+        return s;
+      }
+      function ringBox(nodes) {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const id of nodes) {
+          const x = nodeX(id), y = nodeY(id);
+          if (x < x0) x0 = x; if (x > x1) x1 = x;
+          if (y < y0) y0 = y; if (y > y1) y1 = y;
+        }
+        return [x0, y0, x1, y1];
+      }
+      const gr = g.grid;
+      function toCoords(nodes) {
+        const ring = [];
+        for (const id of nodes) ring.push([gr.west + gr.pixelLng * nodeX(id), gr.north + gr.pixelLat * nodeY(id)]);
+        /* Closed explicitly: RFC 7946 requires the first position repeated, and a caller that had to
+           add it would be the second place this file's ring convention lived. */
+        if (ring.length) ring.push(ring[0].slice());
+        return ring;
+      }
+
+      /* ══ ③ ring → polygon ════════════════════════════════════════════════════════════════════
+         A 4-connected region has ONE exterior ring and one ring per enclosed hole, so the assignment
+         below is normally 「全部 rings[0] の穴」. It is written as a containment test anyway — the
+         smallest exterior whose node box holds the hole's — because that costs a few lines and
+         removes the need to TRUST the topology claim; the rings of one region nest strictly, so their
+         boxes nest too, and a reading that would be wrong is one this file never produces. */
+      const polygons = [];
+      for (let L = 0; L < comps.length; L++) {
+        if (!(await breathe('rings', L, comps.length))) return stopped('rings', L, comps.length);
+        const m = edges.get(L);
+        if (!m) continue;
+        const outer = [], holes = [];
+        for (const s0 of Array.from(m.keys())) {
+          for (; ;) {
+            const list = m.get(s0);
+            if (!list || !list.length) break;
+            const ring = traceRing(m, s0);
+            if (ring.length < 3) continue;
+            (ringArea2(ring) > 0 ? outer : holes).push(ring);
+          }
+        }
+        if (!outer.length) continue;
+        const boxes = outer.map(ringBox);
+        const built = outer.map((ring) => [toCoords(ring)]);
+        for (const hole of holes) {
+          const hb = ringBox(hole);
+          let pick = -1, pickArea = Infinity;
+          for (let k = 0; k < outer.length; k++) {
+            const b = boxes[k];
+            if (!(b[0] <= hb[0] && b[1] <= hb[1] && b[2] >= hb[2] && b[3] >= hb[3])) continue;
+            const area = (b[2] - b[0]) * (b[3] - b[1]);
+            if (area < pickArea) { pickArea = area; pick = k; }
+          }
+          if (pick >= 0) built[pick].push(toCoords(hole));
+        }
+        for (const rings of built) {
+          polygons.push({
+            value: comps[L].value,
+            /* The pixels of the REGION this polygon's rings came from — the count `zonal` would
+               return for the same shape, so a caller can check the two against each other. */
+            pixels: comps[L].pixels,
+            rings: rings,
+            holes: rings.length - 1,
+          });
+        }
+      }
+      if (onp) { try { onp({ phase: 'done', done: n, total: n, polygons: polygons.length }); } catch (_) { } }
+      return {
+        ok: true,
+        polygons: polygons,
+        count: polygons.length,
+        /* `regions` is how many 4-connected regions were found and `count` how many polygons came
+           out; they are equal for every grid this has been run on, and reporting both is how a reader
+           would see it if they ever were not. */
+        regions: comps.length,
+        nodataCount: nodataCount,
       };
     }
 
@@ -797,9 +1454,31 @@ export function makeGisRaster() {
       return { ok: true, raster: raster, filled: filled, empty: empty, failed: failed, textSeen: textSeen };
     }
 
+    /* ⚠⚠⚠ THE VERSION OF THIS KERNEL, AND IT WAS MISSING FROM THE ROUND THAT INVENTED VERSIONS
+       (#R752). js/gis-project.js does not save a grid's numbers — it saves the RECIPE and replays it,
+       so what the reader sees the next time they open the project is whatever THIS file computes
+       then. And this file is where the answers are decided, not merely carried: the interpolation
+       rule for `sample` (bilinear that refuses to blend a void, Keys a = −0.5 for cubic), the
+       area weighting of `zonal`'s mean, what `diff`/`combine` do when one side is missing,
+       `merge`'s overlap rules, `polygonize`'s 4-connectivity and ring orientation. Change any one of
+       them and a replayed recipe lands on different numbers under the same name — which is exactly
+       what a version exists to make visible.
+       #R749 built the version mechanism (js/gis-ops.js `ops-1`, js/gis-geometry.js `geom-1`) in the
+       same round it built this file, and this file did not get one: the recipe recorded which
+       geometry engine answered and said nothing about which grid arithmetic did.
+       ⚠ scripts/gis-kernel-versions.mjs holds the sha256 that keeps this honest — a bump written
+       without touching the arithmetic, or arithmetic touched without a bump, is what it measures. */
+    const KERNEL_VERSION = 'raster-1';
+
     const API = {
+      /* see KERNEL_VERSION above — js/gis-project.js records which kernel answered */
+      version: () => KERNEL_VERSION,
       validate,
       bboxOf, pixelAreaKm2, sample, zonal, mask, diff, describeBands, fromSampler, fromSamplerAsync,
+      /* (#R752) the arithmetic js/gis-ops.js's rasterCalc / mosaic / rasterize / polygonize run on.
+         ⚠ `polygonize` is ASYNC (it walks the grid three times and must stay interruptible); the
+         other three answer synchronously, like everything above them. */
+      build, combine, merge, polygonize,
       /* ⚠ (#R749) PUBLISHED BECAUSE TWO OTHER FILES ASK THE SAME TWO QUESTIONS PER PIXEL. js/map-ui.js
          burns a grid onto a canvas and has to ask 「このセルは欠損か」 for every one of them, and
          js/gis-sources.js hands a band's values to a caller; both would otherwise spell the rule a
@@ -815,7 +1494,15 @@ export function makeGisRaster() {
       /* the condition vocabulary this file accepts, so a UI can offer it without a hand-written list
          (docs/GIS-CORE.md §2.1: 「宣言を読むのは UI の仕事、持つのは op の仕事」) */
       conditionOps: () => CONDITION_OPS.slice(),
+      /* the same reason, for `merge`: the rule is REQUIRED, so whoever asks the reader for one has to
+         be able to read the list rather than keep a hand-written copy that falls behind this one */
+      mergeOverlaps: () => MERGE_OVERLAPS.slice(),
       sampleMethods: () => SAMPLE_METHODS.slice(),
+      /* ⚠ THE SAME LIST, WITH WHAT EACH ENTRY IS — so a reader that has to behave differently for a
+         point method and an areal one (a UI asking for a footprint, an op that samples at a point and
+         therefore cannot offer the areal ones) reads `kind` instead of keeping its own list of which
+         names are which. Both come off ONE table, so neither can fall behind the other. */
+      sampleMethodFacts: () => SAMPLE_METHODS.map((id) => Object.assign({ id: id }, SAMPLE_METHOD_FACTS[id])),
     };
     try { window.IntMapGisRaster = API; } catch (_) { }
     return API;

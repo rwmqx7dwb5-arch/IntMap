@@ -232,6 +232,17 @@ gis-index.js                      **空間索引** `window.IntMapGisIndex`（#R7
                                   ⚠ 不変条件は**偽陰性ゼロ**——子午線をまたぐ箱・世界を覆う箱・
                                   箱を持たないものは `always` に入れ、その件数は `stats().oversize`
                                   で外から見える。実測 40,000×1,000 で 756 ms → 82 ms
+gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorker`（#R752）— 重い算術を
+                                  main thread の外で走らせる。⚠ **`js/gis-ops.js` の yield の代わり
+                                  ではなく隣**——あちらが足すのは応答性、これが足すのは**並列性**
+                                  （`docs/GIS-CORE.md` §6 がその 2 つを分けて述べている）。運べるのは
+                                  **純粋な算術だけ**（`window` も DOM も無い側で評価されるので、仕事は
+                                  外側の変数を掴めない——掴んでいたら `job-not-self-contained` で名指す）。
+                                  ⚠ **中止は `terminate()` まで届く**（同期ループの上の中止ボタンは
+                                  効かない、という実測への答え）。並列度の上限は core ではなく**メモリ**
+                                  から決めた数で、根拠は定数の隣にある。⚠ `available()`（能力）と
+                                  `probe()`（実測）は別の問い——CSP が `blob:` を拒むことは throw では
+                                  なく error イベントで出るので、同期では答えられない
 gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#R738）— 計算列のための
                                   小さな言語。`parse` / `evaluate` / `compile` / `functions` / `refusals`。
                                   ⚠ **読者が打った文字列がコードにならない**——`eval` も `new Function` も

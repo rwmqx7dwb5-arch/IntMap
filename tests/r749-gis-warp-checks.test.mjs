@@ -297,7 +297,7 @@ test('R749 ③ a void does not grow — bilinear falls back to nearest and says 
 /* ── ④ ──────────────────────────────────────────────────────────────────────────────────────── */
 
 test('R749 ④ `method` has no default — an unstated interpolation produces nothing', async () => {
-  const { warp } = await boot();
+  const { warp, raster } = await boot();
   const src = degreeGrid({ west: 0, north: 10, pixelLng: 1, pixelLat: 1, width: 4, height: 4, value: () => 1 });
 
   for (const opts of [undefined, {}, { method: '' }, { method: null }]) {
@@ -306,17 +306,31 @@ test('R749 ④ `method` has no default — an unstated interpolation produces no
     assert.equal(r.why, 'resample-method-not-stated');
     assert.equal(r.grid, undefined, 'a refusal handed back a grid anyway');
   }
-  /* and the refusal names what could have been said, from the declaration rather than from prose */
+  /* and the refusal names what could have been said, from the declaration rather than from prose.
+     ⚠ (#R752) THESE THREE LINES USED TO PIN THE SET TO ['bilinear','nearest'] — and that was a
+     GUARD WRITTEN AS A POLICY ([[intmap-ceiling-guards-are-not-policies]]). What ④ is about is that
+     `method` has no default, that an unknown name is refused, and that the refusal reads its
+     vocabulary from the declaration instead of prose. None of that says how many methods exist, and
+     the first correct change — #R752 adding cubic, average, mode and sum, which docs/GIS-CORE.md §6
+     had listed as missing — was failed by an assertion that was never measuring the rule. The
+     population is now asked of the kernel that owns it. */
+  /* the kernel that owns the method ids */
+  const known = raster.sampleMethods().slice().sort();
   const r = await warp.to4326(src, {});
-  assert.deepEqual(r.detail.methods.slice().sort(), ['bilinear', 'nearest']);
+  assert.deepEqual(r.detail.methods.slice().sort(), known, 'the refusal offers a set the kernel does not have');
 
-  const bad = await warp.to4326(src, { method: 'cubic' });
+  /* ⚠ A NAME THE KERNEL DOES NOT HAVE, and it must be derived rather than typed: 'cubic' stood here
+     and became a real method, so the line stopped testing refusal and started testing absence. */
+  const absent = 'lanczos';
+  assert.ok(!known.includes(absent), 'pick a name the kernel really lacks: ' + absent);
+  const bad = await warp.to4326(src, { method: absent });
   assert.equal(bad.ok, false);
   assert.equal(bad.why, 'resample-method-unknown');
 
   /* the declaration itself: ids come from the raster kernel, meanings from the warp */
   const ms = warp.methods();
-  assert.deepEqual(ms.map((m) => m.id).sort(), ['bilinear', 'nearest']);
+  assert.deepEqual(ms.map((m) => m.id).sort(), known,
+    'the warp offers a different set of methods from the kernel that implements them');
   for (const m of ms) {
     assert.equal(m.stated, true, m.id + ' is offered with no description');
     assert.equal(typeof m.interpolates, 'boolean');

@@ -654,7 +654,14 @@ export function makeGisExpr() {
       }));
     }
 
-    const API = { parse, evaluate, compile, functions, refusals: () => REFUSALS.slice() };
+    /* (#R752) ⚠ WHAT THIS FILE DECIDES IS AN ANSWER, SO IT DECLARES WHICH ONE. `compute` saves its
+       expression as a recipe and js/gis-project.js replays it, so a change here — an operator's
+       precedence, what a missing cell propagates to, whether a leading zero is arithmetic — silently
+       rewrites the numbers in a project a reader saved last week. Until this round the record asked
+       two kernels and this was not one of them. The keeper is scripts/gis-kernel-versions.mjs. */
+    const KERNEL_VERSION = 'expr-1';
+
+    const API = { parse, evaluate, compile, functions, version: () => KERNEL_VERSION, refusals: () => REFUSALS.slice() };
     try { window.IntMapGisExpr = API; } catch (_) { }
     return API;
   })();
