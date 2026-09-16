@@ -40,8 +40,8 @@ and unchanged resolution and image fallback. These count released resources; the
 
 
 **The tiers, measured** (`node scripts/test-budget.mjs`, 2026-08-25): the **core** tier that
-gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **whole** suite is
-**113 measured spec files / 77.3 min** of serial browser time against a ceiling of 77.3 min; and
+gates a push is **7 spec files / 0.5 min** against a ceiling of 0.6 min; the **whole** suite is
+**114 measured spec files / 81.4 min** of serial browser time against a ceiling of 81.4 min; and
 `npm run test:checks` runs every `tests/**/*.test.mjs` with no browser at all, which
 `npm run test:checks` runs **296 Node test files** with no browser at all (counted from
 
@@ -62,7 +62,7 @@ gates a push is **7 spec files / 0.5 min** against a ceiling of 0.5 min; the **w
 > （描かれた文字）も緑だった——**どちらも真だった。同じ文字を40回描くレイヤーについて。**
 > 数を数えるものがどこにも無かった。
 `node --test` discovers for itself — there is no list of them to keep (#R529). The nightly
-**deep** tier — **106 spec files** — is the whole suite minus core
+**deep** tier — **107 spec files** — is the whole suite minus core
 (`node -e "import('./scripts/tiers.mjs').then(t=>console.log(t.tierSpecs('deep').length))"`).
 `npm test` runs the source half and the browser
 half *concurrently* (`scripts/test-parallel.mjs`), so it costs `max(a, b)` rather than `a + b`.
@@ -588,7 +588,7 @@ node scripts/sync-newsgeo.mjs
 ## The deep tier, and who is told when it goes red (#R304)
 
 `npm test` runs the **core** tier — the gate a push waits for. Everything else is the **deep**
-tier: `npm run test:deep`, **106 spec files** against core's 7, because #R204/#R207 turned the split
+tier: `npm run test:deep`, **107 spec files** against core's 7, because #R204/#R207 turned the split
 from a hand-kept list into a **price** (`scripts/tiers.mjs`, `CORE_MAX_S = 1`): a spec may stand in
 front of a push only if it costs at most one second, so nearly every per-round regression file is
 deep. Nothing is deleted by being deep — every assertion still runs.
@@ -1399,6 +1399,42 @@ internal 呼び出しには載らないこと／`map.clear` が `clear` 観測�
 ⚠ **6 種の変異で全部鳴ることを確かめた**（キー名の一覧を戻す／enum を通す／必須優先を戻す／
 未知の id を推測する／空白を通す／宣言された型を無視する）。**うち 2 つは最初生き延びた**
 ——④ は差の出る 1 件を測っていなかったから、②は数を数として渡していたから。
+
+### `tests/r753-account-menu.spec.js` ＋ `tests/r753-account-menu-checks.test.mjs` (#R753)
+
+6 本＋3 本。**アカウントのボタンとアカウントメニュー**。⚠ **このパネルのログイン後の半分は、
+これまで一度も試験されていなかった**——`tests/r168.spec.js` は自分の頭でそう書いている
+（「currentUser は届かない。hermetic policy が Supabase を塞ぐし、資格情報を試験に置くわけには
+いかない」）。塞がっているのは**通信**であって**セッション**ではない: supabase-js は
+`getSession()` を localStorage から答えるので、**期限が未来のセッション 1 個**で
+`refreshCurrentUser()` が走り、本物の `openAccountMenu()` が開く。その後にこのモジュールが
+プロジェクトへ出す要求（プロフィール行・当日の利用行）は hermetic policy の意図どおり全部落ち、
+モジュール自身の catch が受ける——**通信の無い端末でこのパネルが耐えるべき状態そのもの**。
+
+- ① **広い画面のボタンはアイコンを持たず、携帯では逆にアイコンがボタンである**
+  （計算値と実測の箱。34px であることまで）。
+- ② **ログイン後の経路でシートが開き、日次の計器を 2 つとも述べる**（2 行・2 本のバー）。
+- ③ **`.acct-*` の規則で何にも当たらないものが無く、パネルの class で規則の無いものも無い**
+  ——#R488 の形。`acct-danger` は**規則が無いまま**出荷され（#R231 の註が述べている区切りは
+  一度も描かれていなかった）、`.acct-color` は**使う者がいないまま**残っていた。
+  ⚠ **いま当たらない ＝ 死んでいる、ではない**（`.acct-ai-out` は残 0 の色、
+  `.acct-ask-danger` は破壊的な確認）。手書きの除外表ではなく、**その class をモジュールが
+  書いているか**で分ける——状態の class は `js/auth-ui.js` に在り、消えた部品の class はどこにも無い。
+  ⚠ CSSOM を歩くとき、**入れ子 CSS のブラウザでは CSSStyleRule も `.cssRules` を持つ**
+  （空）。「`cssRules` があれば入れ物」とすると**52 個あるうち 0 個**しか見えない。
+- ④ **確認と入力がシートの中で起き、Esc は上にあるものから閉じる**（確認 → シート → 開いた
+  ボタンへ focus が戻る）。
+- ⑤ **Google のセッションに、持っていないパスワードの欄を出さない**。
+- ⑥ **パネルが何も投げていない**。
+
+⚠ **この spec は deep tier（nightly）で走る。** 実測 594 / 1,970 / 574 ms ＝ 表の 2 秒で、`CORE_MAX_S`＝1 を超えるから——**価格であって好みではない**（`scripts/tiers.mjs`）。
+**push を門で守るのは同じ回の checks 側**（node・`npm test` に内包）で、#R620 と同じ関係にある。
+
+checks 側（node）は、ブラウザに言えない 2 つだけを述べる: **window.confirm/prompt/alert を
+持たないこと**（問いは 1 つの `_acctAsk()` を通る）と、**残り回数をこのファイルが計算し直さない
+こと**（`aiUsageSummary()` が唯一の答え）。⚠ 後者の綴りは**語境界で測る**
+——`HOST.aiUsageSummary` は `HOST.aiUsage` を部分文字列として含むので、素朴な包含検査は
+この回が依拠している呼び出しそのものを禁じてしまう。
 
 ### `tests/r746-atlas-clock-rounding-checks.test.mjs` (#R746)
 

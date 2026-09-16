@@ -1732,7 +1732,6 @@ window.IntMapLang.define('fr', { ui: {
   "Log in or create an account to use AI features and sync your settings, widgets, favorites and avatar across devices.": "Connectez-vous ou créez un compte pour utiliser les fonctions d'IA et synchroniser vos réglages, widgets, favoris et avatar entre vos appareils.",
   "Log in to create and view area monitors.": "Connectez-vous pour créer et consulter des surveillances de zone.",
   "Log in to run monitors.": "Connectez-vous pour exécuter des surveillances.",
-  "Log out of your account?": "Se déconnecter du compte ?",
   "Logged out": "Déconnecté",
   "long-run estimates for this year — World Bank / IMF annual series begin in 1960": "estimations de longue période pour cette année — les séries annuelles de la Banque mondiale et du FMI commencent en 1960",
   "LOS breaks": "ruptures de visibilité directe",

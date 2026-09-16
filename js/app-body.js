@@ -266,7 +266,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* READ-WRITE — the console's Atlas actions assign these five (theme/units/radius/measure state).
      * The closure variable stays the single source of truth; `HOST.x=v` writes it through the
      * setter. Get+set pairs on ONE line each; the RW list is pinned by tests/r165-checks.test.mjs. */
-    get measurePoints(){ return measurePoints; },   set measurePoints(v){ measurePoints=v; },
+    get measurePoints(){ return measurePoints; },   set measurePoints(v){ measurePoints=v; },   get measureReading(){ return measureReading; },
     get radiusColor(){ return radiusColor; },       set radiusColor(v){ radiusColor=v; },
     get radiusKm(){ return radiusKm; },             set radiusKm(v){ radiusKm=v; },
     get unitMode(){ return unitMode; },             set unitMode(v){ unitMode=v; },
@@ -372,7 +372,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     get _sfL(){ return _sfL; }, get _splitLineToWindows(){ return _splitLineToWindows; },
     get _splitPolyToWindows(){ return _splitPolyToWindows; }, get _syncToolBtns(){ return _syncToolBtns; },
     get activeDashCategories(){ return activeDashCategories; }, get aiEsc(){ return aiEsc; },
-    get aiFetchUsage(){ return aiFetchUsage; }, get aiReady(){ return aiReady; },
+    get aiFetchUsage(){ return aiFetchUsage; }, get aiReady(){ return aiReady; }, get aiRefreshUsage(){ return aiRefreshUsage; }, get aiUsageSummary(){ return aiUsageSummary; },
     get aiSetBtnBusy(){ return aiSetBtnBusy; }, get aiSyncFeatureButtons(){ return aiSyncFeatureButtons; },
     get applyCountryVisibility(){ return applyCountryVisibility; }, get applyPinMode(){ return applyPinMode; },
     get bearingDeg(){ return bearingDeg; }, get clearMarkers(){ return clearMarkers; },
@@ -1035,14 +1035,14 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   function aiLoginMsg(){ return IM_AI.aiLoginMsg.apply(this,arguments); }
   function aiParseJSON(){ return IM_AI.aiParseJSON.apply(this,arguments); }
   function aiQuotaBlocked(){ return IM_AI.aiQuotaBlocked.apply(this,arguments); }
-  function aiReady(){ return IM_AI.aiReady.apply(this,arguments); }
+  function aiReady(){ return IM_AI.aiReady.apply(this,arguments); } function aiRefreshUsage(){ return IM_AI.aiRefreshUsage.apply(this,arguments); }
   function aiRenderSettings(){ return IM_AI.aiRenderSettings.apply(this,arguments); }
   function aiReport(){ return IM_AI.aiReport.apply(this,arguments); }
   function aiSaveSettings(){ return IM_AI.aiSaveSettings.apply(this,arguments); }
   function aiSetBtnBusy(){ return IM_AI.aiSetBtnBusy.apply(this,arguments); }
   function aiSyncFeatureButtons(){ return IM_AI.aiSyncFeatureButtons.apply(this,arguments); }
   function aiToast(){ return IM_AI.aiToast.apply(this,arguments); }
-  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); }
+  function aiToday(){ return IM_AI.aiToday.apply(this,arguments); } function aiUsageSummary(){ return IM_AI.aiUsageSummary.apply(this,arguments); }   /* (#R753) these two share a line with their neighbour on purpose: the app SHELL is line-budgeted (tests/r168 #8) and a bridge is not code */
   function aiUsesLeft(){ return IM_AI.aiUsesLeft.apply(this,arguments); }
   function aiVisionReady(){ return IM_AI.aiVisionReady.apply(this,arguments); }
   function aiWaitMapIdle(){ return IM_AI.aiWaitMapIdle.apply(this,arguments); }
@@ -1374,7 +1374,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
   function hideMeasureTip(){ document.getElementById('measure-tooltip').style.display='none'; }
-  function totalDistance(p){ let s=0; for(let i=1;i<p.length;i++)s+=turf.distance(turf.point(p[i-1]),turf.point(p[i]),{units:'kilometers'}); return s; }
+  function totalDistance(p){ let s=0; for(let i=1;i<p.length;i++)s+=turf.distance(turf.point(p[i-1]),turf.point(p[i]),{units:'kilometers'}); return s; }   /* ⚠⚠⚠ (#R747) THE MEASUREMENT ITSELF, SO THE ANSWER CAN CONTAIN IT: js/atlas-console.js's `case 'measure'` put the number on the tool panel and NOWHERE in the reply, so a reader who asked for a distance got a drawn line and no distance (measured on production). `distTXT` honours their unit setting. DEV-NOTES #R747 §8. */ function measureReading(pts){ try{ const p=(pts&&pts.length?pts:measurePoints)||[]; if(p.length<2) return null; const km=totalDistance(p), b=bearingDeg(p[0],p[p.length-1]); return { km, text:distTXT(km), bearing:b, bearingText:compassDir(b) }; }catch(_){ return null; } }
   function ringArea(p){
     if(p.length<3)return 0;
     try{
@@ -1422,7 +1422,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
   window.clearAllRadius=function(){ radiusItems=[]; window._activeRadiusId=null; refreshTool(); updateToolPanel(); };
   /* Radius from an already-chosen point (right-click menu + map-click popup, #54): drop the circle at
      a fixed center, then let the user tune radius / color in the tool panel. */
-  window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); const id='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); radiusItems.push({id,center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); window._activeRadiusId=id; refreshTool(); updateToolPanel(); };
+  window._radiusFromPoint=function(lng,lat){ if(toolMode!=='radius') setTool('radius'); const same=radiusItems.find(r=>r&&r.center&&(+r.center[0]).toFixed(5)===(+lng).toFixed(5)&&(+r.center[1]).toFixed(5)===(+lat).toFixed(5)&&Math.abs((+r.radiusKm||0)-(+radiusKm||0))<1e-6); if(same){ same.color=radiusColor; same.opacity=radiusOpacity; window._activeRadiusId=same.id; refreshTool(); updateToolPanel(); return; } const id='r_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); radiusItems.push({id,center:[lng,lat],radiusKm,color:radiusColor,opacity:radiusOpacity}); window._activeRadiusId=id; refreshTool(); updateToolPanel(); };   /* ⚠⚠⚠ (#R747) A CIRCLE IS ITS CENTRE AND ITS RADIUS, NOT ITS COLOUR: seven identical 500 km circles stacked on Tokyo because each retry re-issued the draw in a different colour. A different radius is a real second circle. DEV-NOTES #R747 §9. */
   /* Measure: step back one point (#38). If a closed area drops below 3 points it re-opens as a line. */
   window._measureUndo=function(){ if(!measurePoints.length) return; measurePoints.pop(); if(toolMode==='area' && measurePoints.length<3){ toolMode='measure'; _syncToolBtns(); } liveCursor=null; refreshTool(); updateToolPanel(); };
   /* (#R9/#51) "News in this area": filter the analyzed news to the drawn radius/polygon and show it in
@@ -2976,7 +2976,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){ return null; }
   }
   function addPin(lng,lat,meta){   /* ⚠⚠ (#R489) A PIN MAY CARRY WHAT IT IS — `meta` is the OPTIONAL {title,description,when,source,url}. A pin was four fields and its popup opened with 「Pin #3」, which is the whole of why Atlas could not answer 「着弾地点を説明付きでピンして」: the `pin` action had no field for the explanation, so a turn that wanted described markers went research → bare pin → research again → pin again, four passes whose conclusions disagreed. Every existing caller (the context menu, the search card, the popup's own buttons) passes nothing and is unchanged. */
-    const id='p'+(++pinSeq); const pin={id,lng,lat,elev:null,meta:(meta&&typeof meta==='object')?meta:null};
+    const _pk=(a,b)=>(+a).toFixed(5)+','+(+b).toFixed(5), _at=userPins.find(p=>p&&_pk(p.lng,p.lat)===_pk(lng,lat)); if(_at){ if(meta&&typeof meta==='object') _at.meta=meta; refreshPins(); if(activePinId===_at.id) renderPinPopup(); return _at.id; } const id='p'+(++pinSeq); const pin={id,lng,lat,elev:null,meta:(meta&&typeof meta==='object')?meta:null};   /* ⚠⚠⚠ (#R747) A MARKER IS IDENTIFIED BY WHERE IT IS, NOT BY WHAT IT IS CALLED: six pins landed on Machu Picchu, one per caption, and the elevation the reader asked for never arrived. `toFixed(5)` is ~1 m at the equator. DEV-NOTES #R747 §9. */
     userPins.push(pin); refreshPins();
     fetchElevDepth(lat,lng).then(e=>{ pin.elev=e; if(activePinId===id) renderPinPopup(); });
     return id;

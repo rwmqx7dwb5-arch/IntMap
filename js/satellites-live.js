@@ -928,6 +928,30 @@ window.IntMapModules.satellitesLive=function(HOST){
     try{ const P=window.IntMapSatPanel; if(P&&P.isOpen()) P.close(); }catch(_){}
     return true;
   }
+  /* ⚠⚠⚠ (#R747) THE SMALLEST CATALOGUE THAT HOLDS WHAT WAS NAMED. A reader who asks about ONE object
+     is not asking for the sky; js/atlas-console.js's `satellites` case used `name` only to focus and
+     left the FULL active catalogue propagating, so 「put a single marker on the ISS」 drew 16,010 dots
+     (measured on production 2026-09-15) while the reply said it had drawn one.
+     ⚠ NO TABLE OF NAMES. CelesTrak decides what each catalogue contains and changes it without telling
+     us, so the catalogues are ASKED: smallest declared size first, stopping at the first that holds it.
+     ⚠ AND IT IS BOUNDED BY WHAT WAS GOING TO BE FETCHED ANYWAY — candidates are tried while the running
+     total stays under the size of the catalogue currently selected, so narrowing can never cost more
+     bytes than not narrowing. If nothing smaller holds it, the current catalogue answers, unchanged.
+     EXPIRES IF: `GROUPS` stops declaring `kb`, which is what makes the budget real. */
+  async function narrow(q){
+    const s2=String(q||'').trim(); if(!s2) return null;
+    const cur=GROUPS.filter(g=>g.id===group)[0]; const budget=(cur&&+cur.kb)||0;
+    if(!budget) return find(s2);
+    const smaller=GROUPS.filter(g=>g&&g.id!==group&&+g.kb>0&&+g.kb<budget).sort((a,b)=>(+a.kb)-(+b.kb));
+    const back=group; let spent=0;
+    for(const g of smaller){ if(spent+(+g.kb)>budget) break; spent+=(+g.kb);
+      setGroup(g.id);
+      for(let k=0;k<24;k++){ await new Promise(r=>setTimeout(r,250)); const got=find(s2); if(got) return got; } }
+    setGroup(back);
+    for(let k=0;k<24;k++){ const got=find(s2); if(got) return got; await new Promise(r=>setTimeout(r,250)); }
+    return null;
+  }
+
   function setGroup(g){
     const ok=GROUPS.some(x=>x.id===g);
     if(!ok||g===group) return group;
@@ -992,7 +1016,7 @@ window.IntMapModules.satellitesLive=function(HOST){
     reload(){ tleAt=0; return load(group).then(ok=>{ if(on) paint(); return ok; }); },
     /* (#R289) re-propagate at the current master instant — what the clock subscriber calls */
     refresh(){ if(on) paint(); return on; },
-    pickAt, select, selected:()=>selected, get, find,
+    pickAt, select, selected:()=>selected, get, find, narrow,   /* (#R747) the smallest catalogue that holds a named object */
     list:()=>fixes.slice(), shown,
     /* REAL positions without turning the layer on — what the Layers-panel preview tile paints, and
        what a test can assert against with no map at all. Loads the catalogue once if it has to; the
