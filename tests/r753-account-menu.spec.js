@@ -170,7 +170,10 @@ test('R753 ③ every .acct-* rule matches something, and every .acct-* class has
     document.querySelectorAll('#acct-modal *, #acct-ask *, #btn-account *').forEach((el) => {
       el.classList.forEach((c) => { if (/^acct-/.test(c)) classes.add(c); });
     });
-    const unstyled = [...classes].filter((c) => !sels.some((s) => s.split(',').some((p) => new RegExp('\.' + c + '(?![\w-])').test(p))));
+    /* ⚠ the escapes are DOUBLED because this is a string, not a literal: '\.' is just '.' (any
+       character) and '\w' is just 'w', so the single-backslash version asked whether some rule
+       mentions «<anything>acct-foo not followed by w or -» — a laxer question than the one meant. */
+    const unstyled = [...classes].filter((c) => !sels.some((s) => s.split(',').some((p) => new RegExp('\\.' + c + '(?![\\w-])').test(p))));
     document.getElementById('acct-ask-no').click();
     return { dead, unstyled, seen: classes.size, rules: sels.length };
   }));
