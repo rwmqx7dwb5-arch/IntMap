@@ -288,10 +288,34 @@ test('R231 i18n: coverage is MEMBERSHIP, and Chinese is actually complete', () =
     'coverage counts the intersection');
   assert.ok(!/i\.size \/ Math\.max\(1, inline\.size\)/.test(rep), 'not a size ratio');
   const out = execFileSync(process.execPath, [join(ROOT, 'scripts/i18n-report.mjs')], { encoding: 'utf8' });
+  /* ⚠⚠⚠ (#R752) THIS USED TO ASSERT `/100\.0%/` FOR zh, AND THE PERCENTAGE WAS THE WRONG SUBJECT
+     TWICE OVER.
+     ① CONSTITUTION.md §7 was amended on 2026-09-11: IntMap's own prose is authored in en + jp, and
+        the seven carried languages are held at a FLOOR — 「新しい英語だけの文字列は数を下げないので
+        通り、韓国語の 1 行を消すと落ちる」, in as many words. fr and ko sit at 96.3 % and are
+        correct. A line demanding 100 % of zh alone is the pre-amendment regime left behind in one
+        test, and it made the FIRST round to add an en+jp refusal sentence fail for obeying the
+        constitution. ⚠ The alternative — translating the new strings into zh — is what AGENTS.md
+        §3-5 forbids outright (9 言語体制は完全凍結・言語を、それ自体を目的とした作業の対象にしない).
+     ② AND IT WAS ALREADY ONLY ACCIDENTALLY TRUE. Measured on origin/main the day this changed:
+        zh held 6338 of 6339 live strings and the report printed 100.0 %. One missing member, hidden
+        by rounding — which is THIS TEST'S OWN HEADLINE DEFECT (a table of 2,068 against 2,038
+        printing 「100 %」) in its own assertion, one level down.
+     ⇒ What is measured now is MEMBERSHIP, exactly, against the keeper that the amendment appointed:
+     tests/i18n-coverage-floor.json. Nothing is relaxed — a zh row DELETED still fails, and it fails
+     on a count rather than on a rounded percentage. */
+  const floors = JSON.parse(read('tests/i18n-coverage-floor.json')).langs;
   for (const code of ['zh', 'zh-hans']) {
     const line = out.split('\n').find((l) => l.startsWith(code + ' ') || l.startsWith(code.padEnd(6) + ' '));
     assert.ok(line, `the report has a row for ${code}`);
-    assert.match(line, /100\.0%/, `${code} inline coverage is complete: ${line}`);
+    /* covered/live, printed as members and not only as a ratio — the whole point of this test. */
+    const m = /(\d+)\/(\d+)\s+\d+\.\d%\s*$/.exec(line.trim());
+    assert.ok(m, `${code} does not report inline coverage as a membership count: ${line}`);
+    const covered = Number(m[1]);
+    const floor = floors[code] && floors[code].inline;
+    assert.ok(typeof floor === 'number', `no recorded floor for ${code} — the keeper the amendment appointed is missing`);
+    assert.ok(covered >= floor,
+      `${code} lost ground: ${covered} rows against a floor of ${floor}. Narrowing what is authored next is not licence to delete what is written already (CONSTITUTION.md §0-3): ${line}`);
   }
 });
 
