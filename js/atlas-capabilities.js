@@ -169,6 +169,21 @@ export function makeAtlasCapabilities(HOST) {
       ['map.isolateCountry',         'isolate',        '',                                                            'map',     'paint',   'map.isolate',            'map',                 'session', 'none',   'country',  ''],
       ['sim.lineOfSight',            'los',            'lineOfSight',                                                 'sim',     'sim',     'map.los',                'map',                 'session', 'none',   'place',    'los'],
       ['data.populationIn',          'population',     'populationIn,popIn',                                          'data',    'none',    '',                       'explanation',         'read',    'none',   'area',     ''],
+      /* (#R760) WHICH FIRST-LEVEL UNITS A SHAPE COVERS — prefectures, states, provinces, oblasts.
+         Answered entirely from the bundled data/admin1-world.json.gz (4,515 units, in the repository
+         since #R290), so it reaches no network: measured in this worktree at 32 prefectures in 121 ms
+         for a 500 km circle on Tokyo.
+         ⚠ OBSERVER 'none', AND THAT IS THE POINT (#R743). Computing which units a shape covers and
+         PAINTING them are two capabilities. This one writes nothing and produces prose; an observer
+         that measured the map would report a perfectly correct run as not_rendered, which is the
+         defect #R743 removed from the GIS ops. Painting is map.highlight, given the names this returns.
+         ⚠ COLUMN 9 IS EMPTY, NOT 'area'. The two argument shapes the case accepts — place + km, and a
+         bare ring in points — are not both spellings of one target kind: hasTarget('area') reads
+         area/target/place/region/polygon/radiusKm/km/bbox and NOT points, so a ring-only call would
+         answer needs_input. Widening that list would widen it for data.populationIn as well. What
+         refuses an argument-less call is the anyOf in js/atlas-schemas.js — before anything runs,
+         which is what #R406 required of every capability that cannot act on an empty object. */
+      ['data.coverage',              'admin1Coverage', 'subdivisionsCovered,regionsCovered',                          'data',    'none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['data.satelliteCompare',      'satelliteCompare','satCompare,satChange',                                       'data',    'panelPaint','panel.satcompare',     'panel,map',           'session', 'none',   'place',    ''],
       ['data.layerValues',           'layerData',      'layerValue,layerQuery',                                       'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    ''],
       ['map.object',                 'object',         'mapObject',                                                   'map',     'object',  'map.object',             'object',              'session', 'explicit','',        ''],
@@ -1141,6 +1156,15 @@ export function makeAtlasCapabilities(HOST) {
           /* A simulation that is still computing says so. `raw.running` is what a migrated executor
              sets; a legacy case cannot, so its absence is not evidence of completion — the canvas is. */
           if (raw && raw.running) return { status: 'running', code: 'running', progress: raw.progress || null, html: raw.html || '' };
+          /* ⚠⚠⚠ (#R760) A SIMULATOR THAT IS OPEN AND WAITING FOR THE READER HAS NOT FAILED TO DRAW.
+             `observe()` here is `paintNow()`, which counts map sources and knows nothing about windows,
+             so a simulator whose whole deliverable is a window it just opened moved no number and fell
+             to the line below. Measured on production 2026-09-16, 「Fly me through the Grand Canyon in
+             the flight simulator」: `sim.flightSim` returned `not_rendered` SEVEN times in 87 s while the
+             chooser was on screen saying 「pick your aircraft & runway, then START」, and the reader was
+             told the answer might be incomplete. The opener knows what it opened; this reads that
+             declaration rather than re-deriving it from a surface that cannot hold it. */
+          if (raw && raw.meta && raw.meta.opened) return { status: 'completed', code: 'ok', observed: { opened: raw.meta.opened, paint: after }, html: (raw && raw.html) || '' };
           if (before && after && !changed(before, after)) return { status: 'partial', produced: [], code: 'not_rendered', observed: { paint: after }, html: (raw && raw.html) || '' };
           return { status: 'completed', code: 'ok', observed: { paint: after }, html: (raw && raw.html) || '' };
         }

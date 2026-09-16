@@ -116,9 +116,11 @@ test('R472 ③: 所見はコードのまま Atlas へ渡り、「取り除いた
   const meta = PL.auditMeta(out.env);
   assert.ok(meta, '所見があるのに Atlas へ何も渡していない');
   assert.ok(meta.auditFindings.includes('evidence.primary_unsupported'), JSON.stringify(meta.auditFindings));
-  assert.match(String(meta.unverified), /rendered in full/,
+  assert.match(String(meta.auditNote), /rendered in full/,
     'Atlas に「全文が画面に出ている」と伝えていない——#R419 はこれを伝えないことで壊れた');
-  assert.ok(!/removed|gutted|取り除/.test(String(meta.unverified)),
+  /* (#R760) 所見は判決ではないので、判決の綴り（#R142 の `unverified`）に乗せない */
+  assert.equal(meta.unverified, undefined, '所見が「何も起きなかった」の旗に乗っている');
+  assert.ok(!/removed|gutted|取り除/.test(String(meta.auditNote)),
     '何も取り除いていないのに、取り除いたと言っている');
   assert.equal(meta.degraded, undefined, 'degraded の旗が残っている');
   assert.equal(meta.removedClaims, undefined, 'removedClaims が残っている');

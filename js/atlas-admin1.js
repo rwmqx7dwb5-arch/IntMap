@@ -325,8 +325,249 @@ export function makeAtlasAdmin1(deps) {
       };
     }
 
+    /* ══ WHICH UNITS DOES THIS SHAPE COVER? ════════════════════════════════════════════════════
+       Measured on production (2026-09-16, build R758): 「Draw a 500 km buffer around Tokyo and tell
+       me which prefectures it covers.」 ran `map.radius` three times, drew the circle correctly, and
+       after 4m42s answered with one sentence of preamble and NO LIST. Nothing was broken — the
+       question was simply not askable. Every piece was already here: the 4,515 outlines, their
+       names, their identifiers. What was missing was the SPATIAL direction of the lookup. This file
+       could turn a name into a shape; it could not turn a shape into names.
+       ⚠ It answers from the shipped index only — no network, and no second copy of the loader. */
+
+    /* Every geometry, areal or not, reduced to the same thing: a list of coordinate rings, so one
+       intersection routine serves polygons, lines and points instead of a branch per pair. */
+    function ringsOfGeo(g) {
+      const out = [];
+      const push = (r) => { if (Array.isArray(r) && r.length && Array.isArray(r[0])) out.push(r); };
+      if (!g) return out;
+      try {
+        if (g.type === 'Polygon') (g.coordinates || []).forEach(push);
+        else if (g.type === 'MultiPolygon') (g.coordinates || []).forEach((p) => (p || []).forEach(push));
+        else if (g.type === 'LineString') push(g.coordinates);
+        else if (g.type === 'MultiLineString') (g.coordinates || []).forEach(push);
+        else if (g.type === 'Point') push([g.coordinates]);
+        else if (g.type === 'MultiPoint') (g.coordinates || []).forEach((c) => push([c]));
+      } catch (_) { /* a malformed geometry has no rings, and therefore meets nothing */ }
+      return out.filter((r) => r.every((c) => Array.isArray(c) && typeof c[0] === 'number' && typeof c[1] === 'number'));
+    }
+    const isAreal = (g) => !!g && (g.type === 'Polygon' || g.type === 'MultiPolygon');
+
+    function bboxOfRings(rings) {
+      let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+      rings.forEach((r) => r.forEach((p) => {
+        if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1];
+        if (p[0] > c) c = p[0]; if (p[1] > d) d = p[1];
+      }));
+      return (a === Infinity) ? null : [a, b, c, d];
+    }
+
+    /* Even-odd ray casting across ALL rings of the geometry at once, which is how holes come out
+       right without the caller having to know which ring is a hole. Degrees in, no projection —
+       the test is topological, so the units it is asked in do not change the answer. */
+    function pointInRings(pt, rings) {
+      const x = pt[0], y = pt[1];
+      let inside = false;
+      for (let k = 0; k < rings.length; k++) {
+        const r = rings[k];
+        for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+          const xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1];
+          if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / ((yj - yi) || Number.MIN_VALUE) + xi) inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    function orient(a, b, c) {
+      const v = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+      return (v > 0) ? 1 : (v < 0) ? -1 : 0;
+    }
+    const onSeg = (a, b, p) => Math.min(a[0], b[0]) <= p[0] && p[0] <= Math.max(a[0], b[0])
+      && Math.min(a[1], b[1]) <= p[1] && p[1] <= Math.max(a[1], b[1]);
+    function segsCross(p1, p2, p3, p4) {
+      const o1 = orient(p1, p2, p3), o2 = orient(p1, p2, p4),
+        o3 = orient(p3, p4, p1), o4 = orient(p3, p4, p2);
+      if (o1 !== o2 && o3 !== o4) return true;
+      /* collinear touching counts: a border that runs along the query's edge IS met by it */
+      if (o1 === 0 && onSeg(p1, p2, p3)) return true;
+      if (o2 === 0 && onSeg(p1, p2, p4)) return true;
+      if (o3 === 0 && onSeg(p3, p4, p1)) return true;
+      if (o4 === 0 && onSeg(p3, p4, p2)) return true;
+      return false;
+    }
+    function ringsCross(ra, rb) {
+      for (let i = 0; i < ra.length; i++) {
+        const a = ra[i];
+        for (let m = 0; m + 1 < a.length; m++) {
+          for (let j = 0; j < rb.length; j++) {
+            const b = rb[j];
+            for (let n = 0; n + 1 < b.length; n++) {
+              if (segsCross(a[m], a[m + 1], b[n], b[n + 1])) return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
+
+    /**
+     * intersectsGeo(a, b) -> boolean — do these two geometries meet?
+     *
+     * Four ways, any one of which is enough, and the reason `coveredBy`'s bbox sieve can never
+     * answer for it: ① a's vertices inside b, ② b's vertices inside a, ③ edges crossing, ④ the
+     * degenerate case where one is a point. Containment in BOTH directions is what catches a unit
+     * that swallows the query whole, and edge crossing is what catches two shapes that overlap
+     * without either one's vertices falling inside the other.
+     */
+    function intersectsGeo(a, b) {
+      const ra = ringsOfGeo(a), rb = ringsOfGeo(b);
+      if (!ra.length || !rb.length) return false;
+      const ba = bboxOfRings(ra), bb = bboxOfRings(rb);
+      if (!ba || !bb) return false;
+      if (ba[0] > bb[2] || bb[0] > ba[2] || ba[1] > bb[3] || bb[1] > ba[3]) return false;
+      if (isAreal(b)) { for (let i = 0; i < ra.length; i++) for (let m = 0; m < ra[i].length; m++) if (pointInRings(ra[i][m], rb)) return true; }
+      if (isAreal(a)) { for (let j = 0; j < rb.length; j++) for (let n = 0; n < rb[j].length; n++) if (pointInRings(rb[j][n], ra)) return true; }
+      return ringsCross(ra, rb);
+    }
+
+    /* 1° of latitude is 111.32 km on the WGS84 mean — an EQUIDISTANT APPROXIMATION, not a geodesic
+       buffer: at 500 km the great-circle error is well under one percent, and the answer this feeds
+       is a set of administrative units, not a distance. ⚠ A degree of LONGITUDE shrinks with
+       latitude, so the same radius is dLat / cos(lat) degrees wide — at 60°N exactly twice as many
+       degrees east-west as north-south. Writing the circle with a single degree radius is the bug
+       this comment exists to prevent: it would draw an ellipse that is far too narrow up north.
+       128 steps because the chord sagitta is then R(1-cos(π/128)) = 0.15 km on a 500 km circle,
+       which is smaller than the Natural Earth 10 m outlines it is being intersected with. */
+    const KM_PER_DEG_LAT = 111.32;
+    function circlePolygon(center, radiusKm, steps) {
+      const lng = Number(center && center[0]), lat = Number(center && center[1]);
+      const r = Number(radiusKm);
+      if (!Number.isFinite(lng) || !Number.isFinite(lat) || !Number.isFinite(r) || r <= 0) return null;
+      const n = Math.max(12, Math.floor(steps || 128));
+      const dLat = r / KM_PER_DEG_LAT;
+      /* the cosine is floored so a circle centred within half a degree of a pole stays a polygon
+         instead of becoming an infinitely wide band */
+      const cos = Math.max(Math.cos(lat * Math.PI / 180), Math.cos(89.5 * Math.PI / 180));
+      const dLng = dLat / cos;
+      const ring = [];
+      for (let i = 0; i <= n; i++) {
+        const t = (i % n) * 2 * Math.PI / n;
+        ring.push([lng + dLng * Math.cos(t), Math.max(-90, Math.min(90, lat + dLat * Math.sin(t)))]);
+      }
+      return { type: 'Polygon', coordinates: [ring] };
+    }
+
+    /** the one place a caller's argument becomes a geometry — circle, GeoJSON geometry, or Feature */
+    function queryGeo(geo) {
+      if (!geo) return null;
+      if (geo.center && Number.isFinite(Number(geo.radiusKm))) return circlePolygon(geo.center, geo.radiusKm, geo.steps);
+      const g = (geo.type === 'Feature' && geo.geometry) ? geo.geometry : geo;
+      return ringsOfGeo(g).length ? g : null;
+    }
+
+    /**
+     * coveredBy(geo, opts) -> Promise<{units, scanned, truncated}>
+     *
+     * `geo` is a Polygon / MultiPolygon / LineString / Point, or `{center:[lng,lat], radiusKm}`.
+     * `opts.iso3` / `opts.countryCode` narrow the scan to one country; `opts.limit` (200) caps the
+     * answer. ⚠ THE CAP IS DECLARED, never silent: `truncated` says the list is not the whole set,
+     * because a reader told 「these are the prefectures」 about a cut list has been told something
+     * false (#R742's rule about an operation declaring what it did).
+     *
+     * ⚠ THE BBOX SIEVE MUST NEVER ERR INWARD (#R743: a prefilter that drops a real hit is invisible
+     * to any test that only compares indexed runs against each other). It is a pure rectangle
+     * overlap on the bbox the index derived FROM THE RING ITSELF, so every shape it rejects is one
+     * whose coordinates cannot reach the query; tests/r760 measures that against a sieve-free scan.
+     */
+    async function coveredBy(geo, opts) {
+      const o = opts || {};
+      const limit = Math.max(1, Number.isFinite(Number(o.limit)) ? Math.floor(Number(o.limit)) : 200);
+      const q = queryGeo(geo);
+      if (!q) return { units: [], scanned: 0, truncated: false, error: 'bad_geometry' };
+      let index = null;
+      try { index = await load(); } catch (e) {
+        /* ⚠ 「nothing covers it」 and 「the index never loaded」 are different answers and must not
+           share one shape — the resolveMany rule, kept (#R667). */
+        return { units: [], scanned: 0, truncated: false, error: 'index_unavailable', message: (e && e.message) || 'load failed' };
+      }
+      const qb = bboxOfRings(ringsOfGeo(q));
+      const cc = String(o.iso3 || o.countryCode || '').toUpperCase();
+      /* a country that was named but that this index does not hold scans nothing — answering from
+         the whole planet would silently ignore the narrowing the caller asked for */
+      const pool = cc ? (index.byCountry[cc] || []) : index.units;
+      const units = [];
+      let scanned = 0, truncated = false;
+      for (let i = 0; i < pool.length; i++) {
+        const u = pool[i];
+        scanned++;
+        const b = u.bbox;
+        if (!b || !qb) continue;
+        if (b[0] > qb[2] || qb[0] > b[2] || b[1] > qb[3] || qb[1] > b[3]) continue;
+        if (!intersectsGeo(q, u.geo)) continue;
+        if (units.length >= limit) { truncated = true; break; }
+        units.push({
+          /* `name` and `canonicalName` are both present on purpose: callers that render a list read
+             `name`, and callers that pass the unit back into resolve/hlTarget read the identifier
+             fields — the same shape resolveMany's hits carry. */
+          name: u.canonicalName,
+          canonicalName: u.canonicalName,
+          countryCode: u.iso2 || u.iso3,
+          iso3: u.iso3,
+          stableId: u.stableId,
+          bbox: u.bbox ? u.bbox.slice() : null,
+        });
+      }
+      return { units, scanned, truncated };
+    }
+
+    /* ══ ⚠ (#R760) THE READER'S ANSWER, BUILT HERE AND NOT IN THE KERNEL ═════════════════════════
+       js/atlas-console.js is under a shrink-only ceiling (#R195/#R199), and the ceiling exists to
+       push exactly this kind of body out of it. The console's case is one line that hands in the
+       four things only the console has — its geocoder and its three text helpers — and gets back
+       the {ok, html, meta} shape every dispatch case returns.
+       ⚠ IT DOES NOT PAINT (#R743). The units come back by name so `map.highlight` can colour them
+       if the reader asked for that; a capability that both computes and draws gets a verdict about
+       the drawing, and a correct answer would be called `not_rendered`. */
+    async function coverageAnswer(a, D) {
+      const L = D.L, esc = D.esc, note = D.note, warn = D.warn;
+      const km = +(a.km != null ? a.km : (a.radiusKm != null ? a.radiusKm : 0));
+      const pts = Array.isArray(a.points)
+        ? a.points.filter((p) => Array.isArray(p) && isFinite(+p[0]) && isFinite(+p[1])).map((p) => [+p[0], +p[1]])
+        : [];
+      let geo = null;
+      if (pts.length >= 3) {
+        if (pts[0][0] !== pts[pts.length - 1][0] || pts[0][1] !== pts[pts.length - 1][1]) pts.push([pts[0][0], pts[0][1]]);
+        geo = { type: 'Polygon', coordinates: [pts] };
+      } else {
+        const place = String(a.place || a.country || a.name || '').trim();
+        if (!place) return { ok: false, html: warn('⚠ ' + L('Name a place to centre on, or give the points of a shape', '中心にする場所名か、形の座標を指定してください', 'Ort oder Form angeben', 'Укажите место или форму', 'Indica un lugar o una forma')) };
+        if (!(km > 0)) return { ok: false, html: warn('⚠ ' + L('How many kilometres is the radius?', '半径は何キロですか', 'Wie groß ist der Radius?', 'Каков радиус?', '¿Cuál es el radio?')) };
+        let g = null;
+        try { g = await D.geocode(place); } catch (_) { g = null; }
+        if (!g) return { ok: false, html: warn('⚠ ' + L('Could not place', '場所を特定できません', 'Ort nicht gefunden', 'Место не найдено', 'No se pudo ubicar') + ': ' + esc(place)) };
+        geo = { center: [g.lng, g.lat], radiusKm: km };
+      }
+      const lim = (a.limit != null && isFinite(+a.limit)) ? Math.max(1, Math.min(400, +a.limit)) : 200;
+      const r = await coveredBy(geo, { limit: lim });
+      /* «could not be read» and «nothing is there» are different answers and stay different */
+      if (r && r.error) return { ok: false, html: warn('⚠ ' + L('The first-level boundary index could not be read', '第一級行政区分の索引を読み込めませんでした', 'Index nicht lesbar', 'Индекс недоступен', 'Índice no disponible')) };
+      const units = (r && r.units) || [];
+      let html = '<div style="font-weight:600;margin:2px 0 5px;">'
+        + L('First-level subdivisions covered', '覆う第一級行政区分', 'Abgedeckte Verwaltungseinheiten', 'Охваченные регионы', 'Subdivisiones cubiertas')
+        + ' — ' + units.length + '</div>';
+      html += units.length
+        ? ('<div style="font-size:11.5px;line-height:1.6;">' + units.map((u) => esc(String(u.canonicalName || u.name || ''))
+            + (u.countryCode ? (' <span style="color:var(--text-muted);">' + esc(String(u.countryCode)) + '</span>') : '')).join(' · ') + '</div>')
+        : ('<div style="font-size:11.5px;color:var(--text-muted);">'
+            + L('Nothing of this kind lies inside that shape', 'その形の中に該当する区分はありません', 'Keine Einheit in dieser Form', 'В этой форме ничего нет', 'Nada de este tipo en esa forma') + '</div>');
+      if (r && r.truncated) html += warn('⚠ ' + L('More than the limit — the list above is cut', '上限を超えたため一覧を切りました', 'Liste gekürzt', 'Список обрезан', 'Lista recortada'));
+      return { ok: true, html: note(html), meta: { produced: ['explanation'], resultKey: 'coverage:' + JSON.stringify(geo).slice(0, 140) } };
+    }
+
     const API = { ADM1_URL, TYPE_WORDS, norm, stem, hasTypeWord, degArea,
-      load, build, matchIn, resolve, resolveMany, hlTarget, loaded: () => !!LOADING };
+      load, build, matchIn, resolve, resolveMany, hlTarget, loaded: () => !!LOADING,
+
+
+      coveredBy, intersectsGeo, circlePolygon, coverageAnswer };
     try { window.IntMapAtlasAdmin1 = API; } catch (_) { /* non-browser (the node checks) */ }
     return API;
   })();

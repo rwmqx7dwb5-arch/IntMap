@@ -168,8 +168,19 @@ export function makeAtlasAnswerPipeline() {
     if (!a || !a.errors || !a.errors.length) return null;
     const codes = [];
     a.errors.forEach((e) => { if (e && e.code && codes.indexOf(e.code) < 0) codes.push(e.code); });
+    /* ⚠⚠⚠ (#R760) ITS OWN SPELLING, BECAUSE `unverified` ALREADY MEANT SOMETHING ELSE. This note
+       says, in its own words, that it is NOT a verdict — and it used to ride the one field in the
+       codebase that IS one: #R142's flag, set by the layer toggle when the map never changed, and
+       read as failure in three places (js/atlas-turn-results.js `score` −2, js/atlas-console.js
+       `_visFailed`, js/atlas-results.js `fromLegacy` → `partial`). So an answer the audit merely
+       had a REMARK about was ranked BELOW one it had nothing to say about — and a refusal, having
+       no claims to find fault with, is exactly the kind of answer the audit has nothing to say
+       about. Measured on production 2026-09-16, 「日本の47都道府県を人口順に色分けして」: two analyses in one
+       turn, one refusing and one answering, both rendered into the same bubble. Two facts must not
+       share one spelling ([[intmap-two-readers-one-field-list]] is the same shape from the other
+       side). Atlas still receives this — the executor carries the case's own meta through. */
     return { auditFindings: codes,
-      unverified: 'The answer is rendered in full, as written. IntMap\'s answer audit noticed these things '
+      auditNote: 'The answer is rendered in full, as written. IntMap\'s answer audit noticed these things '
         + 'about it: ' + codes.join(', ') + '. Judge them yourself — `evidence.*` usually means IntMap held no '
         + 'record to link a sentence to, which is not a claim that the sentence is wrong; `contradiction.*`, '
         + '`series.*` and `metric.*` mean the answer disagrees with itself or with a figure IntMap holds, which '

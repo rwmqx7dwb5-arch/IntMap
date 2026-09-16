@@ -163,6 +163,15 @@ export function makeAtlasSchemas() {
       'map.isolateCountry': { type: 'object', properties: { country: str(), place: str(), on: bool() }, anyOf: [{ required: ['country'] }, { required: ['place'] }, { required: ['on'] }] },   /* `isolate` */
       'sim.lineOfSight': { type: 'object', properties: { place: str(), from: str() }, anyOf: [{ required: ['place'] }, { required: ['from'] }] },   /* `los` */
       'data.populationIn': { type: 'object', properties: { target: one('drawn', 'area', 'polygon', 'radius', 'circle'), area: str(), place: str(), radiusKm: num(0), km: num(0) }, anyOf: [{ required: ['target'] }, { required: ['area'] }, { required: ['place'] }, { required: ['radiusKm'] }, { required: ['km'] }] },   /* `population` */
+      /* (#R760) `admin1Coverage`. TWO ARGUMENT SHAPES, AND THE anyOf IS THE WHOLE GATE: a circle is
+         place AND km together (a place with no radius is a flyTo, not a coverage question), or the
+         ring itself in `points`, spelled the way map.drawPolygon spells it — [lng,lat] pairs, three
+         at minimum. The centre has THREE spellings and the radius TWO because the case really reads
+         `a.place||a.country||a.name` and `a.km!=null?a.km:a.radiusKm` — rule (1): a single canonical
+         name would reject the plans the dispatch was written to accept.
+         `limit` is capped at the size of the bundled index — 4,515 units is every first-level unit
+         IntMap ships, so a larger number could not name one more. It expires if the pack grows. */
+      'data.coverage': { type: 'object', properties: { place: str(), country: str(), name: str(), km: num(0), radiusKm: num(0), points: list(list(), 3), limit: int(1, 4515) }, anyOf: [{ required: ['place', 'km'] }, { required: ['place', 'radiusKm'] }, { required: ['country', 'km'] }, { required: ['name', 'km'] }, { required: ['points'] }] },
       /* two dates or nothing — `from`/`to` are DATES here, not endpoints */
       'data.satelliteCompare': { type: 'object', properties: { dateA: str(), dateB: str(), before: str(), after: str(), from: str(), to: str(), place: str() }, anyOf: [{ required: ['dateA', 'dateB'] }, { required: ['before', 'after'] }, { required: ['from', 'to'] }] },
       'data.layerValues': { type: 'object', properties: { place: str(), lng: lng(), lat: lat(), layer: str(), layers: list(str()) }, anyOf: [{ required: ['place'] }, { required: ['lat', 'lng'] }] },   /* `layerData` */
