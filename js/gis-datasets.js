@@ -314,8 +314,21 @@ export function makeGisDatasets() {
       const no = (why, detail) => ({ time: null, refused: detail ? { why, detail } : { why } });
 
       if (kind === 'constant') {
-        const s = decl.start == null ? null : momentOf(decl.start);
-        const e = decl.end == null ? null : momentOf(decl.end);
+        /* ⚠⚠⚠ (#R759) 正規化は冪等でなければならない。THIS BRANCH TURNS 「2020」 INTO A PAIR OF
+           MILLISECONDS, and then refused its own output: momentOf reads a bare integer as a YEAR and
+           1577836800000 is not one, so re-declaring a record's own `time` came back `time-unreadable`
+           and the declaration was dropped. Nothing announced it — `timeRefused` was set and the record
+           simply had no time any more. That is not a hypothetical path: js/gis-ops.js registers every
+           grid output with its input's `time`, so masking, resampling or differencing a grid that
+           SAID WHEN IT WAS produced a grid that did not, silently, on every run.
+           ⚠ THE READING IS UNAMBIGUOUS, WHICH IS WHY IT IS SAFE. A number inside ±9999 is a year (the
+           rule momentOf states and this file does not restate); a finite number outside it cannot be
+           one, and the only thing that produces such a number here is this branch. So an epoch already
+           in milliseconds is accepted AS IT STANDS rather than re-parsed — and a string is still read
+           by momentOf, because a reader's 「2020」 is a year and must stay one. */
+        const already = (v) => (typeof v === 'number' && isFinite(v) && (v < YEAR_MIN || v > YEAR_MAX)) ? { start: v, end: v } : null;
+        const s = decl.start == null ? null : (already(decl.start) || momentOf(decl.start));
+        const e = decl.end == null ? null : (already(decl.end) || momentOf(decl.end));
         if (decl.start != null && s == null) return no('time-unreadable', { end: 'start', value: String(decl.start) });
         if (decl.end != null && e == null) return no('time-unreadable', { end: 'end', value: String(decl.end) });
         if (s == null && e == null) return no('time-constant-empty');
@@ -470,9 +483,43 @@ export function makeGisDatasets() {
         stale: null,
         features: () => features,
       };
+      applyInherited(rec, spec && spec.fieldStatements);
       DS.set(id, rec);
       emit('add', rec);
       return rec;
+    }
+
+    /* ⚠⚠ (#R759) A UNIT IS THE ONE THING ABOUT A COLUMN THAT CANNOT BE MEASURED. describeFields reads
+       the values and says what they ARE — number, date, text, how many are empty — and that is the
+       whole of what this file will ever assert on its own, because every one of those has the cells
+       as its author. 「人/km²」 has no such author: somebody said it, once, about a column, and the
+       only question a later record can answer is WHO.
+       So an op's output arrived with its units stripped, and js/gis-ops.js could not put them back:
+       declareField is the reader's door and openFor REFUSES a record whose provenance is a recipe
+       (`edit-would-contradict-recipe`) — correctly, because editing a derived record contradicts the
+       recipe that rebuilds it. The statement therefore travels HERE, on the record, next to the band
+       units that arrive the same way (addRaster `unitStated:'source'`) — and not into DECL, which
+       holds what the reader said about THIS record and has a different lifetime (see the store).
+       ⚠ IT IS APPLIED TO COLUMNS THAT EXIST, and to nothing else: a caller naming a column the output
+       does not have has said something about nothing, and writing it would invent a column in
+       `fields` that no feature carries. ⚠ AND IT NEVER OVERWRITES A MEASUREMENT: only `unit`,
+       `unitStated` and `unitFrom` are written, so the type, the range and the empty count stay the
+       output's own. */
+    function applyInherited(rec, statements) {
+      if (!statements || typeof statements !== 'object') return;
+      for (const col of rec.fields || []) {
+        const s = statements[col.name];
+        if (!s || s.unit == null) continue;
+        col.unit = String(s.unit);
+        /* ⚠ 'inherited' IS ITS OWN AUTHOR, NOT A COPY OF THE INPUT'S. 'reader' on this record would
+           say the reader typed it here — on a record they are refused from declaring on at all — and
+           'source' would say it arrived with the payload. Both would be false; what is true is that
+           it was carried, and `unitFrom` says from where. `unitStatedAt` keeps the original claimant
+           so the chain does not forget whether a human or a file said it in the first place. */
+        col.unitStated = 'inherited';
+        if (s.unitStated != null) col.unitStatedAt = String(s.unitStated);
+        if (s.unitFrom != null) col.unitFrom = String(s.unitFrom);
+      }
     }
 
     /* ── the raster door ────────────────────────────────────────────────────────────────────────

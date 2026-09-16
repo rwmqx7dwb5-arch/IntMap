@@ -142,14 +142,20 @@ export function makeGisAtlas(core) {
          whatever the camera happened to be looking at, and says it in a sentence with no caveat.
          ⚠ It is passed as the acquisition measured it, not summarised: `completeness` without
          `reason` turns 「訊けなかった」 and 「一部しか無い」 into one word. */
+      /* ⚠⚠ (#R759) AND IT IS A PROJECTION NOW, FOR THE REASON `fields` IS ONE, FOUR LINES UP. This
+         block used to copy six named keys out of the coverage record, so #R759 — which put a coverage
+         on every DERIVED record too, saying which inputs spoke, which said nothing, and which one the
+         verdict came from — would have reached the planner as `completeness` alone, with the entire
+         explanation dropped between two readers of one contract ([[intmap-two-readers-one-field-list]]).
+         A key js/gis-sources.js or js/gis-ops.js adds tomorrow arrives the same day.
+         ⚠ A RECORD WITH NO `completeness` IS STILL PUBLISHED, and that is deliberate: an op whose
+         inputs did not all speak has no completeness to state, and `undeclaredInputs` next to nothing
+         is precisely the answer — 「この問いは開いたままだ」, which the old guard turned into silence. */
       const cov = ds.provenance && ds.provenance.coverage;
-      if (cov && cov.completeness) {
-        row.coverage = { completeness: cov.completeness };
-        if (cov.reason) row.coverage.reason = cov.reason;
-        if (cov.count != null) row.coverage.count = cov.count;
-        if (cov.asOf != null) row.coverage.asOf = cov.asOf;
-        if (cov.filteredBy) row.coverage.filteredBy = cov.filteredBy;
-        if (cov.continues != null) row.coverage.continues = cov.continues;
+      if (cov && typeof cov === 'object') {
+        const c = {};
+        for (const k of Object.keys(cov)) if (cov[k] != null) c[k] = cov[k];
+        if (Object.keys(c).length) row.coverage = c;
       }
       return row;
     }
@@ -184,7 +190,58 @@ export function makeGisAtlas(core) {
        the same copy twice — a chain of four ops over one layer would otherwise hold four copies of
        it, and the second one would be a different dataset id from the first for no reason a reader
        could see. */
-    function makeCache() { return new Map(); }
+    function makeCache() { const m = new Map(); m.acquired = []; return m; }
+
+    /* ══ ⚠⚠⚠ (#R759) 取得の条件が、この扉で全部落ちていた ═══════════════════════════════════════
+       fromLayer() called `layers.toDataset(id, {})` — an empty object, on every path. js/gis-sources.js
+       states an acquisition contract of eight fields and js/gis-layers.js carries six of them through
+       toDataset, so 「この範囲の」「この属性に合うものだけ」「続きを」 were all reachable from the panel
+       and unreachable from the planner. The half of the app that can compose a four-step chain could
+       not state a window for step one.
+       ⚠ THE VOCABULARY IS ASKED FOR, NOT WRITTEN HERE (js/gis-layers.js acquireFields). A copy in this
+       file would be the second list [[intmap-two-readers-one-field-list]] measured in production —
+       the reader that does not know about a field drops it silently, and a planner reading its own
+       correct call back as 「何も指定されなかった」 has no way to see what happened. A field this door
+       does not know is REFUSED BY NAME with the set, which is one corrected call instead of a search.
+       ⚠ AND THE WINDOW IS NOT DERIVED FROM THE CAMERA, HERE OR ANYWHERE BELOW. That is the whole
+       point of the field: 「地図が持っているものを読む」 and 「指定した範囲のものを取得する」 are
+       different questions, and the second one has to be answerable while the camera is somewhere
+       else. What the acquisition could NOT answer travels back as `coverage` (js/gis-layers.js),
+       which is why this file may pass the request on without adjudicating it. */
+    function acquireOpts(action, wantsRaster) {
+      const kind = wantsRaster ? 'raster' : 'vector';
+      const src = (action && action.acquire && typeof action.acquire === 'object') ? action.acquire : null;
+      /* ⚠ 「訊けなかった」 を 「その欄は無い」 の代わりにしない。A door that cannot name the vocabulary
+         cannot judge a request against it, and answering `acquire-unknown-field` for every key would
+         say the map refused a field it was never asked about. */
+      if (src && !(layers && typeof layers.acquireFields === 'function')) {
+        return fail('acquire-unavailable', { needs: 'IntMapGisLayers.acquireFields' });
+      }
+      const allow = (layers && typeof layers.acquireFields === 'function') ? layers.acquireFields(kind) : [];
+      const opts = {};
+      if (src) {
+        for (const k of Object.keys(src)) {
+          if (src[k] === undefined) continue;
+          if (allow.indexOf(k) < 0) return fail('acquire-unknown-field', { field: k, accepts: allow, kind: kind });
+          opts[k] = src[k];
+        }
+      }
+      /* `sample` is the spelling #R743 shipped for the raster window, and it names the same three
+         fields. It keeps working — a planner that learnt it is not wrong — and a call that states a
+         window TWICE and differently is refused rather than resolved by precedence, because which of
+         the two the reader meant is not something this file knows. */
+      const s = action && action.sample;
+      if (wantsRaster && s && typeof s === 'object') {
+        for (const k of ['bounds', 'width', 'height']) {
+          if (s[k] == null) continue;
+          if (opts[k] != null && JSON.stringify(opts[k]) !== JSON.stringify(s[k])) {
+            return fail('window-stated-twice', { field: k, acquire: opts[k], sample: s[k] });
+          }
+          opts[k] = s[k];
+        }
+      }
+      return { ok: true, opts: opts };
+    }
 
     async function resolveRef(ref, slot, decl, cache, action) {
       const raw = (ref == null) ? '' : String(ref).trim();
@@ -198,7 +255,7 @@ export function makeGisAtlas(core) {
       /* 2. a layer of the map, named as one. */
       const wantsRaster = Array.isArray(decl.kinds) && decl.kinds[slot] === 'raster';
       if (raw.slice(0, LAYER_PREFIX.length) === LAYER_PREFIX) {
-        const made = await fromLayer(raw.slice(LAYER_PREFIX.length), wantsRaster, action);
+        const made = await fromLayer(raw.slice(LAYER_PREFIX.length), wantsRaster, action, cache);
         if (!made.ok) return made;
         cache.set(raw, made.id);
         return made;
@@ -218,7 +275,7 @@ export function makeGisAtlas(core) {
         return id.toLowerCase() === raw.toLowerCase() || String(r.label).toLowerCase() === raw.toLowerCase();
       });
       if (hits.length === 1) {
-        const made = await fromLayer(hits[0].ref.slice(LAYER_PREFIX.length), wantsRaster, action);
+        const made = await fromLayer(hits[0].ref.slice(LAYER_PREFIX.length), wantsRaster, action, cache);
         if (!made.ok) return made;
         cache.set(raw, made.id);
         return made;
@@ -234,21 +291,75 @@ export function makeGisAtlas(core) {
       });
     }
 
-    async function fromLayer(id, wantsRaster, action) {
+    async function fromLayer(id, wantsRaster, action, cache) {
       if (!layers) return fail('map-unavailable', { needs: 'IntMapGisLayers' });
-      if (!wantsRaster) {
-        const r = layers.toDataset(id, {});
-        return r.ok ? { ok: true, id: r.dataset.id } : fail(r.why, r.detail || { id: id });
-      }
+      const a = acquireOpts(action, wantsRaster);
+      if (!a.ok) return a;
+      const note = (r) => {
+        if (!r.ok) return fail(r.why, r.detail || { id: id });
+        /* ⚠ (#R759) WHAT WAS ACQUIRED IS PART OF THE ANSWER, AND SO IS THE CURSOR. js/gis-layers.js
+           hands back `next` when the supplier said there is more, and this door threw it away — so
+           「続きを」 was expressible (acquire.cursor) and the one value that makes it usable never
+           reached the planner. The row goes back too: its `coverage` is how a planner learns that the
+           window it named was only partly answered, BEFORE it writes a sentence about the world. */
+        const row = datasetRow(r.dataset);
+        if (r.next != null) row.next = r.next;
+        row.acquiredFrom = LAYER_PREFIX + id;
+        if (cache && cache.acquired) cache.acquired.push(row);
+        return { ok: true, id: r.dataset.id };
+      };
+      if (!wantsRaster) return note(layers.toDataset(id, a.opts));
       /* A field has to be baked over a window at a resolution, and neither of those is something
          this file may invent: a grid chosen here would be a measurement nobody asked for, printed
          with the authority of one. The planner states them, and is told so by name when it has not. */
-      const s = action && action.sample;
-      if (!s || s.bounds == null || s.width == null || s.height == null) {
-        return fail('raster-sample-needs-window', { layer: id, needs: ['sample.bounds', 'sample.width', 'sample.height'] });
+      if (a.opts.bounds == null || a.opts.width == null || a.opts.height == null) {
+        return fail('raster-sample-needs-window', { layer: id, needs: ['acquire.bounds', 'acquire.width', 'acquire.height'], accepts: layers.acquireFields ? layers.acquireFields('raster') : null });
       }
-      const r = await layers.toRaster(id, { bounds: s.bounds, width: s.width, height: s.height });
-      return r.ok ? { ok: true, id: r.dataset.id } : fail(r.why, r.detail || { id: id });
+      return note(await layers.toRaster(id, a.opts));
+    }
+
+    /* ── acquiring, which is a step of its own ───────────────────────────────────────────────── */
+
+    /* ⚠ WHICH DOOR OF THE MAP IS ASKED IS STATED, NOT GUESSED FROM THE LAYER. js/gis-layers.js has
+       two — features (toDataset) and a field baked over a window (toRaster) — and they answer
+       different questions about the same id where a row has both. `kind` says which; when it is not
+       said, a request carrying a resolution is a request for a grid, because width and height are
+       meaningless to a feature copy. ⚠ The map is what knows which rows can be sampled at all
+       (`samplable` in mapRows), so a wrong choice is refused BY js/gis-layers.js with the layer's own
+       vocabulary rather than pre-judged here out of a list of layer ids. */
+    async function acquireOnly(action) {
+      const a = action || {};
+      const given = Array.isArray(a.inputs) ? a.inputs : (a.inputs == null ? [] : [a.inputs]);
+      if (!given.length) {
+        return fail('missing-input', { needs: 'inputs', layers: mapRows().map((r) => r.ref), datasets: data.list().map((d) => d.id) });
+      }
+      const word = (a.kind == null || a.kind === '') ? null : String(a.kind);
+      if (word && word !== 'vector' && word !== 'raster') return fail('bad-param', { param: 'kind', kinds: ['vector', 'raster'] });
+      const win = (a.acquire && typeof a.acquire === 'object') ? a.acquire : {};
+      const wantsRaster = word ? (word === 'raster') : (win.width != null || win.height != null || !!a.sample);
+      const decl = { kinds: given.map(() => (wantsRaster ? 'raster' : 'vector')) };
+      const cache = makeCache();
+      const ids = [];
+      for (let i = 0; i < given.length; i++) {
+        const r = await resolveRef(given[i], i, decl, cache, a);
+        if (!r.ok) return r;
+        ids.push(r.id);
+      }
+      /* The rows are the answer. A ref that already named a registered dataset is reported as it
+         stands — 「取ってきた」 と 「もう在った」 は別の事実なので、`acquiredFrom` が付くのは前者だけ。 */
+      const made = new Map(cache.acquired.map((r) => [r.id, r]));
+      const rows = ids.map((id) => made.get(id) || datasetRow(data.get(id)));
+      const more = rows.filter((r) => r.next != null);
+      return {
+        ok: true, acquired: rows, dataset: rows[0], inputs: ids,
+        html: '<div class="atlas-gis-result"><b>' + esc(L('Acquired', '取得しました')) + '</b> — '
+          + rows.map((r) => esc(r.title) + ' · ' + r.count + ' ' + esc(r.kind === 'raster' ? L('pixels', '画素') : L('rows', '行')) + ' · <code>' + esc(r.id) + '</code>').join('<br>')
+          + '<div class="atlas-gis-next">'
+          + esc(more.length
+            ? L('More remains for that window — ask again with acquire.cursor.', 'その範囲にはまだ続きがあります — acquire.cursor を付けてもう一度。')
+            : L('Use this id as the input of the next step.', 'この id を次の処理の入力に使えます。'))
+          + '</div></div>',
+      };
     }
 
     /* ── running one step ───────────────────────────────────────────────────────────────────── */
@@ -256,6 +367,16 @@ export function makeGisAtlas(core) {
     async function run(action) {
       const a = action || {};
       const op = (a.op == null) ? '' : String(a.op);
+      /* ⚠⚠ (#R759) 取得だけを頼めるようになった。A step with inputs and NO op is an acquisition, and
+         until this round there was no way to express one: every route into js/gis-layers.js ran
+         through an op's input resolution, so 「まずこの範囲のデータを取って、何が来たか見せて」 —
+         the first move of any honest analysis, and the one that tells a planner whether the window it
+         chose was answered — could only be made by running some op the reader had not asked for.
+         ⚠ NOT A SECOND CAPABILITY. It is the same `data.gis` door and the same argument object: what
+         changes is that `op` is absent, which is a fact the caller states rather than a mode it
+         selects. js/atlas-console.js therefore needed no new line, and js/atlas-capabilities.js no new
+         row — a row per shape is the hand-written list this file exists not to grow. */
+      if (op === '') return acquireOnly(a);
       const decl = ops.op(op);
       /* Refused WITH the vocabulary, for the reason the resolver above gives. */
       if (!decl) return fail('op-unknown', { op: op, ops: ops.ops().map((d) => d.id) });
@@ -286,6 +407,8 @@ export function makeGisAtlas(core) {
 
       const row = datasetRow(res.dataset);
       const out = { ok: true, op: op, inputs: ids, dataset: row, stats: res.stats || null };
+      /* (#R759) 何をどこから取ったか、そしてまだ続きがあるか。See fromLayer. */
+      if (cache.acquired && cache.acquired.length) out.acquired = cache.acquired.slice();
       const st = statsText(res.stats);
       out.html = '<div class="atlas-gis-result"><b>' + esc(op) + '</b> → ' + esc(row.title)
         + ' · ' + row.count + ' ' + esc(row.kind === 'raster' ? L('pixels', '画素') : L('rows', '行'))
@@ -331,7 +454,7 @@ export function makeGisAtlas(core) {
       };
     }
 
-    const API = { catalogue, run, draw, resolve: (ref, slot, decl, action) => resolveRef(ref, slot || 0, decl || {}, makeCache(), action || {}) };
+    const API = { catalogue, run, draw, acquire: acquireOnly, resolve: (ref, slot, decl, action) => resolveRef(ref, slot || 0, decl || {}, makeCache(), action || {}) };
     return API;
   })();
 }

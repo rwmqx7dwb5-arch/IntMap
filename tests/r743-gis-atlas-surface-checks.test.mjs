@@ -39,6 +39,10 @@ function installWindow() {
    tests/r732 ⑨ and tests/r735 ⑪. */
 function stubLayers(rows) {
   return {
+    /* (#R759) 取得条件の語彙はこの扉のもの（js/gis-layers.js）。stub も同じものを述べる。 */
+    acquireFields: (kind) => (String(kind) === 'raster'
+      ? ['bounds', 'width', 'height', 'where', 'unit']
+      : ['bounds', 'where', 'fields', 'limit', 'cursor', 'time']),
     sources: () => rows.map((r) => ({ id: r.id, label: r.label, geometryType: r.geometryType || 'Point', count: (r.features || []).length })),
     canSample: (id) => !!(rows.find((r) => r.id === id) || {}).samplable,
     toDataset: (id, o) => {
@@ -186,7 +190,14 @@ test('R743 ⑪ a refusal carries what exists, or the declaration of the op that 
   const grid = await a2.run({ op: 'zonal', inputs: ['Zones', 'layer:elev'], params: { stat: 'mean' } });
   assert.equal(grid.ok, false);
   assert.equal(grid.why, 'raster-sample-needs-window');
-  assert.deepEqual(grid.detail.needs, ['sample.bounds', 'sample.width', 'sample.height']);
+  /* (#R759) 綴りが `acquire.*` になった。取得条件は 1 つの object になり、窓はその 3 欄である
+     (js/gis-layers.js acquireFields)。⚠ `sample` は消していない——#R743 が出荷した綴りで、同じ 3 欄を
+     指し、今日も動く（すぐ下の行が測る）。拒否が名指すのは、目録が planner に教えているほうである。 */
+  assert.deepEqual(grid.detail.needs, ['acquire.bounds', 'acquire.width', 'acquire.height']);
+  assert.deepEqual(grid.detail.accepts, ['bounds', 'width', 'height', 'where', 'unit']);
+  /* ⚠ 古い綴りが今日も届くこと。届かなくなっていたら、それは黙って縮小したのと同じである。 */
+  const still = await a2.run({ op: 'zonal', inputs: ['Zones', 'layer:elev'], params: { stat: 'mean' }, sample: { bounds: [0, 0, 1, 1], width: 2, height: 2 } });
+  assert.notEqual(still.why, 'raster-sample-needs-window');
 });
 
 /* ══ ⑫ 描くことは別の約束である ═════════════════════════════════════════════════════════ */

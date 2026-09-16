@@ -90,6 +90,15 @@ export function makeGisOps() {
     /* (#R752) The projections. Only `measure` reaches for this, and only when the reader NAMED a
        plane — the geodesic answer needs no projection at all. */
     function crsKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisCrs) || null; } catch (_) { return null; } }
+    /* ⚠⚠⚠ (#R759) 「Worker が在る」 と 「普段の分析が Worker で走る」 は別である。js/gis-worker.js has
+       been mounted since #R756 and NOTHING CALLED IT: `run`/`register`/`probe` had zero callers in
+       js/ and in tests/, one job was registered, and that one was never asked for either. So every
+       pixel loop in the app ran on the thread that draws the map, and the module that existed to
+       stop that was a module that existed. ⚠ Read at call time like every other kernel, and its
+       ABSENCE IS NOT AN ERROR — js/gis-raster.js finishes the same arithmetic here and records why
+       it had to (`result.worker.reason`), which is the diagnosis a reader can act on rather than a
+       silence they have to guess at ([[intmap-atlas-failed-because-intmap-said-so]]). */
+    function workerKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisWorker) || null; } catch (_) { return null; } }
     function earthKm() { const g = geodesy(); const R = g && g._R_EARTH_KM; return (typeof R === 'number' && isFinite(R) && R > 0) ? R : null; }
 
     const D2R = Math.PI / 180;
@@ -2406,9 +2415,21 @@ export function makeGisOps() {
       const RK = rasterKernel();
       const b = bandIndexOf(aDs, params.band);
       if (!b.ok) return b.res;
-      const r = await RK.diff(aDs, bDs, b.index, { ctx: ctx });
+      /* (#R759) 口を渡すのはここである。The kernel decides whether it can be used and says so in the
+         result; this layer's whole part is to HAND IT OVER, which is the part that was missing. */
+      const r = await RK.diff(aDs, bDs, b.index, { ctx: ctx, worker: workerKernel() });
       if (!r || !r.ok) return r || fail('diff-failed');
-      return { ok: true, raster: r.raster, stats: { count: r.count, nodata: r.nodataCount } };
+      /* ⚠ WHICH THREAD ANSWERED IS PART OF THE ANSWER, not a log line. `stats` is what js/gis-panel.js
+         and js/gis-atlas.js print as the runner wrote it, so a run that fell back to the main thread
+         says so to the reader who is wondering why the map stopped moving. */
+      /* ⚠ THREE ANSWERS, NOT TWO. `used` is the other thread; a `reason` is the door that could not be
+         used and why; and NO NOTE AT ALL is 「口そのものが無かった」 — a page where js/gis-worker.js is
+         not mounted. Folding the third into either of the others would be this project's recorded
+         「訊けなかった」 と 「無かった」 を同じ答えにする shape. */
+      const stats = { count: r.count, nodata: r.nodataCount };
+      if (r.worker) stats.worker = r.worker.used ? 'used' : ('not-used: ' + r.worker.reason);
+      else stats.worker = 'not-used: worker-not-mounted';
+      return { ok: true, raster: r.raster, stats: stats };
     }
 
     /* ── the time window (#R735) ────────────────────────────────────────────────────────────────
@@ -2505,6 +2526,135 @@ export function makeGisOps() {
       if (!t) return null;
       if (t.kind === 'track' && String(decl.output || '') !== 'same-as-input') return null;
       return t;
+    }
+
+    /* ══ ⚠⚠⚠ (#R759) 答えは、その答えを作った入力より完全にはなれない ════════════════════════════
+       #R749 put `coverage` on an ACQUISITION — 「求めた窓のうち、どこまでが答えられたか」 — and #R756
+       published it to the planner, and both stopped at the door. An op's output carried the recipe
+       (`kind:'op'`, inputs, params) and NO coverage at all, so js/gis-atlas.js datasetRow, which reads
+       `provenance.coverage` of the record IN FRONT OF IT, found nothing on every derived record.
+       ⚠ THE LOSS IS NOT COSMETIC AND IT IS ONE STEP WIDE. 「一部の地域しか取れていない施設データ」 is
+       visible while it is the acquisition; buffer it once and the same rows are a record about which
+       nothing is said, and the count computed from it is stated to the reader with no caveat. The
+       lineage was still there — a reader could walk `provenance.inputs` back to the acquisition — but
+       nothing did, and 「たどれる」 is not 「述べている」 ([[intmap-records-with-no-reader]]).
+
+       ⚠ THE RULE IS A FACT ABOUT DERIVATION, NOT A TABLE OF OPS. Every runner in RUN computes its
+       answer OUT OF its inputs, so no output can describe more of the world than the least complete
+       thing it was computed from. That is why this is one function applied to every registration
+       rather than a per-op inheritance table: an op added to DECL tomorrow inherits by existing.
+
+       ⚠ 'partial' AND 'sample' ARE NOT RANKED AS 「弱い/強い」 BY THIS FILE — js/gis-sources.js says
+       in as many words that the third is not a weaker second. What IS ordered is which one must be
+       said when both are present: rows that were left out (`partial`) cannot be made whole by asking
+       the same question at a finer resolution, so it is the one that survives the join. Both are
+       carried in `inputs` regardless, so nothing that was said is lost.
+
+       ⚠ AND SILENCE IS NOT `all`. A dataset the reader imported from a file has no coverage statement
+       — nobody measured what the file is a part of — and treating that as 「全部」 is exactly the
+       shape this project keeps recording ([[intmap-one-store-was-asked]]). So when any input said
+       nothing, no `completeness` is written: the record says which inputs spoke and which did not,
+       and a planner reading it is told the question is open instead of being told an answer. */
+    const COVERAGE_ORDER = { all: 0, sample: 1, partial: 2 };
+
+    function inheritCoverage(ds) {
+      const stated = [], silent = [];
+      for (const d of ds) {
+        const c = d && d.provenance && d.provenance.coverage;
+        if (c && c.completeness) stated.push({ id: d.id, coverage: c });
+        else if (d) silent.push(d.id);
+      }
+      if (!stated.length) return null;
+      let worst = stated[0];
+      for (const s of stated) {
+        const a = COVERAGE_ORDER[String(s.coverage.completeness)];
+        const b = COVERAGE_ORDER[String(worst.coverage.completeness)];
+        /* ⚠ A WORD THIS FILE DOES NOT KNOW IS NOT SILENTLY RANKED LAST. js/gis-sources.js owns the
+           vocabulary; a fourth value added there arrives here as `undefined` and must not be read as
+           「一番良い」. It is carried as the one that survives, which is the conservative reading. */
+        if (a === undefined || (b !== undefined && a > b)) worst = s;
+      }
+      const out = {
+        /* 「これは導出された記録についての陳述であって、取得の観測ではない」 — the two are different
+           claims and a reader that cannot tell them apart would re-ask an upstream that was never
+           asked in the first place. */
+        derived: true,
+        inputs: stated.map((s) => ({ id: s.id, completeness: s.coverage.completeness, reason: s.coverage.reason || null })),
+      };
+      if (silent.length) out.undeclaredInputs = silent.slice();
+      /* `all` only survives when every input spoke; see the header. */
+      if (!silent.length || COVERAGE_ORDER[String(worst.coverage.completeness)] > 0) {
+        out.completeness = worst.coverage.completeness;
+        out.reason = worst.coverage.reason || null;
+        out.from = worst.id;
+      }
+      return out;
+    }
+
+    /* ══ ⚠⚠ (#R759) 2 時点の差は、どちらか一方の時点ではない ══════════════════════════════════════
+       A grid result was registered with `time: ds[0].time` — the FIRST input's epoch, whatever the op
+       had done with the second. So 「2020 年と 2025 年の差分」 was registered as a dataset that says it
+       is 2020, and every timeWindow, label and legend downstream said 2020 about a picture of change.
+       ⚠ WHICH INPUTS VOTE IS A FACT, NOT A LIST: the ones whose SAMPLES entered the output. rasterMask
+       is a grid masked by a polygon layer — the polygons choose pixels, they do not contribute values
+       — so its second input does not move the epoch, and it does not have to be named here for that
+       to hold, because it is not a grid.
+       ⚠ THE ENDS ARE THE RECORDS' OWN VALUES, NOT A RE-READING OF THEM. js/gis-datasets.js declareTime
+       has already turned whatever each upstream wrote into a pair of epoch milliseconds, and that pair
+       is what is compared and what is carried; asking momentOf again is only for a value that is not
+       one yet, which is what a caller declaring a fresh constant hands over.
+       ⚠ AND AN UNKNOWN EPOCH IS NOT A SPAN. If either grid never said when it is, the range of the
+       result is not something anybody stated, so no declaration is made and the inputs' own times are
+       recorded in the recipe instead — 「述べられていない」 stays 「述べられていない」. */
+    function rasterOutTime(ds, R) {
+      const grids = ds.filter((d) => d && String(d.kind || 'vector') === 'raster');
+      if (!grids.length) return { time: null, stated: [] };
+      const stated = grids.map((d) => ({ id: d.id, time: d.time || null }));
+      if (grids.length === 1) return { time: grids[0].time || null, stated: stated };
+      const first = JSON.stringify(grids[0].time || null);
+      if (grids.every((d) => JSON.stringify(d.time || null) === first)) return { time: grids[0].time || null, stated: stated };
+      const ms = (v, which) => {
+        if (typeof v === 'number' && isFinite(v)) return v;
+        const m = R.momentOf(v);
+        return m ? (which === 'end' ? m.end : m.start) : null;
+      };
+      const ends = [];
+      for (const d of grids) {
+        const t = d.time;
+        if (!t || t.kind !== 'constant') return { time: null, stated: stated };
+        const s = ms(t.start, 'start'), e = ms(t.end, 'end');
+        if (s == null || e == null) return { time: null, stated: stated };
+        ends.push({ start: s, end: e });
+      }
+      let lo = ends[0].start, hi = ends[0].end;
+      for (const x of ends) { if (x.start < lo) lo = x.start; if (x.end > hi) hi = x.end; }
+      return { time: { kind: 'constant', start: lo, end: hi }, stated: stated };
+    }
+
+    /* ══ ⚠⚠ (#R759) 列に付けられた陳述は、列の名前が残る限り残る ═══════════════════════════════════
+       js/gis-datasets.js measures an output's columns from the VALUES (describeFields), which is
+       right — a type nobody verified is a claim with no author. But a unit cannot be measured from
+       values: 「12」 is twelve of something, and the something was stated once, by the reader
+       (declareField) or by the grid its band came from. A filter that keeps 40 of 1,000 rows was
+       therefore handing back a `population_density` column with no unit on it, and the reader who had
+       typed 「人/km²」 five minutes earlier had to type it again — on a record that REFUSES to be
+       declared on at all (openFor: `edit-would-contradict-recipe`), so they could not.
+       ⚠ CARRIED WITH ITS AUTHOR, NEVER RE-AUTHORED. The output's statement says the unit came from
+       the input and who said it there; it is not moved into the reader's declaration store, which
+       holds what the READER said about THAT record (js/gis-datasets.js states that split).
+       ⚠ ONLY THE UNIT, AND ONLY BY NAME. A column that kept its name kept its quantity — the mean and
+       the sum of metres are metres — and a column an op INVENTED has a name nothing stated anything
+       about, so it inherits nothing. The measured `type` is always the output's own. */
+    function fieldStatements(ds) {
+      const out = {};
+      for (const d of ds) {
+        for (const f of (d && d.fields) || []) {
+          if (!f || !f.name || f.unit == null) continue;
+          if (Object.prototype.hasOwnProperty.call(out, f.name)) continue;
+          out[f.name] = { unit: String(f.unit), unitStated: f.unitStated || null, unitFrom: d.id };
+        }
+      }
+      return Object.keys(out).length ? out : null;
     }
 
     /* ── run ──────────────────────────────────────────────────────────────────────────────────── */
@@ -2654,6 +2804,15 @@ export function makeGisOps() {
          the params that ran, cloned — a caller mutating its own object afterwards must not be able to
          rewrite history. */
       const prov = { kind: 'op', op: decl.id, inputs: inputs, params: recorded };
+      /* (#R759) 取得の陳述は、演算をまたいでも落ちない。See inheritCoverage — null when no input ever
+         said anything, which is the state every record made from an imported file is in. */
+      const cov = inheritCoverage(ds);
+      if (cov) prov.coverage = cov;
+      const grid = rasterOutTime(ds, R);
+      /* The inputs' own epochs, recorded whenever more than one grid contributed samples — including
+         (especially) when they could not be combined into a span. */
+      if (grid.stated.length > 1) prov.inputTimes = grid.stated;
+      const statements = fieldStatements(ds);
       let rec;
       try {
         if (res.raster) {
@@ -2665,7 +2824,10 @@ export function makeGisOps() {
             kind: 'raster', id: step.id, title: title,
             width: res.raster.width, height: res.raster.height, grid: res.raster.grid,
             bands: res.raster.bands, read: res.raster.read,
-            time: ds[0].time || null,
+            /* (#R759) 全部の格子の時点。See rasterOutTime: one grid keeps its own, two that agree keep
+               it, two that differ become the span they bracket, and one that never said becomes null
+               rather than the other one's date. */
+            time: grid.time,
             sourceCrs: ds[0].sourceCrs || null,
             provenance: prov,
           });
@@ -2682,6 +2844,9 @@ export function makeGisOps() {
                ⚠ AND IT IS RE-VERIFIED ON THE WAY IN (js/gis-datasets.js declareTime): an op that
                dropped the parallel array is told rather than believed. */
             time: outTime(ds[0], decl),
+            /* (#R759) 単位は測れないので、名前が残った列については入力の陳述が著者ごと運ばれる。
+               See fieldStatements. */
+            fieldStatements: statements,
             provenance: prov,
           });
         }
@@ -2714,7 +2879,7 @@ export function makeGisOps() {
        project saved last week reopens with different pixels in it, which is precisely the fact this
        version exists to announce. (The ctx handover and the surface declarations do not change an
        answer; the rasterize rule does, and one changed answer is enough.) */
-    const KERNEL_VERSION = 'ops-2';
+    const KERNEL_VERSION = 'ops-3';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
