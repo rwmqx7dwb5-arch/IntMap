@@ -46,7 +46,6 @@ import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
-import { makeGisExport } from './gis-export.js';
 import { makeGisPanel } from './gis-panel.js';
 
 window.IntMapModules = window.IntMapModules || {};
@@ -92,9 +91,6 @@ window.IntMapModules.gisCore = function (HOST) {
   const sources = makeGisSources();
   const layers = makeGisLayers();
   const ops = makeGisOps();
-  /* (#R756) The way OUT. Mounted like every other kernel — the panel reads window.IntMapGisExport
-     at call time rather than capturing it, the same rule js/gis-core.js states for all of them. */
-  const exporter = makeGisExport();
   const project = makeGisProject();
   const panel = makeGisPanel(HOST);
 

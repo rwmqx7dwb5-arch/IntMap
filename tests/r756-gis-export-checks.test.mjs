@@ -283,10 +283,14 @@ test('R756 ⑥: a dataset that states a licence carries it out; one that states 
   assert.equal(t1.get(270), 'dem');
   assert.equal(t1.get(305), 'IntMap');
   assert.ok(/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/.test(t1.get(306) || ''), 'DateTime is not TIFF 6.0 shaped: ' + t1.get(306));
-  const md = t1.get(42112) || '';
-  assert.ok(md.includes('INTMAP_LICENCE'), 'GDAL metadata does not carry the licence: ' + md);
-  assert.ok(md.includes('https://example.org/dem'), 'GDAL metadata does not carry the source');
-  assert.ok(md.includes('2026-09-16T01:02:03Z'), 'GDAL metadata does not carry the retrieval time');
+  /* ⚠ THE ITEMS ARE READ AS ITEMS, NOT AS SUBSTRINGS OF THE DOCUMENT. 「その文字列がどこかに在る」
+     passes over a source written into the wrong item, or into a band's DESCRIPTION — and it is the
+     shape a URL-sanitisation scanner correctly objects to, because a substring test on a URL says
+     nothing about what surrounds it. What is measured is the value of the named item. */
+  const md = gdalItems(t1.get(42112) || '');
+  assert.equal(md.INTMAP_LICENCE, PROV.licence, 'the GDAL metadata does not carry the stated licence');
+  assert.equal(md.INTMAP_SOURCE, PROV.url, 'the GDAL metadata does not carry the source');
+  assert.equal(md.INTMAP_RETRIEVED_AT, PROV.readAt, 'the GDAL metadata does not carry the retrieval time');
 
   const t2 = asciiTags(EX.write(anon, { format: 'geotiff' }).bytes);
   assert.equal(t2.has(33432), false, 'a Copyright tag was written for a grid that states no licence');
@@ -517,6 +521,18 @@ test('R756 ⑩: the format list is a declaration a panel can build a control out
    The 7 fields of an IFD entry, little-endian, ASCII values only. Written from TIFF 6.0 §2, the way
    tests/r749-gis-geotiff-checks writes its own fixtures: a check that asked js/gis-export.js what it
    had written would agree with itself whatever it wrote. */
+/* The GDAL_METADATA document's items, by name. Written here rather than asked of js/gis-export.js —
+   the reference for what a writer wrote must not come from the writer. */
+function gdalItems(doc) {
+  const out = {};
+  for (const m of String(doc).matchAll(/<Item name="([^"]+)"(?:[^>]*)>([\s\S]*?)<\/Item>/g)) {
+    out[m[1]] = m[2]
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+  }
+  return out;
+}
+
 function asciiTags(bytes) {
   const u = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   const dv = new DataView(u.buffer, u.byteOffset, u.byteLength);

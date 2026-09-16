@@ -92,8 +92,32 @@ export function makeGisPanel(HOST) {
     const EXPR = () => { try { return window.IntMapGisExpr || null; } catch (_) { return null; } };
     /* js/gis-export.js (#R756). Asked at use time like every other handle here: where it is absent
        the section is drawn WITH the sentence that says so, because a missing exit that says nothing
-       is exactly the state this round found the GIS layer in. */
-    const EXPORT = () => { try { return window.IntMapGisExport || null; } catch (_) { return null; } };
+       is exactly the state this round found the GIS layer in.
+       ⚠ AND IT IS FETCHED WHEN THE READER LOOKS AT THE WAY OUT, not when the panel mounts. The three
+       file READERS (js/gis-shapefile.js · js/gis-geotiff.js · js/gis-geopackage.js) are already their
+       own chunks for exactly this reason — a session that never exports should not carry the writer.
+       ⚠ 天井を上げて自分の変更を通さない: js/lazy-modules.js:154 が「自分の変更に合わせて天井を
+       上げるのは、その検査が捕まえるための動き」と書いており、`gis-core` の 322.2 kB がそれである。
+       ⚠ 「まだ来ていない」と「来られなかった」は別の文で、読者には別のことが起きている。 */
+    let exportPending = false, exportFailed = false;
+    const EXPORT = () => {
+      try { if (window.IntMapGisExport) return window.IntMapGisExport; } catch (_) { return null; }
+      if (!exportPending && !exportFailed) {
+        exportPending = true;
+        /* ⚠ THE SPELLING IS `(await import(…)).NAME`, not `.then(m => m.NAME())`.
+           tests/r175-checks ③ reads a dynamic import as an import OF A NAME only in that shape, and
+           js/screenshot.js and js/geo-import.js already use it — a second spelling here would make
+           the export read as dead code while it is being called. ⚠ その検査は散文の中の import も
+           本物として読むので、ここに例を「書いて」はならない（書いた結果、存在しないモジュールを
+           動的に読み込んでいると報告された）。 */
+        (async () => {
+          try { (await import('./gis-export.js')).makeGisExport(); } catch (_) { exportFailed = true; }
+          exportPending = false;
+          try { render(); } catch (_) { }
+        })();
+      }
+      return null;
+    };
 
     function nf(v) {
       const n = Number(v);
@@ -1469,9 +1493,16 @@ export function makeGisPanel(HOST) {
       sec.appendChild(el('div', CSS_SECTH, window.IntMapLang.t(HOST.lang, 'Export', '書き出し')));
       const X = EXPORT();
       if (!X || typeof X.write !== 'function') {
-        sec.appendChild(el('div', CSS_NOTE, window.IntMapLang.t(HOST.lang,
-          'The export module is not loaded, so nothing can be written out',
-          '書き出しの部品が読み込まれていないため、ファイルに出すことができません')));
+        /* ⚠ 「まだ来ていない」を「来られなかった」と言わない。 The first is a moment and redraws
+           itself; the second is a state the reader can act on. One sentence for both would tell a
+           reader with a slow connection that the feature is broken. */
+        sec.appendChild(el('div', CSS_NOTE, exportFailed
+          ? window.IntMapLang.t(HOST.lang,
+            'The export module could not be loaded, so nothing can be written out',
+            '書き出しの部品を読み込めなかったため、ファイルに出すことができません')
+          : window.IntMapLang.t(HOST.lang,
+            'Getting the export module ready',
+            '書き出しの部品を用意しています')));
         return sec;
       }
       const list = X.formats(ds.kind === 'raster' ? 'raster' : 'vector') || [];
