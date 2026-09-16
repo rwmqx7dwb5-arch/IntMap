@@ -267,55 +267,81 @@ export function makeGisGeometry() {
 
     /* ── the boolean ops ──────────────────────────────────────────────────────────────────────── */
 
-    /* One door, so the three of them cannot drift in how they unwrap, align, run and split.
-       `null` back means the clipper is not loaded or an operand wraps the world; an EMPTY answer is
-       a geometry of null too, and callers distinguish the two by asking available() first — the
-       ops layer does exactly that and answers `clipper-unavailable` by name. */
-    function boolOp(kind, a, b) {
-      if (!available()) return null;
+    /* ══ 「答えは空だった」 AND 「答えられなかった」 ARE NOT THE SAME NULL (#R743) ═══════════════
+       Every door in this file used to answer `null` for both, and the header above promised a
+       vocabulary — `clipper-unavailable`, `geometry-wraps-world` — that **existed in no line of
+       code**: a grep of the whole repository finds those two spellings only in comments. So the
+       refusal that was documented by name had no name, and the caller could not have read one.
+
+       ⚠ WHAT THAT COST, MEASURED IN THIS FILE'S OWN CALLERS: every runner in js/gis-ops.js read the
+       null as 「この行は答えに入らない」 and carried on, so a clipper that threw on one pair came
+       back as `{ ok: true }` with a quietly smaller answer — buffer, clip, intersect, union,
+       difference, dissolve, relate and aggregate all had that shape. Two predicates were worse than
+       silent: `disjoint` is `!intersects`, and `intersects` answers false when it cannot compute —
+       so a failure asserted 「この二つは離れている」; `contains` is `!difference(b, a)`, so a
+       throwing clipper asserted 「b は a に完全に含まれる」. A failure was being read as a verdict.
+
+       The fix is not a second vocabulary bolted on beside the first. These `…R` doors ARE the
+       implementations, and the plain names are one line each over them, so a caller that wants the
+       old shape gets exactly the old shape and there is still only one place where the rule lives.
+       `{ ok: true, geometry: null }` is an empty answer. `{ ok: false, why }` is a refusal, and
+       `why` is the name the header has been claiming since #R732. */
+    const OK = (g) => ({ ok: true, geometry: (g == null) ? null : g });
+    const OKV = (v) => ({ ok: true, value: v });
+    const NO = (why, detail) => ({ ok: false, why: why, detail: detail || null, geometry: null, value: null });
+
+    /* One door, so the three of them cannot drift in how they unwrap, align, run and split. */
+    function boolOpR(kind, a, b) {
+      if (!available()) return NO('clipper-unavailable');
       const A = toMulti(a);
-      if (A === null) return null;
-      if (!A.length) return (kind === 'union' && b) ? boolOp('union', b, null) : null;
+      if (A === null) return NO('geometry-wraps-world', { operand: 0 });
+      /* a has no interior. For an intersection or a difference that is an EMPTY answer and not a
+         failure — 「点と県の交わり」 is nothing, correctly. */
+      if (!A.length) return (kind === 'union' && b) ? boolOpR('union', b, null) : OK(null);
       let args = [A];
       if (b != null) {
         const B = toMulti(b);
-        if (B === null) return null;
+        if (B === null) return NO('geometry-wraps-world', { operand: 1 });
         if (B.length) args.push(alignTo(B, A));
-        else if (kind === 'intersection') return null;
+        else if (kind === 'intersection') return OK(null);
       }
       let res;
       try {
         res = (kind === 'union') ? PC.union.apply(PC, args)
           : (kind === 'intersection') ? PC.intersection.apply(PC, args)
             : PC.difference.apply(PC, args);
-      } catch (_) { return null; }
-      if (!Array.isArray(res) || !res.length) return null;
-      return fromMulti(splitBack(res));
+      } catch (e) { return NO('clipper-failed', { op: kind, message: (e && e.message) || String(e) }); }
+      /* The sweep-line ran and answered nothing: two prefectures that do not touch. That is the
+         answer, and it is the case the old null could not tell from the three above it. */
+      if (!Array.isArray(res) || !res.length) return OK(null);
+      return OK(fromMulti(splitBack(res)));
     }
 
-    function union(geoms) {
+    function unionR(geoms) {
       const list = (Array.isArray(geoms) ? geoms : [geoms]).filter(Boolean);
-      if (!list.length) return null;
-      if (!available()) return null;
+      if (!list.length) return OK(null);
+      if (!available()) return NO('clipper-unavailable');
       /* Unioned in ONE call rather than folded pairwise: the sweep-line is O(n log n) over all the
          edges at once, and folding is O(n²) with an intermediate result rebuilt every step.
          Measured shape, not a guess — this is the path a dissolve of 1,700 municipalities takes. */
       const multis = [];
       let base = null;
-      for (const g of list) {
-        const m = toMulti(g);
-        if (m === null) return null;
+      for (let i = 0; i < list.length; i++) {
+        const m = toMulti(list[i]);
+        if (m === null) return NO('geometry-wraps-world', { operand: i });
         if (!m.length) continue;
         if (!base) { base = m; multis.push(m); }
         else multis.push(alignTo(m, base));
       }
-      if (!multis.length) return null;
+      if (!multis.length) return OK(null);
       let res;
-      try { res = PC.union.apply(PC, multis); } catch (_) { return null; }
-      if (!Array.isArray(res) || !res.length) return null;
-      return fromMulti(splitBack(res));
+      try { res = PC.union.apply(PC, multis); } catch (e) { return NO('clipper-failed', { op: 'union', message: (e && e.message) || String(e) }); }
+      if (!Array.isArray(res) || !res.length) return OK(null);
+      return OK(fromMulti(splitBack(res)));
     }
 
+    function boolOp(kind, a, b) { return boolOpR(kind, a, b).geometry; }
+    function union(geoms) { return unionR(geoms).geometry; }
     function intersection(a, b) { return boolOp('intersection', a, b); }
     function difference(a, b) { return boolOp('difference', a, b); }
 
@@ -439,9 +465,25 @@ export function makeGisGeometry() {
        of one and any part of the other. ⚠ This is the answer 「道路そのものからの距離」 needs, and
        it is exactly what a bounding-box centre cannot give: the centre of a prefecture's box can sit
        in the sea, and the distance to it is not the distance to the prefecture. */
+    function distanceKmR(a, b) {
+      if (!a || !b) return NO('missing-geometry');
+      if (earthKm() == null) return NO('geodesy-unavailable');
+      const r = intersectsR(a, b);
+      if (!r.ok) return r;
+      if (r.value) return OKV(0);
+      const d = distanceApart(a, b);
+      /* Neither shape had a position to measure from — an empty geometry, not a distance of ∞. */
+      return (d == null) ? NO('no-comparable-parts') : OKV(d);
+    }
+
     function distanceKm(a, b) {
       if (!a || !b) return null;
       if (intersects(a, b)) return 0;
+      return distanceApart(a, b);
+    }
+
+    /* The minimum over the pieces, for two shapes already known not to meet. */
+    function distanceApart(a, b) {
       let best = Infinity;
       const ptsA = pointsOf(a), ptsB = pointsOf(b);
       const strA = strandsOf(a), strB = strandsOf(b);
@@ -459,6 +501,45 @@ export function makeGisGeometry() {
     /* Sharing a single point of the plane. Areal × areal is asked of the clipper, because a square
        inside a square crosses nothing and shares no vertex; every other pair is a crossing, a
        containment, or a coincident position. */
+    /* ⚠ THE AREAL QUESTION CAN FAIL TOO (#R743). hasArea() answers false for a ring that wraps the
+       world, which is not 「面ではない」 — it is 「この平面では答えられない」 — and the predicates
+       below then measured its VERTICES and reported a verdict about a shape they had refused. */
+    function arealR(g) {
+      const m = toMulti(g);
+      if (m === null) return NO('geometry-wraps-world');
+      return { ok: true, areal: !!m.length };
+    }
+
+    function intersectsR(a, b) {
+      if (!a || !b) return NO('missing-geometry');
+      const ra = arealR(a); if (!ra.ok) return ra;
+      const rb = arealR(b); if (!rb.ok) return rb;
+      if (ra.areal && rb.areal) {
+        const r = boolOpR('intersection', a, b);
+        return r.ok ? OKV(!!r.geometry) : r;
+      }
+      /* Nothing below this line can fail: it is arithmetic on positions that toMulti has already
+         agreed are expressible in the plane. */
+      return OKV(intersects(a, b));
+    }
+
+    function containsR(a, b) {
+      if (!a || !b) return NO('missing-geometry');
+      const ra = arealR(a); if (!ra.ok) return ra;
+      if (!ra.areal) return OKV(false);
+      const rb = arealR(b); if (!rb.ok) return rb;
+      if (rb.areal) {
+        const r = boolOpR('difference', b, a);
+        return r.ok ? OKV(!r.geometry) : r;
+      }
+      return OKV(contains(a, b));
+    }
+
+    function withinR(a, b) { return containsR(b, a); }
+    /* ⚠ THE NEGATION CARRIES THE REFUSAL (#R743). `!intersects(a,b)` turned every failure into the
+       assertion 「離れている」, which is the one answer a failed computation most resembles. */
+    function disjointR(a, b) { const r = intersectsR(a, b); return r.ok ? OKV(!r.value) : r; }
+
     function intersects(a, b) {
       if (!a || !b) return false;
       const aA = hasArea(a), aB = hasArea(b);
@@ -510,9 +591,18 @@ export function makeGisGeometry() {
     /* The Minkowski sum of a geometry with a disk of `km`, as ONE union. A negative km is the
        inward buffer of an areal shape — the same sum taken off the boundary — and is refused for
        anything without an interior to eat into, because 「点を −5 km 太らせる」 has no meaning. */
-    function bufferKm(g, km, steps) {
+    function bufferKm(g, km, steps) { return bufferKmR(g, km, steps).geometry; }
+
+    /* ⚠ NINE REASONS USED TO SHARE ONE null HERE — no clipper, no geodesy, a radius that is not a
+       number, a shape with no positions, a sleeve the clipper threw on, a ring that wraps the
+       world, an inward buffer asked of something with no interior, a sweep that answered nothing,
+       and a final union that threw. js/gis-ops.js names the seventh (`inward-buffer-needs-area`)
+       before it calls; the other eight had no name anywhere (#R743). */
+    function bufferKmR(g, km, steps) {
       const G = geodesy();
-      if (!available() || !G || typeof G.diskFillPolys !== 'function' || !isFinite(km) || km === 0) return null;
+      if (!available()) return NO('clipper-unavailable');
+      if (!G || typeof G.diskFillPolys !== 'function') return NO('geodesy-unavailable');
+      if (!isFinite(km) || km === 0) return NO('bad-radius', { radiusKm: km });
       const r = Math.abs(km);
       const n = Math.max(8, Math.min(4096, Math.round(steps || 64)));
       const parts = [];
@@ -522,28 +612,29 @@ export function makeGisGeometry() {
       for (const p of pointsOf(g)) addDisk(p);
       for (const l of linesOf(g)) addStrand(l);
       for (const ring of ringsOf(g)) addStrand(ring);
-      if (!parts.length) return null;
+      /* No position anywhere in the geometry: an empty shape buffered is empty, not a failure. */
+      if (!parts.length) return OK(null);
 
-      let sleeve;
+      let sleeve = null;
       try {
         const base = parts[0];
         const args = parts.map((p, i) => (i ? alignTo(p, base) : p));
         const res = PC.union.apply(PC, args);
         sleeve = (Array.isArray(res) && res.length) ? res : null;
-      } catch (_) { sleeve = null; }
-      if (!sleeve) return null;
+      } catch (e) { return NO('clipper-failed', { op: 'sleeve', message: (e && e.message) || String(e) }); }
+      if (!sleeve) return OK(null);
 
       const body = toMulti(g);
-      if (body === null) return null;
+      if (body === null) return NO('geometry-wraps-world');
       /* Outward: the shape plus its sleeve. Inward: the shape minus it. A line or a point has no
-         body, so the sleeve IS the buffer and an inward one is refused above by hasArea. */
-      if (!body.length) return (km > 0) ? fromMulti(splitBack(sleeve)) : null;
+         body, so the sleeve IS the buffer, and an inward one has nothing to eat into. */
+      if (!body.length) return (km > 0) ? OK(fromMulti(splitBack(sleeve))) : NO('inward-buffer-needs-area');
       try {
         const aligned = alignTo(sleeve, body);
         const res = (km > 0) ? PC.union(body, aligned) : PC.difference(body, aligned);
-        if (!Array.isArray(res) || !res.length) return null;
-        return fromMulti(splitBack(res));
-      } catch (_) { return null; }
+        if (!Array.isArray(res) || !res.length) return OK(null);
+        return OK(fromMulti(splitBack(res)));
+      } catch (e) { return NO('clipper-failed', { op: (km > 0) ? 'union' : 'difference', message: (e && e.message) || String(e) }); }
     }
 
     /* ── dissolve ─────────────────────────────────────────────────────────────────────────────── */
@@ -557,6 +648,17 @@ export function makeGisGeometry() {
       union, intersection, difference, dissolve, bufferKm,
       intersects, contains, within, disjoint, distanceKm,
       pointInGeometry,
+      /* ⚠ THE SAME OPERATIONS, ASKED SO THAT A REFUSAL CAN BE READ (#R743). Not a second engine and
+         not a second rule: the plain names above are one line each over these. A caller that must
+         not report success over a computation that did not happen — which is every runner in
+         js/gis-ops.js — asks here and gets `{ ok:false, why }` instead of a null it would have read
+         as 「該当なし」. docs/GIS-CORE.md §1.2 holds the vocabulary. */
+      attempt: {
+        union: unionR, intersection: (a, b) => boolOpR('intersection', a, b), difference: (a, b) => boolOpR('difference', a, b),
+        dissolve: unionR, bufferKm: bufferKmR,
+        intersects: intersectsR, contains: containsR, within: withinR, disjoint: disjointR,
+        distanceKm: distanceKmR, areal: arealR,
+      },
       /* exposed because js/gis-ops.js converts the same way and the checks measure the same
          conversion — two readers of one rule, not two rules */
       toMulti, fromMulti, unwrapRing, ringsOf, linesOf, pointsOf, hasArea,

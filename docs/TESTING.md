@@ -2051,7 +2051,8 @@ needle spelled the withdrawn count as a **literal** — 「撤去済み *1* を�
 comparing it. #R590 raised the registry and reworded that sentence in the same commit, the
 pattern stopped matching, and **four claims went unchecked from that moment**: `Architecture.md`
 twice and `DECISIONS.md` twice, each stating that 137 capabilities are withdrawn when exactly
-one is, while `docs/FILES.md` said 「到達可能 138」 two files away. The rule printed 「10 stated
+one is, while `docs/FILES.md` two files away still carried the reachable count of the round
+ before (138 at the time, and wrong by then). The rule printed 「10 stated
 size(s)」 and none of the four was among them. This is the `alerts` capture group one step
 earlier: there a number was taken and never read; here it was never taken. Both halves of that
 sentence are read and compared now, and `tests/r699-doc-claim-needles-checks` ⑫ mutates the

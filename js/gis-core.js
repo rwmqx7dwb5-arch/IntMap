@@ -37,6 +37,7 @@ import { makeGisDatasets } from './gis-datasets.js';
 import { makeGisGeometry } from './gis-geometry.js';
 import { makeGisCrs } from './gis-crs.js';
 import { makeGisRaster } from './gis-raster.js';
+import { makeGisAtlas } from './gis-atlas.js';
 import { makeGisIndex } from './gis-index.js';
 import { makeGisExpr } from './gis-expr.js';
 import { makeGisLayers } from './gis-layers.js';
@@ -103,7 +104,15 @@ window.IntMapModules.gisCore = function (HOST) {
     } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
   }
 
-  const API = { data, geometry, crs, raster, index, expr, layers, ops, project, panel, draw,
+  /* (#R743) The Atlas-facing door of this layer. ⚠ IT LIVES HERE AND NOT IN js/atlas-console.js
+     BECAUSE THE OPS DECLARE THEMSELVES: the catalogue it hands the planner is `ops.ops()`, so an op
+     added to DECL is offered to Atlas the same day it is offered to the panel. The other direction —
+     a list of ops written on the Atlas side — is the defect #R732 measured in the panel, where
+     `ORDER` had four entries and DECL had nine. It needs no lazy door of its own: the whole of this
+     file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
+  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, draw: (id) => draw(id) });
+
+  const API = { data, geometry, crs, raster, index, expr, layers, ops, project, panel, draw, atlas,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { window.IntMapGis = API; } catch (_) { }
   return API;
