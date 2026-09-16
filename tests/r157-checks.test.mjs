@@ -11,11 +11,12 @@ import { readFileSync } from 'node:fs';
 import { appSource } from './app-source.mjs';
 
 const root = new URL('../', import.meta.url);
-const html = appSource(root);   /* (#R162) index.html + css/intmap.css + js/*.js */
+const html = appSource(root);
+if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;   /* (#R747) the reader below is a shipped module, and it is EVALUATED rather than read (#R505) */   /* (#R162) index.html + css/intmap.css + js/*.js */
 
 /* R157 #1 (localPlan's highlight shortcuts, kept and removed) deleted in #R406: localPlan is gone, so no regular expression decides a highlight target — or anything else — before the model; the turn loop that decides instead is covered by tests/r406-agent.test.mjs and tests/r406-turn.test.mjs. */
 
-test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders (no regionGroup)', () => {
+test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders (no regionGroup)', async () => {
   assert.match(html, /function _hlValidCodeSet\(\)\{/, 'ISO3 validity set built from window.countryGeo');
   assert.match(html, /function _hlReadGptGroups\(a\)\{/, 'reads the model\'s structured targets into validated code groups');
   // accepts targets / groups / iso3 / codes, and a bare-ISO3 "countries" array (never a name array or concept string)
@@ -45,8 +46,23 @@ test('R157 #2 dispatch: GPT-decided-targets path validates ISO3 → real borders
   assert.match(html, /status:\(gUnresolved\.length\?'partial_or_failed':'ok'\)/, 'the mechanical execution-result status');
   // it STATES the interpretation used
   assert.match(html, /Interpreted from your request and drawn from real national borders/, 'the definition used is stated in the reply');
-  // a.query (a concrete single feature the model chose NOT to expand) flows into the legacy resolver
-  assert.match(html, /a\.region\|\|a\.query\|\|''\)\.split/, 'a.query reaches the concrete-place resolver ladder');
+  /* a.query (a concrete single feature the model chose NOT to expand) flows into the legacy resolver.
+     ⚠ (#R747) THIS USED TO FIX THE SPELLING of the field list — /a\.region\|\|a\.query\|\|''\)\.split/ —
+     and the field list is exactly what went wrong: there were TWO of them, js/atlas-console.js's own
+     and js/atlas-country-ids.js's, and `targets` was in only one. A highlight whose members are plain
+     NAMES under `targets` (the shape js/atlas-catalog-text.js documents FIRST) was therefore read by
+     neither: measured on production, the same sixteen country names gave failed/failed under
+     `targets` and completed/ok under `countries`. Fixing the spelling here would have kept passing
+     through all of it, and would fail now that the list lives in ONE place — #R488's shape exactly.
+     So the FACT is asked of the shipped reader instead: every field that carries the request is read,
+     `query` among them, and the reader is the same one the identifier path uses. */
+  const { makeHighlightTargets } = await import('../js/atlas-country-ids.js');
+  const IDS = makeHighlightTargets({ geo: () => ({ features: [] }), resolveCountrySync: () => null });
+  assert.deepEqual(IDS.readNames({ query: 'the Alps' }), ['the Alps'], 'a.query reaches the concrete-place resolver ladder');
+  assert.deepEqual(IDS.readNames({ region: 'the Sahel' }), ['the Sahel'], '…and so does a.region');
+  assert.deepEqual(IDS.readNames({ targets: ['Botswana', 'Chad'] }), ['Botswana', 'Chad'],
+    'a.targets carries names too — the field the two lists disagreed about');
+  assert.ok(IDS.requestFields().text.includes('query'), 'and there is ONE list that says so');
 });
 
 test('R157 #3 SYS: highlight schema is targets/groups/query; the model expands concepts itself', () => {

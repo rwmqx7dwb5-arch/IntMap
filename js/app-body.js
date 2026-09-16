@@ -266,7 +266,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     /* READ-WRITE — the console's Atlas actions assign these five (theme/units/radius/measure state).
      * The closure variable stays the single source of truth; `HOST.x=v` writes it through the
      * setter. Get+set pairs on ONE line each; the RW list is pinned by tests/r165-checks.test.mjs. */
-    get measurePoints(){ return measurePoints; },   set measurePoints(v){ measurePoints=v; },   measureReading(pts){ try{ const p=(pts&&pts.length?pts:measurePoints)||[]; if(p.length<2) return null; const km=totalDistance(p), b=bearingDeg(p[0],p[p.length-1]); return { km, text:distTXT(km), bearing:b, bearingText:compassDir(b) }; }catch(_){ return null; } },   /* ⚠⚠⚠ (#R747) THE MEASUREMENT ITSELF, SO THE ANSWER CAN CONTAIN IT: `case 'measure'` put the number on the tool panel and nothing in the reply, so a reader who asked for a distance got a drawn line and no distance. DEV-NOTES #R747 §8. */
+    get measurePoints(){ return measurePoints; },   set measurePoints(v){ measurePoints=v; },   get measureReading(){ return measureReading; },
     get radiusColor(){ return radiusColor; },       set radiusColor(v){ radiusColor=v; },
     get radiusKm(){ return radiusKm; },             set radiusKm(v){ radiusKm=v; },
     get unitMode(){ return unitMode; },             set unitMode(v){ unitMode=v; },
@@ -1374,7 +1374,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
 
   /* (#R169) moved verbatim to js/map-readout.js — see Architecture.md §3.1. */
   function hideMeasureTip(){ document.getElementById('measure-tooltip').style.display='none'; }
-  function totalDistance(p){ let s=0; for(let i=1;i<p.length;i++)s+=turf.distance(turf.point(p[i-1]),turf.point(p[i]),{units:'kilometers'}); return s; }
+  function totalDistance(p){ let s=0; for(let i=1;i<p.length;i++)s+=turf.distance(turf.point(p[i-1]),turf.point(p[i]),{units:'kilometers'}); return s; }   /* ⚠⚠⚠ (#R747) THE MEASUREMENT ITSELF, SO THE ANSWER CAN CONTAIN IT: js/atlas-console.js's `case 'measure'` put the number on the tool panel and NOWHERE in the reply, so a reader who asked for a distance got a drawn line and no distance (measured on production). `distTXT` honours their unit setting. DEV-NOTES #R747 §8. */ function measureReading(pts){ try{ const p=(pts&&pts.length?pts:measurePoints)||[]; if(p.length<2) return null; const km=totalDistance(p), b=bearingDeg(p[0],p[p.length-1]); return { km, text:distTXT(km), bearing:b, bearingText:compassDir(b) }; }catch(_){ return null; } }
   function ringArea(p){
     if(p.length<3)return 0;
     try{
@@ -2976,7 +2976,7 @@ window.addEventListener('DOMContentLoaded', () => { const _imAppBoot = () => {
     }catch(_){ return null; }
   }
   function addPin(lng,lat,meta){   /* ⚠⚠ (#R489) A PIN MAY CARRY WHAT IT IS — `meta` is the OPTIONAL {title,description,when,source,url}. A pin was four fields and its popup opened with 「Pin #3」, which is the whole of why Atlas could not answer 「着弾地点を説明付きでピンして」: the `pin` action had no field for the explanation, so a turn that wanted described markers went research → bare pin → research again → pin again, four passes whose conclusions disagreed. Every existing caller (the context menu, the search card, the popup's own buttons) passes nothing and is unchanged. */
-    const _pk=(a,b)=>(+a).toFixed(5)+','+(+b).toFixed(5), _at=userPins.find(p=>p&&_pk(p.lng,p.lat)===_pk(lng,lat)); if(_at){ if(meta&&typeof meta==='object') _at.meta=meta; refreshPins(); if(activePinId===_at.id) renderPinPopup(); return _at.id; } const id='p'+(++pinSeq); const pin={id,lng,lat,elev:null,meta:(meta&&typeof meta==='object')?meta:null};   /* ⚠⚠⚠ (#R747) A MARKER IS IDENTIFIED BY WHERE IT IS, NOT BY WHAT IT IS CALLED: six pins landed on Machu Picchu, one per caption, and the elevation the reader asked for never arrived. `toFixed(5)` is ~1 m at the equator. DEV-NOTES #R747 §9. */
+    const _pk=(a,b)=>(+a).toFixed(5)+','+(+b).toFixed(5), _at=userPins.find(p=>p&&_pk(p.lng,p.lat)===_pk(lng,lat)); if(_at){ if(meta&&typeof meta==='object') _at.meta=meta; refreshPins(); if(activePinId===_at.id) renderPinPopup(); return _at.id; } const id='p'+(++pinSeq); const pin={id,lng,lat,elev:null,meta:(meta&&typeof meta==='object')?meta:null};   /* ⚠⚠⚠ (#R747) A MARKER IS IDENTIFIED BY WHERE IT IS, NOT BY WHAT IT IS CALLED: six pins landed on Machu Picchu, one per caption, and the elevation the reader asked for never arrived. `toFixed(5)` is ~1 m at the equator. DEV-NOTES #R747 §9. */
     userPins.push(pin); refreshPins();
     fetchElevDepth(lat,lng).then(e=>{ pin.elev=e; if(activePinId===id) renderPinPopup(); });
     return id;
