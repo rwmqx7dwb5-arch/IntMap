@@ -83,7 +83,21 @@ export function makeAtlasToolSurface(deps) {
          capability — the executor, the schema and the catalogue prose have all been here since the
          clock was; what changes is that Atlas no longer has to find what it is already standing on. */
       { name: 'set_time', cap: 'time.travel', desc: 'Set WHEN the map is — Chronos, the master clock. `year` (astronomical numbering: 0 is 1 BC) for history, `date` "YYYY-MM-DD" for a day (historical borders are day-exact, so use the date a treaty or partition took effect), `daysAgo` for recent news, or `now:true` to return to live. It moves the whole map together: borders, the Countries statistics for that year, choropleths, historical place names, the climate era, the terminator, satellites and the news feed. Call it whenever the request names a year, a date or an era — and whenever the reader asks to come back to the present — BEFORE drawing anything that should be read at that instant.' },
-      { name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations. Use for anything current, contested or beyond your own knowledge. This renders its own sourced answer to the reader.' },
+      /* ══ ⚠⚠⚠ (#R747) THE ACTION THE CATALOGUE TELLS ATLAS TO PREFER WAS THE ONE IT COULD NOT REACH ══
+         js/atlas-catalog-text.js calls `query` 「THE ONE ACTION FOR A QUESTION WITH SEVERAL CONDITIONS
+         AT ONCE」 and says, in capitals, 「USE THIS INSTEAD OF "analyze"/"mapReport"/"researchMap" FOR
+         ANY SUCH QUESTION … Never answer a multi-condition question by explaining what would have to be
+         checked」. `research` was in hand and `query` was behind `find_capability`, so the instruction
+         asked the model to prefer the tool it had not been given over the tool it had.
+         MEASURED on production 2026-09-15, signed in: 「Which cities are above 3000 m elevation and have
+         more than 500,000 people?」 — which is the catalogue's OWN worked example minus one condition —
+         spent two `research` calls of 1m53s and 1m54s and never touched the cities table, which carries
+         `elevM` and `pop` and answers it offline. [[intmap-prompt-that-hid-the-tools-in-hand]], the
+         round after #R733 fixed it for the other capabilities.
+         ⚠ NOTHING IS TAKEN AWAY (CONSTITUTION.md §5): `research` is untouched and every capability is
+         still reachable the same way. One more of them simply arrives already typed. */
+      { name: 'query_data', cap: 'data.query', desc: 'FILTER AND JOIN the datasets IntMap ships and answer with the ACTUAL ROWS \u2014 a table, pinned on the map, each column\u2019s source printed under it. The action for any question with several conditions at once ("cities above 3000 m with more than 500,000 people"). Prefer it over `research` whenever the answer is rows: it computes from the data instead of describing what would have to be checked. Tables, columns, the spatial and near forms and worked examples are in the catalogue entry for "query". An empty result is an answer.' },
+      { name: 'research', cap: 'research.analyze', desc: 'Answer a question from live sources with citations. Use for anything current, contested or beyond your own knowledge \u2014 but when the answer is ROWS from a dataset IntMap ships, use `query_data`. This renders its own sourced answer to the reader.' },
       /* ⚠ (#R413) THE EXISTING CAPABILITY, PROMOTED — NOT A NEW ONE. `view.locate` has read the
          device's real position since #R155. What was missing is that Atlas could not FIND it:
          measured, `find_capability('my location')` matched NOTHING and answered «IntMap may not have

@@ -56,7 +56,15 @@ import { makeCoastline } from './coastline.js';
 window.IntMapModules = window.IntMapModules || {};
 window.IntMapModules.atlasQuery = function (HOST) {
   let D = {};
-  const L = window.IntMapLang.pick(() => HOST.lang);
+  /* ⚠⚠⚠ (#R747) ONE REPLY, ONE LANGUAGE. This module read the UI language while js/atlas-console.js
+     reads the language the READER WROTE IN (`_mirrorLang()`), so a single Atlas answer to a Japanese
+     question arrived with 「✓ ハイライトを消去しました。」「移動先: 日本」 from one module and
+     「⚠ This query names something IntMap does not have…」 from this one, on an English UI.
+     MEASURED on production 2026-09-15, signed in (「日本の都道府県を人口で色分けして…」). Nothing here
+     is untranslated — the two halves were simply answering different questions about who is reading.
+     The composer now passes the language of the reply it is composing (`bind({lang})`), and a call
+     that passes none keeps the UI language, which is right for the Data-query panel's own use. */
+  const L = window.IntMapLang.pick(() => { try { if (D && typeof D.lang === 'function') { const l = D.lang(); if (l) return l; } } catch (_) { } return HOST.lang; });
   const LA = window.IntMapLang.pickArgs();
   /* the distance-to-the-sea measurement, owned here rather than published as a global: this file is
      its only reader, and both are behind js/lazy-modules.js's `atlasQuery` door */
@@ -131,6 +139,42 @@ window.IntMapModules.atlasQuery = function (HOST) {
       for (const code in (cs || {})) { const s = cs[code]; if (s && s.a2) _iso2to3[String(s.a2).toUpperCase()] = code; }
     }
     return _iso2to3[String(a2).toUpperCase()] || '';
+  }
+
+  /* ⚠⚠⚠ (#R747) A ROW THAT NAMES ITS COUNTRY IN WORDS IS NOT A ROW WITHOUT A COUNTRY. The country
+     scope below compared `codes` against `r.iso2` / `r.iso3` only, and `volcanoes` rows are built
+     with `iso2:''` and `country:<the GVP country NAME>` — so the scope matched nothing and said so
+     with a straight face. MEASURED on production 2026-09-15, signed in, inside ONE turn:
+         data.query {from:'volcanoes', in:{countries:['ID']}}                 → 0 Volcanoes
+         data.query {from:'volcanoes', where:[country == 'Indonesia']}        → 101 Volcanoes
+     The reader was shown a 「0 Volcanoes · No row satisfies every condition」 card for a question the
+     table could answer, and Atlas spent three more calls discovering the workaround.
+     [[intmap-store-refused-its-own-key]] is the same shape #R742 found in `highlight`, one reader
+     over: the store knows the mapping between a country's NAME and its codes — it is the same
+     `countryStats` record `iso2to3` already reads — and asking it is reading the store's own
+     declaration, not guessing at a spelling. ⚠ The name is matched against the store's OWN names
+     only; a row whose country name the store does not hold stays unmatched, and the note below says
+     the scope could not be applied rather than reporting an empty answer as a complete one. */
+  let _nameTo3 = null;
+  function countryNameTo3(nm) {
+    if (!nm) return '';
+    if (!_nameTo3) {
+      _nameTo3 = Object.create(null);
+      const cs = D.countryStats ? D.countryStats() : null;
+      const put = (k, code) => { const key = String(k == null ? '' : k).trim().toUpperCase(); if (key && !(key in _nameTo3)) _nameTo3[key] = code; };
+      for (const code in (cs || {})) { const st = cs[code]; if (!st) continue; put(st.nameEn, code); put(code, code); if (st.a2) put(st.a2, code); }
+    }
+    return _nameTo3[String(nm).trim().toUpperCase()] || '';
+  }
+  /* every identifier a row can be asked about, read off the row itself */
+  function rowCountryCodes(r) {
+    const out = [];
+    const a2 = String((r && r.iso2) || '').toUpperCase(); if (a2) out.push(a2);
+    const a3 = String((r && r.iso3) || '').toUpperCase(); if (a3) out.push(a3);
+    if (!a3) { const c = countryNameTo3((r && r.country) || ''); if (c) { out.push(c); const cs = D.countryStats ? D.countryStats() : null; const st = cs && cs[c]; if (st && st.a2) out.push(String(st.a2).toUpperCase()); } }
+    else if (!a2) { const cs = D.countryStats ? D.countryStats() : null; const st = cs && cs[a3]; if (st && st.a2) out.push(String(st.a2).toUpperCase()); }
+    if (!a2 && !a3) { const c2 = iso2to3(String((r && r.country) || '')); if (c2) out.push(c2); }
+    return out;
   }
 
   /* ══ WHICH GEONAMES RECORDS ARE A CITY ═══════════════════════════════════════════════════════
@@ -441,6 +485,16 @@ window.IntMapModules.atlasQuery = function (HOST) {
      ⚠ It is DECLARED, not guessed from `cost`: precipMm and coastKm are both cost 1 and are a
      sample and a computation respectively. */
   const ORIGINS = ['raw', 'sampled', 'computed', 'network', 'derived'];
+  /* ⚠⚠⚠ (#R747) A YEAR IS NOT A QUANTITY. `fmt` below groups anything of magnitude 1000 or more,
+     which is right for people, metres and dollars and wrong for the one kind of number that is a
+     LABEL for a point in time. MEASURED on production 2026-09-15, signed in: the Indonesian volcano
+     table shipped 「LAST KNOWN ERUPTION  2,022」 and 「1,952」 to the reader. The column stays
+     `kind:'number'` on purpose — ordering and every `>=`/`<` predicate compare the number, and a
+     column's kind is what those read — so only the PRINTING changes, which is exactly what `fmt`
+     is for (see #R620's note above `fmt`). Any further column that carries a calendar year takes
+     this formatter rather than restating the rule. */
+  const fmtYear = (v) => { const n = +v; return isFinite(n) ? String(Math.round(n)) : String(v == null ? '' : v); };
+
   function col(id, tables, label, unit, cost, ensure, source, kind, origin, fmt) {
     const c = { id, tables, label, unit, cost, ensure, source, kind: kind || 'number', origin: origin || 'raw' };
     /* ⚠ A MISSPELLED ORIGIN MUST NOT REACH THE READER AS A BLANK. `originLabel` falls back to
@@ -592,7 +646,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
     /* (#R497) the two facts the GVP row carries that nothing could ask for: which country it is in
        (a NAME here, not an ISO code — the file has no code) and the year of its last known eruption. */
     col('country', ['volcanoes'], LA('Country', '国', 'Land', 'Страна', 'País'), '', 0, intrinsic('country', (r) => r.country), 'Smithsonian GVP', 'text', 'raw'),
-    col('lastEruptionYear', ['volcanoes'], LA('Last known eruption', '最後の噴火', 'Letzter bekannter Ausbruch', 'Последнее известное извержение', 'Última erupción conocida'), '', 0, intrinsic('lastEruptionYear', (r) => (r.lastEruption === '' ? null : +r.lastEruption)), 'Smithsonian GVP', 'number', 'raw'),
+    col('lastEruptionYear', ['volcanoes'], LA('Last known eruption', '最後の噴火', 'Letzter bekannter Ausbruch', 'Последнее известное извержение', 'Última erupción conocida'), '', 0, intrinsic('lastEruptionYear', (r) => (r.lastEruption === '' ? null : +r.lastEruption)), 'Smithsonian GVP', 'number', 'raw', fmtYear),
   ];
   for (const w in WX) COLUMNS.push(col(w, ['cities', 'facilities', 'volcanoes'], WX[w][1], WX[w][2], 2, (rows) => ensureWx(rows, [w]), 'Open-Meteo forecast API', 'number', 'network'));
 
@@ -1032,7 +1086,21 @@ window.IntMapModules.atlasQuery = function (HOST) {
           : [inSpec];
       const codes = new Set(want.map((x) => String(x).trim().toUpperCase()).filter(Boolean));
       if (codes.size) {
-        rows = rows.filter((r) => codes.has(String(r.iso2 || '').toUpperCase()) || codes.has(String(r.iso3 || '').toUpperCase()));
+        /* the scope is asked of the row, in every notation the row carries (see countryNameTo3) */
+        const before2 = rows.length;
+        const readable = rows.filter((r) => rowCountryCodes(r).length).length;
+        rows = rows.filter((r) => rowCountryCodes(r).some((c) => codes.has(c)));
+        /* ⚠ 「no row matched」 and 「this table cannot be asked that」 are different answers and used to
+           be the same one: a table whose rows carry no country identifier at all returned an empty
+           result that read as a complete one. */
+        if (!readable && before2) {
+          return { ok: false, error: 'scope-unavailable', table: from,
+            message: L('This table does not say which country each row is in, so it cannot be restricted to one.',
+              'この表は各行がどの国にあるかを持たないため、国で絞り込めません。',
+              'Diese Tabelle nennt kein Land je Zeile und kann daher nicht nach Land eingeschränkt werden.',
+              'В этой таблице у строк нет страны, поэтому ограничить по стране нельзя.',
+              'Esta tabla no indica el país de cada fila, por lo que no puede limitarse por país.') };
+        }
         notes.push(L('Restricted to', '対象を限定', 'Beschränkt auf', 'Ограничено', 'Limitado a')
           + ': ' + Array.from(codes).join(', '));
       }
@@ -1497,7 +1565,7 @@ window.IntMapModules.atlasQuery = function (HOST) {
   }
 
   const API = { run, answer, catalogue, colName, tableName, distKm, human,
-    bind: (deps) => { D = deps || {}; _iso2to3 = null; return API; },
+    bind: (deps) => { D = deps || {}; _iso2to3 = null; _nameTo3 = null; return API; },
     tables: () => { syncUserTables(); return Object.keys(TABLES); }, columnFor, syncUserTables };
   window.IntMapQuery = API;
   return API;
