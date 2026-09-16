@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（306本・14.6 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（309本・14.9 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1833,6 +1833,9 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
 | `js/gis-geometry.js` | `window.IntMapGisGeometry` | **幾何カーネル**——boolean 演算（`union` / `intersection` / `difference` / `dissolve`）・任意形状の `bufferKm`・述語（`intersects` / `contains` / `within` / `disjoint`）・**形そのものからの最短測地距離** `distanceKm`・`pointInGeometry` |
 | `js/gis-crs.js` | `window.IntMapGisCrs` | **座標変換**——`define` / `known` / `resolve` / `transformGeometry` / `transformFeatures` / `why` / `looksProjected` |
 | `js/gis-raster.js` | `window.IntMapGisRaster` | **数値ラスターのカーネル**——`sample`（nearest / bilinear）・`zonal`（面積重み付き・値ごとの面積）・`mask`・`diff`・`pixelAreaKm2`・`describeBands`・`fromSampler` |
+| `js/gis-geotiff.js` | `window.IntMapGisGeotiff` | **GeoTIFF / COG の読み手**——依存を足さずに TIFF 6.0 を読む。`sniff` / `read` / `refusals`。扱えないものは**名前を付けて断る**（BigTIFF・JPEG-in-TIFF・登録名つきの圧縮・地理参照の無い TIFF）。欠損は **NaN** |
+| `js/gis-warp.js` | `window.IntMapGisWarp` | **格子の再投影と再標本化**——`to4326` / `resample` / `align` / `methods` / `affineOf`。⚠ **`method` に既定は無い**。欠損の規則は `IntMapGisRaster.sample` に訊き、写しを持たない |
+| `js/gis-sources.js` | `window.IntMapGisSources` | **供給元**——`list` / `features` / `region` / `acquire` / `declare`。取得はすべて `coverage`（`all` / `partial` / `sample` と理由・求めた範囲・答えた範囲・時点・解像度）を伴い、**`all` は供給元の宣言からしか届かない** |
 | `js/gis-index.js` | `window.IntMapGisIndex` | **空間索引**（一様格子）——`build` / `query` / `queryEach` / `stats`。セルの大きさをデータから導き、**偽陰性を出さない** |
 | `js/gis-expr.js` | `window.IntMapGisExpr` | **式の解釈器**（計算列の言語）——`parse` / `evaluate` / `compile` / `functions` / `refusals` |
 | `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()` / `toRaster()`（数値レイヤーを格子に焼く） |
@@ -1840,7 +1843,7 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
 | `js/gis-atlas.js` | `window.IntMapGis.atlas` | **Atlas がこの層に処理を依頼する扉**。目録は `ops()` そのもの（写しを持たない）。入力は登録済み id・題名・`layer:<id>`、出力は**次の処理の入力になる id**。能力は `data.gis`（計算）と `map.drawDataset`（描画）の 2 つで、op ごとには 1 つも無い |
 | `js/gis-project.js` | `window.IntMapGisProject` | IndexedDB への保存・復元・**引数を変えた再計算** |
 | `js/gis-panel.js` | `window.IntMapGisPanel` | 操作卓（一覧・属性表・由来の連鎖・実行・保存） |
-| `js/gis-core.js` | `window.IntMapGis` | 上の 10 本を起動する 1 つの扉と、`draw()` |
+| `js/gis-core.js` | `window.IntMapGis` | 上を起動する 1 つの扉と、`draw()`——地物は `window.GeoJSONUpload` の 3 レイヤーへ、**格子はエンジンの動的画像へ**。どちらも「描けた」は描画器が報告した事実 |
 | `js/gis-shapefile.js` | `window.IntMapGisShapefile` | **Shapefile の読み手**（`.shp` / `.dbf` / `.prj` / `.cpg`）——`read` / `group` / `refusals` |
 | `js/gis-geopackage.js` | `window.IntMapGisGeopackage` | **GeoPackage の読み手**（依存を足さずに SQLite を読み取り専用で読む）——`sniff` / `tables` / `read` / `refusals` |
 

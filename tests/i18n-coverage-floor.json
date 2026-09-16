@@ -3,12 +3,12 @@
   "langs": {
     "de": {
       "keyed": 422,
-      "positional": 7601,
+      "positional": 7600,
       "pages": 463
     },
     "es": {
       "keyed": 422,
-      "positional": 7601,
+      "positional": 7600,
       "pages": 463
     },
     "fr": {
@@ -23,17 +23,17 @@
     },
     "ru": {
       "keyed": 422,
-      "positional": 7601,
+      "positional": 7600,
       "pages": 463
     },
     "zh": {
       "keyed": 422,
-      "inline": 6299,
+      "inline": 6298,
       "pages": 463
     },
     "zh-hans": {
       "keyed": 422,
-      "inline": 6299,
+      "inline": 6298,
       "pages": 463
     }
   }

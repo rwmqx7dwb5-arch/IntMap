@@ -6825,7 +6825,6 @@ window.IntMapLang.define('zh', {
   "The grid module is not loaded, so this step was not run at all": "網格計算模組尚未載入，因此這個步驟根本沒有執行",
   "This step needs the other kind of data in that slot — features where it was given a grid, or the other way round": "這個步驟在那個輸入需要另一種資料——給了網格的地方需要要素，反之亦然",
   "That grid has no band of that name": "那個網格沒有這個名稱的波段",
-  "A grid is not drawn as shapes on the map; use it as the input of a step instead": "網格不會以圖形的形式繪製到地圖上；請改用它作為某個步驟的輸入",
   "That grid does not describe a grid: one of its size or spacing fields is missing or not a positive number": "那份描述並不構成一個網格：它的大小或間距欄位有一項缺漏，或不是正數",
   "This browser could not allocate a grid that size": "這個瀏覽器無法配置那麼大的網格",
   "That grid has fewer bands than the one asked for": "那個網格的波段數少於所指定的編號",

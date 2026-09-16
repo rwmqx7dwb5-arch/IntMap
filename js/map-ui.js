@@ -2608,6 +2608,10 @@ window.IntMapModules.geojsonUpload=function(HOST){
          {field, mode:'graduated', method, classes} → a numeric ladder ('quantile' | 'equal')  */
     async function style(ref,spec){
       const it=find(ref); if(!it) return {ok:false,why:'no-such-layer',detail:{ref:String(ref)}};
+      /* ⚠ (#R749) A GRID HAS NO ATTRIBUTE TABLE TO COLOUR BY. Falling through would have answered
+         'no-features' — true of the item and false about the reason — and clearing the legend would
+         have wiped the one the picture is painted from. */
+      if(it.kind==='raster') return {ok:false,why:'raster-not-attribute-coloured',detail:{ref:String(ref)}};
       if(spec==null){ it.spec=null; it.legend=null; applyStyle(it); renderList(); return {ok:true,legend:null}; }
       const R=await dataRules(); if(!R) return {ok:false,why:'data-unavailable'};
       const feats=(it.fc&&Array.isArray(it.fc.features))?it.fc.features:null;
@@ -2637,6 +2641,176 @@ window.IntMapModules.geojsonUpload=function(HOST){
        (#R738) `opts.datasetId` is optional too, and the return value is new — {n,sid} is how the
        caller binds the registration that happens after this. Both are additive: js/gis-core.js's
        draw() calls add(fc,title) with two arguments and behaves exactly as before. */
+    /* ══ (#R749) 数値ラスターを地図に出す — A GRID IS NOT A FeatureCollection ═══════════════════
+       The GIS core could compute grids since #R735 — a difference, a masked extract, a layer baked
+       into a grid — and then had nowhere to put them: js/gis-core.js draw() answered
+       'draw-needs-features' for every one of them, and js/gis-panel.js printed that sentence to a
+       reader holding a result they could not look at. A raster op could be RUN but not SEEN, which
+       makes it the end of a chain rather than a step in one.
+
+       ⚠ THIS BORROWS THE ENGINE'S DYNAMIC IMAGE; IT DOES NOT ADD A SECOND ONE. GE().layers
+       .addDynamicImage is the canvas-source primitive js/tsunami.js and js/night-side.js already
+       draw through, and BOTH renderers implement it (js/geo-engine.js, js/cesium-engine.js). A
+       fresh addSource here would be a third spelling of 「画素を地図に置く」 and would work on one
+       renderer only — the exact shape #R739 measured when draw() reported ok:true on the Globe.
+
+       ⚠ AND THE ROWS ARE LOOKED UP, NOT STEPPED. A canvas source is placed by four corners and its
+       texture is interpolated in MERCATOR Y, so a grid sampled at equal steps of LATITUDE lands in
+       the wrong place — measured at 895 km on the #R193 tsunami box. imageRowLatitudes() is the
+       engine answering 「row r is at what latitude?」, and it is the reason this paints correctly
+       under the globe projection as well as the flat map. Columns need no such call: Mercator X is
+       linear in longitude. */
+
+    /* ⚠ HOW BIG THE PAINTED IMAGE MAY BE, AND WHY IT IS NOT A TASTE.
+       OBSERVATION: the canvas is uploaded to the renderer as a single GL texture, and WebGL 2
+       guarantees MAX_TEXTURE_SIZE of at least 2048 — that is the floor every device this app runs on
+       is required to clear, not a number measured on one machine.
+       EXPIRES: when the engine contract publishes the renderer's own MAX_TEXTURE_SIZE, ask it
+       instead of assuming the floor.
+       正本: this line. A grid wider or taller than this is drawn RESAMPLED, and addRaster() says so
+       in drawnAt rather than letting the reader believe they are looking at every pixel. */
+    const RASTER_MAX_PX=2048;
+
+    /* ══ the raster legend — one snapshot, read by the map AND by the list (#R650 の教訓) ══════
+       Takes ONE entry of IntMapGisRaster.describeBands(), which walks the band and reports what is
+       actually in it. ⚠ It is not given the raw values: min/max measured in two places is how the
+       ramp and the legend come to disagree, and describeBands already exists to answer this.
+       Returns {ok:true,legend} or {ok:false,why,detail} — refusals are CODES (docs/GIS-CORE.md §2.2). */
+    function classifyRaster(stat,spec){
+      if(!stat||typeof stat!=='object') return {ok:false,why:'raster-stats-missing'};
+      const mode=(spec&&spec.mode)||'continuous';
+      const base=(spec&&spec.color)||PALETTE[0];
+      const legend={field:(stat.name!=null&&String(stat.name))||'',unit:(stat.unit!=null?String(stat.unit):null),
+        mode:mode,method:null,classes:[],other:null,
+        missing:{color:MISSING_COL,count:stat.nodataCount||0,keys:[]},collapsed:0,
+        total:(stat.count||0)+(stat.nodataCount||0)};
+      if(mode==='categorical'){
+        /* ⚠ WHICH VALUES ARE THE CLASSES IS NOT GUESSABLE FROM THE NUMBERS. 「整数だから分類」 is
+           the inference .agents/rules/no-ad-hoc-hardcoding.md forbids: an elevation band in whole
+           metres is integer and is not a classification. So the caller states them, or this refuses. */
+        const vals=(spec&&Array.isArray(spec.values))?spec.values.slice(0,MAX_CLASSES):null;
+        if(!vals||!vals.length) return {ok:false,why:'raster-categories-not-stated',detail:{band:legend.field}};
+        legend.method='unique';
+        legend.classes=vals.map((v,i)=>({value:Number(v),label:String(v),color:PALETTE[i%PALETTE.length],count:0}));
+        return {ok:true,legend};
+      }
+      if(mode!=='continuous') return {ok:false,why:'raster-mode-unknown',detail:{mode:String(mode)}};
+      /* A band with nothing in it has no scale — and a scale drawn over one value is a lie about a
+         range. Both are named rather than painted. */
+      if(stat.count===0||stat.min==null||stat.max==null) return {ok:false,why:'raster-band-empty',detail:{band:legend.field,nodata:stat.nodataCount||0}};
+      if(!(stat.max>stat.min)) return {ok:false,why:'raster-band-constant',detail:{band:legend.field,value:stat.min}};
+      const want=Math.max(2,Math.min(MAX_CLASSES,Math.round(Number(spec&&spec.classes)||MAX_CLASSES)));
+      /* ⚠ EQUAL INTERVALS, AND THE LEGEND SAYS SO. Quantiles would read better on a skewed band and
+         cost a sort of every pixel — 16 million doubles for a 4k grid — and a legend that claimed
+         quantiles over a SAMPLE would be a claim nobody measured. The honest ladder is the one whose
+         cuts are arithmetic on min and max, and the legend's own method field names it. */
+      legend.method='equal';
+      const cols=ramp(base,want), cuts=[];
+      for(let i=1;i<want;i++) cuts.push(stat.min+(stat.max-stat.min)*(i/want));
+      legend.cuts=cuts.slice();
+      legend.classes=cols.map((c,i)=>({color:c,count:0,from:i===0?stat.min:cuts[i-1],to:i===cuts.length?stat.max:cuts[i]}));
+      legend.min=stat.min; legend.max=stat.max;
+      return {ok:true,legend};
+    }
+
+    /* Which class a value falls in — ONE walk of the legend the map and the list share. */
+    function rasterClassOf(lg,v){
+      if(lg.mode==='categorical'){ for(let i=0;i<lg.classes.length;i++) if(lg.classes[i].value===v) return i; return -1; }
+      let i=0; const cuts=lg.cuts||[]; while(i<cuts.length&&v>=cuts[i]) i++; return i;
+    }
+
+    /* The draw callback the engine calls back with a 2-D context (js/geo-engine.js addDynamicImage).
+       ⚠ IT COUNTS WHAT IT PAINTS. The legend arrives with zero counts because describeBands reports
+       the band and not the picture; a reader looking at a class with no pixels in it has been told
+       something untrue about their data, and 「欠損が何画素あったか」 is the number that says whether
+       they are looking at a grid or at its holes. */
+    function rasterDrawFn(it,coords){
+      return function(ctx,W,H){
+        const R=window.IntMapGisRaster; if(!R||typeof R.values!=='function') return;
+        const V=R.values(it.ds,it.band); if(!V||!V.ok) return;
+        const g=it.ds.grid, lg=it.legend;
+        const west=g.west, north=g.north, sw=it.ds.width, sh=it.ds.height;
+        const east=west+sw*g.pixelLng, south=north-sh*g.pixelLat;
+        let rows=null; try{ rows=GE().layers.imageRowLatitudes(coords,H); }catch(_){ rows=null; }
+        const img=ctx.createImageData(W,H), px=img.data;
+        const rgb=lg.classes.map(c=>{ const m=/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c.color);
+          return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:[128,128,128]; });
+        const miss=(()=>{ const m=/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(lg.missing.color); return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:[199,199,204]; })();
+        lg.classes.forEach(c=>{ c.count=0; });
+        let painted=0, absent=0, off=0;
+        for(let r=0;r<H;r++){
+          /* ⚠ the engine's parameterisation, not a linear walk of latitude (see the header). */
+          const lat=rows?rows[r]:(north+(south-north)*(r+0.5)/H);
+          const sr=Math.floor((north-lat)/g.pixelLat);
+          for(let c=0;c<W;c++){
+            const lon=west+(east-west)*(c+0.5)/W;
+            const sc=Math.floor((lon-west)/g.pixelLng);
+            const o=(r*W+c)*4;
+            if(!(sr>=0&&sr<sh&&sc>=0&&sc<sw)){ px[o+3]=0; off++; continue; }
+            const v=V.values[sr*sw+sc];
+            if(R.missing(v,V.nodata)){ px[o]=miss[0]; px[o+1]=miss[1]; px[o+2]=miss[2]; px[o+3]=110; absent++; continue; }
+            const k=rasterClassOf(lg,v);
+            if(k<0||k>=rgb.length){ px[o+3]=0; off++; continue; }
+            px[o]=rgb[k][0]; px[o+1]=rgb[k][1]; px[o+2]=rgb[k][2]; px[o+3]=255;
+            lg.classes[k].count++; painted++;
+          }
+        }
+        ctx.putImageData(img,0,0);
+        /* The picture is now a measured thing, and the row beside it has to say the same numbers. */
+        lg.missing.count=absent; lg.painted=painted; lg.outside=off;
+        try{ renderList(); }catch(_){}
+      };
+    }
+
+    /* window.GeoJSONUpload.addRaster(ds, name, opts) — the raster twin of addFC.
+         ds    a registry record with kind:'raster' (js/gis-datasets.js)
+         opts  {datasetId, band, stats, spec}  — stats is IntMapGisRaster.describeBands().bands
+       Returns {n,sid,legend,drawnAt} or null. ⚠ NULL IS AN ANSWER SOMEBODY MEASURED, exactly as in
+       addFC: the engine reports whether the image went on, and this reports what the engine said. */
+    function addRaster(ds,name,opts){
+      const R=window.IntMapGisRaster;
+      if(!R||typeof R.values!=='function'||typeof R.missing!=='function') return null;
+      if(!ds||ds.kind!=='raster'||!ds.grid||typeof ds.read!=='function') return null;
+      const band=Math.max(0,Math.round(Number(opts&&opts.band)||0));
+      const stats=(opts&&Array.isArray(opts.stats))?opts.stats:null;
+      const stat=stats?stats[band]:null;
+      if(!stat) return null;
+      const n=++seq, sid='ugr-'+n, col=PALETTE[(n-1)%PALETTE.length];
+      const c=classifyRaster(stat,Object.assign({color:col},(opts&&opts.spec)||{}));
+      if(!c.ok){ toast(rasterReason(c.why,c.detail)); return null; }
+      const g=ds.grid, west=g.west, north=g.north;
+      const east=west+ds.width*g.pixelLng, south=north-ds.height*g.pixelLat;
+      if(!(isFinite(west)&&isFinite(east)&&isFinite(north)&&isFinite(south))) return null;
+      const coords=[[west,north],[east,north],[east,south],[west,south]];
+      const W=Math.max(1,Math.min(ds.width,RASTER_MAX_PX)), H=Math.max(1,Math.min(ds.height,RASTER_MAX_PX));
+      const it={n,sid,name,col,fc:null,kind:'raster',ds,band,coords,
+        datasetId:(opts&&opts.datasetId)||null,spec:null,legend:c.legend};
+      let on=false;
+      try{ on=!!GE().layers.addDynamicImage(sid,{width:W,height:H,coordinates:coords,opacity:0.85,smooth:false,draw:rasterDrawFn(it,coords)}); }catch(_){ on=false; }
+      if(!on){ toast(window.IntMapLang.t(HOST.lang,"This map view cannot draw grids","この地図表示では格子を描けません")); return null; }
+      items.push(it); renderList();
+      try{ GE().camera.fitBounds([[west,south],[east,north]],{padding:60,duration:900,maxZoom:12}); }catch(_){}
+      try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}
+      const resampled=(W<ds.width||H<ds.height);
+      const num=(ds.width*ds.height).toLocaleString(window.IntMapLang.locale(HOST.lang));
+      let msg=(window.IntMapLang.t(HOST.lang,"Added: ","読み込みました: "))+name+' · '+ds.width+'×'+ds.height+' · '+num;
+      /* ⚠ SAY THAT IT WAS RESAMPLED. A reader looking at a 2048-wide picture of a 10,000-wide grid
+         is looking at a resampled one, and 「全部見えている」 is the assumption this sentence removes. */
+      if(resampled) msg+=' · '+window.IntMapLang.t(HOST.lang,"drawn resampled","再標本化して描画")+' ('+W+'×'+H+')';
+      toast(msg);
+      return {n,sid,legend:c.legend,drawnAt:{width:W,height:H,resampled:resampled}};
+    }
+
+    /* Why a grid could not be painted, in the reader's language. Same split as reasonText() below:
+       the codes are produced where the rule is, the sentences are here. */
+    function rasterReason(why,detail){
+      if(why==='raster-band-empty') return window.IntMapLang.t(HOST.lang,"This grid has no values in it — every cell is missing","この格子には値がありません。すべてのセルが欠損です");
+      if(why==='raster-band-constant') return window.IntMapLang.t(HOST.lang,"Every cell of this grid holds the same value, so there is no scale to draw","この格子は全セルが同じ値なので、描く尺度がありません")+((detail&&detail.value!=null)?' ('+nfmt(detail.value)+')':'');
+      if(why==='raster-categories-not-stated') return window.IntMapLang.t(HOST.lang,"Say which values are the categories — this reader will not guess them from the numbers","どの値が分類なのかを指定してください。数値からは推測しません");
+      if(why==='raster-stats-missing') return window.IntMapLang.t(HOST.lang,"The grid was not measured, so it cannot be drawn","この格子は測定されていないため描けません");
+      if(why==='raster-mode-unknown') return window.IntMapLang.t(HOST.lang,"That is not a way of colouring a grid","それは格子の着色方法ではありません");
+      return window.IntMapLang.t(HOST.lang,"This grid could not be drawn","この格子を描けませんでした");
+    }
     function addFC(fc,name,r,opts){
       const n=++seq, sid='ugj-'+n, col=PALETTE[(n-1)%PALETTE.length];
       try{ GE().layers.addSource(sid,{type:'geojson',data:fc}); }catch(e){ toast(window.IntMapLang.t(HOST.lang,"Failed to add layer","読み込みに失敗しました","Ebene konnte nicht hinzugefügt werden","Не удалось добавить слой","No se pudo añadir la capa")); return null; }
@@ -2662,6 +2836,21 @@ window.IntMapModules.geojsonUpload=function(HOST){
       /* ⚠ the SAME FeatureCollection object the renderer holds, not a copy — colouring has to read the
          attributes, and a second copy of a 200,000-feature import would double what the tab costs. */
       items.push({n,sid,name,col,fc,datasetId:(opts&&opts.datasetId)||null,spec:null,legend:null}); renderList(); fit(fc);
+      /* ⚠ (#R749) THIS IS THE ONE SUPPLIER THAT CAN HONESTLY SAY 「全部です」. js/gis-sources.js will
+         not infer completeness — a renderer holding 400 aircraft looks exactly like a renderer that
+         fetched 400 for the current viewport, so it answers 'partial' and names why. An upload is
+         different by construction: the whole FeatureCollection the file decoded to is in this source
+         and nothing about it is a view. Saying so here is what lets an analysis over it report
+         「全件」 instead of 「一部かもしれない」 — and a declare() with no caller would be an export
+         that is not a feature. ⚠ Nothing else in the app may copy this line without the same
+         argument: an unearned 'all' is worse than an honest 'partial'. */
+      try{
+        const S=window.IntMapGisSources;
+        if(S&&typeof S.declare==='function'&&typeof turf!=='undefined'){
+          const bb=turf.bbox(fc);
+          if(bb.every(isFinite)) S.declare(sid,{extent:{w:bb[0],s:bb[1],e:bb[2],n:bb[3]},complete:true,viewBound:false,live:false,asOf:new Date().toISOString()});
+        }
+      }catch(_){ }
       try{ window._imNoteObjects&&window._imNoteObjects(['up_'+n]); }catch(_){}   /* (#R120) uploads join Atlas's "さっき作ったやつ" deixis */
       /* ⚠ (#R576) THE TOAST NAMES WHAT WAS INFERRED, BECAUSE IT WAS INFERRED. When the reader
          drops a CSV, two of its columns were CHOSEN as the coordinates; if the guess is wrong the
@@ -2675,6 +2864,10 @@ window.IntMapModules.geojsonUpload=function(HOST){
       return {n,sid};
     }
     function removeItem(n){ const i=items.findIndex(x=>x.n===n); if(i<0) return; const it=items[i];
+      /* ⚠ (#R749) A GRID IS NOT THREE LAYERS AND A GeoJSON SOURCE. Removing a raster by the vector
+         path left the canvas source and its -lyr on the map with no row to remove them from — a
+         layer the reader had deleted and could still see. */
+      if(it.kind==='raster'){ try{ GE().layers.removeDynamicImage(it.sid); }catch(_){}; items.splice(i,1); renderList(); return; }
       PARTS.forEach(p=>{ const l=it.sid+p.sfx; try{ if(GE().layers.has(l)) GE().layers.remove(l); }catch(_){} });
       try{ if(GE().layers.hasSource(it.sid)) GE().layers.removeSource(it.sid); }catch(_){}
       items.splice(i,1); renderList(); }
@@ -2691,10 +2884,12 @@ window.IntMapModules.geojsonUpload=function(HOST){
       /* ⚠ WHICH METHOD CUT THE CLASSES IS PART OF THE ANSWER. The same column, the same map and the
          same colours say different things under quantile and equal intervals, so the reader is told
          which one they are looking at rather than left to assume. */
-      const how=lg.mode==='graduated'
+      const how=(lg.mode==='graduated'||lg.mode==='continuous')
         ? (lg.method==='equal'?window.IntMapLang.t(HOST.lang,"equal intervals","等間隔"):window.IntMapLang.t(HOST.lang,"quantiles","分位"))
         : window.IntMapLang.t(HOST.lang,"categories","分類");
-      out.push(note(lg.field+' · '+how));
+      /* (#R749) a band carries its UNIT, and a ladder of numbers without one is not readable —
+         「500」 is metres, people, or millimetres depending on a fact the legend was dropping. */
+      out.push(note(lg.field+(lg.unit?' ('+lg.unit+')':'')+' · '+how));
       lg.classes.forEach(c=>out.push(row(c.color, c.label!=null?c.label:(nfmt(c.from)+' – '+nfmt(c.to)), c.count)));
       if(lg.other) out.push(row(lg.other.color, window.IntMapLang.t(HOST.lang,"Other","その他")+' ('+lg.other.distinct+')', lg.other.count));
       if(lg.missing&&lg.missing.count) out.push(row(lg.missing.color, window.IntMapLang.t(HOST.lang,"No value","値なし"), lg.missing.count));
@@ -2775,6 +2970,46 @@ window.IntMapModules.geojsonUpload=function(HOST){
       if(why==='gpkg-geometry-column') return window.IntMapLang.t(HOST.lang,"The column this GeoPackage names as its geometry is not in the table","この GeoPackage が幾何として名指している列が、その表にありません");
       if(why==='gpkg-geometry-blob') return window.IntMapLang.t(HOST.lang,"A geometry in this GeoPackage is not in the format the standard defines","この GeoPackage の幾何が、規格の定める形になっていません");
       if(why==='gpkg-geometry-type') return window.IntMapLang.t(HOST.lang,"This GeoPackage uses a geometry type this reader does not draw","この GeoPackage は、この読み取りが描かない種類の幾何を使っています")+(detail&&detail.geometryType?' ('+detail.geometryType+')':'');
+      /* ══ (#R749) THE GRID READERS — js/gis-geotiff.js AND js/gis-warp.js ════════════════════
+         Both answer in CODES, and both can refuse a file the reader chose deliberately. 「読み込め
+         ませんでした」 covering forty causes is the answer this whole table was written to replace,
+         so each sentence says what is wrong with THEIR file and, where the reader can act, what to
+         do about it. ⚠ Where several codes send the reader to the same action they share a sentence
+         and carry their own detail — the shape 'crs-unsupported' above already uses — but every code
+         is named, and tests/r749-gis-raster-pipeline-checks ⑪ reads the two modules' own refusal
+         sets and fails on any that is not. */
+      if(why==='not-tiff') return window.IntMapLang.t(HOST.lang,"This file is not a TIFF","このファイルは TIFF ではありません");
+      if(why==='bigtiff-unsupported') return window.IntMapLang.t(HOST.lang,"This is a BigTIFF — this reader handles the classic TIFF layout only","これは BigTIFF です。この読み取りは従来の TIFF 配置だけを扱います");
+      if(why==='tiff-truncated'||why==='chunk-short') return window.IntMapLang.t(HOST.lang,"This TIFF ends part way through its pixels — the file is incomplete","この TIFF は画素の途中で終わっています。ファイルが欠けています")+(detail&&detail.need!=null?' ('+detail.need+')':'');
+      if(why==='tiff-corrupt'||why==='lzw-corrupt'||why==='packbits-corrupt') return window.IntMapLang.t(HOST.lang,"The pixel data in this TIFF does not decode — the file is damaged","この TIFF の画素データが復号できません。ファイルが壊れています")+(detail&&detail.at!=null?' ('+detail.at+')':'');
+      if(why==='compression-unsupported') return window.IntMapLang.t(HOST.lang,"This TIFF is compressed in a way this reader does not decode","この TIFF の圧縮方式は、この読み取りが復号しないものです")+(detail?' ('+[detail.name,detail.compression].filter(v=>v!=null).join(' ')+')':'');
+      if(why==='jpeg-in-tiff-unsupported') return window.IntMapLang.t(HOST.lang,"This TIFF holds JPEG-compressed tiles, which this reader does not decode — export it uncompressed or as Deflate","この TIFF は JPEG 圧縮のタイルを持っており、この読み取りは復号しません。無圧縮か Deflate で書き出してください");
+      if(why==='deflate-unavailable') return window.IntMapLang.t(HOST.lang,"This browser cannot decompress the TIFF (no DecompressionStream)","このブラウザでは、この TIFF を展開できません（DecompressionStream が無い）");
+      if(why==='predictor-unsupported'||why==='sample-format-unsupported'||why==='bits-unsupported'||why==='planar-separate-unsupported') return window.IntMapLang.t(HOST.lang,"This TIFF stores its numbers in a form this reader does not read","この TIFF は、この読み取りが読まない形で数値を格納しています")+(detail?' ('+[why,detail.predictor,detail.sampleFormat,detail.bits,detail.planar].filter(v=>v!=null).join(' ')+')':'');
+      /* ⚠ THE ONE REFUSAL THAT IS ABOUT THE FILE'S MEANING RATHER THAN ITS BYTES. A TIFF with no
+         tiepoint and no transform is a picture, not a map: nothing in it says where a pixel is, and
+         placing it anywhere would be this project's 「誰も述べていない主張」 drawn to scale. */
+      if(why==='no-georeference') return window.IntMapLang.t(HOST.lang,"This TIFF does not say where on Earth its pixels are, so it cannot be placed on the map","この TIFF は、画素が地球上のどこなのかを述べていないため、地図に置けません");
+      if(why==='grid-degenerate') return window.IntMapLang.t(HOST.lang,"This TIFF describes a grid with no size: a pixel of zero or negative extent","この TIFF が述べている格子は大きさを持ちません（画素の幅か高さが 0 以下です）")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='crs-not-stated') return window.IntMapLang.t(HOST.lang,"This grid does not state its coordinate system, so it cannot be converted to lon/lat","この格子は座標系を述べていないため、経緯度へ変換できません");
+      if(why==='align-needs-4326'||why==='resample-source-not-4326') return window.IntMapLang.t(HOST.lang,"That grid is not in lon/lat yet — convert it first, then put the two on one grid","その格子はまだ経緯度ではありません。先に変換してから、2 つを 1 つの格子に合わせてください")+(detail&&detail.crs?' ('+detail.crs+')':'');
+      if(why==='crs-unavailable') return window.IntMapLang.t(HOST.lang,"The coordinate-conversion library did not load, so this grid was not converted — nothing was guessed at","座標変換の部品を読み込めなかったため、この格子は変換していません。推測もしていません");
+      if(why==='raster-unavailable') return window.IntMapLang.t(HOST.lang,"The grid module is not loaded, so this file was not read at all","格子の部品が読み込まれていないため、このファイルは読み取っていません");
+      if(why==='resample-method-not-stated'||why==='resample-method-unknown') return window.IntMapLang.t(HOST.lang,"Say how the grid should be resampled — an interpolation nobody named is an answer nobody made","格子をどう再標本化するかを指定してください。誰も名づけていない補間は、誰も出していない答えです")+(detail&&detail.method?' ('+detail.method+')':'');
+      /* ⚠ 「3」と「5」の中間の「4」は別の分類であって中間ではない。 A classification is not a scale,
+         and smoothing one invents land-cover types nobody defined (docs/GIS-CORE.md §1.4 refuses the
+         same thing for 「値ごとの面積」). */
+      if(why==='bilinear-on-categorical') return window.IntMapLang.t(HOST.lang,"This band holds categories, not measurements — interpolating them would invent categories nobody defined; use nearest","このバンドは測定値ではなく分類です。補間すると、誰も定義していない分類を作ってしまいます。nearest を使ってください")+(detail&&detail.band!=null?' ('+detail.band+')':'');
+      if(why==='align-rule-not-stated'||why==='align-rule-unknown') return window.IntMapLang.t(HOST.lang,"Say which of the two grids the result should follow — the finer one, the coarser one, or the first","結果をどちらの格子に合わせるかを指定してください（細かいほう・粗いほう・1 つ目）")+(detail&&detail.rule?' ('+detail.rule+')':'');
+      if(why==='grids-disjoint') return window.IntMapLang.t(HOST.lang,"These two grids do not overlap anywhere, so there is no common grid to put them on","この 2 つの格子はどこも重なっていないため、共通の格子がありません");
+      if(why==='align-grid-rotated'||why==='align-grid-not-north-up'||why==='affine-invalid'||why==='affine-missing'||why==='affine-singular') return window.IntMapLang.t(HOST.lang,"This grid is not a plain north-up grid, and this reader will not straighten it silently","この格子は北が上の単純な格子ではありません。この読み取りは黙って整えることをしません")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='warp-spans-world'||why==='extent-degenerate'||why==='pixel-size-underivable') return window.IntMapLang.t(HOST.lang,"The area this grid covers could not be worked out in lon/lat — it wraps the world, or collapses to nothing","この格子が覆う範囲を経緯度で求められませんでした（地球を一周している、あるいは面積が 0 です）");
+      if(why==='size-invalid'||why==='target-invalid') return window.IntMapLang.t(HOST.lang,"The grid asked for is not a grid: one of its size or spacing values is missing or not positive","指定された格子が格子の形になっていません（大きさか間隔が欠けている、または正の数ではありません）")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='raster-invalid') return window.IntMapLang.t(HOST.lang,"That grid does not describe a grid: one of its size or spacing fields is missing or not a positive number","その格子は格子の形になっていません（大きさか間隔のどれかが欠けている、または正の数ではない）")+(detail&&detail.field?' ('+detail.field+')':'');
+      if(why==='raster-too-large') return window.IntMapLang.t(HOST.lang,"This browser could not allocate a grid that size","このブラウザでは、その大きさの格子を確保できませんでした")+(detail&&detail.cells!=null?' ('+detail.cells+')':'');
+      if(why==='band-out-of-range') return window.IntMapLang.t(HOST.lang,"That grid has fewer bands than the one asked for","その格子には、指定された番号のバンドがありません")+(detail&&detail.bandIndex!=null?' ('+detail.bandIndex+')':'');
+      if(why==='read-failed') return window.IntMapLang.t(HOST.lang,"The grid handed back nothing when its values were asked for","格子に値を求めたところ、何も返ってきませんでした");
+      if(why==='cancelled') return window.IntMapLang.t(HOST.lang,"Stopped before it finished","完了する前に中止しました");
       if(why==='too-big') return window.IntMapLang.t(HOST.lang,"File is too large to read","ファイルが大きすぎて読み込めません","Die Datei ist zu groß zum Lesen","Файл слишком велик для чтения","El archivo es demasiado grande");
       if(why==='too-many-features') return window.IntMapLang.t(HOST.lang,"Too many features to draw","地物が多すぎて描画できません","Zu viele Objekte zum Zeichnen","Слишком много объектов для отрисовки","Demasiados elementos para dibujar");
       if(why==='no-valid-coordinates') return window.IntMapLang.t(HOST.lang,"No usable coordinates in this file","このファイルに使える座標がありません","Keine brauchbaren Koordinaten in dieser Datei","В этом файле нет пригодных координат","No hay coordenadas utilizables en este archivo");
@@ -2802,10 +3037,89 @@ window.IntMapModules.geojsonUpload=function(HOST){
         try{ r=await readGeoFile(f); }catch(_){ r={ok:false,why:'unreadable'}; }
         if(!r||!r.ok){ toast(reasonText(r&&r.why,r&&r.detail)); continue; }
         const label=labelFor(f,r);
+        /* (#R749) A grid takes the other arm. It is a dataset first and a picture second — the
+           reverse of the vector path, where addFC draws immediately and registerDataset follows —
+           because a grid cannot be painted until its extremes have been measured, and measuring
+           them is the registry's job. */
+        if(r.grid){ await registerRaster(r, label); continue; }
         const put=addFC(r.fc, label, r);
         await registerDataset(r, label, f, put&&put.n);
       }
     }
+    /* ══ (#R749) 落ちてきた格子 — READ, PLACED IN DEGREES, REGISTERED, DRAWN ═══════════════════
+       ⚠ THE CONVERSION IS STATED, NOT HIDDEN. js/gis-raster.js's contract is a grid in degrees, and
+       a GeoTIFF is usually in something else, so one has to happen. Which interpolation it used is
+       part of what the reader is looking at — a 30 m land-cover grid smoothed on its way in is a
+       different map from the one in the file — so nearest neighbour is chosen HERE, where the sentence can
+       say so, rather than defaulted inside js/gis-warp.js, which refuses to have a default at all.
+
+       ⚠ AND THE FILE THAT STATES NO COORDINATE SYSTEM IS TREATED THE WAY THE VECTOR PATH TREATS ONE.
+       js/geo-import.js accepts unstated coordinates when they are within degree bounds and refuses
+       them when they are not (settleCrs, #R732). The same rule, asked of a grid's extent: one rule
+       with two readers rather than two rules. The reader is told that the file said nothing. */
+    async function registerRaster(r,label){
+      let mod=false;
+      try{ mod=window.IntMapLazy?await window.IntMapLazy.need('gisCore'):false; }
+      catch(e){ try{ console.warn('[upload] gisCore failed to load',e); }catch(_){} mod=false; }
+      if(!mod||!window.IntMapData||!window.IntMapGisWarp){
+        toast(window.IntMapLang.t(HOST.lang,"This file is a grid, and the module that reads grids did not load","このファイルは格子ですが、格子を扱う部品を読み込めませんでした"));
+        return null;
+      }
+      let g=r.grid, code=g.crs||null, stated=!!code, converted=null;
+      if(!stated){
+        /* The extent the file DOES state, asked whether it could be degrees. */
+        const a=window.IntMapGisWarp.affineOf(g);
+        if(!a.ok){ toast(reasonText(a.why,a.detail)); return null; }
+        const A=a.affine, xs=[], ys=[];
+        for(const [i,j] of [[0,0],[g.width,0],[0,g.height],[g.width,g.height]]){
+          xs.push(A[0]+A[1]*i+A[2]*j); ys.push(A[3]+A[4]*i+A[5]*j); }
+        const inDeg=xs.every(v=>v>=-180&&v<=180)&&ys.every(v=>v>=-90&&v<=90);
+        if(!inDeg){ toast(reasonText('crs-not-stated',null)); return null; }
+        code='EPSG:4326';
+      }
+      if(code!=='EPSG:4326'||g.affine||g.model){
+        /* ⚠ EVEN A GRID THAT IS ALREADY IN DEGREES GOES THROUGH, when what it carries is a FILE's
+           affine rather than the registry's {west,north,pixelLng,pixelLat}: the warp is where the
+           two shapes are reconciled, and a second conversion written here would be the copy this
+           project keeps removing. An identity warp moves no pixel (tests/r749-gis-warp ①). */
+        const out=await window.IntMapGisWarp.to4326(Object.assign({},g,{crs:code}),{method:'nearest'});
+        if(!out.ok){ toast(reasonText(out.why,out.detail)); return null; }
+        converted=out.report; g=out.grid;
+      }
+      let rec=null;
+      try{
+        rec=window.IntMapData.add({
+          kind:'raster', title:label, crs:'EPSG:4326', sourceCrs:(stated?code:null),
+          width:g.width, height:g.height, grid:g.grid, bands:g.bands, read:(i)=>g.read(i),
+          provenance:{kind:'import', file:label, format:'geotiff', readAt:new Date().toISOString()},
+        });
+      }catch(e){ rec=null; try{ console.warn('[upload] grid not registered',e); }catch(_){} }
+      /* ⚠ add() RETURNS THE RECORD OR THROWS — it has no {ok:false} arm (js/gis-datasets.js
+         addRaster), so the only honest test is whether a record with an id came back. Writing a
+         refusal branch for a refusal this door cannot make would be a dead arm that reads like a
+         guarantee. */
+      if(!rec||!rec.id){
+        toast(reasonText('add-failed',null));
+        return null;
+      }
+      const id=rec.id;
+      /* ⚠ SAY WHAT WAS DONE TO IT ON THE WAY IN. Two facts the reader cannot recover from the
+         picture: that the file named no coordinate system, and that the pixels were resampled. */
+      const notes=[];
+      if(!stated) notes.push(window.IntMapLang.t(HOST.lang,"the file states no coordinate system; read as lon/lat","ファイルが座標系を述べていないため、経緯度として読みました"));
+      if(converted&&converted.from&&converted.from!=='EPSG:4326') notes.push(window.IntMapLang.t(HOST.lang,"converted from","変換元")+' '+converted.from+' · '+window.IntMapLang.t(HOST.lang,"nearest neighbour","最近傍"));
+      if(notes.length) toast(label+' — '+notes.join(' · '));
+      /* Registered and measured; now the picture, through the one door (js/gis-core.js draw()). */
+      try{
+        const C=window.IntMapGis;
+        if(id&&C&&typeof C.draw==='function'){
+          const d=C.draw(id,null);
+          if(d&&d.ok===false) toast(reasonText(d.why,d.detail));
+        }
+      }catch(e){ try{ console.warn('[upload] grid drawn nowhere',e); }catch(_){} }
+      return id;
+    }
+
     /* ══ (#R729) THE FILE BECOMES A DATASET, NOT JUST A DRAWING ════════════════════════════════
        addFC() puts the features in the renderer and a row in `items`; that is what the map needs
        and it is all that used to survive. It could not be filtered, joined, aggregated or asked
@@ -2883,8 +3197,10 @@ window.IntMapModules.geojsonUpload=function(HOST){
        (#R738) find/style/styleOf/styleReason/classify are the attribute-colouring face: `find` because
        a caller that holds a DATASET id has no other way to reach the drawn layer, and `classify`
        because the classifier is the part worth measuring on its own (tests/r737-…). */
-    window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, remove:removeItem,
-      find, link, style, styleOf, styleReason, classify, _items:items };
+    /* (#R749) addRaster/classifyRaster join them for the same reason classify did: the classifier is
+       the part worth measuring on its own, and js/gis-core.js needs a door for a grid. */
+    window.GeoJSONUpload={ open:()=>fileInput.click(), add:addFC, addRaster, remove:removeItem,
+      find, link, style, styleOf, styleReason, classify, classifyRaster, _items:items };
   })();
 };
 

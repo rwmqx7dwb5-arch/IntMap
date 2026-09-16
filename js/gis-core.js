@@ -37,10 +37,12 @@ import { makeGisDatasets } from './gis-datasets.js';
 import { makeGisGeometry } from './gis-geometry.js';
 import { makeGisCrs } from './gis-crs.js';
 import { makeGisRaster } from './gis-raster.js';
+import { makeGisWarp } from './gis-warp.js';
 import { makeGisAtlas } from './gis-atlas.js';
 import { makeGisIndex } from './gis-index.js';
 import { makeGisExpr } from './gis-expr.js';
 import { makeGisLayers } from './gis-layers.js';
+import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
 import { makeGisPanel } from './gis-panel.js';
@@ -61,12 +63,23 @@ window.IntMapModules.gisCore = function (HOST) {
      reads window.IntMapGisRaster / window.IntMapGisIndex at CALL time (the same rule as the registry
      and the geodesy), so a module that imported them privately would be a second copy of a kernel. */
   const raster = makeGisRaster();
+  /* (#R749) The grid's coordinate arithmetic: reprojection and resampling. Mounted here for the
+     reason the note above gives — it reads window.IntMapGisRaster and window.IntMapGisCrs at CALL
+     time (the sampling rule and the projection engine both belong to somebody else), so a module
+     that imported either privately would be a second copy of a kernel. Pure otherwise: no DOM, no
+     network, and the projection library it needs is the one js/gis-crs.js already fetches on
+     demand, so this costs what its own bytes cost. */
+  const warp = makeGisWarp();
   const index = makeGisIndex();
   /* (#R738) The expression kernel behind the compute op. Pure — a tokeniser and a recursive-descent
      parser, no eval and no Function — and mounted here for the reason the note above gives: js/gis-ops.js
      reads window.IntMapGisExpr at CALL time, so a module importing it privately would be a second
      parser with a second opinion about what a column name is. */
   const expr = makeGisExpr();
+  /* (#R749) Where data is acquired FROM, as opposed to what is done with it. js/gis-layers.js
+     reads window.IntMapGisSources at call time and will make one if nobody has — so this mount is
+     not what makes it work; it is what makes the order VISIBLE, which is what this file is for. */
+  const sources = makeGisSources();
   const layers = makeGisLayers();
   const ops = makeGisOps();
   const project = makeGisProject();
@@ -76,16 +89,19 @@ window.IntMapModules.gisCore = function (HOST) {
      map draws. ⚠ It goes through window.GeoJSONUpload (js/map-ui.js) rather than adding a source
      itself — that list is what the Object List and the layer rows already read, and a second way to
      put a FeatureCollection on the map would be a second thing to keep in step. */
-  function draw(id) {
+  function draw(id, opts) {
     const ds = data.get(id);
     if (!ds) return { ok: false, why: 'input-missing' };
-    /* ⚠ (#R735) A GRID IS NOT A FeatureCollection, and window.GeoJSONUpload draws one of those. Left
-       to fall through, this would have called a features() that raster records do not have — an
-       exception inside a click, for a dataset the panel had just listed. Saying so by name is what
-       lets the panel offer the reader something else instead of a dead button. */
-    if (ds.kind === 'raster') return { ok: false, why: 'draw-needs-features', detail: { id: ds.id, kind: ds.kind } };
     const GU = window.GeoJSONUpload;
     if (!GU || typeof GU.add !== 'function') return { ok: false, why: 'map-unavailable' };
+    /* ⚠ (#R749) A GRID IS STILL NOT A FeatureCollection — IT IS NOW DRAWN AS A PICTURE. #R735 named
+       the refusal rather than throwing inside a click, and that was right for a build with nowhere
+       to put a grid. It stopped being right the moment the ops could MAKE grids: a difference, a
+       masked extract, a baked layer — every one of them could be computed and none of them could be
+       looked at, so a raster op was the end of a chain instead of a step in one. The picture goes on
+       through the engine's own dynamic-image primitive (js/map-ui.js addRaster), which both
+       renderers implement, so this is one door to the map and not two. */
+    if (ds.kind === 'raster') return drawRaster(ds, GU, opts);
     try {
       /* ⚠ (#R738) THE DRAWN LAYER IS TOLD WHICH DATASET IT IS. Attribute colouring asks the registry
          what a column's values mean (js/map-ui.js style()), and without this the layer a reader just
@@ -104,15 +120,38 @@ window.IntMapModules.gisCore = function (HOST) {
     } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
   }
 
+  /* (#R749) Painting a grid. ⚠ THE EXTREMES ARE MEASURED IN ONE PLACE. describeBands() walks the
+     band and reports what is actually in it; js/map-ui.js is handed that report rather than the
+     values, because a min/max computed a second time beside the ramp is how the legend and the
+     picture come to disagree (docs/GIS-CORE.md §1.4 says the same about declared ranges).
+     ⚠ AND THE BAND IS THE CALLER'S TO NAME. A grid with three bands has three pictures in it, and
+     choosing one silently would be this project's 「誰も述べていない主張」 in colour. */
+  function drawRaster(ds, GU, opts) {
+    if (typeof GU.addRaster !== 'function') return { ok: false, why: 'map-unavailable', detail: { id: ds.id, kind: 'raster' } };
+    const band = Math.max(0, Math.round(Number(opts && opts.band) || 0));
+    const bands = Array.isArray(ds.bands) ? ds.bands.length : 0;
+    if (!(band < bands)) return { ok: false, why: 'band-out-of-range', detail: { bandIndex: band, bands: bands } };
+    const stats = raster.describeBands(ds);
+    if (!stats.ok) return stats;
+    let put = null;
+    try {
+      put = GU.addRaster(ds, ds.title, { datasetId: ds.id, band: band, stats: stats.bands, spec: (opts && opts.spec) || null });
+    } catch (e) { return { ok: false, why: 'map-unavailable', detail: { message: e && e.message } }; }
+    /* Same rule as the vector arm (#R739): 「描けた」 is what the renderer reported, never the
+       absence of a throw. */
+    if (!put) return { ok: false, why: 'draw-not-rendered', detail: { id: ds.id, kind: 'raster' } };
+    return { ok: true, sid: put.sid, band: band, legend: put.legend || null, drawnAt: put.drawnAt || null };
+  }
+
   /* (#R743) The Atlas-facing door of this layer. ⚠ IT LIVES HERE AND NOT IN js/atlas-console.js
      BECAUSE THE OPS DECLARE THEMSELVES: the catalogue it hands the planner is `ops.ops()`, so an op
      added to DECL is offered to Atlas the same day it is offered to the panel. The other direction —
      a list of ops written on the Atlas side — is the defect #R732 measured in the panel, where
      `ORDER` had four entries and DECL had nine. It needs no lazy door of its own: the whole of this
      file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
-  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, draw: (id) => draw(id) });
+  const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, draw: (id, o) => draw(id, o) });
 
-  const API = { data, geometry, crs, raster, index, expr, layers, ops, project, panel, draw, atlas,
+  const API = { data, geometry, crs, raster, warp, index, expr, sources, layers, ops, project, panel, draw, atlas,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { window.IntMapGis = API; } catch (_) { }
   return API;

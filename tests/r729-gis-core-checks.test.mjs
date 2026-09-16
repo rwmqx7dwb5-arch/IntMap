@@ -234,7 +234,14 @@ test('R729 ④ every refusal code that can reach a reader has a sentence', () =>
      sentence that tells the reader what to retype. A kernel whose codes were not scanned is a
      refusal that reaches a reader with no sentence — and the population of a gate is the thing that
      decides what it cannot see. */
-  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js', 'js/gis-raster.js', 'js/gis-expr.js', 'js/gis-datasets.js']) {
+  /* ⚠ js/gis-sources.js JOINED IN #R749. It is the layer js/gis-layers.js now acquires THROUGH, so
+     its refusals travel the same road the bridge's own do — and a gate's population is the thing
+     that decides what it cannot see ([[intmap-gate-universe-is-declared-gates]]). ⚠ js/gis-warp.js
+     and js/gis-geotiff.js are deliberately NOT here, for the reason js/gis-crs.js is not: their codes
+     surface through the IMPORT path, and tests/r749-gis-raster-pipeline-checks ⑪ measures them
+     against js/map-ui.js. Two guards over one fact, one of them aimed at the wrong file, is worse
+     than one aimed at the right one. */
+  for (const rel of ['js/gis-ops.js', 'js/gis-project.js', 'js/gis-core.js', 'js/gis-layers.js', 'js/gis-raster.js', 'js/gis-expr.js', 'js/gis-datasets.js', 'js/gis-sources.js']) {
     const src = read(rel);
     for (const m of src.matchAll(/\bwhy:\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);
     for (const m of src.matchAll(/\bfail\(\s*'([a-z0-9-]+)'/g)) returned.add(m[1]);

@@ -35,8 +35,14 @@
  *  clipped. The only thing that can remove a feature is a bounds the caller asked for.
  *
  *  ⚠ 「ALL OF IT」 IS ASKED AS A WORLD BOX, because the layer contract has exactly one door
- *  (featuresIn(bounds)) and no word for 「everything」. A layer that has answered for
- *  [[-180,-90],[180,90]] has answered for all of its content.
+ *  (featuresIn(bounds)) and no word for 「everything」.
+ *  ⚠⚠⚠ AND THE SENTENCE THAT USED TO FOLLOW THAT ONE WAS FALSE (#R749). It read: 「A layer that has
+ *  answered for [[-180,-90],[180,90]] has answered for all of its content.」 What a layer answers for
+ *  the world box is all of what the RENDERER IS HOLDING — a source a module refreshed for the current
+ *  view, a list an upstream capped, a field loaded only while its layer is on. Stating the world and
+ *  being given the world are two different things, and everything computed downstream inherited the
+ *  difference with no way to see it. js/gis-sources.js is where that difference is now measured and
+ *  said (`coverage`), and toDataset()/toRaster() below go through it.
  *
  *  ⚠ AND THE BOX TEST ITSELF IS NOT WRITTEN HERE. js/map-ui.js owns the one predicate the whole app
  *  uses and now publishes it as IntMapLayers.featuresInSource; a second one in this file would be
@@ -63,8 +69,25 @@
  *  instead of throwing.
  * ==========================================================================*/
 
+import { makeGisSources } from './gis-sources.js';
+
 export function makeGisLayers() {
   return (function () {
+
+    /* ⚠ (#R749) THE SUPPLY LAYER, AND EXACTLY ONE OF IT. js/gis-sources.js holds the judgement this
+       file used to make silently — 「渡したものは、求めたもののどれだけなのか」 — and toDataset() and
+       toRaster() below are its only two readers here. It is reached through window at call time like
+       every other kernel, so js/gis-core.js's mounting order decides; when nothing has mounted it
+       (this file evaluated first, or a test importing only this module) ONE is built here and
+       published, rather than this file keeping a second opinion about coverage. The module publishes
+       itself onto window, so the two paths converge on the same instance and the declarations a
+       supplier makes are visible to both. */
+    let _ownSources = null;
+    function SRC() {
+      try { if (typeof window !== 'undefined' && window.IntMapGisSources) return window.IntMapGisSources; } catch (_) { }
+      if (!_ownSources) _ownSources = makeGisSources();
+      return _ownSources;
+    }
 
     /* Read at call time — never captured. In Node all three are absent and stay absent. */
     function GE() { try { return (typeof window !== 'undefined' && window.IntMapGeoEngine) || null; } catch (_) { return null; } }
@@ -242,10 +265,31 @@ export function makeGisLayers() {
 
     /* ── toDataset() ─────────────────────────────────────────────────────────────────────────── */
 
+    /* ⚠ (#R749) ONE VOCABULARY AT THE DOOR A READER REACHES. js/gis-sources.js says
+       `layer-not-visible` because that is the fact it measured; js/gis-panel.js has nine languages
+       for `layer-not-sampling` and has had since #R735, and they are the same sentence to a reader
+       (「そのレイヤーは表示されていないため、渡せる値がありません」). Translating here rather than
+       inventing a tenth string keeps the refusal readable; every other code passes through as it is,
+       because they are already this app's. */
+    function speak(r) {
+      if (!r || r.ok !== false) return r;
+      if (r.why === 'layer-not-visible') return { ok: false, why: 'layer-not-sampling', detail: r.detail };
+      /* js/gis-panel.js prints the offending parameter's NAME back to the reader, and the name a
+         reader of this file used is `bounds` — `bbox` is what it is called one layer down. */
+      if (r.why === 'bad-param' && r.detail && r.detail.param === 'bbox') {
+        return { ok: false, why: 'bad-param', detail: Object.assign({}, r.detail, { param: 'bounds' }) };
+      }
+      return r;
+    }
+
     function toDataset(id, opts) {
       const o = opts || {};
-      const r = read(id, o);
-      if (!r.ok) return r;
+      /* ⚠ THE READ ITSELF IS STILL read()'s — js/gis-sources.js calls it. What this call adds is the
+         `coverage` that travels with the answer, which is the one thing that could not be said
+         before: 「どこまでを見て出した答えか」. */
+      const got = speak(SRC().features(id, { bbox: (o.bounds == null ? null : o.bounds), limit: o.limit, fields: o.fields, time: o.time }));
+      if (!got.ok) return got;
+      const r = { ok: true, features: got.features, bounds: (o.bounds == null ? null : got.coverage.requested.bbox), coverage: got.coverage };
       const D = DATA();
       if (!D || typeof D.add !== 'function') return { ok: false, why: 'registry-missing' };
       const wanted = (o.id == null || o.id === '') ? null : String(o.id);
@@ -269,7 +313,11 @@ export function makeGisLayers() {
         features: r.features,
         sourceCrs: 'EPSG:4326',
         time: moment ? { kind: 'constant', start: stated, end: stated } : (o.time || null),
-        provenance: { kind: 'layer', layer: String(id), bounds: r.bounds, at: Date.now(), statedTime: stated || null },
+        /* ⚠ (#R749) THE COVERAGE TRAVELS WITH THE DATA. A recipe that says 「いつ・どのレイヤーの・
+           どの範囲を」 still does not say whether that range was ANSWERED, and every number computed
+           downstream inherits the difference. So the record carries it, and a reader (or Atlas)
+           asking 「これは世界についての答えか」 has somewhere to look. */
+        provenance: { kind: 'layer', layer: String(id), bounds: r.bounds, at: Date.now(), statedTime: stated || null, coverage: r.coverage },
       };
       if (wanted) spec.id = wanted;
       try {
@@ -293,72 +341,47 @@ export function makeGisLayers() {
        be mistaken for the upstream's own raster, and a reader who wants it finer runs it again.
        ⚠ ONE await PER PIXEL, ON THE MAIN THREAD — that is what the contract offers, so there is no
        pretending otherwise: instead the work is interruptible (`signal`) and it reports where it is
-       (`onProgress`), and it yields between rows so the map keeps drawing while it runs. A ceiling
-       written here would be a number with no measurement behind it, on a cost that depends entirely
-       on which layer is being asked. */
+       (`onProgress`). ⚠ (#R749) IT NOW YIELDS BY ELAPSED TIME RATHER THAN PER ROW, and the walk
+       itself lives in js/gis-raster.js — a row is a count, and a count is 3 ms of one field and tens
+       of seconds of another (docs/GIS-CORE.md §2.6). A ceiling written here would be a number with no
+       measurement behind it, on a cost that depends entirely on which layer is being asked. */
     async function toRaster(id, opts) {
       const o = opts || {};
       const key = String(id == null ? '' : id);
-      const R = REG(), D = DATA();
-      if (!R || typeof R.sampleAt !== 'function') return { ok: false, why: 'map-unavailable', detail: { needs: 'sampleAt' } };
+      const D = DATA();
       if (!D || typeof D.add !== 'function') return { ok: false, why: 'registry-missing' };
-      if (layerIds().indexOf(key) < 0) return { ok: false, why: 'layer-unknown', detail: { id: key } };
-      /* ⚠ A LAYER THAT IS SWITCHED OFF HAS NO VALUES TO GIVE, and this is the one refusal a reader
-         can act on immediately. The layers load their grids when they are turned on (js/map-ui.js),
-         so sampling one that is off answers null for every pixel — a grid of holes that looks like a
-         measurement of nothing. 「見つからなかった」と「訊けなかった」を同じ答えにしない. */
-      if (!canSample(key)) return { ok: false, why: 'layer-not-sampling', detail: { id: key } };
+      /* ⚠ (#R749) THE WALK IS NOT HERE ANY MORE. It was one await per pixel with a yield ONCE PER
+         ROW, and the rest of this layer had no way to read a field over a region at all — so the
+         only region read in the app was this loop, and the only thing that knew a grid is a SAMPLE
+         of a field was this function's own comment. js/gis-sources.js region() is that read now
+         (js/gis-raster.js fromSamplerAsync does the walk, yielding by elapsed time), and what comes
+         back carries the coverage. ⚠ IT ALSO DOES NOT ASSUME 「off ⇒ no values」 any more: it probes,
+         and refuses only when the field really does not answer. */
+      const got = speak(await SRC().region(key, (o.bounds == null ? null : o.bounds), {
+        width: o.width, height: o.height,
+        band: { name: layerLabel(key) || key, unit: (o.unit == null ? null : String(o.unit)) },
+        signal: o.signal || null, onProgress: o.onProgress || null,
+      }));
+      if (!got.ok) return got;
 
-      const box = (o.bounds == null) ? WHOLE_WORLD : asBox(o.bounds);
-      if (!finiteBox(box)) return { ok: false, why: 'bad-param', detail: { param: 'bounds', value: o.bounds } };
-      const int = (v) => (typeof v === 'number' && isFinite(v) && Number.isInteger(v) && v > 0);
-      if (!int(o.width) || !int(o.height)) return { ok: false, why: 'bad-param', detail: { param: int(o.width) ? 'height' : 'width', value: int(o.width) ? o.height : o.width } };
-
-      const w = o.width, h = o.height;
-      const pixelLng = (box.e - box.w) / w, pixelLat = (box.n - box.s) / h;
-      if (!(pixelLng > 0) || !(pixelLat > 0)) return { ok: false, why: 'bad-param', detail: { param: 'bounds', value: [box.w, box.s, box.e, box.n] } };
-
-      const asNum = (D.asNumber) ? D.asNumber : ((v) => (typeof v === 'number' && isFinite(v) ? v : null));
-      const cells = new Float64Array(w * h);
-      let read = 0, textSeen = null;
-      for (let row = 0; row < h; row++) {
-        if (o.signal && o.signal.aborted) return { ok: false, why: 'cancelled', detail: { rows: row, of: h } };
-        const lat = box.n - (row + 0.5) * pixelLat;
-        for (let col = 0; col < w; col++) {
-          const lng = box.w + (col + 0.5) * pixelLng;
-          let v = null;
-          try {
-            const got = await R.sampleAt(lng, lat, [key]);
-            const hit = Array.isArray(got) ? got.find((x) => x && String(x.id) === key) : null;
-            if (hit) { v = asNum(hit.value); if (v == null && textSeen == null) textSeen = String(hit.value); }
-          } catch (_) { v = null; }
-          /* ⚠ NaN, NOT ZERO. A missing sample written as 0 is an elevation of exactly sea level and a
-             rainfall of exactly none; js/gis-raster.js treats NaN as absent in every statistic. */
-          cells[row * w + col] = (v == null) ? NaN : v;
-          if (v != null) read++;
-        }
-        if (typeof o.onProgress === 'function') { try { o.onProgress({ rows: row + 1, of: h, read: read }); } catch (_) { } }
-        /* one turn of the event loop per row: the camera, the renderer and the cancel button all
-           live on this thread */
-        await new Promise((res) => setTimeout(res, 0));
-      }
-      /* ⚠ A GRID WITH NO NUMBERS IN IT IS NOT A GRID, and the sentence the layer answered with is
-         what the reader needs to see: a layer whose sampleAt returns 「12 °C」 has values, it just
-         does not have them as numbers, and that is a different thing to fix. */
-      if (!read) return { ok: false, why: 'layer-values-not-numeric', detail: { id: key, sample: textSeen } };
-
+      const ras = got.grid;
+      const cells = ras.read(0);
+      const box = { w: ras.grid.west, s: ras.grid.north - ras.grid.pixelLat * ras.height, e: ras.grid.west + ras.grid.pixelLng * ras.width, n: ras.grid.north };
       const stated = layerTime(key);
       const moment = (stated && D.momentOf) ? D.momentOf(stated) : null;
       const spec = {
         kind: 'raster',
         title: o.title ? String(o.title) : (layerLabel(key) || key),
         sourceCrs: 'EPSG:4326',
-        width: w, height: h,
-        grid: { west: box.w, north: box.n, pixelLng: pixelLng, pixelLat: pixelLat },
-        bands: [{ name: layerLabel(key) || key, unit: (o.unit == null ? null : String(o.unit)), nodata: null }],
+        width: ras.width, height: ras.height,
+        grid: { west: ras.grid.west, north: ras.grid.north, pixelLng: ras.grid.pixelLng, pixelLat: ras.grid.pixelLat },
+        bands: ras.bands,
         read: () => cells,
         time: moment ? { kind: 'constant', start: stated, end: stated } : null,
-        provenance: { kind: 'layer-raster', layer: key, bounds: { w: box.w, s: box.s, e: box.e, n: box.n }, width: w, height: h, sampled: read, at: Date.now(), statedTime: stated || null },
+        /* `sampled` is what it has always been (the pixels that carried a number); `coverage` is the
+           part that was missing — 「これは場の標本であって、上流の格子ではない」 said as a value the
+           next op can read, instead of only in this file's header. */
+        provenance: { kind: 'layer-raster', layer: key, bounds: box, width: ras.width, height: ras.height, sampled: got.filled, at: Date.now(), statedTime: stated || null, coverage: got.coverage },
       };
       if (o.id != null && o.id !== '') {
         const wanted = String(o.id);

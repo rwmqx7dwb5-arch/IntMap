@@ -579,6 +579,7 @@ export function makeGisDatasets() {
       /* The edit history and the reader's declarations belong to THIS record. They are dropped with
          it — an id is never reissued (claimId), so nothing can inherit them. */
       EDITS.delete(id);
+      DECL.delete(id);
       emit('remove', rec);
       return true;
     }
@@ -657,15 +658,36 @@ export function makeGisDatasets() {
        machinery a changed parameter uses. Doing nothing here would leave outputs that look current
        and were computed from values that no longer exist, which is exactly §4.1's defect.
 
-       ⚠ THE DECLARATIONS AND THE HISTORY DO NOT SURVIVE A RELOAD, and that asymmetry is deliberate:
-       js/gis-project.js saves an import as its BODY (`features: rec.features()`), so the EDITED
-       VALUES are saved — they are the data — while a declaration is re-askable in one call and an
-       undo stack is keystrokes. */
+       ⚠ THE HISTORY DOES NOT SURVIVE A RELOAD, AND THE DECLARATIONS DO (#R749). Both used to be held
+       in ONE bag, and therefore had one lifetime, and that made a reload lose the wrong half. An undo
+       stack IS keystrokes: js/gis-project.js saves an import as its BODY (`features: rec.features()`),
+       so the EDITED VALUES are already in the save, and a saved stack would be a second history of a
+       file whose features it no longer matches the moment the reader drops a newer copy. A
+       DECLARATION is not of that kind at all — 「この列は人数か、人口密度か」「単位は m か km か」 is
+       what the data MEANS, it is the reader's statement about it, and nothing else in the program can
+       re-derive it. So the two are held separately (EDITS / DECL) and the save carries the second.
+       ⚠ A RESTORED DECLARATION GOES THROUGH THE SAME DOOR AS A NEW ONE (restoreDeclarations →
+       declareField). Writing the saved statement straight back into the fields would be the defect
+       this block exists against, one reload later: a column that says `number` because somebody once
+       said so, over cells that are not numbers. The features may have changed between the save and
+       the load; a declaration the data no longer bears out is refused BY NAME and comes back in
+       `refused`, which is the reader's to see rather than this file's to hide. */
 
-    /* id → { undo:[entry], redo:[entry], declared: Map(name → {type, unit}) }. Held beside the
-       records rather than on them so that describe() — which is what the panel lists and the save
-       file writes — stays the metadata it was. */
+    /* id → { undo:[entry], redo:[entry] }. Held beside the records rather than on them so that
+       describe() — which is what the panel lists and the save file writes — stays the metadata it
+       was. ⚠ SESSION ONLY: this is the stack, and the stack is keystrokes (see above). */
     const EDITS = new Map();
+    /* id → Map(name → {type, unit, refused, at}). ⚠ A SEPARATE STORE BECAUSE IT HAS A SEPARATE
+       LIFETIME, not because it is a different kind of value: this is what the READER declared, it is
+       written into the saved project, and it comes back through restoreDeclarations. `at` is part of
+       the statement — 「いつそう述べたか」 — and it is carried rather than re-stamped on restore,
+       because re-dating it would make every declaration look as though it were made when the project
+       was opened.
+       ⚠ NOTHING A SOURCE SAID IS HELD HERE. A band's unit arrived WITH the grid (`unitStated:'source'`
+       in addRaster) and belongs to the record; a reader's belongs to the reader. The two are told
+       apart by WHERE THEY LIVE rather than by a rule at the door, so no later caller can mix them by
+       forgetting to ask. */
+    const DECL = new Map();
     const EDIT_TYPES = ['number', 'date', 'text'];
     /* undo of an add is a remove and vice versa; a rename and a value edit invert to themselves. */
     const OPPOSITE = { values: 'values', 'add-field': 'remove-field', 'remove-field': 'add-field', 'rename-field': 'rename-field' };
@@ -673,7 +695,12 @@ export function makeGisDatasets() {
     function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
     function editState(id) {
       let s = EDITS.get(id);
-      if (!s) { s = { undo: [], redo: [], declared: new Map() }; EDITS.set(id, s); }
+      if (!s) { s = { undo: [], redo: [] }; EDITS.set(id, s); }
+      return s;
+    }
+    function declState(id) {
+      let s = DECL.get(id);
+      if (!s) { s = new Map(); DECL.set(id, s); }
       return s;
     }
     /* ⚠ THE CODES THIS LAYER CAN ANSWER WITH, DECLARED (#R738). Every refusal here reaches a reader
@@ -737,11 +764,11 @@ export function makeGisDatasets() {
        are not numbers. The measured `type` is never overwritten — a reader must be able to see
        「測ると text、読者が number と宣言」 as two facts. */
     function applyDeclarations(rec) {
-      const s = EDITS.get(rec.id);
-      if (!s || !s.declared.size) return;
+      const s = DECL.get(rec.id);
+      if (!s || !s.size) return;
       const features = rec.features();
       for (const col of rec.fields) {
-        const d = s.declared.get(col.name);
+        const d = s.get(col.name);
         if (!d) continue;
         if (d.unit != null) { col.unit = d.unit; col.unitStated = 'reader'; }
         /* ⚠ A REFUSAL STICKS UNTIL THE READER DECLARES AGAIN. It is held in the declaration state,
@@ -755,7 +782,7 @@ export function makeGisDatasets() {
         else {
           const r = { type: d.type, bad: v.bad, checked: v.checked, example: v.example };
           col.typeRefused = r;
-          s.declared.set(col.name, { type: null, unit: d.unit, refused: r });
+          s.set(col.name, { type: null, unit: d.unit, refused: r, at: d.at == null ? null : d.at });
         }
       }
     }
@@ -807,12 +834,12 @@ export function makeGisDatasets() {
     }
 
     function moveDeclaration(id, from, to) {
-      const s = EDITS.get(id);
+      const s = DECL.get(id);
       if (!s) return;
-      const d = s.declared.get(from);
+      const d = s.get(from);
       if (!d) return;
-      s.declared.delete(from);
-      if (to) s.declared.set(to, d);
+      s.delete(from);
+      if (to) s.set(to, d);
     }
 
     function renameOn(features, from, to) {
@@ -929,14 +956,17 @@ export function makeGisDatasets() {
         if (unit === '') return no('unit-not-a-string', { field: name });
       }
 
-      const s = editState(id);
-      const prev = s.declared.get(name) || { type: null, unit: null, refused: null };
-      s.declared.set(name, {
+      const s = declState(id);
+      const prev = s.get(name) || { type: null, unit: null, refused: null, at: null };
+      s.set(name, {
         type: hasType ? type : prev.type,
         unit: hasUnit ? unit : prev.unit,
         /* A type that has just been verified answers the earlier refusal; a unit-only declaration
            says nothing about it and leaves it standing. */
         refused: hasType ? null : (prev.refused || null),
+        /* WHEN this was stated. It is part of the statement, which is why it is saved with it and
+           why restoreDeclarations puts the SAVED moment back instead of leaving this one. */
+        at: Date.now(),
       });
       /* ⚠ NOT AN ENTRY IN THE UNDO STACK, and not a reason to invalidate what was made from this
          record. A declaration changes nothing in the data: js/gis-ops.js compares through asNumber
@@ -948,6 +978,73 @@ export function makeGisDatasets() {
       applyDeclarations(rec);
       emit('edit', rec);
       return { ok: true, field: copy(rec.fields.find((f) => f.name === name)) };
+    }
+
+    /* ── 宣言を取り出す扉と、戻す扉（#R749）──────────────────────────────────────────────────
+       What the READER declared about this record's columns, in the shape js/gis-project.js writes
+       into a saved project: `{ <列名>: {type, unit, at} }`, plus `refused` on a column whose type
+       declaration the data did not bear out and the reader has not answered yet.
+
+       ⚠ THE TWO ANSWERS THAT ARE NOT THE SAME ANSWER. `null` is 「そのデータセットが無い」 — there is
+       nobody to have declared anything — and `{}` is 「在るが、誰も何も述べていない」. Collapsing them
+       would let a caller write 「宣言は無い」 about a record it never found, which is the shape
+       「欄が在ることを答えが在ることの代わりにするな」 names.
+       ⚠ A SOURCE'S STATEMENT IS NOT IN HERE. A raster band's `unit` came with the grid
+       (`unitStated:'source'`); it is part of the record and travels with the record. Only what came
+       through declareField is the reader's, and only the reader's is in DECL. */
+    function declarations(id) {
+      if (!DS.has(id)) return null;
+      const s = DECL.get(id);
+      const out = {};
+      if (!s) return out;
+      for (const [name, d] of s) {
+        const e = {
+          type: d.type == null ? null : String(d.type),
+          unit: d.unit == null ? null : String(d.unit),
+          at: (typeof d.at === 'number' && isFinite(d.at)) ? d.at : null,
+        };
+        if (d.refused) e.refused = copy(d.refused);
+        out[name] = e;
+      }
+      return out;
+    }
+
+    /* Put saved declarations back. ⚠ THROUGH declareField, NOT INTO THE STORE. A reload is the one
+       moment when 「読者が述べたこと」 and 「データが述べていること」 can have drifted apart: the
+       reader may have dropped a newer file under the same project, a column may be gone, a column of
+       numbers may now hold 「明治22年」. Copying the saved statement in would restore a `number` that
+       is not a number and would be exactly the claim-with-no-author this file refuses everywhere
+       else. Each column is re-verified against the features that actually arrived, and the ones that
+       no longer hold come back NAMED in `refused` — the reader decides, not this file.
+       ⚠ `ok` IS ABOUT THE CALL, NOT ABOUT THE COLUMNS. Every ok:false out of this file carries a
+       `why`; a partly-restorable set has no single one, so the per-column reasons are the answer and
+       `applied` is how many were re-declared. */
+    function restoreDeclarations(id, decls) {
+      const g = openFor(id);
+      if (!g.ok) return g;
+      /* Not an object = nothing was handed over that could be a declaration. Told with the same code
+         a declaration with neither type nor unit gets, because it is the same fact. */
+      if (decls == null || typeof decls !== 'object') return no('nothing-declared', { id: String(id) });
+      const refused = [];
+      let applied = 0;
+      for (const name of Object.keys(decls)) {
+        const d = decls[name];
+        if (!d || typeof d !== 'object') { refused.push({ field: name, why: 'nothing-declared', detail: { field: name } }); continue; }
+        const spec = {};
+        if (d.type != null) spec.type = d.type;
+        if (d.unit != null) spec.unit = d.unit;
+        if (spec.type == null && spec.unit == null) { refused.push({ field: name, why: 'nothing-declared', detail: { field: name } }); continue; }
+        const r = declareField(id, name, spec);
+        if (!r.ok) { refused.push(r.detail ? { field: name, why: r.why, detail: r.detail } : { field: name, why: r.why }); continue; }
+        applied++;
+        /* ⚠ WHEN IT WAS SAID IS PART OF WHAT WAS SAID. declareField stamps `now`, which is right for
+           a declaration being made and wrong for one being restored: left alone it would re-date
+           every statement in the project to the moment the reader opened it. A saved record with no
+           moment in it stays without one — null is 「いつとは述べられていない」. */
+        const cur = declState(id).get(name);
+        if (cur) cur.at = (typeof d.at === 'number' && isFinite(d.at)) ? d.at : null;
+      }
+      return { ok: true, applied, refused };
     }
 
     function editValues(id, edits) {
@@ -1130,6 +1227,9 @@ export function makeGisDatasets() {
          places. */
       editable: (id) => { const g = openFor(id); return g.ok ? { ok: true } : g; },
       declareField, editValues, addField, removeField, renameField, history,
+      /* (#R749) 宣言は取り消し履歴と寿命が違う。js/gis-project.js writes declarations() into the save
+         and hands it back to restoreDeclarations() on load; the history is not saved at all. */
+      declarations, restoreDeclarations,
       undo: (id) => step(id, 'undo', 'redo'),
       redo: (id) => step(id, 'redo', 'undo'),
       /* The one reader of a `time` declaration (#R735): js/gis-ops.js asks it rather than carrying a

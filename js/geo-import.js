@@ -840,6 +840,31 @@ export const GEO_IMPORT = (function () {
     try { bytes = new Uint8Array(await file.arrayBuffer()); } catch (_) { return { ok: false, why: 'unreadable' }; }
     if (!bytes.length) return { ok: false, why: 'empty' };
 
+    /* ══ (#R749) A GeoTIFF IS NOT FEATURES, AND IT LEAVES BEFORE THE FEATURE MACHINERY ═════════
+       Every path below this point works on r.fc — the coordinate repair, the feature cap, the CRS
+       settlement — and a grid has none of those things. Handed to decodeBytes a TIFF comes back
+       'not-text', which is true and useless, exactly as a GeoPackage did before #R738.
+       ⚠ RECOGNISED BY ITS BYTES, not by ".tif". The picker states no accept list on purpose (see
+       js/map-ui.js), so the name is not evidence; the four-byte header is. ⚠ The reader is fetched
+       only when such a file actually lands — a session that never drops a raster downloads none of
+       it. Its own CRS is carried OUT of here untouched: warping is a choice with a method attached,
+       and js/map-ui.js makes it where it can say so to the reader. */
+    {
+      const b0 = bytes[0], b1 = bytes[1];
+      if ((b0 === 0x49 && b1 === 0x49) || (b0 === 0x4d && b1 === 0x4d)) {
+        let TIF = null;
+        try { TIF = (await import('./gis-geotiff.js')).makeGisGeotiff(); } catch (_) { TIF = null; }
+        if (TIF && TIF.sniff(bytes)) {
+          const g = await TIF.read(bytes, null);
+          if (!g || !g.ok) return g || { ok: false, why: 'unreadable' };
+          return { ok: true, format: 'geotiff', grid: g.grid, sourceCrs: (g.grid && g.grid.crs) || null,
+            crsText: (g.grid && g.grid.crsText) || null,
+            stats: { width: g.grid.width, height: g.grid.height, bands: g.grid.bands.length,
+              compression: g.grid.compression, layout: g.grid.layout, overviews: g.grid.overviews } };
+        }
+      }
+    }
+
     const sig = ATL_FILE.sniff(bytes.subarray(0, ATL_FILE.LIMITS.sniff));
     let r;
     if (sig === 'zip') r = await fromZip(bytes);
