@@ -2944,6 +2944,27 @@ export function makeGisOps() {
          the params that ran, cloned — a caller mutating its own object afterwards must not be able to
          rewrite history. */
       const prov = { kind: 'op', op: decl.id, inputs: inputs, params: recorded };
+      /* ══ ⚠⚠⚠ (#R765) 「どのエンジンが計算したか」は、計算した瞬間にしか分からない ═════════════
+         #R749 established that the same recipe is not the same answer across implementations, and
+         wrote the engine's versions into every step js/gis-project.js SAVES. That covers a reopened
+         project and nothing else: a record sitting in the registry right now — the one a reader is
+         looking at, the one they are about to export — carried no statement about what computed it.
+         Asking the kernels later answers a different question («what is loaded now»), and the two
+         differ in exactly the case the version exists for.
+         ⚠ ASKED, NOT COPIED. js/gis-project.js discovers the kernels (any window.IntMapGis* that
+         publishes version()) and that discovery is its rule; a second walk here would be the second
+         list this layer keeps refusing to grow. ⚠ AND ITS ABSENCE IS RECORDED AS ABSENCE — a record
+         made while that module was not mounted says nothing rather than guessing, and manifest()
+         reports the gap instead of printing today's versions as though they were then's. */
+      const eng = (() => {
+        try {
+          const P = (typeof window !== 'undefined') ? window.IntMapGisProject : null;
+          if (!P || typeof P.engine !== 'function') return null;
+          const e = P.engine();
+          return (e && typeof e === 'object' && Object.keys(e).length) ? e : null;
+        } catch (_) { return null; }
+      })();
+      if (eng) prov.engine = eng;
       /* (#R759) 取得の陳述は、演算をまたいでも落ちない。See inheritCoverage — null when no input ever
          said anything, which is the state every record made from an imported file is in. */
       const cov = inheritCoverage(ds, res.stats, decl.id);

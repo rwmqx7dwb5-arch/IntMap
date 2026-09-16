@@ -109,6 +109,9 @@ export function makeGisProject() {
        compareEngine and restoreDecls. */
     const RECORD_VERSION = 2;
 
+    /* (#R765) manifest() が書く文書の版。読み手が「この形を知っているか」を判断できるように。 */
+    const MANIFEST_VERSION = 1;
+
     /* `dead` is set only when the environment HAS NO IndexedDB at all (Node, a browser with it
        switched off). A transaction that failed once does not set it: the disk being full this
        minute is not the same claim as the store not existing. */
@@ -771,8 +774,217 @@ export function makeGisProject() {
       return !!idbGlobal();
     }
 
+
+    /* ══ ⚠⚠⚠ (#R765) 「作業を再開できる」と「その結果をもう一度出せる」は別のこと ══════════════════
+       save()/load() above make an analysis RESUMABLE: the inputs come back whole, the ops replay, and
+       a changed engine is reported. That is the right design and it is not reproducibility. A recipe
+       replayed on a different engine, against an upstream that has refreshed, at a different hour,
+       is a NEW answer wearing the old one's name — and #R749's version comparison can only say
+       「違う」 after the fact, to whoever happens to be looking.
+       ⚠ WHAT WAS MISSING IS A DOCUMENT, not a store. To hand an analysis to somebody else — or to
+       one's own future self — the question is 「この数は何から、どうやって出たのか」, and the answer
+       was spread across four modules and reachable only by walking them. manifest() walks them once
+       and writes it down.
+       ⚠ IT ASSERTS NOTHING IT CANNOT ESTABLISH. Every manifest carries `gaps`: the things this app
+       genuinely does not know about its own answer — an upstream nobody versions, an import whose
+       bytes are not kept, a step computed before the engine stamped itself. A manifest with no gaps
+       list would be the 「知らない」を「全部だ」の代わりにする shape this layer exists to refuse
+       ([[intmap-one-store-was-asked]]), and the gaps are the most useful part of it for a reader
+       deciding how much to trust the number.
+       ⚠ AND THE FINGERPRINT IS OF THE ANSWER, NOT OF THE RECIPE. Two runs of one recipe are the same
+       analysis; whether they are the same ANSWER is the question, and it is answerable only by
+       hashing what came out. That is what makes 「同じ結果を再現できたか」 a measurement rather than
+       a hope. */
+
+    /* SHA-256 through the platform's own digest — the same one in a browser and in node, so a
+       fingerprint taken here and checked there is the same number. ⚠ null when no digest is
+       available (an insecure context has no crypto.subtle): that is a gap, stated, never a weaker
+       hash quietly substituted — two different functions producing 「the fingerprint」 is worse than
+       not having one. */
+    async function sha256Hex(text) {
+      try {
+        const c = (typeof globalThis !== 'undefined') ? globalThis.crypto : null;
+        if (!c || !c.subtle || typeof c.subtle.digest !== 'function') return null;
+        const bytes = new TextEncoder().encode(text);
+        const buf = await c.subtle.digest('SHA-256', bytes);
+        return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+      } catch (_) { return null; }
+    }
+
+    /* ⚠ CANONICAL, OR IT IS NOT A FINGERPRINT. JSON.stringify writes an object's keys in insertion
+       order, so the same features built by two code paths would hash differently and the comparison
+       would report a difference that is not one. Keys are sorted at every depth; arrays keep their
+       order, because the order of features IS part of the answer. */
+    function canonical(v) {
+      if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
+      if (Array.isArray(v)) return '[' + v.map(canonical).join(',') + ']';
+      const keys = Object.keys(v).sort();
+      return '{' + keys.map((k) => JSON.stringify(k) + ':' + canonical(v[k])).join(',') + '}';
+    }
+
+    /* What a record's payload IS, reduced to text one can hash. ⚠ A GRID IS HASHED FROM ITS SAMPLES
+       AND ITS PLACEMENT, both — 「同じ画素の並びが別の場所に置かれている」 is a different answer, and
+       #R756's export round-trip found that exact class of defect by measuring the grid as well as
+       the cells. */
+    function payloadText(rec) {
+      if (!rec) return null;
+      if (String(rec.kind || 'vector') === 'raster') {
+        const bands = [];
+        const n = (rec.bands || []).length;
+        for (let b = 0; b < n; b++) {
+          let vals = null;
+          try { vals = rec.read(b); } catch (_) { return null; }
+          if (!vals) return null;
+          /* NaN has no JSON form and every void would otherwise read as null — written as a word so
+             that 「欠損」 and 「値が無いことを述べていない」 stay distinguishable in the hash too. */
+          const out = new Array(vals.length);
+          for (let i = 0; i < vals.length; i++) out[i] = Number.isFinite(vals[i]) ? vals[i] : 'nodata';
+          bands.push({ band: (rec.bands[b] || {}).name || b, values: out });
+        }
+        return canonical({ kind: 'raster', width: rec.width, height: rec.height, grid: rec.grid, bands: bands });
+      }
+      let feats = null;
+      try { feats = rec.features(); } catch (_) { return null; }
+      if (!Array.isArray(feats)) return null;
+      return canonical({ kind: 'vector', features: feats });
+    }
+
+    /* The origin of one record, in the vocabulary its provenance already uses. Nothing is inferred:
+       a record whose provenance names a kind this file does not know is reported under that name. */
+    function originOf(prov) {
+      const k = (prov && prov.kind) ? String(prov.kind) : 'unknown';
+      return k;
+    }
+
+    async function stepOf(rec, opts) {
+      const D = registry();
+      const desc = (D && typeof D.describe === 'function') ? D.describe(rec.id) : null;
+      const prov = (desc && desc.provenance) || {};
+      const step = {
+        id: rec.id,
+        title: desc ? desc.title : rec.id,
+        kind: desc ? desc.kind : null,
+        origin: originOf(prov),
+        crs: desc ? desc.crs : null,
+        sourceCrs: desc ? desc.sourceCrs : null,
+        time: desc ? desc.time : null,
+        count: desc ? desc.count : null,
+        /* ⚠ THE COLUMNS WITH THEIR UNITS AND WHO STATED THEM. A number whose unit is only in the
+           reader's head is the defect #R763 measured on the layers; a manifest that dropped it here
+           would put it back. */
+        fields: (desc && desc.fields) ? desc.fields.map((f) => ({
+          name: f.name, type: f.type, unit: (f.unit == null ? null : f.unit),
+          unitStated: f.unitStated || null, unitFrom: f.unitFrom || null,
+        })) : null,
+        bands: (desc && desc.bands) ? desc.bands.slice() : null,
+      };
+      if (prov.kind === 'op') {
+        step.recipe = { op: prov.op, inputs: (prov.inputs || []).slice(), params: prov.params || {} };
+        /* Stamped when it ran (#R765). Absent for a record computed before that, or while
+           js/gis-project.js was not mounted — reported as a gap rather than filled in from today. */
+        step.engineThen = prov.engine || null;
+      } else {
+        step.recipe = null;
+      }
+      if (prov.layer != null) {
+        step.acquisition = {
+          layer: String(prov.layer),
+          bounds: prov.bounds || null,
+          statedTime: prov.statedTime || null,
+          at: prov.at || null,
+        };
+      }
+      /* ⚠ COVERAGE IS COPIED WHOLE, not summarised. 「どこまでが答えられたか」 and 「演算が何行
+         落としたか」 are the two questions a reader checking someone else's number asks first, and a
+         manifest that reduced them to a word would be answering a third. */
+      if (prov.coverage) step.coverage = prov.coverage;
+      if (prov.readAt != null) step.readAt = prov.readAt;
+      if (prov.file != null) step.file = String(prov.file);
+      if (prov.format != null) step.format = String(prov.format);
+      if (desc && desc.stale) step.stale = desc.stale;
+
+      if (!(opts && opts.fingerprint === false)) {
+        const text = payloadText(rec);
+        step.fingerprint = (text == null) ? null : await sha256Hex(text);
+        step.fingerprintOf = 'sha256/canonical-json';
+      }
+      return step;
+    }
+
+    /* manifest(id) — 「この数は何から、どうやって出たのか」 as one document. */
+    async function manifest(id, opts) {
+      const D = registry();
+      if (!D || typeof D.lineage !== 'function') return { ok: false, why: 'registry-missing' };
+      const key = String(id == null ? '' : id);
+      const target = (typeof D.get === 'function') ? D.get(key) : null;
+      if (!target) return { ok: false, why: 'unknown-dataset', detail: { id: key } };
+
+      const chain = D.lineage(key) || [];
+      const steps = [];
+      for (const rec of chain) steps.push(await stepOf(rec, opts));
+
+      const gaps = [];
+      for (const s of steps) {
+        if (s.origin === 'op' && !s.engineThen) {
+          gaps.push({ step: s.id, gap: 'engine-not-recorded', means: 'この段を計算したエンジンの版が記録されていない（いまの版は「そのときの版」ではない）' });
+        }
+        if (s.origin === 'import') {
+          gaps.push({ step: s.id, gap: 'source-bytes-not-kept', means: '取り込んだ元のバイトは保存していないので、同じファイルかどうかは指紋でしか確かめられない' });
+        }
+        if (s.acquisition && !(s.coverage && s.coverage.completeness)) {
+          gaps.push({ step: s.id, gap: 'coverage-unstated', means: '求めた範囲のうちどこまで答えられたかを、この供給元は述べていない' });
+        }
+        if (s.acquisition) {
+          gaps.push({ step: s.id, gap: 'upstream-not-versioned', means: '上流そのものに版が無いので、同じ問い合わせが同じ答えを返す保証は無い' });
+        }
+        if (s.fingerprint === null && !(opts && opts.fingerprint === false)) {
+          gaps.push({ step: s.id, gap: 'fingerprint-unavailable', means: '内容の指紋を取れなかった（この環境に SHA-256 が無いか、payload を読めなかった）' });
+        }
+      }
+
+      return {
+        ok: true,
+        id: key,
+        title: target.title,
+        producedAt: Date.now(),
+        /* ⚠ TWO DIFFERENT CLAIMS, SIDE BY SIDE AND NEVER MERGED. `engineNow` is what is loaded as
+           this manifest is written; each step's `engineThen` is what computed that step. They agree
+           in the ordinary case and their disagreement is the whole reason #R749 built the version. */
+        engineNow: engineNow(),
+        steps: steps,
+        answer: {
+          fingerprint: steps.length ? steps[steps.length - 1].fingerprint : null,
+          count: target.count == null ? null : target.count,
+          kind: String(target.kind || 'vector'),
+        },
+        gaps: gaps,
+        manifestVersion: MANIFEST_VERSION,
+      };
+    }
+
+    /* Did this record come out the same as the manifest says it did? ⚠ IT ANSWERS THREE THINGS, NOT
+       TWO: 「同じ」「違う」「測れなかった」. A fingerprint that could not be taken is not a match, and
+       reporting it as one is the failure mode this whole layer keeps recording. */
+    async function verify(id, saved) {
+      const D = registry();
+      if (!D || typeof D.get !== 'function') return { ok: false, why: 'registry-missing' };
+      const rec = D.get(String(id));
+      if (!rec) return { ok: false, why: 'unknown-dataset', detail: { id: String(id) } };
+      const want = (saved && typeof saved === 'object')
+        ? (saved.answer ? saved.answer.fingerprint : saved.fingerprint)
+        : saved;
+      const text = payloadText(rec);
+      const got = (text == null) ? null : await sha256Hex(text);
+      if (want == null || got == null) {
+        return { ok: true, verdict: 'unmeasurable', expected: want == null ? null : String(want), actual: got };
+      }
+      return { ok: true, verdict: (String(want) === got) ? 'same' : 'different', expected: String(want), actual: got };
+    }
+
     const API = {
       save, load, list, remove, setParams, available,
+      /* (#R765) 「この数は何から、どうやって出たのか」を 1 つの文書に — と、それが同じ答えかを測る口 */
+      manifest, verify, manifestVersion: MANIFEST_VERSION,
       /* named so a test or a panel can talk about the store without re-deriving the strings */
       dbName: DB_NAME, storeName: STORE, recordVersion: RECORD_VERSION,
       /* (#R749) What the kernels say they are RIGHT NOW — the other half of what a saved step's

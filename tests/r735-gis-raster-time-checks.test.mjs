@@ -548,7 +548,18 @@ test('R735 ⑩ roads → 500 m → facilities per ward → save → reload → 1
   assert.equal(byWard.dataset.features()[0].properties.cd, '01100');
 
   /* ⚠ THE CHAIN IS A RECIPE, WHICH IS WHAT MAKES THE LAST STEP OF THE SENTENCE POSSIBLE. */
-  assert.deepEqual(data.describe('byWard').provenance, { kind: 'op', op: 'aggregate', inputs: [wards.id, 'near'], params: { stat: 'count' } });
+  /* ⚠ (#R765) THE RECIPE IS ASSERTED FIELD BY FIELD, not as the whole object. It used to be a
+     deepEqual, which says 「このレシピである」 and ALSO 「provenance にはこれ以外の欄が無い」 — and
+     the second half is not what this test is about. #R765 added `engine`: the record now states
+     which kernels computed it, stamped as it ran. Asserting the object whole would make every
+     truthful addition to a record's own account of itself look like a regression here. */
+  const prov = data.describe('byWard').provenance;
+  assert.equal(prov.kind, 'op');
+  assert.equal(prov.op, 'aggregate');
+  assert.deepEqual(prov.inputs, [wards.id, 'near']);
+  assert.deepEqual(prov.params, { stat: 'count' });
+  /* and the engine that ran it is recorded, because it was mounted (#R765) */
+  assert.ok(prov.engine && prov.engine.ops, 'the record does not say which engine computed it');
   assert.deepEqual(data.lineage('byWard').map((r) => r.id), [wards.id, fac.id, roads.id, 'near', 'byWard']);
 
   /* 「距離だけ変更して、同じ結果レイヤーまで更新できる」 — under the same ids, so a map layer and a
