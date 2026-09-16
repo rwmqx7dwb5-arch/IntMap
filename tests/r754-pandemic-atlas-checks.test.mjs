@@ -274,3 +274,90 @@ test('R754 ⑩: the world the builder produces is a world the engine can actuall
   for (let d = 0; d < 60; d++) again.step();
   assert.strictEqual(again.totals().cumInf, t.cumInf, 'the same seed reproduced the run exactly');
 });
+
+/* ══ #R755 — what production said about #R754 ═════════════════════════════════════════════════
+   Build R754 went live and Atlas STOPPED saying the simulator does not exist: it found the
+   capability and called it three times. It still answered nothing, because every call was refused.
+   These four restate what was measured, not what was fixed. */
+
+/* ── ⑪ the spelling a planner actually writes ──────────────────────────────────────────────────
+   MEASURED: Atlas passed `place: "Lagos, Nigeria"`. `"Lagos"` resolved; the qualified form did
+   not, three times, and the turn died at `repeated_calls`. ⚠ The qualifier must be USED, not
+   dropped — dropping it is how «Lagos, Portugal» silently becomes Nigeria. */
+test('R755 ⑪: «City, Country» resolves, and the country half is a test rather than noise', async () => {
+  const src = read('js/pandemic-world.js');
+  assert.match(src, /split\(','\)/, 'the resolver reads a qualified place at all');
+  const i = src.indexOf('gazetteerCandidates');
+  assert.ok(i > 0, 'candidates are enumerated, so the qualifier can choose among them');
+  assert.match(src, /place-not-in-that-country/,
+    'a name found in the WRONG country is refused by name, not silently accepted');
+  /* the refusal must say where it DID find it — «not found» and «found elsewhere» are different facts */
+  assert.match(src, /foundIn/, 'the resolver records which country it was found in instead');
+  /* ⚠ AND THE REPLY MUST READ IT. Producing `foundIn` and never printing it is the same defect as
+     ⑲: measured in the local preview, «Lagos, Portugal» fell through to the generic «could not be
+     resolved» because the new reason had no message of its own. */
+  const atlas = read('js/pandemic-atlas.js');
+  assert.match(atlas, /place-not-in-that-country/, 'the reply has a message for that reason');
+  assert.ok(atlas.includes('o.foundIn'), 'and it names the country the name DID resolve in');
+  /* ⚠ one matcher, so «matches» cannot mean two things */
+  assert.strictEqual((src.match(/const en = String\(r\[4\]/g) || []).length, 1,
+    'the single answer and the candidate list share one definition of a match');
+});
+
+/* ── ⑫ the attribution that never reached the reader ───────────────────────────────────────────
+   MEASURED in production: every assumption printed as «r0 = 3.2 []». The row carries `origin`; the
+   reader-visible line read `d.from`, which no row has, and `esc(undefined)` is ''. ⚠ THE COMMENT
+   DIRECTLY ABOVE THAT LINE SAYS THE ASSUMPTIONS ARE PART OF THE ANSWER. A field list read by two
+   readers ([[intmap-two-readers-one-field-list]]) — measured twice now in one round. */
+test('R755 ⑫: the reader-visible reply carries the author of every assumption', () => {
+  const rows = describePandemicParams('covid', 'naive', {});
+  for (const r of rows) {
+    assert.ok('origin' in r, r.key + ': a row must carry its author');
+    assert.ok('display' in r, r.key + ': and the number its own unit names');
+  }
+  const src = read('js/pandemic-atlas.js');
+  const html = src.slice(src.indexOf('function runHtml'), src.indexOf('function drawHtml'));
+  assert.ok(!/d\.from/.test(html), 'the reply must not read a field the row does not have');
+  assert.match(html, /esc\(d\.origin\)/, 'it reads `origin`, which every row has');
+  assert.match(html, /esc\(String\(d\.display\)\)/, 'and prints the value in the unit it labels');
+});
+
+/* ── ⑬ the unit that made every scaled number a hundred times too small ────────────────────────
+   MEASURED: «baseFatality = 0.007%» (0.7%), «seasonality = 0.18%» (18%), «mobility = 1%» (100%).
+   The engine holds fractions and the declaration says `scale: 0.01`; the report printed the engine
+   number under the reader's unit. ⚠ A unit is part of a number. */
+test('R755 ⑬: a value reported under a unit is the value IN that unit', () => {
+  const rows = describePandemicParams('covid', 'naive', {});
+  const by = Object.fromEntries(rows.map(r => [r.key, r]));
+  assert.strictEqual(by.baseFatality.value, 0.007, 'the engine still gets the fraction');
+  assert.strictEqual(by.baseFatality.display, 0.7, 'and the reader is shown 0.7%');
+  assert.strictEqual(by.seasonality.display, 18);
+  assert.strictEqual(by.mobility.display, 100);
+  /* every declared percentage, not the three that were noticed */
+  for (const r of rows) {
+    const d = PANDEMIC_PARAMS[r.key];
+    if (d.kind !== 'number') continue;
+    const s = d.scale || 1;
+    assert.ok(Math.abs(r.display - r.value / s) < 1e-9, r.key + ': display must be value/scale');
+    if (s === 1) assert.strictEqual(r.display, r.value, r.key + ': an unscaled value is shown as it is');
+  }
+  /* ⚠ AND THE ENGINE IS UNTOUCHED: defaultPandemicParams still hands back engine units */
+  const def = defaultPandemicParams('covid', 'naive');
+  assert.strictEqual(def.baseFatality, 0.007);
+  assert.strictEqual(def.mobility, 1);
+});
+
+/* ── ⑭ the legend that described a shading the map did not have ────────────────────────────────
+   MEASURED at day 60: the worst-hit country's rate was 0.0013 and the fixed ramp's first step was
+   0.02, so 35 countries drew the identical smallest dot under the words «shaded by cases». */
+test('R755 ⑭: the colour scale is the day\'s own, and the reply says what its top means', () => {
+  const src = read('js/pandemic-atlas.js');
+  assert.ok(!/\[0, 0\.02, 0\.1, 0\.4\]/.test(src), 'the fixed ramp that could not reach the data is gone');
+  assert.match(src, /let top = 0;[\s\S]{0,200}f\.properties\.rate/,
+    'the top of the scale is measured from the features actually drawn');
+  assert.match(src, /STOPS = top > 0/, 'and the stops are derived from it');
+  assert.match(src, /scaleTopShareOfPopulation/, 'the machine reader is told the top too');
+  const draw = src.slice(src.indexOf('function drawHtml'));
+  assert.match(draw, /worst-hit country at this day/,
+    'and the reader is told what the darkest mark means — a legend that does not name its top invites one to be invented');
+});

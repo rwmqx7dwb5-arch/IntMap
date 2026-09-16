@@ -298,7 +298,17 @@ export function describePandemicParams(presetKey, scenario, given) {
   return Object.keys(PANDEMIC_PARAMS).map((key) => {
     const d = PANDEMIC_PARAMS[key];
     const held = Object.prototype.hasOwnProperty.call(src, key) && src[key] != null;
-    const row = (value, origin) => ({ key: key, value: value, unit: d.unit || '', kind: d.kind,
+    /* ⚠⚠⚠ (#R755) TWO NUMBERS, BECAUSE THERE ARE TWO READERS AND THEY NEED DIFFERENT ONES.
+       `value` is what the ENGINE holds and what `defaultPandemicParams` must hand back — a fatality
+       of 0.007. `display` is the same quantity in the unit this row NAMES — 0.7, because the unit
+       is «%» and the declaration says `scale: 0.01`. MEASURED IN PRODUCTION (build R754): the reply
+       printed «baseFatality = 0.007%», «seasonality = 0.18%», «mobility = 1%» — every scaled
+       parameter reported a hundred times too small, in meta as well as in the text, so Atlas would
+       have repeated those numbers to the reader as the model's own assumptions. A unit is part of
+       a number; carrying one without the other is how the value stops being true. */
+    const row = (value, origin) => ({ key: key, value: value,
+      display: (d.kind === 'number' && typeof value === 'number') ? +(value / (d.scale || 1)).toPrecision(12) : value,
+      unit: d.unit || '', kind: d.kind,
       origin: origin, bounds: paramBounds(key), values: d.values || null });
     /* The scenario is not defaulted FROM anything — it is what the caller asked for, and it names
        the world the other fields are then read in. */

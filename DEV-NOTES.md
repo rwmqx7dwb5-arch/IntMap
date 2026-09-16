@@ -292,6 +292,7 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 
 ## 索引 — このファイルのラウンド（新しい順）
 
+- **#R755** — **#R754 は Atlas に「シミュレーターは無い」と言わせるのをやめさせた。だが読者は day 60 の数字を 1 つも受け取らなかった**〈#R754 の production verification〉／⚠⚠⚠ **能力が「届く」ことと「使える」ことは別だった**——Atlas は能力を見つけ `run_capability` を **3 回**呼び、3 回とも `origin-place-not-found` で `repeated_calls` 打ち切り。栓は 1 つで、**`"Lagos, Nigeria"`（planner が書く自然な綴り）が引けない**（`"Lagos"` も `"Nigeria"` も単体なら通る）。⚠ **安い直し方＝カンマの後ろを捨てる、は「Lagos, Portugal」を黙ってナイジェリアにする** ⇒ **修飾語は捨てる情報ではなく検査に使う情報**（候補を列挙し、その国の中にあるものを採り、無ければ**どこで見つかったかを言って拒否**＝[[intmap-store-refused-its-own-key]]）／⚠⚠⚠ **出典が読者に届いていなかった**——`r0 = 3.2 []`。機械向けは `d.origin`、読者向けは **存在しない `d.from`** を読み、`esc(undefined)` が空文字になっていた。⚠ **その真上に私が書いた「THE ASSUMPTIONS ARE PART OF THE ANSWER」というコメントがある**＝[[intmap-my-own-fix-had-the-shape-i-was-fixing]]。形は [[intmap-two-readers-one-field-list]] そのもので、**#R754 はその memory を根拠に世界の入口を 1 か所にまとめた回**だった／⚠⚠ **単位を名乗って、その単位でない数を出していた**（`baseFatality 0.007%` は 0.7%・`mobility 1%` は 100%）⇒ 行が `value`（engine）と `display`（その単位の数）を持つ。**engine の入力は 1 バイトも変えていない**／⚠⚠ **「濃淡で示す」と書いた地図に濃淡が無かった**——day 60 の最大 rate 0.0013 に対し固定の段の最初が 0.02＝**35 か国が同じ点** ⇒ **その日の最大値から段を導き、凡例が自分の天井を名乗る**（相対尺度の代償を隠さない）／⚠ **同じ形を 1 ラウンドで 3 度踏んだ**（作った欄を読まない）——3 度目は `foundIn` で、検査を「欄が在るか」から「**返信が印字するか**」に強めた
 - **#R754** — **Atlas は「IntMap に伝播シミュレーターは無い」と答えていた。有る。#R575 から有る**〈#R747 §6 の 1 番目。本番実測 2026-09-16: 「Simulate a pandemic starting in Lagos and show me day 60.」に対し 7 steps / 43.8s / **操作 0 件**で「IntMap does not currently provide an epidemiological transmission simulator」〉／⚠⚠⚠ **模型は正しかった。カタログが嘘だった**——パンデミックについて planner に渡っていたのは block 06 の長い 1 行の中の 1 句「Playground を開く」だけで、**種を置く・日数を進める・その日を読む入口は 1 つも説明されていなかった**。説明されていない能力を「無い」と答えるのは、規則に忠実な模型ほどそうする（[[intmap-prompt-that-hid-the-tools-in-hand]] のより厳しい形——あちらは「手の中にある道具を探せと言われた」、こちらは**一度も言及されなかった**）／⚠⚠⚠ **engine は node から回せたのに、世界はどこからも作れなかった**——「どの行が人の住む場所か・人口・接続・誰が統治するか」は `js/playground.js` の DOM クロージャの中だけにあり、**#R575 が数理を外へ出した仕事の残り半分が残っていた** ⇒ `js/pandemic-world.js`。⚠ **パネルと Atlas は同じ世界を受け取る**（別々に作れば、Atlas が報告する数と読者が見る流行は同じ名前の別物になる＝[[intmap-contract-is-not-implementation]]）。2 段階は**仕様であって実装の都合ではない**——行は即座・`ready` は 4 表が settle してから＝走ってよい時刻（移動行列は `createPandemicModel` で凍る＝#R673）／⚠⚠⚠ **能力は 2 本**（`sim.pandemicRun` 計算・`map.pandemicDay` 描画）。#R743 と同じ理由で、**描画を約束した能力が描かなかった回を観測器は `not_rendered` と呼ぶ**（#R736/#R737 の 21 手・#R742 の 207 中 52 件）／⚠⚠ **観測器は塗った側に訊き、差分でなく「今」を測る**——`paintNow()` は手書きの一覧でその直上のコメントが「足すな」と書いている（#R735 の `nlq-fac-src`）ので `js/pandemic-atlas.js` の `painted()` が自分の canvas を読み、観測器がそれを呼ぶ。`factions`・`isochrone` と同じ補正で**同じ日を 2 度描いても失敗にならない**／⚠⚠⚠ **宣言が 4 つの入力を落としていた**——`P` は `inp.vaccineEfficacy` / `vaccineMonths` / `vaccineImmunityLifelong` / `vaccinateUnreached` を読むのに `PANDEMIC_PARAMS` はそれを述べず、**その真上のコメントが「両者は一致する」と主張していた**（主張は測定ではない）⇒ 18 = 18 を**両方向**で測る／⚠⚠⚠ **既定値は主張である**（#R675）——`describePandemicParams` が 1 つずつ出典を付ける。⚠ **4 種類あり、4 つ目がこの企画が繰り返し学び直しているもの**: 上流が**述べていない**欄を指すポインタは引用ではない（`immunity.lifelong` は麻疹にしかないので covid の `false` を `preset:covid.immunity.lifelong` と報告すると、そのプリセットがしていない発言を帰属させることになる＝[[intmap-data-must-not-claim-an-author-it-lacks]]）⇒ `preset-silent:` を分け、**沈黙を沈黙として**報告する／⚠ **範囲外は丸めず拒否**し、拒否がその変数自身の範囲を運ぶ（丸めると「誰も頼んでいない数で成功した run」を頼まれたかのように報告する＝#R743）／⚠ 開始地点は国コード・国名・地名・座標。**地名は同梱 gazetteer で点に解決してから点内包判定で国を決める**（ジオコーダの第一候補をそのまま国にしない＝[[intmap-store-refused-its-own-key]]）／⚠ `country`・`origin`・`place` は**1 か所で読む**（[[intmap-two-readers-one-field-list]]）／⚠⚠⚠ **門が私の入れた欠陥を 2 回捕まえた**——`ensureCountries(()=>{` が同じインデントで 2 回出ることに気づかず **World Explorer ごと 365 行を消し**（`tests/r670-checks ②` が検出）、次に `freshParams` を消した置換のコメントに `*/` が無く **`let model=null, day=0, …` を丸ごとコメントアウトした**（`check:static` が split-scope 12 件として検出）。どちらも**この回が直していた形と同じ家族**（[[intmap-my-own-fix-had-the-shape-i-was-fixing]]）
 - **#R753** — 「アカウントのボタンは、アイコンを表示しないように。また、アカウントメニューにもAIの残使用回数を書くように。その他、アカウントメニューで、機能や実態、UI含めて全面見直しして。」⑴ **アイコンは幅の問題であって markup の問題ではない**——広い画面では `.acct-av` を出さず名前だけのピルに、**携帯は従来どおりアイコンがボタンそのもの**（利用者の指定。#R30 が「名前を出すとヘッダーが改行される」を実測している）。同じ DOM を media query で出し分けるので、分岐は 1 か所も増えていない。⑵ **AI の残り回数は 2 系統ある**（Atlas の回答＝`ai_usage` と用語解説＝`ai_gloss_usage`。片方が尽きてももう片方は動く）ので**2 行で**述べる。⚠ **数はアカウントメニューが計算しない**——`js/ai-core.js` に `aiUsageSummary()` を 1 つ置き、設定パネルとアカウントメニューはその答えを描くだけ（2 つ目の計算は「1 つの問いに 2 つの答え」を作る）。開くたびに `aiRefreshUsage()` がサーバーの両方の行を読み直す（#R447 の規則を第 2 のレーンにも）。⑶ 全面見直しで**4 つの「述べていなかったこと」**が出た。① 口座の状態である AI の残量がこの画面に無かった。② **どの方法でログインしているかが無かった**——Google の口座に IntMap 側のパスワードは無いのに「パスワードを変更」は欄を開いていた（いまは開かずそう言う）。③ **絵文字を選ぶと端末の画像は消えるのに `profiles.avatar_url` は残り**、コミュニティには差し替えたはずの写真が出続けていた（アプリが同じ事実について自分と食い違う）。画像を消す出口も無かった。④ Esc で閉じられず、`role`/`aria-modal` も focus の行き先も無かった。⑷ **`window.confirm`/`prompt` を 5 か所やめた**——スタイルも翻訳も効かず、携帯では「127.0.0.1 says…」と**出自の名前**で出る。シートの中で訊く `_acctAsk()` 1 つに集約（2 つ目の訊き方を作らない）。⑸ ⚠⚠⚠ **`HOST.user` は 2 か所で組まれていて、片方にしか無い欄があった。** 新しい `provider` を `refreshCurrentUser()` にだけ書いたら、hermetic な試験で「Google でログイン」が**空**になった——`onAuthStateChange` が同期で組む暫定の user が、プロフィール行が届くまで（通信が死んでいれば永久に）**全パネルが読む user** である。⇒ `_sessionProvider()` 1 つを両方が呼ぶ。⑹ ⚠ **`acct-danger` は #R231 から規則の無い class**（その註が述べる「破壊的な 2 つを視覚的に離す」は一度も描かれていなかった）で、逆に `.acct-color` は使う者のいない規則だった。⇒ **CSSOM に訊く検査**（規則が何にも当たらない／class に規則が無い）を 1 本。⚠ 当たらない＝死んでいる、ではない（残 0 の色・破壊的な確認は状態）ので、除外は手書きの表ではなく**その class をモジュールが書いているか**で決める。⚠ CSSOM を歩くとき **入れ子 CSS のブラウザでは CSSStyleRule も `.cssRules` を持つ**——「あれば入れ物」とすると 52 個が 0 個に見えた。⑺ ⚠ **このパネルのログイン後の半分は一度も試験されていなかった**（`tests/r168.spec.js` が自分でそう書いている）。塞がっているのは通信でセッションではない——**期限が未来のセッション 1 個**を localStorage に置けば `getSession()` は通信せずに答え、本物の `openAccountMenu()` が開く。6 本の spec がそこで走る。⑻ ⚠ `.acct-btn{display:inline-block}` は UA の `[hidden]` を**上書きする**ので、「画像を削除」は消す画像が無いまま出荷直前まで見えていた（`display` を書く class は hidden の答えも持つ）。
 - **#R752** — #R749 に対する外部評価の 6 項目を**まずコードで確かめ**（6 つとも成立。ただし **1 つは明確に誤り**——日付変更線・全球環・極冠は `js/gis-geometry.js` が `SEAM_STEP` と `geometry-wraps-world` で正面から扱っている。空間索引・進捗・中止・フレームごとの譲りも実在し配線済みで、足りないのは**並列性と分割読み込み**だけだった）、6 つとも実装した回。⑰ ⚠⚠⚠ **供給元は「レンダラが今持っているもの」しか返せなかった**——`js/gis-sources.js` は共通の入口を作ったのに、実際のベクタ取得は `IntMapGisLayers.read()` へ委譲し、その `opts` は **`bounds` の 1 欄だけ**。属性条件もページ送りも無く、ラスターの区域取得は **1 画素 1 呼び出し**だった。⇒ `supply(id, impl)` を足し、供給元自身が「この範囲・この時刻・この条件・この列・ここから先」に**直接答えられる**ようにした。⚠ **能力は申告制**で、申告していない能力の要求は供給元に渡さず入口で断る（`where-not-supported` / `cursor-not-supported`）——**黙って全件返して「条件で取った」ことにしない**。⚠ **申告を無検証で信じない**: 述べた `available` が実際に渡した件数を上回れば `supplier-page-incomplete`、述べた `served` が窓を覆っていなければ `extent-narrower-than-request`。⚠ **`next` が無いことと「もう無い」ことを同じ答えにしない**（`continuation-unstated`）。⚠ 委譲経路は 1 バイトも消していない。⑱ ⚠⚠⚠ **`datasetRow()` が planner に渡していたのは 6 欄だけ**（id・題名・kind・件数・幾何型・**列名の配列**）。型が無いので識別子と測定値が区別できず、単位が無いので「人口 12」と報告でき、時間軸が無いので `timeWindow` が断ることを知らず、バンドが無いので**3 バンドの格子に対して band 0 しか思いつかない**。どれも記録は持っていた。⇒ **写しではなく投影**にした。⚠ 同じ回に **`core.draw(r.id)` が第 2 引数を渡していなかった**ことも直した——`drawRaster` は `band` と `spec` を読むのに、その真上のコメントが「**バンドは呼び出し元が名指すもの。黙って選ぶのは「誰も述べていない主張」を色で描くこと**」と書いていて、Atlas 経路がまさにそれをやっていた。⚠ 欄は `js/atlas-schemas.js` と `js/gis-atlas.js` の**2 つの一覧**なので、**両者の一致を門にした**（[[intmap-two-readers-one-field-list]]）。⑲ **Worker が 1 つも無かった**。`js/gis-worker.js` が純粋な算術を Blob URL の worker へ運ぶ。⚠ **`js/gis-ops.js` の yield の代わりではなく隣**。⚠ **中止が `terminate()` まで届く**（実測 10,000 ms の仕事を 250 ms で中止して **261 ms**）。⚠ **`available()`（能力）と `probe()`（実測）は別の問い**。⚠ **並列度の上限は core ではなくメモリ**から決めた。同じ回に GeoTIFF の入口を **`{size, read(offset,length)}` の 1 契約**にし、HTTP Range を足し、窓を覆う tile だけを読み、**overviews を数えるのをやめて読む**ようにした。⚠ Range を無視するサーバは `range-unsupported` で断る——**黙って全体を落とさない**。⑳ **再標本化が 2 方式しか無かった**。cubic・average・mode・sum を足し、⚠ **「点を訊く方式」と「覆う範囲を集約する方式」を `kind` として宣言**した。⚠ **`sum` は総量を保つ**ので `average` と別実装（人口を平均すると人が消える）。さらに `rasterCalc` / `mosaic` / `rasterize` / `polygonize` / `resample` を op に足した。⚠ **`rasterCalc` は新しいパーサを書かない**——画素は `a` と `b` という 2 列を持つ行なので、`js/gis-expr.js` がそのまま答える。⚠ **`polygonize` は測定値の格子を拒む**（`zonal` の `classes` と**同じ実装**を呼ぶ）。⑴ **解析用の座標系を選べなかった**。⚠ **答えは「2 つ目の格納 CRS」ではない**——データセットの `crs` は**今も常に EPSG:4326**。動かしたのは**測る面**で、`measure` op が `crs` を取る（往復誤差 実測 **8.4e-4 m**）。⚠ **歪みが同じ行に載る**——60°N の Web メルカトルの面積は真値の **4 倍**。⚠ **自動で選ばない**。同じ回に幾何の `validate` / `repair` を足した。⑵ ⚠⚠⚠ **版台帳そのものが手で並べた一覧だった。** `engineNow()` は `{ops, geometry}` の 2 つを名前で訊いており、**書かれた時点で既に誤っていた**——#R749 は `js/gis-raster.js` と `js/gis-warp.js` を**同じ回に**作って、どちらも訊いていない。⇒ **カーネルとは「`version()` を述べる `IntMapGis*` の module」という事実**にし、比べる部分も**保存側と現在側の和集合**にした。さらに **GIS の module は、記録されたカーネルか、`NOT_A_KERNEL` で理由を述べた非カーネルかのどちらか**でなければ門が落ちる。⚠「まだ版を付けていない」は理由ではない。⑶ 途中で**自分でも同じ形を踏みかけた**: `tests/r749-gis-warp-checks` ④ が `['bilinear','nearest']` を**天井として持っていて**、最初の正しい変更を落第させた——[[intmap-ceiling-guards-are-not-policies]] の形。門は緩めず、母集団をカーネルに訊くよう書き直した。⚠ `js/gis-ops.js` の註が「**その二つの runner が譲る**」と述べていたが**実測 8 本**だったのも同じ回に直した（数を書き直さず、数え方を書いた）。
@@ -740,6 +741,109 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 
 
 
+
+
+## R755 — #R754 は「無い」と言わせるのをやめさせた。次の 1 段で止まっていた
+
+〈#R754 の production verification。本番 build R754・ログイン済み・2026-09-16〉
+
+### 1. 実測——半分は直っていた
+
+同じ質問「Simulate a pandemic starting in Lagos and show me day 60.」を本番へ。
+
+**Atlas はもう「シミュレーターは無い」とは答えなかった。** `find_capability` で能力を見つけ、
+`run_capability` を **3 回**呼んだ。#R754 が狙った当のものは達成されている。
+
+**それでも読者は day 60 の数字を 1 つも受け取らなかった。**
+
+```
+toolCalls: [find_capability, run_capability ×3]
+actionOutcomes: pandemicRun "Lagos, Nigeria" → ok:false code:"origin-place-not-found" （×3 同一）
+stopped: "repeated_calls"   mapDrawn: false   produced: "-"   8 steps / 35.3s
+```
+
+回答文は**予告で終わっていた**——「Running the seeded SEIR pandemic simulation from Lagos and
+preparing the day-60 view.」＋ 打ち切りの注記 ＋
+「⚠ No place called «Lagos, Nigeria» is in the gazetteer.」
+
+### 2. ⚠⚠⚠ 栓は 1 つ——`"Lagos, Nigeria"` が引けない
+
+本番で直接切り分けた:
+
+| 渡した綴り | 結果 |
+|---|---|
+| `place:'Lagos'` | **ok** — `how:'place'` / NGA |
+| `place:'Nigeria'` | **ok** — `how:'name'` / NGA |
+| `place:'Lagos, Nigeria'` | **失敗** — `origin-place-not-found` |
+
+**「都市, 国」は planner が書く自然な綴りである。** #R754 は「カタログが説明していない」という
+栓を抜き、**その 1 段先の栓に気づいていなかった**。⚠ **能力が「届く」ようになったことと、
+「使える」ようになったことは別である**——#R754 の本番検証をしていなければ、
+「能力を足した」で終わっていた。
+
+⚠⚠ **安い直し方は危険である。** カンマで切って後半を捨てれば `"Lagos, Nigeria"` は通るが、
+**`"Lagos, Portugal"` が黙ってナイジェリアになる**（Lagos はポルトガルにも実在する）。
+⇒ **後半は捨てる情報ではなく、検査に使う情報**である: その名前を持つ候補を列挙し、
+**修飾語が名指す国の中にある候補**を採る。無ければ**拒否し、どの国で見つかったかを言う**。
+[[intmap-store-refused-its-own-key]] の規則——候補は**確かめられたから**採るのであって、
+**先頭だったから**ではない。
+
+実測（修正後）:
+- `'Lagos, Nigeria'` → ok / NGA ・ `'Paris, France'` → ok / France ・ `'Lagos'` → ok / Nigeria
+- `'Lagos, Japan'` → **拒否**「⚠ «Lagos» is not in Japan — the name resolves in Nigeria.」
+
+### 3. ⚠⚠⚠ 出典が読者に届いていなかった——同じ回で同じ形を 2 度踏んだ
+
+読者に出ていたのは `r0 = 3.2 []`。**角括弧の中が空**。
+
+`js/pandemic-atlas.js`:
+- 機械向け（248 行）: `from: d.origin` ← **`origin` は実在する欄**
+- 読者向け（265 行）: `esc(d.from)` ← **`described` の行に `from` は無い**
+
+`esc` は `null/undefined` を空文字にするので、**`[]` だけが残った**。
+⚠⚠⚠ **そしてその真上に、私が書いたこのコメントがある**——
+「THE ASSUMPTIONS ARE PART OF THE ANSWER, NOT A FOOTNOTE NOBODY READS」。
+**規則を引用しながら、その規則をその場で破っていた**（[[intmap-my-own-fix-had-the-shape-i-was-fixing]]）。
+形は [[intmap-two-readers-one-field-list]] そのもので、**#R754 はその memory を根拠に世界の入口を
+1 か所にまとめた回である。** 同じ回の別の場所で、同じ欠陥を作っていた。
+
+### 4. ⚠⚠ 単位を名乗って、その単位でない数を出していた（100 倍のずれ）
+
+`baseFatality = 0.007%`（正しくは **0.7%**）・`seasonality = 0.18%`（**18%**）・
+`mobility = 1%`（**100%**）・`vaccineEfficacy = 0.6%`（**60%**）。
+
+engine は分数で持ち、宣言は `scale: 0.01` と言っている。報告は**engine の数**を
+**読者の単位**の下に印字していた。⚠ **単位は数の一部である。**
+しかも `meta` にも同じ数が入るので、**Atlas がそれを読者にそのまま言う**経路だった。
+⇒ 行が 2 つの数を持つ: `value`（engine が受け取るもの）と `display`（その単位での数）。
+`defaultPandemicParams` は `value` を返し続ける——**engine の入力は 1 バイトも変えていない。**
+
+### 5. ⚠⚠ 「濃淡で示す」と書いた地図に、濃淡が無かった
+
+day 60 の最悪国ナイジェリアの `rate` は **0.0013**。固定の段は `0 / 0.02 / 0.1 / 0.4` で、
+**最初の段が 15 倍高い**。⇒ **35 か国が全部おなじ最小の黄色い点**になり、
+そこに「shaded by cases」と書いてあった。**地図はデータについて誤っていたのではなく、
+自分自身について誤っていた**（#R565 が `painted` で名指した家族）。
+
+⚠ **固定の傾斜は流行に使えない。** 同じ run の 5 日目と 600 日目、麻疹とエボラは桁が違う——
+どんな定数も、そのうち 1 つにしか効かない。⇒ **その日の最大値から段を導く。**
+⚠ **代償は隠さず述べる**——相対尺度なので 2 つの run は目で比べられない。だから凡例が自分の
+天井を名乗る:「The darkest mark is the worst-hit country at this day (0.1% of its people).」
+**天井を名乗らない凡例は、読者に天井を発明させる。**
+
+### 6. 検査（`tests/r754-pandemic-atlas-checks.test.mjs` に 4 本追加＝計 14 本）
+
+⚠ **4 本とも「本番が何と言ったか」を述べる**（[[intmap-restate-the-defect-not-the-fix]]）。
+⑪ は**修飾語が捨てられていないこと**（`place-not-in-that-country` と `foundIn`）と
+**一致の定義が 1 つであること**を測る。⚠ ⑪ は最初に落ちた——`gazetteerPoint` が候補列挙とは
+**別に**同じ照合を持っていたから。私が書いた検査が、私が書いた重複を捕まえた。
+⑫ は**読者向けの文が存在する欄を読むこと**、⑬ は**宣言されたすべての倍率**について
+`display === value / scale` であること（気づいた 3 つではなく）、
+⑭ は**固定の段が消えたこと**と**凡例が天井を名乗ること**。
+
+⚠ ⑪ をもう一度落とした 2 度目もある——`foundIn` を**作って、読んでいなかった**
+（「Lagos, Portugal」が汎用の「解決できませんでした」に落ちていた）。**§3 とまったく同じ形**で、
+同じラウンドで **3 度目**。⇒ 検査を「欄が在るか」から「**返信がそれを印字するか**」に強めた。
 
 ## R754 — Atlas は「IntMap に伝播シミュレーターは無い」と答えていた。有る。#R575 から有る
 
