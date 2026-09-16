@@ -556,6 +556,15 @@ export function makeGisOps() {
           { name: 'band', type: 'field', required: false, input: 1 },
           { name: 'stat', type: 'enum', required: true, default: 'mean', values: ['mean', 'sum', 'min', 'max', 'count', 'classes'] },
           { name: 'outName', type: 'text', required: false },
+          /* ⚠ (#R764) 境界の画素をどう数えるか。既定は 'center' で、これまでの答えと 1 ビットも
+             変わらない——選ばなかった読者の数が動くのは、この層がしてはならないことである。
+             'fractional' は画素の面積のうち区域に入っている割合を重みにする（狭い流域・海岸線・
+             小さい行政区では、これが答えそのものになる）。⚠ 重みが効くのは「地面」についての統計
+             （面積・面積加重平均・積分）だけで、count と sum は画素を 1 つとして数える——
+             「観測値の合計」において、読み取り値の 3 分の 2 は読み取り値ではない。
+             ⚠ 使った規則は答えに載る（stats.boundary）。規則を述べない数は、別の規則で出した数と
+             比べられない。 */
+          { name: 'boundary', type: 'enum', required: false, default: 'center', values: ['center', 'allTouched', 'fractional'] },
         ],
       },
       rasterMask: {
@@ -1040,7 +1049,7 @@ export function makeGisOps() {
       return s === '' ? null : s;
     }
 
-    function runJoin(left, right, params) {
+    async function runJoin(left, right, params, ctx) {
       const lf = params.leftField, rf = params.rightField;
       if (lf == null || String(lf) === '') return fail('missing-param', { param: 'leftField' });
       if (rf == null || String(rf) === '') return fail('missing-param', { param: 'rightField' });
@@ -1076,7 +1085,11 @@ export function makeGisOps() {
       const out = [];
       let matched = 0, unmatched = 0, noKey = 0;
       const missSample = [];
-      for (const f of left.features()) {
+      /* (#R764) 左の行数が費用。右は上で 1 度だけ索引にしてある。 */
+      const rows = left.features();
+      for (let li = 0; li < rows.length; li++) {
+        if (ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[li];
         const p = props(f);
         const k = joinKey(p[lf]);
         const hit = (k == null) ? null : table.get(k);
@@ -1111,7 +1124,7 @@ export function makeGisOps() {
       };
     }
 
-    function runCompute(ds, params, R) {
+    async function runCompute(ds, params, R, ctx) {
       const X = exprKernel();
       if (!X || typeof X.compile !== 'function') return fail('expr-unavailable');
       const name = (params.outName == null) ? '' : String(params.outName).trim();
@@ -1135,7 +1148,10 @@ export function makeGisOps() {
 
       const out = [];
       let errors = 0, empty = 0, firstError = null;
-      for (const f of ds.features()) {
+      const rows = ds.features();
+      for (let i = 0; i < rows.length; i++) {
+        if (ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[i];
         const p = props(f);
         let res = null;
         try { res = c.fn(p); } catch (e) { res = { value: null, error: { why: 'expr-internal', detail: (e && e.message) || null } }; }
@@ -1152,7 +1168,7 @@ export function makeGisOps() {
       return { ok: true, features: out, stats: { computed: out.length - empty, empty: empty, errors: errors, firstError: firstError, returns: parsed.returns } };
     }
 
-    function runFilter(ds, params, R) {
+    async function runFilter(ds, params, R, ctx) {
       const where = params.where;
       if (!Array.isArray(where) || !where.length) return fail('missing-param', { param: 'where' });
       for (const c of where) {
@@ -1163,7 +1179,12 @@ export function makeGisOps() {
         if (!hasField(ds, c.field)) return fail('unknown-field', { field: c.field == null ? null : String(c.field) });
       }
       const out = [];
-      for (const f of ds.features()) {
+      /* ⚠ (#R764) この走査は行数とともに伸びる。ctx がある間だけ譲る——無ければ同期のまま走る
+         （2 つの実装は作らない。js/gis-warp.js がこの形の正本）。 */
+      const rows = ds.features();
+      for (let i = 0; i < rows.length; i++) {
+        if (ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[i];
         const p = props(f);
         let keep = true;
         for (const c of where) { if (!evalCondition(R, p[c.field], c.op, c.value)) { keep = false; break; } }
@@ -1174,7 +1195,7 @@ export function makeGisOps() {
       return { ok: true, features: out };
     }
 
-    function runBuffer(ds, params, R) {
+    async function runBuffer(ds, params, R, ctx) {
       const GG = geometry();
       const radius = R.asNumber(params.radiusKm);
       if (radius == null) return fail('missing-param', { param: 'radiusKm' });
@@ -1189,7 +1210,13 @@ export function makeGisOps() {
 
       const out = [];
       const led = makeGeoLedger();
-      for (const f of ds.features()) {
+      /* ⚠⚠ (#R764) THIS IS THE RUNNER THE OLD COMMENT WAS MOST WRONG ABOUT. A buffer unions a
+         geodesic disk PER VERTEX, so its cost grows with the data more steeply than almost anything
+         else here — and it was the one being described as finishing 「in one turn」. */
+      const rows = ds.features();
+      for (let i = 0; i < rows.length; i++) {
+        if (ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[i];
         const g = f && f.geometry;
         if (!g) continue;
         /* ⚠ ONE OUTPUT FEATURE PER INPUT FEATURE, not per position. #R729 emitted one per point of
@@ -1477,7 +1504,7 @@ export function makeGisOps() {
       return withGeoStats({ ok: true, features: out }, led);
     }
 
-    function runDissolve(ds, params, R) {
+    async function runDissolve(ds, params, R, ctx) {
       const GG = geometry();
       const by = (params.by == null || String(params.by).trim() === '') ? null : String(params.by);
       if (by && !hasField(ds, by)) return fail('unknown-field', { field: by });
@@ -1496,7 +1523,11 @@ export function makeGisOps() {
       if (!groups.size) return fail('no-features', { input: 0 });
       const out = [];
       const led = makeGeoLedger();
-      for (const grp of groups.values()) {
+      /* (#R764) 群ごとの union が費用の本体。件数は群の数であって地物の数ではない。 */
+      const grps = Array.from(groups.values());
+      for (let gi = 0; gi < grps.length; gi++) {
+        if (ctx && !(await ctx.tick(1, grps.length))) return fail('cancelled', { done: ctx.done(), total: grps.length });
+        const grp = grps[gi];
         const r = GG.attempt.union(grp.geoms);
         if (!led.ok(r)) continue;
         const merged = r.geometry;
@@ -1767,6 +1798,13 @@ export function makeGisOps() {
       const stat = (params.stat == null) ? 'mean' : String(params.stat);
       const allowed = DECL.zonal.params[1].values;
       if (allowed.indexOf(stat) < 0) return fail('bad-param', { param: 'stat', value: stat, values: allowed });
+      /* ⚠ (#R764) VALIDATED HERE SO THE REFUSAL CARRIES THE VOCABULARY, and defaulted from the
+         declaration rather than from a literal — a second spelling of 'center' in this file is a
+         second place for the default to drift. The kernel refuses an unknown rule too; this exists so
+         the reader is told by the op they called, with the set in hand. */
+      const bDecl = DECL.zonal.params.find((p) => p.name === 'boundary');
+      const boundary = (params.boundary == null || String(params.boundary) === '') ? bDecl.default : String(params.boundary);
+      if (bDecl.values.indexOf(boundary) < 0) return fail('bad-param', { param: 'boundary', value: boundary, values: bDecl.values.slice() });
       const band = (rasDs.bands[b.index] || {});
       const base = (params.outName != null && String(params.outName).trim() !== '')
         ? String(params.outName).trim()
@@ -1782,14 +1820,22 @@ export function makeGisOps() {
         if (!(await ctx.tick(1, zones.length))) return fail('cancelled', { done: ctx.done(), total: zones.length });
         const g = f && f.geometry;
         if (!g || !polygonsOf(g).length) continue;
-        const z = await RK.zonal(rasDs, b.index, g, { classes: stat === 'classes', ctx: ctx });
+        const z = await RK.zonal(rasDs, b.index, g, {
+          classes: stat === 'classes', ctx: ctx, boundary: boundary,
+          /* (#R764) 「この多角形は何 km² か」 is this file's rule, and the kernel is handed it rather
+             than growing a second one. See js/gis-raster.js coverOf. */
+          areaOf: areaKm2,
+        });
         /* ⚠ A ZONE THE KERNEL REFUSED IS NOT A ZONE WITH NO DATA. A ring that wraps the world, a
            degenerate polygon, a grid it could not read: each of those is a reason, and writing `null`
            into the column for it would put 「測れなかった」 and 「そこには何も無い」 in the same cell.
            The refusal stops the whole step, because a table where some rows silently mean something
            else is worse than a step the reader has to fix. */
         if (!z || !z.ok) return z || fail('zonal-failed');
-        const extra = { _areaKm2: areaKm2(g), _gridAreaKm2: z.areaKm2, _valueAreaKm2: z.valueAreaKm2, _pixels: z.count, _pixelsNodata: z.nodataCount };
+        /* ⚠ (#R764) `_boundary` RIDES ON EVERY ROW, not only on the run's stats. The row is what gets
+           joined, exported and compared months later, and a column of areas whose boundary rule lives
+           only in a stats line the reader saw once is a number nobody can check. */
+        const extra = { _areaKm2: areaKm2(g), _gridAreaKm2: z.areaKm2, _valueAreaKm2: z.valueAreaKm2, _pixels: z.count, _pixelsNodata: z.nodataCount, _boundary: z.boundary || boundary };
         if (stat === 'classes') {
           /* One column per distinct value is not a table shape a reader can join to; the map from
              value to km² is carried whole, under a name that says what it is. */
@@ -2446,7 +2492,7 @@ export function makeGisOps() {
     /* ── the time window (#R735) ────────────────────────────────────────────────────────────────
        Both ends are optional: 「1889 年以降」 is a window with no upper end, and refusing it would make
        the op answer a narrower question than the reader's. What is NOT optional is a declared axis. */
-    function runTimeWindow(ds, params, R) {
+    async function runTimeWindow(ds, params, R, ctx) {
       if (!ds.time) return fail('time-not-declared', ds.timeRefused ? { refused: String(ds.timeRefused.why || '') } : undefined);
       const fromM = (params.from == null || String(params.from).trim() === '') ? null : R.momentOf(params.from);
       const toM = (params.to == null || String(params.to).trim() === '') ? null : R.momentOf(params.to);
@@ -2474,7 +2520,11 @@ export function makeGisOps() {
       const out = [];
       let dropped = 0, undated = 0, cut = 0;
       const track = (ds.time.kind === 'track') ? ds.time : null;
-      for (const f of ds.features()) {
+      /* (#R764) 軌跡を切る経路は 1 行あたり数千の位置を歩くので、行数は費用の下限でしかない。 */
+      const rows = ds.features();
+      for (let i = 0; i < rows.length; i++) {
+        if (ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[i];
         if (track) {
           const r = cutTrack(f, track, R, inWindow);
           if (r == null) { dropped++; continue; }
@@ -2830,18 +2880,26 @@ export function makeGisOps() {
          declared in DECL and not wired here would have run AGGREGATE and registered its output
          under the new op's name. Keyed by the same ids DECL is keyed by, the wiring is checkable —
          and tests/r731-gis-geometry-crs-checks ① measures that every declared op has a runner. */
-      /* (#R735) `ctx` is how the two runners whose cost grows with the data stay interruptible and
-         report where they are; see makeCtx. The others finish in one turn and are handed it anyway, so
-         a runner that grows tomorrow has it already. */
+      /* ⚠⚠⚠ (#R764) THIS COMMENT USED TO SAY THE OPPOSITE OF WHAT THE TABLE BELOW DID. It read:
+         「The others finish in one turn and are handed it anyway, so a runner that grows tomorrow has
+         it already.」 MEASURED: six of the twenty-four were handed nothing — `filter`, `buffer`,
+         `dissolve`, `timeWindow`, `join`, `compute` — and `buffer` unions a geodesic disk per vertex,
+         which is about as far from 「one turn」 as anything in this file gets. A reader buffering a
+         few thousand features had the stop button they could not use, under a note explaining that
+         they could ([[intmap-sync-loop-cannot-be-cancelled]] is the same shape one level down).
+         ⚠ THE NOTE IS NOW TRUE OF EVERY ROW, and it is cheap to keep true: a runner that takes `ctx`
+         and yields by ELAPSED TIME costs a caller with no cancel path nothing, because `makeCtx`'s
+         tick is only awaited when a frame has passed. ⚠ AND THERE ARE NOT TWO IMPLEMENTATIONS — the
+         same loop runs either way; `ctx` decides only whether it ever hands the thread back. */
       const ctx = makeCtx(opts);
       const RUN = {
-        filter: () => runFilter(ds[0], params, R),
-        buffer: () => runBuffer(ds[0], params, R),
+        filter: () => runFilter(ds[0], params, R, ctx),
+        buffer: () => runBuffer(ds[0], params, R, ctx),
         clip: () => runClip(ds[0], ds[1], ctx),
         intersect: () => runOverlay('intersect', ds[0], ds[1], ctx),
         difference: () => runOverlay('difference', ds[0], ds[1], ctx),
         union: () => runUnion(ds[0], ds[1], ctx),
-        dissolve: () => runDissolve(ds[0], params, R),
+        dissolve: () => runDissolve(ds[0], params, R, ctx),
         relate: () => runRelate(ds[0], ds[1], params, R, ctx),
         aggregate: () => runAggregate(ds[0], ds[1], params, R, ctx),
         sample: () => runSample(ds[0], ds[1], params, R, ctx),
@@ -2859,13 +2917,17 @@ export function makeGisOps() {
         measure: () => runMeasure(ds[0], params, R, ctx),
         validate: () => runValidate(ds[0], params, ctx),
         repair: () => runRepair(ds[0], params, ctx),
-        timeWindow: () => runTimeWindow(ds[0], params, R),
-        join: () => runJoin(ds[0], ds[1], params),
-        compute: () => runCompute(ds[0], params, R),
+        timeWindow: () => runTimeWindow(ds[0], params, R, ctx),
+        join: () => runJoin(ds[0], ds[1], params, ctx),
+        compute: () => runCompute(ds[0], params, R, ctx),
       };
       const runner = RUN[decl.id];
       if (!runner) return fail('op-not-wired', { op: decl.id });
-      /* ⚠ AWAITED. Four of the runners are async now, and `res.ok` on an unawaited Promise is
+      /* ⚠ AWAITED. (#R764) EVERY runner in the table is async now — the count that used to stand here
+         was 「four」, and this round made it all of them, which is the same drift the note above the
+         table was caught in. A number in prose about a table two lines away is a number nobody
+         checks, so it is stated as 「every」: that stays true when the next op is added.
+         `res.ok` on an unawaited Promise is
          `undefined` — which this function would have reported as a refusal with no reason. */
       const res = await runner();
       if (!res || !res.ok) return res || fail('op-unknown', { op: decl.id });
@@ -2957,7 +3019,7 @@ export function makeGisOps() {
        project saved last week reopens with different pixels in it, which is precisely the fact this
        version exists to announce. (The ctx handover and the surface declarations do not change an
        answer; the rasterize rule does, and one changed answer is enough.) */
-    const KERNEL_VERSION = 'ops-4';
+    const KERNEL_VERSION = 'ops-5';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,

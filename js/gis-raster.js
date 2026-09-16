@@ -731,6 +731,68 @@ export function makeGisRaster() {
       return { ok: true, colRanges: merged };
     }
 
+    /* ══ ⚠ (#R764) 1 画素が区域にどれだけ覆われているか ═════════════════════════════════════════
+       Returns a weight in [0,1], or a refusal object. ⚠ THE CORNERS ARE ASKED FIRST, AND THAT IS NOT
+       an optimisation bolted on afterwards — it is what keeps the expensive road off the interior.
+       A zone of a few thousand pixels has a boundary of a few hundred, and only those need a boolean
+       intersection. All four corners inside and the centre inside ⇒ the pixel is interior ⇒ 1,
+       exactly as `center` would have said, with no polygon algebra at all.
+       ⚠ THE CORNER TEST IS NOT SUFFICIENT ON ITS OWN. Four corners outside does NOT mean the pixel is
+       outside: a zone narrower than a pixel can pass straight through the middle of it, touching no
+       corner. So a pixel with no corner inside is only decided by the intersection, never by the
+       corners. The reverse shortcut (all four in ⇒ inside) IS sound for a zone with no hole cutting
+       through the pixel — and a hole that does cut through it is caught because its ring crosses an
+       edge, which makes at least one corner disagree... unless the hole sits wholly inside the pixel.
+       ⚠ THAT LAST CASE IS WHY `fractional` STILL INTERSECTS WHEN THE ZONE HAS HOLES: a doughnut hole
+       smaller than one pixel is invisible to any corner test, and reporting the pixel as whole would
+       overstate the ground by the hole. */
+    function pixelRing(raster, row, col) {
+      const g = raster.grid;
+      const w = g.west + g.pixelLng * col, e = g.west + g.pixelLng * (col + 1);
+      const n = rowNorth(raster, row), s = rowNorth(raster, row + 1);
+      return { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] };
+    }
+
+    function hasHole(geometry) {
+      const g = geometry || {};
+      const t = String(g.type || '');
+      if (t === 'Polygon') return Array.isArray(g.coordinates) && g.coordinates.length > 1;
+      if (t === 'MultiPolygon') return (g.coordinates || []).some((p) => Array.isArray(p) && p.length > 1);
+      return false;
+    }
+
+    function coverOf(raster, GG, geometry, row, col, boundary, areaOf) {
+      const g = raster.grid;
+      const w = g.west + g.pixelLng * col, e = g.west + g.pixelLng * (col + 1);
+      const n = rowNorth(raster, row), s = rowNorth(raster, row + 1);
+      let inside = 0;
+      for (const p of [[w, s], [e, s], [e, n], [w, n]]) if (GG.pointInGeometry(p, geometry)) inside++;
+      const centreIn = GG.pointInGeometry([colCentreLng(raster, col), rowCentreLat(raster, row)], geometry);
+
+      if (inside === 4 && centreIn && !hasHole(geometry)) return 1;
+
+      const pix = pixelRing(raster, row, col);
+      /* ⚠ ASKED SO THAT A REFUSAL CAN BE READ. js/gis-geometry.js's `attempt` door exists precisely
+         because a null from the plain door means both 「交わらなかった」 and 「計算できなかった」, and
+         a zonal statistic must not read the second as the first (docs/GIS-CORE.md §2.5.1). */
+      const att = GG.attempt && GG.attempt.intersection ? GG.attempt.intersection(pix, geometry) : null;
+      if (!att) return refuse('geometry-unavailable');
+      if (att.ok === false) return att;
+      const cut = att.geometry;
+      if (!cut) return 0;                       /* they really do not meet */
+      if (boundary === 'allTouched') return 1;
+
+      const partKm2 = areaOf(cut);
+      const wholeKm2 = areaOf(pix);
+      if (partKm2 == null || wholeKm2 == null) return refuse('geodesy-missing');
+      if (!(wholeKm2 > 0)) return 0;
+      const frac = partKm2 / wholeKm2;
+      /* ⚠ CLAMPED, AND THE CLAMP IS NOT HIDING AN ERROR. Both areas come from the same closed form on
+         the same sphere, so the ratio is exact to floating point; the clamp exists so that a
+         degenerate cut at the pole cannot put a weight slightly over 1 into a sum. */
+      return frac <= 0 ? 0 : (frac >= 1 ? 1 : frac);
+    }
+
     function zonal(raster, bandIndex, geometry, opts) {
       const v = validate(raster);
       if (!v.ok) return v;
@@ -742,6 +804,40 @@ export function makeGisRaster() {
       const V = values(raster, bandIndex);
       if (!V.ok) return V;
       const wantClasses = !!(opts && (opts.classes === true || opts.histogram === true));
+
+      /* ══ ⚠⚠⚠ (#R764) 境界の画素をどう数えるか — 判断であって、既定の変更ではない ═════════════
+         The header above states centre-in-polygon as a JUDGEMENT and argues it well: a fractional
+         pixel is meaningless for a class CODE, and for a point measurement the fraction is an
+         interpolation nobody asked for. Both of those are about splitting the VALUE, and they stay
+         true. What they do not settle is the AREA — 「この流域の面積」 and 「この区域の平均標高」 are
+         answered from the pixels' ground area, and a zone that cuts a pixel in half is not answered
+         by counting that pixel once or zero times. On a coarse grid against a narrow catchment, a
+         thin coastal strip or a small ward, the difference is the answer.
+         ⇒ THE RULE IS CHOSEN BY THE CALLER AND NAMED IN THE ANSWER. Nothing changes for a caller
+         that does not choose: `center` is the default and its arithmetic is untouched.
+
+           center       the pixel's centre decides. Weight 1 or 0. (default — unchanged)
+           allTouched   any pixel the zone touches is in, whole. Weight 1 or 0.
+           fractional   weight = the fraction of the pixel's area inside the zone, in [0,1].
+
+         ⚠ WHICH STATISTICS THE WEIGHT TOUCHES IS ITSELF A JUDGEMENT, and it is stated rather than
+         assumed. `areaKm2`, `valueAreaKm2`, `sumTimesAreaKm2`, `mean` and the class areas are about
+         GROUND, so they take the weight. `count` and `sum` are about PIXELS — 「観測値の合計」 is a
+         sum of readings, and two thirds of a reading is not a reading — so they count a contributing
+         pixel once, whatever its weight. A caller comparing `sum` across boundary rules gets the
+         same kind of number each time.
+         ⚠ AND THE AREA RULE IS INJECTED, NOT WRITTEN HERE. js/gis-ops.js owns 「この多角形は何 km²
+         か」 (Chamberlain–Duquette on js/geodesy.js's radius, with the seam window its comment
+         explains); a second copy here would be the third spelling of the sphere in this app and the
+         two would agree until they did not (.agents/rules/no-ad-hoc-hardcoding.md §2-3: あれば配る、
+         写さない). Without it, `fractional` is refused BY NAME — never silently downgraded to
+         centre, which would answer a different question with a complete-looking number. */
+      const BOUNDARY = ['center', 'allTouched', 'fractional'];
+      const boundary = (opts && opts.boundary != null && String(opts.boundary) !== '') ? String(opts.boundary) : 'center';
+      if (BOUNDARY.indexOf(boundary) < 0) return refuse('boundary-rule-unknown', { boundary: boundary, rules: BOUNDARY.slice() });
+      const areaOf = (opts && typeof opts.areaOf === 'function') ? opts.areaOf : null;
+      if (boundary === 'fractional' && !areaOf) return refuse('fraction-needs-area-rule', { needs: 'areaOf' });
+      const needsCover = (boundary !== 'center');
 
       const zb = geometryBbox(geometry);
       if (!zb) return refuse('zone-invalid');
@@ -760,6 +856,11 @@ export function makeGisRaster() {
 
       let count = 0, nodataCount = 0, sum = 0, wsum = 0, areaKm2 = 0, valueAreaKm2 = 0;
       let min = null, max = null;
+      /* ⚠ (#R764) A REFUSAL RAISED INSIDE THE WALK IS CARRIED OUT, NOT SWALLOWED. The step function
+         cannot return one (its return value means 「この画素は終わり」), so the first one is kept and
+         `finish` answers with it — a zonal answer computed with some pixels silently skipped would
+         be a complete-looking number about a different zone. */
+      let failedCover = null;
       const classAreas = wantClasses ? Object.create(null) : null;
 
       /* ⚠ THE WINDOW IS WALKED AS ONE SEQUENCE, so the walk can be let go of BETWEEN TWO PIXELS
@@ -788,18 +889,33 @@ export function makeGisRaster() {
         }
         const col = cols[k % perRow];
         /* ⚠ THE PIXEL BELONGS TO THE ZONE WHEN ITS CENTRE IS INSIDE IT — the judgement stated in
-           the header. No boundary pixel is split by area fraction, and none is counted twice. */
-        if (!GG.pointInGeometry([colCentreLng(raster, col), lat], geometry)) return;
-        areaKm2 += cellKm2;
+           the header, and still the default. No boundary pixel is split by area fraction under
+           `center`, and none is counted twice. */
+        let w = 1;
+        if (!needsCover) {
+          if (!GG.pointInGeometry([colCentreLng(raster, col), lat], geometry)) return;
+        } else {
+          const cov = coverOf(raster, GG, geometry, curRow, col, boundary, areaOf);
+          /* a refusal from the area rule or the kernel is the answer, not a zero */
+          if (cov && cov.ok === false) { failedCover = cov; return; }
+          w = cov;
+          if (!(w > 0)) return;
+        }
+        const cellW = cellKm2 * w;
+        areaKm2 += cellW;
         const val = V.values[base + col];
         if (missing(val, V.nodata)) { nodataCount++; return; }
         count++;
         sum += val;
-        wsum += val * cellKm2;
-        valueAreaKm2 += cellKm2;
+        wsum += val * cellW;
+        valueAreaKm2 += cellW;
         if (min == null || val < min) min = val;
         if (max == null || val > max) max = val;
         if (classAreas) {
+          /* ⚠ THE CLASS AREA TAKES THE WEIGHT for the same reason `areaKm2` does: it is ground, and
+             a zone that covers a tenth of a land-cover pixel contains a tenth of that pixel's
+             ground. This is NOT the 「分類を按分する」 the header refuses — the class is not divided,
+             the AREA is, and the class code the area is filed under is the pixel's own. */
           /* ⚠ NOT ROUNDED. A grid of 0.37 and 1.84 is not a classification with classes 0 and 2 —
              it is a continuous field, and answering 「区分ごとの面積」 about it would be an invented
              classification the reader would then compare against published figures. Refused by
@@ -807,13 +923,17 @@ export function makeGisRaster() {
           const notAClass = classValue(val, row, col);
           if (notAClass) return notAClass;
           const key = String(val);
-          classAreas[key] = (classAreas[key] || 0) + cellKm2;
+          classAreas[key] = (classAreas[key] || 0) + cellW;
         }
       };
 
       const finish = () => {
+        if (failedCover) return failedCover;
         const out = {
         ok: true,
+        /* ⚠ (#R764) WHICH RULE PRODUCED THIS. Two zonal answers over the same zone and grid can now
+           differ, and a number whose rule is not stated cannot be compared with another one. */
+        boundary: boundary,
         count: count,
         nodataCount: nodataCount,
         /* `sum` — Σ value, in the band's own unit, one term per pixel. `sumTimesAreaKm2` — Σ value·km²,
@@ -1869,7 +1989,7 @@ export function makeGisRaster() {
        geometry engine answered and said nothing about which grid arithmetic did.
        ⚠ scripts/gis-kernel-versions.mjs holds the sha256 that keeps this honest — a bump written
        without touching the arithmetic, or arithmetic touched without a bump, is what it measures. */
-    const KERNEL_VERSION = 'raster-1';
+    const KERNEL_VERSION = 'raster-2';
 
     const API = {
       /* see KERNEL_VERSION above — js/gis-project.js records which kernel answered */

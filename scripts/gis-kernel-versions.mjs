@@ -82,7 +82,14 @@ export const KERNELS = {
      complete inputs no longer calls itself complete after losing rows. ⚠ The arithmetic in the cells
      is untouched; what changed is which of two dates a replayed project shows, which is exactly the
      thing a reader comparing two loads is entitled to be told. */
-  'js/gis-ops.js': { version: 'ops-4', sha256: '3541cd9e9518e5d3caba25e3a2fc1ce8ba4bef58df991cd6588e59d4c7b1d4b1' },
+  /* (#R764) ops-4 -> ops-5: EVERY ZONAL ROW GAINED A COLUMN, and it had to. `zonal` can now be asked
+     for a different boundary rule, so two answers over the same zone and the same grid can differ —
+     and a column of areas whose rule lives only in a stats line the reader saw once is a number
+     nobody can check later. `_boundary` rides on the row itself, which is what gets joined, exported
+     and compared months afterwards. ⚠ THE DEFAULT ANSWER DID NOT MOVE: a recipe saved before today
+     names no boundary, replays as `center`, and produces the same numbers to the bit. What changed is
+     that the record now says which rule produced them. */
+  'js/gis-ops.js': { version: 'ops-5', sha256: 'b1ccc2ff8ec0145efbba8f1e71090209ea9b5e2b86251309d98ebd406a25a666' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
   'js/gis-geometry.js': { version: 'geom-1', sha256: '675be6ca448ed2a47d3f1baf7a755362b4e69e3a10b5427b6bc8c94cfcfba157' },
@@ -107,7 +114,16 @@ export const KERNELS = {
      (js/gis-sources.js region() splits its refusal on exactly that). Not one cell's value moves: the
      grid a saved recipe replays to is byte-for-byte the grid it replayed to yesterday. A changed
      DIAGNOSTIC is not a changed answer. */
-  'js/gis-raster.js': { version: 'raster-1', sha256: 'dccd141423c379cdbcb91ff1d64eb08c9e92ce0e2c0cd9d4da3a6e6cad77a52e' },
+  /* (#R764) raster-1 -> raster-2, AND THE CONTRAST WITH #R763 IS THE POINT. That round changed what
+     this kernel REPORTED (failed apart from empty) and left the version alone, because no cell moved.
+     This one changes what it can COMPUTE: a boundary pixel may now carry a fractional weight, so the
+     same grid and the same zone can answer with a different area than raster-1 could produce. The
+     default is untouched and a saved recipe replays identically — but 「同じレシピは、実装が違えば
+     同じ答えではない」 is exactly the claim this number exists to make, and an engine that gained an
+     answer it could not give before has changed.
+     ⚠ ALSO: the answer names its rule (`boundary`) and two refusals are new
+     (`boundary-rule-unknown`, `fraction-needs-area-rule`). */
+  'js/gis-raster.js': { version: 'raster-2', sha256: '32aacfbf53a243adc504cecf267d977c7e9f77667ca144180664e9dce6fdfdad' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
   'js/gis-warp.js': { version: 'warp-1', sha256: '4c7eef1f06a84a9b691cce2559d7de37ba8fe5577ee2f58864b2e19ca50e78f2' },
