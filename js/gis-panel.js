@@ -331,6 +331,9 @@ export function makeGisPanel(HOST) {
       if (code === 'map-unavailable') return window.IntMapLang.t(HOST.lang, "The map is not ready, so its layers cannot be handed over as data", "地図がまだ使えないため、レイヤーをデータとして受け取れません", "Die Karte ist nicht bereit, daher können ihre Ebenen nicht als Daten übergeben werden", "Карта не готова, поэтому её слои нельзя передать как данные", "El mapa no está listo, así que sus capas no se pueden entregar como datos");
       if (code === 'layer-unknown') return window.IntMapLang.t(HOST.lang, "There is no layer or map source by that name", "その名前のレイヤーも地図ソースもありません", "Es gibt keine Ebene und keine Kartenquelle dieses Namens", "Слоя или источника карты с таким именем нет", "No hay ninguna capa ni fuente de mapa con ese nombre") + par(d.id || d.layer);
 
+      /* (#R765) manifest()/verify() are asked about an id, and 「その記録はもう無い」 is the one
+         answer they can give that is about the reader's own state rather than about the data. */
+      if (code === 'unknown-dataset') return window.IntMapLang.t(HOST.lang, 'There is no dataset with that id — it may have been removed or rebuilt under a new one', 'その ID のデータセットはありません。削除されたか、作り直されて別の ID になった可能性があります') + par(d.id);
       if (code === 'id-in-use') return window.IntMapLang.t(HOST.lang, 'A dataset with that id is already registered', 'その ID のデータセットは既に登録されています', 'Ein Datensatz mit dieser ID ist bereits registriert', 'Набор данных с таким идентификатором уже зарегистрирован', 'Ya hay un conjunto de datos registrado con ese identificador') + par(d.id);
       /* ⚠ (#R749) TWO CODES, ONE FACT FOR THE READER. js/gis-sources.js answers 'layer-not-visible'
          when a switched-off supplier returned nothing, and js/gis-layers.js translates it back to the

@@ -89,7 +89,17 @@ export const KERNELS = {
      and compared months afterwards. ⚠ THE DEFAULT ANSWER DID NOT MOVE: a recipe saved before today
      names no boundary, replays as `center`, and produces the same numbers to the bit. What changed is
      that the record now says which rule produced them. */
-  'js/gis-ops.js': { version: 'ops-5', sha256: 'b1ccc2ff8ec0145efbba8f1e71090209ea9b5e2b86251309d98ebd406a25a666' },
+  /* ⚠ (#R765) ops-5 IS DELIBERATELY NOT RAISED, and the line this draws is worth stating. The round
+     added `provenance.engine` to every op output — the record now says WHICH ENGINE COMPUTED IT,
+     stamped as it ran, instead of leaving a later reader to ask the kernels a question about today.
+     That is a statement about the COMPUTATION, not about the data: no number moves, no refusal
+     changes, no tolerance changes, and nothing a replayed recipe produces differs.
+     ⚠ CONTRAST WITH #R763 AND #R764, WHICH DID RAISE IT. Those changed what the record says about
+     THE NUMBERS — which of two dates a grid is stamped with, whether a column keeps the unit
+     somebody stated, whether an answer computed out of complete inputs still calls itself complete,
+     which boundary rule produced an area. A reader comparing two loads would read a different claim
+     about their data. Here they read the same claims, plus a note about the machinery. */
+  'js/gis-ops.js': { version: 'ops-5', sha256: '2abfda5a64cf7a63df729000b5fa2dd3d0713a88931942fa1a21db6a6e20807f' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
   'js/gis-geometry.js': { version: 'geom-1', sha256: '675be6ca448ed2a47d3f1baf7a755362b4e69e3a10b5427b6bc8c94cfcfba157' },
