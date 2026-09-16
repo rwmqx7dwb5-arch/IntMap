@@ -91,9 +91,24 @@ export function makeEraHighlight(deps) {
   const PAINTED_IDS = {
     countries: (v) => Array.from(v || []),                       /* `_hl` — a Set of ISO3 codes */
     era: (v) => (v || []).slice(),                               /* `_eraHl` — the era polities drawn, by name */
-    polys: (v) => (v || []).map((p) => p && p.name),             /* `_hlPolys` — regions, sets, basins */
-    lines: (v) => (v || []).map((l) => l && l.name),             /* `_hlLines` — rivers and tributaries */
-    choro: (v) => Object.keys(v || {})                           /* `_choroState` — the shaded countries */
+    /* ⚠⚠⚠ (#R760) A SHAPE'S IDENTITY IS ITS COURSE WHEN IT CARRIES NO CAPTION. #R747 made a redraw
+       of the same line idempotent (js/atlas-console.js `_lnSame` — 「A LINE IS ITS COURSE, NOT ITS
+       CAPTION」) and thereby GUARANTEED the verdict it did not fix: an idempotent redraw cannot move the
+       count, so `paint.verify` fell through to its last line. Measured on production 2026-09-16,
+       「Measure the great-circle distance from Reykjavik to Cape Town and draw the line」: the line was
+       correct on the FIRST call, `map.drawLine` ran five times, two of them `not_rendered`, the turn
+       died at its working limit and the reader never got the distance in prose at all. A caption is a
+       label; the course is the thing. `key` is derived from the geometry BY THE PAINTER, so a redraw
+       states the same identity and an unnamed shape stops being nameless — which is what the note above
+       asks for, without inventing an index or a position. */
+    polys: (v) => (v || []).map((p) => p && (p.name || p.key)),             /* `_hlPolys` — regions, sets, basins */
+    lines: (v) => (v || []).map((l) => l && (l.name || l.key)),             /* `_hlLines` — rivers and tributaries */
+    choro: (v) => Object.keys(v || {}),                          /* `_choroState` — the shaded countries */
+    /* (#R760) the place outline js/map-tools.js `IntMapOutline` holds. It paints its own source, so
+       no count in `paintNow()` moves when the SAME place is outlined again; measured on production
+       2026-09-16, 「Compute the total area of the Amazon basin and show it on the map」 ran
+       `map.outline` four times, two of them `not_rendered`, with the basin on the map throughout. */
+    outline: (v) => (v ? [v] : [])                                /* `IntMapOutline.current().name` */
   };
   /* sorted, de-duplicated, and WITHOUT the nameless: an unnamed tributary has no identity to state,
      and inventing one (its index, its position in the array) would make a redraw look like a change. */

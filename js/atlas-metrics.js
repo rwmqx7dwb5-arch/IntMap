@@ -85,6 +85,17 @@ export function makeAtlasMetrics(HOST, CTX) {
       return null; }
     /* a refusal that cannot be retried is a loop. Every one of these names the whole valid set. */
     function unknownMetric(k){ return R(false, warn('⚠ '+L('Unknown metric','不明な指標','Unbekannte Kennzahl','Неизвестный показатель','Métrica desconocida')
-      +': '+esc(String(k==null?'':k))+' — '+L('valid','有効','gültig','допустимо','válidos')+': '+esc(metKeys().join(', ')))); }
+      +': '+esc(String(k==null?'':k))+' — '+L('valid','有効','gültig','допустимо','válidos')+': '+esc(metKeys().join(', '))),
+      /* ⚠⚠⚠ (#R760) THE LINE ABOVE ALREADY SAID 「a refusal that cannot be retried is a loop」 AND
+         THEN SAID IT TO NOBODY. Naming the valid set is necessary and not sufficient: the refusal is
+         about a metric IntMap does not hold AT ALL, so another spelling of the same idea cannot work
+         either — and the repeat guard keys on the exact arguments, so each new spelling looked like a
+         new request. Measured on production 2026-09-16, 「Show a choropleth of CO2 emissions per
+         capita」: `data.ratio` refused five times across 5 m 30 s, each with a differently-worded
+         metric, and the turn produced no map and no answer. `permanent` names which fact this is:
+         not 「that attempt failed」 but 「this KIND of request is not available」. Its reader is
+         js/atlas-agent.js. ⚠ `meta.retryable` exists elsewhere with no reader at all; it is left
+         alone rather than co-opted, because nothing has measured what those producers mean by it. */
+      {meta:{code:'unknown_metric', permanent:true}}); }
   return { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric };
 }
