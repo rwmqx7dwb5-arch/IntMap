@@ -129,7 +129,11 @@ export function makeGisSources() {
        that answers everywhere; the rest exist because the centre of a window over Japan is ocean,
        and one arbitrary pixel deciding for the whole request is the shape this project keeps
        recording — 「1 点で全体を断じる」. Five is not a measurement of anything; it is the smallest
-       set that puts a point in each quadrant as well as the middle, and it costs five calls once. */
+       set that puts a point in each quadrant as well as the middle, and it costs five calls once.
+       ⚠⚠⚠ (#R774) AND WHAT THESE POSITIONS ARE FOR IS NOT 「ここに値があるか」. They are where the
+       registry is ASKED; what the probe reads is whether it answered with a row at all. The number
+       of points therefore no longer decides which windows are servable — that is what made adding
+       points look like a fix, and a sixth point would only move the corner it gets wrong. */
     const PROBE_POINTS = [[0.5, 0.5], [0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]];
 
     const REFUSALS = [
@@ -856,9 +860,13 @@ export function makeGisSources() {
        no caller), but 「消えているレイヤーは値を持たない」 was an ASSUMPTION applied to every row.
        Some fields answer while their layer is off — a cached sampler, a field another module keeps
        loaded — and refusing them was refusing data that was there.
-       ⇒ SO IT IS MEASURED: when the layer is off, one probe is taken; a number means the field
-       answers and the read proceeds, anything else means it does not and the refusal is
-       `layer-not-visible` — 「訊けなかった」 said as itself rather than returned as a grid of holes. */
+       ⇒ SO IT IS MEASURED: when the layer is off, the registry is probed, and the read proceeds as
+       soon as it ANSWERS — `layer-not-visible` is kept for the row that answers nothing at all,
+       「訊けなかった」 said as itself rather than returned as a grid of holes.
+       ⚠⚠⚠ (#R774) AND 「ANSWERS」 MEANS A ROW CAME BACK, NOT A VALUE AT THE PROBED POINT. Reading a
+       missing value as 「訊けなかった」 made the visibility of a layer change the answer to a question
+       about DATA: a window whose only value sat in a corner was served with the layer on and refused
+       with it off. The two are separated at the door they were merged at (js/map-ui.js sampleAt). */
     async function region(id, box, opts) {
       const o = opts || {};
       const key = String(id == null ? '' : id);
@@ -911,13 +919,19 @@ export function makeGisSources() {
          row that only composes text may still be composing a bare number, and dropping that would
          refuse data that is there. ⚠ AND NOTHING IS PARSED OUT OF THE SENTENCE — a unit stripped off
          a string is a unit nobody stated. */
+      /* ⚠⚠⚠ (#R774) 「行が返ったか」 IS A SEPARATE FACT FROM 「値が在ったか」, AND THE PROBE BELOW
+         NEEDS THE FIRST. It is written by every call and read only by the probe, which checks it
+         immediately after the call it belongs to — so it is that call's answer and not a tally. */
+      let sawRow = false, anyRow = false;
       async function sampleOne(lng, lat) {
         let got;
         /* ⚠ A THROWN REGISTRY IS NOT A HOLE IN THE FIELD. This returned null, which js/gis-raster.js
            counts as `empty` — so its `failed` counter, which exists precisely to keep 「取得に失敗した」
            apart from 「そこには値が無い」, was structurally always 0. Re-thrown, it is counted. */
-        try { got = await R.sampleAt(lng, lat, [key]); } catch (e) { throw e; }
+        try { got = await R.sampleAt(lng, lat, [key]); } catch (e) { sawRow = false; throw e; }
         const hit = Array.isArray(got) ? got.find((x) => x && String(x.id) === key) : null;
+        sawRow = !!hit;
+        if (hit) anyRow = true;
         if (!hit) return null;
         /* The row said it was asked and could not answer — a failure, not an absence. */
         if (hit.failed === true) throw new Error('layer-sample-failed');
@@ -931,16 +945,24 @@ export function makeGisSources() {
       }
 
       if (isOff(key)) {
-        /* ⚠ (#R763) ONE PIXEL DECIDING FOR THE WHOLE WINDOW IS A SAMPLE, NOT A TEST OF THE SUPPLIER.
-           The centre of a window over Japan is ocean, and a field with no ocean values answered
-           「このレイヤーは見えていない」 for a request it could have served everywhere else. So the
-           probe walks a few positions and the row is refused only when NONE of them answers — 「訊け
-           なかった」 stays a statement about the supplier rather than about one arbitrary coordinate. */
+        /* ⚠⚠⚠ (#R774) THE PROBE ASKS WHETHER THE SUPPLIER ANSWERS, NOT WHETHER THESE COORDINATES
+           HAVE VALUES. Until this round it required a NUMBER at one of five fractions of the window,
+           so a field holding a single populated pixel in a corner was refused `layer-not-visible`
+           with the layer off and read normally with it on — THE SAME QUESTION ANSWERED DIFFERENTLY
+           BY THE STATE OF A CHECKBOX. Widening the probe would only move that corner
+           (.agents/rules/no-ad-hoc-hardcoding.md): five points or fifty, it is still one predicate
+           standing in for another ([[intmap-proxy-predicate-freezes-the-wrong-diagnosis]]).
+           ⇒ WHAT IS MEASURED IS WHETHER A ROW COMES BACK. js/map-ui.js's sampleAt returns a row for
+           every registration it actually asked, with a value only when there was one, so 「訊けた」
+           and 「そこに値があった」 are now two different observations and this reads the first.
+           A row — with or without a value — ends the probe and the whole window is read; the window
+           then answers for itself, and a genuinely empty one is refused `layer-values-all-missing`,
+           which is a different fact with its own sentence in js/gis-panel.js.
+           ⚠ ALL FIVE THROWING IS STILL `layer-sample-failed`: 「訊いて落ちた」 is neither. */
         let answered = false, threw = 0;
         for (const f of PROBE_POINTS) {
-          let p = null;
-          try { p = await sampleOne(win.w + (win.e - win.w) * f[0], win.s + (win.n - win.s) * f[1]); } catch (_) { threw++; continue; }
-          if (isNum(p)) { answered = true; break; }
+          try { await sampleOne(win.w + (win.e - win.w) * f[0], win.s + (win.n - win.s) * f[1]); } catch (_) { threw++; continue; }
+          if (sawRow) { answered = true; break; }
         }
         if (!answered) return refuse(threw === PROBE_POINTS.length ? 'layer-sample-failed' : 'layer-not-visible', { id: key, probes: PROBE_POINTS.length });
       }
@@ -982,6 +1004,12 @@ export function makeGisSources() {
         const seen = (baked.textSeen != null) ? baked.textSeen : textSeen;
         if (seen != null) return refuse('layer-values-not-numeric', { id: key, sample: seen });
         if (baked.failed > 0) return refuse('layer-sample-failed', { id: key, failed: baked.failed, empty: baked.empty });
+        /* ⚠⚠⚠ (#R774) AND 「誰も答えなかった」 IS NOT 「どこにも値が無かった」, WITH THE LAYER ON
+           EITHER. The probe above only runs for a switched-off row, so a row with no sampler at all
+           used to be `layer-not-visible` while it was off and `layer-values-all-missing` while it
+           was on — the same silence named twice, by the state of a checkbox. The whole read knows
+           which it was: not one position handed back a row. */
+        if (!anyRow) return refuse('layer-not-visible', { id: key, asked: baked.empty });
         return refuse('layer-values-all-missing', { id: key, empty: baked.empty });
       }
 

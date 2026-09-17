@@ -80,25 +80,30 @@ function makeFakeMap(w) {
       return r.features.filter((f) => inBox(f, b));
     },
     featuresInSource: () => null,
-    /* THE SHAPE js/map-ui.js BUILDS: text always, number/unit only when the row measured. */
+    /* THE SHAPE js/map-ui.js BUILDS: a row for every registration that was ASKED (#R774), text
+       always when there was one, number/unit only when the row measured. ⚠ A REGISTRATION THAT
+       ANSWERS null STILL PRODUCES A ROW — that is the fact 「訊いたが、そこには値が無い」, and
+       collapsing it into silence here is exactly the defect this stub must not hide. */
     sampleAt: async (lng, lat, ids) => {
       const out = [];
       for (const id of (ids && ids.length ? ids : Array.from(rows.keys()))) {
         const r = rows.get(String(id));
         if (!r || (!r.measure && !r.sample)) continue;
-        if (r.measure) {
-          let q;
-          try { q = await Promise.resolve(r.measure(lng, lat)); } catch (_) { out.push({ id: String(id), label: r.label, failed: true }); continue; }
-          if (!q) continue;
-          const row = { id: String(id), label: r.label, value: q.text };
-          if (typeof q.value === 'number') { row.number = q.value; if (q.unit != null) row.unit = q.unit; }
-          if (q.code != null) row.code = q.code;
-          out.push(row);
-          continue;
-        }
-        let v;
-        try { v = await Promise.resolve(r.sample(lng, lat)); } catch (_) { out.push({ id: String(id), label: r.label, failed: true }); continue; }
-        if (v != null && v !== '') out.push({ id: String(id), label: r.label, value: v });
+        const row = { id: String(id), label: r.label, asked: true };
+        try {
+          if (r.measure) {
+            const q = await Promise.resolve(r.measure(lng, lat));
+            if (q) {
+              if (q.text != null && q.text !== '') row.value = q.text;
+              if (typeof q.value === 'number') { row.number = q.value; if (q.unit != null) row.unit = q.unit; }
+              if (q.code != null) row.code = q.code;
+            }
+          } else {
+            const v = await Promise.resolve(r.sample(lng, lat));
+            if (v != null && v !== '') row.value = v;
+          }
+        } catch (_) { row.failed = true; }
+        out.push(row);
       }
       return out;
     },
@@ -259,10 +264,26 @@ test('④ 中央が欠損でも、周辺に値があれば領域全体を拒ま�
   assert.equal(r.ok, true, '中央 1 点の欠損で窓全体が拒まれた: ' + r.why);
 });
 
-test('④ どこも答えないオフのレイヤーは、今までどおり名前を付けて断られる', async () => {
+/* ⚠⚠⚠ (#R774) この検査が測っていた事実は変わった。以前の実装は「5 点のどこかに値があるか」で
+   窓全体を断じていたので、値を 1 つも返さないオフの行は `layer-not-visible`（＝訊けなかった）と
+   呼ばれていた。いまは「訊いたか」と「値があったか」が別の観測なので、答えはした行は窓まで読まれ、
+   どこにも値が無ければ `layer-values-all-missing`——「そこには無い」という別の事実になる。
+   ⚠ 通すために緩めたのではない。断られることは変わっておらず、断り方の主語が
+   「レイヤーの表示」から「データ」へ移った。本当に答えない行は下の検査が測る。 */
+test('④ 答えはするが値を持たないオフのレイヤーは「そこに値が無い」と断られる（「見えていない」ではない）', async () => {
   const { map, sources } = await boot();
   map.rows.set('off', { label: 'Off', on: false, measure: () => null });
   const r = await sources.region('off', { w: 0, s: 0, e: 2, n: 2 }, { width: 2, height: 2 });
+  assert.equal(r.ok, false);
+  assert.equal(r.why, 'layer-values-all-missing', '訊けた行が「訊けなかった」と説明されている');
+  assert.equal(r.detail.empty, 4, 'どれだけ空だったのかが読者に渡っていない');
+});
+
+test('④ 本当に答えない行は、今までどおり名前を付けて断られる', async () => {
+  const { map, sources } = await boot();
+  /* 標本を取る扉が 1 つも無い登録＝ sampleAt が行を返さない＝「訊けなかった」 */
+  map.rows.set('mute', { label: 'Mute', on: false });
+  const r = await sources.region('mute', { w: 0, s: 0, e: 2, n: 2 }, { width: 2, height: 2 });
   assert.equal(r.ok, false);
   assert.equal(r.why, 'layer-not-visible');
   assert.ok(r.detail.probes > 1, 'いくつ試したのかが述べられていない');

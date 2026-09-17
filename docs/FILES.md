@@ -257,6 +257,14 @@ gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorke
                                   から決めた数で、根拠は定数の隣にある。⚠ `available()`（能力）と
                                   `probe()`（実測）は別の問い——CSP が `blob:` を拒むことは throw では
                                   なく error イベントで出るので、同期では答えられない
+gis-units.js                      **量の単位** `window.IntMapGisUnits`（#R774）— 「この 2 つは
+                                  足し引きできるか。できるなら換算は何か」1 問だけに答える。
+                                  `parse` / `compare` / `convert` / `unitOfExpr`。表は **SI の定義値の原子**
+                                  だけで、`mm/h` や `kg/m^2` は並べずに**解析**する（`m2`・`m²`・`m^2` は同じ）。
+                                  ⚠ **綴りが読めなければ「わからない」であって「同じ」ではない**——
+                                  異なる読めない綴りどうしは拒まれる。⚠ **沈黙は不一致ではない**
+                                  （単位を述べていない格子は今までどおり引ける）。°C・°F は
+                                  オフセットを持つので、**読みの換算と差の換算が別**
 gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#R738）— 計算列のための
                                   小さな言語。`parse` / `evaluate` / `compile` / `functions` / `refusals`。
                                   ⚠ **読者が打った文字列がコードにならない**——`eval` も `new Function` も

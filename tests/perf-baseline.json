@@ -40,7 +40,7 @@
       "datacenters": 41619,
       "flight-sim": 117455,
       "geo-import": 18204,
-      "gis-core": 369076,
+      "gis-core": 377285,
       "gis-export": 14748,
       "gis-geopackage": 14411,
       "gis-geotiff": 22817,
@@ -91,6 +91,6 @@
   "dist": {
     "total": 772228629,
     "data": 715578291,
-    "assets": 18444509
+    "assets": 18545075
   }
 }
