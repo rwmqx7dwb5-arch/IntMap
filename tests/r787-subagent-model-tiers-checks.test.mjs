@@ -18,11 +18,19 @@
  *    ② A KEY WRITTEN WHERE NOBODY READS IT. Codex takes its agent file as a config layer whose
  *       model the account chooses; a `model` emitted into .codex/agents/*.toml would be a key with
  *       no reader — [[intmap-records-with-no-reader]]. The renderer must not emit one.
- *    ③ THE PROSE AND THE MACHINE DISAGREEING. The assignment is argued in a table in
- *       .agents/rules/execution-strategy.md §2b, and THAT is what an agent reads before it
- *       delegates. A table that has drifted from the role files is worse than no table, because
- *       both readers are confident — [[intmap-comment-contradicted-the-table-below-it]]. So the
- *       table is PARSED and compared against .agents/roles/, in both directions.
+ *    ③ THE PROSE AND THE MACHINE DISAGREEING. The assignment is argued in a table an agent reads
+ *       before it delegates. A table that has drifted from the role files is worse than no table,
+ *       because both readers are confident — [[intmap-comment-contradicted-the-table-below-it]].
+ *       So the table is PARSED and compared against .agents/roles/, in both directions.
+ *
+ *       ⚠ THAT TABLE IS NOT IN .agents/rules/. It was written there first and tests/r295-checks ⑥
+ *       refused it: an always-on rule file has a 6144-byte ceiling because EVERY session pays for
+ *       it, and execution-strategy.md sits 8 bytes under that ceiling — the check's own words are
+ *       「Move detail into an agent or a skill」. So the table lives in the round skill, and the
+ *       one line a caller needs is in the ROLE'S OWN description, which is what the Agent tool
+ *       shows the caller ([[intmap-hist-names-rule-belongs-to-the-name]]: the rule belongs to the
+ *       thing it governs). This file therefore reads BOTH homes, and neither path is hard-coded
+ *       as the answer — what is asserted is that the caller-facing text and the role files agree.
  *
  *  ④ AND THE ESCALATION MUST SURVIVE. The saving is only sound because the one role whose verdict
  *     can cost more than it saves (`intmap-verifier`, judging environment-vs-regression — see
@@ -41,6 +49,8 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8').replace(/\r\n/g, '\n');
 
 const ROLE_DIR = '.agents/roles';
+/* where the assignment is argued — see the header: NOT .agents/rules/, which is full */
+const SKILL = '.agents/skills/intmap-round/SKILL.md';
 const roleFiles = readdirSync(join(ROOT, ROLE_DIR)).filter((f) => f.endsWith('.md')).sort();
 
 /* the model each source role declares; undefined = inherit from the parent */
@@ -92,10 +102,10 @@ test('③ 生成された frontmatter が、正本と同じことを述べてい
 });
 
 test('④ 散文の割り当て表と、役ファイルが一致している（両方向）', () => {
-  const rule = rd('.agents/rules/execution-strategy.md');
+  const rule = rd(SKILL);
   const rows = [...rule.matchAll(/^\| `(intmap-[a-z0-9-]+)` \| ([^|]+?) \|/gm)]
     .map(([, role, model]) => [role, model.trim()]);
-  assert.ok(rows.length >= declared.size, `.agents/rules/execution-strategy.md's model table lists ${rows.length} role(s) but ${ROLE_DIR} holds ${declared.size} — a role missing from the table is one an agent delegates to without knowing what it costs`);
+  assert.ok(rows.length >= declared.size, `${SKILL}'s model table lists ${rows.length} role(s) but ${ROLE_DIR} holds ${declared.size} — a role missing from the table is one an agent delegates to without knowing what it costs`);
 
   const inTable = new Map();
   for (const [role, cell] of rows) {
@@ -105,18 +115,29 @@ test('④ 散文の割り当て表と、役ファイルが一致している（�
   }
 
   for (const [role, model] of declared) {
-    assert.ok(inTable.has(role), `${ROLE_DIR}/${role}.md exists but execution-strategy.md §2b's table does not list it`);
-    assert.equal(inTable.get(role), model, `execution-strategy.md §2b says ${role} runs on «${inTable.get(role) ?? '継承'}» while ${ROLE_DIR}/${role}.md declares «${model ?? '継承'}» — the table an agent reads and the file the harness reads disagree`);
+    assert.ok(inTable.has(role), `${ROLE_DIR}/${role}.md exists but the model table does not list it`);
+    assert.equal(inTable.get(role), model, `the model table says ${role} runs on «${inTable.get(role) ?? '継承'}» while ${ROLE_DIR}/${role}.md declares «${model ?? '継承'}» — the table an agent reads and the file the harness reads disagree`);
   }
   for (const role of inTable.keys()) {
-    assert.ok(declared.has(role), `execution-strategy.md §2b's table names ${role}, which is not a role in ${ROLE_DIR}`);
+    assert.ok(declared.has(role), `the model table names ${role}, which is not a role in ${ROLE_DIR}`);
   }
 });
 
-test('⑤ 安い既定を成立させている昇格条件が、まだ書かれている', () => {
-  const rule = rd('.agents/rules/execution-strategy.md');
-  assert.ok(/intmap-verifier/.test(rule) && /model: "opus"/.test(rule),
-    '.agents/rules/execution-strategy.md no longer tells the caller to raise intmap-verifier for a judging call — the cheap default was made conditional on that escalation, and without it the saving is unconditional');
-  assert.ok(/one-pass-or-a-reason/.test(rule),
-    'the escalation paragraph no longer names the rule it exists for — a later reader would read it as an optional nicety rather than the condition the default depends on');
+test('⑤ 安い既定を成立させている昇格条件が、呼び手に届く2か所にまだ在る', () => {
+  /* The cheap default was made conditional on the caller raising the model for a JUDGING call.
+     That condition has to survive in both places a caller actually meets it: the procedure it
+     follows, and the role listing the Agent tool puts in front of it. Deleting either one while
+     keeping `model: sonnet` turns a conditional saving into an unconditional one. */
+  const skill = rd(SKILL);
+  assert.ok(/intmap-verifier/.test(skill) && /model: "opus"/.test(skill),
+    `${SKILL} no longer tells the caller to raise intmap-verifier for a judging call — the cheap default was made conditional on that escalation, and without it the saving is unconditional`);
+  assert.ok(/one-pass-or-a-reason/.test(skill),
+    `${SKILL} no longer names the rule the escalation exists for — a later reader would take it for an optional nicety rather than the condition the default depends on`);
+
+  /* the ONE line that reaches a caller who never opened the skill */
+  const fm = rd(`${ROLE_DIR}/intmap-verifier.md`).match(/^---\n([\s\S]*?)\n---\n/)[1];
+  const desc = fm.match(/^description: (.+)$/m);
+  assert.ok(desc, `${ROLE_DIR}/intmap-verifier.md has no description — the Agent tool would list the role with nothing to steer the caller`);
+  assert.ok(/model: "opus"/.test(desc[1]),
+    '.agents/roles/intmap-verifier.md\'s description no longer carries the escalation — a caller who has not opened the round skill sees a sonnet default and no reason to raise it, which is exactly the observer-lied failure (#R736 / #R742 / #R768) the default is priced against');
 });

@@ -169,11 +169,11 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 `codex:` ブロックへ写す先が無く、写せば「読まれないキー」を作るだけになる。
 
 これは `AGENTS.md` §0-5 が言う「**片方だけが知っている状態**」に見えるが、そうではない——
-**どちらの役に何をさせるかという判断は `.agents/rules/execution-strategy.md` §2b にあり、
+**どちらの役に何をさせるかという判断は [`.agents/skills/intmap-round/`](../.agents/skills/intmap-round/SKILL.md) §2 にあり、
 両方が読む。** 届かないのは、その判断を機械に伝える**手段**のほうだけである。
 
 ⇒ **実務上の帰結: Codex で走る scout / i18n / verifier は、Claude Code 側より高いモデルで
-走ることがある。** これは欠陥ではなく、この表が明記している差。§2b の**昇格条件**（verifier に
+走ることがある。** これは欠陥ではなく、この表が明記している差。**昇格条件**（verifier に
 「環境要因か本物の退行か」を訊くときは上げる）は Codex では自動的に満たされている。
 
 ⚠ 綴りの誤りは `npm run check:agents` が止める。Claude Code は知らないモデル名を

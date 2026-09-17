@@ -1,6 +1,6 @@
 ---
 name: intmap-verifier
-description: IntMap のテスト・ゲート・ビルド・CI を実行し、大量の出力から失敗だけを切り分けて返す検証役。npm test / npm run check:* / playwright / gh run のログ解析、CI が赤い原因の特定、その失敗が環境要因（改行コード・ポート・並行実行）か本物の退行かの判定に使う。出力が100行を超える検証は必ずこれに渡す。
+description: IntMap のテスト・ゲート・ビルド・CI を実行し、大量の出力から失敗だけを切り分けて返す検証役。npm test / npm run check:* / playwright / gh run のログ解析、CI が赤い原因の特定、その失敗が環境要因（改行コード・ポート・並行実行）か本物の退行かの判定に使う。出力が100行を超える検証は必ずこれに渡す。⚠ 呼び出し側へ: 既定は sonnet。「その赤は環境要因か本物の退行か」「緑だが実は死んでいないか」を判定させるときは Agent tool の model: "opus" で上書きすること（正本 .agents/skills/intmap-round/ の §2）。
 tools: Bash, Read, Grep, Glob
 model: sonnet
 ---

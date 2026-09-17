@@ -202,7 +202,7 @@ const plan = new Map();                                   /* rel path → expect
 
    ⚠ THIS LIST IS THE HARNESS'S VOCABULARY, NOT A POLICY ABOUT WHICH ROLE DESERVES WHICH
    MODEL. It expires when Claude Code changes the aliases it accepts; the assignment itself
-   is argued in .agents/rules/execution-strategy.md §2 and belongs there, not here.
+   is argued in .agents/skills/intmap-round/ and belongs there, not here.
 
    ⚠ Codex is not given this key. `model` lives under the `claude:` block because the Codex
    renderer emits a config layer whose model is chosen by the account, not by the role file.
