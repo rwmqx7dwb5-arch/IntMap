@@ -14,6 +14,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as acorn from 'acorn';
 import { validate } from '../scripts/lib/elections-schema.mjs';
+import { ciRuns } from './helpers/ci-reach.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -58,7 +59,10 @@ test('② check:elections is declared AND called by the suite and by CI', () => 
   assert.ok(pkg.scripts['check:elections'], 'package.json declares no check:elections');
   assert.match(rd('scripts/test-parallel.mjs'), /build-elections\.mjs['"],\s*['"]--check/,
     'npm test does not run the elections gate');
-  assert.match(rd('.github/workflows/ci.yml'), /check:elections/, 'ci.yml does not run the elections gate');
+  /* ⚠ (#R771) ASKED OF WHAT CI RUNS, NOT OF HOW ci.yml SPELLS IT — tests/helpers/ci-reach.mjs.
+     The 28 declared gates stopped being one step each when they were split across three machines;
+     grepping the workflow for this gate's name reported it as unrun while it ran every time. */
+  assert.ok(ciRuns('check:elections'), 'CI does not run the elections gate');
 });
 
 /* ── ③ the camera is moved by one file, and it is not this layer ────────────────────────────────

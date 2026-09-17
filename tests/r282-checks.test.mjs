@@ -230,9 +230,21 @@ test('R282 (4b) --sync is idempotent, so concurrent finishes cannot disagree', (
 test('R282 (5) AGENTS.md ends the workflow at the master and sources the USB mirror from it', () => {
   const md = read('AGENTS.md');
 
-  const fence = (md.match(/```[\s\S]*?```/g) || []).find((b) => b.includes('squash merge'));
-  assert.ok(fence, '§5 still states the workflow as a fenced chain');
-  assert.match(fence, /branch deletion\s*→\s*原本/, 'the chain must not end at branch deletion');
+  /* ⚠ (#R771) THE DEFECT IS «THE MASTER UPDATE FELL OUT OF THE WORKFLOW», NOT «THERE IS ONE FENCE».
+     This read the chain as a single fence ending 「branch deletion → 原本」 until #R771 split §5.1
+     into what the round does (no waiting) and what the NEXT round's opening collects (production
+     verification · master · USB). Nothing was removed — the master update moved — and a check
+     written against the shape rather than the defect calls that a regression.
+     [[intmap-restate-the-defect-not-the-fix]]: what must hold is that §5.1 still names the merge,
+     still names the master update, and does not stop at deleting the branch. */
+  const s51 = md.slice(md.indexOf('### 5.1'), md.indexOf('\n### ただし'));
+  assert.ok(s51.length > 200, '§5.1 still states the workflow');
+  assert.match(s51, /squash merge|--squash/, '§5.1 must still name the merge');
+  assert.match(s51, /master-sync\.mjs --sync/, 'the workflow must not end at branch deletion — the master update is part of it');
+  assert.ok(s51.indexOf('master-sync.mjs --sync') > s51.search(/squash merge|--squash/),
+    'the master update must come AFTER the merge, or it carries a commit that is not on main yet');
+  const fence = (s51.match(/```[\s\S]*?```/g) || []).find((b) => /→/.test(b));
+  assert.ok(fence, '§5.1 still states the order as a fenced chain');
 
   const s6 = md.slice(md.indexOf('\n## 6.'), md.indexOf('\n## 7.'));
   assert.match(s6, /原本/, '§6 names the master copy');

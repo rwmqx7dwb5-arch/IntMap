@@ -16,6 +16,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { resolve as resolveClassSpans } from '../scripts/histadmin/class-dates.mjs';
+import { ciRuns } from './helpers/ci-reach.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -133,7 +134,10 @@ test('⑤ coverage is observed across every era the clock reaches, and the gate 
 
   const pkg = JSON.parse(read('package.json'));
   assert.ok(pkg.scripts['check:histfidelity'], 'the gate is not declared in package.json');
-  assert.ok(read('.github/workflows/ci.yml').includes('check:histfidelity'), 'no CI step names the gate');
+  /* ⚠ (#R771) ASKED OF WHAT CI RUNS, NOT OF HOW ci.yml SPELLS IT — tests/helpers/ci-reach.mjs.
+     The 28 declared gates stopped being one step each when they were split across three machines;
+     grepping the workflow for this gate's name reported it as unrun while it ran every time. */
+  assert.ok(ciRuns('check:histfidelity'), 'CI does not run the fidelity gate');
   assert.ok(read('scripts/test-parallel.mjs').includes('hist-fidelity.mjs'), 'npm test does not run the gate');
 });
 

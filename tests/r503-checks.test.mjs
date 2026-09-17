@@ -27,6 +27,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTreeLock } from './helpers/gate-lock.mjs';
+import { ciRuns } from './helpers/ci-reach.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const at = (p) => join(ROOT, p);
@@ -164,8 +165,14 @@ test('#R503 ⑤ check:agents is clean, and it is what CI runs', async () => {
   await withTreeLock(() => {
     execFileSync(process.execPath, [at('scripts/agent-sync.mjs')], { cwd: ROOT, stdio: 'pipe' });
   });
-  assert.match(read('.github/workflows/ci.yml'), /npm run check:agents/,
-    'ci.yml no longer runs check:agents — a gate only a developer types is not a gate');
+  /* ⚠ (#R771) ASK WHAT CI RUNS, NOT HOW ci.yml SPELLS IT. The 28 declared gates stopped being one
+     step each when they were split across three machines: scripts/ci-gates.mjs discovers them from
+     package.json and runs the bin it planned. Grepping for the name reported this gate as unrun
+     while it ran — the check was measuring the workflow's spelling.
+     So the planner is EVALUATED, and the workflow is only trusted to reach it on a NON-COMMENT line
+     (a sentence about the shard step looks exactly like the shard step — #R628). */
+  assert.ok(ciRuns('check:agents'),
+    'CI does not run check:agents — a gate only a developer types is not a gate');
 });
 
 test('#R503 ⑤ every rendered file says it is generated', () => {

@@ -144,9 +144,16 @@ node scripts/worktree.mjs new <slug>
 git add -A && git commit -m "R<N>: <一行の要約>"
 git push -u origin feat/r<N>-<slug>
 gh pr create --fill
-gh pr checks --watch          # CI を確認し、赤なら直す
-gh pr merge --squash --delete-branch
+gh pr merge --squash --auto --delete-branch   # 緑なら勝手に merge される。座って見ない
 ```
+
+⚠ **`gh pr checks --watch` で CI を見張らない**（#R771）。実測で、赤い CI は 11.9分・12.2分
+かかり、その間ずっと待っていた。`--auto` なら緑で自動 merge・branch 削除まで行き、**赤いときだけ**
+戻ればよい。CI のゲートは 3 台に分かれ `fail-fast: false` なので、**1 回の run で落ちたゲートが
+全部出る**——「1 つ直して 12 分待ってまた別のが赤」という往復がそもそも起きない
+（`scripts/ci-gates.mjs`。計画は `node scripts/ci-gates.mjs --plan` が印字する）。
+
+⚠ **merge 後に main で走る CI を待たない。** PR の CI が緑なら同じ木が同じ結果を出す。
 
 - **push の直前にラウンド番号を取り直す**（`node scripts/worktree.mjs status`）。
   ⚠ **これは稀な事故ではない。** `DEV-NOTES.md` を「改番」「番号を取り直」で引けば実例が並ぶ
@@ -186,15 +193,33 @@ grep -o '^\[functions\.[a-z0-9-]*\]' supabase/config.toml
 サイトの本番検証は `intmap-prod-verifier` に渡す。**ローカルで測った数字を本番の数字として
 報告しない。**
 
----
-
-## 7. 終了処理（省略できない）
+⚠ **この回の本番検証を、この回の中で待たない**（#R771・`AGENTS.md` §5.1）。Pages の deploy は
+merge のあと数分かかる。**前回までの分を、次のラウンドの着手時（§1）にまとめて検証する。**
+終えたら受領証を残す——これを書かない先送りは「やらなかった」と区別がつかない:
 
 ```bash
+node scripts/worktree.mjs verified      # origin/main の HEAD を「本番検証済み」として記録
+```
+
+---
+
+## 7. 終了処理（省略できない。ただし**待たない**）
+
+⚠ **この回でやるのは `done` だけ。** 残りは merge が本番へ届いてからでないと意味がなく、
+届くのを待つと 1 ラウンドが 1 時間になる（#R771）。**次のラウンドの着手時にまとめて走らせる**
+——`--sync` は冪等で、**1 回の実行がその時点で merge 済みの全セッション分を運ぶ**。
+
+```bash
+node scripts/worktree.mjs done          # この回: 自分の worktree と branch を片付ける
+```
+
+```bash
+# 次のラウンドの着手時に、前回までの分をまとめて:
+node scripts/worktree.mjs status        # 何が未了かを述べる（本番検証・原本・deploy）
 node scripts/master-sync.mjs --sync     # 原本 (OneDrive) を origin/main へ早送り
 node scripts/master-sync.mjs --check    # 原本が merge 後の状態か（exit 0 を確認）
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1   # USB へ完全ミラー（毎回）
-node scripts/worktree.mjs done          # 自分の worktree と branch を片付ける
+node scripts/worktree.mjs verified      # 本番検証を終えたら受領証
 ```
 
 - `--sync` は**冪等**でロックが要らない。他セッションと同時に走ってよい。

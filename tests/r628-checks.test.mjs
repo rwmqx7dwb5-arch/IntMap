@@ -107,9 +107,14 @@ test('R628 the three new document rules actually go red', { timeout: 900_000 }, 
     /* ③ 宣言されたゲートの呼び出し元を外す。母集合は package.json——**ゲートは、自分が宣言
        されている一覧からは隠れられない**。手で書いた表からは隠れられる。 */
     await t.test('③ a declared check:* gate with no caller fails', () => {
+      /* ⚠ (#R771) THE MUTATION MOVED WITH THE CALLER. It used to blank one gate's own step; since
+         the gates run through scripts/ci-gates.mjs the caller IS the shard invocation, so that is
+         what gets blanked. The claim is unchanged — remove what runs a declared gate and the rule
+         must name it — and it is now a stronger mutation: it orphans every gate at once, so a rule
+         that had quietly stopped looking could not survive it. */
       const r = withBroken([{
-        file: '.github/workflows/ci.yml', why: 'the bordercoast gate step',
-        from: 'run: npm run check:bordercoast', to: 'run: echo skipped',
+        file: '.github/workflows/ci.yml', why: 'the step that runs a shard of the declared gates',
+        from: 'run: node scripts/ci-gates.mjs --shard', to: 'run: echo skipped --shard',
       }], () => only('gate-callers'));
       assert.equal(r.code, 1, 'a gate nobody runs was accepted');
       assert.match(r.out, /check:bordercoast/, 'the report does not name the orphan gate');
