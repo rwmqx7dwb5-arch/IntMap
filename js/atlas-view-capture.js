@@ -26,8 +26,12 @@
  *
  *  ⚠ THE WEBGL FRAME IS READ INSIDE A RENDER TICK. `preserveDrawingBuffer` is deliberately OFF on
  *  the map (js/app-body.js: it costs a copy every frame and flickers on resize), and a WebGL
- *  drawing buffer is only guaranteed readable in the frame it was drawn. Hence `events.once('render')`
- *  + `triggerRepaint()`, with a timer behind it for the case where no render event ever comes.
+ *  drawing buffer is only guaranteed readable in the frame it was drawn. Hence the read happens in a
+ *  callback the ENGINE runs inside the tick — `render.onNextFrame(ms, fn)` (js/geo-engine.js), which
+ *  also has the timer behind it for the case where no render event ever comes.
+ *  ⚠ (#R768) THAT WAIT USED TO BE WRITTEN OUT HERE, and the cost of that was paid somewhere else: the
+ *  camera verifier needed the same question — 「is this page compositing at all?」 — had nowhere to
+ *  ask it, and answered `no_change` instead, which reads as 「your move did not take effect」.
  *
  *  ⚠ NO IMPORTS, NO HOST, NO GLOBALS OF ITS OWN. Everything it needs arrives in the options object,
  *  so tests/r493-checks.test.mjs can read this file's surface without a browser.
@@ -93,9 +97,7 @@ export function makeViewCapture(deps) {
        pixels of (0,0,0). A black rectangle handed to a vision model is not a failed capture, it is a
        CONFIDENT WRONG ANSWER — «the map is dark». The caller has to be able to tell the two apart. */
     const grabRendererFrame = (GE2) => new Promise((res) => {
-      let done = false;
       const grab = (live) => {
-        if (done) return; done = true;
         try {
           const c = GE2().render.canvas();
           const g = document.createElement('canvas');
@@ -107,8 +109,12 @@ export function makeViewCapture(deps) {
           res({ canvas: g, live: !!live });
         } catch (_) { res({ canvas: null, live: false }); }
       };
-      try { GE2().events.once('render', () => grab(true)); GE2().render.triggerRepaint(); } catch (_) { grab(false); }
-      setTimeout(() => grab(false), 1200);   /* the safety net: a renderer that never fires 'render' must not hang the caller */
+      /* (#R768) the once-render-or-timeout wait is the ENGINE's, not this file's — js/geo-engine.js
+         `render.onNextFrame`. It used to be written out here, and then the camera verifier needed the
+         same question ("is the page compositing?") and had nowhere to ask it, so every camera move in
+         a backgrounded tab came back `no_change` = a failure that had not happened. One implementation,
+         two readers; the callback still runs INSIDE the tick, which is the whole point. */
+      try { GE2().render.onNextFrame(1200, grab); } catch (_) { grab(false); }
     });
     o = o || {};
     const GE = o.GE;

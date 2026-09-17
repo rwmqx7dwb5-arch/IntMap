@@ -5119,6 +5119,7 @@ window.IntMapLang.define('ko', { ui: {
   'It was calculated but nothing was drawn on the map.': '계산은 되었지만 지도에는 아무것도 그려지지 않았습니다.',   /* atlas-results.js (#R318) atlas.code.not_rendered */
   'It is on the map but currently hidden.': '지도에는 있지만 지금은 숨겨져 있습니다.',   /* atlas-results.js (#R318) atlas.code.not_visible */
   'Nothing on the map changed.': '지도에서 바뀐 것이 없습니다.',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'The map was not drawing — IntMap is in the background, so the view could not move. Bring IntMap to the front and ask again.': '지도가 그려지고 있지 않았습니다 — IntMap이 백그라운드에 있어 화면을 움직일 수 없었습니다. IntMap을 앞으로 가져온 뒤 다시 물어봐 주세요.',   /* atlas-results.js (#R768) atlas.code.not_rendering */
 
   'There was nothing of that kind to remove — the map is already in the state asked for.': '제거할 그런 대상이 없었습니다 — 지도는 이미 요청하신 상태입니다.',   /* atlas-results.js (#R318) atlas.code.already_clear */
   'The map was already showing what you asked for.': '지도는 이미 요청하신 내용을 보여 주고 있었습니다.',   /* atlas-results.js (#R740) atlas.code.already_there */

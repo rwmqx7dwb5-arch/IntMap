@@ -201,6 +201,14 @@ jobs:
       # observers, which is precisely when the difference stops being theoretical.
       - name: Atlas capability registry audit (the one-list rule)
         run: npm run check:capabilities
+      # ══ (#R768) …AND WHAT THOSE CAPABILITIES REPORT BACK ══════════════════════════════════════════
+      # The two gates above ask whether a capability is catalogued and whether it can be run. Neither
+      # can ask whether the sentence it hands Atlas is TRUE — and a false 「it did not take effect」 is
+      # what makes a correct agent retry until its budget is gone (measured in production: a camera
+      # move in a backgrounded tab answered `no_change` seven times and the turn died at its step
+      # budget; the same question with the page in front took one call). .agents/rules/one-pass-or-a-reason.md
+      - name: Atlas observer verdicts (a repeat is a symptom)
+        run: npm run check:atlasrepeat
       # ══ (#R311) THE STARTUP BUDGET ═══════════════════════════════════════════════════════════════
       # 「現在のCIでは、3,000KB超chunkを検出しても成功扱いになる構成があります。」 — measured, and it was
       # exactly true: until this step the only thing CI weighed was TEST TIME. `vite build` printed

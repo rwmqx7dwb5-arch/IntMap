@@ -1919,7 +1919,7 @@ function _m(){ return window.__imap||null; }
       /* (#R180) attach a popup/marker the caller built itself — see the adapter */
       attach:o=>A().attach?A().attach(o):o },
     /* (#R160/#R161) render surface — resize / repaint / canvas / container + size / cursor */
-    render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(),
+    render:{ resize:()=>A().resize(), triggerRepaint:()=>A().triggerRepaint(), canvas:()=>A().getCanvas(), /* (#R768) IS THE RENDERER DRAWING RIGHT NOW? `onNextFrame` runs fn INSIDE the tick (a WebGL drawing buffer is only readable there); `ticking` asks the same thing as a Promise. Both adapters fire 'render'. ⚠ A false answer may only WEAKEN a claim, never make one — .agents/rules/one-pass-or-a-reason.md §5, DEV-NOTES #R768. ⚠ ON ONE LINE BECAUSE THE APP-SHELL BUDGET HAD NO HEADROOM AT ALL (8,049/8,050 at origin/main) — the prose for this lives in DEV-NOTES and in the two files that read it, not here. */ onNextFrame(ms,fn){ let d=false; const f=v=>{ if(d) return; d=true; try{ fn(!!v); }catch(_){} }; try{ A().once('render',()=>f(true)); A().triggerRepaint(); }catch(_){ f(false); } setTimeout(()=>f(false), Math.max(50,+ms||600)); }, ticking(ms){ return new Promise(r=>{ try{ this.onNextFrame(ms,r); }catch(_){ r(false); } }); },
       container:()=>A().getContainer(), size:()=>A().getSize(), setCursor:c=>A().setCursor(c),
       /* (#R202) the render resolution, read and written — see js/render-scale.js */
       getRenderScale:()=>A().getRenderScale?A().getRenderScale():null,
