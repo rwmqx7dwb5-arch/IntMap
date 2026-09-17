@@ -126,7 +126,11 @@ export function lateNote(n, ms) {
  * to it. It is a thunk rather than a signal because the controller is installed when a turn starts,
  * and a value captured at wiring time would belong to no turn at all. */
 export function makeFetchJSON(turnSignal) {
-  return async function _fetchJSON(url, budgetMs) {
+  /* ⚠ (#R769) `note` is an object the CALLER owns; this function only forwards it to the ladder and
+     then names the one failure the ladder cannot see — a document that arrived and did not parse.
+     Without it 「no source answered」 and 「a source answered with no news」 reach js/atlas-sources.js
+     as the same `null`, and the reader is told neither. */
+  return async function _fetchJSON(url, budgetMs, note) {
     /* (#R276) …except Open-Meteo: CORS-open and rate-limited, so it goes through the app's ONE
        guarded client (js/wx-source.js), which owns its cache, its dedupe and its 429 breaker. */
     try { if (window.IntMapWx && window.IntMapWx.isOpenMeteo(url)) return await window.IntMapWx.guardedJSON(url, 300000); } catch (_) { /* fall through to the ladder */ }
@@ -134,8 +138,12 @@ export function makeFetchJSON(turnSignal) {
       as: 'json', direct: true,
       budgetMs: (budgetMs || ATLAS_BUDGETS.EVIDENCE_BUDGET_MS),
       signal: (typeof turnSignal === 'function') ? turnSignal() : undefined,
+      note,
     });
     if (!txt) return null;
-    try { return JSON.parse(txt); } catch (_) { return null; }
+    try { return JSON.parse(txt); } catch (_) {
+      try { if (note && typeof note === 'object') { note.reason = 'not-json'; } } catch (__) { /* the caller's object is theirs */ }
+      return null;
+    }
   };
 }

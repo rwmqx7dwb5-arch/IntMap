@@ -129,9 +129,37 @@ test('R464 ④: every sequential run of GDELT calls shares one shrinking budget'
   /* …and the analyze gather's countdown must be handed over, not merely consulted */
   const gather = seqLines.find((l) => l.includes('regionQ'));
   assert.ok(gather, 'the analyze gather must still be one of them');
-  assert.match(gather, /_gdeltNews\(regionQ,srcSink,null,wLeft\(\)\)/,
-    'a wLeft() that is only CONSULTED gates whether to START another attempt and never bounds one — '
-    + 'which is how three 14 s attempts cost 42 s inside a 20 s budget');
+  /* ⚠ (#R769) THE ARITY IS NOT THE INVARIANT. This read `/_gdeltNews\(regionQ,srcSink,null,wLeft\(\)\)/`
+     — the call as it was spelled in #R464 — so adding a fifth argument failed it while the budget was
+     still being handed over exactly as before. The defect this guards is 「wLeft() is consulted but
+     never passed」, so it is measured on the 4th argument of EVERY call on that line, whatever comes
+     after it (.agents/rules/no-ad-hoc-hardcoding.md section 5: a check that fixes a spelling stops
+     measuring the fact). */
+  /* ⚠ A REGEX CANNOT SPLIT THESE ARGUMENTS. `wLeft()` and `nn()` contain the very parentheses the
+     pattern would have to balance, and the first attempt at this check matched
+     «_gdeltNews(regionQ,srcSink,null,wLeft(» — i.e. it read the 4th argument as truncated and failed
+     a call that was correct. Scanned with a depth counter instead. */
+  const argsOf = (line, at) => {
+    let d = 0; const out = []; let cur = '';
+    for (let i = at; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '(') { d++; if (d === 1) continue; }
+      if (ch === ')') { d--; if (d === 0) { out.push(cur); return out; } }
+      if (ch === ',' && d === 1) { out.push(cur); cur = ''; continue; }
+      cur += ch;
+    }
+    return null;
+  };
+  let found = 0;
+  for (let i = gather.indexOf('_gdeltNews('); i >= 0; i = gather.indexOf('_gdeltNews(', i + 1)) {
+    const args = argsOf(gather, i + '_gdeltNews'.length);
+    assert.ok(args, `a _gdeltNews call on the gather line must have balanced parentheses: «${gather.slice(i, i + 80)}»`);
+    assert.equal((args[3] || '').trim(), 'wLeft()',
+      'a wLeft() that is only CONSULTED gates whether to START another attempt and never bounds one — '
+      + `which is how three 14 s attempts cost 42 s inside a 20 s budget: «${gather.slice(i, i + 80)}»`);
+    found++;
+  }
+  assert.ok(found >= 2, `the gather must still chain its GDELT calls (found ${found})`);
 });
 
 /* ── ④b …and a caller that names no budget still gets a GDELT-sized one ────────────────────────── */
@@ -249,8 +277,16 @@ test('R464 ⑨: nothing is written to the shared cache unless GDELT returned a r
   const src = RELAY.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
   const refresh = /async function refresh\([\s\S]*?\n\}/.exec(src);
   assert.ok(refresh, 'the upstream read must live in one function');
-  assert.match(refresh[0], /if\s*\(!r\.ok\)\s*return null/,
+  /* ⚠ (#R769) THIS READ `/if \(!r\.ok\) return null/` — the 2026-08 spelling of 「give up」. #R769 made
+     the upstream read a bounded ladder, so giving up became `continue`, and this failed while a 429
+     was as far from the cache as it had ever been. What must be true is not a keyword: it is that
+     NO path from a non-2xx reaches writeCache. Measured on the statement instead of the word. */
+  const notOk = /if\s*\(!r\.ok\)\s*\{?([^}\n]*)\}?/.exec(refresh[0]);
+  assert.ok(notOk, 'the upstream read must still test r.ok before doing anything with the body');
+  assert.ok(!/writeCache/.test(notOk[1] || ''),
     'a 429 — measured as 4 responses in 5 — must never become a cache entry');
+  assert.match(notOk[1] || '', /continue|return|break/,
+    'a non-2xx must LEAVE this iteration; falling through would read the body of a refusal');
   assert.match(refresh[0], /Array\.isArray\(j\.articles\)/,
     'a 200 that is not the artlist JSON must not be cached as though it were (news-relay applies '
     + "the same rule to Google's interstitial)");

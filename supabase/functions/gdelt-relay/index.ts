@@ -90,7 +90,8 @@ import { corsFor, fetchGuarded, methodGate, relayFail, MAX_QUERY_URL } from "../
 const CORS = {
   ...corsFor(),
   "Access-Control-Expose-Headers":
-    "x-intmap-gdelt-cache, x-intmap-gdelt-age-ms, x-intmap-gdelt-store",
+    "x-intmap-gdelt-cache, x-intmap-gdelt-age-ms, x-intmap-gdelt-store, x-intmap-gdelt-upstream, " +
+    "x-intmap-gdelt-warm",
 };
 
 /* GDELT's artlist replies measured 4.1-4.8 kB; 2 MB is three orders of magnitude of headroom. */
@@ -100,6 +101,40 @@ const MAX_BYTES = 2 * 1024 * 1024;
    14.1-26.0 s. A deadline shorter than the upstream's successful response time does not protect
    anything — it just guarantees the failure it was meant to bound. */
 const UPSTREAM_TIMEOUT_MS = 25000;
+
+/* ⚠⚠⚠ (#R769) HOW LONG THE WARM BEHIND A COLD MISS MAY RUN, AND WHY IT EXISTS AT ALL.
+   Branch 2 below refreshes a STALE entry behind the reader. Branch 4 — the cache is EMPTY and GDELT
+   refused — did not, so the one case where the cache holds nothing was also the one case where
+   nothing was ever written to it. Every reader paid a full refusal and left the shelf as empty as
+   they found it; the next reader started from the same place. Measured from production on
+   2026-09-17, eight consecutive reads of this endpoint: 502 x8, every one of them 'cold'.
+
+   The retry is worth running because the FIRST toss is the one that loses. Measured the same day
+   against api.gdeltproject.org, six back-to-back pairs of identical requests:
+
+       the request that drew the 429     0 successes / 6      429 in  9.4-13.4 s
+       an IMMEDIATE retry after it       3 successes / 6      200 in 14.9-19.6 s
+
+   ⚠ THAT IS WHY THE RETRY CANNOT LIVE INSIDE THE READER'S REQUEST. js/proxy-fetch.js gives this
+   function OWN_RELAY_TIMEOUT_MS = 28 s end to end; a first attempt spends ~10 s of it and a SUCCESS
+   then needs another 15-20 s, so a retry started in-band would be aborted about as often as it
+   would have worked. EdgeRuntime.waitUntil outlives the response — the same mechanism branch 2
+   already uses — so the reader waits no longer than before and the shelf is stocked for whoever
+   asks next.
+
+   ⚠ THE AMPLIFICATION THIS ADDS IS SELF-LIMITING, and that is the only reason it is allowed to
+   exist. A warm runs ONLY on a cold miss, and one successful warm makes that query fresh for 15 min
+   and servable for 6 h — so the warms stop because they worked. What it must not become is an
+   unbounded loop, and the budget below is the whole of it.
+   ⚠ Expires when GDELT stops refusing most first attempts (docs/MONITORING.md section 1c measures
+   exactly that) — then one in-band attempt succeeds and this budget is dead weight. */
+const WARM_BUDGET_MS = 45000;
+
+/* ⚠ DO NOT START AN ATTEMPT THAT CANNOT FINISH. Measured 2026-09-17 over 29 requests: the fastest
+   response api.gdeltproject.org gave of ANY kind — refusals included — was 9,443 ms. A deadline
+   under that does not bound a failure, it manufactures one (#R464 recorded the same mistake in the
+   6 s direct deadline). */
+const MIN_ATTEMPT_MS = 9500;
 
 /* GDELT's own `cache-control: public, max-age=900`. Using the upstream's number rather than one of
    ours means this cache never claims data is fresher than its publisher says it is. */
@@ -253,32 +288,122 @@ async function writeCache(key, body) {
   } catch (e) { STORE_NOTE = "throw:" + ((e && e.name) || "err"); return false; }
 }
 
-/* One upstream read, and the cache write that makes it worth something to everybody else.
-   Returns the body text, or null. */
-async function refresh(canonUrl, key) {
-  const r = await fetchGuarded(canonUrl, {
-    timeoutMs: UPSTREAM_TIMEOUT_MS,
-    maxBytes: MAX_BYTES,
-    contentTypeRe: /json/i,
-    headers: {
-      accept: "application/json",
-      "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)",
-    },
-  });
-  /* 429 IS THE COMMON CASE, NOT THE EXCEPTION (12 of 15 measured). It is not an error to log and
-     forget — it is the reason this cache exists, and the reason a stale hit is served instead. */
-  if (!r.ok) return null;
-  const txt = r.text();
-  /* An upstream that answers 200 with something that is not the artlist JSON must not be cached as
-     if it were — the same rule news-relay applies to Google's interstitial. */
-  let j = null;
-  try { j = JSON.parse(txt); } catch (_) { return null; }
-  if (!j || typeof j !== "object" || !Array.isArray(j.articles)) return null;
-  await writeCache(key, txt);
-  return txt;
+/* ⚠⚠⚠ (#R769) WHAT THE UPSTREAM ACTUALLY SAID, because until this round nothing did.
+   #R468 put the diagnostic on this endpoint for one stated reason — 「the one outcome a reader
+   actually complains about was the one outcome nobody could explain」 — and then left the refusal
+   itself unnamed. Measured from production 2026-09-17: eight 502s, every one carrying
+   'x-intmap-gdelt-cache: cold' and NOTHING ELSE, so from outside this function 「GDELT refused」,
+   「GDELT answered with something that was not an artlist」 and 「GDELT could not be reached」 were
+   one indistinguishable event. They are three different faults with three different answers.
+   Request-scoped for the same reason STORE_NOTE is: Supabase hands every request a cold isolate. */
+let UPSTREAM_NOTE = "";
+
+/* Upstream reads until the budget runs out, and the cache write that makes one worth something to
+   everybody else. Returns the body text, or null — and leaves UPSTREAM_NOTE naming why not. */
+async function refresh(canonUrl, key, budgetMs, maxTries) {
+  const t0 = Date.now();
+  const budget = budgetMs > 0 ? budgetMs : UPSTREAM_TIMEOUT_MS;
+  const cap = maxTries > 0 ? maxTries : Infinity;
+  const left = function () { return budget - (Date.now() - t0); };
+  let tries = 0;
+  let why = "no-attempt";
+  /* ⚠ THE FLOOR IS CHECKED BEFORE EACH ATTEMPT, NOT ONLY BEFORE THE FIRST. Consulting a budget
+     only decides whether to START one; a second attempt begun with 3 s left is a manufactured
+     failure that also spends a slot GDELT counts (#R464 handed wLeft() to each call for this).
+     ⚠ AND THE COUNT IS A SEPARATE LIMIT FROM THE CLOCK, because the in-band caller wants exactly
+     one attempt and the budget alone does not say so: a 429 returning at 10 s leaves 15 s of a 25 s
+     budget, which is over the floor, so「one attempt」written in a comment above a loop bounded only
+     by time is a comment that its own code contradicts. */
+  while (left() >= MIN_ATTEMPT_MS && tries < cap) {
+    tries++;
+    let r = null;
+    try {
+      r = await fetchGuarded(canonUrl, {
+        timeoutMs: Math.min(UPSTREAM_TIMEOUT_MS, left()),
+        maxBytes: MAX_BYTES,
+        contentTypeRe: /json/i,
+        headers: {
+          accept: "application/json",
+          "user-agent": "IntMap/1.0 (+https://rwmqx7dwb5-arch.github.io/IntMap/)",
+        },
+      });
+    } catch (e) {
+      /* fetchGuarded throws a CODE for unreachable / wrong-type / too-large. It used to travel out
+         of here to relayFail; now it is retryable like any other refusal, so the code is kept
+         rather than lost — this is the only place that still knows it. */
+      why = String((e && e.code) || "unreachable").slice(0, 24);
+      continue;
+    }
+    /* 429 IS THE COMMON CASE, NOT THE EXCEPTION (12 of 15 measured in #R464; 24 of 29 on
+       2026-09-17). It is not an error to log and forget — it is the reason this cache exists, and
+       the reason a stale hit is served instead. */
+    if (!r.ok) { why = String(r.status); continue; }
+    const txt = r.text();
+    /* An upstream that answers 200 with something that is not the artlist JSON must not be cached
+       as if it were — the same rule news-relay applies to Google's interstitial.
+       ⚠⚠⚠ (#R769) …AND IT IS NOT RETRIED, BECAUSE A RETRY CANNOT CHANGE IT. The retry above is
+       justified by one specific measurement — a REFUSAL is a queue decision, so the same request
+       sent again is a fresh draw (0/6 became 3/6). A 200 whose body is not an artlist is not a
+       draw; it is the upstream's answer to this question, and asking again spends a slot GDELT
+       counts to be told the same thing. Measured 2026-09-17, every 200 api.gdeltproject.org gave
+       for ANY of five query shapes and two modes — sort=hybridrel / HybridRel / DateDesc,
+       query=Ukraine and query=climate, mode=artlist and mode=timelinevol — was the two bytes `{}`.
+       Retrying that would have tripled the load on a refusing upstream for a payoff of zero, which
+       is the opposite of what WARM_BUDGET_MS is allowed to exist for. */
+    let j = null;
+    try { j = JSON.parse(txt); } catch (_) { why = "not-json"; break; }
+    if (!j || typeof j !== "object" || !Array.isArray(j.articles)) { why = "not-artlist"; break; }
+    await writeCache(key, txt);
+    UPSTREAM_NOTE = "200/" + tries;
+    return txt;
+  }
+  UPSTREAM_NOTE = why + "/" + tries;
+  return null;
 }
 
-function answer(body, ageMs, note) {
+/* ⚠⚠⚠ (#R769) A WARM THAT NEVER RUNS LOOKS EXACTLY LIKE A WARM THAT RUNS AND IS REFUSED.
+   #R464 wrote that sentence about the cache WRITE ("a cache that silently fails to persist looks
+   exactly like a cache that is working") and it is just as true one level up: from outside, an
+   isolate torn down before waitUntil fires and an isolate that spent 45 s drawing 429s produce the
+   identical observation — the next reader still gets 'cold'. Measured while building this round: at
+   a moment when api.gdeltproject.org refused 5 direct requests out of 5, the two explanations could
+   not be told apart, so the fix could not be verified at all.
+   ⇒ the warm leaves a receipt, and the next cold or stale answer carries it in
+   `x-intmap-gdelt-warm`. It is one small object per query, written where the cache already lives.
+   ⚠ The receipt is written on FAILURE too — that is the whole point; a receipt only kept when
+   things worked would say nothing on the day this matters. */
+const WARM_KEY_PREFIX = "warm-";
+
+async function warmBehind(canonUrl, key, budgetMs) {
+  try {
+    EdgeRuntime.waitUntil((async function () {
+      const t0 = Date.now();
+      let note = "throw";
+      try {
+        const txt = await refresh(canonUrl, key, budgetMs);
+        note = (txt ? "hit:" : "miss:") + (UPSTREAM_NOTE || "-");
+      } catch (_) { /* the receipt below is the only thing that still has to happen */ }
+      await writeCache(WARM_KEY_PREFIX + key, JSON.stringify({ note, ms: Date.now() - t0 }));
+    })());
+    return "started";
+  } catch (_) {
+    /* the warm is best-effort; the answer already went out. ⚠ AND THE READER IS TOLD it did not
+       start — 'unavailable' is a different fact from 'ran and was refused'. */
+    return "no-waituntil";
+  }
+}
+
+/* The last receipt, for the answer that is about to say 'cold' or 'stale'. Never blocks that answer
+   on anything but one short read of an object that is already public. */
+async function lastWarm(key) {
+  const j = await readCache(WARM_KEY_PREFIX + key);
+  if (!j) return "none";
+  let r = null;
+  try { r = JSON.parse(j.b); } catch (_) { return "unreadable"; }
+  return String((r && r.note) || "-").slice(0, 40) + "@" + Math.round((Date.now() - j.t) / 1000) + "s";
+}
+
+function answer(body, ageMs, note, warmNote) {
   return new Response(body, {
     headers: {
       ...CORS,
@@ -286,6 +411,8 @@ function answer(body, ageMs, note) {
       "x-intmap-gdelt-age-ms": String(ageMs),
       "x-intmap-gdelt-cache": note,
       "x-intmap-gdelt-store": STORE_NOTE || "-",
+      "x-intmap-gdelt-upstream": UPSTREAM_NOTE || "-",
+      "x-intmap-gdelt-warm": warmNote || "-",
       /* the browser may keep it for the remainder of the window GDELT itself named */
       "cache-control": "public, max-age=" + Math.max(0, Math.round((FRESH_MS - ageMs) / 1000)),
     },
@@ -321,14 +448,18 @@ Deno.serve(async (req) => {
        refresh would be cancelled mid-flight, so the entry would never stop being stale. (Probed on
        the deployed function: `typeof EdgeRuntime.waitUntil === "function"`.) */
     if (hit && age < STALE_MS) {
-      try {
-        EdgeRuntime.waitUntil(refresh(canonUrl, key).catch(function () { /* best effort */ }));
-      } catch (_) { /* refresh is best-effort; the stale answer still goes out */ }
-      return answer(hit.b, age, "stale");
+      /* ⚠ the receipt is read BEFORE the next warm is started, or this answer would be reporting on
+         a warm that has not done anything yet. */
+      const prev = await lastWarm(key);
+      const started = await warmBehind(canonUrl, key, WARM_BUDGET_MS);
+      return answer(hit.b, age, "stale", started + "/" + prev);
     }
 
-    /* 3) cold — this reader pays for the upstream read, and everybody after them does not */
-    const fresh = await refresh(canonUrl, key);
+    /* 3) cold — this reader pays for the upstream read, and everybody after them does not.
+       ⚠ (#R769) ONE attempt, and the budget is the reader's, not this function's own. What made
+       「everybody after them does not」 false was not the size of this deadline — it was branch 4
+       below giving up without leaving anything behind. */
+    const fresh = await refresh(canonUrl, key, UPSTREAM_TIMEOUT_MS, 1);
     if (fresh) return answer(fresh, 0, "miss");
 
     /* 4) cold AND refused. The pipeline's honest "unavailable", reached in ~12 s rather than ~45.
@@ -337,13 +468,24 @@ Deno.serve(async (req) => {
        measured from production, an uncached query spent 12.7-14.8 s and returned this 502 with no
        `x-intmap-*` header of any kind, so 「the cache had nothing」 and 「GDELT refused a refresh of
        something we had」 were indistinguishable from outside. `cold` says which. */
-    return new Response(JSON.stringify({ error: "upstream_unavailable" }), {
+    /* ⚠⚠⚠ (#R769) …AND IT DOES NOT LEAVE THE SHELF AS EMPTY AS IT FOUND IT. The reader is answered
+       now, with the reason named; the warm keeps trying on the budget above so the NEXT reader of
+       this query gets a hit instead of repeating this. */
+    /* ⚠ THE NOTE IS TAKEN BEFORE THE WARM STARTS. UPSTREAM_NOTE is module state and the warm writes
+       to it; reading it afterwards would make what this reader is told depend on the order of two
+       statements rather than on what happened to this reader. */
+    const coldNote = UPSTREAM_NOTE || "-";
+    const prevWarm = await lastWarm(key);
+    const warmStarted = await warmBehind(canonUrl, key, WARM_BUDGET_MS);
+    return new Response(JSON.stringify({ error: "upstream_unavailable", upstream: coldNote }), {
       status: 502,
       headers: {
         ...CORS,
         "content-type": "application/json",
         "x-intmap-gdelt-cache": "cold",
         "x-intmap-gdelt-store": STORE_NOTE || "-",
+        "x-intmap-gdelt-upstream": coldNote,
+        "x-intmap-gdelt-warm": warmStarted + "/" + prevWarm,
       },
     });
   } catch (e) {
