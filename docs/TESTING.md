@@ -1604,6 +1604,46 @@ span が順序どおりで、どの世紀にも在force の単位がある——
 規則は「spec を足す回はどこかから時間を払う」である。実ブラウザでの確認はリポジトリ外の
 使い捨てスクリプトで行った（#R675 と同じ扱い）。
 
+`tests/smoke.spec.js` の **R766 ①②③** は、その到達可能性を**ブラウザで**測る——#R670 の検査は
+「登録済みの `sim.*` が全部行を持つか」を**ソースから**数えており、`sim.*` ではない扉（データと分析・
+比較ビュー・相関分析・地図データの読み込み・Playground・レイヤープリセット）を 1 つも見ていなかった。
+本番 R765 を 18 幅で測ると、`#layer-tools` の **8 個すべてが全幅で `rect 0,0,0,0`** だった。
+⇒ 測るのは **「帯が差し出す扉は、読者が開くパネルから到達できる」**で、扉は**列挙せず DOM から
+数え上げ**、`elementFromPoint` で 1 つずつ訊く（[[intmap-visible-is-not-unoccluded]]）。
+⚠ **「`#btn-gis-panel` が在る」は測らない**——それは**ずっと在った**ので、その綴りを書いた検査は
+**出荷済みのビルドで緑になる**（[[intmap-restate-the-defect-not-the-fix]]）。
+⚠ 下限は「1 つ以上」で**今日の個数ではない**（携帯では 3 つが作られないので、個数を固定すると
+その差が不合格になる）。
+
+⚠⚠ **なぜ独立した spec ではなく smoke なのか。** 新しい spec は `check:testbudget` の core 天井
+（0.6 分）を壊し、しかも `scripts/tiers.mjs` の current-round 例外により**次のラウンドで deep へ
+降りて、push でも PR でも走らなくなる**（[[intmap-deep-tier-rots-unwatched]]）——**3 度再発した
+欠陥の検査としては最悪の置き場所**である。smoke は `CORE_ALWAYS` で**既に起動している**ので、
+`scripts/test-budget.mjs` の言葉どおり「the assertions are free, the boot was the whole price」。
+⚠ 携帯の面も**リロード不要**（`syncResponsive` が `resize` で `applyLayout` を回す）なので、
+2 つ目の起動を買わずに両レイアウトを測れる。
+⚠⚠ **パネルは「開いているはず」ではなく、読者と同じように `#lsr-toggle` を押して開ける。**
+実測: seeded session の 1280×720 では読み込みから 30 秒後も `body.lsr-open` は false だった
+——閉じたパネルの中の扉は当然到達できないので、開けない検査は**製品を誤って赤くする**。
+帯の配置も build / open / close / 再構築 のときだけ走るので、開くことが置き場所を確定させる。
+⚠⚠ **スクロールは待つのであって、時間を測らない。** `scrollIntoView` のあと 120ms 寝る初版は
+**3 回に 1 回落ち**（実測: 812 高の画面で中心が y=890。落ちる扉は毎回違う）。矩形が
+viewport に入るまで**ポーリング**し、入らなかった扉は `reach:false` として報告する（嘘をつかない）。
+⚠ **測定の罠**: ペインが合成されていないとシートの transition が進まず `top` が動かない
+（[[intmap-raf-zero-is-not-a-product-defect]]）。**screenshot を 1 枚挟むと進む。**
+
+⚠⚠ **変異検査を回すときは 1 本ずつ `-g` で走らせる。** `tests/smoke.spec.js` は
+`test.describe.configure({ mode: 'serial' })` なので、先頭が落ちると後続は「did not run」になる
+——それを**「緑だった」と読むと、不合格を出せない検査を出せると誤判定する**
+（[[intmap-co-designed-reader-cannot-falsify]]）。実測: `_placeLayerTools` を `return;` で潰すと
+**①②③ すべてが単独実行で赤くなる**（`-g` を使わないと①しか赤く見えない）。
+
+`tests/r766-gis-entrance-checks.test.mjs`（4 本・147 ms）は**ソースが答えられることだけ**を測る
+——運んだノードが捨てられる前に救い出されているか（**順序**）・二重の扉の判定が宣言からの計算の
+ままか・`data-os-act` が実在するコマンドを名乗っているか・帯を動かす各経路のあとに再配置が走るか。
+⚠ **到達可能性そのものはここでは測らない**——ソースを読むことは、この欠陥が 3 ラウンド生き延びた
+方法そのものである。
+
 `tests/r670-checks.test.mjs`（3 本）は**到達可能性の正本**を測る。#R666 は
 「LayersのToolsからアクセスできるように」に `#layer-tools` へのボタンで答えたが、そこは
 **クラシックのドロップダウンの中**で、既定の読者には `display:none` の祖先の下で `0×0` だった

@@ -2104,11 +2104,18 @@ window.IntMapModules.dataLayers=function(HOST){
         const mkHr=()=>{ const h=document.createElement('hr'); h.style.cssText='border:0;border-top:1px solid rgba(128,128,128,0.2);width:100%;margin:6px 0;'; return h; };
         /* (#R242) one button, created once and re-used on every rebuild — the same shape `_edu` and
            `btn-correlate` have, so `reorganizeLayerPanel` moves it rather than duplicating it. */
+        /* ⚠⚠ (#R766) `data-os-act` ON THE TWO BUTTONS BELOW — js/map-ui.js now carries this whole
+           strip into the panel the reader opens, where 地震 and パンデミック ALREADY have rows of
+           their own (#R243/#R670 put them there). Each button names the OS action it presses, each
+           row already names its own, and the overlap is computed from the two declarations — so the
+           twin is silenced without either file holding a written pairing of ids, and a row added
+           tomorrow silences its twin by itself. The mark is on the BUTTON for the same reason
+           `data-lyr-tool` is (#R729): the module can add a third without editing js/map-ui.js. */
         const _seisBtn=()=>{
           let b=document.getElementById('btn-seismic-sim');
           const lbl=window.IntMapLang.t(lang,'Earthquake simulator','地震シミュレーター','Erdbeben-Simulator','Симулятор землетрясений','Simulador de terremotos');
           if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
-          b=document.createElement('button'); b.id='btn-seismic-sim'; b.type='button'; b.className='ai-test-btn';
+          b=document.createElement('button'); b.id='btn-seismic-sim'; b.type='button'; b.className='ai-test-btn'; b.dataset.osAct='sim.seismic';
           b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
           b.innerHTML='<span></span>'; b.querySelector('span').textContent=lbl;
           b.onclick=()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec&&OS.has&&OS.has('sim.seismic')){ OS.exec('sim.seismic',{source:'ui'}); return; } }catch(_){}
@@ -2128,7 +2135,7 @@ window.IntMapModules.dataLayers=function(HOST){
           let b=document.getElementById('btn-pandemic-sim');
           const lbl=window.IntMapLang.t(lang,'Pandemic Simulator','パンデミック・シミュレーター','Pandemie-Simulator','Симулятор пандемии','Simulador de pandemia');
           if(b){ const sp=b.querySelector('span'); if(sp) sp.textContent=lbl; return b; }
-          b=document.createElement('button'); b.id='btn-pandemic-sim'; b.type='button'; b.className='ai-test-btn';
+          b=document.createElement('button'); b.id='btn-pandemic-sim'; b.type='button'; b.className='ai-test-btn'; b.dataset.osAct='sim.pandemic';
           b.style.cssText='width:100%;text-align:center;margin:6px 0 0;';
           b.innerHTML='<span></span>'; b.querySelector('span').textContent=lbl;
           b.onclick=()=>{ try{ const OS=window.IntMapOS; if(OS&&OS.exec&&OS.has&&OS.has('sim.pandemic')){ OS.exec('sim.pandemic',{source:'ui'}); return; } }catch(_){}
@@ -2237,6 +2244,10 @@ window.IntMapModules.dataLayers=function(HOST){
         try{ if(window.matchMedia && window.matchMedia('(max-width:768px)').matches){ const _oh=dd.querySelector(':scope > .lyr-head[data-i18n="lyrGrpOthers"]'); if(_oh && !_oh.dataset.userToggled) _collapseGroup(_oh); } }catch(_){}
         try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
         try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* (#R34) move the bar to the sheet scroller on mobile */
+        /* ⚠ (#R766) …AND THE TOOLS STRIP AFTER IT, FOR THE SAME REASON: the loop above re-appended
+           `tools` into this dropdown, which no reader is shown. js/map-ui.js carries it to the panel
+           that is. This runs LAST so it moves the node this rebuild just finished filling. */
+        try{ window._placeLayerTools&&window._placeLayerTools(); }catch(_){}
       }catch(e){ try{ console.warn('reorganizeLayerPanel',e); }catch(_){} }
     };
     /* (#R19) Mobile-start smoothness: the very first panel reorganization (a few hundred DOM moves)
