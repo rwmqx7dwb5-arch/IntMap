@@ -33,10 +33,16 @@
    ⚠ THIS DOES NOT NARROW THE WORLD. Bermuda (4th) and the French Southern and Antarctic Lands (5th)
    stay, because the product's own Countries table shows them — measured in the same screenshot. The
    only rows it removes are the ones IntMap already declines to call a country. */
-export const isRankableCountry = s => !!(s && s.sov !== false && s.nameEn);
-
 export function makeAtlasMetrics(HOST, CTX) {
   const LA=CTX.LA, lx=CTX.lx, L=CTX.L, esc=CTX.esc, warn=CTX.warn, R=CTX.R;
+  /* ⚠⚠ IT LIVES INSIDE THE FACTORY, not at module scope, because two invariants meet here:
+     tests/r199 ① requires the kernel to name this module in an import with ONE binding, and
+     tests/r175 ③ requires every export to be imported BY NAME and forbids an unexported top-level
+     declaration. A module-scope `export const` satisfies neither once the kernel takes it from the
+     factory return instead of the import line. Inside the factory it is still ONE definition, it
+     still travels with the return set tests/r199 ② holds to the destructuring, and nothing else in
+     js/ has a second copy of the question. */
+  const isRankableCountry = s => !!(s && s.sov !== false && s.nameEn);
     /* metric catalog → countryStats keys */
     const METRICS={
       pop:{label:LA('Population','人口','Bevölkerung','Население','Población'),get:s=>s.pop},

@@ -68,8 +68,11 @@ function makeMetrics(lang) {
 /* ── ① ONE PREDICATE FOR 「WHICH ROW IS A COUNTRY」 ─────────────────────────────────────────── */
 
 test('R775 ① the predicate answers the measured rows, and narrows nothing else', () => {
-  const ok = METRICS_MOD.isRankableCountry;
-  assert.equal(typeof ok, 'function', 'js/atlas-metrics.js must export isRankableCountry');
+  /* ⚠ it is a FACTORY member, not a module export — tests/r199 ① wants one binding on the import
+     line and tests/r175 ③ wants every export imported by name; inside the factory both hold, and it
+     is still ONE definition (js/atlas-metrics.js says why). */
+  const ok = makeMetrics('en').isRankableCountry;
+  assert.equal(typeof ok, 'function', 'makeAtlasMetrics must return isRankableCountry');
   /* Antarctica is the row the Countries tab already declines to show (sov===false, measured) */
   assert.equal(ok({ sov: false, nameEn: 'Antarctica' }), false);
   /* …and the dependencies the product DOES show stay — measured in the same screenshot,
