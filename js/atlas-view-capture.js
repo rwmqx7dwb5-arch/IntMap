@@ -205,7 +205,14 @@ export function makeViewCapture(deps) {
     var frames = [];
 
     function reset() { frames = []; }
-    function urls() { return frames.length ? frames.slice(-SENT).map(function (f) { return f.url; }) : null; }
+    /* ⚠⚠⚠ (#R779) 空のとき返すのは `[]` ではなく **null** である。これは省略ではなく契約で、
+     js/ai-core.js は「画像が無い」と「空の画像一覧を送る」を別の道として扱う。⚠ そして
+     **null を返す関数の戻り値に、呼び手が直接メソッドを生やしてはならない**——#R773 が
+     `VFRAMES.urls().concat(…)` と書いた瞬間、`inspect` を一度も通っていない普通の初回送信が
+     毎回 `null.concat` で死に、本番の Atlas は回答の代わりに例外の文字列を返していた
+     （実測: ai-proxy への POST は 1 本も出ない）。呼び手側の受け止めは atlas-console の
+     `_atlTurnImgs`。 */
+  function urls() { return frames.length ? frames.slice(-SENT).map(function (f) { return f.url; }) : null; }
 
     /* ── (#R589) WHAT THE RENDERER PUT ON SCREEN ──────────────────────────────────────────────────
        The cheapest source there is, and the only one that knows what the reader can literally read:
