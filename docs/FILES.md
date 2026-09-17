@@ -257,6 +257,14 @@ gis-worker.js                     **Worker の束ね役** `window.IntMapGisWorke
                                   から決めた数で、根拠は定数の隣にある。⚠ `available()`（能力）と
                                   `probe()`（実測）は別の問い——CSP が `blob:` を拒むことは throw では
                                   なく error イベントで出るので、同期では答えられない
+gis-units.js                      **量の単位** `window.IntMapGisUnits`（#R774）— 「この 2 つは
+                                  足し引きできるか。できるなら換算は何か」1 問だけに答える。
+                                  `parse` / `compare` / `convert` / `unitOfExpr`。表は **SI の定義値の原子**
+                                  だけで、`mm/h` や `kg/m^2` は並べずに**解析**する（`m2`・`m²`・`m^2` は同じ）。
+                                  ⚠ **綴りが読めなければ「わからない」であって「同じ」ではない**——
+                                  異なる読めない綴りどうしは拒まれる。⚠ **沈黙は不一致ではない**
+                                  （単位を述べていない格子は今までどおり引ける）。°C・°F は
+                                  オフセットを持つので、**読みの換算と差の換算が別**
 gis-expr.js                       **式の解釈器** `window.IntMapGisExpr`（#R738）— 計算列のための
                                   小さな言語。`parse` / `evaluate` / `compile` / `functions` / `refusals`。
                                   ⚠ **読者が打った文字列がコードにならない**——`eval` も `new Function` も
@@ -526,6 +534,11 @@ atlas-era-highlight.js            Atlas — 過去年を表示中の国ハイラ
 atlas-sources.js                  Atlas — 外部の証拠源（首脳・ライブニュース・POI カタログ）
 atlas-verify.js                   Atlas — 回答のコード側検証（内容分類・算術・出典・地図化の可否）
 atlas-attach.js                   Atlas — 添付ファイルの正体をバイト列に訊く判定器 `ATL_FILE` と全画面ビューア
+atlas-attach-log.js               Atlas — 会話 1 本ぶんの添付の台帳。テキストは毎ターン載せ、画像と PDF は
+                                  在ることだけを述べて recall_attachment で取り寄せさせる。編集の巻き戻しに追随
+atlas-file-view.js                Atlas — 添付ファイルの**中身**を全画面ビューアの中に描く（PDF はブラウザの表示器へ、
+                                  表は中身の列の揃い方で判定して表として、長い本文と大きな表は残りの量を述べる
+                                  ボタンで畳む）。全画面の枠そのものは `atlas-attach.js` が 1 本だけ持つ
 atlas-msg-tools.js                Atlas — メッセージごとの操作バー（コピー／再試行／編集）とその場編集
 atlas-gloss.js                    Atlas — 回答文の語句を選択→右クリック（タッチは長押し→「解説」）で開く
                                   用語カード。意味・**この文での意味**・背景を AI が生成する。文脈は描画済みの
@@ -539,7 +552,7 @@ atlas-country-ids.js              境界データが宣言している国の識�
                                   "GM" は Gambia）。2 つの feature が主張する token は誰も同定しない。名前だけの要求は読まずに
                                   具体地名の解決器へ落とす。検査は tests/r742-atlas-identifier-checks.test.mjs。
 atlas-capabilities.js             **能力レジストリの正本**（#R318）— IntMap が何をできるかの唯一の一覧。
-                                  144 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
+                                  145 能力 × 別名・分類・副作用・生成物・危険度・確認要否・必要な対象・
                                   遅延モジュール、および観測器と検証器。起動バンドル側（Atlas 抜きで参照可）
 atlas-query.js                    **データ横断クエリエンジン** window.IntMapQuery（#R495）— FROM 表 /
                                   WHERE 列条件 / NEAR 空間結合 / ORDER / LIMIT。表（cities・countries・
@@ -619,7 +632,7 @@ atlas-agent.js                    **ターンの進行**（#R406）— Atlas が
                                   **Atlas が宣言**し、ループは宣言と機械の記録が食い違う final だけを
                                   `map_not_drawn`／`chart_not_drawn`／`output_not_produced`／`no_calls_issued`
                                   として差し戻す（schema 検査と同じ種類の整合。1 つの門・回数は `maxOutputGate`）
-atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全144を検索・到達可能 143）／
+atlas-toolsurface.js              **道具の面**（#R406）— 中核9ツール＋`find_capability`（レジストリの全145を検索・到達可能 144）／
                                   `run_capability`（ID指定で起動）。tool 呼び出しを旧 dispatch の action へ翻訳する
 atlas-view-ground.js              **見たものの裏づけ**（#R589）— `look_at_map` に「フレームの中に何があるか」を持たせる層。
                                   ①レンダラが実際に描いたラベル（中心に近い順）②フレームに重なる OSM の名前付き地物
@@ -635,7 +648,7 @@ atlas-view-capture.js             **Atlas の目**（#R493）— 画面のキャ
                                   transcript には小さな機械記録だけを返す（画素は vision channel で次の呼び出しへ）。
                                   ⚠ render tick から来なかったフレームは**受け取らない**——描画されていない
                                   WebGL バッファは全面 (0,0,0) で、黒い矩形は失敗ではなく自信のある誤答になる
-atlas-schemas.js                  **引数の schema**（#R406）— 144能力ぶんの型・列挙・範囲と `required`/`anyOf`。
+atlas-schemas.js                  **引数の schema**（#R406）— 145能力ぶんの型・列挙・範囲と `required`/`anyOf`。
                                   綴りは dispatch が実際に読む名前から取る（発明しない）
 atlas-policy.js                   **中核指示**（#R406）— 1段落の中核指示（情報源の優先順位＝
                                   IntMap 内部データは最後／地図を触ってよい条件／座標の provenance の読み方）と、

@@ -135,11 +135,32 @@ export function makeGisDatasets() {
        year-month prefixes). ⚠ Date.parse alone would accept 「東京」 in some engines and would read
        03/04/2020 as one of two different days depending on the locale of whoever runs it — a column
        whose meaning changes with the reader is worse than a text column. */
+    /* ⚠⚠⚠ THE SHAPE IS NOT THE CALENDAR (#R774). `2026-02-30` has the shape of a date and Date.parse
+       answers 2026-03-02 for it, because ISO-8601 parsing in ECMA-262 carries the overflow instead of
+       refusing it — so a cell stating a day that never existed became a different, real day, and the
+       column typed as `date` with nothing said. The same rule silently turned a common-year 2/29 into
+       3/1 and 4/31 into 5/1. What is asked here is a ROUND TRIP: the year, month and day the cell
+       STATES are rebuilt in UTC, and the value is accepted only when the rebuilt date states them
+       back. A month table would have to grow a leap-year exception; the round trip already has one,
+       because the calendar the engine implements is the one being asked.
+       ⚠ THE DATE PART IS CHECKED ALONE, without the time or the zone. `2026-02-30T00:00+09:00` names
+       a local day, and rebuilding the instant in UTC would compare against the day next door — so the
+       verdict would depend on the offset rather than on the calendar. The instant itself is still the
+       one Date.parse read, zone and all. */
     function asDate(v) {
       if (v instanceof Date) return isFinite(+v) ? +v : null;
       if (typeof v !== 'string') return null;
       const s = v.trim();
-      if (!/^\d{4}(-\d{2}(-\d{2}([T ]\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?)?)?$/.test(s)) return null;
+      const m = /^(\d{4})(?:-(\d{2})(?:-(\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?)?)?$/.exec(s);
+      if (!m) return null;
+      const y = Number(m[1]), mo = m[2] == null ? 1 : Number(m[2]), da = m[3] == null ? 1 : Number(m[3]);
+      /* ⚠ setUTCFullYear, NOT Date.UTC — the rule momentOf's utcYear() states and the reason #R602
+         paid for: Date.UTC maps a year below 100 onto 1900+y, and `0005-03-01` is a year 5 date. */
+      const probe = new Date(0);
+      probe.setUTCFullYear(y, mo - 1, da);
+      probe.setUTCHours(0, 0, 0, 0);
+      if (!isFinite(+probe)) return null;
+      if (probe.getUTCFullYear() !== y || probe.getUTCMonth() !== mo - 1 || probe.getUTCDate() !== da) return null;
       const t = Date.parse(s.length === 4 ? s + '-01-01' : s.replace(' ', 'T'));
       return isFinite(t) ? t : null;
     }
@@ -332,7 +353,17 @@ export function makeGisDatasets() {
         if (decl.start != null && s == null) return no('time-unreadable', { end: 'start', value: String(decl.start) });
         if (decl.end != null && e == null) return no('time-unreadable', { end: 'end', value: String(decl.end) });
         if (s == null && e == null) return no('time-constant-empty');
-        return { time: { kind: 'constant', start: s ? s.start : null, end: e ? e.end : (s ? s.end : null) }, refused: null };
+        const from = s ? s.start : null;
+        const to = e ? e.end : (s ? s.end : null);
+        /* ⚠ A PERIOD THAT ENDS BEFORE IT BEGINS IS NOT A PERIOD (#R774). Both ends read, so nothing
+           above objected, and the record then carried 「2026-09-17 から 2020-01-01 まで」 as its own
+           statement: every window query answers empty and the reader is left to guess whether their
+           data or their question is wrong. It is refused BY NAME for the reason this whole branch is
+           verified rather than copied — a claim nobody could have meant is still a claim. */
+        if (from != null && to != null && from > to) {
+          return no('time-constant-reversed', { start: String(decl.start), end: String(decl.end) });
+        }
+        return { time: { kind: 'constant', start: from, end: to }, refused: null };
       }
 
       if (kind === 'instant' || kind === 'interval') {
@@ -348,7 +379,7 @@ export function makeGisDatasets() {
            column named 「年」 full of 「明治22年」 parses in no engine. A declaration whose cells
            never parse is refused; one whose cells parse sometimes is kept WITH the count, because a
            gappy time axis is still a time axis and the number is how a reader knows. */
-        let read = 0, seen = 0;
+        let read = 0, seen = 0, reversed = 0;
         for (const f of features) {
           const p = (f && f.properties) || {};
           let any = false, ok = false;
@@ -359,12 +390,25 @@ export function makeGisDatasets() {
             any = true;
             if (momentOf(v) != null) ok = true;
           }
+          /* ⚠ A ROW WHOSE END PRECEDES ITS START IS NOT A ROW THAT READ (#R774). It is counted here
+             rather than judged here, and that is deliberate: the branch already decided, for cells
+             that do not parse, that a gappy axis is still an axis and the COUNT is what lets the
+             reader see it. A reversed row is the same kind of fact, so it takes the same treatment —
+             it does not count towards `readable`, which means a column where EVERY stated row is
+             reversed hits the rule two lines below and is refused whole, with no second policy and
+             no second threshold invented for it. `reversed` rides in the time object as the evidence
+             next to the verdict, the way `readable`/`stated` already do. */
+          if (any && kind === 'interval') {
+            const a = decl.startField ? momentOf(p[decl.startField]) : null;
+            const b = decl.endField ? momentOf(p[decl.endField]) : null;
+            if (a && b && a.start > b.end) { reversed++; ok = false; }
+          }
           if (any) { seen++; if (ok) read++; }
         }
-        if (seen > 0 && read === 0) return no('time-unreadable', { checked: seen });
+        if (seen > 0 && read === 0) return no('time-unreadable', { checked: seen, reversed: reversed });
         const t = { kind, readable: read, stated: seen };
         if (kind === 'instant') t.field = decl.field;
-        else { t.startField = decl.startField || null; t.endField = decl.endField || null; }
+        else { t.startField = decl.startField || null; t.endField = decl.endField || null; t.reversed = reversed; }
         return { time: t, refused: null };
       }
 
@@ -761,7 +805,7 @@ export function makeGisDatasets() {
       'unit-not-a-string', 'no-edits', 'index-not-a-number', 'index-out-of-range', 'value-undefined',
       'field-exists', 'field-in-time-axis', 'field-has-dependents', 'nothing-to-undo', 'nothing-to-redo',
       'edit-not-reversible', 'time-field-not-named', 'time-field-missing', 'time-kind-unknown',
-      'time-unreadable', 'time-constant-empty'];
+      'time-unreadable', 'time-constant-empty', 'time-constant-reversed'];
     function no(why, detail) {
       if (REFUSALS.indexOf(why) < 0) throw new Error('gis-datasets: undeclared refusal code ' + why);
       return detail ? { ok: false, why, detail } : { ok: false, why };

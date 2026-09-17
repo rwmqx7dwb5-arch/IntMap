@@ -249,7 +249,14 @@ export function makeSessionTabs(HOST, CTX) {
       const P=window.IntMapCompanyPanel; if(!P||!P.open) return {ok:false,err:'no module'};
       const ok=await P.open(key); return {ok:ok!==false}; }, 'Company atlas · open a company profile and its facilities (params.company)','company'],
     ['company.close', ()=>{ try{ window.IntMapCompanyPanel&&window.IntMapCompanyPanel.close(); }catch(_){} }, 'Company atlas · close','company'],
-    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=GE().camera.getCenter&&GE().camera.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers); return {ok:true,values:v}; }, 'Layer data · sample active layers at a point','layer']
+    /* ⚠ (#R774) 「訊いたが、そこには値が無かった」 IS REPORTED AS ITSELF, NOT AS A READING. js/map-ui.js
+       sampleAt now returns a row for every registration it ASKED, so the rows it hands back are two
+       kinds of fact; putting both under `values` would offer Atlas a reading with no value in it.
+       `values` stays what it has always been — the rows that answered — and `asked` says which
+       layers were questioned and had nothing here, which is the half that used to be silence. */
+    ['layers.data', async(p)=>{ if(!window.IntMapLayers) return {ok:false,err:'no module'}; const c=GE().camera.getCenter&&GE().camera.getCenter(); const v=await window.IntMapLayers.sampleAt((p&&p.lng!=null)?+p.lng:(c?c.lng:0),(p&&p.lat!=null)?+p.lat:(c?c.lat:0),p&&p.layers)||[];
+      const got=v.filter(x=>x&&(x.value!=null||x.number!=null||x.code!=null||x.failed===true));
+      return {ok:true,values:got,asked:v.filter(x=>x&&got.indexOf(x)<0).map(x=>x.id)}; }, 'Layer data · sample active layers at a point','layer']
   ];
   REGL.forEach(r=>{ try{ IntMapOS.register(r[0], (ctx)=>r[1]((ctx&&ctx.params)||{}), {label:r[2], group:r[3]}); }catch(_){} }); })();
 }

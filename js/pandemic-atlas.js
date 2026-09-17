@@ -87,7 +87,7 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
     if (origin.i < 0) return fail(originRefusal(origin, W), 'origin-' + (origin.why || 'unresolved'));
 
     const presetKey = A.preset && PANDEMIC_PRESETS[A.preset] ? A.preset : (A.preset ? null : 'covid');
-    if (presetKey === null) return fail(L('No such pathogen preset.', 'そのような病原体プリセットはありません。', 'Keine solche Erreger-Vorlage.', 'Такого пресета патогена нет.', 'No existe ese preajuste de patógeno.') + ' ' + Object.keys(PANDEMIC_PRESETS).join(', '), 'preset-unknown');
+    if (presetKey === null) return fail(L('No such pathogen preset.', 'そのような病原体プリセットはありません。', 'Keine solche Erreger-Vorlage.', 'Такого пресета патогена нет.', 'No existe ese preajuste de patógeno.') + ' ' + Object.keys(PANDEMIC_PRESETS).join(', '), 'preset-unknown', true);   /* (#R775) the refusal names every preset; another word for the same pathogen cannot help */
     const scenario = A.scenario === 'real-world' ? 'real-world' : 'naive';
 
     const days = Math.round(+A.days);
@@ -98,7 +98,7 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
        number nobody asked for and the reply describes it as though they had (#R743). */
     const given = (A.params && typeof A.params === 'object') ? A.params : {};
     const bad = checkPandemicParams(given);
-    if (bad.length) return fail(paramRefusal(bad), 'params-rejected');
+    if (bad.length) return fail(paramRefusal(bad), 'params-rejected', bad.some((b) => b.why === 'unknown'));   /* (#R775) a parameter this engine does not have is not a spelling problem */
 
     const seed = (A.seed != null && isFinite(+A.seed)) ? (+A.seed >>> 0) || 1 : 1;
     const params = Object.assign(defaultPandemicParams(presetKey, scenario), given, { scenario: scenario });
@@ -247,7 +247,23 @@ import { buildPandemicWorld, resolveOrigin } from './pandemic-world.js';
   }
 
   /* ── what the reader is told ──────────────────────────────────────────────────────────────── */
-  function fail(msg, code) { return { ok: false, html: '⚠ ' + esc(msg), meta: { code: code || 'failed' } }; }
+  /* ⚠⚠⚠ (#R775) A REFUSAL ABOUT THE KIND OF REQUEST MUST SAY SO. Measured on production 2026-09-17,
+     「Run a pandemic scenario with border closures enabled」: `sim.pandemicRun` was refused SIX TIMES
+     with `params-rejected` — the model sent `borderClosures`, then five more spellings of the same
+     idea — and then ran four times, thirteen tool calls in one turn, ending on the step budget.
+     The vocabulary WAS in the refusal (`paramRefusal` quotes `PANDEMIC_PARAMS`, and the comment
+     above it says why). What was missing is the fact #R760 named for metrics: `meta.permanent`.
+     Without it js/atlas-agent.js keys the ledger on the exact arguments, so every new spelling of a
+     parameter IntMap does not have reads as a NEW request and the note that would stop the search
+     is never attached. 
+     ⚠ ONLY THE 「UNKNOWN KEY」 CASE IS PERMANENT. Out-of-range, not-a-number and not-a-value are
+     about the VALUE, and a different value is a genuinely different request that can succeed —
+     declaring those permanent would tell Atlas to give up on a thing that works. 
+     ⚠ NOTHING IS REFUSED BY THIS. `permanent` only lets the agent attach a note the second time
+     the same kind of refusal happens; the call still runs (CONSTITUTION.md §5).
+     ⚠ `preset-unknown` is the same shape as an unknown metric and carries it too: the refusal
+     already enumerates every preset, so another word for the same pathogen cannot help. */
+  function fail(msg, code, permanent) { return { ok: false, html: '⚠ ' + esc(msg), meta: { code: code || 'failed', permanent: permanent ? true : undefined } }; }
 
   function originRefusal(o, W) {
     if (o.why === 'no-origin-given') return L('Say where the outbreak starts — a country, a place name, or coordinates.', '流行の開始地点を指定してください（国名・地名・座標のいずれか）。', 'Geben Sie an, wo der Ausbruch beginnt — Land, Ortsname oder Koordinaten.', 'Укажите, где начинается вспышка — страна, название места или координаты.', 'Indique dónde comienza el brote: un país, un nombre de lugar o coordenadas.');

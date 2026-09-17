@@ -292,7 +292,13 @@ test('R423 ④ every reader of the sovereignty flag is found by sweeping js/, an
      「a future reader cannot be added silently」 is exactly what happened — silently, and the check
      stayed green through it. The count rose because the census got wider, NOT because a reader was
      added this round; the flag is still written in one place and still reaches all seven. */
-  assert.equal(total, 7, 'readers of the sovereignty flag across js/ — found: ' + readers.join(', '));
+  /* ⚠⚠ (#R775) EIGHT. `js/atlas-metrics.js` `isRankableCountry` is the eighth, and it was added because
+     `data.rank` / `ratio` / `relate` / `drawChoro` / `scoreMap` were NOT reading the flag — measured on
+     production, Antarctica came back as the country with the highest GDP per capita. The number here is
+     a WATCHMAN, not a policy: it exists so a reader cannot appear unnoticed, and it moves when one does.
+     What must not move is the line below it — the flag is still written in exactly one place. */
+  assert.equal(total, 8, 'readers of the sovereignty flag across js/ — found: ' + readers.join(', '));
+  assert.ok(readers.indexOf('js/atlas-metrics.js:1') >= 0, 'including the one predicate every Atlas ranking asks');
   assert.ok(readers.indexOf('js/atlas-query.js:1') >= 0, 'including the one the frozen list could not see');
 
   /* and they all read ONE field, written in ONE place — so fixing the predicate fixes all six */

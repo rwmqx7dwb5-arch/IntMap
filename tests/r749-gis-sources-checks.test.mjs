@@ -79,13 +79,19 @@ function makeFakeMap(w) {
       return held.filter((f) => inBox(f, b));
     },
     featuresInSource: () => null,
+    /* ⚠ (#R774) A ROW FOR EVERY REGISTRATION THAT WAS ASKED, exactly as js/map-ui.js now builds it:
+       `value` only when there was one, so 「訊いた」 and 「値があった」 stay two observations. */
     sampleAt: async (lng, lat, ids) => {
       const out = [];
       for (const id of (ids && ids.length ? ids : Array.from(rows.keys()))) {
         const r = rows.get(String(id));
         if (!r || !r.sample) continue;
-        const v = await Promise.resolve(r.sample(lng, lat));
-        if (v != null && v !== '') out.push({ id: String(id), label: r.label, value: v });
+        const row = { id: String(id), label: r.label, asked: true };
+        try {
+          const v = await Promise.resolve(r.sample(lng, lat));
+          if (v != null && v !== '') row.value = v;
+        } catch (_) { row.failed = true; }
+        out.push(row);
       }
       return out;
     },
@@ -322,15 +328,24 @@ test('R749 ⑥ region() returns the same numbers as a bare sampleAt loop over th
 test('R749 ⑦ a switched-off supplier is refused by name — and one that still answers is read', async () => {
   const { map, sources, layers } = await boot();
 
-  /* A field whose layer is off and whose sampler has nothing loaded: every pixel would be a hole, and
-     a grid of holes is a measurement of nothing wearing the shape of a measurement. */
-  map.rows.set('koppen', { label: 'Köppen climate', on: false, sample: () => null });
+  /* A row with no sampler at all: nothing to ask, so the window is not a window of holes — it is a
+     question that was never put to anybody, and it is refused as that. ⚠ (#R774) 「訊けなかった」 is
+     now measured as 「行が返らなかった」 rather than as 「値が無かった」; a field that ANSWERS while
+     it is off with nothing in this particular window is `layer-values-all-missing`, below. */
+  map.rows.set('koppen', { label: 'Köppen climate', on: false });
   const off = await sources.region('koppen', { w: 0, s: 0, e: 1, n: 1 }, { width: 4, height: 4 });
   assert.equal(off.ok, false);
   assert.equal(off.why, 'layer-not-visible', JSON.stringify(off));
   /* The door a reader reaches speaks the vocabulary js/gis-panel.js already has nine languages for. */
   const spoken = await layers.toRaster('koppen', { bounds: { w: 0, s: 0, e: 1, n: 1 }, width: 4, height: 4 });
   assert.equal(spoken.why, 'layer-not-sampling');
+
+  /* ⚠ (#R774) AND THE ROW THAT ANSWERS NULL EVERYWHERE IS A DIFFERENT REFUSAL, with its own
+     sentence: the supplier was reached, and the data is not there. */
+  map.rows.set('empty', { label: 'Answers, holds nothing', on: false, sample: () => null });
+  const hollow = await sources.region('empty', { w: 0, s: 0, e: 1, n: 1 }, { width: 4, height: 4 });
+  assert.equal(hollow.ok, false);
+  assert.equal(hollow.why, 'layer-values-all-missing', JSON.stringify(hollow));
 
   /* ⚠ AND 「off」 IS NOT ASSUMED TO MEAN 「no values」. It is probed: a field that answers while its
      layer is off is read, where the old path refused it on a rule that was true of most rows and
