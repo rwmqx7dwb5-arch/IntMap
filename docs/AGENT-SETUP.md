@@ -151,6 +151,7 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 | 起動 | Agent tool の `subagent_type` | 「`intmap-scout` に投げて」と依頼／`/agent` で確認 |
 | 名前 | `intmap-scout` ほか 4 つ | 同じ名前（`.codex/agents/*.toml` の `name`） |
 | 道具の絞り方 | frontmatter の `tools` | `sandbox_mode` ほか config キー |
+| **モデルの指定** | frontmatter の `model`／Agent tool の `model` | **無い**（アカウント設定が決める） |
 | 並列 | 同じメッセージで複数起動 | 1 回の依頼でまとめて spawn |
 
 **MCP**: このリポジトリは MCP サーバを 1 つも宣言していない（`.mcp.json` は無い）。
@@ -159,6 +160,25 @@ Codex は `project_doc_max_bytes`（既定 **32,768**）まで読んで**止ま�
 
 ⚠ **本番検証の道具は同じではない。** Claude Code は preview ツール群、Codex は browser
 プラグイン。測る対象（`AGENTS.md` §5.1 の production verification）は同じ。
+
+### ⚠ モデルの指定は Claude Code 固有の差である（#R787）
+
+**`.agents/roles/*.md` の `claude:` ブロックにある `model:` は、Codex には届かない。**
+`.codex/agents/*.toml` は Codex の**設定レイヤー**として読まれ、そこで走るモデルは
+**アカウント側の設定が決める**——役ファイルが選ぶものではない。したがって `model:` を
+`codex:` ブロックへ写す先が無く、写せば「読まれないキー」を作るだけになる。
+
+これは `AGENTS.md` §0-5 が言う「**片方だけが知っている状態**」に見えるが、そうではない——
+**どちらの役に何をさせるかという判断は `.agents/rules/execution-strategy.md` §2b にあり、
+両方が読む。** 届かないのは、その判断を機械に伝える**手段**のほうだけである。
+
+⇒ **実務上の帰結: Codex で走る scout / i18n / verifier は、Claude Code 側より高いモデルで
+走ることがある。** これは欠陥ではなく、この表が明記している差。§2b の**昇格条件**（verifier に
+「環境要因か本物の退行か」を訊くときは上げる）は Codex では自動的に満たされている。
+
+⚠ 綴りの誤りは `npm run check:agents` が止める。Claude Code は知らないモデル名を
+**黙って無視して継承に戻る**ので、宣言だけが残って誰も気づかない（`scripts/agent-sync.mjs`
+の `CLAUDE_MODELS`）。
 
 ---
 

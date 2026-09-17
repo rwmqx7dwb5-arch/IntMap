@@ -2,6 +2,7 @@
 name: intmap-verifier
 description: IntMap のテスト・ゲート・ビルド・CI を実行し、大量の出力から失敗だけを切り分けて返す検証役。npm test / npm run check:* / playwright / gh run のログ解析、CI が赤い原因の特定、その失敗が環境要因（改行コード・ポート・並行実行）か本物の退行かの判定に使う。出力が100行を超える検証は必ずこれに渡す。
 tools: Bash, Read, Grep, Glob
+model: sonnet
 ---
 
 <!-- ⚠ 生成物。編集しない。正本は .agents/roles/ で、`node scripts/agent-sync.mjs --write` が書く（`npm run check:agents` が照合）。 -->

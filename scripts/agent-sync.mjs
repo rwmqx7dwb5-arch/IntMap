@@ -191,11 +191,32 @@ const GENERATED_TOML = `# ⚠ 生成物。編集しない。正本は .agents/ro
 /* ── the render plan: every rendered path, and what should be in it ───────────────────── */
 const plan = new Map();                                   /* rel path → expected content */
 
+/* ── which model a role runs on ───────────────────────────────────────────────────────────
+   (#R787) A role may name the model it runs on, so the mechanical readers do not cost what
+   the deciding ones cost. The value is rendered STRAIGHT into the `model:` frontmatter that
+   Claude Code reads, and Claude Code does not report a name it does not recognise — it falls
+   back to the inherited model and says nothing. That is the shape memory calls
+   「宣言された能力が一度も実行されていない」: the declaration stays in the file, a reader
+   downstream believes it, and the defect is silent. So the spelling is checked HERE, at the
+   one place that writes it, rather than trusted.
+
+   ⚠ THIS LIST IS THE HARNESS'S VOCABULARY, NOT A POLICY ABOUT WHICH ROLE DESERVES WHICH
+   MODEL. It expires when Claude Code changes the aliases it accepts; the assignment itself
+   is argued in .agents/rules/execution-strategy.md §2 and belongs there, not here.
+
+   ⚠ Codex is not given this key. `model` lives under the `claude:` block because the Codex
+   renderer emits a config layer whose model is chosen by the account, not by the role file.
+   The difference is written down where differences are written down: docs/AGENT-SETUP.md §6. */
+const CLAUDE_MODELS = new Set(['opus', 'sonnet', 'haiku', 'fable', 'inherit']);
+
 const ROLE_DIR = '.agents/roles';
 const roles = readdirSync(join(ROOT, ROLE_DIR)).filter((f) => f.endsWith('.md')).sort();
 if (roles.length === 0) fail('roles', `${ROLE_DIR} is empty — the五つの役 are the source, not the copies`);
 for (const f of roles) {
   const r = parseRole(`${ROLE_DIR}/${f}`);
+  if (r.claude.model !== undefined && !CLAUDE_MODELS.has(r.claude.model)) {
+    fail('role-model', `${ROLE_DIR}/${f}: claude.model «${r.claude.model}» is not one Claude Code accepts (${[...CLAUDE_MODELS].join(', ')}) — it would be written into the frontmatter, ignored without a word, and the role would quietly run on the inherited model`);
+  }
   plan.set(`.claude/agents/${r.name}.md`, renderClaudeRole(r));
   plan.set(`.codex/agents/${r.name}.toml`, renderCodexRole(r));
 }
