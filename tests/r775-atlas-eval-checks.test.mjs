@@ -190,7 +190,7 @@ test('R775 ④ the prompt says WHEN a drawing appeared, and says when there is n
   ['highlightCountries', 'highlight', 'choropleth', 'customScore', 'pins', 'polygons', 'lines', 'measure', 'radius']
     .forEach((k) => assert.ok(st.includes("paintMark('" + k + "')"), 'drawing not marked: ' + k));
   /* …and the empty map is STATED, because absence of a line is not a statement */
-  assert.ok(/no Atlas drawing at all right now/.test(st), 'an empty map must say so — four clears were spent finding out');
+  assert.ok(/NO Atlas drawing right now/.test(st), 'an empty map must say so — four clears were spent finding out');
   /* ⚠ it must remain an observation: nothing here switches anything off or keeps anything alive */
   assert.ok(!/clearAll\(|\.remove\(|setVisible\(/.test(st.slice(st.indexOf('var paintOrigin'), st.indexOf('var paintOrigin') + 3000)),
     'the ledger must record, never act');

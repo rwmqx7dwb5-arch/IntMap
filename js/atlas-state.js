@@ -646,7 +646,7 @@ export function makeAtlasState(HOST) {
         (at.eraPolities.names || []).join(', ') + ') from the historical border record, not the modern outlines.');
       if (at.measure && at.measure.n) lines.push('Measure tool active with ' + at.measure.n + ' points.' + paintMark('measure'));
       if (at.radius && at.radius.n) lines.push(at.radius.n + ' radius circle(s) on the map.' + paintMark('radius'));
-      if (_pmarked) lines.push('Drawing marks: "[YOU drew this · THIS turn]" is work you produced for the question you are answering RIGHT NOW — it is the answer, so do not clear, reset or overwrite it while answering that question, and do not re-issue it to "make sure" (it is already there). "[… N turn(s) ago]" is what an earlier question left, and THAT is what the workspace rule above is about. A drawing with no mark has no record of where it came from — it may be the reader\'s.');
+      if (_pmarked) lines.push('Drawing marks: "[YOU drew this · THIS turn]" is your answer to the question you are answering NOW — do not clear it, and do not re-issue it to make sure. "[… N turn(s) ago]" is what an earlier question left; that is what the workspace rule is about. No mark = no record of where it came from.');
       if (at.userPins && at.userPins.n) lines.push(at.userPins.n + ' user pin(s) on the map.');
 
       var pa = snap.panels || {};
@@ -669,9 +669,9 @@ export function makeAtlasState(HOST) {
          answered, which is a DIFFERENT fact from 「the map is empty」 — the same distinction #R768 drew
          between 「it did not work」 and 「I could not see whether it worked」, and the one tests/r413 ③ and
          tests/r534 ①b already hold this file to: a section nobody published stays silent. */
-      if (snap.atlas && typeof snap.atlas === 'object' && !Object.keys(paintOrigin).length && !at.highlightCountries && !(at.highlight && at.highlight.name) && !(at.choropleth && at.choropleth.label) && !(at.customScore && at.customScore.name)
-        && !(at.pins && at.pins.n) && !(at.polygons && at.polygons.n) && !(at.lines && at.lines.n) && !(at.measure && at.measure.n) && !(at.radius && at.radius.n) && !(at.factions && at.factions.n))
-        lines.push('The map carries no Atlas drawing at all right now - no highlight, shading, pins, polygons, lines, radius or measurement. There is nothing to clear, and a clear/reset call would be a step spent on nothing.');
+      var _drawn = drawnKeys(snap.atlas);   /* ⚠ the SAME rule the ledger uses — a second list of kinds here would be free to disagree with it */
+      if (_drawn && !Object.keys(_drawn).length)
+        lines.push('The map carries NO Atlas drawing right now - no highlight, shading, pins, polygons, lines, radius or measurement. There is nothing to clear.');
       if (at.tool) lines.push('Active map tool: ' + at.tool + ((at.measure && at.measure.n) ? (' (' + at.measure.n + ' points)') : '') + '.');
 
       var cp = snap.comparison;
@@ -849,18 +849,25 @@ export function makeAtlasState(HOST) {
        author from an observation must not claim one (#R742's own rule, and #R699's). */
     var paintOrigin = Object.create(null);   /* drawing key → {turnId, capabilityId, at} */
     var paintsSeen = null;                   /* the previous observation; `null` is "never looked" */
-    function paintKeysNow() {
-      var fn = providers['atlas']; if (!fn) return null;
-      var at = null; try { at = fn(); } catch (_) { return null; }
+    /* ONE rule for 「is this key a drawing that is on the map」, read by the ledger below AND by the
+       paragraph that says the map is empty. ⚠ `tool` and `userPins` are excluded here: the first is a
+       mode, the second is the reader's. */
+    var NOT_A_DRAWING = { tool: 1, userPins: 1 };
+    function drawnKeys(at) {
       if (!at || typeof at !== 'object') return null;
       var keys = Object.create(null);
       Object.keys(at).forEach(function (k) {
+        if (NOT_A_DRAWING[k]) return;
         var v = at[k];
         if (v == null || v === false || v === '' || v === 0) return;
         if (typeof v === 'object' && ('n' in v) && !(+v.n > 0)) return;
         keys[k] = 1;
       });
       return keys;
+    }
+    function paintKeysNow() {
+      var fn = providers['atlas']; if (!fn) return null;
+      try { return drawnKeys(fn()); } catch (_) { return null; }
     }
     function observePaints(by) {
       var now = paintKeysNow(); if (!now) return;
