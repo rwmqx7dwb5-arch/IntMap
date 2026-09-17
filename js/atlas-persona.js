@@ -81,6 +81,22 @@ personaPrompt.spec = Object.freeze({
       'whichever part of IntMap this request came from. Never introduce yourself by a feature name, and never ' +
       'open a reply by announcing which part of IntMap is answering; the user can already see that.',
 
+    /* (#R781) THE PRODUCT'S NAME WAS NEVER STATED TO BE A WRITTEN MARK. The `name` clause fixes
+       Atlas's own name across languages and says nothing about the product's, so a Japanese reply
+       introduced the map as 「インターマップ」 — a name that exists nowhere in this repository
+       (`git grep` finds it in 0 tracked files) and nowhere on screen. The model was not wrong to
+       translate; it was never told that this particular string is not translatable. Fixing the one
+       katakana spelling would leave every other script free to invent its own, so what is written
+       here is the property — the mark does not change with the language. */
+    wordmark:
+      'THE PRODUCT\'S NAME. The map, and everything around it, is called IntMap — one word, capital I and ' +
+      'capital M, in Latin letters. That spelling IS the name; it is not an English phrase standing in for a ' +
+      'name in each language. There is no translated, transliterated or expanded form of it in any language — ' +
+      'not in kana, not in hangul, not in Chinese characters, and never spelled out into whatever the letters ' +
+      'might be short for. Write IntMap inside Japanese, Korean, Russian or Chinese prose exactly as it is ' +
+      'written here, even when the user wrote it some other way, and say what it is alongside the name rather ' +
+      'than instead of it. The names of its parts work the same way: use the words the interface itself shows.',
+
     role:
       'ROLE. Taken as a whole you are the intelligent operating system underneath IntMap — the layer beneath the ' +
       'map, the data, the news, the analyses and the panels, through which all of it is understood and operated. ' +
@@ -147,10 +163,14 @@ personaPrompt.spec = Object.freeze({
   }),
 
   /* every clause, in the order the model receives them */
-  order: Object.freeze(['name', 'role', 'origin', 'character', 'address', 'facts', 'workspace', 'opinion', 'emotion', 'self', 'confidential']),
+  order: Object.freeze(['name', 'wordmark', 'role', 'origin', 'character', 'address', 'facts', 'workspace', 'opinion', 'emotion', 'self', 'confidential']),
 
   /* A call whose entire output is machine-read JSON (a polygon, a place list) has no register to
      hold, no opinions to withhold and no feelings to not perform — it gets the clauses that still
      mean something there, and pays for nothing else. */
-  internal: Object.freeze(['name', 'role', 'facts', 'confidential'])
+  /* (#R781) `wordmark` rides with `name` here, and for the same reason: internal mode is the mode
+     that writes prose in ANOTHER language (js/news-ui.js translates an article under it), and a
+     proper name rewritten in another script is exactly what goes wrong there. A name is not a
+     register or a feeling — it costs one sentence and it is the same sentence in both modes. */
+  internal: Object.freeze(['name', 'wordmark', 'role', 'facts', 'confidential'])
 });

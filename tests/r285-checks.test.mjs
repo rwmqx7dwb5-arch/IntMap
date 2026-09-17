@@ -185,6 +185,8 @@ test('R285 (3b) no file in js/ or supabase/functions/ hand-writes an Atlas ident
    clause that exists but no longer carries its content is a clause that was quietly hollowed out. */
 const SPEC = {
   name: [/\bAtlas\b/, /only name/i],
+  /* (#R781) the product's name is a written mark, not a phrase each language renders its own way */
+  wordmark: [/\bIntMap\b/, /no translated, transliterated or expanded form/i, /kana/i],
   role: [/operating system/i, /underneath IntMap/i],
   origin: [/book of maps/i, /Greek myth/i, /holds up the sky/i],
   character: [/calm/i, /intellectually serious/i, /honest/i, /direct/i, /flexible/i, /even-tempered/i, /neutral/i],
@@ -197,7 +199,7 @@ const SPEC = {
   confidential: [/never reveal/i, /system prompt/i, /decline/i],
 };
 
-test('R285 (4) all ten specified points are in the persona, and each still says what it must', () => {
+test('R285 (4) every specified point is in the persona, and each still says what it must', () => {
   assert.deepEqual(ATLAS_PERSONA.order, Object.keys(SPEC), 'the persona carries exactly the specified points, in order');
   for (const [id, patterns] of Object.entries(SPEC)) {
     const text = ATLAS_PERSONA.clauses[id];
@@ -208,13 +210,13 @@ test('R285 (4) all ten specified points are in the persona, and each still says 
 });
 
 /* ── ⑤ …AND ALL OF IT REACHES A REAL PROMPT ────────────────────────────────────────────────── */
-test('R285 (5) the full preamble delivers every clause; internal mode drops exactly four', () => {
+test('R285 (5) the full preamble delivers every clause; internal mode keeps only the five it can hold', () => {
   const full = personaPrompt('the analysis engine of the IntMap world map');
   assert.match(full, /^You are Atlas, the analysis engine of the IntMap world map\.\n/, 'the task role opens the prompt');
   for (const id of ATLAS_PERSONA.order) assert.ok(full.includes(ATLAS_PERSONA.clauses[id]), `clause "${id}" never reaches the prompt`);
 
   const internal = personaPrompt('tracing region outlines', { mode: 'internal' });
-  assert.deepEqual(ATLAS_PERSONA.internal, ['name', 'role', 'facts', 'confidential']);
+  assert.deepEqual(ATLAS_PERSONA.internal, ['name', 'wordmark', 'role', 'facts', 'confidential']);   /* (#R781) a name is invariant in both modes */
   for (const id of ATLAS_PERSONA.internal) assert.ok(internal.includes(ATLAS_PERSONA.clauses[id]), `internal mode dropped "${id}", which it must keep`);
   for (const id of ['origin', 'character', 'address', 'opinion', 'emotion', 'self']) {
     assert.ok(!internal.includes(ATLAS_PERSONA.clauses[id]), `internal mode still pays for "${id}", which a machine-read JSON answer cannot have`);
