@@ -41,6 +41,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, r
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { withTreeLock } from './helpers/gate-lock.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -57,10 +58,20 @@ const toolDir = (name) => {
 };
 const GIT_DIR = toolDir('git');
 
+/* ⚠ (#R771, fixed after CI) «gh IS ABSENT» CANNOT BE BUILT OUT OF PATH. The first version kept
+   node's and git's directories and assumed gh was elsewhere; on Linux git and gh are BOTH in
+   /usr/bin, so the precondition was false on CI and true on this Windows machine — the test was
+   measuring the machine, not the code. What the code must survive is gh NOT ANSWERING (missing,
+   logged out, offline, rate-limited), so that is what is built: a shim named gh that always fails,
+   first on PATH. Deterministic on both platforms, and closer to the real case than absence. */
+const SHIM = mkdtempSync(join(tmpdir(), 'r771-nogh-'));
+writeFileSync(join(SHIM, 'gh'), '#!/bin/sh\nexit 7\n', { mode: 0o755 });
+writeFileSync(join(SHIM, 'gh.cmd'), '@exit /b 7\r\n');
+
 const minimalEnv = () => {
   const env = {};
   for (const [k, v] of Object.entries(process.env)) if (!/^path$/i.test(k)) env[k] = v;
-  env.PATH = [dirname(process.execPath), GIT_DIR].filter(Boolean).join(delimiter);
+  env.PATH = [SHIM, dirname(process.execPath), GIT_DIR].filter(Boolean).join(delimiter);
   return env;
 };
 
@@ -144,8 +155,11 @@ test('R771 (1) status and status --brief survive a machine with no gh, and exit 
     }
     /* and the unreadable half is reported AS unreadable rather than left to look like silence:
        the run happened in a repository whose origin is a local path, so gh has nothing to say. */
-    assert.ok(spawnSync(process.platform === 'win32' ? 'where' : 'which', ['gh'],
-      { encoding: 'utf8', env: minimalEnv() }).status !== 0, 'precondition: gh is off this PATH');
+    /* the precondition, stated as what it actually is: under this env, gh cannot answer. */
+    const probe = spawnSync(process.platform === 'win32' ? 'cmd' : 'sh',
+      process.platform === 'win32' ? ['/c', 'gh', 'auth', 'status'] : ['-c', 'gh auth status'],
+      { encoding: 'utf8', env: minimalEnv() });
+    assert.notEqual(probe.status, 0, 'precondition: gh must not be able to answer under this env');
   } finally { drop(s.tmp); }
 });
 
@@ -338,20 +352,18 @@ test('R771 (6) every declared gate is planned exactly once, for any shard count'
   }
 });
 
-test('R771 (7) the gates packed with the build are the ones that cannot run without it', () => {
-  /* ⚠ THE FIRST DRAFT OF THIS TEST ASKED THE WRONG QUESTION and was caught by its own run: it
-     looked for the string «dist» in a gate's source, which `check:static` contains because it
-     SKIPS dist/ while scanning — mentioning a path is not depending on it. The predicate that
-     actually matters is behavioural: does this gate fail when the build output is not there?
-     So each gate the planner packed with the build is RUN with the build report hidden, and must
-     fail on its own terms. ⚠ Cheap on purpose — these two fail immediately when the report is
-     absent, which is the whole reason they need the build.
+test('R771 (7) the gates packed with the build are the ones that cannot run without it', async () => {
+  /* ⚠ TWO DRAFTS OF THIS TEST WERE WRONG, AND EACH FAILURE IS THE POINT OF A COMMENT HERE.
 
-     ⚠ WHAT THIS DOES NOT PROVE: that no OTHER gate needs the build. Running all 28 without dist/
-     would cost more than the CI job this round exists to shorten. That direction is covered the
-     way scripts/ci-gates.mjs' header says — loudly, at the moment it happens: a gate that needs
-     the build and was not discovered runs without dist/ and fails on its own terms in CI. The
-     failure is visible, not silent, so it is a bug report rather than a green lie. */
+     (1) It first looked for the string «dist» in a gate's source. `check:static` contains it
+     because it SKIPS dist/ while scanning — mentioning a path is not depending on it. The
+     predicate that matters is behavioural: does this gate fail when the build output is absent?
+
+     (2) The behavioural version then moved a file in the working tree WITHOUT TAKING THE TREE
+     LOCK, in a suite whose mutation tests (r399 / r403 / r500) exist precisely because two
+     processes must never edit one tree at once (#R623 measured the breakage). It passed alone and
+     failed in CI's Regression shard, which is exactly how that class of defect presents. Every
+     tree mutation below is inside withTreeLock, like every other tree-editing test in this repo. */
   const plan = cig('--plan', '--of', '3');
   assert.equal(plan.status, 0, plan.stderr);
   const buildLines = plan.stdout.split(/\r?\n/).filter((l) => l.includes('npm run build'));
@@ -360,18 +372,33 @@ test('R771 (7) the gates packed with the build are the ones that cannot run with
   const packed = [...buildLines[0].matchAll(/check:[a-z0-9]+/g)].map((m) => m[0]);
   assert.ok(packed.length > 0, 'the build task carries no gates — the discovery is dead');
 
+  /* The gate scripts are invoked directly rather than through `npm run`: one process instead of
+     two, which keeps this inside the tree lock for as short a time as possible. */
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts;
   const REPORT = join(ROOT, '.perf', 'build-report.json');
   const hidden = REPORT + '.r771-hidden';
-  const had = existsSync(REPORT);
-  if (had) renameSync(REPORT, hidden);
-  try {
-    for (const g of packed) {
-      const r = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', g],
-        { cwd: ROOT, encoding: 'utf8', timeout: 180000 });
-      assert.notEqual(r.status, 0,
-        `${g} is packed with the build, but passed without the build output — it does not belong there`);
-    }
-  } finally { if (had) renameSync(hidden, REPORT); }
+
+  await withTreeLock(() => {
+    const had = existsSync(REPORT);
+    if (had) renameSync(REPORT, hidden);
+    try {
+      for (const g of packed) {
+        const m = String(pkg[g]).match(/scripts\/[\w.-]+\.mjs/);
+        assert.ok(m, `${g} does not resolve to a script file`);
+        const args = String(pkg[g]).split(/\s+/).slice(2);
+        const r = spawnSync(process.execPath, [join(ROOT, m[0]), ...args],
+          { cwd: ROOT, encoding: 'utf8', timeout: 120000 });
+        assert.notEqual(r.status, 0,
+          `${g} is packed with the build, but passed without the build output — it does not belong there`);
+      }
+    } finally { if (had) renameSync(hidden, REPORT); }
+  });
+
+  /* ⚠ WHAT THIS DOES NOT PROVE: that no OTHER gate needs the build. Running all 28 without dist/
+     would cost more than the CI job this round exists to shorten. That direction is covered the way
+     scripts/ci-gates.mjs' header says — loudly, at the moment it happens: a gate that needs the
+     build and was not discovered runs without dist/ and fails on its own terms in CI. Visible, not
+     silent, so it is a bug report rather than a green lie. */
 });
 
 test('R771 (8) ci.yml invokes the planner, and the required check keeps the name the ruleset asks for', () => {

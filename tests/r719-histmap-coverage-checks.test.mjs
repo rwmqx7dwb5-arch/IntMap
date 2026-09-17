@@ -20,6 +20,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, dirname, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registry, shipTags } from '../scripts/histadmin/langs.mjs';
+import { ciRuns } from './helpers/ci-reach.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -103,7 +104,10 @@ test('#R719 ① an unbroken synthetic pair passes, and both gates pass on the co
   const pkg = JSON.parse(read('package.json')).scripts || {};
   assert.equal(pkg['check:histfill'], 'node scripts/build-hist-admin-fill.mjs --check',
     'the new gate must be DECLARED — gate-callers/gate-lists/ci-gates take package.json as their universe');
-  assert.match(read('.github/workflows/ci.yml'), /npm run check:histfill/, 'and CI must call it');
+  /* ⚠ (#R771) ASKED OF WHAT CI RUNS, NOT OF HOW ci.yml SPELLS IT — tests/helpers/ci-reach.mjs.
+     The 28 declared gates stopped being one step each when they were split across three machines;
+     grepping the workflow for this gate's name reported it as unrun while it ran every time. */
+  assert.ok(ciRuns('check:histfill'), 'and CI must call it');
 
   assert.match(execFileSync(process.execPath, [ADMIN, '--check'], { cwd: ROOT, encoding: 'utf8' }), /^✓ hist-admin/);
   assert.match(execFileSync(process.execPath, [FILL, '--check'], { cwd: ROOT, encoding: 'utf8' }), /^✓ hist-admin-fill/);

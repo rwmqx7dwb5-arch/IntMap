@@ -39,6 +39,7 @@ import { makeAtlasGeoObject } from '../js/atlas-geo-object.js';
 import { makeAtlasPolicy } from '../js/atlas-policy.js';
 import { makeAtlasAnswerAudit } from '../js/atlas-answer-audit.js';
 import { makeAtlasAnomalyScore } from '../js/atlas-anomaly-score.js';
+import { ciRuns, ciRunsScript } from './helpers/ci-reach.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -462,8 +463,9 @@ test('R397 ⑨: the capability audit runs in BOTH gates, and the match is a comm
   const local = codeOnly(read('scripts/test-parallel.mjs'));
   assert.ok(/atlas-capability-audit/.test(local),
     'the twenty-item capability audit does not run in npm test, while DECISIONS.md calls it the gate for the one-list rule');
-  /* ci.yml is YAML, so codeOnly's JS comment rules do not apply — strip `#` lines instead. */
-  const ci = read('.github/workflows/ci.yml').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
-  assert.ok(/check:capabilities|atlas-capability-audit/.test(ci),
+  /* ⚠ (#R771) ASKED OF WHAT CI RUNS, NOT OF HOW ci.yml SPELLS IT — tests/helpers/ci-reach.mjs.
+     The 28 declared gates stopped being one step each when they were split across three machines;
+     grepping the workflow for this gate's name reported it as unrun while it ran every time. */
+  assert.ok(ciRuns('check:capabilities') || ciRunsScript('atlas-capability-audit'),
     'the capability audit runs locally but not in CI — the registry can be broken by a push that never runs its gate');
 });
