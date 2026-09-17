@@ -81,6 +81,7 @@
 | 歴史地点（Pleiades） | `npm run check:histplaces` |
 | Atlas の dispatch / catalogue | `npm run check:catalog` |
 | Atlas の能力表 | `npm run check:capabilities` |
+| Atlas の観測器の判定 | `npm run check:atlasrepeat` |
 | 起動費用（**build が要る**） | `npm run check:perf` |
 | 配られる資産（**build が要る**） | `npm run check:assets` |
 | spec を足した・組み替えた | `npm run check:testbudget` |

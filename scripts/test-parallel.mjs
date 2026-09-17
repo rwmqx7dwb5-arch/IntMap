@@ -71,6 +71,15 @@ const HALVES = [
          whether it reported a promise as a result — which is what #R268, #R291, #R302 and #R309
          each turned out to be. See scripts/atlas-capability-audit.mjs. */
       ['node', ['scripts/atlas-capability-audit.mjs', '--check']],
+      /* ⚠⚠⚠ (#R768) …AND THE QUESTION BOTH OF THOSE ASK ABOUT THE CAPABILITY RATHER THAN ABOUT WHAT
+         IT REPORTED. A capability can be catalogued, runnable, watched, and still hand Atlas a
+         sentence that is not true — measured in production: 「アイスランドに飛んで」 in a backgrounded
+         tab answered `no_change` seven times (the code for 「your move did not take effect」) because
+         the page was not compositing, and the turn died at its step budget re-flying somewhere it had
+         already been sent. The same question in front: one call, `ok`. See
+         .agents/rules/one-pass-or-a-reason.md — a repeat is a symptom, and this is the cause a gate
+         can measure. ⚠ IT DOES NOT COUNT STEPS (rule §3). */
+      ['node', ['scripts/atlas-repeat.mjs']],
       /* ⚠ (#R354) THE COMPANY-ATLAS GATE. Every other check in this list reads SOURCE; this one
          reads the SHIPPED BYTES of data/companies/, because "the builder drops what it cannot
          source" is a claim about code and the file is what the reader sees. It caught two real

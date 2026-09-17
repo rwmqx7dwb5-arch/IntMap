@@ -11,6 +11,8 @@
 
 @.agents/rules/historical-verification.md
 
+@.agents/rules/one-pass-or-a-reason.md
+
 ---
 
 > **上の 5 行は import であって要約ではない。** Claude Code は `@` の指すファイルを起動時に

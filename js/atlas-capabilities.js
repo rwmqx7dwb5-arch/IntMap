@@ -557,6 +557,16 @@ export function makeAtlasCapabilities(HOST) {
 
     function changed(a, b) { return JSON.stringify(a) !== JSON.stringify(b); }
     var CAMERA_SETTLE_MS = 2500;   /* see the camera observer below */
+    /* ══ ⚠⚠⚠ (#R768) WAS THE PAGE DRAWING WHEN THE CAMERA WAS LAST OBSERVED? ═══════════════════════
+       true / false / null (= could not be asked). Written by the camera OBSERVER, read by its
+       verdict, because 「is this page compositing?」 is something you SEE, not something you decide.
+       ⚠ IT IS NOT IN THE OBSERVATION OBJECT ON PURPOSE. `changed()` is a JSON comparison of the whole
+       sample (line above), so a field that flipped between the before and after samples would read as
+       「the camera moved」 — a completion invented out of a fact about the window manager.
+       ⚠ ONE SLOT IS ENOUGH because camera operations do not interleave: `writes` makes them share a
+       conflict key, so the executor serialises them (js/atlas-executor.js). If that ever stops being
+       true, this becomes per-operation state and the verdict reads it from `op`. */
+    var _camDrew = null;
     /* legacy(raw) — what a not-yet-migrated dispatch case said about itself. A verifier may use it,
        but it may never be the ONLY evidence for `completed` on a capability that writes something. */
     function legacyOk(raw) { return !!(raw && raw.ok !== false); }
@@ -822,6 +832,7 @@ export function makeAtlasCapabilities(HOST) {
            idle when sampled (the BEFORE sample, a read) returns immediately. */
         observe: async function () {
           var t0 = Date.now(), prev = cameraNow();
+          try { _camDrew = await GE().render.ticking(700); } catch (_) { _camDrew = null; }
           while ((Date.now() - t0) < CAMERA_SETTLE_MS) {
             var moving = false; try { moving = !!(GE().isAnimating && GE().isAnimating()); } catch (_) { moving = false; }
             await new Promise(function (r) { setTimeout(r, 100); });
@@ -848,6 +859,28 @@ export function makeAtlasCapabilities(HOST) {
           if (cameraGoalMet(capId, args, after, raw) === true) {
             return { status: 'completed', code: 'already_there', observed: { camera: after, already: true }, html: (raw && raw.html) || '' };
           }
+          /* ══ ⚠⚠⚠ (#R768) 「IT DID NOT MOVE」 AND 「I COULD NOT SEE IT MOVE」 ARE DIFFERENT ANSWERS ══
+             A page that is not compositing runs no animation frames, so `flyTo` really does leave the
+             camera where it was — and this file used to report that as `no_change`, i.e. a failure of
+             the request. It is not one: the request was fine, the renderer was asleep.
+             MEASURED on production 2026-09-16, signed in, 「アイスランドに飛んで」 in a backgrounded
+             tab: 9 model calls, 8 operations, SEVEN of them `partial / no_change`, ending in
+             `step_budget` with the reader told the turn hit its working limit. The identical question
+             with the tab in front: ONE model call, `completed / ok`, `answered`.
+             ⚠ Atlas was not wrong to retry — a failed move is exactly the case where trying again is
+             right (.agents/rules/one-pass-or-a-reason.md §5). It was told the wrong thing. So this
+             says what is actually true, and Atlas decides what to do with it: nothing here refuses a
+             call, shortens a plan or spends a step (CONSTITUTION.md §5).
+             ⚠ THE OBSERVER ASKED, NOT THIS VERDICT. `_camDrew` is the reading taken beside the AFTER
+             sample (see it above) — which is also the honest moment to take it, and it keeps this
+             function SYNCHRONOUS. An earlier draft of this round made `verify` async instead and so
+             changed the contract of every camera capability (flyTo, bearing, pitch, resetNorth) for a
+             fact none of them decides; twelve tests in tests/r740-isochrone-verdict-checks.test.mjs
+             said so, and they were right.
+             ⚠ THE READING MAY ONLY WEAKEN A CLAIM. `null` — an engine that cannot answer, or that
+             threw — leaves the verdict exactly as it was. Nothing is ever DOWNgraded to a failure on
+             the strength of a question we could not get an answer to. */
+          if (_camDrew === false) return { status: 'partial', produced: [], code: 'not_rendering', observed: { camera: after, rendering: false }, html: (raw && raw.html) || '' };
           /* asked for a view this file cannot measure, and nothing moved: unchanged from before */
           return { status: 'partial', produced: [], code: 'no_change', observed: { camera: after }, html: (raw && raw.html) || '' };
         }

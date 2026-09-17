@@ -57,7 +57,10 @@ test('R493 ①: Atlas and the screenshot button take the SAME picture, by runnin
 
   /* the module really is the capture: the WebGL-inside-a-render-tick read, the #R231 single
      coordinate system, and the overlay pass all live here */
-  assert.match(cap, /events\.once\('render'/, 'the frame is read inside a render tick (preserveDrawingBuffer is OFF)');
+  /* (#R768) the fact is unchanged — the frame is read INSIDE a render tick — but the WAIT moved to
+     js/geo-engine.js (`render.onNextFrame`), because the camera verdict needed the same question
+     («is this page compositing?») and had nowhere to ask it, so it answered `no_change` instead. */
+  assert.match(cap, /render\.onNextFrame\(/, 'the frame is read inside a render tick (preserveDrawingBuffer is OFF)');
   assert.match(cap, /cont\.clientWidth/, 'the output box comes from the container, not the backing store (#R231)');
   assert.match(cap, /html2canvas\(cont,/, 'the DOM overlay pass is here');
   assert.match(cap, /export function makeViewCapture/, 'and it has ONE door — tests/r175 ③ makes a dynamically-reached export look dead, so the three pieces are members rather than exports');
@@ -102,7 +105,8 @@ function fakeDom() {
   };
   const GE = () => ({
     hasRenderer: () => true,
-    render: { canvas: canvas, triggerRepaint() {} },
+    /* (#R768) the engine runs the reader INSIDE the tick — `live` says a real frame arrived */
+    render: { canvas: canvas, triggerRepaint() {}, onNextFrame: (_ms, fn) => fn(true) },
     events: { once: (_e, f) => f() },
   });
   return { doc, GE };
@@ -210,7 +214,7 @@ test('R493 ②f: a frame that did not come from a render tick is REFUSED, not de
      map. The ledger has to refuse it, and say why. */
   const { doc, GE } = fakeDom();
   globalThis.document = doc;
-  const dead = () => Object.assign(GE(), { events: { once: () => {} } });   /* nothing ever fires */
+  const dead = () => Object.assign(GE(), { render: Object.assign({}, GE().render, { onNextFrame: (_ms, fn) => fn(false) }), events: { once: () => {} } });   /* nothing ever fires */
   const V = makeViewCapture({ GE: dead, L: (en) => en, esc: (x) => String(x), snapshot: () => SNAP, waitIdle: async () => {} });
   const r = await V.captureFrame({ include: 'map' });
   assert.equal(r.ok, false, 'an undrawn frame must not be handed to the model');

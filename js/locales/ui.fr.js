@@ -5129,6 +5129,7 @@ window.IntMapLang.define('fr', { ui: {
   'It was calculated but nothing was drawn on the map.': 'Le calcul a été fait, mais rien n’a été dessiné sur la carte.',   /* atlas-results.js (#R318) atlas.code.not_rendered */
   'It is on the map but currently hidden.': 'C’est sur la carte, mais actuellement masqué.',   /* atlas-results.js (#R318) atlas.code.not_visible */
   'Nothing on the map changed.': 'Rien n’a changé sur la carte.',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'The map was not drawing — IntMap is in the background, so the view could not move. Bring IntMap to the front and ask again.': 'La carte ne se dessinait pas — IntMap est en arrière-plan, la vue n’a donc pas pu bouger. Mettez IntMap au premier plan et posez à nouveau la question.',   /* atlas-results.js (#R768) atlas.code.not_rendering */
 
   'There was nothing of that kind to remove — the map is already in the state asked for.': 'Il n’y avait rien de ce genre à retirer — la carte est déjà dans l’état demandé.',   /* atlas-results.js (#R318) atlas.code.already_clear */
   'The map was already showing what you asked for.': 'La carte affichait déjà ce que vous aviez demandé.',   /* atlas-results.js (#R740) atlas.code.already_there */

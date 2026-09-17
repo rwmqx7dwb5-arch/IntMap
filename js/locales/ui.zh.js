@@ -5346,6 +5346,7 @@ window.IntMapLang.define('zh', {
   'It was calculated but nothing was drawn on the map.': '已完成計算，但地圖上沒有畫出任何東西。',   /* atlas-results.js (#R318) atlas.code.not_rendered */
   'It is on the map but currently hidden.': '它在地圖上，但目前處於隱藏狀態。',   /* atlas-results.js (#R318) atlas.code.not_visible */
   'Nothing on the map changed.': '地圖上沒有任何變化。',   /* atlas-results.js (#R318) atlas.code.no_change */
+  'The map was not drawing — IntMap is in the background, so the view could not move. Bring IntMap to the front and ask again.': '地圖當時沒有在繪製 — IntMap 沒有顯示在最前面，所以畫面無法移動。請把 IntMap 切換到最前面，再問一次。',   /* atlas-results.js (#R768) atlas.code.not_rendering */
 
   'There was nothing of that kind to remove — the map is already in the state asked for.': '沒有可移除的該類項目 — 地圖已處於要求的狀態。',   /* atlas-results.js (#R318) atlas.code.already_clear */
   'The map was already showing what you asked for.': '地圖已經顯示您所要求的內容。',   /* atlas-results.js (#R740) atlas.code.already_there */
