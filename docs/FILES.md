@@ -497,6 +497,9 @@ atlas-persona.js                  Atlas の人格の**正本**（名前・立場
                                   意見・感情表現・自己設定・非開示。全 system prompt の先頭に入る唯一の写し）
 atlas-console.js                  Atlas カーネル（自然言語コンソール／OS コマンド面。846 KB）
 atlas-controls.js                 Atlas — 実 UI コントロールとモジュールメソッドへの全操作面
+atlas-reading.js                  Atlas — 主題の上に着く到着（見出し＋説明＋起点チップ＋入力欄へのフォーカス）。
+                                  `arrive()` は地図の右クリック `askHere` と読む面の `askReading()` の
+                                  **両方**が呼ぶ 1 つの組み立て。起点は固定文ではなくその 1 件が持つものから導く
 atlas-examples.js                 Atlas — 例文チップの候補プール（視界のプール `V` ＋ 国のプール `P` ／
                                   世界のプール `W` ＋ 点クリック用の `HERE`。選ぶのは `choose()`）
 atlas-view-subject.js             Atlas — 「いま何を見ているか」の測定（視界に入る国・陸と海の割合・

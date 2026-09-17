@@ -709,7 +709,7 @@ window.IntMapModules.newsEvents = function (HOST) {
       const loc = (item.analysis && item.analysis.loc && isFinite(item.analysis.loc[0]))
         ? [item.analysis.loc[0], item.analysis.loc[1]] : null;
       window._imReader = {
-        open: true, title: ev.titleShown || '',
+        open: true, kind: 'event', title: ev.titleShown || '',
         publisher: (ev.sourceCount > 1 && firstName) ? (firstName + ' +' + (ev.sourceCount - 1)) : firstName,
         link: rows.length ? (rows[0].url || '') : '',
         pubDate: ev.lastAt || '', loc, place: ev.place || '',

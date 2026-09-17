@@ -161,8 +161,16 @@ window.IntMapModules.articleReader=function(HOST){
        a 375×812 reload, `window.IntMapConsole` was undefined while `window.IntMapAtlas` was already
        there, so reaching for the console directly is a route that works on a desktop and throws on a
        phone. */
+  /* ⚠⚠⚠ (#R776) …AND THE ROUTE NOW CARRIES WHAT WAS BEING READ. `call('open')` crossed to Atlas and
+     said nothing about the article, so the button's whole effect — from a surface whose subject is
+     unmistakable — was a tab switch onto an empty composer: the reader had to retype the headline they
+     were looking at. `askReading` (js/atlas-console.js) opens the same console and arrives on the
+     ARTICLE: its title, its outlet and date, its place pinned, and starters derived from what this
+     item actually has. ⚠ It opens FIRST and returns false only when nothing is being read, so there is
+     no second plan to keep in step here — a press with no open article lands where it always did. */
   function askAtlasAboutReading(){
-    try{ if(window.IntMapAtlas&&window.IntMapAtlas.call){ window.IntMapAtlas.call('open'); return; } }catch(_){}
+    try{ if(window.IntMapAtlas&&window.IntMapAtlas.call){ window.IntMapAtlas.call('askReading'); return; } }catch(_){}
+    try{ if(window.IntMapConsole&&window.IntMapConsole.askReading){ window.IntMapConsole.askReading(); return; } }catch(_){}
     try{ if(window.IntMapConsole&&window.IntMapConsole.open){ window.IntMapConsole.open(); return; } }catch(_){}
     try{ const b=document.getElementById('btn-community'); if(b) b.click(); }catch(_){}
   }
@@ -192,7 +200,7 @@ window.IntMapModules.articleReader=function(HOST){
     /* (#R80) vision §2 — Atlas must know the ARTICLE the user is reading right now (not just that the News tab is
        open), so follow-ups like "この記事について詳しく"/"translate this"/"背景は？"/"where did this happen" resolve.
        globalData is closure-scoped, so bridge the open article onto window (same pattern as window._imLayerDates). */
-    try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
+    try{ const _a=(item&&item.analysis)||{}; window._imReader={ open:true, kind:'article', title:item&&item.title||'', publisher:item&&item.publisher||'', link:item&&item.link||'', pubDate:item&&item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
     const pane=enterReaderPane(); if(!pane) return;
     const back=window.IntMapLang.t(HOST.lang,'Back to news','ニュースへ戻る','Zurück zu den News','Назад к новостям','Volver a noticias');
     pane.innerHTML=`${readerBar({back,publisher:item.publisher})}

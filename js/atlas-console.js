@@ -22,6 +22,7 @@ import { makeAtlasReply } from './atlas-reply.js';
 import { personaPrompt } from './atlas-persona.js';   /* (#R285) WHO Atlas is — the ONE copy. Every system prompt below opens with personaPrompt('<its task role>') and adds ONLY its task rules. */
 import { attachLightbox, atlFmtBytes, ATL_FILE } from './atlas-attach.js';   /* (#R232) attachments + the full-screen viewer; (#R540) ATL_FILE asks the BYTES what a file is */
 import { ATTACH_STORE, attachViewStrings, ATTACH_LOG } from './atlas-file-view.js';   /* (#R773) 添付を見せる側（記録の預かり所とビューアの文）と、会話 1 本ぶんの台帳 ATTACH_LOG（実体は js/atlas-attach-log.js。ここを 1 行に束ねているのは、この中心部に import 1 行の余白も無いから） */   /* (#R232) attachments + the full-screen viewer; (#R540) ATL_FILE asks the BYTES what a file is */
+import { makeAtlasReading } from './atlas-reading.js';   /* (#R776) arriving on the thing being read: the bubble both «Ask Atlas» buttons land on. ⚠ A LINE OF ITS OWN, unlike the gloss beside it — scripts/js-reachability.mjs only sees an import at the START of a line, so a module co-located behind another import is invisible to the reachability rule and check:static calls it dead. */
 import { makeMsgTools } from './atlas-msg-tools.js';   /* (#R298) the per-message tool bar + the in-place editor */   import { makeAtlasGloss } from './atlas-gloss.js';   /* (#R491) select a phrase in a reply → a dictionary card for it. ⚠ ON THIS LINE because the kernel has no headroom (tests/r318 ⑨b) and a feature moves out, never the ceiling up */
 import { atlasPanelCSS } from './atlas-styles.js';   /* (#R313) the panel's stylesheet — moved out so this file stays under a ceiling that is never raised */
 import { makeAtlasGeoResolve } from './atlas-geo-resolve.js';
@@ -3939,7 +3940,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          it (the normal sidebar has one surface, so opening Atlas closes the reader). The subject is
          still the subject; it is no longer on screen, and js/atlas-state.js says so in those words
          rather than claiming the reader is reading it right now. */
-      try{ const rd=window._imReader; if(rd&&rd.open&&rd.title) o.article={ title:String(rd.title).slice(0,140), publisher:rd.publisher||'', pubDate:rd.pubDate?String(rd.pubDate).slice(0,16):'', place:rd.place||'', loc:(rd.loc&&isFinite(rd.loc[0]))?[+rd.loc[0],+rd.loc[1]]:null, body:rd.body?String(rd.body).slice(0,2600):'', onScreen:rd.onScreen!==false }; }catch(_){}
+      try{ const rd=window._imReader; if(rd&&rd.open&&rd.title) o.article={ kind:(rd.kind==='event'?'event':'article'), title:String(rd.title).slice(0,140), publisher:rd.publisher||'', pubDate:rd.pubDate?String(rd.pubDate).slice(0,16):'', place:rd.place||'', loc:(rd.loc&&isFinite(rd.loc[0]))?[+rd.loc[0],+rd.loc[1]]:null, body:rd.body?String(rd.body).slice(0,2600):'', onScreen:rd.onScreen!==false }; }catch(_){}
       try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) o.searchBox=String(si.value).trim().slice(0,60); }catch(_){}
       return o; }
     function _atlasOverlayState(){ const o={highlightCountries:0,highlight:null,choropleth:null,customScore:null,pins:null,polygons:null,lines:null,measure:null,radius:null,userPins:null,tool:''};
@@ -4017,7 +4018,7 @@ window.IntMapModules.atlasConsole=function(HOST){
        built, `run` / `_stopRun` are this closure's own, and only this closure may truncate `_hist`. */
     const { copyBtn, editBtn, msgTools } = makeMsgTools({ L:L, esc:esc, chat:()=>chatEl,
       run:(q,imgs,files)=>run(q,imgs,files), stopRun:()=>{ try{ _stopRun(); }catch(_){} },
-      rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); try{ ATTACH_LOG.rewind(t); }catch(_){} } });   /* (#R773) 巻き戻したターンの添付も一緒に落とす——消えた質問の資料だけが会話に居座らないように */   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */
+      rewindHist:(t)=>{ _hist=_hist.filter(x=>x&&x.t<t); try{ ATTACH_LOG.rewind(t); }catch(_){} } });   /* (#R773) 巻き戻したターンの添付も一緒に落とす——消えた質問の資料だけが会話に居座らないように */   const GLOSS = makeAtlasGloss(HOST, { L:L, esc:esc, R:R, note:note, warn:warn, chat:()=>chatEl, ask:(q)=>{ try{ if(inEl){ inEl.value=q; fire(); } }catch(_){} } });   /* (#R491) the term gloss, built beside the tool bar and on the same terms — it reads its context out of the rendered DOM, so all it needs is the picker, the escaper, the result helpers, the chat element and a way to put a follow-up into the composer (the starter chips' pick). ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom */   const READ = makeAtlasReading(HOST, { L:L, esc:esc, bubble:bubble, run:run, ensure:ensure, focus:()=>{ try{ inEl.focus(); }catch(_){} }, open:()=>{ try{ open(); }catch(_){} }, pin:(lng,lat,nm)=>{ _herePoint={lng,lat,name:nm||''}; try{ _lastPlace={lng,lat,name:nm||''}; }catch(_){} }, reset:()=>{ _lastUserMsg=''; } });   /* (#R776) the arrival bubble both «Ask Atlas» buttons land on. ⚠ ON THIS LINE for the reason the import is: the kernel has no headroom (tests/r318 ⑨b) */
     /* (#R296) 「Atlasはユーザーが送ったメッセージもコピーできるように」 — see `copyBtn`. (#R298) `ed` = what the turn was RUN
        with ({turn,q,imgs,files,edit}): the turn id is stamped on the bubble so an edit can rewind to it, and a bubble
        that carries a request (not a bare image row) gets Edit next to Copy. */
@@ -4831,7 +4832,7 @@ window.IntMapModules.atlasConsole=function(HOST){
     async function askHere(ll){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return; try{ open(); }catch(_){}
       /* …and if something was waiting for exactly this, that is what the click meant. */
       try{ if(await _resumeWithPoint(+ll.lng,+ll.lat)) return; }catch(_){}
-      _lastUserMsg=''; const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
+      _lastUserMsg=''; const p=ensure();
       const lng=+ll.lng, lat=+ll.lat;
       _herePoint={lng,lat,name:''}; try{ _lastPlace={lng,lat,name:''}; }catch(_){}
       try{ GE().camera.flyTo({center:[lng,lat],zoom:Math.max(GE().camera.getZoom(),5),duration:900}); }catch(_){}
@@ -4845,11 +4846,9 @@ window.IntMapModules.atlasConsole=function(HOST){
          from the starter chips' own pools now, measured around THE CLICKED POINT (the flyTo above takes
          900 ms, so the camera still shows the old view); #R309's three are the guaranteed tail in `HERE`. */
       let ex=[]; try{ ex=pointExamples(lng,lat,Math.max(GE().camera.getZoom(),5),3)||[]; }catch(_){}
-      const chips=ex.map(e=>'<button class="atl-here-q" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">'+esc(e)+'</button>').join('');
-      const b=bubble('a','<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">📍 '+coordStr+'</div>'
-        +'<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.5;">'+L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.')+'</div>'+chips);
-      try{ b.querySelectorAll('.atl-here-q').forEach(btn=>btn.onclick=()=>run(btn.textContent.trim())); }catch(_){}
-      setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },80); }
+      READ.arrive('<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">📍 '+coordStr+'</div>',
+        L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.'),
+        ex); }
     /* (#R62) external entry point: the AI-brief buttons all over IntMap now open ATLAS and run the brief inline
        ("AI BriefはAtlasに統合して") — one conversation surface for everything. */
     async function briefEntry(name,ll){ try{ open(); }catch(_){}
@@ -4900,7 +4899,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       const gen=++_runGen;
       try{ const fails=await runActions(ai,'',acts,gen); if(gen===_runGen) recordTurn(String(label||''),'',acts,fails); }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} }
       try{ PROG.done(ai); }catch(_){} try{ msgTools(ai,String(label||'')); }catch(_){} }
-    return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, askHere, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
+    return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, askHere, askReading:()=>READ.askReading(), dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
 };
 

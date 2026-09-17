@@ -644,7 +644,7 @@ window.IntMapModules.newsUi=function(HOST){
          bridge from js/news-events.js openDetail() (this button is removed from Event cards by #R405). */
       { const rb=card.querySelector('.btn-read');
         if(rb) rb.onclick=(e)=>{ e.stopPropagation(); const _u=IntMapSafe.url(item.link); if(!_u) return;   /* (#R138 SEC) http(s)-only */
-          try{ const _a=item.analysis||{}; window._imReader={ open:true, title:item.title||'', publisher:item.publisher||'', link:item.link||'', pubDate:item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
+          try{ const _a=item.analysis||{}; window._imReader={ open:true, kind:'article', title:item.title||'', publisher:item.publisher||'', link:item.link||'', pubDate:item.pubDate||'', loc:(_a.loc&&isFinite(_a.loc[0]))?[_a.loc[0],_a.loc[1]]:null, place:_a.name||'' }; }catch(_){ }
           window.open(_u,'_blank','noopener'); }; }
       /* (#R142) Clicking the OUTLET NAME opens that outlet's Wikipedia page in the UI language (jp→ja subdomain). Uses
          Special:Search&go=Go so an exact title jumps straight to the article and a near-miss lands on search results
