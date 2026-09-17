@@ -1014,10 +1014,10 @@ window.IntMapModules.atlasConsole=function(HOST){
       (polys||[]).forEach(p=>{ try{ const bb=fbbox(p.geo); if(!bb) return; any=true; a=Math.min(a,bb[0]);b=Math.min(b,bb[1]);c=Math.max(c,bb[2]);d=Math.max(d,bb[3]); }catch(_){} });
       return (any&&isFinite(a)&&(c-a)<350)?[[a,b],[c,d]]:null; }
     /* ---- analysis ---- */
-    function rows(metric){ const _s=metSpec(metric); const m=_s&&_s.m; if(!m) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const v=m.get(s); if(v==null||isNaN(v)) continue; out.push({code,name:nm(s),val:v}); } out.sort((x,y)=>y.val-x.val); return out; }   /* (#R105) also rank the XMET metrics (life expectancy / internet), not only the base METRICS set */
+    function rows(metric){ const _s=metSpec(metric); const m=_s&&_s.m; if(!m) return null; const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!isRankableCountry(s)) continue;   /* (#R775) Antarctica was 1st by GDP per capita */ const v=m.get(s); if(v==null||isNaN(v)) continue; out.push({code,name:nm(s),val:v}); } out.sort((x,y)=>y.val-x.val); return out; }   /* (#R105) also rank the XMET metrics (life expectancy / internet), not only the base METRICS set */
     function rank(metric,order,n){ const l=rows(metric); if(!l) return null; return order==='bottom'?l.slice(-n).reverse():l.slice(0,n); }
-    function ratio(a,b,order,n){ const sa=metSpec(a),sb=metSpec(b); if(!sa||!sb) return null; const ma=sa.m,mb=sb.m;   /* (#R740) same resolver as rank/mapMetric */ const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; const va=ma.get(s),vb=mb.get(s); if(va==null||vb==null||isNaN(va)||isNaN(vb)||vb===0) continue; out.push({code,name:nm(s),val:va/vb}); } out.sort((x,y)=>y.val-x.val); return order==='bottom'?out.slice(-n).reverse():out.slice(0,n); }
-    function relate(my,mx,find,n){ const spY=metSpec(my),spX=metSpec(mx); if(!spY||!spX) return null; const Y=spY.m,X=spX.m;   /* (#R740) same resolver as rank/mapMetric */ const pts=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; let y=Y.get(s),x=X.get(s); if(y==null||x==null||isNaN(y)||isNaN(x)) continue; if(X.log){ if(x<=0) continue; x=Math.log(x); } pts.push({code,name:nm(s),y,xv:x,raw:Y.get(s)}); }
+    function ratio(a,b,order,n){ const sa=metSpec(a),sb=metSpec(b); if(!sa||!sb) return null; const ma=sa.m,mb=sb.m;   /* (#R740) same resolver as rank/mapMetric */ const out=[]; for(const code in countryStats){ const s=countryStats[code]; if(!isRankableCountry(s)) continue; const va=ma.get(s),vb=mb.get(s); if(va==null||vb==null||isNaN(va)||isNaN(vb)||vb===0) continue; out.push({code,name:nm(s),val:va/vb}); } out.sort((x,y)=>y.val-x.val); return order==='bottom'?out.slice(-n).reverse():out.slice(0,n); }
+    function relate(my,mx,find,n){ const spY=metSpec(my),spX=metSpec(mx); if(!spY||!spX) return null; const Y=spY.m,X=spX.m;   /* (#R740) same resolver as rank/mapMetric */ const pts=[]; for(const code in countryStats){ const s=countryStats[code]; if(!isRankableCountry(s)) continue; let y=Y.get(s),x=X.get(s); if(y==null||x==null||isNaN(y)||isNaN(x)) continue; if(X.log){ if(x<=0) continue; x=Math.log(x); } pts.push({code,name:nm(s),y,xv:x,raw:Y.get(s)}); }
       if(pts.length<4) return null; const N=pts.length; let sx=0,sy=0,sxx=0,sxy=0; pts.forEach(p=>{ sx+=p.xv;sy+=p.y;sxx+=p.xv*p.xv;sxy+=p.xv*p.y; }); const den=(N*sxx-sx*sx)||1; const b=(N*sxy-sx*sy)/den, a=(sy-b*sx)/N; pts.forEach(p=>{ p.resid=p.y-(a+b*p.xv); p.val=p.raw; }); pts.sort((p,q)=>p.resid-q.resid); return find==='high'?pts.slice(-n).reverse():pts.slice(0,n); }
     const clampN=n=>Math.max(1,Math.min(40,parseInt(n,10)||15));
     const note=s=>'<div style="font-size:11.5px;color:var(--text-muted);margin:3px 0;">'+s+'</div>';
@@ -1184,7 +1184,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       let cWarn=''; if(color!=null&&String(color).trim()!==''){ const pc=parseColor(color); if(pc) _choroRamp=rampFrom(pc); else cWarn=warn('⚠ '+L('Unknown color','色を認識できません','Unbekannte Farbe','Неизвестный цвет','Color desconocido')+': '+esc(color)); }
       clearHl(); clearChoro(); clearPolyHl(); clearLineHl(); if(!ensureChoroLayer()) return R(false, warn('⚠ '+L('Could not draw the map shading','地図の濃淡を描けませんでした','Karteneinfärbung fehlgeschlagen','Не удалось окрасить карту','No se pudo sombrear el mapa')));
       try{ GE().layers.setPaint('nlq-choro','fill-color',_choroFillExpr(_choroRamp)); }catch(_){}
-      const vals=[]; for(const code in countryStats){ const s=countryStats[code]; if(!s) continue; let v=m.get(s); if(v==null||isNaN(v)) continue; if(m.log&&v<=0) continue; vals.push({code, raw:v, t:(m.log?Math.log(v):v)}); }
+      const vals=[]; for(const code in countryStats){ const s=countryStats[code]; if(!isRankableCountry(s)) continue; let v=m.get(s); if(v==null||isNaN(v)) continue; if(m.log&&v<=0) continue; vals.push({code, raw:v, t:(m.log?Math.log(v):v)}); }
       if(vals.length<3) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
       let lo=Infinity,hi=-Infinity; vals.forEach(p=>{ lo=Math.min(lo,p.t); hi=Math.max(hi,p.t); }); const span=(hi-lo)||1; const bottom=(String(order||'')==='bottom'||String(order||'')==='reverse');
       vals.forEach(p=>{ let nv=(p.t-lo)/span; if(bottom) nv=1-nv; _choroState[String(p.code)]=nv; try{ GE().layers.setFeatureState({source:'nlq-src',id:String(p.code)},{choroV:nv}); }catch(_){} });
@@ -1198,7 +1198,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       html+='<div style="font-size:11px;color:var(--text-muted);margin-top:5px;">'+L('Max','最高','Höchster','Макс.','Máx.')+': '+esc(nm(countryStats[top.code]))+' ('+esc(fmtVal(metricKey,top.raw))+') · '+L('Min','最低','Niedrigster','Мин.','Mín.')+': '+esc(nm(countryStats[bot.code]))+' ('+esc(fmtVal(metricKey,bot.raw))+')</div>';
       return R(true, note(html)+cWarn, {meta:{painted:{choro:Object.keys(_choroState)}}}); }   /* (#R760) declared, so a redraw of the same state is `already_there` — tests/r760-atlas-verdict-checks.test.mjs */
     /* ==== (#R75) vision §10/§13 groundwork — metric series shared by explore & scoreMap ==== */
-    const { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric } = makeAtlasMetrics(HOST, { LA, lx, L, esc, warn, R });   /* (#R740) ONE metric set and ONE resolver — js/atlas-metrics.js, where the production measurement behind it is written. ⚠ INSTANTIATED HERE, below `warn`/`R`, because those are `const`s of this closure: a hand-off written where METRICS used to stand (line 94) would read them inside their temporal dead zone. */
+    const { METRICS, XMET, VMET, XVMET, metAll, metKeys, metSpec, unknownMetric, isRankableCountry } = makeAtlasMetrics(HOST, { LA, lx, L, esc, warn, R });   /* (#R740) ONE metric set and ONE resolver — js/atlas-metrics.js, where the production measurement behind it is written. ⚠ INSTANTIATED HERE, below `warn`/`R`, because those are `const`s of this closure: a hand-off written where METRICS used to stand (line 94) would read them inside their temporal dead zone. */
     /* one component (bundled metric or a World-Bank indicator code) → {label, vals:{ISO3:num}, log} */
     async function _seriesFor(comp){ try{
       if(comp&&comp.wb){ if(!(window.IntMapWB&&window.IntMapWB.fetch)) return null;
@@ -1208,7 +1208,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         return {label:String(comp.label||comp.wb).slice(0,60),vals,log:false,src:'World Bank '+String(comp.wb)}; }
       const sp=metSpec(comp&&(comp.metric||comp.key||comp.name)); if(!sp) return null;
       await _fillMetric(sp.key);
-      const vals={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!s) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; vals[cd]=+v; }
+      const vals={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!isRankableCountry(s)) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; vals[cd]=+v; }   /* (#R775) _normSeries scales each component between this series minimum and maximum, so one non-country outlier moves EVERY country in the composed score, not only its own row */
       if(Object.keys(vals).length<20) return null;
       return {label:lx(sp.m.label),vals,log:!!sp.m.log,mkey:sp.key,src:null}; }catch(_){ return null; } }
     /* robust 0..1 normalisation: log where flagged, clamped to the 5th–95th percentile so one outlier
@@ -3632,7 +3632,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           if(resolved.length<2) return R(false, warn('⚠ '+L('Not enough usable indicators','利用可能な指標が足りません','Zu wenige nutzbare Indikatoren','Недостаточно доступных показателей','Indicadores utilizables insuficientes')+(missingC.length?(' — '+L('unavailable','取得不可','nicht verfügbar','недоступно','no disponibles')+': '+esc(missingC.join(', '))):'')));
           const totW=resolved.reduce((s2,r2)=>s2+r2.w,0);
           const score={}; let excl=0;
-          for(const cd in countryStats){ let sw=0,sv=0;
+          for(const cd in countryStats){ if(!isRankableCountry(countryStats[cd])) continue; let sw=0,sv=0;   /* (#R775) same set as every other ranking */
             resolved.forEach(r2=>{ const nv=r2.norm[cd]; if(nv==null) return; sv+=r2.w*(r2.inv?(1-nv):nv); sw+=r2.w; });
             if(sw>=totW*0.6) score[cd]=sv/sw; else if(sw>0) excl++; }
           const codes=Object.keys(score);
@@ -3667,7 +3667,7 @@ window.IntMapModules.atlasConsole=function(HOST){
           const sp=metSpec(a.metric||a.target||a.key||a.name);
           if(!sp) return unknownMetric(a.metric||a.target);   /* (#R740) the list was typed here by hand and had already drifted from `METRICS`+`XMET` — it is counted now */
           await _fillMetric(sp.key); await _fillMetric('lifeExp'); await _fillMetric('internet'); await _fillMetric('tfr');   /* lazy fields → WB bulk (sequential — WB throttles bursts) */
-          const tv={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!s) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; tv[cd]=sp.m.log?Math.log(v):v; }
+          const tv={}; for(const cd in countryStats){ const s=countryStats[cd]; if(!isRankableCountry(s)) continue; let v=sp.m.get(s); if(v==null||isNaN(v)) continue; if(sp.m.log&&v<=0) continue; tv[cd]=sp.m.log?Math.log(v):v; }
           if(Object.keys(tv).length<25) return R(false, warn('⚠ '+L('Not enough data for this metric','この指標はデータ不足です','Zu wenig Daten','Недостаточно данных','Datos insuficientes')));
           const ALL=Object.assign({},METRICS,XMET); const out=[];
           for(const k in ALL){ if(k===sp.key) continue; const m2=ALL[k]; const xs=[],ys=[],cds=[];
@@ -4043,13 +4043,13 @@ window.IntMapModules.atlasConsole=function(HOST){
       (document.getElementById('map-container')||document.body).appendChild(panel);
       chatEl=panel.querySelector('.atl-chat'); inEl=panel.querySelector('.atl-in'); try{ GLOSS.wire(panel); }catch(_){}   /* (#R491) one delegated listener per gesture, for every message the panel will ever hold */
       try{ const _cl=()=>L('Close','閉じる','Schließen','Закрыть','Cerrar'), _fs=()=>attachViewStrings(L); attachLightbox(chatEl,_cl,_fs); attachLightbox(panel.querySelector('.atl-imgrow'),_cl,_fs); }catch(_){}   /* (#R232) 送信後の吹き出しと、(#R773) 送る前のコンポーザ——同じ委譲を 2 つの入れ物に貼るだけで、開き方は 1 つ */
-      /* (#R79g) auto-scroll so a reply that REPLACES the "thinking" dots stays visible ("返答が短いものであれば
-         返答に合わせて自動的に最下部までスクロール"). A MutationObserver covers every reply-setting path. It only
-         scrolls when the user is already near the bottom — so a SHORT reply drops fully into view, while a LONG
-         reply (whose new content pushes the bottom far away) is left with its TOP where the dots were, so you
-         read it from the start and aren't yanked around. */
-      try{ const _auto=()=>{ try{ if(chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<150) chatEl.scrollTop=chatEl.scrollHeight; }catch(_){} };
-        new MutationObserver(_auto).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
+      /* (#R79g) auto-scroll so a reply that REPLACES the "thinking" dots stays visible ("返答が短いものであれば返答に合わせて自動的に最下部までスクロール"). A MutationObserver covers every
+         reply-setting path; it only moves when the reader is already near the bottom, so a SHORT reply drops fully into view while a LONG one keeps its TOP where the dots were and is read from the start.
+         ⚠⚠⚠ (#R775) …AND THAT SECOND HALF ANCHORED TO A PIXEL, while the content ABOVE the reply keeps changing height: the progress trace collapses to one line when the turn ends, images and cards
+         finish loading. Measured on production 2026-09-17 with a 3,075px reply — the reply began at 7,900 and `scrollTop` sat at 7,050, i.e. 745px ABOVE the reader's OWN question at 7,795: neither the question nor one line of the answer was on screen when the turn finished. An ELEMENT says what #R79g meant and keeps saying it while the page settles. ⚠ The near-bottom test still owns the short reply; `_anc` is consulted only when it fails, declines when the question is already in view, and declines again when the reader has scrolled far away by hand (nothing is ever yanked back). */
+      try{ const _nb=()=>chatEl.scrollHeight-chatEl.scrollTop-chatEl.clientHeight<150;
+        const _anc=()=>{ const bs=chatEl.querySelectorAll('.atl-b.u'), u=bs[bs.length-1]; if(!u) return; const top=u.offsetTop, v=chatEl.scrollTop; if((top>=v-4&&top<v+chatEl.clientHeight)||top<v-chatEl.clientHeight*3) return; chatEl.scrollTop=Math.max(0,top-6); };
+        new MutationObserver(()=>{ try{ if(_nb()) chatEl.scrollTop=chatEl.scrollHeight; else _anc(); }catch(_){} }).observe(chatEl,{childList:true,subtree:true,characterData:true}); }catch(_){}
       /* (#R42c/#R43) closing Atlas clears the highlights AND choropleth it drew ("×したらAtlas起源の地図上の表示も消える"). */
       panel.querySelector('.atl-x').onclick=()=>{ try{ _atlClose(); }catch(_){ panel.style.display='none'; } try{ clearHl(); }catch(_){} try{ clearChoro(); }catch(_){} try{ clearPolyHl(); }catch(_){} try{ clearLineHl(); }catch(_){} };
       /* (#R42c/#R47) minimize / restore (collapse to just the header bar). FIX: a resized panel carries an inline
@@ -4752,7 +4752,7 @@ window.IntMapModules.atlasConsole=function(HOST){
         try{ PROG.done(ai); }catch(_){} msgTools(ai,q);
       }catch(e){
         if(gen!==_runGen){ try{ ASTATE.endTurn(turn,{status:'cancelled'}); }catch(_){} _markCancelled(ai); return; }
-        try{ ASTATE.endTurn(turn,{status:'error',reply:String((e&&e.message)||'')}); }catch(_){} try{ PROG.done(ai); }catch(_){} ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); }
+        try{ ASTATE.endTurn(turn,{status:'error',reply:String((e&&e.message)||'')}); }catch(_){} try{ PROG.done(ai); }catch(_){} ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'AI error')+'</span>'; msgTools(ai,q); try{ const _t=ASTATE.turn(turn); if(inEl&&!String(inEl.value||'').trim()&&!(_t&&_t.operations&&_t.operations.length)){ inEl.value=q; try{ inEl.dispatchEvent(new Event('input',{bubbles:true})); }catch(_){} } }catch(_){}   /* ⚠⚠⚠ (#R775) A TURN THAT DIED WITH NOTHING DONE MUST NOT TAKE THE QUESTION WITH IT. Measured on production 2026-09-17: the Supabase session vanished mid-session (auth-js removes it when a refresh is refused, js/ai-core.js:58 asks for it on every AI call), and the next four questions came back in 253-553 ms as 「Please log in to use AI features.」 The login modal opened; the questions were gone. Nothing in this file records them — `recordTurn` is not reached on this path — so the reader retypes. Restoring the composer costs nothing and claims nothing: it is done ONLY when the turn filed no operation at all (so a partially-completed turn is never re-sent) and ONLY when the composer is empty (so what the reader has already typed is never overwritten). It does not re-send by itself: pressing send stays the reader\'s. */ }
       }finally{ try{ if(gen===_runGen){ _setGoBusy(false); _abortCtl=null; } }catch(_){} }   /* (#R142) only the LATEST turn clears the busy button — a superseding turn keeps its own Stop shown */
     }
     /* (#R44) append a compact, TRUTHFUL record of the exchange to the rolling history (capped). */

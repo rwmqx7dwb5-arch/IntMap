@@ -189,7 +189,11 @@ test('R742 ⑤a: without the annotation on the snapshot, ① and ② go red', as
 });
 
 test('R742 ⑤b: without the observation at the operation boundary, ① goes red', async () => {
-  const S = await mutant('try { observeLayers({ turnId: turnId,', 'try { if (0) observeLayers({ turnId: turnId,');
+  /* ⚠ (#R775) THE NEEDLE MOVED WITH THE LINE. `recordOperation` now observes the DRAWINGS beside the
+     layers, so the old needle matched nothing and this check silently measured zero. The mutation it
+     names is unchanged — remove the LAYER observation at the operation boundary — and it still must
+     go red. (memory: a check whose needle stops matching is a green that measures nothing.) */
+  const S = await mutant('observeLayers(_by); observePaints(_by);', 'observePaints(_by);');
   arrange(S);
   assert.equal(rowOf(S.snapshot(), 'dl-quakes').origin.by, 'unrecorded',
     'a layer Atlas switched on is indistinguishable from one it never touched');

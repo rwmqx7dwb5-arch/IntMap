@@ -598,12 +598,22 @@ export function makeAtlasState(HOST) {
       }
 
       var at = snap.atlas || {};
-      if (at.highlightCountries) lines.push(at.highlightCountries + ' countries are highlighted by Atlas right now.');
+      /* (#R775) the mark that turns js/atlas-persona.js's `workspace` paragraph into something Atlas
+         can act on: WHEN this drawing appeared. 「THIS turn」 is the load-bearing word — four measured
+         turns cleared or switched off work they had produced for the very question they were answering. */
+      var _pmarked = false, _plast = API.lastTurn();
+      var paintMark = function (key) {
+        var og = paintOrigin[String(key)]; if (!og) return '';
+        _pmarked = true;
+        var ago = turnsBetween(og.turnId, _plast && _plast.turnId);
+        return ' [YOU drew this · turn ' + str(og.turnId) + ' · ' + (ago ? (ago + ' turn(s) ago') : 'THIS turn') + ']';
+      };
+      if (at.highlightCountries) lines.push(at.highlightCountries + ' countries are highlighted by Atlas right now.' + paintMark('highlightCountries'));
       if (at.highlight && at.highlight.name) lines.push('Current Atlas highlight: "' + at.highlight.name + '"' +
-        (at.highlight.basis ? (' — BASIS: ' + at.highlight.basis + '. If the user asks what YEAR the highlighted membership/data refers to, answer from THIS basis') : '') + '.');
-      if (at.choropleth && at.choropleth.label) lines.push('The map is currently shaded (choropleth) by ' + at.choropleth.label + '.');
+        (at.highlight.basis ? (' — BASIS: ' + at.highlight.basis + '. If the user asks what YEAR the highlighted membership/data refers to, answer from THIS basis') : '') + '.' + paintMark('highlight'));
+      if (at.choropleth && at.choropleth.label) lines.push('The map is currently shaded (choropleth) by ' + at.choropleth.label + '.' + paintMark('choropleth'));
       else if (at.customScore && at.customScore.name) lines.push('The map is currently shaded by a CUSTOM Atlas evaluation score: "' + at.customScore.name +
-        '" — follow-ups like "weight X more" / "drop Y" should re-emit scoreMap with adjusted components.');
+        '" — follow-ups like "weight X more" / "drop Y" should re-emit scoreMap with adjusted components.' + paintMark('customScore'));
       if (sel.countryCard && sel.countryCard.name) lines.push('Open country card: ' + sel.countryCard.name + ' — "this country"/"it"/"over time" refer to it.');
 
       var ar = sel.article;
@@ -624,18 +634,19 @@ export function makeAtlasState(HOST) {
       }
 
       if (at.pins && at.pins.n) lines.push(at.pins.n + ' Atlas pins are on the map' +
-        (at.pins.kind === 'research' ? ' (research-report pins with summaries)' : ' (facility/POI pins)') + '.');
+        (at.pins.kind === 'research' ? ' (research-report pins with summaries)' : ' (facility/POI pins)') + '.' + paintMark('pins'));
       if (at.polygons && at.polygons.n) {
         var pn = (at.polygons.names || []).join(', ');
-        lines.push(at.polygons.n + ' Atlas polygon highlight(s)' + (pn ? (': ' + pn) : '') + '.');
+        lines.push(at.polygons.n + ' Atlas polygon highlight(s)' + (pn ? (': ' + pn) : '') + '.' + paintMark('polygons'));
       }
-      if (at.lines && at.lines.n) lines.push(at.lines.n + ' Atlas line(s) drawn (river courses / routes / custom lines).');
+      if (at.lines && at.lines.n) lines.push(at.lines.n + ' Atlas line(s) drawn (river courses / routes / custom lines).' + paintMark('lines'));
       if (at.factions && at.factions.n) lines.push('A historical power/alliance map you drew earlier is still on the globe (' + at.factions.n +
         ' country fills on modern borders). It stays until removed — clear it (clear what:"historical") when it no longer serves the question.');
       if (at.eraPolities && at.eraPolities.n) lines.push('The country highlight is drawn as the displayed year\'s polities (' +
         (at.eraPolities.names || []).join(', ') + ') from the historical border record, not the modern outlines.');
-      if (at.measure && at.measure.n) lines.push('Measure tool active with ' + at.measure.n + ' points.');
-      if (at.radius && at.radius.n) lines.push(at.radius.n + ' radius circle(s) on the map.');
+      if (at.measure && at.measure.n) lines.push('Measure tool active with ' + at.measure.n + ' points.' + paintMark('measure'));
+      if (at.radius && at.radius.n) lines.push(at.radius.n + ' radius circle(s) on the map.' + paintMark('radius'));
+      if (_pmarked) lines.push('Drawing marks: "[YOU drew this · THIS turn]" is work you produced for the question you are answering RIGHT NOW — it is the answer, so do not clear, reset or overwrite it while answering that question, and do not re-issue it to "make sure" (it is already there). "[… N turn(s) ago]" is what an earlier question left, and THAT is what the workspace rule above is about. A drawing with no mark has no record of where it came from — it may be the reader\'s.');
       if (at.userPins && at.userPins.n) lines.push(at.userPins.n + ' user pin(s) on the map.');
 
       var pa = snap.panels || {};
@@ -643,6 +654,24 @@ export function makeAtlasState(HOST) {
       if (pa.ticker) lines.push('The bottom news/markets ticker is on.');
       if (pa.sidebarTab) lines.push('Active sidebar tab: ' + pa.sidebarTab + '.');
       if (pa.open && pa.open.length) lines.push('Open panels: ' + pa.open.join(', ') + '.');
+      /* ⚠⚠⚠ (#R775) AND WHEN THERE IS NOTHING, SAY THERE IS NOTHING. Every line above is emitted only when
+         its drawing exists, so an empty map produced NO sentence at all — and absence of evidence is not
+         evidence of absence to a reader that has been told the map is its workspace. Measured on production
+         2026-09-17: asked to plot ten head offices, Atlas spent four of its seven operations tidying a map
+         that was ALREADY empty (map.clearAll -> map.clear/already_clear -> map.clear/already_clear ->
+         map.clearHighlights/already_there) and hit the step budget before plotting one of them; the next
+         question, twenty-two semiconductor head offices, did the same and also plotted none. Each clear was
+         a DIFFERENT call, so no repeat guard could see them as one, and each came back saying it had nothing
+         to do — which is the answer to a question the model should not have had to ask.
+         ⚠ THIS COMMANDS NOTHING. It states a fact the snapshot already holds; what to do with it stays with
+         Atlas every turn (CONSTITUTION.md §5).
+         ⚠⚠⚠ AND IT IS SAID ONLY WHEN THE MAP PUBLISHED ITS STATE. `snap.atlas` absent means nobody
+         answered, which is a DIFFERENT fact from 「the map is empty」 — the same distinction #R768 drew
+         between 「it did not work」 and 「I could not see whether it worked」, and the one tests/r413 ③ and
+         tests/r534 ①b already hold this file to: a section nobody published stays silent. */
+      if (snap.atlas && typeof snap.atlas === 'object' && !Object.keys(paintOrigin).length && !at.highlightCountries && !(at.highlight && at.highlight.name) && !(at.choropleth && at.choropleth.label) && !(at.customScore && at.customScore.name)
+        && !(at.pins && at.pins.n) && !(at.polygons && at.polygons.n) && !(at.lines && at.lines.n) && !(at.measure && at.measure.n) && !(at.radius && at.radius.n) && !(at.factions && at.factions.n))
+        lines.push('The map carries no Atlas drawing at all right now - no highlight, shading, pins, polygons, lines, radius or measurement. There is nothing to clear, and a clear/reset call would be a step spent on nothing.');
       if (at.tool) lines.push('Active map tool: ' + at.tool + ((at.measure && at.measure.n) ? (' (' + at.measure.n + ' points)') : '') + '.');
 
       var cp = snap.comparison;
@@ -791,6 +820,58 @@ export function makeAtlasState(HOST) {
        layer — layers.toggle, layers.baseDisplay, a simulation that raises its own overlay — and a
        hand-written list of the ones that count would silently miss the next one that is added. */
     var layerOrigin = Object.create(null);   /* checkbox id → {turnId, capabilityId, at} */
+    /* ⚠⚠⚠ (#R775) …AND THE SAME FACT WAS MISSING FOR EVERYTHING ATLAS DRAWS. #R742 gave LAYERS an
+       origin mark and stopped there; a highlight, a choropleth, a pin set, polygons, lines, a radius
+       and a measurement were all still announced to the model as bare counts. js/atlas-persona.js's
+       `workspace` paragraph reaches Atlas every turn and tells it to take down what an EARLIER
+       question left — and with no turn recorded against any drawing, 「earlier」 was not a question
+       Atlas could answer. Measured on production 2026-09-17, four times in one session:
+         ・「1900年の日本の行政区分を地図に出して」 — drew the 1900 boundaries, then switched Country borders
+           and State/province borders OFF as its last two operations. The reader's final screen had no
+           1900 boundary on it at all.
+         ・「GDP上位10か国を地図にコロプレスで描いて」 — painted the top ten, then called map.clearAll
+           mid-turn and wiped its own paint; the reader was left with a different ranking.
+         ・「時価総額上位10社の本社を地図にプロットして」 — spent four of its seven operations tidying an
+           ALREADY EMPTY map (clearAll → clear/already_clear → clear/already_clear →
+           clearHighlights/already_there) and hit the step budget before plotting one head office.
+         ・「地中海に面している国を全部、地図上で選択して数えて」 — highlighted 22 countries, then cleared and
+           re-drew three more times, and ended with an empty map.
+       The mechanism is #R742's, unchanged and deliberately so: an operation only reaches
+       `recordOperation` carrying a turnId, and a turnId only comes from the Atlas path — so a drawing
+       present now that was absent at the previous observation appeared while that operation ran.
+       ⚠ NO LIST OF 「DRAWING CAPABILITIES」, for #R742's reason: the keys are read off the `atlas`
+       section the state block already publishes, so a drawing added later is marked without anybody
+       writing its name here.
+       ⚠ THIS RECORDS AN OBSERVATION, NOT A COMMAND. Nothing below erases anything and no rule here
+       keeps a drawing alive; the decision stays with Atlas every turn (CONSTITUTION.md §5). What
+       changes is that 「this turn」 and 「four turns ago」 stop looking identical.
+       ⚠ `userPins` IS NOT MARKED — those are the reader's own pins, and a ledger that cannot tell an
+       author from an observation must not claim one (#R742's own rule, and #R699's). */
+    var paintOrigin = Object.create(null);   /* drawing key → {turnId, capabilityId, at} */
+    var paintsSeen = null;                   /* the previous observation; `null` is "never looked" */
+    function paintKeysNow() {
+      var fn = providers['atlas']; if (!fn) return null;
+      var at = null; try { at = fn(); } catch (_) { return null; }
+      if (!at || typeof at !== 'object') return null;
+      var keys = Object.create(null);
+      Object.keys(at).forEach(function (k) {
+        var v = at[k];
+        if (v == null || v === false || v === '' || v === 0) return;
+        if (typeof v === 'object' && ('n' in v) && !(+v.n > 0)) return;
+        keys[k] = 1;
+      });
+      return keys;
+    }
+    function observePaints(by) {
+      var now = paintKeysNow(); if (!now) return;
+      var prev = paintsSeen;
+      if (prev && by) Object.keys(now).forEach(function (k) { if (!prev[k]) paintOrigin[k] = by; });
+      Object.keys(paintOrigin).forEach(function (k) { if (!now[k]) delete paintOrigin[k]; });
+      if (paintsSeen) Object.keys(paintsSeen).forEach(function (k) { if (!now[k]) delete paintsSeen[k]; });
+      paintsSeen = now;
+    }
+    /* the ledger's own read-out, for the audit and the debug view */
+    API.paintOrigin = function (k) { return paintOrigin[String(k)] || null; };
     var layersSeen = null;                   /* the previous observation; `null` is "never looked" */
     function layerIdsNow() {
       var fn = providers['activeLayers']; if (!fn) return null;
@@ -856,6 +937,7 @@ export function makeAtlasState(HOST) {
       /* the baseline, taken BEFORE the turn runs and attributed to no one: whatever is on now is on
          for a reason this ledger did not see (#R742) */
       try { observeLayers(null); } catch (_) { }
+      try { observePaints(null); } catch (_) { }   /* (#R775) same baseline, same reason */
       var rec = {
         turnId: turnId, question: String(question || ''), at: (function () { try { return Date.now(); } catch (_) { return 0; } })(),
         plan: null, operations: [], objectIds: [], unresolved: [],   /* (#R406) `goalSpec` left with the planner */
@@ -891,7 +973,10 @@ export function makeAtlasState(HOST) {
       /* (#R742) an operation only reaches this function with a turnId, and a turnId only comes from
          the Atlas path — so a layer that is on NOW and was not on at the last observation went on
          while THIS operation ran */
-      try { observeLayers({ turnId: turnId, capabilityId: String(op.capabilityId || ''), at: (function () { try { return Date.now(); } catch (_) { return 0; } })() }); } catch (_) { }
+      try {
+        var _by = { turnId: turnId, capabilityId: String(op.capabilityId || ''), at: (function () { try { return Date.now(); } catch (_) { return 0; } })() };
+        observeLayers(_by); observePaints(_by);   /* (#R775) the same observation, for what Atlas DRAWS */
+      } catch (_) { }
       return true;
     };
     API.endTurn = function (turnId, o) {

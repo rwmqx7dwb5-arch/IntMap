@@ -111,7 +111,12 @@ test('R740 ③ a refusal a planner cannot act on is a loop — every one names t
     'the English refusal must be written in exactly one place (unknownMetric, js/atlas-metrics.js); '
     + `found ${hits} — a second copy is a refusal that can forget to enumerate`);
   const body = liftFunction(MET, 'unknownMetric');
-  assert.ok(/metKeys\(\)/.test(body),
+  /* ⚠ (#R775) `metNamed()` IS `metKeys()` PLUS EACH RECORD'S OWN LABEL. The refusal has two readers
+     and one string — the planner needs the KEY (it is what it must send back) and the reader needs to
+     know what any of them means; measured on production, twelve bare identifiers went into the reply
+     bubble. The enumeration is still DERIVED from the records, which is what this line is for;
+     tests/r775 ③ measures that both halves actually arrive. */
+  assert.ok(/met(Keys|Named)\(\)/.test(body),
     'unknownMetric must list the keys it counted, so the planner reads the answer instead of guessing again');
   /* and nothing may still be typing that list out by hand */
   assert.ok(!/pop,\s*density,\s*area,\s*gdp/.test(SRC) && !/pop,\s*density,\s*area,\s*gdp/.test(MET),

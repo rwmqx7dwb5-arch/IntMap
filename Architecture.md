@@ -296,7 +296,7 @@ UI のボタンも Atlas の自然文も、テストも監査も、**同じ能�
 | Nominatim の前の 1 つのキュー | `js/nominatim-gate.js` | 公開エンドポイントの「1 秒 1 リクエスト」を**アプリ全体で 1 つの counter** として守る。`reserve({drop:true})` ＝打鍵経路（窓が埋まっていれば**捨てる**——打ち終える前の問い合わせは既に古い）、`nominatimSlot()` ＝一括経路（**並ぶ**）。⚠ **取得はしない**——枠を配るだけで、締切（`js/fetch-deadline.js`）も header も解析も呼び出し側のまま。⚠ `window.IntMapNominatimGate` と ES import の**両方**から届くが、ES モジュールは 1 インスタンスなので counter は 1 つ |
 | 地点の 1 つの形 | `js/atlas-geo-object.js` | `GeoObject`＝ID・名前・緯度経度・種別・日時・出典・確度と **provenance**。`placed` / `pointLike` / `describesUserPoint` / `mergeKnown` |
 | 分野横断の異常度 | `js/atlas-anomaly-score.js` | 種別ごとの固有スケール（Mw／カテゴリ／VAL／CAP 4段）＋ 影響人口・範囲・平常からの乖離・新しさ・確度・国際的重要性の**7成分**。順位の根拠を `why` に残す。**各種別の上位だけを競わせる**（偏りは標本の偏りであって選好ではない） |
-| 国の指標の集合 | `js/atlas-metrics.js` | **集合は 1 つ（`METRICS` ＋ `XMET`）で、名前を解くのも 1 つ。** 解決は各指標レコードが自ら名乗るラベル（位置引数の 5 言語 ＋ 現在の言語）で行うので、指標を足せばその名前で届く。地図の色分け・rank・ratio・relate は全部この解決器に訊き、拒否（`_unknownMetric`）は**有効な鍵を全部数え上げて**返す |
+| 国の指標の集合 | `js/atlas-metrics.js` | **集合は 1 つ（`METRICS` ＋ `XMET`）で、名前を解くのも 1 つ。** 解決は各指標レコードが自ら名乗るラベル（位置引数の 5 言語 ＋ 現在の言語）で行うので、指標を足せばその名前で届く。地図の色分け・rank・ratio・relate は全部この解決器に訊き、拒否（`unknownMetric`）は**有効な鍵を全部、それぞれの読者向けの名前と一緒に**数え上げて返す（`key (name)`。計画側は鍵を、読者は意味を読む）。名前の一致は **完全一致 → 問い合わせが名前の一部（一意なときだけ）→ 名前が問い合わせの中に語としてある（最長・一意なときだけ）** の 3 段。⚠ **語境界は元の文字列で見る**ので「名目GDP」は通り、「demographics」の中の `dem` は通らない。⚠⚠ **国の順位の母集団は `isRankableCountry` 1 つ**で、rank / ratio / relate / 色分け / scoreMap が全部それを訊く（これが一本化される前、`data.rank` だけが訊いておらず南極が 1 人あたりGDP 世界 1 位になっていた） |
 
 **⚠ 観測器は「動いたか」ではなく「求めた状態が地図にあるか」を答える。** `paintNow()` は
 `nlq-fac-src`（歴史勢力図の陣営塗り）も数える。`research.historicalMap` は専用の `factions` 観測器で、
@@ -436,6 +436,16 @@ documenting している形）が、まさにそれで消えていた。
 ことになる**）。`paintNow()` が数える source id は `user-pins` と `nlq-poi-src`——**アプリが実際に
 `addSource` する名前**。`tests/r397-checks.test.mjs` が、この 3 つを**ファサードと生成側のソースから
 導出して**照合する（ここに名前を書き写すと、同じ誤りが 2 か所になる）。
+
+**⚠⚠ 状態ブロックは「何があるか」だけでなく「それがいつ出たか」を述べる。** `js/atlas-state.js` は **2 本の台帳**を持つ——
+レイヤーの `layerOrigin`（チェックボックス id → turn）と、Atlas が**描いたもの**の `paintOrigin`（描画の種類 → turn）。
+どちらも `recordOperation` が見た**差分**だけを記録する（操作は turnId を持ってしかここへ届かず、turnId は Atlas の経路にしか無い）。
+プロンプトへは `[YOU turned this on · turn N]` / `[YOU drew this · THIS turn]` として出る。
+⚠ **種類の一覧を手で並べない**——`paintKeysNow()` は公開済みの `atlas` 節を走査するので、
+後から増えた描画も名前を書き足さずに印が付く。⚠ **読者自身のピン（`userPins`）には印を付けない**（台帳が
+持っていない作者を主張しない）。⚠ **何も描かれていないときは「何も無い」と明言する**——
+行が出ないことは記述ではなく、空の地図を 4 回片付けさせた（本番実測）。
+台帳は**観測を記録するだけで、何かを消したり残したりはしない**（`CONSTITUTION.md` §5）。
 
 **⚠ 目的は門である。** `_goalValidation` は毎ターン計算され、**読まれていなかった**。いまは
 `js/atlas-policy.js` の `unmetGoalText()` が判定文を返し、**呼びが全部成功していても目的が未達なら**、
