@@ -464,18 +464,50 @@ export function makeGisSources() {
       return out;
     }
 
+    /* ⚠⚠⚠ (#R783) FOUR FACTS THAT USED TO ARRIVE AS ONE BOOLEAN. js/gis-layers.js canSample() was
+       `state(id).on`, and js/gis-atlas.js publishes it to the planner as `samplable` — so 「その
+       レイヤーは値を訊けるか」 was answered by a checkbox. The four are separated at their claimants:
+       js/gis-layers.js measures the row's ABILITY (and says null while nobody has asked), this file
+       owns 「表示していなくてもデータが在るか」 (needsVisible, already computed above), and only
+       `visible` is about the reader's checkbox.
+       ⚠ A REGISTERED region() IMPLEMENTATION IS THE CAPABILITY ITSELF, synchronously: a supplier that
+       answers for a whole window does not go through the registry's per-point door at all. */
+    function samplingOf(id, needs) {
+      const rec = sup(id);
+      const L = LAYERS();
+      let said = null;
+      try { said = (L && typeof L.samplingOf === 'function') ? L.samplingOf(id) : null; } catch (_) { said = null; }
+      const st = stateOf(id);
+      const visible = !!(st && st.on);
+      const capable = (rec && rec.region) ? true : (said ? said.capable : null);
+      /* 「訊けなくても在る」 と 「表示が要る」 と 「わからない」: needsVisible is three-valued already,
+         and flattening its null into false here would be this file undoing its own distinction. */
+      const prepared = (needs === true) ? false : ((needs === false) ? true : null);
+      return {
+        capable: capable,
+        prepared: prepared,
+        /* いま訊けるか — the door has to be there, the row must not be known to be mute, and the data
+           has to be either prepared or on screen. null stays null: an unmeasured row is a candidate. */
+        available: (capable === false) ? false : (((rec && rec.region) || (said && said.door)) ? (prepared !== false || visible) : false),
+        visible: visible,
+      };
+    }
+
     function entry(id, title, kind, featureRow) {
       const d = declarationOf(id);
       const st = stateOf(id);
       const stated = statedTime(id);
+      const needs = needsVisible(id, kind, st, featureRow, d);
       return {
         id: id,
         title: title,
         kind: kind,
+        /* (#R783) 能力・準備・可用・表示 — four values, because one of them used to stand for all */
+        sampling: samplingOf(id, needs),
         /* ⚠ null IS 「宣言が無い」, NOT 「生きていない」 — the same distinction js/gis-raster.js draws
            for `nodata`. Nothing reachable from here can watch a source refresh itself. */
         live: d ? d.live : null,
-        needsVisible: needsVisible(id, kind, st, featureRow, d),
+        needsVisible: needs,
         /* The extent its supplier DECLARED, or null. ⚠ NOT the bounding box of what came back: that
            is a statement about today's contents, and reading it as an extent is exactly how 「いま
            画面にあるもの」 becomes 「そのレイヤーの範囲」. What was actually served is in
@@ -540,9 +572,16 @@ export function makeGisSources() {
            だと供給元が述べた」, null 「供給元は何も述べていない」. A reader that treats the absence of a
            cursor as exhaustion is making the claim the supplier declined to make. */
         continues: (m.continues === undefined) ? null : m.continues,
-        /* who executed the attribute conditions — null when none were asked for. Nothing here ever
-           reads 'post-fetch': a supplier that cannot filter is refused at the door instead. */
-        filteredBy: Array.isArray(m.where) && m.where.length ? 'supplier' : null,
+        /* ⚠ (#R783) WHO EXECUTED THE ATTRIBUTE CONDITIONS, SAID BY WHOEVER DID IT — null when none
+           were asked for. This used to read `'supplier'` from the REQUEST alone ("conditions were
+           named, and a supplier that cannot execute them is refused at the door, therefore the
+           supplier executed them"), and the middle step was false: js/gis-layers.js's loader road
+           declared `where:true` and applied nothing, so the record said `filteredBy:'supplier'` over
+           an unfiltered answer. A declaration is a claimant, not a proof — the same argument `all`
+           is built on, one field along. So the executor states it, and its statement is carried;
+           silence from a supplier that was handed conditions is still reported as 'supplier'
+           (the door refused every other kind), which is the one thing here that is inferred. */
+        filteredBy: (Array.isArray(m.where) && m.where.length) ? (m.filteredBy || 'supplier') : null,
       };
       const say = (completeness, reason, extra) => {
         const out = Object.assign({ completeness: completeness, reason: reason }, base);
@@ -768,6 +807,8 @@ export function makeGisSources() {
         timeEstablished: o.time != null && ((supTime != null && supTime === String(o.time)) || (moment != null && layerStated === String(o.time))),
         limit: prep.limit, fields: Array.isArray(o.fields) ? o.fields : null,
         where: prep.where, cursor: prep.cursor,
+        /* what the supplier said about having executed them (#R783) */
+        filteredBy: (stated && stated.filteredBy != null) ? String(stated.filteredBy) : null,
         count: out.length, available: available, truncated: truncated,
         /* 「窓に在ったと供給元が述べた件数」 > 「実際に渡ってきた件数」, with no limit of the caller's
            to explain it: the answer is a part of the window, whatever else the answer claims. */
@@ -836,6 +877,13 @@ export function makeGisSources() {
     }
 
     function isOff(id) { const s = stateOf(id); return !!(s && s.on === false); }
+
+    /* (#R783) the capability store is js/gis-layers.js's — one place, and this is the party that
+       asked. A kernel that is not mounted swallows the observation rather than throwing. */
+    function noteSampling(id, answered) {
+      const L = LAYERS();
+      try { if (L && typeof L.noteSampling === 'function') L.noteSampling(id, answered); } catch (_) { }
+    }
 
     /* A copy carrying only the properties the caller named. ⚠ A NEW OBJECT, not an edit: the feature
        objects belong to the renderer's source, and writing on them would change what the map draws.
@@ -964,6 +1012,12 @@ export function makeGisSources() {
           try { await sampleOne(win.w + (win.e - win.w) * f[0], win.s + (win.n - win.s) * f[1]); } catch (_) { threw++; continue; }
           if (sawRow) { answered = true; break; }
         }
+        /* ⚠ (#R783) THE OBSERVATION IS KEPT, NOT DISCARDED AT THE END OF THE CALL. 「この行は訊いたら
+           行を返すか」 is the capability js/gis-layers.js canSample() used to answer out of the
+           checkbox; it cannot be measured synchronously (this door is async because sampleAt is), so
+           the party that DID ask hands its answer back. ⚠ Only when the probe is conclusive: all five
+           throwing is 「訊いて落ちた」, which is not 「能力が無い」. */
+        if (answered || threw !== PROBE_POINTS.length) noteSampling(key, answered);
         if (!answered) return refuse(threw === PROBE_POINTS.length ? 'layer-sample-failed' : 'layer-not-visible', { id: key, probes: PROBE_POINTS.length });
       }
 
@@ -982,6 +1036,9 @@ export function makeGisSources() {
         onProgress: o.onProgress || null,
       });
       if (!baked.ok) return baked;
+      /* (#R783) the whole window was asked: whether a row ever came back is now known for certain,
+         whatever the values were — see the probe above for who reads it. */
+      noteSampling(key, anyRow);
       /* ⚠ A GRID WITH NO NUMBERS IN IT IS NOT A GRID, and what the layer DID answer with is the
          sentence the reader needs: a field answering 「12 °C」 has values, it just does not have them
          as numbers, and that is a different thing to fix. */

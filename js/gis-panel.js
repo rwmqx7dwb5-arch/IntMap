@@ -239,6 +239,12 @@ export function makeGisPanel(HOST) {
          the other a plane the kernel would not build — and it says why, so that reason is shown
          rather than flattened into 「引数が不正です」. */
       if (code === 'crs-unavailable') return window.IntMapLang.t(HOST.lang, 'The coordinate-conversion module did not load, so this step was not run at all — nothing was measured on a guessed plane', '座標変換の部品を読み込めなかったため、この処理は実行していません。推測した平面の上で測ることもしていません') + par(d.crs);
+      /* ⚠ (#R783) 「精度を満たせない」と「精度を測れなかった」は別の答えである。前者は面の性質で、
+         満たせる面が横に並ぶ（上限ではなく道・CONSTITUTION.md §5）。後者は**この データについて包絡を
+         測れなかった**ので、要求は判定されていない——「満たした」でも「満たさない」でもない。
+         この 2 つに同じ文を返すと、読者は数が無い理由を取り違える。 */
+      if (code === 'crs-accuracy-outside-tolerance') return window.IntMapLang.t(HOST.lang, 'On that surface the number cannot be held to the accuracy you asked for, so none was produced — the surfaces that can are listed beside this', 'その面では、指定された精度を満たす数を出せないため、何も測っていません。満たせる面をこの横に挙げています') + par([d.what, d.surface, d.tolerance, d.worst].filter((x) => x != null && x !== '').join(' · '));
+      if (code === 'crs-accuracy-unmeasured') return window.IntMapLang.t(HOST.lang, 'How far off the number could be could not be measured over this data, so your accuracy requirement was not judged at all', 'このデータについて、数がどれだけ外れるかを測れませんでした。指定された精度は判定していません') + par([d.what, d.surface, d.tolerance].filter((x) => x != null && x !== '').join(' · '));
       if (code === 'crs-plane-unusable') return window.IntMapLang.t(HOST.lang, 'That coordinate system could not be turned into a plane to measure on — name one this build can build, or leave it off to measure on the ellipsoid', 'その座標系から、測るための平面を作れませんでした。このビルドが作れる座標系を指定するか、指定を外して回転楕円体上で測ってください') + par([d.crs, d.why].filter((x) => x != null && x !== '').join(' · '));
 
       /* ── js/gis-datasets.js — a time declaration that did not hold (#R735, worded in #R738) ───
@@ -387,6 +393,37 @@ export function makeGisPanel(HOST) {
       if (code === 'zone-wraps-world') return window.IntMapLang.t(HOST.lang, 'That zone wraps the whole world, which leaves no inside and no outside — split it into two halves', 'その区域は地球を一周しており、内と外の区別がなくなります。東西 2 つに分けてください', 'Diese Zone umläuft die ganze Erde — es gibt kein Innen und Außen; teilen Sie sie in zwei Hälften', 'Эта зона огибает весь мир, поэтому нет ни внутри, ни снаружи — разделите её на две половины', 'Esa zona rodea todo el mundo, así que no hay dentro ni fuera — divídela en dos mitades');
       if (code === 'zone-degenerate-in-plane') return window.IntMapLang.t(HOST.lang, 'That zone encloses no area at all', 'その区域は、面積をまったく囲んでいません', 'Diese Zone umschließt keine Fläche', 'Эта зона не охватывает никакой площади', 'Esa zona no encierra ninguna área');
       if (code === 'values-not-integer') return window.IntMapLang.t(HOST.lang, 'Areas per class need a grid of codes, and this one holds measurements — rounding them would invent classes nobody defined', '区分ごとの面積には符号の格子が必要ですが、これは測定値です。丸めれば、誰も定義していない区分を作ってしまいます', 'Flächen je Klasse brauchen ein Raster aus Codes; dieses enthält Messwerte — Runden würde Klassen erfinden', 'Площади по классам требуют сетки кодов, а здесь измерения — округление придумало бы классы', 'Las áreas por clase necesitan una rejilla de códigos, y esta tiene medidas — redondear inventaría clases') + par(d.value);
+      /* ══ ⚠⚠⚠ (#R783) THE CODES THIS ROUND ADDED, AND WHY THEY ARE SENTENCES AND NOT NUMBERS ══
+         Three groups. ⑴ UNITS AND QUANTITY: js/gis-units.js can now say what a number MEANS (kind,
+         space, time, period) and which totals are allowed, so `convert` / `aggregate` / `zonal`
+         refuse instead of multiplying anyway — and a refusal that reaches a reader as
+         «aggregation-refused» is not a refusal anybody can act on. ⑵ THE ONE-TO-MANY JOIN: the
+         cardinality is required, so the reader has to be told what the three answers do. ⑶ THE
+         ASSEMBLY OF THE RUNTIME (`scope-*` / `dependency-missing` / `kernel-not-reachable`): these
+         come from makeGisRuntime() and normally reach a PROGRAM, not this panel — the browser door
+         throws instead. They are written here anyway because the gate's subject is «no code reaches
+         anyone without a sentence», and a sentence that is never shown costs one line while a
+         missing one costs the reader the whole answer. ⚠ If a later round makes the assembly stage
+         declare itself (a `stage` on the refusal), narrow the gate's population from THAT and
+         delete these three — do not hand-write an exclusion list (#R707). */
+      if (code === 'unit-not-stated') return window.IntMapLang.t(HOST.lang, 'Nobody has said what unit that column is in, so it cannot be converted — state the unit on the column, or name it in `from`', 'その列の単位を誰も述べていないので換算できません。列に単位を宣言するか、`from` で指定してください');
+      if (code === 'unit-incompatible') return window.IntMapLang.t(HOST.lang, 'Those two units measure different quantities, so no factor connects them', 'その 2 つの単位は別の量の測定なので、両者をつなぐ係数はありません');
+      if (code === 'unit-unreadable') return window.IntMapLang.t(HOST.lang, 'That unit is one this app has never been taught to read — it is not a mistake, it is a spelling with no rule behind it', 'その単位はこのアプリが読み方を教わっていないものです。間違いではなく、規則を持たない綴りです');
+      if (code === 'unit-from-contradicts-column') return window.IntMapLang.t(HOST.lang, 'The unit you gave is not the one the column states about itself, and guessing which is right would change the numbers', '指定された単位は、その列自身が述べている単位と違います。どちらが正しいかの推測は数値を変えてしまいます');
+      if (code === 'convert-nothing-numeric') return window.IntMapLang.t(HOST.lang, 'That column holds nothing that can be converted — every value read as text, not as a measurement', 'その列に換算できる値がありません。どの値も測定値ではなく文字列として読めました');
+      if (code === 'units-unavailable') return window.IntMapLang.t(HOST.lang, 'The unit kernel is not loaded in this build, so what the numbers mean cannot be checked — and unchecked is not the same as allowed', 'この build には単位カーネルが読み込まれていないため、数値の意味を検査できません。検査できないことは「してよい」ではありません');
+      if (code === 'aggregation-refused') return window.IntMapLang.t(HOST.lang, 'What these numbers mean does not allow that summary: a density cannot be added up, and a category has no total at all', 'これらの数値の意味はその集計を許しません。密度は足せず、区分には合計がありません');
+      if (code === 'aggregation-needs-weight') return window.IntMapLang.t(HOST.lang, 'That average needs a weight to be meaningful — the refusal names the statistic that carries one', 'その平均は重みが無いと意味を持ちません。重みを持つ統計の名前を拒否の中で述べています');
+      if (code === 'total-rule-refused') return window.IntMapLang.t(HOST.lang, 'That total is not one these numbers can produce — pick the rule that matches what they measure', 'その合計はこれらの数値からは作れません。測っているものに合う規則を選んでください');
+      if (code === 'total-rule-does-not-fit-the-quantity') return window.IntMapLang.t(HOST.lang, 'That rule and what the band says it measures do not fit together, so the number would be the wrong number rather than a rounded one', 'その規則と、帯が述べている測定内容がかみ合いません。出てくる数は丸めた数ではなく、別の数になります');
+      if (code === 'join-one-to-many') return window.IntMapLang.t(HOST.lang, 'One row matched several — say which answer you want: every pair, the first match only, or stop here', '1 行が複数に一致しました。どの答えが要るかを指定してください（すべての組、最初の 1 件だけ、またはここで中止）');
+      if (code === 'scope-missing') return window.IntMapLang.t(HOST.lang, 'This GIS runtime was asked for without the one place its kernels live in', 'この GIS 実行環境は、カーネルが載る場所を渡されずに要求されました');
+      if (code === 'scope-conflict') return window.IntMapLang.t(HOST.lang, 'Another set of kernels is already installed here, and replacing it silently would leave two answers to the same question', 'ここには既に別のカーネル一式が載っています。黙って置き換えると、同じ問いに 2 つの答えができます');
+      if (code === 'scope-install-failed') return window.IntMapLang.t(HOST.lang, 'The kernels could not be installed, and nothing was left half-installed behind', 'カーネルを設置できませんでした。途中の状態は残していません');
+      if (code === 'scope-not-writable') return window.IntMapLang.t(HOST.lang, 'The place the kernels would live in cannot be written to', 'カーネルを載せる場所に書き込めません');
+      if (code === 'scope-carries-uninjected') return window.IntMapLang.t(HOST.lang, 'Something needed was found lying around rather than handed over, and this runtime uses only what it was given', '必要なものが「渡された」のではなく「その場に在った」ので使いません。この実行環境は渡されたものだけを使います');
+      if (code === 'dependency-missing') return window.IntMapLang.t(HOST.lang, 'A part this runtime borrows was not supplied — the refusal names it and says what it is for', 'この実行環境が借りている部品が渡されていません。拒否の中に名前と用途を書いています');
+      if (code === 'kernel-not-reachable') return window.IntMapLang.t(HOST.lang, 'A kernel says it was published but cannot be reached under its own name, so nothing here would have called it', 'あるカーネルは「公開した」と述べていますが、その名前で到達できません。誰も呼べない状態です');
       /* ⚠ (#R774) THE READER IS TOLD BOTH SPELLINGS, because 「単位が合いません」 about a twelve-term
          expression is not something anyone can act on. `verdict` separates 「別の量です」 from
          「この綴りが読めません」: the first is a mistake, the second is a unit this app has never been

@@ -300,7 +300,18 @@ export function makeAtlasCapabilities(HOST) {
       /* ⚠ (#R773) 添付は会話に属する。読者が前のターンで付けた画像や PDF は、費用（1 件 8 MB）の
          ため毎ターンは載せない——在ることだけを述べ、要ると Atlas が決めたときにこれが**次の一手の
          目の前へ戻す**。地図も設定も触らないので observer は 'none'、writes は空、risk は 'read'。 */
-      ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'none',   'text',     ''],
+      /* ⚠⚠ (#R783) COLUMN 9 IS EMPTY, AND IT HAS TO BE. It said 'text', and `hasTarget('text')`
+         accepts query/text/question/value/place/term — this capability's only argument is `name`
+         (js/atlas-schemas.js), so the one call its own schema declares sufficient could not satisfy
+         its own target: every `run_capability{id:'attach.recall',args:{name:'paper.pdf'}}` answered
+         `needs_input` 「使用する値を教えてください」 and the recall #R773 implemented never once
+         reached the dispatch. ⚠ THE FIX IS NOT A WIDER `hasTarget` — adding `name` to the text list
+         would loosen what «the reader gave me something to work on» means for every other capability
+         that targets text. What refuses an argument-less call is `required:['name']` in
+         js/atlas-schemas.js, enforced on what Atlas sends by js/atlas-toolsurface.js, exactly as for
+         data.coverage above (#R760). tests/r783-capability-reachable-checks.test.mjs ①/② measure
+         both halves of that for all 145 rows rather than for these two. */
+      ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['research.analyze',           'analyze',        'research,synthesize',                                         'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'explicit','',        ''],
       ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],
@@ -362,7 +373,19 @@ export function makeAtlasCapabilities(HOST) {
          these report what was measured. Keeping them distinct in the registry is what stops the
          planner answering a question about a real reading with a model — docs/RADIATION.md. */
       ['map.radiation',              'radiationObserved','radiationLayer,doseRate,gammaDoseRate',                     'map',     'paint',   'map.radiation',          'map',                 'session', 'none',   '',         'radiationLayer'],
-      ['data.radiationNear',         'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   'point',    'radiationLayer'],
+      /* ⚠⚠ (#R783) AND COLUMN 9 IS EMPTY HERE FOR THE SAME REASON, ONE SPELLING DOWN. It said
+         'point', and `hasTarget('point')` reads `lng`+`lat`; this case reads `a.lon`
+         (js/atlas-controls.js), its schema requires `lat`+`lon` (js/atlas-schemas.js) and the
+         catalogue shows the reader-facing shape as `"lon"` (js/atlas-catalog-text.js) — so the
+         coordinate every other reader of this capability calls `lon` was the one the target gate
+         could not see, and a call carrying exactly what the schema demanded answered `needs_input`
+         asking for the coordinate it had just been given. ⚠ THE SPELLING CONVERGES ON THE CASE,
+         NOT ON THE GATE: teaching `hasTarget('point')` to accept `lon` would let a lat/lon call
+         past the gate into the nine other point capabilities whose cases read `a.lng` only — the
+         false refusal would move one level down instead of going away. With the column empty the
+         gate is `required:['lat','lon']`, and the case still names its own refusal 「中心となる
+         座標を指定してください」 rather than quietly taking the map centre (#R302). */
+      ['data.radiationNear',         'radiationNear',  'measuringStations,doseNear',                                  'data',    'none',    '',                       'explanation',         'read',    'none',   '',         'radiationLayer'],
       /* (#R527) 「山並み写真から撮影地点・撮影方向を探す」 — js/photo-geo.js. It traces the ridge in a
          photograph and matches it against the TERRAIN; an EXIF coordinate in the file is shown and
          never used as the answer, which is the whole honesty of the feature.

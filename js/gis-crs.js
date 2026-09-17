@@ -101,6 +101,18 @@
  *      ([[intmap-data-must-not-claim-an-author-it-lacks]] — a field being filled is not somebody
  *      having said it).
  *
+ *  ══ HOW FAR OFF IT CAN BE (#R783) ═══════════════════════════════════════════════════════════
+ *  #R752 answered 「どの面の上で測るか」 and carried Tissot's ratios beside every number. An outside
+ *  audit (§4.3) said the plane is declared while the ERROR is not bounded, and it was right about the
+ *  half that was missing: `areaScale` is measured against the plane's OWN DATUM, and two of the four
+ *  planes are drawn on a SPHERE while the ground is an ellipsoid — so a Mollweide area came back
+ *  `exact: true` with an unmeasured 0.4–0.9% under it, and a length was the sum of chords in the
+ *  plane with nothing saying so. The section marked ① ② ③ below is the answer: WGS 84 itself as the
+ *  reference (a closed form for a quadrangle's area, Vincenty for a geodesic — neither going through
+ *  forward(), because a reference built out of the thing it measures cannot fail), a bound DERIVED
+ *  from the surface as projection × datum, and a road — not a cap — where a caller's stated tolerance
+ *  cannot be met: areaOnGround / lengthOnGround measure on the ground with no plane in the way.
+ *
  *  ⚠ EVERYTHING IS INSIDE THE FACTORY (tests/r175 ③) and window.* is read at CALL time, so this
  *  module loads in Node with no DOM: ready() resolves false and every entry point answers `null` /
  *  a named refusal instead of throwing. looksProjected() needs no library at all — it is
@@ -148,6 +160,13 @@ export function makeGisCrs() {
       unitUnknown: 'crs-unit-unknown',
       purposeUnknown: 'crs-purpose-unknown',
       extentUnmeasurable: 'crs-extent-unmeasurable',
+      /* how far the number can be off (#R783) */
+      surfaceUnknown: 'crs-surface-unknown',
+      toleranceInvalid: 'crs-tolerance-invalid',
+      referenceUnavailable: 'crs-reference-unavailable',
+      accuracyUnmeasured: 'crs-accuracy-unmeasured',
+      accuracyOutsideTolerance: 'crs-accuracy-outside-tolerance',
+      edgeSpanAmbiguous: 'crs-edge-span-ambiguous',
     });
 
     /* Sorted so two readers of the list never disagree about its order. */
@@ -482,6 +501,21 @@ export function makeGisCrs() {
        datum, not measurements somebody took). They expire when the datum a code names stops being
        WGS 84, which for the 326NN/327NN block is never: the block IS 「WGS 84 / UTM zone NN」. */
     const ELL_A = 6378137, ELL_F = 1 / 298.257223563;
+    /* The derived eccentricity terms, once. ⚠ (#R783) buildUtm() computed `e2` from ELL_F itself and
+       the ground metric below needs the same number; two spellings of one derivation is the drift
+       .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids, and here it would make a plane disagree
+       with the surface it is measured against by a rounding nobody could see. */
+    const ELL_E2 = ELL_F * (2 - ELL_F), ELL_E = Math.sqrt(ELL_E2);
+
+    /* ⚠ (#R783) THE GROUND ITSELF — metres per radian along the parallel and along the meridian on
+       WGS 84, which is what every `metric()` below is compared AGAINST. N cos φ and M are the two
+       principal scale denominators of the ellipsoid; a plane whose own datum IS this ellipsoid
+       (the 326NN/327NN block) returns these very numbers, and one drawn on a sphere returns
+       something else — which is the datum error §① measures rather than assumes. */
+    function groundMetric(lat) {
+      const sp = Math.sin(lat * D2R), cp = Math.cos(lat * D2R), w = 1 - ELL_E2 * sp * sp;
+      return [ELL_A / Math.sqrt(w) * cp, ELL_A * (1 - ELL_E2) / Math.pow(w, 1.5)];
+    }
 
     /* The one radius this app has, asked of the module that owns it rather than written again here —
        js/gis-ops.js refuses to write 6371 for the same reason. ⚠ A refusal rather than a fallback:
@@ -525,7 +559,7 @@ export function makeGisCrs() {
       /* EPSG's parameters for the block, the same ones utmDefinition() hands proj4 above. */
       const k0 = 0.9996, E0 = 500000, N0 = south ? 10000000 : 0;
       const lon0 = (zone - 1) * 6 - 177;
-      const a = ELL_A, e2 = ELL_F * (2 - ELL_F), ep2 = e2 / (1 - e2);
+      const a = ELL_A, e2 = ELL_E2, ep2 = e2 / (1 - e2);
       const e4 = e2 * e2, e6 = e4 * e2;
       /* Snyder (USGS PP1395) 8-, 9-. ⚠ MEASURED against proj4's etmerc over zone 54 on a 41×41
          lattice: 0.76 mm worst between 20°N and 60°N, 0.95 mm over the whole stated extent, and the
@@ -582,11 +616,11 @@ export function makeGisCrs() {
           return [lngOut, latOut];
         },
         /* metres per radian along the parallel and along the meridian, on this plane's own
-           ellipsoid — the denominator every distortion figure is measured against. */
-        metric(lat) {
-          const sp = Math.sin(lat * D2R), cp = Math.cos(lat * D2R), w = 1 - e2 * sp * sp;
-          return [a / Math.sqrt(w) * cp, a * (1 - e2) / Math.pow(w, 1.5)];
-        },
+           ellipsoid — the denominator every distortion figure is measured against. ⚠ (#R783) It IS
+           groundMetric(): this block's datum is WGS 84 by the definition of the code, so the same
+           function answers both questions and the datum ratio §① measures comes out as exactly 1
+           rather than as 1 ± a rounding between two copies of one formula. */
+        metric(lat) { return groundMetric(lat); },
       };
     }
 
@@ -1033,10 +1067,16 @@ export function makeGisCrs() {
     }
 
     /* min/max of the distortion figures over the lattice of a box. Positions the plane cannot take
-       are skipped and counted rather than zeroed: an antipode is not a distortion of 0. */
-    function distortionOver(P, box) {
+       are skipped and counted rather than zeroed: an antipode is not a distortion of 0.
+       ⚠ (#R783) The WALK is separate from the CHOICE OF POSITIONS because the accuracy bound below
+       samples a different set (the lattice plus the plane's own standard point, which is where the
+       minimum lives) and two copies of this loop would be the drift §2-3 of
+       .agents/rules/no-ad-hoc-hardcoding.md forbids. distortionOver() keeps its own positions, so
+       every number it answered before this round it answers unchanged. */
+    function distortionOver(P, box) { return distortionOverPts(P, latticeOf(box)); }
+    function distortionOverPts(P, pts) {
       let aMin = Infinity, aMax = -Infinity, sMin = Infinity, sMax = -Infinity, at = 0;
-      for (const p of latticeOf(box)) {
+      for (const p of pts) {
         const d = distortionAt(P, p[0], p[1]);
         if (!d) continue;
         at++;
@@ -1065,6 +1105,10 @@ export function makeGisCrs() {
          module cannot measure, and it is refused by its own name rather than answered. */
       const purpose = String(opts.purpose || 'area');
       if (['area', 'shape', 'distance'].indexOf(purpose) < 0) { lastWhy = WHY.purposeUnknown; return null; }
+      /* (#R783) the caller's requirement, if they stated one — see readTolerance() */
+      const t = readTolerance(opts);
+      if (!t.ok) { lastWhy = t.why; return null; }
+      const tol = t.tolerance;
       const box = bboxOf(input);
       if (!box) { lastWhy = WHY.geometryMissing; return null; }
       const midLon = wrapLon(box.w + (box.e - box.w) / 2), midLat = (box.s + box.n) / 2;
@@ -1093,9 +1137,20 @@ export function makeGisCrs() {
         if (P.preserves[purpose === 'shape' ? 'angle' : purpose] === true) reasons.push('preserves-' + purpose);
         if (P.preserves.distance === 'from-centre') reasons.push('distance-true-from-centre-only');
         if (P.seamLon != null) reasons.push('has-seam');
+        /* ⚠ (#R783) AND HOW FAR OFF THE GROUND IT CAN BE, not only how much it distorts ITSELF.
+           `areaScale` above is measured against the candidate's own datum, so two of these four
+           planes were being ranked on a number that omitted their datum error entirely — a sphere
+           plane looked exactly as true as an ellipsoidal one. `bound` is the composed envelope
+           (boundOf), which is what a caller with a tolerance has to compare against. */
+        const bo = boundOf(P, box, null);
         candidates.push({
           spec: P.spec, code: P.code, kind: P.kind, unit: P.unit,
           score: score, areaScale: a.areaScale, scale: a.scale,
+          bound: bo ? bo.bound : null,
+          worst: bo ? { area: worstOf(bo.bound.area), length: worstOf(bo.bound.length) } : null,
+          /* stated only when the caller stated a requirement — nothing here invents one */
+          within: (tol == null || !bo) ? null
+            : ((purpose === 'area' ? worstOf(bo.bound.area) : worstOf(bo.bound.length)) <= tol),
           outside: a.outside, beyond: a.beyond,
           /* ⚠ MACHINE REASONS, NOT SENTENCES. A string here would be a user-visible string this
              module has no business authoring — CONSTITUTION.md §7 — and the panel that renders it
@@ -1106,7 +1161,8 @@ export function makeGisCrs() {
       /* A plane whose stated area of use the data leaves ranks below one it does not, however
          flattering its arithmetic is out there. */
       candidates.sort((x, y) => ((x.outside > 0) - (y.outside > 0)) || (x.score - y.score));
-      return { bbox: [box.w, box.s, box.e, box.n], purpose: purpose, candidates: candidates };
+      lastWhy = null;
+      return { bbox: [box.w, box.s, box.e, box.n], purpose: purpose, tolerance: tol, candidates: candidates };
     }
 
     /* ── measuring ON the plane ────────────────────────────────────────────────────────────────
@@ -1203,6 +1259,10 @@ export function makeGisCrs() {
       if (!isProjection(P)) { lastWhy = WHY.planeMissing; return { ok: false, why: WHY.planeMissing }; }
       const unit = String((options && options.unit) || 'km2');
       if (!AREA_UNITS[unit]) { lastWhy = WHY.unitUnknown; return { ok: false, why: WHY.unitUnknown, detail: { unit: unit, known: Object.keys(AREA_UNITS) } }; }
+      /* (#R783) read BEFORE the shoelace: a requirement that is not a number is a mistake in the
+         call, and finding that out after an area has been computed answers a different question. */
+      const tol = readTolerance(options);
+      if (!tol.ok) { lastWhy = tol.why; return { ok: false, why: tol.why, detail: tol.detail }; }
       const rings = areaRings(geometry);
       if (!rings.ok) { lastWhy = rings.why; return rings.detail ? { ok: false, why: rings.why, detail: rings.detail } : { ok: false, why: rings.why }; }
 
@@ -1225,12 +1285,53 @@ export function makeGisCrs() {
       const box = bboxOf(geometry);
       const d = box ? distortionOver(P, box) : null;
       lastWhy = null;
-      return {
+      const answer = {
         ok: true, value: m2 / AREA_UNITS[unit], unit: unit,
         plane: P.code || P.kind, spec: P.spec,
         /* how true that number is HERE, measured rather than promised */
         areaScale: d ? d.areaScale : null, exact: P.preserves.area === true,
+        /* ⚠ (#R783) AND WHAT THE NUMBER IS, DECLARED — the surface, the coordinate system, the
+           border rule and the edge rule. These are properties of the plane rather than measurements,
+           so they cost nothing and travel with EVERY answer; the measured envelope is `certificate`
+           below and is produced only when a caller asks for it, because it is per-call work.
+           ⚠ `exact` above is a statement about this plane against ITS OWN DATUM (Mollweide is
+           equal-area on its sphere). `declared.datumIsGround` is the half that was missing. */
+        declared: {
+          surface: SURFACE.plane, crs: P.code || null, unit: P.unit,
+          extent: P.extent.slice(), seam: P.seamLon,
+          seamRule: P.seamLon != null ? 'refuse-crossing-edge' : 'wrap-differences',
+          edge: EDGE_RULE[SURFACE.plane].area, vertices: 'as-given',
+          datum: datumIsGround(P) ? 'WGS84' : 'sphere',
+          datumIsGround: datumIsGround(P),
+        },
       };
+      return withTolerance(answer, P, geometry, tol.tolerance, 'area');
+    }
+
+    /* ⚠ ONE GATE FOR BOTH MEASUREMENTS. The caller stated a requirement or they did not; if they did
+       not, the answer is handed back UNTOUCHED (this returns the same object) and nothing here has an
+       opinion. If they did, the envelope is measured over their own geometry and either travels with
+       the number or replaces it — with the roads that would meet it. */
+    function withTolerance(answer, P, geometry, tolerance, what) {
+      if (tolerance == null) return answer;
+      const cert = certify(P || SURFACE.sphere, geometry);
+      lastWhy = null;
+      if (!cert) { lastWhy = WHY.accuracyUnmeasured; return { ok: false, why: WHY.accuracyUnmeasured, detail: { tolerance: tolerance, what: what } }; }
+      const worst = (what === 'area') ? cert.worst.boundArea : cert.worst.boundLength;
+      if (!(worst <= tolerance)) {
+        lastWhy = WHY.accuracyOutsideTolerance;
+        return {
+          ok: false, why: WHY.accuracyOutsideTolerance,
+          detail: {
+            tolerance: tolerance, worst: worst, what: what, unit: 'ratio',
+            certificate: cert,
+            /* ⚠ 「信頼できない」 だけを返さない。 A refusal that does not say where the reader CAN
+               measure is the one this project keeps catching (#R756's spellings, #R733's tools). */
+            alternatives: alternativesFor(geometry, what, tolerance),
+          },
+        };
+      }
+      return Object.assign({}, answer, { certificate: cert, tolerance: tolerance, withinTolerance: true });
     }
 
     function lengthOn(P, geometry, options) {
@@ -1238,6 +1339,8 @@ export function makeGisCrs() {
       if (!isProjection(P)) { lastWhy = WHY.planeMissing; return { ok: false, why: WHY.planeMissing }; }
       const unit = String((options && options.unit) || 'km');
       if (!LENGTH_UNITS[unit]) { lastWhy = WHY.unitUnknown; return { ok: false, why: WHY.unitUnknown, detail: { unit: unit, known: Object.keys(LENGTH_UNITS) } }; }
+      const tol = readTolerance(options);
+      if (!tol.ok) { lastWhy = tol.why; return { ok: false, why: tol.why, detail: tol.detail }; }
       const parts = lineParts(geometry);
       if (!parts.ok) { lastWhy = parts.why; return parts.detail ? { ok: false, why: parts.why, detail: parts.detail } : { ok: false, why: parts.why }; }
 
@@ -1252,11 +1355,734 @@ export function makeGisCrs() {
       const box = bboxOf(geometry);
       const d = box ? distortionOver(P, box) : null;
       lastWhy = null;
-      return {
+      const answer = {
         ok: true, value: m / LENGTH_UNITS[unit], unit: unit,
         plane: P.code || P.kind, spec: P.spec,
         scale: d ? d.scale : null, exact: false,
+        /* ⚠ (#R783) `edge` IS THE LOAD-BEARING FIELD HERE. This number is the sum of straight lines
+           in the plane between the vertices as they arrived, and over a long segment that chord — not
+           the projection — is where the error is. `scale` above cannot see it; a reader who needs the
+           geodesic has lengthOnGround(). */
+        declared: {
+          surface: SURFACE.plane, crs: P.code || null, unit: P.unit,
+          extent: P.extent.slice(), seam: P.seamLon,
+          seamRule: P.seamLon != null ? 'refuse-crossing-edge' : 'wrap-differences',
+          edge: EDGE_RULE[SURFACE.plane].length, vertices: 'as-given',
+          datum: datumIsGround(P) ? 'WGS84' : 'sphere',
+          datumIsGround: datumIsGround(P),
+        },
       };
+      return withTolerance(answer, P, geometry, tol.tolerance, 'length');
+    }
+
+    /* ── どこまで信頼できるか — 面ごとの誤差を実測し、答えに載せる (#R783) ────────────────────
+       An outside audit (§4.3) read this file and said the plane a measurement is made on is DECLARED
+       — #R752 built that — while the ERROR of the measurement is not bounded, and that the useful
+       thing is not 「everything to survey grade」 but 「which of these numbers may be used for an
+       overview, and which for a thin boundary, a small parcel or a long distance」. It was right, and
+       what was missing was never the projection:
+
+         · `areaScale` has travelled with every area since #R752 — but it is measured against the
+           plane's OWN DATUM, and two of the four planes are drawn on a SPHERE while the ground is an
+           ellipsoid. MEASURED (the table is in tests/r783-crs-precision-checks): that unstated datum
+           term is +0.45% at the equator and −0.89% at the pole for the app's own sphere, and ~0.67%
+           for EPSG:3857 — whose code is defined on a sphere of the WGS 84 semi-major axis while being
+           fed ellipsoidal latitudes. buildWebMercator() says so in a comment; nothing measured it.
+         · `preserves.area === true` becomes `exact: true` in areaOn's answer. Mollweide is equal-area
+           ON ITS SPHERE. Against the ground it is not, and `exact` was silent about the difference.
+         · A length is the sum of STRAIGHT LINES IN THE PLANE between the vertices as they arrived.
+           Over a long segment that chord falls short of the geodesic by far more than any scale
+           factor implies — the error is in the EDGE RULE, not in the projection, so no Tissot number
+           can see it. Which is why the resampling rule is declared here, beside the numbers.
+
+       ① THE REFERENCE IS NOT ONE OF THE FOUR PLANES. WGS 84 itself: the exact closed form for the
+          area of a graticule quadrangle, and Vincenty's inverse for a geodesic. Neither goes through
+          forward(), which is the whole point — [[intmap-co-designed-reader-cannot-falsify]]: a
+          reference built out of the thing it measures cannot fail. ⚠ AND THE REFERENCE IS ITSELF
+          FALSIFIED FROM OUTSIDE THIS FILE: tests/r783 integrates M(φ)·N(φ)·cos φ by Gauss-Legendre
+          over the same box and puts the closed form against it, and puts Vincenty against an
+          equatorial arc (a·Δλ, exact by the definition of the ellipsoid) and against its own
+          quadrature of the meridian.
+       ② THE BOUND IS DERIVED FROM THE SURFACE, NOT WRITTEN DOWN PER SURFACE. Two measured factors,
+          composed: the projection's own Tissot ratios over the reader's box (distortionOver, since
+          #R752) and the DATUM ratio — the plane's own metric() against groundMetric() over the same
+          box. A plane added tomorrow is bounded by the same instrument, and no table anywhere says
+          how good it is. ⚠ A bound is a sample over a lattice, so it is CHECKED against ① on a figure
+          of the reader's own extent and the answer carries whether the check fell inside it. A
+          declaration that cannot be falsified is a claim.
+       ③ AND WHERE A NUMBER CANNOT BE STOOD BEHIND THERE IS A ROAD, NOT A CAP. `tolerance` is the
+          CALLER's requirement — nothing here invents one — and a measurement that cannot meet it
+          answers `crs-accuracy-outside-tolerance` WITH the surfaces that can, the ground included:
+          areaOnGround / lengthOnGround measure on WGS 84 with no plane in the way. A reader who
+          states no tolerance is refused nothing and gets the same number, to the bit
+          (CONSTITUTION.md §5, [[atlas-full-authority-no-new-limits]]). */
+
+    /* The surfaces this file can measure ON, spelled the way js/gis-ops.js's closed vocabulary
+       already spells them ('sphere' / 'stated-plane') plus the ground, which had no spelling because
+       nothing measured on it. ⚠ 'degree-plane' and 'degree-grid' are deliberately NOT here: they are
+       surfaces OTHER modules compute on, and this file cannot certify somebody else's arithmetic. */
+    const SURFACE = Object.freeze({ ground: 'ellipsoid', sphere: 'sphere', plane: 'stated-plane' });
+    /* How an edge between two given positions is INTERPRETED on each surface — the resampling rule,
+       which is the term that dominates a long segment and which no distortion figure can see.
+       ⚠ IT IS PER MEASUREMENT AND NOT PER SURFACE, because measuring it showed that it is: the
+       sphere's area and the sphere's length read the same edge as two different curves.
+       js/gis-ops.js areaKm2 sums the trapezoid of (λ, sin φ) — which assumes sin φ is linear in λ
+       along an edge — while lengthKm walks great circles between the same two vertices. MEASURED on
+       a triangle with 1,000 km edges at 60°N: those two readings are 3.3% apart, and 5.1% on 5,000 km
+       edges. A single `edge` field per surface would have hidden exactly that. */
+    const EDGE_RULE = Object.freeze({
+      ellipsoid: Object.freeze({ area: 'linear-in-degrees', length: 'geodesic' }),
+      sphere: Object.freeze({ area: 'trapezoid-in-sin-latitude', length: 'great-circle' }),
+      'stated-plane': Object.freeze({ area: 'straight-in-plane', length: 'straight-in-plane' }),
+    });
+
+    /* ① — WGS 84, AS ARITHMETIC ───────────────────────────────────────────────────────────────
+       q(φ) = (1−e²)·[ sinφ/(1−e²sin²φ) + ln((1+e·sinφ)/(1−e·sinφ))/(2e) ], the authalic integral.
+       ⚠ ONE DERIVATION, TWO READERS. (a) The area of a graticule quadrangle is a²·Δλ·(q(n)−q(s))/2
+       EXACTLY: the ellipsoid's area element is M·N·cosφ = a²(1−e²)·cosφ/(1−e²sin²φ)², and with
+       t = sinφ the integral ∫dt/(1−e²t²)² has the antiderivative q/(2(1−e²)) — so this is arithmetic,
+       neither a series nor a quadrature. (b) The sine of the AUTHALIC latitude is q(φ)/q(90°), which
+       is what lets a POLYGON's ground area be the ordinary spherical trapezoid sum on a sphere of
+       radius a·√(q(90°)/2). ⚠ It expires when the datum being asked about stops being WGS 84, and it
+       is written in terms of ELL_A / ELL_F so it moves with them rather than having to be found. */
+    function authalicQ(lat) {
+      const s = Math.sin(lat * D2R);
+      return (1 - ELL_E2) * (s / (1 - ELL_E2 * s * s) + Math.log((1 + ELL_E * s) / (1 - ELL_E * s)) / (2 * ELL_E));
+    }
+    const AUTH_Q90 = authalicQ(90);
+    const AUTH_R2 = ELL_A * ELL_A * AUTH_Q90 / 2;             /* the authalic radius, squared */
+    function authalicSin(lat) { return authalicQ(lat) / AUTH_Q90; }
+
+    /* The exact ground area of the graticule quadrangle [s,n] × Δλ — the REFERENCE every surface's
+       area is measured against below. */
+    function quadAreaM2(sLat, nLat, dLonDeg) {
+      return ELL_A * ELL_A * Math.abs(dLonDeg) * D2R * (authalicQ(nLat) - authalicQ(sLat)) / 2;
+    }
+
+    /* Vincenty's inverse (T. Vincenty, Survey Review XXIII 176, 1975) — the other reference: the
+       geodesic between two positions on WGS 84, iterated to 1e-12 rad in λ (≈ 6e-6 m on the ground).
+       ⚠ IT DOES NOT CONVERGE FOR NEARLY ANTIPODAL PAIRS, and that is answered as a reference that
+       could not be obtained rather than papered over with a nearby number: 「確認できなかった」 と
+       「一致しなかった」 に同じ答えを返してはならない (.agents/rules/one-pass-or-a-reason.md §5).
+       ⚠ VIN_MAX is the antipodal case's exit and not a budget — measured over a 37×37 lattice of
+       non-antipodal pairs the count never exceeded 6, so a pair that needs 200 is not a pair that
+       would have converged on the 201st step. It expires if the formulation changes. */
+    const VIN_TOL = 1e-12, VIN_MAX = 200;
+    function geodesicM(lng1, lat1, lng2, lat2) {
+      if (!finite(lng1) || !finite(lat1) || !finite(lng2) || !finite(lat2)) return null;
+      if (Math.abs(lat1) > LAT_MAX || Math.abs(lat2) > LAT_MAX) return null;
+      const a = ELL_A, f = ELL_F, b = a * (1 - f);
+      const L = wrapLon(lng2 - lng1) * D2R;
+      const U1 = Math.atan((1 - f) * Math.tan(lat1 * D2R)), U2 = Math.atan((1 - f) * Math.tan(lat2 * D2R));
+      const sU1 = Math.sin(U1), cU1 = Math.cos(U1), sU2 = Math.sin(U2), cU2 = Math.cos(U2);
+      let lam = L, prev = 0, it = 0;
+      let sS = 0, cS = 0, sig = 0, c2A = 1, c2Sm = 0;
+      do {
+        const sl = Math.sin(lam), cl = Math.cos(lam);
+        sS = Math.hypot(cU2 * sl, cU1 * sU2 - sU1 * cU2 * cl);
+        if (sS === 0) return { m: 0, iterations: it };                  /* coincident */
+        cS = sU1 * sU2 + cU1 * cU2 * cl;
+        sig = Math.atan2(sS, cS);
+        const sA = cU1 * cU2 * sl / sS;
+        c2A = 1 - sA * sA;
+        c2Sm = (c2A === 0) ? 0 : (cS - 2 * sU1 * sU2 / c2A);            /* 0 on an equatorial line */
+        const C = f / 16 * c2A * (4 + f * (4 - 3 * c2A));
+        prev = lam;
+        lam = L + (1 - C) * f * sA * (sig + C * sS * (c2Sm + C * cS * (-1 + 2 * c2Sm * c2Sm)));
+        it++;
+      } while (Math.abs(lam - prev) > VIN_TOL && it < VIN_MAX);
+      if (it >= VIN_MAX) return null;                                   /* nearly antipodal */
+      const u2 = c2A * (a * a - b * b) / (b * b);
+      const A = 1 + u2 / 16384 * (4096 + u2 * (-768 + u2 * (320 - 175 * u2)));
+      const B = u2 / 1024 * (256 + u2 * (-128 + u2 * (74 - 47 * u2)));
+      const dS = B * sS * (c2Sm + B / 4 * (cS * (-1 + 2 * c2Sm * c2Sm)
+        - B / 6 * c2Sm * (-3 + 4 * sS * sS) * (-3 + 4 * c2Sm * c2Sm)));
+      const s = b * A * (sig - dS);
+      return isFinite(s) ? { m: s, iterations: it } : null;
+    }
+
+    /* ⚠ THE EDGE SPAN RULE IS js/gis-ops.js's (#R774) RATHER THAN A SECOND OPINION: an edge of more
+       than 180° and less than a full turn is a seam crossing written undivided, so the short way is
+       what it states; the 360° closing edge a full-width band writes is a full turn and is kept as
+       one. More than a turn is neither, and is refused by name instead of folded into something
+       plausible. */
+    /* ⚠ AND IT DOES NOT WRAP WHAT IS ALREADY SHORT. wrapLon() adds 180 and subtracts it again, so a
+       small difference comes back with the ABSOLUTE precision of 180 rather than its own: measured,
+       wrapLon(0.001) is 0.0010000000058 and a 0.001°-wide sliver's ground area came out 2.4e-11 off
+       an independent quadrature — entirely that cancellation, growing as 1/Δλ (2.5e-9 at 1e-6°). An
+       edge inside ±180° is already the short way, so there is nothing to wrap and the subtraction is
+       exact. ⚠ At exactly 180° the two directions are equally writable and wrapLon would silently
+       pick west (it returns −180); the direction the file WROTE is used instead. */
+    function edgeDeltaLon(fromLng, toLng) {
+      const raw = toLng - fromLng;
+      if (Math.abs(raw) > 360 + 1e-9) return null;
+      if (Math.abs(raw) <= 180) return raw;
+      return (Math.abs(raw) >= 360 - 1e-9) ? raw : wrapLon(raw);
+    }
+
+    /* Gauss-Legendre, five nodes, over [-1,1]. ⚠ NOT A TABLE SOMEBODY COPIED: the nodes are the
+       roots of P₅ and the weights their closed forms, so they are COMPUTED here and a reader can
+       check them against the polynomial rather than against somebody's afternoon
+       (.agents/rules/no-ad-hoc-hardcoding.md §1 forbids the embedded list, not the constant). The
+       weights sum to 2 by construction, which tests/r783 measures. */
+    const GL_K = Math.sqrt(10 / 7), GL_S70 = Math.sqrt(70);
+    const GL_X = Object.freeze([0,
+      -(1 / 3) * Math.sqrt(5 - 2 * GL_K), (1 / 3) * Math.sqrt(5 - 2 * GL_K),
+      -(1 / 3) * Math.sqrt(5 + 2 * GL_K), (1 / 3) * Math.sqrt(5 + 2 * GL_K)]);
+    const GL_W = Object.freeze([128 / 225,
+      (322 + 13 * GL_S70) / 900, (322 + 13 * GL_S70) / 900,
+      (322 - 13 * GL_S70) / 900, (322 - 13 * GL_S70) / 900]);
+
+    /* ⚠ AN EDGE IS A CHOICE, AND THIS IS THE CHOICE, STATED. GeoJSON prescribes no interpolation
+       between two positions, so 「その 2 点の間はどんな線か」 has no upstream answer to carry and a
+       measurement that does not say which line it assumed is a number about an unnamed shape. This
+       road assumes the line that the rest of the app assumes — LINEAR IN DEGREES, which is what
+       js/gis-geometry.js's unwrapped ring hands to its planar clipper — and says so in every answer
+       (`edge: 'linear-in-degrees'`). A reader who means geodesic edges densifies the ring and this
+       measures the densification; the number converges from below and the difference is the edge
+       rule's, not this arithmetic's.
+       ⚠ MEASURED, because the size of that choice is the surprising part: a triangle with 1,000 km
+       edges at 60°N is 1.5762e11 m² with edges linear in degrees and 1.5242e11 m² if the same ring is
+       summed by the trapezoid rule that assumes sin φ is linear in λ — 3.3% apart, and 5.1% apart for
+       5,000 km edges. So the integral is done PROPERLY rather than by the trapezoid: ∮ sinβ dλ along
+       each edge, five-node Gauss-Legendre on panels of one degree, which agrees with the Richardson
+       limit of a 8,192-fold densification to 8e-12. Expires if the edge rule changes. */
+    function edgeAuthalicIntegral(lat1, lat2) {
+      const panels = Math.max(1, Math.ceil(Math.abs(lat2 - lat1)));
+      let s = 0;
+      for (let p = 0; p < panels; p++) {
+        const mid = (p + 0.5) / panels, h = 0.5 / panels;
+        for (let i = 0; i < GL_X.length; i++) s += GL_W[i] * authalicSin(lat1 + (lat2 - lat1) * (mid + GL_X[i] * h)) * h;
+      }
+      return s;
+    }
+
+    /* A ring's area ON THE GROUND. ⚠ This is a DIFFERENT SURFACE from js/gis-ops.js areaKm2 rather
+       than a second implementation of it: that one is the sphere the app draws on, this one is the
+       ellipsoid, and the two disagree by exactly the datum term ② measures. There is deliberately no
+       second spherical area road here. Exact for a graticule quadrangle — tests/r783 puts it against
+       quadAreaM2 and against an independent double quadrature. */
+    function ringGroundAreaM2(ring) {
+      const n = (ring && ring.length) || 0;
+      if (n < 3) return { ok: false, why: WHY.geometryMissing };
+      let sum = 0;
+      for (let i = 0; i < n; i++) {
+        const p = ring[i], q = ring[(i + 1) % n];
+        if (!isPosition(p) || !isPosition(q)) return { ok: false, why: WHY.positionInvalid };
+        if (Math.abs(p[1]) > LAT_MAX || Math.abs(q[1]) > LAT_MAX) return { ok: false, why: WHY.axisSuspect };
+        const dl = edgeDeltaLon(p[0], q[0]);
+        if (dl == null) return { ok: false, why: WHY.edgeSpanAmbiguous, detail: { at: [p[0], p[1]], to: [q[0], q[1]] } };
+        if (dl === 0) continue;                       /* a meridian edge sweeps no longitude */
+        sum += dl * D2R * edgeAuthalicIntegral(p[1], q[1]);
+      }
+      return { ok: true, m2: Math.abs(AUTH_R2 * sum) };
+    }
+
+    /* What each ground road is worth, stated where it is measured rather than in prose. ⚠ Every
+       number here is an OBSERVATION with an expiry (.agents/rules/no-ad-hoc-hardcoding.md §4), and
+       tests/r783 is the observer: it measures these very figures, so a drift between the arithmetic
+       and what this declaration says about it is a red test rather than a stale sentence. */
+    const GROUND_ACCURACY = Object.freeze({
+      area: Object.freeze({
+        /* ⚠ RELATIVE, like every other ratio in this file. Measured against an independent
+           Gauss-Legendre double quadrature of M(φ)·N(φ)·cos φ over boxes from the equator to 89°N
+           (worst 7.2e-13, at 88–89°N where the quadrature itself is weakest) and against the
+           Richardson limit of a 8,192-fold densification for polygons with 1,000 and 5,000 km edges
+           (worst 7.7e-12). Expires with the edge rule or with the panel count in
+           edgeAuthalicIntegral. */
+        relative: 1e-11,
+        edge: 'linear-in-degrees',
+      }),
+      /* Vincenty at VIN_TOL, RELATIVE, measured against an equatorial arc (exact: a·Δλ) and against
+         an independent Gauss-Legendre quadrature of the meridian arc — worst 1.5e-12 over arcs from
+         110 km to 20,000 km. Expires with VIN_TOL. */
+      length: Object.freeze({ relative: 1e-11, edge: 'geodesic' }),
+    });
+
+    /* geometry → its area on WGS 84, with no plane in the way. ③'s road: this is what a reader who
+       cannot accept a plane's error measures on instead, and it is why the refusal below can name an
+       alternative rather than only a problem. ⚠ The unit is in the answer for the same reason
+       areaOn's is. */
+    function areaOnGround(geometry, options) {
+      lastWhy = null;
+      const unit = String((options && options.unit) || 'km2');
+      if (!AREA_UNITS[unit]) { lastWhy = WHY.unitUnknown; return { ok: false, why: WHY.unitUnknown, detail: { unit: unit, known: Object.keys(AREA_UNITS) } }; }
+      const rings = areaRings(geometry);
+      if (!rings.ok) { lastWhy = rings.why; return rings.detail ? { ok: false, why: rings.why, detail: rings.detail } : { ok: false, why: rings.why }; }
+      let m2 = 0;
+      for (const poly of rings.polygons) {
+        if (!Array.isArray(poly) || !poly.length) { lastWhy = WHY.geometryMissing; return { ok: false, why: WHY.geometryMissing }; }
+        let outer = 0, holes = 0;
+        for (let i = 0; i < poly.length; i++) {
+          const r = ringGroundAreaM2(poly[i]);
+          if (!r.ok) { lastWhy = r.why; return r.detail ? { ok: false, why: r.why, detail: r.detail } : { ok: false, why: r.why }; }
+          if (i === 0) outer = r.m2; else holes += r.m2;
+        }
+        m2 += Math.max(0, outer - holes);
+      }
+      return {
+        ok: true, value: m2 / AREA_UNITS[unit], unit: unit,
+        surface: SURFACE.ground, datum: 'WGS84', edge: EDGE_RULE.ellipsoid.area,
+        /* ⚠ NOT `exact: true`. It is exact for a graticule quadrangle and carries the authalic e⁴
+           term for a geodesic edge, and saying which is the whole of this round. */
+        accuracy: GROUND_ACCURACY.area,
+      };
+    }
+
+    /* geometry → its length on WGS 84: the sum of geodesics between consecutive positions. ⚠ A
+       segment whose reference cannot be obtained (nearly antipodal) is `crs-reference-unavailable`
+       and NOT a nearby number — a length nobody could compute is not a length. */
+    function lengthOnGround(geometry, options) {
+      lastWhy = null;
+      const unit = String((options && options.unit) || 'km');
+      if (!LENGTH_UNITS[unit]) { lastWhy = WHY.unitUnknown; return { ok: false, why: WHY.unitUnknown, detail: { unit: unit, known: Object.keys(LENGTH_UNITS) } }; }
+      const parts = lineParts(geometry);
+      if (!parts.ok) { lastWhy = parts.why; return parts.detail ? { ok: false, why: parts.why, detail: parts.detail } : { ok: false, why: parts.why }; }
+      let m = 0;
+      for (const part of parts.parts) {
+        const list = Array.isArray(part) ? part : [];
+        if (list.length < 2) { lastWhy = WHY.geometryMissing; return { ok: false, why: WHY.geometryMissing }; }
+        for (let i = 1; i < list.length; i++) {
+          const p = list[i - 1], q = list[i];
+          if (!isPosition(p) || !isPosition(q)) { lastWhy = WHY.positionInvalid; return { ok: false, why: WHY.positionInvalid }; }
+          const g = geodesicM(p[0], p[1], q[0], q[1]);
+          if (!g) { lastWhy = WHY.referenceUnavailable; return { ok: false, why: WHY.referenceUnavailable, detail: { at: [p[0], p[1]], to: [q[0], q[1]] } }; }
+          m += g.m;
+        }
+      }
+      return {
+        ok: true, value: m / LENGTH_UNITS[unit], unit: unit,
+        surface: SURFACE.ground, datum: 'WGS84', edge: EDGE_RULE.ellipsoid.length,
+        accuracy: GROUND_ACCURACY.length,
+      };
+    }
+
+    /* ② — THE BOUND, COMPOSED FROM TWO MEASUREMENTS ──────────────────────────────────────────
+       The positions the bound is sampled at: the reader's own box (the 3×3 assess() uses) PLUS the
+       surface's own standard point clamped into that box. ⚠ WITHOUT THAT POINT THE BOUND IS NOT A
+       BOUND — every surface here is least distorted at its centre or along its standard line, so a
+       box that CONTAINS that point has its minimum in the interior, where a corner-and-edge lattice
+       never looks. It is read out of `params`, which every builder fills, rather than out of a table
+       of which plane has a centre; a plane that declares none is true on the equator, which is the
+       same clamp rather than a case of its own. */
+    function boundLattice(box, params) {
+      const pts = latticeOf(box);
+      const pr = params || {};
+      const clamp = (v, lo, hi) => (v < lo ? lo : (v > hi ? hi : v));
+      const lon = finite(pr.lon0) ? clamp(wrapLon(pr.lon0), box.w, box.e) : (box.w + box.e) / 2;
+      const lat = clamp(finite(pr.lat0) ? pr.lat0 : 0, box.s, box.n);
+      pts.push([lon, lat]);
+      return pts;
+    }
+
+    /* A surface's own datum against the ground, over those positions: how much of the error is there
+       before the projection does anything at all. It is exactly 1 for a plane whose datum IS WGS 84,
+       because such a plane's metric() IS groundMetric() — one function, so the ratio is 1 and not
+       1 ± a rounding between two copies. Positions where cos φ vanishes are counted rather than
+       divided by: a pole is not a ratio of 1. */
+    function datumRatioOver(metricFn, pts) {
+      let aMin = Infinity, aMax = -Infinity, lMin = Infinity, lMax = -Infinity, at = 0, skipped = 0;
+      for (const p of pts) {
+        const m = metricFn(p[1]), g = groundMetric(p[1]);
+        if (!m || !(g[0] > 0) || !(g[1] > 0) || !(m[0] > 0) || !(m[1] > 0)) { skipped++; continue; }
+        const rp = m[0] / g[0], rm = m[1] / g[1];
+        at++;
+        const ra = rp * rm;
+        if (ra < aMin) aMin = ra;
+        if (ra > aMax) aMax = ra;
+        if (Math.min(rp, rm) < lMin) lMin = Math.min(rp, rm);
+        if (Math.max(rp, rm) > lMax) lMax = Math.max(rp, rm);
+      }
+      if (!at) return null;
+      return { area: { min: aMin, max: aMax }, linear: { min: lMin, max: lMax }, at: at, skipped: skipped };
+    }
+
+    /* The sphere the app measures on by default (js/gis-ops.js areaKm2 / lengthKm on
+       IntMapGeodesy._R_EARTH_KM), as a metric. ⚠ A sphere carries NO projection term — the spherical
+       excess and the great circle are exact ON the sphere — so its whole error against the ground is
+       this ratio. Which is precisely the distinction the audit asked to be able to draw. */
+    function sphereMetric(R) { return (lat) => [R * Math.cos(lat * D2R), R]; }
+
+    /* 「この面の台は地面そのものか」 — ASKED OF THE METRIC, not of the plane's name. A plane whose
+       datum is WGS 84 answers groundMetric()'s own numbers, so the comparison is exact rather than
+       within a tolerance, and a fifth plane is classified by the same question. */
+    function datumIsGround(P) {
+      if (!P || typeof P.metric !== 'function') return false;
+      for (const lat of [0, 23.5, 45, 67.5]) {
+        const m = P.metric(lat), g = groundMetric(lat);
+        if (!Array.isArray(m) || m[0] !== g[0] || m[1] !== g[1]) return false;
+      }
+      return true;
+    }
+
+    /* Interval product of two positive ranges. ⚠ CONSERVATIVE ON PURPOSE: the two extremes need not
+       occur at the same position, so this is an envelope and never a promise of tightness. */
+    const mulRange = (x, y) => ({ min: x.min * y.min, max: x.max * y.max });
+    const worstOf = (r) => Math.max(Math.abs(r.min - 1), Math.abs(r.max - 1));
+    const ONE_RANGE = Object.freeze({ min: 1, max: 1 });
+
+    /* The plane's rendering of the graticule quadrangle of the reader's box, densified at equal angle
+       because a parallel is a CURVE on every plane here. ⚠ The step count is not typed: it doubles
+       until the area stops moving by more than 1e-9 relative, and both the count it settled on and
+       the residual are in the answer — a discretisation nobody states is a precision nobody measured.
+       The ceiling is work rather than accuracy, and `settled: false` says so when it is reached. */
+    const QUAD_STEPS0 = 16, QUAD_STEPS_MAX = 512, QUAD_SETTLE = 1e-9;
+    function quadRing(box, steps) {
+      const out = [];
+      const dLon = (box.e - box.w) / steps, dLat = (box.n - box.s) / steps;
+      for (let i = 0; i < steps; i++) out.push([box.w + dLon * i, box.s]);
+      for (let i = 0; i < steps; i++) out.push([box.e, box.s + dLat * i]);
+      for (let i = 0; i < steps; i++) out.push([box.e - dLon * i, box.n]);
+      for (let i = 0; i < steps; i++) out.push([box.w, box.n - dLat * i]);
+      return out;
+    }
+    /* ⚠ AND IT IS EXTRAPOLATED RATHER THAN MERELY REFINED. A polygon inscribed in a smooth curve is
+       short by O(h²), so (4·A₂ₙ − Aₙ)/3 removes that term and the sequence then settles in three or
+       four doublings instead of never: MEASURED, the plain sequence over a whole UTM zone was still
+       at 1.2e-9 after 512 steps per side (16,000 projections) and improving, while the extrapolation
+       is inside 1e-12 by 64. The exponent is the shape's, not a fitted parameter — tests/r783 ⑨ puts
+       the extrapolated value against the INTEGRAL of this plane's own Jacobian over the same
+       quadrangle (∫∫ areaScale·h_λ·h_φ, twenty-node Gauss-Legendre, no polygon anywhere in it) and
+       they agree to better than 1e-7 over five plane-and-box combinations. */
+    function planeQuadAreaM2(P, box) {
+      let prev = null, prevEx = null, residual = null, before = null, steps = QUAD_STEPS0;
+      for (; steps <= QUAD_STEPS_MAX; steps *= 2) {
+        const ring = quadRing(box, steps);
+        const seam = crossesSeam(P, ring, true);
+        if (seam) return { ok: false, why: WHY.planeSeamCrossed, detail: { at: seam, seamLon: P.seamLon } };
+        const pr = projectRing(P, ring);
+        if (!pr.ok) return { ok: false, why: pr.why, detail: pr.detail };
+        const a = shoelace(pr.xy);
+        if (!(a > 0)) return { ok: false, why: WHY.extentUnmeasurable };
+        if (prev != null) {
+          const ex = (4 * a - prev) / 3;
+          if (prevEx != null) {
+            residual = Math.abs(ex / prevEx - 1);
+            if (residual < QUAD_SETTLE) return { ok: true, m2: ex, steps: steps, residual: residual, settled: true, limitedBy: 'converged' };
+            /* ⚠ AND IT STOPS WHEN IT STOPS IMPROVING, which is not the same thing. Measured: a 0.01°
+               parcel on Mollweide never reaches 1e-9, because the Newton solve inside that projection
+               settles θ to 1e-14 and on coordinates of ~1e7 m that is ~4e-10 of a 1 km² ring — the
+               sequence hits the PROJECTION's noise and then wanders. Doubling past that point buys
+               nothing and would report `settled: false` about an answer that is as good as this
+               projection can give. The reason is named rather than smoothed over. */
+            if (before != null && residual >= before) {
+              return { ok: true, m2: ex, steps: steps, residual: Math.min(residual, before), settled: true, limitedBy: 'projection-noise' };
+            }
+            before = residual;
+          }
+          prevEx = ex;
+        }
+        prev = a;
+      }
+      return { ok: true, m2: prevEx, steps: QUAD_STEPS_MAX, residual: residual, settled: false, limitedBy: 'steps' };
+    }
+
+    /* A probe short enough that the chord and the geodesic agree to 1e-9 relative, so that the ratio
+       it measures is the PROJECTION's error and not the edge rule's. ⚠ DERIVED: the chord of a great
+       circle of length L on radius R falls short of the arc by L²/(24R²), so 1e-9 wants
+       L < R·√(24e-9) ≈ 987 m. 1,000 m is the CEILING and leaves a residual of 1.03e-9, which is
+       computed per probe rather than asserted.
+       ⚠ AND THE PROBE MUST FIT INSIDE THE BOX THE BOUND WAS MEASURED OVER. Measured: on a 0.01°
+       parcel (about 1 km across) a fixed 1 km probe stepped OUT of the box and its ratio then fell
+       outside the bound — a bound that was correct about the box and a probe that was no longer
+       about the same place. So each direction's probe is half the box's own extent in that
+       direction, capped at the ceiling and floored at 1 m so that a Point still has a probe.
+       Expires if the reference stops being a geodesic. */
+    const PROBE_MAX_M = 1000, PROBE_MIN_M = 1;
+
+    /* WHAT THE NUMBERS ACTUALLY CAME OUT AS, over the reader's own extent. Lengths are measured twice
+       on purpose: `probe` isolates the projection (a 1 km step along the parallel and along the
+       meridian at the centre of the box) and `span` is what a reader really gets for an edge of this
+       data's own size — the box's south edge, its west edge and its diagonal, as the straight lines
+       in the plane that lengthOn() would sum. ⚠ THE GAP BETWEEN THE TWO IS THE EDGE RULE, and it is
+       the term the audit asked to have named: a `span` ratio outside the bound is not a broken bound. */
+    function checkLengths(P, box, R) {
+      const midLat = (box.s + box.n) / 2, midLon = wrapLon(box.w + (box.e - box.w) / 2);
+      const g = groundMetric(midLat);
+      /* The curvature the chord term is measured against: the GAUSSIAN mean radius √(M·N) at this
+         latitude, derived from the ground metric rather than borrowed from the app's sphere — the
+         chord-versus-arc shortfall is a property of the earth here, not of any plane or of any
+         radius this file might have chosen. */
+      const cosMid = Math.cos(midLat * D2R);
+      const R0 = (cosMid > 1e-9) ? Math.sqrt(g[1] * g[0] / cosMid) : g[1];
+      const fit = (m) => Math.max(PROBE_MIN_M, Math.min(PROBE_MAX_M, m));
+      const probes = [];
+      if (g[0] > 0) {
+        const L = fit(Math.abs(box.e - box.w) * D2R * g[0] / 2);
+        probes.push({ dir: 'parallel', m: L, a: [midLon, midLat], b: [wrapLon(midLon + L / g[0] * R2D), midLat] });
+      }
+      if (g[1] > 0) {
+        const L = fit(Math.abs(box.n - box.s) * D2R * g[1] / 2);
+        const dLat = L / g[1] * R2D;
+        const other = (midLat + dLat > LAT_MAX) ? midLat - dLat : midLat + dLat;
+        probes.push({ dir: 'meridian', m: L, a: [midLon, midLat], b: [midLon, other] });
+      }
+      const spans = [
+        { dir: 'south-edge', a: [box.w, box.s], b: [box.e, box.s] },
+        { dir: 'west-edge', a: [box.w, box.s], b: [box.w, box.n] },
+        { dir: 'diagonal', a: [box.w, box.s], b: [box.e, box.n] },
+      ];
+      const measure = (list) => {
+        const rows = [];
+        for (const seg of list) {
+          if (seg.a[0] === seg.b[0] && seg.a[1] === seg.b[1]) continue;      /* a degenerate box */
+          const ref = geodesicM(seg.a[0], seg.a[1], seg.b[0], seg.b[1]);
+          if (!ref || !(ref.m > 0)) { rows.push({ dir: seg.dir, ratio: null, why: WHY.referenceUnavailable }); continue; }
+          let got = null;
+          if (P) {
+            const p = P.forward(seg.a[0], seg.a[1]), q = P.forward(seg.b[0], seg.b[1]);
+            got = (p && q) ? Math.hypot(q[0] - p[0], q[1] - p[1]) : null;
+          } else if (R != null) {
+            /* the SPHERE's own answer for this edge — a great circle on R. ⚠ It is here because the
+               sphere is the surface being certified, not because this file offers a road to measure
+               a length on it: there is no such public door here and js/gis-ops.js owns that one. */
+            const la1 = seg.a[1] * D2R, la2 = seg.b[1] * D2R, dLo = wrapLon(seg.b[0] - seg.a[0]) * D2R;
+            const s = Math.sin((la2 - la1) / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLo / 2) ** 2;
+            got = 2 * R * Math.asin(clamp1(Math.sqrt(s)));
+          }
+          if (got == null || !(got > 0)) { rows.push({ dir: seg.dir, ratio: null, why: WHY.projectionFailed }); continue; }
+          const row = { dir: seg.dir, m: (seg.m != null ? seg.m : ref.m), ratio: got / ref.m, refM: ref.m, gotM: got, why: null };
+          /* what this very probe's chord costs, from L²/(24R²) on its own measured length — the one
+             term that is NOT the projection's, stated so it cannot be mistaken for it */
+          if (seg.m != null && R0 > 0) row.chordResidual = seg.m * seg.m / (24 * R0 * R0);
+          rows.push(row);
+        }
+        return rows;
+      };
+      const probeRows = measure(probes);
+      return {
+        probe: probeRows, span: measure(spans),
+        /* the longest probe that actually produced a ratio, not the longest one attempted */
+        probeM: probeRows.reduce((m, r) => (r.ratio != null && r.m > m ? r.m : m), 0) || null,
+        probeCeilingM: PROBE_MAX_M,
+        chordResidual: probeRows.reduce((w, r) => Math.max(w, r.chordResidual || 0), 0),
+      };
+    }
+
+    /* ⚠ THE BOUND ITSELF, IN ONE PLACE. certify() states it and suggest() ranks by it, and two
+       spellings of 「この面はどこまで外れうるか」 would be the two-implementations-one-contract shape
+       this project keeps paying for. `P` null means the sphere of radius R, which carries no
+       projection term. */
+    function boundOf(P, box, R) {
+      const pts = boundLattice(box, P ? P.params : null);
+      const datum = datumRatioOver(P ? P.metric : sphereMetric(R), pts);
+      const proj = P ? distortionOverPts(P, pts) : null;
+      lastWhy = null;
+      if (!datum || (P && !proj)) return null;
+      return {
+        datum: datum,
+        bound: {
+          area: mulRange(proj ? proj.areaScale : ONE_RANGE, datum.area),
+          length: mulRange(proj ? proj.scale : ONE_RANGE, datum.linear),
+          unit: 'ratio', from: P ? 'projection-x-datum' : 'datum',
+          at: proj ? proj.at : datum.at, sampled: pts.length,
+        },
+      };
+    }
+
+    /* Every LIST OF POSITIONS in a coordinate tree — a ring, a line, a part — rather than every
+       position. ⚠ It exists because the seam question belongs to an EDGE and a bounding box cannot
+       ask it: bboxOf() takes min and max, so a ring written 179°E → 179°W arrives as a box spanning
+       358° and the crossing that areaOn() will refuse becomes invisible to the certificate. Same
+       walk as mapPositions, one level up. */
+    function eachPositionList(node, fn) {
+      if (!Array.isArray(node) || !node.length) return;
+      if (isPosition(node[0])) { fn(node); return; }
+      for (const child of node) eachPositionList(child, fn);
+    }
+
+    /* ⚠ WHAT WILL REFUSE ON THIS VERY DATA, asked of the data and not of its box. A certificate that
+       reports a healthy bound for a ring areaOn() is about to refuse would be a declaration about a
+       figure the reader does not have. */
+    function blockedOn(P, input) {
+      if (!P || P.seamLon == null) return null;
+      let at = null;
+      const walkGeom = (g) => {
+        if (!g || at) return;
+        if (g.type === 'GeometryCollection') { for (const sub of (g.geometries || [])) walkGeom(sub); return; }
+        const areal = g.type === 'Polygon' || g.type === 'MultiPolygon';
+        eachPositionList(g.coordinates, (list) => {
+          if (at) return;
+          const s = crossesSeam(P, list, areal);
+          if (s) at = s;
+        });
+      };
+      if (Array.isArray(input) && input.length === 4 && input.every(finite)) return null;
+      if (Array.isArray(input)) for (const f of input) walkGeom(f && (f.geometry || (f.type ? f : null)));
+      else walkGeom(input);
+      return at ? { why: WHY.planeSeamCrossed, at: at, seamLon: P.seamLon } : null;
+    }
+
+    const inRange = (r, range) => (r == null ? null : (r >= range.min - 1e-12 && r <= range.max + 1e-12));
+    const worstRatio = (rows) => rows.reduce((w, r) => (r.ratio == null ? w : Math.max(w, Math.abs(r.ratio - 1))), 0);
+
+    /* surface + the reader's own data → everything that may be said about the numbers that come off
+       it. `surface` is 'sphere' or a plane from projection(). ⚠ IT IS A MEASUREMENT AND NOT A
+       VERDICT, the same shape assess() and looksProjected() have: `bound` says how far off an answer
+       can be, `checked` says what the reference actually came out as, `within` says whether the check
+       fell inside the bound — and NOTHING here decides whether that is good enough. The caller's
+       `tolerance` is the only thing that does. */
+    function certify(surface, input, options) {
+      lastWhy = null;
+      const box = bboxOf(input);
+      if (!box) { lastWhy = WHY.geometryMissing; return null; }
+      const isSphere = (typeof surface === 'string') && surface.trim().toLowerCase() === SURFACE.sphere;
+      const P = isProjection(surface) ? surface : null;
+      if (!P && !isSphere) { lastWhy = WHY.surfaceUnknown; return null; }
+      const R = isSphere ? sphereRadiusM() : null;
+      if (isSphere && R == null) { lastWhy = WHY.radiusUnavailable; return null; }
+
+      const b = boundOf(P, box, R);
+      lastWhy = null;
+      if (!b) { lastWhy = WHY.extentUnmeasurable; return null; }
+      const bound = b.bound, datum = b.datum;
+
+      /* the check against ① */
+      const dLon = box.e - box.w, dLat = box.n - box.s;
+      let areaCheck = null;
+      if (dLon > 0 && dLat > 0) {
+        const ref = quadAreaM2(box.s, box.n, dLon);
+        if (P) {
+          const got = planeQuadAreaM2(P, box);
+          areaCheck = got.ok
+            ? { figure: 'graticule-quadrangle', ratio: got.m2 / ref, refM2: ref, gotM2: got.m2, steps: got.steps, residual: got.residual, settled: got.settled, limitedBy: got.limitedBy, why: null }
+            : { figure: 'graticule-quadrangle', ratio: null, refM2: ref, steps: null, residual: null, settled: false, why: got.why, detail: got.detail || null };
+        } else {
+          /* the sphere's own exact answer for a graticule quadrangle: R²·Δλ·(sin n − sin s) */
+          const got = R * R * Math.abs(dLon) * D2R * (Math.sin(box.n * D2R) - Math.sin(box.s * D2R));
+          areaCheck = { figure: 'graticule-quadrangle', ratio: got / ref, refM2: ref, gotM2: got, steps: null, residual: 0, settled: true, limitedBy: 'closed-form', why: null };
+        }
+      }
+      /* ⚠ 「測れた」 is not 「測れて意味があった」. The check's own discretisation has to be far below
+         the error it is reporting, and 「far below」 is RELATIVE to that error rather than an absolute
+         figure: two orders, with a floor for float noise. Measured, this is the difference between a
+         0.01° parcel on Mollweide (residual 1.3e-8 against an envelope of 1.5e-4 — conclusive) and a
+         check that stopped at the step ceiling with a residual of the same order as its own answer. */
+      if (areaCheck && areaCheck.ratio != null) {
+        areaCheck.conclusive = areaCheck.residual != null
+          && areaCheck.residual <= Math.max(1e-8, Math.abs(areaCheck.ratio - 1) / 100);
+      }
+      const lengthCheck = checkLengths(P, box, R);
+      const fit = P ? assess(P, input) : null;
+      const blocked = blockedOn(P, input);
+      lastWhy = null;
+
+      const probeWorst = worstRatio(lengthCheck.probe), spanWorst = worstRatio(lengthCheck.span);
+      const measuredProbe = lengthCheck.probe.filter((r) => r.ratio != null);
+      return {
+        surface: P ? SURFACE.plane : SURFACE.sphere,
+        plane: P ? (P.code || P.kind) : null, spec: P ? P.spec : null,
+        crs: P ? (P.code || null) : WGS84, unit: P ? P.unit : 'm',
+        /* WHICH GROUND these ratios are against, by name and by the constants that define it */
+        reference: {
+          datum: 'WGS84', a: ELL_A, invFlattening: 1 / ELL_F,
+          area: 'authalic-closed-form', length: 'vincenty-inverse', accuracy: GROUND_ACCURACY,
+        },
+        /* the datum the surface itself is drawn on, and whether that datum IS the ground */
+        datum: {
+          isGround: worstOf(datum.area) < 1e-12 && worstOf(datum.linear) < 1e-12,
+          radiusM: P ? (finite(P.params && P.params.R) ? P.params.R : null) : R,
+          area: datum.area, linear: datum.linear, at: datum.at, skipped: datum.skipped,
+        },
+        /* ⚠ WHERE IT MAY BE USED and how far the reader's data leaves it — assess()'s answer carried
+           here, so a certificate is one object rather than two calls a caller may make only one of */
+        extent: P ? P.extent.slice() : [-180, -90, 180, 90],
+        outside: fit ? fit.outside : 0, of: fit ? fit.total : (box.total || 0),
+        beyond: fit ? fit.beyond : null, beyondUnit: 'deg', sample: fit ? fit.sample : null,
+        /* the border rule and the resampling rule, stated rather than implied */
+        seam: {
+          lon: P ? P.seamLon : null,
+          rule: (P && P.seamLon != null) ? 'refuse-crossing-edge' : 'wrap-differences',
+          /* the reader's own edges, not their bounding box — see blockedOn() */
+          crossedAt: blocked ? blocked.at : null,
+        },
+        /* ⚠ 「この面で、このデータは測れるのか」 is a different question from 「どれだけ外れるか」, and
+           a certificate that answered only the second would describe a figure the reader does not
+           have. null means nothing here will refuse. */
+        blocked: blocked,
+        resample: {
+          edge: P ? EDGE_RULE[SURFACE.plane] : EDGE_RULE[SURFACE.sphere],
+          vertices: 'as-given',
+          check: P ? { rule: 'equal-angle', steps: areaCheck ? areaCheck.steps : null } : { rule: 'closed-form', steps: null },
+        },
+        bound: bound,
+        checked: { area: areaCheck, length: lengthCheck, bbox: [box.w, box.s, box.e, box.n], span: { lonDeg: dLon, latDeg: dLat } },
+        within: {
+          area: areaCheck ? inRange(areaCheck.ratio, bound.area) : null,
+          /* ⚠ THE PROBE IS WHAT THE BOUND IS ABOUT. `span` is reported beside it and deliberately not
+             folded in: it carries the chord of a long edge, which a differential scale factor cannot
+             see, so a caller measuring long segments reads the number that applies to them instead of
+             the flattering one. */
+          length: measuredProbe.length ? measuredProbe.every((r) => inRange(r.ratio, bound.length)) : null,
+        },
+        worst: {
+          area: (areaCheck && areaCheck.ratio != null) ? Math.abs(areaCheck.ratio - 1) : null,
+          boundArea: worstOf(bound.area), boundLength: worstOf(bound.length),
+          probeLength: measuredProbe.length ? probeWorst : null,
+          /* what a straight line between two vertices this far apart costs — the edge rule's term */
+          spanLength: lengthCheck.span.some((r) => r.ratio != null) ? spanWorst : null,
+        },
+        /* ⚠ 「測れた」 と 「良い」 は別である。 verified says a reference was obtained and compared;
+           whether the comparison is acceptable is the caller's tolerance, below. */
+        verified: !!(areaCheck && areaCheck.ratio != null && areaCheck.conclusive) && measuredProbe.length > 0 && !blocked,
+        /* ⚠ AN UNVERIFIED CERTIFICATE ALWAYS SAYS WHY. A Point has no extent, so there is no figure
+           to put against the reference and `verified: false` with a null reason would be the silence
+           this file exists to refuse — the bound above is still measured and still true. */
+        why: (blocked && blocked.why) || (areaCheck ? areaCheck.why : WHY.extentUnmeasurable)
+          || (measuredProbe.length ? null : WHY.referenceUnavailable),
+      };
+    }
+
+    /* The three surfaces, as a declaration a panel or a planner can read — derived from the same two
+       tables above so a surface that is published is a surface certify() can measure. */
+    function surfaces() {
+      return [
+        /* ⚠ `certifiable: false` for the ground is not a gap: it is the reference, and certifying it
+           against itself is the co-designed reader this whole section exists to avoid. What stands
+           in for it is `accuracy`, which tests/r783 measures from outside. */
+        { name: SURFACE.ground, edge: EDGE_RULE.ellipsoid, datum: 'WGS84', isGround: true, certifiable: false, measures: ['area', 'length'], how: { area: 'authalic-integral', length: 'vincenty-inverse' }, accuracy: GROUND_ACCURACY, call: { area: 'areaOnGround', length: 'lengthOnGround' } },
+        { name: SURFACE.sphere, edge: EDGE_RULE.sphere, datum: 'sphere', isGround: false, certifiable: true, measures: ['area', 'length'], how: { area: 'spherical-excess', length: 'great-circle' }, accuracy: null, call: { area: 'ops.measure', length: 'ops.measure' } },
+        { name: SURFACE.plane, edge: EDGE_RULE[SURFACE.plane], datum: 'per-plane', isGround: false, certifiable: true, measures: ['area', 'length'], how: { area: 'shoelace', length: 'straight-line' }, accuracy: null, call: { area: 'areaOn', length: 'lengthOn' } },
+      ];
+    }
+
+    /* ③ — the caller's requirement, and the road when it cannot be met ─────────────────────────
+       `tolerance` is a fractional error the CALLER states. ⚠ It is NOT a cap this file invented and
+       it is NOT consulted unless it is given: a reader who states nothing gets the number they always
+       got. When it IS given and the measured envelope cannot meet it, the answer is the refusal
+       NAMED TOGETHER WITH THE SURFACES THAT CAN — because 「この条件では信頼できない」 is only useful
+       next to 「ではどこで測れるか」 (CONSTITUTION.md §5: a road, not a limit). */
+    function readTolerance(options) {
+      if (!options || options.tolerance == null) return { ok: true, tolerance: null };
+      const t = Number(options.tolerance);
+      if (!isFinite(t) || t <= 0) return { ok: false, why: WHY.toleranceInvalid, detail: { tolerance: options.tolerance } };
+      return { ok: true, tolerance: t };
+    }
+
+    /* Every other surface that WOULD meet the tolerance over this data, measured rather than assumed.
+       The ground is always first when it qualifies, because it is the one road with no projection in
+       it. ⚠ It RANKS AND DOES NOT CHOOSE, exactly as suggest() does. */
+    function alternativesFor(input, what, tolerance) {
+      const out = [];
+      const ground = (what === 'area') ? GROUND_ACCURACY.area.relative : GROUND_ACCURACY.length.relative;
+      if (ground <= tolerance) {
+        out.push({ surface: SURFACE.ground, spec: null, worst: ground, call: (what === 'area') ? 'areaOnGround' : 'lengthOnGround' });
+      }
+      const box = bboxOf(input);
+      if (!box) return out;
+      const sph = certify(SURFACE.sphere, [box.w, box.s, box.e, box.n]);
+      if (sph) {
+        const w = (what === 'area') ? sph.worst.boundArea : sph.worst.boundLength;
+        if (w <= tolerance) out.push({ surface: SURFACE.sphere, spec: null, worst: w, call: 'ops.measure' });
+      }
+      const ranked = suggest([box.w, box.s, box.e, box.n], { purpose: (what === 'area') ? 'area' : 'distance' });
+      for (const c of ((ranked && ranked.candidates) || [])) {
+        if (c.bound == null) continue;
+        const w = (what === 'area') ? worstOf(c.bound.area) : worstOf(c.bound.length);
+        if (w <= tolerance) out.push({ surface: SURFACE.plane, spec: c.spec, code: c.code, worst: w, call: (what === 'area') ? 'areaOn' : 'lengthOn' });
+      }
+      lastWhy = null;
+      return out;
     }
 
     /* (#R752) ⚠ THE VERSION OF THIS KERNEL. It was already an answer-bearing module — an import's
@@ -1271,7 +2097,15 @@ export function makeGisCrs() {
        plane and produces a number. `mollweide:150` likewise. Nothing that ALREADY produced a number
        produces a different one — the four builders and their series are untouched — but 「拒否が
        答えになった」 is exactly the change a saved project must be able to see. */
-    const KERNEL_VERSION = 'crs-2';
+    /* ⚠ (#R783) RAISED TO crs-3, and the ledger's own question is the one to answer: does this edit
+       change an ANSWER? ⑴ Not one number that came out of areaOn / lengthOn / assess / distortionAt
+       moves — the four builders and their series are untouched, distortionOver keeps its own lattice,
+       and buildUtm's metric() now CALLS groundMetric() instead of recomputing the identical
+       expression (measured bit-for-bit over a 41×41 lattice). ⑵ But a recipe that states a
+       `tolerance` replays to a REFUSAL where crs-2 would have produced a number, and one that states
+       none now replays with a `declared` block beside it. A refusal that used to be an answer is the
+       same kind of move #R756 raised the version for, read in the other direction. */
+    const KERNEL_VERSION = 'crs-3';
     const API = {
       /* which implementation answered — see KERNEL_VERSION above */
       version: () => KERNEL_VERSION,
@@ -1294,6 +2128,14 @@ export function makeGisCrs() {
       planeSpellings,
       distortionAt, assess, suggest,
       areaOn, lengthOn,
+      /* どこまで信頼できるか (#R783) — `surfaces()` is the catalogue of surfaces a measurement can be
+         made on, `certify()` measures one against WGS 84 over the reader's own data (bound, checked,
+         seam rule, edge rule, verified conditions), and the two ground doors are the road for a
+         caller whose tolerance no plane here can meet. `geodesic()` is the reference itself, exposed
+         because js/gis-ops.js has a 「長さ」 on the sphere and a reader comparing the two needs the
+         third number rather than a second opinion about either. */
+      surfaces, certify, areaOnGround, lengthOnGround,
+      geodesic: geodesicM,
       /* every code this module can refuse with, out of the one declaration that raises them */
       refusals,
       /* exposed because js/geo-import.js asks the same question about a code it read out of a file,

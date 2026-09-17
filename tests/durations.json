@@ -1,4 +1,5 @@
 {
+ "tests/r783-attach-recall.spec.js": 3,
  "tests/r753-account-menu.spec.js": 2,
  "tests/r650.spec.js": 9,
  "tests/r531.spec.js": 4,
@@ -46,7 +47,7 @@
  "tests/r184-imagery.spec.js": 43,
  "tests/r184-routing.spec.js": 30,
  "tests/r184-satellites.spec.js": 166,
- "tests/r185.spec.js": 216,
+ "tests/r185.spec.js": 57,
  "tests/r186.spec.js": 150,
  "tests/r191.spec.js": 47,
  "tests/r192.spec.js": 87,

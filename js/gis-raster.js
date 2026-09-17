@@ -781,20 +781,31 @@ export function makeGisRaster() {
     }
 
     /* ══ ⚠ (#R764) 1 画素が区域にどれだけ覆われているか ═════════════════════════════════════════
-       Returns a weight in [0,1], or a refusal object. ⚠ THE CORNERS ARE ASKED FIRST, AND THAT IS NOT
-       an optimisation bolted on afterwards — it is what keeps the expensive road off the interior.
-       A zone of a few thousand pixels has a boundary of a few hundred, and only those need a boolean
-       intersection. All four corners inside and the centre inside ⇒ the pixel is interior ⇒ 1,
-       exactly as `center` would have said, with no polygon algebra at all.
-       ⚠ THE CORNER TEST IS NOT SUFFICIENT ON ITS OWN. Four corners outside does NOT mean the pixel is
-       outside: a zone narrower than a pixel can pass straight through the middle of it, touching no
-       corner. So a pixel with no corner inside is only decided by the intersection, never by the
-       corners. The reverse shortcut (all four in ⇒ inside) IS sound for a zone with no hole cutting
-       through the pixel — and a hole that does cut through it is caught because its ring crosses an
-       edge, which makes at least one corner disagree... unless the hole sits wholly inside the pixel.
-       ⚠ THAT LAST CASE IS WHY `fractional` STILL INTERSECTS WHEN THE ZONE HAS HOLES: a doughnut hole
-       smaller than one pixel is invisible to any corner test, and reporting the pixel as whole would
-       overstate the ground by the hole. */
+       Returns a weight in [0,1], or a refusal object. A zone of a few thousand pixels has a boundary
+       of a few hundred, and only those few hundred need a boolean intersection — which is what keeps
+       the expensive road off the interior. ⚠ WHAT KEEPS IT OFF IS NOT THE CORNERS (#R783).
+
+       ⚠⚠⚠ FOUR CORNERS AND THE CENTRE INSIDE IS NOT A PROOF THAT THE PIXEL IS INSIDE, and the
+       shortcut that read it as one reported every notched zone as whole. MEASURED (#R783): a 1°×1°
+       pixel against a zone with a slot 0.2° wide and 0.4° deep cut in from above holds all four
+       corners AND the centre inside the zone, and the weight came back 1 where the sphere says
+       0.9200039 — the slot's own ground, missing from 「この区域の面積」, from the integral, from the
+       land-cover areas and from the area-weighted mean. ⚠ NO NUMBER OF SAMPLE POINTS REPAIRS THIS:
+       against any finite set of probes a concave zone can be given a slot that misses every one.
+
+       ⇒ THE SHORTCUT NOW ASKS SOMETHING IT CAN PROVE: does any edge of the zone come near this pixel
+       at all? If none does, the pixel meets the zone's boundary nowhere, so the whole pixel — one
+       connected rectangle — lies on ONE side of that boundary, and the centre says which side. That
+       is a proof rather than a sample; it costs one pass over the edges' boxes and no clipper. What
+       it cannot prove goes down the intersection road, which is exact.
+       ⚠ THE PIXEL WITH NO CORNER INSIDE WAS NEVER DECIDED BY THE CORNERS EITHER: a zone narrower than
+       a pixel can pass straight through its middle touching no corner, so 「隅が全部外」 is not 「外」.
+       With the boundary question above, the corners decide nothing at all — so they are no longer
+       asked, and an interior pixel now costs ONE point-in-polygon test instead of five.
+       ⚠ AND THE HOLE NEEDS NO SPECIAL CASE. A doughnut hole smaller than one pixel is invisible to any
+       corner test, which is why `fractional` used to intersect whenever the zone had a hole ANYWHERE;
+       a hole's ring is an edge like any other, so the pixel holding it fails the boundary question and
+       is measured, while a pixel nowhere near a hole is no longer charged for its existence. */
     function pixelRing(raster, row, col) {
       const g = raster.grid;
       const w = g.west + g.pixelLng * col, e = g.west + g.pixelLng * (col + 1);
@@ -802,23 +813,138 @@ export function makeGisRaster() {
       return { type: 'Polygon', coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] };
     }
 
-    function hasHole(geometry) {
-      const g = geometry || {};
-      const t = String(g.type || '');
-      if (t === 'Polygon') return Array.isArray(g.coordinates) && g.coordinates.length > 1;
-      if (t === 'MultiPolygon') return (g.coordinates || []).some((p) => Array.isArray(p) && p.length > 1);
+    /* Every edge of the zone's boundary as a lat/lng box, in one flat array: [latLo, latHi, lngLo,
+       lngHi] per edge. Computed ONCE PER ZONE and handed to the walk — not cached against the
+       geometry object, because a cache would have to answer 「この多角形は書き換えられたか」 and the
+       walk already has the one lifetime during which the answer cannot change.
+       ⚠ THE RINGS COME FROM THE GEOMETRY KERNEL. `ringsOf` is 「多角形の境界」 as this app decides it
+       (every ring of every areal part, closed, holes included) and `unwrapRing` is its seam rule; a
+       second reading of GeoJSON here would be a second spelling of both
+       (.agents/rules/no-ad-hoc-hardcoding.md §2-3). */
+    function edgeBoxesOf(GG, geometry) {
+      if (typeof GG.ringsOf !== 'function') return null;
+      const rings = GG.ringsOf(geometry);
+      if (!Array.isArray(rings) || !rings.length) return null;
+      const out = [];
+      for (const raw of rings) {
+        const r = (typeof GG.unwrapRing === 'function') ? GG.unwrapRing(raw) : raw;
+        for (let i = 1; i < r.length; i++) {
+          const a = r[i - 1], b = r[i];
+          if (!(Number.isFinite(a[0]) && Number.isFinite(a[1]) && Number.isFinite(b[0]) && Number.isFinite(b[1]))) return null;
+          out.push(Math.min(a[1], b[1]), Math.max(a[1], b[1]), Math.min(a[0], b[0]), Math.max(a[0], b[0]));
+        }
+      }
+      return out.length ? Float64Array.from(out) : null;
+    }
+
+    /* Whether [lngLo,lngHi] and [w,e] can overlap AFTER ANY WHOLE NUMBER OF TURNS — exists k with
+       lngLo + 360k ≤ e and lngHi + 360k ≥ w, which is floor((e−lngLo)/360) ≥ ceil((w−lngHi)/360).
+       ⚠ ASKED ACROSS EVERY TURN ON PURPOSE. The geometry kernel shifts a part by whole turns before it
+       clips or tests a point (js/gis-geometry.js §alignTo), while a pixel's longitudes come from the
+       grid exactly as the producer wrote them — a global grid written −180…540 puts the two frames a
+       turn apart. Ruling out all the turns rules out whichever one the kernel picks, so this test
+       cannot be wrong in the direction that matters: a false 「近い」 only sends the pixel down the exact
+       road, while a false 「遠い」 would be the #R783 defect again. */
+    function lngsMeetAnyTurn(lngLo, lngHi, w, e) {
+      return Math.floor((e - lngLo) / 360) >= Math.ceil((w - lngHi) / 360);
+    }
+
+    /* True unless NO edge of the zone can touch this pixel. Nothing to read ⇒ true, so a pixel is
+       sent down the intersection road rather than proved interior out of an absence. */
+    function edgesMayTouch(edgeBoxes, w, s, e, n) {
+      if (!edgeBoxes) return true;
+      for (let i = 0; i < edgeBoxes.length; i += 4) {
+        if (edgeBoxes[i] > n || edgeBoxes[i + 1] < s) continue;
+        if (lngsMeetAnyTurn(edgeBoxes[i + 2], edgeBoxes[i + 3], w, e)) return true;
+      }
       return false;
     }
 
-    function coverOf(raster, GG, geometry, row, col, boundary, areaOf) {
+    /* ══ ⚠⚠⚠ (#R783) 「合計」は 3 つある。どれを出したのかは、量の意味が決める ═══════════════════
+       An answer with one field called 「合計」 over a grid of unknown meaning is three different
+       numbers wearing one name:
+
+         observations   Σ value                — 「観測値の合計」. One term per contributing pixel,
+                                                 whatever its cover. The reading of a station is a
+                                                 reading, and two thirds of it is not one.
+         areaIntegral   Σ value·km²            — the INTEGRAL of a density over the zone. This is the
+                                                 one 「人/km² の層から県の人口」 wants, and it differs
+                                                 from the first by a factor that varies with latitude.
+         apportioned    Σ value·cover          — a pixel whose value IS that pixel's own total, split
+                                                 by the fraction of the pixel inside the zone. The
+                                                 integral would count the area twice here; the plain
+                                                 sum would hand a border pixel's whole population to
+                                                 both neighbours.
+
+       ⚠ NOTHING THAT EXISTED CHANGES ITS MEANING. `sum` is still Σ value with one term per pixel,
+       `sumTimesAreaKm2` is still the integral, and a caller that does not ask for a rule gets exactly
+       the answer it got before, field for field. What is added is the ability to ASK, and to be told
+       whether the arithmetic asked for means anything about this quantity.
+       ⚠ AND THE JUDGEMENT IS NOT MADE HERE. js/gis-units.js owns 「その集計をしてよいか」 — it reads the
+       declared quantity (kind / space / time / period) and answers a verdict with a remedy. This
+       table only says which of its verdicts each rule corresponds to, and WHICH RULES FIT is then
+       derived from the table rather than written out a second time: a rule added below is offered as
+       a remedy automatically, and a rule cannot claim a verdict the unit kernel did not give.
+       ⚠⚠⚠ AN UNDECLARED QUANTITY IS NOT A PERMISSION. 「誰も述べていない」 and 「足してよい」 are
+       different facts, and the first has been the more expensive one in this app
+       ([[intmap-data-must-not-claim-an-author-it-lacks]]). So an undeclared band gets the rule it
+       asked for BY NAME AND NO NUMBER — never a complete-looking total nobody vouched for. The way
+       out is to declare the quantity (on the band, or in the call), not to read silence as consent. */
+    const TOTAL_RULES = {
+      /* asks / wants / remedy / from — the verdict js/gis-units.js must give for this rule to mean anything.
+         ⚠ 'refused' IS NOT A MISTAKE HERE: 「密度は足せない、面積を掛けてから足せ」 is precisely the
+         unit kernel SAYING that the area integral is the right arithmetic, so the rule that performs
+         it reads that remedy rather than re-deciding what a density is. */
+      observations: { asks: 'sum', wants: 'allowed', remedy: null, from: 'sum', timesAreaKm2: false },
+      areaIntegral: { asks: 'sum', wants: 'refused', remedy: 'multiply-by-area-then-sum', from: 'sumTimesAreaKm2', timesAreaKm2: true },
+      apportioned: { asks: 'sum', wants: 'allowed', remedy: null, from: 'sumWeighted', timesAreaKm2: false },
+    };
+    const TOTAL_RULE_NAMES = Object.keys(TOTAL_RULES);
+
+    function ruleFits(rule, verdict) {
+      const R = TOTAL_RULES[rule];
+      if (!R || !verdict || verdict.verdict !== R.wants) return false;
+      return R.remedy == null || verdict.remedy === R.remedy;
+    }
+
+    /* The total the caller asked for, with the unit kernel's verdict attached to it. ⚠ `value` is null
+       whenever the verdict is not 'allowed' — a number here would be the thing this whole block
+       exists to prevent, and `fits` names the rules that DO mean something about this quantity so the
+       refusal is actionable rather than a door closing. */
+    function totalOf(rule, spec, acc) {
+      const R = TOTAL_RULES[rule];
+      const out = {
+        rule: rule, value: null, verdict: null, why: null, detail: null,
+        fits: null, bandUnit: acc.bandUnit, timesAreaKm2: R.timesAreaKm2,
+        quantityFrom: acc.quantityFrom, units: null,
+      };
+      const U = unitKernel();
+      /* A build with no unit module cannot answer 「してよいか」, and 「訊けなかった」 is not 「よい」
+         — the same line js/gis-raster.js already takes over unit conversion (see commensurate). */
+      if (!U || typeof U.aggregation !== 'function') return Object.assign(out, { verdict: 'unavailable', why: 'units-unavailable' });
+      const v = U.aggregation(spec, R.asks, { over: 'space' });
+      out.units = { verdict: v.verdict, why: v.why == null ? null : v.why, remedy: v.remedy == null ? null : v.remedy };
+      if (v.verdict === 'undeclared' || v.verdict === 'unreadable') {
+        return Object.assign(out, { verdict: 'undeclared', why: v.why || 'quantity-undeclared', detail: v.detail || null, fits: [] });
+      }
+      const fits = TOTAL_RULE_NAMES.filter((k) => ruleFits(k, v));
+      if (fits.indexOf(rule) < 0) {
+        return Object.assign(out, { verdict: 'refused', why: 'total-rule-does-not-fit-the-quantity', detail: v.detail || null, fits: fits });
+      }
+      return Object.assign(out, { verdict: 'allowed', value: acc[R.from], fits: fits });
+    }
+
+    function coverOf(raster, GG, geometry, row, col, boundary, areaOf, edgeBoxes) {
       const g = raster.grid;
       const w = g.west + g.pixelLng * col, e = g.west + g.pixelLng * (col + 1);
       const n = rowNorth(raster, row), s = rowNorth(raster, row + 1);
-      let inside = 0;
-      for (const p of [[w, s], [e, s], [e, n], [w, n]]) if (GG.pointInGeometry(p, geometry)) inside++;
-      const centreIn = GG.pointInGeometry([colCentreLng(raster, col), rowCentreLat(raster, row)], geometry);
-
-      if (inside === 4 && centreIn && !hasHole(geometry)) return 1;
+      /* ⚠ (#R783) THE INTERIOR PIXEL, PROVED RATHER THAN SAMPLED (see the header). No edge of the zone
+         anywhere near this rectangle ⇒ the rectangle lies wholly on one side of the zone's boundary
+         ⇒ the centre says which side, and 「内側」 means the whole pixel. The pixel that fails this
+         goes on to the intersection below, whatever its corners say. */
+      if (!edgesMayTouch(edgeBoxes, w, s, e, n)) {
+        return GG.pointInGeometry([colCentreLng(raster, col), rowCentreLat(raster, row)], geometry) ? 1 : 0;
+      }
 
       const pix = pixelRing(raster, row, col);
       /* ⚠ ASKED SO THAT A REFUSAL CAN BE READ. js/gis-geometry.js's `attempt` door exists precisely
@@ -887,6 +1013,20 @@ export function makeGisRaster() {
       const areaOf = (opts && typeof opts.areaOf === 'function') ? opts.areaOf : null;
       if (boundary === 'fractional' && !areaOf) return refuse('fraction-needs-area-rule', { needs: 'areaOf' });
       const needsCover = (boundary !== 'center');
+      /* Once per zone, before the walk: the same edges answer for every pixel (edgeBoxesOf above
+         says why this is a parameter and not a cache). */
+      const edgeBoxes = needsCover ? edgeBoxesOf(GG, geometry) : null;
+
+      /* ⚠ (#R783) OPT-IN, AND REFUSED BY NAME WHEN UNREADABLE — the same shape as `boundary` above, for
+         the same reason: a rule nobody can spell is not a rule the answer should guess at. The
+         quantity is taken from the CALL if the caller declared one, otherwise from the BAND, and
+         which of the two answered is written into the result — 「帯が述べた」 and 「呼び手が述べた」
+         are different provenance and a reader checking a published figure needs to know which. */
+      const totalRule = (opts && opts.total != null && String(opts.total) !== '') ? String(opts.total) : null;
+      if (totalRule && TOTAL_RULE_NAMES.indexOf(totalRule) < 0) return refuse('total-rule-unknown', { total: totalRule, rules: TOTAL_RULE_NAMES.slice() });
+      const declaredHere = (opts && opts.quantity != null) ? opts.quantity : null;
+      const quantitySpec = declaredHere != null ? declaredHere : (V.band && V.band.quantity != null ? V.band.quantity : null);
+      const quantityFrom = declaredHere != null ? 'caller' : (quantitySpec != null ? 'band' : null);
 
       const zb = geometryBbox(geometry);
       if (!zb) return refuse('zone-invalid');
@@ -904,6 +1044,11 @@ export function makeGisRaster() {
       const colRanges = cw.colRanges;
 
       let count = 0, nodataCount = 0, sum = 0, wsum = 0, areaKm2 = 0, valueAreaKm2 = 0;
+      /* Σ value·cover — the pixel's OWN total split by the fraction of it inside the zone. Kept
+         beside the other two because it is a third quantity and not a scaling of either: under
+         `center` every cover is 1 and it equals `sum` exactly, which is the honest answer when no
+         pixel was split. */
+      let sumWeighted = 0;
       let min = null, max = null;
       /* ⚠ (#R764) A REFUSAL RAISED INSIDE THE WALK IS CARRIED OUT, NOT SWALLOWED. The step function
          cannot return one (its return value means 「この画素は終わり」), so the first one is kept and
@@ -944,7 +1089,7 @@ export function makeGisRaster() {
         if (!needsCover) {
           if (!GG.pointInGeometry([colCentreLng(raster, col), lat], geometry)) return;
         } else {
-          const cov = coverOf(raster, GG, geometry, curRow, col, boundary, areaOf);
+          const cov = coverOf(raster, GG, geometry, curRow, col, boundary, areaOf, edgeBoxes);
           /* a refusal from the area rule or the kernel is the answer, not a zero */
           if (cov && cov.ok === false) { failedCover = cov; return; }
           w = cov;
@@ -956,6 +1101,7 @@ export function makeGisRaster() {
         if (missing(val, V.nodata)) { nodataCount++; return; }
         count++;
         sum += val;
+        sumWeighted += val * w;
         wsum += val * cellW;
         valueAreaKm2 += cellW;
         if (min == null || val < min) min = val;
@@ -1010,6 +1156,10 @@ export function makeGisRaster() {
         colRanges: colRanges,
         };
         if (classAreas) out.classAreasKm2 = classAreas;
+        /* ⚠ (#R783) PRESENT ONLY WHEN ASKED FOR. Every field above answers exactly what it answered
+           before this round, so a caller that chose no rule cannot tell that the choice exists —
+           which is the condition the audit put on adding it. */
+        if (totalRule) out.total = totalOf(totalRule, quantitySpec, { sum: sum, sumWeighted: sumWeighted, sumTimesAreaKm2: wsum, bandUnit: (V.band && V.band.unit != null) ? V.band.unit : null, quantityFrom: quantityFrom });
         return out;
       };
 
@@ -2053,11 +2203,25 @@ export function makeGisRaster() {
        geometry engine answered and said nothing about which grid arithmetic did.
        ⚠ scripts/gis-kernel-versions.mjs holds the sha256 that keeps this honest — a bump written
        without touching the arithmetic, or arithmetic touched without a bump, is what it measures. */
-    const KERNEL_VERSION = 'raster-3';
+    /* (#R783) raster-3 -> raster-4: A REPLAYED ZONAL STEP LANDS ON A DIFFERENT NUMBER, and that is
+       the one thing this version exists to announce. `coverOf` used to read 「四隅と中心が区域内」 as a
+       proof that the pixel was wholly inside, which is false of every concave zone — a slot 0.2° wide
+       and 0.4° deep in a 1° pixel was reported as cover 1 where the sphere says 0.9200039. Every
+       `fractional` and `allTouched` answer over a notched, bayed or holed zone therefore moves:
+       areaKm2, sumTimesAreaKm2, mean and the class areas. ⚠ `center` is untouched — it never asked
+       for a cover — and a project saved with the default replays to the same numbers as before. */
+    const KERNEL_VERSION = 'raster-4';
 
     const API = {
       /* see KERNEL_VERSION above — js/gis-project.js records which kernel answered */
       version: () => KERNEL_VERSION,
+      /* ⚠ (#R783) THE VOCABULARY OF `total` IS PUBLISHED BECAUSE A PANEL HAS TO OFFER IT. `zonal`
+         already refuses an unknown rule BY NAME and hands back the list with the refusal, but a
+         refusal is not an offer: without this door `js/gis-ops.js`'s `valuesOf:'total-rules'` had
+         nothing to ask, so the choice existed and no reader could reach it (#R751's shape — a
+         capability nobody describes is a capability Atlas answers "there is none" about).
+         ⚠ Derived from TOTAL_RULES itself, so a rule added there appears here the same day. */
+      totalRules: () => TOTAL_RULE_NAMES.slice(),
       validate,
       bboxOf, pixelAreaKm2, sample, zonal, mask, diff, describeBands, fromSampler, fromSamplerAsync,
       /* (#R752) the arithmetic js/gis-ops.js's rasterCalc / mosaic / rasterize / polygonize run on.

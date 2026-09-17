@@ -525,22 +525,113 @@ window.IntMapModules.betaPack2=function(HOST){
        on real per-track values. Two copies of that table is what let this one drift from the Python
        that fed it (the docstring promised a `col` property the code never emitted). */
     function fcPoints(arr,colFn){ return {type:'FeatureCollection',features:arr.map(d=>({type:'Feature',geometry:{type:'Point',coordinates:[d[0],d[1]]},properties:{n:d[2],k:d[3]||'',col:colFn(d)}}))}; }
-    function load(key,cb){
-      if(cache[key]){ cb(cache[key]); return; }
-      /* (#R311) the SECOND door into the data-center module: js/compare.js draws the curated half in
-         its own map through IntMapBeta2.load('dc'), with no row and no toggle involved. It gets the
-         fetch too, or the Compare overlay would be empty in exactly the sessions that never ticked
-         the row — which is every session that opens Compare first. */
-      if(key==='dc'){ window.IntMapLazy.need('dataCenters').then(()=>{
-        const M=window.IntMapDataCenters; if(!M||!M.features) return;   /* (#R254) one table, in js/datacenters.js */
-        cache.dc=M.features(); cb(cache.dc); }); }
-      else if(key==='pharma'){ cache.pharma=fcPoints(PH,()=> '#2bb3a3'); cb(cache.pharma); }
-      /* (#R388) the SECOND door into the railway module: js/compare.js draws the world file in its
-         own map through IntMapBeta2.load('rail'), with no row and no toggle involved — so it gets the
-         module, not a private fetch, and the axis buckets are already stamped on the features. */
-      else if(key==='rail'){ window.IntMapLazy.need('railways').then(()=>{
-        const M=window.IntMapRailways; if(!M||!M.load) return;
-        M.load(fc=>{ cache.rail=fc; cb(fc); }); }); }
+    /* ══ ⚠⚠⚠ (#R783) THE SECOND DOOR IS DISCOVERED NOW, NOT SPELLED OUT THREE TIMES ══════════════
+       #R311 gave this pack a door 「with no row and no toggle involved」 so js/compare.js could draw
+       the curated data centres in its own map, #R388 added the railway world file to it, and #R763
+       hung the acquisition layer's `load:` for pharma off it. What it actually WAS, all that time,
+       was an if/else over three spelled-out keys inside load() — so a fourth bundle was reachable
+       from the Layers panel and from nowhere else, and 「取得できる一覧」 could only ever be a list
+       somebody remembered to extend (.agents/rules/no-ad-hoc-hardcoding.md §2-4).
+
+       ⇒ EACH BUNDLE STATES ITSELF, AND THE DOOR IS A LOOP. `get` is how the collection is obtained
+       (a bundled array, or a lazy module asked for its own file); `holds` is what js/gis-sources.js
+       reads declarations in — the vocabulary is that file's, not a second one here. Adding an entry
+       makes the bundle loadable AND acquirable AND declared, in one place, by existing.
+
+       ⚠ `holds.complete` IS ABOUT THE HOLDING AND NOT ABOUT THE WORLD, which is the reading
+       js/map-ui.js's pharma row already spells out: what it states is that a caller asking for these
+       rows over any window gets every one that is IN THE BUNDLE. A curated list is a selection
+       somebody made; `live:false` is what says it is not going to grow behind the reader's back.
+       ⚠ AND `row` IS 「この束がそのまま中身である登録行」 — a fact only the bundle knows, and the
+       reason publish() below does not register a second claimant for pharma: js/map-ui.js's row
+       already hands that exact collection over (through THIS door), and two suppliers for one
+       holding is [[intmap-two-readers-one-field-list]] with a fetch on each side. `dc` has a row and
+       deliberately does not name it: `datacenters` draws the curated table AND OpenStreetMap's own
+       data centres for the current view, so the row's holding is strictly bigger than this bundle
+       and a `complete` claim about the bundle would be a false one about the row. */
+    const WORLD_EXTENT={w:-180,s:-90,e:180,n:90};
+    const BUNDLES={
+      /* (#R311) the data-center module's curated half — js/compare.js draws it in its own map with
+         no row and no toggle involved, and it gets the fetch too, or the Compare overlay would be
+         empty in exactly the sessions that never ticked the row (which is every session that opens
+         Compare first). (#R254) ONE table, in js/datacenters.js. */
+      dc:{ id:'datacenters-curated', row:null, holds:{extent:WORLD_EXTENT,complete:true,viewBound:false,live:false},
+        label:()=>LA('Data centres (curated table)','データセンター（収録表）'),
+        source:()=>'IntMap curated table — operator / region / published capacity / commissioning year',
+        get:()=>window.IntMapLazy.need('dataCenters').then(()=>{ const M=window.IntMapDataCenters; return (M&&M.features)?M.features():null; }) },
+      pharma:{ id:'pharma-hubs', row:'pharma', holds:{extent:WORLD_EXTENT,complete:true,viewBound:false,live:false},
+        label:()=>LA('Pharma manufacturing hubs','製薬・医薬品製造拠点'),
+        source:()=>'IntMap curated table — representative sites',
+        get:()=>fcPoints(PH,()=> '#2bb3a3') },
+      /* (#R388) the railway module's world file — the axis buckets are already stamped on the
+         features, so this hands over the module's data and never a private fetch of its own. */
+      rail:{ id:'railways-world', row:null, holds:{extent:WORLD_EXTENT,complete:true,viewBound:false,live:false},
+        label:()=>LA('Railways (world file)','鉄道（世界ファイル）'),
+        source:()=>'OpenStreetMap contributors (ODbL 1.0)',
+        get:()=>window.IntMapLazy.need('railways').then(()=>new Promise(res=>{ const M=window.IntMapRailways; if(!M||!M.load){ res(null); return; } M.load(fc=>res(fc)); })) },
+    };
+    function loadable(){ return Object.keys(BUNDLES); }
+    function holdsOf(key){ const B=BUNDLES[key]; return B?JSON.parse(JSON.stringify(B.holds)):null; }
+    function idOf(key){ const B=BUNDLES[key]; return B?(B.id||('pack:'+key)):null; }
+    /* ⚠ A PROMISE THAT ALWAYS SETTLES, which the if/else did not have: every branch of it could
+       return without calling back (`if(!M||!M.features) return;`), so a caller that wrapped it in a
+       promise — js/map-ui.js's pharma `load:` does — waited for ever on a module that had not
+       published. null is 「答えられなかった」 and an empty collection is 「空だった」; the two must
+       not merge (js/gis-layers.js loadedFetch says the same about a loader that answers nothing). */
+    function acquireBundle(key){
+      if(cache[key]) return Promise.resolve(cache[key]);
+      const B=BUNDLES[key];
+      if(!B) return Promise.resolve(null);
+      return Promise.resolve().then(()=>B.get()).then(fc=>{
+        if(!(fc&&Array.isArray(fc.features))) return null;
+        cache[key]=fc; return fc;
+      }).catch(()=>null);
+    }
+    /* the shipped signature, unchanged: js/compare.js and js/map-ui.js both call it this way, and it
+       has always been 「答えが出たら呼ぶ」 rather than 「必ず呼ぶ」 */
+    function load(key,cb){ acquireBundle(key).then(fc=>{ if(fc&&typeof cb==='function') cb(fc); }); }
+    /* ⚠⚠⚠ PUBLISHED THROUGH THE REGISTRY, NOT WITH A SECOND IMPLEMENTATION OF THE NARROWING.
+       js/gis-sources.js has a supply() door and it was tempting to use it here — and doing so would
+       have meant writing this pack's own bbox test, its own `available` count and its own
+       continuation, i.e. a fourth spelling of the thing js/gis-layers.js pageOf() already is. What a
+       bundle actually needs to say is 「頼まれたら、描かずに自分の保持を全部渡せる」 (#R763's `load`)
+       plus what it holds, and js/gis-layers.js supplierFor() then builds the supplier — so a bundle
+       gets `where`, `cursor`, `limit`, `available` and `next` from the ONE implementation of them,
+       and a translated label besides ([[intmap-two-readers-one-field-list]] is the alternative).
+       ⚠ IntMapLayers.register IS THE DOOR OTHER MODULES ALREADY USE — this file itself registers the
+       GIBS science rasters through it in a loop a thousand lines below, and js/outbreaks.js and
+       js/precip-annual.js each register one. Guarded and retried the same way, because the pack can
+       be constructed before js/map-ui.js has published the contract.
+       ⚠ AND ONLY WHERE NOBODY ELSE ALREADY SPEAKS FOR THE BUNDLE. Whether the registry already hands
+       a bundle over is ASKED OF THE REGISTRY (`loaderOf`), never kept in a list here — so the day
+       js/map-ui.js grows a row for the railway file, this stops registering a rival for it without
+       anything being edited.
+       ⚠ `on` IS false FOR EVER AND THAT IS NOT A LIE. The subject of these rows is the DOCUMENT, not
+       the drawing: the curated data centres are painted by the `datacenters` row and the world rail
+       file by the railway module, and each of those reports its own visibility. A document is never
+        「点いている」, which is exactly why it can be read while nothing is. */
+    function publish(){
+      const R=window.IntMapLayers;
+      if(!R||typeof R.register!=='function') return 0;
+      let n=0;
+      loadable().forEach(key=>{
+        const B=BUNDLES[key];
+        let taken=false;
+        try{ taken=!!(B.row&&typeof R.loaderOf==='function'&&R.loaderOf(B.row)); }catch(_){ taken=false; }
+        if(taken) return;
+        try{
+          R.register(idOf(key),{
+            label:B.label, on:()=>false, source:B.source,
+            /* ⚠ IT THROWS RATHER THAN HANDING BACK AN EMPTY LIST. js/gis-layers.js loadedFetch()
+               turns a throwing loader into `layer-load-failed` and an empty one into an empty
+               holding, and 「答えられなかった」 and 「空だった」 are two different answers. */
+            load:()=>acquireBundle(key).then(fc=>{ if(!fc) throw new Error('bundle-unavailable: '+key); return fc; }),
+            holds:()=>holdsOf(key),
+          });
+          n++;
+        }catch(_){}
+      });
+      return n;
     }
     function clickPop(layerId){
       GE().events.onLayer('click',layerId,e=>{ const f=e.features&&e.features[0]; if(!f) return; const p=f.properties||{};
@@ -872,7 +963,16 @@ window.IntMapModules.betaPack2=function(HOST){
       ['cpi','lifeexp','unemp','internet','precip'].forEach(k=>{ if(state[k]) wbToggle(k,true); });   /* (#R22) new WB choropleths self-heal too */
     },90); } });
     window.addEventListener('intmap-mem-pressure',()=>{ if(!state.rail){ cache.rail=null; try{ window.IntMapRailways&&window.IntMapRailways.drop(); }catch(_){} } });
-    window.IntMapBeta2={load,_state:state};
+    /* ⚠ (#R783) THE ACQUISITION DOORS ARE OPENED HERE, and they cost no request: a registration is a
+       statement, and the first byte moves when somebody acquires. Doing it at pack construction is
+       what makes a bundle readable while its row has never been ticked — and retrying on
+       DOMContentLoaded is what covers the boot orders in which js/map-ui.js publishes the contract
+       after this pack is built (the same guard the GIBS rows below use). */
+    if(!publish()){
+      if(document.readyState!=='loading') setTimeout(publish,0);
+      else document.addEventListener('DOMContentLoaded',()=>setTimeout(publish,0));
+    }
+    window.IntMapBeta2={load,loadable,holdsOf,idOf,acquireBundle,publish,_state:state};
   })();
 };
 

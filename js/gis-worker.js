@@ -20,6 +20,45 @@
  *  geometry kernel or the ops across — an op calls four other kernels per row, and shipping the
  *  loop alone would leave every call it makes on this thread (#R735 wrote that too).
  *
+ *  ══ ⚠⚠⚠ (#R783) AND THAT SENTENCE WAS A DESCRIPTION OF A LIMIT, READ AS A DESCRIPTION OF A RULE ══
+ *  The external audit (§5, P2) measured what had actually moved: ONE registered job over numbers,
+ *  reached from one place. 「カーネルを参照する演算は丸ごと移せない」 was true of the SHAPE the door
+ *  had — a job is rebuilt from its own source text, so a call to a kernel's function was a free name
+ *  in a scope that has none — and the answer to that is not 「then re-write the kernel's rule inside
+ *  the job」, which is the second implementation .agents/rules/no-ad-hoc-hardcoding.md §2-3 forbids
+ *  and the one that quietly loses the rule. It is A LIBRARY DOOR:
+ *
+ *    `provide(name, fn)` PUTS THE KERNEL'S OWN FUNCTION TEXT IN THE WORKER, and a job reaches it as
+ *    `ctx.lib.<name>`. The bytes evaluated in the thread are `fn.toString()` of the very function
+ *    this thread calls — not a copy authored here — so 「両方が同じだけ間違っていれば緑」 is not
+ *    available: there is one implementation and two callers of it.
+ *    ⚠ `ctx.lib`, NOT A FREE NAME, and that is not decoration. A job whose text said `invAt(…)`
+ *    would carry a free identifier in js/, which scripts/check-split-scope.mjs resolves against the
+ *    browser's globals and rightly refuses — and inside the worker it would sit in the one scope
+ *    where a shadowed intrinsic (`Math`, `self`) is unobservable until an answer is wrong. A member
+ *    of an object passed in shadows nothing and is visible to both gates.
+ *    ⚠ A LIBRARY IS SELF-CONTAINED FOR THE SAME REASON A JOB IS, and it does not get `ctx.lib`
+ *    either: a helper that needs another takes it as a PARAMETER, so the dependency is in the call
+ *    and not in a scope that never crossed postMessage. `register(name, fn, { uses: [...] })`
+ *    declares what a job reaches for and is refused (`job-library-missing`) when it is not there —
+ *    a ReferenceError at the first pixel of a 4096² grid is a diagnosis nobody wants at that hour.
+ *
+ *  ══ ⚠⚠⚠ (#R783) THE CEILING IS MEMORY, SO THE UNIT OF WORK IS A MEMORY BUDGET ══════════════════
+ *  The same audit: 「並列化だけ進めると応答性は改善してもメモリ不足を早める」. A 4096×4096 float64
+ *  band is 128 MiB; two inputs and an output are 384 MiB; a payload the caller still holds is
+ *  resident TWICE while the worker has it. So the answer to a big grid is not a count of items
+ *  (「一律の上限」 — the thing CONSTITUTION.md §5 refuses) but the shape GDAL's warp has: split the
+ *  work into blocks that FIT A STATED BUDGET, run them, and let each block's bytes go.
+ *    · `budgetBytes()` — the one number, with its observation (see BLOCK_BUDGET_BYTES);
+ *    · `planBlocks({units, bytesPerUnit, budgetBytes?, inFlight?})` — how many blocks that is, or
+ *      `budget-too-small` when a single unit does not fit (a named refusal, not a silent overrun);
+ *    · `runBlocks(job, plan, {make, take, …})` — runs them, keeping at most `inFlight` in the air,
+ *      and REPORTS THE PEAK it actually held so 「予算内に収まった」 is a number somebody can read.
+ *  ⚠ A BLOCK PAYLOAD IS TRANSFERRED BY DEFAULT (`own:'worker'`), unlike `run()`'s. `make()` builds it
+ *  for this block and nobody else holds a view of it — the reason `run()` defaults to copying (the
+ *  caller's own grid planes) does not apply, and copying it would be the second resident copy this
+ *  whole mechanism exists to avoid.
+ *
  *  ⚠ A REGISTERED FUNCTION IS REBUILT FROM ITS OWN SOURCE TEXT, SO IT CANNOT CLOSE OVER ANYTHING.
  *  register() takes `fn.toString()` and the worker evaluates that text in ITS global scope. A
  *  variable the function borrowed from the module around it is NOT IN THE TEXT — it is in a scope
@@ -70,9 +109,14 @@
  *  nobody else holds a view of it — there is no owner to surprise.
  *
  *  ══ WHAT IS ACTUALLY ON IT TODAY ══════════════════════════════════════════════════════════════
- *  One job, `grid.binary`: two bands (or a band and a scalar) and an operator, missing values
- *  propagated. It runs in the worker for real — the arithmetic is in the text the Blob is built
- *  from and nowhere else.
+ *  One job registered HERE, `grid.binary`: two bands (or a band and a scalar) and an operator,
+ *  missing values propagated. It runs in the worker for real — the arithmetic is in the text the Blob
+ *  is built from and nowhere else.
+ *  ⚠ THE OTHERS ARE REGISTERED BY THEIR OWN KERNELS, WHICH IS THE WHOLE POINT: js/gis-raster.js
+ *  registers `raster.diff` (#R759) and js/gis-warp.js registers `warp.geometry` with the two
+ *  functions it provides (#R783). A registry this file filled itself would be a list of jobs whose
+ *  arithmetic belongs to somebody else — scripts/gis-kernel-versions.mjs says the same thing about
+ *  this module: 「the arithmetic it runs belongs to the kernel that registered it」.
  *  ⚠ MISSING IS js/gis-raster.js's RULE, NOT A SECOND ONE. That kernel's `missing()` counts NaN
  *  AND ±Infinity as missing («±Infinity is not a measurement»), so an operand that is not finite
  *  gives NaN, and a RESULT that is not finite (1/0 is the ordinary way to get there) is written as
@@ -117,6 +161,22 @@ export function makeGisWorker() {
     })();
     const MAX_WORKERS = Math.max(1, Math.min(4, CORES ? CORES - 1 : 2));
 
+    /* ── how much at once (#R783) ──────────────────────────────────────────────────────────────
+       THE SAME OBSERVATION AS THE CEILING ABOVE, TURNED INTO THE UNIT OF WORK. Measured with the
+       same pencil against the grids this app can already import: one 4096×4096 float64 plane is
+       128 MiB, and a payload the caller still holds is resident TWICE while a worker has it — so a
+       run that hands whole grids across cannot be made safe by counting items, only by BOUNDING
+       BYTES. 64 MiB (67,108,864) is 8,388,608 float64 cells: a 4096² grid splits into 2 blocks, not
+       into 400, so this is a CEILING on residency and not a chunk size, and MAX_WORKERS of them in
+       the air is 256 MiB — which sits beside the caller's own 384 MiB and stays well under the
+       ~1.5 GiB a tab was measured to stake above.
+       ⚠ IT IS NOT A LIMIT ON HOW MUCH WORK MAY BE DONE (CONSTITUTION.md §5): every unit is run, in
+       as many blocks as it takes. A caller that knows better states its own `budgetBytes`.
+       EXPIRES IF: payloads become SharedArrayBuffer-backed (then nothing is resident twice and this
+       arithmetic is void), or the tab ceiling above is re-measured.
+       CANONICAL: this constant, published as budgetBytes() so no caller writes a second one. */
+    const BLOCK_BUDGET_BYTES = 64 * 1024 * 1024;
+
     /* ── the protocol, as the text the worker runs ─────────────────────────────────────────────
        An array of lines rather than a template literal: a backtick inside source assembled for a
        Blob is a trap this repository has already paid for once (see the CSS template-literal note
@@ -136,6 +196,9 @@ export function makeGisWorker() {
       "'use strict';",
       '/* assembled by js/gis-worker.js — the protocol lives in that file */',
       'var JOBS = Object.create(null);',
+      '/* (#R783) the functions provide() shipped, reached by a job as ctx.lib.<name>. A null',
+      "   prototype, so a library called 'toString' is a library and not a borrowed method. */",
+      'var LIBS = Object.create(null);',
       'function post(m, t) {',
       '  try { self.postMessage(m, t || []); }',
       "  catch (e) { self.postMessage({ type: 'done', id: m && m.id, ok: false, why: 'result-not-transferable', detail: { message: String((e && e.message) || e) } }); }",
@@ -147,6 +210,9 @@ export function makeGisWorker() {
       "  if (!rec) { post({ type: 'done', id: id, ok: false, why: 'job-unknown' }); return; }",
       '  var ctx = {',
       '    deps: rec.deps,',
+      '    /* (#R783) the provided functions. One object for every job, because a library is the',
+      '       kernel that provided it, not a per-job copy of it. */',
+      '    lib: LIBS,',
       "    progress: function (done, total) { try { self.postMessage({ type: 'progress', id: id, done: done, total: (typeof total === 'number' ? total : null) }); } catch (_) { } }",
       '  };',
       '  var out;',
@@ -173,6 +239,9 @@ export function makeGisWorker() {
        js/gis-ops.js: an entry added here and forgotten there would answer run() and be invisible
        to everything that asks what can be run. */
     const REG = new Map();
+    /* (#R783) the library — the same kind of Map, for the same reason, and it is the ONLY list of
+       what a job may reach for: `uses` is checked against this, and `libraries()` maps over it. */
+    const LIB = new Map();
     let revision = 0;
 
     /* A job name is used as a JSON key in the assembled source and as a dispatch key; anything
@@ -182,10 +251,15 @@ export function makeGisWorker() {
     function fail(why, detail) { return detail ? { ok: false, why: why, detail: detail } : { ok: false, why: why }; }
     function clone(x) { try { return JSON.parse(JSON.stringify(x)); } catch (_) { return null; } }
 
-    function register(name, fn, opts) {
-      const o = opts || {};
-      if (typeof name !== 'string' || !NAME_RE.test(name)) return fail('job-name-invalid', { name: (typeof name === 'string') ? name : null });
-      if (typeof fn !== 'function') return fail('job-not-a-function', { name: name });
+    /* ── one reconstruction, two doors (#R783) ─────────────────────────────────────────────────
+       A job and a library are rebuilt by the worker in exactly the same way, so the refusals that
+       belong to «this text cannot be rebuilt» are decided HERE, once. Two spellings of it would be
+       two answers to 「その関数は運べるのか」, and the one that matters is whichever the caller
+       happened to use. The `kind` only chooses the PREFIX of the code, because the reader's sentence
+       for a job that cannot travel is not the sentence for a helper that cannot. */
+    function carriable(kind, name, fn) {
+      if (typeof name !== 'string' || !NAME_RE.test(name)) return fail(kind + '-name-invalid', { name: (typeof name === 'string') ? name : null });
+      if (typeof fn !== 'function') return fail(kind + '-not-a-function', { name: name });
       /* ⚠ THE CONSTRUCTOR'S toString, NOT THE FUNCTION'S. `String(fn)` calls whatever `toString`
          the object carries, and a function with its own would hand us source that is not its
          source — the assembled worker would then run something nobody wrote. Reached through
@@ -196,7 +270,7 @@ export function makeGisWorker() {
       /* A bound or native function has no body to move — `[native code]` is what the engine says
          instead of source, and rebuilding from it would produce a worker that throws on first
          call. Refused by name here, where the caller can still do something about it. */
-      if (!src || /\[native code\]/.test(src)) return fail('job-not-serialisable', { name: name });
+      if (!src || /\[native code\]/.test(src)) return fail(kind + '-not-serialisable', { name: name });
       /* Rebuild it HERE, exactly as the worker will, so a source the worker could not have parsed
          is a registration failure rather than a first-call failure.
          ⚠ AND THE COST OF NOT DOING IT IS NOT ONE JOB. The whole registry is ONE script, so a
@@ -212,7 +286,15 @@ export function makeGisWorker() {
          JSON Date Array Object …`, line 29). The list is the thing that is incomplete; until a word
          is added to it, a file that names the global is refused by the static gate. */
       try { fn.constructor('return (' + src + ')'); }
-      catch (e) { if (e instanceof SyntaxError) return fail('job-source-unparsable', { name: name, message: String((e && e.message) || e) }); }
+      catch (e) { if (e instanceof SyntaxError) return fail(kind + '-source-unparsable', { name: name, message: String((e && e.message) || e) }); }
+      return { ok: true, name: name, src: src };
+    }
+
+    function register(name, fn, opts) {
+      const o = opts || {};
+      const c = carriable('job', name, fn);
+      if (!c.ok) return c;
+      const src = c.src;
       /* deps travel as JSON into the assembled source; anything that does not survive that trip
          would arrive as something else and the job would be right about the wrong constants. */
       let deps = null;
@@ -220,10 +302,48 @@ export function makeGisWorker() {
         deps = clone(o.deps);
         if (deps == null) return fail('job-deps-not-json', { name: name });
       }
-      REG.set(name, { name: name, src: src, deps: deps, decl: (o.decl != null ? clone(o.decl) : null) });
+      /* ⚠ (#R783) WHAT THE JOB REACHES FOR IS DECLARED AND CHECKED NOW. Without this the first
+         evidence that a library was never provided is a TypeError on the first pixel of the grid —
+         after the spawn, after the transfer, in the one place where the caller has already thrown
+         the work away. The vocabulary travels with the refusal (`have`), because a caller that
+         misspelled a name needs to see the set it missed, not a list kept at the call site. */
+      let uses = null;
+      if (o.uses != null) {
+        if (!Array.isArray(o.uses) || !o.uses.every((u) => typeof u === 'string')) return fail('job-uses-invalid', { name: name, uses: clone(o.uses) });
+        const gone = o.uses.filter((u) => !LIB.has(u));
+        if (gone.length) return fail('job-library-missing', { name: name, missing: gone, have: libraryNames() });
+        uses = o.uses.slice();
+      }
+      REG.set(name, { name: name, src: src, deps: deps, uses: uses, decl: (o.decl != null ? clone(o.decl) : null) });
       revision++;
       return { ok: true, name: name };
     }
+
+    /* ── provide: a kernel's own function, in the other thread (#R783) ─────────────────────────
+       ⚠ THE ARGUMENT IS THE FUNCTION THE CALLER ITSELF CALLS, and that is the entire correctness
+       argument for this door: the worker evaluates `fn.toString()`, so the bytes that run there are
+       the bytes that run here. A helper written out a second time inside a job would be a rule with
+       two owners, and the second one is always the one that forgets the edge case (js/gis-raster.js
+       `missing()` on ±Infinity is this repository's standing example).
+       ⚠ A LIBRARY IS SELF-CONTAINED TOO. It is rebuilt in the worker's global scope and does NOT
+       receive `ctx.lib`; a helper that needs another takes it as a parameter. A captured name
+       surfaces at the first call as the protocol's `job-not-self-contained`, with the identifier.
+       ⚠ RE-PROVIDING THE SAME TEXT IS NOT A CHANGE. The revision retires idle workers, so a caller
+       that provides on every call would spawn a fresh thread for every block; the text is compared
+       and an identical one leaves the revision alone. */
+    function provide(name, fn) {
+      const c = carriable('lib', name, fn);
+      if (!c.ok) return c;
+      const had = LIB.get(name);
+      if (had && had.src === c.src) return { ok: true, name: name, unchanged: true };
+      LIB.set(name, { name: name, src: c.src });
+      revision++;
+      return { ok: true, name: name };
+    }
+
+    function librarySourceOf(name) { const r = LIB.get(name); return r ? r.src : null; }
+    function libraryNames() { const out = []; LIB.forEach(function (_r, name) { out.push(name); }); return out; }
+    function libraries() { const out = []; LIB.forEach(function (rec, name) { out.push({ name: name, bytes: rec.src.length }); }); return out; }
 
     /* The exact text the worker will evaluate for one job — published so a check can read the
        contract (no closure, no DOM) out of the shipped bytes without a browser. */
@@ -231,6 +351,12 @@ export function makeGisWorker() {
 
     function buildSource() {
       let s = PREAMBLE;
+      /* (#R783) THE LIBRARY GOES FIRST, and not because a job would fail otherwise — `ctx.lib` is
+         read when a job RUNS, by which time every assignment in this script has happened. It goes
+         first so that the text a check prints reads in the order it is depended on. */
+      LIB.forEach(function (rec, name) {
+        s += 'LIBS[' + JSON.stringify(name) + '] = (' + rec.src + ');\n';
+      });
       REG.forEach(function (rec, name) {
         s += 'JOBS[' + JSON.stringify(name) + '] = { deps: ' + JSON.stringify(rec.deps) + ', fn: (' + rec.src + ') };\n';
       });
@@ -239,7 +365,7 @@ export function makeGisWorker() {
 
     function jobs() {
       const out = [];
-      REG.forEach(function (rec, name) { out.push({ name: name, decl: clone(rec.decl), deps: clone(rec.deps), bytes: rec.src.length }); });
+      REG.forEach(function (rec, name) { out.push({ name: name, decl: clone(rec.decl), deps: clone(rec.deps), uses: rec.uses ? rec.uses.slice() : null, bytes: rec.src.length }); });
       return out;
     }
     function jobNames() { const out = []; REG.forEach(function (_r, name) { out.push(name); }); return out; }
@@ -451,6 +577,156 @@ export function makeGisWorker() {
       });
     }
 
+    /* ── the budget, and the split that fits in it (#R783) ─────────────────────────────────────
+       ⚠ THE UNIT IS THE CALLER'S AND SO IS ITS COST. This layer cannot know whether a unit is an
+       output pixel, a row or a feature, and it must not guess: `bytesPerUnit` is what the caller
+       will actually hold for one of them (for js/gis-warp.js it is the size of the geometry that
+       comes BACK, which is the biggest thing in flight there). What this owns is the arithmetic —
+       how many units fit, how many blocks that is, and how many may be in the air at once.
+       ⚠ A SINGLE UNIT THAT DOES NOT FIT IS A NAMED REFUSAL, not a block that quietly exceeds the
+       budget: 「予算に収まらない」 is a fact the caller can act on (raise the budget, or ask for less
+       per unit), and a silent overrun is the out-of-memory the budget was introduced to prevent. */
+    function isCount(v) { return typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v >= 1; }
+
+    function planBlocks(spec) {
+      const s = spec || {};
+      if (!isCount(s.units)) return fail('plan-invalid', { field: 'units', value: (typeof s.units === 'number' ? s.units : null) });
+      if (!(typeof s.bytesPerUnit === 'number' && isFinite(s.bytesPerUnit) && s.bytesPerUnit > 0)) return fail('plan-invalid', { field: 'bytesPerUnit', value: (typeof s.bytesPerUnit === 'number' ? s.bytesPerUnit : null) });
+      const budget = (s.budgetBytes == null) ? BLOCK_BUDGET_BYTES : s.budgetBytes;
+      if (!(typeof budget === 'number' && isFinite(budget) && budget > 0)) return fail('plan-invalid', { field: 'budgetBytes', value: (typeof budget === 'number' ? budget : null) });
+      const want = (s.inFlight == null) ? 1 : s.inFlight;
+      if (!isCount(want)) return fail('plan-invalid', { field: 'inFlight', value: (typeof want === 'number' ? want : null) });
+      /* ⚠ THE BUDGET IS FOR EVERYTHING IN THE AIR, NOT PER BLOCK. A caller asking for four threads
+         gets quarter-sized blocks, so parallelism does not multiply the residency — which is the
+         exact failure the audit named (「並列化だけ進めると…メモリ不足を早める」). */
+      const per = Math.floor(budget / (s.bytesPerUnit * want));
+      if (per < 1) return fail('budget-too-small', { budgetBytes: budget, bytesPerUnit: s.bytesPerUnit, inFlight: want, needs: s.bytesPerUnit * want });
+      const unitsPerBlock = Math.min(s.units, per);
+      const blocks = Math.ceil(s.units / unitsPerBlock);
+      /* No more threads than there are blocks, and never more than the pool has — a plan that
+         promised five would be a plan whose peak nobody could reach. */
+      const inFlight = Math.max(1, Math.min(want, blocks, MAX_WORKERS));
+      const bytesPerBlock = unitsPerBlock * s.bytesPerUnit;
+      return {
+        ok: true,
+        plan: {
+          units: s.units, bytesPerUnit: s.bytesPerUnit, budgetBytes: budget,
+          unitsPerBlock: unitsPerBlock, blocks: blocks, bytesPerBlock: bytesPerBlock,
+          inFlight: inFlight, peakBytesPlanned: bytesPerBlock * inFlight,
+        },
+      };
+    }
+
+    /* ── runBlocks: the plan, executed, with the peak it actually held ─────────────────────────
+       opts: { make(from, count, index) → payload | {ok:false,…},
+               take(value, from, count, index) → void | {ok:false,…},
+               signal, onProgress, own, run }
+       ⚠ `make` AND `take` ARE WHERE THE BYTES LIVE AND DIE. This function never keeps a reference to
+       a block's payload or to its result once `take` has had it, which is what makes the peak the
+       plan's peak and not the whole grid's.
+       ⚠ THE FIRST REFUSAL ENDS THE RUN AND IS THE ANSWER, and blocks already in the air are aborted
+       rather than awaited for their own sake — a caller that has been told 「駄目でした」 is not
+       helped by three more threads finishing arithmetic nobody will read.
+       ⚠ `run` IS AN OPTION BECAUSE THE SCHEDULER IS NOT WELDED TO THIS POOL. In the product it is
+       this module's `run` (the default). Node speaks the same three-message protocol over
+       worker_threads — tests/r759-gis-worker-checks built exactly that door — and a scheduler that
+       could only be exercised through a Blob would be a scheduler measured by nobody. */
+    async function runBlocks(job, plan, opts) {
+      const o = opts || {};
+      /* planBlocks' own answer, or the plan inside it — and nothing else. ⚠ A HALF-STATED PLAN IS
+         REFUSED RATHER THAN COMPLETED: a missing `inFlight` would make the window zero-wide and the
+         run would finish instantly having done nothing, which is the shape of success this module
+         must not be able to report. */
+      const P = (plan && plan.ok === true && plan.plan) ? plan.plan : plan;
+      if (!P || typeof P !== 'object' || !isCount(P.units) || !isCount(P.blocks) || !isCount(P.unitsPerBlock)
+        || !isCount(P.inFlight) || !(typeof P.bytesPerUnit === 'number' && isFinite(P.bytesPerUnit) && P.bytesPerUnit > 0)) {
+        return fail('plan-invalid', { field: 'plan' });
+      }
+      if (typeof o.make !== 'function') return fail('blocks-make-missing', { job: (typeof job === 'string') ? job : null });
+      const runner = (typeof o.run === 'function') ? o.run : run;
+      const own = (o.own == null) ? 'worker' : o.own;
+      /* ⚠ ONE SIGNAL FOR THE WHOLE RUN, AND THIS LAYER OWNS IT. The caller's is forwarded into it,
+         and a refusal from any block aborts it too — that is what ends the threads still holding
+         blocks nobody will read. Without a controller the caller's signal is passed through
+         untouched, and a refusal then lets the survivors finish (there is no handle to stop them);
+         both are stated rather than assumed, because `terminate()` is the only stop that reaches
+         arithmetic already running. */
+      let mine = null;
+      try { if (typeof AbortController === 'function') mine = new AbortController(); } catch (_) { mine = null; }
+      if (mine && o.signal) {
+        if (o.signal.aborted) { try { mine.abort(); } catch (_) { } }
+        else { try { o.signal.addEventListener('abort', function () { try { mine.abort(); } catch (_) { } }, { once: true }); } catch (_) { } }
+      }
+      const sig = mine ? mine.signal : (o.signal || null);
+      const giveUp = () => { if (mine) { try { mine.abort(); } catch (_) { } } };
+
+      let peak = 0, live = 0, transferred = 0, units = 0, next = 0, bad = null;
+      const running = new Set();
+
+      const one = async (index) => {
+        const from = index * P.unitsPerBlock;
+        const count = Math.min(P.unitsPerBlock, P.units - from);
+        const bytes = count * P.bytesPerUnit;
+        let payload;
+        try { payload = o.make(from, count, index); }
+        catch (e) { return fail('block-make-threw', { index: index, message: String((e && e.message) || e) }); }
+        if (payload && payload.ok === false) return payload;
+        live += bytes;
+        if (live > peak) peak = live;
+        try {
+          const res = await runner(job, payload, {
+            own: own, signal: sig,
+            onProgress: (typeof o.onProgress === 'function')
+              ? function (p) { o.onProgress({ done: from + ((p && typeof p.done === 'number' && isFinite(p.done)) ? p.done : 0), total: P.units, block: index }); }
+              : null,
+          });
+          if (!res || !res.ok) return res || fail('worker-answered-nothing', { index: index });
+          if (typeof res.transferred === 'number') transferred += res.transferred;
+          if (typeof o.take === 'function') {
+            let t;
+            /* ⚠ AWAITED, AND THE BUG THAT SENTENCE FIXED IS WHY IT IS WORTH A NOTE. `take` consumes
+               the block, and consuming it can be asynchronous — js/gis-warp.js samples the geometry
+               through an interruptible walk. An unawaited promise made the block count as taken
+               while its consumer was still running, so 29 blocks were in flight at once, the
+               reader's cancellation was dropped on the floor, and the peak was the whole grid's. It
+               was invisible to a caller whose `take` was synchronous. */
+            try { t = await o.take(res.value, from, count, index); }
+            catch (e) { return fail('block-take-threw', { index: index, message: String((e && e.message) || e) }); }
+            if (t && t.ok === false) return t;
+          }
+          units += count;
+          return { ok: true };
+        } finally { live -= bytes; }
+      };
+
+      for (;;) {
+        if (!bad && sig && sig.aborted) bad = fail('aborted');
+        while (!bad && running.size < P.inFlight && next < P.blocks) {
+          const index = next++;
+          const p = one(index).then(function (r) {
+            running.delete(p);
+            if (r && r.ok !== true && !bad) { bad = r; giveUp(); }
+          }, function (e) {
+            running.delete(p);
+            if (!bad) { bad = fail('block-threw', { index: index, message: String((e && e.message) || e) }); giveUp(); }
+          });
+          running.add(p);
+        }
+        if (!running.size) break;
+        await Promise.race(running);
+      }
+      if (bad) return bad;
+      return {
+        ok: true, job: job, units: units, blocks: P.blocks,
+        unitsPerBlock: P.unitsPerBlock, bytesPerBlock: P.bytesPerBlock,
+        budgetBytes: P.budgetBytes, inFlight: P.inFlight,
+        /* ⚠ MEASURED, NOT PLANNED. `peakBytesPlanned` is what the arithmetic allowed; this is the
+           largest sum this run actually had in the air, which is the number a reader needs when the
+           two disagree. */
+        peakBytes: peak, transferred: transferred,
+      };
+    }
+
     /* Did a worker built from THIS source actually load. Resolves once per call; the answer is
        whatever the first spawn reports (see available() for why the two are separate questions). */
     function probe() {
@@ -470,6 +746,7 @@ export function makeGisWorker() {
         available: available(), blocked: blocked ? clone(blocked) : null,
         workers: pool.length, ready: ready, busy: busy, queued: queue.length,
         revision: revision, maxConcurrency: MAX_WORKERS, cores: CORES,
+        jobs: REG.size, libraries: LIB.size, budgetBytes: BLOCK_BUDGET_BYTES,
       };
     }
 
@@ -554,6 +831,16 @@ export function makeGisWorker() {
       jobs: jobs,
       jobNames: jobNames,
       register: register,
+      /* (#R783) the library door — a kernel's own function text, in the other thread */
+      provide: provide,
+      libraries: libraries,
+      libraryNames: libraryNames,
+      librarySourceOf: librarySourceOf,
+      /* (#R783) the memory budget and the split that fits in it. `budgetBytes()` is the one number
+         (see BLOCK_BUDGET_BYTES) so no caller writes a second one. */
+      budgetBytes: function () { return BLOCK_BUDGET_BYTES; },
+      planBlocks: planBlocks,
+      runBlocks: runBlocks,
       /* the exact text that will be evaluated in the worker, so the no-closure contract is
          readable from the shipped bytes */
       sourceOf: sourceOf,

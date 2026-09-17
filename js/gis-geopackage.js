@@ -90,7 +90,14 @@ export function makeGisGeopackage() {
     const REFUSALS = Object.freeze(['gpkg-not-sqlite', 'gpkg-truncated', 'gpkg-page-size', 'gpkg-wal',
       'gpkg-text-encoding', 'gpkg-not-a-geopackage', 'gpkg-schema', 'gpkg-corrupt', 'gpkg-no-tables',
       'gpkg-multiple-tables', 'gpkg-no-such-table', 'gpkg-tiles-unsupported', 'gpkg-geometry-column',
-      'gpkg-geometry-blob', 'gpkg-geometry-type']);
+      'gpkg-geometry-blob', 'gpkg-geometry-type',
+      /* ── the writer's own (#R783; §9) ──────────────────────────────────────────────────────
+         ⚠ SEPARATE CODES, NOT THE READER'S. `gpkg-geometry-type` means 「this file holds a curve I
+         will not approximate」; a caller who asked to WRITE a curve has a different next move, and
+         one code for both would send them to the wrong one. */
+      'gpkg-write-empty', 'gpkg-write-crs-unsupported', 'gpkg-write-geometry-unsupported',
+      'gpkg-write-geometry-mixed-dimensions', 'gpkg-write-value-unsupported',
+      'gpkg-write-table-name']);
     const bad = (why, detail) => {
       if (REFUSALS.indexOf(why) < 0) throw new Error('gis-geopackage: undeclared refusal code ' + why);
       return detail === undefined ? { ok: false, why: why } : { ok: false, why: why, detail: detail };
@@ -807,7 +814,672 @@ export function makeGisGeopackage() {
       };
     }
 
-    const API = { sniff, tables, read, refusals: () => REFUSALS.slice() };
+    /* ══ 9 · THE WAY OUT — WRITING ONE (#R783) ════════════════════════════════════════════════
+     *  The header of this file used to end 「That is what is below, READ-ONLY. Nothing here writes a
+     *  byte.」 That was true and it was also the gap an outside audit named: a GeoPackage is the
+     *  format QGIS, ArcGIS and PostGIS all take without argument, and IntMap could accept one and
+     *  not hand one back. GeoJSON is not a substitute — it has no types, no spatial reference
+     *  declaration a tool will honour, and no place to put a licence where a GIS will find it.
+     *
+     *  ⚠ STILL NO DEPENDENCY, AND STILL NOT A SQL ENGINE. What a writer needs is the inverse of
+     *  §0–§4: the 100-byte header, the record format, table and index b-trees, and the overflow
+     *  chain. sql.js would bring 1.5 MB of compiled C to run statements nobody types.
+     *
+     *  ══ ⚠⚠⚠ THE B-TREES ARE BUILT, NOT BALANCED ══════════════════════════════════════════════
+     *  A general SQLite writer has to split and rebalance pages as rows arrive in any order. This
+     *  one never has to, and the reason is structural rather than lucky: THE ROWS ARE WRITTEN ONCE,
+     *  IN ROWID ORDER, ASCENDING. So the leaves are filled front to back and the interior levels
+     *  are built bottom-up from the finished leaves — the same shape SQLite's own bulk load
+     *  produces, and the only shape this writer can be asked for. There is no code path here that
+     *  inserts into an existing tree, which is why there is none that has to balance one.
+     *  ⚠ AND NO ROW IS TOO BIG FOR A PAGE. The local/overflow split (§2, localSize) caps a cell's
+     *  in-page part at usable−35 bytes, so a cell always fits an empty leaf however long its
+     *  geometry is; a 40,000-point coastline becomes an overflow chain, not a refusal.
+     *
+     *  ══ ⚠ THE FOUR AUTO-INDEXES ARE WRITTEN, NOT DECLARED AWAY ════════════════════════════════
+     *  The standard's schema puts PRIMARY KEY on gpkg_contents.table_name and UNIQUE on
+     *  gpkg_contents.identifier, gpkg_geometry_columns(table_name, column_name) and
+     *  gpkg_geometry_columns.table_name. In SQLite each of those is an INDEX B-TREE with a row in
+     *  sqlite_master, and a file that declares the constraint without building the tree is a
+     *  CORRUPT DATABASE — `PRAGMA integrity_check` fails on it even though a forgiving reader may
+     *  still return the rows. Dropping the constraints instead would be a schema that is not the
+     *  standard's. So the indexes are built. ⚠ EACH HOLDS EXACTLY ONE ROW — this writer emits one
+     *  feature table per file, so gpkg_contents and gpkg_geometry_columns have one row each — which
+     *  is why the index b-trees below are single leaves BY CONSTRUCTION and not by assumption.
+     *
+     *  ══ WHAT IT DOES NOT WRITE, SAID OUT LOUD (in `stated`) ═══════════════════════════════════
+     *    · NO SPATIAL INDEX. The R-tree is an optional extension; without it a reader scans, which
+     *      is correct and slower. `stated.spatialIndex` is false rather than absent.
+     *    · NO TILE PYRAMID. `write` takes features; the raster door is the GeoTIFF/COG one.
+     *    · NO WAL. One file, one commit, write version 1.
+     */
+
+    const GPKG_PAGE = 4096;                 /* SQLite's own default since 3.12; a power of two in range */
+    const GPKG_USABLE = GPKG_PAGE;          /* reserved-space region is 0 — nothing here needs one */
+    const SQLITE_VERSION = 3045001;         /* what this writer's format revision corresponds to */
+
+    /* ── varint, records and pages: the inverse of §0–§2 ──────────────────────────────────── */
+
+    function putVarint(out, v) {
+      /* ⚠ BigInt, for the same reason varint() reads into one: a payload length or a rowid past 2^53
+         would lose its low bits as a double, and a length that is almost right is a corrupt file. */
+      let n = BigInt(v);
+      if (n < 0n) n += 1n << 64n;
+      if (n <= 0x7fn) { out.push(Number(n)); return; }
+      const bytes = [];
+      if (n > (1n << 56n) - 1n) {
+        bytes.push(Number(n & 0xffn)); n >>= 8n;
+        for (let i = 0; i < 8; i++) { bytes.push(Number(n & 0x7fn) | 0x80); n >>= 7n; }
+        bytes.reverse();
+        /* the nine-byte form: eight 7-bit groups then a full byte, so the last pushed must not
+           carry the continuation bit */
+        bytes[8] = bytes[8] & 0xff;
+        for (let i = 0; i < 8; i++) bytes[i] |= 0x80;
+        for (const b of bytes) out.push(b);
+        return;
+      }
+      while (n > 0n) { bytes.push(Number(n & 0x7fn)); n >>= 7n; }
+      bytes.reverse();
+      for (let i = 0; i < bytes.length - 1; i++) bytes[i] |= 0x80;
+      for (const b of bytes) out.push(b);
+    }
+    const varintLen = (v) => { const a = []; putVarint(a, v); return a.length; };
+
+    /* One row as a SQLite record: a header of serial types, then the bodies (fileformat.html §2.1).
+       ⚠ THE INTEGER WIDTH IS CHOSEN FROM THE VALUE, not fixed at 8 bytes — serial types 8 and 9 are
+       the constants 0 and 1 and occupy NO body bytes at all, which is most of what a flags column
+       costs. A value that is not an exact integer is stored as a float64, because rounding a
+       reader's number on the way out is the silent edit this module refuses to make. */
+    function makeRecord(values) {
+      const types = [], bodies = [];
+      for (const v of values) {
+        if (v === null || v === undefined) { types.push(0); bodies.push(null); continue; }
+        if (typeof v === 'number' && Number.isInteger(v)) {
+          if (v === 0) { types.push(8); bodies.push(null); continue; }
+          if (v === 1) { types.push(9); bodies.push(null); continue; }
+          const widths = [[1, -0x80, 0x7f], [2, -0x8000, 0x7fff], [3, -0x800000, 0x7fffff],
+            [4, -0x80000000, 0x7fffffff], [6, -0x800000000000, 0x7fffffffffff]];
+          let done = false;
+          for (const [n, lo, hi] of widths) {
+            if (v >= lo && v <= hi) {
+              const b = new Uint8Array(n);
+              let x = BigInt(v); if (x < 0n) x += 1n << BigInt(n * 8);
+              for (let i = n - 1; i >= 0; i--) { b[i] = Number(x & 0xffn); x >>= 8n; }
+              types.push(n === 6 ? 5 : n); bodies.push(b); done = true; break;
+            }
+          }
+          if (done) continue;
+          const b = new Uint8Array(8); let x = BigInt(v); if (x < 0n) x += 1n << 64n;
+          for (let i = 7; i >= 0; i--) { b[i] = Number(x & 0xffn); x >>= 8n; }
+          types.push(6); bodies.push(b); continue;
+        }
+        if (typeof v === 'number') {
+          const b = new Uint8Array(8); new DataView(b.buffer).setFloat64(0, v, false);
+          types.push(7); bodies.push(b); continue;
+        }
+        if (typeof v === 'string') {
+          const b = new TextEncoder().encode(v);
+          types.push(13 + 2 * b.length); bodies.push(b); continue;
+        }
+        if (v instanceof Uint8Array) { types.push(12 + 2 * v.length); bodies.push(v); continue; }
+        return null;                                   /* the caller turns this into a refusal */
+      }
+      /* the header's own length is part of the header, so it is solved rather than guessed: adding a
+         byte to the length can push the length's varint one byte wider */
+      const typeBytes = [];
+      for (const t of types) putVarint(typeBytes, t);
+      let hdrLen = typeBytes.length + 1;
+      while (varintLen(hdrLen) + typeBytes.length !== hdrLen) hdrLen = varintLen(hdrLen) + typeBytes.length;
+      const head = [];
+      putVarint(head, hdrLen);
+      const total = hdrLen + bodies.reduce((a, b) => a + (b ? b.length : 0), 0);
+      const out = new Uint8Array(total);
+      out.set(head, 0);
+      out.set(typeBytes, head.length);
+      let p = hdrLen;
+      for (const b of bodies) if (b) { out.set(b, p); p += b.length; }
+      return out;
+    }
+
+    /* ── WKB and the GeoPackageBinary wrapper ──────────────────────────────────────────────── */
+
+    const WKB_CODE = { Point: 1, LineString: 2, Polygon: 3, MultiPoint: 4, MultiLineString: 5, MultiPolygon: 6, GeometryCollection: 7 };
+
+    /* Every position of one geometry must carry the same number of ordinates, because WKB states
+       dimensionality ONCE per geometry. A mixture would have to be resolved by dropping somebody's
+       third ordinate in silence, which js/gis-export.js refuses by the same name. */
+    function dimOf(geom) {
+      let dim = null, bad2 = false;
+      const walkPos = (a) => {
+        if (!Array.isArray(a)) return;
+        if (typeof a[0] === 'number') {
+          const d = (a.length >= 3 && typeof a[2] === 'number') ? 3 : 2;
+          if (dim == null) dim = d; else if (dim !== d) bad2 = true;
+          return;
+        }
+        for (const x of a) walkPos(x);
+      };
+      const each = (g) => {
+        if (!g) return;
+        if (g.type === 'GeometryCollection') { (g.geometries || []).forEach(each); return; }
+        walkPos(g.coordinates);
+      };
+      each(geom);
+      return bad2 ? -1 : (dim == null ? 2 : dim);
+    }
+
+    function wkbOf(geom, dim) {
+      const parts = [];
+      let len = 0;
+      const push = (b) => { parts.push(b); len += b.length; };
+      const u32 = (v) => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, v, true); return b; };
+      const f64 = (v) => { const b = new Uint8Array(8); new DataView(b.buffer).setFloat64(0, v, true); return b; };
+      /* ISO 13249 / OGC 06-104r4: a Z geometry's type is the plain code plus 1000. GDAL, PostGIS
+         and this file's own readWkb (§7, `iso === 1`) all read that form. */
+      const hdr = (name) => { push(new Uint8Array([1])); push(u32(WKB_CODE[name] + (dim === 3 ? 1000 : 0))); };
+      const pos = (p) => { push(f64(p[0])); push(f64(p[1])); if (dim === 3) push(f64(p.length >= 3 ? p[2] : 0)); };
+      const ring = (r) => { push(u32(r.length)); for (const p of r) pos(p); };
+
+      const one = (g) => {
+        const t = g && g.type;
+        if (t === 'Point') { hdr('Point'); pos(g.coordinates); return true; }
+        if (t === 'LineString') { hdr('LineString'); ring(g.coordinates); return true; }
+        if (t === 'Polygon') { hdr('Polygon'); push(u32(g.coordinates.length)); for (const r of g.coordinates) ring(r); return true; }
+        if (t === 'MultiPoint') {
+          hdr('MultiPoint'); push(u32(g.coordinates.length));
+          for (const p of g.coordinates) { hdr('Point'); pos(p); }
+          return true;
+        }
+        if (t === 'MultiLineString') {
+          hdr('MultiLineString'); push(u32(g.coordinates.length));
+          for (const l of g.coordinates) { hdr('LineString'); ring(l); }
+          return true;
+        }
+        if (t === 'MultiPolygon') {
+          hdr('MultiPolygon'); push(u32(g.coordinates.length));
+          for (const poly of g.coordinates) { hdr('Polygon'); push(u32(poly.length)); for (const r of poly) ring(r); }
+          return true;
+        }
+        if (t === 'GeometryCollection') {
+          hdr('GeometryCollection'); push(u32((g.geometries || []).length));
+          for (const sub of (g.geometries || [])) if (!one(sub)) return false;
+          return true;
+        }
+        return false;
+      };
+      if (!one(geom)) return null;
+      const out = new Uint8Array(len);
+      let p = 0; for (const b of parts) { out.set(b, p); p += b.length; }
+      return out;
+    }
+
+    function bboxOf(geom) {
+      let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+      const walkPos = (a) => {
+        if (!Array.isArray(a)) return;
+        if (typeof a[0] === 'number') {
+          if (a[0] < minx) minx = a[0]; if (a[0] > maxx) maxx = a[0];
+          if (a[1] < miny) miny = a[1]; if (a[1] > maxy) maxy = a[1];
+          return;
+        }
+        for (const x of a) walkPos(x);
+      };
+      const each = (g) => { if (!g) return; if (g.type === 'GeometryCollection') { (g.geometries || []).forEach(each); return; } walkPos(g.coordinates); };
+      each(geom);
+      return isFinite(minx) ? { minx, miny, maxx, maxy } : null;
+    }
+
+    /* The GeoPackageBinary header (standard §2.1.3.1) followed by the WKB. ⚠ THE ENVELOPE ORDER IS
+       minx, maxx, miny, maxy — NOT the minx,miny,maxx,maxy a GeoJSON bbox uses. Getting it wrong
+       produces a file that opens, draws correctly (the geometry is read from the WKB) and answers
+       every spatial query wrongly, because the envelope is what an index and a bbox filter consult.
+       Measured against GDAL in tests/r783-format-compat-checks ⑦, which asks GDAL for the layer's
+       extent rather than asking this module. */
+    function geometryBlob(geom, srsId, dim) {
+      const wkb = wkbOf(geom, dim);
+      if (!wkb) return null;
+      const box = bboxOf(geom);
+      const envelope = box ? 1 : 0;
+      const flags = 0x01 | (envelope << 1) | (box ? 0 : 0x10);
+      const head = new Uint8Array(8 + (box ? 32 : 0));
+      const hdv = new DataView(head.buffer);
+      head[0] = 0x47; head[1] = 0x50; head[2] = 0x00; head[3] = flags;
+      hdv.setInt32(4, srsId, true);
+      if (box) {
+        hdv.setFloat64(8, box.minx, true); hdv.setFloat64(16, box.maxx, true);
+        hdv.setFloat64(24, box.miny, true); hdv.setFloat64(32, box.maxy, true);
+      }
+      const out = new Uint8Array(head.length + wkb.length);
+      out.set(head, 0); out.set(wkb, head.length);
+      return out;
+    }
+
+    /* ── the b-tree builder ────────────────────────────────────────────────────────────────── */
+
+    /* The local/overflow split for a TABLE leaf, from the same paragraph §2's localSize reads for
+       the other direction (fileformat.html §1.6). One rule, stated once, used both ways. */
+    function splitLocal(payloadLen) {
+      const maxLocal = GPKG_USABLE - 35;
+      const minLocal = Math.floor((GPKG_USABLE - 12) * 32 / 255) - 23;
+      if (payloadLen <= maxLocal) return payloadLen;
+      let surplus = minLocal + ((payloadLen - minLocal) % (GPKG_USABLE - 4));
+      return surplus <= maxLocal ? surplus : minLocal;
+    }
+
+    /* An index leaf's split uses the same numbers but is reached through the index page's own
+       max — for the single-row indexes below the payload is tens of bytes, so the branch that
+       overflows is never taken; it is written anyway because a table_name long enough to reach it
+       is a value a caller supplies, not a constant here. */
+    const splitLocalIndex = splitLocal;
+
+    /* One b-tree, laid out. `rows` is [{rowid, payload}] in ASCENDING rowid order for a table tree,
+       or [{payload}] for an index tree. Returns { rootPage, pages } where pages is a map of page
+       number → Uint8Array, all numbered from `firstPage`. */
+    /* ⚠ `hdrOff` IS WHY PAGE 1 IS NOT AN ORDINARY PAGE. The 100-byte file header occupies the start
+       of page 1, and the b-tree page that shares it begins AFTER it — its page header at byte 100
+       and its cell pointer array at 108 — while the cell content area still grows down from the end
+       of the page. Cell pointers are offsets from the start of the PAGE, not from the header, so
+       only the two structures at the front move. Getting this wrong produces a file whose every
+       byte is otherwise correct and which SQLite calls 「database disk image is malformed」, because
+       it reads the page type from byte 0 of page 1 and finds 'S' of "SQLite". */
+    function buildTree(rows, firstPage, index, hdrOff) {
+      const pages = new Map();
+      const front = hdrOff || 0;
+      let next = firstPage;
+      const alloc = () => next++;
+
+      /* ① the cells, with their overflow chains */
+      const cells = rows.map((r) => {
+        const payload = r.payload;
+        const local = index ? splitLocalIndex(payload.length) : splitLocal(payload.length);
+        const head = [];
+        putVarint(head, payload.length);
+        if (!index) putVarint(head, r.rowid);
+        const size = head.length + local + (local < payload.length ? 4 : 0);
+        return { rowid: r.rowid, payload, local, head, size };
+      });
+
+      /* ② pack them into leaves, front to back — possible only because the rowids ascend */
+      const leaves = [];
+      let cur = [];
+      let used = 0;
+      const hdrSize = front + 8;
+      for (const c of cells) {
+        if (cur.length && hdrSize + (cur.length + 1) * 2 + used + c.size > GPKG_USABLE) {
+          leaves.push(cur); cur = []; used = 0;
+        }
+        cur.push(c); used += c.size;
+      }
+      leaves.push(cur);
+
+      /* ③ page numbers: each leaf, then that leaf's overflow chains, so a reader walking the tree
+         in order walks the file in order too */
+      const leafInfo = [];
+      for (const leaf of leaves) {
+        const pno = alloc();
+        for (const c of leaf) {
+          c.overflow = [];
+          let rest = c.payload.length - c.local;
+          while (rest > 0) { c.overflow.push(alloc()); rest -= (GPKG_USABLE - 4); }
+        }
+        leafInfo.push({ pno, cells: leaf });
+      }
+
+      /* ④ serialise the leaves and their overflow chains */
+      for (const { pno, cells: leaf } of leafInfo) {
+        const page = new Uint8Array(GPKG_PAGE);
+        const dv = new DataView(page.buffer);
+        page[front] = index ? 0x0a : 0x0d;
+        dv.setUint16(front + 1, 0, false);               /* no freeblocks */
+        dv.setUint16(front + 3, leaf.length, false);
+        let contentAt = GPKG_USABLE;
+        const ptrs = [];
+        /* cells are written from the end of the page towards the middle, which is what the format
+           expects and what makes the cell pointer array ascend while the offsets descend */
+        for (let i = leaf.length - 1; i >= 0; i--) {
+          const c = leaf[i];
+          contentAt -= c.size;
+          ptrs[i] = contentAt;
+          let p = contentAt;
+          page.set(c.head, p); p += c.head.length;
+          page.set(c.payload.subarray(0, c.local), p); p += c.local;
+          if (c.overflow.length) dv.setUint32(p, c.overflow[0], false);
+        }
+        dv.setUint16(front + 5, contentAt === GPKG_PAGE ? 0 : contentAt, false);
+        page[front + 7] = 0;                             /* no fragmented free bytes */
+        for (let i = 0; i < leaf.length; i++) dv.setUint16(front + 8 + i * 2, ptrs[i], false);
+        pages.set(pno, page);
+
+        for (const c of leaf) {
+          let at = c.local;
+          for (let k = 0; k < c.overflow.length; k++) {
+            const op = new Uint8Array(GPKG_PAGE);
+            const odv = new DataView(op.buffer);
+            odv.setUint32(0, k + 1 < c.overflow.length ? c.overflow[k + 1] : 0, false);
+            const take = Math.min(GPKG_USABLE - 4, c.payload.length - at);
+            op.set(c.payload.subarray(at, at + take), 4);
+            at += take;
+            pages.set(c.overflow[k], op);
+          }
+        }
+      }
+
+      /* ⑤ the interior levels, bottom-up. An interior cell is a 4-byte left child and the largest
+         rowid in that child's subtree; the right-most child hangs off the page header instead.
+         ⚠ AN INDEX TREE OF ONE LEAF NEEDS NO INTERIOR LEVEL AT ALL — and by construction (see the
+         section header) the index trees here are exactly that, so the branch below is only ever
+         taken by the feature table. */
+      let level = leafInfo.map((l) => ({ pno: l.pno, key: l.cells.length ? l.cells[l.cells.length - 1].rowid : 0 }));
+      while (level.length > 1) {
+        const up = [];
+        let group = [];
+        let gUsed = 0;
+        const flush = () => {
+          if (!group.length) return;
+          const pno = alloc();
+          const page = new Uint8Array(GPKG_PAGE);
+          const dv = new DataView(page.buffer);
+          const rightMost = group[group.length - 1];
+          const inner = group.slice(0, -1);
+          page[0] = 0x05;
+          dv.setUint16(1, 0, false);
+          dv.setUint16(3, inner.length, false);
+          dv.setUint32(8, rightMost.pno, false);
+          let contentAt = GPKG_USABLE;
+          const ptrs = [];
+          for (let i = inner.length - 1; i >= 0; i--) {
+            const key = [];
+            putVarint(key, inner[i].key);
+            contentAt -= 4 + key.length;
+            ptrs[i] = contentAt;
+            dv.setUint32(contentAt, inner[i].pno, false);
+            page.set(key, contentAt + 4);
+          }
+          dv.setUint16(5, contentAt === GPKG_PAGE ? 0 : contentAt, false);
+          page[7] = 0;
+          for (let i = 0; i < inner.length; i++) dv.setUint16(12 + i * 2, ptrs[i], false);
+          pages.set(pno, page);
+          up.push({ pno, key: rightMost.key });
+          group = []; gUsed = 0;
+        };
+        for (const child of level) {
+          const cost = 2 + 4 + varintLen(child.key);
+          if (group.length && 12 + gUsed + cost > GPKG_USABLE) flush();
+          group.push(child); gUsed += cost;
+        }
+        flush();
+        level = up;
+      }
+
+      return { rootPage: level[0].pno, pages, nextPage: next };
+    }
+
+    /* ── the standard's schema, verbatim ────────────────────────────────────────────────────── */
+
+    /* ⚠ THIS SQL IS THE STANDARD'S, NOT A PARAPHRASE (OGC 12-128r18, Annex C). A reader — including
+       §4 of this very file — learns the column ORDER by parsing this text, so a rewording that
+       moved a column would change what every value means. Failing condition: a GeoPackage revision
+       that changes these tables, which would also change what `user_version` below must say. */
+    const SRS_SQL = 'CREATE TABLE gpkg_spatial_ref_sys (srs_name TEXT NOT NULL, srs_id INTEGER PRIMARY KEY, organization TEXT NOT NULL, organization_coordsys_id INTEGER NOT NULL, definition TEXT NOT NULL, description TEXT)';
+    const CONTENTS_SQL = 'CREATE TABLE gpkg_contents (table_name TEXT NOT NULL PRIMARY KEY, data_type TEXT NOT NULL, identifier TEXT UNIQUE, description TEXT DEFAULT \'\', last_change DATETIME NOT NULL DEFAULT (strftime(\'%Y-%m-%dT%H:%M:%fZ\',\'now\')), min_x DOUBLE, min_y DOUBLE, max_x DOUBLE, max_y DOUBLE, srs_id INTEGER, CONSTRAINT fk_gc_r_srs_id FOREIGN KEY (srs_id) REFERENCES gpkg_spatial_ref_sys(srs_id))';
+    const GEOMCOLS_SQL = 'CREATE TABLE gpkg_geometry_columns (table_name TEXT NOT NULL, column_name TEXT NOT NULL, geometry_type_name TEXT NOT NULL, srs_id INTEGER NOT NULL, z TINYINT NOT NULL, m TINYINT NOT NULL, CONSTRAINT pk_geom_cols PRIMARY KEY (table_name, column_name), CONSTRAINT uk_gc_table_name UNIQUE (table_name), CONSTRAINT fk_gc_tn FOREIGN KEY (table_name) REFERENCES gpkg_contents(table_name), CONSTRAINT fk_gc_srs FOREIGN KEY (srs_id) REFERENCES gpkg_spatial_ref_sys (srs_id))';
+
+    /* EPSG:4326 as WKT 1, plus the two rows the standard REQUIRES to exist (srs_id -1 and 0). ⚠ The
+       required rows are not decoration: a reader validating the file looks for them, and a geometry
+       whose srs_id is 0 means 「undefined geographic」 rather than 「missing」. */
+    const WKT_4326 = 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]';
+
+    /* SQLite stores a column's declared type for the reader's benefit; the type is chosen from what
+       the values ACTUALLY are across the whole column, not from the first row. ⚠ A column that
+       holds both 5 and "five" is TEXT, not INTEGER-with-surprises: SQLite would store the string in
+       an INTEGER column anyway (it has no strict typing by default) and a GIS reading the declared
+       type would then hand its user a number column full of text. */
+    function declaredType(values) {
+      let sawNum = false, sawInt = true, sawOther = false, any = false;
+      for (const v of values) {
+        if (v === null || v === undefined) continue;
+        any = true;
+        if (typeof v === 'number') { sawNum = true; if (!Number.isInteger(v)) sawInt = false; continue; }
+        if (typeof v === 'boolean') { sawNum = true; continue; }
+        sawOther = true;
+      }
+      if (!any) return 'TEXT';
+      if (sawOther) return 'TEXT';
+      if (sawNum && sawInt) return 'INTEGER';
+      if (sawNum) return 'DOUBLE';
+      return 'TEXT';
+    }
+
+    const SQL_IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+    /* The one door out. `opts`: { table, features, title, description, provenance, srsId } */
+    function write(opts) {
+      const o = opts || {};
+      const table = String(o.table == null ? '' : o.table);
+      /* ⚠ NOT QUOTED-AND-ACCEPTED. The table name goes into CREATE TABLE text that this file's own
+         §4 parses back; a name with a quote or a bracket in it would produce SQL whose column list
+         cannot be read, which is the `gpkg-schema` refusal one step later and harder to explain. */
+      if (!SQL_IDENT.test(table)) return bad('gpkg-write-table-name', { table: table, expected: 'a bare SQL identifier' });
+
+      const srsId = o.srsId == null ? 4326 : Number(o.srsId);
+      if (srsId !== 4326) return bad('gpkg-write-crs-unsupported', { srsId: srsId, supported: [4326] });
+
+      const feats = Array.isArray(o.features) ? o.features : [];
+      if (!feats.length) return bad('gpkg-write-empty', { count: 0 });
+
+      /* ① the attribute columns, discovered from the features rather than declared by the caller —
+         a column list handed in would silently drop whatever the caller had not thought of. */
+      const colNames = [];
+      const seen = new Set();
+      for (const f of feats) {
+        const props = (f && f.properties) || {};
+        for (const k of Object.keys(props)) {
+          if (seen.has(k)) continue;
+          /* `fid` and `geom` are this schema's own columns; a property of the same name would be
+             two columns with one name. Suffixed, never overwritten — the same rule §6 of
+             js/gis-export.js applies to a CSV's added columns. */
+          let name = k;
+          if (!SQL_IDENT.test(name)) name = 'col_' + name.replace(/[^A-Za-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+          if (!SQL_IDENT.test(name)) name = 'col';
+          let unique = name, n = 1;
+          while (unique === 'fid' || unique === 'geom' || seen.has(unique)) unique = name + '_' + (n++);
+          seen.add(unique);
+          colNames.push({ key: k, column: unique });
+        }
+      }
+
+      /* ② the values, once, so that declaredType sees the whole column and the records are built
+         from the same numbers the type was chosen for */
+      const cells = colNames.map(() => []);
+      for (const f of feats) {
+        const props = (f && f.properties) || {};
+        for (let c = 0; c < colNames.length; c++) {
+          let v = props[colNames[c].key];
+          if (v === undefined) v = null;
+          else if (typeof v === 'boolean') v = v ? 1 : 0;
+          else if (v !== null && typeof v === 'object') {
+            /* a nested object or an array has no SQLite type; JSON is what GDAL's own GPKG driver
+               writes for one, and it is stated in `stated.jsonColumns` rather than done quietly */
+            try { v = JSON.stringify(v); } catch (_) { return bad('gpkg-write-value-unsupported', { column: colNames[c].column, reason: 'not serialisable' }); }
+          } else if (typeof v === 'bigint') {
+            return bad('gpkg-write-value-unsupported', { column: colNames[c].column, reason: 'bigint' });
+          }
+          cells[c].push(v);
+        }
+      }
+      const colTypes = cells.map(declaredType);
+
+      /* ③ the geometries. The declared geometry_type_name is what the features actually are: one
+         type if they agree, GEOMETRY if they do not. ⚠ NOT 「the first one's」 — a layer declared
+         POINT that holds polygons is refused by strict readers and mis-styled by lenient ones. */
+      const blobs = [];
+      const types = new Set();
+      let withZ = false, nullGeom = 0;
+      let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+      for (let i = 0; i < feats.length; i++) {
+        const g = (feats[i] && feats[i].geometry) || null;
+        if (!g || !g.type) { blobs.push(null); nullGeom++; continue; }
+        if (!Object.prototype.hasOwnProperty.call(WKB_CODE, g.type)) {
+          return bad('gpkg-write-geometry-unsupported', { index: i, type: String(g.type), supported: Object.keys(WKB_CODE) });
+        }
+        const dim = dimOf(g);
+        if (dim === -1) return bad('gpkg-write-geometry-mixed-dimensions', { index: i, type: String(g.type) });
+        if (dim === 3) withZ = true;
+        const blob = geometryBlob(g, srsId, dim);
+        if (!blob) return bad('gpkg-write-geometry-unsupported', { index: i, type: String(g.type), supported: Object.keys(WKB_CODE) });
+        blobs.push(blob);
+        types.add(g.type);
+        const box = bboxOf(g);
+        if (box) {
+          if (box.minx < minx) minx = box.minx; if (box.maxx > maxx) maxx = box.maxx;
+          if (box.miny < miny) miny = box.miny; if (box.maxy > maxy) maxy = box.maxy;
+        }
+      }
+      const geomType = types.size === 1 ? [...types][0].toUpperCase() : 'GEOMETRY';
+      const hasExtent = isFinite(minx);
+
+      /* ④ the feature table's own CREATE TABLE. `fid INTEGER PRIMARY KEY` is a rowid ALIAS, so it
+         needs no index of its own — which is why the four auto-indexes this file builds are the
+         four the standard's OWN tables imply and not five. */
+      const tableSql = 'CREATE TABLE ' + table + ' (fid INTEGER PRIMARY KEY, geom ' + geomType
+        + colNames.map((c, i) => ', ' + c.column + ' ' + colTypes[i]).join('') + ')';
+
+      /* ⑤ the rows. The rowid IS fid and the record stores NULL in its place (fileformat.html §2.4:
+         「the value of the column is the rowid」) — writing the number twice would let the two
+         disagree after any edit. */
+      const featureRows = [];
+      for (let i = 0; i < feats.length; i++) {
+        const values = [null, blobs[i]];
+        for (let c = 0; c < colNames.length; c++) values.push(cells[c][i]);
+        const payload = makeRecord(values);
+        if (!payload) return bad('gpkg-write-value-unsupported', { index: i, reason: 'no SQLite type for a value in this row' });
+        featureRows.push({ rowid: i + 1, payload });
+      }
+
+      /* ⑥ the fixed tables, each a single leaf (one to three rows) */
+      const now = new Date().toISOString().replace(/\.(\d{3})Z$/, '.$1Z');
+      const srsRows = [
+        { rowid: -1, payload: makeRecord(['Undefined cartesian SRS', null, 'NONE', -1, 'undefined', 'undefined cartesian coordinate reference system']) },
+        { rowid: 0, payload: makeRecord(['Undefined geographic SRS', null, 'NONE', 0, 'undefined', 'undefined geographic coordinate reference system']) },
+        { rowid: 4326, payload: makeRecord(['WGS 84 geodetic', null, 'EPSG', 4326, WKT_4326, 'longitude/latitude coordinates in decimal degrees on the WGS 84 ellipsoid']) },
+      ];
+      const identifier = (o.title == null || String(o.title) === '') ? table : String(o.title);
+      /* ⚠ THE LICENCE GOES IN `description`, WHICH IS WHERE A GIS SHOWS IT. §1 of js/gis-export.js
+         is about exactly this: a condition of redistribution written in a comment is a condition
+         nobody reads ([[intmap-licence-must-be-a-value]]). And ONLY WHAT WAS STATED travels —
+         a record with no provenance gets the description it was given, not an invented one. */
+      const description = String(o.description == null ? '' : o.description);
+      const contentsRow = makeRecord([
+        table, 'features', identifier, description, now,
+        hasExtent ? minx : null, hasExtent ? miny : null, hasExtent ? maxx : null, hasExtent ? maxy : null,
+        srsId,
+      ]);
+      const geomColsRow = makeRecord([table, 'geom', geomType, srsId, withZ ? 1 : 0, 0]);
+
+      /* ⑦ page allocation. Page 1 is sqlite_master's root by definition, so everything else is
+         numbered after it and the schema records — which must name those numbers — are built last. */
+      let page = 2;
+      const trees = [];
+      const add = (rows, index) => {
+        const t = buildTree(rows, page, !!index);
+        page = t.nextPage;
+        trees.push(t);
+        return t;
+      };
+      const srsTree = add(srsRows, false);
+      const contentsTree = add([{ rowid: 1, payload: contentsRow }], false);
+      /* the two auto-indexes gpkg_contents implies: an index record is the indexed columns followed
+         by the rowid it points at */
+      const ixContents1 = add([{ payload: makeRecord([table, 1]) }], true);
+      const ixContents2 = add([{ payload: makeRecord([identifier, 1]) }], true);
+      const geomColsTree = add([{ rowid: 1, payload: geomColsRow }], false);
+      const ixGeom1 = add([{ payload: makeRecord([table, 'geom', 1]) }], true);
+      const ixGeom2 = add([{ payload: makeRecord([table, 1]) }], true);
+      const featureTree = add(featureRows, false);
+
+      /* ⑧ sqlite_master itself: one row per table and index, in creation order.
+         type, name, tbl_name, rootpage, sql */
+      const schema = [
+        ['table', 'gpkg_spatial_ref_sys', 'gpkg_spatial_ref_sys', srsTree.rootPage, SRS_SQL],
+        ['table', 'gpkg_contents', 'gpkg_contents', contentsTree.rootPage, CONTENTS_SQL],
+        ['index', 'sqlite_autoindex_gpkg_contents_1', 'gpkg_contents', ixContents1.rootPage, null],
+        ['index', 'sqlite_autoindex_gpkg_contents_2', 'gpkg_contents', ixContents2.rootPage, null],
+        ['table', 'gpkg_geometry_columns', 'gpkg_geometry_columns', geomColsTree.rootPage, GEOMCOLS_SQL],
+        ['index', 'sqlite_autoindex_gpkg_geometry_columns_1', 'gpkg_geometry_columns', ixGeom1.rootPage, null],
+        ['index', 'sqlite_autoindex_gpkg_geometry_columns_2', 'gpkg_geometry_columns', ixGeom2.rootPage, null],
+        ['table', table, table, featureTree.rootPage, tableSql],
+      ];
+      const masterRows = schema.map((r, i) => ({ rowid: i + 1, payload: makeRecord(r) }));
+
+      /* Page 1 IS sqlite_master's root, by definition, and it carries the 100-byte file header
+         ahead of its b-tree structures — hence the fourth argument (see buildTree). */
+      const master = buildTree(masterRows, 1, false, 100);
+      const page1Body = master.pages.get(1);
+      if (master.rootPage !== 1) {
+        /* sqlite_master outgrowing one page would mean more tables than this writer emits (eight),
+           so the condition is impossible rather than unhandled — asserted so that a future ninth
+           table fails loudly here instead of producing a file whose schema root is not page 1. */
+        throw new Error('gis-geopackage: sqlite_master did not fit on page 1');
+      }
+      /* the content area must clear the header AND the cell pointer array; eight short schema rows
+         occupy ~2 KB at the END of the page, so this holds by construction and is checked rather
+         than assumed */
+      const contentStart = new DataView(page1Body.buffer).getUint16(105, false);
+      if (contentStart !== 0 && contentStart < 100 + 8 + masterRows.length * 2) {
+        throw new Error('gis-geopackage: page 1 schema overran the file header');
+      }
+
+      /* ⑨ the file */
+      const totalPages = page - 1;
+      const out = new Uint8Array(totalPages * GPKG_PAGE);
+      for (const t of trees) for (const [n, p] of t.pages) out.set(p, (n - 1) * GPKG_PAGE);
+      out.set(page1Body, 0);
+
+      const dv = new DataView(out.buffer);
+      out.set(MAGIC, 0);
+      dv.setUint16(16, GPKG_PAGE === 65536 ? 1 : GPKG_PAGE, false);
+      out[18] = 1; out[19] = 1;                          /* read/write version: legacy, not WAL */
+      out[20] = 0;                                       /* reserved space per page */
+      out[21] = 64; out[22] = 32; out[23] = 32;          /* the payload fractions the format fixes */
+      dv.setUint32(24, 1, false);                        /* file change counter */
+      dv.setUint32(28, totalPages, false);               /* size in pages — an in-header database size */
+      dv.setUint32(32, 0, false); dv.setUint32(36, 0, false);   /* no freelist */
+      dv.setUint32(40, 1, false);                        /* schema cookie */
+      dv.setUint32(44, 4, false);                        /* schema format 4 */
+      dv.setUint32(48, 0, false);                        /* default page cache size */
+      dv.setUint32(52, 0, false);                        /* not auto-vacuum, so no largest-root page */
+      dv.setUint32(56, 1, false);                        /* text encoding: UTF-8 */
+      /* ⚠ THESE TWO BYTES-AT-60-AND-68 ARE WHAT MAKES IT A GEOPACKAGE RATHER THAN A SQLITE FILE.
+         The standard (§1.1.1.1) requires application_id 'GPKG' and user_version set to the version
+         in the form major·10000 + minor·100 + patch; 1.3.0 is what the schema above is taken from,
+         so claiming a later revision would claim tables this file does not write. */
+      dv.setUint32(60, 10300, false);                    /* user_version — GeoPackage 1.3.0 */
+      dv.setUint32(64, 0, false);                        /* no incremental vacuum */
+      dv.setUint32(68, 0x47504b47, false);               /* application_id — "GPKG" */
+      dv.setUint32(92, 1, false);                        /* version-valid-for = change counter */
+      dv.setUint32(96, SQLITE_VERSION, false);
+
+      return {
+        ok: true,
+        bytes: out,
+        stated: {
+          table: table, features: feats.length, columns: colNames.map((c) => c.column),
+          columnTypes: colTypes.slice(),
+          geometryColumn: 'geom', geometryType: geomType, withZ: withZ, withM: false,
+          nullGeometry: nullGeom,
+          srsId: srsId, crs: 'EPSG:4326',
+          extent: hasExtent ? { minx, miny, maxx, maxy } : null,
+          pageSize: GPKG_PAGE, pages: totalPages,
+          /* ⚠ STATED BECAUSE IT IS ABSENT (see the section header): a caller telling a reader 「this
+             is a GeoPackage」 must not also imply 「and queries on it are indexed」. */
+          spatialIndex: false,
+          tiles: false,
+          userVersion: 10300,
+        },
+      };
+    }
+
+    const API = { sniff, tables, read, write, refusals: () => REFUSALS.slice() };
     try { window.IntMapGisGeopackage = API; } catch (_) { }
     return API;
   })();

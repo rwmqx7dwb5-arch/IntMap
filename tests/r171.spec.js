@@ -362,7 +362,23 @@ test('Atlas can draw a circular 3-D volume in a colour', async ({ page }) => {
      fetches the kernel first and is what the button, Ctrl+K and js/app-body.js all press. */
   const st = await page.evaluate(async () => {
     await window.IntMapAtlas.call('dispatch', { type: 'volume3d', place: 'Mount Fuji', km: 8, base: 2000, top: 9000, shape: 'circle', color: '#ff3b30' });
-    await new Promise(r => setTimeout(r, 1200));
+    /* ⚠⚠⚠ (#R783) THIS WAITED A FIXED 1,200 ms AND THEN READ A MODULE THAT MAY NOT HAVE ARRIVED.
+       `dispatch` fetches the volume module through js/lazy-modules.js, so on a slower machine the
+       next line read `undefined.state()` and the nightly reported «Cannot read properties of
+       undefined (reading 'state')» — an OBSERVER REPORTING A SUCCESS AS A FAILURE, which is the one
+       shape .agents/rules/one-pass-or-a-reason.md §2 forbids. Measured: 8.8 s here, 29.6 s on the CI
+       runner for this same test, against a 1,200 ms window. The sibling test at tests/r174.spec.js
+       already waits for the condition instead of the clock; this now does the same.
+       ⚠ The assertions below are untouched — this changes WHEN we look, never what we require. */
+    await new Promise((done, fail) => {
+      const t0 = Date.now();
+      const tick = () => {
+        if (window.IntMapVolume3D && typeof window.IntMapVolume3D.state === 'function') return done();
+        if (Date.now() - t0 > 60000) return fail(new Error('IntMapVolume3D never arrived in 60 s'));
+        setTimeout(tick, 50);
+      };
+      tick();
+    });
     return { s: window.IntMapVolume3D.state(), fill: window.__imap.getPaintProperty('imv3d-vol', 'fill-extrusion-color') };
   });
   expect(st.s.points, 'circle → a real ring').toBeGreaterThan(50);

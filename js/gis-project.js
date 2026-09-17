@@ -109,8 +109,10 @@ export function makeGisProject() {
        compareEngine and restoreDecls. */
     const RECORD_VERSION = 2;
 
-    /* (#R765) manifest() が書く文書の版。読み手が「この形を知っているか」を判断できるように。 */
-    const MANIFEST_VERSION = 1;
+    /* (#R765) manifest() が書く文書の版。読み手が「この形を知っているか」を判断できるように。
+       ⚠ (#R783) 1 → 2。`steps[].trace` / `steps[].provenance` / `environment` / `traceability` が
+       増えた。古い版の文書は今でも verify() が読む——版を上げることは、前の形を拒むことではない。 */
+    const MANIFEST_VERSION = 2;
 
     /* `dead` is set only when the environment HAS NO IndexedDB at all (Node, a browser with it
        switched off). A transaction that failed once does not set it: the disk being full this
@@ -856,6 +858,85 @@ export function makeGisProject() {
       return k;
     }
 
+    /* ══ ⚠⚠⚠ (#R783) 「欄が埋まっている」は「辿れる」ではない ════════════════════════════════════
+       #R765 の manifest は、レシピ・エンジンの版・取得の条件・内容の指紋を持っている。外部監査が
+       名指したのはその次の一段で、正しい指摘だった: **その記録が指す原データと実行環境を、第三者が
+       後から本当に取り出せるか**は、どの欄からも読めない。指紋は「同じものを持っているか」を確かめ
+       られるが、持っていない者にそれを渡さない。レシピは再実行できるが、入力がこの文書の中に無ければ
+       再実行できない。
+       ⚠ SO EVERY STEP STATES WHICH OF THE THREE IT IS, AND THE WORD IS DERIVED, NOT ASSERTED:
+           recipe                この段は導ける——op・引数・**名指した入力が全部この文書にある**
+           recipe-inputs-missing レシピはあるが、入力がこの文書の中に無い（鎖の外から来ている）
+           body                  導けない。本体そのものが出自で、指紋でだけ同一性を確かめられる
+           body-unverifiable     本体が出自で、指紋も無い——同じものかどうかを確かめる手段が無い
+       ⚠ AND `retrieval` IS A REFERENCE, NOT A COPY OF THE DATA. 時刻で変わるレイヤーについては
+       「もう一度取得する」は答えの代わりにならない（#R749 の方針）——だから再取得の参照は参照として
+       書き、答えの側は「取得時の本体」に置いたままにする。`sameAnswer` がその違いを述べる。 */
+    function traceOf(step, known, wantFp) {
+      const hasFp = wantFp && step.fingerprint != null;
+      const out = { data: null, dataDetail: null, environment: null, retrieval: null };
+
+      if (step.origin === 'op' && step.recipe) {
+        const inputs = Array.isArray(step.recipe.inputs) ? step.recipe.inputs.slice() : [];
+        /* ⚠ 測っている。鎖の順序（lineage は入力が先）に依っているのではなく、この文書に実際に在る
+           id と突き合わせている——「入力はあるはず」は辿れることの代わりにならない。 */
+        const missing = inputs.filter((i) => !known.has(i));
+        out.data = missing.length ? 'recipe-inputs-missing' : 'recipe';
+        if (missing.length) out.dataDetail = { missingInputs: missing };
+        const eng = step.engineThen;
+        const parts = (eng && typeof eng === 'object') ? Object.keys(eng) : [];
+        out.environment = !parts.length ? 'not-recorded'
+          : (parts.some((k) => eng[k] == null) ? 'partly-recorded' : 'recorded');
+        out.retrieval = {
+          by: 'replay',
+          call: 'IntMapGisOps.run',
+          args: { op: step.recipe.op, inputs: inputs, params: step.recipe.params },
+          /* ⚠ 再実行が同じ答えを返すのは、同じエンジンのときだけ。版が記録されていなければ
+             「同じになる条件」そのものが述べられていない。 */
+          sameAnswer: (out.environment === 'recorded') ? 'if-engine-matches' : 'unknown',
+          verifyWith: hasFp ? step.fingerprintOf : null,
+          expect: hasFp ? step.fingerprint : null,
+        };
+        return out;
+      }
+
+      /* 演算でないもの——取り込み・地図レイヤーの取得・組み込みの記録。⚠ ここで計算されたものは
+         何も無いので、実行環境は「この段についての主張ではない」。今日のエンジンを書けば、
+         そのエンジンが作ったという主張になる。 */
+      out.environment = 'not-computed-here';
+      out.data = hasFp ? 'body' : 'body-unverifiable';
+      const re = {
+        by: 'body',
+        /* ⚠ 本体は manifest には入らない（数メガバイトの文書は誰も読まない）。入るのは、
+           それが同じ本体かを確かめる手段と、それを保存している場所の名前。 */
+        inThisDocument: false,
+        keptBy: 'IntMapGisProject.save',
+        verifyWith: hasFp ? step.fingerprintOf : null,
+        expect: hasFp ? step.fingerprint : null,
+        file: (step.file == null) ? null : step.file,
+        format: (step.format == null) ? null : step.format,
+        readAt: (step.readAt == null) ? null : step.readAt,
+      };
+      if (step.acquisition) {
+        /* 取得は、そのときの上流への問い合わせ。同じ問い合わせを書き下しても、同じ答えが返る保証は
+           無い——だから参照として書き、そう述べる。 */
+        re.reacquire = {
+          call: 'IntMapGisLayers.acquire',
+          args: {
+            layer: step.acquisition.layer,
+            bounds: step.acquisition.bounds || null,
+            statedTime: step.acquisition.statedTime || null,
+          },
+        };
+        re.acquiredAt = step.acquisition.at || null;
+        re.sameAnswer = 'not-guaranteed';
+      } else {
+        re.sameAnswer = 'same-bytes-only';
+      }
+      out.retrieval = re;
+      return out;
+    }
+
     async function stepOf(rec, opts) {
       const D = registry();
       const desc = (D && typeof D.describe === 'function') ? D.describe(rec.id) : null;
@@ -902,6 +983,14 @@ export function makeGisProject() {
       if (prov.file != null) step.file = String(prov.file);
       if (prov.format != null) step.format = String(prov.format);
       if (desc && desc.stale) step.stale = desc.stale;
+      /* ⚠ (#R783) THE PROVENANCE AS IT WAS WRITTEN, BESIDE THE FIELDS THIS FILE NAMES. The named ones
+         above are what this file knows how to talk about; a writer may have stated more — a licence, a
+         url, how many cells the reader has since edited — and a document carrying only the fields
+         somebody thought of is the hand-written list this repository keeps re-learning about
+         ([[intmap-discovered-list-is-a-photograph]]). Verbatim, so no second reading of it happens
+         here: js/gis-export.js already owns the synonym table for licence / source / retrievedAt, and
+         a second one would be a second opinion about what a record states. */
+      step.provenance = (function () { try { return JSON.parse(JSON.stringify(prov)); } catch (_) { return null; } })();
 
       if (!(opts && opts.fingerprint === false)) {
         const text = payloadText(rec);
@@ -921,7 +1010,17 @@ export function makeGisProject() {
 
       const chain = D.lineage(key) || [];
       const steps = [];
-      for (const rec of chain) steps.push(await stepOf(rec, opts));
+      const wantFp = !(opts && opts.fingerprint === false);
+      /* ⚠ THE SET GROWS AS THE DOCUMENT DOES, so 「入力がこの文書にある」 is measured against what is
+         actually written above this step and not against the registry — a manifest is read by somebody
+         who has only the manifest. */
+      const known = new Set();
+      for (const rec of chain) {
+        const s = await stepOf(rec, opts);
+        s.trace = traceOf(s, known, wantFp);
+        known.add(s.id);
+        steps.push(s);
+      }
 
       const gaps = [];
       for (const s of steps) {
@@ -940,6 +1039,64 @@ export function makeGisProject() {
         if (s.fingerprint === null && !(opts && opts.fingerprint === false)) {
           gaps.push({ step: s.id, gap: 'fingerprint-unavailable', means: '内容の指紋を取れなかった（この環境に SHA-256 が無いか、payload を読めなかった）' });
         }
+        /* ⚠ (#R783) 辿れないことが、辿れる欄の隣に黙って座らないように。上の 5 つは「この app が
+           自分の答えについて知らないこと」で、この 3 つは「この文書だけを持った読み手が到達できない
+           こと」——別の穴なので、別に述べる。 */
+        if (s.trace.data === 'recipe-inputs-missing') {
+          gaps.push({ step: s.id, gap: 'recipe-inputs-missing', means: 'この段のレシピは在るが、名指している入力がこの文書に無いので、この文書だけでは再実行できない', detail: s.trace.dataDetail });
+        }
+        if (s.trace.data === 'body-unverifiable') {
+          gaps.push({ step: s.id, gap: 'body-not-verifiable', means: '本体そのものが出自で、しかも内容の指紋が無いので、手元のものが同じ本体かを確かめる手段が無い' });
+        }
+        if (s.trace.environment === 'partly-recorded') {
+          gaps.push({ step: s.id, gap: 'engine-partly-recorded', means: 'この段を計算したエンジンのうち、版を述べなかった部品がある（その部品については「同じ」と言えない）', detail: { engineThen: s.engineThen } });
+        }
+      }
+
+      /* ══ ⚠ (#R783) 「実行環境」を、版の一覧より 1 段広く述べる ══════════════════════════════════
+         `engineNow` は版を述べた部品の版。⚠ THE MODULES THAT STATE NO VERSION ARE THE INTERESTING
+         HALF: they are loaded, they may well change an answer, and they are precisely the reason
+         #R749's comparison can return 「測れなかった」. engineNow cannot show them — a key with a null
+         value and a key that is not there mean different things and neither is 「載っているが黙って
+         いる」. So the loaded set is listed and the silent ones are named.
+         ⚠ BEING IN `statesNoVersion` IS NOT AN ACCUSATION. This file states no version either, and
+         neither does the panel: a module that changes no number is not a kernel that forgot
+         (engineNow's own note says so). Which of them OUGHT to state one is settled by the ledger in
+         scripts/gis-kernel-versions.mjs, not at run time — what is written here is only the fact a
+         reader needs, that these were loaded and said nothing.
+         ⚠ 版そのものはここに写さない。正本は下の `engineNow` 1 か所。 */
+      const loaded = kernelGlobals();
+      const silent = [];
+      for (const g of loaded) {
+        let mod = null;
+        try { mod = window[g]; } catch (_) { mod = null; }
+        if (!mod || typeof mod.version !== 'function') silent.push(g);
+      }
+      /* Whether this environment can take a fingerprint at all — the same question sha256Hex answers
+         by returning null, asked once so the document states it rather than leaving the reader to
+         infer it from a null. */
+      const digest = (await sha256Hex('')) ? 'sha256' : null;
+
+      /* ⚠ THE SUMMARY IS COMPUTED FROM THE STEPS, NEVER WRITTEN BESIDE THEM. Three answers for the
+         data, because there are three situations: everything is derivable from recipes; some steps
+         need their body handed over as well (and can be checked when it is); or at least one step can
+         be neither derived nor checked. */
+      const blockedBy = [];
+      let needsBody = false;
+      for (const s of steps) {
+        if (s.trace.data === 'recipe') continue;
+        if (s.trace.data === 'body') { needsBody = true; continue; }
+        blockedBy.push({ step: s.id, axis: 'data', state: s.trace.data, detail: s.trace.dataDetail || null });
+      }
+      const opSteps = steps.filter((s) => s.origin === 'op');
+      let envState;
+      if (!opSteps.length) envState = 'nothing-computed';
+      else if (opSteps.every((s) => s.trace.environment === 'recorded')) envState = 'recorded';
+      else if (opSteps.some((s) => s.trace.environment === 'recorded' || s.trace.environment === 'partly-recorded')) envState = 'partly-recorded';
+      else envState = 'not-recorded';
+      for (const s of opSteps) {
+        if (s.trace.environment === 'recorded') continue;
+        blockedBy.push({ step: s.id, axis: 'environment', state: s.trace.environment, detail: null });
       }
 
       return {
@@ -951,11 +1108,26 @@ export function makeGisProject() {
            this manifest is written; each step's `engineThen` is what computed that step. They agree
            in the ordinary case and their disagreement is the whole reason #R749 built the version. */
         engineNow: engineNow(),
+        /* ⚠ (#R783) 実行環境のうち、版では述べられない部分。版は上の engineNow が正本。 */
+        environment: {
+          kernelsLoaded: loaded,
+          statesNoVersion: silent,
+          digest: digest,
+          recordVersion: RECORD_VERSION,
+        },
         steps: steps,
         answer: {
           fingerprint: steps.length ? steps[steps.length - 1].fingerprint : null,
           count: target.count == null ? null : target.count,
           kind: String(target.kind || 'vector'),
+        },
+        /* ⚠ (#R783) 「この文書だけを持った第三者は、原データと実行環境に到達できるか」。
+           到達できない場合は、どの段の・どちらの軸が・なぜ、が blockedBy に並ぶ——空の blockedBy が
+           「到達できる」で、欄が埋まっていることは何の代わりにもならない。 */
+        traceability: {
+          data: blockedBy.some((b) => b.axis === 'data') ? 'partial' : (needsBody ? 'with-bodies' : 'derivable'),
+          environment: envState,
+          blockedBy: blockedBy,
         },
         gaps: gaps,
         manifestVersion: MANIFEST_VERSION,
@@ -975,10 +1147,20 @@ export function makeGisProject() {
         : saved;
       const text = payloadText(rec);
       const got = (text == null) ? null : await sha256Hex(text);
+      /* ⚠ (#R783) THE OTHER HALF OF 「同じ結果か」 IS 「同じ環境か」, and a caller holding a manifest
+         has the answer to it in their hand. Asked through the same compareEngine the load path uses —
+         three answers, and 「測れなかった」 never reported as 「同じ」 — so this file has one opinion
+         about what an engine comparison is. Absent where the document does not carry one: a bare
+         fingerprint string says nothing about an engine, and inventing 'same' for it would be the
+         shape this layer exists to refuse. */
+      const savedEngine = (saved && typeof saved === 'object') ? engineCopy(saved.engineNow) : null;
+      const engine = savedEngine
+        ? { verdict: compareEngine(savedEngine, engineNow()), saved: savedEngine, now: engineCopy(engineNow()) }
+        : { verdict: 'unknown', saved: null, now: engineCopy(engineNow()) };
       if (want == null || got == null) {
-        return { ok: true, verdict: 'unmeasurable', expected: want == null ? null : String(want), actual: got };
+        return { ok: true, verdict: 'unmeasurable', expected: want == null ? null : String(want), actual: got, engine: engine };
       }
-      return { ok: true, verdict: (String(want) === got) ? 'same' : 'different', expected: String(want), actual: got };
+      return { ok: true, verdict: (String(want) === got) ? 'same' : 'different', expected: String(want), actual: got, engine: engine };
     }
 
     const API = {

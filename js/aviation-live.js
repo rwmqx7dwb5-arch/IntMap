@@ -46,6 +46,14 @@ import './plane-glyph.js';
    stage 2 projected them correctly, and the click still did nothing. It costs ~1 kB in a chunk
    that is already downloaded, and it is what turns a found aircraft into a name. */
 import './aviation-codec.js';
+/* ⚠ (#R783) …AND THE MODEL, FOR THE SAME REASON, WHICH IS WHY IT HAD TO BE MEASURED RATHER THAN
+   ASSUMED. `js/aviation-model.js` was imported by src/aviation-worker.js and by NOBODY ELSE — so on
+   the main thread `window.IntMapAviationModel` did not exist at all, and the acquisition door below
+   (which asks it for the feed's address, for the bbox query and for the reach sentence) would have
+   answered `map-unavailable` on every call in the shipped app while every check stayed green. This
+   is the trap the codec's own note two lines up describes, met a second time by the second half of
+   the pair: a worker's module graph is a DIFFERENT graph. */
+import './aviation-model.js';
 /* (#R408) …and the one timer wheel, so the two polls below are entries in it rather than two more
    independent wake-ups in a backgrounded tab — see js/runtime.js. */
 import { everyTick, stopTick } from './runtime.js';
@@ -145,6 +153,9 @@ window.IntMapModules.aviationLive = function (HOST) {
        the worker and nothing on the map or in the card could reach them (reported: 「前までトラック
        もあったんですが、なくなってしまいました」). This is the missing wire. */
     onTrack: null,
+    /* (#R783) the acquisition receipt — the last attempt at the camera-free door, successful or not.
+       See the ACQUISITION section below for why a failed attempt has to leave one behind. */
+    reach: null,
     status: {
       provider: '', attribution: '', coverage: '', serverAgeMs: 0, oldestObservationMs: 0, seq: 0,
       total: 0, rendered: 0, lastPollAt: 0, lastOkAt: 0,
@@ -203,13 +214,15 @@ window.IntMapModules.aviationLive = function (HOST) {
   }
 
   /* ── polling ──────────────────────────────────────────────────────────── */
+  /* THE DRAWING'S OWN CHANNEL, and this is the one place in the file where the camera is the
+     window — because the picture IS the camera. ⚠ (#R783) THE QUERY STRING IS BUILT IN ONE PLACE
+     (MODEL.bboxParam): the acquisition door below asks for a box a caller named, this asks for the
+     box the reader is looking at, and two spellings of `&bbox=` would drift into two cache keys. */
   function bboxQuery() {
     try {
       const b = GE().camera.getBounds();
       if (!b) return null;
-      const w = b.getWest(), s = b.getSouth(), e = b.getEast(), n = b.getNorth();
-      if (![w, s, e, n].every((v) => isFinite(v))) return null;
-      return '&bbox=' + [w, s, e, n].map((v) => v.toFixed(3)).join(',');
+      return window.IntMapAviationModel.bboxParam({ w: b.getWest(), s: b.getSouth(), e: b.getEast(), n: b.getNorth() });
     } catch (_) { return null; }
   }
 
@@ -237,6 +250,183 @@ window.IntMapModules.aviationLive = function (HOST) {
       ST.status.lastError = (e && e.message) || 'poll_failed';
     }
   }
+
+  /* ══ ⚠⚠⚠ (#R783) ACQUISITION: A WINDOW, NOT A CAMERA ═════════════════════════════════════════
+     The external audit's completion condition for a live supplier is 「カメラを別地域へ移しても、
+     指定した範囲・期間の分析入力が変わらないこと」, and until this round nothing in this module could
+     satisfy it — not because the upstream cannot answer a box, but because NOTHING EVER ASKED IT FOR
+     ONE. Every read in this file went through pollView(), whose box is `GE().camera.getBounds()`, and
+     the analysis layer reached the aircraft only through the renderer: js/gis-layers.js supplierFor()
+     refuses a row that declares `viewBound:true` (js/map-ui.js's aircraft row does, correctly, about
+     the DRAWN source), so js/gis-sources.js fell back to reading what happened to be on screen.
+
+     MEASURED against production before writing this (the table in js/aviation-model.js's reach
+     section has the numbers): the feed's `?ch=view&bbox=w,s,e,n` executes the box exactly — 0 of
+     15,116 records outside it across four windows, and two disjoint windows share no aircraft — so
+     the window IS askable and the camera is simply not in the path.
+
+     WHAT THIS DOOR CLAIMS, AND WHAT IT REFUSES TO CLAIM
+     ---------------------------------------------------
+     · `bbox`  — executed by the feed, and re-checked here against the decoded records.
+     · `limit` — NOT claimed, so js/gis-sources.js cuts the answer itself and states a truthful
+                 `available` (askSupplier passes a limit only to a supplier that claims one). One
+                 implementation of paging is enough, and it is not this one.
+     · `where` / `cursor` / `fields` — NOT claimed, so they are refused BY NAME at the door. That is
+                 exactly what they did before this round (prepare() refuses them for an id with no
+                 supplier), so nothing a reader could do yesterday is taken away; what WOULD take
+                 something away is claiming them and not doing them, which is the #R783 defect one
+                 file over.
+     · `time`  — the feed answers for NOW and for nothing else. Nothing is stated about it, so
+                 js/gis-sources.js answers a timed request `partial / time-not-established` instead
+                 of handing today's sky back for a question about last Tuesday.
+     · COMPLETENESS — never. `coverage.complete` is the feed's own `x-intmap-coverage` sentence read
+                 by MODEL.readReach, which is `false` while the lattice is short of its 980 tiles and
+                 `null` otherwise. 「取れないことを取れるように宣言する」 is the failure the audit
+                 named; this is the opposite end of it.
+
+     ⚠ AND IT LEAVES A RECEIPT EVEN WHEN IT FAILS ([[intmap-background-work-needs-a-receipt]]). A door
+     that is never reached and a door that was reached and refused look identical from outside, so
+     every attempt — the box, the count, the reach, the age, and the refusal if there was one — lands
+     in ST.reach and comes back out through reach() and through status().acquire. */
+
+  const WORLD_BOX = { w: -180, s: -90, e: 180, n: 90 };
+  const ACQUIRE_ID = 'aircraft';
+
+  /* The feed's address, asked of the model (which owns the function name) and of the page (which
+     owns the project ref). ⚠ ST.endpoint WINS: js/data-layers.js hands it to start(), and a session
+     configured to a different endpoint must not have this door quietly read the default one. */
+  function endpointUrl() {
+    if (ST.endpoint) return ST.endpoint;
+    try { return window.IntMapAviationModel.feedUrl(window.SUPABASE_URL); } catch (_) { return ''; }
+  }
+
+  function readBox(b) {
+    if (!b) return null;
+    /* both spellings the app uses: {w,s,e,n} and [[w,s],[e,n]] (js/gis-sources.js asBox) */
+    const o = Array.isArray(b) ? { w: b[0] && b[0][0], s: b[0] && b[0][1], e: b[1] && b[1][0], n: b[1] && b[1][1] } : b;
+    const w = +o.w, s = +o.s, e = +o.e, n = +o.n;
+    if (![w, s, e, n].every((v) => isFinite(v))) return null;
+    return { w: w, s: Math.min(s, n), e: e, n: Math.max(s, n) };
+  }
+
+  /* ⚠ ONE READ PER CALL, AND NO STORE. This does not touch the worker, the renderer or ST.frame: the
+     acquisition answer is built from the bytes that came back for the box that was asked for, so two
+     callers asking about two boxes cannot overwrite each other's answer — which is what 「カメラを
+     動かしても同じ」 actually requires. It costs the same one request pollView() costs; the server's
+     own 15 s cache and its burst budget are unchanged by the question arriving from here. */
+  async function acquire(req) {
+    const q = req || {};
+    const box = readBox(q.bbox) || WORLD_BOX;
+    const url = endpointUrl();
+    const receipt = { at: Date.now(), box: box, ok: false, why: '', count: null, reach: null, ageMs: null, oldestMs: null };
+    const done = (r) => { ST.reach = receipt; return r; };
+    if (!url) {
+      receipt.why = 'aviation-endpoint-unset';
+      return done({ ok: false, why: 'map-unavailable', detail: { id: ACQUIRE_ID, needs: 'window.SUPABASE_URL' } });
+    }
+    const C = globalThis.IntMapAviationCodec;
+    const M = window.IntMapAviationModel;
+    if (!C || !M) {
+      receipt.why = 'codec-or-model-absent';
+      return done({ ok: false, why: 'map-unavailable', detail: { id: ACQUIRE_ID, needs: 'IntMapAviationCodec / IntMapAviationModel' } });
+    }
+    let r;
+    try {
+      r = await fetch(url + '?ch=view' + M.bboxParam(box), {
+        headers: { accept: 'application/octet-stream' },
+        signal: q.signal || null,
+      });
+    } catch (e) {
+      /* ⚠ THE RECEIPT IS WRITTEN AND THEN IT THROWS. js/gis-sources.js names a thrown supplier
+         `supplier-failed` and carries the message — that is its vocabulary, and a code its REFUSALS
+         list does not name comes back marked `undeclared`, so inventing one here would be inventing
+         a sentence nobody can translate. What must not be lost is that the attempt HAPPENED. */
+      receipt.why = (e && e.name === 'AbortError') ? 'aborted' : ('fetch_failed: ' + ((e && e.message) || ''));
+      ST.reach = receipt;
+      throw e;
+    }
+    if (!r.ok) {
+      receipt.why = 'http_' + r.status;
+      ST.reach = receipt;
+      throw new Error('aviation-feed http_' + r.status);
+    }
+    let msg;
+    try { msg = C.decode(new Uint8Array(await r.arrayBuffer())); }
+    catch (e) {
+      receipt.why = 'decode_failed: ' + ((e && e.message) || '');
+      ST.reach = receipt;
+      throw e;
+    }
+    const reach = M.readReach(r.headers.get('x-intmap-coverage'));
+    const ageMs = Number(r.headers.get('x-intmap-age-ms')) || 0;
+    const now = Date.now();
+    const built = M.featuresFromSnapshot(msg, now, C, box);
+    /* the moment the feed assembled the answer, not the moment its oldest position was observed —
+       every feature carries its own (js/aviation-model.js ③) */
+    const asOf = new Date(now - ageMs).toISOString();
+
+    receipt.ok = true;
+    receipt.count = built.features.length;
+    receipt.reach = reach;
+    receipt.ageMs = ageMs;
+    receipt.oldestMs = Number(r.headers.get('x-intmap-oldest-ms')) || 0;
+    receipt.skippedNoPosition = built.skippedNoPosition;
+    receipt.droppedOutsideBox = built.droppedOutsideBox;
+    receipt.provider = r.headers.get('x-intmap-provider') || '';
+    receipt.attribution = r.headers.get('x-intmap-attribution') || '';
+    receipt.oldestObservedAt = built.oldestObservedAt;
+    receipt.newestObservedAt = built.newestObservedAt;
+    receipt.asOf = asOf;
+    /* the door's own statement about what it holds, refreshed from what the feed has just said */
+    try { declareHolding(reach, asOf); } catch (_) { }
+
+    if (typeof q.onProgress === 'function') {
+      try { q.onProgress({ done: built.features.length, total: built.features.length }); } catch (_) { }
+    }
+    return done({
+      ok: true,
+      features: built.features,
+      coverage: M.coverageFor({ box: box, count: built.features.length, asOf: asOf, reach: reach }),
+    });
+  }
+
+  /* ⚠ THE DECLARATION IS RE-STATED, NOT SET ONCE. `complete` is the feed's own sentence and the feed
+     says something different as its lattice fills, so a declaration written at registration time
+     would be a photograph ([[intmap-discovered-list-is-a-photograph]]). Before the first read there
+     is no reach and the declaration says so — the world as an extent, `complete:false`, no `asOf`,
+     which reads as 「範囲は世界、全部とは言っていない」 and never as 「全部」. */
+  function declareHolding(reach, asOf) {
+    const S = window.IntMapGisSources;
+    const M = window.IntMapAviationModel;
+    if (!S || typeof S.declare !== 'function' || !M) return false;
+    const r = S.declare(ACQUIRE_ID, M.holdsFor(reach || null, asOf || null));
+    return !!(r && r.ok);
+  }
+
+  /* ⚠ REGISTRATION COSTS NO REQUEST. supply() and declare() are statements; the first byte moves when
+     somebody acquires. So this runs at module construction — the door has to exist before the layer
+     is switched on, because 「表示していなくても取れる」 is the whole point of it.
+     ⚠ AND IT OVERRIDES js/map-ui.js's ROW ON PURPOSE. That row says `viewBound:true`, which is true
+     of the DRAWN source and false of this door; js/gis-sources.js declarationOf() prefers an explicit
+     declare() precisely because the module holding the data is the stronger claimant (#R756). While
+     this module has not loaded, the row's statement stands and it is the correct one. */
+  function register() {
+    const S = window.IntMapGisSources;
+    if (!S || typeof S.supply !== 'function') return false;
+    const sup = S.supply(ACQUIRE_ID, {
+      fetch: acquire,
+      /* it answers with a promise, so js/gis-sources.js's synchronous door refuses it by name
+         (`supplier-is-async`) rather than firing the request and discarding the answer */
+      sync: false,
+      /* what it does NOT claim is the load-bearing half — see the section header */
+      where: false, cursor: false, fields: false, limit: false,
+    });
+    /* the standing statement, before any read has happened */
+    declareHolding(null, null);
+    return !!(sup && sup.ok);
+  }
+
+  function reach() { return ST.reach ? Object.assign({}, ST.reach) : null; }
 
   /* ── picking ──────────────────────────────────────────────────────────────
      Two stages, because neither alone is affordable at 50,000 aircraft:
@@ -488,12 +678,20 @@ window.IntMapModules.aviationLive = function (HOST) {
          and a dead feed is showing real aircraft that are getting old — which is what the UI has
          to be able to say (§22.1). */
       updating: !!(s.lastOkAt && now - s.lastOkAt < WORLD_POLL_MS * 3),
+      /* (#R783) 「範囲を指定した取得は、いつ・何を・どこまで答えたのか」 — null before the door has
+         ever been used, which is a different fact from an attempt that failed. */
+      acquire: reach(),
     };
   }
 
   function workerStats() {
     try { return W().stats().then((r) => r && r.stats); } catch (_) { return Promise.resolve(null); }
   }
+
+  /* ⚠ AT CONSTRUCTION, NOT AT start(). A reader who has never switched the layer on must still be
+     able to ask for a window (that is the whole of 「表示していないレイヤーを読む」), and this costs
+     one supply() and one declare() — no request, no timer, no renderer. */
+  register();
 
   return {
     CLOUD_ID,
@@ -503,6 +701,10 @@ window.IntMapModules.aviationLive = function (HOST) {
     start, stop, destroy,
     pollWorld, pollView,
     pick, select, detail, snapshotFor,
+    /* (#R783) the camera-free door, its receipt, and the registration that publishes it. `acquire`
+       is the supplier js/gis-sources.js calls; nothing else should call it directly — going through
+       the contract is what puts a `coverage` on the answer. */
+    acquire, reach, register, endpointUrl,
     track, find, onTrack,
     setOpacity, setLift, setFilter, onZoom,
     sizeForZoom,

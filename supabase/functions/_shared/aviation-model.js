@@ -374,6 +374,218 @@
     return 'stale';
   }
 
+  /* ══ ⚠⚠⚠ (#R783) WHAT THE FEED CAN SAY ABOUT ITS OWN REACH, AND WHAT IT CANNOT ════════════════
+     js/gis-sources.js can only reach `completeness:'all'` when a supplier states it, and a live
+     ADS-B feed is the clearest case in the app of a supplier that must never state it. MEASURED
+     against production (2026-09-17), four boxes asked of supabase/functions/aviation-feed
+     `?ch=view&bbox=…`:
+
+         bbox                       x-intmap-count   decoded, outside the box   x-intmap-coverage
+         128,30,146,40  (Japan)            605              0                   lattice 856/980
+         -10,40,10,55   (W. Europe)       2661              0                   lattice 856/980
+         -125,30,-70,50 (USA)             6111              0                   lattice 856/980
+         -180,-90,180,90 (world)         15116              0                   lattice 856/980
+
+     Three facts come out of that, and each one is a different sentence:
+
+       ① THE BOX IS EXECUTED. Not one record fell outside the box that was asked for, and Japan's
+          answer and Europe's share no aircraft at all (measured: 0 in common). So a read can be
+          asked for a WINDOW rather than for a camera, which is the whole of #R783's requirement —
+          see IntMapAviation.acquire.
+       ② THE ANSWER IS NOT THE WINDOW'S CONTENTS. `lattice 856/980` is the function's own count of
+          how many of its 980 lattice tiles it has EVER asked the provider about; 124 of them had
+          never been asked. Sky nobody has asked about holds aircraft nobody has been told about,
+          so the answer is a part of the window whatever its count.
+       ③ AND THE PARTS OF IT ARE NOT THE SAME AGE. `x-intmap-oldest-ms` was ~899,000 on every one of
+          those reads: the oldest position in the box had been observed fifteen minutes earlier,
+          because the feed keeps a record until STALE_DROP_S. One `asOf` for the answer would be a
+          claim about 605 observations that only holds for the newest of them — so every feature
+          carries its OWN observation time (featuresFromSnapshot below), and the answer carries
+          when it was assembled.
+
+     ⚠ THIS SECTION IS MIRRORED INTO THE EDGE FUNCTION like the rest of the file, and that is the
+     point of putting it here: `coverageLine()` in supabase/functions/aviation-feed/index.ts WRITES
+     the sentence that readReach() READS, and a vocabulary with a writer in one file and a reader in
+     another is [[intmap-two-readers-one-field-list]] waiting to happen. reachLine() is the writer's
+     half, so the two cannot drift. */
+
+  /* The one place the feed's address is derived. ⚠ NOT A SECOND OPINION ABOUT WHERE IT IS — the
+     project ref lives in `window.SUPABASE_URL` and nowhere else (the same derivation eleven other
+     modules make for their own function); what belongs to aviation is the FUNCTION NAME, and it was
+     spelled out in js/data-layers.js where nothing else could reach it. Callers pass the base so
+     this stays usable in the Worker and in Deno, neither of which has `window`. */
+  var FEED_FUNCTION = 'aviation-feed';
+  function feedUrl(base) {
+    var b = String(base == null ? '' : base).replace(/\/+$/, '');
+    return b ? (b + '/functions/v1/' + FEED_FUNCTION) : '';
+  }
+
+  /* The query the view channel takes, built from a BOX THAT WAS PASSED IN. ⚠ Three decimals because
+     the server rounds the cache key to the half degree; more digits would only split the cache.
+     null when the box cannot be read — 「読めなかった」 is not 「世界」 (js/gis-sources.js prepare()
+     draws the same line for the same reason). */
+  function bboxParam(box) {
+    if (!box) return null;
+    var w = +box.w, s = +box.s, e = +box.e, n = +box.n;
+    if (!(isFinite(w) && isFinite(s) && isFinite(e) && isFinite(n))) return null;
+    return '&bbox=' + [w, s, e, n].map(function (v) { return v.toFixed(3); }).join(',');
+  }
+
+  /* ── the reach sentence: one writer, one reader ───────────────────────────────────────────────
+     `lattice <probed>/<tiles>` — how much of the global lattice this isolate has ever asked about.
+     `provider-global` — the provider answers for the whole globe in one read (OpenSky /states/all).
+     Anything else, including the empty string a cold response carries, is `unstated`. */
+  function reachLine(kind, probed, tiles) {
+    if (kind === 'provider-global') return 'provider-global';
+    if (kind === 'lattice') return 'lattice ' + (probed | 0) + '/' + (tiles | 0);
+    return '';
+  }
+
+  /* ⚠ `complete` IS THREE-VALUED AND IT IS NEVER true TODAY, and that is a measurement rather than a
+     decision here. A shortfall (probed < tiles) is the feed stating that sky it has not asked about
+     exists, so `false`. A fully probed lattice is NOT a statement of completeness: a tile that was
+     asked about once is not a tile whose aircraft are currently held (they are dropped at
+     STALE_DROP_S), so that reads `null` — 「述べていない」. `provider-global` is `null` for the same
+     reason one level up: OpenSky publishes what its receivers heard and claims nothing about what
+     flew. ⚠ A LATER FEED THAT DOES CLAIM IT WOULD SAY SO HERE, which is why nothing downstream
+     writes the claim of its own accord (coverageFor below reads this and only this). */
+  function readReach(line) {
+    var s = String(line == null ? '' : line).trim();
+    var out = { kind: 'unstated', probed: null, tiles: null, fraction: null, complete: null, stated: s };
+    if (!s) return out;
+    if (s === 'provider-global') { out.kind = 'provider-global'; return out; }
+    var m = /^lattice\s+(\d+)\s*\/\s*(\d+)$/.exec(s);
+    if (!m) return out;
+    var p = +m[1], t = +m[2];
+    out.kind = 'lattice';
+    out.probed = p;
+    out.tiles = t;
+    out.fraction = (t > 0) ? (p / t) : null;
+    out.complete = (t > 0 && p < t) ? false : null;
+    return out;
+  }
+
+  /* ── a decoded snapshot as GeoJSON, for the acquisition layer ─────────────────────────────────
+     ⚠ THE FEATURE ID IS THE ICAO 24-BIT ADDRESS, which is the aircraft's own identifier and the same
+     one the click path, the track ring and Atlas resolve to (#R82) — so two reads of the same box are
+     comparable, and so a reader can join this answer to the detail card.
+     ⚠ THE CODEC IS PASSED IN, WHOLE, AND NOT COPIED. The number→hex table and the per-record FLAG
+     BITS are js/aviation-codec.js's — the file whose header says that a codec and a decoder
+     disagreeing about one bit puts every aircraft in the world somewhere plausible and wrong. A
+     second spelling of `AC_POS_VALID` here would be exactly that drift, so this asks the codec that
+     decoded the message. It is a parameter because this file is mirrored into a bundle where the
+     codec is a different module (scripts/sync-aviation.mjs).
+     ⚠ RECORDS WITHOUT A POSITION ARE LEFT OUT, not placed at 0,0. AC_POS_VALID is clear for an
+     aircraft heard from without a position fix; a feature at null island is a claim the wire did not
+     make. `skippedNoPosition` in the return is what makes the difference visible rather than silent.
+     ⚠ AND THE BOX IS APPLIED HERE TOO WHEN ONE IS GIVEN. Measured above, the server already answers
+     the box — this is what keeps that a fact of the ANSWER rather than a promise that was trusted.
+     lonInSpan is this file's own angle test (#R411), so the window means the same thing here as it
+     does on the server. */
+  function featuresFromSnapshot(msg, nowMs, codec, box) {
+    var out = [], skipped = 0, dropped = 0, newest = null, oldest = null;
+    if (!msg || !(msg.count >= 0) || !codec || typeof codec.numToHex !== 'function') {
+      return { features: out, skippedNoPosition: 0, droppedOutsideBox: 0, newestObservedAt: null, oldestObservedAt: null };
+    }
+    var ident = Object.create(null);
+    var idl = msg.identity || [];
+    for (var k = 0; k < idl.length; k++) {
+      var it = idl[k];
+      if (it && it.hex) ident[String(it.hex).toLowerCase()] = it;
+    }
+    var now = (nowMs == null) ? Date.now() : +nowMs;
+    for (var i = 0; i < msg.count; i++) {
+      if (!(msg.flags[i] & codec.AC_POS_VALID)) { skipped++; continue; }
+      var lon = msg.lon[i], lat = msg.lat[i];
+      if (box && !(lat >= box.s && lat <= box.n && lonInSpan(lon, box.w, box.e))) { dropped++; continue; }
+      var hex = codec.numToHex(msg.icao[i]);
+      var id = ident[hex] || null;
+      var ageSec = msg.age[i];
+      var seen = now - ageSec * 1000;
+      if (newest == null || seen > newest) newest = seen;
+      if (oldest == null || seen < oldest) oldest = seen;
+      var cat = msg.cat[i] | 0;
+      out.push({
+        type: 'Feature',
+        /* the aircraft's own identifier, at the level a GeoJSON reader looks for one */
+        id: hex,
+        geometry: { type: 'Point', coordinates: [lon, lat] },
+        properties: {
+          hex: hex,
+          callsign: (id && id.callsign) || '',
+          registration: (id && id.registration) || '',
+          type: (id && id.type) || '',
+          operator: (id && id.operator) || '',
+          /* null, not 0: AC_ALT_VALID clear means the wire carried no altitude (§2 of this file) */
+          altFt: (msg.alt[i] === msg.alt[i]) ? msg.alt[i] : null,
+          /* ⚠ THESE THREE HAVE NO VALIDITY BIT ON THE WIRE (js/aviation-codec.js writes them as
+             plain integers), so a 0 here is 「the wire said 0」 and cannot be told apart from
+             silence. Stating them as numbers is what the wire supports; a reader that needs the
+             distinction asks IntMapAviation.detail(), which carries the provider's own nulls. */
+          track: msg.track[i],
+          gsKt: msg.gs[i],
+          vrFpm: msg.vr[i],
+          category: cat,
+          categoryName: categoryName(cat),
+          onGround: !!(msg.flags[i] & codec.AC_ON_GROUND),
+          military: !!(msg.flags[i] & codec.AC_MILITARY),
+          emergency: !!(msg.flags[i] & codec.AC_EMERGENCY),
+          spi: !!(msg.flags[i] & codec.AC_SPI),
+          /* ⚠ PER AIRCRAFT, BECAUSE THE ANSWER'S OWN TIME IS NOT THIS. Measured: one answer held
+             positions spanning fifteen minutes (see ③ in the section header). */
+          observedAt: new Date(seen).toISOString(),
+          observedAgeSec: Math.round(ageSec * 10) / 10,
+          freshness: freshness(ageSec),
+        },
+      });
+    }
+    return {
+      features: out,
+      skippedNoPosition: skipped,
+      droppedOutsideBox: dropped,
+      newestObservedAt: (newest == null) ? null : new Date(newest).toISOString(),
+      oldestObservedAt: (oldest == null) ? null : new Date(oldest).toISOString(),
+    };
+  }
+
+  /* ── the `coverage` an acquisition states about itself ────────────────────────────────────────
+     js/gis-sources.js fromSupplier() takes exactly what only the supplier can know and runs it
+     through its own coverageOf() — so this states FACTS and never a verdict (`completeness` is not
+     writable from here, by design).
+     ⚠ `complete` COMES FROM THE FEED'S OWN SENTENCE and is not written here: readReach above returns
+     `true` only if a feed ever says so, and none does today, so this is `false` on every real answer
+     — measured, never decided. ⚠ `resolution` carries the reach because that is what the reach is:
+     how finely the window was covered. js/gis-sources.js puts it in the record unread, which is what
+     lets a reader see 「856/980 の空から」 rather than only 「一部」. */
+  function coverageFor(m) {
+    var o = m || {};
+    var r = o.reach || null;
+    return {
+      served: o.box ? { w: +o.box.w, s: +o.box.s, e: +o.box.e, n: +o.box.n } : null,
+      count: (typeof o.count === 'number') ? o.count : null,
+      /* when the ANSWER was assembled by the feed, not when its oldest position was observed */
+      asOf: o.asOf == null ? null : String(o.asOf),
+      resolution: r ? { kind: r.kind, probed: r.probed, tiles: r.tiles, fraction: r.fraction, stated: r.stated } : null,
+      complete: !!(r && r.complete === true),
+    };
+  }
+
+  /* The declaration this module makes about the holding behind acquire(). ⚠ `complete` IS NOT HERE
+     AS A CONSTANT: it is the last reach the feed stated, so a feed that begins claiming completeness
+     is believed and one that does not is not. `viewBound:false` is the #R783 change and it is a
+     statement about THIS door — the renderer's aircraft source is still the camera's, which is what
+     js/map-ui.js's row goes on saying for as long as that row speaks for the drawn layer. */
+  function holdsFor(reach, asOf) {
+    return {
+      extent: { w: -180, s: -90, e: 180, n: 90 },
+      complete: !!(reach && reach.complete === true),
+      viewBound: false,
+      live: true,
+      asOf: asOf == null ? null : String(asOf),
+      resolution: reach ? { kind: reach.kind, probed: reach.probed, tiles: reach.tiles, fraction: reach.fraction } : null,
+    };
+  }
+
   var API = {
     NM_KM: NM_KM, M_PER_FT: M_PER_FT, MS_TO_KT: MS_TO_KT, MS_TO_FPM: MS_TO_FPM,
     CATEGORY_NAMES: CATEGORY_NAMES,
@@ -392,6 +604,16 @@
     tilesForBbox: tilesForBbox,
     lonInSpan: lonInSpan,
     freshness: freshness,
+    /* (#R783) the acquisition half: where the feed is, how a window is asked for, what the feed
+       says about its own reach, and how a decoded snapshot becomes rows a reader can analyse. */
+    FEED_FUNCTION: FEED_FUNCTION,
+    feedUrl: feedUrl,
+    bboxParam: bboxParam,
+    reachLine: reachLine,
+    readReach: readReach,
+    featuresFromSnapshot: featuresFromSnapshot,
+    coverageFor: coverageFor,
+    holdsFor: holdsFor,
   };
 
   if (typeof globalThis !== 'undefined') globalThis.IntMapAviationModel = API;

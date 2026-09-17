@@ -335,7 +335,12 @@ test('#R254 ⑩ the data-center layer is its own module, sourced, and invents no
   /* every door into the layer, and there are two: the row, and Compare's own map */
   assert.match(lp, /IntMapLazy\.need\('dataCenters'\)[\s\S]{0,80}_dcToggle/,
     'the data-center ROW does not fetch its module before delegating');
-  assert.match(lp, /if\(key==='dc'\)\{ window\.IntMapLazy\.need\('dataCenters'\)/,
+  /* ⚠ (#R783) THIS ASSERTION USED TO FIX THE SPELLING OF THE BRANCH («if(key==='dc'){ …»), so the
+     day the three if/else arms became a table the bundles declare themselves in, a correct change
+     failed a check whose subject is «the dc door fetches its module before delegating»
+     (.agents/rules/no-ad-hoc-hardcoding.md §1). The subject is the FETCH, not the shape of the
+     control flow: the `dc` entry — however it is written — has to reach IntMapLazy.need. */
+  assert.match(lp, /dc:\s*\{[\s\S]{0,400}?IntMapLazy\.need\('dataCenters'\)/,
     "IntMapBeta2.load('dc') does not fetch the module — js/compare.js's second map would draw nothing");
 });
 

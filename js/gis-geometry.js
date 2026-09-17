@@ -154,23 +154,58 @@ export function makeGisGeometry() {
       return out;
     }
 
-    function lonRange(rings) {
+    /* The least and greatest longitude anywhere inside a coordinate array — a ring, a list of rings,
+       a list of PARTS, or a single position, ALL THE SAME.
+       ⚠⚠⚠ THIS USED TO ASK ITS CALLER WHAT IT HAD BEEN GIVEN, BY ASSUMING (#R783). It was written as
+       `for (const r of rings) for (const p of r)`, which is exactly two levels, and three callers
+       hand it a MultiPolygon: boolOpR, unionR and bufferKmR all align one multi against another.
+       One level too shallow, `p[0]` is a POSITION rather than a number, `p[0] < mn` against a number
+       is false whichever way it runs, `mn` stays Infinity and the answer is null — so alignTo did
+       nothing and two shapes written one turn apart stayed 360° apart in the plane. MEASURED from
+       js/gis-raster.js's coverOf: `intersection(pixel at 200-201°E, box at −161…−158°E)` — the same
+       ground — returned null, and a null there is read as 「該当なし」 by every caller.
+       ⚠ A POSITION IS A LIST OF NUMBERS AND EVERYTHING ELSE IS A LIST OF SOMETHING, so the depth is
+       a question the VALUE answers (isPos, the same reader the rest of this file uses). No caller
+       passes a flag and none is special-cased — the rule is on the fact, not on the caller
+       (.agents/rules/no-ad-hoc-hardcoding.md §2-2). Identical answers for correctly-nested input:
+       a ring is still walked as a ring. */
+    function lonRange(node) {
       let mn = Infinity, mx = -Infinity;
-      for (const r of rings) for (const p of r) { if (p[0] < mn) mn = p[0]; if (p[0] > mx) mx = p[0]; }
+      const walk = (x) => {
+        if (isPos(x)) { if (x[0] < mn) mn = x[0]; if (x[0] > mx) mx = x[0]; return; }
+        if (Array.isArray(x)) for (const c of x) walk(c);
+      };
+      walk(node);
       return (mn === Infinity) ? null : [mn, mx];
     }
 
-    /* Shift `rings` by whole turns so they sit as close as possible to `ref`'s window. Two shapes
+    /* Every position in a coordinate array moved east by `dx`, at whatever depth it lives, keeping
+       the array's shape. ⚠ Two dimensions out, like the loop it replaces — the third ordinate is
+       not carried here, and js/gis-geometry.js reads none (elevation travels beside the coordinates,
+       [[intmap-declared-axis-must-be-verified]]). */
+    function shiftLng(node, dx) {
+      if (isPos(node)) return [node[0] + dx, node[1]];
+      /* Anything that is neither a position nor a list is carried through untouched rather than
+         thrown over: every caller here filters through isPos before it gets this far, and a helper
+         that turns malformed input into a TypeError would convert a defect validate() reports by
+         name (`position-not-finite`) into a crash somewhere else. */
+      return Array.isArray(node) ? node.map((c) => shiftLng(c, dx)) : node;
+    }
+
+    /* Shift `coords` by whole turns so they sit as close as possible to `ref`'s window. Two shapes
        that both cross the seam can come out of their files on opposite sides of it (one at +179,
        one at -179); in the plane those do not touch, and the intersection of two overlapping
-       countries would come back empty with nothing saying why. */
-    function alignTo(rings, ref) {
-      const a = lonRange(ref), b = lonRange(rings);
-      if (!a || !b) return rings;
+       countries would come back empty with nothing saying why.
+       ⚠ A WHOLE TURN IS EXACT IN FLOAT64 (360 is a power of two times 45), so this moves nothing:
+       the shifted copy is the same point on the sphere, written in the window where the other
+       operand lives. */
+    function alignTo(coords, ref) {
+      const a = lonRange(ref), b = lonRange(coords);
+      if (!a || !b) return coords;
       const centreA = (a[0] + a[1]) / 2, centreB = (b[0] + b[1]) / 2;
       const k = Math.round((centreA - centreB) / 360);
-      if (!k) return rings;
-      return rings.map((r) => r.map((p) => [p[0] + k * 360, p[1]]));
+      if (!k) return coords;
+      return shiftLng(coords, k * 360);
     }
 
     /* Back into [-180,180]. js/geodesy.js already owns this cut — diskFillPolys emits unwrapped
@@ -448,6 +483,28 @@ export function makeGisGeometry() {
       const d1 = orient(p3, p4, p1), d2 = orient(p3, p4, p2), d3 = orient(p1, p2, p3), d4 = orient(p1, p2, p4);
       if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) return true;
       return onSegment(p3, p4, p1) || onSegment(p3, p4, p2) || onSegment(p1, p2, p3) || onSegment(p1, p2, p4);
+    }
+
+    /* Does ab PASS THROUGH cd — each segment's endpoints on strictly opposite sides of the other's
+       line, by more than the width at which two positions are already the same position.
+       ⚠ THIS IS A DIFFERENT QUESTION FROM segmentsCross ABOVE, not a stricter setting of it, and
+       both answers are needed. 「この二つの境界は触れているか」 is what intersects / contains /
+       distance ask, so segmentsCross is generous ON PURPOSE: a shared vertex, a collinear overlap
+       and a T-junction are all meetings. 「一方の境界が他方の内部を通り抜けたか」 is what an OVERLAP
+       between two parts of one MultiPolygon is, and there a tangency must NOT count — two islands
+       meeting at a point, and the two halves of one part cut at the antimeridian which share the
+       seam edge, have meeting boundaries and DISJOINT INTERIORS, and calling those invalid would
+       condemn most of the shipped record.
+       ⚠ The sign test is guarded at SAME_EPS, WHICH IS THE SAME TOLERANCE onSegment USES, and that
+       is the property that matters rather than the number: a position onSegment accepts as lying on
+       an edge (|orient| ≤ SAME_EPS) can never be read here as a passage through it, so the two
+       classifications cannot disagree about one meeting. Measured: an endpoint lying exactly on the
+       other edge computes to ±1e-17 rather than to 0, and an unguarded `d > 0` reads that noise as a
+       crossing — every touching island would have been reported as an overlap. */
+    function crossesTransversally(p1, p2, p3, p4) {
+      const side = (v) => ((v > SAME_EPS) ? 1 : ((v < -SAME_EPS) ? -1 : 0));
+      return side(orient(p3, p4, p1)) * side(orient(p3, p4, p2)) < 0
+        && side(orient(p1, p2, p3)) * side(orient(p1, p2, p4)) < 0;
     }
 
     /* Every line string a geometry contributes to a distance or a crossing test: its own lines, and
@@ -775,8 +832,8 @@ export function makeGisGeometry() {
        vertices each is 6 million edges, and the square of that is not a thing that finishes.
        ⚠ THE WORST CASE IS STILL QUADRATIC (every edge spanning the whole width, e.g. a star) — the
        prune is a prune and not a guarantee, which is why `limit` exists and is reported. */
-    function sweepMeetings(segs, onMeet) {
-      const order = segs.slice().sort((p, q) => p.x0 - q.x0);
+    function sweepBoxes(items, onPair) {
+      const order = items.slice().sort((p, q) => p.x0 - q.x0);
       const active = [];
       for (const s of order) {
         let k = 0;
@@ -784,12 +841,23 @@ export function makeGisGeometry() {
         active.length = k;
         for (const t of active) {
           if (t.y1 < s.y0 - SAME_EPS || s.y1 < t.y0 - SAME_EPS) continue;
-          const meets = adjacentEdges(s, t) ? adjacentDegenerate(s, t) : segmentsCross(s.a, s.b, t.a, t.b);
-          if (!meets) continue;
-          if (onMeet(s, t) === false) return;
+          if (onPair(s, t) === false) return;
         }
         active.push(s);
       }
+    }
+
+    /* The edge walk is the box sweep above with one question asked of each surviving pair. ⚠ The
+       prune is written ONCE (#R783): the between-parts stage below needs the same active-list walk
+       over part bounding boxes, and a second copy of it would be the 「同じ判断を2か所」 this file
+       refuses elsewhere — a pair the edge walk prunes and the part walk keeps could then be reported
+       by one reader and not the other. */
+    function sweepMeetings(segs, onMeet) {
+      sweepBoxes(segs, (s, t) => {
+        const meets = adjacentEdges(s, t) ? adjacentDegenerate(s, t) : segmentsCross(s.a, s.b, t.a, t.b);
+        if (!meets) return true;
+        return onMeet(s, t) !== false;
+      });
     }
 
     /* ONE TOPOLOGY WALK WITH TWO READERS (this file's own note on toMulti, applied again): validate()
@@ -847,6 +915,265 @@ export function makeGisGeometry() {
       return rings;
     }
 
+    /* ── the third stage: BETWEEN the parts of one MultiPolygon (#R783) ───────────────────────── */
+
+    /* ══ VALIDITY HAS THREE STAGES AND ONLY TWO OF THEM WERE ASKED ════════════════════════════════
+     *  scanRing answers about POSITIONS AND RINGS, partTopology answers about the RINGS OF ONE PART,
+     *  and until #R783 that was the whole of it: validate() looped `for (i) checkPolygon(a[i])` over
+     *  a MultiPolygon and returned `valid: true` whenever every part was faultless ON ITS OWN.
+     *  MEASURED on the code as shipped: two squares overlapping in a quarter of their area — the
+     *  first example in any account of OGC validity — were VALID, and the area of that geometry is
+     *  the sum of two parts that cover the same ground twice. repair() had the same shape one level
+     *  down: it cleaned each part and CONCATENATED the results, so a defect that exists only between
+     *  parts survived a repair and was not in `remaining` either, because validate() was not looking.
+     *  OGC's rule is about the multipolygon: THE INTERIORS OF ITS PARTS MUST NOT INTERSECT.
+     *
+     *  ⚠ INTERIORS, AND THE WORD IS LOAD-BEARING. Parts of one geometry TOUCHING is not this defect,
+     *  and reporting it would condemn the shipped record rather than measure it: the two halves of
+     *  one part cut at the antimeridian share the seam edge, and islands meeting at a point are
+     *  written by every clipper. So the test asks whether one boundary PASSES THROUGH the other
+     *  (crossesTransversally, whose note says why it is not segmentsCross) and whether a point
+     *  strictly inside one part is strictly inside the other — never whether two boundaries met.
+     *
+     *  ⚠ AND THE THREE ANSWERS ARE THREE CODES, because they send a reader to different places:
+     *  `parts-overlap` is two parts covering common ground, `part-inside-part` is a part swallowed by
+     *  another (GEOS calls it a nested shell — the area is double-counted and nothing looks wrong on
+     *  a map), `part-duplicates-part` is the same region written twice. Collapsing them into one
+     *  would be [[intmap-restate-the-defect-not-the-fix]] in the vocabulary itself.
+     *
+     *  ⚠ WHAT THIS STAGE DOES NOT REPORT, STATED RATHER THAN IMPLIED:
+     *    · parts that touch, along an edge or at a point — their interiors are disjoint (above);
+     *    · an overlap whose boundary intersection is ENTIRELY COLLINEAR (two rectangles sharing the
+     *      lines of their top and bottom edges and overlapping in a band) when every interior point
+     *      sampled below happens to land on the other part's boundary. There is no transversal
+     *      crossing to find, and the parity test cannot answer about a point on a boundary. Deciding
+     *      that case needs the sweep-line boolean, and validate() answers WITHOUT it on purpose —
+     *      nothing else in validate() depends on the clipper having loaded, and a check that can
+     *      only run sometimes would make 「valid」 mean two different things. repair() does have the
+     *      clipper, and what it could not resolve comes back in `remaining`;
+     *    · the parts of DIFFERENT geometries, and a GeometryCollection's members. Two overlapping
+     *      features are a statement about a DATASET, not about a geometry — see the note on the
+     *      dataset-wide topology this stage deliberately does not attempt.
+     *
+     *  ⚠ THE DATASET-WIDE QUESTION IS A DIFFERENT SUBJECT AND IS NOT ANSWERED HERE. 「地物同士が
+     *  重ならない」 and 「区域の間に隙間が無い」 (an administrative or land-cover coverage) are
+     *  properties of a FEATURE COLLECTION: they need every feature of a layer at once, a shared
+     *  precision model, and a gap tolerance somebody states — a sliver of 1 µm between two municipal
+     *  boundaries is the float64 the file was written with, not a hole in the world. This kernel's
+     *  doors take ONE geometry and this file has no tolerance to state, so answering it here would
+     *  mean inventing one. It belongs beside js/gis-datasets.js, where the layer is. */
+
+    /* All rings of one part in one bounding box. ⚠ Every ring, not the shell alone: a hole drawn
+       outside its shell is already reported by partTopology, and a box that does not contain it
+       would let this stage prune away a pair whose rings really do meet. */
+    function partBounds(rings) {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const rg of rings) for (const p of rg.pts) {
+        if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0];
+        if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1];
+      }
+      return (x0 === Infinity) ? null : [x0, y0, x1, y1];
+    }
+
+    function boxInside(a, b) {
+      return !!a && !!b && a[0] >= b[0] - SAME_EPS && a[1] >= b[1] - SAME_EPS && a[2] <= b[2] + SAME_EPS && a[3] <= b[3] + SAME_EPS;
+    }
+
+    /* Inside the part, by the parity pointInGeometry reads: an odd number of rings — shell minus its
+       holes, which is what GeoJSON means. ⚠ Asked of the SCANNED rings rather than of the geometry,
+       because this stage works on the unwrapped, aligned copies. */
+    function pointInPart(p, rings) {
+      let n = 0;
+      for (const rg of rings) if (pointInRing(p[0], p[1], rg.pts)) n++;
+      return (n % 2) === 1;
+    }
+
+    function onPartBoundary(p, rings) {
+      for (const rg of rings) if (onBoundary(p, rg.pts)) return true;
+      return false;
+    }
+
+    /* Up to `want` points STRICTLY INSIDE a part, each found on a horizontal line that passes
+       through no vertex: between two consecutive distinct vertex latitudes every ring crossing is
+       transversal, so the crossings sort into an even number of x values whose odd-numbered
+       intervals are the inside of the part (holes included, by the same parity as above). The
+       midpoint of the widest such interval is as far from every boundary as this walk can put it.
+       ⚠ WHY NOT PROBE WITH THE PART'S OWN VERTICES, the way partTopology probes a hole with its
+       first off-shell vertex: a vertex is ON its part's boundary, so for the question 「この部分の
+       内部は相手の内部と交わるか」 it answers about a point that belongs to neither interior.
+       MEASURED: a diamond whose four vertices sit on the mid-points of a square's edges is inside
+       that square, crosses it nowhere, and has NO vertex the parity test can answer about — a
+       vertex-probing walk reports nothing at all. ⚠ Nothing computed here is ever emitted as
+       geometry; these are measurements, not positions the repair writes. */
+    function interiorPoints(rings, want) {
+      const ys = [];
+      for (const rg of rings) for (const p of rg.pts) ys.push(p[1]);
+      ys.sort((a, b) => a - b);
+      const out = [];
+      const gaps = [];
+      for (let i = 1; i < ys.length; i++) if (ys[i] - ys[i - 1] > SAME_EPS) gaps.push(i);
+      if (!gaps.length) return out;
+      /* Spread the scanlines over the part rather than taking the first few: consecutive gaps are
+         usually the same sliver of one ring, and a probe near the boundary is the one most likely to
+         land ON another part's boundary, where the parity test cannot answer. */
+      const step = Math.max(1, Math.floor(gaps.length / want));
+      for (let k = Math.floor(step / 2); k < gaps.length && out.length < want; k += step) {
+        const i = gaps[k];
+        const y = (ys[i - 1] + ys[i]) / 2;
+        if (!(y > ys[i - 1] && y < ys[i])) continue;              /* the gap was below float64 here */
+        const xs = [];
+        for (const rg of rings) {
+          const pts = rg.pts, n = pts.length;
+          for (let e = 0; e < n; e++) {
+            const a = pts[e], b = pts[(e + 1) % n];
+            if ((a[1] > y) !== (b[1] > y)) xs.push(a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]));
+          }
+        }
+        if (xs.length < 2) continue;
+        xs.sort((p, q) => p - q);
+        let best = null, width = -1;
+        for (let e = 0; e + 1 < xs.length; e += 2) { const d = xs[e + 1] - xs[e]; if (d > width) { width = d; best = [(xs[e] + xs[e + 1]) / 2, y]; } }
+        if (best && width > SAME_EPS) out.push(best);
+      }
+      return out;
+    }
+
+    /* How many interior probes one part contributes. ⚠ NOT a threshold on correctness — one probe
+       decides every configuration in which a boundary is not walked along, and the extra two exist
+       because a single probe can land on the OTHER part's boundary, where parity is arbitrary (the
+       residual that leaves is stated in the block above). Three keeps the cost of a pair at O(V):
+       measured over data/ecoregions_2017.geojson, the whole between-parts stage adds well under a
+       second to a 10 MB record whose MultiPolygons hold 39,000 parts. */
+    const PART_PROBES = 3;
+
+    function probesOf(part) {
+      if (!part.probes) part.probes = interiorPoints(part.rings, PART_PROBES);
+      return part.probes;
+    }
+
+    /* A point in one interior that is also in the other. Both directions, because one part may be
+       far bigger than the other and only the smaller one's probes land inside. */
+    function interiorsMeet(A, B) {
+      for (const p of probesOf(A)) if (!onPartBoundary(p, B.rings) && pointInPart(p, B.rings)) return p;
+      for (const p of probesOf(B)) if (!onPartBoundary(p, A.rings) && pointInPart(p, A.rings)) return p;
+      return null;
+    }
+
+    /* Is the whole of A inside B. ⚠ Only ever asked of a pair whose interiors have ALREADY been
+       found to meet and whose boundaries do not cross — this is the O(Va·Vb) walk, and on valid data
+       it never runs. Its job is not detection but DIRECTION: nesting and duplication are the same
+       finding until you know which part is which, and a reader told 「part 0 is inside part 1」
+       about the OUTER part has been sent to the wrong array.
+       ⚠ TWO CONDITIONS, AND THE SECOND ONE IS THE ONE THAT IS EASY TO MISS: every position of A
+       lying inside B is not enough, because B's HOLE can lie inside A. Measured on the synthetic
+       case ⑤ covers: a square inside a donut's shell, with the donut's hole entirely inside that
+       square, has all four of its corners inside the donut and its boundary crosses nothing — and
+       it is NOT contained, because it covers the ground the donut left out. A vertex of B strictly
+       inside A is exactly that shape, whichever ring of B it belongs to. */
+    function containedIn(A, B) {
+      if (!boxInside(A.box, B.box)) return false;
+      for (const rg of A.rings) for (const p of rg.pts) {
+        if (pointInPart(p, B.rings)) continue;
+        if (onPartBoundary(p, B.rings)) continue;
+        return false;
+      }
+      for (const rg of B.rings) for (const p of rg.pts) if (!onPartBoundary(p, A.rings) && pointInPart(p, A.rings)) return false;
+      return true;
+    }
+
+    /* The first place where a boundary of A passes through a boundary of B. The edges of both parts
+       go through ONE sweep (the same one the per-part walk uses) and meetings within a part are
+       skipped — those are partTopology's finding, reported there with the ring and the vertex. */
+    function transversalBetween(A, B) {
+      const segs = [];
+      for (const s of ringSegments(A.rings)) { s.part = A; segs.push(s); }
+      for (const s of ringSegments(B.rings)) { s.part = B; segs.push(s); }
+      let hit = null;
+      sweepBoxes(segs, (s, t) => {
+        if (s.part === t.part) return true;
+        if (!crossesTransversally(s.a, s.b, t.a, t.b)) return true;
+        const a = (s.part === A) ? s : t, b = (s.part === A) ? t : s;
+        hit = {
+          rings: [a.ring.r, b.ring.r],
+          vertices: [a.ring.src ? a.ring.src[a.i] : null, b.ring.src ? b.ring.src[b.i] : null],
+        };
+        return false;
+      });
+      return hit;
+    }
+
+    /* Parts put in ONE 360° window, for the reason alignPart does it for the rings of one part: a
+       MultiPolygon whose parts sit on opposite sides of the antimeridian is written at +179 and
+       −179, and in the plane those are 358° apart. ⚠ A whole-turn shift cannot invent an overlap —
+       it either brings two parts to where they really are or leaves them far apart — so the only
+       thing a misalignment can cost this stage is a finding, never a false one. */
+    function alignParts(parts) {
+      if (parts.length < 2) return parts;
+      const base = parts[0].rings.map((x) => x.pts);
+      for (let i = 1; i < parts.length; i++) {
+        const shifted = alignTo(parts[i].rings.map((x) => x.pts), base);
+        for (let k = 0; k < parts[i].rings.length; k++) parts[i].rings[k].pts = shifted[k];
+      }
+      return parts;
+    }
+
+    /* [{ i, rings:[{r, pts, src}] }] → the findings, through ONE reader, exactly as partTopology is
+       read by both validate() and repair(). `i` is the index in the MultiPolygon the caller wrote,
+       so every `part` and `insideOf` below names an array the reader can open. */
+    function partsTopology(parts, report) {
+      const boxes = [];
+      for (const part of alignParts(parts)) {
+        /* A part whose first ring was dropped has no known outside — partTopology declines
+           containment on the same ground (`rings[0].r !== 0`), and guessing which of the survivors
+           is the shell is a statement the file has no basis for. */
+        if (!part.rings.length || part.rings[0].r !== 0) continue;
+        part.box = partBounds(part.rings);
+        if (!part.box) continue;
+        boxes.push({ part: part, x0: part.box[0], y0: part.box[1], x1: part.box[2], y1: part.box[3] });
+      }
+      if (boxes.length < 2) return;
+      sweepBoxes(boxes, (s, t) => {
+        const A = (s.part.i <= t.part.i) ? s.part : t.part;
+        const B = (A === s.part) ? t.part : s.part;
+        /* ⚠ A PART WITH NO INTERIOR CANNOT INTERSECT ONE, AND A CROSSING BOUNDARY IS NOT AN
+           INTERIOR. interiorPoints finds nothing when no scanline through the part encloses a width
+           above SAME_EPS — a spike, a sliver traced out and back, a ring whose positions are all one
+           position. MEASURED: this was the stage's ONLY disagreement with the sweep-line over
+           data/ecoregions_2017.geojson in the direction of over-reporting. Cape York part 776 is
+           eight positions inside 0.01° with three duplicates and two spikes; its boundary really
+           does cross part 756's, and the clipper gives their intersection NO AREA, because 776
+           encloses nothing. Reporting it as an overlap would be claiming double-counted ground for
+           a part that covers none — and the defect it does have (`ring-self-intersects`,
+           `duplicate-point`) is already reported against the ring itself by stage two. */
+        if (!probesOf(A).length || !probesOf(B).length) return true;
+        /* ⚠ A SELF-CROSSING PART IS STILL COMPARED, and that is a decision measured rather than
+           assumed. Its interior is READ BY PARITY here and by re-noding in a sweep-line engine, and
+           for a bow-tie those two readings differ — so the CLASS below (nested, duplicated, merely
+           overlapping) is the parity reading and it is stated as such in `selfCrossing`. What does
+           not differ is the finding: the two parts do cover common ground. Excluding them was tried
+           and measured first: 355 of the 568 interior intersections the sweep-line finds in
+           data/ecoregions_2017.geojson involve a part that crosses itself, and dropping them left
+           the reader with no statement at all about most of the record's real overlaps. The residual
+           is one pair (Albertine Rift 114 & 118), where 0.027% of a bow-tie's area falls on the
+           far side of the two readings and this stage says 「inside」 where the engine says
+           「overlapping」. */
+        const cross = transversalBetween(A, B);
+        const which = [A, B].filter((p) => p.crossed).map((p) => p.i);
+        const flag = which.length ? which : null;
+        if (cross) return report('parts-overlap', { part: A.i, parts: [A.i, B.i], rings: cross.rings, vertices: cross.vertices, selfCrossing: flag });
+        const meet = interiorsMeet(A, B);
+        if (!meet) return true;
+        const aInB = containedIn(A, B), bInA = containedIn(B, A);
+        /* Each inside the other is the same region twice. ⚠ Not 「頂点が同じ」: the same ground
+           traced with an extra collinear vertex is the same ground, and a comparison of vertex lists
+           would call that two different parts and report the wrong defect. */
+        if (aInB && bInA) return report('part-duplicates-part', { part: B.i, duplicateOf: A.i, at: meet.slice(), selfCrossing: flag });
+        if (aInB) return report('part-inside-part', { part: A.i, insideOf: B.i, at: meet.slice(), selfCrossing: flag });
+        if (bInA) return report('part-inside-part', { part: B.i, insideOf: A.i, at: meet.slice(), selfCrossing: flag });
+        return report('parts-overlap', { part: A.i, parts: [A.i, B.i], at: meet.slice(), selfCrossing: flag });
+      });
+    }
+
     /* ── validate ─────────────────────────────────────────────────────────────────────────────── */
 
     /* validate(geom, opts) →
@@ -884,8 +1211,14 @@ export function makeGisGeometry() {
         if (s.pts.length < 2) bad('line-too-few-points', path, null, { distinct: s.pts.length, need: 2 });
       }
 
+      /* → { rings, crossed } — the part's usable rings (scanned, unwrapped, aligned) and whether its
+         own boundary was found to cross, so the third stage can compare one part with the next
+         WITHOUT scanning or sweeping anything twice. ⚠ Two readers of one walk, never two walks: a
+         between-parts stage that read the raw arrays again could disagree with this one about which
+         rings a part has, and one that measured self-crossing again could disagree about whether the
+         part has an interior at all. */
       function checkPolygon(ringsRaw, path) {
-        if (!Array.isArray(ringsRaw) || !ringsRaw.length) { bad('polygon-no-rings', path, null, null); return; }
+        if (!Array.isArray(ringsRaw) || !ringsRaw.length) { bad('polygon-no-rings', path, null, null); return null; }
         const usable = [];
         for (let r = 0; r < ringsRaw.length; r++) {
           const rp = path.concat([r]);
@@ -903,11 +1236,14 @@ export function makeGisGeometry() {
           if (ccw !== wantCcw) note('ring-winding-differs-from-rfc7946', rp, null, { role: r ? 'hole' : 'exterior', winding: ccw ? 'ccw' : 'cw', rfc7946: wantCcw ? 'ccw' : 'cw' });
           usable.push({ r: r, pts: un, src: s.src });
         }
-        if (usable.length < 1) return;
+        if (usable.length < 1) return null;
+        let crossed = false;
         partTopology(alignPart(usable), (code, info) => {
+          if (code === 'ring-self-intersects' || code === 'rings-intersect') crossed = true;
           const rp = (info.ring != null) ? path.concat([info.ring]) : path;
           return bad(code, rp, (info.vertex == null) ? null : info.vertex, info);
         });
+        return { rings: usable, crossed: crossed };
       }
 
       function visit(node, path) {
@@ -924,7 +1260,19 @@ export function makeGisGeometry() {
         if (t === 'LineString') { checkLine(node.coordinates, c); return; }
         if (t === 'MultiLineString') { const a = node.coordinates || []; for (let i = 0; i < a.length; i++) checkLine(a[i], c.concat([i])); return; }
         if (t === 'Polygon') { checkPolygon(node.coordinates, c); return; }
-        if (t === 'MultiPolygon') { const a = node.coordinates; if (!Array.isArray(a)) { bad('unsupported-type', path, null, { type: t }); return; } for (let i = 0; i < a.length; i++) checkPolygon(a[i], c.concat([i])); return; }
+        if (t === 'MultiPolygon') {
+          const a = node.coordinates;
+          if (!Array.isArray(a)) { bad('unsupported-type', path, null, { type: t }); return; }
+          const parts = [];
+          for (let i = 0; i < a.length; i++) {
+            const part = checkPolygon(a[i], c.concat([i]));
+            if (part) parts.push({ i: i, rings: part.rings, crossed: part.crossed, probes: null, box: null });
+          }
+          /* The third stage (#R783). Its subject is the MultiPolygon, so it is asked here and
+             nowhere else — a Polygon has one part and this loop would have nothing to compare. */
+          partsTopology(parts, (code, info) => bad(code, c.concat([info.part]), null, info));
+          return;
+        }
         /* Not 「不正な形」 — a type this kernel does not read. Said as its own code so a caller can
            tell 「この幾何は壊れている」 from 「この幾何のことは知らない」. */
         bad('unsupported-type', path, null, { type: (typeof t === 'string') ? t : null });
@@ -1054,9 +1402,23 @@ export function makeGisGeometry() {
           if (!multi.length) change('dropped-degenerate-polygon', path, { reason: 'noded-to-nothing' });
         }
 
-        /* Back inside [-180,180]. A whole-turn shift is exact and keeps the part in one piece; only
-           a part that really straddles the seam is handed to the splitter, and that one changes the
-           number of parts, so it says so. */
+        const out = backIntoWindow(multi, path);
+
+        /* Winding last, so it is measured on the rings that are actually going out. */
+        const parts = [];
+        for (const poly of out) {
+          const kept = windAndClose(poly, path);
+          if (kept.length) parts.push(kept);
+        }
+        return parts;
+      }
+
+      /* Back inside [-180,180]. A whole-turn shift is exact and keeps the part in one piece; only a
+         part that really straddles the seam is handed to the splitter, and that one changes the
+         number of parts, so it says so. ⚠ WRITTEN ONCE (#R783) for the same reason windAndClose is:
+         the between-parts union below also computes in the unwrapped plane and also has to come
+         back, and two copies of this could shift one part and split the other. */
+      function backIntoWindow(multi, path) {
         const out = [];
         for (const poly of multi) {
           const range2 = lonRange(poly);
@@ -1075,26 +1437,93 @@ export function makeGisGeometry() {
           }
           out.push(poly);
         }
+        return out;
+      }
 
-        /* Winding last, so it is measured on the rings that are actually going out. */
-        const parts = [];
-        for (const poly of out) {
-          const kept = [];
-          for (let r = 0; r < poly.length; r++) {
-            let pts = poly[r];
-            if (pts.length < 3) continue;
-            if (fixWinding) {
-              /* unwrapRing is idempotent on an already-unwrapped ring and is what makes the sign
-                 mean anything on a ring written across the seam. */
-              const ccw = signedAreaDeg2(unwrapRing(pts)) > 0;
-              const wantCcw = (r === 0);
-              if (ccw !== wantCcw) { pts = pts.slice().reverse(); change('reversed-ring-winding', path.concat([r]), { role: r ? 'hole' : 'exterior', from: ccw ? 'ccw' : 'cw', to: wantCcw ? 'ccw' : 'cw' }); }
-            }
-            kept.push(closeRing(pts));
+      /* One part's OPEN rings → the closed rings that go out, wound as RFC 7946 asks unless the
+         caller said `winding:'keep'`. ⚠ WRITTEN ONCE (#R783) because the between-parts stage below
+         re-nodes parts AFTER cleanPolygon has finished with them, and a second copy of this loop
+         could reverse a ring without saying so — or say so about a ring it did not reverse. */
+      function windAndClose(poly, path) {
+        const kept = [];
+        for (let r = 0; r < poly.length; r++) {
+          let pts = poly[r];
+          if (pts.length < 3) continue;
+          if (fixWinding) {
+            /* unwrapRing is idempotent on an already-unwrapped ring and is what makes the sign
+               mean anything on a ring written across the seam. */
+            const ccw = signedAreaDeg2(unwrapRing(pts)) > 0;
+            const wantCcw = (r === 0);
+            if (ccw !== wantCcw) { pts = pts.slice().reverse(); change('reversed-ring-winding', path.concat([r]), { role: r ? 'hole' : 'exterior', from: ccw ? 'ccw' : 'cw', to: wantCcw ? 'ccw' : 'cw' }); }
           }
-          if (kept.length) parts.push(kept);
+          kept.push(closeRing(pts));
         }
-        return parts;
+        return kept;
+      }
+
+      /* ⚠ THE DEFECT THAT ONLY EXISTS BETWEEN PARTS (#R783). cleanPolygon above repairs ONE part at
+         a time and the caller concatenated the results, so two parts covering the same ground came
+         out of a repair untouched — and not in `remaining` either, because validate() was not
+         looking. Now that it looks, a repair that returned them unchanged would be the thing the
+         block at the top of this function refuses: a shape that still fails the check that asked
+         for the repair, over a report that says it was repaired.
+         ⚠ THE FIX IS THE SAME SWEEP LINE, ASKED THE SAME WAY cleanPolygon asks it. A union of the
+         parts with nothing is a re-noding of the whole MultiPolygon: overlapping parts come back as
+         the region they cover ONCE, a part swallowed by another comes back inside it, a part written
+         twice comes back once, and parts that merely touch are left alone because touching is not
+         an overlap. Nothing is moved: the vertices that survive were written, and the ones that are
+         added sit on two edges that were written.
+         ⚠ AND IT COMPUTES IN THE UNWRAPPED, ALIGNED PLANE, not on the rings as written. MEASURED,
+         and the first version of this function got it wrong: a part written across the antimeridian
+         (170 → −170, which is what GeoJSON writes and what cleanPolygon deliberately LEAVES ALONE
+         when nothing else is wrong with it) is, to a planar sweep, a ring 350° wide. Handing that to
+         the union turned a genuine seam-straddling overlap into ONE self-intersecting ring and
+         reported `resolved-part-overlap` over it. So both operands are unwrapped and aligned — the
+         same plane the stage above detected the overlap in — and the answer comes back through
+         backIntoWindow, exactly as cleanPolygon's own union does. */
+      function repairBetweenParts(parts, path) {
+        if (!node || parts.length < 2) return parts;
+        /* `crossed: false` is a fact here rather than an assumption: every part in this array has
+           been through cleanPolygon with noding on, so a part whose boundary crossed itself has
+           already been re-noded into parts whose boundaries do not. */
+        const scan = parts.map((rings, i) => ({
+          i: i,
+          rings: rings.map((r, k) => ({ r: k, pts: unwrapRing(ringPositions(r)), src: null })).filter((x) => x.pts.length >= 3),
+          crossed: false, probes: null, box: null,
+        }));
+        let overlap = false, nested = false, duplicate = false;
+        partsTopology(scan, (code) => {
+          if (code === 'parts-overlap') overlap = true;
+          else if (code === 'part-inside-part') nested = true;
+          else duplicate = true;
+          return !(overlap && nested && duplicate);      /* stop once nothing more can be learned */
+        });
+        if (!(overlap || nested || duplicate)) return parts;
+        if (!available()) throw new Refusal('clipper-unavailable', { path: path.slice() });
+        /* partsTopology has aligned `scan` into one window — the operands are those rings, because
+           the plane the defect was measured in is the plane it has to be resolved in. */
+        let multi;
+        try { multi = PC.union(scan.map((p) => p.rings.map((r) => r.pts))); }
+        catch (e) { throw new Refusal('clipper-failed', { path: path.slice(), op: 'union-parts', message: (e && e.message) || String(e) }); }
+        const united = (Array.isArray(multi) ? multi : []).map((poly) => poly.map((r) => ringPositions(r)).filter((p) => p.length >= 3)).filter((p) => p.length);
+        const polys = backIntoWindow(united, path);
+        const out = [];
+        for (let k = 0; k < polys.length; k++) {
+          /* The parts are new, so a ring's address is its address in the OUTPUT — and when there is
+             only one part left, that output is a Polygon and its rings hang off `coordinates`
+             directly, exactly as the type decision below will write it. */
+          const kept = windAndClose(polys[k], (polys.length > 1) ? path.concat([k]) : path);
+          if (kept.length) out.push(kept);
+        }
+        /* One entry per KIND of thing that was wrong, the way cleanPolygon enumerates its own three.
+           The part counts are in the detail because merging is the one repair here that changes how
+           many parts a reader's geometry has. */
+        const counts = { from: parts.length, to: out.length };
+        if (overlap) change('resolved-part-overlap', path, counts);
+        if (nested) change('resolved-part-nesting', path, counts);
+        if (duplicate) change('resolved-duplicate-part', path, counts);
+        if (!out.length) change('dropped-degenerate-polygon', path, { reason: 'noded-to-nothing' });
+        return out;
       }
 
       function visit(nodeG, path) {
@@ -1133,8 +1562,10 @@ export function makeGisGeometry() {
         if (t === 'Polygon' || t === 'MultiPolygon') {
           const src = (t === 'Polygon') ? [nodeG.coordinates] : (Array.isArray(nodeG.coordinates) ? nodeG.coordinates : null);
           if (!src) throw new Refusal('unsupported-type', { path: path.slice(), type: t });
-          const parts = [];
+          let parts = [];
           for (let i = 0; i < src.length; i++) for (const p of cleanPolygon(src[i], (t === 'Polygon') ? c : c.concat([i]))) parts.push(p);
+          if (!parts.length) return null;
+          parts = repairBetweenParts(parts, c);
           if (!parts.length) return null;
           /* A Polygon that had to become several is a MultiPolygon, and that is a change to the
              geometry's own type — stated, not slipped in. */
@@ -1158,7 +1589,23 @@ export function makeGisGeometry() {
        KERNEL_VERSION — the boolean engine is where #R743's union defect actually lived, so a saved
        recipe that replays through a different geometry kernel can land on different numbers.
        scripts/gis-kernel-versions.mjs holds the sha256 that keeps this honest. */
-    const KERNEL_VERSION = 'geom-1';
+    /* (#R783) geom-1 -> geom-2: A REPLAYED STEP NOW GETS A DIFFERENT ANSWER, in both doors, and the
+       choice this gate exists to force is not a close one. `validate` answers `valid: false` for a
+       MultiPolygon whose parts cover common ground — two squares overlapping in a quarter of their
+       area were VALID before today — so a saved `validate` step re-runs to different columns, and
+       measured on data/ecoregions_2017.geojson that is 126 of its 635 MultiPolygons. `repair` unions
+       parts that overlap, nest or repeat, so a saved `repair` step replays to a geometry with fewer
+       parts and LESS AREA than the one it produced last week. Both differences are corrections, and
+       both are exactly the kind of thing a reader comparing two loads of one project is entitled to
+       have announced.
+       ⚠ AND THE THIRD DIFFERENCE IS THE LARGEST, because it is a wrong number becoming a right one
+       rather than a new statement: alignTo was reading a MultiPolygon as a list of rings (see its
+       note), so `intersection`, `difference`, `union` and `bufferKm` between operands written a
+       whole turn apart were computed 360° apart in the plane. Measured: an intersection of 72,561
+       km² came back EMPTY, a union of 362,769 km² came back 435,331 km², and a 5 km buffer came back
+       437,364 km² where the shape's own perimeter caps it at 348,513. Every saved step that ever
+       crossed that case replays to a different — correct — answer. */
+    const KERNEL_VERSION = 'geom-2';
     const API = {
       /* (#R749) see KERNEL_VERSION above — js/gis-project.js records which engine answered. */
       version: () => KERNEL_VERSION,

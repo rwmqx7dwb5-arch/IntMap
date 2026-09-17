@@ -160,17 +160,350 @@ export function makeGisAtlas(core) {
       return row;
     }
 
-    function mapRows() {
-      if (!layers || typeof layers.sources !== 'function') return [];
+    /* ══ ⚠⚠⚠ (#R783) 取得する前に分かることが、取得した後に分かることより薄かった ═══════════════
+       datasetRow() above publishes what js/gis-datasets.js MEASURED — every column with its type,
+       its range, its unit and its author, the verified time declaration, the grid and its bands, the
+       acquisition's own coverage verdict. That is the record of an answer that has already been
+       fetched. The row for a source that has NOT been fetched from was five fields —
+       `{ref, label, geometryType, count, samplable}` — so the planner chose WHAT to acquire with
+       strictly less information than it got back afterwards, and the questions that decide whether an
+       acquisition is worth making at all had no answer anywhere in the surface:
+
+           何の量か        only the label, and only because a label happens to name it
+           どの時期か      nothing. js/map-ui.js state(id).time is a sentence every readable row can
+                           write (「直近 24 h」「1889」) and this row dropped it, so a planner could
+                           not tell today's ships from an 1889 census before asking for either
+           どの範囲を持つか nothing. js/gis-sources.js declarationOf(id) is the supplier's own
+                           statement of its extent, and it was read only DURING an acquisition, to
+                           judge the answer after the fact
+           どの解像度か    nothing — and `toRaster` REFUSES a call with no width/height, so the
+                           planner was being asked for a number it had been shown nothing about
+           どの条件で検索できるか
+                           nothing. `acquire-unknown-field` names the vocabulary only after a wrong
+                           call, and `where`/`cursor` are capabilities a supplier declares
+                           (js/gis-sources.js supplierOf) that nothing published at all
+
+       ⚠ AND THE FIX IS NOT A SECOND CATALOGUE. Every one of those facts is already stated by a
+       supplier — the layer registry (`state`), the supply layer (`list`, `declarationOf`,
+       `supplierOf`, `conditionOps`) and the map bridge (`sources`, `canSample`, `acquireFields`).
+       describe() is a PROJECTION of those statements, the way datasetRow() is a projection of a
+       record; the ids come from the same discovery mapRows() already used, so a source registered
+       tomorrow is described the same day and nothing here holds a table of sources
+       (.agents/rules/no-ad-hoc-hardcoding.md §2-4).
+
+       ⚠⚠ AND A SLOT NOBODY FILLED IS NAMED, NOT LEFT BLANK. 「宣言が無い」 and 「その問いは当たら
+       ない」 are two different answers and an absent key is neither of them — the distinction this
+       repository keeps paying for ([[intmap-data-must-not-claim-an-author-it-lacks]],
+       js/gis-datasets.js `time:null`). So every slot below appears in exactly one of three places:
+       stated (inside its subject), `undeclared` (with WHY the silence), or `notApplicable` (with why
+       the question does not apply to this row). A planner reading `undeclared` learns what to ask a
+       reader for; a planner reading `notApplicable` learns not to. */
+
+    /* ⚠ THE SLOTS ARE DECLARED, and that is the invariant rather than decoration — the same argument
+       js/gis-sources.js REFUSALS and js/gis-datasets.js REFUSALS are written for. A slot this list
+       names and describe() accounts for nowhere is a fact that fell out of the surface silently, and
+       a slot describe() fills that this list does not name is one no check could ever see. What is
+       NOT written here is any VALUE: every one of them is asked of the supplier that states it. */
+    const PREFETCH_SLOTS = [
+      /* 何の量か */
+      'quantity.payload', 'quantity.name', 'quantity.geometryType', 'quantity.count',
+      'quantity.samplable', 'quantity.sampleCapable', 'quantity.samplePrepared',
+      'quantity.sampleAvailable', 'quantity.sampleVisible',
+      'quantity.unit', 'quantity.legend', 'quantity.attribution',
+      /* どの時期か */
+      'period.statedTime', 'period.asOf', 'period.live',
+      /* どの範囲を持つか */
+      'extent.bounds', 'extent.complete', 'extent.viewBound',
+      /* どの解像度か */
+      'resolution.declared', 'resolution.chosen',
+      /* どの条件で検索できるか */
+      'query.accepts', 'query.conditions', 'query.supplier', 'query.needsVisible',
+    ];
+    /* ⚠ THE SUBJECTS ARE THE SLOTS' OWN PREFIXES, NOT A SECOND LIST. Writing them out would be a
+       list that can lose a subject the slots gained — the drift tests/r759 ① measures for the
+       acquisition vocabulary, in a new place. Order is first appearance above. */
+    const PREFETCH_SUBJECTS = PREFETCH_SLOTS.map((s) => s.slice(0, s.indexOf('.')))
+      .filter((s, i, a) => a.indexOf(s) === i);
+
+    /* Read at call time, never captured — the convention every kernel in this layer follows, and the
+       reason this module imports in Node with no DOM and describes everything as undeclared there. */
+    function SOURCES() { try { return (typeof window !== 'undefined' && window.IntMapGisSources) || null; } catch (_) { return null; } }
+    function REGISTRY() { try { return (typeof window !== 'undefined' && window.IntMapLayers) || null; } catch (_) { return null; } }
+
+    /* js/gis-sources.js list() — one walk for the whole catalogue, not one per row: it asks the
+       registry and builds a supplier for every id it meets, which is work worth doing once.
+       ⚠ THE SILENCE IS NAMED. 「供給層が載っていない」 and 「載っているがこの id を知らない」 reach a
+       planner as different reasons, because the first is fixed by loading a module and the second by
+       registering a source. */
+    function supplyIndex() {
+      const S = SOURCES();
+      const idx = { map: new Map(), sources: S, why: null };
+      if (!S || typeof S.list !== 'function') { idx.why = 'supply-layer-unavailable'; return idx; }
+      let rows = [];
+      try { rows = S.list() || []; } catch (_) { idx.why = 'supply-layer-refused'; return idx; }
+      for (const e of rows) if (e && e.id != null) idx.map.set(String(e.id), e);
+      return idx;
+    }
+
+    /* The layer registry's own row. ⚠ ASKED, NOT LISTED: `state(id)` is what the registration says
+       about itself, so a row added tomorrow answers without this file learning its name. */
+    function registryState(id) {
+      const R = REGISTRY();
+      if (!R || typeof R.state !== 'function') return null;
+      try { const s = R.state(id); return (s && typeof s === 'object') ? s : null; } catch (_) { return null; }
+    }
+
+    function declarationFor(idx, id) {
+      const S = idx.sources;
+      if (!S || typeof S.declarationOf !== 'function') return null;
+      try { const d = S.declarationOf(id); return (d && typeof d === 'object') ? d : null; } catch (_) { return null; }
+    }
+
+    /* ⚠ (#R783) WHAT A SOURCE STATES BEFORE ANYBODY FETCHES FROM IT. `mapRow` is the map bridge's
+       row for this id (null when the map does not offer one) and `idx` is one supplyIndex() walk. */
+    function prefetch(id, mapRow, idx) {
+      const out = {};
+      for (const g of PREFETCH_SUBJECTS) out[g] = {};
+      out.undeclared = [];
+      out.notApplicable = [];
+      const put = (slot, value) => { const i = slot.indexOf('.'); out[slot.slice(0, i)][slot.slice(i + 1)] = value; };
+      const none = (slot, why) => { out.undeclared.push({ slot: slot, why: why }); };
+      const na = (slot, why) => { out.notApplicable.push({ slot: slot, why: why }); };
+
+      const ent = idx.map.get(id) || null;
+      /* Why there is nothing from the supply layer about this id — used wherever the silence is that
+         layer's rather than a supplier's own. */
+      const mute = ent ? null : (idx.why || 'not-in-supply-list');
+      const d = declarationFor(idx, id);
+      const st = registryState(id);
+      /* ⚠ THE NORMALISED DECLARATION TRAVELS WHOLE AS WELL AS IN SLOTS, for the reason `fields` and
+         `coverage` do in datasetRow(): a key js/gis-sources.js readDeclaration adds tomorrow reaches
+         the planner the same day instead of waiting for someone to widen a list here. */
+      if (d) out.declared = d;
+
+      /* ── 何の量か ──────────────────────────────────────────────────────────────────────────── */
+      /* features or a numeric field. ⚠ NOT GUESSED FROM `samplable`: js/gis-sources.js list()
+         classifies a row by what it can DO (#R763), and a second rule here would be free to disagree
+         with the door that actually dispatches. */
+      if (ent && ent.kind) put('quantity.payload', String(ent.kind)); else none('quantity.payload', mute);
+      const name = (mapRow && mapRow.label != null) ? mapRow.label : (ent && ent.title != null ? ent.title : null);
+      if (name != null && String(name) !== '') put('quantity.name', String(name)); else none('quantity.name', mute || 'label-unstated');
+      if (!mapRow) {
+        /* The supply layer knows rows the map bridge does not offer — a document nobody has switched
+           on has no feature count and no geometry to type (#R763 measured exactly that row). */
+        na('quantity.geometryType', 'not-offered-by-the-map-bridge');
+        na('quantity.count', 'not-offered-by-the-map-bridge');
+      } else {
+        if (mapRow.geometryType) put('quantity.geometryType', mapRow.geometryType);
+        else if (mapRow.count === 0) na('quantity.geometryType', 'no-features-to-type');
+        else none('quantity.geometryType', 'geometry-unstated');
+        /* ⚠ THE COUNT IS THE WHOLE LAYER'S, not the current view's — js/gis-layers.js sources() says
+           so, and a planner that read it as a view count would size every window wrongly. */
+        if (typeof mapRow.count === 'number') put('quantity.count', mapRow.count);
+        else none('quantity.count', 'count-unstated');
+      }
+      /* ⚠ THE ONE BOOLEAN THE ROW HAS ALWAYS CARRIED, KEPT. js/gis-layers.js canSample() is the
+         CAPABILITY question now (#R783) and js/gis-panel.js and this row are its two callers; a
+         reader that learnt `samplable` is not wrong, so it stays and the four facts below are added
+         beside it rather than in place of it. */
+      put('quantity.samplable', !!(mapRow ? mapRow.samplable : (layers && layers.canSample && layers.canSample(id))));
+      /* ⚠⚠⚠ (#R783) AND ONE BOOLEAN WAS STANDING FOR FOUR FACTS. Before this round `samplable` was
+         `state(id).on` — a CHECKBOX — so 「その行は値を答えられるか」, 「表示していなくてもデータが
+         在るか」, 「いま訊けるか」 and 「表示されているか」 reached the planner as one word. A planner
+         reading it as capability skipped every readable field that happened to be switched off; a
+         planner reading it as availability asked for a window from a row that cannot answer at all.
+         The four are separated AT THEIR CLAIMANTS: js/gis-layers.js samplingOf() measures the row's
+         ability (and answers null while nobody has asked it), js/gis-sources.js composes the list
+         row's `sampling` and owns `prepared` (its needsVisible judgement), and only `visible` is
+         about the checkbox.
+         ⚠⚠ AND `capable === null` IS NOT false. 「能力が無い」 and 「まだ訊いていない」 are the two
+         answers this project keeps paying for confusing — an unmeasured row is a CANDIDATE
+         (js/gis-sources.js `kind:'grid'` means exactly that), and writing false would hide a field
+         that reads perfectly well the moment it is asked. So a null travels as a named silence, the
+         way every other unstated slot here does. */
+      const supply = ent && ent.sampling && typeof ent.sampling === 'object' ? ent.sampling : null;
+      let bridge = null;
+      if (!supply && layers && typeof layers.samplingOf === 'function') {
+        try { const s = layers.samplingOf(id); bridge = (s && typeof s === 'object') ? s : null; } catch (_) { bridge = null; }
+      }
+      const smp = supply || bridge;
+      /* three-valued in, three-valued out */
+      const tri = (slot, v, why) => { if (v == null) none(slot, why); else put(slot, !!v); };
+      if (!smp) {
+        const why = mute || 'sampling-unasked';
+        none('quantity.sampleCapable', why); none('quantity.samplePrepared', why);
+        none('quantity.sampleAvailable', why); none('quantity.sampleVisible', why);
+      } else {
+        tri('quantity.sampleCapable', smp.capable, 'sampling-capability-unmeasured');
+        /* ⚠ `prepared` AND `available` ARE THE SUPPLY LAYER'S COMPOSITION, not the map bridge's. When
+           only the bridge answered, they are not 「false」 — they are questions this claimant does not
+           take, and saying so is what stops a second judgement of them growing here. */
+        tri('quantity.samplePrepared', smp.prepared, supply ? 'data-presence-unmeasured' : 'prepared-owned-by-the-supply-layer');
+        tri('quantity.sampleAvailable', smp.available, supply ? 'sampling-availability-unmeasured' : 'availability-owned-by-the-supply-layer');
+        tri('quantity.sampleVisible', smp.visible, 'visibility-unreadable');
+      }
+      /* ⚠⚠ THE UNIT IS NOT DECLARABLE IN THIS APP TODAY, AND SAYING SO IS THE POINT. A band's unit is
+         taken from the `measure()` rows during the read (js/gis-sources.js region → `unitSeen`), so
+         it exists only once samples exist; nothing in a registration states it in advance. Naming the
+         slot with that reason tells the planner where to look AFTER acquiring (`bands[].unit` on the
+         record) instead of leaving it to infer a unit from a label, which is the claim with no author
+         this project keeps removing. */
+      none('quantity.unit', 'unit-stated-only-by-the-samples');
+      if (st && st.legend != null) put('quantity.legend', st.legend);
+      else none('quantity.legend', st ? 'legend-undeclared' : 'registry-unavailable');
+      if (st && st.source != null && st.source !== '') put('quantity.attribution', String(st.source));
+      else none('quantity.attribution', st ? 'attribution-undeclared' : 'registry-unavailable');
+
+      /* ── どの時期か ────────────────────────────────────────────────────────────────────────── */
+      /* ⚠ THE SENTENCE AND THE MOMENT ARE TWO FACTS AND BOTH TRAVEL. js/gis-layers.js registerFeatures
+         carries `statedTime` verbatim precisely because 「直近 24 h」 is not a timestamp, and
+         js/gis-sources.js entry() keeps `asOf` only when the sentence READS as a moment. A row that
+         says 「直近 24 h」 therefore has a period to state and no asOf — publishing only the second
+         would tell the planner the row has no time at all. */
+      if (st && st.time != null && st.time !== '') put('period.statedTime', String(st.time));
+      else none('period.statedTime', st ? 'time-unstated' : 'registry-unavailable');
+      const asOf = (d && d.asOf != null) ? d.asOf : (ent && ent.asOf != null ? ent.asOf : null);
+      if (asOf != null) put('period.asOf', String(asOf)); else none('period.asOf', mute || 'asof-undeclared');
+      /* ⚠ THREE-VALUED AT THE SUPPLIER AND THREE-VALUED HERE: null is 「宣言が無い」 and not
+         「生きていない」 (js/gis-sources.js entry()). Flattening it to false would state a claim the
+         supplier declined to make. */
+      const live = (d && d.live != null) ? d.live : (ent && ent.live != null ? ent.live : null);
+      if (live != null) put('period.live', !!live); else none('period.live', mute || 'live-undeclared');
+
+      /* ── どの範囲を持つか ─────────────────────────────────────────────────────────────────── */
+      /* ⚠ THE DECLARED EXTENT, NEVER THE BOUNDING BOX OF WHAT CAME BACK — js/gis-sources.js entry()
+         gives the reason, and it is the whole subject of that file: 「いま画面にあるもの」 read as
+         「そのレイヤーの範囲」 is how a viewport measurement becomes a claim about a region. */
+      if (!d) {
+        const why = mute || 'extent-undeclared';
+        none('extent.bounds', why); none('extent.complete', why); none('extent.viewBound', why);
+      } else {
+        if (d.extent) put('extent.bounds', d.extent); else none('extent.bounds', 'extent-undeclared');
+        /* Both are booleans on a normalised declaration, so they are stated as the declaration states
+           them. ⚠ `complete:false` is js/gis-sources.js's `completeness-undeclared`, which is why the
+           absence of a DECLARATION above is a different silence from a declaration saying false. */
+        put('extent.complete', d.complete === true);
+        put('extent.viewBound', d.viewBound === true);
+      }
+
+      /* ── どの解像度か ─────────────────────────────────────────────────────────────────────── */
+      const res = (d && d.resolution != null) ? d.resolution : (ent && ent.resolution != null ? ent.resolution : null);
+      if (res != null) put('resolution.declared', res); else none('resolution.declared', mute || 'resolution-undeclared');
+      /* ⚠ THE OTHER HALF OF THE ANSWER IS THE CALLER'S, AND THIS FILE ALREADY REFUSES A CALL WITHOUT
+         IT (`raster-sample-needs-window` in fromLayer). A grid is burnt at a resolution the planner
+         chooses — js/gis-sources.js calls it `grid-is-a-sample` for that reason — so the fields it
+         must state are named here, from the same door that enforces them, rather than discovered by
+         making the wrong call. A feature copy has no such number: its resolution is its geometry's. */
+      if (ent && ent.kind === 'grid') put('resolution.chosen', ['acquire.bounds', 'acquire.width', 'acquire.height']);
+      else if (ent) na('resolution.chosen', 'features-are-not-burnt-at-a-resolution');
+      else none('resolution.chosen', mute);
+
+      /* ── どの条件で検索できるか ───────────────────────────────────────────────────────────── */
+      /* The acquisition vocabulary, asked of js/gis-layers.js — the same call acquireOpts() validates
+         against, so what the planner is shown and what the door accepts cannot drift. */
+      const kind = (ent && ent.kind === 'grid') ? 'raster' : 'vector';
+      if (layers && typeof layers.acquireFields === 'function') {
+        let allow = null;
+        try { allow = layers.acquireFields(kind); } catch (_) { allow = null; }
+        if (Array.isArray(allow)) put('query.accepts', allow); else none('query.accepts', 'acquire-fields-refused');
+      } else none('query.accepts', 'acquire-fields-unavailable');
+      /* ⚠ `where` IS js/gis-ops.js's VOCABULARY, HANDED ON (js/gis-sources.js conditionOps). null
+         there is 「訊けなかった」 and not 「比較は無い」, so it is carried as that. */
+      if (idx.sources && typeof idx.sources.conditionOps === 'function') {
+        let cond = null;
+        try { cond = idx.sources.conditionOps(); } catch (_) { cond = null; }
+        if (cond != null) put('query.conditions', cond); else none('query.conditions', 'condition-vocabulary-unavailable');
+      } else none('query.conditions', idx.why || 'condition-vocabulary-unavailable');
+      /* ⚠ THE CAPABILITIES ARE THE SUPPLIER'S OWN STATEMENT ABOUT ITS OWN CODE, and a request naming
+         a condition it did not claim is refused at the door (`where-not-supported`). So a planner
+         that cannot see them cannot tell 「絞り込める」 from 「絞り込めない」 until it is refused. */
+      if (idx.sources && typeof idx.sources.supplierOf === 'function') {
+        let sup = null;
+        try { sup = idx.sources.supplierOf(id); } catch (_) { sup = null; }
+        if (sup) put('query.supplier', sup); else none('query.supplier', 'no-supplier-registered');
+      } else none('query.supplier', idx.why || 'supply-layer-unavailable');
+      /* ⚠ THREE-VALUED AGAIN: null means the question cannot be asked without switching the row off
+         behind the reader's back (js/gis-sources.js needsVisible), which is not 「表示は要らない」. */
+      if (ent && ent.needsVisible != null) put('query.needsVisible', !!ent.needsVisible);
+      else none('query.needsVisible', mute || 'visibility-requirement-unmeasured');
+
+      return out;
+    }
+
+    /* ⚠ ONE SURFACE, SO THE PANEL, ATLAS AND AN EXTERNAL READER READ THE SAME STATEMENTS. The
+       alternative — each reader assembling its own view of the suppliers — is
+       [[intmap-two-readers-one-field-list]] with three readers: the half only one of them knows
+       about evaporates, and no check can see it go. */
+    function describe(ref) {
+      const raw = (ref == null) ? '' : String(ref).trim();
+      const id = (raw.slice(0, LAYER_PREFIX.length) === LAYER_PREFIX) ? raw.slice(LAYER_PREFIX.length) : raw;
+      const idx = supplyIndex();
+      for (const row of sourceRows(idx)) {
+        if (row.id === id) return Object.assign(rowOf(row), prefetch(id, row.onMap ? row : null, idx));
+      }
+      return null;
+    }
+
+    /* ⚠⚠ WHO EXISTS, AND IT IS THE UNION OF TWO DISCOVERIES — NOT A COURTESY. js/gis-layers.js
+       sources() walks the layer registry and the renderer's own style; js/gis-sources.js list()
+       reaches, on top of that, the rows the renderer has NEVER DRAWN (a bundled document nobody has
+       switched on) and the ids that registered a supplier. Those are precisely the rows an
+       acquisition exists for — #R763 measured one being misclassified for not having been drawn — so
+       a list that offered only what is already on screen would make 「表示していないレイヤーから
+       取得する」 unnameable.
+       ⚠ IDENTITY ONLY, AND THAT SEPARATION IS THE COST CONTROL. resolveRef() asks WHO EXISTS on
+       every unresolved ref and needs nothing but the ref and the label; prefetch() asks the registry
+       and the supply layer once per row. Describing every source to answer 「この名前はどれか」 would
+       make a name lookup cost a catalogue. */
+    function sourceRows(idx) {
+      const out = [];
+      const seen = new Set();
       let list = [];
-      try { list = layers.sources() || []; } catch (_) { list = []; }
-      return list.map((s) => ({
-        ref: 'layer:' + s.id, label: s.label, geometryType: s.geometryType || null, count: s.count,
-        /* A numeric layer has no features to copy and IS readable as a grid — the two are different
-           doors (toDataset / toRaster) and a planner that cannot tell them apart asks for the wrong
-           one. The map is asked; nothing here holds a list of which layers are fields. */
-        samplable: !!(layers.canSample && layers.canSample(s.id)),
-      }));
+      if (layers && typeof layers.sources === 'function') {
+        try { list = layers.sources() || []; } catch (_) { list = []; }
+      }
+      for (const s of list) {
+        if (!s || s.id == null) continue;
+        const id = String(s.id);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push({
+          id: id, label: s.label, geometryType: s.geometryType || null, count: s.count, onMap: true,
+          /* A numeric layer has no features to copy and IS readable as a grid — the two are different
+             doors (toDataset / toRaster) and a planner that cannot tell them apart asks for the wrong
+             one. The map is asked; nothing here holds a list of which layers are fields. */
+          samplable: !!(layers.canSample && layers.canSample(s.id)),
+        });
+      }
+      for (const id of idx.map.keys()) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const ent = idx.map.get(id);
+        /* ⚠ `null`, NOT `0`, FOR A ROW THE MAP BRIDGE DOES NOT OFFER — the same distinction
+           js/gis-datasets.js draws with `withGeometry`. 「地物 0 件」 と 「件数を誰も数えていない」
+           は別の主張で、0 は planner に 「空のレイヤー」 と読まれる。 */
+        out.push({
+          id: id, label: ent.title == null ? id : String(ent.title), geometryType: null, count: null,
+          onMap: false, samplable: !!(layers && layers.canSample && layers.canSample(id)),
+        });
+      }
+      return out;
+    }
+
+    /* ⚠ THE FIVE FIELDS THE ROW HAS ALWAYS HAD, UNCHANGED. resolveRef() matches on `ref` and `label`
+       and js/atlas-console.js prints neither — removing or renaming one of them would break a caller
+       that works, and this round only adds. */
+    function rowOf(row) {
+      return { ref: LAYER_PREFIX + row.id, label: row.label, geometryType: row.geometryType, count: row.count, samplable: row.samplable };
+    }
+
+    /* Identity only — the list resolveRef() and the thin refusals read. */
+    function mapRefs() { return sourceRows(supplyIndex()).map(rowOf); }
+
+    /* Identity PLUS what each source states before anybody fetches from it (#R783). */
+    function mapRows() {
+      const idx = supplyIndex();
+      return sourceRows(idx).map((row) => Object.assign(rowOf(row), prefetch(row.id, row.onMap ? row : null, idx)));
     }
 
     /* ⚠ THE OP LIST IS `ops.ops()`, NOT A COPY OF IT. This is the whole reason this file is small. */
@@ -269,7 +602,7 @@ export function makeGisAtlas(core) {
       if (byTitle.length > 1) return fail('ambiguous-input', { slot: slot, ref: raw, ids: byTitle.map((d) => d.id) });
 
       /* 4. a layer named by its own id or by the label the reader sees. */
-      const rows = mapRows();
+      const rows = mapRefs();
       const hits = rows.filter((r) => {
         const id = r.ref.slice(LAYER_PREFIX.length);
         return id.toLowerCase() === raw.toLowerCase() || String(r.label).toLowerCase() === raw.toLowerCase();
@@ -340,7 +673,7 @@ export function makeGisAtlas(core) {
       const a = action || {};
       const given = Array.isArray(a.inputs) ? a.inputs : (a.inputs == null ? [] : [a.inputs]);
       if (!given.length) {
-        return fail('missing-input', { needs: 'inputs', layers: mapRows().map((r) => r.ref), datasets: data.list().map((d) => d.id) });
+        return fail('missing-input', { needs: 'inputs', layers: mapRefs().map((r) => r.ref), datasets: data.list().map((d) => d.id) });
       }
       const word = (a.kind == null || a.kind === '') ? null : String(a.kind);
       if (word && word !== 'vector' && word !== 'raster') return fail('bad-param', { param: 'kind', kinds: ['vector', 'raster'] });
@@ -463,7 +796,17 @@ export function makeGisAtlas(core) {
       };
     }
 
-    const API = { catalogue, run, draw, acquire: acquireOnly, resolve: (ref, slot, decl, action) => resolveRef(ref, slot || 0, decl || {}, makeCache(), action || {}) };
+    const API = {
+      catalogue, run, draw, acquire: acquireOnly,
+      /* (#R783) 取得する前に供給元が述べていること。One surface for the panel, Atlas and an external
+         reader; `describe(ref)` is one source, `catalogue().layers` is all of them. */
+      describe,
+      /* the vocabularies, published from the file that decides them rather than copied into a check
+         (the same argument js/gis-sources.js completenessValues/coverageReasons are written for) */
+      prefetchSlots: () => PREFETCH_SLOTS.slice(),
+      prefetchSubjects: () => PREFETCH_SUBJECTS.slice(),
+      resolve: (ref, slot, decl, action) => resolveRef(ref, slot || 0, decl || {}, makeCache(), action || {}),
+    };
     return API;
   })();
 }

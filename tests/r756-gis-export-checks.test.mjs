@@ -513,8 +513,46 @@ test('R756 ⑩: the format list is a declaration a panel can build a control out
        with nothing on this line is bytes with no reader, which is the door that is not a door. */
     assert.ok(f.readBackBy && f.readBackBy.startsWith('js/'), f.id + ' names no reader');
   }
-  assert.deepEqual(EX.formats('raster').map((f) => f.id), ['geotiff']);
-  assert.deepEqual(EX.formats('vector').map((f) => f.id), ['geojson', 'csv']);
+  /* ⚠⚠⚠ THE TWO LINES THAT USED TO BE HERE FIXED THE SPELLINGS — `['geotiff']` and
+     `['geojson','csv']`. That is the shape .agents/rules/no-ad-hoc-hardcoding.md §1 names as 「名前
+     の埋め込み一覧で、実体から導けるもの」: #R783 added `cog` and `geopackage` and the FIRST
+     CORRECT CHANGE FAILED THE CHECK, which is [[intmap-ceiling-guards-are-not-policies]] exactly —
+     a guard written to watch a regular expression land, read later as a policy about what may
+     exist. This check's own title says what its subject is: 「a declaration a panel can build a
+     control out of」. js/gis-panel.js:1533 asks `X.formats(kind)` and builds one `<option>` per
+     row, labelled with the row's OWN id — so what must hold is that EVERY KIND A DATASET CAN BE
+     yields a usable control, not that the options are the two somebody wrote down. */
+  const kinds = [...new Set(all.flatMap((f) => f.kinds))].sort();
+  assert.deepEqual(kinds, ['raster', 'vector'],
+    'a format names a dataset kind that js/gis-datasets.js does not have, so no panel would ever offer it');
+
+  for (const kind of kinds) {
+    const offered = EX.formats(kind);
+    /* the panel renders an empty list as the `export-format-not-for-kind` note, so a kind with no
+       format is a dataset a reader cannot get out at all */
+    assert.ok(offered.length > 0, kind + ' datasets have no format to offer');
+    /* ⚠ FILTERING IS FILTERING, not a second table: every row offered for a kind claims it, and
+       every row that claims it is offered. A format that fell out of the filter would be a door
+       that exists and is never shown. */
+    for (const f of offered) assert.ok(f.kinds.includes(kind), f.id + ' was offered for ' + kind + ' and does not claim it');
+    for (const f of all) {
+      if (f.kinds.includes(kind)) assert.ok(offered.some((o) => o.id === f.id), f.id + ' claims ' + kind + ' and is not offered for it');
+    }
+    /* an `<option>` needs a value that distinguishes it, and a download needs a name that does */
+    const ids = offered.map((f) => f.id);
+    assert.deepEqual([...new Set(ids)], ids, kind + ' offers two formats under one id: ' + ids.join(' / '));
+  }
+
+  /* ⚠ AND EVERY DECLARED FORMAT IS ONE write() WILL ACTUALLY PRODUCE. The list is what the panel
+     puts in front of a reader, so a row nobody can write is a control that fails when clicked —
+     and `export-format-unknown` naming a format the same module advertises is the contradiction
+     this asserts away. Measured through the door rather than by reading the table. */
+  for (const f of all) {
+    const res = EX.write({ id: 'x', kind: f.kinds[0], features: () => [], width: 0, height: 0 }, { format: f.id });
+    assert.equal(res.ok, false, f.id + ': an empty dataset was written anyway');
+    assert.notEqual(res.why, 'export-format-unknown', f.id + ' is declared and write() does not know it');
+    assert.notEqual(res.why, 'export-format-not-for-kind', f.id + ' is declared for ' + f.kinds[0] + ' and write() refuses that kind');
+  }
 });
 
 /* ══ THE WITNESS — a TIFF tag scanner that is not the module under test ═══════════════════════
