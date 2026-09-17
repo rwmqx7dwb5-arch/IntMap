@@ -169,6 +169,7 @@ window.IntMapLang.define('en', { ui: {
       lblLabelLang:"Place-name labels",
       labelLangUi:"Match app language",
       labelLangLocal:"Local language (native script)",
+      labelLangUiLocal:"App language, with the local name underneath",
       labelLangEn:"Always English",
       lblEngine:"Map engine",
       engineMapLibre:"MapLibre — 2-D/3-D map (default)",

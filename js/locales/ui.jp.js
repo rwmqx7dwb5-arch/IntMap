@@ -169,6 +169,7 @@ window.IntMapLang.define('jp', { ui: {
       lblLabelLang:"地名ラベル",
       labelLangUi:"アプリの言語に合わせる",
       labelLangLocal:"現地語（その地域の表記）",
+      labelLangUiLocal:"アプリの言語（下に現地語を併記）",
       labelLangEn:"常に英語",
       lblEngine:"地図エンジン",
       engineMapLibre:"MapLibre — 2D/3D地図（既定）",

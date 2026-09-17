@@ -78,6 +78,7 @@ window.IntMapLang.define('zh', {
     "favLayers":"常用圖層",
     "labelLangEn":"一律英文",
     "labelLangLocal":"當地語言（原生文字）",
+    "labelLangUiLocal":"應用語言，並在下方顯示當地名稱",
     "labelLangUi":"與應用語言相同",
     "lblAccent":"強調色",
     "lblDataSources":"資料來源",

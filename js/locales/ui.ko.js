@@ -106,6 +106,7 @@ window.IntMapLang.define('ko', { ui: {
       favLayers:"즐겨찾는 레이어",
       labelLangEn:"항상 영어",
       labelLangLocal:"현지어 (현지 문자)",
+      labelLangUiLocal:"앱 언어 (아래에 현지 이름 함께 표시)",
       labelLangUi:"앱 언어에 맞춤",
       lblAccent:"강조 색상",
       lblDataSources:"데이터 출처",
