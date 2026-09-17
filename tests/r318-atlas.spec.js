@@ -352,3 +352,41 @@ test('R318-atlas ④: Atlas loaded without console errors', async () => {
   const errors = (diag.consoleErrors || []).concat(diag.pageErrors || []);
   expect(errors, 'loading the kernel produced console errors:\n' + errors.join('\n')).toEqual([]);
 });
+
+/* ══ (#R777) 送信ボタンは run() に到達するか ══════════════════════════════════════════════
+   ⚠ #R773 が足した添付台帳の 1 行が `const turn = …` の**上**に在ったので、`carry(turn,…)` が
+   TDZ を踏み、**本番の Atlas は入力欄に何を書いても吹き出しすら出さず沈黙していた**（添付の
+   有無に依らず全送信。ai-proxy へのリクエストは 1 本も出ない）。門は 1 つも赤くならなかった
+   ——**誰も送信ボタンを押していなかった**から。
+   ⚠ ここが測るのは「答えが返ること」ではない（それはログインと課金が要る）。測るのは
+   **run() が自分の吹き出しを作るところまで到達すること**で、ログイン判定はその後ろにある。
+   ⚠ そして**添付つきでも押す**——台帳は添付があるときだけ触る欄を持つ。
+   ⚠ この主張はここに間借りしている。専用ファイルにすると 51 秒（アプリの起動ぶん）を新しく
+   払うことになり、その総和が tests/durations.json の天井を越えた（#R204 の「門の会員資格は
+   一覧ではなく値段」）。ここは既に Atlas を開いたページを持っている。 */
+test('R318-atlas ⑦ (#R777): 送信は run() に到達し、吹き出しを作る（例外で沈黙しない）', async () => {
+  const errs = [];
+  const onErr = (e) => errs.push(String((e && e.message) || e));
+  page.on('pageerror', onErr);
+  await page.evaluate(() => window.IntMapConsole.open());
+  await page.waitForSelector('#atlas-panel .atl-in', { timeout: 30_000 });
+  const before = await page.evaluate(() => document.querySelectorAll('#atlas-panel .atl-chat .atl-b.u').length);
+  await page.evaluate(() => {
+    const p = document.getElementById('atlas-panel');
+    const dt = new DataTransfer();
+    dt.items.add(new File(['a,b\n1,2\n3,4\n'], 'r777.csv', { type: 'text/plain' }));
+    p.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  });
+  await page.waitForSelector('#atlas-panel .atl-imgrow .atl-fchip', { timeout: 30_000 });
+  await page.evaluate(() => {
+    const p = document.getElementById('atlas-panel');
+    p.querySelector('.atl-in').value = 'r777 send probe';
+    p.querySelector('.atl-go').click();
+  });
+  await page.waitForFunction((n) => document.querySelectorAll('#atlas-panel .atl-chat .atl-b.u').length > n, before, { timeout: 30_000 });
+  const chip = await page.evaluate(() => !!document.querySelector('#atlas-panel .atl-chat .atl-fchip-msg[data-atlvid]'));
+  expect(chip, 'the request bubble did not carry the attachment it was sent with').toBe(true);
+  page.off('pageerror', onErr);
+  const fatal = errs.filter((m) => /ReferenceError|before initialization|is not defined|is not a function/.test(m));
+  expect(fatal, 'the send path threw: ' + fatal.join(' | ')).toEqual([]);
+});
