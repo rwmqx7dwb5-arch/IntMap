@@ -888,6 +888,15 @@ window.IntMapModules.layerSidebar=function(HOST){
         +'#layer-sidebar-r .lst-toolbody,.lsr-mount .lst-toolbody{display:flex;flex-direction:column;gap:8px;}'
         +'#layer-sidebar-r .lst-toolbody.closed,.lsr-mount .lst-toolbody.closed{display:none;}'
         +'#layer-sidebar-r .lst-tools>.lst-sech,.lsr-mount .lst-tools>.lst-sech{margin-bottom:8px;}'
+        /* ══ ⚠⚠⚠ (#R766) #layer-tools IS CARRIED IN HERE, SO ITS OWN SECTION HEADER IS A SECOND ONE ═══
+           `_placeLayerTools` below moves the real `#layer-tools` node into `.lst-toolbody`; the strip
+           carries a 「ツール」 header of its own (js/data-layers.js builds one on every rebuild), which
+           inside this section is the same heading twice. It is HIDDEN rather than not built, because
+           the strip is also the classic dropdown's own section and that copy still needs its heading
+           — the rule is written against the PLACEMENT (「a section header nested inside a section」)
+           rather than against the id of one button, so a module that adds a third heading is covered. */
+        +'.lst-toolbody > #layer-tools > .lyr-section-label{display:none;}'
+        +'.lst-toolbody > #layer-tools{gap:8px;margin:0;}'
         /* ══ (#R469) 「その他N件」 — the fold inside a category ═══════════════════════════════════════
            Full-width in a 3-column grid, and quiet: it is a way IN to rows the reader did not name,
            not a control competing with the layers themselves. The chevron is the same glyph the
@@ -1289,8 +1298,23 @@ window.IntMapModules.layerSidebar=function(HOST){
       /* ⚠ (#R232) `#lst-root` was an ID and there can now be two of them on the page at once, so the
          root is found by CLASS within its own host. The id is kept on the sidebar's copy because
          tests and older selectors name it. */
-      const old=host.querySelector('.lst-root'); if(old) old.replaceWith(root); else bodyEl.appendChild(root);
+      /* ══ ⚠⚠⚠ (#R766) THE STRIP IS RESCUED BEFORE THE ROOT THAT HOLDS IT IS THROWN AWAY ════════
+         `#layer-tools` is a REAL node carried in here by `_placeLayerTools`, not a copy — so the
+         `replaceWith` below discards it along with the root it is sitting in, and a DETACHED node is
+         one `document.getElementById` can no longer find. MEASURED on a 375px phone before this
+         block: after the second rebuild `#btn-correlate`, `#edu-mount` and `#lyr-presets` were gone
+         from the document for the rest of the session — reorganizeLayerPanel rescues those three BY
+         ID, the ids resolved to null, and it built a fresh empty strip over the top of them. Nothing
+         reported it, because every surviving door still measured reachable.
+         ⚠ IT IS PARKED IN `#layer-dropdown`, WHICH IS WHERE IT LIVED BEFORE THIS ROUND — never in
+         `document.body`, where a strip with no panel around it would be drawn ON the map. The next
+         `_placeLayerTools()` (the line after this rebuild) carries it back into the new section. */
+      const old=host.querySelector('.lst-root');
+      try{ const lt=old&&old.querySelector('#layer-tools'); const dd=document.getElementById('layer-dropdown');
+        if(lt&&dd) dd.appendChild(lt); }catch(_){}
+      if(old) old.replaceWith(root); else bodyEl.appendChild(root);
       if(host===sb) root.id='lst-root';
+      try{ window._placeLayerTools&&window._placeLayerTools(); }catch(_){}   /* (#R766) the strip follows the rebuild that just replaced its section */
       syncModes();   /* (#R469) marks the live mode and runs filterTiles, which is what shows/hides the eleven */
       filterTiles(host); }
     /* ══ (#R243) THE TOOLS BLOCK AT THE FOOT OF THE TILE BROWSER ═════════════════════════════════
@@ -1680,6 +1704,63 @@ window.IntMapModules.layerSidebar=function(HOST){
       const t=TOOLS.find(x=>x.id===b.dataset.act); if(!t) return; b.classList.toggle('on',_toolOn(t));
       const d=b.querySelector('.lst-tooldot'); if(d) d.hidden=!_toolDot(t); })); }catch(_){} }
     try{ document.addEventListener('pointerup',()=>{ try{ if(document.querySelector('.lst-toolrow')) setTimeout(syncTools,60); }catch(_){} },true); }catch(_){}
+    /* ══ ⚠⚠⚠ (#R766) THE DOORS PARKED IN #layer-tools ARE CARRIED TO THE PANEL A READER OPENS ════════
+       THE THIRD TIME THE SAME DEFECT WAS REPORTED, and the two notes above this file's tool CSS
+       (#R243, #R670) are the first two: a module appends a button to `#layer-tools`, the button
+       exists, its handler is correct, its OS action is registered — and `#layer-tools` lives inside
+       `#layer-dropdown`, which no reader is shown. `imLayerPanel` is a CONSTANT `'right'` since #R296
+       (js/app-body.js), so `apply()`'s else arm is unreachable and `body.lsr-avail` is on at EVERY
+       width; the only rule that can show the classic dropdown (css/intmap.css) is scoped to
+       `#mo-mount-layers` inside `@media(max-width:768px)`, and at that width css/intmap.css hides
+       `#layer-tools` by name. MEASURED this round: all NINE children of `#layer-tools` — 比較ビュー /
+       相関分析 / 地図データの読み込み / データと分析 / 地震 / パンデミック / Playground / プリセット —
+       had a 0×0 rect at every width tried. There is no width at which any of them was reachable.
+
+       ⚠⚠ THE FIRST TWO FIXES COPIED A DOOR INTO `SIM_TOOLS`, AND THAT IS WHY THIS IS THE THIRD TIME.
+       Re-stating one button as one row rescues that button and leaves the next one dark — the shape
+       `.agents/rules/no-ad-hoc-hardcoding.md` forbids. So the ROUTE is fixed instead: the real
+       `#layer-tools` node is MOVED into the tools section of whichever host the reader is actually
+       looking at, exactly as `_placeActiveSection` (js/data-layers.js) already moves the real
+       `#layer-active-section` node. A module that appends to `#layer-tools` tomorrow is carried with
+       no list to update, which is the property the two earlier fixes did not have.
+
+       ⚠ THE HOST IS ASKED, NOT DERIVED FROM THE WIDTH. Both hosts stay `isConnected` — on a phone the
+       desktop sidebar is `display:none`, not removed — so `_liveHosts()` alone would park the strip
+       in the hidden one. `getClientRects().length` is the browser's own answer to 「is this laid out」
+       and costs nothing written down; `_hostShown` then prefers a sheet that is actually pulled up.
+       It FAILS SAFE: with no host to carry it, the strip is left where reorganizeLayerPanel put it. */
+    function _syncToolsCount(body){ try{
+      const w=body.closest('.lst-tools'); if(!w) return;
+      const c=w.querySelector('.lst-sech .lst-cnt'); if(!c) return;
+      /* what the reader can press AT THE TOP OF THIS STRIP — measured, not written down. A wrapper
+         (#edu-mount, #lyr-presets) counts once because that is one entry to the reader, and a
+         deduped row counts zero because it is not on screen. */
+      let n=body.querySelectorAll(':scope > .lst-toolrow').length;
+      const lt=body.querySelector(':scope > #layer-tools');
+      if(lt) n+=Array.from(lt.children).filter(el=>el.style.display!=='none'&&(el.tagName==='BUTTON'||el.querySelector('button'))).length;
+      c.textContent=n;
+    }catch(_){} }
+    window._placeLayerTools=function(){
+      try{
+        const tools=document.getElementById('layer-tools'); if(!tools) return;
+        const cands=_liveHosts().filter(h=>h.querySelector('.lst-toolbody'));
+        const host=cands.find(h=>_hostShown(h)&&h.getClientRects().length)
+                || cands.find(h=>h.getClientRects().length) || cands[0] || null;
+        const body=host?host.querySelector('.lst-toolbody'):null;
+        if(!body) return;                     /* nothing built yet — leave the strip where it is */
+        if(tools.parentNode!==body) body.appendChild(tools);
+        /* ⚠ THE DUPLICATE IS FOUND BY THE DOOR EACH SIDE PRESSES, NOT BY A WRITTEN PAIRING OF IDS.
+           地震 and パンデミック already have `.lst-toolrow`s here (#R243/#R670 put them there), so
+           showing the strip's copies too would offer the same command twice. Each such button
+           declares the OS action it presses (`data-os-act`, js/data-layers.js) and each row already
+           declares its own (`data-act`); the overlap is COMPUTED from those two declarations, so a
+           row added tomorrow silences its twin without this line being edited. A button that
+           declares nothing is shown — the honest answer when nobody has said they are the same. */
+        const acts=new Set(Array.from(body.querySelectorAll('.lst-toolrow[data-act]')).map(b=>b.dataset.act));
+        tools.querySelectorAll('[data-os-act]').forEach(b=>{ b.style.display=acts.has(b.dataset.osAct)?'none':''; });
+        _syncToolsCount(body);
+      }catch(_){}
+    };
     /* cheap state re-sync (no rebuild): reflect the live checkboxes onto the existing tiles */
     function syncTiles(){ try{ _liveHosts().forEach(h=>h.querySelectorAll('.lst-tile').forEach(t2=>{ const id=t2.dataset.lid; if(!id) return;
       const cb=document.getElementById(id); if(cb) t2.classList.toggle('on',!!cb.checked); })); }catch(_){} }
@@ -1736,6 +1817,17 @@ window.IntMapModules.layerSidebar=function(HOST){
          inline `display` beats `.closed`'s, and clearing it on an empty query hands the class back. */
       try{ const tw=root.querySelector('.lst-tools'); if(tw){ let tv=0;
         tw.querySelectorAll('.lst-toolrow').forEach(b=>{ const show=!q||String(b.dataset.nm||'').indexOf(q)>=0; b.style.display=show?'':'none'; if(show) tv++; });
+        /* ⚠ (#R766) THE CARRIED STRIP IS SEARCHED TOO, OR A SEARCH LEAVES IT STANDING. `#layer-tools`
+           is moved in here by `_placeLayerTools`, and its buttons carry no `data-nm` — without this a
+           query for 「経路」 filtered every row away and left 比較ビュー / データと分析 sitting under the
+           heading as though they had matched it. They are matched on the text the reader can actually
+           see, which is the only name these buttons have; a twin hidden by the dedupe stays hidden,
+           because being hidden is an answer about the OTHER copy rather than about this query. */
+        tw.querySelectorAll(':scope > .lst-toolbody > #layer-tools > *').forEach(el=>{
+          if(el.dataset&&el.dataset.osAct&&el.style.display==='none') return;   /* deduped — not this filter's to show */
+          if(!(el.tagName==='BUTTON'||el.querySelector('button'))) return;      /* a heading or a file list is not a door */
+          const show=!q||String(el.textContent||'').toLowerCase().indexOf(q)>=0;
+          el.style.display=show?'':'none'; if(show) tv++; });
         const tb=tw.querySelector('.lst-toolbody'); if(tb) tb.style.display=q?'flex':'';
         tw.style.display=tv?'':'none'; } }catch(_){} }
     function open(){ build();   /* (#R107) mobile allowed — the right-sidebar layer panel now works on phones too (overlay, no map push) */
@@ -1766,6 +1858,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       try{ const mc=document.querySelector('.map-container'); if(mc&&mc.style.marginRight) mc.style.marginRight=''; }catch(_){}   /* (#R160) overlay: the panel never pushes the map — clear any stale inline margin from an older session */
       /* the Active-layers bar re-homes to the top of the tile browser (returns to the dropdown on close) */
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){} try{ window._refreshActiveLayers&&window._refreshActiveLayers(); }catch(_){}
+      try{ window._placeLayerTools&&window._placeLayerTools(); }catch(_){}   /* (#R766) …and so do the doors parked in #layer-tools */
       /* rows built by late modules (eco/l9/beta, ~1.5 s) — one deferred rebuild picks them up */
       setTimeout(()=>{ try{ if(sb.classList.contains('open')&&sb.querySelectorAll('.lst-tile[data-lid]:not([data-fav="1"])').length<rowsFromDropdown().length) buildTiles(); }catch(_){} },900);
       /* (#R72) clicking the MAP closes the sidebar, same as the classic dropdown ("地図上のどこかをクリックしたら
@@ -1782,6 +1875,7 @@ window.IntMapModules.layerSidebar=function(HOST){
       document.body.classList.remove('lsr-open');
       try{ const mc=document.querySelector('.map-container'); if(mc) mc.style.marginRight=''; }catch(_){}
       try{ window._placeActiveSection&&window._placeActiveSection(); }catch(_){}   /* Active bar back to the classic dropdown */
+      try{ window._placeLayerTools&&window._placeLayerTools(); }catch(_){}   /* (#R766) …and so do the doors parked in #layer-tools */
       /* (#R160) overlay: closing the panel doesn't resize the map — just recompute the search-pill layout. */
       try{ window.dispatchEvent(new Event('intmap-sidebar-resize')); }catch(_){}
       try{ window._imSaveSession&&window._imSaveSession(); }catch(_){} }   /* (#R195) remember it */
@@ -1876,7 +1970,11 @@ window.IntMapModules.layerSidebar=function(HOST){
       setTimeout(()=>{ try{ if(host.isConnected&&host.querySelectorAll('.lst-tile[data-lid]:not([data-fav="1"])').length<rowsFromDropdown().length) buildTiles(host); }catch(_){} },1200);
       return host;
     }
+    /* ⚠ (#R766) same hazard as the rebuild above, one level up: this removes the whole host, and the
+       carried `#layer-tools` may be inside it. Park it back in the classic dropdown first. */
     function unmountFrom(container){ try{ const host=container&&container.querySelector('.lsr-mount');
+      try{ const lt=host&&host.querySelector('#layer-tools'); const dd=document.getElementById('layer-dropdown');
+        if(lt&&dd) dd.appendChild(lt); }catch(_){}
       if(host){ const i=_hosts.indexOf(host); if(i>=0) _hosts.splice(i,1); host.remove(); } }catch(_){} }
     return { open, close, toggle, apply, mountInto, unmountFrom };
   })();
