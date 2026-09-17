@@ -4654,7 +4654,6 @@ window.IntMapModules.atlasConsole=function(HOST){
       files=(Array.isArray(files)?files:[]).filter(f=>f&&(f.kind==='doc'?typeof f.b64==='string':typeof f.text==='string')).slice(0,ATL_FILE.LIMITS.files+ATL_FILE.LIMITS.docs);   /* (#R158/#R540) text attachments AND provider-native documents */
       if(!q&&!imgs.length&&!files.length) return;
       /* ⚠⚠ (#R540) THE ATTACHMENTS ARE THEIR OWN CHANNELS NOW, NOT MORE PROMPT TEXT. #R158 glued them into the prompt, which ai-proxy slices at MAX_PROMPT (24,000) — so four 60,000-character files were cut mid-word with nothing said to the reader OR the model. Same shape as #R285's system prompt, same fix: a bound of their own. The bubble and history still keep only the reader's own words plus a chip. */
-      try{ ATTACH_LOG.remember(turn,imgs,files); }catch(_){} _atlRecallImgs=[]; _atlSentNames=files.map(f=>String(f&&f.name||''));   /* ⚠⚠⚠ (#R773) 添付は会話に属する（1 つのメッセージではない）。ここは長らく**このメッセージの添付だけ**を組んでいて、次のターンにはファイル名すら残らなかった——だから読者が同じファイルについて続けて訊くと、モデルには本当に何も届いておらず「見られません」と正直に答えていた。理由と方針は js/atlas-attach-log.js の見出し。`_atlSentNames` は今ここに在るものを台帳が二度述べないための一覧 */ const _atts={ files:ATTACH_LOG.carry(turn,files,ATL_FILE.LIMITS), docs:files.filter(f=>f.kind==='doc').map(f=>({name:String(f.name||'file'),mime:String(f.mime||''),b64:String(f.b64||'')})) }; _atlRecallAtts=_atts;   /* (#R773) 台帳へ載せ、この回の取り寄せ枠を空にし、いま載っている名前を控える */
       /* (#R157) IMAGE-ONLY: do NOT fabricate a user message. The old default text ("Read and analyze this image…") was
          written into `q` here and then SHOWN in the user bubble + saved to history — the "勝手にテキストが添付される" the
          user found unpleasant. `q` now stays EMPTY: the user bubble shows only the image, history stores no invented
@@ -4665,6 +4664,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       /* (#R73) a new message CANCELS any turn still thinking/executing */
       const gen=++_runGen;
       const turn=(_curTurn=++_turnSeq);   /* (#R298) the turn id every bubble and every history entry of THIS exchange carries, so an edit can rewind to exactly here */ try{ GLEDGER.beginTurn(turn); }catch(_){}   /* (#R489) …and the same id groups the places this exchange resolves. Nothing is forgotten; the counter moves. */
+      try{ ATTACH_LOG.remember(turn,imgs,files); }catch(_){} _atlRecallImgs=[]; _atlSentNames=files.map(f=>String(f&&f.name||''));   /* ⚠⚠⚠ (#R773) 添付は会話に属する（1 つのメッセージではない）。ここは長らく**このメッセージの添付だけ**を組んでいて、次のターンにはファイル名すら残らなかった——だから読者が同じファイルについて続けて訊くと、モデルには本当に何も届いておらず「見られません」と正直に答えていた。理由と方針は js/atlas-attach-log.js の見出し。`_atlSentNames` は今ここに在るものを台帳が二度述べないための一覧 */ const _atts={ files:ATTACH_LOG.carry(turn,files,ATL_FILE.LIMITS), docs:files.filter(f=>f.kind==='doc').map(f=>({name:String(f.name||'file'),mime:String(f.mime||''),b64:String(f.b64||'')})) }; _atlRecallAtts=_atts;   /* (#R773) 台帳へ載せ、この回の取り寄せ枠を空にし、いま載っている名前を控える */
       /* ══ (#R318) ONE TURN = ONE UNIT OF WORK ═══════════════════════════════════════════════════
          `_turnKey` identifies this exchange to the SERVER, so the planner call, the bounded repair
          calls and the vision re-read that belong to ONE user request consume ONE use of the daily
