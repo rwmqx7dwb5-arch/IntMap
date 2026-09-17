@@ -81,3 +81,11 @@ __pycache__/
 # from it); it just stops standing in the way of everyone else's merge.
 .claude/launch.json
 .cache/
+
+# ── (#R771) 本番検証などの受領証（machine-local） ─────────────────────────────
+# .intmap/receipts.json は「このマシンの operator が、この commit の本番を実際に
+# 見た」という主張を持つ。誰が・いつ見たかはこの機械の事実であって commit の事実
+# ではないので、追跡しない（追跡すると他セッションの fast-forward を塞ぐ——
+# .claude/launch.json で実測済み #R338）。書くのは
+# `node scripts/worktree.mjs verified`、読むのは `worktree.mjs status`。
+.intmap/

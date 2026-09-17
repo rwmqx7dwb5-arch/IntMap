@@ -36,9 +36,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  static:
-    name: Static checks
+  # ══ (#R771) THE GATES RUN ON THREE MACHINES, AND A RED ONE IS KNOWN IN TWO MINUTES ═════════════
+  # MEASURED on run 35172906802: this was ONE job running 28 gates one after another, 570 s. The two
+  # FAILING runs on the same page took 11.9 and 12.2 minutes — and that is the number that actually
+  # costs a working day, because a red gate behind twenty-seven green ones tells the author nothing
+  # until the whole serial run is over, and the fix costs the same again.
+  #
+  # ⚠ NO COVERAGE IS TRADED FOR THIS. Every declared gate still runs, exactly once. scripts/ci-gates.mjs
+  # DISCOVERS them from package.json's `check:*` (the same universe the gate-lists rule uses) and packs
+  # them by measured cost, so a gate added tomorrow lands on a shard by itself — a hand-written list of
+  # «which gate is on which machine» is the shape .agents/rules/no-ad-hoc-hardcoding.md §1 forbids, and
+  # its failure mode is the worst one available: the new gate never runs and CI stays green.
+  # `--check` asserts the bins are a PARTITION of the declared set; tests/r771-… evaluates it.
+  #
+  # ⚠ AND ONE SHARD DOES NOT STOP AT ITS FIRST RED. It runs its whole bin and reports every failure
+  # together, which is what turns 「引っかかったら数時間」 into one round trip.
+  gates:
+    name: Gates ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false            # one red shard must not hide what the other two found
+      matrix:
+        include:
+          - { shard: 1, of: 3 }
+          - { shard: 2, of: 3 }
+          - { shard: 3, of: 3 }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
@@ -46,192 +68,176 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Static checks (syntax, JSON/YAML, merge markers, secrets, assets, action-pinning)
-        run: npm run check:static
-      # (#R178) 「MapLibre依存脱却」: only js/geo-engine.js may name the renderer. An AST gate, so a
-      # comment that says "the map. When…" never trips it, and a local `map` variable is not coupling.
-      - name: Renderer-decoupling gate (only js/geo-engine.js may name MapLibre)
-        run: npm run check:engine
-      # ══ (#R403) THE FIVE GATES `npm test` RAN AND CI DID NOT ════════════════════════════════════
-      # `scripts/test-parallel.mjs` runs eleven source-side gates; this job ran six of them. The five
-      # below were never a CI step, so 「push の直前に `npm test`」 was the ONLY thing standing in front
-      # of them — a human habit, on one machine, with CRLF line endings. `check:docs` in particular is
-      # the gate that compares every document against the tree, and #R399 rebuilt it after six
-      # documents drifted; this round found the round procedure itself stale for three more rounds.
-      # It was not literally unenforced — tests/r399-checks and tests/r403-checks run doc-facts as a
-      # subprocess and assert exit 0, so `test:checks` (now its own job, #R586) already turned red on drift — but it
-      # surfaced as an unrelated-looking test failure rather than as "a document is wrong".
-      # MEASURED before adding: all five are green on a clean origin/main under LF, contact no
-      # network, need no `dist/` and no credentials, and cost ~6 s in total. They are placed BEFORE
-      # `npm run build` (~35 s) so a documentation failure does not wait for a bundle.
-      - name: Cross-document facts (the documents still agree with the repository)
-        run: npm run check:docs
-      - name: Architecture ⇄ file-ledger agreement
-        run: npm run check:archfiles
-      # (#R503) The agent context is written once under .agents/ and RENDERED into each
-      # product's own location, because Claude Code reads only .claude/ and Codex reads only
-      # AGENTS.md plus .codex/. This re-renders and compares, and measures AGENTS.md against
-      # the 32,768-byte ceiling Codex silently truncates it at.
-      - name: Agent context (one source, both products)
-        run: npm run check:agents
-      - name: Atlas catalogue (nothing clickable is unreachable to the planner)
-        run: npm run check:catalog
-      - name: Company atlas (sites, coordinates, attribution)
-        run: npm run check:companies
-      - name: Conflict data (the generated set matches its definitions)
-        run: npm run check:wars
-      - name: Historical city names (the record matches, and namesakes have disjoint location guards)
-        run: npm run check:histcities
-      # (#R518, widened #R690) The day-exact border record below CShapes — 1689-1885 since #R690 —
-      # cannot be re-derived here: the build needs about 2.1 GB of OpenHistoricalMap Overpass
-      # responses. So this proves the committed file's invariants, and
-      # above all that every year of the window covers as much land as data/cshapes.js does — the
-      # same comparison the floor was derived from. See docs/TESTING.md for
-      # what it therefore cannot see.
-      - name: Day-exact borders below CShapes (the bundled record is sound, and no year of it is thin)
-        run: npm run check:histborders
-      # (#R700) …and the record that line derives its floor FROM. data/cshapes.js had no build and
-      # no gate: nothing said where its bytes came from, and nothing said what shipping them costs
-      # — CShapes 2.0 is CC BY-NC-SA 4.0, so attribution is a condition of redistribution and the
-      # source row carried none. This proves the committed bytes and that the credit is paid.
-      - name: CShapes 1886-2019 (the bundled record is sound, and its licence is credited)
-        run: npm run check:cshapes
-      - name: Era snapshots (all eras, incl. BCE)
-        run: npm run check:histeras
-      # ⚠⚠⚠ (#R707) …AND WHETHER THAT BUNDLE IS STILL THE WHOLE UPSTREAM SET. The gate above tests
-      # PROPERTIES on purpose, so that upstream GROWING never turns a PR red — and that is exactly
-      # why upstream growing was invisible: #R679 discovered 53 snapshots and shipped 53, and when
-      # `world_1878.geojson` appeared upstream the bundle stayed at 53 of 54 with every gate green.
-      # A discovered list is a snapshot of a directory taken once. This asks the directory again.
-      # ⚠ NIGHTLY ONLY, AND THAT IS THE POINT: it needs the network, and a red here means «upstream
-      # published something», not «this PR broke something». Putting it on PRs would make somebody
-      # else's commit fail somebody else's branch.
-      - name: Era snapshots — is the shipped set still the whole upstream set? (network)
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        run: node scripts/build-hist-eras.mjs --check-upstream
-      # (#R695) …AND THE NAMES THOSE THREE RECORDS ARE READ BY. One table, three lanes of evidence
-      # (a QID the record itself states · #R686's measure against the map's geometry and clock ·
-      # the upstream's own English prose, translated and marked). Its subject is the NAME, not any
-      # one bundle, which is why it is not folded into the gate above it.
-      - name: Historical polity names (one table, three records)
-        run: npm run check:histnames
-      # (#R628) …AND WHICH EDGE OF A HISTORICAL BORDER IS DRAWN. `check:bordercoast` was declared in
-      # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
-      # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
-      # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
-      # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 56,141 rings, offline;
-      # MEASURED 49 s on this machine (2026-09-11), which is why the sampled form existed and why it is not enough.
-      - name: Historical border coastlines (every ring re-derived, not a sample)
-        run: npm run check:bordercoast
-      # (#R680) …AND THE TWO BIGGEST BUNDLES OF ALL, which had no gate of any kind. hist-admin1 +
-      # hist-admin2 are 25.4 MB of shipped first- and second-level subdivisions; the map draws every
-      # line, label, click answer and coverage count from them. Re-deriving needs OHM's whole
-      # admin_level 3-6 extract, so this proves the committed bytes — above all that each file
-      # defines the global its own NAME implies (#R604 shipped 15 MB that did not) and that every
-      # century it claims to reach has something in force. Residual: docs/TESTING.md.
-      - name: Historical subdivisions (both tiers name themselves, and no century is empty)
-        run: npm run check:histadmin
-      - name: Historical provinces IntMap derived itself (data/hist-kuni.js)
-        run: npm run check:kuni
-      # (#R730) …and the gate that asks whether anybody SAID what the map draws. The three above
-      # measure form and were green while 48 ritsuryō provinces were drawn in 200 BC. This one
-      # fails on a span no upstream states, refuses a growth in units drawn twice over one instant,
-      # and records the share of each polity's land that carries a subdivision — the reader's
-      # 「一部だけ」 as a number. Rule: .agents/rules/historical-verification.md.
-      - name: The historical map is measured as a claim, not as a shape
-        run: npm run check:histfidelity
-      # (#R719) …and the second derived record: the units that still stand today, carried back only
-      # as far as Wikidata's stated inception, the era record's own borders and the OHM record's
-      # silence all agree they may go. A country enters whole or not at all.
-      - name: Present-day subdivisions carried back where the record is silent (data/hist-admin-fill.js)
-        run: npm run check:histfill
-      # (#R716) …AND THE BIGGEST SURFACE OF ALL, bigger than every bundle above put together:
-      # data/border-detail/, 5,622 files and 409 MB of refined outlines for hist-borders, hist-admin1
-      # and hist-admin2. ⚠ Unlike the two steps above it, this one was NOT ungated — a node test has
-      # run its check() since #R711. What was missing is that no DECLARED gate reached it, so the
-      # rules that hunt for uncalled gates could not see it (their universe is package.json's
-      # check:* scripts), no instruction table named it, and no CI step said its name on failure.
-      # Offline, 41 s, paid once: the whole-bundle run moved out of the r711 test rather than being
-      # added alongside it. Residual (it re-derives nothing): docs/TESTING.md.
-      - name: Refined historical outlines (409 MB, every chunk hashed and bounded)
-        run: npm run check:borderdetail
-      # (#R716) …and the other half of the settlement layer. data/hist-cities.json has been re-derived
-      # byte for byte since #R427; data/hist-places.json had two tests on the builder's selection rule
-      # and nothing comparing the shipped bytes to the licensed Pleiades record. Offline, 0.14 s.
-      - name: Independent historical places (shipped bytes re-derived from the licensed record)
-        run: npm run check:histplaces
-      # (#R538) The language layer never had a gate. What it needed one for is what went wrong:
-      # the old build resolved Factbook prose through a hand table of regular expressions and
-      # dropped what it did not recognise, so a country was coloured by the next language down
-      # and 3,136 tests stayed green. This asserts that `top` IS the largest measured share,
-      # that a country with no measured share says so, that every Glottocode resolves in the
-      # tree, and that every ledger row has a written reason. Offline, no build, ~1 s.
-      - name: Language layer (largest share, resolved identity, and a reason for every binding)
-        run: npm run check:languages
-      # (#R588) the national-elections packs. Deliberately offline: it reads only the committed
-      # bytes and asserts the schema, the party table, the seat arithmetic (districts + list =
-      # chamber) and the district↔result join in BOTH directions — a district with no result would
-      # paint a hole, and a hole in a choropleth reads as 「nobody won here」. Registered from the
-      # first day because #R243's `--check` was never wired anywhere and so never ran. ~0.5 s.
-      - name: National elections (schema, licences, and the district↔result join both ways)
-        run: npm run check:elections
-      # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
-      # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
-      # Every previous round fixed test time for that round and the suite grew back, because the
-      # convention was one new spec file per round and nothing counted the total. A round that wants
-      # to add test time now has to take at least as much out somewhere else, which is what forces
-      # consolidation instead of accumulation. Unmeasured specs are charged p75, so deleting a
-      # duration cannot buy headroom. See scripts/test-budget.mjs.
-      - name: Test-time budget (the ceiling only goes down)
-        run: npm run check:testbudget
-      # (#R239) 「今後言語を追加するのが完璧に100%にできるような仕組みを作っておいて。今回のように、
-      # いつまでたっても言語対応の漏れが見つかることは許されない。」 One gate for every translatable
-      # surface — the keyed table wherever it is declared, the inline L() table, the five positional
-      # arguments, the two reading pages, and the data-i18n keys the markup asks for. A 漏れ is found
-      # by a reader only when nothing between the edit and the deploy asks; this asks, every push.
-      - name: Translation gate (every language, every surface)
-        run: npm run check:i18n
-      # ══ (#R397) THE GATE DECISIONS.md ALREADY NAMED ══════════════════════════════════════════════
-      # DECISIONS.md says of the one-list rule: 「『何ができるか』の一覧は1つだけ持つ（js/atlas-capabilities.js。
-      # ゲート＝npm run check:capabilities）」. That audit — twenty items, including «a capability that
-      # writes cannot be registered without observe() and verify()» and «the registry may not truncate
-      # its own population» — ran in scripts/test-parallel.mjs (so, in a local `npm test`) and in NO CI
-      # step. A push could therefore break the registry that every Atlas action resolves through and
-      # never run the check the decision record calls its gate. #R397 rewrote three of that registry's
-      # observers, which is precisely when the difference stops being theoretical.
-      - name: Atlas capability registry audit (the one-list rule)
-        run: npm run check:capabilities
-      # ══ (#R768) …AND WHAT THOSE CAPABILITIES REPORT BACK ══════════════════════════════════════════
-      # The two gates above ask whether a capability is catalogued and whether it can be run. Neither
-      # can ask whether the sentence it hands Atlas is TRUE — and a false 「it did not take effect」 is
-      # what makes a correct agent retry until its budget is gone (measured in production: a camera
-      # move in a backgrounded tab answered `no_change` seven times and the turn died at its step
-      # budget; the same question with the page in front took one call). .agents/rules/one-pass-or-a-reason.md
-      - name: Atlas observer verdicts (a repeat is a symptom)
-        run: npm run check:atlasrepeat
-      # ══ (#R311) THE STARTUP BUDGET ═══════════════════════════════════════════════════════════════
-      # 「現在のCIでは、3,000KB超chunkを検出しても成功扱いになる構成があります。」 — measured, and it was
-      # exactly true: until this step the only thing CI weighed was TEST TIME. `vite build` printed
-      # «Some chunks are larger than 3000 kB» on every single run and exited 0, which asserts nothing.
-      #
-      # The build has to happen here for the report to exist, and it is worth its ~35 s: it is also
-      # the only place that proves the production tree still BUILDS before the browser shards spend
-      # ten machines finding out. scripts/perf-budget.mjs then judges the two halves separately —
-      # eager bytes ratcheted in both directions, async chunks and dist/ totals under a ceiling —
-      # because "the biggest chunk is big" is a fact about Cesium, not about start-up.
-      - name: Production build (also writes .perf/build-report.json)
-        run: npm run build
-      - name: Startup budget (eager bytes ratchet · async + deploy ceilings)
-        run: npm run check:perf
+      - name: The declared gates for this shard
+        run: node scripts/ci-gates.mjs --shard ${{ matrix.shard }}/${{ matrix.of }} --timings gate-timings.json
+      # The measured seconds go back into .github/gate-cost.json by hand (`--update`), not by a bot:
+      # the ledger decides BALANCE only, so drift costs seconds, never coverage.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        if: ${{ !cancelled() }}
+        with:
+          name: gate-timings-${{ matrix.shard }}
+          path: gate-timings.json
+          retention-days: 7
 
-      # (#R322) …and the other half of the deploy. The budget above weighs what Rollup produced,
-      # which is 12.5 MB of a 105.7 MB tree; `data/` is copied whole by vite.config.js and never
-      # passes through the bundler, so nothing could tell that a file in it had stopped being
-      # fetched. This matches every shipped file against the strings the source actually contains
-      # and fails on one nothing names, on a payload shipped twice, and on an unexplained large file.
-      - name: Production assets (every file has a consumer · no payload shipped twice)
-        run: npm run check:assets
+  # (#R586's reason, applied again) A required check cannot be a matrix leg — the leg names change the
+  # day the shard count does. This job carries the name the ruleset requires («Static checks»).
+  static:
+    name: Static checks
+    runs-on: ubuntu-latest
+    needs: [gates]
+    if: ${{ always() }}
+    steps:
+      - name: Every gate shard passed
+        run: |
+          echo "gates: ${{ needs.gates.result }}"
+          test "${{ needs.gates.result }}" = "success"
 
+  # ⚠⚠⚠ (#R707) IS THE SHIPPED ERA BUNDLE STILL THE WHOLE UPSTREAM SET? The property gate above tests
+  # PROPERTIES on purpose, so upstream GROWING never turns a PR red — and that is exactly why upstream
+  # growing was invisible: #R679 discovered 53 snapshots and shipped 53, and when `world_1878.geojson`
+  # appeared upstream the bundle stayed at 53 of 54 with every gate green.
+  # ⚠ NIGHTLY ONLY, AND THAT IS THE POINT: it needs the network, and a red here means «upstream
+  # published something», not «this PR broke something».
+  upstream:
+    name: Era snapshots — still the whole upstream set? (network)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: node scripts/build-hist-eras.mjs --check-upstream
+
+  # ══ WHY EACH OF THOSE GATES EXISTS ═════════════════════════════════════════════════════════════
+  # The commentary below was written against the steps that used to stand here one per gate. The
+  # steps are gone (scripts/ci-gates.mjs runs the set it discovers); the reasons are not, because a
+  # gate whose reason is lost is a gate the next round deletes. Kept verbatim.
+  # (#R178) 「MapLibre依存脱却」: only js/geo-engine.js may name the renderer. An AST gate, so a
+  # comment that says "the map. When…" never trips it, and a local `map` variable is not coupling.
+  # ══ (#R403) THE FIVE GATES `npm test` RAN AND CI DID NOT ════════════════════════════════════
+  # `scripts/test-parallel.mjs` runs eleven source-side gates; this job ran six of them. The five
+  # below were never a CI step, so 「push の直前に `npm test`」 was the ONLY thing standing in front
+  # of them — a human habit, on one machine, with CRLF line endings. `check:docs` in particular is
+  # the gate that compares every document against the tree, and #R399 rebuilt it after six
+  # documents drifted; this round found the round procedure itself stale for three more rounds.
+  # It was not literally unenforced — tests/r399-checks and tests/r403-checks run doc-facts as a
+  # subprocess and assert exit 0, so `test:checks` (now its own job, #R586) already turned red on drift — but it
+  # surfaced as an unrelated-looking test failure rather than as "a document is wrong".
+  # MEASURED before adding: all five are green on a clean origin/main under LF, contact no
+  # network, need no `dist/` and no credentials, and cost ~6 s in total. They are placed BEFORE
+  # `npm run build` (~35 s) so a documentation failure does not wait for a bundle.
+  # (#R503) The agent context is written once under .agents/ and RENDERED into each
+  # product's own location, because Claude Code reads only .claude/ and Codex reads only
+  # AGENTS.md plus .codex/. This re-renders and compares, and measures AGENTS.md against
+  # the 32,768-byte ceiling Codex silently truncates it at.
+  # (#R518, widened #R690) The day-exact border record below CShapes — 1689-1885 since #R690 —
+  # cannot be re-derived here: the build needs about 2.1 GB of OpenHistoricalMap Overpass
+  # responses. So this proves the committed file's invariants, and
+  # above all that every year of the window covers as much land as data/cshapes.js does — the
+  # same comparison the floor was derived from. See docs/TESTING.md for
+  # what it therefore cannot see.
+  # (#R700) …and the record that line derives its floor FROM. data/cshapes.js had no build and
+  # no gate: nothing said where its bytes came from, and nothing said what shipping them costs
+  # — CShapes 2.0 is CC BY-NC-SA 4.0, so attribution is a condition of redistribution and the
+  # source row carried none. This proves the committed bytes and that the credit is paid.
+  # ⚠⚠⚠ (#R707) …AND WHETHER THAT BUNDLE IS STILL THE WHOLE UPSTREAM SET. The gate above tests
+  # PROPERTIES on purpose, so that upstream GROWING never turns a PR red — and that is exactly
+  # why upstream growing was invisible: #R679 discovered 53 snapshots and shipped 53, and when
+  # `world_1878.geojson` appeared upstream the bundle stayed at 53 of 54 with every gate green.
+  # A discovered list is a snapshot of a directory taken once. This asks the directory again.
+  # ⚠ NIGHTLY ONLY, AND THAT IS THE POINT: it needs the network, and a red here means «upstream
+  # published something», not «this PR broke something». Putting it on PRs would make somebody
+  # else's commit fail somebody else's branch.
+  # (#R695) …AND THE NAMES THOSE THREE RECORDS ARE READ BY. One table, three lanes of evidence
+  # (a QID the record itself states · #R686's measure against the map's geometry and clock ·
+  # the upstream's own English prose, translated and marked). Its subject is the NAME, not any
+  # one bundle, which is why it is not folded into the gate above it.
+  # (#R628) …AND WHICH EDGE OF A HISTORICAL BORDER IS DRAWN. `check:bordercoast` was declared in
+  # package.json and named in both instruction tables, and NOTHING RAN IT — the one gate of the
+  # eighteen with no caller anywhere, three rounds after scripts/build-border-coast.mjs wrote
+  # 「as `npm run check:bordercoast` does in CI」 into its own source. `npm test` reached only a
+  # one-in-eight sample of it (tests/r531-checks). Full re-derivation of 56,141 rings, offline;
+  # MEASURED 49 s on this machine (2026-09-11), which is why the sampled form existed and why it is not enough.
+  # (#R680) …AND THE TWO BIGGEST BUNDLES OF ALL, which had no gate of any kind. hist-admin1 +
+  # hist-admin2 are 25.4 MB of shipped first- and second-level subdivisions; the map draws every
+  # line, label, click answer and coverage count from them. Re-deriving needs OHM's whole
+  # admin_level 3-6 extract, so this proves the committed bytes — above all that each file
+  # defines the global its own NAME implies (#R604 shipped 15 MB that did not) and that every
+  # century it claims to reach has something in force. Residual: docs/TESTING.md.
+  # (#R730) …and the gate that asks whether anybody SAID what the map draws. The three above
+  # measure form and were green while 48 ritsuryō provinces were drawn in 200 BC. This one
+  # fails on a span no upstream states, refuses a growth in units drawn twice over one instant,
+  # and records the share of each polity's land that carries a subdivision — the reader's
+  # 「一部だけ」 as a number. Rule: .agents/rules/historical-verification.md.
+  # (#R719) …and the second derived record: the units that still stand today, carried back only
+  # as far as Wikidata's stated inception, the era record's own borders and the OHM record's
+  # silence all agree they may go. A country enters whole or not at all.
+  # (#R716) …AND THE BIGGEST SURFACE OF ALL, bigger than every bundle above put together:
+  # data/border-detail/, 5,622 files and 409 MB of refined outlines for hist-borders, hist-admin1
+  # and hist-admin2. ⚠ Unlike the two steps above it, this one was NOT ungated — a node test has
+  # run its check() since #R711. What was missing is that no DECLARED gate reached it, so the
+  # rules that hunt for uncalled gates could not see it (their universe is package.json's
+  # check:* scripts), no instruction table named it, and no CI step said its name on failure.
+  # Offline, 41 s, paid once: the whole-bundle run moved out of the r711 test rather than being
+  # added alongside it. Residual (it re-derives nothing): docs/TESTING.md.
+  # (#R716) …and the other half of the settlement layer. data/hist-cities.json has been re-derived
+  # byte for byte since #R427; data/hist-places.json had two tests on the builder's selection rule
+  # and nothing comparing the shipped bytes to the licensed Pleiades record. Offline, 0.14 s.
+  # (#R538) The language layer never had a gate. What it needed one for is what went wrong:
+  # the old build resolved Factbook prose through a hand table of regular expressions and
+  # dropped what it did not recognise, so a country was coloured by the next language down
+  # and 3,136 tests stayed green. This asserts that `top` IS the largest measured share,
+  # that a country with no measured share says so, that every Glottocode resolves in the
+  # tree, and that every ledger row has a written reason. Offline, no build, ~1 s.
+  # (#R588) the national-elections packs. Deliberately offline: it reads only the committed
+  # bytes and asserts the schema, the party table, the seat arithmetic (districts + list =
+  # chamber) and the district↔result join in BOTH directions — a district with no result would
+  # paint a hole, and a hole in a choropleth reads as 「nobody won here」. Registered from the
+  # first day because #R243's `--check` was never wired anywhere and so never ran. ~0.5 s.
+  # (#R197) 「そもそもの時間が長すぎる。個別対応するな。何重にもテストとか意味がない。」
+  # The suite's measured serial time has a CEILING, and the ceiling may only ever be LOWERED.
+  # Every previous round fixed test time for that round and the suite grew back, because the
+  # convention was one new spec file per round and nothing counted the total. A round that wants
+  # to add test time now has to take at least as much out somewhere else, which is what forces
+  # consolidation instead of accumulation. Unmeasured specs are charged p75, so deleting a
+  # duration cannot buy headroom. See scripts/test-budget.mjs.
+  # (#R239) 「今後言語を追加するのが完璧に100%にできるような仕組みを作っておいて。今回のように、
+  # いつまでたっても言語対応の漏れが見つかることは許されない。」 One gate for every translatable
+  # surface — the keyed table wherever it is declared, the inline L() table, the five positional
+  # arguments, the two reading pages, and the data-i18n keys the markup asks for. A 漏れ is found
+  # by a reader only when nothing between the edit and the deploy asks; this asks, every push.
+  # ══ (#R397) THE GATE DECISIONS.md ALREADY NAMED ══════════════════════════════════════════════
+  # DECISIONS.md says of the one-list rule: 「『何ができるか』の一覧は1つだけ持つ（js/atlas-capabilities.js。
+  # ゲート＝npm run check:capabilities）」. That audit — twenty items, including «a capability that
+  # writes cannot be registered without observe() and verify()» and «the registry may not truncate
+  # its own population» — ran in scripts/test-parallel.mjs (so, in a local `npm test`) and in NO CI
+  # step. A push could therefore break the registry that every Atlas action resolves through and
+  # never run the check the decision record calls its gate. #R397 rewrote three of that registry's
+  # observers, which is precisely when the difference stops being theoretical.
+  # ══ (#R768) …AND WHAT THOSE CAPABILITIES REPORT BACK ══════════════════════════════════════════
+  # The two gates above ask whether a capability is catalogued and whether it can be run. Neither
+  # can ask whether the sentence it hands Atlas is TRUE — and a false 「it did not take effect」 is
+  # what makes a correct agent retry until its budget is gone (measured in production: a camera
+  # move in a backgrounded tab answered `no_change` seven times and the turn died at its step
+  # budget; the same question with the page in front took one call). .agents/rules/one-pass-or-a-reason.md
+  # ══ (#R311) THE STARTUP BUDGET ═══════════════════════════════════════════════════════════════
+  # 「現在のCIでは、3,000KB超chunkを検出しても成功扱いになる構成があります。」 — measured, and it was
+  # exactly true: until this step the only thing CI weighed was TEST TIME. `vite build` printed
+  # «Some chunks are larger than 3000 kB» on every single run and exited 0, which asserts nothing.
+  #
+  # The build has to happen here for the report to exist, and it is worth its ~35 s: it is also
+  # the only place that proves the production tree still BUILDS before the browser shards spend
+  # ten machines finding out. scripts/perf-budget.mjs then judges the two halves separately —
+  # eager bytes ratcheted in both directions, async chunks and dist/ totals under a ceiling —
+  # because "the biggest chunk is big" is a fact about Cesium, not about start-up.
+  # (#R322) …and the other half of the deploy. The budget above weighs what Rollup produced,
+  # which is 12.5 MB of a 105.7 MB tree; `data/` is copied whole by vite.config.js and never
+  # passes through the bundler, so nothing could tell that a file in it had stopped being
+  # fetched. This matches every shipped file against the strings the source actually contains
+  # and fails on one nothing names, on a payload shipped twice, and on an unexplained large file.
   # ══ (#R586) THE ONE STEP THAT WAS 73% OF THE GATE ══════════════════════════════════════════════
   # Measured on the run for #R578 (job 102601448559): «Static checks» took 760 s, and 558 s of that
   # was ONE step — `npm run test:checks`. Everything else in that job together came to ~200 s.
@@ -251,6 +257,7 @@ jobs:
   # .agents/rules/no-ad-hoc-hardcoding.md §1 names first: it would go stale the day a file is added
   # and nothing would say so. Each shard is a separate checkout, so the mutation tests' tree lock is
   # per-runner and two shards can never edit one tree.
+
   checks:
     name: Regression ${{ matrix.shard }}/${{ matrix.of }}
     runs-on: ubuntu-latest

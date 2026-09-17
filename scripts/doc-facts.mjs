@@ -1435,6 +1435,22 @@ if (RULE && RULE !== 'i18n-open-gap') {
  *  ⚠ `check:perf` / `check:assets` go the other way — CI runs them and `npm test` does not,
  *    deliberately, because they need the build. That direction is not checked here; what must
  *    not happen is a gate the developer's own command runs and CI never sees. */
+/* (#R771) WHICH GATES A CI SHARD WOULD ACTUALLY RUN — asked of the planner, not of the workflow's
+   text. Empty when ci.yml does not invoke it on a non-comment line, so removing the shard step
+   makes both rules below go red rather than quietly widening. */
+const plannedGates = (() => {
+  const live = rd('.github/workflows/ci.yml').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  if (!/scripts\/ci-gates\.mjs\s+--shard/.test(live)) return { names: [] };
+  try {
+    const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'ci-gates.mjs'), '--planned'],
+      { cwd: ROOT, encoding: 'utf8', timeout: 30000 });
+    return { names: JSON.parse(out.trim()) };
+  } catch (e) {
+    fail('ci-gates', 'scripts/ci-gates.mjs --planned が答えられなかった: ' + (e.message || e));
+    return { names: [] };
+  }
+})();
+
 {
   const par = rd('scripts/test-parallel.mjs');
   const ci = rd('.github/workflows/ci.yml');
@@ -1454,6 +1470,18 @@ if (RULE && RULE !== 'i18n-open-gap') {
   }
   /* `npm run test:checks` reaches its own file list, which is how the node tier gets in */
   if (/npm run test:checks/.test(ci)) reached.add('test:checks');
+  /* ⚠ (#R771) …AND THE GATES CI NOW REACHES INDIRECTLY. The 28 declared gates stopped being one
+     ci.yml step each when they were split across three machines; scripts/ci-gates.mjs DISCOVERS
+     them from package.json and runs the bin it planned. Grepping ci.yml for their names would now
+     report all 28 as unreachable while every one of them runs — the rule would be measuring the
+     spelling of the workflow rather than what it executes.
+     ⚠ SO THE PLANNER IS EVALUATED, NOT READ. A gate that falls out of the plan (or a planner that
+     stops planning) turns this red, which is the failure the rule exists for. The invocation must
+     appear on a NON-COMMENT line: a sentence explaining the absence looks exactly like presence
+     (the reason rule 33 below strips comments). */
+  if (plannedGates.names.length) for (const g of plannedGates.names) {
+    for (const m of String(pkg[g] || '').matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)) reached.add(m[1]);
+  }
   if (wanted.length < 5) fail('ci-gates', `only ${wanted.length} gate scripts were read out of scripts/test-parallel.mjs — this rule needs rewriting`);
   const unseen = wanted.filter((n) => !reached.has(n));
   if (unseen.length) {
@@ -2640,6 +2668,8 @@ if (!RULE || RULE.startsWith('chronos-') || RULE === 'histadmin-inforce') {
   const gates = Object.keys(pkg).filter((k) => /^check:/.test(k));
   const orphan = gates.filter((g) => {
     if (ci.includes('npm run ' + g)) return false;
+    /* (#R771) CI reaches the declared gates through the planner — see the note in rule 28. */
+    if (plannedGates.names.includes(g)) return false;
     const body = pkg[g] || '';
     /* CI may reach the same script directly, or `npm test` may run it out of test-parallel */
     for (const m of body.matchAll(/scripts\/([a-z0-9-]+)\.mjs/g)) {

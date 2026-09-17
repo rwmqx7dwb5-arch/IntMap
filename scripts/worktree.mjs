@@ -26,6 +26,7 @@
  *      node scripts/worktree.mjs status --brief # the same, three lines (used by the SessionStart hook)
  *      node scripts/worktree.mjs new <slug>    # free round number + branch + worktree + node_modules + preview
  *      node scripts/worktree.mjs done          # remove THIS worktree and its branch, after the merge
+ *      node scripts/worktree.mjs verified [--round R770]   # record that origin/main was verified in production
  *
  *  ⚠ `status` NEVER EXITS NON-ZERO. It is wired to a SessionStart hook, and a hook that fails is a
  *  session that starts with an error instead of its bearings. Anything it cannot determine is
@@ -34,7 +35,7 @@
  *  worktree that is not the one it is being run from, and uses `git branch -d` (not -D) so an
  *  unmerged branch is refused by git itself rather than by a rule written here.
  * ==========================================================================*/
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, lstatSync, unlinkSync, rmdirSync, symlinkSync, mkdirSync, readdirSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -137,6 +138,149 @@ function nightly() {
   };
 }
 
+/* ══ (#R771) THE STEPS THE ROUND NO LONGER WAITS FOR ════════════════════════════════════════════
+   AGENTS.md §5.1 ends a round with production verification, the master fast-forward and the USB
+   mirror. #R771 moved WHEN those happen — not WHETHER: they are picked up at the START of the next
+   session instead of being waited on at the end of this one. Nothing is dropped.
+
+   ⚠ A STEP MOVED LATER NEEDS A READER, or «deferred» and «never done» are the same observation
+   (memory: intmap-records-with-no-reader, intmap-background-work-needs-a-receipt). `status` is that
+   reader: AGENTS.md §1 sends every session through it before it starts, which makes it the one
+   place the answer is guaranteed to be read — the same argument that put the nightly here (#R304).
+
+   ⚠ NONE OF THIS MAY FAIL, THROW, OR MAKE A SESSION WAIT (see the header). `gh` may be missing,
+   logged out, offline or rate-limited; master-sync may be gone. Every one of those is «不明», and
+   «不明» IS NOT «問題なし» — .agents/rules/one-pass-or-a-reason.md §5: «確認できなかった» is
+   neither a failure nor a pass, and the two must not be given the same answer. That is why every
+   reader below returns a `known` flag rather than a falsy value that reads as «fine».
+
+   ⚠ origin/main HERE IS WHATEVER THIS CHECKOUT LAST FETCHED. `status` deliberately does not fetch
+   — it is wired to a hook and a hook that waits on the network is a session that starts late — so
+   these counts can only UNDERSTATE how far behind the world is, never overstate it. `new` fetches,
+   and so does `verified`, because the sha IT writes down is a claim about one specific commit. */
+
+/* How many commits, and which rounds, lie between a commit and origin/main.
+   ⚠ `q` answers '' both for «no commits» and for «git could not say», and those are the two
+   answers this whole block is about keeping apart — so an empty log is cross-examined: if the
+   starting commit is not an object this checkout holds, nothing was measured. */
+function commitsAfter(from, to) {
+  if (!from || !to) return { known: false };
+  const log = q(['log', '--format=%H %s', `${from}..${to}`]);
+  if (!log) {
+    if (q(['cat-file', '-t', from]) !== 'commit') return { known: false };
+    return { known: true, n: 0, rounds: [] };
+  }
+  const lines = log.split('\n').filter(Boolean);
+  const rounds = [...new Set(lines.map((l) => (l.match(/\bR(\d{2,4})\b/) || [])[1]).filter(Boolean))].map((n) => 'R' + n);
+  return { known: true, n: lines.length, rounds };
+}
+
+/* At most this many round labels are spelled out before the rest become «ほか N件». Purely a
+   display width — the count beside it is always the whole truth, so nothing is hidden by it. */
+const ROUNDS_SHOWN = 6;
+const roundList = (rounds) => (rounds.length > ROUNDS_SHOWN
+  ? rounds.slice(0, ROUNDS_SHOWN).join(' ') + ` ほか${rounds.length - ROUNDS_SHOWN}件`
+  : rounds.join(' '));
+
+/* (a) WHAT IS ON PRODUCTION. The deploy workflow is the only thing that puts bytes on the Pages
+   site, so the sha of its last SUCCESSFUL run is what the public is looking at. A newer run that
+   failed is a separate fact and is reported separately: «the deploy is red» and «the deploy has
+   not caught up» have different next moves. Capped at five runs and six seconds, like nightly(). */
+function deployState() {
+  let raw = '';
+  try {
+    raw = execFileSync('gh', ['run', 'list', '--workflow=deploy.yml', '--limit', '5',
+      '--json', 'conclusion,headSha,createdAt,databaseId'],
+    { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 6000 }).trim();
+  } catch { return { known: false }; }
+  let runs; try { runs = JSON.parse(raw); } catch { return { known: false }; }
+  if (!Array.isArray(runs) || !runs.length) return { known: false };
+
+  const newest = runs[0];
+  /* `conclusion` is '' while a run is still going: that is «not finished», not «failed». */
+  const broken = newest.conclusion && newest.conclusion !== 'success'
+    ? { id: newest.databaseId, what: newest.conclusion, day: String(newest.createdAt || '').slice(0, 10) } : null;
+  const ok = runs.find((r) => r.conclusion === 'success');
+  if (!ok || !ok.headSha) return { known: false, broken };
+
+  const target = q(['rev-parse', 'origin/main']);
+  const gap = commitsAfter(ok.headSha, target);
+  return { known: gap.known, broken, sha: ok.headSha, day: String(ok.createdAt || '').slice(0, 10), ...gap };
+}
+
+/* (b) WHAT HAS BEEN VERIFIED IN PRODUCTION — a receipt, because nothing else can tell «somebody
+   looked at the live site» from «nobody has looked yet». It is machine-local (a claim about what
+   THIS operator checked, holding this machine's timestamps) and therefore untracked; it lives
+   beside the master so all of this machine's worktrees read the ONE store rather than a copy each
+   (memory: intmap-agent-memory-is-one-store). */
+const receiptsPath = (master) => join(master, '.intmap', 'receipts.json');
+
+function readReceipts(master) {
+  const p = receiptsPath(master);
+  if (!existsSync(p)) return { state: 'none' };
+  try { return { state: 'ok', data: JSON.parse(readFileSync(p, 'utf8')) || {} }; }
+  catch (e) { return { state: 'unreadable', why: e.message }; }
+}
+
+function verifiedState(master) {
+  const r = readReceipts(master);
+  if (r.state === 'unreadable') return { known: false, why: r.why };
+  /* ⚠ NO RECEIPT IS NOT AN ALARM. The first session after this lands has none, and a warning that
+     is guaranteed on its first run is a warning nobody reads after that. It is simply stated. */
+  if (r.state === 'none') return { known: true, none: true };
+  const v = r.data && r.data.prodVerified;
+  if (!v || !v.sha) return { known: true, none: true };
+  const gap = commitsAfter(v.sha, q(['rev-parse', 'origin/main']));
+  /* The receipt was read; what could not be answered is how far it is from origin/main. Say which
+     of the two it is — «unreadable receipt» and «a commit this checkout does not hold» have
+     different next moves (fix the file / fetch). */
+  if (!gap.known) return { known: false, why: `受領証の ${String(v.sha).slice(0, 7)} をこの checkout が持っていない`, sha: v.sha };
+  return { ...gap, at: v.at || null, round: v.round || null, sha: v.sha };
+}
+
+/* (c) IS THE MASTER THE MERGED STATE. ⚠ THE VERDICT IS NOT RE-DERIVED HERE. scripts/master-sync.mjs
+   already owns it, including the one distinction that is easy to lose — «behind» blocks, «dirty»
+   does not, because the dirty file usually belongs to a concurrent session and the USB mirror
+   copies the working directory as it stands (AGENTS.md §6). So the script is run and ITS exit code
+   is the answer; only the presentation happens here. `--offline` because `status` does not fetch. */
+function masterState() {
+  const script = join(HERE, 'master-sync.mjs');
+  if (!existsSync(script)) return { known: false, why: 'scripts/master-sync.mjs が無い' };
+  let r;
+  try {
+    r = spawnSync(process.execPath, [script, '--check', '--offline'],
+      { cwd: REPO, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 });
+  } catch (e) { return { known: false, why: e.message }; }
+  if (!r || r.error || r.status === null || r.status === undefined) {
+    return { known: false, why: (r && r.error && r.error.message) || 'master-sync が答えを返さなかった' };
+  }
+  if (r.status === 2) return { known: false, why: (r.stderr || '').trim().split('\n')[0] || 'exit 2' };
+  const err = String(r.stderr || '');
+  /* master-sync prints its blocking reasons on its own «  · » lines and its advisories as
+     «warning — …». Read those lines rather than the prose around them. */
+  const reasons = err.split('\n').filter((l) => /^\s+·\s/.test(l)).map((l) => l.replace(/^\s+·\s*/, '').trim());
+  const warnings = err.split('\n').filter((l) => /warning —/.test(l)).map((l) => l.replace(/^.*warning —\s*/, '').trim());
+  return { known: true, ok: r.status === 0, reasons, warnings };
+}
+
+/* Everything above, in one call, plus the short labels the hook line is built from.
+   An item is «pending» only when it is KNOWN to be outstanding: an unknown is neither pending nor
+   done, and the full `status` states it in its own right (the brief follows nightly()'s precedent
+   of staying silent about what it could not read, rather than printing a line every session). */
+function pendingWork(master) {
+  const deploy = deployState();
+  const verified = verifiedState(master);
+  const copy = masterState();
+  const items = [];
+  if (deploy.known && deploy.n > 0) items.push(`本番未到達 ${deploy.rounds.length ? roundList(deploy.rounds) : `${deploy.n} commit`}`);
+  if (deploy.broken) items.push(`deploy ${deploy.broken.what} (run ${deploy.broken.id})`);
+  if (verified.known && !verified.none && verified.n > 0) {
+    items.push(`本番検証 ${verified.rounds.length ? roundList(verified.rounds) : `${verified.n} commit 分`}`);
+  }
+  if (copy.known && !copy.ok) items.push(`原本: ${copy.reasons[0] || 'merge 後の状態ではない'}`);
+  return { deploy, verified, copy, items };
+}
+
 /* ── STATUS ─────────────────────────────────────────────────────────────────────────────────── */
 function status(brief) {
   const master = masterDir();
@@ -155,6 +299,10 @@ function status(brief) {
     if (isMaster) console.log('⚠ 原本では作業しない。node scripts/worktree.mjs new <slug> で worktree を作る（AGENTS.md §6）。');
     const nb = nightly();
     if (nb && !nb.ok) console.log(`⚠ deep tier (nightly ${nb.day}${nb.age}): ${nb.what}  → gh run view ${nb.id} --log-failed`);
+    /* (#R771) one line, and ONLY when something is actually outstanding. This prints at the top of
+       every session, so a line that is always there is a line nobody reads. */
+    const pw = pendingWork(master);
+    if (pw.items.length) console.log(`⚠ 前回までの未了: ${pw.items.join(' / ')}  → node scripts/worktree.mjs status`);
     console.log('実行戦略は .agents/rules/execution-strategy.md ／ 手順は .agents/skills/intmap-round/。');
     return;
   }
@@ -186,6 +334,52 @@ function status(brief) {
   console.log(`  空きラウンド番号    R${round}   ⚠ push の直前にもう一度取り直すこと`);
   const nf = nightly();
   console.log(`  deep tier (nightly) ${nf ? `${nf.what}${nf.ok ? '' : `   → gh run view ${nf.id} --log-failed`}   (${nf.day}${nf.age})` : '不明（gh が無い・未ログイン・オフラインのいずれか）'}`);
+
+  /* (#R771) THE STEPS THIS ROUND'S PREDECESSORS NO LONGER WAITED FOR. Each line says what is
+     known, or says that it could not be read — and every outstanding one carries the command that
+     clears it, because a report whose reader has to go and look up the next move is a report that
+     gets deferred again. */
+  const pw = pendingWork(master);
+  console.log('\n  前回までの工程（ラウンドの末尾で待たず、ここで回収する——AGENTS.md §5.1）');
+  const d = pw.deploy;
+  if (!d.known) {
+    console.log(`    本番への到達    不明（gh が無い・未ログイン・オフライン・deploy の記録が読めない のいずれか）`);
+  } else if (d.n === 0) {
+    console.log(`    本番への到達    origin/main が本番に出ている (${String(d.sha).slice(0, 7)}${d.day ? `・${d.day}` : ''})`);
+  } else {
+    console.log(`    本番への到達    ⚠ ${d.n} commit が本番に届いていない${d.rounds.length ? `: ${roundList(d.rounds)}` : ''}`);
+    console.log(`                    本番 ${String(d.sha).slice(0, 7)}${d.day ? `・${d.day}` : ''}  → gh run list --workflow=deploy.yml`);
+  }
+  if (d.broken) console.log(`                    ⚠ 最新の deploy が ${d.broken.what}  → gh run view ${d.broken.id} --log-failed`);
+
+  const v = pw.verified;
+  if (!v.known) console.log(`    本番検証        不明（${v.why || '受領証を読めなかった'}）`);
+  else if (v.none) console.log('    本番検証        記録が無い  → 検証したら node scripts/worktree.mjs verified');
+  else if (v.n === 0) console.log(`    本番検証        origin/main まで済み${v.round ? ` (${v.round})` : ''}${v.at ? `・${String(v.at).slice(0, 10)}` : ''}`);
+  else {
+    console.log(`    本番検証        ⚠ ${v.n} commit 分が未検証${v.rounds.length ? `: ${roundList(v.rounds)}` : ''}`);
+    console.log(`                    最後の検証 ${String(v.sha).slice(0, 7)}${v.at ? `・${String(v.at).slice(0, 10)}` : ''}  → 本番を見てから node scripts/worktree.mjs verified`);
+  }
+
+  const c = pw.copy;
+  if (!c.known) console.log(`    原本の同期      不明（${c.why || 'master-sync が答えなかった'}）`);
+  else if (c.ok) console.log('    原本の同期      原本は merge 後の状態');
+  else {
+    console.log('    原本の同期      ⚠ 原本が merge 後の状態ではない  → node scripts/master-sync.mjs --sync');
+    for (const r of c.reasons) console.log(`                    · ${r}`);
+  }
+  /* ⚠ ADVISORY, NOT BLOCKING — master-sync's own distinction (AGENTS.md §6): an uncommitted file
+     usually belongs to a concurrent session and the USB mirror copies it as it stands. */
+  for (const w of c.warnings || []) console.log(`                    (${w})`);
+  /* ⚠ THE MIRROR HAS NO READER HERE, AND SAYS SO. Its ledger lives on the USB drive, which may not
+     even be plugged in; claiming anything about it from this side would be the exact shape this
+     block exists to avoid. It is named because it follows the sync, not because it was checked. */
+  console.log('    USB ミラー      ここでは読んでいない（原本の同期のあとに走らせる。§11.2）');
+  console.log('                    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1');
+  /* ⚠ «no receipt» is NOT «done», so it does not get to say everything is finished either. */
+  if (!pw.items.length && d.known && v.known && !v.none && c.known) {
+    console.log('    → 読めた3つ（本番到達・本番検証・原本）は全部済んでいる。');
+  }
 
   const wts = q(['worktree', 'list']).split('\n').filter(Boolean);
   console.log(`\n  worktree ${wts.length}本（${wts.length - 1}本は別セッションのものかもしれない——触らない）`);
@@ -285,6 +479,53 @@ function makeNew(slug) {
 
   console.log('\n  並列実装をするなら、この絶対パスと「触ってよいファイルの一覧」を');
   console.log('  intmap-implementer に渡す。同じファイルを2体に書かせない。');
+}
+
+/* ── VERIFIED (#R771) ──────────────────────────────────────────────────────────────────
+   The receipt production verification leaves behind. It records origin/main — the state the public
+   is being served, not this session's branch, which nobody outside this machine can see.
+   ⚠ IT FETCHES FIRST. Everything else here reads whatever the checkout last had, because being a
+   little stale only UNDERSTATES the backlog; a receipt is the opposite — it SAYS a commit was
+   looked at, so writing down a stale sha would mark commits verified that nobody ever saw. If the
+   fetch cannot happen, the run says so rather than quietly recording the older ref.
+   ⚠ IT MERGES INTO THE FILE. Other receipts may be added beside this one later; a writer that
+   re-emits only its own key deletes them. And an UNREADABLE file is not overwritten — that is a
+   thing to look at, not a thing to flatten. */
+function markVerified(round) {
+  const master = masterDir();
+  let fetched = true;
+  try { git(['fetch', 'origin', '--quiet']); } catch { fetched = false; }
+
+  const sha = q(['rev-parse', 'origin/main']);
+  if (!sha) {
+    console.error('✖ origin/main が分からないので受領証を書けない（remote-tracking ref が無い）。');
+    process.exit(1);
+  }
+
+  let r = round == null ? null : String(round).replace(/^[Rr]?/, 'R');
+  if (r !== null && !/^R\d{2,4}$/.test(r)) {
+    console.error(`✖ --round は R770 の形で渡す（受け取った: ${round}）`);
+    process.exit(1);
+  }
+  /* No --round: take it from the commit itself. AGENTS.md §9 puts «R‹N›: …» at the head of every
+     merge subject, so the round is a property OF THE COMMIT rather than of whoever runs this. */
+  if (!r) {
+    const m = q(['log', '-1', '--format=%s', sha]).match(/\bR(\d{2,4})\b/);
+    r = m ? 'R' + m[1] : null;
+  }
+
+  const p = receiptsPath(master);
+  const prev = readReceipts(master);
+  if (prev.state === 'unreadable') {
+    console.error(`✖ ${p} を読めなかったので上書きしない: ${prev.why}`);
+    process.exit(1);
+  }
+  const data = prev.state === 'ok' ? (prev.data || {}) : {};
+  data.prodVerified = { sha, at: new Date().toISOString(), round: r };
+  mkdirSync(dirname(p), { recursive: true });
+  writeFileSync(p, JSON.stringify(data, null, 2) + '\n');
+  console.log(`✓ 本番検証を記録: ${r || '(ラウンド番号なし)'} @ ${sha.slice(0, 7)}  → ${p}`
+    + (fetched ? '' : '\n  ⚠ fetch できなかった。この sha はこの checkout が最後に取った origin/main。'));
 }
 
 /* ── CODEX TRUST ─────────────────────────────────────────────────────────────────────────────
@@ -397,7 +638,13 @@ try {
   if (cmd === 'status') status(argv.includes('--brief'));
   else if (cmd === 'new') makeNew(argv[1]);
   else if (cmd === 'done') done();
-  else { console.error(`unknown command: ${cmd}\nusage: node scripts/worktree.mjs [status [--brief] | new <slug> | done]`); process.exit(1); }
+  else if (cmd === 'verified') {
+    const i = argv.indexOf('--round');
+    /* `?? ''` so that a bare `--round` with nothing after it is REFUSED rather than silently
+       falling back to the commit subject — the caller asked for a specific round and did not
+       give one, and guessing is the one thing that must not happen here. */
+    markVerified(i >= 0 ? (argv[i + 1] ?? '') : null);
+  } else { console.error(`unknown command: ${cmd}\nusage: node scripts/worktree.mjs [status [--brief] | new <slug> | done | verified [--round R770]]`); process.exit(1); }
 } catch (e) {
   /* status is wired to a hook — it reports and leaves, it does not take the session down with it */
   if (cmd === 'status') { console.log('IntMap · 現在地を読めなかった: ' + e.message); process.exit(0); }

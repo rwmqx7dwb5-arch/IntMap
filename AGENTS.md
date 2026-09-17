@@ -187,28 +187,39 @@ worktree・subagent・agent 設定の手動管理をユーザーに要求して�
 （判断基準・委譲先の agent・検証の段の表）。ラウンド 1 本を通す**具体的な手順**は
 **`.agents/skills/intmap-round/`**（Claude `/intmap-round`／Codex `$intmap-round`）。書き写さない。
 
-### 5.1 工程
+### 5.1 工程 — **待たない鎖**（#R771）
 
-問題によって妨げられない限り、本規程の確認要件を遵守し、並行作業の存在を考慮したうえで、
-**以下のワークフロー全体を完了まで実行する**こと。
+⚠ **工程は1つも減っていない。やる「時刻」だけが動いた。** 実測: 従来は1ラウンドの純粋な待ちが
+45〜60分あり、しかも**赤い CI は 11.9分・12.2分**——1回引っかかるたびに12分、直してまた12分。
+「数時間」の正体は工程の数ではなく、**直列に並んだ待ちと、その往復**だった。
+
+**そのラウンドの中でやること（待ちがほぼ無い）:**
 
 ```
-調査 → 再現 → 実装 → ドキュメント更新 → テスト → commit → push → PR
-     → CI 確認および修正 → squash merge → production deployment
-     → production verification → branch deletion → 原本 (OneDrive) の最新化
+調査 → 再現 → 実装 → ドキュメント更新 → 触った段のゲート（execution-strategy.md §4）
+     → commit → push → PR（auto-merge を有効化）→ DEV-NOTES.md に R### を1本
 ```
 
-**最後の工程は省略できない。** 原本は `C:\Users\gyuuk\OneDrive\IntMap`（§6）。merge した内容が
-原本の作業ディレクトリに**実際に書き込まれて**初めて、その作業は手元で完了したことになる。
-**冪等なので、他セッションと同時に走らせてよい**（§6）。
+**次のラウンドの着手時に、前回分をまとめてやること:**
 
-```bash
-node scripts/master-sync.mjs --sync    # fetch して原本を origin/main へ早送り
-node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなければ exit 1
+```
+production verification → 原本 (OneDrive) の最新化 → USB（§11）
 ```
 
-原本の場所はハードコードしていない。`git rev-parse --git-common-dir` から導出するので、
-**どの worktree から実行しても原本を指す。**
+- **PR は auto-merge on green にし、CI を座って見ない。** 緑なら勝手に squash merge され branch も消える。
+  **赤いときだけ戻る。** CI のゲートは3台に分かれ `fail-fast: false` なので**1回の run で落ちたゲートが
+  全部出る**——直す往復が1回で済む（`scripts/ci-gates.mjs`）。
+
+  ```bash
+  gh pr merge --squash --auto --delete-branch
+  ```
+
+- ⚠ **merge 後に main で走る CI を待たない。** PR の CI が緑なら同じ木が同じ結果を出す。
+- ⚠ **後ろへ倒した工程には読み手がある。** `node scripts/worktree.mjs status` が「本番に届いて
+  いないラウンド」「本番検証の記録が無いラウンド」「原本の遅れ」を述べ、`--brief` は**未了が
+  あるときだけ**1行足す（§1 が全セッションをここに通す）。検証を終えたら
+  `node scripts/worktree.mjs verified` で受領証を残す。
+  ⚠ **読み手の無い先送りは「やらなかった」と区別がつかない。** 受領証を書かずに次へ行かない。
 
 **変更した Edge Function は本番環境へデプロイする。** 例:
 
@@ -217,11 +228,16 @@ supabase functions deploy ai-proxy --project-ref vpekfwdpurzejrrmacac --use-api
 ```
 
 ⚠ **`--use-api` を省くと無言でハングする**（Docker デーモンが止まっている）。⚠ **進んでいるかは
-経過時間ではなく `supabase functions list` の `version` / `updated_at` で見る。**実測と理由は
-[`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9。
+経過時間ではなく `supabase functions list` の `version` / `updated_at` で見る。**実測と理由、および
+**Edge Functions の名簿**は [`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9 が正本。書き写さない。
 
-**Edge Functions の名簿**（何本あり・何という名前で・`_shared/` をどう扱うか）は
-[`docs/AGENT-SETUP.md`](docs/AGENT-SETUP.md) §9 が正本。ここには書き写さない。
+原本の場所は `git rev-parse --git-common-dir` から導出する。
+**冪等なので他セッションと同時に走らせてよく、1回の実行がその時点の全セッション分を運ぶ**（§6）:
+
+```bash
+node scripts/master-sync.mjs --sync    # fetch して原本を origin/main へ早送り
+node scripts/master-sync.mjs --check   # 原本が merge 後の状態でなければ exit 1
+```
 
 **非破壊的な migration、設定変更、deployment、commit、push、PR 作成、merge その他通常の完了工程に
 ついて、追加承認を求めないこと。**
@@ -386,8 +402,8 @@ CLI、API、SQL、Git、GitHub、Supabase、既存の認証済み環境その他
 
 ### 11.2 USB バックアップ — **作業のたびに毎回**
 
-USB バックアップは、**依頼された作業が完了するたびに毎回**行う。**1 日 1 回の制限は無い。**
-同じ日に複数のセッションがあれば、**そのすべてで**同期する。
+USB は**依頼された作業が完了するたびに毎回**行う（**1 日 1 回の制限は無い**）。⚠ **行う時刻は
+§5.1 が定める——前回分を次のラウンドの着手時にまとめて行い、そのラウンドの中では待たない。**
 
 **手順は実装されている。読んで真似せず、これを実行する:**
 
@@ -402,7 +418,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1
 最後の1行が `RESULT <status> <detail>` で、`ok` / `skipped` / `failed` のいずれかを返す。
 `skipped` は**エラーではない**（USB 未接続、または候補が複数あって一意に特定できない）。
 
-⚠ **ミラー元は原本であって、この worktree ではない。** §5 の最終工程で原本を最新化し、
+⚠ **ミラー元は原本であって、この worktree ではない。** 先に原本を最新化し、
 `node scripts/master-sync.mjs --check` が exit 0 を返してから走らせること
 （原本が merge 後の状態でなければ、スクリプト自身が同期せず `skipped` で終わる）。
 
