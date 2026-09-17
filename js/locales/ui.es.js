@@ -69,7 +69,7 @@ window.IntMapLang.define('es', { ui: {
       lblTz:"Zona horaria", tzSearch:"Buscar zona horaria…", optLocal:"Local (predeterminado del sistema)",
       lblNewsLang:"Idiomas de noticias", newsLangUi:"Solo el idioma actual", newsLangMultiSel:"Varios idiomas…", newsLangMulti:"Todos los idiomas (traducir títulos)", newsLangHint:"Los titulares de todos los idiomas aparecen juntos; con una clave de IA los títulos se traducen automáticamente.",
       lblSidebarStyle:"Barra lateral", sidebarOpaque:"Sólida (predeterminada)", sidebarTranslucent:"Vidrio esmerilado", sidebarGlass2:"Vidrio esmerilado (más transparente)",
-      lblLabelLang:"Etiquetas de lugares", labelLangUi:"Como el idioma de la app", labelLangLocal:"Idioma local (alfabeto original)", labelLangEn:"Siempre en inglés",
+      lblLabelLang:"Etiquetas de lugares", labelLangUi:"Como el idioma de la app", labelLangLocal:"Idioma local (alfabeto original)", labelLangUiLocal:"Idioma de la app, con el nombre local debajo", labelLangEn:"Siempre en inglés",
       /* (#R180) motor de renderizado */
       lblEngine:"Motor del mapa", engineMapLibre:"MapLibre — mapa 2-D/3-D (predeterminado)", engineCesium:"Cesium — globo 3-D real con relieve real",
       engineHint:"Cesium dibuja la Tierra como un elipsoide real en cualquier zoom, con las mismas imágenes de satélite y los mismos datos de elevación. Solo se descarga al seleccionarlo, y cambiar recarga la página. Las curvas de nivel y la herramienta de sólido 3-D cerrado siguen siendo exclusivas de MapLibre.",

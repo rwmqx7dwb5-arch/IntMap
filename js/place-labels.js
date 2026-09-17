@@ -601,6 +601,25 @@ window.IntMapModules.placeLabels=function(HOST){
     if(mode==='en') nameExpr=['coalesce',['get','name:en'],['get','name:latin'],['get','name_int'],['get','name']];
     else if(mode==='local') nameExpr=['get','name'];
     else nameExpr=OSM_NAME_EXPR(OSM_NAME_KEYS(HOST.lang));   /* (#R691) …minus the recorded upstream wrecks */
+    /* ══ (#R772) 「設定言語の下に現地語で地名を併記する」 ═════════════════════════════════════════
+       Google Maps / Google Earth in English draw Tokyo as two lines — «Tokyo» over «東京» — and that
+       is the shape asked for. It is NOT a fourth language: it is the SAME reader-language expression
+       with the tile's own `name` printed under it, so every rule that decides the reader's text (the
+       key chain, the #R691 refusals, the historical-city override) keeps deciding it and this adds
+       only the second line.
+       ⚠ ONE LINE WHEN THE TWO WOULD BE THE SAME. In Paris under a French UI, or anywhere the tile
+       carries no reader-language name (the coalesce then ends at `name` itself), «Paris\nParis» is
+       noise; the `case` prints one line there, which is what Google does too.
+       ⚠ `concat` + "\n", not `format`. format would let the second line be smaller, and it is one of
+       the operators js/cesium-style.js lists as UNSUPPORTED — the Cesium engine reads these very
+       layouts (js/cesium-layers.js), so a format here would blank the label on that engine.
+       ⚠ The face needs no change: placeFont() (js/map-typography.js) gives the reader's stack to a
+       feature that HAS the reader's name key — exactly the feature that gets a second line — and
+       that stack ends in the pan-Han face, so the endonym is drawn by the stack drawing the exonym. */
+    if(mode==='ui+local'){
+      const _loc=['coalesce',['get','name'],''], _ui=nameExpr;
+      nameExpr=['case',['any',['==',_loc,''],['==',['to-string',_ui],_loc]],_ui,['concat',_ui,'\n',_loc]];
+    }
     const sat=(HOST.mapType==='sat');
     /* Show vector labels in satellite mode (always — replaces ugly Esri) and on the map for jp/local. */
     const show = HOST.namesOn && (sat || HOST.mapLabelsViaVector());

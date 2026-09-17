@@ -69,7 +69,7 @@ window.IntMapLang.define('de', { ui: {
       lblTz:"Zeitzone", tzSearch:"Zeitzone suchen…", optLocal:"Lokal (Systemstandard)",
       lblNewsLang:"Nachrichtensprachen", newsLangUi:"Nur aktuelle Sprache", newsLangMultiSel:"Mehrere Sprachen…", newsLangMulti:"Alle Sprachen (Titel automatisch übersetzen)", newsLangHint:"Schlagzeilen aller Sprachen erscheinen gemeinsam; mit einem KI-Schlüssel werden die Titel automatisch übersetzt.",
       lblSidebarStyle:"Seitenleiste", sidebarOpaque:"Solide (Standard)", sidebarTranslucent:"Mattglas", sidebarGlass2:"Mattglas (transparenter)",
-      lblLabelLang:"Ortsbeschriftungen", labelLangUi:"Wie App-Sprache", labelLangLocal:"Lokale Sprache (Originalschrift)", labelLangEn:"Immer Englisch",
+      lblLabelLang:"Ortsbeschriftungen", labelLangUi:"Wie App-Sprache", labelLangLocal:"Lokale Sprache (Originalschrift)", labelLangUiLocal:"App-Sprache, darunter der lokale Name", labelLangEn:"Immer Englisch",
       /* (#R180) Render-Engine */
       lblEngine:"Karten-Engine", engineMapLibre:"MapLibre — 2-D/3-D-Karte (Vorgabe)", engineCesium:"Cesium — echter 3-D-Globus mit realem Gelände",
       engineHint:"Cesium stellt die Erde in jedem Zoom als echtes Ellipsoid dar, mit denselben Satellitenbildern und denselben Höhendaten. Sie wird nur bei Auswahl heruntergeladen, und der Wechsel lädt die Seite neu. Höhenlinien und das geschlossene 3-D-Körper-Werkzeug bleiben MapLibre vorbehalten.",

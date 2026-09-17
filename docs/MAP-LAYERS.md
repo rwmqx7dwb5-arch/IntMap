@@ -896,6 +896,10 @@ id の配列は**利用者が挙げた順**で、先頭の「名指しされた�
   同じ位置の周囲に置き場所を探し、重なった文字を強制表示しない。
 - **地名ラベル**：`ensurePlaceLabels()` が `ofm` の `place` レイヤから `ofm-country` / `ofm-city` /
   `ofm-other` を生成する（冪等）。`cb-names`（既定 ON）で表示。
+  ⚠ **どの言語で描くかは設定「Place-name labels」の 4 択**（`ui` / `local` / `en` / `ui+local`。**既定は `ui+local`**）。
+  `ui+local` は設定言語の下に現地語を併記する 2 行ラベルで、瓦名を描く全レイヤー
+  （`ofm-country` / `ofm-admin1` / `ofm-city` / `ofm-other` / `ofm-poi` / `ofm-river` / `ofm-water` /
+  `ofm-peak`）に同じ式で効く。理由と制約の正本は `Architecture.md` §10.3。
   ⚠ **市区町村より下の階層は `ofm-other`**：`village` / `suburb` / `hamlet` に加えて
   `borough` / `quarter` / **`neighbourhood`** / `isolated_dwelling` / `farm`。
   綴りは **`neighbourhood`**（OpenMapTiles のスキーマ値。US 綴りは1件もマッチしない）。

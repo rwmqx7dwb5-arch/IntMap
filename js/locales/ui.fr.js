@@ -114,6 +114,7 @@ window.IntMapLang.define('fr', { ui: {
       favLayers:"Calques favoris",
       labelLangEn:"Toujours en anglais",
       labelLangLocal:"Langue locale (écriture d'origine)",
+      labelLangUiLocal:"Langue de l'application, avec le nom local en dessous",
       labelLangUi:"Suivre la langue de l'application",
       lblAccent:"Couleur d'accentuation",
       lblDataSources:"Sources des données",

@@ -82,6 +82,7 @@ window.IntMapLang.define('zh-hans', {
     "favLayers":"常用图层",
     "labelLangEn":"一律英文",
     "labelLangLocal":"当地语言（原生文字）",
+    "labelLangUiLocal":"应用语言，并在下方显示当地名称",
     "labelLangUi":"与应用语言相同",
     "lblAccent":"强调色",
     "lblDataSources":"数据来源",
