@@ -253,20 +253,31 @@ window.IntMapModules.layerRegistry=function(HOST){
        is the part js/gis-sources.js needs and could never get. ⚠ A row with neither door is skipped,
        exactly as before; which rows measure is decided by the registrations, not by a list here.
        ⚠ AND A THROWN SAMPLER IS STILL DISTINCT FROM A MISSING VALUE: `failed` says the row was asked
-       and could not answer, so a caller counting holes is not told a failure was a hole. */
+       and could not answer, so a caller counting holes is not told a failure was a hole.
+       ⚠⚠⚠ (#R774) AND 「訊いたが、そこには値が無かった」 IS ALSO ITS OWN ANSWER. Until this round a
+       row whose sampler answered null produced NO ROW AT ALL, so this door handed back one silence
+       for two facts: 「この登録には訊いた。その地点に値が無い」 and 「そもそも訊ける登録が無い」.
+       js/gis-sources.js's probe read that silence as the second and refused whole windows the layer
+       could serve everywhere else — the same answer changing with the layer's visibility. So EVERY
+       registration that was actually asked now comes back as a row (`asked:true`), with `value`
+       present only when there was one. ⚠ THE ROW IS BUILT IN ONE PLACE, not once per road
+       ([[intmap-object-built-twice-and-hidden-class]]): a field written on only one of two
+       constructions is a field half the callers never see.
+       ⚠ NOTHING A READER SEES CHANGES — js/atlas-console.js filters on `value != null` at all three
+       of its call sites, and a row without a value carries no sentence to print. */
     async function sampleAt(lng,lat,ids){ const out=[]; const use=(ids&&ids.length)?ids:activeIds();
       for(const id of use){ const r=REG[id]; if(!r||(!r.measure&&!r.sampleAt)) continue;
+        const row={ id, label:state(id).label, asked:true };
         try{
           if(r.measure){ const q=await Promise.resolve(r.measure(lng,lat));
             if(q&&typeof q==='object'){ const t=(q.text!=null&&q.text!=='')?q.text:((q.value!=null)?(q.value+(q.unit?(' '+q.unit):'')):q.code);
-              if(t!=null&&t!==''){ const row={ id, label:state(id).label, value:t };
-                if(typeof q.value==='number'&&isFinite(q.value)){ row.number=q.value; if(q.unit!=null) row.unit=q.unit; }
-                if(q.code!=null) row.code=q.code;
-                if(q.direction!=null&&isFinite(q.direction)) row.direction=q.direction;
-                out.push(row); } }
-            continue; }
-          const v=await Promise.resolve(r.sampleAt(lng,lat)); if(v!=null&&v!=='') out.push({ id, label:state(id).label, value:v });
-        }catch(_){ out.push({ id, label:state(id).label, failed:true }); } }
+              if(t!=null&&t!=='') row.value=t;
+              if(typeof q.value==='number'&&isFinite(q.value)){ row.number=q.value; if(q.unit!=null) row.unit=q.unit; }
+              if(q.code!=null) row.code=q.code;
+              if(q.direction!=null&&isFinite(q.direction)) row.direction=q.direction; } }
+          else { const v=await Promise.resolve(r.sampleAt(lng,lat)); if(v!=null&&v!=='') row.value=v; }
+        }catch(_){ row.failed=true; }
+        out.push(row); }
       return out; }
     function featuresIn(id,bounds){ const r=REG[id]; if(!r||!r.featuresIn) return null; try{ return r.featuresIn(bounds); }catch(_){ return null; } }
     /* ══ ⚠⚠⚠ (#R756) 登録は状態を運べたが、主張は運べなかった ═══════════════════════════════════

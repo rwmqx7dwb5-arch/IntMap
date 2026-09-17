@@ -41,6 +41,7 @@ import { makeGisWarp } from './gis-warp.js';
 import { makeGisAtlas } from './gis-atlas.js';
 import { makeGisIndex } from './gis-index.js';
 import { makeGisExpr } from './gis-expr.js';
+import { makeGisUnits } from './gis-units.js';
 import { makeGisWorker } from './gis-worker.js';
 import { makeGisLayers } from './gis-layers.js';
 import { makeGisSources } from './gis-sources.js';
@@ -77,6 +78,11 @@ window.IntMapModules.gisCore = function (HOST) {
      reads window.IntMapGisExpr at CALL time, so a module importing it privately would be a second
      parser with a second opinion about what a column name is. */
   const expr = makeGisExpr();
+  /* (#R774) 「この 2 つは同じ量か」. Mounted here for the same reason as every kernel above: both
+     js/gis-raster.js (before it subtracts two grids) and js/gis-ops.js (before it evaluates a
+     reader's expression) read window.IntMapGisUnits at CALL time, and a private import in either
+     would be a second opinion about whether metres and kilometres are the same quantity. */
+  const units = makeGisUnits();
   /* (#R752) Parallelism, which is the half of 「重い処理」 the yield in js/gis-ops.js does NOT provide
      (docs/GIS-CORE.md §6 said so: 「ここで足りないのは並列性であって応答性ではない」). It takes PURE
      ARITHMETIC over numeric arrays — pixel loops, where there is no registry and no geodesy to leave
@@ -160,7 +166,7 @@ window.IntMapModules.gisCore = function (HOST) {
      file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
   const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, draw: (id, o) => draw(id, o) });
 
-  const API = { data, geometry, crs, raster, warp, index, expr, worker, sources, layers, ops, project, panel, draw, atlas,
+  const API = { data, geometry, crs, raster, warp, index, expr, units, worker, sources, layers, ops, project, panel, draw, atlas,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
   try { window.IntMapGis = API; } catch (_) { }
   return API;

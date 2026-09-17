@@ -37,7 +37,7 @@ IntMap は、世界のニュース・気候・人口・経済・地政学デー�
 
 ### 1.1 ビルドと配信
 
-- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（315本・14.9 MB）＋ `src/`（14本）。**
+- **本体は `index.html`（988行・96 KB）＋ `css/`（3本）＋ `js/`（316本・14.9 MB）＋ `src/`（14本）。**
   ビルドは **Vite**。`npm run build` → **`dist/`**（ハッシュ付き・最小化・チャンク分割）が
   **GitHub Pages で配信される実体**であり、リポジトリのソースツリーそのものは配信されない。
   `dist/` は `.gitignore` 済み＝**ビルド成果物はコミットしない**。
@@ -1968,6 +1968,7 @@ KML、KMZ、GPX、CSV・TSV その他の区切り文字つきテキスト、セ�
 | `js/gis-sources.js` | `window.IntMapGisSources` | **供給元**——`list` / `features` / `region` / `acquire` / `declare` / `supply` / `supplierOf`。取得はすべて `coverage`（`all` / `partial` / `sample` と理由・求めた範囲・答えた範囲・時点・解像度）を伴い、**`all` は供給元の宣言からしか届かない**。⚠ **供給元は自分で答えられる**（`supply(id,{fetch,region,…})` が範囲・時刻・属性条件・列・ページ送りを直接受ける）。実装が無ければ従来どおりレンダラへ委譲。⚠ **申告は無検証で信じない**——述べた件数・範囲を実際に返したものと突き合わせる |
 | `js/gis-index.js` | `window.IntMapGisIndex` | **空間索引**（一様格子）——`build` / `query` / `queryEach` / `stats`。セルの大きさをデータから導き、**偽陰性を出さない** |
 | `js/gis-expr.js` | `window.IntMapGisExpr` | **式の解釈器**（計算列の言語）——`parse` / `evaluate` / `compile` / `functions` / `refusals` |
+| `js/gis-units.js` | `window.IntMapGisUnits` | **量の単位**——`parse` / `compare` / `convert` / `unitOfExpr`。「この 2 つは足し引きできるか・換算は何か」1 問だけに答え、`rasterDiff` / `mosaic` / `compute` / `rasterCalc` が**同じ 1 か所**に訊く。表は **SI の定義値の原子**だけで合成単位は解析する（`mm/h`・`kg/m^2`・`m2`＝`m²`）。⚠ **沈黙は不一致ではない**（単位を述べていない格子は今までどおり通る）が、**読めない綴りどうしは「同じ」ではない**ので拒む（`unit-mismatch`）。°C・°F はオフセットを持つので**読みの換算と差の換算が別** |
 | `js/gis-layers.js` | `window.IntMapGisLayers` | **地図のレイヤーをデータセットにする橋**——`sources()` / `read()` / `toDataset()`（同期） / **`acquireDataset()`（非同期）** / `toRaster()`（数値レイヤーを格子に焼く） / `supplierFor()`。⚠ **待つほうの扉が要るのは、描かれていないレイヤーが取得を伴うから**——`toDataset()` は同期の契約のまま（パネルがクリックハンドラから await 無しで呼ぶ）で、planner は `acquireDataset()` を使う。⚠ **`load()` を述べた行には非同期の供給元が組み立てられる**（表示していなくても読める）。⚠ **供給元になれるかはその行自身の宣言が決める**——全件を持ち視野に縛られないと述べた行だけが `where` と `cursor` を答えられる。一覧はどこにも無い。⚠ **取得条件の語彙 `acquireFields()` の正本もここ**（パネルと Atlas が同じ 1 か所に訊く）。ラスタの語彙は `bounds` / `width` / `height` / `where` / `unit` / **`time`** / **`band`** |
 | `js/gis-ops.js` | `window.IntMapGisOps` | 処理（`filter` / `buffer` / `clip` / `intersect` / `difference` / `union` / `dissolve` / `relate` / `sample` / `zonal` / `rasterMask` / `rasterDiff` / `resample` / `rasterCalc` / `mosaic` / `rasterize` / `polygonize` / `measure` / `validate` / `repair` / `timeWindow` / `join` / `compute` / `aggregate`）の宣言と実行。⚠ **引数の語彙は、それを所有するカーネルに訊く**（`valuesOf`）——再標本化の方式・重なりの規則・格子合わせの規則・**面の名指し方**をここに写さない。⚠ **どの op も、自分が計算した面を `surface` で述べる**（`sphere` / `degree-plane` / `degree-grid` / `stated-plane` の閉じた語彙。`surfaces()` が渡す）——球面の面積と展開した度平面の面積は別の数で、宣言が無ければ読み手はその食い違いを見られない。⚠ **長い画素ループの中止は `ctx` で下のカーネルまで渡す**（渡さなければ `js/gis-warp.js` と `js/gis-raster.js` の刻みは到達しないコードになる）。⚠ **出力は入力の意味を引き継ぐ**——`coverage` は述べた入力のうち最も弱いものが残り（沈黙は `all` ではないので、述べていない入力があれば完全性を書かない）、格子の時点は**標本が出力に入った入力**が全部投票し、名前の残った列の単位は著者ごと運ばれる |
 | `js/gis-atlas.js` | `window.IntMapGis.atlas` | **Atlas がこの層に処理を依頼する扉**。目録は `ops()` そのもの（写しを持たない）。入力は登録済み id・題名・`layer:<id>`、出力は**次の処理の入力になる id**。能力は `data.gis`（計算）と `map.drawDataset`（描画）の 2 つで、op ごとには 1 つも無い。⚠ **取得条件（`acquire`）が要求そのもので、カメラではない**——語彙は `js/gis-layers.js` の `acquireFields()` に訊き、知らない欄は名前を挙げて断る。`op` を述べない依頼は**取得だけ**で、答えは取れたものの行・`coverage`・続きの `next` |

@@ -613,12 +613,23 @@ export function makeGisExport() {
 
       /* GDAL_METADATA (42112): the per-band DESCRIPTION/UNITTYPE items js/gis-geotiff.js reads back
          (`sample=`), and the provenance items it ignores — which is why they are safe to add here:
-         an item with no `sample` attribute is skipped by that reader and read by GDAL and QGIS. */
+         an item with no `sample` attribute is skipped by that reader and read by GDAL and QGIS.
+         ⚠⚠⚠ THE `role` SPELLINGS ARE GDAL'S, NOT A DESCRIPTION OF THEM (#R774). GDAL's GTiff driver
+         pairs each metadata item name with a role — DESCRIPTION↔"description", UNITTYPE↔"unittype",
+         SCALE↔"scale", OFFSET↔"offset" — and it is the ROLE, not the name, that it reads back into
+         the band. This file wrote role="unit" for the unit, so GDAL 3.12.1 opened an IntMap GeoTIFF
+         with the unit reported as None: the value was in the file and no GIS could see it.
+         ⚠ IT COULD NOT BE CAUGHT BY READING THE FILE BACK, because js/gis-geotiff.js keys on `name`
+         and ignores `role` — writer and reader agreed about a file no one else could open
+         ([[intmap-co-designed-reader-cannot-falsify]]). The reader stays as it is; what measures this
+         is tests/r774-gis-geotiff-unit-checks, which parses the emitted bytes with a parser of its
+         own. ⚠ Failing condition for this constant: GDAL renaming the role, which would also break
+         every file GDAL itself has written since the item was introduced. */
       const items = [];
       want.forEach((b, s) => {
         const bd = all[b] || {};
         if (bd.name != null && String(bd.name) !== '') items.push('<Item name="DESCRIPTION" sample="' + s + '" role="description">' + xmlEsc(bd.name) + '</Item>');
-        if (bd.unit != null && String(bd.unit) !== '') items.push('<Item name="UNITTYPE" sample="' + s + '" role="unit">' + xmlEsc(bd.unit) + '</Item>');
+        if (bd.unit != null && String(bd.unit) !== '') items.push('<Item name="UNITTYPE" sample="' + s + '" role="unittype">' + xmlEsc(bd.unit) + '</Item>');
       });
       /* §1 — only what is stated. */
       if (rec.id != null) items.push('<Item name="INTMAP_DATASET_ID">' + xmlEsc(rec.id) + '</Item>');

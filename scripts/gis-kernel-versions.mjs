@@ -99,7 +99,16 @@ export const KERNELS = {
      somebody stated, whether an answer computed out of complete inputs still calls itself complete,
      which boundary rule produced an area. A reader comparing two loads would read a different claim
      about their data. Here they read the same claims, plus a note about the machinery. */
-  'js/gis-ops.js': { version: 'ops-5', sha256: '2abfda5a64cf7a63df729000b5fa2dd3d0713a88931942fa1a21db6a6e20807f' },
+  /* (#R774) ops-5 -> ops-6: THREE ANSWERS MOVED, and each of them is what this number exists to
+     announce. ⑴ `areaKm2` reads a ring that states a seam crossing undivided (an edge of more than
+     180° and less than 360°) on js/gis-geometry.js's unwrapping, so 179°E→179°W × 0°–1° replays as
+     24,727 km² where it replayed as 4,426,211 km² — every `_areaKm2` on a buffer, clip, overlay,
+     dissolve and zonal row over the antimeridian moves with it. ⚠ The 360° closing edge a full-width
+     band writes is untouched, so the polar disk is byte-identical. ⑵ `compute` refuses an expression
+     that adds two columns stating different units (`unit-mismatch`) — a step that ran yesterday can
+     refuse today. ⑶ `compute`'s output column now CARRIES the unit it derived, and `rasterCalc`'s
+     band does too when the reader named none. */
+  'js/gis-ops.js': { version: 'ops-6', sha256: '31e77865d383dc1ea995065694787f5cf1ce5dcab5b3deec9aa8312f8e58d9fa' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
   'js/gis-geometry.js': { version: 'geom-1', sha256: '675be6ca448ed2a47d3f1baf7a755362b4e69e3a10b5427b6bc8c94cfcfba157' },
@@ -133,7 +142,17 @@ export const KERNELS = {
      answer it could not give before has changed.
      ⚠ ALSO: the answer names its rule (`boundary`) and two refusals are new
      (`boundary-rule-unknown`, `fraction-needs-area-rule`). */
-  'js/gis-raster.js': { version: 'raster-2', sha256: '32aacfbf53a243adc504cecf267d977c7e9f77667ca144180664e9dce6fdfdad' },
+  /* (#R774) raster-2 -> raster-3: `diff` and `merge` ask js/gis-units.js whether the two bands
+     measure the same quantity before they do any arithmetic. A recipe over two grids that stated
+     convertible units replays to a DIFFERENT NUMBER (1000 m − 1 km replayed as 999 and now replays
+     as 0, in metres); one over incompatible or unreadable spellings replays to a REFUSAL
+     (`unit-mismatch`) where it used to produce a grid. Grids that state no unit, or the same
+     spelling, are untouched. */
+  'js/gis-raster.js': { version: 'raster-3', sha256: '3672267c2595e4b80664e58dec7d152707c68c71eec8e95e6b21f2b797c8b349' },
+  /* (#R774) A FIRST DECLARATION. js/gis-units.js decides whether two quantities may be combined and
+     what the conversion is; every caller above asks it, so a change to the table or to the
+     expression walk changes what a replayed recipe answers or refuses. */
+  'js/gis-units.js': { version: 'units-1', sha256: 'fb9d4113b733aa510ef1793752986533900b42b12006b2183673a80b698d53ed' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
   'js/gis-warp.js': { version: 'warp-1', sha256: '4c7eef1f06a84a9b691cce2559d7de37ba8fe5577ee2f58864b2e19ca50e78f2' },

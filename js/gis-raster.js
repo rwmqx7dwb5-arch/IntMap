@@ -137,6 +137,55 @@ export function makeGisRaster() {
 
     function geodesy() { try { return (typeof window !== 'undefined' && window.IntMapGeodesy) || null; } catch (_) { return null; } }
     function geometryKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisGeometry) || null; } catch (_) { return null; } }
+    function unitKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisUnits) || null; } catch (_) { return null; } }
+
+    /* ⚠⚠⚠ (#R774) TWO GRIDS THAT DO NOT MEASURE THE SAME QUANTITY ARE NOT SUBTRACTED, AND THE
+       LABEL WAS NEVER THE PROBLEM. `diffResult` and `merge` each kept the unit when the two
+       spellings matched and wrote null when they did not — and then did the arithmetic on the raw
+       numbers either way. MEASURED 2026-09-17 on the shipped build: 1000 m − 1 km → 999, and
+       10 °C − 283.15 K → −273.15, both `ok:true`. Both differences are zero. Dropping the unit off
+       a wrong number removes the evidence, not the error ([[intmap-a-fix-that-removes-the-evidence]]).
+
+       ⇒ THE RULE IS ASKED OF js/gis-units.js AND LIVES NOWHERE ELSE, because it belongs to the FACT
+       (two quantities are being combined arithmetically) rather than to `diff`, and a copy inside
+       `merge` is how the two would come to disagree (.agents/rules/no-ad-hoc-hardcoding.md §2-3).
+         · both silent, or the same spelling → untouched, byte for byte as before. ⚠ SILENCE IS NOT
+           A MISMATCH: most grids in this app state no unit at all, and refusing them would be
+           refusing data over a claim nobody made.
+         · convertible → B IS CONVERTED INTO A'S UNIT and the answer is in A's unit. The reading is
+           absolute (10 °C really is 283.15 K); a DIFFERENCE of two readings is handed back in that
+           same unit, which is what both callers already did when the spellings matched.
+         · different quantities, or a spelling this app cannot read → `unit-mismatch`, named, with
+           both spellings in the detail.
+       ⚠ THE CONVERTED COPY DECLARES NO SENTINEL. B's nodata is a number a producer wrote into a
+       header; multiplied by a conversion factor it is no longer that number, so the copy writes NaN
+       where B was missing and states `nodata:null` — `missing()` reads NaN as missing whatever the
+       band declares, so not one cell changes its verdict.
+       ⚠ WITH NO js/gis-units.js PUBLISHED nothing is refused and nothing is converted: this kernel
+       boots with no window at all (tests/r735), and a build without the unit module is one that
+       cannot answer the question rather than one where the answer is 「合っている」. */
+    function commensurate(A, B) {
+      const U = unitKernel();
+      if (!U || typeof U.compare !== 'function') return { ok: true, B: B };
+      const c = U.compare(A.band.unit, B.band.unit);
+      if (c.verdict === 'unstated' || c.verdict === 'identical') return { ok: true, B: B };
+      if (c.verdict !== 'convertible') {
+        return { ok: false, refusal: refuse('unit-mismatch', { a: c.a, b: c.b, verdict: c.verdict }) };
+      }
+      const n = B.values.length;
+      let out;
+      try { out = new Float64Array(n); } catch (e) { return { ok: false, refusal: refuse('raster-too-large', { cells: n }) }; }
+      for (let i = 0; i < n; i++) {
+        const v = B.values[i];
+        if (missing(v, B.nodata)) { out[i] = NaN; continue; }
+        const k = U.convert(v, c.b, c.a);
+        out[i] = (typeof k === 'number' && isFinite(k)) ? k : NaN;
+      }
+      return {
+        ok: true, converted: { from: c.b, to: c.a },
+        B: { ok: true, index: B.index, band: { name: B.band.name, unit: c.a, nodata: null }, values: out, nodata: null },
+      };
+    }
 
     /* The ONE radius this app has. js/gis-ops.js says why inventing 6371 here would be wrong: it
        would be a second copy of a number the app already decides in one place. */
@@ -1197,7 +1246,11 @@ export function makeGisRaster() {
       const off = gridDelta(a, b);
       if (off) return refuse('grid-mismatch', off);
       const A = values(a, bandIndex); if (!A.ok) return A;
-      const B = values(b, bandIndex); if (!B.ok) return B;
+      const B0 = values(b, bandIndex); if (!B0.ok) return B0;
+      /* (#R774) 「同じ量か」 before 「いくつ違うか」 — see commensurate() above. */
+      const comm = commensurate(A, B0);
+      if (!comm.ok) return comm.refusal;
+      const B = comm.B;
       const ctx = useCtx(opts);
       const door = workerDoor(opts);
       /* ⚠ THE ANSWER IS THE SAME EITHER WAY AND THE SHAPE OF THE CALL IS NOT: a usable door means a
@@ -1210,8 +1263,11 @@ export function makeGisRaster() {
     /* The result of a finished difference, built in ONE place, because two arms that assemble their
        own would be two answers to 「単位は残るのか」 wearing one name. */
     function diffResult(a, A, B, out, count, nodataCount, note) {
-      /* The unit survives only if both sides state the same one: 「mm − °C」 has no unit, and writing
-         one of the two would let a chart label a nonsense number confidently. */
+      /* The unit survives only if both sides state the same one. ⚠ (#R774) THAT IS NOW A STATEMENT
+         ABOUT WHAT REACHES HERE, NOT A POLICY: commensurate() has already converted a convertible B
+         into A's unit and refused an incompatible one, so the two spellings are equal whenever
+         either was stated at all. The null arm is left standing for the case it always meant —
+         「片方だけが述べた」 — and never again labels a subtraction of two different quantities. */
       const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
       const name = String(A.band.name == null ? '' : A.band.name) + ' − ' + String(B.band.name == null ? '' : B.band.name);
       const res = {
@@ -1435,7 +1491,13 @@ export function makeGisRaster() {
       const off = gridDelta(a, b);
       if (off) return refuse('grid-mismatch', off);
       const A = values(a, bandIndex); if (!A.ok) return A;
-      const B = values(b, bandIndex); if (!B.ok) return B;
+      const B0 = values(b, bandIndex); if (!B0.ok) return B0;
+      /* (#R774) A mosaic of two sheets is one sheet: `min`, `max` and `mean` are arithmetic over
+         both, and `first`/`second` still hand the reader one band with one unit on it. Same rule,
+         same place — see commensurate(). */
+      const comm = commensurate(A, B0);
+      if (!comm.ok) return comm.refusal;
+      const B = comm.B;
       const n = a.width * a.height;
       let out;
       try { out = new Float64Array(n); } catch (e) { return refuse('raster-too-large', { cells: n }); }
@@ -1461,8 +1523,10 @@ export function makeGisRaster() {
            function inventing the one number the reader would then plot. */
         out[i] = NaN; missingCount++;
       }, useCtx(opts), () => {
-        /* Same two rules as `diff`, for the same reasons: a unit survives only if both sides state the
-           same one, and the name says what was merged rather than claiming to be one of them. */
+        /* Same two rules as `diff`, for the same reasons, and (#R774) the same single commensurate()
+           before either: a unit survives only if both sides state the same one — which they do by
+           the time this runs, or one of them said nothing — and the name says what was merged rather
+           than claiming to be one of them. */
         const unit = (A.band.unit != null && B.band.unit != null && String(A.band.unit) === String(B.band.unit)) ? A.band.unit : null;
         const na = A.band.name == null ? null : String(A.band.name);
         const nb = B.band.name == null ? null : String(B.band.name);
@@ -1989,7 +2053,7 @@ export function makeGisRaster() {
        geometry engine answered and said nothing about which grid arithmetic did.
        ⚠ scripts/gis-kernel-versions.mjs holds the sha256 that keeps this honest — a bump written
        without touching the arithmetic, or arithmetic touched without a bump, is what it measures. */
-    const KERNEL_VERSION = 'raster-2';
+    const KERNEL_VERSION = 'raster-3';
 
     const API = {
       /* see KERNEL_VERSION above — js/gis-project.js records which kernel answered */

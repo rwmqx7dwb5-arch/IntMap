@@ -73,6 +73,8 @@ export function makeGisOps() {
        distance. Read at CALL time for the same reason the two above are: this module may be built
        before it publishes, and a captured `undefined` would be permanent. */
     function geometry() { try { return (typeof window !== 'undefined' && window.IntMapGisGeometry) || null; } catch (_) { return null; } }
+    /* (#R774) 「この 2 つは同じ量か」 — js/gis-units.js, read at call time like every other kernel. */
+    function unitKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisUnits) || null; } catch (_) { return null; } }
     /* (#R735) The grid arithmetic and the spatial index, asked the same way and for the same reason. */
     function rasterKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisRaster) || null; } catch (_) { return null; } }
     function indexKernel() { try { return (typeof window !== 'undefined' && window.IntMapGisIndex) || null; } catch (_) { return null; } }
@@ -145,16 +147,56 @@ export function makeGisOps() {
        the renderer draws. Normalising each edge to the short way deletes the −360° closing edge, the
        ring then reads as winding once around the pole, and the formula answers with the COMPLEMENT:
        measured, a 500 km buffer at 89°N came out as 509,280,824 km² instead of 785,200.
-       For any ring whose longitude span is ≤ 180° the two readings are identical (no edge can exceed
-       180°), so nothing else changes. A ring that states a seam crossing by jumping 170 → −170 is
-       not in this window at all; a ring whose longitude span exceeds 180° is not in this
-       window, and its area is not defined here. js/gis-geometry.js unwraps such a ring before it
-       does anything with it, and hands back pieces that each sit in one window. */
+
+       ⚠⚠⚠ (#R774) AND THAT SENTENCE WAS TRUE ABOUT ONE READING AND SILENT ABOUT THE OTHER. The
+       block above went on to say 「a ring that states a seam crossing by jumping 170 → −170 is not
+       in this window at all … its area is not defined here」 — but nothing REFUSED such a ring, so
+       an undivided seam-crossing polygon was measured with Δλ = −358 and answered with a number.
+       MEASURED: 179°E→179°W × 0°–1° came back as 4,426,211 km², 179 times the 24,727 km² of the
+       same band ten degrees away, while js/gis-geometry.js pointInGeometry — which aligns the ring
+       to the query point first — called 180°,0.5° INSIDE and 0°,0.5° OUTSIDE, i.e. read it as the
+       two-degree band it is. Two readings of one polygon, and the reader could meet either.
+       ⚠ js/gis-crs.js areaOn (the planar road, when `measure` names a CRS) already refuses these
+       with `plane-seam-crossed`. It was only the geodesic road that answered anyway.
+
+       ⇒ THE TWO CASES ARE TOLD APART BY THE EDGE, AND THE RULE IS ABOUT THE REPRESENTATION, NOT
+       ABOUT THE DATA: in plate carrée, no EDGE of a shape this app reads is more than half a world
+       long (js/gis-geometry.js SEAM_STEP states the same thing for the same reason), and the one
+       edge that is a full 360° is the closing edge a full-width band writes deliberately — that is
+       what diskFillPolys emits and what the paragraph above protects. So an edge with
+       180° < |Δλ| < 360° is a SEAM CROSSING written undivided, and such a ring is measured on
+       js/gis-geometry.js unwrapRing's output — the app's one unwrapping, not a second copy of it
+       (.agents/rules/no-ad-hoc-hardcoding.md §2-3), which is also the one pointInGeometry reaches
+       through alignTo. Every other ring is measured exactly as before.
+       ⚠ Observed 2026-09-17 on this tree: polar disk 500 km @89°N 785,022.8 km² and seam disk
+       500 km @179.8°E 784,434.8 km² are BYTE-IDENTICAL before and after; the seam band goes
+       4,426,211 → 24,727 km² and a seam band with a seam hole 13,167,667 → 172,949 km².
+       ⚠ Expires if this app ever reads a producer that writes a real edge longer than 180° that is
+       not a closing 360°: then the edge stops being able to say which case it is, and the answer
+       moves to the producer declaring it. Canonical source for the seam convention:
+       docs/GIS-CORE.md §2.4.
+       ⚠ THE KERNEL IS ASKED, NOT COPIED: with no js/gis-geometry.js published, a seam-crossing ring
+       is null — 「measured on an unwrapping this build does not have」 — the same honest null this
+       function already answers when js/geodesy.js has not published its radius. */
+    const SEAM_EDGE_EPS = 1e-9;
+    function crossesSeamUndivided(pts) {
+      for (let i = 0; i < pts.length; i++) {
+        const d = Math.abs(pts[(i + 1) % pts.length][0] - pts[i][0]);
+        if (d > 180 + SEAM_EDGE_EPS && d < 360 - SEAM_EDGE_EPS) return true;
+      }
+      return false;
+    }
     function ringAreaKm2(ring) {
       const R = earthKm();
       if (R == null) return null;
-      const pts = ringPositions(ring);
+      let pts = ringPositions(ring);
       if (pts.length < 3) return 0;
+      if (crossesSeamUndivided(pts)) {
+        const G = geometry();
+        if (!G || typeof G.unwrapRing !== 'function') return null;
+        pts = G.unwrapRing(pts);
+        if (pts.length < 3) return 0;
+      }
       let total = 0;
       for (let i = 0; i < pts.length; i++) {
         const a = pts[i], b = pts[(i + 1) % pts.length];
@@ -1143,6 +1185,26 @@ export function makeGisOps() {
          and a chart of nothing, with no error anywhere. */
       for (const f of (parsed.fields || [])) if (!hasField(ds, f)) return fail('unknown-field', { field: String(f) });
 
+      /* ⚠⚠⚠ (#R774) `人口 + 面積` HAS ALWAYS BEEN A NUMBER, AND IT HAS NEVER BEEN A QUANTITY. The
+         evaluator converts nothing and knows nothing about units, so an expression that adds metres
+         to kilometres produced a column and a chart with nothing anywhere saying what had happened —
+         the same defect `rasterDiff` shipped with, one layer up. The verdict is asked of
+         js/gis-units.js over js/gis-expr.js's own AST, so `compute` and `rasterCalc` below get the
+         SAME answer from the SAME place rather than two walks that agree today.
+         ⚠ A COLUMN THAT STATES NOTHING IS NOT REFUSED — silence is not a mismatch (most columns in
+         this app state no unit), and a literal is neutral, so `pop / area` and `t − 273.15` are
+         untouched. What is refused is two columns that BOTH stated, and stated differently.
+         ⚠ AND THE OUTPUT NOW CARRIES THE UNIT IT DERIVED, which is the half #R759 could not do for
+         a computed column: js/gis-datasets.js applyInherited keys statements by column NAME, and
+         this column did not exist until now, so nobody could ever state its unit afterwards. */
+      const UQ = unitKernel();
+      let derivedUnit = null;
+      if (UQ && typeof UQ.unitOfExpr === 'function') {
+        const uv = UQ.unitOfExpr(parsed.ast, (n) => unitOfField(ds, n));
+        if (!uv.ok) return fail(uv.why, uv.detail);
+        derivedUnit = uv.unit || null;
+      }
+
       const c = X.compile(src, R);
       if (!c || !c.ok) return fail(c && c.why ? c.why : 'expr-syntax', (c && c.detail) || null);
 
@@ -1165,7 +1227,13 @@ export function makeGisOps() {
         if (v == null) delete merged[name]; else merged[name] = v;
         out.push({ type: 'Feature', geometry: f.geometry || null, properties: merged });
       }
-      return { ok: true, features: out, stats: { computed: out.length - empty, empty: empty, errors: errors, firstError: firstError, returns: parsed.returns } };
+      return {
+        ok: true, features: out,
+        /* (#R774) The runner states the unit of the column it invented — the same shape as
+           `renamed` above, and for the same reason: it is the only thing that knows. */
+        units: derivedUnit ? { [name]: derivedUnit } : null,
+        stats: { computed: out.length - empty, empty: empty, errors: errors, firstError: firstError, returns: parsed.returns, unit: derivedUnit },
+      };
     }
 
     async function runFilter(ds, params, R, ctx) {
@@ -1950,6 +2018,24 @@ export function makeGisOps() {
       const c = EK.compile(src, R);
       if (!c || !c.ok) return fail(c ? c.why : 'expr-failed', c ? c.detail : undefined);
 
+      /* ⚠ (#R774) `a - b` OVER TWO BANDS IS THE SAME QUESTION `rasterDiff` ASKS, and it is asked in
+         the same place — js/gis-units.js over js/gis-expr.js's AST, exactly as `compute` does over a
+         row. ⚠ NOTHING IS CONVERTED HERE and that is deliberate: the arithmetic is the READER's, so
+         a silent conversion inside their own expression would change a number they wrote. They are
+         told which two spellings collided and convert explicitly. A band that states no unit, and
+         `a / b` or `a * 0.1`, are untouched. */
+      const UQ = unitKernel();
+      let calcUnit = null;
+      if (UQ && typeof UQ.unitOfExpr === 'function') {
+        const parsedCalc = EK.parse(src);
+        if (parsedCalc && parsedCalc.ok) {
+          const bandUnit = (dsx, idx) => { const bd = (dsx.bands || [])[idx]; return bd && bd.unit != null ? bd.unit : null; };
+          const uv = UQ.unitOfExpr(parsedCalc.ast, (n) => (String(n) === 'a' ? bandUnit(aDs, ba.index) : (String(n) === 'b' ? bandUnit(bDs, bb.index) : null)));
+          if (!uv.ok) return fail(uv.why, uv.detail);
+          calcUnit = uv.unit || null;
+        }
+      }
+
       /* ⚠ THE NAMES ARE `a` AND `b`, AND THE REFUSAL SAYS SO. An expression naming anything else is
          reaching for a column that a grid does not have — a pixel has two values, not a row of
          them — and telling the reader which two names exist is one corrected call instead of a
@@ -1975,10 +2061,13 @@ export function makeGisOps() {
 
       const band = (aDs.bands[ba.index] || {});
       const name = (params.outName != null && String(params.outName).trim() !== '') ? String(params.outName).trim() : src.trim();
-      /* ⚠ NO UNIT IS INVENTED. `(a − b) / b` is a ratio and `a × 0.1` is whatever a was; nothing here
-         can tell which, so the reader states it or the band carries none — the same rule `diff` uses
-         when two units disagree. */
-      const unit = (params.unit != null && String(params.unit).trim() !== '') ? String(params.unit).trim() : null;
+      /* ⚠ NO UNIT IS INVENTED. `(a − b) / b` is a ratio and `a × 0.1` is whatever a was; the reader
+         states it, or — (#R774) — js/gis-units.js derived it from the expression in the one case
+         where it follows without a guess: every additive term stated the SAME unit, so the answer is
+         in that unit. ⚠ THE READER'S `params.unit` STILL WINS: they are looking at the expression,
+         and an op overruling a stated unit with a derived one would be this layer telling a reader
+         what they meant. */
+      const unit = (params.unit != null && String(params.unit).trim() !== '') ? String(params.unit).trim() : calcUnit;
 
       if (!(await ctx.tick(1, 1))) return fail('cancelled', { done: ctx.done(), total: 1 });
       const r = await RK.combine(aDs, bDs, ba.index, bb.index, fn, { name: name, unit: unit, nodata: band.nodata, ctx: ctx });
@@ -2752,8 +2841,21 @@ export function makeGisOps() {
        ⚠ ONLY THE UNIT, AND ONLY BY NAME. A column that kept its name kept its quantity — the mean and
        the sum of metres are metres — and a column an op INVENTED has a name nothing stated anything
        about, so it inherits nothing. The measured `type` is always the output's own. */
-    function fieldStatements(ds, renamed) {
+    function fieldStatements(ds, renamed, authored, by) {
       const out = {};
+      /* ⚠ (#R774) A COLUMN THE RUN INVENTED CAN STILL HAVE A UNIT — but only the runner can say it,
+         because it is the one that knows the arithmetic. `compute` derives one from the expression
+         (js/gis-units.js unitOfExpr) and hands it over here. It is written FIRST so that an inherited
+         statement about a column of the same name never silently overrides the run's own; the entries
+         below skip a name that is already present. ⚠ The author recorded is the op, not the reader
+         and not the input — js/gis-datasets.js applyInherited keeps it in `unitStatedAt`. */
+      if (authored && typeof authored === 'object') {
+        for (const n of Object.keys(authored)) {
+          const u = authored[n];
+          if (u == null || String(u) === '') continue;
+          out[n] = { unit: String(u), unitStated: 'derived', unitFrom: by == null ? null : String(by) };
+        }
+      }
       for (const d of ds) {
         for (const f of (d && d.fields) || []) {
           if (!f || !f.name || f.unit == null) continue;
@@ -2973,7 +3075,7 @@ export function makeGisOps() {
       /* The inputs' own epochs, recorded whenever more than one grid contributed samples — including
          (especially) when they could not be combined into a span. */
       if (grid.stated.length > 1) prov.inputTimes = grid.stated;
-      const statements = fieldStatements(ds, res.renamed);
+      const statements = fieldStatements(ds, res.renamed, res.units, decl.id);
       let rec;
       try {
         if (res.raster) {
@@ -3040,7 +3142,7 @@ export function makeGisOps() {
        project saved last week reopens with different pixels in it, which is precisely the fact this
        version exists to announce. (The ctx handover and the surface declarations do not change an
        answer; the rasterize rule does, and one changed answer is enough.) */
-    const KERNEL_VERSION = 'ops-5';
+    const KERNEL_VERSION = 'ops-6';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
