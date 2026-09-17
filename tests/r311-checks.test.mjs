@@ -20,6 +20,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fnBody } from './app-source.mjs';
 import { judge } from '../scripts/perf-budget.mjs';
+import { ciRuns, ciBuildsBefore } from './helpers/ci-reach.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -183,8 +184,10 @@ test('r311 ⑨ `npm run dev` resolves the satellite WASM entry points the same w
    ───────────────────────────────────────────────────────────────────────── */
 test('r311 ⑩ the startup budget is a CI step and a baseline exists to ratchet against', () => {
   const ci = read('.github/workflows/ci.yml');
-  assert.ok(/check:perf/.test(ci), 'CI runs the budget');
-  assert.ok(ci.indexOf('npm run build') < ci.indexOf('check:perf'),
+  /* ⚠ (#R771) ASKED OF WHAT CI RUNS, NOT OF HOW ci.yml SPELLS IT — tests/helpers/ci-reach.mjs.
+     The declared gates stopped being one step each when they were split across three machines. */
+  assert.ok(ciRuns('check:perf'), 'CI runs the budget');
+  assert.ok(ciBuildsBefore('check:perf'),
     'and builds first — the budget reads the report the build writes');
   const pkg = JSON.parse(read('package.json'));
   assert.equal(pkg.scripts['check:perf'], 'node scripts/perf-budget.mjs');

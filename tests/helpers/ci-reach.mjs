@@ -70,3 +70,26 @@ export function ciRunsScript(scriptStem) {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).scripts || {};
   return plannedGates().some((g) => String(pkg[g] || '').includes('scripts/' + scriptStem + '.mjs'));
 }
+
+/**
+ * True when the build runs before `gate` in whatever CI actually does — for the gates that read what
+ * `npm run build` wrote rather than what the tree contains.
+ *
+ * ⚠ (#R771) THIS USED TO BE ASKED AS A STRING OFFSET: `ci.indexOf('npm run build') < ci.indexOf('check:perf')`.
+ * That was a fact about where two lines sat in a file, and it stopped being answerable the moment
+ * the gates were planned rather than listed — while the ordering it cared about became STRONGER
+ * (the planner packs the build and its dependants into one task, so they cannot be separated onto
+ * different machines at all). The question is asked of the plan.
+ */
+export function ciBuildsBefore(gate) {
+  const live = liveWorkflow();
+  if (live.includes('npm run ' + gate)) {
+    const b = live.indexOf('npm run build');
+    return b >= 0 && b < live.indexOf('npm run ' + gate);
+  }
+  if (!plannedGates().includes(gate)) return false;
+  const plan = execFileSync(process.execPath, [join(ROOT, 'scripts', 'ci-gates.mjs'), '--plan'],
+    { cwd: ROOT, encoding: 'utf8', timeout: 60000 });
+  const line = plan.split('\n').find((l) => l.includes('npm run build'));
+  return Boolean(line && line.includes(gate));
+}

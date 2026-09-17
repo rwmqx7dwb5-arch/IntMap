@@ -255,8 +255,12 @@ const NEW_RULES = [
     from: '→  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1', to: '→  pwsh -File scripts/backup-usb.ps1' },
 
   /* ci-gates — `npm test` が走らせる門を CI から外す（この回まで5件がこの状態だった） */
+  /* ⚠ (#R771) THE ANCHOR MOVED WITH THE CALLER. This blanked check:docs' own step; since the
+     declared gates run through scripts/ci-gates.mjs the caller IS the shard invocation, so that is
+     what gets blanked. The claim is unchanged — remove what CI uses to reach a gate npm test runs,
+     and the rule must go red — and the mutation is now stronger: it cuts every gate at once. */
   { rule: 'ci-gates', file: '.github/workflows/ci.yml', why: 'a gate npm test runs that no CI step reaches',
-    from: '      - name: Cross-document facts (the documents still agree with the repository)\n        run: npm run check:docs\n', to: '' },
+    from: '        run: node scripts/ci-gates.mjs --shard', to: '        run: echo skipped --shard' },
 ];
 
 test('R403 ⑥ every rule this round added goes RED when its fact is made wrong', async () => {

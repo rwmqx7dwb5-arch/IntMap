@@ -165,6 +165,14 @@ test('R407 ①〜④ deep-tier-when goes RED in both directions, and cannot pass
 
   /* ② 腕B: 門のほうを動かすと、散文が追随していない限り落ちる */
   const IF = "    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}";
+  /* ⚠ (#R771) THE IF LINE ALONE IS NOT AN ANCHOR — IT IS NOT UNIQUE. A second job (the nightly
+     upstream check) is gated on the same events, spelled identically, and it comes FIRST in the
+     file. withBroken replaces the first occurrence, so the mutation landed on that job and left the
+     deep tier's gate untouched: the rule stayed green and this test reported a rule that had
+     stopped working, when what had actually happened is that the test stopped naming its subject.
+     The anchor therefore carries the job's own identity. [[intmap-restate-the-defect-not-the-fix]] */
+  const DEEP = '    name: Deep ${{ matrix.suite }} ${{ matrix.shard }}/${{ matrix.of }}\n    runs-on: ubuntu-latest\n';
+  const at = (ifLine) => DEEP + ifLine;
   const GATES = [
     /* 門が `push` を得た: docs/TESTING.md はまだ「push では走らない」と言っている。 */
     { why: 'the gate gains `push`', says: /does NOT run on `push`/,
@@ -207,9 +215,11 @@ test('R407 ①〜④ deep-tier-when goes RED in both directions, and cannot pass
     });
 
     await t.test('② changing the GATE goes red until the 正本 follows it — both directions', () => {
-      assert.ok(readLF(join(ROOT, CI)).includes(IF), 'the browser-deep gate is no longer written the way this test anchors on');
+      const ci = readLF(join(ROOT, CI));
+      assert.ok(ci.includes(at(IF)), 'the browser-deep gate is no longer written the way this test anchors on');
+      assert.equal(ci.split(at(IF)).length - 1, 1, 'the anchor must name exactly one job, or the mutation lands on the wrong gate');
       for (const c of GATES) {
-        const r = withBroken([{ file: CI, why: c.why, from: IF, to: c.to }], onlyRule);
+        const r = withBroken([{ file: CI, why: c.why, from: at(IF), to: at(c.to) }], onlyRule);
         assert.equal(r.code, 1, `the rule stayed GREEN when ${c.why} and no document said so:\n` + r.out);
         assert.match(r.out, c.says, `the report must say WHICH way the prose and the gate disagree (${c.why}):\n` + r.out);
       }

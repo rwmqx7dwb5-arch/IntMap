@@ -218,7 +218,7 @@ node scripts/worktree.mjs done          # この回: 自分の worktree と bran
 node scripts/worktree.mjs status        # 何が未了かを述べる（本番検証・原本・deploy）
 node scripts/master-sync.mjs --sync     # 原本 (OneDrive) を origin/main へ早送り
 node scripts/master-sync.mjs --check    # 原本が merge 後の状態か（exit 0 を確認）
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1   # USB へ完全ミラー
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/backup-usb.ps1   # USB へ完全ミラー（毎回）
 node scripts/worktree.mjs verified      # 本番検証を終えたら受領証
 ```
 
