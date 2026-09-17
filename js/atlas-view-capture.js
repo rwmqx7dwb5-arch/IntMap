@@ -205,7 +205,17 @@ export function makeViewCapture(deps) {
     var frames = [];
 
     function reset() { frames = []; }
-    function urls() { return frames.length ? frames.slice(-SENT).map(function (f) { return f.url; }) : null; }
+    /* ⚠⚠⚠ (#R780) IT RETURNS AN ARRAY, ALWAYS. It used to return `null` when no frame had been
+       captured, and js/ai-core.js treats `null` and `[]` identically (`(imageDatas||[]).filter`), so the
+       two shapes cost nothing for as long as it was the only reader. Then #R773 gave that reader a
+       second source of images and it became `VFRAMES.urls().concat(_atlRecallImgs)` — and every turn
+       that had not captured a frame (nearly every turn) died on
+       `Cannot read properties of null (reading 'concat')`. Measured on production 2026-09-17, on the
+       build that had just fixed #R773's OTHER regression: the bubble appeared and then went red, with
+       zero operations and zero model calls.
+       ⚠ THE FIX IS THE SHAPE, NOT THE CALL SITE. A guard at the caller would leave the next reader to
+       discover the same thing (#R429); `frames.length` already answers 「are there any」. One shape. */
+    function urls() { return frames.slice(-SENT).map(function (f) { return f.url; }); }
 
     /* ── (#R589) WHAT THE RENDERER PUT ON SCREEN ──────────────────────────────────────────────────
        The cheapest source there is, and the only one that knows what the reader can literally read:
