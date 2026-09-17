@@ -227,7 +227,11 @@ test('R493 ②e: the console binds it — frames to the vision argument, reset t
   /* the three lines that make the module reachable. The transport's third argument used to be
      `null` on every atlas_turn call; this is the one place that changes. */
   assert.match(CONSOLE_SRC, /const VFRAMES=makeViewCapture\(/, 'the ledger is built once, with the app injected');
-  assert.match(CONSOLE_SRC, /askAIJSONEnvelope\(_agentPrompt\(req,q\),_sys,VFRAMES\.urls\(\)/,
+  /* ⚠ (#R779) 第 3 引数は `VFRAMES.urls()` そのものではなくなった——#R773 が取り戻した添付の
+     画像を同じチャネルに載せるので、**フレームと取り寄せを 1 か所で束ねる**（そしてそこが
+     `urls()` の「空なら null」を受け止める。直接 `.concat` して本番が死んだのが #R779）。
+     束ねる側が `urls()` を読んでいることは、ここで綴りを 2 つとも読んで結び直す。 */
+  assert.match(CONSOLE_SRC, /askAIJSONEnvelope\(_agentPrompt\(req,q\),_sys,_atlTurnImgs\(VFRAMES\.urls\(\),/,
     'the atlas_turn call carries the frames as IMAGES');
   assert.match(CONSOLE_SRC, /p\+=VFRAMES\.promptBlock\(\)/, 'and the prompt names them');
   assert.match(CONSOLE_SRC, /VFRAMES\.reset\(\)/, 'and a new turn starts with none');

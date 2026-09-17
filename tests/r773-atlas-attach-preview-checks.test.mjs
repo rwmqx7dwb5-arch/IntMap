@@ -172,7 +172,9 @@ test('⑪ 取り寄せは実装されている — 宣言だけして繋がっ�
   assert.match(con, /^ {8}case 'recallAttachment':/m, 'dispatch の case（監査はインデント 8 で数える）');
   /* ⚠ 取り戻したものは tool の結果テキストではなく、次のモデル呼び出しの**チャネル**に載る
      （プロンプト本文に置いた data URL は画像ではなく数十万文字の base64・#R493）。 */
-  assert.match(con, /VFRAMES\.urls\(\)\.concat\(_atlRecallImgs\)/);
+  /* (#R779) 取り戻した画像はターンの画像一覧に載る。⚠ 組む場所は 1 か所で、
+     `VFRAMES.urls()` が空のとき返す null はそこが受け止める（直接 .concat しない）。 */
+  assert.match(con, /_atlTurnImgs\(VFRAMES\.urls\(\),_atlRecallImgs\)/);
   assert.match(con, /_atlRecallAtts\.docs\.push/);
   /* 台帳は毎ターンの入口で更新され、編集の巻き戻しと同じ境界を持つ */
   assert.match(con, /ATTACH_LOG\.remember\(turn,imgs,files\)/);
