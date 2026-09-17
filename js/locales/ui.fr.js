@@ -2867,7 +2867,7 @@ window.IntMapLang.define('fr', { ui: {
   "Min length (m)": "Longueur min. (m)",
   "Area (loops)": "Superficie (boucles)",
   "Points (simpl/raw)": "Points (simplifiés/bruts)",
-  "Resolution (smoothing)": "Résolution (lissage)",
+  "Resolution (right = coarser)": "Résolution (à droite = plus grossier)",
   "Kept on the map": "Conservé sur la carte",
   "Country border not found": "Frontière du pays introuvable",
   "Exit country view": "Quitter la vue du pays",

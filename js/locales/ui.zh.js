@@ -3083,7 +3083,7 @@ window.IntMapLang.define('zh', {
   "Min length (m)": "最小長度 (m)",
   "Area (loops)": "面積（封閉區域）",
   "Points (simpl/raw)": "點數（簡化／原始）",
-  "Resolution (smoothing)": "解析度（平滑化）",
+  "Resolution (right = coarser)": "解析度（越往右越粗糙）",
   "Kept on the map": "已保留在地圖上",
   "Country border not found": "找不到國界資料",
   "Exit country view": "回到整體檢視",

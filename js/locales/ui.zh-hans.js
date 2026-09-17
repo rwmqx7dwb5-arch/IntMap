@@ -3087,7 +3087,7 @@ window.IntMapLang.define('zh-hans', {
   "Min length (m)": "最小长度 (m)",
   "Area (loops)": "面积（封闭区域）",
   "Points (simpl/raw)": "点数（简化／原始）",
-  "Resolution (smoothing)": "分辨率（平滑化）",
+  "Resolution (right = coarser)": "分辨率（越往右越粗糙）",
   "Kept on the map": "已保留在地图上",
   "Country border not found": "找不到国界数据",
   "Exit country view": "回到整体检视",

@@ -266,90 +266,13 @@ test('#R719 ⑦ each deep tier fetches and draws at the zoom its own median unit
   }
 });
 
-/* ── ⑧ THE DRAW TOOL DRAWS A CURVE, AND CAPTURES FINER THAN IT MEASURES ───────────────────────
-   ⚠ THE SHIPPED MODULE IS EVALUATED, NOT READ (#R505). What the slider does is a property of the
-   running function; a test that matched the source for `smoothPath(` would pass on a build where
-   the spline had been disconnected from the line. The only things stubbed are the two things the
-   module imports (a timer wheel and the Nominatim gate) and the renderer contract — none of which
-   the geometry under test touches. */
-function drawTool() {
-  const noop = () => {};
-  const el = () => ({ style: {}, classList: { add: noop, remove: noop }, appendChild: noop,
-                      querySelector: () => null, querySelectorAll: () => [], addEventListener: noop, setAttribute: noop, remove: noop });
-  const sb = { console, Math, JSON, Date, Number, String, Object, Array, isFinite, parseInt, parseFloat, setTimeout, clearTimeout, RegExp };
-  sb.window = sb; sb.globalThis = sb;
-  sb.document = { getElementById: () => null, createElement: el, body: el(), head: el(),
-                  addEventListener: noop, readyState: 'complete', querySelector: () => null, querySelectorAll: () => [] };
-  sb.turf = { distance: () => 1, point: (p) => p };
-  sb.IntMapModules = {};
-  sb.IntMapGeoEngine = { hasRenderer: () => true,
-    layers: { hasSource: () => true, addSource: noop, has: () => true, add: noop, setSourceData: noop, setLayout: noop },
-    render: { canvas: () => ({ style: {} }) }, input: { set: noop }, camera: { getZoom: () => 5 }, events: { on: noop, once: noop } };
-  sb.IntMapLang = { t: () => 'x' };
-  sb.everyTick = () => noop; sb.NominatimGate = {};
-  vm.createContext(sb);
-  vm.runInContext(read('js/map-tools.js').replace(/^import[^\n]*\n/gm, ''), sb, { filename: 'map-tools.js' });
-  sb.IntMapModules.drawTool({ ringArea: () => 0, t: () => '', distHTML: String, areaHTML: String,
-                              makeDraggable: noop, imToast: noop, exitTool: noop, lang: 'en', isMobile: () => false });
-  return sb.DrawTool;
-}
-/* ⚠ SMOOTHNESS IS THE SHARPEST CORNER, NOT THE AVERAGE ONE. A mean turn per vertex is a function
-   of how DENSELY a path is sampled — a 360-point circle averages 1° a vertex and a 5-point one
-   averages 72°, so comparing two paths of different densities by their mean measures the sampling
-   and not the shape. What the reader sees as «not smooth at all» is a corner, so that is what is
-   measured: the largest angle the path turns through at any one vertex. */
-const maxTurn = (a) => {
-  let worst = 0;
-  for (let i = 1; i < a.length - 1; i++) {
-    const v1 = [a[i][0] - a[i - 1][0], a[i][1] - a[i - 1][1]], v2 = [a[i + 1][0] - a[i][0], a[i + 1][1] - a[i][1]];
-    const n1 = Math.hypot(v1[0], v1[1]), n2 = Math.hypot(v2[0], v2[1]);
-    if (!n1 || !n2) continue;
-    worst = Math.max(worst, Math.acos(Math.max(-1, Math.min(1, (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2)))));
-  }
-  return worst;
-};
-
-test('#R719 ⑧ the smoothing slider produces a curve through the points, at every setting', () => {
-  const D = drawTool();
-  assert.ok(D && D._debug && typeof D._debug.simulate === 'function', 'the shipped module evaluated and armed');
-
-  /* a hand-drawn loop — a wobbly circle, which is what the tool is actually used to draw, and the
-     input a decimation-only «smoothing» turns into a polygon with visible corners. */
-  const raw = [];
-  for (let i = 0; i < 360; i++) {
-    const a = i * Math.PI / 180, r = 1 + 0.04 * Math.sin(a * 9);
-    raw.push([139 + r * Math.cos(a), 35 + r * Math.sin(a)]);
-  }
-  for (const sm of [0, 50, 100]) {
-    const r = D._debug.simulate(raw, sm);
-    assert.ok(r.kept.length >= 3, `at smoothing ${sm} the slider must leave something to draw (kept ${r.kept.length})`);
-    assert.ok(r.curveN > r.simplN,
-      `at smoothing ${sm} the drawn line (${r.curveN}) must carry more vertices than the ${r.simplN} the slider kept — a polyline through them is not a curve`);
-    /* ⚠ THE POINT OF THE ROUND: the line that is DRAWN must be smoother than the polyline through
-       the same points. Before #R719 they were the same object, so «maximum smoothing» was the most
-       angular line the tool could produce. */
-    assert.ok(maxTurn(r.line) < maxTurn(r.kept) / 2,
-      `at smoothing ${sm} the drawn line's sharpest corner is ${maxTurn(r.line).toFixed(4)} rad against ` +
-      `${maxTurn(r.kept).toFixed(4)} for the polyline through the same points — that is not smoothing`);
-    /* and it still goes where the reader drew: every kept point is ON the curve */
-    for (const p of r.kept)
-      assert.ok(r.line.some((q) => Math.abs(q[0] - p[0]) < 1e-6 && Math.abs(q[1] - p[1]) < 1e-6),
-        `the curve must pass through the point the slider kept at ${p} — an approximating spline moves the line off what was drawn`);
-  }
-  /* MAXIMUM smoothing is where the reader said the line was «全然滑らかじゃない», and it is where
-     decimation hurts most: five points out of 360. The line drawn there must still have no corner. */
-  const top = D._debug.simulate(raw, 100);
-  assert.ok(maxTurn(top.line) < 0.35,
-    `at maximum smoothing the drawn line still turns ${maxTurn(top.line).toFixed(3)} rad (${(maxTurn(top.line) * 180 / Math.PI).toFixed(1)}°) ` +
-    'at a single vertex — a corner that size is what «not smooth at all» means. (0.35 rad ≈ 20° is the ' +
-    'angle at which a joint stops reading as a corner at the sub-pixel vertex spacing the spline emits.)');
-  assert.ok(top.line.every((p) => Number.isFinite(p[0]) && Number.isFinite(p[1]) && Math.abs(p[0]) <= 180 && Math.abs(p[1]) <= 90),
-    'and every vertex is on the globe — the first build of the spline put the last one at [0,0]');
-
-  /* and the AREA is still measured on the coarse trace, so the finer capture costs nothing there */
-  assert.equal(D._debug.simulate(raw, 0).area, D._debug.simulate(raw, 100).area,
-    'the area stays invariant under the slider — #R8c’s contract, unchanged');
-});
+/* ── ⑧ WITHDRAWN (#R782) ─────────────────────────────────────────────────────────────────────
+   ⑧ measured the centripetal Catmull–Rom spline this round added between the points the slider
+   kept and the line on the map. The reader's answer to it was 「本来はスライダーで荒くするって
+   やつなのに、滑らかなまま。」「いや消せよ」 — the spline made the slider's own effect unreachable,
+   and it is gone. ⚠ WHAT REPLACES A WITHDRAWN MECHANISM'S CHECK IS NOT ITS ABSENCE: the thing
+   that can go wrong now is a second stage creeping back in, and that is measured on the running
+   function in tests/r782-draw-slider-coarsens-checks.test.mjs, not by this file's silence. */
 
 test('#R719 ⑨ the stroke is captured finer than the trace the area is measured on', () => {
   const s = read('js/map-tools.js');
@@ -359,10 +282,9 @@ test('#R719 ⑨ the stroke is captured finer than the trace the area is measured
     'the LINE is sampled finer than the AREA — the resolution the reader draws at is not bounded by an O(n²) area pass');
   assert.ok(parseFloat(minPx[1]) <= 2,
     'and finer than the 5 px staircase the reader reported: a line can never be smoother than it was captured');
-  /* the curve is bounded, so a long stroke cannot unbound the source it is pushed into */
-  assert.match(s, /const CURVE_MAX=\d+;/, 'the spline states its own ceiling');
-  assert.match(s, /if\(total\/step>CURVE_MAX\) step=total\/CURVE_MAX;/,
-    'and it widens the step to fit rather than truncating the stroke');
+  /* (#R782) the two assertions that stood here guarded CURVE_MAX, the withdrawn spline's own
+     output ceiling. With no stage after RDP there is nothing between the kept points and the map
+     to bound — the vertex count the layer receives is the vertex count the slider chose. */
 });
 
 /* ── ⑩ THE COASTLINE IS OFF BY DEFAULT — IN THE FOUR PLACES THAT MUST AGREE ───────────────────
