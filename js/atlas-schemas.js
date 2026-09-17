@@ -300,6 +300,9 @@ export function makeAtlasSchemas() {
          is the right default for 「今見えているもの」. `reason` is free text — what Atlas is looking
          FOR — carried into the frame's caption so the reader can see why their view was captured. */
       'view.inspect': { type: 'object', properties: { include: { type: 'string', enum: ['screen', 'map'] }, reason: str() } },
+      /* (#R773) 取り寄せるものは名前で指す。名前は [ATTACHED EARLIER…] が述べたもので、無ければ
+         その一覧が返る（存在しない名前に対して黙って別のものを返さない）。 */
+      'attach.recall': { type: 'object', properties: { name: str() }, required: ['name'] },
       /* the place is optional (no place = the current view) but the KIND is not: without it the
          case asks «what kind of facilities?» */
       'map.poi': { type: 'object', properties: { kind: str(), query: str(), what: str(), name: str(), place: str(), color: str() }, anyOf: [{ required: ['kind'] }, { required: ['query'] }, { required: ['what'] }, { required: ['name'] }] },
