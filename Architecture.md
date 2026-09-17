@@ -1061,11 +1061,11 @@ flex 列が高さを折半する）。**`setMode()` はタブ／scope の操作�
 読んでいる間は Atlas タブが 0×0 になる。帯（`.nrp-bar`）は `js/article-reader.js` の
 `readerBar()` が**1 か所で**組み、戻ると **`.nrp-atlas`（「Ask Atlas」）** を必ず載せる——
 記事 reader も出来事の詳細もそれを呼ぶ。
-⚠⚠ **その道は主題を連れて渡る。** `.nrp-atlas` は `js/atlas-console.js` の **`askReading()`** を呼び、
+⚠⚠ **その道は主題を連れて渡る。** `.nrp-atlas` は `js/atlas-reading.js` の **`askReading()`** を呼び、
 Atlas は**読んでいたものの上に**開く——見出し・媒体と日付と場所の 1 行・`window._imReader.loc` を
 ピンに据え、その 1 件が**実際に持っているもの**から導いた質問チップを 3 つまで。入力欄は自由のまま
 で、チップは起点であって唯一の出口ではない（送るのは読み手）。到着の吹き出し（見出し＋説明＋チップ）
-は `_arrive()` が**1 か所で**組み、地図の右クリック `askHere()` も同じものを呼ぶ——同じ名前の
+は `js/atlas-reading.js` の `arrive()` が**1 か所で**組み、地図の右クリック `askHere()` も同じものを呼ぶ——同じ名前の
 2 つのボタンが違う着き方をしたのは、到着が片方の中に書かれていたからである。
 ⚠⚠ **面を離れることと、Atlas の主題を捨てることは別である。** `closeReaderPane(quiet, carryArticle)`
 は既定で `window._imReader` を捨てるが、`setMode()` が **Atlas へ入る**ときだけ主題を運び、

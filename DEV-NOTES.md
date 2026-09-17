@@ -900,8 +900,13 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 
 ### 2. 直したもの
 
-- `js/atlas-console.js` に **`_arrive(headHtml, note, qs)`** を置き、**askHere もこれを呼ぶ**。
+- **`js/atlas-reading.js`（新設）** に **`arrive(headHtml, note, qs)`** を置き、**askHere もこれを呼ぶ**。
   到着の吹き出し（見出し＋説明＋チップ＋チップの配線＋入力欄へのフォーカス）はこれ 1 か所。
+  ⚠⚠⚠ **最初はカーネルの中に書いて、5 本の検査を赤にした**——`js/atlas-console.js` は shrink-only の
+  行数天井（4,908・`tests/r318` ⑨b）の**1 行下**に座っていて、+57 行で 4,964 になった。天井の脇に
+  書いてある規則は「**機能が出ていくのであって、天井が上がるのではない**」なので、`js/atlas-gloss.js`
+  や `js/atlas-msg-tools.js` と同じ形で module へ出した（import と組み立てはどちらも**既存の行に
+  足す**——カーネルには 1 行の余白も無い）。結果 4,904 行＝ `origin/main` の 4,907 より**3 行少ない**。
   ⚠ 検査 ③ は `class="atl-here-q"` の**出現回数が 1** であることを測る——2 か所になった日が、
   次に誰かが写した日である。
 - **`askReading()`**（公開 API）。`open()` を先に済ませ、`window._imReader` を読み、

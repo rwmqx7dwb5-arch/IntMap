@@ -38,6 +38,11 @@ function extractFn(src, name) {
 }
 
 const ATLAS = read('js/atlas-console.js');
+/* ⚠ The arrival lives in its own module because the kernel is under a shrink-only line ceiling and
+   was sitting ONE line below it — writing this inside js/atlas-console.js measured 4,964 lines and
+   turned five checks red. The rule beside that ceiling is «a feature moves out, never the ceiling
+   up», so the subject of ①②③ is this file. */
+const READING = read('js/atlas-reading.js');
 
 /* ── 1. The starters are DERIVED from the item, not a fixed trio ──────────────────────────────
    #R392 took fixed sentences out of askHere because the most subject-specific gesture there is was
@@ -47,7 +52,7 @@ const ATLAS = read('js/atlas-console.js');
 function starters(rd, langIndex) {
   const L = (...a) => a[langIndex];
   // eslint-disable-next-line no-new-func
-  const fn = new Function('L', extractFn(ATLAS, 'readingStarters') + '; return readingStarters;')(L);
+  const fn = new Function('L', extractFn(READING, 'readingStarters') + '; return readingStarters;')(L);
   return fn(rd);
 }
 
@@ -88,16 +93,17 @@ test('R776 ② the substitution is done in every language, not only English', ()
    the chip markup appears, the two entries can disagree again — and the next surface to want an
    arrival will copy one of them rather than call it. */
 test('R776 ③ the arrival bubble is built in exactly one place', () => {
-  const chipMarkup = ATLAS.split('class="atl-here-q"').length - 1;
+  /* across BOTH files: a copy left behind in the kernel would be just as much a second copy */
+  const chipMarkup = (ATLAS + READING).split('class="atl-here-q"').length - 1;
   assert.equal(chipMarkup, 1, `the starter-chip markup appears ${chipMarkup} times; it is built once, by _arrive()`);
-  const wiring = ATLAS.split(".querySelectorAll('.atl-here-q')").length - 1;
+  const wiring = (ATLAS + READING).split(".querySelectorAll('.atl-here-q')").length - 1;
   assert.equal(wiring, 1, 'the chip click wiring has more than one copy');
-  for (const caller of ['_arrive(', 'function askHere', 'function askReading']) {
-    assert.ok(ATLAS.includes(caller), `${caller} is gone`);
-  }
+  for (const caller of ['function arrive(', 'function askReading(']) assert.ok(READING.includes(caller), `${caller} is gone`);
+  assert.ok(ATLAS.includes('function askHere'), 'askHere is gone');
+  assert.ok(ATLAS.includes('makeAtlasReading('), 'the kernel no longer builds the arrival module');
   /* askHere must be a CALLER of the shared builder, not its own copy again */
   const here = extractFn(ATLAS, 'askHere');
-  assert.ok(here.includes('_arrive('), 'askHere stopped using the shared arrival');
+  assert.ok(here.includes('.arrive('), 'askHere stopped using the shared arrival');
   assert.ok(!here.includes('class="atl-here-q"'), 'askHere grew its own chip markup back');
 });
 
@@ -113,6 +119,9 @@ test('R776 ④ the reading surface asks for the reading arrival, and the kernel 
   assert.ok(!fn.includes("call('open')"), "the reading surface is back to `call('open')` — a tab switch and nothing else");
   /* the kernel's public API object actually offers it */
   const api = ATLAS.slice(ATLAS.lastIndexOf('return { open, toggle,'));
+  /* ⚠ the kernel must also still be able to REACH it — an export naming a method the module does not
+     define, and a module method nobody exports, look the same from either side alone. */
+  assert.ok(READING.includes('return { arrive, askReading'), 'js/atlas-reading.js stopped exporting the arrival');
   assert.ok(/\baskReading\b/.test(api.slice(0, api.indexOf('};'))), 'askReading is not on the console\'s public API');
   /* and the fallback for a press with nothing open still exists */
   assert.ok(fn.includes('IntMapConsole'), 'the no-kernel fallback route is gone');
