@@ -164,6 +164,11 @@ gis-core.js                       **GIS 中核の 1 つの扉**（#R729）— �
                                   `window.IntMapGis`。データセットを地図に描く `draw()` もここ
                                   （`window.GeoJSONUpload.add` を通す＝地図に載せる道を 2 本作らない）。
                                   遅延読み込み `gisCore`。正本 `docs/GIS-CORE.md`
+gis-runtime.js                    **GIS の組み立て**（#R783）— `makeGisRuntime(deps)` が、ブラウザ入口と
+                                  **同じ `mount()`** で 15 のカーネルを載せる。`externals` を渡せば閉じた集合
+                                  （渡していないものは scope に在っても使わない）、渡さなければ生きた scope。
+                                  ⚠ **Atlas 用 GIS と外部 AI 用 GIS を別に作らないための 1 か所**。
+                                  `js/gis-core.js` がこれを名前で読んで再公開する
 gis-datasets.js                   **データセットのレジストリ** `window.IntMapData` — 取り込み・内蔵・
                                   **処理の出力**を同じ 1 つの形で持つ。列の型は**値を測って**決める
                                   （列名で決めない。⚠ #R735 以降**先頭ゼロのセルは符号**＝`text`）。
@@ -1319,7 +1324,7 @@ scripts/
   build-*.mjs                     data/ の生成（実行時には不要）。`build-admin1.mjs` は Natural Earth 10m
                                   admin-1 を 0.01°（≈1.1 km）で間引いて data/admin1-world.json.gz を書く
   run-tests.mjs / test-parallel.mjs / shard-plan.mjs / test-budget.mjs   テストの実行と予算
-  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 7 本 / deep 107 本。
+  tiers.mjs                       core / deep の**分割は価格**（`CORE_MAX_S`＝1秒）。実測 core 7 本 / deep 108 本。
   baseline.mjs                    main の前回結果と突き合わせ、**その失敗が main にも在るか**を言う
   deep-alarm.mjs                  **nightly の deep tier が赤いことを人に届ける**（ci.yml の `deep-alarm` job）。
                                   赤→ Issue を開く／**本文を今夜の失敗テスト名で書き直す**（shard の

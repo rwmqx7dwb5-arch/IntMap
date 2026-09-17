@@ -514,7 +514,13 @@ window.IntMapModules.layerRegistry=function(HOST){
       on:()=>_lyrVis('ph-pt'), featuresIn:b=>_srcFeatsIn('ph-src',b),
       /* (#R763) js/layer-packs.js has had this door since #R311 (js/compare.js draws the curated
          half through it, with no row and no toggle involved) — the acquisition layer asks it now too. */
-      load:()=>new Promise((res,rej)=>{ try{ window.IntMapBeta2.load('pharma',fc=>res(fc)); }catch(e){ rej(e); } }),
+      /* ⚠⚠⚠ (#R783) THIS PROMISE HAD NO WAY TO LOSE. `IntMapBeta2.load(key, cb)` calls the callback
+         only when the bundle arrived — the old arms returned silently when the fetch produced no
+         features — so a failed bundle left this promise pending FOREVER and whatever awaited the
+         acquisition simply never answered (not a refusal, not an error: nothing). #R783 gave
+         js/layer-packs.js a door that always settles; this reads that one, and turns «came back with
+         nothing» into a named failure the caller can report. */
+      load:()=>window.IntMapBeta2.acquireBundle('pharma').then((fc)=>{ if(!fc) throw new Error('bundle-unavailable: pharma'); return fc; }),
       /* ⚠ (#R759) THE THIRD ROW THAT MAY SAY THIS, AND THE AUDIT THAT FOUND IT IS THE POINT. #R756
          built the declaration and two rows used it; this round asked the question of ALL THIRTY
          registrations — what narrows each one — and the answer is that twenty-six of them CANNOT say
@@ -3210,6 +3216,16 @@ window.IntMapModules.geojsonUpload=function(HOST){
       if(why==='gpkg-truncated'||why==='gpkg-corrupt') return window.IntMapLang.t(HOST.lang,"The GeoPackage ends or breaks part-way through, so the rest cannot be read","GeoPackage が途中で途切れているため、続きを読めません")+(detail&&detail.at!=null?' ('+detail.at+')':'');
       if(why==='gpkg-page-size') return window.IntMapLang.t(HOST.lang,"The page size in this file's header is not one SQLite defines","このファイルのヘッダのページサイズが、SQLite の定める値ではありません");
       if(why==='gpkg-wal') return window.IntMapLang.t(HOST.lang,"This GeoPackage was left with a write-ahead log, and the log is not in the file — reopen and close it in the program that wrote it","この GeoPackage には write-ahead log が残っており、その中身がファイルに含まれていません。書き出した側で開き直して閉じてください");
+      /* ⚠ (#R783) THE SIX ABOVE ARE ABOUT READING A FILE SOMEBODY ELSE WROTE; THESE SIX ARE ABOUT
+         WRITING ONE. A writer refuses for different reasons than a reader, and the reader cannot
+         guess which — so each says what in THIS data the format cannot carry, rather than that the
+         export failed. */
+      if(why==='gpkg-write-empty') return window.IntMapLang.t(HOST.lang,"There is nothing to write: this dataset holds no rows","書き出すものがありません。このデータセットに行が 1 つもありません");
+      if(why==='gpkg-write-crs-unsupported') return window.IntMapLang.t(HOST.lang,"A GeoPackage has to name the coordinate system it stores, and this data does not state one this writer can declare","GeoPackage は座標系を明示する必要がありますが、このデータはこの書き手が宣言できる座標系を述べていません");
+      if(why==='gpkg-write-geometry-unsupported') return window.IntMapLang.t(HOST.lang,"One of these shapes is of a kind this writer does not put into a GeoPackage yet","この形のうち 1 つは、この書き手がまだ GeoPackage に入れられない種類です");
+      if(why==='gpkg-write-geometry-mixed-dimensions') return window.IntMapLang.t(HOST.lang,"Some of these shapes carry a height and some do not, and one GeoPackage layer states a single dimensionality for all of them","この形の一部は高さを持ち一部は持ちません。GeoPackage の 1 レイヤーは全体で 1 つの次元数を述べます");
+      if(why==='gpkg-write-value-unsupported') return window.IntMapLang.t(HOST.lang,"A value in this table is of a kind the format has no column type for","この表の値のうち 1 つは、この形式に対応する列の型がない種類です");
+      if(why==='gpkg-write-table-name') return window.IntMapLang.t(HOST.lang,"That layer name cannot be a table name in a GeoPackage — rename it and write again","そのレイヤー名は GeoPackage の表名にできません。名前を変えてもう一度書き出してください");
       if(why==='gpkg-text-encoding') return window.IntMapLang.t(HOST.lang,"This GeoPackage stores its text in an encoding this reader will not guess at","この GeoPackage の文字符号化は、この読み取りが推測で扱わないものです");
       if(why==='gpkg-schema') return window.IntMapLang.t(HOST.lang,"A table definition in this GeoPackage could not be read, and it was not guessed at","この GeoPackage の表定義を読み取れず、推測もしていません")+(detail&&detail.table?' ('+detail.table+')':'');
       if(why==='gpkg-no-tables') return window.IntMapLang.t(HOST.lang,"This GeoPackage holds nothing this map can read","この GeoPackage に、この地図が読めるものがありません");

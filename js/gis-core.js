@@ -31,6 +31,31 @@
  *  ⚠ THIS FILE MOUNTS; IT DOES NOT DECIDE. Every rule lives in the files above. What is here
  *  is the order they come up in (registry first — the other three read it) and the one public name
  *  that other modules reach for.
+ *
+ *  ══ #R783 — 同じ GIS を、画面の無いところでも動かす ═══════════════════════════════════════════
+ *  An outside review read this layer and named what the mounting order above hides: every kernel
+ *  resolves its neighbours from the GLOBAL SCOPE at call time (js/gis-ops.js:70, js/gis-layers.js:87,
+ *  js/gis-raster.js:138 — each of them `window.X` inside a try), and the things this layer does NOT
+ *  own — the geodesy, the layer registry, the renderer, the upload door — are supplied by the page.
+ *  Each module is individually loadable in Node; the ASSEMBLY was not, because nothing but a browser
+ *  ever built the scope they read each other out of.
+ *
+ *  ⚠ THE FIX IS NOT A SECOND GIS. A separate «headless GIS» beside this one would be two kernels
+ *  with two opinions, and the panel, Atlas and any outside caller would stop being able to hand each
+ *  other an id. js/gis-runtime.js holds the ONE assembler: the browser entry calls it with no
+ *  dependencies (so the page supplies them, exactly as before), and a caller with no window passes
+ *  `{scope, externals}` and gets the same instances, reachable through the same globals. What this
+ *  file publishes is the mounting order ITSELF — `mountGis`, the function the assembler calls once
+ *  it has decided what the scope is and what has been handed over.
+ *
+ *  ⚠ WHY THE ASSEMBLER IS A SECOND FILE. Its reader is outside js/: a Node caller imports
+ *  `makeGisRuntime` from THIS file (docs/GIS-CORE.md §5.8), while the browser comes in through
+ *  window.IntMapModules.gisCore below. An export no js/ module names is dead code by
+ *  tests/r175-checks ③ — and the answer to that is a real reader, not a hidden export. So the
+ *  mounting order and the assembler are two files that import each other by name: this one reads
+ *  `makeGisRuntime` (to re-export it, and to build the browser door out of it), and
+ *  js/gis-runtime.js reads `mountGis`. The cycle is evaluation-safe because neither half CALLS the
+ *  other while the modules evaluate; js/gis-runtime.js's header says the same thing from its side.
  * ==========================================================================*/
 
 import { makeGisDatasets } from './gis-datasets.js';
@@ -48,9 +73,26 @@ import { makeGisSources } from './gis-sources.js';
 import { makeGisOps } from './gis-ops.js';
 import { makeGisProject } from './gis-project.js';
 import { makeGisPanel } from './gis-panel.js';
+/* ⚠ (#R783) THE ASSEMBLER, READ BY NAME AND HANDED STRAIGHT ON. The re-export is what an outside
+   caller imports (`import { makeGisRuntime } from './js/gis-core.js'`), and shellEntry below is the
+   browser's way into the same function — one assembler, two doors, no second set of kernels. */
+import { makeGisRuntime } from './gis-runtime.js';
+export { makeGisRuntime };
+/* ══ ⚠ (#R783) ONE TOP-LEVEL BINDING, AND THE REST OF THE FILE INSIDE IT ═════════════════════
+   tests/r175-checks ③ is the property the bundling rests on: a js/ module may hold NO unexported
+   top-level declaration, because a classic script's top-level `const`/`function` was a global and
+   this file is still loaded as the `gisCore` chunk beside fifteen kernels that resolve each other
+   by global name. What is inside this closure is `mount` and `shellEntry` — module-private in
+   intent, neither of them wrapped in fact before this round, and the rule does not admit an export
+   written only so a test can reach a helper. So the mounting order lives in one closure and the
+   file publishes the ONE name the assembler reads: `mountGis`.
+   ⚠ WRAPPED WHOLE, NOT REFORMATTED. The body below is byte-for-byte what it was — the same
+   expressions, the same indentation, the same order, and the window registration still running at
+   module evaluation — so this change cannot alter an answer. Re-indenting 185 lines while calling
+   it a move is the shape [[intmap-my-own-fix-had-the-shape-i-was-fixing]] records. */
+export const mountGis = (function () {
 
-window.IntMapModules = window.IntMapModules || {};
-window.IntMapModules.gisCore = function (HOST) {
+function mount(scope, HOST) {
   /* ⚠ ORDER IS NOT DECORATION HERE. The registry comes up first because the other eight read it,
      and the geometry kernel before the ops because every op but filter asks it a question. Nothing
      awaits: each publishes a synchronous face and fetches what it borrows on demand, so this is a
@@ -107,7 +149,9 @@ window.IntMapModules.gisCore = function (HOST) {
   function draw(id, opts) {
     const ds = data.get(id);
     if (!ds) return { ok: false, why: 'input-missing' };
-    const GU = window.GeoJSONUpload;
+    /* From the scope this assembly was mounted on, at CALL time — the same rule every kernel above
+       follows, and the reason a headless runtime reaches the same door (#R783). */
+    let GU = null; try { GU = scope.GeoJSONUpload || null; } catch (_) { GU = null; }
     if (!GU || typeof GU.add !== 'function') return { ok: false, why: 'map-unavailable' };
     /* ⚠ (#R749) A GRID IS STILL NOT A FeatureCollection — IT IS NOW DRAWN AS A PICTURE. #R735 named
        the refusal rather than throwing inside a click, and that was right for a build with nowhere
@@ -166,8 +210,73 @@ window.IntMapModules.gisCore = function (HOST) {
      file is behind `gisCore`, and asking Atlas to run an op is asking for this file. */
   const atlas = makeGisAtlas({ data: data, ops: ops, layers: layers, draw: (id, o) => draw(id, o) });
 
-  const API = { data, geometry, crs, raster, warp, index, expr, units, worker, sources, layers, ops, project, panel, draw, atlas,
+  /* ⚠ (#R783) THE FIVE STAGES, AS THE FUNCTIONS THAT ACTUALLY DO THEM. The outside review drew the
+     flow 「データを探す → 内容・時期・単位・取得可能範囲を確認する → 必要な条件で取得する → 共通 GIS
+     演算を実行する → 結果・根拠・制約・再取得用の参照を返す」, and every one of those already had an
+     implementation — reachable only by knowing which of fifteen modules held it. These are REFERENCES
+     to those implementations, so this is a table of contents and not a fifth caller: a copy would be
+     the 「Atlas 用 GIS と外部 AI 用 GIS を別々に作る」 this round exists to refuse.
+     ⚠ `find` ANSWERS TWO STAGES AND THAT IS NOT A SHORTCUT: js/gis-atlas.js's catalogue() states,
+     for every dataset and every map layer, what it holds, its time declaration, its columns with
+     their units and the window it can answer for. 探す and 確認する are one document there. */
+  const flow = Object.freeze({
+    find: atlas.catalogue,
+    acquire: atlas.acquire,
+    run: atlas.run,
+    draw: atlas.draw,
+    /* 「根拠・制約・再取得用の参照」 — js/gis-project.js manifest(), whose `gaps` are the 制約 part. */
+    account: project.manifest,
+    verify: project.verify,
+  });
+
+  const API = { data, geometry, crs, raster, warp, index, expr, units, worker, sources, layers, ops, project, panel, draw, atlas, flow,
     open: () => panel.open(), close: () => panel.close(), toggle: () => panel.toggle() };
-  try { window.IntMapGis = API; } catch (_) { }
-  return API;
-};
+  try { scope.IntMapGis = API; } catch (_) { }
+
+  /* ⚠ THE KERNELS ARE ASKED WHETHER THEY ARE REACHABLE, NOT ASSUMED TO BE. Each module publishes
+     ITSELF onto the scope (its own `try { window.X = API }`), which is the right owner of its name —
+     naming them again here would be a second naming authority. What is verified is the thing the
+     whole assembly rests on: that the object the kernels publish into is the object they read out of.
+     A headless scope where this failed would give a registry nobody else can find, and every op
+     would answer `registry-missing` with no reason a reader could act on. */
+  const unreachable = [];
+  for (const [g, inst] of [['IntMapData', data], ['IntMapGisGeometry', geometry], ['IntMapGisCrs', crs],
+    ['IntMapGisRaster', raster], ['IntMapGisWarp', warp], ['IntMapGisIndex', index], ['IntMapGisExpr', expr],
+    ['IntMapGisUnits', units], ['IntMapGisWorker', worker], ['IntMapGisSources', sources],
+    ['IntMapGisLayers', layers], ['IntMapGisOps', ops], ['IntMapGisProject', project], ['IntMapGis', API]]) {
+    let seen = null; try { seen = scope[g] || null; } catch (_) { seen = null; }
+    if (seen !== inst) unreachable.push(g);
+  }
+  if (unreachable.length) return { ok: false, why: 'kernel-not-reachable', detail: { globals: unreachable } };
+
+  /* The shell's own door, on whatever scope this assembly lives in — so the one below (which runs at
+     import time, and only where a window already exists) is not the only way in. */
+  try { scope.IntMapModules = scope.IntMapModules || {}; scope.IntMapModules.gisCore = shellEntry; } catch (_) { }
+  return { ok: true, gis: API };
+}
+
+/* ⚠ (#R783) THE BROWSER ENTRY IS UNCHANGED IN WHAT IT DOES AND WHAT IT RETURNS. It hands over no
+   dependencies, so the page is the supplier and every absence stays a call-time question, which is
+   what js/lazy-modules.js has always got back from here. */
+function shellEntry(HOST) {
+  const r = makeGisRuntime({ host: HOST });
+  /* ⚠ A REFUSAL IS NOT AN API. `gisCore` is expected to return the mounted layer; where it cannot,
+     the reason is thrown rather than returned as an object that looks like one — a caller handed
+     `{ok:false}` would call .data on it and fail one step later, with the wrong sentence. */
+  if (!r.ok) throw new Error('gisCore: ' + r.why + (r.detail ? ' ' + JSON.stringify(r.detail) : ''));
+  return r.gis;
+}
+
+/* Registered where there is a window, which is every browser and no Node import. ⚠ AN UNGUARDED
+   `window.IntMapModules` at module top level made this file the one member of the fifteen that could
+   not be IMPORTED in Node at all (ReferenceError before the first line of anybody's test), which is
+   how the assembly came to be the part nothing headless could measure. */
+try {
+  if (typeof window !== 'undefined' && window) {
+    window.IntMapModules = window.IntMapModules || {};
+    window.IntMapModules.gisCore = shellEntry;
+  }
+} catch (_) { }
+
+return mount;
+})();

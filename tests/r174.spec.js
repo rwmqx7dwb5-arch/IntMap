@@ -244,7 +244,25 @@ test('the 3-D volume survives the globe→flat handover at z12', async ({ page }
   const seen = [];
   for (const z of [11, 12, 13]) {
     await page.evaluate(zz => window.__imap.jumpTo({ center: [139.76, 35.68], zoom: zz, pitch: 55, bearing: 0 }), z);
+    /* ⚠⚠⚠ (#R783) A FIXED 1,400 ms IS NOT «THE FRAME IS DRAWN». When the composite came late the
+       red count was 0 and this test reported «nothing was painted» — which is indistinguishable,
+       from the outside, from «not painted YET» (one-pass-or-a-reason.md §2: an observer must not
+       report a success as a failure). Measured: 18.6 s here against 46.4 s for this same test on the
+       CI runner. ⚠ The threshold below is NOT lowered — only the moment we look at it moves: we wait
+       for the renderer to say it is idle, and keep the old delay as the floor. */
     await page.waitForTimeout(1400);
+    await page.evaluate(() => new Promise((done) => {
+      const m = window.__imap; const t0 = Date.now();
+      const give = () => done();
+      if (m && typeof m.once === 'function' && typeof m.loaded === 'function') {
+        if (m.loaded()) return requestAnimationFrame(() => requestAnimationFrame(give));
+        m.once('idle', () => requestAnimationFrame(() => requestAnimationFrame(give)));
+        setTimeout(give, 8000);   /* the renderer may never go idle while tiles stream; the floor above still held */
+        return;
+      }
+      const tick = () => (Date.now() - t0 > 2000 ? give() : requestAnimationFrame(tick));
+      tick();
+    }));
     const variant = await page.evaluate(() => +window.IntMapGeoEngine.camera.globeness().toFixed(2));
     seen.push({ z, red: await red(), variant });
   }

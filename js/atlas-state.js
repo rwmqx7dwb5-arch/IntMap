@@ -630,7 +630,20 @@ export function makeAtlasState(HOST) {
           (ar.place ? (', about ' + ar.place) : '') +
           '. "This article / this event / この記事 / この出来事 / それ / a bare 詳しく・背景・なぜ・translate this" refer to THIS article' +
           ((ar.loc && isFinite(ar.loc[0])) ? ('; its location is ' + (+ar.loc[1]).toFixed(2) + ',' + (+ar.loc[0]).toFixed(2) + ' — "there / 現地" map here') : '') + '.');
-        if (ar.body) lines.push('ARTICLE BODY (extracted reader text — quote/translate/analyze from THIS, not from memory):\n"""\n' + str(ar.body).slice(0, lim.maxBody) + '\n"""');
+        /* ⚠⚠⚠ (#R783) THE CLIP NOW SAYS SO. The cap above is not a limit on Atlas — it is the reason a
+           200 kB news page cannot become the whole prompt (#R413), and it stays. What was wrong is that
+           it cut SILENTLY: #R783 made `askReading()` read the whole reading surface, so a long event
+           (synthesis + every publisher's headline + the coverage list) now really does exceed 2,600
+           characters — and Atlas was handed the top of it with nothing saying the rest existed. That is
+           the silent truncation #R320 named, this time about text arriving from outside.
+           ⇒ the body carries its own statement of what happened to it. Atlas can then say 「ここまでが
+           読み取れた範囲です」 instead of answering about the coverage list as if it were absent. */
+        if (ar.body) {
+          var _b = str(ar.body), _cut = _b.length > lim.maxBody;
+          lines.push('ARTICLE BODY (extracted reader text — quote/translate/analyze from THIS, not from memory)'
+            + (_cut ? (' — CLIPPED: this is the first ' + lim.maxBody + ' of ' + _b.length + ' characters, in the order the reader sees them; the rest is below the cut and you have NOT been shown it. Say so if the question needs it') : '')
+            + ':\n"""\n' + _b.slice(0, lim.maxBody) + '\n"""');
+        }
       }
 
       if (at.pins && at.pins.n) lines.push(at.pins.n + ' Atlas pins are on the map' +

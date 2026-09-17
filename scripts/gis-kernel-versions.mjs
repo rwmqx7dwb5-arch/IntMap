@@ -108,10 +108,27 @@ export const KERNELS = {
      that adds two columns stating different units (`unit-mismatch`) — a step that ran yesterday can
      refuse today. ⑶ `compute`'s output column now CARRIES the unit it derived, and `rasterCalc`'s
      band does too when the reader named none. */
-  'js/gis-ops.js': { version: 'ops-6', sha256: '31e77865d383dc1ea995065694787f5cf1ce5dcab5b3deec9aa8312f8e58d9fa' },
+    /* (#R783) ops-6 -> ops-8: FOUR NEW OPS AND TWO ANSWERS THAT MOVED. ops-7 added spatialJoin /
+     nearestJoin / timeJoin / convert (a join whose cardinality is REQUIRED, a half-open time
+     window, and a conversion that asks js/gis-units.js for the transform instead of writing a
+     factor), and made aggregate and zonal read units.aggregation() — a step that ran yesterday can
+     REFUSE today when the quantity it declares does not allow that summary, and the stat
+     `areaWeightedMean` went from bad-param to a number. ops-8 then added `tolerance`: a recipe that
+     states one replays to a REFUSAL (crs-accuracy-outside-tolerance) where ops-7 gave a figure, and
+     surface 'ellipsoid' went from bad-param to a number. ⚠ A call that declares neither a quantity
+     nor a tolerance is bit-identical, measured over the existing suite. */
+  'js/gis-ops.js': { version: 'ops-8', sha256: '9c5b4bb02eb9af5491e60021ca769c263383afe7351b92ff4ec2374477870420' },
   /* `geom-1` likewise: validate() and repair() are new doors, and the boolean engine behind union,
      intersection and difference was measured unchanged over 800,000 pairs. */
-  'js/gis-geometry.js': { version: 'geom-1', sha256: '675be6ca448ed2a47d3f1baf7a755362b4e69e3a10b5427b6bc8c94cfcfba157' },
+    /* (#R783) geom-1 -> geom-2: MultiPolygon validity grew its THIRD stage (parts-overlap /
+     part-inside-part / part-duplicates-part), so validate() answers false where it answered true
+     — measured on data/ecoregions_2017.geojson: 126 of 635 records really do put the same ground in
+     twice, and an independent sweep-line confirmed 568 of 568. repair() resolves between parts and
+     states what it could not. ⚠ AND alignTo stopped deciding the depth of what it was handed:
+     boolean ops over two shapes written a turn of longitude apart used to come back EMPTY. 15 of
+     720 replayed answers move; every union keeps its area to the bit, and the one buffer that
+     changed was geometrically impossible before (63,867 km² inside a ceiling of 34,603 km²). */
+  'js/gis-geometry.js': { version: 'geom-2', sha256: '5af573fdf0d51e44b090beb1d0573f578dbaf3364bf1100bd2d92b6e18f0b8af' },
   /* The five below are FIRST declarations, not bumps — they are the kernels #R749 built and never
      recorded, plus the two that were older than the record and outside it. There is nothing to
      compare them against in a project saved before today, which is why a load of such a project
@@ -148,22 +165,49 @@ export const KERNELS = {
      as 0, in metres); one over incompatible or unreadable spellings replays to a REFUSAL
      (`unit-mismatch`) where it used to produce a grid. Grids that state no unit, or the same
      spelling, are untouched. */
-  'js/gis-raster.js': { version: 'raster-3', sha256: '3672267c2595e4b80664e58dec7d152707c68c71eec8e95e6b21f2b797c8b349' },
+    /* (#R783) raster-3 -> raster-4: coverOf stopped believing four corners and a centre. A concave
+     pixel reported 1 where the spherical closed form says 0.92000389922 — measured +701.66 km²
+     (0.44%) over a 4°×4° grid with 40 notches, so every fractional area, area integral, class area
+     and area-weighted mean over a notched, bayed or holed zone moves with it. The new short cut
+     fires only when no edge of the zone CAN touch the pixel box (all 360° of wrap), and it is
+     4.8-17.6× faster than the wrong one. ⚠ Also new, and additive: zonal takes an explicit `total`
+     rule and a band may declare its quantity — every existing call answers as it did. */
+  'js/gis-raster.js': { version: 'raster-4', sha256: '2e739f94d1d382d5a8c682c101d05ec1c968e264103651a31828904e457d87eb' },
   /* (#R774) A FIRST DECLARATION. js/gis-units.js decides whether two quantities may be combined and
      what the conversion is; every caller above asks it, so a change to the table or to the
      expression walk changes what a replayed recipe answers or refuses. */
-  'js/gis-units.js': { version: 'units-1', sha256: 'fb9d4113b733aa510ef1793752986533900b42b12006b2183673a80b698d53ed' },
+    /* (#R783) units-1 -> units-2: the expression walk stopped returning `unit: null` for four
+     different facts. abs / round / min / max / coalesce / number dropped the unit of a column that
+     stated one; `len/len` could not say it was dimensionless; `len*dist` could not say it did not
+     know. Now min/max/if/coalesce/% REFUSE m against km (unit-mismatch) and exact cancellation
+     derives `1` — both change what a recipe replays to. The quantity vocabulary (kind / space /
+     time / period, and which aggregations are allowed) is new and refuses nothing by itself: an
+     undeclared quantity stays undeclared, which is not permission. */
+  'js/gis-units.js': { version: 'units-2', sha256: '94bdd3a280b1835fd4c75ac86a33cbd95a53a56fd33c661b1d4d2830a8fc8f82' },
   /* (#R756) Hash only, for the same reason: the output-pixel loop now yields through the same
      paced walk, and the per-row cancel that had been unreachable code since #R749 is reached. */
-  'js/gis-warp.js': { version: 'warp-1', sha256: '4c7eef1f06a84a9b691cce2559d7de37ba8fe5577ee2f58864b2e19ca50e78f2' },
-  'js/gis-expr.js': { version: 'expr-1', sha256: 'd9cf9ebb9d47924abe53d5ce4a318c29ca8d2db8622a12b98b2f6228a70630ee' },
+    /* (#R783) HASH ONLY: the inverse mapping and the areal footprint boxes may now be computed in the
+     GIS worker in budget-sized row blocks. One implementation (invAt / boxOf) runs on both threads,
+     and tests/r783-worker-budget-checks measures the blocked grid, the unblocked grid and the grid
+     of a declined door byte for byte. Not one pixel changes. */
+  'js/gis-warp.js': { version: 'warp-1', sha256: 'ac8c5e339e0e05ac433d89d59102ff81cfab16f744cad984ea69f7a1175c7c7e' },
+    /* (#R783) HASH ONLY: every function in FUNCS now declares what it does to a unit (keeps /
+     dimensionless / no-unit / changes) so js/gis-units.js can ASK instead of guessing. The
+     evaluator is untouched — the same expression over the same rows returns the same numbers. */
+  'js/gis-expr.js': { version: 'expr-1', sha256: '06597de1ba5addea548b925bf473b20d25419aca12d57f43c0f6a8e347bed996' },
   'js/gis-index.js': { version: 'index-1', sha256: '580cf1a49be665d6d8ac2ca825d08bc8b32d85e3e30df44ec103cd01810c34cd' },
   /* (#R756) crs-1 -> crs-2: a refusal became an answer. The azimuthal equidistant plane was
      implemented and unreachable (it holds no EPSG code, and `measure` takes its plane as text), so
      `planeSpec()` now reads the spellings out of the PLANES table itself -- 'aeqd:<lon0>,<lat0>'
      and 'mollweide:<lon0>' name planes that were refused yesterday. A saved recipe naming one of
      those replays to a number where it used to replay to a refusal. */
-  'js/gis-crs.js': { version: 'crs-2', sha256: '14475b714e3076d06ac52524f38caf5dff635b62b128c501d9f21cecafec72e4' },
+    /* (#R783) crs-2 -> crs-3: no path that already produced a number moves (buildUtm.metric was
+     factored out and measured bit-identical), but certify() and `tolerance` are new answers — a
+     recipe that STATES a tolerance replays to a refusal plus the surfaces that can hold it, where
+     crs-2 had no way to state one. The measurement behind it: EPSG:3857 area is +311% at 60°N and
+     +10744% at 84°N; the datum term nobody had measured is +0.449% at the equator on this app's own
+     sphere; and `exact: true` was a claim about a surface's OWN datum, not about the ground. */
+  'js/gis-crs.js': { version: 'crs-3', sha256: 'de3d3e94602c3e3ef56e5ebd80ee96df08b3b9fd90714e392cab6bb16342e469' },
 };
 
 /* ⚠ THE OTHER HALF, AND IT IS THE HALF THAT MAKES THE FIRST ONE A RULE. A GIS module that is not a
@@ -172,6 +216,9 @@ export const KERNELS = {
    round. ⚠ 「まだ版を付けていない」 is not a reason. If it can change an answer it declares a version. */
 export const NOT_A_KERNEL = {
   'js/gis-core.js': 'mounts the modules and draws a dataset on the map; computes nothing',
+  /* (#R783) the assembly, not the arithmetic: it decides what plays the part of the scope and what
+     was handed over, mounts through js/gis-core.js, and computes nothing a saved recipe replays. */
+  'js/gis-runtime.js': 'decides what plays the part of the scope and what was handed over; mounts through js/gis-core.js and computes nothing itself',
   'js/gis-panel.js': 'draws the screen out of the declarations; no arithmetic of its own',
   'js/gis-export.js': 'a writer of bytes — it reads no recipe and produces no answer a saved project replays; a re-export is a new file, not a replay',
   'js/gis-project.js': 'stores and replays recipes — it is the READER of these versions',

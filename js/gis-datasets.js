@@ -579,7 +579,7 @@ export function makeGisDatasets() {
        special case, exactly as a vector output is:
 
          { id, title, kind:'raster', crs:'EPSG:4326', sourceCrs, width, height,
-           grid:{west,north,pixelLng,pixelLat}, bands:[{name,unit,nodata}], time, count, raster() }
+           grid:{west,north,pixelLng,pixelLat}, bands:[{name,unit,nodata,quantity}], time, count, raster() }
 
        ⚠ `raster()` IS THE DOOR, THE WAY features() IS. A grid of 4,000 × 4,000 is 128 MB as doubles;
        the panel, the chain view and the save file all want the METADATA. Nothing in this file touches
@@ -618,10 +618,21 @@ export function makeGisDatasets() {
         width: src.width,
         height: src.height,
         grid: { west: g.west, north: g.north, pixelLng: g.pixelLng, pixelLat: g.pixelLat },
+        /* ⚠⚠⚠ (#R783) THIS DOOR USED TO DROP WHAT THE BAND SAID ABOUT ITSELF. The three fields below
+           were the whole of a band here, so a grid that arrived declaring `quantity` (what kind of
+           amount it is, whether the number belongs to the whole pixel or to a point, whether it is
+           an instant or an accumulation — js/gis-units.js) came out the other side with the
+           declaration gone. Everything downstream then read it as UNDECLARED, and undeclared is not
+           「合計してよい」: js/gis-raster.js's `total` rules refuse rather than guess, so the correct
+           answer became unreachable for any grid that went through a dataset.
+           ⚠ It is carried VERBATIM and not normalised here — the vocabulary belongs to
+           js/gis-units.js (`quantity()`), and a second normaliser in this file would be a second
+           answer to the same question. A band that says nothing still says nothing (`null`). */
         bands: bands.map((b, i) => ({
           name: String((b && b.name) || ('band' + (i + 1))),
           unit: (b && b.unit != null) ? String(b.unit) : null,
           nodata: (b && typeof b.nodata === 'number' && isFinite(b.nodata)) ? b.nodata : null,
+          quantity: (b && b.quantity && typeof b.quantity === 'object') ? b.quantity : null,
         })),
         fields: bands.map((b, i) => ({
           name: String((b && b.name) || ('band' + (i + 1))),

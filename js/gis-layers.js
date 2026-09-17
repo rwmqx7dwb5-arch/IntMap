@@ -146,11 +146,65 @@ export function makeGisLayers() {
 
     /* Whether a layer answers 「その地点の値は」 at all — the contract js/map-ui.js documents as
        `sampleAt(lng,lat) → the REAL value at a point`. It is the entrance toRaster() uses, and the
-       reason a numeric layer can become a dataset without anybody writing a reader for it. */
-    function canSample(id) {
+       reason a numeric layer can become a dataset without anybody writing a reader for it.
+
+       ══ ⚠⚠⚠ (#R783) IT ANSWERED 「いま表示されているか」 TO A QUESTION ABOUT ABILITY ═══════════════
+       The body was `!!state(id).on`, and js/gis-atlas.js publishes that very answer to the planner
+       as `samplable` — a word about what the LAYER CAN DO. MEASURED: switching a numeric layer off
+       told Atlas 「このレイヤーは値を訊けない」 (the data did not change; a checkbox did), and a row
+       with no sampler at all, switched on, was published as samplable. It is the same defect
+       js/gis-sources.js region() removed one level down in #R774 — 「off ⇒ no values」 assumed rather
+       than measured — kept alive at the door above it.
+       ⇒ FOUR FACTS, AND EACH HAS ITS OWN CLAIMANT:
+         · capable  — この行は 「その地点の値は」 に答える実装を持つか。MEASURED, never inferred: the
+                      registry's one door is asynchronous (js/map-ui.js sampleAt hands back a ROW for
+                      every registration it actually asked, with a value only when there was one —
+                      #R774), so a synchronous answer here cannot be a measurement. null = 「まだ誰も
+                      訊いていない」, which is not false.
+         · prepared — 表示していなくてもデータが在るか。js/gis-sources.js `needsVisible` is the one
+                      place that judgement lives, and it composes this list row there.
+         · available— いま訊けるか。
+         · visible  — 表示されているか。state(id).on — and ONLY this one is about the checkbox.
+       ⚠ canSample KEEPS ITS NAME AND NOW ANSWERS THE CAPABILITY QUESTION, because that is what both
+       its callers mean by it (js/gis-panel.js offers the sampling control; js/gis-atlas.js publishes
+       `samplable`). A row MEASURED not to answer is not offered. A row nobody has measured is a
+       candidate — which is exactly what js/gis-sources.js list() means by `kind:'grid'` 「場として
+       訊ける候補」, and what acquisition refuses by name (`layer-not-visible`,
+       `layer-values-not-numeric`) when the candidate turns out not to answer. Guessing false for an
+       unmeasured row would hide a readable field; guessing true forever would keep offering a control
+       whose only outcome is a refusal, and the measurement below is what stops the second. */
+    const sampledRows = new Map();          /* id → did the registry hand a row back when it was asked */
+
+    /* ⚠ WRITTEN BY THE ONE THAT ASKED. js/gis-sources.js region() already asks the registry and
+       already separates 「行が返ったか」 from 「値が在ったか」 (#R774); this is that observation being
+       kept instead of discarded at the end of the call. Nothing here asks on its own behalf: a probe
+       fired from a render function would be a request the reader did not make. */
+    function noteSampling(id, answered) {
+      const key = String(id == null ? '' : id);
+      if (!key) return;
+      sampledRows.set(key, !!answered);
+    }
+
+    /* The three facts this file can answer. `prepared` is not among them on purpose — it belongs to
+       js/gis-sources.js, and a second reading of it here is how the two would come to disagree. */
+    function samplingOf(id) {
+      const key = String(id == null ? '' : id);
       const R = REG();
-      if (!R || typeof R.sampleAt !== 'function') return false;
-      try { const s = R.state ? R.state(id) : null; return !!(s && s.on); } catch (_) { return false; }
+      const door = !!(R && typeof R.sampleAt === 'function');
+      let visible = false;
+      try { const s = (R && R.state) ? R.state(key) : null; visible = !!(s && s.on); } catch (_) { visible = false; }
+      const known = sampledRows.has(key) ? sampledRows.get(key) : null;
+      return {
+        /* ⚠ null WHEN THE KERNEL IS NOT MOUNTED TOO: 「訊けなかった」 is not 「能力が無い」. */
+        capable: door ? known : null,
+        door: door,
+        visible: visible,
+      };
+    }
+
+    function canSample(id) {
+      const s = samplingOf(id);
+      return !!s.door && s.capable !== false;
     }
 
     /* The renderer's GeoJSON sources, off the parsed style. ⚠ The style is the renderer's own
@@ -360,13 +414,86 @@ export function makeGisLayers() {
        as `next` and hands it on unread, so a cursor from another row — or one a caller invented —
        would otherwise be read as an offset into a list it was never taken from. It is refused by
        name (`bad-param`) rather than clamped: a page that silently starts somewhere else is the
-       「知らない」を「全部だ」の代わりにする shape, one level down. */
-    function cursorOffset(key, cursor) {
-      if (cursor == null) return 0;
+       「知らない」を「全部だ」の代わりにする shape, one level down.
+
+       ══ ⚠⚠⚠ (#R783) AND NAMING THE LAYER WAS ALL IT DID, SO 「全部調べた」 HAD NO KEEPER ═══════════
+       The cursor was `<layer>@<offset>`, which is a position in WHICHEVER list that layer hands over
+       next. MEASURED on the shipped code: page 1 of a layer with three rows answers `v=1` and hands
+       back `drawn@1`; the same cursor sent back with an attribute condition added answers `v=3` —
+       position 1 of a DIFFERENT, filtered set — with `ok:true` and a coverage that says nothing about
+       it. A reader paging to the end of that sequence has skipped a row and been told the window was
+       exhausted, which is the 「述べていないことを地図が述べる」 shape applied to 「全部見た」.
+       ⇒ SO A CURSOR IS A POSITION IN ONE ORDERED ANSWER, AND IT CARRIES WHICH ONE. `<layer>@<sig>@
+       <offset>`, where `sig` is a digest of the QUESTION (the window, the conditions, and the row's
+       own sentence about when its holding is) AND of the ORDERED ANSWER those produced. A cursor
+       whose `sig` does not match what the current request produces is refused BY NAME, with the
+       reason in the detail — not clamped, and not read as a position in this set.
+       ⚠ WHAT THE ANSWER DIGEST IS AND IS NOT. It is taken from the rows themselves, in the order they
+       will be paged in: each row's geometry type and its first position, after the count. So a
+       holding that grew, shrank or was reordered between two pages does not resume — which is the
+       fact a cursor has to depend on, because the offset means nothing without it. It is NOT a proof
+       of identity: two different holdings can digest alike, and this refuses what it can recognise
+       rather than claiming to recognise everything. ⚠ It costs one pass over the rows and is only
+       taken when a page boundary actually exists (a cursor arrived, or one is about to be handed
+       back), so an unpaged read pays nothing.
+       ⚠ THE ORDER IS THE SUPPLIER'S OWN, not one invented here: re-sorting would hand the reader a
+       sequence the renderer and the document do not have. What makes it safe to page is that the
+       digest changes when the order does. */
+    function fnv(s, h) {
+      let x = h >>> 0;
+      const t = String(s);
+      for (let i = 0; i < t.length; i++) { x ^= t.charCodeAt(i); x = (x + ((x << 1) + (x << 4) + (x << 7) + (x << 8) + (x << 24))) >>> 0; }
+      return (x ^ 0x2f) >>> 0;                               /* one separator, so 「ab」+「c」 ≠ 「a」+「bc」 */
+    }
+    /* The first position of a geometry, however deeply the coordinates are nested. ⚠ null for a
+       geometry with none (a null geometry, an empty ring) rather than a made-up zero. */
+    function firstPos(g) {
+      let c = g && g.coordinates;
+      if (g && g.type === 'GeometryCollection' && Array.isArray(g.geometries)) return firstPos(g.geometries[0]);
+      for (let depth = 0; depth < 8; depth++) {
+        if (!Array.isArray(c) || !c.length) return null;
+        if (typeof c[0] === 'number') return (typeof c[1] === 'number') ? [c[0], c[1]] : null;
+        c = c[0];
+      }
+      return null;
+    }
+    function pageSig(key, asked, features) {
+      let h = 0x811c9dc5;
+      h = fnv(key, h);
+      let q = '';
+      try {
+        q = JSON.stringify({
+          b: asked.bbox ? [asked.bbox.w, asked.bbox.s, asked.bbox.e, asked.bbox.n] : null,
+          /* the conditions as they will be executed, not as they were spelt */
+          w: asked.where ? asked.where.map((c) => [String(c.field), String(c.op), (c.value === undefined) ? null : c.value]) : null,
+          /* ⚠ THE ROW'S OWN STATEMENT ABOUT WHEN ITS HOLDING IS (state(id).time). A layer that rolled
+             over to a new hour is a new holding whatever its count says. */
+          t: layerTime(key),
+        });
+      } catch (_) { q = 'unserialisable'; }                  /* a value we cannot read is its own version */
+      h = fnv(q, h);
+      h = fnv('#' + features.length, h);
+      for (const f of features) {
+        const g = f && f.geometry;
+        const p = firstPos(g);
+        h = fnv((g && g.type) ? g.type : '-', h);
+        h = fnv(p ? (p[0] + ',' + p[1]) : '-', h);
+      }
+      return (h >>> 0).toString(36);
+    }
+    const cursorFor = (key, sig, offset) => key + '@' + sig + '@' + offset;
+    /* The offset, or null when this cursor is not a position in THIS answer. The two refusals are
+       told apart by the caller so the reader is told which it was. */
+    function cursorOffset(key, sig, cursor) {
+      if (cursor == null) return { ok: true, offset: 0 };
       const s = String(cursor), tag = key + '@';
-      if (s.indexOf(tag) !== 0) return null;
-      const n = Number(s.slice(tag.length));
-      return (Number.isInteger(n) && n >= 0) ? n : null;
+      if (s.indexOf(tag) !== 0) return { ok: false, reason: 'cursor-of-another-layer' };
+      const rest = s.slice(tag.length), cut = rest.lastIndexOf('@');
+      if (cut < 0) return { ok: false, reason: 'cursor-not-recognised' };
+      const n = Number(rest.slice(cut + 1));
+      if (!(Number.isInteger(n) && n >= 0)) return { ok: false, reason: 'cursor-not-recognised' };
+      if (rest.slice(0, cut) !== sig) return { ok: false, reason: 'query-or-data-changed' };
+      return { ok: true, offset: n };
     }
 
     function supplierFor(id) {
@@ -413,11 +540,76 @@ export function makeGisLayers() {
       };
     }
 
-    /* ⚠ THE SAME NARROWING AS builtInFetch, ON FEATURES THAT CAME FROM THE LOADER INSTEAD OF THE
-       RENDERER. The bbox filter is the one thing read() did that this road does not get for free, so
-       it is asked of the geometry the same way — and `where`/`cursor`/`limit` are js/gis-sources.js's
-       to apply, exactly as they are for the drawn road. ⚠ A LOADER THAT ANSWERS WITH NOTHING HAS
-       ANSWERED: it is an empty holding, not an unavailable one, and the two must not merge. */
+    /* ══ ⚠⚠⚠ (#R783) ONE NARROWING, AND BOTH ROADS TRAVEL IT ══════════════════════════════════════
+       supplierFor() declares `where:true, cursor:true, limit:true` for BOTH suppliers it builds, and
+       js/gis-sources.js believes a declaration — prepare() lets a condition through precisely because
+       the supplier claimed it can execute one. MEASURED on the shipped code, against a loader holding
+       three rows v=1,2,3:
+
+           where v>=2      → 1, 2, 3        (the condition was never applied)
+           limit 1         → 1, 2, 3        next:null — 「これで全部」 about a page of one
+           limit 1, cursor → 1, 2, 3        the position was never read
+
+       and `coverage.filteredBy` said `'supplier'` over every one of them. That is the worst of the
+       three: an answer that LOOKS filtered, with real rows in it, and a record claiming the supplier
+       did the filtering. The old comment here said 「`where`/`cursor`/`limit` are js/gis-sources.js's
+       to apply」, and js/gis-sources.js does not apply them — it refuses a supplier that cannot, and
+       this one said it could.
+       ⇒ THE FIX IS NOT THREE `if`s ON THIS ROAD. builtInFetch already implements the condition
+       executor, the cursor, the limit, the available count and the continuation, so BOTH roads are
+       handed to that one implementation and the drawn/undrawn difference shrinks to where the rows
+       came from (.agents/rules/no-ad-hoc-hardcoding.md §2-3: the judgement is配られる, not copied).
+       ⚠ THE DECLARATION AND THE IMPLEMENTATION ARE ONE FACT NOW, and that is the invariant
+       tests/r783-gis-fetch-contract-checks measures: the same request answered from the document and
+       from the renderer returns the same ids, the same count and the same continuation. */
+    function pageOf(key, all, q) {
+      const asked = {
+        bbox: (q.bbox == null) ? null : asBox(q.bbox),
+        where: (Array.isArray(q.where) && q.where.length) ? q.where : null,
+      };
+      let fs = all;
+      if (asked.where) {
+        const sel = selectWhere(fs, asked.where);
+        if (!sel.ok) return sel;
+        fs = sel.features;
+      }
+      const total = fs.length;
+      const limit = (typeof q.limit === 'number' && isFinite(q.limit) && q.limit > 0) ? Math.floor(q.limit) : null;
+      /* ⚠ THE DIGEST IS TAKEN ONLY WHERE A PAGE BOUNDARY IS IN PLAY — a cursor arrived, or a limit
+         is about to cut this answer. An unpaged read is the common one and pays nothing for paging. */
+      const paging = (q.cursor != null) || (limit != null && limit < total);
+      const sig = paging ? pageSig(key, asked, fs) : null;
+      const at = cursorOffset(key, sig, q.cursor);
+      if (!at.ok) return { ok: false, why: 'bad-param', detail: { param: 'cursor', value: q.cursor, reason: at.reason } };
+      const start = at.offset;
+      if (start > total) return { ok: false, why: 'bad-param', detail: { param: 'cursor', value: q.cursor, reason: 'past-the-end', available: total } };
+      const end = (limit == null) ? total : Math.min(total, start + limit);
+      return {
+        ok: true,
+        features: fs.slice(start, end),
+        coverage: {
+          /* 「窓に在った件数」 next to what was handed over — the pair that makes 「一部だけ」 visible
+             at all (memory: coverage counted is not coverage seen). */
+          available: total,
+          /* THIS answer holding the whole window, which is a different statement from the row's
+             standing declaration and is only true when no page boundary cut it. */
+          complete: (start === 0 && end === total),
+          /* ⚠ (#R783) WHO EXECUTED THE CONDITIONS, SAID BY THE PARTY THAT EXECUTED THEM.
+             js/gis-sources.js used to write `'supplier'` whenever conditions had been ASKED FOR,
+             which is a record of the request and not of the work — and it was false on this road. */
+          filteredBy: asked.where ? 'supplier' : null,
+        },
+        /* ⚠ PRESENT EVEN WHEN null, because js/gis-sources.js reads the PROPERTY BEING THERE as the
+           supplier having spoken about continuation at all. Omitting it would say 「述べていない」. */
+        next: (end < total) ? cursorFor(key, sig || pageSig(key, asked, fs), end) : null,
+      };
+    }
+
+    /* The loader road: features that came from the row's own document instead of from the renderer.
+       The bbox filter is the one thing read() did that this road does not get for free, so it is
+       asked of the geometry the same way; everything after it is pageOf above.
+       ⚠ A LOADER THAT ANSWERS WITH NOTHING HAS ANSWERED: it is an empty holding, not an unavailable
+       one, and the two must not merge. */
     async function loadedFetch(key, loader, q) {
       let fc = null;
       try { fc = await loader(); } catch (e) { return { ok: false, why: 'layer-load-failed', detail: { id: key, message: e && e.message } }; }
@@ -431,7 +623,12 @@ export function makeGisLayers() {
       if (q.bbox != null && !(R && typeof R.narrow === 'function')) return { ok: false, why: 'map-unavailable', detail: { needs: 'IntMapLayers.narrow' } };
       const feats = (q.bbox == null) ? all.slice() : R.narrow(all, asPair(q.bbox));
       if (!Array.isArray(feats)) return { ok: false, why: 'layer-load-failed', detail: { id: key, at: 'narrow' } };
-      return { ok: true, features: feats, loaded: true };
+      /* ⚠ THE WHOLE REQUEST GOES ON, `bbox` INCLUDED. pageOf does not narrow by it — the window was
+         already applied by the registry's own predicate just above — but the cursor is a position in
+         the answer to THIS window, so the window is part of what the cursor is bound to. */
+      const paged = pageOf(key, feats, q);
+      if (!paged.ok) return paged;
+      return Object.assign({}, paged, { loaded: true });
     }
 
     function builtInFetch(key, q) {
@@ -445,33 +642,10 @@ export function makeGisLayers() {
         }
         return r;
       }
-      let fs = r.features;
-      if (Array.isArray(q.where) && q.where.length) {
-        const sel = selectWhere(fs, q.where);
-        if (!sel.ok) return sel;
-        fs = sel.features;
-      }
-      const total = fs.length;
-      const start = cursorOffset(key, q.cursor);
-      if (start == null || start > total) return { ok: false, why: 'bad-param', detail: { param: 'cursor', value: q.cursor } };
-      const limit = (typeof q.limit === 'number' && isFinite(q.limit) && q.limit > 0) ? Math.floor(q.limit) : null;
-      const end = (limit == null) ? total : Math.min(total, start + limit);
-      const page = fs.slice(start, end);
-      return {
-        ok: true,
-        features: page,
-        coverage: {
-          /* 「窓に在った件数」 next to what was handed over — the pair that makes 「一部だけ」 visible
-             at all (memory: coverage counted is not coverage seen). */
-          available: total,
-          /* THIS answer holding the whole window, which is a different statement from the row's
-             standing declaration and is only true when no page boundary cut it. */
-          complete: (start === 0 && end === total),
-        },
-        /* ⚠ PRESENT EVEN WHEN null, because js/gis-sources.js reads the PROPERTY BEING THERE as the
-           supplier having spoken about continuation at all. Omitting it would say 「述べていない」. */
-        next: (end < total) ? (key + '@' + end) : null,
-      };
+      /* ⚠ (#R783) AND THE NARROWING IS pageOf's, WHICH IS ALSO THE LOADER ROAD'S. It used to live
+         here and only here, which is how the other road came to declare three capabilities it did
+         not have. */
+      return pageOf(key, r.features, q);
     }
 
     /* ── toDataset() ─────────────────────────────────────────────────────────────────────────── */
@@ -700,7 +874,10 @@ export function makeGisLayers() {
        section above for why the answer is built from the registration rather than kept in a list. */
     /* (#R763) acquireDataset is the door that waits — see its note above for why toDataset is not
        simply made async, and why the planner takes this one. */
-    const API = { sources, read, toDataset, acquireDataset, toRaster, canSample, supplierFor, acquireFields };
+    /* (#R783) canSample answers 「訊けるか」 as a capability; samplingOf is the four facts it used to
+       flatten into one boolean, and noteSampling is how the party that ASKS the registry hands its
+       observation back (js/gis-sources.js region()). */
+    const API = { sources, read, toDataset, acquireDataset, toRaster, canSample, samplingOf, noteSampling, supplierFor, acquireFields };
     try { window.IntMapGisLayers = API; } catch (_) { }
     return API;
   })();

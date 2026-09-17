@@ -32,9 +32,33 @@ export const ATTACH_LOG = (function () {
   let log = [];
   const CAP = 48;   /* js/atlas-console.js の _hist と同じ数。会話の記憶が 2 つの長さを持つ状態を作らない */
 
+  /* ⚠⚠⚠ (#R783) 「前に添付された」という札の綴りは、**モデルがそのファイルについて知る唯一の名前**
+     である。だから 1 か所に持ち、取り寄せ（`find`）が同じ 1 か所からそれを外す。実測: 台帳が
+     モデルに見せた `a.csv (attached earlier in this conversation)` をそのまま `find` に渡すと
+     `null` が返っていた——**見せられた名前で頼むと必ず失敗する**取り寄せだった。 */
+  const EARLIER_TAG = ' (attached earlier in this conversation)';
+
+  /* ⚠⚠⚠ (#R783) carry() の判定は declare() の前提である。台帳に在って carry が載せなかったものは
+     画像と PDF だけではない——**テキストも枠で落ちる**（1 ターン 8 件・総計 400,000 字）。実測:
+     以前のターンのテキスト 10 件のうち carry が載せたのは 8 件で、残る 2 件は carry も declare も
+     述べなかった＝読者が添付したものが、モデルにとって存在しない。これは #R773 が直した
+     「1 バイトも届いていなかった」と同じ形が、枠の下で残っていたということ。
+     ⚠ だから carry は**そのターンについてだけ**「何を目の前に置いたか」を記録し、declare はその
+     差分を述べる。turn が一致しないとき（carry を経ずに declare が呼ばれた）は差分を知らないので
+     #R773 の規則（テキストは載っている前提）に戻る——知らないことを「このリクエストには無い」と
+     述べるほうが悪い。 */
+  let carriedTurn = -1, carriedNames = new Set();
+
+  /* ⚠⚠⚠ (#R783) 画像の名前は**単調に増える番号**から作る。以前は `log.length + i + 1` で、
+     その `log.length` を同じループが押し込みながら変えていた——1 通に 2 枚添付すると
+     `image-1` と `image-3`（4 枚なら 1,3,5,7）になり、**次のターンの 1 枚目がまた `image-3`**
+     になる。同名が 2 件在ると `find` は新しいほうだけを返すので、読者が最初に添付した画像は
+     取り寄せ不能になる（実測）。名前は台帳が発行する識別子であって、長さの計算ではない。 */
+  let imgSeq = 0;
+
   /** このターンに添付されたものを台帳に載せる。imgs は data URL の配列、files は read() の記録。 */
   function remember(turn, imgs, files) {
-    (imgs || []).forEach((u, i) => { if (u) log.push({ turn: turn, rec: { kind: 'image', name: 'image-' + (log.length + i + 1), dataUrl: u } }); });
+    (imgs || []).forEach((u) => { if (u) log.push({ turn: turn, rec: { kind: 'image', name: 'image-' + (++imgSeq), dataUrl: u } }); });
     (files || []).forEach((f) => { if (f) log.push({ turn: turn, rec: f }); });
     /* ⚠ 会話は終わらない（「新しい会話」でモジュールが作り直される経路はこの製品に無い）。
        台帳は会話履歴 `_hist` と同じ 48 件で頭を落とす——1 件 8 MB の PDF を無限に抱えないため。
@@ -43,8 +67,10 @@ export const ATTACH_LOG = (function () {
   }
 
   /** 編集で巻き戻されたターン以降の添付を落とす（履歴の巻き戻しと同じ境界）。 */
-  function rewind(turn) { log = log.filter((e) => e.turn < turn); }
-  function reset() { log = []; }
+  /* ⚠ どちらも carry の判定を無効にする（残っていると、もう台帳に無いものについて
+     「載せた」と答える集合が declare の入力になる）。 */
+  function rewind(turn) { log = log.filter((e) => e.turn < turn); carriedTurn = -1; carriedNames = new Set(); }
+  function reset() { log = []; carriedTurn = -1; carriedNames = new Set(); imgSeq = 0; }
 
   /** 今のターンの分を除いた、以前のターンの記録（新しい順）。 */
   function earlier(turn) { return log.filter((e) => e.turn < turn).map((e) => e.rec).reverse(); }
@@ -56,15 +82,18 @@ export const ATTACH_LOG = (function () {
     const L = limits || { files: 8, textTotal: 400000 };
     const out = (files || []).filter((f) => f && f.kind === 'text').map((f) => ({ name: f.name, text: f.text, truncated: !!f.truncated }));
     let used = out.reduce((n, f) => n + f.text.length, 0);
+    const put = new Set(out.map((f) => String(f.name)));   /* (#R783) このターンに目の前へ置いた名前——declare がここを読む */
     for (const rec of earlier(turn)) {
       if (rec.kind !== 'text') continue;
       if (out.length >= L.files) break;
       if (used + rec.text.length > L.textTotal) continue;
       /* ⚠ いつ添付されたものかを名前が述べる。「今このメッセージに付いている」と
          「前に付けられた」を同じ顔で渡すと、モデルは読者が今見せたものだと思って答える。 */
-      out.push({ name: rec.name + ' (attached earlier in this conversation)', text: rec.text, truncated: !!rec.truncated });
+      out.push({ name: rec.name + EARLIER_TAG, text: rec.text, truncated: !!rec.truncated });
+      put.add(String(rec.name));
       used += rec.text.length;
     }
+    carriedTurn = turn; carriedNames = put;
     return out;
   }
 
@@ -72,20 +101,44 @@ export const ATTACH_LOG = (function () {
    *  ⚠ 中身は渡さない——渡さないことと、在ることを黙っていることは別である。 */
   function declare(turn, sentNames) {
     const sent = new Set((sentNames || []).map(String));
-    const rest = earlier(turn).filter((r) => r.kind !== 'text' && !sent.has(r.name));
+    /* (#R783) 述べるのは「台帳に在って、このターンの carry が目の前に置かなかったもの」。
+       種別で決めていたので、枠で落ちたテキストがどちらの文にも現れなかった（上の見出し）。 */
+    const known = (carriedTurn === turn);
+    const rest = earlier(turn).filter((r) => !sent.has(r.name)
+      && (known ? !carriedNames.has(String(r.name)) : r.kind !== 'text'));
     if (!rest.length) return '';
     const seen = new Set(), rows = [];
-    rest.forEach((r) => { if (seen.has(r.name)) return; seen.add(r.name); rows.push('· ' + r.name + ' (' + (r.kind === 'image' ? 'image' : (r.mime || 'document')) + ')'); });
+    const what = (r) => (r.kind === 'image' ? 'image'
+      : (r.kind === 'text' ? 'text, not included in this request' : (r.mime || 'document')));
+    rest.forEach((r) => { if (seen.has(r.name)) return; seen.add(r.name); rows.push('· ' + r.name + ' (' + what(r) + ')'); });
     return '\n[ATTACHED EARLIER IN THIS CONVERSATION — not in this request. Ask find_capability for "attach.recall" and run it with the name to put one back in front of you on your next step.]\n' + rows.join('\n') + '\n';
   }
 
-  /** 名前で 1 件取り寄せる（新しいほうを優先）。無ければ null。 */
+  /** 名前で 1 件取り寄せる（新しいほうを優先）。無ければ null。
+   *  ⚠ (#R783) 問い合わせは**台帳が見せた名前**で来る。だから比べる前に、台帳が自分で足した札
+   *  （`EARLIER_TAG`）を外す——この 1 行が無いと、carry が渡したその名前で頼まれた取り寄せが
+   *  全部失敗する（実測）。 */
+  function _nm(s) { return String(s == null ? '' : s).trim().replace(/\s+/g, ' ').toLowerCase(); }
+  function _ask(s) {
+    const q = _nm(s), i = q.indexOf(_nm(EARLIER_TAG));
+    return (i >= 0 ? q.slice(0, i).trim() : q);
+  }
+  /* 名前がその問い合わせの中に**語として**現れるか（「x.pdf を見せて」「paper.pdf (document)」）。
+     ⚠ 境界は元の文字列で見る——`image-1` は `image-12.png` の部分列だが別のファイルである
+     （memory: 語境界は元の文字列で見る／推測は拒否より悪い）。 */
+  function _namedIn(q, nm) {
+    if (!nm) return false;
+    const i = q.indexOf(nm); if (i < 0) return false;
+    const w = (c) => !!c && /[0-9a-z]/.test(c);
+    return !w(i > 0 ? q.charAt(i - 1) : '') && !w(q.charAt(i + nm.length));
+  }
   function find(turn, name) {
-    const n = String(name || '').trim().toLowerCase();
+    const n = _ask(name);
     if (!n) return null;
     const all = earlier(turn + 1);
-    return all.find((r) => String(r.name).toLowerCase() === n)
-      || all.find((r) => String(r.name).toLowerCase().indexOf(n) >= 0) || null;
+    return all.find((r) => _nm(r.name) === n)
+      || all.find((r) => _nm(r.name).indexOf(n) >= 0)
+      || all.find((r) => _namedIn(n, _nm(r.name))) || null;
   }
 
   /** 台帳に在るものの名前（読者向けの文と、道具の誤りの説明に使う）。 */

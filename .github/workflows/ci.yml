@@ -111,6 +111,33 @@ jobs:
       - run: npm ci
       - run: node scripts/build-hist-eras.mjs --check-upstream
 
+  # ⚠⚠⚠ (#R783) THE ONE CLAIM THIS REPOSITORY COULD NOT MAKE ABOUT ITS OWN EXPORTS. The round-trip
+  # in tests/r756 reads a written file back with THIS repository's own reader, and two readers that
+  # were designed together cannot falsify each other — docs/GIS-CORE.md said so itself («it passing
+  # and QGIS opening it are different things»). So the writers are now read by GDAL: rasterio,
+  # pyogrio and rio-cogeo arrive as wheels that carry GDAL and PROJ, so nothing here needs the
+  # system gdal-bin. python's stdlib sqlite3 checks the GeoPackage b-tree on its own.
+  # ⚠ It is NOT a push gate: installing GDAL costs about a minute, and the structural half of the
+  # same test file runs in front of every push already. Here the environment variable turns an
+  # UNVERIFIED hole into a RED one, so a night where the wheels fail to install does not pass
+  # quietly (.agents/rules/one-pass-or-a-reason.md §5: 「確認できなかった」は成功ではない).
+  formats:
+    name: Exports read by GDAL (third-party readers)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: python -m pip install --disable-pip-version-check rasterio pyogrio rio-cogeo
+      - name: COG, GeoPackage and GeoTIFF as a third party reads them
+        env:
+          INTMAP_REQUIRE_THIRD_PARTY: '1'
+        run: node --test tests/r783-format-compat-checks.test.mjs
+
   # ══ WHY EACH OF THOSE GATES EXISTS ═════════════════════════════════════════════════════════════
   # The commentary below was written against the steps that used to stand here one per gate. The
   # steps are gone (scripts/ci-gates.mjs runs the set it discovers); the reasons are not, because a

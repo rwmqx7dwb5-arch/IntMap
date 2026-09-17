@@ -662,7 +662,15 @@ test('⑪ the module publishes itself and answers with codes, never sentences', 
   assert.equal(globalThis.window.IntMapGisGeopackage, GPKG);
   /* (#R738) refusals() joined the face so the codes are a DECLARATION rather than something a gate
      has to find by scanning — see the note on REFUSALS in js/gis-geopackage.js. */
-  assert.deepEqual(Object.keys(GPKG).sort(), ['read', 'refusals', 'sniff', 'tables']);
+  /* ⚠ (#R783) THIS LINE USED TO FIX THE SPELLING OF THE WHOLE FACE, so the day a writer was added
+     (`write`) a correct change failed a check whose subject is refusal codes. The subject is
+     «everything published is callable, and nothing that was published has left» — not «the face is
+     exactly these four names» (.agents/rules/no-ad-hoc-hardcoding.md §1). */
+  const face = Object.keys(GPKG).sort();
+  for (const k of face) assert.equal(typeof GPKG[k], 'function', k + ' is published and is not callable');
+  for (const need of ['sniff', 'tables', 'read', 'refusals']) {
+    assert.ok(face.includes(need), need + ' left the face');
+  }
   /* and the declaration is complete: every code the module can hand back is in it */
   const src = readFileSync(new URL('../js/gis-geopackage.js', import.meta.url), 'utf8');
   const thrown = [...new Set([...src.matchAll(/bad\(\s*'([a-z0-9-]+)'/g)].map((m) => m[1]))].sort();

@@ -48,12 +48,26 @@
  *  that has no business knowing which UI it is in — the same reason refusals are codes
  *  (docs/GIS-CORE.md §2.2). A panel drawing this list carries its own wording, keyed by name.
  *
+ *  ══ EACH FUNCTION SAYS WHAT IT DOES TO A UNIT (#R783) ═════════════════════════════════════════
+ *  MEASURED before this round: `abs([len])` over a column stating metres derived NO unit, and so did
+ *  `round`, `min`, `max`, `if`, `coalesce` and `number` — js/gis-units.js walked into a call node and
+ *  answered `unit:null` for every one of them. Two different facts were wearing one answer: 「無次元
+ *  だ」 and 「導けなかった」. Worse, `min([m], [km])` was not even refused, while `[m] + [km]` was.
+ *  ⚠ THE RULE IS DECLARED HERE, BESIDE THE IMPLEMENTATION, AND NOWHERE ELSE. A table of function
+ *  names inside js/gis-units.js would be the hand-written list .agents/rules/no-ad-hoc-hardcoding.md
+ *  §2-4 forbids: a function added here and not there would silently lose its unit. `unit` rides on
+ *  the same declaration as `arity` and `fn`, travels out through `functions()`, and a name whose rule
+ *  this file cannot read never reaches the app (the loop under FUNCS refuses to build).
+ *  ⚠ THIS FILE STILL CONVERTS NOTHING AND REFUSES NOTHING ON UNIT GROUNDS. It states what its own
+ *  arithmetic does to a quantity; the verdict, the comparison table and the refusal are
+ *  js/gis-units.js's, because that is the one place that knows whether two spellings are one quantity.
+ *
  *  ══ WHAT IS RETURNED, ALWAYS ══════════════════════════════════════════════════════════════════
  *      parse(src)             → { ok:true, ast, fields:[…], returns }  |  { ok:false, why, detail }
  *      evaluate(ast,row,env)  → { value }  |  { value:null, error:{ why, detail } }   — never throws
  *      compile(src,env)       → { ok:true, fn(row) → {value,error?}, ast, fields, returns }
  *                             |  { ok:false, why, detail }
- *      functions()            → [{ name, arity:[min,max], returns, doc }]
+ *      functions()            → [{ name, arity:[min,max], returns, doc, unit:{rule,args?} }]
  *
  *  A parse failure carries WHERE: `detail.at` is the character offset, `detail.token` what was found,
  *  `detail.expected` what would have been accepted — so a panel can write one sentence the reader
@@ -111,23 +125,42 @@ export function makeGisExpr() {
        `arity` is [min, max] with max === null meaning 「いくつでも」. `returns` is the static type a
        call produces, or 'same' when it is whatever its branches are (resolved by the parser).
        `fn(vals, R)` receives already-evaluated arguments; `lazy(nodes, ev)` receives the argument
-       NODES, for the three forms that must not evaluate a branch they are not going to use. */
+       NODES, for the three forms that must not evaluate a branch they are not going to use.
+       `unit` is what the call does to the unit of its arguments (see the header):
+         · keeps          — the answer is in the same unit as the arguments named by `args`, which
+                            therefore have to be ONE quantity (js/gis-units.js refuses them if not);
+                            `args` omitted means every argument.
+         · dimensionless  — the answer is a pure number ('1') whatever went in. ⚠ A JUDGEMENT SITS
+                            HERE: strict dimensional analysis requires the ARGUMENT of a logarithm to
+                            be dimensionless and would refuse `log([pop])`. Readers write that
+                            constantly and the number they get is the one they meant, so it is
+                            allowed and only the ANSWER is called dimensionless.
+         · no-unit        — the answer is not a quantity at all (text, or a yes/no).
+         · changes        — the answer has a unit and no SPELLING for it can be derived. `sqrt(m2)`
+                            is metres and `pow(m, 3)` is m³, but deriving either means inventing a
+                            spelling nobody wrote — the same line × and ÷ draw in js/gis-units.js.
+                            ⚠ 'changes' IS NOT 'no unit': js/gis-units.js answers 「決まらない」,
+                            which a reader can be told, instead of silence that reads as 「無次元」. */
+    const UNIT_RULES = ['keeps', 'dimensionless', 'no-unit', 'changes'];
     const FUNCS = {
-      abs:   { arity: [1, 1], returns: 'number', doc: 'abs(x)', fn: (v, R) => arith1(v[0], R, 'abs', Math.abs) },
-      floor: { arity: [1, 1], returns: 'number', doc: 'floor(x)', fn: (v, R) => arith1(v[0], R, 'floor', Math.floor) },
-      ceil:  { arity: [1, 1], returns: 'number', doc: 'ceil(x)', fn: (v, R) => arith1(v[0], R, 'ceil', Math.ceil) },
-      sqrt:  { arity: [1, 1], returns: 'number', doc: 'sqrt(x)', fn: (v, R) => arith1(v[0], R, 'sqrt', Math.sqrt) },
+      abs:   { arity: [1, 1], returns: 'number', doc: 'abs(x)', unit: { rule: 'keeps' }, fn: (v, R) => arith1(v[0], R, 'abs', Math.abs) },
+      floor: { arity: [1, 1], returns: 'number', doc: 'floor(x)', unit: { rule: 'keeps' }, fn: (v, R) => arith1(v[0], R, 'floor', Math.floor) },
+      ceil:  { arity: [1, 1], returns: 'number', doc: 'ceil(x)', unit: { rule: 'keeps' }, fn: (v, R) => arith1(v[0], R, 'ceil', Math.ceil) },
+      sqrt:  { arity: [1, 1], returns: 'number', doc: 'sqrt(x)', unit: { rule: 'changes' }, fn: (v, R) => arith1(v[0], R, 'sqrt', Math.sqrt) },
       /* ⚠ log is base 10 and ln is natural, stated by having BOTH: one name `log` would be read as
          whichever the reader's previous tool meant, and a column whose meaning depends on who reads
          it is the defect docs/GIS-CORE.md §1.1 names for dates. */
-      log:   { arity: [1, 1], returns: 'number', doc: 'log(x)', fn: (v, R) => arith1(v[0], R, 'log', Math.log10) },
-      ln:    { arity: [1, 1], returns: 'number', doc: 'ln(x)', fn: (v, R) => arith1(v[0], R, 'ln', Math.log) },
-      pow:   { arity: [2, 2], returns: 'number', doc: 'pow(x, y)', fn: (v, R) => arith2(v[0], v[1], R, 'pow', (a, b) => Math.pow(a, b)) },
+      log:   { arity: [1, 1], returns: 'number', doc: 'log(x)', unit: { rule: 'dimensionless' }, fn: (v, R) => arith1(v[0], R, 'log', Math.log10) },
+      ln:    { arity: [1, 1], returns: 'number', doc: 'ln(x)', unit: { rule: 'dimensionless' }, fn: (v, R) => arith1(v[0], R, 'ln', Math.log) },
+      pow:   { arity: [2, 2], returns: 'number', doc: 'pow(x, y)', unit: { rule: 'changes', args: [0] }, fn: (v, R) => arith2(v[0], v[1], R, 'pow', (a, b) => Math.pow(a, b)) },
       /* round(x) and round(x, digits). Half-way values go up, as Math.round does; digits scale by a
          power of ten, so round(2.675, 2) is 2.68 or 2.67 according to the binary representation of
          the input — that is float64, not a choice this file makes. */
       round: {
         arity: [1, 2], returns: 'number', doc: 'round(x[, digits])',
+        /* ⚠ `args:[0]` — the digit count is a COUNT, not a length: a unit rule over every argument
+           would make round([len], 2) two quantities being mixed. */
+        unit: { rule: 'keeps', args: [0] },
         fn: (v, R) => {
           const x = toNumber(v[0], R, 'round');
           if (x == null) return null;
@@ -141,19 +174,21 @@ export function makeGisExpr() {
       /* min/max skip missing values and answer null when everything was missing — the alternative
          (a missing cell dragging the answer to null) would make the two useless on the half-filled
          columns they exist for. A reader who wants missing to win says coalesce(x, …) first. */
-      min: { arity: [1, null], returns: 'number', doc: 'min(a, b, …)', fn: (v, R) => extremum(v, R, 'min', -1) },
-      max: { arity: [1, null], returns: 'number', doc: 'max(a, b, …)', fn: (v, R) => extremum(v, R, 'max', 1) },
+      min: { arity: [1, null], returns: 'number', doc: 'min(a, b, …)', unit: { rule: 'keeps' }, fn: (v, R) => extremum(v, R, 'min', -1) },
+      max: { arity: [1, null], returns: 'number', doc: 'max(a, b, …)', unit: { rule: 'keeps' }, fn: (v, R) => extremum(v, R, 'max', 1) },
       /* ⚠ if() and coalesce() evaluate only the branch they answer with. Eager evaluation would let
          `if(isnull([x]), 0, [x] * 2)` fail on the very rows the reader wrote the guard for. */
       if: {
-        arity: [3, 3], returns: 'same', doc: 'if(cond, a, b)', lazy: (nodes, ev, R) => {
+        arity: [3, 3], returns: 'same', doc: 'if(cond, a, b)',
+        /* The condition is a yes/no and carries no quantity; the two BRANCHES are the answer. */
+        unit: { rule: 'keeps', args: [1, 2] }, lazy: (nodes, ev, R) => {
           const c = asBool(ev(nodes[0]), 'if', R);
           if (c == null) return null;                     /* an unknown condition has an unknown answer */
           return ev(c ? nodes[1] : nodes[2]);
         },
       },
       coalesce: {
-        arity: [1, null], returns: 'same', doc: 'coalesce(a, b, …)', lazy: (nodes, ev, R) => {
+        arity: [1, null], returns: 'same', doc: 'coalesce(a, b, …)', unit: { rule: 'keeps' }, lazy: (nodes, ev, R) => {
           for (const n of nodes) { const v = ev(n); if (v != null) return v; }
           return null;
         },
@@ -161,22 +196,22 @@ export function makeGisExpr() {
       /* number() is the reader's way to say 「これは数として読んでよい」: it answers null where the
          arithmetic operators would refuse with expr-type, and it obeys the same registry rule, so
          number('01100') is null too. */
-      number: { arity: [1, 1], returns: 'number', doc: 'number(x)', fn: (v, R) => (R.isEmpty(v[0]) ? null : (typeof v[0] === 'number' ? finite(v[0]) : (typeof v[0] === 'string' ? R.asNumber(v[0]) : null))) },
-      text:   { arity: [1, 1], returns: 'text', doc: 'text(x)', fn: (v, R) => toText(v[0], R) },
-      len:    { arity: [1, 1], returns: 'number', doc: 'len(x)', fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : chars(t).length; } },
-      upper:  { arity: [1, 1], returns: 'text', doc: 'upper(x)', fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : t.toUpperCase(); } },
-      lower:  { arity: [1, 1], returns: 'text', doc: 'lower(x)', fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : t.toLowerCase(); } },
-      trim:   { arity: [1, 1], returns: 'text', doc: 'trim(x)', fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : t.trim(); } },
+      number: { arity: [1, 1], returns: 'number', doc: 'number(x)', unit: { rule: 'keeps' }, fn: (v, R) => (R.isEmpty(v[0]) ? null : (typeof v[0] === 'number' ? finite(v[0]) : (typeof v[0] === 'string' ? R.asNumber(v[0]) : null))) },
+      text:   { arity: [1, 1], returns: 'text', doc: 'text(x)', unit: { rule: 'no-unit' }, fn: (v, R) => toText(v[0], R) },
+      len:    { arity: [1, 1], returns: 'number', doc: 'len(x)', unit: { rule: 'dimensionless' }, fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : chars(t).length; } },
+      upper:  { arity: [1, 1], returns: 'text', doc: 'upper(x)', unit: { rule: 'no-unit' }, fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : t.toUpperCase(); } },
+      lower:  { arity: [1, 1], returns: 'text', doc: 'lower(x)', unit: { rule: 'no-unit' }, fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : t.toLowerCase(); } },
+      trim:   { arity: [1, 1], returns: 'text', doc: 'trim(x)', unit: { rule: 'no-unit' }, fn: (v, R) => { const t = toText(v[0], R); return t == null ? null : t.trim(); } },
       /* concat is the ONLY join, and it reads a missing value as nothing rather than poisoning the
          whole result: 「県名＋市名」 over a table where some rows have no 市 is the ordinary case, and
          answering null for those rows would be answering a question nobody asked. */
-      concat: { arity: [1, null], returns: 'text', doc: 'concat(a, b, …)', fn: (v, R) => v.map((x) => { const t = toText(x, R); return t == null ? '' : t; }).join('') },
+      concat: { arity: [1, null], returns: 'text', doc: 'concat(a, b, …)', unit: { rule: 'no-unit' }, fn: (v, R) => v.map((x) => { const t = toText(x, R); return t == null ? '' : t; }).join('') },
       /* substr counts from 1, like the 「◯文字目」 a reader means, and counts CODE POINTS, so a name
          written in kanji or with an emoji is not cut in half. Positions before 1 clamp to 1; there is
          no negative indexing, because 「末尾から」 is a different request and inventing it here would
          be guessing at one. */
       substr: {
-        arity: [2, 3], returns: 'text', doc: 'substr(x, start[, len])',
+        arity: [2, 3], returns: 'text', doc: 'substr(x, start[, len])', unit: { rule: 'no-unit' },
         fn: (v, R) => {
           const t = toText(v[0], R);
           if (t == null) return null;
@@ -193,12 +228,30 @@ export function makeGisExpr() {
       /* Case-insensitive, exactly as the `contains` of the filter op is (js/gis-ops.js evalCondition):
          a reader typing a word is choosing a word, not a capitalisation, and the same word must find
          the same rows in the panel and in an expression. */
-      contains:   { arity: [2, 2], returns: 'boolean', doc: 'contains(haystack, needle)', fn: (v, R) => textPair(v, R, (h, n) => h.indexOf(n) >= 0) },
-      startswith: { arity: [2, 2], returns: 'boolean', doc: 'startswith(haystack, prefix)', fn: (v, R) => textPair(v, R, (h, n) => h.indexOf(n) === 0) },
+      contains:   { arity: [2, 2], returns: 'boolean', doc: 'contains(haystack, needle)', unit: { rule: 'no-unit' }, fn: (v, R) => textPair(v, R, (h, n) => h.indexOf(n) >= 0) },
+      startswith: { arity: [2, 2], returns: 'boolean', doc: 'startswith(haystack, prefix)', unit: { rule: 'no-unit' }, fn: (v, R) => textPair(v, R, (h, n) => h.indexOf(n) === 0) },
       /* isnull is the one function that never answers null: it is the question 「欠けているか」 and
          that question always has an answer. */
-      isnull: { arity: [1, 1], returns: 'boolean', doc: 'isnull(x)', fn: (v, R) => (v[0] == null || R.isEmpty(v[0])) },
+      isnull: { arity: [1, 1], returns: 'boolean', doc: 'isnull(x)', unit: { rule: 'no-unit' }, fn: (v, R) => (v[0] == null || R.isEmpty(v[0])) },
     };
+
+    /* ⚠ A FUNCTION WITHOUT A READABLE UNIT RULE DOES NOT SHIP. The alternative to refusing here is
+       the one measured defect this declaration exists to end: a call node whose unit nobody stated,
+       answering 「無次元」-looking silence to every reader downstream. This throws at construction, so
+       it is one deterministic failure at the first test rather than a quiet wrong number in a column;
+       `args` is checked against the declared arity for the same reason (`keeps` over an argument that
+       cannot exist would silently name nothing). */
+    for (const name of Object.keys(FUNCS)) {
+      const u = FUNCS[name].unit;
+      if (!u || UNIT_RULES.indexOf(u.rule) < 0) throw new Error('gis-expr: ' + name + '() declares no unit rule');
+      if (u.args != null) {
+        const max = FUNCS[name].arity[1];
+        if (!Array.isArray(u.args) || !u.args.length) throw new Error('gis-expr: ' + name + '() unit.args is not a list of positions');
+        for (const i of u.args) {
+          if (!Number.isInteger(i) || i < 0 || (max != null && i >= max)) throw new Error('gis-expr: ' + name + '() unit.args names position ' + i + ', which its arity has not got');
+        }
+      }
+    }
 
     /* ── values ───────────────────────────────────────────────────────────────────────────────── */
 
@@ -651,6 +704,9 @@ export function makeGisExpr() {
         arity: FUNCS[name].arity.slice(),
         returns: FUNCS[name].returns,
         doc: FUNCS[name].doc,
+        /* (#R783) Copied, not handed over: js/gis-units.js reads this list to decide what a call does
+           to a unit, and a shared object would let a caller edit the declaration this file enforces. */
+        unit: { rule: FUNCS[name].unit.rule, args: FUNCS[name].unit.args ? FUNCS[name].unit.args.slice() : null },
       }));
     }
 

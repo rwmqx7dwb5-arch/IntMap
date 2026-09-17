@@ -459,6 +459,37 @@ export function makeGisOps() {
        the panel the list rather than the panel carrying one. */
     const RELATE_PREDICATES = ['intersects', 'within', 'contains', 'disjoint', 'nearer-than'];
 
+    /* (#R783) The relations a JOIN may stand on — DERIVED from the list above rather than retyped,
+       so a tenth predicate added there is offered here the day it lands. ⚠ `disjoint` is the one
+       that cannot carry attributes: it is true of a feature and EVERY other feature it does not
+       touch, so 「相手の属性を持ってくる」 has no partner to bring them from. That is a property of
+       the relation, not an exception written for a case somebody met. */
+    const JOIN_PREDICATES = RELATE_PREDICATES.filter((p) => p !== 'disjoint');
+
+    /* (#R783) 1 対多のとき何が起きるか。⚠ THERE IS NO DEFAULT, AND THAT IS THE POINT. A ward with
+       forty facilities in it is the ORDINARY case of a spatial join, and both honest answers — one
+       output row per matching pair, or one per left feature — change the row count on the strength
+       of data the reader has not looked at. `join`'s `duplicates` can default to `refuse` because a
+       lookup table that repeats itself is a defect IN THE TABLE; here the multiplicity is the
+       subject. So the parameter is `required` in DECL: the caller states it once and the run never
+       has to be repeated to discover which it wanted (.agents/rules/one-pass-or-a-reason.md).
+         'all'     one row per matching pair — the left geometry travels with each partner
+         'first'   one row per left feature, the partner being the FIRST ROW OF INPUT 1 that matched
+                   (input 1's own order, never the order a spatial index happened to visit in)
+         'refuse'  a left feature with more than one partner is refused by name, with the count */
+    const JOIN_CARDINALITY = ['all', 'first', 'refuse'];
+
+    /* (#R783) How a row's STATED END is read when the two sides of a temporal join meet at it.
+       See the note above spanReader for the measurement that makes this a question and not a
+       detail: 廃藩置県 is stated as 1871-08-29 by the unit that ended and by the unit that began. */
+    const TIME_ENDS = ['exclusive', 'inclusive'];
+
+    /* (#R783) The statistics `aggregate` offers. ⚠ ONE LIST: the `stat` enum and the answer to
+       「どの stat が列を要るか」 are both derived from it, so a sixth statistic cannot be offered and
+       left out of the requirement (it was two hand-written lists one line apart until this round).
+       `areaWeightedMean` is the door for the remedy js/gis-units.js hands back — see the note there. */
+    const AGG_STATS = ['count', 'sum', 'mean', 'min', 'max', 'areaWeightedMean'];
+
     /* ── どの面の上で計算したのか (#R756) ──────────────────────────────────────────────────────
        An outside review of R752 said the ops do not state, per op, which surface they compute on.
        They did not, and the answer was not derivable from anywhere: `measure` alone reported a
@@ -478,13 +509,47 @@ export function makeGisOps() {
                          refused there as `grid-not-degrees`)
          'stated-plane'  a projection the CALLER named, never one this layer picked
 
-       ⚠ 「許容誤差」 IS NOT DECLARED HERE, and that is deliberate. A per-op error bound would have to
-       say what was measured and when it expires (.agents/rules/no-ad-hoc-hardcoding.md §4), and no
-       such measurement exists for these ops today. What IS stated is where each op refuses rather
-       than approximating: a ring that spans a whole turn is `geometry-wraps-world`, and a measured
-       plane crossed at its seam is `crs-plane-seam-crossed`. An invented tolerance would read as a
-       measurement and be neither. */
+       ⚠ (#R783) THIS PARAGRAPH SAID 「許容誤差はここでは宣言しない」 AND THAT SUCH A MEASUREMENT DID
+       NOT EXIST. The first half still holds; the second stopped being true in the same round this
+       sentence is being rewritten in, and a note that contradicts the code below it is #R764's
+       defect. What exists now is js/gis-crs.js's `certify()`: the envelope of an area and of a
+       length against WGS 84, measured over THE READER'S OWN DATA rather than written down per op —
+       which is why .agents/rules/no-ad-hoc-hardcoding.md §4 refused a constant here and still does.
+       So `measure` carries that certificate's `bound` / `checked` / `within` back in `stats.fit`
+       beside the number, and a caller who states a `tolerance` is answered by the kernel that
+       measured it: inside the envelope, the same number as always; outside it,
+       `crs-accuracy-outside-tolerance` TOGETHER WITH the surfaces that can — a road and never a cap
+       (CONSTITUTION.md §5). A caller who states nothing is refused nothing.
+       ⚠ THE OTHER OPS STILL DECLARE NO ENVELOPE, for the original reason: nobody has measured them.
+       What they state instead is where they refuse rather than approximate — a ring that spans a
+       whole turn is `geometry-wraps-world`, and a measured plane crossed at its seam is
+       `crs-plane-seam-crossed`. An invented tolerance would read as a measurement and be neither.
+       ⚠ AND THE GROUND IS NOT NAMED IN THE LIST BELOW, because its name is not this file's to write.
+       js/gis-crs.js publishes the surfaces it can measure on, the ellipsoid included; the vocabulary
+       this layer hands out is the four names below UNION that declaration (surfaceVocab). A fifth
+       name typed here would be the copy that falls behind the day the kernel adds one. */
     const SURFACES = ['sphere', 'degree-plane', 'degree-grid', 'stated-plane'];
+
+    /* (#R783) この層が計算する四面 ∪ js/gis-crs.js が「測れる」と述べる面 — see the note above. Asked
+       at call time for the reason VALUE_SOURCES is: the crs kernel may mount after this factory ran,
+       and a vocabulary resolved at construction would be missing a surface for the whole session. */
+    function surfaceVocab() {
+      const out = SURFACES.slice();
+      const src = VALUE_SOURCES['measure-surfaces'];
+      let extra = null;
+      try { extra = src ? src() : null; } catch (_) { extra = null; }
+      for (const name of (extra || [])) if (out.indexOf(name) < 0) out.push(name);
+      return out;
+    }
+
+    /* (#R783) 地面の名前も、その面を持っている module に訊く。null is 「訊けなかった」. */
+    function groundSurfaceName() {
+      const CK = crsKernel();
+      let list = null;
+      try { list = (CK && typeof CK.surfaces === 'function') ? CK.surfaces() : null; } catch (_) { list = null; }
+      for (const s of (list || [])) if (s && s.isGround) return String(s.name);
+      return null;
+    }
 
     /* ── the declarations a panel reads ───────────────────────────────────────────────────────── */
 
@@ -607,6 +672,14 @@ export function makeGisOps() {
              ⚠ 使った規則は答えに載る（stats.boundary）。規則を述べない数は、別の規則で出した数と
              比べられない。 */
           { name: 'boundary', type: 'enum', required: false, default: 'center', values: ['center', 'allTouched', 'fractional'] },
+          /* ⚠ (#R783) 「合計」は 3 つある — js/gis-raster.js's TOTAL_RULES: Σ value（観測値の合計）/
+             Σ value·km²（密度の積分＝「人/km² の層から県の人口」）/ Σ value·cover（画素自身の総量を
+             区域の取り分だけ）。どれを出したのかは量の意味が決めるので、**規則は呼び手が述べ、
+             その規則がその量について意味を持つかは js/gis-units.js が判定する**。省略すれば
+             `sum` は今までと 1 ビットも変わらない。 */
+          { name: 'total', type: 'enum', required: false, valuesOf: 'total-rules' },
+          /* (#R783) 帯が量を述べていなければ、呼び手が述べる。See the note on aggregate's. */
+          { name: 'quantity', type: 'quantity', required: false, input: 1 },
         ],
       },
       rasterMask: {
@@ -736,11 +809,23 @@ export function makeGisOps() {
            and whose caveat are both missing. */
         id: 'measure',
         surface: ['sphere', 'stated-plane'], inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        /* (#R783) …AND the surfaces js/gis-crs.js says it can measure on, which is where the ground's
+           own name lives. Resolved on the way out (declOut) for the same reason `valuesOf` is. */
+        surfaceOf: 'measure-surfaces',
         needsGeodesy: true,
         params: [
           { name: 'what', type: 'enum', required: true, values: ['area', 'length'] },
           { name: 'crs', type: 'text', required: false, valuesOf: 'plane-spellings', open: true },
+          /* (#R783) 面そのものを述べる。Omitted, the surface is the one it always was: the geodesic
+             default, or the plane when `crs` names one. Stated, it may be the ellipsoidal ground —
+             the one surface with no projection in it, and the road a tolerance refusal offers. */
+          { name: 'surface', type: 'enum', required: false, valuesOf: 'measure-surfaces' },
           { name: 'unit', type: 'enum', required: false, values: ['km', 'm'] },
+          /* (#R783) ⚠ 上限ではなく、別の道である。 A fractional error the CALLER states; nothing here
+             invents one, and a run that states none is unchanged to the bit. When the measured
+             envelope cannot meet it the answer is `crs-accuracy-outside-tolerance` WITH the surfaces
+             that can (CONSTITUTION.md §5 · atlas-full-authority-no-new-limits). */
+          { name: 'tolerance', type: 'number', required: false, unit: 'ratio' },
           { name: 'outName', type: 'text', required: false },
         ],
       },
@@ -816,6 +901,82 @@ export function makeGisOps() {
           { name: 'duplicates', type: 'enum', required: false, default: 'refuse', values: ['refuse', 'first'] },
         ],
       },
+      /* ── the joins (#R783) ────────────────────────────────────────────────────────────────────
+         ⚠⚠⚠ 「結合」 WAS ONE OP AND IT IS FOUR QUESTIONS. `join` above matches on a key the reader
+         can point at; the three below match on WHERE a row is, on WHAT IS NEAREST to it, and on
+         WHEN it holds — and until this round none of those could bring a partner's attributes over.
+         `relate` answered the yes/no half (「その区域に重なる行だけ残す」) and THREW THE PARTNER
+         AWAY, so 「区域内の施設を、その施設の属性ごと」, 「最寄りの駅と、そこまでの距離」 and
+         「当時の区域」 were each two passes the reader had to stitch back together by hand, with no
+         column anywhere saying which row came from which partner.
+         ⚠ NOTHING BELOW IS A NEW ENGINE. The relations are RELATE_PREDICATES asked through
+         relateOne, the distance is js/gis-geometry.js attempt.distanceKm (the sphere, on
+         IntMapGeodesy's radius), the candidates come from candidateSource — the same grid `relate`
+         and `aggregate` are queried through — and the time axis is the registry's declaration read
+         by R.timeSpan. Four copies of any of those is the drift this file keeps refusing to grow. */
+      spatialJoin: {
+        /* 空間結合: keep input 0's rows and bring input 1's columns onto the ones that stand in
+           `predicate` to them. ⚠ THE CARDINALITY IS STATED, NOT GUESSED (see JOIN_CARDINALITY).
+           ⚠ `nearer-than` writes `_distanceKm` for the pair, exactly as `relate` does — the same
+           column name, because it is the same measurement and a reader chaining the two ops must
+           not have to learn a second spelling. */
+        id: 'spatialJoin',
+        surface: ['sphere', 'degree-plane'], inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
+        needsGeodesy: true, needsGeometry: true,
+        params: [
+          { name: 'predicate', type: 'enum', required: true, default: 'intersects', values: JOIN_PREDICATES },
+          { name: 'maxKm', type: 'number', required: false, unit: 'km', requiredWhen: { predicate: ['nearer-than'] } },
+          { name: 'cardinality', type: 'enum', required: true, values: JOIN_CARDINALITY },
+          { name: 'fields', type: 'fields', required: false, input: 1 },
+          { name: 'prefix', type: 'text', required: false },
+          { name: 'unmatched', type: 'enum', required: false, default: 'keep', values: ['keep', 'drop'] },
+        ],
+      },
+      nearestJoin: {
+        /* 最近傍結合: every row of input 0 gets the NEAREST row of input 1, the distance to it, and
+           which row it was. ⚠ IT IS ONE PARTNER BY CONSTRUCTION, so there is no cardinality to
+           state — what there is instead is a tie, and `stats.ties` counts the rows that had one
+           (the lowest row of input 1 wins, stated rather than left to the index's visiting order).
+           ⚠ `maxKm` IS A LIMIT, NOT A RADIUS TO SEARCH IN. Omitted, the nearest is the nearest
+           however far away it is; given, a row with nothing inside it has NO partner and travels
+           unmatched — which is a different answer from 「一番近いのは 4,000 km 先だった」. */
+        id: 'nearestJoin',
+        surface: ['sphere', 'degree-plane'], inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
+        needsGeodesy: true, needsGeometry: true,
+        params: [
+          { name: 'maxKm', type: 'number', required: false, unit: 'km' },
+          /* Which column of input 1 names the partner. Omitted, the row's POSITION in input 1 is
+             still written (`_nearestRow`) — a dataset need not have an identifier column, and an
+             answer that cannot say WHICH row it measured to is not an answer. */
+          { name: 'idField', type: 'field', required: false, input: 1 },
+          { name: 'fields', type: 'fields', required: false, input: 1 },
+          { name: 'prefix', type: 'text', required: false },
+          { name: 'unmatched', type: 'enum', required: false, default: 'keep', values: ['keep', 'drop'] },
+        ],
+      },
+      timeJoin: {
+        /* 時点・期間による結合: 「当時の区域」「観測時点の統計」「期間が重なるイベント」 as one op.
+           ⚠ INPUT 1 MUST HAVE A DECLARED TIME AXIS — it is the side being asked when it holds, and
+           a dataset that never declared one is refused by name rather than filtered on a guess
+           (the rule `timeWindow` already states). The LEFT side is either its own axis or the
+           moment the reader stated: `at` / `from` / `to` REPLACE input 0's axis, which is what
+           makes 「1871 年時点の区域を、時間の列を持たない表に結合する」 expressible at all.
+           ⚠ 半開で訊く。See spanReader: the window is [from, to) and a bare year is that whole
+           year, so 「1871」 is 1871-01-01 through 1872-01-01, exclusive. */
+        id: 'timeJoin',
+        surface: [], inputs: 2, accepts: ['any', 'any'], output: 'same-as-input',
+        params: [
+          { name: 'relation', type: 'enum', required: false, default: 'overlaps', values: ['overlaps', 'within', 'contains'] },
+          { name: 'at', type: 'text', required: false },
+          { name: 'from', type: 'text', required: false },
+          { name: 'to', type: 'text', required: false },
+          { name: 'ends', type: 'enum', required: false, default: 'exclusive', values: TIME_ENDS },
+          { name: 'cardinality', type: 'enum', required: true, values: JOIN_CARDINALITY },
+          { name: 'fields', type: 'fields', required: false, input: 1 },
+          { name: 'prefix', type: 'text', required: false },
+          { name: 'unmatched', type: 'enum', required: false, default: 'keep', values: ['keep', 'drop'] },
+        ],
+      },
       compute: {
         /* A new column from an expression over the existing ones. ⚠ The expression is PARSED, never
            evaluated as JavaScript (js/gis-expr.js), and the columns it names are checked against the
@@ -830,6 +991,45 @@ export function makeGisOps() {
           { name: 'replace', type: 'boolean', required: false, default: false },
         ],
       },
+      convert: {
+        /* ── 単位換算 (#R783) ──────────────────────────────────────────────────────────────────
+           ⚠⚠⚠ THE READER'S ONLY ROAD TO 「m を km に」 WAS `compute` WITH A NUMBER TYPED INTO IT,
+           and that is the 手作業の倍率計算 the outside review named: `[len] / 1000` produces a
+           column whose recipe says 「1000 で割った」 and NOWHERE says what the column was in, what
+           it is in now, or that a conversion is what happened. js/gis-units.js has known the factor
+           since #R774 and no op asked it for one — it was consulted only to REFUSE mismatched
+           arithmetic. ⚠ AND `compute` COULD NOT BE FIXED INTO THIS: an expression is the reader's
+           own arithmetic, and #R774 settled that `+` and `−` there do not convert (docs/GIS-CORE.md
+           §6). 「換算する」 is a different act and it has to be nameable.
+           ⚠ THE FACTOR IS NEVER WRITTEN HERE. Every value goes through js/gis-units.js convert(),
+           per cell, and the transform this run used is ASKED of the same kernel rather than derived
+           from a table of its own — `.agents/rules/no-ad-hoc-hardcoding.md` §2-3, and the reason
+           °C→K cannot be a multiplication at all.
+           ⚠ 換算できない組は係数を掛けずに名前で拒む: a pair of different quantities is
+           `unit-incompatible`, a spelling the kernel cannot read is `unit-unreadable`, and a column
+           nobody has stated a unit for is `unit-not-stated` — 「単位を述べていない値を km に直す」
+           is not a thing anybody can do, and picking a source unit for the reader would invent the
+           author of the number this op is about to write. */
+        id: 'convert',
+        surface: [], inputs: 1, accepts: ['any'], kinds: ['vector'], output: 'same-as-input',
+        needsUnits: true,
+        params: [
+          { name: 'field', type: 'field', required: true, input: 0 },
+          { name: 'to', type: 'text', required: true },
+          /* 換算前の単位。Omitted, it is the one the COLUMN states (its author travels with it in
+             `fields[].unitStated`). Given, it must AGREE with any statement the column carries —
+             a caller overriding the column's own author silently would be a claim about somebody
+             else's data, so the disagreement is refused by name. */
+          { name: 'from', type: 'text', required: false },
+          { name: 'outName', type: 'text', required: false, requiredWhen: { replace: [false] } },
+          { name: 'replace', type: 'boolean', required: false, default: false },
+          /* ⚠ 読みか、差か。For every linear pair this changes nothing; for °C / °F / K it is the
+             whole answer (a 10 °C reading is 283.15 K, a 10 °C difference is 10 K). It is recorded
+             in the recipe either way, because a temperature column that was converted one way and
+             a column that was converted the other are not the same column. */
+          { name: 'difference', type: 'boolean', required: false, default: false },
+        ],
+      },
       aggregate: {
         /* ⚠ `accepts[1]` WAS 'Point' (#R729) and the arithmetic was 「面に含まれる点」. With a real
            predicate available it is 「その面に重なるもの」, which is the same answer for points and
@@ -838,9 +1038,23 @@ export function makeGisOps() {
         surface: ['degree-plane'], inputs: 2, accepts: ['Polygon', 'any'], output: 'Polygon',
         needsGeodesy: true, needsGeometry: true,
         params: [
-          { name: 'stat', type: 'enum', required: true, default: 'count', values: ['count', 'sum', 'mean', 'min', 'max'] },
-          { name: 'field', type: 'field', required: false, input: 1, requiredWhen: { stat: ['sum', 'mean', 'min', 'max'] } },
+          /* ⚠ (#R783) `areaWeightedMean` IS HERE BECAUSE THE REMEDY HAD TO HAVE A DOOR. js/gis-units.js
+             answers 「密度・点観測の単純平均は面の平均ではない、面積で重み付けろ」 — and until this
+             round the op that received that verdict had no such stat, so the honest refusal pointed at
+             a method the reader could not reach. That is the shape #R752 removed for `grid-mismatch`
+             (the kernel could resample; nothing could ask it to). Σ(value·km²)/Σkm² over the members
+             that overlap the zone, each member weighted by ITS OWN area — a member with no area
+             (a point, a line) carries no weight, and a zone whose members are all of them answers
+             `null` rather than dividing by zero. */
+          { name: 'stat', type: 'enum', required: true, default: 'count', values: AGG_STATS },
+          { name: 'field', type: 'field', required: false, input: 1, requiredWhen: { stat: AGG_STATS.filter((s) => s !== 'count') } },
           { name: 'outName', type: 'text', required: false },
+          /* ⚠ (#R783) その列は何の量か。js/gis-units.js's vocabulary (`quantityVocabulary()` —
+             kind / space / time / period / unit), stated by the caller because NOTHING in this app
+             declares one yet: a dataset's `fields` carry a unit and no quantity. Omitted, the
+             verdict is 'undeclared' and the run is exactly what it was before — this layer does not
+             read silence as permission, and it does not read it as a refusal either. */
+          { name: 'quantity', type: 'quantity', required: false, input: 1 },
         ],
       },
     };
@@ -902,6 +1116,31 @@ export function makeGisOps() {
          and hands them over, so neither this file nor a panel keeps a second list.
          WARNING `open: true` -- the set is the GRAMMAR, not the values. 'utm:<zone>,<south>' stands
          for every zone, so a caller must not present this as a closed dropdown. */
+      /* (#R783) 「合計」のどの読み方か — js/gis-raster.js owns the three (Σ value / Σ value·km² /
+         Σ value·cover) and judges each against js/gis-units.js's verdict, so the set is ITS to
+         publish. ⚠ Until it does, this answers null and `values` is absent — 「訊けなかった」, not
+         「選べる値は無い」 — and the rule the caller named is handed to the kernel, which refuses an
+         unknown one by name with its own list. A list retyped here would be the copy that falls
+         behind the day a fourth reading is added. */
+      'total-rules': () => {
+        const RK = rasterKernel();
+        if (!RK || typeof RK.totalRules !== 'function') return null;
+        try { return RK.totalRules(); } catch (_) { return null; }
+      },
+      /* (#R783) 測れる面の名前は、この層のものではない。js/gis-crs.js publishes every surface it can
+         measure an area AND a length on — the ellipsoidal ground included, whose two doors were
+         reachable only from the kernel until this round — so `measure` offers exactly those and no
+         spelling of them is written here. null is 「訊けなかった」, not 「選べる面は無い」. */
+      'measure-surfaces': () => {
+        const CK = crsKernel();
+        if (!CK || typeof CK.surfaces !== 'function') return null;
+        try {
+          const list = CK.surfaces()
+            .filter((s) => s && Array.isArray(s.measures) && s.measures.indexOf('area') >= 0 && s.measures.indexOf('length') >= 0)
+            .map((s) => String(s.name));
+          return list.length ? list : null;
+        } catch (_) { return null; }
+      },
       'plane-spellings': () => {
         const CK = crsKernel();
         if (!CK || typeof CK.planeSpellings !== 'function') return null;
@@ -920,6 +1159,22 @@ export function makeGisOps() {
       if (!p.valuesOf) return null;
       const src = Object.prototype.hasOwnProperty.call(VALUE_SOURCES, p.valuesOf) ? VALUE_SOURCES[p.valuesOf] : null;
       return src ? src() : null;
+    }
+
+    /* (#R783) One declaration, handed out with the parts that belong to another module resolved.
+       `surfaceOf` names where the REST of an op's surfaces live (the ground's spelling is
+       js/gis-crs.js's), and it is asked here rather than at construction for the reason the note
+       above VALUE_SOURCES gives: that kernel may mount after this factory ran. */
+    function declOut(id) {
+      const d = clone(DECL[id]);
+      if (!d) return null;
+      if (!d.surfaceOf) return d;
+      const src = Object.prototype.hasOwnProperty.call(VALUE_SOURCES, d.surfaceOf) ? VALUE_SOURCES[d.surfaceOf] : null;
+      let extra = null;
+      try { extra = src ? src() : null; } catch (_) { extra = null; }
+      if (!Array.isArray(d.surface)) d.surface = [];
+      for (const name of (extra || [])) if (d.surface.indexOf(name) < 0) d.surface.push(name);
+      return d;
     }
 
     /* ── the runners ──────────────────────────────────────────────────────────────────────────── */
@@ -1072,6 +1327,71 @@ export function makeGisOps() {
       };
     }
 
+    /* ══ ⚠⚠⚠ (#R783) 集計してよい量なのかを、集計する演算が訊く ═══════════════════════════════════
+       js/gis-units.js has known since this round whether a method means anything about a quantity —
+       「密度は足せない（面積を掛けてから足せ）」「割合の単純平均は分母で重み付けろ」「区分の平均は
+       平均ではない」 — and the two ops that AGGREGATE were not asking. `aggregate` and `zonal` would
+       compute the mean of a land-cover code and hand it over as a number.
+       ⚠⚠⚠ AND THE HARD PART IS THE OTHER DIRECTION: 「誰も述べていない」 must not become
+       「してはいけない」. The kernel answers 'undeclared' for every quantity nobody declared, which is
+       every column in this app today — reading that as a refusal would break every existing call and
+       would ALSO be wrong, because silence is not a contradiction. So:
+         'refused'      → a refusal by name, with the kernel's own remedy (a real contradiction; only
+                          reachable once somebody HAS declared the quantity)
+         'needs-weight' → the weight is applied where this layer honestly has it, and the answer says
+                          so; where it does not, the refusal names the method that does
+         'undeclared' / 'unreadable' / 'unasked'
+                        → the run is UNCHANGED, and the verdict is recorded rather than silently read
+                          as permission ([[intmap-data-must-not-claim-an-author-it-lacks]])
+       ⚠ NOTHING THAT DOES NOT DECLARE A QUANTITY CHANGES BY ONE BIT — not a value, not a column, not
+       a refusal. MEASURED on this tree: every existing spec that calls `aggregate` or `zonal` passes
+       unchanged, because none of them declares one.
+       ⚠ THE JUDGEMENT IS NOT MADE HERE. This function ASKS; the verdict, the remedy and the weight
+       are the unit kernel's words, carried and not re-decided (the same division js/gis-raster.js
+       totalOf states for the three totals). */
+    function quantitySpecOf(raw) {
+      if (raw == null) return { ok: true, spec: null };
+      if (typeof raw === 'object' && !Array.isArray(raw)) return { ok: true, spec: raw };
+      /* ⚠ A JSON STRING IS THE SAME DECLARATION. js/gis-panel.js draws a text box for a type it does
+         not know, so the reader's road to this parameter is a typed string; refusing that would make
+         the parameter reachable from Atlas and unreachable from the screen. A string that is not a
+         declaration is refused by name rather than read as silence. */
+      if (typeof raw === 'string') {
+        const s = raw.trim();
+        if (s === '') return { ok: true, spec: null };
+        let parsed = null;
+        try { parsed = JSON.parse(s); } catch (_) { parsed = null; }
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return fail('bad-param', { param: 'quantity', value: s });
+        return { ok: true, spec: parsed };
+      }
+      return fail('bad-param', { param: 'quantity', value: String(raw) });
+    }
+
+    function aggregationVerdict(spec, method, over) {
+      const UQ = unitKernel();
+      /* ⚠ 「訊けなかった」 IS ITS OWN STATE. A build with no unit module cannot say whether the
+         aggregation means anything, and answering 'allowed' for it would be this file deciding the
+         question it just delegated. */
+      if (!UQ || typeof UQ.aggregation !== 'function') return { verdict: 'unasked', why: 'units-unavailable', method: method, over: over };
+      let v = null;
+      try { v = UQ.aggregation(spec, method, { over: over }); } catch (_) { v = null; }
+      return v || { verdict: 'unasked', why: 'units-unavailable', method: method, over: over };
+    }
+
+    /* What travels in the answer and in the recipe about the rule that was used. ⚠ null when there
+       was nothing to say: a run over an undeclared quantity records the verdict, and a build with no
+       unit kernel records that it could not ask — but a caller that declared nothing on a `count`
+       gets the same record it always got. */
+    function aggregationRecord(agg, spec, weight) {
+      if (!agg) return null;
+      const out = { method: agg.method || null, over: agg.over || null, verdict: agg.verdict || null };
+      if (agg.why != null) out.why = String(agg.why);
+      if (agg.remedy != null) out.remedy = String(agg.remedy);
+      if (weight) out.weight = String(weight);
+      if (spec != null) out.quantityStatedBy = 'caller';
+      return out;
+    }
+
     function hasField(ds, name) {
       for (const f of (ds.fields || [])) if (f && f.name === name) return true;
       return false;
@@ -1166,6 +1486,443 @@ export function makeGisOps() {
       };
     }
 
+    /* ── the joins (#R783) ──────────────────────────────────────────────────────────────────────
+       ⚠ ONE IMPLEMENTATION OF THE THINGS ALL THREE DO. Which columns come over, the name they
+       arrive under, the refusal when that name is taken, the `renamed` statement that keeps a
+       prefixed column's unit (#R763), what happens to a feature with several partners and to one
+       with none — none of that depends on WHAT decided the partners, so it lives here once. Three
+       copies would drift the first time one of them was fixed, which is the shape
+       .agents/rules/no-ad-hoc-hardcoding.md §2-3 names. */
+
+    /* The right-hand columns and the names they land under, or a refusal. `writes` are the columns
+       THIS run invents (a distance, a partner count): a column the reader already has is not
+       overwritten, by the same argument `aggregate` refuses `output-column-in-use`. */
+    function joinPlan(left, right, params, writes) {
+      const wanted = Array.isArray(params.fields) && params.fields.length
+        ? params.fields.map((x) => String(x))
+        : (right.fields || []).map((f) => f.name);
+      for (const n of wanted) if (!hasField(right, n)) return fail('unknown-field', { input: 1, field: n });
+      const prefix = (params.prefix == null) ? '' : String(params.prefix);
+      /* Same rule as runJoin: a collision is REFUSED, not resolved. Overwriting the left's own
+         column would destroy data the reader still has on screen, and renaming it here would
+         invent a name nothing else knows. `prefix` is how the reader answers this. */
+      const collide = wanted.filter((n) => hasField(left, prefix + n));
+      if (collide.length) return fail('join-column-collision', { columns: collide.slice(0, 8), prefix: prefix || null });
+      for (const n of (writes || [])) if (hasField(left, n)) return fail('output-column-in-use', { name: n });
+      return {
+        ok: true, wanted: wanted, prefix: prefix,
+        /* (#R763) A renamed column is the same quantity, and the statement about it has to follow —
+           fieldStatements keys the inputs' units BY COLUMN NAME, and a prefix is a rename. */
+        renamed: prefix ? wanted.reduce((m, n) => { m[prefix + n] = { from: right.id, name: n }; return m; }, {}) : null,
+      };
+    }
+
+    /* The stated cardinality, or the refusal that names the set. ⚠ NO DEFAULT IS SUPPLIED HERE
+       EITHER — a default written in the runner would be the silent choice DECL declined to make. */
+    function joinCardinality(params) {
+      const v = (params.cardinality == null) ? '' : String(params.cardinality);
+      if (!v) return fail('missing-param', { param: 'cardinality', values: JOIN_CARDINALITY });
+      if (JOIN_CARDINALITY.indexOf(v) < 0) return fail('bad-param', { param: 'cardinality', value: v, values: JOIN_CARDINALITY });
+      return { ok: true, mode: v };
+    }
+
+    /* Writes the output rows. `matches` is [{ row, props, extra }] and MUST be in input 1's own row
+       order — see the note in runSpatialJoin for why the index's visiting order may not decide
+       which partner 'first' means. */
+    function joinWriter(plan, mode, drop, countName) {
+      const out = [];
+      let matched = 0, unmatched = 0, pairs = 0, oneToMany = 0, maxPartners = 0;
+      return {
+        rows: out,
+        take(f, matches) {
+          if (!matches.length) {
+            unmatched++;
+            /* ⚠ THE FEATURE TRAVELS UNCHANGED. A row with no partner keeps the properties the
+               reader imported, byte for byte — the same thing runJoin does, so an unmatched row is
+               recognisable as one rather than as a row with empty new columns. */
+            if (!drop) out.push(f);
+            return;
+          }
+          matched++;
+          pairs += matches.length;
+          if (matches.length > maxPartners) maxPartners = matches.length;
+          if (matches.length > 1) oneToMany++;
+          const p = props(f);
+          const use = (mode === 'all') ? matches : matches.slice(0, 1);
+          for (const m of use) {
+            const merged = Object.assign({}, p);
+            for (const n of plan.wanted) { const v = m.props[n]; if (v !== undefined) merged[plan.prefix + n] = v; }
+            if (m.extra) Object.assign(merged, m.extra);
+            /* ⚠ HOW MANY PARTNERS THERE REALLY WERE, ON THE ROW. Under 'first' this is the only
+               thing that can tell a reader their forty facilities became one — the count is the
+               answer to 「1 対多だった」 and dropping it would make 'first' look like 1-to-1. */
+            if (countName) merged[countName] = matches.length;
+            out.push({ type: 'Feature', geometry: f.geometry || null, properties: merged });
+          }
+        },
+        stats: () => ({
+          matched: matched, unmatched: unmatched, pairs: pairs,
+          oneToMany: oneToMany, maxPartners: maxPartners, columns: plan.wanted.length,
+        }),
+      };
+    }
+
+    const JOIN_COUNT = '_joinPartners';
+
+    async function runSpatialJoin(aDs, bDs, params, R, ctx) {
+      const GG = geometry();
+      const predicate = (params.predicate == null || String(params.predicate) === '') ? 'intersects' : String(params.predicate);
+      if (JOIN_PREDICATES.indexOf(predicate) < 0) return fail('bad-param', { param: 'predicate', value: predicate, values: JOIN_PREDICATES });
+      let maxKm = null;
+      if (predicate === 'nearer-than') {
+        maxKm = R.asNumber(params.maxKm);
+        if (maxKm == null) return fail('missing-param', { param: 'maxKm' });
+        if (!(maxKm >= 0)) return fail('bad-param', { param: 'maxKm', value: params.maxKm });
+      }
+      const card = joinCardinality(params);
+      if (!card.ok) return card;
+      const writes = (predicate === 'nearer-than') ? [JOIN_COUNT, '_distanceKm'] : [JOIN_COUNT];
+      const plan = joinPlan(aDs, bDs, params, writes);
+      if (!plan.ok) return plan;
+
+      /* Read once with its box and its properties, so a 50,000-row input is not walked through its
+         accessors again for every left feature — the shape runAggregate uses. */
+      const others = [];
+      for (const f of bDs.features()) {
+        const g = f && f.geometry;
+        if (!g) continue;
+        others.push({ row: others.length, geometry: g, bbox: bboxOf(g), props: props(f) });
+      }
+      /* ⚠ 「相手に地物が 1 つも無い」 IS NOT 「一致が 0 件だった」. The second is an answer about the
+         reader's data and the first is about their inputs, and `relate` already tells them apart by
+         this name. */
+      if (!others.length) return fail('no-features', { input: 1 });
+
+      const pad = (predicate === 'nearer-than') ? maxKm : 0;
+      const cand = candidateSource(others);
+      const led = makeGeoLedger();
+      const w = joinWriter(plan, card.mode, params.unmatched === 'drop', JOIN_COUNT);
+      const rows = aDs.features();
+      for (let li = 0; li < rows.length; li++) {
+        if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[li];
+        const g = f && f.geometry;
+        /* A row that states no place cannot stand in a spatial relation to anything. It has no
+           partner — which is a different fact from 「探したが無かった」 and is counted as such. */
+        if (!g) { w.take(f, []); continue; }
+        const gb = bboxOf(g);
+        const matches = [];
+        cand.each(gb, pad, (o) => {
+          const r = relateOne(GG, g, o.geometry, predicate, maxKm);
+          if (!led.ok(r)) return true;
+          if (r.d == null) return true;
+          matches.push({ row: o.row, props: o.props, extra: (predicate === 'nearer-than') ? { _distanceKm: r.d } : null });
+          /* ⚠ 'first' DOES NOT STOP THE WALK, and 'refuse' cannot either: both need to know HOW
+             MANY partners there were, and a walk that stopped at the first would report 1 for every
+             row — the silence `cardinality` exists to remove. */
+          return true;
+        });
+        /* ⚠⚠⚠ THE ORDER OF THE PARTNERS IS INPUT 1'S, NOT THE INDEX'S. candidateSource hands
+           candidates over in the order its grid happens to hold them, and the unindexed fallback
+           hands them over in row order — so 'first' would have meant two different partners
+           depending on whether js/gis-index.js was mounted, and a saved recipe would replay to a
+           different answer. Sorting by the row the partner came from is what makes 「最初の一致」 a
+           statement about the reader's data instead of about the index. */
+        matches.sort((x, y) => x.row - y.row);
+        if (card.mode === 'refuse' && matches.length > 1) {
+          return fail('join-one-to-many', { input: 0, row: li, partners: matches.length, cardinality: JOIN_CARDINALITY });
+        }
+        w.take(f, matches);
+      }
+      return withGeoStats({ ok: true, features: w.rows, renamed: plan.renamed }, led,
+        Object.assign(w.stats(), { predicate: predicate, cardinality: card.mode, indexed: cand.indexed }));
+    }
+
+    async function runNearestJoin(aDs, bDs, params, R, ctx) {
+      const GG = geometry();
+      let maxKm = null;
+      if (params.maxKm != null && String(params.maxKm).trim() !== '') {
+        maxKm = R.asNumber(params.maxKm);
+        if (maxKm == null || !(maxKm > 0)) return fail('bad-param', { param: 'maxKm', value: params.maxKm });
+      }
+      const idField = (params.idField == null || String(params.idField) === '') ? null : String(params.idField);
+      if (idField && !hasField(bDs, idField)) return fail('unknown-field', { input: 1, field: idField });
+      const writes = ['_nearestKm', '_nearestRow'].concat(idField ? ['_nearestId'] : []);
+      const plan = joinPlan(aDs, bDs, params, writes);
+      if (!plan.ok) return plan;
+
+      const targets = [];
+      for (const f of bDs.features()) {
+        const g = f && f.geometry;
+        if (!g) continue;
+        targets.push({ row: targets.length, geometry: g, bbox: bboxOf(g), props: props(f) });
+      }
+      if (!targets.length) return fail('no-features', { input: 1 });
+
+      const cand = candidateSource(targets);
+      const Rk = earthKm();
+      /* The furthest two points on a sphere of this radius can be. Derived, not chosen: it is the
+         radius IntMapGeodesy publishes, so 「上限を述べなかった」 is 「地球の裏側まで」 and not a
+         number written here. */
+      const halfWay = Math.PI * Rk;
+      const cap = (maxKm != null) ? Math.min(maxKm, halfWay) : halfWay;
+      const kmPerDeg = Math.PI * Rk / 180;
+      /* ⚠⚠⚠ THE FIRST RADIUS IS THE INDEX'S OWN CELL, AND THAT IS WHY IT IS NOT A TUNING KNOB.
+         js/gis-index.js derives its cell size FROM THE DATA (the median item size, or the core span
+         over √n), so one cell is 「この記録では近いとはどのくらいか」 already measured. A fixed
+         seed would be a constant with no observation behind it, which §4 of
+         .agents/rules/no-ad-hoc-hardcoding.md forbids; with no index mounted there is no grid to
+         ask and the walk is over every target anyway, so the first radius is the cap and the search
+         is one pass. */
+      const seed = (() => {
+        const s = cand.stats();
+        const deg = s && s.cellDeg;
+        const km = (typeof deg === 'number' && isFinite(deg) && deg > 0) ? deg * kmPerDeg : 0;
+        return (km > 0 && km < cap) ? km : cap;
+      })();
+
+      const led = makeGeoLedger();
+      const w = joinWriter(plan, 'first', params.unmatched === 'drop', null);
+      const rows = aDs.features();
+      let ties = 0, passes = 0, capped = 0;
+      for (let li = 0; li < rows.length; li++) {
+        if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[li];
+        const g = f && f.geometry;
+        if (!g) { w.take(f, []); continue; }
+        const gb = bboxOf(g);
+        let radius = seed, best = null, bestItem = null, tie = 0;
+        /* ⚠⚠⚠ WHY THE ANSWER IS THE TRUE NEAREST AND NOT THE NEAREST IN A BOX. padBoxKm grows the
+           query box so that NOTHING within `radius` km of it is left out (#R743 measured the round
+           that got this backwards), so once a partner is found at `best ≤ radius` there can be no
+           closer one outside the box — the box already contained every target that near. When the
+           best found is FURTHER than the radius searched, the radius becomes that distance and the
+           same query is asked once more: the second pass sees the same winner, now inside its own
+           box, and stops. When nothing at all was found the radius grows by 4× until it reaches the
+           cap, where the box is the world and the walk is exhaustive.
+           ⚠ THE LOOP IS NOT A RETRY OF A FAILURE (.agents/rules/one-pass-or-a-reason.md §5): each
+           pass is a DIFFERENT, strictly larger question, it terminates in at most log₄(cap/seed)+1
+           of them, and `stats.passes` reports the total so an index that is not helping is visible
+           rather than assumed. */
+        for (;;) {
+          passes++;
+          best = null; bestItem = null; tie = 0;
+          cand.each(gb, radius, (o) => {
+            const r = GG.attempt.distanceKm(g, o.geometry);
+            if (!r.ok) {
+              /* An empty geometry is not within any distance of anything — the reading relateOne
+                 already makes, so one empty row does not poison the dataset. */
+              if (r.why !== 'no-comparable-parts') led.ok(r);
+              return true;
+            }
+            const d = r.value;
+            if (d == null) return true;
+            if (maxKm != null && d > maxKm) return true;
+            if (best == null || d < best) { best = d; bestItem = o; tie = 1; return true; }
+            /* ⚠ A TIE IS TWO DISTANCES THAT ARE THE SAME FLOAT, not two that are close. A
+               tolerance here would be a claim about measurement error that nobody in this project
+               has measured; the lowest row of input 1 wins, so the answer is the reader's own
+               order rather than the index's. */
+            if (d === best) { tie++; if (o.row < bestItem.row) bestItem = o; }
+            return true;
+          });
+          if (best != null && best <= radius) break;
+          if (radius >= cap) { if (best == null) capped++; break; }
+          radius = (best != null) ? Math.min(best, cap) : Math.min(radius * 4, cap);
+        }
+        if (best == null || bestItem == null) { w.take(f, []); continue; }
+        if (tie > 1) ties++;
+        const extra = { _nearestKm: best, _nearestRow: bestItem.row };
+        if (idField) extra._nearestId = bestItem.props[idField];
+        w.take(f, [{ row: bestItem.row, props: bestItem.props, extra: extra }]);
+      }
+      return withGeoStats({ ok: true, features: w.rows, renamed: plan.renamed }, led,
+        Object.assign(w.stats(), {
+          ties: ties, passes: passes, searchedToLimit: capped,
+          indexed: cand.indexed, seedKm: seed, capKm: cap,
+        }));
+    }
+
+    /* ══ ⚠⚠⚠ (#R783) 半開で読む — その日はどちらのものか ══════════════════════════════════════
+       The registry hands a span back as a pair of milliseconds in which `end` is the LAST instant
+       the row holds: momentOf reads a bare year as the WHOLE year, so 1889 ends at
+       1889-12-31T23:59:59.999. Half-open arithmetic needs the first instant the row does NOT hold,
+       and the two readings differ by exactly the case this op exists for — 廃藩置県 is stated as
+       1871-08-29 by the 令制国 that ended and by the 県 that began, so 「その日の区域」 has one
+       answer under [from, to) and two under [from, to].
+         · an INTERVAL whose end cell is a stated instant → that instant is the BOUNDARY: the row
+           does not hold at it ('exclusive', the default), or it is the last moment it holds
+           ('inclusive')
+         · an interval whose end cell is a BARE YEAR → the year names a PERIOD, so the boundary is
+           the first instant of the next year under either reading; 「1871 年まで」 includes 1871
+       ⚠ WHICH OF THE TWO A CELL IS, IS THE REGISTRY'S ANSWER AND NOT A PARSE OF OUR OWN. momentOf
+       returns `year` only when its year rule fired, and this asks it for that one fact — a second
+       reader of 「その綴りは年か日付か」 would drift from the one that built the span
+       (.agents/rules/no-ad-hoc-hardcoding.md §2-3).
+       ⚠ AN AXIS WHOSE END CANNOT BE ASKED IS READ AS INCLUSIVE, AND THE ANSWER SAYS SO. A
+       `constant` declaration holds milliseconds that js/gis-datasets.js already normalised and a
+       `track` holds an array of fixes; neither has a cell this function can put back through
+       momentOf, so the last instant it holds is the last instant it holds, and `stats.endsRead`
+       reports how many rows were read each way. Moving a boundary on the strength of a guess is
+       what 「述べられていないことを地図が述べる」 looks like in arithmetic. */
+    function spanReader(ds, R, endsExclusive) {
+      const t = ds && ds.time;
+      /* Only an interval STATES an end. An instant is a moment (or a year) and occupies itself; a
+         constant and a track hold milliseconds nobody can ask about any more. */
+      const endField = (t && t.kind === 'interval' && t.endField) ? t.endField : null;
+      let asked = 0, assumed = 0;
+      return {
+        read(f) {
+          const s = R.timeSpan(ds, f);
+          if (!s) return null;
+          const start = (s.start == null) ? -Infinity : s.start;
+          /* An open end means 「まだ続いている」/「終わりを誰も述べていない」 — it reaches every
+             window, the reading runTimeWindow already states. */
+          if (s.end == null) return { start: start, endEx: Infinity };
+          const cell = endField ? props(f)[endField] : undefined;
+          const m = (cell === undefined || cell === null) ? null : R.momentOf(cell);
+          let endEx;
+          if (m && m.year == null) { asked++; endEx = endsExclusive ? s.end : s.end + 1; }
+          else { assumed++; endEx = s.end + 1; }
+          return { start: start, endEx: endEx };
+        },
+        stated: () => ({ statedEnd: asked, periodEnd: assumed }),
+      };
+    }
+
+    /* The moment the READER stated, read half-open. ⚠ 「…まで」 NAMES A PERIOD AND THE WHOLE OF IT
+       IS IN: a bare year's exclusive bound is the first instant of the next year, so
+       from:1871 to:1871 is the whole of 1871. A stated instant IS the bound, so
+       from:'1871-08-29' to:'1871-09-01' does not include 1871-09-01. Returns
+       `{ ok:true, span:null }` when the reader stated nothing, which is the case where input 0's
+       own axis answers instead. */
+    function statedWindow(params, R) {
+      const txt = (k) => (params[k] == null || String(params[k]).trim() === '') ? null : String(params[k]).trim();
+      const atRaw = txt('at');
+      if (atRaw) {
+        const m = R.momentOf(atRaw);
+        if (!m) return fail('bad-param', { param: 'at', value: atRaw });
+        if (txt('from') || txt('to')) return fail('bad-param', { param: 'at', value: atRaw, detail: 'at-with-window' });
+        return { ok: true, span: { start: m.start, endEx: m.end + 1 }, stated: 'at' };
+      }
+      const fromRaw = txt('from'), toRaw = txt('to');
+      if (!fromRaw && !toRaw) return { ok: true, span: null, stated: null };
+      const fromM = fromRaw ? R.momentOf(fromRaw) : null;
+      if (fromRaw && !fromM) return fail('bad-param', { param: 'from', value: fromRaw });
+      const toM = toRaw ? R.momentOf(toRaw) : null;
+      if (toRaw && !toM) return fail('bad-param', { param: 'to', value: toRaw });
+      const start = fromM ? fromM.start : -Infinity;
+      const endEx = toM ? ((toM.year != null) ? toM.end + 1 : toM.end) : Infinity;
+      if (!(start < endEx)) return fail('bad-param', { param: 'to', value: toRaw });
+      return { ok: true, span: { start: start, endEx: endEx }, stated: 'window' };
+    }
+
+    /* Half-open, all three of them. `overlaps` is a NECESSARY condition for the other two, which is
+       what lets the sweep below prune candidates for every relation with one rule. */
+    function timeRelates(relation, a, b) {
+      if (relation === 'within') return b.start <= a.start && a.endEx <= b.endEx;
+      if (relation === 'contains') return a.start <= b.start && b.endEx <= a.endEx;
+      return a.start < b.endEx && b.start < a.endEx;
+    }
+
+    async function runTimeJoin(aDs, bDs, params, R, ctx) {
+      const relation = (params.relation == null || String(params.relation) === '') ? 'overlaps' : String(params.relation);
+      const relations = paramValues(DECL.timeJoin, 'relation');
+      if (relations.indexOf(relation) < 0) return fail('bad-param', { param: 'relation', value: relation, values: relations });
+      const ends = (params.ends == null || String(params.ends) === '') ? 'exclusive' : String(params.ends);
+      if (TIME_ENDS.indexOf(ends) < 0) return fail('bad-param', { param: 'ends', value: ends, values: TIME_ENDS });
+      const win = statedWindow(params, R);
+      if (!win.ok) return win;
+      const card = joinCardinality(params);
+      if (!card.ok) return card;
+      /* ⚠ THE SIDE BEING ASKED WHEN IT HOLDS MUST HAVE SAID SO. `time-not-declared` carries WHICH
+         input, and the registry's own refusal when it had one, so 「宣言していない」 and
+         「宣言が読めなかった」 do not reach the reader as the same sentence. */
+      if (!bDs.time) return fail('time-not-declared', { input: 1, refused: bDs.timeRefused ? String(bDs.timeRefused.why || '') : null });
+      if (!win.span && !aDs.time) return fail('time-not-declared', { input: 0, refused: aDs.timeRefused ? String(aDs.timeRefused.why || '') : null });
+      const plan = joinPlan(aDs, bDs, params, [JOIN_COUNT]);
+      if (!plan.ok) return plan;
+
+      const rightRead = spanReader(bDs, R, ends === 'exclusive');
+      const leftRead = win.span ? null : spanReader(aDs, R, ends === 'exclusive');
+
+      const targets = [];
+      let undatedRight = 0, ri = -1;
+      for (const f of bDs.features()) {
+        ri++;
+        const s = rightRead.read(f);
+        /* ⚠ A ROW WHOSE OWN TIME CANNOT BE READ IS NOT A PARTNER OF EVERY WINDOW. It is counted and
+           left out — the reading runTimeWindow states for the same case. */
+        if (!s) { undatedRight++; continue; }
+        targets.push({ row: ri, start: s.start, endEx: s.endEx, props: props(f) });
+      }
+      if (!targets.length) return fail('no-features', { input: 1, undated: undatedRight });
+
+      /* ⚠⚠⚠ NOT A LOOP OVER A × B, AND NOT A SECOND COPY OF js/gis-index.js EITHER. That file's
+         promise is about BOXES on a plate-carrée plane with a seam; time has one axis and no seam,
+         and mapping milliseconds onto degrees to borrow its grid would be a lie about its domain.
+         What bounds the work here is the classic sweep: the targets are sorted by their start, a
+         binary search finds the last one that can begin before the query ends, and the walk goes
+         DOWNWARD from there with a prefix maximum of the exclusive ends — the moment
+         `reach[i] <= query.start`, no earlier target can possibly reach the query and the walk
+         stops. ⚠ IT HAS NO FALSE NEGATIVE: `reach[i]` is the largest end among targets 0..i, so a
+         target that could overlap is never behind the stop. Deeply nested spans (one validity that
+         covers the whole record) degrade it toward the full walk, which is the same character as
+         js/gis-index.js's `always` bucket — and `stats.scanned` is how a caller sees it happening
+         instead of assuming it is not. */
+      targets.sort((x, y) => (x.start - y.start) || (x.row - y.row));
+      const reach = new Array(targets.length);
+      for (let i = 0; i < targets.length; i++) reach[i] = (i ? Math.max(reach[i - 1], targets[i].endEx) : targets[i].endEx);
+      /* The first index whose start is >= t (targets are sorted by start). */
+      const lowerBound = (t) => {
+        let lo = 0, hi = targets.length;
+        while (lo < hi) { const mid = (lo + hi) >> 1; if (targets[mid].start < t) lo = mid + 1; else hi = mid; }
+        return lo;
+      };
+
+      const w = joinWriter(plan, card.mode, params.unmatched === 'drop', JOIN_COUNT);
+      const rows = aDs.features();
+      let undatedLeft = 0, scanned = 0;
+      for (let li = 0; li < rows.length; li++) {
+        if (!(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[li];
+        const q = win.span || leftRead.read(f);
+        if (!q) { undatedLeft++; w.take(f, []); continue; }
+        const matches = [];
+        /* Everything at or after the query's exclusive end begins too late for any of the three
+           relations — `overlaps` is necessary for `within` and `contains` alike. */
+        let i = (q.endEx === Infinity) ? targets.length - 1 : lowerBound(q.endEx) - 1;
+        for (; i >= 0; i--) {
+          if (reach[i] <= q.start) break;
+          scanned++;
+          const t = targets[i];
+          if (!timeRelates(relation, q, t)) continue;
+          matches.push({ row: t.row, props: t.props, extra: null });
+        }
+        matches.sort((x, y) => x.row - y.row);
+        if (card.mode === 'refuse' && matches.length > 1) {
+          return fail('join-one-to-many', { input: 0, row: li, partners: matches.length, cardinality: JOIN_CARDINALITY });
+        }
+        w.take(f, matches);
+      }
+      const read = rightRead.stated();
+      return {
+        ok: true, features: w.rows, renamed: plan.renamed,
+        stats: Object.assign(w.stats(), {
+          relation: relation, cardinality: card.mode, ends: ends,
+          /* ⚠ 使った規則は答えに載る。`statedEnd` counted the rows whose end cell was a stated
+             instant and so obeyed `ends`; `periodEnd` counted the rows whose end named a period (a
+             bare year) or could not be asked at all, and were therefore read inclusively. A number
+             that does not say which rule produced it cannot be compared with one produced by the
+             other rule. */
+          endsRead: read,
+          window: win.span ? { start: win.span.start, endEx: win.span.endEx, from: win.stated } : null,
+          undatedLeft: undatedLeft, undatedRight: undatedRight,
+          targets: targets.length, scanned: scanned,
+        }),
+      };
+    }
+
     async function runCompute(ds, params, R, ctx) {
       const X = exprKernel();
       if (!X || typeof X.compile !== 'function') return fail('expr-unavailable');
@@ -1233,6 +1990,121 @@ export function makeGisOps() {
            `renamed` above, and for the same reason: it is the only thing that knows. */
         units: derivedUnit ? { [name]: derivedUnit } : null,
         stats: { computed: out.length - empty, empty: empty, errors: errors, firstError: firstError, returns: parsed.returns, unit: derivedUnit },
+      };
+    }
+
+    /* ── convert: 換算は、演算であって算術ではない (#R783) ────────────────────────────────────── */
+
+    async function runConvert(ds, params, R, ctx) {
+      const UQ = unitKernel();
+      if (!UQ || typeof UQ.convert !== 'function' || typeof UQ.compare !== 'function') return fail('units-unavailable');
+      const field = (params.field == null) ? '' : String(params.field).trim();
+      if (!field) return fail('missing-param', { param: 'field' });
+      if (!hasField(ds, field)) return fail('unknown-field', { input: 0, field: field });
+      const to = UQ.stated(params.to);
+      if (to == null) return fail('missing-param', { param: 'to' });
+
+      const replace = params.replace === true;
+      const outNameRaw = (params.outName == null) ? '' : String(params.outName).trim();
+      /* ⚠ THE DESTINATION IS NEVER INVENTED. A name built here out of the target spelling would be
+         a column called `len_m/s` in some cases and a collision in others, and the reader could not
+         predict either. Either they name it, or they say the column itself becomes the converted
+         one. */
+      if (replace && outNameRaw) return fail('bad-param', { param: 'outName', value: outNameRaw, detail: 'replace-writes-the-same-column' });
+      if (!replace && !outNameRaw) return fail('missing-param', { param: 'outName' });
+      const outName = replace ? field : outNameRaw;
+      if (!replace && hasField(ds, outName)) return fail('output-column-in-use', { name: outName });
+
+      /* 換算前の単位。The column's own statement first, because it has an AUTHOR (`unitStated`) and
+         a caller's `from` does not. */
+      const column = UQ.stated(unitOfField(ds, field));
+      const asked = UQ.stated(params.from);
+      if (column != null && asked != null) {
+        const same = UQ.compare(column, asked);
+        /* ⚠ 'convertible' IS STILL A DISAGREEMENT HERE. 「この列は m だ」 と 列自身の 「km だ」 は
+           両方が本当ではありえない——片方を黙って採ると、換算は通り、答えは 1000 倍違う。 */
+        if (same.verdict !== 'identical') {
+          return fail('unit-from-contradicts-column', { field: field, column: column, from: asked, verdict: same.verdict });
+        }
+      }
+      const from = (asked != null) ? asked : column;
+      if (from == null) return fail('unit-not-stated', { field: field, to: to });
+
+      const verdict = UQ.compare(from, to);
+      if (verdict.verdict === 'incompatible') return fail('unit-incompatible', { field: field, from: from, to: to });
+      if (verdict.verdict === 'unknown') return fail('unit-unreadable', { field: field, from: from, to: to, unreadable: verdict.unreadable || null });
+      if (verdict.verdict !== 'identical' && verdict.verdict !== 'convertible') {
+        return fail('unit-not-stated', { field: field, from: from, to: to, verdict: verdict.verdict });
+      }
+
+      const difference = params.difference === true;
+      /* ⚠⚠⚠ THE TRANSFORM IS ASKED OF THE KERNEL, NOT READ OUT OF ITS TABLE. slope is what the
+         kernel does to a DIFFERENCE of one (offsets cancel) and intercept is what it does to zero;
+         together they are the affine map it applied, in the kernel's own arithmetic. Writing
+         `pa.f / pb.f` here would be a second copy of the conversion — and for °C→K there is no
+         factor to copy at all, which is exactly why the recipe records a map and not a 倍率. */
+      const slope = UQ.convert(1, from, to, { difference: true });
+      const intercept = UQ.convert(0, from, to, { difference: difference });
+      if (slope == null || intercept == null) return fail('unit-unreadable', { field: field, from: from, to: to });
+
+      const out = [];
+      let converted = 0, skipped = 0, empty = 0;
+      const sample = [];
+      const rows = ds.features();
+      for (let i = 0; i < rows.length; i++) {
+        if (ctx && !(await ctx.tick(1, rows.length))) return fail('cancelled', { done: ctx.done(), total: rows.length });
+        const f = rows[i];
+        const p = props(f);
+        const raw = p[field];
+        const merged = Object.assign({}, p);
+        if (R.isEmpty(raw)) {
+          empty++;
+          /* An empty cell converts to an empty cell. Writing 0 would be the 「欠損を 0 で埋める」
+             this project refuses everywhere else it measures. */
+          delete merged[outName];
+        } else {
+          const v = R.asNumber(raw);
+          /* ⚠ EVERY VALUE GOES THROUGH THE KERNEL, per cell. Multiplying by `slope` here would be a
+             second implementation of the conversion that agrees with the first until the day an
+             affine or a compound unit is asked of it. */
+          const w = (v == null) ? null : UQ.convert(v, from, to, { difference: difference });
+          if (w == null) {
+            /* ⚠ A CELL THAT IS NOT A NUMBER IS COUNTED, NOT DROPPED IN SILENCE — the rule
+               `aggregate`'s `_statSkipped` states. A column of 「12 km」 strings is a column this op
+               did not convert, and the reader must be able to see how much of it. */
+            skipped++;
+            if (sample.length < 5) sample.push(String(raw));
+            delete merged[outName];
+          } else { converted++; merged[outName] = w; }
+        }
+        out.push({ type: 'Feature', geometry: f.geometry || null, properties: merged });
+      }
+      /* ⚠ 「0 件だった」 と 「1 件も数ではなかった」 は別の答え。An empty dataset converts to an
+         empty dataset; a column of codes is not a quantity and saying so is the diagnosis. */
+      if (!converted && skipped > 0 && !empty) {
+        return fail('convert-nothing-numeric', { field: field, rows: rows.length, sample: sample });
+      }
+      return {
+        ok: true, features: out,
+        /* The output column's unit is stated BY THIS RUN — it is the only thing that knows, exactly
+           as `compute` is for a column it invented (#R774). Under `replace` this also overrides the
+           inherited statement about the same name, which is the point: the column is no longer in
+           the unit its input stated. */
+        units: { [outName]: to },
+        /* ⚠ 換算前後の単位と使った変換は、レシピに残る（`resolved` — see run()). `stats` is read for
+           this turn and written nowhere (#R763), so a manifest that held only `params` would say
+           「something を km に直した」 and never what it had been in. */
+        resolved: {
+          field: field, outName: outName, replace: replace,
+          from: from, fromStatedBy: (asked != null) ? 'caller' : 'column',
+          to: to, conversion: verdict.verdict, difference: difference,
+          transform: { kind: (intercept === 0) ? 'factor' : 'affine', slope: slope, intercept: intercept },
+        },
+        stats: {
+          converted: converted, skipped: skipped, empty: empty, notNumeric: sample,
+          from: from, to: to, conversion: verdict.verdict, difference: difference,
+          slope: slope, intercept: intercept,
+        },
       };
     }
 
@@ -1724,6 +2596,28 @@ export function makeGisOps() {
         if (!field) return fail('missing-param', { param: 'field' });
         if (!hasField(memberDs, field)) return fail('unknown-field', { field: field });
       }
+      /* (#R783) 「この量をこの方法で集計してよいか」 — asked of js/gis-units.js, never decided here.
+         See aggregationVerdict for what each verdict does and for why an undeclared quantity leaves
+         this run bit-for-bit what it was. */
+      const qs = quantitySpecOf(params.quantity);
+      if (!qs.ok) return qs;
+      const agg = aggregationVerdict(qs.spec, stat, 'space');
+      let weight = null;
+      if (agg.verdict === 'refused') {
+        return fail('aggregation-refused', { stat: stat, why: agg.why || null, remedy: agg.remedy || null, quantity: agg.quantity || null });
+      }
+      /* ⚠ A WEIGHT COMES BACK ON 'allowed' TOO — `areaWeightedMean` is allowed WITH weight 'area',
+         and that is the rule that produced the number, so it travels into the answer and the recipe
+         exactly as the refused one does. */
+      if (agg.verdict === 'allowed') weight = agg.weight || null;
+      if (agg.verdict === 'needs-weight') {
+        weight = agg.weight || null;
+        /* ⚠ THE WEIGHT THIS OP HAS IS AREA, AND ONLY THROUGH THE STAT THAT SAYS SO. Quietly turning
+           a `mean` into an area-weighted one would change a number under a name the reader chose;
+           `areaWeightedMean` is the door, and the refusal names it. A `denominator` weight is a
+           column nobody has named, so it is the reader's to supply and not this op's to invent. */
+        return fail('aggregation-needs-weight', { stat: stat, weight: weight, why: agg.why || null, remedy: agg.remedy || null });
+      }
       const outName = (params.outName != null && String(params.outName).trim() !== '')
         ? String(params.outName).trim()
         : (stat === 'count' ? 'count' : stat + '_' + field);
@@ -1739,7 +2633,12 @@ export function makeGisOps() {
       for (const f of memberDs.features()) {
         const g = f && f.geometry;
         if (!g) continue;
-        members.push({ geometry: g, bbox: bboxOf(g), raw: (field ? props(f)[field] : null) });
+        /* (#R783) 面積は、使う stat のときだけ測る。It is the member's OWN ground area and it does
+           not depend on the zone, so it is measured once per member rather than once per pair. */
+        members.push({
+          geometry: g, bbox: bboxOf(g), raw: (field ? props(f)[field] : null),
+          areaKm2: (stat === 'areaWeightedMean') ? areaKm2(g) : null,
+        });
       }
 
       /* ⚠ THE PAIRS ARE NO LONGER ENUMERATED (#R735). This was 「面をループ × member をループ」, and
@@ -1755,6 +2654,8 @@ export function makeGisOps() {
         if (!g || !polygonsOf(g).length) continue;
         const gb = bboxOf(g);
         let n = 0, skipped = 0, sum = 0, min = null, max = null;
+        /* (#R783) Σ(value·km²) と Σkm²，`areaWeightedMean` のときだけ動く。 */
+        let wsum = 0, wtot = 0, noWeight = 0;
         cand.each(gb, 0, (m) => {
           /* ⚠ 「この面に重なるもの」, asked of the one predicate. #R729 asked point-in-polygon, which
              is the same answer for a point and no answer at all for the roads and parcels a reader
@@ -1778,6 +2679,14 @@ export function makeGisOps() {
           sum += v;
           if (min == null || v < min) min = v;
           if (max == null || v > max) max = v;
+          if (stat === 'areaWeightedMean') {
+            const a = m.areaKm2;
+            /* ⚠ A MEMBER WITH NO AREA CARRIES NO WEIGHT, AND IT IS COUNTED. A point has no ground,
+               so weighting by it is not defined — and dropping it in silence would make the answer
+               「面積で重み付けた平均」 over a set the reader was never told was smaller. */
+            if (a == null || !(a > 0)) { noWeight++; return true; }
+            wsum += v * a; wtot += a;
+          }
           return true;
         });
         const used = n - skipped;
@@ -1785,14 +2694,27 @@ export function makeGisOps() {
         if (stat === 'count') value = n;
         else if (stat === 'sum') value = used ? sum : null;
         else if (stat === 'mean') value = used ? sum / used : null;
+        else if (stat === 'areaWeightedMean') value = (wtot > 0) ? (wsum / wtot) : null;
         else if (stat === 'min') value = min;
         else value = max;
         const extra = { _areaKm2: areaKm2(g) };
         extra[outName] = value;
         if (stat !== 'count') extra._statSkipped = skipped;
+        if (stat === 'areaWeightedMean') {
+          /* ⚠ 使った重みは行に載る。The row is what gets joined, exported and compared months later
+             — the argument `_boundary` makes in runZonal — and a weighted mean whose weight total is
+             not beside it cannot be checked. */
+          extra._weightKm2 = wtot;
+          extra._statNoWeight = noWeight;
+        }
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
       }
-      return withGeoStats({ ok: true, features: out }, led);
+      /* (#R783) 実行した規則は答えとレシピの両方に残る。⚠ `resolved` is written ONLY when there was
+         something to say, so an existing call registers the record it has always registered. */
+      const rule = aggregationRecord(agg, qs.spec, weight);
+      const res = withGeoStats({ ok: true, features: out }, led, rule ? { aggregation: rule } : null);
+      if (res.ok && rule && (qs.spec != null || agg.verdict !== 'undeclared')) res.resolved = { aggregation: rule };
+      return res;
     }
 
     /* ── the grid runners (#R735) ───────────────────────────────────────────────────────────────
@@ -1874,6 +2796,48 @@ export function makeGisOps() {
       const boundary = (params.boundary == null || String(params.boundary) === '') ? bDecl.default : String(params.boundary);
       if (bDecl.values.indexOf(boundary) < 0) return fail('bad-param', { param: 'boundary', value: boundary, values: bDecl.values.slice() });
       const band = (rasDs.bands[b.index] || {});
+      /* ══ (#R783) どの「合計」か、そしてその量についてそれは意味を持つか ══════════════════════════
+         ⚠ THE RULE IS THE CALLER'S AND THE VERDICT IS THE KERNELS'. js/gis-raster.js owns the three
+         readings of 「合計」 and asks js/gis-units.js whether the one named means anything about this
+         quantity; this op's whole job is to carry the reader's choice down and the refusal back up.
+         ⚠ A STATED `total` IS THE CALLER ANSWERING THE `sum` QUESTION, so the verdict about the plain
+         sum is not the verdict about what they asked for — 「密度は足せない、面積を掛けてから足せ」 IS
+         the remedy that makes `areaIntegral` the right arithmetic, and refusing on it here would
+         refuse the very thing the kernel recommended. */
+      const qs = quantitySpecOf(params.quantity);
+      if (!qs.ok) return qs;
+      const spec = (qs.spec != null) ? qs.spec : ((band.quantity != null) ? band.quantity : null);
+      const total = (params.total == null || String(params.total) === '') ? null : String(params.total);
+      if (total) {
+        if (stat !== 'sum') return fail('bad-param', { param: 'total', value: total, detail: 'total-rule-is-a-reading-of-sum' });
+        const rules = paramValues(DECL.zonal, 'total');
+        /* null = the kernel does not publish the set; the rule then travels down and js/gis-raster.js
+           refuses an unknown one by name with its own list. Refusing here on a list we could not ask
+           for would be this file inventing the vocabulary. */
+        if (rules && rules.indexOf(total) < 0) return fail('bad-param', { param: 'total', value: total, values: rules });
+      }
+      /* ⚠ THE METHOD ASKED ABOUT IS THE STAT, EXCEPT FOR `classes`: that is a table of areas per
+         distinct value, which js/gis-units.js has a word for — a majority-style question about a
+         nominal quantity — and calling it 'sum' would ask about arithmetic nobody performed. */
+      const method = (stat === 'classes') ? 'majority' : stat;
+      const agg = aggregationVerdict(spec, method, 'space');
+      let weight = null;
+      if (!total) {
+        if (agg.verdict === 'refused') {
+          return fail('aggregation-refused', { stat: stat, why: agg.why || null, remedy: agg.remedy || null, quantity: agg.quantity || null });
+        }
+        if (agg.verdict === 'needs-weight') {
+          weight = agg.weight || null;
+          /* ⚠ THIS ONE IS ALREADY SATISFIED, AND THAT IS A FACT ABOUT THE KERNEL RATHER THAN A
+             CONCESSION: js/gis-raster.js zonal's `mean` is Σ(value·km²)/Σkm² over the pixels that
+             carry a value — the area-weighted mean, since the round it was written. So a density's
+             mean over a zone needs no new arithmetic here; what it needed was for somebody to SAY
+             which mean it is, which the row and the recipe now do. */
+          if (!(weight === 'area' && stat === 'mean')) {
+            return fail('aggregation-needs-weight', { stat: stat, weight: weight, why: agg.why || null, remedy: agg.remedy || null });
+          }
+        }
+      }
       const base = (params.outName != null && String(params.outName).trim() !== '')
         ? String(params.outName).trim()
         : (stat + '_' + String(band.name || 'band'));
@@ -1890,6 +2854,9 @@ export function makeGisOps() {
         if (!g || !polygonsOf(g).length) continue;
         const z = await RK.zonal(rasDs, b.index, g, {
           classes: stat === 'classes', ctx: ctx, boundary: boundary,
+          /* (#R783) 呼び手が述べた量と、述べた「合計」の読み方。Both are optional and the kernel
+             answers exactly as before when neither is given. */
+          quantity: qs.spec, total: total,
           /* (#R764) 「この多角形は何 km² か」 is this file's rule, and the kernel is handed it rather
              than growing a second one. See js/gis-raster.js coverOf. */
           areaOf: areaKm2,
@@ -1908,15 +2875,44 @@ export function makeGisOps() {
           /* One column per distinct value is not a table shape a reader can join to; the map from
              value to km² is carried whole, under a name that says what it is. */
           extra[base] = z.classAreasKm2 || null;
+        } else if (total) {
+          /* ⚠ THE KERNEL'S VERDICT ABOUT THE RULE IS THE ANSWER. `value` is null whenever the
+             verdict is not 'allowed', and writing that null into a column for every row would be a
+             complete-looking table of nothing — so the step is refused with what DOES fit this
+             quantity, which is a refusal the reader can act on. */
+          const t = z.total || null;
+          if (!t || t.verdict !== 'allowed') {
+            return fail('total-rule-refused', {
+              total: total, verdict: t ? t.verdict : null, why: t ? (t.why || null) : 'total-missing',
+              fits: t ? (t.fits || null) : null, units: t ? (t.units || null) : null,
+            });
+          }
+          extra[base] = t.value;
+          /* 規則も、量を述べたのが誰かも、行に載る。 */
+          extra._totalRule = total;
+          extra._totalTimesAreaKm2 = t.timesAreaKm2 === true;
+          if (t.quantityFrom != null) extra._quantityFrom = t.quantityFrom;
         } else if (stat === 'count') extra[base] = z.count;
         else if (stat === 'sum') extra[base] = z.sum;
         else if (stat === 'mean') extra[base] = z.mean;
         else if (stat === 'min') extra[base] = z.min;
         else extra[base] = z.max;
-        if (stat === 'sum') extra._sumTimesAreaKm2 = z.sumTimesAreaKm2;
+        if (stat === 'sum' && !total) extra._sumTimesAreaKm2 = z.sumTimesAreaKm2;
+        /* (#R783) 面積重み付けの平均であることを、その平均の隣で述べる。⚠ ONLY WHEN THE QUANTITY
+           WAS DECLARED: the arithmetic is the same one zonal has always done, so a caller who
+           declared nothing must not suddenly find a new column in their table. */
+        if (weight === 'area') extra._meanWeight = 'area';
         out.push({ type: 'Feature', properties: withProps(props(f), extra), geometry: g });
       }
-      return { ok: true, features: out };
+      const rule = aggregationRecord(agg, qs.spec, weight);
+      const stats = { aggregation: rule };
+      if (total) stats.total = total;
+      const res = { ok: true, features: out, stats: stats };
+      /* 実行した規則はレシピにも残る（run() の `resolved`）——ただし述べることがあったときだけ。 */
+      if (total || qs.spec != null || (rule && rule.verdict !== 'undeclared')) {
+        res.resolved = total ? { aggregation: rule, total: total } : { aggregation: rule };
+      }
+      return res;
     }
 
     async function runRasterMask(rasDs, params, R, ctx) {
@@ -2457,18 +3453,111 @@ export function makeGisOps() {
       return { ok: true, features: out, stats: { changed: changed, refused: refused, emptied: emptied, total: fs.length } };
     }
 
+    /* ── (#R783) どの面なら、述べられた要求を満たせるのか ─────────────────────────────────────
+       ⚠ THIS LAYER DOES NOT ENUMERATE SURFACES AND DOES NOT MEASURE THEM. Every name, every figure
+       and every plane below comes out of js/gis-crs.js's own doors: surfaces() for the ground's
+       declared accuracy, certify() for the sphere's measured envelope, suggest() for the planes it
+       ranks over THIS data. A list assembled here would be the second opinion #R756 removed, and it
+       would fall behind the day the kernel gains a fourth surface. */
+    function surfacesMeeting(CK, input, what, tol) {
+      const out = [];
+      let list = null;
+      try { list = CK.surfaces(); } catch (_) { list = null; }
+      for (const s of (list || [])) {
+        if (!s || !Array.isArray(s.measures) || s.measures.indexOf(what) < 0) continue;
+        const call = (s.call && s.call[what]) || null;
+        if (s.isGround) {
+          const w = groundEnvelope(CK, what);
+          if (w != null && w <= tol) out.push({ surface: s.name, spec: null, worst: w, call: call });
+          continue;
+        }
+        if (!s.certifiable) continue;
+        if (s.name === 'sphere') {
+          const w = sphereEnvelope(CK, input, what);
+          if (w != null && w <= tol) out.push({ surface: s.name, spec: null, worst: w, call: call });
+          continue;
+        }
+        /* a plane has to be NAMED, so the kernel parameterises its own candidates from this data and
+           says which of them stay inside the requirement — it ranks and does not choose */
+        let ranked = null;
+        try { ranked = CK.suggest(input, { purpose: (what === 'area') ? 'area' : 'distance', tolerance: tol }); } catch (_) { ranked = null; }
+        for (const c of ((ranked && ranked.candidates) || [])) {
+          if (c.within !== true || !c.worst) continue;
+          out.push({ surface: s.name, spec: c.spec, code: c.code, worst: (what === 'area') ? c.worst.area : c.worst.length, call: call });
+        }
+      }
+      return out;
+    }
+
+    /* The ground's envelope is its DECLARED accuracy — it is the reference, so certifying it against
+       itself would be the co-designed reader js/gis-crs.js refuses to be. */
+    function groundEnvelope(CK, what) {
+      let list = null;
+      try { list = CK.surfaces(); } catch (_) { list = null; }
+      for (const s of (list || [])) {
+        if (!s || !s.isGround) continue;
+        const acc = s.accuracy && s.accuracy[what];
+        return (acc && typeof acc.relative === 'number') ? acc.relative : null;
+      }
+      return null;
+    }
+
+    /* The sphere's is MEASURED over the reader's own data, because it depends on where they are. */
+    function sphereEnvelope(CK, input, what) {
+      let cert = null;
+      try { cert = CK.certify('sphere', input); } catch (_) { cert = null; }
+      if (!cert || !cert.worst) return null;
+      const w = (what === 'area') ? cert.worst.boundArea : cert.worst.boundLength;
+      return (typeof w === 'number' && isFinite(w)) ? w : null;
+    }
+
     /* ── measure: the plane is the reader's, and its distortion travels with the number (#R752) ── */
 
     async function runMeasure(ds, params, R, ctx) {
       const what = String(params.what == null ? '' : params.what);
-      const wants = DECL.measure.params[0].values;
+      /* (#R783) ⚠ BY NAME, NOT BY POSITION. These two read params[0] and params[2] until a fifth
+         parameter was inserted between them and `unit` silently became `surface`'s list — an index
+         written beside a declaration is a copy of its order. */
+      const wants = paramValues(DECL.measure, 'what');
       if (wants.indexOf(what) < 0) return fail('bad-param', { param: 'what', value: what, values: wants });
       const unit = (params.unit == null || String(params.unit) === '') ? 'km' : String(params.unit);
-      const units = DECL.measure.params[2].values;
+      const units = paramValues(DECL.measure, 'unit');
       if (units.indexOf(unit) < 0) return fail('bad-param', { param: 'unit', value: unit, values: units });
+
+      /* (#R783) 述べた要求と、述べた面。⚠ BOTH ARE READ BEFORE ANY ARITHMETIC: a requirement that is
+         not a number is a mistake in the call, and finding that out after a column of areas has been
+         computed answers a different question (the kernel reads its own tolerance the same way). */
+      let tol = null;
+      if (params.tolerance != null && String(params.tolerance).trim() !== '') {
+        tol = Number(params.tolerance);
+        if (!isFinite(tol) || tol <= 0) return fail('bad-param', { param: 'tolerance', value: params.tolerance, unit: 'ratio' });
+      }
+      const wanted = (params.surface == null || String(params.surface).trim() === '') ? null : String(params.surface).trim();
 
       const spec = (params.crs == null || String(params.crs).trim() === '') ? null : String(params.crs).trim();
       let P = null, CK = null;
+      if (wanted != null || tol != null) {
+        /* ⚠ 「訊けなかった」 は 「無い」 ではない。 Both of these questions belong to js/gis-crs.js, so
+           a page where it is not mounted answers that rather than measuring something else. */
+        CK = crsKernel();
+        if (!CK) return fail('crs-unavailable', wanted != null ? { surface: wanted } : { tolerance: tol });
+      }
+      if (wanted != null) {
+        const allowed = paramValues(DECL.measure, 'surface');
+        if (!allowed) return fail('crs-unavailable', { surface: wanted });
+        if (allowed.indexOf(wanted) < 0) return fail('bad-param', { param: 'surface', value: wanted, values: allowed });
+      }
+      const ground = groundSurfaceName();
+      /* ⚠ 二つ述べられたら、それは呼び出しの誤りである。 A plane named beside a surface that has no
+         plane in it is two answers to one question, and picking one silently is the unit nobody said
+         out loud (#R752's whole reason for making the plane a parameter). */
+      if (wanted != null && spec && wanted !== 'stated-plane') {
+        return fail('bad-param', { param: 'surface', value: wanted, crs: spec, values: paramValues(DECL.measure, 'surface') });
+      }
+      if (wanted === 'stated-plane' && !spec) {
+        return fail('bad-param', { param: 'crs', value: null, surface: wanted, spellings: paramValues(DECL.measure, 'crs') });
+      }
+      const onGround = wanted != null && ground != null && wanted === ground;
       if (spec) {
         CK = crsKernel();
         if (!CK || typeof CK.projection !== 'function') return fail('crs-unavailable', { crs: spec });
@@ -2492,6 +3581,24 @@ export function makeGisOps() {
       if (hasField(ds, base)) return fail('output-column-in-use', { name: base });
 
       const fs = ds.features();
+
+      /* (#R783) ⚠ 数を出してから取り消すことはできない。 For the two surfaces this layer does not hand
+         a tolerance to per geometry (the sphere's arithmetic is its own; the ground's accuracy is
+         declared by the kernel that implements it), the stated requirement is compared against the
+         measured envelope BEFORE the loop. The plane's is applied by the kernel inside areaOn /
+         lengthOn, over each geometry, which is where that measurement belongs. */
+      if (tol != null && !spec) {
+        const env = onGround ? groundEnvelope(CK, what) : sphereEnvelope(CK, fs, what);
+        if (env == null) return fail('crs-accuracy-unmeasured', { tolerance: tol, what: what, surface: onGround ? ground : 'sphere' });
+        if (!(env <= tol)) {
+          return fail('crs-accuracy-outside-tolerance', {
+            tolerance: tol, worst: env, what: what, unit: 'ratio', surface: onGround ? ground : 'sphere',
+            /* ⚠ 「信頼できない」 だけを返さない（#R783 の kernel 側と同じ形）。 */
+            alternatives: surfacesMeeting(CK, fs, what, tol),
+          });
+        }
+      }
+
       const out = [];
       let measured = 0, refusedRows = 0;
       for (const f of fs) {
@@ -2501,6 +3608,19 @@ export function makeGisOps() {
         if (!g) {
           /* A row with no place has no area. null, not 0 — 0 is a measurement. */
           extra[base] = null;
+        } else if (onGround) {
+          /* (#R783) 地面の上で、平面を1枚も挟まずに測る。 ⚠ THE ARITHMETIC IS NOT REIMPLEMENTED HERE:
+             these are js/gis-crs.js's two ground doors, which carry their own declared accuracy. */
+          const m = (what === 'area') ? CK.areaOnGround(g, { unit: unit === 'm' ? 'm2' : 'km2' })
+            : CK.lengthOnGround(g, { unit: unit });
+          if (!m || !m.ok) {
+            refusedRows++;
+            extra[base] = null;
+            extra[base + 'Refused'] = String((m && m.why) || 'measure-failed');
+          } else {
+            measured++;
+            extra[base] = m.value;
+          }
         } else if (!P) {
           /* The geodesic answer this layer has always given, unchanged. ⚠ `areaKm2` is the ONE
              implementation of 「面積」 in this file; a second walk here would be a second opinion. */
@@ -2508,9 +3628,22 @@ export function makeGisOps() {
           extra[base] = (km == null) ? null : (unit === 'm' ? (what === 'area' ? km * 1e6 : km * 1e3) : km);
           if (extra[base] != null) measured++;
         } else {
-          const m = (what === 'area') ? CK.areaOn(P, g, { unit: unit === 'm' ? 'm2' : 'km2' })
-            : CK.lengthOn(P, g, { unit: unit });
+          /* ⚠ (#R783) THE TOLERANCE IS HANDED TO THE KERNEL, NOT APPLIED HERE. It measures the
+             envelope over this very geometry and either lets the number through or answers with the
+             surfaces that would meet it; `options.tolerance` absent means nothing is computed and
+             nothing is refused, which is what keeps every old call identical to the bit. */
+          const mOpts = (what === 'area') ? { unit: unit === 'm' ? 'm2' : 'km2' } : { unit: unit };
+          if (tol != null) mOpts.tolerance = tol;
+          const m = (what === 'area') ? CK.areaOn(P, g, mOpts) : CK.lengthOn(P, g, mOpts);
           if (!m || !m.ok) {
+            /* ⚠ 要求を満たせなかったことは、この行の話ではなく、この測定の話である。 A reader who
+               stated a tolerance asked for numbers they can stand behind; answering with a column of
+               nulls beside one refusal code would be the 「表面的な対処」 this project forbids. The
+               kernel's own detail — how far off, the certificate, and the surfaces that can — is
+               handed up whole. */
+            if (tol != null && m && m.why === 'crs-accuracy-outside-tolerance') {
+              return fail(m.why, Object.assign({ surface: 'stated-plane', plane: spec }, m.detail || {}));
+            }
             refusedRows++;
             extra[base] = null;
             extra[base + 'Refused'] = String((m && m.why) || 'measure-failed');
@@ -2544,14 +3677,26 @@ export function makeGisOps() {
             extent: a.extent, areaScale: a.areaScale, scale: a.scale,
           };
         }
+        /* ⚠ (#R783) 「面の外へ出たか」の次の問いに、答えが無かった。 assess() says where the data is
+           relative to the plane's stated area of use; it says NOTHING about how far off the numbers
+           can be, and a column of Web-Mercator areas at 60°N is +324% with a perfectly healthy
+           `outside: 0`. certify() is the measurement — the composed envelope, the independent
+           reference it was checked against, and whether the check fell inside it — and it is carried
+           here as the kernel produced it rather than restated. ⚠ IT IS A MEASUREMENT AND NOT A
+           VERDICT: nothing is refused unless the caller stated a tolerance. */
+        if (fit && typeof CK.certify === 'function') {
+          const cert = CK.certify(P, fs);
+          if (cert) { fit.bound = cert.bound; fit.checked = cert.checked; fit.within = cert.within; }
+        }
       }
       return {
         ok: true, features: out,
         stats: {
           measured: measured, refused: refusedRows, total: fs.length,
           plane: spec || 'geodesic', unit: unit,
-          /* which surface the numbers above were computed on — the same vocabulary ops() declares */
-          surface: P ? 'stated-plane' : 'sphere',
+          /* which surface the numbers above were computed on — the same vocabulary ops() declares.
+             (#R783) `onGround` is the ground's own name, taken from the module that owns it. */
+          surface: onGround ? ground : (P ? 'stated-plane' : 'sphere'),
           fit: fit,
         },
       };
@@ -2906,6 +4051,10 @@ export function makeGisOps() {
       if (decl.needsExpr && !exprKernel()) return fail('expr-unavailable');
       /* (#R752) Same shape again — the warp is a module, and 「載っていない」 is an answer. */
       if (decl.needsWarp && !warpKernel()) return fail('warp-unavailable');
+      /* (#R783) And again for the units. ⚠ `convert` MAY NOT FALL BACK TO ARITHMETIC OF ITS OWN
+         when js/gis-units.js is not mounted: a conversion this file performed with a factor it
+         invented would be the one thing the op exists to stop. */
+      if (decl.needsUnits && !unitKernel()) return fail('units-unavailable');
       if (decl.needsGeometry) {
         const GG = geometry();
         if (!GG) return fail('geometry-missing');
@@ -3021,7 +4170,14 @@ export function makeGisOps() {
         repair: () => runRepair(ds[0], params, ctx),
         timeWindow: () => runTimeWindow(ds[0], params, R, ctx),
         join: () => runJoin(ds[0], ds[1], params, ctx),
+        /* (#R783) the three joins the outside review's §9 named, in the order it put them: where a
+           row is, what is nearest to it, when it holds. */
+        spatialJoin: () => runSpatialJoin(ds[0], ds[1], params, R, ctx),
+        nearestJoin: () => runNearestJoin(ds[0], ds[1], params, R, ctx),
+        timeJoin: () => runTimeJoin(ds[0], ds[1], params, R, ctx),
         compute: () => runCompute(ds[0], params, R, ctx),
+        /* (#R783) 単位換算——同じ §9 の「手作業の倍率計算ではなく」。 */
+        convert: () => runConvert(ds[0], params, R, ctx),
       };
       const runner = RUN[decl.id];
       if (!runner) return fail('op-not-wired', { op: decl.id });
@@ -3067,6 +4223,21 @@ export function makeGisOps() {
         } catch (_) { return null; }
       })();
       if (eng) prov.engine = eng;
+      /* ══ ⚠⚠⚠ (#R783) レシピは、呼び手が打ったものだけでなく、実行が解決したものも持つ ═════════
+         `convert` forced this. A reader converting 人口密度 to /km² states only the TARGET, because
+         the source unit is already on the column with its own author — so `params` alone says
+         「something を /km² に直した」, and the one fact a manifest exists for (換算前後の単位と、
+         使った変換) lived in `stats`, which js/gis-panel.js prints for that turn and nobody writes
+         down. That is the loss #R763 recorded for the geometry a run could not compute, one op over.
+         ⚠ IT IS SEPARATE FROM `params`, AND IT HAS TO BE. `params` is what js/gis-project.js
+         REPLAYS: a resolved value merged into it would become a caller's statement on reload, and
+         the next replay would stop asking the column — so a column whose unit was corrected in the
+         meantime would be recomputed against the old one. `resolved` sits beside `engine` and
+         `coverage` — a statement about THAT run, for a reader, never an input to the replay. */
+      if (res.resolved && typeof res.resolved === 'object') {
+        const rv = clone(res.resolved);
+        if (rv) prov.resolved = rv;
+      }
       /* (#R759) 取得の陳述は、演算をまたいでも落ちない。See inheritCoverage — null when no input ever
          said anything, which is the state every record made from an imported file is in. */
       const cov = inheritCoverage(ds, res.stats, decl.id);
@@ -3142,7 +4313,23 @@ export function makeGisOps() {
        project saved last week reopens with different pixels in it, which is precisely the fact this
        version exists to announce. (The ctx handover and the surface declarations do not change an
        answer; the rasterize rule does, and one changed answer is enough.) */
-    const KERNEL_VERSION = 'ops-6';
+    /* ⚠ (#R783) ops-6 → ops-7 BECAUSE A REFUSAL MOVED. Four ops are new and cannot change an old
+       recipe — but `aggregate` grew `areaWeightedMean`, so a step that named it was refused with
+       `bad-param` last week and computes a number today, and `aggregate` / `zonal` now REFUSE a
+       declared quantity whose aggregation js/gis-units.js says means nothing (`aggregation-refused`,
+       `aggregation-needs-weight`). ⚠ A run that declares no quantity is unchanged to the bit — no
+       value, no column, no refusal — which is the condition on adding this at all; what moved is
+       what the layer does when somebody DOES declare one. */
+    /* ⚠ (#R783) RAISED TO ops-8, and the ledger's question is the one to answer: does this edit
+       change an ANSWER? ⑴ A recipe that states no `tolerance` and no `surface` replays to the same
+       numbers, bit for bit — the geodesic default is still areaKm2 / lengthKm and the plane's number
+       is still what js/gis-crs.js's areaOn / lengthOn returns, with no certificate computed behind
+       the caller's back. ⑵ But a recipe that states a `tolerance` the measured envelope cannot meet
+       now replays to `crs-accuracy-outside-tolerance` where ops-7 produced a column of numbers, and
+       one that states `surface: 'ellipsoid'` measures on WGS 84 where ops-7 answered `bad-param`.
+       「拒否が答えになった」 and its mirror are exactly the changes a saved project must be able to
+       see. The keeper is scripts/gis-kernel-versions.mjs. */
+    const KERNEL_VERSION = 'ops-8';
     const API = {
       /* The implementation a saved recipe replays through (see KERNEL_VERSION above). */
       version: () => KERNEL_VERSION,
@@ -3152,7 +4339,7 @@ export function makeGisOps() {
          mounted leaves `values` ABSENT rather than empty: 「訊けなかった」 and 「選べる値は無い」 are
          different statements, and a UI that draws an empty dropdown for the first one is lying. */
       ops: () => ORDER.map((id) => {
-        const d = clone(DECL[id]);
+        const d = declOut(id);
         for (const p of (d.params || [])) {
           if (!p.valuesOf || Array.isArray(p.values)) continue;
           const v = paramValues(DECL[id], p.name);
@@ -3160,7 +4347,7 @@ export function makeGisOps() {
         }
         return d;
       }),
-      op: (id) => (DECL[id] ? clone(DECL[id]) : null),
+      op: (id) => (DECL[id] ? declOut(id) : null),
       run: run,
       /* exposed because the panel labels a clipped shape with its area and the checks measure the
          same number the ops wrote — one implementation, asked by both */
@@ -3170,7 +4357,7 @@ export function makeGisOps() {
       predicates: () => RELATE_PREDICATES.slice(),
       /* (#R756) The closed vocabulary every op's `surface` is drawn from — handed out so a reader,
          a panel and the checks all ask the same question of the same list. */
-      surfaces: () => SURFACES.slice(),
+      surfaces: () => surfaceVocab(),
     };
     try { window.IntMapGisOps = API; } catch (_) { }
     return API;
