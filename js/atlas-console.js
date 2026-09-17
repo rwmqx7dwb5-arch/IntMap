@@ -3937,7 +3937,7 @@ window.IntMapModules.atlasConsole=function(HOST){
          it (the normal sidebar has one surface, so opening Atlas closes the reader). The subject is
          still the subject; it is no longer on screen, and js/atlas-state.js says so in those words
          rather than claiming the reader is reading it right now. */
-      try{ const rd=window._imReader; if(rd&&rd.open&&rd.title) o.article={ title:String(rd.title).slice(0,140), publisher:rd.publisher||'', pubDate:rd.pubDate?String(rd.pubDate).slice(0,16):'', place:rd.place||'', loc:(rd.loc&&isFinite(rd.loc[0]))?[+rd.loc[0],+rd.loc[1]]:null, body:rd.body?String(rd.body).slice(0,2600):'', onScreen:rd.onScreen!==false }; }catch(_){}
+      try{ const rd=window._imReader; if(rd&&rd.open&&rd.title) o.article={ kind:(rd.kind==='event'?'event':'article'), title:String(rd.title).slice(0,140), publisher:rd.publisher||'', pubDate:rd.pubDate?String(rd.pubDate).slice(0,16):'', place:rd.place||'', loc:(rd.loc&&isFinite(rd.loc[0]))?[+rd.loc[0],+rd.loc[1]]:null, body:rd.body?String(rd.body).slice(0,2600):'', onScreen:rd.onScreen!==false }; }catch(_){}
       try{ const si=document.getElementById('map-search')||document.getElementById('search-input'); if(si&&si.value&&String(si.value).trim()) o.searchBox=String(si.value).trim().slice(0,60); }catch(_){}
       return o; }
     function _atlasOverlayState(){ const o={highlightCountries:0,highlight:null,choropleth:null,customScore:null,pins:null,polygons:null,lines:null,measure:null,radius:null,userPins:null,tool:''};
@@ -4828,10 +4828,69 @@ window.IntMapModules.atlasConsole=function(HOST){
         if(ar.status==='needs_input'&&ar.inputRequest) _pendingInput={ result:ar, bubble:host, at:Date.now() }; }catch(_){}
       return true;
     }
+    /* ══ ⚠⚠⚠ (#R776) ARRIVING WITH A SUBJECT IS A SHAPE, NOT ONE GESTURE'S PRIVILEGE ══════════
+       The map's right-click «Ask Atlas» (askHere, below) opens onto a bubble that NAMES what the
+       reader just pointed at and offers starters measured around it. The reading surface's «Ask
+       Atlas» (js/article-reader.js `readerBar()`, on the article reader AND the Event detail) called
+       `open()` and nothing else — so the same button, with the same label, dropped the reader into an
+       empty console and asked them to type the subject they were already looking at. `window._imReader`
+       has carried that subject since #R430 and `_selectionState()` reads it, so Atlas COULD answer
+       「この記事の背景は？」 — it just never said so, and a reader with no way of knowing that typed
+       nothing. ⚠ The head/note/chips bubble is built ONCE here and both entries call it; a second copy
+       is how the two «Ask Atlas» buttons drifted apart in the first place. */
+    function _arrive(headHtml,note,qs){
+      const p=ensure();
+      try{ const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none'; }catch(_){}   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
+      const chips=(qs||[]).filter(Boolean).map(e=>'<button class="atl-here-q" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">'+esc(e)+'</button>').join('');
+      const b=bubble('a',headHtml
+        +'<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.5;">'+esc(note)+'</div>'+chips);
+      /* ⚠ the chips are a STARTER, not the only way out: the composer below stays free, which is why
+         this focuses it instead of sending anything. Nothing is asked until the reader asks it. */
+      try{ b.querySelectorAll('.atl-here-q').forEach(btn=>btn.onclick=()=>run(btn.textContent.trim())); }catch(_){}
+      setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },80);
+      return b;
+    }
+    /* ⚠⚠⚠ (#R776) THE READING SURFACE'S ARRIVAL. Returns false when nothing is being read, and the
+       caller does not need a second plan for that: `open()` has already happened, so a press with no
+       open article lands exactly where it used to. ⚠ THE STARTERS ARE DERIVED, NOT A FIXED TRIO —
+       #R392 removed fixed sentences from askHere for the same reason: what this item HAS (a place, a
+       cluster of sources, a body) is what it can usefully be asked about, and an item that has none of
+       them must not be offered a question about one. */
+    function readingStarters(rd){
+      const ev=rd.kind==='event', place=String(rd.place||'').trim().slice(0,60), out=[];
+      out.push(ev?L('Explain the background of this event','この出来事の背景を説明して','Erkläre den Hintergrund dieses Ereignisses','Объясни предысторию этого события','Explica el trasfondo de este suceso')
+                : L('Explain the background of this article','この記事の背景を説明して','Erkläre den Hintergrund dieses Artikels','Объясни предысторию этой статьи','Explica el trasfondo de este artículo'));
+      if(place) out.push(String(L('Show {p} on the map','{p} を地図で見せて','Zeige {p} auf der Karte','Покажи {p} на карте','Muestra {p} en el mapa')).replace('{p}',place));
+      else out.push(L('Which places does this involve? Put them on the map','この話に出てくる場所を地図に出して','Welche Orte betrifft das? Zeige sie auf der Karte','Каких мест это касается? Покажи их на карте','¿Qué lugares implica esto? Ponlos en el mapa'));
+      if(rd.body) out.push(ev?L('What do the sources actually agree on?','出典が実際に一致しているのはどこ？','Worin stimmen die Quellen tatsächlich überein?','В чём источники действительно сходятся?','¿En qué coinciden realmente las fuentes?')
+                             : L('What does this article not say?','この記事が書いていないことは？','Was sagt dieser Artikel nicht?','О чём эта статья умалчивает?','¿Qué no dice este artículo?'));
+      else if(place) out.push(String(L('What else is happening around {p}?','{p} の周辺で他に何が起きている？','Was passiert sonst rund um {p}?','Что ещё происходит вокруг {p}?','¿Qué más ocurre alrededor de {p}?')).replace('{p}',place));
+      return out.slice(0,3);
+    }
+    function askReading(){
+      try{ open(); }catch(_){}
+      let rd=null; try{ rd=window._imReader; }catch(_){}
+      if(!rd||!rd.open||!rd.title) return false;
+      _lastUserMsg='';   /* (#R64) button entry has no typed message → the mirror falls back to the UI language */
+      const title=String(rd.title).slice(0,160);
+      const place=String(rd.place||'').trim().slice(0,60);
+      /* ⚠ pin the article's own point so 「ここ」/「現地」 in the follow-ups resolve to the story's
+         place and not to whatever the camera happened to be over. No flyTo: the reader is still
+         reading, and moving the map under them is not what this button was pressed for. */
+      try{ if(rd.loc&&isFinite(rd.loc[0])){ const lng=+rd.loc[0], lat=+rd.loc[1]; _herePoint={lng,lat,name:place}; _lastPlace={lng,lat,name:place}; } }catch(_){}
+      const meta=[String(rd.publisher||'').slice(0,60),(rd.pubDate?String(rd.pubDate).slice(0,10):''),place].filter(Boolean).join(' · ');
+      const head='<div class="atl-read-hd" style="font-weight:600;margin-bottom:3px;line-height:1.4;">'+esc(title)+'</div>'
+        +(meta?('<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">'+esc(meta)+'</div>'):'');
+      _arrive(head,(rd.kind==='event')
+        ? L('I have this event open — ask me anything about it.','いまこの出来事を把握しています。何でも聞いてください。','Ich habe dieses Ereignis offen — fragen Sie mich alles dazu.','Это событие сейчас передо мной — спрашивайте что угодно.','Tengo este suceso abierto — pregúntame lo que quieras.')
+        : L('I have this article open — ask me anything about it.','いまこの記事を把握しています。何でも聞いてください。','Ich habe diesen Artikel offen — fragen Sie mich alles dazu.','Эта статья сейчас передо мной — спрашивайте что угодно.','Tengo este artículo abierto — pregúntame lo que quieras.'),
+        readingStarters(rd));
+      return true;
+    }
     async function askHere(ll){ if(!ll||ll.lng==null||!isFinite(+ll.lng)) return; try{ open(); }catch(_){}
       /* …and if something was waiting for exactly this, that is what the click meant. */
       try{ if(await _resumeWithPoint(+ll.lng,+ll.lat)) return; }catch(_){}
-      _lastUserMsg=''; const p=ensure(); const exw=p.querySelector('.atl-ex'); if(exw) exw.style.display='none'; const subw=p.querySelector('.atl-sub'); if(subw) subw.style.display='none';   /* (#R103) drop the intro sub-text once a conversation starts (don't stick it to the top) */
+      _lastUserMsg=''; const p=ensure();
       const lng=+ll.lng, lat=+ll.lat;
       _herePoint={lng,lat,name:''}; try{ _lastPlace={lng,lat,name:''}; }catch(_){}
       try{ GE().camera.flyTo({center:[lng,lat],zoom:Math.max(GE().camera.getZoom(),5),duration:900}); }catch(_){}
@@ -4845,11 +4904,9 @@ window.IntMapModules.atlasConsole=function(HOST){
          from the starter chips' own pools now, measured around THE CLICKED POINT (the flyTo above takes
          900 ms, so the camera still shows the old view); #R309's three are the guaranteed tail in `HERE`. */
       let ex=[]; try{ ex=pointExamples(lng,lat,Math.max(GE().camera.getZoom(),5),3)||[]; }catch(_){}
-      const chips=ex.map(e=>'<button class="atl-here-q" style="display:block;width:100%;text-align:left;margin:3px 0;padding:7px 10px;font-size:11.5px;border-radius:9px;border:1px solid var(--glass-border,rgba(128,128,128,0.28));background:var(--input-bg);color:var(--text-main);cursor:pointer;">'+esc(e)+'</button>').join('');
-      const b=bubble('a','<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">📍 '+coordStr+'</div>'
-        +'<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;line-height:1.5;">'+L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.')+'</div>'+chips);
-      try{ b.querySelectorAll('.atl-here-q').forEach(btn=>btn.onclick=()=>run(btn.textContent.trim())); }catch(_){}
-      setTimeout(()=>{ try{ inEl.focus(); }catch(_){} },80); }
+      _arrive('<div class="atl-here-hd" style="font-weight:600;margin-bottom:3px;">📍 '+coordStr+'</div>',
+        L('Ask me anything about this spot — I know exactly where it is.','この地点について何でも聞いてください。正確な位置を把握しています。','Fragen Sie mich alles zu diesem Ort — ich kenne die genaue Position.','Спросите что угодно об этом месте — я знаю его точные координаты.','Pregúntame lo que sea sobre este lugar — sé exactamente dónde está.'),
+        ex); }
     /* (#R62) external entry point: the AI-brief buttons all over IntMap now open ATLAS and run the brief inline
        ("AI BriefはAtlasに統合して") — one conversation surface for everything. */
     async function briefEntry(name,ll){ try{ open(); }catch(_){}
@@ -4900,7 +4957,7 @@ window.IntMapModules.atlasConsole=function(HOST){
       const gen=++_runGen;
       try{ const fails=await runActions(ai,'',acts,gen); if(gen===_runGen) recordTurn(String(label||''),'',acts,fails); }catch(e){ try{ ai.innerHTML='<span style="color:#ff453a;">'+esc((e&&e.message)||'error')+'</span>'; }catch(_){} }
       try{ PROG.done(ai); }catch(_){} try{ msgTools(ai,String(label||'')); }catch(_){} }
-    return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, askHere, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
+    return { open, toggle, close:_atlClose, mountTab, run, runDirect, brief:briefEntry, askHere, askReading, dispatch:a=>dispatch(a), wctx:()=>{ try{ return JSON.parse(JSON.stringify(_wctx)); }catch(_){ return null; } }, state:()=>{ try{ return stateContext(); }catch(_){ return ''; } } };
   })();
 };
 
