@@ -28,6 +28,7 @@
  * ==========================================================================*/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { withTreeLock } from './helpers/gate-lock.mjs';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -88,7 +89,21 @@ test('#R718 ③ the measured ea7664a1 shape fails, though its LF size passed', (
 });
 
 /* ── ④ the gate is WIRED to it, asserted by running the gate ────────────────────────────────── */
-test('#R718 ④ check:agents reports the worst case for the shipped AGENTS.md', () => {
+test('#R718 ④ check:agents reports the worst case for the shipped AGENTS.md', async () => {
+  /* ⚠⚠⚠ (#R766) THE TREE LOCK, AND WHY THIS TEST NEEDS IT TOO. This runs the WHOLE gate, and
+     four other files prove their own gates by making a fact WRONG on disk, running the gate and
+     putting it back — two of those facts live in `.agents/`, whose rendered copies this gate
+     compares. tests/r503-checks.test.mjs ⑤ runs the same gate and already takes this lock, with
+     the reason written beside it; this one did not, so it read the tree mid-mutation.
+     MEASURED on CI run 35171903243: `stale: .claude/agents/intmap-verifier.md is not what
+     .agents/ renders to` — for a file nobody had edited. The same commit, re-checked out with
+     CI's own LF bytes, renders 13/13 matching copies, and `--write` has nothing to do. The
+     verdict was a property of the RUNNER's concurrency, not of the tree
+     ([[intmap-gate-verdict-must-not-depend-on-the-runner]]).
+     ⚠ The lock wraps the whole body rather than the `execFileSync` alone: the assertions below
+     read AGENTS.md again, and a gate verdict compared against a file that moved in between is
+     the same defect one line later. */
+  await withTreeLock(async () => {
   /* ⚠ EVALUATED, NOT READ. A test that greps agent-sync.mjs for the word `crlfBytes` passes on a
      file that imports it and never calls it (#R505). So run the gate and read the number out. */
   /* ⚠ AND ITS MUTATION IS A LINUX-SIDE ONE, WHICH IS THE POINT. On a CRLF checkout the bytes on
@@ -121,6 +136,7 @@ test('#R718 ④ check:agents reports the worst case for the shipped AGENTS.md', 
   /* and the bound has to actually bound the file this checkout holds */
   assert.ok(readFileSync(at('AGENTS.md')).length <= want,
     'this checkout is LARGER than the "worst case" — the measurement is not an upper bound');
+  });
 });
 
 /* ── ⑤ the margin was regained by moving, not by raising the number ─────────────────────────── */

@@ -2142,3 +2142,199 @@ test('R479 ⑨ the basemap credit is visible and names the base that is drawn', 
   expect(c.text, 'the credit names the base actually drawn (sat=' + c.sat + ')').toMatch(want);
   expect(c.links.length, 'and the credit links out').toBeGreaterThan(0);
 });
+
+/* ══ (#R766) THE TOOLS STRIP'S DOORS ARE REACHABLE FROM THE PANEL A READER OPENS ═══════════════
+   「「データと分析」を開くボタンが、試したどの幅でも押せなかった。」 — and the reason it was
+   reported a THIRD time is that the two earlier answers each copied ONE door into the tile
+   browser's row list (#R242 the earthquake sim, redone by #R243; #R666 the pandemic sim, redone by
+   #R670), which rescues that door and leaves the next one dark.
+
+   MEASURED ON PRODUCTION (build R765) BEFORE THE FIX — 18 widths, 320 / 375 / 414 / 500 / 600 /
+   680 / 700 / 740 / 767 / 768 / 769 / 800 / 900 / 1000 / 1024 / 1200 / 1440 / 1920, each reloaded
+   so the load-time branch re-ran, each with the layer UI actually opened:
+
+       #btn-gis-panel #btn-upload-geojson #btn-compare #btn-correlate
+       #btn-edu #lp-save #btn-seismic-sim #btn-pandemic-sim
+           → rect 0,0,0,0 and offsetParent null AT EVERY ONE OF THE 18 WIDTHS.
+
+   None of the eight was hidden: each had display block/flex and visibility visible. Their ANCESTOR
+   was. `imLayerPanel` is a constant 'right' since #R296, so no rule can show `#layer-dropdown`
+   above 768px, and at/below 768px css/intmap.css hides `#layer-tools` by name. There was no width
+   at which any of them was reachable. Forcing `#layer-dropdown` visible at 1440 gave all eight a
+   258×31 rect and `elementFromPoint` returned each button at its own centre — the parts were fine,
+   the ROUTE was missing (js/map-ui.js `_placeLayerTools`, Architecture.md §8.6).
+
+   ⚠⚠ WHY THIS IS HERE AND NOT IN A FILE OF ITS OWN. A new spec is core only while its round is the
+   highest-numbered one (scripts/tiers.mjs) and drops to the nightly deep tier the round after —
+   which is where a check against a defect that has recurred three times is least use. This suite is
+   CORE_ALWAYS, it already booted the app, and scripts/test-budget.mjs says the rest out loud:
+   "the assertions are free, the boot was the whole price".
+
+   ⚠⚠⚠ AND THE ASSERTION IS NOT 「#btn-gis-panel EXISTS」. It existed the whole time, and so did its
+   handler and its lazy module — a check spelling that id would have passed on the shipped build
+   ([[intmap-restate-the-defect-not-the-fix]]). What is measured is the defect: 「a door the strip
+   offers is not reachable from the panel a reader opens」, for EVERY door the strip offers,
+   DISCOVERED from the DOM rather than listed here, because a list is what let the second door stay
+   dark while the first was being fixed. Reachability is asked of the browser
+   ([[intmap-visible-is-not-unoccluded]]): display / visibility / opacity / 「inside the viewport」
+   are all true of a button with an opaque plate over it. */
+
+/** Reachability of every door the strip offers, asked of the page — ids are never written here.
+ *  ⚠ THE SCROLL IS WAITED ON, NOT TIMED. A first draft did `scrollIntoView` then slept 120 ms, and
+ *  it failed about one run in three — measured, `#btn-correlate` sat at y=890 in an 812-high
+ *  viewport and `elementFromPoint` returned null, and the button it happened to be was different
+ *  every time. A sleep guesses; polling the rect asks the thing that is moving whether it has
+ *  arrived. A door that never comes into view is reported unreachable, which is the truth. */
+const r766Doors = () => page.evaluate(async () => {
+  const strip = document.getElementById('layer-tools');
+  if (!strip) return { strip: 'MISSING', doors: [], dupes: [] };
+  const doors = [];
+  for (const el of Array.from(strip.children)) {
+    if (getComputedStyle(el).display === 'none') continue;          /* deduped twin, or empty */
+    const btn = el.tagName === 'BUTTON' ? el : el.querySelector('button');
+    if (!btn) continue;                                             /* a heading is not a door */
+    let r = null;
+    for (let i = 0; i < 40; i++) {
+      btn.scrollIntoView({ block: 'center' });
+      await new Promise((res) => setTimeout(res, 100));
+      r = btn.getBoundingClientRect();
+      if (r.width && r.height && r.top >= 0 && r.bottom <= window.innerHeight) break;
+    }
+    const hit = (r && r.width && r.height && r.top >= 0 && r.bottom <= window.innerHeight)
+      ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+    doors.push({
+      id: btn.id || el.id || '(unnamed)',
+      w: Math.round(r ? r.width : 0), h: Math.round(r ? r.height : 0),
+      y: Math.round(r ? r.top : -1),
+      reach: !!(hit && (btn === hit || btn.contains(hit))),
+    });
+  }
+  /* the strip and the tile browser's rows are two surfaces over the same OS commands; the overlap
+     is computed from two declarations (`data-os-act` on the button, `data-act` on the row) rather
+     than from a written pairing of ids, so this measures that the computation actually ran. */
+  const tb = strip.closest('.lst-toolbody');
+  const rows = new Set(tb ? Array.from(tb.querySelectorAll('.lst-toolrow[data-act]'))
+    .filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.dataset.act) : []);
+  const dupes = Array.from(strip.querySelectorAll('[data-os-act]'))
+    .filter((b) => getComputedStyle(b).display !== 'none' && rows.has(b.dataset.osAct))
+    .map((b) => b.dataset.osAct);
+  return {
+    strip: strip.closest('.lsr-mount') ? '.lsr-mount'
+      : strip.closest('#layer-sidebar-r') ? '#layer-sidebar-r'
+        : strip.closest('#layer-dropdown') ? '#layer-dropdown' : '?',
+    doors, dupes,
+  };
+});
+
+function r766Assert(d, where) {
+  expect(d.strip, where + ': the strip is carried into the panel the reader opens').not.toBe('#layer-dropdown');
+  expect(d.strip, where + ': the strip still exists').not.toBe('MISSING');
+  /* ⚠ THE FLOOR IS NOT A COUNT OF TODAY'S BUTTONS. It says 「the strip offers something」, so a
+     rebuild that silently empties it cannot pass by having nothing left to measure. The exact set
+     differs by width on purpose — #btn-correlate / #edu-mount / #lyr-presets are not built on a
+     phone — and pinning a number here would make that difference a failure. */
+  expect(d.doors.length, where + ': the tools strip offers at least one door').toBeGreaterThan(0);
+  expect(d.doors.filter((x) => !x.reach), where + ': unreachable doors').toEqual([]);
+  expect(d.doors.filter((x) => !x.w || !x.h), where + ': doors with no box').toEqual([]);
+  expect(d.dupes, where + ': commands offered by both a row and a button').toEqual([]);
+}
+
+/** Open the desktop layer panel and hand back whether it had to be opened, so the suite is left
+ *  as it was found. ⚠ THE PANEL IS OPENED RATHER THAN ASSUMED OPEN: measured on this suite's
+ *  seeded session at 1280×720, `body.lsr-open` was still false 30 s after load, and the doors
+ *  inside a shut panel are of course unreachable. 「The panel a reader opens」 is the claim, so the
+ *  test opens it the way a reader does — by pressing #lsr-toggle — instead of waiting for it to
+ *  happen by itself. This is also what puts the strip in place: `_placeLayerTools` runs on a build,
+ *  an open, a close and a rebuild, so before the first open the strip may still be parked in
+ *  `#layer-dropdown` (measured — the earlier draft's wait for `.lst-toolbody` was a race). */
+async function r766OpenPanel() {
+  const wasOpen = await page.evaluate(() => document.body.classList.contains('lsr-open'));
+  if (!wasOpen) {
+    await page.click('#lsr-toggle');
+    await page.waitForFunction(() => document.body.classList.contains('lsr-open'), null, { timeout: 30_000 });
+  }
+  await page.waitForFunction(() => {
+    const t = document.getElementById('layer-tools');
+    return !!t && !!t.closest('.lst-toolbody');
+  }, null, { timeout: 30_000 });
+  return wasOpen;
+}
+async function r766RestorePanel(wasOpen) {
+  if (wasOpen) return;
+  await page.evaluate(() => { try { document.getElementById('lsr-toggle')?.click(); } catch { /* nothing to restore */ } });
+  await page.waitForFunction(() => !document.body.classList.contains('lsr-open'), null, { timeout: 30_000 })
+    .catch(() => { /* restore is courtesy — the assertions above already ran */ });
+}
+
+test('R766 ① every door the layer tools strip offers is reachable on a desktop viewport', async () => {
+  const wasOpen = await r766OpenPanel();
+  try { r766Assert(await r766Doors(), 'desktop'); } finally { await r766RestorePanel(wasOpen); }
+});
+
+/* ② the reported case, stated as what the reader could not do — the door is found by what it
+   SAYS, in whatever language is live, and the press goes to the element a finger would land on. */
+test('R766 ② the data-and-analysis panel can be opened from the layer UI', async () => {
+  const wasOpen = await r766OpenPanel();
+  try {
+    const got = await page.evaluate(async () => {
+      const strip = document.getElementById('layer-tools');
+      const want = /data\s*&\s*analysis|データと分析|Daten und Analyse|Данные и анализ|Datos y análisis|Données et analyse|데이터와 분석|資料與分析|数据与分析/i;
+      const btn = Array.from(strip ? strip.querySelectorAll('button') : []).find((b) => want.test(b.textContent || ''));
+      if (!btn) return { found: false };
+      let r = null;
+      for (let i = 0; i < 40; i++) {
+        btn.scrollIntoView({ block: 'center' });
+        await new Promise((res) => setTimeout(res, 100));
+        r = btn.getBoundingClientRect();
+        if (r.width && r.height && r.top >= 0 && r.bottom <= window.innerHeight) break;
+      }
+      const hit = (r && r.width && r.top >= 0 && r.bottom <= window.innerHeight)
+        ? document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) : null;
+      if (!hit || !(btn === hit || btn.contains(hit))) return { found: true, reach: false };
+      hit.click();
+      for (let i = 0; i < 80; i++) {
+        await new Promise((res) => setTimeout(res, 250));
+        try {
+          if (window.IntMapGis && window.IntMapGis.panel && window.IntMapGis.panel.isOpen()) {
+            window.IntMapGis.close();                 /* leave the page as this suite found it */
+            return { found: true, reach: true, open: true };
+          }
+        } catch { /* the lazy chunk has not landed yet */ }
+      }
+      return { found: true, reach: true, open: false };
+    });
+    expect(got.found, 'the strip offers a door to the dataset-and-analysis panel').toBe(true);
+    expect(got.reach, 'that door is the front-most element at its own centre').toBe(true);
+    expect(got.open, 'pressing it opens the panel').toBe(true);
+  } finally { await r766RestorePanel(wasOpen); }
+});
+
+/* ③ the other layout. ⚠ NO RELOAD: js/mobile-ui.js `syncResponsive` re-runs `applyLayout` on
+   `resize` and on the media query's own change event, so the phone surface is reached for the price
+   of a resize rather than a second boot — which is the whole reason these three fit in this suite.
+   The strip is ONE REAL NODE, so this also exercises the hand-off between the two hosts. */
+test('R766 ③ every door is reachable on a phone viewport too', async () => {
+  const before = page.viewportSize();
+  await page.setViewportSize({ width: 375, height: 812 });
+  try {
+    await page.waitForFunction(() => document.body.classList.contains('m-lyr-tiles'), null, { timeout: 30_000 });
+    await page.click('#m-fab-map');
+    /* the sheet arrives by transition; poll the thing that is moving rather than guess a number */
+    await page.waitForFunction(() => {
+      const sh = document.getElementById('mo-sheet');
+      return !!sh && sh.classList.contains('show')
+        && sh.getBoundingClientRect().top < window.innerHeight - 200;
+    }, null, { timeout: 30_000 });
+    await page.waitForFunction(() => {
+      const t = document.getElementById('layer-tools');
+      return !!t && !!t.closest('#mo-mount-layers .lst-toolbody');
+    }, null, { timeout: 30_000 });
+    r766Assert(await r766Doors(), 'phone 375');
+  } finally {
+    if (before) await page.setViewportSize(before);
+    /* the strip is handed back to the desktop host by the same placement call; wait for it so a
+       later test in this serial suite never sees the page mid-hand-off */
+    await page.waitForFunction(() => !document.body.classList.contains('m-lyr-tiles'), null, { timeout: 30_000 })
+      .catch(() => { /* restore is courtesy — nothing below asserts on the layout */ });
+  }
+});
