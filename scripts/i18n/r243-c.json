@@ -399,13 +399,13 @@
     "점 수 (단순화/원본)",
     "點數（簡化／原始）"
   ],
-  "Resolution (smoothing)": [
-    "Auflösung (Glättung)",
-    "Разрешение (сглаживание)",
-    "Resolución (suavizado)",
-    "Résolution (lissage)",
-    "해상도 (평활화)",
-    "解析度（平滑化）"
+  "Resolution (right = coarser)": [
+    "Auflösung (rechts = gröber)",
+    "Разрешение (правее — грубее)",
+    "Resolución (derecha = más basto)",
+    "Résolution (à droite = plus grossier)",
+    "해상도 (오른쪽일수록 거칠게)",
+    "解析度（越往右越粗糙）"
   ],
   "Keep on map": [
     "Auf der Karte behalten",

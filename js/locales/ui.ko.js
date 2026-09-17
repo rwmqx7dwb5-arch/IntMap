@@ -2857,7 +2857,7 @@ window.IntMapLang.define('ko', { ui: {
   "Min length (m)": "최소 길이 (m)",
   "Area (loops)": "면적 (닫힌 영역)",
   "Points (simpl/raw)": "점 수 (단순화/원본)",
-  "Resolution (smoothing)": "해상도 (평활화)",
+  "Resolution (right = coarser)": "해상도 (오른쪽일수록 거칠게)",
   "Kept on the map": "지도에 남겼습니다",
   "Country border not found": "국경 데이터를 찾을 수 없습니다",
   "Exit country view": "전체 보기로 돌아가기",
