@@ -76,6 +76,87 @@ readers are still served (correctly, with `x-intmap-age-ms` telling them how old
 coverage, the tile lattice not having reached that sky yet, and a client-side filter before
 concluding anything — that distinction is the whole reason `coveragePct` and the age headers exist.
 
+## 1c. The CORS relay ladder (#R769)
+
+`js/proxy-fetch.js` is how every reader gets a document from a host that sends no ACAO header —
+news feeds, article pages, share prices, GDELT. When our own Edge relay is cold or does not cover
+the URL, it falls down a ladder of **public CORS relays**. That ladder is the second black-box
+dependency worth watching, and until #R769 nobody was watching it.
+
+```bash
+node scripts/probe-relay-ladder.mjs                 # the ladder, as this build builds it
+node scripts/probe-relay-ladder.mjs --json          # …and the same run as JSON
+node scripts/probe-relay-ladder.mjs --target https://example.com/ --needle 'Example Domain'
+```
+
+The scheduled reader is the **`ladder` job in `.github/workflows/uptime.yml`** (same 6-hourly
+schedule, and on demand). Its run log is the time series.
+
+### Why the probe does not contain the list of relays
+
+It **discovers** the rungs by evaluating `js/proxy-fetch.js`: `globalThis.fetch` is replaced with a
+stub that records the URL it is handed and then rejects, `fetchViaProxy` is called once, and because
+every rung fails the call walks the ladder to the bottom — so what comes back is the ordered list of
+URLs *this build actually requests*. Then the stub is removed and those exact URLs are fetched for
+real.
+
+Copying the four endpoints into the probe would make a second list that goes stale exactly the way
+the first one did (#R488 — a check that pins spelling keeps a dead rule green), and reading them out
+of the source with a regexp cannot work either: the rungs are *functions*, one takes the URL raw
+while the others encode it, and the order matters (#R505 — a check that reads source cannot see
+evaluation).
+
+The probe introduces itself with the production site's `Origin`, because **the origin is part of the
+request** (#R216): with no `Origin` header corsfix answers `invalid_origin` (400), and with the
+deployed one it answers `domain_not_registered` (403) — same relay, different fact, and only the
+second is what a reader gets.
+
+### Measured 2026-09-17 — all four rungs down at once
+
+Against `https://example.com/`, a target whose availability is not in question, from
+`Origin: https://rwmqx7dwb5-arch.github.io`:
+
+| # | Relay | Status | Time | Body |
+|---|---|---|---|---|
+| 1 | `api.allorigins.win/raw` | **520 / 522** | 13.0–19.8 s | the upstream's own 5xx page |
+| 2 | `corsproxy.io` | **401** | 0.04–0.11 s | `{"error":"A valid API key is required…"}` — the free tier ended |
+| 3 | `proxy.corsfix.com` | **403** | 0.29–0.51 s | `{"corsfix_error":"domain_not_registered"}` — the domain must be registered with them |
+| 4 | `api.codetabs.com/v1/proxy` | **522** | 19.4–19.8 s | Cloudflare, origin down |
+
+`RESULT dead 0/4`. This is a photograph of 2026-09-17, **not a permanent fact** — the whole point of
+the job is that the next photograph is taken automatically. The relay list itself had not been
+re-measured since #R212/#R214/#R216, which is how it could stop being a ladder without anyone
+noticing.
+
+### ⚠ One dead rung is not an alarm
+
+A ladder exists *because* rungs break: a free relay going down, rate-limiting an egress, or moving
+behind an API key is the ordinary weather this list was built to survive. Paging a human for that
+would teach everyone to ignore the page.
+
+- at least one rung answers → `RESULT ok|degraded n/4`, script **exit 0**, nothing is reported;
+- none answers → `RESULT dead 0/4`, script **exit 1** — the ladder has stopped being a ladder, and
+  every caller can now only spend its full 20 s budget and return `null`.
+
+**What the scheduled job does with that** is the same thing `probe` does with an outage: it opens
+**one** deduplicated issue labelled `status:relay-ladder-down` (a label of its own — a dead relay is
+not the production site being down), containing the `RESULT` line, each rung's status and the date
+it was measured. As soon as any rung answers again it comments and **auto-closes** the issue.
+
+⚠ **The run itself stays green, on purpose:** two of the four rungs are down for *permanent* reasons
+(a paid API key, a domain registration), so failing the run would make this workflow red every six
+hours for ever — and a permanently red alarm is an alarm nobody reads, which is noise added rather
+than an instrument added. ⚠ The **script's** exit code is unchanged: run by hand it still exits 1 on
+a dead ladder, because one caller's reporting choice must not bend what the tool means.
+
+The probe's verdict is not "HTTP 200": a relay's own error envelope arrives with a status and a body
+too (#R446 measured what it costs to treat one as the document). A rung is alive only when the
+**target's** content came back through it.
+
+⚠ The numbers above live **here and nowhere else**. Do not copy them into `AGENTS.md`,
+`Architecture.md` or a source comment — a measurement written in two places is a measurement that
+will disagree with itself.
+
 ## 2. Error monitoring
 
 ### Always on (no setup)

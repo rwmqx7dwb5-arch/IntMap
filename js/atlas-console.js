@@ -3330,16 +3330,16 @@ window.IntMapModules.atlasConsole=function(HOST){
             jobs.push((async()=>{ let any=false;
               /* ⚠⚠ (#R452) GOOGLE NEWS IS A DIFFERENT HOST, SO IT STARTS NOW AND IS AWAITED LAST — all three were in one file, so own-language news waited out every GDELT attempt first, and the file exists for GDELT's per-IP limit, which says nothing about news.google.com */
               const gnQ=topic||cnEn.join(' OR ')||q.slice(0,60);
-              const gn=_gnewsNews(gnQ,srcSink).catch(()=>null);   /* 3) user-language Google News — started first, awaited last */
+              const wNotes=[],nn=()=>{ const n={}; wNotes.push(n); return n; }; const gn=_gnewsNews(gnQ,srcSink,nn).catch(()=>null);   /* 3) user-language Google News — started first, awaited last. ⚠⚠⚠ (#R769) ONE NOTE PER ATTEMPT, never one shared object — the ladder states its own verdict (js/proxy-fetch.js opts.note) and a shared note lets the LAST engine to finish speak for all of them */
               const w0=Date.now(); const wLeft=()=>WEB_BUDGET_MS-(Date.now()-w0);
               /* ⚠⚠ (#R464) wLeft() is HANDED to each call, not just consulted before it — consulting alone gated only whether to START one, so 3×14 s ran inside a 「20 s」 budget (js/atlas-deadlines.js)
                  1) region-wide GDELT (the whole area) — runs sequentially with (2) to stay gentle on GDELT's rate limit */
-              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink,null,wLeft()); if(!v&&regionQ.indexOf('"')>=0&&wLeft()>0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink,null,wLeft()); if(v){ got.web=v; any=true; } }
+              if(regionQ){ let v=await _gdeltNews(regionQ,srcSink,null,wLeft(),nn()); if(!v&&regionQ.indexOf('"')>=0&&wLeft()>0) v=await _gdeltNews(regionQ.replace(/"/g,''),srcSink,null,wLeft(),nn()); if(v){ got.web=v; any=true; } }
               /* 2) a search that INCLUDES the explicit countries (OR of the requested set), so no country is dropped */
-              if(orQ&&wLeft()>0){ let v3=await _gdeltNews(orQ,srcSink,null,wLeft()); if(v3){ got.web3=v3; any=true; } }
+              if(orQ&&wLeft()>0){ let v3=await _gdeltNews(orQ,srcSink,null,wLeft(),nn()); if(v3){ got.web3=v3; any=true; } }
               const v2=await gn;
               if(v2){ got.web2=v2; any=true; }
-              if(!any) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')); })());
+              if(!any) missing.push(L('live web news','ライブWebニュース','Live-Webnews','живые веб-новости','noticias web en vivo')+(wNotes.some(n=>n&&n.reason==='ok')?L(' — sources answered, no matching story',' — 各取得先は応答、該当記事なし',' — Quellen antworteten, kein Treffer',' — источники ответили, совпадений нет',' — las fuentes respondieron, sin coincidencias'):L(' — no source could be reached',' — どの取得先にも到達できず',' — keine Quelle erreichbar',' — ни один источник недоступен',' — ninguna fuente accesible')));   /* ⚠ (#R769) THE TEST IS 「did ANY source answer」, not 「did any attempt fail」 — a ladder that reached Google News and found no matching story is the world saying no; a ladder where nothing answered is IntMap saying nothing, and only the second is ours to fix. ⚠ The base string is UNCHANGED so the readers who already have it keep it (CONSTITUTION.md §0-3); the clause is what is new */ })());
             if(topic) jobs.push(_wikiSummary(topic).then(v=>{ if(v) got.wiki=v; })); }
           if(wantD('weather')===true||(wantD('weather')===null&&pt)){ if(pt) jobs.push(_weatherData(pt.lng,pt.lat).then(v=>{ if(v) got.weather=v; else missing.push(L('weather','天気','Wetter','погода','tiempo')); })); else missing.push(L('weather (no place given)','天気（場所未指定）','Wetter (kein Ort)','погода (нет места)','tiempo (sin lugar)')); }
           if(wantD('airquality')===true||wantD('air')===true){ if(pt) jobs.push(_airData(pt.lng,pt.lat).then(v=>{ if(v) got.air=v; else missing.push(L('air quality','大気質','Luftqualität','качество воздуха','calidad del aire')); })); else missing.push(L('air quality (no place given)','大気質（場所未指定）','Luftqualität (kein Ort)','воздух (нет места)','aire (sin lugar)')); }

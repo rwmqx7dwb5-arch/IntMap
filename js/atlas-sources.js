@@ -57,8 +57,14 @@ export function makeAtlasSources(HOST, CTX) {
        gives its own upstream read (25 s), so a COLD call would be aborted at 14 s — and a cold call
        is precisely the one that fills the shared cache. Every site would keep paying full price
        forever while looking like it was merely unlucky. */
-    async function _gdeltNews(q2,sink,timespan,budgetMs){ const query=String(q2||'').trim(); if(!query) return null;   /* (#R113d) optional timespan (default 3d) so a brief can widen the window */
-      const j=await _fetchJSON('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(query)+'&mode=artlist&maxrecords=14&format=json&timespan='+encodeURIComponent(timespan||'3d')+'&sort=hybridrel',(budgetMs>0?budgetMs:CTX.WEB_BUDGET_MS));
+    /* ⚠⚠⚠ (#R769) `note` IS HOW 「取得できなかった」 STOPS LOOKING LIKE 「ニュースが無かった」.
+       This function returned null for both, and js/atlas-console.js could only say 「取得不可:
+       ライブWebニュース」 when GDELT AND Google News were both empty — with no way to say which of
+       the two things had happened. Measured in production 2026-09-17: all six rungs of the ladder
+       refused and the reader was shown nothing at all. One of those is IntMap's plumbing failing
+       and the other is a fact about the world (#R763 drew the same line for numeric layers). */
+    async function _gdeltNews(q2,sink,timespan,budgetMs,note){ const query=String(q2||'').trim(); if(!query) return null;   /* (#R113d) optional timespan (default 3d) so a brief can widen the window */
+      const j=await _fetchJSON('https://api.gdeltproject.org/api/v2/doc/doc?query='+encodeURIComponent(query)+'&mode=artlist&maxrecords=14&format=json&timespan='+encodeURIComponent(timespan||'3d')+'&sort=hybridrel',(budgetMs>0?budgetMs:CTX.WEB_BUDGET_MS),note);
       const arts=j&&j.articles; if(!Array.isArray(arts)||!arts.length) return null;
       const seen=new Set(); const rows2=[];
       for(const a2 of arts){ const t2=String(a2.title||'').trim(); if(!t2||seen.has(t2)) continue; seen.add(t2);
@@ -80,8 +86,13 @@ export function makeAtlasSources(HOST, CTX) {
        it is js/proxy-fetch.js: our own relay first, the four public ones raced behind it, a clock on
        the body, and a budget for the whole ladder. Google News RSS is a feed, which is exactly what
        that module already verifies before declaring a winner. */
-    async function _fetchText(url){ return fetchViaProxy(url,{budgetMs:CTX.EVIDENCE_BUDGET_MS,signal:(CTX.turnSignal?CTX.turnSignal():undefined)}); }
-    async function _gnewsNews(q2,sink){ const query=String(q2||'').trim(); if(!query) return null;
+    async function _fetchText(url,note){ return fetchViaProxy(url,{budgetMs:CTX.EVIDENCE_BUDGET_MS,signal:(CTX.turnSignal?CTX.turnSignal():undefined),note}); }
+    /* ⚠ (#R769) A FACTORY, NOT A NOTE — this engine tries up to TWO editions, and one shared note
+       would let the second attempt's verdict speak for the first. Measured shape of the bug: the
+       reader's edition answers with no matching story ('ok'), the English fallback is then refused,
+       and the pair reports 'refused' — 「取得できなかった」 printed over a source that answered.
+       One note per ATTEMPT is the same rule js/atlas-console.js applies to the block as a whole. */
+    async function _gnewsNews(q2,sink,mkNote){ const query=String(q2||'').trim(); if(!query) return null;
       /* (#R318) NINE EDITIONS, NOT FOUR — a reader of zh / zh-Hans / fr / ko was searching the US
          English edition of Google News for a query in their own language.
          ⚠ THIS TABLE STAYS LITERAL, and the two Chinese rows are the reason: hl is Google's UI
@@ -93,7 +104,7 @@ export function makeAtlasSources(HOST, CTX) {
                   zh:['zh-TW','TW','TW:zh-Hant'],'zh-hans':['zh-CN','CN','CN:zh-Hans'],fr:['fr','FR','FR:fr'],ko:['ko','KR','KR:ko']};
       const locs=[LOCS[HOST.lang]||LOCS.en]; if(HOST.lang!=='en'&&LOCS[HOST.lang]) locs.push(LOCS.en);
       for(const loc of locs){ try{
-        const xml=await _fetchText('https://news.google.com/rss/search?q='+encodeURIComponent(query)+'&hl='+loc[0]+'&gl='+loc[1]+'&ceid='+encodeURIComponent(loc[2]));
+        const xml=await _fetchText('https://news.google.com/rss/search?q='+encodeURIComponent(query)+'&hl='+loc[0]+'&gl='+loc[1]+'&ceid='+encodeURIComponent(loc[2]),(typeof mkNote==='function'?mkNote():undefined));
         if(!xml) continue;
         const doc=new DOMParser().parseFromString(xml,'text/xml'); if(doc.querySelector('parsererror')) continue;
         const items=Array.prototype.slice.call(doc.querySelectorAll('item'),0,12); const rows2=[]; const seen=new Set();

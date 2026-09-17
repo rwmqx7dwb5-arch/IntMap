@@ -100,3 +100,133 @@ jobs:
         run: |
           echo "::error::Production probe failed (HTTP ${{ steps.probe.outputs.status }})."
           exit 1
+
+  # ── (#R769) The CORS relay ladder ────────────────────────────────────────────────────────────
+  # A SECOND black-box probe, of the other thing every reader depends on and nobody was watching:
+  # the public CORS relays js/proxy-fetch.js falls down when a host will not answer a browser.
+  # Measured 2026-09-17 against https://example.com/ — a target whose availability is not in
+  # question — ALL FOUR rungs failed (520 / 401 «a valid API key is required» / 403
+  # «domain_not_registered» / 522). The list had not been re-measured since #R212/#R216, so the
+  # ladder had been gone for an unknown length of time while every caller paid its full budget to
+  # be told `null`. This job is the thing that notices next time, and its run log is the time
+  # series (same idea as aviation-sweep.yml's "Report coverage" step).
+  #
+  # ⚠ IT IS A SEPARATE JOB, NOT A STEP OF `probe`. The site being up and the relays being up are
+  # independent facts about independent systems, and folding them together would make one red mean
+  # either thing. `probe` also owns the `status:prod-down` incident issue; a dead relay ladder is
+  # not the production site being down and must not open that issue.
+  #
+  # ⚠ THE WORKFLOW-LEVEL `concurrency: uptime / cancel-in-progress: true` IS LEFT ALONE. It
+  # de-duplicates RUNS of this workflow, not jobs within a run, so adding a job here cannot cancel
+  # the existing probe — the two jobs are part of the same run and are unaffected by each other.
+  #
+  # ⚠ ONE DEAD RUNG IS NOT A FAILURE, AND NEITHER IS A DEAD LADDER — NOT AS A RED RUN.
+  # A ladder exists because rungs break, so the script exits 1 only when NONE of them answers. But
+  # this job must not inherit that exit code: two of the four rungs are down for PERMANENT reasons
+  # (corsproxy.io now requires a paid API key, corsfix requires registering the domain), so a job
+  # that goes red on «all down» would be red every six hours for ever. A permanently red alarm is
+  # an alarm nobody reads — that is noise added, not an instrument added. The run therefore stays
+  # green and reports through the mechanism this workflow already has: ONE deduplicated issue,
+  # commented and auto-closed on recovery.
+  #
+  # ⚠ THE SCRIPT'S OWN EXIT CODE IS UNCHANGED. Run by hand, `node scripts/probe-relay-ladder.mjs`
+  # still exits 1 when every rung is dead; it is this job that catches the code instead of dying on
+  # it. The meaning of the tool must not be bent by one of its callers.
+  #
+  # ⚠ THIS IS WHY THE LABEL IS ITS OWN. The job needs `issues: write`, which is exactly the
+  # permission the note above says should not let it touch the production-outage issue. Separating
+  # the LABEL — `status:relay-ladder-down`, never `status:prod-down` — keeps that intent while
+  # granting the permission: the query this job runs cannot see, comment on or close `probe`'s
+  # issue, because it only ever lists and writes its own label.
+  ladder:
+    name: CORS relay ladder
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write             # its OWN label only — see the note above
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      # No `npm ci`: the probe imports js/proxy-fetch.js directly and uses nothing but the runtime.
+      - name: Probe every rung js/proxy-fetch.js actually builds
+        id: ladder
+        run: |
+          set +e
+          node scripts/probe-relay-ladder.mjs 2>&1 | tee ladder.log
+          code=${PIPESTATUS[0]}
+          # The last line is the machine-readable verdict: RESULT <ok|degraded|dead> <alive>/<total>
+          result=$(grep -E '^RESULT ' ladder.log | tail -n 1)
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "result=${result:-RESULT unknown 0/0}" >> "$GITHUB_OUTPUT"
+          {
+            echo 'log<<INTMAP_LADDER_EOF'
+            cat ladder.log
+            echo 'INTMAP_LADDER_EOF'
+          } >> "$GITHUB_OUTPUT"
+          # The table itself is the time series, and it is already in this log above.
+          exit 0
+
+      - name: Open / close the relay-ladder issue
+        if: always()
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b  # v7.1.0
+        env:
+          CODE: ${{ steps.ladder.outputs.code }}
+          RESULT: ${{ steps.ladder.outputs.result }}
+          LOG: ${{ steps.ladder.outputs.log }}
+        with:
+          script: |
+            // exit 1 from the probe means EVERY rung is dead. Anything else — including a
+            // `degraded` ladder with three of four rungs down — is the weather it was built for.
+            const dead = process.env.CODE === '1';
+            const result = process.env.RESULT || '(no RESULT line)';
+            const log = process.env.LOG || '';
+            const label = 'status:relay-ladder-down';
+            const title = 'Every public CORS relay is down';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const now = new Date().toISOString();
+
+            async function ensureLabel() {
+              try { await github.rest.issues.getLabel({ ...context.repo, name: label }); }
+              catch (e) {
+                if (e.status === 404) {
+                  await github.rest.issues.createLabel({ ...context.repo, name: label, color: 'd93f0b',
+                    description: 'Automated: no rung of the js/proxy-fetch.js relay ladder answers' });
+                } else { throw e; }
+              }
+            }
+            // Listing BY LABEL is what keeps this job away from `probe`'s incident issue.
+            const open = (await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: label })).data;
+
+            if (dead) {
+              if (open.length === 0) {
+                await ensureLabel();
+                await github.rest.issues.create({ ...context.repo, title, labels: [label],
+                  body: [
+                    'Every rung of the CORS relay ladder in `js/proxy-fetch.js` failed against a target',
+                    'whose availability is not in question, so the ladder has stopped being a ladder:',
+                    'every caller can now only spend its full budget and return `null`.', '',
+                    `- Verdict: \`${result}\``,
+                    `- Measured (UTC): ${now}`,
+                    `- Run: ${runUrl}`, '',
+                    'Per-rung status, as measured:', '',
+                    '```', log.slice(0, 40000), '```', '',
+                    'The rungs are discovered by evaluating `js/proxy-fetch.js`, so this list is what',
+                    'THIS build requests — not a copy. A single dead rung is normal and does not open',
+                    'this issue. It will auto-close as soon as any rung answers again.',
+                    'See `docs/MONITORING.md` §1c.',
+                  ].join('\n') });
+                core.info('Opened the relay-ladder issue.');
+              } else {
+                core.info(`Relay-ladder issue #${open[0].number} already open — not duplicating.`);
+              }
+            } else {
+              for (const iss of open) {
+                await github.rest.issues.createComment({ ...context.repo, issue_number: iss.number,
+                  body: `Recovered at ${now}: \`${result}\`. At least one rung answers again. Auto-closing.\n\nRun: ${runUrl}` });
+                await github.rest.issues.update({ ...context.repo, issue_number: iss.number, state: 'closed' });
+                core.info(`Closed recovered relay-ladder issue #${iss.number}.`);
+              }
+            }

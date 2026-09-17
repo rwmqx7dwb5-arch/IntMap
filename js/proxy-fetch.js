@@ -209,6 +209,21 @@ export const fetchViaProxy = (() => {
    *                  sizing a deadline as though it were is what made this path unusable.
    *                  The direct deadline is therefore per-HOST (see directMsFor), not one number.
    *   opts.signal    the caller's AbortSignal — Stop, or a superseding turn (#R452)
+   *   opts.note      ⚠⚠⚠ (#R769) AN OBJECT THE CALLER OWNS, INTO WHICH THIS LADDER WRITES WHY IT
+   *                  RETURNED WHAT IT RETURNED. Optional, and nothing that does not pass one is
+   *                  affected — the return value is unchanged.
+   *
+   *                  IT EXISTS BECAUSE `null` WAS ANSWERING TWO DIFFERENT QUESTIONS. Measured in
+   *                  production 2026-09-17: every rung of the GDELT ladder refused — our own relay
+   *                  502, the host itself a CORS refusal, and all four public proxies dead (401
+   *                  'API key required', 403 'domain_not_registered', 408, abort) — and the reader
+   *                  was shown nothing at all, because js/atlas-sources.js cannot tell 「every
+   *                  source refused」 from 「the sources answered and there was no news」 when both
+   *                  arrive as `null`. One of those is a fault in IntMap's plumbing and the other
+   *                  is a fact about the world, and a reader is owed the difference (#R763 drew the
+   *                  same line on the GIS side).
+   *                  Fields: `reason` — 'ok' | 'aborted' | 'no-budget' | 'refused' — and `via`,
+   *                  the rung that answered.
    *
    * ⚠⚠ (#R452) `opts.signal` IS NOT DECORATION. Atlas builds an AbortController for every turn and
    * hands it to the model call and to the executor, but the EVIDENCE fetches never saw it — so
@@ -222,13 +237,29 @@ export const fetchViaProxy = (() => {
    * out, inside it, whether it got a document. */
   return async function fetchViaProxy(url, opts) {
     const o = opts || {};
+    /* ⚠ (#R769) the note is written at EVERY exit, including the early ones — a verdict that is
+       only recorded on the paths somebody remembered is not a verdict. */
+    /* ⚠ AND A STOP IS NEVER REPORTED AS A REFUSAL. `left()` returns 0 once the caller's signal
+       fires and every in-flight attempt rejects, so the two failing exits below are reached by BOTH
+       「nobody would answer」 and 「the reader pressed Stop」 — and calling the second one 'refused'
+       would put IntMap's plumbing on trial for something the reader did. The signal is the
+       authority on that, so it is asked at the exit rather than tracked on the way down. */
     const okDoc = ACCEPT[o.as] || isFeed;
     const budget = (o.budgetMs > 0) ? o.budgetMs : BUDGET_MS;
     const t0 = Date.now();
     const outer = o.signal || null;
+    const outerAborted = () => { try { return !!(outer && outer.aborted); } catch (_) { return false; } };
     const left = () => ((outer && outer.aborted) ? 0 : budget - (Date.now() - t0));
+    /* ⚠ DECLARED AFTER WHAT IT READS, not before. It happens to be called only later, so the
+       temporal dead zone would not have fired today — and that is exactly the shape #R545 recorded
+       (a hoisting question answered by 「when does anyone call it」 rather than by the source). */
+    const say = (reason, via) => {
+      const r = (reason !== 'ok' && outerAborted()) ? 'aborted' : reason;
+      try { if (o.note && typeof o.note === 'object') { o.note.reason = r; o.note.via = via || ''; } } catch (_) { /* the caller's object is theirs */ }
+      return null;
+    };
 
-    if (outer && outer.aborted) return null;
+    if (outer && outer.aborted) return say('aborted');
     /* ⚠ (#R452) EVERY attempt this call makes is registered here — the direct one, the racers and
        the fallback pass alike — so the caller's Stop reaches whichever of them is in flight. A
        signal that only cancels the attempt someone remembered to wire it to is not a Stop. */
@@ -243,18 +274,19 @@ export const fetchViaProxy = (() => {
       if (own) {
         try {
           const txt = await fetchDeadline(own, Math.min(OWN_RELAY_TIMEOUT_MS, left()), mk());
-          if (okDoc(txt)) return txt;
+          if (okDoc(txt)) { say('ok', 'own-relay'); return txt; }
         } catch (_) { /* ours is cold, refused or down — the reader's own IP is the next chance */ }
       }
       /* (#R452) the host itself, when the caller says a browser is allowed to read it */
       if (o.direct && left() > 0) {
         try {
           const txt = await fetchDeadline(url, Math.min(directMsFor(url), left()), mk());
-          if (okDoc(txt)) return txt;
+          if (okDoc(txt)) { say('ok', 'direct'); return txt; }
         } catch (_) { /* CORS, a status, or the clock — the relays are next either way */ }
       }
-      if (left() <= 0) return null;
-      return await race(proxiesFor(url), url, okDoc, left, mk);
+      if (left() <= 0) return say('no-budget');
+      const won = await race(proxiesFor(url), url, okDoc, left, mk);
+      return (won === null) ? say('refused') : (say('ok', 'proxy'), won);
     } finally {
       if (outer) { try { outer.removeEventListener('abort', relayAbort); } catch (_) { /* nothing to remove */ } }
     }
