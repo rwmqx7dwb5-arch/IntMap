@@ -297,6 +297,10 @@ export function makeAtlasCapabilities(HOST) {
       ['map.drawPolygon',            'drawPolygon',    'polygon',                                                     'map',     'paint',   'map.polygon',            'object,map',          'session', 'none',   'points',   ''],
       ['ui.inlineControls',          'controls',       '',                                                            'ui',      'none',    '',                       'panel',               'session', 'none',   '',         ''],
       ['dialog.ask',                 'ask',            'choose,clarify,options',                                      'dialog',  'none',    '',                       'explanation',         'read',    'none',   '',         ''],
+      /* ⚠ (#R773) 添付は会話に属する。読者が前のターンで付けた画像や PDF は、費用（1 件 8 MB）の
+         ため毎ターンは載せない——在ることだけを述べ、要ると Atlas が決めたときにこれが**次の一手の
+         目の前へ戻す**。地図も設定も触らないので observer は 'none'、writes は空、risk は 'read'。 */
+      ['attach.recall',              'recallAttachment','recall_attachment,recallFile,reopenAttachment',               'dialog',  'none',    '',                       'explanation',         'read',    'none',   'text',     ''],
       ['research.analyze',           'analyze',        'research,synthesize',                                         'research','none',    '',                       'explanation',         'read',    'none',   '',         ''],
       ['settings.engine',            'engine',         '',                                                            'settings','setting', 'settings.engine',        'setting',             'persist', 'explicit','',        ''],
       ['settings.tiltLimit',         'tiltLimit',      '',                                                            'settings','setting', 'settings.camera',        'setting',             'persist', 'explicit','',        ''],

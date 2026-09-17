@@ -21,6 +21,7 @@
  *  whole site. It is built with quoted strings and `+` for exactly that reason; keep it that way.
  * ==========================================================================*/
 import { LIGHTBOX_CSS } from './atlas-attach.js';
+import { ATTACH_VIEW_CSS } from './atlas-file-view.js';   /* (#R773) 添付ビューアの中身。枠は LIGHTBOX_CSS */
 import { MSG_TOOLS_CSS, MSG_TOOLS_CSS_MOBILE } from './atlas-msg-tools.js';
 import { GLOSS_CSS, GLOSS_CSS_MOBILE } from './atlas-gloss.js';   /* (#R491) the term-gloss card + its touch pill */
 import { ATLAS_ANNOTATE_CSS } from './atlas-annotate.js';
@@ -90,6 +91,7 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'.atl-viewframe img{display:block;width:100%;height:auto;border-radius:10px;border:1px solid var(--atlas-glass-edge);cursor:zoom-in;}'
       +'.atl-viewframe-cap{font-size:10.5px;line-height:1.45;color:var(--text-muted);margin-top:4px;}'
       +LIGHTBOX_CSS
+      +ATTACH_VIEW_CSS
       /* (#R156) UNIFIED RENDERER — code blocks, inline code, display/inline math, tables, blockquotes. NOT scoped to
          #atlas-panel so the same classes render identically in the sidebar-tab and workspace-window Atlas surfaces.
          Every wide element (code, math, table) is INDEPENDENTLY horizontally scrollable so the reply column never
@@ -284,9 +286,9 @@ return '#atlas-panel{position:absolute;box-sizing:border-box;z-index:1850;left:1
       +'@keyframes atlMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,0.55);}50%{box-shadow:0 0 0 5px rgba(255,59,48,0);}}'
       +'#atlas-panel .atl-imgrow{display:flex;flex-wrap:wrap;gap:6px;padding:8px 10px 0;}'
       +'#atlas-panel .atl-thumb{position:relative;width:54px;height:54px;border-radius:9px;overflow:hidden;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);}'
-      +'#atlas-panel .atl-thumb img{width:100%;height:100%;object-fit:cover;display:block;}'
+      +'#atlas-panel .atl-thumb img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in;}'   /* (#R773) */
       +'#atlas-panel .atl-thumb-x{position:absolute;top:2px;right:2px;width:17px;height:17px;border-radius:50%;background:rgba(0,0,0,0.62);color:#fff;border:none;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}'
-      +'#atlas-panel .atl-fchip{position:relative;display:inline-flex;align-items:center;gap:5px;max-width:190px;height:30px;padding:0 26px 0 9px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:11.5px;}'   /* (#R158) non-image file chip in the composer */
+      +'#atlas-panel .atl-fchip{position:relative;display:inline-flex;align-items:center;gap:5px;max-width:190px;height:30px;padding:0 26px 0 9px;border-radius:9px;border:1px solid rgba(128,128,128,0.28);background:var(--input-bg);color:var(--text-main);font-size:11.5px;cursor:pointer;}'   /* (#R158) non-image file chip in the composer; (#R773) それは開けるので指の形をしている */
       +'#atlas-panel .atl-fchip svg{flex:0 0 auto;opacity:.72;}'
       +'#atlas-panel .atl-fchip-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
       +'#atlas-panel .atl-fchip-x{position:absolute;top:50%;right:4px;transform:translateY(-50%);}'

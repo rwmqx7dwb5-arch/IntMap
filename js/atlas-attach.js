@@ -27,22 +27,39 @@
  *  src/main.js; js/atlas-console.js names it in an `import`, so the bundler resolves the binding.
  * ==========================================================================*/
 
+/* (#R773) 非画像の添付の「中身をどう描くか」は別の主題なので別のファイル。⚠ 全画面の枠は
+   このファイルのものが 1 本きりで、あちらは中に置く要素を組むだけ（枠を 2 つ作らない）。 */
+import { ATTACH_STORE, ATTACH_VIEW } from './atlas-file-view.js';
+
 /** THE ONE ENTRY POINT: delegate from the chat element, once. Every picture the conversation will
- *  ever hold is covered, nothing is attached per image, and nothing leaks when the panel is rebuilt. */
-export function attachLightbox(chatEl, closeLabel) {
+ *  ever hold is covered, nothing is attached per image, and nothing leaks when the panel is rebuilt.
+ *  (#R773) 同じ委譲を**コンポーザの添付行**にも貼る（要素ごとに 1 度きり）。送信前と送信後で
+ *  「タップしたら見られる」が違う理由は 1 つも無い。 */
+export function attachLightbox(chatEl, closeLabel, fileStrings) {
   if (!chatEl || chatEl.__lb) return;
+  /* (#R773) 非画像の添付を開く。⚠ 枠は下の _open と同じ 1 本で、違うのは中に置く要素だけ。 */
+  function _openFile(vid, closeLabel) {
+    const rec = ATTACH_STORE.get(vid);
+    const L = (typeof fileStrings === 'function') ? (fileStrings() || {}) : (fileStrings || {});
+    let node = null;
+    try { node = ATTACH_VIEW.render(rec, { L: L, fmtBytes: atlFmtBytes }); } catch (_) { return; }
+    _open(null, closeLabel, node);
+  }
   /* ⚠ NOT EXPORTED, AND NOT TOP-LEVEL EITHER. tests/r175-checks ③ allows a top-level declaration in
      js/ only when it is exported AND imported by name — a private helper is exactly what that rule
      forbids — so both the opener and its closer live inside the one thing this module publishes.
      Open `src` full-screen; `closeLabel` is the × button's accessible name, already localised. */
-  function _open(src, closeLabel) {
-    if (!src) return;
+  function _open(src, closeLabel, node) {
+    if (!src && !node) return;
     /* ⚠ `close` IS DECLARED HERE, NOT AT THE TOP OF THE FILE. tests/r175-checks ③ allows a top-level
        declaration in js/ only when it is exported AND imported by name; a private helper is exactly
        what that rule forbids, so the only closing logic lives inside the function that opens. */
     const close = (fromPop) => {
       const cur = document.querySelector('.atl-lightbox'); if (!cur) return;
       try { cur.remove(); } catch (_) {}
+      /* (#R773) 閉じたら、その中身が確保した資源を返す（PDF の Blob URL）。⚠ 要素を外すだけでは
+         Blob は生き続ける——8 MB の PDF を 10 回開けば 80 MB がタブに残る。 */
+      try { if (typeof cur.__release === 'function') cur.__release(); } catch (_) {}
       try { document.removeEventListener('keydown', cur.__esc, true); } catch (_) {}
       try { if (!fromPop && cur.__pushed) history.back(); } catch (_) {}
     };
@@ -50,91 +67,100 @@ export function attachLightbox(chatEl, closeLabel) {
     const el = document.createElement('div');
     el.className = 'atl-lightbox';
     el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
-    const img = document.createElement('img');
-    img.src = src; img.alt = '';
-    /* tapping the PICTURE must not close it — only tapping around it does, which is the convention
-       every gallery uses and the reason the backdrop carries the handler rather than the document. */
-    img.addEventListener('click', (e) => e.stopPropagation());
+    /* (#R773) 画像の道。⚠ 非画像のときはここを一切通らない——ズームの算術は <img> の
+       getBoundingClientRect を前提にしていて、外れた要素に対しては答えが 0 になる。 */
+    let img = null, moved = false;
+    if (!node) {
+      img = document.createElement('img');
+      img.src = src; img.alt = '';
+      /* tapping the PICTURE must not close it — only tapping around it does, which is the convention
+         every gallery uses and the reason the backdrop carries the handler rather than the document. */
+      img.addEventListener('click', (e) => e.stopPropagation());
 
-    /* ══ (#R233) ZOOM ═════════════════════════════════════════════════════════════════════════
-       「送信した画像をタップした画面で、画像をズーム可能に。」 #R232 gave the picture the screen at
-       its own aspect ratio, which is still ONE size — a screenshot pasted into Atlas is exactly the
-       kind of image you open in order to read something small in it.
+      /* ══ (#R233) ZOOM ═════════════════════════════════════════════════════════════════════════
+         「送信した画像をタップした画面で、画像をズーム可能に。」 #R232 gave the picture the screen at
+         its own aspect ratio, which is still ONE size — a screenshot pasted into Atlas is exactly the
+         kind of image you open in order to read something small in it.
 
-       Wheel / pinch / double-tap, and drag to pan once it is bigger than the frame. Pointer events
-       so one implementation covers mouse, touch and pen.
+         Wheel / pinch / double-tap, and drag to pan once it is bigger than the frame. Pointer events
+         so one implementation covers mouse, touch and pen.
 
-       ⚠ ZOOM IS ABOUT THE POINTER, NOT THE CENTRE. Keeping the pixel under the finger fixed is what
-       makes this feel like a viewer rather than a slider: with local coordinate u = (P−C−T)/S held
-       constant across the scale change, T′ = d − (d−T)·S′/S where d = P − C.
-       ⚠ AND A DRAG MUST NOT CLOSE THE PICTURE. The backdrop's click handler is what closes, and a
-       pan that ends over the backdrop is a click on it — so a gesture that moved is remembered and
-       the next click is swallowed. Without this, panning a zoomed image dismisses it. */
-    let S = 1, TX = 0, TY = 0, moved = false;
-    const pts = new Map();
-    let pinch0 = 0, s0 = 1;
-    const paint = () => {
-      img.style.transform = 'translate(' + TX + 'px,' + TY + 'px) scale(' + S + ')';
-      img.classList.toggle('atl-lb-zoomed', S > 1.001);
-    };
-    /* keep at least a third of the picture reachable, so it cannot be flung out of the window */
-    const clamp = () => {
-      const r = img.getBoundingClientRect(), w = r.width, h = r.height;
-      const mx = Math.max(0, (w - innerWidth) / 2 + w / 3), my = Math.max(0, (h - innerHeight) / 2 + h / 3);
-      TX = Math.max(-mx, Math.min(mx, TX)); TY = Math.max(-my, Math.min(my, TY));
-    };
-    const zoomAt = (px, py, next) => {
-      const s2 = Math.max(1, Math.min(8, next));
-      if (s2 === S) return;
-      const b = img.getBoundingClientRect();
-      const cx = b.left + b.width / 2 - TX, cy = b.top + b.height / 2 - TY;   /* untransformed centre */
-      const dx = px - cx, dy = py - cy;
-      TX = dx - (dx - TX) * (s2 / S); TY = dy - (dy - TY) * (s2 / S);
-      S = s2;
-      if (S === 1) { TX = 0; TY = 0; } else clamp();
-      paint();
-    };
-    el.addEventListener('wheel', (e) => {
-      e.preventDefault(); zoomAt(e.clientX, e.clientY, S * Math.pow(1.0016, -e.deltaY));
-    }, { passive: false });
-    img.addEventListener('dblclick', (e) => { e.preventDefault(); e.stopPropagation(); zoomAt(e.clientX, e.clientY, S > 1.001 ? 1 : 2.5); });
-    img.addEventListener('pointerdown', (e) => {
-      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      try { img.setPointerCapture(e.pointerId); } catch (_) {}
-      if (pts.size === 2) {
-        const [a, b] = [...pts.values()];
-        pinch0 = Math.hypot(a.x - b.x, a.y - b.y) || 1; s0 = S;
-      }
-    });
-    img.addEventListener('pointermove', (e) => {
-      const p = pts.get(e.pointerId); if (!p) return;
-      const dx = e.clientX - p.x, dy = e.clientY - p.y;
-      p.x = e.clientX; p.y = e.clientY;
-      if (pts.size >= 2) {
-        const [a, b] = [...pts.values()];
-        const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
-        moved = true;
-        zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, s0 * (d / pinch0));
-      } else if (S > 1.001) {
-        if (Math.abs(dx) + Math.abs(dy) > 1) moved = true;
-        TX += dx; TY += dy; clamp(); paint();
-      }
-    });
-    const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = 0; };
-    img.addEventListener('pointerup', up); img.addEventListener('pointercancel', up);
-    /* double-TAP on touch, where dblclick is unreliable */
-    let lastTap = 0;
-    img.addEventListener('pointerup', (e) => {
-      if (e.pointerType === 'mouse') return;
-      const t = e.timeStamp;
-      if (t - lastTap < 300 && !moved) { zoomAt(e.clientX, e.clientY, S > 1.001 ? 1 : 2.5); lastTap = 0; }
-      else lastTap = t;
-    });
+         ⚠ ZOOM IS ABOUT THE POINTER, NOT THE CENTRE. Keeping the pixel under the finger fixed is what
+         makes this feel like a viewer rather than a slider: with local coordinate u = (P−C−T)/S held
+         constant across the scale change, T′ = d − (d−T)·S′/S where d = P − C.
+         ⚠ AND A DRAG MUST NOT CLOSE THE PICTURE. The backdrop's click handler is what closes, and a
+         pan that ends over the backdrop is a click on it — so a gesture that moved is remembered and
+         the next click is swallowed. Without this, panning a zoomed image dismisses it. */
+      let S = 1, TX = 0, TY = 0;
+      const pts = new Map();
+      let pinch0 = 0, s0 = 1;
+      const paint = () => {
+        img.style.transform = 'translate(' + TX + 'px,' + TY + 'px) scale(' + S + ')';
+        img.classList.toggle('atl-lb-zoomed', S > 1.001);
+      };
+      /* keep at least a third of the picture reachable, so it cannot be flung out of the window */
+      const clamp = () => {
+        const r = img.getBoundingClientRect(), w = r.width, h = r.height;
+        const mx = Math.max(0, (w - innerWidth) / 2 + w / 3), my = Math.max(0, (h - innerHeight) / 2 + h / 3);
+        TX = Math.max(-mx, Math.min(mx, TX)); TY = Math.max(-my, Math.min(my, TY));
+      };
+      const zoomAt = (px, py, next) => {
+        const s2 = Math.max(1, Math.min(8, next));
+        if (s2 === S) return;
+        const b = img.getBoundingClientRect();
+        const cx = b.left + b.width / 2 - TX, cy = b.top + b.height / 2 - TY;   /* untransformed centre */
+        const dx = px - cx, dy = py - cy;
+        TX = dx - (dx - TX) * (s2 / S); TY = dy - (dy - TY) * (s2 / S);
+        S = s2;
+        if (S === 1) { TX = 0; TY = 0; } else clamp();
+        paint();
+      };
+      el.addEventListener('wheel', (e) => {
+        e.preventDefault(); zoomAt(e.clientX, e.clientY, S * Math.pow(1.0016, -e.deltaY));
+      }, { passive: false });
+      img.addEventListener('dblclick', (e) => { e.preventDefault(); e.stopPropagation(); zoomAt(e.clientX, e.clientY, S > 1.001 ? 1 : 2.5); });
+      img.addEventListener('pointerdown', (e) => {
+        pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        try { img.setPointerCapture(e.pointerId); } catch (_) {}
+        if (pts.size === 2) {
+          const [a, b] = [...pts.values()];
+          pinch0 = Math.hypot(a.x - b.x, a.y - b.y) || 1; s0 = S;
+        }
+      });
+      img.addEventListener('pointermove', (e) => {
+        const p = pts.get(e.pointerId); if (!p) return;
+        const dx = e.clientX - p.x, dy = e.clientY - p.y;
+        p.x = e.clientX; p.y = e.clientY;
+        if (pts.size >= 2) {
+          const [a, b] = [...pts.values()];
+          const d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+          moved = true;
+          zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, s0 * (d / pinch0));
+        } else if (S > 1.001) {
+          if (Math.abs(dx) + Math.abs(dy) > 1) moved = true;
+          TX += dx; TY += dy; clamp(); paint();
+        }
+      });
+      const up = (e) => { pts.delete(e.pointerId); if (pts.size < 2) pinch0 = 0; };
+      img.addEventListener('pointerup', up); img.addEventListener('pointercancel', up);
+      /* double-TAP on touch, where dblclick is unreliable */
+      let lastTap = 0;
+      img.addEventListener('pointerup', (e) => {
+        if (e.pointerType === 'mouse') return;
+        const t = e.timeStamp;
+        if (t - lastTap < 300 && !moved) { zoomAt(e.clientX, e.clientY, S > 1.001 ? 1 : 2.5); lastTap = 0; }
+        else lastTap = t;
+      });
+    }
 
     const x = document.createElement('button');
     x.className = 'atl-lb-x'; x.type = 'button';
     x.setAttribute('aria-label', closeLabel || window.IntMapLang.t(document.documentElement.lang,'Close','閉じる','Schließen','Закрыть','Cerrar')); x.textContent = '×';
-    el.appendChild(img); el.appendChild(x);
+    /* ⚠ (#R773) 中身の上のクリックで閉じない——画像と同じ約束（閉じるのは周りと × と Escape）。
+       これが無いと、表のセルを選ぶ・PDF を触るたびにビューアが畳まれる（実測）。 */
+    if (node) node.addEventListener('click', (e) => e.stopPropagation());
+    el.appendChild(node || img); el.appendChild(x);
+    if (node && typeof node.__release === 'function') el.__release = node.__release;   /* (#R773) 閉じるときに返す資源は、中身が自分で述べる */
     x.addEventListener('click', (e) => { e.stopPropagation(); close(); });
     el.addEventListener('click', () => { if (moved) { moved = false; return; } close(); });
     el.__esc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
@@ -153,8 +179,15 @@ export function attachLightbox(chatEl, closeLabel) {
        340-pixel thumbnail of a map is a thing you have to be able to enlarge. ⚠ THE SELECTOR IS THE
        WHOLE BINDING: a class renamed on one side and not here fails SILENTLY (the click simply does
        nothing), which is why tests/r493-checks.test.mjs reads both spellings out of the sources. */
-    const im = e.target && e.target.closest && e.target.closest('.atl-imgrow-in img, .atl-viewframe img');
-    if (im && im.src) { e.preventDefault(); e.stopPropagation(); _open(im.src, (typeof closeLabel === 'function') ? closeLabel() : closeLabel); }
+    const im = e.target && e.target.closest && e.target.closest('.atl-imgrow-in img, .atl-viewframe img, .atl-thumb img');   /* (#R773) `.atl-thumb img` は送る前のサムネ——送ってから開けるものは、送る前にも開ける */
+    if (im && im.src) { e.preventDefault(); e.stopPropagation(); _open(im.src, (typeof closeLabel === 'function') ? closeLabel() : closeLabel); return; }
+    /* (#R773) そして非画像の添付。⚠ チップの × は「外す」ボタンであって「開く」ではないので、
+       そこから始まったクリックはここを通さない。 */
+    const ch = e.target && e.target.closest && e.target.closest('.atl-fchip');
+    if (ch && ch.dataset && ch.dataset.atlvid && !(e.target.closest && e.target.closest('.atl-fchip-x'))) {
+      e.preventDefault(); e.stopPropagation();
+      _openFile(ch.dataset.atlvid, (typeof closeLabel === 'function') ? closeLabel() : closeLabel);
+    }
   });
 }
 
