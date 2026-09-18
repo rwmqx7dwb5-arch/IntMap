@@ -142,14 +142,11 @@ test('the legend actually writes its cautions, run with the REAL language regist
   api.legend();
   api.toggle(false);                             /* stop the refresh tick so the runner can exit */
   /* ⚠ …and clear the fallback timer too. With no runtime HOST mounted, js/runtime.js's everyTick
-     degrades to a raw setInterval kept in `everyTick.pending`; that handle holds the event loop
+     degrades to a raw setInterval kept in a module-private memo; that handle holds the event loop
      open and the test FILE times out even though every assertion passed. Cleaning up what this
      test started is the test's own business. */
   const rt = await import('../js/runtime.js');
-  if (rt.everyTick && rt.everyTick.pending) {
-    for (const entry of rt.everyTick.pending.values()) { try { clearInterval(entry.h); } catch (_) { } }
-    rt.everyTick.pending.clear();
-  }
+  rt.stopEarlyTimers();   /* (#R789) the memo is module-private now; this is the door to it */
 
   const html = (host._key && host._key.innerHTML) || '';
   assert.ok(html.length > 0,

@@ -3793,6 +3793,25 @@ observer の次の配達を待てないときに言う。
 されるので、`suspend(name)` はその機能の毎フレーム仕事を一括で外し、`dispose(name)` は
 **camera / frame / timer / idle の4つの登録簿すべてから**その capability の仕事を消す。
 
+**世代と scope。** 各 capability は**世代番号**を持ち、`dispose` だけがそれを進める。`load` と
+`activate` は着手時の世代を覚え、完了時に照合する——**開く → 読み込み中 → 閉じる → 古い読み込みが
+完了**、の順で「閉じたのに active に戻る」ことは起きない（`generationOf(name)` が読める）。
+失敗した `load` はメモされず、次の `activate` がやり直す。
+そして動詞は **scope** を受け取る: `load(host, loaded)`・`activate(arg, value, active)`。
+- **loaded scope** は `load` から `dispose` まで生きる——カタログ・worker・トグルをまたいで
+  持ち続ける GL オブジェクト。
+- **active scope** は `activate` から `suspend` まで生きる——地図のリスナー・tick・パネルの
+  DOM ハンドラ・飛んでいる fetch。
+scope は `on(target, ev, fn)`（DOM でも emitter でも）・`every`・`frame`・`onCamera`・`idle`・
+`timeout`・`fetch`（AbortSignal は scope のもの）・`own(x)`（dispose／abort／terminate／
+disconnect／close を持つもの、または関数）で**登録したものを所有**し、`release()` で逆順に一括で
+返す。`alive()` はその scope が今の世代のものか、`guard(fn)` は release 後に届いた結果を捨てる
+継続。scope 経由の登録は所有者名のタグと `name:` 接頭辞の鍵を自動で持つ（実測: `capability:` を
+手で渡していた登録は js/ に 0 件——手で付ける札は付いていない札）。`RT.scope(name)` /
+`RT.scope(name,'active')` で動詞の外からも取れる。`stats().unowned` は**所有者の無い登録の数**で、
+0 に向けて減らす計器。⚠ **R708 が DEM／Köppen／凡例／Playground で手書きした「古い完了を拒む」は、
+この機構の 4 つの写しである**——新しく書くときはこちらを使う。
+
 状態は `defined` → `loading` → `loaded` / `failed` → `active`、そして `disposed`。
 ⚠ **`disposed` は「もう開けない」ではない。** 定義は登録簿に残り、消えるのは `load` のメモだけなので、
 次の `activate` は `def.load` からやり直して**同じ機能をもう一度開く**。資源を返す動詞が
@@ -3805,7 +3824,7 @@ observer の次の配達を待てないときに言う。
 |---|---|---|---|
 | `wx.wind` | 風レイヤー ON | OFF。**WebGL のレンダラは残す**（テクスチャ2・FBO2・VBO2・プログラム2の作り直しを毎トグル払わないため） | `js/wx-wind.js` の `dispose()` ＝ GL オブジェクトを削除し、キャンバスのバッキングストアも解放 |
 | `sim.tsunami` | 津波パネルを開く | 閉じる（走っているジョブは abort、ソルバのスレッドは残す） | worker を terminate（`IntMapTsunamiWorker.dispose()`）、モデルとパネル DOM を破棄 |
-| `sat.live` | 実時間衛星 ON | OFF（interval・3つの地図リスナー・詳細パネル。**カタログは残す**） | カタログと導出位置を捨て、レイヤーと軌道を地図から削除 |
+| `sat.live` | 実時間衛星 ON。**3 つの地図リスナーと tick は active scope が所有**し、閉じた後に届いたカタログは `guard` が捨てる | OFF（scope が interval・3 リスナーを返す。詳細パネルを閉じる。**カタログは残す**） | カタログと導出位置を捨て、レイヤーと軌道を地図から削除 |
 
 ⚠ **worker を返す動詞と、worker が死んだ経路は別物。** `src/tsunami-worker-client.js` と
 `src/sat-worker-client.js` の `dispose()` は、**在庫のジョブを必ず決着させてから** terminate する
