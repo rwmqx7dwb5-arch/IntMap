@@ -2,16 +2,32 @@
 # ----------------------------------------------------------------------------
 # Runs ONLY against a throwaway LOCAL Supabase stack on the runner (Docker). It
 # never connects to production and needs NO secrets, so it is safe on PRs from
-# forks. Separate from ci.yml so it never slows the main static/browser checks;
-# path-filtered so it runs only when database files change.
+# forks. Separate from ci.yml so it never slows the main static/browser checks.
+#
+# ⚠⚠⚠ (#R793) THE `paths:` FILTER THAT USED TO BE HERE MUST NOT COME BACK, because on
+# 2026-09-18 this job's name was added to the `Protect main` ruleset as a REQUIRED status
+# check. A required context that a path filter can suppress is never reported at all — and
+# GitHub does not read that as «nothing to run», it reads it as «not finished yet». MEASURED
+# the next day: PRs #709, #710 and #655 all green on every check they could run, all
+# BLOCKED, and nothing in either the PR or the ruleset naming the missing one. The three
+# rounds merged just before it (#702/#704/#707) had touched no database file either; the
+# only thing that changed was the ruleset. So the filter and the requirement are not two
+# settings that happen to disagree — TOGETHER they are a gate that stops every round that
+# does not touch supabase/, for as long as both exist.
+#
+# The requirement is the part worth keeping (a migration must never reach main unrebuilt),
+# so the TRIGGER gives way, not the rule: the job starts on every pull request and reports,
+# and the expensive half — Docker, the Supabase CLI, a full rebuild and pgTAP, ~8 minutes —
+# is what the path test now guards, inside the job, where a skip is visible in the log
+# instead of being an absence outside it. A PR that touches no database file pays seconds.
+# ⚠ AND IT FAILS OPEN TOWARDS RUNNING: anything the diff cannot answer — a push, a manual
+# dispatch, a base commit this checkout does not have — runs the tests in full.
 name: Database checks
 
 on:
   push:
     branches: [main]
-    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/backup-db.sh', 'scripts/restore-test.sh']
   pull_request:
-    paths: ['supabase/**', '.github/workflows/db.yml', 'scripts/backup-db.sh', 'scripts/restore-test.sh']
   workflow_dispatch:
 
 # Read-only token. This job connects to a local database only — no prod secrets.
@@ -29,8 +45,42 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          # both ends of the diff below have to exist locally; the default shallow fetch
+          # gives only the merge commit, and «base is missing» would send every PR down
+          # the run-in-full branch — correct, but it would cost every round 8 minutes.
+          fetch-depth: 0
+
+      # Does this pull request touch the database at all? ⚠ The answer decides only whether
+      # the work below is SKIPPED — never whether this job reports, because the ruleset
+      # requires the report. Deliberately git and not a third-party filter action: one less
+      # pinned supply-chain dependency (#R138 SEC), and the same question.
+      - name: Is this a database change?
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          # kept in ONE place: the paths that used to sit in `on:`
+          DB_PATHS='^(supabase/|\.github/workflows/db\.yml$|scripts/backup-db\.sh$|scripts/restore-test\.sh$)'
+          run_full () { echo "run=true" >> "$GITHUB_OUTPUT"; echo "$1 — running the database tests in full"; exit 0; }
+          [ "$EVENT" = "pull_request" ] || run_full "event is $EVENT, not a pull request"
+          git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null || run_full "base commit $BASE_SHA is not in this checkout"
+          git cat-file -e "$HEAD_SHA^{commit}" 2>/dev/null || run_full "head commit $HEAD_SHA is not in this checkout"
+          CHANGED="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")" || run_full "could not diff $BASE_SHA..$HEAD_SHA"
+          if printf '%s\n' "$CHANGED" | grep -qE "$DB_PATHS"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo 'database files changed:'
+            printf '%s\n' "$CHANGED" | grep -E "$DB_PATHS"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "no database file among $(printf '%s\n' "$CHANGED" | grep -c .) changed file(s) — skipping the rebuild and the pgTAP matrix, and reporting so the required check is not left pending"
+          fi
 
       - name: Install Supabase CLI
+        if: steps.scope.outputs.run == 'true'
         # (#R138 SEC) third-party action pinned to a full commit SHA (supply-chain: a moveable tag could be
         # repointed to malicious code). Dependabot (github-actions ecosystem) proposes SHA bumps. v1 = ab05898.
         uses: supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1  # v1.7.1
@@ -42,16 +92,19 @@ jobs:
       # / edge-runtime), and skipping them avoids their slow pulls + flaky health
       # checks — the usual cause of a `supabase start` failure in CI.
       - name: Start local Postgres
+        if: steps.scope.outputs.run == 'true'
         run: supabase db start
 
       # Rebuild the database purely from migrations + seed. Fails if either breaks.
       - name: Rebuild from migrations + seed
+        if: steps.scope.outputs.run == 'true'
         run: supabase db reset --local
 
       # Reproducibility / drift gate: after a clean rebuild the migrations must
       # FULLY describe the schema, so a public-schema diff is empty. (Run BEFORE
       # installing pgTAP, which is a CI-only extension not present in migrations.)
       - name: Schema drift check (migrations ⇄ rebuilt schema, must be empty)
+        if: steps.scope.outputs.run == 'true'
         run: |
           supabase db diff --schema public > /tmp/db_diff.sql || true
           if [ -s /tmp/db_diff.sql ]; then
@@ -64,6 +117,7 @@ jobs:
       # pgTAP is a TEST dependency only — installed on the local runner DB, never
       # shipped to production via a migration.
       - name: Install pgTAP + client tools (CI only)
+        if: steps.scope.outputs.run == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client gnupg
@@ -74,6 +128,7 @@ jobs:
       # The RLS + permission matrix. Fails CLOSED: any failing assertion, or a DB
       # that could not be set up, fails the job (never a green skip).
       - name: RLS + permission tests (pgTAP)
+        if: steps.scope.outputs.run == 'true'
         run: |
           set +e
           supabase test db 2>&1 | tee "$RUNNER_TEMP/tap.txt"
@@ -93,6 +148,7 @@ jobs:
       # end to end, on SYNTHETIC seed data only (no secrets, no production access).
       # This is the automatable half of the restore drill (§10).
       - name: Backup + restore roundtrip (synthetic data)
+        if: steps.scope.outputs.run == 'true'
         env:
           GPG_PASSPHRASE: ci-throwaway-passphrase-not-a-secret
         run: |
@@ -106,5 +162,6 @@ jobs:
           bash scripts/restore-test.sh "$ENC" "postgresql://postgres:postgres@127.0.0.1:54322/intmap_restore_test"
 
       - name: Stop local Supabase
-        if: ${{ always() }}
+        # always(), but only if something was ever started — a skipped run has nothing to stop
+        if: ${{ always() && steps.scope.outputs.run == 'true' }}
         run: supabase stop || true
