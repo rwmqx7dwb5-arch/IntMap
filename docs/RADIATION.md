@@ -2,7 +2,8 @@
 
 > **この文書が正本なのは**「どの観測網の値を、どのライセンスで、どの単位で、どこまで遡って
 > 出しているか」と、**なぜ EURDEP を使っていないか**。
-> レイヤーの実装は [`FILES.md`](FILES.md) の `radiation-layer.js`、上流ごとの取得と正規化は
+> データは [`FILES.md`](FILES.md) の `radiation-obs-core.js`（window を知らない）、描画・凡例・時計連動は
+> `radiation-layer.js`（そのブラウザ入口）、上流ごとの取得と正規化は
 > `supabase/functions/_shared/radiation-sources.js`（**機械が持っている正本**）。
 > ⚠ 拡散シミュレーション（`js/sims.js` の `IntMapRadiation`）は**別物**。§1 を読むこと。
 
@@ -15,7 +16,7 @@ IntMap には放射線に関するものが 2 つあり、混ぜてはならな�
 | | 実測放射線（本文書） | 放射性プルーム simulation |
 |---|---|---|
 | 何か | 地面に置かれた測定器が**実際に読んでいる値** | 風の場の上で**material がどこへ行くかの模型** |
-| どこ | `js/radiation-layer.js` / `window.IntMapRadiationObs` | `js/sims.js` / `window.IntMapRadiation` |
+| どこ | `js/radiation-obs-core.js`（データ）＋ `js/radiation-layer.js`（描画）/ `window.IntMapRadiationObs` | `js/sims.js` / `window.IntMapRadiation` |
 | Atlas | `map.radiation` / `data.radiationNear` | `sim.radiation` |
 | 量 | 周辺線量当量率 H\*(10) ほか（§3） | Cs-137 等の地表沈着と、そこから換算した µSv/h |
 | 色 | §4 の 1 本の尺度 | `js/sims.js` の `ZONES`（Chernobyl の 40/15/5/1 Ci/km²） |
@@ -113,7 +114,7 @@ IntMap には放射線に関するものが 2 つあり、混ぜてはならな�
 | 2,000 nSv/h | **RIVM が公表している「安全地域へも通報」の閾値** |
 
 **失効条件**: いずれかの provider が別の行動閾値を公表したら、この段はその時点で誤りになる。
-**正本**: この表と `js/radiation-layer.js` の `RAMP`。`tests/r585-checks.test.mjs` が両者の一致を測る。
+**正本**: この表と `js/radiation-obs-core.js` の `RAMP`（レイヤーは `obs.ramp()` で読む）。`tests/r585-checks.test.mjs` が両者の一致を測る。
 
 ⚠ **50–200 nSv/h は警告ではない。** 地球上のほぼ全ての健全な観測局がこの帯に入る。
 
