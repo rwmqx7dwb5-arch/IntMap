@@ -1,3 +1,73 @@
+## R796 — **Runtime のライフサイクルに世代番号と scope を足した（所有権リファクタの段 2）**
+
+〈#R786 の続き。利用者の 9 段の 2 番目: 「Runtime の世代管理・停止・破棄の強化——閉じた後の
+結果反映がなく、開閉を繰り返しても資源が増え続けない」〉
+
+### 0. 実測（着手前）
+
+| 何 | 実測 |
+|---|---|
+| `activate(name)` | `load(name).then(v => { SUSPENDED.delete(name); c.state='active'; … })`。**その間に suspend／dispose されたかを見る行が無い** |
+| 失敗した `load` | `.catch` で `state='failed'` にするが **`c.p` は残る**——次の `load` は同じ promise を返す。`dispose` だけが `c.p=null` |
+| `capability:` を渡す登録 | **js/ に 0 件**（onCamera 9・frame 6・everyTick 34 ファイル、全部 `cap:null`）。`_skip` は `e.cap &&` で短絡するので suspend の影響を受けない |
+| `dispose` の呼び手 | **js/ に 0 件**（3 capability は `API.dispose` を出しているが誰も呼ばない） |
+| `js/satellites-live.js` | `start()` が `_hover/_click/_onMove` の 3 変数と `timer` を手で持ち、`unwire()` が手で返す。**`load(group).then(ok => { if(ok) go(); })` は生死を見ない**——閉じた後に届いたカタログで `paint()` し `everyTick` を張る |
+| R708 の 4 機能 | DEM／Köppen／凡例時計／Playground が**それぞれ手書き**で「古い完了を拒む」（`tests/r708-*-lifecycle`） |
+
+### 1. ⚠⚠⚠ 開いた → 読み込み中 → 閉じた → 読み込み完了 → active
+
+静的に許されていた順序で、`load` が非同期な capability（`js/lazy-modules.js` を呼ぶもの）ではそのまま
+起きる。直したのは**上限や再試行ではなく、時刻の照合**:
+- 各 capability に `gen`。`dispose` が `gen++` を**最初に**やる（`def.dispose` より前）。
+- `load` は着手時の `gen` を閉じ込め、完了時に違えば `null` を返す。失敗時は `c.p=null`（メモしない）。
+- `activate` は `load` の完了後に `gen` と `state` を照合し、古ければ `def.activate` を呼ばず `null`。
+- `suspend` は世代を変えない（速い再開のため）。
+
+### 2. ⚠⚠⚠ 手で付ける札は付いていない札——scope
+
+`opts.capability` を渡せば suspend／dispose が掃く設計だったが、**渡している登録は 0 件**だった。
+機構が正しくても、呼び手が毎回思い出す必要がある形は守られない（#R498 の `setMapTooltipHTML` と
+同じ観測: 11 ラウンドで 8 ファイル中 1 つ）。⇒ 動詞が scope を受け取り、**scope 経由の登録は所有者名の
+タグと `name:` 接頭辞の鍵を自動で持つ**。
+
+| scope | 生存 | 所有するもの |
+|---|---|---|
+| loaded | `load` → `dispose` | カタログ・worker・トグルをまたぐ GL オブジェクト |
+| active | `activate` → `suspend` | 地図リスナー・tick・パネルの DOM ハンドラ・飛んでいる fetch |
+
+`on(target, ev, fn)` は `addEventListener` の対象にも `on/off` の emitter にも効く。`every / frame /
+onCamera / idle / timeout` は登録簿へ、`fetch` は scope の AbortSignal 付き、`own(x)` は
+dispose／abort／terminate／disconnect／close を持つものか関数。`release()` は逆順に一括、
+`alive()` は今の世代か、`guard(fn)` は release 後に届いた結果を捨てる継続。
+`stats().unowned` が**所有者の無い登録の数**を数える（着手時の全登録がこれ。0 へ向ける）。
+
+### 3. ⚠⚠ sat.live——閉じたあとに届くカタログ
+
+`start()` を `start(_arg, _v, S)` にし、3 リスナー・tick・moveend の遅延を `S` に登録、
+`load(group).then(S.guard(ok => …))`。`unwire()` と 4 つの私有ハンドルは撤去。`stop()` は
+レイヤーの表示とパネルだけを畳む（リスナーと tick は runtime が `suspend` の直後に返す）。
+`startPublic` の「register が無ければ直接 `start()`」は、register が無い状態で `start` を呼ぶと
+scope が無いので**明示的に断る**形に（register は app-body が lazy の最初の解決より前に作るので、
+本番でその枝は到達しない。実測: `makeLazyModules` :776 → `makeRuntime` :783、`need()` は非同期）。
+
+### 4. 検査
+
+- `tests/r789-runtime-ownership-checks.test.mjs`: 古い load が activate しない／古い load が新しい load を
+  上書きしない／失敗は再試行／開閉 ×50 で reads・writes・camera・timers が増えない／unowned が数えられる／
+  loaded scope は suspend をまたぎ dispose で返す／`guard` と AbortSignal／世代は dispose だけで動く／
+  sat.live の start が scope を取る。
+- `tests/r408-checks` ②d は `everyTick.pending` の綴り 2 本を固定していた⇒ **挙動**（早い呼び出しは実際に
+  鳴る・register 生成時に同じ鍵でホイールへ・生 interval は止まる）に。`stopEarlyTimers()` を export
+  （headless の呼び手が生 interval を返す扉。r621 が使う）。
+- ⚠ headless の `setTimeout` は `unref` する（node のテストが timer に掴まれて 150 秒で timeout していた）。
+  `_wireCamera` の `window` 参照を try に（Node で `onCamera` が途中で投げ、`off` が返らなかった）。
+
+### 5. 残したもの
+
+- `wx.wind`・`sim.tsunami` は scope をまだ受け取らない（tsunami の `seq` は build 単位の世代で、
+  こちらは capability 単位——粒度が違うので併存でよいが、リスナーの所有は次で移す）。
+- `stats().unowned` は着手時の全登録分ある。段 3 以降、機能を移すたびに減る数。
+
 ## R795 — **形式を固定していた検査を、守りたい性質の検査に置き換えた（所有権リファクタの段 1）**
 
 〈利用者「IntMap のアーキテクチャを総合的に分析して、品質・速度・安定性・保守性を大幅に改善する
@@ -560,6 +630,8 @@ S(L(LA('50–200 nSv/h is normal…', '50〜200 nSv/h は…', …)))
 > 4,240 行へ切り、60 ラウンドで 14,704 行に戻った——**境界は固定値ではなく、動かすもの**である。
 
 ## 索引 — このファイルのラウンド（新しい順）
+
+- **#R796** — **Runtime のライフサイクルに世代番号と scope を足した（所有権リファクタの段 2）**〈段 1 の続き。「閉じた後の結果反映がなく、開閉を繰り返しても資源が増え続けない」が完了条件〉／⚠⚠⚠ **`activate` は `load` の完了を待って `active` にしていたので、開く → 読み込み中 → 閉じる → 古い読み込みが完了 → 誰も見ていないのに active、が許されていた**。失敗した `load` も `c.p` にメモされ次の open は同じ拒否を返した⇒ capability に**世代番号**（`dispose` だけが進める）。`load`／`activate` は着手時の世代を照合し、古い完了は捨てる。失敗はメモしない／⚠⚠⚠ **`capability:` を手で渡していた登録は js/ に 0 件**——札が手書きなら札は付いていない⇒ 動詞が **scope** を受け取る（`load(host, loaded)`・`activate(arg, value, active)`）。scope は `on`（DOM／emitter）・`every`・`frame`・`onCamera`・`idle`・`timeout`・`fetch`・`own` で登録したものを所有し `release()` で一括返却、`guard(fn)` は release 後の結果を捨てる。R708 が 4 機能で手書きした「古い完了を拒む」の機構側／⚠⚠ **sat.live は閉じた後に届いたカタログで `go()` を走らせ tick を張っていた**（`load(group).then(ok => go())` が生死を知らない）⇒ 3 リスナー・tick・遅延タイマーを active scope が所有、カタログの続きは `S.guard`。手書きの `unwire()` は撤去／⚠ `stats().unowned`＝所有者の無い登録の数（0 へ向ける計器）／⚠ `everyTick.pending` は module-scope の `PENDING_TICKS` に（#R786 で禁止が解けた）、r408 ②d は綴りでなく挙動で測る／回帰: 開閉 ×50 で登録簿が増えない・古い load は activate しない・失敗は再試行
 
 - **#R795** — **形式を固定していた検査を、守りたい性質の検査に置き換えた（所有権リファクタの段 1）**〈利用者「品質・速度・安定性・保守性を大幅に改善するリファクタリング。必要なのはファイル分割ではなく、状態・依存・非同期・メモリの所有者を明確にすること。まずリファクタを妨げるテストを改める」〉／⚠⚠⚠ **`tests/r175` ③ の「export しないトップレベル宣言の禁止」は形式の規則になっていた**——守っていた危険（裸の名前が何にも解決しない）は `scripts/check-split-scope.mjs` が直接測っていて、規則の残した費用は `js/gis-core.js` ⇄ `js/gis-runtime.js` の相互 import・`everyTick.pending` という関数プロパティ・閉包 1 個に包んだ組立器。撤去し、「export に読み手が居る」は `scripts/export-readers.mjs`（読み手は `js/`・`src/`・`scripts/`・`tests/`）で測る／⚠⚠⚠ **行数の天井は 21 か所にあり、shell は 8,049 / 8,050・atlas-console は 4,906 / 4,908 だった**。産んだのは src/main.js の 11 行に畳まれた 2〜5 本の import と、lazy-modules の畳まれた case で、初期配信量も結合の広さも測っていない⇒ 全部撤去し、初期配信量は既にある `check:perf`、結合の広さは新しい `check:surface`（`IM_HOST` 277 項目・`window.*` 606 名を**名前で**両方向ラチェット）が測る／⚠⚠ **r168 #1〜#3 は shim・factory 呼び出し・位置を文字列で固定し、マーカーを 2 回張り替えていた**⇒ acorn で閉包を読み、「factory は map の後に 1 回」「shim は hoisted で this と全引数を転送」「評価中の文が提供前の名前に触れない」を性質として測る／⚠ 並行セッション `wt-r785-gis-foundation` が gis-core / gis-runtime を未コミットで編集中なので、循環 import の撤去は**今回は触らず**、規則の側だけ変えた（あちらの着地後に 1 行で消せる）／段 2 以降（Runtime の世代管理・scope・機能の明示的依存）は次のラウンド
 
